@@ -680,7 +680,7 @@ has_to_build_configure=no
 if has_to_build "${CONFIGURE_AC}" "$0"; then
 	echo "Generating configure.ac"
 	cat <<EOF > "${CONFIGURE_AC}"
-AC_INIT([UNISIM mpc57xx simulator validation tests generator package], [${SIMULATOR_VERSION}], [Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}])
+AC_INIT([UNISIM mpc57xx simulator validation tests generator package], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}])
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST

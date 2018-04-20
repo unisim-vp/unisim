@@ -48,11 +48,11 @@ bcctr.execute = {
 		/* Conditional branch */
 		if(bo & 8) {
 			/* Branch if condition is true */
-			cond_ok = ((cpu->GetCR() << bi) & U32(0x80000000)) != 0;
+			cond_ok = ((U32(cpu->GetCR()) << bi) & U32(0x80000000)) != 0;
 		}
 		else {
 			/* Branch if condition is false */
-			cond_ok = ((cpu->GetCR() << bi) & U32(0x80000000)) == 0;
+			cond_ok = ((U32(cpu->GetCR()) << bi) & U32(0x80000000)) == 0;
 		}
 	}
 	

@@ -98,7 +98,7 @@ namespace mpc57
   typedef ut::ADDRESS ADDRESS;
   
   using ut::CPU;
-  using ut::SignedAdd32;
+  //  using ut::SignedAdd32;
   using ut::XER;
   using ut::LR;
   using ut::CTR;
@@ -188,10 +188,6 @@ namespace mpc57
 
 #if defined(unlikely)
 #undef unlikely
-#endif
-
-#if defined(unlikely)
-#undef perhaps
 #endif
 
 #define likely(x)       __builtin_expect(cpu->Cond(x),1)

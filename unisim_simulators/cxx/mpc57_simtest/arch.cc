@@ -44,7 +44,6 @@ namespace ut
   void SourceReg::Repr( std::ostream& sink ) const { sink << 'r' << unsigned( reg ); }
   void MaskNode::Repr( std::ostream& sink ) const { sink << "Mask( " << mb << "," << me << " )"; }
   void CPU::LoadRepr( std::ostream& sink, Expr const& _addr, unsigned bits ) { sink << "Load<"<<bits<<">( " << _addr << " )"; }
-  void BadSource::Repr( std::ostream& sink ) const { sink << "BadSource( \"" << msg << "\" )"; }
   void MixNode::Repr( std::ostream& sink ) const { sink << "Mix( " << left << ", " << right << " )"; }
   void XER::XERNode::Repr( std::ostream& sink ) const { sink << "XER"; }
   void CR::CRNode::Repr( std::ostream& sink ) const { sink << "CR"; }
@@ -348,15 +347,15 @@ namespace ut
 
   void  CPU::donttest_system()  { throw ut::Untestable("system"); }
   
-  void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, U8 carry_in)
-  {
-    U32 res = x + y + U32(carry_in);
-    U32 carry31 = ((x & y) | ((res ^ x ^ y) & (x | y)));
-    carry_out = U8((carry31 >> 31) & U32(1));
-    result = res;
-    sign = U8(S32(res) > S32(0));
-    overflow = U8(((carry31 ^ (res ^ x ^ y)) >> 31) & U32(1));
-  }
+  // void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, U8 carry_in)
+  // {
+  //   U32 res = x + y + U32(carry_in);
+  //   U32 carry31 = ((x & y) | ((res ^ x ^ y) & (x | y)));
+  //   carry_out = U8((carry31 >> 31) & U32(1));
+  //   result = res;
+  //   sign = U8(S32(res) > S32(0));
+  //   overflow = U8(((carry31 ^ (res ^ x ^ y)) >> 31) & U32(1));
+  // }
   
   inline U32 Mask(U32 mb, U32 me) { return U32(new MaskNode( mb.expr, me.expr )); }
 

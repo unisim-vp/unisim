@@ -166,20 +166,6 @@ namespace ut
   
   struct CPU;
 
-  struct BadSource : public unisim::util::symbolic::ExprNode
-  {
-    BadSource( char const* _msg ) : msg(_msg) {}
-    virtual void Repr( std::ostream& sink ) const;
-    virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
-    {
-      char const* rmsg = dynamic_cast<BadSource const&>( brhs ).msg;
-      rmsg = rmsg ? rmsg : "";
-      char const* lmsg = msg ? msg : "";
-      return strcmp( lmsg, rmsg );
-    }
-    char const* msg;
-  };
-  
   struct MixNode : public unisim::util::symbolic::ExprNode
   {
     typedef unisim::util::symbolic::Expr Expr;
