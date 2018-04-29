@@ -239,34 +239,43 @@ struct SoftFloat
 {
   typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltFloatTraits> impl_type;
 
-  enum ComparisonResult { CRNaN=impl_type::CRNaN, CRLess=impl_type::CRLess, CREqual=impl_type::CREqual, CRGreater=impl_type::CRGreater };
+  enum ComparisonResult
+    { CRNaN=impl_type::CRNaN, CRLess=impl_type::CRLess, CREqual=impl_type::CREqual, CRGreater=impl_type::CRGreater };
   
   SoftFloat() : impl() {}
-  SoftFloat(const SoftDouble& op1, Flags& flags) { convertAssign( op1, flags ); }
+  
   enum __FromRawBits__ { FromRawBits };
   SoftFloat(__FromRawBits__, uint32_t source) { fromRawBitsAssign( source ); }
-
-  SoftFloat& convertAssign(const SoftDouble& op1, Flags& flags);
-  SoftFloat& fromRawBitsAssign(uint32_t source);
-  SoftFloat& operator=(const SoftFloat& source);
+  SoftFloat(SoftDouble const& source, Flags& flags) { convertAssign( source, flags ); }
+  
   SoftFloat& assign(const SoftFloat& source);
-  U32  queryRawBits() const;
-  BOOL isNegative() const;
-  BOOL isPositive() const;
-  BOOL isZero() const;
-  BOOL isInfty() const;
-  void opposite();
+  SoftFloat& operator=(const SoftFloat& source);
+  
+  SoftFloat& fromRawBitsAssign(uint32_t source);
+  SoftFloat& convertAssign(const SoftDouble& op1, Flags& flags);
+  
+  U32 queryRawBits() const;
+  
   void plusAssign(const SoftFloat& op1, Flags& flags);
   void minusAssign(const SoftFloat& op1, Flags& flags);
   void multAssign(const SoftFloat& op1, Flags& flags);
   void divAssign(const SoftFloat& op1, Flags& flags);
   void multAndAddAssign(const SoftFloat& a, const SoftFloat& b, Flags& flags);
   void multAndSubAssign(const SoftFloat& a, const SoftFloat& b, Flags& flags);
+  void opposite();
+  void setQuiet();
+  void setPositive();
+  void setNegative();
+  
   ComparisonResult compare( SoftFloat const& rhs ) const;
+  
+  BOOL isNegative() const;
+  // BOOL isPositive() const;
+  BOOL isZero() const;
+  BOOL isInfty() const;
   BOOL isSNaN() const;
   BOOL isQNaN() const;
   BOOL isNaN() const;
-  void setQuiet();
   BOOL isDenormalized() const;
   
   impl_type impl;
@@ -285,37 +294,71 @@ struct SoftDouble
 {
   typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltDoubleTraits> impl_type;
 
-  enum ComparisonResult { CRNaN=impl_type::CRNaN, CRLess=impl_type::CRLess, CREqual=impl_type::CREqual, CRGreater=impl_type::CRGreater };
+  enum ComparisonResult
+    { CRNaN=impl_type::CRNaN, CRLess=impl_type::CRLess, CREqual=impl_type::CREqual, CRGreater=impl_type::CRGreater };
   
   SoftDouble() : impl() {}
-  SoftDouble(const SoftFloat& op1, Flags& flags) { convertAssign(op1, flags); }
+  
   enum __FromRawBits__ { FromRawBits };
   SoftDouble(__FromRawBits__, uint64_t source) { fromRawBitsAssign( source ); }
+  
+  SoftDouble(SoftFloat const& source, Flags& flags) { convertAssign(source, flags); }
   SoftDouble(int64_t, Flags& flags);
   
-  SoftDouble& convertAssign(const SoftFloat& op1, Flags& flags);
-  SoftDouble& fromRawBitsAssign(uint64_t source);
-  SoftDouble& operator=(const SoftDouble& source);
   SoftDouble& assign(const SoftDouble& source);
+  SoftDouble& operator=(const SoftDouble& source);
+  
+  SoftDouble& fromRawBitsAssign(uint64_t source);
+  SoftDouble& convertAssign(const SoftFloat& op1, Flags& flags);
+  
   U64  queryRawBits() const;
   S32  queryS32( Flags& flags );
   S64  queryS64( Flags& flags );
-  BOOL isNegative() const;
-  BOOL isPositive() const;
-  BOOL isZero() const;
-  BOOL isInfty() const;
-  void opposite();
+  
   void plusAssign(const SoftDouble& op1, Flags& flags);
   void minusAssign(const SoftDouble& op1, Flags& flags);
   void multAssign(const SoftDouble& op1, Flags& flags);
   void divAssign(const SoftDouble& op1, Flags& flags);
   void multAndAddAssign(const SoftDouble& a, const SoftDouble& b, Flags& flags);
   void multAndSubAssign(const SoftDouble& a, const SoftDouble& b, Flags& flags);
+  void opposite();
+  void setQuiet();
+  void setPositive();
+  void setNegative();
+
+  void rSqrtEstimAssign()
+  {
+    // First estimation of 1/sqrt(b), seed of Newton-Raphson algorithm
+    // see http://www.mceniry.net/papers/Fast%20Inverse%20Square%20Root.pdf
+    // mirror: http://www.daxia.com/bibis/upload/406Fast_Inverse_Square_Root.pdf
+    // see also: http://www.azillionmonkeys.com/qed/sqroot.html
+
+    union  { double as_fp_number; uint64_t as_unsigned_integer; } transfer;
+    transfer.as_unsigned_integer = queryRawBits();
+    double x = transfer.as_fp_number;
+    transfer.as_unsigned_integer = (0xbfcdd6a18f6a6f55ULL - transfer.as_unsigned_integer) >> 1;
+    double y = transfer.as_fp_number;
+    
+    // Five Newton-Raphson iterations are sufficient with 64-bit
+    // floating point numbers
+    for (unsigned i = 0; i < 5; i++)
+      {
+        y = y*(3 - x*y*y) / 2;
+      }
+    
+    transfer.as_fp_number = y;
+    fromRawBitsAssign( transfer.as_unsigned_number );
+  }
+  
   ComparisonResult compare( SoftDouble const& rhs ) const;
+  
+  BOOL isNegative() const;
+  // BOOL isPositive() const;
+  BOOL isZero() const;
+  BOOL isInfty() const;
   BOOL isSNaN() const;
   BOOL isQNaN() const;
   BOOL isNaN() const;
-  void setQuiet();
   BOOL isDenormalized() const;
 
   impl_type impl;

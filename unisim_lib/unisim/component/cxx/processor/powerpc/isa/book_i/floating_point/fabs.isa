@@ -52,15 +52,10 @@ fabs.execute = {
 	}
 
 	// Read the input operands
-	SoftDouble result = cpu->GetFPR(fd);
-	const SoftDouble& b = cpu->GetFPR(fb);
+	SoftDouble result( cpu->GetFPR(fb) );
 
 	// Compute the result
-	result = b;
-	if(result.isNegative())
-	{
-		result.opposite();
-	}
+	result.setPositive();
 
 	// Write back the result
 	cpu->SetFPR(fd, result);

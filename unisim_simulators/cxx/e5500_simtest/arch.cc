@@ -32,24 +32,25 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <top_mpc57.hh>
-#include <testutils.hh>
 #include <arch.hh>
-#include <sstream>
-#include <iostream>
-#include <set>
+#include <top_ppc64.hh>
+// #include <sstream>
+// #include <iostream>
+// #include <set>
 
 namespace ut
 {
 //   void SourceReg::Repr( std::ostream& sink ) const { sink << 'r' << unsigned( reg ); }
 //   void MaskNode::Repr( std::ostream& sink ) const { sink << "Mask( " << mb << "," << me << " )"; }
-//   void CPU::LoadRepr( std::ostream& sink, Expr const& _addr, unsigned bits ) { sink << "Load<"<<bits<<">( " << _addr << " )"; }
+//   void Arch::LoadRepr( std::ostream& sink, Expr const& _addr, unsigned bits ) { sink << "Load<"<<bits<<">( " << _addr << " )"; }
 //   void MixNode::Repr( std::ostream& sink ) const { sink << "Mix( " << left << ", " << right << " )"; }
 //   void XER::XERNode::Repr( std::ostream& sink ) const { sink << "XER"; }
 //   void CR::CRNode::Repr( std::ostream& sink ) const { sink << "CR"; }
 //   void SPEFSCR::SPEFSCRNode::Repr( std::ostream& sink ) const { sink << "SPEFSCR"; }
+//  void FromRawBits::Repr( std::ostream& sink ) const { sink << "FromRawBits( " << src << " )"; }
+  
 
-//   void CPU::Interrupt::SetELEV(unsigned x) {}
+//   void Arch::Interrupt::SetELEV(unsigned x) {}
   
 //   void
 //   Interface::irappend( uint8_t index, bool w )
@@ -73,7 +74,7 @@ namespace ut
 //     bool has_valid_path = false;
 //     for (PathNode path_root;;)
 //       {
-//         CPU cpu( *this, path_root );
+//         Arch cpu( *this, path_root );
         
 //         has_valid_path |= op.execute( &cpu );
         
@@ -343,9 +344,9 @@ namespace ut
 //     return 0; // All equal
 //   }
   
-//   void  CPU::donttest_branch()  { throw ut::Untestable("branch"); }
+//   void  Arch::donttest_branch()  { throw ut::Untestable("branch"); }
 
-  void  CPU::donttest_system()  { throw ut::Untestable("system"); }
+  void  Arch::donttest_system()  { throw ut::Untestable("system"); }
   
 //   void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, U8 carry_in)
 //   {
@@ -402,5 +403,4 @@ namespace ut
 //     return false;
 //   }
     
-}
-end of namespace ut
+} //end of namespace ut

@@ -39,10 +39,10 @@ mcrf.execute = {
 	// Read the input operands
         unsigned tsh = 4*bft, ash = 4*bfa;
 	CR& cr = cpu->GetCR();
-	UINT const mask(0xf0000000 >> tsh), source(cr);
+	U32 const mask(0xf0000000 >> tsh), source(cr);
 
 	// Compute the result
-	UINT result = (source & ~mask) | (mask & ((source << ash) >> tsh));
+	U32 result = (source & ~mask) | (mask & ((source << ash) >> tsh));
 	
 	// Write back the result
 	cr = result;

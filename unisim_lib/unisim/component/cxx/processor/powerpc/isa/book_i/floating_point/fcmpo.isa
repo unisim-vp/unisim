@@ -52,14 +52,13 @@ fcmpo.execute = {
 	}
 
 	// Read the input operands
-	UINT fpscr = cpu->GetFPSCR();
-	UINT old_fpscr = fpscr;
-	const SoftDouble& a = cpu->GetFPR(fa);
-	const SoftDouble& b = cpu->GetFPR(fb);
+	FPSCR& fpscr = cpu->GetFPSCR();
+	SoftDouble const& a = cpu->GetFPR(fa);
+	SoftDouble const& b = cpu->GetFPR(fb);
 	
 	// Do the floating point comparison
 	unsigned c;
-	switch(a.compare(b))
+	switch (a.compare(b))
 	{
 		case SoftDouble::CRNaN: c = 1; break;
 		case SoftDouble::CRLess: c = 8; break;
@@ -70,37 +69,22 @@ fcmpo.execute = {
 	}
 
 	// Generate FPCC
-	FPSCR::FPCC::Set(fpscr, UINT(c));
+	fpscr.Set<FPSCR::FPCC>(UINT(c));
 	
 	// Generate VXSNAN and VXVC
-	if(unlikely(a.isSNaN() || b.isSNaN()))
+	if (unlikely(a.isQNaN() or b.isQNaN()))
 	{
-		FPSCR::VXSNAN::Set(fpscr, UINT(1));
-		if(not bool(FPSCR::VE::Get(fpscr)))
+		if (unlikely(a.isSNaN() or b.isSNaN()))
 		{
-			FPSCR::VXVC::Set(fpscr, UINT(1));
+			fpscr.SetInvalid(FPSCR::VXSNAN());
+			if (not cpu->CheckFloatingPointException())
+				return false;
 		}
-	}
-	if(unlikely(a.isQNaN() || b.isQNaN()))
-	{
-		FPSCR::VXVC::Set(fpscr, UINT(1));
+		fpscr.SetException(FPSCR::VXVC());
 	}
 
-	// Generate FX, VX, FEX
-	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
-	GenFPSCR_VX<FPSCR>(fpscr);
-	GenFPSCR_FEX<FPSCR>(fpscr);
-
-	// Update FPSCR
-	cpu->SetFPSCR(fpscr);
-
-	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely((cpu->GetMSR().Get<MSR::FE0>() or cpu->GetMSR().Get<MSR::FE1>()) and (cpu->GetFPSCR().Get<FPSCR::FEX>())))
-	{
-		// Raise a floating point exception
-		cpu->ThrowException<CPU::ProgramInterrupt::FloatingPoint>();
+	if (not cpu->CheckFloatingPointException())
 		return false;
-	}
 
 	// CR[crfD] <- c
 	CR& cr = cpu->GetCR();

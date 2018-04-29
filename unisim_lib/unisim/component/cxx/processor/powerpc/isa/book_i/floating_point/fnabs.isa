@@ -50,15 +50,10 @@ fnabs.execute = {
 	}
 
 	// Read the input operands
-	SoftDouble result = cpu->GetFPR(fd);
-	const SoftDouble& b = cpu->GetFPR(fb);
+	SoftDouble result( cpu->GetFPR(fb) );
 
 	// Compute the result
-	result = b;
-	if(result.isPositive())
-	{
-		result.opposite();
-	}
+	result.setNegative();
 
 	// Write back the result
 	cpu->SetFPR(fd, result);
@@ -67,10 +62,11 @@ fnabs.execute = {
 	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
 	
 	return true;
-}
+};
+
 fnabs.disasm = {
 	os << "fnabs" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
-}
+};
 
-specialize fnabs(rc=0)
-specialize fnabs(rc=1)
+specialize fnabs(rc=0);
+specialize fnabs(rc=1);

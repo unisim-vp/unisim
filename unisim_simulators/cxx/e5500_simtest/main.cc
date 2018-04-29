@@ -32,346 +32,348 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-// #include <top_mpc57.hh>
-// #include <arch.hh>
+#include <top_ppc64.hh>
+#include <arch.hh>
+#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
 // #include <testutils.hh>
-// #include <unisim/util/random/random.hh>
-// #include <fstream>
-// #include <iostream>
-// #include <sstream>
+#include <unisim/util/random/random.hh>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 // #include <set>
-// #include <memory>
-// #include <inttypes.h>
+#include <memory>
+#include <string>
+#include <inttypes.h>
 
-// struct Sink
-// {
-//   Sink( std::string const& gendir )
-//     : macros( gendir + ".inc" ), sources( gendir + ".S" )
-//   {
-//   }
+struct Sink
+{
+  Sink( std::string const& gendir )
+    : macros( gendir + ".inc" ), sources( gendir + ".S" )
+  {
+  }
   
-//   ~Sink() {}
+  ~Sink() {}
   
-//   std::ofstream macros;
-//   std::ofstream sources;
+  std::ofstream macros;
+  std::ofstream sources;
   
-//   char const* test_prefix() const { return "iut_"; }
-// };
+  char const* test_prefix() const { return "iut_"; }
+};
 
-// struct TestConfig
-// {
-//   ut::Interface const& iif;
-//   std::string ident, disasm;
+struct TestConfig
+{
+  typedef unisim::component::cxx::processor::powerpc::GPRPrint GPRPrint;
+  typedef unisim::component::cxx::processor::powerpc::HexPrint HexPrint;
   
-//   TestConfig( ut::Interface const& _iif, std::string const& _ident, std::string const& _disasm )
-//     : iif( _iif ), ident( _ident ), disasm( _disasm )
-//   {}
   
-//   bool wide() const { return iif.length == 32; }
+  ut::Interface const& iif;
+  std::string ident, disasm;
   
-//   std::string prologue() const
-//   {
-//     if (iif.usemem()) {
-//       std::ostringstream sink;
-//       try {
-//         auto const& p = iif.GetPrologue();
-//         mpc57::GPRPrint br( p.base );
-//         if      ((p.offset & -128) == 0)
-//           {
-//             // a suitable 7 bit unsigned immediate (cost 2 bytes)
-//             sink << "\tse_li\t" << br << ", " << p.offset << "\n";
-//           }
-//         else if (((p.offset + 0x80000) >> 20) == 0)
-//           {
-//             // a suitable 20 bit signed immediate (cost 4 bytes)
-//             sink << "\te_li\t" << br << ", " << int32_t(p.offset) << "\n";
-//           }
-//         else
-//           {
-//             // a full n raw 32 bit immediate (8 bytes)
-//             mpc57::HexPrint xoff( p.offset );
-//             sink << "\te_lis\t" << br << ", " << xoff << "@h\n";
-//             sink << "\te_or2i\t" << br << ", " << xoff << "@l\n";
-//           }
+  TestConfig( ut::Interface const& _iif, std::string const& _ident, std::string const& _disasm )
+    : iif( _iif ), ident( _ident ), disasm( _disasm )
+  {}
+  
+  bool wide() const { return iif.length == 32; }
+  
+  std::string prologue() const
+  {
+    if (iif.usemem()) {
+      std::ostringstream sink;
+      try {
+        auto const& p = iif.GetPrologue();
+        GPRPrint br( p.base );
+        if      ((p.offset & -128) == 0)
+          {
+            // a suitable 7 bit unsigned immediate (cost 2 bytes)
+            sink << "\tse_li\t" << br << ", " << p.offset << "\n";
+          }
+        else if (((p.offset + 0x80000) >> 20) == 0)
+          {
+            // a suitable 20 bit signed immediate (cost 4 bytes)
+            sink << "\te_li\t" << br << ", " << int32_t(p.offset) << "\n";
+          }
+        else
+          {
+            // a full n raw 32 bit immediate (8 bytes)
+            HexPrint xoff( p.offset );
+            sink << "\te_lis\t" << br << ", " << xoff << "@h\n";
+            sink << "\te_or2i\t" << br << ", " << xoff << "@l\n";
+          }
         
-//         mpc57::GPRPrint buffer( iif.aligned ? 3 : 0 );
+        GPRPrint buffer( iif.aligned ? 3 : 0 );
 
-//         sink << "\t" << (p.sign ? "sub" : "add") << "\t" << br << ", " << br << ", " << buffer << "\n";
+        sink << "\t" << (p.sign ? "sub" : "add") << "\t" << br << ", " << br << ", " << buffer << "\n";
         
-//         for (auto reg : p.regs) {
-//           mpc57::GPRPrint rname( reg.first );
-//           mpc57::HexPrint rvalue( reg.second );
-//           if (reg.second & -128) { std::cerr << "IE immediate generation.\n"; throw 0; }
-//           sink << "\tse_li\t" << rname << ", " << rvalue << "\n";
-//         }
-//       } catch (ut::Interface::Prologue::Error const& x) {
-//         std::cerr << "Prologue error in: " << disasm << ".\n";
-//         throw x;
-//       }
-//       return sink.str();
-//     }
-//     return "";
-//   }
+        for (auto reg : p.regs) {
+          GPRPrint rname( reg.first );
+          HexPrint rvalue( reg.second );
+          if (reg.second & -128) { std::cerr << "IE immediate generation.\n"; throw 0; }
+          sink << "\tse_li\t" << rname << ", " << rvalue << "\n";
+        }
+      } catch (ut::Interface::Prologue::Error const& x) {
+        std::cerr << "Prologue error in: " << disasm << ".\n";
+        throw x;
+      }
+      return sink.str();
+    }
+    return "";
+  }
   
-//   std::string epilogue() const { return ""; }
-// };
+  std::string epilogue() const { return ""; }
+};
 
-// struct E5500 : mpc57::Decoder
-// {
-//   typedef mpc57::DecodeTableEntry DecodeTableEntry;
-//   typedef mpc57::CodeType         CodeType;
-//   typedef mpc57::Operation        Operation;
+struct E5500 : e5500::Decoder
+{
+  typedef e5500::DecodeTableEntry DecodeTableEntry;
+  typedef e5500::CodeType         CodeType;
+  typedef e5500::Operation        Operation;
   
-//   static CodeType mkcode( uint32_t code ) { return CodeType( code ); }
-//   static CodeType cleancode( Operation const& op )
-//   {
-//     CodeType code = op.GetEncoding();
-//     unsigned lsb = 32 - op.GetLength();
-//     return (code >> lsb) << lsb;
-//   }
-//   static char const* Name() { return "VLE"; }
-//   void
-//   write_test( Sink& sink, TestConfig const& cfg, CodeType code )
-//   {
-//     std::string hexcode;
-//     {
-//       uint32_t codebits = code >> (cfg.wide() ? 0 : 16);
-//       std::ostringstream oss;
-//       oss << std::hex << codebits;
-//       hexcode = oss.str();
-//     }
-//     std::string opfunc_name = sink.test_prefix() + cfg.ident + '_' + hexcode;
+  static CodeType mkcode( uint32_t code ) { return CodeType( code ); }
+  static CodeType cleancode( Operation const& op ) { return op.GetEncoding(); }
+  
+  static char const* Name() { return "VLE"; }
+  void
+  write_test( Sink& sink, TestConfig const& cfg, CodeType code )
+  {
+    std::string hexcode;
+    {
+      uint32_t codebits = code >> (cfg.wide() ? 0 : 16);
+      std::ostringstream oss;
+      oss << std::hex << codebits;
+      hexcode = oss.str();
+    }
+    std::string opfunc_name = sink.test_prefix() + cfg.ident + '_' + hexcode;
     
-//     sink.macros << "ENTRY(" << opfunc_name << ",0x" << hexcode << ")\n";
+    sink.macros << "ENTRY(" << opfunc_name << ",0x" << hexcode << ")\n";
     
-//     sink.sources << "\t.text\n\t.align\t2\n\t.global\t" << opfunc_name
-//                  << "\n\t.type\t" << opfunc_name
-//                  << ", @function\n" << opfunc_name
-//                  << ":\n"
-//                  << cfg.prologue()
-//                  << "\t." << (cfg.wide() ? "long" : "short") << "\t0x" << hexcode << '\t' << "/* " << cfg.disasm << " */\n"
-//                  << cfg.epilogue()
-//                  << "\tse_blr\n"
-//                  << "\t.size\t" << opfunc_name
-//                  << ", .-" << opfunc_name << "\n\n";
-//   }
-// };
+    sink.sources << "\t.text\n\t.align\t2\n\t.global\t" << opfunc_name
+                 << "\n\t.type\t" << opfunc_name
+                 << ", @function\n" << opfunc_name
+                 << ":\n"
+                 << cfg.prologue()
+                 << "\t." << (cfg.wide() ? "long" : "short") << "\t0x" << hexcode << '\t' << "/* " << cfg.disasm << " */\n"
+                 << cfg.epilogue()
+                 << "\tse_blr\n"
+                 << "\t.size\t" << opfunc_name
+                 << ", .-" << opfunc_name << "\n\n";
+  }
+};
 
 template <typename ISA>
 struct Checker
 {
-//   typedef typename ISA::CodeType CodeType;
-//   typedef typename ISA::Operation Operation;
-//   typedef std::multimap<ut::Interface, CodeType> CodeClass;
-//   typedef std::map<std::string, CodeClass> TestClasses;
+  typedef typename ISA::CodeType CodeType;
+  typedef typename ISA::Operation Operation;
+  typedef std::multimap<ut::Interface, CodeType> CodeClass;
+  typedef std::map<std::string, CodeClass> TestClasses;
   
-//   unisim::util::random::Random random;
-//   ISA isa;
+  unisim::util::random::Random random;
+  ISA isa;
   
-//   TestClasses testclasses;
-//   std::ofstream logger;
+  TestClasses testclasses;
+  std::ofstream logger;
   
-//   Checker() : random( 1, 2, 3, 4 ), logger((std::string( ISA::Name() ) + ".log").c_str()) {}
+  Checker() : random( 1, 2, 3, 4 ), logger((std::string( ISA::Name() ) + ".log").c_str()) {}
   
-//   void discover( uintptr_t ttl )
-//   {
-//     uint64_t step = 0;
-//     //auto const& dectable = isa.GetDecodeTable();
-//     for (auto&& opc : isa.GetDecodeTable())
-//       {
-//         uint32_t mask = opc.opcode_mask, bits = opc.opcode & mask;
-//         auto testclass = testclasses.end();
-//         std::map<std::string,uintptr_t> fails;
+  void discover( uintptr_t ttl )
+  {
+    uint64_t step = 0;
+    //auto const& dectable = isa.GetDecodeTable();
+    for (auto&& opc : isa.GetDecodeTable())
+      {
+        uint32_t mask = opc.opcode_mask, bits = opc.opcode & mask;
+        auto testclass = testclasses.end();
+        std::map<std::string,uintptr_t> fails;
         
-//         for (uintptr_t trial = 0; trial < ttl; ++trial)
-//           {
-//             step += 1;
-//             try
-//               {
-//                 CodeType code = ISA::mkcode( (random.Generate() & ~mask) | bits );
+        for (uintptr_t trial = 0; trial < ttl; ++trial)
+          {
+            step += 1;
+            try
+              {
+                CodeType code = ISA::mkcode( (random.Generate() & ~mask) | bits );
                 
-//                 std::unique_ptr<Operation> codeop( opc.decode( code, 0 ) );
+                std::unique_ptr<Operation> codeop( opc.decode( code, 0 ) );
                 
-//                 {
-//                   std::string name( codeop->GetName() );
-//                   if (testclass == testclasses.end()) {
-//                     testclasses[name];
-//                     testclass = testclasses.find(name);
-//                     std::cerr << "Tests[" << ISA::Name() << "::" << name << "]: ";
-//                   } else if (testclass->first != name) {
-//                     std::cerr << "Incoherent Operation names: " << testclass->first << " and " << name << std::endl;
-//                     throw 0;
-//                   }
-//                 }
+                {
+                  std::string name( codeop->GetName() );
+                  if (testclass == testclasses.end()) {
+                    testclasses[name];
+                    testclass = testclasses.find(name);
+                    std::cerr << "Tests[" << ISA::Name() << "::" << name << "]: ";
+                  } else if (testclass->first != name) {
+                    std::cerr << "Incoherent Operation names: " << testclass->first << " and " << name << std::endl;
+                    throw 0;
+                  }
+                }
                 
-//                 if (codeop->donttest())
-//                   {
-//                     fails["not under test"] += 1;
-//                     break;
-//                   }
+                if (codeop->donttest())
+                  {
+                    fails["not under test"] += 1;
+                    break;
+                  }
                 
-//                 {
-//                   std::unique_ptr<Operation> realop( isa.NCDecode( 0, code ) );
-//                   if (strcmp( realop->GetName(), codeop->GetName() ) != 0)
-//                     {
-//                       fails["hidden"] += 1;
-//                       continue; /* Not the op we were looking for. */
-//                     }
-//                   code = ISA::cleancode( *codeop );
-//                 }
+                {
+                  std::unique_ptr<Operation> realop( isa.NCDecode( 0, code ) );
+                  if (strcmp( realop->GetName(), codeop->GetName() ) != 0)
+                    {
+                      fails["hidden"] += 1;
+                      continue; /* Not the op we were looking for. */
+                    }
+                  code = ISA::cleancode( *codeop );
+                }
                 
-//                 if (testclass->second.size() >= 256) {
-//                   std::cerr << "Possible issue: too many tests for" << testclass->first << "...\n";
-//                   throw 0;
-//                 }
+                if (testclass->second.size() >= 256) {
+                  std::cerr << "Possible issue: too many tests for" << testclass->first << "...\n";
+                  throw 0;
+                }
                 
-//                 // We need to perform an abstract execution of the
-//                 // instruction to 1/ further check testability and 2/
-//                 // compute operation interface.
-//                 ut::Interface interface( *codeop );
+                // We need to perform an abstract execution of the
+                // instruction to 1/ further check testability and 2/
+                // compute operation interface.
+                ut::Interface interface( *codeop );
 
-//                 // At this point, code corresponds to valid operation
-//                 // to be tested. Nevertheless, if the interface of
-//                 // this operation matches an existing test, we don't
-//                 // add the operation since the new test is unlikely to
-//                 // reveal new bugs.
-//                 if (testclass->second.find( interface ) != testclass->second.end()) continue;
-//                 testclass->second.insert( std::make_pair( interface, code ) );
-//                 trial = 0;
-//               }
-//             catch (ut::Untestable const& denial)
-//               {
-//                 fails[denial.reason] += 1;
-//                 if (denial.reason == "not implemented")
-//                   break;
-//               }
-//           }
-//         if (testclass == testclasses.end())
-//           std::cerr << "Tests[" << ISA::Name() << "::?]: nothing found...\n";
-//         else if (testclass->second.size() == 0)
-//           {
-//             std::ostringstream msg;
+                // At this point, code corresponds to valid operation
+                // to be tested. Nevertheless, if the interface of
+                // this operation matches an existing test, we don't
+                // add the operation since the new test is unlikely to
+                // reveal new bugs.
+                if (testclass->second.find( interface ) != testclass->second.end()) continue;
+                testclass->second.insert( std::make_pair( interface, code ) );
+                trial = 0;
+              }
+            catch (ut::Untestable const& denial)
+              {
+                fails[denial.reason] += 1;
+                if (denial.reason == "not implemented")
+                  break;
+              }
+          }
+        if (testclass == testclasses.end())
+          std::cerr << "Tests[" << ISA::Name() << "::?]: nothing found...\n";
+        else if (testclass->second.size() == 0)
+          {
+            std::ostringstream msg;
             
-//             msg << "nothing found";
-//             for (auto&& reason : fails)
-//               msg << " <" << reason.first << ">";
-//             msg << "\n";
-//             std::cerr << msg.str();
-//             logger << testclass->first << " : " << msg.str();
-//           }
-//         else
-//           std::cerr << testclass->second.size() << " patterns found." << std::endl;
-//       }
-//   }
+            msg << "nothing found";
+            for (auto&& reason : fails)
+              msg << " <" << reason.first << ">";
+            msg << "\n";
+            std::cerr << msg.str();
+            logger << testclass->first << " : " << msg.str();
+          }
+        else
+          std::cerr << testclass->second.size() << " patterns found." << std::endl;
+      }
+  }
   
-//   void
-//   write_repos( std::string const& reposname )
-//   {
-//     std::ofstream sink( reposname );
+  void
+  write_repos( std::string const& reposname )
+  {
+    std::ofstream sink( reposname );
     
-//     typedef typename TestClasses::value_type TCItem;
-//     typedef typename CodeClass::value_type CCItem;
+    typedef typename TestClasses::value_type TCItem;
+    typedef typename CodeClass::value_type CCItem;
     
-//     for (TCItem const& tcitem : testclasses)
-//       {
-//         std::string name = tcitem.first;
+    for (TCItem const& tcitem : testclasses)
+      {
+        std::string name = tcitem.first;
         
-//         for (CCItem const& ccitem : tcitem.second)
-//           {
-//             sink << name << '\t' << std::hex << uint32_t( ccitem.second ) << std::dec
-//                  << "\t# " << this->disasm( ccitem.second ) << '\n';
-//           }
-//       }
-//   }
+        for (CCItem const& ccitem : tcitem.second)
+          {
+            sink << name << '\t' << std::hex << uint32_t( ccitem.second ) << std::dec
+                 << "\t# " << this->disasm( ccitem.second ) << '\n';
+          }
+      }
+  }
 
-//   std::string disasm( CodeType code )
-//   {
-//     std::unique_ptr<Operation> operation( isa.NCDecode( 0, code ) );
-//     std::ostringstream oss;
-//     operation->disasm( 0, oss );
-//     return oss.str();
-//   }
+  std::string disasm( CodeType code )
+  {
+    std::unique_ptr<Operation> operation( isa.NCDecode( 0, code ) );
+    std::ostringstream oss;
+    operation->disasm( oss );
+    return oss.str();
+  }
   
-//   struct FileLoc
-//   {
-//     std::string name;
-//     unsigned    line;
+  struct FileLoc
+  {
+    std::string name;
+    unsigned    line;
     
-//     FileLoc( std::string const& _name ) : name( _name ), line(0) {}
-//     void newline() { line += 1; }
-//     friend std::ostream& operator << (std::ostream& sink, FileLoc const& fl) { sink << fl.name << ':' << fl.line << ": "; return sink; }
-//   };
+    FileLoc( std::string const& _name ) : name( _name ), line(0) {}
+    void newline() { line += 1; }
+    friend std::ostream& operator << (std::ostream& sink, FileLoc const& fl) { sink << fl.name << ':' << fl.line << ": "; return sink; }
+  };
   
-//   void
-//   read_repos( std::string const& reposname )
-//   {
-//     FileLoc fl( reposname );
-//     std::ifstream source( fl.name );
+  void
+  read_repos( std::string const& reposname )
+  {
+    FileLoc fl( reposname );
+    std::ifstream source( fl.name );
     
-//     while (source)
-//       {
-//         fl.newline();
-//         // Parsing incoming repository
-//         std::string name;
-//         if (not (source >> name)) break;
-//         uint32_t rawcode;
-//         if (not (source >> std::hex >> rawcode)) break;
-//         std::string extra;
-//         std::getline( source, extra, '\n' );
-//         // Decoding operation and checking that given operation name is coherent
-//         CodeType code = ISA::mkcode( rawcode );
+    while (source)
+      {
+        fl.newline();
+        // Parsing incoming repository
+        std::string name;
+        if (not (source >> name)) break;
+        uint32_t rawcode;
+        if (not (source >> std::hex >> rawcode)) break;
+        std::string extra;
+        std::getline( source, extra, '\n' );
+        // Decoding operation and checking that given operation name is coherent
+        CodeType code = ISA::mkcode( rawcode );
         
-//         std::unique_ptr<Operation> codeop( isa.NCDecode( 0, code ) );
-//         code = ISA::cleancode( *codeop );
+        std::unique_ptr<Operation> codeop( isa.NCDecode( 0, code ) );
+        code = ISA::cleancode( *codeop );
         
-//         if (name != codeop->GetName()) {
-//           std::cerr << fl << " operation '" << std::hex << rawcode << std::dec << "' "
-//                     << "is said to be: '" << name << "' "
-//                     << "whereas it is: '" << codeop->GetName() << "'\n";
-//           throw 0;
-//         }
+        if (name != codeop->GetName()) {
+          std::cerr << fl << " operation '" << std::hex << rawcode << std::dec << "' "
+                    << "is said to be: '" << name << "' "
+                    << "whereas it is: '" << codeop->GetName() << "'\n";
+          throw 0;
+        }
         
-//         if (codeop->donttest())
-//           {
-//             std::cerr << fl << " explicit rejection ('donttest') for " << codeop->GetName() << "\n";
-//             continue;
-//           }
+        if (codeop->donttest())
+          {
+            std::cerr << fl << " explicit rejection ('donttest') for " << codeop->GetName() << "\n";
+            continue;
+          }
           
-//         // Performing an abstract execution to check the validity of
-//         // the opcode, and to compute the interface of the operation
-//         try
-//           {
-//             ut::Interface interface( *codeop );
-//             // Finally recording the operation test
-//             testclasses[name].insert( std::make_pair( interface, code ) );
-//           }
-//         catch (ut::Untestable const& denial)
-//           {
-//             std::cerr << fl << ": behavioral rejection for " << this->disasm( code ) << " <" << denial.reason << ">\n";
-//             continue;
-//           }
+        // Performing an abstract execution to check the validity of
+        // the opcode, and to compute the interface of the operation
+        try
+          {
+            ut::Interface interface( *codeop );
+            // Finally recording the operation test
+            testclasses[name].insert( std::make_pair( interface, code ) );
+          }
+        catch (ut::Untestable const& denial)
+          {
+            std::cerr << fl << ": behavioral rejection for " << this->disasm( code ) << " <" << denial.reason << ">\n";
+            continue;
+          }
         
-//       }
+      }
     
-//   }
+  }
   
-//   void
-//   write_tests( Sink& sink )
-//   {
-//     typedef typename TestClasses::value_type TCItem;
-//     typedef typename CodeClass::value_type CCItem;
+  void
+  write_tests( Sink& sink )
+  {
+    typedef typename TestClasses::value_type TCItem;
+    typedef typename CodeClass::value_type CCItem;
     
-//     for (TCItem const& tcitem : testclasses)
-//       {
-//         std::string name = tcitem.first;
+    for (TCItem const& tcitem : testclasses)
+      {
+        std::string name = tcitem.first;
         
-//         for (CCItem const& ccitem : tcitem.second)
-//           {
-//             TestConfig cfg( ccitem.first, std::string( ISA::Name() ) + '_' + name, disasm( ccitem.second ) );
-//             isa.write_test( sink, cfg, ccitem.second );
-//           }
-//       }
-//   }
+        for (CCItem const& ccitem : tcitem.second)
+          {
+            TestConfig cfg( ccitem.first, std::string( ISA::Name() ) + '_' + name, disasm( ccitem.second ) );
+            isa.write_test( sink, cfg, ccitem.second );
+          }
+      }
+  }
 };
 
 template <typename T>

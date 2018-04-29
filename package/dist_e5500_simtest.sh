@@ -312,6 +312,8 @@ arch.cc \
 
 UNISIM_SIMULATOR_HEADER_FILES="\
 ${UNISIM_SIMULATOR_ISA_FILES} \
+types.hh \
+simfloat.hh \
 arch.hh \
 "
 

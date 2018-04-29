@@ -52,43 +52,40 @@ fmul.execute = {
 	}
 
 	// Read the input operands
-	UINT fpscr = cpu->GetFPSCR(), old_fpscr = fpscr;
-	Flags flags( Flags::RoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>()) );
+        FPSCR& fpscr = cpu->GetFPSCR();
+	Flags flags( Flags::RoundingMode(fpscr.Get<FPSCR::RN>()) );
 	SoftDouble result = cpu->GetFPR(fa);
-	const SoftDouble& c = cpu->GetFPR(fc);
+	SoftDouble const& c = cpu->GetFPR(fc);
 
 	// Compute the result
 	result.multAssign(c, flags);
 
 	// Generate OX, UX, VXSNAN, VXIMZ, FR, FI, FPRF, XX, FX, VX, FEX
-	GenFPSCR_OX<FPSCR>(fpscr, flags);
-	GenFPSCR_UX<FPSCR>(fpscr, flags);
-	GenFPSCR_VXSNAN<FPSCR>(fpscr, flags);
-	GenFPSCR_VXIMZ<FPSCR>(fpscr, flags);
-	GenFPSCR_FR<FPSCR, SoftDouble>(fpscr, result, flags);
-	GenFPSCR_FI<FPSCR>(fpscr, flags);
-	GenFPSCR_FPRF<FPSCR, SoftDouble>(fpscr, result);
-	GenFPSCR_XX<FPSCR>(fpscr);
-	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
-	GenFPSCR_VX<FPSCR>(fpscr);
-	GenFPSCR_FEX<FPSCR>(fpscr);
+	UINT new_fpscr( fpscr ), old_fpscr = new_fpscr;
+	GenFPSCR_OX<FPSCR>(new_fpscr, flags);
+	GenFPSCR_UX<FPSCR>(new_fpscr, flags);
+	GenFPSCR_VXSNAN<FPSCR>(new_fpscr, flags);
+	GenFPSCR_FR<FPSCR, SoftDouble>(new_fpscr, result, flags);
+	GenFPSCR_FI<FPSCR>(new_fpscr, flags);
+	GenFPSCR_FPRF<FPSCR, SoftDouble>(new_fpscr, result);
+	GenFPSCR_XX<FPSCR>(new_fpscr);
+	GenFPSCR_FX<FPSCR>(new_fpscr, old_fpscr);
+	GenFPSCR_VX<FPSCR>(new_fpscr);
+	GenFPSCR_FEX<FPSCR>(new_fpscr);
 
 	// Update FPSCR
-	cpu->SetFPSCR(fpscr);
+	cpu->SetFPSCR(new_fpscr);
 
-	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely((cpu->GetMSR().Get<MSR::FE0>() or cpu->GetMSR().Get<MSR::FE1>()) and (cpu->GetFPSCR().Get<FPSCR::FEX>())))
-	{
-		// Raise a floating point exception
-		cpu->ThrowException<CPU::ProgramInterrupt::FloatingPoint>();
+	if (unlikely(flags.isInftyMultZero())) fpscr.SetInvalid(FPSCR::VXIMZ());
+	
+	if (not cpu->CheckFloatingPointException())
 		return false;
-	}
 
 	// Write back the result
 	cpu->SetFPR(fd, result);
 
 	// Copy FX, FEX, VX, OX to CR1
-	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
+	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( fpscr.Get<FPSCR::_0_3>() ); }
 	
 	return true;
 };

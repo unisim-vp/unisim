@@ -33,15 +33,15 @@
  */
 
 op rldcr(30[6]:rs[5]:ra[5]:rb[5]:me1[5]:shl<5>me0[1]:9[4]:rc[1]);
-rldcr.var m : {uint64_t} = {uint64_t(-1) << ~(me0|me1)};
+rldcr.var me : {uint8_t} = {me0|me1};
 
 rldcr.execute = {
 	// Read the input operands
-	U64 s = cpu->GetGPR(rs);
-	U8  n = U8(cpu->GetGPR(rs) & U64(0x3f));
+	U64 s( cpu->GetGPR(rs) );
+	U8  n( cpu->GetGPR(rs) & UINT(0x3f) );
 	
 	// Compute the result
-	U64 result = RotateLeft(s, n) & U64(m);
+	U64 result( RotateLeft(s, n) & U64(uint64_t(-1) << (me^63)) );
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
@@ -60,7 +60,7 @@ rldcr.execute = {
 };
 
 rldcr.disasm = {
-	os << "rldcr" << (rc ? "." : "") << ' ' << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << GPRPrint(rb) << ',' << int(me0|me1);
+	os << "rldcr" << (rc ? "." : "") << ' ' << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << GPRPrint(rb) << ',' << int(me);
 };
 
 specialize rldcr(rc=0);

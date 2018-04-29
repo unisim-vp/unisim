@@ -38,21 +38,20 @@ impl {
 
 /* Shift Right Algebraic Doubleword Immediate */
 op sradi(31[6]:rs[5]:ra[5]:sh1[5]:413[9]:shl<5> sh0[1]:rc[1]);
-sradi.var sh : {unsigned} = {sh0|sh1}, shifted_out : {int64_t} = {(1 << sh)-1};
+sradi.var sh : {unsigned} = {sh0|sh1};
 
 sradi.execute = {
 	// Read the input operands
-	S64 s = S64(  cpu->GetGPR(rs) );
+	S64 s = S64( cpu->GetGPR(rs) );
 	
 	// Compute the result
-	S64 result = s >> sh;
+	S64 result = s >> sh, shifted_out( (int64_t(1) << sh) - 1 );
 
 	XER& xer = cpu->GetXER();
-	xer.Set<XER::CA>((s < S64(0)) and ((s & S64(shifted_out)) != S64(0)));
-	//xer.Set<XER::CA>((s < S64(0)) and (s != (result << sh)));
+	xer.Set<XER::CA>((s < S64(0)) and ((s & shifted_out) != S64(0)));
 	
 	// Write back the result
-	cpu->SetGPR(ra, result);
+	cpu->SetGPR(ra, UINT(result));
 	
 	if(unlikely(rc))
 	{

@@ -77,13 +77,8 @@ fadds.execute = {
 	// Update FPSCR
 	cpu->SetFPSCR(fpscr);
 
-	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely((cpu->GetMSR().Get<MSR::FE0>() or cpu->GetMSR().Get<MSR::FE1>()) and (cpu->GetFPSCR().Get<FPSCR::FEX>())))
-	{
-		// Raise a floating point exception
-		cpu->ThrowException<CPU::ProgramInterrupt::FloatingPoint>();
+	if (not cpu->CheckFloatingPointException())
 		return false;
-	}
 
 	// Write back the result
 	cpu->SetFPR(fd, SoftDouble(result, flags));

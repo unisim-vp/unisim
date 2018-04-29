@@ -49,12 +49,18 @@ mtfsfi.execute = {
 		return false;
 	}
 
-	uint32_t mask = crfD ? 0xf : 0x9;
+	unsigned pos = (4 * (7 - crfD));
+        uint32_t bits = imm;
+        if (crfD == 0) imm &= 0x9;
+	bits <<= pos;
+        uint32_t mask = ~(0xf << pos);
+        
 	UINT fpscr = cpu->GetFPSCR();
-	fpscr = (fpscr & (~(0xf << (4 * (7 - crfD))))) | ((imm & mask) << (4 * (7 - crfD)));
+	fpscr = (fpscr & UINT(mask)) | UINT(bits);
 	cpu->SetFPSCR(fpscr);
+        
 	// Copy FX, FEX, VX, OX to CR1
-	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
+	if (unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
 	
 	return true;
 }

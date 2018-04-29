@@ -53,7 +53,7 @@ mtfsb1.execute = {
 
 	if(likely(crbD != 1 && crbD != 2))
 	{
-		fpscr = fpscr | (1 << (31 - crbD));
+		fpscr |= UINT(1 << (31 - crbD));
 		cpu->SetFPSCR(fpscr);
 	}
 	// Copy FX, FEX, VX, OX to CR1

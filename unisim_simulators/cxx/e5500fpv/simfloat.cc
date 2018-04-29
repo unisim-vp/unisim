@@ -203,8 +203,8 @@ SoftDouble::queryRawBits() const
 
 bool SoftFloat::isNegative() const { return impl.isNegative(); }
 bool SoftDouble::isNegative() const { return impl.isNegative(); }
-bool SoftFloat::isPositive() const { return impl.isPositive(); }
-bool SoftDouble::isPositive() const { return impl.isPositive(); }
+//bool SoftFloat::isPositive() const { return impl.isPositive(); }
+//bool SoftDouble::isPositive() const { return impl.isPositive(); }
 bool SoftFloat::isZero() const { return impl.isZero(); }
 bool SoftDouble::isZero() const { return impl.isZero(); }
 bool SoftFloat::isInfty() const { return impl.isInfty(); }
@@ -212,6 +212,11 @@ bool SoftDouble::isInfty() const { return impl.isInfty(); }
 
 void SoftFloat::opposite() { impl.opposite(); }
 void SoftDouble::opposite() { impl.opposite(); }
+
+void SoftFloat::setPositive() { impl.setNegative(false); }
+void SoftDouble::setPositive() { impl.setNegative(false); }
+void SoftFloat::setNegative() { impl.setNegative(true); }
+void SoftDouble::setNegative() { impl.setNegative(true); }
 
 void SoftFloat::plusAssign(const SoftFloat& op1, Flags& flags) { impl.plusAssign(op1.impl,flags.impl); }
 void SoftDouble::plusAssign(const SoftDouble& op1, Flags& flags) { impl.plusAssign(op1.impl,flags.impl); }

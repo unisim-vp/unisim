@@ -52,36 +52,36 @@ mcrfs.execute = {
 	}
 
 	// Read the input operands
-	UINT fpscr = cpu->GetFPSCR();
+	FPSCR& fpscr = cpu->GetFPSCR();
 
 	// Extract FPSCR source 4-bit field
-	UINT c = (fpscr >> 4*crfS) & 0xf;
+	UINT bits = (UINT(fpscr) >> 4*crfS) & UINT(0xf);
 	
 	// Clear copied bits if they are exception bits or FX
 	switch(crfS)
 	{
 	case 0:
-		FPSCR::FX::Set(fpscr,UINT(0));
-		FPSCR::OX::Set(fpscr,UINT(0));
+		fpscr.Set<FPSCR::FX>(UINT(0));
+		fpscr.Set<FPSCR::OX>(UINT(0));
 		break;
 	case 1:
-		FPSCR::UX::Set(fpscr,UINT(0));
-		FPSCR::ZX::Set(fpscr,UINT(0));
-		FPSCR::XX::Set(fpscr,UINT(0));
-		FPSCR::VXSNAN::Set(fpscr,UINT(0));
+		fpscr.Set<FPSCR::UX>(UINT(0));
+		fpscr.Set<FPSCR::ZX>(UINT(0));
+		fpscr.Set<FPSCR::XX>(UINT(0));
+		fpscr.Set<FPSCR::VXSNAN>(UINT(0));
 	case 2:
-		FPSCR::VXISI::Set(fpscr,UINT(0));
-		FPSCR::VXIDI::Set(fpscr,UINT(0));
-		FPSCR::VXZDZ::Set(fpscr,UINT(0));
-		FPSCR::VXIMZ::Set(fpscr,UINT(0));
+		fpscr.Set<FPSCR::VXISI>(UINT(0));
+		fpscr.Set<FPSCR::VXIDI>(UINT(0));
+		fpscr.Set<FPSCR::VXZDZ>(UINT(0));
+		fpscr.Set<FPSCR::VXIMZ>(UINT(0));
 		break;
 	case 3:
-		FPSCR::VXVC::Set(fpscr,UINT(0));
+		fpscr.Set<FPSCR::VXVC>(UINT(0));
 		break;
 	case 5:
-		FPSCR::VXSOFT::Set(fpscr,UINT(0));
-		FPSCR::VXSQRT::Set(fpscr,UINT(0));
-		FPSCR::VXCVI::Set(fpscr,UINT(0));
+		fpscr.Set<FPSCR::VXSOFT>(UINT(0));
+		fpscr.Set<FPSCR::VXSQRT>(UINT(0));
+		fpscr.Set<FPSCR::VXCVI>(UINT(0));
 		break;
 	}
 	
@@ -89,14 +89,14 @@ mcrfs.execute = {
 	CR& cr = cpu->GetCR();
 	switch(crfD)
 	{
-	case 0: cr.Set<CR::CR0>(c); break;
-	case 1: cr.Set<CR::CR1>(c); break;
-	case 2: cr.Set<CR::CR2>(c); break;
-	case 3: cr.Set<CR::CR3>(c); break;
-	case 4: cr.Set<CR::CR4>(c); break;
-	case 5: cr.Set<CR::CR5>(c); break;
-	case 6: cr.Set<CR::CR6>(c); break;
-	case 7: cr.Set<CR::CR7>(c); break;
+	case 0: cr.Set<CR::CR0>(bits); break;
+	case 1: cr.Set<CR::CR1>(bits); break;
+	case 2: cr.Set<CR::CR2>(bits); break;
+	case 3: cr.Set<CR::CR3>(bits); break;
+	case 4: cr.Set<CR::CR4>(bits); break;
+	case 5: cr.Set<CR::CR5>(bits); break;
+	case 6: cr.Set<CR::CR6>(bits); break;
+	case 7: cr.Set<CR::CR7>(bits); break;
 	}
 	
 	return true;

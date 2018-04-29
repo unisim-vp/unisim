@@ -39,7 +39,7 @@ b.execute = {
 	UINT li = UINT(li24);
 	ADDRESS target_addr = aa ? li : cpu->GetCIA() + li;
 	cpu->Branch(target_addr);
-	if (lk) cpu->GetLR() = (cpu->GetCIA() + 4);
+	if (lk) cpu->GetLR() = ADDRESS(cpu->GetCIA()) + ADDRESS(4);
 	return true;
 };
 

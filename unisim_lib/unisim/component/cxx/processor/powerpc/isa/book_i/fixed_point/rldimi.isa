@@ -42,12 +42,11 @@ rldimi.var sh : {uint8_t} = {sh0|sh1}, mb : {uint8_t} = {mb0|mb1};
 
 rldimi.execute = {
 	// Read the input operands
-	UINT s = cpu->GetGPR(rs);
-	UINT const m = UINT(Mask64(mb,sh^63)),  a = cpu->GetGPR(ra);
+	U64 s( cpu->GetGPR(rs) );
+	U64 const m( Mask64(mb,sh^63) ),  a( cpu->GetGPR(ra) );
 	
 	// Compute the result
-  	UINT r = RotateLeft(s, sh);
-	UINT result = (r & m) | (a & ~m);
+	U64 result( (RotateLeft(s, sh) & m) | (a & ~m) );
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);

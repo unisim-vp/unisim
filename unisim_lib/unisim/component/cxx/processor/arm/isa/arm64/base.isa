@@ -1018,8 +1018,8 @@ adds_xasr.execute = {
  * Address of label at a PC-relative offset
  */
 
-op adr( 0b0[1] : imm0[2] : 0b10000[5] : sext imm1[19] : rd[5] );
-adr.var imm : {uint64_t} = {(int64_t(imm1)<<2)|imm0}, format : {char const*} = {"base,2"};
+op adr( 0b0[1] : imm0[2] : 0b10000[5] : shl<2> sext imm1[19] : rd[5] );
+adr.var imm : {int32_t} = {imm1|imm0}, format : {char const*} = {"base,2"};
 
 adr.disasm = {
   sink << "adr\t" << DisasmGZXR(rd) << ", 0x" << std::hex << (this->GetAddr()+imm);
@@ -1041,17 +1041,17 @@ adr.execute = {
  * Address of 4KB page at a PC-relative offset
  */
 
-op adrp( 0b1[1] : shl<12> imm0[2] : 0b10000[5] : sext imm1[19] : rd[5] );
-adrp.var imm : {uint64_t} = {(int64_t(imm1)<<14)|imm0}, format : {char const*} = {"base,1"};
+op adrp( 0b1[1] : imm0[2] : 0b10000[5] : shl<2> sext imm1[19] : rd[5] );
+adrp.var imm : {int32_t} = {imm1|imm0}, format : {char const*} = {"base,1"};
 
 adrp.disasm = {
-  sink << "adrp\t" << DisasmGZXR(rd) << ", 0x" << std::hex << ((this->GetAddr()+imm)&(-1ll<<12));
+  sink << "adrp\t" << DisasmGZXR(rd) << ", 0x" << std::hex << ((this->GetAddr()+(imm<<12))&(-1ll<<12));
 };
 
 adrp.execute = {
   typedef typename ARCH::U64 U64;
   
-  cpu.SetGZR(rd, (cpu.GetPC() + U64(imm)) & U64(-1ll<<12));
+  cpu.SetGZR(rd, (cpu.GetPC() + U64(imm<<12)) & U64(-1ll<<12));
 };
 
 /*

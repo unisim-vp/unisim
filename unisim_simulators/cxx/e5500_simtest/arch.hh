@@ -35,39 +35,16 @@
 #ifndef ARCH_HH
 #define ARCH_HH
 
+#include <simfloat.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <map>
 #include <vector>
 #include <set>
 
-namespace e5500
-{
-  struct Operation;
-}
+namespace e5500 { struct Operation; }
 
 namespace ut
 {
-  using unisim::util::symbolic::SmartValue;
-  typedef SmartValue<bool>     BOOL;
-  typedef SmartValue<uint8_t>  U8;
-  typedef SmartValue<uint16_t> U16;
-  typedef SmartValue<uint32_t> U32;
-  typedef SmartValue<uint64_t> U64;
-  typedef SmartValue<int8_t>   S8;
-  typedef SmartValue<int16_t>  S16;
-  typedef SmartValue<int32_t>  S32;
-  typedef SmartValue<int64_t>  S64;
-
-  typedef SmartValue<uint64_t> ADDRESS;
-  typedef SmartValue<uint64_t> UINT;
-  typedef SmartValue<int64_t>  SINT;
-  
-  template <unsigned BITS> struct TypeFor {};
-  template <> struct TypeFor<8> { typedef U8 U; typedef S8 S; };
-  template <> struct TypeFor<16> { typedef U16 U; typedef S16 S; };
-  template <> struct TypeFor<32> { typedef U32 U; typedef S32 S; };
-  template <> struct TypeFor<64> { typedef U64 U; typedef S64 S; };
-  
   struct Untestable
   {
     Untestable(std::string const& _reason) : reason(_reason) {}
@@ -143,6 +120,7 @@ namespace ut
 
     
     void irappend( uint8_t _index, bool w );
+    void frappend( uint8_t _index, bool w );
     
     int  cmp( Interface const& ) const;
     bool operator < ( Interface const& b ) const { return cmp( b ) < 0; }
@@ -261,9 +239,9 @@ namespace ut
     
     template <typename PART,typename T> void Set( SmartValue<T> const& value ) { CRAccess(true); cr_value = Expr( new MixNode( cr_value.expr, value.expr ) ); }
     template <typename PART> void Set( uint32_t value ) { Set<PART,uint32_t>( unisim::util::symbolic::make_const(value) ); }
-    template <typename PART> U64 Get() { CRAccess(false); return cr_value; }
-    operator U64 () { CRAccess(false); return cr_value; }
-    CR& operator= ( U64 const& value ) { CRAccess(true); cr_value = value; return *this; }
+    template <typename PART> U32 Get() { CRAccess(false); return cr_value; }
+    operator U32 () { CRAccess(false); return cr_value; }
+    CR& operator= ( U32 const& value ) { CRAccess(true); cr_value = value; return *this; }
     CR& GetCR() { return *this; }
     
     struct CRNode : public ArchExprNode
@@ -276,8 +254,104 @@ namespace ut
 
     CR( Arch& _arch ) : cr_value( new CRNode( _arch ) ) {}
     
-    U64 cr_value;
+    U32 cr_value;
     virtual void CRAccess( bool is_write ) = 0;
+  };
+
+  struct FPSCR
+  {
+    typedef unisim::util::symbolic::Expr Expr;
+    typedef unisim::util::symbolic::ExprNode ExprNode;
+    
+    struct _0_3  {};  // FX, FEX, VX, OX bunch
+    struct FX    {};     // Floating-Point Exception Summary
+    struct FEX   {};     // Floating-Point Enabled Exception Summary
+    struct VX    {};     // Floating-Point Invalid Operation Exception Summary
+    struct OX    {};     // Floating-Point Overflow Exception
+    struct UX    {};     // Floating-Point Underflow Exception
+    struct ZX    {};     // Floating-Point Zero Divide Exception
+    struct XX    {};     // Floating-Point Inexact Exception
+    struct VXSNAN{};     // Floating-Point Invalid Operation Exception (SNaN)
+    struct VXISI {};     // Floating-Point Invalid Operation Exception (inf - inf)
+    struct VXIDI {};     // Floating-Point Invalid Operation Exception (inf / inf)
+    struct VXZDZ {};     // Floating-Point Invalid Operation Exception (0 / 0)
+    struct VXIMZ {};     // Floating-Point Invalid Operation Exception (inf * 0)
+    struct VXVC  {};     // Floating-Point Invalid Operation Exception (Invalid Compare)
+    struct FR    {};     // Floating-Point Fraction Rounded
+    struct FI    {};     // Floating-Point Fraction Inexact
+    struct FPRF          // Floating-Point Result Flags
+    {
+      static uint64_t          QNAN    () { return 0x11; }
+      static uint64_t NEGATIVE_INFINITY() { return 0x9; }
+      static uint64_t NEGATIVE_NORMAL  () { return 0x8; }
+      static uint64_t NEGATIVE_DENORMAL() { return 0x18; }
+      static uint64_t NEGATIVE_ZERO    () { return 0x12; }
+      static uint64_t POSITIVE_ZERO    () { return 0x2; }
+      static uint64_t POSITIVE_DENORMAL() { return 0x14; }
+      static uint64_t POSITIVE_NORMAL  () { return 0x4; }
+      static uint64_t POSITIVE_INFINITY() { return 0x5; }
+    };
+    struct C     {};     // Floating-Point Result Class Descriptor
+    struct FPCC  {}; // Floating-Point Condition Code
+    struct FL    {};     // Floating-Point Less Than or Negative
+    struct FG    {};     // Floating-Point Greater Than or Positive
+    struct FE    {};     // Floating-Point Equal or Zero
+    struct FU    {};     // Floating-Point Unordered or NaN
+    struct VXSOFT{};     // Floating-Point Invalid Operation Exception (Software-Defined Condition)
+    struct VXSQRT{};     // Floating-Point Invalid Operation Exception (Invalid Square Root)
+    struct VXCVI {};     // Floating-Point Invalid Operation Exception (Invalid Integer Convert)
+    struct VE    {};     // Floating-Point Invalid Operation Exception Enable
+    struct OE    {};     // Floating-Point Overflow Exception Enable
+    struct UE    {};     // Floating-Point Underflow Exception Enable
+    struct ZE    {};     // Floating-Point Zero Divide Exception  Enable
+    struct XE    {};     // Floating-Point Inexact Exception Enable
+    struct NI    {};     // Floating-Point Non-IEEE Mode
+    struct RN    {}; // Floating-Point Rounding Control
+  
+    template <typename PART,typename T> void Set( SmartValue<T> const& value )
+    { FPSCRAccess(false); FPSCRAccess(true); fpscr_value = Expr( new MixNode( fpscr_value.expr, value.expr ) ); }
+    template <typename PART> void Set( uint64_t value ) { Set<PART,uint64_t>( unisim::util::symbolic::make_const(value) ); }
+    template <typename PART> U64 Get() { FPSCRAccess(false); return fpscr_value; }
+    operator U64 () { FPSCRAccess(false); return fpscr_value; }
+    FPSCR& operator= ( U64 const& value ) { FPSCRAccess(true); fpscr_value = value; return *this; }
+    FPSCR& GetFPSCR() { return *this; }
+    void SetFPSCR(U64 const& value) { FPSCRAccess(true); fpscr_value = value; }
+
+    void SetInexact( BOOL i )
+    {
+      Set<FI>( UINT(i) );
+      // if (evenly(i))
+      //   SetInvalid( XX() );
+    }
+  
+    template <class FIELD>
+    void SetInvalid( FIELD const& )
+    {
+      Set<FIELD>( UINT(1) );
+      // SetException( VX() );
+    }
+
+    template <class FIELD>
+    void SetException( FIELD const& )
+    {
+      Set<FIELD>( UINT(1) );
+      // Set<FX>( UINT(1) );
+      // struct Enable : Field<Enable, FIELD::offset1 + 22> {};
+      // if (Get<Enable>() == UINT(1))
+      //   Register<FPSCR>::Set<FEX>( UINT(1) );
+    }
+    struct FPSCRNode : public ArchExprNode
+    {
+      FPSCRNode( Arch& _arch ) : ArchExprNode( _arch ) {}
+      virtual void Repr( std::ostream& sink ) const;
+      virtual unsigned SubCount() const { return 0; };
+      virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+    };
+
+    FPSCR( Arch& _arch ) : fpscr_value( new FPSCRNode( _arch ) ) {}
+    
+    U64 fpscr_value;
+    virtual void FPSCRAccess( bool is_write ) = 0;
   };
   
   struct LR
@@ -304,8 +378,20 @@ namespace ut
   
   struct MSR
   {
-    struct PR {};
-    struct EE {};
+  struct SPV {};
+  struct WE  {};
+  struct CE  {};
+  struct EE  {};
+  struct PR  {};
+  struct FP  {};
+  struct ME  {};
+  struct FE0 {};
+  struct DE  {};
+  struct FE1 {};
+  struct IS  {};
+  struct DS  {};
+  struct PMM {};
+  struct RI  {};
     template <typename PART,typename T> void Set( SmartValue<T> const& value ) { throw Untestable("MSR access"); }
     template <typename PART> void Set( unsigned ) { throw Untestable("MSR access"); }
     template <typename PART> U64 Get() { throw Untestable("MSR access"); return U64(0); }
@@ -313,8 +399,8 @@ namespace ut
     MSR& operator= (U64 const& v) { throw Untestable("MSR access"); return *this; }
     MSR& GetMSR() { throw Untestable("MSR access"); return *this; }
   };
-    
-  struct Arch : public XER, public CR, public MSR, public LR, public CTR
+  
+  struct Arch : public XER, public CR, public MSR, public LR, public CTR, public FPSCR
   {
     typedef ut::BOOL BOOL;
     typedef ut::U8   U8;
@@ -338,10 +424,12 @@ namespace ut
     // typedef SPEFSCR SPEFSCR;
     
     Arch( Interface& _interface, PathNode& root )
-      : XER(*this), CR(*this), interface(_interface), path(&root), cia( new CIA( *this ) )
-    {     
+      : XER(*this), CR(*this), FPSCR(*this), interface(_interface), path(&root), cia( new CIA( *this ) )
+    {
       for (unsigned reg = 0; reg < 32; ++reg)
         reg_values[reg] = U64( new SourceReg( *this, reg ) );
+      for (unsigned reg = 0; reg < 32; ++reg)
+        fpr_values[reg].expr = new SourceReg( *this, reg );
     }
     
     virtual void XERAccess( bool is_write ) { interface.xer.addaccess(is_write); }
@@ -368,6 +456,11 @@ namespace ut
       struct PrivilegeViolation {};
     };
     
+    struct FloatingPointUnavailableInterrupt
+    {
+      struct FloatingPointUnavailable { typedef FloatingPointUnavailableInterrupt Interrupt; };
+    };
+  
     template <class T> Interrupt ThrowException() { DispatchException( T() ); return Interrupt(); }
     
     template <class T> void DispatchException( T const& exc ) { donttest_system(); }
@@ -421,6 +514,7 @@ namespace ut
     PathNode*  path;
     U64        reg_values[32];
     U64        cia;
+    SoftDouble fpr_values[32];
     
     
     struct CIA : public ArchExprNode
@@ -432,61 +526,86 @@ namespace ut
       virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return 0; }
     };
     
-    // U32 GetCIA() { return cia; };
+    U64 GetCIA() { return cia; };
     // bool EqualCIA(uint32_t pc) { return false; };
-    // U32 GetGPR(unsigned n) { gpr_append(n,false); return reg_values[n]; };
-    // void SetGPR(unsigned n, U32 value) { gpr_append(n,true); reg_values[n] = value; }
-    
-    // static void LoadRepr( std::ostream& sink, Expr const& _addr, unsigned bits );
-    
-    // template <unsigned BITS>
-    // struct Load : public ArchExprNode
-    // {
-    //   Load( Expr const& _addr ) : addr(_addr) {}
-    //   virtual void Repr( std::ostream& sink ) const { LoadRepr( sink, addr, BITS ); }
-    //   virtual unsigned SubCount() const { return 2; };
-    //   virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; } return ExprNode::GetSub(idx); };
-    //   virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
-    //   { return addr.cmp( dynamic_cast<Load<BITS> const&>( brhs ).addr ); }
-    //   Expr addr;
-    // };
-    
-    // template <unsigned BITS> Expr MemRead( U32 const& _addr )
-    // {
-    //   interface.load( _addr.expr );
-    //   return new Load<BITS>( _addr.expr );
-    // }
-    // template <unsigned BITS> void MemWrite( U32 const& _addr, typename TypeFor<BITS>::U const& _val )
-    // {
-    //   interface.store( _addr.expr );
-    // }
-    
-    // bool Int8Load(unsigned n, U32 const& address) { SetGPR(n, Arch::U32(Arch::U8(MemRead<8>(address)))); return true; }
-    // bool Int16Load(unsigned n, U32 const& address) { SetGPR(n, Arch::U32(Arch::U16(MemRead<16>(address)))); return true; }
-    // bool Int32Load(unsigned n, U32 const& address) { SetGPR(n, Arch::U32(MemRead<32>(address))); return true; }
-    
-    // bool SInt8Load(unsigned n, U32 const& address) { SetGPR(n, Arch::U32(Arch::S8(MemRead<8>(address)))); return true; }
-    // bool SInt16Load(unsigned n, U32 const& address) { SetGPR(n, Arch::U32(Arch::S16(MemRead<16>(address)))); return true; }
+    U64 GetGPR(unsigned n) { gpr_append(n,false); return reg_values[n]; };
+    void SetGPR(unsigned n, U64 value) { gpr_append(n,true); reg_values[n] = value; }
 
-    // bool Int16LoadByteReverse(unsigned n, U32 const& address) { SetGPR(n, ByteSwap(Arch::U32(Arch::U16(MemRead<16>(address))))); return true; }
-    // bool Int32LoadByteReverse(unsigned n, U32 const& address) { SetGPR(n, ByteSwap(Arch::U32(MemRead<32>(address)))); return true; }
+    SoftDouble const& GetFPR(unsigned n) { fpr_append(n,false); return fpr_values[n]; }
+    void SetFPR(unsigned n, SoftDouble const& value) { fpr_append(n,true); fpr_values[n] = value; }
     
-    // bool Int8Store(unsigned n, U32 const& address ) { MemWrite<8>( address, U8(GetGPR(n)) ); return true; }
-    // bool Int16Store(unsigned n, U32 const& address ) { MemWrite<16>( address, U16(GetGPR(n)) ); return true; }
-    // bool Int32Store(unsigned n, U32 const& address ) { MemWrite<32>( address, U32(GetGPR(n)) ); return true; }
+    static void LoadRepr( std::ostream& sink, Expr const& _addr, unsigned bits );
+    
+    template <unsigned BITS>
+    struct Load : public ArchExprNode
+    {
+      Load( Arch& _arch, Expr const& _addr ) : ArchExprNode(_arch), addr(_addr) {}
+      virtual void Repr( std::ostream& sink ) const { LoadRepr( sink, addr, BITS ); }
+      virtual unsigned SubCount() const { return 2; };
+      virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; } return ExprNode::GetSub(idx); };
+      virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
+      { return addr.cmp( dynamic_cast<Load<BITS> const&>( brhs ).addr ); }
+      Expr addr;
+    };
+    
+    template <unsigned BITS> Expr MemRead( ADDRESS const& _addr )
+    {
+      interface.load( _addr.expr );
+      return new Load<BITS>( *this, _addr.expr );
+    }
+    template <unsigned BITS> void MemWrite( ADDRESS const& _addr, typename TypeFor<BITS>::U const& _val )
+    {
+      interface.store( _addr.expr );
+    }
+    
+    bool Int8Load(unsigned n, ADDRESS const& address) { SetGPR(n, UINT(U8(MemRead<8>(address)))); return true; }
+    bool Int16Load(unsigned n, ADDRESS const& address) { SetGPR(n, UINT(U16(MemRead<16>(address)))); return true; }
+    bool Int32Load(unsigned n, ADDRESS const& address) { SetGPR(n, UINT(U32(MemRead<32>(address)))); return true; }
+    bool Int64Load(unsigned n, ADDRESS const& address) { SetGPR(n, UINT(U64(MemRead<64>(address)))); return true; }
+    
+    bool SInt8Load(unsigned n, ADDRESS const& address) { SetGPR(n, UINT(S8(MemRead<8>(address)))); return true; }
+    bool SInt16Load(unsigned n, ADDRESS const& address) { SetGPR(n, UINT(S16(MemRead<16>(address)))); return true; }
+    bool SInt32Load(unsigned n, ADDRESS const& address) { SetGPR(n, UINT(S32(MemRead<32>(address)))); return true; }
+    bool SInt64Load(unsigned n, ADDRESS const& address) { SetGPR(n, UINT(S64(MemRead<64>(address)))); return true; }
 
-    // bool Int16StoreByteReverse(unsigned n, U32 const& address ) { MemWrite<16>( address, ByteSwap(U16(GetGPR(n))) ); return true; }
-    // bool Int32StoreByteReverse(unsigned n, U32 const& address ) { MemWrite<32>( address, ByteSwap(U32(GetGPR(n))) ); return true; }
+    // bool Int16LoadByteReverse(unsigned n, ADDRESS const& address) { SetGPR(n, ByteSwap(U32(U16(MemRead<16>(address))))); return true; }
+    // bool Int32LoadByteReverse(unsigned n, ADDRESS const& address) { SetGPR(n, ByteSwap(U32(MemRead<32>(address)))); return true; }
+    
+    bool Int8Store(unsigned n, ADDRESS const& address ) { MemWrite<8>( address, U8(GetGPR(n)) ); return true; }
+    bool Int16Store(unsigned n, ADDRESS const& address ) { MemWrite<16>( address, U16(GetGPR(n)) ); return true; }
+    bool Int32Store(unsigned n, ADDRESS const& address ) { MemWrite<32>( address, U32(GetGPR(n)) ); return true; }
+    bool Int64Store(unsigned n, ADDRESS const& address ) { MemWrite<64>( address, U64(GetGPR(n)) ); return true; }
 
-    // void gpr_append( unsigned idx, bool w ) { interface.irappend( idx, w ); }
+    bool Fp32Load(unsigned n, ADDRESS const& address)
+    {
+      SoftFloat sf(SoftFloat::FromRawBits, MemRead<32>(address));
+      Flags flags(Flags::RoundingMode(GetFPSCR().Get<FPSCR::RN>()));
+      SetFPR(n, SoftDouble( sf, flags ));
+      return true;
+    }
+    
+    bool Fp64Load(unsigned n, ADDRESS const& addr) { return SetFPR(n, SoftDouble(SoftDouble::FromRawBits,MemRead<64>(addr))), true; }
+    // bool Int16StoreByteReverse(unsigned n, ADDRESS const& address ) { MemWrite<16>( address, ByteSwap(U16(GetGPR(n))) ); return true; }
+    // bool Int32StoreByteReverse(unsigned n, ADDRESS const& address ) { MemWrite<32>( address, ByteSwap(U32(GetGPR(n))) ); return true; }
+
+    bool Fp32Store(unsigned n, ADDRESS const& addr)
+    {
+      Flags flags(Flags::RoundingMode(GetFPSCR().Get<FPSCR::RN>()));
+      MemWrite<32>( addr, SoftFloat(GetFPR(n), flags).queryRawBits() );
+      return true;
+    }
+
+    bool Fp64Store(unsigned n, ADDRESS const& addr) { MemWrite<64>( addr, GetFPR(n).queryRawBits() ); return true; }
+    bool FpStoreLSW(unsigned n, ADDRESS const& addr) { MemWrite<32>( addr, U32(GetFPR(n).queryRawBits()) ); return true; }
+    
+    void gpr_append( unsigned idx, bool w ) { interface.irappend( idx, w ); }
+    void fpr_append( unsigned idx, bool w ) { interface.frappend( idx, w ); }
 
     void donttest_system();
-    // void donttest_branch();
+    void donttest_branch();
     // void donttest_illegal();
     
-    // char const* GetObjectFriendlyName(U32) { return "???"; }
-    
-    // bool Branch(U32 const& addr) { donttest_branch(); return false; }
+    bool Branch(U64 const& addr) { donttest_branch(); return false; }
     
     // bool Rfmci() { donttest_system(); return false; }
     // bool Rfci() { donttest_system(); return false; }
@@ -518,124 +637,18 @@ namespace ut
     // bool MoveToSPR(unsigned dcrn, U32 const& result) { donttest_system(); return false; }
     
     // bool Wait() { return false; }
-  };
-  
-  struct Flags
-  {
-    struct RoundingMode { RoundingMode(UINT const& rm) : arch(ArchExprNode::SeekArch(rm.expr)) {} RoundingMode(unsigned rm) : arch(0) {} Arch* arch; };
-    Flags( RoundingMode const& rm ) : arch(rm.arch) {}
-    // Flags() {}
-    // BOOL isUpApproximate() { return make_unknown<BOOL>(); }
-    // BOOL isDownApproximate() { return make_unknown<BOOL>(); }
-    // BOOL takeOverflow() { return make_unknown<BOOL>(); }
 
-    BOOL hasIncrementFraction(bool neg) const { return make_unknown<BOOL>(arch); }           // FPSCR.FR
-    BOOL isApproximate() const { return make_unknown<BOOL>(arch); }                          // FPSCR.FI
-    BOOL isOverflow() const { return make_unknown<BOOL>(arch); }                             // FPSCR.OX
-    BOOL isUnderflow() const { return make_unknown<BOOL>(arch); }                            // FPSCR.UX
-    BOOL isDivisionByZero() const { return make_unknown<BOOL>(arch); }                       // FPSCR.ZX
-    BOOL hasSNaNOperand() const { return make_unknown<BOOL>(arch); }                         // FPSCR.VXSNAN
-    BOOL isInftyMinusInfty() const { return make_unknown<BOOL>(arch); }                      // FPSCR.VXISI
-    BOOL isInftyOnInfty() const { return make_unknown<BOOL>(arch); }                         // FPSCR.VXIDI
-    BOOL isInftyMultZero() const { return make_unknown<BOOL>(arch); }                        // FPSCR.VXIMZ
-    BOOL isZeroOnZero() const { return make_unknown<BOOL>(arch); }                           // FPSCR.VXZDZ
+    bool        GetMSR_FP() { return true; }
+    bool        CheckFloatingPointException() { return true; }
 
-    void touch( unisim::util::symbolic::Expr const& _expr ) { if (not arch) arch = ArchExprNode::SeekArch(_expr); }
-    void touch( Arch* _arch ) { if (not arch) arch = _arch; }
-
-    Arch* arch;
-  };
-  
-  struct SoftHalfFloat;
-  
-  struct SoftFloat
-  {
-    enum __FromRawBits__ { FromRawBits };
-    SoftFloat( __FromRawBits__, U32 const& source ) : arch(ArchExprNode::SeekArch(source.expr)) {}
-    
-    SoftFloat( U32 const& source, Flags& flags ) : arch(ArchExprNode::SeekArch(source.expr)) { flags.touch(source.expr); }
-    SoftFloat( S32 const& source, Flags& flags ) : arch(ArchExprNode::SeekArch(source.expr)) { flags.touch(source.expr); }
-    enum __FromFraction__ { FromFraction };
-    SoftFloat( __FromFraction__, U32 const& source, Flags& flags ) : arch(ArchExprNode::SeekArch(source.expr)) { flags.touch(source.expr); }
-    SoftFloat( __FromFraction__, S32 const& source, Flags& flags ) : arch(ArchExprNode::SeekArch(source.expr)) { flags.touch(source.expr); }
-    SoftFloat( SoftHalfFloat const& source, Flags& flags );
-    
-    U32 queryU32( Flags& flags, unsigned fbits=0 ) { flags.touch(arch); return make_unknown<U32>(arch); }
-    S32 queryS32( Flags& flags, unsigned fbits=0 ) { flags.touch(arch); return make_unknown<S32>(arch); }
-
-    // SoftFloat& convertAssign( SoftHalfFloat const& source, Flags& flags );
-    // SoftFloat& fromRawBitsAssign( U32 const& );
-    
-    U32 queryRawBits() { return make_unknown<U32>(arch); }
-    BOOL isNaN() { return make_unknown<BOOL>(arch); }
-    BOOL operator == (SoftFloat const&) { return make_unknown<BOOL>(arch); }
-    BOOL operator < (SoftFloat const&) { return make_unknown<BOOL>(arch); }
-    BOOL operator > (SoftFloat const&) { return make_unknown<BOOL>(arch); }
-    // void retrieveInteger(IntConversion const&, Flags const&) {}
-    // BOOL isPositive() { return make_unknown<BOOL>(arch); }
-    BOOL isNegative() { return make_unknown<BOOL>(arch); }
-    void setNegative(bool=false) {}
-    void setNegative(BOOL) {}
-    void plusAssign(SoftFloat const&, Flags const& flags) {}
-    void divAssign(SoftFloat const&, Flags const& flags) {}
-    void multAssign(SoftFloat const&, Flags const& flags) {}
-    void minusAssign(SoftFloat const&, Flags const& flags) {}
-    void sqrtAssign(Flags const& flags) {}
-    // void squareAssign(Flags const& flags) {}
-    void multAndAddAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
-    void multAndSubAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
-    // void multNegativeAndAddAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
-    // void multNegativeAndSubAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
-    void maxAssign(SoftFloat const&) {}
-    void minAssign(SoftFloat const&) {}
-    
-    // BigInt querySBasicExponent() { return BigInt(); }
-    // BigInt queryBasicExponent() { return BigInt(); }
-    BOOL isZero() { return make_unknown<BOOL>(arch); }
-    BOOL isNormalized() { return make_unknown<BOOL>(arch); }
-    // void clear() {}
-    
-    // BOOL hasInftyExponent() { return make_unknown<BOOL>(arch); }
-    // BOOL isDenormalized() { return make_unknown<BOOL>(arch); }
-
-    Arch* arch;
+    static bool const HAS_FPU = true;
+    static bool const HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS = true;
+    static bool const HAS_FLOATING_POINT_SQRT = true;
   };
 
-  struct SoftHalfFloat
-  {
-    enum __FromRawBits__ { FromRawBits };
-    SoftHalfFloat( __FromRawBits__, U16 const& source ) : arch(ArchExprNode::SeekArch(source.expr)) {}
-    SoftHalfFloat( SoftFloat const& source, Flags& flags ) : arch(source.arch) { flags.touch( source.arch ); }
-    U16 queryRawBits() { return make_unknown<U16>(arch); }
 
-    Arch* arch;
-  };
-
-  SoftFloat::SoftFloat( SoftHalfFloat const& source, Flags& flags )
-    : arch(source.arch)
-  { flags.touch(source.arch); }
-  
-  // static const unsigned int RN_NEAREST = 0;
-  // static const unsigned int RN_ZERO = 1;
-  // static const unsigned int RN_UP = 2;
-  // static const unsigned int RN_DOWN = 3;
-
-  // inline void GenSPEFSCR_FOVF(SPEFSCR& spefscr, const Flags& flags) { spefscr = make_unknown<U32>(arch); }
-  // inline void GenSPEFSCR_FUNF(SPEFSCR& spefscr, const Flags& flags) { spefscr = make_unknown<U32>(arch); }
-  // inline void GenSPEFSCR_FINXS(SPEFSCR& spefscr, const Flags& flags) { spefscr = make_unknown<U32>(arch); }
-  // inline void GenSPEFSCR_FDBZ(SPEFSCR& spefscr, const Flags& flags) { spefscr = make_unknown<U32>(arch); }
-  // inline void GenSPEFSCR_FG(SPEFSCR& spefscr, const Flags& flags, bool x=false) { spefscr = make_unknown<U32>(arch); }
-  // inline void GenSPEFSCR_FX(SPEFSCR& spefscr, const Flags& flags, bool x=false) { spefscr = make_unknown<U32>(arch); }
-  // inline void GenSPEFSCR_FG(SPEFSCR& spefscr, const SoftFloat& result) { spefscr = make_unknown<U32>(arch); }
-  // inline BOOL HasSPEFSCR_InvalidInput(const SoftFloat& input) { return make_unknown<BOOL>(arch); }
-  // template <class RESULT>
-  // inline void GenSPEFSCR_DefaultResults(SPEFSCR& spefscr, RESULT& result) { spefscr = make_unknown<U32>(arch); }
-  // template <class FLOAT>
-  // inline void GenSPEFSCR_FINV(SPEFSCR& spefscr, FLOAT& first, FLOAT* second = 0, FLOAT* third = 0, bool x=false, bool y=false) { spefscr = make_unknown<U32>(arch); }
-
-  // inline BOOL DoesSPEFSCR_TriggerException(const SPEFSCR& spefscr) { return BOOL(false); }
-  
-  // inline void GenSPEFSCR_TriggerException(Arch* cpu) { cpu->donttest_system(); }
+  U64 UnsignedMultiplyHigh( U64 lop, U64 rop );
+  S64 SignedMultiplyHigh( S64 lop, S64 rop );
   
   // extern void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, U8 carry_in);
   // extern inline void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, int carry_in)
@@ -659,7 +672,7 @@ namespace ut
   // };
   
   // extern U32 Mask(U32 mb, U32 me);
-  
+
 }
 
 #endif // ARCH_HH

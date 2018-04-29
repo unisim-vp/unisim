@@ -52,22 +52,29 @@ fcfid.execute = {
 	}
 
 	// Read the input operands
-	S64 b = S64(cpu->GetFPR(frb).queryRawBits());
+	S64 b( cpu->GetFPR(frb).queryRawBits() );
 	
 	// Compute the result
 	Flags flags( Flags::RoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>()) );
 	SoftDouble result(b, flags);
 
-	// Write back the result
-	cpu->SetFPR(frt, result);
-	
 	// Generate FPRF, FR, FI, XX, FX
 	UINT fpscr = cpu->GetFPSCR(), old_fpscr = fpscr;
 	GenFPSCR_FPRF<FPSCR>(fpscr, result);
 	GenFPSCR_FR<FPSCR, SoftDouble>(fpscr, result, flags);
-	if(not flags.isOverflow()) GenFPSCR_FI<FPSCR>(fpscr, flags);
+	if (likely(not flags.isOverflow())) GenFPSCR_FI<FPSCR>(fpscr, flags);
 	GenFPSCR_XX<FPSCR>(fpscr);
 	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
+	GenFPSCR_FEX<FPSCR>(fpscr);
+
+	// Update FPSCR
+	cpu->SetFPSCR(fpscr);
+	
+	if (not cpu->CheckFloatingPointException())
+		return false;
+
+	// Write back the result
+	cpu->SetFPR(frt, result);
 	
 	// Copy FX, FEX, VX, OX to CR1
 	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }

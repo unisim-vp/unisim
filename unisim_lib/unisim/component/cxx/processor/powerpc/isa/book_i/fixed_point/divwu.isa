@@ -71,7 +71,7 @@ divwu.execute = {
 	}
 	
 	// Write back the result
-	cpu->SetGPR(rd, result);
+	cpu->SetGPR(rd, UINT(result)); // TODO: upper bits (0..31) are undefined
 		
 	if(unlikely(rc))
 	{

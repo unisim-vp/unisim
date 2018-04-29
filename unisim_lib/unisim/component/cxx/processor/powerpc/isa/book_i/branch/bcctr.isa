@@ -48,20 +48,20 @@ bcctr.execute = {
 		/* Conditional branch */
 		if(bo & 8) {
 			/* Branch if condition is true */
-			cond_ok = ((U32(cpu->GetCR()) << bi) & U32(0x80000000)) != 0;
+			cond_ok = ((U32(cpu->GetCR()) << bi) & U32(0x80000000)) != U32(0);
 		}
 		else {
 			/* Branch if condition is false */
-			cond_ok = ((U32(cpu->GetCR()) << bi) & U32(0x80000000)) == 0;
+			cond_ok = ((U32(cpu->GetCR()) << bi) & U32(0x80000000)) == U32(0);
 		}
 	}
 	
-	if (cond_ok) {
-		ADDRESS target_addr = cpu->GetCTR() & UINT(-4);
+	if (evenly(cond_ok)) {
+		ADDRESS target_addr = ADDRESS(cpu->GetCTR()) & ADDRESS(-4);
 		cpu->Branch(target_addr);
 	}
 	
-	if (lk) cpu->GetLR() = (cpu->GetCIA() + 4);
+	if (lk) cpu->GetLR() = ADDRESS(cpu->GetCIA()) + ADDRESS(4);
 	
 	return true;
 };

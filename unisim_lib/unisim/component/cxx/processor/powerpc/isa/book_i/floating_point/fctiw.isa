@@ -52,10 +52,11 @@ fctiw.execute = {
 	}
 
 	// Read the input operands
+        FPSCR& fpscr = cpu->GetFPSCR();
 	SoftDouble b = cpu->GetFPR(fb);
 
 	// Compute the result
-	Flags flags( Flags::RoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>()) );
+	Flags flags( Flags::RoundingMode(fpscr.Get<FPSCR::RN>()) );
 	S32 res32 = b.queryS32( flags );
 	
         U64 undef_high = (U64(0xfff80000) | U64(res32 == S32(0) and b.isNegative())) << 32;
@@ -63,39 +64,27 @@ fctiw.execute = {
 	SoftDouble result(SoftDouble::FromRawBits, undef_high | U64(U32(res32)));
 	
 	// Generate VXSNAN, VXCVI, FR, FI, XX, FX, VX, FEX
-	UINT fpscr = cpu->GetFPSCR(), old_fpscr = fpscr;
-	GenFPSCR_VXSNAN<FPSCR>(fpscr, flags);
-	GenFPSCR_VXCVI<FPSCR>(fpscr, flags);
-	GenFPSCR_FR<FPSCR, SoftDouble>(fpscr, b, flags);
-	if(not flags.isOverflow()) GenFPSCR_FI<FPSCR>(fpscr, flags);
-	GenFPSCR_XX<FPSCR>(fpscr);
-	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
-	GenFPSCR_VX<FPSCR>(fpscr);
-	GenFPSCR_FEX<FPSCR>(fpscr);
+	UINT new_fpscr( fpscr ), old_fpscr = fpscr;
+	GenFPSCR_VXSNAN<FPSCR>(new_fpscr, flags);
+	GenFPSCR_VXCVI<FPSCR>(new_fpscr, flags);
+	GenFPSCR_FR<FPSCR, SoftDouble>(new_fpscr, b, flags);
+	if(likely(not flags.isOverflow())) GenFPSCR_FI<FPSCR>(new_fpscr, flags);
+	GenFPSCR_XX<FPSCR>(new_fpscr);
+	GenFPSCR_FX<FPSCR>(new_fpscr, old_fpscr);
+	GenFPSCR_VX<FPSCR>(new_fpscr);
+	GenFPSCR_FEX<FPSCR>(new_fpscr);
 
 	// Update FPSCR
-	cpu->SetFPSCR(fpscr);
+	cpu->SetFPSCR(new_fpscr);
 
-	if(unlikely((cpu->GetMSR().Get<MSR::FE0>() or cpu->GetMSR().Get<MSR::FE1>()) and (cpu->GetFPSCR().Get<FPSCR::FEX>())))
-	{
-		// Raise a floating point exception if FPSCR[FEX] is set
-		cpu->ThrowException<CPU::ProgramInterrupt::FloatingPoint>();
+	if (not cpu->CheckFloatingPointException())
 		return false;
-	}
-
-	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely((cpu->GetMSR().Get<MSR::FE0>() or cpu->GetMSR().Get<MSR::FE1>()) and (cpu->GetFPSCR().Get<FPSCR::FEX>())))
-	{
-		// Raise a floating point exception
-		cpu->ThrowException<CPU::ProgramInterrupt::FloatingPoint>();
-		return false;
-	}
 
 	// Write back the result
 	cpu->SetFPR(fd, result);
 
 	// Copy FX, FEX, VX, OX to CR1
-	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
+	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( fpscr.Get<FPSCR::_0_3>() ); }
 	
 	return true;
 };

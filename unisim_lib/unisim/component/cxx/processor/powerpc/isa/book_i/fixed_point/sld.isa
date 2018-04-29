@@ -45,7 +45,7 @@ sld.execute = {
 	U8 b = U8(cpu->GetGPR(rb)) & U8(0x7f);
 	
 	// Compute the result
-	U64 result = (b > U8(0x3f)) ? U64(0) : (s << b);
+	U64 result = unlikely(b > U8(0x3f)) ? U64(0) : (s << b);
 	
 	// Write back the result
 	cpu->SetGPR(ra, UINT(result));

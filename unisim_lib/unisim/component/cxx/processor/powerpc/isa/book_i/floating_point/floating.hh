@@ -85,13 +85,6 @@ inline void GenFPSCR_FR(typename FPSCR::TYPE& fpscr, const FLOAT& result, const 
 }
 
 template <class FPSCR>
-inline void GenFPSCR_FI(typename FPSCR::TYPE& fpscr, const Flags& flags)
-{
-	typedef typename FPSCR::TYPE TYPE;
-	FPSCR::FI::Set(fpscr, TYPE(flags.isApproximate()));
-}
-
-template <class FPSCR>
 inline void GenFPSCR_OX(typename FPSCR::TYPE& fpscr, const Flags& flags)
 {
 	if(unlikely(flags.isOverflow() and flags.isApproximate()))
@@ -106,15 +99,6 @@ inline void GenFPSCR_UX(typename FPSCR::TYPE& fpscr, const Flags& flags)
 	if(unlikely(flags.isUnderflow() and flags.isApproximate()))
 	{
 		FPSCR::UX::Set(fpscr, typename FPSCR::TYPE(1));
-	}
-}
-
-template <class FPSCR>
-inline void GenFPSCR_ZX(typename FPSCR::TYPE& fpscr, const Flags& flags)
-{
-	if(unlikely(flags.isDivisionByZero()))
-	{
-		FPSCR::ZX::Set(fpscr, typename FPSCR::TYPE(1));
 	}
 }
 
@@ -137,47 +121,11 @@ inline void GenFPSCR_VXISI(typename FPSCR::TYPE& fpscr, const Flags& flags)
 }
 
 template <class FPSCR>
-inline void GenFPSCR_VXIDI(typename FPSCR::TYPE& fpscr, const Flags& flags)
-{
-	if(unlikely(flags.isInftyOnInfty()))
-	{
-		FPSCR::VXIDI::Set(fpscr, typename FPSCR::TYPE(1));
-	}
-}
-
-template <class FPSCR>
-inline void GenFPSCR_VXZDZ(typename FPSCR::TYPE& fpscr, const Flags& flags)
-{
-	if(unlikely(flags.isZeroOnZero()))
-	{
-		FPSCR::VXZDZ::Set(fpscr, typename FPSCR::TYPE(1));
-	}
-}
-
-template <class FPSCR>
-inline void GenFPSCR_VXIMZ(typename FPSCR::TYPE& fpscr, const Flags& flags)
-{
-	if(unlikely(flags.isInftyMultZero()))
-	{
-		FPSCR::VXIMZ::Set(fpscr, typename FPSCR::TYPE(1));
-	}
-}
-
-template <class FPSCR>
 inline void GenFPSCR_VXCVI(typename FPSCR::TYPE& fpscr, const Flags& flags)
 {
 	if(unlikely(flags.isOverflow()))
 	{
 		FPSCR::VXCVI::Set(fpscr, typename FPSCR::TYPE(1));
-	}
-}
-
-template <class FPSCR>
-inline void GenFPSCR_XX(typename FPSCR::TYPE& fpscr)
-{
-	if(likely(FPSCR::FI::Get(fpscr)))
-	{
-		FPSCR::XX::Set(fpscr,typename FPSCR::TYPE(1));
 	}
 }
 

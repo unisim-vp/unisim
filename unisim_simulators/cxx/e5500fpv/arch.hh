@@ -80,6 +80,7 @@ template <typename FIELD, int OFFSET1, int OFFSET2 = -1, unisim::util::reg::core
 struct Field : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (63 - OFFSET2) : (63 - OFFSET1)) : (63 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, ACCESS>
 {
   typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (63 - OFFSET2) : (63 - OFFSET1)) : (63 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, ACCESS> Super;
+  enum { offset1 = OFFSET1, offset2 = OFFSET2 };
 };
 
 template <typename REGISTER>
@@ -155,6 +156,32 @@ struct FPSCR : Register<FPSCR>
   UINT GetDispatch( FIELD const& field ) const { return Register<FPSCR>::Get<FIELD>(); }
 
   UINT GetDispatch( RN const& rn ) const;
+
+  void SetInexact( BOOL i )
+  {
+    Register<FPSCR>::Set<FI>( UINT(i) );
+    if (evenly(i))
+      SetInvalid( XX() );
+  }
+  
+  template <class FIELD>
+  void SetInvalid( FIELD const& )
+  {
+    Register<FPSCR>::Set<FIELD>( UINT(1) );
+    SetException( VX() );
+  }
+
+  template <class FIELD>
+  void SetException( FIELD const& )
+  {
+    Register<FPSCR>::Set<FIELD>( UINT(1) );
+    Register<FPSCR>::Set<FX>( UINT(1) );
+    // Check if exception is enable (enable bits locations are 22 bit
+    // upper than their exception bits counterparts)
+    struct Enable : Field<Enable, FIELD::offset1 + 22> {};
+    if (Get<Enable>() == UINT(1))
+      Register<FPSCR>::Set<FEX>( UINT(1) );
+  }
 };
 
 // Machine State Register
@@ -375,6 +402,17 @@ struct Arch
   void        SetFPR(unsigned id, SoftDouble const& value ) { fprs[id] = value; }
   FPSCR&      GetFPSCR() { return fpscr; }
   void        SetFPSCR(UINT value) { fpscr.value = value; }
+  bool        CheckFloatingPointException()
+  {
+    // Check for floating point exception condition: FPSCR[FEX] and (MSR[FE0] or MSR[FE1])
+    if ((fpscr.Get<FPSCR::FEX>()) and (msr.Get<MSR::FE0>() or msr.Get<MSR::FE1>()))
+      {
+        // Raise a floating point exception if FPSCR[FEX] is set
+        ThrowException<ProgramInterrupt::FloatingPoint>();
+        return false;
+      }
+    return true;
+  }
 
   bool Fp64Load(unsigned id, U64 addr) { fprs[id].fromRawBitsAssign(IntLoad<U64>( addr )); return true; }
   bool Fp64Store(unsigned id, U64 addr) { IntStore( addr, U64(fprs[id].queryRawBits()) ); return true; }

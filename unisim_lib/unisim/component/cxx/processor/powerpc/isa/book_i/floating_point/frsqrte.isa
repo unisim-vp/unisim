@@ -48,137 +48,77 @@ frsqrte.execute = {
 	}
 
 	// Read the input operands
-	UINT fpscr = cpu->GetFPSCR(), old_fpscr = fpscr;
-	Flags flags( Flags::RoundingMode(0) );
-	const SoftDouble& b = cpu->GetFPR(fb);
+	FPSCR& fpscr = cpu->GetFPSCR();
+	SoftDouble result( cpu->GetFPR(fb) );
 
-	if(unlikely(b.isSNaN()))
+	if (unlikely(result.isNaN()))
 	{
-		// b = SNaN
-		if(not bool(FPSCR::VE::Get(fpscr)))
+		if (unlikely(result.isSNaN()))
 		{
-			// Generate FPRF
-			FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::QNAN());
-			// Write back result
-			cpu->SetFPR(fd, SoftDouble(SoftDouble::FromRawBits,b.queryRawBits() | 0x0008000000000000ULL)); // QNaN (b with high order bit of mantissa set)
+			fpscr.SetInvalid(FPSCR::VXSNAN());
+
+			if (unlikely(not cpu->CheckFloatingPointException()))
+				return false;
+
+			// Compute the result (QNaN)
+			result.setQuiet();
 		}
-		// Generate VXSNAN
-		FPSCR::VXSNAN::Set(fpscr, UINT(1));
-	}
-	else if(unlikely(b.isQNaN()))
-	{
-		// b = QNaN
+	
 		// Generate FPRF
-		FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::QNAN());
-		// Write back result
-		cpu->SetFPR(fd, b); // QNaN (b)
+		fpscr.Set<FPSCR::FPRF>( FPSCR::FPRF::QNAN() );
 	}
-	else if(unlikely(b.isZero()))
-	{
-		// Generate ZX
-		FPSCR::ZX::Set(fpscr, UINT(1));
-
-		if(not FPSCR::ZE::Get(fpscr))
-		{
-			if(b.isNegative())
-			{
-				// b = -0
-				// Write back result
-				cpu->SetFPR(fd, SoftDouble(SoftDouble::FromRawBits,0xfff0000000000000ULL)); // -infinity
-				// Generate FPRF
-				FPSCR::FPRF::Set(fpscr, UINT(FPSCR::FPRF::NEGATIVE_INFINITY()));
-			}
-			else
-			{
-				// b = +0
-				// Write back result
-				cpu->SetFPR(fd, SoftDouble(SoftDouble::FromRawBits,0x7ff0000000000000ULL)); // +infinity
-				// Generate FPRF
-				FPSCR::FPRF::Set(fpscr, UINT(FPSCR::FPRF::POSITIVE_INFINITY()));
-			}
-		}
-	}
-	else if(unlikely(b.isNegative()))
+	else if (unlikely(result.isNegative()))
 	{
 		// -infinity <= b < 0
-		if(not bool(FPSCR::VE::Get(fpscr)))
-		{
-			// Write back result
-			cpu->SetFPR(fd, SoftDouble(SoftDouble::FromRawBits,0x7ff8000000000000ULL)); // Positive QNaN
-			// Generate FPRF
-			FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::QNAN());
-		}
-		// Generate VXSQRT
-		FPSCR::VXSQRT::Set(fpscr, UINT(1));
+		fpscr.SetInvalid(FPSCR::VXSQRT());
+		
+		if (unlikely(not cpu->CheckFloatingPointException()))
+			return false;
+		
+		// Compute the result
+		result.fromRawBitsAssign(U64(0x7ff8000000000000ULL)); // Positive QNaN
+		
+		// Generate FPRF
+		fpscr.Set<FPSCR::FPRF>(FPSCR::FPRF::QNAN());
 	}
-	else if(unlikely(b.isInfty()))
+	else if (unlikely(result.isZero()))
+	{
+		fpscr.SetException(FPSCR::ZX());
+		
+		if (unlikely(not cpu->CheckFloatingPointException()))
+			return false;
+		
+		// Compute the result (+/- Inf)
+		bool neg = evenly(result.isNegative());
+		result.fromRawBitsAssign( U64(neg ? 0xfff0000000000000ULL : 0x7ff0000000000000ULL) );
+		fpscr.Set<FPSCR::FPRF>(neg ? FPSCR::FPRF::NEGATIVE_INFINITY() : FPSCR::FPRF::POSITIVE_INFINITY());
+	}
+	else if (unlikely(result.isInfty()))
 	{
 		// b = +infinity
-		cpu->SetFPR(fd, SoftDouble(SoftDouble::FromRawBits,0x0000000000000000ULL)); // +0
+		result.fromRawBitsAssign(U64(0x0000000000000000ULL)); // +0
+		
 		// Generate FPRF
-		FPSCR::FPRF::Set(fpscr, UINT(FPSCR::FPRF::POSITIVE_ZERO()));
+		fpscr.Set<FPSCR::FPRF>(FPSCR::FPRF::POSITIVE_ZERO());
 	}
 	else
 	{
 		// 0 < b < infinity
+		result.rSqrtEstimAssign();
 
-		// First estimation of 1/sqrt(b), seed of Newton-Raphson algorithm
-		// see http://www.mceniry.net/papers/Fast%20Inverse%20Square%20Root.pdf
-		// mirror: http://www.daxia.com/bibis/upload/406Fast_Inverse_Square_Root.pdf
-		// see also: http://www.azillionmonkeys.com/qed/sqroot.html
-		SoftDouble u(SoftDouble::FromRawBits,(0xbfcdd6a18f6a6f55ULL - b.queryRawBits()) >> 1);
-
-		// Newton-Raphson method:  u = u * (3 - b * u²) / 2
-		SoftDouble half(SoftDouble::FromRawBits,0x3fe0000000000000ULL); // 0.5
-		SoftDouble one_and_half(SoftDouble::FromRawBits,0x3ff8000000000000ULL); // 1.5
-
-		SoftDouble v(b);
-		v.multAssign(half, flags); // v = b / 2 => u = (3 * u / 2) - u² * u * v
-		
-		unsigned int i;
-		// five iterations are sufficient with 64-bit floating point numbers
-		for(i = 0; i < 5; i++)
+		// Generate FPRF
 		{
-			// Newton-Raphson iteration
-			
-			// w = u² * u * b / 2
-			SoftDouble w(u);
-			w.multAssign(u, flags);
-			w.multAssign(u, flags);
-			w.multAssign(v, flags);
-			
-			// u = (3 * u / 2) - (u² * u * b / 2)
-			u.multAssign(one_and_half, flags);
-			u.minusAssign(w, flags);
+			UINT fpscr_value( fpscr );
+			GenFPSCR_FPRF<FPSCR, SoftDouble>(fpscr_value, result);
+			cpu->SetFPSCR( fpscr_value );
 		}
-
-		// Write back result
-		cpu->SetFPR(fd, u);
-
-		// Generate VXSNAN, FR, FI, FPRF
-		GenFPSCR_VXSNAN<FPSCR>(fpscr, flags);
-		GenFPSCR_FPRF<FPSCR, SoftDouble>(fpscr, u);
 	}
 
-	// Generate XX, FX, VX, FEX
-	GenFPSCR_XX<FPSCR>(fpscr);
-	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
-	GenFPSCR_VX<FPSCR>(fpscr);
-	GenFPSCR_FEX<FPSCR>(fpscr);
-
-	// Update FPSCR
-	cpu->SetFPSCR(fpscr);
-
-	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely((cpu->GetMSR().Get<MSR::FE0>() or cpu->GetMSR().Get<MSR::FE1>()) and (cpu->GetFPSCR().Get<FPSCR::FEX>())))
-	{
-		// Raise a floating point exception
-		cpu->ThrowException<CPU::ProgramInterrupt::FloatingPoint>();
-		return false;
-	}
+	// Write back result
+	cpu->SetFPR(fd, result);
 
 	// Copy FX, FEX, VX, OX to CR1
-	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
+	if (unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( fpscr.Get<FPSCR::_0_3>() ); }
 	
 	return true;
 };
@@ -189,3 +129,34 @@ frsqrte.disasm = {
 
 specialize frsqrte(rc=0);
 specialize frsqrte(rc=1);
+
+// // First estimation of 1/sqrt(b), seed of Newton-Raphson algorithm
+// // see http://www.mceniry.net/papers/Fast%20Inverse%20Square%20Root.pdf
+// // mirror: http://www.daxia.com/bibis/upload/406Fast_Inverse_Square_Root.pdf
+// // see also: http://www.azillionmonkeys.com/qed/sqroot.html
+// SoftDouble b( result );
+// result.fromRawBitsAssign((U64(0xbfcdd6a18f6a6f55ULL) - b.queryRawBits()) >> 1);
+
+// // Newton-Raphson method:  result = result * (3 - b * result²) / 2
+// SoftDouble half(SoftDouble::FromRawBits,U64(0x3fe0000000000000ULL)); // 0.5
+// SoftDouble one_and_half(SoftDouble::FromRawBits,U64(0x3ff8000000000000ULL)); // 1.5
+
+// SoftDouble v(b);
+// v.multAssign(half, flags); // v = b / 2 => result = (3 * result / 2) - result² * result * v
+
+// unsigned int i;
+// // five iterations are sufficient with 64-bit floating point numbers
+// for(i = 0; i < 5; i++)
+// {
+// 	// Newton-Raphson iteration
+
+// 	// w = result² * result * b / 2
+// 	SoftDouble w(result);
+// 	w.multAssign(result, flags);
+// 	w.multAssign(result, flags);
+// 	w.multAssign(v, flags);
+
+// 	// result = (3 * result / 2) - (result² * result * b / 2)
+// 	result.multAssign(one_and_half, flags);
+// 	result.minusAssign(w, flags);
+// }

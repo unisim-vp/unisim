@@ -41,7 +41,7 @@ op mulhdu(31[6]:rd[5]:ra[5]:rb[5]:?[1]:9[9]:rc[1]);
 
 mulhdu.execute = {
 	// Read the input operands
-	U64 a = U64(U64(cpu->GetGPR(ra))), b = U64(U64(cpu->GetGPR(rb)));
+	U64 a( cpu->GetGPR(ra) ), b( cpu->GetGPR(rb) );
 	
 	// Compute the result
 	U64 result = UnsignedMultiplyHigh(a, b);

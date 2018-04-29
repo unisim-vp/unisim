@@ -38,10 +38,7 @@ mtcrf.var crmask : {uint32_t} = {((((crm&0x80) << 21)|((crm&0x40) << 18)|((crm&0
 
 mtcrf.execute = {
 	// Read the input operands
-	U32 s = cpu->GetGPR(rs);
-	
-	/*Generate a bit mask of bits to move from source GPR to CR*/	
-	U32 mask(crmask);
+	U32 s( cpu->GetGPR(rs) ), mask(crmask);
 	
 	// Apply the bit mask
 	CR& cr = cpu->GetCR();

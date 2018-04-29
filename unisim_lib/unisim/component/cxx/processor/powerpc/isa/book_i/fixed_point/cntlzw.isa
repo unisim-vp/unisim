@@ -44,19 +44,19 @@ cntlzw.execute = {
 	U32 s = U32(cpu->GetGPR(rs));
 	
 	// Compute the result
-	UINT result = likely(s != UINT(0)) ? UINT(31) - BitScanReverse(s) : UINT(32);
+	U32 result = likely(s != U32(0)) ? U32(31) - BitScanReverse(s) : U32(32);
 	
 	// Write back the result
-	cpu->SetGPR(ra, result);
+	cpu->SetGPR(ra, UINT(result));
 
 	if(unlikely(rc))
 	{
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(SINT(result) < SINT(0));
-		cr.Set<CR::CR0::GT>(SINT(result) > SINT(0));
-		cr.Set<CR::CR0::EQ>(result == UINT(0));
+		cr.Set<CR::CR0::LT>(S32(result) < S32(0));
+		cr.Set<CR::CR0::GT>(S32(result) > S32(0));
+		cr.Set<CR::CR0::EQ>(result == U32(0));
 	}
 	
 	return true;

@@ -51,27 +51,6 @@ namespace e5500
 {
   using ut::Arch;
   
-  struct DASMPrint
-  {
-    virtual void Print( std::ostream& sink ) const = 0;
-    friend std::ostream& operator << (std::ostream& sink, DASMPrint const& dap)
-    {
-      dap.Print(sink);
-      return sink;
-    }
-  };
-
-  struct GPRPrint : public DASMPrint
-  {
-    GPRPrint(unsigned _reg) : reg(_reg) {} unsigned reg;
-    void Print( std::ostream& sink ) const;
-  };
-
-  struct HexPrint : public DASMPrint
-  {
-    HexPrint(uint32_t _num) : num(_num) {} unsigned num;
-    void Print( std::ostream& sink ) const;
-  };
 }
 
 }
@@ -79,8 +58,18 @@ namespace e5500
 impl {
 #include <arch.hh>
 #include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
+#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 #include <unisim/util/likely/likely.hh>
 #include <iostream>
+
+  //namespace e5500
+  //{
+  typedef unisim::component::cxx::processor::powerpc::CondPrint CondPrint;
+  typedef unisim::component::cxx::processor::powerpc::GPRPrint GPRPrint;
+  typedef unisim::component::cxx::processor::powerpc::FPRPrint FPRPrint;
+  typedef unisim::component::cxx::processor::powerpc::CRPrint CRPrint;
+  typedef unisim::component::cxx::processor::powerpc::EAPrint EAPrint;
+  using unisim::component::cxx::processor::powerpc::Mask64;
 
   typedef ut::BOOL  BOOL;
   typedef ut::U8    U8;
@@ -99,21 +88,39 @@ impl {
   using ut::Flags;
 
   typedef ut::Arch CPU;
+  typedef ut::Arch CONFIG;
   
-  // using ut::XER;
+  using ut::XER;
   // using ut::LR;
-  // using ut::CTR;
-  // using ut::CR;
+  using ut::CTR;
+  using ut::MSR;
+  using ut::CR;
+  using ut::FPSCR;
   // using ut::ADDRESS;
   // using ut::RN_NEAREST;
   // using ut::RN_ZERO;
   // using ut::RN_UP;
   // using ut::RN_DOWN;
-  // using ut::SoftFloat;
-  // using ut::SoftHalfFloat;
+  using ut::SoftFloat;
+  using ut::SoftDouble;
+  
+  using ut::UnsignedMultiplyHigh;
+  using ut::SignedMultiplyHigh;
 
 
-  // using ut::GenSPEFSCR_FINV;
+  using ut::GenFPSCR_OX;
+  using ut::GenFPSCR_UX;
+  using ut::GenFPSCR_VXSNAN;
+  using ut::GenFPSCR_VXISI;
+  using ut::GenFPSCR_VXCVI;
+  using ut::GenFPSCR_FR;
+  using ut::GenFPSCR_FI;
+  using ut::GenFPSCR_FPRF;
+  using ut::GenFPSCR_XX;
+  using ut::GenFPSCR_FX;
+  using ut::GenFPSCR_VX;
+  using ut::GenFPSCR_FEX;
+  
   // using ut::GenSPEFSCR_FOVF;
   // using ut::GenSPEFSCR_FUNF;
   // using ut::GenSPEFSCR_FINXS;
@@ -122,7 +129,9 @@ impl {
   // using ut::GenSPEFSCR_FX;
   // using ut::DoesSPEFSCR_TriggerException;
   // using ut::GenSPEFSCR_FG;
-  
+
+  //}
+ 
 #if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
 #if defined(likely)
 #undef likely
@@ -148,7 +157,9 @@ action {bool} execute({Arch*} {cpu}) {
   return false;
 };
 
-action {void} disasm({std::ostream&} {os}) { os << "???"; }
+action {void} disasm({std::ostream&} {os}) { os << "???"; };
+
+action {bool} donttest() { return false; };
 
 // action {void} update_esr_st({ARCH *} {cpu}) {}
 

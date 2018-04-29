@@ -60,9 +60,9 @@ mulld.execute = {
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(result < int64_t(0));
-		cr.Set<CR::CR0::GT>(result > int64_t(0));
-		cr.Set<CR::CR0::EQ>(result == int64_t(0));
+		cr.Set<CR::CR0::LT>(result < S64(0));
+		cr.Set<CR::CR0::GT>(result > S64(0));
+		cr.Set<CR::CR0::EQ>(result == S64(0));
 	}
 
 	return true;

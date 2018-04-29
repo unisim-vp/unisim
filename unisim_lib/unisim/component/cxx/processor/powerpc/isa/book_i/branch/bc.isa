@@ -43,11 +43,11 @@ bc.execute = {
 		/* Conditional branch */
 		if(bo & 8) {
 			/* Branch if condition is true */
-			cond_ok = ((cpu->GetCR() << bi) & U32(0x80000000)) != 0;
+			cond_ok = ((U32(cpu->GetCR()) << bi) & U32(0x80000000)) != U32(0);
 		}
 		else {
 			/* Branch if condition is false */
-			cond_ok = ((cpu->GetCR() << bi) & U32(0x80000000)) == 0;
+			cond_ok = ((U32(cpu->GetCR()) << bi) & U32(0x80000000)) == U32(0);
 		}
 	}
 	
@@ -58,20 +58,20 @@ bc.execute = {
 		ctr = UINT(ctr) - UINT(1);
 		/* Test whether to branch if CTR is zero or not */
 		if(bo & 2) {
-			ctr_ok = cpu->GetCTR() == 0;
+			ctr_ok = UINT(cpu->GetCTR()) == UINT(0);
 		}
 		else {
-			ctr_ok = cpu->GetCTR() != 0;
+			ctr_ok = UINT(cpu->GetCTR()) != UINT(0);
 		}
 	}
 	
-	if (ctr_ok and cond_ok) {
+	if (evenly(ctr_ok and cond_ok)) {
 		UINT bd = UINT(bd14);
 		ADDRESS target_addr = aa ? bd : cpu->GetCIA() + bd;
 		cpu->Branch(target_addr);
 	}
 	
-	if (lk) cpu->GetLR() = (cpu->GetCIA() + 4);
+	if (lk) cpu->GetLR() = ADDRESS(cpu->GetCIA()) + ADDRESS(4);
 	
 	return true;
 };

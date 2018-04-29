@@ -38,10 +38,10 @@ op crorc(19[6]:bt[5]:ba[5]:bb[5]:417[10]:?[1]);
 crorc.execute = {
 	// Read the input operands
 	CR& cr = cpu->GetCR();
-	UINT const mask(0x80000000 >> bt), source(cr);
+	U32 const mask(0x80000000 >> bt), source(cr);
 
 	// Compute the result
-	UINT result = (source & ~mask) | (mask & (((source << ba) | ~(source << bb)) >> bt));
+	U32 result = (source & ~mask) | (mask & (((source << ba) | ~(source << bb)) >> bt));
 	
 	// Write back the result
 	cr = result;

@@ -51,9 +51,9 @@ mtfsb0.execute = {
 
 	UINT fpscr = cpu->GetFPSCR();
 
-	if(likely(crbD != 1 && crbD != 2))
+	if (likely(crbD != 1 && crbD != 2))
 	{
-		fpscr = fpscr & (~(1 << (31 - crbD)));
+		fpscr &= UINT(~(1 << (31 - crbD)));
 	}
 
 	// Generate VX, FEX

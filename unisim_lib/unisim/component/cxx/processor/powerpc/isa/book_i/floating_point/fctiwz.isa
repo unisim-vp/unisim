@@ -67,7 +67,7 @@ fctiwz.execute = {
 	GenFPSCR_VXSNAN<FPSCR>(fpscr, flags);
 	GenFPSCR_VXCVI<FPSCR>(fpscr, flags);
 	GenFPSCR_FR<FPSCR, SoftDouble>(fpscr, b, flags);
-	if(not flags.isOverflow()) GenFPSCR_FI<FPSCR>(fpscr, flags);
+	if (likely(not flags.isOverflow())) GenFPSCR_FI<FPSCR>(fpscr, flags);
 	GenFPSCR_XX<FPSCR>(fpscr);
 	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
 	GenFPSCR_VX<FPSCR>(fpscr);
@@ -76,20 +76,8 @@ fctiwz.execute = {
 	// Update FPSCR
 	cpu->SetFPSCR(fpscr);
 
-	if(unlikely((cpu->GetMSR().Get<MSR::FE0>() or cpu->GetMSR().Get<MSR::FE1>()) and (cpu->GetFPSCR().Get<FPSCR::FEX>())))
-	{
-		// Raise a floating point exception if FPSCR[FEX] is set
-		cpu->ThrowException<CPU::ProgramInterrupt::FloatingPoint>();
+	if (not cpu->CheckFloatingPointException())
 		return false;
-	}
-
-	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely((cpu->GetMSR().Get<MSR::FE0>() or cpu->GetMSR().Get<MSR::FE1>()) and (cpu->GetFPSCR().Get<FPSCR::FEX>())))
-	{
-		// Raise a floating point exception
-		cpu->ThrowException<CPU::ProgramInterrupt::FloatingPoint>();
-		return false;
-	}
 
 	// Write back the result
 	cpu->SetFPR(fd, result);

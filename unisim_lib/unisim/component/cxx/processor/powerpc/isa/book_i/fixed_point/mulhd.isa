@@ -41,10 +41,10 @@ op mulhd(31[6]:rd[5]:ra[5]:rb[5]:?[1]:73[9]:rc[1]);
 
 mulhd.execute = {
 	// Read the input operands
-	U64 a = U64(U64(cpu->GetGPR(ra))), b = U64(U64(cpu->GetGPR(rb)));
+	S64 a( cpu->GetGPR(ra) ), b( cpu->GetGPR(rb) );
 	
 	// Compute the result
-	U64 result = SignedMultiplyHigh(a, b);
+	S64 result = SignedMultiplyHigh(a, b);
 	
 	// Write back the result
 	cpu->SetGPR(rd, UINT(result));
@@ -56,7 +56,7 @@ mulhd.execute = {
 		cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
 		cr.Set<CR::CR0::LT>(S64(result) < S64(0));
 		cr.Set<CR::CR0::GT>(S64(result) > S64(0));
-		cr.Set<CR::CR0::EQ>(result == U64(0));
+		cr.Set<CR::CR0::EQ>(result == S64(0));
 	}
 	
 	return true;
