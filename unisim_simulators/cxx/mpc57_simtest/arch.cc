@@ -71,7 +71,7 @@ namespace ut
     : xer(0), cr(0), spefscr(0), base_register(-1), aligned(false), mem_writes(false), length(op.GetLength()), retfalse(false)
   {
     bool has_valid_path = false;
-    for (PathNode path_root;;)
+    for (ActionNode path_root;;)
       {
         CPU cpu( *this, path_root );
         
@@ -359,47 +359,4 @@ namespace ut
   
   inline U32 Mask(U32 mb, U32 me) { return U32(new MaskNode( mb.expr, me.expr )); }
 
-  PathNode::PathNode( PathNode* _previous )
-    : cond(), previous( _previous ), true_nxt(), false_nxt(), complete(false)
-  {}
-    
-  PathNode::~PathNode()
-  {
-    delete false_nxt;
-    delete true_nxt;
-  }
-    
-  bool
-  PathNode::proceed( Expr const& _cond )
-  {
-    if (not cond.node) {
-      cond = _cond;
-      false_nxt = new PathNode( this );
-      true_nxt = new PathNode( this );
-      return false;
-    }
-      
-    if (cond != _cond)
-      throw std::logic_error( "unexpected condition" );
-      
-    if (not false_nxt->complete)
-      return false;
-      
-    if (true_nxt->complete)
-      throw std::logic_error( "unexpected condition" );
-    
-    return true;
-  }
-    
-  bool
-  PathNode::close()
-  {
-    complete = true;
-    if (not previous)
-      return true;
-    if (previous->true_nxt == this)
-      return previous->close();
-    return false;
-  }
-    
 } // end of namespace ut

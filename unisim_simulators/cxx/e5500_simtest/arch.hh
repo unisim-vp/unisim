@@ -51,24 +51,6 @@ namespace ut
     std::string reason;
   };
   
-  struct PathNode
-  {
-    typedef unisim::util::symbolic::Expr Expr;
-
-    PathNode( PathNode* _previous=0 );
-    ~PathNode();
-
-    bool        proceed( Expr const& _cond );
-    bool        close();
-    PathNode*   next( bool predicate ) const { return predicate ? true_nxt : false_nxt; }
-    
-    Expr cond;
-    PathNode* previous;
-    PathNode* true_nxt;
-    PathNode* false_nxt;
-    bool complete;
-  };
-
   struct Arch;
 
   struct ArchExprNode : public unisim::util::symbolic::ExprNode
@@ -88,8 +70,9 @@ namespace ut
   
   struct Interface
   {
-    typedef unisim::util::symbolic::Expr Expr;
-    typedef unisim::util::symbolic::ExprNode ExprNode;
+    typedef unisim::util::symbolic::Expr       Expr;
+    typedef unisim::util::symbolic::ExprNode   ExprNode;
+    typedef unisim::util::symbolic::ActionNode ActionNode;
     
     Interface( e5500::Operation& op );
     
@@ -107,25 +90,41 @@ namespace ut
     
       int  cmp( VirtualRegister const& ) const;
     };
+
+    struct RegBank
+    {
+      std::map<unsigned,VirtualRegister> vmap;
+      std::vector<unsigned>              refs;
+
+      void append( uint8_t _index, bool w );
+      
+      int  cmp( RegBank const& ) const;
+    } iregs, fregs;
     
-    std::map<unsigned,VirtualRegister> irmap;
-    std::vector<unsigned>              iruse;
-    VirtualRegister                    xer, cr, spefscr;
+    VirtualRegister                    xer, cr, fpscr;
     std::set<Expr>                     mem_addrs;
     uint8_t                            base_register;
     bool                               aligned;
     bool                               mem_writes;
     uint8_t                            length;
     bool                               retfalse;
-
     
-    void irappend( uint8_t _index, bool w );
-    void frappend( uint8_t _index, bool w );
+    void irappend( uint8_t idx, bool w )
+    {
+      if ((idx < 4) or (idx >= 8))
+        throw Untestable("Wild register access");
+      iregs.append( idx, w );
+    }
+    void frappend( uint8_t idx, bool w )
+    {
+      if ((idx < 4) or (idx >= 8))
+        throw Untestable("Wild register access");
+      fregs.append( idx, w );
+    }
     
     int  cmp( Interface const& ) const;
     bool operator < ( Interface const& b ) const { return cmp( b ) < 0; }
     bool usemem() const { return mem_addrs.size(); }
-    
     
     struct Prologue
     {
@@ -159,23 +158,23 @@ namespace ut
     unsigned reg;
   };
   
-  struct MixNode : public unisim::util::symbolic::ExprNode
-  {
-    typedef unisim::util::symbolic::Expr Expr;
-    typedef unisim::util::symbolic::ExprNode ExprNode;
+  // struct MixNode : public unisim::util::symbolic::ExprNode
+  // {
+  //   typedef unisim::util::symbolic::Expr Expr;
+  //   typedef unisim::util::symbolic::ExprNode ExprNode;
     
-    MixNode( Expr const& _left, Expr const& _right ) : left(_left), right(_right) {}
-    virtual void Repr( std::ostream& sink ) const;
-    virtual unsigned SubCount() const { return 2; };
-    virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return left; case 1: return right; } return ExprNode::GetSub(idx); };
-    virtual intptr_t cmp( ExprNode const& brhs ) const
-    {
-      MixNode const& rhs = dynamic_cast<MixNode const&>( brhs );
-      if (intptr_t delta = left.cmp( rhs.left )) return delta;
-      return right.cmp( rhs.right );
-    }
-    Expr left, right;
-  };
+  //   MixNode( Expr const& _left, Expr const& _right ) : left(_left), right(_right) {}
+  //   virtual void Repr( std::ostream& sink ) const;
+  //   virtual unsigned SubCount() const { return 2; };
+  //   virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return left; case 1: return right; } return ExprNode::GetSub(idx); };
+  //   virtual intptr_t cmp( ExprNode const& brhs ) const
+  //   {
+  //     MixNode const& rhs = dynamic_cast<MixNode const&>( brhs );
+  //     if (intptr_t delta = left.cmp( rhs.left )) return delta;
+  //     return right.cmp( rhs.right );
+  //   }
+  //   Expr left, right;
+  // };
   
   struct Unknown : public ArchExprNode
   {
@@ -202,7 +201,7 @@ namespace ut
     typedef unisim::util::symbolic::Expr Expr;
     typedef unisim::util::symbolic::ExprNode ExprNode;
     
-    template <typename PART,typename T> void Set( SmartValue<T> const& value ) { XERAccess(true); xer_value = Expr( new MixNode( xer_value.expr, value.expr ) ); }
+    template <typename PART,typename T> void Set( SmartValue<T> const& value ) { XERAccess(true); xer_value = make_function("mix", xer_value.expr, value.expr ); }
     template <typename PART> void Set( uint32_t value ) { Set<PART,uint32_t>( unisim::util::symbolic::make_const(value) ); }
     template <typename PART> U64 Get() { XERAccess(false); return xer_value; }
     operator U64 () { XERAccess(false); return xer_value; }
@@ -237,7 +236,7 @@ namespace ut
     typedef unisim::util::symbolic::Expr Expr;
     typedef unisim::util::symbolic::ExprNode ExprNode;
     
-    template <typename PART,typename T> void Set( SmartValue<T> const& value ) { CRAccess(true); cr_value = Expr( new MixNode( cr_value.expr, value.expr ) ); }
+    template <typename PART,typename T> void Set( SmartValue<T> const& value ) { CRAccess(true); cr_value = make_function( "mix", cr_value.expr, value.expr ); }
     template <typename PART> void Set( uint32_t value ) { Set<PART,uint32_t>( unisim::util::symbolic::make_const(value) ); }
     template <typename PART> U32 Get() { CRAccess(false); return cr_value; }
     operator U32 () { CRAccess(false); return cr_value; }
@@ -309,7 +308,7 @@ namespace ut
     struct RN    {}; // Floating-Point Rounding Control
   
     template <typename PART,typename T> void Set( SmartValue<T> const& value )
-    { FPSCRAccess(false); FPSCRAccess(true); fpscr_value = Expr( new MixNode( fpscr_value.expr, value.expr ) ); }
+    { FPSCRAccess(false); FPSCRAccess(true); fpscr_value = make_function( "mix", fpscr_value.expr, value.expr ); }
     template <typename PART> void Set( uint64_t value ) { Set<PART,uint64_t>( unisim::util::symbolic::make_const(value) ); }
     template <typename PART> U64 Get() { FPSCRAccess(false); return fpscr_value; }
     operator U64 () { FPSCRAccess(false); return fpscr_value; }
@@ -417,13 +416,14 @@ namespace ut
     typedef ut::ADDRESS ADDRESS;
     
     
-    typedef unisim::util::symbolic::Expr Expr;
-    typedef unisim::util::symbolic::ExprNode ExprNode;
+    typedef unisim::util::symbolic::Expr       Expr;
+    typedef unisim::util::symbolic::ExprNode   ExprNode;
+    typedef unisim::util::symbolic::ActionNode ActionNode;
     
     typedef MSR MSR;
     // typedef SPEFSCR SPEFSCR;
     
-    Arch( Interface& _interface, PathNode& root )
+    Arch( Interface& _interface, ActionNode& root )
       : XER(*this), CR(*this), FPSCR(*this), interface(_interface), path(&root), cia( new CIA( *this ) )
     {
       for (unsigned reg = 0; reg < 32; ++reg)
@@ -434,7 +434,7 @@ namespace ut
     
     virtual void XERAccess( bool is_write ) { interface.xer.addaccess(is_write); }
     virtual void CRAccess( bool is_write ) { interface.cr.addaccess(is_write); }
-    virtual void SPEFSCRAccess( bool is_write ) { interface.spefscr.addaccess(is_write); }
+    virtual void FPSCRAccess( bool is_write ) { interface.fpscr.addaccess(is_write); }
     
     struct Interrupt { void SetELEV(unsigned x); };
     
@@ -510,11 +510,11 @@ namespace ut
     
     bool close() { return path->close(); }
 
-    Interface& interface;
-    PathNode*  path;
-    U64        reg_values[32];
-    U64        cia;
-    SoftDouble fpr_values[32];
+    Interface&   interface;
+    ActionNode*  path;
+    U64          reg_values[32];
+    U64          cia;
+    SoftDouble   fpr_values[32];
     
     
     struct CIA : public ArchExprNode
@@ -647,8 +647,8 @@ namespace ut
   };
 
 
-  U64 UnsignedMultiplyHigh( U64 lop, U64 rop );
-  S64 SignedMultiplyHigh( S64 lop, S64 rop );
+  inline U64 UnsignedMultiplyHigh( U64 lop, U64 rop ){ return U64( make_function( "UnsignedMultiplyHigh", lop.expr, rop.expr ) ); }
+  inline S64 SignedMultiplyHigh( S64 lop, S64 rop ) { return S64( make_function( "SignedMultiplyHigh", lop.expr, rop.expr ) ); }
   
   // extern void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, U8 carry_in);
   // extern inline void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, int carry_in)

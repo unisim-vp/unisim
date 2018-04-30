@@ -308,6 +308,7 @@ top_ppc64.isa \
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
 arch.cc \
+types.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\

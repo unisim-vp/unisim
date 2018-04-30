@@ -36,6 +36,7 @@
 #define E5500_SIMTEST_TYPES_HH
 
 #include <unisim/util/symbolic/symbolic.hh>
+#include <inttypes.h>
 
 namespace ut
 {
@@ -60,17 +61,26 @@ namespace ut
   template <> struct TypeFor<32> { typedef U32 U; typedef S32 S; };
   template <> struct TypeFor<64> { typedef U64 U; typedef S64 S; };
 
-  int compare( char const* a, char const* b );
-    
-  template <unsigned SUBS>
-  struct FunctionNode : public unisim::util::symbolic::ExprNode
+  struct FunctionNodeBase : public unisim::util::symbolic::ExprNode
   {
     typedef unisim::util::symbolic::ExprNode ExprNode;
     typedef unisim::util::symbolic::Expr Expr;
     
-    FunctionNode( char const* _ident ) : ident(_ident) {}
-    FunctionNode* src(unsigned idx, Expr const& x) { srcs[idx] = x; return this; }
+    FunctionNodeBase( char const* _ident ) : ident(_ident) {}
     virtual void Repr( std::ostream& sink ) const;
+    int NameCompare( FunctionNodeBase const& b ) const;
+
+    char const* ident;
+  };
+    
+  template <unsigned SUBS>
+  struct FunctionNode : FunctionNodeBase
+  {
+    typedef unisim::util::symbolic::ExprNode ExprNode;
+    typedef unisim::util::symbolic::Expr Expr;
+    
+    FunctionNode( char const* _ident ) : FunctionNodeBase(_ident) {}
+    FunctionNode* src(unsigned idx, Expr const& x) { srcs[idx] = x; return this; }
     virtual unsigned SubCount() const { return SUBS; };
     virtual Expr const& GetSub(unsigned idx) const { if (idx < SUBS) return srcs[idx]; return ExprNode::GetSub(idx); };
     virtual intptr_t cmp( ExprNode const& brhs ) const
@@ -79,18 +89,28 @@ namespace ut
       for (unsigned idx = 0; idx < SUBS; ++idx)
         if (intptr_t delta = srcs[idx].cmp( rhs.srcs[idx] )) return delta;
       
-      return compare( ident, rhs.ident );
+      return NameCompare( rhs );
     }
     Expr srcs[SUBS];
-    char const* ident;
   };
 
+  /* 1 operand */
   inline unisim::util::symbolic::Expr
   make_function(char const* ident, unisim::util::symbolic::Expr const& op0)
   { return (new FunctionNode<1>(ident))->src(0,op0); }
+  /* 2 operands */
   inline unisim::util::symbolic::Expr
-  make_function(char const* ident, unisim::util::symbolic::Expr const& op0, unisim::util::symbolic::Expr const& op1)
+  make_function(char const* ident,
+                unisim::util::symbolic::Expr const& op0,
+                unisim::util::symbolic::Expr const& op1)
   { return (new FunctionNode<1>(ident))->src(0,op0)->src(1,op1); }
+  /* 3 operands */
+  inline unisim::util::symbolic::Expr
+  make_function(char const* ident,
+                unisim::util::symbolic::Expr const& op0,
+                unisim::util::symbolic::Expr const& op1,
+                unisim::util::symbolic::Expr const& op2)
+  { return (new FunctionNode<1>(ident))->src(0,op0)->src(1,op1)->src(2,op2); }
   
 }
 

@@ -74,28 +74,11 @@ namespace ut
     std::string reason;
   };
   
-  struct PathNode
-  {
-    typedef unisim::util::symbolic::Expr Expr;
-
-    PathNode( PathNode* _previous=0 );
-    ~PathNode();
-
-    bool        proceed( Expr const& _cond );
-    bool        close();
-    PathNode*   next( bool predicate ) const { return predicate ? true_nxt : false_nxt; }
-    
-    Expr cond;
-    PathNode* previous;
-    PathNode* true_nxt;
-    PathNode* false_nxt;
-    bool complete;
-  };
-  
   struct Interface
   {
-    typedef unisim::util::symbolic::Expr Expr;
-    typedef unisim::util::symbolic::ExprNode ExprNode;
+    typedef unisim::util::symbolic::Expr       Expr;
+    typedef unisim::util::symbolic::ExprNode   ExprNode;
+    typedef unisim::util::symbolic::ActionNode ActionNode;
     
     Interface( mpc57::Operation& op );
     
@@ -354,13 +337,14 @@ namespace ut
     typedef ut::ADDRESS ADDRESS;
     
     
-    typedef unisim::util::symbolic::Expr Expr;
-    typedef unisim::util::symbolic::ExprNode ExprNode;
+    typedef unisim::util::symbolic::Expr       Expr;
+    typedef unisim::util::symbolic::ExprNode   ExprNode;
+    typedef unisim::util::symbolic::ActionNode ActionNode;
     
     typedef MSR MSR;
     typedef SPEFSCR SPEFSCR;
     
-    CPU( Interface& _interface, PathNode& root )
+    CPU( Interface& _interface, ActionNode& root )
       : interface(_interface), path(&root), cia( new CIA )
     {     
       for (unsigned reg = 0; reg < 32; ++reg)
@@ -416,10 +400,10 @@ namespace ut
     
     bool close() { return path->close(); }
 
-    Interface& interface;
-    PathNode*  path;
-    U32        reg_values[32];
-    U32        cia;
+    Interface&   interface;
+    ActionNode*  path;
+    U32          reg_values[32];
+    U32          cia;
     
     
     struct CIA : public ExprNode
