@@ -53,11 +53,6 @@ namespace ut
 
     Flags( RoundingMode const& _rm ) : rm(_rm) {}
     
-    // Flags() {}
-    // BOOL isUpApproximate() { return make_unknown<BOOL>(); }
-    // BOOL isDownApproximate() { return make_unknown<BOOL>(); }
-    // BOOL takeOverflow() { return make_unknown<BOOL>(); }
-
     BOOL hasIncrementFraction(bool neg) const
     {
       return make_function(neg ? "hasIncrementFractionNeg" : "hasIncrementFractionPos", op);
@@ -79,6 +74,23 @@ namespace ut
 
   struct SoftFloat;
   struct SoftDouble;
+
+  template <class FP, class ARCH>
+  int FPCompare( ARCH& arch, FP const& lhs, FP const& rhs )
+  {
+    bool ge = arch.Choose( make_function( "GE", lhs.expr, rhs.expr ) );
+    bool le = arch.Choose( make_function( "LE", lhs.expr, rhs.expr ) );
+    return 2*int(ge) + int(le);
+  }
+
+  template <class FP>
+  int FPCompare( FP const& lhs, FP const& rhs )
+  {
+    Arch*         arch = ArchExprNode::SeekArch(lhs.expr);
+    if (not arch) arch = ArchExprNode::SeekArch(rhs.expr);
+    if (not arch) throw 0;
+    return FPCompare( *arch, lhs, rhs );
+  }
 
   struct SoftFloat
   {
@@ -106,12 +118,7 @@ namespace ut
     void setQuiet() { expr = make_function("setQuiet",expr); }
     void setPositive() { expr = make_function("setPos",expr); }
     
-    ComparisonResult compare( SoftFloat const& rhs ) const
-    {
-      return CRNaN; /*TODO*/
-      // SoftFloat const& lhs = *this;
-      // return ComparisonResult(2*int(evenly(lhs >= rhs)) + int(evenly(lhs <= rhs)));
-    }
+    ComparisonResult compare( SoftFloat const& rhs ) const { return ComparisonResult( FPCompare( *this, rhs ) ); }
 
     BOOL isZero() const { return make_function("isZero",expr); }
     BOOL isNaN() const { return make_function("isNaN", expr); }
@@ -181,29 +188,7 @@ namespace ut
     
     void sqrtAssign(Flags& flags) { expr = make_function("sqrt",expr,flags.rm); flags.from(expr); }
     
-    ComparisonResult compare( SoftDouble const& rhs ) const
-    {
-      return CRNaN; /*TODO*/
-      // SoftFloat const& lhs = *this;
-      // return ComparisonResult(2*int(evenly(lhs >= rhs)) + int(evenly(lhs <= rhs)));
-    }
-    
-    // struct Cmp : public unisim::util::symbolic::Identifier<Cmp>
-    // {
-    //   enum Code { NA = 0, EQ, GT, LT, end } code;
-    //   char const* c_str()
-    //   {
-    //     switch (code) { case EQ: return "EQ"; case GT: return "GT"; case LT: return "LT"; case NA: case end: break; }
-    //     return "INVALID";
-    //   }
-    //   Cmp() : code(end) {}
-    //   Cmp( Code _code ) : code(_code) {}
-    //   Cmp( char const* _code ) : code(end) { init( _code ); }
-    // };
-    
-    // BOOL operator == (SoftDouble const& rhs) { return make_function("EQ",expr,rhs.expr); }
-    // BOOL operator < (SoftDouble const& rhs) { return make_function("LT",expr,rhs.expr); }
-    // BOOL operator > (SoftDouble const& rhs) { return make_function("GT",expr,rhs.expr); }
+    ComparisonResult compare( SoftDouble const& rhs ) const { return ComparisonResult( FPCompare( *this, rhs ) ); }
 
     BOOL isNegative() const { return make_function("isNeg",expr); }
     BOOL isNaN() const { return make_function("isNaN",expr); }
@@ -211,15 +196,6 @@ namespace ut
     BOOL isSNaN() const { return make_function("isSNaN",expr); }
     BOOL isZero() const { return make_function("isZero",expr); }
     BOOL isInfty() const { return make_function("isInfty",expr); }
-    // BOOL isNormalized() const { return make_function("isNormal",expr); }
-    // BOOL isPositive() { return make_unknown<BOOL>(arch); }
-    // void setNegative(bool=false) {}
-    // void setNegative(BOOL) {}
-    
-    // void clear() {}
-    
-    // BOOL hasInftyExponent() { return make_unknown<BOOL>(arch); }
-    // BOOL isDenormalized() { return make_unknown<BOOL>(arch); }
 
     unisim::util::symbolic::Expr expr;
   };
@@ -240,29 +216,6 @@ namespace ut
   template <typename T> void GenFPSCR_FX(U64& r, U64& ar) { r.expr = make_function("GenFPSCR_FX",r.expr,ar.expr); }
   template <typename T> void GenFPSCR_VX(U64& r) { r.expr = make_function("GenFPSCR_VX",r.expr); }
   template <typename T> void GenFPSCR_FEX(U64& r) { r.expr = make_function("GenFPSCR_FEX",r.expr); }
-  
-  // static const unsigned int RN_NEAREST = 0;
-  // static const unsigned int RN_ZERO = 1;
-  // static const unsigned int RN_UP = 2;
-  // static const unsigned int RN_DOWN = 3;
-
-  // inline void GenSPEFSCR_FOVF(SPEFSCR& spefscr, const Flags& flags) { spefscr = make_unknown<U32>(arch); }
-  // inline void GenSPEFSCR_FUNF(SPEFSCR& spefscr, const Flags& flags) { spefscr = make_unknown<U32>(arch); }
-  // inline void GenSPEFSCR_FINXS(SPEFSCR& spefscr, const Flags& flags) { spefscr = make_unknown<U32>(arch); }
-  // inline void GenSPEFSCR_FDBZ(SPEFSCR& spefscr, const Flags& flags) { spefscr = make_unknown<U32>(arch); }
-  // inline void GenSPEFSCR_FG(SPEFSCR& spefscr, const Flags& flags, bool x=false) { spefscr = make_unknown<U32>(arch); }
-  // inline void GenSPEFSCR_FX(SPEFSCR& spefscr, const Flags& flags, bool x=false) { spefscr = make_unknown<U32>(arch); }
-  // inline void GenSPEFSCR_FG(SPEFSCR& spefscr, const SoftFloat& result) { spefscr = make_unknown<U32>(arch); }
-  // inline BOOL HasSPEFSCR_InvalidInput(const SoftFloat& input) { return make_unknown<BOOL>(arch); }
-  // template <class RESULT>
-  // inline void GenSPEFSCR_DefaultResults(SPEFSCR& spefscr, RESULT& result) { spefscr = make_unknown<U32>(arch); }
-  // template <class FLOAT>
-  // inline void GenSPEFSCR_FINV(SPEFSCR& spefscr, FLOAT& first, FLOAT* second = 0, FLOAT* third = 0, bool x=false, bool y=false) { spefscr = make_unknown<U32>(arch); }
-
-  // inline BOOL DoesSPEFSCR_TriggerException(const SPEFSCR& spefscr) { return BOOL(false); }
-  
-  // inline void GenSPEFSCR_TriggerException(Arch* cpu) { cpu->donttest_system(); }
-
 }
 
 #endif // E5500_SIMTEST_SIMFLOAT_HH

@@ -112,6 +112,22 @@ namespace ut
                 unisim::util::symbolic::Expr const& op2)
   { return (new FunctionNode<1>(ident))->src(0,op0)->src(1,op1)->src(2,op2); }
   
+  struct Arch;
+
+  struct ArchExprNode : public unisim::util::symbolic::ExprNode
+  {
+    ArchExprNode( Arch& _arch ) : arch(_arch) {} Arch& arch;
+
+    static Arch* SeekArch( unisim::util::symbolic::Expr const& expr )
+    {
+      if (ArchExprNode const* node = dynamic_cast<ArchExprNode const*>( expr.node ))
+        return &node->arch;
+      for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
+        if (Arch* found = SeekArch( expr->GetSub(idx)))
+          return found;
+      return 0;
+    }
+  };
 }
 
 #endif // E5500_SIMTEST_TYPES_HH

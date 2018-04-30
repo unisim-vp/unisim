@@ -36,6 +36,7 @@
 #define ARCH_HH
 
 #include <simfloat.hh>
+#include <types.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <map>
 #include <vector>
@@ -49,23 +50,6 @@ namespace ut
   {
     Untestable(std::string const& _reason) : reason(_reason) {}
     std::string reason;
-  };
-  
-  struct Arch;
-
-  struct ArchExprNode : public unisim::util::symbolic::ExprNode
-  {
-    ArchExprNode( Arch& _arch ) : arch(_arch) {} Arch& arch;
-
-    static Arch* SeekArch( unisim::util::symbolic::Expr const& expr )
-    {
-      if (ArchExprNode const* node = dynamic_cast<ArchExprNode const*>( expr.node ))
-        return &node->arch;
-      for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
-        if (Arch* found = SeekArch( expr->GetSub(idx)))
-          return found;
-      return 0;
-    }
   };
   
   struct Interface
@@ -157,24 +141,6 @@ namespace ut
     }
     unsigned reg;
   };
-  
-  // struct MixNode : public unisim::util::symbolic::ExprNode
-  // {
-  //   typedef unisim::util::symbolic::Expr Expr;
-  //   typedef unisim::util::symbolic::ExprNode ExprNode;
-    
-  //   MixNode( Expr const& _left, Expr const& _right ) : left(_left), right(_right) {}
-  //   virtual void Repr( std::ostream& sink ) const;
-  //   virtual unsigned SubCount() const { return 2; };
-  //   virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return left; case 1: return right; } return ExprNode::GetSub(idx); };
-  //   virtual intptr_t cmp( ExprNode const& brhs ) const
-  //   {
-  //     MixNode const& rhs = dynamic_cast<MixNode const&>( brhs );
-  //     if (intptr_t delta = left.cmp( rhs.left )) return delta;
-  //     return right.cmp( rhs.right );
-  //   }
-  //   Expr left, right;
-  // };
   
   struct Unknown : public ArchExprNode
   {
@@ -485,20 +451,6 @@ namespace ut
       if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
         return cnode->GetBoolean();
       
-      // struct
-      // {
-      //   Arch*
-      //   arch( Expr const& expr )
-      //   {
-      //     if (ArchExprNode const* node = dynamic_cast<ArchExprNode const*>( expr.node ))
-      //       return node->arch;
-      //     for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
-      //       if (Arch* found = arch( expr->GetSub(idx)))
-      //         return found;
-      //     return 0;
-      //   }
-      // } seeker;
-      
       Arch* arch = ArchExprNode::SeekArch(cexp);
       if (not arch)
         throw 0;
@@ -606,37 +558,6 @@ namespace ut
     // void donttest_illegal();
     
     bool Branch(U64 const& addr) { donttest_branch(); return false; }
-    
-    // bool Rfmci() { donttest_system(); return false; }
-    // bool Rfci() { donttest_system(); return false; }
-    // bool Rfdi() { donttest_system(); return false; }
-    // bool Rfi() { donttest_system(); return false; }
-
-    // bool Dcba(U32 const& addr) { donttest_system(); return false; }
-    // bool Dcbf(U32 const& addr) { donttest_system(); return false; }
-    // bool Dcbst(U32 const& addr) { donttest_system(); return false; }
-    // bool Dcbz(U32 const& addr) { donttest_system(); return false; }
-    // bool Dcbi(U32 const& addr) { donttest_system(); return false; }
-    // bool Icbi(U32 const& addr) { donttest_system(); return false; }
-    // bool Icbt(U32 const& addr) { donttest_system(); return false; }
-    
-    // bool Msync() { donttest_system(); return false; }
-    // bool Isync() { donttest_system(); return false; }
-    // bool Mpure() { donttest_system(); return false; }
-    // bool Mpuwe() { donttest_system(); return false; }
-    // bool Mpusync() { donttest_system(); return false; }
-    
-    // bool Lbarx(unsigned n, U32 const& addr) { donttest_system(); return false; }
-    // bool Lharx(unsigned n, U32 const& addr) { donttest_system(); return false; }
-    // bool Lwarx(unsigned n, U32 const& addr) { donttest_system(); return false; }
-    // bool Stbcx(unsigned n, U32 const& addr) { donttest_system(); return false; }
-    // bool Sthcx(unsigned n, U32 const& addr) { donttest_system(); return false; }
-    // bool Stwcx(unsigned n, U32 const& addr) { donttest_system(); return false; }
-    // bool MoveFromDCR(unsigned dcrn, U32& result) { donttest_system(); return false; }
-    // bool MoveFromSPR(unsigned dcrn, U32& result) { donttest_system(); return false; }
-    // bool MoveToSPR(unsigned dcrn, U32 const& result) { donttest_system(); return false; }
-    
-    // bool Wait() { return false; }
 
     bool        GetMSR_FP() { return true; }
     bool        CheckFloatingPointException() { return true; }
@@ -649,30 +570,6 @@ namespace ut
 
   inline U64 UnsignedMultiplyHigh( U64 lop, U64 rop ){ return U64( make_function( "UnsignedMultiplyHigh", lop.expr, rop.expr ) ); }
   inline S64 SignedMultiplyHigh( S64 lop, S64 rop ) { return S64( make_function( "SignedMultiplyHigh", lop.expr, rop.expr ) ); }
-  
-  // extern void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, U8 carry_in);
-  // extern inline void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, int carry_in)
-  // { return SignedAdd32(result, carry_out, overflow, sign, x, y, U8(carry_in)); }
-
-  // struct MaskNode : public ArchExprNode
-  // {
-  //   typedef unisim::util::symbolic::Expr Expr;
-    
-  //   MaskNode( Expr const& _mb, Expr const& _me ) : mb(_mb), me(_me) {}
-  //   virtual void Repr( std::ostream& sink ) const;
-  //   virtual unsigned SubCount() const { return 2; };
-  //   virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return mb; case 1: return me; } return ExprNode::GetSub(idx); };
-  //   virtual intptr_t cmp( ExprNode const& brhs ) const
-  //   {
-  //     MaskNode const& rhs = dynamic_cast<MaskNode const&>( brhs );
-  //     if (intptr_t delta = mb.cmp( rhs.mb )) return delta;
-  //     return me.cmp( rhs.me );
-  //   }
-  //   Expr mb, me;
-  // };
-  
-  // extern U32 Mask(U32 mb, U32 me);
-
 }
 
 #endif // ARCH_HH

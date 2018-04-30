@@ -35,12 +35,10 @@
 #include <top_ppc64.hh>
 #include <arch.hh>
 #include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-// #include <testutils.hh>
 #include <unisim/util/random/random.hh>
 #include <fstream>
 #include <iostream>
 #include <sstream>
-// #include <set>
 #include <memory>
 #include <string>
 #include <inttypes.h>

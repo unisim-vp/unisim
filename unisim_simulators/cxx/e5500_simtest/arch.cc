@@ -41,16 +41,11 @@
 namespace ut
 {
   void SourceReg::Repr( std::ostream& sink ) const { sink << 'r' << unsigned( reg ); }
-//   void MaskNode::Repr( std::ostream& sink ) const { sink << "Mask( " << mb << "," << me << " )"; }
   void Arch::LoadRepr( std::ostream& sink, Expr const& _addr, unsigned bits ) { sink << "Load<"<<bits<<">( " << _addr << " )"; }
   void XER::XERNode::Repr( std::ostream& sink ) const { sink << "XER"; }
   void CR::CRNode::Repr( std::ostream& sink ) const { sink << "CR"; }
   void FPSCR::FPSCRNode::Repr( std::ostream& sink ) const { sink << "FPSCR"; }
-//  void FromRawBits::Repr( std::ostream& sink ) const { sink << "FromRawBits( " << src << " )"; }
   
-
-//   void Arch::Interrupt::SetELEV(unsigned x) {}
-
   void
   Interface::RegBank::append( uint8_t index, bool w )
   {
@@ -351,7 +346,5 @@ namespace { template <typename T> int _Cmp( T a, T b ) { return (a < b) ? -1 : (
   void  Arch::donttest_branch()  { throw ut::Untestable("branch"); }
 
   void  Arch::donttest_system()  { throw ut::Untestable("system"); }
-  
-//   inline U32 Mask(U32 mb, U32 me) { return U32(new MaskNode( mb.expr, me.expr )); }
 
 } //end of namespace ut
