@@ -272,7 +272,7 @@ namespace binsec {
   void
   Load::Repr( std::ostream& sink ) const
   {
-    sink << "[" << GetRepr(addr) << ',' << bitsize() << ",^" << alignment << ',' << (bigendian ? "be" : "le") << "]";
+    sink << "[" << addr << ',' << bitsize() << ",^" << alignment << ',' << (bigendian ? "be" : "le") << "]";
   }
   
   int
@@ -286,7 +286,7 @@ namespace binsec {
   void
   Store::Repr( std::ostream& sink ) const
   {
-    sink << "[" << GetRepr(addr) << ',' << size << ",^" << alignment << ',' << (bigendian ? "be" : "le") << "] := " << GetRepr(value);
+    sink << "[" << addr << ',' << size << ",^" << alignment << ',' << (bigendian ? "be" : "le") << "] := " << value;
   }
   
       

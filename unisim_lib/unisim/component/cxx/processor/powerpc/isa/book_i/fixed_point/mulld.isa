@@ -41,7 +41,7 @@ op mulld(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:233[9]:rc[1]);
 
 mulld.execute = {
 	// Read the input operands
-	S64 a = S64(cpu->GetGPR(ra)), b = S64(cpu->GetGPR(rb));
+	S64 a( cpu->GetGPR(ra) ), b( cpu->GetGPR(rb) );
 	
 	// Compute the result
 	S64 result = a*b;
@@ -51,8 +51,15 @@ mulld.execute = {
 	
 	if(oe)
 	{
-		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
-		return false;
+		/* Overflow if the signed 128-bits product cannot be
+                 * represented as a signed 64-bits result.
+		 */
+		S64 high( SignedMultiplyHigh(a, b) );
+		UINT overflow = UINT((result >> 63) != high);
+		// Generate XER[OV] and XER[SO]: XER[OV]=overflow XER[SO]=1
+		XER& xer = cpu->GetXER();
+		xer.Set<XER::OV>(overflow);
+		xer.Set<XER::SO>(xer.Get<XER::SO>() | overflow);
 	}
 	
 	if(unlikely(rc))

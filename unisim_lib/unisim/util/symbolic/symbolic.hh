@@ -431,12 +431,6 @@ namespace symbolic {
     friend std::ostream& operator << (std::ostream&, Expr const&);
   };
 
-  struct GetRepr
-  {
-    GetRepr( Expr const& _x ) : x(_x) {} Expr const& x;
-    friend std::ostream& operator << ( std::ostream& sink, GetRepr const& gr );
-  };
-  
   template <typename VALUE_TYPE>
   VALUE_TYPE ConstNode<VALUE_TYPE>::GetValue( ConstNodeBase const* cnb ) { return dynamic_cast<ConstNode<VALUE_TYPE> const&>( *cnb ).value; }
 
@@ -517,7 +511,7 @@ namespace symbolic {
       return src.cmp( rhs.src );
     }
     
-    virtual void Repr( std::ostream& sink ) const { sink << ScalarType( TypeInfo<DST_VALUE_TYPE>::GetType() ).name; sink << "( " << GetRepr(src) << " )"; }
+    virtual void Repr( std::ostream& sink ) const { sink << ScalarType( TypeInfo<DST_VALUE_TYPE>::GetType() ).name; sink << "( " << src << " )"; }
     
     virtual ConstNodeBase const* GetConstNode() const
     {
@@ -706,7 +700,7 @@ namespace symbolic {
     struct IsNaNNode : public ExprNode
     {
       IsNaNNode( Expr const& _src, bool _signaling ) : src(_src), signaling(_signaling) {} Expr src; bool signaling;
-      virtual void Repr( std::ostream& sink ) const { sink << "IsNaN(" << GetRepr(src) << ")"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "IsNaN(" << src << ")"; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         IsNaNNode const& rhs = dynamic_cast<IsNaNNode const&>( brhs );
@@ -766,7 +760,7 @@ namespace symbolic {
       virtual unsigned SubCount() const { return 3; };
       virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return acc; case 1: return left; case 2: return right; } return ExprNode::GetSub(idx); };
       
-      virtual void Repr( std::ostream& sink ) const { sink << "MulAdd( " << GetRepr(acc) << ", " << GetRepr(left) << ", " << GetRepr(right) << " )"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "MulAdd( " << acc << ", " << left << ", " << right << " )"; }
       
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -793,7 +787,7 @@ namespace symbolic {
       virtual unsigned SubCount() const { return 3; };
       virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return acc; case 1: return left; case 2: return right; } return ExprNode::GetSub(idx); };
       
-      virtual void Repr( std::ostream& sink ) const { sink << "IsInvalidMulAdd( " << GetRepr(acc) << ", " << GetRepr(left) << ", " << GetRepr(right) << " )"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "IsInvalidMulAdd( " << acc << ", " << left << ", " << right << " )"; }
       
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -826,7 +820,7 @@ namespace symbolic {
         : src( _src ), ssz( _ssz ), dsz( _dsz )
       {} Expr src; int ssz; int dsz;
       
-      virtual void Repr( std::ostream& sink ) const { sink << "FtoF( " << GetRepr(src) << " )"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "FtoF( " << src << " )"; }
       virtual unsigned SubCount() const { return 1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; }
       intptr_t cmp( ExprNode const& brhs ) const
@@ -850,7 +844,7 @@ namespace symbolic {
         : src( _src ), fsz( _fsz ), isz( _isz ), fb( _fb )
       {} Expr src; int fsz; int isz; int fb; 
       
-      virtual void Repr( std::ostream& sink ) const { sink << "FtoI( " << GetRepr(src) << " )"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "FtoI( " << src << " )"; }
       virtual unsigned SubCount() const { return 1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; }
       intptr_t cmp( ExprNode const& brhs ) const
@@ -875,7 +869,7 @@ namespace symbolic {
         : src( _src ), isz( _isz ), fsz( _fsz ), fb( _fb )
       {} Expr src; int isz; int fsz; int fb;
       
-      virtual void Repr( std::ostream& sink ) const { sink << "ItoF( " << GetRepr(src) << " )"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "ItoF( " << src << " )"; }
       virtual unsigned SubCount() const { return 1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; }
       intptr_t cmp( ExprNode const& brhs ) const

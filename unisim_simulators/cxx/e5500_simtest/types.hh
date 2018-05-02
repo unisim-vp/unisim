@@ -103,14 +103,14 @@ namespace ut
   make_function(char const* ident,
                 unisim::util::symbolic::Expr const& op0,
                 unisim::util::symbolic::Expr const& op1)
-  { return (new FunctionNode<1>(ident))->src(0,op0)->src(1,op1); }
+  { return (new FunctionNode<2>(ident))->src(0,op0)->src(1,op1); }
   /* 3 operands */
   inline unisim::util::symbolic::Expr
   make_function(char const* ident,
                 unisim::util::symbolic::Expr const& op0,
                 unisim::util::symbolic::Expr const& op1,
                 unisim::util::symbolic::Expr const& op2)
-  { return (new FunctionNode<1>(ident))->src(0,op0)->src(1,op1)->src(2,op2); }
+  { return (new FunctionNode<3>(ident))->src(0,op0)->src(1,op1)->src(2,op2); }
   
   struct Arch;
 

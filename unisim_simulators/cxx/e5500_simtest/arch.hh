@@ -46,6 +46,8 @@ namespace e5500 { struct Operation; }
 
 namespace ut
 {
+  typedef uint64_t Offset;
+  
   struct Untestable
   {
     Untestable(std::string const& _reason) : reason(_reason) {}
@@ -65,34 +67,26 @@ namespace ut
       VirtualRegister() : vindex(0), source(false), destination(false), bad(true) { throw 0; }
       VirtualRegister( unsigned _index ) : vindex(_index), source(false), destination(false), bad(false) {}
     
+      void addaccess( bool w ) { source |= not w; destination |= w; }
+    
+      int  cmp( VirtualRegister const& ) const;
+    
       uint8_t vindex      : 5;
       uint8_t source      : 1;
       uint8_t destination : 1;
       uint8_t bad         : 1;
-    
-      void addaccess( bool w ) { source |= not w; destination |= w; }
-    
-      int  cmp( VirtualRegister const& ) const;
     };
 
     struct RegBank
     {
+      void append( uint8_t _index, bool w );
+
+      int  cmp( RegBank const& ) const;
+      
       std::map<unsigned,VirtualRegister> vmap;
       std::vector<unsigned>              refs;
+    };
 
-      void append( uint8_t _index, bool w );
-      
-      int  cmp( RegBank const& ) const;
-    } iregs, fregs;
-    
-    VirtualRegister                    xer, cr, fpscr;
-    std::set<Expr>                     mem_addrs;
-    uint8_t                            base_register;
-    bool                               aligned;
-    bool                               mem_writes;
-    uint8_t                            length;
-    bool                               retfalse;
-    
     void irappend( uint8_t idx, bool w )
     {
       if ((idx < 4) or (idx >= 8))
@@ -114,11 +108,11 @@ namespace ut
     {
       struct Error {};
       
-      typedef std::map<unsigned,uint32_t> Regs;
-      Prologue( Regs const& _regs, uint32_t _offset, bool _sign, uint8_t _base )
+      typedef std::map<unsigned,Offset> Regs;
+      Prologue( Regs const& _regs, Offset _offset, bool _sign, uint8_t _base )
         : regs( _regs ), offset( _offset ), sign( _sign ), base( _base )
       {}
-      Regs regs; uint32_t offset; bool sign; uint8_t base;
+      Regs regs; Offset offset; bool sign; uint8_t base;
     };
     
     Prologue GetPrologue() const;
@@ -127,6 +121,15 @@ namespace ut
     
     void load( Expr const& addr ) { mem_addrs.insert( addr ); }
     void store( Expr const& addr ) { mem_addrs.insert( addr ); mem_writes = true; }
+    
+    RegBank                            iregs, fregs;
+    VirtualRegister                    xer, cr, fpscr;
+    std::set<Expr>                     mem_addrs;
+    uint8_t                            base_register;
+    bool                               aligned;
+    bool                               mem_writes;
+    uint8_t                            length;
+    bool                               retfalse;
   };
   
   struct SourceReg : public ArchExprNode

@@ -59,7 +59,14 @@ namespace ut
   }
   
   Interface::Interface( e5500::Operation& op )
-    : xer(0), cr(0), fpscr(0), base_register(-1), aligned(false), mem_writes(false), length(op.GetLength()), retfalse(false)
+    : xer(0)
+    , cr(0)
+    , fpscr(0)
+    , base_register(-1)
+    , aligned(false)
+    , mem_writes(false)
+    , length(op.GetLength())
+    , retfalse(false)
   {
     bool has_valid_path = false;
     for (ActionNode path_root;;)
@@ -83,7 +90,7 @@ namespace ut
       {
         if (auto n = dynamic_cast<SourceReg const*>( expr.node ))
           {
-            uint32_t reg  = (1u << n->reg);
+            unsigned reg  = (1u << n->reg);
             invalid |= (invalid | visited | (valid_path ? 0 : -1)) & reg;
             visited |= reg;
             return;
@@ -124,14 +131,14 @@ namespace ut
       throw Untestable("no base address register");
     base_register =__builtin_ctz(valid_base_regs);
   }
-  
+
   Interface::Prologue
   Interface::GetPrologue() const
   {
     struct Rule
     {
-      Rule() : offset(0), sign(false) {} uint32_t offset; bool sign;
-      void rsub( uint32_t value ) { offset = value - offset; sign = not sign; }
+      Rule() : offset(0), sign(false) {} Offset offset; bool sign;
+      void rsub( Offset value ) { offset = value - offset; sign = not sign; }
       bool operator<( Rule const& rhs ) const
       {
         if (sign != rhs.sign) throw Prologue::Error();
@@ -147,14 +154,14 @@ namespace ut
       {
         if (not rules.begin()->sign) {
           auto itr = rules.rbegin(), end = rules.rend();
-          for (uint32_t lo = rules.begin()->offset, hi = itr->offset; (hi - lo) >= 16;) {
+          for (Offset lo = rules.begin()->offset, hi = itr->offset; (hi - lo) >= 16;) {
             if (++itr == end) throw Prologue::Error();
             lo = hi; hi = itr->offset;
           }
           return *itr;
         } /* else */
         auto itr = rules.begin(), end = rules.end();
-        for (uint32_t lo = itr->offset, hi = rules.rbegin()->offset; (hi - lo) >= 16;) {
+        for (Offset lo = itr->offset, hi = rules.rbegin()->offset; (hi - lo) >= 16;) {
           if (++itr == end) throw Prologue::Error();
           hi = lo; lo = itr->offset;
         }
@@ -166,14 +173,16 @@ namespace ut
 
     struct Registers : Prologue::Regs
     {
-      uint32_t eval(unsigned idx)
+      Offset eval(unsigned idx)
       {
         Prologue::Regs::iterator itr = lower_bound( idx );
 	// idx is less or equal to itr->first.
-	if (itr == end() or (idx < itr->first)) {
-          uint32_t value = unsigned( rand() ) % 128; /* ppc se_li's immediate is 7 bit unsigned */
-          itr = insert( itr, Prologue::Regs::value_type( idx, value ) );
-        }
+	if (itr == end() or (idx < itr->first))
+          {
+            /* ppc se_li's immediate is 7 bit unsigned, TODO: but what about PPC64 */
+            Offset value( unsigned(rand()) % 128 );
+            itr = insert( itr, Prologue::Regs::value_type( idx, value ) );
+          }
 	return itr->second;
       }
     };
@@ -232,7 +241,7 @@ namespace ut
         throw Prologue::Error();
       }
       
-      uint32_t GetValue( ExprNode const* node )
+      Offset GetValue( ExprNode const* node )
       {
         if (auto n = dynamic_cast<SourceReg const*>(node))
           {
@@ -240,57 +249,39 @@ namespace ut
             return regs.eval(n->reg);
           }
         
-        if (auto n = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const*>(node))
-          return n->value;
-        if (auto n = dynamic_cast<unisim::util::symbolic::ConstNode<int32_t> const*>(node))
-          return n->value;
-        if (auto n = dynamic_cast<unisim::util::symbolic::CastNode<int32_t,uint32_t> const*>(node))
-          return GetValue( n->src.node );
-        if (auto n = dynamic_cast<unisim::util::symbolic::CastNode<uint32_t,int32_t> const*>(node))
-          return GetValue( n->src.node );
+        if (auto n = dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const*>(node))
+          return Offset( n->value );
+        // if (auto n = dynamic_cast<unisim::util::symbolic::ConstNode<int64_t> const*>(node))
+        //   return n->value;
+        // if (auto n = dynamic_cast<unisim::util::symbolic::CastNode<int32_t,uint32_t> const*>(node))
+        //   return GetValue( n->src.node );
+        // if (auto n = dynamic_cast<unisim::util::symbolic::CastNode<uint32_t,int32_t> const*>(node))
+        //   return GetValue( n->src.node );
 
         if (auto n = node->AsOpNode())
           {
-            uint32_t lval = GetValue( n->GetSub(0).node );
-            uint32_t rval = n->SubCount() > 1 ? GetValue( n->GetSub(1).node ) : 0;
+            Offset lval( GetValue( n->GetSub(0).node ) );
+            Offset rval( n->SubCount() > 1 ? GetValue( n->GetSub(1).node ) : Offset( 0 ) );
             using unisim::util::symbolic::Op;
             switch (n->op.code)
               {
-              case Op::Add: return lval + rval;
-              case Op::Sub: return lval - rval;
-              case Op::Lsl: return lval << rval;
-              case Op::Lsr: return lval >> rval;
-              case Op::Or:  return lval | rval;
-              case Op::And: return lval & rval;
-              case Op::Asr: return int32_t(lval) >> rval;
-              case Op::Neg: return -lval;
-              case Op::Not: return ~lval;
+              case Op::Add: return Offset( lval + rval );
+              case Op::Sub: return Offset( lval - rval );
+              case Op::Lsl: return Offset( lval << rval );
+              case Op::Lsr: return Offset( lval >> rval );
+              case Op::Or:  return Offset( lval | rval );
+              case Op::And: return Offset( lval & rval );
+              case Op::Asr: return Offset( int64_t(lval) >> rval );
+              case Op::Neg: return Offset( -lval );
+              case Op::Not: return Offset( ~lval );
               default: break;
               }
           }
         
+        std::cerr << "Can't compute value of " << Expr(node) << std::endl;
         
-        // if (auto n = dynamic_cast<MulNode const*>(node))
-        //   return lval * rval;
-        // if (auto n = dynamic_cast<DivNode const*>(node))
-        //   return lval / rval;
-        // else if (auto n = dynamic_cast<TeqNode const*>(node)) {}
-        // else if (auto n = dynamic_cast<TneNode const*>(node)) {}
-        // else if (auto n = dynamic_cast<TgeNode const*>(node)) {}
-        // else if (auto n = dynamic_cast<TleNode const*>(node)) {}
-        // else if (auto n = dynamic_cast<TgtNode const*>(node)) {}
-        // else if (auto n = dynamic_cast<TltNode const*>(node)) {}
-        // else if (auto n = dynamic_cast<ByteSwapNode const*>(node)) {}
-        // else if (auto n = dynamic_cast<RORNode const*>(node)) {}
-        // else if (auto n = dynamic_cast<CLZNode const*>(node)) {}
-        {
-          std::stringstream err;
-          err << "Can't compute value of ";
-          node->Repr( err );
-          std::cerr << err.str() << std::endl;
-        }
         throw Prologue::Error();
-        return 0;
+        return Offset( 0 );
       }
     };
     

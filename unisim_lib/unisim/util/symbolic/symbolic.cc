@@ -199,14 +199,6 @@ namespace symbolic {
         std::swap( false_nxt, true_nxt );
       }
   }
-
-  std::ostream&
-  operator << ( std::ostream& sink, GetRepr const& gr )
-  {
-    gr.x->Repr( sink );
-    return sink;
-  }
-  
 } /* end of namespace symbolic */
 } /* end of namespace util */
 } /* end of namespace unisim */

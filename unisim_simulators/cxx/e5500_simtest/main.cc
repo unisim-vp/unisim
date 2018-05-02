@@ -80,6 +80,7 @@ struct TestConfig
       try {
         auto const& p = iif.GetPrologue();
         GPRPrint br( p.base );
+        /*TODO:*/
         if      ((p.offset & -128) == 0)
           {
             // a suitable 7 bit unsigned immediate (cost 2 bytes)
@@ -102,12 +103,14 @@ struct TestConfig
 
         sink << "\t" << (p.sign ? "sub" : "add") << "\t" << br << ", " << br << ", " << buffer << "\n";
         
-        for (auto reg : p.regs) {
-          GPRPrint rname( reg.first );
-          HexPrint rvalue( reg.second );
-          if (reg.second & -128) { std::cerr << "IE immediate generation.\n"; throw 0; }
-          sink << "\tse_li\t" << rname << ", " << rvalue << "\n";
-        }
+        for (auto reg : p.regs)
+          {
+            GPRPrint rname( reg.first );
+            HexPrint rvalue( reg.second );
+            /*TODO:*/
+            if (reg.second & -128) { std::cerr << "IE immediate generation.\n"; throw 0; }
+            sink << "\tse_li\t" << rname << ", " << rvalue << "\n";
+          }
       } catch (ut::Interface::Prologue::Error const& x) {
         std::cerr << "Prologue error in: " << disasm << ".\n";
         throw x;
@@ -236,7 +239,7 @@ struct Checker
                 // add the operation since the new test is unlikely to
                 // reveal new bugs.
                 if (testclass->second.find( interface ) != testclass->second.end()) continue;
-                testclass->second.insert( std::make_pair( interface, code ) );
+                testclass->second.emplace( std::piecewise_construct, std::forward_as_tuple( std::move( interface ) ), std::forward_as_tuple( code ) );
                 trial = 0;
               }
             catch (ut::Untestable const& denial)
@@ -337,13 +340,10 @@ struct Checker
             continue;
           }
           
-        // Performing an abstract execution to check the validity of
-        // the opcode, and to compute the interface of the operation
+        // Computing and recording the interface of the operation (also checking validity)
         try
           {
-            ut::Interface interface( *codeop );
-            // Finally recording the operation test
-            testclasses[name].insert( std::make_pair( interface, code ) );
+            testclasses[name].emplace( std::piecewise_construct, std::forward_as_tuple( *codeop ), std::forward_as_tuple( code ) );
           }
         catch (ut::Untestable const& denial)
           {
