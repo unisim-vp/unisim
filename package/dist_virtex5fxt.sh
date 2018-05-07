@@ -356,6 +356,7 @@ unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsb1.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsf.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsfi.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fres.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fre.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/frsqrte.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsel.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsqrt.isa \

@@ -2181,7 +2181,13 @@ protected:
 		struct FDBZE : Field<FDBZE,    27> {}; // Embedded Floating-point Divide by Zero Exception Enable
 		struct FUNFE : Field<FUNFE,    28> {}; // Embedded Floating-point Underflow Exception Enable
 		struct FOVFE : Field<FOVFE,    29> {}; // Embedded Floating-point Overflow Exception Enable
-		struct FRMC  : Field<FRMC,  30,31> {}; // Embedded Floating-point Rounding Mode Control
+		struct FRMC  : Field<FRMC,  30,31>     // Embedded Floating-point Rounding Mode Control
+		{
+			static uint32_t NEAREST() { return 0; }
+			static uint32_t ZERO()    { return 1; }
+			static uint32_t UP()      { return 2; }
+			static uint32_t DOWN()    { return 3; }
+                };
 		
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<FINXS, FINVS, FDBZS, FUNFS, FOVFS, /*MODE,*/ SOV, OV, FG, FX, FINV, FDBZ, FUNF, FOVF, FINXE, FINVE, FDBZE, FUNFE, FOVFE, FRMC> ALL; };

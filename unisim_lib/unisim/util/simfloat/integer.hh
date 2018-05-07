@@ -45,8 +45,8 @@
 
 #include <unisim/util/endian/endian.hh>
 #include <iosfwd>
-#include <limits.h>
-#include <float.h>
+#include <climits>
+#include <cfloat>
 #include <cmath>
 #include <cstdio>
 #include <cassert>

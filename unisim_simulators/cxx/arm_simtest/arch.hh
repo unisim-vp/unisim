@@ -294,6 +294,9 @@ namespace ut
     PSRTracer  cpsr;
     PSRTracer& CPSR() { return cpsr; };
     PSRTracer& SPSR() { /* Only work in system mode instruction */ donttest_system(); return cpsr; };
+
+    U32 GetCPSR() { return cpsr.bits(); }
+    void SetCPSR(U32 mask, uint32_t bits) { donttest_system(); }
     
     void SetGPRMapping( uint32_t src_mode, uint32_t tar_mode ) { /* system related */ donttest_system(); }
     
@@ -335,10 +338,11 @@ namespace ut
     bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { return true; }
     void ClearExclusiveLocal() {}
     
+    enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
     void donttest_branch();
     bool Check( BOOL condition ) { return true; }
-    void BranchExchange( U32 const& target ) { donttest_branch(); }
-    void Branch( U32 const& target ) { donttest_branch(); }
+    void BranchExchange( U32 const& target, branch_type_t ) { donttest_branch(); }
+    void Branch( U32 const& target, branch_type_t  ) { donttest_branch(); }
     
     void donttest_copro();
     // bool CoprocessorLoad( uint32_t cp_num, uint32_t address) { donttest_copro(); return false; }

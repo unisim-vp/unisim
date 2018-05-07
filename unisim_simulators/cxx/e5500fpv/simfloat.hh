@@ -267,6 +267,8 @@ struct SoftFloat
   void setPositive();
   void setNegative();
   
+  void sqrtAssign( Flags& flags );
+  
   ComparisonResult compare( SoftFloat const& rhs ) const;
   
   BOOL isNegative() const;
@@ -325,7 +327,18 @@ struct SoftDouble
   void setQuiet();
   void setPositive();
   void setNegative();
+  
+  void sqrtAssign( Flags& flags )
+  {
+    SoftDouble rse(*this);
+    
+    rse.rSqrtEstimAssign();
 
+    fromRawBitsAssign( U64( 0x3ff0000000000000ULL ) ); // 1. 
+    
+    divAssign(rse,flags);
+  }
+  
   void rSqrtEstimAssign()
   {
     // First estimation of 1/sqrt(b), seed of Newton-Raphson algorithm
@@ -347,9 +360,9 @@ struct SoftDouble
       }
     
     transfer.as_fp_number = y;
-    fromRawBitsAssign( transfer.as_unsigned_number );
+    fromRawBitsAssign( transfer.as_unsigned_integer );
   }
-  
+
   ComparisonResult compare( SoftDouble const& rhs ) const;
   
   BOOL isNegative() const;

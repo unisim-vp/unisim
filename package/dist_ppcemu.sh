@@ -3,6 +3,7 @@
 SIMPKG=ppcemu
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
+unisim/component/cxx/processor/powerpc/isa/disasm.cc \
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_config_file_helper.cc \
 unisim/kernel/service/ini_config_file_helper.cc \
@@ -86,9 +87,6 @@ unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc"
 
 UNISIM_LIB_SIMULATOR_ISA_FILES="\
-unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/vector/altivec.isa \
 unisim/component/cxx/processor/powerpc/mpc7447a/isa/mpc7447a.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/add.isa \
@@ -172,6 +170,7 @@ unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsb0.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsb1.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsf.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsfi.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fre.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fres.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/frsqrte.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsel.isa \
@@ -285,6 +284,10 @@ unisim/component/cxx/processor/powerpc/isa/book_iii_s/mtsrin.isa \
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_FILES} \
+unisim/component/cxx/processor/powerpc/isa/disasm.hh \
+unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
+unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh \
 unisim/component/cxx/cache/cache.hh \
 unisim/component/cxx/cache/cache.tcc \
 unisim/component/cxx/memory/ram/memory.hh \

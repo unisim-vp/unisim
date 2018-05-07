@@ -327,3 +327,14 @@ S64 SoftDouble::queryS64( Flags& flags )
 
   return neg ? -result : result;
 }
+
+void
+SoftFloat::sqrtAssign( Flags& flags )
+{
+  SoftDouble rse(*this, flags);
+    
+  rse.sqrtAssign( flags );
+
+  convertAssign( rse, flags );
+}
+  

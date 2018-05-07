@@ -282,7 +282,13 @@ namespace ut
 
   struct SPEFSCR
   {
-    struct FRMC {};
+    struct FRMC
+    {
+      static uint32_t NEAREST() { return 0; }
+      static uint32_t ZERO()    { return 1; }
+      static uint32_t UP()      { return 2; }
+      static uint32_t DOWN()    { return 3; }
+    };
     struct FINVE {};
     struct FINV {};
     struct FINVS {};

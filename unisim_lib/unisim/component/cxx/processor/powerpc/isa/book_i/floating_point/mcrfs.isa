@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,12 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
-}
-
 /* Move to Condition Register from FPSCR */
-op mcrfs(63[6]:crfD[3]:?[2]:crfS[3]:?[7]:64[10]:?[1]);
+op mcrfs(63[6]:bft[3]:?[2]:bfa[3]:?[7]:64[10]:?[1]);
 
 mcrfs.execute = {
 	if(not CONFIG::HAS_FPU)
@@ -55,10 +51,10 @@ mcrfs.execute = {
 	FPSCR& fpscr = cpu->GetFPSCR();
 
 	// Extract FPSCR source 4-bit field
-	UINT bits = (UINT(fpscr) >> 4*crfS) & UINT(0xf);
+	UINT bits = (UINT(fpscr) >> 4*bfa) & UINT(0xf);
 	
 	// Clear copied bits if they are exception bits or FX
-	switch(crfS)
+	switch(bfa)
 	{
 	case 0:
 		fpscr.Set<FPSCR::FX>(UINT(0));
@@ -85,9 +81,16 @@ mcrfs.execute = {
 		break;
 	}
 	
+	// Update VX, FEX
+	UINT new_fpscr(fpscr);	
+	GenFPSCR_VX<FPSCR>(new_fpscr);
+	GenFPSCR_FEX<FPSCR>(new_fpscr);
+	
+	cpu->SetFPSCR(new_fpscr);
+	
 	// Copy it into CR 4-bit destination field
 	CR& cr = cpu->GetCR();
-	switch(crfD)
+	switch(bft)
 	{
 	case 0: cr.Set<CR::CR0>(bits); break;
 	case 1: cr.Set<CR::CR1>(bits); break;
@@ -103,6 +106,6 @@ mcrfs.execute = {
 };
 
 mcrfs.disasm = {
-	os << "mcrfs " << CRPrint(crfD) << ", " << CRPrint(crfS);
+	os << "mcrfs " << CRPrint(bft) << ", " << CRPrint(bfa);
 };
 

@@ -53,10 +53,7 @@ namespace ut
 
     Flags( RoundingMode const& _rm ) : rm(_rm) {}
     
-    BOOL hasIncrementFraction(bool neg) const
-    {
-      return make_function(neg ? "hasIncrementFractionNeg" : "hasIncrementFractionPos", op);
-    }
+    BOOL hasIncrementFraction(BOOL neg) const { return make_function("fraction_rounded", op); }
     BOOL isApproximate() const { return make_function("isApproximate", op); }         // FPSCR.FI
     BOOL isOverflow() const { return make_function("isOverflow", op); }               // FPSCR.OX
     BOOL isUnderflow() const { return make_function("isUnderflow", op); }             // FPSCR.UX
@@ -120,9 +117,10 @@ namespace ut
     
     ComparisonResult compare( SoftFloat const& rhs ) const { return ComparisonResult( FPCompare( *this, rhs ) ); }
 
-    BOOL isZero() const { return make_function("isZero",expr); }
+    BOOL isNegative() const { return make_function("isNeg",expr); }
     BOOL isNaN() const { return make_function("isNaN", expr); }
     BOOL isQNaN() const { return make_function("isQNaN", expr); }
+    BOOL isZero() const { return make_function("isZero",expr); }
 
     unisim::util::symbolic::Expr expr;
   };

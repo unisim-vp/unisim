@@ -34,6 +34,7 @@
 
 #include <unisim/component/cxx/processor/arm/execute.hh>
 #include <unisim/component/cxx/processor/arm/disasm.hh>
+#include <unisim/component/cxx/processor/arm/isa/decode.hh>
 #include <testutils.hh>
 #include <arch.hh>
 #include <sstream>
@@ -50,10 +51,10 @@ namespace ut
     // We want register operands to be in {0-3,15} and register 15
     // (PC) is only allowed as a source
     if      (index == 15) {
-      if (w) throw unisim::component::cxx::processor::arm::Reject();
+      if (w) throw unisim::component::cxx::processor::arm::isa::Reject();
     }
     else if (index >= 4) {
-      throw unisim::component::cxx::processor::arm::Reject();
+      throw unisim::component::cxx::processor::arm::isa::Reject();
     }
     
     VirtualRegister& reg = irmap[index];
@@ -371,6 +372,6 @@ namespace ut
     throw ut::DontTest( "not under test (system)" );
   }
 
-  void Arch::reject() { throw unisim::component::cxx::processor::arm::Reject(); }
+  void Arch::reject() { throw unisim::component::cxx::processor::arm::isa::Reject(); }
   
 } // end of namespace ut

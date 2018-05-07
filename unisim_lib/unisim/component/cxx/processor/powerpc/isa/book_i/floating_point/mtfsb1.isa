@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,11 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
-}
+/* Move To FPSCR Bit 1 */
+op mtfsb1(63[6]:bt[5]:?[10]:38[10]:rc[1]);
 
-op mtfsb1(63[6]:crbD[5]:?[10]:38[10]:rc[1])
 mtfsb1.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -49,21 +47,32 @@ mtfsb1.execute = {
 		return false;
 	}
 
-	UINT fpscr = cpu->GetFPSCR();
+	// Read the input operands
+	FPSCR& fpscr = cpu->GetFPSCR();
 
-	if(likely(crbD != 1 && crbD != 2))
+	// Compute the result
+	if (likely(bt != 1 && bt != 2))
 	{
-		fpscr |= UINT(1 << (31 - crbD));
-		cpu->SetFPSCR(fpscr);
+		// Set bit BT
+		UINT new_fpscr( fpscr );
+		new_fpscr |= UINT(0x80000000 >> bt);
+		
+		// Update VX, FEX
+		GenFPSCR_VX<FPSCR>(new_fpscr);
+		GenFPSCR_FEX<FPSCR>(new_fpscr);
+		
+		cpu->SetFPSCR(new_fpscr);
 	}
+	
 	// Copy FX, FEX, VX, OX to CR1
-	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
+	if (unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( fpscr.Get<FPSCR::_0_3>() ); }
 	
 	return true;
-}
-mtfsb1.disasm = {
-	os << "mtfsb1" << (rc ? "." : "") << " " << CRPrint(crbD);
-}
+};
 
-specialize mtfsb1(rc=0)
-specialize mtfsb1(rc=1)
+mtfsb1.disasm = {
+	os << "mtfsb1" << (rc ? "." : "") << " " << CRPrint(bt);
+};
+
+specialize mtfsb1(rc=0);
+specialize mtfsb1(rc=1);

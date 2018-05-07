@@ -32,10 +32,6 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-/***************************************/
-/*** Convenience disassembly methods ***/
-/***************************************/
-
 namespace unisim::component::cxx::processor::powerpc::ppc64
 
 set addressclass {uint64_t}
@@ -50,11 +46,19 @@ struct Arch;
 
 impl {
 #include <arch.hh>
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
+#include <unisim/component/cxx/processor/powerpc/isa/disasm.hh>
+
 #include <unisim/util/likely/likely.hh>
+#define evenly(x) (x)
+
+#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
+#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
+#include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
 #include <iostream>
 
-#define evenly(x) (x)
+  using unisim::util::arithmetic::BitScanReverse;
+
 }
 
 action {bool} execute({Arch*} {cpu}) {

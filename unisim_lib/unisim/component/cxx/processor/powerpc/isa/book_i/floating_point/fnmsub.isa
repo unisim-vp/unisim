@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,10 +32,6 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
-}
-
 op fnmsub(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:30[5]:rc[1])
 fnmsub.execute = {
 	if(not CONFIG::HAS_FPU)
@@ -58,21 +54,19 @@ fnmsub.execute = {
 	// Compute the result
 	Flags flags( Flags::RoundingMode(fpscr.Get<FPSCR::RN>()) );
 	result.multAndSubAssign(c, b, flags);
+	BOOL fraction_rounded = flags.hasIncrementFraction(result.isNegative());
+	
+	if (likely(not result.isQNaN())) result.opposite();
 
-	// Generate FR
+	// Generate FR, OX, UX, VXSNAN, VXISI, VXIMZ, FR, FI, FPRF, XX, FX, VX, FEX
+        fpscr.SetInexact( flags.isApproximate() );
+	fpscr.Set<FPSCR::FR>(UINT(fraction_rounded));
 	UINT new_fpscr( fpscr ), old_fpscr = new_fpscr;
-	GenFPSCR_FR<FPSCR, SoftDouble>(new_fpscr, result, flags);
-
-	if(likely(not result.isQNaN())) result.opposite();
-
-	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FR, FI, FPRF, XX, FX, VX, FEX
 	GenFPSCR_OX<FPSCR>(new_fpscr, flags);
 	GenFPSCR_UX<FPSCR>(new_fpscr, flags);
 	GenFPSCR_VXSNAN<FPSCR>(new_fpscr, flags);
 	GenFPSCR_VXISI<FPSCR>(new_fpscr, flags);
-	GenFPSCR_FI<FPSCR>(new_fpscr, flags);
 	GenFPSCR_FPRF<FPSCR, SoftDouble>(new_fpscr, result);
-	GenFPSCR_XX<FPSCR>(new_fpscr);
 	GenFPSCR_FX<FPSCR>(new_fpscr, old_fpscr);
 	GenFPSCR_VX<FPSCR>(new_fpscr);
 	GenFPSCR_FEX<FPSCR>(new_fpscr);

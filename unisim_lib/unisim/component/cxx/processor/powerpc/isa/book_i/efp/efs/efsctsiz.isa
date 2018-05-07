@@ -46,7 +46,7 @@ efsctsiz.execute = {
 		return false; // Should not occur
 	
 	// Compute the result
-	Flags flags = Flags( Flags::RoundingMode(RN_ZERO) );
+	Flags flags = Flags( Flags::RoundingMode(CPU::SPEFSCR::FRMC::ZERO()) );
 	S32 result( unlikely(b.isNaN()) ? S32(0) : b.queryS32( flags ) );
 
 	// Update flags (Overflow is invalid)

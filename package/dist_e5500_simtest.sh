@@ -3,6 +3,7 @@
 SIMPKG=e5500_simtest
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
+unisim/component/cxx/processor/powerpc/isa/disasm.cc \
 unisim/util/random/random.cc \
 unisim/util/symbolic/symbolic.cc \
 "
@@ -207,8 +208,9 @@ unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmadd.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmadds.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmsub.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmsubs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fres.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/frsp.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fre.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fres.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/frsqrte.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsel.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsqrt.isa \
@@ -238,14 +240,13 @@ unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfs.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfsu.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfsux.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfsx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
 "
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_FILES} \
+unisim/component/cxx/processor/powerpc/isa/disasm.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh \
-unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
 unisim/util/endian/endian.hh \
 unisim/util/inlining/inlining.hh \
 unisim/util/likely/likely.hh \

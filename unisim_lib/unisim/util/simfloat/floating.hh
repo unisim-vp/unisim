@@ -45,9 +45,9 @@
 
 #include <unisim/util/endian/endian.hh>
 #include <iosfwd>
-#include <limits.h>
-#include <float.h>
-#include <math.h>
+#include <climits>
+#include <cfloat>
+#include <cmath>
 #include <cstdio>
 #include <cassert>
 #if defined(__GNUC__)
@@ -461,7 +461,6 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
    static const Exponent& getOneExponent(const Exponent&) { return eOneExponent; }
    static const Exponent& getMinusOneExponent(const Exponent&) { return eMinusOneExponent; }
    static const Exponent& getInftyExponent(const Exponent&) { return eInftyExponent; }
-   static const Exponent& getMaxExponent(const Exponent&) { return eZeroExponent; }
 
    class ExtendedMantissa : public Integer::TBigInt<Integer::Details::TIntegerTraits<BitSizeMantissa+1> > {
      private:

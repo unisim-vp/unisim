@@ -155,31 +155,33 @@ inline void GenFPSCR_FX(typename FPSCR::TYPE& fpscr, typename FPSCR::TYPE old_fp
 template <class FPSCR>
 inline void GenFPSCR_VX(typename FPSCR::TYPE& fpscr)
 {
-	if (unlikely(FPSCR::VXSNAN::Get(fpscr) or
-	             FPSCR::VXISI::Get(fpscr) or
-	             FPSCR::VXIDI::Get(fpscr) or
-	             FPSCR::VXZDZ::Get(fpscr) or
-	             FPSCR::VXIMZ::Get(fpscr) or
-	             FPSCR::VXVC::Get(fpscr) or
-	             FPSCR::VXSOFT::Get(fpscr) or
-	             FPSCR::VXSQRT::Get(fpscr) or
-	             FPSCR::VXCVI::Get(fpscr)))
-	{
-		FPSCR::VX::Set(fpscr,typename FPSCR::TYPE(1));
-	}
+	typename FPSCR::TYPE vx(
+	  FPSCR::VXSNAN::Get(fpscr) or
+	  FPSCR::VXISI::Get(fpscr) or
+	  FPSCR::VXIDI::Get(fpscr) or
+	  FPSCR::VXZDZ::Get(fpscr) or
+	  FPSCR::VXIMZ::Get(fpscr) or
+	  FPSCR::VXVC::Get(fpscr) or
+	  FPSCR::VXSOFT::Get(fpscr) or
+	  FPSCR::VXSQRT::Get(fpscr) or
+	  FPSCR::VXCVI::Get(fpscr)
+	);
+	
+	FPSCR::VX::Set(fpscr, vx);
 }
 
 template <class FPSCR>
 inline void GenFPSCR_FEX(typename FPSCR::TYPE& fpscr)
 {
-	if (unlikely((FPSCR::VX::Get(fpscr) and FPSCR::VE::Get(fpscr)) or
-	             (FPSCR::OX::Get(fpscr) and FPSCR::OE::Get(fpscr)) or
-	             (FPSCR::UX::Get(fpscr) and FPSCR::UE::Get(fpscr)) or
-	             (FPSCR::ZX::Get(fpscr) and FPSCR::ZE::Get(fpscr)) or
-	             (FPSCR::XX::Get(fpscr) and FPSCR::XE::Get(fpscr))))
-	{
-		FPSCR::FEX::Set(fpscr,typename FPSCR::TYPE(1));
-	}
+	typename FPSCR::TYPE fex(
+	  (FPSCR::VX::Get(fpscr) and FPSCR::VE::Get(fpscr)) or
+	  (FPSCR::OX::Get(fpscr) and FPSCR::OE::Get(fpscr)) or
+	  (FPSCR::UX::Get(fpscr) and FPSCR::UE::Get(fpscr)) or
+	  (FPSCR::ZX::Get(fpscr) and FPSCR::ZE::Get(fpscr)) or
+	  (FPSCR::XX::Get(fpscr) and FPSCR::XE::Get(fpscr))
+	);
+	
+	FPSCR::FEX::Set(fpscr, fex);
 }
 
 } // end of namespace powerpc

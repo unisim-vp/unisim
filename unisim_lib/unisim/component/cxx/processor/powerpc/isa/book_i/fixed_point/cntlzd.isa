@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,10 +31,6 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
-
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
-}
 
 /* Count Leading Zeros Doubleword */
 op cntlzd(31[6]:rs[5]:ra[5]:?[5]:58[10]:rc[1]);

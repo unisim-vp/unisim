@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,10 +32,6 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
-}
-
 /* Floating Subtract Single */
 op fsubs(59[6]:fd[5]:fa[5]:fb[5]:?[5]:20[5]:rc[1]);
 
@@ -52,30 +48,30 @@ fsubs.execute = {
 	}
 
 	// Read the input operands
-	UINT fpscr = cpu->GetFPSCR(), old_fpscr = fpscr;
+        FPSCR& fpscr = cpu->GetFPSCR();
 	SoftDouble a(cpu->GetFPR(fa));
 	SoftDouble const& b(cpu->GetFPR(fb));
 
 	// Compute the result
-	Flags flags( Flags::RoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>()) );
+	Flags flags( Flags::RoundingMode(fpscr.Get<FPSCR::RN>()) );
 	a.minusAssign(b, flags);
 	SoftFloat result(a, flags);
 
 	// Generate OX, UX, VXSNAN, VXISI, FR, FI, FPRF, XX, FX, VX, FEX
-	GenFPSCR_OX<FPSCR>(fpscr, flags);
-	GenFPSCR_UX<FPSCR>(fpscr, flags);
-	GenFPSCR_VXSNAN<FPSCR>(fpscr, flags);
-	GenFPSCR_VXISI<FPSCR>(fpscr, flags);
-	GenFPSCR_FR<FPSCR, SoftFloat>(fpscr, result, flags);
-	GenFPSCR_FI<FPSCR>(fpscr, flags);
-	GenFPSCR_FPRF<FPSCR, SoftFloat>(fpscr, result);
-	GenFPSCR_XX<FPSCR>(fpscr);
-	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
-	GenFPSCR_VX<FPSCR>(fpscr);
-	GenFPSCR_FEX<FPSCR>(fpscr);
+        fpscr.SetInexact(flags.isApproximate());
+	UINT new_fpscr( fpscr ), old_fpscr = new_fpscr;
+	GenFPSCR_OX<FPSCR>(new_fpscr, flags);
+	GenFPSCR_UX<FPSCR>(new_fpscr, flags);
+	GenFPSCR_VXSNAN<FPSCR>(new_fpscr, flags);
+	GenFPSCR_VXISI<FPSCR>(new_fpscr, flags);
+	GenFPSCR_FR<FPSCR, SoftFloat>(new_fpscr, result, flags);
+	GenFPSCR_FPRF<FPSCR, SoftFloat>(new_fpscr, result);
+	GenFPSCR_FX<FPSCR>(new_fpscr, old_fpscr);
+	GenFPSCR_VX<FPSCR>(new_fpscr);
+	GenFPSCR_FEX<FPSCR>(new_fpscr);
 
 	// Update FPSCR
-	cpu->SetFPSCR(fpscr);
+	cpu->SetFPSCR(new_fpscr);
 
 	if (not cpu->CheckFloatingPointException())
 		return false;
@@ -84,7 +80,7 @@ fsubs.execute = {
 	cpu->SetFPR(fd, SoftDouble(result, flags));
 
 	// Copy FX, FEX, VX, OX to CR1
-	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
+	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( fpscr.Get<FPSCR::_0_3>() ); }
 	
 	return true;
 };

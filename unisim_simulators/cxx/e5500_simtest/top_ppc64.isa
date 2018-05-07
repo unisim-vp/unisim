@@ -57,8 +57,9 @@ namespace e5500
 
 impl {
 #include <arch.hh>
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
+#include <unisim/component/cxx/processor/powerpc/isa/disasm.hh>
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
+  //#include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
 #include <unisim/util/likely/likely.hh>
 #include <iostream>
 
@@ -114,7 +115,6 @@ impl {
   using ut::GenFPSCR_VXISI;
   using ut::GenFPSCR_VXCVI;
   using ut::GenFPSCR_FR;
-  using ut::GenFPSCR_FI;
   using ut::GenFPSCR_FPRF;
   using ut::GenFPSCR_XX;
   using ut::GenFPSCR_FX;

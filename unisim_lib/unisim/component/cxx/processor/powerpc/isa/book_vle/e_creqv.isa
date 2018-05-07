@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,10 +32,6 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
-
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
 
 /* Condition Register Equivalent */
 op e_creqv(31[6]:bt[5]:ba[5]:bb[5]:289[10]:0[1]);

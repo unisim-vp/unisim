@@ -3,6 +3,7 @@
 SIMPKG=e5500fpv
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
+unisim/component/cxx/processor/powerpc/isa/disasm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/service/service.cc \
@@ -210,6 +211,7 @@ unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmadds.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmsub.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmsubs.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fres.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fre.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/frsp.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/frsqrte.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsel.isa \
@@ -318,7 +320,7 @@ ${UNISIM_LIB_SIMULATOR_ISA_FILES} \
 unisim/component/cxx/memory/sparse/memory.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh \
-unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
+unisim/component/cxx/processor/powerpc/isa/disasm.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/service/service.hh \
@@ -550,6 +552,7 @@ UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
 linuxsystem.cc \
 debugger.cc \
+core.cc \
 arch.cc \
 simfloat.cc \
 "
@@ -558,6 +561,7 @@ UNISIM_SIMULATOR_HEADER_FILES="\
 ${UNISIM_SIMULATOR_ISA_FILES} \
 linuxsystem.hh \
 debugger.hh \
+core.hh \
 arch.hh \
 simfloat.hh \
 types.hh \

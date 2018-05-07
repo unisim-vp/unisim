@@ -2,89 +2,6 @@
 
 SIMPKG=mpc5777m
 
-UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
-action.hh \
-cli.hh \
-errtools.hh \
-isa.hh \
-parser_defs.hh \
-riscgenerator.hh \
-specialization.hh \
-variable.hh \
-bitfield.hh \
-comment.hh \
-fwd.hh \
-main.hh \
-product.hh \
-scanner.hh \
-strtools.hh \
-vect.hh \
-ciscgenerator.hh \
-conststr.hh \
-generator.hh \
-operation.hh \
-referencecounting.hh \
-sourcecode.hh \
-subdecoder.hh \
-"
-
-UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES="\
-scanner.cc \
-parser.cc \
-parser_tokens.hh \
-"
-
-UNISIM_TOOLS_GENISSLIB_SOURCE_FILES="\
-parser.yy \
-scanner.ll \
-action.cc \
-bitfield.cc \
-cli.cc \
-comment.cc \
-conststr.cc \
-isa.cc \
-main.cc \
-operation.cc \
-product.cc \
-referencecounting.cc \
-sourcecode.cc \
-strtools.cc \
-variable.cc \
-generator.cc \
-riscgenerator.cc \
-ciscgenerator.cc \
-subdecoder.cc \
-specialization.cc \
-errtools.cc \
-"
-
-UNISIM_TOOLS_GENISSLIB_DATA_FILES="COPYING INSTALL NEWS README AUTHORS ChangeLog"
-
-UNISIM_TOOLS_GENISSLIB_M4_FILES="\
-m4/lexer.m4 \
-m4/parser_gen.m4 \
-"
-
-GENISSLIB_EXTERNAL_HEADERS="\
-cassert \
-cctype \
-cerrno \
-cstdarg \
-cstdio \
-cstdlib \
-cstring \
-fstream \
-inttypes.h \
-iosfwd \
-iostream \
-limits \
-map \
-memory \
-ostream \
-unistd.h \
-vector \
-"
-
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_config_file_helper.cc \
@@ -168,6 +85,7 @@ unisim/service/os/linux_os/powerpc_linux32.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/floating.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/cpu.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/cpu.cc \
+unisim/component/cxx/processor/powerpc/isa/disasm.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
@@ -179,7 +97,6 @@ unisim/component/tlm2/com/serial_terminal/serial_terminal.cc \
 UNISIM_LIB_SIMULATOR_ISA_FILES="\
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.isa \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/add.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addc.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/adde.isa \
@@ -294,7 +211,6 @@ unisim/component/cxx/processor/powerpc/isa/book_iii_e/mtspr.isa \
 unisim/component/cxx/processor/powerpc/isa/book_iii_e/wrtee.isa \
 unisim/component/cxx/processor/powerpc/isa/book_iii_e/wrteei.isa \
 unisim/component/cxx/processor/powerpc/isa/book_e/msync.isa \
-unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
 unisim/component/cxx/processor/powerpc/isa/book_vle/se_add.isa \
 unisim/component/cxx/processor/powerpc/isa/book_vle/se_addi.isa \
 unisim/component/cxx/processor/powerpc/isa/book_vle/se_and.isa \
@@ -426,7 +342,6 @@ unisim/component/cxx/processor/powerpc/isa/book_vle/e_lmvdsrrw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_vle/e_stmvdsrrw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_vle/e_lmvmcsrrw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_vle/e_stmvmcsrrw.isa \
-unisim/component/cxx/processor/powerpc/isa/lsp/lsp.hh \
 unisim/component/cxx/processor/powerpc/isa/lsp/zabsw.isa \
 unisim/component/cxx/processor/powerpc/isa/lsp/zabsws.isa \
 unisim/component/cxx/processor/powerpc/isa/lsp/zaddd.isa \
@@ -661,7 +576,12 @@ unisim/component/cxx/processor/powerpc/isa/mpu/mpusync.isa \
 unisim/component/cxx/processor/powerpc/isa/mpu/mpuwe.isa \
 "
 
-UNISIM_LIB_SIMULATOR_HEADER_FILES="${UNISIM_LIB_SIMULATOR_ISA_FILES} \
+UNISIM_LIB_SIMULATOR_HEADER_FILES="\
+${UNISIM_LIB_SIMULATOR_ISA_FILES} \
+unisim/component/cxx/processor/powerpc/isa/disasm.hh \
+unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
+unisim/component/cxx/processor/powerpc/isa/lsp/lsp.hh \
 unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_config_file_helper.hh \
 unisim/kernel/service/ini_config_file_helper.hh \
@@ -1157,7 +1077,6 @@ UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
 UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/${SIMPKG}
 
 SIMULATOR_VERSION=$(cat ${UNISIM_SIMULATOR_DIR}/VERSION)
-GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-${SIMPKG}-${SIMULATOR_VERSION}
 
 if [ -z "${DISTCOPY}" ]; then
 	DISTCOPY=cp
@@ -1177,14 +1096,9 @@ dist_copy() {
 	false
 }
 
-mkdir -p ${DEST_DIR}/genisslib
+GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib
+
 mkdir -p ${DEST_DIR}/${SIMPKG}
-
-UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
-
-for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
-	dist_copy "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}"
-done
 
 UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_TEMPLATE_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES}"
 
@@ -1211,16 +1125,9 @@ done
 mkdir -p ${DEST_DIR}/config
 mkdir -p ${DEST_DIR}/${SIMPKG}/config
 mkdir -p ${DEST_DIR}/${SIMPKG}/m4
-mkdir -p ${DEST_DIR}/genisslib/config
-mkdir -p ${DEST_DIR}/genisslib/m4
 
 # Some imported files (m4 macros) impact configure generation
-has_to_build_genisslib_configure=no
 has_to_build_simulator_configure=no
-
-for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
-	dist_copy "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" && has_to_build_genisslib_configure=yes
-done
 
 for file in ${UNISIM_LIB_SIMULATOR_M4_FILES}; do
 	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}" && has_to_build_simulator_configure=yes
@@ -1414,71 +1321,6 @@ echo "\$(basename \$0): run 'make -f \${HERE}/Makefile.cross' or '\${HERE}/Makef
 EOF_CONFIGURE_CROSS
 	chmod +x "${CONFIGURE_CROSS}"
 fi  # has to build configure cross
-
-# GENISSLIB
-
-GENISSLIB_CONFIGURE_AC="${DEST_DIR}/genisslib/configure.ac"
-GENISSLIB_MAKEFILE_AM="${DEST_DIR}/genisslib/Makefile.am"
-
-if has_to_build "${GENISSLIB_CONFIGURE_AC}" "$0"; then
-	echo "Generating GENISSLIB configure.ac"
-	cat <<EOF > "${GENISSLIB_CONFIGURE_AC}"
-AC_INIT([UNISIM GENISSLIB], [${GENISSLIB_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves  Lhuillier <yves.lhuillier@cea.fr>], [genisslib])
-AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_AUX_DIR(config)
-AC_CONFIG_HEADERS([config.h])
-AC_CANONICAL_BUILD
-AC_CANONICAL_HOST
-AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([subdir-objects tar-pax])
-AC_PATH_PROGS(SH, sh)
-AC_PROG_CXX
-AC_PROG_INSTALL
-AC_PROG_LN_S
-AC_LANG([C++])
-AC_CHECK_HEADERS([${GENISSLIB_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))
-UNISIM_CHECK_LEXER_GENERATOR
-UNISIM_CHECK_PARSER_GENERATOR
-AC_CONFIG_FILES([Makefile])
-AC_OUTPUT
-EOF
-	has_to_build_genisslib_configure=yes
-fi
-
-if has_to_build "${GENISSLIB_MAKEFILE_AM}" "$0"; then
-	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
-	echo "Generating GENISSLIB Makefile.am"
-	cat <<EOF > "${GENISSLIB_MAKEFILE_AM}"
-ACLOCAL_AMFLAGS=-I m4
-BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}
-CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}
-AM_YFLAGS = -d -p yy
-AM_LFLAGS = -l
-AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
-noinst_PROGRAMS = genisslib
-genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}
-genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\"${GENISSLIB_VERSION}\"
-noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}
-EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}
-# The following lines are a workaround caused by a bugFix in AUTOMAKE 1.12
-# Note that parser_tokens.hh has been added to BUILT_SOURCES above
-# assumption: parser.cc and either parser.h or parser.hh are generated at the same time
-\$(top_builddir)/parser_tokens.hh: \$(top_builddir)/parser.cc
-	if test -f "\$(top_builddir)/parser.h"; then\
-		cp -f "\$(top_builddir)/parser.h" "\$(top_builddir)/parser_tokens.hh";\
-	elif test -f "\$(top_builddir)/parser.hh"; then\
-		cp -f "\$(top_builddir)/parser.hh" "\$(top_builddir)/parser_tokens.hh";\
-	fi
-# The following line disable some C++ flags that prevent the flex generated file to compile properly
-\$(top_builddir)/genisslib-scanner.o: CXXFLAGS += -O1 -Wno-error
-EOF
-	has_to_build_genisslib_configure=yes
-fi
-
-if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
-	echo "Building GENISSLIB configure"
-	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
-fi
 
 # Simulator
 

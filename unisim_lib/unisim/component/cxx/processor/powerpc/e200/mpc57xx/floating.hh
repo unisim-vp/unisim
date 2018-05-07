@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,17 +31,14 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_FLOATING_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_FLOATING_HH__
 
-#include <unisim/kernel/service/service.hh>
-#include <unisim/service/interfaces/register.hh>
 #include <unisim/util/simfloat/floating.hh>
 #include <unisim/util/likely/likely.hh>
 
 #include <inttypes.h>
-#include <string>
 
 #ifdef powerpc
 #undef powerpc
@@ -71,11 +68,11 @@ protected:
        QNNRInftyMultZero
     };
   enum FlowException { FENoException, FEOverflow, FEUnderflow, FEEnd };
-      
+
 private:
   bool fRoundToEven;
   bool fUpApproximateInfty;
-      
+
   RoundMode rmRound;
   bool fKeepSignalingConversion;
 
@@ -101,14 +98,14 @@ public:
        feExcept(rpSource.feExcept), fDivisionByZero(rpSource.fDivisionByZero) {}
 
   struct RoundingMode { RoundingMode(unsigned int rm) : mode(rm) {} unsigned int mode; };
-      
+
   Flags( RoundingMode const& rm )
     :  fRoundToEven(true), fUpApproximateInfty(false), rmRound(RMNearest),
        fKeepSignalingConversion(true), aApproximation(AExact), rrReadResult(RRTotal),
        fEffectiveRoundToEven(false), fSNaNOperand(false), qnrQNaNResult(QNNRUndefined),
        feExcept(FENoException), fDivisionByZero(false)
   { setRoundingMode( rm.mode ); }
-      
+
   Flags& operator=(const Flags& rpSource)
   {  aApproximation = rpSource.aApproximation;
     rrReadResult = rpSource.rrReadResult;
@@ -185,7 +182,7 @@ public:
 
   void setSNaNOperand() { fSNaNOperand = true; }
   bool hasSNaNOperand() const { return fSNaNOperand; }
-      
+
   void setInftyMinusInfty() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRInftyMinusInfty; }
   void setInftyOnInfty() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRInftyOnInfty; }
   void setZeroOnZero() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRZeroOnZero; }
@@ -214,7 +211,7 @@ public:
   bool isOverflow() const { return feExcept == FEOverflow; }
   bool isUnderflow() const { return feExcept == FEUnderflow; }
   bool takeOverflow() { bool ov = isOverflow(); feExcept = FENoException; return ov; }
-      
+
   void setRoundingMode(unsigned int rn_mode)
   {  switch(rn_mode)
       {
@@ -327,7 +324,7 @@ struct IntConversion
       biResult.setTrueBitArray(uSize-1);
   }
   void setMax()
-  {  biResult.clear(); 
+  {  biResult.clear();
     if (fUnsigned)
       biResult.neg(uSize);
     else
@@ -348,15 +345,14 @@ private:
   }
 };
 
-class BuiltDoubleTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11>
+struct BuiltDoubleTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11>
 {
-  public:
-   typedef Flags StatusAndControlFlags;
-   class MultExtension : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11>::MultExtension {
-     public:
-      typedef Flags StatusAndControlFlags;
-   };
-   typedef mpc57xx::IntConversion IntConversion;
+  typedef Flags StatusAndControlFlags;
+  struct MultExtension : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11>::MultExtension
+  {
+    typedef Flags StatusAndControlFlags;
+  };
+  typedef mpc57xx::IntConversion IntConversion;
 };
 
 class SoftHalfFloat;

@@ -65,7 +65,11 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/floating.hh>
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.tcc>
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/genfflags.hh>
-
+#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
+#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
+#include <unisim/component/cxx/processor/powerpc/isa/disasm.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
+  
 #define evenly(x) (x)
 
 namespace unisim {
@@ -76,6 +80,9 @@ namespace powerpc {
 namespace e200 {
 namespace mpc57xx {
 namespace e200z425bn3 {
+
+using unisim::util::arithmetic::BitScanReverse;
+using unisim::util::arithmetic::RotateRight;
 
 typedef CPU::ADDRESS ADDRESS;
 

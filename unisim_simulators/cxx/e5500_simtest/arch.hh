@@ -82,6 +82,7 @@ namespace ut
       void append( uint8_t _index, bool w );
 
       int  cmp( RegBank const& ) const;
+      uintptr_t count() const { return vmap.size(); }
       
       std::map<unsigned,VirtualRegister> vmap;
       std::vector<unsigned>              refs;

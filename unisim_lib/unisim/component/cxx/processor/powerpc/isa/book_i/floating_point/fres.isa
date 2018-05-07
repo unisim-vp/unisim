@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -96,23 +96,10 @@ fres.execute = {
       SoftFloat roundres(result, flags);
       result.convertAssign(roundres, flags);
             
-      // TODO: Flag generation is a complete fail
-      // Generate OX, UX, ZX, VXSNAN, FR, FI, FPRF
-      // UINT new_fpscr( fpscr ), old_fpscr = new_fpscr;
-      // GenFPSCR_OX<FPSCR>(new_fpscr, flags);
-      // GenFPSCR_UX<FPSCR>(new_fpscr, flags);
-      // GenFPSCR_FPRF<FPSCR, SoftDouble>(new_fpscr, result);
+      // TODO: recode flag generation (previous was a complete fail)
     }
 
-  // TODO: Flag generation is a complete fail
-  // Generate XX, FX, VX, FEX
-  // GenFPSCR_XX<FPSCR>(fpscr);
-  // GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
-  // GenFPSCR_VX<FPSCR>(fpscr);
-  // GenFPSCR_FEX<FPSCR>(fpscr);
-
-  // Update FPSCR
-  // cpu->SetFPSCR(fpscr);
+  // TODO: recode flag generation (previous was a complete fail)
 
   if (not cpu->CheckFloatingPointException())
     return false;
@@ -120,6 +107,9 @@ fres.execute = {
   // Write back the result
   cpu->SetFPR(fd, result);
 	
+  if (not cpu->CheckFloatingPointException())
+    return false;
+
   // Copy FX, FEX, VX, OX to CR1
   if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( fpscr.Get<FPSCR::_0_3>() ); }
 	

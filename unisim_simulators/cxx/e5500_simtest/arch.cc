@@ -36,6 +36,8 @@
 #include <top_ppc64.hh>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
+#include <fstream>
 // #include <set>
 
 namespace ut
@@ -45,18 +47,6 @@ namespace ut
   void XER::XERNode::Repr( std::ostream& sink ) const { sink << "XER"; }
   void CR::CRNode::Repr( std::ostream& sink ) const { sink << "CR"; }
   void FPSCR::FPSCRNode::Repr( std::ostream& sink ) const { sink << "FPSCR"; }
-  
-  void
-  Interface::RegBank::append( uint8_t index, bool w )
-  {
-    refs.push_back( index );
-    auto itr = vmap.find(index);
-    if ((itr == vmap.end()) or (index < itr->first))
-      itr = vmap.emplace_hint( itr, std::piecewise_construct, std::forward_as_tuple( index ), std::forward_as_tuple( vmap.size() ) );
-    VirtualRegister& reg = itr->second;
-    reg.source |= not w;
-    reg.destination |= w;
-  }
   
   Interface::Interface( e5500::Operation& op )
     : xer(0)
@@ -81,6 +71,11 @@ namespace ut
     
     if (not has_valid_path)
       throw ut::Untestable("illegal");
+
+    {
+      static std::ofstream debug("debug");
+      debug << "regs: " << std::setw(10) << (iregs.count() + fregs.count()) << ", int: " << iregs.count() << ", fp: " << fregs.count() << "\n";
+    }
     
     if (not usemem()) return; // done
     
@@ -295,6 +290,31 @@ namespace ut
     return Prologue( regs, rule.offset, rule.sign, base_register );
   }
 
+  int
+  Interface::cmp( Interface const& b ) const
+  {
+    if (int delta = iregs.cmp( b.iregs )) return delta;
+    if (int delta = fregs.cmp( b.fregs )) return delta;
+        
+    if (int delta = xer.cmp( b.xer )) return delta;
+    if (int delta = cr.cmp( b.cr )) return delta;
+    if (int delta = fpscr.cmp( b.fpscr )) return delta;
+    
+    return 0; // All equal
+  }
+
+  void
+  Interface::RegBank::append( uint8_t index, bool w )
+  {
+    refs.push_back( index );
+    auto itr = vmap.find(index);
+    if ((itr == vmap.end()) or (index < itr->first))
+      itr = vmap.emplace_hint( itr, std::piecewise_construct, std::forward_as_tuple( index ), std::forward_as_tuple( vmap.size() ) );
+    VirtualRegister& reg = itr->second;
+    reg.source |= not w;
+    reg.destination |= w;
+  }
+  
 namespace { template <typename T> int _Cmp( T a, T b ) { return (a < b) ? -1 : (a > b) ? +1 : 0; } }
 
   int
@@ -311,19 +331,6 @@ namespace { template <typename T> int _Cmp( T a, T b ) { return (a < b) ? -1 : (
     return 0;
   }
   
-  int
-  Interface::cmp( Interface const& b ) const
-  {
-    if (int delta = iregs.cmp( b.iregs )) return delta;
-    if (int delta = fregs.cmp( b.fregs )) return delta;
-        
-    if (int delta = xer.cmp( b.xer )) return delta;
-    if (int delta = cr.cmp( b.cr )) return delta;
-    if (int delta = fpscr.cmp( b.fpscr )) return delta;
-    
-    return 0; // All equal
-  }
-
   int
   Interface::VirtualRegister::cmp( VirtualRegister const& b ) const
   {

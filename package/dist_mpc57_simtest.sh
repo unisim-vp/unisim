@@ -3,12 +3,12 @@
 SIMPKG=mpc57_simtest
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
+unisim/component/cxx/processor/powerpc/isa/book_i/disasm.cc \
 unisim/util/symbolic/symbolic.cc \
 unisim/util/random/random.cc \
 "
 
 UNISIM_LIB_SIMULATOR_ISA_FILES="\
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/add.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addc.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/adde.isa \
@@ -122,7 +122,6 @@ unisim/component/cxx/processor/powerpc/isa/book_iii_e/mtspr.isa \
 unisim/component/cxx/processor/powerpc/isa/book_iii_e/wrtee.isa \
 unisim/component/cxx/processor/powerpc/isa/book_iii_e/wrteei.isa \
 unisim/component/cxx/processor/powerpc/isa/book_e/msync.isa \
-unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
 unisim/component/cxx/processor/powerpc/isa/book_vle/se_add.isa \
 unisim/component/cxx/processor/powerpc/isa/book_vle/se_addi.isa \
 unisim/component/cxx/processor/powerpc/isa/book_vle/se_and.isa \
@@ -242,7 +241,6 @@ unisim/component/cxx/processor/powerpc/isa/book_vle/e_stw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_vle/e_stwu.isa \
 unisim/component/cxx/processor/powerpc/isa/book_vle/e_subfic.isa \
 unisim/component/cxx/processor/powerpc/isa/book_vle/e_xori.isa \
-unisim/component/cxx/processor/powerpc/isa/lsp/lsp.hh \
 unisim/component/cxx/processor/powerpc/isa/lsp/zabsw.isa \
 unisim/component/cxx/processor/powerpc/isa/lsp/zabsws.isa \
 unisim/component/cxx/processor/powerpc/isa/lsp/zaddd.isa \
@@ -479,6 +477,10 @@ unisim/component/cxx/processor/powerpc/isa/mpu/mpuwe.isa \
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_FILES} \
+unisim/component/cxx/processor/powerpc/isa/book_i/disasm.hh \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
+unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
+unisim/component/cxx/processor/powerpc/isa/lsp/lsp.hh \
 unisim/util/truth_table/truth_table.hh \
 unisim/util/endian/endian.hh \
 unisim/util/inlining/inlining.hh \

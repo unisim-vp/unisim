@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,10 +32,6 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
-}
-
 /* Floating Convert From Integer */
 op fcfid(63[6]:frt[5]:?[5]:frb[5]:846[10]:rc[1]);
 
@@ -52,23 +48,23 @@ fcfid.execute = {
 	}
 
 	// Read the input operands
+	FPSCR& fpscr( cpu->GetFPSCR() );
 	S64 b( cpu->GetFPR(frb).queryRawBits() );
 	
 	// Compute the result
-	Flags flags( Flags::RoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>()) );
+	Flags flags( Flags::RoundingMode(fpscr.Get<FPSCR::RN>()) );
 	SoftDouble result(b, flags);
 
 	// Generate FPRF, FR, FI, XX, FX
-	UINT fpscr = cpu->GetFPSCR(), old_fpscr = fpscr;
-	GenFPSCR_FPRF<FPSCR>(fpscr, result);
-	GenFPSCR_FR<FPSCR, SoftDouble>(fpscr, result, flags);
-	if (likely(not flags.isOverflow())) GenFPSCR_FI<FPSCR>(fpscr, flags);
-	GenFPSCR_XX<FPSCR>(fpscr);
-	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
-	GenFPSCR_FEX<FPSCR>(fpscr);
+	if (likely(not flags.isOverflow())) fpscr.SetInexact( flags.isApproximate() );
+	UINT new_fpscr(fpscr), old_fpscr = new_fpscr;
+	GenFPSCR_FPRF<FPSCR>(new_fpscr, result);
+	GenFPSCR_FR<FPSCR, SoftDouble>(new_fpscr, result, flags);
+	GenFPSCR_FX<FPSCR>(new_fpscr, old_fpscr);
+	GenFPSCR_FEX<FPSCR>(new_fpscr);
 
 	// Update FPSCR
-	cpu->SetFPSCR(fpscr);
+	cpu->SetFPSCR(new_fpscr);
 	
 	if (not cpu->CheckFloatingPointException())
 		return false;
@@ -77,7 +73,7 @@ fcfid.execute = {
 	cpu->SetFPR(frt, result);
 	
 	// Copy FX, FEX, VX, OX to CR1
-	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
+	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( fpscr.Get<FPSCR::_0_3>() ); }
 	
 	return true;
 };

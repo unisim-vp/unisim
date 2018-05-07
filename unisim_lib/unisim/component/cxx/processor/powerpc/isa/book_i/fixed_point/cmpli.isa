@@ -32,10 +32,6 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
-}
-
 /* Compare Logical Immediate (32-bit operands) */
 op cmpli(10[6]:crfD[3]:?[1]:0[1]:ra[5]:uimm[16]);
 

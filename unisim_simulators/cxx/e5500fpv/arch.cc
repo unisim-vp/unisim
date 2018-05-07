@@ -57,13 +57,8 @@ Arch::Arch()
   , debug_yielding_import("debug-yielding-import", this)
   , trap_reporting_import("trap-reporting-import", this)
   , memory_access_reporting_import("memory-access-reporting-import", this)
-  , xer(0)
-  , cr(0)
-  , msr(0)
-  , fpscr(0,*this)
   , insn_count(0)
   , time_base(0)
-    // , linux_os(0)
 {
   for (int idx = 0; idx < 32; ++idx)
     {
@@ -207,7 +202,7 @@ Arch::InjectWriteMemory(uint64_t addr, void const* buffer, unsigned size)
 
 // Implementation of ExecuteSystemCall
 void
-Arch::ThrowException( SystemCallInterrupt::SystemCall const& )
+Arch::SystemCall()
 {
   if (not linux_os)
     { throw std::logic_error( "No linux OS emulation connected" ); }
@@ -306,32 +301,4 @@ Arch::FpStoreLSW(unsigned id, U64 addr)
 {
   IntStore( addr, U32(fprs[id].queryRawBits()) );
   return true;
-}
-
-U64
-UnsignedMultiplyHigh( U64 lop, U64 rop )
-{
-  U64 lhi = U64(lop >> 32), llo = U64(U32(lop)), rhi = U64(rop >> 32), rlo = U64(U32(rop));
-  U64 hihi( lhi*rhi ), hilo( lhi*rlo), lohi( llo*rhi ), lolo( llo*rlo );
-  return (((lolo >> 32) + U64(U32(hilo)) + U64(U32(lohi))) >> 32) + (hilo >> 32) + (lohi >> 32) + hihi;
-}
-
-S64
-SignedMultiplyHigh( S64 lop, S64 rop )
-{
-  bool lsign = (lop < S64(0)), rsign = (rop < S64(0));
-  U64 ulop = lsign ? -lop : lop, urop = rsign ? -rop : rop;
-  
-  if (lop < S64(0)) { ulop = -lop; lsign = true; } else { ulop = lop; lsign = false; }
-  if (rop < S64(0)) { urop = -rop; rsign = true; } else { urop = rop; rsign = false; }
-  
-  U64 uhi = UnsignedMultiplyHigh(ulop, urop), ulo = ulop*urop;
-  
-  return S64( (lsign xor rsign) ? (ulo == 0) ? -uhi : ~uhi : uhi );
-}
-
-UINT
-FPSCR::GetDispatch( FPSCR::RN const& rn ) const
-{
-  return arch.fp_shuffler.GetRN( arch.cia, FPSCR::RN::Get(value) );
 }

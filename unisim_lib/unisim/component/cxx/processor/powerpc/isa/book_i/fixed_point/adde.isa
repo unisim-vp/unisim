@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,10 +31,6 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
-
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
-}
 
 /* Add Extended */
 op adde(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:138[9]:rc[1]);
