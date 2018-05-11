@@ -33,11 +33,11 @@
  */
 
 /* Add Immediate Shifted */
-op addis(15[6]:rd[5]:ra[5]:shl<16> sext simm[16]);
+op addis(15[6]:rd[5]:ra[5]:sext simm[16]);
 
 addis.execute = {
 	// Read the input operands
-	UINT b = UINT(SINT(simm));
+	UINT b = UINT(simm) << 16;
 	
 	// Compute the result
 	UINT result = ra ? cpu->GetGPR(ra) + b : b;
@@ -50,8 +50,8 @@ addis.execute = {
 
 addis.disasm = {
 	if(ra == 0)
-		os << "lis " << GPRPrint(rd) << ", " << (simm >> 16);
+		os << "lis " << GPRPrint(rd) << ", " << simm;
 	else
-		os << "addis " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << (simm >> 16);
+		os << "addis " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << simm;
 };
 

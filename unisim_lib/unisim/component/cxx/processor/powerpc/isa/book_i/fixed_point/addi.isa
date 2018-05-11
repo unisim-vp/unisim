@@ -37,7 +37,7 @@ op addi(14[6]:rd[5]:ra[5]:sext simm[16]);
 
 addi.execute = {
 	// Read the input operands
-	UINT b = UINT(SINT(simm));
+	UINT b = UINT(simm);
 	
 	// Compute the result
 	UINT result = ra ? cpu->GetGPR(ra) + b : b;
