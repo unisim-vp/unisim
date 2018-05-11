@@ -37,13 +37,13 @@
 op se_b(58[6]:0[1]:lk[1]:shl<1> sext bd[8]);
 
 se_b.execute = {
-	ADDRESS target_addr( ADDRESS(cpu->GetCIA()) + ADDRESS(bd) );
+	ADDRESS target_addr( cpu->GetCIA() + UINT(bd) );
 	cpu->Branch(target_addr);
 	
 	if(lk)
 	{
 		LR& lr = cpu->GetLR();
-		lr = ADDRESS(cpu->GetCIA()) + ADDRESS(2);
+		lr = ADDRESS( cpu->GetCIA() + UINT(2) );
 	}
 	
 	return true;

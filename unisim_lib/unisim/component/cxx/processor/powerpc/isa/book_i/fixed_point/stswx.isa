@@ -32,7 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op stswx(31[6]:rs[5]:ra[5]:rb[5]:661[10]:?[1])
+op stswx(31[6]:rs[5]:ra[5]:rb[5]:661[10]:?[1]);
+
 stswx.execute = {
 	ADDRESS ea = ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb);
 
@@ -50,12 +51,9 @@ stswx.execute = {
 	}
 	
 	return true;
-}
+};
+
 stswx.disasm = {
 	os << "stswx " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
-	if(cpu && (cpu->GetCIA() == this->GetAddr()))
-	{
-		ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+};
+

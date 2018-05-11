@@ -32,7 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lswi(31[6]:rd[5]:ra[5]:nb[5]:597[10]:?[1])
+op lswi(31[6]:rd[5]:ra[5]:nb[5]:597[10]:?[1]);
+
 lswi.execute = {
 	ADDRESS ea = ra ? cpu->GetGPR(ra) : 0;
 
@@ -49,12 +50,9 @@ lswi.execute = {
 	}
 	
 	return true;
-}
+};
+
 lswi.disasm = {
 	os << "lswi " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << unsigned(nb);
-	if(cpu && (cpu->GetCIA() == this->GetAddr()))
-	{
-		ADDRESS ea = ra ? cpu->GetGPR(ra) : 0;
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+};
+

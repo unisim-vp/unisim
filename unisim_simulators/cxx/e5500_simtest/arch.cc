@@ -72,11 +72,6 @@ namespace ut
     if (not has_valid_path)
       throw ut::Untestable("illegal");
 
-    {
-      static std::ofstream debug("debug");
-      debug << "regs: " << std::setw(10) << (iregs.count() + fregs.count()) << ", int: " << iregs.count() << ", fp: " << fregs.count() << "\n";
-    }
-    
     if (not usemem()) return; // done
     
     struct BaseRegChecker
@@ -127,8 +122,8 @@ namespace ut
     base_register =__builtin_ctz(valid_base_regs);
   }
 
-  Interface::Prologue
-  Interface::GetPrologue() const
+  void
+  Interface::Prologue::Resolve(Interface const& iif)
   {
     struct Rule
     {
@@ -166,26 +161,26 @@ namespace ut
       std::set<Rule> rules;
     };
 
-    struct Registers : Prologue::Regs
+    static struct 
     {
-      Offset eval(unsigned idx)
+      Offset operator()(Regs& regs, unsigned idx) const
       {
-        Prologue::Regs::iterator itr = lower_bound( idx );
+        auto itr = regs.lower_bound( idx );
 	// idx is less or equal to itr->first.
-	if (itr == end() or (idx < itr->first))
+	if (itr == regs.end() or (idx < itr->first))
           {
-            /* ppc se_li's immediate is 7 bit unsigned, TODO: but what about PPC64 */
-            Offset value( unsigned(rand()) % 128 );
-            itr = insert( itr, Prologue::Regs::value_type( idx, value ) );
+            /* ppc li's immediate is 16 bit signed */
+            Offset value = int16_t(rand());
+            itr = regs.insert( itr, Prologue::Regs::value_type( idx, value ) );
           }
 	return itr->second;
       }
-    };
+    } eval;
     
     struct GetRule
     {
-      GetRule( Registers& _regs, Rules& _rules, unsigned _rbase ) : regs( _regs ), rules(_rules), rbase( _rbase ), rule() {}
-      Registers& regs;
+      GetRule( Regs& _regs, Rules& _rules, unsigned _rbase ) : regs( _regs ), rules(_rules), rbase( _rbase ), rule() {}
+      Regs&      regs;
       Rules&     rules;
       unsigned   rbase;
       Rule       rule;
@@ -241,7 +236,7 @@ namespace ut
         if (auto n = dynamic_cast<SourceReg const*>(node))
           {
             if (n->reg == rbase) throw Prologue::Error();
-            return regs.eval(n->reg);
+            return eval(regs, n->reg);
           }
         
         if (auto n = dynamic_cast<unisim::util::symbolic::ConstNode<uint64_t> const*>(node))
@@ -279,15 +274,14 @@ namespace ut
         return Offset( 0 );
       }
     };
-    
-    Registers regs;
+
     Rules rules;
-    
-    for (Expr const& expr : mem_addrs)
-      GetRule( regs, rules, base_register ).Process( expr.node );
+    for (Expr const& expr : iif.mem_addrs)
+      GetRule( regs, rules, iif.base_register ).Process( expr.node );
     
     Rule rule = rules.GetBaseRule();
-    return Prologue( regs, rule.offset, rule.sign, base_register );
+    offset = rule.offset;
+    sign = rule.sign;
   }
 
   int

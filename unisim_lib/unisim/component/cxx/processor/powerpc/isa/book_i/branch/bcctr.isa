@@ -57,11 +57,11 @@ bcctr.execute = {
 	}
 	
 	if (evenly(cond_ok)) {
-		ADDRESS target_addr = ADDRESS(cpu->GetCTR()) & ADDRESS(-4);
+		ADDRESS target_addr( UINT(cpu->GetCTR()) & UINT(-4) );
 		cpu->Branch(target_addr);
 	}
 	
-	if (lk) cpu->GetLR() = ADDRESS(cpu->GetCIA()) + ADDRESS(4);
+	if (lk) cpu->GetLR() = ADDRESS( cpu->GetCIA() + UINT(4) );
 	
 	return true;
 };

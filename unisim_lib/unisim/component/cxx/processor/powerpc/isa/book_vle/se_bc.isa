@@ -52,7 +52,7 @@ se_bc.execute = {
 	
 	if(evenly(cond_ok))
 	{
-		ADDRESS target_addr = cpu->GetCIA() + ADDRESS(bd);
+		ADDRESS target_addr( cpu->GetCIA() + UINT(bd) );
 		cpu->Branch(target_addr);
 	}
 	

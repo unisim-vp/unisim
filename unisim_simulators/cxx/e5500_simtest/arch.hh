@@ -83,10 +83,19 @@ namespace ut
 
       int  cmp( RegBank const& ) const;
       uintptr_t count() const { return vmap.size(); }
+      unsigned sources() const
+      {
+        unsigned flags = 0;
+        for (auto&& vr : vmap)
+          flags |= unsigned(vr.second.source) << vr.first;
+        return flags;
+      }
       
       std::map<unsigned,VirtualRegister> vmap;
       std::vector<unsigned>              refs;
     };
+
+    unsigned GetSources() const { return (iregs.sources() >> 4) | (fregs.sources() >> 0); }
 
     void irappend( uint8_t idx, bool w )
     {
@@ -108,15 +117,13 @@ namespace ut
     struct Prologue
     {
       struct Error {};
-      
       typedef std::map<unsigned,Offset> Regs;
-      Prologue( Regs const& _regs, Offset _offset, bool _sign, uint8_t _base )
-        : regs( _regs ), offset( _offset ), sign( _sign ), base( _base )
-      {}
-      Regs regs; Offset offset; bool sign; uint8_t base;
+      Prologue() : regs(), offset(), sign() {}
+      void Resolve(Interface const& iif);
+      Regs regs; Offset offset; bool sign;
     };
     
-    Prologue GetPrologue() const;
+    void GetPrologue( Prologue& p ) const;
     
     void PCRelPrologue( Prologue const& pc ) const;
     

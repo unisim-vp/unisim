@@ -60,10 +60,6 @@ struct Sink
 
 struct TestConfig
 {
-  typedef unisim::component::cxx::processor::powerpc::GPRPrint GPRPrint;
-  typedef unisim::component::cxx::processor::powerpc::HexPrint HexPrint;
-  
-  
   ut::Interface const& iif;
   std::string ident, disasm;
   
@@ -71,53 +67,16 @@ struct TestConfig
     : iif( _iif ), ident( _ident ), disasm( _disasm )
   {}
   
-  bool wide() const { return iif.length == 32; }
+  typedef ut::Interface::Prologue Prologue;
   
-  std::string prologue() const
+  void Resolve(Prologue& p) const
   {
-    if (iif.usemem()) {
-      std::ostringstream sink;
-      try {
-        auto const& p = iif.GetPrologue();
-        GPRPrint br( p.base );
-        /*TODO:*/
-        if      ((p.offset & -128) == 0)
-          {
-            // a suitable 7 bit unsigned immediate (cost 2 bytes)
-            sink << "\tse_li\t" << br << ", " << p.offset << "\n";
-          }
-        else if (((p.offset + 0x80000) >> 20) == 0)
-          {
-            // a suitable 20 bit signed immediate (cost 4 bytes)
-            sink << "\te_li\t" << br << ", " << int32_t(p.offset) << "\n";
-          }
-        else
-          {
-            // a full n raw 32 bit immediate (8 bytes)
-            HexPrint xoff( p.offset );
-            sink << "\te_lis\t" << br << ", " << xoff << "@h\n";
-            sink << "\te_or2i\t" << br << ", " << xoff << "@l\n";
-          }
-        
-        GPRPrint buffer( iif.aligned ? 3 : 0 );
-
-        sink << "\t" << (p.sign ? "sub" : "add") << "\t" << br << ", " << br << ", " << buffer << "\n";
-        
-        for (auto reg : p.regs)
-          {
-            GPRPrint rname( reg.first );
-            HexPrint rvalue( reg.second );
-            /*TODO:*/
-            if (reg.second & -128) { std::cerr << "IE immediate generation.\n"; throw 0; }
-            sink << "\tse_li\t" << rname << ", " << rvalue << "\n";
-          }
-      } catch (ut::Interface::Prologue::Error const& x) {
+    try { p.Resolve(iif); }
+    catch (Prologue::Error const& x)
+      {
         std::cerr << "Prologue error in: " << disasm << ".\n";
         throw x;
       }
-      return sink.str();
-    }
-    return "";
   }
   
   std::string epilogue() const { return ""; }
@@ -133,28 +92,80 @@ struct E5500 : e5500::Decoder
   static CodeType cleancode( Operation const& op ) { return op.GetEncoding(); }
   
   static char const* Name() { return "VLE"; }
+
+  E5500() : const_id(0) {}
+  unsigned const_id;
+  std::vector<uint64_t> constants;
+
+  unsigned add_constant( uint64_t value )
+  {
+    unsigned id = const_id + constants.size();
+    constants.push_back(value);
+    return id;
+  }
+
+  typedef unsigned GPRPrint ;
+  
+  struct LoadImmediate
+  {
+    LoadImmediate(unsigned _r, uint64_t _i) : r(_r), i(_i) {} unsigned r; uint64_t i;
+    friend std::ostream& operator << (std::ostream& os, LoadImmediate const& li)
+    {
+      GPRPrint rname( li.r );
+      if      (uint64_t(int16_t(li.i)) == li.i) // LI constant ?
+        os << "li\t" << rname << ", " << int16_t(li.i);
+      else if ((uint64_t(int16_t(li.i >> 16)) << 16) == li.i) // LIS constant
+        os << "lis\t" << rname << ", " << int16_t(li.i >> 16);
+      else // not any easily
+        {
+          // unsigned n = __builtin_ctzl(li.i);
+          // if ((uint64_t(int16_t(li.i >> n)) << n) == li.i) // LI+SLD constant
+          //   os << "\tli\t" << rname << ", " << int16_t(li.i >> n) << "\n\tsldi\t" << rname << ", " << rname << n << "\n";
+          // unsigned id = add_constant( li.i );
+          // os << "\taddis " << rname << ", r2, .LC" << id << "@toc@ha\n";
+          // os << "\tld " << rname << ",.LC" << id << "@toc@l(" << rname << ")\n";
+          std::cerr << "error in generation of " << std::hex << li.i << "\n";
+          throw 0;
+        }
+      return os;
+        
+    }
+  };
+
   void
   write_test( Sink& sink, TestConfig const& cfg, CodeType code )
   {
     std::string hexcode;
     {
-      uint32_t codebits = code >> (cfg.wide() ? 0 : 16);
       std::ostringstream oss;
-      oss << std::hex << codebits;
+      oss << std::hex << code;
       hexcode = oss.str();
     }
+    
     std::string opfunc_name = sink.test_prefix() + cfg.ident + '_' + hexcode;
     
     sink.macros << "ENTRY(" << opfunc_name << ",0x" << hexcode << ")\n";
-    
+
     sink.sources << "\t.text\n\t.align\t2\n\t.global\t" << opfunc_name
                  << "\n\t.type\t" << opfunc_name
-                 << ", @function\n" << opfunc_name
-                 << ":\n"
-                 << cfg.prologue()
-                 << "\t." << (cfg.wide() ? "long" : "short") << "\t0x" << hexcode << '\t' << "/* " << cfg.disasm << " */\n"
+                 << ", @object\n" << opfunc_name
+                 << ":\n";
+    sink.sources << "\t.long\t0x" << std::hex << cfg.iif.GetSources() << std::dec << "\n";
+    if (cfg.iif.usemem())
+      {
+        ut::Interface::Prologue p;
+        cfg.Resolve( p );
+        
+        GPRPrint br( cfg.iif.base_register ),  buffer( cfg.iif.aligned ? 3 : 0 );;
+        sink.sources << '\t' << LoadImmediate(cfg.iif.base_register, p.offset) << '\n'
+                     << '\t' << (p.sign ? "sub" : "add") << "\t" << br << ", " << br << ", " << buffer << "\n";
+        for (auto reg : p.regs)
+          sink.sources << '\t' << LoadImmediate(reg.first, reg.second) << '\n';
+      }
+    
+    sink.sources << "\t.long\t0x" << hexcode << '\t' << "/* " << cfg.disasm << " */\n"
                  << cfg.epilogue()
-                 << "\tse_blr\n"
+                 << "\tblr\n"
                  << "\t.size\t" << opfunc_name
                  << ", .-" << opfunc_name << "\n\n";
   }
@@ -174,7 +185,7 @@ struct Checker
   TestClasses testclasses;
   std::ofstream logger;
   
-  Checker() : random( 1, 2, 3, 4 ), logger((std::string( ISA::Name() ) + ".log").c_str()) {}
+  Checker() : random( 1, 2, 3, 4 ), logger("insnscan.log") {}
   
   void discover( uintptr_t ttl )
   {

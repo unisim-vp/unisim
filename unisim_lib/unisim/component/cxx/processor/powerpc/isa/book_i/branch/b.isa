@@ -36,10 +36,10 @@
 op b(18[6]:shl<2> sext li24[24]: aa[1]: lk[1]);
 
 b.execute = {
-	UINT li = UINT(li24);
-	ADDRESS target_addr = aa ? li : cpu->GetCIA() + li;
+	UINT li( li24 );
+	ADDRESS target_addr( aa ? li : cpu->GetCIA() + li );
 	cpu->Branch(target_addr);
-	if (lk) cpu->GetLR() = ADDRESS(cpu->GetCIA()) + ADDRESS(4);
+	if (lk) cpu->GetLR() = ADDRESS( cpu->GetCIA() + UINT(4) );
 	return true;
 };
 

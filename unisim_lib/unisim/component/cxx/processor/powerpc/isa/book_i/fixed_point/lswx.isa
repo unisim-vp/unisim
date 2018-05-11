@@ -32,7 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lswx(31[6]:rd[5]:ra[5]:rb[5]:533[10]:?[1])
+op lswx(31[6]:rd[5]:ra[5]:rb[5]:533[10]:?[1]);
+
 lswx.execute = {
 	if(unlikely(rd == ra ||
 	            rd == rb ||
@@ -58,12 +59,9 @@ lswx.execute = {
 	}
 	
 	return true;
-}
+};
+
 lswx.disasm = {
 	os << "lswx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
-	if(cpu && (cpu->GetCIA() == this->GetAddr()))
-	{
-		ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+};
+

@@ -39,9 +39,4 @@ tlbie.execute = {
 }
 tlbie.disasm = {
 	os << "tlbie " << GPRPrint(rb);
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t ea = cpu->GetGPR(rb);
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
 }

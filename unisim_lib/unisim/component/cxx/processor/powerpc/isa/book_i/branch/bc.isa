@@ -66,12 +66,12 @@ bc.execute = {
 	}
 	
 	if (evenly(ctr_ok and cond_ok)) {
-		UINT bd = UINT(bd14);
-		ADDRESS target_addr = aa ? bd : cpu->GetCIA() + bd;
+		UINT bd( bd14 );
+		ADDRESS target_addr( aa ? bd : cpu->GetCIA() + bd );
 		cpu->Branch(target_addr);
 	}
 	
-	if (lk) cpu->GetLR() = ADDRESS(cpu->GetCIA()) + ADDRESS(4);
+	if (lk) cpu->GetLR() = ADDRESS( cpu->GetCIA() + UINT(4) );
 	
 	return true;
 };
