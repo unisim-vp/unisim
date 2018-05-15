@@ -38,7 +38,7 @@ rldcr.var me : {uint8_t} = {me0|me1};
 rldcr.execute = {
 	// Read the input operands
 	U64 s( cpu->GetGPR(rs) );
-	U8  n( cpu->GetGPR(rs) & UINT(0x3f) );
+	U8  n( cpu->GetGPR(rb) & UINT(0x3f) );
 	
 	// Compute the result
 	U64 result( RotateLeft(s, n) & U64(uint64_t(-1) << (me^63)) );
