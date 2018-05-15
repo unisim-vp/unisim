@@ -167,10 +167,10 @@ action {bool} donttest() { return false; };
 
 /* Book I: Power ISA User Instruction Set Architecture */
 /* Branch */
-include "unisim/component/cxx/processor/powerpc/isa/book_i/branch/bcctr.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/branch/bc.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/branch/bclr.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/branch/b.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/branch/bcctr.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/branch/bc.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/branch/bclr.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/branch/b.isa"
 
 /* Conditional Registers */
 include "unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/crandc.isa"
@@ -337,10 +337,10 @@ include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmsub
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmsubs.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fres.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/frsp.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/frsqrte.isa"
+//include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/frsqrte.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsel.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsqrt.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsqrts.isa"
+//include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsqrt.isa"
+//include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsqrts.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsub.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsubs.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfd.isa"

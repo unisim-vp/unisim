@@ -67,7 +67,7 @@ divw.execute = {
 	}
 	
 	// Write back the result
-	cpu->SetGPR(rd, UINT(result));
+	cpu->SetGPR(rd, UINT(U32(result)));
 		
 	if(unlikely(rc))
 	{
