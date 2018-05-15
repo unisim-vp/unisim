@@ -196,8 +196,8 @@ struct Checker
         uint32_t mask = opc.opcode_mask, bits = opc.opcode & mask;
         auto testclass = testclasses.end();
         std::map<std::string,uintptr_t> fails;
-        
-        for (uintptr_t trial = 0; trial < ttl; ++trial)
+        uintptr_t maxtrials = ttl;
+        for (uintptr_t trial = 0; trial < maxtrials; ++trial)
           {
             step += 1;
             try
@@ -211,6 +211,7 @@ struct Checker
                   if (testclass == testclasses.end()) {
                     testclasses[name];
                     testclass = testclasses.find(name);
+                    maxtrials += ttl*testclass->second.size();
                     std::cerr << "Tests[" << ISA::Name() << "::" << name << "]: ";
                   } else if (testclass->first != name) {
                     std::cerr << "Incoherent Operation names: " << testclass->first << " and " << name << std::endl;
