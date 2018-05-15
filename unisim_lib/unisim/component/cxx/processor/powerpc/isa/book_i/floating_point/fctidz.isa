@@ -50,29 +50,37 @@ fctidz.execute = {
 	// Read the input operands
 	FPSCR& fpscr( cpu->GetFPSCR() );
 	SoftDouble b = cpu->GetFPR(fb);
-	
+
 	// Compute the result
-	Flags flags( Flags::RoundingMode(1) ); // ZeroRounding
-	S64 res64 = b.queryS64( flags );
+	S64 res64;
+	
+	if (unlikely(b.isNaN()))
+	{
+		if (unlikely(b.isSNaN()))
+		{
+			// Generate VXSNAN
+			fpscr.SetInvalid(FPSCR::VXSNAN());
+			if (unlikely(not cpu->CheckFloatingPointException()))
+				return false;
+		}
+
+		res64 = S64(1ll<<63);
+	}
+	else
+	{
+		Flags flags( Flags::RoundingMode(1) );
+		res64 = b.queryS64( flags );
+		// Generate VXCVI, FR, FI, XX, FX, VX, FEX
+		if (likely(not flags.isOverflow())) fpscr.SetInexact( flags.isApproximate() );
+		else                                fpscr.SetInvalid( FPSCR::VXCVI() );
+		fpscr.Set<FPSCR::FR>( flags.hasIncrementFraction(res64 < S64(0)) );
+		
+		if (not cpu->CheckFloatingPointException())
+			return false;
+	}
 	
 	SoftDouble result(SoftDouble::FromRawBits, U64(res64));
 	
-	// Generate VXSNAN, VXCVI, FR, FI, XX, FX, VX, FEX
-	if (likely(not flags.isOverflow())) fpscr.SetInexact(flags.isApproximate());
-	UINT new_fpscr(fpscr), old_fpscr = new_fpscr;
-	GenFPSCR_VXSNAN<FPSCR>(new_fpscr, flags);
-	GenFPSCR_VXCVI<FPSCR>(new_fpscr, flags);
-	GenFPSCR_FR<FPSCR, SoftDouble>(new_fpscr, b, flags);
-	GenFPSCR_FX<FPSCR>(new_fpscr, old_fpscr);
-	GenFPSCR_VX<FPSCR>(new_fpscr);
-	GenFPSCR_FEX<FPSCR>(new_fpscr);
-
-	// Update FPSCR
-	cpu->SetFPSCR(new_fpscr);
-
-	if (not cpu->CheckFloatingPointException())
-		return false;
-
 	// Write back the result
 	cpu->SetFPR(fd, result);
 

@@ -150,7 +150,7 @@ struct E5500 : e5500::Decoder
                  << "\n\t.type\t" << opfunc_name
                  << ", @object\n" << opfunc_name
                  << ":\n";
-    sink.sources << "\t.long\t0x" << std::hex << cfg.iif.GetSources() << std::dec << "\n";
+    sink.sources << "\t.long\t0x" << std::hex << cfg.iif.GetRegs() << std::dec << "\n";
     if (cfg.iif.usemem())
       {
         ut::Interface::Prologue p;

@@ -83,11 +83,11 @@ namespace ut
 
       int  cmp( RegBank const& ) const;
       uintptr_t count() const { return vmap.size(); }
-      unsigned sources() const
+      unsigned used() const
       {
         unsigned flags = 0;
         for (auto&& vr : vmap)
-          flags |= unsigned(vr.second.source) << vr.first;
+          flags |= unsigned(vr.second.source|vr.second.destination) << vr.first;
         return flags;
       }
       
@@ -95,7 +95,7 @@ namespace ut
       std::vector<unsigned>              refs;
     };
 
-    unsigned GetSources() const { return (iregs.sources() >> 4) | (fregs.sources() >> 0); }
+    unsigned GetRegs() const { return (iregs.used() >> 4) | (fregs.used() >> 0); }
 
     void irappend( uint8_t idx, bool w )
     {
