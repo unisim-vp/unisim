@@ -45,7 +45,8 @@ divdu.execute = {
 	if(unlikely(b == U64(0)))
 	{
 		// Compute the result (-1)
-		result = U64(-1);
+		// result = U64(-1);
+		result = a; // Is QEMU Right ?
 			
 		if(unlikely(oe))
 		{

@@ -70,6 +70,8 @@ namespace ut
       void addaccess( bool w ) { source |= not w; destination |= w; }
     
       int  cmp( VirtualRegister const& ) const;
+
+      bool used() const { return source | destination; }
     
       uint8_t vindex      : 5;
       uint8_t source      : 1;
@@ -87,7 +89,7 @@ namespace ut
       {
         unsigned flags = 0;
         for (auto&& vr : vmap)
-          flags |= unsigned(vr.second.source|vr.second.destination) << vr.first;
+          flags |= unsigned(vr.second.used()) << vr.first;
         return flags;
       }
       
@@ -95,7 +97,16 @@ namespace ut
       std::vector<unsigned>              refs;
     };
 
-    unsigned GetRegs() const { return (iregs.used() >> 4) | (fregs.used() >> 0); }
+    uint32_t GetRegs() const
+    {
+      return (iregs.used() >> 4) | (fregs.used() >> 0)
+        | (unsigned(cr.used())    <<  8)
+        | (unsigned(fpscr.used()) <<  9)
+        | (unsigned(xer.used())   << 10)
+        // | (unsigned(lr.used())    << 11)
+        // | (unsigned(ctr.used())   << 12)
+        ;
+    }
 
     void irappend( uint8_t idx, bool w )
     {

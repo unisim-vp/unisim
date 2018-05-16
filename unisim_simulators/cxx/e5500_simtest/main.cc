@@ -91,7 +91,7 @@ struct E5500 : e5500::Decoder
   static CodeType mkcode( uint32_t code ) { return CodeType( code ); }
   static CodeType cleancode( Operation const& op ) { return op.GetEncoding(); }
   
-  static char const* Name() { return "VLE"; }
+  static char const* Name() { return "PPC64"; }
 
   E5500() : const_id(0) {}
   unsigned const_id;
