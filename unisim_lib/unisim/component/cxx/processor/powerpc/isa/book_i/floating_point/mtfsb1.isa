@@ -54,10 +54,11 @@ mtfsb1.execute = {
 	if (likely(bt != 1 && bt != 2))
 	{
 		// Set bit BT
-		UINT new_fpscr( fpscr );
+		UINT new_fpscr( fpscr ), old_fpscr = new_fpscr;
 		new_fpscr |= UINT(0x80000000 >> bt);
 		
 		// Update VX, FEX
+		GenFPSCR_FX<FPSCR>(new_fpscr, old_fpscr);
 		GenFPSCR_VX<FPSCR>(new_fpscr);
 		GenFPSCR_FEX<FPSCR>(new_fpscr);
 		

@@ -40,9 +40,10 @@ mulhwu.execute = {
 	U64 a = U64(U32(cpu->GetGPR(ra))), b = U64(U32(cpu->GetGPR(rb)));
 	
 	// Compute the result
-	U64 result = a*b >> 32;
+	U32 res32 = a*b >> 32;
 	
 	// Write back the result
+        SINT result = SINT( U32(res32) ); // TODO: upper bits (0..31) are undefined
 	cpu->SetGPR(rd, UINT(result));
 	
 	if(unlikely(rc))
@@ -50,9 +51,9 @@ mulhwu.execute = {
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(S32(result) < S32(0));
-		cr.Set<CR::CR0::GT>(S32(result) > S32(0));
-		cr.Set<CR::CR0::EQ>(result == U64(0));
+		cr.Set<CR::CR0::LT>(result < SINT(0));
+		cr.Set<CR::CR0::GT>(result > SINT(0));
+		cr.Set<CR::CR0::EQ>(result == SINT(0));
 	}
 	
 	return true;
