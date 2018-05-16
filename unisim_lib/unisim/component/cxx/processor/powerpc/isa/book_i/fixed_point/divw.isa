@@ -45,7 +45,8 @@ divw.execute = {
 	if(unlikely((a == S32( 0x80000000) and b == S32( -1)) or b == S32(0)))
 	{
 		// Compute the res32 (0)
-		res32 = S32(0);
+		// res32 = S32(0);
+		res32 = a; // Is QEMU Right ?
 		
 		if (unlikely(oe))
 		{

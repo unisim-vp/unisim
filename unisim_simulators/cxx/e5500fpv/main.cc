@@ -177,6 +177,11 @@ main( int argc, char* argv[] )
   {
     stop_address = strtoull(stop_addr_env, 0, 16);
   }
+  uint64_t debug_address = 0;
+  if (char const* debug_addr_env = getenv("YVES_DEBUG_ADDRESS"))
+  {
+    debug_address = strtoull(debug_addr_env, 0, 16);
+  }
   
   try
     {
@@ -187,8 +192,12 @@ main( int argc, char* argv[] )
           uint64_t current_address = lastaddrs[cpu.insn_count%tail_trace_size] = op->GetAddr();
           if (current_address == stop_address)
             {
-              std::cerr << "Address-Stop requested.\n";
+              std::cerr << "Stop address hit.\n";
               break;
+            }
+          if (current_address == debug_address)
+            {
+              std::cerr << "Debug address hit!\n";
             }
           asm volatile ("operation_execute:");
           bool success = op->execute( &cpu );

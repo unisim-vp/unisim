@@ -107,7 +107,7 @@ impl {
   
   using ut::UnsignedMultiplyHigh;
   using ut::SignedMultiplyHigh;
-
+  using ut::RotL32;
 
   using ut::GenFPSCR_OX;
   using ut::GenFPSCR_UX;

@@ -51,7 +51,7 @@ mcrfs.execute = {
 	FPSCR& fpscr = cpu->GetFPSCR();
 
 	// Extract FPSCR source 4-bit field
-	UINT bits = (UINT(fpscr) >> 4*bfa) & UINT(0xf);
+	UINT bits = ((UINT(fpscr) << 4*bfa) >> 28) & UINT(0xf);
 	
 	// Clear copied bits if they are exception bits or FX
 	switch(bfa)

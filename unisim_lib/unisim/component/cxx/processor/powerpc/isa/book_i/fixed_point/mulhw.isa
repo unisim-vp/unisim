@@ -40,7 +40,7 @@ mulhw.execute = {
 	S64 a = S64(S32(cpu->GetGPR(ra))), b = S64(S32(cpu->GetGPR(rb)));
 	
 	// Compute the result
-	S32 res32 = a*b >> 32;
+	S32 res32( a*b >> 32 );
 	
 	// Write back the result
         SINT result = SINT( U32(res32) ); // TODO: upper bits (0..31) are undefined

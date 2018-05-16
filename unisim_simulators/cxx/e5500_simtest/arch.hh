@@ -581,6 +581,7 @@ namespace ut
 
   inline U64 UnsignedMultiplyHigh( U64 lop, U64 rop ){ return U64( make_function( "UnsignedMultiplyHigh", lop.expr, rop.expr ) ); }
   inline S64 SignedMultiplyHigh( S64 lop, S64 rop ) { return S64( make_function( "SignedMultiplyHigh", lop.expr, rop.expr ) ); }
+  inline U64 RotL32( U64 const& src, U8 const& sh ) { return U64( make_function( "RotL32", src.expr, sh.expr ) ); }
 }
 
 #endif // ARCH_HH

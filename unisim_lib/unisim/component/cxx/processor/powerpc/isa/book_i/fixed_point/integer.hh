@@ -62,6 +62,16 @@ inline uint64_t Mask64(unsigned mb, unsigned me)
 	return RotateRight(uint64_t(-1) << (~(me-mb) & 63), mb);
 }
 
+inline uint64_t RotL32(uint64_t value, uint8_t sh)
+{
+  return 0x100000001ull * RotateLeft(uint32_t(value), sh);
+}
+
+inline uint32_t RotL32(uint32_t value, uint8_t sh)
+{
+  return RotateLeft(value, sh);
+}
+
 } // end of namespace powerpc
 } // end of namespace processor
 } // end of namespace cxx

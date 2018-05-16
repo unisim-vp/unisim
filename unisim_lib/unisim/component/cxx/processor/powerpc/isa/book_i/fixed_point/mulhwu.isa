@@ -40,7 +40,7 @@ mulhwu.execute = {
 	U64 a = U64(U32(cpu->GetGPR(ra))), b = U64(U32(cpu->GetGPR(rb)));
 	
 	// Compute the result
-	U32 res32 = a*b >> 32;
+	U32 res32( a*b >> 32 );
 	
 	// Write back the result
         SINT result = SINT( U32(res32) ); // TODO: upper bits (0..31) are undefined

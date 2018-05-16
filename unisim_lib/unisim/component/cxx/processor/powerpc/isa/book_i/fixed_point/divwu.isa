@@ -45,7 +45,8 @@ divwu.execute = {
 	if(unlikely(b == U32(0)))
 	{
 		// Compute the res32 (-1)
-		res32 = U32(-1);
+		//res32 = U32(-1);
+		res32 = a; // Is QEMU Right ?
 			
 		if(unlikely(oe))
 		{

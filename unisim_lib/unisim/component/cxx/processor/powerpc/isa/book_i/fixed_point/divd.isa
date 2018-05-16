@@ -45,7 +45,8 @@ divd.execute = {
 	if(unlikely((a == S64(0x8000000000000000ll) and b == S64(-1)) or b == S64(0)))
 	{
 		// Compute the result (0)
-		result = S64(0);
+		// result = S64(0);
+		result = a; // Is QEMU Right ?
 		
 		if (unlikely(oe))
 		{
