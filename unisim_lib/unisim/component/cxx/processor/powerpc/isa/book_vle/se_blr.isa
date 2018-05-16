@@ -37,7 +37,7 @@
 op se_blr(2[15]:lk[1]);
 
 se_blr.execute = {
-	ADDRESS target_addr( cpu->GetLR() & UINT(-2) );
+	ADDRESS target_addr( UINT(cpu->GetLR()) & UINT(-2) ); // TODO: LR should behave as a UINT
 	cpu->Branch(target_addr);
 	
 	if(lk)
