@@ -143,6 +143,10 @@ include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpl.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cntlzw.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divw_sat.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divwu_sat.isa"
+
+divw.var DZResult : {struct { S32 operator () ( S32 a, S32 b ) { return (a >> 31) ^ b ^ S32( 0x7fffffff); } }};
+divwu.var DZResult : {struct { U32 operator () ( U32 a, U32 b ) { return U32(-1); } }};
+
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/eqv.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/extsb.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/extsh.isa"

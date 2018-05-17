@@ -45,7 +45,7 @@ divw.execute = {
 	if(unlikely((a == S32( 0x80000000) and b == S32( -1)) or b == S32(0)))
 	{
 		// Compute the result
-		res32 = (a >> 31) ^ b ^ S32( 0x7fffffff); // saturated
+		res32 = (a >> 31) ^ b ^ S32( 0x7fffffff); // Saturated
 		// res32 = S32(0); // G4
 		// res32 = a; // Is QEMU Right ?
 		
