@@ -37,16 +37,13 @@ op divdu(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:457[9]:rc[1]);
 
 divdu.execute = {
 	// Read the input operands
-	U64 a( cpu->GetGPR(ra) );
-	U64 b( cpu->GetGPR(rb) );
+	U64 a( cpu->GetGPR(ra) ), b( cpu->GetGPR(rb) ), result;
 	XER& xer = cpu->GetXER();
-	U64 result;
 	
 	if(unlikely(b == U64(0)))
 	{
-		// Compute the result (-1)
-		// result = U64(-1);
-		result = a; // Is QEMU Right ?
+		// Compute the result
+		result = DZResult( a, b );
 			
 		if(unlikely(oe))
 		{

@@ -37,17 +37,13 @@ op divw(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:491[9]:rc[1]);
 
 divw.execute = {
 	// Read the input operands
-	S32 a( cpu->GetGPR(ra) );
-	S32 b( cpu->GetGPR(rb) );
+	S32 a( cpu->GetGPR(ra) ), b( cpu->GetGPR(rb) ), res32;
 	XER& xer = cpu->GetXER();
-	S32 res32;
 	
 	if(unlikely((a == S32( 0x80000000) and b == S32( -1)) or b == S32(0)))
 	{
 		// Compute the result
-		// res32 = (a >> 31) ^ b ^ S32( 0x7fffffff); // saturated
-		// res32 = S32(0); // G4
-		res32 = a; // Is QEMU Right ?
+		res32 = DZResult( a , b );
 		
 		if (unlikely(oe))
 		{

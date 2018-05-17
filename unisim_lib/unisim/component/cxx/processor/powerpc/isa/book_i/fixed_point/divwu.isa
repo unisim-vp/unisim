@@ -43,8 +43,7 @@ divwu.execute = {
 	if(unlikely(b == U32(0)))
 	{
 		// Compute the result
-		// res32 = U32(-1); // Saturated
-		res32 = a; // Is QEMU Right ?
+		res32 = DZResult( a, b );
 		
 		if(unlikely(oe))
 		{

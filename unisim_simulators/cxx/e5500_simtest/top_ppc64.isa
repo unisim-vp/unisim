@@ -309,6 +309,11 @@ include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/xori.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/xor.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/xoris.isa"
 
+divdu.var DZResult : {struct { U64 operator () ( U64 a, U64 b ) { return a; /* Is QEMU Right ? */ } }};
+divd.var DZResult : {struct { S64 operator () ( S64 a, S64 b ) { return a; /* Is QEMU Right ? */ } }};
+divw.var DZResult : {struct { S32 operator () ( S32 a, S32 b ) { return a; /* Is QEMU Right ? */ } }};
+divwu.var DZResult : {struct { U32 operator () ( U32 a, U32 b ) { return a; /* Is QEMU Right ? */ } }};
+
 /* Floating-point */
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fabs.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fadd.isa"
