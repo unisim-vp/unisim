@@ -44,8 +44,9 @@ divw.execute = {
 	
 	if(unlikely((a == S32( 0x80000000) and b == S32( -1)) or b == S32(0)))
 	{
-		// Compute the res32 (0)
-		// res32 = S32(0);
+		// Compute the result
+		// res32 = (a >> 31) ^ b ^ S32( 0x7fffffff); // saturated
+		// res32 = S32(0); // G4
 		res32 = a; // Is QEMU Right ?
 		
 		if (unlikely(oe))
@@ -57,7 +58,7 @@ divw.execute = {
 	}
 	else
 	{
-		// Compute the res32
+		// Compute the result
 		res32 = a / b;
 		
 		if(unlikely(oe))
@@ -68,7 +69,7 @@ divw.execute = {
 	}
 	
 	// Write back the result
-        SINT result = SINT( U32(res32) ); // TODO: upper bits (0..31) are undefined
+	SINT result = SINT( U32(res32) ); // TODO: upper bits (0..31) are undefined
 	cpu->SetGPR(rd, UINT(result));
 		
 	if(unlikely(rc))
@@ -92,3 +93,4 @@ specialize divw(rc=0,oe=0);
 specialize divw(rc=0,oe=1);
 specialize divw(rc=1,oe=0);
 specialize divw(rc=1,oe=1);
+

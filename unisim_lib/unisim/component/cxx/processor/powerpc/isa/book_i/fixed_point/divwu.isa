@@ -37,17 +37,15 @@ op divwu(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:459[9]:rc[1]);
 
 divwu.execute = {
 	// Read the input operands
-	U32 a( cpu->GetGPR(ra) );
-	U32 b( cpu->GetGPR(rb) );
+	U32 a( cpu->GetGPR(ra) ), b( cpu->GetGPR(rb) ), res32;
 	XER& xer = cpu->GetXER();
-	U32 res32;
 	
 	if(unlikely(b == U32(0)))
 	{
-		// Compute the res32 (-1)
-		//res32 = U32(-1);
+		// Compute the result
+		// res32 = U32(-1); // Saturated
 		res32 = a; // Is QEMU Right ?
-			
+		
 		if(unlikely(oe))
 		{
 			// Generate XER[OV] and XER[SO]: XER[OV]=1 XER[SO]=1
@@ -68,7 +66,7 @@ divwu.execute = {
 	}
 	
 	// Write back the result
-        SINT result = SINT( U32(res32) ); // TODO: upper bits (0..31) are undefined
+	SINT result = SINT( U32(res32) ); // TODO: upper bits (0..31) are undefined
 	cpu->SetGPR(rd, UINT(result));
 		
 	if(unlikely(rc))

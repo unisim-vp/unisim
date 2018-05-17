@@ -40,12 +40,14 @@ divw.execute = {
 	S32 a( cpu->GetGPR(ra) );
 	S32 b( cpu->GetGPR(rb) );
 	XER& xer = cpu->GetXER();
-	S32 result;
+	S32 res32;
 	
 	if(unlikely((a == S32( 0x80000000) and b == S32( -1)) or b == S32(0)))
 	{
-		// Compute the saturated result
-		result = (a >> 31) ^ b ^ S32( 0x7fffffff);
+		// Compute the result
+		res32 = (a >> 31) ^ b ^ S32( 0x7fffffff); // saturated
+		// res32 = S32(0); // G4
+		// res32 = a; // Is QEMU Right ?
 		
 		if (unlikely(oe))
 		{
@@ -57,7 +59,7 @@ divw.execute = {
 	else
 	{
 		// Compute the result
-		result = a / b;
+		res32 = a / b;
 		
 		if(unlikely(oe))
 		{
@@ -67,6 +69,7 @@ divw.execute = {
 	}
 	
 	// Write back the result
+	SINT result = SINT( U32(res32) ); // TODO: upper bits (0..31) are undefined
 	cpu->SetGPR(rd, UINT(result));
 		
 	if(unlikely(rc))
@@ -74,9 +77,9 @@ divw.execute = {
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(result < S32(0));
-		cr.Set<CR::CR0::GT>(result > S32(0));
-		cr.Set<CR::CR0::EQ>(result == S32(0));
+		cr.Set<CR::CR0::LT>(result < SINT(0));
+		cr.Set<CR::CR0::GT>(result > SINT(0));
+		cr.Set<CR::CR0::EQ>(result == SINT(0));
 	}
 	
 	return true;
@@ -90,3 +93,4 @@ specialize divw(rc=0,oe=0);
 specialize divw(rc=0,oe=1);
 specialize divw(rc=1,oe=0);
 specialize divw(rc=1,oe=1);
+
