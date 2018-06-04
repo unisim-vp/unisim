@@ -2,6 +2,106 @@
 <variables>
 	<object name="HARDWARE">
 		<object name="HARDWARE.instrumenter">
+			<object name="HARDWARE.instrumenter.http-server">
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+				<variable name="http-port">
+					<type>parameter</type>
+					<data_type>signed 32-bit integer</data_type>
+					<value>1260</value>
+					<description>HTTP port</description>
+				</variable>
+				<variable name="http-max-clients">
+					<type>parameter</type>
+					<data_type>signed 32-bit integer</data_type>
+					<value>1</value>
+					<description>HTTP max clients</description>
+				</variable>
+				<variable name="instrumentation">
+					<type>parameter</type>
+					<data_type>string</data_type>
+					<value></value>
+					<description>Instrumented signals (wildcards '*' and '?' are allowed in signal names) that are controlled by user over HTTP</description>
+				</variable>
+				<variable name="intr-poll-period">
+					<type>parameter</type>
+					<data_type>sc_time</data_type>
+					<value>1 ms</value>
+					<description>Polling period for user interrupt request while continue</description>
+				</variable>
+			</object>
+			<object name="HARDWARE.instrumenter.csv-reader">
+				<variable name="filename">
+					<type>parameter</type>
+					<data_type>string</data_type>
+					<value></value>
+					<description>name of CSV input file</description>
+				</variable>
+				<variable name="instrumentation">
+					<type>parameter</type>
+					<data_type>string</data_type>
+					<value></value>
+					<description>Instrumented signals (wildcards '*' and '?' are allowed in signal names) that take there input from the CSV file</description>
+				</variable>
+				<variable name="instrumentation-start-time">
+					<type>parameter</type>
+					<data_type>sc_time</data_type>
+					<value>0 s</value>
+					<description>Start time of instrumentation</description>
+				</variable>
+				<variable name="instrumentation-end-time">
+					<type>parameter</type>
+					<data_type>sc_time</data_type>
+					<value>18446744073709551615 ps</value>
+					<description>End time of instrumentation</description>
+				</variable>
+				<variable name="csv-delimiter">
+					<type>parameter</type>
+					<data_type>string</data_type>
+					<value>,</value>
+					<description>delimiter in CSV file</description>
+				</variable>
+			</object>
+			<object name="HARDWARE.instrumenter.csv-writer">
+				<variable name="filename">
+					<type>parameter</type>
+					<data_type>string</data_type>
+					<value></value>
+					<description>name of CSV output file</description>
+				</variable>
+				<variable name="instrumentation">
+					<type>parameter</type>
+					<data_type>string</data_type>
+					<value></value>
+					<description>Instrumented signals (wildcards '*' and '?' are allowed in signal names) to record in the CSV file</description>
+				</variable>
+				<variable name="instrumentation-start-time">
+					<type>parameter</type>
+					<data_type>sc_time</data_type>
+					<value>0 s</value>
+					<description>Start time of instrumentation</description>
+				</variable>
+				<variable name="instrumentation-end-time">
+					<type>parameter</type>
+					<data_type>sc_time</data_type>
+					<value>18446744073709551615 ps</value>
+					<description>End time of instrumentation</description>
+				</variable>
+				<variable name="csv-delimiter">
+					<type>parameter</type>
+					<data_type>string</data_type>
+					<value>,</value>
+					<description>delimiter in CSV file</description>
+				</variable>
+			</object>
 			<variable name="verbose">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -22,86 +122,6 @@
 					<item>false</item>
 				</enumeration>
 			</variable>
-			<variable name="enable-output-instrumentation">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable output instrumentation of signals</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="instrumentation-output-filename">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>Output filename for instrumented signals</description>
-			</variable>
-			<variable name="output-instrumentation">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>Instrumented signals to output in the instrumentation output file</description>
-			</variable>
-			<variable name="output-instrumentation-start-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>0 s</value>
-				<description>Start time for output instrumentation of signals</description>
-			</variable>
-			<variable name="output-instrumentation-end-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>18446744073709551615 ps</value>
-				<description>End time for output instrumentation of signals</description>
-			</variable>
-			<variable name="output-csv-delimiter">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value>,</value>
-				<description>CSV delimiter for instrumentation output file</description>
-			</variable>
-			<variable name="enable-input-instrumentation">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable input instrumentation of signals</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="instrumentation-input-filename">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>Input filename for instrumented signals</description>
-			</variable>
-			<variable name="input-instrumentation">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>Instrumented signals (wildcard '*' is allowed in signal names) that take there input from the instrumentation input file</description>
-			</variable>
-			<variable name="input-instrumentation-start-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>0 s</value>
-				<description>Start time for input instrumentation of signals</description>
-			</variable>
-			<variable name="input-instrumentation-end-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>18446744073709551615 ps</value>
-				<description>End time for input instrumentation of signals</description>
-			</variable>
-			<variable name="input-csv-delimiter">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value>,</value>
-				<description>CSV delimiter for instrumentation input file</description>
-			</variable>
 			<variable name="vcd-trace-file">
 				<type>parameter</type>
 				<data_type>string</data_type>
@@ -112,7 +132,7 @@
 				<type>parameter</type>
 				<data_type>string</data_type>
 				<value></value>
-				<description>Signals to trace (wildcard '*' is allowed in signal names)</description>
+				<description>Signals to trace (wildcards '*' and '?' are allowed in signal names)</description>
 			</variable>
 			<variable name="enable-trace-signals">
 				<type>parameter</type>
@@ -129,6 +149,42 @@
 				<data_type>string</data_type>
 				<value></value>
 				<description>GTKWave initialization script that simulators must automatically generate at startup</description>
+			</variable>
+			<variable name="enable-http-server">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable HTTP server</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-csv-reader">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable CSV reader</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-csv-writer">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable CSV writer</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="front-ends-priority-order">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>HARDWARE.instrumenter.csv-reader HARDWARE.instrumenter.http-server HARDWARE.instrumenter.csv-writer</value>
+				<description>Front-ends priority order (from left/higher to right/lower priority)</description>
 			</variable>
 		</object>
 		<object name="HARDWARE.Main_Core_0">
@@ -13163,7 +13219,7 @@
 	<variable name="enable-press-enter-at-exit">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
-		<value>false</value>
+		<value>true</value>
 		<description>Enable/Disable pressing key enter at exit</description>
 		<enumeration>
 			<item>true</item>

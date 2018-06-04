@@ -149,32 +149,48 @@ enum Access
 
 std::ostream& operator << (std::ostream& os, const Access& access);
 
+////////////////////////////// ReadWriteStatusFlag///////////////////////////////
+
+enum ReadWriteStatusFlag
+{
+	RWSF_WOORV         = 1,                                   // writing out-of-range value
+	RWSF_WROR          = 2,                                   // writing read-only register
+	RWSF_WROB          = 4,                                   // writing read-only bits
+	RWSF_RWOR          = 8,                                   // reading write-only register
+	RWSF_ANA           = 16,                                  // access not allowed
+	RWSF_UA            = 32                                   // unmapped access
+};
+
 //////////////////////////////// ReadWriteStatus ////////////////////////////////
 
 enum ReadWriteStatus
 {
 	RWS_OK            = 0,                                   // OK
-	RWS_WOORV         = 1,                                   // writing out-of-range value
-	RWS_WROR          = 2,                                   // writing read-only register
-	RWS_WROB          = 4,                                   // writing read-only bits
-	RWS_RWOR          = 8,                                   // reading write-only register
+	RWS_WOORV         = RWSF_WOORV,                          // writing out-of-range value
+	RWS_WROR          = RWSF_WROR,                           // writing read-only register
+	RWS_WROB          = RWSF_WROB,                           // writing read-only bits
+	RWS_RWOR          = RWSF_RWOR,                           // reading write-only register
 	RWS_WOORV_WROR    = RWS_WOORV | RWS_WROR,                // writing out-of-range value and writing read-only register
 	RWS_WOORV_WROB    = RWS_WOORV | RWS_WROB,                // writing out-of-range value and writing read-only bits
-	RWS_ANA           = 16,                                  // access not allowed
+	RWS_ANA           = RWSF_ANA,                            // access not allowed
 	RWS_WOORV_NA      = RWS_WOORV | RWS_ANA,                 // writing out-of-range value and access not allowed
 	RWS_WROR_NA       = RWS_WROR | RWS_ANA,                  // writing read-only register and access not allowed
 	RWS_WROB_NA       = RWS_WROB | RWS_ANA,                  // writing read-only bits and access not allowed
 	RWS_RWOR_NA       = RWS_RWOR | RWS_ANA,                  // reading write-only register and access not allowed
 	RWS_WOORV_WROR_NA = RWS_WOORV | RWS_WROR | RWS_ANA,      // writing out-of-range value and writing read-only register and access not allowed
 	RWS_WOORV_WROB_NA = RWS_WOORV | RWS_WROB | RWS_ANA,      // writing out-of-range value and writing read-only bits and access not allowed
-	RWS_UA            = 32                                   // unmapped access
+	RWS_UA            = RWSF_UA                              // unmapped access
 };
 
 std::ostream& operator << (std::ostream& os, const ReadWriteStatus& ws);
 
 inline bool IsReadWriteError(ReadWriteStatus rws) ALWAYS_INLINE;
 
-inline bool IsReadWriteError(ReadWriteStatus rws) { return (rws & (RWS_ANA | RWS_UA)) != 0; }
+inline bool IsReadWriteError(ReadWriteStatus rws) { return (rws & (RWSF_ANA | RWSF_UA)) != 0; }
+
+inline void SetReadWriteStatusFlag(ReadWriteStatus& rws, ReadWriteStatusFlag rwsf) { rws = ReadWriteStatus(rws | rwsf); }
+
+inline void ClearReadWriteStatusFlag(ReadWriteStatus& rws, ReadWriteStatusFlag rwsf) { rws = ReadWriteStatus(rws & ~rwsf); }
 
 ////////////////////////// Forward declarations ///////////////////////////////
 

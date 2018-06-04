@@ -143,6 +143,7 @@ unisim/util/os/linux_os/linux.cc \
 unisim/util/lexer/lexer.cc \
 unisim/util/ieee754/ieee754.cc \
 unisim/util/reg/core/register.cc \
+unisim/util/hypapp/hypapp.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
@@ -765,6 +766,7 @@ unisim/util/lexer/lexer.hh \
 unisim/util/parser/parser.hh \
 unisim/util/reg/core/register.hh \
 unisim/util/cache/cache.hh \
+unisim/util/hypapp/hypapp.hh \
 unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/debug_selecting.hh \
 unisim/service/interfaces/debug_event.hh \
@@ -939,6 +941,7 @@ m4/pthread.m4 \
 "
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="\
+unisim/kernel/tlm2/style.css \
 unisim/service/debug/gdb_server/gdb_powerpc_vle.xml \
 unisim/util/debug/dwarf/powerpc_e500_dwarf_register_number_mapping.xml \
 unisim/util/debug/dwarf/powerpc_e500_gcc_dwarf_register_number_mapping.xml \

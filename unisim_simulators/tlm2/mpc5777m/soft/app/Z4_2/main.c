@@ -55,7 +55,7 @@ void dspi_2_tfff_rfdf(unsigned int dspi_id, enum DSPI_REQ dspi_req)
 		spi_cmd.ctcnt = 0;
 		spi_cmd.pe_masc = 0;
 		spi_cmd.pp_mcsc = 0;
-		spi_cmd.pcs = 1 << (7 - 0);
+		spi_cmd.pcs = 1 << 0;
 
 		uint16_t v = x ? 0xcafe : 0xbabe;
 		dspi_master_spi_tx_fifo_push(dspi_id, &spi_cmd, v);
@@ -88,7 +88,7 @@ int main(void)
 	dspi_set_mode(2, DSPI_MASTER_MODE);
 	dspi_set_peripheral_chip_select_inactive_states(2, 0xff); // inactive high, active low
 	
-	struct DSPI_CLOCK_AND_TRANSFER_ATTRIBUTES cta0;
+	struct DSPI_CLOCK_AND_TRANSFER_ATTRIBUTES cta0; // 1 Mbit/s with a protocol clock at 80 Mhz
 	cta0.double_baud_rate               = 0;
 	cta0.frame_size                     = 16;
 	cta0.clock_polarity                 = DSPI_CLOCK_INACTIVE_LOW;
@@ -101,21 +101,23 @@ int main(void)
 	cta0.pcs_to_sck_delay_scaler        = 0;
 	cta0.after_sck_delay_scaler         = 0;
 	cta0.delay_after_transfer_scaler    = 0;
-	cta0.baud_rate_scaler               = 4;
+	cta0.baud_rate_scaler               = 3;
 	cta0.parity_enable                  = 0;
 	cta0.parity_polarity                = 0;
 
 	dspi_set_spi_clock_and_transfer_attributes(2, 0, &cta0);
-	
-	dspi_enable_module(2);
-	dspi_start_transfers(2);
 	
 #if DSPI_INT_MODE
 	dspi_set_interrupt_handler(2, DSPI_REQ_TFFF, dspi_2_tfff_rfdf);
 	dspi_set_interrupt_handler(2, DSPI_REQ_RFDF, dspi_2_tfff_rfdf);
 	dspi_enable_request(2, DSPI_REQ_TFFF);
 	dspi_enable_request(2, DSPI_REQ_RFDF);
-#else
+#endif
+	
+	dspi_enable_module(2);
+	dspi_start_transfers(2);
+	
+#if !DSPI_INT_MODE
 	struct DSPI_MASTER_SPI_COMMAND spi_cmd;
 	spi_cmd.cont = 0;
 	spi_cmd.ctas = 0;
@@ -123,7 +125,7 @@ int main(void)
 	spi_cmd.ctcnt = 0;
 	spi_cmd.pe_masc = 0;
 	spi_cmd.pp_mcsc = 0;
-	spi_cmd.pcs = 1 << (7 - 0);
+	spi_cmd.pcs = 1 << 0;
 	
 	int x = 0;
 	

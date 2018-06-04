@@ -892,17 +892,26 @@ bool NetStreamer::Get(uint8_t& v)
 #endif
 				{
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-					if((r == SOCKET_ERROR) && (WSAGetLastError() == WSAEWOULDBLOCK))
+					if(r == SOCKET_ERROR)
 #else
-					if(r < 0 && errno == EAGAIN)
+					if(r < 0)
 #endif
 					{
-						if(unlikely(debug))
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+						if(WSAGetLastError() == WSAEWOULDBLOCK)
+#else
+						if((errno == EAGAIN) || (errno == EWOULDBLOCK))
+#endif
 						{
-							logger << DebugInfo << "simulation thread: unlocking socket" << EndDebugInfo;
+							if(unlikely(debug))
+							{
+								logger << DebugInfo << "simulation thread: unlocking socket" << EndDebugInfo;
+							}
+							Unlock();
+							return false; // try again later
 						}
-						Unlock();
-						return false;
+						
+						// can't read from socket because of I/O error
 					}
 
 					logger << DebugWarning << "can't read from socket" << EndDebugWarning;

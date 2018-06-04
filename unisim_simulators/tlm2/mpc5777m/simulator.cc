@@ -34,6 +34,8 @@
 
 #include <simulator.hh>
 
+using unisim::kernel::tlm2::OUTPUT_INSTRUMENTATION;
+
 Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	: unisim::kernel::tlm2::Simulator(name, argc, argv, LoadBuiltInConfig)
 	, main_core_0(0)
@@ -57,11 +59,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, pit_0(0)
 	, pit_1(0)
 	, linflexd_0(0)
-    , linflexd_1(0)
-    , linflexd_2(0)
-    , linflexd_14(0)
-    , linflexd_15(0)
-    , linflexd_16(0)
+	, linflexd_1(0)
+	, linflexd_2(0)
+	, linflexd_14(0)
+	, linflexd_15(0)
+	, linflexd_16(0)
 	, linflexd_0_tx_serial_bus(0)
 	, linflexd_0_rx_serial_bus(0)
 	, linflexd_1_tx_serial_bus(0)
@@ -1348,7 +1350,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateSignal("m_por", false);
 	CreateSignal("stop", false);
 	CreateSignal("debug", false);
-	CreateSignal("reset_b", false);
+	CreateSignal("reset_b", true);
 	CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_0", true);
 	CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_1", true);
 	CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_2", true);
@@ -1357,9 +1359,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateSignal("p_mcp_b", true);
 	CreateSignal("p_rstbase", sc_dt::sc_uint<30>(0));
 	CreateSignal("p_cpuid", sc_dt::sc_uint<8>(0));
-	CreateSignal("p_extint_b", true);
 	CreateSignal("p_crint_b", true);
-	CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_irq_b", false);
+	CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_irq_b", true);
 	CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_avec_b", true);
 	CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_voffset", sc_dt::sc_uint<INTC_0_CONFIG::VOFFSET_WIDTH>(0));
 	CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_iack", false);
@@ -1501,115 +1502,115 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateSignal("DSPI_12_INT_TFIWF", false);
 	
 	//  - LIN Serial Buses
-	linflexd_0_tx_serial_bus = new LINFlexD_0_TX_SERIAL_BUS("LINFlexD_0_TX_SERIAL_BUS", CreateSignal("LINFlexD_0_TX", true), this);
-	linflexd_0_rx_serial_bus = new LINFlexD_0_RX_SERIAL_BUS("LINFlexD_0_RX_SERIAL_BUS", CreateSignal("LINFlexD_0_RX", true), this);
-	linflexd_1_tx_serial_bus = new LINFlexD_1_TX_SERIAL_BUS("LINFlexD_1_TX_SERIAL_BUS", CreateSignal("LINFlexD_1_TX", true), this);
-	linflexd_1_rx_serial_bus = new LINFlexD_1_RX_SERIAL_BUS("LINFlexD_1_RX_SERIAL_BUS", CreateSignal("LINFlexD_1_RX", true), this);
-	linflexd_2_tx_serial_bus = new LINFlexD_2_TX_SERIAL_BUS("LINFlexD_2_TX_SERIAL_BUS", CreateSignal("LINFlexD_2_TX", true), this);
-	linflexd_2_rx_serial_bus = new LINFlexD_2_RX_SERIAL_BUS("LINFlexD_2_RX_SERIAL_BUS", CreateSignal("LINFlexD_2_RX", true), this);
-	linflexd_14_tx_serial_bus = new LINFlexD_14_TX_SERIAL_BUS("LINFlexD_14_TX_SERIAL_BUS", CreateSignal("LINFlexD_14_TX", true), this);
-	linflexd_14_rx_serial_bus = new LINFlexD_14_RX_SERIAL_BUS("LINFlexD_14_RX_SERIAL_BUS", CreateSignal("LINFlexD_14_RX", true), this);
-	linflexd_15_tx_serial_bus = new LINFlexD_15_TX_SERIAL_BUS("LINFlexD_15_TX_SERIAL_BUS", CreateSignal("LINFlexD_15_TX", true), this);
-	linflexd_15_rx_serial_bus = new LINFlexD_15_RX_SERIAL_BUS("LINFlexD_15_RX_SERIAL_BUS", CreateSignal("LINFlexD_15_RX", true), this);
-	linflexd_16_tx_serial_bus = new LINFlexD_16_TX_SERIAL_BUS("LINFlexD_16_TX_SERIAL_BUS", CreateSignal("LINFlexD_16_TX", true), this);
-	linflexd_16_rx_serial_bus = new LINFlexD_16_RX_SERIAL_BUS("LINFlexD_16_RX_SERIAL_BUS", CreateSignal("LINFlexD_16_RX", true), this);
+	linflexd_0_tx_serial_bus = new LINFlexD_0_TX_SERIAL_BUS("LINFlexD_0_TX_SERIAL_BUS", CreateSignal("LINFlexD_0_TX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_0_rx_serial_bus = new LINFlexD_0_RX_SERIAL_BUS("LINFlexD_0_RX_SERIAL_BUS", CreateSignal("LINFlexD_0_RX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_1_tx_serial_bus = new LINFlexD_1_TX_SERIAL_BUS("LINFlexD_1_TX_SERIAL_BUS", CreateSignal("LINFlexD_1_TX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_1_rx_serial_bus = new LINFlexD_1_RX_SERIAL_BUS("LINFlexD_1_RX_SERIAL_BUS", CreateSignal("LINFlexD_1_RX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_2_tx_serial_bus = new LINFlexD_2_TX_SERIAL_BUS("LINFlexD_2_TX_SERIAL_BUS", CreateSignal("LINFlexD_2_TX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_2_rx_serial_bus = new LINFlexD_2_RX_SERIAL_BUS("LINFlexD_2_RX_SERIAL_BUS", CreateSignal("LINFlexD_2_RX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_14_tx_serial_bus = new LINFlexD_14_TX_SERIAL_BUS("LINFlexD_14_TX_SERIAL_BUS", CreateSignal("LINFlexD_14_TX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_14_rx_serial_bus = new LINFlexD_14_RX_SERIAL_BUS("LINFlexD_14_RX_SERIAL_BUS", CreateSignal("LINFlexD_14_RX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_15_tx_serial_bus = new LINFlexD_15_TX_SERIAL_BUS("LINFlexD_15_TX_SERIAL_BUS", CreateSignal("LINFlexD_15_TX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_15_rx_serial_bus = new LINFlexD_15_RX_SERIAL_BUS("LINFlexD_15_RX_SERIAL_BUS", CreateSignal("LINFlexD_15_RX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_16_tx_serial_bus = new LINFlexD_16_TX_SERIAL_BUS("LINFlexD_16_TX_SERIAL_BUS", CreateSignal("LINFlexD_16_TX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_16_rx_serial_bus = new LINFlexD_16_RX_SERIAL_BUS("LINFlexD_16_RX_SERIAL_BUS", CreateSignal("LINFlexD_16_RX", true, OUTPUT_INSTRUMENTATION), this);
 
 	//  - DSPI serial buses
-	dspi_0_sout_serial_bus  = new DSPI_0_SOUT_SERIAL_BUS ("DSPI_0_SOUT_SERIAL_BUS" , CreateSignal("DSPI_0_SOUT" , true), this);
-	dspi_0_sin_serial_bus   = new DSPI_0_SIN_SERIAL_BUS  ("DSPI_0_SIN_SERIAL_BUS"  , CreateSignal("DSPI_0_SIN"  , true), this);
+	dspi_0_sout_serial_bus  = new DSPI_0_SOUT_SERIAL_BUS ("DSPI_0_SOUT_SERIAL_BUS" , CreateSignal("DSPI_0_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_0_sin_serial_bus   = new DSPI_0_SIN_SERIAL_BUS  ("DSPI_0_SIN_SERIAL_BUS"  , CreateSignal("DSPI_0_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
 	for(i = 0; i < DSPI_0::NUM_CTARS; i++)
 	{
 		std::stringstream dspi_0_pcs_serial_bus_name_sstr;
 		dspi_0_pcs_serial_bus_name_sstr << "DSPI_0_PCS_SERIAL_BUS_" << i;
 		std::stringstream dspi_0_pcs_name_sstr;
 		dspi_0_pcs_name_sstr << "DSPI_0_PCS_" << i;
-		dspi_0_pcs_serial_bus[i] = new DSPI_0_PCS_SERIAL_BUS(dspi_0_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_0_pcs_name_sstr.str(), true), this);
+		dspi_0_pcs_serial_bus[i] = new DSPI_0_PCS_SERIAL_BUS(dspi_0_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_0_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
 	}
-	dspi_0_ss_serial_bus = new DSPI_0_SS_SERIAL_BUS("DSPI_0_SS_SERIAL_BUS", CreateSignal("DSPI_0_SS", true), this);
+	dspi_0_ss_serial_bus = new DSPI_0_SS_SERIAL_BUS("DSPI_0_SS_SERIAL_BUS", CreateSignal("DSPI_0_SS", true, OUTPUT_INSTRUMENTATION), this);
 	
-	dspi_1_sout_serial_bus  = new DSPI_1_SOUT_SERIAL_BUS ("DSPI_1_SOUT_SERIAL_BUS" , CreateSignal("DSPI_1_SOUT" , true), this);
-	dspi_1_sin_serial_bus   = new DSPI_1_SIN_SERIAL_BUS  ("DSPI_1_SIN_SERIAL_BUS"  , CreateSignal("DSPI_1_SIN"  , true), this);
+	dspi_1_sout_serial_bus  = new DSPI_1_SOUT_SERIAL_BUS ("DSPI_1_SOUT_SERIAL_BUS" , CreateSignal("DSPI_1_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_1_sin_serial_bus   = new DSPI_1_SIN_SERIAL_BUS  ("DSPI_1_SIN_SERIAL_BUS"  , CreateSignal("DSPI_1_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
 	for(i = 0; i < DSPI_1::NUM_CTARS; i++)
 	{
 		std::stringstream dspi_1_pcs_serial_bus_name_sstr;
 		dspi_1_pcs_serial_bus_name_sstr << "DSPI_1_PCS_SERIAL_BUS_" << i;
 		std::stringstream dspi_1_pcs_name_sstr;
 		dspi_1_pcs_name_sstr << "DSPI_1_PCS_" << i;
-		dspi_1_pcs_serial_bus[i] = new DSPI_1_PCS_SERIAL_BUS(dspi_1_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_1_pcs_name_sstr.str(), true), this);
+		dspi_1_pcs_serial_bus[i] = new DSPI_1_PCS_SERIAL_BUS(dspi_1_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_1_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
 	}
-	dspi_1_ss_serial_bus = new DSPI_1_SS_SERIAL_BUS("DSPI_1_SS_SERIAL_BUS", CreateSignal("DSPI_1_SS", true), this);
+	dspi_1_ss_serial_bus = new DSPI_1_SS_SERIAL_BUS("DSPI_1_SS_SERIAL_BUS", CreateSignal("DSPI_1_SS", true, OUTPUT_INSTRUMENTATION), this);
 	
-	dspi_2_sout_serial_bus  = new DSPI_2_SOUT_SERIAL_BUS ("DSPI_2_SOUT_SERIAL_BUS" , CreateSignal("DSPI_2_SOUT" , true), this);
-	dspi_2_sin_serial_bus   = new DSPI_2_SIN_SERIAL_BUS  ("DSPI_2_SIN_SERIAL_BUS"  , CreateSignal("DSPI_2_SIN"  , true), this);
+	dspi_2_sout_serial_bus  = new DSPI_2_SOUT_SERIAL_BUS ("DSPI_2_SOUT_SERIAL_BUS" , CreateSignal("DSPI_2_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_2_sin_serial_bus   = new DSPI_2_SIN_SERIAL_BUS  ("DSPI_2_SIN_SERIAL_BUS"  , CreateSignal("DSPI_2_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
 	for(i = 0; i < DSPI_2::NUM_CTARS; i++)
 	{
 		std::stringstream dspi_2_pcs_serial_bus_name_sstr;
 		dspi_2_pcs_serial_bus_name_sstr << "DSPI_2_PCS_SERIAL_BUS_" << i;
 		std::stringstream dspi_2_pcs_name_sstr;
 		dspi_2_pcs_name_sstr << "DSPI_2_PCS_" << i;
-		dspi_2_pcs_serial_bus[i] = new DSPI_2_PCS_SERIAL_BUS(dspi_2_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_2_pcs_name_sstr.str(), true), this);
+		dspi_2_pcs_serial_bus[i] = new DSPI_2_PCS_SERIAL_BUS(dspi_2_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_2_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
 	}
-	dspi_2_ss_serial_bus = new DSPI_2_SS_SERIAL_BUS("DSPI_2_SS_SERIAL_BUS", CreateSignal("DSPI_2_SS", true), this);
+	dspi_2_ss_serial_bus = new DSPI_2_SS_SERIAL_BUS("DSPI_2_SS_SERIAL_BUS", CreateSignal("DSPI_2_SS", true, OUTPUT_INSTRUMENTATION), this);
 	
-	dspi_3_sout_serial_bus  = new DSPI_3_SOUT_SERIAL_BUS ("DSPI_3_SOUT_SERIAL_BUS" , CreateSignal("DSPI_3_SOUT" , true), this);
-	dspi_3_sin_serial_bus   = new DSPI_3_SIN_SERIAL_BUS  ("DSPI_3_SIN_SERIAL_BUS"  , CreateSignal("DSPI_3_SIN"  , true), this);
+	dspi_3_sout_serial_bus  = new DSPI_3_SOUT_SERIAL_BUS ("DSPI_3_SOUT_SERIAL_BUS" , CreateSignal("DSPI_3_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_3_sin_serial_bus   = new DSPI_3_SIN_SERIAL_BUS  ("DSPI_3_SIN_SERIAL_BUS"  , CreateSignal("DSPI_3_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
 	for(i = 0; i < DSPI_3::NUM_CTARS; i++)
 	{
 		std::stringstream dspi_3_pcs_serial_bus_name_sstr;
 		dspi_3_pcs_serial_bus_name_sstr << "DSPI_3_PCS_SERIAL_BUS_" << i;
 		std::stringstream dspi_3_pcs_name_sstr;
 		dspi_3_pcs_name_sstr << "DSPI_3_PCS_" << i;
-		dspi_3_pcs_serial_bus[i] = new DSPI_3_PCS_SERIAL_BUS(dspi_3_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_3_pcs_name_sstr.str(), true), this);
+		dspi_3_pcs_serial_bus[i] = new DSPI_3_PCS_SERIAL_BUS(dspi_3_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_3_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
 	}
-	dspi_3_ss_serial_bus = new DSPI_3_SS_SERIAL_BUS("DSPI_3_SS_SERIAL_BUS", CreateSignal("DSPI_3_SS", true), this);
+	dspi_3_ss_serial_bus = new DSPI_3_SS_SERIAL_BUS("DSPI_3_SS_SERIAL_BUS", CreateSignal("DSPI_3_SS", true, OUTPUT_INSTRUMENTATION), this);
 	
-	dspi_4_sout_serial_bus  = new DSPI_4_SOUT_SERIAL_BUS ("DSPI_4_SOUT_SERIAL_BUS" , CreateSignal("DSPI_4_SOUT" , true), this);
-	dspi_4_sin_serial_bus   = new DSPI_4_SIN_SERIAL_BUS  ("DSPI_4_SIN_SERIAL_BUS"  , CreateSignal("DSPI_4_SIN"  , true), this);
+	dspi_4_sout_serial_bus  = new DSPI_4_SOUT_SERIAL_BUS ("DSPI_4_SOUT_SERIAL_BUS" , CreateSignal("DSPI_4_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_4_sin_serial_bus   = new DSPI_4_SIN_SERIAL_BUS  ("DSPI_4_SIN_SERIAL_BUS"  , CreateSignal("DSPI_4_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
 	for(i = 0; i < DSPI_4::NUM_CTARS; i++)
 	{
 		std::stringstream dspi_4_pcs_serial_bus_name_sstr;
 		dspi_4_pcs_serial_bus_name_sstr << "DSPI_4_PCS_SERIAL_BUS_" << i;
 		std::stringstream dspi_4_pcs_name_sstr;
 		dspi_4_pcs_name_sstr << "DSPI_4_PCS_" << i;
-		dspi_4_pcs_serial_bus[i] = new DSPI_4_PCS_SERIAL_BUS(dspi_4_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_4_pcs_name_sstr.str(), true), this);
+		dspi_4_pcs_serial_bus[i] = new DSPI_4_PCS_SERIAL_BUS(dspi_4_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_4_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
 	}
-	dspi_4_ss_serial_bus = new DSPI_4_SS_SERIAL_BUS("DSPI_4_SS_SERIAL_BUS", CreateSignal("DSPI_4_SS", true), this);
+	dspi_4_ss_serial_bus = new DSPI_4_SS_SERIAL_BUS("DSPI_4_SS_SERIAL_BUS", CreateSignal("DSPI_4_SS", true, OUTPUT_INSTRUMENTATION), this);
 	
-	dspi_5_sout_serial_bus  = new DSPI_5_SOUT_SERIAL_BUS ("DSPI_5_SOUT_SERIAL_BUS" , CreateSignal("DSPI_5_SOUT" , true), this);
-	dspi_5_sin_serial_bus   = new DSPI_5_SIN_SERIAL_BUS  ("DSPI_5_SIN_SERIAL_BUS"  , CreateSignal("DSPI_5_SIN"  , true), this);
+	dspi_5_sout_serial_bus  = new DSPI_5_SOUT_SERIAL_BUS ("DSPI_5_SOUT_SERIAL_BUS" , CreateSignal("DSPI_5_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_5_sin_serial_bus   = new DSPI_5_SIN_SERIAL_BUS  ("DSPI_5_SIN_SERIAL_BUS"  , CreateSignal("DSPI_5_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
 	for(i = 0; i < DSPI_5::NUM_CTARS; i++)
 	{
 		std::stringstream dspi_5_pcs_serial_bus_name_sstr;
 		dspi_5_pcs_serial_bus_name_sstr << "DSPI_5_PCS_SERIAL_BUS_" << i;
 		std::stringstream dspi_5_pcs_name_sstr;
 		dspi_5_pcs_name_sstr << "DSPI_5_PCS_" << i;
-		dspi_5_pcs_serial_bus[i] = new DSPI_5_PCS_SERIAL_BUS(dspi_5_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_5_pcs_name_sstr.str(), true), this);
+		dspi_5_pcs_serial_bus[i] = new DSPI_5_PCS_SERIAL_BUS(dspi_5_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_5_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
 	}
-	dspi_5_ss_serial_bus = new DSPI_5_SS_SERIAL_BUS("DSPI_5_SS_SERIAL_BUS", CreateSignal("DSPI_5_SS", true), this);
+	dspi_5_ss_serial_bus = new DSPI_5_SS_SERIAL_BUS("DSPI_5_SS_SERIAL_BUS", CreateSignal("DSPI_5_SS", true, OUTPUT_INSTRUMENTATION), this);
 	
-	dspi_6_sout_serial_bus  = new DSPI_6_SOUT_SERIAL_BUS ("DSPI_6_SOUT_SERIAL_BUS" , CreateSignal("DSPI_6_SOUT" , true), this);
-	dspi_6_sin_serial_bus   = new DSPI_6_SIN_SERIAL_BUS  ("DSPI_6_SIN_SERIAL_BUS"  , CreateSignal("DSPI_6_SIN"  , true), this);
+	dspi_6_sout_serial_bus  = new DSPI_6_SOUT_SERIAL_BUS ("DSPI_6_SOUT_SERIAL_BUS" , CreateSignal("DSPI_6_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_6_sin_serial_bus   = new DSPI_6_SIN_SERIAL_BUS  ("DSPI_6_SIN_SERIAL_BUS"  , CreateSignal("DSPI_6_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
 	for(i = 0; i < DSPI_6::NUM_CTARS; i++)
 	{
 		std::stringstream dspi_6_pcs_serial_bus_name_sstr;
 		dspi_6_pcs_serial_bus_name_sstr << "DSPI_6_PCS_SERIAL_BUS_" << i;
 		std::stringstream dspi_6_pcs_name_sstr;
 		dspi_6_pcs_name_sstr << "DSPI_6_PCS_" << i;
-		dspi_6_pcs_serial_bus[i] = new DSPI_6_PCS_SERIAL_BUS(dspi_6_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_6_pcs_name_sstr.str(), true), this);
+		dspi_6_pcs_serial_bus[i] = new DSPI_6_PCS_SERIAL_BUS(dspi_6_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_6_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
 	}
-	dspi_6_ss_serial_bus = new DSPI_6_SS_SERIAL_BUS("DSPI_6_SS_SERIAL_BUS", CreateSignal("DSPI_6_SS", true), this);
+	dspi_6_ss_serial_bus = new DSPI_6_SS_SERIAL_BUS("DSPI_6_SS_SERIAL_BUS", CreateSignal("DSPI_6_SS", true, OUTPUT_INSTRUMENTATION), this);
 	
-	dspi_12_sout_serial_bus = new DSPI_12_SOUT_SERIAL_BUS("DSPI_12_SOUT_SERIAL_BUS", CreateSignal("DSPI_12_SOUT", true), this);
-	dspi_12_sin_serial_bus  = new DSPI_12_SIN_SERIAL_BUS ("DSPI_12_SIN_SERIAL_BUS" , CreateSignal("DSPI_12_SIN" , true), this);
+	dspi_12_sout_serial_bus = new DSPI_12_SOUT_SERIAL_BUS("DSPI_12_SOUT_SERIAL_BUS", CreateSignal("DSPI_12_SOUT", true, OUTPUT_INSTRUMENTATION), this);
+	dspi_12_sin_serial_bus  = new DSPI_12_SIN_SERIAL_BUS ("DSPI_12_SIN_SERIAL_BUS" , CreateSignal("DSPI_12_SIN" , true, OUTPUT_INSTRUMENTATION), this);
 	for(i = 0; i < DSPI_12::NUM_CTARS; i++)
 	{
 		std::stringstream dspi_12_pcs_serial_bus_name_sstr;
 		dspi_12_pcs_serial_bus_name_sstr << "DSPI_12_PCS_SERIAL_BUS_" << i;
 		std::stringstream dspi_12_pcs_name_sstr;
 		dspi_12_pcs_name_sstr << "DSPI_12_PCS_" << i;
-		dspi_12_pcs_serial_bus[i] = new DSPI_12_PCS_SERIAL_BUS(dspi_12_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_12_pcs_name_sstr.str(), true), this);
+		dspi_12_pcs_serial_bus[i] = new DSPI_12_PCS_SERIAL_BUS(dspi_12_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_12_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
 	}
-	dspi_12_ss_serial_bus = new DSPI_12_SS_SERIAL_BUS("DSPI_12_SS_SERIAL_BUS", CreateSignal("DSPI_12_SS", true), this);
+	dspi_12_ss_serial_bus = new DSPI_12_SS_SERIAL_BUS("DSPI_12_SS_SERIAL_BUS", CreateSignal("DSPI_12_SS", true, OUTPUT_INSTRUMENTATION), this);
 
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -3633,669 +3634,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	InterruptSource(964);
 
 	// DMA sources
-	
-#if 0
-	// DMAMUX_0
-	DMASource(0, 0);
-	DMASource(0, 1);
-	DMASource(0, 2);
-	DMASource(0, 3);
-	DMASource(0, 4);
-	DMASource(0, 5, "HARDWARE.DSPI_0_DMA_RX", "HARDWARE.DSPI_0_DMA_ACK_RX");
-	DMASource(0, 6, "HARDWARE.DSPI_0_DMA_TX", "HARDWARE.DSPI_0_DMA_ACK_TX");
-	DMASource(0, 7, "HARDWARE.DSPI_4_DMA_RX", "HARDWARE.DSPI_4_DMA_ACK_RX");
-	DMASource(0, 8, "HARDWARE.DSPI_4_DMA_TX", "HARDWARE.DSPI_4_DMA_ACK_TX");
-	DMASource(0, 9);
-	DMASource(0, 10);
-	DMASource(0, 11);
-	DMASource(0, 12);
-	DMASource(0, 13);
-	DMASource(0, 14);
-	DMASource(0, 15);
-	DMASource(0, 16, "HARDWARE.LINFlexD_0_DMA_RX_0", "HARDWARE.LINFlexD_0_DMA_ACK_RX_0");
-	DMASource(0, 17, "HARDWARE.LINFlexD_0_DMA_TX_0", "HARDWARE.LINFlexD_0_DMA_ACK_TX_0");
-	DMASource(0, 18, "HARDWARE.LINFlexD_14_DMA_RX_0", "HARDWARE.LINFlexD_14_DMA_ACK_RX_0");
-	DMASource(0, 19, "HARDWARE.DSPI_0_DMA_CMD", "HARDWARE.DSPI_0_DMA_ACK_CMD");
-	DMASource(0, 20, "HARDWARE.DSPI_4_DMA_CMD", "HARDWARE.DSPI_4_DMA_ACK_CMD");
-	DMASource(0, 21);
-	DMASource(0, 22);
-	DMASource(0, 23);
-	DMASource(0, 24);
-	DMASource(0, 25);
-	DMASource(0, 26);
-	DMASource(0, 27);
-	DMASource(0, 28);
-	DMASource(0, 29);
-	DMASource(0, 30);
-	DMASource(0, 31);
-	DMASource(0, 32);
-	DMASource(0, 33);
-	DMASource(0, 34);
-	DMASource(0, 35);
-	DMASource(0, 36);
-	DMASource(0, 37);
-	DMASource(0, 38);
-	DMASource(0, 39);
-	DMASource(0, 40);
-	DMASource(0, 41);
-	DMASource(0, 42);
-	DMASource(0, 43);
-	DMASource(0, 44);
-	DMASource(0, 45);
-	DMASource(0, 46);
-	DMASource(0, 47);
-	DMASource(0, 48);
-	DMASource(0, 49);
-	DMASource(0, 50);
-	DMASource(0, 51);
-	DMASource(0, 52);
-	DMASource(0, 53);
-	DMASource(0, 54);
-	DMASource(0, 55);
-	DMASource(0, 56);
-	DMASource(0, 57);
-	DMASource(0, 58);
-	DMASource(0, 59);
-	DMASource(0, 60);
-	DMASource(0, 61);
-	DMASource(0, 62);
-	DMASource(0, 63);
-	
-	// DMAMUX_1
-	DMASource(1, 0);                                                                                                                                                                                        
-	DMASource(1, 1, "HARDWARE.DSPI_12_DMA_RX", "HARDWARE.DSPI_12_DMA_ACK_RX");
-	DMASource(1, 2, "HARDWARE.DSPI_12_DMA_TX", "HARDWARE.DSPI_12_DMA_ACK_TX");                                                                                                                                                                                        
-	DMASource(1, 3, "HARDWARE.LINFlexD_0_DMA_RX_0", "HARDWARE.LINFlexD_0_DMA_ACK_RX_0");
-	DMASource(1, 4, "HARDWARE.LINFlexD_0_DMA_TX_0", "HARDWARE.LINFlexD_0_DMA_ACK_TX_0");
-	DMASource(1, 5, "HARDWARE.LINFlexD_1_DMA_RX_0", "HARDWARE.LINFlexD_1_DMA_ACK_RX_0");
-	DMASource(1, 6, "HARDWARE.LINFlexD_1_DMA_TX_0", "HARDWARE.LINFlexD_1_DMA_ACK_TX_0");
-	DMASource(1, 7, "HARDWARE.LINFlexD_14_DMA_RX_0", "HARDWARE.LINFlexD_14_DMA_ACK_RX_0");
-	DMASource(1, 8, "HARDWARE.LINFlexD_14_DMA_TX_0", "HARDWARE.LINFlexD_14_DMA_ACK_TX_0");
-	DMASource(1, 9);
-	DMASource(1, 10);
-	DMASource(1, 11);
-	DMASource(1, 12);
-	DMASource(1, 13);
-	DMASource(1, 14);
-	DMASource(1, 15);
-	DMASource(1, 16);
-	DMASource(1, 17);
-	DMASource(1, 18);
-	DMASource(1, 19);
-	DMASource(1, 20);
-	DMASource(1, 21);
-	DMASource(1, 22);
-	DMASource(1, 23);
-	DMASource(1, 24);
-	DMASource(1, 25);
-	DMASource(1, 26);
-	DMASource(1, 27);
-	DMASource(1, 28);
-	DMASource(1, 29);
-	DMASource(1, 30);
-	DMASource(1, 31);
-	DMASource(1, 32);
-	DMASource(1, 33);
-	DMASource(1, 34);
-	DMASource(1, 35);
-	DMASource(1, 36);
-	DMASource(1, 37);
-	DMASource(1, 38);
-	DMASource(1, 39);
-	DMASource(1, 40);
-	DMASource(1, 41);
-	DMASource(1, 42);
-	DMASource(1, 43);
-	DMASource(1, 44);
-	DMASource(1, 45, "HARDWARE.LINFlexD_15_DMA_RX_0", "HARDWARE.LINFlexD_15_DMA_ACK_RX_0");
-	DMASource(1, 46, "HARDWARE.LINFlexD_15_DMA_TX_0", "HARDWARE.LINFlexD_15_DMA_ACK_TX_0");
-	DMASource(1, 47, "HARDWARE.DSPI_5_DMA_RX", "HARDWARE.DSPI_5_DMA_ACK_RX");
-	DMASource(1, 48, "HARDWARE.DSPI_5_DMA_TX", "HARDWARE.DSPI_5_DMA_ACK_TX");
-	DMASource(1, 49, "HARDWARE.DSPI_5_DMA_CMD", "HARDWARE.DSPI_5_DMA_ACK_CMD");
-	DMASource(1, 50);
-	DMASource(1, 51);
-	DMASource(1, 52);
-	DMASource(1, 53, "HARDWARE.DSPI_0_DMA_RX", "HARDWARE.DSPI_0_DMA_ACK_RX");
-	DMASource(1, 54, "HARDWARE.DSPI_0_DMA_TX", "HARDWARE.DSPI_0_DMA_ACK_TX");
-	DMASource(1, 55);
-	DMASource(1, 56);
-	DMASource(1, 57);
-	DMASource(1, 58);
-	DMASource(1, 59);
-	DMASource(1, 60);
-	DMASource(1, 61);
-	DMASource(1, 62);
-	DMASource(1, 63);
-	
-	// DMAMUX_2
-	DMASource(2, 0);
-	DMASource(2, 1);
-	DMASource(2, 2);
-	DMASource(2, 3, "HARDWARE.DSPI_1_DMA_RX", "HARDWARE.DSPI_1_DMA_ACK_RX");
-	DMASource(2, 4, "HARDWARE.DSPI_1_DMA_TX", "HARDWARE.DSPI_1_DMA_ACK_TX");
-	DMASource(2, 5);
-	DMASource(2, 6);
-	DMASource(2, 7);
-	DMASource(2, 8);
-	DMASource(2, 9);
-	DMASource(2, 10);
-	DMASource(2, 11);
-	DMASource(2, 12);
-	DMASource(2, 13);
-	DMASource(2, 14);
-	DMASource(2, 15);
-	DMASource(2, 16);
-	DMASource(2, 17);
-	DMASource(2, 18);
-	DMASource(2, 19);
-	DMASource(2, 20);
-	DMASource(2, 21);
-	DMASource(2, 22);
-	DMASource(2, 23);
-	DMASource(2, 24);
-	DMASource(2, 25);
-	DMASource(2, 26);
-	DMASource(2, 27);
-	DMASource(2, 28);
-	DMASource(2, 29);
-	DMASource(2, 30);
-	DMASource(2, 31);
-	DMASource(2, 32);
-	DMASource(2, 33);
-	DMASource(2, 34);
-	DMASource(2, 35);
-	DMASource(2, 36);
-	DMASource(2, 37);
-	DMASource(2, 38);
-	DMASource(2, 39);
-	DMASource(2, 40);
-	DMASource(2, 41);
-	DMASource(2, 42, "HARDWARE.DSPI_1_DMA_CMD", "HARDWARE.DSPI_1_DMA_ACK_CMD");
-	DMASource(2, 43, "HARDWARE.DSPI_2_DMA_RX", "HARDWARE.DSPI_2_DMA_ACK_RX");
-	DMASource(2, 44, "HARDWARE.DSPI_2_DMA_TX", "HARDWARE.DSPI_2_DMA_ACK_TX");
-	DMASource(2, 45, "HARDWARE.LINFlexD_2_DMA_RX_0", "HARDWARE.LINFlexD_2_DMA_ACK_RX_0");
-	DMASource(2, 46, "HARDWARE.LINFlexD_2_DMA_TX_0", "HARDWARE.LINFlexD_2_DMA_ACK_TX_0");
-	DMASource(2, 47);
-	DMASource(2, 48);
-	DMASource(2, 49);
-	DMASource(2, 50);
-	DMASource(2, 51);
-	DMASource(2, 52);
-	DMASource(2, 53);
-	DMASource(2, 54);
-	DMASource(2, 55);
-	DMASource(2, 56);
-	DMASource(2, 57);
-	DMASource(2, 58);
-	DMASource(2, 59);
-	DMASource(2, 60);
-	DMASource(2, 61);
-	DMASource(2, 62);
-	DMASource(2, 63);
-	
-	// DMAMUX_3
-	DMASource(3, 0);
-	DMASource(3, 1);
-	DMASource(3, 2, "HARDWARE.DSPI_2_DMA_RX", "HARDWARE.DSPI_2_DMA_ACK_RX");
-	DMASource(3, 3, "HARDWARE.DSPI_2_DMA_TX", "HARDWARE.DSPI_2_DMA_ACK_TX");
-	DMASource(3, 4, "HARDWARE.LINFlexD_2_DMA_RX_0", "HARDWARE.LINFlexD_2_DMA_ACK_RX_0");
-	DMASource(3, 5, "HARDWARE.LINFlexD_2_DMA_TX_0", "HARDWARE.LINFlexD_2_DMA_ACK_TX_0");
-	DMASource(3, 6);
-	DMASource(3, 7);
-	DMASource(3, 8);
-	DMASource(3, 9);
-	DMASource(3, 10);
-	DMASource(3, 11);
-	DMASource(3, 12);
-	DMASource(3, 13);
-	DMASource(3, 14);
-	DMASource(3, 15);
-	DMASource(3, 16);
-	DMASource(3, 17);
-	DMASource(3, 18);
-	DMASource(3, 19);
-	DMASource(3, 20);
-	DMASource(3, 21);
-	DMASource(3, 22);
-	DMASource(3, 23);
-	DMASource(3, 24);
-	DMASource(3, 25);
-	DMASource(3, 26);
-	DMASource(3, 27);
-	DMASource(3, 28);
-	DMASource(3, 29);
-	DMASource(3, 30);
-	DMASource(3, 31);
-	DMASource(3, 32);
-	DMASource(3, 33);
-	DMASource(3, 34);
-	DMASource(3, 35);
-	DMASource(3, 36);
-	DMASource(3, 37);
-	DMASource(3, 38);
-	DMASource(3, 39);
-	DMASource(3, 40);
-	DMASource(3, 41);
-	DMASource(3, 42);
-	DMASource(3, 43);
-	DMASource(3, 44);
-	DMASource(3, 45, "HARDWARE.DSPI_2_DMA_CMD", "HARDWARE.DSPI_2_DMA_ACK_CMD");
-	DMASource(3, 46, "HARDWARE.DSPI_1_DMA_RX", "HARDWARE.DSPI_1_DMA_ACK_RX");
-	DMASource(3, 47, "HARDWARE.DSPI_1_DMA_TX", "HARDWARE.DSPI_1_DMA_ACK_TX");
-	DMASource(3, 48);
-	DMASource(3, 49);
-	DMASource(3, 50);
-	DMASource(3, 51);
-	DMASource(3, 52);
-	DMASource(3, 53);
-	DMASource(3, 54);
-	DMASource(3, 55);
-	DMASource(3, 56);
-	DMASource(3, 57);
-	DMASource(3, 58);
-	DMASource(3, 59);
-	DMASource(3, 60);
-	DMASource(3, 61);
-	DMASource(3, 62);
-	DMASource(3, 63);
-	
-	// DMAMUX_4
-	DMASource(4, 0);
-	DMASource(4, 1);
-	DMASource(4, 2);
-	DMASource(4, 3);
-	DMASource(4, 4);
-	DMASource(4, 5);
-	DMASource(4, 6);
-	DMASource(4,  7, "HARDWARE.LINFlexD_0_DMA_RX_0", "HARDWARE.LINFlexD_0_DMA_ACK_RX_0");
-	DMASource(4,  8, "HARDWARE.LINFlexD_0_DMA_TX_0", "HARDWARE.LINFlexD_0_DMA_ACK_TX_0");
-	DMASource(4,  9, "HARDWARE.LINFlexD_14_DMA_RX_0", "HARDWARE.LINFlexD_14_DMA_ACK_RX_0");
-	DMASource(4, 10, "HARDWARE.LINFlexD_14_DMA_TX_0", "HARDWARE.LINFlexD_14_DMA_ACK_TX_0");
-	DMASource(4, 11);
-	DMASource(4, 12);
-	DMASource(4, 13);
-	DMASource(4, 14);
-	DMASource(4, 15);
-	DMASource(4, 16);
-	DMASource(4, 17);
-	DMASource(4, 18);
-	DMASource(4, 19);
-	DMASource(4, 20);
-	DMASource(4, 21);
-	DMASource(4, 22);
-	DMASource(4, 23);
-	DMASource(4, 24);
-	DMASource(4, 25);
-	DMASource(4, 26);
-	DMASource(4, 27);
-	DMASource(4, 28);
-	DMASource(4, 29);
-	DMASource(4, 30);
-	DMASource(4, 31);
-	DMASource(4, 32);
-	DMASource(4, 33);
-	DMASource(4, 34, "HARDWARE.DSPI_1_DMA_CMD", "HARDWARE.DSPI_1_DMA_ACK_CMD");
-	DMASource(4, 35);
-	DMASource(4, 36);
-	DMASource(4, 37);
-	DMASource(4, 38);
-	DMASource(4, 39, "HARDWARE.DSPI_0_DMA_CMD", "HARDWARE.DSPI_0_DMA_ACK_CMD");
-	DMASource(4, 40, "HARDWARE.DSPI_0_DMA_RX", "HARDWARE.DSPI_0_DMA_ACK_RX");
-	DMASource(4, 41, "HARDWARE.DSPI_0_DMA_TX", "HARDWARE.DSPI_0_DMA_ACK_TX");
-	DMASource(4, 42);
-	DMASource(4, 43);
-	DMASource(4, 44);
-	DMASource(4, 45);
-	DMASource(4, 46);
-	DMASource(4, 47);
-	DMASource(4, 48);
-	DMASource(4, 49);
-	DMASource(4, 50);
-	DMASource(4, 51);
-	DMASource(4, 52);
-	DMASource(4, 53);
-	DMASource(4, 54);
-	DMASource(4, 55);
-	DMASource(4, 56);
-	DMASource(4, 57);
-	DMASource(4, 58);
-	DMASource(4, 59);
-	DMASource(4, 60);
-	DMASource(4, 61);
-	DMASource(4, 62);
-	DMASource(4, 63);
-	
-	// DMAMUX_5
-	DMASource(5, 0);
-	DMASource(5, 1);
-	DMASource(5, 2);
-	DMASource(5, 3);
-	DMASource(5, 4);
-	DMASource(5, 5);
-	DMASource(5,  6, "HARDWARE.LINFlexD_1_DMA_RX_0", "HARDWARE.LINFlexD_1_DMA_ACK_RX_0");
-	DMASource(5,  7, "HARDWARE.LINFlexD_1_DMA_TX_0", "HARDWARE.LINFlexD_1_DMA_ACK_TX_0");
-	DMASource(5,  8, "HARDWARE.LINFlexD_15_DMA_RX_0", "HARDWARE.LINFlexD_15_DMA_ACK_RX_0");
-	DMASource(5,  9, "HARDWARE.LINFlexD_15_DMA_TX_0", "HARDWARE.LINFlexD_15_DMA_ACK_TX_0");
-	DMASource(5, 10);
-	DMASource(5, 11);
-	DMASource(5, 12);
-	DMASource(5, 13);
-	DMASource(5, 14);
-	DMASource(5, 15);
-	DMASource(5, 16);
-	DMASource(5, 17);
-	DMASource(5, 18);
-	DMASource(5, 19);
-	DMASource(5, 20);
-	DMASource(5, 21);
-	DMASource(5, 22);
-	DMASource(5, 23);
-	DMASource(5, 24);
-	DMASource(5, 25);
-	DMASource(5, 26);
-	DMASource(5, 27);
-	DMASource(5, 28);
-	DMASource(5, 29);
-	DMASource(5, 30);
-	DMASource(5, 31);
-	DMASource(5, 32);
-	DMASource(5, 33, "HARDWARE.DSPI_5_DMA_CMD", "HARDWARE.DSPI_5_DMA_ACK_CMD");
-	DMASource(5, 34);
-	DMASource(5, 35);
-	DMASource(5, 36, "HARDWARE.DSPI_3_DMA_RX", "HARDWARE.DSPI_3_DMA_ACK_RX");
-	DMASource(5, 37, "HARDWARE.DSPI_3_DMA_TX", "HARDWARE.DSPI_3_DMA_ACK_TX");
-	DMASource(5, 38);
-	DMASource(5, 39, "HARDWARE.LINFlexD_2_DMA_RX_0", "HARDWARE.LINFlexD_2_DMA_ACK_RX_0");
-	DMASource(5, 40, "HARDWARE.LINFlexD_2_DMA_TX_0", "HARDWARE.LINFlexD_2_DMA_ACK_TX_0");
-	DMASource(5, 41);
-	DMASource(5, 42);
-	DMASource(5, 43);
-	DMASource(5, 44);
-	DMASource(5, 45);
-	DMASource(5, 46);
-	DMASource(5, 47);
-	DMASource(5, 48);
-	DMASource(5, 49);
-	DMASource(5, 50);
-	DMASource(5, 51);
-	DMASource(5, 52);
-	DMASource(5, 53);
-	DMASource(5, 54);
-	DMASource(5, 55);
-	DMASource(5, 56);
-	DMASource(5, 57);
-	DMASource(5, 58);
-	DMASource(5, 59);
-	DMASource(5, 60);
-	DMASource(5, 61);
-	DMASource(5, 62);
-	DMASource(5, 63);
-	
-	// DMAMUX_6
-	DMASource(6, 0);
-	DMASource(6, 1);
-	DMASource(6, 2);
-	DMASource(6, 3);
-	DMASource(6, 4);
-	DMASource(6, 5);
-	DMASource(6, 6);
-	DMASource(6, 7);
-	DMASource(6, 8);
-	DMASource(6, 9);
-	DMASource(6, 10);
-	DMASource(6, 11);
-	DMASource(6, 12);
-	DMASource(6, 13);
-	DMASource(6, 14);
-	DMASource(6, 15);
-	DMASource(6, 16, "HARDWARE.LINFlexD_16_DMA_RX_0", "HARDWARE.LINFlexD_16_DMA_ACK_RX_0");
-	DMASource(6, 17, "HARDWARE.LINFlexD_16_DMA_TX_0", "HARDWARE.LINFlexD_16_DMA_ACK_TX_0");
-	DMASource(6, 18);
-	DMASource(6, 19);
-	DMASource(6, 20);
-	DMASource(6, 21);
-	DMASource(6, 22);
-	DMASource(6, 23);
-	DMASource(6, 24, "HARDWARE.DSPI_1_DMA_CMD", "HARDWARE.DSPI_1_DMA_ACK_CMD");
-	DMASource(6, 25, "HARDWARE.DSPI_1_DMA_RX", "HARDWARE.DSPI_1_DMA_ACK_RX");
-	DMASource(6, 26, "HARDWARE.DSPI_1_DMA_TX", "HARDWARE.DSPI_1_DMA_ACK_TX");
-	DMASource(6, 27, "HARDWARE.DSPI_12_DMA_CMD", "HARDWARE.DSPI_12_DMA_ACK_CMD");
-	DMASource(6, 28, "HARDWARE.DSPI_12_DMA_RX", "HARDWARE.DSPI_12_DMA_ACK_RX");
-	DMASource(6, 29, "HARDWARE.DSPI_12_DMA_TX", "HARDWARE.DSPI_12_DMA_ACK_TX");
-	DMASource(6, 30);
-	DMASource(6, 31);
-	DMASource(6, 32);
-	DMASource(6, 33);
-	DMASource(6, 34);
-	DMASource(6, 35);
-	DMASource(6, 36);
-	DMASource(6, 37);
-	DMASource(6, 38);
-	DMASource(6, 39);
-	DMASource(6, 40);
-	DMASource(6, 41);
-	DMASource(6, 42);
-	DMASource(6, 43);
-	DMASource(6, 44);
-	DMASource(6, 45);
-	DMASource(6, 46);
-	DMASource(6, 47);
-	DMASource(6, 48);
-	DMASource(6, 49);
-	DMASource(6, 50);
-	DMASource(6, 51);
-	DMASource(6, 52);
-	DMASource(6, 53);
-	DMASource(6, 54);
-	DMASource(6, 55);
-	DMASource(6, 56);
-	DMASource(6, 57);
-	DMASource(6, 58);
-	DMASource(6, 59);
-	DMASource(6, 60);
-	DMASource(6, 61);
-	DMASource(6, 62);
-	DMASource(6, 63);
-	
-	// DMAMUX_7
-	DMASource(7, 0);
-	DMASource(7, 1);
-	DMASource(7, 2);
-	DMASource(7, 3);
-	DMASource(7, 4);
-	DMASource(7, 5);
-	DMASource(7, 6);
-	DMASource(7, 7);
-	DMASource(7, 8);
-	DMASource(7, 9);
-	DMASource(7, 10);
-	DMASource(7, 11);
-	DMASource(7, 12);
-	DMASource(7, 13);
-	DMASource(7, 14);
-	DMASource(7, 15);
-	DMASource(7, 16);
-	DMASource(7, 17);
-	DMASource(7, 18);
-	DMASource(7, 19);
-	DMASource(7, 20);
-	DMASource(7, 21);
-	DMASource(7, 22);
-	DMASource(7, 23);
-	DMASource(7, 24);
-	DMASource(7, 25);
-	DMASource(7, 26);
-	DMASource(7, 27);
-	DMASource(7, 28);
-	DMASource(7, 29);
-	DMASource(7, 30);
-	DMASource(7, 31);
-	DMASource(7, 32);
-	DMASource(7, 33);
-	DMASource(7, 34);
-	DMASource(7, 35);
-	DMASource(7, 36);
-	DMASource(7, 37);
-	DMASource(7, 38);
-	DMASource(7, 39);
-	DMASource(7, 40);
-	DMASource(7, 41);
-	DMASource(7, 42);
-	DMASource(7, 43);
-	DMASource(7, 44);
-	DMASource(7, 45, "HARDWARE.DSPI_3_DMA_CMD", "HARDWARE.DSPI_3_DMA_ACK_CMD");
-	DMASource(7, 46, "HARDWARE.DSPI_3_DMA_RX", "HARDWARE.DSPI_3_DMA_ACK_RX");
-	DMASource(7, 47, "HARDWARE.DSPI_3_DMA_TX", "HARDWARE.DSPI_3_DMA_ACK_TX");
-	DMASource(7, 48, "HARDWARE.DSPI_5_DMA_CMD", "HARDWARE.DSPI_5_DMA_ACK_CMD");
-	DMASource(7, 49, "HARDWARE.DSPI_5_DMA_RX", "HARDWARE.DSPI_5_DMA_ACK_RX");
-	DMASource(7, 50, "HARDWARE.DSPI_5_DMA_TX", "HARDWARE.DSPI_5_DMA_ACK_TX");
-	DMASource(7, 51);
-	DMASource(7, 52);
-	DMASource(7, 53);
-	DMASource(7, 54);
-	DMASource(7, 55);
-	DMASource(7, 56);
-	DMASource(7, 57);
-	DMASource(7, 58);
-	DMASource(7, 59);
-	DMASource(7, 60);
-	DMASource(7, 61);
-	DMASource(7, 62);
-	DMASource(7, 63);
-	
-	// DMAMUX_8
-	DMASource(8, 0);
-	DMASource(8, 1);
-	DMASource(8, 2);
-	DMASource(8, 3);
-	DMASource(8, 4);
-	DMASource(8, 5);
-	DMASource(8, 6);
-	DMASource(8, 7);
-	DMASource(8, 8);
-	DMASource(8, 9);
-	DMASource(8, 10);
-	DMASource(8, 11);
-	DMASource(8, 12);
-	DMASource(8, 13);
-	DMASource(8, 14);
-	DMASource(8, 15);
-	DMASource(8, 16);
-	DMASource(8, 17);
-	DMASource(8, 18);
-	DMASource(8, 19);
-	DMASource(8, 20);
-	DMASource(8, 21);
-	DMASource(8, 22);
-	DMASource(8, 23);
-	DMASource(8, 24);
-	DMASource(8, 25);
-	DMASource(8, 26);
-	DMASource(8, 27);
-	DMASource(8, 28);
-	DMASource(8, 29);
-	DMASource(8, 30);
-	DMASource(8, 31);
-	DMASource(8, 32);
-	DMASource(8, 33);
-	DMASource(8, 34);
-	DMASource(8, 35);
-	DMASource(8, 36);
-	DMASource(8, 37);
-	DMASource(8, 38);
-	DMASource(8, 39);
-	DMASource(8, 40);
-	DMASource(8, 41);
-	DMASource(8, 42);
-	DMASource(8, 43, "HARDWARE.DSPI_4_DMA_CMD", "HARDWARE.DSPI_4_DMA_ACK_CMD");
-	DMASource(8, 44, "HARDWARE.DSPI_4_DMA_RX", "HARDWARE.DSPI_4_DMA_ACK_RX");
-	DMASource(8, 45, "HARDWARE.DSPI_4_DMA_TX", "HARDWARE.DSPI_4_DMA_ACK_TX");
-	DMASource(8, 46);
-	DMASource(8, 47);
-	DMASource(8, 48);
-	DMASource(8, 49);
-	DMASource(8, 50);
-	DMASource(8, 51);
-	DMASource(8, 52);
-	DMASource(8, 53);
-	DMASource(8, 54);
-	DMASource(8, 55);
-	DMASource(8, 56);
-	DMASource(8, 57);
-	DMASource(8, 58);
-	DMASource(8, 59);
-	DMASource(8, 60);
-	DMASource(8, 61);
-	DMASource(8, 62);
-	DMASource(8, 63);
-	
-	// DMAMUX_9
-	DMASource(9, 0);
-	DMASource(9, 1);
-	DMASource(9, 2);
-	DMASource(9, 3);
-	DMASource(9, 4);
-	DMASource(9, 5);
-	DMASource(9, 6);
-	DMASource(9, 7);
-	DMASource(9, 8);
-	DMASource(9, 9);
-	DMASource(9, 10);
-	DMASource(9, 11);
-	DMASource(9, 12);
-	DMASource(9, 13);
-	DMASource(9, 14);
-	DMASource(9, 15);
-	DMASource(9, 16);
-	DMASource(9, 17);
-	DMASource(9, 18);
-	DMASource(9, 19);
-	DMASource(9, 20);
-	DMASource(9, 21);
-	DMASource(9, 22);
-	DMASource(9, 23);
-	DMASource(9, 24);
-	DMASource(9, 25);
-	DMASource(9, 26);
-	DMASource(9, 27);
-	DMASource(9, 28);
-	DMASource(9, 29);
-	DMASource(9, 30);
-	DMASource(9, 31);
-	DMASource(9, 32);
-	DMASource(9, 33);
-	DMASource(9, 34);
-	DMASource(9, 35);
-	DMASource(9, 36);
-	DMASource(9, 37);
-	DMASource(9, 38);
-	DMASource(9, 39);
-	DMASource(9, 40);
-	DMASource(9, 41, "HARDWARE.DSPI_2_DMA_CMD", "HARDWARE.DSPI_2_DMA_ACK_CMD");
-	DMASource(9, 42, "HARDWARE.DSPI_2_DMA_RX", "HARDWARE.DSPI_2_DMA_ACK_RX");
-	DMASource(9, 43, "HARDWARE.DSPI_2_DMA_TX", "HARDWARE.DSPI_2_DMA_ACK_TX");
-	DMASource(9, 44);
-	DMASource(9, 45);
-	DMASource(9, 46);
-	DMASource(9, 47);
-	DMASource(9, 48);
-	DMASource(9, 49);
-	DMASource(9, 50);
-	DMASource(9, 51);
-	DMASource(9, 52);
-	DMASource(9, 53);
-	DMASource(9, 54);
-	DMASource(9, 55);
-	DMASource(9, 56);
-	DMASource(9, 57);
-	DMASource(9, 58);
-	DMASource(9, 59);
-	DMASource(9, 60);
-	DMASource(9, 61);
-	DMASource(9, 62);
-	DMASource(9, 63);
-#endif
-
 	DMASource("HARDWARE.LINFlexD_0.DMA_RX_0", "HARDWARE.LINFlexD_0.DMA_ACK_RX_0", 0, 16, 1, 3, 4, 7);
 	DMASource("HARDWARE.LINFlexD_0.DMA_TX_0", "HARDWARE.LINFlexD_0.DMA_ACK_TX_0", 0, 17, 1, 4, 4, 8);
 	
@@ -4320,22 +3658,22 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	DMASource("HARDWARE.DSPI_1.DMA_RX", "HARDWARE.DSPI_1.DMA_ACK_RX", 2, 3, 3, 46, 6, 25);
 	DMASource("HARDWARE.DSPI_1.DMA_TX", "HARDWARE.DSPI_1.DMA_ACK_TX", 2, 4, 3, 47, 6, 26);
-	DMASource("HARDWARE.DSPI_1.DMA_CMD", "HARDWARE.DSPI_1.DMA_ACK_CMD", 2, 42, 4, 34, 6, 24);
+	DMASource("HARDWARE.DSPI_1.DMA_CMD", "HARDWARE.DSPI_1.DMA_ACK_CMD", 2, 42, 6, 24);
 
 	DMASource("HARDWARE.DSPI_2.DMA_RX", "HARDWARE.DSPI_2.DMA_ACK_RX", 2, 43, 3, 2, 9, 42);
 	DMASource("HARDWARE.DSPI_2.DMA_TX", "HARDWARE.DSPI_2.DMA_ACK_TX", 2, 44, 3, 3, 9, 43);
 	DMASource("HARDWARE.DSPI_2.DMA_CMD", "HARDWARE.DSPI_2.DMA_ACK_CMD", 3, 45, 9, 41);
 	
-	DMASource("HARDWARE.DSPI_3.DMA_RX", "HARDWARE.DSPI_3.DMA_ACK_RX", 5, 36, 7, 46);
-	DMASource("HARDWARE.DSPI_3.DMA_TX", "HARDWARE.DSPI_3.DMA_ACK_TX", 5, 37, 7, 47);
-	DMASource("HARDWARE.DSPI_3.DMA_CMD", "HARDWARE.DSPI_3.DMA_ACK_CMD", 7, 45);
+	DMASource("HARDWARE.DSPI_3.DMA_RX", "HARDWARE.DSPI_3.DMA_ACK_RX", 4, 5, 5, 36, 7, 46);
+	DMASource("HARDWARE.DSPI_3.DMA_TX", "HARDWARE.DSPI_3.DMA_ACK_TX", 4, 6, 5, 37, 7, 47);
+	DMASource("HARDWARE.DSPI_3.DMA_CMD", "HARDWARE.DSPI_3.DMA_ACK_CMD", 4, 34, 7, 45);
 
 	DMASource("HARDWARE.DSPI_4.DMA_RX", "HARDWARE.DSPI_4.DMA_ACK_RX", 0, 7, 8, 44); 
 	DMASource("HARDWARE.DSPI_4.DMA_TX", "HARDWARE.DSPI_4.DMA_ACK_TX", 0, 8, 8, 45);
 	DMASource("HARDWARE.DSPI_4.DMA_CMD", "HARDWARE.DSPI_4.DMA_ACK_CMD", 0, 20, 8, 43);
 
-	DMASource("HARDWARE.DSPI_5.DMA_RX", "HARDWARE.DSPI_5.DMA_ACK_RX", 1, 47, 7, 49);
-	DMASource("HARDWARE.DSPI_5.DMA_TX", "HARDWARE.DSPI_5.DMA_ACK_TX", 1, 48, 7, 50);
+	DMASource("HARDWARE.DSPI_5.DMA_RX", "HARDWARE.DSPI_5.DMA_ACK_RX", 1, 47, 5, 4, 7, 49);
+	DMASource("HARDWARE.DSPI_5.DMA_TX", "HARDWARE.DSPI_5.DMA_ACK_TX", 1, 48, 5, 5, 7, 50);
 	DMASource("HARDWARE.DSPI_5.DMA_CMD", "HARDWARE.DSPI_5.DMA_ACK_CMD", 1, 49, 5, 33, 7, 48);
 	  
 	DMASource("HARDWARE.DSPI_6.DMA_RX", "HARDWARE.DSPI_6.DMA_ACK_RX", 6, 13);
@@ -4344,7 +3682,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	  
 	DMASource("HARDWARE.DSPI_12.DMA_RX", "HARDWARE.DSPI_12.DMA_ACK_RX", 1, 1, 6, 28);
 	DMASource("HARDWARE.DSPI_12.DMA_TX", "HARDWARE.DSPI_12.DMA_ACK_TX", 1, 2, 6, 29);
-	DMASource("HARDWARE.DSPI_12.DMA_CMD", "HARDWARE.DSPI_12.DMA_ACK_CMD", 6, 27);
+	DMASource("HARDWARE.DSPI_12.DMA_CMD", "HARDWARE.DSPI_12.DMA_ACK_CMD", 1, 50, 6, 27);
 	  
 	// DMAMUX_0
 	DMASource(0, 0);
@@ -4441,7 +3779,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(1, 42);
 	DMASource(1, 43);
 	DMASource(1, 44);
-	DMASource(1, 50);
+	//DMASource(1, 50);
 	DMASource(1, 51);
 	DMASource(1, 52);
 	DMASource(1, 55);
@@ -4578,8 +3916,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(4, 2);
 	DMASource(4, 3);
 	DMASource(4, 4);
-	DMASource(4, 5);
-	DMASource(4, 6);
+	//DMASource(4, 5);
+	//DMASource(4, 6);
 	DMASource(4, 11);
 	DMASource(4, 12);
 	DMASource(4, 13);
@@ -4635,8 +3973,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(5, 1);
 	DMASource(5, 2);
 	DMASource(5, 3);
-	DMASource(5, 4);
-	DMASource(5, 5);
+	//DMASource(5, 4);
+	//DMASource(5, 5);
 	DMASource(5, 10);
 	DMASource(5, 11);
 	DMASource(5, 12);
@@ -5297,19 +4635,23 @@ void Simulator::InterruptSource(unsigned int irq_num, const std::string& source)
 
 void Simulator::DMASource(unsigned int dmamux_num, unsigned int dma_source_num)
 {
-	sc_core::sc_signal<bool>& source_req_signal = CreateSignal(false);
+	std::stringstream source_req_signal_basename_sstr;
+	source_req_signal_basename_sstr << "DMAMUX_" << dmamux_num << "_SOURCE_REQ_" << dma_source_num;
+	CreateSignal(source_req_signal_basename_sstr.str(), false);
 
 	std::stringstream dmamux_source_req_port_name_sstr;
-	dmamux_source_req_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num << ".dma_source_" << dma_source_num;
+	dmamux_source_req_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num << ".dma_source_" << dma_source_num;
 
-	Bind(dmamux_source_req_port_name_sstr.str(), source_req_signal.name());
+	Bind(dmamux_source_req_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
 
-	sc_core::sc_signal<bool>& source_ack_signal = CreateSignal(false);
+	std::stringstream source_ack_signal_basename_sstr;
+	source_ack_signal_basename_sstr << "DMAMUX_" << dmamux_num << "_SOURCE_ACK_" << dma_source_num;
+	CreateSignal(source_ack_signal_basename_sstr.str(), false);
 
 	std::stringstream dmamux_source_ack_port_name_sstr;
-	dmamux_source_ack_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num << ".dma_source_ack_" << dma_source_num;
+	dmamux_source_ack_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num << ".dma_source_ack_" << dma_source_num;
 
-	Bind(dmamux_source_ack_port_name_sstr.str(), source_ack_signal.name());
+	Bind(dmamux_source_ack_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_ack_signal_basename_sstr.str());
 }
 
 void Simulator::DMASource(const std::string& source_req,
@@ -5317,21 +4659,25 @@ void Simulator::DMASource(const std::string& source_req,
                           unsigned int dmamux_num,
                           unsigned int dma_source_num)
 {
-	sc_core::sc_signal<bool>& source_req_signal = CreateSignal(false);
+	std::stringstream source_req_signal_basename_sstr;
+	source_req_signal_basename_sstr << "DMAMUX_" << dmamux_num << "_SOURCE_REQ_" << dma_source_num;
+	CreateSignal(source_req_signal_basename_sstr.str(), false);
 
 	std::stringstream dmamux_source_req_port_name_sstr;
-	dmamux_source_req_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num << ".dma_source_" << dma_source_num;
+	dmamux_source_req_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num << ".dma_source_" << dma_source_num;
 
-	Bind(source_req, source_req_signal.name());
-	Bind(dmamux_source_req_port_name_sstr.str(), source_req_signal.name());
+	Bind(source_req, std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
+	Bind(dmamux_source_req_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
 
-	sc_core::sc_signal<bool>& source_ack_signal = CreateSignal(false);
+	std::stringstream source_ack_signal_basename_sstr;
+	source_ack_signal_basename_sstr << "DMAMUX_" << dmamux_num << "_SOURCE_ACK_" << dma_source_num;
+	CreateSignal(source_ack_signal_basename_sstr.str(), false);
 
 	std::stringstream dmamux_source_ack_port_name_sstr;
-	dmamux_source_ack_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num << ".dma_source_ack_" << dma_source_num;
+	dmamux_source_ack_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num << ".dma_source_ack_" << dma_source_num;
 
-	Bind(dmamux_source_ack_port_name_sstr.str(), source_ack_signal.name());
-	Bind(source_ack, source_ack_signal.name());
+	Bind(dmamux_source_ack_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_ack_signal_basename_sstr.str());
+	Bind(source_ack, std::string(this->sc_core::sc_object::name()) + '.' + source_ack_signal_basename_sstr.str());
 }
 
 void Simulator::LogicalOr2(sc_core::sc_signal<bool>& in0, sc_core::sc_signal<bool>& in1, sc_core::sc_signal<bool>& out)
@@ -5351,36 +4697,41 @@ void Simulator::DMASource(const std::string& source_req,
                           unsigned int dmamux_num1,
                           unsigned int dma_source_num1)
 {
-	sc_core::sc_signal<bool>& source_req_signal = CreateSignal(false);
+	std::stringstream source_req_signal_basename_sstr;
+	source_req_signal_basename_sstr << "DMAMUX_" << dmamux_num0 << "_" << dmamux_num1 << "_SOURCE_REQ_" << dma_source_num0 << "_" << dma_source_num1;
+	CreateSignal(source_req_signal_basename_sstr.str(), false);
 
 	std::stringstream dmamux_source_req0_port_name_sstr;
-	dmamux_source_req0_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num0 << ".dma_source_" << dma_source_num0;
+	dmamux_source_req0_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num0 << ".dma_source_" << dma_source_num0;
 
 	std::stringstream dmamux_source_req1_port_name_sstr;
-	dmamux_source_req1_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num1 << ".dma_source_" << dma_source_num1;
+	dmamux_source_req1_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num1 << ".dma_source_" << dma_source_num1;
 
-	Bind(source_req, source_req_signal.name());
-	Bind(dmamux_source_req0_port_name_sstr.str(), source_req_signal.name());
-	Bind(dmamux_source_req1_port_name_sstr.str(), source_req_signal.name());
+	Bind(source_req, std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
+	Bind(dmamux_source_req0_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
+	Bind(dmamux_source_req1_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
 
-	std::stringstream dmamux_ack0_signal_sstr;
-	dmamux_ack0_signal_sstr << "DMAMUX_" << dmamux_num0 << "_DMA_SOURCE_ACK_" << dma_source_num0;
+	std::stringstream dmamux_ack0_signal_basename_sstr;
+	dmamux_ack0_signal_basename_sstr << "DMAMUX_" << dmamux_num0 << "_DMA_SOURCE_ACK_" << dma_source_num0;
 	
-	std::stringstream dmamux_ack1_signal_sstr;
-	dmamux_ack1_signal_sstr << "DMAMUX_" << dmamux_num1 << "_DMA_SOURCE_ACK_" << dma_source_num1;
+	std::stringstream dmamux_ack1_signal_basename_sstr;
+	dmamux_ack1_signal_basename_sstr << "DMAMUX_" << dmamux_num1 << "_DMA_SOURCE_ACK_" << dma_source_num1;
 
-	sc_core::sc_signal<bool>& dmamux_ack0_signal = CreateSignal(dmamux_ack0_signal_sstr.str(), false);
-	sc_core::sc_signal<bool>& dmamux_ack1_signal = CreateSignal(dmamux_ack1_signal_sstr.str(), false);
-	sc_core::sc_signal<bool>& source_ack_signal = CreateSignal(false);
+	std::stringstream source_ack_signal_basename_sstr;
+	source_ack_signal_basename_sstr << "DMAMUX_" << dmamux_num0 << "_" << dmamux_num1 << "_SOURCE_ACK_" << dma_source_num0 << "_" << dma_source_num1;
+	
+	sc_core::sc_signal<bool>& dmamux_ack0_signal = CreateSignal(dmamux_ack0_signal_basename_sstr.str(), false);
+	sc_core::sc_signal<bool>& dmamux_ack1_signal = CreateSignal(dmamux_ack1_signal_basename_sstr.str(), false);
+	sc_core::sc_signal<bool>& source_ack_signal = CreateSignal(source_ack_signal_basename_sstr.str(), false);
 
 	std::stringstream dmamux_source_ack0_port_name_sstr;
-	dmamux_source_ack0_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num0 << ".dma_source_ack_" << dma_source_num0;
+	dmamux_source_ack0_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num0 << ".dma_source_ack_" << dma_source_num0;
 
 	std::stringstream dmamux_source_ack1_port_name_sstr;
-	dmamux_source_ack1_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num1 << ".dma_source_ack_" << dma_source_num1;
+	dmamux_source_ack1_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num1 << ".dma_source_ack_" << dma_source_num1;
 
-	Bind(dmamux_source_ack0_port_name_sstr.str(), dmamux_ack0_signal.name());
-	Bind(dmamux_source_ack1_port_name_sstr.str(), dmamux_ack1_signal.name());
+	Bind(dmamux_source_ack0_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + dmamux_ack0_signal_basename_sstr.str());
+	Bind(dmamux_source_ack1_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + dmamux_ack1_signal_basename_sstr.str());
 
 	sc_core::sc_spawn_options or_process_spawn_options;
 	or_process_spawn_options.spawn_method();
@@ -5389,7 +4740,7 @@ void Simulator::DMASource(const std::string& source_req,
 	
 	sc_core::sc_spawn(sc_bind(&Simulator::LogicalOr2, this, sc_ref(dmamux_ack0_signal), sc_ref(dmamux_ack1_signal), sc_ref(source_ack_signal)), sc_core::sc_gen_unique_name("Or2Process"), &or_process_spawn_options);
 
-	Bind(source_ack, source_ack_signal.name());
+	Bind(source_ack, std::string(this->sc_core::sc_object::name()) + '.' + source_ack_signal_basename_sstr.str());
 }
 
 void Simulator::DMASource(const std::string& source_req,
@@ -5401,57 +4752,63 @@ void Simulator::DMASource(const std::string& source_req,
                           unsigned int dmamux_num2,
                           unsigned int dma_source_num2)
 {
-	sc_core::sc_signal<bool>& source_req_signal = CreateSignal(false);
+	std::stringstream source_req_signal_basename_sstr;
+	source_req_signal_basename_sstr << "DMAMUX_" << dmamux_num0 << "_" << dmamux_num1 << "_" << dmamux_num2 << "_SOURCE_REQ_" << dma_source_num0 << "_" << dma_source_num1 << "_" << dma_source_num2;
+	CreateSignal(source_req_signal_basename_sstr.str(), false);
 
 	std::stringstream dmamux_source_req0_port_name_sstr;
-	dmamux_source_req0_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num0 << ".dma_source_" << dma_source_num0;
+	dmamux_source_req0_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num0 << ".dma_source_" << dma_source_num0;
 
 	std::stringstream dmamux_source_req1_port_name_sstr;
-	dmamux_source_req1_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num1 << ".dma_source_" << dma_source_num1;
+	dmamux_source_req1_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num1 << ".dma_source_" << dma_source_num1;
 
 	std::stringstream dmamux_source_req2_port_name_sstr;
-	dmamux_source_req2_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num2 << ".dma_source_" << dma_source_num2;
+	dmamux_source_req2_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num2 << ".dma_source_" << dma_source_num2;
 
-	Bind(source_req, source_req_signal.name());
-	Bind(dmamux_source_req0_port_name_sstr.str(), source_req_signal.name());
-	Bind(dmamux_source_req1_port_name_sstr.str(), source_req_signal.name());
-	Bind(dmamux_source_req2_port_name_sstr.str(), source_req_signal.name());
+	Bind(source_req, std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
+	Bind(dmamux_source_req0_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
+	Bind(dmamux_source_req1_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
+	Bind(dmamux_source_req2_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
 
-	std::stringstream dmamux_ack0_signal_sstr;
-	dmamux_ack0_signal_sstr << "DMAMUX_" << dmamux_num0 << "_DMA_SOURCE_ACK_" << dma_source_num0;
+	std::stringstream dmamux_ack0_signal_basename_sstr;
+	dmamux_ack0_signal_basename_sstr << "DMAMUX_" << dmamux_num0 << "_DMA_SOURCE_ACK_" << dma_source_num0;
 	
-	std::stringstream dmamux_ack1_signal_sstr;
-	dmamux_ack1_signal_sstr << "DMAMUX_" << dmamux_num1 << "_DMA_SOURCE_ACK_" << dma_source_num1;
+	std::stringstream dmamux_ack1_signal_basename_sstr;
+	dmamux_ack1_signal_basename_sstr << "DMAMUX_" << dmamux_num1 << "_DMA_SOURCE_ACK_" << dma_source_num1;
 
-	std::stringstream dmamux_ack2_signal_sstr;
-	dmamux_ack2_signal_sstr << "DMAMUX_" << dmamux_num2 << "_DMA_SOURCE_ACK_" << dma_source_num2;
+	std::stringstream dmamux_ack2_signal_basename_sstr;
+	dmamux_ack2_signal_basename_sstr << "DMAMUX_" << dmamux_num2 << "_DMA_SOURCE_ACK_" << dma_source_num2;
 	
-	sc_core::sc_signal<bool>& dmamux_ack0_signal = CreateSignal(dmamux_ack0_signal_sstr.str(), false);
-	sc_core::sc_signal<bool>& dmamux_ack1_signal = CreateSignal(dmamux_ack1_signal_sstr.str(), false);
-	sc_core::sc_signal<bool>& dmamux_ack2_signal = CreateSignal(dmamux_ack2_signal_sstr.str(), false);
-	sc_core::sc_signal<bool>& source_ack_signal = CreateSignal(false);
+	std::stringstream source_ack_signal_basename_sstr;
+	source_ack_signal_basename_sstr << "DMAMUX_" << dmamux_num0 << "_" << dmamux_num1 << "_" << dmamux_num2 << "_SOURCE_ACK_" << dma_source_num0 << "_" << dma_source_num1 << "_" << dma_source_num2;
 
+	sc_core::sc_signal<bool>& dmamux_ack0_signal = CreateSignal(dmamux_ack0_signal_basename_sstr.str(), false);
+	sc_core::sc_signal<bool>& dmamux_ack1_signal = CreateSignal(dmamux_ack1_signal_basename_sstr.str(), false);
+	sc_core::sc_signal<bool>& dmamux_ack2_signal = CreateSignal(dmamux_ack2_signal_basename_sstr.str(), false);
+	sc_core::sc_signal<bool>& source_ack_signal = CreateSignal(source_ack_signal_basename_sstr.str(), false);
+	
 	std::stringstream dmamux_source_ack0_port_name_sstr;
-	dmamux_source_ack0_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num0 << ".dma_source_ack_" << dma_source_num0;
+	dmamux_source_ack0_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num0 << ".dma_source_ack_" << dma_source_num0;
 
 	std::stringstream dmamux_source_ack1_port_name_sstr;
-	dmamux_source_ack1_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num1 << ".dma_source_ack_" << dma_source_num1;
+	dmamux_source_ack1_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num1 << ".dma_source_ack_" << dma_source_num1;
 
 	std::stringstream dmamux_source_ack2_port_name_sstr;
-	dmamux_source_ack2_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num2 << ".dma_source_ack_" << dma_source_num2;
+	dmamux_source_ack2_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num2 << ".dma_source_ack_" << dma_source_num2;
 
-	Bind(dmamux_source_ack0_port_name_sstr.str(), dmamux_ack0_signal.name());
-	Bind(dmamux_source_ack1_port_name_sstr.str(), dmamux_ack1_signal.name());
-	Bind(dmamux_source_ack2_port_name_sstr.str(), dmamux_ack2_signal.name());
+	Bind(dmamux_source_ack0_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + dmamux_ack0_signal_basename_sstr.str());
+	Bind(dmamux_source_ack1_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + dmamux_ack1_signal_basename_sstr.str());
+	Bind(dmamux_source_ack2_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + dmamux_ack2_signal_basename_sstr.str());
 
 	sc_core::sc_spawn_options or_process_spawn_options;
 	or_process_spawn_options.spawn_method();
 	or_process_spawn_options.set_sensitivity(&dmamux_ack0_signal);
 	or_process_spawn_options.set_sensitivity(&dmamux_ack1_signal);
+	or_process_spawn_options.set_sensitivity(&dmamux_ack2_signal);
 	
 	sc_core::sc_spawn(sc_bind(&Simulator::LogicalOr3, this, sc_ref(dmamux_ack0_signal), sc_ref(dmamux_ack1_signal), sc_ref(dmamux_ack2_signal), sc_ref(source_ack_signal)), sc_core::sc_gen_unique_name("Or3Process"), &or_process_spawn_options);
 
-	Bind(source_ack, source_ack_signal.name());
+	Bind(source_ack, std::string(this->sc_core::sc_object::name()) + '.' + source_ack_signal_basename_sstr.str());
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
@@ -6032,6 +5389,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("debugger.sel-cpu[7]", 1); // profiler
 	simulator->SetVariable("debugger.sel-cpu[8]", 2); // profiler
 	
+	//  - Netstreamer
 	simulator->SetVariable("netstreamer0.tcp-port", 12348);
 	simulator->SetVariable("netstreamer1.tcp-port", 12349);
 	simulator->SetVariable("netstreamer2.tcp-port", 12350);
@@ -6039,9 +5397,13 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("netstreamer15.tcp-port", 12352);
 	simulator->SetVariable("netstreamer16.tcp-port", 12353);
 	
+	//  - DSPI netlist
 	simulator->SetVariable("dspi_0-is-slave", true);
 	simulator->SetVariable("dspi_0-master", 2);
 	simulator->SetVariable("dspi_0-slave", 0);
+	
+	// Instrumenter
+	simulator->SetVariable("HARDWARE.instrumenter.http-server.http-port", 1260);
 }
 
 void Simulator::Run()

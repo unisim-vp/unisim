@@ -79,6 +79,8 @@ using unisim::util::reg::core::RWS_OK;
 using unisim::util::reg::core::RWS_ANA;
 using unisim::util::reg::core::Access;
 using unisim::util::reg::core::IsReadWriteError;
+using unisim::util::reg::core::ClearReadWriteStatusFlag;
+using unisim::util::reg::core::RWSF_WROB;
 
 template <typename REGISTER, typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
 struct Field : unisim::util::reg::core::Field<FIELD
@@ -144,8 +146,8 @@ public:
 	static const unsigned int RX_FIFO_DEPTH            = CONFIG::RX_FIFO_DEPTH;
 	static const unsigned int CMD_FIFO_DEPTH           = CONFIG::CMD_FIFO_DEPTH;
 	static const bool HAS_DATA_SERIALIZATION_SUPPORT   = CONFIG::HAS_DATA_SERIALIZATION_SUPPORT;
-	static const bool NUM_DSI_INPUTS                   = CONFIG::NUM_DSI_INPUTS;
-	static const bool NUM_DSI_OUTPUTS                  = CONFIG::NUM_DSI_OUTPUTS;
+	static const unsigned int NUM_DSI_INPUTS           = CONFIG::NUM_DSI_INPUTS;
+	static const unsigned int NUM_DSI_OUTPUTS          = CONFIG::NUM_DSI_OUTPUTS;
 	static const unsigned int NUM_SLAVE_CONFIGURATIONS = 2;
 	static const unsigned int SPI_CTAR_SLAVE_NUM       = 0;
 	static const unsigned int DSI_CTAR_SLAVE_NUM       = 1;
@@ -453,12 +455,12 @@ private:
 					this->template Set<CLR_RXF>(0);
 				}
 				
-				if(!old_mdis && new_mdis) // enabling module?
+				if(old_mdis && !new_mdis) // enabling module?
 				{
 					this->dspi->ScheduleTransfer();
 				}
 				
-				if(!new_mstr && new_mdis)
+				if((!old_mdis && new_mdis && !new_mstr) || (old_mstr && !new_mstr && new_mdis)) // master -> slave mode while MDIS=1, or MDIS=1 -> 0 while in slave mode
 				{
 					this->dspi->logger << DebugWarning << sc_core::sc_time_stamp() << ": MDIS should be set to '0' in Slave Mode as a slave doesn't control master transactions" << EndDebugWarning;
 				}
@@ -528,6 +530,21 @@ private:
 			this->Initialize(0x0);
 		}
 
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				if(this->dspi->Running())
+				{
+					this->dspi->logger << DebugWarning << "do not write to " << this->GetName() << " while " << this->dspi->GetName() << " is in " << this->dspi->GetState() << EndDebugWarning;
+				}
+			}
+			
+			return rws;
+		}
+
 		using Super::operator =;
 	};
 	
@@ -591,6 +608,11 @@ private:
 			
 			if(!IsReadWriteError(rws))
 			{
+				if(this->dspi->Running())
+				{
+					this->dspi->logger << DebugWarning << "do not write to " << this->GetName() << " while " << this->dspi->GetName() << " is in " << this->dspi->GetState() << EndDebugWarning;
+				}
+				
 				switch(reg_num)
 				{
 					case SPI_CTAR_SLAVE_NUM:
@@ -689,9 +711,9 @@ private:
 				scke = this->dspi->dspi_mcr.template Get<typename DSPI_MCR::CONT_SCKE>();
 				
 				// baud rate: 1 / f_SCK = (1 / f_P) * (PBR * BR) / (1 + DBR)
-				unsigned int pbr = (2 * this->template Get<PBR>()) + 1;
+				unsigned int pbr = this->template Get<PBR>() ? ((2 * this->template Get<PBR>()) + 1) : 2;
 				unsigned int dbr = this->template Get<DBR>();
-				unsigned int br = 1 << this->template Get<BR>();
+				unsigned int br = 1 << (this->template Get<BR>() + 1);
 				double n = (double)(pbr * br) / (1 + dbr);
 				sck_period = dspi_clock_period;
 				sck_period *= n;
@@ -893,6 +915,8 @@ private:
 			
 			if(!IsReadWriteError(rws))
 			{
+				ClearReadWriteStatusFlag(rws, RWSF_WROB); // disable writing read-only bits warnings
+				
 				this->dspi->UpdateState();
 				
 				uint32_t new_value = this->template Get<ALL>();
@@ -977,7 +1001,7 @@ private:
 		struct TFIWF_RE    : Field<DSPI_RSER, TFIWF_RE   , 13> {}; // Transmit FIFO Invalid Write Request Enable
 		struct RFDF_RE     : Field<DSPI_RSER, RFDF_RE    , 14> {}; // Receive FIFO Drain Request Enable
 		struct RFDF_DIRS   : Field<DSPI_RSER, RFDF_DIRS  , 15> {}; // Receive FIFO Drain DMA or Interrupt Request Select
-		struct CMDFFF_DIRS : Field<DSPI_RSER, CMDFFF_DIRS, 16> {}; // Command FIFO FIll DMA or Interrupt Request Select
+		struct CMDFFF_DIRS : Field<DSPI_RSER, CMDFFF_DIRS, 16> {}; // Command FIFO Fill DMA or Interrupt Request Select
 		struct DDIF_DIRS   : Field<DSPI_RSER, DDIF_DIRS  , 17> {}; // DSI data received with active bits - DMA or Interrupt Request Select
 		
 		SWITCH_ENUM_TRAIT(bool, _);
@@ -1007,7 +1031,7 @@ private:
 			TFIWF_RE   ::SetName("TFIWF_RE");    TFIWF_RE   ::SetDescription("Transmit FIFO Invalid Write Request Enable");
 			RFDF_RE    ::SetName("RFDF_RE");     RFDF_RE    ::SetDescription("Receive FIFO Drain Request Enable");
 			RFDF_DIRS  ::SetName("RFDF_DIRS");   RFDF_DIRS  ::SetDescription("Receive FIFO Drain DMA or Interrupt Request Select");
-			CMDFFF_DIRS::SetName("CMDFFF_DIRS"); CMDFFF_DIRS::SetDescription("Command FIFO FIll DMA or Interrupt Request Select");
+			CMDFFF_DIRS::SetName("CMDFFF_DIRS"); CMDFFF_DIRS::SetDescription("Command FIFO Fill DMA or Interrupt Request Select");
 			if(HAS_DATA_SERIALIZATION_SUPPORT) { DDIF_DIRS  ::SetName("DDIF_DIRS");   DDIF_DIRS  ::SetDescription("DSI data received with active bits - DMA or Interrupt Request Select"); }
 		}
 		
@@ -1023,6 +1047,11 @@ private:
 			
 			if(!IsReadWriteError(rws))
 			{
+				if(this->dspi->Running())
+				{
+					this->dspi->logger << DebugWarning << "do not write to " << this->GetName() << " while " << this->dspi->GetName() << " is in " << this->dspi->GetState() << EndDebugWarning;
+				}
+				
 				uint32_t new_value = this->template Get<ALL>();
 				
 				uint32_t value_changed = new_value ^ old_value;
@@ -1091,8 +1120,13 @@ private:
 		struct PE_MASC : Field<DSPI_PUSHR, PE_MASC, 6     > {}; // Parity Enable or Mask tASC delay in the current frame
 		struct PP_MCSC : Field<DSPI_PUSHR, PP_MCSC, 7     > {}; // Parity Polarity or Mask tCSC delay in the next frame
 		struct PCS     : Field<DSPI_PUSHR, PCS    , 8, 15 > {}; // Select which PCS signals are to be asserted for the transfer
-		struct CMD     : Field<DSPI_PUSHR, CMD    , 0, 15 > {}; // Command
-		struct TXDATA  : Field<DSPI_PUSHR, TXDATA , 16, 31> {}; // Transmit Data
+		struct CMD     : Field<DSPI_PUSHR, CMD    , 0, 15 > {}; // (16-bit) Command
+		struct TXDATA  : Field<DSPI_PUSHR, TXDATA , 16, 31> {}; // (16-bit) Transmit Data
+		
+		struct CMD_MSB    : Field<DSPI_PUSHR, CMD_MSB   , 0, 7  > {}; // MSB of Command
+		struct CMD_LSB    : Field<DSPI_PUSHR, CMD_LSB   , 8, 15 > {}; // LSB of Command
+		struct TXDATA_MSB : Field<DSPI_PUSHR, TXDATA_MSB, 16, 23> {}; // MSB of Transmit Data
+		struct TXDATA_LSB : Field<DSPI_PUSHR, TXDATA_LSB, 24, 31> {}; // LSB of Transmit Data
 		
 		typedef FieldSet<CONT, CTAS, EOQ, CTCNT, PE_MASC, PP_MCSC, PCS, TXDATA> ALL;
 		
@@ -1124,22 +1158,23 @@ private:
 				
 				if(this->dspi->ExtendedMode())
 				{
-					if(bit_enable & FieldSet<CMD>::template GetMask<uint32_t>())
+					if((bit_enable & CMD_MSB::template GetMask<uint32_t>()) == CMD_MSB::template GetMask<uint32_t>())
 					{
 						this->dspi->XSPI_Master_CMD_FIFO_Push(this->template Get<CMD>());
 					}
 					
-					if(bit_enable & FieldSet<TXDATA>::template GetMask<uint32_t>())
+					if((bit_enable & TXDATA_MSB::template GetMask<uint32_t>()) == TXDATA_MSB::template GetMask<uint32_t>())
 					{
 						this->dspi->XSPI_Master_TX_FIFO_Push(this->template Get<TXDATA>());
 					}
 				}
 				else
 				{
-					this->dspi->SPI_Master_TX_FIFO_Push(this->template Get<CMD>(), this->template Get<TXDATA>());
+					if((bit_enable & TXDATA_MSB::template GetMask<uint32_t>()) == TXDATA_MSB::template GetMask<uint32_t>())
+					{
+						this->dspi->SPI_Master_TX_FIFO_Push(this->template Get<CMD>(), this->template Get<TXDATA>());
+					}
 				}
-				
-//				Reset();
 			}
 			return rws;
 		}
@@ -1182,8 +1217,6 @@ private:
 				this->dspi->dspi_pushr.template Set<typename DSPI_PUSHR::TXDATA>(this->template Get<TXDATA>());
 				
 				this->dspi->SPI_Slave_TX_FIFO_Push(this->template Get<TXDATA>());
-				
-				//Reset();
 			}
 			return rws;
 		}
@@ -1327,6 +1360,21 @@ private:
 			this->Initialize(0x0);
 		}
 		
+		virtual ReadWriteStatus Read(uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Read(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				if(this->dspi->ModuleDisabled())
+				{
+					this->dspi->logger << DebugWarning << "module must not be disabled when " << this->GetName() << " is read" << EndDebugWarning;
+				}
+			}
+			
+			return rws;
+		}
+
 		using Super::operator =;
 	private:
 		unsigned int reg_num;
@@ -1390,6 +1438,21 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				if(this->dspi->Running())
+				{
+					this->dspi->logger << DebugWarning << "do not write to " << this->GetName() << " while " << this->dspi->GetName() << " is in " << this->dspi->GetState() << EndDebugWarning;
+				}
+			}
+			
+			return rws;
 		}
 		
 		using Super::operator =;
@@ -1825,6 +1888,9 @@ private:
 	sc_core::sc_event gen_dma_tx_event;
 	sc_core::sc_event gen_dma_cmd_event;
 	sc_core::sc_event gen_dma_dd_event;
+	sc_core::sc_event gen_tfff_event;
+	sc_core::sc_event gen_cmdfff_event;
+	sc_core::sc_event gen_rfdf_event;
 	
 	sc_core::sc_vector<sc_core::sc_event> dsi_input_sample_event;
 	sc_core::sc_event latch_serialized_data_event;
@@ -1854,6 +1920,7 @@ private:
 	void MapRegisters();
 	bool Running() const;
 	bool Stopped() const;
+	DSPI_State GetState() const;
 	void UpdateState();
 	bool ModuleDisabled() const;
 	bool MasterMode() const;
@@ -1900,9 +1967,9 @@ private:
 	void RX_FIFO_Dump();
 
 	
-	void UpdateTFFF();
-	void UpdateCMDFFF();
-	void UpdateRFDF();
+	void Set_TFFF_If_TX_FIFO_Not_Full();
+	void Set_CMDFFF_If_CMD_FIFO_Not_Full();
+	void Set_RFDF_If_RX_FIFO_Not_Empty();
 	
 	void UpdateINT_EOQF();
 	void UpdateINT_TFFF();  
@@ -1955,6 +2022,9 @@ private:
 	void DMA_ACK_TX_Process();
 	void DMA_ACK_CMD_Process();
 	void DMA_ACK_DD_Process();
+	void Set_TFFF_Process();
+	void Set_CMDFFF_Process();
+	void Set_RFDF_Process();
 	void HT_Process();
 	void DEBUG_Process();
 	void SetPCS(unsigned int slave_num, const sc_core::sc_time& t, const sc_core::sc_time& duration, bool value);

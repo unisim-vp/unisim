@@ -126,8 +126,14 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	
 	SC_THREAD(Run);
 
-	SC_METHOD(P_IACK_Process);
-	sensitive << int_ack_event;
+	sc_core::sc_spawn_options p_iack_process_spawn_options;
+	p_iack_process_spawn_options.spawn_method();
+	p_iack_process_spawn_options.dont_initialize();
+	p_iack_process_spawn_options.set_sensitivity(&int_ack_event);
+	
+	sc_core::sc_spawn(sc_bind(&CPU<TYPES, CONFIG>::P_IACK_Process, this), "P_IACK_Process", &p_iack_process_spawn_options);
+// 	SC_METHOD(P_IACK_Process);
+// 	sensitive << int_ack_event;
 	
 	SC_METHOD(ExternalEventProcess);
 	sensitive << p_reset_b.pos() << p_nmi_b.neg() << p_mcp_b.neg() << p_extint_b << p_crint_b;
@@ -149,6 +155,8 @@ void CPU<TYPES, CONFIG>::end_of_elaboration()
 	clock_properties_changed_process_spawn_options.set_sensitivity(&m_clk_prop_proxy.GetClockPropertiesChangedEvent());
 
 	sc_core::sc_spawn(sc_bind(&CPU<TYPES, CONFIG>::ClockPropertiesChangedProcess, this), "ClockPropertiesChangedProcess", &clock_properties_changed_process_spawn_options);
+	
+	p_iack = false;
 }
 
 template <typename TYPES, typename CONFIG>
@@ -401,8 +409,6 @@ void CPU<TYPES, CONFIG>::Idle()
 		
 		// update overall run time
 		run_time = new_time_stamp;
-		
-		SampleInputs();
 	}
 }
 
@@ -521,6 +527,7 @@ void CPU<TYPES, CONFIG>::ExternalEventProcess()
 	|| p_extint_b.negedge()
 	|| p_crint_b.negedge())
 	{
+		SampleInputs();
 		external_event.notify(sc_core::SC_ZERO_TIME);
 	}
 }

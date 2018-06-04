@@ -35,6 +35,7 @@ void dspi_0_tfff_rfdf(unsigned int dspi_id, enum DSPI_REQ dspi_req)
 int main(void)
 {
 	dspi_init(0);
+	dspi_enable_module(0);
 	dspi_set_mode(0, DSPI_SLAVE_MODE);
 	
 	struct DSPI_CLOCK_AND_TRANSFER_ATTRIBUTES cta0;
@@ -56,15 +57,16 @@ int main(void)
 
 	dspi_set_spi_clock_and_transfer_attributes(0, 0, &cta0);
 
-	dspi_enable_module(0);
-	dspi_start_transfers(0);
-	
 #if DSPI_INT_MODE
 	dspi_set_interrupt_handler(0, DSPI_REQ_TFFF, dspi_0_tfff_rfdf);
 	dspi_set_interrupt_handler(0, DSPI_REQ_RFDF, dspi_0_tfff_rfdf);
 	dspi_enable_request(0, DSPI_REQ_TFFF);
 	dspi_enable_request(0, DSPI_REQ_RFDF);
-#else
+#endif
+
+	dspi_start_transfers(0);
+	
+#if !DSPI_INT_MODE
 	int x = 0;
 	
 	do

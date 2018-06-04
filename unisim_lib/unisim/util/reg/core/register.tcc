@@ -1207,57 +1207,6 @@ inline typename Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE Register
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Write(const TYPE& _value, const TYPE& bit_enable)
 {
-#if 0
-	if(unlikely(__IsVerboseWrite__()))
-	{
-		std::ostream& os = __GetInfoStream__();
-		std::ios_base::fmtflags ff = os.flags();
-		os << "writing " << GetName() << " <- 0x" << std::hex << (uint64_t)(_value & bit_enable);
-		if(bit_enable != (~TYPE(0) & TYPE_MASK))
-		{
-			os << " (bit_enable=0x" << bit_enable << ")";
-		}
-		os.flags(ff);
-	}
-
-	ReadWriteStatus rws(RWS_OK);
-	const TYPE write_mask = bit_enable & GetWriteMask();
-	const TYPE unwritable_mask = bit_enable & ~GetWriteMask();
-	const TYPE write_one_clear_mask = _value & bit_enable & GetWriteOneClearMask();
-	
-	TYPE old_value = value & TYPE_MASK;
-	
-	if((_value & bit_enable & TYPE_MASK) != (_value & bit_enable))
-	{
-		// writing out-of-range register value
-		rws = ReadWriteStatus(rws | RWS_WOORV);
-	}
-	
-	if(!(_ACCESS & AF_SW_W))
-	{
-		// writing read-only register
-		rws = ReadWriteStatus(rws | RWS_WROR);
-	}
-	else if((_value & unwritable_mask) != (old_value & unwritable_mask))
-	{
-		// writing read-only bits
-		rws = ReadWriteStatus(rws | RWS_WROB);
-	}
-	
-	value = (old_value & ~write_mask) | (_value & write_mask & ~write_one_clear_mask);
-	
-	if(unlikely(__IsVerboseWrite__()))
-	{
-		std::ostream& os = __GetInfoStream__();
-		std::ios_base::fmtflags ff = os.flags();
-		os << " => " << std::hex;
-		ShortPrettyPrint(os);
-		os << ", " << rws << std::endl;
-		os.flags(ff);
-	}
-
-	return rws;
-#endif
 	if(unlikely(__IsVerboseWrite__()))
 	{
 		std::ostream& os = __GetInfoStream__();
@@ -1279,18 +1228,18 @@ ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Write(const T
 	if((_value & bit_enable & TYPE_MASK) != (_value & bit_enable))
 	{
 		// writing out-of-range register value
-		rws = ReadWriteStatus(rws | RWS_WOORV);
+		rws = ReadWriteStatus(rws | RWSF_WOORV);
 	}
 	
 	if(!(_ACCESS & AF_SW_W))
 	{
 		// writing read-only register
-		rws = ReadWriteStatus(rws | RWS_WROR);
+		rws = ReadWriteStatus(rws | RWSF_WROR);
 	}
 	else if((_value & unwritable_mask) != (value & unwritable_mask))
 	{
 		// writing read-only bits
-		rws = ReadWriteStatus(rws | RWS_WROB);
+		rws = ReadWriteStatus(rws | RWSF_WROB);
 	}
 	
 	value = (value & ~copy_mask) | (_value & copy_mask);
@@ -1334,18 +1283,18 @@ ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::WritePreserve
 	if((_value & bit_enable & TYPE_MASK) != (_value & bit_enable))
 	{
 		// writing out-of-range register value
-		rws = ReadWriteStatus(rws | RWS_WOORV);
+		rws = ReadWriteStatus(rws | RWSF_WOORV);
 	}
 	
 	if(!(_ACCESS & AF_SW_W))
 	{
 		// writing read-only register
-		rws = ReadWriteStatus(rws | RWS_WROR);
+		rws = ReadWriteStatus(rws | RWSF_WROR);
 	}
 	else if((_value & unwritable_mask) != (value & unwritable_mask))
 	{
 		// writing read-only bits
-		rws = ReadWriteStatus(rws | RWS_WROB);
+		rws = ReadWriteStatus(rws | RWSF_WROB);
 	}
 	
 	value = (value & ~copy_mask) | (_value & copy_mask);
@@ -1373,7 +1322,7 @@ ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Read(TYPE& _v
 	if(!(_ACCESS & AF_SW_R))
 	{
 		// reading write-only register
-		rws = ReadWriteStatus(rws | RWS_RWOR);
+		rws = ReadWriteStatus(rws | RWSF_RWOR);
 	}
 	
 	_value = (_value & ~bit_enable) | (value & read_mask);

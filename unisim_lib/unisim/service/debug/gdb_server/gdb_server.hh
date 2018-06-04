@@ -160,7 +160,7 @@ public:
 	GDBServerBase(const char *_name, unisim::kernel::service::Object *_parent);
 	virtual ~GDBServerBase();
 	
-	virtual void SigInt();
+//	virtual void SigInt();
 protected:
 	static bool killed;
 };
@@ -257,6 +257,7 @@ public:
 	virtual bool EndSetup();
 	virtual void OnDisconnect();
 
+	virtual void SigInt();
 private:
 	static const unsigned int MAX_BUFFER_SIZE = 256;
 	bool VisitArchitecture(unisim::util::xml::Node *xml_node);

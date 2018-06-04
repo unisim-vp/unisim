@@ -105,6 +105,14 @@ struct LoggerServer : public unisim::kernel::service::Object
 	 */
 	void Print( mode_t mode, std::string name, const char *buffer );
 
+	/** Message debug null log command
+	 * Loggers should call this method (using the handle obtained with GetInstance)
+	 *   to log a debug null message.
+	 *
+	 * @param obj the unisim::kernel::service::Object that is sending the debug info message
+	 * @param buffer the debug null message
+	 */
+	void DebugNull( std::string name, const char *buffer );
 	/** Message debug info log command
 	 * Loggers should call this method (using the handle obtained with GetInstance)
 	 *   to log a debug info message.

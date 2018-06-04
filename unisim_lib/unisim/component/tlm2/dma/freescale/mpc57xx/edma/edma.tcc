@@ -128,7 +128,7 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, gen_irq_event()
 	, gen_err_event()
 	, gen_dma_channel_ack_event()
-	, ack()
+	, gen_dma_channel_ack_edge()
 	, grp_per_prio_error(true)
 	, ch_per_prio_error()
 	, sel_grp(0)
@@ -272,6 +272,7 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 		sc_core::sc_spawn_options dma_channel_process_spawn_options;
 		dma_channel_process_spawn_options.spawn_method();
 		dma_channel_process_spawn_options.set_sensitivity(dma_channel[dma_channel_num]);
+		dma_channel_process_spawn_options.set_sensitivity(dma_channel_ack[dma_channel_num]);
 		
 		std::stringstream dma_channel_process_name_sstr;
 		dma_channel_process_name_sstr << "DMA_CHANNEL_Process_" << dma_channel_num;
@@ -670,7 +671,7 @@ void EDMA<CONFIG>::Reset()
 		edma_dchpri      [dma_channel_num].Reset();
 		edma_dchmid      [dma_channel_num].Reset();
 		
-		ack[dma_channel_num] = false;
+		gen_dma_channel_ack_edge[dma_channel_num] = NEG;
 		UpdateAcknowledge(dma_channel_num);
 	}
 
@@ -996,15 +997,18 @@ template <typename CONFIG>
 bool EDMA<CONFIG>::HardwareRequestStatus(unsigned int dma_channel_num)
 {
 	bool dma_channel_value = dma_channel[dma_channel_num]->read();
+	bool dma_channel_ack_value = dma_channel_ack[dma_channel_num]->read();
+	bool enable_request_value = ((dma_channel_num >= 32) ? edma_erqh.Get(dma_channel_num - 32) : edma_erql.Get(dma_channel_num));
 
 #if 0
 	if(unlikely(verbose))
 	{
 		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << dma_channel[dma_channel_num]->name() << " = " << dma_channel_value << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << dma_channel_ack[dma_channel_num]->name() << " = " << dma_channel_ack_value << EndDebugInfo;
 	}
 #endif
 	
-	return ((dma_channel_num >= 32) ? edma_erqh.Get(dma_channel_num - 32) : edma_erql.Get(dma_channel_num)) && dma_channel_value;
+	return enable_request_value && dma_channel_value && !dma_channel_ack_value;
 }
 
 template <typename CONFIG>
@@ -1118,7 +1122,7 @@ void EDMA<CONFIG>::Acknowledge(unsigned int dma_channel_num)
 		logger << DebugInfo << sc_core::sc_time_stamp() << ":channel #" << dma_channel_num << ": acknowledging" << EndDebugInfo;
 	}
 	
-	ack[dma_channel_num] = true;
+	gen_dma_channel_ack_edge[dma_channel_num] = POS;
 	UpdateAcknowledge(dma_channel_num);
 }
 
@@ -1278,12 +1282,6 @@ template <typename CONFIG>
 void EDMA<CONFIG>::DMA_CHANNEL_Process(unsigned int dma_channel_num)
 {
 	UpdateHardwareRequestStatus(dma_channel_num);
-	
-	if(dma_channel[dma_channel_num]->negedge())
-	{
-		ack[dma_channel_num] = false;
-		UpdateAcknowledge(dma_channel_num, master_clock_period);
-	}
 }
 
 template <typename CONFIG>
@@ -1315,16 +1313,20 @@ void EDMA<CONFIG>::ERR_IRQ_Process(unsigned int dma_channel_num)
 template <typename CONFIG>
 void EDMA<CONFIG>::DMA_CHANNEL_ACK_Process(unsigned int dma_channel_num)
 {
-	bool dma_channel_ack_value = ack[dma_channel_num];
+	bool dma_channel_ack_value = false;
 	
+	if(gen_dma_channel_ack_edge[dma_channel_num] == POS)
+	{
+		dma_channel_ack_value = true;
+		gen_dma_channel_ack_edge[dma_channel_num] = NEG;
+		UpdateAcknowledge(dma_channel_num, master_clock_period);
+	}
 	if(verbose)
 	{
 		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << dma_channel_ack[dma_channel_num]->name() << " <- " << dma_channel_ack_value << EndDebugInfo;
 	}
-	
 	dma_channel_ack[dma_channel_num]->write(dma_channel_ack_value);
 }
-
 
 template <typename CONFIG>
 void EDMA<CONFIG>::SetMasterID(unsigned int dma_channel_num, MasterID mid)
@@ -2165,6 +2167,11 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 				if(end_of_minor_loop)
 				{
 					// Decrement major loop iteration counter
+					if(unlikely(citer == 0))
+					{
+						logger << DebugError << "Internal error! decrementing CITER would result in an underflow" << EndDebugError;
+						this->Stop(-1);
+					}
 					citer = citer - 1;
 					channel_tcd->SetCITER(citer);
 				}

@@ -385,6 +385,13 @@ bool GDBServer<ADDRESS>::EndSetup()
 }
 
 template <class ADDRESS>
+void GDBServer<ADDRESS>::SigInt()
+{
+	killed = true;
+	if(!run_cond) Run();
+}
+
+template <class ADDRESS>
 bool GDBServer<ADDRESS>::StartServer()
 {
 	// Simulation is currently stalled (in WaitForCommandProcessing)
@@ -2312,27 +2319,30 @@ bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
 #else
 			if(sock < 0) return false;
 			ssize_t r = read(sock, input_buffer, sizeof(input_buffer));
-#endif
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-			if(r == SOCKET_ERROR)
-#else
-			if(r < 0)
+			if(r <= 0)
 #endif
 			{
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-				if(WSAGetLastError() == WSAEWOULDBLOCK)
+				if(r == SOCKET_ERROR)
 #else
-				if((errno == EAGAIN) || (errno == EWOULDBLOCK))
+				if(r < 0)
 #endif
 				{
-					if(blocking && !killed)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+					if(WSAGetLastError() == WSAEWOULDBLOCK)
+#else
+					if((errno == EAGAIN) || (errno == EWOULDBLOCK))
+#endif
 					{
-						WaitTime(NON_BLOCKING_READ_POLL_PERIOD_MS);
-						continue;
-					}
-					else
-					{
-						return false;
+						if(blocking && !killed)
+						{
+							WaitTime(NON_BLOCKING_READ_POLL_PERIOD_MS);
+							continue;
+						}
+						else
+						{
+							return false;
+						}
 					}
 				}
 				

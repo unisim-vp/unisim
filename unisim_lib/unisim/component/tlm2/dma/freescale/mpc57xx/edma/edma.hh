@@ -110,6 +110,12 @@ struct CeilLog2
     static const unsigned int value = (N > (1 << Log2<N>::value)) ? Log2<N>::value + 1 : Log2<N>::value;
 };
 
+enum EDGE
+{
+	NEG = 0,
+	POS = 1
+};
+
 template <typename CONFIG>
 class EDMA
 	: unisim::kernel::service::Object
@@ -2869,8 +2875,7 @@ private:
 	sc_core::sc_event *gen_irq_event[NUM_DMA_CHANNELS];
 	sc_core::sc_event *gen_err_event[NUM_DMA_CHANNELS];
 	sc_core::sc_event *gen_dma_channel_ack_event[NUM_DMA_CHANNELS];
-	
-	bool ack[NUM_DMA_CHANNELS];
+	EDGE gen_dma_channel_ack_edge[NUM_DMA_CHANNELS];
 	
 	bool grp_per_prio_error;
 	bool ch_per_prio_error[NUM_GROUPS];

@@ -307,7 +307,7 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 	{
 		sc_core::sc_spawn_options dma_ack_rx_process_spawn_options;
 		dma_ack_rx_process_spawn_options.spawn_method();
-		dma_ack_rx_process_spawn_options.set_sensitivity(DMA_ACK_RX[dma_rx_num]);
+		dma_ack_rx_process_spawn_options.set_sensitivity(&DMA_ACK_RX[dma_rx_num]->pos());
 		
 		std::stringstream dma_ack_rx_process_name_sstr;
 		dma_ack_rx_process_name_sstr << "DMA_ACK_RX_Process_" << dma_rx_num;
@@ -319,7 +319,7 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 	{
 		sc_core::sc_spawn_options dma_ack_tx_process_spawn_options;
 		dma_ack_tx_process_spawn_options.spawn_method();
-		dma_ack_tx_process_spawn_options.set_sensitivity(DMA_ACK_TX[dma_tx_num]);
+		dma_ack_tx_process_spawn_options.set_sensitivity(&DMA_ACK_TX[dma_tx_num]->pos());
 		
 		std::stringstream dma_ack_tx_process_name_sstr;
 		dma_ack_tx_process_name_sstr << "DMA_ACK_TX_Process_" << dma_tx_num;
@@ -1381,7 +1381,7 @@ void LINFlexD<CONFIG>::DMA_ACK_RX_Process(unsigned int dma_rx_num)
 	if(DMA_ACK_RX[dma_rx_num]->posedge())
 	{
 		dma_rx[dma_rx_num] = false;
-		UpdateDMA_RX(dma_rx_num, master_clock_period);
+		UpdateDMA_RX(dma_rx_num/*, master_clock_period*/);
 	}
 }
 
@@ -1391,7 +1391,7 @@ void LINFlexD<CONFIG>::DMA_ACK_TX_Process(unsigned int dma_tx_num)
 	if(DMA_ACK_TX[dma_tx_num]->posedge())
 	{
 		dma_tx[dma_tx_num] = false;
-		UpdateDMA_TX(dma_tx_num, master_clock_period);
+		UpdateDMA_TX(dma_tx_num/*, master_clock_period*/);
 	}
 }
 
@@ -1404,43 +1404,51 @@ void LINFlexD<CONFIG>::RX_FIFO_Pop()
 		if(UART_RX_FIFO_Mode())
 		{
 			// FIFO mode
-			
+			unsigned int rx_fifo_cnt = linflexd_uartcr.template Get<typename LINFlexD_UARTCR::RFC>();
 			unsigned int wls = linflexd_uartcr.template Get<typename LINFlexD_UARTCR::WLS>();
 			unsigned int wl1 = linflexd_uartcr.template Get<typename LINFlexD_UARTCR::WL1>();
+			unsigned int byte_cnt = ((wls || wl1) ? 2 : 1);
+			unsigned int bit_cnt = ((wls || wl1) ? 16 : 8);
 		
 			if(verbose)
 			{
-				logger << DebugInfo << sc_core::sc_time_stamp() << ": Poping " << ((wls || wl1) ? 2 : 1) << " byte(s) from Rx FIFO" << EndDebugInfo;
+				logger << DebugInfo << sc_core::sc_time_stamp() << ": Poping " << byte_cnt << " byte(s) from Rx FIFO" << EndDebugInfo;
 			}
 			
-			// pop front of Rx FIFO in BDRM
-			linflexd_bdrm = linflexd_bdrm >> ((wls || wl1) ? 16 : 8);
-			
-			// shift accordling parity error bits
-			unsigned int pe = linflexd_uartsr.template Get<typename LINFlexD_UARTSR::PE>();
-			pe = pe >> ((wls || wl1) ? 2 : 1);
-			linflexd_uartsr.template Set<typename LINFlexD_UARTSR::PE>(pe);
-			
-			// decrement Rx FIFO count
-			unsigned int rx_fifo_cnt = linflexd_uartcr.template Get<typename LINFlexD_UARTCR::RFC>();
-			rx_fifo_cnt -= ((wls || wl1) ? 2 : 1);
-			
-			if(rx_fifo_cnt == 0)
+			if(rx_fifo_cnt >= byte_cnt)
 			{
-				if(verbose)
+				// pop front of Rx FIFO in BDRM
+				linflexd_bdrm = linflexd_bdrm >> bit_cnt;
+				
+				// shift accordling parity error bits
+				unsigned int pe = linflexd_uartsr.template Get<typename LINFlexD_UARTSR::PE>();
+				pe = pe >> byte_cnt;
+				linflexd_uartsr.template Set<typename LINFlexD_UARTSR::PE>(pe);
+				
+				// decrement Rx FIFO count
+				rx_fifo_cnt -= byte_cnt;
+				
+				if(rx_fifo_cnt == 0)
 				{
-					logger << DebugInfo << rx_input.get_time_stamp() << ": Rx FIFO is empty" << EndDebugInfo;
+					if(verbose)
+					{
+						logger << DebugInfo << rx_input.get_time_stamp() << ": Rx FIFO is empty" << EndDebugInfo;
+					}
 				}
-			}
-			
-			linflexd_uartcr.template Set<typename LINFlexD_UARTCR::RFC>(rx_fifo_cnt);
-			
-			linflexd_uartsr.template Set<typename LINFlexD_UARTSR::RFE>(rx_fifo_cnt == 0); // Rx FIFO Empty ?
+				
+				linflexd_uartcr.template Set<typename LINFlexD_UARTCR::RFC>(rx_fifo_cnt);
+				
+				linflexd_uartsr.template Set<typename LINFlexD_UARTSR::RFE>(rx_fifo_cnt == 0); // Rx FIFO Empty ?
 
-			linflexd_uartsr.template Set<typename LINFlexD_UARTSR::RFNE>(rx_fifo_cnt != 0); // Receive FIFO Not Empty
+				linflexd_uartsr.template Set<typename LINFlexD_UARTSR::RFNE>(rx_fifo_cnt != 0); // Receive FIFO Not Empty
 			
-			// Request DMA RX
-			if(rx_fifo_cnt != 0) RequestDMA_RX();
+				// Request DMA RX
+				if(rx_fifo_cnt != 0) RequestDMA_RX();
+			}
+			else
+			{
+				logger << DebugWarning << sc_core::sc_time_stamp() << ": Attempt to pop " << byte_cnt << " byte(s) from Rx FIFO while RX FIFO count is " << rx_fifo_cnt << EndDebugWarning;
+			}
 		}
 	}
 }
@@ -2060,6 +2068,15 @@ void LINFlexD<CONFIG>::TX_FIFO_Push()
 			
 			// update interrupt signals
 			UpdateINT_TX();
+		}
+		else
+		{
+			if(verbose)
+			{
+				logger << DebugInfo << sc_core::sc_time_stamp() << ": Tx FIFO is not full" << EndDebugInfo;
+			}
+			// Request DMA TX
+			RequestDMA_TX();
 		}
 	}
 }
