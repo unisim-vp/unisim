@@ -20,6 +20,7 @@ src/drv/linflexd.c \
 src/drv/dmamux.c \
 src/drv/edma.c \
 src/drv/dspi.c \
+src/drv/siul2.c \
 src/drv/console.c \
 src/drv/ramdisk.c \
 src/fs/lfs.c \

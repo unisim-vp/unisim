@@ -36,6 +36,7 @@
 #define __MPC5777M_CONFIG_HH__
 
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
+#include <unisim/component/tlm2/com/freescale/mpc57xx/siul2/defs.hh>
 #include <stdint.h>
 
 struct Config
@@ -459,6 +460,22 @@ struct Config
 		static const bool HAS_DATA_SERIALIZATION_SUPPORT = false;
 		static const unsigned int NUM_DSI_INPUTS         = 0;
 		static const unsigned int NUM_DSI_OUTPUTS        = 0;
+	};
+	
+	struct SIUL2_CONFIG
+	{
+		static const unsigned int BUSWIDTH                               = 64; // FIXME: SIUL2 will be on PBRIDGE which is 32-bit width
+		static const unsigned int NUM_MULTIPLEXED_SIGNALS_CONFIGURATIONS = 512;
+		static const unsigned int NUM_PADS                               = 341;
+		static const unsigned int NUM_INTERRUPT_FILTERS                  = 32;
+		static const unsigned int PART_NUMBER                            = 0x5777;
+		static const bool ENGINEERING_DEVICE                             = true;
+		static const unisim::component::tlm2::com::freescale::mpc57xx::siul2::PACKAGE_SETTING_TYPE PACKAGE_SETTING = unisim::component::tlm2::com::freescale::mpc57xx::siul2::BGA512;
+		static const unsigned int MAJOR_MASK                             = 1;
+		static const unsigned int MINOR_MASK                             = 1;
+		static const unisim::component::tlm2::com::freescale::mpc57xx::siul2::MANUFACTURER_TYPE MANUFACTURER = unisim::component::tlm2::com::freescale::mpc57xx::siul2::FREESCALE;
+		static const unsigned int FLASH_SIZE                             = 8 * 1024 * 1024;
+		static const char FAMILY_NUMBER                                  = 'M';
 	};
 };
 

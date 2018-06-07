@@ -83,8 +83,8 @@ Instrumenter::Instrumenter(const char *name, unisim::kernel::service::Object *pa
 	if(front_ends_priority_order.empty())
 	{
 		std::stringstream front_ends_priority_order_sstr;
-		//front_ends_priority_order_sstr << this->GetName() << ".http-server " << this->GetName() << ".csv-reader " << this->GetName() << ".csv-writer";
-		front_ends_priority_order_sstr << this->GetName() << ".csv-reader " << this->GetName() << ".http-server " << this->GetName() << ".csv-writer";
+		front_ends_priority_order_sstr << this->GetName() << ".http-server " << this->GetName() << ".csv-reader " << this->GetName() << ".csv-writer";
+		//front_ends_priority_order_sstr << this->GetName() << ".csv-reader " << this->GetName() << ".http-server " << this->GetName() << ".csv-writer";
 		front_ends_priority_order = front_ends_priority_order_sstr.str();
 	}
 	

@@ -44,6 +44,7 @@
 #include "dmamux.h"
 #include "edma.h"
 #include "dspi.h"
+#include "siul2.h"
 #include "console.h"
 #include "ramdisk.h"
 #include "lfs.h"
@@ -271,6 +272,7 @@ void sys_init()
 	pit_drv_init();
 	linflexd_drv_init();
 	dspi_drv_init();
+	siul2_drv_init();
 	
 	intc_init();      // initialize interrupt controller
 	edma_init(0);     // initialize eDMA_0
@@ -289,6 +291,7 @@ void sys_init()
 			stm_init(2);      // initialize STM_2
 			pit_init(0);      // initialize PIT_0
 			pit_init(1);      // initialize PIT_1
+			siul2_init();     // initialize SIUL2
 			
 			stm_set_channel_irq_priority(2, 0, 63);          // STM_2: set STM_2 channel #0 IRQ priority level to 63
 			stm_select_channel_irq_for_processor(2, 0, 2);  // STM_2: select STM_2 channel #0 IRQ for processor #2

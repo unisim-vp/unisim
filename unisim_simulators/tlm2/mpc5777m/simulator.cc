@@ -134,6 +134,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, dspi_12_sin_serial_bus(0)
 	, dspi_12_pcs_serial_bus()
 	, dspi_12_ss_serial_bus(0)
+	, siul2(0)
 	, ebi_space_stub(0)
 	, ebi_stub(0)
 	, flash_port1_stub(0)
@@ -147,7 +148,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, xbar_1_stub(0)
 	, pbridge_a_stub(0)
 	, pbridge_b_stub(0)
-	, siul2_stub(0)
+	//, siul2_stub(0)
 	, dma_err_irq_combinator(0)
 	, DSPI0_0(0)
 	, DSPI1_0(0)
@@ -370,6 +371,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	dspi_5 = new DSPI_5("DSPI_5", this);
 	dspi_6 = new DSPI_6("DSPI_6", this);
 	dspi_12 = new DSPI_12("DSPI_12", this);
+	// - SIUL2
+	siul2 = new SIUL2("SIUL2", this);
 	
 	//  - Stubs
 	ebi_space_stub = new EBI_SPACE_STUB("EBI_SPACE", this);
@@ -385,7 +388,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	xbar_1_stub = new XBAR_1_STUB("XBAR_1_STUB", this);
 	pbridge_a_stub = new PBRIDGE_A_STUB("PBRIDGE_A_STUB", this);
 	pbridge_b_stub = new PBRIDGE_B_STUB("PBRIDGE_B_STUB", this);
-	siul2_stub = new SIUL2_STUB("SIUL2", this);
+	//siul2_stub = new SIUL2_STUB("SIUL2", this);
 
 	dma_err_irq_combinator = new unisim::component::tlm2::operators::LogicalOrOperator<bool, NUM_DMA_CHANNELS>("DMA_ERR_IRQ_COMBINATOR");
 
@@ -1325,6 +1328,15 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(DSPI6_7->out);
 	RegisterPort(DSPI12_0->out);
 	
+	// - SIUL2
+	RegisterPort(siul2->m_clk);
+	RegisterPort(siul2->reset_b);
+	for(i = 0; i < SIUL2::NUM_PADS; i++)
+	{
+		RegisterPort(siul2->pad_in[i]);
+		RegisterPort(siul2->pad_out[i]);
+	}
+	
 	//=========================================================================
 	//===                         Channels creation                         ===
 	//=========================================================================
@@ -1500,6 +1512,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateSignal("DSPI_12_INT_TFUF", false);
 	CreateSignal("DSPI_12_INT_RFOF", false);
 	CreateSignal("DSPI_12_INT_TFIWF", false);
+	
+	CreateSignalArray<bool, sc_core::SC_MANY_WRITERS>(SIUL2::NUM_PADS, "pad", false);
 	
 	//  - LIN Serial Buses
 	linflexd_0_tx_serial_bus = new LINFlexD_0_TX_SERIAL_BUS("LINFlexD_0_TX_SERIAL_BUS", CreateSignal("LINFlexD_0_TX", true, OUTPUT_INSTRUMENTATION), this);
@@ -1679,7 +1693,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*pbridge_a->init_socket[35])(xbar_0_stub->slave_sock);             // PBRIDGE_A <-> XBAR_0
 	(*pbridge_a->init_socket[36])(xbar_1_stub->slave_sock);             // PBRIDGE_A <-> XBAR_1
 	(*pbridge_a->init_socket[37])(pbridge_a_stub->slave_sock);          // PBRIDGE_A <-> PBRIDGE_A
-	(*pbridge_a->init_socket[38])(siul2_stub->slave_sock);              // PBRIDGE_A <-> SIUL2
+	(*pbridge_a->init_socket[38])(siul2->peripheral_slave_if);          // PBRIDGE_A <-> SIUL2
 	(*pbridge_a->init_socket[39])(ebi_stub->slave_sock);                // PBRIDGE_A <-> EBI
 	
 	(*pbridge_b->init_socket[0])(linflexd_2->peripheral_slave_if);      // PBRIDGE_B <-> LINFlexD_2
@@ -2349,6 +2363,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI12_0.in_1", "HARDWARE.DSPI_12_INT_RFOF");
 	Bind("HARDWARE.DSPI12_0.in_2", "HARDWARE.DSPI_12_INT_TFIWF");
 	
+	Bind("HARDWARE.SIUL2.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.SIUL2.reset_b" , "HARDWARE.reset_b");
+	BindArray(SIUL2::NUM_PADS, "HARDWARE.SIUL2.pad_in", "HARDWARE.pad");
+	BindArray(SIUL2::NUM_PADS, "HARDWARE.SIUL2.pad_out", "HARDWARE.pad");
+
 	// Interrupt sources
 	
 	// IRQ # ---- Source name ------------ Description ------------------------- Note --------------
@@ -4531,6 +4550,7 @@ Simulator::~Simulator()
 	if(dspi_12_sin_serial_bus) delete dspi_12_sin_serial_bus; 
 	for(i = 0; i < DSPI_12::NUM_CTARS; i++) if(dspi_12_pcs_serial_bus[i]) delete dspi_12_pcs_serial_bus[i];
 	if(dspi_12_ss_serial_bus) delete dspi_12_ss_serial_bus;
+	if(siul2) delete siul2;
 	if(ebi_space_stub) delete ebi_space_stub;
 	if(ebi_stub) delete ebi_stub;
 	if(flash_port1_stub) delete flash_port1_stub;
@@ -4544,7 +4564,7 @@ Simulator::~Simulator()
 	if(xbar_1_stub) delete xbar_1_stub;
 	if(pbridge_a_stub) delete pbridge_a_stub;
 	if(pbridge_b_stub) delete pbridge_b_stub;
-	if(siul2_stub) delete siul2_stub;
+	//if(siul2_stub) delete siul2_stub;
 	if(dma_err_irq_combinator) delete dma_err_irq_combinator;
 	if(DSPI0_0) delete DSPI0_0;
 	if(DSPI1_0) delete DSPI1_0;

@@ -183,7 +183,7 @@
 			<variable name="front-ends-priority-order">
 				<type>parameter</type>
 				<data_type>string</data_type>
-				<value>HARDWARE.instrumenter.csv-reader HARDWARE.instrumenter.http-server HARDWARE.instrumenter.csv-writer</value>
+				<value>HARDWARE.instrumenter.http-server HARDWARE.instrumenter.csv-reader HARDWARE.instrumenter.csv-writer</value>
 				<description>Front-ends priority order (from left/higher to right/lower priority)</description>
 			</variable>
 		</object>

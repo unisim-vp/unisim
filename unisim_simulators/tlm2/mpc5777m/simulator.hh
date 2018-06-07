@@ -55,6 +55,7 @@
 #include <unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.hh>
 #include <unisim/component/tlm2/operators/associative_operator.hh>
 #include <unisim/component/tlm2/com/freescale/mpc57xx/dspi/dspi.hh>
+#include <unisim/component/tlm2/com/freescale/mpc57xx/siul2/siul2.hh>
 
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
@@ -208,6 +209,7 @@ private:
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SIN_SERIAL_BUS;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_PCS_SERIAL_BUS;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SS_SERIAL_BUS;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::siul2::SIUL2<SIUL2_CONFIG> SIUL2;
 	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_SPACE_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> FLASH_PORT1_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> XBAR_0_S6_STUB;
@@ -221,7 +223,7 @@ private:
 	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> XBAR_1_STUB;
 	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PBRIDGE_A_STUB;
 	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PBRIDGE_B_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> SIUL2_STUB;
+	//typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> SIUL2_STUB;
 	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_STUB;
 
 	//=========================================================================
@@ -351,6 +353,8 @@ private:
 	DSPI_12_SIN_SERIAL_BUS  *dspi_12_sin_serial_bus;
 	DSPI_12_PCS_SERIAL_BUS  *dspi_12_pcs_serial_bus[DSPI_12::NUM_CTARS];
 	DSPI_12_SS_SERIAL_BUS   *dspi_12_ss_serial_bus;
+	// - SIUL2
+	SIUL2 *siul2;
 	
 	//  - Stubs
 	EBI_SPACE_STUB *ebi_space_stub;
@@ -366,7 +370,7 @@ private:
 	XBAR_1_STUB *xbar_1_stub;
 	PBRIDGE_A_STUB *pbridge_a_stub;
 	PBRIDGE_B_STUB *pbridge_b_stub;
-	SIUL2_STUB *siul2_stub;
+//	SIUL2_STUB *siul2_stub;
 	
 	unisim::component::tlm2::operators::LogicalOrOperator<bool, NUM_DMA_CHANNELS> *dma_err_irq_combinator;
 	unisim::component::tlm2::operators::LogicalOrOperator<bool, 3> *DSPI0_0;
