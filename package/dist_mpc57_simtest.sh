@@ -3,7 +3,7 @@
 SIMPKG=mpc57_simtest
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
-unisim/component/cxx/processor/powerpc/isa/book_i/disasm.cc \
+unisim/component/cxx/processor/powerpc/isa/disasm.cc \
 unisim/util/symbolic/symbolic.cc \
 unisim/util/random/random.cc \
 "
@@ -19,7 +19,9 @@ unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/andc.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmp.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpl.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cntlzw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divw_sat.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divwu.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divwu_sat.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/eqv.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/extsb.isa \
@@ -477,10 +479,10 @@ unisim/component/cxx/processor/powerpc/isa/mpu/mpuwe.isa \
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_FILES} \
-unisim/component/cxx/processor/powerpc/isa/book_i/disasm.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
 unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
 unisim/component/cxx/processor/powerpc/isa/lsp/lsp.hh \
+unisim/component/cxx/processor/powerpc/isa/disasm.hh \
 unisim/util/truth_table/truth_table.hh \
 unisim/util/endian/endian.hh \
 unisim/util/inlining/inlining.hh \
