@@ -38,7 +38,7 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/symbolic/identifier.hh>
 #include <ostream>
-#include <set>
+#include <map>
 #include <stdexcept>
 #include <limits>
 #include <typeinfo>
@@ -78,6 +78,7 @@ namespace symbolic {
     virtual intptr_t cmp( ExprNode const& ) const = 0;
     virtual ConstNodeBase const* GetConstNode() const { return 0; };
     virtual OpNodeBase const* AsOpNode() const { return 0; }
+    virtual ExprNode* Mutate() const = 0;
   };
   
   struct Op : public Identifier<Op>
@@ -297,11 +298,14 @@ namespace symbolic {
   template <typename VALUE_TYPE>
   struct ConstNode : public ConstNodeBase
   {
+    typedef ConstNode<VALUE_TYPE> this_type;
+    
     ConstNode( VALUE_TYPE _value ) : value( _value ) {} VALUE_TYPE value;
+    virtual this_type* Mutate() const { return new this_type( *this ); };
     
     intptr_t cmp( ExprNode const& brhs ) const
     {
-      ConstNode<VALUE_TYPE> const& rhs = dynamic_cast<ConstNode<VALUE_TYPE> const&>( brhs );
+      this_type const& rhs = dynamic_cast<this_type const&>( brhs );
       return (value < rhs.value) ? -1 : (value > rhs.value) ? +1 : 0;
     }
     
@@ -317,28 +321,28 @@ namespace symbolic {
     {
       switch (op.code)
         {
-        case Op::BSwp:  return new ConstNode<VALUE_TYPE>( EvalByteSwap( value ) );
-        case Op::Not:   return new ConstNode<VALUE_TYPE>( EvalNot( value ) );
-        case Op::Neg:   return new ConstNode<VALUE_TYPE>( - value );
-        case Op::BSR:   return new ConstNode<VALUE_TYPE>( EvalBitScanReverse( value ) );
-        case Op::BSF:   return new ConstNode<VALUE_TYPE>( EvalBitScanForward( value ) );
+        case Op::BSwp:  return new this_type( EvalByteSwap( value ) );
+        case Op::Not:   return new this_type( EvalNot( value ) );
+        case Op::Neg:   return new this_type( - value );
+        case Op::BSR:   return new this_type( EvalBitScanReverse( value ) );
+        case Op::BSF:   return new this_type( EvalBitScanForward( value ) );
         case Op::FSQB:  break;
         case Op::FFZ:   break;
         case Op::FNeg:  break;
         case Op::FSqrt: break;
         case Op::FAbs:  break;
         case Op::FDen:  break;
-        case Op::Xor:   return new ConstNode<VALUE_TYPE>( EvalXor( value, GetValue( args[1] ) ) );
-        case Op::And:   return new ConstNode<VALUE_TYPE>( EvalAnd( value, GetValue( args[1] ) ) );
-        case Op::Or:    return new ConstNode<VALUE_TYPE>( EvalOr( value, GetValue( args[1] ) ) );
-        case Op::Lsl:   return new ConstNode<VALUE_TYPE>( EvalSHL( value, args[1]->GetU8() ) );
+        case Op::Xor:   return new this_type( EvalXor( value, GetValue( args[1] ) ) );
+        case Op::And:   return new this_type( EvalAnd( value, GetValue( args[1] ) ) );
+        case Op::Or:    return new this_type( EvalOr( value, GetValue( args[1] ) ) );
+        case Op::Lsl:   return new this_type( EvalSHL( value, args[1]->GetU8() ) );
         case Op::Lsr:   
-        case Op::Asr:   return new ConstNode<VALUE_TYPE>( EvalSHR( value, args[1]->GetU8() ) );
-        case Op::Add:   return new ConstNode<VALUE_TYPE>( value + GetValue( args[1] ) );
-        case Op::Sub:   return new ConstNode<VALUE_TYPE>( value - GetValue( args[1] ) );
-        case Op::Mul:   return new ConstNode<VALUE_TYPE>( value * GetValue( args[1] ) );
-        case Op::Div:   return new ConstNode<VALUE_TYPE>( value / GetValue( args[1] ) );
-        case Op::Mod:   return new ConstNode<VALUE_TYPE>( EvalMod( value, GetValue( args[1] ) ) );
+        case Op::Asr:   return new this_type( EvalSHR( value, args[1]->GetU8() ) );
+        case Op::Add:   return new this_type( value + GetValue( args[1] ) );
+        case Op::Sub:   return new this_type( value - GetValue( args[1] ) );
+        case Op::Mul:   return new this_type( value * GetValue( args[1] ) );
+        case Op::Div:   return new this_type( value / GetValue( args[1] ) );
+        case Op::Mod:   return new this_type( EvalMod( value, GetValue( args[1] ) ) );
           
         case Op::Teq:   return new ConstNode   <bool>   ( value == GetValue( args[1] ) );
         case Op::Tne:   return new ConstNode   <bool>   ( value != GetValue( args[1] ) );
@@ -350,8 +354,8 @@ namespace symbolic {
         case Op::Tge:   return new ConstNode   <bool>   ( value >= GetValue( args[1] ) );
         case Op::Tgtu:  
         case Op::Tgt:   return new ConstNode   <bool>   ( value >  GetValue( args[1] ) );
-        case Op::Ror:   return new ConstNode<VALUE_TYPE>( EvalRotateRight( value, args[1]->GetU8() ) );
-        case Op::Rol:   return new ConstNode<VALUE_TYPE>( EvalRotateLeft( value, args[1]->GetU8() ) );
+        case Op::Ror:   return new this_type( EvalRotateRight( value, args[1]->GetU8() ) );
+        case Op::Rol:   return new this_type( EvalRotateLeft( value, args[1]->GetU8() ) );
         case Op::FCmp:  break;
           
         case Op::NA:
@@ -443,6 +447,7 @@ namespace symbolic {
     typedef OpNode<SUBCOUNT> this_type;
     
     OpNode( Op _op ) : OpNodeBase(_op) {}
+    virtual this_type* Mutate() const { return new this_type( *this ); };
 
     virtual ConstNodeBase const* GetConstNode() const
     {
@@ -500,14 +505,15 @@ namespace symbolic {
   template <typename DST_VALUE_TYPE, typename SRC_VALUE_TYPE>
   struct CastNode : public CastNodeBase
   {
+    typedef CastNode<DST_VALUE_TYPE,SRC_VALUE_TYPE> this_type;
     CastNode( Expr const& _src ) : CastNodeBase( _src ) {}
-    
+    virtual this_type* Mutate() const { return new this_type( *this ); }
     virtual ScalarType::id_t GetSrcType() const { return TypeInfo<SRC_VALUE_TYPE>::GetType(); }
     virtual ScalarType::id_t GetDstType() const { return TypeInfo<DST_VALUE_TYPE>::GetType(); }
     
     intptr_t cmp( ExprNode const& brhs ) const
     {
-      CastNode<DST_VALUE_TYPE,SRC_VALUE_TYPE> const& rhs = dynamic_cast<CastNode<DST_VALUE_TYPE,SRC_VALUE_TYPE> const&>( brhs );
+      this_type const& rhs = dynamic_cast<this_type const&>( brhs );
       return src.cmp( rhs.src );
     }
     
@@ -543,6 +549,7 @@ namespace symbolic {
   struct BONode : public OpNode<2>
   {
     BONode( Op _op, Expr const& _left, Expr const& _right ) : OpNode<2>(_op) { subs[0] = _left; subs[1] = _right; }
+    virtual this_type* Mutate() const { return new this_type( *this ); };
   };
   
   template <typename VALUE_TYPE>
@@ -660,6 +667,7 @@ namespace symbolic {
     struct DefaultNaNNode : public ExprNode
     {
       DefaultNaNNode( int _fsz ) : fsz( _fsz ) {} int fsz;
+      virtual DefaultNaNNode* Mutate() const { return new DefaultNaNNode( *this ); }
       virtual void Repr( std::ostream& sink ) const { sink << "DefaultNaN()"; }
       virtual unsigned SubCount() const { return 0; };
       intptr_t cmp( ExprNode const& brhs ) const
@@ -700,6 +708,7 @@ namespace symbolic {
     struct IsNaNNode : public ExprNode
     {
       IsNaNNode( Expr const& _src, bool _signaling ) : src(_src), signaling(_signaling) {} Expr src; bool signaling;
+      virtual IsNaNNode* Mutate() const { return new IsNaNNode( *this ); }
       virtual void Repr( std::ostream& sink ) const { sink << "IsNaN(" << src << ")"; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -753,9 +762,8 @@ namespace symbolic {
     {
       MulAddNode( Expr const& _acc, Expr const& _left, Expr const& _right )
         : acc( _acc ), left( _left ), right( _right )
-      {}
-      
-      Expr acc, left, right;
+      {} Expr acc, left, right;
+      virtual MulAddNode* Mutate() const { return new MulAddNode( *this ); }
       
       virtual unsigned SubCount() const { return 3; };
       virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return acc; case 1: return left; case 2: return right; } return ExprNode::GetSub(idx); };
@@ -781,8 +789,8 @@ namespace symbolic {
     {
       IsInvalidMulAddNode( Expr const& _acc, Expr const& _left, Expr const& _right )
         : acc( _acc ), left( _left ), right( _right )
-      {}
-      Expr acc, left, right;
+      {} Expr acc, left, right;
+      virtual IsInvalidMulAddNode* Mutate() const { return new IsInvalidMulAddNode( *this ); }
       
       virtual unsigned SubCount() const { return 3; };
       virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return acc; case 1: return left; case 2: return right; } return ExprNode::GetSub(idx); };
@@ -819,6 +827,7 @@ namespace symbolic {
       FtoFNode( Expr const& _src, int _ssz, int _dsz )
         : src( _src ), ssz( _ssz ), dsz( _dsz )
       {} Expr src; int ssz; int dsz;
+      virtual FtoFNode* Mutate() const { return new FtoFNode( *this ); }
       
       virtual void Repr( std::ostream& sink ) const { sink << "FtoF( " << src << " )"; }
       virtual unsigned SubCount() const { return 1; }
@@ -842,7 +851,8 @@ namespace symbolic {
     {
       FtoINode( Expr const& _src, int _fsz, int _isz, int _fb )
         : src( _src ), fsz( _fsz ), isz( _isz ), fb( _fb )
-      {} Expr src; int fsz; int isz; int fb; 
+      {} Expr src; int fsz; int isz; int fb;
+      virtual FtoINode* Mutate() const { return new FtoINode( *this ); }
       
       virtual void Repr( std::ostream& sink ) const { sink << "FtoI( " << src << " )"; }
       virtual unsigned SubCount() const { return 1; }
@@ -868,6 +878,7 @@ namespace symbolic {
       ItoFNode( Expr const& _src, int _isz, int _fsz, int _fb )
         : src( _src ), isz( _isz ), fsz( _fsz ), fb( _fb )
       {} Expr src; int isz; int fsz; int fb;
+      virtual ItoFNode* Mutate() const { return new ItoFNode( *this ); }
       
       virtual void Repr( std::ostream& sink ) const { sink << "ItoF( " << src << " )"; }
       virtual unsigned SubCount() const { return 1; }
@@ -890,25 +901,83 @@ namespace symbolic {
     
   };
 
-  struct ActionNode
+  template <class T>
+  struct Choice
   {
-    ActionNode( ActionNode* _previous=0 );
-    ~ActionNode();
-  
-    bool        proceed( Expr const& _cond );
-    ActionNode* next( bool predicate ) const { return predicate ? true_nxt : false_nxt; }
-    bool        close();
-    bool        remove_dead_paths();
-    void        factorize();
-  
-    Expr           cond;
-    std::set<Expr> sinks;
-    ActionNode*    previous;
-    ActionNode*    true_nxt;
-    ActionNode*    false_nxt;
-    bool           complete;
-  };
+    Choice( T* _previous ) : nexts(), previous(_previous), cond() {}
+    ~Choice() { delete nexts[0]; delete nexts[1]; }
 
+    bool  proceed( Expr const& _cond );
+    bool  close();
+    T*    next(bool predicate) { return nexts[predicate]; }
+  
+    T*    nexts[2];
+    T*    previous;
+    Expr  cond;
+  };
+  
+  template <class T>
+  bool
+  Choice<T>::proceed( Expr const& _cond )
+  {
+    if (not cond.good())
+      {
+        cond = _cond;
+        nexts[0] = new T(static_cast<T*>(this));
+        nexts[1] = new T(static_cast<T*>(this));
+        return false;
+      }
+
+    if (cond == _cond)
+      for (unsigned choice = 0; choice < 2; choice++)
+        if (nexts[choice]->previous) return bool(choice);
+    
+    throw cond; return true;
+  }
+  
+  template <class T>
+  bool
+  Choice<T>::close()
+  {
+    if (Choice<T>* p = previous)
+      {
+        previous = 0;
+        if (this == p->nexts[1])
+          return p->close();
+        return false;
+      }
+    return true;
+  }
+  
+  struct SEStats : public std::map<Expr,unsigned>
+  {
+    typedef std::map<Expr,unsigned>::value_type Stat;
+    void count( Expr const& );
+    void factorize( SEStats& f, SEStats& t );
+    struct Merger { void operator () ( SEStats& stats, Stat& l, Stat& r ) { stats[l.first] = l.second + r.second; } };
+  };
+  
+  template <class PoolT, typename Merger>
+  void
+  factorize( PoolT& dst, PoolT& lho, PoolT& rho, Merger merger )
+  {
+    for (typename PoolT::iterator lhi = lho.begin(), rhi = rho.begin(), lie = lho.end(), rie = rho.end(); lhi != lie and rhi != rie; )
+      {
+        if (lho.value_comp()(*lhi, *rhi))
+          ++lhi;
+        else if (lho.value_comp()(*rhi, *lhi))
+          ++rhi;
+        else
+          {
+            merger( dst, *lhi, *rhi );
+            lho.erase( lhi++ );
+            rho.erase( rhi++ );
+          }
+      }
+  }
+  
+
+  
 } /* end of namespace symbolic */
 } /* end of namespace util */
 } /* end of namespace unisim */

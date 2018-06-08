@@ -87,118 +87,34 @@ namespace symbolic {
 
   uint32_t EvalRotateLeft( uint32_t v, uint8_t s ) { return unisim::util::arithmetic::RotateLeft( v, s ); }
   
-  ActionNode::ActionNode( ActionNode* _previous )
-    : cond(), sinks(), previous(_previous), true_nxt(), false_nxt(), complete(false)
-  {}
-
-  ActionNode::~ActionNode()
-  {
-    delete false_nxt;
-    delete true_nxt;
-  }
-
-  bool
-  ActionNode::proceed( Expr const& _cond )
-  {
-    if (not cond.good())
-      {
-        cond = _cond;
-        false_nxt = new ActionNode(this);
-        true_nxt = new ActionNode(this);
-        return false;
-      }
-  
-    if (cond != _cond)
-      throw std::logic_error( "unexpected condition" );
-  
-    if (not false_nxt->complete)
-      return false;
-  
-    if (true_nxt->complete)
-      throw std::logic_error( "unexpected path" );
-  
-    return true;
-  }
-
-  bool
-  ActionNode::close()
-  {
-    complete = true;
-    if (not previous)
-      return true;
-    if (this == previous->true_nxt)
-      return previous->close();
-    return false;
-  }
-
-  bool
-  ActionNode::remove_dead_paths()
-  {
-    if (cond.good()) {
-      bool leaf = true;
-      if (false_nxt)
-        {
-          if (false_nxt->remove_dead_paths())
-            {
-              delete false_nxt;
-              false_nxt = 0;
-            }
-          else
-            leaf = false;
-        }
-      if (true_nxt)
-        {
-          if (true_nxt->remove_dead_paths())
-            {
-              delete true_nxt;
-              true_nxt = 0;
-            }
-          else
-            leaf = false;
-        }
-      if (not leaf)
-        return false;
-      else
-        cond = Expr();
-    }
-    // This is a leaf; if no local sinks, signal dead path to parent
-    return sinks.size() == 0;
-  }
-
   void
-  ActionNode::factorize()
+  SEStats::count( Expr const& e )
   {
-    if (not cond.good())
-      return;
-  
-    false_nxt->factorize();
-    true_nxt->factorize();
-  
-    std::vector<Expr> isect;
+    struct SECounter
     {
-      isect.resize( std::max( false_nxt->sinks.size(), true_nxt->sinks.size() ) );
-      std::vector<Expr>::iterator end =
-        std::set_intersection( false_nxt->sinks.begin(), false_nxt->sinks.end(),
-                               true_nxt->sinks.begin(), true_nxt->sinks.end(),
-                               isect.begin() );
-      isect.resize( end - isect.begin() );
-    }
-  
-    for (std::vector<Expr>::const_iterator itr = isect.begin(), end = isect.end(); itr != end; ++itr) {
-      sinks.insert( *itr );
-      false_nxt->sinks.erase( *itr );
-      true_nxt->sinks.erase( *itr );
-    }
-  
-    // If condition begins with a logical not, remove the not and
-    //   swap if then else branches
-    using unisim::util::symbolic::OpNodeBase;
-    if (OpNodeBase const* onb = cond->AsOpNode())
-      if (onb->op.code == onb->op.Not) {
-        cond = onb->GetSub(0);
-        std::swap( false_nxt, true_nxt );
+      SECounter( std::map<Expr,unsigned>& _stats ) : stats(_stats) {} std::map<Expr,unsigned>& stats;
+      
+      void Recurse( Expr const& expr )
+      {
+        for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
+          Process( expr->GetSub(idx) );
       }
+
+      void Process( Expr const& expr )
+      {
+        if (not expr->SubCount())
+          return;
+
+        if (stats[expr]++)
+          return;
+
+        Recurse( expr );
+      }
+    } sec( *this );
+
+    sec.Process( e );
   }
+  
 } /* end of namespace symbolic */
 } /* end of namespace util */
 } /* end of namespace unisim */

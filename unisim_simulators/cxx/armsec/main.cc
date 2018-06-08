@@ -55,8 +55,8 @@ struct Processor
     
   typedef unisim::util::symbolic::FP                   FP;
   typedef unisim::util::symbolic::Expr                 Expr;
-  typedef unisim::util::symbolic::ActionNode           ActionNode;
-  
+
+  typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
   typedef unisim::util::symbolic::binsec::Load         Load;
   typedef unisim::util::symbolic::binsec::Store        Store;
   typedef unisim::util::symbolic::binsec::Branch       Br;
@@ -64,12 +64,15 @@ struct Processor
   template <typename RID>
   struct RegRead : public unisim::util::symbolic::binsec::RegRead
   {
+    typedef RegRead<RID> this_type;
     typedef unisim::util::symbolic::binsec::RegRead Super;
     RegRead( RID _id, unsigned _bitsize ) : Super(_bitsize), id(_id) {}
+    virtual this_type* Mutate() const { return new this_type( *this ); }
     
     virtual char const* GetRegName() const { return id.c_str(); }
     virtual intptr_t cmp( ExprNode const& brhs ) const
     { if (intptr_t delta = id.cmp( dynamic_cast<RegRead const&>( brhs ).id )) return delta; return Super::cmp( brhs ); }
+    virtual Expr Simplify() const { return this; }
     
     RID id;
   };
@@ -88,6 +91,7 @@ struct Processor
       buf << (RegID("r0") + idx).c_str() << '_' << mode_ident();
       strncpy(&name[0],buf.str().c_str(),sizeof(name)-1);
     }
+    virtual ForeignRegister* Mutate() const { return new ForeignRegister( *this ); }
     
     char const* mode_ident() const
     {
@@ -113,6 +117,7 @@ struct Processor
       if (int delta = int(mode) - int(rhs.mode)) return delta;
       return idx - rhs.idx;
     }
+    virtual Expr Simplify() const { return this; }
     
     char name[8];
     unsigned idx;
@@ -122,12 +127,19 @@ struct Processor
   template <typename RID>
   struct RegWrite : public unisim::util::symbolic::binsec::RegWrite
   {
+    typedef RegWrite<RID> this_type;
     typedef unisim::util::symbolic::binsec::RegWrite Super;
     RegWrite( RID _id, Expr const& _value, unsigned _bitsize ) : Super(_value, _bitsize), id(_id) {}
+    virtual this_type* Mutate() const { return new this_type( *this ); }
     
     virtual char const* GetRegName() const { return id.c_str(); }
     virtual intptr_t cmp( ExprNode const& brhs ) const
     { if (intptr_t delta = id.cmp( dynamic_cast<RegWrite const&>( brhs ).id )) return delta; return Super::cmp( brhs ); }
+    virtual Expr Simplify() const
+    {
+      Expr nvalue( ASExprNode::Simplify( value ) );
+      return nvalue != value ? new RegWrite<RID>( id, nvalue, bitsize ) : this;
+    }
     
     RID id;
   };
@@ -138,7 +150,13 @@ struct Processor
   struct PCWrite : public Br
   {
     PCWrite( Expr const& value, Br::type_t bt ) : Br( value, 32, bt ) {}
+    virtual PCWrite* Mutate() const { return new PCWrite( *this ); }
     virtual char const* GetRegName() const { return "pc"; }
+    virtual Expr Simplify() const
+    {
+      Expr nvalue( ASExprNode::Simplify(value) );
+      return nvalue != value ? new PCWrite( nvalue, type ) : this;
+    }
   };
 
   struct ITCond {};
@@ -370,7 +388,7 @@ struct Processor
     Expr cexp( BOOL(cond).expr );
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
       return cnode->GetBoolean();
-      
+
     bool predicate = path->proceed( cexp );
     path = path->next( predicate );
     return predicate;
@@ -918,7 +936,7 @@ struct InstructionAddress : public unisim::util::symbolic::binsec::ASExprNode
 
 struct Translator
 {
-  typedef unisim::util::symbolic::ActionNode ActionNode;
+  typedef unisim::util::symbolic::binsec::ActionNode ActionNode;
   typedef Processor::StatusRegister StatusRegister;
   
   Translator( uint32_t _addr, uint32_t _code )
@@ -994,8 +1012,9 @@ struct Translator
               state.ITAdvance();
             end = state.close( reference );
           }
-        coderoot->factorize();
-        coderoot->remove_dead_paths();
+        coderoot->simplify_sinks();
+        coderoot->release_inactive();
+        coderoot->commit_stats();
       }
     catch (...)
       {

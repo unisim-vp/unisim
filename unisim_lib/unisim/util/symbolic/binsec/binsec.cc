@@ -59,8 +59,100 @@ namespace binsec {
     return true;
   }
 
+  Expr
+  ASExprNode::Simplify( Expr const& expr )
+  {
+    if (ConstNodeBase const* node = expr->GetConstNode())
+      {
+        return node;
+      }
+    else if (OpNodeBase const* node = expr->AsOpNode())
+      {
+        switch (node->SubCount())
+          {
+          default: break;
+            
+          case 2: {
+            Expr subs[2] = {ASExprNode::Simplify( node->GetSub(0) ), ASExprNode::Simplify( node->GetSub(1) )};
+
+            switch (node->op.code)
+              {
+              default: break;
+              case Op::And:
+                for (unsigned idx = 0; idx < 2; ++idx)
+                  if (ConstNodeBase const* node = subs[idx]->GetConstNode())
+                    {
+                      uint64_t v = node->GetU64();
+                      if (v & (v+1))
+                        continue;
+                      if (v == 0)
+                        return subs[idx];
+                      unsigned bitsize = ScalarType(node->GetType()).bitsize, select = arithmetic::BitScanReverse(v)+1;
+                      if (select >= bitsize)
+                        return subs[idx^1];
+                      BitFilter bf( subs[idx^1], bitsize, select, bitsize, false );
+                      bf.Retain(); // Not a heap-allocated object (never delete)
+                      Expr res( bf.Simplify() );
+                      return (res.node == &bf) ? new BitFilter( bf ) : res.node;
+                    }
+                break;
+                
+                // case Op::Mod: break;
+              }
+
+            return (subs[0] != node->GetSub(0)) or (subs[1] != node->GetSub(1)) ? new BONode( node->op.code, subs[0], subs[1] ) : node;
+          } break;
+
+          case 1: {
+            Expr sub = ASExprNode::Simplify( node->GetSub(0) );
+            
+            switch (node->op.code)
+              {
+              default: break;
+              
+              case Op::Cast:
+                {
+                  CastNodeBase const& cnb = dynamic_cast<CastNodeBase const&>( *expr.node );
+                  ScalarType src( cnb.GetSrcType() ), dst( cnb.GetDstType() );
+                  if (not dst.is_integer or not src.is_integer or (dst.bitsize == 1 and src.bitsize != 1))
+                    {
+                      // Complex casts
+                      if (sub == node->GetSub(0))
+                        return expr;
+                      ExprNode* en = cnb.Mutate();
+                      Expr res(en); // Exception safety
+                      dynamic_cast<CastNodeBase&>( *en ).src = sub;
+                      return res;
+                    }
+
+                  if (src.bitsize == dst.bitsize)
+                    return cnb.src;
+                  
+                  
+                  BitFilter bf( cnb.src, src.bitsize, std::min(src.bitsize, dst.bitsize), dst.bitsize, dst.bitsize > src.bitsize ? src.is_signed : false );
+                  bf.Retain(); // Not a heap-allocated object (never delete);
+                  Expr res( bf.Simplify() );
+                  return (res.node == &bf) ? new BitFilter( bf ) : res.node;
+                } break;
+              }
+            
+            return (sub != node->GetSub(0)) ? new UONode( node->op.code, sub ) : node;
+          } break;
+
+          }
+
+        return expr;
+      }
+    else if (ASExprNode const* node = dynamic_cast<ASExprNode const*>( expr.node ))
+      {
+        return node->Simplify();
+      }
+    
+    return expr;
+  }
+
   int
-  ASExprNode::GenerateCode(Expr const& expr, Variables& vars, Label& label, std::ostream& sink)
+  ASExprNode::GenerateCode( Expr const& expr, Variables& vars, Label& label, std::ostream& sink )
   {
     /*** Pre expression process ***/
     Variables::iterator itr = vars.find( expr );
@@ -72,6 +164,7 @@ namespace binsec {
     /*** Sub expression process ***/
     if (ConstNodeBase const* node = expr->GetConstNode())
       {
+        Expr c( node );
         switch (node->GetType())
           {
           case ScalarType::BOOL: sink << node->GetS32() << "<1>";  return 1;
@@ -123,13 +216,19 @@ namespace binsec {
                 {
                   Expr operator() (U8 x, int s)
                   {
+                    // Peephole optimisation for shifters (safety issue)
+                    if (CastNodeBase const* cnb = dynamic_cast<CastNodeBase const*>( x.expr.node ))
+                      if (ScalarType(cnb->GetSrcType()).bitsize == unsigned(s))
+                        return cnb->src;
+                    
                     if (s==16) return U16(x).expr;
                     if (s==32) return U32(x).expr;
                     if (s==64) return U64(x).expr;
+                    
                     return x.expr;
                   }
                 } fixsh;
-            
+                
               case Op::Lsl:     sink << " lshift ";  rhs = fixsh( rhs, retsz ); break;
               case Op::Asr:     sink << " rshifts "; rhs = fixsh( rhs, retsz ); break;
               case Op::Lsr:     sink << " rshiftu "; rhs = fixsh( rhs, retsz ); break;
@@ -236,6 +335,38 @@ namespace binsec {
   }
 
   int
+  BitFilter::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
+  {
+    bool extension = extend > select;
+    bool selection = source > select;
+    if (extension)
+      sink << '(' << (sxtend ? "exts " : "extu ");
+    if (selection)
+      sink << '(';
+
+    int chksize = ASExprNode::GenerateCode( input, vars, label, sink );
+    if (chksize != source) throw 0;
+    
+    if (selection)
+        sink << " {0," << (select-1) << "})";
+    if (extension)
+      sink << ' ' << extend << ')';
+    
+    return extend;
+  }
+  
+  void
+  BitFilter::Repr( std::ostream& sink ) const
+  {
+    sink << "BitFilter(" << input
+         << ", " << source
+         << ", " << select
+         << ", " << extend
+         << ", " << (sxtend ? "signed" : "unsigned")
+         << ")";
+  }
+  
+  int
   RegRead::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
     sink << GetRegName() << "<" << bitsize << ">";
@@ -288,8 +419,80 @@ namespace binsec {
   {
     sink << "[" << addr << ',' << size << ",^" << alignment << ',' << (bigendian ? "be" : "le") << "] := " << value;
   }
+
+  bool
+  ActionNode::release_inactive()
+  {
+    if (cond.good())
+      {
+        bool leaf = true;
+        for (unsigned choice = 0; choice < 2; ++choice)
+          if (ActionNode* next = nexts[choice])
+            {
+              if (next->release_inactive()) { delete next; nexts[choice] = 0; }
+              else leaf = false;
+            }
+        if (not leaf)    return false;
+        else             cond = Expr();
+      }
+    // This is a leaf; if no local sinks, signal dead path to parent
+    return sinks.size() == 0;
+  }
+
+  namespace {
+    struct SinksMerger { void operator () ( std::set<Expr>& sinks, Expr const& l, Expr const& r ) { sinks.insert( l ); } };
+  }
+
+  void
+  ActionNode::simplify_sinks()
+  {
+    {
+      std::set<Expr> nsinks;
+      for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
+        nsinks.insert( ASExprNode::Simplify( *itr ) );
+      std::swap(nsinks, sinks);
+    }
+    
+    if (not cond.good())
+      return;
+    
+    nexts[0]->simplify_sinks();
+    nexts[1]->simplify_sinks();
+
+    factorize( sinks, nexts[0]->sinks, nexts[1]->sinks, SinksMerger() );
   
-      
+    // If condition begins with a logical not, remove the not and
+    //   swap if then else branches
+    using unisim::util::symbolic::OpNodeBase;
+    if (OpNodeBase const* onb = cond->AsOpNode())
+      if (onb->op.code == onb->op.Not) {
+        cond = onb->GetSub(0);
+        std::swap( nexts[0], nexts[1] );
+      }
+  }
+  
+  void
+  ActionNode::commit_stats()
+  {
+    if (cond.good())
+      {
+        if (nexts[0]) nexts[0]->commit_stats();
+        if (nexts[1]) nexts[1]->commit_stats();
+
+        if (nexts[0] and nexts[1])
+          factorize( sestats, nexts[0]->sestats, nexts[1]->sestats, SEStats::Merger() );
+        
+        // sestats.count( cond );
+      }
+
+    for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
+      {
+        // First level of expression is not functionnal (architectual side effect)
+        for (unsigned idx = 0, end = (**itr).SubCount(); idx < end; ++idx)
+          sestats.count( (**itr).GetSub(idx) );
+      }
+  }
+
   void
   Program::Generate( ActionNode const* action_tree )
   {
@@ -317,10 +520,12 @@ namespace binsec {
           TmpVar( std::string const& _ref, unsigned rsz )
             : ref(_ref), dsz(rsz)
           {}
+          virtual TmpVar* Mutate() const { return new TmpVar(*this); }
           virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const { sink << ref; return dsz; }
           virtual intptr_t cmp( ExprNode const& rhs ) const { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
           virtual unsigned SubCount() const { return 0; }
           virtual void Repr( std::ostream& sink ) const { sink << ref; }
+          virtual Expr Simplify() const { return this; }
           std::string ref;
           int dsz;
         };
@@ -328,7 +533,7 @@ namespace binsec {
         place = new TmpVar( name, size );
         return place;
       }      
-      std::string nxtname( char const* rname, unsigned size ) { std::ostringstream buffer; buffer << "nxt_" << rname << "<" << size << ">"; return buffer.str(); }
+      std::string nxtname( char const* rname, unsigned rsize ) { std::ostringstream buffer; buffer << "nxt_" << rname << "<" << rsize << ">"; return buffer.str(); }
       std::string tmpname( unsigned size ) { std::ostringstream buffer; buffer << "tmp" << size << '_' << (next_tmp[size]++) << "<" << size << ">"; return buffer.str(); }
 
       void GenCode( ActionNode const* action_tree, Label const& start, Label const& after )
@@ -369,39 +574,18 @@ namespace binsec {
         } head( start, after.GetID() );
 
         {
-          /* find common sub expressions */
-          struct : public std::map<Expr,unsigned>
-          {
-            void Process( Expr const& expr )
-            {
-              for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
-                Recurse( expr->GetSub(idx) );
-            }
-
-            void Recurse( Expr const& expr )
-            {
-              if (not expr->SubCount())
-                return;
-
-              if ((*this)[expr]++)
-                return;
-
-              Process( expr );
-            }
-          } sestats;
-
+          // Keeping track of expressions involved in register
+          // assignment. Their temporary name will differ from regular
+          // temporary.
           std::map<Expr,char const*> rtmps;
-
           for (std::set<Expr>::const_iterator itr = action_tree->sinks.begin(), end = action_tree->sinks.end(); itr != end; ++itr)
             {
-              sestats.Process( *itr );
               if (RegWrite const* rw = dynamic_cast<RegWrite const*>( itr->node ))
                 rtmps[rw->value] = rw->GetRegName();
             }
-
-          // if (cond.good())
-          //   sestats.Process( cond );
-
+          
+          // Ordering Sub Expressions by size of expressions (so that
+          // smaller expressions are factorized in larger ones)
           struct CSE : public std::multimap<unsigned,Expr>
           {
             void Process( Expr const& expr )
@@ -417,7 +601,7 @@ namespace binsec {
             }
           } cse;
 
-          for (std::map<Expr,unsigned>::iterator itr = sestats.begin(), end = sestats.end(); itr != end; ++itr)
+          for (std::map<Expr,unsigned>::const_iterator itr = action_tree->sestats.begin(), end = action_tree->sestats.end(); itr != end; ++itr)
             {
               if (itr->second < 2)
                 continue; // No reuse
@@ -456,10 +640,9 @@ namespace binsec {
 
                 if (not value.ConstSimplify() and not this->vars.count(value))
                   {
+                    std::string vname = this->nxtname( rname, rsize );
                     std::ostringstream buffer;
-                    buffer << "nxt_" << rname << "<" << rsize << ">";
-                    std::string vname = buffer.str();
-                    buffer << " := " << GetCode(value, this->vars, head.current()) << "; goto <next>";
+                    buffer << vname << " := " << GetCode(value, this->vars, head.current()) << "; goto <next>";
                     head.write( buffer.str() );
                     this->addvar( vname, rsize, value );
                   }
@@ -496,29 +679,29 @@ namespace binsec {
             if (nia.good() or (after.valid() and (this->has_pending())))
               endif.allocate();
 
-            if (not action_tree->false_nxt) {
+            if (not action_tree->nexts[0]) {
               Label ifthen(ifinsn);
               buffer << " goto " << ifthen.allocate() << " else goto " << endif.GetID();
               ifinsn.write( buffer.str() );
               Context nxt(this);
-              nxt.GenCode( action_tree->true_nxt, ifthen, endif );
-            } else if (not action_tree->true_nxt) {
+              nxt.GenCode( action_tree->nexts[1], ifthen, endif );
+            } else if (not action_tree->nexts[1]) {
               Label ifelse(ifinsn);
               buffer << " goto " << endif.GetID() << " else goto " << ifelse.allocate();
               ifinsn.write( buffer.str() );
               Context nxt(this);
-              nxt.GenCode( action_tree->false_nxt, ifelse, endif );
+              nxt.GenCode( action_tree->nexts[0], ifelse, endif );
             } else {
               Label ifthen(ifinsn), ifelse(ifinsn);
               buffer << " goto " << ifthen.allocate() << " else goto " << ifelse.allocate();
               ifinsn.write( buffer.str() );
               {
                 Context nxt(this);
-                nxt.GenCode( action_tree->true_nxt, ifthen, endif );
+                nxt.GenCode( action_tree->nexts[1], ifthen, endif );
               }
               {
                 Context nxt(this);
-                nxt.GenCode( action_tree->false_nxt, ifelse, endif );
+                nxt.GenCode( action_tree->nexts[0], ifelse, endif );
               }
             }
 

@@ -37,6 +37,7 @@
 
 #include <unisim/util/symbolic/symbolic.hh>
 #include <map>
+#include <set>
 #include <vector>
 
 namespace unisim {
@@ -60,6 +61,18 @@ namespace binsec {
   {
     dbx( unsigned _bytes, uint64_t _value ) : value(_value), bytes(_bytes) {} uint64_t value; unsigned bytes;
     friend std::ostream& operator << ( std::ostream& sink, dbx const& _ );
+  };
+  
+  struct ActionNode : public Choice<ActionNode>
+  {
+    ActionNode( ActionNode* _previous=0 ) : Choice<ActionNode>(_previous), sinks(), sestats() {}
+
+    std::set<Expr> sinks;
+    SEStats        sestats;
+
+    bool           release_inactive();
+    void           simplify_sinks();
+    void           commit_stats();
   };
 
   struct Program : public std::map<int,std::string>
@@ -123,6 +136,8 @@ namespace binsec {
   {
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const = 0;
     static  int GenerateCode( Expr const& expr, Variables& vars, Label& label, std::ostream& sink );
+    virtual Expr Simplify() const = 0;
+    static  Expr Simplify( Expr const& );
   };
 
   struct GetCode
@@ -179,6 +194,7 @@ namespace binsec {
   struct AssertFalse : public ASExprNode
   {
     AssertFalse() {}
+    virtual AssertFalse* Mutate() const { return new AssertFalse( *this ); }
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const
     {
       sink << "assert (false)";
@@ -188,6 +204,7 @@ namespace binsec {
     virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
     virtual unsigned SubCount() const { return 0; }
     virtual void Repr( std::ostream& sink ) const { sink << "assert (false)"; }
+    virtual Expr Simplify() const { return this; }
   };
     
   struct Load : public ASExprNode
@@ -195,6 +212,7 @@ namespace binsec {
     Load( Expr const& _addr, unsigned _size, unsigned _alignment, bool _bigendian )
       : addr(_addr), size(_size), alignment(_alignment), bigendian(_bigendian)
     {}
+    virtual Load* Mutate() const { return new Load( *this ); }
     
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     unsigned bitsize() const { return 1<<size; }
@@ -209,6 +227,11 @@ namespace binsec {
     }
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
+    virtual Expr Simplify() const
+    {
+      Expr naddr( ASExprNode::Simplify( addr ) );
+      return (naddr != addr) ? new Load( naddr, size, alignment, bigendian ) : this;
+    }
     
     Expr addr;
     uint32_t size      :  4; // (log2) [1,2,4,8,...,32768] bytes
@@ -216,12 +239,66 @@ namespace binsec {
     uint32_t bigendian :  1; // 0=little-endian
     uint32_t reserved  : 23; // reserved
   };
+
+  struct BitFilter : public ASExprNode
+  {
+    BitFilter( Expr const& _input, unsigned _source, unsigned _select, unsigned _extend, bool _sxtend )
+      : input(_input), source(_source), select(_select), extend(_extend), sxtend(_sxtend), reserved()
+    {}
+    virtual BitFilter* Mutate() const { return new BitFilter( *this ); }
+
+    Expr Simplify() const
+    {
+      Expr ninput( ASExprNode::Simplify( input ) );
+      
+      if (BitFilter const* bf = dynamic_cast<BitFilter const*>( ninput.node ))
+        {
+          // if (source != bf.extend) throw "ouch!";
+          if (select <= bf->select)
+            return new BitFilter( bf->input, bf->source, select, extend, sxtend );
+          // select > bf->select
+          if (not sxtend and bf->sxtend)
+            return this;
+          return new BitFilter( bf->input, bf->source, bf->select, extend, bf->sxtend );
+        }
+
+      return ninput != input ? new BitFilter( ninput, source, select, extend, sxtend ) : this;
+    }
     
+    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
+    virtual void Repr( std::ostream& sink ) const;
+    intptr_t cmp( ExprNode const& brhs ) const
+    {
+      BitFilter const& rhs = dynamic_cast<BitFilter const&>( brhs );
+      if (intptr_t delta = input.cmp( rhs.input )) return delta;
+      if (intptr_t delta = int(source) - int(rhs.source)) return delta;
+      if (intptr_t delta = int(select) - int(rhs.select)) return delta;
+      if (intptr_t delta = int(extend) - int(rhs.extend)) return delta;
+      return int(sxtend) - int(rhs.sxtend);
+    }
+    virtual unsigned SubCount() const { return 1; }
+    virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return input; }
+    
+    Expr     input;
+    uint32_t source   : 10;
+    uint32_t select   : 10;
+    uint32_t extend   : 10;
+    uint32_t sxtend   :  1;
+    uint32_t reserved :  1;
+  };
+
   struct Store : public ASExprNode
   {
     Store( Expr const& _addr, Expr const& _value, unsigned _size, unsigned _alignment, bool _bigendian )
       : value(_value), addr(_addr), size(_size), alignment(_alignment), bigendian(_bigendian)
     {}
+    virtual Store* Mutate() const { return new Store( *this ); }
+    
+    virtual Expr Simplify() const
+    {
+      Expr nvalue( ASExprNode::Simplify( value ) ), naddr( ASExprNode::Simplify( addr ) );
+      return (nvalue != value) or (naddr != addr) ? new Store( nvalue, naddr, size, alignment, bigendian ) : this;
+    }
       
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     unsigned bitsize() const { return 1<<size; }
