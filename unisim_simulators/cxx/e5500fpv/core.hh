@@ -138,21 +138,22 @@ struct FPSCR : Register<FPSCR>
   {
     Register<FPSCR>::Set<FI>( UINT(i) );
     if (i)
-      SetInvalid( XX() );
+      SetException( XX() );
   }
   
   template <class FIELD>
-  void SetInvalid( FIELD const& )
+  void SetInvalid( FIELD const& vxfield )
   {
-    Register<FPSCR>::Set<FIELD>( UINT(1) );
-    SetException( VX() );
+    SetException( vxfield );
+    Register<FPSCR>::Set<VX>( UINT(1) );
   }
 
   template <class FIELD>
   void SetException( FIELD const& )
   {
+    if (not Register<FPSCR>::Get<FIELD>())
+      Register<FPSCR>::Set<FX>( UINT(1) ); // Exception bit change from 0 to 1
     Register<FPSCR>::Set<FIELD>( UINT(1) );
-    Register<FPSCR>::Set<FX>( UINT(1) );
     // Check if exception is enable (enable bits locations are 22 bit
     // upper than their exception bits counterparts)
     struct Enable : Field<Enable, FIELD::offset1 + 22> {};
