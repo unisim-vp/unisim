@@ -904,12 +904,13 @@ namespace symbolic {
   template <class T>
   struct Choice
   {
-    Choice( T* _previous ) : nexts(), previous(_previous), cond() {}
+    Choice() : nexts(), previous(), cond() {}
     ~Choice() { delete nexts[0]; delete nexts[1]; }
 
     bool  proceed( Expr const& _cond );
     bool  close();
-    T*    next(bool predicate) { return nexts[predicate]; }
+    T*    next(bool choice) { return nexts[choice]; }
+    void  setnext( bool choice, T* nxt ) { nexts[choice] = nxt; nxt->previous = static_cast<T*>(this); }
   
     T*    nexts[2];
     T*    previous;
@@ -923,8 +924,8 @@ namespace symbolic {
     if (not cond.good())
       {
         cond = _cond;
-        nexts[0] = new T(static_cast<T*>(this));
-        nexts[1] = new T(static_cast<T*>(this));
+        setnext(false, new T);
+        setnext(true,  new T);
         return false;
       }
 

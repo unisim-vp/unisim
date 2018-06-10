@@ -458,17 +458,18 @@ namespace binsec {
     
     nexts[0]->simplify_sinks();
     nexts[1]->simplify_sinks();
-
+    
     factorize( sinks, nexts[0]->sinks, nexts[1]->sinks, SinksMerger() );
-  
+    
     // If condition begins with a logical not, remove the not and
     //   swap if then else branches
     using unisim::util::symbolic::OpNodeBase;
     if (OpNodeBase const* onb = cond->AsOpNode())
-      if (onb->op.code == onb->op.Not) {
-        cond = onb->GetSub(0);
-        std::swap( nexts[0], nexts[1] );
-      }
+      if (onb->op.code == onb->op.Not)
+        {
+          cond = onb->GetSub(0);
+          std::swap( nexts[0], nexts[1] );
+        }
   }
   
   void

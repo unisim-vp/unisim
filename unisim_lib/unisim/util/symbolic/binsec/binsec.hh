@@ -65,7 +65,7 @@ namespace binsec {
   
   struct ActionNode : public Choice<ActionNode>
   {
-    ActionNode( ActionNode* _previous=0 ) : Choice<ActionNode>(_previous), sinks(), sestats() {}
+    ActionNode() : Choice<ActionNode>(), sinks(), sestats() {}
 
     std::set<Expr> sinks;
     SEStats        sestats;
