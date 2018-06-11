@@ -71,7 +71,7 @@ namespace binsec {
     SEStats        sestats;
 
     bool           release_inactive();
-    void           simplify_sinks();
+    void           simplify();
     void           commit_stats();
   };
 

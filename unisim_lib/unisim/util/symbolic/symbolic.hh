@@ -541,16 +541,21 @@ namespace symbolic {
     }
   };
   
-  struct UONode : public OpNode<1>
+  /* 1 operand operation */
+  inline Expr make_operation( Op op, Expr const& operand )
   {
-    UONode( Op _op, Expr const& _src ) : OpNode<1>( _op ) { subs[0] = _src; }
-  };
+    OpNode<1>* res = new OpNode<1>( op );
+    res->subs[0] = operand;
+    return res;
+  }
   
-  struct BONode : public OpNode<2>
+  /* 2 operands operation */
+  inline Expr make_operation( Op op, Expr const& left, Expr const& right )
   {
-    BONode( Op _op, Expr const& _left, Expr const& _right ) : OpNode<2>(_op) { subs[0] = _left; subs[1] = _right; }
-    virtual this_type* Mutate() const { return new this_type( *this ); };
-  };
+    OpNode<2>* res = new OpNode<2>( op );
+    res->subs[0] = left; res->subs[1] = right;
+    return res;
+  }
   
   template <typename VALUE_TYPE>
   struct SmartValue
@@ -586,81 +591,81 @@ namespace symbolic {
     this_type& operator = ( this_type const& other ) { expr = other.expr; return *this; }
     
     template <typename SHT>
-    this_type operator << ( SHT sh ) const { return this_type( Expr( new BONode( "Lsl", expr, make_const<uint8_t>(sh) ) ) ); }
+    this_type operator << ( SHT sh ) const { return this_type( make_operation( "Lsl", expr, make_const<uint8_t>(sh) ) ); }
     template <typename SHT>
-    this_type operator >> ( SHT sh ) const { return this_type( Expr( new BONode( is_signed?"Asr":"Lsr",expr,make_const<uint8_t>(sh) ) ) ); }
+    this_type operator >> ( SHT sh ) const { return this_type( make_operation( is_signed ? "Asr" : "Lsr", expr, make_const<uint8_t>(sh) ) ); }
     template <typename SHT>
-    this_type& operator <<= ( SHT sh ) { expr = new BONode( "Lsl", expr, make_const<uint8_t>(sh) ); return *this; }
+    this_type& operator <<= ( SHT sh ) { expr = make_operation( "Lsl", expr, make_const<uint8_t>(sh) ); return *this; }
     template <typename SHT>
-    this_type& operator >>= ( SHT sh ) { expr = new BONode( is_signed?"Asr":"Lsr", expr, make_const<uint8_t>(sh) ); return *this; }
+    this_type& operator >>= ( SHT sh ) { expr = make_operation( is_signed?"Asr":"Lsr", expr, make_const<uint8_t>(sh) ); return *this; }
     
     template <typename SHT>
-    this_type operator << ( SmartValue<SHT> const& sh ) const { return this_type( Expr( new BONode( "Lsl", expr, SmartValue<uint8_t>(sh).expr ) ) ); }
+    this_type operator << ( SmartValue<SHT> const& sh ) const { return this_type( make_operation( "Lsl", expr, SmartValue<uint8_t>(sh).expr ) ); }
     template <typename SHT>
-    this_type operator >> ( SmartValue<SHT> const& sh ) const {return this_type( Expr( new BONode( is_signed?"Asr":"Lsr", expr, SmartValue<uint8_t>(sh).expr ) ) ); }
+    this_type operator >> ( SmartValue<SHT> const& sh ) const {return this_type( make_operation( is_signed?"Asr":"Lsr", expr, SmartValue<uint8_t>(sh).expr ) ); }
     
-    this_type operator - () const { return this_type( Expr( new UONode( "Neg", expr ) ) ); }
-    this_type operator ~ () const { return this_type( Expr( new UONode( "Not", expr ) ) ); }
+    this_type operator - () const { return this_type( make_operation( "Neg", expr ) ); }
+    this_type operator ~ () const { return this_type( make_operation( "Not", expr ) ); }
     
-    this_type& operator += ( this_type const& other ) { expr = new BONode( "Add", expr, other.expr ); return *this; }
-    this_type& operator -= ( this_type const& other ) { expr = new BONode( "Sub", expr, other.expr ); return *this; }
-    this_type& operator *= ( this_type const& other ) { expr = new BONode( "Mul", expr, other.expr ); return *this; }
-    this_type& operator /= ( this_type const& other ) { expr = new BONode( "Div", expr, other.expr ); return *this; }
-    this_type& operator %= ( this_type const& other ) { expr = new BONode( "Mod", expr, other.expr ); return *this; }
-    this_type& operator ^= ( this_type const& other ) { expr = new BONode( "Xor", expr, other.expr ); return *this; }
-    this_type& operator &= ( this_type const& other ) { expr = new BONode( "And", expr, other.expr ); return *this; }
-    this_type& operator |= ( this_type const& other ) { expr = new  BONode( "Or", expr, other.expr ); return *this; }
+    this_type& operator += ( this_type const& other ) { expr = make_operation( "Add", expr, other.expr ); return *this; }
+    this_type& operator -= ( this_type const& other ) { expr = make_operation( "Sub", expr, other.expr ); return *this; }
+    this_type& operator *= ( this_type const& other ) { expr = make_operation( "Mul", expr, other.expr ); return *this; }
+    this_type& operator /= ( this_type const& other ) { expr = make_operation( "Div", expr, other.expr ); return *this; }
+    this_type& operator %= ( this_type const& other ) { expr = make_operation( "Mod", expr, other.expr ); return *this; }
+    this_type& operator ^= ( this_type const& other ) { expr = make_operation( "Xor", expr, other.expr ); return *this; }
+    this_type& operator &= ( this_type const& other ) { expr = make_operation( "And", expr, other.expr ); return *this; }
+    this_type& operator |= ( this_type const& other ) { expr =  make_operation( "Or", expr, other.expr ); return *this; }
     
-    this_type operator + ( this_type const& other ) const { return this_type( Expr( new BONode( "Add", expr, other.expr ) ) ); }
-    this_type operator - ( this_type const& other ) const { return this_type( Expr( new BONode( "Sub", expr, other.expr ) ) ); }
-    this_type operator * ( this_type const& other ) const { return this_type( Expr( new BONode( "Mul", expr, other.expr ) ) ); }
-    this_type operator / ( this_type const& other ) const { return this_type( Expr( new BONode( "Div", expr, other.expr ) ) ); }
-    this_type operator % ( this_type const& other ) const { return this_type( Expr( new BONode( "Mod", expr, other.expr ) ) ); }
-    this_type operator ^ ( this_type const& other ) const { return this_type( Expr( new BONode( "Xor", expr, other.expr ) ) ); }
-    this_type operator & ( this_type const& other ) const { return this_type( Expr( new BONode( "And", expr, other.expr ) ) ); }
-    this_type operator | ( this_type const& other ) const { return this_type( Expr( new  BONode( "Or", expr, other.expr ) ) ); }
+    this_type operator + ( this_type const& other ) const { return this_type( make_operation( "Add", expr, other.expr ) ); }
+    this_type operator - ( this_type const& other ) const { return this_type( make_operation( "Sub", expr, other.expr ) ); }
+    this_type operator * ( this_type const& other ) const { return this_type( make_operation( "Mul", expr, other.expr ) ); }
+    this_type operator / ( this_type const& other ) const { return this_type( make_operation( "Div", expr, other.expr ) ); }
+    this_type operator % ( this_type const& other ) const { return this_type( make_operation( "Mod", expr, other.expr ) ); }
+    this_type operator ^ ( this_type const& other ) const { return this_type( make_operation( "Xor", expr, other.expr ) ); }
+    this_type operator & ( this_type const& other ) const { return this_type( make_operation( "And", expr, other.expr ) ); }
+    this_type operator | ( this_type const& other ) const { return this_type( Expr(  make_operation( "Or", expr, other.expr ) ) ); }
     
-    SmartValue<bool> operator == ( this_type const& other ) const { return SmartValue<bool>( Expr( new BONode( "Teq", expr, other.expr ) ) ); }
-    SmartValue<bool> operator != ( this_type const& other ) const { return SmartValue<bool>( Expr( new BONode( "Tne", expr, other.expr ) ) ); }
-    SmartValue<bool> operator <= ( this_type const& other ) const { return SmartValue<bool>( Expr( new BONode( is_signed ? "Tle" : "Tleu", expr, other.expr ) ) ); }
-    SmartValue<bool> operator >= ( this_type const& other ) const { return SmartValue<bool>( Expr( new BONode( is_signed ? "Tge" : "Tgeu", expr, other.expr ) ) ); }
-    SmartValue<bool> operator < ( this_type const& other ) const  { return SmartValue<bool>( Expr( new BONode( is_signed ? "Tlt" : "Tltu", expr, other.expr ) ) ); }
-    SmartValue<bool> operator > ( this_type const& other ) const  { return SmartValue<bool>( Expr( new BONode( is_signed ? "Tgt" : "Tgtu", expr, other.expr ) ) ); }
+    SmartValue<bool> operator == ( this_type const& other ) const { return SmartValue<bool>( make_operation( "Teq", expr, other.expr ) ); }
+    SmartValue<bool> operator != ( this_type const& other ) const { return SmartValue<bool>( make_operation( "Tne", expr, other.expr ) ); }
+    SmartValue<bool> operator <= ( this_type const& other ) const { return SmartValue<bool>( make_operation( is_signed ? "Tle" : "Tleu", expr, other.expr ) ); }
+    SmartValue<bool> operator >= ( this_type const& other ) const { return SmartValue<bool>( make_operation( is_signed ? "Tge" : "Tgeu", expr, other.expr ) ); }
+    SmartValue<bool> operator < ( this_type const& other ) const  { return SmartValue<bool>( make_operation( is_signed ? "Tlt" : "Tltu", expr, other.expr ) ); }
+    SmartValue<bool> operator > ( this_type const& other ) const  { return SmartValue<bool>( make_operation( is_signed ? "Tgt" : "Tgtu", expr, other.expr ) ); }
     
     SmartValue<bool> operator ! () const
-    { AssertBool<value_type>::check(); return SmartValue<bool>( Expr( new UONode( "Not", expr ) ) ); }
+    { AssertBool<value_type>::check(); return SmartValue<bool>( make_operation( "Not", expr ) ); }
 
     SmartValue<bool> operator && ( SmartValue<bool> const& other ) const
-    { AssertBool<value_type>::check(); return SmartValue<bool>( Expr( new BONode( "And", expr, other.expr ) ) ); }
+    { AssertBool<value_type>::check(); return SmartValue<bool>( make_operation( "And", expr, other.expr ) ); }
     
     SmartValue<bool> operator || ( SmartValue<bool> const& other ) const
-    { AssertBool<value_type>::check(); return SmartValue<bool>( Expr( new  BONode( "Or", expr, other.expr ) ) ); }
+    { AssertBool<value_type>::check(); return SmartValue<bool>( Expr(  make_operation( "Or", expr, other.expr ) ) ); }
   };
   
   template <typename UTP>
-  UTP ByteSwap( UTP const& value ) { return UTP( new UONode( "BSwp", value.expr ) ); }
+  UTP ByteSwap( UTP const& value ) { return UTP( make_operation( "BSwp", value.expr ) ); }
   
   template <typename UTP>
-  UTP RotateRight( UTP const& value, uint8_t sh ) { return UTP( new BONode( "Ror", value.expr, make_const<uint8_t>(sh) ) ); }
+  UTP RotateRight( UTP const& value, uint8_t sh ) { return UTP( make_operation( "Ror", value.expr, make_const<uint8_t>(sh) ) ); }
   template <typename UTP, typename STP>
-  UTP RotateRight( UTP const& value, STP const& sh ) { return UTP( new BONode( "Ror", value.expr, SmartValue<uint8_t>(sh).expr ) ); }
+  UTP RotateRight( UTP const& value, STP const& sh ) { return UTP( make_operation( "Ror", value.expr, SmartValue<uint8_t>(sh).expr ) ); }
   
   template <typename UTP>
-  UTP RotateLeft( UTP const& value, uint8_t sh ) { return UTP( new BONode( "Rol", value.expr, make_const<uint8_t>(sh) ) ); }
+  UTP RotateLeft( UTP const& value, uint8_t sh ) { return UTP( make_operation( "Rol", value.expr, make_const<uint8_t>(sh) ) ); }
   template <typename UTP, typename STP>
-  UTP RotateLeft( UTP const& value, STP const& sh ) { return UTP( new BONode( "Rol", value.expr, SmartValue<uint8_t>(sh).expr ) ); }
+  UTP RotateLeft( UTP const& value, STP const& sh ) { return UTP( make_operation( "Rol", value.expr, SmartValue<uint8_t>(sh).expr ) ); }
   
   template <typename UTP>
-  UTP BitScanReverse( UTP const& value ) { return UTP( new UONode( "BSR", value.expr ) ); }
+  UTP BitScanReverse( UTP const& value ) { return UTP( make_operation( "BSR", value.expr ) ); }
   
   template <typename UTP>
-  UTP BitScanForward( UTP const& value ) { return UTP( new UONode( "BSF", value.expr ) ); }
+  UTP BitScanForward( UTP const& value ) { return UTP( make_operation( "BSF", value.expr ) ); }
   
   template <typename T>
-  SmartValue<T> power( SmartValue<T> const& left, SmartValue<T> const& right ) { return SmartValue<T>( new BONode( "Pow", left.expr, right.expr ) ); }
+  SmartValue<T> power( SmartValue<T> const& left, SmartValue<T> const& right ) { return SmartValue<T>( make_operation( "Pow", left.expr, right.expr ) ); }
   
   template <typename T>
-  SmartValue<T> fmodulo( SmartValue<T> const& left, SmartValue<T> const& right ) { return SmartValue<T>( new BONode( "FMod", left.expr, right.expr ) ); }
+  SmartValue<T> fmodulo( SmartValue<T> const& left, SmartValue<T> const& right ) { return SmartValue<T>( make_operation( "FMod", left.expr, right.expr ) ); }
   
   struct FP
   {
@@ -688,21 +693,21 @@ namespace symbolic {
     template <typename FLOAT> static
     void SetQuietBit( FLOAT& op )
     {
-      op = FLOAT( Expr( new UONode( "FSQB", op.expr ) ) );
+      op = FLOAT( make_operation( "FSQB", op.expr ) );
     }
 
     template <typename FLOAT> static
     SmartValue<bool>
     FlushToZero( FLOAT& op, SmartValue<uint32_t> const& fpscr_val )
     {
-      op = FLOAT( Expr( new UONode( "FFZ", op.expr ) ) );
-      return SmartValue<bool>( Expr( new UONode( "FDen", op.expr ) ) );
+      op = FLOAT( make_operation( "FFZ", op.expr ) );
+      return SmartValue<bool>( make_operation( "FDen", op.expr ) );
     }
 
     template <typename FLOAT> static
     SmartValue<int32_t> Compare( FLOAT op1, FLOAT op2, SmartValue<uint32_t> const& fpscr_val )
     {
-      return SmartValue<int32_t>( Expr( new BONode( "FCmp", op1.expr, op2.expr ) ) );
+      return SmartValue<int32_t>( make_operation( "FCmp", op1.expr, op2.expr ) );
     }
 
     struct IsNaNNode : public ExprNode
@@ -737,25 +742,25 @@ namespace symbolic {
     template <typename FLOAT, class ARCH> static
     void Add( FLOAT& acc, FLOAT const& op2, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
-      acc = FLOAT( Expr( new BONode( "Add", acc.expr, op2.expr ) ) );
+      acc = FLOAT( make_operation( "Add", acc.expr, op2.expr ) );
     }
 
     template <typename FLOAT, class ARCH> static
     void Sub( FLOAT& acc, FLOAT const& op2, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
-      acc = FLOAT( Expr( new BONode( "Sub", acc.expr, op2.expr ) ) );
+      acc = FLOAT( make_operation( "Sub", acc.expr, op2.expr ) );
     }
 
     template <typename FLOAT, class ARCH> static
     void Div( FLOAT& acc, FLOAT const& op2, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
-      acc = FLOAT( Expr( new BONode( "Div", acc.expr, op2.expr ) ) );
+      acc = FLOAT( make_operation( "Div", acc.expr, op2.expr ) );
     }
 
     template <typename FLOAT, class ARCH> static
     void Mul( FLOAT& acc, FLOAT const& op2, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
-      acc = FLOAT( Expr( new BONode( "Mul", acc.expr, op2.expr ) ) );
+      acc = FLOAT( make_operation( "Mul", acc.expr, op2.expr ) );
     }
 
     struct MulAddNode : public ExprNode
@@ -814,13 +819,13 @@ namespace symbolic {
     }
     
     template <typename FLOAT> static
-    void Neg( FLOAT& acc ) { acc = FLOAT( Expr( new UONode( "FNeg", acc.expr ) ) ); }
+    void Neg( FLOAT& acc ) { acc = FLOAT( make_operation( "FNeg", acc.expr ) ); }
 
     template <typename FLOAT> static
-    void Abs( FLOAT& acc ) { acc = FLOAT( Expr( new UONode( "FAbs", acc.expr ) ) ); }
+    void Abs( FLOAT& acc ) { acc = FLOAT( make_operation( "FAbs", acc.expr ) ); }
     
     template <typename FLOAT, class ARCH> static
-    void Sqrt( FLOAT& acc, ARCH& arch, SmartValue<uint32_t> const& fpscr_val ) { acc = FLOAT( Expr( new UONode( "FSqrt", acc.expr ) ) ); }
+    void Sqrt( FLOAT& acc, ARCH& arch, SmartValue<uint32_t> const& fpscr_val ) { acc = FLOAT( make_operation( "FSqrt", acc.expr ) ); }
 
     struct FtoFNode : public ExprNode
     {

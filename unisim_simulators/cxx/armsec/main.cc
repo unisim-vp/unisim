@@ -1012,8 +1012,7 @@ struct Translator
               state.ITAdvance();
             end = state.close( reference );
           }
-        coderoot->simplify_sinks();
-        coderoot->release_inactive();
+        coderoot->simplify();
         coderoot->commit_stats();
       }
     catch (...)

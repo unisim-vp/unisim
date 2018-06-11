@@ -64,7 +64,16 @@ namespace binsec {
   {
     if (ConstNodeBase const* node = expr->GetConstNode())
       {
-        return node;
+        Expr cexp( node );
+        switch (node->GetType())
+          {
+          case ScalarType::S8:  return make_const( node-> GetU8() );
+          case ScalarType::S16: return make_const( node->GetU16() );
+          case ScalarType::S32: return make_const( node->GetU32() );
+          case ScalarType::S64: return make_const( node->GetU64() );
+          default: break;
+          }
+        return cexp;
       }
     else if (OpNodeBase const* node = expr->AsOpNode())
       {
@@ -100,7 +109,7 @@ namespace binsec {
                 // case Op::Mod: break;
               }
 
-            return (subs[0] != node->GetSub(0)) or (subs[1] != node->GetSub(1)) ? new BONode( node->op.code, subs[0], subs[1] ) : node;
+            return (subs[0] != node->GetSub(0)) or (subs[1] != node->GetSub(1)) ? make_operation( node->op.code, subs[0], subs[1] ) : node;
           } break;
 
           case 1: {
@@ -126,17 +135,17 @@ namespace binsec {
                     }
 
                   if (src.bitsize == dst.bitsize)
-                    return cnb.src;
+                    return sub;
                   
                   
-                  BitFilter bf( cnb.src, src.bitsize, std::min(src.bitsize, dst.bitsize), dst.bitsize, dst.bitsize > src.bitsize ? src.is_signed : false );
+                  BitFilter bf( sub, src.bitsize, std::min(src.bitsize, dst.bitsize), dst.bitsize, dst.bitsize > src.bitsize ? src.is_signed : false );
                   bf.Retain(); // Not a heap-allocated object (never delete);
                   Expr res( bf.Simplify() );
                   return (res.node == &bf) ? new BitFilter( bf ) : res.node;
                 } break;
               }
             
-            return (sub != node->GetSub(0)) ? new UONode( node->op.code, sub ) : node;
+            return (sub != node->GetSub(0)) ? make_operation( node->op.code, sub ) : node;
           } break;
 
           }
@@ -164,11 +173,11 @@ namespace binsec {
     /*** Sub expression process ***/
     if (ConstNodeBase const* node = expr->GetConstNode())
       {
-        Expr c( node );
+        Expr cexp( node );
         switch (node->GetType())
           {
           case ScalarType::BOOL: sink << node->GetS32() << "<1>";  return 1;
-          case ScalarType::U8:  case ScalarType::S8:  sink << dbx(1, node->GetU8());  return 8;
+          case ScalarType::U8:  case ScalarType::S8:  sink << dbx(1,node-> GetU8());  return 8;
           case ScalarType::U16: case ScalarType::S16: sink << dbx(2,node->GetU16()); return 16;
           case ScalarType::U32: case ScalarType::S32: sink << dbx(4,node->GetU32()); return 32;
           case ScalarType::U64: case ScalarType::S64: sink << dbx(8,node->GetU64()); return 64;
@@ -216,14 +225,14 @@ namespace binsec {
                 {
                   Expr operator() (U8 x, int s)
                   {
-                    // Peephole optimisation for shifters (safety issue)
+                    // Peephole optimisation for shifters (note: potential safety issue)
                     if (CastNodeBase const* cnb = dynamic_cast<CastNodeBase const*>( x.expr.node ))
                       if (ScalarType(cnb->GetSrcType()).bitsize == unsigned(s))
                         return cnb->src;
                     
-                    if (s==16) return U16(x).expr;
-                    if (s==32) return U32(x).expr;
-                    if (s==64) return U64(x).expr;
+                    if (s==16) return Simplify( U16(x).expr );
+                    if (s==32) return Simplify( U32(x).expr );
+                    if (s==64) return Simplify( U64(x).expr );
                     
                     return x.expr;
                   }
@@ -337,6 +346,12 @@ namespace binsec {
   int
   BitFilter::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
+    if (extend == source)
+      {
+        /* TODO: check GetCode bitsize == extend == source */
+        sink << "(" << GetCode(input, vars, label) << " and " << dbx(source/8, (1ull << select)-1) << ")";
+        return extend;
+      }
     bool extension = extend > select;
     bool selection = source > select;
     if (extension)
@@ -420,31 +435,12 @@ namespace binsec {
     sink << "[" << addr << ',' << size << ",^" << alignment << ',' << (bigendian ? "be" : "le") << "] := " << value;
   }
 
-  bool
-  ActionNode::release_inactive()
-  {
-    if (cond.good())
-      {
-        bool leaf = true;
-        for (unsigned choice = 0; choice < 2; ++choice)
-          if (ActionNode* next = nexts[choice])
-            {
-              if (next->release_inactive()) { delete next; nexts[choice] = 0; }
-              else leaf = false;
-            }
-        if (not leaf)    return false;
-        else             cond = Expr();
-      }
-    // This is a leaf; if no local sinks, signal dead path to parent
-    return sinks.size() == 0;
-  }
-
   namespace {
     struct SinksMerger { void operator () ( std::set<Expr>& sinks, Expr const& l, Expr const& r ) { sinks.insert( l ); } };
   }
 
   void
-  ActionNode::simplify_sinks()
+  ActionNode::simplify()
   {
     {
       std::set<Expr> nsinks;
@@ -455,21 +451,34 @@ namespace binsec {
     
     if (not cond.good())
       return;
+
+    cond = ASExprNode::Simplify( cond );
     
-    nexts[0]->simplify_sinks();
-    nexts[1]->simplify_sinks();
+    for (unsigned choice = 0; choice < 2; ++choice)
+      if (ActionNode* next = nexts[choice])
+        next->simplify();
     
     factorize( sinks, nexts[0]->sinks, nexts[1]->sinks, SinksMerger() );
     
-    // If condition begins with a logical not, remove the not and
-    //   swap if then else branches
-    using unisim::util::symbolic::OpNodeBase;
-    if (OpNodeBase const* onb = cond->AsOpNode())
+    bool leaf = true;
+    for (unsigned choice = 0; choice < 2; ++choice)
+      if (ActionNode* next = nexts[choice])
+        {
+          if (next->cond.good() or next->sinks.size()) leaf = false;
+          else { delete next; nexts[choice] = 0; }
+        }
+    
+    if (leaf)
+      cond = Expr();
+    else if (OpNodeBase const* onb = cond->AsOpNode())
       if (onb->op.code == onb->op.Not)
         {
+          // If condition begins with a logical not, remove the not and
+          //   swap if then else branches
           cond = onb->GetSub(0);
-          std::swap( nexts[0], nexts[1] );
+          std::swap( nexts[false], nexts[true] );
         }
+      
   }
   
   void
@@ -480,8 +489,8 @@ namespace binsec {
         if (nexts[0]) nexts[0]->commit_stats();
         if (nexts[1]) nexts[1]->commit_stats();
 
-        if (nexts[0] and nexts[1])
-          factorize( sestats, nexts[0]->sestats, nexts[1]->sestats, SEStats::Merger() );
+        // if (nexts[0] and nexts[1])
+        //   factorize( sestats, nexts[0]->sestats, nexts[1]->sestats, SEStats::Merger() );
         
         // sestats.count( cond );
       }
