@@ -67,12 +67,11 @@ namespace binsec {
   {
     ActionNode() : Choice<ActionNode>(), sinks(), sestats() {}
 
-    std::set<Expr> sinks;
-    SEStats        sestats;
+    std::set<Expr>          sinks;
+    std::map<Expr,unsigned> sestats;
 
-    bool           release_inactive();
-    void           simplify();
-    void           commit_stats();
+    void                    simplify();
+    void                    commit_stats();
   };
 
   struct Program : public std::map<int,std::string>

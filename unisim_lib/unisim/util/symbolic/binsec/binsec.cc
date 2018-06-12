@@ -480,29 +480,41 @@ namespace binsec {
         }
       
   }
+
+  namespace
+  {
+    struct Sec : public ExprScanner<Sec>
+    {
+      void Process( Expr const& e )
+      {
+        if (not e->SubCount())
+          return;
+        bool cont = true;
+        for (Sec* sec = this; sec; sec = sec->up)
+          cont &= (sec->stats[e]++ == 0);
+        if (cont)
+          Flood( e );
+      }
+      Sec( ActionNode* node, Sec* _up )
+        : stats(node->sestats), up(_up)
+      {
+        // First level of expression is not functionnal (architectual side effect)
+        for (std::set<Expr>::const_iterator itr = node->sinks.begin(), end = node->sinks.end(); itr != end; ++itr)
+          Flood( *itr );
+        for (unsigned choice = 0; choice < 2; ++choice)
+          if (ActionNode* next = node->nexts[choice])
+            { Sec sub(next,this); }
+      }
+      std::map<Expr,unsigned>& stats; Sec* up;
+    };
+  }
   
   void
   ActionNode::commit_stats()
   {
-    if (cond.good())
-      {
-        if (nexts[0]) nexts[0]->commit_stats();
-        if (nexts[1]) nexts[1]->commit_stats();
-
-        // if (nexts[0] and nexts[1])
-        //   factorize( sestats, nexts[0]->sestats, nexts[1]->sestats, SEStats::Merger() );
-        
-        // sestats.count( cond );
-      }
-
-    for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
-      {
-        // First level of expression is not functionnal (architectual side effect)
-        for (unsigned idx = 0, end = (**itr).SubCount(); idx < end; ++idx)
-          sestats.count( (**itr).GetSub(idx) );
-      }
+    Sec sec(this,0);
   }
-
+  
   void
   Program::Generate( ActionNode const* action_tree )
   {

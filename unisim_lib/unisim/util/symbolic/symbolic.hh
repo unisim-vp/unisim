@@ -955,14 +955,6 @@ namespace symbolic {
     return true;
   }
   
-  struct SEStats : public std::map<Expr,unsigned>
-  {
-    typedef std::map<Expr,unsigned>::value_type Stat;
-    void count( Expr const& );
-    void factorize( SEStats& f, SEStats& t );
-    struct Merger { void operator () ( SEStats& stats, Stat& l, Stat& r ) { stats[l.first] = l.second + r.second; } };
-  };
-  
   template <class PoolT, typename Merger>
   void
   factorize( PoolT& dst, PoolT& lho, PoolT& rho, Merger merger )
@@ -981,9 +973,18 @@ namespace symbolic {
           }
       }
   }
-  
 
-  
+  template <class T>
+  struct ExprScanner
+  {
+    void
+    Flood( Expr const& e )
+    {
+      for (unsigned idx = 0, end = e->SubCount(); idx < end; ++idx)
+        static_cast<T*>(this)->Process( e->GetSub(idx) );
+    }
+  };
+
 } /* end of namespace symbolic */
 } /* end of namespace util */
 } /* end of namespace unisim */

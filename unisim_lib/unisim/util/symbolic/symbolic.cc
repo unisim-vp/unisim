@@ -87,34 +87,6 @@ namespace symbolic {
 
   uint32_t EvalRotateLeft( uint32_t v, uint8_t s ) { return unisim::util::arithmetic::RotateLeft( v, s ); }
   
-  void
-  SEStats::count( Expr const& e )
-  {
-    struct SECounter
-    {
-      SECounter( std::map<Expr,unsigned>& _stats ) : stats(_stats) {} std::map<Expr,unsigned>& stats;
-      
-      void Recurse( Expr const& expr )
-      {
-        for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
-          Process( expr->GetSub(idx) );
-      }
-
-      void Process( Expr const& expr )
-      {
-        if (not expr->SubCount())
-          return;
-
-        if (stats[expr]++)
-          return;
-
-        Recurse( expr );
-      }
-    } sec( *this );
-
-    sec.Process( e );
-  }
-  
 } /* end of namespace symbolic */
 } /* end of namespace util */
 } /* end of namespace unisim */
