@@ -225,11 +225,6 @@ namespace binsec {
                 {
                   Expr operator() (U8 x, int s)
                   {
-                    // Peephole optimisation for shifters (note: potential safety issue)
-                    if (CastNodeBase const* cnb = dynamic_cast<CastNodeBase const*>( x.expr.node ))
-                      if (ScalarType(cnb->GetSrcType()).bitsize == unsigned(s))
-                        return cnb->src;
-                    
                     if (s==16) return Simplify( U16(x).expr );
                     if (s==32) return Simplify( U32(x).expr );
                     if (s==64) return Simplify( U64(x).expr );
@@ -297,27 +292,15 @@ namespace binsec {
                   
                   if (dst.is_integer and src.is_integer)
                     {
-                      int extend = dst.bitsize - src.bitsize;
-                      if      (extend > 0)
-                        {
-                          sink << '(' << (src.is_signed ? "exts " : "extu ") << GetCode(cnb.src, vars, label) << ' ' << dst.bitsize << ')';
-                        }
-                      else if (extend < 0)
-                        {
-                          CastNodeBase const* src_node = dynamic_cast<CastNodeBase const*>( cnb.src.node );
-                          if (src_node and (src_node->GetSrcType() == cnb.GetDstType())) {
-                            sink << GetCode(src_node->src, vars, label);
-                          } else  if (dst.bitsize == 1) {
-                            sink << "(" << GetCode(cnb.src, vars, label) << " <> " << dbx(src.bitsize/8,0) << ")";
-                          } else {
-                            sink << "(" << GetCode(cnb.src, vars, label) << " {0," << (dst.bitsize-1) << "})";
-                          }
-                        }
-                      else
-                        sink << GetCode(cnb.src, vars, label);
+                      /* At this point, only boolean casts should remain */
+                      if ((src.bitsize <= 1) or (dst.bitsize != 1))
+                        throw std::logic_error("Unexpected cast");
+                      
+                      sink << "(" << GetCode(cnb.src, vars, label) << " <> " << dbx(src.bitsize/8,0) << ")";
                     }
                   else
                     {
+                      /* TODO: What to do with FP casts ? */
                       sink << dst.name << "( " << GetCode(cnb.src, vars, label) << " )";
                     }
       
