@@ -78,17 +78,18 @@ namespace ut
   {
     typedef unisim::util::symbolic::ExprNode ExprNode;
     typedef unisim::util::symbolic::Expr Expr;
+    typedef FunctionNode<SUBS> this_type;
     
     FunctionNode( char const* _ident ) : FunctionNodeBase(_ident) {}
-    FunctionNode* src(unsigned idx, Expr const& x) { srcs[idx] = x; return this; }
+    virtual this_type* Mutate() const { return new this_type(*this); };
+    this_type* src(unsigned idx, Expr const& x) { srcs[idx] = x; return this; }
     virtual unsigned SubCount() const { return SUBS; };
     virtual Expr const& GetSub(unsigned idx) const { if (idx < SUBS) return srcs[idx]; return ExprNode::GetSub(idx); };
     virtual intptr_t cmp( ExprNode const& brhs ) const
     {
-      auto && rhs = dynamic_cast<FunctionNode const&>( brhs );
+      auto && rhs = dynamic_cast<this_type const&>( brhs );
       for (unsigned idx = 0; idx < SUBS; ++idx)
         if (intptr_t delta = srcs[idx].cmp( rhs.srcs[idx] )) return delta;
-      
       return NameCompare( rhs );
     }
     Expr srcs[SUBS];

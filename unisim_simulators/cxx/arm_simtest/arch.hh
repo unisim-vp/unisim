@@ -172,6 +172,7 @@ namespace ut
   struct SourceReg : public unisim::util::symbolic::ExprNode
   {
     SourceReg( unsigned _reg ) : reg( _reg ) {} unsigned reg;
+    virtual SourceReg* Mutate() const { return new SourceReg(*this); }
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 0; }
     virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
@@ -242,6 +243,7 @@ namespace ut
     
     struct NPC : public ExprNode
     {
+      virtual NPC* Mutate() const { return new NPC(*this); }
       virtual void Repr( std::ostream& sink ) const { sink << "@NextInsn"; }
       virtual unsigned SubCount() const { return 0; }
       virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return 0; }
@@ -255,6 +257,7 @@ namespace ut
     struct PSRFlags : public ExprNode
     {
       PSRFlags( uint32_t _mask ) : mask( _mask ) {} uint32_t mask;
+      virtual PSRFlags* Mutate() const { return new PSRFlags(*this); }
       virtual void Repr( std::ostream& sink ) const { sink << "PSR_flags"; }
       virtual unsigned SubCount() const { return 0; }
       virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return 0; }
@@ -303,6 +306,7 @@ namespace ut
     struct Load : public ExprNode
     {
       Load( Expr const& _address ) : address( _address ) {} Expr address;
+      virtual Load* Mutate() const { return new Load(*this); }
       virtual void Repr( std::ostream& sink ) const { sink << "Load( "; address->Repr( sink ); sink << " )"; }
       virtual unsigned SubCount() const { return 1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx!=0) return ExprNode::GetSub(0); return address; }

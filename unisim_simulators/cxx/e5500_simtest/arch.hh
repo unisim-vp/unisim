@@ -53,12 +53,15 @@ namespace ut
     Untestable(std::string const& _reason) : reason(_reason) {}
     std::string reason;
   };
-  
+
+  struct ActionNode : public unisim::util::symbolic::Choice<ActionNode>
+  {
+  };
+
   struct Interface
   {
     typedef unisim::util::symbolic::Expr       Expr;
     typedef unisim::util::symbolic::ExprNode   ExprNode;
-    typedef unisim::util::symbolic::ActionNode ActionNode;
     
     Interface( e5500::Operation& op );
     
@@ -154,6 +157,7 @@ namespace ut
   struct SourceReg : public ArchExprNode
   {
     SourceReg( Arch& _arch, unsigned _reg ) : ArchExprNode( _arch ), reg( _reg ) {}
+    virtual SourceReg* Mutate() const override { return new SourceReg(*this); }
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 0; };
     virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
@@ -170,6 +174,7 @@ namespace ut
     typedef unisim::util::symbolic::ExprNode ExprNode;
     
     Unknown( Arch& _arch ) : ArchExprNode( _arch ) {}
+    virtual Unknown* Mutate() const { return new Unknown(*this); }
     virtual void Repr( std::ostream& sink ) const { sink << "?"; }
     virtual unsigned SubCount() const { return 0; };
     virtual Expr const& GetSub(unsigned idx) const { return ExprNode::GetSub(idx); };
@@ -199,6 +204,7 @@ namespace ut
     struct XERNode : public ArchExprNode
     {
       XERNode( Arch& _arch ) : ArchExprNode( _arch ) {}
+      virtual XERNode* Mutate() const { return new XERNode(*this); }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
@@ -234,6 +240,7 @@ namespace ut
     struct CRNode : public ArchExprNode
     {
       CRNode( Arch& _arch ) : ArchExprNode( _arch ) {}
+      virtual CRNode* Mutate() const { return new CRNode(*this); }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
@@ -330,6 +337,7 @@ namespace ut
     struct FPSCRNode : public ArchExprNode
     {
       FPSCRNode( Arch& _arch ) : ArchExprNode( _arch ) {}
+      virtual FPSCRNode* Mutate() const { return new FPSCRNode(*this); }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
@@ -406,7 +414,6 @@ namespace ut
     
     typedef unisim::util::symbolic::Expr       Expr;
     typedef unisim::util::symbolic::ExprNode   ExprNode;
-    typedef unisim::util::symbolic::ActionNode ActionNode;
     
     typedef MSR MSR;
     // typedef SPEFSCR SPEFSCR;
@@ -494,7 +501,7 @@ namespace ut
     struct CIA : public ArchExprNode
     {
       CIA( Arch& _arch ) : ArchExprNode( _arch ) {}
-      
+      virtual CIA* Mutate() const override { return new CIA(*this); }
       virtual void Repr( std::ostream& sink ) const { sink << "CIA"; }
       virtual unsigned SubCount() const { return 0; };
       virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return 0; }
@@ -514,6 +521,7 @@ namespace ut
     struct Load : public ArchExprNode
     {
       Load( Arch& _arch, Expr const& _addr ) : ArchExprNode(_arch), addr(_addr) {}
+      virtual Load* Mutate() const { return new Load(*this); }
       virtual void Repr( std::ostream& sink ) const { LoadRepr( sink, addr, BITS ); }
       virtual unsigned SubCount() const { return 2; };
       virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; } return ExprNode::GetSub(idx); };

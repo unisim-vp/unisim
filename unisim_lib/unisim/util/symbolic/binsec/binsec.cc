@@ -464,10 +464,16 @@ namespace binsec {
       
   }
 
-  namespace
+  void
+  ActionNode::commit_stats()
   {
-    struct Sec : public ExprScanner<Sec>
+    struct Sec
     {
+      void Flood( Expr const& e )
+      {
+        for (unsigned idx = 0, end = e->SubCount(); idx < end; ++idx)
+          this->Process( e->GetSub(idx) );
+      }
       void Process( Expr const& e )
       {
         if (not e->SubCount())
@@ -476,26 +482,20 @@ namespace binsec {
         for (Sec* sec = this; sec; sec = sec->up)
           cont &= (sec->stats[e]++ == 0);
         if (cont)
-          Flood( e );
+          this->Flood( e );
       }
       Sec( ActionNode* node, Sec* _up )
         : stats(node->sestats), up(_up)
       {
         // First level of expression is not functionnal (architectual side effect)
         for (std::set<Expr>::const_iterator itr = node->sinks.begin(), end = node->sinks.end(); itr != end; ++itr)
-          Flood( *itr );
+          this->Flood( *itr );
         for (unsigned choice = 0; choice < 2; ++choice)
           if (ActionNode* next = node->nexts[choice])
             { Sec sub(next,this); }
       }
       std::map<Expr,unsigned>& stats; Sec* up;
-    };
-  }
-  
-  void
-  ActionNode::commit_stats()
-  {
-    Sec sec(this,0);
+    } sec(this,0);
   }
   
   void
