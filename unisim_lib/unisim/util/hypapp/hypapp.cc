@@ -56,6 +56,7 @@
 #include <netdb.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <ctype.h>
 
 #endif
 
@@ -85,7 +86,7 @@ namespace
   char const*
   streat( char const* ptr, char const* from )
   {
-    while (*ptr and *ptr == *from)
+    while (*ptr and tolower(*ptr) == tolower(*from))
       ++ptr, ++from;
     return *ptr ? 0 : from;
   }
@@ -136,7 +137,7 @@ void MessageLoop::Run(ClientConnection const& conn)
   for (;;)
     {
       char const* ptr = &ibuf[0];
-#if 0
+#if 1
       {
         uintptr_t skip = 0, size = ibuf.size();
         while ((size-skip) >= 2 and ptr[skip] == '\r' and ptr[skip+1] == '\n')
@@ -156,6 +157,12 @@ void MessageLoop::Run(ClientConnection const& conn)
           if(ibuf.size() == ibuf.capacity()) ibuf.reserve(ibuf.capacity() + 4096);
           uintptr_t resume = ibuf.size(), end = ibuf.capacity();
           ibuf.resize(end);
+          if(end == resume) throw 0;
+          if(http_server.Killed()) return;
+          if(http_server.Verbose())
+          {
+            log << "trying to receive " << (end - resume) << " bytes" << std::endl;
+          }
           intptr_t bytes = recv(conn.socket, &ibuf[resume], end - resume, 0);
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
           if((bytes == 0) || (bytes == SOCKET_ERROR))
@@ -182,12 +189,33 @@ void MessageLoop::Run(ClientConnection const& conn)
                 err_log << "[" << conn.socket << "] recv error\n"; return; 
               }
             }
-            
+            else
+            {
+              err_log << "[" << conn.socket << "] header short read (got " << resume << " bytes)\n"; return; 
+            }
             ibuf.resize(resume);
           }
           else
           {
             ibuf.resize(resume + bytes);
+            if(http_server.Verbose())
+            {
+              log << "received " << bytes << " bytes [";
+              for(intptr_t i = 0; i < bytes; i++)
+              {
+                if(i) log << ' ';
+                char c = ibuf[resume + i];
+                if((c >= 32) && (c <= 126))
+                {
+                  log << '\'' << c << '\'';
+                }
+                else
+                {
+                  log << '\'' << "0x" << std::hex << (unsigned int) c << '\'' << std::dec;
+                }
+              }
+              log << "]" << std::endl;
+            }
           }
           continue;
         }
@@ -225,7 +253,10 @@ void MessageLoop::Run(ClientConnection const& conn)
         char const* uri = ptr;
         if (not (ptr = strchr(uri, ' '))) { err_log << "[" << conn.socket << "] URI parse error\n"; return; }
         ibuf[ptr++-soh] = '\0';
-        log << "[" << conn.socket << "] URI: " << uri << std::endl;
+        if(http_server.Verbose())
+        {
+          log << "[" << conn.socket << "] URI: " << uri << std::endl;
+        }
         SetRequestURI( uri );
       }
       
@@ -264,16 +295,19 @@ void MessageLoop::Run(ClientConnection const& conn)
           if      (streat("Connection", key))
             {
               keep_alive = streat("Keep-Alive", val);
-              log << "[" << conn.socket << "] keep alive: " << keep_alive << "\n";
+              if(http_server.Verbose())
+              {
+                log << "[" << conn.socket << "] keep alive: " << keep_alive << "\n";
+              }
             }
           else if (streat("Content-Type", key))
             {
               if (char const* b = streat("multipart/form-data; boundary=",val))
                 { err_log << "[" << conn.socket << "] MP boundary:" << b << "\n"; return; }
-              else { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; SetContentType(val); }
+              else { if(http_server.Verbose()) { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; SetContentType(val); } }
             }
           else if (streat("CSeq", key))
-            { cseq = strtoul( val, 0, 0 ); log << "[" << conn.socket << "] cseq:" << cseq << "\n"; }
+            { cseq = strtoul( val, 0, 0 ); if(http_server.Verbose()) { log << "[" << conn.socket << "] cseq:" << cseq << "\n"; } }
           else if (streat("Host", key) or
                    streat("User-Agent", key) or
                    streat("Referer", key) or
@@ -283,11 +317,11 @@ void MessageLoop::Run(ClientConnection const& conn)
                    streat("Cache-Control", key) or
                    streat("DNT", key) or
                    streat("Origin", key))
-            { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; }
+            { if(http_server.Verbose()) { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; } }
           else if (streat("Range", key))
             { err_log << "[" << conn.socket << "] " << key << ": " << val << "\n"; return; }
           else if (streat("Content-Length", key))
-            { log << "[" << conn.socket << "] " << key << ": " << val << "\n";
+            { if(http_server.Verbose()) { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; }
               content_length = 0;
               for (unsigned digit; *val != 0; ++val) {
                 if ((digit = (*val - '0')) >= 10) { err_log << "[" << conn.socket << "] Content length parse error\n"; return; }
@@ -301,18 +335,21 @@ void MessageLoop::Run(ClientConnection const& conn)
             { err_log << "[" << conn.socket << "] error: {key:" << key << ", val:" << val << "}\n"; return; }
         }
         
-      log << "Header (size: " << request_size << ") received and processed.\n";
-      switch (request_type) {
-      case GET: log << "Get request." << std::endl; break;
-      case HEAD: log << "Head request." << std::endl; break;
-      case POST: log << "Post request." << std::endl; break;
+      if(http_server.Verbose())
+      {
+        log << "Header (size: " << request_size << ") received and processed.\n";
+        switch (request_type) {
+        case GET: log << "Get request." << std::endl; break;
+        case HEAD: log << "Head request." << std::endl; break;
+        case POST: log << "Post request." << std::endl; break;
+        }
       }
       
       if(var_content || (content_length != 0))
       {
         if(content_length != 0)
         {
-          ibuf.reserve(request_size + content_length + 1); // header + content + terminal zero character
+          ibuf.reserve(request_size + content_length /* + 1*/); // header + content (+ terminal zero character)
         }
         
         unsigned int rem_content_length = content_length;
@@ -334,8 +371,9 @@ void MessageLoop::Run(ClientConnection const& conn)
         while(var_content || (rem_content_length != 0))
         {
           if(var_content && (ibuf.size() == ibuf.capacity())) ibuf.reserve(ibuf.capacity() + 4096);
-          uintptr_t resume = ibuf.size(), end = var_content ? (ibuf.capacity() - 1): (request_size + content_length);
+          uintptr_t resume = ibuf.size(), end = var_content ? (ibuf.capacity() /*- 1*/): (request_size + content_length);
           ibuf.resize(end);
+          if(http_server.Killed()) return;
           int bytes = recv(conn.socket, &ibuf[resume], end - resume, 0);
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
           if((bytes == 0) || (bytes == SOCKET_ERROR))
@@ -356,6 +394,7 @@ void MessageLoop::Run(ClientConnection const& conn)
 #endif
               {
                 sleep(1); // try again later
+                ibuf.resize(resume);
                 continue;
               }
               else
@@ -366,10 +405,7 @@ void MessageLoop::Run(ClientConnection const& conn)
             
             // connection closed by peer
             if(var_content) break;
-            if(ibuf.size() != (request_size + content_length))
-            {
-              err_log << "[" << conn.socket << "] content short read\n"; return; 
-            }
+            err_log << "[" << conn.socket << "] content short read (" << (content_length - rem_content_length) << " instead of " << content_length << " bytes)\n"; return; 
           }
           
           ibuf.resize(resume + bytes);
@@ -377,17 +413,21 @@ void MessageLoop::Run(ClientConnection const& conn)
           if(var_content) content_length += bytes; else rem_content_length -= bytes;
         }
         
-        ibuf.resize(request_size + content_length + 1);
-        ibuf[request_size + content_length] = '\0';
-        log << "[" << conn.socket << "] content " << ":" << "\n=-=-=-=-=-=-=-=-=-=-=\n" << &ibuf[request_size] << "\n=-=-=-=-=-=-=-=-=-=-=\n";
+        //ibuf.resize(request_size + content_length + 1);
+        //ibuf[request_size + content_length] = '\0';
+        if(http_server.Verbose())
+        {
+          log << "[" << conn.socket << "] content " << ":" << "\n=-=-=-=-=-=-=-=-=-=-=\n" << std::string(&ibuf[request_size], content_length) << "\n=-=-=-=-=-=-=-=-=-=-=\n";
+        }
         
         SetContentLength(content_length);
         SetContent(&ibuf[request_size]);
       }
   
+//  keep_alive = false;
       if (not SendResponse(conn) or not keep_alive) return;
 
-      ibuf.erase(ibuf.begin(), ibuf.begin() + request_size + ((content_length != 0) ? (content_length + 1) : 0));
+      ibuf.erase(ibuf.begin(), ibuf.begin() + request_size + content_length/*((content_length != 0) ? (content_length + 1) : 0)*/);
     }
 }
 
@@ -399,6 +439,7 @@ HttpServer::HttpServer()
   , socket()
   , killed( false )
   , running( false )
+  , verbose( false )
   , log(&std::cout)
   , warn_log(&std::cout)
   , err_log(&std::cerr)
@@ -414,6 +455,7 @@ HttpServer::HttpServer( int _port, int _maxclients)
   , socket()
   , killed( false )
   , running( false )
+  , verbose( false )
   , log(&std::cout)
   , warn_log(&std::cout)
   , err_log(&std::cerr)
@@ -508,18 +550,50 @@ void HttpServer::JoinLoopThread()
     }
 }
 
+bool HttpServer::Killed() const
+{
+	return killed;
+}
+
+bool HttpServer::Verbose() const
+{
+  return verbose;
+}
+
 bool ClientConnection::Send( char const* buf, uintptr_t size ) const
 {
-  for (uintptr_t done; size > 0; size -= done)
+  for (intptr_t done; size > 0; size -= done)
     {
+      if(http_server.Killed()) return false;
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
       done = ::send( socket, buf, size, 0);
 #else
       done = ::write( socket, buf, size );
 #endif
-      if (done > size) {
-        // TODO: should investigate the reason and bail out properly
-        return false;
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+      if((done == 0) || (done == SOCKET_ERROR))
+#else
+      if(done <= 0)
+#endif
+      {
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+        if(done == SOCKET_ERROR)
+#else
+        if(done < 0)
+#endif
+        {
+           done = 0;
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+           if(WSAGetLastError() == WSAEWOULDBLOCK)
+#else
+           if((errno == EAGAIN) || (errno == EWOULDBLOCK))
+#endif
+           {
+             sleep(1); // try again later
+             continue;
+           }
+           return false;
+        }
       }
       buf += done;
     }
@@ -632,7 +706,7 @@ HttpServer::LoopThread()
           (*shuttle.server.log) << "[" << shuttle.socket << "] Client Connection from IP: " << IPAddrRepr(shuttle.ipaddr) << "\n";
           
           /* Finish servicing client */
-          ClientConnection conn(shuttle.socket);
+          ClientConnection conn(shuttle.server, shuttle.socket);
           shuttle.server.Serve(conn);
           
           (*shuttle.server.log) << "[" << shuttle.socket << "] closing connection\n";
@@ -663,6 +737,11 @@ HttpServer::LoopThread()
           socket = accept(server.socket, (struct sockaddr*)&addr, &addrlen);
           if (socket < 0) return;
           ipaddr = addr.sin_addr.s_addr;
+#if 0
+          /* set short latency */
+          int opt_tcp_nodelay = 1;
+          setsockopt(socket, IPPROTO_TCP, TCP_NODELAY, (char *) &opt_tcp_nodelay, sizeof(opt_tcp_nodelay));
+#endif
           // set to non-blocking to allow partial read ()
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
           u_long non_blocking_flag = 1;

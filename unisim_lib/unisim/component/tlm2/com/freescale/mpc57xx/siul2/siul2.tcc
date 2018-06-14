@@ -125,6 +125,8 @@ SIUL2<CONFIG>::SIUL2(const sc_core::sc_module_name& name, unisim::kernel::servic
 	, reg_addr_map()
 	, pad_out_event("pad_out_event", NUM_PADS)
 	, schedule()
+	, input_buffers()
+	, output_buffers()
 	, endian(unisim::util::endian::E_BIG_ENDIAN)
 	, param_endian("endian", this, endian, "endian")
 	, verbose(false)
@@ -268,6 +270,39 @@ void SIUL2<CONFIG>::Reset()
 		siul2_pgpdo[i].Reset();
 		siul2_pgpdi[i].Reset();
 		siul2_mpgpdo[i].Reset();
+	}
+}
+
+template <typename CONFIG>
+void SIUL2<CONFIG>::UpdateOutputBuffer(unsigned int pad_num)
+{
+	bool output_buffer_value = siul2_gpdo[pad_num].template Get<typename SIUL2_GPDO::PDO>();
+	output_buffers[pad_num] = output_buffer_value;
+	
+	UpdatePadOut(pad_num);
+}
+
+template <typename CONFIG>
+void SIUL2<CONFIG>::UpdateInputBuffer(unsigned int pad_num)
+{
+	input_buffers[pad_num] = pad_in[pad_num]->read();
+	UpdateGPI(pad_num);
+}
+
+template <typename CONFIG>
+void SIUL2<CONFIG>::UpdateGPI(unsigned int pad_num)
+{
+	bool input_buffer_value = input_buffers[pad_num];
+	bool inv = siul2_mscr_mux[pad_num].template Get<typename SIUL2_MSCR_MUX::INV>();
+	bool gpi_value = inv ? !input_buffer_value : input_buffer_value;
+	siul2_gpdi[pad_num].template Set<typename SIUL2_GPDI::PDI>(gpi_value);
+	unsigned int pgpdi_reg_num = pad_num / 16;
+	unsigned int pgpdi_bit_ofs = 15 - (pad_num % 16);
+	siul2_pgpdi[pgpdi_reg_num].Set(pgpdi_bit_ofs, gpi_value);
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << siul2_gpdi[pad_num].GetName() << " <- 0x" << std::hex << siul2_gpdi[pad_num] << std::dec << EndDebugInfo;
+		logger << DebugInfo << siul2_pgpdi[pgpdi_reg_num].GetName() << " <- 0x" << std::hex << siul2_pgpdi[pgpdi_reg_num] << std::dec << EndDebugInfo;
 	}
 }
 
@@ -521,29 +556,30 @@ void SIUL2<CONFIG>::Process()
 template <typename CONFIG>
 void SIUL2<CONFIG>::PAD_In_Process(unsigned int pad_num)
 {
-	bool pad_value = pad_in[pad_num]->read();
+	bool ibe = siul2_mscr_io[pad_num].template Get<typename SIUL2_MSCR_IO::IBE>();
 	
-	siul2_gpdi[pad_num].template Set<typename SIUL2_GPDI::PDI>(pad_value);
-	unsigned int pgpdi_reg_num = pad_num / 16;
-	unsigned int pgpdi_bit_ofs = 15 - (pad_num % 16);
-	siul2_pgpdi[pgpdi_reg_num].Set(pgpdi_bit_ofs, pad_value);
-	if(unlikely(verbose))
+	if(ibe)
 	{
-		logger << DebugInfo << siul2_gpdi[pad_num].GetName() << " <- 0x" << std::hex << siul2_gpdi[pad_num] << std::dec << EndDebugInfo;
-		logger << DebugInfo << siul2_pgpdi[pgpdi_reg_num].GetName() << " <- 0x" << std::hex << siul2_pgpdi[pgpdi_reg_num] << std::dec << EndDebugInfo;
+		UpdateInputBuffer(pad_num);
 	}
 }
 
 template <typename CONFIG>
 void SIUL2<CONFIG>::PAD_Out_Process(unsigned int pad_num)
 {
-	bool pad_value = siul2_gpdo[pad_num].template Get<typename SIUL2_GPDO::PDO>();
-	
-	if(unlikely(verbose))
+	OUTPUT_DRIVE_CONTROL odc = OUTPUT_DRIVE_CONTROL(siul2_mscr_io[pad_num].template Get<typename SIUL2_MSCR_IO::ODC>());
+	if(odc != ODC_OUTPUT_BUFFER_DISABLED)
 	{
-		logger << DebugInfo << pad_out[pad_num].name() << " <- '" << pad_value << "'" << EndDebugInfo;
+		bool output_buffer_value = output_buffers[pad_num];
+		bool inv = siul2_mscr_io[pad_num].template Get<typename SIUL2_MSCR_IO::INV>();
+		bool pad_value = inv ? output_buffer_value : !output_buffer_value;
+		
+		if(unlikely(verbose))
+		{
+			logger << DebugInfo << pad_out[pad_num].name() << " <- '" << pad_value << "'" << EndDebugInfo;
+		}
+		pad_out[pad_num]->write(pad_value);
 	}
-	pad_out[pad_num]->write(pad_value);
 }
 
 } // end of namespace siul2

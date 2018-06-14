@@ -101,6 +101,16 @@ struct LOG2<1>
     static const unsigned int VALUE = 0;
 };
 
+enum OUTPUT_DRIVE_CONTROL
+{
+	ODC_OUTPUT_BUFFER_DISABLED   = 0x0,
+	ODC_OPEN_DRAIN               = 0x1,
+	ODC_PUSH_PULL                = 0x2,
+	ODC_OPEN_SOURCE              = 0x3,
+	ODC_MICROSECOND_CHANNEL_LVDS = 0x4,
+	ODC_LFAST_LVDS               = 0x5,
+};
+
 #if 0
 struct SIUL2_CONFIG
 {
@@ -862,6 +872,18 @@ private:
 			 this->Initialize(0x00090000UL);
 		}
 		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				this->siul2->UpdateOutputBuffer(reg_num);
+			}
+			
+			return rws;
+		}
+		
 		using Super::operator =;
 	private:
 		unsigned int reg_num;
@@ -967,7 +989,7 @@ private:
 			SIUL2_PGPDO& siul2_pgpdo = this->siul2->siul2_pgpdo[pgpdo_reg_num];
 			siul2_pgpdo.Set(pgpdo_bit_ofs, this->template Get<PDO>());
 			
-			this->siul2->UpdatePadOut(reg_num);
+			this->siul2->UpdateOutputBuffer(reg_num);
 		}
 		
 		using Super::operator =;
@@ -1070,7 +1092,7 @@ private:
 				unsigned int gpdo_reg_num = (reg_num * 16) + i;
 				SIUL2_GPDO& siul2_gpdo = this->siul2->siul2_gpdo[gpdo_reg_num];
 				siul2_gpdo.template Set<typename SIUL2_GPDO::PDO>(this->Get(i));
-				this->siul2->UpdatePadOut(gpdo_reg_num);
+				this->siul2->UpdateOutputBuffer(gpdo_reg_num);
 			}
 		}
 
@@ -1183,6 +1205,9 @@ private:
 
 	unisim::kernel::tlm2::Schedule<Event> schedule;         // Payload (processor requests over AHB interface) schedule
 	
+	bool input_buffers[NUM_PADS];
+	bool output_buffers[NUM_PADS];
+	
 	unisim::util::endian::endian_type endian;
 	unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endian;
 	bool verbose;
@@ -1194,6 +1219,9 @@ private:
 	double master_clock_duty_cycle;                       // Master clock duty cycle
 	
 	void Reset();
+	void UpdateOutputBuffer(unsigned int pad_num);
+	void UpdateInputBuffer(unsigned int pad_num);
+	void UpdateGPI(unsigned int pad_num);
 	void UpdatePadOut(unsigned int pad_num);
 
 	void UpdateMasterClock();

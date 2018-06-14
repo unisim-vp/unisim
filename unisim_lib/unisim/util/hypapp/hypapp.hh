@@ -43,22 +43,25 @@ namespace unisim {
 namespace util {
 namespace hypapp {
 
+struct HttpServer;
+
 struct ClientConnection
 {
-  ClientConnection(int _socket) : socket(_socket) {}
+  ClientConnection(HttpServer& _http_server, int _socket) : http_server(_http_server), socket(_socket) {}
   
   template <uintptr_t SZ>
   bool Send(char const (&text)[SZ]) const { return Send( &text[0], SZ-1 ); }
   bool Send( std::string const& text ) const { return Send( &text[0], text.size() ); }
   bool Send(char const* buf, uintptr_t size) const;
   
-  int                socket;
+  HttpServer& http_server;
+  int         socket;
 };
 
 struct MessageLoop
 {
-  MessageLoop(std::ostream& _log = std::cout, std::ostream& _warn_log = std::cout, std::ostream& _err_log = std::cerr)
-    : log(_log), warn_log(_warn_log), err_log(_err_log) {}
+  MessageLoop(HttpServer& _http_server, std::ostream& _log = std::cout, std::ostream& _warn_log = std::cout, std::ostream& _err_log = std::cerr)
+    : http_server(_http_server), log(_log), warn_log(_warn_log), err_log(_err_log) {}
   virtual ~MessageLoop() {}
   
   void Run(ClientConnection const& conn);
@@ -73,6 +76,7 @@ struct MessageLoop
   virtual void SetContent( const char *content) {}
   virtual bool SendResponse( ClientConnection const& conn ) = 0;
 protected:
+  HttpServer& http_server;
   // Log
   std::ostream& log;
   std::ostream& warn_log;
@@ -93,6 +97,8 @@ struct HttpServer
   void StartLoopThread();
   void Kill();
   void JoinLoopThread();
+  bool Killed() const;
+  bool Verbose() const;
 
   // Content exchange callbacks
   virtual void Serve(ClientConnection const& conn) = 0;
@@ -114,6 +120,7 @@ protected:
   bool            running;
   
   // Log
+  bool verbose;
   std::ostream* log;
   std::ostream* warn_log;
   std::ostream* err_log;

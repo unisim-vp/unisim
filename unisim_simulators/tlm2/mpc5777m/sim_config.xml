@@ -22,7 +22,7 @@
 				<variable name="http-max-clients">
 					<type>parameter</type>
 					<data_type>signed 32-bit integer</data_type>
-					<value>1</value>
+					<value>10</value>
 					<description>HTTP max clients</description>
 				</variable>
 				<variable name="instrumentation">
@@ -34,7 +34,7 @@
 				<variable name="intr-poll-period">
 					<type>parameter</type>
 					<data_type>sc_time</data_type>
-					<value>1 ms</value>
+					<value>1 us</value>
 					<description>Polling period for user interrupt request while continue</description>
 				</variable>
 			</object>

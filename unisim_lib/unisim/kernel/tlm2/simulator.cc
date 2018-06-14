@@ -664,6 +664,7 @@ void InstrumenterFrontEnd::InputInstrumentationProcess()
 
 UserInstrument::UserInstrument(const std::string& _name, InputInstrumentBase *_input_instrument, OutputInstrumentBase *_output_instrument)
 	: name(_name)
+  , sstr()
 	, set_value()
 	, get_value()
 	, input_instrument(_input_instrument)
@@ -672,6 +673,7 @@ UserInstrument::UserInstrument(const std::string& _name, InputInstrumentBase *_i
 	, new_enable(enable)
 	, value_changed_breakpoint(false)
 	, has_breakpoint_cond(false)
+	, get_value_valid(false)
 {
 	if(input_instrument)
 	{
@@ -685,6 +687,7 @@ UserInstrument::UserInstrument(const std::string& _name, InputInstrumentBase *_i
 		std::ostringstream get_value_sstr;
 		output_instrument->Output(get_value_sstr);
 		get_value = get_value_sstr.str();
+		get_value_valid = true;
 	}
 	
 	if(input_instrument)
@@ -712,34 +715,68 @@ void UserInstrument::Set(const std::string& value)
 
 void UserInstrument::Get(std::string& value) const
 {
+	Update();
 	value = get_value;
+}
+
+void UserInstrument::Set(bool value)
+{
+	set_value = value ? "1" : "0";
+}
+
+void UserInstrument::Get(bool& value) const
+{
+	Update();
+	value = (get_value != "0");
+}
+
+void UserInstrument::Toggle()
+{
+	Update();
+	if(get_value == "1") set_value = "0";
+	else if(get_value == "0") set_value = "1";
 }
 
 void UserInstrument::InitialFetch()
 {
-	if(output_instrument)
+	if(likely(output_instrument))
 	{
-		std::ostringstream sstr;
+		sstr.clear();
+		sstr.seekp(0);
 		output_instrument->Output(sstr);
 		get_value = sstr.str();
+	}
+}
+
+void UserInstrument::Update() const
+{
+	if(!get_value_valid)
+	{
+		sstr.clear();
+		sstr.seekp(0);
+		output_instrument->Output(sstr);
+		get_value = sstr.str();
+		get_value_valid = true;
 	}
 }
 
 void UserInstrument::Sample()
 {
-	if(output_instrument)
+	if(likely(output_instrument))
 	{
 		output_instrument->Sample();
-		std::ostringstream sstr;
-		output_instrument->Output(sstr);
+// 		sstr.clear();
+// 		sstr.seekp(0);
+// 		output_instrument->Output(sstr);
 		has_breakpoint_cond = value_changed_breakpoint && output_instrument->ValueChanged();
-		get_value = sstr.str();
+// 		get_value = sstr.str();
+		get_value_valid = false;
 	}
 }
 
 void UserInstrument::Latch()
 {
-	if(output_instrument)
+	if(likely(output_instrument))
 	{
 		output_instrument->Latch();
 	}
@@ -773,7 +810,7 @@ bool UserInstrument::HasBreakpointCondition() const
 
 void UserInstrument::Commit()
 {
-	if(input_instrument)
+	if(likely(input_instrument))
 	{
 		if(new_enable != enable)
 		{
@@ -1055,15 +1092,14 @@ HttpServer::HttpServer(const char *name, Instrumenter *instrumenter)
 	, unisim::util::hypapp::HttpServer()
 	, logger(*this)
 	, program_name(unisim::kernel::service::Simulator::Instance()->FindVariable("program-name")->operator std::string())
-	, verbose(false)
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, http_port(0)
 	, param_http_port("http-port", this, http_port, "HTTP port")
-	, http_max_clients(1)
+	, http_max_clients(10)
 	, param_http_max_clients("http-max-clients", this, http_max_clients, "HTTP max clients")
 	, instrumentation()
 	, param_instrumentation("instrumentation", this, instrumentation, "Instrumented signals (wildcards '*' and '?' are allowed in signal names) that are controlled by user over HTTP")
-	, intr_poll_period(1.0, sc_core::SC_MS)
+	, intr_poll_period(1.0, sc_core::SC_US)
 	, param_intr_poll_period("intr-poll-period", this, intr_poll_period, "Polling period for user interrupt request while continue")
 	, instrumented_signal_names()
 	, user_instruments()
@@ -1071,7 +1107,7 @@ HttpServer::HttpServer(const char *name, Instrumenter *instrumenter)
 	, curr_time_stamp(sc_core::SC_ZERO_TIME)
 	, bad_user_step_time(false)
 	, timed_step(false)
-	, delta_step(false)
+	, delta_steps(0)
 	, cont(false)
 	, intr(true)
 	, halt(false)
@@ -1082,7 +1118,8 @@ HttpServer::HttpServer(const char *name, Instrumenter *instrumenter)
 	, disable_all_value_changed_breakpoints(false)
 	, enable_input_instruments()
 	, enable_value_changed_breakpoints()
-	, mutex()
+	, mutex_instruments()
+	, mutex_post()
 	, run(false)
 	, cond_run()
 	, mutex_run()
@@ -1109,7 +1146,8 @@ HttpServer::HttpServer(const char *name, Instrumenter *instrumenter)
 	this->SetWarnLog(logger.DebugWarningStream());
 	this->SetErrLog(logger.DebugErrorStream());
 	
-	pthread_mutex_init(&mutex, NULL);
+	pthread_mutex_init(&mutex_instruments, NULL);
+	pthread_mutex_init(&mutex_post, NULL);
 	pthread_cond_init(&cond_run, NULL);
 	pthread_mutex_init(&mutex_run, NULL);
 	pthread_cond_init(&cond_user, NULL);
@@ -1138,7 +1176,8 @@ HttpServer::~HttpServer()
 		delete user_instrument;
 	}
 
-	pthread_mutex_destroy(&mutex);
+	pthread_mutex_destroy(&mutex_instruments);
+	pthread_mutex_destroy(&mutex_post);
 	pthread_cond_destroy(&cond_run);
 	pthread_mutex_destroy(&mutex_run);
 	pthread_cond_destroy(&cond_user);
@@ -1184,6 +1223,8 @@ bool HttpServer::SetupInstrumentation()
 			user_instruments[instrumented_signal_name] = user_instrument;
 			enable_input_instruments[user_instrument] = false;
 			enable_value_changed_breakpoints[user_instrument] = false;
+			set_input_instruments[user_instrument] = std::string();
+			toggle_input_instruments[user_instrument] = false;
 			if(!input_instrument)
 			{
 				logger << DebugWarning << "User instrument \"" << user_instrument->GetName() << "\" is read-only" << EndDebugWarning;
@@ -1260,14 +1301,24 @@ void HttpServer::UnblockUser()
 	pthread_mutex_unlock(&mutex_user);
 }
 
-void HttpServer::Lock()
+void HttpServer::LockInstruments()
 {
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&mutex_instruments);
 }
 
-void HttpServer::Unlock()
+void HttpServer::UnlockInstruments()
 {
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&mutex_instruments);
+}
+
+void HttpServer::LockPost()
+{
+	pthread_mutex_lock(&mutex_post);
+}
+
+void HttpServer::UnlockPost()
+{
+	pthread_mutex_unlock(&mutex_post);
 }
 
 void HttpServer::Commit()
@@ -1285,26 +1336,20 @@ void HttpServer::ProcessInputInstruments()
 {
 	if(unlikely(halt))
 	{
-		this->Stop(-1);
+		UnblockUser();
 		return;
 	}
 	curr_time_stamp = sc_core::sc_time_stamp();
-	if(!has_breakpoint_cond)
-	{
-		Lock();
-		Sample();
-		Unlock();
-	}
-	has_breakpoint_cond = false;
-	if(unlikely(timed_step || delta_step || intr))
+	if(unlikely(timed_step || (delta_steps == 1) || intr))
 	{
 		WaitForUser();
-		Lock();
+		LockInstruments();
 		Commit();
-		Unlock();
+		UnlockInstruments();
 	}
+	if(delta_steps > 1) delta_steps--;
 
-	sc_core::sc_time t = timed_step ? user_step_time : ((delta_step || intr || halt) ? sc_core::SC_ZERO_TIME : intr_poll_period);
+	sc_core::sc_time t = timed_step ? user_step_time : ((delta_steps || intr || halt) ? sc_core::SC_ZERO_TIME : intr_poll_period);
 	
 	//std::cerr << sc_core::sc_time_stamp() << ": next input instrumentation after " << t << std::endl;
 	NextInputTrigger(t);
@@ -1347,7 +1392,7 @@ void HttpServer::Fetch()
 			//std::cerr << "\"" << user_instrument->GetName() << "\" has breakpoint condition" << std::endl;
 			intr = true;
 			timed_step = false;
-			delta_step = false;
+			delta_steps = 0;
 			cont = false;
 			has_breakpoint_cond = true;
 			NextInputTrigger(sc_core::SC_ZERO_TIME);
@@ -1357,9 +1402,9 @@ void HttpServer::Fetch()
 
 void HttpServer::ProcessOutputInstruments()
 {
-	Lock();
+	LockInstruments();
 	Fetch();
-	Unlock();
+	UnlockInstruments();
 }
 
 void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
@@ -1368,6 +1413,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 	{
 		MessageLoop(HttpServer& _http_server)
 			: unisim::util::hypapp::MessageLoop(
+				_http_server,
 				_http_server.verbose ? _http_server.logger.DebugInfoStream()    : _http_server.logger.DebugNullStream(),
 				_http_server.logger.DebugWarningStream(),
 				_http_server.logger.DebugErrorStream())
@@ -1385,7 +1431,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 		virtual void SetRequestURI(char const *_uri ) { uri = _uri; }
 		virtual void SetContentType( char const* _content_type) { content_type = _content_type; }
 		virtual void SetContentLength( unsigned int _content_length) { content_length = _content_length; }
-		virtual void SetContent( const char *_content) { content = _content; }
+		virtual void SetContent( const char *_content) { content = std::string(_content, content_length); }
 
 		virtual bool SendResponse(unisim::util::hypapp::ClientConnection const& conn)
 		{
@@ -1393,7 +1439,8 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 			{
 				if(reqtype == POST)
 				{
-					http_server.Lock();
+					http_server.LockPost();
+					http_server.LockInstruments();
 					//std::cerr << "content length=" << content_length << std::endl;
 					
 					struct PropertySetter : public Form_URL_Encoded_Decoder
@@ -1440,7 +1487,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 							}
 							else if((name.compare("timed-step") == 0) && (value.compare("on") == 0))
 							{
-								if(http_server.verbose)
+								if(http_server.Verbose())
 								{
 									http_server.logger << DebugInfo << "Timed Step" << EndDebugInfo;
 								}
@@ -1448,15 +1495,15 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 							}
 							else if((name.compare("delta-step") == 0) && (value.compare("on") == 0))
 							{
-								if(http_server.verbose)
+								if(http_server.Verbose())
 								{
 									http_server.logger << DebugInfo << "Delta Step" << EndDebugInfo;
 								}
-								http_server.delta_step = true;
+								http_server.delta_steps = 3;
 							}
 							else if((name.compare("cont") == 0) && (value.compare("on") == 0))
 							{
-								if(http_server.verbose)
+								if(http_server.Verbose())
 								{
 									http_server.logger << DebugInfo << "Continue" << EndDebugInfo;
 								}
@@ -1464,7 +1511,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 							}
 							else if((name.compare("intr") == 0) && (value.compare("on") == 0))
 							{
-								if(http_server.verbose)
+								if(http_server.Verbose())
 								{
 									http_server.logger << DebugInfo << "Interrupt" << EndDebugInfo;
 								}
@@ -1472,7 +1519,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 							}
 							else if((name.compare("halt") == 0) && (value.compare("on") == 0))
 							{
-								if(http_server.verbose)
+								if(http_server.Verbose())
 								{
 									http_server.logger << DebugInfo << "Halt" << EndDebugInfo;
 								}
@@ -1521,11 +1568,11 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 											}
 											else if(user_instrument_action == "set")
 											{
-												if(http_server.verbose)
-												{
-													http_server.logger << DebugInfo << "set \"" << user_instrument_name << "\" <- \"" << value << "\"" << EndDebugInfo;
-												}
-												user_instrument->Set(value);
+												http_server.set_input_instruments[user_instrument] = value;
+											}
+											else if(user_instrument_action == "toggle")
+											{
+												http_server.toggle_input_instruments[user_instrument] = true;
 											}
 											else
 											{
@@ -1552,7 +1599,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 					http_server.DisableValueChangedBreakpoint();
 					http_server.bad_user_step_time = false;
 					http_server.timed_step = false;
-					http_server.delta_step = false;
+					http_server.delta_steps = 0;
 					http_server.cont = false;
 					http_server.intr = false;
 					http_server.halt = false;
@@ -1571,6 +1618,18 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 					for(enable_value_changed_breakpoint_it = http_server.enable_value_changed_breakpoints.begin(); enable_value_changed_breakpoint_it != http_server.enable_value_changed_breakpoints.end(); enable_value_changed_breakpoint_it++)
 					{
 						(*enable_value_changed_breakpoint_it).second = false;
+					}
+
+					std::map<UserInstrument *, std::string>::iterator set_input_instruments_it;
+					for(set_input_instruments_it = http_server.set_input_instruments.begin(); set_input_instruments_it != http_server.set_input_instruments.end(); set_input_instruments_it++)
+					{
+						(*set_input_instruments_it).second = std::string();
+					}
+
+					std::map<UserInstrument *, bool>::iterator toggle_input_instrument_it;
+					for(toggle_input_instrument_it = http_server.toggle_input_instruments.begin(); toggle_input_instrument_it != http_server.toggle_input_instruments.end(); toggle_input_instrument_it++)
+					{
+						(*toggle_input_instrument_it).second = false;
 					}
 
 					PropertySetter property_setter(http_server);
@@ -1645,27 +1704,69 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 								}
 							}
 						}
+						
+						std::map<UserInstrument *, std::string>::iterator set_input_instrument_it;
+						for(set_input_instrument_it = http_server.set_input_instruments.begin(); set_input_instrument_it != http_server.set_input_instruments.end(); set_input_instrument_it++)
+						{
+							UserInstrument *user_instrument = (*set_input_instrument_it).first;
+							
+							std::map<UserInstrument *, bool>::iterator toggle_input_instrument_it = http_server.toggle_input_instruments.find(user_instrument);
+							
+							bool toggle = (toggle_input_instrument_it == http_server.toggle_input_instruments.end()) ? (*toggle_input_instrument_it).second : false;
+							if(!toggle)
+							{
+								const std::string set_value = (*set_input_instrument_it).second;
+								if(!set_value.empty())
+								{
+									if(http_server.Verbose())
+									{
+										http_server.logger << DebugInfo << "set \"" << user_instrument->GetName() << "\" <- \"" << set_value << "\"" << EndDebugInfo;
+									}
+									user_instrument->Set(set_value);
+									if(!http_server.cont && !http_server.timed_step) http_server.delta_steps = 3;
+								}
+							}
+						}
+
+						std::map<UserInstrument *, bool>::iterator toggle_input_instrument_it;
+						for(toggle_input_instrument_it = http_server.toggle_input_instruments.begin(); toggle_input_instrument_it != http_server.toggle_input_instruments.end(); toggle_input_instrument_it++)
+						{
+							UserInstrument *user_instrument = (*toggle_input_instrument_it).first;
+							bool toggle = (*toggle_input_instrument_it).second;
+
+							if(toggle)
+							{
+								if(http_server.Verbose())
+								{
+									http_server.logger << DebugInfo << "toggling \"" << user_instrument->GetName() << "\"" << EndDebugInfo;
+								}
+								user_instrument->Toggle();
+								if(!http_server.cont && !http_server.timed_step) http_server.delta_steps = 3;
+							}
+						}
 					}
 					else
 					{
 						http_server.logger << DebugWarning << "parse error in POST data" << EndDebugWarning;
 						http_server.timed_step = false;
-						http_server.delta_step = false;
+						http_server.delta_steps = 0;
 						http_server.cont = false;
 						http_server.intr = false;
 						http_server.halt = false;
 					}
 					
-					http_server.Unlock();
-
+					http_server.UnlockInstruments();
+					
 					if(http_server.cont)
 					{
 						http_server.Run();
 					}
-					else if(http_server.timed_step || http_server.delta_step || http_server.intr || http_server.halt)
+					else if(http_server.timed_step || http_server.delta_steps || http_server.intr || http_server.halt)
 					{
 						http_server.WaitForSimulation();
 					}
+					
+					http_server.UnlockPost();
 				}
 				
 				std::ostringstream doc_sstr;
@@ -1675,11 +1776,15 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 				
 				if(http_server.halt)
 				{
+					http_server.Stop(-1, /* asynchronous */ true);
+					
 					doc_sstr << "\t<head>" << std::endl;
 					doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 					doc_sstr << "\t</head>" << std::endl;
 					doc_sstr << "\t<body>" << std::endl;
 					doc_sstr << "\t<p>Disconnected</p>" << std::endl;
+					doc_sstr << "\t<script type=\"application/javascript\">Reload = function() { window.location.href=window.location.href; }</script>" << std::endl;
+					doc_sstr << "\t<button onclick=\"Reload()\">Reconnect</button>" << std::endl;
 					doc_sstr << "\t</body>" << std::endl;
 				}
 				else
@@ -1694,8 +1799,9 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 					doc_sstr << "\t\t<title>" << String_to_HTML(http_server.program_name) << " - " << String_to_HTML(http_server.GetName()) << "</title>" << std::endl;
 					doc_sstr << "\t\t<meta name=\"description\" content=\"remote control interface over HTTP of virtual platform hardware signal instrumenter\">" << std::endl;
 					doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-					doc_sstr << "\t\t<link rel=\"icon\" type=\"image/x-icon\" href=\"/unisim.ico\" />" << std::endl;
+					doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
 					doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/style.css\" type=\"text/css\" />" << std::endl;
+					doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/script.js\"></script>" << std::endl;
 					doc_sstr << "\t</head>" << std::endl;
 					
 					doc_sstr << "\t<body>" << std::endl;
@@ -1709,10 +1815,10 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 					doc_sstr << "\t\t\t\t\t<tbody>" << std::endl;
 					doc_sstr << "\t\t\t\t\t\t<tr>" << std::endl;
 					doc_sstr << "\t\t\t\t\t\t\t<td>Step time:&nbsp;<input class=\"step-time\" type=\"text\" name=\"step-time\" value=\"" << http_server.user_step_time << "\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << "></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<td><button class=\"delta-step\" type=\"submit\" name=\"delta-step\" value=\"on\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << ">&delta;</button></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<td><button class=\"timed-step\" type=\"submit\" name=\"timed-step\" value=\"on\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << ">Step</button></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<td><button class=\"" << (http_server.cont ? "intr" : "cont") << "\" type=\"submit\" name=\"" << (http_server.cont ? "intr" : "cont") << "\" value=\"on\"" << (http_server.halt ? " disabled" : "") << ">" << (http_server.cont ? "Interrupt" : "Continue") << "</button></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<td><button  class=\"halt\" type=\"submit\" name=\"halt\" value=\"on\"" << (http_server.halt ? " disabled" : "")  << ">Halt</button></td>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t\t<td><button class=\"delta-step\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"delta-step\" value=\"on\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << ">&delta;</button></td>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t\t<td><button class=\"timed-step\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"timed-step\" value=\"on\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << ">Step</button></td>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t\t<td><button class=\"" << (http_server.cont ? "intr" : "cont") << "\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"" << (http_server.cont ? "intr" : "cont") << "\" value=\"on\"" << (http_server.halt ? " disabled" : "") << ">" << (http_server.cont ? "Interrupt" : "Continue") << "</button></td>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t\t<td><button class=\"halt\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"halt\" value=\"on\"" << (http_server.halt ? " disabled" : "")  << ">Halt</button></td>" << std::endl;
 					doc_sstr << "\t\t\t\t\t\t</tr>" << std::endl;
 					doc_sstr << "\t\t\t\t\t</tbody>" << std::endl;
 					doc_sstr << "\t\t\t\t</table>" << std::endl;
@@ -1725,19 +1831,26 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-enable\">En</th>" << std::endl;
 					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-value-changed-brkp\">Brkp</th>" << std::endl;
 					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-name\">Signal</th>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-toggle\">Toggle</th>" << std::endl;
 					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-value\">Value</th>" << std::endl;
 					doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
 					doc_sstr << "\t\t\t\t</thead>" << std::endl;
 					doc_sstr << "\t\t\t\t<tbody>" << std::endl;
 					
 					doc_sstr << "\t\t\t\t\t\t<tr class=\"signal\">" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-enable\"><button class=\"signal-disable-all\" type=\"submit\" name=\"disable*all\">C</button><button class=\"signal-enable-all\" type=\"submit\" name=\"enable*all\">A</button></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-brkp-enable\"><button class=\"signal-brkp-disable-all\" type=\"submit\" name=\"disable-brkp*all\">C</button><button class=\"signal-brkp-enable-all\" type=\"submit\" name=\"enable-brkp*all\">A</button></td>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-enable\"><button class=\"signal-disable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"disable*all\">C</button><button class=\"signal-enable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"enable*all\">A</button></td>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-brkp-enable\"><button class=\"signal-brkp-disable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"disable-brkp*all\">C</button><button class=\"signal-brkp-enable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"enable-brkp*all\">A</button></td>" << std::endl;
 					doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-name\"></td>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-toggle\"></td>" << std::endl;
 					doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-value\"></td>" << std::endl;
 					doc_sstr << "\t\t\t\t\t\t</tr>" << std::endl;
 
-					http_server.Lock();
+					http_server.LockInstruments();
+					if(likely(!http_server.has_breakpoint_cond))
+					{
+						http_server.Sample();
+					}
+					http_server.has_breakpoint_cond = false;
 
 					std::stringstream sstr(http_server.instrumentation);
 					
@@ -1752,20 +1865,26 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 						{
 							std::string value;
 							user_instrument->Get(value);
+							bool bvalue;
+							user_instrument->Get(bvalue);
 							doc_sstr << "\t\t\t\t\t\t<tr class=\"signal" << (user_instrument->HasBreakpointCondition() ? " brkp-cond" : "") << "\">" << std::endl;
 							doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-enable\"><input class=\"signal-enable-checkbox\" type=\"checkbox\" name=\"enable*" << String_to_HTML(user_instrument->GetName()) << "\"" << (user_instrument->IsInjectionEnabled() ? " checked" : "") << (user_instrument->IsReadOnly() ? " disabled" : "") << "></td>" << std::endl;
 							doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-brkp-enable\"><input class=\"signal-brkp-enable-checkbox\" type=\"checkbox\" name=\"enable-brkp*" << String_to_HTML(user_instrument->GetName()) << "\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : "") << "></td>" << std::endl;
 							doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-name\">" << String_to_HTML(user_instrument->GetName()) << "</td>" << std::endl;
+							doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-toggle\"><button class=\"signal-toggle-button signal-" << (bvalue ? "on" : "off") << "\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"toggle*" << String_to_HTML(user_instrument->GetName()) << "\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << ">" << (bvalue ? "on" : "off")  << "</button></td>" << std::endl;
 							doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-value\"><input class=\"signal-value-text" << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"text\" name=\"set*" << String_to_HTML(user_instrument->GetName()) << "\" value=\"" << String_to_HTML(value) << "\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << "></td>" << std::endl;
 							doc_sstr << "\t\t\t\t\t\t</tr>" << std::endl;
 						}
 					}
 						
-					http_server.Unlock();
+					http_server.UnlockInstruments();
 					
 					doc_sstr << "\t\t\t\t\t</tbody>" << std::endl;
 					doc_sstr << "\t\t\t\t</table>" << std::endl;
 					doc_sstr << "\t\t\t</div>" << std::endl;
+					doc_sstr << "\t\t\t<script type=\"application/javascript\">" << std::endl;
+					doc_sstr << "\t\t\t\trestoreScrollTop();" << std::endl;
+					doc_sstr << "\t\t\t</script>" << std::endl;
 					doc_sstr << "\t\t</form>" << std::endl;
 					
 					doc_sstr << "\t</body>" << std::endl;
@@ -1795,19 +1914,40 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 				
 				std::string http_header(http_header_sstr.str());
 
-				if(http_server.verbose)
+				if(http_server.Verbose())
 				{
-					http_server.logger << DebugInfo << "sending HTTP header: " << std::endl << http_header << EndDebugInfo;
+					http_server.logger << DebugInfo << "sending HTTP response header: " << std::endl << http_header << EndDebugInfo;
 				}
-				if(!conn.Send(http_header.c_str(), http_header.length())) return false;
-						
+				if(!conn.Send(http_header.c_str(), http_header.length()))
+				{
+					http_server.logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP header" << EndDebugWarning;
+					return false;
+				}
+				
+				if(http_server.Verbose())
+				{
+					http_server.logger << DebugInfo << "sending HTTP response header: done" << EndDebugInfo;
+				}
+				
 				if(reqtype == HEAD) return true;
 						
-				if(http_server.verbose)
+				if(http_server.Verbose())
 				{
-					http_server.logger << DebugInfo << "sending HTTP response: " << std::endl << doc << EndDebugInfo;
+					http_server.logger << DebugInfo << "sending HTTP response body: " << std::endl << doc << EndDebugInfo;
 				}
-				return conn.Send(doc.c_str(), doc.length()) && !http_server.killed;
+				
+				if(!conn.Send(doc.c_str(), doc.length()))
+				{
+					http_server.logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response body" << EndDebugWarning;
+					return false;
+				}
+				
+				if(http_server.Verbose())
+				{
+					http_server.logger << DebugInfo << "sending HTTP response body: done" << EndDebugInfo;
+				}
+				
+				return !http_server.killed;
 			}
 			else
 			{
@@ -1828,6 +1968,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 							std::string ext = path.substr(path.find_last_of("/."));
 							
 							http_header_sstr << "HTTP/1.1 200 OK\r\n";
+							http_header_sstr << "Connection: keep-alive\r\n";
 							http_header_sstr << "Content-Type: ";
 							if((ext == ".htm") || (ext == ".html"))
 								http_header_sstr << "text/html";
@@ -1848,13 +1989,27 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 							
 							std::string http_header(http_header_sstr.str());
 
-							if(http_server.verbose)
+							if(http_server.Verbose())
 							{
-								http_server.logger << DebugInfo << "sending HTTP header: " << std::endl << http_header << EndDebugInfo;
+								http_server.logger << DebugInfo << "sending HTTP response header: " << std::endl << http_header << EndDebugInfo;
 							}
 							
-							if(!conn.Send(http_header.c_str(), http_header.length())) return false;
+							if(!conn.Send(http_header.c_str(), http_header.length()))
+							{
+								http_server.logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response header" << EndDebugWarning;
+								return false;
+							}
 							
+							if(http_server.Verbose())
+							{
+								http_server.logger << DebugInfo << "sending HTTP response header: done" << EndDebugInfo;
+							}
+
+							if(http_server.Verbose())
+							{
+								http_server.logger << DebugInfo << "sending HTTP response body" << EndDebugInfo;
+							}
+
 							if(length > 0)
 							{
 								char buffer[4096];
@@ -1867,13 +2022,22 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 									
 									if(n > 0)
 									{
-										if(!conn.Send(buffer, n)) return false;
+										if(!conn.Send(buffer, n))
+										{
+											http_server.logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response body" << EndDebugWarning;
+											return false;
+										}
 										count -= n;
 									}
 								}
 								while(count > 0);
 							}
 							
+							if(http_server.Verbose())
+							{
+								http_server.logger << DebugInfo << "sending HTTP response body: done" << EndDebugInfo;
+							}
+
 							return true;
 						}
 						else
@@ -1891,7 +2055,15 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 					http_server.logger << DebugWarning << "Can't open File \"" << path << "\"" << EndDebugWarning;
 				}
 				
-				conn.Send("HTTP/1.1 404 Not Found\r\n\r\n");
+				if(http_server.Verbose())
+				{
+					http_server.logger << DebugInfo << "sending HTTP response 404 Not Found" << EndDebugInfo;
+				}
+				
+				if(!conn.Send("HTTP/1.1 404 Not Found\r\n\r\n"))
+				{
+					http_server.logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP 404 Not Found" << EndDebugWarning;
+				}
 				return false;
 			}
 			

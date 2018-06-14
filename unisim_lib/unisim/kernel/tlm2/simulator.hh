@@ -361,6 +361,9 @@ public:
 	const std::string& GetName() const;
 	void Set(const std::string& value);
 	void Get(std::string& value) const;
+	void Set(bool value);
+	void Get(bool& value) const;
+	void Toggle();
 	void InitialFetch();
 	void Sample();
 	void Latch();
@@ -376,14 +379,18 @@ public:
 	bool HasBreakpointCondition() const;
 private:
 	std::string name;
+	mutable std::ostringstream sstr;
 	std::string set_value;
-	std::string get_value;
+	mutable std::string get_value;
 	InputInstrumentBase *input_instrument;
 	OutputInstrumentBase *output_instrument;
 	bool enable;
 	bool new_enable;
 	bool value_changed_breakpoint;
 	bool has_breakpoint_cond;
+	mutable bool get_value_valid;
+	
+	void Update() const;
 };
 
 class Form_URL_Encoded_Decoder
@@ -413,8 +420,6 @@ public:
 	virtual void ProcessInputInstruments();
 	virtual void ProcessOutputInstruments();
 	
-	void Kill() { killed = true; }
-	
 	virtual void Serve(unisim::util::hypapp::ClientConnection const& conn);
 	
 	UserInstrument *FindUserInstrument(const std::string& name);
@@ -428,7 +433,6 @@ private:
 	
 	std::string program_name;
 	
-	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;
 	int http_port;
 	unisim::kernel::service::Parameter<int> param_http_port;
@@ -444,7 +448,7 @@ private:
 	sc_core::sc_time curr_time_stamp;
 	bool bad_user_step_time;
 	bool timed_step;
-	bool delta_step;
+	unsigned int delta_steps;
 	bool cont;
 	bool intr;
 	bool halt;
@@ -455,8 +459,11 @@ private:
 	bool disable_all_value_changed_breakpoints;
 	std::map<UserInstrument *, bool> enable_input_instruments;
 	std::map<UserInstrument *, bool> enable_value_changed_breakpoints;
+	std::map<UserInstrument *, std::string> set_input_instruments;
+	std::map<UserInstrument *, bool> toggle_input_instruments;
 	
-	pthread_mutex_t mutex;
+	pthread_mutex_t mutex_instruments;
+	pthread_mutex_t mutex_post;
 	
 	bool run;
 	pthread_cond_t cond_run;
@@ -474,8 +481,10 @@ private:
 	void WaitForSimulation();
 	void Run();
 	void UnblockUser();
-	void Lock();
-	void Unlock();
+	void LockInstruments();
+	void UnlockInstruments();
+	void LockPost();
+	void UnlockPost();
 };
 
 class CSV_Reader

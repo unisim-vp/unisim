@@ -905,7 +905,7 @@ public:
 	Simulator *GetSimulator() const;
 	void GenerateLatexDocumentation(std::ostream& os, VariableBase::Type variable_type) const;
 	const char *GetDescription() const;
-	virtual void Stop(int exit_status);
+	virtual void Stop(int exit_status, bool asynchronous = false);
 	void SetDescription(const char *description);
 private:
 	std::string name;

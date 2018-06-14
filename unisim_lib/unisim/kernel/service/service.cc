@@ -1894,9 +1894,9 @@ void Object::GenerateLatexDocumentation(std::ostream& os, VariableBase::Type var
 	if(header_printed) os << "\\hline" << std::endl;
 }
 
-void Object::Stop(int exit_status)
+void Object::Stop(int exit_status, bool asynchronous)
 {
-	Simulator::Instance()->Stop(this, exit_status);
+	Simulator::Instance()->Stop(this, exit_status, asynchronous);
 }
 
 void Object::SetDescription(const char *_description)

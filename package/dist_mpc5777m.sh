@@ -945,6 +945,8 @@ m4/pthread.m4 \
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="\
 unisim/kernel/tlm2/style.css \
+unisim/kernel/tlm2/script.js \
+unisim/kernel/tlm2/favicon.ico \
 unisim/service/debug/gdb_server/gdb_powerpc_vle.xml \
 unisim/util/debug/dwarf/powerpc_e500_dwarf_register_number_mapping.xml \
 unisim/util/debug/dwarf/powerpc_e500_gcc_dwarf_register_number_mapping.xml \
