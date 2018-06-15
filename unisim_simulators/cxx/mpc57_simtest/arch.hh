@@ -73,12 +73,13 @@ namespace ut
     Untestable(std::string const& _reason) : reason(_reason) {}
     std::string reason;
   };
-  
+
+  struct ActionNode : public unisim::util::symbolic::Choice<ActionNode>  {};
+
   struct Interface
   {
     typedef unisim::util::symbolic::Expr       Expr;
     typedef unisim::util::symbolic::ExprNode   ExprNode;
-    typedef unisim::util::symbolic::ActionNode ActionNode;
     
     Interface( mpc57::Operation& op );
     
@@ -137,6 +138,7 @@ namespace ut
   struct SourceReg : public unisim::util::symbolic::ExprNode
   {
     SourceReg( unsigned _reg ) : reg( _reg ) {}
+    virtual SourceReg* Mutate() const { return new SourceReg(*this); }
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 0; };
     virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
@@ -155,6 +157,7 @@ namespace ut
     typedef unisim::util::symbolic::ExprNode ExprNode;
     
     MixNode( Expr const& _left, Expr const& _right ) : left(_left), right(_right) {}
+    virtual MixNode* Mutate() const { return new MixNode(*this); }
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 2; };
     virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return left; case 1: return right; } return ExprNode::GetSub(idx); };
@@ -173,6 +176,7 @@ namespace ut
     typedef unisim::util::symbolic::ExprNode ExprNode;
     
     Unknown() {}
+    virtual Unknown* Mutate() const { return new Unknown(*this); }
     virtual void Repr( std::ostream& sink ) const { sink << "?"; }
     virtual unsigned SubCount() const { return 0; };
     virtual Expr const& GetSub(unsigned idx) const { return ExprNode::GetSub(idx); };
@@ -201,6 +205,7 @@ namespace ut
     
     struct XERNode : public ExprNode
     {
+      virtual XERNode* Mutate() const { return new XERNode(*this); }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
@@ -235,6 +240,7 @@ namespace ut
     
     struct CRNode : public ExprNode
     {
+      virtual CRNode* Mutate() const { return new CRNode(*this); }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
@@ -305,6 +311,7 @@ namespace ut
     
     struct SPEFSCRNode : public ExprNode
     {
+      virtual SPEFSCRNode* Mutate() const { return new SPEFSCRNode(*this); }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
@@ -345,7 +352,6 @@ namespace ut
     
     typedef unisim::util::symbolic::Expr       Expr;
     typedef unisim::util::symbolic::ExprNode   ExprNode;
-    typedef unisim::util::symbolic::ActionNode ActionNode;
     
     typedef MSR MSR;
     typedef SPEFSCR SPEFSCR;
@@ -415,7 +421,7 @@ namespace ut
     struct CIA : public ExprNode
     {
       CIA() {}
-      
+      virtual CIA* Mutate() const { return new CIA(*this) ; }
       virtual void Repr( std::ostream& sink ) const { sink << "CIA"; }
       virtual unsigned SubCount() const { return 0; };
       virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return 0; }
@@ -432,6 +438,7 @@ namespace ut
     struct Load : public ExprNode
     {
       Load( Expr const& _addr ) : addr(_addr) {}
+      virtual Load* Mutate() const { return new Load(*this); }
       virtual void Repr( std::ostream& sink ) const { LoadRepr( sink, addr, BITS ); }
       virtual unsigned SubCount() const { return 2; };
       virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; } return ExprNode::GetSub(idx); };
@@ -720,6 +727,7 @@ namespace ut
     typedef unisim::util::symbolic::Expr Expr;
     
     MaskNode( Expr const& _mb, Expr const& _me ) : mb(_mb), me(_me) {}
+    virtual MaskNode* Mutate() const { return new MaskNode(*this); }
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 2; };
     virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return mb; case 1: return me; } return ExprNode::GetSub(idx); };
