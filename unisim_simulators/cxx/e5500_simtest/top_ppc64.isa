@@ -340,7 +340,7 @@ include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmadd
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmadds.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmsub.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmsubs.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fres.isa"
+//include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fres.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/frsp.isa"
 //include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/frsqrte.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsel.isa"
