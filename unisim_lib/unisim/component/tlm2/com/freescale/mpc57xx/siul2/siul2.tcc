@@ -572,7 +572,7 @@ void SIUL2<CONFIG>::PAD_Out_Process(unsigned int pad_num)
 	{
 		bool output_buffer_value = output_buffers[pad_num];
 		bool inv = siul2_mscr_io[pad_num].template Get<typename SIUL2_MSCR_IO::INV>();
-		bool pad_value = inv ? output_buffer_value : !output_buffer_value;
+		bool pad_value = inv ? !output_buffer_value : output_buffer_value;
 		
 		if(unlikely(verbose))
 		{

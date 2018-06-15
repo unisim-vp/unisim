@@ -32,39 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include "siul2.h"
-#include "intc.h"
-#include "MPC5777M.h"
+#include "config.hh"
 
-void siul2_drv_init()
-{
-}
-
-void siul2_init()
-{
-}
-
-void siul2_gpio_write(unsigned int port, uint8_t value)
-{
-	SIUL2.GPDO[port].R = value;
-}
-
-uint8_t siul2_gpio_read(unsigned int port)
-{
-	return SIUL2.GPDI[port].R;
-}
-
-void siul2_gpio_parallel_write(unsigned int port, uint16_t value)
-{
-	SIUL2.PGPDO[port].R = value;
-}
-
-uint16_t siul2_gpio_parallel_read(unsigned int port)
-{
-	return SIUL2.PGPDI[port].R;
-}
-
-void siul2_set_output_drive_control(unsigned int port, enum OUTPUT_DRIVE_CONTROL odc)
-{
-	SIUL2.MSCR_IO[port].B.ODC = odc;
-}
+const unisim::component::tlm2::com::freescale::mpc57xx::siul2::PACKAGE_SETTING_TYPE Config::SIUL2_CONFIG::PACKAGE_SETTING;
+const unisim::component::tlm2::com::freescale::mpc57xx::siul2::MANUFACTURER_TYPE Config::SIUL2_CONFIG::MANUFACTURER;

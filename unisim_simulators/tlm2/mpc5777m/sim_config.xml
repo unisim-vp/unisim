@@ -16,7 +16,7 @@
 				<variable name="http-port">
 					<type>parameter</type>
 					<data_type>signed 32-bit integer</data_type>
-					<value>1260</value>
+					<value>12360</value>
 					<description>HTTP port</description>
 				</variable>
 				<variable name="http-max-clients">
@@ -28,7 +28,7 @@
 				<variable name="instrumentation">
 					<type>parameter</type>
 					<data_type>string</data_type>
-					<value></value>
+					<value>HARDWARE.pad_*</value>
 					<description>Instrumented signals (wildcards '*' and '?' are allowed in signal names) that are controlled by user over HTTP</description>
 				</variable>
 				<variable name="intr-poll-period">

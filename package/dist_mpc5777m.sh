@@ -1115,6 +1115,7 @@ soft/libsys/include/linflexd.h \
 soft/libsys/include/dmamux.h \
 soft/libsys/include/edma.h \
 soft/libsys/include/dspi.h \
+soft/libsys/include/siul2.h \
 soft/libsys/include/console.h \
 soft/libsys/include/ramdisk.h \
 soft/libsys/include/lfs.h \
@@ -1133,6 +1134,7 @@ soft/libsys/src/drv/linflexd.c \
 soft/libsys/src/drv/dmamux.c \
 soft/libsys/src/drv/edma.c \
 soft/libsys/src/drv/dspi.c \
+soft/libsys/src/drv/siul2.c \
 soft/libsys/src/drv/console.c \
 soft/libsys/src/drv/ramdisk.c \
 soft/libsys/src/fs/lfs.c \

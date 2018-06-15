@@ -14,6 +14,7 @@
 #include "edma.h"
 #include "console.h"
 #include "dspi.h"
+#include "siul2.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -148,6 +149,9 @@ int main(void)
 	} while(1);
 #endif
 	
+	siul2_set_output_drive_control(12, ODC_PUSH_PULL);
+	siul2_set_output_drive_control(14, ODC_OUTPUT_BUFFER_DISABLED);
+	
 	const char boot_msg[] = "HAL 9000...booting..............................\r\n"
 						"I'm ready to control Discovery One spacecraft.\r\n\r\n"
 						"Dave, Discovery One is approaching Jupiter.\r\n"
@@ -168,18 +172,23 @@ int main(void)
 		fputs(prompt, stdout);
 		
 		char line[1536];
-			
+
+		siul2_gpio_write(12, 1);
+		
 		if(!fgets(line, sizeof(line), stdin))
 		{
 			fprintf(stderr, "can' get line\n");
 			break;
 		}
 		
+		siul2_gpio_write(12, 0);
+		
+		uint8_t gpio_button_status = siul2_gpio_read(14);
 		
 		time_t t = time(NULL);
 		struct tm tm = *localtime(&t);
 		
-		fprintf(stdout, "at %s, got \"%s\"\n", asctime(&tm), line);
+		fprintf(stdout, "at %s, got \"%s\" on prompt and %u on GPIO button\n", asctime(&tm), line, gpio_button_status);
 		
 		//struct tms tms;
 		

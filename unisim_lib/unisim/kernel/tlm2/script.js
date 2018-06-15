@@ -1,18 +1,18 @@
 saveScrollTop = function()
 {
-	var el = document.querySelector("div.instruments-table-container");
+	var el = document.querySelector('div.scroller');
 	if(el)
 	{
-		sessionStorage.setItem('div.instruments-table-container.scrollTop', el.scrollTop);
+		sessionStorage.setItem('div.scroller.scrollTop', el.scrollTop);
 	}
 }
 
 restoreScrollTop = function()
 {
-	var el = document.querySelector("div.instruments-table-container");
+	var el = document.querySelector('div.scroller');
 	if(el)
 	{
-		var t = sessionStorage.getItem('div.instruments-table-container.scrollTop');
+		var t = sessionStorage.getItem('div.scroller.scrollTop');
 		if(t)
 		{
 			el.scrollTop = t;

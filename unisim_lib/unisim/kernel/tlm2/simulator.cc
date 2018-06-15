@@ -851,6 +851,11 @@ bool UserInstrument::IsReadOnly() const
 	return !input_instrument;
 }
 
+bool UserInstrument::IsBoolean() const
+{
+	return (input_instrument && (input_instrument->GetTypeInfo() == typeid(bool))) || (output_instrument && (output_instrument->GetTypeInfo() == typeid(bool)));
+}
+
 bool Form_URL_Encoded_Decoder::Decode(const std::string& s, std::ostream& err_log)
 {
 	int state = 0;
@@ -1543,11 +1548,11 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 										{
 											http_server.disable_all_input_instruments = true;
 										}
-										else if(user_instrument_action == "enable-brkp")
+										else if(user_instrument_action == "enable-brkpt")
 										{
 											http_server.enable_all_value_changed_breakpoints = true;
 										}
-										else if(user_instrument_action == "disable-brkp")
+										else if(user_instrument_action == "disable-brkpt")
 										{
 											http_server.disable_all_value_changed_breakpoints = true;
 										}
@@ -1562,7 +1567,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 											{
 												http_server.enable_input_instruments[user_instrument] = true;
 											}
-											else if(user_instrument_action == "enable-brkp")
+											else if(user_instrument_action == "enable-brkpt")
 											{
 												http_server.enable_value_changed_breakpoints[user_instrument] = true;
 											}
@@ -1806,44 +1811,59 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 					
 					doc_sstr << "\t<body>" << std::endl;
 					doc_sstr << "\t\t<h1>" << String_to_HTML(http_server.program_name) << " - " << String_to_HTML(http_server.GetName()) << "</h1>" << std::endl;
-					doc_sstr << "\t\t<p>Status: " << (http_server.bad_user_step_time ? "bad step time" : (http_server.cont ? "running" : "ready")) << "</p>" << std::endl;
-					doc_sstr << "\t\t<p>Time stamp: " << String_to_HTML(http_server.curr_time_stamp.to_string()) << "</p>" << std::endl;
+					
+					doc_sstr << "\t\t<table class=\"status-table\">" << std::endl;
+					doc_sstr << "\t\t\t<thead>" << std::endl;
+					doc_sstr << "\t\t\t\t<tr>" << std::endl;
+					doc_sstr << "\t\t\t\t\t<th class=\"status\">Status</th>" << std::endl;
+					doc_sstr << "\t\t\t\t\t<th class=\"time\">Time</th>" << std::endl;
+					doc_sstr << "\t\t\t\t\t<th class=\"time\">(exactly)</th>" << std::endl;
+					doc_sstr << "\t\t\t\t</tr>" << std::endl;
+					doc_sstr << "\t\t\t</thead>" << std::endl;
+					doc_sstr << "\t\t\t<tbody>" << std::endl;
+					doc_sstr << "\t\t\t\t<tr>" << std::endl;
+					doc_sstr << "\t\t\t\t\t<td class=\"status\">" << (http_server.bad_user_step_time ? "bad step time" : (http_server.cont ? "running" : "ready")) << "</td>" << std::endl;
+					
+					std::ios_base::fmtflags ff = doc_sstr.flags();
+					doc_sstr.setf(std::ios::fixed);
+					doc_sstr.precision(3);
+					doc_sstr << "\t\t\t\t\t<td class=\"time\">" << http_server.curr_time_stamp.to_seconds() << " seconds</td>" << std::endl;
+					doc_sstr.flags(ff);
+					
+					doc_sstr << "\t\t\t\t\t<td class=\"time\">(" << String_to_HTML(http_server.curr_time_stamp.to_string()) << ")</td>" << std::endl;
+					doc_sstr << "\t\t\t\t</tr>" << std::endl;
+					doc_sstr << "\t\t\t</tbody>" << std::endl;
+					doc_sstr << "\t\t</table>" << std::endl;
+					
 					doc_sstr << "\t\t<form action=\"/\" method=\"post\" enctype=\"application/x-www-form-urlencoded\">" << std::endl;
 					doc_sstr << "\t\t\t<h2>Commands</h2>" << std::endl;
-					doc_sstr << "\t\t\t<div class=\"command-table-container\">" << std::endl;
-					doc_sstr << "\t\t\t\t<table class=\"command-table\">" << std::endl;
-					doc_sstr << "\t\t\t\t\t<tbody>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<tr>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<td>Step time:&nbsp;<input class=\"step-time\" type=\"text\" name=\"step-time\" value=\"" << http_server.user_step_time << "\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << "></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<td><button class=\"delta-step\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"delta-step\" value=\"on\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << ">&delta;</button></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<td><button class=\"timed-step\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"timed-step\" value=\"on\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << ">Step</button></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<td><button class=\"" << (http_server.cont ? "intr" : "cont") << "\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"" << (http_server.cont ? "intr" : "cont") << "\" value=\"on\"" << (http_server.halt ? " disabled" : "") << ">" << (http_server.cont ? "Interrupt" : "Continue") << "</button></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<td><button class=\"halt\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"halt\" value=\"on\"" << (http_server.halt ? " disabled" : "")  << ">Halt</button></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t</tr>" << std::endl;
-					doc_sstr << "\t\t\t\t\t</tbody>" << std::endl;
-					doc_sstr << "\t\t\t\t</table>" << std::endl;
-					doc_sstr << "\t\t\t</div>" << std::endl;
+					doc_sstr << "\t\t\t<table class=\"command-table\">" << std::endl;
+					doc_sstr << "\t\t\t\t<tbody>" << std::endl;
+					doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t<td><button class=\"delta-step\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"delta-step\" value=\"on\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << ">&delta;</button></td>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t<td><button class=\"timed-step\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"timed-step\" value=\"on\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << ">Step</button>&nbsp;by&nbsp;<input class=\"step-time\" type=\"text\" name=\"step-time\" value=\"" << http_server.user_step_time << "\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << "></td>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t<td><button class=\"" << (http_server.cont ? "intr" : "cont") << "\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"" << (http_server.cont ? "intr" : "cont") << "\" value=\"on\"" << (http_server.halt ? " disabled" : "") << ">" << (http_server.cont ? "Interrupt" : "Continue") << "</button></td>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t<td><button class=\"halt\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"halt\" value=\"on\"" << (http_server.halt ? " disabled" : "")  << ">Halt</button></td>" << std::endl;
+					doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
+					doc_sstr << "\t\t\t\t</tbody>" << std::endl;
+					doc_sstr << "\t\t\t</table>" << std::endl;
 					doc_sstr << "\t\t\t<h2>Instruments</h2>" << std::endl;
-					doc_sstr << "\t\t\t<div class=\"instruments-table-container\">" << std::endl;
-					doc_sstr << "\t\t\t\t<table class=\"instruments-table\">" << std::endl;
+					doc_sstr << "\t\t\t<table class=\"instruments-table1\">" << std::endl;
 					doc_sstr << "\t\t\t\t<thead>" << std::endl;
 					doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-enable\">En</th>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-value-changed-brkp\">Brkp</th>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-name\">Signal</th>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-enable\">Enable<br><button class=\"signal-disable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"disable*all\">C</button><button class=\"signal-enable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"enable*all\">A</button></th>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-brkpt-enable\">Brkpt<br><button class=\"signal-brkpt-disable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"disable-brkpt*all\">C</button><button class=\"signal-brkpt-enable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"enable-brkpt*all\">A</button></th>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-name\">Hardware signal</th>" << std::endl;
 					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-toggle\">Toggle</th>" << std::endl;
 					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-value\">Value</th>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t<th class=\"scrollbar\"></th>" << std::endl;
 					doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
 					doc_sstr << "\t\t\t\t</thead>" << std::endl;
 					doc_sstr << "\t\t\t\t<tbody>" << std::endl;
-					
-					doc_sstr << "\t\t\t\t\t\t<tr class=\"signal\">" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-enable\"><button class=\"signal-disable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"disable*all\">C</button><button class=\"signal-enable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"enable*all\">A</button></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-brkp-enable\"><button class=\"signal-brkp-disable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"disable-brkp*all\">C</button><button class=\"signal-brkp-enable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"enable-brkp*all\">A</button></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-name\"></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-toggle\"></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-value\"></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t</tr>" << std::endl;
+					doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t<td colspan=\"6\">" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t\t<div class=\"scroller\">" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t\t\t<table class=\"instruments-table2\">" << std::endl;
 
 					http_server.LockInstruments();
 					if(likely(!http_server.has_breakpoint_cond))
@@ -1865,23 +1885,32 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 						{
 							std::string value;
 							user_instrument->Get(value);
-							bool bvalue;
-							user_instrument->Get(bvalue);
-							doc_sstr << "\t\t\t\t\t\t<tr class=\"signal" << (user_instrument->HasBreakpointCondition() ? " brkp-cond" : "") << "\">" << std::endl;
-							doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-enable\"><input class=\"signal-enable-checkbox\" type=\"checkbox\" name=\"enable*" << String_to_HTML(user_instrument->GetName()) << "\"" << (user_instrument->IsInjectionEnabled() ? " checked" : "") << (user_instrument->IsReadOnly() ? " disabled" : "") << "></td>" << std::endl;
-							doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-brkp-enable\"><input class=\"signal-brkp-enable-checkbox\" type=\"checkbox\" name=\"enable-brkp*" << String_to_HTML(user_instrument->GetName()) << "\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : "") << "></td>" << std::endl;
-							doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-name\">" << String_to_HTML(user_instrument->GetName()) << "</td>" << std::endl;
-							doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-toggle\"><button class=\"signal-toggle-button signal-" << (bvalue ? "on" : "off") << "\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"toggle*" << String_to_HTML(user_instrument->GetName()) << "\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << ">" << (bvalue ? "on" : "off")  << "</button></td>" << std::endl;
-							doc_sstr << "\t\t\t\t\t\t\t<td class=\"signal-value\"><input class=\"signal-value-text" << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"text\" name=\"set*" << String_to_HTML(user_instrument->GetName()) << "\" value=\"" << String_to_HTML(value) << "\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << "></td>" << std::endl;
-							doc_sstr << "\t\t\t\t\t\t</tr>" << std::endl;
+							bool is_boolean = user_instrument->IsBoolean();
+							bool bool_value = false;
+							if(is_boolean) user_instrument->Get(bool_value);
+							doc_sstr << "\t\t\t\t\t\t\t\t\t\t<tr class=\"signal" << (user_instrument->HasBreakpointCondition() ? " brkpt-cond" : "") << "\">" << std::endl;
+							doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-enable\"><input class=\"signal-enable-checkbox\" type=\"checkbox\" name=\"enable*" << String_to_HTML(user_instrument->GetName()) << "\"" << (user_instrument->IsInjectionEnabled() ? " checked" : "") << (user_instrument->IsReadOnly() ? " disabled" : "") << "></td>" << std::endl;
+							doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-brkpt-enable\"><input class=\"signal-brkpt-enable-checkbox\" type=\"checkbox\" name=\"enable-brkpt*" << String_to_HTML(user_instrument->GetName()) << "\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : "") << "></td>" << std::endl;
+							doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-name\">" << String_to_HTML(user_instrument->GetName()) << "</td>" << std::endl;
+							doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-toggle\">";
+							if(is_boolean)
+							{
+								doc_sstr << "<button class=\"signal-toggle-button signal-" << (bool_value ? "on" : "off") << "\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"toggle*" << String_to_HTML(user_instrument->GetName()) << "\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << ">" << (bool_value ? "on" : "off")  << "</button>";
+							}
+							doc_sstr << "</td>" << std::endl;
+							doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-value\"><input class=\"signal-value-text" << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"text\" name=\"set*" << String_to_HTML(user_instrument->GetName()) << "\" value=\"" << String_to_HTML(value) << "\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << "></td>" << std::endl;
+							doc_sstr << "\t\t\t\t\t\t\t\t\t\t</tr>" << std::endl;
 						}
 					}
-						
+
 					http_server.UnlockInstruments();
 					
-					doc_sstr << "\t\t\t\t\t</tbody>" << std::endl;
-					doc_sstr << "\t\t\t\t</table>" << std::endl;
-					doc_sstr << "\t\t\t</div>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t\t\t</table>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t\t</div>" << std::endl;
+					doc_sstr << "\t\t\t\t\t\t</td>" << std::endl;
+					doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
+					doc_sstr << "\t\t\t\t</tbody>" << std::endl;
+					doc_sstr << "\t\t\t</table>" << std::endl;
 					doc_sstr << "\t\t\t<script type=\"application/javascript\">" << std::endl;
 					doc_sstr << "\t\t\t\trestoreScrollTop();" << std::endl;
 					doc_sstr << "\t\t\t</script>" << std::endl;

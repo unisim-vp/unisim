@@ -37,11 +37,22 @@
 
 #include "typedefs.h"
 
+enum OUTPUT_DRIVE_CONTROL
+{
+	ODC_OUTPUT_BUFFER_DISABLED   = 0x0,
+	ODC_OPEN_DRAIN               = 0x1,
+	ODC_PUSH_PULL                = 0x2,
+	ODC_OPEN_SOURCE              = 0x3,
+	ODC_MICROSECOND_CHANNEL_LVDS = 0x4,
+	ODC_LFAST_LVDS               = 0x5,
+};
+
 void siul2_drv_init();
 void siul2_init();
 void siul2_gpio_write(unsigned int port, uint8_t value);
 uint8_t siul2_gpio_read(unsigned int port);
 void siul2_gpio_parallel_write(unsigned int port, uint16_t value);
 uint16_t siul2_gpio_parallel_read(unsigned int port);
+void siul2_set_output_drive_control(unsigned int port, enum OUTPUT_DRIVE_CONTROL odc);
 
 #endif

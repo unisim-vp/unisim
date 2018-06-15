@@ -377,6 +377,7 @@ public:
 	void DisableValueChangedBreakpoint();
 	bool IsValueChangedBreakpointEnabled() const;
 	bool HasBreakpointCondition() const;
+	bool IsBoolean() const;
 private:
 	std::string name;
 	mutable std::ostringstream sstr;

@@ -5423,7 +5423,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("dspi_0-slave", 0);
 	
 	// Instrumenter
-	simulator->SetVariable("HARDWARE.instrumenter.http-server.http-port", 1260);
+	simulator->SetVariable("HARDWARE.instrumenter.http-server.http-port", 12360);
 }
 
 void Simulator::Run()
