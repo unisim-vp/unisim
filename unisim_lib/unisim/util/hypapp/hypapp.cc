@@ -191,7 +191,11 @@ void MessageLoop::Run(ClientConnection const& conn)
             }
             else
             {
-              err_log << "[" << conn.socket << "] header short read (got " << resume << " bytes)\n"; return; 
+              if(resume)
+              {
+                err_log << "[" << conn.socket << "] header short read (got " << resume << " bytes)\n";
+              }  
+              return; 
             }
             ibuf.resize(resume);
           }
@@ -219,16 +223,6 @@ void MessageLoop::Run(ClientConnection const& conn)
           }
           continue;
         }
-        
-//         unsigned int n = ibuf.size();
-//         std::cerr << "ibuf (" << n << "bytes):" << std::endl;
-// 		for(unsigned int i = 0; i < n; i++)
-// 		{
-// 			char c = ibuf[i];
-// 			if((c >= 32) && (c <= 126)) std::cerr << c;
-// 			else std::cerr << "\0x" << std::hex << (unsigned int) c << std::dec << " ";
-// 		}
-// 		std::cerr << std::endl;
         
       eoh += 2; // first "\r\n" is inside header
       uintptr_t request_size = eoh - ptr;
@@ -349,7 +343,7 @@ void MessageLoop::Run(ClientConnection const& conn)
       {
         if(content_length != 0)
         {
-          ibuf.reserve(request_size + content_length /* + 1*/); // header + content (+ terminal zero character)
+          ibuf.reserve(request_size + content_length); // header + content
         }
         
         unsigned int rem_content_length = content_length;
@@ -405,7 +399,11 @@ void MessageLoop::Run(ClientConnection const& conn)
             
             // connection closed by peer
             if(var_content) break;
-            err_log << "[" << conn.socket << "] content short read (" << (content_length - rem_content_length) << " instead of " << content_length << " bytes)\n"; return; 
+            if(rem_content_length)
+            {
+              err_log << "[" << conn.socket << "] content short read (" << (content_length - rem_content_length) << " instead of " << content_length << " bytes)\n";
+            }
+            return; 
           }
           
           ibuf.resize(resume + bytes);
@@ -413,8 +411,6 @@ void MessageLoop::Run(ClientConnection const& conn)
           if(var_content) content_length += bytes; else rem_content_length -= bytes;
         }
         
-        //ibuf.resize(request_size + content_length + 1);
-        //ibuf[request_size + content_length] = '\0';
         if(http_server.Verbose())
         {
           log << "[" << conn.socket << "] content " << ":" << "\n=-=-=-=-=-=-=-=-=-=-=\n" << std::string(&ibuf[request_size], content_length) << "\n=-=-=-=-=-=-=-=-=-=-=\n";
@@ -424,10 +420,9 @@ void MessageLoop::Run(ClientConnection const& conn)
         SetContent(&ibuf[request_size]);
       }
   
-//  keep_alive = false;
       if (not SendResponse(conn) or not keep_alive) return;
 
-      ibuf.erase(ibuf.begin(), ibuf.begin() + request_size + content_length/*((content_length != 0) ? (content_length + 1) : 0)*/);
+      ibuf.erase(ibuf.begin(), ibuf.begin() + request_size + content_length);
     }
 }
 
