@@ -252,7 +252,7 @@ struct Scas : public Operation<ARCH>
     
     if (REP) {
       str->deccounter( arch );
-      if (arch.Cond( bit_t( REP&1 ) ^arch.flagread( ARCH::FLAG::ZF ) )) return;
+      if (arch.Cond( bit_t( REP&1 ) ^ arch.flagread( ARCH::FLAG::ZF ) )) return;
       arch.seteip( u32_t( Operation<ARCH>::address ) );
     }
   }

@@ -59,6 +59,33 @@ namespace symbolic {
 
   template <class T>  struct CmpTypes<T,T> { static bool const same = true; };
   
+  struct ScalarType
+  {
+    enum id_t { VOID, BOOL, U8, U16, U32, U64, S8, S16, S32, S64, F32, F64 };
+    ScalarType( id_t id )
+      : name(0), bitsize(0), is_signed(false), is_integer(false)
+    {
+      switch (id)
+        {
+        case VOID: bitsize = 0;  is_integer = false; is_signed = false; name = "VOID"; break;
+        case BOOL: bitsize = 1;  is_integer = true;  is_signed = false; name = "BOOL"; break;
+        case U8:   bitsize = 8;  is_integer = true;  is_signed = false; name = "U8";  break;
+        case S8:   bitsize = 8;  is_integer = true;  is_signed = true;  name = "S8";  break;
+        case U16:  bitsize = 16; is_integer = true;  is_signed = false; name = "U16"; break;
+        case S16:  bitsize = 16; is_integer = true;  is_signed = true;  name = "S16"; break;
+        case U32:  bitsize = 32; is_integer = true;  is_signed = false; name = "U32"; break;
+        case S32:  bitsize = 32; is_integer = true;  is_signed = true;  name = "S32"; break;
+        case U64:  bitsize = 64; is_integer = true;  is_signed = false; name = "U64"; break;
+        case S64:  bitsize = 64; is_integer = true;  is_signed = true;  name = "S64"; break;
+        case F32:  bitsize = 32; is_integer = false; is_signed = true;  name = "F32"; break;
+        case F64:  bitsize = 64; is_integer = false; is_signed = true;  name = "F64"; break;
+        }
+    }
+    char const* name;
+    unsigned bitsize;
+    bool is_signed, is_integer;
+  };
+  
   struct Expr;
   
   struct ConstNodeBase;
@@ -79,13 +106,13 @@ namespace symbolic {
     virtual ConstNodeBase const* GetConstNode() const { return 0; };
     virtual OpNodeBase const* AsOpNode() const { return 0; }
     virtual ExprNode* Mutate() const = 0;
+    virtual ScalarType::id_t GetType() const = 0;
   };
   
   struct Op : public Identifier<Op>
   {
     enum Code
       {
-        NA = 0,
         Xor, And, Or,
         Ror, Rol, Lsl, Asr, Lsr,
         Add, Sub, Div, Mod, Mul,
@@ -136,41 +163,14 @@ namespace symbolic {
         case  FAbs: return "FAbs";
         case  FDen: return "FDen";
         case  Cast: return "Cast";
-        case    NA: return "NA";
         case   end: break;
         }
-      return "INVALID";
+      return "NA";
     }
     
     Op() : code(end) {}
     Op( Code _code ) : code(_code) {}
     Op( char const* _code ) : code(end) { init( _code ); }
-  };
-  
-  struct ScalarType
-  {
-    enum id_t { BOOL, U8, U16, U32, U64, S8, S16, S32, S64, F32, F64 };
-    ScalarType( id_t id )
-      : name(0), bitsize(0), is_signed(false), is_integer(false)
-    {
-      switch (id)
-        {
-        case BOOL: bitsize = 1;  is_integer = true;  is_signed = false; name = "BOOL"; break;
-        case U8:   bitsize = 8;  is_integer = true;  is_signed = false; name = "U8";  break;
-        case S8:   bitsize = 8;  is_integer = true;  is_signed = true;  name = "S8";  break;
-        case U16:  bitsize = 16; is_integer = true;  is_signed = false; name = "U16"; break;
-        case S16:  bitsize = 16; is_integer = true;  is_signed = true;  name = "S16"; break;
-        case U32:  bitsize = 32; is_integer = true;  is_signed = false; name = "U32"; break;
-        case S32:  bitsize = 32; is_integer = true;  is_signed = true;  name = "S32"; break;
-        case U64:  bitsize = 64; is_integer = true;  is_signed = false; name = "U64"; break;
-        case S64:  bitsize = 64; is_integer = true;  is_signed = true;  name = "S64"; break;
-        case F32:  bitsize = 32; is_integer = false; is_signed = true;  name = "F32"; break;
-        case F64:  bitsize = 64; is_integer = false; is_signed = true;  name = "F64"; break;
-        }
-    }
-    char const* name;
-    unsigned bitsize;
-    bool is_signed, is_integer;
   };
   
   template <typename VALUE_TYPE>
@@ -236,7 +236,8 @@ namespace symbolic {
     virtual int16_t GetS16() const = 0;
     virtual int32_t GetS32() const = 0;
     virtual int64_t GetS64() const = 0;
-    virtual ScalarType::id_t GetType() const = 0;
+    virtual float GetF32() const = 0;
+    virtual double GetF64() const = 0;
     static std::ostream& warn();
   };
   
@@ -287,10 +288,81 @@ namespace symbolic {
   VALUE_TYPE EvalRotateLeft( VALUE_TYPE v, uint8_t shift ) { throw std::logic_error( "No RotateLeft for this type" ); }
   uint32_t   EvalRotateLeft( uint32_t v, uint8_t shift );
   
+  struct Expr
+  {
+    Expr() : node() {} ExprNode const* node;
+    Expr( Expr const& expr ) : node( expr.node ) { if (node) node->Retain(); }
+    Expr( ExprNode const* _node ) : node( _node ) { if (node) node->Retain(); }
+    ~Expr() { if (node) node->Release(); }
+    
+    Expr&  operator = ( Expr const& expr )
+    {
+      if (expr.node) expr.node->Retain();
+      ExprNode const* old_node = node;
+      node = expr.node;
+      if (old_node) old_node->Release();
+      return *this;
+    }
+    
+    ExprNode const* operator->() const { return node; }
+    ExprNode const* operator->() { return node; }
+    ExprNode const& operator* () const { return *node; }
+    
+    intptr_t cmp( Expr const& rhs ) const
+    {
+      // Do not compare null expressions
+      if (not rhs.node) return     node ?  1 : 0;
+      if (not     node) return rhs.node ? -1 : 0;
+      
+      /* First compare actual types */
+      const std::type_info& til = typeid(*node);
+      const std::type_info& tir = typeid(*rhs.node);
+      if (intptr_t delta = &til - &tir)
+        return delta;
+      /* Same types, call derived comparator */
+      return node->cmp( *rhs.node );
+    }
+    
+    bool operator != ( Expr const& rhs ) const { return cmp( rhs ) != 0; }
+    bool operator == ( Expr const& rhs ) const { return cmp( rhs ) == 0; }
+    bool operator  < ( Expr const& rhs ) const { return cmp( rhs )  < 0; }
+    bool operator  > ( Expr const& rhs ) const { return cmp( rhs )  > 0; }
+    
+    ConstNodeBase const* ConstSimplify();
+    
+    bool good() const { return node; }
+    friend std::ostream& operator << (std::ostream&, Expr const&);
+  };
+  
   struct OpNodeBase : public ExprNode
   {
-    OpNodeBase( Op _op ) : op(_op) {}
+    OpNodeBase( Op _op ) : op(_op) { if (op.code == op.end) throw 0; }
     virtual OpNodeBase const* AsOpNode() const { return this; }
+    virtual ScalarType::id_t GetType() const
+    {
+      switch (op.code)
+        {
+        case Op::BSwp: case Op::Not: case Op::Neg:  case Op::BSR:   case Op::BSF:
+        case Op::FSQB: case Op::FFZ: case Op::FNeg: case Op::FSqrt: case Op::FAbs:
+        case Op::Xor:  case Op::And: case Op::Or:
+        case Op::Lsl:  case Op::Lsr: case Op::Asr: case Op::Ror: case Op::Rol:
+        case Op::Add:  case Op::Sub:
+        case Op::Mul:  case Op::Div: case Op::Mod:
+          return GetSub(0)->GetType();
+          
+        case Op::FDen:
+        case Op::Teq: case Op::Tne: case Op::Tleu: case Op::Tle: case Op::Tltu:
+        case Op::Tlt: case Op::Tgeu: case Op::Tge: case Op::Tgtu: case Op::Tgt:
+          return ScalarType::BOOL;
+            
+        case Op::FCmp:
+          return ScalarType::S32;
+          
+        case Op::Cast: /* Should have been handled elsewhere */
+        case Op::end:   throw std::logic_error("???");
+        }
+      return ScalarType::VOID;
+    }
     
     Op op;
   };
@@ -358,7 +430,6 @@ namespace symbolic {
         case Op::Rol:   return new this_type( EvalRotateLeft( value, args[1]->GetU8() ) );
         case Op::FCmp:  break;
           
-        case Op::NA:
         case Op::Cast: /* Should have been handled elsewhere */
         case Op::end:   throw std::logic_error("???");
         }
@@ -377,64 +448,24 @@ namespace symbolic {
     int16_t GetS16() const { return value; }
     int32_t GetS32() const { return value; }
     int64_t GetS64() const { return value; }
+    float GetF32() const { return value; }
+    double GetF64() const { return value; }
     ScalarType::id_t GetType() const { return TypeInfo<VALUE_TYPE>::GetType(); }
   };
-  
-  struct Expr
-  {
-    Expr() : node() {} ExprNode const* node;
-    Expr( Expr const& expr ) : node( expr.node ) { if (node) node->Retain(); }
-    Expr( ExprNode const* _node ) : node( _node ) { if (node) node->Retain(); }
-    ~Expr() { if (node) node->Release(); }
-    
-    Expr&  operator = ( Expr const& expr )
-    {
-      if (expr.node) expr.node->Retain();
-      ExprNode const* old_node = node;
-      node = expr.node;
-      if (old_node) old_node->Release();
-      return *this;
-    }
-    
-    ExprNode const* operator->() const { return node; }
-    ExprNode const* operator->() { return node; }
-    ExprNode const& operator* () const { return *node; }
-    
-    intptr_t cmp( Expr const& rhs ) const
-    {
-      // Do not compare null expressions
-      if (not rhs.node) return     node ?  1 : 0;
-      if (not     node) return rhs.node ? -1 : 0;
-      
-      /* First compare actual types */
-      const std::type_info& til = typeid(*node);
-      const std::type_info& tir = typeid(*rhs.node);
-      if (intptr_t delta = &til - &tir)
-        return delta;
-      /* Same types, call derived comparator */
-      return node->cmp( *rhs.node );
-    }
-    
-    bool operator != ( Expr const& rhs ) const { return cmp( rhs ) != 0; }
-    bool operator == ( Expr const& rhs ) const { return cmp( rhs ) == 0; }
-    bool operator  < ( Expr const& rhs ) const { return cmp( rhs )  < 0; }
-    bool operator  > ( Expr const& rhs ) const { return cmp( rhs )  > 0; }
-    
-    ConstNodeBase const* ConstSimplify()
-    {
-      if (ConstNodeBase const* cn = node->GetConstNode())
-        {
-          *this = Expr( cn );
-          return cn;
-        }
-      
-      return 0;
-    }
-    
-    bool good() const { return node; }
-    friend std::ostream& operator << (std::ostream&, Expr const&);
-  };
 
+  inline
+  ConstNodeBase const*
+  Expr::ConstSimplify()
+  {
+    if (ConstNodeBase const* cn = node->GetConstNode())
+      {
+        *this = Expr( cn );
+        return cn;
+      }
+    
+    return 0;
+  }
+    
   template <typename VALUE_TYPE>
   VALUE_TYPE ConstNode<VALUE_TYPE>::GetValue( ConstNodeBase const* cnb ) { return dynamic_cast<ConstNode<VALUE_TYPE> const&>( *cnb ).value; }
 
@@ -447,7 +478,7 @@ namespace symbolic {
     typedef OpNode<SUBCOUNT> this_type;
     
     OpNode( Op _op ) : OpNodeBase(_op) {}
-    virtual this_type* Mutate() const { return new this_type( *this ); };
+    virtual this_type* Mutate() const { return new this_type( *this ); }
 
     virtual ConstNodeBase const* GetConstNode() const
     {
@@ -496,7 +527,6 @@ namespace symbolic {
   {
     CastNodeBase( Expr const& _src ) : OpNodeBase( Op::Cast ), src(_src) {}
     virtual ScalarType::id_t GetSrcType() const = 0;
-    virtual ScalarType::id_t GetDstType() const = 0;
     virtual unsigned SubCount() const { return 1; };
     virtual Expr const& GetSub(unsigned idx) const { if (idx!= 0) return ExprNode::GetSub(idx); return src; }
     Expr src;
@@ -509,7 +539,7 @@ namespace symbolic {
     CastNode( Expr const& _src ) : CastNodeBase( _src ) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
     virtual ScalarType::id_t GetSrcType() const { return TypeInfo<SRC_VALUE_TYPE>::GetType(); }
-    virtual ScalarType::id_t GetDstType() const { return TypeInfo<DST_VALUE_TYPE>::GetType(); }
+    virtual ScalarType::id_t GetType() const { return TypeInfo<DST_VALUE_TYPE>::GetType(); }
     
     intptr_t cmp( ExprNode const& brhs ) const
     {
@@ -675,6 +705,7 @@ namespace symbolic {
       virtual DefaultNaNNode* Mutate() const { return new DefaultNaNNode( *this ); }
       virtual void Repr( std::ostream& sink ) const { sink << "DefaultNaN()"; }
       virtual unsigned SubCount() const { return 0; };
+      virtual ScalarType::id_t GetType() const { return fsz==32 ? TypeInfo<float>::GetType() : TypeInfo<double>::GetType(); }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         DefaultNaNNode const& rhs = dynamic_cast<DefaultNaNNode const&>( brhs );
@@ -723,6 +754,7 @@ namespace symbolic {
       }
       virtual unsigned SubCount() const { return 1; };
       virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; };
+      virtual ScalarType::id_t GetType() const { return ScalarType::BOOL; }
     };
     
     template <typename FLOAT> static
@@ -774,6 +806,7 @@ namespace symbolic {
       virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return acc; case 1: return left; case 2: return right; } return ExprNode::GetSub(idx); };
       
       virtual void Repr( std::ostream& sink ) const { sink << "MulAdd( " << acc << ", " << left << ", " << right << " )"; }
+      virtual ScalarType::id_t GetType() const { return GetSub(0)->GetType(); }
       
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -796,6 +829,7 @@ namespace symbolic {
         : acc( _acc ), left( _left ), right( _right )
       {} Expr acc, left, right;
       virtual IsInvalidMulAddNode* Mutate() const { return new IsInvalidMulAddNode( *this ); }
+      virtual ScalarType::id_t GetType() const { return ScalarType::BOOL; }
       
       virtual unsigned SubCount() const { return 3; };
       virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return acc; case 1: return left; case 2: return right; } return ExprNode::GetSub(idx); };
@@ -837,6 +871,11 @@ namespace symbolic {
       virtual void Repr( std::ostream& sink ) const { sink << "FtoF( " << src << " )"; }
       virtual unsigned SubCount() const { return 1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; }
+      virtual ScalarType::id_t GetType() const
+      {
+        switch (dsz) { case 32: return ScalarType::F32; case 64: return ScalarType::F64; }
+        throw 0; return ScalarType::F32;
+      }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         FtoFNode const& rhs = dynamic_cast<FtoFNode const&>( brhs );
@@ -852,12 +891,12 @@ namespace symbolic {
       dst = SmartValue<ofpT>( Expr( new FtoFNode( src.expr, TypeInfo<ifpT>::bitsize(), TypeInfo<ofpT>::bitsize() ) ) );
     }
 
+    template <typename intT, typename fpT>
     struct FtoINode : public ExprNode
     {
-      FtoINode( Expr const& _src, int _fsz, int _isz, int _fb )
-        : src( _src ), fsz( _fsz ), isz( _isz ), fb( _fb )
-      {} Expr src; int fsz; int isz; int fb;
+      FtoINode( Expr const& _src, int _fb ) : src( _src ), fb( _fb ) {} Expr src; int fb;
       virtual FtoINode* Mutate() const { return new FtoINode( *this ); }
+      virtual ScalarType::id_t GetType() const { return TypeInfo<intT>::GetType(); }
       
       virtual void Repr( std::ostream& sink ) const { sink << "FtoI( " << src << " )"; }
       virtual unsigned SubCount() const { return 1; }
@@ -866,8 +905,6 @@ namespace symbolic {
       {
         FtoINode const& rhs = dynamic_cast<FtoINode const&>( brhs );
         if (intptr_t delta = src.cmp( rhs.src )) return delta;
-        if (intptr_t delta = isz - rhs.isz) return delta;
-        if (intptr_t delta = fsz - rhs.fsz) return delta;
         return fb - rhs.fb;
       }
     };
@@ -875,16 +912,17 @@ namespace symbolic {
     template <typename intT, typename fpT, class ARCH> static
     void FtoI( SmartValue<intT>& dst, SmartValue<fpT> const& src, int fracbits, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
-      dst = SmartValue<intT>( Expr( new FtoINode( src.expr, TypeInfo<fpT>::bitsize(), TypeInfo<intT>::bitsize(), fracbits) ) );
+      dst = SmartValue<intT>( Expr( new FtoINode<intT,fpT>( src.expr, fracbits) ) );
     }
 
+    template <typename fpT, typename intT>
     struct ItoFNode : public ExprNode
     {
-      ItoFNode( Expr const& _src, int _isz, int _fsz, int _fb )
-        : src( _src ), isz( _isz ), fsz( _fsz ), fb( _fb )
-      {} Expr src; int isz; int fsz; int fb;
+      ItoFNode( Expr const& _src, int _fb )
+        : src( _src ), fb( _fb )
+      {} Expr src; int fb;
       virtual ItoFNode* Mutate() const { return new ItoFNode( *this ); }
-      
+      virtual ScalarType::id_t GetType() const { return TypeInfo<fpT>::GetType(); }
       virtual void Repr( std::ostream& sink ) const { sink << "ItoF( " << src << " )"; }
       virtual unsigned SubCount() const { return 1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; }
@@ -892,8 +930,6 @@ namespace symbolic {
       {
         ItoFNode const& rhs = dynamic_cast<ItoFNode const&>( brhs );
         if (intptr_t delta = src.cmp( rhs.src )) return delta;
-        if (intptr_t delta = isz - rhs.isz) return delta;
-        if (intptr_t delta = fsz - rhs.fsz) return delta;
         return fb - rhs.fb;
       }
     };
@@ -901,7 +937,7 @@ namespace symbolic {
     template <typename fpT, typename intT, class ARCH> static
     void ItoF( SmartValue<fpT>& dst, SmartValue<intT> const& src, int fracbits, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
-      dst = SmartValue<fpT>( Expr( new ItoFNode( src.expr, TypeInfo<intT>::bitsize(), TypeInfo<fpT>::bitsize(), fracbits ) ) );
+      dst = SmartValue<fpT>( Expr( new ItoFNode<fpT,intT>( src.expr, fracbits ) ) );
     }
     
   };
