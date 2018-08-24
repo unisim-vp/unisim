@@ -32,10 +32,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
-#define __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
-
-#include <tlm>
+#include "unisim/component/tlm2/interconnect/generic_router/config.hh"
 
 namespace unisim {
 namespace component {
@@ -43,31 +40,21 @@ namespace tlm2 {
 namespace interconnect {
 namespace generic_router {
 
-class Config {
-public:
-	typedef uint64_t ADDRESS;
-	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 1;
-	static const unsigned int MAX_NUM_MAPPINGS = 256;
-	static const unsigned int INPUT_BUSWIDTH = 32;
-	static const unsigned int OUTPUT_BUSWIDTH = 32;
-	typedef tlm::tlm_base_protocol_types TYPES;
-	static const bool VERBOSE = false;
-	static const char *INPUT_SOCKET_NAME_PREFIX;
-	static const char *OUTPUT_SOCKET_NAME_PREFIX;
-	static const unsigned int BURST_LENGTH = 1;
-};
+const unsigned int Config::INPUT_SOCKETS;
+const unsigned int Config::OUTPUT_SOCKETS;
+const unsigned int Config::MAX_NUM_MAPPINGS;
+const unsigned int Config::INPUT_BUSWIDTH;
+const unsigned int Config::OUTPUT_BUSWIDTH;
+const bool Config::VERBOSE;
+const char *Config::INPUT_SOCKET_NAME_PREFIX = "targ_socket_";
+const char *Config::OUTPUT_SOCKET_NAME_PREFIX = "init_socket_";
+const unsigned int Config::BURST_LENGTH;
 
-class VerboseConfig : public Config {
-public:
-	static const bool VERBOSE = true;
-};
+const bool VerboseConfig::VERBOSE;
 
 } // end of namespace generic_router
 } // end of namespace interconnect
 } // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
-
-#endif // __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
 

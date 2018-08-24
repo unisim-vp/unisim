@@ -80,6 +80,7 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, peripheral_slave_if("peripheral_slave_if")
 	, master_if("master_if")
 	, m_clk("m_clk")
+	, dma_clk("dma_clk")
 	, reset_b("reset_b")
 	, dma_channel()
 	, dma_channel_ack()
@@ -87,6 +88,7 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, err_irq()
 	, logger(*this)
 	, m_clk_prop_proxy(m_clk)
+	, dma_clk_prop_proxy(dma_clk)
 	, edma_cr(this)  
 	, edma_es(this)  
 	, edma_erqh(this)
@@ -123,6 +125,10 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, master_clock_start_time(sc_core::SC_ZERO_TIME)
 	, master_clock_posedge_first(true)
 	, master_clock_duty_cycle(0.5)
+	, dma_clock_period(10.0, sc_core::SC_NS)
+	, dma_clock_start_time(sc_core::SC_ZERO_TIME)
+	, dma_clock_posedge_first(true)
+	, dma_clock_duty_cycle(0.5)
 	, dma_engine_time(sc_core::SC_ZERO_TIME)
 	, dma_engine_event("dma_engine_event")
 	, gen_irq_event()
@@ -369,6 +375,14 @@ void EDMA<CONFIG>::end_of_elaboration()
 	master_clock_properties_changed_process_spawn_options.set_sensitivity(&m_clk_prop_proxy.GetClockPropertiesChangedEvent());
 
 	sc_core::sc_spawn(sc_bind(&EDMA<CONFIG>::MasterClockPropertiesChangedProcess, this), "MasterClockPropertiesChangedProcess", &master_clock_properties_changed_process_spawn_options);
+
+	// Spawn DMAClockPropertiesChangedProcess Process that monitor clock properties modifications
+	sc_core::sc_spawn_options dma_clock_properties_changed_process_spawn_options;
+	
+	dma_clock_properties_changed_process_spawn_options.spawn_method();
+	dma_clock_properties_changed_process_spawn_options.set_sensitivity(&m_clk_prop_proxy.GetClockPropertiesChangedEvent());
+
+	sc_core::sc_spawn(sc_bind(&EDMA<CONFIG>::DMAClockPropertiesChangedProcess, this), "DMAClockPropertiesChangedProcess", &dma_clock_properties_changed_process_spawn_options);
 
 	Reset();
 }
@@ -1392,7 +1406,7 @@ bool EDMA<CONFIG>::Transfer(tlm::tlm_command cmd, int mid, uint32_t& addr, uint8
 		
 		if(resp_status != tlm::TLM_OK_RESPONSE)
 		{
-			t += master_clock_period;
+			t += dma_clock_period;
 			return false;
 		}
 		
@@ -1436,7 +1450,7 @@ bool EDMA<CONFIG>::LoadTCD(unsigned int dma_channel_num, sc_dt::uint64 addr, sc_
 	
 	if(resp_status != tlm::TLM_OK_RESPONSE)
 	{
-		t += master_clock_period;
+		t += dma_clock_period;
 		return false;
 	}
 	
@@ -1942,8 +1956,8 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 						unsigned int dma_channel_num = 0;
 						if(SelectChannel(dma_channel_num, /* preempt */ true))
 						{
-							dma_engine_time += master_clock_period;
-							dma_engine_time += master_clock_period;
+							dma_engine_time += dma_clock_period;
+							dma_engine_time += dma_clock_period;
 							
 							// a channel can be selected
 							if(dma_channel_num != channel_tcd->dma_channel_num)
@@ -1967,8 +1981,8 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 									if(CheckTCD(edma_tcd_file[dma_channel_num]))
 									{
 										// start channel y
-										dma_engine_time += master_clock_period;
-										dma_engine_time += master_clock_period;
+										dma_engine_time += dma_clock_period;
+										dma_engine_time += dma_clock_period;
 										if(verbose)
 										{
 											logger << DebugInfo << sc_core::sc_time_stamp() << ":channel #" << dma_channel_num << ": beginning" << EndDebugInfo;
@@ -2001,8 +2015,8 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 				unsigned int dma_channel_num = 0;
 				if(SelectChannel(dma_channel_num))
 				{
-					dma_engine_time += master_clock_period;
-					dma_engine_time += master_clock_period;
+					dma_engine_time += dma_clock_period;
+					dma_engine_time += dma_clock_period;
 					
 					if(verbose)
 					{
@@ -2012,8 +2026,8 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 					if(CheckTCD(edma_tcd_file[dma_channel_num]))
 					{
 						// Start channel x
-						dma_engine_time += master_clock_period;
-						dma_engine_time += master_clock_period;
+						dma_engine_time += dma_clock_period;
+						dma_engine_time += dma_clock_period;
 						
 						if(verbose)
 						{
@@ -2150,9 +2164,9 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 					else
 					{
 						// exit
-						dma_engine_time += master_clock_period;
-						dma_engine_time += master_clock_period;
-						dma_engine_time += master_clock_period;
+						dma_engine_time += dma_clock_period;
+						dma_engine_time += dma_clock_period;
+						dma_engine_time += dma_clock_period;
 						channel_tcd = 0;
 					}
 				}
@@ -2192,9 +2206,9 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 				else
 				{
 					// exit
-					dma_engine_time += master_clock_period;
-					dma_engine_time += master_clock_period;
-					dma_engine_time += master_clock_period;
+					dma_engine_time += dma_clock_period;
+					dma_engine_time += dma_clock_period;
+					dma_engine_time += dma_clock_period;
 					channel_tcd = 0;
 				}
 
@@ -2364,10 +2378,26 @@ void EDMA<CONFIG>::UpdateMasterClock()
 }
 
 template <typename CONFIG>
+void EDMA<CONFIG>::UpdateDMAClock()
+{
+	dma_clock_period = dma_clk_prop_proxy.GetClockPeriod();
+	dma_clock_start_time = dma_clk_prop_proxy.GetClockStartTime();
+	dma_clock_posedge_first = dma_clk_prop_proxy.GetClockPosEdgeFirst();
+	dma_clock_duty_cycle = dma_clk_prop_proxy.GetClockDutyCycle();
+}
+
+template <typename CONFIG>
 void EDMA<CONFIG>::MasterClockPropertiesChangedProcess()
 {
 	// Master Clock properties have changed
 	UpdateMasterClock();
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::DMAClockPropertiesChangedProcess()
+{
+	// DMA Clock properties have changed
+	UpdateDMAClock();
 }
 
 } // end of namespace edma

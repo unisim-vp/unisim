@@ -35,15 +35,27 @@
 #ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_HH__
 #define __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_HH__
 
+#if defined(HAVE_CONFIG_H)
+#include "config.h"
+#endif
+
 #include <systemc>
 #include <tlm>
 #include <tlm_utils/simple_initiator_socket.h>
 #include <tlm_utils/passthrough_target_socket.h>
+
+#if HAVE_TVS
+
+#include <tvs/tracing.h>
+
+#endif
+
 #include <inttypes.h>
 #include <queue>
 #include <vector>
 #include <map>
 #include "unisim/kernel/tlm2/tlm.hh"
+#include "unisim/kernel/tlm2/clock.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh"
@@ -54,6 +66,17 @@ namespace component {
 namespace tlm2 {
 namespace interconnect {
 namespace generic_router {
+
+#if HAVE_TVS
+struct timed_xfer_traits
+{
+  typedef double value_type;
+  typedef tracing::timed_empty_policy_silence<value_type> empty_policy;
+  typedef tracing::timed_split_policy_decay<value_type> split_policy;
+  typedef tracing::timed_join_policy_combine<value_type> join_policy;
+  typedef tracing::timed_merge_policy_error<value_type> merge_policy;
+};
+#endif
 
 class Mapping {
 public:
@@ -105,6 +128,18 @@ public:
 	}
 };
 
+class MappingTableEntry : public Mapping
+{
+public:
+	MappingTableEntry()
+		: Mapping()
+		, next(0)
+	{
+	}
+	
+	MappingTableEntry *next;
+};
+
 class RouterPayloadExtension :
 	public tlm::tlm_extension<RouterPayloadExtension> {
 public:
@@ -151,18 +186,22 @@ private:
 	static const unsigned int INPUT_SOCKETS = CONFIG::INPUT_SOCKETS;
 	static const unsigned int OUTPUT_SOCKETS = CONFIG::OUTPUT_SOCKETS;
 	static const unsigned int MAX_NUM_MAPPINGS = CONFIG::MAX_NUM_MAPPINGS; 
-	static const unsigned int BUSWIDTH = CONFIG::BUSWIDTH;
+	static const unsigned int INPUT_BUSWIDTH = CONFIG::INPUT_BUSWIDTH;
+	static const unsigned int OUTPUT_BUSWIDTH = CONFIG::OUTPUT_BUSWIDTH;
 	typedef typename CONFIG::TYPES TYPES;
 	static const bool VERBOSE = CONFIG::VERBOSE;
 
-	typedef tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES> InitSocket;
-	typedef tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES> TargSocket;
+	typedef tlm_utils::simple_initiator_socket_tagged<Router, OUTPUT_BUSWIDTH, TYPES> InitSocket;
+	typedef tlm_utils::passthrough_target_socket_tagged<Router, INPUT_BUSWIDTH, TYPES> TargSocket;
 
 public:
 	SC_HAS_PROCESS(Router);
 	Router(const sc_core::sc_module_name &name, Object *parent = 0);
 	~Router();
 
+	sc_core::sc_in<bool> output_if_clock; // clock of output (master) interface (init_socket)
+	sc_core::sc_in<bool> input_if_clock;  // clock of input (slave) interface (targ_socket)
+	
 	/** Router initiator port sockets */
 	InitSocket *init_socket[OUTPUT_SOCKETS];
 	/** Router target port sockets */
@@ -174,6 +213,9 @@ public:
 	/** Outgoing memory interfaces (one per output port) for outgoing debugging/loading requests */
 	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> > *memory_import[OUTPUT_SOCKETS];
 
+	virtual void end_of_elaboration();
+	virtual void end_of_simulation();
+	
 	/** Object setup method
 	 * This method is required by the inherited Object class.
 	 *
@@ -249,48 +291,40 @@ protected:
 	 *************************************************************************/
 
 	/**
-	 * Synchronize the dispatcher with the given time
-	 *
-	 * @param  time   the delay against sc_time_stamp
-	 * @return        the delay against sc_time_stamp once synchronized
-	 */
-	sc_core::sc_time Sync(const sc_core::sc_time &time);
-
-	/**
 	 * Apply mapping function over an address range
 	 *
 	 * @param addr		the base address
 	 * @param size		the size of the range (positive)
-	 * @param applied_mapping	the applied mapping index
+	 * @param applied_mapping	the applied mapping pointer
 	 * @return			true if a map was found, false otherwise
 	 */
-	bool ApplyMap(uint64_t addr, uint32_t size, unsigned int &applied_mapping) const;
+	virtual bool ApplyMap(uint64_t addr, uint32_t size, Mapping const *&applied_mapping) const;
 	
 	/** 
 	 * Apply mapping function over the given transaction
 	 *
 	 * @param trans		the transaction to apply the mapping over
-	 * @param applied_mapping	the applied mapping index
+	 * @param applied_mapping	the applied mapping pointer
 	 * @return        true if a map was found, false otherwise
 	 */
-	bool ApplyMap(const transaction_type &trans, unsigned int &applied_mapping) const;
+	virtual bool ApplyMap(const transaction_type &trans, Mapping const *&applied_mapping) const;
 
 	/**
 	 * Apply mapping function over an address range and return the mapping division
 	 *
 	 * @param addr		the base address
 	 * @param size		the size of the range (positive)
-	 * @param mappings	the mapping indexes that should be applied
+	 * @param mappings	the mapping pointers that should be applied
 	 */
-	void ApplyMap(uint64_t addr, uint32_t size, std::vector<unsigned int> &mappings) const;
+	virtual void ApplyMap(uint64_t addr, uint32_t size, std::vector<Mapping const *> &mappings) const;
 
 	/**
 	 * Apply mapping function over a given transaction and return the mapping division
 	 *
 	 * @param trans		the transaction to apply the mapping over
-	 * @param mappings	the mapping indexes that should be applied
+	 * @param mappings	the mapping pointers that should be applied
 	 */
-	void ApplyMap(const transaction_type &trans, std::vector<unsigned int> &mappings) const;
+	virtual void ApplyMap(const transaction_type &trans, std::vector<Mapping const *> &mappings) const;
 
 	/**
 	 * Set the incomming port into the transaction using the tlm2.0 extension
@@ -380,19 +414,77 @@ protected:
 
 	sc_core::sc_time cycle_time;
 	unisim::kernel::service::Parameter<sc_core::sc_time> param_cycle_time;
-//	unsigned int num_input_sockets;
-//	unisim::kernel::service::Parameter<unsigned int> param_num_input_sockets;
-//	unsigned int num_output_sockets;
-//	unisim::kernel::service::Parameter<unsigned int> param_num_output_sockets;
-	Mapping mapping[MAX_NUM_MAPPINGS];
+	MappingTableEntry mapping[MAX_NUM_MAPPINGS];
+	mutable MappingTableEntry *mru_mapping;
 	unisim::kernel::service::Parameter<Mapping> *param_mapping[MAX_NUM_MAPPINGS];
-	unsigned int port_buffer_size;
-	unisim::kernel::service::Parameter<unsigned int> param_port_buffer_size;
+#if HAVE_TVS
+	bool enable_tracing;
+	unisim::kernel::service::Parameter<bool> param_enable_tracing;
+	bool verbose_tracing;
+	unisim::kernel::service::Parameter<bool> *param_verbose_tracing;
+#endif
+	unisim::kernel::tlm2::ClockPropertiesProxy in_if_clk_prop_proxy;  // proxy to get clock properties from input interface clock port
+	unisim::kernel::tlm2::ClockPropertiesProxy out_if_clk_prop_proxy; // proxy to get clock properties from output interface clock port
+	unisim::kernel::tlm2::LatencyLookupTable input_lat_lut;  // latency lookup table based on input cycle time: number of cycle -> latency time
+	unisim::kernel::tlm2::LatencyLookupTable output_lat_lut; // latency lookup table based on output cycle time: number of cycle -> latency time
+	
+	void InputInterfaceClockPropertyChangedProcess();
+	void OutputInterfaceClockPropertyChangedProcess();
 
 	/*************************************************************************
 	 * Parameters                                                        END *
 	 *************************************************************************/
 	
+	const sc_core::sc_time& TargetTransferDuration(unsigned int data_length) const { return input_lat_lut.Lookup((data_length + (INPUT_BUSWIDTH / 8) - 1) / (INPUT_BUSWIDTH / 8)); }
+	const sc_core::sc_time& InitTransferDuration(unsigned int data_length) const { return output_lat_lut.Lookup((data_length + (OUTPUT_BUSWIDTH / 8) - 1) / (OUTPUT_BUSWIDTH / 8)); }
+#if HAVE_TVS
+	/*************************************************************************
+	 * Tracing                                                         START *
+	 *************************************************************************/
+	typedef tracing::timed_writer<double, timed_xfer_traits> xfer_trace_writer_type;
+	typedef tracing::timed_value<double> xfer_trace_tuple_type;
+	sc_core::sc_time init_wr_xfer_trace_writer_push_end_time[OUTPUT_SOCKETS];
+	sc_core::sc_time targ_wr_xfer_trace_writer_push_end_time[INPUT_SOCKETS];
+	sc_core::sc_time init_rd_xfer_trace_writer_push_end_time[OUTPUT_SOCKETS];
+	sc_core::sc_time targ_rd_xfer_trace_writer_push_end_time[INPUT_SOCKETS];
+	sc_core::sc_time init_wr_xfer_trace_writer_commit_time[OUTPUT_SOCKETS];
+	sc_core::sc_time targ_wr_xfer_trace_writer_commit_time[INPUT_SOCKETS];
+	sc_core::sc_time init_rd_xfer_trace_writer_commit_time[OUTPUT_SOCKETS];
+	sc_core::sc_time targ_rd_xfer_trace_writer_commit_time[INPUT_SOCKETS];
+	xfer_trace_writer_type *init_wr_xfer_trace_writer[OUTPUT_SOCKETS];
+	xfer_trace_writer_type *targ_wr_xfer_trace_writer[INPUT_SOCKETS];
+	xfer_trace_writer_type *init_rd_xfer_trace_writer[OUTPUT_SOCKETS];
+	xfer_trace_writer_type *targ_rd_xfer_trace_writer[INPUT_SOCKETS];
+	sc_core::sc_time trace_commit_period;
+	sc_core::sc_event trace_commit_event;
+	
+	template <unsigned int BUSWIDTH> static unsigned int CeilDataLength(unsigned int data_length) { unsigned int mod = data_length % (BUSWIDTH / 8); return mod ? data_length + ((BUSWIDTH / 8) - mod) : data_length; }
+	void TraceTargetPortWrite(unsigned int targ_id, unsigned int data_length, const sc_core::sc_time& xfer_start_time, const sc_core::sc_time& xfer_duration);
+	void TraceTargetPortRead(unsigned int targ_id, unsigned int data_length, const sc_core::sc_time& xfer_end_time, const sc_core::sc_time& xfer_duration);
+	void TraceInitPortWrite(unsigned int init_id, unsigned int data_length, const sc_core::sc_time& xfer_start_time, const sc_core::sc_time& xfer_duration);
+	void TraceInitPortRead(unsigned int init_id, unsigned int data_length, const sc_core::sc_time& xfer_end_time, const sc_core::sc_time& xfer_duration);
+	void TraceCommitProcess();
+	void TraceCommit();
+	/*************************************************************************
+	 * Tracing                                                           END *
+	 *************************************************************************/
+#endif
+	
+	/*************************************************************************
+	 * Statistics                                                      START *
+	 *************************************************************************/
+
+#if 0
+	mutable uint64_t mapping_lookup_count;
+	unisim::kernel::service::Statistic<uint64_t> param_mapping_lookup_count;
+	mutable uint64_t mapping_fast_lookup_count;
+	unisim::kernel::service::Statistic<uint64_t> param_mapping_fast_lookup_count;
+#endif
+
+	/*************************************************************************
+	 * Statistics                                                        END *
+	 *************************************************************************/
+
 	/*************************************************************************
 	 * Logger and verbose parameters                                   START *
 	 *************************************************************************/

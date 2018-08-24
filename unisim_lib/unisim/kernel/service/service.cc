@@ -1666,8 +1666,8 @@ template class Formula<double>;
 //=============================================================================
 
 Object::Object(const char *_name, Object *_parent, const char *_description)
-	: name(_parent ? (std::string(_parent->GetName()) + std::string(".") + std::string(_name)) : std::string(_name))
-	, object_name(std::string(_name))
+	: object_name(_parent ? (std::string(_parent->GetName()) + std::string(".") + std::string(_name)) : std::string(_name))
+	, object_base_name(std::string(_name))
 	, description(_description ? std::string(_description) : std::string(""))
 	, parent(_parent)
 	, srv_imports()
@@ -1686,12 +1686,12 @@ Object::~Object()
 
 const char *Object::GetName() const
 {
-	return name.c_str();
+	return object_name.c_str();
 }
 
 const char *Object::GetObjectName() const
 {
-	return object_name.c_str();
+	return object_base_name.c_str();
 }
 
 Object *Object::GetParent() const

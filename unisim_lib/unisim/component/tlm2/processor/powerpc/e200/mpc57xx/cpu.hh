@@ -73,11 +73,12 @@ public:
 	typedef typename TYPES::STORAGE_ATTR STORAGE_ATTR;
 	
 	typedef typename CONFIG::CPU Super;
-	typedef tlm::tlm_initiator_socket<CONFIG::FSB_WIDTH * 8> ahb_master_if_type;
-	typedef tlm::tlm_target_socket<CONFIG::FSB_WIDTH * 8> ahb_slave_if_type;
+	typedef tlm::tlm_initiator_socket<CONFIG::INSN_FSB_WIDTH * 8> i_ahb_master_if_type;
+	typedef tlm::tlm_initiator_socket<CONFIG::DATA_FSB_WIDTH * 8> d_ahb_master_if_type;
+	typedef tlm::tlm_target_socket<CONFIG::INCO_FSB_WIDTH * 8> ahb_slave_if_type;
 
-	ahb_master_if_type i_ahb_if; // instruction master AHB interface
-	ahb_master_if_type d_ahb_if; // data master AHB interface
+	i_ahb_master_if_type i_ahb_if; // instruction master AHB interface
+	d_ahb_master_if_type d_ahb_if; // data master AHB interface
 	ahb_slave_if_type s_ahb_if;  // slave AHB interface
 	sc_core::sc_in<bool>                m_clk;            // clock
 	sc_core::sc_in<bool>                m_por;            // power-on reset
@@ -137,9 +138,6 @@ private:
 	sc_core::sc_time time_per_instruction;
 	double clock_multiplier;
 	sc_core::sc_time bus_cycle_time;         //<! Bus (AHB) cycle time
-	sc_core::sc_time cpu_time;               //<! local time (relative to sc_time_stamp)
-	sc_core::sc_time timer_time;             //<! absolute time from the internal timers point of view
-	sc_core::sc_time nice_time;              //<! period of synchronization with other threads
 	sc_core::sc_time run_time;               //<! absolute timer (local time + sc_time_stamp)
 	sc_core::sc_time idle_time;              //<! total idle time
 	bool enable_host_idle;
@@ -150,9 +148,9 @@ private:
 	bool enable_dmi;
 	bool debug_dmi;
 	unsigned int ahb_master_id;
+	unisim::kernel::tlm2::QuantumKeeper qk;
 
 	Parameter<double> param_clock_multiplier;
-	Parameter<sc_core::sc_time> param_nice_time;
 	Parameter<double> param_ipc;
 	Parameter<bool> param_enable_host_idle;
 	Parameter<bool> param_enable_dmi;
@@ -168,7 +166,6 @@ private:
 	unisim::kernel::tlm2::DMIRegionCache d_dmi_region_cache;
 
 	inline void AlignToBusClock() ALWAYS_INLINE;
-	void AlignToBusClock(sc_core::sc_time& t);
 };
 
 } // end of namespace mpc57xx

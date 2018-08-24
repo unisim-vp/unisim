@@ -34,6 +34,13 @@
 
 #include <simulator.hh>
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
 using unisim::kernel::tlm2::OUTPUT_INSTRUMENTATION;
 
 Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
@@ -148,7 +155,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, xbar_1_stub(0)
 	, pbridge_a_stub(0)
 	, pbridge_b_stub(0)
-	//, siul2_stub(0)
 	, dma_err_irq_combinator(0)
 	, DSPI0_0(0)
 	, DSPI1_0(0)
@@ -219,6 +225,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, dspi_5_slave(0)
 	, dspi_6_slave(0)
 	, dspi_12_slave(0)
+	, max_time(sc_core::SC_ZERO_TIME)
 	, param_enable_core0_reset("enable-core0-reset", this, enable_core0_reset, "Enable/Disable Core #0 reset")
 	, param_enable_core1_reset("enable-core1-reset", this, enable_core1_reset, "Enable/Disable Core #1 reset")
 	, param_enable_core2_reset("enable-core2-reset", this, enable_core2_reset, "Enable/Disable Core #2 reset")
@@ -258,6 +265,13 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, param_dspi_5_slave("dspi_5-slave", 0, dspi_5_slave, "Assigned slave number (in master) of DSPI_5 when DSPI_5 is wired as a slave")
 	, param_dspi_6_slave("dspi_6-slave", 0, dspi_6_slave, "Assigned slave number (in master) of DSPI_6 when DSPI_6 is wired as a slave")
 	, param_dspi_12_slave("dspi_12-slave", 0, dspi_12_slave, "Assigned slave number (in master) of DSPI_12 when DSPI_12 is wired as a slave")
+	, param_max_time("max-time", 0, max_time, "Maximum time to simulate (zero means forever)")
+#if HAVE_TVS
+	, xfer_vcd_filename("xfer.vcd")
+	, param_xfer_vcd_filename("xfer-vcd-filename", this, xfer_vcd_filename, "Filename of VCD file where to trace interconnects transfer activity")
+	, xfer_vcd_file(0)
+	, xfer_vcd(0)
+#endif
 	, exit_status(0)
 {
 	param_dspi_0_master.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -311,6 +325,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	//  - Concentrators
 	xbar_1_m1_concentrator = new XBAR_1_M1_CONCENTRATOR("XBAR_1_M1_CONCENTRATOR", this);
+	
+	//  - Intelligent Bus Bridging Gaskets
+	iahbg_0 = new IAHBG_0("IAHBG_0", this);
+	iahbg_1 = new IAHBG_1("IAHBG_1", this);
 	
 	//  - Interrupt Controller
 	intc_0 = new INTC_0("INTC_0", this);
@@ -371,6 +389,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	dspi_5 = new DSPI_5("DSPI_5", this);
 	dspi_6 = new DSPI_6("DSPI_6", this);
 	dspi_12 = new DSPI_12("DSPI_12", this);
+	
 	// - SIUL2
 	siul2 = new SIUL2("SIUL2", this);
 	
@@ -388,7 +407,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	xbar_1_stub = new XBAR_1_STUB("XBAR_1_STUB", this);
 	pbridge_a_stub = new PBRIDGE_A_STUB("PBRIDGE_A_STUB", this);
 	pbridge_b_stub = new PBRIDGE_B_STUB("PBRIDGE_B_STUB", this);
-	//siul2_stub = new SIUL2_STUB("SIUL2", this);
 
 	dma_err_irq_combinator = new unisim::component::tlm2::operators::LogicalOrOperator<bool, NUM_DMA_CHANNELS>("DMA_ERR_IRQ_COMBINATOR");
 
@@ -486,6 +504,34 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(peripheral_core_2->p_voffset);
 	RegisterPort(peripheral_core_2->p_iack);
 	
+	// - XBAR_0
+	RegisterPort(xbar_0->input_if_clock);
+	RegisterPort(xbar_0->output_if_clock);
+	
+	// - XBAR_1
+	RegisterPort(xbar_1->input_if_clock);
+	RegisterPort(xbar_1->output_if_clock);
+
+	// - PBRIDGE_A
+	RegisterPort(pbridge_a->input_if_clock);
+	RegisterPort(pbridge_a->output_if_clock);
+
+	// - PBRIDGE_B
+	RegisterPort(pbridge_b->input_if_clock);
+	RegisterPort(pbridge_b->output_if_clock);
+
+	// - IAHBG_0
+	RegisterPort(iahbg_0->input_if_clock);
+	RegisterPort(iahbg_0->output_if_clock);
+
+	// - IAHBG_1
+	RegisterPort(iahbg_1->input_if_clock);
+	RegisterPort(iahbg_1->output_if_clock);
+
+	// - XBAR_1_M1_CONCENTRATOR
+	RegisterPort(xbar_1_m1_concentrator->input_if_clock);
+	RegisterPort(xbar_1_m1_concentrator->output_if_clock);
+
 	// - INTC_0
 	RegisterPort(intc_0->m_clk);
 	RegisterPort(intc_0->reset_b);
@@ -943,6 +989,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	// - EDMA_0
 	RegisterPort(edma_0->m_clk);
+	RegisterPort(edma_0->dma_clk);
 	RegisterPort(edma_0->reset_b);
 	for(dma_channel_num = 0; dma_channel_num < EDMA_0::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
@@ -960,6 +1007,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 
 	// - EDMA_1
 	RegisterPort(edma_1->m_clk);
+	RegisterPort(edma_1->dma_clk);
 	RegisterPort(edma_1->reset_b);
 	for(dma_channel_num = 0; dma_channel_num < EDMA_1::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
@@ -1648,12 +1696,15 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*xbar_0->init_socket[4])(system_sram->slave_sock);                 //       XBAR_0 S4 <-> System SRAM
 	(*xbar_0->init_socket[5])(ebi_space_stub->slave_sock);              // TODO: XBAR_0 S5 <-> EBI
 	(*xbar_0->init_socket[6])(xbar_0_s6_stub->slave_sock);              //       XBAR_0 S6 <-> unused
-	(*xbar_0->init_socket[7])(*xbar_1->targ_socket[3]);                 //       XBAR_0 S7 <-> XBAR_1 M3
+	(*xbar_0->init_socket[7])(*iahbg_0->targ_socket[0]);                //       XBAR_0 S7 <-> XBAR_1 M3 (through IAHBG_0)
                                                                      
-	(*xbar_1->init_socket[0])(*xbar_0->targ_socket[4]);                 //       XBAR_1 S0 <-> XBAR_0 M4
+	(*xbar_1->init_socket[0])(*iahbg_1->targ_socket[0]);                //       XBAR_1 S0 <-> XBAR_0 M4 (through IAHBG_1)
 	(*xbar_1->init_socket[1])(peripheral_core_2->s_ahb_if);             //       XBAR_1 S1 <-> S_AHB_IF<Peripheral_Core_2
 	(*xbar_1->init_socket[2])(*pbridge_b->targ_socket[0]);              //       XBAR_1 S2 <-> PBRIDGE_B
 	(*xbar_1->init_socket[3])(*pbridge_a->targ_socket[0]);              //       XBAR_1 S3 <-> PBRIDGE_A
+	
+	(*iahbg_0->init_socket[0])(*xbar_1->targ_socket[3]);                // IAHBG_0: XBAR_0 S7 -> XBAR_1 M3
+	(*iahbg_1->init_socket[0])(*xbar_0->targ_socket[4]);                // IAHBG_1: XBAR_1 S0 -> XBAR_0 M4
 	
 	(*pbridge_a->init_socket[0])(intc_0->peripheral_slave_if);          // PBRIDGE_A <-> INTC_0
 	(*pbridge_a->init_socket[1])(stm_0->peripheral_slave_if);           // PBRIDGE_A <-> STM_0
@@ -1878,14 +1929,14 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 			
 			if(dspi_is_slave[i] && (((s >= 0) && (s <= 6)) || (s == 12)) && (((m >= 0) && (m <= 6)) || (m == 12)))
 			{
-				std::cerr << "DSPI_" << i << " is slave #" << s << " of Master #" << m << std::endl;
+				logger << DebugInfo << "DSPI_" << i << " is slave #" << s << " of Master #" << m << EndDebugInfo;
 				dspi_sout[i]->bind(dspi_sin_serial_bus[m]->serial_socket);    //  DSPI_0 SOUT  <->  DSPI_2 SIN serial bus
 				dspi_sin[i]->bind(dspi_sout_serial_bus[m]->serial_socket);   //  DSPI_0 SIN   <->  DSPI_2 SOUT serial bus
 				dspi_ss[i]->bind(dspi_pcs_serial_bus[m][s]->serial_socket);   //  DSPI_0_SS    <->  DSPI_2_0 PCS serial bus
 			}
 			else
 			{
-				std::cerr << "DSPI_" << i << " is master" << std::endl;
+				logger << DebugInfo << "DSPI_" << i << " is master" << EndDebugInfo;
 				dspi_sout[i]->bind(dspi_sout_serial_bus[i]->serial_socket);                                               //  DSPI_0 SOUT  <->  DSPI_0 SOUT serial bus
 				dspi_sin[i]->bind(dspi_sin_serial_bus[i]->serial_socket);                                                //  DSPI_0 SIN   <->  DSPI_0 SIN serial bus
 				dspi_ss[i]->bind(dspi_ss_serial_bus[i]->serial_socket);                                                 //  DSPI_0_SS   <->  DSPI_0 SS serial bus
@@ -1949,6 +2000,21 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.Peripheral_Core_2.p_voffset"       , "HARDWARE.p_voffset_2");
 	Bind("HARDWARE.Peripheral_Core_2.p_iack"          , "HARDWARE.p_iack_2");
 	
+	Bind("HARDWARE.XBAR_0.input_if_clock"                 , "HARDWARE.FXBAR_CLK");
+	Bind("HARDWARE.XBAR_0.output_if_clock"                , "HARDWARE.FXBAR_CLK");
+	Bind("HARDWARE.XBAR_1.input_if_clock"                 , "HARDWARE.SXBAR_CLK");
+	Bind("HARDWARE.XBAR_1.output_if_clock"                , "HARDWARE.SXBAR_CLK");
+	Bind("HARDWARE.PBRIDGE_A.input_if_clock"              , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.PBRIDGE_A.output_if_clock"             , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.PBRIDGE_B.input_if_clock"              , "HARDWARE.PBRIDGEB_CLK");
+	Bind("HARDWARE.PBRIDGE_B.output_if_clock"             , "HARDWARE.PBRIDGEB_CLK");
+	Bind("HARDWARE.IAHBG_0.input_if_clock"                , "HARDWARE.FXBAR_CLK");
+	Bind("HARDWARE.IAHBG_0.output_if_clock"               , "HARDWARE.SXBAR_CLK");
+	Bind("HARDWARE.IAHBG_1.input_if_clock"                , "HARDWARE.SXBAR_CLK");
+	Bind("HARDWARE.IAHBG_1.output_if_clock"               , "HARDWARE.FXBAR_CLK");
+	Bind("HARDWARE.XBAR_1_M1_CONCENTRATOR.input_if_clock" , "HARDWARE.SXBAR_CLK");
+	Bind("HARDWARE.XBAR_1_M1_CONCENTRATOR.output_if_clock", "HARDWARE.SXBAR_CLK");
+
 	Bind("HARDWARE.INTC_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.INTC_0.reset_b"         , "HARDWARE.reset_b");
 	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_irq_b"  , "HARDWARE.p_irq_b"  );
@@ -2119,11 +2185,13 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	BindArray(DMAMUX_9::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_9.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 112); // DMA channels 112 - 127
 
 	Bind("HARDWARE.eDMA_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.eDMA_0.dma_clk"         , "HARDWARE.SXBAR_CLK");
 	Bind("HARDWARE.eDMA_0.reset_b"         , "HARDWARE.reset_b");
 	BindArray(EDMA_0::NUM_DMA_CHANNELS, "HARDWARE.eDMA_0.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 0);  // DMA channels  0 - 63
 	BindArray(EDMA_0::NUM_DMA_CHANNELS, "HARDWARE.eDMA_0.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 0);  // DMA channels  0 - 63
 	
 	Bind("HARDWARE.eDMA_1.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.eDMA_1.dma_clk"         , "HARDWARE.SXBAR_CLK");
 	Bind("HARDWARE.eDMA_1.reset_b"         , "HARDWARE.reset_b");
 	BindArray(EDMA_1::NUM_DMA_CHANNELS, "HARDWARE.eDMA_1.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 64); // DMA channels 64 - 127
 	BindArray(EDMA_1::NUM_DMA_CHANNELS, "HARDWARE.eDMA_1.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 64); // DMA channels 64 - 127
@@ -2164,9 +2232,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_0.INT_DSITCF", "HARDWARE.DSPI_0_INT_DSITCF");
 	BindArray(DSPI_0::NUM_DSI_INPUTS, "HARDWARE.DSPI_0.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
 	BindArray(DSPI_0::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_0.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
-// 	Bind("HARDWARE.DSPI_0.DMA_RX"   , "HARDWARE.DSPI_0_DMA_RX");
-// 	Bind("HARDWARE.DSPI_0.DMA_TX"   , "HARDWARE.DSPI_0_DMA_TX");
-// 	Bind("HARDWARE.DSPI_0.DMA_CMD"  , "HARDWARE.DSPI_0_DMA_CMD");
 	Bind("HARDWARE.DSPI_0.DMA_DD"   , "HARDWARE.DSPI_0_DMA_DD");
 	Bind("HARDWARE.DSPI_0.DMA_ACK_DD", "HARDWARE.DSPI_0_DMA_ACK_DD");
 	
@@ -2184,9 +2249,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_1.INT_DSITCF","HARDWARE.DSPI_1_INT_DSITCF");
 	BindArray(DSPI_1::NUM_DSI_INPUTS, "HARDWARE.DSPI_1.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
 	BindArray(DSPI_1::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_1.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
-// 	Bind("HARDWARE.DSPI_1.DMA_RX"   , "HARDWARE.DSPI_1_DMA_RX");
-// 	Bind("HARDWARE.DSPI_1.DMA_TX"   , "HARDWARE.DSPI_1_DMA_TX");
-// 	Bind("HARDWARE.DSPI_1.DMA_CMD"  , "HARDWARE.DSPI_1_DMA_CMD");
 	Bind("HARDWARE.DSPI_1.DMA_DD"   , "HARDWARE.DSPI_1_DMA_DD");
 	Bind("HARDWARE.DSPI_1.DMA_ACK_DD", "HARDWARE.DSPI_1_DMA_ACK_DD");
 	
@@ -2204,9 +2266,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_2.INT_DSITCF", "HARDWARE.DSPI_2_INT_DSITCF");
 	BindArray(DSPI_2::NUM_DSI_INPUTS, "HARDWARE.DSPI_2.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
 	BindArray(DSPI_2::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_2.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
-// 	Bind("HARDWARE.DSPI_2.DMA_RX"   , "HARDWARE.DSPI_2_DMA_RX");
-// 	Bind("HARDWARE.DSPI_2.DMA_TX"   , "HARDWARE.DSPI_2_DMA_TX");
-// 	Bind("HARDWARE.DSPI_2.DMA_CMD"  , "HARDWARE.DSPI_2_DMA_CMD");
 	Bind("HARDWARE.DSPI_2.DMA_DD"   , "HARDWARE.DSPI_2_DMA_DD");
 	Bind("HARDWARE.DSPI_2.DMA_ACK_DD", "HARDWARE.DSPI_2_DMA_ACK_DD");
 	
@@ -2224,9 +2283,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_3.INT_DSITCF", "HARDWARE.DSPI_3_INT_DSITCF");
 	BindArray(DSPI_3::NUM_DSI_INPUTS, "HARDWARE.DSPI_3.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
 	BindArray(DSPI_3::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_3.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
-// 	Bind("HARDWARE.DSPI_3.DMA_RX"   , "HARDWARE.DSPI_3_DMA_RX");
-// 	Bind("HARDWARE.DSPI_3.DMA_TX"   , "HARDWARE.DSPI_3_DMA_TX");
-// 	Bind("HARDWARE.DSPI_3.DMA_CMD"  , "HARDWARE.DSPI_3_DMA_CMD");
 	Bind("HARDWARE.DSPI_3.DMA_DD"   , "HARDWARE.DSPI_3_DMA_DD");
 	Bind("HARDWARE.DSPI_3.DMA_ACK_DD", "HARDWARE.DSPI_3_DMA_ACK_DD");
 	
@@ -2246,9 +2302,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_4.INT_DPEF"  , "HARDWARE.DSPI_4_INT_DPEF");
 	BindArray(DSPI_4::NUM_DSI_INPUTS, "HARDWARE.DSPI_4.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
 	BindArray(DSPI_4::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_4.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
-// 	Bind("HARDWARE.DSPI_4.DMA_RX"   , "HARDWARE.DSPI_4_DMA_RX");
-// 	Bind("HARDWARE.DSPI_4.DMA_TX"   , "HARDWARE.DSPI_4_DMA_TX");
-// 	Bind("HARDWARE.DSPI_4.DMA_CMD"  , "HARDWARE.DSPI_4_DMA_CMD");
 	Bind("HARDWARE.DSPI_4.DMA_DD"   , "HARDWARE.DSPI_4_DMA_DD");
 	Bind("HARDWARE.DSPI_4.DMA_ACK_DD", "HARDWARE.DSPI_4_DMA_ACK_DD");
 	
@@ -2268,9 +2321,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_5.INT_DPEF"  , "HARDWARE.DSPI_5_INT_DPEF");
 	BindArray(DSPI_5::NUM_DSI_INPUTS, "HARDWARE.DSPI_5.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
 	BindArray(DSPI_5::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_5.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
-// 	Bind("HARDWARE.DSPI_5.DMA_RX"    , "HARDWARE.DSPI_5_DMA_RX");
-// 	Bind("HARDWARE.DSPI_5.DMA_TX"    , "HARDWARE.DSPI_5_DMA_TX");
-// 	Bind("HARDWARE.DSPI_5.DMA_CMD"   , "HARDWARE.DSPI_5_DMA_CMD");
 	Bind("HARDWARE.DSPI_5.DMA_DD"   , "HARDWARE.DSPI_5_DMA_DD");
 	Bind("HARDWARE.DSPI_5.DMA_ACK_DD", "HARDWARE.DSPI_5_DMA_ACK_DD");
 	
@@ -2290,9 +2340,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_6.INT_DPEF"  , "HARDWARE.DSPI_6_INT_DPEF");
 	BindArray(DSPI_6::NUM_DSI_INPUTS, "HARDWARE.DSPI_6.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
 	BindArray(DSPI_6::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_6.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
-// 	Bind("HARDWARE.DSPI_6.DMA_RX"    , "HARDWARE.DSPI_6_DMA_RX");
-// 	Bind("HARDWARE.DSPI_6.DMA_TX"    , "HARDWARE.DSPI_6_DMA_TX");
-// 	Bind("HARDWARE.DSPI_6.DMA_CMD"   , "HARDWARE.DSPI_6_DMA_CMD");
 	Bind("HARDWARE.DSPI_6.DMA_DD"   , "HARDWARE.DSPI_6_DMA_DD");
 	Bind("HARDWARE.DSPI_6.DMA_ACK_DD", "HARDWARE.DSPI_6_DMA_ACK_DD");
 	
@@ -2310,9 +2357,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_12.INT_DSITCF", "HARDWARE.DSPI_12_INT_DSITCF");
 	BindArray(DSPI_12::NUM_DSI_INPUTS, "HARDWARE.DSPI_12.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
 	BindArray(DSPI_12::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_12.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
-// 	Bind("HARDWARE.DSPI_12.DMA_RX"   , "HARDWARE.DSPI_12_DMA_RX");
-// 	Bind("HARDWARE.DSPI_12.DMA_TX"   , "HARDWARE.DSPI_12_DMA_TX");
-// 	Bind("HARDWARE.DSPI_12.DMA_CMD"  , "HARDWARE.DSPI_12_DMA_CMD");
 	Bind("HARDWARE.DSPI_12.DMA_DD"   , "HARDWARE.DSPI_12_DMA_DD");
 	Bind("HARDWARE.DSPI_12.DMA_ACK_DD", "HARDWARE.DSPI_12_DMA_ACK_DD");
 	
@@ -3798,7 +3842,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(1, 42);
 	DMASource(1, 43);
 	DMASource(1, 44);
-	//DMASource(1, 50);
 	DMASource(1, 51);
 	DMASource(1, 52);
 	DMASource(1, 55);
@@ -3935,8 +3978,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(4, 2);
 	DMASource(4, 3);
 	DMASource(4, 4);
-	//DMASource(4, 5);
-	//DMASource(4, 6);
 	DMASource(4, 11);
 	DMASource(4, 12);
 	DMASource(4, 13);
@@ -3992,8 +4033,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(5, 1);
 	DMASource(5, 2);
 	DMASource(5, 3);
-	//DMASource(5, 4);
-	//DMASource(5, 5);
 	DMASource(5, 10);
 	DMASource(5, 11);
 	DMASource(5, 12);
@@ -4443,6 +4482,223 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		serial_terminal16->char_io_import >> netstreamer16->char_io_export;
 	}
 	
+#if HAVE_TVS
+	bool enable_tracing = (*xbar_0)["enable-tracing"] ||
+	                      (*xbar_1)["enable-tracing"] ||
+	                      (*pbridge_a)["enable-tracing"] ||
+	                      (*pbridge_b)["enable-tracing"] ||
+	                      (*xbar_1_m1_concentrator)["enable-tracing"] ||
+	                      (*iahbg_0)["enable-tracing"] ||
+	                      (*iahbg_1)["enable-tracing"];
+	if(enable_tracing)
+	{
+		if(!xfer_vcd_filename.empty())
+		{
+			xfer_vcd_file = new std::ofstream(xfer_vcd_filename.c_str());
+			
+			if(xfer_vcd_file->is_open())
+			{
+				xfer_vcd = new tracing::timed_stream_vcd_processor("sink", *xfer_vcd_file);
+				
+				typedef tracing::timed_stream<double, unisim::component::tlm2::interconnect::generic_router::timed_xfer_traits> stream_type;
+				if((*xbar_0)["enable-tracing"])
+				{
+					for(unsigned int i = 0; i < XBAR_0_CONFIG::OUTPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.XBAR_0." << XBAR_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < XBAR_0_CONFIG::OUTPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.XBAR_0." << XBAR_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < XBAR_0_CONFIG::INPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.XBAR_0." << XBAR_0_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < XBAR_0_CONFIG::INPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.XBAR_0." << XBAR_0_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+				}
+				if((*xbar_1)["enable-tracing"])
+				{
+					for(unsigned int i = 0; i < XBAR_1_CONFIG::OUTPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.XBAR_1." << XBAR_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < XBAR_1_CONFIG::OUTPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.XBAR_1." << XBAR_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < XBAR_1_CONFIG::INPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.XBAR_1." << XBAR_1_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < XBAR_1_CONFIG::INPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.XBAR_1." << XBAR_1_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+				}
+				if((*pbridge_a)["enable-tracing"])
+				{
+					for(unsigned int i = 0; i < PBRIDGE_A_CONFIG::OUTPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.PBRIDGE_A." << PBRIDGE_A_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < PBRIDGE_A_CONFIG::OUTPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.PBRIDGE_A." << PBRIDGE_A_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < PBRIDGE_A_CONFIG::INPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.PBRIDGE_A." << PBRIDGE_A_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < PBRIDGE_A_CONFIG::INPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.PBRIDGE_A." << PBRIDGE_A_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+				}
+				if((*pbridge_b)["enable-tracing"])
+				{
+					for(unsigned int i = 0; i < PBRIDGE_B_CONFIG::OUTPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.PBRIDGE_B." << PBRIDGE_B_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < PBRIDGE_B_CONFIG::OUTPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.PBRIDGE_B." << PBRIDGE_B_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < PBRIDGE_B_CONFIG::INPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.PBRIDGE_B." << PBRIDGE_B_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < PBRIDGE_B_CONFIG::INPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.PBRIDGE_B." << PBRIDGE_B_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+				}
+				if((*xbar_1_m1_concentrator)["enable-tracing"])
+				{
+					for(unsigned int i = 0; i < XBAR_1_M1_CONCENTRATOR_CONFIG::OUTPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << XBAR_1_M1_CONCENTRATOR_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < XBAR_1_M1_CONCENTRATOR_CONFIG::OUTPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << XBAR_1_M1_CONCENTRATOR_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < XBAR_1_M1_CONCENTRATOR_CONFIG::INPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << XBAR_1_M1_CONCENTRATOR_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < XBAR_1_M1_CONCENTRATOR_CONFIG::INPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << XBAR_1_M1_CONCENTRATOR_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+				}
+				if((*iahbg_0)["enable-tracing"])
+				{
+					for(unsigned int i = 0; i < IAHBG_0_CONFIG::OUTPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.IAHBG_0." << IAHBG_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < IAHBG_0_CONFIG::OUTPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.IAHBG_0." << IAHBG_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < IAHBG_0_CONFIG::INPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.IAHBG_0." << IAHBG_0_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < IAHBG_0_CONFIG::INPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.IAHBG_0." << IAHBG_0_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+				}
+				if((*iahbg_1)["enable-tracing"])
+				{
+					for(unsigned int i = 0; i < IAHBG_1_CONFIG::OUTPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.IAHBG_1." << IAHBG_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < IAHBG_1_CONFIG::OUTPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.IAHBG_1." << IAHBG_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < IAHBG_1_CONFIG::INPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.IAHBG_1." << IAHBG_1_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+					for(unsigned int i = 0; i < IAHBG_1_CONFIG::INPUT_SOCKETS; i++)
+					{
+						std::stringstream sstr;
+						sstr << "HARDWARE.IAHBG_1." << IAHBG_1_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					}
+				}
+			}
+			else
+			{
+				logger << DebugWarning << "Can't open File \"" << xfer_vcd_filename << "\"" << EndDebugWarning;
+			}
+		}
+	}
+#endif
+	
 	SC_HAS_PROCESS(Simulator);
 	
 	SC_THREAD(Core0ResetProcess);
@@ -4464,6 +4720,8 @@ Simulator::~Simulator()
 	if(pbridge_a) delete pbridge_a;
 	if(pbridge_b) delete pbridge_b;
 	if(xbar_1_m1_concentrator) delete xbar_1_m1_concentrator;
+	if(iahbg_0) delete iahbg_0;
+	if(iahbg_1) delete iahbg_1;
 	if(intc_0) delete intc_0;
 	if(stm_0) delete stm_0;
 	if(stm_1) delete stm_1;
@@ -4564,7 +4822,6 @@ Simulator::~Simulator()
 	if(xbar_1_stub) delete xbar_1_stub;
 	if(pbridge_a_stub) delete pbridge_a_stub;
 	if(pbridge_b_stub) delete pbridge_b_stub;
-	//if(siul2_stub) delete siul2_stub;
 	if(dma_err_irq_combinator) delete dma_err_irq_combinator;
 	if(DSPI0_0) delete DSPI0_0;
 	if(DSPI1_0) delete DSPI1_0;
@@ -4602,6 +4859,10 @@ Simulator::~Simulator()
 	if(netstreamer14) delete netstreamer14;
 	if(netstreamer15) delete netstreamer15;
 	if(netstreamer16) delete netstreamer16;
+#if HAVE_TVS
+	if(xfer_vcd) delete xfer_vcd;
+	if(xfer_vcd_file) delete xfer_vcd_file;
+#endif
 }
 
 void Simulator::Core0ResetProcess()
@@ -4986,6 +5247,14 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.XBAR_1.mapping_11", "range_start=\"0xfc000000\" range_end=\"0xffffffff\" output_port=\"3\" translation=\"0xfc000000\""); // PBRIDGE_A                       -> PBRIDGE_B (abs address)
 	simulator->SetVariable("HARDWARE.XBAR_1.mapping_12", "range_start=\"0x20000000\" range_end=\"0x2fffffff\" output_port=\"0\" translation=\"0x20000000\""); // EBI                             -> XBAR_0 (abs address)
 	
+	//  - IAHBG_0
+	simulator->SetVariable("HARDWARE.IAHBG_0.cycle_time", "0 ns");
+	simulator->SetVariable("HARDWARE.IAHBG_0.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x0\"");
+	
+	//  - IAHBG_1
+	simulator->SetVariable("HARDWARE.IAHBG_1.cycle_time", "0 ns");
+	simulator->SetVariable("HARDWARE.IAHBG_1.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x0\"");
+
 	//  - PBRIDGE_A
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.cycle_time", "20 ns");
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_0",  "range_start=\"0xfc040000\" range_end=\"0xfc04ffff\" output_port=\"0\"  translation=\"0x0\""); // INTC        -> INTC  (rel address)
@@ -5436,7 +5705,14 @@ void Simulator::Run()
 	
 	try
 	{
-		sc_core::sc_start();
+		if(max_time != sc_core::SC_ZERO_TIME)
+		{
+			sc_core::sc_start(max_time);
+		}
+		else
+		{
+			sc_core::sc_start();
+		}
 	}
 	catch(std::runtime_error& e)
 	{
@@ -5444,6 +5720,7 @@ void Simulator::Run()
 		std::cerr << e.what() << std::endl;
 	}
 
+	std::cerr << "Program exited with status " << exit_status << std::endl;
 	std::cerr << "Simulation finished" << std::endl;
 
 	double time_stop = host_time->GetTime();
@@ -5464,7 +5741,7 @@ void Simulator::Run()
 	double idle_time = (double)(*peripheral_core_2)["idle-time"] + (double)(*main_core_0)["idle-time"] + (double)(*main_core_1)["idle-time"];
 	
 	std::cerr << "simulation time: " << spent_time << " seconds" << std::endl;
-	std::cerr << "simulated time : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
+	std::cerr << "simulated time: " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
 	std::cerr << "target speed: " << (instruction_counter / (run_time - idle_time) / 1000000.0) << " MIPS" << std::endl;
 	std::cerr << "host simulation speed: " << ((double) instruction_counter / spent_time / 1000000.0) << " MIPS" << std::endl;
 	std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
@@ -5500,16 +5777,6 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 {
 	exit_status = _exit_status;
-	if(object)
-	{
-		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
-	}
-	if(DEBUG_ENABLE)
-	{
-		std::cerr << "Call stack:" << std::endl;
-		std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
-	}
-	std::cerr << "Program exited with status " << exit_status << std::endl;
 	if(sc_core::sc_get_status() != sc_core::SC_STOPPED)
 	{
 		sc_core::sc_stop();

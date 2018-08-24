@@ -175,6 +175,7 @@ unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
+unisim/component/tlm2/interconnect/generic_router/config.cc \
 unisim/component/tlm2/com/serial_terminal/serial_terminal.cc \
 "
 
@@ -941,6 +942,7 @@ m4/check_lib.m4 \
 m4/get_exec_path.m4 \
 m4/real_path.m4 \
 m4/pthread.m4 \
+m4/tvs.m4 \
 "
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="\
@@ -1005,6 +1007,8 @@ xbar_1.cc \
 pbridge_a.cc \
 pbridge_b.cc \
 xbar_1_m1_concentrator.cc \
+iahbg_0.cc \
+iahbg_1.cc \
 intc_0.cc \
 stm_0.cc \
 stm_1.cc \
@@ -1177,7 +1181,11 @@ if [ -z "${DISTCOPY}" ]; then
 fi
 
 has_to_build() {
-	[ ! -e "$1" -o "$2" -nt "$1" ]
+	if [ ! -e "$1" -o "$2" -nt "$1" ]; then
+		return 0;
+	else
+		return 1;
+	fi
 }
 
 dist_copy() {
@@ -1185,9 +1193,9 @@ dist_copy() {
 		echo "$1 ==> $2"
 		mkdir -p "$(dirname $2)"
 		${DISTCOPY} -f "$1" "$2" || exit
-		true
+		return 0
 	fi
-	false
+	return 1
 }
 
 mkdir -p ${DEST_DIR}/genisslib
@@ -1538,6 +1546,7 @@ AX_BOOST_BASE([1.53.0], AC_MSG_NOTICE([boost >= 1.53.0 found.]), AC_MSG_ERROR([b
 CPPFLAGS="\${BOOST_CPPFLAGS} \${CPPFLAGS}"
 LDFLAGS="\${BOOST_LDFLAGS} \${LDFLAGS}"
 UNISIM_CHECK_SYSTEMC
+UNISIM_CHECK_TVS
 AX_CXXFLAGS_WARN_ALL
 GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
 AC_SUBST(GENISSLIB_PATH)
@@ -1563,7 +1572,7 @@ libtool: \$(LIBTOOL_DEPS)
 # Program
 bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION}
 unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_TESTBENCH_FILES} ${UNISIM_SIMULATOR_SOURCE_FILES}
-unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
+#unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
 unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 
 # Static Library

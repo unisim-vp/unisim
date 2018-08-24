@@ -82,8 +82,6 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	, time_per_instruction()
 	, clock_multiplier(1.0)
 	, bus_cycle_time(10.0, sc_core::SC_NS)
-	, cpu_time()
-	, nice_time()
 	, run_time()
 	, idle_time()
 	, enable_host_idle(false)
@@ -95,7 +93,6 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	, debug_dmi(false)
 	, ahb_master_id(0)
 	, param_clock_multiplier("clock-multiplier", this, clock_multiplier, "clock multiplier")
-	, param_nice_time("nice-time", this, nice_time, "maximum time between synchonizations")
 	, param_ipc("ipc", this, ipc, "maximum instructions per cycle, typically 1 or 2")
 	, param_enable_host_idle("enable-host-idle", this, enable_host_idle, "Enable/Disable host idle periods when target is idle")
 	, param_enable_dmi("enable-dmi", this, enable_dmi, "Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation")
@@ -114,7 +111,7 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	s_ahb_if(*this);
 	
 	param_clock_multiplier.SetMutable(false);
-	param_nice_time.SetMutable(false);
+//	param_nice_time.SetMutable(false);
 	param_ipc.SetMutable(false);
 	param_enable_host_idle.SetMutable(false);
 	param_enable_dmi.SetMutable(false);
@@ -349,9 +346,8 @@ tlm::tlm_sync_enum CPU<TYPES, CONFIG>::nb_transport_fw(tlm::tlm_generic_payload&
 template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::Synchronize()
 {
-	wait(cpu_time);
-	cpu_time = sc_core::SC_ZERO_TIME;
-	run_time = sc_core::sc_time_stamp();
+	qk.sync();
+	run_time = qk.get_current_time();
 	
 	SampleInputs();
 }
@@ -359,26 +355,8 @@ void CPU<TYPES, CONFIG>::Synchronize()
 template <typename TYPES, typename CONFIG>
 inline void CPU<TYPES, CONFIG>::AlignToBusClock()
 {
-	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
-	sc_dt::uint64 run_time_tu = run_time.value();
-	sc_dt::uint64 modulo = run_time_tu % bus_cycle_time_tu;
-	if(!modulo) return; // already aligned
-	
-	sc_dt::uint64 time_alignment_tu = bus_cycle_time_tu - modulo;
-	//sc_time time_alignment(time_alignment_tu, false);
-	sc_core::sc_time time_alignment(sc_core::sc_get_time_resolution());
-	time_alignment *= time_alignment_tu;
-	cpu_time += time_alignment;
-	run_time += time_alignment;
-}
-
-template <typename TYPES, typename CONFIG>
-void CPU<TYPES, CONFIG>::AlignToBusClock(sc_core::sc_time& t)
-{
-	sc_core::sc_time modulo(t);
-	modulo %= bus_cycle_time;
-	if(modulo == sc_core::SC_ZERO_TIME) return; // already aligned
-	t += bus_cycle_time - modulo;
+	qk.align_to_clock(bus_cycle_time);
+	run_time = qk.get_current_time();
 }
 
 template <typename TYPES, typename CONFIG>
@@ -408,7 +386,9 @@ void CPU<TYPES, CONFIG>::Idle()
 		idle_time += delta_time;
 		
 		// update overall run time
-		run_time = new_time_stamp;
+		qk.reset();
+		run_time = qk.get_current_time();
+		//run_time = new_time_stamp;
 	}
 }
 
@@ -598,11 +578,11 @@ void CPU<TYPES, CONFIG>::Run()
 	{
 		this->StepOneInstruction();
 		// update local time (relative to sc_time_stamp)
-		cpu_time += time_per_instruction;
+		qk.inc(time_per_instruction);
 		// update absolute time (local time + sc_time_stamp)
-		run_time += time_per_instruction;
+		run_time = qk.get_current_time();
 		// Periodically synchronize with other threads
-		if(unlikely(cpu_time >= nice_time))
+		if(unlikely(qk.need_sync()))
 		{
 			Synchronize();
 		}
@@ -633,8 +613,8 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
 					const sc_core::sc_time& read_lat = dmi_region->GetReadLatency(size);
-					cpu_time += read_lat;
-					run_time += read_lat;
+					qk.inc(read_lat);
+					run_time = qk.get_current_time();
 					return true;
 				}
 				else
@@ -674,10 +654,8 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 	payload->set_data_length(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	
-	i_ahb_if->b_transport(*payload, cpu_time);
-	
-	run_time = sc_core::sc_time_stamp();
-	run_time += cpu_time;
+	i_ahb_if->b_transport(*payload, qk.get_local_time());
+	run_time = qk.get_current_time();
 	
 	tlm::tlm_response_status status = payload->get_response_status();
 	
@@ -728,8 +706,8 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
 					const sc_core::sc_time& read_lat = dmi_region->GetReadLatency(size);
-					cpu_time += read_lat;
-					run_time += read_lat;
+					qk.inc(read_lat);
+					run_time = qk.get_current_time();
 					return true;
 				}
 				else
@@ -770,11 +748,9 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 	payload->set_data_length(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	
-	d_ahb_if->b_transport(*payload, cpu_time);
+	d_ahb_if->b_transport(*payload, qk.get_local_time());
+	run_time = qk.get_current_time();
 	
-	run_time = sc_core::sc_time_stamp();
-	run_time += cpu_time;
-
 	tlm::tlm_response_status status = payload->get_response_status();
 	
 	if(likely(enable_dmi))
@@ -824,8 +800,8 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), buffer, size);
 					const sc_core::sc_time& write_lat = dmi_region->GetWriteLatency(size);
-					cpu_time += write_lat;
-					run_time += write_lat;
+					qk.inc(write_lat);
+					run_time = qk.get_current_time();
 					return true;
 				}
 				else
@@ -865,11 +841,9 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 	payload->set_data_length(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	
-	d_ahb_if->b_transport(*payload, cpu_time);
+	d_ahb_if->b_transport(*payload, qk.get_local_time());
+	run_time = qk.get_current_time();
 	
-	run_time = sc_core::sc_time_stamp();
-	run_time += cpu_time;
-
 	tlm::tlm_response_status status = payload->get_response_status();
 
 	if(likely(enable_dmi))

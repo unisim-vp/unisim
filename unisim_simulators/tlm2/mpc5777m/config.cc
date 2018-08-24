@@ -36,3 +36,8 @@
 
 const unisim::component::tlm2::com::freescale::mpc57xx::siul2::PACKAGE_SETTING_TYPE Config::SIUL2_CONFIG::PACKAGE_SETTING;
 const unisim::component::tlm2::com::freescale::mpc57xx::siul2::MANUFACTURER_TYPE Config::SIUL2_CONFIG::MANUFACTURER;
+
+const char *Config::XBAR_0_CONFIG::INPUT_SOCKET_NAME_PREFIX = "M";
+const char *Config::XBAR_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX = "S";
+const char *Config::XBAR_1_CONFIG::INPUT_SOCKET_NAME_PREFIX = "M";
+const char *Config::XBAR_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX = "S";

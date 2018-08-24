@@ -605,7 +605,9 @@ inline tlm_input_bitstream_sync_status tlm_input_bitstream::seek(const sc_core::
 		tlm_serial_payload *serial_payload = tsp->serial_payload;
 		
 		const tlm_serial_payload::data_type& serial_data = serial_payload->get_data();
+#ifndef NDEBUG
 		tlm_serial_payload::data_type::size_type serial_data_length = serial_data.size();
+#endif
 		
 		if(likely(tsp->after_end_time_stamp > time_stamp))
 		{
@@ -687,7 +689,9 @@ inline tlm_input_bitstream_sync_status tlm_input_bitstream::next()
 		tlm_serial_payload *serial_payload = tsp->serial_payload;
 		
 		const tlm_serial_payload::data_type& serial_data = serial_payload->get_data();
+#ifndef NDEBUG
 		tlm_serial_payload::data_type::size_type serial_data_length = serial_data.size();
+#endif
 		
 		prev_value = curr_value;
 		assert(tsp->next_bit_offset < serial_data_length);

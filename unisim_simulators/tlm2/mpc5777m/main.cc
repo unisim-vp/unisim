@@ -36,6 +36,10 @@
 
 typedef Simulator SIMULATOR;
 
+extern "C" 
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+__declspec(dllexport)
+#endif
 int sc_main(int argc, char *argv[])
 {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
@@ -73,3 +77,10 @@ int sc_main(int argc, char *argv[])
 
 	return exit_status;
 }
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+int main(int argc, char *argv[])
+{
+	return sc_core::sc_elab_and_sim(argc, argv);
+}
+#endif

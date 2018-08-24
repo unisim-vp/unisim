@@ -745,7 +745,7 @@ template <typename TYPES, typename CONFIG>
 template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN>
 inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, ADDRESS ea)
 {
-	uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (ea & (CONFIG::FSB_WIDTH - 1));
+	uint32_t size_to_fsb_boundary = CONFIG::DATA_FSB_WIDTH - (ea & (CONFIG::DATA_FSB_WIDTH - 1));
 
 	// Ensure that memory access does not cross a FSB boundary
 	if(likely(size_to_fsb_boundary >= sizeof(T)))
@@ -789,7 +789,7 @@ inline bool CPU<TYPES, CONFIG>::DataStore(T value, ADDRESS ea)
 		unisim::util::endian::BSwap(value);
 	}
 
-	uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (ea & (CONFIG::FSB_WIDTH - 1));
+	uint32_t size_to_fsb_boundary = CONFIG::DATA_FSB_WIDTH - (ea & (CONFIG::DATA_FSB_WIDTH - 1));
 
 	// Ensure that memory access does not cross a FSB boundary
 	if(likely(size_to_fsb_boundary >= sizeof(T)))

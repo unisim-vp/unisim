@@ -53,9 +53,8 @@ namespace unisim {
 namespace kernel {
 namespace tlm2 {
 
-inline const sc_core::sc_time& AlignToClock(sc_core::sc_time& time_stamp, sc_core::sc_time& clock_period, const sc_core::sc_time& clock_start_time = sc_core::SC_ZERO_TIME, bool clock_posedge_first = true, double clock_duty_cycle = 0.5)
+inline const sc_core::sc_time& AlignToClock(sc_core::sc_time& time_stamp, const sc_core::sc_time& clock_period)
 {
-#if 0
 	sc_core::sc_time skew(time_stamp);
 	skew %= clock_period;
 	
@@ -66,16 +65,19 @@ inline const sc_core::sc_time& AlignToClock(sc_core::sc_time& time_stamp, sc_cor
 	}
 	
 	return time_stamp;
-#else
+}
+
+inline const sc_core::sc_time& AlignToClock(sc_core::sc_time& time_stamp, const sc_core::sc_time& clock_period, const sc_core::sc_time& clock_start_time, bool clock_posedge_first, double clock_duty_cycle)
+{
 	sc_core::sc_time first_pos_edge_time(clock_start_time);
-	if(!clock_posedge_first)
+	if(unlikely(!clock_posedge_first))
 	{
 		sc_core::sc_time neg_to_pos_edge_time(clock_period);
 		neg_to_pos_edge_time *= (1.0 - clock_duty_cycle);
 		first_pos_edge_time += neg_to_pos_edge_time;
 	}
 
-	if(time_stamp > first_pos_edge_time)
+	if(likely(time_stamp > first_pos_edge_time))
 	{
 		sc_core::sc_time skew(time_stamp);
 		skew -= first_pos_edge_time;
@@ -93,7 +95,6 @@ inline const sc_core::sc_time& AlignToClock(sc_core::sc_time& time_stamp, sc_cor
 	}
 	
 	return time_stamp;
-#endif
 }
 
 class ManagedPayload
@@ -888,20 +889,26 @@ public:
 	inline LatencyLookupTable(const sc_core::sc_time& base_lat);
 	inline ~LatencyLookupTable();
 	inline void SetBaseLatency(const sc_core::sc_time& base_lat);
-	inline const sc_core::sc_time& Lookup(unsigned int n); // returns n * base_lat
+	inline const sc_core::sc_time& GetBaseLatency() const;
+	inline const sc_core::sc_time& Lookup(unsigned int n) const; // returns n * base_lat
 private:
 	static const unsigned int NUM_LATENCY_FAST_LOOKUP = 16; // 0 <= n < 16 for fast lookup
 	sc_core::sc_time base_lat;
 	sc_core::sc_time latency_fast_lookup[NUM_LATENCY_FAST_LOOKUP];
-	std::map<unsigned int, sc_core::sc_time> latency_slow_lookup;
+	mutable std::map<unsigned int, sc_core::sc_time> latency_slow_lookup;
 };
 
 LatencyLookupTable::LatencyLookupTable()
 	: base_lat(sc_core::SC_ZERO_TIME)
+	, latency_fast_lookup()
+	, latency_slow_lookup()
 {
 }
 
 LatencyLookupTable::LatencyLookupTable(const sc_core::sc_time& _base_lat)
+	: base_lat(sc_core::SC_ZERO_TIME)
+	, latency_fast_lookup()
+	, latency_slow_lookup()
 {
 	SetBaseLatency(_base_lat);
 }
@@ -923,18 +930,23 @@ inline void LatencyLookupTable::SetBaseLatency(const sc_core::sc_time& _base_lat
 	latency_slow_lookup.clear();
 }
 
-const sc_core::sc_time& LatencyLookupTable::Lookup(unsigned int n)
+const sc_core::sc_time& LatencyLookupTable::GetBaseLatency() const
 {
-	if(n < NUM_LATENCY_FAST_LOOKUP)
+	return base_lat;
+}
+
+const sc_core::sc_time& LatencyLookupTable::Lookup(unsigned int n) const
+{
+	if(likely(n < NUM_LATENCY_FAST_LOOKUP))
 	{
 		return latency_fast_lookup[n];
 	}
 	
 	do
 	{
-		std::map<unsigned int, sc_core::sc_time>::iterator iter = latency_slow_lookup.find(n);
+		std::map<unsigned int, sc_core::sc_time>::const_iterator iter = latency_slow_lookup.find(n);
 		
-		if(iter != latency_slow_lookup.end())
+		if(likely(iter != latency_slow_lookup.end()))
 		{
 			return (*iter).second;
 		}
@@ -944,7 +956,7 @@ const sc_core::sc_time& LatencyLookupTable::Lookup(unsigned int n)
 	}
 	while(1);
 	
-	return latency_fast_lookup[0]; // shall never occur
+	return sc_core::SC_ZERO_TIME; // shall never occur
 }
 
 class DMIRegionCache;
@@ -1043,13 +1055,13 @@ inline DMIRegion *DMIRegionCache::Lookup(sc_dt::uint64 addr, sc_dt::uint64 size)
 	sc_dt::uint64 end_addr = addr + size - 1;
 	
 	DMIRegion *cur = mru_dmi_region;
-	if(cur)
+	if(likely(cur))
 	{
 		tlm::tlm_dmi *dmi_data = cur->GetDMI();
 		sc_dt::uint64 dmi_start_address = dmi_data->get_start_address();
 		sc_dt::uint64 dmi_end_address = dmi_data->get_end_address();
 		
-		if((addr >= dmi_start_address) && (end_addr <= dmi_end_address))
+		if(likely((addr >= dmi_start_address) && (end_addr <= dmi_end_address)))
 		{
 			return cur;
 		}
@@ -1063,7 +1075,7 @@ inline DMIRegion *DMIRegionCache::Lookup(sc_dt::uint64 addr, sc_dt::uint64 size)
 				sc_dt::uint64 dmi_start_address = dmi_data->get_start_address();
 				sc_dt::uint64 dmi_end_address = dmi_data->get_end_address();
 				
-				if((addr >= dmi_start_address) && (end_addr <= dmi_end_address))
+				if(likely((addr >= dmi_start_address) && (end_addr <= dmi_end_address)))
 				{
 					prev->next = cur->next;
 					cur->next= mru_dmi_region;
@@ -1226,6 +1238,104 @@ inline void DMIRegionCache::Invalidate(sc_dt::uint64 start_range, sc_dt::uint64 
 		} while(dmi_region);
 	}
 }
+
+class QuantumKeeper
+{
+public:
+	static void set_global_quantum(const sc_core::sc_time& t)
+	{
+		tlm::tlm_global_quantum::instance().set(t);
+	}
+
+	static const sc_core::sc_time& get_global_quantum()
+	{
+		return tlm::tlm_global_quantum::instance().get();
+	}
+	
+	QuantumKeeper()
+		: local_time_offset(sc_core::SC_ZERO_TIME)
+		, sync_deadline(sc_core::SC_ZERO_TIME)
+	{
+		reset();
+	}
+	
+	void align_to_clock(const sc_core::sc_time& clock_period)
+	{
+		sc_core::sc_time current_time(sc_core::sc_time_stamp());
+		current_time += local_time_offset;
+		AlignToClock(current_time, clock_period);
+		local_time_offset = current_time;
+		local_time_offset -= sc_core::sc_time_stamp();
+	}
+	
+	void inc(const sc_core::sc_time& t)
+	{
+		local_time_offset += t;
+	}
+	
+	void set(const sc_core::sc_time& t)
+	{
+		local_time_offset = t;
+	}
+	
+	sc_core::sc_time get_current_time() const
+	{
+		sc_core::sc_time current_time(sc_core::sc_time_stamp());
+		current_time += local_time_offset;
+		return current_time;
+	}
+	
+	const sc_core::sc_time& get_local_time() const
+	{
+		return local_time_offset;
+	}
+	
+	sc_core::sc_time& get_local_time() // intended for passing local_time_offset to nb_transport/b_transport
+	{
+		return local_time_offset;
+	}
+	
+	bool need_sync() const
+	{
+		sc_core::sc_time current_time(sc_core::sc_time_stamp());
+		current_time += local_time_offset;
+		
+		return unlikely(current_time >= sync_deadline);
+	}
+	
+	void sync()
+	{
+		sc_core::wait(local_time_offset);
+		reset();
+	}
+	
+	void set_and_sync(const sc_core::sc_time& t)
+	{
+		set(t);
+		if(unlikely(need_sync())) sync();
+	}
+	
+	void reset()
+	{
+		local_time_offset = sc_core::SC_ZERO_TIME;
+		sync_deadline = sc_core::sc_time_stamp();
+
+		const sc_core::sc_time& global_quantum = get_global_quantum();
+		
+		if(likely(global_quantum != sc_core::SC_ZERO_TIME))
+		{
+			sc_core::sc_time offset(sc_core::sc_time_stamp());
+			offset %= global_quantum;
+			
+			sync_deadline += global_quantum;
+			sync_deadline -= offset;
+		}
+	}
+	
+private:
+	sc_core::sc_time local_time_offset;
+	sc_core::sc_time sync_deadline;
+};
 
 } // end of namespace tlm2
 } // end of namespace kernel

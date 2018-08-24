@@ -125,7 +125,7 @@ class EDMA
 {
 public:
 	static const unsigned int TLM2_IP_VERSION_MAJOR  = 1;
-	static const unsigned int TLM2_IP_VERSION_MINOR  = 0;
+	static const unsigned int TLM2_IP_VERSION_MINOR  = 1;
 	static const unsigned int TLM2_IP_VERSION_PATCH  = 0;
 	static const unsigned int NUM_DMA_CHANNELS       = CONFIG::NUM_DMA_CHANNELS;
 	static const unsigned int BUSWIDTH               = CONFIG::BUSWIDTH;
@@ -138,7 +138,8 @@ public:
 
 	peripheral_slave_if_type  peripheral_slave_if;              // peripheral slave interface
 	master_if_type            master_if;                        // master interface
-	sc_core::sc_in<bool>      m_clk;                            // Clock port
+	sc_core::sc_in<bool>      m_clk;                            // Clock port (peripheral slave interface)
+	sc_core::sc_in<bool>      dma_clk;                          // DMA Clock port (master interface)
 	sc_core::sc_in<bool>      reset_b;                          // reset
 	sc_core::sc_in<bool>     *dma_channel[NUM_DMA_CHANNELS];    // DMA channels (peripheral requests)
 	sc_core::sc_out<bool>    *dma_channel_ack[NUM_DMA_CHANNELS];// DMA channel acknowledgements (toward peripheral)
@@ -2827,6 +2828,7 @@ private:
 	};
 	
 	unisim::kernel::tlm2::ClockPropertiesProxy m_clk_prop_proxy; // proxy to get clock properties from master clock port
+	unisim::kernel::tlm2::ClockPropertiesProxy dma_clk_prop_proxy; // proxy to get clock properties from dma clock port
 	
 	EDMA_CR                                                                        edma_cr;           // eDMA_CR  
 	EDMA_ES                                                                        edma_es;           // eDMA_ES  
@@ -2870,6 +2872,11 @@ private:
 	bool master_clock_posedge_first;                      // Master clock posedge first ?
 	double master_clock_duty_cycle;                       // Master clock duty cycle
 	
+	sc_core::sc_time dma_clock_period;                 // DMA clock period
+	sc_core::sc_time dma_clock_start_time;             // DMA clock start time
+	bool dma_clock_posedge_first;                      // DMA clock posedge first ?
+	double dma_clock_duty_cycle;                       // DMA clock duty cycle
+
 	sc_core::sc_time dma_engine_time;
 	sc_core::sc_event dma_engine_event;
 	sc_core::sc_event *gen_irq_event[NUM_DMA_CHANNELS];
@@ -2943,7 +2950,9 @@ private:
 	void DMA_Engine_Process();
 
 	void UpdateMasterClock();
+	void UpdateDMAClock();
 	void MasterClockPropertiesChangedProcess();
+	void DMAClockPropertiesChangedProcess();
 };
 
 } // end of namespace edma

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2008,
+ *  Copyright (c) 2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,45 +29,10 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
-#define __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
 
-#include <tlm>
+#include <config.hh>
+#include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 
-namespace unisim {
-namespace component {
-namespace tlm2 {
-namespace interconnect {
-namespace generic_router {
-
-class Config {
-public:
-	typedef uint64_t ADDRESS;
-	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 1;
-	static const unsigned int MAX_NUM_MAPPINGS = 256;
-	static const unsigned int INPUT_BUSWIDTH = 32;
-	static const unsigned int OUTPUT_BUSWIDTH = 32;
-	typedef tlm::tlm_base_protocol_types TYPES;
-	static const bool VERBOSE = false;
-	static const char *INPUT_SOCKET_NAME_PREFIX;
-	static const char *OUTPUT_SOCKET_NAME_PREFIX;
-	static const unsigned int BURST_LENGTH = 1;
-};
-
-class VerboseConfig : public Config {
-public:
-	static const bool VERBOSE = true;
-};
-
-} // end of namespace generic_router
-} // end of namespace interconnect
-} // end of namespace tlm2
-} // end of namespace component
-} // end of namespace unisim
-
-#endif // __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
-
+template class unisim::component::tlm2::interconnect::generic_router::Router<Config::IAHBG_1_CONFIG>;
