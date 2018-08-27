@@ -5142,14 +5142,16 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.DSPI_CLK0.clock-period", "12500 ps");               // DSPI_CLK0: 80 Mhz
 	simulator->SetVariable("HARDWARE.DSPI_CLK1.lazy-clock", "true");
 	simulator->SetVariable("HARDWARE.DSPI_CLK1.clock-period", "12500 ps");               // DSPI_CLK1: 80 Mhz
-	
+
+  // global quantum
+	simulator->SetVariable("HARDWARE.global-quantum", "200 ns");
+  
 	//  - e200 PowerPC cores
 
 	// Peripheral_Core_2
 	simulator->SetVariable("HARDWARE.Peripheral_Core_2.ahb-master-id", 2);
 	simulator->SetVariable("HARDWARE.Peripheral_Core_2.clock-multiplier", 1.0);
 	simulator->SetVariable("HARDWARE.Peripheral_Core_2.max-inst", ~uint64_t(0));
-	simulator->SetVariable("HARDWARE.Peripheral_Core_2.nice-time", "200 ns");
 	simulator->SetVariable("HARDWARE.Peripheral_Core_2.ipc", 2.0);
 	simulator->SetVariable("HARDWARE.Peripheral_Core_2.enable-dmi", true);
 
@@ -5176,7 +5178,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.Main_Core_0.ahb-master-id", 0);
 	simulator->SetVariable("HARDWARE.Main_Core_0.clock-multiplier", 1.0);
 	simulator->SetVariable("HARDWARE.Main_Core_0.max-inst", ~uint64_t(0));
-	simulator->SetVariable("HARDWARE.Main_Core_0.nice-time", "200 ns");
 	simulator->SetVariable("HARDWARE.Main_Core_0.ipc", 1.0);
 	simulator->SetVariable("HARDWARE.Main_Core_0.enable-dmi", true);
 
@@ -5198,7 +5199,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.Main_Core_1.ahb-master-id", 1);
 	simulator->SetVariable("HARDWARE.Main_Core_1.clock-multiplier", 1.0);
 	simulator->SetVariable("HARDWARE.Main_Core_1.max-inst", ~uint64_t(0));
-	simulator->SetVariable("HARDWARE.Main_Core_1.nice-time", "200 ns");
 	simulator->SetVariable("HARDWARE.Main_Core_1.ipc", 1.0);
 	simulator->SetVariable("HARDWARE.Main_Core_1.enable-dmi", true);
 
