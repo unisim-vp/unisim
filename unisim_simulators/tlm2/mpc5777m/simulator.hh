@@ -45,6 +45,8 @@
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
+#include <unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/xbar.hh>
+#include <unisim/component/tlm2/interconnect/freescale/mpc57xx/pbridge/pbridge.hh>
 #include <unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh>
 #include <unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh>
 #include <unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh>
@@ -128,10 +130,10 @@ private:
 	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::e200z710n3::CPU Main_Core_0;
 	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::e200z710n3::CPU Main_Core_1;
 	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::e200z425bn3::CPU Peripheral_Core_2;
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<XBAR_0_CONFIG> XBAR_0;
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<XBAR_1_CONFIG> XBAR_1;
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<PBRIDGE_A_CONFIG> PBRIDGE_A;
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<PBRIDGE_B_CONFIG> PBRIDGE_B;
+	typedef unisim::component::tlm2::interconnect::freescale::mpc57xx::xbar::XBAR<XBAR_0_CONFIG> XBAR_0;
+	typedef unisim::component::tlm2::interconnect::freescale::mpc57xx::xbar::XBAR<XBAR_1_CONFIG> XBAR_1;
+	typedef unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::PBRIDGE<PBRIDGE_A_CONFIG> PBRIDGE_A;
+	typedef unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::PBRIDGE<PBRIDGE_B_CONFIG> PBRIDGE_B;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<XBAR_1_M1_CONCENTRATOR_CONFIG> XBAR_1_M1_CONCENTRATOR;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<IAHBG_0_CONFIG> IAHBG_0;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<IAHBG_1_CONFIG> IAHBG_1;
@@ -226,10 +228,6 @@ private:
 	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PFLASH_STUB;
 	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> MC_ME_STUB;
 	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> MC_CGM_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> XBAR_0_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> XBAR_1_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PBRIDGE_A_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_B_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PBRIDGE_B_STUB;
 	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_STUB;
 
 	//=========================================================================
@@ -375,10 +373,6 @@ private:
 	PFLASH_STUB *pflash_stub;
 	MC_ME_STUB *mc_me_stub;
 	MC_CGM_STUB *mc_cgm_stub;
-	XBAR_0_STUB *xbar_0_stub;
-	XBAR_1_STUB *xbar_1_stub;
-	PBRIDGE_A_STUB *pbridge_a_stub;
-	PBRIDGE_B_STUB *pbridge_b_stub;
 	
 	unisim::component::tlm2::operators::LogicalOrOperator<bool, NUM_DMA_CHANNELS> *dma_err_irq_combinator;
 	unisim::component::tlm2::operators::LogicalOrOperator<bool, 3> *DSPI0_0;
@@ -513,6 +507,8 @@ private:
 #if HAVE_TVS
 	std::string xfer_vcd_filename;
 	unisim::kernel::service::Parameter<std::string> param_xfer_vcd_filename;
+	std::string xfer_gtkwave_init_script;
+	unisim::kernel::service::Parameter<std::string> param_xfer_gtkwave_init_script;
 	std::ofstream *xfer_vcd_file;
 	tracing::timed_stream_vcd_processor *xfer_vcd;
 #endif

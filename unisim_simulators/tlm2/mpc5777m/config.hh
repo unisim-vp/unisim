@@ -80,10 +80,13 @@ struct Config
 		static const unsigned int MAX_NUM_MAPPINGS = 12;
 		static const unsigned int INPUT_BUSWIDTH = 64;
 		static const unsigned int OUTPUT_BUSWIDTH = 64;
+		static const unsigned int BUSWIDTH = 32;
 		static const bool VERBOSE = DEBUG_ENABLE;
 		static const char *INPUT_SOCKET_NAME_PREFIX;
 		static const char *OUTPUT_SOCKET_NAME_PREFIX;
 		static const unsigned int BURST_LENGTH = FSB_BURST_SIZE / (INPUT_BUSWIDTH / 8);
+		static const uint32_t XBAR_PRS_RESET_VALUE = 0x00301425;
+		static const uint32_t XBAR_CRS_RESET_VALUE = 0x003f0100;
 	};
 	
 	struct XBAR_1_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
@@ -94,10 +97,13 @@ struct Config
 		static const unsigned int MAX_NUM_MAPPINGS = 13;
 		static const unsigned int INPUT_BUSWIDTH = 32;
 		static const unsigned int OUTPUT_BUSWIDTH = 32;
+		static const unsigned int BUSWIDTH = 32;
 		static const bool VERBOSE = DEBUG_ENABLE;
 		static const char *INPUT_SOCKET_NAME_PREFIX;
 		static const char *OUTPUT_SOCKET_NAME_PREFIX;
 		static const unsigned int BURST_LENGTH = FSB_BURST_SIZE / (INPUT_BUSWIDTH / 8);
+		static const uint32_t XBAR_PRS_RESET_VALUE = 0x00003102;
+		static const uint32_t XBAR_CRS_RESET_VALUE = 0x000f0100;
 	};
 	
 	struct PBRIDGE_A_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
@@ -108,6 +114,7 @@ struct Config
 		static const unsigned int MAX_NUM_MAPPINGS = 40;
 		static const unsigned int INPUT_BUSWIDTH = 32;
 		static const unsigned int OUTPUT_BUSWIDTH = 32;
+		static const unsigned int BUSWIDTH = 32;
 		static const bool VERBOSE = DEBUG_ENABLE;
 		static const unsigned int BURST_LENGTH = FSB_BURST_SIZE / (INPUT_BUSWIDTH / 8);
 	};
@@ -120,6 +127,7 @@ struct Config
 		static const unsigned int MAX_NUM_MAPPINGS = 6;
 		static const unsigned int INPUT_BUSWIDTH = 32;
 		static const unsigned int OUTPUT_BUSWIDTH = 32;
+		static const unsigned int BUSWIDTH = 32;
 		static const bool VERBOSE = DEBUG_ENABLE;
 		static const unsigned int BURST_LENGTH = FSB_BURST_SIZE / (INPUT_BUSWIDTH / 8);
 	};

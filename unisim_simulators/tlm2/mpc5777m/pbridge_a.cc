@@ -33,6 +33,6 @@
  */
 
 #include <config.hh>
-#include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
+#include <unisim/component/tlm2/interconnect/freescale/mpc57xx/pbridge/pbridge.tcc>
 
-template class unisim::component::tlm2::interconnect::generic_router::Router<Config::PBRIDGE_A_CONFIG>;
+template class unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::PBRIDGE<Config::PBRIDGE_A_CONFIG>;

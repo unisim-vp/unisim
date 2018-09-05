@@ -118,7 +118,7 @@ enum EDGE
 
 template <typename CONFIG>
 class EDMA
-	: unisim::kernel::service::Object
+	: public unisim::kernel::service::Object
 	, public sc_core::sc_module
 	, public tlm::tlm_fw_transport_if<>
 	, public tlm::tlm_bw_transport_if<>

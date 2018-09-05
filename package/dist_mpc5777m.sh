@@ -176,6 +176,7 @@ unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
 unisim/component/tlm2/interconnect/generic_router/config.cc \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/pbridge/acr_mapping.cc \
 unisim/component/tlm2/com/serial_terminal/serial_terminal.cc \
 "
 
@@ -833,6 +834,9 @@ unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/tlm2/interconnect/generic_router/router.hh \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
 unisim/component/tlm2/interconnect/generic_router/config.hh \
+unisim/component/tlm2/interconnect/programmable_router/router.hh \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/xbar.hh \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/pbridge/pbridge.hh \
 unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh \
 unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh \
 unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh \
@@ -917,6 +921,9 @@ unisim/component/tlm2/processor/powerpc/e200/mpc57xx/cpu.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
+unisim/component/tlm2/interconnect/programmable_router/router.tcc \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/xbar.tcc \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/pbridge/pbridge.tcc \
 unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.tcc \
 unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.tcc \
 unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.tcc \
@@ -1145,6 +1152,7 @@ soft/libsys/src/fs/lfs.c \
 soft/libsys/src/fs/lfs_util.c \
 sim_config.xml \
 gtkwave_init_script.tcl \
+xfer_gtkwave_init_script.tcl \
 .gtkwaverc \
 gtkwave.ini \
 config.t32 \

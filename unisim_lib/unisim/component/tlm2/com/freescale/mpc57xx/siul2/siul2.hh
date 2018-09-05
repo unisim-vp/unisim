@@ -131,7 +131,7 @@ struct SIUL2_CONFIG
 
 template <typename CONFIG>
 class SIUL2
-	: unisim::kernel::service::Object
+	: public unisim::kernel::service::Object
 	, public sc_core::sc_module
 	, public tlm::tlm_fw_transport_if<>
 {

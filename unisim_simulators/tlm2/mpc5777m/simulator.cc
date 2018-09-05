@@ -151,10 +151,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, pflash_stub(0)
 	, mc_me_stub(0)
 	, mc_cgm_stub(0)
-	, xbar_0_stub(0)
-	, xbar_1_stub(0)
-	, pbridge_a_stub(0)
-	, pbridge_b_stub(0)
 	, dma_err_irq_combinator(0)
 	, DSPI0_0(0)
 	, DSPI1_0(0)
@@ -269,6 +265,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 #if HAVE_TVS
 	, xfer_vcd_filename("xfer.vcd")
 	, param_xfer_vcd_filename("xfer-vcd-filename", this, xfer_vcd_filename, "Filename of VCD file where to trace interconnects transfer activity")
+	, xfer_gtkwave_init_script()
+	, param_xfer_gtkwave_init_script("xfer-gtkwave-init-script", this, xfer_gtkwave_init_script, "GTKWave initialization script that simulators must automatically generate at startup for interconnects transfer activity")
 	, xfer_vcd_file(0)
 	, xfer_vcd(0)
 #endif
@@ -403,10 +401,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	pflash_stub = new PFLASH_STUB("PFLASH", this);
 	mc_me_stub = new MC_ME_STUB("MC_ME", this);
 	mc_cgm_stub = new MC_CGM_STUB("MC_CGM", this);
-	xbar_0_stub = new XBAR_0_STUB("XBAR_0_STUB", this);
-	xbar_1_stub = new XBAR_1_STUB("XBAR_1_STUB", this);
-	pbridge_a_stub = new PBRIDGE_A_STUB("PBRIDGE_A_STUB", this);
-	pbridge_b_stub = new PBRIDGE_B_STUB("PBRIDGE_B_STUB", this);
 
 	dma_err_irq_combinator = new unisim::component::tlm2::operators::LogicalOrOperator<bool, NUM_DMA_CHANNELS>("DMA_ERR_IRQ_COMBINATOR");
 
@@ -505,18 +499,26 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(peripheral_core_2->p_iack);
 	
 	// - XBAR_0
+	RegisterPort(xbar_0->m_clk);
+	RegisterPort(xbar_0->reset_b);
 	RegisterPort(xbar_0->input_if_clock);
 	RegisterPort(xbar_0->output_if_clock);
 	
 	// - XBAR_1
+	RegisterPort(xbar_1->m_clk);
+	RegisterPort(xbar_1->reset_b);
 	RegisterPort(xbar_1->input_if_clock);
 	RegisterPort(xbar_1->output_if_clock);
 
 	// - PBRIDGE_A
+	RegisterPort(pbridge_a->m_clk);
+	RegisterPort(pbridge_a->reset_b);
 	RegisterPort(pbridge_a->input_if_clock);
 	RegisterPort(pbridge_a->output_if_clock);
 
 	// - PBRIDGE_B
+	RegisterPort(pbridge_b->m_clk);
+	RegisterPort(pbridge_b->reset_b);
 	RegisterPort(pbridge_b->input_if_clock);
 	RegisterPort(pbridge_b->output_if_clock);
 
@@ -1741,9 +1743,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*pbridge_a->init_socket[32])(pflash_stub->slave_sock);             // PBRIDGE_A <-> PFLASH
 	(*pbridge_a->init_socket[33])(mc_me_stub->slave_sock);              // PBRIDGE_A <-> MC_ME
 	(*pbridge_a->init_socket[34])(mc_cgm_stub->slave_sock);             // PBRIDGE_A <-> MC_CGM
-	(*pbridge_a->init_socket[35])(xbar_0_stub->slave_sock);             // PBRIDGE_A <-> XBAR_0
-	(*pbridge_a->init_socket[36])(xbar_1_stub->slave_sock);             // PBRIDGE_A <-> XBAR_1
-	(*pbridge_a->init_socket[37])(pbridge_a_stub->slave_sock);          // PBRIDGE_A <-> PBRIDGE_A
+	(*pbridge_a->init_socket[35])(xbar_0->peripheral_slave_if);         // PBRIDGE_A <-> XBAR_0
+	(*pbridge_a->init_socket[36])(xbar_1->peripheral_slave_if);         // PBRIDGE_A <-> XBAR_1
+	(*pbridge_a->init_socket[37])(pbridge_a->peripheral_slave_if);      // PBRIDGE_A <-> PBRIDGE_A
 	(*pbridge_a->init_socket[38])(siul2->peripheral_slave_if);          // PBRIDGE_A <-> SIUL2
 	(*pbridge_a->init_socket[39])(ebi_stub->slave_sock);                // PBRIDGE_A <-> EBI
 	
@@ -1752,7 +1754,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*pbridge_b->init_socket[2])(dspi_2->peripheral_slave_if);          // PBRIDGE_B <-> DSPI_2
 	(*pbridge_b->init_socket[3])(dspi_3->peripheral_slave_if);          // PBRIDGE_B <-> DSPI_3
 	(*pbridge_b->init_socket[4])(dspi_5->peripheral_slave_if);          // PBRIDGE_B <-> DSPI_5
-	(*pbridge_b->init_socket[5])(pbridge_b_stub->slave_sock);           // PBRIDGE_B <-> PBRIDGE_B
+	(*pbridge_b->init_socket[5])(pbridge_b->peripheral_slave_if);       // PBRIDGE_B <-> PBRIDGE_B
 
 	edma_0->master_if(*xbar_1_m1_concentrator->targ_socket[0]);         // EDMA_0 <-> XBAR_1 M1 Concentrator
 	edma_1->master_if(*xbar_1_m1_concentrator->targ_socket[1]);         // EDMA_1 <-> XBAR_1 M1 Concentrator
@@ -2000,12 +2002,23 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.Peripheral_Core_2.p_voffset"       , "HARDWARE.p_voffset_2");
 	Bind("HARDWARE.Peripheral_Core_2.p_iack"          , "HARDWARE.p_iack_2");
 	
+	Bind("HARDWARE.XBAR_0.m_clk"                          , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.XBAR_0.reset_b"                        , "HARDWARE.reset_b");
 	Bind("HARDWARE.XBAR_0.input_if_clock"                 , "HARDWARE.FXBAR_CLK");
 	Bind("HARDWARE.XBAR_0.output_if_clock"                , "HARDWARE.FXBAR_CLK");
+	
+	Bind("HARDWARE.XBAR_1.m_clk"                          , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.XBAR_1.reset_b"                        , "HARDWARE.reset_b");
 	Bind("HARDWARE.XBAR_1.input_if_clock"                 , "HARDWARE.SXBAR_CLK");
 	Bind("HARDWARE.XBAR_1.output_if_clock"                , "HARDWARE.SXBAR_CLK");
+	
+	Bind("HARDWARE.PBRIDGE_A.m_clk"                       , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.PBRIDGE_A.reset_b"                     , "HARDWARE.reset_b");
 	Bind("HARDWARE.PBRIDGE_A.input_if_clock"              , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.PBRIDGE_A.output_if_clock"             , "HARDWARE.PBRIDGEA_CLK");
+	
+	Bind("HARDWARE.PBRIDGE_B.m_clk"                       , "HARDWARE.PBRIDGEB_CLK");
+	Bind("HARDWARE.PBRIDGE_B.reset_b"                     , "HARDWARE.reset_b");
 	Bind("HARDWARE.PBRIDGE_B.input_if_clock"              , "HARDWARE.PBRIDGEB_CLK");
 	Bind("HARDWARE.PBRIDGE_B.output_if_clock"             , "HARDWARE.PBRIDGEB_CLK");
 	Bind("HARDWARE.IAHBG_0.input_if_clock"                , "HARDWARE.FXBAR_CLK");
@@ -4492,6 +4505,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	                      (*iahbg_1)["enable-tracing"];
 	if(enable_tracing)
 	{
+		if((*peripheral_core_2)["enable-dmi"] || (*main_core_0)["enable-dmi"] || (*main_core_1)["enable-dmi"])
+		{
+			logger << DebugWarning << "As tracing is enabled at interconnect level, you should consider preventing Processors " << peripheral_core_2->GetName() << ", " << main_core_0->GetName() << " and " << main_core_1->GetName() << " from using SystemC TLM-2.0 DMI in order to capture all interconnect transfer activity in File \"" << xfer_vcd_filename << "\"" << EndDebugWarning;
+		}
+		
 		if(!xfer_vcd_filename.empty())
 		{
 			xfer_vcd_file = new std::ofstream(xfer_vcd_filename.c_str());
@@ -4499,202 +4517,265 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 			if(xfer_vcd_file->is_open())
 			{
 				xfer_vcd = new tracing::timed_stream_vcd_processor("sink", *xfer_vcd_file);
-				
-				typedef tracing::timed_stream<double, unisim::component::tlm2::interconnect::generic_router::timed_xfer_traits> stream_type;
-				if((*xbar_0)["enable-tracing"])
-				{
-					for(unsigned int i = 0; i < XBAR_0_CONFIG::OUTPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.XBAR_0." << XBAR_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < XBAR_0_CONFIG::OUTPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.XBAR_0." << XBAR_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < XBAR_0_CONFIG::INPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.XBAR_0." << XBAR_0_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < XBAR_0_CONFIG::INPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.XBAR_0." << XBAR_0_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-				}
-				if((*xbar_1)["enable-tracing"])
-				{
-					for(unsigned int i = 0; i < XBAR_1_CONFIG::OUTPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.XBAR_1." << XBAR_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < XBAR_1_CONFIG::OUTPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.XBAR_1." << XBAR_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < XBAR_1_CONFIG::INPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.XBAR_1." << XBAR_1_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < XBAR_1_CONFIG::INPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.XBAR_1." << XBAR_1_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-				}
-				if((*pbridge_a)["enable-tracing"])
-				{
-					for(unsigned int i = 0; i < PBRIDGE_A_CONFIG::OUTPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.PBRIDGE_A." << PBRIDGE_A_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < PBRIDGE_A_CONFIG::OUTPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.PBRIDGE_A." << PBRIDGE_A_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < PBRIDGE_A_CONFIG::INPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.PBRIDGE_A." << PBRIDGE_A_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < PBRIDGE_A_CONFIG::INPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.PBRIDGE_A." << PBRIDGE_A_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-				}
-				if((*pbridge_b)["enable-tracing"])
-				{
-					for(unsigned int i = 0; i < PBRIDGE_B_CONFIG::OUTPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.PBRIDGE_B." << PBRIDGE_B_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < PBRIDGE_B_CONFIG::OUTPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.PBRIDGE_B." << PBRIDGE_B_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < PBRIDGE_B_CONFIG::INPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.PBRIDGE_B." << PBRIDGE_B_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < PBRIDGE_B_CONFIG::INPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.PBRIDGE_B." << PBRIDGE_B_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-				}
-				if((*xbar_1_m1_concentrator)["enable-tracing"])
-				{
-					for(unsigned int i = 0; i < XBAR_1_M1_CONCENTRATOR_CONFIG::OUTPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << XBAR_1_M1_CONCENTRATOR_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < XBAR_1_M1_CONCENTRATOR_CONFIG::OUTPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << XBAR_1_M1_CONCENTRATOR_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < XBAR_1_M1_CONCENTRATOR_CONFIG::INPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << XBAR_1_M1_CONCENTRATOR_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < XBAR_1_M1_CONCENTRATOR_CONFIG::INPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << XBAR_1_M1_CONCENTRATOR_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-				}
-				if((*iahbg_0)["enable-tracing"])
-				{
-					for(unsigned int i = 0; i < IAHBG_0_CONFIG::OUTPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.IAHBG_0." << IAHBG_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < IAHBG_0_CONFIG::OUTPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.IAHBG_0." << IAHBG_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < IAHBG_0_CONFIG::INPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.IAHBG_0." << IAHBG_0_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < IAHBG_0_CONFIG::INPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.IAHBG_0." << IAHBG_0_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-				}
-				if((*iahbg_1)["enable-tracing"])
-				{
-					for(unsigned int i = 0; i < IAHBG_1_CONFIG::OUTPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.IAHBG_1." << IAHBG_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < IAHBG_1_CONFIG::OUTPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.IAHBG_1." << IAHBG_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < IAHBG_1_CONFIG::INPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.IAHBG_1." << IAHBG_1_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-					for(unsigned int i = 0; i < IAHBG_1_CONFIG::INPUT_SOCKETS; i++)
-					{
-						std::stringstream sstr;
-						sstr << "HARDWARE.IAHBG_1." << IAHBG_1_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
-						xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
-					}
-				}
 			}
 			else
 			{
 				logger << DebugWarning << "Can't open File \"" << xfer_vcd_filename << "\"" << EndDebugWarning;
+				delete xfer_vcd;
 			}
+		}
+		
+		std::ofstream *xfer_gtkwave_init_script_file = 0;
+		if(!xfer_gtkwave_init_script.empty())
+		{
+			xfer_gtkwave_init_script_file = new std::ofstream(xfer_gtkwave_init_script.c_str());
+			
+			if(xfer_gtkwave_init_script_file->is_open())
+			{
+				(*xfer_gtkwave_init_script_file) << "# Added some signals to view" << std::endl;
+				(*xfer_gtkwave_init_script_file) << "set my_sig_list [list]" << std::endl;
+			}
+			else
+			{
+				logger << DebugWarning << "Can't open output \"" << xfer_gtkwave_init_script << "\"" << EndDebugWarning;
+				delete xfer_gtkwave_init_script_file;
+			}
+		}
+		
+		if(xfer_vcd || xfer_gtkwave_init_script_file)
+		{
+			typedef tracing::timed_stream<double, unisim::component::tlm2::interconnect::generic_router::timed_xfer_traits> stream_type;
+			if((*xbar_0)["enable-tracing"])
+			{
+				for(unsigned int i = 0; i < XBAR_0_CONFIG::OUTPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.XBAR_0." << XBAR_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < XBAR_0_CONFIG::OUTPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.XBAR_0." << XBAR_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < XBAR_0_CONFIG::INPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.XBAR_0." << XBAR_0_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < XBAR_0_CONFIG::INPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.XBAR_0." << XBAR_0_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+			}
+			if((*xbar_1)["enable-tracing"])
+			{
+				for(unsigned int i = 0; i < XBAR_1_CONFIG::OUTPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.XBAR_1." << XBAR_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < XBAR_1_CONFIG::OUTPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.XBAR_1." << XBAR_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < XBAR_1_CONFIG::INPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.XBAR_1." << XBAR_1_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < XBAR_1_CONFIG::INPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.XBAR_1." << XBAR_1_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+			}
+			if((*pbridge_a)["enable-tracing"])
+			{
+				for(unsigned int i = 0; i < PBRIDGE_A_CONFIG::OUTPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.PBRIDGE_A." << PBRIDGE_A_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < PBRIDGE_A_CONFIG::OUTPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.PBRIDGE_A." << PBRIDGE_A_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < PBRIDGE_A_CONFIG::INPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.PBRIDGE_A." << PBRIDGE_A_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < PBRIDGE_A_CONFIG::INPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.PBRIDGE_A." << PBRIDGE_A_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+			}
+			if((*pbridge_b)["enable-tracing"])
+			{
+				for(unsigned int i = 0; i < PBRIDGE_B_CONFIG::OUTPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.PBRIDGE_B." << PBRIDGE_B_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < PBRIDGE_B_CONFIG::OUTPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.PBRIDGE_B." << PBRIDGE_B_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < PBRIDGE_B_CONFIG::INPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.PBRIDGE_B." << PBRIDGE_B_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < PBRIDGE_B_CONFIG::INPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.PBRIDGE_B." << PBRIDGE_B_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+			}
+			if((*xbar_1_m1_concentrator)["enable-tracing"])
+			{
+				for(unsigned int i = 0; i < XBAR_1_M1_CONCENTRATOR_CONFIG::OUTPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << XBAR_1_M1_CONCENTRATOR_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < XBAR_1_M1_CONCENTRATOR_CONFIG::OUTPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << XBAR_1_M1_CONCENTRATOR_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < XBAR_1_M1_CONCENTRATOR_CONFIG::INPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << XBAR_1_M1_CONCENTRATOR_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < XBAR_1_M1_CONCENTRATOR_CONFIG::INPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << XBAR_1_M1_CONCENTRATOR_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+			}
+			if((*iahbg_0)["enable-tracing"])
+			{
+				for(unsigned int i = 0; i < IAHBG_0_CONFIG::OUTPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.IAHBG_0." << IAHBG_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < IAHBG_0_CONFIG::OUTPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.IAHBG_0." << IAHBG_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < IAHBG_0_CONFIG::INPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.IAHBG_0." << IAHBG_0_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < IAHBG_0_CONFIG::INPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.IAHBG_0." << IAHBG_0_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+			}
+			if((*iahbg_1)["enable-tracing"])
+			{
+				for(unsigned int i = 0; i < IAHBG_1_CONFIG::OUTPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.IAHBG_1." << IAHBG_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < IAHBG_1_CONFIG::OUTPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.IAHBG_1." << IAHBG_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < IAHBG_1_CONFIG::INPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.IAHBG_1." << IAHBG_1_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+				for(unsigned int i = 0; i < IAHBG_1_CONFIG::INPUT_SOCKETS; i++)
+				{
+					std::stringstream sstr;
+					sstr << "HARDWARE.IAHBG_1." << IAHBG_1_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
+					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
+				}
+			}
+		}
+		
+		if(xfer_gtkwave_init_script_file)
+		{
+			(*xfer_gtkwave_init_script_file) << "set num_added [ gtkwave::addSignalsFromList $my_sig_list ]" << std::endl;
+			(*xfer_gtkwave_init_script_file) << "# Analog data format" << std::endl;
+			(*xfer_gtkwave_init_script_file) << "gtkwave::/Edit/Highlight_All" << std::endl;
+			(*xfer_gtkwave_init_script_file) << "gtkwave::/Edit/Data_Format/Analog/Step" << std::endl;
+			(*xfer_gtkwave_init_script_file) << "gtkwave::/Edit/UnHighlight_All" << std::endl;
+			(*xfer_gtkwave_init_script_file) << "# Adjust zoom" << std::endl;
+			(*xfer_gtkwave_init_script_file) << "gtkwave::/Time/Zoom/Zoom_Full" << std::endl;
+			//(*xfer_gtkwave_init_script_file) << "gtkwave::setZoomFactor 34" << std::endl;
+			
+			delete xfer_gtkwave_init_script_file;
 		}
 	}
 #endif
@@ -4818,10 +4899,6 @@ Simulator::~Simulator()
 	if(pflash_stub) delete pflash_stub;
 	if(mc_me_stub) delete mc_me_stub;
 	if(mc_cgm_stub) delete mc_cgm_stub;
-	if(xbar_0_stub) delete xbar_0_stub;
-	if(xbar_1_stub) delete xbar_1_stub;
-	if(pbridge_a_stub) delete pbridge_a_stub;
-	if(pbridge_b_stub) delete pbridge_b_stub;
 	if(dma_err_irq_combinator) delete dma_err_irq_combinator;
 	if(DSPI0_0) delete DSPI0_0;
 	if(DSPI1_0) delete DSPI1_0;
@@ -5298,6 +5375,47 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_38", "range_start=\"0xfffc0000\" range_end=\"0xfffc3fff\" output_port=\"38\" translation=\"0x0\""); // SIUL2       -> SIUL2    (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_39", "range_start=\"0xffff0000\" range_end=\"0xffff3fff\" output_port=\"39\" translation=\"0x0\""); // EBI         -> EBI      (rel address)
 
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_0", "pacr16");   // INTC_0
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_1", "pacr26");   // STM_0
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_2", "pacr27");   // STM_1
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_3", "pacr28");   // STM_2
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_4", "pacr20");   // SWT_0
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_5", "pacr21");   // SWT_1
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_6", "pacr22");   // SWT_2
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_7", "pacr23");   // SWT_3
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_8", "opacr30");  // PIT_0
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_9", "opacr31");  // PIT_1
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_10", "opacr92"); // LINFlexD_0
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_11", "opacr91"); // LINFlexD_1
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_12", "opacr85"); // LINFlexD_14
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_13", "opacr84"); // LINFlexD_16
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_14", "opacr36"); // DMAMUX_0
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_15", "opacr36"); // DMAMUX_1
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_16", "opacr36"); // DMAMUX_2
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_17", "opacr36"); // DMAMUX_3
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_18", "opacr36"); // DMAMUX_4
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_19", "opacr36"); // DMAMUX_5
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_20", "opacr36"); // DMAMUX_6
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_21", "opacr36"); // DMAMUX_7
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_22", "opacr36"); // DMAMUX_8
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_23", "opacr36"); // DMAMUX_9
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_24", "pacr40");  // EDMA_0
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_25", "pacr41");  // EDMA_1
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_26", "opacr99"); // DSPI_0
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_27", "opacr98"); // DSPI_1
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_28", "opacr97"); // DSPI_4
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_29", "opacr96"); // DSPI_6
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_30", "opacr93"); // DSPI_12
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_31", "pacr10");  // PCM
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_32", "pacr12");  // PFLASH
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_33", "opacr17"); // MC_ME
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_34", "opacr19"); // MC_CGM
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_35", "pacr1");   // XBAR_0
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_36", "pacr2");   // XBAR_1
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_37", "pacr0");   // PBRIDGE_A
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_38", "opacr15"); // SIUL2
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_39", "opacr3");  // EBI
+	
 	//  - PBRIDGE_B
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.cycle_time", "20 ns");
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.mapping_0",  "range_start=\"0xfbe8c000\" range_end=\"0xfbe8ffff\" output_port=\"0\" translation=\"0x0\""); // LINFlexD_2  -> LINFlexD_2 (rel address)
@@ -5306,6 +5424,13 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.mapping_3",  "range_start=\"0xfbe74000\" range_end=\"0xfbe77fff\" output_port=\"3\" translation=\"0x0\""); // DSPI_3      -> DSPI_3 (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.mapping_4",  "range_start=\"0xfbe78000\" range_end=\"0xfbe7bfff\" output_port=\"4\" translation=\"0x0\""); // DSPI_5      -> DSPI_5 (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.mapping_5",  "range_start=\"0xf8000000\" range_end=\"0xf8003fff\" output_port=\"5\" translation=\"0x0\""); // PBRIDGE_B   -> PBRIDGE_B (rel address)
+	
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.acr_mapping_0", "opacr92"); // LINFlexD_2
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.acr_mapping_1", "opacr85"); // LINFlexD_15
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.acr_mapping_2", "opacr99"); // DSPI_2
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.acr_mapping_3", "opacr98"); // DSPI_3
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.acr_mapping_4", "opacr97"); // DSPI_5
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.acr_mapping_5", "pacr0");   // PBRIDGE_B
 	
 	//  - XBAR_1_M1_CONCENTRATOR
 	simulator->SetVariable("HARDWARE.XBAR_1_M1_CONCENTRATOR.cycle_time", "10 ns");
@@ -5617,41 +5742,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.MC_CGM.write-latency", "20 ns");
 	simulator->SetVariable("HARDWARE.MC_CGM.org", 0x0);
 	simulator->SetVariable("HARDWARE.MC_CGM.bytesize", 16 * 1024);
-
-	//  - XBAR_0_STUB
-	simulator->SetVariable("HARDWARE.XBAR_0_STUB.cycle-time", "20 ns");
-	simulator->SetVariable("HARDWARE.XBAR_0_STUB.read-latency", "20 ns");
-	simulator->SetVariable("HARDWARE.XBAR_0_STUB.write-latency", "20 ns");
-	simulator->SetVariable("HARDWARE.XBAR_0_STUB.org", 0x0);
-	simulator->SetVariable("HARDWARE.XBAR_0_STUB.bytesize", 16 * 1024);
-
-	//  - XBAR_1_STUB
-	simulator->SetVariable("HARDWARE.XBAR_1_STUB.cycle-time", "20 ns");
-	simulator->SetVariable("HARDWARE.XBAR_1_STUB.read-latency", "20 ns");
-	simulator->SetVariable("HARDWARE.XBAR_1_STUB.write-latency", "20 ns");
-	simulator->SetVariable("HARDWARE.XBAR_1_STUB.org", 0x0);
-	simulator->SetVariable("HARDWARE.XBAR_1_STUB.bytesize", 16 * 1024);
-
-	//  - PBRIDGE_A_STUB
-	simulator->SetVariable("HARDWARE.PBRIDGE_A_STUB.cycle-time", "20 ns");
-	simulator->SetVariable("HARDWARE.PBRIDGE_A_STUB.read-latency", "20 ns");
-	simulator->SetVariable("HARDWARE.PBRIDGE_A_STUB.write-latency", "20 ns");
-	simulator->SetVariable("HARDWARE.PBRIDGE_A_STUB.org", 0x0);
-	simulator->SetVariable("HARDWARE.PBRIDGE_A_STUB.bytesize", 16 * 1024);
-
-	//  - PBRIDGE_B_STUB
-	simulator->SetVariable("HARDWARE.PBRIDGE_B_STUB.cycle-time", "20 ns");
-	simulator->SetVariable("HARDWARE.PBRIDGE_B_STUB.read-latency", "20 ns");
-	simulator->SetVariable("HARDWARE.PBRIDGE_B_STUB.write-latency", "20 ns");
-	simulator->SetVariable("HARDWARE.PBRIDGE_B_STUB.org", 0x0);
-	simulator->SetVariable("HARDWARE.PBRIDGE_B_STUB.bytesize", 16 * 1024);
-
-	//  - SIUL2_STUB
-	simulator->SetVariable("HARDWARE.SIUL2.cycle-time", "20 ns");
-	simulator->SetVariable("HARDWARE.SIUL2.read-latency", "20 ns");
-	simulator->SetVariable("HARDWARE.SIUL2.write-latency", "20 ns");
-	simulator->SetVariable("HARDWARE.SIUL2.org", 0x0);
-	simulator->SetVariable("HARDWARE.SIUL2.bytesize", 16 * 1024);
 
 	//=========================================================================
 	//===                      Service run-time configuration               ===

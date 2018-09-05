@@ -248,6 +248,8 @@ template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGIST
 
 template <typename CUSTOM_RW_ARG> class AddressableRegisterBase;
 
+template <typename CUSTOM_RW_ARG> class AddressableRegisterFileBase;
+
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG> class AddressableRegister;
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG> class AddressableRegisterHandle;
@@ -578,12 +580,12 @@ private:
 
 // Note: this class is internal, it is not intended to be used directly by the user
 //       use AddressableRegister instead
-template <typename CUSTOM_RW_ARG>
+template <typename CUSTOM_RW_ARG = NullCustomArg>
 class AddressableRegisterBase
 {
 public:
-	virtual void ShortPrettyPrint(std::ostream& os) = 0;
-	virtual void LongPrettyPrint(std::ostream& os) = 0;
+	virtual void ShortPrettyPrint(std::ostream& os) const = 0;
+	virtual void LongPrettyPrint(std::ostream& os) const = 0;
 protected:
 	virtual unsigned int __ARB_GetSize__() const = 0;
 	virtual const std::string& __ARB_GetName__() const = 0;
@@ -599,7 +601,7 @@ protected:
 /////////////////////// AddressableRegisterFileBase<> /////////////////////////
 // Note: this class is internal, it is not intended to be used directly by the user
 //       use AddressableRegisterFile instead
-template <typename CUSTOM_RW_ARG>
+template <typename CUSTOM_RW_ARG = NullCustomArg>
 class AddressableRegisterFileBase
 {
 protected:
@@ -625,8 +627,8 @@ public:
 	using Super::operator =;
 
 public:
-	virtual void ShortPrettyPrint(std::ostream& os);
-	virtual void LongPrettyPrint(std::ostream& os);
+	virtual void ShortPrettyPrint(std::ostream& os) const;
+	virtual void LongPrettyPrint(std::ostream& os) const;
 protected:
 	virtual ReadWriteStatus Write(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
 	virtual ReadWriteStatus Read(typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
@@ -712,8 +714,8 @@ public:
 	void SetEndian(unisim::util::endian::endian_type endian);
 	void MapRegister(ADDRESS addr, AddressableRegisterBase<CUSTOM_RW_ARG> *reg, unsigned int reg_byte_size = 0 /* in bytes (with padding) */);
 	void MapRegisterFile(ADDRESS addr, AddressableRegisterFileBase<CUSTOM_RW_ARG> *regfile, unsigned int reg_byte_size = 0 /* in bytes (with padding) */, unsigned int stride = 0 /* in bytes */);
-	void Unmap(ADDRESS addr, unsigned int byte_size);
-	void Clear();
+	void UnmapRegistersAt(ADDRESS addr, unsigned int byte_size);
+	void ClearRegisterMap();
 	AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *FindAddressableRegister(ADDRESS addr) const;
 	
 	ReadWriteStatus Write(ADDRESS addr, const unsigned char *data_ptr, unsigned int data_length);
