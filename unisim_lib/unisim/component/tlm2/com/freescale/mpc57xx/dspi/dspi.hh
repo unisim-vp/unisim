@@ -132,7 +132,7 @@ inline std::ostream& operator << (std::ostream& os, const DSPI_State& state)
 
 template <typename CONFIG>
 class DSPI
-	: unisim::kernel::service::Object
+	: public unisim::kernel::service::Object
 	, public sc_core::sc_module
 	, public tlm::tlm_fw_transport_if<>
 {

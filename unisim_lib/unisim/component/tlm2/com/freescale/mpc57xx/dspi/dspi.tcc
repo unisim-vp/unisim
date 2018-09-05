@@ -475,7 +475,7 @@ template <typename CONFIG>
 void DSPI<CONFIG>::MapRegisters()
 {
 	// Map DSPI registers regarding there address offsets
-	reg_addr_map.Clear();
+	reg_addr_map.ClearRegisterMap();
 	reg_addr_map.MapRegister(dspi_mcr.ADDRESS_OFFSET, &dspi_mcr);  
 	reg_addr_map.MapRegister(dspi_tcr.ADDRESS_OFFSET, &dspi_tcr);
 	unsigned int i;

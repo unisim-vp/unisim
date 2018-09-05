@@ -181,15 +181,16 @@ class Router :
 	public unisim::kernel::service::Service<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >,
 	public unisim::kernel::service::Client<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >,
 	public sc_core::sc_module {
-private:
-	typedef unisim::kernel::service::Object Object;
+public:
 	static const unsigned int INPUT_SOCKETS = CONFIG::INPUT_SOCKETS;
 	static const unsigned int OUTPUT_SOCKETS = CONFIG::OUTPUT_SOCKETS;
 	static const unsigned int MAX_NUM_MAPPINGS = CONFIG::MAX_NUM_MAPPINGS; 
 	static const unsigned int INPUT_BUSWIDTH = CONFIG::INPUT_BUSWIDTH;
 	static const unsigned int OUTPUT_BUSWIDTH = CONFIG::OUTPUT_BUSWIDTH;
-	typedef typename CONFIG::TYPES TYPES;
 	static const bool VERBOSE = CONFIG::VERBOSE;
+private:
+	typedef unisim::kernel::service::Object Object;
+	typedef typename CONFIG::TYPES TYPES;
 
 	typedef tlm_utils::simple_initiator_socket_tagged<Router, OUTPUT_BUSWIDTH, TYPES> InitSocket;
 	typedef tlm_utils::passthrough_target_socket_tagged<Router, INPUT_BUSWIDTH, TYPES> TargSocket;

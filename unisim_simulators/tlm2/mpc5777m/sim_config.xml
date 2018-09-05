@@ -1780,6 +1780,26 @@
 				<value>range_start=&quot;0x20000000&quot; range_end=&quot;0x2fffffff&quot; output_port=&quot;5&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
 		</object>
 		<object name="HARDWARE.XBAR_1">
 			<variable name="cycle_time">
@@ -1935,6 +1955,26 @@
 				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
 				<value>range_start=&quot;0x20000000&quot; range_end=&quot;0x2fffffff&quot; output_port=&quot;0&quot; translation=&quot;0x20000000&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
 			</variable>
 		</object>
 		<object name="HARDWARE.PBRIDGE_A">
@@ -2254,6 +2294,266 @@
 				<value>range_start=&quot;0xffff0000&quot; range_end=&quot;0xffff3fff&quot; output_port=&quot;39&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="acr_mapping_0">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr16</value>
+				<description>access control register for output port #0</description>
+			</variable>
+			<variable name="acr_mapping_1">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr26</value>
+				<description>access control register for output port #1</description>
+			</variable>
+			<variable name="acr_mapping_2">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr27</value>
+				<description>access control register for output port #2</description>
+			</variable>
+			<variable name="acr_mapping_3">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr28</value>
+				<description>access control register for output port #3</description>
+			</variable>
+			<variable name="acr_mapping_4">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr20</value>
+				<description>access control register for output port #4</description>
+			</variable>
+			<variable name="acr_mapping_5">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr21</value>
+				<description>access control register for output port #5</description>
+			</variable>
+			<variable name="acr_mapping_6">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr22</value>
+				<description>access control register for output port #6</description>
+			</variable>
+			<variable name="acr_mapping_7">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr23</value>
+				<description>access control register for output port #7</description>
+			</variable>
+			<variable name="acr_mapping_8">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr30</value>
+				<description>access control register for output port #8</description>
+			</variable>
+			<variable name="acr_mapping_9">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr31</value>
+				<description>access control register for output port #9</description>
+			</variable>
+			<variable name="acr_mapping_10">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr92</value>
+				<description>access control register for output port #10</description>
+			</variable>
+			<variable name="acr_mapping_11">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr91</value>
+				<description>access control register for output port #11</description>
+			</variable>
+			<variable name="acr_mapping_12">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr85</value>
+				<description>access control register for output port #12</description>
+			</variable>
+			<variable name="acr_mapping_13">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr84</value>
+				<description>access control register for output port #13</description>
+			</variable>
+			<variable name="acr_mapping_14">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr36</value>
+				<description>access control register for output port #14</description>
+			</variable>
+			<variable name="acr_mapping_15">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr36</value>
+				<description>access control register for output port #15</description>
+			</variable>
+			<variable name="acr_mapping_16">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr36</value>
+				<description>access control register for output port #16</description>
+			</variable>
+			<variable name="acr_mapping_17">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr36</value>
+				<description>access control register for output port #17</description>
+			</variable>
+			<variable name="acr_mapping_18">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr36</value>
+				<description>access control register for output port #18</description>
+			</variable>
+			<variable name="acr_mapping_19">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr36</value>
+				<description>access control register for output port #19</description>
+			</variable>
+			<variable name="acr_mapping_20">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr36</value>
+				<description>access control register for output port #20</description>
+			</variable>
+			<variable name="acr_mapping_21">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr36</value>
+				<description>access control register for output port #21</description>
+			</variable>
+			<variable name="acr_mapping_22">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr36</value>
+				<description>access control register for output port #22</description>
+			</variable>
+			<variable name="acr_mapping_23">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr36</value>
+				<description>access control register for output port #23</description>
+			</variable>
+			<variable name="acr_mapping_24">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr40</value>
+				<description>access control register for output port #24</description>
+			</variable>
+			<variable name="acr_mapping_25">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr41</value>
+				<description>access control register for output port #25</description>
+			</variable>
+			<variable name="acr_mapping_26">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr99</value>
+				<description>access control register for output port #26</description>
+			</variable>
+			<variable name="acr_mapping_27">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr98</value>
+				<description>access control register for output port #27</description>
+			</variable>
+			<variable name="acr_mapping_28">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr97</value>
+				<description>access control register for output port #28</description>
+			</variable>
+			<variable name="acr_mapping_29">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr96</value>
+				<description>access control register for output port #29</description>
+			</variable>
+			<variable name="acr_mapping_30">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr93</value>
+				<description>access control register for output port #30</description>
+			</variable>
+			<variable name="acr_mapping_31">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr10</value>
+				<description>access control register for output port #31</description>
+			</variable>
+			<variable name="acr_mapping_32">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr12</value>
+				<description>access control register for output port #32</description>
+			</variable>
+			<variable name="acr_mapping_33">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr17</value>
+				<description>access control register for output port #33</description>
+			</variable>
+			<variable name="acr_mapping_34">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr19</value>
+				<description>access control register for output port #34</description>
+			</variable>
+			<variable name="acr_mapping_35">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr1</value>
+				<description>access control register for output port #35</description>
+			</variable>
+			<variable name="acr_mapping_36">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr2</value>
+				<description>access control register for output port #36</description>
+			</variable>
+			<variable name="acr_mapping_37">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr0</value>
+				<description>access control register for output port #37</description>
+			</variable>
+			<variable name="acr_mapping_38">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr15</value>
+				<description>access control register for output port #38</description>
+			</variable>
+			<variable name="acr_mapping_39">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr3</value>
+				<description>access control register for output port #39</description>
+			</variable>
 		</object>
 		<object name="HARDWARE.PBRIDGE_B">
 			<variable name="cycle_time">
@@ -2367,6 +2667,62 @@
 				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
 				<value>range_start=&quot;0xf8000000&quot; range_end=&quot;0xf8003fff&quot; output_port=&quot;5&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="acr_mapping_0">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr92</value>
+				<description>access control register for output port #0</description>
+			</variable>
+			<variable name="acr_mapping_1">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr85</value>
+				<description>access control register for output port #1</description>
+			</variable>
+			<variable name="acr_mapping_2">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr99</value>
+				<description>access control register for output port #2</description>
+			</variable>
+			<variable name="acr_mapping_3">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr98</value>
+				<description>access control register for output port #3</description>
+			</variable>
+			<variable name="acr_mapping_4">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr97</value>
+				<description>access control register for output port #4</description>
+			</variable>
+			<variable name="acr_mapping_5">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr0</value>
+				<description>access control register for output port #5</description>
 			</variable>
 		</object>
 		<object name="HARDWARE.XBAR_1_M1_CONCENTRATOR">
@@ -10702,326 +11058,6 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.XBAR_0_STUB">
-			<variable name="org">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>0x00000000</value>
-				<description>memory origin/base address</description>
-			</variable>
-			<variable name="bytesize">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>16384</value>
-				<description>memory size in bytes</description>
-			</variable>
-			<variable name="verbose">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>enable/disable verbosity</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="initial-byte-value">
-				<type>parameter</type>
-				<data_type>unsigned 8-bit integer</data_type>
-				<value>0x00</value>
-				<description>initial value for all bytes of memory</description>
-			</variable>
-			<variable name="input-filename">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>Input filename</description>
-			</variable>
-			<variable name="output-filename">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>output filename</description>
-			</variable>
-			<variable name="cycle-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>20 ns</value>
-				<description>memory cycle time</description>
-			</variable>
-			<variable name="read-latency">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>20 ns</value>
-				<description>memory read latency</description>
-			</variable>
-			<variable name="write-latency">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>20 ns</value>
-				<description>memory write latency</description>
-			</variable>
-			<variable name="read-only">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>enable/disable read-only protection</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="enable-dmi">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>true</value>
-				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-		</object>
-		<object name="HARDWARE.XBAR_1_STUB">
-			<variable name="org">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>0x00000000</value>
-				<description>memory origin/base address</description>
-			</variable>
-			<variable name="bytesize">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>16384</value>
-				<description>memory size in bytes</description>
-			</variable>
-			<variable name="verbose">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>enable/disable verbosity</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="initial-byte-value">
-				<type>parameter</type>
-				<data_type>unsigned 8-bit integer</data_type>
-				<value>0x00</value>
-				<description>initial value for all bytes of memory</description>
-			</variable>
-			<variable name="input-filename">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>Input filename</description>
-			</variable>
-			<variable name="output-filename">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>output filename</description>
-			</variable>
-			<variable name="cycle-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>20 ns</value>
-				<description>memory cycle time</description>
-			</variable>
-			<variable name="read-latency">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>20 ns</value>
-				<description>memory read latency</description>
-			</variable>
-			<variable name="write-latency">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>20 ns</value>
-				<description>memory write latency</description>
-			</variable>
-			<variable name="read-only">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>enable/disable read-only protection</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="enable-dmi">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>true</value>
-				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-		</object>
-		<object name="HARDWARE.PBRIDGE_A_STUB">
-			<variable name="org">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>0x00000000</value>
-				<description>memory origin/base address</description>
-			</variable>
-			<variable name="bytesize">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>16384</value>
-				<description>memory size in bytes</description>
-			</variable>
-			<variable name="verbose">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>enable/disable verbosity</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="initial-byte-value">
-				<type>parameter</type>
-				<data_type>unsigned 8-bit integer</data_type>
-				<value>0x00</value>
-				<description>initial value for all bytes of memory</description>
-			</variable>
-			<variable name="input-filename">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>Input filename</description>
-			</variable>
-			<variable name="output-filename">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>output filename</description>
-			</variable>
-			<variable name="cycle-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>20 ns</value>
-				<description>memory cycle time</description>
-			</variable>
-			<variable name="read-latency">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>20 ns</value>
-				<description>memory read latency</description>
-			</variable>
-			<variable name="write-latency">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>20 ns</value>
-				<description>memory write latency</description>
-			</variable>
-			<variable name="read-only">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>enable/disable read-only protection</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="enable-dmi">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>true</value>
-				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-		</object>
-		<object name="HARDWARE.PBRIDGE_B_STUB">
-			<variable name="org">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>0x00000000</value>
-				<description>memory origin/base address</description>
-			</variable>
-			<variable name="bytesize">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>16384</value>
-				<description>memory size in bytes</description>
-			</variable>
-			<variable name="verbose">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>enable/disable verbosity</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="initial-byte-value">
-				<type>parameter</type>
-				<data_type>unsigned 8-bit integer</data_type>
-				<value>0x00</value>
-				<description>initial value for all bytes of memory</description>
-			</variable>
-			<variable name="input-filename">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>Input filename</description>
-			</variable>
-			<variable name="output-filename">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>output filename</description>
-			</variable>
-			<variable name="cycle-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>20 ns</value>
-				<description>memory cycle time</description>
-			</variable>
-			<variable name="read-latency">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>20 ns</value>
-				<description>memory read latency</description>
-			</variable>
-			<variable name="write-latency">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>20 ns</value>
-				<description>memory write latency</description>
-			</variable>
-			<variable name="read-only">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>enable/disable read-only protection</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="enable-dmi">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>true</value>
-				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-		</object>
 		<object name="HARDWARE.IOP_CLK">
 			<variable name="lazy-clock">
 				<type>parameter</type>
@@ -11761,6 +11797,12 @@
 			<data_type>string</data_type>
 			<value>xfer.vcd</value>
 			<description>Filename of VCD file where to trace interconnects transfer activity</description>
+		</variable>
+		<variable name="xfer-gtkwave-init-script">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>GTKWave initialization script that simulators must automatically generate at startup for interconnects transfer activity</description>
 		</variable>
 	</object>
 	<object name="debugger">

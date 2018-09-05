@@ -1719,13 +1719,13 @@ void AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::DebugRead(CUS
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG>
-void AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::ShortPrettyPrint(std::ostream& os)
+void AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::ShortPrettyPrint(std::ostream& os) const
 {
 	Super::ShortPrettyPrint(os);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG>
-void AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::LongPrettyPrint(std::ostream& os)
+void AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::LongPrettyPrint(std::ostream& os) const
 {
 	Super::LongPrettyPrint(os);
 }
@@ -1863,7 +1863,7 @@ RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::RegisterAddressMap()
 template <typename ADDRESS, typename CUSTOM_RW_ARG>
 RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::~RegisterAddressMap()
 {
-	Clear();
+	ClearRegisterMap();
 }
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG>
@@ -1930,7 +1930,7 @@ void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::MapRegisterFile(ADDRESS addr, A
 }
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG>
-void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Unmap(ADDRESS addr, unsigned int byte_size)
+void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::UnmapRegistersAt(ADDRESS addr, unsigned int byte_size)
 {
 	if(byte_size)
 	{
@@ -1956,7 +1956,7 @@ void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Unmap(ADDRESS addr, unsigned in
 }
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG>
-void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Clear()
+void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::ClearRegisterMap()
 {
 	typename std::map<ADDRESS, AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *>::const_iterator it;
 
