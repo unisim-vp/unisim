@@ -66,10 +66,9 @@ struct Processor
   {
     typedef RegRead<RID> this_type;
     typedef unisim::util::symbolic::binsec::RegRead Super;
-    typedef unisim::util::symbolic::ScalarType ScalarType;
     RegRead( RID _id, unsigned _bitsize ) : Super(_bitsize), id(_id) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false, bitsize); }
+    
     virtual char const* GetRegName() const { return id.c_str(); }
     virtual intptr_t cmp( ExprNode const& brhs ) const
     { if (intptr_t delta = id.cmp( dynamic_cast<RegRead const&>( brhs ).id )) return delta; return Super::cmp( brhs ); }
@@ -84,7 +83,6 @@ struct Processor
   struct ForeignRegister : public unisim::util::symbolic::binsec::RegRead
   {
     typedef unisim::util::symbolic::binsec::RegRead Super;
-    typedef unisim::util::symbolic::ScalarType ScalarType;
     ForeignRegister( uint8_t _mode, unsigned _idx )
       : Super(32), name(), idx(_idx), mode(_mode)
     {
@@ -94,7 +92,6 @@ struct Processor
       strncpy(&name[0],buf.str().c_str(),sizeof(name)-1);
     }
     virtual ForeignRegister* Mutate() const { return new ForeignRegister( *this ); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType( false, bitsize ); }
     
     char const* mode_ident() const
     {
@@ -132,10 +129,9 @@ struct Processor
   {
     typedef RegWrite<RID> this_type;
     typedef unisim::util::symbolic::binsec::RegWrite Super;
-    typedef unisim::util::symbolic::ScalarType ScalarType;
     RegWrite( RID _id, Expr const& _value, unsigned _bitsize ) : Super(_value, _bitsize), id(_id) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
+    
     virtual char const* GetRegName() const { return id.c_str(); }
     virtual intptr_t cmp( ExprNode const& brhs ) const
     { if (intptr_t delta = id.cmp( dynamic_cast<RegWrite const&>( brhs ).id )) return delta; return Super::cmp( brhs ); }
@@ -156,7 +152,6 @@ struct Processor
     PCWrite( Expr const& value, Br::type_t bt ) : Br( value, 32, bt ) {}
     virtual PCWrite* Mutate() const { return new PCWrite( *this ); }
     virtual char const* GetRegName() const { return "pc"; }
-    virtual unisim::util::symbolic::ScalarType::id_t GetType() const { return unisim::util::symbolic::ScalarType::VOID; }
     virtual Expr Simplify() const
     {
       Expr nvalue( ASExprNode::Simplify(value) );

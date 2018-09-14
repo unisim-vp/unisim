@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SIMPKG=armsec
+SIMPKG=s3pac
 
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \
@@ -348,7 +348,7 @@ EOF
 
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
-  - ArmSec: an ARMv7 decoder for BINSEC::DBA translation
+  - S3pac: an ARMv7 decoder for BINSEC::DBA translation
   - GenISSLib (will not be installed): an instruction set simulator generator
 See INSTALL for installation instructions.
 EOF
@@ -385,7 +385,7 @@ has_to_build_configure=no
 if has_to_build "${CONFIGURE_AC}" "$0"; then
 	echo "Generating configure.ac"
 	cat <<EOF > "${CONFIGURE_AC}"
-AC_INIT([UNISIM ArmSec ARMv7 to BINSEC-DBA translator package], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}])
+AC_INIT([UNISIM S3pac ARMv7 to BINSEC-DBA translator package], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}])
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
@@ -598,7 +598,7 @@ SIMULATOR_MAKEFILE_AM="${DEST_DIR}/${SIMPKG}/Makefile.am"
 if has_to_build "${SIMULATOR_CONFIGURE_AC}" "$0"; then
 	echo "Generating ${SIMPKG} configure.ac"
 	cat <<EOF > "${SIMULATOR_CONFIGURE_AC}"
-AC_INIT([UNISIM ArmSec ARMv7 to BINSEC-DBA translator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
+AC_INIT([UNISIM S3pac ARMv7 to BINSEC-DBA translator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])

@@ -199,6 +199,7 @@ namespace binsec {
       sink << "assert (false)";
       return 0;
     }
+    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
 
     virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
     virtual unsigned SubCount() const { return 0; }
@@ -214,6 +215,7 @@ namespace binsec {
     virtual Load* Mutate() const { return new Load( *this ); }
     
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
+    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
     unsigned bitsize() const { return 1<<size; }
     virtual void Repr( std::ostream& sink ) const;
     intptr_t cmp( ExprNode const& brhs ) const
@@ -263,8 +265,10 @@ namespace binsec {
 
       return ninput != input ? new BitFilter( ninput, source, select, extend, sxtend ) : this;
     }
+    virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType( false, extend ); }
     
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
+    
     virtual void Repr( std::ostream& sink ) const;
     intptr_t cmp( ExprNode const& brhs ) const
     {
@@ -300,6 +304,7 @@ namespace binsec {
     }
       
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
+    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
     unsigned bitsize() const { return 1<<size; }
     virtual void Repr( std::ostream& sink ) const;
     intptr_t cmp( ExprNode const& brhs ) const

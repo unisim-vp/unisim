@@ -122,7 +122,7 @@ namespace binsec {
               case Op::Cast:
                 {
                   CastNodeBase const& cnb = dynamic_cast<CastNodeBase const&>( *expr.node );
-                  ScalarType src( cnb.GetSrcType() ), dst( cnb.GetDstType() );
+                  ScalarType src( cnb.GetSrcType() ), dst( cnb.GetType() );
                   if (not dst.is_integer or not src.is_integer or (dst.bitsize == 1 and src.bitsize != 1))
                     {
                       // Complex casts
@@ -288,7 +288,7 @@ namespace binsec {
               case Op::Cast:
                 {
                   CastNodeBase const& cnb = dynamic_cast<CastNodeBase const&>( *expr.node );
-                  ScalarType src( cnb.GetSrcType() ), dst( cnb.GetDstType() );
+                  ScalarType src( cnb.GetSrcType() ), dst( cnb.GetType() );
                   
                   if (dst.is_integer and src.is_integer)
                     {
@@ -527,6 +527,7 @@ namespace binsec {
           {}
           virtual TmpVar* Mutate() const { return new TmpVar(*this); }
           virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const { sink << ref; return dsz; }
+          virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false, dsz); }
           virtual intptr_t cmp( ExprNode const& rhs ) const { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
           virtual unsigned SubCount() const { return 0; }
           virtual void Repr( std::ostream& sink ) const { sink << ref; }

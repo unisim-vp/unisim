@@ -62,6 +62,17 @@ namespace symbolic {
   struct ScalarType
   {
     enum id_t { VOID, BOOL, U8, U16, U32, U64, S8, S16, S32, S64, F32, F64 };
+    static id_t IntegerType( bool is_signed, unsigned bits )
+    {
+      switch (bits) {
+      default: throw VOID;
+      case 8:  return is_signed ? S8 :  U8;
+      case 16: return is_signed ? S16 : U16;
+      case 32: return is_signed ? S32 : U32;
+      case 64: return is_signed ? S64 : U64;
+      }
+      return VOID;
+    }
     ScalarType( id_t id )
       : name(0), bitsize(0), is_signed(false), is_integer(false)
     {
@@ -190,12 +201,7 @@ namespace symbolic {
           bool is_signed = std::numeric_limits<VALUE_TYPE>::is_signed;
           //int bits = std::numeric_limits<VALUE_TYPE>::digits + (is_signed ? 1 : 0);
           int bits = 8*sizeof(VALUE_TYPE);
-          switch (bits) {
-          case 8:  return is_signed ? ScalarType::S8 :  ScalarType::U8;
-          case 16: return is_signed ? ScalarType::S16 : ScalarType::U16;
-          case 32: return is_signed ? ScalarType::S32 : ScalarType::U32;
-          case 64: return is_signed ? ScalarType::S64 : ScalarType::U64;
-          }
+          return ScalarType::IntegerType( is_signed, bits );
         }
       throw std::logic_error("not an integer type");
     }
