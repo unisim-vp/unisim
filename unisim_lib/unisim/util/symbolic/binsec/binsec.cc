@@ -32,7 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
-#include <unisim/util/symbolic/binsec/binsec.hh>
+#include <unisim/util/symbolic/ccode/ccode.hh>
 #include <ostream>
 #include <sstream>
 #include <iomanip>
@@ -40,7 +40,7 @@
 namespace unisim {
 namespace util {
 namespace symbolic {
-namespace binsec {
+namespace ccode {
 
   std::ostream&
   operator << ( std::ostream& sink, dbx const& _ )
@@ -762,7 +762,7 @@ namespace binsec {
   }
   
 
-} /* end of namespace binsec */
+} /* end of namespace ccode */
 } /* end of namespace symbolic */
 } /* end of namespace util */
 } /* end of namespace unisim */

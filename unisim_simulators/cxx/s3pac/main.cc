@@ -1,6 +1,6 @@
 #include <unisim/component/cxx/processor/arm/disasm.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
-#include <unisim/util/symbolic/binsec/binsec.hh>
+#include <unisim/util/symbolic/ccode/ccode.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <top_arm32.tcc>
 #include <top_thumb.tcc>
@@ -56,19 +56,20 @@ struct Processor
   typedef unisim::util::symbolic::FP                   FP;
   typedef unisim::util::symbolic::Expr                 Expr;
 
-  typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
-  typedef unisim::util::symbolic::binsec::Load         Load;
-  typedef unisim::util::symbolic::binsec::Store        Store;
-  typedef unisim::util::symbolic::binsec::Branch       Br;
+  typedef unisim::util::symbolic::ccode::ActionNode   ActionNode;
+  typedef unisim::util::symbolic::ccode::Load         Load;
+  typedef unisim::util::symbolic::ccode::Store        Store;
+  typedef unisim::util::symbolic::ccode::Branch       Br;
 
   template <typename RID>
-  struct RegRead : public unisim::util::symbolic::binsec::RegRead
+  struct RegRead : public unisim::util::symbolic::ccode::RegRead
   {
     typedef RegRead<RID> this_type;
-    typedef unisim::util::symbolic::binsec::RegRead Super;
+    typedef unisim::util::symbolic::ccode::RegRead Super;
+    typedef unisim::util::symbolic::ScalarType ScalarType;
     RegRead( RID _id, unsigned _bitsize ) : Super(_bitsize), id(_id) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
-    
+    virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType( false, bitsize ); }
     virtual char const* GetRegName() const { return id.c_str(); }
     virtual intptr_t cmp( ExprNode const& brhs ) const
     { if (intptr_t delta = id.cmp( dynamic_cast<RegRead const&>( brhs ).id )) return delta; return Super::cmp( brhs ); }
@@ -80,9 +81,10 @@ struct Processor
   template <typename RID>
   static RegRead<RID>* newRegRead( RID id, unsigned bitsize ) { return new RegRead<RID>( id, bitsize ); }
 
-  struct ForeignRegister : public unisim::util::symbolic::binsec::RegRead
+  struct ForeignRegister : public unisim::util::symbolic::ccode::RegRead
   {
-    typedef unisim::util::symbolic::binsec::RegRead Super;
+    typedef unisim::util::symbolic::ccode::RegRead Super;
+    typedef unisim::util::symbolic::ScalarType ScalarType;
     ForeignRegister( uint8_t _mode, unsigned _idx )
       : Super(32), name(), idx(_idx), mode(_mode)
     {
@@ -92,7 +94,7 @@ struct Processor
       strncpy(&name[0],buf.str().c_str(),sizeof(name)-1);
     }
     virtual ForeignRegister* Mutate() const { return new ForeignRegister( *this ); }
-    
+    virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false, bitsize); }
     char const* mode_ident() const
     {
       switch (mode)
@@ -125,13 +127,14 @@ struct Processor
   };
   
   template <typename RID>
-  struct RegWrite : public unisim::util::symbolic::binsec::RegWrite
+  struct RegWrite : public unisim::util::symbolic::ccode::RegWrite
   {
     typedef RegWrite<RID> this_type;
-    typedef unisim::util::symbolic::binsec::RegWrite Super;
+    typedef unisim::util::symbolic::ccode::RegWrite Super;
+    typedef unisim::util::symbolic::ScalarType ScalarType;
     RegWrite( RID _id, Expr const& _value, unsigned _bitsize ) : Super(_value, _bitsize), id(_id) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
-    
+    virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType( false, bitsize ); }
     virtual char const* GetRegName() const { return id.c_str(); }
     virtual intptr_t cmp( ExprNode const& brhs ) const
     { if (intptr_t delta = id.cmp( dynamic_cast<RegWrite const&>( brhs ).id )) return delta; return Super::cmp( brhs ); }
@@ -151,6 +154,7 @@ struct Processor
   {
     PCWrite( Expr const& value, Br::type_t bt ) : Br( value, 32, bt ) {}
     virtual PCWrite* Mutate() const { return new PCWrite( *this ); }
+    virtual unisim::util::symbolic::ScalarType::id_t GetType() const { return unisim::util::symbolic::ScalarType::VOID; }
     virtual char const* GetRegName() const { return "pc"; }
     virtual Expr Simplify() const
     {
@@ -327,7 +331,7 @@ struct Processor
     path->sinks.insert( Expr( new PCWrite( next_insn_addr.expr, branch_type ) ) );
     if (unpredictable)
       {
-        path->sinks.insert( Expr( new unisim::util::symbolic::binsec::AssertFalse() ) );
+        path->sinks.insert( Expr( new unisim::util::symbolic::ccode::AssertFalse() ) );
         return complete;
       }
     if (cpsr.n != ref.cpsr.n)
@@ -927,7 +931,7 @@ struct THUMBISA : public unisim::component::cxx::processor::arm::isa::thumb2::De
   static bool const is_thumb = true;
 };
 
-struct InstructionAddress : public unisim::util::symbolic::binsec::ASExprNode
+struct InstructionAddress : public unisim::util::symbolic::ccode::ASExprNode
 {
   InstructionAddress() {}
   virtual void Repr( std::ostream& sink ) const { sink << "insn_addr"; }
@@ -936,7 +940,7 @@ struct InstructionAddress : public unisim::util::symbolic::binsec::ASExprNode
 
 struct Translator
 {
-  typedef unisim::util::symbolic::binsec::ActionNode ActionNode;
+  typedef unisim::util::symbolic::ccode::ActionNode ActionNode;
   typedef Processor::StatusRegister StatusRegister;
   
   Translator( uint32_t _addr, uint32_t _code )
@@ -948,7 +952,7 @@ struct Translator
   void
   extract( std::ostream& sink, ISA& isa )
   {
-    sink << "(address . " << unisim::util::symbolic::binsec::dbx(4, addr) << ")\n";
+    sink << "(address . " << unisim::util::symbolic::ccode::dbx(4, addr) << ")\n";
   
     // Instruction decoding
     struct Instruction
@@ -978,7 +982,7 @@ struct Translator
     
     if (not instruction.operation)
       {
-        sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(4, code) << ")\n(illegal)\n";
+        sink << "(opcode . " << unisim::util::symbolic::ccode::dbx(4, code) << ")\n(illegal)\n";
         return;
       }
 
@@ -987,7 +991,7 @@ struct Translator
       if (instruction.bytecount == 2)
         encoding &= 0xffff;
       
-      sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(instruction.bytecount, encoding) << ")\n(size . " << (instruction.bytecount) << ")\n";
+      sink << "(opcode . " << unisim::util::symbolic::ccode::dbx(instruction.bytecount, encoding) << ")\n(size . " << (instruction.bytecount) << ")\n";
     }
     
     Processor::U32      insn_addr = unisim::util::symbolic::make_const(addr); //< concrete instruction address
@@ -1038,11 +1042,11 @@ struct Translator
       throw 0;
 
     // Translate to DBA
-    unisim::util::symbolic::binsec::Program program;
+    unisim::util::symbolic::ccode::Program program;
     program.Generate( coderoot );
-    typedef unisim::util::symbolic::binsec::Program::const_iterator Iterator;
+    typedef unisim::util::symbolic::ccode::Program::const_iterator Iterator;
     for (Iterator itr = program.begin(), end = program.end(); itr != end; ++itr)
-      sink << "(" << unisim::util::symbolic::binsec::dbx(4, addr) << ',' << itr->first << ") " << itr->second << std::endl;
+      sink << "(" << unisim::util::symbolic::ccode::dbx(4, addr) << ',' << itr->first << ") " << itr->second << std::endl;
   }
 
   Processor::StatusRegister status;

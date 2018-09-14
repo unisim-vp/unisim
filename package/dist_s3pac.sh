@@ -87,7 +87,7 @@ vector \
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/component/cxx/processor/arm/disasm.cc \
-unisim/util/symbolic/binsec/binsec.cc \
+unisim/util/symbolic/ccode/ccode.cc \
 unisim/util/symbolic/symbolic.cc \
 "
 
@@ -144,7 +144,7 @@ unisim/util/endian/endian.hh \
 unisim/util/inlining/inlining.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/symbolic/symbolic.hh \
-unisim/util/symbolic/binsec/binsec.hh \
+unisim/util/symbolic/ccode/ccode.hh \
 unisim/util/symbolic/identifier.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
 unisim/component/cxx/processor/arm/exception.hh \
@@ -348,7 +348,7 @@ EOF
 
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
-  - S3pac: an ARMv7 decoder for BINSEC::DBA translation
+  - s3pac: an ARMv7 decoder for conversion of arm instructions to C code
   - GenISSLib (will not be installed): an instruction set simulator generator
 See INSTALL for installation instructions.
 EOF
@@ -385,7 +385,7 @@ has_to_build_configure=no
 if has_to_build "${CONFIGURE_AC}" "$0"; then
 	echo "Generating configure.ac"
 	cat <<EOF > "${CONFIGURE_AC}"
-AC_INIT([UNISIM S3pac ARMv7 to BINSEC-DBA translator package], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}])
+AC_INIT([UNISIM S3pac ARMv7 to C code translator package], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}])
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
@@ -598,7 +598,7 @@ SIMULATOR_MAKEFILE_AM="${DEST_DIR}/${SIMPKG}/Makefile.am"
 if has_to_build "${SIMULATOR_CONFIGURE_AC}" "$0"; then
 	echo "Generating ${SIMPKG} configure.ac"
 	cat <<EOF > "${SIMULATOR_CONFIGURE_AC}"
-AC_INIT([UNISIM S3pac ARMv7 to BINSEC-DBA translator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
+AC_INIT([UNISIM S3pac ARMv7 to C code translator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
