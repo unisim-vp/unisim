@@ -35,10 +35,8 @@
 #ifndef __UNISIM_COMPONENT_TLM2_DMA_FREESCALE_MPC57XX_EDMA_EDMA_TCC__
 #define __UNISIM_COMPONENT_TLM2_DMA_FREESCALE_MPC57XX_EDMA_EDMA_TCC__
 
-#include <unisim/kernel/tlm2/master_id.hh>
 #include <unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.hh>
 #include <unisim/util/reg/core/register.tcc>
-#include <unisim/kernel/tlm2/master_id.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 
 namespace unisim {
@@ -121,6 +119,7 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, master_id(0)
 	, param_master_id("master-id", this, master_id, "master ID")
+	, default_trans_attr()
 	, master_clock_period(10.0, sc_core::SC_NS)
 	, master_clock_start_time(sc_core::SC_ZERO_TIME)
 	, master_clock_posedge_first(true)
@@ -142,6 +141,10 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, grp_per_prio()
 	, ch_per_prio()
 {
+	default_trans_attr.set_privileged(true);
+	default_trans_attr.set_instruction(false);
+	default_trans_attr.set_master_id(0);
+	
 	peripheral_slave_if(*this);
 	master_if(*this);
 	
@@ -395,8 +398,6 @@ void EDMA<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_ti
 	notify_time_stamp += t;
 	unisim::kernel::tlm2::AlignToClock(notify_time_stamp, master_clock_period, master_clock_start_time, master_clock_posedge_first, master_clock_duty_cycle);
 	Event *event = schedule.AllocEvent();
-	unisim::kernel::tlm2::tlm_master_id *master_id_ext = payload.template get_extension<unisim::kernel::tlm2::tlm_master_id>();
-	event->SetMasterID(master_id_ext ? (int)(*master_id_ext) : 0);
 	event->SetPayload(&payload);
 	event->SetTimeStamp(notify_time_stamp);
 	event->SetCompletionEvent(&completion_event);
@@ -434,15 +435,15 @@ unsigned int EDMA<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 		return 0;
 	}
 
-	unisim::kernel::tlm2::tlm_master_id *master_id_ext = payload.template get_extension<unisim::kernel::tlm2::tlm_master_id>();
-	MasterID mid = master_id_ext ? (int)(*master_id_ext) : 0;
+	tlm_trans_attr *trans_attr = payload.template get_extension<tlm_trans_attr>();
+	if(!trans_attr) trans_attr = &default_trans_attr;
 	
 	switch(cmd)
 	{
 		case tlm::TLM_WRITE_COMMAND:
-			return reg_addr_map.DebugWrite(mid, start_addr, data_ptr, data_length);
+			return reg_addr_map.DebugWrite(*trans_attr, start_addr, data_ptr, data_length);
 		case tlm::TLM_READ_COMMAND:
-			return reg_addr_map.DebugRead(mid, start_addr, data_ptr, data_length);
+			return reg_addr_map.DebugRead(*trans_attr, start_addr, data_ptr, data_length);
 		default:
 			break;
 	}
@@ -461,8 +462,6 @@ tlm::tlm_sync_enum EDMA<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& paylo
 				notify_time_stamp += t;
 				unisim::kernel::tlm2::AlignToClock(notify_time_stamp, master_clock_period, master_clock_start_time, master_clock_posedge_first, master_clock_duty_cycle);
 				Event *event = schedule.AllocEvent();
-				unisim::kernel::tlm2::tlm_master_id *master_id_ext = payload.template get_extension<unisim::kernel::tlm2::tlm_master_id>();
-				event->SetMasterID(master_id_ext ? (int)(*master_id_ext) : 0);
 				event->SetPayload(&payload);
 				event->SetTimeStamp(notify_time_stamp);
 				schedule.Notify(event);
@@ -543,15 +542,16 @@ void EDMA<CONFIG>::ProcessEvent(Event *event)
 		else
 		{
 			ReadWriteStatus rws = RWS_OK;
-			MasterID mid = event->GetMasterID();
+			tlm_trans_attr *trans_attr = event->GetAttributes();
+			if(!trans_attr) trans_attr = &default_trans_attr;
 			
 			switch(cmd)
 			{
 				case tlm::TLM_WRITE_COMMAND:
-					rws = reg_addr_map.Write(mid, start_addr, data_ptr, data_length);
+					rws = reg_addr_map.Write(*trans_attr, start_addr, data_ptr, data_length);
 					break;
 				case tlm::TLM_READ_COMMAND:
-					rws = reg_addr_map.Read(mid, start_addr, data_ptr, data_length);
+					rws = reg_addr_map.Read(*trans_attr, start_addr, data_ptr, data_length);
 					break;
 				default:
 					break;
@@ -1349,6 +1349,12 @@ void EDMA<CONFIG>::SetMasterID(unsigned int dma_channel_num, MasterID mid)
 }
 
 template <typename CONFIG>
+void EDMA<CONFIG>::SetPrivilegeAccessLevel(unsigned int dma_channel_num, PrivilegeAccessLevel pal)
+{
+	edma_dchmid[dma_channel_num].template Set<typename EDMA_DCHMID::PAL>(pal);
+}
+
+template <typename CONFIG>
 typename EDMA<CONFIG>::MasterID EDMA<CONFIG>::GetMasterID(unsigned int dma_channel_num)
 {
 	if(edma_dchmid[dma_channel_num].template Get<typename EDMA_DCHMID::EMI>()) // master ID replication ?
@@ -1362,7 +1368,13 @@ typename EDMA<CONFIG>::MasterID EDMA<CONFIG>::GetMasterID(unsigned int dma_chann
 }
 
 template <typename CONFIG>
-bool EDMA<CONFIG>::Transfer(tlm::tlm_command cmd, int mid, uint32_t& addr, uint8_t *data_ptr, unsigned int size, unsigned int tsize, int32_t addr_signed_offset, uint32_t addr_mask, sc_core::sc_time& t)
+typename EDMA<CONFIG>::PrivilegeAccessLevel EDMA<CONFIG>::GetPrivilegeAccessLevel(unsigned int dma_channel_num)
+{
+	return (typename EDMA<CONFIG>::PrivilegeAccessLevel) edma_dchmid[dma_channel_num].template Get<typename EDMA_DCHMID::PAL>();
+}
+
+template <typename CONFIG>
+bool EDMA<CONFIG>::Transfer(tlm::tlm_command cmd, MasterID mid, PrivilegeAccessLevel pal, uint32_t& addr, uint8_t *data_ptr, unsigned int size, unsigned int tsize, int32_t addr_signed_offset, uint32_t addr_mask, sc_core::sc_time& t)
 {
 	while(size > 0)
 	{
@@ -1386,17 +1398,16 @@ bool EDMA<CONFIG>::Transfer(tlm::tlm_command cmd, int mid, uint32_t& addr, uint8
 		payload->set_data_ptr(data_ptr);
 		payload->set_command(cmd);
 		
-		unisim::kernel::tlm2::tlm_master_id *master_id_ext = 0;
-		payload->get_extension(master_id_ext);
-		if(master_id_ext)
+		unisim::kernel::tlm2::tlm_trans_attr *trans_attr = 0;
+		payload->get_extension(trans_attr);
+		if(!trans_attr)
 		{
-			*master_id_ext = mid;
+			trans_attr = new unisim::kernel::tlm2::tlm_trans_attr();
+			payload->set_extension(trans_attr);
 		}
-		else
-		{
-			master_id_ext = new unisim::kernel::tlm2::tlm_master_id(mid);
-			payload->set_extension(master_id_ext);
-		}
+		trans_attr->set_master_id(mid);
+		trans_attr->set_instruction(false);
+		trans_attr->set_privileged(pal == PAL_PRIVILEGED_PROTECTION_LEVEL);
 
 		master_if->b_transport(*payload, t);
 		
@@ -1430,17 +1441,16 @@ bool EDMA<CONFIG>::LoadTCD(unsigned int dma_channel_num, sc_dt::uint64 addr, sc_
 	payload->set_data_ptr((unsigned char *) data);
 	payload->set_command(tlm::TLM_READ_COMMAND);
 	
-	unisim::kernel::tlm2::tlm_master_id *master_id_ext = 0;
-	payload->get_extension(master_id_ext);
-	if(master_id_ext)
+	unisim::kernel::tlm2::tlm_trans_attr *trans_attr = 0;
+	payload->get_extension(trans_attr);
+	if(!trans_attr)
 	{
-		*master_id_ext = master_id;
+		trans_attr = new unisim::kernel::tlm2::tlm_trans_attr();
+		payload->set_extension(trans_attr);
 	}
-	else
-	{
-		master_id_ext = new unisim::kernel::tlm2::tlm_master_id(master_id);
-		payload->set_extension(master_id_ext);
-	}
+	trans_attr->set_master_id(master_id);
+	trans_attr->set_instruction(false);
+	trans_attr->set_privileged(true);
 	
 	master_if->b_transport(*payload, t);
 	
@@ -1454,8 +1464,11 @@ bool EDMA<CONFIG>::LoadTCD(unsigned int dma_channel_num, sc_dt::uint64 addr, sc_
 		return false;
 	}
 	
-	MasterID mid = GetMasterID(dma_channel_num);
-	/*ReadWriteStatus rws =*/ reg_addr_map.Write(mid, EDMA_TCD::ADDRESS_OFFSET + (EDMA_TCD::SIZE * dma_channel_num), data, EDMA_TCD::SIZE);
+	tlm_trans_attr int_trans_attr;
+	int_trans_attr.set_master_id(GetMasterID(dma_channel_num)); // Note:  operation does not affect the DCHMIDn registers
+	int_trans_attr.set_privileged(true);
+	int_trans_attr.set_instruction(false);
+	/*ReadWriteStatus rws =*/ reg_addr_map.Write(int_trans_attr, EDMA_TCD::ADDRESS_OFFSET + (EDMA_TCD::SIZE * dma_channel_num), data, EDMA_TCD::SIZE);
 	
 	return true;
 }
@@ -1512,425 +1525,6 @@ bool EDMA<CONFIG>::CheckTCD(EDMA_TCD& tcd)
 	
 	return check_status;
 }
-
-#if 0
-template <typename CONFIG>
-void EDMA<CONFIG>::DMA_Engine_Process()
-{
-	bool idle = true;
-	
-	while(1)
-	{
-		if(channel_tcd)
-		{
-			if(channel_tcd == &channel_x_tcd)
-			{
-				// channel x is active
-				if(edma_dchpri[channel_tcd->dma_channel_num].template Get<typename EDMA_DCHPRI::ECP>())
-				{
-					// channel x preemption is enabled
-					if(!edma_cr.template Get<typename EDMA_CR::ERCA>() && !edma_cr.template Get<typename EDMA_CR::ERGA>())
-					{
-						// Fixed-priority arbitration for both groups and channels
-						
-						// give a chance to another channel to preempt channel x
-						wait(sc_core::SC_ZERO_TIME);
-						
-						// Select a channel that have preempt ability
-						unsigned int dma_channel_num = 0;
-						if(SelectChannel(dma_channel_num, /* preempt */ true))
-						{
-							// a channel can be selected
-							if(dma_channel_num != channel_tcd->dma_channel_num)
-							{
-								// a channel different from current channel can be selected
-								if(edma_dchpri[dma_channel_num].template Get<typename EDMA_DCHPRI::DPA>())
-								{
-									// new channel have preempt ability
-								
-									if(verbose)
-									{
-										logger << DebugInfo << sc_core::sc_time_stamp() << ":channel #" << channel_tcd->dma_channel_num << ": channel #" << dma_channel_num << " preempts" << EndDebugInfo;
-									}
-									
-									// preempt channel x
-									
-									// check TCD
-									if(CheckTCD(edma_tcd_file[dma_channel_num]))
-									{
-										// start channel y
-										if(verbose)
-										{
-											logger << DebugInfo << sc_core::sc_time_stamp() << ":channel #" << dma_channel_num << ": beginning" << EndDebugInfo;
-										}
-										
-										edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::ACTIVE>(1); // channel y is active
-										
-										channel_y_tcd = edma_tcd_file[dma_channel_num];
-										channel_tcd = &channel_y_tcd;
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		else
-		{
-			if(idle)
-			{
-				// DMA engine is idle waiting for a DMA request
-				if(verbose)
-				{
-					logger << DebugInfo << sc_core::sc_time_stamp() << ": waiting for request" << EndDebugInfo;
-				}
-				wait();
-				
-				idle = false;
-			}
-			
-			if(edma_cr.template Get<typename EDMA_CR::HALT>()) // halt DMA operations ?
-			{
-				if(verbose)
-				{
-					logger << DebugInfo << sc_core::sc_time_stamp() << ": DMA operations halted" << EndDebugInfo;
-				}
-				idle = true;
-			}
-			else
-			{
-				// Select a DMA channel
-				unsigned int dma_channel_num = 0;
-				if(SelectChannel(dma_channel_num))
-				{
-					if(verbose)
-					{
-						logger << DebugInfo << sc_core::sc_time_stamp() << ": selecting channel #" << dma_channel_num << EndDebugInfo;
-					}
-					
-					if(CheckTCD(edma_tcd_file[dma_channel_num]))
-					{
-						// Start channel x
-						
-						if(verbose)
-						{
-							logger << DebugInfo << sc_core::sc_time_stamp() << ":channel #" << dma_channel_num << ": beginning" << EndDebugInfo;
-						}
-						
-						// START=0
-						edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::START>(0);
-						
-						// DONE=0
-						edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::DONE>(0);
-						
-						// ACTIVE=1
-						edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::ACTIVE>(1);
-						
-						channel_x_tcd = edma_tcd_file[dma_channel_num];
-						channel_tcd = &channel_x_tcd;
-					}
-					else
-					{
-						idle = true;
-					}
-				}
-				else
-				{
-					idle = true;
-				}
-			}
-		}
-		
-		if(channel_tcd)
-		{
-			unsigned int dma_channel_num = channel_tcd->dma_channel_num;
-			bool end_of_minor_loop = false;
-			bool transfer_error = false;
-			sc_core::sc_time t;
-			uint32_t saddr = channel_tcd->edma_tcd_saddr.template Get<typename EDMA_TCD_SADDR::SADDR>();
-			uint32_t daddr = channel_tcd->edma_tcd_daddr.template Get<typename EDMA_TCD_DADDR::DADDR>();
-			
-			if(edma_cr.template Get<typename EDMA_CR::CX>() || edma_cr.template Get<typename EDMA_CR::ECX>()) // cancel transfer ?
-			{
-				if(verbose)
-				{
-					logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": cancelling" << EndDebugInfo;
-				}
-				
-				// force minor loop to finish
-				end_of_minor_loop = true;
-				
-				if(edma_cr.template Get<typename EDMA_CR::CX>())
-				{
-					// Clear cancel request
-					edma_cr.template Set<typename EDMA_CR::CX>(0);
-				}
-				
-				if(edma_cr.template Get<typename EDMA_CR::ECX>())
-				{
-					// Clear error cancel request
-					edma_cr.template Set<typename EDMA_CR::ECX>(0);
-					
-					// Transfer cancelled
-					edma_es.template Set<typename EDMA_ES::ECX>(1);
-					
-					SetErrorIndicator(dma_channel_num);
-				}
-			}
-			else
-			{
-				uint32_t citer = channel_tcd->GetCITER();
-				
-				if(citer != 0)
-				{
-					uint64_t nbytes = channel_tcd->GetNBYTES();
-					
-					unsigned int ssize = channel_tcd->GetSourceDataTransferSize();
-					unsigned int dsize = channel_tcd->GetDestinationDataTransferSize();
-					int32_t soff = unisim::util::arithmetic::SignExtend(channel_tcd->edma_tcd_soff.template Get<typename EDMA_TCD_SOFF::SOFF>(), EDMA_TCD_SOFF::SOFF::BITWIDTH);
-					int32_t doff = unisim::util::arithmetic::SignExtend(channel_tcd->edma_tcd_doff.template Get<typename EDMA_TCD_DOFF::DOFF>(), EDMA_TCD_DOFF::DOFF::BITWIDTH);
-					unsigned int smod = channel_tcd->edma_tcd_attr.template Get<typename EDMA_TCD_ATTR::SMOD>();
-					unsigned int dmod = channel_tcd->edma_tcd_attr.template Get<typename EDMA_TCD_ATTR::DMOD>();
-					uint32_t saddr_mask = smod ? ((uint32_t(1) << smod) - 1) : ~uint32_t(0);
-					uint32_t daddr_mask = dmod ? ((uint32_t(1) << dmod) - 1) : ~uint32_t(0);
-					
-					unsigned int size = (ssize > dsize) ? ssize : dsize;
-					
-					assert(nbytes >= size);
-					
-					uint8_t data[size];
-					
-					if(verbose)
-					{
-						logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": minor-loop byte count of " << nbytes << " bytes" << EndDebugInfo;
-					}
-					
-					if(Transfer(tlm::TLM_READ_COMMAND, GetMasterID(dma_channel_num), saddr, data, size, ssize, soff, saddr_mask, t))
-					{
-						if(Transfer(tlm::TLM_WRITE_COMMAND, GetMasterID(dma_channel_num), daddr, data, size, dsize, doff, daddr_mask, t))
-						{
-							// Decrement minor loop byte transfer counter
-							nbytes -= size;
-							
-							channel_tcd->SetNBYTES(nbytes);
-							channel_tcd->edma_tcd_saddr.template Set<typename EDMA_TCD_SADDR::SADDR>(saddr);
-							channel_tcd->edma_tcd_daddr.template Set<typename EDMA_TCD_DADDR::DADDR>(daddr);
-							
-							end_of_minor_loop = (nbytes == 0);
-						}
-						else
-						{
-							logger << DebugWarning << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": destination bus error" << EndDebugWarning;
-							
-							transfer_error = true;
-							edma_es.template Set<typename EDMA_ES::DBE>(1); // destination bus error
-						}
-					}
-					else
-					{
-						logger << DebugWarning << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": source bus error" << EndDebugWarning;
-						
-						transfer_error = true;
-						edma_es.template Set<typename EDMA_ES::SBE>(1); // source bus error
-					}
-				}
-				else
-				{
-					logger << DebugWarning << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": null major-loop iteration count" << EndDebugWarning;
-					if(channel_tcd == &channel_y_tcd)
-					{
-						// resume preempted channel x
-						channel_tcd = &channel_x_tcd;
-					}
-					else
-					{
-						channel_tcd = 0;
-						idle = true;
-					}
-				}
-			}
-			
-			if(end_of_minor_loop || transfer_error)
-			{
-				// end of minor-loop or transfer error
-				
-				uint32_t citer = channel_tcd->GetCITER();
-				
-				if(end_of_minor_loop)
-				{
-					// Decrement major loop iteration counter
-					citer = citer - 1;
-					channel_tcd->SetCITER(citer);
-				}
-				
-				// write back SADDR, DADDR and CITER to TCD memory
-				edma_tcd_file[dma_channel_num].edma_tcd_saddr = channel_tcd->edma_tcd_saddr;
-				edma_tcd_file[dma_channel_num].edma_tcd_daddr = channel_tcd->edma_tcd_daddr;
-				edma_tcd_file[dma_channel_num].edma_tcd_citer = channel_tcd->edma_tcd_citer;
-				
-				// ACTIVE=0
-				edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::ACTIVE>(0);
-
-				if(channel_tcd == &channel_y_tcd)
-				{
-					// resume preempted channel x
-					channel_tcd = &channel_x_tcd;
-				}
-				else
-				{
-					channel_tcd = 0;
-					idle = true;
-				}
-
-				if(end_of_minor_loop)
-				{
-					// end of minor-loop
-					if(verbose)
-					{
-						logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": end of minor-loop" << EndDebugInfo;
-						logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": current major-loop count is " << citer << EndDebugInfo;
-					}
-					
-					if(citer == 0)
-					{
-						// end of major-loop
-						if(verbose)
-						{
-							logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": end of major-loop" << EndDebugInfo;
-						}
-						
-						// DONE=1
-						edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::DONE>(1);
-						
-						if(edma_tcd_file[dma_channel_num].edma_tcd_csr.template Get<typename EDMA_TCD_CSR::INTMAJOR>()) // interrupt when major iteration count completes ?
-						{
-							SetInterruptRequest(dma_channel_num);
-						}
-						
-						if(edma_tcd_file[dma_channel_num].edma_tcd_csr.template Get<typename EDMA_TCD_CSR::DREQ>()) // clear ERQ ?
-						{
-							if(verbose)
-							{
-								logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": autodisabling DMA requests" << EndDebugInfo;
-							}
-							DisableRequest(dma_channel_num);
-						}
-						
-						if(edma_tcd_file[dma_channel_num].edma_tcd_csr.template Get<typename EDMA_TCD_CSR::ESG>()) // scatter/gather ?
-						{
-							// scatter/gather
-							if(verbose)
-							{
-								logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ":scatter/gather" << EndDebugInfo;
-							}
-							if(edma_tcd_file[dma_channel_num].CheckScatterGatherAddress())
-							{
-								uint32_t tcd_addr = edma_tcd_file[dma_channel_num].edma_tcd_dlastsga.template Get<typename EDMA_TCD_DLASTSGA::DLASTSGA>();
-								if(!LoadTCD(dma_channel_num, tcd_addr, t))
-								{
-									logger << DebugWarning << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": TCD transfer error while scatter/gather" << EndDebugWarning;
-								}
-							}
-							else
-							{
-								logger << DebugWarning << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": scatter/gather configuration error" << EndDebugWarning;
-								
-								edma_es.template Set<typename EDMA_ES::SGE>(1);
-								SetErrorIndicator(dma_channel_num);
-							}
-						}
-						else
-						{
-							// Adjust source address
-							uint32_t slast = edma_tcd_file[dma_channel_num].edma_tcd_slast.template Get<typename EDMA_TCD_SLAST::SLAST>();
-							saddr += slast;
-							if(verbose)
-							{
-								logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": last source address adjustment @0x" << std::hex << saddr << std::dec << EndDebugInfo;
-							}
-							edma_tcd_file[dma_channel_num].edma_tcd_saddr.template Set<typename EDMA_TCD_SADDR::SADDR>(saddr);
-							
-							// Adjust destination address
-							uint32_t dlast = edma_tcd_file[dma_channel_num].edma_tcd_dlastsga.template Get<typename EDMA_TCD_DLASTSGA::DLASTSGA>();
-							daddr += dlast;
-							if(verbose)
-							{
-								logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": last destination address adjustment @0x" << std::hex << daddr << std::dec << EndDebugInfo;
-							}
-							edma_tcd_file[dma_channel_num].edma_tcd_daddr.template Set<typename EDMA_TCD_DADDR::DADDR>(daddr);
-							
-							// Reload BITER into CITER
-							edma_tcd_file[dma_channel_num].edma_tcd_citer = edma_tcd_file[dma_channel_num].edma_tcd_biter;
-						}
-						
-						if(edma_tcd_file[dma_channel_num].edma_tcd_csr.template Get<typename EDMA_TCD_CSR::MAJORELINK>()) // channel-to-channel linking on major loop complete ?
-						{
-							unsigned int majorlinkch = edma_tcd_file[dma_channel_num].edma_tcd_csr.template Get<typename EDMA_TCD_CSR::MAJORLINKCH>();
-							edma_tcd_file[majorlinkch].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::START>(1);
-							idle = false;
-						}
-					}
-					else
-					{
-						// not end of major-loop
-						
-						if(edma_tcd_file[dma_channel_num].edma_tcd_csr.template Get<typename EDMA_TCD_CSR::INTHALF>()) // interrupt when major counter is half complete ?
-						{
-							uint32_t biter = edma_tcd_file[dma_channel_num].GetBITER();
-							
-							if(citer == (biter / 2)) // half of major-loop ?
-							{
-								SetInterruptRequest(dma_channel_num);
-							}
-						}
-						
-						if(edma_tcd_file[dma_channel_num].CheckMinorLoopChannelLinking())
-						{
-							if(edma_tcd_file[dma_channel_num].edma_tcd_citer.template Get<typename EDMA_TCD_CITER::ELINKNO::ELINK>()) // channel-to-channel linking on minor-loop complete ?
-							{
-								unsigned int linkch = edma_tcd_file[dma_channel_num].edma_tcd_citer.template Get<typename EDMA_TCD_CITER::ELINKYES::LINKCH>();
-								edma_tcd_file[linkch].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::START>(1);
-								idle = false;
-								
-								if((dma_channel_num == linkch) && edma_cr.template Get<typename EDMA_CR::CLM>()) // link to same channel and continuous link mode ?
-								{
-									// START=0
-									edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::START>(0);
-									
-									// DONE=0
-									edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::DONE>(0);
-									
-									// ACTIVE=1
-									edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::ACTIVE>(1);
-									
-									if(channel_tcd == &channel_y_tcd)
-									{
-										channel_y_tcd = edma_tcd_file[dma_channel_num];
-										channel_tcd = &channel_y_tcd;
-									}
-									else
-									{
-										channel_x_tcd = edma_tcd_file[dma_channel_num];
-										channel_tcd = &channel_x_tcd;
-									}
-								}
-							}
-						}
-						else
-						{
-							edma_es.template Set<typename EDMA_ES::NCE>(1);
-							SetErrorIndicator(dma_channel_num);
-						}
-					}
-				}
-			}
-			
-			wait(t);
-		}
-	}
-}
-#endif
 
 template <typename CONFIG>
 void EDMA<CONFIG>::DMA_Engine_Process()
@@ -2120,9 +1714,9 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 						logger << DebugInfo << (sc_core::sc_time_stamp() + dma_engine_time) << ":channel #" << dma_channel_num << ": minor-loop byte count of " << nbytes << " bytes" << EndDebugInfo;
 					}
 					
-					if(Transfer(tlm::TLM_READ_COMMAND, GetMasterID(dma_channel_num), saddr, data, size, ssize, soff, saddr_mask, dma_engine_time))
+					if(Transfer(tlm::TLM_READ_COMMAND, GetMasterID(dma_channel_num), GetPrivilegeAccessLevel(dma_channel_num), saddr, data, size, ssize, soff, saddr_mask, dma_engine_time))
 					{
-						if(Transfer(tlm::TLM_WRITE_COMMAND, GetMasterID(dma_channel_num), daddr, data, size, dsize, doff, daddr_mask, dma_engine_time))
+						if(Transfer(tlm::TLM_WRITE_COMMAND, GetMasterID(dma_channel_num), GetPrivilegeAccessLevel(dma_channel_num), daddr, data, size, dsize, doff, daddr_mask, dma_engine_time))
 						{
 							// Decrement minor loop byte transfer counter
 							nbytes -= size;

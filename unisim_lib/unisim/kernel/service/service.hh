@@ -1065,6 +1065,7 @@ public:
 	Object *GetParent() const;
 	void Disconnect();
 	VariableBase& operator [] (const char *name);
+	VariableBase& operator [] (const std::string& name);
 	Simulator *GetSimulator() const;
 	void GenerateLatexDocumentation(std::ostream& os, VariableBase::Type variable_type) const;
 	const char *GetDescription() const;

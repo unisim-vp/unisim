@@ -40,7 +40,7 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/tlm2/clock.hh>
-#include <unisim/kernel/tlm2/master_id.hh>
+#include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.hh>
 #include <inttypes.h>
 #include <stack>
 #include <vector>
@@ -60,6 +60,8 @@ using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
 using unisim::kernel::service::Formula;
 using unisim::kernel::logger::Logger;
+
+using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BusResponseStatus;
 
 template <typename TYPES, typename CONFIG>
 class CPU
@@ -125,9 +127,9 @@ public:
 	
 protected:
 	sc_core::sc_time GetBurstLatency(uint32_t size, const sc_core::sc_time& latency) const;
-	virtual bool AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-	virtual bool AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr, bool rwitm);
-	virtual bool AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
+	virtual BusResponseStatus AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
+	virtual BusResponseStatus AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr, bool rwitm);
+	virtual BusResponseStatus AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
 
 	virtual bool AHBDebugInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
 	virtual bool AHBDebugDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);

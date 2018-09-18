@@ -54,6 +54,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, xbar_1(0)
 	, pbridge_a(0)
 	, pbridge_b(0)
+	, ebi(0)
 	, xbar_1_m1_concentrator(0)
 	, intc_0(0)
 	, stm_0(0)
@@ -142,8 +143,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, dspi_12_pcs_serial_bus()
 	, dspi_12_ss_serial_bus(0)
 	, siul2(0)
-	, ebi_space_stub(0)
-	, ebi_stub(0)
+	, ebi_mem_0(0)
+	, ebi_mem_1(0)
+	, ebi_mem_2(0)
 	, flash_port1_stub(0)
 	, xbar_0_s6_stub(0)
 	, xbar_1_m2_stub(0)
@@ -321,6 +323,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	pbridge_a = new PBRIDGE_A("PBRIDGE_A", this); 
 	pbridge_b = new PBRIDGE_B("PBRIDGE_B", this); 
 	
+	//  - External Bus Interface
+	ebi = new EBI("EBI", this);
+	
 	//  - Concentrators
 	xbar_1_m1_concentrator = new XBAR_1_M1_CONCENTRATOR("XBAR_1_M1_CONCENTRATOR", this);
 	
@@ -392,8 +397,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	siul2 = new SIUL2("SIUL2", this);
 	
 	//  - Stubs
-	ebi_space_stub = new EBI_SPACE_STUB("EBI_SPACE", this);
-	ebi_stub = new EBI_STUB("EBI", this);
+	ebi_mem_0 = new EBI_MEM("EBI_MEM_0", this);
+	ebi_mem_1 = new EBI_MEM("EBI_MEM_1", this);
+	ebi_mem_2 = new EBI_MEM("EBI_MEM_2", this);
 	flash_port1_stub = new FLASH_PORT1_STUB("FLASH_PORT1", this);
 	xbar_0_s6_stub = new XBAR_0_S6_STUB("XBAR_0_S6", this);
 	xbar_1_m2_stub = new XBAR_1_M2_STUB("XBAR_1_M2", this);
@@ -521,6 +527,12 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(pbridge_b->reset_b);
 	RegisterPort(pbridge_b->input_if_clock);
 	RegisterPort(pbridge_b->output_if_clock);
+
+	// - EBI
+	RegisterPort(ebi->m_clk);
+	RegisterPort(ebi->reset_b);
+	RegisterPort(ebi->input_if_clock);
+	RegisterPort(ebi->output_if_clock);
 
 	// - IAHBG_0
 	RegisterPort(iahbg_0->input_if_clock);
@@ -1696,7 +1708,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*xbar_0->init_socket[2])(main_core_0->s_ahb_if);                   //       XBAR_0 S2 <-> S_AHB_IF<Main_Core_0
 	(*xbar_0->init_socket[3])(main_core_1->s_ahb_if);                   //       XBAR_0 S3 <-> S_AHB_IF<Main_Core_1
 	(*xbar_0->init_socket[4])(system_sram->slave_sock);                 //       XBAR_0 S4 <-> System SRAM
-	(*xbar_0->init_socket[5])(ebi_space_stub->slave_sock);              // TODO: XBAR_0 S5 <-> EBI
+	(*xbar_0->init_socket[5])(*ebi->targ_socket[0]);                    //       XBAR_0 S5 <-> EBI
 	(*xbar_0->init_socket[6])(xbar_0_s6_stub->slave_sock);              //       XBAR_0 S6 <-> unused
 	(*xbar_0->init_socket[7])(*iahbg_0->targ_socket[0]);                //       XBAR_0 S7 <-> XBAR_1 M3 (through IAHBG_0)
                                                                      
@@ -1743,11 +1755,13 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*pbridge_a->init_socket[32])(pflash_stub->slave_sock);             // PBRIDGE_A <-> PFLASH
 	(*pbridge_a->init_socket[33])(mc_me_stub->slave_sock);              // PBRIDGE_A <-> MC_ME
 	(*pbridge_a->init_socket[34])(mc_cgm_stub->slave_sock);             // PBRIDGE_A <-> MC_CGM
-	(*pbridge_a->init_socket[35])(xbar_0->peripheral_slave_if);         // PBRIDGE_A <-> XBAR_0
-	(*pbridge_a->init_socket[36])(xbar_1->peripheral_slave_if);         // PBRIDGE_A <-> XBAR_1
+	(*pbridge_a->init_socket[35])(xbar_0->peripheral_slave_if[XBAR_0_CONFIG::XBAR_PERIPHERAL_SLAVE_IF]);         // PBRIDGE_A <-> XBAR_0
+	(*pbridge_a->init_socket[36])(xbar_1->peripheral_slave_if[XBAR_1_CONFIG::XBAR_PERIPHERAL_SLAVE_IF]);         // PBRIDGE_A <-> XBAR_1
 	(*pbridge_a->init_socket[37])(pbridge_a->peripheral_slave_if);      // PBRIDGE_A <-> PBRIDGE_A
 	(*pbridge_a->init_socket[38])(siul2->peripheral_slave_if);          // PBRIDGE_A <-> SIUL2
-	(*pbridge_a->init_socket[39])(ebi_stub->slave_sock);                // PBRIDGE_A <-> EBI
+	(*pbridge_a->init_socket[39])(ebi->peripheral_slave_if);            // PBRIDGE_A <-> EBI
+	(*pbridge_a->init_socket[40])(xbar_0->peripheral_slave_if[XBAR_0_CONFIG::SMPU_PERIPHERAL_SLAVE_IF]);         // PBRIDGE_A <-> SMPU_0
+	(*pbridge_a->init_socket[41])(xbar_1->peripheral_slave_if[XBAR_1_CONFIG::SMPU_PERIPHERAL_SLAVE_IF]);         // PBRIDGE_A <-> SMPU_1
 	
 	(*pbridge_b->init_socket[0])(linflexd_2->peripheral_slave_if);      // PBRIDGE_B <-> LINFlexD_2
 	(*pbridge_b->init_socket[1])(linflexd_15->peripheral_slave_if);     // PBRIDGE_B <-> LINFlexD_15
@@ -1756,6 +1770,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*pbridge_b->init_socket[4])(dspi_5->peripheral_slave_if);          // PBRIDGE_B <-> DSPI_5
 	(*pbridge_b->init_socket[5])(pbridge_b->peripheral_slave_if);       // PBRIDGE_B <-> PBRIDGE_B
 
+	(*ebi->init_socket[0])(ebi_mem_0->slave_sock);
+	(*ebi->init_socket[1])(ebi_mem_1->slave_sock);
+	(*ebi->init_socket[2])(ebi_mem_2->slave_sock);
+	
 	edma_0->master_if(*xbar_1_m1_concentrator->targ_socket[0]);         // EDMA_0 <-> XBAR_1 M1 Concentrator
 	edma_1->master_if(*xbar_1_m1_concentrator->targ_socket[1]);         // EDMA_1 <-> XBAR_1 M1 Concentrator
 	
@@ -2021,10 +2039,18 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.PBRIDGE_B.reset_b"                     , "HARDWARE.reset_b");
 	Bind("HARDWARE.PBRIDGE_B.input_if_clock"              , "HARDWARE.PBRIDGEB_CLK");
 	Bind("HARDWARE.PBRIDGE_B.output_if_clock"             , "HARDWARE.PBRIDGEB_CLK");
+	
+	Bind("HARDWARE.EBI.m_clk"                             , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.EBI.reset_b"                           , "HARDWARE.reset_b");
+	Bind("HARDWARE.EBI.input_if_clock"                    , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.EBI.output_if_clock"                   , "HARDWARE.PBRIDGEA_CLK");
+
 	Bind("HARDWARE.IAHBG_0.input_if_clock"                , "HARDWARE.FXBAR_CLK");
 	Bind("HARDWARE.IAHBG_0.output_if_clock"               , "HARDWARE.SXBAR_CLK");
+	
 	Bind("HARDWARE.IAHBG_1.input_if_clock"                , "HARDWARE.SXBAR_CLK");
 	Bind("HARDWARE.IAHBG_1.output_if_clock"               , "HARDWARE.FXBAR_CLK");
+	
 	Bind("HARDWARE.XBAR_1_M1_CONCENTRATOR.input_if_clock" , "HARDWARE.SXBAR_CLK");
 	Bind("HARDWARE.XBAR_1_M1_CONCENTRATOR.output_if_clock", "HARDWARE.SXBAR_CLK");
 
@@ -4464,7 +4490,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*loader->memory_import[2]) >> main_core_0->memory_export;
 	(*loader->memory_import[3]) >> main_core_1->memory_export;
 	(*loader->memory_import[4]) >> peripheral_core_2->memory_export;
-	(*loader->memory_import[5]) >> ebi_space_stub->memory_export;
+	(*loader->memory_import[5]) >> ebi_mem_0->memory_export;
+	(*loader->memory_import[6]) >> ebi_mem_1->memory_export;
+	(*loader->memory_import[7]) >> ebi_mem_2->memory_export;
 	loader->registers_import >> peripheral_core_2->registers_export;
 	main_core_0->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	main_core_1->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
@@ -4545,33 +4573,42 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		if(xfer_vcd || xfer_gtkwave_init_script_file)
 		{
 			typedef tracing::timed_stream<double, unisim::component::tlm2::interconnect::generic_router::timed_xfer_traits> stream_type;
+			
 			if((*xbar_0)["enable-tracing"])
 			{
 				for(unsigned int i = 0; i < XBAR_0_CONFIG::OUTPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "output_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.XBAR_0." << XBAR_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					sstr << "HARDWARE.XBAR_0." << (std::string)(*xbar_0)[param_name_sstr.str()] << "_wr_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < XBAR_0_CONFIG::OUTPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "output_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.XBAR_0." << XBAR_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					sstr << "HARDWARE.XBAR_0." << (std::string)(*xbar_0)[param_name_sstr.str()] << "_rd_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < XBAR_0_CONFIG::INPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "input_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.XBAR_0." << XBAR_0_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					sstr << "HARDWARE.XBAR_0." << (std::string)(*xbar_0)[param_name_sstr.str()] << "_wr_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < XBAR_0_CONFIG::INPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "input_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.XBAR_0." << XBAR_0_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					sstr << "HARDWARE.XBAR_0." << (std::string)(*xbar_0)[param_name_sstr.str()] << "_rd_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
@@ -4580,29 +4617,37 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 			{
 				for(unsigned int i = 0; i < XBAR_1_CONFIG::OUTPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "output_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.XBAR_1." << XBAR_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					sstr << "HARDWARE.XBAR_1." << (std::string)(*xbar_1)[param_name_sstr.str()] << "_wr_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < XBAR_1_CONFIG::OUTPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "output_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.XBAR_1." << XBAR_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					sstr << "HARDWARE.XBAR_1." << (std::string)(*xbar_1)[param_name_sstr.str()] << "_rd_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < XBAR_1_CONFIG::INPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "input_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.XBAR_1." << XBAR_1_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					sstr << "HARDWARE.XBAR_1." << (std::string)(*xbar_1)[param_name_sstr.str()] << "_wr_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < XBAR_1_CONFIG::INPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "input_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.XBAR_1." << XBAR_1_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					sstr << "HARDWARE.XBAR_1." << (std::string)(*xbar_1)[param_name_sstr.str()] << "_rd_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
@@ -4611,29 +4656,37 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 			{
 				for(unsigned int i = 0; i < PBRIDGE_A_CONFIG::OUTPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "output_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.PBRIDGE_A." << PBRIDGE_A_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					sstr << "HARDWARE.PBRIDGE_A." << (std::string)(*pbridge_a)[param_name_sstr.str()] << "_wr_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < PBRIDGE_A_CONFIG::OUTPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "output_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.PBRIDGE_A." << PBRIDGE_A_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					sstr << "HARDWARE.PBRIDGE_A." << (std::string)(*pbridge_a)[param_name_sstr.str()] << "_rd_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < PBRIDGE_A_CONFIG::INPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "input_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.PBRIDGE_A." << PBRIDGE_A_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					sstr << "HARDWARE.PBRIDGE_A." << (std::string)(*pbridge_a)[param_name_sstr.str()] << "_wr_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < PBRIDGE_A_CONFIG::INPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "input_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.PBRIDGE_A." << PBRIDGE_A_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					sstr << "HARDWARE.PBRIDGE_A." << (std::string)(*pbridge_a)[param_name_sstr.str()] << "_rd_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
@@ -4642,29 +4695,37 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 			{
 				for(unsigned int i = 0; i < PBRIDGE_B_CONFIG::OUTPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "output_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.PBRIDGE_B." << PBRIDGE_B_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					sstr << "HARDWARE.PBRIDGE_B." << (std::string)(*pbridge_b)[param_name_sstr.str()] << "_wr_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < PBRIDGE_B_CONFIG::OUTPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "output_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.PBRIDGE_B." << PBRIDGE_B_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					sstr << "HARDWARE.PBRIDGE_B." << (std::string)(*pbridge_b)[param_name_sstr.str()] << "_rd_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < PBRIDGE_B_CONFIG::INPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "input_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.PBRIDGE_B." << PBRIDGE_B_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					sstr << "HARDWARE.PBRIDGE_B." << (std::string)(*pbridge_b)[param_name_sstr.str()] << "_wr_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < PBRIDGE_B_CONFIG::INPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "input_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.PBRIDGE_B." << PBRIDGE_B_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					sstr << "HARDWARE.PBRIDGE_B." << (std::string)(*pbridge_b)[param_name_sstr.str()] << "_rd_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
@@ -4673,29 +4734,37 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 			{
 				for(unsigned int i = 0; i < XBAR_1_M1_CONCENTRATOR_CONFIG::OUTPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "output_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << XBAR_1_M1_CONCENTRATOR_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << (std::string)(*xbar_1_m1_concentrator)[param_name_sstr.str()] << "_wr_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < XBAR_1_M1_CONCENTRATOR_CONFIG::OUTPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "output_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << XBAR_1_M1_CONCENTRATOR_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << (std::string)(*xbar_1_m1_concentrator)[param_name_sstr.str()] << "_rd_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < XBAR_1_M1_CONCENTRATOR_CONFIG::INPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "input_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << XBAR_1_M1_CONCENTRATOR_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << (std::string)(*xbar_1_m1_concentrator)[param_name_sstr.str()] << "_wr_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < XBAR_1_M1_CONCENTRATOR_CONFIG::INPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "input_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << XBAR_1_M1_CONCENTRATOR_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					sstr << "HARDWARE.XBAR_1_M1_CONCENTRATOR." << (std::string)(*xbar_1_m1_concentrator)[param_name_sstr.str()] << "_rd_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
@@ -4704,29 +4773,37 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 			{
 				for(unsigned int i = 0; i < IAHBG_0_CONFIG::OUTPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "output_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.IAHBG_0." << IAHBG_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					sstr << "HARDWARE.IAHBG_0." << (std::string)(*iahbg_0)[param_name_sstr.str()] << "_wr_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < IAHBG_0_CONFIG::OUTPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "output_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.IAHBG_0." << IAHBG_0_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					sstr << "HARDWARE.IAHBG_0." << (std::string)(*iahbg_0)[param_name_sstr.str()] << "_rd_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < IAHBG_0_CONFIG::INPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "input_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.IAHBG_0." << IAHBG_0_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					sstr << "HARDWARE.IAHBG_0." << (std::string)(*iahbg_0)[param_name_sstr.str()] << "_wr_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < IAHBG_0_CONFIG::INPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "input_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.IAHBG_0." << IAHBG_0_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					sstr << "HARDWARE.IAHBG_0." << (std::string)(*iahbg_0)[param_name_sstr.str()] << "_rd_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
@@ -4735,29 +4812,37 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 			{
 				for(unsigned int i = 0; i < IAHBG_1_CONFIG::OUTPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "output_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.IAHBG_1." << IAHBG_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					sstr << "HARDWARE.IAHBG_1." << (std::string)(*iahbg_1)[param_name_sstr.str()] << "_wr_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < IAHBG_1_CONFIG::OUTPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "output_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.IAHBG_1." << IAHBG_1_CONFIG::OUTPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					sstr << "HARDWARE.IAHBG_1." << (std::string)(*iahbg_1)[param_name_sstr.str()] << "_rd_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < IAHBG_1_CONFIG::INPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "input_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.IAHBG_1." << IAHBG_1_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_wr_xfer_trace";
+					sstr << "HARDWARE.IAHBG_1." << (std::string)(*iahbg_1)[param_name_sstr.str()] << "_wr_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
 				for(unsigned int i = 0; i < IAHBG_1_CONFIG::INPUT_SOCKETS; i++)
 				{
+					std::stringstream param_name_sstr;
+					param_name_sstr << "input_socket_name_" << i;
 					std::stringstream sstr;
-					sstr << "HARDWARE.IAHBG_1." << IAHBG_1_CONFIG::INPUT_SOCKET_NAME_PREFIX << i << "_rd_xfer_trace";
+					sstr << "HARDWARE.IAHBG_1." << (std::string)(*iahbg_1)[param_name_sstr.str()] << "_rd_xfer_trace";
 					if(xfer_vcd) xfer_vcd->add(tracing::stream_by_name<stream_type>(sstr.str().c_str()));
 					if(xfer_gtkwave_init_script_file) (*xfer_gtkwave_init_script_file) << "lappend my_sig_list \"" << sstr.str() << "\"" << std::endl;
 				}
@@ -4800,6 +4885,7 @@ Simulator::~Simulator()
 	if(xbar_1) delete xbar_1;
 	if(pbridge_a) delete pbridge_a;
 	if(pbridge_b) delete pbridge_b;
+	if(ebi) delete ebi;
 	if(xbar_1_m1_concentrator) delete xbar_1_m1_concentrator;
 	if(iahbg_0) delete iahbg_0;
 	if(iahbg_1) delete iahbg_1;
@@ -4890,8 +4976,9 @@ Simulator::~Simulator()
 	for(i = 0; i < DSPI_12::NUM_CTARS; i++) if(dspi_12_pcs_serial_bus[i]) delete dspi_12_pcs_serial_bus[i];
 	if(dspi_12_ss_serial_bus) delete dspi_12_ss_serial_bus;
 	if(siul2) delete siul2;
-	if(ebi_space_stub) delete ebi_space_stub;
-	if(ebi_stub) delete ebi_stub;
+	if(ebi_mem_0) delete ebi_mem_0;
+	if(ebi_mem_1) delete ebi_mem_1;
+	if(ebi_mem_2) delete ebi_mem_2;
 	if(flash_port1_stub) delete flash_port1_stub;
 	if(xbar_0_s6_stub) delete xbar_0_s6_stub;
 	if(xbar_1_m2_stub) delete xbar_1_m2_stub;
@@ -5294,6 +5381,22 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.Main_Core_1.cpuid", 0x1);
 
 	//  - XBAR_0
+	simulator->SetVariable("HARDWARE.XBAR_0.input_socket_name_0", "M0");
+	simulator->SetVariable("HARDWARE.XBAR_0.input_socket_name_1", "M1");
+	simulator->SetVariable("HARDWARE.XBAR_0.input_socket_name_2", "M2");
+	simulator->SetVariable("HARDWARE.XBAR_0.input_socket_name_3", "M3");
+	simulator->SetVariable("HARDWARE.XBAR_0.input_socket_name_4", "M4");
+	simulator->SetVariable("HARDWARE.XBAR_0.input_socket_name_5", "M5");
+	
+	simulator->SetVariable("HARDWARE.XBAR_0.output_socket_name_0", "S0");
+	simulator->SetVariable("HARDWARE.XBAR_0.output_socket_name_1", "S1");
+	simulator->SetVariable("HARDWARE.XBAR_0.output_socket_name_2", "S2");
+	simulator->SetVariable("HARDWARE.XBAR_0.output_socket_name_3", "S3");
+	simulator->SetVariable("HARDWARE.XBAR_0.output_socket_name_4", "S4");
+	simulator->SetVariable("HARDWARE.XBAR_0.output_socket_name_5", "S5");
+	simulator->SetVariable("HARDWARE.XBAR_0.output_socket_name_6", "S6");
+	simulator->SetVariable("HARDWARE.XBAR_0.output_socket_name_7", "S7");
+
 	simulator->SetVariable("HARDWARE.XBAR_0.cycle_time", "5 ns");
 	simulator->SetVariable("HARDWARE.XBAR_0.mapping_0",  "range_start=\"0x00400000\" range_end=\"0x00407fff\" output_port=\"0\" translation=\"0x0\"");        //   0 KB: UTest NVM Block (32 KB)         -> FLASH (rel address)
 	simulator->SetVariable("HARDWARE.XBAR_0.mapping_1",  "range_start=\"0x0060c000\" range_end=\"0x0062ffff\" output_port=\"0\" translation=\"0x8000\"");     //  32 KB: HSM Code (144 KB)               -> FLASH (rel address)
@@ -5306,9 +5409,19 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.XBAR_0.mapping_8",  "range_start=\"0x40000000\" range_end=\"0x401fffff\" output_port=\"4\" translation=\"0x0\"");        // System SRAM                             -> SYSTEM_SRAM (rel address)
 	simulator->SetVariable("HARDWARE.XBAR_0.mapping_9",  "range_start=\"0x52000000\" range_end=\"0x5fffffff\" output_port=\"7\" translation=\"0x52000000\""); // Peripheral_Core_2 Local Memory          -> XBAR_1 (abs address)
 	simulator->SetVariable("HARDWARE.XBAR_0.mapping_10", "range_start=\"0xf0000000\" range_end=\"0xffffffff\" output_port=\"7\" translation=\"0xf0000000\""); // Peripherals PBRIDGE_A, PBRIDGE_B        -> XBAR_1 (abs address)
-	simulator->SetVariable("HARDWARE.XBAR_0.mapping_11", "range_start=\"0x20000000\" range_end=\"0x2fffffff\" output_port=\"5\" translation=\"0x0\"");        // EBI                                     -> EBI (rel address)
+	simulator->SetVariable("HARDWARE.XBAR_0.mapping_11", "range_start=\"0x20000000\" range_end=\"0x2fffffff\" output_port=\"5\" translation=\"0x20000000\""); // EBI                                     -> EBI (abs address)
 	
 	//  - XBAR_1
+	simulator->SetVariable("HARDWARE.XBAR_1.input_socket_name_0", "M0");
+	simulator->SetVariable("HARDWARE.XBAR_1.input_socket_name_1", "M1");
+	simulator->SetVariable("HARDWARE.XBAR_1.input_socket_name_2", "M2");
+	simulator->SetVariable("HARDWARE.XBAR_1.input_socket_name_3", "M3");
+	
+	simulator->SetVariable("HARDWARE.XBAR_1.output_socket_name_0", "S0");
+	simulator->SetVariable("HARDWARE.XBAR_1.output_socket_name_1", "S1");
+	simulator->SetVariable("HARDWARE.XBAR_1.output_socket_name_2", "S2");
+	simulator->SetVariable("HARDWARE.XBAR_1.output_socket_name_3", "S3");
+
 	simulator->SetVariable("HARDWARE.XBAR_1.cycle_time", "10 ns");
 	simulator->SetVariable("HARDWARE.XBAR_1.mapping_0",  "range_start=\"0x00400000\" range_end=\"0x00407fff\" output_port=\"0\" translation=\"0x00400000\""); // UTest NVM Block (32 KB)         -> XBAR_0 (abs address)
 	simulator->SetVariable("HARDWARE.XBAR_1.mapping_1",  "range_start=\"0x0060c000\" range_end=\"0x0062ffff\" output_port=\"0\" translation=\"0x0060c000\""); // HSM Code (144 KB)               -> XBAR_0 (abs address)
@@ -5325,14 +5438,65 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.XBAR_1.mapping_12", "range_start=\"0x20000000\" range_end=\"0x2fffffff\" output_port=\"0\" translation=\"0x20000000\""); // EBI                             -> XBAR_0 (abs address)
 	
 	//  - IAHBG_0
+	simulator->SetVariable("HARDWARE.IAHBG_0.input_socket_name_0", "XBAR_0_S7");
+	simulator->SetVariable("HARDWARE.IAHBG_0.output_socket_name_0", "XBAR_1_M3");
+	
 	simulator->SetVariable("HARDWARE.IAHBG_0.cycle_time", "0 ns");
 	simulator->SetVariable("HARDWARE.IAHBG_0.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x0\"");
 	
 	//  - IAHBG_1
+	simulator->SetVariable("HARDWARE.IAHBG_1.input_socket_name_0", "XBAR_1_S0");
+	simulator->SetVariable("HARDWARE.IAHBG_1.output_socket_name_0", "XBAR_0_M4");
+
 	simulator->SetVariable("HARDWARE.IAHBG_1.cycle_time", "0 ns");
 	simulator->SetVariable("HARDWARE.IAHBG_1.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x0\"");
 
 	//  - PBRIDGE_A
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.input_socket_name_0", "XBAR_1_S3");
+	
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_0" , "INTC");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_1" , "STM_0");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_2" , "STM_1");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_3" , "STM_2");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_4" , "SWT_0");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_5" , "SWT_1");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_6" , "SWT_2");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_7" , "SWT_3");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_8" , "PIT_0");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_9" , "PIT_1");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_10", "LINFlexD_0");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_11", "LINFlexD_1");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_12", "LINFlexD_14");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_13", "LINFlexD_16");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_14", "DMAMUX_0");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_15", "DMAMUX_1");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_16", "DMAMUX_2");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_17", "DMAMUX_3");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_18", "DMAMUX_4");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_19", "DMAMUX_5");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_20", "DMAMUX_6");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_21", "DMAMUX_7");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_22", "DMAMUX_8");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_23", "DMAMUX_9");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_24", "EDMA_0");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_25", "EDMA_1");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_26", "DSPI_0");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_27", "DSPI_1");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_28", "DSPI_4");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_29", "DSPI_6");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_30", "DSPI_12");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_31", "PCM");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_32", "PFLASH");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_33", "MC_ME");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_34", "MC_CGM");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_35", "XBAR_0");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_36", "XBAR_1");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_37", "PBRIDGE_A");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_38", "SIUL2");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_39", "EBI");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_40", "SMPU_0");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_41", "SMPU_1");
+	
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.cycle_time", "20 ns");
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_0",  "range_start=\"0xfc040000\" range_end=\"0xfc04ffff\" output_port=\"0\"  translation=\"0x0\""); // INTC        -> INTC  (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_1",  "range_start=\"0xfc068000\" range_end=\"0xfc06bfff\" output_port=\"1\"  translation=\"0x0\""); // STM_0       -> STM_0 (rel address)
@@ -5374,6 +5538,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_37", "range_start=\"0xfc000000\" range_end=\"0xfc003fff\" output_port=\"37\" translation=\"0x0\""); // PBRIDGE_A   -> PBRIDGE_A (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_38", "range_start=\"0xfffc0000\" range_end=\"0xfffc3fff\" output_port=\"38\" translation=\"0x0\""); // SIUL2       -> SIUL2    (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_39", "range_start=\"0xffff0000\" range_end=\"0xffff3fff\" output_port=\"39\" translation=\"0x0\""); // EBI         -> EBI      (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_40", "range_start=\"0xfc010000\" range_end=\"0xfc013fff\" output_port=\"40\" translation=\"0x0\""); // SMPU_0      -> SMPU_0   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_41", "range_start=\"0xfc014000\" range_end=\"0xfc017fff\" output_port=\"41\" translation=\"0x0\""); // SMPU_1      -> SMPU_1   (rel address)
 
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_0", "pacr16");   // INTC_0
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_1", "pacr26");   // STM_0
@@ -5415,8 +5581,19 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_37", "pacr0");   // PBRIDGE_A
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_38", "opacr15"); // SIUL2
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_39", "opacr3");  // EBI
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_40", "pacr4");   // SMPU_0
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_41", "pacr5");   // SMPU_1
 	
 	//  - PBRIDGE_B
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.input_socket_name_0", "XBAR_1_S2");
+	
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.output_socket_name_0", "LINFlexD_2");
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.output_socket_name_1", "LINFlexD_15");
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.output_socket_name_2", "DSPI_2");
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.output_socket_name_3", "DSPI_3");
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.output_socket_name_4", "DSPI_5");
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.output_socket_name_5", "PBRIDGE_B");
+	
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.cycle_time", "20 ns");
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.mapping_0",  "range_start=\"0xfbe8c000\" range_end=\"0xfbe8ffff\" output_port=\"0\" translation=\"0x0\""); // LINFlexD_2  -> LINFlexD_2 (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.mapping_1",  "range_start=\"0xfbea8000\" range_end=\"0xfbeabfff\" output_port=\"1\" translation=\"0x0\""); // LINFlexD_15 -> LINFlexD_15 (rel address)
@@ -5433,22 +5610,28 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.acr_mapping_5", "pacr0");   // PBRIDGE_B
 	
 	//  - XBAR_1_M1_CONCENTRATOR
+	simulator->SetVariable("HARDWARE.XBAR_1_M1_CONCENTRATOR.input_socket_name_0", "XBAR_1_M1");
+	simulator->SetVariable("HARDWARE.XBAR_1_M1_CONCENTRATOR.output_socket_name_0", "eDMA_0");
+	simulator->SetVariable("HARDWARE.XBAR_1_M1_CONCENTRATOR.output_socket_name_1", "eDMA_1");
+	
 	simulator->SetVariable("HARDWARE.XBAR_1_M1_CONCENTRATOR.cycle_time", "10 ns");
 	simulator->SetVariable("HARDWARE.XBAR_1_M1_CONCENTRATOR.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x0\"");
 	
 	// - Loader memory router
 	simulator->SetVariable("loader.memory-mapper.mapping",
-	                       "HARDWARE.SYSTEM-SRAM:0x40000000-0x401fffff:+0x0"        // System SRAM                             -> SYSTEM_SRAM       (rel address)
-	                       ",HARDWARE.FLASH:0x00400000-0x00407fff:+0x0"             //   0 KB: UTest NVM Block (32 KB)         -> FLASH             (rel address)
-	                       ",HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x8000"          //  32 KB: HSM Code (144 KB)               -> FLASH             (rel address)
-	                       ",HARDWARE.FLASH:0x00680000-0x00687fff:+0x2c000"         // 176 KB: HSM Data (32 KB)                -> FLASH             (rel address)
-	                       ",HARDWARE.FLASH:0x00800000-0x0087ffff:+0x34000"         // 208 KB: Data Flash (512 KB)             -> FLASH             (rel address)
-	                       ",HARDWARE.FLASH:0x00fc0000-0x00ffffff:+0xb4000"         // 720 KB: Low & Mid Flash Blocks (256 KB) -> FLASH             (rel address)
-	                       ",HARDWARE.FLASH:0x01000000-0x0177ffff:+0xf4000"         // 976 KB: Large Flash Blocks (7680 KB)    -> FLASH             (rel address)
+	                       "HARDWARE.SYSTEM-SRAM:0x40000000-0x401fffff:+0x0"               // System SRAM                             -> SYSTEM_SRAM       (rel address)
+	                       ",HARDWARE.FLASH:0x00400000-0x00407fff:+0x0"                    //   0 KB: UTest NVM Block (32 KB)         -> FLASH             (rel address)
+	                       ",HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x8000"                 //  32 KB: HSM Code (144 KB)               -> FLASH             (rel address)
+	                       ",HARDWARE.FLASH:0x00680000-0x00687fff:+0x2c000"                // 176 KB: HSM Data (32 KB)                -> FLASH             (rel address)
+	                       ",HARDWARE.FLASH:0x00800000-0x0087ffff:+0x34000"                // 208 KB: Data Flash (512 KB)             -> FLASH             (rel address)
+	                       ",HARDWARE.FLASH:0x00fc0000-0x00ffffff:+0xb4000"                // 720 KB: Low & Mid Flash Blocks (256 KB) -> FLASH             (rel address)
+	                       ",HARDWARE.FLASH:0x01000000-0x0177ffff:+0xf4000"                // 976 KB: Large Flash Blocks (7680 KB)    -> FLASH             (rel address)
 	                       ",HARDWARE.Main_Core_0:0x50000000-0x50ffffff:+0x50000000"       // Main_Core_0 Local Memory                -> Main_Core_0       (rel address)
 	                       ",HARDWARE.Main_Core_1:0x51000000-0x51ffffff:+0x51000000"       // Main_Core_1 Local Memory                -> Main_Core_1       (rel address)
 	                       ",HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x52000000" // Peripheral_Core_2 Local Memory          -> Peripheral_Core_2 (rel address)
-	                       ",HARDWARE.EBI_SPACE:0x20000000-0x2fffffff:+0x0"               // EBI                                     -> EBI               (rel address)
+	                       ",HARDWARE.EBI_MEM_0:0x20000000-0x20ffffff:+0x0"                // EBI_MEM_0                               -> EBI_MEM_0         (rel address)
+	                       ",HARDWARE.EBI_MEM_1:0x21000000-0x21ffffff:+0x0"                // EBI_MEM_1                               -> EBI_MEM_1         (rel address)
+	                       ",HARDWARE.EBI_MEM_2:0x22000000-0x22ffffff:+0x0"                // EBI_MEM_2                               -> EBI_MEM_2         (rel address)
 	                      );
 
 	//  - System SRAM
@@ -5701,19 +5884,26 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//  - eDMA_1
 	simulator->SetVariable("HARDWARE.eDMA_1.master-id", 11);
 	
-	//  - EBI_SPACE_STUB
-	simulator->SetVariable("HARDWARE.EBI_SPACE.cycle-time", "10 ns");
-	simulator->SetVariable("HARDWARE.EBI_SPACE.read-latency", "10 ns");
-	simulator->SetVariable("HARDWARE.EBI_SPACE.write-latency", "10 ns");
-	simulator->SetVariable("HARDWARE.EBI_SPACE.org", 0x0);
-	simulator->SetVariable("HARDWARE.EBI_SPACE.bytesize", 256 * 1024 * 1024);
-	
-	//  - EBI_STUB
-	simulator->SetVariable("HARDWARE.EBI.cycle-time", "10 ns");
-	simulator->SetVariable("HARDWARE.EBI.read-latency", "10 ns");
-	simulator->SetVariable("HARDWARE.EBI.write-latency", "10 ns");
-	simulator->SetVariable("HARDWARE.EBI.org", 0x0);
-	simulator->SetVariable("HARDWARE.EBI.bytesize", 16 * 1024);
+	//  - EBI_MEM_0
+	simulator->SetVariable("HARDWARE.EBI_MEM_0.cycle-time", "10 ns");
+	simulator->SetVariable("HARDWARE.EBI_MEM_0.read-latency", "10 ns");
+	simulator->SetVariable("HARDWARE.EBI_MEM_0.write-latency", "10 ns");
+	simulator->SetVariable("HARDWARE.EBI_MEM_0.org", 0x0);
+	simulator->SetVariable("HARDWARE.EBI_MEM_0.bytesize", 16 * 1024 * 1024);
+
+	//  - EBI_MEM_1
+	simulator->SetVariable("HARDWARE.EBI_MEM_1.cycle-time", "10 ns");
+	simulator->SetVariable("HARDWARE.EBI_MEM_1.read-latency", "10 ns");
+	simulator->SetVariable("HARDWARE.EBI_MEM_1.write-latency", "10 ns");
+	simulator->SetVariable("HARDWARE.EBI_MEM_1.org", 0x0);
+	simulator->SetVariable("HARDWARE.EBI_MEM_1.bytesize", 16 * 1024 * 1024);
+
+	//  - EBI_MEM_2
+	simulator->SetVariable("HARDWARE.EBI_MEM_2.cycle-time", "10 ns");
+	simulator->SetVariable("HARDWARE.EBI_MEM_2.read-latency", "10 ns");
+	simulator->SetVariable("HARDWARE.EBI_MEM_2.write-latency", "10 ns");
+	simulator->SetVariable("HARDWARE.EBI_MEM_2.org", 0x0);
+	simulator->SetVariable("HARDWARE.EBI_MEM_2.bytesize", 16 * 1024 * 1024);
 
 	//  - PCM_STUB
 	simulator->SetVariable("HARDWARE.PCM.cycle-time", "20 ns");

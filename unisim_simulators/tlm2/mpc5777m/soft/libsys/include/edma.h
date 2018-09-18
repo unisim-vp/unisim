@@ -141,8 +141,9 @@ void edma_set_channel_arbitration_priority(unsigned int edma_id, unsigned int ch
 
 void edma_enable_master_id_replication(unsigned int edma_id, unsigned int chan);
 void edma_disable_master_id_replication(unsigned int edma_id, unsigned int chan);
-void edma_select_privilege_access_level(unsigned int edma_id, unsigned int chan, enum eDMA_PrivilegeAccessLevel pal);
-void edma_set_master_id(unsigned int edma_id, unsigned int chan, unsigned int master_id);
+int edma_is_master_id_replication_enabled(unsigned int edma_id, unsigned int chan);
+enum eDMA_PrivilegeAccessLevel edma_get_privilege_access_level(unsigned int edma_id, unsigned int chan);
+unsigned int edma_get_master_id(unsigned int edma_id, unsigned int chan);
 
 uint32_t edma_get_tcd_source_address(unsigned int edma_id, unsigned int chan);
 void edma_set_tcd_source_address(unsigned int edma_id, unsigned int chan, uint32_t saddr);

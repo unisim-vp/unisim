@@ -37,6 +37,7 @@
 
 #include <unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/xbar.hh>
 #include <unisim/component/tlm2/interconnect/programmable_router/router.tcc>
+#include <unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/smpu/smpu.tcc>
 
 namespace unisim {
 namespace component {
@@ -46,12 +47,15 @@ namespace freescale {
 namespace mpc57xx {
 namespace xbar {
 
+using unisim::component::tlm2::interconnect::generic_router::MEM_ACCESS_READ;
+
 template <typename CONFIG>
 XBAR<CONFIG>::XBAR(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, Super(name, parent)
 	, xbar_prs(this)
 	, xbar_crs(this)
+	, smpu("SMPU", this)
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 {
@@ -61,14 +65,14 @@ XBAR<CONFIG>::XBAR(const sc_core::sc_module_name& name, unisim::kernel::service:
 	description_sstr << "  - " << CONFIG::INPUT_BUSWIDTH << "-bit master data bus" << std::endl;
 	description_sstr << "  - " << CONFIG::OUTPUT_SOCKETS << " Slave ports" << std::endl;
 	description_sstr << "  - " << CONFIG::OUTPUT_BUSWIDTH << "-bit slave data bus" << std::endl;
-	description_sstr << "  - " << CONFIG::BUSWIDTH << "-bit peripheral data bus" << std::endl;
+	description_sstr << "  - " << CONFIG::PERIPHERAL_BUSWIDTH << "-bit peripheral data bus" << std::endl;
 	description_sstr << "  - SystemC TLM-2.0 IP Version: " << TLM2_IP_VERSION_MAJOR << "." << TLM2_IP_VERSION_MINOR << "." << TLM2_IP_VERSION_PATCH << std::endl;
 	description_sstr << "  - SystemC TLM-2.0 IP Authors: Gilles Mouchard (gilles.mouchard@cea.fr)" << std::endl;
 	description_sstr << "  - Hardware reference manual: MPC5777M Reference Manual, MPC5777MRM, Rev. 4.3, 01/2017, Chapter 17" << std::endl;
 	this->SetDescription(description_sstr.str().c_str());
 
-	this->MapRegisterFile(XBAR_PRS::ADDRESS_OFFSET, &xbar_prs, 4, XBAR_PRS::ADDRESS_STRIDE);
-	this->MapRegisterFile(XBAR_CRS::ADDRESS_OFFSET, &xbar_crs, 4, XBAR_CRS::ADDRESS_STRIDE);
+	this->MapRegisterFile(XBAR_PERIPHERAL_SLAVE_IF, XBAR_PRS::ADDRESS_OFFSET, &xbar_prs, 4, XBAR_PRS::ADDRESS_STRIDE);
+	this->MapRegisterFile(XBAR_PERIPHERAL_SLAVE_IF, XBAR_CRS::ADDRESS_OFFSET, &xbar_crs, 4, XBAR_CRS::ADDRESS_STRIDE);
 }
 
 template <typename CONFIG>
@@ -82,6 +86,8 @@ void XBAR<CONFIG>::end_of_elaboration()
 	Super::end_of_elaboration();
 	
 	this->logger << DebugInfo << this->GetDescription() << EndDebugInfo;
+	
+	smpu.end_of_elaboration();
 }
 
 template <typename CONFIG>
@@ -95,13 +101,15 @@ void XBAR<CONFIG>::Reset()
 		xbar_crs[i].Reset();
 	}
 	
+	smpu.Reset();
+	
 	Super::Reset();
 }
 
 template <typename CONFIG>
-bool XBAR<CONFIG>::ApplyMap(const transaction_type &trans, Mapping const *&applied_mapping) const
+bool XBAR<CONFIG>::ApplyMap(transaction_type &trans, MAPPING const *&applied_mapping, MemoryRegion *mem_rgn)
 {
-	return Super::ApplyMap(trans, applied_mapping) && (!trans.is_write() || !xbar_crs[applied_mapping->output_port].template Get<typename XBAR_CRS::RO>());
+	return Super::ApplyMap(trans, applied_mapping, mem_rgn) && smpu.Check(trans, mem_rgn);
 }
 
 } // end of namespace xbar

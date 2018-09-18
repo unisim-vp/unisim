@@ -188,6 +188,10 @@ inline bool IsReadWriteError(ReadWriteStatus rws) ALWAYS_INLINE;
 
 inline bool IsReadWriteError(ReadWriteStatus rws) { return (rws & (RWSF_ANA | RWSF_UA)) != 0; }
 
+inline bool IsUnmappedAccessError(ReadWriteStatus rws) { return (rws & RWSF_UA) != 0; }
+
+inline bool IsAccessNotAllowedError(ReadWriteStatus rws) { return (rws & RWSF_ANA) != 0; }
+
 inline void SetReadWriteStatusFlag(ReadWriteStatus& rws, ReadWriteStatusFlag rwsf) { rws = ReadWriteStatus(rws | rwsf); }
 
 inline void ClearReadWriteStatusFlag(ReadWriteStatus& rws, ReadWriteStatusFlag rwsf) { rws = ReadWriteStatus(rws & ~rwsf); }
@@ -364,6 +368,8 @@ private:
 
 struct NullField
 {
+	static const unsigned int BITWIDTH = 0;
+	
 	template <typename T> static inline T GetMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetAssignMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetWriteMask() ALWAYS_INLINE;
@@ -397,6 +403,14 @@ template < typename  BF0 = NullField, typename  BF1 = NullField, typename  BF2 =
          , typename BF60 = NullField, typename BF61 = NullField, typename BF62 = NullField, typename BF63 = NullField>
 struct FieldSet
 {
+	static const unsigned int BITWIDTH = BF0::BITWIDTH + BF1::BITWIDTH + BF2::BITWIDTH + BF3::BITWIDTH + BF4::BITWIDTH + BF5::BITWIDTH + BF6::BITWIDTH + BF7::BITWIDTH +
+	                                     BF8::BITWIDTH + BF9::BITWIDTH + BF10::BITWIDTH + BF11::BITWIDTH + BF12::BITWIDTH + BF13::BITWIDTH + BF14::BITWIDTH + BF15::BITWIDTH +
+	                                     BF16::BITWIDTH + BF17::BITWIDTH + BF18::BITWIDTH + BF19::BITWIDTH + BF20::BITWIDTH + BF21::BITWIDTH + BF22::BITWIDTH + BF23::BITWIDTH +
+	                                     BF24::BITWIDTH + BF25::BITWIDTH + BF26::BITWIDTH + BF27::BITWIDTH + BF28::BITWIDTH + BF29::BITWIDTH + BF30::BITWIDTH + BF31::BITWIDTH +
+	                                     BF32::BITWIDTH + BF33::BITWIDTH + BF34::BITWIDTH + BF35::BITWIDTH + BF36::BITWIDTH + BF37::BITWIDTH + BF38::BITWIDTH + BF39::BITWIDTH +
+	                                     BF40::BITWIDTH + BF41::BITWIDTH + BF42::BITWIDTH + BF43::BITWIDTH + BF44::BITWIDTH + BF45::BITWIDTH + BF46::BITWIDTH + BF47::BITWIDTH +
+	                                     BF48::BITWIDTH + BF49::BITWIDTH + BF50::BITWIDTH + BF51::BITWIDTH + BF52::BITWIDTH + BF53::BITWIDTH + BF54::BITWIDTH + BF55::BITWIDTH +
+	                                     BF56::BITWIDTH + BF57::BITWIDTH + BF58::BITWIDTH + BF59::BITWIDTH + BF60::BITWIDTH + BF61::BITWIDTH + BF62::BITWIDTH + BF63::BITWIDTH;
 	template <typename T> static inline T GetMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetAssignMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetWriteMask() ALWAYS_INLINE;

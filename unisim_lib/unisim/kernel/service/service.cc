@@ -1860,6 +1860,13 @@ VariableBase& Object::operator [] (const char *name)
 	return *variable;
 }
 
+VariableBase& Object::operator [] (const std::string& name)
+{
+	std::string fullname = GetName() + std::string(".") + name;
+	VariableBase *variable = Simulator::Instance()->FindVariable(fullname.c_str());
+	return *variable;
+}
+
 Simulator *Object::GetSimulator() const
 {
 	return Simulator::Instance();

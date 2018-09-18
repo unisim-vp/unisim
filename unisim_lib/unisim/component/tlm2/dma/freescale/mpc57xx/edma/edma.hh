@@ -39,6 +39,7 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/tlm2/clock.hh>
+#include <unisim/kernel/tlm2/trans_attr.hh>
 #include <unisim/util/reg/core/register.hh>
 
 #define SWITCH_ENUM_TRAIT(ENUM_TYPE, CLASS_NAME) template <ENUM_TYPE, bool __SWITCH_TRAIT_DUMMY__ = true> struct CLASS_NAME {}
@@ -75,6 +76,8 @@ using unisim::util::reg::core::SW_W;
 using unisim::util::reg::core::SW_R_W1C;
 using unisim::util::reg::core::RWS_OK;
 using unisim::util::reg::core::RWS_ANA;
+
+using unisim::kernel::tlm2::tlm_trans_attr;
 
 template <typename REGISTER, typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
 struct Field : unisim::util::reg::core::Field<FIELD
@@ -166,6 +169,12 @@ private:
 	
 	typedef unsigned int MasterID;
 	
+	enum PrivilegeAccessLevel
+	{
+		PAL_USER_PROTECTION_LEVEL       = 0,
+		PAL_PRIVILEGED_PROTECTION_LEVEL = 1
+	};
+	
 	class Event
 	{
 	public:
@@ -208,7 +217,6 @@ private:
 		
 		Event()
 			: key()
-			, master_id(0)
 			, payload(0)
 			, release_payload(false)
 			, completion_event(0)
@@ -223,7 +231,6 @@ private:
 		void Clear()
 		{
 			key.Clear();
-			master_id = 0;
 			if(release_payload)
 			{
 				if(payload && payload->has_mm()) payload->release();
@@ -248,11 +255,6 @@ private:
 			release_payload = _release_payload;
 		}
 		
-		void SetMasterID(MasterID _master_id)
-		{
-			master_id = _master_id;
-		}
-		
 		void SetCompletionEvent(sc_core::sc_event *_completion_event)
 		{
 			completion_event = _completion_event;
@@ -263,9 +265,9 @@ private:
 			return key.GetTimeStamp();
 		}
 		
-		MasterID GetMasterID() const
+		tlm_trans_attr *GetAttributes() const
 		{
-			return master_id;
+			return payload->template get_extension<unisim::kernel::tlm2::tlm_trans_attr>();
 		}
 		
 		tlm::tlm_generic_payload *GetPayload() const
@@ -285,7 +287,6 @@ private:
 		
 	private:
 		Key key;                             // schedule key (i.e. time stamp)
-		MasterID master_id;                  // master ID
 		tlm::tlm_generic_payload *payload;   // payload
 		bool release_payload;                // whether payload must be released using payload memory management
 		sc_core::sc_event *completion_event; // completion event (for blocking transport interface)
@@ -293,9 +294,9 @@ private:
 
 	// Common EDMA register representation
 	template <typename REGISTER, unsigned int _SIZE, Access _ACCESS>
-	struct EDMA_Register : AddressableRegister<REGISTER, _SIZE, _ACCESS, MasterID>
+	struct EDMA_Register : AddressableRegister<REGISTER, _SIZE, _ACCESS, tlm_trans_attr>
 	{
-		typedef AddressableRegister<REGISTER, _SIZE, _ACCESS, MasterID> Super;
+		typedef AddressableRegister<REGISTER, _SIZE, _ACCESS, tlm_trans_attr> Super;
 		
 		EDMA_Register(EDMA<CONFIG> *_edma) : Super(), edma(_edma) {}
 		EDMA_Register(EDMA<CONFIG> *_edma, uint32_t value) : Super(value), edma(_edma) {}
@@ -362,10 +363,10 @@ private:
 			this->edma->UpdateGroupPriority();
 		}
 		
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint32_t& value, const uint32_t& bit_enable)
 		{
 			bool old_halt = this->template Get<HALT>();
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			bool new_halt = this->template Get<HALT>();
 			
 			if(!IsReadWriteError(rws))
@@ -531,9 +532,9 @@ private:
 			this->edma->UpdateAllHardwareRequestStatus();
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			
 			this->edma->UpdateAllHardwareRequestStatus();
 			
@@ -635,9 +636,9 @@ private:
 			this->edma->UpdateAllHardwareRequestStatus();
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			
 			this->edma->UpdateAllHardwareRequestStatus();
 			
@@ -864,9 +865,9 @@ private:
 			this->Initialize(0x0);
 		}
 		
-		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint8_t& value, const uint8_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -921,9 +922,9 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint8_t& value, const uint8_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -978,9 +979,9 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint8_t& value, const uint8_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -1035,9 +1036,9 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint8_t& value, const uint8_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -1092,9 +1093,9 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint8_t& value, const uint8_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -1149,9 +1150,9 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint8_t& value, const uint8_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -1206,9 +1207,9 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint8_t& value, const uint8_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -1263,9 +1264,9 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint8_t& value, const uint8_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -1382,9 +1383,9 @@ private:
 			this->edma->UpdateInterruptRequests();
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -1489,9 +1490,9 @@ private:
 			this->edma->UpdateInterruptRequests();
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -1596,9 +1597,9 @@ private:
 			this->edma->UpdateErrors();
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -1704,9 +1705,9 @@ private:
 			this->edma->UpdateErrors();
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -1958,9 +1959,9 @@ private:
 			this->edma->UpdateChannelPriority(reg_num);
 		}
 		
-		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint8_t& value, const uint8_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -2524,16 +2525,17 @@ private:
 			// undefined
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint16_t& value, const uint16_t& bit_enable)
+		virtual ReadWriteStatus Write(tlm_trans_attr& trans_attr, const uint16_t& value, const uint16_t& bit_enable)
 		{
 			bool old_start = this->template Get<START>();
-			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			ReadWriteStatus rws = Super::Write(trans_attr, value, bit_enable);
 			bool new_start = this->template Get<START>();
 			
 			if(!IsReadWriteError(rws))
 			{
-				// Capture Master ID used to write CSR
-				this->edma->SetMasterID(reg_num, mid);
+				// Capture Master ID and Privilege Access Level used to write CSR
+				this->edma->SetMasterID(reg_num, trans_attr.master_id());
+				this->edma->SetPrivilegeAccessLevel(reg_num, trans_attr.is_privileged() ? PAL_PRIVILEGED_PROTECTION_LEVEL : PAL_USER_PROTECTION_LEVEL);
 				
 				if(!old_start && new_start)
 				{
@@ -2850,11 +2852,11 @@ private:
 	EDMA_ERRL                                                                      edma_errl;         // eDMA_ERRL
 	EDMA_HRSH                                                                      edma_hrsh;         // eDMA_HRSH
 	EDMA_HRSL                                                                      edma_hrsl;         // eDMA_HRSL
-	AddressableRegisterFile<EDMA_DCHPRI, NUM_DMA_CHANNELS, EDMA<CONFIG>, MasterID> edma_dchpri;       // eDMA_DCHPRIn      
-	AddressableRegisterFile<EDMA_DCHMID, NUM_DMA_CHANNELS, EDMA<CONFIG>, MasterID> edma_dchmid;       // eDMA_DCHMIDn      
+	AddressableRegisterFile<EDMA_DCHPRI, NUM_DMA_CHANNELS, EDMA<CONFIG>, tlm_trans_attr> edma_dchpri; // eDMA_DCHPRIn      
+	AddressableRegisterFile<EDMA_DCHMID, NUM_DMA_CHANNELS, EDMA<CONFIG>, tlm_trans_attr> edma_dchmid; // eDMA_DCHMIDn      
 	EDMA_TCD_File                                                                  edma_tcd_file;     // eDMA TCDs
 	
-	RegisterAddressMap<sc_dt::uint64, MasterID> reg_addr_map;
+	RegisterAddressMap<sc_dt::uint64, tlm_trans_attr> reg_addr_map;
 	
 	unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
 	
@@ -2866,6 +2868,8 @@ private:
 	unisim::kernel::service::Parameter<bool> param_verbose;
 	MasterID master_id;
 	unisim::kernel::service::Parameter<MasterID> param_master_id;
+	
+	tlm_trans_attr default_trans_attr;
 	
 	sc_core::sc_time master_clock_period;                 // Master clock period
 	sc_core::sc_time master_clock_start_time;             // Master clock start time
@@ -2943,8 +2947,10 @@ private:
 	void ERR_IRQ_Process(unsigned int dma_channel_num);
 	void DMA_CHANNEL_ACK_Process(unsigned int dma_channel_num);
 	void SetMasterID(unsigned int dma_channel_num, MasterID mid);
+	void SetPrivilegeAccessLevel(unsigned int dma_channel_num, PrivilegeAccessLevel pal);
 	MasterID GetMasterID(unsigned int dma_channel_num);
-	bool Transfer(tlm::tlm_command cmd, int mid, uint32_t& addr, uint8_t *data_ptr, unsigned int size, unsigned int tsize, int32_t addr_signed_offset, uint32_t addr_mask, sc_core::sc_time& t);
+	PrivilegeAccessLevel GetPrivilegeAccessLevel(unsigned int dma_channel_num);
+	bool Transfer(tlm::tlm_command cmd, MasterID mid, PrivilegeAccessLevel pal, uint32_t& addr, uint8_t *data_ptr, unsigned int size, unsigned int tsize, int32_t addr_signed_offset, uint32_t addr_mask, sc_core::sc_time& t);
 	bool LoadTCD(unsigned int dma_channel_num, sc_dt::uint64 addr, sc_core::sc_time& t);
 	bool CheckTCD(EDMA_TCD& tcd);
 	void DMA_Engine_Process();

@@ -37,7 +37,7 @@
 
 #include <unisim/component/tlm2/interconnect/freescale/mpc57xx/pbridge/pbridge.hh>
 #include <unisim/component/tlm2/interconnect/programmable_router/router.tcc>
-#include <unisim/kernel/tlm2/master_id.hh>
+#include <unisim/kernel/tlm2/trans_attr.hh>
 #include <unisim/util/likely/likely.hh>
 
 namespace unisim {
@@ -47,6 +47,11 @@ namespace interconnect {
 namespace freescale {
 namespace mpc57xx {
 namespace pbridge {
+
+using unisim::component::tlm2::interconnect::generic_router::MEM_ACCESS_NONE;
+using unisim::component::tlm2::interconnect::generic_router::MEM_ACCESS_READ;
+using unisim::component::tlm2::interconnect::generic_router::MEM_ACCESS_WRITE;
+using unisim::component::tlm2::interconnect::generic_router::MEM_ACCESS_READ_WRITE;
 
 template <typename CONFIG>
 PBRIDGE<CONFIG>::PBRIDGE(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
@@ -99,21 +104,19 @@ PBRIDGE<CONFIG>::PBRIDGE(const sc_core::sc_module_name& name, unisim::kernel::se
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 {
-	unsigned int i;
-	
 	std::stringstream description_sstr;
 	description_sstr << "MPC57XX Peripheral Bridge (PBRIDGE):" << std::endl;
 	description_sstr << "  - " << CONFIG::INPUT_SOCKETS << " Master ports" << std::endl;
 	description_sstr << "  - " << CONFIG::INPUT_BUSWIDTH << "-bit master data bus" << std::endl;
 	description_sstr << "  - " << CONFIG::OUTPUT_SOCKETS << " Slave ports" << std::endl;
 	description_sstr << "  - " << CONFIG::OUTPUT_BUSWIDTH << "-bit slave data bus" << std::endl;
-	description_sstr << "  - " << CONFIG::BUSWIDTH << "-bit peripheral data bus" << std::endl;
+	description_sstr << "  - " << CONFIG::PERIPHERAL_BUSWIDTH << "-bit peripheral data bus" << std::endl;
 	description_sstr << "  - SystemC TLM-2.0 IP Version: " << TLM2_IP_VERSION_MAJOR << "." << TLM2_IP_VERSION_MINOR << "." << TLM2_IP_VERSION_PATCH << std::endl;
 	description_sstr << "  - SystemC TLM-2.0 IP Authors: Gilles Mouchard (gilles.mouchard@cea.fr)" << std::endl;
 	description_sstr << "  - Hardware reference manual: MPC5777M Reference Manual, MPC5777MRM, Rev. 4.3, 01/2017, Chapter 19" << std::endl;
 	this->SetDescription(description_sstr.str().c_str());
 	
-	for(i = 0; i < CONFIG::OUTPUT_SOCKETS; i++)
+	for(unsigned int i = 0; i < CONFIG::NUM_MAPPINGS; i++)
 	{
 		std::stringstream sstr_name;
 		sstr_name << "acr_mapping_" << i;
@@ -124,8 +127,8 @@ PBRIDGE<CONFIG>::PBRIDGE(const sc_core::sc_module_name& name, unisim::kernel::se
 		param_acr_mapping[i]->SetMutable(false);
 	}
 	
-	this->MapRegister(pbridge_mpra.ADDRESS_OFFSET, &pbridge_mpra);
-	this->MapRegister(pbridge_mprb.ADDRESS_OFFSET, &pbridge_mprb);
+	this->MapRegister(pbridge_mpra.ADDRESS_OFFSET,    &pbridge_mpra);
+	this->MapRegister(pbridge_mprb.ADDRESS_OFFSET,    &pbridge_mprb);
 	this->MapRegister(pbridge_pacra.ADDRESS_OFFSET,   &pbridge_pacra);
 	this->MapRegister(pbridge_pacrb.ADDRESS_OFFSET,   &pbridge_pacrb);
 	this->MapRegister(pbridge_pacrc.ADDRESS_OFFSET,   &pbridge_pacrc);
@@ -173,7 +176,7 @@ PBRIDGE<CONFIG>::~PBRIDGE()
 {
 	unsigned int i;
 	
-	for(i = 0; i < CONFIG::OUTPUT_SOCKETS; i++)
+	for(i = 0; i < CONFIG::NUM_MAPPINGS; i++)
 	{
 		delete param_acr_mapping[i];
 	}
@@ -185,6 +188,23 @@ void PBRIDGE<CONFIG>::end_of_elaboration()
 	Super::end_of_elaboration();
 	
 	this->logger << DebugInfo << this->GetDescription() << EndDebugInfo;
+	
+	bool invalid_acr_mapping = false;
+	for(unsigned int i = 0; i < CONFIG::NUM_MAPPINGS; i++)
+	{
+		AccessControlRegisterMapping& acr_m = acr_mapping[i];
+		if(!acr_m.valid)
+		{
+			invalid_acr_mapping = true;
+			this->logger << DebugError << "Parameter \"" <<  param_acr_mapping[i]->GetName() << "\" value is out-of-range" << EndDebugError;
+		}
+	}
+	
+	if(invalid_acr_mapping)
+	{
+		this->logger << DebugError << "Invalid ACR mapping configuration" << EndDebugError;
+		unisim::kernel::service::Object::Stop(-1);
+	}
 }
 
 template <typename CONFIG>
@@ -237,33 +257,26 @@ void PBRIDGE<CONFIG>::Reset()
 }
 
 template <typename CONFIG>
-bool PBRIDGE<CONFIG>::GetMasterPrivilege(int master_id, MasterPrivilege& mpriv) const
+unsigned int PBRIDGE<CONFIG>::GetMasterProtection(unsigned int master_id) const
 {
-	//std::cerr << "master_id=" << master_id << std::endl;
 	unsigned int pbridge_mpr_num = master_id / 8;
 	unsigned int mprot_shift = 4 * (7 - (master_id % 8));
 	
-	uint32_t pbridge_mpr = 0;
+	uint32_t mpr = 0;
 	switch(pbridge_mpr_num)
 	{
-		case 0: pbridge_mpr = (uint32_t) pbridge_mpra; break;
-		case 1: pbridge_mpr = (uint32_t) pbridge_mprb; break;
-		default: return false;
+		case 0: mpr = (uint32_t) pbridge_mpra; break;
+		case 1: mpr = (uint32_t) pbridge_mprb; break;
 	}
-	unsigned int mprot = pbridge_mpr >> mprot_shift;
-	mpriv.mtr = MPROT::MTR::Get(mprot);
-	mpriv.mtw = MPROT::MTW::Get(mprot);
-	mpriv.mpl = MPROT::MPL::Get(mprot);
-	//std::cerr << "mtr=" << mpriv.mtr << ",mtw=" << mpriv.mtw << ",mpl=" << mpriv.mpl << std::endl;
 	
-	return true;
+	return (mpr >> mprot_shift) & MPROT::ALL::template GetMask<unsigned int>();
 }
 
 template <typename CONFIG>
-bool PBRIDGE<CONFIG>::GetAccessControl(unsigned int output_port, AccessControl& access_ctrl) const
+unsigned int PBRIDGE<CONFIG>::GetAccessControl(unsigned int mapping_id) const
 {
 	//std::cerr << "output_port=" << output_port << std::endl;
-	const AccessControlRegisterMapping& _acr_mapping = acr_mapping[output_port];
+	const AccessControlRegisterMapping& _acr_mapping = acr_mapping[mapping_id];
 	bool off_platform = _acr_mapping.off_platform;
 	unsigned int acr_reg_num = _acr_mapping.reg_num;
 	//std::cerr << (off_platform ? "o" : "") << "pacr" << acr_reg_num << std::endl;
@@ -272,101 +285,119 @@ bool PBRIDGE<CONFIG>::GetAccessControl(unsigned int output_port, AccessControl& 
 	unsigned int acr_shift = 4 * (7 - (acr_reg_num % 8));
 	//std::cerr << "acr_shift=" << acr_shift << std::endl;
 	
+	uint32_t pacr = 0;
 	if(off_platform)
 	{
-		uint32_t pbridge_opacr = 0;
 		switch(reg_num)
 		{
-			case 0: pbridge_opacr = (uint32_t) pbridge_opacra; break;
-			case 1: pbridge_opacr = (uint32_t) pbridge_opacrb; break;
-			case 2: pbridge_opacr = (uint32_t) pbridge_opacrc; break;
-			case 3: pbridge_opacr = (uint32_t) pbridge_opacrd; break;
-			case 4: pbridge_opacr = (uint32_t) pbridge_opacre; break;
-			case 5: pbridge_opacr = (uint32_t) pbridge_opacrf; break;
-			case 6: pbridge_opacr = (uint32_t) pbridge_opacrg; break;
-			case 7: pbridge_opacr = (uint32_t) pbridge_opacrh; break;
-			case 8: pbridge_opacr = (uint32_t) pbridge_opacri; break;
-			case 9: pbridge_opacr = (uint32_t) pbridge_opacrj; break;
-			case 10: pbridge_opacr = (uint32_t) pbridge_opacrk; break;
-			case 11: pbridge_opacr = (uint32_t) pbridge_opacrl; break;
-			case 12: pbridge_opacr = (uint32_t) pbridge_opacrm; break;
-			case 13: pbridge_opacr = (uint32_t) pbridge_opacrn; break;
-			case 14: pbridge_opacr = (uint32_t) pbridge_opacro; break;
-			case 15: pbridge_opacr = (uint32_t) pbridge_opacrp; break;
-			case 16: pbridge_opacr = (uint32_t) pbridge_opacrq; break;
-			case 17: pbridge_opacr = (uint32_t) pbridge_opacrr; break;
-			case 18: pbridge_opacr = (uint32_t) pbridge_opacrs; break;
-			case 19: pbridge_opacr = (uint32_t) pbridge_opacrt; break;
-			case 20: pbridge_opacr = (uint32_t) pbridge_opacru; break;
-			case 21: pbridge_opacr = (uint32_t) pbridge_opacrv; break;
-			case 22: pbridge_opacr = (uint32_t) pbridge_opacrw; break;
-			case 23: pbridge_opacr = (uint32_t) pbridge_opacrx; break;
-			case 24: pbridge_opacr = (uint32_t) pbridge_opacry; break;
-			case 25: pbridge_opacr = (uint32_t) pbridge_opacrz; break;
-			case 26: pbridge_opacr = (uint32_t) pbridge_opacraa; break;
-			case 27: pbridge_opacr = (uint32_t) pbridge_opacrab; break;
-			case 28: pbridge_opacr = (uint32_t) pbridge_opacrac; break;
-			case 29: pbridge_opacr = (uint32_t) pbridge_opacrad; break;
-			case 30: pbridge_opacr = (uint32_t) pbridge_opacrae; break;
-			case 31: pbridge_opacr = (uint32_t) pbridge_opacraf; break;
-			default:
-				return false;
+			case 0: pacr = (uint32_t) pbridge_opacra; break;
+			case 1: pacr = (uint32_t) pbridge_opacrb; break;
+			case 2: pacr = (uint32_t) pbridge_opacrc; break;
+			case 3: pacr = (uint32_t) pbridge_opacrd; break;
+			case 4: pacr = (uint32_t) pbridge_opacre; break;
+			case 5: pacr = (uint32_t) pbridge_opacrf; break;
+			case 6: pacr = (uint32_t) pbridge_opacrg; break;
+			case 7: pacr = (uint32_t) pbridge_opacrh; break;
+			case 8: pacr = (uint32_t) pbridge_opacri; break;
+			case 9: pacr = (uint32_t) pbridge_opacrj; break;
+			case 10: pacr = (uint32_t) pbridge_opacrk; break;
+			case 11: pacr = (uint32_t) pbridge_opacrl; break;
+			case 12: pacr = (uint32_t) pbridge_opacrm; break;
+			case 13: pacr = (uint32_t) pbridge_opacrn; break;
+			case 14: pacr = (uint32_t) pbridge_opacro; break;
+			case 15: pacr = (uint32_t) pbridge_opacrp; break;
+			case 16: pacr = (uint32_t) pbridge_opacrq; break;
+			case 17: pacr = (uint32_t) pbridge_opacrr; break;
+			case 18: pacr = (uint32_t) pbridge_opacrs; break;
+			case 19: pacr = (uint32_t) pbridge_opacrt; break;
+			case 20: pacr = (uint32_t) pbridge_opacru; break;
+			case 21: pacr = (uint32_t) pbridge_opacrv; break;
+			case 22: pacr = (uint32_t) pbridge_opacrw; break;
+			case 23: pacr = (uint32_t) pbridge_opacrx; break;
+			case 24: pacr = (uint32_t) pbridge_opacry; break;
+			case 25: pacr = (uint32_t) pbridge_opacrz; break;
+			case 26: pacr = (uint32_t) pbridge_opacraa; break;
+			case 27: pacr = (uint32_t) pbridge_opacrab; break;
+			case 28: pacr = (uint32_t) pbridge_opacrac; break;
+			case 29: pacr = (uint32_t) pbridge_opacrad; break;
+			case 30: pacr = (uint32_t) pbridge_opacrae; break;
+			case 31: pacr = (uint32_t) pbridge_opacraf; break;
 		}
-		unsigned int opacr = pbridge_opacr >> acr_shift;
-		access_ctrl.sp = OPACR::SP::Get(opacr);
-		access_ctrl.wp = OPACR::WP::Get(opacr);
-		access_ctrl.tp = OPACR::TP::Get(opacr);
 	}
 	else
 	{
-		uint32_t pbridge_pacr = 0;
 		switch(reg_num)
 		{
-			case 0: pbridge_pacr = (uint32_t) pbridge_pacra; break;
-			case 1: pbridge_pacr = (uint32_t) pbridge_pacrb; break;
-			case 2: pbridge_pacr = (uint32_t) pbridge_pacrc; break;
-			case 3: pbridge_pacr = (uint32_t) pbridge_pacrd; break;
-			case 4: pbridge_pacr = (uint32_t) pbridge_pacre; break;
-			case 5: pbridge_pacr = (uint32_t) pbridge_pacrf; break;
-			case 6: pbridge_pacr = (uint32_t) pbridge_pacrg; break;
-			case 7: pbridge_pacr = (uint32_t) pbridge_pacrh; break;
-			default:
-				return false;
+			case 0: pacr = (uint32_t) pbridge_pacra; break;
+			case 1: pacr = (uint32_t) pbridge_pacrb; break;
+			case 2: pacr = (uint32_t) pbridge_pacrc; break;
+			case 3: pacr = (uint32_t) pbridge_pacrd; break;
+			case 4: pacr = (uint32_t) pbridge_pacre; break;
+			case 5: pacr = (uint32_t) pbridge_pacrf; break;
+			case 6: pacr = (uint32_t) pbridge_pacrg; break;
+			case 7: pacr = (uint32_t) pbridge_pacrh; break;
 		}
-		unsigned int pacr = pbridge_pacr >> acr_shift;
-		access_ctrl.sp = PACR::SP::Get(pacr);
-		access_ctrl.wp = PACR::WP::Get(pacr);
-		access_ctrl.tp = PACR::TP::Get(pacr);
 	}
 	
-	//std::cerr << "sp=" << access_ctrl.sp << ", wp=" << access_ctrl.wp << ",tp=" << access_ctrl.tp << std::endl;
-	return true;
+	return (pacr >> acr_shift) & PACR::ALL::template GetMask<unsigned int>();
 }
 
 template <typename CONFIG>
-bool PBRIDGE<CONFIG>::ApplyMap(const transaction_type &trans, Mapping const *&applied_mapping) const
+bool PBRIDGE<CONFIG>::ApplyMap(transaction_type &trans, MAPPING const *&applied_mapping, MemoryRegion *mem_rgn)
 {
-	if(likely(Super::ApplyMap(trans, applied_mapping)))
+	if(likely(Super::ApplyMap(trans, applied_mapping, mem_rgn)))
 	{
 		bool is_ignore = trans.get_command() == tlm::TLM_IGNORE_COMMAND;
 		bool is_read = trans.is_read();
 		bool is_write = trans.is_write();
 
-		unisim::kernel::tlm2::tlm_master_id *master_id_ext = trans.template get_extension<unisim::kernel::tlm2::tlm_master_id>();
+		unisim::kernel::tlm2::tlm_trans_attr *trans_attr_ext = trans.template get_extension<unisim::kernel::tlm2::tlm_trans_attr>();
 		
-		if(likely(master_id_ext != 0))
+		if(likely(trans_attr_ext != 0))
 		{
-			int master_id = (int)(*master_id_ext);
-		
-			unsigned int output_port = applied_mapping->output_port;
+			unsigned int master_id = trans_attr_ext->master_id();
+			unsigned int mapping_id = applied_mapping->id;
 			
-			MasterPrivilege mpriv;
-			if(unlikely(!GetMasterPrivilege(master_id, mpriv))) return false;
+			if(likely(master_id < NUM_MASTER_IDS))
+			{
+				unsigned int mprot = GetMasterProtection(master_id);
+				
+				bool master_trusted_for_read = MPROT::MTR::Get(mprot);
+				bool master_trusted_for_write = MPROT::MTW::Get(mprot);
+				bool master_pivilege_level = MPROT::MPL::Get(mprot) && trans_attr_ext->is_privileged();
+
+				unsigned int pacr = GetAccessControl(mapping_id);
+				
+				bool supervisor_protect = PACR::SP::Get(pacr);
+				bool write_protect = PACR::WP::Get(pacr);
+				bool trusted_protect = PACR::TP::Get(pacr);
+
+				if(likely((!supervisor_protect || master_pivilege_level) &&
+				          ((is_read && (!trusted_protect || master_trusted_for_read)) ||
+				           (is_write && !write_protect && (!trusted_protect || master_trusted_for_write)) ||
+				           unlikely(is_ignore))))
+				{
+					if(mem_rgn)
+					{
+						bool trusted_read = !trusted_protect || master_trusted_for_read;
+						bool trusted_write = !trusted_protect || master_trusted_for_write;
+						mem_rgn->mem_access = (is_ignore || (trusted_read && trusted_write)) ? MEM_ACCESS_READ_WRITE : (trusted_read ? MEM_ACCESS_READ : (trusted_write ? MEM_ACCESS_WRITE : MEM_ACCESS_NONE));
+					}
+					
+					return true;
+				}
+				
+				this->logger << DebugWarning << "Master #" << master_id << " can't access port #" << applied_mapping->output_port << " according " << acr_mapping[mapping_id] << EndDebugWarning;
+				trans.set_response_status(tlm::TLM_INCOMPLETE_RESPONSE);
+			}
+			else
+			{
+				this->logger << DebugError << "Master ID (" << master_id << ") out-of-range" << EndDebugError;
+				trans.set_response_status(tlm::TLM_GENERIC_ERROR_RESPONSE);
+				unisim::kernel::service::Object::Stop(-1);
+			}
 			
-			AccessControl access_ctrl;
-			if(unlikely(!GetAccessControl(output_port, access_ctrl))) return false;
-			
-			return likely((!access_ctrl.sp || mpriv.mpl) && ((is_read && (!access_ctrl.tp || mpriv.mtr)) || (is_write && !access_ctrl.wp && (!access_ctrl.tp || mpriv.mtw)) || unlikely(is_ignore)));
+			return false;
 		}
 		
 		return true;

@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_INTERCONNECT_FREESCALE_MPC57XX_XBAR_XBAR_HH__
 
 #include <unisim/component/tlm2/interconnect/programmable_router/router.hh>
+#include <unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/smpu/smpu.hh>
 
 #define SWITCH_ENUM_TRAIT(ENUM_TYPE, CLASS_NAME) template <ENUM_TYPE, bool __SWITCH_TRAIT_DUMMY__ = true> struct CLASS_NAME {}
 #define CASE_ENUM_TRAIT(ENUM_VALUE, CLASS_NAME) template <bool __SWITCH_TRAIT_DUMMY__> struct CLASS_NAME<ENUM_VALUE, __SWITCH_TRAIT_DUMMY__>
@@ -49,7 +50,14 @@ namespace freescale {
 namespace mpc57xx {
 namespace xbar {
 
-using unisim::component::tlm2::interconnect::generic_router::Mapping;
+namespace smpu {
+
+template <typename CONFIG>
+class SMPU;
+
+} // end of namespace smpu
+
+using unisim::component::tlm2::interconnect::generic_router::MemoryRegion;
 
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
@@ -64,6 +72,8 @@ using unisim::util::reg::core::AddressableRegisterFile;
 using unisim::util::reg::core::Access;
 using unisim::util::reg::core::SW_RW;
 using unisim::util::reg::core::SW_R;
+using unisim::util::reg::core::ReadWriteStatus;
+using unisim::util::reg::core::RWS_ANA;
 
 template <typename REGISTER, typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
 struct Field : unisim::util::reg::core::Field<FIELD
@@ -88,21 +98,27 @@ class XBAR
 {
 public:
 	typedef unisim::component::tlm2::interconnect::programmable_router::Router<CONFIG> Super;
+	typedef unisim::component::tlm2::interconnect::freescale::mpc57xx::xbar::smpu::SMPU<CONFIG> SMPU;
 	typedef typename Super::transaction_type transaction_type;
+	typedef typename Super::MAPPING MAPPING;
 	
 	static const unsigned int TLM2_IP_VERSION_MAJOR = 1;
 	static const unsigned int TLM2_IP_VERSION_MINOR = 0;
 	static const unsigned int TLM2_IP_VERSION_PATCH = 0;
+	static const unsigned int XBAR_PERIPHERAL_SLAVE_IF = CONFIG::XBAR_PERIPHERAL_SLAVE_IF;
+	static const unsigned int SMPU_PERIPHERAL_SLAVE_IF = CONFIG::SMPU_PERIPHERAL_SLAVE_IF;
 	static const bool threaded_model                = false;
 	
 	XBAR(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
 	virtual ~XBAR();
 
 protected:
+	friend class smpu::SMPU<CONFIG>;
+	
 	virtual void end_of_elaboration();
 	virtual void Reset();
 	
-	virtual bool ApplyMap(const transaction_type &trans, Mapping const *&applied_mapping) const;
+	virtual bool ApplyMap(transaction_type &trans, MAPPING const *&applied_mapping, MemoryRegion *mem_rgn);
 
 	// Common XBAR register representation
 	template <typename REGISTER, Access _ACCESS>
@@ -182,6 +198,13 @@ protected:
 			this->Initialize(CONFIG::XBAR_PRS_RESET_VALUE);
 		}
 		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			if(this->xbar->xbar_crs[reg_num].template Get<typename XBAR_CRS::RO>()) return RWS_ANA;
+			
+			return Super::Write(value, bit_enable);
+		}
+		
 	private:
 		unsigned int reg_num;
 	};
@@ -255,12 +278,24 @@ protected:
 			this->Initialize(CONFIG::XBAR_CRS_RESET_VALUE);
 		}
 		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			if(this->template Get<RO>()) return RWS_ANA;
+			
+			unsigned int output_port = reg_num;
+			this->xbar->DMI_Invalidate(output_port);
+			
+			return Super::Write(value, bit_enable);
+		}
+		
 	private:
 		unsigned int reg_num;
 	};
 
 	AddressableRegisterFile<XBAR_PRS, CONFIG::OUTPUT_SOCKETS, XBAR<CONFIG> > xbar_prs; // XBAR_PRSn
 	AddressableRegisterFile<XBAR_CRS, CONFIG::OUTPUT_SOCKETS, XBAR<CONFIG> > xbar_crs; // XBAR_CRSn
+	
+	SMPU smpu;
 	
 	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;

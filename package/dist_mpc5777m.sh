@@ -674,7 +674,7 @@ unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/kernel/tlm2/simulator.hh \
 unisim/kernel/tlm2/clock.hh \
-unisim/kernel/tlm2/master_id.hh \
+unisim/kernel/tlm2/trans_attr.hh \
 unisim/kernel/tlm2/tlm_serial.hh \
 unisim/util/backtrace/backtrace.hh \
 unisim/kernel/api/api.hh \
@@ -834,9 +834,16 @@ unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/tlm2/interconnect/generic_router/router.hh \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
 unisim/component/tlm2/interconnect/generic_router/config.hh \
+unisim/component/tlm2/interconnect/generic_router/mapping.hh \
+unisim/component/tlm2/interconnect/generic_router/protection.hh \
 unisim/component/tlm2/interconnect/programmable_router/router.hh \
+unisim/component/tlm2/interconnect/programmable_router/config.hh \
 unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/xbar.hh \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/config.hh \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/smpu/smpu.hh \
 unisim/component/tlm2/interconnect/freescale/mpc57xx/pbridge/pbridge.hh \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/ebi/ebi.hh \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/ebi/config.hh \
 unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh \
 unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh \
 unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh \
@@ -923,7 +930,9 @@ unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/tlm2/interconnect/programmable_router/router.tcc \
 unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/xbar.tcc \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/smpu/smpu.tcc \
 unisim/component/tlm2/interconnect/freescale/mpc57xx/pbridge/pbridge.tcc \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/ebi/ebi.tcc \
 unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.tcc \
 unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.tcc \
 unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.tcc \
@@ -1013,6 +1022,7 @@ xbar_0.cc \
 xbar_1.cc \
 pbridge_a.cc \
 pbridge_b.cc \
+ebi.cc \
 xbar_1_m1_concentrator.cc \
 iahbg_0.cc \
 iahbg_1.cc \
@@ -1127,6 +1137,10 @@ soft/libsys/include/dmamux.h \
 soft/libsys/include/edma.h \
 soft/libsys/include/dspi.h \
 soft/libsys/include/siul2.h \
+soft/libsys/include/ebi.h \
+soft/libsys/include/pbridge.h \
+soft/libsys/include/xbar.h \
+soft/libsys/include/smpu.h \
 soft/libsys/include/console.h \
 soft/libsys/include/ramdisk.h \
 soft/libsys/include/lfs.h \
@@ -1136,7 +1150,7 @@ soft/libsys/src/core/startup.S \
 soft/libsys/src/core/vector.S \
 soft/libsys/src/core/cache.c \
 soft/libsys/src/core/mpu.c \
-soft/libsys/src/syscalls.c \
+soft/libsys/src/sys/sys.c \
 soft/libsys/src/drv/intc.c \
 soft/libsys/src/drv/stm.c \
 soft/libsys/src/drv/swt.c \
@@ -1146,6 +1160,10 @@ soft/libsys/src/drv/dmamux.c \
 soft/libsys/src/drv/edma.c \
 soft/libsys/src/drv/dspi.c \
 soft/libsys/src/drv/siul2.c \
+soft/libsys/src/drv/ebi.c \
+soft/libsys/src/drv/pbridge.c \
+soft/libsys/src/drv/xbar.c \
+soft/libsys/src/drv/smpu.c \
 soft/libsys/src/drv/console.c \
 soft/libsys/src/drv/ramdisk.c \
 soft/libsys/src/fs/lfs.c \

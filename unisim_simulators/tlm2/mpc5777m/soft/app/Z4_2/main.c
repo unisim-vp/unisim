@@ -15,6 +15,9 @@
 #include "console.h"
 #include "dspi.h"
 #include "siul2.h"
+#include "pbridge.h"
+#include "xbar.h"
+#include "smpu.h"
 
 #include <stdio.h>
 #include <stdlib.h>

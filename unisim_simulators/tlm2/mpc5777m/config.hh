@@ -36,6 +36,9 @@
 #define __MPC5777M_CONFIG_HH__
 
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
+#include <unisim/component/tlm2/interconnect/programmable_router/config.hh>
+#include <unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/config.hh>
+#include <unisim/component/tlm2/interconnect/freescale/mpc57xx/ebi/config.hh>
 #include <unisim/component/tlm2/com/freescale/mpc57xx/siul2/defs.hh>
 #include <stdint.h>
 
@@ -72,62 +75,75 @@ struct Config
 		static const unsigned int MAX_FRONT_ENDS = Config::MAX_FRONT_ENDS;
 	};
 
-	struct XBAR_0_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
+	struct XBAR_0_CONFIG : unisim::component::tlm2::interconnect::freescale::mpc57xx::xbar::Config
 	{
 		typedef uint32_t ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 6;
 		static const unsigned int OUTPUT_SOCKETS = 8;
-		static const unsigned int MAX_NUM_MAPPINGS = 12;
+		static const unsigned int NUM_MAPPINGS = 12;
 		static const unsigned int INPUT_BUSWIDTH = 64;
 		static const unsigned int OUTPUT_BUSWIDTH = 64;
-		static const unsigned int BUSWIDTH = 32;
+		static const unsigned int PERIPHERAL_BUSWIDTH = 32;
 		static const bool VERBOSE = DEBUG_ENABLE;
-		static const char *INPUT_SOCKET_NAME_PREFIX;
-		static const char *OUTPUT_SOCKET_NAME_PREFIX;
 		static const unsigned int BURST_LENGTH = FSB_BURST_SIZE / (INPUT_BUSWIDTH / 8);
 		static const uint32_t XBAR_PRS_RESET_VALUE = 0x00301425;
 		static const uint32_t XBAR_CRS_RESET_VALUE = 0x003f0100;
+		static const unsigned int NUM_REGION_DESCRIPTORS = 12;
+		static const unsigned int NUM_BUS_MASTERS = 16;
 	};
 	
-	struct XBAR_1_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
+	struct XBAR_1_CONFIG : unisim::component::tlm2::interconnect::freescale::mpc57xx::xbar::Config
 	{
 		typedef uint32_t ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 4;
 		static const unsigned int OUTPUT_SOCKETS = 4;
-		static const unsigned int MAX_NUM_MAPPINGS = 13;
+		static const unsigned int NUM_MAPPINGS = 13;
 		static const unsigned int INPUT_BUSWIDTH = 32;
 		static const unsigned int OUTPUT_BUSWIDTH = 32;
-		static const unsigned int BUSWIDTH = 32;
+		static const unsigned int PERIPHERAL_BUSWIDTH = 32;
 		static const bool VERBOSE = DEBUG_ENABLE;
-		static const char *INPUT_SOCKET_NAME_PREFIX;
-		static const char *OUTPUT_SOCKET_NAME_PREFIX;
 		static const unsigned int BURST_LENGTH = FSB_BURST_SIZE / (INPUT_BUSWIDTH / 8);
 		static const uint32_t XBAR_PRS_RESET_VALUE = 0x00003102;
 		static const uint32_t XBAR_CRS_RESET_VALUE = 0x000f0100;
+		static const unsigned int NUM_REGION_DESCRIPTORS = 8;
+		static const unsigned int NUM_BUS_MASTERS = 16;
 	};
 	
-	struct PBRIDGE_A_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
+	struct PBRIDGE_A_CONFIG : unisim::component::tlm2::interconnect::programmable_router::Config
 	{
 		typedef uint32_t ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 40;
-		static const unsigned int MAX_NUM_MAPPINGS = 40;
+		static const unsigned int OUTPUT_SOCKETS = 42;
+		static const unsigned int NUM_MAPPINGS = 42;
 		static const unsigned int INPUT_BUSWIDTH = 32;
 		static const unsigned int OUTPUT_BUSWIDTH = 32;
-		static const unsigned int BUSWIDTH = 32;
+		static const unsigned int PERIPHERAL_BUSWIDTH = 32;
 		static const bool VERBOSE = DEBUG_ENABLE;
 		static const unsigned int BURST_LENGTH = FSB_BURST_SIZE / (INPUT_BUSWIDTH / 8);
 	};
 	
-	struct PBRIDGE_B_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
+	struct PBRIDGE_B_CONFIG : unisim::component::tlm2::interconnect::programmable_router::Config
 	{
 		typedef uint32_t ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 1;
 		static const unsigned int OUTPUT_SOCKETS = 6;
-		static const unsigned int MAX_NUM_MAPPINGS = 6;
+		static const unsigned int NUM_MAPPINGS = 6;
 		static const unsigned int INPUT_BUSWIDTH = 32;
 		static const unsigned int OUTPUT_BUSWIDTH = 32;
-		static const unsigned int BUSWIDTH = 32;
+		static const unsigned int PERIPHERAL_BUSWIDTH = 32;
+		static const bool VERBOSE = DEBUG_ENABLE;
+		static const unsigned int BURST_LENGTH = FSB_BURST_SIZE / (INPUT_BUSWIDTH / 8);
+	};
+	
+	struct EBI_CONFIG : unisim::component::tlm2::interconnect::freescale::mpc57xx::ebi::Config
+	{
+		typedef uint32_t ADDRESS;
+		static const unsigned int INPUT_SOCKETS = 1;
+		static const unsigned int OUTPUT_SOCKETS = 3;
+		static const unsigned int NUM_MAPPINGS = 0;
+		static const unsigned int INPUT_BUSWIDTH = 64;
+		static const unsigned int OUTPUT_BUSWIDTH = 32;
+		static const unsigned int PERIPHERAL_BUSWIDTH = 32;
 		static const bool VERBOSE = DEBUG_ENABLE;
 		static const unsigned int BURST_LENGTH = FSB_BURST_SIZE / (INPUT_BUSWIDTH / 8);
 	};
@@ -137,7 +153,7 @@ struct Config
 		typedef uint32_t ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 2;
 		static const unsigned int OUTPUT_SOCKETS = 1;
-		static const unsigned int MAX_NUM_MAPPINGS = 1;
+		static const unsigned int NUM_MAPPINGS = 1;
 		static const unsigned int INPUT_BUSWIDTH = 32;
 		static const unsigned int OUTPUT_BUSWIDTH = 32;
 		static const bool VERBOSE = DEBUG_ENABLE;
@@ -149,7 +165,7 @@ struct Config
 		typedef uint32_t ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 1;
 		static const unsigned int OUTPUT_SOCKETS = 1;
-		static const unsigned int MAX_NUM_MAPPINGS = 1;
+		static const unsigned int NUM_MAPPINGS = 1;
 		static const unsigned int INPUT_BUSWIDTH = 64;
 		static const unsigned int OUTPUT_BUSWIDTH = 32;
 		static const bool VERBOSE = DEBUG_ENABLE;
@@ -161,7 +177,7 @@ struct Config
 		typedef uint32_t ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 1;
 		static const unsigned int OUTPUT_SOCKETS = 1;
-		static const unsigned int MAX_NUM_MAPPINGS = 1;
+		static const unsigned int NUM_MAPPINGS = 1;
 		static const unsigned int INPUT_BUSWIDTH = 32;
 		static const unsigned int OUTPUT_BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;

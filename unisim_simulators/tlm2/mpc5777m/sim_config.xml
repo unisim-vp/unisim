@@ -1632,6 +1632,18 @@
 			</variable>
 		</object>
 		<object name="HARDWARE.XBAR_0">
+			<object name="HARDWARE.XBAR_0.SMPU">
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+			</object>
 			<variable name="cycle_time">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
@@ -1777,8 +1789,92 @@
 			<variable name="mapping_11">
 				<type>parameter</type>
 				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
-				<value>range_start=&quot;0x20000000&quot; range_end=&quot;0x2fffffff&quot; output_port=&quot;5&quot; translation=&quot;0x0&quot;</value>
+				<value>range_start=&quot;0x20000000&quot; range_end=&quot;0x2fffffff&quot; output_port=&quot;5&quot; translation=&quot;0x20000000&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="input_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M0</value>
+				<description>Name of input socket #0</description>
+			</variable>
+			<variable name="input_socket_name_1">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M1</value>
+				<description>Name of input socket #1</description>
+			</variable>
+			<variable name="input_socket_name_2">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M2</value>
+				<description>Name of input socket #2</description>
+			</variable>
+			<variable name="input_socket_name_3">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M3</value>
+				<description>Name of input socket #3</description>
+			</variable>
+			<variable name="input_socket_name_4">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M4</value>
+				<description>Name of input socket #4</description>
+			</variable>
+			<variable name="input_socket_name_5">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M5</value>
+				<description>Name of input socket #5</description>
+			</variable>
+			<variable name="output_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>S0</value>
+				<description>Name of output socket #0</description>
+			</variable>
+			<variable name="output_socket_name_1">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>S1</value>
+				<description>Name of output socket #1</description>
+			</variable>
+			<variable name="output_socket_name_2">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>S2</value>
+				<description>Name of output socket #2</description>
+			</variable>
+			<variable name="output_socket_name_3">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>S3</value>
+				<description>Name of output socket #3</description>
+			</variable>
+			<variable name="output_socket_name_4">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>S4</value>
+				<description>Name of output socket #4</description>
+			</variable>
+			<variable name="output_socket_name_5">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>S5</value>
+				<description>Name of output socket #5</description>
+			</variable>
+			<variable name="output_socket_name_6">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>S6</value>
+				<description>Name of output socket #6</description>
+			</variable>
+			<variable name="output_socket_name_7">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>S7</value>
+				<description>Name of output socket #7</description>
 			</variable>
 			<variable name="endian">
 				<type>parameter</type>
@@ -1802,6 +1898,18 @@
 			</variable>
 		</object>
 		<object name="HARDWARE.XBAR_1">
+			<object name="HARDWARE.XBAR_1.SMPU">
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+			</object>
 			<variable name="cycle_time">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
@@ -1955,6 +2063,54 @@
 				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
 				<value>range_start=&quot;0x20000000&quot; range_end=&quot;0x2fffffff&quot; output_port=&quot;0&quot; translation=&quot;0x20000000&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="input_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M0</value>
+				<description>Name of input socket #0</description>
+			</variable>
+			<variable name="input_socket_name_1">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M1</value>
+				<description>Name of input socket #1</description>
+			</variable>
+			<variable name="input_socket_name_2">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M2</value>
+				<description>Name of input socket #2</description>
+			</variable>
+			<variable name="input_socket_name_3">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M3</value>
+				<description>Name of input socket #3</description>
+			</variable>
+			<variable name="output_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>S0</value>
+				<description>Name of output socket #0</description>
+			</variable>
+			<variable name="output_socket_name_1">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>S1</value>
+				<description>Name of output socket #1</description>
+			</variable>
+			<variable name="output_socket_name_2">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>S2</value>
+				<description>Name of output socket #2</description>
+			</variable>
+			<variable name="output_socket_name_3">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>S3</value>
+				<description>Name of output socket #3</description>
 			</variable>
 			<variable name="endian">
 				<type>parameter</type>
@@ -2294,6 +2450,276 @@
 				<value>range_start=&quot;0xffff0000&quot; range_end=&quot;0xffff3fff&quot; output_port=&quot;39&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
+			<variable name="mapping_40">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc010000&quot; range_end=&quot;0xfc013fff&quot; output_port=&quot;40&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_41">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc014000&quot; range_end=&quot;0xfc017fff&quot; output_port=&quot;41&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="input_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>XBAR_1_S3</value>
+				<description>Name of input socket #0</description>
+			</variable>
+			<variable name="output_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>INTC</value>
+				<description>Name of output socket #0</description>
+			</variable>
+			<variable name="output_socket_name_1">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>STM_0</value>
+				<description>Name of output socket #1</description>
+			</variable>
+			<variable name="output_socket_name_2">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>STM_1</value>
+				<description>Name of output socket #2</description>
+			</variable>
+			<variable name="output_socket_name_3">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>STM_2</value>
+				<description>Name of output socket #3</description>
+			</variable>
+			<variable name="output_socket_name_4">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>SWT_0</value>
+				<description>Name of output socket #4</description>
+			</variable>
+			<variable name="output_socket_name_5">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>SWT_1</value>
+				<description>Name of output socket #5</description>
+			</variable>
+			<variable name="output_socket_name_6">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>SWT_2</value>
+				<description>Name of output socket #6</description>
+			</variable>
+			<variable name="output_socket_name_7">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>SWT_3</value>
+				<description>Name of output socket #7</description>
+			</variable>
+			<variable name="output_socket_name_8">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>PIT_0</value>
+				<description>Name of output socket #8</description>
+			</variable>
+			<variable name="output_socket_name_9">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>PIT_1</value>
+				<description>Name of output socket #9</description>
+			</variable>
+			<variable name="output_socket_name_10">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>LINFlexD_0</value>
+				<description>Name of output socket #10</description>
+			</variable>
+			<variable name="output_socket_name_11">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>LINFlexD_1</value>
+				<description>Name of output socket #11</description>
+			</variable>
+			<variable name="output_socket_name_12">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>LINFlexD_14</value>
+				<description>Name of output socket #12</description>
+			</variable>
+			<variable name="output_socket_name_13">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>LINFlexD_16</value>
+				<description>Name of output socket #13</description>
+			</variable>
+			<variable name="output_socket_name_14">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DMAMUX_0</value>
+				<description>Name of output socket #14</description>
+			</variable>
+			<variable name="output_socket_name_15">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DMAMUX_1</value>
+				<description>Name of output socket #15</description>
+			</variable>
+			<variable name="output_socket_name_16">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DMAMUX_2</value>
+				<description>Name of output socket #16</description>
+			</variable>
+			<variable name="output_socket_name_17">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DMAMUX_3</value>
+				<description>Name of output socket #17</description>
+			</variable>
+			<variable name="output_socket_name_18">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DMAMUX_4</value>
+				<description>Name of output socket #18</description>
+			</variable>
+			<variable name="output_socket_name_19">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DMAMUX_5</value>
+				<description>Name of output socket #19</description>
+			</variable>
+			<variable name="output_socket_name_20">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DMAMUX_6</value>
+				<description>Name of output socket #20</description>
+			</variable>
+			<variable name="output_socket_name_21">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DMAMUX_7</value>
+				<description>Name of output socket #21</description>
+			</variable>
+			<variable name="output_socket_name_22">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DMAMUX_8</value>
+				<description>Name of output socket #22</description>
+			</variable>
+			<variable name="output_socket_name_23">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DMAMUX_9</value>
+				<description>Name of output socket #23</description>
+			</variable>
+			<variable name="output_socket_name_24">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>EDMA_0</value>
+				<description>Name of output socket #24</description>
+			</variable>
+			<variable name="output_socket_name_25">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>EDMA_1</value>
+				<description>Name of output socket #25</description>
+			</variable>
+			<variable name="output_socket_name_26">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DSPI_0</value>
+				<description>Name of output socket #26</description>
+			</variable>
+			<variable name="output_socket_name_27">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DSPI_1</value>
+				<description>Name of output socket #27</description>
+			</variable>
+			<variable name="output_socket_name_28">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DSPI_4</value>
+				<description>Name of output socket #28</description>
+			</variable>
+			<variable name="output_socket_name_29">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DSPI_6</value>
+				<description>Name of output socket #29</description>
+			</variable>
+			<variable name="output_socket_name_30">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DSPI_12</value>
+				<description>Name of output socket #30</description>
+			</variable>
+			<variable name="output_socket_name_31">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>PCM</value>
+				<description>Name of output socket #31</description>
+			</variable>
+			<variable name="output_socket_name_32">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>PFLASH</value>
+				<description>Name of output socket #32</description>
+			</variable>
+			<variable name="output_socket_name_33">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>MC_ME</value>
+				<description>Name of output socket #33</description>
+			</variable>
+			<variable name="output_socket_name_34">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>MC_CGM</value>
+				<description>Name of output socket #34</description>
+			</variable>
+			<variable name="output_socket_name_35">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>XBAR_0</value>
+				<description>Name of output socket #35</description>
+			</variable>
+			<variable name="output_socket_name_36">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>XBAR_1</value>
+				<description>Name of output socket #36</description>
+			</variable>
+			<variable name="output_socket_name_37">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>PBRIDGE_A</value>
+				<description>Name of output socket #37</description>
+			</variable>
+			<variable name="output_socket_name_38">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>SIUL2</value>
+				<description>Name of output socket #38</description>
+			</variable>
+			<variable name="output_socket_name_39">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>EBI</value>
+				<description>Name of output socket #39</description>
+			</variable>
+			<variable name="output_socket_name_40">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>SMPU_0</value>
+				<description>Name of output socket #40</description>
+			</variable>
+			<variable name="output_socket_name_41">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>SMPU_1</value>
+				<description>Name of output socket #41</description>
+			</variable>
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -2554,6 +2980,18 @@
 				<value>opacr3</value>
 				<description>access control register for output port #39</description>
 			</variable>
+			<variable name="acr_mapping_40">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr4</value>
+				<description>access control register for output port #40</description>
+			</variable>
+			<variable name="acr_mapping_41">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr5</value>
+				<description>access control register for output port #41</description>
+			</variable>
 		</object>
 		<object name="HARDWARE.PBRIDGE_B">
 			<variable name="cycle_time">
@@ -2668,6 +3106,48 @@
 				<value>range_start=&quot;0xf8000000&quot; range_end=&quot;0xf8003fff&quot; output_port=&quot;5&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
+			<variable name="input_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>XBAR_1_S2</value>
+				<description>Name of input socket #0</description>
+			</variable>
+			<variable name="output_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>LINFlexD_2</value>
+				<description>Name of output socket #0</description>
+			</variable>
+			<variable name="output_socket_name_1">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>LINFlexD_15</value>
+				<description>Name of output socket #1</description>
+			</variable>
+			<variable name="output_socket_name_2">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DSPI_2</value>
+				<description>Name of output socket #2</description>
+			</variable>
+			<variable name="output_socket_name_3">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DSPI_3</value>
+				<description>Name of output socket #3</description>
+			</variable>
+			<variable name="output_socket_name_4">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>DSPI_5</value>
+				<description>Name of output socket #4</description>
+			</variable>
+			<variable name="output_socket_name_5">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>PBRIDGE_B</value>
+				<description>Name of output socket #5</description>
+			</variable>
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -2723,6 +3203,128 @@
 				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
 				<value>pacr0</value>
 				<description>access control register for output port #5</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.EBI">
+			<variable name="cycle_time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>Time to process a request/response by the router</description>
+			</variable>
+			<variable name="enable-tracing">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable tracing of I/O activity over Initiator (aka. master) and Target (aka. slave) TLM-2.0 sockets (aka. ports)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_all">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Activate all the verbose options</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_setup">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display Object setup information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_tlm">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display TLM blocking/non-blocking transactions information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_tlm_debug">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display TLM debug transactions information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_memory_interface">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display memory interface operations information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-tracing">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity while tracing I/O activity over Initiator and Target TLM-2.0 sockets</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="input_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>targ_socket_0</value>
+				<description>Name of input socket #0</description>
+			</variable>
+			<variable name="output_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>init_socket_0</value>
+				<description>Name of output socket #0</description>
+			</variable>
+			<variable name="output_socket_name_1">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>init_socket_1</value>
+				<description>Name of output socket #1</description>
+			</variable>
+			<variable name="output_socket_name_2">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>init_socket_2</value>
+				<description>Name of output socket #2</description>
+			</variable>
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
 			</variable>
 		</object>
 		<object name="HARDWARE.XBAR_1_M1_CONCENTRATOR">
@@ -2808,6 +3410,24 @@
 				<value>range_start=&quot;0x0&quot; range_end=&quot;0xffffffff&quot; output_port=&quot;0&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
+			<variable name="input_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>XBAR_1_M1</value>
+				<description>Name of input socket #0</description>
+			</variable>
+			<variable name="input_socket_name_1">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>targ_socket_1</value>
+				<description>Name of input socket #1</description>
+			</variable>
+			<variable name="output_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>eDMA_0</value>
+				<description>Name of output socket #0</description>
+			</variable>
 		</object>
 		<object name="HARDWARE.IAHBG_0">
 			<variable name="cycle_time">
@@ -2892,6 +3512,18 @@
 				<value>range_start=&quot;0x0&quot; range_end=&quot;0xffffffff&quot; output_port=&quot;0&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
+			<variable name="input_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>XBAR_0_S7</value>
+				<description>Name of input socket #0</description>
+			</variable>
+			<variable name="output_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>XBAR_1_M3</value>
+				<description>Name of output socket #0</description>
+			</variable>
 		</object>
 		<object name="HARDWARE.IAHBG_1">
 			<variable name="cycle_time">
@@ -2975,6 +3607,18 @@
 				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
 				<value>range_start=&quot;0x0&quot; range_end=&quot;0xffffffff&quot; output_port=&quot;0&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="input_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>XBAR_1_S0</value>
+				<description>Name of input socket #0</description>
+			</variable>
+			<variable name="output_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>XBAR_0_M4</value>
+				<description>Name of output socket #0</description>
 			</variable>
 		</object>
 		<object name="HARDWARE.INTC_0">
@@ -10512,7 +11156,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.EBI_SPACE">
+		<object name="HARDWARE.EBI_MEM_0">
 			<variable name="org">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -10522,7 +11166,7 @@
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
-				<value>268435456</value>
+				<value>16777216</value>
 				<description>memory size in bytes</description>
 			</variable>
 			<variable name="verbose">
@@ -10592,7 +11236,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.EBI">
+		<object name="HARDWARE.EBI_MEM_1">
 			<variable name="org">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -10602,7 +11246,87 @@
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
-				<value>16384</value>
+				<value>16777216</value>
+				<description>memory size in bytes</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename</description>
+			</variable>
+			<variable name="output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>output filename</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.EBI_MEM_2">
+			<variable name="org">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>16777216</value>
 				<description>memory size in bytes</description>
 			</variable>
 			<variable name="verbose">
@@ -12321,7 +13045,7 @@
 			<variable name="mapping">
 				<type>parameter</type>
 				<data_type>string</data_type>
-				<value>HARDWARE.SYSTEM-SRAM:0x40000000-0x401fffff:+0x0,HARDWARE.FLASH:0x00400000-0x00407fff:+0x0,HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x8000,HARDWARE.FLASH:0x00680000-0x00687fff:+0x2c000,HARDWARE.FLASH:0x00800000-0x0087ffff:+0x34000,HARDWARE.FLASH:0x00fc0000-0x00ffffff:+0xb4000,HARDWARE.FLASH:0x01000000-0x0177ffff:+0xf4000,HARDWARE.Main_Core_0:0x50000000-0x50ffffff:+0x50000000,HARDWARE.Main_Core_1:0x51000000-0x51ffffff:+0x51000000,HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x52000000,HARDWARE.EBI_SPACE:0x20000000-0x2fffffff:+0x0</value>
+				<value>HARDWARE.SYSTEM-SRAM:0x40000000-0x401fffff:+0x0,HARDWARE.FLASH:0x00400000-0x00407fff:+0x0,HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x8000,HARDWARE.FLASH:0x00680000-0x00687fff:+0x2c000,HARDWARE.FLASH:0x00800000-0x0087ffff:+0x34000,HARDWARE.FLASH:0x00fc0000-0x00ffffff:+0xb4000,HARDWARE.FLASH:0x01000000-0x0177ffff:+0xf4000,HARDWARE.Main_Core_0:0x50000000-0x50ffffff:+0x50000000,HARDWARE.Main_Core_1:0x51000000-0x51ffffff:+0x51000000,HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x52000000,HARDWARE.EBI_MEM_0:0x20000000-0x20ffffff:+0x0,HARDWARE.EBI_MEM_1:0x21000000-0x21ffffff:+0x0,HARDWARE.EBI_MEM_2:0x22000000-0x22ffffff:+0x0</value>
 				<description>Memory mapping. Syntax: [memory=]&lt;memory1&gt;[:[range=]&lt;low1-high1&gt;][:[translation=]+&lt;translation1&gt;][,... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff:+0xff0000)</description>
 			</variable>
 		</object>

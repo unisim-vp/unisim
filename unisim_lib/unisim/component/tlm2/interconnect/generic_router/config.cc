@@ -46,8 +46,6 @@ const unsigned int Config::MAX_NUM_MAPPINGS;
 const unsigned int Config::INPUT_BUSWIDTH;
 const unsigned int Config::OUTPUT_BUSWIDTH;
 const bool Config::VERBOSE;
-const char *Config::INPUT_SOCKET_NAME_PREFIX = "targ_socket_";
-const char *Config::OUTPUT_SOCKET_NAME_PREFIX = "init_socket_";
 const unsigned int Config::BURST_LENGTH;
 
 const bool VerboseConfig::VERBOSE;

@@ -59,6 +59,8 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh"
+#include "unisim/component/tlm2/interconnect/generic_router/mapping.hh"
+#include "unisim/component/tlm2/interconnect/generic_router/protection.hh"
 #include "unisim/service/interfaces/memory.hh"
 
 namespace unisim {
@@ -77,68 +79,6 @@ struct timed_xfer_traits
   typedef tracing::timed_merge_policy_error<value_type> merge_policy;
 };
 #endif
-
-class Mapping {
-public:
-	bool used;
-	uint64_t range_start;
-	uint64_t range_end;
-	unsigned int output_port;
-	uint64_t translation;
-
-	Mapping() {
-		used = false;
-		range_start = 0;
-		range_end = 0;
-		output_port = 0;
-		translation = 0;
-	}
-	
-	Mapping(const Mapping& mapping)
-		: used(mapping.used)
-		, range_start(mapping.range_start)
-		, range_end(mapping.range_end)
-		, output_port(mapping.output_port)
-		, translation(mapping.translation) {
-	}
-	
-	int operator != (const Mapping& mapping) const {
-		return (used != mapping.used) ||
-		       (range_start != mapping.range_start) ||
-		       (range_end != mapping.range_end) ||
-		       (output_port != mapping.output_port) ||
-		       (translation != mapping.translation);
-	}
-
-	int operator == (const Mapping& mapping) const {
-		return (used == mapping.used) &&
-		       (range_start == mapping.range_start) &&
-		       (range_end == mapping.range_end) &&
-		       (output_port == mapping.output_port) &&
-		       (translation == mapping.translation);
-	}
-
-	Mapping& operator = (const Mapping& mapping) {
-		used = mapping.used;
-		range_start = mapping.range_start;
-		range_end = mapping.range_end;
-		output_port = mapping.output_port;
-		translation = mapping.translation;
-		return *this;
-	}
-};
-
-class MappingTableEntry : public Mapping
-{
-public:
-	MappingTableEntry()
-		: Mapping()
-		, next(0)
-	{
-	}
-	
-	MappingTableEntry *next;
-};
 
 class RouterPayloadExtension :
 	public tlm::tlm_extension<RouterPayloadExtension> {
@@ -177,14 +117,16 @@ private:
 };
 
 template<class CONFIG>
-class Router :
-	public unisim::kernel::service::Service<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >,
-	public unisim::kernel::service::Client<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >,
-	public sc_core::sc_module {
+class Router
+	: public unisim::kernel::service::Service<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >
+	, public unisim::kernel::service::Client<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >
+	, public sc_core::sc_module
+{
 public:
+	typedef typename CONFIG::MAPPING MAPPING;
 	static const unsigned int INPUT_SOCKETS = CONFIG::INPUT_SOCKETS;
 	static const unsigned int OUTPUT_SOCKETS = CONFIG::OUTPUT_SOCKETS;
-	static const unsigned int MAX_NUM_MAPPINGS = CONFIG::MAX_NUM_MAPPINGS; 
+	static const unsigned int NUM_MAPPINGS = CONFIG::NUM_MAPPINGS; 
 	static const unsigned int INPUT_BUSWIDTH = CONFIG::INPUT_BUSWIDTH;
 	static const unsigned int OUTPUT_BUSWIDTH = CONFIG::OUTPUT_BUSWIDTH;
 	static const bool VERBOSE = CONFIG::VERBOSE;
@@ -292,41 +234,43 @@ protected:
 	 *************************************************************************/
 
 	/**
-	 * Apply mapping function over an address range
+	 * Apply mapping function over an address range (purpose: simulation; should be overloaded if mapping is dynamic)
 	 *
 	 * @param addr		the base address
 	 * @param size		the size of the range (positive)
 	 * @param applied_mapping	the applied mapping pointer
+	 * @param mem_rgn	if not zero, a pointer to the memory region protection attributes to be filled when function returns true
 	 * @return			true if a map was found, false otherwise
 	 */
-	virtual bool ApplyMap(uint64_t addr, uint32_t size, Mapping const *&applied_mapping) const;
+	virtual bool ApplyMap(uint64_t addr, uint32_t size, MAPPING const *&applied_mapping, MemoryRegion *mem_rgn = 0);
 	
 	/** 
-	 * Apply mapping function over the given transaction
+	 * Apply mapping function over the given transaction (purpose: simulation; should be overloaded for specific behaviors and/or mapping is dynamic)
 	 *
-	 * @param trans		the transaction to apply the mapping over
+	 * @param trans		the transaction to apply the mapping over, transaction response status may be set when function returns false
 	 * @param applied_mapping	the applied mapping pointer
+	 * @param mem_rgn	if not zero, a pointer to the memory region protection attributes to be filled when function returns true
 	 * @return        true if a map was found, false otherwise
 	 */
-	virtual bool ApplyMap(const transaction_type &trans, Mapping const *&applied_mapping) const;
+	virtual bool ApplyMap(transaction_type &trans, MAPPING const *&applied_mapping, MemoryRegion *mem_rgn = 0);
 
 	/**
-	 * Apply mapping function over an address range and return the mapping division
+	 * Apply mapping function over an address range and return the mapping division (purpose: debug accesses; should be overloaded if mapping is dynamic)
 	 *
 	 * @param addr		the base address
 	 * @param size		the size of the range (positive)
 	 * @param mappings	the mapping pointers that should be applied
 	 */
-	virtual void ApplyMap(uint64_t addr, uint32_t size, std::vector<Mapping const *> &mappings) const;
+	virtual void ApplyMap(uint64_t addr, uint32_t size, std::vector<MAPPING const *> &mappings);
 
 	/**
-	 * Apply mapping function over a given transaction and return the mapping division
+	 * Apply mapping function over a given transaction and return the mapping division (purpose: debug accesses; should be overloaded if mapping is dynamic)
 	 *
 	 * @param trans		the transaction to apply the mapping over
 	 * @param mappings	the mapping pointers that should be applied
 	 */
-	virtual void ApplyMap(const transaction_type &trans, std::vector<Mapping const *> &mappings) const;
-
+	virtual void ApplyMap(const transaction_type &trans, std::vector<MAPPING const *> &mappings);
+	
 	/**
 	 * Set the incomming port into the transaction using the tlm2.0 extension
 	 *   mechanism.
@@ -361,7 +305,7 @@ protected:
 	 * @param  trans the read transaction to handle
 	 * @return       the total number of bytes that were read
 	 */
-	inline unsigned int ReadTransportDbg(unsigned int id, transaction_type &trans);
+	unsigned int ReadTransportDbg(unsigned int id, transaction_type &trans);
 	
 	/**
 	 * Transport debugging method to handle read requests.
@@ -370,7 +314,7 @@ protected:
 	 * @param  trans the read transaction to handle
 	 * @return       the total number of bytes that were read
 	 */
-	inline unsigned int WriteTransportDbg(unsigned int id, transaction_type &trans);
+	unsigned int WriteTransportDbg(unsigned int id, transaction_type &trans);
 
 	/*************************************************************************
 	 * Transport debugging helper methods                                END *
@@ -415,9 +359,26 @@ protected:
 
 	sc_core::sc_time cycle_time;
 	unisim::kernel::service::Parameter<sc_core::sc_time> param_cycle_time;
-	MappingTableEntry mapping[MAX_NUM_MAPPINGS];
+	std::string input_socket_name[INPUT_SOCKETS];
+	unisim::kernel::service::Parameter<std::string> *param_input_socket_name[INPUT_SOCKETS];
+	std::string output_socket_name[OUTPUT_SOCKETS];
+	unisim::kernel::service::Parameter<std::string> *param_output_socket_name[OUTPUT_SOCKETS];
+
+	class MappingTableEntry : public MAPPING
+	{
+	public:
+		MappingTableEntry()
+			: MAPPING()
+			, next(0)
+		{
+		}
+		
+		MappingTableEntry *next;
+	};
+
+	std::vector<MappingTableEntry> mapping;
 	mutable MappingTableEntry *mru_mapping;
-	unisim::kernel::service::Parameter<Mapping> *param_mapping[MAX_NUM_MAPPINGS];
+	std::vector<unisim::kernel::service::Parameter<MAPPING> *> param_mapping;
 #if HAVE_TVS
 	bool enable_tracing;
 	unisim::kernel::service::Parameter<bool> param_enable_tracing;
@@ -435,6 +396,20 @@ protected:
 	/*************************************************************************
 	 * Parameters                                                        END *
 	 *************************************************************************/
+	
+	/*************************************************************************
+	 * DMI                                                             START *
+	 *************************************************************************/
+	
+	unisim::kernel::tlm2::DMIRegionCache dmi_region_cache[INPUT_SOCKETS];
+	
+	void DMI_Invalidate();
+	void DMI_Invalidate(unsigned int output_port);
+
+	/*************************************************************************
+	 * DMI                                                               END *
+	 *************************************************************************/
+	
 	
 	const sc_core::sc_time& TargetTransferDuration(unsigned int data_length) const { return input_lat_lut.Lookup((data_length + (INPUT_BUSWIDTH / 8) - 1) / (INPUT_BUSWIDTH / 8)); }
 	const sc_core::sc_time& InitTransferDuration(unsigned int data_length) const { return output_lat_lut.Lookup((data_length + (OUTPUT_BUSWIDTH / 8) - 1) / (OUTPUT_BUSWIDTH / 8)); }
@@ -490,7 +465,7 @@ protected:
 	 * Logger and verbose parameters                                   START *
 	 *************************************************************************/
 
-	unisim::kernel::logger::Logger logger;
+	mutable unisim::kernel::logger::Logger logger;
 	bool verbose_all;
 	unisim::kernel::service::Parameter<bool> *param_verbose_all;
 	bool verbose_setup;
@@ -510,11 +485,11 @@ protected:
 	 * Verbose methods                                                 START *
 	 *************************************************************************/
 
-	inline void SetVerboseAll();
-	inline bool VerboseSetup();
-	inline bool VerboseTLM();
-	inline bool VerboseTLMDebug();
-	inline bool VerboseMemoryInterface();
+	void SetVerboseAll();
+	bool VerboseSetup();
+	bool VerboseTLM();
+	bool VerboseTLMDebug();
+	bool VerboseMemoryInterface();
 
 	/*************************************************************************
 	 * Verbose methods                                                   END *

@@ -157,7 +157,7 @@ index 4b5d3ed..a1530a0 100644
  
  template<typename T, typename Traits>
 diff --git a/src/tvs/tracing/processors/timed_stream_vcd_processor.cpp b/src/tvs/tracing/processors/timed_stream_vcd_processor.cpp
-index cf218e1..90644f8 100644
+index cf218e1..0c14a32 100644
 --- a/src/tvs/tracing/processors/timed_stream_vcd_processor.cpp
 +++ b/src/tvs/tracing/processors/timed_stream_vcd_processor.cpp
 @@ -29,12 +29,16 @@ vcd_stream_container_base::scope() const
@@ -183,10 +183,11 @@ index cf218e1..90644f8 100644
      header_written_ = true;
    }
  
+-  unsigned long scaled =
+-    sysx::units::sc_time_cast<sysx::units::time_type>(this->local_time()) /
 +  time_type const& loc_time = this->local_time();
 +  
-   unsigned long scaled =
--    sysx::units::sc_time_cast<sysx::units::time_type>(this->local_time()) /
++  sysx::utils::uint64 scaled =
 +    sysx::units::sc_time_cast<sysx::units::time_type>(loc_time) /
      scale_;
  

@@ -47,6 +47,7 @@
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
 #include <unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/xbar.hh>
 #include <unisim/component/tlm2/interconnect/freescale/mpc57xx/pbridge/pbridge.hh>
+#include <unisim/component/tlm2/interconnect/freescale/mpc57xx/ebi/ebi.hh>
 #include <unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh>
 #include <unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh>
 #include <unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh>
@@ -134,6 +135,7 @@ private:
 	typedef unisim::component::tlm2::interconnect::freescale::mpc57xx::xbar::XBAR<XBAR_1_CONFIG> XBAR_1;
 	typedef unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::PBRIDGE<PBRIDGE_A_CONFIG> PBRIDGE_A;
 	typedef unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::PBRIDGE<PBRIDGE_B_CONFIG> PBRIDGE_B;
+	typedef unisim::component::tlm2::interconnect::freescale::mpc57xx::ebi::EBI<EBI_CONFIG> EBI;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<XBAR_1_M1_CONCENTRATOR_CONFIG> XBAR_1_M1_CONCENTRATOR;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<IAHBG_0_CONFIG> IAHBG_0;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<IAHBG_1_CONFIG> IAHBG_1;
@@ -219,7 +221,9 @@ private:
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_PCS_SERIAL_BUS;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SS_SERIAL_BUS;
 	typedef unisim::component::tlm2::com::freescale::mpc57xx::siul2::SIUL2<SIUL2_CONFIG> SIUL2;
-	typedef unisim::component::tlm2::memory::ram::Memory<XBAR_0_CONFIG::OUTPUT_BUSWIDTH, uint32_t, FSB_BURST_SIZE / (XBAR_0_CONFIG::OUTPUT_BUSWIDTH / 8), unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_SPACE_STUB;
+
+	typedef unisim::component::tlm2::memory::ram::Memory<EBI_CONFIG::OUTPUT_BUSWIDTH, uint32_t, FSB_BURST_SIZE / (EBI_CONFIG::OUTPUT_BUSWIDTH / 8), unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_MEM;
+	//typedef unisim::component::tlm2::memory::ram::Memory<XBAR_0_CONFIG::OUTPUT_BUSWIDTH, uint32_t, FSB_BURST_SIZE / (XBAR_0_CONFIG::OUTPUT_BUSWIDTH / 8), unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_SPACE_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<XBAR_0_CONFIG::OUTPUT_BUSWIDTH> FLASH_PORT1_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<XBAR_0_CONFIG::OUTPUT_BUSWIDTH> XBAR_0_S6_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<XBAR_1_CONFIG::OUTPUT_BUSWIDTH> XBAR_1_M2_STUB;
@@ -228,7 +232,7 @@ private:
 	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PFLASH_STUB;
 	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> MC_ME_STUB;
 	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> MC_CGM_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_STUB;
+	//typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_STUB;
 
 	//=========================================================================
 	//===                      Aliases for services classes                 ===
@@ -258,6 +262,8 @@ private:
 	//  - Peripheral Bridges
 	PBRIDGE_A *pbridge_a;
 	PBRIDGE_B *pbridge_b;
+	//  - External Bus interface
+	EBI *ebi;
 	//  - Concentrators
 	XBAR_1_M1_CONCENTRATOR *xbar_1_m1_concentrator;
 	//  - Intelligent Bus Bridging Gaskets
@@ -364,8 +370,11 @@ private:
 	SIUL2 *siul2;
 	
 	//  - Stubs
-	EBI_SPACE_STUB *ebi_space_stub;
-	EBI_STUB *ebi_stub;
+	EBI_MEM *ebi_mem_0;
+	EBI_MEM *ebi_mem_1;
+	EBI_MEM *ebi_mem_2;
+	//EBI_SPACE_STUB *ebi_space_stub;
+	//EBI_STUB *ebi_stub;
 	FLASH_PORT1_STUB *flash_port1_stub;
 	XBAR_0_S6_STUB *xbar_0_s6_stub;
 	XBAR_1_M2_STUB *xbar_1_m2_stub;

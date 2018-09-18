@@ -49,7 +49,7 @@ namespace freescale {
 namespace mpc57xx {
 namespace pbridge {
 
-using unisim::component::tlm2::interconnect::generic_router::Mapping;
+using unisim::component::tlm2::interconnect::generic_router::MemoryRegion;
 
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
@@ -64,6 +64,7 @@ using unisim::util::reg::core::AddressableRegisterFile;
 using unisim::util::reg::core::Access;
 using unisim::util::reg::core::SW_RW;
 using unisim::util::reg::core::SW_R;
+using unisim::util::reg::core::ReadWriteStatus;
 
 template <typename REGISTER, typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
 struct Field : unisim::util::reg::core::Field<FIELD
@@ -98,14 +99,20 @@ inline std::string OrdinalToAlpha(unsigned int n)
 
 struct AccessControlRegisterMapping
 {
+	bool valid;
 	bool off_platform;
 	unsigned int reg_num;
 	
-	AccessControlRegisterMapping() : off_platform(false), reg_num(0) {}
-	int operator != (const AccessControlRegisterMapping& o) { return (off_platform != o.off_platform) || (reg_num != o.reg_num); }
-	int operator == (const AccessControlRegisterMapping& o) { return (off_platform == o.off_platform) && (reg_num == o.reg_num); }
-	AccessControlRegisterMapping& operator = (const AccessControlRegisterMapping& o) { off_platform = o.off_platform; reg_num = o.reg_num; return *this; }
+	AccessControlRegisterMapping() : valid(false), off_platform(false), reg_num(0) {}
+	int operator != (const AccessControlRegisterMapping& o) { return (valid != o.valid) || (off_platform != o.off_platform) || (reg_num != o.reg_num); }
+	int operator == (const AccessControlRegisterMapping& o) { return (valid == o.valid) &&(off_platform == o.off_platform) && (reg_num == o.reg_num); }
+	AccessControlRegisterMapping& operator = (const AccessControlRegisterMapping& o) { valid = o.valid; off_platform = o.off_platform; reg_num = o.reg_num; return *this; }
 };
+
+inline std::ostream& operator << (std::ostream& os, const AccessControlRegisterMapping& acrm)
+{
+	return os << ((acrm.off_platform) ? "o" : "") << "pacr" << std::dec << acrm.reg_num;
+}
 
 template <typename CONFIG>
 class PBRIDGE
@@ -114,10 +121,12 @@ class PBRIDGE
 public:
 	typedef unisim::component::tlm2::interconnect::programmable_router::Router<CONFIG> Super;
 	typedef typename Super::transaction_type transaction_type;
+	typedef typename Super::MAPPING MAPPING;
 	
 	static const unsigned int TLM2_IP_VERSION_MAJOR = 1;
 	static const unsigned int TLM2_IP_VERSION_MINOR = 0;
 	static const unsigned int TLM2_IP_VERSION_PATCH = 0;
+	static const unsigned int NUM_MASTER_IDS = 16;
 	static const bool threaded_model                = false;
 	
 	PBRIDGE(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
@@ -127,7 +136,7 @@ protected:
 	virtual void end_of_elaboration();
 	virtual void Reset();
 	
-	virtual bool ApplyMap(const transaction_type &trans, Mapping const *&applied_mapping) const;
+	virtual bool ApplyMap(transaction_type &trans, MAPPING const *&applied_mapping, MemoryRegion *mem_rgn);
 
 	// Common PBRIDGE register representation
 	template <typename REGISTER, Access _ACCESS>
@@ -349,6 +358,14 @@ protected:
 		{
 			this->Initialize(0x77777777ul);
 		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			// modifying MPR may affect memory protection, so it's safer to invalidate SystemC TLM-2.0 direct memory pointers before modification
+			this->pbridge->DMI_Invalidate();
+			
+			return Super::Write(value, bit_enable);
+		}
 	};
 
 	// Peripheral Access Control Register (PBRIDGE_PACRn)
@@ -519,6 +536,14 @@ protected:
 			this->Initialize(0x44444444ul);
 		}
 		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			// modifying PACR may affect memory protection, so it's safer to invalidate SystemC TLM-2.0 direct memory pointers before modification
+			this->pbridge->DMI_Invalidate();
+			
+			return Super::Write(value, bit_enable);
+		}
+
 		using Super::operator =;
 	};
 
@@ -691,6 +716,14 @@ protected:
 			this->Initialize(0x44444444ul);
 		}
 		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			// modifying PACR may affect memory protection, so it's safer to invalidate SystemC TLM-2.0 direct memory pointers before modification
+			this->pbridge->DMI_Invalidate();
+			
+			return Super::Write(value, bit_enable);
+		}
+
 		using Super::operator =;
 	};
 
@@ -785,6 +818,8 @@ protected:
 		struct MTR : unisim::util::reg::core::Field<MTR, 2> {}; // Master trusted for read
 		struct MTW : unisim::util::reg::core::Field<MTW, 1> {}; // Master trusted for write
 		struct MPL : unisim::util::reg::core::Field<MPL, 0> {}; // Master privilege level
+		
+		typedef FieldSet<MTR, MTW, MPL> ALL;
 	};
 	
 	struct PACR
@@ -792,34 +827,15 @@ protected:
 		struct SP : unisim::util::reg::core::Field<SP, 2> {}; // Supervisor protect
 		struct WP : unisim::util::reg::core::Field<SP, 1> {}; // Write protect
 		struct TP : unisim::util::reg::core::Field<SP, 0> {}; // Trusted protect
-	};
-	
-	struct OPACR
-	{
-		struct SP : unisim::util::reg::core::Field<SP, 2> {}; // Supervisor protect
-		struct WP : unisim::util::reg::core::Field<SP, 1> {}; // Write protect
-		struct TP : unisim::util::reg::core::Field<SP, 0> {}; // Trusted protect
+		
+		typedef FieldSet<SP, WP, TP> ALL;
 	};
 
-	AccessControlRegisterMapping acr_mapping[CONFIG::OUTPUT_SOCKETS];
-	unisim::kernel::service::Parameter<AccessControlRegisterMapping> *param_acr_mapping[CONFIG::OUTPUT_SOCKETS];
+	AccessControlRegisterMapping acr_mapping[CONFIG::NUM_MAPPINGS];
+	unisim::kernel::service::Parameter<AccessControlRegisterMapping> *param_acr_mapping[CONFIG::NUM_MAPPINGS];
 	
-	struct MasterPrivilege
-	{
-		bool mtr;
-		bool mtw;
-		bool mpl;
-	};
-	
-	struct AccessControl
-	{
-		bool sp;
-		bool wp;
-		bool tp;
-	};
-	
-	bool GetMasterPrivilege(int master_id, MasterPrivilege& mpriv) const;
-	bool GetAccessControl(unsigned int output_port, AccessControl& access_ctrl) const;
+	unsigned int GetMasterProtection(unsigned int master_id) const;
+	unsigned int GetAccessControl(unsigned int mapping_id) const;
 	
 	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;

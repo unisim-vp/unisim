@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_E200_MPC57XX_CPU_TCC__
 
 #include <unisim/component/tlm2/processor/powerpc/e200/mpc57xx/cpu.hh>
+#include <unisim/kernel/tlm2/trans_attr.hh>
 #include <unistd.h>
 
 #ifdef powerpc
@@ -56,6 +57,14 @@ using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
+
+using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_OK_RESPONSE;
+using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_INCOMPLETE_RESPONSE;
+using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_GENERIC_ERROR_RESPONSE;
+using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_ADDRESS_ERROR_RESPONSE;
+using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_COMMAND_ERROR_RESPONSE;
+using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_BURST_ERROR_RESPONSE;
+using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_BYTE_ENABLE_ERROR_RESPONSE;
 
 template <typename TYPES, typename CONFIG>
 CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
@@ -590,7 +599,7 @@ void CPU<TYPES, CONFIG>::Run()
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
+BusResponseStatus CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
 {
 	AlignToBusClock();
 
@@ -615,7 +624,7 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 					const sc_core::sc_time& read_lat = dmi_region->GetReadLatency(size);
 					qk.inc(read_lat);
 					run_time = qk.get_current_time();
-					return true;
+					return BUS_OK_RESPONSE;
 				}
 				else
 				{
@@ -636,17 +645,16 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
-	unisim::kernel::tlm2::tlm_master_id *master_id = 0;
-	payload->get_extension(master_id);
-	if(master_id)
+	unisim::kernel::tlm2::tlm_trans_attr *trans_attr = 0;
+	payload->get_extension(trans_attr);
+	if(!trans_attr)
 	{
-		*master_id = ahb_master_id;
+		trans_attr = new unisim::kernel::tlm2::tlm_trans_attr();
+		payload->set_extension(trans_attr);
 	}
-	else
-	{
-		master_id = new unisim::kernel::tlm2::tlm_master_id(ahb_master_id);
-		payload->set_extension(master_id);
-	}
+	trans_attr->set_master_id(ahb_master_id);
+	trans_attr->set_instruction();
+	trans_attr->set_privileged(this->msr.template Get<typename Super::MSR::PR>() == 0);
 	
 	payload->set_address(physical_addr);
 	payload->set_command(tlm::TLM_READ_COMMAND);
@@ -680,11 +688,26 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 	
 	payload->release();
 	
-	return status == tlm::TLM_OK_RESPONSE;
+	if(unlikely(status != tlm::TLM_OK_RESPONSE))
+	{
+		switch(status)
+		{
+			case tlm::TLM_OK_RESPONSE               : return BUS_OK_RESPONSE;
+			case tlm::TLM_INCOMPLETE_RESPONSE       : return BUS_INCOMPLETE_RESPONSE;
+			case tlm::TLM_GENERIC_ERROR_RESPONSE    : return BUS_GENERIC_ERROR_RESPONSE;
+			case tlm::TLM_ADDRESS_ERROR_RESPONSE    : return BUS_ADDRESS_ERROR_RESPONSE;
+			case tlm::TLM_COMMAND_ERROR_RESPONSE    : return BUS_COMMAND_ERROR_RESPONSE;
+			case tlm::TLM_BURST_ERROR_RESPONSE      : return BUS_BURST_ERROR_RESPONSE;
+			case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE: return BUS_BYTE_ENABLE_ERROR_RESPONSE;
+		}
+		return BUS_INCOMPLETE_RESPONSE;
+	}
+	
+	return BUS_OK_RESPONSE;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr, bool rwitm)
+BusResponseStatus CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr, bool rwitm)
 {
 	AlignToBusClock();
 	
@@ -708,7 +731,7 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 					const sc_core::sc_time& read_lat = dmi_region->GetReadLatency(size);
 					qk.inc(read_lat);
 					run_time = qk.get_current_time();
-					return true;
+					return BUS_OK_RESPONSE;
 				}
 				else
 				{
@@ -730,17 +753,15 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
-	unisim::kernel::tlm2::tlm_master_id *master_id = 0;
-	payload->get_extension(master_id);
-	if(master_id)
+	unisim::kernel::tlm2::tlm_trans_attr *trans_attr = 0;
+	payload->get_extension(trans_attr);
+	if(!trans_attr)
 	{
-		*master_id = ahb_master_id;
+		trans_attr = new unisim::kernel::tlm2::tlm_trans_attr();
+		payload->set_extension(trans_attr);
 	}
-	else
-	{
-		master_id = new unisim::kernel::tlm2::tlm_master_id(ahb_master_id);
-		payload->set_extension(master_id);
-	}
+	trans_attr->set_master_id(ahb_master_id);
+	trans_attr->set_privileged(this->msr.template Get<typename Super::MSR::PR>() == 0);
 
 	payload->set_address(physical_addr);
 	payload->set_command(tlm::TLM_READ_COMMAND);
@@ -774,11 +795,26 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 
 	payload->release();
 
-	return status == tlm::TLM_OK_RESPONSE;
+	if(unlikely(status != tlm::TLM_OK_RESPONSE))
+	{
+		switch(status)
+		{
+			case tlm::TLM_OK_RESPONSE               : return BUS_OK_RESPONSE;
+			case tlm::TLM_INCOMPLETE_RESPONSE       : return BUS_INCOMPLETE_RESPONSE;
+			case tlm::TLM_GENERIC_ERROR_RESPONSE    : return BUS_GENERIC_ERROR_RESPONSE;
+			case tlm::TLM_ADDRESS_ERROR_RESPONSE    : return BUS_ADDRESS_ERROR_RESPONSE;
+			case tlm::TLM_COMMAND_ERROR_RESPONSE    : return BUS_COMMAND_ERROR_RESPONSE;
+			case tlm::TLM_BURST_ERROR_RESPONSE      : return BUS_BURST_ERROR_RESPONSE;
+			case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE: return BUS_BYTE_ENABLE_ERROR_RESPONSE;
+		}
+		return BUS_INCOMPLETE_RESPONSE;
+	}
+	
+	return BUS_OK_RESPONSE;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
+BusResponseStatus CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
 {
 	AlignToBusClock();
 	
@@ -802,7 +838,7 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 					const sc_core::sc_time& write_lat = dmi_region->GetWriteLatency(size);
 					qk.inc(write_lat);
 					run_time = qk.get_current_time();
-					return true;
+					return BUS_OK_RESPONSE;
 				}
 				else
 				{
@@ -824,17 +860,16 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
-	unisim::kernel::tlm2::tlm_master_id *master_id = 0;
-	payload->get_extension(master_id);
-	if(master_id)
+	unisim::kernel::tlm2::tlm_trans_attr *trans_attr = 0;
+	payload->get_extension(trans_attr);
+	if(!trans_attr)
 	{
-		*master_id = ahb_master_id;
+		trans_attr = new unisim::kernel::tlm2::tlm_trans_attr();
+		payload->set_extension(trans_attr);
 	}
-	else
-	{
-		master_id = new unisim::kernel::tlm2::tlm_master_id(ahb_master_id);
-		payload->set_extension(master_id);
-	}
+	trans_attr->set_master_id(ahb_master_id);
+	trans_attr->set_privileged(this->msr.template Get<typename Super::MSR::PR>() == 0);
+	
 	payload->set_address(physical_addr);
 	payload->set_command(tlm::TLM_WRITE_COMMAND);
 	payload->set_streaming_width(size);
@@ -866,7 +901,22 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 
 	payload->release();
 
-	return status == tlm::TLM_OK_RESPONSE;
+	if(unlikely(status != tlm::TLM_OK_RESPONSE))
+	{
+		switch(status)
+		{
+			case tlm::TLM_OK_RESPONSE               : return BUS_OK_RESPONSE;
+			case tlm::TLM_INCOMPLETE_RESPONSE       : return BUS_INCOMPLETE_RESPONSE;
+			case tlm::TLM_GENERIC_ERROR_RESPONSE    : return BUS_GENERIC_ERROR_RESPONSE;
+			case tlm::TLM_ADDRESS_ERROR_RESPONSE    : return BUS_ADDRESS_ERROR_RESPONSE;
+			case tlm::TLM_COMMAND_ERROR_RESPONSE    : return BUS_COMMAND_ERROR_RESPONSE;
+			case tlm::TLM_BURST_ERROR_RESPONSE      : return BUS_BURST_ERROR_RESPONSE;
+			case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE: return BUS_BYTE_ENABLE_ERROR_RESPONSE;
+		}
+		return BUS_INCOMPLETE_RESPONSE;
+	}
+	
+	return BUS_OK_RESPONSE;
 }
 
 } // end of namespace mpc57xx
