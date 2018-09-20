@@ -1170,7 +1170,7 @@ soft/libsys/src/fs/lfs.c \
 soft/libsys/src/fs/lfs_util.c \
 sim_config.xml \
 gtkwave_init_script.tcl \
-xfer_gtkwave_init_script.tcl \
+bandwidth_gtkwave_init_script.tcl \
 .gtkwaverc \
 gtkwave.ini \
 config.t32 \

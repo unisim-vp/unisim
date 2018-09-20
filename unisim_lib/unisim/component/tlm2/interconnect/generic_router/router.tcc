@@ -174,10 +174,14 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 	, mru_mapping(0)
 	, param_mapping(NUM_MAPPINGS)
 #if HAVE_TVS
-	, enable_tracing(false)
-	, param_enable_tracing("enable-tracing", this, enable_tracing, "Enable/Disable tracing of I/O activity over Initiator (aka. master) and Target (aka. slave) TLM-2.0 sockets (aka. ports)")
-	, verbose_tracing(false)
-	, param_verbose_tracing(0)
+	, enable_bandwidth_tracing(false)
+	, param_enable_bandwidth_tracing("enable-bandwidth-tracing", this, enable_bandwidth_tracing, "Enable/Disable bandwidth tracing")
+	, verbose_bandwidth_tracing(false)
+	, param_verbose_bandwidth_tracing(0)
+	, bandwidth_tracing_start_time(sc_core::SC_ZERO_TIME)
+	, param_bandwidth_tracing_start_time("bandwidth-tracing-start-time", this, bandwidth_tracing_start_time, "bandwidth tracing start time")
+	, bandwidth_tracing_end_time(sc_core::sc_max_time())
+	, param_bandwidth_tracing_end_time("bandwidth-tracing-end-time", this, bandwidth_tracing_end_time, "bandwidth tracing end time")
 #endif
 	, in_if_clk_prop_proxy(input_if_clock)
 	, out_if_clk_prop_proxy(output_if_clock)
@@ -185,26 +189,14 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 	, output_lat_lut()
 	, dmi_region_cache()
 #if HAVE_TVS
-	, init_wr_xfer_trace_writer_push_end_time()
-	, targ_wr_xfer_trace_writer_push_end_time()
-	, init_rd_xfer_trace_writer_push_end_time()
-	, targ_rd_xfer_trace_writer_push_end_time()
-	, init_wr_xfer_trace_writer_commit_time()
-	, targ_wr_xfer_trace_writer_commit_time()
-	, init_rd_xfer_trace_writer_commit_time()
-	, targ_rd_xfer_trace_writer_commit_time()
-	, init_wr_xfer_trace_writer()
-	, targ_wr_xfer_trace_writer()
-	, init_rd_xfer_trace_writer()
-	, targ_rd_xfer_trace_writer()
+	, init_bw_trace_writer_push_end_time()
+	, targ_bw_trace_writer_push_end_time()
+	, init_bw_trace_writer_commit_time()
+	, targ_bw_trace_writer_commit_time()
+	, init_bw_trace_writer()
+	, targ_bw_trace_writer()
 	, trace_commit_period(100.0, sc_core::SC_US)
 	, trace_commit_event("trace_commit_event")
-#endif
-#if 0
-	, mapping_lookup_count(0)
-	, param_mapping_lookup_count("mapping_lookup_count", this, mapping_lookup_count, "mapping_lookup_count")
-	, mapping_fast_lookup_count(0)
-	, param_mapping_fast_lookup_count("mapping_fast_lookup_count", this, mapping_fast_lookup_count, "mapping_fast_lookup_count")
 #endif
 	, logger(*this)
 	, verbose_all(false)
@@ -243,7 +235,7 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 		param_verbose_tlm_debug = new unisim::kernel::service::Parameter<bool>("verbose_tlm_debug", this, verbose_tlm_debug, "Display TLM debug transactions information");
 		param_verbose_memory_interface = new unisim::kernel::service::Parameter<bool>("verbose_memory_interface", this, verbose_memory_interface, "Display memory interface operations information");
 #if HAVE_TVS
-		param_verbose_tracing = new unisim::kernel::service::Parameter<bool>("verbose-tracing", this, verbose_tracing, "Enable/Disable verbosity while tracing I/O activity over Initiator and Target TLM-2.0 sockets");
+		param_verbose_bandwidth_tracing = new unisim::kernel::service::Parameter<bool>("verbose-tracing", this, verbose_bandwidth_tracing, "Enable/Disable verbosity while tracing I/O activity over Initiator and Target TLM-2.0 sockets");
 #endif
 	}
 
@@ -378,45 +370,23 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 	for(unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
 	{
 		std::stringstream sstr;
-		sstr << output_socket_name[i] << "_wr_xfer_trace";
-		if(unlikely(verbose_tracing))
+		sstr << output_socket_name[i] << "_bw";
+		if(unlikely(verbose_bandwidth_tracing))
 		{
 			logger << DebugInfo << ": creating Timed-Value Stream \"" << sstr.str() << "\"" << EndDebugInfo;
 		}
-		init_wr_xfer_trace_writer[i] = new xfer_trace_writer_type(sstr.str().c_str(), tracing::STREAM_CREATE);
+		init_bw_trace_writer[i] = new bandwidth_trace_writer_type(sstr.str().c_str(), tracing::STREAM_CREATE);
 	}
 	
 	for(unsigned int i = 0; i < INPUT_SOCKETS; i++)
 	{
 		std::stringstream sstr;
-		sstr << input_socket_name[i] << "_wr_xfer_trace";
-		if(unlikely(verbose_tracing))
+		sstr << input_socket_name[i] << "_bw";
+		if(unlikely(verbose_bandwidth_tracing))
 		{
 			logger << DebugInfo << ": creating Timed-Value Stream \"" << sstr.str() << "\"" << EndDebugInfo;
 		}
-		targ_wr_xfer_trace_writer[i] = new xfer_trace_writer_type(sstr.str().c_str(), tracing::STREAM_CREATE);
-	}
-
-	for(unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
-	{
-		std::stringstream sstr;
-		sstr << output_socket_name[i] << "_rd_xfer_trace";
-		if(unlikely(verbose_tracing))
-		{
-			logger << DebugInfo << ": creating Timed-Value Stream \"" << sstr.str() << "\"" << EndDebugInfo;
-		}
-		init_rd_xfer_trace_writer[i] = new xfer_trace_writer_type(sstr.str().c_str(), tracing::STREAM_CREATE);
-	}
-	
-	for(unsigned int i = 0; i < INPUT_SOCKETS; i++)
-	{
-		std::stringstream sstr;
-		sstr << input_socket_name[i] << "_rd_xfer_trace";
-		if(unlikely(verbose_tracing))
-		{
-			logger << DebugInfo << ": creating Timed-Value Stream \"" << sstr.str() << "\"" << EndDebugInfo;
-		}
-		targ_rd_xfer_trace_writer[i] = new xfer_trace_writer_type(sstr.str().c_str(), tracing::STREAM_CREATE);
+		targ_bw_trace_writer[i] = new bandwidth_trace_writer_type(sstr.str().c_str(), tracing::STREAM_CREATE);
 	}
 	
 	SC_METHOD(TraceCommitProcess);
@@ -430,22 +400,12 @@ Router<CONFIG>::~Router()
 #if HAVE_TVS
 	for(unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
 	{
-		delete init_wr_xfer_trace_writer[i];
+		delete init_bw_trace_writer[i];
 	}
 	
 	for(unsigned int i = 0; i < INPUT_SOCKETS; i++)
 	{
-		delete targ_wr_xfer_trace_writer[i];
-	}
-
-	for(unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
-	{
-		delete init_rd_xfer_trace_writer[i];
-	}
-	
-	for(unsigned int i = 0; i < INPUT_SOCKETS; i++)
-	{
-		delete targ_rd_xfer_trace_writer[i];
+		delete targ_bw_trace_writer[i];
 	}
 #endif
 
@@ -499,7 +459,7 @@ Router<CONFIG>::~Router()
 	if (param_verbose_tlm_debug) delete param_verbose_tlm_debug;
 	if (param_verbose_memory_interface) delete param_verbose_memory_interface;
 #if HAVE_TVS
-	if (param_verbose_tracing) delete param_verbose_tracing;
+	if (param_verbose_bandwidth_tracing) delete param_verbose_bandwidth_tracing;
 #endif
 }
 
@@ -682,7 +642,7 @@ tlm::tlm_sync_enum Router<CONFIG>::I_nb_transport_bw_cb(int id, transaction_type
 				m_init_rsp_ready[id] = cur_time; // take care of bandwidth limit of init port by limiting next transaction acceptance
 				
 #if HAVE_TVS
-				if(unlikely(enable_tracing))
+				if(unlikely(enable_bandwidth_tracing))
 				{
 					if(trans.is_write())
 					{
@@ -883,7 +843,7 @@ tlm::tlm_sync_enum Router<CONFIG>::T_nb_transport_fw_cb(int id, transaction_type
 			}
 
 #if HAVE_TVS
-			if(unlikely(enable_tracing))
+			if(unlikely(enable_bandwidth_tracing))
 			{
 				if(trans.is_write())
 				{
@@ -951,27 +911,30 @@ tlm::tlm_sync_enum Router<CONFIG>::T_nb_transport_fw_cb(int id, transaction_type
 template <class CONFIG>
 void Router<CONFIG>::TraceTargetPortWrite(unsigned int targ_id, unsigned int data_length, const sc_core::sc_time& xfer_start_time, const sc_core::sc_time& xfer_duration)
 {
-	if(xfer_start_time >= targ_wr_xfer_trace_writer_push_end_time[targ_id])
+	sc_core::sc_time xfer_end_time(xfer_start_time);
+	xfer_end_time += xfer_duration;
+	
+	if((xfer_start_time >= bandwidth_tracing_start_time) && (xfer_end_time <= bandwidth_tracing_end_time))
 	{
-		sc_core::sc_time xfer_start_time_offset(xfer_start_time);
-		xfer_start_time_offset -= targ_wr_xfer_trace_writer_push_end_time[targ_id];
-		
-		sc_core::sc_time xfer_end_time(xfer_start_time);
-		xfer_end_time += xfer_duration;
-
-		targ_wr_xfer_trace_writer_push_end_time[targ_id] = xfer_end_time;
-		xfer_trace_tuple_type value(CeilDataLength<INPUT_BUSWIDTH>(data_length) / xfer_duration.to_seconds(), xfer_duration);
-		if(unlikely(verbose_tracing))
+		if(xfer_start_time >= targ_bw_trace_writer_push_end_time[targ_id])
 		{
-			logger << DebugInfo << "targ port #" << targ_id << " write:" << xfer_start_time << " -> " << xfer_duration << ":push(" << xfer_start_time_offset << ", " << value << ");" << EndDebugInfo;
+			sc_core::sc_time xfer_start_time_offset(xfer_start_time);
+			xfer_start_time_offset -= targ_bw_trace_writer_push_end_time[targ_id];
+			
+			targ_bw_trace_writer_push_end_time[targ_id] = xfer_end_time;
+			bandwidth_trace_tuple_type value(CeilDataLength<INPUT_BUSWIDTH>(data_length) / xfer_duration.to_seconds(), xfer_duration);
+			if(unlikely(verbose_bandwidth_tracing))
+			{
+				logger << DebugInfo << "targ port #" << targ_id << " transfer:" << xfer_start_time << " -> " << xfer_duration << ":push(" << xfer_start_time_offset << ", " << value << ");" << EndDebugInfo;
+			}
+			targ_bw_trace_writer[targ_id]->push(xfer_start_time_offset, value);
+			if(unlikely(verbose_bandwidth_tracing))
+			{
+				logger << DebugInfo << "targ port #" << targ_id << " transfer:commit(" << xfer_end_time << ");" << EndDebugInfo;
+			}
+			targ_bw_trace_writer[targ_id]->commit(xfer_end_time);
+			targ_bw_trace_writer_commit_time[targ_id] = xfer_end_time;
 		}
-		targ_wr_xfer_trace_writer[targ_id]->push(xfer_start_time_offset, value);
-		if(unlikely(verbose_tracing))
-		{
-			logger << DebugInfo << "targ port #" << targ_id << " write:commit(" << xfer_end_time << ");" << EndDebugInfo;
-		}
-		targ_wr_xfer_trace_writer[targ_id]->commit(xfer_end_time);
-		targ_wr_xfer_trace_writer_commit_time[targ_id] = xfer_end_time;
 	}
 }
 
@@ -982,26 +945,29 @@ void Router<CONFIG>::TraceTargetPortRead(unsigned int targ_id, unsigned int data
 	{
 		sc_core::sc_time xfer_start_time(xfer_end_time);
 		xfer_start_time -= xfer_duration;
-		
-		if(xfer_start_time >= targ_rd_xfer_trace_writer_push_end_time[targ_id])
-		{
-			sc_core::sc_time xfer_start_time_offset(xfer_start_time);
-			xfer_start_time_offset -= targ_rd_xfer_trace_writer_push_end_time[targ_id];
 
-			targ_rd_xfer_trace_writer_push_end_time[targ_id] = xfer_end_time;
-			xfer_trace_tuple_type value(CeilDataLength<INPUT_BUSWIDTH>(data_length) / xfer_duration.to_seconds(), xfer_duration);
-			if(unlikely(verbose_tracing))
+		if((xfer_start_time >= bandwidth_tracing_start_time) && (xfer_end_time <= bandwidth_tracing_end_time))
+		{
+			if(xfer_start_time >= targ_bw_trace_writer_push_end_time[targ_id])
 			{
-				logger << DebugInfo << "targ port #" << targ_id << " read:" << xfer_start_time << " -> " << xfer_duration << ":push(" << xfer_start_time_offset << ", " << value << ");" << EndDebugInfo;
+				sc_core::sc_time xfer_start_time_offset(xfer_start_time);
+				xfer_start_time_offset -= targ_bw_trace_writer_push_end_time[targ_id];
+
+				targ_bw_trace_writer_push_end_time[targ_id] = xfer_end_time;
+				bandwidth_trace_tuple_type value(CeilDataLength<INPUT_BUSWIDTH>(data_length) / xfer_duration.to_seconds(), xfer_duration);
+				if(unlikely(verbose_bandwidth_tracing))
+				{
+					logger << DebugInfo << "targ port #" << targ_id << " transfer:" << xfer_start_time << " -> " << xfer_duration << ":push(" << xfer_start_time_offset << ", " << value << ");" << EndDebugInfo;
+				}
+				targ_bw_trace_writer[targ_id]->push(xfer_start_time_offset, value);
+				
+				if(unlikely(verbose_bandwidth_tracing))
+				{
+					logger << DebugInfo << "targ port #" << targ_id << " transfer:commit(" << xfer_end_time << ");" << EndDebugInfo;
+				}
+				targ_bw_trace_writer[targ_id]->commit(xfer_end_time);
+				targ_bw_trace_writer_commit_time[targ_id] = xfer_end_time;
 			}
-			targ_rd_xfer_trace_writer[targ_id]->push(xfer_start_time_offset, value);
-			
-			if(unlikely(verbose_tracing))
-			{
-				logger << DebugInfo << "targ port #" << targ_id << " read:commit(" << xfer_end_time << ");" << EndDebugInfo;
-			}
-			targ_rd_xfer_trace_writer[targ_id]->commit(xfer_end_time);
-			targ_rd_xfer_trace_writer_commit_time[targ_id] = xfer_end_time;
 		}
 	}
 }
@@ -1009,27 +975,30 @@ void Router<CONFIG>::TraceTargetPortRead(unsigned int targ_id, unsigned int data
 template <class CONFIG>
 void Router<CONFIG>::TraceInitPortWrite(unsigned int init_id, unsigned int data_length, const sc_core::sc_time& xfer_start_time, const sc_core::sc_time& xfer_duration)
 {
-	if(xfer_start_time >= init_wr_xfer_trace_writer_push_end_time[init_id])
+	sc_core::sc_time xfer_end_time(xfer_start_time);
+	xfer_end_time += xfer_duration;
+	
+	if((xfer_start_time >= bandwidth_tracing_start_time) && (xfer_end_time <= bandwidth_tracing_end_time))
 	{
-		sc_core::sc_time xfer_end_time(xfer_start_time);
-		xfer_end_time += xfer_duration;
-
-		sc_core::sc_time xfer_start_time_offset(xfer_start_time);
-		xfer_start_time_offset -= init_wr_xfer_trace_writer_push_end_time[init_id];
-
-		init_wr_xfer_trace_writer_push_end_time[init_id] = xfer_end_time;
-		xfer_trace_tuple_type value(CeilDataLength<OUTPUT_BUSWIDTH>(data_length) / xfer_duration.to_seconds(), xfer_duration);
-		if(unlikely(verbose_tracing))
+		if(xfer_start_time >= init_bw_trace_writer_push_end_time[init_id])
 		{
-			logger << DebugInfo << "init port #" << init_id << " write:" << xfer_start_time << " -> " << xfer_duration << ":push(" << xfer_start_time_offset << ", " << value << ");" << EndDebugInfo;
+			sc_core::sc_time xfer_start_time_offset(xfer_start_time);
+			xfer_start_time_offset -= init_bw_trace_writer_push_end_time[init_id];
+
+			init_bw_trace_writer_push_end_time[init_id] = xfer_end_time;
+			bandwidth_trace_tuple_type value(CeilDataLength<OUTPUT_BUSWIDTH>(data_length) / xfer_duration.to_seconds(), xfer_duration);
+			if(unlikely(verbose_bandwidth_tracing))
+			{
+				logger << DebugInfo << "init port #" << init_id << " transfer:" << xfer_start_time << " -> " << xfer_duration << ":push(" << xfer_start_time_offset << ", " << value << ");" << EndDebugInfo;
+			}
+			init_bw_trace_writer[init_id]->push(xfer_start_time_offset, value);
+			if(unlikely(verbose_bandwidth_tracing))
+			{
+				logger << DebugInfo << "init port #" << init_id << " transfer:commit(" << xfer_end_time << ");" << EndDebugInfo;
+			}
+			init_bw_trace_writer[init_id]->commit(xfer_end_time);
+			init_bw_trace_writer_commit_time[init_id] = xfer_end_time;
 		}
-		init_wr_xfer_trace_writer[init_id]->push(xfer_start_time_offset, value);
-		if(unlikely(verbose_tracing))
-		{
-			logger << DebugInfo << "init port #" << init_id << " write:commit(" << xfer_end_time << ");" << EndDebugInfo;
-		}
-		init_wr_xfer_trace_writer[init_id]->commit(xfer_end_time);
-		init_wr_xfer_trace_writer_commit_time[init_id] = xfer_end_time;
 	}
 }
 
@@ -1040,25 +1009,28 @@ void Router<CONFIG>::TraceInitPortRead(unsigned int init_id, unsigned int data_l
 	{
 		sc_core::sc_time xfer_start_time(xfer_end_time);
 		xfer_start_time -= xfer_duration;
-
-		if(xfer_start_time >= init_rd_xfer_trace_writer_push_end_time[init_id])
+		
+		if((xfer_start_time >= bandwidth_tracing_start_time) && (xfer_end_time <= bandwidth_tracing_end_time))
 		{
-			sc_core::sc_time xfer_start_time_offset(xfer_start_time);
-			xfer_start_time_offset -= init_rd_xfer_trace_writer_push_end_time[init_id];
-			
-			init_rd_xfer_trace_writer_push_end_time[init_id] = xfer_end_time;
-			xfer_trace_tuple_type value(CeilDataLength<OUTPUT_BUSWIDTH>(data_length) / xfer_duration.to_seconds(), xfer_duration);
-			if(unlikely(verbose_tracing))
+			if(xfer_start_time >= init_bw_trace_writer_push_end_time[init_id])
 			{
-				logger << DebugInfo << "init port #" << init_id << " read:" << xfer_start_time << " -> " << xfer_duration << ":push(" << xfer_start_time_offset << ", " << value << ");" << EndDebugInfo;
+				sc_core::sc_time xfer_start_time_offset(xfer_start_time);
+				xfer_start_time_offset -= init_bw_trace_writer_push_end_time[init_id];
+				
+				init_bw_trace_writer_push_end_time[init_id] = xfer_end_time;
+				bandwidth_trace_tuple_type value(CeilDataLength<OUTPUT_BUSWIDTH>(data_length) / xfer_duration.to_seconds(), xfer_duration);
+				if(unlikely(verbose_bandwidth_tracing))
+				{
+					logger << DebugInfo << "init port #" << init_id << " transfer:" << xfer_start_time << " -> " << xfer_duration << ":push(" << xfer_start_time_offset << ", " << value << ");" << EndDebugInfo;
+				}
+				init_bw_trace_writer[init_id]->push(xfer_start_time_offset, value);
+				if(unlikely(verbose_bandwidth_tracing))
+				{
+					logger << DebugInfo << "init port #" << init_id << " transfer:commit(" << xfer_end_time << ");" << EndDebugInfo;
+				}
+				init_bw_trace_writer[init_id]->commit(xfer_end_time);
+				init_bw_trace_writer_commit_time[init_id] = xfer_end_time;
 			}
-			init_rd_xfer_trace_writer[init_id]->push(xfer_start_time_offset, value);
-			if(unlikely(verbose_tracing))
-			{
-				logger << DebugInfo << "init port #" << init_id << " read:commit(" << xfer_end_time << ");" << EndDebugInfo;
-			}
-			init_rd_xfer_trace_writer[init_id]->commit(xfer_end_time);
-			init_rd_xfer_trace_writer_commit_time[init_id] = xfer_end_time;
 		}
 	}
 }
@@ -1076,92 +1048,50 @@ void Router<CONFIG>::TraceCommit()
 	
 	for(unsigned int i = 0; i < INPUT_SOCKETS; i++)
 	{
-		if(time_stamp > targ_rd_xfer_trace_writer_commit_time[i])
+		if(time_stamp > targ_bw_trace_writer_commit_time[i])
 		{
-			if(time_stamp > targ_rd_xfer_trace_writer_push_end_time[i])
+			if(time_stamp > targ_bw_trace_writer_push_end_time[i])
 			{
 				sc_core::sc_time dur(time_stamp);
-				dur -= targ_rd_xfer_trace_writer_push_end_time[i];
-				xfer_trace_tuple_type value(0, dur);
-				if(unlikely(verbose_tracing))
+				dur -= targ_bw_trace_writer_push_end_time[i];
+				bandwidth_trace_tuple_type value(0, dur);
+				if(unlikely(verbose_bandwidth_tracing))
 				{
-					logger << DebugInfo << "targ port #" << i << " read:push(" << value << ");" << EndDebugInfo;
+					logger << DebugInfo << "targ port #" << i << " transfer:push(" << value << ");" << EndDebugInfo;
 				}
-				targ_rd_xfer_trace_writer[i]->push(value);
-				targ_rd_xfer_trace_writer_push_end_time[i] = time_stamp;
+				targ_bw_trace_writer[i]->push(value);
+				targ_bw_trace_writer_push_end_time[i] = time_stamp;
 			}
-			if(unlikely(verbose_tracing))
+			if(unlikely(verbose_bandwidth_tracing))
 			{
-				logger << DebugInfo << "targ port #" << i << " read:commit(" << time_stamp << ");" << EndDebugInfo;
+				logger << DebugInfo << "targ port #" << i << " transfer:commit(" << time_stamp << ");" << EndDebugInfo;
 			}
-			targ_rd_xfer_trace_writer[i]->commit(time_stamp);
-			targ_rd_xfer_trace_writer_commit_time[i] = time_stamp;
-		}
-		if(time_stamp > targ_wr_xfer_trace_writer_commit_time[i])
-		{
-			if(time_stamp > targ_wr_xfer_trace_writer_push_end_time[i])
-			{
-				sc_core::sc_time dur(time_stamp);
-				dur -= targ_wr_xfer_trace_writer_push_end_time[i];
-				xfer_trace_tuple_type value(0, dur);
-				if(unlikely(verbose_tracing))
-				{
-					logger << DebugInfo << "targ port #" << i << " write:push(" << value << ");" << EndDebugInfo;
-				}
-				targ_wr_xfer_trace_writer[i]->push(value);
-				targ_wr_xfer_trace_writer_push_end_time[i] = time_stamp;
-			}
-			if(unlikely(verbose_tracing))
-			{
-				logger << DebugInfo << "targ port #" << i << " write:commit(" << time_stamp << ");" << EndDebugInfo;
-			}
-			targ_wr_xfer_trace_writer[i]->commit(time_stamp);
-			targ_wr_xfer_trace_writer_commit_time[i] = time_stamp;
+			targ_bw_trace_writer[i]->commit(time_stamp);
+			targ_bw_trace_writer_commit_time[i] = time_stamp;
 		}
 	}
 	for(unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
 	{
-		if(time_stamp > init_rd_xfer_trace_writer_commit_time[i])
+		if(time_stamp > init_bw_trace_writer_commit_time[i])
 		{
-			if(time_stamp > init_rd_xfer_trace_writer_push_end_time[i])
+			if(time_stamp > init_bw_trace_writer_push_end_time[i])
 			{
 				sc_core::sc_time dur(time_stamp);
-				dur -= init_rd_xfer_trace_writer_push_end_time[i];
-				xfer_trace_tuple_type value(0, dur);
-				if(unlikely(verbose_tracing))
+				dur -= init_bw_trace_writer_push_end_time[i];
+				bandwidth_trace_tuple_type value(0, dur);
+				if(unlikely(verbose_bandwidth_tracing))
 				{
-					logger << DebugInfo << "init port #" << i << " read:push(" << value << ");" << EndDebugInfo;
+					logger << DebugInfo << "init port #" << i << " transfer:push(" << value << ");" << EndDebugInfo;
 				}
-				init_rd_xfer_trace_writer[i]->push(value);
-				init_rd_xfer_trace_writer_push_end_time[i] = time_stamp;
+				init_bw_trace_writer[i]->push(value);
+				init_bw_trace_writer_push_end_time[i] = time_stamp;
 			}
-			if(unlikely(verbose_tracing))
+			if(unlikely(verbose_bandwidth_tracing))
 			{
-				logger << DebugInfo << "init port #" << i << " read:commit(" << time_stamp << ");" << EndDebugInfo;
+				logger << DebugInfo << "init port #" << i << " transfer:commit(" << time_stamp << ");" << EndDebugInfo;
 			}
-			init_rd_xfer_trace_writer[i]->commit(time_stamp);
-			init_rd_xfer_trace_writer_commit_time[i] = time_stamp;
-		}
-		if(time_stamp > init_wr_xfer_trace_writer_commit_time[i])
-		{
-			if(time_stamp > init_wr_xfer_trace_writer_push_end_time[i])
-			{
-				sc_core::sc_time dur(time_stamp);
-				dur -= init_wr_xfer_trace_writer_push_end_time[i];
-				xfer_trace_tuple_type value(0, dur);
-				if(unlikely(verbose_tracing))
-				{
-					logger << DebugInfo << "init port #" << i << " write:push(" << value << ");" << EndDebugInfo;
-				}
-				init_wr_xfer_trace_writer[i]->push(value);
-				init_wr_xfer_trace_writer_push_end_time[i] = time_stamp;
-			}
-			if(unlikely(verbose_tracing))
-			{
-				logger << DebugInfo << "init port #" << i << " write:commit(" << time_stamp << ");" << EndDebugInfo;
-			}
-			init_wr_xfer_trace_writer[i]->commit(time_stamp);
-			init_wr_xfer_trace_writer_commit_time[i] = time_stamp;
+			init_bw_trace_writer[i]->commit(time_stamp);
+			init_bw_trace_writer_commit_time[i] = time_stamp;
 		}
 	}
 	
@@ -1221,7 +1151,7 @@ void Router<CONFIG>::T_b_transport_cb(int id, transaction_type &trans, sc_core::
 	}
 	
 #if HAVE_TVS
-	if(unlikely(enable_tracing))
+	if(unlikely(enable_bandwidth_tracing))
 	{
 		if(trans.is_write())
 		{
@@ -1312,7 +1242,7 @@ void Router<CONFIG>::T_b_transport_cb(int id, transaction_type &trans, sc_core::
 	m_init_rsp_ready[init_id] = cur_time; // take care of bandwidth limit of init port by limiting next transaction acceptance
 	
 #if HAVE_TVS
-	if(unlikely(enable_tracing))
+	if(unlikely(enable_bandwidth_tracing))
 	{
 		if(trans.is_read())
 		{
@@ -1346,7 +1276,7 @@ void Router<CONFIG>::T_b_transport_cb(int id, transaction_type &trans, sc_core::
 	}
 
 #if HAVE_TVS
-	if(unlikely(enable_tracing))
+	if(unlikely(enable_bandwidth_tracing))
 	{
 		if(trans.is_read())
 		{
@@ -1947,7 +1877,7 @@ void Router<CONFIG>::SendReq(unsigned int id, transaction_type &trans)
 						m_init_rsp_ready[id] = cur_time; // take care of bandwidth limit of init port by limiting next transaction acceptance
 						
 #if HAVE_TVS
-						if(unlikely(enable_tracing))
+						if(unlikely(enable_bandwidth_tracing))
 						{
 							if(trans.is_read())
 							{
@@ -2050,7 +1980,7 @@ void Router<CONFIG>::SendReq(unsigned int id, transaction_type &trans)
 				m_init_rsp_ready[id] = cur_time; // take care of bandwidth limit of init port by limiting next transaction acceptance
 				
 #if HAVE_TVS
-				if(unlikely(enable_tracing))
+				if(unlikely(enable_bandwidth_tracing))
 				{
 					if(trans.is_read())
 					{
@@ -2109,7 +2039,7 @@ void Router<CONFIG>::SendRsp(unsigned int id, transaction_type &trans)
 	}
 	
 #if HAVE_TVS
-	if(unlikely(enable_tracing))
+	if(unlikely(enable_bandwidth_tracing))
 	{
 		if(trans.is_read())
 		{
@@ -2166,9 +2096,6 @@ void Router<CONFIG>::SendRsp(unsigned int id, transaction_type &trans)
 template <class CONFIG>
 bool Router<CONFIG>::ApplyMap(uint64_t addr, uint32_t size, MAPPING const *& applied_mapping, MemoryRegion *mem_rgn)
 {
-#if 0
-	mapping_lookup_count++;
-#endif
 	for(MappingTableEntry *mte = mru_mapping, *prev_mte = 0; mte != 0; prev_mte = mte, mte = mte->next)
 	{
 		if(likely((addr >= mte->range_start) && ((addr + size - 1) <= mte->range_end)))
@@ -2180,12 +2107,7 @@ bool Router<CONFIG>::ApplyMap(uint64_t addr, uint32_t size, MAPPING const *& app
 				mte->next = mru_mapping;
 				mru_mapping = mte;
 			}
-#if 0
-			else
-			{
-				mapping_fast_lookup_count++;
-			}
-#endif
+
 			if(unlikely(mem_rgn))
 			{
 				mem_rgn->start_addr = applied_mapping->range_start;

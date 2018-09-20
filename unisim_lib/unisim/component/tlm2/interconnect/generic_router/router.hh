@@ -70,7 +70,7 @@ namespace interconnect {
 namespace generic_router {
 
 #if HAVE_TVS
-struct timed_xfer_traits
+struct timed_bandwidth_traits
 {
   typedef double value_type;
   typedef tracing::timed_empty_policy_silence<value_type> empty_policy;
@@ -380,10 +380,14 @@ protected:
 	mutable MappingTableEntry *mru_mapping;
 	std::vector<unisim::kernel::service::Parameter<MAPPING> *> param_mapping;
 #if HAVE_TVS
-	bool enable_tracing;
-	unisim::kernel::service::Parameter<bool> param_enable_tracing;
-	bool verbose_tracing;
-	unisim::kernel::service::Parameter<bool> *param_verbose_tracing;
+	bool enable_bandwidth_tracing;
+	unisim::kernel::service::Parameter<bool> param_enable_bandwidth_tracing;
+	bool verbose_bandwidth_tracing;
+	unisim::kernel::service::Parameter<bool> *param_verbose_bandwidth_tracing;
+	sc_core::sc_time bandwidth_tracing_start_time;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_bandwidth_tracing_start_time;
+	sc_core::sc_time bandwidth_tracing_end_time;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_bandwidth_tracing_end_time;
 #endif
 	unisim::kernel::tlm2::ClockPropertiesProxy in_if_clk_prop_proxy;  // proxy to get clock properties from input interface clock port
 	unisim::kernel::tlm2::ClockPropertiesProxy out_if_clk_prop_proxy; // proxy to get clock properties from output interface clock port
@@ -417,20 +421,14 @@ protected:
 	/*************************************************************************
 	 * Tracing                                                         START *
 	 *************************************************************************/
-	typedef tracing::timed_writer<double, timed_xfer_traits> xfer_trace_writer_type;
-	typedef tracing::timed_value<double> xfer_trace_tuple_type;
-	sc_core::sc_time init_wr_xfer_trace_writer_push_end_time[OUTPUT_SOCKETS];
-	sc_core::sc_time targ_wr_xfer_trace_writer_push_end_time[INPUT_SOCKETS];
-	sc_core::sc_time init_rd_xfer_trace_writer_push_end_time[OUTPUT_SOCKETS];
-	sc_core::sc_time targ_rd_xfer_trace_writer_push_end_time[INPUT_SOCKETS];
-	sc_core::sc_time init_wr_xfer_trace_writer_commit_time[OUTPUT_SOCKETS];
-	sc_core::sc_time targ_wr_xfer_trace_writer_commit_time[INPUT_SOCKETS];
-	sc_core::sc_time init_rd_xfer_trace_writer_commit_time[OUTPUT_SOCKETS];
-	sc_core::sc_time targ_rd_xfer_trace_writer_commit_time[INPUT_SOCKETS];
-	xfer_trace_writer_type *init_wr_xfer_trace_writer[OUTPUT_SOCKETS];
-	xfer_trace_writer_type *targ_wr_xfer_trace_writer[INPUT_SOCKETS];
-	xfer_trace_writer_type *init_rd_xfer_trace_writer[OUTPUT_SOCKETS];
-	xfer_trace_writer_type *targ_rd_xfer_trace_writer[INPUT_SOCKETS];
+	typedef tracing::timed_writer<double, timed_bandwidth_traits> bandwidth_trace_writer_type;
+	typedef tracing::timed_value<double> bandwidth_trace_tuple_type;
+	sc_core::sc_time init_bw_trace_writer_push_end_time[OUTPUT_SOCKETS];
+	sc_core::sc_time targ_bw_trace_writer_push_end_time[INPUT_SOCKETS];
+	sc_core::sc_time init_bw_trace_writer_commit_time[OUTPUT_SOCKETS];
+	sc_core::sc_time targ_bw_trace_writer_commit_time[INPUT_SOCKETS];
+	bandwidth_trace_writer_type *init_bw_trace_writer[OUTPUT_SOCKETS];
+	bandwidth_trace_writer_type *targ_bw_trace_writer[INPUT_SOCKETS];
 	sc_core::sc_time trace_commit_period;
 	sc_core::sc_event trace_commit_event;
 	
@@ -449,13 +447,6 @@ protected:
 	/*************************************************************************
 	 * Statistics                                                      START *
 	 *************************************************************************/
-
-#if 0
-	mutable uint64_t mapping_lookup_count;
-	unisim::kernel::service::Statistic<uint64_t> param_mapping_lookup_count;
-	mutable uint64_t mapping_fast_lookup_count;
-	unisim::kernel::service::Statistic<uint64_t> param_mapping_fast_lookup_count;
-#endif
 
 	/*************************************************************************
 	 * Statistics                                                        END *

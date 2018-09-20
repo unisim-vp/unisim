@@ -157,7 +157,7 @@ index 4b5d3ed..a1530a0 100644
  
  template<typename T, typename Traits>
 diff --git a/src/tvs/tracing/processors/timed_stream_vcd_processor.cpp b/src/tvs/tracing/processors/timed_stream_vcd_processor.cpp
-index cf218e1..0c14a32 100644
+index cf218e1..1595390 100644
 --- a/src/tvs/tracing/processors/timed_stream_vcd_processor.cpp
 +++ b/src/tvs/tracing/processors/timed_stream_vcd_processor.cpp
 @@ -29,12 +29,16 @@ vcd_stream_container_base::scope() const
@@ -179,20 +179,33 @@ index cf218e1..0c14a32 100644
  {}
  
  timed_stream_vcd_processor::~timed_stream_vcd_processor() = default;
-@@ -78,26 +82,55 @@ timed_stream_vcd_processor::process(duration_type /* unused */)
+@@ -78,26 +82,64 @@ timed_stream_vcd_processor::process(duration_type /* unused */)
      header_written_ = true;
    }
  
 -  unsigned long scaled =
 -    sysx::units::sc_time_cast<sysx::units::time_type>(this->local_time()) /
+-    scale_;
+-
+-  out_ << "#" << scaled << "\n";
+-
 +  time_type const& loc_time = this->local_time();
 +  
-+  sysx::utils::uint64 scaled =
-+    sysx::units::sc_time_cast<sysx::units::time_type>(loc_time) /
-     scale_;
- 
-   out_ << "#" << scaled << "\n";
- 
++  for (auto&& vcd : this->vcd_streams_) {
++    auto& rd = vcd->reader();
++    if (rd.local_time() == loc_time) {
++      if (vcd->front_value_changed())
++      {
++        sysx::utils::uint64 scaled =
++          sysx::units::sc_time_cast<sysx::units::time_type>(loc_time) /
++          scale_;
++
++        out_ << "#" << scaled << "\n";
++        break;
++      }
++    }
++  }
++  
    // figure out the next local time to advance to
 -  std::vector<time_type> next;
 +  time_type min_next = max_time_;
@@ -242,7 +255,7 @@ index cf218e1..0c14a32 100644
  
  } // namespace tracing
 diff --git a/src/tvs/tracing/processors/timed_stream_vcd_processor.h b/src/tvs/tracing/processors/timed_stream_vcd_processor.h
-index 8ed340b..6ddbd9c 100644
+index 8ed340b..7a71543 100644
 --- a/src/tvs/tracing/processors/timed_stream_vcd_processor.h
 +++ b/src/tvs/tracing/processors/timed_stream_vcd_processor.h
 @@ -53,7 +53,7 @@ struct vcd_stream_container_base
@@ -254,7 +267,15 @@ index 8ed340b..6ddbd9c 100644
                                       std::string const& scope,
                                       std::string const& name)
      : id_(id)
-@@ -74,7 +74,7 @@ struct vcd_stream_container_base
+@@ -64,6 +64,7 @@ struct vcd_stream_container_base
+   virtual void header_defn(std::ostream&) const = 0;
+   virtual void print_front_value(std::ostream&) = 0;
+   virtual void default_value(std::ostream& out) const = 0;
++  virtual bool front_value_changed() const = 0;
+ 
+   virtual reader_base_type& reader() const = 0;
+ 
+@@ -74,7 +75,7 @@ struct vcd_stream_container_base
    virtual ~vcd_stream_container_base() = default;
  
  protected:
@@ -263,7 +284,7 @@ index 8ed340b..6ddbd9c 100644
    std::string scope_;
    std::string name_;
  };
-@@ -92,7 +92,7 @@ struct vcd_stream_container : vcd_stream_container_base
+@@ -92,9 +93,10 @@ struct vcd_stream_container : vcd_stream_container_base
    vcd_stream_container(reader_type& reader,
                         std::string const& scope,
                         std::string const& name,
@@ -271,8 +292,39 @@ index 8ed340b..6ddbd9c 100644
 +                       const std::string& id)
      : base_type(id, scope, name)
      , reader_(reader)
++    , value_()
    {}
-@@ -165,7 +165,8 @@ struct timed_stream_vcd_processor
+ 
+ private:
+@@ -125,8 +127,11 @@ private:
+ 
+   void print_front_value(std::ostream& out) override
+   {
+-    value_type val = this->reader_.front().value();
+-    do_print_val(out, val);
++    value_type const& val = this->reader_.front().value();
++    if(val != value_) {
++      do_print_val(out, val);
++      value_ = val;
++    }
+   }
+ 
+   void do_print_val(std::ostream& out, value_type const& val) const
+@@ -142,7 +147,13 @@ private:
+     out << this->id_ << "\n";
+   }
+ 
++  bool front_value_changed() const
++  {
++	  return this->reader_.front().value() != value_;
++  }
++  
+   reader_type& reader_;
++  value_type value_;
+ };
+ 
+ /**
+@@ -165,7 +176,8 @@ struct timed_stream_vcd_processor
  public:
    timed_stream_vcd_processor(char const* modscope,
                               std::ostream& out,
@@ -282,7 +334,7 @@ index 8ed340b..6ddbd9c 100644
  
    ~timed_stream_vcd_processor() override;
  
-@@ -205,7 +206,7 @@ private:
+@@ -205,7 +217,7 @@ private:
        host::gen_unique_name("vcd_reader"), stream);
  
      vcd_streams_.emplace_back(std::make_unique<container_type>(
@@ -291,7 +343,7 @@ index 8ed340b..6ddbd9c 100644
  
      // move the reader (including ownership) to the backend of the processor,
      // making it sensitive to the committed values
-@@ -215,17 +216,23 @@ private:
+@@ -215,17 +227,23 @@ private:
    duration_type process(duration_type dur) override;
  
    void write_header();

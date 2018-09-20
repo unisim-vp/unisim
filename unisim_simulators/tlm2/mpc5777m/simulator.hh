@@ -514,12 +514,12 @@ private:
 	unisim::kernel::service::Parameter<sc_core::sc_time> param_max_time;
 
 #if HAVE_TVS
-	std::string xfer_vcd_filename;
-	unisim::kernel::service::Parameter<std::string> param_xfer_vcd_filename;
-	std::string xfer_gtkwave_init_script;
-	unisim::kernel::service::Parameter<std::string> param_xfer_gtkwave_init_script;
-	std::ofstream *xfer_vcd_file;
-	tracing::timed_stream_vcd_processor *xfer_vcd;
+	std::string bandwidth_vcd_filename;
+	unisim::kernel::service::Parameter<std::string> param_bandwidth_vcd_filename;
+	std::string bandwidth_gtkwave_init_script;
+	unisim::kernel::service::Parameter<std::string> param_bandwidth_gtkwave_init_script;
+	std::ofstream *bandwidth_vcd_file;
+	tracing::timed_stream_vcd_processor *bandwidth_vcd;
 #endif
 	
 	int exit_status;

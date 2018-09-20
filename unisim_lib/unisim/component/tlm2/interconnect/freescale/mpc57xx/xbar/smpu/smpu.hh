@@ -443,16 +443,16 @@ protected:
 			description_sstr << "Region Descriptor " << region_descriptor_num << ", Word 2 Format 0";
 			this->SetDescription(name_sstr.str());
 
-			M0P ::SetName("M0P "); M0P ::SetDescription("Bus master 0 permissions");
-			M1P ::SetName("M1P "); M1P ::SetDescription("Bus master 1 permissions");
-			M2P ::SetName("M2P "); M2P ::SetDescription("Bus master 2 permissions");
-			M3P ::SetName("M3P "); M3P ::SetDescription("Bus master 3 permissions");
-			M4P ::SetName("M4P "); M4P ::SetDescription("Bus master 4 permissions");
-			M5P ::SetName("M5P "); M5P ::SetDescription("Bus master 5 permissions");
-			M6P ::SetName("M6P "); M6P ::SetDescription("Bus master 6 permissions");
-			M7P ::SetName("M7P "); M7P ::SetDescription("Bus master 7 permissions");
-			M8P ::SetName("M8P "); M8P ::SetDescription("Bus master 8 permissions");
-			M9P ::SetName("M9P "); M9P ::SetDescription("Bus master 9 permissions");
+			M0P ::SetName("M0P");  M0P ::SetDescription("Bus master 0 permissions");
+			M1P ::SetName("M1P");  M1P ::SetDescription("Bus master 1 permissions");
+			M2P ::SetName("M2P");  M2P ::SetDescription("Bus master 2 permissions");
+			M3P ::SetName("M3P");  M3P ::SetDescription("Bus master 3 permissions");
+			M4P ::SetName("M4P");  M4P ::SetDescription("Bus master 4 permissions");
+			M5P ::SetName("M5P");  M5P ::SetDescription("Bus master 5 permissions");
+			M6P ::SetName("M6P");  M6P ::SetDescription("Bus master 6 permissions");
+			M7P ::SetName("M7P");  M7P ::SetDescription("Bus master 7 permissions");
+			M8P ::SetName("M8P");  M8P ::SetDescription("Bus master 8 permissions");
+			M9P ::SetName("M9P");  M9P ::SetDescription("Bus master 9 permissions");
 			M10P::SetName("M10P"); M10P::SetDescription("Bus master 10 permissions");
 			M11P::SetName("M11P"); M11P::SetDescription("Bus master 11 permissions");
 			M12P::SetName("M12P"); M12P::SetDescription("Bus master 12 permissions");
@@ -510,8 +510,8 @@ protected:
 			this->SetDescription(name_sstr.str());
 			
 			FMT::SetName("FMT"); FMT::SetDescription("Region Descriptor Format");
-			RO ::SetName("RO "); RO ::SetDescription("Read-Only");
-			CI ::SetName("CI "); CI ::SetDescription("Cache Inhibit");
+			RO ::SetName("RO");  RO ::SetDescription("Read-Only");
+			CI ::SetName("CI");  CI ::SetDescription("Cache Inhibit");
 			VLD::SetName("VLD"); VLD::SetDescription("Valid");
 		}
 
