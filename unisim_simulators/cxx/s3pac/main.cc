@@ -1066,6 +1066,13 @@ struct Translator
     struct Instruction
     {
       typedef typename ISA::Operation Operation;
+      Instruction(Instruction && rhs) noexcept
+      {
+        operation = rhs.operation;
+        bytecount = rhs.bytecount;
+        rhs.operation = 0;
+      }
+      Instruction(Instruction const& rhs) = delete;
       Instruction(ISA& isa, uint32_t addr, uint8_t const* codebuf)
         : operation(0), bytecount(0)
       {
