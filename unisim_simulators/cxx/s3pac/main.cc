@@ -15,6 +15,16 @@
 #include <cstdlib>
 #include <cstdio>
 
+struct pphex
+{
+  pphex( unsigned _bytes, uint64_t _value ) : value(_value), bytes(_bytes) {} uint64_t value; unsigned bytes;
+  friend std::ostream& operator << ( std::ostream& sink, pphex const& _ )
+  {
+    sink << "0x" << std::hex << std::setw(_.bytes*2) << std::setfill('0') << _.value << std::dec;
+    return sink;
+  }
+};
+
 #define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
 
 struct Processor
@@ -55,38 +65,47 @@ struct Processor
     
   typedef unisim::util::symbolic::FP                   FP;
   typedef unisim::util::symbolic::Expr                 Expr;
+  typedef unisim::util::symbolic::ExprNode             ExprNode;
+  typedef unisim::util::symbolic::ScalarType           ScalarType;
+  typedef unisim::util::symbolic::ccode::ActionNode    ActionNode;
+  typedef unisim::util::symbolic::ccode::CNode         CNode;
+  typedef unisim::util::symbolic::ccode::Update        Update;
+  typedef unisim::util::symbolic::ccode::CCode         CCode;
+  typedef unisim::util::symbolic::ccode::SrcMgr        SrcMgr;
 
-  typedef unisim::util::symbolic::ccode::ActionNode   ActionNode;
-  typedef unisim::util::symbolic::ccode::Load         Load;
-  typedef unisim::util::symbolic::ccode::Store        Store;
-  typedef unisim::util::symbolic::ccode::Branch       Br;
+  struct RegReadBase : public CNode
+  {
+    RegReadBase() {}
+    
+    virtual char const* GetRegName() const = 0;
+    
+    virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const { srcmgr << '$' << GetRegName(); }
+    virtual void Repr( std::ostream& sink ) const { sink << GetRegName(); }
+    
+    virtual unsigned SubCount() const { return 0; }
+    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<CNode const&>( rhs ) ); }
+  };
 
   template <typename RID>
-  struct RegRead : public unisim::util::symbolic::ccode::RegRead
+  struct RegRead : public RegReadBase
   {
     typedef RegRead<RID> this_type;
-    typedef unisim::util::symbolic::ccode::RegRead Super;
-    typedef unisim::util::symbolic::ScalarType ScalarType;
-    RegRead( RID _id, unsigned _bitsize ) : Super(_bitsize), id(_id) {}
+    RegRead( RID _id ) : RegReadBase(), id(_id) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType( false, bitsize ); }
+    virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<typename RID::register_type>::GetType();; }
     virtual char const* GetRegName() const { return id.c_str(); }
-    virtual intptr_t cmp( ExprNode const& brhs ) const
-    { if (intptr_t delta = id.cmp( dynamic_cast<RegRead const&>( brhs ).id )) return delta; return Super::cmp( brhs ); }
-    virtual Expr Simplify() const { return this; }
+    intptr_t compare( this_type const& rhs ) const { if (intptr_t delta = id.cmp( rhs.id )) return delta; return RegReadBase::compare( rhs ); }
+    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<this_type const&>( rhs ) ); }
     
     RID id;
   };
 
-  template <typename RID>
-  static RegRead<RID>* newRegRead( RID id, unsigned bitsize ) { return new RegRead<RID>( id, bitsize ); }
+  template <typename RID> static RegRead<RID>* newRegRead( RID id ) { return new RegRead<RID>( id ); }
 
-  struct ForeignRegister : public unisim::util::symbolic::ccode::RegRead
+  struct ForeignRegister : public RegReadBase
   {
-    typedef unisim::util::symbolic::ccode::RegRead Super;
-    typedef unisim::util::symbolic::ScalarType ScalarType;
     ForeignRegister( uint8_t _mode, unsigned _idx )
-      : Super(32), name(), idx(_idx), mode(_mode)
+      : RegReadBase(), name(), idx(_idx), mode(_mode)
     {
       if (mode == SYSTEM_MODE) mode = USER_MODE;
       std::ostringstream buf;
@@ -94,7 +113,7 @@ struct Processor
       strncpy(&name[0],buf.str().c_str(),sizeof(name)-1);
     }
     virtual ForeignRegister* Mutate() const { return new ForeignRegister( *this ); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false, bitsize); }
+    virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
     char const* mode_ident() const
     {
       switch (mode)
@@ -113,56 +132,133 @@ struct Processor
     }
 
     virtual char const* GetRegName() const { return &name[0]; }
-    virtual intptr_t cmp( ExprNode const& brhs ) const
+    
+    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<ForeignRegister const&>( rhs ) ); }
+    intptr_t compare( ForeignRegister const& rhs ) const
     {
-      ForeignRegister const& rhs =  dynamic_cast<ForeignRegister const&>( brhs );
       if (int delta = int(mode) - int(rhs.mode)) return delta;
-      return idx - rhs.idx;
+      if (int delta = int(idx) - int(rhs.idx)) return delta;
+      return RegReadBase::compare( rhs );
     }
-    virtual Expr Simplify() const { return this; }
     
     char name[8];
     unsigned idx;
     uint8_t mode;
   };
   
+  struct RegWriteBase : public Update
+  {
+    RegWriteBase( Expr const& _value ) : value(_value) {}
+      
+    virtual char const* GetRegName() const = 0;
+    virtual void Repr( std::ostream& sink ) const { sink << GetRegName() << " := "; value->Repr(sink); }
+    virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const { srcmgr << '$' << GetRegName() << " = " << ccode(value) << ";\n"; }
+    virtual unsigned SubCount() const { return 1; }
+    virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
+    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<RegWriteBase const&>( rhs ) ); }
+    intptr_t compare( RegWriteBase const& rhs ) const { return value.cmp( rhs.value ); }
+      
+    Expr value;
+  };
+
   template <typename RID>
-  struct RegWrite : public unisim::util::symbolic::ccode::RegWrite
+  struct RegWrite : public RegWriteBase
   {
     typedef RegWrite<RID> this_type;
-    typedef unisim::util::symbolic::ccode::RegWrite Super;
-    typedef unisim::util::symbolic::ScalarType ScalarType;
-    RegWrite( RID _id, Expr const& _value, unsigned _bitsize ) : Super(_value, _bitsize), id(_id) {}
+    RegWrite( RID _id, Expr const& _value ) : RegWriteBase(_value), id(_id) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType( false, bitsize ); }
+    virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<typename RID::register_type>::GetType(); }
     virtual char const* GetRegName() const { return id.c_str(); }
-    virtual intptr_t cmp( ExprNode const& brhs ) const
-    { if (intptr_t delta = id.cmp( dynamic_cast<RegWrite const&>( brhs ).id )) return delta; return Super::cmp( brhs ); }
-    virtual Expr Simplify() const
-    {
-      Expr nvalue( ASExprNode::Simplify( value ) );
-      return nvalue != value ? new RegWrite<RID>( id, nvalue, bitsize ) : this;
-    }
+    intptr_t compare( this_type const& rhs ) const { if (intptr_t delta = id.cmp( rhs.id )) return delta; return RegWriteBase::cmp( rhs ); }
+    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
     
     RID id;
   };
 
   template <typename RID>
-  static RegWrite<RID>* newRegWrite( RID id, Expr const& value, unsigned bitsize ) { return new RegWrite<RID>( id, value, bitsize ); }
+  static RegWrite<RID>* newRegWrite( RID id, Expr const& value ) { return new RegWrite<RID>( id, value ); }
+  
+  struct Br : public RegWriteBase
+  {
+    enum type_t { Jump = 0, Call, Return } type;
+    Br( Expr const& value, type_t bt ) : RegWriteBase( value ), type(bt) {}
+  };
   
   struct PCWrite : public Br
   {
-    PCWrite( Expr const& value, Br::type_t bt ) : Br( value, 32, bt ) {}
-    virtual PCWrite* Mutate() const { return new PCWrite( *this ); }
-    virtual unisim::util::symbolic::ScalarType::id_t GetType() const { return unisim::util::symbolic::ScalarType::VOID; }
-    virtual char const* GetRegName() const { return "pc"; }
-    virtual Expr Simplify() const
+    PCWrite( Expr const& value, Br::type_t bt ) : Br( value, bt ) {}
+    virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const
     {
-      Expr nvalue( ASExprNode::Simplify(value) );
-      return nvalue != value ? new PCWrite( nvalue, type ) : this;
+      srcmgr << "/* npc: " << ccode(value) << " */\n";
     }
+    virtual PCWrite* Mutate() const { return new PCWrite( *this ); }
+    virtual char const* GetRegName() const { return "pc"; }
   };
 
+  struct Load : public Update
+  {
+    Load( Expr const& _addr, unsigned _size, unsigned _alignment, bool _bigendian )
+      : addr(_addr), size(_size), alignment(_alignment), bigendian(_bigendian)
+    {}
+    virtual Load* Mutate() const { return new Load( *this ); }
+    virtual void Repr( std::ostream& sink ) const { sink << "Load(" << addr << ", " << size << ", " << alignment << ", " << bigendian << ")"; }
+    virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const
+    {
+      if (bigendian)
+        throw 0;
+      srcmgr << "(*(uint" << (8 << size) << "_t*)(" << ccode(addr) << "));\n";
+    }
+    virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::ScalarType::IntegerType( false, 8 << size ); }
+    virtual unsigned SubCount() const { return 1; }
+    virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
+    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<Load const&>( rhs ) ); }
+    intptr_t compare( Load const& rhs ) const
+    {
+      if (intptr_t delta = addr.cmp( rhs.addr )) return delta;
+      if (intptr_t delta = int(size - rhs.size)) return delta;
+      if (intptr_t delta = int(alignment - rhs.alignment)) return delta;
+      return (int(bigendian) - int(rhs.bigendian));
+    }
+    
+    Expr addr;
+    uint32_t size      :  4; // (log2) [1,2,4,8,...,32768] bytes
+    uint32_t alignment :  4; // (log2) [1,2,4,8,...,32768] bytes
+    uint32_t bigendian :  1; // 0=little-endian
+    uint32_t reserved  : 23; // reserved
+  };
+
+  struct Store : public Update
+  {
+    Store( Expr const& _addr, Expr const& _value, unsigned _size, unsigned _alignment, bool _bigendian )
+      : value(_value), addr(_addr), size(_size), alignment(_alignment), bigendian(_bigendian)
+    {}
+    virtual Store* Mutate() const { return new Store( *this ); }
+    virtual void Repr( std::ostream& sink ) const { sink << "Store(" << addr << ", " << value << ", " << size << ", " << alignment << ", " << bigendian << ")"; }
+    intptr_t cmp( ExprNode const& brhs ) const
+    {
+      Store const& rhs = dynamic_cast<Store const&>( brhs );
+      if (intptr_t delta = value.cmp( rhs.value )) return delta;
+      if (intptr_t delta = addr.cmp( rhs.addr )) return delta;
+      if (intptr_t delta = int(size - rhs.size)) return delta;
+      if (intptr_t delta = int(alignment - rhs.alignment)) return delta;
+      return (int(bigendian) - int(rhs.bigendian));
+    }
+    virtual unsigned SubCount() const { return 2; }
+    virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
+    virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const
+    {
+      if (bigendian)
+        throw 0;
+      srcmgr << "(*(uint" << (8 << size) << "_t*)(" << ccode(addr) << ")) = " << ccode(value) << ";\n";
+    }
+    
+    Expr value, addr;
+    uint32_t size      :  4; // (log2) [1,2,4,8,...,32768] bytes
+    uint32_t alignment :  4; // (log2) [1,2,4,8,...,32768] bytes
+    uint32_t bigendian :  1; // 0=little-endian
+    uint32_t reserved  : 23; // reserved
+  };
+    
   struct ITCond {};
     
   struct Mode
@@ -196,12 +292,12 @@ struct Processor
       
     typedef unisim::util::symbolic::Expr       Expr;
     StatusRegister()
-      : n(newRegRead(RegID("n"),1))
-      , z(newRegRead(RegID("z"),1))
-      , c(newRegRead(RegID("c"),1))
-      , v(newRegRead(RegID("v"),1))
-      , itstate(newRegRead(RegID("itstate"),8)) // Default is variable
-      , bg(newRegRead(RegID("cpsr"),32))        
+      : n(newRegRead(RegID("n")))
+      , z(newRegRead(RegID("z")))
+      , c(newRegRead(RegID("c")))
+      , v(newRegRead(RegID("v")))
+      , itstate(newRegRead(RegID("itstate")))   // Default is variable
+      , bg(newRegRead(RegID("cpsr")))        
       , iset(Arm)                               // Default is ARM instruction set
       , bigendian(false)                        // Default is Little Endian
       , mode(SUPERVISOR_MODE)                   // Default is SUPERVISOR_MODE
@@ -298,17 +394,17 @@ struct Processor
       
     Processor& proc;
   };
-  
-  Processor( StatusRegister const& ref_psr, U32 const& insn_addr, unsigned insn_bytes )
+
+  Processor( StatusRegister const& ref_psr )
     : path(0)
     , reg_values()
-    , next_insn_addr( insn_addr + U32(insn_bytes) )
-    , branch_type( Br::Jump )
+    , next_insn_addr()
+    , branch_type()
     , cpsr( ref_psr, *this )
-    , spsr( Expr( newRegRead(RegID("spsr"),32) ) )
+    , spsr( Expr( newRegRead(RegID("spsr")) ) )
     , sregs()
-    , FPSCR( Expr( newRegRead(RegID("fpscr"),32) ) )
-    , FPEXC( Expr( newRegRead(RegID("fpexc"),32) ) )
+    , FPSCR( Expr( newRegRead(RegID("fpscr")) ) )
+    , FPEXC( Expr( newRegRead(RegID("fpexc")) ) )
     , stores()
     , unpredictable(false)
     , is_it_assigned(false)
@@ -317,47 +413,57 @@ struct Processor
   {
     // GPR regs
     for (unsigned reg = 0; reg < 15; ++reg)
-      reg_values[reg] = U32( Expr( newRegRead( RegID("r0") + reg, 32 ) ) );
-    reg_values[15] = insn_addr + U32(ref_psr.IsThumb() ? 4 : 8 );
+      reg_values[reg] = U32( Expr( newRegRead( RegID("r0") + reg ) ) );
       
     // Special registers
     for (SRegID reg; reg.next();)
-      sregs[reg.idx()] = U32( Expr( newRegRead( reg, 32 ) ) );
+      sregs[reg.idx()] = U32( Expr( newRegRead( reg ) ) );
   }
 
+  struct AssertFalse : public CNode
+  {
+    AssertFalse() {}
+    virtual AssertFalse* Mutate() const { return new AssertFalse( *this ); }
+    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
+    virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+    virtual unsigned SubCount() const { return 0; }
+    virtual void Repr( std::ostream& sink ) const { sink << "assert (false)"; }
+    virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const { throw 0; }
+  };
+    
   bool close( Processor const& ref )
   {
     bool complete = path->close();
-    path->sinks.insert( Expr( new PCWrite( next_insn_addr.expr, branch_type ) ) );
+    path->updates.insert( Expr( new PCWrite( next_insn_addr.expr, branch_type ) ) );
     if (unpredictable)
       {
-        path->sinks.insert( Expr( new unisim::util::symbolic::ccode::AssertFalse() ) );
+        path->updates.insert( Expr( new AssertFalse() ) );
         return complete;
       }
     if (cpsr.n != ref.cpsr.n)
-      path->sinks.insert( Expr( newRegWrite( RegID("n"), cpsr.n, 1 ) ) );
+      path->updates.insert( Expr( newRegWrite( RegID("n"), cpsr.n ) ) );
     if (cpsr.z != ref.cpsr.z)
-      path->sinks.insert( Expr( newRegWrite( RegID("z"), cpsr.z, 1 ) ) );
+      path->updates.insert( Expr( newRegWrite( RegID("z"), cpsr.z ) ) );
     if (cpsr.c != ref.cpsr.c)
-      path->sinks.insert( Expr( newRegWrite( RegID("c"), cpsr.c, 1 ) ) );
+      path->updates.insert( Expr( newRegWrite( RegID("c"), cpsr.c ) ) );
     if (cpsr.v != ref.cpsr.v)
-      path->sinks.insert( Expr( newRegWrite( RegID("v"), cpsr.v, 1 ) ) );
+      path->updates.insert( Expr( newRegWrite( RegID("v"), cpsr.v ) ) );
     if (cpsr.itstate.expr != ref.cpsr.itstate.expr)
-      path->sinks.insert( Expr( newRegWrite( RegID("itstate"), cpsr.itstate.expr, 8 ) ) );
+      path->updates.insert( Expr( newRegWrite( RegID("itstate"), cpsr.itstate.expr ) ) );
     if (cpsr.bg.expr != ref.cpsr.bg.expr)
-      path->sinks.insert( Expr( newRegWrite( RegID("cpsr"), cpsr.bg.expr, 32 ) ) );
+      path->updates.insert( Expr( newRegWrite( RegID("cpsr"), cpsr.bg.expr ) ) );
     if (spsr.expr != ref.spsr.expr)
-      path->sinks.insert( Expr( newRegWrite( RegID("spsr"), spsr.expr, 32 ) ) );
+      path->updates.insert( Expr( newRegWrite( RegID("spsr"), spsr.expr ) ) );
     for (SRegID reg; reg.next();)
       if (sregs[reg.idx()].expr != ref.sregs[reg.idx()].expr)
-        path->sinks.insert( Expr( newRegWrite( reg, sregs[reg.idx()].expr, 32 ) ) );
+        path->updates.insert( Expr( newRegWrite( reg, sregs[reg.idx()].expr ) ) );
     if (FPSCR.expr != ref.FPSCR.expr)
-      path->sinks.insert( Expr( newRegWrite( RegID("fpscr"), FPSCR.expr, 32 ) ) );
+      path->updates.insert( Expr( newRegWrite( RegID("fpscr"), FPSCR.expr ) ) );
     if (FPEXC.expr != ref.FPEXC.expr)
-      path->sinks.insert( Expr( newRegWrite( RegID("fpexc"), FPEXC.expr, 32 ) ) );
+      path->updates.insert( Expr( newRegWrite( RegID("fpexc"), FPEXC.expr ) ) );
     for (unsigned reg = 0; reg < 15; ++reg) {
       if (reg_values[reg].expr != ref.reg_values[reg].expr)
-        path->sinks.insert( Expr( newRegWrite( RegID("r0") + reg, reg_values[reg].expr, 32 ) ) );
+        path->updates.insert( Expr( newRegWrite( RegID("r0") + reg, reg_values[reg].expr ) ) );
     }
     for (ForeignRegisters::iterator itr = foreign_registers.begin(), end = foreign_registers.end(); itr != end; ++itr)
       {
@@ -367,10 +473,10 @@ struct Processor
         if (itr->second == Expr(&ref)) continue;
         std::ostringstream buf;
         ref.Repr( buf );
-        path->sinks.insert( Expr( newRegWrite( RegID(buf.str().c_str()), itr->second, 32 ) ) );
+        path->updates.insert( Expr( newRegWrite( RegID(buf.str().c_str()), itr->second ) ) );
       }
     for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
-      path->sinks.insert( *itr );
+      path->updates.insert( *itr );
     return complete;
   }
   
@@ -425,7 +531,7 @@ struct Processor
     else
       SetNIA( value, B_JMP );
   }
-    
+  
   void SetGPR_usr( uint32_t id, U32 const& value ) { /* Only work in system mode instruction */ not_implemented(); }
   U32  GetGPR_usr( uint32_t id ) { /* Only work in system mode instruction */ not_implemented(); return U32(); }
     
@@ -614,6 +720,7 @@ struct Processor
 
   struct SRegID : public unisim::util::symbolic::Identifier<SRegID>
   {
+    typedef uint32_t register_type;
     enum Code {
       SCTLR, ACTLR,
       CTR, MPIDR,
@@ -690,6 +797,7 @@ struct Processor
     
   struct RegID : public unisim::util::symbolic::Identifier<RegID>
   {
+    typedef uint32_t register_type;
     enum Code
       {
         NA = 0,
@@ -931,7 +1039,7 @@ struct THUMBISA : public unisim::component::cxx::processor::arm::isa::thumb2::De
   static bool const is_thumb = true;
 };
 
-struct InstructionAddress : public unisim::util::symbolic::ccode::ASExprNode
+struct InstructionAddress : public unisim::util::symbolic::ccode::CNode
 {
   InstructionAddress() {}
   virtual void Repr( std::ostream& sink ) const { sink << "insn_addr"; }
@@ -943,7 +1051,7 @@ struct Translator
   typedef unisim::util::symbolic::ccode::ActionNode ActionNode;
   typedef Processor::StatusRegister StatusRegister;
   
-  Translator( uint32_t _addr, uint32_t _code )
+  Translator( uint32_t _addr, std::vector<uint8_t> const& _code )
     : addr(_addr), code(_code), coderoot(new ActionNode)
   {}
   ~Translator() { delete coderoot; }
@@ -952,72 +1060,93 @@ struct Translator
   void
   extract( std::ostream& sink, ISA& isa )
   {
-    sink << "(address . " << unisim::util::symbolic::ccode::dbx(4, addr) << ")\n";
+    sink << "/* address: " << pphex(4,addr) << " */\n";
   
     // Instruction decoding
     struct Instruction
     {
       typedef typename ISA::Operation Operation;
-      Instruction(ISA& isa, uint32_t addr, uint32_t code)
+      Instruction(ISA& isa, uint32_t addr, uint8_t const* codebuf)
         : operation(0), bytecount(0)
       {
-        try {
-          operation = isa.NCDecode( addr, ISA::mkcode( code ) );
-          unsigned bitlength = operation->GetLength(); 
-          if ((bitlength != 32) and ((bitlength != 16) or not ISA::is_thumb))
-            { delete operation; operation = 0; }
-          bytecount = bitlength/8;
-        }
-        catch (unisim::component::cxx::processor::arm::isa::Reject const&)
-          { operation = 0; }
+        uint32_t code = 0;
+        for (int byte = 4; --byte >= 0;)
+          code = (code << 8) | codebuf[byte];
+        
+        operation = isa.NCDecode( addr, ISA::mkcode( code ) );
+        unsigned bitlength = operation->GetLength();
+        if ((bitlength != 32) and ((bitlength != 16) or not ISA::is_thumb))
+          {
+            delete operation;
+            operation = 0;
+            throw unisim::component::cxx::processor::arm::isa::Reject();
+          }
+        bytecount = bitlength/8;
       }
       ~Instruction() { delete operation; }
-      Operation* operator -> () { return operation; }
+      Operation* operator -> () const { return operation; }
       
       Operation* operation;
       unsigned   bytecount;
     };
-    
-    Instruction instruction( isa, addr, code );
-    
-    if (not instruction.operation)
-      {
-        sink << "(opcode . " << unisim::util::symbolic::ccode::dbx(4, code) << ")\n(illegal)\n";
-        return;
-      }
 
-    {
-      uint32_t encoding = instruction->GetEncoding();
-      if (instruction.bytecount == 2)
-        encoding &= 0xffff;
-      
-      sink << "(opcode . " << unisim::util::symbolic::ccode::dbx(instruction.bytecount, encoding) << ")\n(size . " << (instruction.bytecount) << ")\n";
-    }
+    std::vector<Instruction> instructions;
     
-    Processor::U32      insn_addr = unisim::util::symbolic::make_const(addr); //< concrete instruction address
-    // Processor::U32      insn_addr = Expr(new InstructionAddress); //< symbolic instruction address
-    Processor reference( status, insn_addr, instruction.bytecount );
+    Processor reference( status );
     
-    // Disassemble
-    sink << "(mnemonic . \"";
-    try { instruction->disasm( reference, sink ); }
-    catch (...) { sink << "(bad)"; }
-    sink << "\")\n";
+    for (uint32_t offset = 0, end = code.size(); offset < end;)
+      {
+        try
+          { instructions.emplace_back( isa, addr + offset, &code[offset] ); }
+        catch( unisim::component::cxx::processor::arm::isa::Reject const& )
+          {
+            sink << "/* Illegal instruction bytes:";
+            for (int idx = 4; --idx >= 0;)
+              sink << ' ' << std::hex << std::setw(2) << std::setfill('0') << unsigned(code[offset+idx]) << std::dec;
+            sink << " */\n";
+            return;
+          }
+        Instruction const& instruction = instructions.back();
+        {
+          // Disassemble
+          uint32_t encoding = instruction->GetEncoding();
+          if (instruction.bytecount == 2)
+            encoding &= 0xffff;
+          sink << "/* " << pphex(4,addr + offset) << " " << (instruction.bytecount == 2 ? "    " : "") << "["
+               << pphex(instruction.bytecount, encoding) << "]:  ";
+          try { instruction->disasm( reference, sink ); }
+          catch (...) { sink << "(bad)"; }
+          sink << " */\n";
+        }
+        offset += instruction.bytecount;
+      }
+    
     
     // Get actions
     try
       {
+        bool is_thumb = reference.cpsr.IsThumb();
         for (bool end = false; not end;)
           {
             Processor state( reference );
             state.path = coderoot;
-            instruction->execute( state );
-            if (state.cpsr.IsThumb())
+            for (Instruction const& instruction : instructions)
+              {
+                // Fetch
+                uint32_t insn_addr = instruction->GetAddr();
+                state.SetNIA( Processor::U32(insn_addr + instruction.bytecount), Processor::B_JMP );
+                state.reg_values[15] = Processor::U32(insn_addr + (is_thumb ? 4 : 8) );
+                // Execute
+                instruction->execute( state );
+              }
+            
+    
+            if (is_thumb)
               state.ITAdvance();
             end = state.close( reference );
           }
-        coderoot->simplify();
-        coderoot->commit_stats();
+        // coderoot->simplify();
+        // coderoot->commit_stats();
       }
     catch (...)
       {
@@ -1026,32 +1155,145 @@ struct Translator
       }
   }
 
-  void translate( std::ostream& sink )
+  void translate( std::ostream& ostr )
   {
     if      (status.iset == status.Arm)
       {
         ARMISA armisa;
-        extract( sink, armisa );
+        extract( ostr, armisa );
       }
     else if (status.iset == status.Thumb)
       {
         THUMBISA thumbisa;
-        extract( sink, thumbisa );
+        extract( ostr, thumbisa );
       }
     else
       throw 0;
+    
+    coderoot->simplify();
+    
+    coderoot->commit_stats();
 
-    // Translate to DBA
-    unisim::util::symbolic::ccode::Program program;
-    program.Generate( coderoot );
-    typedef unisim::util::symbolic::ccode::Program::const_iterator Iterator;
-    for (Iterator itr = program.begin(), end = program.end(); itr != end; ++itr)
-      sink << "(" << unisim::util::symbolic::ccode::dbx(4, addr) << ',' << itr->first << ") " << itr->second << std::endl;
+    typedef unisim::util::symbolic::ccode::CCode CCode;
+    typedef unisim::util::symbolic::ccode::SrcMgr SrcMgr;
+    typedef unisim::util::symbolic::ccode::Update Update;
+    typedef unisim::util::symbolic::ccode::Variable Variable;
+    typedef unisim::util::symbolic::Expr Expr;
+
+    CCode ccode( "ctx" );
+    SrcMgr sink( ostr );
+
+    
+    struct Coder
+    {
+      Coder( SrcMgr& _srcmgr, CCode& _ccode ) : srcmgr(_srcmgr), ccode(_ccode) {}
+
+      void generate(ActionNode* node)
+      {
+        // Ordering Sub Expressions by size of expressions (so that
+        // smaller expressions are factorized in larger ones)
+        struct CSE : public std::multimap<unsigned,Expr>
+        {
+          void Process( Expr const& expr ) { insert( std::make_pair( CountSubs( expr ), expr ) ); }
+          unsigned CountSubs( Expr const& expr )
+          {
+            unsigned sum = 1;
+            for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
+              sum += CountSubs( expr->GetSub(idx) );
+            return sum;
+          }
+        } cse;
+
+        for (std::map<Expr,unsigned>::const_iterator itr = node->sestats.begin(), end = node->sestats.end(); itr != end; ++itr)
+          {
+            // Check if reused and not already defined
+            if ((itr->second > 1) and not ccode.tmps.count( itr->first ))
+              cse.Process(itr->first);
+          }
+
+        for (std::multimap<unsigned,Expr>::const_iterator itr = cse.begin(), end = cse.end(); itr != end; ++itr)
+          {
+            ccode.make_temp( srcmgr, itr->second );
+          }
+
+        for (auto && update : node->updates)
+          {
+            Update const& ud = dynamic_cast<Update const&>( *update.node );
+            
+            for (unsigned idx = 0, end = ud.SubCount(); idx < end; ++idx)
+              {
+                Expr value = ud.GetSub(idx);
+                
+                if (value.ConstSimplify() or ccode.tmps.count( value ))
+                  continue;
+                
+                ccode.make_temp( srcmgr, value );
+              }
+          }
+
+        if (node->cond.good())
+          {
+            std::map<Expr,Variable> saved_tmps( ccode.tmps );
+            srcmgr << "if (" << ccode(node->cond) << ")\n";
+            if (ActionNode* next = node->nexts[true])
+              {
+                srcmgr << "{\n";
+                generate( next );
+                srcmgr << "}\n";
+                ccode.tmps = saved_tmps;
+              }
+            else
+              throw 0;
+            if (ActionNode* next = node->nexts[false])
+              {
+                srcmgr << "else\n{\n";
+                generate( next );
+                srcmgr << "}\n";
+                ccode.tmps = saved_tmps;
+              }
+          }
+
+        // Commit architectural updates
+        for (auto && update : node->updates)
+          {
+            srcmgr << ccode(update);
+          }
+      }
+      
+      SrcMgr& srcmgr;
+      CCode&   ccode;
+    } coder(sink, ccode);
+    
+    coder.generate( coderoot );
+
+    // {
+    //   /*** Handling instruction control flow ***/
+    //   Expr addr(branch.addr), cond(branch.cond);
+    //   Branch::mode_t mode(branch.mode);
+    //   auto banode = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const*>( addr.node );
+      
+    //   if (cond.good())
+    //     {
+    //       if (not banode)
+    //         throw 0;
+    //       sink << cvar << " = " << (cinv ? "not " : "") << ccode(cond) << ";\n";
+    //     }
+    //   else if      (mode == Branch::call)
+    //     sink << " if ((" << ccode.ctxvar << ".EIP = "
+    //          <<             ccode.ctxvar << ".call( " << ccode(addr) << " )( " << ccode.ctxvar << " )) != "
+    //          <<       csrc::hex(GetAddr() + GetLength()) << ") return " << ccode.ctxvar << ".EIP;\n";
+    //   else if (mode == Branch::ret)
+    //     sink << "return " << ccode(addr) << ";\n";
+    //   else if (not banode)
+    //     sink << "return " << ccode.ctxvar << ".call( " << ccode(addr) << " )( " << ccode.ctxvar << ");\n";
+    // }
+    
   }
 
   Processor::StatusRegister status;
-  uint32_t    addr, code;
-  ActionNode* coderoot;
+  uint32_t                    addr;
+  std::vector<uint8_t> const& code;
+  ActionNode*                 coderoot;
 };
   
 uint32_t getu32( uint32_t& res, char const* arg )
@@ -1075,15 +1317,47 @@ main( int argc, char** argv )
 {
   if (argc != 4)
     {
-      std::cerr << "Wrong number of CLI arguments.\n" << usage();
+      std::cerr << "Wrong number of arguments.\n" << usage();
       return 1;
     }
 
-  uint32_t addr, code;
-
-  if (not getu32(addr, argv[2]) or not getu32(code, argv[3]))
+  uint32_t addr;
+  if (not getu32(addr, argv[2]))
     {
-      std::cerr << "<addr> and <code> should be 32bits numeric values.\n" << usage();
+      std::cerr << "<addr> should be a 32 bit numeric value pointing at start of code.";
+      return 1;
+    }
+  struct : public std::vector<uint8_t>
+  {
+    void fromhex( char const* s, uintptr_t pos = 0 )
+    {
+      uint8_t byte = 0;
+      for (unsigned idx = 0; idx < 2; ++idx)
+        {
+          byte <<= 4;
+          switch (char ch = *s++)
+            {
+            default:
+              resize( pos ); return;
+            case '0': case '1': case '2': case '3': case '4': case '6': case '5': case '7': case '8': case '9':
+              byte |= ch - '0'; break;
+            case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+              byte |= ch - 'a' + 10; break;
+            case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+              byte |= ch - 'A' + 10; break;
+            }
+        }
+      fromhex( s, pos+1 );
+      at(pos) = byte;
+    }
+      
+  } code;
+
+  code.fromhex( argv[3] );
+
+  if (not code.size())
+    {
+      std::cerr << "<code> should be an hex encoded instruction stream (as found in memory).\n" << usage();
       return 1;
     }
 
@@ -1117,7 +1391,6 @@ main( int argc, char** argv )
           std::cerr << "Unknown execution state flag: " << flag << std::endl;
           return 1;
         }
-
     }
 
   actset.translate( std::cout );
