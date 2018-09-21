@@ -1261,10 +1261,16 @@ struct Translator
           }
 
         // Commit architectural updates
-        for (auto && update : node->updates)
+        typedef Processor::PCWrite PCWrite;
+        PCWrite const*  npc = 0;
+        for (Expr const& update : node->updates)
           {
+            if (PCWrite const* pcw = dynamic_cast<PCWrite const*>( update.node ))
+              { npc = pcw; continue; }
             srcmgr << ccode(update);
           }
+        if (npc)
+          srcmgr << ccode(Expr(npc));
       }
       
       SrcMgr& srcmgr;
