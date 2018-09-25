@@ -121,7 +121,7 @@ cps.disasm = {
 cps.execute = {
   typedef typename ARCH::U32 U32;
   
-  if (cpu.Cond( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
+  if (evenly( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
     return;
   
   // CPSRWriteByInstr() checks for illegal mode changes
@@ -146,7 +146,7 @@ subspc.disasm = {
 };
 
 subspc.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( 14 ), op2 = U32(imm), res = op1 - op2;

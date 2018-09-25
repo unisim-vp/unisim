@@ -52,7 +52,7 @@ b_1.disasm = {
 };
 
 b_1.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
+  if (unlikely( not CheckCondition(cpu, cond) )) return;
   // Note: according to specification, if InITBlock() then UNPREDICTABLE;
   
   typedef typename ARCH::U32 U32;
@@ -66,7 +66,7 @@ b_2.disasm = {
 };
 
 b_2.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   cpu.Branch(cpu.GetGPR( 15 ) + U32(imm), ARCH::B_JMP);
@@ -90,7 +90,7 @@ bx.disasm = {
 };
 
 bx.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.BranchExchange( cpu.GetGPR(rm), ARCH::B_JMP );
 };
@@ -114,7 +114,7 @@ blx.disasm = {
 };
 
 blx.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 address = cpu.GetGPR(rm);

@@ -146,7 +146,7 @@ namespace ccode {
   {
     typedef unisim::util::symbolic::Expr Expr;
     
-    CCode(char const* _cv) : tmps(), ctxvar(_cv) {}
+    CCode() : tmps() {}
     
     struct ExprPrinter
     {
@@ -157,8 +157,6 @@ namespace ccode {
     void make_temp( SrcMgr& sink, Expr const& e );
 
     std::map<Expr,Variable> tmps;
-    //Variables tmpvars;
-    char const* ctxvar;
   };
   
   struct CNode : public unisim::util::symbolic::ExprNode

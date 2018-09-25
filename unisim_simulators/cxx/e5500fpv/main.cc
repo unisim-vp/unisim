@@ -163,7 +163,7 @@ main( int argc, char* argv[] )
   
   linux64.Setup( simargs, envs );
 
-  //Debugger debugger( cpu, linux64 );
+  Debugger debugger( cpu, linux64 );
 
   simulator.Setup();
   

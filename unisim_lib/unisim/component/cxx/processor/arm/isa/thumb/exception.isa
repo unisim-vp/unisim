@@ -50,7 +50,7 @@ swi.disasm = {
 };
 
 swi.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.CallSupervisor( imm );
 };
@@ -72,7 +72,7 @@ bkpt.disasm = {
 };
 
 bkpt.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.BKPT( imm );
 };
@@ -94,7 +94,7 @@ cpsi.disasm = {
 cpsi.execute = {
   typedef typename ARCH::U32 U32;
   
-  if (cpu.Cond( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
+  if (unlikely( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
     return;
   
   // CPSRWriteByInstr() checks for illegal mode changes
