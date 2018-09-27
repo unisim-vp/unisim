@@ -367,6 +367,7 @@ namespace binsec {
   int
   RegRead::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
+    unsigned bitsize = ScalarType(GetType()).bitsize;
     sink << GetRegName() << "<" << bitsize << ">";
     return bitsize;
   }
@@ -380,7 +381,7 @@ namespace binsec {
   int
   RegWrite::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
-    sink << GetRegName() << "<" << std::dec << bitsize << "> := " << GetCode(value, vars, label);
+    sink << GetRegName() << "<" << std::dec << ScalarType(value->GetType()).bitsize << "> := " << GetCode(value, vars, label);
     return 0;
   }
   
@@ -641,8 +642,8 @@ namespace binsec {
             if (RegWrite const* rw = dynamic_cast<RegWrite const*>( itr->node ))
               {
                 char const* rname = rw->GetRegName();
-                unsigned    rsize = rw->bitsize;
                 Expr        value = rw->value;
+                unsigned    rsize = ScalarType(value->GetType()).bitsize;
 
                 if (not value.ConstSimplify() and not this->vars.count(value))
                   {

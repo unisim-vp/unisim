@@ -94,7 +94,7 @@ Debugger::Debugger(Arch& cpu, LinuxOS& linux_os)
   gdb_server.registers_import                          >> *debug_hub.registers_export[0];
 
   debug_hub["parse-dwarf"] = false;
-  // gdb_server["verbose"] = true;
+  gdb_server["verbose"] = true;
 }
 
 Debugger::~Debugger()

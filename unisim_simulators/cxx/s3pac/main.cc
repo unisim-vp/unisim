@@ -107,11 +107,11 @@ struct Processor
   typedef unisim::util::symbolic::ccode::CCode         CCode;
   typedef unisim::util::symbolic::ccode::SrcMgr        SrcMgr;
 
-  struct Variable { Variable( Processor& _proc ) : proc( _proc ) {} Processor& proc; };
+  struct Input { Input( Processor& _proc ) : proc( _proc ) {} Processor& proc; };
   
   static Processor* FindRoot( unisim::util::symbolic::Expr const& expr )
   {
-    if (Variable const* node = dynamic_cast<Variable const*>( expr.node ))
+    if (Input const* node = dynamic_cast<Input const*>( expr.node ))
       return &node->proc;
     
     for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
@@ -120,9 +120,9 @@ struct Processor
     return 0;
   }
     
-  struct RegReadBase : public CNode, Variable
+  struct RegReadBase : public CNode, Input
   {
-    RegReadBase( Processor& p ) : Variable(p)  {}
+    RegReadBase( Processor& p ) : Input(p)  {}
     
     virtual char const* GetRegName() const = 0;
     
@@ -137,17 +137,23 @@ struct Processor
   struct RegRead : public RegReadBase
   {
     typedef RegRead<RID> this_type;
-    RegRead( Processor& p, RID _id ) : RegReadBase(p), id(_id) {}
+    RegRead( Processor& p, RID _id, ScalarType::id_t _tid ) : RegReadBase(p), tid(_tid), id(_id) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<typename RID::register_type>::GetType();; }
+    virtual ScalarType::id_t GetType() const { return tid; }
     virtual char const* GetRegName() const { return id.c_str(); }
-    intptr_t compare( this_type const& rhs ) const { if (intptr_t delta = id.cmp( rhs.id )) return delta; return RegReadBase::compare( rhs ); }
+    intptr_t compare( this_type const& rhs ) const
+    {
+      if (int delta = int(tid) - int(rhs.tid)) return delta;
+      if (intptr_t delta = id.cmp( rhs.id )) return delta;
+      return RegReadBase::compare( rhs );
+    }
     virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<this_type const&>( rhs ) ); }
-    
+
+    ScalarType::id_t tid;
     RID id;
   };
 
-  template <typename RID> static Expr newRegRead( Processor& p, RID id ) { return new RegRead<RID>( p, id ); }
+  template <typename RID> static Expr newRegRead( Processor& p, RID id, ScalarType::id_t tp ) { return new RegRead<RID>( p, id, tp ); }
 
   struct ForeignRegister : public RegReadBase
   {
@@ -214,16 +220,19 @@ struct Processor
     typedef RegWrite<RID> this_type;
     RegWrite( RID _id, Expr const& _value ) : RegWriteBase(_value), id(_id) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<typename RID::register_type>::GetType(); }
     virtual char const* GetRegName() const { return id.c_str(); }
-    intptr_t compare( this_type const& rhs ) const { if (intptr_t delta = id.cmp( rhs.id )) return delta; return RegWriteBase::cmp( rhs ); }
+    intptr_t compare( this_type const& rhs ) const
+    {
+      if (intptr_t delta = id.cmp( rhs.id )) return delta;
+      return RegWriteBase::cmp( rhs );
+    }
     virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
-    
+
     RID id;
   };
 
   template <typename RID>
-  static RegWrite<RID>* newRegWrite( RID id, Expr const& value ) { return new RegWrite<RID>( id, value ); }
+  static Expr newRegWrite( RID id, Expr const& value ) { return new RegWrite<RID>( id, value ); }
   
   struct Br : public RegWriteBase
   {
@@ -242,10 +251,10 @@ struct Processor
     virtual char const* GetRegName() const { return "pc"; }
   };
 
-  struct Load : public CNode
+  struct Load : public CNode, Input
   {
-    Load( Expr const& _addr, unsigned _size, unsigned _alignment, bool _bigendian )
-      : addr(_addr), size(_size), alignment(_alignment), bigendian(_bigendian)
+    Load( Processor& p, Expr const& _addr, unsigned _size, unsigned _alignment, bool _bigendian )
+      : Input(p), addr(_addr), size(_size), alignment(_alignment), bigendian(_bigendian)
     {}
     virtual Load* Mutate() const { return new Load( *this ); }
     virtual void Repr( std::ostream& sink ) const { sink << "Load(" << addr << ", " << size << ", " << alignment << ", " << bigendian << ")"; }
@@ -382,13 +391,14 @@ struct Processor
     
     PSR( Processor& p, StatusRegister const& ref )
       : StatusRegister(ref)
-      , n(newRegRead(p, RegID("n")))
-      , z(newRegRead(p, RegID("z")))
-      , c(newRegRead(p, RegID("c")))
-      , v(newRegRead(p, RegID("v")))
-      , itstate(ref.outitb ? U8(0).expr : newRegRead(p, RegID("itstate")))
-      , bg(newRegRead(p, RegID("cpsr")))        
-      , proc(p) {}
+      , proc( p )
+      , n(newRegRead(p, RegID("n"), ScalarType::BOOL))
+      , z(newRegRead(p, RegID("z"), ScalarType::BOOL))
+      , c(newRegRead(p, RegID("c"), ScalarType::BOOL))
+      , v(newRegRead(p, RegID("v"), ScalarType::BOOL))
+      , itstate(ref.outitb ? U8(0).expr : newRegRead(p, RegID("itstate"), ScalarType::U8))
+      , bg(newRegRead(p, RegID("cpsr"), ScalarType::U32))
+    {}
     
     bool   GetJ() const { return (iset == Jazelle) or (iset == ThumbEE); }
     bool   GetT() const { return (iset ==   Thumb) or (iset == ThumbEE); }
@@ -425,11 +435,6 @@ struct Processor
     void   Set( ERF const& _, U32 const& value ) { if (proc.Choose(value != U32(bigendian))) proc.UnpredictableInsnBehaviour(); }
     void   Set( NZCVRF const& _, U32 const& value );
       
-    // void FixITState( unsigned is )
-    // {
-    //   /* Set itstate to constant (default is variable) */
-    //   itstate = U8(is);
-    // }
     void   SetITState( uint8_t init_val ) { itstate = U8(init_val); }
     BOOL   InITBlock() const { return (itstate & U8(0b1111)) != U8(0); }
       
@@ -447,10 +452,10 @@ struct Processor
     U32    Get( MRF const& _ ) { return U32(mode); }
     // U32 Get( ALL const& _ ) { return (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) | bg; }
       
+    Processor& proc;
     Expr n, z, c, v; /* TODO: should handle q */
     U8 itstate;
     U32 bg;
-    Processor& proc;
   };
 
   Processor( Processor const& ) = delete;
@@ -462,10 +467,10 @@ struct Processor
     , next_insn_addr()
     , branch_type()
     , cpsr( *this, ref_psr )
-    , spsr( Expr( newRegRead(*this, RegID("spsr")) ) )
+    , spsr( newRegRead(*this, RegID("spsr"), ScalarType::U32) )
     , sregs()
-    , FPSCR( Expr( newRegRead(*this, RegID("fpscr")) ) )
-    , FPEXC( Expr( newRegRead(*this, RegID("fpexc")) ) )
+    , FPSCR( newRegRead(*this, RegID("fpscr"), ScalarType::U32) )
+    , FPEXC( newRegRead(*this, RegID("fpexc"), ScalarType::U32) )
     , stores()
     , unpredictable(false)
     , is_it_assigned(false)
@@ -474,11 +479,11 @@ struct Processor
   {
     // GPR regs
     for (unsigned reg = 0; reg < 15; ++reg)
-      reg_values[reg] = U32( Expr( newRegRead( *this, RegID("r0") + reg ) ) );
+      reg_values[reg] = U32( newRegRead( *this, RegID("r0") + reg, ScalarType::U32 ) );
       
     // Special registers
     for (SRegID reg; reg.next();)
-      sregs[reg.idx()] = U32( Expr( newRegRead( *this, reg ) ) );
+      sregs[reg.idx()] = U32( newRegRead( *this, reg, ScalarType::U32 ) );
   }
 
   struct AssertFalse : public CNode
@@ -502,29 +507,29 @@ struct Processor
         return complete;
       }
     if (cpsr.n != ref.cpsr.n)
-      path->updates.insert( Expr( newRegWrite( RegID("n"), cpsr.n ) ) );
+      path->updates.insert( newRegWrite( RegID("n"), cpsr.n ) );
     if (cpsr.z != ref.cpsr.z)
-      path->updates.insert( Expr( newRegWrite( RegID("z"), cpsr.z ) ) );
+      path->updates.insert( newRegWrite( RegID("z"), cpsr.z ) );
     if (cpsr.c != ref.cpsr.c)
-      path->updates.insert( Expr( newRegWrite( RegID("c"), cpsr.c ) ) );
+      path->updates.insert( newRegWrite( RegID("c"), cpsr.c ) );
     if (cpsr.v != ref.cpsr.v)
-      path->updates.insert( Expr( newRegWrite( RegID("v"), cpsr.v ) ) );
+      path->updates.insert( newRegWrite( RegID("v"), cpsr.v ) );
     if (cpsr.itstate.expr != ref.cpsr.itstate.expr)
-      path->updates.insert( Expr( newRegWrite( RegID("itstate"), cpsr.itstate.expr ) ) );
+      path->updates.insert( newRegWrite( RegID("itstate"), cpsr.itstate.expr ) );
     if (cpsr.bg.expr != ref.cpsr.bg.expr)
-      path->updates.insert( Expr( newRegWrite( RegID("cpsr"), cpsr.bg.expr ) ) );
+      path->updates.insert( newRegWrite( RegID("cpsr"), cpsr.bg.expr ) );
     if (spsr.expr != ref.spsr.expr)
-      path->updates.insert( Expr( newRegWrite( RegID("spsr"), spsr.expr ) ) );
+      path->updates.insert( newRegWrite( RegID("spsr"), spsr.expr ) );
     for (SRegID reg; reg.next();)
       if (sregs[reg.idx()].expr != ref.sregs[reg.idx()].expr)
-        path->updates.insert( Expr( newRegWrite( reg, sregs[reg.idx()].expr ) ) );
+        path->updates.insert( newRegWrite( reg, sregs[reg.idx()].expr ) );
     if (FPSCR.expr != ref.FPSCR.expr)
-      path->updates.insert( Expr( newRegWrite( RegID("fpscr"), FPSCR.expr ) ) );
+      path->updates.insert( newRegWrite( RegID("fpscr"), FPSCR.expr ) );
     if (FPEXC.expr != ref.FPEXC.expr)
-      path->updates.insert( Expr( newRegWrite( RegID("fpexc"), FPEXC.expr ) ) );
+      path->updates.insert( newRegWrite( RegID("fpexc"), FPEXC.expr ) );
     for (unsigned reg = 0; reg < 15; ++reg) {
       if (reg_values[reg].expr != ref.reg_values[reg].expr)
-        path->updates.insert( Expr( newRegWrite( RegID("r0") + reg, reg_values[reg].expr ) ) );
+        path->updates.insert( newRegWrite( RegID("r0") + reg, reg_values[reg].expr ) );
     }
     for (ForeignRegisters::iterator itr = foreign_registers.begin(), end = foreign_registers.end(); itr != end; ++itr)
       {
@@ -534,7 +539,7 @@ struct Processor
         if (itr->second == Expr(&ref)) continue;
         std::ostringstream buf;
         ref.Repr( buf );
-        path->updates.insert( Expr( newRegWrite( RegID(buf.str().c_str()), itr->second ) ) );
+        path->updates.insert( newRegWrite( RegID(buf.str().c_str()), itr->second ) );
       }
     for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
       path->updates.insert( *itr );
@@ -746,11 +751,11 @@ struct Processor
   //   =                       Memory access methods                       =
   //   =====================================================================
   
-  U32  MemURead32( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 2, 0, false ) ) ); }
-  U16  MemURead16( U32 const& addr ) { return U16( Expr( new Load( addr.expr, 1, 0, false ) ) ); }
-  U32  MemRead32( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 2, 2, false ) ) ); }
-  U16  MemRead16( U32 const& addr ) { return U16( Expr( new Load( addr.expr, 1, 1, false ) ) ); }
-  U8   MemRead8( U32 const& addr ) { return U8( Expr( new Load( addr.expr, 0, 0, false ) ) ); }
+  U32  MemURead32( U32 const& addr ) { return U32( Expr( new Load( *this, addr.expr, 2, 0, false ) ) ); }
+  U16  MemURead16( U32 const& addr ) { return U16( Expr( new Load( *this, addr.expr, 1, 0, false ) ) ); }
+  U32  MemRead32( U32 const& addr ) { return U32( Expr( new Load( *this, addr.expr, 2, 2, false ) ) ); }
+  U16  MemRead16( U32 const& addr ) { return U16( Expr( new Load( *this, addr.expr, 1, 1, false ) ) ); }
+  U8   MemRead8( U32 const& addr ) { return U8( Expr( new Load( *this, addr.expr, 0, 0, false ) ) ); }
   
   void MemUWrite32( U32 const& addr, U32 const& value ) { stores.insert( new Store( addr.expr, value.expr, 2, 0, false ) ); }
   void MemUWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( addr.expr, value.expr, 1, 0, false ) ); }
@@ -803,7 +808,6 @@ struct Processor
 
   struct SRegID : public unisim::util::symbolic::Identifier<SRegID>
   {
-    typedef uint32_t register_type;
     enum Code {
       SCTLR, ACTLR,
       CTR, MPIDR,
@@ -880,7 +884,6 @@ struct Processor
     
   struct RegID : public unisim::util::symbolic::Identifier<RegID>
   {
-    typedef uint32_t register_type;
     enum Code
       {
         NA = 0,
@@ -1122,13 +1125,6 @@ struct THUMBISA : public unisim::component::cxx::processor::arm::isa::thumb2::De
   static bool const is_thumb = true;
 };
 
-struct InstructionAddress : public unisim::util::symbolic::ccode::CNode
-{
-  InstructionAddress() {}
-  virtual void Repr( std::ostream& sink ) const { sink << "insn_addr"; }
-  virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { dynamic_cast<InstructionAddress const&>( brhs ); return 0; }
-};
-
 struct Translator
 {
   typedef unisim::util::symbolic::ccode::ActionNode ActionNode;
@@ -1215,7 +1211,7 @@ struct Translator
     // Get actions
     try
       {
-        bool is_thumb = reference.cpsr.IsThumb();
+        bool is_thumb = status.IsThumb();
         for (bool end = false; not end;)
           {
             Processor state( status );
@@ -1228,11 +1224,9 @@ struct Translator
                 state.reg_values[15] = Processor::U32(insn_addr + (is_thumb ? 4 : 8) );
                 // Execute
                 instruction->execute( state );
+                if (is_thumb)
+                  state.ITAdvance();
               }
-            
-    
-            if (is_thumb)
-              state.ITAdvance();
             end = state.close( reference );
           }
         // coderoot->simplify();

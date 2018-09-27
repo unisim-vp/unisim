@@ -151,21 +151,16 @@ namespace binsec {
 
   struct RegRead : public ASExprNode
   {
-    RegRead( unsigned _bitsize ) : bitsize(_bitsize) {}
-
     virtual char const* GetRegName() const = 0;
       
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 0; }
-    virtual intptr_t cmp( ExprNode const& brhs ) const { return int(bitsize) - int(dynamic_cast<RegRead const&>( brhs ).bitsize); }
-    
-    unsigned bitsize;
   };
 
   struct RegWrite : public ASExprNode
   {
-    RegWrite( Expr const& _value, unsigned _bitsize ) : value(_value), bitsize(_bitsize) {}
+    RegWrite( Expr const& _value ) : value(_value) {}
       
     virtual char const* GetRegName() const = 0;
       
@@ -173,21 +168,16 @@ namespace binsec {
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
-    virtual intptr_t cmp( ExprNode const& brhs ) const
-    {
-      RegWrite const& rhs = dynamic_cast<RegWrite const&>( brhs );
-      if (intptr_t delta = int(bitsize) - int(rhs.bitsize)) return delta;
-      return value.cmp( rhs.value );
-    }
-      
+    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
+    intptr_t compare( RegWrite const& rhs ) const { return value.cmp( rhs.value ); }
+    
     Expr value;
-    unsigned bitsize;
   };
 
   struct Branch : public RegWrite
   {
     enum type_t { Jump = 0, Call, Return } type;
-    Branch( Expr const& value, unsigned bitsize, type_t bt ) : RegWrite( value, bitsize ), type(bt) {}
+    Branch( Expr const& value, type_t bt ) : RegWrite( value ), type(bt) {}
   };
   
   struct AssertFalse : public ASExprNode

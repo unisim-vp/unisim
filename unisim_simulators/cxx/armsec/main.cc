@@ -55,38 +55,50 @@ struct Processor
     
   typedef unisim::util::symbolic::FP                   FP;
   typedef unisim::util::symbolic::Expr                 Expr;
-
+  typedef unisim::util::symbolic::ScalarType           ScalarType;
+  
   typedef unisim::util::symbolic::binsec::ActionNode   ActionNode;
-  typedef unisim::util::symbolic::binsec::Load         Load;
   typedef unisim::util::symbolic::binsec::Store        Store;
   typedef unisim::util::symbolic::binsec::Branch       Br;
 
+  struct Input { Input( Processor& _proc ) : proc( _proc ) {} Processor& proc; };
+  
+  static Processor* FindRoot( unisim::util::symbolic::Expr const& expr )
+  {
+    if (Input const* node = dynamic_cast<Input const*>( expr.node ))
+      return &node->proc;
+    
+    for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
+      if (Processor* found = FindRoot( expr->GetSub(idx)))
+        return found;
+    return 0;
+  }
+    
   template <typename RID>
-  struct RegRead : public unisim::util::symbolic::binsec::RegRead
+  struct RegRead : public unisim::util::symbolic::binsec::RegRead, Input
   {
     typedef RegRead<RID> this_type;
     typedef unisim::util::symbolic::binsec::RegRead Super;
-    typedef unisim::util::symbolic::ScalarType ScalarType;
-    RegRead( RID _id, unsigned _bitsize ) : Super(_bitsize), id(_id) {}
+    RegRead( Processor& p, RID _id, ScalarType::id_t _tp ) : Super(), Input(p), tp(_tp) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false, bitsize); }
+    virtual ScalarType::id_t GetType() const { return tp; }
     virtual char const* GetRegName() const { return id.c_str(); }
-    virtual intptr_t cmp( ExprNode const& brhs ) const
-    { if (intptr_t delta = id.cmp( dynamic_cast<RegRead const&>( brhs ).id )) return delta; return Super::cmp( brhs ); }
+    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
+    intptr_t compare( this_type const& rhs ) const { if (int delta = int(tp) - int(rhs.tp)) return delta; return id.cmp( rhs.id ); }
     virtual Expr Simplify() const { return this; }
-    
+
+    ScalarType::id_t tp;
     RID id;
   };
 
   template <typename RID>
-  static RegRead<RID>* newRegRead( RID id, unsigned bitsize ) { return new RegRead<RID>( id, bitsize ); }
+  static Expr newRegRead( Processor& p, RID id, ScalarType::id_t tp ) { return new RegRead<RID>( p, id, tp ); }
 
   struct ForeignRegister : public unisim::util::symbolic::binsec::RegRead
   {
     typedef unisim::util::symbolic::binsec::RegRead Super;
-    typedef unisim::util::symbolic::ScalarType ScalarType;
     ForeignRegister( uint8_t _mode, unsigned _idx )
-      : Super(32), name(), idx(_idx), mode(_mode)
+      : Super(), name(), idx(_idx), mode(_mode)
     {
       if (mode == SYSTEM_MODE) mode = USER_MODE;
       std::ostringstream buf;
@@ -94,7 +106,7 @@ struct Processor
       strncpy(&name[0],buf.str().c_str(),sizeof(name)-1);
     }
     virtual ForeignRegister* Mutate() const { return new ForeignRegister( *this ); }
-    virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType( false, bitsize ); }
+    virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
     
     char const* mode_ident() const
     {
@@ -132,8 +144,7 @@ struct Processor
   {
     typedef RegWrite<RID> this_type;
     typedef unisim::util::symbolic::binsec::RegWrite Super;
-    typedef unisim::util::symbolic::ScalarType ScalarType;
-    RegWrite( RID _id, Expr const& _value, unsigned _bitsize ) : Super(_value, _bitsize), id(_id) {}
+    RegWrite( RID _id, Expr const& _value ) : Super(_value), id(_id) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
     virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
     virtual char const* GetRegName() const { return id.c_str(); }
@@ -142,21 +153,21 @@ struct Processor
     virtual Expr Simplify() const
     {
       Expr nvalue( ASExprNode::Simplify( value ) );
-      return nvalue != value ? new RegWrite<RID>( id, nvalue, bitsize ) : this;
+      return nvalue != value ? new RegWrite<RID>( id, nvalue ) : this;
     }
     
     RID id;
   };
 
   template <typename RID>
-  static RegWrite<RID>* newRegWrite( RID id, Expr const& value, unsigned bitsize ) { return new RegWrite<RID>( id, value, bitsize ); }
+  static Expr newRegWrite( RID id, Expr const& value ) { return new RegWrite<RID>( id, value ); }
   
   struct PCWrite : public Br
   {
-    PCWrite( Expr const& value, Br::type_t bt ) : Br( value, 32, bt ) {}
+    PCWrite( Expr const& value, Br::type_t bt ) : Br( value, bt ) {}
     virtual PCWrite* Mutate() const { return new PCWrite( *this ); }
     virtual char const* GetRegName() const { return "pc"; }
-    virtual unisim::util::symbolic::ScalarType::id_t GetType() const { return unisim::util::symbolic::ScalarType::VOID; }
+    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
     virtual Expr Simplify() const
     {
       Expr nvalue( ASExprNode::Simplify(value) );
@@ -187,6 +198,13 @@ struct Processor
     virtual char const* Describe() = 0;
   };
 
+  struct Load : public unisim::util::symbolic::binsec::Load, Input
+  {
+    Load( Processor& p, Expr const& addr, unsigned size, unsigned alignment, bool bigendian )
+      : unisim::util::symbolic::binsec::Load(addr, size, alignment, bigendian)
+      , Input( p )
+    {}
+  };
   //   =====================================================================
   //   =                      Construction/Destruction                     =
   //   =====================================================================
@@ -197,26 +215,18 @@ struct Processor
       
     typedef unisim::util::symbolic::Expr       Expr;
     StatusRegister()
-      : n(newRegRead(RegID("n"),1))
-      , z(newRegRead(RegID("z"),1))
-      , c(newRegRead(RegID("c"),1))
-      , v(newRegRead(RegID("v"),1))
-      , itstate(newRegRead(RegID("itstate"),8)) // Default is variable
-      , bg(newRegRead(RegID("cpsr"),32))        
-      , iset(Arm)                               // Default is ARM instruction set
+      : iset(Arm)                               // Default is ARM instruction set
       , bigendian(false)                        // Default is Little Endian
       , mode(SUPERVISOR_MODE)                   // Default is SUPERVISOR_MODE
+      , outitb(false)                           // Force status as if outside ITBlock
     {}
 
-    void FixITState( unsigned is ) { itstate = U8(is); }
     bool IsThumb() const { return iset == Thumb; }
       
-    Expr n, z, c, v; /* TODO: should handle q */
-    U8 itstate;
-    U32 bg;
     InstructionSet iset;
     bool bigendian;
     uint8_t mode;
+    bool outitb;
   };
   
   struct PSR : public StatusRegister
@@ -243,7 +253,19 @@ struct Processor
       
     static uint32_t const bg_mask = 0x08ff01c0; /* Q, 23-20, GE[3:0], A, I, F, are not handled for now */
       
-    PSR( StatusRegister const& ref, Processor& _proc ) : StatusRegister(ref), proc(_proc) {}
+  private:
+    PSR( PSR const& );
+  public:
+    PSR( Processor& p, StatusRegister const& ref )
+      : StatusRegister(ref)
+      , proc(p)
+      , n(newRegRead(p, RegID("n"), ScalarType::BOOL))
+      , z(newRegRead(p, RegID("z"), ScalarType::BOOL))
+      , c(newRegRead(p, RegID("c"), ScalarType::BOOL))
+      , v(newRegRead(p, RegID("v"), ScalarType::BOOL))
+      , itstate(ref.outitb ? U8(0).expr : newRegRead(p, RegID("itstate"), ScalarType::U8))
+      , bg(newRegRead(p, RegID("cpsr"), ScalarType::U32))
+    {}
     
     bool   GetJ() const { return (iset == Jazelle) or (iset == ThumbEE); }
     bool   GetT() const { return (iset ==   Thumb) or (iset == ThumbEE); }
@@ -277,7 +299,7 @@ struct Processor
     void   Set( ZRF const& _, BOOL const& value ) { z = value.expr; }
     void   Set( CRF const& _, BOOL const& value ) { c = value.expr; }
     void   Set( VRF const& _, BOOL const& value ) { v = value.expr; }
-    void   Set( ERF const& _, U32 const& value ) { if (proc.Cond(value != U32(bigendian))) proc.UnpredictableInsnBehaviour(); }
+    void   Set( ERF const& _, U32 const& value ) { if (proc.Choose(value != U32(bigendian))) proc.UnpredictableInsnBehaviour(); }
     void   Set( NZCVRF const& _, U32 const& value );
       
     void   SetITState( uint8_t init_val ) { itstate = U8(init_val); }
@@ -298,18 +320,25 @@ struct Processor
     // U32 Get( ALL const& _ ) { return (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) | bg; }
       
     Processor& proc;
+    Expr n, z, c, v; /* TODO: should handle q */
+    U8 itstate;
+    U32 bg;
   };
+
+private:
+  Processor( Processor const& );
+public:
   
-  Processor( StatusRegister const& ref_psr, U32 const& insn_addr, unsigned insn_bytes )
+  Processor( StatusRegister const& ref_psr )
     : path(0)
     , reg_values()
-    , next_insn_addr( insn_addr + U32(insn_bytes) )
-    , branch_type( Br::Jump )
-    , cpsr( ref_psr, *this )
-    , spsr( Expr( newRegRead(RegID("spsr"),32) ) )
+    , next_insn_addr()
+    , branch_type()
+    , cpsr( *this, ref_psr )
+    , spsr( newRegRead(*this, RegID("spsr"), ScalarType::U32) )
     , sregs()
-    , FPSCR( Expr( newRegRead(RegID("fpscr"),32) ) )
-    , FPEXC( Expr( newRegRead(RegID("fpexc"),32) ) )
+    , FPSCR( newRegRead(*this, RegID("fpscr"), ScalarType::U32) )
+    , FPEXC( newRegRead(*this, RegID("fpexc"), ScalarType::U32) )
     , stores()
     , unpredictable(false)
     , is_it_assigned(false)
@@ -318,12 +347,11 @@ struct Processor
   {
     // GPR regs
     for (unsigned reg = 0; reg < 15; ++reg)
-      reg_values[reg] = U32( Expr( newRegRead( RegID("r0") + reg, 32 ) ) );
-    reg_values[15] = insn_addr + U32(ref_psr.IsThumb() ? 4 : 8 );
+      reg_values[reg] = U32( newRegRead( *this, RegID("r0") + reg, ScalarType::U32 ) );
       
     // Special registers
     for (SRegID reg; reg.next();)
-      sregs[reg.idx()] = U32( Expr( newRegRead( reg, 32 ) ) );
+      sregs[reg.idx()] = U32( newRegRead( *this, reg, ScalarType::U32 ) );
   }
 
   bool close( Processor const& ref )
@@ -336,29 +364,29 @@ struct Processor
         return complete;
       }
     if (cpsr.n != ref.cpsr.n)
-      path->sinks.insert( Expr( newRegWrite( RegID("n"), cpsr.n, 1 ) ) );
+      path->sinks.insert( newRegWrite( RegID("n"), cpsr.n ) );
     if (cpsr.z != ref.cpsr.z)
-      path->sinks.insert( Expr( newRegWrite( RegID("z"), cpsr.z, 1 ) ) );
+      path->sinks.insert( newRegWrite( RegID("z"), cpsr.z ) );
     if (cpsr.c != ref.cpsr.c)
-      path->sinks.insert( Expr( newRegWrite( RegID("c"), cpsr.c, 1 ) ) );
+      path->sinks.insert( newRegWrite( RegID("c"), cpsr.c ) );
     if (cpsr.v != ref.cpsr.v)
-      path->sinks.insert( Expr( newRegWrite( RegID("v"), cpsr.v, 1 ) ) );
+      path->sinks.insert( newRegWrite( RegID("v"), cpsr.v ) );
     if (cpsr.itstate.expr != ref.cpsr.itstate.expr)
-      path->sinks.insert( Expr( newRegWrite( RegID("itstate"), cpsr.itstate.expr, 8 ) ) );
+      path->sinks.insert( newRegWrite( RegID("itstate"), cpsr.itstate.expr ) );
     if (cpsr.bg.expr != ref.cpsr.bg.expr)
-      path->sinks.insert( Expr( newRegWrite( RegID("cpsr"), cpsr.bg.expr, 32 ) ) );
+      path->sinks.insert( newRegWrite( RegID("cpsr"), cpsr.bg.expr ) );
     if (spsr.expr != ref.spsr.expr)
-      path->sinks.insert( Expr( newRegWrite( RegID("spsr"), spsr.expr, 32 ) ) );
+      path->sinks.insert( newRegWrite( RegID("spsr"), spsr.expr ) );
     for (SRegID reg; reg.next();)
       if (sregs[reg.idx()].expr != ref.sregs[reg.idx()].expr)
-        path->sinks.insert( Expr( newRegWrite( reg, sregs[reg.idx()].expr, 32 ) ) );
+        path->sinks.insert( newRegWrite( reg, sregs[reg.idx()].expr ) );
     if (FPSCR.expr != ref.FPSCR.expr)
-      path->sinks.insert( Expr( newRegWrite( RegID("fpscr"), FPSCR.expr, 32 ) ) );
+      path->sinks.insert( newRegWrite( RegID("fpscr"), FPSCR.expr ) );
     if (FPEXC.expr != ref.FPEXC.expr)
-      path->sinks.insert( Expr( newRegWrite( RegID("fpexc"), FPEXC.expr, 32 ) ) );
+      path->sinks.insert( newRegWrite( RegID("fpexc"), FPEXC.expr ) );
     for (unsigned reg = 0; reg < 15; ++reg) {
       if (reg_values[reg].expr != ref.reg_values[reg].expr)
-        path->sinks.insert( Expr( newRegWrite( RegID("r0") + reg, reg_values[reg].expr, 32 ) ) );
+        path->sinks.insert( newRegWrite( RegID("r0") + reg, reg_values[reg].expr ) );
     }
     for (ForeignRegisters::iterator itr = foreign_registers.begin(), end = foreign_registers.end(); itr != end; ++itr)
       {
@@ -368,7 +396,7 @@ struct Processor
         if (itr->second == Expr(&ref)) continue;
         std::ostringstream buf;
         ref.Repr( buf );
-        path->sinks.insert( Expr( newRegWrite( RegID(buf.str().c_str()), itr->second, 32 ) ) );
+        path->sinks.insert( newRegWrite( RegID(buf.str().c_str()), itr->second ) );
       }
     for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
       path->sinks.insert( *itr );
@@ -384,19 +412,41 @@ struct Processor
   template <typename OP>
   void UndefinedInstruction( OP* op ) { not_implemented(); }
     
+  bool Choose( Expr const& cexp )
+  {
+    bool predicate = path->proceed( cexp );
+    path = path->next( predicate );
+    return predicate;
+  }
+  
   template <typename T>
-  bool Cond( unisim::util::symbolic::SmartValue<T> const& cond )
+  bool Choose( unisim::util::symbolic::SmartValue<T> const& cond )
   {
     if (not cond.expr.good())
       throw std::logic_error( "Not a valid condition" );
-      
+
     Expr cexp( BOOL(cond).expr );
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
       return cnode->GetBoolean();
 
-    bool predicate = path->proceed( cexp );
-    path = path->next( predicate );
-    return predicate;
+    return Choose( cexp );
+  }
+  
+  template <typename T>
+  static bool Concretize( unisim::util::symbolic::SmartValue<T> const& cond )
+  {
+    if (not cond.expr.good())
+      throw std::logic_error( "Not a valid condition" );
+
+    Expr cexp( BOOL(cond).expr );
+    if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
+      return cnode->GetBoolean();
+
+    Processor* proc = Processor::FindRoot(cexp);
+    if (not proc)
+      throw std::logic_error( "No root processor in variable expression" );
+
+    return proc->Choose( cexp );
   }
     
   void FPTrap( unsigned exc )
@@ -480,7 +530,7 @@ struct Processor
   U32& SPSR() { not_implemented(); static U32 spsr_dummy; return spsr_dummy; }
   
   ITCond itcond() const { return ITCond(); }
-  bool itblock() { return Cond(cpsr.InITBlock()); }
+  bool itblock() { return Choose(cpsr.InITBlock()); }
   
   void ITSetState( uint32_t cond, uint32_t mask )
   {
@@ -495,7 +545,7 @@ struct Processor
     else if (itblock())
       {
         U8 itstate( cpsr.itstate );
-        itstate = (Cond((itstate & U8(7)) != U8(0))) ? ((itstate & U8(-32)) | ((itstate << 1) & U8(31))) : U8(0);
+        itstate = (Choose((itstate & U8(7)) != U8(0))) ? ((itstate & U8(-32)) | ((itstate << 1) & U8(31))) : U8(0);
         cpsr.itstate = itstate;
       }
   }
@@ -558,11 +608,11 @@ struct Processor
   //   =                       Memory access methods                       =
   //   =====================================================================
   
-  U32  MemURead32( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 2, 0, false ) ) ); }
-  U16  MemURead16( U32 const& addr ) { return U16( Expr( new Load( addr.expr, 1, 0, false ) ) ); }
-  U32  MemRead32( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 2, 2, false ) ) ); }
-  U16  MemRead16( U32 const& addr ) { return U16( Expr( new Load( addr.expr, 1, 1, false ) ) ); }
-  U8   MemRead8( U32 const& addr ) { return U8( Expr( new Load( addr.expr, 0, 0, false ) ) ); }
+  U32  MemURead32( U32 const& addr ) { return U32( Expr( new Load( *this, addr.expr, 2, 0, false ) ) ); }
+  U16  MemURead16( U32 const& addr ) { return U16( Expr( new Load( *this, addr.expr, 1, 0, false ) ) ); }
+  U32  MemRead32( U32 const& addr ) { return U32( Expr( new Load( *this, addr.expr, 2, 2, false ) ) ); }
+  U16  MemRead16( U32 const& addr ) { return U16( Expr( new Load( *this, addr.expr, 1, 1, false ) ) ); }
+  U8   MemRead8( U32 const& addr ) { return U8( Expr( new Load( *this, addr.expr, 0, 0, false ) ) ); }
   
   void MemUWrite32( U32 const& addr, U32 const& value ) { stores.insert( new Store( addr.expr, value.expr, 2, 0, false ) ); }
   void MemUWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( addr.expr, value.expr, 1, 0, false ) ); }
@@ -873,7 +923,7 @@ void UpdateStatusSubWithBorrow( Processor& state, Processor::U32 const& res, Pro
   Processor::BOOL neg = S32(res) < S32(0);
   state.cpsr.n = neg.expr;
   state.cpsr.z = ( res == U32(0) ).expr;
-  if (state.Cond(borrow != U32(0)))
+  if (state.Choose(borrow != U32(0)))
     {
       state.cpsr.c = ( lhs >  rhs ).expr;
       state.cpsr.v = ( neg xor (S32(lhs) <= S32(rhs)) ).expr;
@@ -903,7 +953,7 @@ void UpdateStatusAddWithCarry( Processor& state, Processor::U32 const& res, Proc
   Processor::BOOL neg = S32(res) < S32(0);
   state.cpsr.n = neg.expr;
   state.cpsr.z = ( res == U32(0) ).expr;
-  if (state.Cond(carry != U32(0)))
+  if (state.Choose(carry != U32(0)))
     {
       state.cpsr.c = ( lhs >= ~rhs ).expr;
       state.cpsr.v = ( neg xor (S32(lhs) <  S32(~rhs)) ).expr;
@@ -996,8 +1046,8 @@ struct Translator
     }
     
     Processor::U32      insn_addr = unisim::util::symbolic::make_const(addr); //< concrete instruction address
-    // Processor::U32      insn_addr = Expr(new InstructionAddress); //< symbolic instruction address
-    Processor reference( status, insn_addr, instruction.bytecount );
+    // Processor::U32      insn_addr = Expr(new InstructionAddress()); //< symbolic instruction address
+    Processor reference( status );
     
     // Disassemble
     sink << "(mnemonic . \"";
@@ -1008,12 +1058,18 @@ struct Translator
     // Get actions
     try
       {
+        bool is_thumb = status.IsThumb();
         for (bool end = false; not end;)
           {
-            Processor state( reference );
+            Processor state( status );
             state.path = coderoot;
+            // Fetch
+            uint32_t insn_addr = instruction->GetAddr();
+            state.SetNIA( Processor::U32(insn_addr + instruction.bytecount), Processor::B_JMP );
+            state.reg_values[15] = Processor::U32(insn_addr + (is_thumb ? 4 : 8) );
+            // Execute
             instruction->execute( state );
-            if (state.cpsr.IsThumb())
+            if (is_thumb)
               state.ITAdvance();
             end = state.close( reference );
           }
@@ -1112,7 +1168,7 @@ main( int argc, char** argv )
       else if (flag == "hypervisor") { status.mode = Processor::HYPERVISOR_MODE; }
       else if (flag == "undefined")  { status.mode = Processor::UNDEFINED_MODE; }
       else if (flag == "system")     { status.mode = Processor::SYSTEM_MODE; }
-      else if (flag == "outitb")     { status.FixITState(0); }
+      else if (flag == "outitb")     { status.outitb = true; }
       else
         {
           std::cerr << "Unknown execution state flag: " << flag << std::endl;
@@ -1603,13 +1659,13 @@ Processor::PSR::SetBits( U32 const& bits, uint32_t mask )
         throw 0;
       U32       nmode = MRF().Get(bits);
       MRF().Set(mask, 0u);
-      if (proc.Cond(nmode != U32(mode)))
+      if (proc.Choose(nmode != U32(mode)))
         proc.UnpredictableInsnBehaviour();
     }
         
-  if (JRF().Get(mask)) { if (proc.Cond(JRF().Get(bits) != U32(GetJ())))    { proc.UnpredictableInsnBehaviour(); } JRF().Set(mask, 0u); }
-  if (TRF().Get(mask)) { if (proc.Cond(TRF().Get(bits) != U32(GetT())))    { proc.UnpredictableInsnBehaviour(); } TRF().Set(mask, 0u); }
-  if (ERF().Get(mask)) { if (proc.Cond(ERF().Get(bits) != U32(bigendian))) { proc.UnpredictableInsnBehaviour(); } ERF().Set(mask, 0u); }
+  if (JRF().Get(mask)) { if (proc.Choose(JRF().Get(bits) != U32(GetJ())))    { proc.UnpredictableInsnBehaviour(); } JRF().Set(mask, 0u); }
+  if (TRF().Get(mask)) { if (proc.Choose(TRF().Get(bits) != U32(GetT())))    { proc.UnpredictableInsnBehaviour(); } TRF().Set(mask, 0u); }
+  if (ERF().Get(mask)) { if (proc.Choose(ERF().Get(bits) != U32(bigendian))) { proc.UnpredictableInsnBehaviour(); } ERF().Set(mask, 0u); }
         
   bg = (bg & U32(~mask)) | (bits & U32(mask));
 }
