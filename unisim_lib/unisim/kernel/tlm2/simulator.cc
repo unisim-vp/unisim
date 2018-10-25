@@ -33,6 +33,7 @@
  */
 
 #include <unisim/kernel/tlm2/simulator.hh>
+#include <unisim/kernel/tlm2/tlm_can.hh>
 
 namespace unisim {
 namespace kernel {
@@ -2615,13 +2616,17 @@ Simulator::Simulator(sc_core::sc_module_name const& name, int argc, char **argv,
 	, stat_cur_sim_time("cur-sim-time", this, *const_cast<sc_core::sc_time *>(&sc_core::sc_time_stamp()), "SystemC current simulation time (as returned by sc_core::sc_time_stamp()) ")
 	, global_quantum(sc_core::SC_ZERO_TIME)
 	, param_global_quantum("global-quantum", this, global_quantum, "SystemC TLM-2.0 global quantum")
+	, can_global_quantum(sc_core::SC_ZERO_TIME)
+	, param_can_global_quantum("can-global-quantum", this, can_global_quantum, "SystemC TLM CAN global quantum")
 {
 	stat_cur_sim_time.SetMutable(false);
 	stat_cur_sim_time.SetSerializable(false);
 	param_global_quantum.SetMutable(false);
+	param_can_global_quantum.SetMutable(false);
 	instrumenter = new Instrumenter("instrumenter", this);
 	
 	tlm::tlm_global_quantum::instance().set(global_quantum);
+	tlm_can_global_quantum::instance().set(can_global_quantum);
 }
 
 Simulator::~Simulator()

@@ -153,6 +153,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, pflash_stub(0)
 	, mc_me_stub(0)
 	, mc_cgm_stub(0)
+	, mc_rgm_stub(0)
+	, pram_0_stub(0)
 	, dma_err_irq_combinator(0)
 	, DSPI0_0(0)
 	, DSPI1_0(0)
@@ -407,6 +409,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	pflash_stub = new PFLASH_STUB("PFLASH", this);
 	mc_me_stub = new MC_ME_STUB("MC_ME", this);
 	mc_cgm_stub = new MC_CGM_STUB("MC_CGM", this);
+	mc_rgm_stub = new MC_RGM_STUB("MC_RGM", this);
+	pram_0_stub = new PRAMC_STUB("PRAM_0", this);
 
 	dma_err_irq_combinator = new unisim::component::tlm2::operators::LogicalOrOperator<bool, NUM_DMA_CHANNELS>("DMA_ERR_IRQ_COMBINATOR");
 
@@ -1763,6 +1767,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*pbridge_a->init_socket[39])(ebi->peripheral_slave_if);            // PBRIDGE_A <-> EBI
 	(*pbridge_a->init_socket[40])(xbar_0->peripheral_slave_if[XBAR_0_CONFIG::SMPU_PERIPHERAL_SLAVE_IF]);         // PBRIDGE_A <-> SMPU_0
 	(*pbridge_a->init_socket[41])(xbar_1->peripheral_slave_if[XBAR_1_CONFIG::SMPU_PERIPHERAL_SLAVE_IF]);         // PBRIDGE_A <-> SMPU_1
+	(*pbridge_a->init_socket[42])(mc_rgm_stub->slave_sock);             // PBRIDGE_A <-> MC_RGM
+	(*pbridge_a->init_socket[43])(pram_0_stub->slave_sock);             // PBRIDGE_A <-> PRAM_0
 	
 	(*pbridge_b->init_socket[0])(linflexd_2->peripheral_slave_if);      // PBRIDGE_B <-> LINFlexD_2
 	(*pbridge_b->init_socket[1])(linflexd_15->peripheral_slave_if);     // PBRIDGE_B <-> LINFlexD_15
@@ -4886,6 +4892,8 @@ Simulator::~Simulator()
 	if(pflash_stub) delete pflash_stub;
 	if(mc_me_stub) delete mc_me_stub;
 	if(mc_cgm_stub) delete mc_cgm_stub;
+	if(mc_rgm_stub) delete mc_rgm_stub;
+	if(pram_0_stub) delete pram_0_stub;
 	if(dma_err_irq_combinator) delete dma_err_irq_combinator;
 	if(DSPI0_0) delete DSPI0_0;
 	if(DSPI1_0) delete DSPI1_0;
@@ -5398,6 +5406,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_39", "EBI");
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_40", "SMPU_0");
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_41", "SMPU_1");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_42", "MC_RGM");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_43", "PRAM_0");
 	
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.cycle_time", "20 ns");
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_0",  "range_start=\"0xfc040000\" range_end=\"0xfc04ffff\" output_port=\"0\"  translation=\"0x0\""); // INTC        -> INTC  (rel address)
@@ -5442,6 +5452,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_39", "range_start=\"0xffff0000\" range_end=\"0xffff3fff\" output_port=\"39\" translation=\"0x0\""); // EBI         -> EBI      (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_40", "range_start=\"0xfc010000\" range_end=\"0xfc013fff\" output_port=\"40\" translation=\"0x0\""); // SMPU_0      -> SMPU_0   (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_41", "range_start=\"0xfc014000\" range_end=\"0xfc017fff\" output_port=\"41\" translation=\"0x0\""); // SMPU_1      -> SMPU_1   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_42", "range_start=\"0xfffa8000\" range_end=\"0xfffabfff\" output_port=\"42\" translation=\"0x0\""); // MC_RGM      -> MC_RGM   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_43", "range_start=\"0xfc020000\" range_end=\"0xfc023fff\" output_port=\"43\" translation=\"0x0\""); // PRAM_0      -> PRAM_0   (rel address)
 
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_0", "pacr16");   // INTC_0
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_1", "pacr26");   // STM_0
@@ -5485,6 +5497,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_39", "opacr3");  // EBI
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_40", "pacr4");   // SMPU_0
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_41", "pacr5");   // SMPU_1
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_42", "opacr21"); // MC_RGM
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_43", "pacr8");   // PRAM_0
 	
 	//  - PBRIDGE_B
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.input_socket_name_0", "XBAR_1_S2");
@@ -5840,6 +5854,20 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.MC_CGM.write-latency", "20 ns");
 	simulator->SetVariable("HARDWARE.MC_CGM.org", 0x0);
 	simulator->SetVariable("HARDWARE.MC_CGM.bytesize", 16 * 1024);
+
+	//  - MC_RGM_STUB
+	simulator->SetVariable("HARDWARE.MC_RGM.cycle-time", "20 ns");
+	simulator->SetVariable("HARDWARE.MC_RGM.read-latency", "20 ns");
+	simulator->SetVariable("HARDWARE.MC_RGM.write-latency", "20 ns");
+	simulator->SetVariable("HARDWARE.MC_RGM.org", 0x0);
+	simulator->SetVariable("HARDWARE.MC_RGM.bytesize", 16 * 1024);
+
+	//  - PRAM_0 stub
+	simulator->SetVariable("HARDWARE.PRAM_0.cycle-time", "20 ns");
+	simulator->SetVariable("HARDWARE.PRAM_0.read-latency", "20 ns");
+	simulator->SetVariable("HARDWARE.PRAM_0.write-latency", "20 ns");
+	simulator->SetVariable("HARDWARE.PRAM_0.org", 0x0);
+	simulator->SetVariable("HARDWARE.PRAM_0.bytesize", 16 * 1024);
 
 	//=========================================================================
 	//===                      Service run-time configuration               ===

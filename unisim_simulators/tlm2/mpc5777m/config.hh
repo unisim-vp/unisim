@@ -113,8 +113,8 @@ struct Config
 	{
 		typedef uint32_t ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 42;
-		static const unsigned int NUM_MAPPINGS = 42;
+		static const unsigned int OUTPUT_SOCKETS = 44;
+		static const unsigned int NUM_MAPPINGS = 44;
 		static const unsigned int INPUT_BUSWIDTH = 32;
 		static const unsigned int OUTPUT_BUSWIDTH = 32;
 		static const unsigned int PERIPHERAL_BUSWIDTH = 32;

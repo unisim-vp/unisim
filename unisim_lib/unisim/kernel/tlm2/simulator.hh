@@ -720,6 +720,8 @@ private:
 	unisim::kernel::service::Statistic<sc_core::sc_time> stat_cur_sim_time;
 	sc_core::sc_time global_quantum;
 	unisim::kernel::service::Parameter<sc_core::sc_time> param_global_quantum;
+	sc_core::sc_time can_global_quantum;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_can_global_quantum;
 };
 
 template <typename T> sc_core::sc_signal<T>& Simulator::CreateSignal(const T& init_value, INSTRUMENTATION_TYPE instr_type)
