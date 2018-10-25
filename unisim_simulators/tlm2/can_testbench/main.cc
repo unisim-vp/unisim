@@ -79,6 +79,8 @@ struct Node : tlm_can_node<Node>
 		, can_error(TLM_CAN_NO_ERROR)
 		, receive_error_count(0)
 		, transmit_error_count(0)
+		, loopback(false)
+		, param_loopback("loopback", this, loopback, "enable/disable loopback")
 	{
 		SC_HAS_PROCESS(Node);
 		
@@ -267,7 +269,7 @@ protected:
 	{
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << ":received message " << msg << EndDebugInfo;
+			logger << DebugInfo << "received message " << msg << EndDebugInfo;
 		}
 		rx_fifo.push(msg);
 	}
@@ -278,7 +280,7 @@ protected:
 	
 	bool is_loopback_enabled() const
 	{
-		return false;
+		return loopback;
 	}
 
 	sc_core::sc_time sample_point;
@@ -291,6 +293,8 @@ protected:
 	tlm_can_error can_error;
 	uint8_t receive_error_count;
 	uint8_t transmit_error_count;
+	bool loopback;
+	unisim::kernel::service::Parameter<bool> param_loopback;
 };
 
 class Simulator : public unisim::kernel::tlm2::Simulator

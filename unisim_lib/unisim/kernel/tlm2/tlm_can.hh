@@ -1866,7 +1866,7 @@ void tlm_can_node<CAN_NODE>::transceive_error_frame()
 			inc_transmit_error_count(8);
 		}
 	}
-	else if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER)
+	else
 	{
 		// 1. When a RECEIVER detects an error, the RECEIVE ERROR COUNT will be increased by 1...
 		inc_receive_error_count(1);
@@ -1901,7 +1901,7 @@ void tlm_can_node<CAN_NODE>::transceive_error_frame()
 				// 4. If an TRANSMITTER detects a BIT ERROR while sending an ACTIVE ERROR FLAG the TRANSMIT ERROR COUNT is increased by 8
 				inc_transmit_error_count(8);
 			}
-			else if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER)
+			else
 			{
 				// 5. If an RECEIVE detects a BIT ERROR while sending an ACTIVE ERROR FLAG the RECEIVE ERROR COUNT is increased by 8
 				inc_receive_error_count(8);
@@ -1944,7 +1944,7 @@ void tlm_can_node<CAN_NODE>::transceive_error_frame()
 					// every TRANSMITTER increases its TRANSMITTER ERROR COUNT
 					inc_transmit_error_count(8);
 				}
-				else if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER)
+				else
 				{
 					// every RECEIVER increases its TRANSMITTER ERROR COUNT
 					inc_receive_error_count(8);
@@ -1970,6 +1970,7 @@ void tlm_can_node<CAN_NODE>::transceive_error_frame()
 template <typename CAN_NODE>
 void tlm_can_node<CAN_NODE>::transceive_overload_frame()
 {
+	assert((__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER) || __get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER);
 	__set_phase(TLM_CAN_OVERLOAD_FLAG_PHASE);
 
 	bool bit_error = false;
@@ -2012,7 +2013,7 @@ void tlm_can_node<CAN_NODE>::transceive_overload_frame()
 				// 4. If an TRANSMITTER detects a BIT ERROR while sending an OVERLOAD FLAG the TRANSMIT ERROR COUNT is increased by 8
 				inc_transmit_error_count(8);
 			}
-			else if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER)
+			else
 			{
 				// 5. If an RECEIVE detects a BIT ERROR while sending an OVERLOAD FLAG the RECEIVE ERROR COUNT is increased by 8
 				inc_receive_error_count(8);
@@ -2051,7 +2052,7 @@ void tlm_can_node<CAN_NODE>::transceive_overload_frame()
 					// every TRANSMITTER increases its TRANSMITTER ERROR COUNT
 					inc_transmit_error_count(8);
 				}
-				else if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER)
+				else
 				{
 					// every RECEIVER increases its TRANSMITTER ERROR COUNT
 					inc_receive_error_count(8);
@@ -2070,6 +2071,7 @@ void tlm_can_node<CAN_NODE>::transceive_overload_frame()
 template <typename CAN_NODE>
 void tlm_can_node<CAN_NODE>::transceive_intermission()
 {
+	assert((__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER) || __get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER);
 	__set_phase(TLM_CAN_INTERMISSION_PHASE);
 	
 	bool overload = false;
@@ -2334,6 +2336,7 @@ void tlm_can_node<CAN_NODE>::transceive_start_of_frame()
 template <typename CAN_NODE>
 void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 {
+	assert((__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER) || __get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER);
 	__set_phase(TLM_CAN_ID_PHASE);
 	
 	bool bit_error = false;
@@ -2546,6 +2549,7 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 		{
 			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":standard format" << EndDebugInfo;
 		}
+		recv_msg.set_identifier(recv_msg_id);
 		recv_msg.set_remote_transmission_request(recv_srr_rtr);
 		
 		if(unlikely(verbose))
@@ -3147,7 +3151,7 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 			}
 		}
 	}
-	else if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER)
+	else
 	{
 		form_error = (crc_delimiter != TLM_CAN_RECESSIVE);
 		if(form_error)
@@ -3221,7 +3225,7 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 			data.push_back(TLM_CAN_RECESSIVE);  // ack slot
 			CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 		}
-		else if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER)
+		else
 		{
 			payload.set_period(baud_period);
 			data.clear();
@@ -3370,14 +3374,15 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 	
 	if(__get_can_error() == TLM_CAN_NO_ERROR)
 	{
+		if((__get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER) || __is_loopback_enabled())
+		{
+			__receive_message(recv_msg);
+		}
+		
 		if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
 		{
 			assert(__has_pending_transmission_request());
 			__transmission_occurred(*send_msg);
-		}
-		else
-		{
-			__receive_message(recv_msg);
 		}
 	}
 	
