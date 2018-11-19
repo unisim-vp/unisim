@@ -1650,28 +1650,6 @@
 				<value>5 ns</value>
 				<description>Time to process a request/response by the router</description>
 			</variable>
-			<variable name="enable-bandwidth-tracing">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable bandwidth tracing</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="bandwidth-tracing-start-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>0 s</value>
-				<description>bandwidth tracing start time</description>
-			</variable>
-			<variable name="bandwidth-tracing-end-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>18446744073709551615 ps</value>
-				<description>bandwidth tracing end time</description>
-			</variable>
 			<variable name="verbose_all">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -1717,16 +1695,6 @@
 				<data_type>boolean</data_type>
 				<value>false</value>
 				<description>Display memory interface operations information</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="verbose-tracing">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable verbosity while tracing I/O activity over Initiator and Target TLM-2.0 sockets</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -1928,28 +1896,6 @@
 				<value>10 ns</value>
 				<description>Time to process a request/response by the router</description>
 			</variable>
-			<variable name="enable-bandwidth-tracing">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable bandwidth tracing</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="bandwidth-tracing-start-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>0 s</value>
-				<description>bandwidth tracing start time</description>
-			</variable>
-			<variable name="bandwidth-tracing-end-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>18446744073709551615 ps</value>
-				<description>bandwidth tracing end time</description>
-			</variable>
 			<variable name="verbose_all">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -1995,16 +1941,6 @@
 				<data_type>boolean</data_type>
 				<value>false</value>
 				<description>Display memory interface operations information</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="verbose-tracing">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable verbosity while tracing I/O activity over Initiator and Target TLM-2.0 sockets</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -2164,28 +2100,6 @@
 				<value>20 ns</value>
 				<description>Time to process a request/response by the router</description>
 			</variable>
-			<variable name="enable-bandwidth-tracing">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable bandwidth tracing</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="bandwidth-tracing-start-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>0 s</value>
-				<description>bandwidth tracing start time</description>
-			</variable>
-			<variable name="bandwidth-tracing-end-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>18446744073709551615 ps</value>
-				<description>bandwidth tracing end time</description>
-			</variable>
 			<variable name="verbose_all">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -2231,16 +2145,6 @@
 				<data_type>boolean</data_type>
 				<value>false</value>
 				<description>Display memory interface operations information</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="verbose-tracing">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable verbosity while tracing I/O activity over Initiator and Target TLM-2.0 sockets</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -2508,6 +2412,42 @@
 				<type>parameter</type>
 				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
 				<value>range_start=&quot;0xfc020000&quot; range_end=&quot;0xfc023fff&quot; output_port=&quot;43&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_44">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xffee4000&quot; range_end=&quot;0xffee7fff&quot; output_port=&quot;44&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_45">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xffee8000&quot; range_end=&quot;0xffeebfff&quot; output_port=&quot;45&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_46">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xffeec000&quot; range_end=&quot;0xffeeffff&quot; output_port=&quot;46&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_47">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xffef0000&quot; range_end=&quot;0xffef3fff&quot; output_port=&quot;47&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_48">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xffed4000&quot; range_end=&quot;0xffed7fff&quot; output_port=&quot;48&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_49">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xffed8000&quot; range_end=&quot;0xffedbfff&quot; output_port=&quot;48&quot; translation=&quot;0x4000&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
 			<variable name="input_socket_name_0">
@@ -2779,6 +2719,36 @@
 				<data_type>string</data_type>
 				<value>PRAM_0</value>
 				<description>Name of output socket #43</description>
+			</variable>
+			<variable name="output_socket_name_44">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M_CAN_1</value>
+				<description>Name of output socket #44</description>
+			</variable>
+			<variable name="output_socket_name_45">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M_CAN_2</value>
+				<description>Name of output socket #45</description>
+			</variable>
+			<variable name="output_socket_name_46">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M_CAN_3</value>
+				<description>Name of output socket #46</description>
+			</variable>
+			<variable name="output_socket_name_47">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M_CAN_4</value>
+				<description>Name of output socket #47</description>
+			</variable>
+			<variable name="output_socket_name_48">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>SHARED_CAN_MESSAGE_RAM</value>
+				<description>Name of output socket #48</description>
 			</variable>
 			<variable name="endian">
 				<type>parameter</type>
@@ -3064,6 +3034,42 @@
 				<value>pacr8</value>
 				<description>access control register for output port #43</description>
 			</variable>
+			<variable name="acr_mapping_44">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr70</value>
+				<description>access control register for output port #44</description>
+			</variable>
+			<variable name="acr_mapping_45">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr69</value>
+				<description>access control register for output port #45</description>
+			</variable>
+			<variable name="acr_mapping_46">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr68</value>
+				<description>access control register for output port #46</description>
+			</variable>
+			<variable name="acr_mapping_47">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr67</value>
+				<description>access control register for output port #47</description>
+			</variable>
+			<variable name="acr_mapping_48">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr74</value>
+				<description>access control register for output port #48</description>
+			</variable>
+			<variable name="acr_mapping_49">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>opacr73</value>
+				<description>access control register for output port #49</description>
+			</variable>
 		</object>
 		<object name="HARDWARE.PBRIDGE_B">
 			<variable name="cycle_time">
@@ -3071,28 +3077,6 @@
 				<data_type>sc_time</data_type>
 				<value>20 ns</value>
 				<description>Time to process a request/response by the router</description>
-			</variable>
-			<variable name="enable-bandwidth-tracing">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable bandwidth tracing</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="bandwidth-tracing-start-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>0 s</value>
-				<description>bandwidth tracing start time</description>
-			</variable>
-			<variable name="bandwidth-tracing-end-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>18446744073709551615 ps</value>
-				<description>bandwidth tracing end time</description>
 			</variable>
 			<variable name="verbose_all">
 				<type>parameter</type>
@@ -3139,16 +3123,6 @@
 				<data_type>boolean</data_type>
 				<value>false</value>
 				<description>Display memory interface operations information</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="verbose-tracing">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable verbosity while tracing I/O activity over Initiator and Target TLM-2.0 sockets</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -3296,28 +3270,6 @@
 				<value>0 s</value>
 				<description>Time to process a request/response by the router</description>
 			</variable>
-			<variable name="enable-bandwidth-tracing">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable bandwidth tracing</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="bandwidth-tracing-start-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>0 s</value>
-				<description>bandwidth tracing start time</description>
-			</variable>
-			<variable name="bandwidth-tracing-end-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>18446744073709551615 ps</value>
-				<description>bandwidth tracing end time</description>
-			</variable>
 			<variable name="verbose_all">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -3363,16 +3315,6 @@
 				<data_type>boolean</data_type>
 				<value>false</value>
 				<description>Display memory interface operations information</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="verbose-tracing">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable verbosity while tracing I/O activity over Initiator and Target TLM-2.0 sockets</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -3430,28 +3372,6 @@
 				<value>10 ns</value>
 				<description>Time to process a request/response by the router</description>
 			</variable>
-			<variable name="enable-bandwidth-tracing">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable bandwidth tracing</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="bandwidth-tracing-start-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>0 s</value>
-				<description>bandwidth tracing start time</description>
-			</variable>
-			<variable name="bandwidth-tracing-end-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>18446744073709551615 ps</value>
-				<description>bandwidth tracing end time</description>
-			</variable>
 			<variable name="verbose_all">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -3497,16 +3417,6 @@
 				<data_type>boolean</data_type>
 				<value>false</value>
 				<description>Display memory interface operations information</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="verbose-tracing">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable verbosity while tracing I/O activity over Initiator and Target TLM-2.0 sockets</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -3544,28 +3454,6 @@
 				<value>0 s</value>
 				<description>Time to process a request/response by the router</description>
 			</variable>
-			<variable name="enable-bandwidth-tracing">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable bandwidth tracing</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="bandwidth-tracing-start-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>0 s</value>
-				<description>bandwidth tracing start time</description>
-			</variable>
-			<variable name="bandwidth-tracing-end-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>18446744073709551615 ps</value>
-				<description>bandwidth tracing end time</description>
-			</variable>
 			<variable name="verbose_all">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -3611,16 +3499,6 @@
 				<data_type>boolean</data_type>
 				<value>false</value>
 				<description>Display memory interface operations information</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="verbose-tracing">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable verbosity while tracing I/O activity over Initiator and Target TLM-2.0 sockets</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -3652,28 +3530,6 @@
 				<value>0 s</value>
 				<description>Time to process a request/response by the router</description>
 			</variable>
-			<variable name="enable-bandwidth-tracing">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable bandwidth tracing</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="bandwidth-tracing-start-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>0 s</value>
-				<description>bandwidth tracing start time</description>
-			</variable>
-			<variable name="bandwidth-tracing-end-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>18446744073709551615 ps</value>
-				<description>bandwidth tracing end time</description>
-			</variable>
 			<variable name="verbose_all">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -3719,16 +3575,6 @@
 				<data_type>boolean</data_type>
 				<value>false</value>
 				<description>Display memory interface operations information</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="verbose-tracing">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable verbosity while tracing I/O activity over Initiator and Target TLM-2.0 sockets</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -11288,6 +11134,336 @@
 				</enumeration>
 			</variable>
 		</object>
+		<object name="HARDWARE.M_CAN_1">
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="model-accuracy">
+				<type>parameter</type>
+				<data_type>can-model-accuracy</data_type>
+				<value>cycle-accurate</value>
+				<description>model accuracy (cycle-accurate, transaction-accurate, transmission-start-inaccurate)</description>
+				<enumeration>
+					<item>cycle-accurate</item>
+					<item>transaction-accurate</item>
+					<item>transmission-start-inaccurate</item>
+				</enumeration>
+			</variable>
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.M_CAN_2">
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="model-accuracy">
+				<type>parameter</type>
+				<data_type>can-model-accuracy</data_type>
+				<value>cycle-accurate</value>
+				<description>model accuracy (cycle-accurate, transaction-accurate, transmission-start-inaccurate)</description>
+				<enumeration>
+					<item>cycle-accurate</item>
+					<item>transaction-accurate</item>
+					<item>transmission-start-inaccurate</item>
+				</enumeration>
+			</variable>
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.M_CAN_3">
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="model-accuracy">
+				<type>parameter</type>
+				<data_type>can-model-accuracy</data_type>
+				<value>cycle-accurate</value>
+				<description>model accuracy (cycle-accurate, transaction-accurate, transmission-start-inaccurate)</description>
+				<enumeration>
+					<item>cycle-accurate</item>
+					<item>transaction-accurate</item>
+					<item>transmission-start-inaccurate</item>
+				</enumeration>
+			</variable>
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.M_CAN_4">
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="model-accuracy">
+				<type>parameter</type>
+				<data_type>can-model-accuracy</data_type>
+				<value>cycle-accurate</value>
+				<description>model accuracy (cycle-accurate, transaction-accurate, transmission-start-inaccurate)</description>
+				<enumeration>
+					<item>cycle-accurate</item>
+					<item>transaction-accurate</item>
+					<item>transmission-start-inaccurate</item>
+				</enumeration>
+			</variable>
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER">
+			<variable name="cycle_time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>Time to process a request/response by the router</description>
+			</variable>
+			<variable name="verbose_all">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Activate all the verbose options</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_setup">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display Object setup information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_tlm">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display TLM blocking/non-blocking transactions information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_tlm_debug">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display TLM debug transactions information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_memory_interface">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display memory interface operations information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="mapping_0">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x0&quot; range_end=&quot;0x7fff&quot; output_port=&quot;0&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="input_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>PBRIDGE_A</value>
+				<description>Name of input socket #0</description>
+			</variable>
+			<variable name="input_socket_name_1">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M_CAN_1</value>
+				<description>Name of input socket #1</description>
+			</variable>
+			<variable name="input_socket_name_2">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M_CAN_2</value>
+				<description>Name of input socket #2</description>
+			</variable>
+			<variable name="input_socket_name_3">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M_CAN_3</value>
+				<description>Name of input socket #3</description>
+			</variable>
+			<variable name="input_socket_name_4">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>M_CAN_4</value>
+				<description>Name of input socket #4</description>
+			</variable>
+			<variable name="output_socket_name_0">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>SHARED_CAN_MESSAGE_RAM</value>
+				<description>Name of output socket #0</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.SHARED_CAN_MESSAGE_RAM">
+			<variable name="org">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>20480</value>
+				<description>memory size in bytes</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename</description>
+			</variable>
+			<variable name="output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>output filename</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.CAN_BUS">
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="bit-inversion-error-probability">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0</value>
+				<description>probability of bit inversion error</description>
+			</variable>
+		</object>
 		<object name="HARDWARE.EBI_MEM_0">
 			<variable name="org">
 				<type>parameter</type>
@@ -12794,11 +12970,57 @@
 				</enumeration>
 			</variable>
 		</object>
+		<object name="HARDWARE.CAN_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>125 ns</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
 		<variable name="global-quantum">
 			<type>parameter</type>
 			<data_type>sc_time</data_type>
 			<value>200 ns</value>
 			<description>SystemC TLM-2.0 global quantum</description>
+		</variable>
+		<variable name="can-global-quantum">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>100 us</value>
+			<description>SystemC TLM CAN global quantum</description>
 		</variable>
 		<variable name="enable-core0-reset">
 			<type>parameter</type>
@@ -12847,18 +13069,6 @@
 			<data_type>sc_time</data_type>
 			<value>0 s</value>
 			<description>When Core #2 receives reset signal</description>
-		</variable>
-		<variable name="bandwidth-vcd-filename">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>bandwidth.vcd</value>
-			<description>Filename of VCD file where to trace interconnects bandwidth</description>
-		</variable>
-		<variable name="bandwidth-gtkwave-init-script">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>GTKWave initialization script that simulators must automatically generate at startup for best viewing interconnects bandwidth VCD trace</description>
 		</variable>
 	</object>
 	<object name="debugger">
@@ -14563,6 +14773,16 @@
 		<data_type>boolean</data_type>
 		<value>false</value>
 		<description>Enable/Disable serial terminal over LINFlexD_16 UART serial interface</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-tlm-can-bus-observer">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable TLM CAN bus observer</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>

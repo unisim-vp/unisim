@@ -49,6 +49,7 @@
 #include "pbridge.h"
 #include "xbar.h"
 #include "smpu.h"
+#include "m_can.h"
 #include "console.h"
 #include "ramdisk.h"
 #include "lfs.h"
@@ -281,6 +282,7 @@ void sys_init()
 	pbridge_drv_init();
 	xbar_drv_init();
 	smpu_drv_init();
+	m_can_drv_init();
 	
 	intc_init();      // initialize interrupt controller
 	edma_init(0);     // initialize eDMA_0
@@ -465,6 +467,27 @@ void sys_init()
 			dspi_select_irq_for_processor(12, DSPI_REQ_RFDF, 2);
 			dspi_select_irq_for_processor(12, DSPI_REQ_SPEF, 2);
 			dspi_select_irq_for_processor(12, DSPI_REQ_TFUF_RFOF_TFIWF, 2);
+
+			m_can_set_irq_priority(1, M_CAN_INT0, 60);
+			m_can_set_irq_priority(1, M_CAN_INT1, 60);
+
+			m_can_set_irq_priority(2, M_CAN_INT0, 60);
+			m_can_set_irq_priority(2, M_CAN_INT1, 60);
+
+			m_can_set_irq_priority(3, M_CAN_INT0, 60);
+			m_can_set_irq_priority(3, M_CAN_INT1, 60);
+
+			m_can_set_irq_priority(4, M_CAN_INT0, 60);
+			m_can_set_irq_priority(4, M_CAN_INT1, 60);
+
+			m_can_select_irq_for_processor(1, M_CAN_INT0, 0);
+			m_can_select_irq_for_processor(1, M_CAN_INT1, 0);
+
+			m_can_select_irq_for_processor(2, M_CAN_INT0, 1);
+			m_can_select_irq_for_processor(2, M_CAN_INT1, 1);
+
+			m_can_select_irq_for_processor(3, M_CAN_INT0, 2);
+			m_can_select_irq_for_processor(3, M_CAN_INT1, 2);
 
 			unsigned int chan;
 			for(chan = 0; chan < 64; chan++)

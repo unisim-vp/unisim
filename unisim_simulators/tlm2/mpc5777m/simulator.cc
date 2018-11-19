@@ -143,6 +143,14 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, dspi_12_pcs_serial_bus()
 	, dspi_12_ss_serial_bus(0)
 	, siul2(0)
+	//,m_ttcan_0(0)
+	, m_can_1(0)
+	, m_can_2(0)
+	, m_can_3(0)
+	, m_can_4(0)
+	, shared_can_message_ram_router(0)
+	, shared_can_message_ram(0)
+	, can_bus(0)
 	, ebi_mem_0(0)
 	, ebi_mem_1(0)
 	, ebi_mem_2(0)
@@ -397,6 +405,23 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	// - SIUL2
 	siul2 = new SIUL2("SIUL2", this);
+	
+	// - CAN subsystem
+	//m_ttcan_0 = new M_TTCAN_0("M_TTCAN_0", this);
+	m_can_1 = new M_CAN_1("M_CAN_1", this);
+	m_can_2 = new M_CAN_2("M_CAN_2", this);
+	m_can_3 = new M_CAN_3("M_CAN_3", this);
+	m_can_4 = new M_CAN_4("M_CAN_4", this);
+	shared_can_message_ram_router = new SHARED_CAN_MESSAGE_RAM_ROUTER("SHARED_CAN_MESSAGE_RAM_ROUTER", this);
+	shared_can_message_ram = new SHARED_CAN_MESSAGE_RAM("SHARED_CAN_MESSAGE_RAM", this);
+	
+	std::vector<sc_core::sc_signal<bool> *> CAN_TX;
+	CAN_TX.push_back(&CreateSignal("CAN_TX_1", true, OUTPUT_INSTRUMENTATION));
+	CAN_TX.push_back(&CreateSignal("CAN_TX_2", true, OUTPUT_INSTRUMENTATION));
+	CAN_TX.push_back(&CreateSignal("CAN_TX_3", true, OUTPUT_INSTRUMENTATION));
+	CAN_TX.push_back(&CreateSignal("CAN_TX_4", true, OUTPUT_INSTRUMENTATION));
+	
+	can_bus = new CAN_BUS("CAN_BUS", CreateSignal("CAN_RX", true, OUTPUT_INSTRUMENTATION), CAN_TX, this);
 	
 	//  - Stubs
 	ebi_mem_0 = new EBI_MEM("EBI_MEM_0", this);
@@ -1403,6 +1428,42 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		RegisterPort(siul2->pad_out[i]);
 	}
 	
+	// - CAN subsystem
+	RegisterPort(m_can_1->m_clk);
+	RegisterPort(m_can_1->can_clk);
+	RegisterPort(m_can_1->reset_b);
+	RegisterPort(m_can_1->DMA_ACK);
+	RegisterPort(m_can_1->INT0);
+	RegisterPort(m_can_1->INT1);
+	RegisterPort(m_can_1->DMA_REQ);
+	
+	RegisterPort(m_can_2->m_clk);
+	RegisterPort(m_can_2->can_clk);
+	RegisterPort(m_can_2->reset_b);
+	RegisterPort(m_can_2->DMA_ACK);
+	RegisterPort(m_can_2->INT0);
+	RegisterPort(m_can_2->INT1);
+	RegisterPort(m_can_2->DMA_REQ);
+
+	RegisterPort(m_can_3->m_clk);
+	RegisterPort(m_can_3->can_clk);
+	RegisterPort(m_can_3->reset_b);
+	RegisterPort(m_can_3->DMA_ACK);
+	RegisterPort(m_can_3->INT0);
+	RegisterPort(m_can_3->INT1);
+	RegisterPort(m_can_3->DMA_REQ);
+
+	RegisterPort(m_can_4->m_clk);
+	RegisterPort(m_can_4->can_clk);
+	RegisterPort(m_can_4->reset_b);
+	RegisterPort(m_can_4->DMA_ACK);
+	RegisterPort(m_can_4->INT0);
+	RegisterPort(m_can_4->INT1);
+	RegisterPort(m_can_4->DMA_REQ);
+	
+	RegisterPort(shared_can_message_ram_router->input_if_clock);
+	RegisterPort(shared_can_message_ram_router->output_if_clock);
+
 	//=========================================================================
 	//===                         Channels creation                         ===
 	//=========================================================================
@@ -1425,6 +1486,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateClock("SERIAL_TERMINAL16_CLK");
 	CreateClock("DSPI_CLK0");
 	CreateClock("DSPI_CLK1");
+	CreateClock("CAN_CLK");
 	
 	CreateSignal("m_por", false);
 	CreateSignal("stop", false);
@@ -1581,6 +1643,12 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateSignal("DSPI_12_INT_TFIWF", false);
 	
 	CreateSignalArray<bool, sc_core::SC_MANY_WRITERS>(SIUL2::NUM_PADS, "pad", false);
+	
+	CreateSignal("M_CAN_3_DMA_REQ", false);
+	CreateSignal("M_CAN_3_DMA_ACK", false);
+
+	CreateSignal("M_CAN_4_DMA_REQ", false);
+	CreateSignal("M_CAN_4_DMA_ACK", false);
 	
 	//  - LIN Serial Buses
 	linflexd_0_tx_serial_bus = new LINFlexD_0_TX_SERIAL_BUS("LINFlexD_0_TX_SERIAL_BUS", CreateSignal("LINFlexD_0_TX", true, OUTPUT_INSTRUMENTATION), this);
@@ -1769,6 +1837,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*pbridge_a->init_socket[41])(xbar_1->peripheral_slave_if[XBAR_1_CONFIG::SMPU_PERIPHERAL_SLAVE_IF]);         // PBRIDGE_A <-> SMPU_1
 	(*pbridge_a->init_socket[42])(mc_rgm_stub->slave_sock);             // PBRIDGE_A <-> MC_RGM
 	(*pbridge_a->init_socket[43])(pram_0_stub->slave_sock);             // PBRIDGE_A <-> PRAM_0
+	(*pbridge_a->init_socket[44])(m_can_1->peripheral_slave_if);        // PBRIDGE_A <-> M_CAN_1
+	(*pbridge_a->init_socket[45])(m_can_2->peripheral_slave_if);        // PBRIDGE_A <-> M_CAN_2
+	(*pbridge_a->init_socket[46])(m_can_3->peripheral_slave_if);        // PBRIDGE_A <-> M_CAN_3
+	(*pbridge_a->init_socket[47])(m_can_4->peripheral_slave_if);        // PBRIDGE_A <-> M_CAN_4
+	(*pbridge_a->init_socket[48])(*shared_can_message_ram_router->targ_socket[0]); // PBRIDGE_A <-> Shared CAN message RAM Controller/Access Arbiter
 	
 	(*pbridge_b->init_socket[0])(linflexd_2->peripheral_slave_if);      // PBRIDGE_B <-> LINFlexD_2
 	(*pbridge_b->init_socket[1])(linflexd_15->peripheral_slave_if);     // PBRIDGE_B <-> LINFlexD_15
@@ -1780,6 +1853,21 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*ebi->init_socket[0])(ebi_mem_0->slave_sock);
 	(*ebi->init_socket[1])(ebi_mem_1->slave_sock);
 	(*ebi->init_socket[2])(ebi_mem_2->slave_sock);
+	
+	m_can_1->can_message_ram_if(*shared_can_message_ram_router->targ_socket[1]);
+	m_can_2->can_message_ram_if(*shared_can_message_ram_router->targ_socket[2]);
+	m_can_3->can_message_ram_if(*shared_can_message_ram_router->targ_socket[3]);
+	m_can_4->can_message_ram_if(*shared_can_message_ram_router->targ_socket[4]);
+	(*shared_can_message_ram_router->init_socket[0])(shared_can_message_ram->slave_sock);  // Shared CAN message RAM Controller/Access Arbiter <-> Shared CAN message RAM
+	
+	m_can_1->CAN_TX(can_bus->CAN_TX);
+	m_can_1->CAN_RX(can_bus->CAN_RX);
+	m_can_2->CAN_TX(can_bus->CAN_TX);
+	m_can_2->CAN_RX(can_bus->CAN_RX);
+	m_can_3->CAN_TX(can_bus->CAN_TX);
+	m_can_3->CAN_RX(can_bus->CAN_RX);
+	m_can_4->CAN_TX(can_bus->CAN_TX);
+	m_can_4->CAN_RX(can_bus->CAN_RX);
 	
 	edma_0->master_if(*xbar_1_m1_concentrator->targ_socket[0]);         // EDMA_0 <-> XBAR_1 M1 Concentrator
 	edma_1->master_if(*xbar_1_m1_concentrator->targ_socket[1]);         // EDMA_1 <-> XBAR_1 M1 Concentrator
@@ -2457,6 +2545,30 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.SIUL2.reset_b" , "HARDWARE.reset_b");
 	BindArray(SIUL2::NUM_PADS, "HARDWARE.SIUL2.pad_in", "HARDWARE.pad");
 	BindArray(SIUL2::NUM_PADS, "HARDWARE.SIUL2.pad_out", "HARDWARE.pad");
+
+	Bind("HARDWARE.M_CAN_1.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.M_CAN_1.can_clk" , "HARDWARE.CAN_CLK");
+	Bind("HARDWARE.M_CAN_1.reset_b" , "HARDWARE.reset_b");
+	
+	Bind("HARDWARE.M_CAN_2.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.M_CAN_2.can_clk" , "HARDWARE.CAN_CLK");
+	Bind("HARDWARE.M_CAN_2.reset_b" , "HARDWARE.reset_b");
+	
+	Bind("HARDWARE.M_CAN_3.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.M_CAN_3.can_clk" , "HARDWARE.CAN_CLK");
+	Bind("HARDWARE.M_CAN_3.reset_b" , "HARDWARE.reset_b");
+	Bind("HARDWARE.M_CAN_3.DMA_REQ" , "HARDWARE.M_CAN_3_DMA_REQ");
+	Bind("HARDWARE.M_CAN_3.DMA_ACK" , "HARDWARE.M_CAN_3_DMA_ACK");
+	
+	Bind("HARDWARE.M_CAN_4.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.M_CAN_4.can_clk" , "HARDWARE.CAN_CLK");
+	Bind("HARDWARE.M_CAN_4.reset_b" , "HARDWARE.reset_b");
+	Bind("HARDWARE.M_CAN_4.DMA_REQ" , "HARDWARE.M_CAN_4_DMA_REQ");
+	Bind("HARDWARE.M_CAN_4.DMA_ACK" , "HARDWARE.M_CAN_4_DMA_ACK");
+	
+	
+	Bind("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.input_if_clock", "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.output_if_clock", "HARDWARE.PBRIDGEA_CLK");
 
 	// Interrupt sources
 	
@@ -3213,7 +3325,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 
 	// 439      TODO
 	// ..       TODO
-	// 964
+	// 687
 	
 	InterruptSource(439);
 	InterruptSource(440);
@@ -3464,14 +3576,29 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	InterruptSource(685);
 	InterruptSource(686);
 	InterruptSource(687);
-	InterruptSource(688);
-	InterruptSource(689);
-	InterruptSource(690);
-	InterruptSource(691);
-	InterruptSource(692);
-	InterruptSource(693);
-	InterruptSource(694);
-	InterruptSource(695);
+	
+	// 688      M_CAN_1 INT0
+	// 689      M_CAN_1 INT1
+	// 690      M_CAN_2 INT0
+	// 691      M_CAN_2 INT1
+	// 692      M_CAN_3 INT0
+	// 693      M_CAN_3 INT1
+	// 694      M_CAN_4 INT0
+	// 695      M_CAN_4 INT1
+	
+	InterruptSource(688, "HARDWARE.M_CAN_1.INT0");
+	InterruptSource(689, "HARDWARE.M_CAN_1.INT1");
+	InterruptSource(690, "HARDWARE.M_CAN_2.INT0");
+	InterruptSource(691, "HARDWARE.M_CAN_2.INT1");
+	InterruptSource(692, "HARDWARE.M_CAN_3.INT0");
+	InterruptSource(693, "HARDWARE.M_CAN_3.INT1");
+	InterruptSource(694, "HARDWARE.M_CAN_4.INT0");
+	InterruptSource(695, "HARDWARE.M_CAN_4.INT1");
+	
+	// 696      TODO
+	// ..       TODO
+	// 964
+	
 	InterruptSource(696);
 	InterruptSource(697);
 	InterruptSource(698);
@@ -3792,6 +3919,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource("HARDWARE.DSPI_12.DMA_RX", "HARDWARE.DSPI_12.DMA_ACK_RX", 1, 1, 6, 28);
 	DMASource("HARDWARE.DSPI_12.DMA_TX", "HARDWARE.DSPI_12.DMA_ACK_TX", 1, 2, 6, 29);
 	DMASource("HARDWARE.DSPI_12.DMA_CMD", "HARDWARE.DSPI_12.DMA_ACK_CMD", 1, 50, 6, 27);
+	
+	DMASource("HARDWARE.M_CAN_1.DMA_REQ", "HARDWARE.M_CAN_1.DMA_ACK", 0, 12, 5, 34, 9, 34);
+	DMASource("HARDWARE.M_CAN_2.DMA_REQ", "HARDWARE.M_CAN_2.DMA_ACK", 0, 13, 5, 35, 9, 35);
 	  
 	// DMAMUX_0
 	DMASource(0, 0);
@@ -3802,8 +3932,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(0, 9);
 	DMASource(0, 10);
 	DMASource(0, 11);
-	DMASource(0, 12);
-	DMASource(0, 13);
+//	DMASource(0, 12);
+//	DMASource(0, 13);
 	DMASource(0, 14);
 	DMASource(0, 15);
 	DMASource(0, 21);
@@ -4102,8 +4232,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(5, 30);
 	DMASource(5, 31);
 	DMASource(5, 32);
-	DMASource(5, 34);
-	DMASource(5, 35);
+// 	DMASource(5, 34);
+// 	DMASource(5, 35);
 	DMASource(5, 38);
 	DMASource(5, 41);
 	DMASource(5, 42);
@@ -4342,8 +4472,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(9, 31);
 	DMASource(9, 32);
 	DMASource(9, 33);
-	DMASource(9, 34);
-	DMASource(9, 35);
+// 	DMASource(9, 34);
+// 	DMASource(9, 35);
 	DMASource(9, 36);
 	DMASource(9, 37);
 	DMASource(9, 38);
@@ -4882,6 +5012,14 @@ Simulator::~Simulator()
 	for(i = 0; i < DSPI_12::NUM_CTARS; i++) if(dspi_12_pcs_serial_bus[i]) delete dspi_12_pcs_serial_bus[i];
 	if(dspi_12_ss_serial_bus) delete dspi_12_ss_serial_bus;
 	if(siul2) delete siul2;
+	//if(m_ttcan_0) delete m_ttcan_0;
+	if(m_can_1) delete m_can_1;
+	if(m_can_2) delete m_can_2;
+	if(m_can_3) delete m_can_3;
+	if(m_can_4) delete m_can_4;
+	if(shared_can_message_ram_router) delete shared_can_message_ram_router;
+	if(shared_can_message_ram) delete shared_can_message_ram;
+	if(can_bus) delete can_bus;
 	if(ebi_mem_0) delete ebi_mem_0;
 	if(ebi_mem_1) delete ebi_mem_1;
 	if(ebi_mem_2) delete ebi_mem_2;
@@ -5216,9 +5354,14 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.DSPI_CLK0.clock-period", "12500 ps");               // DSPI_CLK0: 80 Mhz
 	simulator->SetVariable("HARDWARE.DSPI_CLK1.lazy-clock", "true");
 	simulator->SetVariable("HARDWARE.DSPI_CLK1.clock-period", "12500 ps");               // DSPI_CLK1: 80 Mhz
+	simulator->SetVariable("HARDWARE.CAN_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.CAN_CLK.clock-period", "125 ns");                   // CAN_CLK: 8 Mhz
 
-  // global quantum
+	// TLM-2.0 global quantum
 	simulator->SetVariable("HARDWARE.global-quantum", "200 ns");
+	
+	// TLM CAN global quantum
+	simulator->SetVariable("HARDWARE.can-global-quantum", "100 us");
   
 	//  - e200 PowerPC cores
 
@@ -5408,6 +5551,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_41", "SMPU_1");
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_42", "MC_RGM");
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_43", "PRAM_0");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_44", "M_CAN_1");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_45", "M_CAN_2");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_46", "M_CAN_3");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_47", "M_CAN_4");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_48", "SHARED_CAN_MESSAGE_RAM");
 	
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.cycle_time", "20 ns");
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_0",  "range_start=\"0xfc040000\" range_end=\"0xfc04ffff\" output_port=\"0\"  translation=\"0x0\""); // INTC        -> INTC  (rel address)
@@ -5454,6 +5602,12 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_41", "range_start=\"0xfc014000\" range_end=\"0xfc017fff\" output_port=\"41\" translation=\"0x0\""); // SMPU_1      -> SMPU_1   (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_42", "range_start=\"0xfffa8000\" range_end=\"0xfffabfff\" output_port=\"42\" translation=\"0x0\""); // MC_RGM      -> MC_RGM   (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_43", "range_start=\"0xfc020000\" range_end=\"0xfc023fff\" output_port=\"43\" translation=\"0x0\""); // PRAM_0      -> PRAM_0   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_44", "range_start=\"0xffee4000\" range_end=\"0xffee7fff\" output_port=\"44\" translation=\"0x0\"");  // M_CAN_1      -> M_CAN_1   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_45", "range_start=\"0xffee8000\" range_end=\"0xffeebfff\" output_port=\"45\" translation=\"0x0\"");  // M_CAN_2      -> M_CAN_2   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_46", "range_start=\"0xffeec000\" range_end=\"0xffeeffff\" output_port=\"46\" translation=\"0x0\"");  // M_CAN_3      -> M_CAN_3   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_47", "range_start=\"0xffef0000\" range_end=\"0xffef3fff\" output_port=\"47\" translation=\"0x0\"");  // M_CAN_4      -> M_CAN_4   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_48", "range_start=\"0xffed4000\" range_end=\"0xffed7fff\" output_port=\"48\" translation=\"0x0\"");  // Shared CAN message RAM            -> Shared CAN message RAM   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_49", "range_start=\"0xffed8000\" range_end=\"0xffedbfff\" output_port=\"48\" translation=\"0x4000\"");  // Shared CAN message RAM (extended) -> Shared CAN message RAM (extended)   (rel address)
 
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_0", "pacr16");   // INTC_0
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_1", "pacr26");   // STM_0
@@ -5499,6 +5653,12 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_41", "pacr5");   // SMPU_1
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_42", "opacr21"); // MC_RGM
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_43", "pacr8");   // PRAM_0
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_44", "opacr70"); // M_CAN_1
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_45", "opacr69"); // M_CAN_2
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_46", "opacr68"); // M_CAN_3
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_47", "opacr67"); // M_CAN_4
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_48", "opacr74"); // Shared CAN Message RAM
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_49", "opacr73"); // Shared CAN Message RAM (extended)
 	
 	//  - PBRIDGE_B
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.input_socket_name_0", "XBAR_1_S2");
@@ -5868,6 +6028,30 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PRAM_0.write-latency", "20 ns");
 	simulator->SetVariable("HARDWARE.PRAM_0.org", 0x0);
 	simulator->SetVariable("HARDWARE.PRAM_0.bytesize", 16 * 1024);
+	
+	//  - Modular CAN
+	simulator->SetVariable("HARDWARE.M_CAN_1.endian", "big-endian");
+	simulator->SetVariable("HARDWARE.M_CAN_2.endian", "big-endian");
+	simulator->SetVariable("HARDWARE.M_CAN_3.endian", "big-endian");
+	simulator->SetVariable("HARDWARE.M_CAN_4.endian", "big-endian");
+
+	//  - Shared CAN message RAM
+	simulator->SetVariable("HARDWARE.SHARED_CAN_MESSAGE_RAM.cycle-time", "20 ns");
+	simulator->SetVariable("HARDWARE.SHARED_CAN_MESSAGE_RAM.read-latency", "20 ns");
+	simulator->SetVariable("HARDWARE.SHARED_CAN_MESSAGE_RAM.write-latency", "20 ns");
+	simulator->SetVariable("HARDWARE.SHARED_CAN_MESSAGE_RAM.org", 0x0);
+	simulator->SetVariable("HARDWARE.SHARED_CAN_MESSAGE_RAM.bytesize", 20 * 1024);
+
+	//  - Shared CAN message RAM Controller/Access Arbiter
+	simulator->SetVariable("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.input_socket_name_0", "PBRIDGE_A");
+	simulator->SetVariable("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.input_socket_name_1", "M_CAN_1");
+	simulator->SetVariable("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.input_socket_name_2", "M_CAN_2");
+	simulator->SetVariable("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.input_socket_name_3", "M_CAN_3");
+	simulator->SetVariable("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.input_socket_name_4", "M_CAN_4");
+	simulator->SetVariable("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.output_socket_name_0", "SHARED_CAN_MESSAGE_RAM");
+	
+	simulator->SetVariable("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.cycle_time", "20 ns");
+	simulator->SetVariable("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.mapping_0", "range_start=\"0x0\" range_end=\"0x7fff\" output_port=\"0\" translation=\"0x0\"");
 
 	//=========================================================================
 	//===                      Service run-time configuration               ===

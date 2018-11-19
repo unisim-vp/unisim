@@ -46,18 +46,27 @@
 
 using unisim::kernel::tlm2::OUTPUT_INSTRUMENTATION;
 
-using unisim::kernel::tlm2::tlm_can_node;
+using unisim::kernel::tlm2::tlm_can_core;
+using unisim::kernel::tlm2::tlm_can_core_config;
 using unisim::kernel::tlm2::tlm_can_error;
-using unisim::kernel::tlm2::tlm_can_node_activity;
+using unisim::kernel::tlm2::tlm_can_core_activity;
 using unisim::kernel::tlm2::tlm_can_phase;
 using unisim::kernel::tlm2::tlm_can_message;
+using unisim::kernel::tlm2::tlm_can_message_event;
 using unisim::kernel::tlm2::tlm_can_state;
 using unisim::kernel::tlm2::TLM_CAN_SOF_PHASE;
 using unisim::kernel::tlm2::TLM_CAN_ERROR_ACTIVE_STATE;
-using unisim::kernel::tlm2::TLM_CAN_NODE_ACTIVITY_SYNCHRONIZING;
+using unisim::kernel::tlm2::TLM_CAN_CORE_SYNCHRONIZING;
 using unisim::kernel::tlm2::TLM_CAN_NO_ERROR;
 using unisim::kernel::tlm2::TLM_CAN_STD_FMT;
 using unisim::kernel::tlm2::TLM_CAN_XTD_FMT;
+using unisim::kernel::tlm2::TLM_CAN_START_OF_FRAME_TRANSMISSION_EVENT;
+using unisim::kernel::tlm2::TLM_CAN_START_OF_FRAME_RECEPTION_EVENT;
+using unisim::kernel::tlm2::TLM_CAN_TRANSMISSION_ERROR_EVENT;
+using unisim::kernel::tlm2::TLM_CAN_TRANSMISSION_CANCELLED_EVENT;
+using unisim::kernel::tlm2::TLM_CAN_TRANSMISSION_OCCURRED_EVENT;
+using unisim::kernel::tlm2::TLM_CAN_RECEPTION_ERROR_EVENT;
+using unisim::kernel::tlm2::TLM_CAN_MESSAGE_RECEIVED_EVENT;
 using unisim::kernel::tlm2::tlm_can_bus;
 
 using unisim::util::random::Random;
@@ -65,23 +74,37 @@ using unisim::util::random::Random;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::EndDebugInfo;
 
-struct Node : tlm_can_node<Node>
+struct Node : tlm_can_core<Node>
 {
 	Node(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0)
-		: tlm_can_node<Node>(name, parent)
-		, sample_point(0.75, sc_core::SC_US)
-		, phase_seg2(0.25, sc_core::SC_US)
+		: tlm_can_core<Node>(name, parent)
+		, enabled(false)
+		, config()
 		, tx_fifo()
 		, rx_fifo()
 		, phase(TLM_CAN_SOF_PHASE)
 		, state(TLM_CAN_ERROR_ACTIVE_STATE)
-		, node_activity(TLM_CAN_NODE_ACTIVITY_SYNCHRONIZING)
+		, core_activity(TLM_CAN_CORE_SYNCHRONIZING)
 		, can_error(TLM_CAN_NO_ERROR)
 		, receive_error_count(0)
 		, transmit_error_count(0)
 		, loopback(false)
-		, param_loopback("loopback", this, loopback, "enable/disable loopback")
+		, param_loopback("loopback", this, loopback, "enable/disable loopback mode")
+		, bus_monitoring(false)
+		, param_bus_monitoring("bus-monitoring", this, bus_monitoring, "enable/disable bus monitoring mode")
+		, automatic_retransmission(true)
+		, param_automatic_retransmission("automatic-retransmission", this, automatic_retransmission, "enable/disable automatic retransmission")
+		, restricted_operation(false)
+		, param_restricted_operation("restricted-operation", this, restricted_operation, "enable/disable restricted operation mode")
+		, transmit_pause(0)
 	{
+		config.set_sample_point(sc_core::sc_time(0.75, sc_core::SC_US));
+		config.set_phase_seg2(sc_core::sc_time(0.25, sc_core::SC_US));
+		config.set_loopback_mode(loopback);
+		config.set_bus_monitoring_mode(bus_monitoring);
+		config.set_automatic_retransmission(automatic_retransmission);
+		config.set_restricted_operation_mode(restricted_operation);
+
 		SC_HAS_PROCESS(Node);
 		
 		SC_THREAD(cpu);
@@ -145,16 +168,16 @@ struct Node : tlm_can_node<Node>
 	}
 
 protected:
-	friend class tlm_can_node<Node>;
+	friend class tlm_can_core<Node>;
 	
-	const sc_core::sc_time& get_sample_point() const
+	bool is_enabled() const
 	{
-		return sample_point;
+		return enabled;
 	}
 	
-	const sc_core::sc_time& get_phase_seg2() const
+	const tlm_can_core_config& get_config() const
 	{
-		return phase_seg2;
+		return config;
 	}
 	
 	tlm_can_error get_can_error() const
@@ -167,21 +190,21 @@ protected:
 		can_error = _can_error;
 	}
 	
-	tlm_can_node_activity get_node_activity() const
+	tlm_can_core_activity get_core_activity() const
 	{
-		return node_activity;
+		return core_activity;
 	}
 	
-	void set_node_activity(tlm_can_node_activity _node_activity)
+	void set_core_activity(tlm_can_core_activity _core_activity)
 	{
-		if(node_activity != _node_activity)
+		if(core_activity != _core_activity)
 		{
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << "node is now " << _node_activity << EndDebugInfo;
+				logger << DebugInfo << "core is now " << _core_activity << EndDebugInfo;
 			}
 		}
-		node_activity = _node_activity;
+		core_activity = _core_activity;
 	}
 	
 	tlm_can_phase get_phase() const
@@ -251,50 +274,122 @@ protected:
 		return !tx_fifo.empty();
 	}
 	
-	const tlm_can_message& pending_transmission_request() const
+	const tlm_can_message& fetch_pending_transmission_request()
 	{
 		return tx_fifo.front();
 	}
 	
-	void transmission_occurred(const tlm_can_message& msg)
+	tlm_can_message& get_receive_message()
 	{
-		if(unlikely(verbose))
-		{
-			logger << DebugInfo << "transmitted message " << msg << EndDebugInfo;
-		}
-		tx_fifo.pop();
+		return rx_msg;
 	}
 	
-	void receive_message(const tlm_can_message& msg)
+	void process_message_event(const tlm_can_message_event<>& msg_event)
 	{
-		if(unlikely(verbose))
+		switch(msg_event.get_type())
 		{
-			logger << DebugInfo << "received message " << msg << EndDebugInfo;
+			case TLM_CAN_START_OF_FRAME_TRANSMISSION_EVENT:
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << "start of frame transmission of message " << msg_event.get_message() << EndDebugInfo;
+				}
+				break;
+				
+			case TLM_CAN_START_OF_FRAME_RECEPTION_EVENT:
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << "start of frame reception of message " << msg_event.get_message() << EndDebugInfo;
+				}
+				break;
+				
+			case TLM_CAN_TRANSMISSION_ERROR_EVENT:
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << "transmission error of message " << msg_event.get_message() << EndDebugInfo;
+				}
+				break;
+				
+			case TLM_CAN_TRANSMISSION_CANCELLED_EVENT:
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << "transmission cancelled of message " << msg_event.get_message() << EndDebugInfo;
+				}
+				break;
+				
+			case TLM_CAN_TRANSMISSION_OCCURRED_EVENT: 
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << "transmitted message " << msg_event.get_message() << EndDebugInfo;
+				}
+				tx_fifo.pop();
+				break;
+				
+			case TLM_CAN_RECEPTION_ERROR_EVENT:
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << "reception error of message " << msg_event.get_message() << EndDebugInfo;
+				}
+				break;
+				
+			case TLM_CAN_MESSAGE_RECEIVED_EVENT:
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << "received message " << msg_event.get_message() << EndDebugInfo;
+				}
+				rx_fifo.push(msg_event.get_message());
+				break;
 		}
-		rx_fifo.push(msg);
 	}
 	
 	void received_bit(bool value)
 	{
 	}
 	
-	bool is_loopback_enabled() const
+	unsigned int get_transmit_pause() const
 	{
-		return loopback;
+		return transmit_pause;
+	}
+	
+	bool is_transmission_cancelled(const tlm_can_message&) const
+	{
+		return false;
 	}
 
-	sc_core::sc_time sample_point;
-	sc_core::sc_time phase_seg2;
+	void enable(bool v = true)
+	{
+		if(!enabled && v)
+		{
+			logger << DebugInfo << "enabling" << EndDebugInfo;
+		}
+		else if(enabled && !v)
+		{
+			logger << DebugInfo << "disabling" << EndDebugInfo;
+		}
+		enabled = v;
+	}
+	
+	bool enabled;
+	tlm_can_core_config config;
+	tlm_can_message can_msg;
 	std::queue<tlm_can_message> tx_fifo;
+	tlm_can_message rx_msg;
 	std::queue<tlm_can_message> rx_fifo;
 	tlm_can_phase phase;
 	tlm_can_state state;
-	tlm_can_node_activity node_activity;
+	tlm_can_core_activity core_activity;
 	tlm_can_error can_error;
 	uint8_t receive_error_count;
 	uint8_t transmit_error_count;
 	bool loopback;
 	unisim::kernel::service::Parameter<bool> param_loopback;
+	bool bus_monitoring;
+	unisim::kernel::service::Parameter<bool> param_bus_monitoring;
+	bool automatic_retransmission;
+	unisim::kernel::service::Parameter<bool> param_automatic_retransmission;
+	bool restricted_operation;
+	unisim::kernel::service::Parameter<bool> param_restricted_operation;
+	unsigned int transmit_pause;
+	
 };
 
 class Simulator : public unisim::kernel::tlm2::Simulator

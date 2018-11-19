@@ -54,7 +54,9 @@ class tlm_can_quantumkeeper;
 class tlm_can_value;
 class tlm_can_bus;
 class tlm_can_message;
-template <typename CAN_NODE> class tlm_can_node;
+template <typename CAN_MESSAGE> class tlm_can_message_event;
+class tlm_can_core_config;
+template <typename CAN_MODULE, typename TYPES> class tlm_can_core;
 
 /////////////////////////////////// declarations //////////////////////////////
 
@@ -221,12 +223,12 @@ enum tlm_can_format
 {
 	TLM_CAN_STD_FMT     = 0,
 	TLM_CAN_XTD_FMT     = 1,
-	TLM_CAN_FD_BASE_FMT = 2, // for future extension
-	TLM_CAN_FD_XTD_FMT  = 3  // for future extension
+	TLM_CAN_FD_BASE_FMT = 2, // not yet supported
+	TLM_CAN_FD_XTD_FMT  = 3  // not yet supported
 };
 
 // maximum data length in CAN data frame
-static const unsigned int CAN_MAX_DATA_LENGTH = 64; // in bytes
+static const unsigned int TLM_CAN_MAX_DATA_LENGTH = 64; // in bytes
 
 // tlm_can_message
 
@@ -235,9 +237,8 @@ struct tlm_can_message
 	inline tlm_can_message();
 	inline tlm_can_message(tlm_can_format fmt, unsigned int id, bool rtr, bool brs, bool esi, unsigned int dlc, uint8_t *data);
 	inline tlm_can_message(const tlm_can_message& msg);
-	inline void clear();
+	inline void reset();
 	
-	inline unsigned int get_data_length() const;
 	static inline unsigned int encode_dlc(tlm_can_format fmt, unsigned int data_length);
 	static inline bool valid_data_length(tlm_can_format fmt, unsigned int data_length);
 
@@ -246,37 +247,48 @@ struct tlm_can_message
 	inline void set_remote_transmission_request(bool _rtr) { rtr = _rtr; }
 	inline void set_bit_rate_switch(bool _brs) { brs = _brs; }
 	inline void set_error_state_indicator(bool _esi) { esi = _esi; }
-	inline void set_data_length_code(unsigned int _dlc) { dlc = _dlc; }
+	inline void set_data_length_code(unsigned int _dlc) { dlc = _dlc; data_length = compute_data_length(); }
+	inline void set_transmission_cancelled(bool v = true) { transmission_cancelled = v; }
+	inline void set_data(uint8_t *_data, unsigned int _data_length) { memcpy(data, _data, _data_length); }
+	inline void set_data_byte_at(unsigned int index, uint8_t v) { data[index] = v; }
 	
 	inline tlm_can_format get_format() const { return fmt; }
 	inline unsigned int get_identifier() const { return id; }
-	inline bool get_remote_transmission_request() const { return rtr; }
+	inline bool is_identifier_extended() const { return (fmt == TLM_CAN_XTD_FMT) || (fmt == TLM_CAN_FD_XTD_FMT); }
+	inline bool is_fd() const { return (fmt == TLM_CAN_FD_BASE_FMT) || (fmt == TLM_CAN_FD_XTD_FMT); }
+	inline bool is_remote_transmission_request() const { return rtr; }
 	inline bool get_bit_rate_switch() const { return brs; }
 	inline bool get_error_state_indicator() const { return esi; }
 	inline unsigned int get_data_length_code() const { return dlc; }
-	inline void set_data_byte_at(unsigned int index, uint8_t v) { data[index] = v; }
+	inline unsigned int get_data_length() const { return data_length; }
+	inline bool is_transmission_cancelled() const { return transmission_cancelled; }
+	inline void get_data(uint8_t *_data, unsigned int _data_length) const { memcpy(_data, data, _data_length); }
 	inline uint8_t get_data_byte_at(unsigned int index) const { return data[index]; }
 	
 private:
 	tlm_can_format fmt;
 	unsigned int id;
 	bool rtr;
-	bool brs; // CAN FD only
-	bool esi; // CAN FD only
+	bool brs; // CAN FD only: not yet supported
+	bool esi; // CAN FD only: not yet supported
 	unsigned int dlc;
-	uint8_t data[CAN_MAX_DATA_LENGTH];
+	unsigned int data_length;
+	bool transmission_cancelled;
+	uint8_t data[TLM_CAN_MAX_DATA_LENGTH];
+	
+	unsigned int compute_data_length() const;
 	
 	friend std::ostream& operator << (std::ostream& os, const tlm_can_message& msg);
 };
 
-// tlm_can_node_activity
+// tlm_can_core_activity
 
-enum tlm_can_node_activity
+enum tlm_can_core_activity
 {
-	TLM_CAN_NODE_ACTIVITY_SYNCHRONIZING = 0, // node is monitoring bus looking for transmitting/receiving a start of frame
-	TLM_CAN_NODE_ACTIVITY_IDLE          = 1, // node is idle
-	TLM_CAN_NODE_ACTIVITY_RECEIVER      = 2, // node is a receiver
-	TLM_CAN_NODE_ACTIVITY_TRANSMITTER   = 3  // node is a transmitter
+	TLM_CAN_CORE_SYNCHRONIZING = 0, // node is monitoring bus looking for transmitting/receiving a start of frame
+	TLM_CAN_CORE_IDLE          = 1, // node is idle
+	TLM_CAN_CORE_RECEIVER      = 2, // node is a receiver
+	TLM_CAN_CORE_TRANSMITTER   = 3  // node is a transmitter
 };
 
 // tlm_can_error
@@ -301,23 +313,137 @@ enum tlm_can_state
 	TLM_CAN_BUS_OFF_STATE       = 2  // node is 'bus off'
 };
 
-// tlm_can_node (CAN core)
+// tlm_can_event_type
 
-template <typename CAN_NODE>
-class tlm_can_node
+enum tlm_can_message_event_type
+{
+	TLM_CAN_START_OF_FRAME_TRANSMISSION_EVENT = 0, // start of frame transmission
+	TLM_CAN_START_OF_FRAME_RECEPTION_EVENT    = 1, // start of frame reception
+	TLM_CAN_TRANSMISSION_ERROR_EVENT          = 2, // error during transmission
+	TLM_CAN_TRANSMISSION_CANCELLED_EVENT      = 3, // transmission cancelled
+	TLM_CAN_TRANSMISSION_OCCURRED_EVENT       = 4, // transmission occurred
+	TLM_CAN_RECEPTION_ERROR_EVENT             = 5, // error during reception
+	TLM_CAN_MESSAGE_RECEIVED_EVENT            = 6  // message received
+};
+
+// TLM_CAN_DEFAULT_TYPES
+
+struct TLM_CAN_DEFAULT_TYPES
+{
+	typedef tlm_can_message CAN_MESSAGE;
+};
+
+// tlm_can_message_event<>
+
+template <typename TYPES>
+std::ostream& operator << (std::ostream& os, const tlm_can_message_event<TYPES>& msg_event);
+
+template <typename TYPES = TLM_CAN_DEFAULT_TYPES>
+class tlm_can_message_event
+{
+public:
+	typedef typename TYPES::CAN_MESSAGE CAN_MESSAGE;
+	
+	inline tlm_can_message_event(const tlm_can_message_event& msg_event);
+	inline tlm_can_message_event_type get_type() const { return type; }
+	inline const sc_core::sc_time& get_timestamp() const { return timestamp; }
+	inline const CAN_MESSAGE& get_message() const { return msg; }
+	
+	friend std::ostream& operator << <TYPES>(std::ostream& os, const tlm_can_message_event<TYPES>& msg_event); 
+private:
+	template <typename CAN_MODULE, typename _TYPES> friend class tlm_can_core;
+	
+	inline tlm_can_message_event(tlm_can_message_event_type type, const sc_core::sc_time& timestamp, const CAN_MESSAGE& msg);
+	
+	tlm_can_message_event_type type;
+	sc_core::sc_time timestamp;
+	const CAN_MESSAGE& msg;
+};
+
+// tlm_can_core_config
+class tlm_can_core_config
+{
+public:
+	tlm_can_core_config()
+	{
+		reset();
+	}
+	
+	void reset()
+	{
+		bit_time = sc_core::SC_ZERO_TIME;
+		sample_point = sc_core::SC_ZERO_TIME;
+		phase_seg2 = sc_core::SC_ZERO_TIME;
+		loopback_mode = false;
+		bus_monitoring_mode = false;
+		automatic_retransmission = true;
+		restricted_operation_mode = false;
+	}
+	
+	void set_sample_point(const sc_core::sc_time& v) { sample_point = v; compute_bit_time(); }
+	void set_phase_seg2(const sc_core::sc_time& v) { phase_seg2 = v; compute_bit_time(); }
+	void set_loopback_mode(bool v = true) { loopback_mode = v; }
+	void set_bus_monitoring_mode(bool v = true) { bus_monitoring_mode = v; }
+	void set_automatic_retransmission(bool v = true) { automatic_retransmission = v; }
+	void set_restricted_operation_mode(bool v = true) { restricted_operation_mode = v; }
+	
+	const sc_core::sc_time& get_sample_point() const { return sample_point; }
+	const sc_core::sc_time& get_phase_seg2() const { return phase_seg2; }
+	bool get_loopback_mode() const { return loopback_mode; }
+	bool get_bus_monitoring_mode() const { return bus_monitoring_mode; }
+	bool get_automatic_retransmission() const { return automatic_retransmission; }
+	bool get_restricted_operation_mode() const { return restricted_operation_mode; }
+	
+	const sc_core::sc_time& get_bit_time() const { return bit_time; }
+	
+	friend std::ostream& operator << (std::ostream& os, const tlm_can_core_config& cfg);
+private:
+	void compute_bit_time() { bit_time = sample_point + phase_seg2; }
+	
+	sc_core::sc_time bit_time;       // SYNC_SEG + PROP_SEG + PHASE_SEG1 + PHASE_SEG2
+	sc_core::sc_time sample_point;   // SYNC_SEG + PROP_SEG + PHASE_SEG1
+	sc_core::sc_time phase_seg2;     // PHASE_SEG2
+	bool loopback_mode;              // whether loopback mode is enabled or not (CAN_RX disconnected from CAN bus, CAN_TX connected to CAN_RX)
+	bool bus_monitoring_mode;        // whether bus monitoring mode is enabled or not (see ISO 11898-1:2003, 10.12 Bus Monitoring)
+	bool automatic_retransmission;   // whether automatic retransmission of message (which transmission has been disturbed) is enabled or not
+	bool restricted_operation_mode;  // whether node can't send error frames or overload frames or not
+};
+
+// tlm_can_core (CAN core)
+
+template <typename CAN_MODULE, typename TYPES = TLM_CAN_DEFAULT_TYPES>
+class tlm_can_core
 	: public unisim::kernel::service::Object
 	, public sc_core::sc_module
 {
 public:
-	typedef tlm_serial_peripheral_socket_tagged<tlm_can_node> CAN_TX_type;
-	typedef tlm_serial_peripheral_socket_tagged<tlm_can_node> CAN_RX_type;
+	typedef typename TYPES::CAN_MESSAGE CAN_MESSAGE;
+	
+	// CAN protocol constants (should not be changed)
+	static const unsigned int ID_LENGTH                                = 29;
+	static const unsigned int STD_FMT_ID_LENGTH                        = 11;
+	static const unsigned int DLC_LENGTH                               = 4;
+	static const unsigned int INTERMISSION_LENGTH                      = 3;
+	static const unsigned int SUSPEND_TRANSMISSION_LENGTH              = 8;
+	static const unsigned int EOF_LENGTH                               = 7;
+	static const uint16_t     POLYNOMIAL                               = 0x4599;
+	static const uint16_t     CRC_INIT                                 = 0x0;
+	static const unsigned int CRC_LENGTH                               = 15;
+	static const unsigned int MAX_IDENTICAL_CONSECUTIVE_BITS           = 5;
+	static const unsigned int ERROR_FLAG_LENGTH                        = 6;
+	static const unsigned int ERROR_FLAG_DELIMITER_LENGTH              = 8;
+	static const unsigned int OVERLOAD_FLAG_LENGTH                     = 6;
+	static const unsigned int OVERLOAD_FLAG_DELIMITER_LENGTH           = 8;
+	static const unsigned int BUS_OFF_ROUNDS = 128;
+
+	typedef tlm_serial_peripheral_socket_tagged<tlm_can_core> CAN_TX_type;
+	typedef tlm_serial_peripheral_socket_tagged<tlm_can_core> CAN_RX_type;
 	
 	CAN_TX_type CAN_TX; // CAN RX interface
 	CAN_RX_type CAN_RX; // CAN TX interface
 	
-	tlm_can_node(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0);
-	virtual ~tlm_can_node();
-	void enable(bool v = true);
+	tlm_can_core(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0);
+	virtual ~tlm_can_core();
 	
 protected:
 	mutable unisim::kernel::logger::Logger logger; // logger
@@ -325,12 +451,12 @@ protected:
 	
 private:
 	// interface methods that derived class shall provide
-	const sc_core::sc_time& get_sample_point() const;            // returns SYNC_SEG + PROP_SEG + PHASE_SEG1
-	const sc_core::sc_time& get_phase_seg2() const;              // returns PHASE_SEG2
+	bool is_enabled() const;                                     // returns whether CAN core is enabled or not
+	const tlm_can_core_config& get_config() const;               // returns CAN core configuration
 	tlm_can_error get_can_error() const;                         // CAN error getter
 	void set_can_error(tlm_can_error _can_error);                // CAN error setter
-	tlm_can_node_activity get_node_activity() const;             // CAN node activity getter
-	void set_node_activity(tlm_can_node_activity);               // CAN node activity setter
+	tlm_can_core_activity get_core_activity() const;             // CAN core activity getter
+	void set_core_activity(tlm_can_core_activity);               // CAN core activity setter
 	tlm_can_phase get_phase() const;                             // CAN protocol phase getter
 	void set_phase(tlm_can_phase _phase);                        // CAN protocol phase setter
 	uint8_t get_transmit_error_count() const;                    // TRANSMIT ERROR COUNT getter
@@ -340,33 +466,33 @@ private:
 	void set_receive_error_count(uint8_t);                       // RECEIVE ERROR COUNT setter
 	void set_state(tlm_can_state);                               // CAN node state setter
 	bool has_pending_transmission_request() const;               // returns whether there's a pending transmission request (i.e. there's a message to transmit or Tx FIFO not empty)
-	const tlm_can_message& pending_transmission_request() const; // returns pending transmission request (the message with the highest priority or Tx FIFO front element)
-	void transmission_occurred(const tlm_can_message&);          // called whenever a CAN message has been successfully transmitted
-	void receive_message(const tlm_can_message&);                // called whenever a CAN message has been successfully received
+	const CAN_MESSAGE& fetch_pending_transmission_request();     // fetch and then returns pending transmission request (the message with the highest priority or Tx FIFO front element)
+	CAN_MESSAGE& get_receive_message();                          // returns message being received
+	void process_message_event(const tlm_can_message_event<TYPES>&);    // processes CAN message events
 	void received_bit(bool);                                     // called each time a bit is received when node is not idle
-	bool is_loopback_enabled() const;                            // whether loopback is enabled (CAN_RX disconnected from CAN bus, CAN_TX connected to CAN_RX)
+	unsigned int get_transmit_pause() const;                     // returns pauses before next transmission (in CAN bits); should be zero
 	
 	// trampoline to the derived class public interface methods
-	const sc_core::sc_time& __get_sample_point() const;
-	const sc_core::sc_time& __get_phase_seg2() const;
+	bool __is_enabled() const;
+	const tlm_can_core_config& __get_config() const;
 	tlm_can_error __get_can_error() const;
 	void __set_can_error(tlm_can_error _can_error);
-	tlm_can_node_activity __get_node_activity() const;
+	tlm_can_core_activity __get_core_activity() const;
 	uint8_t __get_transmit_error_count() const;
 	uint8_t __get_receive_error_count() const;
 	tlm_can_state __get_state() const;
-	void __set_node_activity(tlm_can_node_activity _node_activity);
+	void __set_core_activity(tlm_can_core_activity _core_activity);
 	tlm_can_phase __get_phase() const;
 	void __set_phase(tlm_can_phase _phase);
 	void __set_transmit_error_count(uint8_t v);
 	void __set_receive_error_count(uint8_t v);
 	void __set_state(tlm_can_state _state);
 	bool __has_pending_transmission_request() const;
-	const tlm_can_message& __pending_transmission_request() const;
-	void __transmission_occurred(const tlm_can_message& msg);
-	void __receive_message(const tlm_can_message& msg);
+	const CAN_MESSAGE& __fetch_pending_transmission_request();
+	CAN_MESSAGE& __get_receive_message();
+	void __process_message_event(const tlm_can_message_event<TYPES>& msg_event);
 	void __received_bit(bool value);
-	bool __is_loopback_enabled() const;
+	unsigned int __get_transmit_pause() const;
 
 	static void unimplemented(const char *method_decl);
 	virtual void end_of_elaboration();
@@ -387,6 +513,7 @@ private:
 	void inc_transmit_error_count(int delta);
 	void inc_receive_error_count(int delta);
 	void count_recessive_bits(bool value);
+	void init();
 	void transceive_error_frame();
 	void transceive_overload_frame();
 	void transceive_intermission();
@@ -394,23 +521,6 @@ private:
 	void transceive_data_remote_frame();
 	void process();
 
-	// CAN protocol constants (should not be changed)
-	static const unsigned int ID_LENGTH                                = 29;
-	static const unsigned int STD_FMT_ID_LENGTH                        = 11;
-	static const unsigned int DLC_LENGTH                               = 4;
-	static const unsigned int INTERMISSION_LENGTH                      = 3;
-	static const unsigned int SUSPEND_TRANSMISSION_LENGTH              = 8;
-	static const unsigned int EOF_LENGTH                               = 7;
-	static const uint16_t     POLYNOMIAL                               = 0x4599;
-	static const uint16_t     CRC_INIT                                 = 0x0;
-	static const unsigned int CRC_LENGTH                               = 15;
-	static const unsigned int MAX_IDENTICAL_CONSECUTIVE_BITS           = 5;
-	static const unsigned int ERROR_FLAG_LENGTH                        = 6;
-	static const unsigned int ERROR_FLAG_DELIMITER_LENGTH              = 8;
-	static const unsigned int OVERLOAD_FLAG_LENGTH                     = 6;
-	static const unsigned int OVERLOAD_FLAG_DELIMITER_LENGTH           = 8;
-	static const unsigned int BUS_OFF_ROUNDS = 128;
-	
 	// number of cycles while node can safely inject recessive bits (until last CRC bit) while bus is idle
 	static const unsigned int INACCURATE_TRANSMISSION_START_MAX_CYCLES = 1 /* SOF */ + STD_FMT_ID_LENGTH + 1 /* RTR */ + 1 /* r0 */ + 1 /* r1 */ + DLC_LENGTH + CRC_LENGTH;
 	static const unsigned int INACCURATE_TRANSMISSION_START_CYCLES = INACCURATE_TRANSMISSION_START_MAX_CYCLES;
@@ -421,9 +531,8 @@ private:
 		CAN_RX_IF  // identifier of CAN_RX interface
 	};
 
-	sc_core::sc_time baud_period;          // baud period
-	sc_core::sc_time sample_point;         // sample_point
-	sc_core::sc_time phase_seg2;           // phase_seg2
+	tlm_can_core_config config;            // configuration
+	unsigned int transmit_pause;           // transmit pause
 	tlm_input_bitstream rx_bitstream;      // input bitstream over CAN_RX
 	tlm_serial_payload payload;            // serial payload sent over CAN_TX
 	unsigned int recessive_bit_count;      // number of recessive bits received while looking for a start-of-frame
@@ -434,11 +543,10 @@ private:
 	bool destuff_old_value;                // old value received compared against currently received value to decide whether to destuff or not
 	tlm_can_model_accuracy model_accuracy; // model accuracy
 	unsigned int bus_off_round_count;      // number of rounds where 11 consecutive recessive bits were monitored while looking for a start-of-frame
-	bool enabled;                          // whether CAN node is enabled
 	sc_core::sc_time t_transmit;           // absolute time when transmitting DOMINANT or RECESSIVE bits (or when they were supposed to be transmitted)
 	tlm_can_quantumkeeper qk_sample_point; // quantum keeper that keeps local time offset for sampling point
-	const tlm_can_message *send_msg;       // CAN message being transmitted
-	tlm_can_message recv_msg;              // CAN message being received
+	const CAN_MESSAGE *send_msg;           // CAN message being transmitted
+	CAN_MESSAGE *recv_msg;                 // CAN message being received
 	uint16_t send_crc;                     // CRC of CAN message being transmitted
 	uint16_t recv_crc;                     // CRC in from CAN message being received
 	uint16_t comp_crc;                     // computed CRC of CAN message being received
@@ -1011,6 +1119,8 @@ inline tlm_can_message::tlm_can_message()
 	, brs(false)
 	, esi(false)
 	, dlc(0)
+	, data_length(0)
+	, transmission_cancelled(false)
 	, data()
 {
 }
@@ -1022,9 +1132,11 @@ inline tlm_can_message::tlm_can_message(tlm_can_format _fmt, unsigned int _id, b
 	, brs(_brs)
 	, esi(_esi)
 	, dlc(_dlc)
+	, data_length(compute_data_length())
+	, transmission_cancelled(false)
 	, data()
 {
-	if(!rtr && dlc) memcpy(data, _data, get_data_length());
+	if(!rtr && dlc) memcpy(data, _data, data_length);
 }
 
 inline tlm_can_message::tlm_can_message(const tlm_can_message& msg)
@@ -1034,38 +1146,24 @@ inline tlm_can_message::tlm_can_message(const tlm_can_message& msg)
 	, brs(msg.brs)
 	, esi(msg.esi)
 	, dlc(msg.dlc)
+	, data_length(msg.data_length)
+	, transmission_cancelled(msg.transmission_cancelled)
 	, data()
 {
-	if(!rtr && dlc) memcpy(data, msg.data, get_data_length());
+	if(!rtr && dlc) memcpy(data, msg.data, data_length);
 }
 
-inline void tlm_can_message::clear()
+inline void tlm_can_message::reset()
 {
-	memset(data, 0, get_data_length());
+	memset(data, 0, data_length);
 	fmt = TLM_CAN_STD_FMT;
 	id = 0;
 	rtr = false;
 	brs = false;
 	esi = false;
 	dlc = 0;
-}
-
-inline unsigned int tlm_can_message::get_data_length() const
-{
-	switch(fmt)
-	{
-		case TLM_CAN_STD_FMT:
-		case TLM_CAN_XTD_FMT:
-		case TLM_CAN_FD_BASE_FMT:
-			return (dlc <= 8) ? dlc : 8;
-		case TLM_CAN_FD_XTD_FMT:
-			if(dlc <= 8) return dlc;
-			if(dlc <= 12) return 8 + (4 * (dlc - 8));
-			if(dlc <= 15) return 16 + (16 * (dlc - 12));
-			break;
-	}
-	
-	return 0;
+	data_length = 0;
+	transmission_cancelled = false;
 }
 
 inline unsigned int tlm_can_message::encode_dlc(tlm_can_format fmt, unsigned int data_length)
@@ -1088,6 +1186,24 @@ inline bool tlm_can_message::valid_data_length(tlm_can_format fmt, unsigned int 
 	             (data_length == 64)));
 }
 
+inline unsigned int tlm_can_message::compute_data_length() const
+{
+	switch(fmt)
+	{
+		case TLM_CAN_STD_FMT:
+		case TLM_CAN_XTD_FMT:
+		case TLM_CAN_FD_BASE_FMT:
+			return (dlc <= 8) ? dlc : 8;
+		case TLM_CAN_FD_XTD_FMT:
+			if(dlc <= 8) return dlc;
+			if(dlc <= 12) return 8 + (4 * (dlc - 8));
+			if(dlc <= 15) return 16 + (16 * (dlc - 12));
+			break;
+	}
+	
+	return 0;
+}
+
 inline std::ostream& operator << (std::ostream& os, const tlm_can_message& msg)
 {
 	os << "tlm_can_message(format=" << msg.fmt;
@@ -1101,6 +1217,7 @@ inline std::ostream& operator << (std::ostream& os, const tlm_can_message& msg)
 	os << ",dlc=" << msg.dlc;
 	unsigned int data_length = msg.get_data_length();
 	os << ",data length=" << data_length << " bytes";
+	os << ",transmission cancelled=" << msg.transmission_cancelled;
 	if(!msg.rtr)
 	{
 		os << ",data=";
@@ -1117,17 +1234,17 @@ inline std::ostream& operator << (std::ostream& os, const tlm_can_message& msg)
 	return os;
 }
 
-// tlm_can_node_activity
+// tlm_can_core_activity
 
-inline std::ostream& operator << (std::ostream& os, const tlm_can_node_activity& node_activity)
+inline std::ostream& operator << (std::ostream& os, const tlm_can_core_activity& core_activity)
 {
-	switch(node_activity)
+	switch(core_activity)
 	{
-		case TLM_CAN_NODE_ACTIVITY_SYNCHRONIZING: os << "synchronizing"; break;
-		case TLM_CAN_NODE_ACTIVITY_IDLE         : os << "idle"; break;
-		case TLM_CAN_NODE_ACTIVITY_RECEIVER     : os << "receiver"; break;
-		case TLM_CAN_NODE_ACTIVITY_TRANSMITTER  : os << "transmitter"; break;
-		default                                 : os << "unknown"; break;
+		case TLM_CAN_CORE_SYNCHRONIZING: os << "synchronizing"; break;
+		case TLM_CAN_CORE_IDLE         : os << "idle"; break;
+		case TLM_CAN_CORE_RECEIVER     : os << "receiver"; break;
+		case TLM_CAN_CORE_TRANSMITTER  : os << "transmitter"; break;
+		default                        : os << "doing unknown activity"; break;
 	}
 	
 	return os;
@@ -1167,16 +1284,75 @@ inline std::ostream& operator << (std::ostream& os, const tlm_can_state& state)
 	return os << " state";
 }
 
-// tlm_can_node (CAN core)
+// tlm_can_message_event_type
 
-template <typename CAN_NODE>
-tlm_can_node<CAN_NODE>::tlm_can_node(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
+inline std::ostream& operator << (std::ostream& os, const tlm_can_message_event_type& msg_event_type)
+{
+	switch(msg_event_type)
+	{
+		case TLM_CAN_START_OF_FRAME_TRANSMISSION_EVENT: os << "start of frame transmission event"; break;
+		case TLM_CAN_START_OF_FRAME_RECEPTION_EVENT   : os << "start of frame reception event"; break;
+		case TLM_CAN_TRANSMISSION_ERROR_EVENT         : os << "error during transmission event"; break;
+		case TLM_CAN_TRANSMISSION_CANCELLED_EVENT     : os << "transmission cancelled event"; break;
+		case TLM_CAN_TRANSMISSION_OCCURRED_EVENT      : os << "transmission occurred event"; break;
+		case TLM_CAN_RECEPTION_ERROR_EVENT            : os << "error during reception event"; break;
+		case TLM_CAN_MESSAGE_RECEIVED_EVENT           : os << "message received event"; break;
+		default                                       : os << "unknown message event"; break;
+	}
+	return os;
+}
+
+// tlm_can_message_event<>
+
+template <typename TYPES>
+tlm_can_message_event<TYPES>::tlm_can_message_event(tlm_can_message_event_type _type, const sc_core::sc_time& _timestamp, const CAN_MESSAGE& _msg)
+	: type(_type)
+	, timestamp(_timestamp)
+	, msg(_msg)
+{
+}
+
+template <typename TYPES>
+tlm_can_message_event<TYPES>::tlm_can_message_event(const tlm_can_message_event<TYPES>& msg_event)
+	: type(msg_event.type)
+	, timestamp(msg_event.timestamp)
+	, msg(msg_event.msg)
+{
+}
+
+template <typename TYPES>
+std::ostream& operator << (std::ostream& os, const tlm_can_message_event<TYPES>& msg_event)
+{
+	return os << "tlm_can_message_event(type=" << msg_event.get_type() << ",timestamp=" << msg_event.timestamp << ",message=" << msg_event.get_message() << ")";
+}
+
+// tlm_can_core_config
+
+inline std::ostream& operator << (std::ostream& os, const tlm_can_core_config& cfg)
+{
+	os << "tlm_can_core_config(";
+	os << "bit_time=" << cfg.bit_time;
+	os << ",sample_point=" << cfg.sample_point;
+	os << ",phase_seg2=" << cfg.phase_seg2;
+	os << ",loopback_mode=" << cfg.loopback_mode;
+	os << ",bus_monitoring_mode=" << cfg.bus_monitoring_mode;
+	os << ",automatic_retransmission=" << cfg.automatic_retransmission;
+	os << ",restricted_operation_mode=" << cfg.restricted_operation_mode;
+	return os << ")";
+}
+
+// tlm_can_core (CAN core)
+
+template <typename CAN_MODULE, typename TYPES>
+tlm_can_core<CAN_MODULE, TYPES>::tlm_can_core(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_module(name)
 	, CAN_TX("CAN_TX")
 	, CAN_RX("CAN_RX")
 	, logger(*this)
 	, verbose(false)
+	, config()
+	, transmit_pause(0)
 	, rx_bitstream()
 	, payload()
 	, recessive_bit_count(0)
@@ -1185,11 +1361,10 @@ tlm_can_node<CAN_NODE>::tlm_can_node(const sc_core::sc_module_name& name, unisim
 	, stuff_old_value(TLM_CAN_RECESSIVE)
 	, destuff_count(0)
 	, destuff_old_value(TLM_CAN_RECESSIVE)
-	, model_accuracy(TLM_CAN_TRANSMISSION_START_INACCURATE)
+	, model_accuracy(TLM_CAN_CYCLE_ACCURATE)
 	, bus_off_round_count(0)
-	, enabled(false)
 	, send_msg(0)
-	, recv_msg()
+	, recv_msg(0)
 	, send_crc(CRC_INIT)
 	, recv_crc(0)
 	, comp_crc(CRC_INIT)
@@ -1198,305 +1373,290 @@ tlm_can_node<CAN_NODE>::tlm_can_node(const sc_core::sc_module_name& name, unisim
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, param_model_accuracy("model-accuracy", this, model_accuracy, "model accuracy (cycle-accurate, transaction-accurate, transmission-start-inaccurate)")
 {
-	CAN_TX.register_nb_receive(this, &tlm_can_node::nb_receive, CAN_TX_IF);
-	CAN_RX.register_nb_receive(this, &tlm_can_node::nb_receive, CAN_RX_IF);
+	CAN_TX.register_nb_receive(this, &tlm_can_core::nb_receive, CAN_TX_IF);
+	CAN_RX.register_nb_receive(this, &tlm_can_core::nb_receive, CAN_RX_IF);
 	
-	SC_HAS_PROCESS(tlm_can_node);
+	SC_HAS_PROCESS(tlm_can_core);
 	
 	SC_THREAD(process);
 }
 
-template <typename CAN_NODE>
-tlm_can_node<CAN_NODE>::~tlm_can_node()
+template <typename CAN_MODULE, typename TYPES>
+tlm_can_core<CAN_MODULE, TYPES>::~tlm_can_core()
 {
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::enable(bool v)
+template <typename CAN_MODULE, typename TYPES>
+bool tlm_can_core<CAN_MODULE, TYPES>::is_enabled() const
 {
-	if(!enabled && v)
-	{
-		logger << DebugInfo << "enabling" << EndDebugInfo;
-		hot_plugged = true;
-		recessive_bit_count = 0;
-		__set_phase(TLM_CAN_SOF_PHASE);
-	}
-	else if(enabled && !v)
-	{
-		logger << DebugInfo << "disabling" << EndDebugInfo;
-	}
-	enabled = v;
+	unimplemented("bool is_enabled() const");
+	return false;
 }
 
-template <typename CAN_NODE>
-const sc_core::sc_time& tlm_can_node<CAN_NODE>::get_sample_point() const
+template <typename CAN_MODULE, typename TYPES>
+const tlm_can_core_config& tlm_can_core<CAN_MODULE, TYPES>::get_config() const
 {
-	unimplemented("const sc_core::sc_time& get_sample_point() const");
-	return sc_core::SC_ZERO_TIME;
+	static tlm_can_core_config void_config;
+	unimplemented("const tlm_can_core_config& get_config() const");
+	return void_config;
 }
 
-template <typename CAN_NODE>
-const sc_core::sc_time& tlm_can_node<CAN_NODE>::get_phase_seg2() const
-{
-	unimplemented("const sc_core::sc_time& get_phase_seg2() const");
-	return sc_core::SC_ZERO_TIME;
-}
-
-template <typename CAN_NODE>
-tlm_can_error tlm_can_node<CAN_NODE>::get_can_error() const
+template <typename CAN_MODULE, typename TYPES>
+tlm_can_error tlm_can_core<CAN_MODULE, TYPES>::get_can_error() const
 {
 	unimplemented("tlm_can_error get_can_error() const");
 	return TLM_CAN_NO_ERROR;
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::set_can_error(tlm_can_error _can_error)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::set_can_error(tlm_can_error _can_error)
 {
 	unimplemented("void set_can_error(tlm_can_error _can_error)");
 }
 
-template <typename CAN_NODE>
-tlm_can_node_activity tlm_can_node<CAN_NODE>::get_node_activity() const
+template <typename CAN_MODULE, typename TYPES>
+tlm_can_core_activity tlm_can_core<CAN_MODULE, TYPES>::get_core_activity() const
 {
-	unimplemented("tlm_can_node_activity get_node_activity() const");
-	return TLM_CAN_NODE_ACTIVITY_IDLE;
+	unimplemented("tlm_can_core_activity get_core_activity() const");
+	return TLM_CAN_CORE_IDLE;
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::set_node_activity(tlm_can_node_activity)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::set_core_activity(tlm_can_core_activity)
 {
-	unimplemented("void set_node_activity(tlm_can_node_activity)");
+	unimplemented("void set_core_activity(tlm_can_core_activity)");
 }
 
-template <typename CAN_NODE>
-tlm_can_phase tlm_can_node<CAN_NODE>::get_phase() const
+template <typename CAN_MODULE, typename TYPES>
+tlm_can_phase tlm_can_core<CAN_MODULE, TYPES>::get_phase() const
 {
 	unimplemented("tlm_can_phase get_phase() const");
 	return TLM_CAN_IDLE_PHASE;
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::set_phase(tlm_can_phase _phase)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::set_phase(tlm_can_phase _phase)
 {
 	unimplemented("void set_phase(tlm_can_phase _phase)");
 }
 
-template <typename CAN_NODE>
-uint8_t tlm_can_node<CAN_NODE>::get_transmit_error_count() const
+template <typename CAN_MODULE, typename TYPES>
+uint8_t tlm_can_core<CAN_MODULE, TYPES>::get_transmit_error_count() const
 {
 	unimplemented("uint8_t get_transmit_error_count() const");
 	return 0;
 }
 
-template <typename CAN_NODE>
-uint8_t tlm_can_node<CAN_NODE>::get_receive_error_count() const
+template <typename CAN_MODULE, typename TYPES>
+uint8_t tlm_can_core<CAN_MODULE, TYPES>::get_receive_error_count() const
 {
 	unimplemented("uint8_t get_receive_error_count() const");
 	return 0;
 }
 
-template <typename CAN_NODE>
-tlm_can_state tlm_can_node<CAN_NODE>::get_state() const
+template <typename CAN_MODULE, typename TYPES>
+tlm_can_state tlm_can_core<CAN_MODULE, TYPES>::get_state() const
 {
 	unimplemented("tlm_can_state get_state() const");
 	return TLM_CAN_BUS_OFF_STATE;
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::set_transmit_error_count(uint8_t)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::set_transmit_error_count(uint8_t)
 {
 	unimplemented("void set_transmit_error_count(uint8_t)");
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::set_receive_error_count(uint8_t)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::set_receive_error_count(uint8_t)
 {
 	unimplemented("void set_receive_error_count(uint8_t)");
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::set_state(tlm_can_state)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::set_state(tlm_can_state)
 {
 	unimplemented("void set_state(tlm_can_state)");
 }
 
-template <typename CAN_NODE>
-bool tlm_can_node<CAN_NODE>::has_pending_transmission_request() const
+template <typename CAN_MODULE, typename TYPES>
+bool tlm_can_core<CAN_MODULE, TYPES>::has_pending_transmission_request() const
 {
 	unimplemented("bool has_pending_transmission_request() const");
 	return false;
 }
 
-template <typename CAN_NODE>
-const tlm_can_message& tlm_can_node<CAN_NODE>::pending_transmission_request() const
+template <typename CAN_MODULE, typename TYPES>
+const typename TYPES::CAN_MESSAGE& tlm_can_core<CAN_MODULE, TYPES>::fetch_pending_transmission_request()
 {
-	unimplemented("const tlm_can_message& pending_transmission_request() const");
-	static tlm_can_message msg;
+	unimplemented("const tlm_can_message& fetch_pending_transmission_request()");
+	static CAN_MESSAGE msg;
 	return msg;
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::transmission_occurred(const tlm_can_message&)
+template <typename CAN_MODULE, typename TYPES>
+typename TYPES::CAN_MESSAGE& tlm_can_core<CAN_MODULE, TYPES>::get_receive_message()
 {
-	unimplemented("void transmission_occurred(const tlm_can_message&)");
+	unimplemented("tlm_can_message& get_receive_message()");
+	static CAN_MESSAGE msg;
+	return msg;
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::receive_message(const tlm_can_message&)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::process_message_event(const tlm_can_message_event<TYPES>& msg_event)
 {
-	unimplemented("void receive_message(const tlm_can_message&)");
+	unimplemented("void process_message_event(const tlm_can_message_event<TYPES>&)");
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::received_bit(bool)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::received_bit(bool)
 {
 	unimplemented("void received_bit(bool)");
 }
 
-template <typename CAN_NODE>
-bool tlm_can_node<CAN_NODE>::is_loopback_enabled() const
+template <typename CAN_MODULE, typename TYPES>
+unsigned int tlm_can_core<CAN_MODULE, TYPES>::get_transmit_pause() const
 {
-	unimplemented("bool is_loopback_enabled() const");
+	unimplemented("unsigned int get_transmit_pause() const");
 	return false;
 }
 
-template <typename CAN_NODE>
-const sc_core::sc_time& tlm_can_node<CAN_NODE>::__get_sample_point() const
+template <typename CAN_MODULE, typename TYPES>
+bool tlm_can_core<CAN_MODULE, TYPES>::__is_enabled() const
 {
-	return static_cast<const CAN_NODE *>(this)->get_sample_point();
+	return static_cast<const CAN_MODULE *>(this)->is_enabled();
 }
 
-template <typename CAN_NODE>
-const sc_core::sc_time& tlm_can_node<CAN_NODE>::__get_phase_seg2() const
+template <typename CAN_MODULE, typename TYPES>
+const tlm_can_core_config& tlm_can_core<CAN_MODULE, TYPES>::__get_config() const
 {
-	return static_cast<const CAN_NODE *>(this)->get_phase_seg2();
+	return static_cast<const CAN_MODULE *>(this)->get_config();
 }
 
-template <typename CAN_NODE>
-tlm_can_error tlm_can_node<CAN_NODE>::__get_can_error() const
+template <typename CAN_MODULE, typename TYPES>
+tlm_can_error tlm_can_core<CAN_MODULE, TYPES>::__get_can_error() const
 {
-	return static_cast<const CAN_NODE *>(this)->get_can_error();
+	return static_cast<const CAN_MODULE *>(this)->get_can_error();
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::__set_can_error(tlm_can_error _can_error)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::__set_can_error(tlm_can_error _can_error)
 {
-	static_cast<CAN_NODE *>(this)->set_can_error(_can_error);
+	static_cast<CAN_MODULE *>(this)->set_can_error(_can_error);
 }
 
-template <typename CAN_NODE>
-tlm_can_node_activity tlm_can_node<CAN_NODE>::__get_node_activity() const
+template <typename CAN_MODULE, typename TYPES>
+tlm_can_core_activity tlm_can_core<CAN_MODULE, TYPES>::__get_core_activity() const
 {
-	return static_cast<const CAN_NODE *>(this)->get_node_activity();
+	return static_cast<const CAN_MODULE *>(this)->get_core_activity();
 }
 
-template <typename CAN_NODE>
-uint8_t tlm_can_node<CAN_NODE>::__get_transmit_error_count() const
+template <typename CAN_MODULE, typename TYPES>
+uint8_t tlm_can_core<CAN_MODULE, TYPES>::__get_transmit_error_count() const
 {
-	return static_cast<const CAN_NODE *>(this)->get_transmit_error_count();
+	return static_cast<const CAN_MODULE *>(this)->get_transmit_error_count();
 }
 
-template <typename CAN_NODE>
-uint8_t tlm_can_node<CAN_NODE>::__get_receive_error_count() const
+template <typename CAN_MODULE, typename TYPES>
+uint8_t tlm_can_core<CAN_MODULE, TYPES>::__get_receive_error_count() const
 {
-	return static_cast<const CAN_NODE *>(this)->get_receive_error_count();
+	return static_cast<const CAN_MODULE *>(this)->get_receive_error_count();
 }
 
-template <typename CAN_NODE>
-tlm_can_state tlm_can_node<CAN_NODE>::__get_state() const
+template <typename CAN_MODULE, typename TYPES>
+tlm_can_state tlm_can_core<CAN_MODULE, TYPES>::__get_state() const
 {
-	return static_cast<const CAN_NODE *>(this)->get_state();
+	return static_cast<const CAN_MODULE *>(this)->get_state();
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::__set_node_activity(tlm_can_node_activity _node_activity)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::__set_core_activity(tlm_can_core_activity _core_activity)
 {
-	static_cast<CAN_NODE *>(this)->set_node_activity(_node_activity);
+	static_cast<CAN_MODULE *>(this)->set_core_activity(_core_activity);
 }
 
-template <typename CAN_NODE>
-tlm_can_phase tlm_can_node<CAN_NODE>::__get_phase() const
+template <typename CAN_MODULE, typename TYPES>
+tlm_can_phase tlm_can_core<CAN_MODULE, TYPES>::__get_phase() const
 {
-	return static_cast<const CAN_NODE *>(this)->get_phase();
+	return static_cast<const CAN_MODULE *>(this)->get_phase();
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::__set_phase(tlm_can_phase _phase)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::__set_phase(tlm_can_phase _phase)
 {
-	static_cast<CAN_NODE *>(this)->set_phase(_phase);
+	static_cast<CAN_MODULE *>(this)->set_phase(_phase);
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::__set_transmit_error_count(uint8_t v)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::__set_transmit_error_count(uint8_t v)
 {
-	static_cast<CAN_NODE *>(this)->set_transmit_error_count(v);
+	static_cast<CAN_MODULE *>(this)->set_transmit_error_count(v);
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::__set_receive_error_count(uint8_t v)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::__set_receive_error_count(uint8_t v)
 {
-	static_cast<CAN_NODE *>(this)->set_receive_error_count(v);
+	static_cast<CAN_MODULE *>(this)->set_receive_error_count(v);
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::__set_state(tlm_can_state _state)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::__set_state(tlm_can_state _state)
 {
-	static_cast<CAN_NODE *>(this)->set_state(_state);
+	static_cast<CAN_MODULE *>(this)->set_state(_state);
 }
 
-template <typename CAN_NODE>
-bool tlm_can_node<CAN_NODE>::__has_pending_transmission_request() const
+template <typename CAN_MODULE, typename TYPES>
+bool tlm_can_core<CAN_MODULE, TYPES>::__has_pending_transmission_request() const
 {
-	return static_cast<const CAN_NODE *>(this)->has_pending_transmission_request();
+	return static_cast<const CAN_MODULE *>(this)->has_pending_transmission_request();
 }
 
-template <typename CAN_NODE>
-const tlm_can_message& tlm_can_node<CAN_NODE>::__pending_transmission_request() const
+template <typename CAN_MODULE, typename TYPES>
+const typename TYPES::CAN_MESSAGE& tlm_can_core<CAN_MODULE, TYPES>::__fetch_pending_transmission_request()
 {
-	return static_cast<const CAN_NODE *>(this)->pending_transmission_request();
+	return static_cast<CAN_MODULE *>(this)->fetch_pending_transmission_request();
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::__transmission_occurred(const tlm_can_message& msg)
+template <typename CAN_MODULE, typename TYPES>
+typename TYPES::CAN_MESSAGE& tlm_can_core<CAN_MODULE, TYPES>::__get_receive_message()
 {
-	static_cast<CAN_NODE *>(this)->transmission_occurred(msg);
+	return static_cast<CAN_MODULE *>(this)->get_receive_message();
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::__receive_message(const tlm_can_message& msg)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::__process_message_event(const tlm_can_message_event<TYPES>& msg_event)
 {
-	static_cast<CAN_NODE *>(this)->receive_message(msg);
+	static_cast<CAN_MODULE *>(this)->process_message_event(msg_event);
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::__received_bit(bool value)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::__received_bit(bool value)
 {
-	static_cast<CAN_NODE *>(this)->received_bit(value);
+	static_cast<CAN_MODULE *>(this)->received_bit(value);
 }
 
-template <typename CAN_NODE>
-bool tlm_can_node<CAN_NODE>::__is_loopback_enabled() const
+template <typename CAN_MODULE, typename TYPES>
+unsigned int tlm_can_core<CAN_MODULE, TYPES>::__get_transmit_pause() const
 {
-	return static_cast<const CAN_NODE *>(this)->is_loopback_enabled();
+	return static_cast<const CAN_MODULE *>(this)->get_transmit_pause();
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::unimplemented(const char *method_decl)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::unimplemented(const char *method_decl)
 {
-	throw std::runtime_error(std::string("a tlm_can_node<> derived class shall implement '") + method_decl + "'");
+	throw std::runtime_error(std::string("a tlm_can_core<> derived class shall implement '") + method_decl + "'");
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::end_of_elaboration()
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::end_of_elaboration()
 {
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::nb_receive(int id, tlm_serial_payload& payload, const sc_core::sc_time& t)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::nb_receive(int id, tlm_serial_payload& payload, const sc_core::sc_time& t)
 {
-	bool loopback = __is_loopback_enabled();
-	if(((id == CAN_RX_IF) && !loopback) ||
-	   ((id == CAN_TX_IF) && loopback))
+	if(((id == CAN_RX_IF) && !config.get_loopback_mode()) ||
+	   ((id == CAN_TX_IF) && config.get_loopback_mode()))
 	{
 		tlm_serial_payload::data_type& data = payload.get_data();
 		const sc_core::sc_time& period = payload.get_period();
@@ -1509,8 +1669,8 @@ void tlm_can_node<CAN_NODE>::nb_receive(int id, tlm_serial_payload& payload, con
 	}
 }
 
-template <typename CAN_NODE>
-uint16_t tlm_can_node<CAN_NODE>::update_crc(uint16_t crc_rg, bool nxtbit)
+template <typename CAN_MODULE, typename TYPES>
+uint16_t tlm_can_core<CAN_MODULE, TYPES>::update_crc(uint16_t crc_rg, bool nxtbit)
 {
 	bool crcnxt = nxtbit ^ ((crc_rg >> (CRC_LENGTH - 1)) & 1);
 	crc_rg = (crc_rg << 1) & ((1 << CRC_LENGTH) - 1);
@@ -1521,15 +1681,15 @@ uint16_t tlm_can_node<CAN_NODE>::update_crc(uint16_t crc_rg, bool nxtbit)
 	return crc_rg & ((1 << CRC_LENGTH) - 1);
 }
 
-template <typename CAN_NODE>
-const sc_core::sc_time& tlm_can_node<CAN_NODE>::feed(const sc_core::sc_time& t, bool value)
+template <typename CAN_MODULE, typename TYPES>
+const sc_core::sc_time& tlm_can_core<CAN_MODULE, TYPES>::feed(const sc_core::sc_time& t, bool value)
 {
 	assert(model_accuracy != TLM_CAN_CYCLE_ACCURATE);
 	if(t > last_feed)
 	{
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << (sc_core::sc_time_stamp() + qk_sample_point.get_local_time() - sample_point) << ":" << sc_core::sc_time_stamp() << "[+" << (qk_sample_point.get_local_time() - sample_point) << "]:" << __get_node_activity() << ":" << __get_state() << ":feeding until " << t << " (excluded)" << EndDebugInfo;
+			logger << DebugInfo << (qk_sample_point.get_current_time() - config.get_sample_point()) << ":" << sc_core::sc_time_stamp() << "[+" << (qk_sample_point.get_local_time() - config.get_sample_point()) << "]:" << __get_core_activity() << ":" << __get_state() << ":feeding until " << t << " (excluded)" << EndDebugInfo;
 		}
 		sc_core::sc_time period(t);
 		period -= last_feed;
@@ -1545,18 +1705,18 @@ const sc_core::sc_time& tlm_can_node<CAN_NODE>::feed(const sc_core::sc_time& t, 
 	{
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << (sc_core::sc_time_stamp() + qk_sample_point.get_local_time() - sample_point) << ":" << sc_core::sc_time_stamp() << "[+" << (qk_sample_point.get_local_time() - sample_point) << "]:" << __get_node_activity() << ":" << __get_state() << ":already fed until " << t << " (excluded)" << EndDebugInfo;
+			logger << DebugInfo << (qk_sample_point.get_current_time() - config.get_sample_point()) << ":" << sc_core::sc_time_stamp() << "[+" << (qk_sample_point.get_local_time() - config.get_sample_point()) << "]:" << __get_core_activity() << ":" << __get_state() << ":already fed until " << t << " (excluded)" << EndDebugInfo;
 		}
 	}
 	return last_feed;
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::b_seek(int bit_index)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::b_seek(int bit_index)
 {
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":seeking to " << qk_sample_point.get_current_time() << " (" << __get_phase();
+		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":seeking to " << qk_sample_point.get_current_time() << " (" << __get_phase();
 		if(bit_index >= 0) logger << ", bit #" << bit_index;
 		logger << ")" << EndDebugInfo;
 	}
@@ -1564,7 +1724,7 @@ void tlm_can_node<CAN_NODE>::b_seek(int bit_index)
 	{
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":need sync (" << __get_phase();
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":need sync (" << __get_phase();
 			if(bit_index >= 0) logger << ", bit #" << bit_index;
 			logger << ")" << EndDebugInfo;
 		}
@@ -1573,44 +1733,44 @@ void tlm_can_node<CAN_NODE>::b_seek(int bit_index)
 	}
 }
 
-template <typename CAN_NODE>
-bool tlm_can_node<CAN_NODE>::nb_read()
+template <typename CAN_MODULE, typename TYPES>
+bool tlm_can_core<CAN_MODULE, TYPES>::nb_read()
 {
 	bool recv_value = rx_bitstream.read();
 	__received_bit(recv_value);
 	return recv_value;
 }
 
-template <typename CAN_NODE>
-bool tlm_can_node<CAN_NODE>::b_read(int bit_index)
+template <typename CAN_MODULE, typename TYPES>
+bool tlm_can_core<CAN_MODULE, TYPES>::b_read(int bit_index)
 {
 	b_seek(bit_index);
 	bool recv_value = nb_read();
 	return recv_value;
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::inc_time(sc_core::sc_time& t, unsigned int cycle)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::inc_time(sc_core::sc_time& t, unsigned int cycle)
 {
 	if(cycle)
 	{
 		do
 		{
-			t += baud_period;
+			t += config.get_bit_time();
 		}
 		while(--cycle);
 	}
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::restart_stuffing(bool value)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::restart_stuffing(bool value)
 {
 	stuff_count = 1;
 	stuff_old_value = value;
 }
 
-template <typename CAN_NODE>
-bool tlm_can_node<CAN_NODE>::need_stuff(bool value)
+template <typename CAN_MODULE, typename TYPES>
+bool tlm_can_core<CAN_MODULE, TYPES>::need_stuff(bool value)
 {
 	if(stuff_old_value == value)
 	{
@@ -1628,50 +1788,50 @@ bool tlm_can_node<CAN_NODE>::need_stuff(bool value)
 	return false;
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::stuff(bool value)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::stuff(bool value)
 {
 	if(need_stuff(value))
 	{
 		value = !value;
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << __get_node_activity() << ":" << __get_state() << ":stuffing with " << value << EndDebugInfo;
+			logger << DebugInfo << __get_core_activity() << ":" << __get_state() << ":stuffing with " << value << EndDebugInfo;
 		}
-		payload.set_period(baud_period);
+		payload.set_period(config.get_bit_time());
 		tlm_serial_payload::data_type& data = payload.get_data();
 		data.clear();
 		data.push_back(value);
 		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
-		t_transmit += baud_period;
+		t_transmit += config.get_bit_time();
 	}
 	stuff_old_value = value;
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::stuff(tlm_serial_payload::data_type& data, bool value)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::stuff(tlm_serial_payload::data_type& data, bool value)
 {
 	if(need_stuff(value))
 	{
 		value = !value;
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << __get_node_activity() << ":" << __get_state() << ":stuffing with " << value << EndDebugInfo;
+			logger << DebugInfo << __get_core_activity() << ":" << __get_state() << ":stuffing with " << value << EndDebugInfo;
 		}
 		data.push_back(value);
 	}
 	stuff_old_value = value;
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::restart_destuffing(bool value)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::restart_destuffing(bool value)
 {
 	destuff_count = 1;
 	destuff_old_value = value;
 }
 
-template <typename CAN_NODE>
-bool tlm_can_node<CAN_NODE>::need_destuff(bool value)
+template <typename CAN_MODULE, typename TYPES>
+bool tlm_can_core<CAN_MODULE, TYPES>::need_destuff(bool value)
 {
 	if(destuff_old_value == value)
 	{
@@ -1689,38 +1849,38 @@ bool tlm_can_node<CAN_NODE>::need_destuff(bool value)
 	return false;
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::destuff(bool value)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::destuff(bool value)
 {
 	if(need_destuff(value))
 	{
-		if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER)
+		if(__get_core_activity() == TLM_CAN_CORE_RECEIVER)
 		{
 			if(model_accuracy != TLM_CAN_CYCLE_ACCURATE)
 			{
-				feed(last_feed + baud_period, TLM_CAN_RECESSIVE);
+				feed(last_feed + config.get_bit_time(), TLM_CAN_RECESSIVE);
 			}
 			else
 			{
-				payload.set_period(baud_period);
+				payload.set_period(config.get_bit_time());
 				tlm_serial_payload::data_type& data = payload.get_data();
 				data.clear();
 				data.push_back(TLM_CAN_RECESSIVE);
 				CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 			}
 			
-			t_transmit += baud_period;
+			t_transmit += config.get_bit_time();
 		}
 		
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":seeking to " << qk_sample_point.get_current_time() << " (destuffing)" << EndDebugInfo;
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":seeking to " << qk_sample_point.get_current_time() << " (destuffing)" << EndDebugInfo;
 		}
 		if((rx_bitstream.seek(qk_sample_point.get_local_time()) == TLM_INPUT_BITSTREAM_NEED_SYNC) || qk_sample_point.need_sync())
 		{
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":need sync (destuffing)" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":need sync (destuffing)" << EndDebugInfo;
 			}
 			qk_sample_point.sync();
 			rx_bitstream.latch();
@@ -1731,22 +1891,24 @@ void tlm_can_node<CAN_NODE>::destuff(bool value)
 		
 		if(stuff_value == value)
 		{
-			__set_can_error(TLM_CAN_STUFF_ERROR);
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":bad stuffing from transmitter (" << stuff_value << " instead of " << !value << ")" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":bad stuffing from transmitter (" << stuff_value << " instead of " << !value << ")" << EndDebugInfo;
 			}
+			qk_sample_point.sync();
+			__set_can_error(TLM_CAN_STUFF_ERROR);
+			__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_RECEPTION_ERROR_EVENT, qk_sample_point.get_current_time(), *recv_msg));
 		}
 		
 		value = stuff_value;
 		
-		qk_sample_point.inc(baud_period);
+		qk_sample_point.inc(config.get_bit_time());
 	}
 	destuff_old_value = value;
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::inc_transmit_error_count(int delta)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::inc_transmit_error_count(int delta)
 {
 	uint8_t tec = __get_transmit_error_count();
 	uint8_t rec = __get_receive_error_count();
@@ -1763,9 +1925,9 @@ void tlm_can_node<CAN_NODE>::inc_transmit_error_count(int delta)
 			__set_state(TLM_CAN_BUS_OFF_STATE);
 			if(__get_state() == TLM_CAN_BUS_OFF_STATE)
 			{
-				if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+				if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 				{
-					__set_node_activity(TLM_CAN_NODE_ACTIVITY_RECEIVER);
+					__set_core_activity(TLM_CAN_CORE_RECEIVER);
 				}
 			
 				bus_off_round_count = 0;
@@ -1793,8 +1955,8 @@ void tlm_can_node<CAN_NODE>::inc_transmit_error_count(int delta)
 	}
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::inc_receive_error_count(int delta)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::inc_receive_error_count(int delta)
 {
 	uint8_t tec = __get_transmit_error_count();
 	uint8_t rec = __get_receive_error_count();
@@ -1826,8 +1988,8 @@ void tlm_can_node<CAN_NODE>::inc_receive_error_count(int delta)
 	}
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::count_recessive_bits(bool value)
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::count_recessive_bits(bool value)
 {
 	if(value == TLM_CAN_RECESSIVE)
 	{
@@ -1839,10 +2001,46 @@ void tlm_can_node<CAN_NODE>::count_recessive_bits(bool value)
 	}
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::transceive_error_frame()
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::init()
 {
-	assert((__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER) || __get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER);
+	__set_core_activity(TLM_CAN_CORE_SYNCHRONIZING);
+	__set_phase(TLM_CAN_SOF_PHASE);
+	__set_can_error(TLM_CAN_NO_ERROR);
+	config = __get_config();
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ":using " << config << EndDebugInfo;
+	}
+	transmit_pause = 0;
+	qk_sample_point.set(config.get_sample_point());
+	recessive_bit_count = 0;
+	
+	// Make sure automagically that there's no clock skew at all in case bit time has changed
+	sc_core::sc_time skew(t_transmit);
+	skew %= config.get_bit_time();
+	
+	if(skew != sc_core::SC_ZERO_TIME)
+	{
+		sc_core::sc_time period(config.get_bit_time());
+		period -= skew;
+		
+		payload.set_period(period);
+		tlm_serial_payload::data_type& data = payload.get_data();
+		data.clear();
+		data.push_back(TLM_CAN_RECESSIVE);
+		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
+		t_transmit += payload.get_period();
+		qk_sample_point.inc(payload.get_period());
+	}
+	
+	last_feed = t_transmit;
+}
+
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::transceive_error_frame()
+{
+	assert((__get_core_activity() == TLM_CAN_CORE_TRANSMITTER) || __get_core_activity() == TLM_CAN_CORE_RECEIVER);
 	__set_phase(TLM_CAN_ERROR_FLAG_PHASE);
 
 	bool bit_error = false;
@@ -1853,23 +2051,7 @@ void tlm_can_node<CAN_NODE>::transceive_error_frame()
 	// transmit/receive an error frame
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":transmitting a error frame over CAN_TX because of " << tlm_can_error(__get_can_error()) << EndDebugInfo;
-	}
-	
-	if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
-	{
-		// 3. When a TRANSMITTER sends an ERROR FLAG the TRANSMIT ERROR COUNT is increased by 8
-		if(!(__get_can_error() & TLM_CAN_ACK_ERROR))
-		{
-			// Exception 1:
-			// If the TRANSMITTER is 'error passive' and detects an ACKNOWLEDGMENT ERROR because of not detecting a 'dominant' ACK...
-			inc_transmit_error_count(8);
-		}
-	}
-	else
-	{
-		// 1. When a RECEIVER detects an error, the RECEIVE ERROR COUNT will be increased by 1...
-		inc_receive_error_count(1);
+		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":transmitting an error frame over CAN_TX because of " << tlm_can_error(__get_can_error()) << EndDebugInfo;
 	}
 	
 	unsigned int dominant_bit_count = 0;
@@ -1878,15 +2060,38 @@ void tlm_can_node<CAN_NODE>::transceive_error_frame()
 	{
 		unsigned int bit_index = ERROR_FLAG_LENGTH - i - 1;
 		
-		payload.set_period(baud_period);
+		payload.set_period(config.get_bit_time());
 		tlm_serial_payload::data_type& data = payload.get_data();
 		data.clear();
 		send_value = (__get_state() == TLM_CAN_ERROR_ACTIVE_STATE) ? TLM_CAN_DOMINANT : TLM_CAN_RECESSIVE;
-		data.push_back(send_value);
+		data.push_back(config.get_bus_monitoring_mode() ? TLM_CAN_RECESSIVE : send_value);
 		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
-		t_transmit += baud_period;
+		t_transmit += config.get_bit_time();
+		
+		if(i == 0)
+		{
+			if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
+			{
+				// 3. When a TRANSMITTER sends an ERROR FLAG the TRANSMIT ERROR COUNT is increased by 8
+				if(!(__get_can_error() & TLM_CAN_ACK_ERROR))
+				{
+					// Exception 1:
+					// If the TRANSMITTER is 'error passive' and detects an ACKNOWLEDGMENT ERROR because of not detecting a 'dominant' ACK...
+					qk_sample_point.sync();
+					inc_transmit_error_count(8);
+				}
+			}
+			else
+			{
+				// 1. When a RECEIVER detects an error, the RECEIVE ERROR COUNT will be increased by 1...
+				qk_sample_point.sync();
+				inc_receive_error_count(1);
+			}
+		}
 		
 		recv_value = b_read(bit_index);
+		if(config.get_bus_monitoring_mode()) recv_value = send_value;
+		
 		if(recv_value == TLM_CAN_DOMINANT)
 		{
 			dominant_bit_count++;
@@ -1896,7 +2101,8 @@ void tlm_can_node<CAN_NODE>::transceive_error_frame()
 
 		if(bit_error && (__get_state() == TLM_CAN_ERROR_ACTIVE_STATE))
 		{
-			if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+			qk_sample_point.sync();
+			if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 			{
 				// 4. If an TRANSMITTER detects a BIT ERROR while sending an ACTIVE ERROR FLAG the TRANSMIT ERROR COUNT is increased by 8
 				inc_transmit_error_count(8);
@@ -1908,7 +2114,7 @@ void tlm_can_node<CAN_NODE>::transceive_error_frame()
 			}
 		}
 		
-		qk_sample_point.inc(baud_period);
+		qk_sample_point.inc(config.get_bit_time());
 	}
 	
 
@@ -1920,11 +2126,11 @@ void tlm_can_node<CAN_NODE>::transceive_error_frame()
 	{
 		unsigned int bit_index = ERROR_FLAG_DELIMITER_LENGTH - i - 1;
 		
-		payload.set_period(baud_period);
+		payload.set_period(config.get_bit_time());
 		data.clear();
 		data.push_back(TLM_CAN_RECESSIVE);
 		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
-		t_transmit += baud_period;
+		t_transmit += config.get_bit_time();
 		
 		recv_value = b_read(bit_index);
 		
@@ -1939,14 +2145,16 @@ void tlm_can_node<CAN_NODE>::transceive_error_frame()
 				// 6. after detecting the 14th consecutive 'dominant' bit (in case of an ACTIVE ERROR FLAG) or
 				//    after detecting 8th consecutive 'dominant' bit following a PASSIVE ERROR FLAG, and
 				//    after each sequence of additional eight consecutive 'dominant' bits 
-				if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+				if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 				{
 					// every TRANSMITTER increases its TRANSMITTER ERROR COUNT
+					qk_sample_point.sync();
 					inc_transmit_error_count(8);
 				}
 				else
 				{
 					// every RECEIVER increases its TRANSMITTER ERROR COUNT
+					qk_sample_point.sync();
 					inc_receive_error_count(8);
 				}
 			}
@@ -1956,21 +2164,22 @@ void tlm_can_node<CAN_NODE>::transceive_error_frame()
 			dominant_bit_count = 0;
 		}
 		
-		if((recv_value == TLM_CAN_DOMINANT) && (__get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER) && first_bit_after_error_flag)
+		if((recv_value == TLM_CAN_DOMINANT) && (__get_core_activity() == TLM_CAN_CORE_RECEIVER) && first_bit_after_error_flag)
 		{
 			// 2. When a RECEIVER detects a 'dominant' bit as the first bit after sending an ERROR FLAG the RECEIVE ERROR COUNT will be increased by 8
 			first_bit_after_error_flag = false;
+			qk_sample_point.sync();
 			inc_receive_error_count(8);
 		}
 		
-		qk_sample_point.inc(baud_period);
+		qk_sample_point.inc(config.get_bit_time());
 	}
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::transceive_overload_frame()
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::transceive_overload_frame()
 {
-	assert((__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER) || __get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER);
+	assert((__get_core_activity() == TLM_CAN_CORE_TRANSMITTER) || __get_core_activity() == TLM_CAN_CORE_RECEIVER);
 	__set_phase(TLM_CAN_OVERLOAD_FLAG_PHASE);
 
 	bool bit_error = false;
@@ -1981,7 +2190,7 @@ void tlm_can_node<CAN_NODE>::transceive_overload_frame()
 	// transmit/receive an error frame
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":transmitting a overload frame over CAN_TX" << EndDebugInfo;
+		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":transmitting a overload frame over CAN_TX" << EndDebugInfo;
 	}
 	
 	unsigned int dominant_bit_count = 0;
@@ -1989,15 +2198,16 @@ void tlm_can_node<CAN_NODE>::transceive_overload_frame()
 	{
 		unsigned int bit_index = OVERLOAD_FLAG_LENGTH - i - 1;
 		
-		payload.set_period(baud_period);
+		payload.set_period(config.get_bit_time());
 		tlm_serial_payload::data_type& data = payload.get_data();
 		data.clear();
 		send_value = (__get_state() == TLM_CAN_ERROR_ACTIVE_STATE) ? TLM_CAN_DOMINANT : TLM_CAN_RECESSIVE;
-		data.push_back(send_value);
+		data.push_back(config.get_bus_monitoring_mode() ? TLM_CAN_RECESSIVE : send_value);
 		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
-		t_transmit += baud_period;
+		t_transmit += config.get_bit_time();
 		
 		recv_value = b_read(bit_index);
+		if(config.get_bus_monitoring_mode()) recv_value = send_value;
 		
 		if(recv_value == TLM_CAN_DOMINANT)
 		{
@@ -2008,19 +2218,21 @@ void tlm_can_node<CAN_NODE>::transceive_overload_frame()
 
 		if(bit_error)
 		{
-			if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+			if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 			{
 				// 4. If an TRANSMITTER detects a BIT ERROR while sending an OVERLOAD FLAG the TRANSMIT ERROR COUNT is increased by 8
+				qk_sample_point.sync();
 				inc_transmit_error_count(8);
 			}
 			else
 			{
 				// 5. If an RECEIVE detects a BIT ERROR while sending an OVERLOAD FLAG the RECEIVE ERROR COUNT is increased by 8
+				qk_sample_point.sync();
 				inc_receive_error_count(8);
 			}
 		}
 		
-		qk_sample_point.inc(baud_period);
+		qk_sample_point.inc(config.get_bit_time());
 	}
 	
 	bool first_dominant_sequence = true;
@@ -2031,11 +2243,11 @@ void tlm_can_node<CAN_NODE>::transceive_overload_frame()
 	{
 		unsigned int bit_index = OVERLOAD_FLAG_DELIMITER_LENGTH - i - 1;
 		
-		payload.set_period(baud_period);
+		payload.set_period(config.get_bit_time());
 		data.clear();
 		data.push_back(TLM_CAN_RECESSIVE);
 		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
-		t_transmit += baud_period;
+		t_transmit += config.get_bit_time();
 		
 		recv_value = b_read(bit_index);
 		
@@ -2047,14 +2259,16 @@ void tlm_can_node<CAN_NODE>::transceive_overload_frame()
 			{
 				first_dominant_sequence = false;
 				// 6. after detecting the 14th consecutive 'dominant' bit (in case of an OVERLOAD FLAG) 
-				if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+				if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 				{
 					// every TRANSMITTER increases its TRANSMITTER ERROR COUNT
+					qk_sample_point.sync();
 					inc_transmit_error_count(8);
 				}
 				else
 				{
 					// every RECEIVER increases its TRANSMITTER ERROR COUNT
+					qk_sample_point.sync();
 					inc_receive_error_count(8);
 				}
 			}
@@ -2064,14 +2278,14 @@ void tlm_can_node<CAN_NODE>::transceive_overload_frame()
 			dominant_bit_count = 0;
 		}
 		
-		qk_sample_point.inc(baud_period);
+		qk_sample_point.inc(config.get_bit_time());
 	}
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::transceive_intermission()
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::transceive_intermission()
 {
-	assert((__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER) || __get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER);
+	assert((__get_core_activity() == TLM_CAN_CORE_TRANSMITTER) || __get_core_activity() == TLM_CAN_CORE_RECEIVER);
 	__set_phase(TLM_CAN_INTERMISSION_PHASE);
 	
 	bool overload = false;
@@ -2082,19 +2296,19 @@ void tlm_can_node<CAN_NODE>::transceive_intermission()
 	// interframe space intermission
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":intermission starts" << EndDebugInfo;
+		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":intermission starts" << EndDebugInfo;
 	}
 
 	for(unsigned int i = 0; !overload && (i < INTERMISSION_LENGTH); i++)
 	{
 		unsigned int bit_index = INTERMISSION_LENGTH - i - 1;
 		
-		payload.set_period(baud_period);
+		payload.set_period(config.get_bit_time());
 		data.clear();
 		send_value = TLM_CAN_RECESSIVE;
 		data.push_back(send_value); // intermission
 		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
-		t_transmit += baud_period;
+		t_transmit += config.get_bit_time();
 		
 		if(i == 0)
 		{
@@ -2105,7 +2319,7 @@ void tlm_can_node<CAN_NODE>::transceive_intermission()
 		
 		if(verbose)
 		{
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got " << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got " << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
 		}
 		
 		overload = (intermission == TLM_CAN_DOMINANT);
@@ -2114,14 +2328,14 @@ void tlm_can_node<CAN_NODE>::transceive_intermission()
 			// 2. Detection of a 'dominant' bit during INTERMISSION
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":overload" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":overload" << EndDebugInfo;
 			}
 		}
 		
-		qk_sample_point.inc(baud_period);
+		qk_sample_point.inc(config.get_bit_time());
 	}
-		
-	if(overload)
+	
+	if(!config.get_restricted_operation_mode() && overload)
 	{
 		// overload: dominant bits during intermission
 		transceive_overload_frame();
@@ -2129,18 +2343,25 @@ void tlm_can_node<CAN_NODE>::transceive_intermission()
 	}
 	else
 	{
-		__set_phase(enabled ? TLM_CAN_SOF_PHASE : TLM_CAN_IDLE_PHASE);
+		if(__is_enabled())
+		{
+			transmit_pause = transmitted_last_message ? __get_transmit_pause() : 0;
+			__set_phase(TLM_CAN_SOF_PHASE);
+		}
+		else
+		{
+			__set_phase(TLM_CAN_IDLE_PHASE);
+		}
 		recessive_bit_count = 0;
 		last_feed = t_transmit;
 	}
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::transceive_start_of_frame()
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::transceive_start_of_frame()
 {
 	// start of frame
-	transmitted_last_message = false;
-	__set_node_activity(TLM_CAN_NODE_ACTIVITY_SYNCHRONIZING);
+	__set_core_activity(TLM_CAN_CORE_SYNCHRONIZING);
 	bool bit_error = false;
 	bool send_value = false;
 	bool recv_value = false;
@@ -2151,61 +2372,67 @@ void tlm_can_node<CAN_NODE>::transceive_start_of_frame()
 	if(model_accuracy != TLM_CAN_CYCLE_ACCURATE)
 	{
 		// inject enough recessive bits for interframe space suspend transmission if we were last transmitter and in error passive node
-		if(!__has_pending_transmission_request())
+		if((__get_state() == TLM_CAN_BUS_OFF_STATE) || config.get_bus_monitoring_mode() || (!send_msg && !__has_pending_transmission_request()))
 		{
-			// there's nothing to transmit: inject some recessive bits up to a limit
+			// there's nothing to transmit or we're forbidden to transmit: inject some recessive bits up to a limit
 			if(model_accuracy == TLM_CAN_TRANSMISSION_START_INACCURATE)
 			{
 				// limit is up to ACK slot
-				if(t_transmit >= last_feed) feed(t_transmit + (INACCURATE_TRANSMISSION_START_CYCLES * baud_period), TLM_CAN_RECESSIVE);
+				if(t_transmit >= last_feed) feed(t_transmit + (INACCURATE_TRANSMISSION_START_CYCLES * config.get_bit_time()), TLM_CAN_RECESSIVE);
 			}
 			else
 			{
 				// limit is up to next cycle
-				feed(t_transmit + baud_period, TLM_CAN_RECESSIVE);
+				feed(t_transmit + config.get_bit_time(), TLM_CAN_RECESSIVE);
 			}
 			passive = true;
 		}
-		else if(hot_plugged && (recessive_bit_count < (1 + EOF_LENGTH + INTERMISSION_LENGTH)))
+		else if((hot_plugged || config.get_restricted_operation_mode()) && (recessive_bit_count < (1 + EOF_LENGTH + INTERMISSION_LENGTH)))
 		{
-			// there's something to transmit but we've just been plugged: inject enough recessive bits for ack delimiter + eof + intermission
-			feed(t_transmit + ((1 + EOF_LENGTH + INTERMISSION_LENGTH - recessive_bit_count) * baud_period), TLM_CAN_RECESSIVE);
+			// there's something to transmit but we've just been plugged or we're restricted operation mode: inject enough recessive bits for ack delimiter + eof + intermission
+			feed(t_transmit + ((1 + EOF_LENGTH + INTERMISSION_LENGTH - recessive_bit_count) * config.get_bit_time()), TLM_CAN_RECESSIVE);
 			passive = true;
 		}
-		else if(transmitted_last_message && (__get_state() == TLM_CAN_ERROR_PASSIVE_STATE) && (recessive_bit_count < SUSPEND_TRANSMISSION_LENGTH))
+		else if(transmitted_last_message && (((__get_state() == TLM_CAN_ERROR_PASSIVE_STATE) && (recessive_bit_count < SUSPEND_TRANSMISSION_LENGTH)) || (transmit_pause && (recessive_bit_count < transmit_pause))))
 		{
-			// there's something to transmit be we were last transmitter and in error passive state: inject enough recessive bits for interframe space suspend transmission
-			feed(t_transmit + ((SUSPEND_TRANSMISSION_LENGTH - recessive_bit_count) * baud_period), TLM_CAN_RECESSIVE);
+			// there's something to transmit and we are last transmitter but either we are in error passive state or a transmit pause must be observed: inject enough recessive bits for interframe space suspend transmission or transmit pause
+			unsigned int suspend_bit_count = (__get_state() == TLM_CAN_ERROR_PASSIVE_STATE) && (recessive_bit_count < SUSPEND_TRANSMISSION_LENGTH) ? (SUSPEND_TRANSMISSION_LENGTH - recessive_bit_count) : 0;
+			unsigned int pause_bit_count = (transmit_pause && (recessive_bit_count < transmit_pause)) ? (transmit_pause - recessive_bit_count) : 0;
+			
+			feed(t_transmit + (std::max(suspend_bit_count, pause_bit_count) * config.get_bit_time()), TLM_CAN_RECESSIVE);
 			passive = true;
 		}
 		else
 		{
-			// there's something to transmit: don't feed with recessive bits
+			// there's something to transmit: don't feed with more recessive bits
 			passive = (t_transmit < last_feed);
 		}
 	}
-	else if(hot_plugged || !__has_pending_transmission_request() || (__get_state() == TLM_CAN_BUS_OFF_STATE))
+	else if(((hot_plugged || config.get_bus_monitoring_mode() || config.get_restricted_operation_mode()) && (recessive_bit_count < (1 + EOF_LENGTH + INTERMISSION_LENGTH))) ||
+	        (transmitted_last_message && ((__get_state() == TLM_CAN_ERROR_PASSIVE_STATE) && (recessive_bit_count < SUSPEND_TRANSMISSION_LENGTH))) ||
+	        (transmitted_last_message && transmit_pause && (recessive_bit_count < transmit_pause)) ||
+	        (__get_state() == TLM_CAN_BUS_OFF_STATE) ||
+	        (!send_msg && !__has_pending_transmission_request()))
 	{
 		passive = true;
 		// inject one RECESSIVE bit
-		payload.set_period(baud_period);
+		payload.set_period(config.get_bit_time());
 		data.clear();
 		send_value = TLM_CAN_RECESSIVE;
 		data.push_back(send_value);
 		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
-		
 	}
 	
 	if(passive)
 	{
-		t_transmit += baud_period;
+		t_transmit += config.get_bit_time();
 		
 		// monitor bus
 		recv_value = b_read();
 		count_recessive_bits(recv_value);
 		if(verbose)
 		{
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got " << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got " << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
 		}
 		
 		// a 'Bus off' node needs to wait 128 times 11 contiguous recessive bits before becoming again an 'error active' node
@@ -2216,7 +2443,7 @@ void tlm_can_node<CAN_NODE>::transceive_start_of_frame()
 			bus_off_round_count++;
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":" << bus_off_round_count << " bus off rounds" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":" << bus_off_round_count << " bus off rounds" << EndDebugInfo;
 			}
 			
 			if(bus_off_round_count >= BUS_OFF_ROUNDS)
@@ -2225,6 +2452,7 @@ void tlm_can_node<CAN_NODE>::transceive_start_of_frame()
 				//     with its error counters both set to 0 after 128 occurrence of 11 consecutive 'recessive' bits
 				//     have been monitored on the bus
 				bus_off_round_count = 0;
+				qk_sample_point.sync();
 				__set_transmit_error_count(0);
 				__set_receive_error_count(0);
 				__set_state(TLM_CAN_ERROR_ACTIVE_STATE);
@@ -2238,68 +2466,94 @@ void tlm_can_node<CAN_NODE>::transceive_start_of_frame()
 			hot_plugged = false;
 		}
 		
-		if(rx_bitstream.negedge() && !hot_plugged)
+		if(rx_bitstream.negedge() && (__get_state() != TLM_CAN_BUS_OFF_STATE) && !hot_plugged && (!config.get_restricted_operation_mode() || (recessive_bit_count >= (1 + EOF_LENGTH + INTERMISSION_LENGTH))))
 		{
 			// receiver: start of frame
+			recv_msg = &__get_receive_message();
+			
+			transmitted_last_message = false;
+			
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got start of frame" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got start of frame" << EndDebugInfo;
 			}
-			qk_sample_point.inc(baud_period);
-			assert((model_accuracy != TLM_CAN_CYCLE_ACCURATE) || (qk_sample_point.get_current_time() - sample_point) == t_transmit);
+			qk_sample_point.sync();
+			__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_START_OF_FRAME_RECEPTION_EVENT, qk_sample_point.get_current_time(), *recv_msg));
+			
+			qk_sample_point.inc(config.get_bit_time());
+			assert((model_accuracy != TLM_CAN_CYCLE_ACCURATE) || (qk_sample_point.get_current_time() - config.get_sample_point()) == t_transmit);
 			
 			recessive_bit_count = 0;
+			
+			// intialize CRC
 			comp_crc = CRC_INIT;
 			recv_crc = 0;
+			
+			// initialize destuffing
 			restart_destuffing(TLM_CAN_RECESSIVE);
 			
 			comp_crc = update_crc(comp_crc, recv_value);
 			
 			__set_phase(TLM_CAN_ID_PHASE);
-			__set_node_activity(TLM_CAN_NODE_ACTIVITY_RECEIVER);
+			__set_core_activity(TLM_CAN_CORE_RECEIVER);
 			
 			if(__get_can_error() == TLM_CAN_NO_ERROR) destuff(recv_value);
 		}
 		else
 		{
-			qk_sample_point.inc(baud_period);
+			qk_sample_point.inc(config.get_bit_time());
 		}
 	}
 	else
 	{
 		// transmitter: start of frame
-		__set_node_activity(TLM_CAN_NODE_ACTIVITY_TRANSMITTER);
-		assert((qk_sample_point.get_current_time() - sample_point) == t_transmit);
+		transmitted_last_message = false;
+
+		__set_core_activity(TLM_CAN_CORE_TRANSMITTER);
+		assert((qk_sample_point.get_current_time() - config.get_sample_point()) == t_transmit);
 		assert((model_accuracy == TLM_CAN_CYCLE_ACCURATE) || (t_transmit == last_feed));
 
-		// get message to transmit
-		send_msg = &__pending_transmission_request();
-		
-		if(unlikely(verbose))
+		// get a new message to transmit, unless automatic retransmission is enabled and last message transmission has been disturbed 
+		if(send_msg)
 		{
-			logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_node_activity() << ":" << __get_state() << ":starting transmission over CAN_TX of " << (*send_msg) << EndDebugInfo;
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_core_activity() << ":" << __get_state() << ":starting automatic retransmission over CAN_TX of " << (*send_msg) << EndDebugInfo;
+			}
 		}
+		else
+		{
+			send_msg = &__fetch_pending_transmission_request();
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_core_activity() << ":" << __get_state() << ":starting transmission over CAN_TX of " << (*send_msg) << EndDebugInfo;
+			}
+		}
+		
+		recv_msg = &__get_receive_message();
 		
 		// initialize CRC
 		send_crc = CRC_INIT;
 		recv_crc = 0;
 		comp_crc = CRC_INIT;
+		
+		// initialize stuffing/destuffing
 		restart_stuffing(TLM_CAN_RECESSIVE);
 		restart_destuffing(TLM_CAN_RECESSIVE);
 		
 		// transmitter: start of frame
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_node_activity() << ":" << __get_state() << ":transmitting start of frame" << EndDebugInfo;
+			logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_core_activity() << ":" << __get_state() << ":transmitting start of frame" << EndDebugInfo;
 		}
-		payload.set_period(baud_period);
+		payload.set_period(config.get_bit_time());
 		data.clear();
 		send_value = TLM_CAN_DOMINANT;
 		data.push_back(send_value);
 		send_crc = update_crc(send_crc, send_value);
 		stuff(data, send_value);
 		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
-		t_transmit += baud_period;
+		t_transmit += config.get_bit_time();
 		
 		recv_value = b_read();
 		
@@ -2307,22 +2561,33 @@ void tlm_can_node<CAN_NODE>::transceive_start_of_frame()
 		{
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got start of frame" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got start of frame" << EndDebugInfo;
 			}
 		}
 		
 		bit_error = (recv_value != TLM_CAN_DOMINANT);
 		if(bit_error)
 		{
-			__set_can_error(TLM_CAN_BIT0_ERROR);
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":bit error" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":bit error" << EndDebugInfo;
 			}
-			last_feed = qk_sample_point.get_current_time() + phase_seg2;
+			qk_sample_point.sync();
+			bool cancelled = send_msg->is_transmission_cancelled();
+			__set_can_error(TLM_CAN_BIT0_ERROR);
+			__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_ERROR_EVENT, qk_sample_point.get_current_time(), *send_msg));
+			if(cancelled) __process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_CANCELLED_EVENT, qk_sample_point.get_current_time(), *send_msg));
+			if(cancelled || !config.get_automatic_retransmission()) send_msg = 0;
+			last_feed = qk_sample_point.get_current_time() + config.get_phase_seg2();
+		}
+		else
+		{
+			qk_sample_point.sync();
+			__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_START_OF_FRAME_TRANSMISSION_EVENT, qk_sample_point.get_current_time(), *send_msg));
+			__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_START_OF_FRAME_RECEPTION_EVENT, qk_sample_point.get_current_time(), *recv_msg));
 		}
 		
-		qk_sample_point.inc(baud_period);
+		qk_sample_point.inc(config.get_bit_time());
 		
 		if(__get_can_error() == TLM_CAN_NO_ERROR) destuff(recv_value);
 
@@ -2333,10 +2598,10 @@ void tlm_can_node<CAN_NODE>::transceive_start_of_frame()
 	}
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::transceive_data_remote_frame()
 {
-	assert((__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER) || __get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER);
+	assert((__get_core_activity() == TLM_CAN_CORE_TRANSMITTER) || __get_core_activity() == TLM_CAN_CORE_RECEIVER);
 	__set_phase(TLM_CAN_ID_PHASE);
 	
 	bool bit_error = false;
@@ -2349,15 +2614,15 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 	tlm_serial_payload::data_type& data = payload.get_data();
 	
 	// arbitration
-	recv_msg.clear();
-		
+//	recv_msg = &__get_receive_message();
+	
 	// identifier (bits 28-18)
 	unsigned int recv_msg_id = 0;
 	for(unsigned int i = 0; (__get_can_error() == TLM_CAN_NO_ERROR) && (i < STD_FMT_ID_LENGTH); i++)
 	{
 		unsigned int bit_index = ID_LENGTH - i - 1;
 		
-		if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+		if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 		{
 			data.clear();
 			send_value = (send_msg->get_identifier() >> bit_index) & 1;
@@ -2365,36 +2630,36 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 			send_crc = update_crc(send_crc, send_value);
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_node_activity() << ":" << __get_state() << ":transmitting ID#" << bit_index << "=" << send_value << " (" << tlm_can_value(send_value) << ")" << EndDebugInfo;
+				logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_core_activity() << ":" << __get_state() << ":transmitting ID#" << bit_index << "=" << send_value << " (" << tlm_can_value(send_value) << ")" << EndDebugInfo;
 			}
 			CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 		}
 		else if(model_accuracy != TLM_CAN_CYCLE_ACCURATE)
 		{
-			feed(t_transmit + baud_period, TLM_CAN_RECESSIVE);
+			feed(t_transmit + config.get_bit_time(), TLM_CAN_RECESSIVE);
 		}
 		else
 		{
-			payload.set_period(baud_period);
+			payload.set_period(config.get_bit_time());
 			data.clear();
 			send_value = TLM_CAN_RECESSIVE;
 			data.push_back(send_value);
 			CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 		}
 		
-		t_transmit += baud_period;
+		t_transmit += config.get_bit_time();
 		
 		recv_value = b_read(bit_index);
 		comp_crc = update_crc(comp_crc, recv_value);
 		
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got ID#" << bit_index << "=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got ID#" << bit_index << "=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
 		}
 		
 		recv_msg_id = recv_msg_id | (recv_value << bit_index);
 
-		if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+		if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 		{
 			bit_error = (send_value != recv_value);
 			if(bit_error)
@@ -2402,16 +2667,20 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 				// bit error while arbitration: continue as a receiver
 				if(unlikely(verbose))
 				{
-					logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":lost arbitration" << EndDebugInfo;
+					logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":lost arbitration" << EndDebugInfo;
 				}
-				__set_node_activity(TLM_CAN_NODE_ACTIVITY_RECEIVER);
-				last_feed = qk_sample_point.get_current_time() + phase_seg2;
+				qk_sample_point.sync();
+				bool cancelled = send_msg->is_transmission_cancelled();
+				if(cancelled) __process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_CANCELLED_EVENT, qk_sample_point.get_current_time(), *send_msg));
+				if(cancelled || !config.get_automatic_retransmission()) send_msg = 0;
+				__set_core_activity(TLM_CAN_CORE_RECEIVER);
+				last_feed = qk_sample_point.get_current_time() + config.get_phase_seg2();
 			}
 		}
 		
-		qk_sample_point.inc(baud_period);
+		qk_sample_point.inc(config.get_bit_time());
 		
-		if((__get_can_error() == TLM_CAN_NO_ERROR) && (__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)) stuff(send_value);
+		if((__get_can_error() == TLM_CAN_NO_ERROR) && (__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)) stuff(send_value);
 		
 		if(__get_can_error() == TLM_CAN_NO_ERROR) destuff(recv_value);
 	}
@@ -2421,41 +2690,41 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 	// SRR or RTR
 	__set_phase(TLM_CAN_SRR_OR_RTR_PHASE);
 	
-	if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+	if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 	{
 		data.clear();
-		send_value = (send_msg->get_format() == TLM_CAN_STD_FMT) ? send_msg->get_remote_transmission_request() : TLM_CAN_RECESSIVE /* SRR */;
+		send_value = (send_msg->get_format() == TLM_CAN_STD_FMT) ? send_msg->is_remote_transmission_request() : TLM_CAN_RECESSIVE /* SRR */;
 		data.push_back(send_value);
 		send_crc = update_crc(send_crc, send_value);
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_node_activity() << ":" << __get_state() << ":transmitting " << ((send_msg->get_format() == TLM_CAN_STD_FMT) ? "RTR" : "SRR") << "=" << send_value << " (" << tlm_can_value(send_value) << ")" << EndDebugInfo;
+			logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_core_activity() << ":" << __get_state() << ":transmitting " << ((send_msg->get_format() == TLM_CAN_STD_FMT) ? "RTR" : "SRR") << "=" << send_value << " (" << tlm_can_value(send_value) << ")" << EndDebugInfo;
 		}
 		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 	}
 	else if(model_accuracy != TLM_CAN_CYCLE_ACCURATE)
 	{
-		feed(t_transmit + baud_period, TLM_CAN_RECESSIVE);
+		feed(t_transmit + config.get_bit_time(), TLM_CAN_RECESSIVE);
 	}
 	else
 	{
-		payload.set_period(baud_period);
+		payload.set_period(config.get_bit_time());
 		data.clear();
 		send_value = TLM_CAN_RECESSIVE;
 		data.push_back(send_value);
 		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 	}
 	
-	t_transmit += baud_period;
+	t_transmit += config.get_bit_time();
 	
 	bool recv_srr_rtr = recv_value = b_read();
 	comp_crc = update_crc(comp_crc, recv_value);
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got SRR or RTR=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
+		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got SRR or RTR=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
 	}
 	
-	if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+	if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 	{
 		bit_error = (send_value != recv_value);
 		if(bit_error)
@@ -2463,16 +2732,20 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 			// bit error while arbitration: continue as a receiver
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":lost arbitration" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":lost arbitration" << EndDebugInfo;
 			}
-			__set_node_activity(TLM_CAN_NODE_ACTIVITY_RECEIVER);
-			last_feed = qk_sample_point.get_current_time() + phase_seg2;
+			qk_sample_point.sync();
+			bool cancelled = send_msg->is_transmission_cancelled();
+			if(cancelled) __process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_CANCELLED_EVENT, qk_sample_point.get_current_time(), *send_msg));
+			if(cancelled || !config.get_automatic_retransmission()) send_msg = 0;
+			__set_core_activity(TLM_CAN_CORE_RECEIVER);
+			last_feed = qk_sample_point.get_current_time() + config.get_phase_seg2();
 		}
 	}
 	
-	qk_sample_point.inc(baud_period);
+	qk_sample_point.inc(config.get_bit_time());
 	
-	if((__get_can_error() == TLM_CAN_NO_ERROR) && (__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)) stuff(send_value);
+	if((__get_can_error() == TLM_CAN_NO_ERROR) && (__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)) stuff(send_value);
 	
 	if(__get_can_error() == TLM_CAN_NO_ERROR) destuff(recv_value);
 
@@ -2481,7 +2754,7 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 	// r1 or IDE
 	__set_phase(TLM_CAN_IDE_OR_R1_PHASE);
 	
-	if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+	if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 	{
 		data.clear();
 		send_value = (send_msg->get_format() == TLM_CAN_STD_FMT) ? TLM_CAN_DOMINANT /* r1 */: TLM_CAN_RECESSIVE /* IDE */;
@@ -2489,33 +2762,33 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 		send_crc = update_crc(send_crc, send_value);
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_node_activity() << ":" << __get_state() << ":transmitting " << ((send_msg->get_format() == TLM_CAN_STD_FMT) ? "r1" : "IDE") << "=" << send_value << " (" << tlm_can_value(send_value) << ")" << EndDebugInfo;
+			logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_core_activity() << ":" << __get_state() << ":transmitting " << ((send_msg->get_format() == TLM_CAN_STD_FMT) ? "r1" : "IDE") << "=" << send_value << " (" << tlm_can_value(send_value) << ")" << EndDebugInfo;
 		}
 		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 	}
 	else if(model_accuracy != TLM_CAN_CYCLE_ACCURATE)
 	{
-		feed(t_transmit + baud_period, TLM_CAN_RECESSIVE);
+		feed(t_transmit + config.get_bit_time(), TLM_CAN_RECESSIVE);
 	}
 	else
 	{
-		payload.set_period(baud_period);
+		payload.set_period(config.get_bit_time());
 		data.clear();
 		send_value = TLM_CAN_RECESSIVE;
 		data.push_back(send_value);
 		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 	}
 	
-	t_transmit += baud_period;
+	t_transmit += config.get_bit_time();
 	
 	bool recv_r1_ide = recv_value = b_read();
 	comp_crc = update_crc(comp_crc, recv_value);
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got r1 or IDE=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
+		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got r1 or IDE=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
 	}
 	
-	if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+	if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 	{
 		bit_error = (send_value != recv_value);
 		if(bit_error)
@@ -2524,44 +2797,47 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 			{
 				if(unlikely(verbose))
 				{
-					logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":standard frame from peer has priority" << EndDebugInfo;
+					logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":standard frame from peer has priority" << EndDebugInfo;
 				}
 			}
-			
-			__set_node_activity(TLM_CAN_NODE_ACTIVITY_RECEIVER);
-			last_feed = qk_sample_point.get_current_time() + phase_seg2;
+			qk_sample_point.sync();
+			bool cancelled = send_msg->is_transmission_cancelled();
+			if(cancelled) __process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_CANCELLED_EVENT, qk_sample_point.get_current_time(), *send_msg));
+			if(cancelled || !config.get_automatic_retransmission()) send_msg = 0;
+			__set_core_activity(TLM_CAN_CORE_RECEIVER);
+			last_feed = qk_sample_point.get_current_time() + config.get_phase_seg2();
 		}
 	}
 	
-	qk_sample_point.inc(baud_period);
+	qk_sample_point.inc(config.get_bit_time());
 	
-	if((__get_can_error() == TLM_CAN_NO_ERROR) && (__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)) stuff(send_value);
+	if((__get_can_error() == TLM_CAN_NO_ERROR) && (__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)) stuff(send_value);
 	
 	if(__get_can_error() == TLM_CAN_NO_ERROR) destuff(recv_value);
 	
 	if(__get_can_error() != TLM_CAN_NO_ERROR) return;
 	
-	recv_msg.set_format((recv_r1_ide == TLM_CAN_DOMINANT) ? TLM_CAN_STD_FMT : TLM_CAN_XTD_FMT);
+	recv_msg->set_format((recv_r1_ide == TLM_CAN_DOMINANT) ? TLM_CAN_STD_FMT : TLM_CAN_XTD_FMT);
 	
-	if(recv_msg.get_format() == TLM_CAN_STD_FMT)
+	if(recv_msg->get_format() == TLM_CAN_STD_FMT)
 	{
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":standard format" << EndDebugInfo;
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":standard format" << EndDebugInfo;
 		}
-		recv_msg.set_identifier(recv_msg_id);
-		recv_msg.set_remote_transmission_request(recv_srr_rtr);
+		recv_msg->set_identifier(recv_msg_id);
+		recv_msg->set_remote_transmission_request(recv_srr_rtr);
 		
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":frame being received is a " << (recv_msg.get_remote_transmission_request() ? "remote" : "data") << " frame" << EndDebugInfo;
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":frame being received is a " << (recv_msg->is_remote_transmission_request() ? "remote" : "data") << " frame" << EndDebugInfo;
 		}
 	}
 	else
 	{
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":extended format" << EndDebugInfo;
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":extended format" << EndDebugInfo;
 		}
 		
 		// identifier (bits 17-0)
@@ -2570,7 +2846,7 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 		{
 			unsigned int bit_index = ID_LENGTH - i - 1;
 			
-			if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+			if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 			{
 				data.clear();
 				send_value = (send_msg->get_identifier() >> bit_index) & 1;
@@ -2578,116 +2854,124 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 				send_crc = update_crc(send_crc, send_value);
 				if(unlikely(verbose))
 				{
-					logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_node_activity() << ":" << __get_state() << ":transmitting ID#" << bit_index << "=" << send_value << " (" << tlm_can_value(send_value) << ")" << EndDebugInfo;
+					logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_core_activity() << ":" << __get_state() << ":transmitting ID#" << bit_index << "=" << send_value << " (" << tlm_can_value(send_value) << ")" << EndDebugInfo;
 				}
 				CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 			}
 			else if(model_accuracy != TLM_CAN_CYCLE_ACCURATE)
 			{
-				feed(t_transmit + baud_period, TLM_CAN_RECESSIVE);
+				feed(t_transmit + config.get_bit_time(), TLM_CAN_RECESSIVE);
 			}
 			else
 			{
-				payload.set_period(baud_period);
+				payload.set_period(config.get_bit_time());
 				data.clear();
 				send_value = TLM_CAN_RECESSIVE;
 				data.push_back(send_value);
 				CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 			}
 			
-			t_transmit += baud_period;
+			t_transmit += config.get_bit_time();
 			
 			recv_value = b_read(bit_index);
 			comp_crc = update_crc(comp_crc, recv_value);
 			
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got ID#" << bit_index << "=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got ID#" << bit_index << "=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
 			}
 			
 			recv_msg_id = recv_msg_id | (recv_value << bit_index);
 
-			if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+			if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 			{
 				bit_error = (send_value != recv_value);
 				if(bit_error)
 				{
 					if(unlikely(verbose))
 					{
-						logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":lost arbitration" << EndDebugInfo;
+						logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":lost arbitration" << EndDebugInfo;
 					}
-					__set_node_activity(TLM_CAN_NODE_ACTIVITY_RECEIVER);
-					last_feed = qk_sample_point.get_current_time() + phase_seg2;
+					qk_sample_point.sync();
+					bool cancelled = send_msg->is_transmission_cancelled();
+					if(cancelled) __process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_CANCELLED_EVENT, qk_sample_point.get_current_time(), *send_msg));
+					if(cancelled || !config.get_automatic_retransmission()) send_msg = 0;
+					__set_core_activity(TLM_CAN_CORE_RECEIVER);
+					last_feed = qk_sample_point.get_current_time() + config.get_phase_seg2();
 				}
 			}
 			
-			qk_sample_point.inc(baud_period);
+			qk_sample_point.inc(config.get_bit_time());
 			
-			if((__get_can_error() == TLM_CAN_NO_ERROR) && (__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)) stuff(send_value);
+			if((__get_can_error() == TLM_CAN_NO_ERROR) && (__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)) stuff(send_value);
 			
 			if(__get_can_error() == TLM_CAN_NO_ERROR) destuff(recv_value);
 		}
 		
 		if(__get_can_error() != TLM_CAN_NO_ERROR) return;
 		
-		recv_msg.set_identifier(recv_msg_id);
+		recv_msg->set_identifier(recv_msg_id);
 		
 		// RTR
 		__set_phase(TLM_CAN_RTR_PHASE);
 		
-		if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+		if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 		{
 			data.clear();
-			send_value = send_msg->get_remote_transmission_request() ? TLM_CAN_RECESSIVE : TLM_CAN_DOMINANT;
+			send_value = send_msg->is_remote_transmission_request() ? TLM_CAN_RECESSIVE : TLM_CAN_DOMINANT;
 			data.push_back(send_value);
 			send_crc = update_crc(send_crc, send_value);
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_node_activity() << ":" << __get_state() << ":transmitting RTR=" << send_value << " (" << tlm_can_value(send_value) << ")" << EndDebugInfo;
+				logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_core_activity() << ":" << __get_state() << ":transmitting RTR=" << send_value << " (" << tlm_can_value(send_value) << ")" << EndDebugInfo;
 			}
 			CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 		}
 		else if(model_accuracy != TLM_CAN_CYCLE_ACCURATE)
 		{
-			feed(t_transmit + baud_period, TLM_CAN_RECESSIVE);
+			feed(t_transmit + config.get_bit_time(), TLM_CAN_RECESSIVE);
 		}
 		else
 		{
-			payload.set_period(baud_period);
+			payload.set_period(config.get_bit_time());
 			data.clear();
 			send_value = TLM_CAN_RECESSIVE;
 			data.push_back(send_value);
 			CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 		}
 		
-		t_transmit += baud_period;
+		t_transmit += config.get_bit_time();
 		
 		bool recv_rtr = recv_value = b_read();
-		recv_msg.set_remote_transmission_request(recv_rtr);
+		recv_msg->set_remote_transmission_request(recv_rtr);
 		comp_crc = update_crc(comp_crc, recv_value);
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got RTR=" << recv_rtr << " (" << tlm_can_value(recv_rtr) << ")" << EndDebugInfo;
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":frame being received is a " << (recv_msg.get_remote_transmission_request() ? "remote" : "data") << " frame" << EndDebugInfo;
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got RTR=" << recv_rtr << " (" << tlm_can_value(recv_rtr) << ")" << EndDebugInfo;
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":frame being received is a " << (recv_msg->is_remote_transmission_request() ? "remote" : "data") << " frame" << EndDebugInfo;
 		}
 		
-		if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+		if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 		{
 			bit_error = (send_value != recv_value);
 			if(bit_error)
 			{
 				if(unlikely(verbose))
 				{
-					logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":lost arbitration" << EndDebugInfo;
+					logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":lost arbitration" << EndDebugInfo;
 				}
-				__set_node_activity(TLM_CAN_NODE_ACTIVITY_RECEIVER);
-				last_feed = qk_sample_point.get_current_time() + phase_seg2;
+				qk_sample_point.sync();
+				bool cancelled = send_msg->is_transmission_cancelled();
+				if(cancelled) __process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_CANCELLED_EVENT, qk_sample_point.get_current_time(), *send_msg));
+				if(cancelled || !config.get_automatic_retransmission()) send_msg = 0;
+				__set_core_activity(TLM_CAN_CORE_RECEIVER);
+				last_feed = qk_sample_point.get_current_time() + config.get_phase_seg2();
 			}
 		}
 		
-		qk_sample_point.inc(baud_period);
+		qk_sample_point.inc(config.get_bit_time());
 		
-		if((__get_can_error() == TLM_CAN_NO_ERROR) && (__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)) stuff(send_value);
+		if((__get_can_error() == TLM_CAN_NO_ERROR) && (__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)) stuff(send_value);
 		
 		if(__get_can_error() == TLM_CAN_NO_ERROR) destuff(recv_value);
 		
@@ -2696,7 +2980,7 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 		// r1
 		__set_phase(TLM_CAN_R1_PHASE);
 		
-		if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+		if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 		{
 			data.clear();
 			send_value = TLM_CAN_DOMINANT;
@@ -2704,56 +2988,62 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 			send_crc = update_crc(send_crc, send_value);
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_node_activity() << ":" << __get_state() << ":transmitting r1=" << send_value << " (" << tlm_can_value(send_value) << ")" << EndDebugInfo;
+				logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_core_activity() << ":" << __get_state() << ":transmitting r1=" << send_value << " (" << tlm_can_value(send_value) << ")" << EndDebugInfo;
 			}
 			CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 		}
 		else if(model_accuracy != TLM_CAN_CYCLE_ACCURATE)
 		{
-			feed(t_transmit + baud_period, TLM_CAN_RECESSIVE);
+			feed(t_transmit + config.get_bit_time(), TLM_CAN_RECESSIVE);
 		}
 		else
 		{
-			payload.set_period(baud_period);
+			payload.set_period(config.get_bit_time());
 			data.clear();
 			send_value = TLM_CAN_RECESSIVE;
 			data.push_back(send_value);
 			CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 		}
 		
-		t_transmit += baud_period;
+		t_transmit += config.get_bit_time();
 		
 		bool recv_r1 = recv_value = b_read();
 		comp_crc = update_crc(comp_crc, recv_value);
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got r1=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got r1=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
 		}
 		if(recv_r1 != TLM_CAN_DOMINANT)
 		{
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":r1 should be DOMINANT" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":r1 should be DOMINANT" << EndDebugInfo;
 			}
 		}
 		
-		if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+		if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 		{
 			bit_error = (send_value != recv_value);
 			if(bit_error)
 			{
-				__set_can_error((send_value == TLM_CAN_RECESSIVE) ? TLM_CAN_BIT1_ERROR : TLM_CAN_BIT0_ERROR);
 				if(unlikely(verbose))
 				{
-					logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":lost arbitration" << EndDebugInfo;
+					logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":lost arbitration" << EndDebugInfo;
 				}
-				last_feed = qk_sample_point.get_current_time() + phase_seg2;
+				qk_sample_point.sync();
+				bool cancelled = send_msg->is_transmission_cancelled();
+				__set_can_error((send_value == TLM_CAN_RECESSIVE) ? TLM_CAN_BIT1_ERROR : TLM_CAN_BIT0_ERROR);
+				__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_ERROR_EVENT, qk_sample_point.get_current_time(), *send_msg));
+				if(cancelled) __process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_CANCELLED_EVENT, qk_sample_point.get_current_time(), *send_msg));
+				if(cancelled || !config.get_automatic_retransmission()) send_msg = 0;
+				__set_core_activity(TLM_CAN_CORE_RECEIVER);
+				last_feed = qk_sample_point.get_current_time() + config.get_phase_seg2();
 			}
 		}
 		
-		qk_sample_point.inc(baud_period);
+		qk_sample_point.inc(config.get_bit_time());
 		
-		if((__get_can_error() == TLM_CAN_NO_ERROR) && (__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)) stuff(send_value);
+		if((__get_can_error() == TLM_CAN_NO_ERROR) && (__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)) stuff(send_value);
 		
 		if(__get_can_error() == TLM_CAN_NO_ERROR) destuff(recv_value);
 		
@@ -2763,7 +3053,7 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 	// r0
 	__set_phase(TLM_CAN_R0_PHASE);
 	
-	if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+	if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 	{
 		data.clear();
 		send_value = TLM_CAN_DOMINANT;
@@ -2771,56 +3061,62 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 		send_crc = update_crc(send_crc, send_value);
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_node_activity() << ":" << __get_state() << ":transmitting r0=" << send_value << " (" << tlm_can_value(send_value) << ")" << EndDebugInfo;
+			logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_core_activity() << ":" << __get_state() << ":transmitting r0=" << send_value << " (" << tlm_can_value(send_value) << ")" << EndDebugInfo;
 		}
 		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 	}
 	else if(model_accuracy != TLM_CAN_CYCLE_ACCURATE)
 	{
-		feed(t_transmit + baud_period, TLM_CAN_RECESSIVE);
+		feed(t_transmit + config.get_bit_time(), TLM_CAN_RECESSIVE);
 	}
 	else
 	{
-		payload.set_period(baud_period);
+		payload.set_period(config.get_bit_time());
 		data.clear();
 		send_value = TLM_CAN_RECESSIVE;
 		data.push_back(send_value);
 		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 	}
 	
-	t_transmit += baud_period;
+	t_transmit += config.get_bit_time();
 	
 	bool recv_r0 = recv_value = b_read();
 	comp_crc = update_crc(comp_crc, recv_value);
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got r0=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
+		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got r0=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
 	}
 	if(recv_r0 != TLM_CAN_DOMINANT)
 	{
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":r0 should be DOMINANT" << EndDebugInfo;
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":r0 should be DOMINANT" << EndDebugInfo;
 		}
 	}
 	
-	if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+	if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 	{
 		bit_error = (send_value != recv_value);
 		if(bit_error)
 		{
-			__set_can_error((send_value == TLM_CAN_RECESSIVE) ? TLM_CAN_BIT1_ERROR : TLM_CAN_BIT0_ERROR);
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":lost arbitration" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":lost arbitration" << EndDebugInfo;
 			}
-			last_feed = qk_sample_point.get_current_time() + phase_seg2;
+			qk_sample_point.sync();
+			bool cancelled = send_msg->is_transmission_cancelled();
+			__set_can_error((send_value == TLM_CAN_RECESSIVE) ? TLM_CAN_BIT1_ERROR : TLM_CAN_BIT0_ERROR);
+			__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_ERROR_EVENT, qk_sample_point.get_current_time(), *send_msg));
+			if(cancelled) __process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_CANCELLED_EVENT, qk_sample_point.get_current_time(), *send_msg));
+			if(cancelled || !config.get_automatic_retransmission()) send_msg = 0;
+				__set_core_activity(TLM_CAN_CORE_RECEIVER);
+			last_feed = qk_sample_point.get_current_time() + config.get_phase_seg2();
 		}
 	}
 	
-	qk_sample_point.inc(baud_period);
+	qk_sample_point.inc(config.get_bit_time());
 	
-	if((__get_can_error() == TLM_CAN_NO_ERROR) && (__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)) stuff(send_value);
+	if((__get_can_error() == TLM_CAN_NO_ERROR) && (__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)) stuff(send_value);
 		
 	if(__get_can_error() == TLM_CAN_NO_ERROR) destuff(recv_value);
 
@@ -2831,14 +3127,15 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 	
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":won arbitration" << EndDebugInfo;
+		if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
+		{
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":won arbitration" << EndDebugInfo;
+		}
 	}
-	
-	transmitted_last_message = true;
 	
 	if(model_accuracy != TLM_CAN_CYCLE_ACCURATE)
 	{
-		if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+		if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 		{
 			data.clear();
 			for(unsigned int i = 0; i < DLC_LENGTH; i++)
@@ -2849,7 +3146,7 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 				send_crc = update_crc(send_crc, send_value);
 				stuff(data, send_value);
 			}
-			if(!send_msg->get_remote_transmission_request())
+			if(!send_msg->is_remote_transmission_request())
 			{
 				// it's a data frame
 				data_bit_length = 8 * send_msg->get_data_length();
@@ -2866,7 +3163,7 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 			
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":CRC=0x" << std::hex << send_crc << std::dec << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":CRC=0x" << std::hex << send_crc << std::dec << EndDebugInfo;
 			}
 			for(unsigned int i = 0; i < CRC_LENGTH; i++)
 			{
@@ -2890,7 +3187,7 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 		else
 		{
 			// I'm not the transmitter: inject enough recessive bits for DLC
-			t_transmit = feed(qk_sample_point.get_current_time() + phase_seg2 + ((DLC_LENGTH - 1) * baud_period), TLM_CAN_RECESSIVE);
+			t_transmit = feed(qk_sample_point.get_current_time() + config.get_phase_seg2() + ((DLC_LENGTH - 1) * config.get_bit_time()), TLM_CAN_RECESSIVE);
 		}
 	}
 	
@@ -2901,9 +3198,9 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 		
 		if(model_accuracy == TLM_CAN_CYCLE_ACCURATE)
 		{
-			if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+			if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 			{
-				payload.set_period(baud_period);
+				payload.set_period(config.get_bit_time());
 				data.clear();
 				send_value = (send_msg->get_data_length_code() >> bit_index) & 1;
 				data.push_back(send_value);
@@ -2912,77 +3209,82 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 			}
 			else
 			{
-				payload.set_period(baud_period);
+				payload.set_period(config.get_bit_time());
 				data.clear();
 				send_value = TLM_CAN_RECESSIVE;
 				data.push_back(send_value);
 				CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 			}
-			t_transmit += baud_period;
+			t_transmit += config.get_bit_time();
 		}
 		
 		bool recv_value = b_read(bit_index);
 		comp_crc = update_crc(comp_crc, recv_value);
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got DLC#" << bit_index << "=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got DLC#" << bit_index << "=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
 		}
 		recv_msg_dlc = recv_msg_dlc | (recv_value << bit_index);
 		
-		if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+		if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 		{
 			send_value = (send_msg->get_data_length_code() >> bit_index) & 1;
 			bit_error = (send_value != recv_value);
 			
 			if(bit_error)
 			{
-				__set_can_error((send_value == TLM_CAN_RECESSIVE) ? TLM_CAN_BIT1_ERROR : TLM_CAN_BIT0_ERROR);
 				if(unlikely(verbose))
 				{
-					logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":bit error" << EndDebugInfo;
+					logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":bit error" << EndDebugInfo;
 				}
+				qk_sample_point.sync();
+				bool cancelled = send_msg->is_transmission_cancelled();
+				__set_can_error((send_value == TLM_CAN_RECESSIVE) ? TLM_CAN_BIT1_ERROR : TLM_CAN_BIT0_ERROR);
+				__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_ERROR_EVENT, qk_sample_point.get_current_time(), *send_msg));
+				if(cancelled) __process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_CANCELLED_EVENT, qk_sample_point.get_current_time(), *send_msg));
+				if(cancelled || !config.get_automatic_retransmission()) send_msg = 0;
 			}
 		}
 		
-		qk_sample_point.inc(baud_period);
+		qk_sample_point.inc(config.get_bit_time());
 		
-		if((model_accuracy == TLM_CAN_CYCLE_ACCURATE) && (__get_can_error() == TLM_CAN_NO_ERROR) && (__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)) stuff(send_value);
+		if((model_accuracy == TLM_CAN_CYCLE_ACCURATE) && (__get_can_error() == TLM_CAN_NO_ERROR) && (__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)) stuff(send_value);
 		
 		if(__get_can_error() == TLM_CAN_NO_ERROR) destuff(recv_value);
 	}
 	
 	if(__get_can_error() != TLM_CAN_NO_ERROR) return;
 	
-	recv_msg.set_data_length_code(recv_msg_dlc);
+	recv_msg->set_data_length_code(recv_msg_dlc);
 	
-	if(((__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER) && !send_msg->get_remote_transmission_request()) ||
-	((__get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER) && !recv_msg.get_remote_transmission_request()))
+	if(((__get_core_activity() == TLM_CAN_CORE_TRANSMITTER) && !send_msg->is_remote_transmission_request()) ||
+	((__get_core_activity() == TLM_CAN_CORE_RECEIVER) && !recv_msg->is_remote_transmission_request()))
 	{
 		// data
 		__set_phase(TLM_CAN_DATA_PHASE);
 		
 		if(model_accuracy != TLM_CAN_CYCLE_ACCURATE)
 		{
-			if(__get_node_activity() != TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+			if(__get_core_activity() != TLM_CAN_CORE_TRANSMITTER)
 			{
 				// I'm not the transmitter: inject enough recessive bits for DATA, CRC and CRC DELIMITER
-				data_bit_length = 8 * recv_msg.get_data_length();
+				data_bit_length = 8 * recv_msg->get_data_length();
 				if(unlikely(verbose))
 				{
-					logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":expecting " << data_bit_length << " data bits" << EndDebugInfo;
+					logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":expecting " << data_bit_length << " data bits" << EndDebugInfo;
 				}
-				t_transmit = feed(qk_sample_point.get_current_time() + phase_seg2 + ((data_bit_length + CRC_LENGTH) * baud_period), TLM_CAN_RECESSIVE);
+				t_transmit = feed(qk_sample_point.get_current_time() + config.get_phase_seg2() + ((data_bit_length + CRC_LENGTH) * config.get_bit_time()), TLM_CAN_RECESSIVE);
 			}
 		}
 		else
 		{
-			if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+			if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 			{
 				data_bit_length = 8 * send_msg->get_data_length();
 			}
 			else
 			{
-				data_bit_length = 8 * recv_msg.get_data_length();
+				data_bit_length = 8 * recv_msg->get_data_length();
 			}
 		}
 		
@@ -2995,9 +3297,9 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 			
 			if(model_accuracy == TLM_CAN_CYCLE_ACCURATE)
 			{
-				if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+				if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 				{
-					payload.set_period(baud_period);
+					payload.set_period(config.get_bit_time());
 					data.clear();
 					send_value = (send_msg->get_data_byte_at(byte_index) >> shift) & 1;
 					data.push_back(send_value);
@@ -3006,43 +3308,48 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 				}
 				else
 				{
-					payload.set_period(baud_period);
+					payload.set_period(config.get_bit_time());
 					data.clear();
 					send_value = TLM_CAN_RECESSIVE;
 					data.push_back(send_value);
 					CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 				}
-				t_transmit += baud_period;
+				t_transmit += config.get_bit_time();
 			}
 			
 			recv_value = b_read(bit_index);
 			comp_crc = update_crc(comp_crc, recv_value);
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got DATA#" << bit_index << "=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got DATA#" << bit_index << "=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
 			}
 			
 			recv_msg_data_byte = ((shift == 7) ? 0 : recv_msg_data_byte) | (recv_value << shift);
-			if(shift == 0) recv_msg.set_data_byte_at(byte_index, recv_msg_data_byte);
+			if(shift == 0) recv_msg->set_data_byte_at(byte_index, recv_msg_data_byte);
 			
-			if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+			if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 			{
 				send_value = (send_msg->get_data_byte_at(byte_index) >> shift) & 1;
 				bit_error = (send_value != recv_value);
 				
 				if(bit_error)
 				{
-					__set_can_error((send_value == TLM_CAN_RECESSIVE) ? TLM_CAN_BIT1_ERROR : TLM_CAN_BIT0_ERROR);
 					if(unlikely(verbose))
 					{
-						logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":bit error" << EndDebugInfo;
+						logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":bit error" << EndDebugInfo;
 					}
+					qk_sample_point.sync();
+					bool cancelled = send_msg->is_transmission_cancelled();
+					__set_can_error((send_value == TLM_CAN_RECESSIVE) ? TLM_CAN_BIT1_ERROR : TLM_CAN_BIT0_ERROR);
+					__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_ERROR_EVENT, qk_sample_point.get_current_time(), *send_msg));
+					if(cancelled) __process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_CANCELLED_EVENT, qk_sample_point.get_current_time(), *send_msg));
+					if(cancelled || !config.get_automatic_retransmission()) send_msg = 0;
 				}
 			}
 			
-			qk_sample_point.inc(baud_period);
+			qk_sample_point.inc(config.get_bit_time());
 			
-			if((model_accuracy == TLM_CAN_CYCLE_ACCURATE) && (__get_can_error() == TLM_CAN_NO_ERROR) && (__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)) stuff(send_value);
+			if((model_accuracy == TLM_CAN_CYCLE_ACCURATE) && (__get_can_error() == TLM_CAN_NO_ERROR) && (__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)) stuff(send_value);
 			
 			if(__get_can_error() == TLM_CAN_NO_ERROR) destuff(recv_value);
 		}
@@ -3053,10 +3360,10 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 	{
 		if(model_accuracy != TLM_CAN_CYCLE_ACCURATE)
 		{
-			if(__get_node_activity() != TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+			if(__get_core_activity() != TLM_CAN_CORE_TRANSMITTER)
 			{
 				// I'm not the transmitter: inject enough recessive bits for CRC and CRC DELIMITER
-				t_transmit = feed(qk_sample_point.get_current_time() + phase_seg2 + (CRC_LENGTH * baud_period), TLM_CAN_RECESSIVE);
+				t_transmit = feed(qk_sample_point.get_current_time() + config.get_phase_seg2() + (CRC_LENGTH * config.get_bit_time()), TLM_CAN_RECESSIVE);
 			}
 		}
 	}
@@ -3071,9 +3378,9 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 		
 		if(model_accuracy == TLM_CAN_CYCLE_ACCURATE)
 		{
-			if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+			if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 			{
-				payload.set_period(baud_period);
+				payload.set_period(config.get_bit_time());
 				data.clear();
 				send_value = (send_crc >> shift) & 1;
 				data.push_back(send_value);
@@ -3081,40 +3388,45 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 			}
 			else
 			{
-				payload.set_period(baud_period);
+				payload.set_period(config.get_bit_time());
 				data.clear();
 				send_value = TLM_CAN_RECESSIVE;
 				data.push_back(send_value);
 				CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 			}
-			t_transmit += baud_period;
+			t_transmit += config.get_bit_time();
 		}
 		
 		recv_value = b_read(bit_index);
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got CRC#" << bit_index << "=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got CRC#" << bit_index << "=" << recv_value << " (" << tlm_can_value(recv_value) << ")" << EndDebugInfo;
 		}
 		recv_crc = recv_crc | (recv_value << shift);
 		
-		if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+		if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 		{
 			send_value = (send_crc >> shift) & 1;
 			bit_error = (send_value != recv_value);
 			
 			if(bit_error)
 			{
-				__set_can_error((send_value == TLM_CAN_RECESSIVE) ? TLM_CAN_BIT1_ERROR : TLM_CAN_BIT0_ERROR);
 				if(unlikely(verbose))
 				{
-					logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":bit error" << EndDebugInfo;
+					logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":bit error" << EndDebugInfo;
 				}
+				qk_sample_point.sync();
+				bool cancelled = send_msg->is_transmission_cancelled();
+				__set_can_error((send_value == TLM_CAN_RECESSIVE) ? TLM_CAN_BIT1_ERROR : TLM_CAN_BIT0_ERROR);
+				__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_ERROR_EVENT, qk_sample_point.get_current_time(), *send_msg));
+				if(cancelled) __process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_CANCELLED_EVENT, qk_sample_point.get_current_time(), *send_msg));
+				if(cancelled || !config.get_automatic_retransmission()) send_msg = 0;
 			}
 		}
 		
-		qk_sample_point.inc(baud_period);
+		qk_sample_point.inc(config.get_bit_time());
 		
-		if((model_accuracy == TLM_CAN_CYCLE_ACCURATE) && (__get_can_error() == TLM_CAN_NO_ERROR) && (__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)) stuff(send_value);
+		if((model_accuracy == TLM_CAN_CYCLE_ACCURATE) && (__get_can_error() == TLM_CAN_NO_ERROR) && (__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)) stuff(send_value);
 		
 		if(__get_can_error() == TLM_CAN_NO_ERROR) destuff(recv_value);
 	}
@@ -3126,29 +3438,34 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 	
 	if(model_accuracy == TLM_CAN_CYCLE_ACCURATE)
 	{
-		payload.set_period(baud_period);
+		payload.set_period(config.get_bit_time());
 		data.clear();
 		data.push_back(TLM_CAN_RECESSIVE); // CRC delimiter
 		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
-		t_transmit += baud_period;
+		t_transmit += config.get_bit_time();
 	}
 	
 	bool crc_delimiter = b_read();
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got CRC DELIMITER=" << crc_delimiter << " (" << tlm_can_value(crc_delimiter) << ")" << EndDebugInfo;
+		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got CRC DELIMITER=" << crc_delimiter << " (" << tlm_can_value(crc_delimiter) << ")" << EndDebugInfo;
 	}
 	
-	if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+	if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 	{
 		bit_error = (crc_delimiter != TLM_CAN_RECESSIVE);
 		if(bit_error)
 		{
-			__set_can_error(TLM_CAN_BIT1_ERROR);
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":bit error" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":bit error" << EndDebugInfo;
 			}
+			qk_sample_point.sync();
+			bool cancelled = send_msg->is_transmission_cancelled();
+			__set_can_error(TLM_CAN_BIT1_ERROR);
+			__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_ERROR_EVENT, qk_sample_point.get_current_time(), *send_msg));
+			if(cancelled) __process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_CANCELLED_EVENT, qk_sample_point.get_current_time(), *send_msg));
+			if(cancelled || !config.get_automatic_retransmission()) send_msg = 0;
 		}
 	}
 	else
@@ -3156,45 +3473,47 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 		form_error = (crc_delimiter != TLM_CAN_RECESSIVE);
 		if(form_error)
 		{
-			__set_can_error(TLM_CAN_FORM_ERROR);
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":form error" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":form error" << EndDebugInfo;
 			}
+			qk_sample_point.sync();
+			__set_can_error(TLM_CAN_FORM_ERROR);
+			__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_RECEPTION_ERROR_EVENT, qk_sample_point.get_current_time(), *recv_msg));
 		}
 	}
 	
-	qk_sample_point.inc(baud_period);
-	
-	if(__get_can_error() != TLM_CAN_NO_ERROR) return;
-	
 	// CRC check
-	if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER)
+	if((__get_can_error() != TLM_CAN_NO_ERROR) && (__get_core_activity() == TLM_CAN_CORE_RECEIVER))
 	{
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":computed CRC=0x" << std::hex << comp_crc << std::dec << EndDebugInfo;
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":frame CRC=0x" << std::hex << recv_crc << std::dec << EndDebugInfo;
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":computed CRC=0x" << std::hex << comp_crc << std::dec << EndDebugInfo;
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":frame CRC=0x" << std::hex << recv_crc << std::dec << EndDebugInfo;
 		}
 		crc_error = (recv_crc != comp_crc);
 		
 		if(crc_error)
 		{
-			__set_can_error(TLM_CAN_CRC_ERROR);
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":CRC error" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":CRC error" << EndDebugInfo;
 			}
+			qk_sample_point.sync();
+			__set_can_error(TLM_CAN_CRC_ERROR);
+			__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_RECEPTION_ERROR_EVENT, qk_sample_point.get_current_time(), *recv_msg));
 		}
 		else
 		{
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":CRC OK" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":CRC OK" << EndDebugInfo;
 			}
 		}
 	}
 	
+	qk_sample_point.inc(config.get_bit_time());
+
 	if(__get_can_error() != TLM_CAN_NO_ERROR) return;
 
 	// ACK
@@ -3202,11 +3521,11 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 	
 	if(model_accuracy != TLM_CAN_CYCLE_ACCURATE)
 	{
-		if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER)
+		if(__get_core_activity() == TLM_CAN_CORE_RECEIVER)
 		{
-			payload.set_period(baud_period);
+			payload.set_period(config.get_bit_time());
 			data.clear();
-			data.push_back((__get_state() != TLM_CAN_BUS_OFF_STATE) ? TLM_CAN_DOMINANT : TLM_CAN_RECESSIVE);  // ack
+			data.push_back((config.get_bus_monitoring_mode() || (__get_state() == TLM_CAN_BUS_OFF_STATE)) ? TLM_CAN_RECESSIVE : TLM_CAN_DOMINANT);  // ack
 			data.push_back(TLM_CAN_RECESSIVE); // ack delimiter
 			for(unsigned int i = 0; i < EOF_LENGTH; i++)
 			{
@@ -3218,93 +3537,105 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 	}
 	else
 	{
-		if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+		if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 		{
-			payload.set_period(baud_period);
+			payload.set_period(config.get_bit_time());
 			data.clear();
 			data.push_back(TLM_CAN_RECESSIVE);  // ack slot
 			CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 		}
 		else
 		{
-			payload.set_period(baud_period);
+			payload.set_period(config.get_bit_time());
 			data.clear();
-			data.push_back((__get_state() != TLM_CAN_BUS_OFF_STATE) ? TLM_CAN_DOMINANT : TLM_CAN_RECESSIVE);  // ack
+			data.push_back((config.get_bus_monitoring_mode() || (__get_state() == TLM_CAN_BUS_OFF_STATE)) ? TLM_CAN_RECESSIVE : TLM_CAN_DOMINANT);  // ack
 			CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 		}
-		t_transmit += baud_period;
+		t_transmit += config.get_bit_time();
 	}
 	
 	
 	bool ack = b_read();
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got ACK=" << ack << " (" << tlm_can_value(ack) << ")" << EndDebugInfo;
-		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":" << ((ack == TLM_CAN_DOMINANT) ? "message acknowledged" : "message not acknowledged") << EndDebugInfo;
+		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got ACK=" << ack << " (" << tlm_can_value(ack) << ")" << EndDebugInfo;
+		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":message" << ((ack == TLM_CAN_DOMINANT) ? "" : " not") << " acknowledged" << EndDebugInfo;
 	}
 	
-	if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+	if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 	{
-		ack_error = !__is_loopback_enabled() && (ack != TLM_CAN_DOMINANT);
+		ack_error = !config.get_loopback_mode() && (ack != TLM_CAN_DOMINANT);
 		
 		if(ack_error)
 		{
-			__set_can_error(TLM_CAN_ACK_ERROR);
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":acknowledgment error" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":acknowledgment error" << EndDebugInfo;
 			}
+			qk_sample_point.sync();
+			bool cancelled = send_msg->is_transmission_cancelled();
+			__set_can_error(TLM_CAN_ACK_ERROR);
+			__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_ERROR_EVENT, qk_sample_point.get_current_time(), *send_msg));
+			if(cancelled) __process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_CANCELLED_EVENT, qk_sample_point.get_current_time(), *send_msg));
+			if(cancelled || !config.get_automatic_retransmission()) send_msg = 0;
 		}
 	}
 	
-	qk_sample_point.inc(baud_period);
-	
-	if(__get_can_error() != TLM_CAN_NO_ERROR) return;
-	
-	if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER)
+	if((__get_can_error() == TLM_CAN_NO_ERROR) && (__get_core_activity() == TLM_CAN_CORE_RECEIVER))
 	{
 		// 8. After the successful reception of a message (reception without error up to the ACK SLOT and the successful sending of the ACK bit),
 		if(__get_receive_error_count() <= 127)
 		{
 			// the RECEIVE ERROR COUNT is decreased by 1, if it was between 1 and 127.
 			// If the RECEIVE ERROR COUNT was 0, it stays 0
+			qk_sample_point.sync();
 			inc_receive_error_count(-1);
 		}
 		else
 		{
 			// and if it was greater than 127, then it will be set to a value between 119 and 127
+			qk_sample_point.sync();
 			__set_receive_error_count(127);
 		}
 	}
+
+	qk_sample_point.inc(config.get_bit_time());
+	
+	if(__get_can_error() != TLM_CAN_NO_ERROR) return;
 	
 	// ACK delimiter
 	__set_phase(TLM_CAN_ACK_DELIMITER_PHASE);
 	
 	if(model_accuracy == TLM_CAN_CYCLE_ACCURATE)
 	{
-		payload.set_period(baud_period);
+		payload.set_period(config.get_bit_time());
 		data.clear();
 		data.push_back(TLM_CAN_RECESSIVE);  // ack delimiter
 		CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
-		t_transmit += baud_period;
+		t_transmit += config.get_bit_time();
 	}
 	
 	bool ack_delimiter = b_read();
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got ACK DELIMITER=" << ack_delimiter << " (" << tlm_can_value(ack_delimiter) << ")" << EndDebugInfo;
+		logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got ACK DELIMITER=" << ack_delimiter << " (" << tlm_can_value(ack_delimiter) << ")" << EndDebugInfo;
 	}
 	
-	if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+	if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 	{
 		bit_error = (ack_delimiter != TLM_CAN_RECESSIVE);
 		if(bit_error)
 		{
-			__set_can_error(TLM_CAN_BIT1_ERROR);
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":bit error" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":bit error" << EndDebugInfo;
 			}
+			qk_sample_point.sync();
+			bool cancelled = send_msg->is_transmission_cancelled();
+			__set_can_error(TLM_CAN_BIT1_ERROR);
+			__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_ERROR_EVENT, qk_sample_point.get_current_time(), *send_msg));
+			if(cancelled) __process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_CANCELLED_EVENT, qk_sample_point.get_current_time(), *send_msg));
+			if(cancelled || !config.get_automatic_retransmission()) send_msg = 0;
 		}
 	}
 	else
@@ -3312,15 +3643,17 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 		form_error = (ack_delimiter != TLM_CAN_RECESSIVE);
 		if(form_error)
 		{
-			__set_can_error(TLM_CAN_FORM_ERROR);
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":form error" << EndDebugInfo;
+				logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":form error" << EndDebugInfo;
 			}
+			qk_sample_point.sync();
+			__set_can_error(TLM_CAN_FORM_ERROR);
+			__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_RECEPTION_ERROR_EVENT, qk_sample_point.get_current_time(), *recv_msg));
 		}
 	}
 	
-	qk_sample_point.inc(baud_period);
+	qk_sample_point.inc(config.get_bit_time());
 
 	if(__get_can_error() != TLM_CAN_NO_ERROR) return;
 	
@@ -3333,65 +3666,86 @@ void tlm_can_node<CAN_NODE>::transceive_data_remote_frame()
 		
 		if(model_accuracy == TLM_CAN_CYCLE_ACCURATE)
 		{
-			payload.set_period(baud_period);
+			payload.set_period(config.get_bit_time());
 			data.clear();
 			send_value = TLM_CAN_RECESSIVE;
 			data.push_back(send_value);
 			CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
-			t_transmit += baud_period;
+			t_transmit += config.get_bit_time();
 		}
 
 		bool eof = b_read(bit_index);
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":got EOF#" << bit_index << "=" << eof << " (" << tlm_can_value(eof) << ")" << EndDebugInfo;
+			logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":got EOF#" << bit_index << "=" << eof << " (" << tlm_can_value(eof) << ")" << EndDebugInfo;
 		}
 			
 		// The message is valid for the transmitter, if there is no error until the end of END OF FRAME
 		// The message is valid for the receiver, if there is no error until the last but one bit of END OF FRAME
-		if((__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER) || (i < (EOF_LENGTH - 1)))
+		if((__get_core_activity() == TLM_CAN_CORE_TRANSMITTER) || (i < (EOF_LENGTH - 1)))
 		{
 			form_error = (eof != TLM_CAN_RECESSIVE);
 			if(form_error)
 			{
-				__set_can_error(TLM_CAN_FORM_ERROR);
 				if(unlikely(verbose))
 				{
-					logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_node_activity() << ":" << __get_state() << ":form error" << EndDebugInfo;
+					logger << DebugInfo << qk_sample_point.get_current_time() << ":" << sc_core::sc_time_stamp() << "[+" << qk_sample_point.get_local_time() << "]:" << __get_core_activity() << ":" << __get_state() << ":form error" << EndDebugInfo;
+				}
+				if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
+				{
+					qk_sample_point.sync();
+					bool cancelled = send_msg->is_transmission_cancelled();
+					__set_can_error(TLM_CAN_FORM_ERROR);
+					__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_ERROR_EVENT, qk_sample_point.get_current_time(), *send_msg));
+					if(cancelled) __process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_CANCELLED_EVENT, qk_sample_point.get_current_time(), *send_msg));
+					if(cancelled || !config.get_automatic_retransmission()) send_msg = 0;
+				}
+				else
+				{
+					qk_sample_point.sync();
+					__set_can_error(TLM_CAN_FORM_ERROR);
+					__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_RECEPTION_ERROR_EVENT, qk_sample_point.get_current_time(), *recv_msg));
 				}
 			}
 		}
 
-		if((__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER) && (__get_can_error() != TLM_CAN_NO_ERROR))
+		if((__get_core_activity() == TLM_CAN_CORE_TRANSMITTER) && (__get_can_error() != TLM_CAN_NO_ERROR))
 		{
 			// 7. After the successful transmission of a message (getting ACK and no error until END OF FRAME is finished)
 			//    the TRANSMIT ERROR COUNT is decreased by 1 unless it was already 0
+			qk_sample_point.sync();
 			inc_transmit_error_count(-1);
 		}
 		
-		qk_sample_point.inc(baud_period);
+		if((__get_can_error() != TLM_CAN_NO_ERROR) || (i < (EOF_LENGTH - 1))) qk_sample_point.inc(config.get_bit_time());
 	}
 	
 	if(__get_can_error() == TLM_CAN_NO_ERROR)
 	{
-		if((__get_node_activity() == TLM_CAN_NODE_ACTIVITY_RECEIVER) || __is_loopback_enabled())
+		if((__get_core_activity() == TLM_CAN_CORE_RECEIVER) || config.get_loopback_mode())
 		{
-			__receive_message(recv_msg);
+			qk_sample_point.sync();
+			__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_MESSAGE_RECEIVED_EVENT, qk_sample_point.get_current_time(), *recv_msg));
 		}
 		
-		if(__get_node_activity() == TLM_CAN_NODE_ACTIVITY_TRANSMITTER)
+		if(__get_core_activity() == TLM_CAN_CORE_TRANSMITTER)
 		{
-			assert(__has_pending_transmission_request());
-			__transmission_occurred(*send_msg);
+			assert(!config.get_bus_monitoring_mode());
+			qk_sample_point.sync();
+			__process_message_event(tlm_can_message_event<TYPES>(TLM_CAN_TRANSMISSION_OCCURRED_EVENT, qk_sample_point.get_current_time(), *send_msg));
+			send_msg = 0;
+			transmitted_last_message = true;
 		}
+		
+		qk_sample_point.inc(config.get_bit_time());
 	}
 	
 	recessive_bit_count = 0;
 	__set_phase(TLM_CAN_INTERMISSION_PHASE);
 }
 
-template <typename CAN_NODE>
-void tlm_can_node<CAN_NODE>::process()
+template <typename CAN_MODULE, typename TYPES>
+void tlm_can_core<CAN_MODULE, TYPES>::process()
 {
 	// top: list
 	// list: element | element list
@@ -3406,14 +3760,9 @@ void tlm_can_node<CAN_NODE>::process()
 	t_transmit = sc_core::SC_ZERO_TIME;
 	tlm_serial_payload::data_type& data = payload.get_data();
 	
-	if(enabled)
+	if(__is_enabled())
 	{
-		__set_node_activity(TLM_CAN_NODE_ACTIVITY_SYNCHRONIZING);
-		__set_phase(TLM_CAN_SOF_PHASE);
-		sample_point = __get_sample_point();
-		phase_seg2 = __get_phase_seg2();
-		baud_period = sample_point + phase_seg2;
-		qk_sample_point.set(sample_point);
+		init();
 	}
 	else
 	{
@@ -3424,10 +3773,10 @@ void tlm_can_node<CAN_NODE>::process()
 	{
 		if(__get_phase() == TLM_CAN_IDLE_PHASE)
 		{
-			__set_node_activity(TLM_CAN_NODE_ACTIVITY_IDLE);
+			__set_core_activity(TLM_CAN_CORE_IDLE);
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_node_activity() << ":" << __get_state() << ":node is idle" << EndDebugInfo;
+				logger << DebugInfo << t_transmit << ":" << sc_core::sc_time_stamp() << "[+" << (t_transmit - sc_core::sc_time_stamp()) << "]:" << __get_core_activity() << ":" << __get_state() << ":node is idle" << EndDebugInfo;
 			}
 			
 			const sc_core::sc_time& can_global_quantum = tlm_can_global_quantum::instance().get();
@@ -3451,16 +3800,14 @@ void tlm_can_node<CAN_NODE>::process()
 			data.push_back(TLM_CAN_RECESSIVE);
 			CAN_TX->nb_send(payload, t_transmit - sc_core::sc_time_stamp());
 			t_transmit += payload.get_period();
+			bool was_enabled = __is_enabled();
 			wait(t_transmit - sc_core::sc_time_stamp());
 			
-			sample_point = __get_sample_point();
-			phase_seg2 = __get_phase_seg2();
-			baud_period = sample_point + phase_seg2;
-			
-			qk_sample_point.set(sample_point);
-			__set_can_error(TLM_CAN_NO_ERROR);
-			recessive_bit_count = 0;
-			last_feed = t_transmit;
+			if(__is_enabled())
+			{
+				init();
+				hot_plugged = !was_enabled;
+			}
 		}
 		else if(__get_can_error() != TLM_CAN_NO_ERROR)
 		{
@@ -3473,16 +3820,26 @@ void tlm_can_node<CAN_NODE>::process()
 				while(t_s < t_transmit)
 				{
 					b_read();
-					qk_sample_point.inc(baud_period);
-					t_s += baud_period;
+					qk_sample_point.inc(config.get_bit_time());
+					t_s += config.get_bit_time();
 				}
 			}
 			
-			// transceive an error frame
-			transceive_error_frame();
+			if(config.get_restricted_operation_mode())
+			{
+				transmit_pause = 0;
+				__set_phase(TLM_CAN_SOF_PHASE);
+				recessive_bit_count = 0;
+				last_feed = t_transmit;
+			}
+			else
+			{
+				// transceive an error frame
+				transceive_error_frame();
+				__set_phase(TLM_CAN_INTERMISSION_PHASE);
+			}
 			
 			__set_can_error(TLM_CAN_NO_ERROR);
-			__set_phase(TLM_CAN_INTERMISSION_PHASE);
 		}
 		else if(__get_phase() == TLM_CAN_INTERMISSION_PHASE)
 		{

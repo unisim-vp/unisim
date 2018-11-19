@@ -7,6 +7,7 @@
 #include "compiler_api.h"
 #include <stdio.h>
 #include "dspi.h"
+#include "m_can.h"
 
 volatile int counter = 0;
 
@@ -32,8 +33,36 @@ void dspi_0_tfff_rfdf(unsigned int dspi_id, enum DSPI_REQ dspi_req)
 }
 #endif
 
+void m_can_1_int0(unsigned int m_can_id, enum M_CAN_INT_LINE m_can_int_line)
+{
+	if(m_can_get_interrupt_flag(m_can_id, M_CAN_INT_RF0N))
+	{
+		m_can_clear_interrupt_flag(1, M_CAN_INT_RF0N);
+		struct m_can_rx_buffer_fifo_element e;
+		m_can_pop_rx_fifo(m_can_id, 0, &e);
+	}
+}
+
 int main(void)
 {
+	m_can_init(1);
+	m_can_enable_configuration_change(1);
+	m_can_set_rx_fifo_operation_mode(1, 0, M_CAN_RX_FIFO_OVERWRITING_MODE);
+	m_can_set_rx_fifo_size(1, 0, 2);
+	m_can_set_rx_fifo_start_address(1, 0, 0x400);
+	m_can_enable_timestamp_counter(1);
+	m_can_enable_interrupt(1, M_CAN_INT_RF0N);
+	m_can_select_interrupt_line(1, M_CAN_INT_RF0N, M_CAN_INT0);
+	m_can_enable_interrupt_line(1, M_CAN_INT0);
+	m_can_set_interrupt_handler(1, M_CAN_INT0, m_can_1_int0);
+	m_can_disable_configuration_change(1);
+	m_can_exit_init_mode(1);
+	
+// 	struct m_can_tx_buffer_element e = { { .XTD = 0, .RTR = 0, .ID = (0x10 << 18) }, {.MM = 0, .EFC = 0, .DLC = 4}, .DATA = { 0x12, 0x34, 0x56, 0x78 } };
+// 	m_can_write_tx_buffer_element(3, 0, &e);
+// 	
+// 	m_can_add_tx_buffer_request(3, 0);
+
 	dspi_init(0);
 	dspi_enable_module(0);
 	dspi_set_mode(0, DSPI_SLAVE_MODE);

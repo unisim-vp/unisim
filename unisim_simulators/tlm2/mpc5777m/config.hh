@@ -113,8 +113,8 @@ struct Config
 	{
 		typedef uint32_t ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 44;
-		static const unsigned int NUM_MAPPINGS = 44;
+		static const unsigned int OUTPUT_SOCKETS = 49;
+		static const unsigned int NUM_MAPPINGS = 50;
 		static const unsigned int INPUT_BUSWIDTH = 32;
 		static const unsigned int OUTPUT_BUSWIDTH = 32;
 		static const unsigned int PERIPHERAL_BUSWIDTH = 32;
@@ -538,6 +538,66 @@ struct Config
 		static const unisim::component::tlm2::com::freescale::mpc57xx::siul2::MANUFACTURER_TYPE MANUFACTURER = unisim::component::tlm2::com::freescale::mpc57xx::siul2::FREESCALE;
 		static const unsigned int FLASH_SIZE                             = 8 * 1024 * 1024;
 		static const char FAMILY_NUMBER                                  = 'M';
+	};
+	
+	struct M_CAN_1_CONFIG
+	{
+		// Core Release 3.0.1, May 6th, 2013
+		static const unsigned int CORE_RELEASE         = 3;
+		static const unsigned int CORE_RELEASE_STEP    = 0;
+		static const unsigned int CORE_RELEASE_SUBSTEP = 1;
+		static const unsigned int CORE_RELEASE_YEAR    = 3;
+		static const unsigned int CORE_RELEASE_MONTH   = 5;
+		static const unsigned int CORE_RELEASE_DAY     = 6;
+		static const unsigned int BUSWIDTH             = 32;
+	};
+	
+	struct M_CAN_2_CONFIG
+	{
+		// Core Release 3.0.1, May 6th, 2013
+		static const unsigned int CORE_RELEASE         = 3;
+		static const unsigned int CORE_RELEASE_STEP    = 0;
+		static const unsigned int CORE_RELEASE_SUBSTEP = 1;
+		static const unsigned int CORE_RELEASE_YEAR    = 3;
+		static const unsigned int CORE_RELEASE_MONTH   = 5;
+		static const unsigned int CORE_RELEASE_DAY     = 6;
+		static const unsigned int BUSWIDTH             = 32;
+	};
+	
+	struct M_CAN_3_CONFIG
+	{
+		// Core Release 3.0.1, May 6th, 2013
+		static const unsigned int CORE_RELEASE         = 3;
+		static const unsigned int CORE_RELEASE_STEP    = 0;
+		static const unsigned int CORE_RELEASE_SUBSTEP = 1;
+		static const unsigned int CORE_RELEASE_YEAR    = 3;
+		static const unsigned int CORE_RELEASE_MONTH   = 5;
+		static const unsigned int CORE_RELEASE_DAY     = 6;
+		static const unsigned int BUSWIDTH             = 32;
+	};
+	
+	struct M_CAN_4_CONFIG
+	{
+		// Core Release 3.0.1, May 6th, 2013
+		static const unsigned int CORE_RELEASE         = 3;
+		static const unsigned int CORE_RELEASE_STEP    = 0;
+		static const unsigned int CORE_RELEASE_SUBSTEP = 1;
+		static const unsigned int CORE_RELEASE_YEAR    = 3;
+		static const unsigned int CORE_RELEASE_MONTH   = 5;
+		static const unsigned int CORE_RELEASE_DAY     = 6;
+		static const unsigned int BUSWIDTH             = 32;
+	};
+	
+	struct SHARED_CAN_MESSAGE_RAM_ROUTER_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
+	{
+		typedef uint32_t ADDRESS;
+		static const unsigned int INPUT_SOCKETS = 5;
+		static const unsigned int OUTPUT_SOCKETS = 1;
+		static const unsigned int NUM_MAPPINGS = 1;
+		static const unsigned int INPUT_BUSWIDTH = 32;
+		static const unsigned int OUTPUT_BUSWIDTH = 32;
+		static const bool VERBOSE = DEBUG_ENABLE;
+		static const unsigned int BURST_LENGTH = FSB_BURST_SIZE / (INPUT_BUSWIDTH / 8); // FIXME
 	};
 };
 

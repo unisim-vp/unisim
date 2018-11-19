@@ -18,6 +18,7 @@
 #include "pbridge.h"
 #include "xbar.h"
 #include "smpu.h"
+#include "m_can.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -87,6 +88,26 @@ int main(void)
 	pit_enable_timer(0, 0);                                // PIT_0: enable timer #0
 	pit_enable_timer_interrupt(0, 0);                      // PIT_0: enable interrupts for timer #0
 	pit_enable_timers_clock(0);                            // PIT_0: enable PIT_0 timers clock
+	
+	m_can_init(3);
+	m_can_enable_configuration_change(3);
+	m_can_set_num_dedicated_tx_buffers(3, 32);
+	m_can_set_tx_queue_fifo_size(3, 0);
+	m_can_set_tx_buffers_start_address(3, 0x0);
+	m_can_enable_timestamp_counter(3);
+	m_can_disable_configuration_change(3);
+	m_can_exit_init_mode(3);
+	
+	struct m_can_tx_buffer_element e1 = { { .XTD = 0, .RTR = 0, .ID = (0x12 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12, 0x34, 0x56, 0x78 } };
+	m_can_write_tx_buffer_element(3, 0, &e1);
+	
+	struct m_can_tx_buffer_element e2 = { { .XTD = 0, .RTR = 0, .ID = (0x10 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98, 0x76, 0x54, 0x32 } };
+	m_can_write_tx_buffer_element(3, 1, &e2);
+
+	struct m_can_tx_buffer_element e3 = { { .XTD = 0, .RTR = 0, .ID = (0x14 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa5, 0x5a, 0xa5, 0x5a } };
+	m_can_write_tx_buffer_element(3, 2, &e3);
+
+	m_can_add_tx_buffer_requests(3, 0x80000000 | 0x40000000 | 0x20000000);
 	
 	dspi_init(2);
 	dspi_set_mode(2, DSPI_MASTER_MODE);

@@ -491,6 +491,7 @@ public:
 	static const unsigned int SIZE = _SIZE;
 	static const Access ACCESS = _ACCESS;
 	
+	inline TYPE Get() const ALWAYS_INLINE;
 	inline bool HasBit(unsigned int bit_offset) const ALWAYS_INLINE;
 	inline TYPE Get(unsigned int bit_offset) const ALWAYS_INLINE;
 	inline void Set(unsigned int bit_offset, TYPE bit_value) ALWAYS_INLINE;
@@ -510,7 +511,7 @@ public:
 	void WithinRegisterFileCtor(unsigned int index, void *custom_ctor_arg);
 	void Initialize(TYPE value);
 	inline Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>& operator = (const TYPE& value) ALWAYS_INLINE;
-	inline operator TYPE () const ALWAYS_INLINE;
+	inline operator const TYPE () const ALWAYS_INLINE;
 	inline TYPE operator [] (unsigned int bit_offset) const ALWAYS_INLINE;
 	ReadWriteStatus Write(const TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
 	template <typename PRESERVED_FIELD> ReadWriteStatus WritePreserve(const TYPE& value, const TYPE& bit_enable);

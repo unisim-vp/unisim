@@ -857,6 +857,7 @@ unisim/component/tlm2/operators/associative_operator.hh \
 unisim/component/tlm2/com/freescale/mpc57xx/dspi/dspi.hh \
 unisim/component/tlm2/com/freescale/mpc57xx/siul2/siul2.hh \
 unisim/component/tlm2/com/freescale/mpc57xx/siul2/defs.hh \
+unisim/component/tlm2/com/bosch/m_can/m_can.hh \
 "
 
 UNISIM_LIB_SIMULATOR_TEMPLATE_FILES="\
@@ -943,6 +944,7 @@ unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.tcc \
 unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.tcc \
 unisim/component/tlm2/com/freescale/mpc57xx/dspi/dspi.tcc \
 unisim/component/tlm2/com/freescale/mpc57xx/siul2/siul2.tcc \
+unisim/component/tlm2/com/bosch/m_can/m_can.tcc \
 "
 
 UNISIM_LIB_SIMULATOR_M4_FILES="\
@@ -1064,6 +1066,11 @@ dspi_5.cc \
 dspi_6.cc \
 dspi_12.cc \
 siul2.cc \
+m_can_1.cc \
+m_can_2.cc \
+m_can_3.cc \
+m_can_4.cc \
+shared_can_message_ram_router.cc \
 "
 UNISIM_SIMULATOR_HEADER_FILES="\
 simulator.hh \
@@ -1142,6 +1149,7 @@ soft/libsys/include/ebi.h \
 soft/libsys/include/pbridge.h \
 soft/libsys/include/xbar.h \
 soft/libsys/include/smpu.h \
+soft/libsys/include/m_can.h \
 soft/libsys/include/console.h \
 soft/libsys/include/ramdisk.h \
 soft/libsys/include/lfs.h \
@@ -1165,6 +1173,7 @@ soft/libsys/src/drv/ebi.c \
 soft/libsys/src/drv/pbridge.c \
 soft/libsys/src/drv/xbar.c \
 soft/libsys/src/drv/smpu.c \
+soft/libsys/src/drv/m_can.c \
 soft/libsys/src/drv/console.c \
 soft/libsys/src/drv/ramdisk.c \
 soft/libsys/src/fs/lfs.c \

@@ -59,6 +59,7 @@
 #include <unisim/component/tlm2/operators/associative_operator.hh>
 #include <unisim/component/tlm2/com/freescale/mpc57xx/dspi/dspi.hh>
 #include <unisim/component/tlm2/com/freescale/mpc57xx/siul2/siul2.hh>
+#include <unisim/component/tlm2/com/bosch/m_can/m_can.hh>
 
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
@@ -221,6 +222,16 @@ private:
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_PCS_SERIAL_BUS;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SS_SERIAL_BUS;
 	typedef unisim::component::tlm2::com::freescale::mpc57xx::siul2::SIUL2<SIUL2_CONFIG> SIUL2;
+	
+	//typedef unisim::component::tlm2::com::freescale::mpc57xx::can::m_ttcan::m_ttcan<CONFIG::M_TTCAN_0_CONFIG> M_TTCAN_0;
+	typedef unisim::component::tlm2::com::bosch::m_can::M_CAN<M_CAN_1_CONFIG> M_CAN_1;
+	typedef unisim::component::tlm2::com::bosch::m_can::M_CAN<M_CAN_2_CONFIG> M_CAN_2;
+	typedef unisim::component::tlm2::com::bosch::m_can::M_CAN<M_CAN_3_CONFIG> M_CAN_3;
+	typedef unisim::component::tlm2::com::bosch::m_can::M_CAN<M_CAN_4_CONFIG> M_CAN_4;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<SHARED_CAN_MESSAGE_RAM_ROUTER_CONFIG> SHARED_CAN_MESSAGE_RAM_ROUTER;
+	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, FSB_BURST_SIZE / (PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH / 8), unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> SHARED_CAN_MESSAGE_RAM;
+	
+	typedef unisim::kernel::tlm2::tlm_can_bus CAN_BUS;
 
 	typedef unisim::component::tlm2::memory::ram::Memory<EBI_CONFIG::OUTPUT_BUSWIDTH, uint32_t, FSB_BURST_SIZE / (EBI_CONFIG::OUTPUT_BUSWIDTH / 8), unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_MEM;
 	//typedef unisim::component::tlm2::memory::ram::Memory<XBAR_0_CONFIG::OUTPUT_BUSWIDTH, uint32_t, FSB_BURST_SIZE / (XBAR_0_CONFIG::OUTPUT_BUSWIDTH / 8), unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_SPACE_STUB;
@@ -235,6 +246,7 @@ private:
 	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> MC_RGM_STUB;
 	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PRAMC_STUB;
 	//typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_STUB;
+
 
 	//=========================================================================
 	//===                      Aliases for services classes                 ===
@@ -370,13 +382,20 @@ private:
 	DSPI_12_SS_SERIAL_BUS   *dspi_12_ss_serial_bus;
 	// - SIUL2
 	SIUL2 *siul2;
+	// - CAN Subsystem
+// 	M_TTCAN_0 *m_ttcan_0;
+	M_CAN_1 *m_can_1;
+	M_CAN_2 *m_can_2;
+	M_CAN_3 *m_can_3;
+	M_CAN_4 *m_can_4;
+	SHARED_CAN_MESSAGE_RAM_ROUTER *shared_can_message_ram_router;
+	SHARED_CAN_MESSAGE_RAM *shared_can_message_ram;
+	CAN_BUS *can_bus;
 	
 	//  - Stubs
 	EBI_MEM *ebi_mem_0;
 	EBI_MEM *ebi_mem_1;
 	EBI_MEM *ebi_mem_2;
-	//EBI_SPACE_STUB *ebi_space_stub;
-	//EBI_STUB *ebi_stub;
 	FLASH_PORT1_STUB *flash_port1_stub;
 	XBAR_0_S6_STUB *xbar_0_s6_stub;
 	XBAR_1_M2_STUB *xbar_1_m2_stub;

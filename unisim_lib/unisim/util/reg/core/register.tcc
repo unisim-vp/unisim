@@ -1120,6 +1120,12 @@ inline typename Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE Register
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
+inline typename Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Get() const
+{
+	return value;
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 inline bool Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::HasBit(unsigned int bit_offset) const
 {
 	return REGISTER::ALL::template GetMask<TYPE>() & (TYPE(1) << bit_offset);
@@ -1193,7 +1199,7 @@ inline Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>& Register<REGISTER, _SI
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
-inline Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::operator TYPE () const
+inline Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::operator const TYPE () const
 {
 	return value & TYPE_MASK;
 }
