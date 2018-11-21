@@ -1797,11 +1797,6 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 				{
 					doc_sstr << "\t<head>" << std::endl;
 							
-					if(http_server.cont)
-					{
-						doc_sstr << "\t\t<meta http-equiv=\"refresh\" content=\"1\">" << std::endl;
-					}
-					
 					doc_sstr << "\t\t<title>" << String_to_HTML(http_server.program_name) << " - " << String_to_HTML(http_server.GetName()) << "</title>" << std::endl;
 					doc_sstr << "\t\t<meta name=\"description\" content=\"remote control interface over HTTP of virtual platform hardware signal instrumenter\">" << std::endl;
 					doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
@@ -1810,7 +1805,15 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 					doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/script.js\"></script>" << std::endl;
 					doc_sstr << "\t</head>" << std::endl;
 					
-					doc_sstr << "\t<body>" << std::endl;
+					if(http_server.cont)
+					{
+						doc_sstr << "\t<body onload=\"setTimeout(reloadPage, 1000)\">" << std::endl; // while in continue mode, reload page every seconds
+					}
+					else
+					{
+						doc_sstr << "\t<body>" << std::endl;
+					}
+					
 					doc_sstr << "\t\t<h1>" << String_to_HTML(http_server.program_name) << " - " << String_to_HTML(http_server.GetName()) << "</h1>" << std::endl;
 					
 					doc_sstr << "\t\t<table class=\"status-table\">" << std::endl;

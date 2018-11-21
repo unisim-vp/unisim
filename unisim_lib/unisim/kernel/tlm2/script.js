@@ -19,3 +19,9 @@ restoreScrollTop = function()
 		}
 	}
 }
+
+reloadPage = function()
+{
+	saveScrollTop();
+	window.location.replace(window.location.href); // reload without POST
+}
