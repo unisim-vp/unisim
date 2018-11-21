@@ -358,7 +358,7 @@ void SWT<CONFIG>::ProcessEvent(Event *event)
 			
 			if(IsReadWriteError(rws))
 			{
-				logger << DebugError << "while mapped read/write access, " << std::hex << rws << std::dec << std::endl;
+				logger << DebugError << "while mapped read/write access, " << std::hex << rws << std::dec << EndDebugError;
 				if(swt_cr.template Get<typename SWT_CR::WEN>() && swt_cr.template Get<typename SWT_CR::RIA>())
 				{
 					// Invalid access to the SWT causes a system reset if WEN=1

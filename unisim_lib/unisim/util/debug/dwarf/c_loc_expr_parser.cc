@@ -217,7 +217,7 @@ bool CLocExprParser::Parse(CLocOperationStream& _c_loc_operation_stream)
 		}
 	}
 	
-	ast->GenerateGraphviz("ast.dot");
+	//ast->GenerateGraphviz("ast.dot");
 
 	c_loc_operation_stream = &_c_loc_operation_stream;
 	unisim::util::parser::DepthFirstSearchTraversalOrder order = unisim::util::parser::DFS_PRE_ORDER;

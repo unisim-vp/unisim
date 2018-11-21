@@ -279,7 +279,7 @@ void m_can_set_tx_buffer_data_field_size(unsigned int m_can_id, enum M_CAN_DATA_
 
 void m_can_add_tx_buffer_request(unsigned int m_can_id, unsigned int tx_buffer_element_idx)
 {
-	M_CAN_WRITE_REG(m_can_id, TXBAR, AR, 0x80000000 >> tx_buffer_element_idx);
+	M_CAN_WRITE_REG(m_can_id, TXBAR, AR, (uint32_t) 1 << tx_buffer_element_idx);
 }
 
 void m_can_add_tx_buffer_requests(unsigned int m_can_id, uint32_t mask)
@@ -289,7 +289,7 @@ void m_can_add_tx_buffer_requests(unsigned int m_can_id, uint32_t mask)
 
 void m_can_cancel_tx_buffer_request(unsigned int m_can_id, unsigned int tx_buffer_element_idx)
 {
-	M_CAN_WRITE_REG(m_can_id, TXBCR, CR, 0x80000000 >> tx_buffer_element_idx);
+	M_CAN_WRITE_REG(m_can_id, TXBCR, CR, (uint32_t) 1 << tx_buffer_element_idx);
 }
 
 void m_can_cancel_tx_buffer_requests(unsigned int m_can_id, uint32_t mask)
@@ -299,37 +299,37 @@ void m_can_cancel_tx_buffer_requests(unsigned int m_can_id, uint32_t mask)
 
 void m_can_enable_tx_buffer_transmission_interrupt(unsigned int m_can_id, unsigned int tx_buffer_element_idx)
 {
-	m_can[m_can_id]->TXBTIE.R = (m_can[m_can_id]->TXBTIE.R & ~(0x80000000 >> tx_buffer_element_idx)) | (0x80000000 >> tx_buffer_element_idx);
+	m_can[m_can_id]->TXBTIE.R = (m_can[m_can_id]->TXBTIE.R & ~((uint32_t) 1 << tx_buffer_element_idx)) | ((uint32_t) 1 << tx_buffer_element_idx);
 }
 
 void m_can_disable_tx_buffer_transmission_interrupt(unsigned int m_can_id, unsigned int tx_buffer_element_idx)
 {
-	m_can[m_can_id]->TXBTIE.R = (m_can[m_can_id]->TXBTIE.R & ~(0x80000000 >> tx_buffer_element_idx));
+	m_can[m_can_id]->TXBTIE.R = (m_can[m_can_id]->TXBTIE.R & ~((uint32_t) 1 << tx_buffer_element_idx));
 }
 
 void m_can_enable_tx_buffer_cancellation_finished_interrupt(unsigned int m_can_id, unsigned int tx_buffer_element_idx)
 {
-	m_can[m_can_id]->TXBCIE.R = (m_can[m_can_id]->TXBCIE.R & ~(0x80000000 >> tx_buffer_element_idx)) | (0x80000000 >> tx_buffer_element_idx);
+	m_can[m_can_id]->TXBCIE.R = (m_can[m_can_id]->TXBCIE.R & ~((uint32_t) 1 << tx_buffer_element_idx)) | ((uint32_t) 1 << tx_buffer_element_idx);
 }
 
 void m_can_disable_tx_buffer_cancellation_finished_interrupt(unsigned int m_can_id, unsigned int tx_buffer_element_idx)
 {
-	m_can[m_can_id]->TXBCIE.R = (m_can[m_can_id]->TXBCIE.R & ~(0x80000000 >> tx_buffer_element_idx));
+	m_can[m_can_id]->TXBCIE.R = (m_can[m_can_id]->TXBCIE.R & ~((uint32_t) 1 << tx_buffer_element_idx));
 }
 
 int m_can_is_tx_buffer_has_pending_request(unsigned int m_can_id, unsigned int tx_buffer_element_idx)
 {
-	return (M_CAN_READ_REG(m_can_id, TXBRP, TRP) & (0x80000000 >> tx_buffer_element_idx)) != 0;
+	return (M_CAN_READ_REG(m_can_id, TXBRP, TRP) & ((uint32_t) 1 << tx_buffer_element_idx)) != 0;
 }
 
 int m_can_is_tx_buffer_transmission_occurred(unsigned int m_can_id, unsigned int tx_buffer_element_idx)
 {
-	return (M_CAN_READ_REG(m_can_id, TXBTO, TO) & (0x80000000 >> tx_buffer_element_idx)) != 0;
+	return (M_CAN_READ_REG(m_can_id, TXBTO, TO) & ((uint32_t) 1 << tx_buffer_element_idx)) != 0;
 }
 
 int m_can_is_tx_buffer_cancellation_finished(unsigned int m_can_id, unsigned int tx_buffer_element_idx)
 {
-	return (M_CAN_READ_REG(m_can_id, TXBCF, CF) & (0x80000000 >> tx_buffer_element_idx)) != 0;
+	return (M_CAN_READ_REG(m_can_id, TXBCF, CF) & ((uint32_t) 1 << tx_buffer_element_idx)) != 0;
 }
 
 void m_can_write_tx_buffer_element(unsigned int m_can_id, unsigned int tx_buffer_element_idx, struct m_can_tx_buffer_element *elem)
@@ -343,7 +343,7 @@ void m_can_write_tx_buffer_element(unsigned int m_can_id, unsigned int tx_buffer
 	unsigned int i;
 	for(i = 0; i < tx_buffer_element_size; dest++, source++, i++)
 	{
-		M_CAN_STORE32(m_can_id, dest, *source);
+		STORE_LE32(dest, *source);
 	}
 }
 
@@ -398,8 +398,8 @@ void m_can_read_tx_event_fifo_element(unsigned int m_can_id, struct m_can_tx_eve
 	unsigned int tx_event_fifo_get_index = m_can_get_tx_event_fifo_get_index(m_can_id);
 	volatile uint32_t *dest = (volatile uint32_t *) elem;
 	volatile uint32_t *source = &SHARED_CAN_MESSAGE_RAM + efsa + (tx_event_fifo_get_index * 2);
-	dest[0] = M_CAN_LOAD32(m_can_id, source);
-	dest[1] = M_CAN_LOAD32(m_can_id, source + 1);
+	dest[0] = LOAD_LE32(source);
+	dest[1] = LOAD_LE32(source + 1);
 }
 
 void m_can_set_rx_fifo_operation_mode(unsigned int m_can_id, unsigned int fifo_id, enum M_CAN_RX_FIFO_OPERATION_MODE fom)
@@ -518,7 +518,7 @@ void m_can_read_rx_fifo(unsigned int m_can_id, unsigned int fifo_id, struct m_ca
 	unsigned int i;
 	for(i = 0; i < rx_fifo_element_size; dest++, source++, i++)
 	{
-		*dest = M_CAN_LOAD32(m_can_id, source);
+		*dest = LOAD_LE32(source);
 	}
 }
 
@@ -533,7 +533,7 @@ void m_can_read_rx_buffer(unsigned int m_can_id, unsigned int rx_buffer_element_
 	unsigned int i;
 	for(i = 0; i < rx_buffer_element_size; dest++, source++, i++)
 	{
-		*dest = M_CAN_LOAD32(m_can_id, source);
+		*dest = LOAD_LE32(source);
 	}
 }
 
@@ -618,7 +618,7 @@ void m_can_write_standard_filter(unsigned int m_can_id, unsigned int filter_elem
 	uint32_t flssa = M_CAN_READ_REG(m_can_id, SIDFC, FLSSA);
 	volatile uint32_t *source = (volatile uint32_t *) elem;
 	volatile uint32_t *dest = &SHARED_CAN_MESSAGE_RAM + flssa + (filter_element_index * 1);
-	M_CAN_STORE32(m_can_id, dest, *source);
+	STORE_LE32(dest, *source);
 }
 
 void m_can_write_extended_filter(unsigned int m_can_id, unsigned int filter_element_index, struct m_can_extended_message_id_filter_element *elem)
@@ -626,8 +626,8 @@ void m_can_write_extended_filter(unsigned int m_can_id, unsigned int filter_elem
 	uint32_t flesa = M_CAN_READ_REG(m_can_id, XIDFC, FLESA);
 	volatile uint32_t *source = (volatile uint32_t *) elem;
 	volatile uint32_t *dest = &SHARED_CAN_MESSAGE_RAM + flesa + (filter_element_index * 2);
-	M_CAN_STORE32(m_can_id, dest, source[0]);
-	M_CAN_STORE32(m_can_id, dest + 1, source[1]);
+	STORE_LE32(dest, source[0]);
+	STORE_LE32(dest + 1, source[1]);
 }
 
 uint32_t m_can_new_data1(unsigned int m_can_id)
@@ -643,7 +643,7 @@ uint32_t m_can_new_data2(unsigned int m_can_id)
 int m_can_new_data(unsigned int m_can_id, unsigned int rx_buffer_fifo_element_index)
 {
 	if(rx_buffer_fifo_element_index >= 64) return 0;
-	return ((rx_buffer_fifo_element_index < 32) ? m_can_new_data1(m_can_id) : m_can_new_data2(m_can_id)) & (0x80000000 >> (rx_buffer_fifo_element_index % 32));
+	return ((rx_buffer_fifo_element_index < 32) ? m_can_new_data1(m_can_id) : m_can_new_data2(m_can_id)) & ((uint32_t) 1 << (rx_buffer_fifo_element_index % 32));
 }
 
 void m_can_clear_new_data(unsigned int m_can_id, unsigned int rx_buffer_fifo_element_index)
@@ -651,27 +651,27 @@ void m_can_clear_new_data(unsigned int m_can_id, unsigned int rx_buffer_fifo_ele
 	if(rx_buffer_fifo_element_index >= 64) return;
 	if(rx_buffer_fifo_element_index < 32)
 	{
-		M_CAN_WRITE_REG(m_can_id, NDAT1, ND1, 0x80000000 >> rx_buffer_fifo_element_index);
+		M_CAN_WRITE_REG(m_can_id, NDAT1, ND1, (uint32_t) 1 << rx_buffer_fifo_element_index);
 	}
 	else
 	{
-		M_CAN_WRITE_REG(m_can_id, NDAT2, ND2, 0x80000000 >> (rx_buffer_fifo_element_index % 32));
+		M_CAN_WRITE_REG(m_can_id, NDAT2, ND2, (uint32_t) 1 << (rx_buffer_fifo_element_index % 32));
 	}
 }
 
 void m_can_enable_interrupt(unsigned int m_can_id, enum M_CAN_INT m_can_int)
 {
-	m_can[m_can_id]->IE.R = m_can[m_can_id]->IE.R | (0x80000000 >> m_can_int);
+	m_can[m_can_id]->IE.R = m_can[m_can_id]->IE.R | ((uint32_t) 1 << m_can_int);
 }
 
 void m_can_disable_interrupt(unsigned int m_can_id, enum M_CAN_INT m_can_int)
 {
-	m_can[m_can_id]->IE.R = m_can[m_can_id]->IE.R & ~(0x80000000 >> m_can_int);
+	m_can[m_can_id]->IE.R = m_can[m_can_id]->IE.R & ~((uint32_t) 1 << m_can_int);
 }
 
 void m_can_select_interrupt_line(unsigned int m_can_id, enum M_CAN_INT m_can_int, enum M_CAN_INT_LINE m_can_int_line)
 {
-	m_can[m_can_id]->ILS.R = (m_can[m_can_id]->ILS.R & ~(0x80000000 >> m_can_int)) | ((m_can_int_line ? 0x80000000 : 0x0) >> m_can_int);
+	m_can[m_can_id]->ILS.R = (m_can[m_can_id]->ILS.R & ~((uint32_t) 1 << m_can_int)) | ((m_can_int_line ? 0x1 : 0x0) << m_can_int);
 }
 
 void m_can_enable_interrupt_line(unsigned int m_can_id, enum M_CAN_INT_LINE m_can_int_line)
@@ -694,12 +694,12 @@ void m_can_disable_interrupt_line(unsigned int m_can_id, enum M_CAN_INT_LINE m_c
 
 int m_can_get_interrupt_flag(unsigned int m_can_id, enum M_CAN_INT m_can_int)
 {
-	return (m_can[m_can_id]->IR.R & (0x80000000 >> m_can_int)) != 0;
+	return (m_can[m_can_id]->IR.R & ((uint32_t) 1 << m_can_int)) != 0;
 }
 
 void m_can_clear_interrupt_flag(unsigned int m_can_id, enum M_CAN_INT m_can_int)
 {
-	m_can[m_can_id]->IR.R = (0x80000000 >> m_can_int);
+	m_can[m_can_id]->IR.R = ((uint32_t) 1 << m_can_int);
 }
 
 m_can_int_handler_t m_can_set_interrupt_handler(unsigned int m_can_id, enum M_CAN_INT_LINE m_can_int_line, m_can_int_handler_t m_can_int_handler)

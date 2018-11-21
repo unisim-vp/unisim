@@ -274,7 +274,7 @@ private:
 	unsigned int dlc;
 	unsigned int data_length;
 	bool transmission_cancelled;
-	uint8_t data[TLM_CAN_MAX_DATA_LENGTH];
+	uint8_t data[TLM_CAN_MAX_DATA_LENGTH]; // big-endian byte order
 	
 	unsigned int compute_data_length() const;
 	
@@ -1207,7 +1207,7 @@ inline unsigned int tlm_can_message::compute_data_length() const
 inline std::ostream& operator << (std::ostream& os, const tlm_can_message& msg)
 {
 	os << "tlm_can_message(format=" << msg.fmt;
-	os << ",ID=" << msg.id;
+	os << ",ID=0x" << std::hex << msg.id << std::dec;
 	os << ",type=" << (msg.rtr ? "request" : "data") << " frame";
 	if((msg.fmt == TLM_CAN_FD_BASE_FMT) || (msg.fmt == TLM_CAN_FD_XTD_FMT))
 	{

@@ -346,7 +346,7 @@ void Router<CONFIG>::ProcessEvent(Event *event)
 			
 			if(IsReadWriteError(rws))
 			{
-				this->logger << DebugError << "while mapped read/write access, " << std::hex << rws << std::dec << std::endl;
+				this->logger << DebugError << "while mapped read/write access, " << std::hex << rws << std::dec << EndDebugError;
 				if(IsUnmappedAccessError(rws)) payload->set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
 				else if(IsAccessNotAllowedError(rws)) payload->set_response_status(tlm::TLM_INCOMPLETE_RESPONSE);
 				else payload->set_response_status(tlm::TLM_GENERIC_ERROR_RESPONSE);

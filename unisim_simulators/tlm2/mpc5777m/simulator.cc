@@ -1436,6 +1436,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(m_can_1->INT0);
 	RegisterPort(m_can_1->INT1);
 	RegisterPort(m_can_1->DMA_REQ);
+	for(i = 0; i < M_CAN_1::NUM_FILTER_EVENTS; i++)
+	{
+		RegisterPort(m_can_1->FE[i]);
+	}
 	
 	RegisterPort(m_can_2->m_clk);
 	RegisterPort(m_can_2->can_clk);
@@ -1444,6 +1448,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(m_can_2->INT0);
 	RegisterPort(m_can_2->INT1);
 	RegisterPort(m_can_2->DMA_REQ);
+	for(i = 0; i < M_CAN_2::NUM_FILTER_EVENTS; i++)
+	{
+		RegisterPort(m_can_2->FE[i]);
+	}
 
 	RegisterPort(m_can_3->m_clk);
 	RegisterPort(m_can_3->can_clk);
@@ -1452,6 +1460,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(m_can_3->INT0);
 	RegisterPort(m_can_3->INT1);
 	RegisterPort(m_can_3->DMA_REQ);
+	for(i = 0; i < M_CAN_3::NUM_FILTER_EVENTS; i++)
+	{
+		RegisterPort(m_can_3->FE[i]);
+	}
 
 	RegisterPort(m_can_4->m_clk);
 	RegisterPort(m_can_4->can_clk);
@@ -1460,6 +1472,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(m_can_4->INT0);
 	RegisterPort(m_can_4->INT1);
 	RegisterPort(m_can_4->DMA_REQ);
+	for(i = 0; i < M_CAN_4::NUM_FILTER_EVENTS; i++)
+	{
+		RegisterPort(m_can_4->FE[i]);
+	}
 	
 	RegisterPort(shared_can_message_ram_router->input_if_clock);
 	RegisterPort(shared_can_message_ram_router->output_if_clock);
@@ -1644,11 +1660,17 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	CreateSignalArray<bool, sc_core::SC_MANY_WRITERS>(SIUL2::NUM_PADS, "pad", false);
 	
+	CreateSignalArray(M_CAN_1::NUM_FILTER_EVENTS, "M_CAN_1_FE", false);
+
+	CreateSignalArray(M_CAN_2::NUM_FILTER_EVENTS, "M_CAN_2_FE", false);
+	
 	CreateSignal("M_CAN_3_DMA_REQ", false);
 	CreateSignal("M_CAN_3_DMA_ACK", false);
+	CreateSignalArray(M_CAN_3::NUM_FILTER_EVENTS, "M_CAN_3_FE", false);
 
 	CreateSignal("M_CAN_4_DMA_REQ", false);
 	CreateSignal("M_CAN_4_DMA_ACK", false);
+	CreateSignalArray(M_CAN_4::NUM_FILTER_EVENTS, "M_CAN_4_FE", false);
 	
 	//  - LIN Serial Buses
 	linflexd_0_tx_serial_bus = new LINFlexD_0_TX_SERIAL_BUS("LINFlexD_0_TX_SERIAL_BUS", CreateSignal("LINFlexD_0_TX", true, OUTPUT_INSTRUMENTATION), this);
@@ -2549,23 +2571,26 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.M_CAN_1.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.M_CAN_1.can_clk" , "HARDWARE.CAN_CLK");
 	Bind("HARDWARE.M_CAN_1.reset_b" , "HARDWARE.reset_b");
+	BindArray(M_CAN_1::NUM_FILTER_EVENTS, "HARDWARE.M_CAN_1.FE", "HARDWARE.M_CAN_1_FE");
 	
 	Bind("HARDWARE.M_CAN_2.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.M_CAN_2.can_clk" , "HARDWARE.CAN_CLK");
 	Bind("HARDWARE.M_CAN_2.reset_b" , "HARDWARE.reset_b");
+	BindArray(M_CAN_2::NUM_FILTER_EVENTS, "HARDWARE.M_CAN_2.FE", "HARDWARE.M_CAN_2_FE");
 	
 	Bind("HARDWARE.M_CAN_3.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.M_CAN_3.can_clk" , "HARDWARE.CAN_CLK");
 	Bind("HARDWARE.M_CAN_3.reset_b" , "HARDWARE.reset_b");
 	Bind("HARDWARE.M_CAN_3.DMA_REQ" , "HARDWARE.M_CAN_3_DMA_REQ");
 	Bind("HARDWARE.M_CAN_3.DMA_ACK" , "HARDWARE.M_CAN_3_DMA_ACK");
+	BindArray(M_CAN_3::NUM_FILTER_EVENTS, "HARDWARE.M_CAN_3.FE", "HARDWARE.M_CAN_3_FE");
 	
 	Bind("HARDWARE.M_CAN_4.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.M_CAN_4.can_clk" , "HARDWARE.CAN_CLK");
 	Bind("HARDWARE.M_CAN_4.reset_b" , "HARDWARE.reset_b");
 	Bind("HARDWARE.M_CAN_4.DMA_REQ" , "HARDWARE.M_CAN_4_DMA_REQ");
 	Bind("HARDWARE.M_CAN_4.DMA_ACK" , "HARDWARE.M_CAN_4_DMA_ACK");
-	
+	BindArray(M_CAN_4::NUM_FILTER_EVENTS, "HARDWARE.M_CAN_4.FE", "HARDWARE.M_CAN_4_FE");
 	
 	Bind("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.input_if_clock", "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.output_if_clock", "HARDWARE.PBRIDGEA_CLK");

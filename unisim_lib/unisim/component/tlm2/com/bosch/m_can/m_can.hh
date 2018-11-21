@@ -62,7 +62,6 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-using unisim::util::reg::core::Register;
 using unisim::util::reg::core::AddressableRegister;
 using unisim::util::reg::core::AddressableRegisterHandle;
 using unisim::util::reg::core::RegisterAddressMap;
@@ -107,10 +106,10 @@ using unisim::kernel::tlm2::TLM_CAN_MESSAGE_RECEIVED_EVENT;
 using unisim::kernel::tlm2::tlm_can_bus;
 using unisim::kernel::tlm2::TLM_CAN_MAX_DATA_LENGTH;
 
-template <typename REGISTER, typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
+template <typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
 struct Field : unisim::util::reg::core::Field<FIELD
-                                             , ((OFFSET1 >= 0) && (OFFSET1 < REGISTER::SIZE)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < REGISTER::SIZE) ? ((OFFSET1 < OFFSET2) ? ((REGISTER::SIZE - 1) - OFFSET2) : ((REGISTER::SIZE - 1) - OFFSET1)) : ((REGISTER::SIZE - 1) - OFFSET1)) : ((REGISTER::SIZE - 1) - OFFSET1)) : 0
-                                             , ((OFFSET1 >= 0) && (OFFSET1 < REGISTER::SIZE)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < REGISTER::SIZE) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 0) : 1) : 0
+                                             , (OFFSET1 >= 0) ? ((OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? OFFSET1 : OFFSET2) : OFFSET1) : 0
+                                             , (OFFSET1 >= 0) ? ((OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1) : 0
                                              , _ACCESS>
 {
 };
@@ -303,19 +302,21 @@ inline std::ostream& operator << (std::ostream& os, const DEBUG_MESSAGE_STATUS& 
 // Filter Type (for SFT/EFT in Filter Element)
 enum FILTER_TYPE 
 {
-	RANGE_FILTER   = 0, // Range Filter
-	DUAL_ID_FILTER = 1, // Dual ID Filter
-	CLASSIC_FILTER = 2  // Classic Filter
+	RANGE_FILTER    = 0, // Range Filter
+	DUAL_ID_FILTER  = 1, // Dual ID Filter
+	CLASSIC_FILTER  = 2, // Classic Filter
+	RESERVED_FILTER = 3  // Reserved
 };
 
 inline std::ostream& operator << (std::ostream& os, const FILTER_TYPE& ft)
 {
 	switch(ft)
 	{
-		case RANGE_FILTER  : os << "Range Filter"; break;
-		case DUAL_ID_FILTER: os << "Dual ID Filter"; break;
-		case CLASSIC_FILTER: os << "Classic Filter"; break;
-		default            : os << "unknown Filter"; break;
+		case RANGE_FILTER   : os << "Range Filter"; break;
+		case DUAL_ID_FILTER : os << "Dual ID Filter"; break;
+		case CLASSIC_FILTER : os << "Classic Filter"; break;
+		case RESERVED_FILTER: os << "Reserved Filter"; break;
+		default             : os << "unknown Filter"; break;
 	}
 	
 	return os;
@@ -375,30 +376,25 @@ inline std::ostream& operator << (std::ostream& os, const RX_BUFFER_OR_DEBUG_MES
 	return os;
 }
 
-struct CAN_Message_RAM_Word
-{
-	static const unsigned int SIZE = 32;
-};
-
 // Rx Buffer and FIFO Element
 struct Rx_Buffer_FIFO_Element
 {
-	struct R0 : CAN_Message_RAM_Word
+	struct R0
 	{
-		struct ESI : Field<R0, ESI, 0    > {}; // Error State Indicator
-		struct XTD : Field<R0, XTD, 1    > {}; // Extended Indentifier
-		struct RTR : Field<R0, RTR, 2    > {}; // Remote Transmission Request
-		struct ID  : Field<R0, ID , 3, 31> {}; // Indentifier
+		struct ESI : Field<ESI, 31   > {}; // Error State Indicator
+		struct XTD : Field<XTD, 30   > {}; // Extended Indentifier
+		struct RTR : Field<RTR, 29   > {}; // Remote Transmission Request
+		struct ID  : Field<ID , 28, 0> {}; // Indentifier
 	};
 	
-	struct R1 : CAN_Message_RAM_Word
+	struct R1
 	{
-		struct ANMF : Field<R1, ANMF, 0     > {}; // Accepted Non-Matching Frame
-		struct FIDX : Field<R1, FIDX, 1 , 7 > {}; // Filter Index
-		struct EDL  : Field<R1, EDL , 10    > {}; // Extended Data Length
-		struct BRS  : Field<R1, BRS , 11    > {}; // Bit Rate Switch
-		struct DLC  : Field<R1, DLC , 12, 15> {}; // Data Length Code
-		struct RXTS : Field<R1, RXTS, 16, 31> {}; // Rx Timestamp
+		struct ANMF : Field<ANMF, 31    > {}; // Accepted Non-Matching Frame
+		struct FIDX : Field<FIDX, 30, 24> {}; // Filter Index
+		struct EDL  : Field<EDL , 21    > {}; // Extended Data Length
+		struct BRS  : Field<BRS , 20    > {}; // Bit Rate Switch
+		struct DLC  : Field<DLC , 19, 16> {}; // Data Length Code
+		struct RXTS : Field<RXTS, 15, 0 > {}; // Rx Timestamp
 	};
 	
 	unsigned int GetDataLength() const
@@ -427,7 +423,7 @@ inline std::ostream& operator << (std::ostream& os, const Rx_Buffer_FIFO_Element
 	os << "Rx_Buffer_FIFO_Element(R0=(ESI=" << Rx_Buffer_FIFO_Element::R0::ESI::template Get<uint32_t>(e.r[0]);
 	os << ",XTD=" << Rx_Buffer_FIFO_Element::R0::XTD::template Get<uint32_t>(e.r[0]);
 	os << ",RTR=" << Rx_Buffer_FIFO_Element::R0::RTR::template Get<uint32_t>(e.r[0]);
-	os << ",ID=" << Rx_Buffer_FIFO_Element::R0::ID::template Get<uint32_t>(e.r[0]) << ")";
+	os << ",ID=0x" << std::hex << Rx_Buffer_FIFO_Element::R0::ID::template Get<uint32_t>(e.r[0]) << std::dec << ")";
 	os << ",R1=(ANMF=" << Rx_Buffer_FIFO_Element::R1::ANMF::template Get<uint32_t>(e.r[1]);
 	os << ",FIDX=" << Rx_Buffer_FIFO_Element::R1::FIDX::template Get<uint32_t>(e.r[1]);
 	os << ",EDL=" << Rx_Buffer_FIFO_Element::R1::EDL::template Get<uint32_t>(e.r[1]);
@@ -445,18 +441,18 @@ inline std::ostream& operator << (std::ostream& os, const Rx_Buffer_FIFO_Element
 // Tx Buffer Element
 struct Tx_Buffer_Element
 {
-	struct T0 : CAN_Message_RAM_Word
+	struct T0
 	{
-		struct XTD : Field<T0, XTD, 1    > {}; // Extended Identifier
-		struct RTR : Field<T0, RTR, 2    > {}; // Remote Transmission Request
-		struct ID  : Field<T0, ID , 3, 31> {}; // Identifier
+		struct XTD : Field<XTD, 30   > {}; // Extended Identifier
+		struct RTR : Field<RTR, 29   > {}; // Remote Transmission Request
+		struct ID  : Field<ID , 28, 0> {}; // Identifier
 	};
 	
-	struct T1 : CAN_Message_RAM_Word
+	struct T1
 	{
-		struct MM  : Field<T1, MM , 0 , 7 > {}; // Message Marker
-		struct EFC : Field<T1, EFC, 8     > {}; // Event FIFO Control
-		struct DLC : Field<T1, DLC, 12, 15> {}; // Data Length Code
+		struct MM  : Field<MM , 31, 24> {}; // Message Marker
+		struct EFC : Field<EFC, 23    > {}; // Event FIFO Control
+		struct DLC : Field<DLC, 19, 16> {}; // Data Length Code
 	};
 	
 	unsigned int element_size;
@@ -467,7 +463,7 @@ inline std::ostream& operator << (std::ostream& os, const Tx_Buffer_Element& e)
 {
 	os << "Tx_Buffer_Element(T0=(XTD=" << Tx_Buffer_Element::T0::XTD::template Get<uint32_t>(e.t[0]);
 	os << ",RTR=" << Tx_Buffer_Element::T0::RTR::template Get<uint32_t>(e.t[0]);
-	os << ",ID=" << Tx_Buffer_Element::T0::ID::template Get<uint32_t>(e.t[0]) << ")";
+	os << ",ID=0x" << std::hex << Tx_Buffer_Element::T0::ID::template Get<uint32_t>(e.t[0]) << std::dec << ")";
 	os << ",T1=(MM=" << Tx_Buffer_Element::T1::MM::template Get<uint32_t>(e.t[1]);
 	os << ",EFC=" << Tx_Buffer_Element::T1::EFC::template Get<uint32_t>(e.t[1]);
 	os << ",DLC=" << Tx_Buffer_Element::T1::DLC::template Get<uint32_t>(e.t[1]) << ")";
@@ -482,24 +478,22 @@ inline std::ostream& operator << (std::ostream& os, const Tx_Buffer_Element& e)
 // Tx Event FIFO Element
 struct Tx_Event_FIFO_Element
 {
-	static const unsigned int SIZE = 64;
-	
-	struct E0 : CAN_Message_RAM_Word
+	struct E0
 	{
-		struct ESI : Field<E0, ESI, 0    > {}; // Error State Indicator
-		struct XTD : Field<E0, XTD, 1    > {}; // Extended Identifier
-		struct RTR : Field<E0, RTR, 2    > {}; // Remote Transmission Request
-		struct ID  : Field<E0, ID , 3, 31> {}; // Identifier
+		struct ESI : Field<ESI, 31   > {}; // Error State Indicator
+		struct XTD : Field<XTD, 30   > {}; // Extended Identifier
+		struct RTR : Field<RTR, 29   > {}; // Remote Transmission Request
+		struct ID  : Field<ID , 28, 0> {}; // Identifier
 	};
 	
-	struct E1 : CAN_Message_RAM_Word
+	struct E1
 	{
-		struct MM   : Field<E1, MM  , 0 , 7 > {}; // Message Marker
-		struct ET   : Field<E1, ET  , 8 , 9 > {}; // Event Type
-		struct EDL  : Field<E1, EDL , 10    > {}; // Extended Data Length
-		struct BRS  : Field<E1, BRS , 11    > {}; // Bit Rate Switch
-		struct DLC  : Field<E1, DLC , 12, 15> {}; // Data Length Code
-		struct TXTS : Field<E1, TXTS, 16, 31> {}; // Tx Timestamp
+		struct MM   : Field<MM  , 31, 24> {}; // Message Marker
+		struct ET   : Field<ET  , 23, 22> {}; // Event Type
+		struct EDL  : Field<EDL , 21    > {}; // Extended Data Length
+		struct BRS  : Field<BRS , 20    > {}; // Bit Rate Switch
+		struct DLC  : Field<DLC , 19, 16> {}; // Data Length Code
+		struct TXTS : Field<TXTS, 15, 0 > {}; // Tx Timestamp
 	};
 	
 	uint32_t e[2];
@@ -510,7 +504,7 @@ inline std::ostream& operator << (std::ostream& os, const Tx_Event_FIFO_Element&
 	os << "Tx_Event_FIFO_Element(E0=(ESI=" << Tx_Event_FIFO_Element::E0::ESI::template Get<uint32_t>(e.e[0]);
 	os << ",XTD=" << Tx_Event_FIFO_Element::E0::XTD::template Get<uint32_t>(e.e[0]);
 	os << ",RTR=" << Tx_Event_FIFO_Element::E0::RTR::template Get<uint32_t>(e.e[0]);
-	os << ",ID=" << Tx_Event_FIFO_Element::E0::ID::template Get<uint32_t>(e.e[0]) << ")";
+	os << ",ID=0x" << std::hex << Tx_Event_FIFO_Element::E0::ID::template Get<uint32_t>(e.e[0]) << std::dec << ")";
 	os << ",E1=(MM=" << Tx_Event_FIFO_Element::E1::MM::template Get<uint32_t>(e.e[1]);
 	os << ",ET=" << Tx_Event_FIFO_Element::E1::ET::template Get<uint32_t>(e.e[1]);
 	os << ",EDL=" << Tx_Event_FIFO_Element::E1::EDL::template Get<uint32_t>(e.e[1]);
@@ -523,15 +517,15 @@ inline std::ostream& operator << (std::ostream& os, const Tx_Event_FIFO_Element&
 // Standard Message ID Filter Element
 struct Standard_Message_ID_Filter_Element
 {
-	struct S0 : CAN_Message_RAM_Word
+	struct S0
 	{
-		struct SFT        : Field<S0, SFT       , 0 , 1 > {}; // Standard Filter Type
-		struct SFEC       : Field<S0, SFEC      , 2 , 4 > {}; // Standard Filter Element Configuration
-		struct SFID1      : Field<S0, SFID1     , 5 , 15> {}; // Standard Filter ID 1
-		struct SFID2      : Field<S0, SFID2     , 21, 31> {}; // Standard Filter ID 2 when (SFEC != 000b) AND (SFEC != 111b)
-		struct SFID2_10_9 : Field<S0, SFID2_10_9, 21, 22> {}; // Rx Buffers or Debug Message when SFEC=111b
-		struct SFID2_8_6  : Field<S0, SFID2_8_6 , 23, 25> {}; // m_can filter event pins (mask) for which a pulse is generated when SFEC=111b
-		struct SFID2_5_0  : Field<S0, SFID2_5_0 , 26, 31> {}; // Offset relative to RXBC[RBSA] when SFEC=111b
+		struct SFT        : Field<SFT       , 31, 30> {}; // Standard Filter Type
+		struct SFEC       : Field<SFEC      , 29, 27> {}; // Standard Filter Element Configuration
+		struct SFID1      : Field<SFID1     , 26, 16> {}; // Standard Filter ID 1
+		struct SFID2      : Field<SFID2     , 10, 0 > {}; // Standard Filter ID 2 when (SFEC != 000b) AND (SFEC != 111b)
+		struct SFID2_10_9 : Field<SFID2_10_9, 10, 9 > {}; // Rx Buffers or Debug Message when SFEC=111b
+		struct SFID2_8_6  : Field<SFID2_8_6 , 8 , 6 > {}; // m_can filter event pins (mask) for which a pulse is generated when SFEC=111b
+		struct SFID2_5_0  : Field<SFID2_5_0 , 5 , 0 > {}; // Offset relative to RXBC[RBSA] when SFEC=111b
 	};
 	
 	uint32_t s0;
@@ -541,27 +535,27 @@ inline std::ostream& operator << (std::ostream& os, const Standard_Message_ID_Fi
 {
 	os << "Standard_Message_ID_Filter_Element(S0=(SFT='" << FILTER_TYPE(Standard_Message_ID_Filter_Element::S0::SFT::template Get<uint32_t>(e.s0)) << "'";
 	os << ",SFEC='" << FILTER_ELEMENT_CONFIGURATION(Standard_Message_ID_Filter_Element::S0::SFEC::template Get<uint32_t>(e.s0)) << "'";
-	os << ",SFID1=" << Standard_Message_ID_Filter_Element::S0::SFID1::template Get<uint32_t>(e.s0);
-	os << ",SFID2=" << Standard_Message_ID_Filter_Element::S0::SFID2::template Get<uint32_t>(e.s0) << ")";
+	os << ",SFID1=0x" << std::hex << Standard_Message_ID_Filter_Element::S0::SFID1::template Get<uint32_t>(e.s0) << std::dec;
+	os << ",SFID2=0x" << std::hex << Standard_Message_ID_Filter_Element::S0::SFID2::template Get<uint32_t>(e.s0) << std::dec << ")";
 	return os << ")";
 }
 
 // Extended Message ID Filter Element
 struct Extended_Message_ID_Filter_Element
 {
-	struct F0 : CAN_Message_RAM_Word
+	struct F0
 	{
-		struct EFEC  : Field<F0, EFEC , 0, 2 > {}; // Extended Filter Element Configuration
-		struct EFID1 : Field<F0, EFID1, 3, 31> {}; // Extended Filter ID 1
+		struct EFEC  : Field<EFEC , 31, 29> {}; // Extended Filter Element Configuration
+		struct EFID1 : Field<EFID1, 28, 0 > {}; // Extended Filter ID 1
 	};
 	
-	struct F1 : CAN_Message_RAM_Word
+	struct F1
 	{
-		struct EFT        : Field<F1, EFT       , 0 , 1 > {}; // Extended Filter Type
-		struct EFID2      : Field<F1, EFID2     , 3 , 31> {}; // Extended Filter ID 2 when (EFEC != 000b) AND (EFEC != 111b)
-		struct EFID2_10_9 : Field<F1, EFID2_10_9, 21, 22> {}; // Rx Buffers or Debug Message when EFEC=111b
-		struct EFID2_8_6  : Field<F1, EFID2_8_6 , 23, 25> {}; // m_can filter event pins (mask) for which a pulse is generated when EFEC=111b
-		struct EFID2_5_0  : Field<F1, EFID2_5_0 , 26, 31> {}; // Offset relative to RXBC[RBSA] when EFEC=111b
+		struct EFT        : Field<EFT       , 31, 30> {}; // Extended Filter Type
+		struct EFID2      : Field<EFID2     , 28, 0 > {}; // Extended Filter ID 2 when (EFEC != 000b) AND (EFEC != 111b)
+		struct EFID2_10_9 : Field<EFID2_10_9, 10, 9 > {}; // Rx Buffers or Debug Message when EFEC=111b
+		struct EFID2_8_6  : Field<EFID2_8_6 , 8 , 6 > {}; // m_can filter event pins (mask) for which a pulse is generated when EFEC=111b
+		struct EFID2_5_0  : Field<EFID2_5_0 , 5 , 0 > {}; // Offset relative to RXBC[RBSA] when EFEC=111b
 	};
 	
 	uint32_t f0;
@@ -571,26 +565,13 @@ struct Extended_Message_ID_Filter_Element
 inline std::ostream& operator << (std::ostream& os, const Extended_Message_ID_Filter_Element& e)
 {
 	os << "Extended_Message_ID_Filter_Element(F0=(EFEC='" << FILTER_ELEMENT_CONFIGURATION(Extended_Message_ID_Filter_Element::F0::EFEC::template Get<uint32_t>(e.f0)) << "'";
-	os << ",EFID1=" << Extended_Message_ID_Filter_Element::F0::EFID1::template Get<uint32_t>(e.f0) << ")";
+	os << ",EFID1=0x" << std::hex << Extended_Message_ID_Filter_Element::F0::EFID1::template Get<uint32_t>(e.f0) << std::dec << ")";
 	os << ",F1=(EFT='" << FILTER_TYPE(Extended_Message_ID_Filter_Element::F1::EFT::template Get<uint32_t>(e.f1)) << "'";
-	os << ",EFID2=" << Extended_Message_ID_Filter_Element::F1::EFID2::template Get<uint32_t>(e.f1) << ")";
+	os << ",EFID2=0x" << std::hex << Extended_Message_ID_Filter_Element::F1::EFID2::template Get<uint32_t>(e.f1) << std::dec << ")";
 	return os << ")";
 }
 
-#if 0
-struct CONFIG
-{
-	// Core Release 3.0.1, May 6th, 2013
-	static const unsigned int CORE_RELEASE         = 3; // in [0-9]
-	static const unsigned int CORE_RELEASE_STEP    = 0; // in [0-9]
-	static const unsigned int CORE_RELEASE_SUBSTEP = 1; // in [0-9]
-	static const unsigned int CORE_RELEASE_YEAR    = 3; // in [0-9]
-	static const unsigned int CORE_RELEASE_MONTH   = 5; // in [0-99]
-	static const unsigned int CORE_RELEASE_DAY     = 6; // in [0-99]
-	static const unsigned int BUSWIDTH             = 32;
-};
-#endif
-
+// M_CAN_Message
 struct M_CAN_Message : tlm_can_message
 {
 	typedef tlm_can_message Super;
@@ -627,11 +608,27 @@ inline std::ostream& operator << (std::ostream& os, const M_CAN_Message& msg)
 	return os << ")";
 }
 
+#if 0
+struct CONFIG
+{
+	// Core Release 3.0.1, May 6th, 2013
+	static const unsigned int CORE_RELEASE         = 3; // in [0-9]
+	static const unsigned int CORE_RELEASE_STEP    = 0; // in [0-9]
+	static const unsigned int CORE_RELEASE_SUBSTEP = 1; // in [0-9]
+	static const unsigned int CORE_RELEASE_YEAR    = 3; // in [0-9]
+	static const unsigned int CORE_RELEASE_MONTH   = 5; // in [0-99]
+	static const unsigned int CORE_RELEASE_DAY     = 6; // in [0-99]
+	static const unsigned int BUSWIDTH             = 32;
+};
+#endif
+
+// M_CAN Types
 struct M_CAN_TYPES
 {
 	typedef M_CAN_Message CAN_MESSAGE;
 };
 
+// M_CAN Module
 template <typename CONFIG>
 class M_CAN
 	: public tlm_can_core<M_CAN<CONFIG>, M_CAN_TYPES>
@@ -641,21 +638,21 @@ class M_CAN
 public:
 	typedef tlm_can_core<M_CAN<CONFIG>, M_CAN_TYPES> Super;
 	
-	static const unsigned int TLM2_IP_VERSION_MAJOR    = 1;
-	static const unsigned int TLM2_IP_VERSION_MINOR    = 0;
-	static const unsigned int TLM2_IP_VERSION_PATCH    = 0;
-	static const unsigned int BUSWIDTH                 = CONFIG::BUSWIDTH;
-	static const bool threaded_model                   = false;
-	static const unsigned int ERROR_WARNING_LIMIT      = 96;
-	static const unsigned int MAX_DEDICATED_TX_BUFFERS = 32;
-	static const unsigned int MAX_TX_QUEUE_FIFO_SIZE   = 32;
-	static const unsigned int MAX_TX_BUFFERS           = 32;
+	static const unsigned int TLM2_IP_VERSION_MAJOR          = 1;
+	static const unsigned int TLM2_IP_VERSION_MINOR          = 0;
+	static const unsigned int TLM2_IP_VERSION_PATCH          = 0;
+	static const unsigned int BUSWIDTH                       = CONFIG::BUSWIDTH;
+	static const bool threaded_model                         = false;
+	static const unsigned int ERROR_WARNING_LIMIT            = 96;
+	static const unsigned int MAX_DEDICATED_TX_BUFFERS       = 32;
+	static const unsigned int MAX_TX_QUEUE_FIFO_SIZE         = 32;
+	static const unsigned int MAX_TX_BUFFERS                 = 32;
 	static const unsigned int MAX_STD_MSG_ID_FILTER_ELEMENTS = 128;
 	static const unsigned int MAX_XTD_MSG_ID_FILTER_ELEMENTS = 64;
-	static const unsigned int MAX_RX_FIFO_WATERMARK = 64;
-	static const unsigned int MAX_RX_FIFO_SIZE = 64;
-	static const unsigned int MAX_TX_EVENT_FIFO_SIZE = 32;
-	
+	static const unsigned int MAX_RX_FIFO_WATERMARK          = 64;
+	static const unsigned int MAX_RX_FIFO_SIZE               = 64;
+	static const unsigned int MAX_TX_EVENT_FIFO_SIZE         = 32;
+	static const unsigned int NUM_FILTER_EVENTS              = 3;
 	
 	// TLM socket types
 	typedef tlm::tlm_target_socket<BUSWIDTH>         peripheral_slave_if_type;
@@ -673,6 +670,7 @@ public:
 	sc_core::sc_out<bool>                            INT0;                        // interrupt 0
 	sc_core::sc_out<bool>                            INT1;                        // interrupt 1
 	sc_core::sc_out<bool>                            DMA_REQ;                     // DMA request output
+	sc_core::sc_vector<sc_core::sc_out<bool> >       FE;                          // Filter Events
 	
 	M_CAN(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
 	virtual ~M_CAN();
@@ -860,12 +858,12 @@ private:
 	
 	// M_CAN Register
 	template <typename REGISTER, Access _ACCESS>
-	struct M_CAN_Register : AddressableRegister<REGISTER, 32, _ACCESS, sc_core::sc_time>
+	struct Register : AddressableRegister<REGISTER, 32, _ACCESS, sc_core::sc_time>
 	{
 		typedef AddressableRegister<REGISTER, 32, _ACCESS, sc_core::sc_time> Super;
 		
-		M_CAN_Register(M_CAN<CONFIG> *_m_can) : Super(), m_can(_m_can) {}
-		M_CAN_Register(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(value), m_can(_m_can) {}
+		Register(M_CAN<CONFIG> *_m_can) : Super(), m_can(_m_can) {}
+		Register(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(value), m_can(_m_can) {}
 		
 		inline bool IsVerboseRead() const ALWAYS_INLINE { return m_can->verbose; }
 		inline bool IsVerboseWrite() const ALWAYS_INLINE { return m_can->verbose; }
@@ -876,28 +874,28 @@ private:
 		M_CAN<CONFIG> *m_can;
 	};
 
-	// Core Release Register (M_CAN_CREL)
-	struct M_CAN_CREL : M_CAN_Register<M_CAN_CREL, SW_R>
+	// Core Release Register (CREL)
+	struct CREL : Register<CREL, SW_R>
 	{
-		typedef M_CAN_Register<M_CAN_CREL, SW_R> Super;
+		typedef Register<CREL, SW_R> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x0;
 		
-		struct REL     : Field<M_CAN_CREL, REL    , 0, 3  , SW_R> {}; // Core Release
-		struct STEP    : Field<M_CAN_CREL, STEP   , 4, 7  , SW_R> {}; // Step of Core Release
-		struct SUBSTEP : Field<M_CAN_CREL, SUBSTEP, 8, 11 , SW_R> {}; // Sub-step of Core Release
-		struct YEAR    : Field<M_CAN_CREL, YEAR   , 12, 15, SW_R> {}; // Time Stamp Year
-		struct MON     : Field<M_CAN_CREL, MON    , 16, 23, SW_R> {}; // Time Stamp Month
-		struct DAY     : Field<M_CAN_CREL, DAY    , 24, 31, SW_R> {}; // Time Stamp Day
+		struct REL     : Field<REL    , 31, 28, SW_R> {}; // Core Release
+		struct STEP    : Field<STEP   , 27, 24, SW_R> {}; // Step of Core Release
+		struct SUBSTEP : Field<SUBSTEP, 23, 20, SW_R> {}; // Sub-step of Core Release
+		struct YEAR    : Field<YEAR   , 19, 16, SW_R> {}; // Time Stamp Year
+		struct MON     : Field<MON    , 15, 8 , SW_R> {}; // Time Stamp Month
+		struct DAY     : Field<DAY    , 7 , 0 , SW_R> {}; // Time Stamp Day
 		
 		typedef FieldSet<REL, STEP, SUBSTEP, YEAR, MON, DAY> ALL;
 		
-		M_CAN_CREL(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_CREL(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		CREL(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		CREL(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_CREL"); this->SetDescription("Core Release Register");
+			this->SetName("CREL"); this->SetDescription("Core Release Register");
 			
 			REL    ::SetName("REL");     REL    ::SetDescription("Core Release");
 			STEP   ::SetName("STEP");    STEP   ::SetDescription("Step of Core Release");
@@ -920,23 +918,23 @@ private:
 		using Super::operator =;
 	};
 	
-	// Endian Register (M_CAN_ENDN)
-	struct M_CAN_ENDN : M_CAN_Register<M_CAN_ENDN, SW_R>
+	// Endian Register (ENDN)
+	struct ENDN : Register<ENDN, SW_R>
 	{
-		typedef M_CAN_Register<M_CAN_ENDN, SW_R> Super;
+		typedef Register<ENDN, SW_R> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x4;
 		
-		struct ETV : Field<M_CAN_ENDN, ETV, 0, 31, SW_R> {}; // Endianness Test Value
+		struct ETV : Field<ETV, 31, 0, SW_R> {}; // Endianness Test Value
 		
 		typedef FieldSet<ETV> ALL;
 		
-		M_CAN_ENDN(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_ENDN(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		ENDN(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		ENDN(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_ENDN"); this->SetDescription("Endian Register");
+			this->SetName("ENDN"); this->SetDescription("Endian Register");
 			
 			ETV::SetName("ETV"); ETV::SetDescription("Endianness Test Value");
 		}
@@ -949,28 +947,28 @@ private:
 		using Super::operator =;
 	};
 	
-	// Fast Bit Timing and Prescaler Register (M_CAN_FBTP)
-	struct M_CAN_FBTP : M_CAN_Register<M_CAN_FBTP, SW_RW>
+	// Fast Bit Timing and Prescaler Register (FBTP)
+	struct FBTP : Register<FBTP, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_FBTP, SW_RW> Super;
+		typedef Register<FBTP, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xc;
 		
-		struct TDCO   : Field<M_CAN_FBTP, TDCO  , 3, 7  , SW_RW> {}; // Transceiver Delay Compensation Offset
-		struct TDC    : Field<M_CAN_FBTP, TDC   , 8, 8  , SW_RW> {}; // Transceiver Delay Compensation
-		struct FBRP   : Field<M_CAN_FBTP, FBRP  , 11, 15, SW_RW> {}; // Fast Baud Rate Prescaler
-		struct FTSEG1 : Field<M_CAN_FBTP, FTSEG1, 20, 23, SW_RW> {}; // Fast time segment before sample point
-		struct FTSEG2 : Field<M_CAN_FBTP, FTSEG2, 25, 27, SW_RW> {}; // Fast time segment after sample point
-		struct FSJW   : Field<M_CAN_FBTP, FSJW  , 30, 31, SW_RW> {}; // Fast (Re) Synchronization Jump Width
+		struct TDCO   : Field<TDCO  , 28, 24, SW_RW> {}; // Transceiver Delay Compensation Offset
+		struct TDC    : Field<TDC   , 23, 23, SW_RW> {}; // Transceiver Delay Compensation
+		struct FBRP   : Field<FBRP  , 20, 16, SW_RW> {}; // Fast Baud Rate Prescaler
+		struct FTSEG1 : Field<FTSEG1, 11, 8 , SW_RW> {}; // Fast time segment before sample point
+		struct FTSEG2 : Field<FTSEG2, 6 , 4 , SW_RW> {}; // Fast time segment after sample point
+		struct FSJW   : Field<FSJW  , 1 , 0 , SW_RW> {}; // Fast (Re) Synchronization Jump Width
 		
 		typedef FieldSet<TDCO, TDC, FBRP, FTSEG1, FTSEG2, FSJW> ALL;
 		
-		M_CAN_FBTP(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_FBTP(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		FBTP(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		FBTP(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_FBTP"); this->SetDescription("Fast Bit Timing and Prescaler Register");
+			this->SetName("FBTP"); this->SetDescription("Fast Bit Timing and Prescaler Register");
 			
 			TDCO  ::SetName("TDCO");   TDCO  ::SetDescription("Transceiver Delay Compensation Offset");
 			TDC   ::SetName("TDC");    TDC   ::SetDescription("Transceiver Delay Compensation");
@@ -993,26 +991,26 @@ private:
 		using Super::operator =;
 	};
 	
-	// Test Register (M_CAN_TEST)
-	struct M_CAN_TEST : M_CAN_Register<M_CAN_TEST, SW_RW>
+	// Test Register (TEST)
+	struct TEST : Register<TEST, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_TEST, SW_RW> Super;
+		typedef Register<TEST, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x10;
 		
-		struct TDCV : Field<M_CAN_TEST, TDCV, 18, 23, SW_R > {}; // Transceiver Delay Compensation Value
-		struct RX   : Field<M_CAN_TEST, RX  , 24, 24, SW_R > {}; // Receive Pin
-		struct TX   : Field<M_CAN_TEST, TX  , 25, 26, SW_RW> {}; // Control of Transmit Pin
-		struct LBCK : Field<M_CAN_TEST, LBCK, 27, 27, SW_RW> {}; // Loop Back mode
+		struct TDCV : Field<TDCV, 13, 8, SW_R > {}; // Transceiver Delay Compensation Value
+		struct RX   : Field<RX  , 7 , 7, SW_R > {}; // Receive Pin
+		struct TX   : Field<TX  , 6 , 5, SW_RW> {}; // Control of Transmit Pin
+		struct LBCK : Field<LBCK, 4 , 4, SW_RW> {}; // Loop Back mode
 
 		typedef FieldSet<TDCV, RX, TX, LBCK> ALL;
 		
-		M_CAN_TEST(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TEST(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TEST(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TEST(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TEST"); this->SetDescription("Test Register");
+			this->SetName("TEST"); this->SetDescription("Test Register");
 			
 			TDCV::SetName("TDCV"); TDCV::SetDescription("Transceiver Delay Compensation Value");
 			RX  ::SetName("RX");   RX  ::SetDescription("Receive Pin");
@@ -1033,24 +1031,24 @@ private:
 		using Super::operator =;
 	};
 	
-	// RAM Watchdog Register (M_CAN_RWD)
-	struct M_CAN_RWD : M_CAN_Register<M_CAN_RWD, SW_RW>
+	// RAM Watchdog Register (RWD)
+	struct RWD : Register<RWD, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_RWD, SW_RW> Super;
+		typedef Register<RWD, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x14;
 		
-		struct WDV : Field<M_CAN_RWD, WDV, 16, 23, SW_R > {}; // Watchdog Value
-		struct WDC : Field<M_CAN_RWD, WDC, 24, 31, SW_RW> {}; // Watchdog Configuration
+		struct WDV : Field<WDV, 15, 8, SW_R > {}; // Watchdog Value
+		struct WDC : Field<WDC, 7 , 0, SW_RW> {}; // Watchdog Configuration
 
 		typedef FieldSet<WDV, WDC> ALL;
 		
-		M_CAN_RWD(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_RWD(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		RWD(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		RWD(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_RWD"); this->SetDescription("RAM Watchdog Register");
+			this->SetName("RWD"); this->SetDescription("RAM Watchdog Register");
 			
 			WDV::SetName("WDV"); WDV::SetDescription("Watchdog Value");
 			WDC::SetName("WDC"); WDC::SetDescription("Watchdog Configuration");
@@ -1069,37 +1067,37 @@ private:
 		using Super::operator =;
 	};
 	
-	// CC Control Register (M_CAN_CCCR)
-	struct M_CAN_CCCR : M_CAN_Register<M_CAN_CCCR, SW_RW>
+	// CC Control Register (CCCR)
+	struct CCCR : Register<CCCR, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_CCCR, SW_RW> Super;
+		typedef Register<CCCR, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x18;
 		
-		struct TXP  : Field<M_CAN_CCCR, TXP , 17, 17, SW_RW> {}; // Transmit Pause
-		struct FDBS : Field<M_CAN_CCCR, FDBS, 18, 18, SW_RW> {}; // CAN FD Bit Rate Switching
-		struct FDO  : Field<M_CAN_CCCR, FDO , 19, 19, SW_RW> {}; // Fast Frame Mode Active
-		struct CMR  : Field<M_CAN_CCCR, CMR , 20, 21, SW_RW> {}; // CAN Mode Request
-		struct CME  : Field<M_CAN_CCCR, CME , 22, 20, SW_RW> {}; // CAN Mode Enable
-		struct TEST : Field<M_CAN_CCCR, TEST, 24, 24, SW_RW> {}; // Test Enable Mode
-		struct DAR  : Field<M_CAN_CCCR, DAR , 25, 25, SW_RW> {}; // DAR: Disable Automatic Retransmission
-		struct MON  : Field<M_CAN_CCCR, MON , 26, 26, SW_RW> {}; // Bus Monitoring Mode
-		struct CSR  : Field<M_CAN_CCCR, CSR , 27, 27, SW_RW> {}; // Clock Stop Request
-		struct CSA  : Field<M_CAN_CCCR, CSA , 28, 28, SW_RW> {}; // Clock Stop Acknowledge
-		struct ASM  : Field<M_CAN_CCCR, ASM , 29, 29, SW_RW> {}; // ASM Restricted Operation Mode
-		struct CCE  : Field<M_CAN_CCCR, CCE , 30, 30, SW_RW> {}; // Configuration Change Enable
-		struct INIT : Field<M_CAN_CCCR, INIT, 31, 31, SW_RW> {}; // Initialization
+		struct TXP  : Field<TXP , 14, 14, SW_RW> {}; // Transmit Pause
+		struct FDBS : Field<FDBS, 13, 13, SW_RW> {}; // CAN FD Bit Rate Switching
+		struct FDO  : Field<FDO , 12, 12, SW_RW> {}; // Fast Frame Mode Active
+		struct CMR  : Field<CMR , 11, 10, SW_RW> {}; // CAN Mode Request
+		struct CME  : Field<CME , 9 , 8 , SW_RW> {}; // CAN Mode Enable
+		struct TEST : Field<TEST, 7 , 7 , SW_RW> {}; // Test Enable Mode
+		struct DAR  : Field<DAR , 6 , 6 , SW_RW> {}; // DAR: Disable Automatic Retransmission
+		struct MON  : Field<MON , 5 , 5 , SW_RW> {}; // Bus Monitoring Mode
+		struct CSR  : Field<CSR , 4 , 4 , SW_RW> {}; // Clock Stop Request
+		struct CSA  : Field<CSA , 3 , 3 , SW_RW> {}; // Clock Stop Acknowledge
+		struct ASM  : Field<ASM , 2 , 2 , SW_RW> {}; // ASM Restricted Operation Mode
+		struct CCE  : Field<CCE , 1 , 1 , SW_RW> {}; // Configuration Change Enable
+		struct INIT : Field<INIT, 0 , 0 , SW_RW> {}; // Initialization
 		
 		typedef FieldSet<TXP, FDBS, FDO, CMR, CME, TEST, DAR, MON, CSR, CSA, ASM, CCE, INIT> ALL;
 		
 		typedef FieldSet<CME, TEST, DAR, MON, ASM> PROTECTED_WRITE_FIELDS; 
 		
-		M_CAN_CCCR(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_CCCR(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		CCCR(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		CCCR(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_CCCR"); this->SetDescription("CC Control Register");
+			this->SetName("CCCR"); this->SetDescription("CC Control Register");
 			
 			TXP ::SetName("TXP");  TXP ::SetDescription("Transmit Pause");
 			FDBS::SetName("FDBS"); FDBS::SetDescription("CAN FD Bit Rate Switching");
@@ -1148,19 +1146,19 @@ private:
 			
 			if(old_test && !new_test)
 			{
-				this->m_can->m_can_test.Reset();
+				this->m_can->test.Reset();
 			}
 			
 			if(!old_cce && new_cce)
 			{
-				this->m_can->m_can_hpms.Reset();
-				this->m_can->m_can_rxf0s.Reset();
-				this->m_can->m_can_rxf1s.Reset();
-				this->m_can->m_can_txfqs.Reset();
-				this->m_can->m_can_txbrp.Reset();
-				this->m_can->m_can_txbto.Reset();
-				this->m_can->m_can_txbcf.Reset();
-				this->m_can->m_can_txefs.Reset();
+				this->m_can->hpms.Reset();
+				this->m_can->rxf0s.Reset();
+				this->m_can->rxf1s.Reset();
+				this->m_can->txfqs.Reset();
+				this->m_can->txbrp.Reset();
+				this->m_can->txbto.Reset();
+				this->m_can->txbcf.Reset();
+				this->m_can->txefs.Reset();
 			}
 			
 			return rws;
@@ -1169,26 +1167,26 @@ private:
 		using Super::operator =;
 	};
 	
-	// Bit Timing and Prescaler Register (M_CAN_BTP)
-	struct M_CAN_BTP : M_CAN_Register<M_CAN_BTP, SW_RW>
+	// Bit Timing and Prescaler Register (BTP)
+	struct BTP : Register<BTP, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_BTP, SW_RW> Super;
+		typedef Register<BTP, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x1c;
 		
-		struct BRP   : Field<M_CAN_BTP, BRP  , 6 , 15, SW_RW> {}; // Baud Rate Prescaler
-		struct TSEG1 : Field<M_CAN_BTP, TSEG1, 18, 23, SW_RW> {}; // Time segment before sample point
-		struct TSEG2 : Field<M_CAN_BTP, TSEG2, 24, 27, SW_RW> {}; // Time segment after sample point
-		struct SJW   : Field<M_CAN_BTP, SJW  , 28, 31, SW_RW> {}; // (Re) Synchronization Jump Width
+		struct BRP   : Field<BRP  , 25, 16, SW_RW> {}; // Baud Rate Prescaler
+		struct TSEG1 : Field<TSEG1, 13, 8 , SW_RW> {}; // Time segment before sample point
+		struct TSEG2 : Field<TSEG2, 7 , 4 , SW_RW> {}; // Time segment after sample point
+		struct SJW   : Field<SJW  , 3 , 0 , SW_RW> {}; // (Re) Synchronization Jump Width
 		
 		typedef FieldSet<BRP, TSEG1, TSEG2, SJW> ALL;
 		
-		M_CAN_BTP(M_CAN<CONFIG> *_m_can) : Super(_m_can), can_clock_period(), sample_point(), phase_seg2(), bit_time() { Init(); }
-		M_CAN_BTP(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value), can_clock_period(), sample_point(), phase_seg2(), bit_time() { Init(); }
+		BTP(M_CAN<CONFIG> *_m_can) : Super(_m_can), can_clock_period(), sample_point(), phase_seg2(), bit_time() { Init(); }
+		BTP(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value), can_clock_period(), sample_point(), phase_seg2(), bit_time() { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_BTP"); this->SetDescription("Bit Timing and Prescaler Register");
+			this->SetName("BTP"); this->SetDescription("Bit Timing and Prescaler Register");
 			
 			BRP  ::SetName("BRP");   BRP  ::SetDescription("Baud Rate Prescaler");
 			TSEG1::SetName("TSEG1"); TSEG1::SetDescription("Time segment before sample point");
@@ -1271,23 +1269,23 @@ private:
 	};
 	
 	// Timestamp Counter Configuration Register (M_CAN_TSCC)
-	struct M_CAN_TSCC : M_CAN_Register<M_CAN_TSCC, SW_RW>
+	struct TSCC : Register<TSCC, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_TSCC, SW_RW> Super;
+		typedef Register<TSCC, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x20;
 		
-		struct TCP : Field<M_CAN_TSCC, TCP, 12, 15, SW_RW> {}; // Timestamp Counter Prescaler
-		struct TSS : Field<M_CAN_TSCC, TSS, 30, 31, SW_RW> {}; // Timestamp Select
+		struct TCP : Field<TCP, 19, 16, SW_RW> {}; // Timestamp Counter Prescaler
+		struct TSS : Field<TSS, 1 , 0 , SW_RW> {}; // Timestamp Select
 		
 		typedef FieldSet<TCP, TSS> ALL;
 		
-		M_CAN_TSCC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TSCC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TSCC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TSCC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TSCC"); this->SetDescription("Timestamp Counter Configuration Register");
+			this->SetName("TSCC"); this->SetDescription("Timestamp Counter Configuration Register");
 			
 			TCP::SetName("TCP"); TCP::SetDescription("Timestamp Counter Prescaler");
 			TSS::SetName("TSS"); TSS::SetDescription("Timestamp Select");
@@ -1316,7 +1314,7 @@ private:
 		
 		void Update() const
 		{
-			const sc_core::sc_time& bit_time = this->m_can->m_can_btp.GetBitTime();
+			const sc_core::sc_time& bit_time = this->m_can->btp.GetBitTime();
 			
 			unsigned int tcp = this->template Get<TCP>() + 1;
 			
@@ -1326,22 +1324,22 @@ private:
 	};
 	
 	// Timestamp Counter Value Register (M_CAN_TSCV)
-	struct M_CAN_TSCV : M_CAN_Register<M_CAN_TSCV, SW_RW>
+	struct TSCV : Register<TSCV, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_TSCV, SW_RW> Super;
+		typedef Register<TSCV, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x24;
 		
-		struct TSC : Field<M_CAN_TSCV, TSC, 16, 31, SW_R_W1C> {}; // Timestamp Counter
+		struct TSC : Field<TSC, 15, 0, SW_R_W1C> {}; // Timestamp Counter
 		
 		typedef FieldSet<TSC> ALL;
 		
-		M_CAN_TSCV(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TSCV(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TSCV(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TSCV(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TSCV"); this->SetDescription("Timestamp Counter Value Register");
+			this->SetName("TSCV"); this->SetDescription("Timestamp Counter Value Register");
 			
 			TSC::SetName("TSC"); TSC::SetDescription("Timestamp Counter");
 		}
@@ -1354,25 +1352,25 @@ private:
 		using Super::operator =;
 	};
 	
-	// Timeout Counter Configuration Register (M_CAN_TOCC)
-	struct M_CAN_TOCC : M_CAN_Register<M_CAN_TOCC, SW_RW>
+	// Timeout Counter Configuration Register (TOCC)
+	struct TOCC : Register<TOCC, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_TOCC, SW_RW> Super;
+		typedef Register<TOCC, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x28;
 		
-		struct TOP  : Field<M_CAN_TOCC, TOP , 0 , 15, SW_RW> {}; // Timeout Period
-		struct TOS  : Field<M_CAN_TOCC, TOS , 29, 30, SW_RW> {}; // Timeout Select
-		struct ETOC : Field<M_CAN_TOCC, ETOC, 31, 31, SW_RW> {}; // Enable Timeout Counter
+		struct TOP  : Field<TOP , 31, 16, SW_RW> {}; // Timeout Period
+		struct TOS  : Field<TOS , 2 , 1 , SW_RW> {}; // Timeout Select
+		struct ETOC : Field<ETOC, 0 , 0 , SW_RW> {}; // Enable Timeout Counter
 		
 		typedef FieldSet<TOP, TOS, ETOC> ALL;
 		
-		M_CAN_TOCC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TOCC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TOCC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TOCC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TOCC"); this->SetDescription("Timeout Counter Configuration Register");
+			this->SetName("TOCC"); this->SetDescription("Timeout Counter Configuration Register");
 			
 			TOP ::SetName("TOP");  TOP ::SetDescription("Timeout Period");
 			TOS ::SetName("TOS");  TOS ::SetDescription("Timeout Select");
@@ -1390,23 +1388,23 @@ private:
 		}
 	};
 	
-	// Timeout Counter Value Register (M_CAN_TOCV)
-	struct M_CAN_TOCV : M_CAN_Register<M_CAN_TOCV, SW_RW>
+	// Timeout Counter Value Register (TOCV)
+	struct TOCV : Register<TOCV, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_TOCV, SW_RW> Super;
+		typedef Register<TOCV, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x2c;
 		
-		struct TOC : Field<M_CAN_TOCV, TOC, 16, 31, SW_RW> {}; // Timeout Counter
+		struct TOC : Field<TOC, 15, 0, SW_RW> {}; // Timeout Counter
 		
 		typedef FieldSet<TOC> ALL;
 		
-		M_CAN_TOCV(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TOCV(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TOCV(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TOCV(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TOCV"); this->SetDescription("Timeout Counter Value Register");
+			this->SetName("TOCV"); this->SetDescription("Timeout Counter Value Register");
 			
 			TOC::SetName("TOC"); TOC::SetDescription("Timeout Counter");
 		}
@@ -1419,14 +1417,14 @@ private:
 		
 		virtual ReadWriteStatus Write(sc_core::sc_time& time_stamp, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			if(this->m_can->m_can_tocc.template Get<typename M_CAN_TOCC::TOS>() == TOS_CONTINOUS)
+			if(this->m_can->tocc.template Get<typename TOCC::TOS>() == TOS_CONTINOUS)
 			{
 				ReadWriteStatus rws = Super::Write(time_stamp, value, bit_enable);
 			
 				if(!IsReadWriteError(rws))
 				{
 					// When operating in Continuous mode, a write to TOCV presets the counter to the value configured by TOCC[TOP]
-					uint32_t top = this->m_can->m_can_tocc.template Get<typename M_CAN_TOCC::TOP>();
+					uint32_t top = this->m_can->tocc.template Get<typename TOCC::TOP>();
 					this->template Set<TOC>(top);
 				}
 				
@@ -1439,28 +1437,28 @@ private:
 		using Super::operator =;
 	};
 	
-	// Error Counter Register (M_CAN_ECR)
-	struct M_CAN_ECR : M_CAN_Register<M_CAN_ECR, SW_R>
+	// Error Counter Register (ECR)
+	struct ECR : Register<ECR, SW_R>
 	{
-		typedef M_CAN_Register<M_CAN_ECR, SW_R> Super;
+		typedef Register<ECR, SW_R> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x40;
 		
-		struct CEL : Field<M_CAN_ECR, CEL, 8 , 15, SW_R> {}; // CAN Error Logging
-		struct RP  : Field<M_CAN_ECR, RP , 16, 16, SW_R> {}; // Receive Error Passive
-		struct REC : Field<M_CAN_ECR, REC, 17, 23, SW_R> {}; // Receive Error Counter
-		struct TEC : Field<M_CAN_ECR, TEC, 24, 31, SW_R> {}; // Transmit Error Counter
+		struct CEL : Field<CEL, 23, 16, SW_R> {}; // CAN Error Logging
+		struct RP  : Field<RP , 15, 15, SW_R> {}; // Receive Error Passive
+		struct REC : Field<REC, 14, 8 , SW_R> {}; // Receive Error Counter
+		struct TEC : Field<TEC, 7 , 0 , SW_R> {}; // Transmit Error Counter
 		
 		typedef FieldSet<RP, REC> RECEIVE_ERROR_COUNT;
 		
 		typedef FieldSet<CEL, RP, REC, TEC> ALL;
 		
-		M_CAN_ECR(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_ECR(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		ECR(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		ECR(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_ECR"); this->SetDescription("Error Counter Register");
+			this->SetName("ECR"); this->SetDescription("Error Counter Register");
 			
 			CEL::SetName("CEL"); CEL::SetDescription("CAN Error Logging");
 			RP ::SetName("RP "); RP ::SetDescription("Receive Error Passive");
@@ -1503,7 +1501,7 @@ private:
 				cel = cel + 1;
 				this->template Set<CEL>(cel);
 				
-				this->m_can->m_can_ir.template Set<typename M_CAN_IR::ELO>(1); // Error Logging Overflow
+				this->m_can->ir.template Set<typename IR::ELO>(1); // Error Logging Overflow
 				this->m_can->UpdateInterrupts();
 			}
 		}
@@ -1511,31 +1509,31 @@ private:
 		using Super::operator =;
 	};
 	
-	// Protocol Status Register (M_CAN_PSR)
-	struct M_CAN_PSR : M_CAN_Register<M_CAN_PSR, SW_R>
+	// Protocol Status Register (PSR)
+	struct PSR : Register<PSR, SW_R>
 	{
-		typedef M_CAN_Register<M_CAN_PSR, SW_R> Super;
+		typedef Register<PSR, SW_R> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x44;
 		
-		struct REDL : Field<M_CAN_PSR, REDL, 18, 18, SW_R> {}; // Received CAN FD Message with EDL flag
-		struct RBRS : Field<M_CAN_PSR, RBRS, 19, 19, SW_R> {}; // BRS flag of last received CAN FD Message
-		struct RESI : Field<M_CAN_PSR, RESI, 20, 20, SW_R> {}; // ESI CAN FD Message with ESI flag
-		struct FLEC : Field<M_CAN_PSR, FLEC, 21, 23, SW_R> {}; // Fast Last Error Code
-		struct BO   : Field<M_CAN_PSR, BO  , 24, 24, SW_R> {}; // Bus_Off Status
-		struct EW   : Field<M_CAN_PSR, EW  , 25, 25, SW_R> {}; // Warning Status
-		struct EP   : Field<M_CAN_PSR, EP  , 26, 26, SW_R> {}; // Error Passive
-		struct ACT  : Field<M_CAN_PSR, ACT , 27, 28, SW_R> {}; // Activity
-		struct LEC  : Field<M_CAN_PSR, LEC , 29, 31, SW_R> {}; // Last Error Code
+		struct REDL : Field<REDL, 13, 13, SW_R> {}; // Received CAN FD Message with EDL flag
+		struct RBRS : Field<RBRS, 12, 12, SW_R> {}; // BRS flag of last received CAN FD Message
+		struct RESI : Field<RESI, 11, 11, SW_R> {}; // ESI CAN FD Message with ESI flag
+		struct FLEC : Field<FLEC, 10, 8 , SW_R> {}; // Fast Last Error Code
+		struct BO   : Field<BO  , 7 , 7 , SW_R> {}; // Bus_Off Status
+		struct EW   : Field<EW  , 6 , 6 , SW_R> {}; // Warning Status
+		struct EP   : Field<EP  , 5 , 5 , SW_R> {}; // Error Passive
+		struct ACT  : Field<ACT , 4 , 3 , SW_R> {}; // Activity
+		struct LEC  : Field<LEC , 2 , 0 , SW_R> {}; // Last Error Code
 		
 		typedef FieldSet<REDL, RBRS, RESI, FLEC, BO, EW, EP, ACT, LEC> ALL; 
 		
-		M_CAN_PSR(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_PSR(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		PSR(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		PSR(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_PSR"); this->SetDescription("Protocol Status Register");
+			this->SetName("PSR"); this->SetDescription("Protocol Status Register");
 			
 			REDL::SetName("REDL"); REDL::SetDescription("Received CAN FD Message with EDL flag");
 			RBRS::SetName("RBRS"); RBRS::SetDescription("BRS flag of last received CAN FD Message");
@@ -1563,55 +1561,55 @@ private:
 		using Super::operator =;
 	};
 	
-	// Interrupt Register (M_CAN_IR)
-	struct M_CAN_IR : M_CAN_Register<M_CAN_IR, SW_R_W1C>
+	// Interrupt Register (IR)
+	struct IR : Register<IR, SW_R_W1C>
 	{
-		typedef M_CAN_Register<M_CAN_IR, SW_R_W1C> Super;
+		typedef Register<IR, SW_R_W1C> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x50;
 		
-		struct STE  : Field<M_CAN_IR, STE , 0 , 0 , SW_R_W1C> {}; // Stuff Error
-		struct FOE  : Field<M_CAN_IR, FOE , 1 , 1 , SW_R_W1C> {}; // Format Error
-		struct ACKE : Field<M_CAN_IR, ACKE, 2 , 2 , SW_R_W1C> {}; // Acknowledge Error
-		struct BE   : Field<M_CAN_IR, BE  , 3 , 3 , SW_R_W1C> {}; // Bit Error
-		struct CRCE : Field<M_CAN_IR, CRCE, 4 , 4 , SW_R_W1C> {}; // CRC Error
-		struct WDI  : Field<M_CAN_IR, WDI , 5 , 5 , SW_R_W1C> {}; // Watchdog Interrupt
-		struct BO   : Field<M_CAN_IR, BO  , 6 , 6 , SW_R_W1C> {}; // Bus_Off Status
-		struct EW   : Field<M_CAN_IR, EW  , 7 , 7 , SW_R_W1C> {}; // Warning Status
-		struct EP   : Field<M_CAN_IR, EP  , 8 , 8 , SW_R_W1C> {}; // Error Passive
-		struct ELO  : Field<M_CAN_IR, ELO , 9 , 9 , SW_R_W1C> {}; // Error Logging Overflow
-		struct BEU  : Field<M_CAN_IR, BEU , 10, 10, SW_R_W1C> {}; // Bit Error Uncorrected
-		struct BEC  : Field<M_CAN_IR, BEC , 11, 11, SW_R_W1C> {}; // Bit Error Corrected 
-		struct DRX  : Field<M_CAN_IR, DRX , 12, 12, SW_R_W1C> {}; // Message stored to Dedicated Rx Buffer
-		struct TOO  : Field<M_CAN_IR, TOO , 13, 13, SW_R_W1C> {}; // Timeout Occurred
-		struct MRAF : Field<M_CAN_IR, MRAF, 14, 14, SW_R_W1C> {}; // Message RAM Access Failure
-		struct TSW  : Field<M_CAN_IR, TSW , 15, 15, SW_R_W1C> {}; // Timestamp Wraparound
-		struct TEFL : Field<M_CAN_IR, TEFL, 16, 16, SW_R_W1C> {}; // Tx Event FIFO Event Lost
-		struct TEFF : Field<M_CAN_IR, TEFF, 17, 17, SW_R_W1C> {}; // Tx Event FIFO Full
-		struct TEFW : Field<M_CAN_IR, TEFW, 18, 18, SW_R_W1C> {}; // Tx Event FIFO Watermark Reached
-		struct TEFN : Field<M_CAN_IR, TEFN, 19, 19, SW_R_W1C> {}; // Tx Event FIDO New Entry
-		struct TFE  : Field<M_CAN_IR, TFE , 20, 20, SW_R_W1C> {}; // Tx FIFO Empty
-		struct TCF  : Field<M_CAN_IR, TCF , 21, 21, SW_R_W1C> {}; // Transmission Cancellation Finished
-		struct TC   : Field<M_CAN_IR, TC  , 22, 22, SW_R_W1C> {}; // Transmission Completed
-		struct HPM  : Field<M_CAN_IR, HPM , 23, 23, SW_R_W1C> {}; // High Priority Message
-		struct RF1L : Field<M_CAN_IR, RF1L, 24, 24, SW_R_W1C> {}; // Rx FIFO 1 Message Lost
-		struct RF1F : Field<M_CAN_IR, RF1F, 25, 25, SW_R_W1C> {}; // Rx FIFO 1 Full
-		struct RF1W : Field<M_CAN_IR, RF1W, 26, 26, SW_R_W1C> {}; // Rx FIFO 1 Watermark Reached
-		struct RF1N : Field<M_CAN_IR, RF1N, 27, 27, SW_R_W1C> {}; // Rx FIFO 1 New Message
-		struct RF0L : Field<M_CAN_IR, RF0L, 28, 28, SW_R_W1C> {}; // Rx FIFO 0 Message Lost
-		struct RF0F : Field<M_CAN_IR, RF0F, 29, 29, SW_R_W1C> {}; // Rx FIFO 0 Full
-		struct RF0W : Field<M_CAN_IR, RF0W, 30, 30, SW_R_W1C> {}; // Rx FIFO 0 Watermark Reached
-		struct RF0N : Field<M_CAN_IR, RF0N, 31, 31, SW_R_W1C> {}; // Rx FIFO 0 New Message
+		struct STE  : Field<STE , 31, 31, SW_R_W1C> {}; // Stuff Error
+		struct FOE  : Field<FOE , 30, 30, SW_R_W1C> {}; // Format Error
+		struct ACKE : Field<ACKE, 29, 29, SW_R_W1C> {}; // Acknowledge Error
+		struct BE   : Field<BE  , 28, 28, SW_R_W1C> {}; // Bit Error
+		struct CRCE : Field<CRCE, 27, 27, SW_R_W1C> {}; // CRC Error
+		struct WDI  : Field<WDI , 26, 26, SW_R_W1C> {}; // Watchdog Interrupt
+		struct BO   : Field<BO  , 25, 25, SW_R_W1C> {}; // Bus_Off Status
+		struct EW   : Field<EW  , 24, 24, SW_R_W1C> {}; // Warning Status
+		struct EP   : Field<EP  , 23, 23, SW_R_W1C> {}; // Error Passive
+		struct ELO  : Field<ELO , 22, 22, SW_R_W1C> {}; // Error Logging Overflow
+		struct BEU  : Field<BEU , 21, 21, SW_R_W1C> {}; // Bit Error Uncorrected
+		struct BEC  : Field<BEC , 20, 20, SW_R_W1C> {}; // Bit Error Corrected 
+		struct DRX  : Field<DRX , 19, 19, SW_R_W1C> {}; // Message stored to Dedicated Rx Buffer
+		struct TOO  : Field<TOO , 18, 18, SW_R_W1C> {}; // Timeout Occurred
+		struct MRAF : Field<MRAF, 17, 17, SW_R_W1C> {}; // Message RAM Access Failure
+		struct TSW  : Field<TSW , 16, 16, SW_R_W1C> {}; // Timestamp Wraparound
+		struct TEFL : Field<TEFL, 15, 15, SW_R_W1C> {}; // Tx Event FIFO Event Lost
+		struct TEFF : Field<TEFF, 14, 14, SW_R_W1C> {}; // Tx Event FIFO Full
+		struct TEFW : Field<TEFW, 13, 13, SW_R_W1C> {}; // Tx Event FIFO Watermark Reached
+		struct TEFN : Field<TEFN, 12, 12, SW_R_W1C> {}; // Tx Event FIDO New Entry
+		struct TFE  : Field<TFE , 11, 11, SW_R_W1C> {}; // Tx FIFO Empty
+		struct TCF  : Field<TCF , 10, 10, SW_R_W1C> {}; // Transmission Cancellation Finished
+		struct TC   : Field<TC  , 9 , 9 , SW_R_W1C> {}; // Transmission Completed
+		struct HPM  : Field<HPM , 8 , 8 , SW_R_W1C> {}; // High Priority Message
+		struct RF1L : Field<RF1L, 7 , 7 , SW_R_W1C> {}; // Rx FIFO 1 Message Lost
+		struct RF1F : Field<RF1F, 6 , 6 , SW_R_W1C> {}; // Rx FIFO 1 Full
+		struct RF1W : Field<RF1W, 5 , 5 , SW_R_W1C> {}; // Rx FIFO 1 Watermark Reached
+		struct RF1N : Field<RF1N, 4 , 4 , SW_R_W1C> {}; // Rx FIFO 1 New Message
+		struct RF0L : Field<RF0L, 3 , 3 , SW_R_W1C> {}; // Rx FIFO 0 Message Lost
+		struct RF0F : Field<RF0F, 2 , 2 , SW_R_W1C> {}; // Rx FIFO 0 Full
+		struct RF0W : Field<RF0W, 1 , 1 , SW_R_W1C> {}; // Rx FIFO 0 Watermark Reached
+		struct RF0N : Field<RF0N, 0 , 0 , SW_R_W1C> {}; // Rx FIFO 0 New Message
 		
 		typedef FieldSet<STE, FOE, ACKE, BE, CRCE, WDI, BO, EW, EP, ELO, BEU, BEC, DRX, TOO, MRAF, TSW, TEFL,
 		                 TEFF, TEFW, TEFN, TFE, TCF, TC, HPM, RF1L, RF1F, RF1W, RF1N, RF0L, RF0F, RF0W, RF0N> ALL;
 		
-		M_CAN_IR(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_IR(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		IR(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		IR(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_IR"); this->SetDescription("Interrupt Register");
+			this->SetName("IR"); this->SetDescription("Interrupt Register");
 			
 			STE ::SetName("STE");  STE ::SetDescription("Stuff Error");
 			FOE ::SetName("FOE");  FOE ::SetDescription("Format Error");
@@ -1658,7 +1656,7 @@ private:
 			
 			if(!IsReadWriteError(rws))
 			{
-				this->m_can->m_can_txefs.template Set<typename M_CAN_TXEFS::TEFL>(this->template Get<TEFL>());
+				this->m_can->txefs.template Set<typename TXEFS::TEFL>(this->template Get<TEFL>());
 				this->m_can->UpdateInterrupts();
 			}
 			
@@ -1668,56 +1666,56 @@ private:
 		using Super::operator =;
 	};
 	
-	// Interrupt Enable Register (M_CAN_IE)
-	struct M_CAN_IE : M_CAN_Register<M_CAN_IE, SW_RW>
+	// Interrupt Enable Register (IE)
+	struct IE : Register<IE, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_IE, SW_RW> Super;
+		typedef Register<IE, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x54;
 		
-		struct STEE  : Field<M_CAN_IE, STEE , 0 , 0 , SW_RW> {}; // Stuff Error Interrupt Enable
-		struct FOEE  : Field<M_CAN_IE, FOEE , 1 , 1 , SW_RW> {}; // Format Error Interrupt Enable
-		struct ACKEE : Field<M_CAN_IE, ACKEE, 2 , 2 , SW_RW> {}; // Acknowledge Error Interrupt Enable
-		struct BEE   : Field<M_CAN_IE, BEE  , 3 , 3 , SW_RW> {}; // Bit Error Interrupt Enable
-		struct CRCEE : Field<M_CAN_IE, CRCEE, 4 , 4 , SW_RW> {}; // CRC Error Interrupt Enable
-		struct WDIE  : Field<M_CAN_IE, WDIE , 5 , 5 , SW_RW> {}; // Watchdog Interrupt Enable
-		struct BOE   : Field<M_CAN_IE, BOE  , 6 , 6 , SW_RW> {}; // Bus_Off Status Interrupt Enable
-		struct EWE   : Field<M_CAN_IE, EWE  , 7 , 7 , SW_RW> {}; // Warning Status Interrupt Enable
-		struct EPE   : Field<M_CAN_IE, EPE  , 8 , 8 , SW_RW> {}; // Error Passive Interrupt Enable
-		struct ELOE  : Field<M_CAN_IE, ELOE , 9 , 9 , SW_RW> {}; // Error Logging Overflow Interrupt Enable
-		struct BEUE  : Field<M_CAN_IE, BEUE , 10, 10, SW_RW> {}; // Bit Error Uncorrected Interrupt Enable
-		struct BECE  : Field<M_CAN_IE, BECE , 11, 11, SW_RW> {}; // Bit Error Corrected Interrupt Enable 
-		struct DRXE  : Field<M_CAN_IE, DRXE , 12, 12, SW_RW> {}; // Message stored to Dedicated Rx Buffer Interrupt Enable
-		struct TOOE  : Field<M_CAN_IE, TOOE , 13, 13, SW_RW> {}; // Timeout Occurred Interrupt Enable
-		struct MRAFE : Field<M_CAN_IE, MRAFE, 14, 14, SW_RW> {}; // Message RAM Access Failure Interrupt Enable
-		struct TSWE  : Field<M_CAN_IE, TSWE , 15, 15, SW_RW> {}; // Timestamp Wraparound Interrupt Enable
-		struct TEFLE : Field<M_CAN_IE, TEFLE, 16, 16, SW_RW> {}; // Tx Event FIFO Event Lost Interrupt Enable
-		struct TEFFE : Field<M_CAN_IE, TEFFE, 17, 17, SW_RW> {}; // Tx Event FIFO Full Interrupt Enable
-		struct TEFWE : Field<M_CAN_IE, TEFWE, 18, 18, SW_RW> {}; // Tx Event FIFO Watermark Reached Interrupt Enable
-		struct TEFNE : Field<M_CAN_IE, TEFNE, 19, 19, SW_RW> {}; // Tx Event FIDO New Entry Interrupt Enable
-		struct TFEE  : Field<M_CAN_IE, TFEE , 20, 20, SW_RW> {}; // Tx FIFO Empty Interrupt Enable
-		struct TCFE  : Field<M_CAN_IE, TCFE , 21, 21, SW_RW> {}; // Transmission Cancellation Finished Interrupt Enable
-		struct TCE   : Field<M_CAN_IE, TCE  , 22, 22, SW_RW> {}; // Transmission Completed Interrupt Enable
-		struct HPME  : Field<M_CAN_IE, HPME , 23, 23, SW_RW> {}; // High Priority Message Interrupt Enable
-		struct RF1LE : Field<M_CAN_IE, RF1LE, 24, 24, SW_RW> {}; // Rx FIFO 1 Message Lost Interrupt Enable
-		struct RF1FE : Field<M_CAN_IE, RF1FE, 25, 25, SW_RW> {}; // Rx FIFO 1 Full Interrupt Enable
-		struct RF1WE : Field<M_CAN_IE, RF1WE, 26, 26, SW_RW> {}; // Rx FIFO 1 Watermark Reached Interrupt Enable
-		struct RF1NE : Field<M_CAN_IE, RF1NE, 27, 27, SW_RW> {}; // Rx FIFO 1 New Message Interrupt Enable
-		struct RF0LE : Field<M_CAN_IE, RF0LE, 28, 28, SW_RW> {}; // Rx FIFO 0 Message Lost Interrupt Enable
-		struct RF0FE : Field<M_CAN_IE, RF0FE, 29, 29, SW_RW> {}; // Rx FIFO 0 Full Interrupt Enable
-		struct RF0WE : Field<M_CAN_IE, RF0WE, 30, 30, SW_RW> {}; // Rx FIFO 0 Watermark Reached Interrupt Enable
-		struct RF0NE : Field<M_CAN_IE, RF0NE, 31, 31, SW_RW> {}; // Rx FIFO 0 New Message Interrupt Enable
+		struct STEE  : Field<STEE , 31, 31, SW_RW> {}; // Stuff Error Interrupt Enable
+		struct FOEE  : Field<FOEE , 30, 30, SW_RW> {}; // Format Error Interrupt Enable
+		struct ACKEE : Field<ACKEE, 29, 29, SW_RW> {}; // Acknowledge Error Interrupt Enable
+		struct BEE   : Field<BEE  , 28, 28, SW_RW> {}; // Bit Error Interrupt Enable
+		struct CRCEE : Field<CRCEE, 27, 27, SW_RW> {}; // CRC Error Interrupt Enable
+		struct WDIE  : Field<WDIE , 26, 26, SW_RW> {}; // Watchdog Interrupt Enable
+		struct BOE   : Field<BOE  , 25, 25, SW_RW> {}; // Bus_Off Status Interrupt Enable
+		struct EWE   : Field<EWE  , 24, 24, SW_RW> {}; // Warning Status Interrupt Enable
+		struct EPE   : Field<EPE  , 23, 23, SW_RW> {}; // Error Passive Interrupt Enable
+		struct ELOE  : Field<ELOE , 22, 22, SW_RW> {}; // Error Logging Overflow Interrupt Enable
+		struct BEUE  : Field<BEUE , 21, 21, SW_RW> {}; // Bit Error Uncorrected Interrupt Enable
+		struct BECE  : Field<BECE , 20, 20, SW_RW> {}; // Bit Error Corrected Interrupt Enable 
+		struct DRXE  : Field<DRXE , 19, 19, SW_RW> {}; // Message stored to Dedicated Rx Buffer Interrupt Enable
+		struct TOOE  : Field<TOOE , 18, 18, SW_RW> {}; // Timeout Occurred Interrupt Enable
+		struct MRAFE : Field<MRAFE, 17, 17, SW_RW> {}; // Message RAM Access Failure Interrupt Enable
+		struct TSWE  : Field<TSWE , 16, 16, SW_RW> {}; // Timestamp Wraparound Interrupt Enable
+		struct TEFLE : Field<TEFLE, 15, 15, SW_RW> {}; // Tx Event FIFO Event Lost Interrupt Enable
+		struct TEFFE : Field<TEFFE, 14, 14, SW_RW> {}; // Tx Event FIFO Full Interrupt Enable
+		struct TEFWE : Field<TEFWE, 13, 13, SW_RW> {}; // Tx Event FIFO Watermark Reached Interrupt Enable
+		struct TEFNE : Field<TEFNE, 12, 12, SW_RW> {}; // Tx Event FIDO New Entry Interrupt Enable
+		struct TFEE  : Field<TFEE , 11, 11, SW_RW> {}; // Tx FIFO Empty Interrupt Enable
+		struct TCFE  : Field<TCFE , 10, 10, SW_RW> {}; // Transmission Cancellation Finished Interrupt Enable
+		struct TCE   : Field<TCE  , 9 , 9 , SW_RW> {}; // Transmission Completed Interrupt Enable
+		struct HPME  : Field<HPME , 8 , 8 , SW_RW> {}; // High Priority Message Interrupt Enable
+		struct RF1LE : Field<RF1LE, 7 , 7 , SW_RW> {}; // Rx FIFO 1 Message Lost Interrupt Enable
+		struct RF1FE : Field<RF1FE, 6 , 6 , SW_RW> {}; // Rx FIFO 1 Full Interrupt Enable
+		struct RF1WE : Field<RF1WE, 5 , 5 , SW_RW> {}; // Rx FIFO 1 Watermark Reached Interrupt Enable
+		struct RF1NE : Field<RF1NE, 4 , 4 , SW_RW> {}; // Rx FIFO 1 New Message Interrupt Enable
+		struct RF0LE : Field<RF0LE, 3 , 3 , SW_RW> {}; // Rx FIFO 0 Message Lost Interrupt Enable
+		struct RF0FE : Field<RF0FE, 2 , 2 , SW_RW> {}; // Rx FIFO 0 Full Interrupt Enable
+		struct RF0WE : Field<RF0WE, 1 , 1 , SW_RW> {}; // Rx FIFO 0 Watermark Reached Interrupt Enable
+		struct RF0NE : Field<RF0NE, 0 , 0 , SW_RW> {}; // Rx FIFO 0 New Message Interrupt Enable
 		
 		typedef FieldSet<STEE, FOEE, ACKEE, BEE, CRCEE, WDIE, BOE, EWE, EPE, ELOE, BEUE, BECE,
 		                 DRXE, TOOE, MRAFE, TSWE, TEFLE, TEFFE, TEFWE, TEFNE, TFEE, TCFE, TCE,
 		                 HPME, RF1LE, RF1FE, RF1WE, RF1NE, RF0LE, RF0FE, RF0WE, RF0NE> ALL;
 		
-		M_CAN_IE(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_IE(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		IE(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		IE(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_IE"); this->SetDescription("Interrupt Enable Register");
+			this->SetName("IE"); this->SetDescription("Interrupt Enable Register");
 			
 			STEE ::SetName("STEE");  STEE ::SetDescription("Stuff Error Interrupt Enable");
 			FOEE ::SetName("FOEE");  FOEE ::SetDescription("Format Error Interrupt Enable");
@@ -1773,56 +1771,56 @@ private:
 		using Super::operator =;
 	};
 	
-	// Interrupt Line Select Register (M_CAN_ILS)
-	struct M_CAN_ILS : M_CAN_Register<M_CAN_ILS, SW_RW>
+	// Interrupt Line Select Register (ILS)
+	struct ILS : Register<ILS, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_ILS, SW_RW> Super;
+		typedef Register<ILS, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x58;
 		
-		struct STEL  : Field<M_CAN_ILS, STEL , 0 , 0 , SW_RW> {}; // Stuff Error Interrupt Line
-		struct FOEL  : Field<M_CAN_ILS, FOEL , 1 , 1 , SW_RW> {}; // Format Error Interrupt Line
-		struct ACKEL : Field<M_CAN_ILS, ACKEL, 2 , 2 , SW_RW> {}; // Acknowledge Error Interrupt Line
-		struct BEL   : Field<M_CAN_ILS, BEL  , 3 , 3 , SW_RW> {}; // Bit Error Interrupt Line
-		struct CRCEL : Field<M_CAN_ILS, CRCEL, 4 , 4 , SW_RW> {}; // CRC Error Interrupt Line
-		struct WDIL  : Field<M_CAN_ILS, WDIL , 5 , 5 , SW_RW> {}; // Watchdog Interrupt Line
-		struct BOL   : Field<M_CAN_ILS, BOL  , 6 , 6 , SW_RW> {}; // Bus_Off Status Interrupt Line
-		struct EWL   : Field<M_CAN_ILS, EWL  , 7 , 7 , SW_RW> {}; // Warning Status Interrupt Line
-		struct EPL   : Field<M_CAN_ILS, EPL  , 8 , 8 , SW_RW> {}; // Error Passive Interrupt Line
-		struct ELOL  : Field<M_CAN_ILS, ELOL , 9 , 9 , SW_RW> {}; // Error Logging Overflow Interrupt Line
-		struct BEUL  : Field<M_CAN_ILS, BEUL , 10, 10, SW_RW> {}; // Bit Error Uncorrected Interrupt Line
-		struct BECL  : Field<M_CAN_ILS, BECL , 11, 11, SW_RW> {}; // Bit Error Corrected Interrupt Line 
-		struct DRXL  : Field<M_CAN_ILS, DRXL , 12, 12, SW_RW> {}; // Message stored to Dedicated Rx Buffer Interrupt Line
-		struct TOOL  : Field<M_CAN_ILS, TOOL , 13, 13, SW_RW> {}; // Timeout Occurred Interrupt Line
-		struct MRAFL : Field<M_CAN_ILS, MRAFL, 14, 14, SW_RW> {}; // Message RAM Access Failure Interrupt Line
-		struct TSWL  : Field<M_CAN_ILS, TSWL , 15, 15, SW_RW> {}; // Timestamp Wraparound Interrupt Line
-		struct TEFLL : Field<M_CAN_ILS, TEFLL, 16, 16, SW_RW> {}; // Tx Event FIFO Event Lost Interrupt Line
-		struct TEFFL : Field<M_CAN_ILS, TEFFL, 17, 17, SW_RW> {}; // Tx Event FIFO Full Interrupt Line
-		struct TEFWL : Field<M_CAN_ILS, TEFWL, 18, 18, SW_RW> {}; // Tx Event FIFO Watermark Reached Interrupt Line
-		struct TEFNL : Field<M_CAN_ILS, TEFNL, 19, 19, SW_RW> {}; // Tx Event FIDO New Entry Interrupt Line
-		struct TFEL  : Field<M_CAN_ILS, TFEL , 20, 20, SW_RW> {}; // Tx FIFO Empty Interrupt Line
-		struct TCFL  : Field<M_CAN_ILS, TCFL , 21, 21, SW_RW> {}; // Transmission Cancellation Finished Interrupt Line
-		struct TCL   : Field<M_CAN_ILS, TCL  , 22, 22, SW_RW> {}; // Transmission Completed Interrupt Line
-		struct HPML  : Field<M_CAN_ILS, HPML , 23, 23, SW_RW> {}; // High Priority Message Interrupt Line
-		struct RF1LL : Field<M_CAN_ILS, RF1LL, 24, 24, SW_RW> {}; // Rx FIFO 1 Message Lost Interrupt Line
-		struct RF1FL : Field<M_CAN_ILS, RF1FL, 25, 25, SW_RW> {}; // Rx FIFO 1 Full Interrupt Line
-		struct RF1WL : Field<M_CAN_ILS, RF1WL, 26, 26, SW_RW> {}; // Rx FIFO 1 Watermark Reached Interrupt Line
-		struct RF1NL : Field<M_CAN_ILS, RF1NL, 27, 27, SW_RW> {}; // Rx FIFO 1 New Message Interrupt Line
-		struct RF0LL : Field<M_CAN_ILS, RF0LL, 28, 28, SW_RW> {}; // Rx FIFO 0 Message Lost Interrupt Line
-		struct RF0FL : Field<M_CAN_ILS, RF0FL, 29, 29, SW_RW> {}; // Rx FIFO 0 Full Interrupt Line
-		struct RF0WL : Field<M_CAN_ILS, RF0WL, 30, 30, SW_RW> {}; // Rx FIFO 0 Watermark Reached Interrupt Line
-		struct RF0NL : Field<M_CAN_ILS, RF0NL, 31, 31, SW_RW> {}; // Rx FIFO 0 New Message Interrupt Line
+		struct STEL  : Field<STEL , 31, 31, SW_RW> {}; // Stuff Error Interrupt Line
+		struct FOEL  : Field<FOEL , 30, 30, SW_RW> {}; // Format Error Interrupt Line
+		struct ACKEL : Field<ACKEL, 29, 29, SW_RW> {}; // Acknowledge Error Interrupt Line
+		struct BEL   : Field<BEL  , 28, 28, SW_RW> {}; // Bit Error Interrupt Line
+		struct CRCEL : Field<CRCEL, 27, 27, SW_RW> {}; // CRC Error Interrupt Line
+		struct WDIL  : Field<WDIL , 26, 26, SW_RW> {}; // Watchdog Interrupt Line
+		struct BOL   : Field<BOL  , 25, 25, SW_RW> {}; // Bus_Off Status Interrupt Line
+		struct EWL   : Field<EWL  , 24, 24, SW_RW> {}; // Warning Status Interrupt Line
+		struct EPL   : Field<EPL  , 23, 23, SW_RW> {}; // Error Passive Interrupt Line
+		struct ELOL  : Field<ELOL , 22, 22, SW_RW> {}; // Error Logging Overflow Interrupt Line
+		struct BEUL  : Field<BEUL , 21, 21, SW_RW> {}; // Bit Error Uncorrected Interrupt Line
+		struct BECL  : Field<BECL , 20, 20, SW_RW> {}; // Bit Error Corrected Interrupt Line 
+		struct DRXL  : Field<DRXL , 19, 19, SW_RW> {}; // Message stored to Dedicated Rx Buffer Interrupt Line
+		struct TOOL  : Field<TOOL , 18, 18, SW_RW> {}; // Timeout Occurred Interrupt Line
+		struct MRAFL : Field<MRAFL, 17, 17, SW_RW> {}; // Message RAM Access Failure Interrupt Line
+		struct TSWL  : Field<TSWL , 16, 16, SW_RW> {}; // Timestamp Wraparound Interrupt Line
+		struct TEFLL : Field<TEFLL, 15, 15, SW_RW> {}; // Tx Event FIFO Event Lost Interrupt Line
+		struct TEFFL : Field<TEFFL, 14, 14, SW_RW> {}; // Tx Event FIFO Full Interrupt Line
+		struct TEFWL : Field<TEFWL, 13, 13, SW_RW> {}; // Tx Event FIFO Watermark Reached Interrupt Line
+		struct TEFNL : Field<TEFNL, 12, 12, SW_RW> {}; // Tx Event FIDO New Entry Interrupt Line
+		struct TFEL  : Field<TFEL , 11, 11, SW_RW> {}; // Tx FIFO Empty Interrupt Line
+		struct TCFL  : Field<TCFL , 10, 10, SW_RW> {}; // Transmission Cancellation Finished Interrupt Line
+		struct TCL   : Field<TCL  , 9 , 9 , SW_RW> {}; // Transmission Completed Interrupt Line
+		struct HPML  : Field<HPML , 8 , 8 , SW_RW> {}; // High Priority Message Interrupt Line
+		struct RF1LL : Field<RF1LL, 7 , 7 , SW_RW> {}; // Rx FIFO 1 Message Lost Interrupt Line
+		struct RF1FL : Field<RF1FL, 6 , 6 , SW_RW> {}; // Rx FIFO 1 Full Interrupt Line
+		struct RF1WL : Field<RF1WL, 5 , 5 , SW_RW> {}; // Rx FIFO 1 Watermark Reached Interrupt Line
+		struct RF1NL : Field<RF1NL, 4 , 4 , SW_RW> {}; // Rx FIFO 1 New Message Interrupt Line
+		struct RF0LL : Field<RF0LL, 3 , 3 , SW_RW> {}; // Rx FIFO 0 Message Lost Interrupt Line
+		struct RF0FL : Field<RF0FL, 2 , 2 , SW_RW> {}; // Rx FIFO 0 Full Interrupt Line
+		struct RF0WL : Field<RF0WL, 1 , 1 , SW_RW> {}; // Rx FIFO 0 Watermark Reached Interrupt Line
+		struct RF0NL : Field<RF0NL, 0 , 0 , SW_RW> {}; // Rx FIFO 0 New Message Interrupt Line
 		
 		typedef FieldSet<STEL, FOEL, ACKEL, BEL, CRCEL, WDIL, BOL, EWL, EPL, ELOL, BEUL, BECL,
 		                 DRXL, TOOL, MRAFL, TSWL, TEFLL, TEFFL, TEFWL, TEFNL, TFEL, TCFL, TCL,
 		                 HPML, RF1LL, RF1FL, RF1WL, RF1NL, RF0LL, RF0FL, RF0WL, RF0NL> ALL;
 		
-		M_CAN_ILS(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_ILS(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		ILS(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		ILS(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_ILS"); this->SetDescription("Interrupt Line Select Register");
+			this->SetName("ILS"); this->SetDescription("Interrupt Line Select Register");
 			
 			STEL ::SetName("STEL");  STEL ::SetDescription("Stuff Error Interrupt Line");
 			FOEL ::SetName("FOEL");  FOEL ::SetDescription("Format Error Interrupt Line");
@@ -1878,24 +1876,24 @@ private:
 		using Super::operator =;
 	};
 	
-	// Interrupt Line Enable Register (M_CAN_ILE)
-	struct M_CAN_ILE : M_CAN_Register<M_CAN_ILE, SW_RW>
+	// Interrupt Line Enable Register (ILE)
+	struct ILE : Register<ILE, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_ILE, SW_RW> Super;
+		typedef Register<ILE, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x5c;
 		
-		struct EINT1 : Field<M_CAN_ILE, EINT1, 30, 30, SW_RW> {}; // Enable Interrupt Line 1
-		struct EINT0 : Field<M_CAN_ILE, EINT0, 31, 31, SW_RW> {}; // Enable Interrupt Line 0
+		struct EINT1 : Field<EINT1, 1, 1, SW_RW> {}; // Enable Interrupt Line 1
+		struct EINT0 : Field<EINT0, 0, 0, SW_RW> {}; // Enable Interrupt Line 0
 		
 		typedef FieldSet<EINT1, EINT0> ALL;
 		
-		M_CAN_ILE(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_ILE(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		ILE(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		ILE(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_ILE"); this->SetDescription("Interrupt Line Enable Register");
+			this->SetName("ILE"); this->SetDescription("Interrupt Line Enable Register");
 			
 			EINT1::SetName("EINT1"); EINT1::SetDescription("Enable Interrupt Line 1");
 			EINT0::SetName("EINT0"); EINT0::SetDescription("Enable Interrupt Line 0");
@@ -1921,26 +1919,26 @@ private:
 		using Super::operator =;
 	};
 	
-	// Global Filter Configuration Register (M_CAN_GFC)
-	struct M_CAN_GFC : M_CAN_Register<M_CAN_GFC, SW_RW>
+	// Global Filter Configuration Register (GFC)
+	struct GFC : Register<GFC, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_GFC, SW_RW> Super;
+		typedef Register<GFC, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x80;
 		
-		struct ANFS : Field<M_CAN_GFC, ANFS, 26, 27, SW_RW> {}; // Accept Non-matching Frames Standard
-		struct ANFE : Field<M_CAN_GFC, ANFE, 28, 29, SW_RW> {}; // Accept Non-matching Frames Extended
-		struct RRFS : Field<M_CAN_GFC, RRFS, 30, 30, SW_RW> {}; // Reject Remote Frames Standard
-		struct RRFE : Field<M_CAN_GFC, RRFE, 31, 31, SW_RW> {}; // Reject Remote Frames Extended
+		struct ANFS : Field<ANFS, 5, 4, SW_RW> {}; // Accept Non-matching Frames Standard
+		struct ANFE : Field<ANFE, 3, 2, SW_RW> {}; // Accept Non-matching Frames Extended
+		struct RRFS : Field<RRFS, 1, 1, SW_RW> {}; // Reject Remote Frames Standard
+		struct RRFE : Field<RRFE, 0, 0, SW_RW> {}; // Reject Remote Frames Extended
 		
 		typedef FieldSet<ANFS, ANFE, RRFS, RRFE> ALL;
 		
-		M_CAN_GFC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_GFC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		GFC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		GFC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_GFC"); this->SetDescription("Global Filter Configuration Register");
+			this->SetName("GFC"); this->SetDescription("Global Filter Configuration Register");
 			
 			ANFS::SetName("ANFS"); ANFS::SetDescription("Accept Non-matching Frames Standard");
 			ANFE::SetName("ANFE"); ANFE::SetDescription("Accept Non-matching Frames Extended");
@@ -1961,24 +1959,24 @@ private:
 		using Super::operator =;
 	};
 	
-	// Standard ID Filter Configuration Register (M_CAN_SIDFC)
-	struct M_CAN_SIDFC : M_CAN_Register<M_CAN_SIDFC, SW_RW>
+	// Standard ID Filter Configuration Register (SIDFC)
+	struct SIDFC : Register<SIDFC, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_SIDFC, SW_RW> Super;
+		typedef Register<SIDFC, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x84;
 		
-		struct LSS   : Field<M_CAN_SIDFC, LSS  , 8 ,15, SW_RW> {}; // List Size Standard
-		struct FLSSA : Field<M_CAN_SIDFC, FLSSA, 16,29, SW_RW> {}; // Filter List Standard Start Address
+		struct LSS   : Field<LSS  , 23, 16, SW_RW> {}; // List Size Standard
+		struct FLSSA : Field<FLSSA, 15, 2 , SW_RW> {}; // Filter List Standard Start Address
 		
 		typedef FieldSet<LSS, FLSSA> ALL;
 		
-		M_CAN_SIDFC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_SIDFC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		SIDFC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		SIDFC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_SIDFC"); this->SetDescription("Standard ID Filter Configuration Register");
+			this->SetName("SIDFC"); this->SetDescription("Standard ID Filter Configuration Register");
 			
 			LSS  ::SetName("LSS");   LSS  ::SetDescription("List Size Standard");
 			FLSSA::SetName("FLSSA"); FLSSA::SetDescription("Filter List Standard Start Address");
@@ -1997,24 +1995,24 @@ private:
 		using Super::operator =;
 	};
 	
-	// Extended ID Filter Configuration Register (M_CAN_XIDFC)
-	struct M_CAN_XIDFC : M_CAN_Register<M_CAN_XIDFC, SW_RW>
+	// Extended ID Filter Configuration Register (XIDFC)
+	struct XIDFC : Register<XIDFC, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_XIDFC, SW_RW> Super;
+		typedef Register<XIDFC, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x88;
 		
-		struct LSE   : Field<M_CAN_XIDFC, LSE  , 9 ,15, SW_RW> {}; // List Size Extended
-		struct FLESA : Field<M_CAN_XIDFC, FLESA, 16,29, SW_RW> {}; // Filter List Extended Start Address
+		struct LSE   : Field<LSE  , 22, 16, SW_RW> {}; // List Size Extended
+		struct FLESA : Field<FLESA, 15, 2 , SW_RW> {}; // Filter List Extended Start Address
 		
 		typedef FieldSet<LSE, FLESA> ALL;
 		
-		M_CAN_XIDFC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_XIDFC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		XIDFC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		XIDFC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_XIDFC"); this->SetDescription("Extended ID Filter Configuration Register");
+			this->SetName("XIDFC"); this->SetDescription("Extended ID Filter Configuration Register");
 			
 			LSE  ::SetName("LSE");   LSE  ::SetDescription("List Size Extended");
 			FLESA::SetName("FLESA"); FLESA::SetDescription("Filter List Extended Start Address");
@@ -2033,23 +2031,23 @@ private:
 		using Super::operator =;
 	};
 	
-	// Extended ID and Mask Register (M_CAN_XIDAM)
-	struct M_CAN_XIDAM : M_CAN_Register<M_CAN_XIDAM, SW_RW>
+	// Extended ID and Mask Register (XIDAM)
+	struct XIDAM : Register<XIDAM, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_XIDAM, SW_RW> Super;
+		typedef Register<XIDAM, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x90;
 		
-		struct EIDM : Field<M_CAN_XIDAM, EIDM, 3, 31, SW_RW> {}; // Extended ID Mask
+		struct EIDM : Field<EIDM, 28, 0, SW_RW> {}; // Extended ID Mask
 		
 		typedef FieldSet<EIDM> ALL;
 		
-		M_CAN_XIDAM(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_XIDAM(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		XIDAM(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		XIDAM(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_XIDAM"); this->SetDescription("Extended ID and Mask Register");
+			this->SetName("XIDAM"); this->SetDescription("Extended ID and Mask Register");
 			
 			EIDM::SetName("EIDM"); EIDM::SetDescription("Extended ID Mask");
 		}
@@ -2067,26 +2065,26 @@ private:
 		using Super::operator =;
 	};
 	
-	// High Priority Message Status Register (M_CAN_HPMS)
-	struct M_CAN_HPMS : M_CAN_Register<M_CAN_HPMS, SW_R>
+	// High Priority Message Status Register (HPMS)
+	struct HPMS : Register<HPMS, SW_R>
 	{
-		typedef M_CAN_Register<M_CAN_HPMS, SW_R> Super;
+		typedef Register<HPMS, SW_R> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x94;
 		
-		struct FLST : Field<M_CAN_HPMS, FLST, 16, 16, SW_R> {}; // Filter List
-		struct FIDX : Field<M_CAN_HPMS, FIDX, 17, 23, SW_R> {}; // Filter Index
-		struct MSI  : Field<M_CAN_HPMS, MSI , 24, 25, SW_R> {}; // Message Storage Indicator
-		struct BIDX : Field<M_CAN_HPMS, BIDX, 26, 31, SW_R> {}; // Buffer Index
+		struct FLST : Field<FLST, 15, 15, SW_R> {}; // Filter List
+		struct FIDX : Field<FIDX, 14, 8 , SW_R> {}; // Filter Index
+		struct MSI  : Field<MSI , 7 , 6 , SW_R> {}; // Message Storage Indicator
+		struct BIDX : Field<BIDX, 5 , 0 , SW_R> {}; // Buffer Index
 		
 		typedef FieldSet<FLST, FIDX, MSI, BIDX> ALL;
 		
-		M_CAN_HPMS(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_HPMS(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		HPMS(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		HPMS(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_HPMS"); this->SetDescription("High Priority Message Status Register");
+			this->SetName("HPMS"); this->SetDescription("High Priority Message Status Register");
 			
 			FLST::SetName("FLST"); FLST::SetDescription("Filter List");
 			FIDX::SetName("FIDX"); FIDX::SetDescription("Filter Index");
@@ -2102,25 +2100,25 @@ private:
 		using Super::operator =;
 	};
 	
-	// New Data 1 Register (M_CAN_NDAT1)
-	struct M_CAN_NDAT1 : M_CAN_Register<M_CAN_NDAT1, SW_RW>
+	// New Data 1 Register (NDAT1)
+	struct NDAT1 : Register<NDAT1, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_NDAT1, SW_RW> Super;
+		typedef Register<NDAT1, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x98;
 		
-		struct ND1 : Field<M_CAN_NDAT1, ND1, 0, 31, SW_R_W1C> {}; // New Data[0:31]
+		struct ND1 : Field<ND1, 31, 0, SW_R_W1C> {}; // New Data[0:31]
 		
 		typedef FieldSet<ND1> ALL;
 		
-		M_CAN_NDAT1(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_NDAT1(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		NDAT1(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		NDAT1(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_NDAT1"); this->SetDescription("New Data 1 Register");
+			this->SetName("NDAT1"); this->SetDescription("New Data 1 Register");
 			
-			ND1::SetName("ND1"); ND1::SetDescription("New Data[0:31]");
+			ND1::SetName("ND1"); ND1::SetDescription("New Data[31:0]");
 		}
 		
 		void Reset()
@@ -2130,31 +2128,31 @@ private:
 		
 		void NewData(unsigned int i)
 		{
-			this->Set(Super::SIZE - 1 - i, 1);
+			this->Set(i, 1);
 		}
 
 		using Super::operator =;
 	};
 
-	// New Data 2 Register (M_CAN_NDAT2)
-	struct M_CAN_NDAT2 : M_CAN_Register<M_CAN_NDAT2, SW_RW>
+	// New Data 2 Register (NDAT2)
+	struct NDAT2 : Register<NDAT2, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_NDAT2, SW_RW> Super;
+		typedef Register<NDAT2, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x9c;
 		
-		struct ND2 : Field<M_CAN_NDAT2, ND2, 0, 31, SW_R_W1C> {}; // New Data[32:63]
+		struct ND2 : Field<ND2, 31, 0, SW_R_W1C> {}; // New Data[32:63]
 		
 		typedef FieldSet<ND2> ALL;
 		
-		M_CAN_NDAT2(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_NDAT2(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		NDAT2(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		NDAT2(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_NDAT2"); this->SetDescription("New Data 2 Register");
+			this->SetName("NDAT2"); this->SetDescription("New Data 2 Register");
 			
-			ND2::SetName("ND2"); ND2::SetDescription("New Data[32:63]");
+			ND2::SetName("ND2"); ND2::SetDescription("New Data[63:32]");
 		}
 		
 		void Reset()
@@ -2164,32 +2162,32 @@ private:
 		
 		void NewData(unsigned int i)
 		{
-			this->Set(Super::SIZE - 1 - i, 1);
+			this->Set(i, 1);
 		}
 
 		using Super::operator =;
 	};
 
-	// Rx FIFO 0 Configuration (M_CAN_RXF0C)
-	struct M_CAN_RXF0C : M_CAN_Register<M_CAN_RXF0C, SW_RW>
+	// Rx FIFO 0 Configuration (RXF0C)
+	struct RXF0C : Register<RXF0C, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_RXF0C, SW_RW> Super;
+		typedef Register<RXF0C, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xa0;
 		
-		struct F0OM : Field<M_CAN_RXF0C, F0OM, 0 , 0 , SW_RW > {}; // FIFO 0 Operation Mode
-		struct F0WM : Field<M_CAN_RXF0C, F0WM, 1 , 7 , SW_RW> {}; // Rx FIFO 0 Watermark
-		struct F0S  : Field<M_CAN_RXF0C, F0S , 10, 15, SW_RW> {}; // Rx FIFO 0 Size
-		struct F0SA : Field<M_CAN_RXF0C, F0SA, 16, 29, SW_RW> {}; // Rx FIFO 0 Start Address
+		struct F0OM : Field<F0OM, 31, 31, SW_RW > {}; // FIFO 0 Operation Mode
+		struct F0WM : Field<F0WM, 30, 24, SW_RW> {}; // Rx FIFO 0 Watermark
+		struct F0S  : Field<F0S , 22, 16, SW_RW> {}; // Rx FIFO 0 Size
+		struct F0SA : Field<F0SA, 15, 2 , SW_RW> {}; // Rx FIFO 0 Start Address
 		
 		typedef FieldSet<F0OM, F0WM, F0S, F0SA> ALL;
 		
-		M_CAN_RXF0C(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_RXF0C(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		RXF0C(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		RXF0C(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_RXF0C"); this->SetDescription("Rx FIFO 0 Configuration");
+			this->SetName("RXF0C"); this->SetDescription("Rx FIFO 0 Configuration");
 			
 			F0OM::SetName("F0OM"); F0OM::SetDescription("FIFO 0 Operation Mode");
 			F0WM::SetName("F0WM"); F0WM::SetDescription("Rx FIFO 0 Watermark");
@@ -2210,27 +2208,27 @@ private:
 		using Super::operator =;
 	};
 
-	// Rx FIFO 0 Status Register (M_CAN_RXF0S)
-	struct M_CAN_RXF0S : M_CAN_Register<M_CAN_RXF0S, SW_R>
+	// Rx FIFO 0 Status Register (RXF0S)
+	struct RXF0S : Register<RXF0S, SW_R>
 	{
-		typedef M_CAN_Register<M_CAN_RXF0S, SW_R> Super;
+		typedef Register<RXF0S, SW_R> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xa4;
 		
-		struct RF0L : Field<M_CAN_RXF0S, RF0L, 6 , 6 , SW_R> {}; // Rx FIFO 0 Message Lost
-		struct F0F  : Field<M_CAN_RXF0S, F0F , 7 , 7 , SW_R> {}; // Rx FIFO 0 Full
-		struct F0PI : Field<M_CAN_RXF0S, F0PI, 10, 15, SW_R> {}; // Rx FIFO 0 Put Index
-		struct F0GI : Field<M_CAN_RXF0S, F0GI, 18, 23, SW_R> {}; // Rx FIFO 0 Get Index
-		struct F0FL : Field<M_CAN_RXF0S, F0FL, 25, 31, SW_R> {}; // Rx FIFO 0 Fill Level
+		struct RF0L : Field<RF0L, 25, 25, SW_R> {}; // Rx FIFO 0 Message Lost
+		struct F0F  : Field<F0F , 24, 24, SW_R> {}; // Rx FIFO 0 Full
+		struct F0PI : Field<F0PI, 21, 16, SW_R> {}; // Rx FIFO 0 Put Index
+		struct F0GI : Field<F0GI, 13, 8 , SW_R> {}; // Rx FIFO 0 Get Index
+		struct F0FL : Field<F0FL, 6 , 0 , SW_R> {}; // Rx FIFO 0 Fill Level
 		
 		typedef FieldSet<RF0L, F0F, F0PI, F0GI, F0FL> ALL;
 		
-		M_CAN_RXF0S(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_RXF0S(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		RXF0S(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		RXF0S(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_RXF0S"); this->SetDescription("Rx FIFO 0 Status Register");
+			this->SetName("RXF0S"); this->SetDescription("Rx FIFO 0 Status Register");
 			
 			RF0L::SetName("RF0L"); RF0L::SetDescription("Rx FIFO 0 Message Lost");
 			F0F ::SetName("F0F");  F0F ::SetDescription("Rx FIFO 0 Full");
@@ -2247,23 +2245,23 @@ private:
 		using Super::operator =;
 	};
 
-	// Rx FIFO 0 Acknowledge Register (M_CAN_RXF0A)
-	struct M_CAN_RXF0A : M_CAN_Register<M_CAN_RXF0A, SW_RW>
+	// Rx FIFO 0 Acknowledge Register (RXF0A)
+	struct RXF0A : Register<RXF0A, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_RXF0A, SW_RW> Super;
+		typedef Register<RXF0A, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xa8;
 		
-		struct F0AI : Field<M_CAN_RXF0A, F0AI, 26, 31, SW_RW> {}; // Rx FIFO 0 Acknowledge Index
+		struct F0AI : Field<F0AI, 5, 0, SW_RW> {}; // Rx FIFO 0 Acknowledge Index
 		
 		typedef FieldSet<F0AI> ALL;
 		
-		M_CAN_RXF0A(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_RXF0A(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		RXF0A(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		RXF0A(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_RXF0A"); this->SetDescription("Rx FIFO 0 Acknowledge Register");
+			this->SetName("RXF0A"); this->SetDescription("Rx FIFO 0 Acknowledge Register");
 			
 			F0AI::SetName("F0AI"); F0AI::SetDescription("Rx FIFO 0 Acknowledge Index");
 		}
@@ -2288,23 +2286,23 @@ private:
 		using Super::operator =;
 	};
 
-	// Rx Buffer Configuration Register (M_CAN_RXBC)
-	struct M_CAN_RXBC : M_CAN_Register<M_CAN_RXBC, SW_RW>
+	// Rx Buffer Configuration Register (RXBC)
+	struct RXBC : Register<RXBC, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_RXBC, SW_RW> Super;
+		typedef Register<RXBC, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xac;
 		
-		struct RBSA : Field<M_CAN_RXBC, RBSA, 16, 29, SW_RW> {}; // Rx Buffer Start Address
+		struct RBSA : Field<RBSA, 15, 2, SW_RW> {}; // Rx Buffer Start Address
 		
 		typedef FieldSet<RBSA> ALL;
 		
-		M_CAN_RXBC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_RXBC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		RXBC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		RXBC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_RXBC"); this->SetDescription("Rx Buffer Configuration Register");
+			this->SetName("RXBC"); this->SetDescription("Rx Buffer Configuration Register");
 			
 			RBSA::SetName("RBSA"); RBSA::SetDescription("Rx Buffer Start Address");
 		}
@@ -2322,26 +2320,26 @@ private:
 		using Super::operator =;
 	};
 
-	// Rx FIFO 1 Configuration Register (M_CAN_RXF1C)
-	struct M_CAN_RXF1C : M_CAN_Register<M_CAN_RXF1C, SW_RW>
+	// Rx FIFO 1 Configuration Register (RXF1C)
+	struct RXF1C : Register<RXF1C, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_RXF1C, SW_RW> Super;
+		typedef Register<RXF1C, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xb0;
 		
-		struct F1OM : Field<M_CAN_RXF1C, F1OM, 0 , 0 , SW_RW> {}; // FIFO 1 Operation Mode
-		struct F1WM : Field<M_CAN_RXF1C, F1WM, 1 , 7 , SW_RW> {}; // Rx FIFO 1 Watermark
-		struct F1S  : Field<M_CAN_RXF1C, F1S , 9 , 15, SW_RW> {}; // Rx FIFO 1 Size
-		struct F1SA : Field<M_CAN_RXF1C, F1SA, 16, 29, SW_RW> {}; // Rx FIFO 1 Start Address
+		struct F1OM : Field<F1OM, 31, 31, SW_RW> {}; // FIFO 1 Operation Mode
+		struct F1WM : Field<F1WM, 30, 24, SW_RW> {}; // Rx FIFO 1 Watermark
+		struct F1S  : Field<F1S , 22, 16, SW_RW> {}; // Rx FIFO 1 Size
+		struct F1SA : Field<F1SA, 15, 2 , SW_RW> {}; // Rx FIFO 1 Start Address
 		
 		typedef FieldSet<F1OM, F1WM, F1S, F1SA> ALL;
 		
-		M_CAN_RXF1C(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_RXF1C(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		RXF1C(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		RXF1C(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_RXF1C"); this->SetDescription("Rx FIFO 1 Configuration Register");
+			this->SetName("RXF1C"); this->SetDescription("Rx FIFO 1 Configuration Register");
 			
 			F1OM::SetName("F1OM"); F1OM::SetDescription("FIFO 1 Operation Mode");
 			F1WM::SetName("F1WM"); F1WM::SetDescription("Rx FIFO 1 Watermark");
@@ -2362,28 +2360,28 @@ private:
 		using Super::operator =;
 	};
 
-	// Rx FIFO 1 Status Register (M_CAN_RXF1S)
-	struct M_CAN_RXF1S : M_CAN_Register<M_CAN_RXF1S, SW_RW>
+	// Rx FIFO 1 Status Register (RXF1S)
+	struct RXF1S : Register<RXF1S, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_RXF1S, SW_RW> Super;
+		typedef Register<RXF1S, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xb4;
 		
-		struct DMS  : Field<M_CAN_RXF1S, DMS , 0 , 1 , SW_RW> {}; // Debug Message Status
-		struct RF1L : Field<M_CAN_RXF1S, RF1L, 6 , 6 , SW_RW> {}; // Rx FIFO 1 Message Lost
-		struct F1F  : Field<M_CAN_RXF1S, F1F , 7 , 7 , SW_RW> {}; // Rx FIFO 1 Full
-		struct F1PI : Field<M_CAN_RXF1S, F1PI, 10, 15, SW_RW> {}; // Rx FIFO 1 Put Index
-		struct F1GI : Field<M_CAN_RXF1S, F1GI, 18, 23, SW_RW> {}; // Rx FIFO 1 Get Index
-		struct F1FL : Field<M_CAN_RXF1S, F1FL, 25, 31, SW_RW> {}; // Rx FIFO 1 Fill Level
+		struct DMS  : Field<DMS , 31, 30, SW_RW> {}; // Debug Message Status
+		struct RF1L : Field<RF1L, 25, 25, SW_RW> {}; // Rx FIFO 1 Message Lost
+		struct F1F  : Field<F1F , 24, 24, SW_RW> {}; // Rx FIFO 1 Full
+		struct F1PI : Field<F1PI, 21, 16, SW_RW> {}; // Rx FIFO 1 Put Index
+		struct F1GI : Field<F1GI, 13, 8 , SW_RW> {}; // Rx FIFO 1 Get Index
+		struct F1FL : Field<F1FL, 6 , 0 , SW_RW> {}; // Rx FIFO 1 Fill Level
 		
 		typedef FieldSet<DMS, RF1L, F1F, F1PI, F1GI, F1FL> ALL;
 		
-		M_CAN_RXF1S(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_RXF1S(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		RXF1S(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		RXF1S(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_RXF1S"); this->SetDescription("Rx FIFO 1 Status Register");
+			this->SetName("RXF1S"); this->SetDescription("Rx FIFO 1 Status Register");
 			
 			DMS ::SetName("DMS");  DMS ::SetDescription("Debug Message Status");
 			RF1L::SetName("RF1L"); RF1L::SetDescription("Rx FIFO 1 Message Lost");
@@ -2401,23 +2399,23 @@ private:
 		using Super::operator =;
 	};
 
-	// Rx FIFO 1 Acknowledge Register (M_CAN_RXF1A)
-	struct M_CAN_RXF1A : M_CAN_Register<M_CAN_RXF1A, SW_RW>
+	// Rx FIFO 1 Acknowledge Register (RXF1A)
+	struct RXF1A : Register<RXF1A, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_RXF1A, SW_RW> Super;
+		typedef Register<RXF1A, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xb8;
 		
-		struct F1AI : Field<M_CAN_RXF1A, F1AI, 26, 31, SW_RW> {}; // Rx FIFO 1 Acknowledge Index
+		struct F1AI : Field<F1AI, 5, 0, SW_RW> {}; // Rx FIFO 1 Acknowledge Index
 		
 		typedef FieldSet<F1AI> ALL;
 		
-		M_CAN_RXF1A(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_RXF1A(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		RXF1A(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		RXF1A(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_RXF1A"); this->SetDescription("Rx FIFO 1 Acknowledge Register");
+			this->SetName("RXF1A"); this->SetDescription("Rx FIFO 1 Acknowledge Register");
 			
 			F1AI::SetName("F1AI"); F1AI::SetDescription("Rx FIFO 1 Acknowledge Index");
 		}
@@ -2442,25 +2440,25 @@ private:
 		using Super::operator =;
 	};
 
-	// Rx Buffer / FIFO Element Size Configuration Register (M_CAN_RXESC)
-	struct M_CAN_RXESC : M_CAN_Register<M_CAN_RXESC, SW_RW>
+	// Rx Buffer / FIFO Element Size Configuration Register (RXESC)
+	struct RXESC : Register<RXESC, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_RXESC, SW_RW> Super;
+		typedef Register<RXESC, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xbc;
 		
-		struct RBDS : Field<M_CAN_RXESC, RBDS, 21, 23, SW_RW> {}; // Rx Buffer Data Field Size
-		struct F1DS : Field<M_CAN_RXESC, F1DS, 25, 27, SW_RW> {}; // Rx FIFO 1 Data Field Size
-		struct F0DS : Field<M_CAN_RXESC, F0DS, 29, 31, SW_RW> {}; // Rx FIFO 0 Data Field Size
+		struct RBDS : Field<RBDS, 10, 8, SW_RW> {}; // Rx Buffer Data Field Size
+		struct F1DS : Field<F1DS, 6 , 4, SW_RW> {}; // Rx FIFO 1 Data Field Size
+		struct F0DS : Field<F0DS, 2 , 0, SW_RW> {}; // Rx FIFO 0 Data Field Size
 		
 		typedef FieldSet<RBDS, F1DS, F0DS> ALL;
 		
-		M_CAN_RXESC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_RXESC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		RXESC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		RXESC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_RXESC"); this->SetDescription("Rx Buffer / FIFO Element Size Configuration Register");
+			this->SetName("RXESC"); this->SetDescription("Rx Buffer / FIFO Element Size Configuration Register");
 			
 			RBDS::SetName("RBDS"); RBDS::SetDescription("Rx Buffer Data Field Size");
 			F1DS::SetName("F1DS"); F1DS::SetDescription("Rx FIFO 1 Data Field Size");
@@ -2480,26 +2478,26 @@ private:
 		using Super::operator =;
 	};
 
-	// Tx Buffer Configuration Register (M_CAN_TXBC)
-	struct M_CAN_TXBC : M_CAN_Register<M_CAN_TXBC, SW_RW>
+	// Tx Buffer Configuration Register (TXBC)
+	struct TXBC : Register<TXBC, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_TXBC, SW_RW> Super;
+		typedef Register<TXBC, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xc0;
 		
-		struct TQFM : Field<M_CAN_TXBC, TQFM, 1 , 1 , SW_RW> {}; // Tx FIFO/Queue Mode
-		struct TQFS : Field<M_CAN_TXBC, TQFS, 2 , 7 , SW_RW> {}; // Tx FIFO/Queue Size
-		struct NDTB : Field<M_CAN_TXBC, NDTB, 10, 15, SW_RW> {}; // Number of Dedicated Transmit Buffers
-		struct TBSA : Field<M_CAN_TXBC, TBSA, 16, 29, SW_RW> {}; // Tx Buffers Start Address
+		struct TQFM : Field<TQFM, 30, 30, SW_RW> {}; // Tx FIFO/Queue Mode
+		struct TQFS : Field<TQFS, 29, 24, SW_RW> {}; // Tx FIFO/Queue Size
+		struct NDTB : Field<NDTB, 21, 16, SW_RW> {}; // Number of Dedicated Transmit Buffers
+		struct TBSA : Field<TBSA, 15, 2 , SW_RW> {}; // Tx Buffers Start Address
 		
 		typedef FieldSet<TQFM, TQFS, NDTB, TBSA> ALL;
 		
-		M_CAN_TXBC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TXBC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TXBC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TXBC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TXBC"); this->SetDescription("Tx Buffer Configuration Register");
+			this->SetName("TXBC"); this->SetDescription("Tx Buffer Configuration Register");
 			
 			TQFM::SetName("TQFM"); TQFM::SetDescription("Tx FIFO/Queue Mode");
 			TQFS::SetName("TQFS"); TQFS::SetDescription("Tx FIFO/Queue Size");
@@ -2520,26 +2518,26 @@ private:
 		using Super::operator =;
 	};
 
-	// Tx FIFO/Queue Status Register (M_CAN_TXFQS)
-	struct M_CAN_TXFQS : M_CAN_Register<M_CAN_TXFQS, SW_RW>
+	// Tx FIFO/Queue Status Register (TXFQS)
+	struct TXFQS : Register<TXFQS, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_TXFQS, SW_RW> Super;
+		typedef Register<TXFQS, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xc4;
 		
-		struct TFQF  : Field<M_CAN_TXFQS, TFQF , 10, 10, SW_RW> {}; // Tx FIFO/Queue Full
-		struct TFQPI : Field<M_CAN_TXFQS, TFQPI, 11, 15, SW_RW> {}; // Tx FIFO/Queue Put Index
-		struct TFGI  : Field<M_CAN_TXFQS, TFGI , 19, 23, SW_RW> {}; // Tx FIFO Get Index
-		struct TFFL  : Field<M_CAN_TXFQS, TFFL , 26, 31, SW_RW> {}; // Tx FIFO Free Level
+		struct TFQF  : Field<TFQF , 21, 21, SW_RW> {}; // Tx FIFO/Queue Full
+		struct TFQPI : Field<TFQPI, 20, 16, SW_RW> {}; // Tx FIFO/Queue Put Index
+		struct TFGI  : Field<TFGI , 12, 8 , SW_RW> {}; // Tx FIFO Get Index
+		struct TFFL  : Field<TFFL , 5 , 0 , SW_RW> {}; // Tx FIFO Free Level
 		
 		typedef FieldSet<TFQF, TFQPI, TFGI, TFFL> ALL;
 		
-		M_CAN_TXFQS(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TXFQS(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TXFQS(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TXFQS(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TXFQS"); this->SetDescription("Tx FIFO/Queue Status Register");
+			this->SetName("TXFQS"); this->SetDescription("Tx FIFO/Queue Status Register");
 			
 			TFQF ::SetName("TFQF");  TFQF ::SetDescription("Tx FIFO/Queue Full");
 			TFQPI::SetName("TFQPI"); TFQPI::SetDescription("Tx FIFO/Queue Put Index");
@@ -2555,23 +2553,23 @@ private:
 		using Super::operator =;
 	};
 
-	// Tx Buffer Element Size Configuration (M_CAN_TXESC)
-	struct M_CAN_TXESC : M_CAN_Register<M_CAN_TXESC, SW_RW>
+	// Tx Buffer Element Size Configuration (TXESC)
+	struct TXESC : Register<TXESC, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_TXESC, SW_RW> Super;
+		typedef Register<TXESC, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xc8;
 		
-		struct TBDS : Field<M_CAN_TXESC, TBDS, 29, 31, SW_RW> {}; // Tx Buffer Data Field Size
+		struct TBDS : Field<TBDS, 2, 0, SW_RW> {}; // Tx Buffer Data Field Size
 		
 		typedef FieldSet<TBDS> ALL;
 		
-		M_CAN_TXESC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TXESC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TXESC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TXESC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TXESC"); this->SetDescription("Tx Buffer Element Size Configuration");
+			this->SetName("TXESC"); this->SetDescription("Tx Buffer Element Size Configuration");
 			
 			TBDS::SetName("TBDS"); TBDS::SetDescription("Tx Buffer Data Field Size");
 		}
@@ -2589,23 +2587,23 @@ private:
 		using Super::operator =;
 	};
 
-	// Tx Buffer Request Pending Register (M_CAN_TXBRP)
-	struct M_CAN_TXBRP : M_CAN_Register<M_CAN_TXBRP, SW_R>
+	// Tx Buffer Request Pending Register (TXBRP)
+	struct TXBRP : Register<TXBRP, SW_R>
 	{
-		typedef M_CAN_Register<M_CAN_TXBRP, SW_R> Super;
+		typedef Register<TXBRP, SW_R> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xcc;
 		
-		struct TRP : Field<M_CAN_TXBRP, TRP, 0, 31, SW_R> {}; // Transmission Request Pending
+		struct TRP : Field<TRP, 31, 0, SW_R> {}; // Transmission Request Pending
 		
 		typedef FieldSet<TRP> ALL;
 		
-		M_CAN_TXBRP(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TXBRP(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TXBRP(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TXBRP(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TXBRP"); this->SetDescription("Tx Buffer Request Pending Register");
+			this->SetName("TXBRP"); this->SetDescription("Tx Buffer Request Pending Register");
 			
 			TRP::SetName("TRP"); TRP::SetDescription("Transmission Request Pending");
 		}
@@ -2617,29 +2615,29 @@ private:
 		
 		void ClearRequest(unsigned int i)
 		{
-			this->template Set(Super::SIZE - 1 - i, 0);
+			this->template Set(i, 0);
 		}
 		
 		using Super::operator =;
 	};
 
-	// Tx Buffer Add Request register (M_CAN_TXBAR)
-	struct M_CAN_TXBAR : M_CAN_Register<M_CAN_TXBAR, SW_RW>
+	// Tx Buffer Add Request register (TXBAR)
+	struct TXBAR : Register<TXBAR, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_TXBAR, SW_RW> Super;
+		typedef Register<TXBAR, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xd0;
 		
-		struct AR : Field<M_CAN_TXBAR, AR, 0, 31, SW_RW> {}; // Add Request
+		struct AR : Field<AR, 31, 0, SW_RW> {}; // Add Request
 		
 		typedef FieldSet<AR> ALL;
 		
-		M_CAN_TXBAR(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TXBAR(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TXBAR(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TXBAR(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TXBAR"); this->SetDescription("Tx Buffer Add Request register");
+			this->SetName("TXBAR"); this->SetDescription("Tx Buffer Add Request register");
 		}
 		
 		void Reset()
@@ -2649,7 +2647,7 @@ private:
 		
 		virtual ReadWriteStatus Write(sc_core::sc_time& time_stamp, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			if(!this->m_can->m_can_cccr.template Get<typename M_CAN_CCCR::CCE>())
+			if(!this->m_can->cccr.template Get<typename CCCR::CCE>())
 			{
 				// TXBAR is only writable while CCR[CCE]=0
 				// writing '0' has no impact.
@@ -2658,7 +2656,7 @@ private:
 				// transmission request (corresponding TXBRP bit already set),
 				// this add request is ignored.
 				uint32_t old_value = this->Get();
-				uint32_t new_value = old_value | (value & bit_enable & this->m_can->GetTxBuffersMask() & ~this->m_can->m_can_txbrp);
+				uint32_t new_value = old_value | (value & bit_enable & this->m_can->GetTxBuffersMask() & ~this->m_can->txbrp);
 				
 				ReadWriteStatus rws = Super::Write(time_stamp, new_value, bit_enable);
 				
@@ -2675,29 +2673,29 @@ private:
 		
 		void ClearAddRequest(unsigned int i)
 		{
-			this->Set(Super::SIZE - 1 - i, 0);
+			this->Set(i, 0);
 		}
 
 		using Super::operator =;
 	};
 
-	// Tx Buffer Cancellation Request register (M_CAN_TXBCR)
-	struct M_CAN_TXBCR : M_CAN_Register<M_CAN_TXBCR, SW_RW>
+	// Tx Buffer Cancellation Request register (TXBCR)
+	struct TXBCR : Register<TXBCR, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_TXBCR, SW_RW> Super;
+		typedef Register<TXBCR, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xd4;
 		
-		struct CR : Field<M_CAN_TXBCR, CR, 0, 31, SW_RW> {}; // Cancellation Request
+		struct CR : Field<CR, 31, 0, SW_RW> {}; // Cancellation Request
 		
 		typedef FieldSet<CR> ALL;
 		
-		M_CAN_TXBCR(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TXBCR(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TXBCR(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TXBCR(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TXBCR"); this->SetDescription("Tx Buffer Cancellation Request register");
+			this->SetName("TXBCR"); this->SetDescription("Tx Buffer Cancellation Request register");
 			
 			CR::SetName("CR"); CR::SetDescription("Tx Buffer Cancellation Request register");
 		}
@@ -2709,17 +2707,17 @@ private:
 		
 		bool IsCancelled(unsigned int tx_buffer_element_index) const
 		{
-			return Super::Get(Super::SIZE - 1 - tx_buffer_element_index);
+			return Super::Get(tx_buffer_element_index);
 		}
 		
 		void ClearRequest(unsigned int tx_buffer_element_index)
 		{
-			Super::Set(Super::SIZE - 1 - tx_buffer_element_index, 0);
+			Super::Set(tx_buffer_element_index, 0);
 		}
 		
 		virtual ReadWriteStatus Write(sc_core::sc_time& time_stamp, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			if(!this->m_can->m_can_cccr.template Get<typename M_CAN_CCCR::CCE>())
+			if(!this->m_can->cccr.template Get<typename CCCR::CCE>())
 			{
 				// TXBCR is only writable while CCR[CCE]=0
 				// writing '0' has no impact.
@@ -2743,23 +2741,23 @@ private:
 		using Super::operator =;
 	};
 
-	// Tx Buffer Transmission Occurred register (M_CAN_TXBTO)
-	struct M_CAN_TXBTO : M_CAN_Register<M_CAN_TXBTO, SW_R>
+	// Tx Buffer Transmission Occurred register (TXBTO)
+	struct TXBTO : Register<TXBTO, SW_R>
 	{
-		typedef M_CAN_Register<M_CAN_TXBTO, SW_R> Super;
+		typedef Register<TXBTO, SW_R> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xd8;
 		
-		struct TO : Field<M_CAN_TXBTO, TO, 0, 31, SW_R> {}; // Transmission Occurred
+		struct TO : Field<TO, 31, 0, SW_R> {}; // Transmission Occurred
 		
 		typedef FieldSet<TO> ALL;
 		
-		M_CAN_TXBTO(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TXBTO(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TXBTO(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TXBTO(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TXBTO"); this->SetDescription("Tx Buffer Transmission Occurred register");
+			this->SetName("TXBTO"); this->SetDescription("Tx Buffer Transmission Occurred register");
 			
 			TO::SetName("TO"); TO::SetDescription("Transmission Occurred");
 		}
@@ -2771,29 +2769,29 @@ private:
 		
 		void TransmissionOccurred(unsigned int tx_buffer_element_index)
 		{
-			Super::Set(Super::SIZE - 1 - tx_buffer_element_index, 1);
+			Super::Set(tx_buffer_element_index, 1);
 		}
 		
 		using Super::operator =;
 	};
 
-	// Tx Buffer Cancellation Finished register (M_CAN_TXBCF)
-	struct M_CAN_TXBCF : M_CAN_Register<M_CAN_TXBCF, SW_RW>
+	// Tx Buffer Cancellation Finished register (TXBCF)
+	struct TXBCF : Register<TXBCF, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_TXBCF, SW_RW> Super;
+		typedef Register<TXBCF, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xdc;
 		
-		struct CF : Field<M_CAN_TXBCF, CF, 0, 31> {}; // Cancellation Finished
+		struct CF : Field<CF, 31, 0> {}; // Cancellation Finished
 		
 		typedef FieldSet<CF> ALL;
 		
-		M_CAN_TXBCF(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TXBCF(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TXBCF(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TXBCF(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TXBCF"); this->SetDescription("Tx Buffer Cancellation Finished register");
+			this->SetName("TXBCF"); this->SetDescription("Tx Buffer Cancellation Finished register");
 			
 			CF::SetName("CF"); CF::SetDescription("Cancellation Finished");
 		}
@@ -2805,29 +2803,29 @@ private:
 		
 		void CancellationFinished(unsigned int tx_buffer_element_index)
 		{
-			Super::Set(Super::SIZE - 1 - tx_buffer_element_index, 1);
+			Super::Set(tx_buffer_element_index, 1);
 		}
 
 		using Super::operator =;
 	};
 
-	// Tx Buffer Transmission Interrupt Enable register (M_CAN_TXBTIE)
-	struct M_CAN_TXBTIE : M_CAN_Register<M_CAN_TXBTIE, SW_RW>
+	// Tx Buffer Transmission Interrupt Enable register (TXBTIE)
+	struct TXBTIE : Register<TXBTIE, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_TXBTIE, SW_RW> Super;
+		typedef Register<TXBTIE, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xe0;
 		
-		struct TIE : Field<M_CAN_TXBTIE, TIE, 0, 31, SW_RW> {}; // Transmission Interrupt Enable
+		struct TIE : Field<TIE, 31, 0, SW_RW> {}; // Transmission Interrupt Enable
 		
 		typedef FieldSet<TIE> ALL;
 		
-		M_CAN_TXBTIE(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TXBTIE(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TXBTIE(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TXBTIE(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TXBTIE"); this->SetDescription("Tx Buffer Transmission Interrupt Enable register");
+			this->SetName("TXBTIE"); this->SetDescription("Tx Buffer Transmission Interrupt Enable register");
 			
 			TIE::SetName("TIE"); TIE::SetDescription("Transmission Interrupt Enable");
 		}
@@ -2839,29 +2837,29 @@ private:
 		
 		bool IsInterruptEnabled(unsigned int tx_buffer_element_index) const
 		{
-			return Super::Get(Super::SIZE - 1 - tx_buffer_element_index);
+			return Super::Get(tx_buffer_element_index);
 		}
 
 		using Super::operator =;
 	};
 
-	// Tx Buffer Cancellation Finished Interrupt Enable register (M_CAN_TXBCIE)
-	struct M_CAN_TXBCIE : M_CAN_Register<M_CAN_TXBCIE, SW_RW>
+	// Tx Buffer Cancellation Finished Interrupt Enable register (TXBCIE)
+	struct TXBCIE : Register<TXBCIE, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_TXBCIE, SW_RW> Super;
+		typedef Register<TXBCIE, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xe4;
 		
-		struct CFIE : Field<M_CAN_TXBCIE, CFIE, 0, 31, SW_RW> {}; // Cancellation Finished Interrupt Enable
+		struct CFIE : Field<CFIE, 31, 0, SW_RW> {}; // Cancellation Finished Interrupt Enable
 		
 		typedef FieldSet<CFIE> ALL;
 		
-		M_CAN_TXBCIE(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TXBCIE(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TXBCIE(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TXBCIE(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TXBCIE"); this->SetDescription("Tx Buffer Cancellation Finished Interrupt Enable register");
+			this->SetName("TXBCIE"); this->SetDescription("Tx Buffer Cancellation Finished Interrupt Enable register");
 			
 			CFIE::SetName("CFIE"); CFIE::SetDescription("Cancellation Finished Interrupt Enable");
 		}
@@ -2873,31 +2871,31 @@ private:
 		
 		bool IsInterruptEnabled(unsigned int tx_buffer_element_index) const
 		{
-			return Super::Get(Super::SIZE - 1 - tx_buffer_element_index);
+			return Super::Get(tx_buffer_element_index);
 		}
 
 		using Super::operator =;
 	};
 
-	// Tx Event FIFO Configuration Register (M_CAN_TXEFC)
-	struct M_CAN_TXEFC : M_CAN_Register<M_CAN_TXEFC, SW_RW>
+	// Tx Event FIFO Configuration Register (TXEFC)
+	struct TXEFC : Register<TXEFC, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_TXEFC, SW_RW> Super;
+		typedef Register<TXEFC, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xf0;
 		
-		struct EFWM : Field<M_CAN_TXEFC, EFWM, 2 , 7 , SW_RW> {}; // Event FIFO Watermark
-		struct EFS  : Field<M_CAN_TXEFC, EFS , 10, 15, SW_RW> {}; // Event FIFO Size
-		struct EFSA : Field<M_CAN_TXEFC, EFSA, 16, 29, SW_RW> {}; // Event FIFO Start Address
+		struct EFWM : Field<EFWM, 29, 24, SW_RW> {}; // Event FIFO Watermark
+		struct EFS  : Field<EFS , 21, 16, SW_RW> {}; // Event FIFO Size
+		struct EFSA : Field<EFSA, 15, 2 , SW_RW> {}; // Event FIFO Start Address
 		
 		typedef FieldSet<EFWM, EFS, EFSA> ALL;
 		
-		M_CAN_TXEFC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TXEFC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TXEFC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TXEFC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TXEFC"); this->SetDescription("Tx Event FIFO Configuration Register");
+			this->SetName("TXEFC"); this->SetDescription("Tx Event FIFO Configuration Register");
 			
 			EFWM::SetName("EFWM"); EFWM::SetDescription("Event FIFO Watermark");
 			EFS ::SetName("EFS");  EFS ::SetDescription("Event FIFO Size");
@@ -2917,27 +2915,27 @@ private:
 		using Super::operator =;
 	};
 
-	// Tx Event FIFO Status register (M_CAN_TXEFS)
-	struct M_CAN_TXEFS : M_CAN_Register<M_CAN_TXEFS, SW_R>
+	// Tx Event FIFO Status register (TXEFS)
+	struct TXEFS : Register<TXEFS, SW_R>
 	{
-		typedef M_CAN_Register<M_CAN_TXEFS, SW_R> Super;
+		typedef Register<TXEFS, SW_R> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xf4;
 		
-		struct TEFL : Field<M_CAN_TXEFS, TEFL, 6 , 6 , SW_R> {}; // Tx Event FIFO Element Lost
-		struct EFF  : Field<M_CAN_TXEFS, EFF , 7 , 7 , SW_R> {}; // Event FIFO Full
-		struct EFPI : Field<M_CAN_TXEFS, EFPI, 11, 15, SW_R> {}; // Event FIFO Put Index
-		struct EFGI : Field<M_CAN_TXEFS, EFGI, 19, 23, SW_R> {}; // Event FIFO Get Index
-		struct EFFL : Field<M_CAN_TXEFS, EFFL, 26, 31, SW_R> {}; // Event FIFO Fill Level
+		struct TEFL : Field<TEFL, 25, 25, SW_R> {}; // Tx Event FIFO Element Lost
+		struct EFF  : Field<EFF , 24, 24, SW_R> {}; // Event FIFO Full
+		struct EFPI : Field<EFPI, 20, 16, SW_R> {}; // Event FIFO Put Index
+		struct EFGI : Field<EFGI, 12, 8 , SW_R> {}; // Event FIFO Get Index
+		struct EFFL : Field<EFFL, 5 , 0 , SW_R> {}; // Event FIFO Fill Level
 		
 		typedef FieldSet<TEFL, EFF, EFPI, EFGI, EFFL> ALL;
 		
-		M_CAN_TXEFS(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TXEFS(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TXEFS(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TXEFS(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TXEFS"); this->SetDescription("Tx Event FIFO Status register");
+			this->SetName("TXEFS"); this->SetDescription("Tx Event FIFO Status register");
 			
 			TEFL::SetName("TEFL"); TEFL::SetDescription("Tx Event FIFO Element Lost");
 			EFF ::SetName("EFF");  EFF ::SetDescription("Event FIFO Full");
@@ -2954,23 +2952,23 @@ private:
 		using Super::operator =;
 	};
 
-	// Tx Event FIFO Acknowledge register (M_CAN_TXEFA)
-	struct M_CAN_TXEFA : M_CAN_Register<M_CAN_TXEFA, SW_RW>
+	// Tx Event FIFO Acknowledge register (TXEFA)
+	struct TXEFA : Register<TXEFA, SW_RW>
 	{
-		typedef M_CAN_Register<M_CAN_TXEFA, SW_RW> Super;
+		typedef Register<TXEFA, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xf8;
 		
-		struct EFAI : Field<M_CAN_TXEFA, EFAI, 27, 31, SW_RW> {}; // Event FIFO Acknowledge Index
+		struct EFAI : Field<EFAI, 4, 0, SW_RW> {}; // Event FIFO Acknowledge Index
 		
 		typedef FieldSet<EFAI> ALL;
 		
-		M_CAN_TXEFA(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
-		M_CAN_TXEFA(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
+		TXEFA(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
+		TXEFA(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
 		
 		void Init()
 		{
-			this->SetName("M_CAN_TXEFA"); this->SetDescription("Tx Event FIFO Acknowledge register");
+			this->SetName("TXEFA"); this->SetDescription("Tx Event FIFO Acknowledge register");
 			
 			EFAI::SetName("EFAI"); EFAI::SetDescription("Event FIFO Acknowledge Index");
 		}
@@ -2999,55 +2997,58 @@ private:
 	unisim::kernel::tlm2::ClockPropertiesProxy can_clk_prop_proxy; // proxy to get clock properties from CAN clock port
 
 	// M_CAN registers
-	M_CAN_CREL   m_can_crel;
-	M_CAN_ENDN   m_can_endn;
-	M_CAN_FBTP   m_can_fbtp;
-	M_CAN_TEST   m_can_test;
-	M_CAN_RWD    m_can_rwd;
-	M_CAN_CCCR   m_can_cccr;
-	M_CAN_BTP    m_can_btp;
-	M_CAN_TSCC   m_can_tscc;
-	M_CAN_TSCV   m_can_tscv;
-	M_CAN_TOCC   m_can_tocc;
-	M_CAN_TOCV   m_can_tocv;
-	M_CAN_ECR    m_can_ecr;
-	M_CAN_PSR    m_can_psr;
-	M_CAN_IR     m_can_ir;
-	M_CAN_IE     m_can_ie;
-	M_CAN_ILS    m_can_ils;
-	M_CAN_ILE    m_can_ile;
-	M_CAN_GFC    m_can_gfc;
-	M_CAN_SIDFC  m_can_sidfc;
-	M_CAN_XIDFC  m_can_xidfc;
-	M_CAN_XIDAM  m_can_xidam;
-	M_CAN_HPMS   m_can_hpms;
-	M_CAN_NDAT1  m_can_ndat1;
-	M_CAN_NDAT2  m_can_ndat2;
-	M_CAN_RXF0C  m_can_rxf0c;
-	M_CAN_RXF0S  m_can_rxf0s;
-	M_CAN_RXF0A  m_can_rxf0a;
-	M_CAN_RXBC   m_can_rxbc;
-	M_CAN_RXF1C  m_can_rxf1c;
-	M_CAN_RXF1S  m_can_rxf1s;
-	M_CAN_RXF1A  m_can_rxf1a;
-	M_CAN_RXESC  m_can_rxesc;
-	M_CAN_TXBC   m_can_txbc;
-	M_CAN_TXFQS  m_can_txfqs;
-	M_CAN_TXESC  m_can_txesc;
-	M_CAN_TXBRP  m_can_txbrp;
-	M_CAN_TXBAR  m_can_txbar;
-	M_CAN_TXBCR  m_can_txbcr;
-	M_CAN_TXBTO  m_can_txbto;
-	M_CAN_TXBCF  m_can_txbcf;
-	M_CAN_TXBTIE m_can_txbtie;
-	M_CAN_TXBCIE m_can_txbcie;
-	M_CAN_TXEFC  m_can_txefc;
-	M_CAN_TXEFS  m_can_txefs;
-	M_CAN_TXEFA  m_can_txefa;
+	CREL   crel;
+	ENDN   endn;
+	FBTP   fbtp;
+	TEST   test;
+	RWD    rwd;
+	CCCR   cccr;
+	BTP    btp;
+	TSCC   tscc;
+	TSCV   tscv;
+	TOCC   tocc;
+	TOCV   tocv;
+	ECR    ecr;
+	PSR    psr;
+	IR     ir;
+	IE     ie;
+	ILS    ils;
+	ILE    ile;
+	GFC    gfc;
+	SIDFC  sidfc;
+	XIDFC  xidfc;
+	XIDAM  xidam;
+	HPMS   hpms;
+	NDAT1  ndat1;
+	NDAT2  ndat2;
+	RXF0C  rxf0c;
+	RXF0S  rxf0s;
+	RXF0A  rxf0a;
+	RXBC   rxbc;
+	RXF1C  rxf1c;
+	RXF1S  rxf1s;
+	RXF1A  rxf1a;
+	RXESC  rxesc;
+	TXBC   txbc;
+	TXFQS  txfqs;
+	TXESC  txesc;
+	TXBRP  txbrp;
+	TXBAR  txbar;
+	TXBCR  txbcr;
+	TXBTO  txbto;
+	TXBCF  txbcf;
+	TXBTIE txbtie;
+	TXBCIE txbcie;
+	TXEFC  txefc;
+	TXEFS  txefs;
+	TXEFA  txefa;
 	
 	sc_core::sc_event gen_int0_event;
 	sc_core::sc_event gen_int1_event;
 	sc_core::sc_event gen_dma_req_event;
+	sc_core::sc_vector<sc_core::sc_event> gen_filter_event_pulse_event;
+	bool gen_filter_event_pos[NUM_FILTER_EVENTS];
+	bool gen_filter_event_neg[NUM_FILTER_EVENTS];
 	
 	// M_CAN registers address map
 	RegisterAddressMap<sc_dt::uint64, sc_core::sc_time> reg_addr_map;
@@ -3069,8 +3070,8 @@ private:
 	
 	sc_core::sc_time max_time_to_next_timers_run;
 	sc_core::sc_time last_timers_run_time;               // Last time when timers ran
-	bool start_request; // M_CAN_CCCR[INIT]: 1 -> 0
-	bool init_request;  // M_CAN_CCCR[INIT]: 0 -> 1
+	bool start_request; // CCCR[INIT]: 1 -> 0
+	bool init_request;  // CCCR[INIT]: 0 -> 1
 	mutable tlm_can_core_config core_config;
 	tlm_can_phase phase;
 	tlm_can_error can_error;
@@ -3085,6 +3086,7 @@ private:
 	M_CAN_Message *pending_tx_msg; // pending CAN message (Tx scan stage)
 	M_CAN_Message *curr_tx_msg;    // current CAN message being transmitted (Tx stage)
 	M_CAN_Message rx_msg;          // CAN message being received
+	
 	
 	void Reset();
 	void RequestInit();
@@ -3124,7 +3126,7 @@ private:
 	void CancelTxRequests();
 	void EnterInitMode();
 	void LeaveInitMode();
-	void StoreTxEvent(const M_CAN_Message& msg);
+	void StoreTxEventFIFO(const M_CAN_Message& msg);
 	void AcknowledgeTxEventFIFO();
 	void StoreRx(sc_dt::uint64 addr, unsigned int element_size, const M_CAN_Message& msg, bool match, unsigned int filter_index);
 	void StoreRxFIFO(unsigned int fifo_id, const M_CAN_Message& msg, bool match, unsigned int filter_index = 0, bool set_priority = false);
@@ -3143,6 +3145,7 @@ private:
 	void INT1_Process();
 	void DMA_REQ_Process();
 	void DMA_ACK_Process();
+	void FilterEventProcess(unsigned int filter_event_num);
 	
 	using Super::logger;
 	using Super::verbose;

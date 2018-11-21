@@ -84,7 +84,7 @@ struct m_can_rx_buffer_fifo_element
 	}
 	R1;
 	
-	uint8_t DATA[64];
+	uint32_t DATA[16];
 };
 
 struct m_can_tx_buffer_element
@@ -108,7 +108,7 @@ struct m_can_tx_buffer_element
 	}
 	T1;
 	
-	uint8_t DATA[64];
+	uint32_t DATA[16];
 };
 
 struct m_can_tx_event_fifo_element
@@ -167,38 +167,38 @@ struct m_can_extended_message_id_filter_element
 
 enum M_CAN_INT
 {
-	M_CAN_INT_STE  = 0,
-	M_CAN_INT_FOE  = 1,
-	M_CAN_INT_ACKE = 2,
-	M_CAN_INT_BE   = 3,
-	M_CAN_INT_CRCE = 4,
-	M_CAN_INT_WDI  = 5,
-	M_CAN_INT_BO   = 6,
-	M_CAN_INT_EW   = 7,
-	M_CAN_INT_EP   = 8,
-	M_CAN_INT_ELO  = 9,
-	M_CAN_INT_BLEU = 10,
-	M_CAN_INT_BEC  = 11,
-	M_CAN_INT_DRX  = 12,
-	M_CAN_INT_TOO  = 13,
-	M_CAN_INT_MRAF = 14,
-	M_CAN_INT_TSW  = 15,
-	M_CAN_INT_TEFL = 16,
-	M_CAN_INT_TEFF = 17,
-	M_CAN_INT_TEFW = 18,
-	M_CAN_INT_TEFN = 19,
-	M_CAN_INT_TFE  = 20,
-	M_CAN_INT_TCF  = 21,
-	M_CAN_INT_TC   = 22,
-	M_CAN_INT_HPM  = 23,
-	M_CAN_INT_RF1L = 24,
-	M_CAN_INT_RF1F = 25,
-	M_CAN_INT_RF1W = 26,
-	M_CAN_INT_RF1N = 27,
-	M_CAN_INT_RF0L = 28,
-	M_CAN_INT_RF0F = 29,
-	M_CAN_INT_RF0W = 30,
-	M_CAN_INT_RF0N = 31
+	M_CAN_INT_STE  = 31,
+	M_CAN_INT_FOE  = 30,
+	M_CAN_INT_ACKE = 29,
+	M_CAN_INT_BE   = 28,
+	M_CAN_INT_CRCE = 27,
+	M_CAN_INT_WDI  = 26,
+	M_CAN_INT_BO   = 25,
+	M_CAN_INT_EW   = 24,
+	M_CAN_INT_EP   = 23,
+	M_CAN_INT_ELO  = 22,
+	M_CAN_INT_BLEU = 21,
+	M_CAN_INT_BEC  = 20,
+	M_CAN_INT_DRX  = 19,
+	M_CAN_INT_TOO  = 18,
+	M_CAN_INT_MRAF = 17,
+	M_CAN_INT_TSW  = 16,
+	M_CAN_INT_TEFL = 15,
+	M_CAN_INT_TEFF = 14,
+	M_CAN_INT_TEFW = 13,
+	M_CAN_INT_TEFN = 12,
+	M_CAN_INT_TFE  = 11,
+	M_CAN_INT_TCF  = 10,
+	M_CAN_INT_TC   = 9,
+	M_CAN_INT_HPM  = 8,
+	M_CAN_INT_RF1L = 7,
+	M_CAN_INT_RF1F = 6,
+	M_CAN_INT_RF1W = 5,
+	M_CAN_INT_RF1N = 4,
+	M_CAN_INT_RF0L = 3,
+	M_CAN_INT_RF0F = 2,
+	M_CAN_INT_RF0W = 1,
+	M_CAN_INT_RF0N = 0 
 };
 
 enum M_CAN_INT_LINE
