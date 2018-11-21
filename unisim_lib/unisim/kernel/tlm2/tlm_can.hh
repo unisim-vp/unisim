@@ -1655,17 +1655,20 @@ void tlm_can_core<CAN_MODULE, TYPES>::end_of_elaboration()
 template <typename CAN_MODULE, typename TYPES>
 void tlm_can_core<CAN_MODULE, TYPES>::nb_receive(int id, tlm_serial_payload& payload, const sc_core::sc_time& t)
 {
-	if(((id == CAN_RX_IF) && !config.get_loopback_mode()) ||
-	   ((id == CAN_TX_IF) && config.get_loopback_mode()))
+	if(__get_phase() != TLM_CAN_IDLE_PHASE)
 	{
-		tlm_serial_payload::data_type& data = payload.get_data();
-		const sc_core::sc_time& period = payload.get_period();
-		if(unlikely(verbose))
+		if(((id == CAN_RX_IF) && !config.get_loopback_mode()) ||
+		((id == CAN_TX_IF) && config.get_loopback_mode()))
 		{
-			logger << DebugInfo << sc_core::sc_time_stamp() << "[+" << t << "]:receiving [" << data << "] over CAN_RX with a period of " << period << EndDebugInfo;
+			tlm_serial_payload::data_type& data = payload.get_data();
+			const sc_core::sc_time& period = payload.get_period();
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << sc_core::sc_time_stamp() << "[+" << t << "]:receiving [" << data << "] over CAN_RX with a period of " << period << EndDebugInfo;
+			}
+			
+			rx_bitstream.fill(payload, t);
 		}
-		
-		rx_bitstream.fill(payload, t);
 	}
 }
 

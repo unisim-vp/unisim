@@ -357,13 +357,16 @@ protected:
 
 	void enable(bool v = true)
 	{
-		if(!enabled && v)
+		if(unlikely(verbose))
 		{
-			logger << DebugInfo << "enabling" << EndDebugInfo;
-		}
-		else if(enabled && !v)
-		{
-			logger << DebugInfo << "disabling" << EndDebugInfo;
+			if(!enabled && v)
+			{
+				logger << DebugInfo << "enabling" << EndDebugInfo;
+			}
+			else if(enabled && !v)
+			{
+				logger << DebugInfo << "disabling" << EndDebugInfo;
+			}
 		}
 		enabled = v;
 	}
