@@ -58,6 +58,33 @@ struct ClientConnection
   int         socket;
 };
 
+struct MessageLoop;
+
+struct Request
+{
+	enum request_type_t { GET, HEAD, POST };
+	
+	request_type_t GetRequestType() const { return request_type; }
+	char const* GetRequestURI() const { return ibuf + uri; }
+	char const* GetContentType() const { return ibuf + content_type; }
+	unsigned int GetContentLength() const { return content_length; }
+	char const* GetContent() const { return ibuf + content; }
+	
+private:
+	Request() {}
+	Request(Request const &) {}
+	Request& operator = (Request const&) { return *this; }
+	
+	friend struct MessageLoop;
+	
+	char const *ibuf;
+	request_type_t request_type;
+	unsigned int uri;
+	unsigned int content_type;
+	unsigned int content_length;
+	unsigned int content;
+};
+
 struct MessageLoop
 {
   MessageLoop(HttpServer& _http_server, std::ostream& _log = std::cout, std::ostream& _warn_log = std::cout, std::ostream& _err_log = std::cerr)
@@ -66,15 +93,7 @@ struct MessageLoop
   
   void Run(ClientConnection const& conn);
   
-  enum request_type_t { GET, HEAD, POST };
-  
-  virtual void NewRequest() {}
-  virtual void SetRequestType( request_type_t request_type ) {}
-  virtual void SetRequestURI( char const* uri ) {}
-  virtual void SetContentType( char const* content_type) {}
-  virtual void SetContentLength( unsigned int content_length) {}
-  virtual void SetContent( const char *content) {}
-  virtual bool SendResponse( ClientConnection const& conn ) = 0;
+  virtual bool SendResponse(Request const& request, ClientConnection const& conn ) = 0;
 protected:
   HttpServer& http_server;
   // Log

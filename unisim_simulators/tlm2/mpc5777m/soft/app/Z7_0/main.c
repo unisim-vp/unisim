@@ -45,10 +45,15 @@ void m_can_1_int0(unsigned int m_can_id, enum M_CAN_INT_LINE m_can_int_line)
 
 int main(void)
 {
-	struct m_can_standard_message_id_filter_element filt = { .S0 = { .SFT = 1, .SFEC = 1, .SFID1 = 0x12, .SFID2 = 0x14 } };
+	struct m_can_standard_message_id_filter_element filt0 = { .S0 = { .SFT = DUAL_ID_FILTER, .SFEC = FEC_STORE_IN_RX_FIFO_0_IF_FILTER_MATCHES, .SFID1 = 0x12, .SFID2 = 0x14 } };
+	struct m_can_standard_message_id_filter_element filt1 = { .S0 = { .SFT = CLASSIC_FILTER, .SFEC = FEC_STORE_IN_RX_FIFO_0_IF_FILTER_MATCHES, .SFID1 = 0x10, .SFID2 = 0xff } };
 	
 	m_can_init(1);
 	m_can_enable_configuration_change(1);
+	m_can_set_baud_rate_prescaler(1, 1);
+	m_can_set_tseg1(1, 6);
+	m_can_set_tseg2(1, 1);
+	m_can_set_sjw(1, 1);
 	m_can_set_rx_fifo_operation_mode(1, 0, M_CAN_RX_FIFO_OVERWRITING_MODE);
 	m_can_set_rx_fifo_size(1, 0, 2);
 	m_can_set_rx_fifo_start_address(1, 0, 0x400);
@@ -58,9 +63,10 @@ int main(void)
 	m_can_enable_interrupt_line(1, M_CAN_INT0);
 	m_can_set_interrupt_handler(1, M_CAN_INT0, m_can_1_int0);
 	m_can_reject_non_matching_frame_standard(1);
-	m_can_set_standard_filter_list_size(1, 1);
+	m_can_set_standard_filter_list_size(1, 64);
 	m_can_set_standard_filter_list_start_address(1, 0x800);
-	m_can_write_standard_filter(1, 0, &filt);
+	m_can_write_standard_filter(1, 0, &filt0);
+	m_can_write_standard_filter(1, 1, &filt1);
 	m_can_disable_configuration_change(1);
 	m_can_exit_init_mode(1);
 	

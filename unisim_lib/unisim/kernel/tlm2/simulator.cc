@@ -1424,30 +1424,18 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 				_http_server.logger.DebugWarningStream(),
 				_http_server.logger.DebugErrorStream())
 			, http_server(_http_server)
-			, reqtype(GET)
-			, uri()
-			, content_type()
-			, content_length(0)
-			, content()
 		{
 		}
 		
-		virtual void NewRequest() { reqtype = GET; uri.clear(); content_type.clear(); content_length = 0; content.clear(); }
-		virtual void SetRequestType(request_type_t _reqtype ) { reqtype = _reqtype; }
-		virtual void SetRequestURI(char const *_uri ) { uri = _uri; }
-		virtual void SetContentType( char const* _content_type) { content_type = _content_type; }
-		virtual void SetContentLength( unsigned int _content_length) { content_length = _content_length; }
-		virtual void SetContent( const char *_content) { content = std::string(_content, content_length); }
-
-		virtual bool SendResponse(unisim::util::hypapp::ClientConnection const& conn)
+		virtual bool SendResponse(unisim::util::hypapp::Request const& req, unisim::util::hypapp::ClientConnection const& conn)
 		{
-			if(uri == "/")
+			if(strcmp(req.GetRequestURI(), "/") == 0)
 			{
-				if(reqtype == POST)
+				if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
 				{
 					http_server.LockPost();
 					http_server.LockInstruments();
-					//std::cerr << "content length=" << content_length << std::endl;
+					//std::cerr << "content length=" << req.GetContentLength() << std::endl;
 					
 					struct PropertySetter : public Form_URL_Encoded_Decoder
 					{
@@ -1639,7 +1627,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 					}
 
 					PropertySetter property_setter(http_server);
-					if(property_setter.Decode(content, http_server.logger.DebugWarningStream()))
+					if(property_setter.Decode(std::string(req.GetContent(), req.GetContentLength()), http_server.logger.DebugWarningStream()))
 					{
 						if(http_server.enable_all_input_instruments || http_server.disable_all_input_instruments)
 						{
@@ -1929,7 +1917,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 				std::string doc(doc_sstr.str());
 					
 				std::ostringstream http_header_sstr;
-				if(reqtype == POST)
+				if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
 				{
 					http_header_sstr << "HTTP/1.1 201 Created\r\n";
 				}
@@ -1962,7 +1950,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 					http_server.logger << DebugInfo << "sending HTTP response header: done" << EndDebugInfo;
 				}
 				
-				if(reqtype == HEAD) return true;
+				if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
 						
 				if(http_server.Verbose())
 				{
@@ -1984,7 +1972,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 			}
 			else
 			{
-				std::string filename = std::string(".") + uri;
+				std::string filename = std::string(".") + req.GetRequestURI();
 				std::string path = http_server.GetSimulator()->SearchSharedDataFile(filename.c_str());
 
 				std::ifstream file(path.c_str(), std::fstream::binary);
@@ -2103,12 +2091,8 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 			return true;
 		}
 		
+	private:
 		HttpServer& http_server;
-		request_type_t reqtype;
-		std::string uri;
-		std::string content_type;
-		unsigned int content_length;
-		std::string content;
 	};
 	
 	MessageLoop msg_loop = MessageLoop(*this);

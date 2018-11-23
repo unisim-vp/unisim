@@ -1181,8 +1181,8 @@ private:
 		
 		typedef FieldSet<BRP, TSEG1, TSEG2, SJW> ALL;
 		
-		BTP(M_CAN<CONFIG> *_m_can) : Super(_m_can), can_clock_period(), sample_point(), phase_seg2(), bit_time() { Init(); }
-		BTP(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value), can_clock_period(), sample_point(), phase_seg2(), bit_time() { Init(); }
+		BTP(M_CAN<CONFIG> *_m_can) : Super(_m_can), can_clock_period(), brp(0), sjw(0), tseg1(0), tseg2(0), sample_point(), phase_seg2(), bit_time() { Init(); }
+		BTP(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value), can_clock_period(), brp(0), sjw(0), tseg1(0), tseg2(0), sample_point(), phase_seg2(), bit_time() { Init(); }
 		
 		void Init()
 		{
@@ -1201,7 +1201,14 @@ private:
 		
 		virtual ReadWriteStatus Write(sc_core::sc_time& time_stamp, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			return this->m_can->CheckProtectedWrite() ? Super::Write(time_stamp, value, bit_enable) : RWS_WROR;
+			ReadWriteStatus rws = this->m_can->CheckProtectedWrite() ? Super::Write(time_stamp, value, bit_enable) : RWS_WROR;
+			
+			if(!IsReadWriteError(rws))
+			{
+				Update();
+			}
+			
+			return rws;
 		}
 		
 		const sc_core::sc_time& GetSamplePoint() const
@@ -1229,38 +1236,43 @@ private:
 		
 	private:
 		mutable sc_core::sc_time can_clock_period;
+		mutable unsigned int brp;
+		mutable unsigned int sjw;
+		mutable unsigned int tseg1;
+		mutable unsigned int tseg2;
 		mutable sc_core::sc_time sample_point;
 		mutable sc_core::sc_time phase_seg2;
 		mutable sc_core::sc_time bit_time;
 		
 		void Update() const
 		{
-			if(unlikely(can_clock_period != this->m_can->can_clock_period))
+			if(unlikely((can_clock_period != this->m_can->can_clock_period) ||
+			            (brp != this->template Get<BRP>()) ||
+			            (sjw != this->template Get<SJW>()) ||
+			            (tseg1 != this->template Get<TSEG1>()) ||
+			            (tseg2 != this->template Get<TSEG2>())))
 			{
 				// protocol clock: 1 / f_P
 				can_clock_period = this->m_can->can_clock_period;
 				
-				unsigned int brp = this->template Get<BRP>() + 1; // baud rate prescaler
-				unsigned int sjw = this->template Get<SJW>();     // Sync_Seg?
-				unsigned int tseg1 = this->template Get<TSEG1>(); // Prop_Seg + Phase_Seg1
-				unsigned int tseg2 = this->template Get<TSEG2>(); // Phase_Seg2
+				brp = this->template Get<BRP>(); // baud rate prescaler
+				sjw = this->template Get<SJW>();     // unused by model
+				tseg1 = this->template Get<TSEG1>(); // Prop_Seg + Phase_Seg1
+				tseg2 = this->template Get<TSEG2>(); // Phase_Seg2
 				
-				if(unlikely(tseg1 == 0))
-				{
-					this->m_can->logger << DebugWarning << DebugWarning << sc_core::sc_time_stamp() << ": TSEG1 should be non-zero" << EndDebugWarning;
-				}
+				// see also http://www.bittiming.can-wiki.info/ for bit timing calculations
 				
 				// CAN time quantum: tq = BRP * 1 / f_P
 				sc_core::sc_time tq(can_clock_period);
-				tq *= brp;
+				tq *= (brp + 1);
 				
 				// sample point: Sync_Seg + Prop_Seg + Phase_Seg1
 				sample_point = tq;
-				sample_point *= (sjw + tseg1);
+				sample_point *= 1 + (tseg1 + 1);
 				
 				// phase_seg2: Phase_Seg2
 				phase_seg2 = tq;
-				phase_seg2 *= tseg2;
+				phase_seg2 *= (tseg2 + 1);
 				
 				// bit time: Sync_Seg + Prop_Seg + Phase_Seg1 + Phase_Seg2
 				bit_time = sample_point + phase_seg2;

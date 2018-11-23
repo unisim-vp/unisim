@@ -91,6 +91,10 @@ int main(void)
 	
 	m_can_init(3);
 	m_can_enable_configuration_change(3);
+	m_can_set_baud_rate_prescaler(3, 1);
+	m_can_set_tseg1(3, 6);
+	m_can_set_tseg2(3, 1);
+	m_can_set_sjw(3, 1);
 	m_can_set_num_dedicated_tx_buffers(3, 32);
 	m_can_set_tx_queue_fifo_size(3, 0);
 	m_can_set_tx_buffers_start_address(3, 0x0);

@@ -234,22 +234,22 @@ void m_can_disable_timestamp_counter(unsigned int m_can_id)
 
 void m_can_set_baud_rate_prescaler(unsigned m_can_id, unsigned int brp)
 {
-	M_CAN_READ_MODIFY_WRITE_REG(m_can_id, BTP, BRP, brp);
+	if(brp > 0) M_CAN_READ_MODIFY_WRITE_REG(m_can_id, BTP, BRP, brp - 1);
 }
 
 void m_can_set_tseg1(unsigned m_can_id, unsigned int tseg1)
 {
-	M_CAN_READ_MODIFY_WRITE_REG(m_can_id, BTP, TSEG1, tseg1);
+	if(tseg1 > 0) M_CAN_READ_MODIFY_WRITE_REG(m_can_id, BTP, TSEG1, tseg1 - 1);
 }
 
 void m_can_set_tseg2(unsigned m_can_id, unsigned int tseg2)
 {
-	M_CAN_READ_MODIFY_WRITE_REG(m_can_id, BTP, TSEG2, tseg2);
+	if(tseg2 > 0) M_CAN_READ_MODIFY_WRITE_REG(m_can_id, BTP, TSEG2, tseg2 - 1);
 }
 
 void m_can_set_sjw(unsigned m_can_id, unsigned int sjw)
 {
-	M_CAN_READ_MODIFY_WRITE_REG(m_can_id, BTP, SJW, sjw);
+	if(sjw > 0) M_CAN_READ_MODIFY_WRITE_REG(m_can_id, BTP, SJW, sjw - 1);
 }
 
 void m_can_set_num_dedicated_tx_buffers(unsigned int m_can_id, unsigned int ndtb)
@@ -343,7 +343,7 @@ void m_can_write_tx_buffer_element(unsigned int m_can_id, unsigned int tx_buffer
 	unsigned int i;
 	for(i = 0; i < tx_buffer_element_size; dest++, source++, i++)
 	{
-		STORE_LE32(dest, *source);
+		M_CAN_STORE32(m_can_id, dest, *source);
 	}
 }
 
@@ -398,8 +398,8 @@ void m_can_read_tx_event_fifo_element(unsigned int m_can_id, struct m_can_tx_eve
 	unsigned int tx_event_fifo_get_index = m_can_get_tx_event_fifo_get_index(m_can_id);
 	volatile uint32_t *dest = (volatile uint32_t *) elem;
 	volatile uint32_t *source = &SHARED_CAN_MESSAGE_RAM + efsa + (tx_event_fifo_get_index * 2);
-	dest[0] = LOAD_LE32(source);
-	dest[1] = LOAD_LE32(source + 1);
+	dest[0] = M_CAN_LOAD32(m_can_id, source);
+	dest[1] = M_CAN_LOAD32(m_can_id, source + 1);
 }
 
 void m_can_set_rx_fifo_operation_mode(unsigned int m_can_id, unsigned int fifo_id, enum M_CAN_RX_FIFO_OPERATION_MODE fom)
@@ -518,7 +518,7 @@ void m_can_read_rx_fifo(unsigned int m_can_id, unsigned int fifo_id, struct m_ca
 	unsigned int i;
 	for(i = 0; i < rx_fifo_element_size; dest++, source++, i++)
 	{
-		*dest = LOAD_LE32(source);
+		*dest = M_CAN_LOAD32(m_can_id, source);
 	}
 }
 
@@ -533,7 +533,7 @@ void m_can_read_rx_buffer(unsigned int m_can_id, unsigned int rx_buffer_element_
 	unsigned int i;
 	for(i = 0; i < rx_buffer_element_size; dest++, source++, i++)
 	{
-		*dest = LOAD_LE32(source);
+		*dest = M_CAN_LOAD32(m_can_id, source);
 	}
 }
 
@@ -618,7 +618,7 @@ void m_can_write_standard_filter(unsigned int m_can_id, unsigned int filter_elem
 	uint32_t flssa = M_CAN_READ_REG(m_can_id, SIDFC, FLSSA);
 	volatile uint32_t *source = (volatile uint32_t *) elem;
 	volatile uint32_t *dest = &SHARED_CAN_MESSAGE_RAM + flssa + (filter_element_index * 1);
-	STORE_LE32(dest, *source);
+	M_CAN_STORE32(m_can_id, dest, *source);
 }
 
 void m_can_write_extended_filter(unsigned int m_can_id, unsigned int filter_element_index, struct m_can_extended_message_id_filter_element *elem)
@@ -626,8 +626,8 @@ void m_can_write_extended_filter(unsigned int m_can_id, unsigned int filter_elem
 	uint32_t flesa = M_CAN_READ_REG(m_can_id, XIDFC, FLESA);
 	volatile uint32_t *source = (volatile uint32_t *) elem;
 	volatile uint32_t *dest = &SHARED_CAN_MESSAGE_RAM + flesa + (filter_element_index * 2);
-	STORE_LE32(dest, source[0]);
-	STORE_LE32(dest + 1, source[1]);
+	M_CAN_STORE32(m_can_id, dest, source[0]);
+	M_CAN_STORE32(m_can_id, dest + 1, source[1]);
 }
 
 uint32_t m_can_new_data1(unsigned int m_can_id)

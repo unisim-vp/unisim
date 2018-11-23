@@ -431,6 +431,8 @@ public:
 	void EnableValueChangedBreakpoint();
 	void DisableValueChangedBreakpoint();
 private:
+	friend struct MessageLoop;
+	
 	unisim::kernel::logger::Logger logger;
 	
 	std::string program_name;

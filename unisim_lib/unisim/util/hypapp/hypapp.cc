@@ -229,19 +229,16 @@ void MessageLoop::Run(ClientConnection const& conn)
       ibuf[request_size] = '\0';
       request_size += 2; // second "\r\n" before next part
 
-      NewRequest();
-      
-      request_type_t request_type;
-      if      (char const* p = streat("GET ", ptr))  { ptr = p; request_type = GET; }
-      else if (char const* p = streat("HEAD ", ptr)) { ptr = p; request_type = HEAD; }
-      else if (char const* p = streat("POST ", ptr)) { ptr = p; request_type = POST; }
+      Request request;
+      if      (char const* p = streat("GET ", ptr))  { ptr = p; request.request_type = Request::GET; }
+      else if (char const* p = streat("HEAD ", ptr)) { ptr = p; request.request_type = Request::HEAD; }
+      else if (char const* p = streat("POST ", ptr)) { ptr = p; request.request_type = Request::POST; }
       else {
         if (char const* p = strchr(ptr, '\r'))
           ibuf[p-soh] = '\0';
         err_log << "unknown method in: " << ptr << std::endl;
         return;
       }
-      SetRequestType( request_type );
       
       {
         char const* uri = ptr;
@@ -251,7 +248,7 @@ void MessageLoop::Run(ClientConnection const& conn)
         {
           log << "[" << conn.socket << "] URI: " << uri << std::endl;
         }
-        SetRequestURI( uri );
+        request.uri = uri - &ibuf[0];
       }
       
       if (not (ptr = streat("HTTP/1.", ptr))) { err_log << "[" << conn.socket << "] HTTP version parse error\n"; return; }
@@ -298,7 +295,7 @@ void MessageLoop::Run(ClientConnection const& conn)
             {
               if (char const* b = streat("multipart/form-data; boundary=",val))
                 { err_log << "[" << conn.socket << "] MP boundary:" << b << "\n"; return; }
-              else { if(http_server.Verbose()) { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; SetContentType(val); } }
+              else { if(http_server.Verbose()) { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; request.content_type = val - &ibuf[0]; } }
             }
           else if (streat("CSeq", key))
             { cseq = strtoul( val, 0, 0 ); if(http_server.Verbose()) { log << "[" << conn.socket << "] cseq:" << cseq << "\n"; } }
@@ -321,7 +318,7 @@ void MessageLoop::Run(ClientConnection const& conn)
                 if ((digit = (*val - '0')) >= 10) { err_log << "[" << conn.socket << "] Content length parse error\n"; return; }
                 content_length = 10*content_length+digit;
               }
-              if(content_length) SetContentLength(content_length);
+              if(content_length) request.content_length = content_length;
               var_content = (content_length == 0);
               if(var_content) keep_alive = false;
             }
@@ -332,10 +329,10 @@ void MessageLoop::Run(ClientConnection const& conn)
       if(http_server.Verbose())
       {
         log << "Header (size: " << request_size << ") received and processed.\n";
-        switch (request_type) {
-        case GET: log << "Get request." << std::endl; break;
-        case HEAD: log << "Head request." << std::endl; break;
-        case POST: log << "Post request." << std::endl; break;
+        switch (request.request_type) {
+        case Request::GET: log << "Get request." << std::endl; break;
+        case Request::HEAD: log << "Head request." << std::endl; break;
+        case Request::POST: log << "Post request." << std::endl; break;
         }
       }
       
@@ -416,11 +413,12 @@ void MessageLoop::Run(ClientConnection const& conn)
           log << "[" << conn.socket << "] content " << ":" << "\n=-=-=-=-=-=-=-=-=-=-=\n" << std::string(&ibuf[request_size], content_length) << "\n=-=-=-=-=-=-=-=-=-=-=\n";
         }
         
-        SetContentLength(content_length);
-        SetContent(&ibuf[request_size]);
+        request.content_length = content_length;
+        request.content = request_size;
       }
   
-      if (not SendResponse(conn) or not keep_alive) return;
+      request.ibuf = &ibuf[0];
+      if (not SendResponse(request, conn) or not keep_alive) return;
 
       ibuf.erase(ibuf.begin(), ibuf.begin() + request_size + content_length);
     }

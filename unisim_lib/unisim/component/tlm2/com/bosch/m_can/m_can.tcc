@@ -1704,8 +1704,8 @@ void M_CAN<CONFIG>::StoreTxEventFIFO(const M_CAN_Message& msg)
 			logger << DebugInfo << sc_core::sc_time_stamp() << ":storing Tx Event FIFO Element " << tx_event << " at @0x" << std::hex << tx_event_addr << std::dec << EndDebugInfo;
 		}
 		
-		tx_event.e[0] = unisim::util::endian::Host2LittleEndian(tx_event.e[0]);
-		tx_event.e[1] = unisim::util::endian::Host2LittleEndian(tx_event.e[1]);
+		tx_event.e[0] = unisim::util::endian::Host2Target(endian, tx_event.e[0]);
+		tx_event.e[1] = unisim::util::endian::Host2Target(endian, tx_event.e[1]);
 		WriteWords(tx_event_addr, &tx_event.e[0], 2); // Write the Tx Event (2 words) in CAN message RAM
 		
 		// Increment Put Index and wrap around
@@ -1824,11 +1824,14 @@ void M_CAN<CONFIG>::StoreRx(sc_dt::uint64 addr, unsigned int element_size, const
 		logger << DebugInfo << sc_core::sc_time_stamp() << ":storing Rx Buffer FIFO Element " << rx_buffer_fifo_element << " at @0x" << std::hex << addr << std::dec << EndDebugInfo;
 	}
 	
-	rx_buffer_fifo_element.r[0] = unisim::util::endian::Host2LittleEndian(rx_buffer_fifo_element.r[0]);
-	rx_buffer_fifo_element.r[1] = unisim::util::endian::Host2LittleEndian(rx_buffer_fifo_element.r[1]);
-	for(unsigned int i = 2; i < element_size; i++)
+	rx_buffer_fifo_element.r[0] = unisim::util::endian::Host2Target(endian, rx_buffer_fifo_element.r[0]);
+	rx_buffer_fifo_element.r[1] = unisim::util::endian::Host2Target(endian, rx_buffer_fifo_element.r[1]);
+	if(endian != unisim::util::endian::E_BIG_ENDIAN)
 	{
-		rx_buffer_fifo_element.r[i] = unisim::util::endian::ByteSwap(rx_buffer_fifo_element.r[i]); // Big-Endian to Little-endian
+		for(unsigned int i = 2; i < element_size; i++)
+		{
+			unisim::util::endian::BSwap(rx_buffer_fifo_element.r[i]);
+		}
 	}
 	
 	WriteWords(addr, &rx_buffer_fifo_element.r[0], element_size);
@@ -2217,6 +2220,8 @@ void M_CAN<CONFIG>::Filter(const M_CAN_Message& msg)
 	// Matching
 	if(unlikely(verbose))
 	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ":trying to match ID=0x" << std::hex << id << std::dec << EndDebugInfo;
+	
 		if(list_size)
 		{
 			logger << DebugInfo << sc_core::sc_time_stamp() << ":filter list has " << list_size << " filter elements" << EndDebugInfo;
@@ -2233,7 +2238,7 @@ void M_CAN<CONFIG>::Filter(const M_CAN_Message& msg)
 	{
 		if(xtd)
 		{
-			uint32_t f0 = filter_elements.xtd_msg_id_filter_elements[filter_index].f0 = unisim::util::endian::LittleEndian2Host(filter_elements.xtd_msg_id_filter_elements[filter_index].f0);
+			uint32_t f0 = filter_elements.xtd_msg_id_filter_elements[filter_index].f0 = unisim::util::endian::Target2Host(endian, filter_elements.xtd_msg_id_filter_elements[filter_index].f0);
 			
 			fec = Extended_Message_ID_Filter_Element::F0::EFEC::template Get<uint32_t>(f0);
 			
@@ -2241,7 +2246,7 @@ void M_CAN<CONFIG>::Filter(const M_CAN_Message& msg)
 			{
 				fid1 = Extended_Message_ID_Filter_Element::F0::EFID1::template Get<uint32_t>(f0);
 				
-				uint32_t f1 = filter_elements.xtd_msg_id_filter_elements[filter_index].f1 = unisim::util::endian::LittleEndian2Host(filter_elements.xtd_msg_id_filter_elements[filter_index].f1);
+				uint32_t f1 = filter_elements.xtd_msg_id_filter_elements[filter_index].f1 = unisim::util::endian::Target2Host(endian, filter_elements.xtd_msg_id_filter_elements[filter_index].f1);
 			
 				if(fec == FEC_STORE_INTO_RX_BUFFER_OR_AS_DEBUG_MESSAGE) // store into Rx buffer or debug message?
 				{
@@ -2258,7 +2263,7 @@ void M_CAN<CONFIG>::Filter(const M_CAN_Message& msg)
 		}
 		else
 		{
-			uint32_t s0 = filter_elements.std_msg_id_filter_elements[filter_index].s0 = unisim::util::endian::LittleEndian2Host(filter_elements.std_msg_id_filter_elements[filter_index].s0);
+			uint32_t s0 = filter_elements.std_msg_id_filter_elements[filter_index].s0 = unisim::util::endian::Target2Host(endian, filter_elements.std_msg_id_filter_elements[filter_index].s0);
 		
 			fec = Standard_Message_ID_Filter_Element::S0::SFEC::template Get<uint32_t>(s0);
 			
@@ -2286,7 +2291,7 @@ void M_CAN<CONFIG>::Filter(const M_CAN_Message& msg)
 			{
 				if(unlikely(verbose))
 				{
-					logger << DebugInfo << sc_core::sc_time_stamp() << ":executing a exact matching filter with no masking mechanism and FID1=0x" << std::hex << fid1 << std::dec << EndDebugInfo;
+					logger << DebugInfo << sc_core::sc_time_stamp() << ":filter #" << filter_index << ":executing a exact matching filter with no masking mechanism and FID1=0x" << std::hex << fid1 << std::dec << EndDebugInfo;
 				}
 				
 				match = (id == fid1); // exact match with no masking mechanism
@@ -2295,7 +2300,7 @@ void M_CAN<CONFIG>::Filter(const M_CAN_Message& msg)
 			{
 				if(unlikely(verbose))
 				{
-					logger << DebugInfo << sc_core::sc_time_stamp() << ":Executing a " << ft << " with FID1=0x" << std::hex << fid1 << std::dec << " and FID2=0x" << std::hex << fid2 << std::dec << EndDebugInfo;
+					logger << DebugInfo << sc_core::sc_time_stamp() << ":filter #" << filter_index << ":Executing a " << ft << " with FID1=0x" << std::hex << fid1 << std::dec << " and FID2=0x" << std::hex << fid2 << std::dec << EndDebugInfo;
 				}
 				
 				switch(ft)
@@ -2315,6 +2320,13 @@ void M_CAN<CONFIG>::Filter(const M_CAN_Message& msg)
 					default: // reserved
 						break;
 				}
+			}
+		}
+		else
+		{
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << sc_core::sc_time_stamp() << ":filter #" << filter_index << ":disabled" << EndDebugInfo;
 			}
 		}
 	}
@@ -2558,7 +2570,7 @@ void M_CAN<CONFIG>::TxScan()
 			
 			uint32_t t0 = 0;
 			ReadWords(tx_buffer_addr, &t0, 1);
-			t0 = unisim::util::endian::LittleEndian2Host(t0);
+			t0 = unisim::util::endian::Target2Host(endian, t0);
 
 			uint32_t identifier = Tx_Buffer_Element::T0::XTD::template Get<uint32_t>(t0) ? Tx_Buffer_Element::T0::ID::template Get<uint32_t>(t0)
 																							: (Tx_Buffer_Element::T0::ID::template Get<uint32_t>(t0) & (~uint32_t(0) << (Super::ID_LENGTH - Super::STD_FMT_ID_LENGTH)));
@@ -2596,7 +2608,7 @@ void M_CAN<CONFIG>::TxScan()
 				
 				uint32_t t0 = 0;
 				ReadWords(tx_buffer_element_addr, &t0, 1);
-				t0 = unisim::util::endian::LittleEndian2Host(t0);
+				t0 = unisim::util::endian::Target2Host(endian, t0);
 				uint32_t identifier = Tx_Buffer_Element::T0::XTD::template Get<uint32_t>(t0) ? Tx_Buffer_Element::T0::ID::template Get<uint32_t>(t0)
 																								: (Tx_Buffer_Element::T0::ID::template Get<uint32_t>(t0) & (~uint32_t(0) << (Super::ID_LENGTH - Super::STD_FMT_ID_LENGTH)));
 				
@@ -2620,16 +2632,19 @@ void M_CAN<CONFIG>::TxScan()
 		sc_dt::uint64 tx_buffer_element_addr = tx_buffers_start_addr + (tx_buffer_element_index * tx_buffer_element_size);
 		
 		ReadWords(tx_buffer_element_addr + 1, &tx_buffer_element.t[1], tx_buffer_element_size - 1);
-		tx_buffer_element.t[1] = unisim::util::endian::LittleEndian2Host(tx_buffer_element.t[1]);
-		
-		for(unsigned int i = 2; i < tx_buffer_element_size; i++)
-		{
-			tx_buffer_element.t[i] = unisim::util::endian::LittleEndian2Host(tx_buffer_element.t[i]); 
-		}
+		tx_buffer_element.t[1] = unisim::util::endian::Target2Host(endian, tx_buffer_element.t[1]);
 		
 		if(unlikely(verbose))
 		{
+			for(unsigned int i = 2; i < tx_buffer_element_size; i++)
+			{
+				tx_buffer_element.t[i] = unisim::util::endian::Target2Host(endian, tx_buffer_element.t[i]); 
+			}
 			logger << DebugInfo << "Loaded Tx Buffer Element " << tx_buffer_element << " at @0x" << std::hex << tx_buffer_element_addr << std::dec << EndDebugInfo;
+			for(unsigned int i = 2; i < tx_buffer_element_size; i++)
+			{
+				tx_buffer_element.t[i] = unisim::util::endian::Host2Target(endian, tx_buffer_element.t[i]); 
+			}
 		}
 		
 		tlm_can_format fmt = Tx_Buffer_Element::T0::XTD::template Get<uint32_t>(tx_buffer_element.t[0]) ? TLM_CAN_XTD_FMT : TLM_CAN_STD_FMT;
@@ -2637,9 +2652,12 @@ void M_CAN<CONFIG>::TxScan()
 		unsigned int message_marker = Tx_Buffer_Element::T1::MM::template Get<uint32_t>(tx_buffer_element.t[1]);
 		bool event_fifo_control = Tx_Buffer_Element::T1::EFC::template Get<uint32_t>(tx_buffer_element.t[1]);
 		unsigned int data_length_code = Tx_Buffer_Element::T1::DLC::template Get<uint32_t>(tx_buffer_element.t[1]);
-		for(unsigned int i = 2; i < tx_buffer_element_size; i++)
+		if(endian != unisim::util::endian::E_BIG_ENDIAN)
 		{
-			tx_buffer_element.t[i] = unisim::util::endian::Host2BigEndian(tx_buffer_element.t[i]); 
+			for(unsigned int i = 2; i < tx_buffer_element_size; i++)
+			{
+				unisim::util::endian::BSwap(tx_buffer_element.t[i]);
+			}
 		}
 		
 		M_CAN_Message& new_can_msg = tx_msg_pipe[flip_flop ^= 1]; // pick one of the two CAN messages in double buffer

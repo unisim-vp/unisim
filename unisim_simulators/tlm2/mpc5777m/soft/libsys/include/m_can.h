@@ -207,6 +207,26 @@ enum M_CAN_INT_LINE
 	M_CAN_INT1 = 1
 };
 
+enum M_CAN_FILTER_TYPE 
+{
+	RANGE_FILTER    = 0, // Range Filter
+	DUAL_ID_FILTER  = 1, // Dual ID Filter
+	CLASSIC_FILTER  = 2, // Classic Filter
+	RESERVED_FILTER = 3  // Reserved
+};
+
+enum FILTER_ELEMENT_CONFIGURATION
+{
+	FEC_DISABLE_FILTER_ELEMENT                                = 0, // Disable Filter Element
+	FEC_STORE_IN_RX_FIFO_0_IF_FILTER_MATCHES                  = 1, // Store in Rx FIFO #0 if filter matches
+	FEC_STORE_IN_RX_FIFO_1_IF_FILTER_MATCHES                  = 2, // Store in Rx FIFO #1 if filter matches
+	FEC_REJECT_ID_IF_FILTER_MATCHES                           = 3, // Reject ID if filter matches
+	FEC_SET_PRIORITY_IF_FILTER_MATCHES                        = 4, // Set priority if filter matches
+	FEC_SET_PRIORITY_AND_STORE_IN_RX_FIFO_0_IF_FILTER_MATCHES = 5, // Set priority and store in Rx FIFO #0 if filter matches
+	FEC_SET_PRIORITY_AND_STORE_IN_RX_FIFO_1_IF_FILTER_MATCHES = 6, // Set priority and store in Rx FIFO #1 if filter matches
+	FEC_STORE_INTO_RX_BUFFER_OR_AS_DEBUG_MESSAGE              = 7  // Store in Rx Buffer or as a Debug Message
+};
+
 typedef void (*m_can_int_handler_t)(unsigned int, enum M_CAN_INT_LINE m_can_int_line);
 
 void m_can_drv_init();
