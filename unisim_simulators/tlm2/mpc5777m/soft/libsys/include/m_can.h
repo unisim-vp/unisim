@@ -37,7 +37,7 @@
 
 #include "typedefs.h"
 
-enum M_CAN_TX_QUEUE_FIFO_MODE
+enum M_CAN_TX_FIFO_QUEUE_MODE
 {
 	M_CAN_TX_FIFO_MODE  = 0,
 	M_CAN_TX_QUEUE_MODE = 1
@@ -253,10 +253,15 @@ void m_can_set_tseg2(unsigned m_can_id, unsigned int tseg2);
 void m_can_set_sjw(unsigned m_can_id, unsigned int sjw);
 
 void m_can_set_num_dedicated_tx_buffers(unsigned int m_can_id, unsigned int ndtb);
-void m_can_set_tx_queue_fifo_mode(unsigned int m_can_id, enum M_CAN_TX_QUEUE_FIFO_MODE tqfm);
-void m_can_set_tx_queue_fifo_size(unsigned int m_can_id, unsigned int tqfs);
+void m_can_set_tx_fifo_queue_mode(unsigned int m_can_id, enum M_CAN_TX_FIFO_QUEUE_MODE tfqm);
+void m_can_set_tx_fifo_queue_size(unsigned int m_can_id, unsigned int tfqs);
 void m_can_set_tx_buffers_start_address(unsigned int m_can_id, uint32_t tbsa);
 void m_can_set_tx_buffer_data_field_size(unsigned int m_can_id, enum M_CAN_DATA_FIELD_SIZE tbds);
+
+unsigned int m_can_get_tx_fifo_queue_put_index(unsigned int m_can_id);
+unsigned int m_can_get_tx_fifo_get_index(unsigned int m_can_id);
+unsigned int m_can_get_tx_fifo_free_level(unsigned int m_can_id);
+void m_can_tx_fifo_push(unsigned int m_can_id, struct m_can_tx_buffer_element *elem);
 
 void m_can_add_tx_buffer_request(unsigned int m_can_id, unsigned int tx_buffer_element_idx);
 void m_can_add_tx_buffer_requests(unsigned int m_can_id, uint32_t mask);

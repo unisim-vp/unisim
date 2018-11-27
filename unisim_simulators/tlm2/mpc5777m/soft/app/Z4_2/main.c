@@ -92,28 +92,60 @@ int main(void)
 	m_can_init(3);
 	m_can_enable_configuration_change(3);
 	m_can_set_baud_rate_prescaler(3, 1);
-	m_can_set_tseg1(3, 6);
-	m_can_set_tseg2(3, 1);
+	m_can_set_tseg1(3, 34);
+	m_can_set_tseg2(3, 5);
 	m_can_set_sjw(3, 1);
-	m_can_set_num_dedicated_tx_buffers(3, 32);
-	m_can_set_tx_queue_fifo_size(3, 0);
+	m_can_set_tx_fifo_queue_mode(3, M_CAN_TX_FIFO_MODE);
+	m_can_set_num_dedicated_tx_buffers(3, 16);
+	m_can_set_tx_fifo_queue_size(3, 16);
 	m_can_set_tx_buffers_start_address(3, 0x0);
-	m_can_set_tx_event_fifo_start_address(3, 0x1200);
-	m_can_set_tx_event_fifo_size(3, 2);
+	m_can_set_tx_event_fifo_start_address(3, 0x200);
+	m_can_set_tx_event_fifo_size(3, 32);
 	m_can_enable_timestamp_counter(3);
 	m_can_disable_configuration_change(3);
 	m_can_exit_init_mode(3);
 	
-	struct m_can_tx_buffer_element e1 = { { .XTD = 0, .RTR = 0, .ID = (0x12 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } };
-	m_can_write_tx_buffer_element(3, 0, &e1);
-	
-	struct m_can_tx_buffer_element e2 = { { .XTD = 0, .RTR = 0, .ID = (0x10 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } };
-	m_can_write_tx_buffer_element(3, 1, &e2);
+	struct m_can_tx_buffer_element e[32] = {
+		{ { .XTD = 0, .RTR = 0, .ID = (0 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (1 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (2 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (3 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (4 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (5 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (6 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (7 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (8 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (9 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (10 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (11 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (12 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (13 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (14 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (15 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (16 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (17 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (18 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (19 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (20 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (21 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (22 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (23 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (24 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (25 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (26 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (27 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (28 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (29 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (30 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (31 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } }
+	};
 
-	struct m_can_tx_buffer_element e3 = { { .XTD = 0, .RTR = 0, .ID = (0x14 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } };
-	m_can_write_tx_buffer_element(3, 2, &e3);
-
-	m_can_add_tx_buffer_requests(3, 1 | 2 | 4);
+	unsigned int i;
+	for(i = 0; i < 32; i++)
+	{
+		while(m_can_get_tx_fifo_free_level(3) == 0);
+		m_can_tx_fifo_push(3, &e[i]);
+	}
 	
 	dspi_init(2);
 	dspi_set_mode(2, DSPI_MASTER_MODE);

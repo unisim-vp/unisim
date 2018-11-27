@@ -5380,7 +5380,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.DSPI_CLK1.lazy-clock", "true");
 	simulator->SetVariable("HARDWARE.DSPI_CLK1.clock-period", "12500 ps");               // DSPI_CLK1: 80 Mhz
 	simulator->SetVariable("HARDWARE.CAN_CLK.lazy-clock", "true");
-	simulator->SetVariable("HARDWARE.CAN_CLK.clock-period", "125 ns");                   // CAN_CLK: 8 Mhz
+	simulator->SetVariable("HARDWARE.CAN_CLK.clock-period", "25 ns");                   // CAN_CLK: 40 Mhz
 
 	// TLM-2.0 global quantum
 	simulator->SetVariable("HARDWARE.global-quantum", "200 ns");

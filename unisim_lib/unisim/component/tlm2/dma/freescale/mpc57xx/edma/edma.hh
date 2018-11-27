@@ -844,7 +844,7 @@ private:
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x18;
 
 		struct NOP  : Field<EDMA_SERQ, NOP , 0, 0, SW_W> {}; // No operation
-		struct SAER : Field<EDMA_SERQ, SAER, 1, 0, SW_W> {}; // Set all enable request
+		struct SAER : Field<EDMA_SERQ, SAER, 1, 1, SW_W> {}; // Set all enable request
 		struct SERQ : Field<EDMA_SERQ, SERQ, 2, 7, SW_W> {}; // Set enable request
 		
 		typedef FieldSet<NOP, SAER, SERQ> ALL;
@@ -900,7 +900,7 @@ private:
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x19;
 		
 		struct NOP  : Field<EDMA_CERQ, NOP , 0, 0, SW_W> {}; // No operation
-		struct CAER : Field<EDMA_CERQ, CAER, 1, 0, SW_W> {}; // Clear all enable requests
+		struct CAER : Field<EDMA_CERQ, CAER, 1, 1, SW_W> {}; // Clear all enable requests
 		struct CERQ : Field<EDMA_CERQ, CERQ, 2, 7, SW_W> {}; // Clear enable request
 		
 		typedef FieldSet<NOP, CAER, CERQ> ALL;

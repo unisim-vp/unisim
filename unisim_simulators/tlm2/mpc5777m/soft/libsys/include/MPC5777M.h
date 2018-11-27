@@ -16463,8 +16463,8 @@ typedef union M_CAN_TXBC_union_tag {   /* Tx Buffer Configuration Register */
   vuint32_t R;
   struct {
     vuint32_t  :1;
-    vuint32_t TQFM:1;
-    vuint32_t TQFS:6;
+    vuint32_t TFQM:1;
+    vuint32_t TFQS:6;
     vuint32_t  :2;
     vuint32_t NDTB:6;
     vuint32_t TBSA:14;

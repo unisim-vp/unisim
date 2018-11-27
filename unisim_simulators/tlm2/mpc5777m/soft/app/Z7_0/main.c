@@ -51,12 +51,12 @@ int main(void)
 	m_can_init(1);
 	m_can_enable_configuration_change(1);
 	m_can_set_baud_rate_prescaler(1, 1);
-	m_can_set_tseg1(1, 6);
-	m_can_set_tseg2(1, 1);
+	m_can_set_tseg1(1, 34);
+	m_can_set_tseg2(1, 5);
 	m_can_set_sjw(1, 1);
 	m_can_set_rx_fifo_operation_mode(1, 0, M_CAN_RX_FIFO_OVERWRITING_MODE);
 	m_can_set_rx_fifo_size(1, 0, 2);
-	m_can_set_rx_fifo_start_address(1, 0, 0x400);
+	m_can_set_rx_fifo_start_address(1, 0, 0x800);
 	m_can_enable_timestamp_counter(1);
 	m_can_enable_interrupt(1, M_CAN_INT_RF0N);
 	m_can_select_interrupt_line(1, M_CAN_INT_RF0N, M_CAN_INT0);
@@ -64,7 +64,7 @@ int main(void)
 	m_can_set_interrupt_handler(1, M_CAN_INT0, m_can_1_int0);
 	m_can_reject_non_matching_frame_standard(1);
 	m_can_set_standard_filter_list_size(1, 64);
-	m_can_set_standard_filter_list_start_address(1, 0x800);
+	m_can_set_standard_filter_list_start_address(1, 0x1000);
 	m_can_write_standard_filter(1, 0, &filt0);
 	m_can_write_standard_filter(1, 1, &filt1);
 	m_can_disable_configuration_change(1);

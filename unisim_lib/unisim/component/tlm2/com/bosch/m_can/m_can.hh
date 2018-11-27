@@ -168,19 +168,19 @@ inline std::ostream& operator << (std::ostream& os, const LAST_ERROR_CODE& lec)
 	return os;
 }
 
-// Tx Queue/FIFO Mode
+// Tx FIFO/Queue Mode
 enum TX_QUEUE_FIFO_MODE
 {
-	TQFM_FIFO  = 0, // FIFO Mode
-	TQFM_QUEUE = 1  // Queue Mode
+	TFQM_FIFO  = 0, // FIFO Mode
+	TFQM_QUEUE = 1  // Queue Mode
 };
 
-inline std::ostream& operator << (std::ostream& os, const TX_QUEUE_FIFO_MODE& tqfm)
+inline std::ostream& operator << (std::ostream& os, const TX_QUEUE_FIFO_MODE& tfqm)
 {
-	switch(tqfm)
+	switch(tfqm)
 	{
-		case TQFM_FIFO : os << "FIFO Mode"; break;
-		case TQFM_QUEUE: os << "Queue Mode"; break;
+		case TFQM_FIFO : os << "FIFO Mode"; break;
+		case TFQM_QUEUE: os << "Queue Mode"; break;
 		default        : os << "unknown Tx Queue/FIFO mode"; break;
 	}
 	
@@ -1361,6 +1361,18 @@ private:
 			this->Initialize(0x0);
 		}
 		
+		virtual ReadWriteStatus Write(sc_core::sc_time& time_stamp, const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(time_stamp, value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				Reset();
+			}
+			
+			return rws;
+		}
+		
 		using Super::operator =;
 	};
 	
@@ -2497,12 +2509,12 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xc0;
 		
-		struct TQFM : Field<TQFM, 30, 30, SW_RW> {}; // Tx FIFO/Queue Mode
-		struct TQFS : Field<TQFS, 29, 24, SW_RW> {}; // Tx FIFO/Queue Size
+		struct TFQM : Field<TFQM, 30, 30, SW_RW> {}; // Tx FIFO/Queue Mode
+		struct TFQS : Field<TFQS, 29, 24, SW_RW> {}; // Tx FIFO/Queue Size
 		struct NDTB : Field<NDTB, 21, 16, SW_RW> {}; // Number of Dedicated Transmit Buffers
 		struct TBSA : Field<TBSA, 15, 2 , SW_RW> {}; // Tx Buffers Start Address
 		
-		typedef FieldSet<TQFM, TQFS, NDTB, TBSA> ALL;
+		typedef FieldSet<TFQM, TFQS, NDTB, TBSA> ALL;
 		
 		TXBC(M_CAN<CONFIG> *_m_can) : Super(_m_can) { Init(); }
 		TXBC(M_CAN<CONFIG> *_m_can, uint32_t value) : Super(_m_can, value) { Init(); }
@@ -2511,8 +2523,8 @@ private:
 		{
 			this->SetName("TXBC"); this->SetDescription("Tx Buffer Configuration Register");
 			
-			TQFM::SetName("TQFM"); TQFM::SetDescription("Tx FIFO/Queue Mode");
-			TQFS::SetName("TQFS"); TQFS::SetDescription("Tx FIFO/Queue Size");
+			TFQM::SetName("TFQM"); TFQM::SetDescription("Tx FIFO/Queue Mode");
+			TFQS::SetName("TFQS"); TFQS::SetDescription("Tx FIFO/Queue Size");
 			NDTB::SetName("NDTB"); NDTB::SetDescription("Number of Dedicated Transmit Buffers");
 			TBSA::SetName("TBSA"); TBSA::SetDescription("Tx Buffers Start Address");
 		}
@@ -3124,12 +3136,12 @@ private:
 	sc_core::sc_time TimeToNextTimersRun();
 	void ScheduleTimersRun();
 	unsigned int GetNumDedicatedTxBuffers() const;
-	unsigned int GetTxQueueFIFOSize() const;
+	unsigned int GetTxFIFOQueueSize() const;
 	unsigned int GetNumTxBuffers() const;
 	unsigned int GetTxEventFIFOSize() const;
 	unsigned int GetRxFIFOSize(unsigned int fifo_id) const;
 	uint32_t GetTxDedicatedMask() const;
-	uint32_t GetTxQueueFIFOMask() const;
+	uint32_t GetTxFIFOQueueMask() const;
 	uint32_t GetTxFIFOFillMask() const;
 	uint32_t GetTxBuffersMask() const;
 	void IncrementTxFIFOQueuePutIndex();

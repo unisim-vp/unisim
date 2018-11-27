@@ -257,14 +257,14 @@ void m_can_set_num_dedicated_tx_buffers(unsigned int m_can_id, unsigned int ndtb
 	M_CAN_READ_MODIFY_WRITE_REG(m_can_id, TXBC, NDTB, ndtb);
 }
 
-void m_can_set_tx_queue_fifo_mode(unsigned int m_can_id, enum M_CAN_TX_QUEUE_FIFO_MODE tqfm)
+void m_can_set_tx_fifo_queue_mode(unsigned int m_can_id, enum M_CAN_TX_FIFO_QUEUE_MODE tfqm)
 {
-	M_CAN_READ_MODIFY_WRITE_REG(m_can_id, TXBC, TQFM, tqfm);
+	M_CAN_READ_MODIFY_WRITE_REG(m_can_id, TXBC, TFQM, tfqm);
 };
 
-void m_can_set_tx_queue_fifo_size(unsigned int m_can_id, unsigned int tqfs)
+void m_can_set_tx_fifo_queue_size(unsigned int m_can_id, unsigned int tfqs)
 {
-	M_CAN_READ_MODIFY_WRITE_REG(m_can_id, TXBC, TQFS, tqfs);
+	M_CAN_READ_MODIFY_WRITE_REG(m_can_id, TXBC, TFQS, tfqs);
 }
 
 void m_can_set_tx_buffers_start_address(unsigned int m_can_id, uint32_t tbsa)
@@ -275,6 +275,31 @@ void m_can_set_tx_buffers_start_address(unsigned int m_can_id, uint32_t tbsa)
 void m_can_set_tx_buffer_data_field_size(unsigned int m_can_id, enum M_CAN_DATA_FIELD_SIZE tbds)
 {
 	M_CAN_READ_MODIFY_WRITE_REG(m_can_id, TXESC, TBDS, tbds);
+}
+
+unsigned int m_can_get_tx_fifo_queue_put_index(unsigned int m_can_id)
+{
+	return M_CAN_READ_REG(m_can_id, TXFQS, TFQPI); 
+}
+
+unsigned int m_can_get_tx_fifo_get_index(unsigned int m_can_id)
+{
+	return M_CAN_READ_REG(m_can_id, TXFQS, TFGI); 
+}
+
+unsigned int m_can_get_tx_fifo_free_level(unsigned int m_can_id)
+{
+	return M_CAN_READ_REG(m_can_id, TXFQS, TFFL); 
+}
+
+void m_can_tx_fifo_push(unsigned int m_can_id, struct m_can_tx_buffer_element *elem)
+{
+	if(m_can_get_tx_fifo_free_level(m_can_id) != 0)
+	{
+		unsigned int fqpi = m_can_get_tx_fifo_queue_put_index(m_can_id);
+		m_can_write_tx_buffer_element(m_can_id, fqpi, elem);
+		m_can_add_tx_buffer_requests(m_can_id, 1 << fqpi);
+	}
 }
 
 void m_can_add_tx_buffer_request(unsigned int m_can_id, unsigned int tx_buffer_element_idx)

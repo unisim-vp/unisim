@@ -337,6 +337,7 @@ public:
 	template <typename T> static inline T GetWriteMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetWriteOneClearMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetReadMask() ALWAYS_INLINE;
+	template <typename T> static inline bool HasOverlappingBitFields();
 	template <typename T> static inline T Mask(const T& storage) ALWAYS_INLINE;
 	template <typename T> static inline T Get(const T& storage) ALWAYS_INLINE;
 	template <typename T> static void inline Set(T& storage, T field_value) ALWAYS_INLINE;
@@ -416,6 +417,7 @@ struct FieldSet
 	template <typename T> static inline T GetWriteMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetWriteOneClearMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetReadMask() ALWAYS_INLINE;
+	template <typename T> static inline bool HasOverlappingBitFields();
 	template <typename T> static inline T Get(const T& storage) ALWAYS_INLINE;
 	template <typename T> static inline void Set(T& storage, T bitfied_value) ALWAYS_INLINE;
 	static inline const std::string& GetName();

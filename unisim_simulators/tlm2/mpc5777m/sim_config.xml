@@ -12984,7 +12984,7 @@
 			<variable name="clock-period">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
-				<value>125 ns</value>
+				<value>25 ns</value>
 				<description>clock period</description>
 			</variable>
 			<variable name="clock-duty-cycle">

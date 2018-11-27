@@ -839,16 +839,17 @@ void M_CAN<CONFIG>::process_message_event(const tlm_can_message_event<M_CAN_TYPE
 			// Set corresponding bit in Tx Buffer Transmission Occurred register 
 			txbto.TransmissionOccurred(tx_buffer_element_index);
 			
-			if(tx_buffer_element_index >= GetNumDedicatedTxBuffers()) // buffer is in Tx Queue/FIFO?
+			if(tx_buffer_element_index >= GetNumDedicatedTxBuffers()) // buffer is in Tx FIFO/Queue?
 			{
-				switch(txbc.template Get<typename TXBC::TQFM>()) // Tx Queue/FIFO Mode
+				switch(txbc.template Get<typename TXBC::TFQM>()) // Tx FIFO/Queue Mode
 				{
-					case TQFM_FIFO:
+					case TFQM_FIFO:
 						// Tx FIFO
 						IncrementTxFIFOGetIndex();
+						TxScan();
 						break;
 					
-					case TQFM_QUEUE:
+					case TFQM_QUEUE:
 						// Tx Queue
 						txfqs.template Set<typename TXFQS::TFQF>(0);     // Tx Queue is not full
 						break;
@@ -1206,7 +1207,7 @@ void M_CAN<CONFIG>::IncrementTimestampCounter(sc_dt::uint64 delta)
 				tsc += delta;
 				tscv.template Set<typename TSCV::TSC>(tsc);
 				
-				if(tsc == 0) // wrap-around?
+				if(tscv.template Get<typename TSCV::TSC>() == 0) // wrap-around?
 				{
 					ir.template Set<typename IR::TSW>(1); // Timestamp wrap-around
 					UpdateInterrupts();
@@ -1232,7 +1233,7 @@ void M_CAN<CONFIG>::DecrementTimeoutCounter(sc_dt::uint64 delta)
 					toc = (toc > delta) ? (toc - delta) : 0;
 					tocv.template Set<typename TOCV::TOC>(toc);
 					
-					if(toc == 0)
+					if(tocv.template Get<typename TOCV::TOC>() == 0)
 					{
 						ir.template Set<typename IR::TOO>(1); // Timeout Occurred
 						UpdateInterrupts();
@@ -1262,7 +1263,7 @@ void M_CAN<CONFIG>::RunTimersToTime(const sc_core::sc_time& time_stamp)
 		
 			IncrementTimestampCounter(delta);
 			DecrementTimeoutCounter(delta);
-			delay_since_last_timers_run += run_time;
+			last_timers_run_time += run_time;
 		}
 	}
 }
@@ -1369,16 +1370,16 @@ unsigned int M_CAN<CONFIG>::GetNumDedicatedTxBuffers() const
 }
 
 template <typename CONFIG>
-unsigned int M_CAN<CONFIG>::GetTxQueueFIFOSize() const
+unsigned int M_CAN<CONFIG>::GetTxFIFOQueueSize() const
 {
-	return std::min(txbc.template Get<typename TXBC::TQFS>(), MAX_TX_QUEUE_FIFO_SIZE);
+	return std::min(txbc.template Get<typename TXBC::TFQS>(), MAX_TX_QUEUE_FIFO_SIZE);
 }
 
 template <typename CONFIG>
 unsigned int M_CAN<CONFIG>::GetNumTxBuffers() const
 {
 	unsigned int num_dedicated_tx_buffers = GetNumDedicatedTxBuffers();
-	unsigned int tx_fifo_queue_size = GetTxQueueFIFOSize();
+	unsigned int tx_fifo_queue_size = GetTxFIFOQueueSize();
 	unsigned int num_tx_buffers = std::min(num_dedicated_tx_buffers + tx_fifo_queue_size, MAX_TX_BUFFERS);
 	return num_tx_buffers;
 }
@@ -1405,7 +1406,7 @@ uint32_t M_CAN<CONFIG>::GetTxDedicatedMask() const
 }
 
 template <typename CONFIG>
-uint32_t M_CAN<CONFIG>::GetTxQueueFIFOMask() const
+uint32_t M_CAN<CONFIG>::GetTxFIFOQueueMask() const
 {
 	unsigned int num_dedicated_tx_buffers = GetNumDedicatedTxBuffers();
 	if(num_dedicated_tx_buffers >= 32) return 0;
@@ -1420,7 +1421,7 @@ uint32_t M_CAN<CONFIG>::GetTxFIFOFillMask() const
 {
 	if(txfqs.template Get<typename TXFQS::TFQF>()) // Tx FIFO Full?
 	{
-		return GetTxQueueFIFOMask();
+		return GetTxFIFOQueueMask();
 	}
 
 	uint32_t tx_fifo_put_index = txfqs.template Get<typename TXFQS::TFQPI>();  // Tx FIFO Put Index
@@ -1429,7 +1430,7 @@ uint32_t M_CAN<CONFIG>::GetTxFIFOFillMask() const
 	if(tx_fifo_put_index != tx_fifo_get_index) // Tx FIFO not empty?
 	{
 		// compute a binary mask between Get Index and Put Index excluded
-		return ((~uint32_t(0) << tx_fifo_get_index) & (~uint32_t(0) >> (32 - tx_fifo_put_index))) & GetTxQueueFIFOMask();
+		return ((~uint32_t(0) << tx_fifo_get_index) & (~uint32_t(0) >> (32 - tx_fifo_put_index))) & GetTxFIFOQueueMask();
 	}
 	
 	return 0;
@@ -1446,15 +1447,15 @@ uint32_t M_CAN<CONFIG>::GetTxBuffersMask() const
 template <typename CONFIG>
 void M_CAN<CONFIG>::IncrementTxFIFOQueuePutIndex()
 {
-	bool tfqf = txfqs.template Get<typename TXFQS::TFQF>(); // Tx Queue/FIFO Full
+	bool tfqf = txfqs.template Get<typename TXFQS::TFQF>(); // Tx FIFO/Queue Full
 	assert(!tfqf);
 	
 	unsigned int num_dedicated_tx_buffers = GetNumDedicatedTxBuffers();
 	unsigned int num_tx_buffers = GetNumTxBuffers();
 	
-	switch(txbc.template Get<typename TXBC::TQFM>()) // Tx Queue/FIFO mode
+	switch(txbc.template Get<typename TXBC::TFQM>()) // Tx FIFO/Queue mode
 	{
-		case TQFM_FIFO:
+		case TFQM_FIFO:
 		{
 			// Tx FIFO
 			uint32_t tx_fifo_put_index = txfqs.template Get<typename TXFQS::TFQPI>();  // Read Tx FIFO Put Index
@@ -1475,7 +1476,7 @@ void M_CAN<CONFIG>::IncrementTxFIFOQueuePutIndex()
 			break;
 		}
 		
-		case TQFM_QUEUE:
+		case TFQM_QUEUE:
 		{
 			// Tx Queue
 			uint32_t old_tx_queue_put_index = txfqs.template Get<typename TXFQS::TFQPI>();
@@ -1511,14 +1512,14 @@ void M_CAN<CONFIG>::IncrementTxFIFOQueuePutIndex()
 template <typename CONFIG>
 void M_CAN<CONFIG>::IncrementTxFIFOGetIndex()
 {
-	assert(txbc.template Get<typename TXBC::TQFM>() == TQFM_FIFO);
+	assert(txbc.template Get<typename TXBC::TFQM>() == TFQM_FIFO);
 
 	uint32_t tx_fifo_put_index = txfqs.template Get<typename TXFQS::TFQPI>();  // Read Tx FIFO Put Index
 	uint32_t tx_fifo_get_index = txfqs.template Get<typename TXFQS::TFGI>();    // Read Tx FIFO Get Index
 	unsigned int num_dedicated_tx_buffers = GetNumDedicatedTxBuffers();
 	unsigned int num_tx_buffers = GetNumTxBuffers();
 	tx_fifo_get_index = tx_fifo_get_index + 1;
-	if(tx_fifo_get_index > num_tx_buffers) tx_fifo_get_index = num_dedicated_tx_buffers;                 // wrap around
+	if(tx_fifo_get_index >= num_tx_buffers) tx_fifo_get_index = num_dedicated_tx_buffers;                 // wrap around
 	txfqs.template Set<typename TXFQS::TFGI>(tx_fifo_get_index);
 	// Compute Tx FIFO Free Level
 	unsigned int tffl = (tx_fifo_get_index > tx_fifo_put_index) ? (tx_fifo_get_index - tx_fifo_put_index) : ((num_tx_buffers - tx_fifo_put_index) + (tx_fifo_get_index - num_dedicated_tx_buffers));
@@ -1545,7 +1546,7 @@ void M_CAN<CONFIG>::AddTxRequests()
 	// requested by writing a '1' to the corresponding bit of register TXBAR
 	txbcf = txbcf & ~txbar;
 	
-	if(txbc.template Get<typename TXBC::TQFM>() == TQFM_FIFO) // Tx FIFO Mode?
+	if(txbc.template Get<typename TXBC::TFQM>() == TFQM_FIFO) // Tx FIFO Mode?
 	{
 		// For each add request in txbar, increment Tx FIFO Put Index
 		do
@@ -1558,7 +1559,7 @@ void M_CAN<CONFIG>::AddTxRequests()
 	}
 	
 	// Add requests in TXBRP
-	if(txbc.template Get<typename TXBC::TQFM>() == TQFM_FIFO) // Tx FIFO Mode?
+	if(txbc.template Get<typename TXBC::TFQM>() == TFQM_FIFO) // Tx FIFO Mode?
 	{
 		// Add Dedicated Tx Buffers and Tx FIFO Fill requests
 		txbrp = txbrp | (txbar & (GetTxFIFOFillMask() | GetTxDedicatedMask()));
@@ -1623,9 +1624,9 @@ void M_CAN<CONFIG>::LeaveInitMode()
 	txfqs.template Set<typename TXFQS::TFQF>(0); // TX FIFO/Queue is not full
 	txfqs.template Set<typename TXFQS::TFQPI>(num_dedicated_tx_buffers); // Put Index is after last dedicated Tx buffer
 	
-	switch(txbc.template Get<typename TXBC::TQFM>()) // Tx Queue/FIFO Mode
+	switch(txbc.template Get<typename TXBC::TFQM>()) // Tx FIFO/Queue Mode
 	{
-		case TQFM_FIFO:
+		case TFQM_FIFO:
 		{
 			// Tx FIFO
 			unsigned int num_tx_buffers = GetNumTxBuffers();
@@ -1634,7 +1635,7 @@ void M_CAN<CONFIG>::LeaveInitMode()
 			break;
 		}
 		
-		case TQFM_QUEUE:
+		case TFQM_QUEUE:
 		{
 			// Tx Queue
 			txfqs.template Set<typename TXFQS::TFGI>(0); // read as 0
@@ -2542,11 +2543,12 @@ void M_CAN<CONFIG>::TxScan()
 	}
 	
 	unsigned int num_dedicated_tx_buffers = GetNumDedicatedTxBuffers();
+	unsigned int num_tx_buffers = GetNumTxBuffers();
 	unsigned int tx_buffers_start_addr = txbc.template Get<typename TXBC::TBSA>(); // word address
 	unsigned int tbds = txesc.template Get<typename TXESC::TBDS>();
 	unsigned int tx_buffer_data_field_size = (tbds <= 4) ? (8 + (tbds * 4)) : (16 + ((tbds & 3) * 16)); // in bytes
 	unsigned int tx_buffer_element_size = 2 + (tx_buffer_data_field_size / 4); // in words
-	unsigned int tx_fifo_queue_mode = txbc.template Get<typename TXBC::TQFM>(); 
+	unsigned int tx_fifo_queue_mode = txbc.template Get<typename TXBC::TFQM>(); 
 	
 	bool hit = false;
 	unsigned int tx_buffer_element_index = 0;
@@ -2555,7 +2557,7 @@ void M_CAN<CONFIG>::TxScan()
 	tx_buffer_element.element_size = tx_buffer_element_size;
 	
 	unsigned int tx_buffer_scan_index;
-	if(unisim::util::arithmetic::BitScanForward(tx_buffer_scan_index, transmission_request_pending) && (tx_buffer_scan_index < num_dedicated_tx_buffers))
+	if(unisim::util::arithmetic::BitScanForward(tx_buffer_scan_index, transmission_request_pending) && (tx_buffer_scan_index < ((tx_fifo_queue_mode == TFQM_FIFO) ? num_dedicated_tx_buffers : num_tx_buffers)))
 	{
 		hit = true;
 		
@@ -2573,7 +2575,7 @@ void M_CAN<CONFIG>::TxScan()
 			t0 = unisim::util::endian::Target2Host(endian, t0);
 
 			uint32_t identifier = Tx_Buffer_Element::T0::XTD::template Get<uint32_t>(t0) ? Tx_Buffer_Element::T0::ID::template Get<uint32_t>(t0)
-																							: (Tx_Buffer_Element::T0::ID::template Get<uint32_t>(t0) & (~uint32_t(0) << (Super::ID_LENGTH - Super::STD_FMT_ID_LENGTH)));
+			                                                                             : (Tx_Buffer_Element::T0::ID::template Get<uint32_t>(t0) & (~uint32_t(0) << (Super::ID_LENGTH - Super::STD_FMT_ID_LENGTH)));
 			
 			if(identifier < tx_buffer_element_identifier)
 			{
@@ -2584,12 +2586,12 @@ void M_CAN<CONFIG>::TxScan()
 			
 			transmission_request_pending &= ~(uint32_t(1) << tx_buffer_scan_index); // clear pending request
 		}
-		while(unisim::util::arithmetic::BitScanForward(tx_buffer_scan_index, transmission_request_pending) && (tx_buffer_scan_index < num_dedicated_tx_buffers));
+		while(unisim::util::arithmetic::BitScanForward(tx_buffer_scan_index, transmission_request_pending) && (tx_buffer_scan_index < ((tx_fifo_queue_mode == TFQM_FIFO) ? num_dedicated_tx_buffers : num_tx_buffers)));
 	}
 	
-	if(tx_fifo_queue_mode == TQFM_FIFO)
+	if(tx_fifo_queue_mode == TFQM_FIFO)
 	{
-		unsigned int tqfs = GetTxQueueFIFOSize();   // Tx FIFO Size
+		unsigned int tqfs = GetTxFIFOQueueSize();   // Tx FIFO Size
 		unsigned int tffl = txfqs.template Get<typename TXFQS::TFFL>(); // Tx FIFO Free Level
 		
 		if(tffl != tqfs) // TX FIFO not empty?
@@ -2604,13 +2606,13 @@ void M_CAN<CONFIG>::TxScan()
 					logger << DebugInfo << "Pending transmission request for Tx Buffer Element #" << tx_buffer_scan_index << " from Tx FIFO" << EndDebugInfo;
 				}
 				
-				sc_dt::uint64 tx_buffer_element_addr = tx_buffers_start_addr + (tx_fifo_get_index * tx_buffer_element_size * 4);
+				sc_dt::uint64 tx_buffer_element_addr = tx_buffers_start_addr + (tx_fifo_get_index * tx_buffer_element_size);
 				
 				uint32_t t0 = 0;
 				ReadWords(tx_buffer_element_addr, &t0, 1);
 				t0 = unisim::util::endian::Target2Host(endian, t0);
 				uint32_t identifier = Tx_Buffer_Element::T0::XTD::template Get<uint32_t>(t0) ? Tx_Buffer_Element::T0::ID::template Get<uint32_t>(t0)
-																								: (Tx_Buffer_Element::T0::ID::template Get<uint32_t>(t0) & (~uint32_t(0) << (Super::ID_LENGTH - Super::STD_FMT_ID_LENGTH)));
+				                                                                             : (Tx_Buffer_Element::T0::ID::template Get<uint32_t>(t0) & (~uint32_t(0) << (Super::ID_LENGTH - Super::STD_FMT_ID_LENGTH)));
 				
 				if(identifier < tx_buffer_element_identifier)
 				{
@@ -2698,7 +2700,7 @@ void M_CAN<CONFIG>::TxScan()
 	{
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << "Tx scan misses" << tx_buffer_element_index << EndDebugInfo;
+			logger << DebugInfo << "Tx scan misses" << EndDebugInfo;
 		}
 	}
 }
