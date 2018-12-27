@@ -285,7 +285,10 @@ struct Core
   struct FPShuffler
   {
     FPShuffler() : random(), addr_range() {}
-    UINT GetRN( UINT cia, UINT normal_value ) { return (cia >= addr_range.first and cia < addr_range.second) ? UINT(random.Generate() & 3) : normal_value; }
+    UINT GetRN( UINT cia, UINT normal_value )
+    {
+      return (cia >= addr_range.first and cia < addr_range.second) ? UINT((random.Generate() & 3) | 2) : normal_value;
+    }
     unisim::util::random::Random random;
     std::pair<U64,U64> addr_range;
   } fp_shuffler;

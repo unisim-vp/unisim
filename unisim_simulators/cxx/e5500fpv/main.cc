@@ -126,10 +126,10 @@ main( int argc, char* argv[] )
       char* range = fpsat;
       cpu.fp_shuffler.addr_range.first  = strtoull(range, &range, 0);
       if (*range++ != ':')
-        { std::cerr << "error: expected FP_SCRABLING_AT=<start address>:<end address>, got: " << fpsat << std::endl; return 1; }
+        { std::cerr << "error: expected FP_SHUFFLING_AT=<start address>:<end address>, got: " << fpsat << std::endl; return 1; }
       cpu.fp_shuffler.addr_range.second = strtoull(range, &range, 0);
       if (*range)
-        { std::cerr << "error: expected FP_SCRABLING_AT=<start address>:<end address>, got: " << fpsat << std::endl; return 1; }
+        { std::cerr << "error: expected FP_SHUFFLING_AT=<start address>:<end address>, got: " << fpsat << std::endl; return 1; }
       std::cerr << "FP_SHUFFLING_AT=" << std::hex << cpu.fp_shuffler.addr_range.first << ":" << cpu.fp_shuffler.addr_range.second << std::dec << std::endl;
     }
   
@@ -143,7 +143,7 @@ main( int argc, char* argv[] )
           seeds[i] = strtol(seed,&seed,0);
         }
       if (*seed)
-        { std::cerr << "error: expected FP_SCRABLING_OF=<seed0>:<seed1>:<seed2>:<seed3>, got: " << fpsof << std::endl; return 1; }
+        { std::cerr << "error: expected FP_SHUFFLING_OF=<seed0>:<seed1>:<seed2>:<seed3>, got: " << fpsof << std::endl; return 1; }
       cpu.fp_shuffler.random.Seed(seeds[0],seeds[1],seeds[2],seeds[3]);
       std::cerr << "FP_SHUFFLING_OF" << std::hex;
       char const* sep = "=";
@@ -163,7 +163,7 @@ main( int argc, char* argv[] )
   
   linux64.Setup( simargs, envs );
 
-  Debugger debugger( cpu, linux64 );
+  //Debugger debugger( cpu, linux64 );
 
   simulator.Setup();
   
@@ -182,6 +182,12 @@ main( int argc, char* argv[] )
   {
     debug_address = strtoull(debug_addr_env, 0, 16);
   }
+  uint64_t max_instructions = uint64_t(-1);
+  if (char const* debug_addr_env = getenv("YVES_MAX_INSTRUCTIONS"))
+  {
+    max_instructions = strtoull(debug_addr_env, 0, 0);
+  }
+  
   
   try
     {
@@ -207,7 +213,12 @@ main( int argc, char* argv[] )
           cpu.commit();
           
           //{ uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread32( idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
-      
+
+          if (cpu.insn_count >= max_instructions)
+            {
+              std::cerr << "Max instructions reached (" << max_instructions << ")\n";
+              break;
+            }
           // if ((cpu.m_instcount % 0x1000000) == 0)
           //   { std::cerr << "Executed instructions: " << std::dec << cpu.m_instcount << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
         }
