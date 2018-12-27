@@ -72,6 +72,9 @@ impl {
 #include <iostream>
 #include <iomanip>
 
+#include <unisim/util/likely/likely.hh>
+#define evenly(x) (x)
+
 using unisim::util::arithmetic::BitScanReverse;
 using unisim::util::endian::ByteSwap;
 using unisim::util::arithmetic::RotateRight;
