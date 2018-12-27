@@ -98,6 +98,10 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 		AC_MSG_CHECKING([for sc_start in -lsystemc])
 		AC_LINK_IFELSE([AC_LANG_SOURCE([[
 #include <systemc.h>
+extern "C"
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+__declspec(dllexport)
+#endif
 int sc_main(int argc, char **argv)
 {
 	sc_start();

@@ -35,7 +35,6 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_E200_MPC57XX_CPU_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_E200_MPC57XX_CPU_TCC__
 
-#include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.hh>
 #include <unisim/component/cxx/processor/powerpc/cpu.tcc>
 
 namespace unisim {
@@ -745,7 +744,7 @@ template <typename TYPES, typename CONFIG>
 template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN>
 inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, ADDRESS ea)
 {
-	uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (ea & (CONFIG::FSB_WIDTH - 1));
+	uint32_t size_to_fsb_boundary = CONFIG::DATA_FSB_WIDTH - (ea & (CONFIG::DATA_FSB_WIDTH - 1));
 
 	// Ensure that memory access does not cross a FSB boundary
 	if(likely(size_to_fsb_boundary >= sizeof(T)))
@@ -789,7 +788,7 @@ inline bool CPU<TYPES, CONFIG>::DataStore(T value, ADDRESS ea)
 		unisim::util::endian::BSwap(value);
 	}
 
-	uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (ea & (CONFIG::FSB_WIDTH - 1));
+	uint32_t size_to_fsb_boundary = CONFIG::DATA_FSB_WIDTH - (ea & (CONFIG::DATA_FSB_WIDTH - 1));
 
 	// Ensure that memory access does not cross a FSB boundary
 	if(likely(size_to_fsb_boundary >= sizeof(T)))
@@ -814,13 +813,31 @@ inline bool CPU<TYPES, CONFIG>::DataStore(T value, ADDRESS ea)
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::DataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm)
 {
-	if(unlikely(!AHBDataRead(addr, buffer, size, storage_attr, rwitm)))
+	BusResponseStatus response_status = AHBDataRead(addr, buffer, size, storage_attr, rwitm);
+	if(unlikely(response_status != BUS_OK_RESPONSE))
 	{
-		if(this->verbose_exception)
+		switch(response_status)
 		{
-			this->logger << DebugInfo << "Data Read Bus Error at @0x" << std::hex << addr << std::dec << EndDebugInfo;
+			case BUS_OK_RESPONSE: return true;
+			case BUS_COMMAND_ERROR_RESPONSE:
+				if(this->verbose_exception)
+				{
+					this->logger << DebugInfo << "Data Read Access Control Error at @0x" << std::hex << addr << std::dec << EndDebugInfo;
+				}
+				this->template ThrowException<typename CPU::DataStorageInterrupt::AccessControl>().SetAddress(addr); // FIXME: physical address != logical address
+				break;
+			case BUS_INCOMPLETE_RESPONSE:
+			case BUS_GENERIC_ERROR_RESPONSE:
+			case BUS_ADDRESS_ERROR_RESPONSE:
+			case BUS_BURST_ERROR_RESPONSE:
+			case BUS_BYTE_ENABLE_ERROR_RESPONSE:
+				if(this->verbose_exception)
+				{
+					this->logger << DebugInfo << "Data Read Bus Error at @0x" << std::hex << addr << std::dec << EndDebugInfo;
+				}
+				this->template ThrowException<typename MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_DATA_READ_BUS_ERROR);
+				break;
 		}
-		this->template ThrowException<typename MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_DATA_READ_BUS_ERROR);
 		return false;
 	}
 	
@@ -830,13 +847,31 @@ bool CPU<TYPES, CONFIG>::DataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsign
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::DataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
 {
-	if(unlikely(!AHBDataWrite(addr, buffer, size, storage_attr)))
+	BusResponseStatus response_status = AHBDataWrite(addr, buffer, size, storage_attr);
+	if(unlikely(response_status != BUS_OK_RESPONSE))
 	{
-		if(this->verbose_exception)
+		switch(response_status)
 		{
-			this->logger << DebugInfo << "Data Write Bus Error at @0x" << std::hex << addr << std::dec << EndDebugInfo;
+			case BUS_OK_RESPONSE: return true;
+			case BUS_COMMAND_ERROR_RESPONSE:
+				if(this->verbose_exception)
+				{
+					this->logger << DebugInfo << "Data Write Access Control Error at @0x" << std::hex << addr << std::dec << EndDebugInfo;
+				}
+				this->template ThrowException<typename CPU::DataStorageInterrupt::AccessControl>().SetAddress(addr); // FIXME: physical address != logical address
+				break;
+			case BUS_INCOMPLETE_RESPONSE:
+			case BUS_GENERIC_ERROR_RESPONSE:
+			case BUS_ADDRESS_ERROR_RESPONSE:
+			case BUS_BURST_ERROR_RESPONSE:
+			case BUS_BYTE_ENABLE_ERROR_RESPONSE:
+				if(this->verbose_exception)
+				{
+					this->logger << DebugInfo << "Data Write Bus Error at @0x" << std::hex << addr << std::dec << EndDebugInfo;
+				}
+				this->template ThrowException<typename MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_DATA_WRITE_BUS_ERROR);
+				break;
 		}
-		this->template ThrowException<typename MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_INSTRUCTION_READ_BUS_ERROR);
 		return false;
 	}
 	
@@ -846,13 +881,31 @@ bool CPU<TYPES, CONFIG>::DataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer,
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::InstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
 {
-	if(unlikely(!AHBInsnRead(addr, buffer, size, storage_attr)))
+	BusResponseStatus response_status = AHBInsnRead(addr, buffer, size, storage_attr);
+	if(unlikely(response_status != BUS_OK_RESPONSE))
 	{
-		if(this->verbose_exception)
+		switch(response_status)
 		{
-			this->logger << DebugInfo << "Instruction Read Bus Error at @0x" << std::hex << addr << std::dec << EndDebugInfo;
+			case BUS_OK_RESPONSE: return true;
+			case BUS_COMMAND_ERROR_RESPONSE:
+				if(this->verbose_exception)
+				{
+					this->logger << DebugInfo << "Instruction Read Access Control Error at @0x" << std::hex << addr << std::dec << EndDebugInfo;
+				}
+				this->template ThrowException<typename CPU::InstructionStorageInterrupt::AccessControl>();
+				break;
+			case BUS_INCOMPLETE_RESPONSE:
+			case BUS_GENERIC_ERROR_RESPONSE:
+			case BUS_ADDRESS_ERROR_RESPONSE:
+			case BUS_BURST_ERROR_RESPONSE:
+			case BUS_BYTE_ENABLE_ERROR_RESPONSE:
+				if(this->verbose_exception)
+				{
+					this->logger << DebugInfo << "Instruction Read Bus Error at @0x" << std::hex << addr << std::dec << EndDebugInfo;
+				}
+				this->template ThrowException<typename MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_INSTRUCTION_READ_BUS_ERROR);
+				break;
 		}
-		this->template ThrowException<typename MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_INSTRUCTION_READ_BUS_ERROR);
 		return false;
 	}
 	
@@ -878,21 +931,21 @@ bool CPU<TYPES, CONFIG>::DebugInstructionBusRead(PHYSICAL_ADDRESS addr, void *bu
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
+BusResponseStatus CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
 {
-	return false;
+	return BUS_INCOMPLETE_RESPONSE;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr, bool rwitm)
+BusResponseStatus CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr, bool rwitm)
 {
-	return false;
+	return BUS_INCOMPLETE_RESPONSE;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
+BusResponseStatus CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
 {
-	return false;
+	return BUS_INCOMPLETE_RESPONSE;
 }
 
 template <typename TYPES, typename CONFIG>

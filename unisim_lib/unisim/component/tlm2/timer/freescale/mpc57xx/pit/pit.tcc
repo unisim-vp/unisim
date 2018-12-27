@@ -616,7 +616,7 @@ void PIT<CONFIG>::ProcessEvent(Event *event)
 					
 					if(IsReadWriteError(rws))
 					{
-						logger << DebugError << "while mapped read/write access, " << std::hex << rws << std::dec << std::endl;
+						logger << DebugError << "while mapped read/write access, " << std::hex << rws << std::dec << EndDebugError;
 						payload->set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
 					}
 					else

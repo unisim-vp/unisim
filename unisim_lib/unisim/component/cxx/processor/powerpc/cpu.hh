@@ -1930,16 +1930,16 @@ protected:
 	{
 		typedef PrivilegedSPR<DBCR1, 309> Super;
 		
-		struct IAC1US : Field<IAC1US, 0, 1>   {}; // Instruction Address Compare 1 User/Supervisor Mode
-		struct IAC1ER : Field<IAC1ER, 2, 3>   {}; // Instruction Address Compare 1 Effective/Real Mode
-		struct IAC2US : Field<IAC2US, 4, 5>   {}; // Instruction Address Compare 2 User/Supervisor Mode
-		struct IAC2ER : Field<IAC2ER, 6, 7>   {}; // Instruction Address Compare 2 Effective/Real Mode
-		struct IAC12M : Field<IAC12M, 8, 9>   {}; // Instruction Address Compare 1/2 Mode
-		struct IAC3US : Field<IAC3US, 16, 7>  {}; // Instruction Address Compare 3 User/Supervisor Mode
-		struct IAC3ER : Field<IAC3ER, 18, 19> {}; // Instruction Address Compare 3 Effective/Real Mode
-		struct IAC4US : Field<IAC4US, 20, 21> {}; // Instruction Address Compare 4 User/Supervisor Mode
-		struct IAC4ER : Field<IAC4ER, 22, 23> {}; // Instruction Address Compare 4 Effective/Real Mode
-		struct IAC34M : Field<IAC34M, 24, 25> {}; // Instruction Address Compare 3/4 Mode
+		struct IAC1US : Field<IAC1US, 0, 1>   {};  // Instruction Address Compare 1 User/Supervisor Mode
+		struct IAC1ER : Field<IAC1ER, 2, 3>   {};  // Instruction Address Compare 1 Effective/Real Mode
+		struct IAC2US : Field<IAC2US, 4, 5>   {};  // Instruction Address Compare 2 User/Supervisor Mode
+		struct IAC2ER : Field<IAC2ER, 6, 7>   {};  // Instruction Address Compare 2 Effective/Real Mode
+		struct IAC12M : Field<IAC12M, 8, 9>   {};  // Instruction Address Compare 1/2 Mode
+		struct IAC3US : Field<IAC3US, 16, 17>  {}; // Instruction Address Compare 3 User/Supervisor Mode
+		struct IAC3ER : Field<IAC3ER, 18, 19> {};  // Instruction Address Compare 3 Effective/Real Mode
+		struct IAC4US : Field<IAC4US, 20, 21> {};  // Instruction Address Compare 4 User/Supervisor Mode
+		struct IAC4ER : Field<IAC4ER, 22, 23> {};  // Instruction Address Compare 4 Effective/Real Mode
+		struct IAC34M : Field<IAC34M, 24, 25> {};  // Instruction Address Compare 3/4 Mode
 		
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<IAC1US, IAC1ER, IAC2US, IAC2ER, IAC12M, IAC3US, IAC3ER, IAC4US, IAC4ER, IAC34M> ALL; };
@@ -2525,7 +2525,7 @@ protected:
 		struct DAC2XMH : Field<DAC2XMH, 15>     {}; // Data Address Compare 2 Extended Mask Control High 
 		struct DAC1XM  : Field<DAC1XM , 16, 19> {}; // Data Address Compare 1 Extended Mask Control
 		struct DAC2XM  : Field<DAC2XM , 20, 23> {}; // Data Address Compare 2 Extended Mask Control
-		struct DAC1CFG : Field<DAC1CFG, 20, 23> {}; // Data Address Compare 1 Configuration 
+		struct DAC1CFG : Field<DAC1CFG, 24, 27> {}; // Data Address Compare 1 Configuration 
 		struct DAC2CFG : Field<DAC2CFG, 28, 31> {}; // Data Address Compare 2 Configuration 
 		
 		SWITCH_ENUM_TRAIT(Model, _);
@@ -2563,13 +2563,13 @@ protected:
 		struct IAC56M : Field<IAC56M, 8, 9>   {}; // Instruction Address Compare 5/6 Mode
 		struct IAC7US : Field<IAC7US, 16, 17> {}; // Instruction Address Compare 7 User/Supervisor Mode
 		struct IAC7ER : Field<IAC7ER, 18, 19> {}; // Instruction Address Compare 7 Effective/Real Mode
-		struct IAC8US : Field<IAC7ER, 20, 21> {}; // Instruction Address Compare 8 User/Supervisor Mode
-		struct IAC8ER : Field<IAC8US, 22, 23> {}; // Instruction Address Compare 8 Effective/Real Mode
+		struct IAC8US : Field<IAC8US, 20, 21> {}; // Instruction Address Compare 8 User/Supervisor Mode
+		struct IAC8ER : Field<IAC8ER, 22, 23> {}; // Instruction Address Compare 8 Effective/Real Mode
 		struct IAC78M : Field<IAC78M, 24, 25> {}; // Instruction Address Compare 7/8 Mode
 		
 		SWITCH_ENUM_TRAIT(Model, _);
-		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<IAC5US, IAC5ER, IAC6US, IAC6ER, IAC56M, IAC7US, IAC7ER, IAC7ER, IAC8US, IAC78M> ALL; };
-		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<IAC5US, IAC5ER, IAC6US, IAC6ER, IAC56M, IAC7US, IAC7ER, IAC7ER, IAC8US, IAC78M> ALL; };
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<IAC5US, IAC5ER, IAC6US, IAC6ER, IAC56M, IAC7US, IAC7ER, IAC8US, IAC8ER, IAC78M> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<IAC5US, IAC5ER, IAC6US, IAC6ER, IAC56M, IAC7US, IAC7ER, IAC8US, IAC8ER, IAC78M> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		DBCR5(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }

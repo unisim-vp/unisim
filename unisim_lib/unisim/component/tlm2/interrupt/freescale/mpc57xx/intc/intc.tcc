@@ -37,7 +37,7 @@
 
 #include <unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh>
 #include <unisim/util/reg/core/register.tcc>
-#include <unisim/kernel/tlm2/master_id.hh>
+#include <unisim/kernel/tlm2/trans_attr.hh>
 
 namespace unisim {
 namespace component {
@@ -382,8 +382,8 @@ void INTC<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_ti
 	sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 	notify_time_stamp += t;
 	Event *event = schedule.AllocEvent();
-	unisim::kernel::tlm2::tlm_master_id *master_id = payload.template get_extension<unisim::kernel::tlm2::tlm_master_id>();
-	event->SetProcessorNumber(master_id ? (int)(*master_id) : 0);
+	unisim::kernel::tlm2::tlm_trans_attr *trans_attr = payload.template get_extension<unisim::kernel::tlm2::tlm_trans_attr>();
+	event->SetProcessorNumber(trans_attr ? trans_attr->master_id() : 0);
 	event->SetPayload(&payload);
 	event->SetTimeStamp(notify_time_stamp);
 	event->SetCompletionEvent(&completion_event);
@@ -421,9 +421,8 @@ unsigned int INTC<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 		return 0;
 	}
 	
-	unisim::kernel::tlm2::tlm_master_id *master_id = payload.template get_extension<unisim::kernel::tlm2::tlm_master_id>();
-	
-	ProcessorNumber prc_num = master_id ? (int)(*master_id) : 0;
+	unisim::kernel::tlm2::tlm_trans_attr *trans_attr = payload.template get_extension<unisim::kernel::tlm2::tlm_trans_attr>();
+	ProcessorNumber prc_num = trans_attr ? trans_attr->master_id() : 0;
 	
 	switch(cmd)
 	{
@@ -448,8 +447,8 @@ tlm::tlm_sync_enum INTC<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& paylo
 				sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 				notify_time_stamp += t;
 				Event *event = schedule.AllocEvent();
-				unisim::kernel::tlm2::tlm_master_id *master_id = payload.template get_extension<unisim::kernel::tlm2::tlm_master_id>();
-				event->SetProcessorNumber(master_id ? (int)(*master_id) : 0);
+				unisim::kernel::tlm2::tlm_trans_attr *trans_attr = payload.template get_extension<unisim::kernel::tlm2::tlm_trans_attr>();
+				event->SetProcessorNumber(trans_attr ? trans_attr->master_id() : 0);
 				event->SetPayload(&payload);
 				event->SetTimeStamp(notify_time_stamp);
 				schedule.Notify(event);
@@ -531,7 +530,7 @@ void INTC<CONFIG>::ProcessEvent(Event *event)
 			
 			if(IsReadWriteError(rws))
 			{
-				logger << DebugError << "while mapped read/write access, " << std::hex << rws << std::dec << std::endl;
+				logger << DebugError << "while mapped read/write access, " << std::hex << rws << std::dec << EndDebugError;
 				payload->set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
 			}
 			else

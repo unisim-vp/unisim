@@ -292,6 +292,10 @@ void LoggerServer::Print(mode_t mode, std::string name, const char *buffer)
 	pthread_mutex_unlock(&mutex);
 }
 
+void LoggerServer::DebugNull( std::string name, const char *buffer )
+{
+}
+
 void LoggerServer::DebugInfo(std::string name, const char *buffer)
 {
 	Print(INFO_MODE, name, buffer);

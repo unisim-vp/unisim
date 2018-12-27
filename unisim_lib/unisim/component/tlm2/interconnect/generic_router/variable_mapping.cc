@@ -32,7 +32,8 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "unisim/component/tlm2/interconnect/generic_router/router.hh"
+#include "unisim/component/tlm2/interconnect/generic_router/mapping.hh"
+#include "unisim/kernel/service/service.hh"
 
 namespace unisim {
 namespace kernel {

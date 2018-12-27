@@ -79,7 +79,9 @@ LoggerStreamBuffer::LoggerStreamBuffer(Logger& _owner, LoggerServerOutputMethodP
 	: owner(_owner)
 	, logger_server_output_method_ptr(_logger_server_output_method_ptr)
 	, buffer()
+	, mutex()
 {
+	pthread_mutex_init(&mutex, NULL);
 }
 
 LoggerStreamBuffer::~LoggerStreamBuffer()
@@ -88,6 +90,8 @@ LoggerStreamBuffer::~LoggerStreamBuffer()
 	{
 		Flush();
 	}
+	
+	pthread_mutex_destroy(&mutex);
 }
 
 std::streambuf::int_type LoggerStreamBuffer::overflow(int_type c)
@@ -122,14 +126,18 @@ void LoggerStreamBuffer::Append(char c)
 	}
 	else
 	{
+		pthread_mutex_lock(&mutex);
 		buffer.append(1, c);
+		pthread_mutex_unlock(&mutex);
 	}
 }
 
 void LoggerStreamBuffer::Flush()
 {
+	pthread_mutex_lock(&mutex);
 	(owner.GetServerInstance()->*logger_server_output_method_ptr)(owner.GetName(), buffer.c_str());
 	buffer.clear();
+	pthread_mutex_unlock(&mutex);
 }
 
 LoggerStream::LoggerStream(Logger& owner, LoggerServerOutputMethodPtr logger_server_output_method_ptr)
@@ -147,6 +155,7 @@ Logger::Logger(const std::string& _name)
 	, buffer()
 	, mode(NO_MODE)
 	, server(0)
+	, null_stream(*this, &unisim::kernel::logger::LoggerServer::DebugNull)
 	, info_stream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
 	, warning_stream(*this, &unisim::kernel::logger::LoggerServer::DebugWarning)
 	, error_stream(*this, &unisim::kernel::logger::LoggerServer::DebugError)
@@ -159,6 +168,7 @@ Logger::Logger(const char * _name)
 	, buffer()
 	, mode(NO_MODE)
 	, server(0)
+	, null_stream(*this, &unisim::kernel::logger::LoggerServer::DebugNull)
 	, info_stream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
 	, warning_stream(*this, &unisim::kernel::logger::LoggerServer::DebugWarning)
 	, error_stream(*this, &unisim::kernel::logger::LoggerServer::DebugError)
@@ -171,6 +181,7 @@ Logger::Logger(const unisim::kernel::service::Object& object)
 	, buffer()
 	, mode(NO_MODE)
 	, server(0)
+	, null_stream(*this, &unisim::kernel::logger::LoggerServer::DebugNull)
 	, info_stream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
 	, warning_stream(*this, &unisim::kernel::logger::LoggerServer::DebugWarning)
 	, error_stream(*this, &unisim::kernel::logger::LoggerServer::DebugError)

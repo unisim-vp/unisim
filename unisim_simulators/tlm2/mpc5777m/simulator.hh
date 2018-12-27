@@ -45,6 +45,9 @@
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
+#include <unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/xbar.hh>
+#include <unisim/component/tlm2/interconnect/freescale/mpc57xx/pbridge/pbridge.hh>
+#include <unisim/component/tlm2/interconnect/freescale/mpc57xx/ebi/ebi.hh>
 #include <unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh>
 #include <unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh>
 #include <unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh>
@@ -55,6 +58,8 @@
 #include <unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.hh>
 #include <unisim/component/tlm2/operators/associative_operator.hh>
 #include <unisim/component/tlm2/com/freescale/mpc57xx/dspi/dspi.hh>
+#include <unisim/component/tlm2/com/freescale/mpc57xx/siul2/siul2.hh>
+#include <unisim/component/tlm2/com/bosch/m_can/m_can.hh>
 
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
@@ -74,6 +79,11 @@
 
 // Compile time configuration
 #include <config.hh>
+
+#if HAVE_TVS
+// Timed Value Streams
+#include <tvs/tracing.h>
+#endif
 
 // Host machine standard headers
 #include <iostream>
@@ -117,16 +127,19 @@ private:
 	//===                     Aliases for components classes                ===
 	//=========================================================================
 
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> SYSTEM_SRAM;
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> FLASH;
+	typedef unisim::component::tlm2::memory::ram::Memory<XBAR_0_CONFIG::OUTPUT_BUSWIDTH, uint32_t, FSB_BURST_SIZE / (XBAR_0_CONFIG::OUTPUT_BUSWIDTH / 8), unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> SYSTEM_SRAM;
+	typedef unisim::component::tlm2::memory::ram::Memory<XBAR_0_CONFIG::OUTPUT_BUSWIDTH, uint32_t, FSB_BURST_SIZE / (XBAR_0_CONFIG::OUTPUT_BUSWIDTH / 8), unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> FLASH;
 	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::e200z710n3::CPU Main_Core_0;
 	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::e200z710n3::CPU Main_Core_1;
 	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::e200z425bn3::CPU Peripheral_Core_2;
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<XBAR_0_CONFIG> XBAR_0;
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<XBAR_1_CONFIG> XBAR_1;
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<PBRIDGE_A_CONFIG> PBRIDGE_A;
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<PBRIDGE_B_CONFIG> PBRIDGE_B;
+	typedef unisim::component::tlm2::interconnect::freescale::mpc57xx::xbar::XBAR<XBAR_0_CONFIG> XBAR_0;
+	typedef unisim::component::tlm2::interconnect::freescale::mpc57xx::xbar::XBAR<XBAR_1_CONFIG> XBAR_1;
+	typedef unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::PBRIDGE<PBRIDGE_A_CONFIG> PBRIDGE_A;
+	typedef unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::PBRIDGE<PBRIDGE_B_CONFIG> PBRIDGE_B;
+	typedef unisim::component::tlm2::interconnect::freescale::mpc57xx::ebi::EBI<EBI_CONFIG> EBI;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<XBAR_1_M1_CONCENTRATOR_CONFIG> XBAR_1_M1_CONCENTRATOR;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<IAHBG_0_CONFIG> IAHBG_0;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<IAHBG_1_CONFIG> IAHBG_1;
 	typedef unisim::component::tlm2::interrupt::freescale::mpc57xx::intc::INTC<INTC_0_CONFIG> INTC_0;
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<STM_0_CONFIG> STM_0;
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<STM_1_CONFIG> STM_1;
@@ -208,21 +221,32 @@ private:
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SIN_SERIAL_BUS;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_PCS_SERIAL_BUS;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SS_SERIAL_BUS;
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_SPACE_STUB;
-	typedef unisim::kernel::tlm2::TargetStub<64> FLASH_PORT1_STUB;
-	typedef unisim::kernel::tlm2::TargetStub<64> XBAR_0_S6_STUB;
-	typedef unisim::kernel::tlm2::InitiatorStub<64> XBAR_1_M2_STUB;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::siul2::SIUL2<SIUL2_CONFIG> SIUL2;
 	
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PCM_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PFLASH_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> MC_ME_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> MC_CGM_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> XBAR_0_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> XBAR_1_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PBRIDGE_A_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PBRIDGE_B_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> SIUL2_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_STUB;
+	//typedef unisim::component::tlm2::com::freescale::mpc57xx::can::m_ttcan::m_ttcan<CONFIG::M_TTCAN_0_CONFIG> M_TTCAN_0;
+	typedef unisim::component::tlm2::com::bosch::m_can::M_CAN<M_CAN_1_CONFIG> M_CAN_1;
+	typedef unisim::component::tlm2::com::bosch::m_can::M_CAN<M_CAN_2_CONFIG> M_CAN_2;
+	typedef unisim::component::tlm2::com::bosch::m_can::M_CAN<M_CAN_3_CONFIG> M_CAN_3;
+	typedef unisim::component::tlm2::com::bosch::m_can::M_CAN<M_CAN_4_CONFIG> M_CAN_4;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<SHARED_CAN_MESSAGE_RAM_ROUTER_CONFIG> SHARED_CAN_MESSAGE_RAM_ROUTER;
+	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, FSB_BURST_SIZE / (PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH / 8), unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> SHARED_CAN_MESSAGE_RAM;
+	
+	typedef unisim::kernel::tlm2::tlm_can_bus CAN_BUS;
+
+	typedef unisim::component::tlm2::memory::ram::Memory<EBI_CONFIG::OUTPUT_BUSWIDTH, uint32_t, FSB_BURST_SIZE / (EBI_CONFIG::OUTPUT_BUSWIDTH / 8), unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_MEM;
+	//typedef unisim::component::tlm2::memory::ram::Memory<XBAR_0_CONFIG::OUTPUT_BUSWIDTH, uint32_t, FSB_BURST_SIZE / (XBAR_0_CONFIG::OUTPUT_BUSWIDTH / 8), unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_SPACE_STUB;
+	typedef unisim::kernel::tlm2::TargetStub<XBAR_0_CONFIG::OUTPUT_BUSWIDTH> FLASH_PORT1_STUB;
+	typedef unisim::kernel::tlm2::TargetStub<XBAR_0_CONFIG::OUTPUT_BUSWIDTH> XBAR_0_S6_STUB;
+	typedef unisim::kernel::tlm2::InitiatorStub<XBAR_1_CONFIG::OUTPUT_BUSWIDTH> XBAR_1_M2_STUB;
+	
+	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PCM_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PFLASH_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> MC_ME_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> MC_CGM_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> MC_RGM_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PRAMC_STUB;
+	//typedef unisim::component::tlm2::memory::ram::Memory<PBRIDGE_A_CONFIG::OUTPUT_BUSWIDTH, uint32_t, 1, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_STUB;
+
 
 	//=========================================================================
 	//===                      Aliases for services classes                 ===
@@ -252,8 +276,13 @@ private:
 	//  - Peripheral Bridges
 	PBRIDGE_A *pbridge_a;
 	PBRIDGE_B *pbridge_b;
+	//  - External Bus interface
+	EBI *ebi;
 	//  - Concentrators
 	XBAR_1_M1_CONCENTRATOR *xbar_1_m1_concentrator;
+	//  - Intelligent Bus Bridging Gaskets
+	IAHBG_0 *iahbg_0;
+	IAHBG_1 *iahbg_1;
 	//  - Interrupt Controller
 	INTC_0 *intc_0;
 	//  - System Timer Modules
@@ -351,10 +380,22 @@ private:
 	DSPI_12_SIN_SERIAL_BUS  *dspi_12_sin_serial_bus;
 	DSPI_12_PCS_SERIAL_BUS  *dspi_12_pcs_serial_bus[DSPI_12::NUM_CTARS];
 	DSPI_12_SS_SERIAL_BUS   *dspi_12_ss_serial_bus;
+	// - SIUL2
+	SIUL2 *siul2;
+	// - CAN Subsystem
+// 	M_TTCAN_0 *m_ttcan_0;
+	M_CAN_1 *m_can_1;
+	M_CAN_2 *m_can_2;
+	M_CAN_3 *m_can_3;
+	M_CAN_4 *m_can_4;
+	SHARED_CAN_MESSAGE_RAM_ROUTER *shared_can_message_ram_router;
+	SHARED_CAN_MESSAGE_RAM *shared_can_message_ram;
+	CAN_BUS *can_bus;
 	
 	//  - Stubs
-	EBI_SPACE_STUB *ebi_space_stub;
-	EBI_STUB *ebi_stub;
+	EBI_MEM *ebi_mem_0;
+	EBI_MEM *ebi_mem_1;
+	EBI_MEM *ebi_mem_2;
 	FLASH_PORT1_STUB *flash_port1_stub;
 	XBAR_0_S6_STUB *xbar_0_s6_stub;
 	XBAR_1_M2_STUB *xbar_1_m2_stub;
@@ -362,11 +403,8 @@ private:
 	PFLASH_STUB *pflash_stub;
 	MC_ME_STUB *mc_me_stub;
 	MC_CGM_STUB *mc_cgm_stub;
-	XBAR_0_STUB *xbar_0_stub;
-	XBAR_1_STUB *xbar_1_stub;
-	PBRIDGE_A_STUB *pbridge_a_stub;
-	PBRIDGE_B_STUB *pbridge_b_stub;
-	SIUL2_STUB *siul2_stub;
+	MC_RGM_STUB *mc_rgm_stub;
+	PRAMC_STUB *pram_0_stub;
 	
 	unisim::component::tlm2::operators::LogicalOrOperator<bool, NUM_DMA_CHANNELS> *dma_err_irq_combinator;
 	unisim::component::tlm2::operators::LogicalOrOperator<bool, 3> *DSPI0_0;
@@ -453,6 +491,8 @@ private:
 	unsigned int dspi_6_slave;
 	unsigned int dspi_12_slave;
 	
+	sc_core::sc_time max_time;
+	
 	unisim::kernel::service::Parameter<bool> param_enable_core0_reset;
 	unisim::kernel::service::Parameter<bool> param_enable_core1_reset;
 	unisim::kernel::service::Parameter<bool> param_enable_core2_reset;
@@ -493,7 +533,18 @@ private:
 	unisim::kernel::service::Parameter<unsigned int> param_dspi_5_slave;
 	unisim::kernel::service::Parameter<unsigned int> param_dspi_6_slave;
 	unisim::kernel::service::Parameter<unsigned int> param_dspi_12_slave;
+	
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_max_time;
 
+#if HAVE_TVS
+	std::string bandwidth_vcd_filename;
+	unisim::kernel::service::Parameter<std::string> param_bandwidth_vcd_filename;
+	std::string bandwidth_gtkwave_init_script;
+	unisim::kernel::service::Parameter<std::string> param_bandwidth_gtkwave_init_script;
+	std::ofstream *bandwidth_vcd_file;
+	tracing::timed_stream_vcd_processor *bandwidth_vcd;
+#endif
+	
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
 	
@@ -502,7 +553,6 @@ private:
 	void Core2ResetProcess();
 	
 	void InterruptSource(unsigned int irq_num, const std::string& source = std::string());
-	//void DMASource(unsigned int dmamux_num, unsigned int dma_source_num, const std::string& source_req = std::string(), const std::string& source_ack = std::string());
 	void LogicalOr2(sc_core::sc_signal<bool>& in0, sc_core::sc_signal<bool>& in1, sc_core::sc_signal<bool>& out);
 	void LogicalOr3(sc_core::sc_signal<bool>& in0, sc_core::sc_signal<bool>& in1, sc_core::sc_signal<bool>& in2, sc_core::sc_signal<bool>& out);
 	void DMASource(unsigned int dmamux_num, unsigned int dma_source_num);

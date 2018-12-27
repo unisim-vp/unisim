@@ -47,8 +47,9 @@ namespace random {
 class Random
 {
 public:
-	static const long Max = +2147483647L;
-	static const long Min = -Max - 1L;
+	static const int32_t Max = +2147483647L;
+	static const int32_t Min = -Max - 1L;
+	static const uint64_t Amplitude = 4294967296ULL;
 	Random();
 	Random(int32_t seed_x, int32_t seed_y, int32_t seed_z, int32_t seed_w);
 	void Seed(int32_t seed_x, int32_t seed_y, int32_t seed_z, int32_t seed_w);

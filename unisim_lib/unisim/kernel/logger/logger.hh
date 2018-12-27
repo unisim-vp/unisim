@@ -42,6 +42,7 @@
 #include <ios>
 #include <ostream>
 #include <sstream>
+#include <pthread.h>
 
 namespace unisim {
 namespace kernel {
@@ -71,6 +72,7 @@ private:
 	Logger& owner;
 	LoggerServerOutputMethodPtr logger_server_output_method_ptr;
 	std::string buffer;
+	pthread_mutex_t mutex;
 };
 
 class LoggerStream : public std::ostream
@@ -128,6 +130,7 @@ struct Logger
 	void EndDebugError();
 	void EndDebug();
 	
+	LoggerStream& DebugNullStream() { return null_stream; }
 	LoggerStream& DebugInfoStream() { return info_stream; }
 	LoggerStream& DebugWarningStream() { return warning_stream; }
 	LoggerStream& DebugErrorStream() { return error_stream; }
@@ -146,6 +149,7 @@ private:
 	std::stringstream buffer;
 	mode_t mode;
 	unisim::kernel::logger::LoggerServer *server;
+	LoggerStream null_stream;
 	LoggerStream info_stream;
 	LoggerStream warning_stream;
 	LoggerStream error_stream;

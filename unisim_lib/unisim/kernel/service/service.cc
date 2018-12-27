@@ -889,7 +889,7 @@ TYPE Formula<TYPE>::Compute() const
 		case FormulaOperator::OP_EQ: return (TYPE)(childs[0] ? *childs[0] : TYPE()) == (TYPE)(childs[1] ? *childs[1] : TYPE());
 		case FormulaOperator::OP_SEL: return (TYPE)(childs[0] ? *childs[0] : TYPE()) ? (TYPE)(childs[1] ? *childs[1] : TYPE()) : (TYPE)(childs[2] ? *childs[2] : TYPE());
 		case FormulaOperator::OP_NEG: return -(TYPE)(childs[0] ? *childs[0] : TYPE());
-		case FormulaOperator::OP_ABS: return (TYPE)(childs[0] ? *childs[0] : TYPE()) >= 0 ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : -(TYPE)(childs[0] ? *childs[0] : TYPE());
+		case FormulaOperator::OP_ABS: return (TYPE)(childs[0] ? *childs[0] : TYPE()) >= TYPE() ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : -(TYPE)(childs[0] ? *childs[0] : TYPE());
 		case FormulaOperator::OP_MIN: return (TYPE)(childs[0] ? *childs[0] : TYPE()) < (TYPE)(childs[1] ? *childs[1] : TYPE()) ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : (TYPE)(childs[1] ? *childs[1] : TYPE());
 		case FormulaOperator::OP_MAX: return (TYPE)(childs[0] ? *childs[0] : TYPE()) > (TYPE)(childs[1] ? *childs[1] : TYPE()) ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : (TYPE)(childs[1] ? *childs[1] : TYPE());
 		case FormulaOperator::OP_AND: return (TYPE)(childs[0] ? *childs[0] : TYPE()) && (TYPE)(childs[1] ? *childs[1] : TYPE());
@@ -1666,8 +1666,8 @@ template class Formula<double>;
 //=============================================================================
 
 Object::Object(const char *_name, Object *_parent, const char *_description)
-	: name(_parent ? (std::string(_parent->GetName()) + std::string(".") + std::string(_name)) : std::string(_name))
-	, object_name(std::string(_name))
+	: object_name(_parent ? (std::string(_parent->GetName()) + std::string(".") + std::string(_name)) : std::string(_name))
+	, object_base_name(std::string(_name))
 	, description(_description ? std::string(_description) : std::string(""))
 	, parent(_parent)
 	, srv_imports()
@@ -1686,12 +1686,12 @@ Object::~Object()
 
 const char *Object::GetName() const
 {
-	return name.c_str();
+	return object_name.c_str();
 }
 
 const char *Object::GetObjectName() const
 {
-	return object_name.c_str();
+	return object_base_name.c_str();
 }
 
 Object *Object::GetParent() const
@@ -1860,6 +1860,13 @@ VariableBase& Object::operator [] (const char *name)
 	return *variable;
 }
 
+VariableBase& Object::operator [] (const std::string& name)
+{
+	std::string fullname = GetName() + std::string(".") + name;
+	VariableBase *variable = Simulator::Instance()->FindVariable(fullname.c_str());
+	return *variable;
+}
+
 Simulator *Object::GetSimulator() const
 {
 	return Simulator::Instance();
@@ -1894,9 +1901,9 @@ void Object::GenerateLatexDocumentation(std::ostream& os, VariableBase::Type var
 	if(header_printed) os << "\\hline" << std::endl;
 }
 
-void Object::Stop(int exit_status)
+void Object::Stop(int exit_status, bool asynchronous)
 {
-	Simulator::Instance()->Stop(this, exit_status);
+	Simulator::Instance()->Stop(this, exit_status, asynchronous);
 }
 
 void Object::SetDescription(const char *_description)

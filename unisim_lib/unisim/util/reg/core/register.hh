@@ -149,32 +149,52 @@ enum Access
 
 std::ostream& operator << (std::ostream& os, const Access& access);
 
+////////////////////////////// ReadWriteStatusFlag///////////////////////////////
+
+enum ReadWriteStatusFlag
+{
+	RWSF_WOORV         = 1,                                   // writing out-of-range value
+	RWSF_WROR          = 2,                                   // writing read-only register
+	RWSF_WROB          = 4,                                   // writing read-only bits
+	RWSF_RWOR          = 8,                                   // reading write-only register
+	RWSF_ANA           = 16,                                  // access not allowed
+	RWSF_UA            = 32                                   // unmapped access
+};
+
 //////////////////////////////// ReadWriteStatus ////////////////////////////////
 
 enum ReadWriteStatus
 {
 	RWS_OK            = 0,                                   // OK
-	RWS_WOORV         = 1,                                   // writing out-of-range value
-	RWS_WROR          = 2,                                   // writing read-only register
-	RWS_WROB          = 4,                                   // writing read-only bits
-	RWS_RWOR          = 8,                                   // reading write-only register
+	RWS_WOORV         = RWSF_WOORV,                          // writing out-of-range value
+	RWS_WROR          = RWSF_WROR,                           // writing read-only register
+	RWS_WROB          = RWSF_WROB,                           // writing read-only bits
+	RWS_RWOR          = RWSF_RWOR,                           // reading write-only register
 	RWS_WOORV_WROR    = RWS_WOORV | RWS_WROR,                // writing out-of-range value and writing read-only register
 	RWS_WOORV_WROB    = RWS_WOORV | RWS_WROB,                // writing out-of-range value and writing read-only bits
-	RWS_ANA           = 16,                                  // access not allowed
+	RWS_ANA           = RWSF_ANA,                            // access not allowed
 	RWS_WOORV_NA      = RWS_WOORV | RWS_ANA,                 // writing out-of-range value and access not allowed
 	RWS_WROR_NA       = RWS_WROR | RWS_ANA,                  // writing read-only register and access not allowed
 	RWS_WROB_NA       = RWS_WROB | RWS_ANA,                  // writing read-only bits and access not allowed
 	RWS_RWOR_NA       = RWS_RWOR | RWS_ANA,                  // reading write-only register and access not allowed
 	RWS_WOORV_WROR_NA = RWS_WOORV | RWS_WROR | RWS_ANA,      // writing out-of-range value and writing read-only register and access not allowed
 	RWS_WOORV_WROB_NA = RWS_WOORV | RWS_WROB | RWS_ANA,      // writing out-of-range value and writing read-only bits and access not allowed
-	RWS_UA            = 32                                   // unmapped access
+	RWS_UA            = RWSF_UA                              // unmapped access
 };
 
 std::ostream& operator << (std::ostream& os, const ReadWriteStatus& ws);
 
 inline bool IsReadWriteError(ReadWriteStatus rws) ALWAYS_INLINE;
 
-inline bool IsReadWriteError(ReadWriteStatus rws) { return (rws & (RWS_ANA | RWS_UA)) != 0; }
+inline bool IsReadWriteError(ReadWriteStatus rws) { return (rws & (RWSF_ANA | RWSF_UA)) != 0; }
+
+inline bool IsUnmappedAccessError(ReadWriteStatus rws) { return (rws & RWSF_UA) != 0; }
+
+inline bool IsAccessNotAllowedError(ReadWriteStatus rws) { return (rws & RWSF_ANA) != 0; }
+
+inline void SetReadWriteStatusFlag(ReadWriteStatus& rws, ReadWriteStatusFlag rwsf) { rws = ReadWriteStatus(rws | rwsf); }
+
+inline void ClearReadWriteStatusFlag(ReadWriteStatus& rws, ReadWriteStatusFlag rwsf) { rws = ReadWriteStatus(rws & ~rwsf); }
 
 ////////////////////////// Forward declarations ///////////////////////////////
 
@@ -231,6 +251,8 @@ struct NullRegisterBase;
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE> class Register;
 
 template <typename CUSTOM_RW_ARG> class AddressableRegisterBase;
+
+template <typename CUSTOM_RW_ARG> class AddressableRegisterFileBase;
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG> class AddressableRegister;
 
@@ -315,6 +337,7 @@ public:
 	template <typename T> static inline T GetWriteMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetWriteOneClearMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetReadMask() ALWAYS_INLINE;
+	template <typename T> static inline bool HasOverlappingBitFields();
 	template <typename T> static inline T Mask(const T& storage) ALWAYS_INLINE;
 	template <typename T> static inline T Get(const T& storage) ALWAYS_INLINE;
 	template <typename T> static void inline Set(T& storage, T field_value) ALWAYS_INLINE;
@@ -346,6 +369,8 @@ private:
 
 struct NullField
 {
+	static const unsigned int BITWIDTH = 0;
+	
 	template <typename T> static inline T GetMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetAssignMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetWriteMask() ALWAYS_INLINE;
@@ -379,11 +404,20 @@ template < typename  BF0 = NullField, typename  BF1 = NullField, typename  BF2 =
          , typename BF60 = NullField, typename BF61 = NullField, typename BF62 = NullField, typename BF63 = NullField>
 struct FieldSet
 {
+	static const unsigned int BITWIDTH = BF0::BITWIDTH + BF1::BITWIDTH + BF2::BITWIDTH + BF3::BITWIDTH + BF4::BITWIDTH + BF5::BITWIDTH + BF6::BITWIDTH + BF7::BITWIDTH +
+	                                     BF8::BITWIDTH + BF9::BITWIDTH + BF10::BITWIDTH + BF11::BITWIDTH + BF12::BITWIDTH + BF13::BITWIDTH + BF14::BITWIDTH + BF15::BITWIDTH +
+	                                     BF16::BITWIDTH + BF17::BITWIDTH + BF18::BITWIDTH + BF19::BITWIDTH + BF20::BITWIDTH + BF21::BITWIDTH + BF22::BITWIDTH + BF23::BITWIDTH +
+	                                     BF24::BITWIDTH + BF25::BITWIDTH + BF26::BITWIDTH + BF27::BITWIDTH + BF28::BITWIDTH + BF29::BITWIDTH + BF30::BITWIDTH + BF31::BITWIDTH +
+	                                     BF32::BITWIDTH + BF33::BITWIDTH + BF34::BITWIDTH + BF35::BITWIDTH + BF36::BITWIDTH + BF37::BITWIDTH + BF38::BITWIDTH + BF39::BITWIDTH +
+	                                     BF40::BITWIDTH + BF41::BITWIDTH + BF42::BITWIDTH + BF43::BITWIDTH + BF44::BITWIDTH + BF45::BITWIDTH + BF46::BITWIDTH + BF47::BITWIDTH +
+	                                     BF48::BITWIDTH + BF49::BITWIDTH + BF50::BITWIDTH + BF51::BITWIDTH + BF52::BITWIDTH + BF53::BITWIDTH + BF54::BITWIDTH + BF55::BITWIDTH +
+	                                     BF56::BITWIDTH + BF57::BITWIDTH + BF58::BITWIDTH + BF59::BITWIDTH + BF60::BITWIDTH + BF61::BITWIDTH + BF62::BITWIDTH + BF63::BITWIDTH;
 	template <typename T> static inline T GetMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetAssignMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetWriteMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetWriteOneClearMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetReadMask() ALWAYS_INLINE;
+	template <typename T> static inline bool HasOverlappingBitFields();
 	template <typename T> static inline T Get(const T& storage) ALWAYS_INLINE;
 	template <typename T> static inline void Set(T& storage, T bitfied_value) ALWAYS_INLINE;
 	static inline const std::string& GetName();
@@ -459,6 +493,7 @@ public:
 	static const unsigned int SIZE = _SIZE;
 	static const Access ACCESS = _ACCESS;
 	
+	inline TYPE Get() const ALWAYS_INLINE;
 	inline bool HasBit(unsigned int bit_offset) const ALWAYS_INLINE;
 	inline TYPE Get(unsigned int bit_offset) const ALWAYS_INLINE;
 	inline void Set(unsigned int bit_offset, TYPE bit_value) ALWAYS_INLINE;
@@ -478,7 +513,7 @@ public:
 	void WithinRegisterFileCtor(unsigned int index, void *custom_ctor_arg);
 	void Initialize(TYPE value);
 	inline Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>& operator = (const TYPE& value) ALWAYS_INLINE;
-	inline operator TYPE () const ALWAYS_INLINE;
+	inline operator const TYPE () const ALWAYS_INLINE;
 	inline TYPE operator [] (unsigned int bit_offset) const ALWAYS_INLINE;
 	ReadWriteStatus Write(const TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
 	template <typename PRESERVED_FIELD> ReadWriteStatus WritePreserve(const TYPE& value, const TYPE& bit_enable);
@@ -562,12 +597,12 @@ private:
 
 // Note: this class is internal, it is not intended to be used directly by the user
 //       use AddressableRegister instead
-template <typename CUSTOM_RW_ARG>
+template <typename CUSTOM_RW_ARG = NullCustomArg>
 class AddressableRegisterBase
 {
 public:
-	virtual void ShortPrettyPrint(std::ostream& os) = 0;
-	virtual void LongPrettyPrint(std::ostream& os) = 0;
+	virtual void ShortPrettyPrint(std::ostream& os) const = 0;
+	virtual void LongPrettyPrint(std::ostream& os) const = 0;
 protected:
 	virtual unsigned int __ARB_GetSize__() const = 0;
 	virtual const std::string& __ARB_GetName__() const = 0;
@@ -583,7 +618,7 @@ protected:
 /////////////////////// AddressableRegisterFileBase<> /////////////////////////
 // Note: this class is internal, it is not intended to be used directly by the user
 //       use AddressableRegisterFile instead
-template <typename CUSTOM_RW_ARG>
+template <typename CUSTOM_RW_ARG = NullCustomArg>
 class AddressableRegisterFileBase
 {
 protected:
@@ -609,8 +644,8 @@ public:
 	using Super::operator =;
 
 public:
-	virtual void ShortPrettyPrint(std::ostream& os);
-	virtual void LongPrettyPrint(std::ostream& os);
+	virtual void ShortPrettyPrint(std::ostream& os) const;
+	virtual void LongPrettyPrint(std::ostream& os) const;
 protected:
 	virtual ReadWriteStatus Write(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
 	virtual ReadWriteStatus Read(typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
@@ -696,8 +731,8 @@ public:
 	void SetEndian(unisim::util::endian::endian_type endian);
 	void MapRegister(ADDRESS addr, AddressableRegisterBase<CUSTOM_RW_ARG> *reg, unsigned int reg_byte_size = 0 /* in bytes (with padding) */);
 	void MapRegisterFile(ADDRESS addr, AddressableRegisterFileBase<CUSTOM_RW_ARG> *regfile, unsigned int reg_byte_size = 0 /* in bytes (with padding) */, unsigned int stride = 0 /* in bytes */);
-	void Unmap(ADDRESS addr, unsigned int byte_size);
-	void Clear();
+	void UnmapRegistersAt(ADDRESS addr, unsigned int byte_size);
+	void ClearRegisterMap();
 	AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *FindAddressableRegister(ADDRESS addr) const;
 	
 	ReadWriteStatus Write(ADDRESS addr, const unsigned char *data_ptr, unsigned int data_length);

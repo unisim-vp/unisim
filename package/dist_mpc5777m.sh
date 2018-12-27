@@ -59,6 +59,7 @@ unisim/util/os/linux_os/linux.cc \
 unisim/util/lexer/lexer.cc \
 unisim/util/ieee754/ieee754.cc \
 unisim/util/reg/core/register.cc \
+unisim/util/hypapp/hypapp.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
@@ -91,6 +92,8 @@ unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
+unisim/component/tlm2/interconnect/generic_router/config.cc \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/pbridge/acr_mapping.cc \
 unisim/component/tlm2/com/serial_terminal/serial_terminal.cc \
 "
 
@@ -592,8 +595,9 @@ unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/kernel/tlm2/simulator.hh \
 unisim/kernel/tlm2/clock.hh \
-unisim/kernel/tlm2/master_id.hh \
+unisim/kernel/tlm2/trans_attr.hh \
 unisim/kernel/tlm2/tlm_serial.hh \
+unisim/kernel/tlm2/tlm_can.hh \
 unisim/util/backtrace/backtrace.hh \
 unisim/util/likely/likely.hh \
 unisim/util/inlining/inlining.hh \
@@ -685,6 +689,7 @@ unisim/util/lexer/lexer.hh \
 unisim/util/parser/parser.hh \
 unisim/util/reg/core/register.hh \
 unisim/util/cache/cache.hh \
+unisim/util/hypapp/hypapp.hh \
 unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/debug_selecting.hh \
 unisim/service/interfaces/debug_event.hh \
@@ -750,6 +755,16 @@ unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/tlm2/interconnect/generic_router/router.hh \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
 unisim/component/tlm2/interconnect/generic_router/config.hh \
+unisim/component/tlm2/interconnect/generic_router/mapping.hh \
+unisim/component/tlm2/interconnect/generic_router/protection.hh \
+unisim/component/tlm2/interconnect/programmable_router/router.hh \
+unisim/component/tlm2/interconnect/programmable_router/config.hh \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/xbar.hh \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/config.hh \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/smpu/smpu.hh \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/pbridge/pbridge.hh \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/ebi/ebi.hh \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/ebi/config.hh \
 unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh \
 unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh \
 unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh \
@@ -760,6 +775,9 @@ unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.hh \
 unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.hh \
 unisim/component/tlm2/operators/associative_operator.hh \
 unisim/component/tlm2/com/freescale/mpc57xx/dspi/dspi.hh \
+unisim/component/tlm2/com/freescale/mpc57xx/siul2/siul2.hh \
+unisim/component/tlm2/com/freescale/mpc57xx/siul2/defs.hh \
+unisim/component/tlm2/com/bosch/m_can/m_can.hh \
 "
 
 UNISIM_LIB_SIMULATOR_TEMPLATE_FILES="\
@@ -832,6 +850,11 @@ unisim/component/tlm2/processor/powerpc/e200/mpc57xx/cpu.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
+unisim/component/tlm2/interconnect/programmable_router/router.tcc \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/xbar.tcc \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/smpu/smpu.tcc \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/pbridge/pbridge.tcc \
+unisim/component/tlm2/interconnect/freescale/mpc57xx/ebi/ebi.tcc \
 unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.tcc \
 unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.tcc \
 unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.tcc \
@@ -840,6 +863,8 @@ unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.tcc \
 unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.tcc \
 unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.tcc \
 unisim/component/tlm2/com/freescale/mpc57xx/dspi/dspi.tcc \
+unisim/component/tlm2/com/freescale/mpc57xx/siul2/siul2.tcc \
+unisim/component/tlm2/com/bosch/m_can/m_can.tcc \
 "
 
 UNISIM_LIB_SIMULATOR_M4_FILES="\
@@ -856,9 +881,13 @@ m4/check_lib.m4 \
 m4/get_exec_path.m4 \
 m4/real_path.m4 \
 m4/pthread.m4 \
+m4/tvs.m4 \
 "
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="\
+unisim/kernel/tlm2/style.css \
+unisim/kernel/tlm2/script.js \
+unisim/kernel/tlm2/favicon.ico \
 unisim/service/debug/gdb_server/gdb_powerpc_vle.xml \
 unisim/util/debug/dwarf/powerpc_e500_dwarf_register_number_mapping.xml \
 unisim/util/debug/dwarf/powerpc_e500_gcc_dwarf_register_number_mapping.xml \
@@ -910,12 +939,16 @@ set \
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 simulator.cc \
+config.cc \
 debugger.cc \
 xbar_0.cc \
 xbar_1.cc \
 pbridge_a.cc \
 pbridge_b.cc \
+ebi.cc \
 xbar_1_m1_concentrator.cc \
+iahbg_0.cc \
+iahbg_1.cc \
 intc_0.cc \
 stm_0.cc \
 stm_1.cc \
@@ -952,6 +985,12 @@ dspi_4.cc \
 dspi_5.cc \
 dspi_6.cc \
 dspi_12.cc \
+siul2.cc \
+m_can_1.cc \
+m_can_2.cc \
+m_can_3.cc \
+m_can_4.cc \
+shared_can_message_ram_router.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
@@ -1026,6 +1065,12 @@ soft/libsys/include/linflexd.h \
 soft/libsys/include/dmamux.h \
 soft/libsys/include/edma.h \
 soft/libsys/include/dspi.h \
+soft/libsys/include/siul2.h \
+soft/libsys/include/ebi.h \
+soft/libsys/include/pbridge.h \
+soft/libsys/include/xbar.h \
+soft/libsys/include/smpu.h \
+soft/libsys/include/m_can.h \
 soft/libsys/include/console.h \
 soft/libsys/include/ramdisk.h \
 soft/libsys/include/lfs.h \
@@ -1035,7 +1080,7 @@ soft/libsys/src/core/startup.S \
 soft/libsys/src/core/vector.S \
 soft/libsys/src/core/cache.c \
 soft/libsys/src/core/mpu.c \
-soft/libsys/src/syscalls.c \
+soft/libsys/src/sys/sys.c \
 soft/libsys/src/drv/intc.c \
 soft/libsys/src/drv/stm.c \
 soft/libsys/src/drv/swt.c \
@@ -1044,12 +1089,19 @@ soft/libsys/src/drv/linflexd.c \
 soft/libsys/src/drv/dmamux.c \
 soft/libsys/src/drv/edma.c \
 soft/libsys/src/drv/dspi.c \
+soft/libsys/src/drv/siul2.c \
+soft/libsys/src/drv/ebi.c \
+soft/libsys/src/drv/pbridge.c \
+soft/libsys/src/drv/xbar.c \
+soft/libsys/src/drv/smpu.c \
+soft/libsys/src/drv/m_can.c \
 soft/libsys/src/drv/console.c \
 soft/libsys/src/drv/ramdisk.c \
 soft/libsys/src/fs/lfs.c \
 soft/libsys/src/fs/lfs_util.c \
 sim_config.xml \
 gtkwave_init_script.tcl \
+bandwidth_gtkwave_init_script.tcl \
 .gtkwaverc \
 gtkwave.ini \
 config.t32 \
@@ -1085,7 +1137,11 @@ if [ -z "${DISTCOPY}" ]; then
 fi
 
 has_to_build() {
-	[ ! -e "$1" -o "$2" -nt "$1" ]
+	if [ ! -e "$1" -o "$2" -nt "$1" ]; then
+		return 0;
+	else
+		return 1;
+	fi
 }
 
 dist_copy() {
@@ -1093,9 +1149,9 @@ dist_copy() {
 		echo "$1 ==> $2"
 		mkdir -p "$(dirname $2)"
 		${DISTCOPY} -f "$1" "$2" || exit
-		true
+		return 0
 	fi
-	false
+	return 1
 }
 
 GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib
@@ -1373,6 +1429,7 @@ AX_BOOST_BASE([1.53.0], AC_MSG_NOTICE([boost >= 1.53.0 found.]), AC_MSG_ERROR([b
 CPPFLAGS="\${BOOST_CPPFLAGS} \${CPPFLAGS}"
 LDFLAGS="\${BOOST_LDFLAGS} \${LDFLAGS}"
 UNISIM_CHECK_SYSTEMC
+UNISIM_CHECK_TVS
 AX_CXXFLAGS_WARN_ALL
 GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
 AC_SUBST(GENISSLIB_PATH)
@@ -1401,7 +1458,7 @@ libtool: \$(LIBTOOL_DEPS)
 # Program
 bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION}
 unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_TESTBENCH_FILES} ${UNISIM_SIMULATOR_SOURCE_FILES}
-unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
+#unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
 unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 
 # Static Library

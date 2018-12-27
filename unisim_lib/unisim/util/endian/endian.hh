@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_ENDIAN_ENDIAN_HH__
 #define __UNISIM_UTIL_ENDIAN_ENDIAN_HH__
 
+#include <iostream>
 #include <inttypes.h>
 #include <string.h>
 
@@ -506,6 +507,19 @@ inline void Target2Host(endian_type target_endian, uint32_t *dst, uint32_t *src,
 		BigEndian2Host(dst, src, count);
 	else
 		LittleEndian2Host(dst, src, count);
+}
+
+inline std::ostream& operator << (std::ostream& os, const endian_type& endian)
+{
+	switch(endian)
+	{
+		case E_BIG_ENDIAN    : os << "big-endian"; break;
+		case E_LITTLE_ENDIAN : os << "little-endian"; break;
+		case E_UNKNOWN_ENDIAN:
+		default              : os << "unknown-endian"; break;
+	}
+	
+	return os;
 }
 
 } // end of namespace endian

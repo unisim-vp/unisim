@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_CONFIG_HH__
 
 #include <tlm>
+#include "unisim/component/tlm2/interconnect/generic_router/mapping.hh"
 
 namespace unisim {
 namespace component {
@@ -49,9 +50,12 @@ public:
 	static const unsigned int INPUT_SOCKETS = 1;
 	static const unsigned int OUTPUT_SOCKETS = 1;
 	static const unsigned int MAX_NUM_MAPPINGS = 256;
-	static const unsigned int BUSWIDTH = 32;
+	static const unsigned int INPUT_BUSWIDTH = 32;
+	static const unsigned int OUTPUT_BUSWIDTH = 32;
 	typedef tlm::tlm_base_protocol_types TYPES;
 	static const bool VERBOSE = false;
+	static const unsigned int BURST_LENGTH = 1;
+	typedef unisim::component::tlm2::interconnect::generic_router::Mapping MAPPING;
 };
 
 class VerboseConfig : public Config {

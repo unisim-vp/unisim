@@ -75,6 +75,15 @@ template <typename CONFIG>
 const unsigned int DSPI<CONFIG>::CMD_FIFO_DEPTH;
 
 template <typename CONFIG>
+const bool DSPI<CONFIG>::HAS_DATA_SERIALIZATION_SUPPORT;
+
+template <typename CONFIG>
+const unsigned int DSPI<CONFIG>::NUM_DSI_INPUTS;
+
+template <typename CONFIG>
+const unsigned int DSPI<CONFIG>::NUM_DSI_OUTPUTS;
+
+template <typename CONFIG>
 const unsigned int DSPI<CONFIG>::NUM_SLAVE_CONFIGURATIONS;
 
 template <typename CONFIG>
@@ -177,6 +186,9 @@ DSPI<CONFIG>::DSPI(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, gen_dma_tx_event("gen_dma_tx_event")
 	, gen_dma_cmd_event("gen_dma_cmd_event")
 	, gen_dma_dd_event("gen_dma_dd_event")
+	, gen_tfff_event("gen_tfff_event")
+	, gen_cmdfff_event("gen_cmdfff_event")
+	, gen_rfdf_event("gen_rfdf_event")
 	, dsi_input_sample_event("dsi_input_sample_event", NUM_DSI_INPUTS)
 	, latch_serialized_data_event("latch_serialized_data_event")
 	, reg_addr_map()
@@ -210,6 +222,8 @@ DSPI<CONFIG>::DSPI(const sc_core::sc_module_name& name, unisim::kernel::service:
 	if(HAS_DATA_SERIALIZATION_SUPPORT)
 	{
 		description_sstr << "  - Data Serialization support" << std::endl;
+		description_sstr << "  - " << NUM_DSI_INPUTS << " parallel inputs" << std::endl;
+		description_sstr << "  - " << NUM_DSI_OUTPUTS << " parallel outputs" << std::endl;
 	}
 	description_sstr << "  - " << BUSWIDTH << "-bit data bus" << std::endl;
 	description_sstr << "  - SystemC TLM-2.0 IP Version: " << TLM2_IP_VERSION_MAJOR << "." << TLM2_IP_VERSION_MINOR << "." << TLM2_IP_VERSION_PATCH << std::endl;
@@ -288,24 +302,31 @@ DSPI<CONFIG>::DSPI(const sc_core::sc_module_name& name, unisim::kernel::service:
 	sensitive << gen_dma_dd_event;
 	
 	SC_METHOD(DMA_ACK_RX_Process);
-	sensitive << DMA_ACK_RX.neg();
+	sensitive << DMA_ACK_RX.pos();
 	
 	SC_METHOD(DMA_ACK_TX_Process);
-	sensitive << DMA_ACK_TX.neg();
+	sensitive << DMA_ACK_TX.pos();
 
 	SC_METHOD(DMA_ACK_CMD_Process);
-	sensitive << DMA_ACK_CMD.neg();
+	sensitive << DMA_ACK_CMD.pos();
 
 	SC_METHOD(DMA_ACK_DD_Process);
-	sensitive << DMA_ACK_DD.neg();
+	sensitive << DMA_ACK_DD.pos();
+	
+	SC_METHOD(Set_TFFF_Process);
+	sensitive << gen_tfff_event;
+
+	SC_METHOD(Set_CMDFFF_Process);
+	sensitive << gen_cmdfff_event;
+
+	SC_METHOD(Set_RFDF_Process);
+	sensitive << gen_rfdf_event;
 
 	SC_METHOD(HT_Process);
 	sensitive << HT;
 	
 	SC_METHOD(DEBUG_Process);
 	sensitive << debug;
-	
-//	SC_THREAD(TransferProcess);
 	
 	SC_THREAD(MasterTransferProcess);
 	sensitive << transfer_event;
@@ -454,7 +475,7 @@ template <typename CONFIG>
 void DSPI<CONFIG>::MapRegisters()
 {
 	// Map DSPI registers regarding there address offsets
-	reg_addr_map.Clear();
+	reg_addr_map.ClearRegisterMap();
 	reg_addr_map.MapRegister(dspi_mcr.ADDRESS_OFFSET, &dspi_mcr);  
 	reg_addr_map.MapRegister(dspi_tcr.ADDRESS_OFFSET, &dspi_tcr);
 	unsigned int i;
@@ -525,6 +546,12 @@ template <typename CONFIG>
 bool DSPI<CONFIG>::Stopped() const
 {
 	return dspi_sr.template Get<typename DSPI_SR::TXRXS>() == 0;
+}
+
+template <typename CONFIG>
+DSPI_State DSPI<CONFIG>::GetState() const
+{
+	return dspi_sr.template Get<typename DSPI_SR::TXRXS>() ? DSPI_RUNNING : DSPI_STOPPED;
 }
 
 template <typename CONFIG>
@@ -706,8 +733,8 @@ void DSPI<CONFIG>::SPI_Master_TX_FIFO_Push(uint16_t txcmd, uint16_t txdata)
 				txctr++;
 				dspi_sr.template Set<typename DSPI_SR::TXCTR>(txctr);
 				
-				// Update TFFF
-				UpdateTFFF();
+				// Set TFFF if TX FIFO is not full
+				Set_TFFF_If_TX_FIFO_Not_Full();
 				
 				ScheduleTransfer();
 			}
@@ -758,8 +785,8 @@ void DSPI<CONFIG>::XSPI_Master_TX_FIFO_Push(uint16_t txdata)
 				txctr++;
 				dspi_sr.template Set<typename DSPI_SR::TXCTR>(txctr);
 				
-				// Update TFFF
-				UpdateTFFF();
+				// Set TFFF if TX FIFO is not full
+				Set_TFFF_If_TX_FIFO_Not_Full();
 
 				ScheduleTransfer();
 			}
@@ -810,8 +837,8 @@ void DSPI<CONFIG>::XSPI_Master_CMD_FIFO_Push(uint16_t txcmd)
 				cmdctr++;
 				dspi_srex.template Set<typename DSPI_SREX::CMDCTR>(cmdctr);
 				
-				// Update CMDFFF
-				UpdateCMDFFF();
+				// Set TFFF if CMD FIFO is not full
+				Set_CMDFFF_If_CMD_FIFO_Not_Full();
 
 				ScheduleTransfer();
 			}
@@ -858,8 +885,8 @@ void DSPI<CONFIG>::SPI_Slave_TX_FIFO_Push(uint16_t txdata)
 				txctr++;
 				dspi_sr.template Set<typename DSPI_SR::TXCTR>(txctr);
 				
-				// Update TFFF
-				UpdateTFFF();
+				// Set TFFF if TX FIFO is not full
+				Set_TFFF_If_TX_FIFO_Not_Full();
 				
 				ScheduleTransfer();
 			}
@@ -880,8 +907,8 @@ void DSPI<CONFIG>::SPI_Slave_TX_FIFO_Push(uint16_t txdata)
 			txctr++;
 			dspi_sr.template Set<typename DSPI_SR::TXCTR>(txctr);
 			
-			// Update TFFF
-			UpdateTFFF();
+			// Set TFFF if TX FIFO is not full
+			Set_TFFF_If_TX_FIFO_Not_Full();
 			
 			ScheduleTransfer();
 		}
@@ -1006,8 +1033,8 @@ void DSPI<CONFIG>::SPI_Master_TX_FIFO_Pop()
 		txctr--;
 		dspi_sr.template Set<typename DSPI_SR::TXCTR>(txctr);
 		
-		// Update TFFF
-		UpdateTFFF();
+		// Set TFFF if TX FIFO is not full
+		Set_TFFF_If_TX_FIFO_Not_Full();
 		
 		ScheduleTransfer();
 	}
@@ -1043,8 +1070,8 @@ void DSPI<CONFIG>::XSPI_Master_CMD_FIFO_Pop()
 		cmdctr--;
 		dspi_srex.template Set<typename DSPI_SREX::CMDCTR>(cmdctr);
 		
-		// Update CMDFFF
-		UpdateCMDFFF();
+		// Set TFFF if CMD FIFO is not full
+		Set_CMDFFF_If_CMD_FIFO_Not_Full();
 		
 		ScheduleTransfer();
 	}
@@ -1080,8 +1107,8 @@ void DSPI<CONFIG>::SPI_Slave_TX_FIFO_Pop()
 		txctr--;
 		dspi_sr.template Set<typename DSPI_SR::TXCTR>(txctr);
 		
-		// Update TFFF
-		UpdateTFFF();
+		// Set TFFF if TX FIFO is not full
+		Set_TFFF_If_TX_FIFO_Not_Full();
 	}
 	
 	if(verbose)
@@ -1216,8 +1243,8 @@ void DSPI<CONFIG>::RX_FIFO_Push(uint32_t rxdata)
 		rxctr++;
 		dspi_sr.template Set<typename DSPI_SR::RXCTR>(rxctr);
 		
-		// Update RFDF
-		UpdateRFDF();
+		// Set RFDF if RX FIFO is not empty
+		Set_RFDF_If_RX_FIFO_Not_Empty();
 	}
 	else
 	{
@@ -1278,8 +1305,8 @@ void DSPI<CONFIG>::RX_FIFO_Pop()
 		rxctr--;
 		dspi_sr.template Set<typename DSPI_SR::RXCTR>(rxctr);
 		
-		// Update RFDF
-		UpdateRFDF();
+		// Set RFDF if RX FIFO is not empty
+		Set_RFDF_If_RX_FIFO_Not_Empty();
 	}
 	
 	if(verbose)
@@ -1289,36 +1316,21 @@ void DSPI<CONFIG>::RX_FIFO_Pop()
 }
 
 template <typename CONFIG>
-void DSPI<CONFIG>::UpdateTFFF()
+void DSPI<CONFIG>::Set_TFFF_If_TX_FIFO_Not_Full()
 {
-	if(!TX_FIFO_Full())
-	{
-		dspi_sr.template Set<typename DSPI_SR::TFFF>(1); // Transmit FIFO Fill Flag
-		UpdateINT_TFFF();
-		UpdateDMA_TX();
-	}
+	gen_tfff_event.notify(master_clock_period);
 }
 
 template <typename CONFIG>
-void DSPI<CONFIG>::UpdateCMDFFF()
+void DSPI<CONFIG>::Set_CMDFFF_If_CMD_FIFO_Not_Full()
 {
-	if(!CMD_FIFO_Full())
-	{
-		dspi_sr.template Set<typename DSPI_SR::CMDFFF>(1); // CMD FIFO Fill Flag
-		UpdateINT_CMDFFF();
-		UpdateDMA_CMD();
-	}
+	gen_cmdfff_event.notify(master_clock_period);
 }
 
 template <typename CONFIG>
-void DSPI<CONFIG>::UpdateRFDF()
+void DSPI<CONFIG>::Set_RFDF_If_RX_FIFO_Not_Empty()
 {
-	if(!RX_FIFO_Empty())
-	{
-		dspi_sr.template Set<typename DSPI_SR::RFDF>(1); // Receive FIFO Drain Flag
-		UpdateINT_RFDF();
-		UpdateDMA_RX();
-	}
+	gen_rfdf_event.notify(master_clock_period);
 }
 
 template <typename CONFIG>
@@ -1645,7 +1657,7 @@ void DSPI<CONFIG>::ProcessEvent(Event *event)
 			
 			if(IsReadWriteError(rws))
 			{
-				logger << DebugError << "while mapped read/write access, " << std::hex << rws << std::dec << std::endl;
+				logger << DebugError << "while mapped read/write access, " << std::hex << rws << std::dec << EndDebugError;
 				payload->set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
 			}
 			else
@@ -2003,7 +2015,7 @@ void DSPI<CONFIG>::DMA_DD_Process()
 template <typename CONFIG>
 void DSPI<CONFIG>::DMA_ACK_RX_Process()
 {
-	if(DMA_ACK_RX.negedge())
+	if(DMA_ACK_RX.posedge())
 	{
 		bool rfdf_re = dspi_rser.template Get<typename DSPI_RSER::RFDF_RE>();
 		bool rfdf_dirs = dspi_rser.template Get<typename DSPI_RSER::RFDF_DIRS>();
@@ -2011,7 +2023,7 @@ void DSPI<CONFIG>::DMA_ACK_RX_Process()
 		if(rfdf_re && rfdf_dirs)
 		{
 			dspi_sr.template Set<typename DSPI_SR::RFDF>(0); // DMA RX acknowledgement clears DSPI_SR[RFDF]
-			UpdateDMA_RX(master_clock_period);
+			UpdateDMA_RX(/*master_clock_period*/);
 		}
 	}
 }
@@ -2019,7 +2031,7 @@ void DSPI<CONFIG>::DMA_ACK_RX_Process()
 template <typename CONFIG>
 void DSPI<CONFIG>::DMA_ACK_TX_Process()
 {
-	if(DMA_ACK_TX.negedge())
+	if(DMA_ACK_TX.posedge())
 	{
 		bool tfff_re = dspi_rser.template Get<typename DSPI_RSER::TFFF_RE>();
 		bool tfff_dirs = dspi_rser.template Get<typename DSPI_RSER::TFFF_DIRS>();
@@ -2027,7 +2039,7 @@ void DSPI<CONFIG>::DMA_ACK_TX_Process()
 		if(tfff_re && tfff_dirs)
 		{
 			dspi_sr.template Set<typename DSPI_SR::TFFF>(0); // DMA TX acknowledgement clears DSPI_SR[TFFF]
-			UpdateDMA_TX(master_clock_period);
+			UpdateDMA_TX(/*master_clock_period*/);
 		}
 	}
 }
@@ -2035,7 +2047,7 @@ void DSPI<CONFIG>::DMA_ACK_TX_Process()
 template <typename CONFIG>
 void DSPI<CONFIG>::DMA_ACK_CMD_Process()
 {
-	if(DMA_ACK_CMD.negedge())
+	if(DMA_ACK_CMD.posedge())
 	{
 		bool cmdfff_re = dspi_rser.template Get<typename DSPI_RSER::CMDFFF_RE>();
 		bool cmdfff_dirs = dspi_rser.template Get<typename DSPI_RSER::CMDFFF_DIRS>();
@@ -2043,7 +2055,7 @@ void DSPI<CONFIG>::DMA_ACK_CMD_Process()
 		if(cmdfff_re && cmdfff_dirs)
 		{
 			dspi_sr.template Set<typename DSPI_SR::CMDFFF>(0); // DMA CMD acknowledgement clears DSPI_SR[CMDFFF]
-			UpdateDMA_CMD(master_clock_period);
+			UpdateDMA_CMD(/*master_clock_period*/);
 		}
 	}
 }
@@ -2051,7 +2063,7 @@ void DSPI<CONFIG>::DMA_ACK_CMD_Process()
 template <typename CONFIG>
 void DSPI<CONFIG>::DMA_ACK_DD_Process()
 {
-	if(DMA_ACK_DD.negedge())
+	if(DMA_ACK_DD.posedge())
 	{
 		bool ddif_re = dspi_rser.template Get<typename DSPI_RSER::DDIF_RE>();
 		bool ddif_dirs = dspi_rser.template Get<typename DSPI_RSER::DDIF_DIRS>();
@@ -2059,8 +2071,41 @@ void DSPI<CONFIG>::DMA_ACK_DD_Process()
 		if(ddif_re && ddif_dirs)
 		{
 			dspi_sr.template Set<typename DSPI_SR::DDIF>(0); // Deserialized Data Match DMA acknowledgement clears DSPI_SR[DDIF]
-			UpdateDMA_DD(master_clock_period);
+			UpdateDMA_DD(/*master_clock_period*/);
 		}
+	}
+}
+
+template <typename CONFIG>
+void DSPI<CONFIG>::Set_TFFF_Process()
+{
+	if(!TX_FIFO_Full())
+	{
+		dspi_sr.template Set<typename DSPI_SR::TFFF>(1); // Transmit FIFO Fill Flag
+		UpdateINT_TFFF();
+		UpdateDMA_TX();
+	}
+}
+
+template <typename CONFIG>
+void DSPI<CONFIG>::Set_CMDFFF_Process()
+{
+	if(!CMD_FIFO_Full())
+	{
+		dspi_sr.template Set<typename DSPI_SR::CMDFFF>(1); // CMD FIFO Fill Flag
+		UpdateINT_CMDFFF();
+		UpdateDMA_CMD();
+	}
+}
+
+template <typename CONFIG>
+void DSPI<CONFIG>::Set_RFDF_Process()
+{
+	if(!RX_FIFO_Empty())
+	{
+		dspi_sr.template Set<typename DSPI_SR::RFDF>(1); // Receive FIFO Drain Flag
+		UpdateINT_RFDF();
+		UpdateDMA_RX();
 	}
 }
 
@@ -2252,18 +2297,23 @@ void DSPI<CONFIG>::MasterTransfer(uint32_t& rxdata, const uint32_t& txdata, bool
 
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": Frame size = " << frame_size << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": frame size = " << frame_size << EndDebugInfo;
 		logger << DebugInfo << sc_core::sc_time_stamp() << ": SCK period = " << sck_period << EndDebugInfo;
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": t_CSC = " << t_CSC << EndDebugInfo;
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": t_ASC = " << t_ASC << EndDebugInfo;
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": t_DT = " << t_DT << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": tCSC = " << t_CSC << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": tASC = " << t_ASC << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": tDT = " << t_DT << EndDebugInfo;
 		logger << DebugInfo << sc_core::sc_time_stamp() << ": sample point = " << sample_point << EndDebugInfo;
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": Minimum allowable frame size = " << min_frame_size << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": minimum allowable frame size = " << min_frame_size << EndDebugInfo;
 	}
 	
 	if(unlikely(frame_size < min_frame_size))
 	{
 		logger << DebugWarning << sc_core::sc_time_stamp() << ": frame size (" << frame_size << ") is lower than minimum frame size (" << min_frame_size << ")" << EndDebugWarning;
+	}
+	
+	if(mtfe && (t_ASC < sck_half_period))
+	{
+		logger << DebugWarning << sc_core::sc_time_stamp() << ": the After SCK (tASC) delay must be greater or equal to half of the SCK period" << EndDebugWarning;
 	}
 	
 	// Continous selection format (controlled by DSPI_MCR[CONT]): no t_DT between frames, slaves keep selected
@@ -2272,7 +2322,6 @@ void DSPI<CONFIG>::MasterTransfer(uint32_t& rxdata, const uint32_t& txdata, bool
 	//  - no t_CSC at start of next frame (controlled by CMD[MCSC]),
 	//  - no t_CSC at start of next frame (controlled by CMD[MCSC]) and no t_ASC at end of current frame (controlled by CMD[MASC])
 	
-	// Select Slaves
 	sc_core::sc_time sof_time = sc_core::sc_time_stamp();
 	sc_core::sc_time transmit_time = sc_core::SC_ZERO_TIME;
 	
@@ -2297,13 +2346,15 @@ void DSPI<CONFIG>::MasterTransfer(uint32_t& rxdata, const uint32_t& txdata, bool
 		if(!masc) pcs_time += t_ASC;
 	}
 	
+	// Select slaves
 	unsigned int pcsis = dspi_mcr.template Get<typename DSPI_MCR::PCSIS>(); // Peripheral Chip Select Inactive State
 	
 	unsigned int slave_num;
 	for(slave_num = 0; slave_num < NUM_CTARS; slave_num++)
 	{
-		bool pcs_value = ((pcs >> (DSPI_MCR::PCSIS::BITWIDTH - 1 - slave_num) & 1) != 0);
-		SetPCS(slave_num, sc_core::SC_ZERO_TIME, pcs_time, pcsis ? !pcs_value : pcs_value);
+		bool pcs_value = ((pcs >> slave_num) & 1) != 0;
+		bool pcsis_value = ((pcsis >> slave_num) & 1) != 0;
+		SetPCS(slave_num, sc_core::SC_ZERO_TIME, pcs_time, pcsis_value ? !pcs_value : pcs_value);
 	}
 
 	// Transmit frame
@@ -2423,6 +2474,7 @@ void DSPI<CONFIG>::MasterTransfer(uint32_t& rxdata, const uint32_t& txdata, bool
 	transfer_ready_time = sof_time;
 	transfer_ready_time += pcs_time;
 	
+	// Deselect slaves
 	if(!cont) // continuous selection format?
 	{
 		sc_core::sc_time t(transfer_ready_time);
@@ -2430,7 +2482,7 @@ void DSPI<CONFIG>::MasterTransfer(uint32_t& rxdata, const uint32_t& txdata, bool
 		// no: deselect slaves
 		for(slave_num = 0; slave_num < NUM_CTARS; slave_num++)
 		{
-			SetPCS(slave_num, t, t_DT, pcsis);
+			SetPCS(slave_num, t, t_DT, ((pcsis >> slave_num) & 1) != 0);
 		}
 		
 		transfer_ready_time += t_DT;

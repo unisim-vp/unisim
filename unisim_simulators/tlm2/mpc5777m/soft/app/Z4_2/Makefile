@@ -16,7 +16,7 @@ all: $(OUTPUT)
 clean:
 	$(RM) $(OUTPUT) $(OBJS) $(DEPS)
 
-$(OUTPUT): $(OBJS)
+$(OUTPUT): $(OBJS) $(PWD)/../../libsys/lib/libsys.a
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(OBJS): %.o: %.c

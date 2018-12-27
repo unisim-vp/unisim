@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_E200_MPC57XX_CPU_TCC__
 
 #include <unisim/component/tlm2/processor/powerpc/e200/mpc57xx/cpu.hh>
+#include <unisim/kernel/tlm2/trans_attr.hh>
 #include <unistd.h>
 
 #ifdef powerpc
@@ -56,6 +57,14 @@ using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
+
+using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_OK_RESPONSE;
+using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_INCOMPLETE_RESPONSE;
+using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_GENERIC_ERROR_RESPONSE;
+using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_ADDRESS_ERROR_RESPONSE;
+using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_COMMAND_ERROR_RESPONSE;
+using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_BURST_ERROR_RESPONSE;
+using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_BYTE_ENABLE_ERROR_RESPONSE;
 
 template <typename TYPES, typename CONFIG>
 CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
@@ -82,8 +91,6 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	, time_per_instruction()
 	, clock_multiplier(1.0)
 	, bus_cycle_time(10.0, sc_core::SC_NS)
-	, cpu_time()
-	, nice_time()
 	, run_time()
 	, idle_time()
 	, enable_host_idle(false)
@@ -95,7 +102,6 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	, debug_dmi(false)
 	, ahb_master_id(0)
 	, param_clock_multiplier("clock-multiplier", this, clock_multiplier, "clock multiplier")
-	, param_nice_time("nice-time", this, nice_time, "maximum time between synchonizations")
 	, param_ipc("ipc", this, ipc, "maximum instructions per cycle, typically 1 or 2")
 	, param_enable_host_idle("enable-host-idle", this, enable_host_idle, "Enable/Disable host idle periods when target is idle")
 	, param_enable_dmi("enable-dmi", this, enable_dmi, "Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation")
@@ -114,7 +120,7 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	s_ahb_if(*this);
 	
 	param_clock_multiplier.SetMutable(false);
-	param_nice_time.SetMutable(false);
+//	param_nice_time.SetMutable(false);
 	param_ipc.SetMutable(false);
 	param_enable_host_idle.SetMutable(false);
 	param_enable_dmi.SetMutable(false);
@@ -126,8 +132,14 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	
 	SC_THREAD(Run);
 
-	SC_METHOD(P_IACK_Process);
-	sensitive << int_ack_event;
+	sc_core::sc_spawn_options p_iack_process_spawn_options;
+	p_iack_process_spawn_options.spawn_method();
+	p_iack_process_spawn_options.dont_initialize();
+	p_iack_process_spawn_options.set_sensitivity(&int_ack_event);
+	
+	sc_core::sc_spawn(sc_bind(&CPU<TYPES, CONFIG>::P_IACK_Process, this), "P_IACK_Process", &p_iack_process_spawn_options);
+// 	SC_METHOD(P_IACK_Process);
+// 	sensitive << int_ack_event;
 	
 	SC_METHOD(ExternalEventProcess);
 	sensitive << p_reset_b.pos() << p_nmi_b.neg() << p_mcp_b.neg() << p_extint_b << p_crint_b;
@@ -149,6 +161,8 @@ void CPU<TYPES, CONFIG>::end_of_elaboration()
 	clock_properties_changed_process_spawn_options.set_sensitivity(&m_clk_prop_proxy.GetClockPropertiesChangedEvent());
 
 	sc_core::sc_spawn(sc_bind(&CPU<TYPES, CONFIG>::ClockPropertiesChangedProcess, this), "ClockPropertiesChangedProcess", &clock_properties_changed_process_spawn_options);
+	
+	p_iack = false;
 }
 
 template <typename TYPES, typename CONFIG>
@@ -341,9 +355,8 @@ tlm::tlm_sync_enum CPU<TYPES, CONFIG>::nb_transport_fw(tlm::tlm_generic_payload&
 template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::Synchronize()
 {
-	wait(cpu_time);
-	cpu_time = sc_core::SC_ZERO_TIME;
-	run_time = sc_core::sc_time_stamp();
+	qk.sync();
+	run_time = qk.get_current_time();
 	
 	SampleInputs();
 }
@@ -351,26 +364,8 @@ void CPU<TYPES, CONFIG>::Synchronize()
 template <typename TYPES, typename CONFIG>
 inline void CPU<TYPES, CONFIG>::AlignToBusClock()
 {
-	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
-	sc_dt::uint64 run_time_tu = run_time.value();
-	sc_dt::uint64 modulo = run_time_tu % bus_cycle_time_tu;
-	if(!modulo) return; // already aligned
-	
-	sc_dt::uint64 time_alignment_tu = bus_cycle_time_tu - modulo;
-	//sc_time time_alignment(time_alignment_tu, false);
-	sc_core::sc_time time_alignment(sc_core::sc_get_time_resolution());
-	time_alignment *= time_alignment_tu;
-	cpu_time += time_alignment;
-	run_time += time_alignment;
-}
-
-template <typename TYPES, typename CONFIG>
-void CPU<TYPES, CONFIG>::AlignToBusClock(sc_core::sc_time& t)
-{
-	sc_core::sc_time modulo(t);
-	modulo %= bus_cycle_time;
-	if(modulo == sc_core::SC_ZERO_TIME) return; // already aligned
-	t += bus_cycle_time - modulo;
+	qk.align_to_clock(bus_cycle_time);
+	run_time = qk.get_current_time();
 }
 
 template <typename TYPES, typename CONFIG>
@@ -400,9 +395,9 @@ void CPU<TYPES, CONFIG>::Idle()
 		idle_time += delta_time;
 		
 		// update overall run time
-		run_time = new_time_stamp;
-		
-		SampleInputs();
+		qk.reset();
+		run_time = qk.get_current_time();
+		//run_time = new_time_stamp;
 	}
 }
 
@@ -521,6 +516,7 @@ void CPU<TYPES, CONFIG>::ExternalEventProcess()
 	|| p_extint_b.negedge()
 	|| p_crint_b.negedge())
 	{
+		SampleInputs();
 		external_event.notify(sc_core::SC_ZERO_TIME);
 	}
 }
@@ -591,11 +587,11 @@ void CPU<TYPES, CONFIG>::Run()
 	{
 		this->StepOneInstruction();
 		// update local time (relative to sc_time_stamp)
-		cpu_time += time_per_instruction;
+		qk.inc(time_per_instruction);
 		// update absolute time (local time + sc_time_stamp)
-		run_time += time_per_instruction;
+		run_time = qk.get_current_time();
 		// Periodically synchronize with other threads
-		if(unlikely(cpu_time >= nice_time))
+		if(unlikely(qk.need_sync()))
 		{
 			Synchronize();
 		}
@@ -603,7 +599,7 @@ void CPU<TYPES, CONFIG>::Run()
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
+BusResponseStatus CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
 {
 	AlignToBusClock();
 
@@ -626,9 +622,9 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
 					const sc_core::sc_time& read_lat = dmi_region->GetReadLatency(size);
-					cpu_time += read_lat;
-					run_time += read_lat;
-					return true;
+					qk.inc(read_lat);
+					run_time = qk.get_current_time();
+					return BUS_OK_RESPONSE;
 				}
 				else
 				{
@@ -649,17 +645,16 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
-	unisim::kernel::tlm2::tlm_master_id *master_id = 0;
-	payload->get_extension(master_id);
-	if(master_id)
+	unisim::kernel::tlm2::tlm_trans_attr *trans_attr = 0;
+	payload->get_extension(trans_attr);
+	if(!trans_attr)
 	{
-		*master_id = ahb_master_id;
+		trans_attr = new unisim::kernel::tlm2::tlm_trans_attr();
+		payload->set_extension(trans_attr);
 	}
-	else
-	{
-		master_id = new unisim::kernel::tlm2::tlm_master_id(ahb_master_id);
-		payload->set_extension(master_id);
-	}
+	trans_attr->set_master_id(ahb_master_id);
+	trans_attr->set_instruction();
+	trans_attr->set_privileged(this->msr.template Get<typename Super::MSR::PR>() == 0);
 	
 	payload->set_address(physical_addr);
 	payload->set_command(tlm::TLM_READ_COMMAND);
@@ -667,10 +662,8 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 	payload->set_data_length(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	
-	i_ahb_if->b_transport(*payload, cpu_time);
-	
-	run_time = sc_core::sc_time_stamp();
-	run_time += cpu_time;
+	i_ahb_if->b_transport(*payload, qk.get_local_time());
+	run_time = qk.get_current_time();
 	
 	tlm::tlm_response_status status = payload->get_response_status();
 	
@@ -695,11 +688,26 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 	
 	payload->release();
 	
-	return status == tlm::TLM_OK_RESPONSE;
+	if(unlikely(status != tlm::TLM_OK_RESPONSE))
+	{
+		switch(status)
+		{
+			case tlm::TLM_OK_RESPONSE               : return BUS_OK_RESPONSE;
+			case tlm::TLM_INCOMPLETE_RESPONSE       : return BUS_INCOMPLETE_RESPONSE;
+			case tlm::TLM_GENERIC_ERROR_RESPONSE    : return BUS_GENERIC_ERROR_RESPONSE;
+			case tlm::TLM_ADDRESS_ERROR_RESPONSE    : return BUS_ADDRESS_ERROR_RESPONSE;
+			case tlm::TLM_COMMAND_ERROR_RESPONSE    : return BUS_COMMAND_ERROR_RESPONSE;
+			case tlm::TLM_BURST_ERROR_RESPONSE      : return BUS_BURST_ERROR_RESPONSE;
+			case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE: return BUS_BYTE_ENABLE_ERROR_RESPONSE;
+		}
+		return BUS_INCOMPLETE_RESPONSE;
+	}
+	
+	return BUS_OK_RESPONSE;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr, bool rwitm)
+BusResponseStatus CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr, bool rwitm)
 {
 	AlignToBusClock();
 	
@@ -721,9 +729,9 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
 					const sc_core::sc_time& read_lat = dmi_region->GetReadLatency(size);
-					cpu_time += read_lat;
-					run_time += read_lat;
-					return true;
+					qk.inc(read_lat);
+					run_time = qk.get_current_time();
+					return BUS_OK_RESPONSE;
 				}
 				else
 				{
@@ -745,17 +753,15 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
-	unisim::kernel::tlm2::tlm_master_id *master_id = 0;
-	payload->get_extension(master_id);
-	if(master_id)
+	unisim::kernel::tlm2::tlm_trans_attr *trans_attr = 0;
+	payload->get_extension(trans_attr);
+	if(!trans_attr)
 	{
-		*master_id = ahb_master_id;
+		trans_attr = new unisim::kernel::tlm2::tlm_trans_attr();
+		payload->set_extension(trans_attr);
 	}
-	else
-	{
-		master_id = new unisim::kernel::tlm2::tlm_master_id(ahb_master_id);
-		payload->set_extension(master_id);
-	}
+	trans_attr->set_master_id(ahb_master_id);
+	trans_attr->set_privileged(this->msr.template Get<typename Super::MSR::PR>() == 0);
 
 	payload->set_address(physical_addr);
 	payload->set_command(tlm::TLM_READ_COMMAND);
@@ -763,11 +769,9 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 	payload->set_data_length(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	
-	d_ahb_if->b_transport(*payload, cpu_time);
+	d_ahb_if->b_transport(*payload, qk.get_local_time());
+	run_time = qk.get_current_time();
 	
-	run_time = sc_core::sc_time_stamp();
-	run_time += cpu_time;
-
 	tlm::tlm_response_status status = payload->get_response_status();
 	
 	if(likely(enable_dmi))
@@ -791,11 +795,26 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 
 	payload->release();
 
-	return status == tlm::TLM_OK_RESPONSE;
+	if(unlikely(status != tlm::TLM_OK_RESPONSE))
+	{
+		switch(status)
+		{
+			case tlm::TLM_OK_RESPONSE               : return BUS_OK_RESPONSE;
+			case tlm::TLM_INCOMPLETE_RESPONSE       : return BUS_INCOMPLETE_RESPONSE;
+			case tlm::TLM_GENERIC_ERROR_RESPONSE    : return BUS_GENERIC_ERROR_RESPONSE;
+			case tlm::TLM_ADDRESS_ERROR_RESPONSE    : return BUS_ADDRESS_ERROR_RESPONSE;
+			case tlm::TLM_COMMAND_ERROR_RESPONSE    : return BUS_COMMAND_ERROR_RESPONSE;
+			case tlm::TLM_BURST_ERROR_RESPONSE      : return BUS_BURST_ERROR_RESPONSE;
+			case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE: return BUS_BYTE_ENABLE_ERROR_RESPONSE;
+		}
+		return BUS_INCOMPLETE_RESPONSE;
+	}
+	
+	return BUS_OK_RESPONSE;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
+BusResponseStatus CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
 {
 	AlignToBusClock();
 	
@@ -817,9 +836,9 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), buffer, size);
 					const sc_core::sc_time& write_lat = dmi_region->GetWriteLatency(size);
-					cpu_time += write_lat;
-					run_time += write_lat;
-					return true;
+					qk.inc(write_lat);
+					run_time = qk.get_current_time();
+					return BUS_OK_RESPONSE;
 				}
 				else
 				{
@@ -841,28 +860,25 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
-	unisim::kernel::tlm2::tlm_master_id *master_id = 0;
-	payload->get_extension(master_id);
-	if(master_id)
+	unisim::kernel::tlm2::tlm_trans_attr *trans_attr = 0;
+	payload->get_extension(trans_attr);
+	if(!trans_attr)
 	{
-		*master_id = ahb_master_id;
+		trans_attr = new unisim::kernel::tlm2::tlm_trans_attr();
+		payload->set_extension(trans_attr);
 	}
-	else
-	{
-		master_id = new unisim::kernel::tlm2::tlm_master_id(ahb_master_id);
-		payload->set_extension(master_id);
-	}
+	trans_attr->set_master_id(ahb_master_id);
+	trans_attr->set_privileged(this->msr.template Get<typename Super::MSR::PR>() == 0);
+	
 	payload->set_address(physical_addr);
 	payload->set_command(tlm::TLM_WRITE_COMMAND);
 	payload->set_streaming_width(size);
 	payload->set_data_length(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	
-	d_ahb_if->b_transport(*payload, cpu_time);
+	d_ahb_if->b_transport(*payload, qk.get_local_time());
+	run_time = qk.get_current_time();
 	
-	run_time = sc_core::sc_time_stamp();
-	run_time += cpu_time;
-
 	tlm::tlm_response_status status = payload->get_response_status();
 
 	if(likely(enable_dmi))
@@ -885,7 +901,22 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 
 	payload->release();
 
-	return status == tlm::TLM_OK_RESPONSE;
+	if(unlikely(status != tlm::TLM_OK_RESPONSE))
+	{
+		switch(status)
+		{
+			case tlm::TLM_OK_RESPONSE               : return BUS_OK_RESPONSE;
+			case tlm::TLM_INCOMPLETE_RESPONSE       : return BUS_INCOMPLETE_RESPONSE;
+			case tlm::TLM_GENERIC_ERROR_RESPONSE    : return BUS_GENERIC_ERROR_RESPONSE;
+			case tlm::TLM_ADDRESS_ERROR_RESPONSE    : return BUS_ADDRESS_ERROR_RESPONSE;
+			case tlm::TLM_COMMAND_ERROR_RESPONSE    : return BUS_COMMAND_ERROR_RESPONSE;
+			case tlm::TLM_BURST_ERROR_RESPONSE      : return BUS_BURST_ERROR_RESPONSE;
+			case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE: return BUS_BYTE_ENABLE_ERROR_RESPONSE;
+		}
+		return BUS_INCOMPLETE_RESPONSE;
+	}
+	
+	return BUS_OK_RESPONSE;
 }
 
 } // end of namespace mpc57xx

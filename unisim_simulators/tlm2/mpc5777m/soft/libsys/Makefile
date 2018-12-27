@@ -20,11 +20,17 @@ src/drv/linflexd.c \
 src/drv/dmamux.c \
 src/drv/edma.c \
 src/drv/dspi.c \
+src/drv/siul2.c \
+src/drv/ebi.c \
+src/drv/pbridge.c \
+src/drv/xbar.c \
+src/drv/smpu.c \
+src/drv/m_can.c \
 src/drv/console.c \
 src/drv/ramdisk.c \
 src/fs/lfs.c \
 src/fs/lfs_util.c \
-src/syscalls.c
+src/sys/sys.c
 
 LIBSYS_ASMS    = \
 src/core/startup.S \

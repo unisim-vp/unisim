@@ -53,3 +53,6 @@
 #define PPC_MPUWE              PPCASM volatile ("mpuwe")
 
 #define PPC_MPURE              PPCASM volatile ("mpure")
+
+#define LOAD_LE32(p) ({uint32_t rval; PPCASM volatile("lwbrx %0, %y1" : "=r"(rval) : "Z"(*(p))); rval;})
+#define STORE_LE32(p, v) do { PPCASM volatile("stwbrx %0, %y1" : : "r" (v), "Z"(*(p))); } while(0)

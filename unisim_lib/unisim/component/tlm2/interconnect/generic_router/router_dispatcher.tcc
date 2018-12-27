@@ -88,8 +88,10 @@ void
 RouterDispatcher<OWNER, CONFIG> ::
 Push(transaction_type &trans, const sc_core::sc_time &time) 
 {
-	trans.acquire();
-	m_queue.insert(pair_t(sc_core::sc_time_stamp() + time, &trans));
+	if(trans.has_mm()) trans.acquire();
+	sc_core::sc_time time_stamp(sc_core::sc_time_stamp());
+	time_stamp += time;
+	m_queue.insert(pair_t(time_stamp, &trans));
 	m_event.notify(time);
 	//phase_type phase = tlm::BEGIN_REQ;
 	//m_queue.notify(trans, phase, time);
@@ -190,14 +192,14 @@ ProcessTransactionCompletion()
 {
 	typename std::multimap<const sc_core::sc_time, transaction_type *>::iterator it;
 
-	sc_core::sc_time now = sc_core::sc_time_stamp();
+	sc_core::sc_time now(sc_core::sc_time_stamp());
 	transaction_type *trans;
 
 	it = m_queue.begin();
 	assert(it != m_queue.end());
 	trans = it->second;
 	m_queue.erase(it);
-	trans->release();
+	if(trans->has_mm()) trans->release();
 	it = m_queue.begin();
 	if (it == m_queue.end()) return true;
 	if (it->first > now) {
@@ -205,11 +207,18 @@ ProcessTransactionCompletion()
 		return true;
 	}
 	// we need to synchronize
+	sc_core::sc_time fut(now);
+	unisim::kernel::tlm2::AlignToClock(fut, m_cycle_time);
+	fut += m_cycle_time;
+	fut -= now;
+	m_event.notify(fut);
+#if 0
 	uint64_t val = now.value() / m_cycle_time.value();
 	val = val + 1;
 	sc_core::sc_time fut = m_cycle_time * val;
 	fut += m_cycle_time;
 	m_event.notify(fut - now);
+#endif
 	return true;
 }
 

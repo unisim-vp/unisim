@@ -44,6 +44,12 @@
 #include "dmamux.h"
 #include "edma.h"
 #include "dspi.h"
+#include "siul2.h"
+#include "ebi.h"
+#include "pbridge.h"
+#include "xbar.h"
+#include "smpu.h"
+#include "m_can.h"
 #include "console.h"
 #include "ramdisk.h"
 #include "lfs.h"
@@ -271,6 +277,12 @@ void sys_init()
 	pit_drv_init();
 	linflexd_drv_init();
 	dspi_drv_init();
+	siul2_drv_init();
+	ebi_drv_init();
+	pbridge_drv_init();
+	xbar_drv_init();
+	smpu_drv_init();
+	m_can_drv_init();
 	
 	intc_init();      // initialize interrupt controller
 	edma_init(0);     // initialize eDMA_0
@@ -285,10 +297,20 @@ void sys_init()
 			break;
 			
 		case 2:
+			xbar_init(0);     // initialize XBAR_0
+			xbar_init(1);     // initialize XBAR_1
+			smpu_init(0);     // initialize SMPU_0
+			smpu_init(1);     // initialize SMPU_1
+			pbridge_init(0);  // initialize PBRIDGE_A
+			pbridge_init(1);  // initialize PBRIDGE_B
 			swt_init(2);      // initialize SWT_2
 			stm_init(2);      // initialize STM_2
 			pit_init(0);      // initialize PIT_0
 			pit_init(1);      // initialize PIT_1
+			siul2_init();     // initialize SIUL2
+			ebi_init();       // initialize EBI
+			
+			ebi_enable_module();
 			
 			stm_set_channel_irq_priority(2, 0, 63);          // STM_2: set STM_2 channel #0 IRQ priority level to 63
 			stm_select_channel_irq_for_processor(2, 0, 2);  // STM_2: select STM_2 channel #0 IRQ for processor #2
@@ -446,12 +468,37 @@ void sys_init()
 			dspi_select_irq_for_processor(12, DSPI_REQ_SPEF, 2);
 			dspi_select_irq_for_processor(12, DSPI_REQ_TFUF_RFOF_TFIWF, 2);
 
+			m_can_set_irq_priority(1, M_CAN_INT0, 60);
+			m_can_set_irq_priority(1, M_CAN_INT1, 60);
+
+			m_can_set_irq_priority(2, M_CAN_INT0, 60);
+			m_can_set_irq_priority(2, M_CAN_INT1, 60);
+
+			m_can_set_irq_priority(3, M_CAN_INT0, 60);
+			m_can_set_irq_priority(3, M_CAN_INT1, 60);
+
+			m_can_set_irq_priority(4, M_CAN_INT0, 60);
+			m_can_set_irq_priority(4, M_CAN_INT1, 60);
+
+			m_can_select_irq_for_processor(1, M_CAN_INT0, 0);
+			m_can_select_irq_for_processor(1, M_CAN_INT1, 0);
+
+			m_can_select_irq_for_processor(2, M_CAN_INT0, 1);
+			m_can_select_irq_for_processor(2, M_CAN_INT1, 1);
+
+			m_can_select_irq_for_processor(3, M_CAN_INT0, 2);
+			m_can_select_irq_for_processor(3, M_CAN_INT1, 2);
+
 			unsigned int chan;
 			for(chan = 0; chan < 64; chan++)
 			{
-				edma_set_channel_arbitration_priority(0, chan, chan & 15); // eDMA0          : set channel priority in group (lower to higher)
-				edma_set_channel_arbitration_priority(1, chan, chan & 15); // eDMA1          : set channel priority in group (lower to higher)
+				//edma_enable_master_id_replication(0, chan);                // eDMA_0: enable Master ID replication
+				//edma_enable_master_id_replication(1, chan);                // eDMA_1: enable Master ID replication
+				
+				edma_set_channel_arbitration_priority(0, chan, chan & 15); // eDMA_0: set channel priority in group (lower to higher)
+				edma_set_channel_arbitration_priority(1, chan, chan & 15); // eDMA_1: set channel priority in group (lower to higher)
 			}
+			
 			
 			// lifetime
 			pit_set_timer_load_value(1, 0, ((PIT_1_CLK_FREQ_MHZ * 1000000) / TICKS_PER_SECONDS) - 1);      // PIT_1: timer #0 down counter to zero every ticks
@@ -461,10 +508,33 @@ void sys_init()
 			pit_enable_timer(1, 1);                      // PIT_1: enable timer #1
 			pit_enable_timers_clock(1);                  // PIT_1: enable PIT_1 timers clock
 			
-			if(core_id == 2)
-			{
-				boot_flag = 1;
-			}
+			// System memory protection
+			smpu_region_descriptor_set_start_address(1, 0, 0x0);                            // SMPU_0: region descriptor #0, start address <- 0x0
+			smpu_region_descriptor_set_end_address(1, 0, 0xffffffff);                       // SMPU_0: region descriptor #0, end address <- 0xffffffff
+			smpu_region_descriptor_set_master_permission(1, 0, 0, SMPU_MP_READ_WRITE);      // SMPU_0: region descriptor #0, master #0, permission <- read/write (Main_Core_0)
+			smpu_region_descriptor_set_master_permission(1, 0, 1, SMPU_MP_READ_WRITE);      // SMPU_0: region descriptor #0, master #1, permission <- read/write (Main_Core_1)
+			smpu_region_descriptor_set_master_permission(1, 0, 2, SMPU_MP_READ_WRITE);      // SMPU_0: region descriptor #0, master #2, permission <- read/write (Peripheral_Core_2)
+			smpu_region_descriptor_set_master_permission(1, 0, 3, SMPU_MP_READ);            // SMPU_0: region descriptor #0, master #3, permission <- read only (eDMA_0)
+			smpu_region_descriptor_set_valid_flag(1, 0, 1);                                 // SMPU_0: region descriptor #0, valid <- 1
+			
+			smpu_region_descriptor_set_start_address(1, 1, (uint32_t) &LINFlexD_0);         // SMPU_0: region descriptor #1, start address <- LINFlexD_0(start)
+			smpu_region_descriptor_set_end_address(1, 1, (uint32_t) (&LINFlexD_0 + 1) - 1); // SMPU_0: region descriptor #1, end address <- LINFlexD_0(end)
+			smpu_region_descriptor_set_master_permission(1, 1, 3, SMPU_MP_WRITE);           // SMPU_0: region descriptor #1, master #3, permission <- write (eDMA_0)
+			smpu_region_descriptor_set_valid_flag(1, 1, 1);                                 // SMPU_0: region descriptor #1, valid <- 1
+			                                                                                
+			smpu_region_descriptor_set_start_address(1, 2, (uint32_t) &LINFlexD_1);         // SMPU_0: region descriptor #2, start address <- LINFlexD_1(start)
+			smpu_region_descriptor_set_end_address(1, 2, (uint32_t) (&LINFlexD_1 + 1) - 1); // SMPU_0: region descriptor #2, end address <- LINFlexD_1(end)
+			smpu_region_descriptor_set_master_permission(1, 2, 3, SMPU_MP_WRITE);           // SMPU_0: region descriptor #2, master #3, permission <- write (eDMA_0)
+			smpu_region_descriptor_set_valid_flag(1, 2, 1);                                 // SMPU_0: region descriptor #2, valid <- 1
+			
+			smpu_region_descriptor_set_start_address(1, 3, (uint32_t) &LINFlexD_2);         // SMPU_0: region descriptor #3, start address <- LINFlexD_2(start)
+			smpu_region_descriptor_set_end_address(1, 3, (uint32_t) (&LINFlexD_2 + 1) - 1); // SMPU_0: region descriptor #3, end address <- LINFlexD_2(end)
+			smpu_region_descriptor_set_master_permission(1, 3, 3, SMPU_MP_WRITE);           // SMPU_0: region descriptor #3, master #3, permission <- write (eDMA_0)
+			smpu_region_descriptor_set_valid_flag(1, 3, 1);                                 // SMPU_0: region descriptor #3, valid <- 1
+			
+			smpu_enable(1);                                                                 // SMPU_0: enable
+	
+			boot_flag = 1;
 			break;
 	}
 	
@@ -486,6 +556,13 @@ void sys_init()
 	assert(open("/dev/tty", O_WRONLY, 0) == STDOUT_FILENO);
 	assert(open("/dev/tty", O_WRONLY, 0) == STDERR_FILENO);
 	
+	unsigned int ramdisk_ebi_bank = core_id;
+	
+	ebi_set_bank_port_size(ramdisk_ebi_bank, EBI_PORT_SIZE_8);   // EBI: byte addressing
+	ebi_set_bank_base_address(ramdisk_ebi_bank, (uint32_t) &__RAMDISK);      // EBI: base address
+	ebi_set_bank_address_mask(ramdisk_ebi_bank, 0xffff8000);     // EBI: no address aliasing
+	ebi_set_bank_valid_flag(ramdisk_ebi_bank, 1);                // EBI: enable bank
+
 	ramdisk_init(&ramdisk_lfs_cfg);
 	
 	/* check if there's a littlefs file system in ramdisk */

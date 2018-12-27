@@ -1,4 +1,4 @@
-/*
+ /*
  *  Copyright (c) 2015-2016,
  *  Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
  *  All rights reserved.
@@ -40,6 +40,7 @@
 #include <unisim/kernel/tlm2/clock.hh>
 #include <unisim/util/likely/likely.hh>
 #include <systemc>
+#include <tlm>
 #include <stdexcept>
 #include <string>
 #include <map>
@@ -48,8 +49,24 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <typeinfo>
 
-#define DEBUG_INSTRUMENTER 1
+#include <unisim/util/hypapp/hypapp.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
+
+namespace sc_core {
+inline std::ostream& operator << (std::ostream& os, const sc_writer_policy& pol)
+{
+	switch(pol)
+	{
+		case SC_ONE_WRITER: os << "SC_ONE_WRITER"; break;
+		case SC_MANY_WRITERS: os << "SC_MANY_WRITERS"; break;
+		case SC_UNCHECKED_WRITERS: os << "SC_UNCHECKED_WRITERS"; break;
+	}
+	return os;
+}
+
+}
 
 namespace unisim {
 namespace kernel {
@@ -62,49 +79,195 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
+class SignalTeeBase
+{
+public:
+	SignalTeeBase(const std::string& name);
+	virtual ~SignalTeeBase();
+	virtual void Initialize() = 0;
+	void EnableInjection(unsigned int front_end_id);
+	void DisableInjection(unsigned int front_end_id);
+	inline bool IsInjectionEnabled(unsigned int front_end_id) const;
+	inline bool Select(unsigned int& n) const;
+protected:
+	sc_core::sc_event enable_injection_event;
+	sc_core::sc_spawn_options process_spawn_options;
+private:
+	uint64_t enable_mask;
+	std::string name;
+};
+
+inline bool SignalTeeBase::IsInjectionEnabled(unsigned int front_end_id) const
+{
+	return (enable_mask & (uint64_t(1) << front_end_id)) != 0;
+}
+
+inline bool SignalTeeBase::Select(unsigned int& n) const
+{
+	return unisim::util::arithmetic::BitScanForward(n, enable_mask);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+class SignalTee : public SignalTeeBase
+{
+public:
+	SignalTee(const std::string& name, sc_core::sc_signal<T, WRITER_POLICY> *original_signal, sc_core::sc_signal<T, WRITER_POLICY> *signal);
+	
+	virtual void Initialize();
+	
+	sc_core::sc_signal<T, WRITER_POLICY> *GetOriginalSignal();
+	void SetInjectedSignal(unsigned int front_end_id, sc_core::sc_signal<T, WRITER_POLICY> *injected_signal);
+	
+	void Process();
+private:
+	sc_core::sc_signal<T, WRITER_POLICY> *original_signal;
+	std::vector<sc_core::sc_signal<T, WRITER_POLICY> *> injected_signals;
+	sc_core::sc_signal<T, WRITER_POLICY> *signal;
+};
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+SignalTee<T, WRITER_POLICY>::SignalTee(const std::string& _name, sc_core::sc_signal<T, WRITER_POLICY> *_original_signal, sc_core::sc_signal<T, WRITER_POLICY> *_signal)
+	: SignalTeeBase(_name)
+	, original_signal(_original_signal)
+	, signal(_signal)
+{
+	process_spawn_options.set_sensitivity(original_signal);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+void SignalTee<T, WRITER_POLICY>::Initialize()
+{
+	sc_core::sc_spawn(sc_bind(&SignalTee<T, WRITER_POLICY>::Process, this), sc_core::sc_gen_unique_name("signal_tee_process"), &process_spawn_options);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+sc_core::sc_signal<T, WRITER_POLICY> *SignalTee<T, WRITER_POLICY>::GetOriginalSignal()
+{
+	return original_signal;
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+void SignalTee<T, WRITER_POLICY>::SetInjectedSignal(unsigned int front_end_id, sc_core::sc_signal<T, WRITER_POLICY> *injected_signal)
+{
+	if(injected_signals.size() <= front_end_id)
+	{
+		injected_signals.resize(front_end_id + 1);
+	}
+	
+	if(!injected_signals[front_end_id])
+	{
+		injected_signals[front_end_id] = injected_signal;
+		process_spawn_options.set_sensitivity(injected_signal);
+	}
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+void SignalTee<T, WRITER_POLICY>::Process()
+{
+	T value;
+	
+	unsigned int n = 0;
+	if(Select(n))
+	{
+#if 0
+		std::cerr << "SignalTee<T, WRITER_POLICY>::Process(): At " << sc_core::sc_time_stamp() << ", Inject(" << n << "): " << signal->name() << " <- '" << injected_signals[n]->read() << "'" << std::endl;
+#endif
+		value = injected_signals[n]->read();
+	}
+	else
+	{
+#if 0
+		std::cerr << "SignalTee<T, WRITER_POLICY>::Process(): At " << sc_core::sc_time_stamp() << ", Passthrough: " << signal->name() << " <- '" << original_signal->read() << "'" << std::endl;
+#endif
+		value = original_signal->read();
+	}
+	
+	signal->write(value);
+}
+
 enum INSTRUMENTATION_TYPE
 {
+	NO_INSTRUMENTATION           = 0,
 	INPUT_INSTRUMENTATION        = 1,
-	OUTPUT_INSTRUMENTATION       = 2
+	OUTPUT_INSTRUMENTATION       = 2,
+	INPUT_OUTPUT_INSTRUMENTATION = INPUT_INSTRUMENTATION | OUTPUT_INSTRUMENTATION
+};
+
+inline std::ostream& operator << (std::ostream& os, const INSTRUMENTATION_TYPE& instrumentation_type)
+{
+	switch(instrumentation_type)
+	{
+		case NO_INSTRUMENTATION          : os << "no instrumentation"; break;
+		case INPUT_INSTRUMENTATION       : os << "input instrumentation"; break;
+		case OUTPUT_INSTRUMENTATION      : os << "output instrumentation"; break;
+		case INPUT_OUTPUT_INSTRUMENTATION: os << "input/output instrumentation"; break;
+		default                          : os << "?"; break;
+	}
+	
+	return os;
+}
+
+struct InstrumentKey
+{
+	std::string name;
+	INSTRUMENTATION_TYPE instrumentation_type;
+	unsigned int front_end_id;
+
+	InstrumentKey(const std::string& _name, INSTRUMENTATION_TYPE _instrumentation_type, unsigned int _front_end_id) : name(_name), instrumentation_type(_instrumentation_type), front_end_id(_front_end_id) {}
+	int operator < (const InstrumentKey& key) const { return (name.compare(key.name) < 0) || ((name.compare(key.name) == 0) && ((instrumentation_type < key.instrumentation_type) || ((instrumentation_type == key.instrumentation_type) && (front_end_id < key.front_end_id)))); }
 };
 
 class InstrumentBase
 {
 public:
-	inline InstrumentBase(const std::string& name, INSTRUMENTATION_TYPE instrumentation_type);
+	inline InstrumentBase(const std::string& name, INSTRUMENTATION_TYPE instrumentation_type, unsigned int front_end_id);
 	inline virtual ~InstrumentBase();
 	
-	inline virtual const std::string& GetName() const;
+	inline const std::string& GetName() const;
 	inline INSTRUMENTATION_TYPE GetInstrumentationType() const;
+	inline unsigned int GetFrontEndId() const;
+	inline const InstrumentKey& GetKey() const;
+	
+	virtual const std::type_info& GetTypeInfo() const = 0;
 private:
-	std::string name;
-	INSTRUMENTATION_TYPE instrumentation_type;
+	InstrumentKey key;
 };
 
 class InputInstrumentBase : public InstrumentBase
 {
 public:
-	inline InputInstrumentBase(const std::string& name);
+	InputInstrumentBase(const std::string& name, unsigned int front_end_id, SignalTeeBase *_signal_tee);
 	virtual void Inject() = 0;
 	virtual void Input(std::istream& is) = 0;
+	void EnableInjection();
+	void DisableInjection();
+	inline bool IsInjectionEnabled() const;
+	virtual void Print(std::ostream& os) const = 0;
+private:
+	SignalTeeBase *signal_tee;
 };
 
 class OutputInstrumentBase : public InstrumentBase
 {
 public:
-	inline OutputInstrumentBase(const std::string& name);
+	OutputInstrumentBase(const std::string& name, unsigned int front_end_id);
+	virtual sc_core::sc_interface *GetInterface() = 0;
 	virtual void Sample() = 0;
-	virtual void Output(std::ostream& os, bool force_output = false) = 0;
+	virtual void Latch() = 0;
+	virtual bool ValueChanged() const = 0;
+	virtual void Output(std::ostream& os) = 0;
 };
 
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY = sc_core::SC_ONE_WRITER>
 class InputInstrument : public InputInstrumentBase
 {
 public:
-	InputInstrument(const std::string& name, sc_core::sc_signal<T, WRITER_POLICY> *signal);
+	InputInstrument(const std::string& name, unsigned int front_end_id, sc_core::sc_signal<T, WRITER_POLICY> *signal, SignalTee<T, WRITER_POLICY> *signal_tee, const T& init_value);
 	
 	virtual void Inject();
 	virtual void Input(std::istream& is);
+	virtual const std::type_info& GetTypeInfo() const;
+	virtual void Print(std::ostream& os) const;
 private:
 	sc_core::sc_signal<T, WRITER_POLICY> *signal;
 	T value;
@@ -115,10 +278,14 @@ template <typename T, sc_core::sc_writer_policy WRITER_POLICY = sc_core::SC_ONE_
 class OutputInstrument : public OutputInstrumentBase
 {
 public:
-	OutputInstrument(const std::string& name, const sc_core::sc_signal<T, WRITER_POLICY> *signal);
+	OutputInstrument(const std::string& name, unsigned int front_end_id, const sc_core::sc_signal<T, WRITER_POLICY> *signal, const T& init_value);
 	
+	virtual sc_core::sc_interface *GetInterface();
 	virtual void Sample();
-	virtual void Output(std::ostream& os, bool force_output);
+	virtual void Latch();
+	virtual bool ValueChanged() const;
+	virtual void Output(std::ostream& os);
+	virtual const std::type_info& GetTypeInfo() const;
 private:
 	const sc_core::sc_signal<T, WRITER_POLICY> *signal;
 	T latched_value;
@@ -130,12 +297,11 @@ class TyperBase
 public:
 	virtual ~TyperBase() {}
 	virtual bool TryTraceSignal(const std::string& signal_name) = 0;
-	virtual bool TryInstrumentInputSignal(const std::string& signal_name) = 0;
-	virtual bool TryInstrumentOutputSignal(const std::string& signal_name) = 0;
 	virtual bool TryBind(const std::string& port_name, const std::string& signal_name) = 0;
 };
 
 class Instrumenter;
+class Simulator;
 
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY = sc_core::SC_ONE_WRITER>
 class Typer : public TyperBase
@@ -143,11 +309,253 @@ class Typer : public TyperBase
 public:
 	Typer(Instrumenter *instrumenter);
 	virtual bool TryTraceSignal(const std::string& signal_name);
-	virtual bool TryInstrumentInputSignal(const std::string& signal_name);
-	virtual bool TryInstrumentOutputSignal(const std::string& signal_name);
 	virtual bool TryBind(const std::string& port_name, const std::string& signal_name);
 private:
 	Instrumenter *instrumenter;
+};
+
+class InstrumenterFrontEnd : public unisim::kernel::service::Object
+{
+public:
+	InstrumenterFrontEnd(const char *name, Simulator *simulator);
+	InstrumenterFrontEnd(const char *name, Instrumenter *instrumenter);
+	virtual ~InstrumenterFrontEnd();
+	
+	virtual bool SetupInstrumentation() = 0;
+	virtual void ProcessInputInstruments() = 0;
+	virtual void ProcessOutputInstruments() = 0;
+	void MatchSignalPattern(const std::string& signal_name_pattern, std::vector<std::string>& vec_signal_names) const;
+	void PrepareInstrumentation(const std::string& signal_name_pattern, INSTRUMENTATION_TYPE instrumentation_type);
+	InputInstrumentBase *InstrumentInputSignal(const std::string& signal_name);
+	OutputInstrumentBase *InstrumentOutputSignal(const std::string& signal_name);
+	InputInstrumentBase *FindInputInstrument(const std::string& signal_name) const;
+	const std::vector<InputInstrumentBase *>& GetInputInstruments() const;
+	OutputInstrumentBase *FindOutputInstrument(const std::string& signal_name) const;
+	const std::vector<OutputInstrumentBase *>& GetOutputInstruments() const;
+	inline void NextInputTrigger(const sc_core::sc_time& t);
+private:
+	friend class Instrumenter;
+	Instrumenter *instrumenter;
+	unsigned int front_end_id;
+	std::vector<InputInstrumentBase *> input_instruments;
+	std::vector<OutputInstrumentBase *> output_instruments;
+	std::map<std::string, InputInstrumentBase *> input_instruments_map;
+	std::map<std::string, OutputInstrumentBase *> output_instruments_map;
+	sc_core::sc_spawn_options output_instrumentation_process_spawn_options;
+	sc_core::sc_event next_input_instrumentation_event;
+	
+	void Initialize();
+	void OutputInstrumentationProcess();
+	void InputInstrumentationProcess();
+};
+
+inline void InstrumenterFrontEnd::NextInputTrigger(const sc_core::sc_time& t)
+{
+	next_input_instrumentation_event.notify(t);
+}
+
+class UserInstrument
+{
+public:
+	UserInstrument(const std::string& name, InputInstrumentBase *input_instrument, OutputInstrumentBase *output_instrument);
+	
+	const std::string& GetName() const;
+	void Set(const std::string& value);
+	void Get(std::string& value) const;
+	void Set(bool value);
+	void Get(bool& value) const;
+	void Toggle();
+	void InitialFetch();
+	void Sample();
+	void Latch();
+	void Fetch();
+	void Commit();
+	void EnableInjection();
+	void DisableInjection();
+	bool IsInjectionEnabled() const;
+	bool IsReadOnly() const;
+	void EnableValueChangedBreakpoint();
+	void DisableValueChangedBreakpoint();
+	bool IsValueChangedBreakpointEnabled() const;
+	bool HasBreakpointCondition() const;
+	bool IsBoolean() const;
+private:
+	std::string name;
+	mutable std::ostringstream sstr;
+	std::string set_value;
+	mutable std::string get_value;
+	InputInstrumentBase *input_instrument;
+	OutputInstrumentBase *output_instrument;
+	bool enable;
+	bool new_enable;
+	bool value_changed_breakpoint;
+	bool has_breakpoint_cond;
+	mutable bool get_value_valid;
+	
+	void Update() const;
+};
+
+class Form_URL_Encoded_Decoder
+{
+public:
+	bool Decode(const std::string& s, std::ostream& err_log = std::cerr);
+	virtual bool FormAssign(const std::string& name, const std::string& value) = 0;
+private:
+	static bool IsHexDigit(char c);
+	static bool IsSafe(char c);
+	static bool IsAlphaNumeric(char c);
+	static unsigned int AsciiHexToUInt(char c);
+};
+
+class HttpServer
+	: public InstrumenterFrontEnd
+	, public unisim::util::hypapp::HttpServer
+{
+public:
+	HttpServer(const char *name, Instrumenter *instrumenter = 0);
+	virtual ~HttpServer();
+	
+	virtual bool EndSetup();
+	virtual void SigInt();
+	
+	virtual bool SetupInstrumentation();
+	virtual void ProcessInputInstruments();
+	virtual void ProcessOutputInstruments();
+	
+	virtual void Serve(unisim::util::hypapp::ClientConnection const& conn);
+	
+	UserInstrument *FindUserInstrument(const std::string& name);
+	
+	void EnableInjection();
+	void DisableInjection();
+	void EnableValueChangedBreakpoint();
+	void DisableValueChangedBreakpoint();
+private:
+	friend struct MessageLoop;
+	
+	unisim::kernel::logger::Logger logger;
+	
+	std::string program_name;
+	
+	unisim::kernel::service::Parameter<bool> param_verbose;
+	int http_port;
+	unisim::kernel::service::Parameter<int> param_http_port;
+	int http_max_clients;
+	unisim::kernel::service::Parameter<int> param_http_max_clients;
+	std::string instrumentation;
+	unisim::kernel::service::Parameter<std::string> param_instrumentation;
+	sc_core::sc_time intr_poll_period;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_intr_poll_period;
+	std::vector<std::string> instrumented_signal_names;
+	std::map<std::string, UserInstrument *> user_instruments;
+	sc_core::sc_time user_step_time;
+	sc_core::sc_time curr_time_stamp;
+	bool bad_user_step_time;
+	bool timed_step;
+	unsigned int delta_steps;
+	bool cont;
+	bool intr;
+	bool halt;
+	bool has_breakpoint_cond;
+	bool enable_all_input_instruments;
+	bool disable_all_input_instruments;
+	bool enable_all_value_changed_breakpoints;
+	bool disable_all_value_changed_breakpoints;
+	std::map<UserInstrument *, bool> enable_input_instruments;
+	std::map<UserInstrument *, bool> enable_value_changed_breakpoints;
+	std::map<UserInstrument *, std::string> set_input_instruments;
+	std::map<UserInstrument *, bool> toggle_input_instruments;
+	
+	pthread_mutex_t mutex_instruments;
+	pthread_mutex_t mutex_post;
+	
+	bool run;
+	pthread_cond_t cond_run;
+	pthread_mutex_t mutex_run;
+	
+	bool user;
+	pthread_cond_t cond_user;
+	pthread_mutex_t mutex_user;
+
+	void InitialFetch();
+	void Sample();
+	void Fetch();
+	void Commit();
+	void WaitForUser();
+	void WaitForSimulation();
+	void Run();
+	void UnblockUser();
+	void LockInstruments();
+	void UnlockInstruments();
+	void LockPost();
+	void UnlockPost();
+};
+
+class CSV_Reader
+	: public InstrumenterFrontEnd
+{
+public:
+	CSV_Reader(const char *name, Instrumenter *instrumenter);
+	virtual ~CSV_Reader();
+
+	virtual bool SetupInstrumentation();
+	virtual void ProcessInputInstruments();
+	virtual void ProcessOutputInstruments();
+private:
+	unisim::kernel::logger::Logger logger;
+	
+	std::string filename;
+	unisim::kernel::service::Parameter<std::string> param_filename;
+	std::string instrumentation;
+	unisim::kernel::service::Parameter<std::string> param_instrumentation;
+	sc_core::sc_time instrumentation_start_time;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_instrumentation_start_time;
+	sc_core::sc_time instrumentation_end_time;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_instrumentation_end_time;
+	std::string csv_delimiter;
+	unisim::kernel::service::Parameter<std::string> param_csv_delimiter;
+	
+	std::ifstream *file;
+	sc_core::sc_time time_resolution;
+	std::vector<InputInstrumentBase *> csv_instrument_map;
+	sc_core::sc_time csv_time_stamp;
+	
+	bool ParseCSVHeaderAndInstrumentInput(int pass);
+	bool ParseCSV(sc_core::sc_time& deadline);
+};
+
+class CSV_Writer
+	: public InstrumenterFrontEnd
+{
+public:
+	CSV_Writer(const char *name, Instrumenter *instrumenter);
+	virtual ~CSV_Writer();
+	
+	virtual bool SetupInstrumentation();
+	virtual void ProcessInputInstruments();
+	virtual void ProcessOutputInstruments();
+private:
+	unisim::kernel::logger::Logger logger;
+	
+	std::string filename;
+	unisim::kernel::service::Parameter<std::string> param_filename;
+	std::string instrumentation;
+	unisim::kernel::service::Parameter<std::string> param_instrumentation;
+	sc_core::sc_time instrumentation_start_time;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_instrumentation_start_time;
+	sc_core::sc_time instrumentation_end_time;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_instrumentation_end_time;
+	std::string csv_delimiter;
+	unisim::kernel::service::Parameter<std::string> param_csv_delimiter;
+	
+	std::ofstream *file;
+	sc_core::sc_time last_instrument_sampling_time_stamp;
+	bool force_output;
+	
+	void SampleInstruments();
+	void LatchInstruments();
+	void OutputInstrumentsNamesAsCSV(std::ostream& os);
+	void OutputInstrumentsAsCSV(std::ostream& os, const sc_core::sc_time& time_stamp);
 };
 
 class Instrumenter
@@ -156,15 +564,25 @@ class Instrumenter
 public:
 	Instrumenter(const char *name, unisim::kernel::service::Object *parent = 0);
 	virtual ~Instrumenter();
+	virtual bool BeginSetup();
 	virtual bool EndSetup();
 	
 	Clock& CreateClock(const std::string& clock_name);
-	template <typename T> sc_core::sc_signal<T>& CreateSignal(const T& init_value);
-	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const T& init_value);
-	template <typename T> sc_core::sc_signal<T>& CreateSignal(const std::string& signal_name, const T& init_value);
-	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const std::string& signal_name, const T& init_value);
-	template <typename T> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value);
-	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value);
+// 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const T& init_value);
+// 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const T& init_value);
+// 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const std::string& signal_name, const T& init_value);
+// 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const std::string& signal_name, const T& init_value);
+// 	template <typename T> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value);
+// 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value);
+	
+	template <typename T> sc_core::sc_signal<T>& CreateSignal(const T& init_value, INSTRUMENTATION_TYPE instr_type = INPUT_OUTPUT_INSTRUMENTATION);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const T& init_value, INSTRUMENTATION_TYPE instr_type = INPUT_OUTPUT_INSTRUMENTATION);
+	template <typename T> sc_core::sc_signal<T>& CreateSignal(const std::string& signal_name, const T& init_value, INSTRUMENTATION_TYPE instr_type = INPUT_OUTPUT_INSTRUMENTATION);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const std::string& signal_name, const T& init_value, INSTRUMENTATION_TYPE instr_type = INPUT_OUTPUT_INSTRUMENTATION);
+	template <typename T> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value, INSTRUMENTATION_TYPE limit = NO_INSTRUMENTATION);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value, INSTRUMENTATION_TYPE instr_type = INPUT_OUTPUT_INSTRUMENTATION);
+
+	void PrepareInstrumentation(const std::string& signal_name_pattern, INSTRUMENTATION_TYPE instrumentation_type, unsigned int front_end_id);
 
 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void RegisterSignal(sc_core::sc_signal<T, WRITER_POLICY> *signal);
 	void RegisterPort(sc_core::sc_port_base& port);
@@ -183,7 +601,7 @@ public:
 	void BindArray(unsigned int dim, const std::string& port_array_name, unsigned int port_array_begin_idx, unsigned int port_array_stride, const std::string& signal_array_name, unsigned int signal_array_begin_idx, unsigned int signal_array_stride);
 	
 	void StartBinding();
-	void StartInstrumentation();
+	bool SetupInstrumentation();
 
 protected:
 	mutable unisim::kernel::logger::Logger logger;
@@ -192,36 +610,11 @@ protected:
 	bool debug;
 private:
 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> friend class Typer;
+	friend class InstrumenterFrontEnd;
 	
 	unisim::kernel::service::Parameter<bool> param_verbose;
 	unisim::kernel::service::Parameter<bool> param_debug;
 	
-	bool enable_output_instrumentation;
-	unisim::kernel::service::Parameter<bool> param_enable_output_instrumentation;
-	std::string instrumentation_output_filename;
-	unisim::kernel::service::Parameter<std::string> param_instrumentation_output_filename;
-	std::string output_instrumentation;
-	unisim::kernel::service::Parameter<std::string> param_output_instrumentation;
-	sc_core::sc_time output_instrumentation_start_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_output_instrumentation_start_time;
-	sc_core::sc_time output_instrumentation_end_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_output_instrumentation_end_time;
-	std::string output_csv_delimiter;
-	unisim::kernel::service::Parameter<std::string> param_output_csv_delimiter;
-	
-	bool enable_input_instrumentation;
-	unisim::kernel::service::Parameter<bool> param_enable_input_instrumentation;
-	std::string instrumentation_input_filename;
-	unisim::kernel::service::Parameter<std::string> param_instrumentation_input_filename;
-	std::string input_instrumentation;
-	unisim::kernel::service::Parameter<std::string> param_input_instrumentation;
-	sc_core::sc_time input_instrumentation_start_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_input_instrumentation_start_time;
-	sc_core::sc_time input_instrumentation_end_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_input_instrumentation_end_time;
-	std::string input_csv_delimiter;
-	unisim::kernel::service::Parameter<std::string> param_input_csv_delimiter;
-
 	std::string vcd_trace_filename;
 	unisim::kernel::service::Parameter<std::string> param_vcd_trace_filename;
 	std::string trace_signals;
@@ -232,61 +625,61 @@ private:
 
 	std::string gtkwave_init_script;
 	unisim::kernel::service::Parameter<std::string> param_gtkwave_init_script;
+	
+	bool enable_http_server;
+	unisim::kernel::service::Parameter<bool> param_enable_http_server;
+	HttpServer *http_server;
+	
+	bool enable_csv_reader;
+	unisim::kernel::service::Parameter<bool> param_enable_csv_reader;
+	CSV_Reader *csv_reader;
+	
+	bool enable_csv_writer;
+	unisim::kernel::service::Parameter<bool> param_enable_csv_writer;
+	CSV_Writer *csv_writer;
+	
+	std::string front_ends_priority_order;
+	unisim::kernel::service::Parameter<std::string> param_front_ends_priority_order;
 
-	std::map<std::string, sc_core::sc_interface *> signal_pool;
+	std::map<std::string, sc_core::sc_interface *, unisim::kernel::service::nat_ltstr /*unisim::kernel::service::lexltstr*/> signal_pool;
+	std::map<std::string, sc_core::sc_interface *> auto_signal_pool;
 	std::map<std::string, sc_core::sc_port_base *> port_pool;
 	std::map<std::string, std::string> netlist;
-	std::set<std::string> input_instrumentation_set;
 	std::map<std::string, TyperBase *> typers;
+	std::map<std::string, SignalTeeBase *> signal_tees;
 
-	std::ofstream *instrumentation_output_file;
-	std::ifstream *instrumentation_input_file;
-	std::vector<OutputInstrumentBase *> output_instruments;
-	std::vector<InputInstrumentBase *> input_instruments;
-	sc_core::sc_spawn_options output_instrumentation_process_spawn_options;
-	sc_core::sc_time last_instrument_sampling_time_stamp;
-	sc_core::sc_time input_time_resolution;
-	std::vector<InputInstrumentBase *> input_csv_instrument_map;
-	sc_core::sc_time input_time_stamp;
-	sc_core::sc_event next_input_instrumentation_event;
+	std::set<InstrumentKey> instrumentations;
+	std::map<std::string, INSTRUMENTATION_TYPE> instrumentation_limit;
+	std::map<InstrumentKey, InstrumentBase *> instruments;
+	std::vector<InstrumenterFrontEnd *> instrumenter_front_ends;
+	
 	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& pull_down_signal;
 	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& pull_down_0_signal;
 	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& pull_up_signal;
 	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& pull_up_0_signal;
 	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& unused_signal;
 	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& unused_0_signal;
-
+	
+	static bool Match(const char *p, const char *s);
+	static bool Match(const std::string& p, const std::string& s);
+	void MatchSignalPattern(const std::string& signal_name_pattern, std::vector<std::string>& vec_signal_names) const;
+	
 	template <typename T> sc_core::sc_signal<T> *TryGetSignal(const std::string& signal_name);
 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY> *TryGetSignal(const std::string& signal_name);
 	template <typename T> sc_core::sc_signal<T> *TryGetSignal(const std::string& signal_array_name, unsigned int idx);
 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY> *TryGetSignal(const std::string& signal_array_name, unsigned int idx);
-	template <typename T> void MatchSignal(const std::string& signal_name_pattern, std::vector<sc_core::sc_signal<T> *>& vec_signals);
-	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void MatchSignal(const std::string& signal_name_pattern, std::vector<sc_core::sc_signal<T, WRITER_POLICY> *>& vec_signals);
 	template <typename T> bool SignalIsA(const std::string& signal_name, const T& sample);
 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> bool SignalIsA(const std::string& signal_name, const T& sample);
 	template <typename T> bool TryTraceSignal(const std::string& signal_name);
 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> bool TryTraceSignal(const std::string& signal_name);
-	bool IsInInputInstrumentSet(const std::string& name) const;
 	void GenerateGTKWaveInitScript(const std::string& filename, int zoom_factor) const;
-	bool Match(const std::string& p, const std::string& s) const;
- 	template <typename T> bool TryBind(const std::string& port_name, const std::string& signal_name);
-	void SampleInstruments(const sc_core::sc_time& time_stamp);
-	void OutputInstrumentsNamesAsCSV(std::ostream& os);
-	void OutputInstrumentsAsCSV(std::ostream& os, const sc_core::sc_time& time_stamp);
-	void OutputInstrumentationProcess();
-	void InputInstrumentationProcess();
-	template <typename T> void SignalTeeProcess(sc_core::sc_signal<T> *original_signal, sc_core::sc_signal<T> *injected_signal, sc_core::sc_signal<T> *signal);
-	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void SignalTeeProcess(sc_core::sc_signal<T, WRITER_POLICY> *original_signal, sc_core::sc_signal<T, WRITER_POLICY> *injected_signal, sc_core::sc_signal<T, WRITER_POLICY> *signal);
-	template <typename T> bool TryInstrumentInputSignal(const std::string& signal_name);
-	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> bool TryInstrumentInputSignal(const std::string& signal_name);
-	template <typename T> bool TryInstrumentOutputSignal(const std::string& signal_name);
-	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> bool TryInstrumentOutputSignal(const std::string& signal_name);
-	void InstrumentOutputSignal(const std::string& signal_name);
-	bool InstrumentInputSignal(const std::string& signal_name);
+ 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> bool TryBind(const std::string& port_name, const std::string& signal_name);
 	
-	bool ParseCSVHeaderAndInstrumentInput();
-	bool ParseCSV();
-	InputInstrumentBase *FindInputInstrument(const std::string& name);
+	InstrumentBase *FindInstrument(const std::string& name, INSTRUMENTATION_TYPE instrumentation_type, unsigned int front_end_id);
+	InputInstrumentBase *FindInputInstrument(const std::string& name, unsigned int front_end_id);
+	OutputInstrumentBase *FindOutputInstrument(const std::string& name, unsigned int front_end_id);
+	
+	unsigned int RegisterFrontEnd(InstrumenterFrontEnd *instrumenter_front_end);
 };
 
 class Simulator
@@ -299,12 +692,13 @@ public:
 	virtual ~Simulator();
 	
 	Clock& CreateClock(const std::string& clock_name);
-	template <typename T> sc_core::sc_signal<T>& CreateSignal(const T& init_value);
-	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const T& init_value);
-	template <typename T> sc_core::sc_signal<T>& CreateSignal(const std::string& signal_name, const T& init_value);
-	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const std::string& signal_name, const T& init_value);
-	template <typename T> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value);
-	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value);
+	template <typename T> sc_core::sc_signal<T>& CreateSignal(const T& init_value, INSTRUMENTATION_TYPE instr_type = INPUT_OUTPUT_INSTRUMENTATION);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const T& init_value, INSTRUMENTATION_TYPE instr_type = INPUT_OUTPUT_INSTRUMENTATION);
+	template <typename T> sc_core::sc_signal<T>& CreateSignal(const std::string& signal_name, const T& init_value, INSTRUMENTATION_TYPE instr_type = INPUT_OUTPUT_INSTRUMENTATION);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const std::string& signal_name, const T& init_value, INSTRUMENTATION_TYPE instr_type = INPUT_OUTPUT_INSTRUMENTATION);
+	template <typename T> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value, INSTRUMENTATION_TYPE instr_type = INPUT_OUTPUT_INSTRUMENTATION);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value, INSTRUMENTATION_TYPE instr_type = INPUT_OUTPUT_INSTRUMENTATION);
+	
 	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_name);
 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& GetSignal(const std::string& signal_name);
 	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_array_name, unsigned int idx);
@@ -319,41 +713,47 @@ public:
 	void BindArray(unsigned int dim, const std::string& port_array_name, const std::string& signal_array_name);
 	void BindArray(unsigned int dim, const std::string& port_array_name, unsigned int port_array_begin_idx, const std::string& signal_array_name, unsigned int signal_array_begin_idx);
 	void BindArray(unsigned int dim, const std::string& port_array_name, unsigned int port_array_begin_idx, unsigned int port_array_stride, const std::string& signal_array_name, unsigned int signal_array_begin_idx, unsigned int signal_array_stride);
+	
+	Instrumenter *GetInstrumenter();
 protected:
 	unisim::kernel::logger::Logger logger;
 private:
 	Instrumenter *instrumenter;
 	unisim::kernel::service::Statistic<sc_core::sc_time> stat_cur_sim_time;
+	sc_core::sc_time global_quantum;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_global_quantum;
+	sc_core::sc_time can_global_quantum;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_can_global_quantum;
 };
 
-template <typename T> sc_core::sc_signal<T>& Simulator::CreateSignal(const T& init_value)
+template <typename T> sc_core::sc_signal<T>& Simulator::CreateSignal(const T& init_value, INSTRUMENTATION_TYPE instr_type)
 {
-	return instrumenter->CreateSignal<T>(init_value);
+	return instrumenter->CreateSignal<T>(init_value, instr_type);
 }
 
-template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& Simulator::CreateSignal(const T& init_value)
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& Simulator::CreateSignal(const T& init_value, INSTRUMENTATION_TYPE instr_type)
 {
-	return instrumenter->CreateSignal<T, WRITER_POLICY>(init_value);
+	return instrumenter->CreateSignal<T, WRITER_POLICY>(init_value, instr_type);
 }
 
-template <typename T> sc_core::sc_signal<T>& Simulator::CreateSignal(const std::string& signal_name, const T& init_value)
+template <typename T> sc_core::sc_signal<T>& Simulator::CreateSignal(const std::string& signal_name, const T& init_value, INSTRUMENTATION_TYPE instr_type)
 {
-	return instrumenter->CreateSignal<T>(signal_name, init_value);
+	return instrumenter->CreateSignal<T>(signal_name, init_value, instr_type);
 }
 
-template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& Simulator::CreateSignal(const std::string& signal_name, const T& init_value)
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& Simulator::CreateSignal(const std::string& signal_name, const T& init_value, INSTRUMENTATION_TYPE instr_type)
 {
-	return instrumenter->CreateSignal<T, WRITER_POLICY>(signal_name, init_value);
+	return instrumenter->CreateSignal<T, WRITER_POLICY>(signal_name, init_value, instr_type);
 }
 
-template <typename T> void Simulator::CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value)
+template <typename T> void Simulator::CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value, INSTRUMENTATION_TYPE instr_type)
 {
-	instrumenter->CreateSignalArray<T>(signal_array_dim, signal_array_name, init_value);
+	instrumenter->CreateSignalArray<T>(signal_array_dim, signal_array_name, init_value, instr_type);
 }
 
-template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void Simulator::CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value)
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void Simulator::CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value, INSTRUMENTATION_TYPE instr_type)
 {
-	instrumenter->CreateSignalArray<T, WRITER_POLICY>(signal_array_dim, signal_array_name, init_value);
+	instrumenter->CreateSignalArray<T, WRITER_POLICY>(signal_array_dim, signal_array_name, init_value, instr_type);
 }
 
 template <typename T> sc_core::sc_signal<T>& Simulator::GetSignal(const std::string& signal_name)
@@ -391,9 +791,8 @@ template <typename T> void Simulator::RegisterPort(sc_core::sc_port_b<sc_core::s
 	instrumenter->RegisterPort(out_port);
 }
 
-inline InstrumentBase::InstrumentBase(const std::string& _name, INSTRUMENTATION_TYPE _instrumentation_type)
-	: name(_name)
-	, instrumentation_type(_instrumentation_type)
+inline InstrumentBase::InstrumentBase(const std::string& name, INSTRUMENTATION_TYPE instrumentation_type, unsigned int front_end_id)
+	: key(name, instrumentation_type, front_end_id)
 {
 }
 
@@ -401,32 +800,37 @@ inline InstrumentBase::~InstrumentBase()
 {
 }
 
+inline unsigned int InstrumentBase::GetFrontEndId() const
+{
+	return key.front_end_id;
+}
+
 inline const std::string& InstrumentBase::GetName() const
 {
-	return name;
+	return key.name;
 }
 
 inline INSTRUMENTATION_TYPE InstrumentBase::GetInstrumentationType() const
 {
-	return instrumentation_type;
+	return key.instrumentation_type;
 }
 
-inline InputInstrumentBase::InputInstrumentBase(const std::string& name)
-	: InstrumentBase(name, INPUT_INSTRUMENTATION)
+inline const InstrumentKey& InstrumentBase::GetKey() const
 {
+	return key;
 }
 
-inline OutputInstrumentBase::OutputInstrumentBase(const std::string& name)
-	: InstrumentBase(name, OUTPUT_INSTRUMENTATION)
+inline bool InputInstrumentBase::IsInjectionEnabled() const
 {
+	return signal_tee->IsInjectionEnabled(GetFrontEndId());
 }
 
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
-InputInstrument<T, WRITER_POLICY>::InputInstrument(const std::string& name, sc_core::sc_signal<T, WRITER_POLICY> *_signal)
-	: InputInstrumentBase(name)
+InputInstrument<T, WRITER_POLICY>::InputInstrument(const std::string& name, unsigned int front_end_id, sc_core::sc_signal<T, WRITER_POLICY> *_signal, SignalTee<T, WRITER_POLICY> *signal_tee, const T& init_value)
+	: InputInstrumentBase(name, front_end_id, signal_tee)
 	, signal(_signal)
-	, value(signal->read())
-	, value_changed(true)
+	, value(init_value)
+	, value_changed(false)
 {
 }
 
@@ -455,33 +859,70 @@ void InputInstrument<T, WRITER_POLICY>::Input(std::istream& is)
 			std::cerr << "WARNING! ignoring extra characters after \"" << tmp_value << "\"" << std::endl;
 		}
 		if(!(value == tmp_value)) value_changed = true;
+#if 0
+		std::cout << "InputInstrument<T, WRITER_POLICY>::Input(): At " << sc_core::sc_time_stamp() << ", " << signal->name() << ": '" << value << "' -> '" << tmp_value << "'" << std::endl;
+#endif
 		value = tmp_value;
 	}
 }
 
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
-OutputInstrument<T, WRITER_POLICY>::OutputInstrument(const std::string& name, const sc_core::sc_signal<T, WRITER_POLICY> *_signal)
-	: OutputInstrumentBase(name)
-	, signal(_signal)
-	, latched_value(signal->read())
-	, sample_value(latched_value)
+const std::type_info& InputInstrument<T, WRITER_POLICY>::GetTypeInfo() const
 {
+	return typeid(T);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+void InputInstrument<T, WRITER_POLICY>::Print(std::ostream& os) const
+{
+	os << value;
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+OutputInstrument<T, WRITER_POLICY>::OutputInstrument(const std::string& name, unsigned int front_end_id, const sc_core::sc_signal<T, WRITER_POLICY> *_signal, const T& init_value)
+	: OutputInstrumentBase(name, front_end_id)
+	, signal(_signal)
+	, latched_value(init_value)
+	, sample_value(init_value)
+{
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+sc_core::sc_interface *OutputInstrument<T, WRITER_POLICY>::GetInterface()
+{
+	return (sc_core::sc_interface *) signal;
 }
 
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
 void OutputInstrument<T, WRITER_POLICY>::Sample()
 {
 	sample_value = signal->read();
+	//std::cerr << sc_core::sc_time_stamp() << ":Sample:" << sample_value << std::endl;
 }
 
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
-void OutputInstrument<T, WRITER_POLICY>::Output(std::ostream& os, bool force_output)
+void OutputInstrument<T, WRITER_POLICY>::Latch()
 {
-	if(force_output || (sample_value != latched_value))
-	{
-		latched_value = sample_value;
-		os << latched_value;
-	}
+	latched_value = sample_value;
+	//std::cerr << sc_core::sc_time_stamp() << ":Latch:" << latched_value << std::endl;
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+bool OutputInstrument<T, WRITER_POLICY>::ValueChanged() const
+{
+	return sample_value != latched_value;
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+void OutputInstrument<T, WRITER_POLICY>::Output(std::ostream& os)
+{
+	os << sample_value;
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+const std::type_info& OutputInstrument<T, WRITER_POLICY>::GetTypeInfo() const
+{
+	return typeid(T);
 }
 
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
@@ -497,54 +938,33 @@ bool Typer<T, WRITER_POLICY>::TryTraceSignal(const std::string& signal_name)
 }
 
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
-bool Typer<T, WRITER_POLICY>::TryInstrumentInputSignal(const std::string& signal_name)
-{
-	return instrumenter->TryInstrumentInputSignal<T, WRITER_POLICY>(signal_name);
-}
-
-template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
-bool Typer<T, WRITER_POLICY>::TryInstrumentOutputSignal(const std::string& signal_name)
-{
-	return instrumenter->TryInstrumentOutputSignal<T, WRITER_POLICY>(signal_name);
-}
-
-template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
 bool Typer<T, WRITER_POLICY>::TryBind(const std::string& port_name, const std::string& signal_name)
 {
-	return instrumenter->TryBind<T>(port_name, signal_name); // Note: Binding does not depend on writer policy
+	return instrumenter->TryBind<T, WRITER_POLICY>(port_name, signal_name); // Note: Binding does not depend on writer policy
 }
 
 template <typename T>
-sc_core::sc_signal<T>& Instrumenter::CreateSignal(const T& init_value)
+sc_core::sc_signal<T>& Instrumenter::CreateSignal(const T& init_value, INSTRUMENTATION_TYPE instr_type)
 {
-	return CreateSignal<T, sc_core::SC_ONE_WRITER>(init_value);
+	return CreateSignal<T, sc_core::SC_ONE_WRITER>(init_value, instr_type);
 }
 
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
-sc_core::sc_signal<T, WRITER_POLICY>& Instrumenter::CreateSignal(const T& init_value)
+sc_core::sc_signal<T, WRITER_POLICY>& Instrumenter::CreateSignal(const T& init_value, INSTRUMENTATION_TYPE instr_type)
 {
-	sc_core::sc_signal<T, WRITER_POLICY> *signal = new sc_core::sc_signal<T, WRITER_POLICY>();
-	if(unlikely(verbose))
-	{
-		logger << DebugInfo << "Creating Signal \"" << signal->name() << "\" <- '" << init_value << "'" << EndDebugInfo;
-	}
-	signal_pool[signal->name()] = signal;
-	*signal = init_value;
-	
-	typers[signal->name()] = new Typer<T, WRITER_POLICY>(this);
-	
-	return *signal;
+	return CreateSignal<T, WRITER_POLICY>(sc_core::sc_gen_unique_name("signal"), init_value, instr_type);
 }
 
 template <typename T>
-sc_core::sc_signal<T>& Instrumenter::CreateSignal(const std::string& signal_name, const T& init_value)
+sc_core::sc_signal<T>& Instrumenter::CreateSignal(const std::string& signal_name, const T& init_value, INSTRUMENTATION_TYPE instr_type)
 {
-	return CreateSignal<T, sc_core::SC_ONE_WRITER>(signal_name, init_value);
+	return CreateSignal<T, sc_core::SC_ONE_WRITER>(signal_name, init_value, instr_type);
 }
 
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
-sc_core::sc_signal<T, WRITER_POLICY>& Instrumenter::CreateSignal(const std::string& signal_name, const T& init_value)
+sc_core::sc_signal<T, WRITER_POLICY>& Instrumenter::CreateSignal(const std::string& signal_basename, const T& init_value, INSTRUMENTATION_TYPE instr_type)
 {
+	std::string signal_name(std::string(this->GetParent()->GetName()) + '.' + signal_basename);
 	std::map<std::string, sc_core::sc_interface *>::iterator signal_pool_it = signal_pool.find(signal_name);
 	if(signal_pool_it != signal_pool.end())
 	{
@@ -552,48 +972,84 @@ sc_core::sc_signal<T, WRITER_POLICY>& Instrumenter::CreateSignal(const std::stri
 		throw std::runtime_error("Internal error!");
 	}
 	
-	sc_core::sc_signal<T, WRITER_POLICY> *signal = new sc_core::sc_signal<T, WRITER_POLICY>(signal_name.c_str());
+	sc_core::sc_signal<T, WRITER_POLICY> *signal = new sc_core::sc_signal<T, WRITER_POLICY>(signal_basename.c_str());
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << "Creating Signal \"" << signal->name() << "\" <- '" << init_value << "'" << EndDebugInfo;
+		logger << DebugInfo << "Creating Signal \"" << signal->name() << "\" <- '" << init_value << "' (" << WRITER_POLICY << ")" << EndDebugInfo;
 	}
 	signal_pool[signal->name()] = signal;
 	*signal = init_value;
 	
 	typers[signal->name()] = new Typer<T, WRITER_POLICY>(this);
-
-	if(enable_input_instrumentation)
+	
+	SignalTee<T, WRITER_POLICY> *signal_tee = 0;
+	sc_core::sc_signal<T, WRITER_POLICY> *original_signal = 0;
+	
+	std::set<InstrumentKey>::iterator instrumentation_it;
+	
+	for(instrumentation_it = instrumentations.begin(); instrumentation_it != instrumentations.end(); instrumentation_it++)
 	{
-		std::string full_signal_name(signal->name());
+		InstrumentKey instrumentation = *instrumentation_it;
+		const std::string& signal_name_pattern = instrumentation.name;
+		unsigned int front_end_id = instrumentation.front_end_id;
+		INSTRUMENTATION_TYPE instrumentation_type = instrumentation.instrumentation_type;
 		
-		if(IsInInputInstrumentSet(full_signal_name))
+		if(Match(signal_name_pattern, signal_name))
 		{
-			// signal is instrumented for input
-			std::stringstream original_signal_name_sstr;
-			original_signal_name_sstr << "original_" << signal_name;
-			sc_core::sc_signal<T, WRITER_POLICY> *original_signal = new sc_core::sc_signal<T, WRITER_POLICY>((signal_name + "_original").c_str());
-			signal_pool[original_signal->name()] = original_signal;
-			*original_signal = init_value;
+			if(((instr_type & INPUT_INSTRUMENTATION) != 0) && ((instrumentation_type & INPUT_INSTRUMENTATION) != 0))
+			{
+				if(!original_signal)
+				{
+					std::string original_signal_basename(std::string(signal->basename()) + "_original");
+					original_signal = new sc_core::sc_signal<T, WRITER_POLICY>(original_signal_basename.c_str());;
+					auto_signal_pool[original_signal->name()] = original_signal;
+					*original_signal = init_value;
+				}
+				
+				std::stringstream injected_signal_basename_sstr;
+				injected_signal_basename_sstr << signal->basename() << "_injected_" << front_end_id;
+				std::string injected_signal_basename(injected_signal_basename_sstr.str());
+				sc_core::sc_signal<T, WRITER_POLICY> *injected_signal = new sc_core::sc_signal<T, WRITER_POLICY>(injected_signal_basename.c_str());;
+				auto_signal_pool[injected_signal->name()] = injected_signal;
+				*injected_signal = init_value;
+				
+				if(!signal_tee)
+				{
+					std::string signal_tee_name(std::string(signal->name()) + "_tee");
+					if(unlikely(verbose))
+					{
+						logger << DebugInfo << "Creating Signal tee \"" << signal_tee_name << "\" (" << WRITER_POLICY << ")" << EndDebugInfo;
+					}
+					signal_tee = new SignalTee<T, WRITER_POLICY>(signal_tee_name, original_signal, signal);;
+					signal_tees[signal_tee_name] = signal_tee;
+				}
+				
+				signal_tee->SetInjectedSignal(front_end_id, injected_signal);
+				signal_tee->EnableInjection(front_end_id); // FIXME
+				
+				InputInstrument<T, WRITER_POLICY> *input_instrument = new InputInstrument<T, WRITER_POLICY>(signal_name, front_end_id, injected_signal, signal_tee, init_value);
+				instruments.insert(std::pair<InstrumentKey, InstrumentBase *>(input_instrument->GetKey(), input_instrument));
+			}
 			
-			std::stringstream injected_signal_name_sstr;
-			injected_signal_name_sstr << "injected_" << signal_name;
-			sc_core::sc_signal<T, WRITER_POLICY> *injected_signal = new sc_core::sc_signal<T, WRITER_POLICY>((signal_name + "_injected").c_str());
-			signal_pool[injected_signal->name()] = injected_signal;
-			*injected_signal = init_value;
+			if(((instr_type & OUTPUT_INSTRUMENTATION) != 0) && ((instrumentation_type & OUTPUT_INSTRUMENTATION) != 0))
+			{
+				OutputInstrument<T, WRITER_POLICY> *output_instrument = new OutputInstrument<T, WRITER_POLICY>(signal_name, front_end_id, signal, init_value);
+				instruments.insert(std::pair<InstrumentKey, InstrumentBase *>(output_instrument->GetKey(), output_instrument));
+			}
 		}
 	}
 	
-	return *signal;
+	return original_signal ? (*original_signal) : (*signal);
 }
 
 template <typename T>
-void Instrumenter::CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value)
+void Instrumenter::CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value, INSTRUMENTATION_TYPE instr_type)
 {
-	CreateSignalArray<T, sc_core::SC_ONE_WRITER>(signal_array_dim, signal_array_name, init_value);
+	CreateSignalArray<T, sc_core::SC_ONE_WRITER>(signal_array_dim, signal_array_name, init_value, instr_type);
 }
 
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
-void Instrumenter::CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value)
+void Instrumenter::CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value, INSTRUMENTATION_TYPE instr_type)
 {
 	unsigned int signal_array_index;
 	
@@ -602,7 +1058,7 @@ void Instrumenter::CreateSignalArray(unsigned int signal_array_dim, const std::s
 		std::stringstream sstr;
 		sstr << signal_array_name << "_" << signal_array_index;
 		std::string signal_name(sstr.str());
-		CreateSignal<T, WRITER_POLICY>(signal_name, init_value);
+		CreateSignal<T, WRITER_POLICY>(signal_name, init_value, instr_type);
 	}
 }
 
@@ -624,7 +1080,26 @@ sc_core::sc_signal<T, WRITER_POLICY>& Instrumenter::GetSignal(const std::string&
 		{
 			sc_core::sc_signal<T, WRITER_POLICY> *signal = dynamic_cast<sc_core::sc_signal<T, WRITER_POLICY> *>(signal_if);
 			
-			if(signal) return *signal;
+			if(signal)
+			{
+				std::string signal_tee_name(std::string(signal->name()) + "_tee");
+				std::map<std::string, SignalTeeBase *>::iterator signal_tee_it = signal_tees.find(signal_tee_name);
+				
+				if(signal_tee_it != signal_tees.end())
+				{
+					SignalTee<T, WRITER_POLICY> *signal_tee = dynamic_cast<SignalTee<T, WRITER_POLICY> *>((*signal_tee_it).second);
+					
+					if(signal_tee)
+					{
+						sc_core::sc_signal<T, WRITER_POLICY> *original_signal = signal_tee->GetOriginalSignal();
+						return *original_signal;
+					}
+
+					logger << DebugError << "Can't retrieve signal tee \"" << signal_tee_name << "\" (" << WRITER_POLICY << ")" << EndDebugError;
+					throw std::runtime_error("Internal error!");
+				}
+				return *signal;
+			}
 			
 			logger << DebugError << "ERROR! Signal \"" << signal_name << "\" has an unexpected type" << EndDebugError;
 			throw std::runtime_error("Internal error!");
@@ -692,37 +1167,6 @@ sc_core::sc_signal<T, WRITER_POLICY> *Instrumenter::TryGetSignal(const std::stri
 	std::string signal_name(sstr.str());
 
 	return TryGetSignal<T, WRITER_POLICY>(signal_name);
-}
-
-template <typename T>
-void Instrumenter::MatchSignal(const std::string& signal_name_pattern, std::vector<sc_core::sc_signal<T> *>& vec_signals)
-{
-	MatchSignal<T, sc_core::SC_ONE_WRITER>(signal_name_pattern, vec_signals);
-}
-
-template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
-void Instrumenter::MatchSignal(const std::string& signal_name_pattern, std::vector<sc_core::sc_signal<T, WRITER_POLICY> *>& vec_signals)
-{
-	std::map<std::string, sc_core::sc_interface *>::iterator signal_pool_it;
-	
-	for(signal_pool_it = signal_pool.begin(); signal_pool_it != signal_pool.end(); signal_pool_it++)
-	{
-		sc_core::sc_interface *signal_if = (*signal_pool_it).second;
-		
-		sc_core::sc_signal<T, WRITER_POLICY> *candidate_signal = dynamic_cast<sc_core::sc_signal<T, WRITER_POLICY> *>(signal_if);
-		
-		if(candidate_signal)
-		{
-			std::string s(candidate_signal->name());
-			const std::string& p = signal_name_pattern;
-			
-			if(Match(p, s))
-			{
-				// match
-				vec_signals.push_back(candidate_signal);
-			}
-		}
-    }
 }
 
 template <typename T>
@@ -799,17 +1243,17 @@ template <typename T>
 void Instrumenter::RegisterPort(sc_core::sc_port_b<sc_core::sc_signal_in_if<T> >& in_port)
 {
 	RegisterPort(*(sc_core::sc_port_base *) &in_port);
-	typers[in_port.name()] = new Typer<T>(this);
+	//typers[in_port.name()] = new Typer<T>(this);
 }
 
 template <typename T>
 void Instrumenter::RegisterPort(sc_core::sc_port_b<sc_core::sc_signal_inout_if<T> >& out_port)
 {
 	RegisterPort(*(sc_core::sc_port_base *) &out_port);
-	typers[out_port.name()] = new Typer<T>(this);
+	//typers[out_port.name()] = new Typer<T>(this);
 }
 
-template <typename T>
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
 bool Instrumenter::TryBind(const std::string& port_name, const std::string& signal_name)
 {
 	sc_core::sc_port_b<sc_core::sc_signal_in_if<T> > *in_port = 0;
@@ -883,29 +1327,37 @@ bool Instrumenter::TryBind(const std::string& port_name, const std::string& sign
 
 				if(signal_inout_if)
 				{
-					if(param_enable_input_instrumentation && FindInputInstrument(signal_name))
+					std::string signal_tee_name(signal_name + "_tee");
+					
+					std::map<std::string, SignalTeeBase *>::iterator signal_tee_it = signal_tees.find(signal_tee_name);
+					
+					if(signal_tee_it != signal_tees.end())
 					{
-						// signal is instrumented for input
-						signal_pool_it = signal_pool.find(signal_name + "_original");
-						if(signal_pool_it != signal_pool.end())
+						SignalTee<T, WRITER_POLICY> *signal_tee = dynamic_cast<SignalTee<T, WRITER_POLICY> *>((*signal_tee_it).second);
+						
+						if(signal_tee)
 						{
-							sc_core::sc_interface *original_signal_if = (*signal_pool_it).second;
-							sc_core::sc_signal_inout_if<T> *original_signal_inout_if = dynamic_cast<sc_core::sc_signal_inout_if<T> *>(original_signal_if);
-							if(!original_signal_inout_if) throw std::runtime_error("Internal error! can't retrieve interface of original signal");
-							(*out_port)(*original_signal_inout_if);
+							(*out_port)(*signal_tee->GetOriginalSignal());
 							if(unlikely(debug))
 							{
 								logger << DebugInfo << "TryBind(\"" << port_name << ",\"" << signal_name << "): success (out_port -> original_signal_inout_if)" << EndDebugInfo;
 							}
-							return true;
 						}
-						throw std::runtime_error("Internal error! can't find original signal");
+						else
+						{
+							logger << DebugError << "Can't retrieve signal tee \"" << signal_tee_name << "\" (" << WRITER_POLICY << ") because instrumenter front-end probably did not prepared signal for input instrumentation" << EndDebugError;
+							throw std::runtime_error("Internal error!");
+						}
 					}
-					(*out_port)(*signal_inout_if);
-					if(unlikely(debug))
+					else
 					{
-						logger << DebugInfo << "TryBind(\"" << port_name << ",\"" << signal_name << "): success (output -> signal_inout_if)" << EndDebugInfo;
+						(*out_port)(*signal_inout_if);
+						if(unlikely(debug))
+						{
+							logger << DebugInfo << "TryBind(\"" << port_name << ",\"" << signal_name << "): success (output -> signal_inout_if)" << EndDebugInfo;
+						}
 					}
+					
 					return true;
 				}
 				else
@@ -928,106 +1380,6 @@ bool Instrumenter::TryBind(const std::string& port_name, const std::string& sign
 		logger << DebugInfo << "TryBind(\"" << port_name << ",\"" << signal_name << "): failed" << EndDebugInfo;
 	}
 	return false;
-}
-
-template <typename T>
-bool Instrumenter::TryInstrumentInputSignal(const std::string& signal_name)
-{
-	return TryInstrumentInputSignal<T, sc_core::SC_ONE_WRITER>(signal_name);
-}
-
-template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
-bool Instrumenter::TryInstrumentInputSignal(const std::string& signal_name)
-{
-	sc_core::sc_signal<T, WRITER_POLICY> *signal = TryGetSignal<T, WRITER_POLICY>(signal_name);
-	
-	if(signal)
-	{
-		sc_core::sc_signal<T, WRITER_POLICY> *original_signal = TryGetSignal<T, WRITER_POLICY>((signal_name + "_original").c_str());
-		sc_core::sc_signal<T, WRITER_POLICY> *injected_signal = TryGetSignal<T, WRITER_POLICY>((signal_name + "_injected").c_str());
-		if(!original_signal || !injected_signal) throw std::runtime_error("Internal error! can't get either original or injected signal");
-		
-		if(unlikely(verbose))
-		{
-			logger << DebugInfo << "Instrumenting Signal \"" << signal->name() << "\" for input" << EndDebugInfo;
-		}
-		InputInstrument<T, WRITER_POLICY> *instrument = new InputInstrument<T, WRITER_POLICY>(signal_name, injected_signal);
-		input_instruments.push_back(instrument);
-		
-		sc_core::sc_spawn_options signal_tee_process_spawn_options;
-		signal_tee_process_spawn_options.spawn_method();
-		signal_tee_process_spawn_options.set_sensitivity(original_signal);
-		signal_tee_process_spawn_options.set_sensitivity(injected_signal);
-		
-		sc_core::sc_spawn(sc_bind(&Instrumenter::SignalTeeProcess<T, WRITER_POLICY>, this, original_signal, injected_signal, signal), sc_core::sc_gen_unique_name("signal_tee_process"), &signal_tee_process_spawn_options);
-		return true;
-	}
-	
-	return false;
-}
-
-template <typename T>
-bool Instrumenter::TryInstrumentOutputSignal(const std::string& signal_name)
-{
-	return TryInstrumentOutputSignal<T, sc_core::SC_ONE_WRITER>(signal_name);
-}
-
-template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
-bool Instrumenter::TryInstrumentOutputSignal(const std::string& signal_name)
-{
-	bool status = false;
-	std::vector<sc_core::sc_signal<T, WRITER_POLICY> *> sv;
-	MatchSignal<T, WRITER_POLICY>(signal_name, sv);
-	typename std::vector<sc_core::sc_signal<T, WRITER_POLICY> *>::const_iterator sv_it;
-	for(sv_it = sv.begin(); sv_it != sv.end(); sv_it++)
-	{
-		
-		sc_core::sc_signal<T, WRITER_POLICY> *matched_signal = *sv_it;
-		if(unlikely(verbose))
-		{
-			logger << DebugInfo << "Instrumenting Signal \"" << matched_signal->name() << "\" for output" << EndDebugInfo;
-		}
-		std::string matched_signal_name(matched_signal->name());
-		OutputInstrument<T, WRITER_POLICY> *instrument = new OutputInstrument<T, WRITER_POLICY>(matched_signal_name, matched_signal);
-		output_instruments.push_back(instrument);
-		output_instrumentation_process_spawn_options.set_sensitivity(matched_signal);
-		status = true;
-	}
-	
-	return status;
-}
-
-template <typename T>
-void Instrumenter::SignalTeeProcess(sc_core::sc_signal<T> *original_signal, sc_core::sc_signal<T> *injected_signal, sc_core::sc_signal<T> *signal)
-{
-	SignalTeeProcess<T, sc_core::SC_ONE_WRITER>(original_signal, injected_signal, signal);
-}
-
-template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
-void Instrumenter::SignalTeeProcess(sc_core::sc_signal<T, WRITER_POLICY> *original_signal, sc_core::sc_signal<T, WRITER_POLICY> *injected_signal, sc_core::sc_signal<T, WRITER_POLICY> *signal)
-{
-	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
-	
-	T value;
-	
-	if((time_stamp >= input_instrumentation_start_time) && (time_stamp <= input_instrumentation_end_time))
-	{
-		if(unlikely(debug))
-		{
-			logger << DebugInfo << time_stamp << ": Inject: " << signal->name() << " <- '" << (*injected_signal) << "'" << EndDebugInfo;
-		}
-		value = *injected_signal;
-	}
-	else
-	{
-		if(unlikely(debug))
-		{
-			logger << DebugInfo << time_stamp << ": Passthrough: " << signal->name() << " <- '" << (*original_signal) << "'" << EndDebugInfo;
-		}
-		value = *original_signal;
-	}
-	
-	*signal = value;
 }
 
 } // end of namespace tlm2

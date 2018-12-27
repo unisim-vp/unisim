@@ -52,10 +52,10 @@ GDBServerBase::~GDBServerBase()
 {
 }
 
-void GDBServerBase::SigInt()
-{
-	killed = true;
-}
+// void GDBServerBase::SigInt()
+// {
+// 	killed = true;
+// }
 
 //////////////////////////////// GDBRegister //////////////////////////////////
 

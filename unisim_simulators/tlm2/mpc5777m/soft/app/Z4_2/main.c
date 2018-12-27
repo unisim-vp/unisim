@@ -14,6 +14,11 @@
 #include "edma.h"
 #include "console.h"
 #include "dspi.h"
+#include "siul2.h"
+#include "pbridge.h"
+#include "xbar.h"
+#include "smpu.h"
+#include "m_can.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,7 +60,7 @@ void dspi_2_tfff_rfdf(unsigned int dspi_id, enum DSPI_REQ dspi_req)
 		spi_cmd.ctcnt = 0;
 		spi_cmd.pe_masc = 0;
 		spi_cmd.pp_mcsc = 0;
-		spi_cmd.pcs = 1 << (7 - 0);
+		spi_cmd.pcs = 1 << 0;
 
 		uint16_t v = x ? 0xcafe : 0xbabe;
 		dspi_master_spi_tx_fifo_push(dspi_id, &spi_cmd, v);
@@ -84,11 +89,69 @@ int main(void)
 	pit_enable_timer_interrupt(0, 0);                      // PIT_0: enable interrupts for timer #0
 	pit_enable_timers_clock(0);                            // PIT_0: enable PIT_0 timers clock
 	
+	m_can_init(3);
+	m_can_enable_configuration_change(3);
+	m_can_set_baud_rate_prescaler(3, 1);
+	m_can_set_tseg1(3, 34);
+	m_can_set_tseg2(3, 5);
+	m_can_set_sjw(3, 1);
+	m_can_set_tx_fifo_queue_mode(3, M_CAN_TX_FIFO_MODE);
+	m_can_set_num_dedicated_tx_buffers(3, 16);
+	m_can_set_tx_fifo_queue_size(3, 16);
+	m_can_set_tx_buffers_start_address(3, 0x0);
+	m_can_set_tx_event_fifo_start_address(3, 0x200);
+	m_can_set_tx_event_fifo_size(3, 32);
+	m_can_enable_timestamp_counter(3);
+	m_can_disable_configuration_change(3);
+	m_can_exit_init_mode(3);
+	
+	struct m_can_tx_buffer_element e[32] = {
+		{ { .XTD = 0, .RTR = 0, .ID = (0 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (1 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (2 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (3 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (4 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (5 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (6 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (7 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (8 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (9 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (10 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (11 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (12 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (13 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (14 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (15 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (16 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (17 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (18 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (19 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (20 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (21 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (22 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (23 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (24 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (25 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (26 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (27 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x12345678 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (28 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0x98765432 } },
+		{ { .XTD = 0, .RTR = 0, .ID = (29 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (30 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } },
+		{ { .XTD = 0, .RTR = 0, .ID = (31 << 18) }, {.MM = 0, .EFC = 1, .DLC = 4}, .DATA = { 0xa55aa55a } }
+	};
+
+	unsigned int i;
+	for(i = 0; i < 32; i++)
+	{
+		while(m_can_get_tx_fifo_free_level(3) == 0);
+		m_can_tx_fifo_push(3, &e[i]);
+	}
+	
 	dspi_init(2);
 	dspi_set_mode(2, DSPI_MASTER_MODE);
 	dspi_set_peripheral_chip_select_inactive_states(2, 0xff); // inactive high, active low
 	
-	struct DSPI_CLOCK_AND_TRANSFER_ATTRIBUTES cta0;
+	struct DSPI_CLOCK_AND_TRANSFER_ATTRIBUTES cta0; // 1 Mbit/s with a protocol clock at 80 Mhz
 	cta0.double_baud_rate               = 0;
 	cta0.frame_size                     = 16;
 	cta0.clock_polarity                 = DSPI_CLOCK_INACTIVE_LOW;
@@ -101,21 +164,23 @@ int main(void)
 	cta0.pcs_to_sck_delay_scaler        = 0;
 	cta0.after_sck_delay_scaler         = 0;
 	cta0.delay_after_transfer_scaler    = 0;
-	cta0.baud_rate_scaler               = 4;
+	cta0.baud_rate_scaler               = 3;
 	cta0.parity_enable                  = 0;
 	cta0.parity_polarity                = 0;
 
 	dspi_set_spi_clock_and_transfer_attributes(2, 0, &cta0);
-	
-	dspi_enable_module(2);
-	dspi_start_transfers(2);
 	
 #if DSPI_INT_MODE
 	dspi_set_interrupt_handler(2, DSPI_REQ_TFFF, dspi_2_tfff_rfdf);
 	dspi_set_interrupt_handler(2, DSPI_REQ_RFDF, dspi_2_tfff_rfdf);
 	dspi_enable_request(2, DSPI_REQ_TFFF);
 	dspi_enable_request(2, DSPI_REQ_RFDF);
-#else
+#endif
+	
+	dspi_enable_module(2);
+	dspi_start_transfers(2);
+	
+#if !DSPI_INT_MODE
 	struct DSPI_MASTER_SPI_COMMAND spi_cmd;
 	spi_cmd.cont = 0;
 	spi_cmd.ctas = 0;
@@ -123,7 +188,7 @@ int main(void)
 	spi_cmd.ctcnt = 0;
 	spi_cmd.pe_masc = 0;
 	spi_cmd.pp_mcsc = 0;
-	spi_cmd.pcs = 1 << (7 - 0);
+	spi_cmd.pcs = 1 << 0;
 	
 	int x = 0;
 	
@@ -146,6 +211,9 @@ int main(void)
 	} while(1);
 #endif
 	
+	siul2_set_output_drive_control(12, ODC_PUSH_PULL);
+	siul2_set_output_drive_control(14, ODC_OUTPUT_BUFFER_DISABLED);
+	
 	const char boot_msg[] = "HAL 9000...booting..............................\r\n"
 						"I'm ready to control Discovery One spacecraft.\r\n\r\n"
 						"Dave, Discovery One is approaching Jupiter.\r\n"
@@ -166,18 +234,23 @@ int main(void)
 		fputs(prompt, stdout);
 		
 		char line[1536];
-			
+
+		siul2_gpio_write(12, 1);
+		
 		if(!fgets(line, sizeof(line), stdin))
 		{
 			fprintf(stderr, "can' get line\n");
 			break;
 		}
 		
+		siul2_gpio_write(12, 0);
+		
+		uint8_t gpio_button_status = siul2_gpio_read(14);
 		
 		time_t t = time(NULL);
 		struct tm tm = *localtime(&t);
 		
-		fprintf(stdout, "at %s, got \"%s\"\n", asctime(&tm), line);
+		fprintf(stdout, "at %s, got \"%s\" on prompt and %u on GPIO button\n", asctime(&tm), line, gpio_button_status);
 		
 		//struct tms tms;
 		
