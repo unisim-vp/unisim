@@ -134,14 +134,14 @@ protected:
   unisim::kernel::service::Parameter<std::string> param_binary_;
   unsigned int argc_;
   unisim::kernel::service::Parameter<unsigned int> param_argc_;
-  std::vector<std::string *> argv_;
-  std::vector<unisim::kernel::service::Parameter<std::string> *> param_argv_;
+  // std::vector<std::string *> argv_;
+  // std::vector<unisim::kernel::service::Parameter<std::string> *> param_argv_;
   bool apply_host_environment_;
   unisim::kernel::service::Parameter<bool> param_apply_host_environment_;
   unsigned int envc_;
   unisim::kernel::service::Parameter<unsigned int> param_envc_;
-  std::vector<std::string *> envp_;
-  std::vector<unisim::kernel::service::Parameter<std::string> *> param_envp_;
+  // std::vector<std::string *> envp_;
+  // std::vector<unisim::kernel::service::Parameter<std::string> *> param_envp_;
   std::string utsname_sysname_;
   unisim::kernel::service::Parameter<std::string> param_utsname_sysname_;
   std::string utsname_nodename_;
