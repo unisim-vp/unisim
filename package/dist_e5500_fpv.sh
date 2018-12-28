@@ -582,7 +582,7 @@ AUTHORS \
 ChangeLog \
 "
 
-Usage()
+function Usage
 {
 	echo "Usage:"
 	echo "  $0 <destination directory>"
@@ -725,7 +725,7 @@ EOF
 fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
-	echo "Building configure"
+	echo "Building top configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
 fi
 
@@ -836,7 +836,7 @@ chmod +x Makefile.cross
 echo "\$(basename \$0): run 'make -f \${HERE}/Makefile.cross' or '\${HERE}/Makefile.cross' to build for \${host} host system type"
 EOF_CONFIGURE_CROSS
 	chmod +x "${CONFIGURE_CROSS}"
-fi  # has to build configure.cross
+fi  # has to build configure cross
 
 # Simulator
 

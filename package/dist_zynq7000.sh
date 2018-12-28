@@ -629,7 +629,8 @@ ${UNISIM_SIMULATOR_HEADER_FILES} \
 ${UNISIM_SIMULATOR_EXTRA_FILES} \
 ${UNISIM_SIMULATOR_TEMPLATE_FILES} \
 ${UNISIM_SIMULATOR_DATA_FILES} \
-${UNISIM_SIMULATOR_TESTBENCH_FILES}"
+${UNISIM_SIMULATOR_TESTBENCH_FILES} \
+"
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
@@ -704,6 +705,7 @@ MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 
 has_to_build_configure=no
+
 if has_to_build "${CONFIGURE_AC}" "$0"; then
 	echo "Generating configure.ac"
 	cat <<EOF > "${CONFIGURE_AC}"
