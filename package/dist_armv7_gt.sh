@@ -1,109 +1,8 @@
 #!/bin/bash
-function Usage
-{
-	echo "Usage:"
-	echo "  $0 <destination directory>"
-}
 
-if [ -z "$1" ]; then
-	Usage
-	exit -1
-fi
+SIMPKG=armv7_gt
 
-MY_DIR=$(cd $(dirname $0); pwd)
-mkdir -p "$1"
-DEST_DIR=$(cd "$1"; pwd)
-UNISIM_DIR=$(cd ${MY_DIR}/..; pwd)
-UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
-UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
-UNISIM_SIMULATORS_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/armv7_gt
-
-ARMV7_GT_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
-GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-armv7_gt-${ARMV7_GT_VERSION}
-
-if test -z "${DISTCOPY}"; then
-    DISTCOPY=cp
-fi
-
-UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
-action.hh \
-cli.hh \
-errtools.hh \
-isa.hh \
-parser_defs.hh \
-riscgenerator.hh \
-specialization.hh \
-variable.hh \
-bitfield.hh \
-comment.hh \
-fwd.hh \
-main.hh \
-product.hh \
-scanner.hh \
-strtools.hh \
-vect.hh \
-ciscgenerator.hh \
-conststr.hh \
-generator.hh \
-operation.hh \
-referencecounting.hh \
-sourcecode.hh \
-subdecoder.hh"
-
-UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES="\
-scanner.cc \
-parser.cc \
-parser_tokens.hh"
-
-UNISIM_TOOLS_GENISSLIB_SOURCE_FILES="\
-parser.yy \
-scanner.ll \
-action.cc \
-bitfield.cc \
-cli.cc \
-comment.cc \
-conststr.cc \
-isa.cc \
-main.cc \
-operation.cc \
-product.cc \
-referencecounting.cc \
-sourcecode.cc \
-strtools.cc \
-variable.cc \
-generator.cc \
-riscgenerator.cc \
-ciscgenerator.cc \
-subdecoder.cc \
-specialization.cc \
-errtools.cc"
-
-UNISIM_TOOLS_GENISSLIB_DATA_FILES="COPYING INSTALL NEWS README AUTHORS ChangeLog"
-
-UNISIM_TOOLS_GENISSLIB_M4_FILES="\
-m4/lexer.m4 \
-m4/parser_gen.m4"
-
-GENISSLIB_EXTERNAL_HEADERS="\
-cassert \
-cctype \
-cerrno \
-cstdarg \
-cstdio \
-cstdlib \
-cstring \
-fstream \
-inttypes.h \
-iosfwd \
-iostream \
-limits \
-map \
-memory \
-ostream \
-unistd.h \
-vector"
-
-UNISIM_LIB_ARMV7_GT_SOURCE_FILES="\
+UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/util/backtrace/backtrace.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
@@ -213,7 +112,7 @@ unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 "
 
-UNISIM_LIB_ARMV7_GT_ISA_THUMB_FILES="\
+UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES="\
 unisim/component/cxx/processor/arm/isa/thumb/thumb.isa \
 unisim/component/cxx/processor/arm/isa/thumb/exception.isa \
 unisim/component/cxx/processor/arm/isa/thumb/load_store.isa \
@@ -239,7 +138,7 @@ unisim/component/cxx/processor/arm/isa/thumb2/thumb.isa \
 unisim/component/cxx/processor/arm/isa/thumb2/vfp.isa \
 unisim/component/cxx/processor/arm/isa/thumb2/xscale.isa"
 
-UNISIM_LIB_ARMV7_GT_ISA_ARM32_FILES="\
+UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES="\
 unisim/component/cxx/processor/arm/isa/arm32/branch.isa \
 unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa \
 unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa \
@@ -259,9 +158,9 @@ unisim/component/cxx/processor/arm/isa/arm32/vfp.isa \
 unisim/component/cxx/processor/arm/isa/arm32/xscale.isa \
 unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 
-UNISIM_LIB_ARMV7_GT_ISA_FILES="${UNISIM_LIB_ARMV7_GT_ISA_THUMB_FILES} ${UNISIM_LIB_ARMV7_GT_ISA_ARM32_FILES}"
-
-UNISIM_LIB_ARMV7_GT_HEADER_FILES="${UNISIM_LIB_ARMV7_GT_ISA_FILES} \
+UNISIM_LIB_SIMULATOR_HEADER_FILES="\
+${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES} \
+${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES} \
 unisim/util/backtrace/backtrace.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
@@ -428,9 +327,6 @@ unisim/component/cxx/processor/arm/simfloat.hh \
 unisim/component/cxx/processor/arm/extregbank.hh \
 unisim/component/cxx/processor/arm/hostfloat.hh \
 unisim/component/cxx/memory/ram/memory.hh \
-"
-
-UNISIM_LIB_ARMV7_GT_TEMPLATE_FILES="\
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/loader/multiformat_loader/multiformat_loader.tcc \
 unisim/service/loader/elf_loader/elf32_loader.tcc \
@@ -499,7 +395,7 @@ unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
 "
 
-UNISIM_LIB_ARMV7_GT_M4_FILES="\
+UNISIM_LIB_SIMULATOR_M4_FILES="\
 m4/times.m4 \
 m4/endian.m4 \
 m4/cxxabi.m4 \
@@ -518,12 +414,12 @@ m4/get_exec_path.m4 \
 m4/real_path.m4 \
 m4/pthread.m4"
 
-UNISIM_LIB_ARMV7_GT_DATA_FILES="\
+UNISIM_LIB_SIMULATOR_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_arm_with_fpa.xml \
 unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml \
 "
 
-ARMV7_GT_EXTERNAL_HEADERS="\
+SIMULATOR_EXTERNAL_HEADERS="\
 assert.h \
 ctype.h \
 cxxabi.h \
@@ -562,155 +458,114 @@ queue \
 vector \
 string"
 
-UNISIM_SIMULATORS_ARMV7_GT_SOURCE_FILES="\
+UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
 simulator.cc \
 GenericTimer.cc \
 "
 
-UNISIM_SIMULATORS_ARMV7_GT_HEADER_FILES="\
+UNISIM_SIMULATOR_HEADER_FILES="\
 simulator.hh \
 GenericTimer.hh \
 "
 
-UNISIM_SIMULATORS_ARMV7_GT_EXTRA_FILES="\
-"
-
-UNISIM_SIMULATORS_ARMV7_GT_TEMPLATE_FILES=
-UNISIM_SIMULATORS_ARMV7_GT_DATA_FILES="\
+UNISIM_SIMULATOR_TOP_DATA_FILES="\
 COPYING \
 NEWS \
 ChangeLog \
 "
 
-UNISIM_SIMULATORS_ARMV7_GT_TESTBENCH_FILES=""
+UNISIM_SIMULATOR_DATA_FILES="\
+COPYING \
+README \
+INSTALL \
+AUTHORS \
+NEWS \
+ChangeLog \
+"
 
-has_to_build_configure=no
-has_to_build_genisslib_configure=no
-has_to_build_armv7_gt_configure=no
+function Usage
+{
+	echo "Usage:"
+	echo "  $0 <destination directory>"
+}
 
-mkdir -p ${DEST_DIR}/genisslib
-mkdir -p ${DEST_DIR}/armv7_gt
+if [ -z "$1" ]; then
+	Usage
+	exit -1
+fi
 
-UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
+UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
+mkdir -p "$1"
+DEST_DIR=$(cd "$1"; pwd)
 
-for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
-	mkdir -p "${DEST_DIR}/$(dirname ${file})"
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/genisslib/${file}" ]; then
-		if [ "${UNISIM_TOOLS_DIR}/genisslib/${file}" -nt "${DEST_DIR}/genisslib/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
+UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
+UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/${SIMPKG}
+
+SIMULATOR_VERSION=$(cat ${UNISIM_SIMULATOR_DIR}/VERSION)
+
+if [ -z "${DISTCOPY}" ]; then
+	DISTCOPY=cp
+fi
+
+has_to_build() {
+	[ ! -e "$1" -o "$2" -nt "$1" ]
+}
+
+dist_copy() {
+	if has_to_build "$2" "$1"; then
+		echo "$1 ==> $2"
+		mkdir -p "$(dirname $2)"
+		${DISTCOPY} -f "$1" "$2" || exit
+		true
 	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_TOOLS_DIR}/genisslib/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		${DISTCOPY} -f "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}" || exit
-	fi
+	false
+}
+
+GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib
+
+mkdir -p ${DEST_DIR}/${SIMPKG}
+
+UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES}"
+
+for file in ${UNISIM_LIB_SIMULATOR_FILES}; do
+	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
 done
 
-UNISIM_LIB_ARMV7_GT_FILES="${UNISIM_LIB_ARMV7_GT_SOURCE_FILES} ${UNISIM_LIB_ARMV7_GT_HEADER_FILES} ${UNISIM_LIB_ARMV7_GT_TEMPLATE_FILES} ${UNISIM_LIB_ARMV7_GT_DATA_FILES}"
+UNISIM_SIMULATOR_FILES="${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_DATA_FILES}"
 
-for file in ${UNISIM_LIB_ARMV7_GT_FILES}; do
-	mkdir -p "${DEST_DIR}/armv7_gt/$(dirname ${file})"
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/armv7_gt/${file}" ]; then
-		if [ "${UNISIM_LIB_DIR}/${file}" -nt "${DEST_DIR}/armv7_gt/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/armv7_gt/${file}"
-		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/armv7_gt/${file}" || exit
-	fi
+for file in ${UNISIM_SIMULATOR_FILES}; do
+	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
 done
 
-UNISIM_SIMULATORS_ARMV7_GT_FILES="${UNISIM_SIMULATORS_ARMV7_GT_SOURCE_FILES} ${UNISIM_SIMULATORS_ARMV7_GT_HEADER_FILES} ${UNISIM_SIMULATORS_ARMV7_GT_EXTRA_FILES} ${UNISIM_SIMULATORS_ARMV7_GT_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARMV7_GT_DATA_FILES} ${UNISIM_SIMULATORS_ARMV7_GT_TESTBENCH_FILES}"
-
-for file in ${UNISIM_SIMULATORS_ARMV7_GT_FILES}; do
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/armv7_gt/${file}" ]; then
-		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/armv7_gt/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/armv7_gt/${file}"
-		${DISTCOPY} -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/armv7_gt/${file}" || exit
-	fi
+for file in ${UNISIM_SIMULATOR_TOP_DATA_FILES}; do
+	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
-
-for file in ${UNISIM_SIMULATORS_ARMV7_GT_DATA_FILES}; do
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/${file}" ]; then
-		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/${file}"
-		${DISTCOPY} -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}" || exit
-	fi
-done
-
 
 mkdir -p ${DEST_DIR}/config
-mkdir -p ${DEST_DIR}/armv7_gt/config
-mkdir -p ${DEST_DIR}/armv7_gt/m4
-mkdir -p ${DEST_DIR}/genisslib/config
-mkdir -p ${DEST_DIR}/genisslib/m4
+mkdir -p ${DEST_DIR}/${SIMPKG}/config
+mkdir -p ${DEST_DIR}/${SIMPKG}/m4
 
-for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/genisslib/${file}" ]; then
-		if [ "${UNISIM_TOOLS_DIR}/${file}" -nt  "${DEST_DIR}/genisslib/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_TOOLS_DIR}/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		${DISTCOPY} -f "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" || exit
-		has_to_build_genisslib_configure=yes
-	fi
-done
+# Some imported files (m4 macros) impact configure generation
+has_to_build_simulator_configure=no
 
-for file in ${UNISIM_LIB_ARMV7_GT_M4_FILES}; do
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/armv7_gt/${file}" ]; then
-		if [ "${UNISIM_LIB_DIR}/${file}" -nt  "${DEST_DIR}/armv7_gt/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/armv7_gt/${file}"
-		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/armv7_gt/${file}" || exit
-		has_to_build_armv7_gt_configure=yes
-	fi
+for file in ${UNISIM_LIB_SIMULATOR_M4_FILES}; do
+	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}" && has_to_build_simulator_configure=yes
 done
 
 # Top level
 
 cat << EOF > "${DEST_DIR}/AUTHORS"
-Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>
+Yves Lhuillier <yves.lhuillier@cea.fr>
 Gilles Mouchard <gilles.mouchard@cea.fr>
-Réda Nouacer <reda.nouacer@cea.fr>
+Reda Nouacer <reda.nouacer@cea.fr>
 EOF
 
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
-  - armv7_gt: an ARM V5 user level simulator
-  - GenISSLib (will not be installed): an instruction set simulator generator
+  - ARMv7-GT: an ARM V7 modest SoC full system simulator with a generic timer
+  - UniSIM GenISSLib (will not be installed): an instruction set simulator generator
+
 See INSTALL for installation instructions.
 EOF
 
@@ -731,11 +586,11 @@ Requirements:
   - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
   - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
   - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.3.0 (http://www.systemc.org)
+  - Core SystemC Language >= 2.3 (http://www.systemc.org)
 
 
 Building instructions:
-  $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir> --with-scml2=<path-to-scml2-install-dir>
+  $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-scml2=<path-to-scml2-install-dir>
   $ make
 
 Installing (optional):
@@ -746,62 +601,50 @@ CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 
-if [ ! -e "${CONFIGURE_AC}" ]; then
+has_to_build_configure=no
+
+if has_to_build "${CONFIGURE_AC}" "$0"; then
+	echo "Generating configure.ac"
+	cat <<EOF > "${CONFIGURE_AC}"
+AC_INIT([UniSIM ARMv7-GT Standalone simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}])
+AC_CONFIG_AUX_DIR(config)
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE([subdir-objects tar-pax])
+AC_PATH_PROGS(SH, sh)
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_CONFIG_SUBDIRS([genisslib]) 
+AC_CONFIG_SUBDIRS([${SIMPKG}]) 
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
+EOF
 	has_to_build_configure=yes
-else
-	if [ "$0" -nt "${CONFIGURE_AC}" ]; then
-		has_to_build_configure=yes
-	fi
 fi
 
-if [ ! -e "${MAKEFILE_AM}" ]; then
+if has_to_build "${MAKEFILE_AM}" "$0"; then
+	echo "Generating Makefile.am"
+	cat <<EOF > "${MAKEFILE_AM}"
+SUBDIRS=genisslib ${SIMPKG}
+EXTRA_DIST = configure.cross
+EOF
 	has_to_build_configure=yes
-else
-	if [ "$0" -nt "${MAKEFILE_AM}" ]; then
-		has_to_build_configure=yes
-	fi
-fi
-
-if [ ! -e "${CONFIGURE_CROSS}" ]; then
-	has_to_build_configure_cross=yes
-else
-	if [ "$0" -nt "${CONFIGURE_CROSS}" ]; then
-		has_to_build_configure_cross=yes
-	fi
 fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
-	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM Armv7_Gt Standalone simulator], [${ARMV7_GT_VERSION}], [Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>], [unisim-armv7_gt])" > "${DEST_DIR}/configure.ac"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${CONFIGURE_AC}"
-	echo "AC_CONFIG_SUBDIRS([genisslib])"  >> "${CONFIGURE_AC}" 
-	echo "AC_CONFIG_SUBDIRS([armv7_gt])"  >> "${CONFIGURE_AC}" 
-	echo "AC_CONFIG_FILES([Makefile])" >> "${CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${CONFIGURE_AC}"
-
-	echo "Generating Makefile.am"
-	echo "SUBDIRS=genisslib armv7_gt" > "${MAKEFILE_AM}"
-	echo "EXTRA_DIST = configure.cross" >> "${MAKEFILE_AM}"
-
-	echo "Building configure"
+	echo "Building top configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
 fi
 
-if [ "${has_to_build_configure_cross}" = "yes" ]; then
+if has_to_build "${CONFIGURE_CROSS}" "$0"; then
 	echo "Building configure.cross"
 	cat << EOF_CONFIGURE_CROSS > "${CONFIGURE_CROSS}"
 #!/bin/bash
 HERE=\$(pwd)
 MY_DIR=\$(cd \$(dirname \$0); pwd)
 
-# remove --host, --with-systemc, --with-tlm20, --with-scml2, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
+# remove --host from command line arguments
 host=""
 help=""
 i=0
@@ -811,8 +654,6 @@ do
 	case "\${arg}" in
 		--host=*)
 			host=\$(printf "%s" "\${arg}" | cut -f 2- -d '=')
-			;;
-		--with-systemc=* | --with-tlm20=* | --with-scml2 | --with-zlib=* | --with-libxml2=* | --with-boost=* | --with-ncurses=* | --with-libedit=*)
 			;;
 		--help=* | --help)
 			help="yes"
@@ -844,7 +685,7 @@ if test ! -d \${HERE}/genisslib; then
 	mkdir "\${HERE}/genisslib"
 fi
 cd "\${HERE}/genisslib"
-\${MY_DIR}/genisslib/configure "\${args[@]}"
+\${MY_DIR}/genisslib/configure --disable-option-checking "\${args[@]}"
 STATUS="\$?"
 cd "\${HERE}"
 if test \${STATUS} -ne 0; then
@@ -852,17 +693,17 @@ if test \${STATUS} -ne 0; then
 fi
 
 if test "\${help}" = "yes"; then
-	echo "=== configure help for armv7_gt"
+	echo "=== configure help for ${SIMPKG}"
 else
-	echo "=== configuring in armv7_gt (\${HERE}/armv7_gt) for \${host} host system type"
-	echo "\$(basename \$0): running \${MY_DIR}/armv7_gt/configure \$@"
+	echo "=== configuring in ${SIMPKG} (\${HERE}/${SIMPKG}) for \${host} host system type"
+	echo "\$(basename \$0): running \${MY_DIR}/${SIMPKG}/configure \$@"
 fi
 
-if test ! -d \${HERE}/armv7_gt; then
-	mkdir \${HERE}/armv7_gt
+if test ! -d \${HERE}/${SIMPKG}; then
+	mkdir \${HERE}/${SIMPKG}
 fi
-cd \${HERE}/armv7_gt
-\${MY_DIR}/armv7_gt/configure "\$@"
+cd \${HERE}/${SIMPKG}
+\${MY_DIR}/${SIMPKG}/configure "\$@"
 STATUS="\$?"
 cd "\${HERE}"
 if test \${STATUS} -ne 0; then
@@ -876,26 +717,26 @@ fi
 echo "\$(basename \$0): creating Makefile.cross"
 cat << EOF_MAKEFILE_CROSS > Makefile.cross
 #!/usr/bin/make -f
-all: armv7_gt-all
-clean: genisslib-clean armv7_gt-clean
-distclean: genisslib-distclean armv7_gt-distclean
+all: ${SIMPKG}-all
+clean: genisslib-clean ${SIMPKG}-clean
+distclean: genisslib-distclean ${SIMPKG}-distclean
 	rm -f \${HERE}/Makefile.cross
-install: armv7_gt-install
+install: ${SIMPKG}-install
 
 genisslib-all:
 	@\\\$(MAKE) -C \${HERE}/genisslib all
-armv7_gt-all: genisslib-all
-	@\\\$(MAKE) -C \${HERE}/armv7_gt all
+${SIMPKG}-all: genisslib-all
+	@\\\$(MAKE) -C \${HERE}/${SIMPKG} all
 genisslib-clean:
 	@\\\$(MAKE) -C \${HERE}/genisslib clean
-armv7_gt-clean:
-	@\\\$(MAKE) -C \${HERE}/armv7_gt clean
+${SIMPKG}-clean:
+	@\\\$(MAKE) -C \${HERE}/${SIMPKG} clean
 genisslib-distclean:
 	@\\\$(MAKE) -C \${HERE}/genisslib distclean
-armv7_gt-distclean:
-	@\\\$(MAKE) -C \${HERE}/armv7_gt distclean
-armv7_gt-install:
-	@\\\$(MAKE) -C \${HERE}/armv7_gt install
+${SIMPKG}-distclean:
+	@\\\$(MAKE) -C \${HERE}/${SIMPKG} distclean
+${SIMPKG}-install:
+	@\\\$(MAKE) -C \${HERE}/${SIMPKG} install
 EOF_MAKEFILE_CROSS
 
 chmod +x Makefile.cross
@@ -903,233 +744,117 @@ chmod +x Makefile.cross
 echo "\$(basename \$0): run 'make -f \${HERE}/Makefile.cross' or '\${HERE}/Makefile.cross' to build for \${host} host system type"
 EOF_CONFIGURE_CROSS
 	chmod +x "${CONFIGURE_CROSS}"
-fi  # has_to_build_configure_cross = "yes"
+fi  # has to build configure cross
 
-# GENISSLIB
+# Simulator
 
-GENISSLIB_CONFIGURE_AC="${DEST_DIR}/genisslib/configure.ac"
-GENISSLIB_MAKEFILE_AM="${DEST_DIR}/genisslib/Makefile.am"
+SIMULATOR_CONFIGURE_AC="${DEST_DIR}/${SIMPKG}/configure.ac"
+SIMULATOR_MAKEFILE_AM="${DEST_DIR}/${SIMPKG}/Makefile.am"
 
-
-if [ ! -e "${GENISSLIB_CONFIGURE_AC}" ]; then
-	has_to_build_genisslib_configure=yes
-else
-	if [ "$0" -nt "${GENISSLIB_CONFIGURE_AC}" ]; then
-		has_to_build_genisslib_configure=yes
-	fi
+if has_to_build "${SIMULATOR_CONFIGURE_AC}" "$0"; then
+	echo "Generating ${SIMPKG} configure.ac"
+	cat <<EOF > "${SIMULATOR_CONFIGURE_AC}"
+AC_INIT([UNISIM ARMv7-GT C++ simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}-core])
+AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE([subdir-objects tar-pax])
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
+AC_PROG_INSTALL
+LT_INIT
+AC_SUBST(LIBTOOL_DEPS)
+AC_PROG_LN_S
+AC_LANG([C++])
+AM_PROG_CC_C_O
+AC_CHECK_HEADERS([${SIMULATOR_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))
+case "\${host}" in
+	*mingw*)
+		CPPFLAGS="-U__STRICT_ANSI__ \${CPPFLAGS}"
+		;;
+	*)
+		;;
+esac
+UNISIM_CHECK_PTHREAD(main)
+UNISIM_CHECK_TIMES(main)
+UNISIM_CHECK_ENDIAN(main)
+UNISIM_CHECK_CURSES(main)
+UNISIM_CHECK_LIBEDIT(main)
+UNISIM_CHECK_BSD_SOCKETS(main)
+UNISIM_CHECK_ZLIB(main)
+UNISIM_CHECK_LIBXML2(main)
+UNISIM_CHECK_CXXABI(main)
+UNISIM_WITH_BOOST(main)
+UNISIM_CHECK_BOOST_GRAPH(main)
+UNISIM_CHECK_CACTI(main)
+UNISIM_CHECK_GET_EXECUTABLE_PATH(main)
+UNISIM_CHECK_REAL_PATH(main)
+UNISIM_CHECK_SYSTEMC
+GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
+AC_SUBST(GENISSLIB_PATH)
+AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
+EOF
+	has_to_build_simulator_configure=yes
 fi
 
-if [ ! -e "${GENISSLIB_MAKEFILE_AM}" ]; then
-	has_to_build_genisslib_configure=yes
-else
-	if [ "$0" -nt "${GENISSLIB_MAKEFILE_AM}" ]; then
-		has_to_build_genisslib_configure=yes
-	fi
+if has_to_build "${SIMULATOR_MAKEFILE_AM}" "$0"; then
+	AM_SIMULATOR_VERSION=$(printf ${SIMULATOR_VERSION} | sed -e 's/\./_/g')
+	echo "Generating ${SIMPKG} Makefile.am"
+	cat <<EOF > "${SIMULATOR_MAKEFILE_AM}"
+ACLOCAL_AMFLAGS=-I m4
+AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
+LIBTOOL_DEPS = @LIBTOOL_DEPS@
+libtool: \$(LIBTOOL_DEPS)
+	\$(SHELL) ./config.status libtool
+
+# Program
+bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION}
+unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
+unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
+unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
+
+# Static Library
+noinst_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
+libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
+libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
+
+noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
+EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
+sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
+dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
+
+BUILT_SOURCES=\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc\
+
+CLEANFILES=\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc
+
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.isa
+
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.isa
+EOF
+	has_to_build_simulator_configure=yes
 fi
 
-if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
-	echo "Generating GENISSLIB configure.ac"
-	echo "AC_INIT([UNISIM GENISSLIB], [${GENISSLIB_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves  Lhuillier <yves.lhuillier@cea.fr>], [genisslib])" > "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CONFIG_HEADERS([config.h])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_PROG_CXX" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_LANG([C++])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CHECK_HEADERS([${GENISSLIB_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LEXER_GENERATOR" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_PARSER_GENERATOR" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CONFIG_FILES([Makefile])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${GENISSLIB_CONFIGURE_AC}"
-
-	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
-	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
-	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "AM_LFLAGS = -l" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "noinst_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\\\"${GENISSLIB_VERSION}\\\"" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-# The following lines are a workaround caused by a bugFix in AUTOMAKE 1.12
-# Note that parser_tokens.hh has been added to BUILT_SOURCES above
-# assumption: parser.cc and either parser.h or parser.hh are generated at the same time
-    echo "\$(top_builddir)/parser_tokens.hh: \$(top_builddir)/parser.cc" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\tif test -f \"\$(top_builddir)/parser.h\"; then \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\t\tcp -f \"\$(top_builddir)/parser.h\" \"\$(top_builddir)/parser_tokens.hh\"; \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\telif test -f \"\$(top_builddir)/parser.hh\"; then \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\t\tcp -f \"\$(top_builddir)/parser.hh\" \"\$(top_builddir)/parser_tokens.hh\"; \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\tfi\n" >> "${GENISSLIB_MAKEFILE_AM}"
-
-	echo "Building GENISSLIB configure"
-	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
-fi
-
-
-# armv7_gt
-
-ARMV7_GT_CONFIGURE_AC="${DEST_DIR}/armv7_gt/configure.ac"
-ARMV7_GT_MAKEFILE_AM="${DEST_DIR}/armv7_gt/Makefile.am"
-
-
-if [ ! -e "${ARMV7_GT_CONFIGURE_AC}" ]; then
-	has_to_build_armv7_gt_configure=yes
-else
-	if [ "$0" -nt "${ARMV7_GT_CONFIGURE_AC}" ]; then
-		has_to_build_armv7_gt_configure=yes
-	fi
-fi
-
-if [ ! -e "${ARMV7_GT_MAKEFILE_AM}" ]; then
-	has_to_build_armv7_gt_configure=yes
-else
-	if [ "$0" -nt "${ARMV7_GT_MAKEFILE_AM}" ]; then
-		has_to_build_armv7_gt_configure=yes
-	fi
-fi
-
-if [ "${has_to_build_armv7_gt_configure}" = "yes" ]; then
-	echo "Generating armv7_gt configure.ac"
-	echo "AC_INIT([UNISIM Armv7_Gt C++ simulator], [${ARMV7_GT_VERSION}], [Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>], [unisim-armv7_gt-core])" > "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_CONFIG_HEADERS([config.h])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_PROG_CXX" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_PROG_RANLIB" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_LANG([C++])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AM_PROG_CC_C_O" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_CHECK_HEADERS([${ARMV7_GT_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_PTHREAD(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TIMES(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ENDIAN(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CURSES(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBEDIT(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ZLIB(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBXML2(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CXXABI(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_WITH_BOOST(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CACTI(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_SYSTEMC" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_SCML2" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_SUBST(GENISSLIB_PATH)" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-armv7_gt-${ARMV7_GT_VERSION}\"], [path of shared data relative to bin directory])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	SIM_VERSION_MAJOR=$(printf "${ARMV7_GT_VERSION}" | cut -f 1 -d .)
-	SIM_VERSION_MINOR=$(printf "${ARMV7_GT_VERSION}" | cut -f 2 -d .)
-	SIM_VERSION_PATCH=$(printf "${ARMV7_GT_VERSION}" | cut -f 3 -d .)
-	SIM_VERSION="${ARMV7_GT_VERSION}"
-	SIM_VERSION_CODENAME="Triumphalis Tarraco"
-	SIM_AUTHOR="Daniel Gracia Perez (daniel.gracia-perez@cea.fr)"
-	SIM_PROGRAM_NAME="UNISIM Armv7_Gt"
-	SIM_LICENSE="BSD (See file COPYING)"
-	SIM_COPYRIGHT="Copyright (C) 2007-2010, Commissariat a l'Energie Atomique"
-	SIM_DESCRIPTION="UNISIM ARMv5 User Level Simulator"
-	SIM_SCHEMATIC="armv7_gt/fig_schematic.pdf"
-	echo "AC_DEFINE([SIM_VERSION_MAJOR], [${SIM_VERSION_MAJOR}], [Version major number])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION_MINOR], [${SIM_VERSION_MINOR}], [Version minor number])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION_PATCH], [${SIM_VERSION_PATCH}], [Version patch number])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION], [\"${SIM_VERSION}\"], [Version])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION_CODENAME], [\"${SIM_VERSION_CODENAME}\"], [Version code name])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_AUTHOR], [\"${SIM_AUTHOR}\"], [Author])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_PROGRAM_NAME], [\"${SIM_PROGRAM_NAME}\"], [Program name])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_COPYRIGHT], [\"${SIM_COPYRIGHT}\"], [Copyright])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_LICENSE], [\"${SIM_LICENSE}\"], [License])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_DESCRIPTION], [\"${SIM_DESCRIPTION}\"], [Description])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_SCHEMATIC], [\"${SIM_SCHEMATIC}\"], [Schematic])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_CONFIG_FILES([Makefile])" >> "${ARMV7_GT_CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${ARMV7_GT_CONFIGURE_AC}"
-
-	AM_ARMV7_GT_VERSION=$(printf ${ARMV7_GT_VERSION} | sed -e 's/\./_/g')
-	echo "Generating armv7_gt Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I m4" > "${ARMV7_GT_MAKEFILE_AM}"
-	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "noinst_LIBRARIES = libarmv7_gt-${ARMV7_GT_VERSION}.a" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "libarmv7_gt_${AM_ARMV7_GT_VERSION}_a_SOURCES = ${UNISIM_LIB_ARMV7_GT_SOURCE_FILES}" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "bin_PROGRAMS = unisim-armv7_gt-${ARMV7_GT_VERSION}" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "unisim_armv7_gt_${AM_ARMV7_GT_VERSION}_SOURCES = ${UNISIM_SIMULATORS_ARMV7_GT_SOURCE_FILES}" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "unisim_armv7_gt_${AM_ARMV7_GT_VERSION}_LDADD = libarmv7_gt-${ARMV7_GT_VERSION}.a" >> "${ARMV7_GT_MAKEFILE_AM}"
-
-	echo "noinst_HEADERS = ${UNISIM_LIB_ARMV7_GT_HEADER_FILES} ${UNISIM_LIB_ARMV7_GT_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARMV7_GT_HEADER_FILES} ${UNISIM_SIMULATORS_ARMV7_GT_TEMPLATE_FILES}" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_LIB_ARMV7_GT_M4_FILES}" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "sharedir = \$(prefix)/share/unisim-armv7_gt-${ARMV7_GT_VERSION}" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "dist_share_DATA = ${UNISIM_LIB_ARMV7_GT_DATA_FILES} ${UNISIM_SIMULATORS_ARMV7_GT_DATA_FILES}" >> "${ARMV7_GT_MAKEFILE_AM}"
-
-	echo -n "BUILT_SOURCES=" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh " >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc " >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh " >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc " >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo >> "${ARMV7_GT_MAKEFILE_AM}"
-	
-	echo -n "CLEANFILES=" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh " >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc " >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh " >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc " >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo >> "${ARMV7_GT_MAKEFILE_AM}"
-	
-	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: ${UNISIM_LIB_ARMV7_GT_ISA_ARM32_FILES}" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\t" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.isa" >> "${ARMV7_GT_MAKEFILE_AM}"
-
-	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: ${UNISIM_LIB_ARMV7_GT_ISA_THUMB_FILES}" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\t" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.isa" >> "${ARMV7_GT_MAKEFILE_AM}"
-
-	echo "all-local: all-local-bin all-local-share" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "clean-local: clean-local-bin clean-local-share" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/bin/\$\$(basename \$\${PROGRAM})\"; \\\\\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\tcp -f \"\$(top_builddir)/\$\${PROGRAM}\" \$(top_builddir)/bin/\$\$(basename \"\$\${PROGRAM}\"); \\\\\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\tdone\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "clean-local-bin:" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\tfi\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "all-local-share: \$(dist_share_DATA)" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/share/unisim-armv7_gt-${ARMV7_GT_VERSION}/\$\$(basename \$\${SHARED_DATA})\"; \\\\\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/share/unisim-armv7_gt-${ARMV7_GT_VERSION}'; \\\\\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\tcp -f \"\$(top_srcdir)/\$\${SHARED_DATA}\" \$(top_builddir)/share/unisim-armv7_gt-${ARMV7_GT_VERSION}/\$\$(basename \"\$\${SHARED_DATA}\"); \\\\\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\tdone\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "clean-local-share:" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-	printf "\tfi\n" >> "${ARMV7_GT_MAKEFILE_AM}"
-
-	${DISTCOPY} ${DEST_DIR}/INSTALL ${DEST_DIR}/armv7_gt
-	${DISTCOPY} ${DEST_DIR}/README ${DEST_DIR}/armv7_gt
-	${DISTCOPY} ${DEST_DIR}/AUTHORS ${DEST_DIR}/armv7_gt
-	
-	echo "Building armv7_gt configure"
-	${SHELL} -c "cd ${DEST_DIR}/armv7_gt && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
+if [ "${has_to_build_simulator_configure}" = "yes" ]; then
+	echo "Building ${SIMPKG} configure"
+	${SHELL} -c "cd ${DEST_DIR}/${SIMPKG} && aclocal -I m4 && libtoolize --force && autoconf --force && autoheader && automake -ac"
 fi
 
 echo "Distribution is up-to-date"
+
