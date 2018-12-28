@@ -778,9 +778,6 @@ unisim/component/tlm2/com/freescale/mpc57xx/dspi/dspi.hh \
 unisim/component/tlm2/com/freescale/mpc57xx/siul2/siul2.hh \
 unisim/component/tlm2/com/freescale/mpc57xx/siul2/defs.hh \
 unisim/component/tlm2/com/bosch/m_can/m_can.hh \
-"
-
-UNISIM_LIB_SIMULATOR_TEMPLATE_FILES="\
 unisim/util/debug/breakpoint_registry.tcc \
 unisim/util/debug/profile.tcc \
 unisim/util/debug/watchpoint_registry.tcc \
@@ -998,9 +995,6 @@ simulator.hh \
 config.hh \
 "
 
-UNISIM_SIMULATOR_TEMPLATE_FILES="\
-"
-
 UNISIM_SIMULATOR_EXTRA_FILES="\
 trace32-core0.cmm.in \
 trace32-core1.cmm.in \
@@ -1158,7 +1152,7 @@ GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib
 
 mkdir -p ${DEST_DIR}/${SIMPKG}
 
-UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_TEMPLATE_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES}"
+UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES}"
 
 for file in ${UNISIM_LIB_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
@@ -1168,7 +1162,6 @@ UNISIM_SIMULATOR_FILES="\
 ${UNISIM_SIMULATOR_SOURCE_FILES} \
 ${UNISIM_SIMULATOR_HEADER_FILES} \
 ${UNISIM_SIMULATOR_EXTRA_FILES} \
-${UNISIM_SIMULATOR_TEMPLATE_FILES} \
 ${UNISIM_SIMULATOR_DATA_FILES} \
 ${UNISIM_SIMULATOR_TESTBENCH_FILES}"
 
@@ -1467,7 +1460,7 @@ libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_
 libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
 nodist_libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.cc unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.cc
 
-noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_TEMPLATE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_TEMPLATE_FILES}
+noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
 dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_TOP_DATA_FILES}

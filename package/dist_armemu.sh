@@ -411,12 +411,6 @@ UNISIM_SIMULATOR_HEADER_FILES="\
 simulator.hh \
 "
 
-UNISIM_SIMULATOR_TEMPLATE_FILES="\
-"
-
-UNISIM_SIMULATOR_EXTRA_FILES="\
-"
-
 UNISIM_SIMULATOR_TOP_DATA_FILES="\
 COPYING \
 NEWS \
@@ -430,9 +424,6 @@ INSTALL \
 AUTHORS \
 NEWS \
 ChangeLog \
-"
-
-UNISIM_SIMULATOR_TESTBENCH_FILES="\
 "
 
 function Usage
@@ -515,7 +506,7 @@ EOF
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
   - ARMemu: an ARMv7 application level simulator (LinuxOS emulation)
-  - GenISSLib (will not be installed): an instruction set simulator generator
+  - UniSIM GenISSLib (will not be installed): an instruction set simulator generator
 
 See INSTALL for installation instructions.
 EOF
@@ -779,7 +770,7 @@ libunisim_${SIMPKG}_plugin_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIM
 libunisim_${SIMPKG}_plugin_${AM_SIMULATOR_VERSION}_la_CPPFLAGS = -DSIM_PLUGIN
 libunisim_${SIMPKG}_plugin_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -shared -no-undefined
 
-noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_TEMPLATE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_TEMPLATE_FILES}
+noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
 dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}

@@ -2,89 +2,6 @@
 
 SIMPKG=zynq7000
 
-UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
-action.hh \
-cli.hh \
-errtools.hh \
-isa.hh \
-parser_defs.hh \
-riscgenerator.hh \
-specialization.hh \
-variable.hh \
-bitfield.hh \
-comment.hh \
-fwd.hh \
-main.hh \
-product.hh \
-scanner.hh \
-strtools.hh \
-vect.hh \
-ciscgenerator.hh \
-conststr.hh \
-generator.hh \
-operation.hh \
-referencecounting.hh \
-sourcecode.hh \
-subdecoder.hh \
-"
-
-UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES="\
-scanner.cc \
-parser.cc \
-parser_tokens.hh \
-"
-
-UNISIM_TOOLS_GENISSLIB_SOURCE_FILES="\
-parser.yy \
-scanner.ll \
-action.cc \
-bitfield.cc \
-cli.cc \
-comment.cc \
-conststr.cc \
-isa.cc \
-main.cc \
-operation.cc \
-product.cc \
-referencecounting.cc \
-sourcecode.cc \
-strtools.cc \
-variable.cc \
-generator.cc \
-riscgenerator.cc \
-ciscgenerator.cc \
-subdecoder.cc \
-specialization.cc \
-errtools.cc \
-"
-
-UNISIM_TOOLS_GENISSLIB_DATA_FILES="COPYING INSTALL NEWS README AUTHORS ChangeLog"
-
-UNISIM_TOOLS_GENISSLIB_M4_FILES="\
-m4/lexer.m4 \
-m4/parser_gen.m4 \
-"
-
-GENISSLIB_EXTERNAL_HEADERS="\
-cassert \
-cctype \
-cerrno \
-cstdarg \
-cstdio \
-cstdlib \
-cstring \
-fstream \
-inttypes.h \
-iosfwd \
-iostream \
-limits \
-map \
-memory \
-ostream \
-unistd.h \
-vector \
-"
-
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/util/backtrace/backtrace.cc \
 unisim/kernel/logger/logger.cc \
@@ -401,9 +318,6 @@ unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
 unisim/component/tlm2/interconnect/generic_router/router.hh \
 unisim/service/telnet/telnet.hh \
 unisim/service/interfaces/char_io.hh \
-"
-
-UNISIM_LIB_SIMULATOR_TEMPLATE_FILES="\
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
@@ -545,12 +459,6 @@ UNISIM_SIMULATOR_HEADER_FILES="\
 simulator.hh \
 "
 
-UNISIM_SIMULATOR_TEMPLATE_FILES="\
-"
-
-UNISIM_SIMULATOR_EXTRA_FILES="\
-"
-
 UNISIM_SIMULATOR_TOP_DATA_FILES="\
 COPYING \
 NEWS \
@@ -564,9 +472,6 @@ INSTALL \
 AUTHORS \
 NEWS \
 ChangeLog \
-"
-
-UNISIM_SIMULATOR_TESTBENCH_FILES="\
 "
 
 function Usage
@@ -583,12 +488,11 @@ fi
 UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
 mkdir -p "$1"
 DEST_DIR=$(cd "$1"; pwd)
-UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
+
 UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
 UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/${SIMPKG}
 
 SIMULATOR_VERSION=$(cat ${UNISIM_SIMULATOR_DIR}/VERSION)
-GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-${SIMPKG}-${SIMULATOR_VERSION}
 
 if [ -z "${DISTCOPY}" ]; then
 	DISTCOPY=cp
@@ -608,29 +512,17 @@ dist_copy() {
 	false
 }
 
-mkdir -p ${DEST_DIR}/genisslib
+GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib
+
 mkdir -p ${DEST_DIR}/${SIMPKG}
 
-UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
-
-for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
-	dist_copy "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}"
-done
-
-UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_TEMPLATE_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES}"
+UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES}"
 
 for file in ${UNISIM_LIB_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
 done
 
-UNISIM_SIMULATOR_FILES="\
-${UNISIM_SIMULATOR_SOURCE_FILES} \
-${UNISIM_SIMULATOR_HEADER_FILES} \
-${UNISIM_SIMULATOR_EXTRA_FILES} \
-${UNISIM_SIMULATOR_TEMPLATE_FILES} \
-${UNISIM_SIMULATOR_DATA_FILES} \
-${UNISIM_SIMULATOR_TESTBENCH_FILES} \
-"
+UNISIM_SIMULATOR_FILES="${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_DATA_FILES}"
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
@@ -643,16 +535,9 @@ done
 mkdir -p ${DEST_DIR}/config
 mkdir -p ${DEST_DIR}/${SIMPKG}/config
 mkdir -p ${DEST_DIR}/${SIMPKG}/m4
-mkdir -p ${DEST_DIR}/genisslib/config
-mkdir -p ${DEST_DIR}/genisslib/m4
 
 # Some imported files (m4 macros) impact configure generation
-has_to_build_genisslib_configure=no
 has_to_build_simulator_configure=no
-
-for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
-	dist_copy "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" && has_to_build_genisslib_configure=yes
-done
 
 for file in ${UNISIM_LIB_SIMULATOR_M4_FILES}; do
 	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}" && has_to_build_simulator_configure=yes
@@ -668,8 +553,9 @@ EOF
 
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
-  - ARMemu: an ARMv7 application level simulator (LinuxOS emulation)
-  - GenISSLib (will not be installed): an instruction set simulator generator
+  - Zynq7000: a xilinx Zynq full system simulator
+  - UniSIM GenISSLib (will not be installed): an instruction set simulator generator
+
 See INSTALL for installation instructions.
 EOF
 
@@ -709,7 +595,7 @@ has_to_build_configure=no
 if has_to_build "${CONFIGURE_AC}" "$0"; then
 	echo "Generating configure.ac"
 	cat <<EOF > "${CONFIGURE_AC}"
-AC_INIT([UniSIM ARMemu Standalone simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}])
+AC_INIT([UniSIM Zynq7000 Standalone simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}])
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
@@ -736,7 +622,7 @@ EOF
 fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
-	echo "Building configure"
+	echo "Building top configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
 fi
 
@@ -849,72 +735,6 @@ EOF_CONFIGURE_CROSS
 	chmod +x "${CONFIGURE_CROSS}"
 fi  # has to build configure cross
 
-# GENISSLIB
-
-GENISSLIB_CONFIGURE_AC="${DEST_DIR}/genisslib/configure.ac"
-GENISSLIB_MAKEFILE_AM="${DEST_DIR}/genisslib/Makefile.am"
-
-if has_to_build "${GENISSLIB_CONFIGURE_AC}" "$0"; then
-	echo "Generating GENISSLIB configure.ac"
-	cat <<EOF > "${GENISSLIB_CONFIGURE_AC}"
-AC_INIT([UNISIM GENISSLIB], [${GENISSLIB_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves  Lhuillier <yves.lhuillier@cea.fr>], [genisslib])
-AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_AUX_DIR(config)
-AC_CONFIG_HEADERS([config.h])
-AC_CANONICAL_BUILD
-AC_CANONICAL_HOST
-AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([subdir-objects tar-pax])
-AC_PATH_PROGS(SH, sh)
-AC_PROG_CXX
-AC_PROG_INSTALL
-AC_PROG_LN_S
-AC_LANG([C++])
-AC_CHECK_HEADERS([${GENISSLIB_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))
-UNISIM_CHECK_LEXER_GENERATOR
-UNISIM_CHECK_PARSER_GENERATOR
-AC_CONFIG_FILES([Makefile])
-AC_OUTPUT
-EOF
-	has_to_build_genisslib_configure=yes
-fi
-
-if has_to_build "${GENISSLIB_MAKEFILE_AM}" "$0"; then
-	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
-	echo "Generating GENISSLIB Makefile.am"
-	cat <<EOF > "${GENISSLIB_MAKEFILE_AM}"
-ACLOCAL_AMFLAGS=-I m4
-BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}
-CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}
-AM_YFLAGS = -d -p yy
-AM_LFLAGS = -l
-AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
-noinst_PROGRAMS = genisslib
-genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}
-genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\"${GENISSLIB_VERSION}\"
-genisslib_CXXFLAGS = -O1 -Wno-error
-noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}
-EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}
-# The following lines are a workaround caused by a bugFix in AUTOMAKE 1.12
-# Note that parser_tokens.hh has been added to BUILT_SOURCES above
-# assumption: parser.cc and either parser.h or parser.hh are generated at the same time
-\$(top_builddir)/parser_tokens.hh: \$(top_builddir)/parser.cc
-	if test -f "\$(top_builddir)/parser.h"; then\
-		cp -f "\$(top_builddir)/parser.h" "\$(top_builddir)/parser_tokens.hh";\
-	elif test -f "\$(top_builddir)/parser.hh"; then\
-		cp -f "\$(top_builddir)/parser.hh" "\$(top_builddir)/parser_tokens.hh";\
-	fi
-# The following line disable some C++ flags that prevent the flex generated file to compile properly
-\$(top_builddir)/genisslib-scanner.o: CXXFLAGS += -O1 -Wno-error
-EOF
-	has_to_build_genisslib_configure=yes
-fi
-
-if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
-	echo "Building GENISSLIB configure"
-	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
-fi
-
 # Simulator
 
 SIMULATOR_CONFIGURE_AC="${DEST_DIR}/${SIMPKG}/configure.ac"
@@ -923,7 +743,7 @@ SIMULATOR_MAKEFILE_AM="${DEST_DIR}/${SIMPKG}/Makefile.am"
 if has_to_build "${SIMULATOR_CONFIGURE_AC}" "$0"; then
 	echo "Generating ${SIMPKG} configure.ac"
 	cat <<EOF > "${SIMULATOR_CONFIGURE_AC}"
-AC_INIT([UNISIM ARMemu C++ simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}-core])
+AC_INIT([UNISIM Zynq7000 C++ simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}-core])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
@@ -992,7 +812,7 @@ noinst_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
 libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
 
-noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_TEMPLATE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_TEMPLATE_FILES}
+noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
 dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
@@ -1026,3 +846,4 @@ if [ "${has_to_build_simulator_configure}" = "yes" ]; then
 fi
 
 echo "Distribution is up-to-date"
+
