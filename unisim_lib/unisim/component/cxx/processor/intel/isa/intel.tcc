@@ -254,7 +254,7 @@ namespace intel {
     typedef typename ARCH::u32_t u32_t;
     ModBase( uint8_t _seg, uint8_t _rm ) : MOp<ARCH>( _seg ), rm( _rm ) {} uint8_t rm;
 
-    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << '(' << DisasmR<ADDRSIZE>( rm ) << ')'; };
+    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << '(' << DisasmG<ADDRSIZE>( rm ) << ')'; };
     
     u32_t effective_address( ARCH& arch ) const { return u32_t( arch.template regread<ADDRSIZE>( rm ) ); }
   };
@@ -267,8 +267,8 @@ namespace intel {
     
     void disasm_memory_operand( std::ostream& sink ) const
     {
-      sink << DisasmMS( MOp<ARCH>::segment ) << '(' << DisasmRd( base );
-      if                       (index != 4) sink << ',' << DisasmRd( index ) << ',' << (1 << scale);
+      sink << DisasmMS( MOp<ARCH>::segment ) << '(' << DisasmGd( base );
+      if                       (index != 4) sink << ',' << DisasmGd( index ) << ',' << (1 << scale);
       else if ((base != 4) or (scale != 0)) sink << ',' << "%eiz" << ',' << (1 << scale);
       sink << ')';
     }
@@ -297,7 +297,7 @@ namespace intel {
     void disasm_memory_operand( std::ostream& sink ) const
     {
       sink << DisasmMS( MOp<ARCH>::segment ) << (disp < 0 ? "-0x" : "0x") << std::hex << (disp < 0 ? -disp : disp) << "(,";
-      if (index != 4) sink << DisasmRd( index );
+      if (index != 4) sink << DisasmGd( index );
       else            sink << "%eiz";
       sink << ',' << (1 << scale) << ')';
     }
@@ -314,8 +314,8 @@ namespace intel {
     
     void disasm_memory_operand( std::ostream& sink ) const
     {
-      sink << DisasmMS( MOp<ARCH>::segment ) << (disp < 0 ? "-0x" : "0x") << std::hex << (disp < 0 ? -disp : disp) << '(' << DisasmRd( base );
-      if (index != 4) sink << ',' << DisasmRd( index ) << ',' << (1 << scale);
+      sink << DisasmMS( MOp<ARCH>::segment ) << (disp < 0 ? "-0x" : "0x") << std::hex << (disp < 0 ? -disp : disp) << '(' << DisasmGd( base );
+      if (index != 4) sink << ',' << DisasmGd( index ) << ',' << (1 << scale);
       else if ((base != 4) or (scale != 0)) sink << ',' << "%eiz" << ',' << (1 << scale);
       sink << ')';
     };
@@ -331,7 +331,7 @@ namespace intel {
     
     void disasm_memory_operand( std::ostream& sink ) const
     {
-      sink << DisasmMS( MOp<ARCH>::segment ) << (disp < 0 ? "-0x" : "0x") << std::hex << (disp < 0 ? -disp : disp) << std::dec << '(' << DisasmRd( rm ) << ')';
+      sink << DisasmMS( MOp<ARCH>::segment ) << (disp < 0 ? "-0x" : "0x") << std::hex << (disp < 0 ? -disp : disp) << std::dec << '(' << DisasmGd( rm ) << ')';
     };
 
     u32_t effective_address( ARCH& arch ) const { return arch.regread32( rm ) + u32_t( disp ); };

@@ -5,8 +5,8 @@ struct AddRM : public Operation<ARCH>
   AddRM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
   void disasm( std::ostream& sink ) const {
-    if (GTOE) sink << "add " << DisasmR<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
-    else      sink << "add " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn );
+    if (GTOE) sink << "add " << DisasmG<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
+    else      sink << "add " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmG<OPSIZE>( gn );
   }
   
   typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
@@ -99,8 +99,8 @@ struct OrRM : public Operation<ARCH>
   OrRM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
   void disasm( std::ostream& sink ) const {
-    if (GTOE) sink << "or " << DisasmR<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
-    else      sink << "or " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn );
+    if (GTOE) sink << "or " << DisasmG<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
+    else      sink << "or " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmG<OPSIZE>( gn );
   }
   
   typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
@@ -193,8 +193,8 @@ struct AdcRM : public Operation<ARCH>
   AdcRM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
   void disasm( std::ostream& sink ) const {
-    if (GTOE) sink << "adc " << DisasmR<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
-    else      sink << "adc " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn );
+    if (GTOE) sink << "adc " << DisasmG<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
+    else      sink << "adc " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmG<OPSIZE>( gn );
   }
   
   typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
@@ -287,8 +287,8 @@ struct SbbRM : public Operation<ARCH>
   SbbRM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
   void disasm( std::ostream& sink ) const {
-    if (GTOE) sink << "sbb " << DisasmR<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
-    else      sink << "sbb " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn );
+    if (GTOE) sink << "sbb " << DisasmG<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
+    else      sink << "sbb " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmG<OPSIZE>( gn );
   }
   
   typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
@@ -381,8 +381,8 @@ struct AndRM : public Operation<ARCH>
   AndRM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
   void disasm( std::ostream& sink ) const {
-    if (GTOE) sink << "and " << DisasmR<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
-    else      sink << "and " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn );
+    if (GTOE) sink << "and " << DisasmG<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
+    else      sink << "and " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmG<OPSIZE>( gn );
   }
   
   typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
@@ -475,8 +475,8 @@ struct SubRM : public Operation<ARCH>
   SubRM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
   void disasm( std::ostream& sink ) const {
-    if (GTOE) sink << "sub " << DisasmR<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
-    else      sink << "sub " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn );
+    if (GTOE) sink << "sub " << DisasmG<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
+    else      sink << "sub " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmG<OPSIZE>( gn );
   }
   
   typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
@@ -569,8 +569,8 @@ struct XorRM : public Operation<ARCH>
   XorRM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
   void disasm( std::ostream& sink ) const {
-    if (GTOE) sink << "xor " << DisasmR<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
-    else      sink << "xor " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn );
+    if (GTOE) sink << "xor " << DisasmG<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
+    else      sink << "xor " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmG<OPSIZE>( gn );
   }
   
   typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
@@ -663,8 +663,8 @@ struct CmpRM : public Operation<ARCH>
   CmpRM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
   void disasm( std::ostream& sink ) const {
-    if (GTOE) sink << "cmp " << DisasmR<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
-    else      sink << "cmp " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn );
+    if (GTOE) sink << "cmp " << DisasmG<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
+    else      sink << "cmp " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmG<OPSIZE>( gn );
   }
   
   typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
@@ -1220,7 +1220,7 @@ struct TestRMG : public Operation<ARCH>
 {
   TestRMG( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
-  void disasm( std::ostream& sink ) const { sink << "test " << DisasmR<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
+  void disasm( std::ostream& sink ) const { sink << "test " << DisasmG<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
   
   void execute( ARCH& arch ) const { eval_and( arch, arch.template rmread<OPSIZE>( rmop ), arch.template regread<OPSIZE>( gn ) ); }
 };
@@ -1475,7 +1475,7 @@ struct IMulGE : public Operation<ARCH>
 {
   IMulGE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
-  void disasm( std::ostream& sink ) const { sink << "imul " << DisasmE( UI<OPSIZE>(), rmop )  << ',' << DisasmR<OPSIZE>( gn ); }
+  void disasm( std::ostream& sink ) const { sink << "imul " << DisasmE( UI<OPSIZE>(), rmop )  << ',' << DisasmG<OPSIZE>( gn ); }
   
   void execute( ARCH& arch ) const { arch.template regwrite<OPSIZE>( gn, arch.template regread<OPSIZE>( gn ) * arch.template rmread<OPSIZE>( rmop ) ); }
 };
@@ -1488,7 +1488,7 @@ struct IMulGEI : public Operation<ARCH>
   IMulGEI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn, imm_type _imm )
     : Operation<ARCH>( opbase ), rmop( _rmop ), imm(_imm), gn( _gn ) {} RMOp<ARCH> rmop; imm_type imm; uint8_t gn;
   
-  void disasm( std::ostream& sink ) const { sink << "imul" << DisasmI( imm ) << ',' << DisasmE( UI<OPSIZE>(), rmop )  << ',' << DisasmR<OPSIZE>( gn ); }
+  void disasm( std::ostream& sink ) const { sink << "imul" << DisasmI( imm ) << ',' << DisasmE( UI<OPSIZE>(), rmop )  << ',' << DisasmG<OPSIZE>( gn ); }
   
   void execute( ARCH& arch ) const
   {
@@ -1558,7 +1558,7 @@ struct Lea : public Operation<ARCH>
 {
   Lea( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
-  void disasm( std::ostream& sink ) const { sink << "lea " << DisasmM( rmop ) << ',' << DisasmR<OPSIZE>( gn ); }
+  void disasm( std::ostream& sink ) const { sink << "lea " << DisasmM( rmop ) << ',' << DisasmG<OPSIZE>( gn ); }
   
   void execute( ARCH& arch ) const { arch.template regwrite<OPSIZE>( gn, typename TypeFor<ARCH,OPSIZE>::u( rmop->effective_address( arch ) ) ); }
 };
@@ -1688,7 +1688,7 @@ struct ShldIM : public Operation<ARCH>
     : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ), shift( _sh & 0b11111 ) {} RMOp<ARCH> rmop; uint8_t gn; uint8_t shift;
   /* TODO: shouldn't shift be truncated according to OPSIZE (especially in 64bit) */
   
-  void disasm( std::ostream& sink ) const { sink << "shld " << DisasmI( shift ) << ',' << DisasmR<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
+  void disasm( std::ostream& sink ) const { sink << "shld " << DisasmI( shift ) << ',' << DisasmG<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
 
   void execute( ARCH& arch ) const
   {
@@ -1704,7 +1704,7 @@ struct ShldCL : public Operation<ARCH>
   ShldCL( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn )
     : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
-  void disasm( std::ostream& sink ) const { sink << "shld %cl," << DisasmR<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
+  void disasm( std::ostream& sink ) const { sink << "shld %cl," << DisasmG<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
 
   void execute( ARCH& arch ) const
   {
@@ -1721,7 +1721,7 @@ struct ShrdIM : public Operation<ARCH>
   ShrdIM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn, uint8_t _sh )
     : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ), sh( _sh ) {} RMOp<ARCH> rmop; uint8_t gn; uint8_t sh;
   
-  void disasm( std::ostream& sink ) const { sink << "shrd " << DisasmI( sh ) << ',' << DisasmR<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
+  void disasm( std::ostream& sink ) const { sink << "shrd " << DisasmI( sh ) << ',' << DisasmG<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
 
   void execute( ARCH& arch ) const
   {
@@ -1738,7 +1738,7 @@ struct ShrdCL : public Operation<ARCH>
   ShrdCL( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn )
     : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
-  void disasm( std::ostream& sink ) const { sink << "shrd %cl," << DisasmR<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
+  void disasm( std::ostream& sink ) const { sink << "shrd %cl," << DisasmG<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
 
   void execute( ARCH& arch ) const
   {
@@ -1794,7 +1794,7 @@ struct BitScan : public Operation<ARCH>
 {
   BitScan( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
-  void disasm( std::ostream& sink ) const { sink << (LEAD ? "bsr " : "bsf ") << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn ); }
+  void disasm( std::ostream& sink ) const { sink << (LEAD ? "bsr " : "bsf ") << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmG<OPSIZE>( gn ); }
   
   void execute( ARCH& arch ) const
   {
@@ -1817,7 +1817,7 @@ struct CountZeros : public Operation<ARCH>
 {
   CountZeros( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
-  void disasm( std::ostream& sink ) const { sink << (LEAD ? "lzcnt " : "tzcnt ") << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn ); }
+  void disasm( std::ostream& sink ) const { sink << (LEAD ? "lzcnt " : "tzcnt ") << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmG<OPSIZE>( gn ); }
   
   void execute( ARCH& arch ) const
   {
@@ -1881,7 +1881,7 @@ struct Popcnt : public Operation<ARCH>
 {
   Popcnt( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn )  : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
-  void disasm( std::ostream& sink ) const { sink << "popcnt " << DisasmE( UI<OPSIZE>(), rmop ) << DisasmR<OPSIZE>( gn ); }
+  void disasm( std::ostream& sink ) const { sink << "popcnt " << DisasmE( UI<OPSIZE>(), rmop ) << DisasmG<OPSIZE>( gn ); }
   
   // void execute( ARCH& arch ) const
   // {
@@ -2138,7 +2138,7 @@ template <class ARCH, unsigned OPSIZE>
 struct Bound : public Operation<ARCH>
 {
   Bound( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "bound " << DisasmR<OPSIZE>( gn ) << ',' << DisasmM( rmop ); }
+  void disasm( std::ostream& sink ) const { sink << "bound " << DisasmG<OPSIZE>( gn ) << ',' << DisasmM( rmop ); }
 };
 
 template <class ARCH> struct DC<ARCH,BOUND> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -2160,14 +2160,14 @@ template <class ARCH, unsigned OPSIZE>
 struct Adcx : public Operation<ARCH>
 {
   Adcx( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "adcx " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn ); }
+  void disasm( std::ostream& sink ) const { sink << "adcx " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmG<OPSIZE>( gn ); }
 };
 
 template <class ARCH, unsigned OPSIZE>
 struct Adox : public Operation<ARCH>
 {
   Adox( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "adox " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn ); }
+  void disasm( std::ostream& sink ) const { sink << "adox " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmG<OPSIZE>( gn ); }
 };
 
 template <class ARCH> struct DC<ARCH,ADF> { Operation<ARCH>* get( InputCode<ARCH> const& ic )

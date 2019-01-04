@@ -75,7 +75,7 @@ struct Movs : public Operation<ARCH>
   Movs( OpBase<ARCH> const& opbase, uint8_t _segment, StringEngine<ARCH>* _str ) : Operation<ARCH>( opbase ), segment( _segment ), str( _str ) {} uint8_t segment; StringEngine<ARCH>* str;
   
   void disasm( std::ostream& _sink ) const {
-    _sink << (REP?"rep ":"") << DisasmMnemonic<OPSIZE>( "movs" ) << DisasmS( segment ) << ":(" << DisasmRd( 6 ) << ")," << DisasmS( 0 ) << ":(" << DisasmRd( 7 ) << ")";
+    _sink << (REP?"rep ":"") << DisasmMnemonic<OPSIZE>( "movs" ) << DisasmS( segment ) << ":(" << DisasmGd( 6 ) << ")," << DisasmS( 0 ) << ":(" << DisasmGd( 7 ) << ")";
   }
   
   void execute( ARCH& arch ) const
@@ -123,7 +123,7 @@ struct Stos : public Operation<ARCH>
 {
   Stos( OpBase<ARCH> const& opbase, StringEngine<ARCH>* _str ) : Operation<ARCH>( opbase ), str( _str ) {} StringEngine<ARCH>* str;
   
-  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << "stos " << DisasmR<OPSIZE>( 0 ) << ',' << DisasmS( 0 ) << ":(" << DisasmRd( 7 ) << ")"; }
+  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << "stos " << DisasmG<OPSIZE>( 0 ) << ',' << DisasmS( 0 ) << ":(" << DisasmGd( 7 ) << ")"; }
   
   void execute( ARCH& arch ) const
   {
@@ -171,8 +171,8 @@ struct Cmps : public Operation<ARCH>
   void disasm( std::ostream& _sink ) const
   {
     _sink << ((REP==0) ? "" : (REP&1) ? "repz " : "repnz ") << "cmpsb "
-          << DisasmS( 0 ) << ":(" << DisasmRd( 7 ) << "),"
-          << DisasmS( segment ) << ":(" << DisasmRd( 6 ) << ")";
+          << DisasmS( 0 ) << ":(" << DisasmGd( 7 ) << "),"
+          << DisasmS( segment ) << ":(" << DisasmGd( 6 ) << ")";
   }
   
   void execute( ARCH& arch ) const
@@ -236,7 +236,7 @@ struct Scas : public Operation<ARCH>
 {
   Scas( OpBase<ARCH> const& opbase, StringEngine<ARCH>* _str ) : Operation<ARCH>( opbase ), str( _str ) {} StringEngine<ARCH>* str;
   
-  void disasm( std::ostream& _sink ) const { _sink << "scas " << DisasmS( ES ) << ":(" << DisasmRd( 7 ) << ")," << DisasmR<OPSIZE>( 0 ); }
+  void disasm( std::ostream& _sink ) const { _sink << "scas " << DisasmS( ES ) << ":(" << DisasmGd( 7 ) << ")," << DisasmG<OPSIZE>( 0 ); }
   
   void execute( ARCH& arch ) const
   {
@@ -298,7 +298,7 @@ struct Lods : public Operation<ARCH>
 {
   Lods( OpBase<ARCH> const& opbase, uint8_t _segment, StringEngine<ARCH>* _str ) : Operation<ARCH>( opbase ), segment( _segment ), str( _str ) {} uint8_t segment; StringEngine<ARCH>* str;
   
-  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << "lods " << DisasmS( segment ) << ":(" << DisasmRd( 6 ) << ")," << DisasmRb( 0 ); }
+  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << "lods " << DisasmS( segment ) << ":(" << DisasmGd( 6 ) << ")," << DisasmGb( 0 ); }
   
   void execute( ARCH& arch ) const
   {
@@ -343,7 +343,7 @@ template <class ARCH, unsigned OPSIZE, bool REP>
 struct Outs : public Operation<ARCH>
 {
   Outs( OpBase<ARCH> const& opbase, uint8_t _segment ) : Operation<ARCH>( opbase ), segment( _segment ) {} uint8_t segment;
-  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << DisasmMnemonic<OPSIZE>( "outs" ) << DisasmS( segment ) << ":(" << DisasmRd( 6 ) << "),(" << DisasmRw( 2 ) << ")"; }
+  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << DisasmMnemonic<OPSIZE>( "outs" ) << DisasmS( segment ) << ":(" << DisasmGd( 6 ) << "),(" << DisasmGw( 2 ) << ")"; }
 };
 
 template <class ARCH> struct DC<ARCH,OUTS> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -370,7 +370,7 @@ template <class ARCH, unsigned OPSIZE, bool REP>
 struct Ins : public Operation<ARCH>
 {
   Ins( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {};
-  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << DisasmMnemonic<OPSIZE>( "ins" ) << "(" << DisasmRw( 2 ) << ")," << DisasmS( 0 ) << ":(" << DisasmRd( 7 ) << ")"; }
+  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << DisasmMnemonic<OPSIZE>( "ins" ) << "(" << DisasmGw( 2 ) << ")," << DisasmS( 0 ) << ":(" << DisasmGd( 7 ) << ")"; }
 };
 
 template <class ARCH> struct DC<ARCH,INS> { Operation<ARCH>* get( InputCode<ARCH> const& ic )

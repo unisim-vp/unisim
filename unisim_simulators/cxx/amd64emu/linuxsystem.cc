@@ -67,8 +67,8 @@ LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string
   
   // Set the system type of the target simulator (should be the same than the
   // binary)
-  auto i386_target = new unisim::util::os::linux_os::AMD64TS<unisim::util::os::linux_os::Linux<uint64_t,uint64_t> >( linux_impl );
-  linux_impl.SetTargetSystem(i386_target);
+  auto amd64_target = new unisim::util::os::linux_os::AMD64TS<unisim::util::os::linux_os::Linux<uint64_t,uint64_t> >( linux_impl );
+  linux_impl.SetTargetSystem(amd64_target);
     
   linux_impl.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
   linux_impl.SetStackBase( 0x40000000UL );
@@ -77,7 +77,7 @@ LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string
                       "localhost" /* nodename */,
                       "3.14.43-unisim" /* release */,
                       "#1 SMP Fri Mar 12 05:23:09 UTC 2010" /* version */,
-                      "i386" /* machine */,
+                      "x86_64" /* machine */,
                       "localhost" /* domainname */);
   // linux_impl.SetStdinPipeFilename(stdin_pipe_filename.c_str());
   // linux_impl.SetStdoutPipeFilename(stdout_pipe_filename.c_str());
@@ -87,7 +87,7 @@ LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string
   if (not linux_impl.Load())
     throw 0;
   
-  if (!linux_impl.SetupTarget())
+  if (not linux_impl.SetupTarget())
     throw 0;
 }
 

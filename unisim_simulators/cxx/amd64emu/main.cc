@@ -34,6 +34,7 @@
 
 // #include <unisim/component/cxx/processor/intel/arch.hh>
 // #include <unisim/component/cxx/processor/intel/isa/intel.hh>
+#include <unisim/component/cxx/processor/intel/disasm.hh>
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <linuxsystem.hh>
@@ -50,13 +51,16 @@ struct Arch
     , unisim::service::interfaces::Memory<uint64_t>()
     , unisim::service::interfaces::Registers()
     , linux_os(0)
+    , rip()
   {
-  //   for (int idx = 0; idx < 8; ++idx) {
-  //     std::ostringstream regname;
-  //     regname << unisim::component::cxx::processor::intel::DisasmRd(idx);
-  //     regmap[regname.str()] = new unisim::util::debug::SimpleRegister<uint64_t>(regname.str(), &m_regs[idx]);
-  //   }
-  //   regmap["%eip"] = new unisim::util::debug::SimpleRegister<uint64_t>("%eip", &m_EIP);
+    regmap["%rip"] = new unisim::util::debug::SimpleRegister<uint64_t>("%rip", &this->rip);
+    
+    for (int idx = 0; idx < 16; ++idx)
+      {
+        std::ostringstream regname;
+        regname << unisim::component::cxx::processor::intel::DisasmGq(idx);
+        regmap[regname.str()] = new unisim::util::debug::SimpleRegister<uint64_t>(regname.str(), &u64regs[idx]);
+      }
     
   //   struct SegmentRegister : public unisim::service::interfaces::Register
   //   {
@@ -127,33 +131,33 @@ struct Arch
   }
   void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
   {
-    // General purpose registers
-    scanner.Append( GetRegister( "%eax" ) );
-    scanner.Append( GetRegister( "%ecx" ) );
-    scanner.Append( GetRegister( "%edx" ) );
-    scanner.Append( GetRegister( "%ebx" ) );
-    scanner.Append( GetRegister( "%esp" ) );
-    scanner.Append( GetRegister( "%ebp" ) );
-    scanner.Append( GetRegister( "%esi" ) );
-    scanner.Append( GetRegister( "%edi" ) );
     // Program counter
-    scanner.Append( GetRegister( "%eip" ) );
+    scanner.Append( GetRegister( "%rip" ) );
+    // General purpose registers
+    // scanner.Append( GetRegister( "%eax" ) );
+    // scanner.Append( GetRegister( "%ecx" ) );
+    // scanner.Append( GetRegister( "%edx" ) );
+    // scanner.Append( GetRegister( "%ebx" ) );
+    // scanner.Append( GetRegister( "%esp" ) );
+    // scanner.Append( GetRegister( "%ebp" ) );
+    // scanner.Append( GetRegister( "%esi" ) );
+    // scanner.Append( GetRegister( "%edi" ) );
     // Segments
-    scanner.Append( GetRegister( "%es" ) );
-    scanner.Append( GetRegister( "%cs" ) );
-    scanner.Append( GetRegister( "%ss" ) );
-    scanner.Append( GetRegister( "%ds" ) );
-    scanner.Append( GetRegister( "%fs" ) );
-    scanner.Append( GetRegister( "%gs" ) );
+    // scanner.Append( GetRegister( "%es" ) );
+    // scanner.Append( GetRegister( "%cs" ) );
+    // scanner.Append( GetRegister( "%ss" ) );
+    // scanner.Append( GetRegister( "%ds" ) );
+    // scanner.Append( GetRegister( "%fs" ) );
+    // scanner.Append( GetRegister( "%gs" ) );
     // FP registers
-    scanner.Append( GetRegister( "%st" ) );
-    scanner.Append( GetRegister( "%st(1)" ) );
-    scanner.Append( GetRegister( "%st(2)" ) );
-    scanner.Append( GetRegister( "%st(3)" ) );
-    scanner.Append( GetRegister( "%st(4)" ) );
-    scanner.Append( GetRegister( "%st(5)" ) );
-    scanner.Append( GetRegister( "%st(6)" ) );
-    scanner.Append( GetRegister( "%st(7)" ) );
+    // scanner.Append( GetRegister( "%st" ) );
+    // scanner.Append( GetRegister( "%st(1)" ) );
+    // scanner.Append( GetRegister( "%st(2)" ) );
+    // scanner.Append( GetRegister( "%st(3)" ) );
+    // scanner.Append( GetRegister( "%st(4)" ) );
+    // scanner.Append( GetRegister( "%st(5)" ) );
+    // scanner.Append( GetRegister( "%st(6)" ) );
+    // scanner.Append( GetRegister( "%st(7)" ) );
   }
   // unisim::service::interfaces::MemoryInjection<ADDRESS>
   bool InjectReadMemory(uint64_t addr, void *buffer, uint32_t size) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
@@ -166,7 +170,10 @@ struct Arch
   //     { throw std::logic_error( "No linux OS emulation connected" ); }
   //   linux_os->ExecuteSystemCall( id );
   // }
-  
+
+  uint64_t rip;
+  uint64_t u64regs[16]; ///< extended reg
+
   struct Operation
   {
     void execute( Arch& core ) { throw 0; }

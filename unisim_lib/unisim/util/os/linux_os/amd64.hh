@@ -61,7 +61,7 @@ namespace os {
 namespace linux_os {
 
   // Register names
-  static char const* const kAMD64_x0  = "x0"; /* syscall arg#1 */
+  static char const* const kAMD64_rax  = "%rax"; /* syscall arg#1 */
   static char const* const kAMD64_x1  = "x1"; /* syscall arg#2, argc */
   static char const* const kAMD64_x2  = "x2"; /* syscall arg#3, argv */
   static char const* const kAMD64_x3  = "x3"; /* syscall arg#4 */
@@ -182,15 +182,15 @@ namespace linux_os {
     bool SetupTarget() const
     {
       // Reset all target registers
-      for (int idx = 0; idx < 32; ++idx) {
-        std::ostringstream buf;
-        buf << 'x' << std::dec << idx;
-        if (not ClearRegister(lin, buf.str().c_str()))
-          return false;
-      }
+      // for (int idx = 0; idx < 32; ++idx) {
+      //   std::ostringstream buf;
+      //   buf << 'x' << std::dec << idx;
+      //   if (not ClearRegister(lin, buf.str().c_str()))
+      //     return false;
+      // }
       
       // Set PC to the program entry point
-      if (not SetRegister(lin, "pc", lin.GetEntryPoint()))
+      if (not SetRegister(lin, "%rip", lin.GetEntryPoint()))
         return false;
       
       // Set SP to the base of the created stack
@@ -216,7 +216,7 @@ namespace linux_os {
     }
     
     static void SetAMD64SystemCallStatus(LINUX& _lin, int64_t ret, bool error)
-    { SetRegister(_lin, kAMD64_x0, (parameter_type) ret); }
+    { SetRegister(_lin, kAMD64_rax, (parameter_type) ret); }
     
     void SetSystemCallStatus(int64_t ret, bool error) const { SetAMD64SystemCallStatus( lin, ret, error ); }
     
@@ -225,7 +225,7 @@ namespace linux_os {
       parameter_type val = 0;
           
       switch (id) {
-      case 0: GetRegister(_lin, kAMD64_x0, &val); break;
+      case 0: GetRegister(_lin, kAMD64_rax, &val); break;
       case 1: GetRegister(_lin, kAMD64_x1, &val); break;
       case 2: GetRegister(_lin, kAMD64_x2, &val); break;
       case 3: GetRegister(_lin, kAMD64_x3, &val); break;

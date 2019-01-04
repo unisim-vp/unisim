@@ -55,45 +55,51 @@ namespace intel {
   std::ostream& operator << ( std::ostream& sink, DisasmObject const& dobj );
   
   /* General purpose registers */
-  struct DisasmRb : public DisasmObject
+  struct DisasmGb : public DisasmObject
   {
-    DisasmRb( unsigned _reg ) : reg( _reg ) {} unsigned reg;
+    DisasmGb( unsigned _reg ) : reg( _reg ) {} unsigned reg;
     void operator() ( std::ostream& sink ) const;
   };
-  struct DisasmRw : public DisasmObject
+  struct DisasmGw : public DisasmObject
   {
-    DisasmRw( unsigned _reg ) : reg( _reg ) {} unsigned reg;
+    DisasmGw( unsigned _reg ) : reg( _reg ) {} unsigned reg;
     void operator() ( std::ostream& sink ) const;
   };
-  struct DisasmRd : public DisasmObject
+  struct DisasmGd : public DisasmObject
   {
-    DisasmRd( unsigned _reg ) : reg( _reg ) {} unsigned reg;
+    DisasmGd( unsigned _reg ) : reg( _reg ) {} unsigned reg;
     void operator() ( std::ostream& sink ) const;
+  };
+  struct DisasmGq : public DisasmObject
+  {
+    DisasmGq( unsigned _reg ) : reg( _reg ) {} unsigned reg;
+    void operator() (std::ostream& sink ) const;
   };
 
   template <unsigned OPSIZE>
-  struct DisasmR : public DisasmObject
+  struct DisasmG : public DisasmObject
   {
-    DisasmR( unsigned _reg ) : reg( _reg ) {} unsigned reg;
+    DisasmG( unsigned _reg ) : reg( _reg ) {} unsigned reg;
     void operator() ( std::ostream& sink ) const {
-      if      (OPSIZE == 8)  sink << DisasmRb( reg );
-      else if (OPSIZE == 16) sink << DisasmRw( reg );
-      else if (OPSIZE == 32) sink << DisasmRd( reg );
+      if      (OPSIZE == 8)  sink << DisasmGb( reg );
+      else if (OPSIZE == 16) sink << DisasmGw( reg );
+      else if (OPSIZE == 32) sink << DisasmGd( reg );
+      else if (OPSIZE == 64) sink << DisasmGq( reg );
       else throw 0;
     }
   };
   
   /* Quadword registers*/
-  struct DisasmRq : public DisasmObject
+  struct DisasmPq : public DisasmObject
   {
-    DisasmRq( unsigned _reg ) : reg( _reg ) {} unsigned reg;
+    DisasmPq( unsigned _reg ) : reg( _reg ) {} unsigned reg;
     void operator() ( std::ostream& sink ) const;
   };
   
   /* Double quadword registers */
-  struct DisasmRdq : public DisasmObject
+  struct DisasmVdq : public DisasmObject
   {
-    DisasmRdq( unsigned _reg ) : reg( _reg ) {} unsigned reg;
+    DisasmVdq( unsigned _reg ) : reg( _reg ) {} unsigned reg;
     void operator() ( std::ostream& sink ) const;
   };
   
@@ -122,14 +128,6 @@ namespace intel {
     void operator () ( std::ostream& sink ) const;
   };
   
-  /* ModRM disassembly */
-  // struct DisasmRoM : public DisasmObject
-  // {
-  //   DisasmRoM( BaseMOp const* _mop ) : mop( _mop ) {} BaseMOp const* mop;
-  //   void operator() ( std::ostream& sink ) const;
-  //   virtual void disasm_register( std::ostream& sink, unsigned reg ) const = 0;
-  // };
-  
   template <class ARCH> struct RMOp;
   
   template <class ARCH, class REGDIS>
@@ -150,23 +148,23 @@ namespace intel {
   };
   
   template <class ARCH>
-  DisasmRegOrMem<ARCH,DisasmRb>  DisasmEb( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmRb>( rmop ); }
+  DisasmRegOrMem<ARCH,DisasmGb>  DisasmEb( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmGb>( rmop ); }
   
   template <class ARCH>
-  DisasmRegOrMem<ARCH,DisasmRw>  DisasmEw( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmRw>( rmop ); }
+  DisasmRegOrMem<ARCH,DisasmGw>  DisasmEw( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmGw>( rmop ); }
 
   template <class ARCH>
-  DisasmRegOrMem<ARCH,DisasmRd>  DisasmEd( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmRd>( rmop ); }
+  DisasmRegOrMem<ARCH,DisasmGd>  DisasmEd( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmGd>( rmop ); }
   
   
   template <class ARCH,unsigned OPSIZE>
-  DisasmRegOrMem<ARCH,DisasmR<OPSIZE> > DisasmE( UI<OPSIZE> const&, RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmR<OPSIZE> >( rmop ); }
+  DisasmRegOrMem<ARCH,DisasmG<OPSIZE> > DisasmE( UI<OPSIZE> const&, RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmG<OPSIZE> >( rmop ); }
   
   template <class ARCH>
-  DisasmRegOrMem<ARCH,DisasmRq>  DisasmQq( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmRq>( rmop ); }
+  DisasmRegOrMem<ARCH,DisasmPq>  DisasmQq( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmPq>( rmop ); }
   
   template <class ARCH>
-  DisasmRegOrMem<ARCH,DisasmRdq> DisasmWdq( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmRdq>( rmop ); }
+  DisasmRegOrMem<ARCH,DisasmVdq> DisasmWdq( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmVdq>( rmop ); }
 
   struct DisasmBadReg : public DisasmObject
   {

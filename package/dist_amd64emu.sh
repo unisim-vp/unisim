@@ -5,6 +5,7 @@ SIMPKG=amd64emu
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
+unisim/component/cxx/processor/intel/disasm.cc \
 unisim/util/blob/blob32.cc \
 unisim/util/blob/blob64.cc \
 unisim/util/blob/section32.cc \
@@ -40,6 +41,11 @@ unisim/util/xml/xml.cc \
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 unisim/component/cxx/memory/sparse/memory.hh \
+unisim/component/cxx/processor/intel/disasm.hh \
+unisim/component/cxx/processor/intel/segments.hh \
+unisim/component/cxx/processor/intel/tmp.hh \
+unisim/component/cxx/processor/intel/modrm.hh \
+unisim/component/cxx/processor/intel/types.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/service/service.hh \

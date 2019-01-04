@@ -58,7 +58,7 @@ struct Arch
   {
     for (int idx = 0; idx < 8; ++idx) {
       std::ostringstream regname;
-      regname << unisim::component::cxx::processor::intel::DisasmRd(idx);
+      regname << unisim::component::cxx::processor::intel::DisasmGd(idx);
       regmap[regname.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(regname.str(), &m_regs[idx]);
     }
     regmap["%eip"] = new unisim::util::debug::SimpleRegister<uint32_t>("%eip", &m_EIP);
