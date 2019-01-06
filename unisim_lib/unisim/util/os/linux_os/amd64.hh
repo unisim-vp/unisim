@@ -200,16 +200,15 @@ namespace linux_os {
         lin.DebugErrorStream() << "Could not find the stack pointer section." << std::endl;
         return false;
       }
-      if (not SetRegister(lin, "sp", sp_section->GetAddr()))
+      address_type stack_pointer = sp_section->GetAddr();
+      if (not SetRegister(lin, "%rsp", stack_pointer))
         return false;
-      address_type par1_addr = sp_section->GetAddr() + 8;
-      address_type par2_addr = sp_section->GetAddr() + 16;
       parameter_type par1 = 0;
       parameter_type par2 = 0;
-      if (not this->MemIF().ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)) or
-          not this->MemIF().ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2)) or
-          not SetRegister(lin, "x1", Target2Host(lin.GetEndianness(), par1)) or
-          not SetRegister(lin, "x2", Target2Host(lin.GetEndianness(), par2)))
+      if (not this->MemIF().ReadMemory(stack_pointer +  8, (uint8_t *)&par1, sizeof(par1)) or
+          not this->MemIF().ReadMemory(stack_pointer + 16, (uint8_t *)&par2, sizeof(par2)) or
+          not SetRegister(lin, "%rdi", Target2Host(lin.GetEndianness(), par1)) or
+          not SetRegister(lin, "%rsi", Target2Host(lin.GetEndianness(), par2)))
         return false;
           
       return true;
