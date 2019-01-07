@@ -59,7 +59,9 @@ struct MPU_ENTRY
 };
 
 template <typename TYPES, typename CONFIG>
-struct MPU : unisim::util::cache::AccessController<TYPES, MPU<TYPES, CONFIG> >
+struct MPU
+	: unisim::kernel::service::Object
+	, unisim::util::cache::AccessController<TYPES, MPU<TYPES, CONFIG> >
 {
 	typedef typename CONFIG::CPU CPU;
 	typedef typename TYPES::ADDRESS ADDRESS;
@@ -180,7 +182,8 @@ private:
 
 template <typename TYPES, typename CONFIG>
 MPU<TYPES, CONFIG>::MPU(CPU *_cpu, unsigned int _sel)
-	: cpu(_cpu)
+	: unisim::kernel::service::Object("MPU", _cpu)
+	, cpu(_cpu)
 	, sel(_sel)
 	, mas0(_cpu)
 	, mas1(_cpu)

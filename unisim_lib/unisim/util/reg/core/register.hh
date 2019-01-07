@@ -646,7 +646,6 @@ public:
 public:
 	virtual void ShortPrettyPrint(std::ostream& os) const;
 	virtual void LongPrettyPrint(std::ostream& os) const;
-protected:
 	virtual ReadWriteStatus Write(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
 	virtual ReadWriteStatus Read(typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
 	virtual void DebugWrite(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable);

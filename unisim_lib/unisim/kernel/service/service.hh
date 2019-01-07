@@ -70,12 +70,26 @@ struct Logger;
 
 }
 
+namespace http_server {
+	class HttpRequest;
+	class HttpServer;
+}
+
 namespace api {
 
 class APIBase;
 
 }
 }
+
+namespace util {
+namespace hypapp {
+
+struct ClientConnection;
+
+}
+}
+
 }
 
 #include "unisim/kernel/api/api.hh"
@@ -446,6 +460,7 @@ public:
 	VariableBase *FindFormula(const char *name);
 
 	void GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
+	void GetRootVariables(std::list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
 	void GetArrays(std::list<VariableBase *>& lst);
 	void GetParameters(std::list<VariableBase *>& lst);
 	void GetRegisters(std::list<VariableBase *>& lst);
@@ -463,6 +478,7 @@ public:
 	bool GetExecutablePath(const char *argv0, std::string& out_execute_path) const;
 	bool GetBinPath(const char *argv0, std::string& out_bin_dir, std::string& out_bin_program) const;
 	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const;
+	const std::string GetSharedDataDirectory() const;
 	std::string SearchSharedDataFile(const char *filename) const;
 
 	void GenerateLatexDocumentation(std::ostream& os) const;
@@ -553,6 +569,7 @@ public:
 	//   become public
 	void GetObjects(std::list<Object *>& lst) const;
 	void GetRootObjects(std::list<Object *>& lst) const;
+	Object *FindObject(const char *name) const;
 	void GetAPIs(std::list<unisim::kernel::api::APIBase *> &api_list) const;
 
 private:
@@ -584,6 +601,8 @@ private:
 	
 	std::string *cmd_args;
 	ParameterArray<std::string> *param_cmd_args;
+	
+	unisim::kernel::http_server::HttpServer *http_server;
 	
 public:
 	template <typename T> T GetVariable(const char *variable_name, const T *t = 0) const;
@@ -1071,6 +1090,8 @@ public:
 	const char *GetDescription() const;
 	virtual void Stop(int exit_status, bool asynchronous = false);
 	void SetDescription(const char *description);
+	
+	virtual bool ServeHttpRequest(unisim::kernel::http_server::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 private:
 	std::string object_name;
 	std::string object_base_name;

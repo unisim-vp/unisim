@@ -387,7 +387,7 @@ bool PBRIDGE<CONFIG>::ApplyMap(transaction_type &trans, MAPPING const *&applied_
 					return true;
 				}
 				
-				this->logger << DebugWarning << "Master #" << master_id << " can't access port #" << applied_mapping->output_port << " according " << acr_mapping[mapping_id] << EndDebugWarning;
+				this->logger << DebugWarning << "Master #" << master_id << " can't access port #" << applied_mapping->output_port << " (" << this->output_socket_name[applied_mapping->output_port] << ") with mapping #" << mapping_id << " according " << acr_mapping[mapping_id] << EndDebugWarning;
 				trans.set_response_status(tlm::TLM_INCOMPLETE_RESPONSE);
 			}
 			else

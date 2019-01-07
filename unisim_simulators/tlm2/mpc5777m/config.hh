@@ -113,8 +113,8 @@ struct Config
 	{
 		typedef uint32_t ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 49;
-		static const unsigned int NUM_MAPPINGS = 50;
+		static const unsigned int OUTPUT_SOCKETS = 50;
+		static const unsigned int NUM_MAPPINGS = 51;
 		static const unsigned int INPUT_BUSWIDTH = 32;
 		static const unsigned int OUTPUT_BUSWIDTH = 32;
 		static const unsigned int PERIPHERAL_BUSWIDTH = 32;
@@ -598,6 +598,12 @@ struct Config
 		static const unsigned int OUTPUT_BUSWIDTH = 32;
 		static const bool VERBOSE = DEBUG_ENABLE;
 		static const unsigned int BURST_LENGTH = FSB_BURST_SIZE / (INPUT_BUSWIDTH / 8); // FIXME
+	};
+	
+	struct SEMA4_CONFIG
+	{
+		static const unsigned int NUM_GATES = 16;
+		static const unsigned int BUSWIDTH  = 32;
 	};
 };
 

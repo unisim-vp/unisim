@@ -34,6 +34,7 @@
 
 #include <unisim/kernel/tlm2/simulator.hh>
 #include <unisim/kernel/tlm2/tlm_can.hh>
+#include <unisim/kernel/http_server/http_server.hh>
 
 namespace unisim {
 namespace kernel {
@@ -55,9 +56,9 @@ Instrumenter::Instrumenter(const char *name, unisim::kernel::service::Object *pa
 	, trace_file(0)
 	, gtkwave_init_script()
 	, param_gtkwave_init_script("gtkwave-init-script", this, gtkwave_init_script, "GTKWave initialization script that simulators must automatically generate at startup")
-	, enable_http_server(false)
-	, param_enable_http_server("enable-http-server", this, enable_http_server, "Enable/Disable HTTP server")
-	, http_server(0)
+	, enable_user_interface(false)
+	, param_enable_user_interface("enable-user-interface", this, enable_user_interface, "Enable/Disable User interface over HTTP")
+	, user_interface(0)
 	, enable_csv_reader(false)
 	, param_enable_csv_reader("enable-csv-reader", this, enable_csv_reader, "Enable/Disable CSV reader")
 	, csv_reader(0)
@@ -84,14 +85,13 @@ Instrumenter::Instrumenter(const char *name, unisim::kernel::service::Object *pa
 	if(front_ends_priority_order.empty())
 	{
 		std::stringstream front_ends_priority_order_sstr;
-		front_ends_priority_order_sstr << this->GetName() << ".http-server " << this->GetName() << ".csv-reader " << this->GetName() << ".csv-writer";
-		//front_ends_priority_order_sstr << this->GetName() << ".csv-reader " << this->GetName() << ".http-server " << this->GetName() << ".csv-writer";
+		front_ends_priority_order_sstr << this->GetName() << ".user-interface " << this->GetName() << ".csv-reader " << this->GetName() << ".csv-writer";
 		front_ends_priority_order = front_ends_priority_order_sstr.str();
 	}
 	
-	if(enable_http_server)
+	if(enable_user_interface)
 	{
-		http_server = new HttpServer("http-server", this);
+		user_interface = new UserInterface("user-interface", this);
 	}
 	
 	if(enable_csv_reader)
@@ -857,199 +857,6 @@ bool UserInstrument::IsBoolean() const
 	return (input_instrument && (input_instrument->GetTypeInfo() == typeid(bool))) || (output_instrument && (output_instrument->GetTypeInfo() == typeid(bool)));
 }
 
-bool Form_URL_Encoded_Decoder::Decode(const std::string& s, std::ostream& err_log)
-{
-	int state = 0;
-	std::size_t pos = 0;
-	std::size_t len = s.length();
-	std::size_t eos_pos = len ? (len - 1) : 0;
-	std::string name;
-	std::string value;
-	char non_alpha_numeric;
-	
-	// syntax: name'='value('&'name'='value)*
-	//         '+' is replaced by space
-	//         non alpha-numeric ASCII characters are encoded as %HH where H is an hexadecimal digit
-	while(pos < len)
-	{
-		char c = s[pos];
-		
-		switch(state)
-		{
-			case 0: // name parsing
-				if(c == '&')
-				{
-					err_log << "In \"" << s << "\", expecting '=' after \"" << name << "\"" << std::endl;
-					return false;
-				}
-				else if(c == '=')
-				{
-					value.clear();
-					state = 3;
-					if(pos == eos_pos)
-					{
-						if(!FormAssign(name, value)) return false;
-					}
-				}
-				else if(c == '+')
-				{
-					name.append(1, ' ');
-					if(pos == eos_pos)
-					{
-						err_log << "In \"" << s << "\", expecting '=' after \"" << name << "\"" << std::endl;
-						return false;
-					}
-				}
-				else if(c == '%')
-				{
-					state = 1;
-					if(pos == eos_pos)
-					{
-						err_log << "In \"" << s << "\", expecting '=' after \"" << name << "\"" << std::endl;
-						return false;
-					}
-				}
-				else if(IsAlphaNumeric(c) || IsSafe(c))
-				{
-					name.append(1, c);
-					if(pos == eos_pos)
-					{
-						err_log << "In \"" << s << "\", expecting '=' after \"" << name << "\"" << std::endl;
-						return false;
-					}
-				}
-				else
-				{
-					err_log << "In \"" << s << "\", at character position #" << pos << ", unexpected character '" << c << "'" << std::endl;
-					return false;
-				}
-				break;
-			case 1: // first hexadecimal digit after % while parsing name
-				if(IsHexDigit(c))
-				{
-					non_alpha_numeric = AsciiHexToUInt(c);
-					state = 2;
-					if(pos == eos_pos)
-					{
-						err_log << "In \"" << s << "\", expecting a second hexadecimal digit before end of string" << std::endl;
-						return false;
-					}
-				}
-				else
-				{
-					err_log << "In \"" << s << "\", at character position #" << pos << ", unexpected character '" << c << "'" << std::endl;
-					return false;
-				}
-				break;
-			case 2: // second hexadecimal digit after % while parsing name
-				if(IsHexDigit(c))
-				{
-					non_alpha_numeric = (non_alpha_numeric << 4) | AsciiHexToUInt(c);
-					name.append(1, non_alpha_numeric);
-					if(pos == eos_pos)
-					{
-						err_log << "In \"" << s << "\", expecting '=' after \"" << name << "\"" << std::endl;
-						return false;
-					}
-					state = 0;
-				}
-				else
-				{
-					err_log << "In \"" << s << "\", at character position #" << pos << ", unexpected character '" << c << "'" << std::endl;
-					return false;
-				}
-				break;
-			case 3: // value parsing
-				if(c == '+')
-				{
-					value.append(1, ' ');
-				}
-				else if(c == '%')
-				{
-					state = 4;
-				}
-				else if(IsAlphaNumeric(c) || IsSafe(c))
-				{
-					value.append(1, c);
-				}
-				else if(c != '&')
-				{
-					err_log << "In \"" << s << "\", at character position #" << pos << ", unexpected character '" << c << "'" << std::endl;
-					return false;
-				}
-
-				if((c == '&') || (pos == eos_pos))
-				{
-					if(!FormAssign(name, value)) return false;
-					name.clear();
-					state = 0;
-				}
-
-				break;
-				
-			case 4: // first hexadecimal digit after % while parsing value
-				if(IsHexDigit(c))
-				{
-					non_alpha_numeric = AsciiHexToUInt(c);
-					state = 5;
-					if(pos == eos_pos)
-					{
-						err_log << "In \"" << s << "\", expecting a second hexadecimal digit before end of string" << std::endl;
-						return false;
-					}
-				}
-				else
-				{
-					err_log << "In \"" << s << "\", at character position #" << pos << ", unexpected character '" << c << "'" << std::endl;
-					return false;
-				}
-				break;
-			case 5: // first hexadecimal digit after % while parsing value
-				if(IsHexDigit(c))
-				{
-					non_alpha_numeric = (non_alpha_numeric << 4) | AsciiHexToUInt(c);
-					value.append(1, non_alpha_numeric);
-					
-					if(pos == eos_pos)
-					{
-						if(!FormAssign(name, value)) return false;
-					}
-					state = 3;
-				}
-				else
-				{
-					err_log << "In \"" << s << "\", at character position #" << pos << ", unexpected character '" << c << "'" << std::endl;
-					return false;
-				}
-				break;
-		}
-
-		pos++;
-	}
-	
-	return true;
-}
-
-bool Form_URL_Encoded_Decoder::IsHexDigit(char c)
-{
-	return ((c >= '0') && (c <= '9')) || ((c >= 'a') && (c <= 'f')) || ((c >= 'A') && (c <= 'F'));
-}
-
-bool Form_URL_Encoded_Decoder::IsSafe(char c)
-{
-	return (c == '$') || (c == '-') || (c == '_') || (c == '.') || (c == '+') || (c == '!') || (c == '*') || (c == '\'') || (c == '(') || (c == ')') || (c == ',');
-}
-
-bool Form_URL_Encoded_Decoder::IsAlphaNumeric(char c)
-{
-	return ((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')) || ((c >= '0') && (c <= '9'));
-}
-
-unsigned int Form_URL_Encoded_Decoder::AsciiHexToUInt(char c)
-{
-	return ((c >= '0') && (c <= '9')) ? (c - '0') : (((c >= 'a') && (c <= 'f')) ? (10 + (c - 'a')) : (((c >= 'A') && (c <= 'F')) ? (10 + (c - 'A')) : ~int(0)));
-}
-
 static std::string String_to_HTML(const std::string& s)
 {
 	std::stringstream sstr;
@@ -1093,16 +900,12 @@ static std::string String_to_HTML(const std::string& s)
 	return sstr.str();
 }
 
-HttpServer::HttpServer(const char *name, Instrumenter *instrumenter)
+UserInterface::UserInterface(const char *name, Instrumenter *instrumenter)
 	: InstrumenterFrontEnd(name, instrumenter)
-	, unisim::util::hypapp::HttpServer()
 	, logger(*this)
 	, program_name(unisim::kernel::service::Simulator::Instance()->FindVariable("program-name")->operator std::string())
+	, verbose(false)
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
-	, http_port(0)
-	, param_http_port("http-port", this, http_port, "HTTP port")
-	, http_max_clients(10)
-	, param_http_max_clients("http-max-clients", this, http_max_clients, "HTTP max clients")
 	, instrumentation()
 	, param_instrumentation("instrumentation", this, instrumentation, "Instrumented signals (wildcards '*' and '?' are allowed in signal names) that are controlled by user over HTTP")
 	, intr_poll_period(1.0, sc_core::SC_US)
@@ -1133,25 +936,6 @@ HttpServer::HttpServer(const char *name, Instrumenter *instrumenter)
 	, cond_user()
 	, mutex_user()
 {
-	param_http_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_http_port.SetMutable(false);
-	param_http_max_clients.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_http_max_clients.SetMutable(false);
-	
-	logger << DebugInfo << "HTTP server on port #" << http_port << EndDebugInfo;
-	this->SetTCPPort(http_port);
-	this->SetMaxClients(http_max_clients);
-	if(verbose)
-	{
-		this->SetLog(logger.DebugInfoStream());
-	}
-	else
-	{
-		this->SetLog(logger.DebugNullStream());
-	}
-	this->SetWarnLog(logger.DebugWarningStream());
-	this->SetErrLog(logger.DebugErrorStream());
-	
 	pthread_mutex_init(&mutex_instruments, NULL);
 	pthread_mutex_init(&mutex_post, NULL);
 	pthread_cond_init(&cond_run, NULL);
@@ -1168,11 +952,9 @@ HttpServer::HttpServer(const char *name, Instrumenter *instrumenter)
 	}
 }
 
-HttpServer::~HttpServer()
+UserInterface::~UserInterface()
 {
 	UnblockUser();
-	Kill();
-	JoinLoopThread();
 	
 	std::map<std::string, UserInstrument *>::iterator user_instrument_it;
 	for(user_instrument_it = user_instruments.begin(); user_instrument_it != user_instruments.end(); user_instrument_it++)
@@ -1190,20 +972,17 @@ HttpServer::~HttpServer()
 	pthread_mutex_destroy(&mutex_user);
 }
 
-bool HttpServer::EndSetup()
+bool UserInterface::EndSetup()
 {
-	StartLoopThread();
-	logger << DebugInfo << "HTTP server started on TCP/IP port #" << http_port << EndDebugInfo;
-	
 	return true;
 }
 
-void HttpServer::SigInt()
+void UserInterface::SigInt()
 {
 	Run();
 }
 
-bool HttpServer::SetupInstrumentation()
+bool UserInterface::SetupInstrumentation()
 {
 	std::stringstream sstr(instrumentation);
 	std::string signal_name_pattern;
@@ -1253,7 +1032,7 @@ bool HttpServer::SetupInstrumentation()
 	return true;
 }
 
-void HttpServer::WaitForUser()
+void UserInterface::WaitForUser()
 {
 	//std::cerr << sc_core::sc_time_stamp() << ":WaitForUser: start" << std::endl;
 	pthread_mutex_lock(&mutex_user);
@@ -1271,7 +1050,7 @@ void HttpServer::WaitForUser()
 	//std::cerr << sc_core::sc_time_stamp() << ":WaitForUser: end" << std::endl;
 }
 
-void HttpServer::WaitForSimulation()
+void UserInterface::WaitForSimulation()
 {
 	//std::cerr << "WaitForSimulation: start" << std::endl;
 	pthread_mutex_lock(&mutex_run);
@@ -1289,7 +1068,7 @@ void HttpServer::WaitForSimulation()
 	//std::cerr << "WaitForSimulation: end" << std::endl;
 }
 
-void HttpServer::Run()
+void UserInterface::Run()
 {
 	//std::cerr << "Run" << std::endl;
 	pthread_mutex_lock(&mutex_run);
@@ -1298,7 +1077,7 @@ void HttpServer::Run()
 	pthread_mutex_unlock(&mutex_run);
 }
 
-void HttpServer::UnblockUser()
+void UserInterface::UnblockUser()
 {
 	//std::cerr << "UnblockUser" << std::endl;
 	pthread_mutex_lock(&mutex_user);
@@ -1307,27 +1086,27 @@ void HttpServer::UnblockUser()
 	pthread_mutex_unlock(&mutex_user);
 }
 
-void HttpServer::LockInstruments()
+void UserInterface::LockInstruments()
 {
 	pthread_mutex_lock(&mutex_instruments);
 }
 
-void HttpServer::UnlockInstruments()
+void UserInterface::UnlockInstruments()
 {
 	pthread_mutex_unlock(&mutex_instruments);
 }
 
-void HttpServer::LockPost()
+void UserInterface::LockPost()
 {
 	pthread_mutex_lock(&mutex_post);
 }
 
-void HttpServer::UnlockPost()
+void UserInterface::UnlockPost()
 {
 	pthread_mutex_unlock(&mutex_post);
 }
 
-void HttpServer::Commit()
+void UserInterface::Commit()
 {
 	std::map<std::string, UserInstrument *>::iterator user_instrument_it;
 	for(user_instrument_it = user_instruments.begin(); user_instrument_it != user_instruments.end(); user_instrument_it++)
@@ -1338,7 +1117,7 @@ void HttpServer::Commit()
 	}
 }
 
-void HttpServer::ProcessInputInstruments()
+void UserInterface::ProcessInputInstruments()
 {
 	if(unlikely(halt))
 	{
@@ -1361,7 +1140,7 @@ void HttpServer::ProcessInputInstruments()
 	NextInputTrigger(t);
 }
 
-void HttpServer::InitialFetch()
+void UserInterface::InitialFetch()
 {
 	std::map<std::string, UserInstrument *>::iterator user_instrument_it;
 	for(user_instrument_it = user_instruments.begin(); user_instrument_it != user_instruments.end(); user_instrument_it++)
@@ -1372,7 +1151,7 @@ void HttpServer::InitialFetch()
 	}
 }
 
-void HttpServer::Sample()
+void UserInterface::Sample()
 {
 	std::map<std::string, UserInstrument *>::iterator user_instrument_it;
 	for(user_instrument_it = user_instruments.begin(); user_instrument_it != user_instruments.end(); user_instrument_it++)
@@ -1383,7 +1162,7 @@ void HttpServer::Sample()
 	}
 }
 
-void HttpServer::Fetch()
+void UserInterface::Fetch()
 {
 	has_breakpoint_cond = false;
 	std::map<std::string, UserInstrument *>::iterator user_instrument_it;
@@ -1406,700 +1185,558 @@ void HttpServer::Fetch()
 	}
 }
 
-void HttpServer::ProcessOutputInstruments()
+void UserInterface::ProcessOutputInstruments()
 {
 	LockInstruments();
 	Fetch();
 	UnlockInstruments();
 }
 
-void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
+bool UserInterface::ServeHttpRequest(unisim::kernel::http_server::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
-	struct MessageLoop : public unisim::util::hypapp::MessageLoop
+	if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
 	{
-		MessageLoop(HttpServer& _http_server)
-			: unisim::util::hypapp::MessageLoop(
-				_http_server,
-				_http_server.verbose ? _http_server.logger.DebugInfoStream()    : _http_server.logger.DebugNullStream(),
-				_http_server.logger.DebugWarningStream(),
-				_http_server.logger.DebugErrorStream())
-			, http_server(_http_server)
-		{
-		}
+		LockPost();
+		LockInstruments();
+		//std::cerr << "content length=" << req.GetContentLength() << std::endl;
 		
-		virtual bool SendResponse(unisim::util::hypapp::Request const& req, unisim::util::hypapp::ClientConnection const& conn)
+		struct PropertySetter : public unisim::util::hypapp::Form_URL_Encoded_Decoder
 		{
-			if(strcmp(req.GetRequestURI(), "/") == 0)
+			PropertySetter(UserInterface& _user_interface)
+				: user_interface(_user_interface)
 			{
-				if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
+			}
+			
+			virtual bool FormAssign(const std::string& name, const std::string& value)
+			{
+				if(name.compare("step-time") == 0)
 				{
-					http_server.LockPost();
-					http_server.LockInstruments();
-					//std::cerr << "content length=" << req.GetContentLength() << std::endl;
+					std::stringstream value_sstr(value);
+					double time_value = 0.0;
+					std::string time_unit;
 					
-					struct PropertySetter : public Form_URL_Encoded_Decoder
+					if((value_sstr >> time_value) && (value_sstr >> time_unit))
 					{
-						PropertySetter(HttpServer& _http_server)
-							: http_server(_http_server)
+						if(time_unit.compare("s") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_SEC);
+						else if(time_unit.compare("ms") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_MS);
+						else if(time_unit.compare("us") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_US);
+						else if(time_unit.compare("ns") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_NS);
+						else if(time_unit.compare("ps") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_PS);
+						else if(time_unit.compare("fs") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_FS);
+						else
 						{
+							user_interface.logger << DebugWarning << "malformed time unit ('" << time_unit << "'): expecting 's', 'ms', 'us', 'ns', 'ps', or 'fs'." << EndDebugWarning;
+							user_interface.bad_user_step_time = true;
+							return false;
 						}
+					}
+					else
+					{
+						user_interface.logger << DebugWarning << "expecting a time in time-step" << EndDebugWarning;
+						user_interface.bad_user_step_time = true;
+						return false;
+					}
+					
+					if(!value_sstr.eof())
+					{
+						user_interface.logger << DebugWarning << "ignoring extra characters after time step" << EndDebugWarning;
+					}
+				}
+				else if((name.compare("timed-step") == 0) && (value.compare("on") == 0))
+				{
+					if(user_interface.verbose)
+					{
+						user_interface.logger << DebugInfo << "Timed Step" << EndDebugInfo;
+					}
+					user_interface.timed_step = true;
+				}
+				else if((name.compare("delta-step") == 0) && (value.compare("on") == 0))
+				{
+					if(user_interface.verbose)
+					{
+						user_interface.logger << DebugInfo << "Delta Step" << EndDebugInfo;
+					}
+					user_interface.delta_steps = 3;
+				}
+				else if((name.compare("cont") == 0) && (value.compare("on") == 0))
+				{
+					if(user_interface.verbose)
+					{
+						user_interface.logger << DebugInfo << "Continue" << EndDebugInfo;
+					}
+					user_interface.cont = true;
+				}
+				else if((name.compare("intr") == 0) && (value.compare("on") == 0))
+				{
+					if(user_interface.verbose)
+					{
+						user_interface.logger << DebugInfo << "Interrupt" << EndDebugInfo;
+					}
+					user_interface.intr = true;
+				}
+				else if((name.compare("halt") == 0) && (value.compare("on") == 0))
+				{
+					if(user_interface.verbose)
+					{
+						user_interface.logger << DebugInfo << "Halt" << EndDebugInfo;
+					}
+					user_interface.halt = true;
+				}
+				else
+				{
+					std::size_t delim_pos = name.find_first_of('*');
+					if(delim_pos != std::string::npos)
+					{
+						std::string user_instrument_action = name.substr(0, delim_pos);
+						std::string user_instrument_name = name.substr(delim_pos + 1);
 						
-						virtual bool FormAssign(const std::string& name, const std::string& value)
+						if(user_instrument_name == "all")
 						{
-							if(name.compare("step-time") == 0)
+							if(user_instrument_action == "enable")
 							{
-								std::stringstream value_sstr(value);
-								double time_value = 0.0;
-								std::string time_unit;
-								
-								if((value_sstr >> time_value) && (value_sstr >> time_unit))
+								user_interface.enable_all_input_instruments = true;
+							}
+							else if(user_instrument_action == "disable")
+							{
+								user_interface.disable_all_input_instruments = true;
+							}
+							else if(user_instrument_action == "enable-brkpt")
+							{
+								user_interface.enable_all_value_changed_breakpoints = true;
+							}
+							else if(user_instrument_action == "disable-brkpt")
+							{
+								user_interface.disable_all_value_changed_breakpoints = true;
+							}
+						}
+						else
+						{
+							UserInstrument *user_instrument = user_interface.FindUserInstrument(user_instrument_name);
+							
+							if(user_instrument)
+							{
+								if(user_instrument_action == "enable")
 								{
-									if(time_unit.compare("s") == 0) http_server.user_step_time = sc_core::sc_time(time_value, sc_core::SC_SEC);
-									else if(time_unit.compare("ms") == 0) http_server.user_step_time = sc_core::sc_time(time_value, sc_core::SC_MS);
-									else if(time_unit.compare("us") == 0) http_server.user_step_time = sc_core::sc_time(time_value, sc_core::SC_US);
-									else if(time_unit.compare("ns") == 0) http_server.user_step_time = sc_core::sc_time(time_value, sc_core::SC_NS);
-									else if(time_unit.compare("ps") == 0) http_server.user_step_time = sc_core::sc_time(time_value, sc_core::SC_PS);
-									else if(time_unit.compare("fs") == 0) http_server.user_step_time = sc_core::sc_time(time_value, sc_core::SC_FS);
-									else
-									{
-										http_server.logger << DebugWarning << "malformed time unit ('" << time_unit << "'): expecting 's', 'ms', 'us', 'ns', 'ps', or 'fs'." << EndDebugWarning;
-										http_server.bad_user_step_time = true;
-										return false;
-									}
+									user_interface.enable_input_instruments[user_instrument] = true;
+								}
+								else if(user_instrument_action == "enable-brkpt")
+								{
+									user_interface.enable_value_changed_breakpoints[user_instrument] = true;
+								}
+								else if(user_instrument_action == "set")
+								{
+									user_interface.set_input_instruments[user_instrument] = value;
+								}
+								else if(user_instrument_action == "toggle")
+								{
+									user_interface.toggle_input_instruments[user_instrument] = true;
 								}
 								else
 								{
-									http_server.logger << DebugWarning << "expecting a time in time-step" << EndDebugWarning;
-									http_server.bad_user_step_time = true;
+									user_interface.logger << DebugWarning << "unknown Action \"" << user_instrument_action << "\" on User instrument \"" << user_instrument_name << "\"" << EndDebugWarning;
 									return false;
 								}
-								
-								if(!value_sstr.eof())
-								{
-									http_server.logger << DebugWarning << "ignoring extra characters after time step" << EndDebugWarning;
-								}
-							}
-							else if((name.compare("timed-step") == 0) && (value.compare("on") == 0))
-							{
-								if(http_server.Verbose())
-								{
-									http_server.logger << DebugInfo << "Timed Step" << EndDebugInfo;
-								}
-								http_server.timed_step = true;
-							}
-							else if((name.compare("delta-step") == 0) && (value.compare("on") == 0))
-							{
-								if(http_server.Verbose())
-								{
-									http_server.logger << DebugInfo << "Delta Step" << EndDebugInfo;
-								}
-								http_server.delta_steps = 3;
-							}
-							else if((name.compare("cont") == 0) && (value.compare("on") == 0))
-							{
-								if(http_server.Verbose())
-								{
-									http_server.logger << DebugInfo << "Continue" << EndDebugInfo;
-								}
-								http_server.cont = true;
-							}
-							else if((name.compare("intr") == 0) && (value.compare("on") == 0))
-							{
-								if(http_server.Verbose())
-								{
-									http_server.logger << DebugInfo << "Interrupt" << EndDebugInfo;
-								}
-								http_server.intr = true;
-							}
-							else if((name.compare("halt") == 0) && (value.compare("on") == 0))
-							{
-								if(http_server.Verbose())
-								{
-									http_server.logger << DebugInfo << "Halt" << EndDebugInfo;
-								}
-								http_server.halt = true;
 							}
 							else
 							{
-								std::size_t delim_pos = name.find_first_of('*');
-								if(delim_pos != std::string::npos)
-								{
-									std::string user_instrument_action = name.substr(0, delim_pos);
-									std::string user_instrument_name = name.substr(delim_pos + 1);
-									
-									if(user_instrument_name == "all")
-									{
-										if(user_instrument_action == "enable")
-										{
-											http_server.enable_all_input_instruments = true;
-										}
-										else if(user_instrument_action == "disable")
-										{
-											http_server.disable_all_input_instruments = true;
-										}
-										else if(user_instrument_action == "enable-brkpt")
-										{
-											http_server.enable_all_value_changed_breakpoints = true;
-										}
-										else if(user_instrument_action == "disable-brkpt")
-										{
-											http_server.disable_all_value_changed_breakpoints = true;
-										}
-									}
-									else
-									{
-										UserInstrument *user_instrument = http_server.FindUserInstrument(user_instrument_name);
-										
-										if(user_instrument)
-										{
-											if(user_instrument_action == "enable")
-											{
-												http_server.enable_input_instruments[user_instrument] = true;
-											}
-											else if(user_instrument_action == "enable-brkpt")
-											{
-												http_server.enable_value_changed_breakpoints[user_instrument] = true;
-											}
-											else if(user_instrument_action == "set")
-											{
-												http_server.set_input_instruments[user_instrument] = value;
-											}
-											else if(user_instrument_action == "toggle")
-											{
-												http_server.toggle_input_instruments[user_instrument] = true;
-											}
-											else
-											{
-												http_server.logger << DebugWarning << "unknown Action \"" << user_instrument_action << "\" on User instrument \"" << user_instrument_name << "\"" << EndDebugWarning;
-												return false;
-											}
-										}
-										else
-										{
-											http_server.logger << DebugWarning << "Can't find User instrument \"" << user_instrument_name << "\"" << EndDebugWarning;
-											return false;
-										}
-									}
-								}
-							}
-							
-							return true;
-						}
-						
-						HttpServer& http_server;
-					};
-					
-					http_server.DisableInjection();
-					http_server.DisableValueChangedBreakpoint();
-					http_server.bad_user_step_time = false;
-					http_server.timed_step = false;
-					http_server.delta_steps = 0;
-					http_server.cont = false;
-					http_server.intr = false;
-					http_server.halt = false;
-					http_server.enable_all_input_instruments = false;
-					http_server.disable_all_input_instruments = false;
-					http_server.enable_all_value_changed_breakpoints = false;
-					http_server.disable_all_value_changed_breakpoints = false;
-					
-					std::map<UserInstrument *, bool>::iterator enable_input_instrument_it;
-					for(enable_input_instrument_it = http_server.enable_input_instruments.begin(); enable_input_instrument_it != http_server.enable_input_instruments.end(); enable_input_instrument_it++)
-					{
-						(*enable_input_instrument_it).second = false;
-					}
-					
-					std::map<UserInstrument *, bool>::iterator enable_value_changed_breakpoint_it;
-					for(enable_value_changed_breakpoint_it = http_server.enable_value_changed_breakpoints.begin(); enable_value_changed_breakpoint_it != http_server.enable_value_changed_breakpoints.end(); enable_value_changed_breakpoint_it++)
-					{
-						(*enable_value_changed_breakpoint_it).second = false;
-					}
-
-					std::map<UserInstrument *, std::string>::iterator set_input_instruments_it;
-					for(set_input_instruments_it = http_server.set_input_instruments.begin(); set_input_instruments_it != http_server.set_input_instruments.end(); set_input_instruments_it++)
-					{
-						(*set_input_instruments_it).second = std::string();
-					}
-
-					std::map<UserInstrument *, bool>::iterator toggle_input_instrument_it;
-					for(toggle_input_instrument_it = http_server.toggle_input_instruments.begin(); toggle_input_instrument_it != http_server.toggle_input_instruments.end(); toggle_input_instrument_it++)
-					{
-						(*toggle_input_instrument_it).second = false;
-					}
-
-					PropertySetter property_setter(http_server);
-					if(property_setter.Decode(std::string(req.GetContent(), req.GetContentLength()), http_server.logger.DebugWarningStream()))
-					{
-						if(http_server.enable_all_input_instruments || http_server.disable_all_input_instruments)
-						{
-							std::map<std::string, UserInstrument *>::iterator user_instrument_it;
-							for(user_instrument_it = http_server.user_instruments.begin(); user_instrument_it != http_server.user_instruments.end(); user_instrument_it++)
-							{
-								UserInstrument *user_instrument = (*user_instrument_it).second;
-								if(http_server.enable_all_input_instruments)
-								{
-									user_instrument->EnableInjection();
-								}
-								else if(http_server.disable_all_input_instruments)
-								{
-									user_instrument->DisableInjection();
-								}
-							}
-						}
-						else
-						{
-							std::map<UserInstrument *, bool>::iterator enable_input_instrument_it;
-							for(enable_input_instrument_it = http_server.enable_input_instruments.begin(); enable_input_instrument_it != http_server.enable_input_instruments.end(); enable_input_instrument_it++)
-							{
-								UserInstrument *user_instrument = (*enable_input_instrument_it).first;
-								bool enable_injection = (*enable_input_instrument_it).second;
-
-								if(enable_injection)
-								{
-									user_instrument->EnableInjection();
-								}
-								else
-								{
-									user_instrument->DisableInjection();
-								}
-							}
-						}
-						
-						if(http_server.enable_all_value_changed_breakpoints || http_server.disable_all_value_changed_breakpoints)
-						{
-							std::map<std::string, UserInstrument *>::iterator user_instrument_it;
-							for(user_instrument_it = http_server.user_instruments.begin(); user_instrument_it != http_server.user_instruments.end(); user_instrument_it++)
-							{
-								UserInstrument *user_instrument = (*user_instrument_it).second;
-								if(http_server.enable_all_value_changed_breakpoints)
-								{
-									user_instrument->EnableValueChangedBreakpoint();
-								}
-								else if(http_server.disable_all_value_changed_breakpoints)
-								{
-									user_instrument->DisableValueChangedBreakpoint();
-								}
-							}
-						}
-						else
-						{
-							std::map<UserInstrument *, bool>::iterator enable_value_changed_breakpoint_it;
-							for(enable_value_changed_breakpoint_it = http_server.enable_value_changed_breakpoints.begin(); enable_value_changed_breakpoint_it != http_server.enable_value_changed_breakpoints.end(); enable_value_changed_breakpoint_it++)
-							{
-								UserInstrument *user_instrument = (*enable_value_changed_breakpoint_it).first;
-								bool enable_injection = (*enable_value_changed_breakpoint_it).second;
-
-								if(enable_injection)
-								{
-									user_instrument->EnableValueChangedBreakpoint();
-								}
-								else
-								{
-									user_instrument->DisableValueChangedBreakpoint();
-								}
-							}
-						}
-						
-						std::map<UserInstrument *, std::string>::iterator set_input_instrument_it;
-						for(set_input_instrument_it = http_server.set_input_instruments.begin(); set_input_instrument_it != http_server.set_input_instruments.end(); set_input_instrument_it++)
-						{
-							UserInstrument *user_instrument = (*set_input_instrument_it).first;
-							
-							std::map<UserInstrument *, bool>::iterator toggle_input_instrument_it = http_server.toggle_input_instruments.find(user_instrument);
-							
-							bool toggle = (toggle_input_instrument_it == http_server.toggle_input_instruments.end()) ? (*toggle_input_instrument_it).second : false;
-							if(!toggle)
-							{
-								const std::string set_value = (*set_input_instrument_it).second;
-								if(!set_value.empty())
-								{
-									if(http_server.Verbose())
-									{
-										http_server.logger << DebugInfo << "set \"" << user_instrument->GetName() << "\" <- \"" << set_value << "\"" << EndDebugInfo;
-									}
-									user_instrument->Set(set_value);
-									if(!http_server.cont && !http_server.timed_step) http_server.delta_steps = 3;
-								}
-							}
-						}
-
-						std::map<UserInstrument *, bool>::iterator toggle_input_instrument_it;
-						for(toggle_input_instrument_it = http_server.toggle_input_instruments.begin(); toggle_input_instrument_it != http_server.toggle_input_instruments.end(); toggle_input_instrument_it++)
-						{
-							UserInstrument *user_instrument = (*toggle_input_instrument_it).first;
-							bool toggle = (*toggle_input_instrument_it).second;
-
-							if(toggle)
-							{
-								if(http_server.Verbose())
-								{
-									http_server.logger << DebugInfo << "toggling \"" << user_instrument->GetName() << "\"" << EndDebugInfo;
-								}
-								user_instrument->Toggle();
-								if(!http_server.cont && !http_server.timed_step) http_server.delta_steps = 3;
+								user_interface.logger << DebugWarning << "Can't find User instrument \"" << user_instrument_name << "\"" << EndDebugWarning;
+								return false;
 							}
 						}
 					}
-					else
-					{
-						http_server.logger << DebugWarning << "parse error in POST data" << EndDebugWarning;
-						http_server.timed_step = false;
-						http_server.delta_steps = 0;
-						http_server.cont = false;
-						http_server.intr = false;
-						http_server.halt = false;
-					}
-					
-					http_server.UnlockInstruments();
-					
-					if(http_server.cont)
-					{
-						http_server.Run();
-					}
-					else if(http_server.timed_step || http_server.delta_steps || http_server.intr || http_server.halt)
-					{
-						http_server.WaitForSimulation();
-					}
-					
-					http_server.UnlockPost();
 				}
 				
-				std::ostringstream doc_sstr;
-				
-				doc_sstr << "<!DOCTYPE html>" << std::endl;
-				doc_sstr << "<html>" << std::endl;
-				
-				if(http_server.halt)
-				{
-					http_server.Stop(-1, /* asynchronous */ true);
-					
-					doc_sstr << "\t<head>" << std::endl;
-					doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-					doc_sstr << "\t</head>" << std::endl;
-					doc_sstr << "\t<body>" << std::endl;
-					doc_sstr << "\t<p>Disconnected</p>" << std::endl;
-					doc_sstr << "\t<script type=\"application/javascript\">Reload = function() { window.location.href=window.location.href; }</script>" << std::endl;
-					doc_sstr << "\t<button onclick=\"Reload()\">Reconnect</button>" << std::endl;
-					doc_sstr << "\t</body>" << std::endl;
-				}
-				else
-				{
-					doc_sstr << "\t<head>" << std::endl;
-							
-					doc_sstr << "\t\t<title>" << String_to_HTML(http_server.program_name) << " - " << String_to_HTML(http_server.GetName()) << "</title>" << std::endl;
-					doc_sstr << "\t\t<meta name=\"description\" content=\"remote control interface over HTTP of virtual platform hardware signal instrumenter\">" << std::endl;
-					doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-					doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
-					doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/style.css\" type=\"text/css\" />" << std::endl;
-					doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/script.js\"></script>" << std::endl;
-					doc_sstr << "\t</head>" << std::endl;
-					
-					if(http_server.cont)
-					{
-						doc_sstr << "\t<body onload=\"setTimeout(reloadPage, 1000)\">" << std::endl; // while in continue mode, reload page every seconds
-					}
-					else
-					{
-						doc_sstr << "\t<body>" << std::endl;
-					}
-					
-					doc_sstr << "\t\t<h1>" << String_to_HTML(http_server.program_name) << " - " << String_to_HTML(http_server.GetName()) << "</h1>" << std::endl;
-					
-					doc_sstr << "\t\t<table class=\"status-table\">" << std::endl;
-					doc_sstr << "\t\t\t<thead>" << std::endl;
-					doc_sstr << "\t\t\t\t<tr>" << std::endl;
-					doc_sstr << "\t\t\t\t\t<th class=\"status\">Status</th>" << std::endl;
-					doc_sstr << "\t\t\t\t\t<th class=\"time\">Time</th>" << std::endl;
-					doc_sstr << "\t\t\t\t\t<th class=\"time\">(exactly)</th>" << std::endl;
-					doc_sstr << "\t\t\t\t</tr>" << std::endl;
-					doc_sstr << "\t\t\t</thead>" << std::endl;
-					doc_sstr << "\t\t\t<tbody>" << std::endl;
-					doc_sstr << "\t\t\t\t<tr>" << std::endl;
-					doc_sstr << "\t\t\t\t\t<td class=\"status\">" << (http_server.bad_user_step_time ? "bad step time" : (http_server.cont ? "running" : "ready")) << "</td>" << std::endl;
-					
-					std::ios_base::fmtflags ff = doc_sstr.flags();
-					doc_sstr.setf(std::ios::fixed);
-					doc_sstr.precision(3);
-					doc_sstr << "\t\t\t\t\t<td class=\"time\">" << http_server.curr_time_stamp.to_seconds() << " seconds</td>" << std::endl;
-					doc_sstr.flags(ff);
-					
-					doc_sstr << "\t\t\t\t\t<td class=\"time\">(" << String_to_HTML(http_server.curr_time_stamp.to_string()) << ")</td>" << std::endl;
-					doc_sstr << "\t\t\t\t</tr>" << std::endl;
-					doc_sstr << "\t\t\t</tbody>" << std::endl;
-					doc_sstr << "\t\t</table>" << std::endl;
-					
-					doc_sstr << "\t\t<form action=\"/\" method=\"post\" enctype=\"application/x-www-form-urlencoded\">" << std::endl;
-					doc_sstr << "\t\t\t<h2>Commands</h2>" << std::endl;
-					doc_sstr << "\t\t\t<table class=\"command-table\">" << std::endl;
-					doc_sstr << "\t\t\t\t<tbody>" << std::endl;
-					doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<td><button class=\"delta-step\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"delta-step\" value=\"on\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << ">&delta;</button></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<td><button class=\"timed-step\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"timed-step\" value=\"on\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << ">Step</button>&nbsp;by&nbsp;<input class=\"step-time\" type=\"text\" name=\"step-time\" value=\"" << http_server.user_step_time << "\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << "></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<td><button class=\"" << (http_server.cont ? "intr" : "cont") << "\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"" << (http_server.cont ? "intr" : "cont") << "\" value=\"on\"" << (http_server.halt ? " disabled" : "") << ">" << (http_server.cont ? "Interrupt" : "Continue") << "</button></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<td><button class=\"halt\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"halt\" value=\"on\"" << (http_server.halt ? " disabled" : "")  << ">Halt</button></td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
-					doc_sstr << "\t\t\t\t</tbody>" << std::endl;
-					doc_sstr << "\t\t\t</table>" << std::endl;
-					doc_sstr << "\t\t\t<h2>Instruments</h2>" << std::endl;
-					doc_sstr << "\t\t\t<table class=\"instruments-table1\">" << std::endl;
-					doc_sstr << "\t\t\t\t<thead>" << std::endl;
-					doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-enable\">Enable<br><button class=\"signal-disable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"disable*all\">C</button><button class=\"signal-enable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"enable*all\">A</button></th>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-brkpt-enable\">Brkpt<br><button class=\"signal-brkpt-disable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"disable-brkpt*all\">C</button><button class=\"signal-brkpt-enable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"enable-brkpt*all\">A</button></th>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-name\">Hardware signal</th>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-toggle\">Toggle</th>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<th class=\"signal-value\">Value</th>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<th class=\"scrollbar\"></th>" << std::endl;
-					doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
-					doc_sstr << "\t\t\t\t</thead>" << std::endl;
-					doc_sstr << "\t\t\t\t<tbody>" << std::endl;
-					doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<td colspan=\"6\">" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t<div class=\"scroller\">" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t\t<table class=\"instruments-table2\">" << std::endl;
+				return true;
+			}
+			
+			UserInterface& user_interface;
+		};
+		
+		DisableInjection();
+		DisableValueChangedBreakpoint();
+		bad_user_step_time = false;
+		timed_step = false;
+		delta_steps = 0;
+		cont = false;
+		intr = false;
+		halt = false;
+		enable_all_input_instruments = false;
+		disable_all_input_instruments = false;
+		enable_all_value_changed_breakpoints = false;
+		disable_all_value_changed_breakpoints = false;
+		
+		std::map<UserInstrument *, bool>::iterator enable_input_instrument_it;
+		for(enable_input_instrument_it = enable_input_instruments.begin(); enable_input_instrument_it != enable_input_instruments.end(); enable_input_instrument_it++)
+		{
+			(*enable_input_instrument_it).second = false;
+		}
+		
+		std::map<UserInstrument *, bool>::iterator enable_value_changed_breakpoint_it;
+		for(enable_value_changed_breakpoint_it = enable_value_changed_breakpoints.begin(); enable_value_changed_breakpoint_it != enable_value_changed_breakpoints.end(); enable_value_changed_breakpoint_it++)
+		{
+			(*enable_value_changed_breakpoint_it).second = false;
+		}
 
-					http_server.LockInstruments();
-					if(likely(!http_server.has_breakpoint_cond))
+		std::map<UserInstrument *, std::string>::iterator set_input_instruments_it;
+		for(set_input_instruments_it = set_input_instruments.begin(); set_input_instruments_it != set_input_instruments.end(); set_input_instruments_it++)
+		{
+			(*set_input_instruments_it).second = std::string();
+		}
+
+		std::map<UserInstrument *, bool>::iterator toggle_input_instrument_it;
+		for(toggle_input_instrument_it = toggle_input_instruments.begin(); toggle_input_instrument_it != toggle_input_instruments.end(); toggle_input_instrument_it++)
+		{
+			(*toggle_input_instrument_it).second = false;
+		}
+
+		PropertySetter property_setter(*this);
+		if(property_setter.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
+		{
+			if(enable_all_input_instruments || disable_all_input_instruments)
+			{
+				std::map<std::string, UserInstrument *>::iterator user_instrument_it;
+				for(user_instrument_it = user_instruments.begin(); user_instrument_it != user_instruments.end(); user_instrument_it++)
+				{
+					UserInstrument *user_instrument = (*user_instrument_it).second;
+					if(enable_all_input_instruments)
 					{
-						http_server.Sample();
+						user_instrument->EnableInjection();
 					}
-					http_server.has_breakpoint_cond = false;
-
-					std::stringstream sstr(http_server.instrumentation);
-					
-					std::vector<std::string>::iterator instrumented_signal_name_it;
-					for(instrumented_signal_name_it = http_server.instrumented_signal_names.begin(); instrumented_signal_name_it != http_server.instrumented_signal_names.end(); instrumented_signal_name_it++)
+					else if(disable_all_input_instruments)
 					{
-						const std::string& instrumented_signal_name = *instrumented_signal_name_it;
-
-						UserInstrument *user_instrument = http_server.FindUserInstrument(instrumented_signal_name);
-						
-						if(user_instrument)
-						{
-							std::string value;
-							user_instrument->Get(value);
-							bool is_boolean = user_instrument->IsBoolean();
-							bool bool_value = false;
-							if(is_boolean) user_instrument->Get(bool_value);
-							doc_sstr << "\t\t\t\t\t\t\t\t\t\t<tr class=\"signal" << (user_instrument->HasBreakpointCondition() ? " brkpt-cond" : "") << "\">" << std::endl;
-							doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-enable\"><input class=\"signal-enable-checkbox\" type=\"checkbox\" name=\"enable*" << String_to_HTML(user_instrument->GetName()) << "\"" << (user_instrument->IsInjectionEnabled() ? " checked" : "") << (user_instrument->IsReadOnly() ? " disabled" : "") << "></td>" << std::endl;
-							doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-brkpt-enable\"><input class=\"signal-brkpt-enable-checkbox\" type=\"checkbox\" name=\"enable-brkpt*" << String_to_HTML(user_instrument->GetName()) << "\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : "") << "></td>" << std::endl;
-							doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-name\">" << String_to_HTML(user_instrument->GetName()) << "</td>" << std::endl;
-							doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-toggle\">";
-							if(is_boolean)
-							{
-								doc_sstr << "<button class=\"signal-toggle-button signal-" << (bool_value ? "on" : "off") << "\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"toggle*" << String_to_HTML(user_instrument->GetName()) << "\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << ">" << (bool_value ? "on" : "off")  << "</button>";
-							}
-							doc_sstr << "</td>" << std::endl;
-							doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-value\"><input class=\"signal-value-text" << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"text\" name=\"set*" << String_to_HTML(user_instrument->GetName()) << "\" value=\"" << String_to_HTML(value) << "\"" << ((http_server.cont || http_server.halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << "></td>" << std::endl;
-							doc_sstr << "\t\t\t\t\t\t\t\t\t\t</tr>" << std::endl;
-						}
+						user_instrument->DisableInjection();
 					}
-
-					http_server.UnlockInstruments();
-					
-					doc_sstr << "\t\t\t\t\t\t\t\t</table>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t\t</div>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t</td>" << std::endl;
-					doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
-					doc_sstr << "\t\t\t\t</tbody>" << std::endl;
-					doc_sstr << "\t\t\t</table>" << std::endl;
-					doc_sstr << "\t\t\t<script type=\"application/javascript\">" << std::endl;
-					doc_sstr << "\t\t\t\trestoreScrollTop();" << std::endl;
-					doc_sstr << "\t\t\t</script>" << std::endl;
-					doc_sstr << "\t\t</form>" << std::endl;
-					
-					doc_sstr << "\t</body>" << std::endl;
 				}
-					
-				doc_sstr << "</html>" << std::endl;
-				doc_sstr << std::endl;
-				
-				std::string doc(doc_sstr.str());
-					
-				std::ostringstream http_header_sstr;
-				if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
-				{
-					http_header_sstr << "HTTP/1.1 201 Created\r\n";
-				}
-				else
-				{
-					http_header_sstr << "HTTP/1.1 200 OK\r\n";
-				}
-					
-				http_header_sstr << "Server: UNISIM-VP\r\n"
-								<< "Cache-control: no-cache\r\n"
-								<< "Connection: keep-alive\r\n"
-								<< "Content-length: " << doc.length() << "\r\n"
-								<< "Content-Type: text/html\r\n"
-								<< "\r\n";
-				
-				std::string http_header(http_header_sstr.str());
-
-				if(http_server.Verbose())
-				{
-					http_server.logger << DebugInfo << "sending HTTP response header: " << std::endl << http_header << EndDebugInfo;
-				}
-				if(!conn.Send(http_header.c_str(), http_header.length()))
-				{
-					http_server.logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP header" << EndDebugWarning;
-					return false;
-				}
-				
-				if(http_server.Verbose())
-				{
-					http_server.logger << DebugInfo << "sending HTTP response header: done" << EndDebugInfo;
-				}
-				
-				if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
-						
-				if(http_server.Verbose())
-				{
-					http_server.logger << DebugInfo << "sending HTTP response body: " << std::endl << doc << EndDebugInfo;
-				}
-				
-				if(!conn.Send(doc.c_str(), doc.length()))
-				{
-					http_server.logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response body" << EndDebugWarning;
-					return false;
-				}
-				
-				if(http_server.Verbose())
-				{
-					http_server.logger << DebugInfo << "sending HTTP response body: done" << EndDebugInfo;
-				}
-				
-				return !http_server.killed;
 			}
 			else
 			{
-				std::string filename = std::string(".") + req.GetRequestURI();
-				std::string path = http_server.GetSimulator()->SearchSharedDataFile(filename.c_str());
-
-				std::ifstream file(path.c_str(), std::fstream::binary);
-				
-				if(file.is_open())
+				std::map<UserInstrument *, bool>::iterator enable_input_instrument_it;
+				for(enable_input_instrument_it = enable_input_instruments.begin(); enable_input_instrument_it != enable_input_instruments.end(); enable_input_instrument_it++)
 				{
-					if(file.seekg(0, file.end))
+					UserInstrument *user_instrument = (*enable_input_instrument_it).first;
+					bool enable_injection = (*enable_input_instrument_it).second;
+
+					if(enable_injection)
 					{
-						std::streampos length = file.tellg();
-						
-						if(file.seekg(0, file.beg))
-						{
-							std::ostringstream http_header_sstr;
-							std::string ext = path.substr(path.find_last_of("/."));
-							
-							http_header_sstr << "HTTP/1.1 200 OK\r\n";
-							http_header_sstr << "Connection: keep-alive\r\n";
-							http_header_sstr << "Content-Type: ";
-							if((ext == ".htm") || (ext == ".html"))
-								http_header_sstr << "text/html";
-							else if(ext == ".css")
-								http_header_sstr << "text/css";
-							else if(ext == ".js")
-								http_header_sstr << "application/javascript";
-							else if(ext == ".png")
-								http_header_sstr << "image/png";
-							else if((ext == ".jpg") || (ext == ".jpeg"))
-								http_header_sstr << "image/jpeg";
-							else if(ext == ".ico")
-								http_header_sstr << "image/x-icon";
-							else
-								http_header_sstr << "application/octet-stream";
-							
-							http_header_sstr << "\r\nContent-Length: " << length << "\r\n\r\n";
-							
-							std::string http_header(http_header_sstr.str());
-
-							if(http_server.Verbose())
-							{
-								http_server.logger << DebugInfo << "sending HTTP response header: " << std::endl << http_header << EndDebugInfo;
-							}
-							
-							if(!conn.Send(http_header.c_str(), http_header.length()))
-							{
-								http_server.logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response header" << EndDebugWarning;
-								return false;
-							}
-							
-							if(http_server.Verbose())
-							{
-								http_server.logger << DebugInfo << "sending HTTP response header: done" << EndDebugInfo;
-							}
-
-							if(http_server.Verbose())
-							{
-								http_server.logger << DebugInfo << "sending HTTP response body" << EndDebugInfo;
-							}
-
-							if(length > 0)
-							{
-								char buffer[4096];
-								std::streampos count = length;
-								do
-								{
-									std::streamsize n = file.readsome(buffer, sizeof(buffer));
-									
-									if(file.fail()) return false;
-									
-									if(n > 0)
-									{
-										if(!conn.Send(buffer, n))
-										{
-											http_server.logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response body" << EndDebugWarning;
-											return false;
-										}
-										count -= n;
-									}
-								}
-								while(count > 0);
-							}
-							
-							if(http_server.Verbose())
-							{
-								http_server.logger << DebugInfo << "sending HTTP response body: done" << EndDebugInfo;
-							}
-
-							return true;
-						}
-						else
-						{
-							http_server.logger << DebugWarning << "Can't seek at beginning of File \"" << path << "\"" << EndDebugWarning;
-						}
+						user_instrument->EnableInjection();
 					}
 					else
 					{
-						http_server.logger << DebugWarning << "Can't seek at end of File \"" << path << "\"" << EndDebugWarning;
+						user_instrument->DisableInjection();
 					}
 				}
-				else
-				{
-					http_server.logger << DebugWarning << "Can't open File \"" << path << "\"" << EndDebugWarning;
-				}
-				
-				if(http_server.Verbose())
-				{
-					http_server.logger << DebugInfo << "sending HTTP response 404 Not Found" << EndDebugInfo;
-				}
-				
-				if(!conn.Send("HTTP/1.1 404 Not Found\r\n\r\n"))
-				{
-					http_server.logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP 404 Not Found" << EndDebugWarning;
-				}
-				return false;
 			}
 			
-			return true;
+			if(enable_all_value_changed_breakpoints || disable_all_value_changed_breakpoints)
+			{
+				std::map<std::string, UserInstrument *>::iterator user_instrument_it;
+				for(user_instrument_it = user_instruments.begin(); user_instrument_it != user_instruments.end(); user_instrument_it++)
+				{
+					UserInstrument *user_instrument = (*user_instrument_it).second;
+					if(enable_all_value_changed_breakpoints)
+					{
+						user_instrument->EnableValueChangedBreakpoint();
+					}
+					else if(disable_all_value_changed_breakpoints)
+					{
+						user_instrument->DisableValueChangedBreakpoint();
+					}
+				}
+			}
+			else
+			{
+				std::map<UserInstrument *, bool>::iterator enable_value_changed_breakpoint_it;
+				for(enable_value_changed_breakpoint_it = enable_value_changed_breakpoints.begin(); enable_value_changed_breakpoint_it != enable_value_changed_breakpoints.end(); enable_value_changed_breakpoint_it++)
+				{
+					UserInstrument *user_instrument = (*enable_value_changed_breakpoint_it).first;
+					bool enable_injection = (*enable_value_changed_breakpoint_it).second;
+
+					if(enable_injection)
+					{
+						user_instrument->EnableValueChangedBreakpoint();
+					}
+					else
+					{
+						user_instrument->DisableValueChangedBreakpoint();
+					}
+				}
+			}
+			
+			std::map<UserInstrument *, std::string>::iterator set_input_instrument_it;
+			for(set_input_instrument_it = set_input_instruments.begin(); set_input_instrument_it != set_input_instruments.end(); set_input_instrument_it++)
+			{
+				UserInstrument *user_instrument = (*set_input_instrument_it).first;
+				
+				std::map<UserInstrument *, bool>::iterator toggle_input_instrument_it = toggle_input_instruments.find(user_instrument);
+				
+				bool toggle = (toggle_input_instrument_it == toggle_input_instruments.end()) ? (*toggle_input_instrument_it).second : false;
+				if(!toggle)
+				{
+					const std::string set_value = (*set_input_instrument_it).second;
+					if(!set_value.empty())
+					{
+						if(verbose)
+						{
+							logger << DebugInfo << "set \"" << user_instrument->GetName() << "\" <- \"" << set_value << "\"" << EndDebugInfo;
+						}
+						user_instrument->Set(set_value);
+						if(!cont && !timed_step) delta_steps = 3;
+					}
+				}
+			}
+
+			std::map<UserInstrument *, bool>::iterator toggle_input_instrument_it;
+			for(toggle_input_instrument_it = toggle_input_instruments.begin(); toggle_input_instrument_it != toggle_input_instruments.end(); toggle_input_instrument_it++)
+			{
+				UserInstrument *user_instrument = (*toggle_input_instrument_it).first;
+				bool toggle = (*toggle_input_instrument_it).second;
+
+				if(toggle)
+				{
+					if(verbose)
+					{
+						logger << DebugInfo << "toggling \"" << user_instrument->GetName() << "\"" << EndDebugInfo;
+					}
+					user_instrument->Toggle();
+					if(!cont && !timed_step) delta_steps = 3;
+				}
+			}
+		}
+		else
+		{
+			logger << DebugWarning << "parse error in POST data" << EndDebugWarning;
+			timed_step = false;
+			delta_steps = 0;
+			cont = false;
+			intr = false;
+			halt = false;
 		}
 		
-	private:
-		HttpServer& http_server;
-	};
+		UnlockInstruments();
+		
+		if(cont)
+		{
+			Run();
+		}
+		else if(timed_step || delta_steps || intr || halt)
+		{
+			WaitForSimulation();
+		}
+		
+		UnlockPost();
+	}
 	
-	MessageLoop msg_loop = MessageLoop(*this);
-	msg_loop.Run(conn);
+	std::ostringstream doc_sstr;
+	
+	doc_sstr << "<!DOCTYPE html>" << std::endl;
+	doc_sstr << "<html>" << std::endl;
+	
+	if(halt)
+	{
+		Stop(-1, /* asynchronous */ true);
+		
+		doc_sstr << "\t<head>" << std::endl;
+		doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		doc_sstr << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
+		doc_sstr << "\t</head>" << std::endl;
+		doc_sstr << "\t<body>" << std::endl;
+		doc_sstr << "\t<p>Disconnected</p>" << std::endl;
+		doc_sstr << "\t<script type=\"application/javascript\">Reload = function() { window.location.href=window.location.href; }</script>" << std::endl;
+		doc_sstr << "\t<button onclick=\"Reload()\">Reconnect</button>" << std::endl;
+		doc_sstr << "\t</body>" << std::endl;
+	}
+	else
+	{
+		doc_sstr << "\t<head>" << std::endl;
+				
+		doc_sstr << "\t\t<title>" << String_to_HTML(program_name) << " - " << String_to_HTML(GetName()) << "</title>" << std::endl;
+		doc_sstr << "\t\t<meta name=\"description\" content=\"remote control interface over HTTP of virtual platform hardware signal instrumenter\">" << std::endl;
+		doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		doc_sstr << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
+		doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
+		doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/kernel/tlm2/style.css\" type=\"text/css\" />" << std::endl;
+		doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/kernel/tlm2/script.js\"></script>" << std::endl;
+		doc_sstr << "\t</head>" << std::endl;
+		
+		if(cont)
+		{
+			doc_sstr << "\t<body onload=\"setTimeout(reloadPage, 1000)\">" << std::endl; // while in continue mode, reload page every seconds
+		}
+		else
+		{
+			doc_sstr << "\t<body>" << std::endl;
+		}
+		
+		doc_sstr << "\t\t<h1>" << String_to_HTML(program_name) << " - " << String_to_HTML(GetName()) << "</h1>" << std::endl;
+		
+		doc_sstr << "\t\t<table class=\"status-table\">" << std::endl;
+		doc_sstr << "\t\t\t<thead>" << std::endl;
+		doc_sstr << "\t\t\t\t<tr>" << std::endl;
+		doc_sstr << "\t\t\t\t\t<th class=\"status\">Status</th>" << std::endl;
+		doc_sstr << "\t\t\t\t\t<th class=\"time\">Time</th>" << std::endl;
+		doc_sstr << "\t\t\t\t\t<th class=\"time\">(exactly)</th>" << std::endl;
+		doc_sstr << "\t\t\t\t</tr>" << std::endl;
+		doc_sstr << "\t\t\t</thead>" << std::endl;
+		doc_sstr << "\t\t\t<tbody>" << std::endl;
+		doc_sstr << "\t\t\t\t<tr>" << std::endl;
+		doc_sstr << "\t\t\t\t\t<td class=\"status\">" << (bad_user_step_time ? "bad step time" : (cont ? "running" : "ready")) << "</td>" << std::endl;
+		
+		std::ios_base::fmtflags ff = doc_sstr.flags();
+		doc_sstr.setf(std::ios::fixed);
+		doc_sstr.precision(3);
+		doc_sstr << "\t\t\t\t\t<td class=\"time\">" << curr_time_stamp.to_seconds() << " seconds</td>" << std::endl;
+		doc_sstr.flags(ff);
+		
+		doc_sstr << "\t\t\t\t\t<td class=\"time\">(" << String_to_HTML(curr_time_stamp.to_string()) << ")</td>" << std::endl;
+		doc_sstr << "\t\t\t\t</tr>" << std::endl;
+		doc_sstr << "\t\t\t</tbody>" << std::endl;
+		doc_sstr << "\t\t</table>" << std::endl;
+		
+		doc_sstr << "\t\t<form action=\"" << req.GetRequestURI() << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\">" << std::endl;
+		doc_sstr << "\t\t\t<h2>Commands</h2>" << std::endl;
+		doc_sstr << "\t\t\t<table class=\"command-table\">" << std::endl;
+		doc_sstr << "\t\t\t\t<tbody>" << std::endl;
+		doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<td><button class=\"delta-step\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"delta-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">&delta;</button></td>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<td><button class=\"timed-step\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"timed-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">Step</button>&nbsp;by&nbsp;<input class=\"step-time\" type=\"text\" name=\"step-time\" value=\"" << user_step_time << "\"" << ((cont || halt) ? " disabled" : "") << "></td>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<td><button class=\"" << (cont ? "intr" : "cont") << "\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"" << (cont ? "intr" : "cont") << "\" value=\"on\"" << (halt ? " disabled" : "") << ">" << (cont ? "Interrupt" : "Continue") << "</button></td>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<td><button class=\"halt\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"halt\" value=\"on\"" << (halt ? " disabled" : "")  << ">Halt</button></td>" << std::endl;
+		doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
+		doc_sstr << "\t\t\t\t</tbody>" << std::endl;
+		doc_sstr << "\t\t\t</table>" << std::endl;
+		doc_sstr << "\t\t\t<h2>Instruments</h2>" << std::endl;
+		doc_sstr << "\t\t\t<table class=\"instruments-table1\">" << std::endl;
+		doc_sstr << "\t\t\t\t<thead>" << std::endl;
+		doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-enable\">Enable<br><button class=\"signal-disable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"disable*all\">C</button><button class=\"signal-enable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"enable*all\">A</button></th>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-brkpt-enable\">Brkpt<br><button class=\"signal-brkpt-disable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"disable-brkpt*all\">C</button><button class=\"signal-brkpt-enable-all\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"enable-brkpt*all\">A</button></th>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-name\">Hardware signal</th>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-toggle\">Toggle</th>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-value\">Value</th>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<th class=\"scrollbar\"></th>" << std::endl;
+		doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
+		doc_sstr << "\t\t\t\t</thead>" << std::endl;
+		doc_sstr << "\t\t\t\t<tbody>" << std::endl;
+		doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<td colspan=\"6\">" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t\t<div class=\"scroller\">" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t\t\t<table class=\"instruments-table2\">" << std::endl;
+
+		LockInstruments();
+		if(likely(!has_breakpoint_cond))
+		{
+			Sample();
+		}
+		has_breakpoint_cond = false;
+
+		std::stringstream sstr(instrumentation);
+		
+		std::vector<std::string>::iterator instrumented_signal_name_it;
+		for(instrumented_signal_name_it = instrumented_signal_names.begin(); instrumented_signal_name_it != instrumented_signal_names.end(); instrumented_signal_name_it++)
+		{
+			const std::string& instrumented_signal_name = *instrumented_signal_name_it;
+
+			UserInstrument *user_instrument = FindUserInstrument(instrumented_signal_name);
+			
+			if(user_instrument)
+			{
+				std::string value;
+				user_instrument->Get(value);
+				bool is_boolean = user_instrument->IsBoolean();
+				bool bool_value = false;
+				if(is_boolean) user_instrument->Get(bool_value);
+				doc_sstr << "\t\t\t\t\t\t\t\t\t\t<tr class=\"signal" << (user_instrument->HasBreakpointCondition() ? " brkpt-cond" : "") << "\">" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-enable\"><input class=\"signal-enable-checkbox\" type=\"checkbox\" name=\"enable*" << String_to_HTML(user_instrument->GetName()) << "\"" << (user_instrument->IsInjectionEnabled() ? " checked" : "") << (user_instrument->IsReadOnly() ? " disabled" : "") << "></td>" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-brkpt-enable\"><input class=\"signal-brkpt-enable-checkbox\" type=\"checkbox\" name=\"enable-brkpt*" << String_to_HTML(user_instrument->GetName()) << "\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : "") << "></td>" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-name\">" << String_to_HTML(user_instrument->GetName()) << "</td>" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-toggle\">";
+				if(is_boolean)
+				{
+					doc_sstr << "<button class=\"signal-toggle-button signal-" << (bool_value ? "on" : "off") << "\" type=\"submit\" onclick=\"saveScrollTop()\" name=\"toggle*" << String_to_HTML(user_instrument->GetName()) << "\"" << ((cont || halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << ">" << (bool_value ? "on" : "off")  << "</button>";
+				}
+				doc_sstr << "</td>" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-value\"><input class=\"signal-value-text" << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"text\" name=\"set*" << String_to_HTML(user_instrument->GetName()) << "\" value=\"" << String_to_HTML(value) << "\"" << ((cont || halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << "></td>" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t\t\t\t\t</tr>" << std::endl;
+			}
+		}
+
+		UnlockInstruments();
+		
+		doc_sstr << "\t\t\t\t\t\t\t\t</table>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t\t</div>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t</td>" << std::endl;
+		doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
+		doc_sstr << "\t\t\t\t</tbody>" << std::endl;
+		doc_sstr << "\t\t\t</table>" << std::endl;
+		doc_sstr << "\t\t\t<script type=\"application/javascript\">" << std::endl;
+		doc_sstr << "\t\t\t\trestoreScrollTop();" << std::endl;
+		doc_sstr << "\t\t\t</script>" << std::endl;
+		doc_sstr << "\t\t</form>" << std::endl;
+		
+		doc_sstr << "\t</body>" << std::endl;
+	}
+		
+	doc_sstr << "</html>" << std::endl;
+	doc_sstr << std::endl;
+	
+	std::string doc(doc_sstr.str());
+		
+	std::ostringstream http_header_sstr;
+	if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
+	{
+		http_header_sstr << "HTTP/1.1 201 Created\r\n";
+	}
+	else
+	{
+		http_header_sstr << "HTTP/1.1 200 OK\r\n";
+	}
+		
+	http_header_sstr << "Server: UNISIM-VP\r\n"
+					<< "Cache-control: no-cache\r\n"
+					<< "Connection: keep-alive\r\n"
+					<< "Content-length: " << doc.length() << "\r\n"
+					<< "Content-Type: text/html\r\n"
+					<< "\r\n";
+	
+	std::string http_header(http_header_sstr.str());
+
+	if(verbose)
+	{
+		logger << DebugInfo << "sending HTTP response header: " << std::endl << http_header << EndDebugInfo;
+	}
+	if(!conn.Send(http_header.c_str(), http_header.length()))
+	{
+		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP header" << EndDebugWarning;
+		return false;
+	}
+	
+	if(verbose)
+	{
+		logger << DebugInfo << "sending HTTP response header: done" << EndDebugInfo;
+	}
+	
+	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
+			
+	if(verbose)
+	{
+		logger << DebugInfo << "sending HTTP response body: " << std::endl << doc << EndDebugInfo;
+	}
+	
+	if(!conn.Send(doc.c_str(), doc.length()))
+	{
+		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response body" << EndDebugWarning;
+		return false;
+	}
+	
+	if(verbose)
+	{
+		logger << DebugInfo << "sending HTTP response body: done" << EndDebugInfo;
+	}
+	
+	return true;
 }
 
-UserInstrument *HttpServer::FindUserInstrument(const std::string& name)
+UserInstrument *UserInterface::FindUserInstrument(const std::string& name)
 {
 	std::map<std::string, UserInstrument *>::iterator user_instrument_it = user_instruments.find(name);
 	
@@ -2113,7 +1750,7 @@ UserInstrument *HttpServer::FindUserInstrument(const std::string& name)
 	return 0;
 }
 
-void HttpServer::EnableInjection()
+void UserInterface::EnableInjection()
 {
 	std::map<std::string, UserInstrument *>::iterator user_instrument_it;
 	
@@ -2125,7 +1762,7 @@ void HttpServer::EnableInjection()
 	}
 }
 
-void HttpServer::DisableInjection()
+void UserInterface::DisableInjection()
 {
 	std::map<std::string, UserInstrument *>::iterator user_instrument_it;
 	
@@ -2137,7 +1774,7 @@ void HttpServer::DisableInjection()
 	}
 }
 
-void HttpServer::EnableValueChangedBreakpoint()
+void UserInterface::EnableValueChangedBreakpoint()
 {
 	std::map<std::string, UserInstrument *>::iterator user_instrument_it;
 	
@@ -2149,7 +1786,7 @@ void HttpServer::EnableValueChangedBreakpoint()
 	}
 }
 
-void HttpServer::DisableValueChangedBreakpoint()
+void UserInterface::DisableValueChangedBreakpoint()
 {
 	std::map<std::string, UserInstrument *>::iterator user_instrument_it;
 	

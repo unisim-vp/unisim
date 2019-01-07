@@ -47,6 +47,7 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger_server.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include "unisim/kernel/http_server/http_server.hh"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -77,11 +78,11 @@
 #include <boost/graph/visitors.hpp>
 #include <boost/graph/graphviz.hpp>
 
-#include "unisim/kernel/service/xml_config_file_helper.hh"
+#include "unisim/kernel/config/xml_config_file_helper.hh"
 #include "unisim/util/backtrace/backtrace.hh"
 #include "unisim/util/likely/likely.hh"
 
-#include <unisim/kernel/service/ini_config_file_helper.hh>
+#include <unisim/kernel/config/ini_config_file_helper.hh>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <fcntl.h>
@@ -1911,6 +1912,39 @@ void Object::SetDescription(const char *_description)
 	description = _description;
 }
 
+bool Object::ServeHttpRequest(unisim::kernel::http_server::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+{
+	std::ostringstream doc_sstr;
+	
+	doc_sstr << "<!DOCTYPE html>" << std::endl;
+	doc_sstr << "<html>" << std::endl;
+	doc_sstr << "\t<head>" << std::endl;
+	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+	doc_sstr << "\t</head>" << std::endl;
+	doc_sstr << "\t<body>" << std::endl;
+	doc_sstr << "\t</body>" << std::endl;
+	doc_sstr << "</html>" << std::endl;
+
+	std::string doc(doc_sstr.str());
+		
+	std::ostringstream http_header_sstr;
+	http_header_sstr << "HTTP/1.1 200 OK\r\n";
+	http_header_sstr << "Server: UNISIM-VP\r\n";
+	http_header_sstr << "Cache-control: no-cache\r\n";
+	http_header_sstr << "Connection: keep-alive\r\n";
+	http_header_sstr << "Content-length: " << doc.length() << "\r\n";
+	http_header_sstr << "Content-Type: text/html\r\n";
+	http_header_sstr << "\r\n";
+	
+	std::string http_header(http_header_sstr.str());
+
+	if(!conn.Send(http_header.c_str(), http_header.length())) return false;
+	
+	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
+			
+	return conn.Send(doc.c_str(), doc.length());
+}
+
 //=============================================================================
 //=                           ServiceImportBase                               =
 //=============================================================================
@@ -2072,9 +2106,10 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, apis()
 	, cmd_args(0)
 	, param_cmd_args(0)
+	, http_server(0)
 {
-	new XMLConfigFileHelper(this);
-	new INIConfigFileHelper(this);
+	new unisim::kernel::config::XMLConfigFileHelper(this);
+	new unisim::kernel::config::INIConfigFileHelper(this);
 	
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
@@ -2548,6 +2583,10 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	// Setup logger server
 	unisim::kernel::logger::LoggerServer *logserv = unisim::kernel::logger::Logger::StaticServerInstance();
 	logserv->Setup();
+	
+	// Setup http server
+	http_server = new unisim::kernel::http_server::HttpServer("http-server");
+	http_server->Setup();
 }
 
 Simulator::~Simulator()
@@ -2612,7 +2651,12 @@ Simulator::~Simulator()
 	{
 		delete[] cmd_args;
 	}
-
+	
+	if(http_server)
+	{
+		delete http_server;
+	}
+	
 	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_iter;
 	for(config_file_helper_iter = config_file_helpers.begin(); config_file_helper_iter != config_file_helpers.end(); config_file_helper_iter++)
 	{
@@ -3296,6 +3340,22 @@ void Simulator::GetVariables(std::list<VariableBase *>& lst, VariableBase::Type 
 	}
 }
 
+void Simulator::GetRootVariables(std::list<VariableBase *>& lst, VariableBase::Type type)
+{
+	std::map<std::string, VariableBase *>::iterator variable_iter;
+
+	lst.clear();
+	
+	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		VariableBase *var = (*variable_iter).second;
+		if(!var->GetOwner() && var->IsVisible() && (type == VariableBase::VAR_VOID || var->GetType() == type))
+		{
+			lst.push_back((*variable_iter).second);
+		}
+	}
+}
+
 void Simulator::GetArrays(std::list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_ARRAY);
@@ -3354,6 +3414,12 @@ void Simulator::GetRootObjects(std::list<Object *>& lst) const
 			}
 		}
 	}
+}
+
+Object *Simulator::FindObject(const char *name) const
+{
+	std::map<std::string, Object *>::const_iterator object_iter = objects.find(name);
+	return (object_iter != objects.end()) ? (*object_iter).second : 0;
 }
 
 #if defined(__APPLE_CC__) || defined(linux) || defined(__linux) || defined(__linux__)
@@ -3472,6 +3538,11 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const
 {
 	return ResolvePath(bin_dir, std::string(BIN_TO_SHARED_DATA_PATH), out_share_dir);
+}
+
+const std::string Simulator::GetSharedDataDirectory() const
+{
+	return shared_data_dir;
 }
 
 std::string Simulator::SearchSharedDataFile(const char *filename) const
