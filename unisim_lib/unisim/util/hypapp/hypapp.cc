@@ -116,6 +116,28 @@ namespace
   }
 }
 
+std::ostream& operator << (std::ostream& os, const Request::request_type_t& request_type)
+{
+  switch(request_type)
+  {
+    case Request::GET : os << "GET"; break;
+    case Request::HEAD: os << "HEAD"; break;
+    case Request::POST: os << "POST"; break;
+    default           : os << "unknown"; break;
+  }
+  return os;
+}
+
+std::ostream& operator << (std::ostream& os, const Request& req)
+{
+  os << "Request type: " << req.GetRequestType() << std::endl;
+  os << "Request URI: \"" << req.GetRequestURI() << "\"" << std::endl;
+  os << "Content Type: \"" << req.GetContentType() << "\"" << std::endl;
+  os << "Content length: " << req.GetContentLength() << std::endl;
+  os << "Content: \"" << std::string(req.GetContent(), req.GetContentLength()) << std::endl;
+  return os;
+}
+
 struct IPAddrRepr
 {
   IPAddrRepr( uint32_t _ipaddr ) : addr(ntohl(_ipaddr)) {} uint32_t addr;
@@ -307,7 +329,12 @@ void MessageLoop::Run(ClientConnection const& conn)
                    streat("If-Modified-Since", key) or
                    streat("Cache-Control", key) or
                    streat("DNT", key) or
-                   streat("Origin", key))
+                   streat("Origin", key) or
+                   streat("UA-CPU", key) or
+                   streat("UA-Disp", key) or
+                   streat("UA-OS", key) or
+                   streat("UA-Color", key) or
+                   streat("UA-Pixels", key))
             { if(http_server.Verbose()) { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; } }
           else if (streat("Range", key))
             { err_log << "[" << conn.socket << "] " << key << ": " << val << "\n"; return; }
@@ -422,6 +449,408 @@ void MessageLoop::Run(ClientConnection const& conn)
 
       ibuf.erase(ibuf.begin(), ibuf.begin() + request_size + content_length);
     }
+}
+
+static bool IsHexDigit(char c)
+{
+  return ((c >= '0') && (c <= '9')) || ((c >= 'a') && (c <= 'f')) || ((c >= 'A') && (c <= 'F'));
+}
+
+static bool IsSafe(char c)
+{
+  return (c == '$') || (c == '-') || (c == '_') || (c == '.') || (c == '+') || (c == '!') || (c == '*') || (c == '\'') || (c == '(') || (c == ')') || (c == ',');
+}
+
+static bool IsAlphaNumeric(char c)
+{
+  return ((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')) || ((c >= '0') && (c <= '9'));
+}
+
+static unsigned int AsciiHexToUInt(char c)
+{
+  return ((c >= '0') && (c <= '9')) ? (c - '0') : (((c >= 'a') && (c <= 'f')) ? (10 + (c - 'a')) : (((c >= 'A') && (c <= 'F')) ? (10 + (c - 'A')) : ~int(0)));
+}
+
+bool Form_URL_Encoded_Decoder::Decode(const std::string& s, std::ostream& err_log)
+{
+  int state = 0;
+  std::size_t pos = 0;
+  std::size_t len = s.length();
+  std::size_t eos_pos = len ? (len - 1) : 0;
+  std::string name;
+  std::string value;
+  char non_alpha_numeric;
+  
+  // syntax: name'='value('&'name'='value)*
+  //         '+' is replaced by space
+  //         non alpha-numeric ASCII characters are encoded as %HH where H is an hexadecimal digit
+  while(pos < len)
+  {
+    char c = s[pos];
+    
+    switch(state)
+    {
+      case 0: // name parsing
+        if(c == '&')
+        {
+          err_log << "In \"" << s << "\", expecting '=' after \"" << name << "\"" << std::endl;
+          return false;
+        }
+        else if(c == '=')
+        {
+          value.clear();
+          state = 3;
+          if(pos == eos_pos)
+          {
+            if(!FormAssign(name, value)) return false;
+          }
+        }
+        else if(c == '+')
+        {
+          name.append(1, ' ');
+          if(pos == eos_pos)
+          {
+            err_log << "In \"" << s << "\", expecting '=' after \"" << name << "\"" << std::endl;
+            return false;
+          }
+        }
+        else if(c == '%')
+        {
+          state = 1;
+          if(pos == eos_pos)
+          {
+            err_log << "In \"" << s << "\", expecting '=' after \"" << name << "\"" << std::endl;
+            return false;
+          }
+        }
+        else if(IsAlphaNumeric(c) || IsSafe(c))
+        {
+          name.append(1, c);
+          if(pos == eos_pos)
+          {
+            err_log << "In \"" << s << "\", expecting '=' after \"" << name << "\"" << std::endl;
+            return false;
+          }
+        }
+        else
+        {
+          err_log << "In \"" << s << "\", at character position #" << pos << ", unexpected character '" << c << "'" << std::endl;
+          return false;
+        }
+        break;
+      case 1: // first hexadecimal digit after % while parsing name
+        if(IsHexDigit(c))
+        {
+          non_alpha_numeric = AsciiHexToUInt(c);
+          state = 2;
+          if(pos == eos_pos)
+          {
+            err_log << "In \"" << s << "\", expecting a second hexadecimal digit before end of string" << std::endl;
+            return false;
+          }
+        }
+        else
+        {
+          err_log << "In \"" << s << "\", at character position #" << pos << ", unexpected character '" << c << "'" << std::endl;
+          return false;
+        }
+        break;
+      case 2: // second hexadecimal digit after % while parsing name
+        if(IsHexDigit(c))
+        {
+          non_alpha_numeric = (non_alpha_numeric << 4) | AsciiHexToUInt(c);
+          name.append(1, non_alpha_numeric);
+          if(pos == eos_pos)
+          {
+            err_log << "In \"" << s << "\", expecting '=' after \"" << name << "\"" << std::endl;
+            return false;
+          }
+          state = 0;
+        }
+        else
+        {
+          err_log << "In \"" << s << "\", at character position #" << pos << ", unexpected character '" << c << "'" << std::endl;
+          return false;
+        }
+        break;
+      case 3: // value parsing
+        if(c == '+')
+        {
+          value.append(1, ' ');
+        }
+        else if(c == '%')
+        {
+          state = 4;
+        }
+        else if(IsAlphaNumeric(c) || IsSafe(c))
+        {
+          value.append(1, c);
+        }
+        else if(c != '&')
+        {
+          err_log << "In \"" << s << "\", at character position #" << pos << ", unexpected character '" << c << "'" << std::endl;
+          return false;
+        }
+
+        if((c == '&') || (pos == eos_pos))
+        {
+          if(!FormAssign(name, value)) return false;
+          name.clear();
+          state = 0;
+        }
+
+        break;
+        
+      case 4: // first hexadecimal digit after % while parsing value
+        if(IsHexDigit(c))
+        {
+          non_alpha_numeric = AsciiHexToUInt(c);
+          state = 5;
+          if(pos == eos_pos)
+          {
+            err_log << "In \"" << s << "\", expecting a second hexadecimal digit before end of string" << std::endl;
+            return false;
+          }
+        }
+        else
+        {
+          err_log << "In \"" << s << "\", at character position #" << pos << ", unexpected character '" << c << "'" << std::endl;
+          return false;
+        }
+        break;
+      case 5: // first hexadecimal digit after % while parsing value
+        if(IsHexDigit(c))
+        {
+          non_alpha_numeric = (non_alpha_numeric << 4) | AsciiHexToUInt(c);
+          value.append(1, non_alpha_numeric);
+          
+          if(pos == eos_pos)
+          {
+            if(!FormAssign(name, value)) return false;
+          }
+          state = 3;
+        }
+        else
+        {
+          err_log << "In \"" << s << "\", at character position #" << pos << ", unexpected character '" << c << "'" << std::endl;
+          return false;
+        }
+        break;
+    }
+
+    pos++;
+  }
+  
+  return true;
+}
+
+std::string Encoder::Encode(const std::string& s)
+{
+	std::string r;
+	std::size_t len = s.length();
+	std::size_t pos;
+	for(pos = 0; pos < len; pos++)
+	{
+		char c = s[pos];
+		if(IsSafe(c) || IsAlphaNumeric(c))
+		{
+			r.append(1, c);
+		}
+		else
+		{
+			char h = (c >> 4) & 15;
+			char l = c & 15;
+			r.append(1, '%');
+			r.append(1, ((h < 10) ? ('0' + h) : ('a' + h - 10)));
+			r.append(1, ((l < 10) ? ('0' + l) : ('a' + l - 10)));
+		}
+	}
+	return r;
+}
+
+
+bool URL_AbsolutePathDecoder::Decode(const std::string& url, std::string& abs_path, std::ostream& err_log)
+{
+	std::size_t pos = 0;
+	std::size_t len = url.length();
+	std::size_t eos_pos = len ? (len - 1) : 0;
+	char non_alpha_numeric;
+	
+	std::string s;
+	std::vector<std::string> stack;
+	int state = 0;
+
+	while((pos < len) && (state < 7))
+	{
+		char c = url[pos];
+	
+		switch(state)
+		{
+			case 0: // expecting '/'
+				if(c != '/') return false;
+				stack.push_back("/");
+				state = 1;
+				break;
+			case 1:
+				if(c == '.') // got '.'
+				{
+					state = 2;
+				}
+				else if(c == '?') // got '?'
+				{
+					state = 7;
+				}
+				else if(c == '%') // got '%'
+				{
+					state = 5;
+				}
+				else if(c != '/') // got normal character
+				{
+					s += c;
+					state = 4;
+					if(pos == eos_pos)
+					{
+						stack.push_back(s);
+						s.clear();
+					}
+				}
+				break;
+			case 2: // '.'
+				if(c == '.') // got '..'
+				{
+					if(pos == eos_pos)
+					{
+						stack.pop_back();
+						if(stack.empty()) return false;
+					}
+					state = 3;
+				}
+				else if(c == '?') // got '.?'
+				{
+					stack.push_back(".");
+					state = 7;
+				}
+				else if(c == '%') // got '.%'
+				{
+					stack.push_back(".");
+					state = 5;
+				}
+				else if(c == '/') // got './'
+				{
+					state = 1;
+				}
+				else // got '.' followed by a normal character
+				{
+					s += '.';
+					s += c;
+					state = 4;
+					if(pos == eos_pos)
+					{
+						stack.push_back(s);
+						s.clear();
+					}
+				}
+				break;
+			case 3: // '..'
+				if(c == '/') // got '../'
+				{
+					stack.pop_back();
+					if(stack.empty()) return false;
+					state = 1;
+				}
+				else if(c == '?') // got '..?'
+				{
+					stack.pop_back();
+					if(stack.empty()) return false;
+					state = 7;
+				}
+				else if(c == '%') // got '..%'
+				{
+					stack.pop_back();
+					if(stack.empty()) return false;
+					state = 5;
+				}
+				else // got '..' followed by a normal character
+				{
+					s += "..";
+					s += c;
+					state = 4;
+					if(pos == eos_pos)
+					{
+						stack.push_back(s);
+						s.clear();
+					}
+				}
+				break;
+			case 4: // normal characters
+				if(c == '?') // normal character(s) followed by '?'
+				{
+					stack.push_back(s);
+					s.clear();
+					state = 7;
+				}
+				else if(c == '%')
+				{
+					state = 5;
+				}
+				else
+				{
+					s += c;
+					if(c == '/') // normal character(s) followed by '/'
+					{
+						stack.push_back(s);
+						s.clear();
+						state = 1;
+					}
+					else if(pos == eos_pos)
+					{
+						stack.push_back(s);
+						s.clear();
+					}
+				}
+				break;
+			case 5: // first hexadecimal digit after %
+				if(IsHexDigit(c))
+				{
+					non_alpha_numeric = AsciiHexToUInt(c);
+					state = 6;
+					if(pos == eos_pos)
+					{
+						err_log << "In \"" << s << "\", expecting a second hexadecimal digit before end of string" << std::endl;
+						return false;
+					}
+				}
+				else
+				{
+					err_log << "In \"" << s << "\", at character position #" << pos << ", unexpected character '" << c << "'" << std::endl;
+					return false;
+				}
+				break;
+			case 6: // second hexadecimal digit after %
+				if(IsHexDigit(c))
+				{
+					non_alpha_numeric = (non_alpha_numeric << 4) | AsciiHexToUInt(c);
+					s.append(1, non_alpha_numeric);
+					state = 4;
+				}
+				else
+				{
+					err_log << "In \"" << s << "\", at character position #" << pos << ", unexpected character '" << c << "'" << std::endl;
+					return false;
+				}
+				break;
+		}
+		
+		pos++;
+	}
+	
+	abs_path.clear();
+	for(std::vector<std::string>::const_iterator it = stack.begin(); it != stack.end(); it++)
+	{
+		abs_path.append(*it);
+	}
+	
+	return true;
 }
 
 HttpServer::HttpServer()

@@ -60,6 +60,7 @@
 #include <unisim/component/tlm2/com/freescale/mpc57xx/dspi/dspi.hh>
 #include <unisim/component/tlm2/com/freescale/mpc57xx/siul2/siul2.hh>
 #include <unisim/component/tlm2/com/bosch/m_can/m_can.hh>
+#include <unisim/component/tlm2/memory/semaphore/freescale/mpc57xx/sema42/sema42.hh>
 
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
@@ -233,6 +234,8 @@ private:
 	
 	typedef unisim::kernel::tlm2::tlm_can_bus CAN_BUS;
 
+	typedef unisim::component::tlm2::memory::semaphore::freescale::mpc57xx::sema42::SEMA42<SEMA4_CONFIG> SEMA4;
+	
 	typedef unisim::component::tlm2::memory::ram::Memory<EBI_CONFIG::OUTPUT_BUSWIDTH, uint32_t, FSB_BURST_SIZE / (EBI_CONFIG::OUTPUT_BUSWIDTH / 8), unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_MEM;
 	//typedef unisim::component::tlm2::memory::ram::Memory<XBAR_0_CONFIG::OUTPUT_BUSWIDTH, uint32_t, FSB_BURST_SIZE / (XBAR_0_CONFIG::OUTPUT_BUSWIDTH / 8), unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_SPACE_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<XBAR_0_CONFIG::OUTPUT_BUSWIDTH> FLASH_PORT1_STUB;
@@ -391,6 +394,9 @@ private:
 	SHARED_CAN_MESSAGE_RAM_ROUTER *shared_can_message_ram_router;
 	SHARED_CAN_MESSAGE_RAM *shared_can_message_ram;
 	CAN_BUS *can_bus;
+	
+	// - Semaphores2
+	SEMA4 *sema4;
 	
 	//  - Stubs
 	EBI_MEM *ebi_mem_0;

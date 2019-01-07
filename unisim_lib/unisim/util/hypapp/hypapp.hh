@@ -85,6 +85,9 @@ private:
 	unsigned int content;
 };
 
+std::ostream& operator << (std::ostream& os, const Request::request_type_t& request_type);
+std::ostream& operator << (std::ostream& os, const Request& req);
+
 struct MessageLoop
 {
   MessageLoop(HttpServer& _http_server, std::ostream& _log = std::cout, std::ostream& _warn_log = std::cout, std::ostream& _err_log = std::cerr)
@@ -100,6 +103,22 @@ protected:
   std::ostream& log;
   std::ostream& warn_log;
   std::ostream& err_log;
+};
+
+struct Form_URL_Encoded_Decoder
+{
+	bool Decode(const std::string& s, std::ostream& err_log = std::cerr);
+	virtual bool FormAssign(const std::string& name, const std::string& value) = 0;
+};
+
+struct Encoder
+{
+	static std::string Encode(const std::string& s);
+};
+
+struct URL_AbsolutePathDecoder
+{
+	static bool Decode(const std::string& url, std::string& abs_path, std::ostream& err_log = std::cerr);
 };
 
 struct HttpServer

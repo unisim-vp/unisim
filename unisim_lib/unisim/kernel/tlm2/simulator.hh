@@ -395,25 +395,12 @@ private:
 	void Update() const;
 };
 
-class Form_URL_Encoded_Decoder
-{
-public:
-	bool Decode(const std::string& s, std::ostream& err_log = std::cerr);
-	virtual bool FormAssign(const std::string& name, const std::string& value) = 0;
-private:
-	static bool IsHexDigit(char c);
-	static bool IsSafe(char c);
-	static bool IsAlphaNumeric(char c);
-	static unsigned int AsciiHexToUInt(char c);
-};
-
-class HttpServer
+class UserInterface
 	: public InstrumenterFrontEnd
-	, public unisim::util::hypapp::HttpServer
 {
 public:
-	HttpServer(const char *name, Instrumenter *instrumenter = 0);
-	virtual ~HttpServer();
+	UserInterface(const char *name, Instrumenter *instrumenter = 0);
+	virtual ~UserInterface();
 	
 	virtual bool EndSetup();
 	virtual void SigInt();
@@ -422,7 +409,7 @@ public:
 	virtual void ProcessInputInstruments();
 	virtual void ProcessOutputInstruments();
 	
-	virtual void Serve(unisim::util::hypapp::ClientConnection const& conn);
+	virtual bool ServeHttpRequest(unisim::kernel::http_server::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 	
 	UserInstrument *FindUserInstrument(const std::string& name);
 	
@@ -431,17 +418,12 @@ public:
 	void EnableValueChangedBreakpoint();
 	void DisableValueChangedBreakpoint();
 private:
-	friend struct MessageLoop;
-	
 	unisim::kernel::logger::Logger logger;
 	
 	std::string program_name;
-	
+
+	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;
-	int http_port;
-	unisim::kernel::service::Parameter<int> param_http_port;
-	int http_max_clients;
-	unisim::kernel::service::Parameter<int> param_http_max_clients;
 	std::string instrumentation;
 	unisim::kernel::service::Parameter<std::string> param_instrumentation;
 	sc_core::sc_time intr_poll_period;
@@ -626,9 +608,9 @@ private:
 	std::string gtkwave_init_script;
 	unisim::kernel::service::Parameter<std::string> param_gtkwave_init_script;
 	
-	bool enable_http_server;
-	unisim::kernel::service::Parameter<bool> param_enable_http_server;
-	HttpServer *http_server;
+	bool enable_user_interface;
+	unisim::kernel::service::Parameter<bool> param_enable_user_interface;
+	UserInterface *user_interface;
 	
 	bool enable_csv_reader;
 	unisim::kernel::service::Parameter<bool> param_enable_csv_reader;

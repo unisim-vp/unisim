@@ -50,6 +50,7 @@
 #include "xbar.h"
 #include "smpu.h"
 #include "m_can.h"
+#include "sema4.h"
 #include "console.h"
 #include "ramdisk.h"
 #include "lfs.h"
@@ -283,6 +284,7 @@ void sys_init()
 	xbar_drv_init();
 	smpu_drv_init();
 	m_can_drv_init();
+	sema4_drv_init();
 	
 	intc_init();      // initialize interrupt controller
 	edma_init(0);     // initialize eDMA_0
@@ -309,6 +311,11 @@ void sys_init()
 			pit_init(1);      // initialize PIT_1
 			siul2_init();     // initialize SIUL2
 			ebi_init();       // initialize EBI
+			sema4_init();
+			
+			// check that semaphores work
+			sema4_lock_gate(0);
+			sema4_reset_all_gates();
 			
 			ebi_enable_module();
 			

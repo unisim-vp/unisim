@@ -2,7 +2,7 @@
 <variables>
 	<object name="HARDWARE">
 		<object name="HARDWARE.instrumenter">
-			<object name="HARDWARE.instrumenter.http-server">
+			<object name="HARDWARE.instrumenter.user-interface">
 				<variable name="verbose">
 					<type>parameter</type>
 					<data_type>boolean</data_type>
@@ -12,18 +12,6 @@
 						<item>true</item>
 						<item>false</item>
 					</enumeration>
-				</variable>
-				<variable name="http-port">
-					<type>parameter</type>
-					<data_type>signed 32-bit integer</data_type>
-					<value>12360</value>
-					<description>HTTP port</description>
-				</variable>
-				<variable name="http-max-clients">
-					<type>parameter</type>
-					<data_type>signed 32-bit integer</data_type>
-					<value>10</value>
-					<description>HTTP max clients</description>
 				</variable>
 				<variable name="instrumentation">
 					<type>parameter</type>
@@ -150,11 +138,11 @@
 				<value></value>
 				<description>GTKWave initialization script that simulators must automatically generate at startup</description>
 			</variable>
-			<variable name="enable-http-server">
+			<variable name="enable-user-interface">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>Enable/Disable HTTP server</description>
+				<description>Enable/Disable User interface over HTTP</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -183,7 +171,7 @@
 			<variable name="front-ends-priority-order">
 				<type>parameter</type>
 				<data_type>string</data_type>
-				<value>HARDWARE.instrumenter.http-server HARDWARE.instrumenter.csv-reader HARDWARE.instrumenter.csv-writer</value>
+				<value>HARDWARE.instrumenter.user-interface HARDWARE.instrumenter.csv-reader HARDWARE.instrumenter.csv-writer</value>
 				<description>Front-ends priority order (from left/higher to right/lower priority)</description>
 			</variable>
 		</object>
@@ -2450,6 +2438,12 @@
 				<value>range_start=&quot;0xffed8000&quot; range_end=&quot;0xffedbfff&quot; output_port=&quot;48&quot; translation=&quot;0x4000&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
+			<variable name="mapping_50">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc03c000&quot; range_end=&quot;0xfc03ffff&quot; output_port=&quot;49&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
 			<variable name="input_socket_name_0">
 				<type>parameter</type>
 				<data_type>string</data_type>
@@ -2749,6 +2743,12 @@
 				<data_type>string</data_type>
 				<value>SHARED_CAN_MESSAGE_RAM</value>
 				<description>Name of output socket #48</description>
+			</variable>
+			<variable name="output_socket_name_49">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>SEMA4</value>
+				<description>Name of output socket #49</description>
 			</variable>
 			<variable name="endian">
 				<type>parameter</type>
@@ -3069,6 +3069,12 @@
 				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
 				<value>opacr73</value>
 				<description>access control register for output port #49</description>
+			</variable>
+			<variable name="acr_mapping_50">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
+				<value>pacr15</value>
+				<description>access control register for output port #50</description>
 			</variable>
 		</object>
 		<object name="HARDWARE.PBRIDGE_B">
@@ -11464,6 +11470,28 @@
 				<description>probability of bit inversion error</description>
 			</variable>
 		</object>
+		<object name="HARDWARE.SEMA4">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
 		<object name="HARDWARE.EBI_MEM_0">
 			<variable name="org">
 				<type>parameter</type>
@@ -13464,6 +13492,30 @@
 				<item>single-thread</item>
 				<item>multi-thread</item>
 			</enumeration>
+		</variable>
+	</object>
+	<object name="http-server">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="http-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12360</value>
+			<description>HTTP port</description>
+		</variable>
+		<variable name="http-max-clients">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>10</value>
+			<description>HTTP max clients</description>
 		</variable>
 	</object>
 	<object name="inline-debugger0">

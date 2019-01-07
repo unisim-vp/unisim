@@ -151,6 +151,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, shared_can_message_ram_router(0)
 	, shared_can_message_ram(0)
 	, can_bus(0)
+	, sema4(0)
 	, ebi_mem_0(0)
 	, ebi_mem_1(0)
 	, ebi_mem_2(0)
@@ -422,6 +423,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CAN_TX.push_back(&CreateSignal("CAN_TX_4", true, OUTPUT_INSTRUMENTATION));
 	
 	can_bus = new CAN_BUS("CAN_BUS", CreateSignal("CAN_RX", true, OUTPUT_INSTRUMENTATION), CAN_TX, this);
+	
+	// - Semaphores2
+	sema4 = new SEMA4("SEMA4", this);
 	
 	//  - Stubs
 	ebi_mem_0 = new EBI_MEM("EBI_MEM_0", this);
@@ -1479,6 +1483,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	RegisterPort(shared_can_message_ram_router->input_if_clock);
 	RegisterPort(shared_can_message_ram_router->output_if_clock);
+	
+	// - Semaphores2
+	RegisterPort(sema4->m_clk);
+	RegisterPort(sema4->reset_b);
 
 	//=========================================================================
 	//===                         Channels creation                         ===
@@ -1864,6 +1872,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*pbridge_a->init_socket[46])(m_can_3->peripheral_slave_if);        // PBRIDGE_A <-> M_CAN_3
 	(*pbridge_a->init_socket[47])(m_can_4->peripheral_slave_if);        // PBRIDGE_A <-> M_CAN_4
 	(*pbridge_a->init_socket[48])(*shared_can_message_ram_router->targ_socket[0]); // PBRIDGE_A <-> Shared CAN message RAM Controller/Access Arbiter
+	(*pbridge_a->init_socket[49])(sema4->peripheral_slave_if);          // PBRIDGE_A <-> SEMA4
 	
 	(*pbridge_b->init_socket[0])(linflexd_2->peripheral_slave_if);      // PBRIDGE_B <-> LINFlexD_2
 	(*pbridge_b->init_socket[1])(linflexd_15->peripheral_slave_if);     // PBRIDGE_B <-> LINFlexD_15
@@ -2594,6 +2603,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	Bind("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.input_if_clock", "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.output_if_clock", "HARDWARE.PBRIDGEA_CLK");
+	
+	Bind("HARDWARE.SEMA4.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.SEMA4.reset_b", "HARDWARE.reset_b");
 
 	// Interrupt sources
 	
@@ -5045,6 +5057,7 @@ Simulator::~Simulator()
 	if(shared_can_message_ram_router) delete shared_can_message_ram_router;
 	if(shared_can_message_ram) delete shared_can_message_ram;
 	if(can_bus) delete can_bus;
+	if(sema4) delete sema4;
 	if(ebi_mem_0) delete ebi_mem_0;
 	if(ebi_mem_1) delete ebi_mem_1;
 	if(ebi_mem_2) delete ebi_mem_2;
@@ -5581,6 +5594,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_46", "M_CAN_3");
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_47", "M_CAN_4");
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_48", "SHARED_CAN_MESSAGE_RAM");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.output_socket_name_49", "SEMA4");
 	
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.cycle_time", "20 ns");
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_0",  "range_start=\"0xfc040000\" range_end=\"0xfc04ffff\" output_port=\"0\"  translation=\"0x0\""); // INTC        -> INTC  (rel address)
@@ -5627,12 +5641,13 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_41", "range_start=\"0xfc014000\" range_end=\"0xfc017fff\" output_port=\"41\" translation=\"0x0\""); // SMPU_1      -> SMPU_1   (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_42", "range_start=\"0xfffa8000\" range_end=\"0xfffabfff\" output_port=\"42\" translation=\"0x0\""); // MC_RGM      -> MC_RGM   (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_43", "range_start=\"0xfc020000\" range_end=\"0xfc023fff\" output_port=\"43\" translation=\"0x0\""); // PRAM_0      -> PRAM_0   (rel address)
-	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_44", "range_start=\"0xffee4000\" range_end=\"0xffee7fff\" output_port=\"44\" translation=\"0x0\"");  // M_CAN_1      -> M_CAN_1   (rel address)
-	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_45", "range_start=\"0xffee8000\" range_end=\"0xffeebfff\" output_port=\"45\" translation=\"0x0\"");  // M_CAN_2      -> M_CAN_2   (rel address)
-	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_46", "range_start=\"0xffeec000\" range_end=\"0xffeeffff\" output_port=\"46\" translation=\"0x0\"");  // M_CAN_3      -> M_CAN_3   (rel address)
-	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_47", "range_start=\"0xffef0000\" range_end=\"0xffef3fff\" output_port=\"47\" translation=\"0x0\"");  // M_CAN_4      -> M_CAN_4   (rel address)
-	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_48", "range_start=\"0xffed4000\" range_end=\"0xffed7fff\" output_port=\"48\" translation=\"0x0\"");  // Shared CAN message RAM            -> Shared CAN message RAM   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_44", "range_start=\"0xffee4000\" range_end=\"0xffee7fff\" output_port=\"44\" translation=\"0x0\"");  // M_CAN_1    -> M_CAN_1   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_45", "range_start=\"0xffee8000\" range_end=\"0xffeebfff\" output_port=\"45\" translation=\"0x0\"");  // M_CAN_2    -> M_CAN_2   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_46", "range_start=\"0xffeec000\" range_end=\"0xffeeffff\" output_port=\"46\" translation=\"0x0\"");  // M_CAN_3    -> M_CAN_3   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_47", "range_start=\"0xffef0000\" range_end=\"0xffef3fff\" output_port=\"47\" translation=\"0x0\"");  // M_CAN_4    -> M_CAN_4   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_48", "range_start=\"0xffed4000\" range_end=\"0xffed7fff\" output_port=\"48\" translation=\"0x0\"");  // Shared CAN message RAM -> Shared CAN message RAM   (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_49", "range_start=\"0xffed8000\" range_end=\"0xffedbfff\" output_port=\"48\" translation=\"0x4000\"");  // Shared CAN message RAM (extended) -> Shared CAN message RAM (extended)   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_50", "range_start=\"0xfc03c000\" range_end=\"0xfc03ffff\" output_port=\"49\" translation=\"0x0\"");  // SEMA4      -> SEMA4   (rel address)
 
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_0", "pacr16");   // INTC_0
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_1", "pacr26");   // STM_0
@@ -5684,6 +5699,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_47", "opacr67"); // M_CAN_4
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_48", "opacr74"); // Shared CAN Message RAM
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_49", "opacr73"); // Shared CAN Message RAM (extended)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.acr_mapping_50", "pacr15");  // SEMA4
 	
 	//  - PBRIDGE_B
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.input_socket_name_0", "XBAR_1_S2");
@@ -6117,7 +6133,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("dspi_0-slave", 0);
 	
 	// Instrumenter
-	simulator->SetVariable("HARDWARE.instrumenter.http-server.http-port", 12360);
+	simulator->SetVariable("http-server.http-port", 12360);
 }
 
 void Simulator::Run()

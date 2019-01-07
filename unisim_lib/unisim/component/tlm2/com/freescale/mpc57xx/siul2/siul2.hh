@@ -878,7 +878,11 @@ private:
 			
 			if(!IsReadWriteError(rws))
 			{
-				this->siul2->UpdateOutputBuffer(reg_num);
+				// Note: only GPIO is supported corresponding to first entries
+				if(reg_num < NUM_PADS)
+				{
+					this->siul2->UpdateOutputBuffer(reg_num);
+				}
 			}
 			
 			return rws;

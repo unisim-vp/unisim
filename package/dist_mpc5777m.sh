@@ -4,8 +4,9 @@ SIMPKG=mpc5777m
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_config_file_helper.cc \
-unisim/kernel/service/ini_config_file_helper.cc \
+unisim/kernel/config/xml_config_file_helper.cc \
+unisim/kernel/config/ini_config_file_helper.cc \
+unisim/kernel/http_server/http_server.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/tlm2/simulator.cc \
 unisim/kernel/tlm2/clock.cc \
@@ -588,8 +589,9 @@ unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
 unisim/component/cxx/processor/powerpc/isa/lsp/lsp.hh \
 unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_config_file_helper.hh \
-unisim/kernel/service/ini_config_file_helper.hh \
+unisim/kernel/config/xml_config_file_helper.hh \
+unisim/kernel/config/ini_config_file_helper.hh \
+unisim/kernel/http_server/http_server.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm2/tlm.hh \
@@ -778,6 +780,7 @@ unisim/component/tlm2/com/freescale/mpc57xx/dspi/dspi.hh \
 unisim/component/tlm2/com/freescale/mpc57xx/siul2/siul2.hh \
 unisim/component/tlm2/com/freescale/mpc57xx/siul2/defs.hh \
 unisim/component/tlm2/com/bosch/m_can/m_can.hh \
+unisim/component/tlm2/memory/semaphore/freescale/mpc57xx/sema42/sema42.hh \
 unisim/util/debug/breakpoint_registry.tcc \
 unisim/util/debug/profile.tcc \
 unisim/util/debug/watchpoint_registry.tcc \
@@ -862,6 +865,7 @@ unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.tcc \
 unisim/component/tlm2/com/freescale/mpc57xx/dspi/dspi.tcc \
 unisim/component/tlm2/com/freescale/mpc57xx/siul2/siul2.tcc \
 unisim/component/tlm2/com/bosch/m_can/m_can.tcc \
+unisim/component/tlm2/memory/semaphore/freescale/mpc57xx/sema42/sema42.tcc \
 "
 
 UNISIM_LIB_SIMULATOR_M4_FILES="\
@@ -881,13 +885,23 @@ m4/pthread.m4 \
 m4/tvs.m4 \
 "
 
+UNISIM_LIB_SIMULATOR_TOP_DATA_FILES="\
+unisim/service/debug/gdb_server/gdb_powerpc_vle.xml \
+unisim/util/debug/dwarf/powerpc_e500_dwarf_register_number_mapping.xml \
+unisim/util/debug/dwarf/powerpc_e500_gcc_dwarf_register_number_mapping.xml \
+"
+
 UNISIM_LIB_SIMULATOR_DATA_FILES="\
 unisim/kernel/tlm2/style.css \
 unisim/kernel/tlm2/script.js \
 unisim/kernel/tlm2/favicon.ico \
-unisim/service/debug/gdb_server/gdb_powerpc_vle.xml \
-unisim/util/debug/dwarf/powerpc_e500_dwarf_register_number_mapping.xml \
-unisim/util/debug/dwarf/powerpc_e500_gcc_dwarf_register_number_mapping.xml \
+unisim/kernel/http_server/style.css \
+unisim/kernel/http_server/vline.png \
+unisim/kernel/http_server/node.png \
+unisim/kernel/http_server/lastnode.png \
+unisim/kernel/http_server/var_style.css \
+unisim/kernel/http_server/script.js \
+unisim/kernel/http_server/load_object.js \
 "
 
 SIMULATOR_EXTERNAL_HEADERS="\
@@ -988,6 +1002,7 @@ m_can_2.cc \
 m_can_3.cc \
 m_can_4.cc \
 shared_can_message_ram_router.cc \
+sema4.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
@@ -1065,6 +1080,7 @@ soft/libsys/include/pbridge.h \
 soft/libsys/include/xbar.h \
 soft/libsys/include/smpu.h \
 soft/libsys/include/m_can.h \
+soft/libsys/include/sema4.h \
 soft/libsys/include/console.h \
 soft/libsys/include/ramdisk.h \
 soft/libsys/include/lfs.h \
@@ -1089,6 +1105,7 @@ soft/libsys/src/drv/pbridge.c \
 soft/libsys/src/drv/xbar.c \
 soft/libsys/src/drv/smpu.c \
 soft/libsys/src/drv/m_can.c \
+soft/libsys/src/drv/sema4.c \
 soft/libsys/src/drv/console.c \
 soft/libsys/src/drv/ramdisk.c \
 soft/libsys/src/fs/lfs.c \
@@ -1463,8 +1480,8 @@ nodist_libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = unisim/component
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
-dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_TOP_DATA_FILES}
-nobase_dist_share_DATA = ${UNISIM_SIMULATOR_DATA_FILES} trace32-core0.cmm trace32-core1.cmm trace32-core2.cmm trace32-multi.cmm sim_gtkwave.sh
+dist_share_DATA = ${UNISIM_LIB_SIMULATOR_TOP_DATA_FILES} ${UNISIM_SIMULATOR_TOP_DATA_FILES}
+nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES} trace32-core0.cmm trace32-core1.cmm trace32-core2.cmm trace32-multi.cmm sim_gtkwave.sh
 
 BUILT_SOURCES=\
 	\$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.hh\

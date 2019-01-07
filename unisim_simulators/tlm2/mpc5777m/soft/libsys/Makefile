@@ -26,6 +26,7 @@ src/drv/pbridge.c \
 src/drv/xbar.c \
 src/drv/smpu.c \
 src/drv/m_can.c \
+src/drv/sema4.c \
 src/drv/console.c \
 src/drv/ramdisk.c \
 src/fs/lfs.c \
