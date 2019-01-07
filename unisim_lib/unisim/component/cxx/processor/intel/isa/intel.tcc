@@ -43,6 +43,7 @@
 #include <unisim/component/cxx/processor/intel/tmp.hh>
 
 #include <iostream>
+#include <typeinfo>
 
 namespace unisim {
 namespace component {
@@ -494,41 +495,45 @@ namespace intel {
   
   typedef RM_RegOrMem<true>  RM_reg;
   typedef RM_RegOrMem<false> RM_mem;
-    
-  template <class ARCH, typename PATTERN>
-  struct Match
+
+  template <class ARCH>
+  struct BaseMatch
   {
-    Match( InputCode<ARCH> const& _ic, PATTERN const& _pattern, bool _good )
-      : ic( _ic ), pattern( _pattern ), good( _good ) {}
-    
-    operator bool () const { return good; }
-    
+    BaseMatch( InputCode<ARCH> const* _ic ) : ic(_ic) {}
+    operator bool () const { return ic; }
+    InputCode<ARCH> const* ic;
+  };
+  template <class ARCH, typename PATTERN>
+  struct Match : BaseMatch<ARCH>
+  {
+    Match( InputCode<ARCH> const* ic, PATTERN const& _pattern )
+      : BaseMatch<ARCH>( ic ), pattern( _pattern ) {}
+
+    InputCode<ARCH> const& icode() const { return *BaseMatch<ARCH>::ic; };
     // TODO: following functions should be const
     
     OpBase<ARCH> opbase()
     {
       struct GetLength {} getlength;
-      unsigned length = (pattern.get( getlength, &ic.bytes[ic.opc_idx] ) - &ic.bytes[0]);
-      return OpBase<ARCH>( ic.header, ic.mode, length );
+      unsigned length = (pattern.get( getlength, &icode().bytes[icode().opc_idx] ) - &icode().bytes[0]);
+      return OpBase<ARCH>( icode().header, icode().mode, length );
     }
     
     template <typename INT>
-    INT imm( unsigned idx = 0 ) { ImmValue<INT> res( idx ); pattern.get( res, &ic.bytes[ic.opc_idx] ); return res.value; }
+    INT imm( unsigned idx = 0 ) { ImmValue<INT> res( idx ); pattern.get( res, &icode().bytes[icode().opc_idx] ); return res.value; }
     
     template <typename INT>
-    int32_t i( INT it, unsigned idx = 0 ) { ImmValue<int32_t> res( idx ); pattern.get( res, &ic.bytes[ic.opc_idx] ); return res.value; }
+    int32_t i( INT it, unsigned idx = 0 ) { ImmValue<int32_t> res( idx ); pattern.get( res, &icode().bytes[icode().opc_idx] ); return res.value; }
     
-    MOp<ARCH>* rmop() { RM code; RM::Ref ref(code); pattern.get( ref, &ic.bytes[ic.opc_idx] ); return get_rmop<ARCH>( code, ref.bytes ); }
+    MOp<ARCH>* rmop() { RM code; RM::Ref ref(code); pattern.get( ref, &icode().bytes[icode().opc_idx] ); return get_rmop<ARCH>( code, ref.bytes ); }
     
-    uint8_t vbval( int idx = 0 ) { VBValue res( idx ); pattern.get( res, &ic.bytes[ic.opc_idx] ); return res.value; }
+    uint8_t vbval( int idx = 0 ) { VBValue res( idx ); pattern.get( res, &icode().bytes[icode().opc_idx] ); return res.value; }
     
-    uint8_t greg() { GReg res; pattern.get( res, &ic.bytes[ic.opc_idx] ); return res.idx; }
+    uint8_t greg() { GReg res; pattern.get( res, &icode().bytes[icode().opc_idx] ); return res.idx; }
     
-    uint8_t ereg() { EReg res; pattern.get( res, &ic.bytes[ic.opc_idx] ); return res.idx; }
+    uint8_t ereg() { EReg res; pattern.get( res, &icode().bytes[icode().opc_idx] ); return res.idx; }
     
-    InputCode<ARCH> const& ic;
     PATTERN pattern;
-    bool good;
   };
   
   template <class ARCH, typename PATTERN>
@@ -536,7 +541,7 @@ namespace intel {
   {
     PATTERN pattern( _pattern );
     bool good = bool( pattern.get( static_cast<CodeBase const&>( ic ), &ic.bytes[ic.opc_idx] ) );
-    return Match<ARCH,PATTERN>( ic, pattern, good );
+    return Match<ARCH,PATTERN>( good ? &ic : 0, pattern );
   }
   
   // Empty template for decoding tables
