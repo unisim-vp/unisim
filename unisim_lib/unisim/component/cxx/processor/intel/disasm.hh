@@ -219,14 +219,14 @@ namespace intel {
   template <unsigned OPSIZE>
   struct DisasmMnemonic : public DisasmObject
   {
-    DisasmMnemonic( char const* _mnemonic, bool _implicit_size = false ) : mnemonic( _mnemonic ), implicit_size( _implicit_size ) {}
+    DisasmMnemonic( char const* _mnemonic, bool _implicit_size = true ) : mnemonic( _mnemonic ), implicit_size( _implicit_size ) {}
     char const* mnemonic;
     bool implicit_size;
     
     void operator() ( std::ostream& _sink ) const
     {
       PutString( _sink, mnemonic );
-      if (implicit_size) PutChar( _sink, ("bwlq"[SB<OPSIZE/8>::begin]) );
+      if (not implicit_size) PutChar( _sink, ("bwlq"[SB<OPSIZE/8>::begin]) );
       PutChar( _sink, ' ' );
     }
   };

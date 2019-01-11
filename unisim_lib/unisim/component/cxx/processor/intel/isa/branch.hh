@@ -65,7 +65,7 @@ template <class ARCH> struct DC<ARCH,CALL> { Operation<ARCH>* get( InputCode<ARC
     
     return new NearCallJ<ARCH,32>( _.opbase(), _.i( int32_t() ) );
     
-  if (auto _ = match( ic, opcode( "\xff", 2 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xff" ) /2 & RM() ))
     {
       if      (ic.opsize() == 16) return new NearCallE<ARCH,16>( _.opbase(), _.rmop() );
       else if (ic.opsize() == 32) return new NearCallE<ARCH,32>( _.opbase(), _.rmop() );
@@ -80,7 +80,7 @@ template <class ARCH> struct DC<ARCH,CALL> { Operation<ARCH>* get( InputCode<ARC
     
     return new FarCallA<ARCH,32>( _.opbase(), _.i( int32_t(), 0 ), _.i( int16_t(), 1 ) );
     
-  if (auto _ = match( ic, opcode( "\xff", 3 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xff" ) /3 & RM() ))
     {
       if      (ic.opsize() == 16) return new FarCallE<ARCH,16>( _.opbase(), _.rmop() );
       else if (ic.opsize() == 32) return new FarCallE<ARCH,32>( _.opbase(), _.rmop() );
@@ -108,21 +108,21 @@ struct JccJ : public Operation<ARCH>
   
 template <class ARCH> struct DC<ARCH,JCC> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, VarByte<0x70,0xF0>() & Imm<8>() ))
+  if (auto _ = match( ic, (opcode( "\x70" ) + Var<4>()) & Imm<8>() ))
     
     {
-      if      (ic.opsize() == 16) return new JccJ<ARCH,16>( _.opbase(), _.vbval(), _.i( int32_t() ) );
-      else if (ic.opsize() == 32) return new JccJ<ARCH,32>( _.opbase(), _.vbval(), _.i( int32_t() ) );
+      if      (ic.opsize() == 16) return new JccJ<ARCH,16>( _.opbase(), _.var(), _.i( int32_t() ) );
+      else if (ic.opsize() == 32) return new JccJ<ARCH,32>( _.opbase(), _.var(), _.i( int32_t() ) );
       else return 0;
     }
     
-  if (auto _ = match( ic, OpSize<16>() & opcode( "\x0f" ) & VarByte<0x80,0xf0>() & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<16>() & (opcode( "\x0f\x80" ) + Var<4>()) & Imm<16>() ))
     
-    return new JccJ<ARCH,16>( _.opbase(), _.vbval(), _.i( int32_t() ) );
+    return new JccJ<ARCH,16>( _.opbase(), _.var(), _.i( int32_t() ) );
     
-  if (auto _ = match( ic, OpSize<32>() & opcode( "\x0f" ) & VarByte<0x80,0xf0>() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<32>() & (opcode( "\x0f\x80" ) + Var<4>()) & Imm<32>() ))
     
-    return new JccJ<ARCH,32>( _.opbase(), _.vbval(), _.i( int32_t() ) );
+    return new JccJ<ARCH,32>( _.opbase(), _.var(), _.i( int32_t() ) );
     
   return 0;
 }};
@@ -249,7 +249,7 @@ struct JmpM : public Operation<ARCH>
   
 template <class ARCH> struct DC<ARCH,JMP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, opcode( "\xff", 4 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xff" ) /4 & RM() ))
     
     {
       if      (ic.opsize() == 16) return new JmpE<ARCH,16>( _.opbase(), _.rmop() );
@@ -282,7 +282,7 @@ template <class ARCH> struct DC<ARCH,JMP> { Operation<ARCH>* get( InputCode<ARCH
     
     return new JmpA<ARCH,32>( _.opbase(), _.i( int32_t() ), _.i( int16_t() ) );
     
-  if (auto _ = match( ic, opcode( "\xff", 5 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xff" ) /5 & RM() ))
     
     {
       if      (ic.opsize() == 16) return new JmpM<ARCH,16>( _.opbase(), _.rmop() );

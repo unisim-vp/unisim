@@ -42,9 +42,13 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <linuxsystem.hh>
+#include <algorithm>
 #include <iostream>
+#include <fstream>
+#include <string>
 #include <iomanip>
 #include <cmath>
+#include <cctype>
 
 // TODO: should handle twice of 64-bit types
 template <typename T>
@@ -83,14 +87,16 @@ struct Arch
   typedef int64_t      s64_t;
   typedef Twice<s64_t> s128_t;
   typedef bool         bit_t;
+  typedef uint64_t     addr_t;
 
   typedef float        f32_t;
   typedef double       f64_t;
   typedef long double  f80_t;
 
+
   struct OpHeader
   {
-    OpHeader( uint64_t _address ) : address( _address ) {} uint64_t address;
+    OpHeader( addr_t _address ) : address( _address ) {} addr_t address;
   };
 
   Arch()
@@ -563,18 +569,22 @@ struct Arch
   
   uint64_t u64regs[16]; ///< extended reg
 
-  u8_t                        regread8( uint32_t _idx )
+  u8_t                        regread8( uint32_t idx )
   {
-    uint32_t idx=_idx%4, sh=_idx*2 & 8;
-    return u8_t( u64regs[idx] >> sh );
+    uint32_t reg=idx%4, sh=idx*2 & 8;
+    return u8_t( u64regs[reg] >> sh );
   }
-  u16_t                       regread16( uint32_t _idx )
+  u16_t                       regread16( uint32_t idx )
   {
-    return u16_t( u64regs[_idx] );
+    return u16_t( u64regs[idx] );
   }
-  u32_t                       regread32( uint32_t _idx )
+  u32_t                       regread32( uint32_t idx )
   {
-    return u32_t( u64regs[_idx] );
+    return u32_t( u64regs[idx] );
+  }
+  u64_t                       regread64( uint64_t idx )
+  {
+    return u64_t( u64regs[idx] );
   }
 
   template <unsigned OPSIZE>
@@ -584,6 +594,7 @@ struct Arch
     if (OPSIZE==8) return regread8( idx );
     if (OPSIZE==16) return regread16( idx );
     if (OPSIZE==32) return regread32( idx );
+    if (OPSIZE==64) return regread64( idx );
     throw 0;
     return 0;
   }
@@ -595,21 +606,26 @@ struct Arch
     if (OPSIZE==8) return regwrite8( idx, value );
     if (OPSIZE==16) return regwrite16( idx, value );
     if (OPSIZE==32) return regwrite32( idx, value );
+    if (OPSIZE==64) return regwrite64( idx, value );
     throw 0;
   }
 
-  void                        regwrite8( uint32_t _idx, u8_t _val )
+  void                        regwrite8( uint32_t idx, u8_t val )
   {
-    uint32_t idx=_idx%4, sh=_idx*2 & 8;
-    u64regs[idx] = (u64regs[idx] & ~(0xff << sh)) | ((_val & 0xff) << sh);
+    uint32_t reg=idx%4, sh=idx*2 & 8;
+    u64regs[reg] = (u64regs[reg] & ~(0xff << sh)) | ((val & 0xff) << sh);
   }
-  void                        regwrite16( uint32_t _idx, u16_t _val )
+  void                        regwrite16( uint32_t idx, u16_t val )
   {
-    u64regs[_idx] = (u64regs[_idx] & 0xffff0000) | (_val & 0x0000ffff);
+    u64regs[idx] = (u64regs[idx] & 0xffff0000) | (val & 0x0000ffff);
   }
-  void                        regwrite32( uint32_t _idx, u32_t _val )
+  void                        regwrite32( uint32_t idx, u32_t val )
   {
-    u64regs[_idx] = _val;
+    u64regs[idx] = val;
+  }
+  void                        regwrite64( uint32_t idx, u64_t val )
+  {
+    u64regs[idx] = val;
   }
 
   struct FLAG
@@ -878,6 +894,12 @@ struct ICache : public DECODER
     : mru_page( 0 )
   {
     memset( hash_table, 0, sizeof (hash_table) );
+    std::ifstream source( "certs.txt" );
+    for (std::string line; std::getline( source, line );)
+      {
+        line.erase(std::find_if(line.rbegin(), line.rend(), [](int c) { return not isspace(c); }).base(), line.end());
+        certs.insert( line );
+      }
   }
   ~ICache()
   {
@@ -899,10 +921,23 @@ struct ICache : public DECODER
       }
       
     page->operations[offset] = operation = this->Decode( mode, address, bytes );
-    memcpy( &page->bytes[offset], &bytes[0], operation->length );
+    memcpy( &page->bytes[offset], bytes, operation->length );
+    
+    {
+      std::ostringstream buf;
+      buf << std::hex << address << ":\t" << unisim::component::cxx::processor::intel::DisasmBytes(bytes,operation->length) << '\t';
+      operation->disasm( buf );
+      if (certs.insert( buf.str() ).second)
+        {
+          std::cerr << "unknown instruction: " << buf.str() << '\n';
+          throw 0;
+        }
+    }
       
     return operation;
   }
+
+  std::set<std::string> certs;
     
 private:
   Page*
@@ -943,7 +978,7 @@ struct Decoder
     if (Operation* op = getoperation( unisim::component::cxx::processor::intel::InputCode<Arch>( mode, bytes, Arch::OpHeader( address ) ) ))
       return op;
       
-    std::cerr << "No decoding for " << unisim::component::cxx::processor::intel::DisasmBytes( bytes, 16 ) << " @" << std::hex << address << std::endl;
+    std::cerr << "No decoding for " << unisim::component::cxx::processor::intel::DisasmBytes( bytes, 15 ) << " @" << std::hex << address << std::endl;
     throw 0;
     return 0;
   }
@@ -956,7 +991,7 @@ Arch::fetch()
   uint64_t insn_addr = this->rip;
   uint8_t decbuf[15];
   lla_memcpy( decbuf, insn_addr, sizeof (decbuf) );
-  Decoder::Mode mode( 0, 1, 1 );
+  Decoder::Mode mode( 1, 0, 1 );
     
   Operation* operation = icache.Get( mode, insn_addr, &decbuf[0] );
     
@@ -965,11 +1000,9 @@ Arch::fetch()
   if (do_disasm) {
     std::ios fmt(NULL);
     fmt.copyfmt(std::cerr);
-    std::cerr << "#0x" << std::setfill('0') << std::setw(8) << std::hex << insn_addr;
-    std::cerr.copyfmt(fmt);
+    std::cerr << std::hex << insn_addr << ":\t";
     operation->disasm( std::cerr );
-    std::cerr.copyfmt(fmt);
-    std::cerr << " (" << unisim::component::cxx::processor::intel::DisasmBytes( &decbuf[0], operation->length ) << ")" << std::endl;
+    std::cerr << " (" << unisim::component::cxx::processor::intel::DisasmBytes(&decbuf[0],operation->length) << ")\n";
     std::cerr.copyfmt(fmt);
   }
     
@@ -1201,7 +1234,7 @@ main( int argc, char *argv[] )
   
   linux64.Setup( simargs, envs );
   
-  // cpu.m_disasm = false;
+  cpu.do_disasm = true;
   
   // Loading image
   std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;

@@ -71,19 +71,19 @@ template <class ARCH> struct DC<ARCH,ADD> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, OpSize<64>() & opcode( "\005" ) & Imm<32>() ))
     return new AddRMI<ARCH,64>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, opcode( "\x80", 0 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\x80" ) /0 & RM() & Imm<8>() ))
     return new AddRMI<ARCH,8>( _.opbase(), _.rmop(), _.i( int8_t() ) );
 
-  if (auto _ = match( ic, OpSize<16>() & opcode( "\x81", 0 ) & RM() & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<16>() & opcode( "\x81" ) /0 & RM() & Imm<16>() ))
     return new AddRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
 
-  if (auto _ = match( ic, OpSize<32>() & opcode( "\x81", 0 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<32>() & opcode( "\x81" ) /0 & RM() & Imm<32>() ))
     return new AddRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, OpSize<64>() & opcode( "\x81", 0 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<64>() & opcode( "\x81" ) /0 & RM() & Imm<32>() ))
     return new AddRMI<ARCH,64>( _.opbase(), _.rmop(), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, opcode( "\x83", 0 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\x83" ) /0 & RM() & Imm<8>() ))
     {
       if      (ic.opsize() == 16) return new AddRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new AddRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
@@ -165,19 +165,19 @@ template <class ARCH> struct DC<ARCH,OR> { Operation<ARCH>* get( InputCode<ARCH>
   if (auto _ = match( ic, OpSize<64>() & opcode( "\015" ) & Imm<32>() ))
     return new OrRMI<ARCH,64>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, opcode( "\x80", 1 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\x80" ) /1 & RM() & Imm<8>() ))
     return new OrRMI<ARCH,8>( _.opbase(), _.rmop(), _.i( int8_t() ) );
 
-  if (auto _ = match( ic, OpSize<16>() & opcode( "\x81", 1 ) & RM() & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<16>() & opcode( "\x81" ) /1 & RM() & Imm<16>() ))
     return new OrRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
 
-  if (auto _ = match( ic, OpSize<32>() & opcode( "\x81", 1 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<32>() & opcode( "\x81" ) /1 & RM() & Imm<32>() ))
     return new OrRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, OpSize<64>() & opcode( "\x81", 1 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<64>() & opcode( "\x81" ) /1 & RM() & Imm<32>() ))
     return new OrRMI<ARCH,64>( _.opbase(), _.rmop(), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, opcode( "\x83", 1 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\x83" ) /1 & RM() & Imm<8>() ))
     {
       if      (ic.opsize() == 16) return new OrRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new OrRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
@@ -259,19 +259,19 @@ template <class ARCH> struct DC<ARCH,ADC> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, OpSize<64>() & opcode( "\025" ) & Imm<32>() ))
     return new AdcRMI<ARCH,64>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, opcode( "\x80", 2 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\x80" ) /2 & RM() & Imm<8>() ))
     return new AdcRMI<ARCH,8>( _.opbase(), _.rmop(), _.i( int8_t() ) );
 
-  if (auto _ = match( ic, OpSize<16>() & opcode( "\x81", 2 ) & RM() & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<16>() & opcode( "\x81" ) /2 & RM() & Imm<16>() ))
     return new AdcRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
 
-  if (auto _ = match( ic, OpSize<32>() & opcode( "\x81", 2 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<32>() & opcode( "\x81" ) /2 & RM() & Imm<32>() ))
     return new AdcRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, OpSize<64>() & opcode( "\x81", 2 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<64>() & opcode( "\x81" ) /2 & RM() & Imm<32>() ))
     return new AdcRMI<ARCH,64>( _.opbase(), _.rmop(), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, opcode( "\x83", 2 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\x83" ) /2 & RM() & Imm<8>() ))
     {
       if      (ic.opsize() == 16) return new AdcRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new AdcRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
@@ -353,19 +353,19 @@ template <class ARCH> struct DC<ARCH,SBB> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, OpSize<64>() & opcode( "\035" ) & Imm<32>() ))
     return new SbbRMI<ARCH,64>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, opcode( "\x80", 3 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\x80" ) /3 & RM() & Imm<8>() ))
     return new SbbRMI<ARCH,8>( _.opbase(), _.rmop(), _.i( int8_t() ) );
 
-  if (auto _ = match( ic, OpSize<16>() & opcode( "\x81", 3 ) & RM() & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<16>() & opcode( "\x81" ) /3 & RM() & Imm<16>() ))
     return new SbbRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
 
-  if (auto _ = match( ic, OpSize<32>() & opcode( "\x81", 3 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<32>() & opcode( "\x81" ) /3 & RM() & Imm<32>() ))
     return new SbbRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, OpSize<64>() & opcode( "\x81", 3 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<64>() & opcode( "\x81" ) /3 & RM() & Imm<32>() ))
     return new SbbRMI<ARCH,64>( _.opbase(), _.rmop(), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, opcode( "\x83", 3 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\x83" ) /3 & RM() & Imm<8>() ))
     {
       if      (ic.opsize() == 16) return new SbbRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new SbbRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
@@ -447,19 +447,19 @@ template <class ARCH> struct DC<ARCH,AND> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, OpSize<64>() & opcode( "\045" ) & Imm<32>() ))
     return new AndRMI<ARCH,64>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, opcode( "\x80", 4 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\x80" ) /4 & RM() & Imm<8>() ))
     return new AndRMI<ARCH,8>( _.opbase(), _.rmop(), _.i( int8_t() ) );
 
-  if (auto _ = match( ic, OpSize<16>() & opcode( "\x81", 4 ) & RM() & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<16>() & opcode( "\x81" ) /4 & RM() & Imm<16>() ))
     return new AndRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
 
-  if (auto _ = match( ic, OpSize<32>() & opcode( "\x81", 4 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<32>() & opcode( "\x81" ) /4 & RM() & Imm<32>() ))
     return new AndRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, OpSize<64>() & opcode( "\x81", 4 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<64>() & opcode( "\x81" ) /4 & RM() & Imm<32>() ))
     return new AndRMI<ARCH,64>( _.opbase(), _.rmop(), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, opcode( "\x83", 4 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\x83" ) /4 & RM() & Imm<8>() ))
     {
       if      (ic.opsize() == 16) return new AndRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new AndRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
@@ -541,19 +541,19 @@ template <class ARCH> struct DC<ARCH,SUB> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, OpSize<64>() & opcode( "\055" ) & Imm<32>() ))
     return new SubRMI<ARCH,64>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, opcode( "\x80", 5 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\x80" ) /5 & RM() & Imm<8>() ))
     return new SubRMI<ARCH,8>( _.opbase(), _.rmop(), _.i( int8_t() ) );
 
-  if (auto _ = match( ic, OpSize<16>() & opcode( "\x81", 5 ) & RM() & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<16>() & opcode( "\x81" ) /5 & RM() & Imm<16>() ))
     return new SubRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
 
-  if (auto _ = match( ic, OpSize<32>() & opcode( "\x81", 5 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<32>() & opcode( "\x81" ) /5 & RM() & Imm<32>() ))
     return new SubRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, OpSize<64>() & opcode( "\x81", 5 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<64>() & opcode( "\x81" ) /5 & RM() & Imm<32>() ))
     return new SubRMI<ARCH,64>( _.opbase(), _.rmop(), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, opcode( "\x83", 5 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\x83" ) /5 & RM() & Imm<8>() ))
     {
       if      (ic.opsize() == 16) return new SubRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new SubRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
@@ -635,19 +635,19 @@ template <class ARCH> struct DC<ARCH,XOR> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, OpSize<64>() & opcode( "\065" ) & Imm<32>() ))
     return new XorRMI<ARCH,64>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, opcode( "\x80", 6 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\x80" ) /6 & RM() & Imm<8>() ))
     return new XorRMI<ARCH,8>( _.opbase(), _.rmop(), _.i( int8_t() ) );
 
-  if (auto _ = match( ic, OpSize<16>() & opcode( "\x81", 6 ) & RM() & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<16>() & opcode( "\x81" ) /6 & RM() & Imm<16>() ))
     return new XorRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
 
-  if (auto _ = match( ic, OpSize<32>() & opcode( "\x81", 6 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<32>() & opcode( "\x81" ) /6 & RM() & Imm<32>() ))
     return new XorRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, OpSize<64>() & opcode( "\x81", 6 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<64>() & opcode( "\x81" ) /6 & RM() & Imm<32>() ))
     return new XorRMI<ARCH,64>( _.opbase(), _.rmop(), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, opcode( "\x83", 6 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\x83" ) /6 & RM() & Imm<8>() ))
     {
       if      (ic.opsize() == 16) return new XorRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new XorRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
@@ -724,19 +724,19 @@ template <class ARCH> struct DC<ARCH,CMP> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, OpSize<64>() & opcode( "\075" ) & Imm<32>() ))
     return new CmpRMI<ARCH,64>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, opcode( "\x80", 7 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\x80" ) /7 & RM() & Imm<8>() ))
     return new CmpRMI<ARCH,8>( _.opbase(), _.rmop(), _.i( int8_t() ) );
 
-  if (auto _ = match( ic, OpSize<16>() & opcode( "\x81", 7 ) & RM() & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<16>() & opcode( "\x81" ) /7 & RM() & Imm<16>() ))
     return new CmpRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
 
-  if (auto _ = match( ic, OpSize<32>() & opcode( "\x81", 7 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<32>() & opcode( "\x81" ) /7 & RM() & Imm<32>() ))
     return new CmpRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, OpSize<64>() & opcode( "\x81", 7 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<64>() & opcode( "\x81" ) /7 & RM() & Imm<32>() ))
     return new CmpRMI<ARCH,64>( _.opbase(), _.rmop(), _.i( int32_t() ) );
 
-  if (auto _ = match( ic, opcode( "\x83", 7 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\x83" ) /7 & RM() & Imm<8>() ))
     {
       if      (ic.opsize() == 16) return new CmpRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new CmpRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
@@ -771,11 +771,11 @@ struct RolRMCL : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,ROL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, opcode( "\xc0", 0 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xc0" ) /0 & RM() & Imm<8>() ))
   
     return new RolRMI<ARCH,8>( _.opbase(), _.rmop(), _.i( int8_t() ) );
   
-  if (auto _ = match( ic, opcode( "\xc1", 0 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xc1" ) /0 & RM() & Imm<8>() ))
   
     {
       if      (ic.opsize() == 16) return new RolRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int8_t() ) );
@@ -784,11 +784,11 @@ template <class ARCH> struct DC<ARCH,ROL> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\xd0", 0 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd0" ) /0 & RM() ))
   
     return new RolRMI<ARCH,8>( _.opbase(), _.rmop(), 1 );
   
-  if (auto _ = match( ic, opcode( "\xd1", 0 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd1" ) /0 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new RolRMI<ARCH,16>( _.opbase(), _.rmop(), 1 );
@@ -797,11 +797,11 @@ template <class ARCH> struct DC<ARCH,ROL> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\xd2", 0 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd2" ) /0 & RM() ))
   
     return new RolRMCL<ARCH,8>( _.opbase(), _.rmop() );
   
-  if (auto _ = match( ic, opcode( "\xd3", 0 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd3" ) /0 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new RolRMCL<ARCH,16>( _.opbase(), _.rmop() );
@@ -838,11 +838,11 @@ struct RorRMCL : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,ROR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, opcode( "\xc0", 1 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xc0" ) /1 & RM() & Imm<8>() ))
   
     return new RorRMI<ARCH,8>( _.opbase(), _.rmop(), _.i( int8_t() ) );
   
-  if (auto _ = match( ic, opcode( "\xc1", 1 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xc1" ) /1 & RM() & Imm<8>() ))
   
     {
       if      (ic.opsize() == 16) return new RorRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int8_t() ) );
@@ -851,11 +851,11 @@ template <class ARCH> struct DC<ARCH,ROR> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\xd0", 1 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd0" ) /1 & RM() ))
   
     return new RorRMI<ARCH,8>( _.opbase(), _.rmop(), 1 );
   
-  if (auto _ = match( ic, opcode( "\xd1", 1 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd1" ) /1 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new RorRMI<ARCH,16>( _.opbase(), _.rmop(), 1 );
@@ -864,11 +864,11 @@ template <class ARCH> struct DC<ARCH,ROR> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\xd2", 1 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd2" ) /1 & RM() ))
   
     return new RorRMCL<ARCH,8>( _.opbase(), _.rmop() );
   
-  if (auto _ = match( ic, opcode( "\xd3", 1 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd3" ) /1 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new RorRMCL<ARCH,16>( _.opbase(), _.rmop() );
@@ -905,11 +905,11 @@ struct RclRMCL : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,RCL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, opcode( "\xc0", 2 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xc0" ) /2 & RM() & Imm<8>() ))
   
     return new RclRMI<ARCH,8>( _.opbase(), _.rmop(), _.i( int8_t() ) );
   
-  if (auto _ = match( ic, opcode( "\xc1", 2 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xc1" ) /2 & RM() & Imm<8>() ))
   
     {
       if      (ic.opsize() == 16) return new RclRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int8_t() ) );
@@ -918,11 +918,11 @@ template <class ARCH> struct DC<ARCH,RCL> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\xd0", 2 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd0" ) /2 & RM() ))
   
     return new RclRMI<ARCH,8>( _.opbase(), _.rmop(), 1 );
   
-  if (auto _ = match( ic, opcode( "\xd1", 2 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd1" ) /2 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new RclRMI<ARCH,16>( _.opbase(), _.rmop(), 1 );
@@ -931,11 +931,11 @@ template <class ARCH> struct DC<ARCH,RCL> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\xd2", 2 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd2" ) /2 & RM() ))
   
     return new RclRMCL<ARCH,8>( _.opbase(), _.rmop() );
   
-  if (auto _ = match( ic, opcode( "\xd3", 2 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd3" ) /2 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new RclRMCL<ARCH,16>( _.opbase(), _.rmop() );
@@ -972,11 +972,11 @@ struct RcrRMCL : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,RCR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, opcode( "\xc0", 3 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xc0" ) /3 & RM() & Imm<8>() ))
   
     return new RcrRMI<ARCH,8>( _.opbase(), _.rmop(), _.i( int8_t() ) );
   
-  if (auto _ = match( ic, opcode( "\xc1", 3 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xc1" ) /3 & RM() & Imm<8>() ))
   
     {
       if      (ic.opsize() == 16) return new RcrRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int8_t() ) );
@@ -985,11 +985,11 @@ template <class ARCH> struct DC<ARCH,RCR> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\xd0", 3 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd0" ) /3 & RM() ))
   
     return new RcrRMI<ARCH,8>( _.opbase(), _.rmop(), 1 );
   
-  if (auto _ = match( ic, opcode( "\xd1", 3 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd1" ) /3 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new RcrRMI<ARCH,16>( _.opbase(), _.rmop(), 1 );
@@ -998,11 +998,11 @@ template <class ARCH> struct DC<ARCH,RCR> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\xd2", 3 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd2" ) /3 & RM() ))
   
     return new RcrRMCL<ARCH,8>( _.opbase(), _.rmop() );
   
-  if (auto _ = match( ic, opcode( "\xd3", 3 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd3" ) /3 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new RcrRMCL<ARCH,16>( _.opbase(), _.rmop() );
@@ -1039,11 +1039,11 @@ struct ShlRMCL : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,SHL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, opcode( "\xc0", 4 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xc0" ) /4 & RM() & Imm<8>() ))
   
     return new ShlRMI<ARCH,8>( _.opbase(), _.rmop(), _.i( int8_t() ) );
   
-  if (auto _ = match( ic, opcode( "\xc1", 4 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xc1" ) /4 & RM() & Imm<8>() ))
   
     {
       if      (ic.opsize() == 16) return new ShlRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int8_t() ) );
@@ -1052,11 +1052,11 @@ template <class ARCH> struct DC<ARCH,SHL> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\xd0", 4 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd0" ) /4 & RM() ))
   
     return new ShlRMI<ARCH,8>( _.opbase(), _.rmop(), 1 );
   
-  if (auto _ = match( ic, opcode( "\xd1", 4 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd1" ) /4 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new ShlRMI<ARCH,16>( _.opbase(), _.rmop(), 1 );
@@ -1065,11 +1065,11 @@ template <class ARCH> struct DC<ARCH,SHL> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\xd2", 4 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd2" ) /4 & RM() ))
   
     return new ShlRMCL<ARCH,8>( _.opbase(), _.rmop() );
   
-  if (auto _ = match( ic, opcode( "\xd3", 4 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd3" ) /4 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new ShlRMCL<ARCH,16>( _.opbase(), _.rmop() );
@@ -1106,11 +1106,11 @@ struct ShrRMCL : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,SHR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, opcode( "\xc0", 5 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xc0" ) /5 & RM() & Imm<8>() ))
   
     return new ShrRMI<ARCH,8>( _.opbase(), _.rmop(), _.i( int8_t() ) );
   
-  if (auto _ = match( ic, opcode( "\xc1", 5 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xc1" ) /5 & RM() & Imm<8>() ))
   
     {
       if      (ic.opsize() == 16) return new ShrRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int8_t() ) );
@@ -1119,11 +1119,11 @@ template <class ARCH> struct DC<ARCH,SHR> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\xd0", 5 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd0" ) /5 & RM() ))
   
     return new ShrRMI<ARCH,8>( _.opbase(), _.rmop(), 1 );
   
-  if (auto _ = match( ic, opcode( "\xd1", 5 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd1" ) /5 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new ShrRMI<ARCH,16>( _.opbase(), _.rmop(), 1 );
@@ -1132,11 +1132,11 @@ template <class ARCH> struct DC<ARCH,SHR> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\xd2", 5 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd2" ) /5 & RM() ))
   
     return new ShrRMCL<ARCH,8>( _.opbase(), _.rmop() );
   
-  if (auto _ = match( ic, opcode( "\xd3", 5 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd3" ) /5 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new ShrRMCL<ARCH,16>( _.opbase(), _.rmop() );
@@ -1173,11 +1173,11 @@ struct SarRMCL : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,SAR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, opcode( "\xc0", 7 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xc0" ) /7 & RM() & Imm<8>() ))
   
     return new SarRMI<ARCH,8>( _.opbase(), _.rmop(), _.i( int8_t() ) );
   
-  if (auto _ = match( ic, opcode( "\xc1", 7 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xc1" ) /7 & RM() & Imm<8>() ))
   
     {
       if      (ic.opsize() == 16) return new SarRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int8_t() ) );
@@ -1186,11 +1186,11 @@ template <class ARCH> struct DC<ARCH,SAR> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\xd0", 7 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd0" ) /7 & RM() ))
   
     return new SarRMI<ARCH,8>( _.opbase(), _.rmop(), 1 );
   
-  if (auto _ = match( ic, opcode( "\xd1", 7 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd1" ) /7 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new SarRMI<ARCH,16>( _.opbase(), _.rmop(), 1 );
@@ -1199,11 +1199,11 @@ template <class ARCH> struct DC<ARCH,SAR> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\xd2", 7 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd2" ) /7 & RM() ))
   
     return new SarRMCL<ARCH,8>( _.opbase(), _.rmop() );
   
-  if (auto _ = match( ic, opcode( "\xd3", 7 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xd3" ) /7 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new SarRMCL<ARCH,16>( _.opbase(), _.rmop() );
@@ -1252,19 +1252,19 @@ template <class ARCH> struct DC<ARCH,TEST> { Operation<ARCH>* get( InputCode<ARC
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\xf6", 0 ) & RM() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xf6" ) /0 & RM() & Imm<8>() ))
   
     return new TestRMI<ARCH,8>( _.opbase(), _.rmop(), _.i( int8_t() ) );
   
-  if (auto _ = match( ic, OpSize<16>() & opcode( "\xf7", 0 ) & RM() & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<16>() & opcode( "\xf7" ) /0 & RM() & Imm<16>() ))
   
     return new TestRMI<ARCH,16>( _.opbase(), _.rmop(), _.i( int16_t() ) );
   
-  if (auto _ = match( ic, OpSize<32>() & opcode( "\xf7", 0 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<32>() & opcode( "\xf7" ) /0 & RM() & Imm<32>() ))
   
     return new TestRMI<ARCH,32>( _.opbase(), _.rmop(), _.i( int32_t() ) );
   
-  if (auto _ = match( ic, OpSize<64>() & opcode( "\xf7", 0 ) & RM() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<64>() & opcode( "\xf7" ) /0 & RM() & Imm<32>() ))
   
     return new TestRMI<ARCH,64>( _.opbase(), _.rmop(), _.i( int32_t() ) );
   
@@ -1299,11 +1299,11 @@ struct NotRM : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,NOT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, opcode( "\xf6", 2 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xf6" ) /2 & RM() ))
   
     return new NotRM<ARCH,8>( _.opbase(), _.rmop() );
   
-  if (auto _ = match( ic, opcode( "\xf7", 2 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xf7" ) /2 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new NotRM<ARCH,16>( _.opbase(), _.rmop() );
@@ -1327,11 +1327,11 @@ struct NegRM : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,NEG> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, opcode( "\xf6", 3 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xf6" ) /3 & RM() ))
   
     return new NegRM<ARCH,8>( _.opbase(), _.rmop() );
   
-  if (auto _ = match( ic, opcode( "\xf7", 3 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xf7" ) /3 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new NegRM<ARCH,16>( _.opbase(), _.rmop() );
@@ -1363,11 +1363,11 @@ struct DivE : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,DIV> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, opcode( "\xf6", 6 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xf6" ) /6 & RM() ))
   
     return new DivE<ARCH,8>( _.opbase(), _.rmop() );
   
-  if (auto _ = match( ic, opcode( "\xf7", 6 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xf7" ) /6 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new DivE<ARCH,16>( _.opbase(), _.rmop() );
@@ -1400,11 +1400,11 @@ struct IDivE : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,IDIV> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, opcode( "\xf6", 7 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xf6" ) /7 & RM() ))
   
     return new IDivE<ARCH,8>( _.opbase(), _.rmop() );
   
-  if (auto _ = match( ic, opcode( "\xf7", 7 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xf7" ) /7 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new IDivE<ARCH,16>( _.opbase(), _.rmop() );
@@ -1435,11 +1435,11 @@ struct MulE : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,MUL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, opcode( "\xf6", 4 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xf6" ) /4 & RM() ))
   
     return new MulE<ARCH,8>( _.opbase(), _.rmop() );
   
-  if (auto _ = match( ic, opcode( "\xf7", 4 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xf7" ) /4 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new MulE<ARCH,16>( _.opbase(), _.rmop() );
@@ -1507,11 +1507,11 @@ struct IMulGEI : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,IMUL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, opcode( "\xf6", 5 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xf6" ) /5 & RM() ))
   
     return new IMulE<ARCH,8>( _.opbase(), _.rmop() );
   
-  if (auto _ = match( ic, opcode( "\xf7", 5 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xf7" ) /5 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new IMulE<ARCH,16>( _.opbase(), _.rmop() );
@@ -1615,19 +1615,19 @@ struct Dec : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,INCDEC> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, VarByte<0x40,0xF8>() ))
+  if (auto _ = match( ic, opcode( "\x40" ) + Reg() ))
 
     {
-      if      (ic.opsize() == 16) return new Inc<ARCH,16>( _.opbase(), make_rop<ARCH>( _.vbval() ) );
-      else if (ic.opsize() == 32) return new Inc<ARCH,32>( _.opbase(), make_rop<ARCH>( _.vbval() ) );
+      if      (ic.opsize() == 16) return new Inc<ARCH,16>( _.opbase(), make_rop<ARCH>( _.ereg() ) );
+      else if (ic.opsize() == 32) return new Inc<ARCH,32>( _.opbase(), make_rop<ARCH>( _.ereg() ) );
       return 0;
     }
 
-  if (auto _ = match( ic, opcode( "\xfe", 0 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xfe" ) /0 & RM() ))
   
     return new Inc<ARCH,8>( _.opbase(), _.rmop() );
 
-  if (auto _ = match( ic, opcode( "\xff", 0 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xff" ) /0 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new Inc<ARCH,16>( _.opbase(), _.rmop() );
@@ -1636,19 +1636,19 @@ template <class ARCH> struct DC<ARCH,INCDEC> { Operation<ARCH>* get( InputCode<A
       return 0;
     }
   
-  if (auto _ = match( ic, VarByte<0x48,0xF8>() ))
+  if (auto _ = match( ic, opcode( "\x48" ) + Reg() ))
 
     {
-      if      (ic.opsize() == 16) return new Dec<ARCH,16>( _.opbase(), make_rop<ARCH>( _.vbval() ) );
-      else if (ic.opsize() == 32) return new Dec<ARCH,32>( _.opbase(), make_rop<ARCH>( _.vbval() ) );
+      if      (ic.opsize() == 16) return new Dec<ARCH,16>( _.opbase(), make_rop<ARCH>( _.ereg() ) );
+      else if (ic.opsize() == 32) return new Dec<ARCH,32>( _.opbase(), make_rop<ARCH>( _.ereg() ) );
       return 0;
     }
 
-  if (auto _ = match( ic, opcode( "\xfe", 1 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xfe" ) /1 & RM() ))
   
     return new Dec<ARCH,8>( _.opbase(), _.rmop() );
 
-  if (auto _ = match( ic, opcode( "\xff", 1 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xff" ) /1 & RM() ))
   
     {
       if      (ic.opsize() == 16) return new Dec<ARCH,16>( _.opbase(), _.rmop() );
@@ -1673,9 +1673,9 @@ struct SetCC : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,SETCC> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( ic, opcode( "\x0f" ) & VarByte<0x90,0xF0>() & RM() ))
+  if (auto _ = match( ic, (opcode( "\x0f\x90" ) + Var<4>()) & RM() ))
   
-    return new SetCC<ARCH>( _.opbase(), _.rmop(), _.vbval() );
+    return new SetCC<ARCH>( _.opbase(), _.rmop(), _.var() );
   
   return 0;
 }};
@@ -2149,7 +2149,7 @@ template <class ARCH> struct DC<ARCH,BOUND> { Operation<ARCH>* get( InputCode<AR
   
     {
       if      (ic.opsize() == 16) return new Bound<ARCH,16>( _.opbase(), _.rmop(), _.greg() );
-      else if (ic.opsize() == 16) return new Bound<ARCH,16>( _.opbase(), _.rmop(), _.greg() );
+      else if (ic.opsize() == 32) return new Bound<ARCH,32>( _.opbase(), _.rmop(), _.greg() );
       return 0;
     }
   
