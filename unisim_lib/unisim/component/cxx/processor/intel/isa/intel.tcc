@@ -290,6 +290,20 @@ namespace intel {
     
     addr_t effective_address( ARCH& arch ) const { return addr_t( arch.template regread<ADDRSIZE>( rm ) ); }
   };
+
+  template <class ARCH,unsigned ADDRSIZE>
+  struct ModSIB : public MOp<ARCH>
+  {
+    typedef typename ARCH::addr_t addr_t;
+    ModSIB( uint8_t _seg, uint8_t _scale, uint8_t _index, uint8_t _base ) : MOp<ARCH>( _seg ), scale( _scale ), index( _index ), base( _base ) {} uint8_t scale, index, base;
+    // index != 4
+    void disasm_memory_operand( std::ostream& sink ) const
+    {
+      sink << DisasmMS( MOp<ARCH>::segment ) << '(' << DisasmG<ADDRSIZE>( base ) << ',' << DisasmG<ADDRSIZE>( index ) << ',' << (1 << scale) << ')';
+    }
+
+    addr_t effective_address( ARCH& arch ) const { return addr_t( arch.regread<ADDRSIZE>( base ) + (arch.regread<ADDRSIZE>( index ) << scale) ); }
+  };
   
   template <class ARCH>
   struct Mod32Sib : public MOp<ARCH>
