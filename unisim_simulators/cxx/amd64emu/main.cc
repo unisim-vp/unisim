@@ -440,10 +440,13 @@ struct Arch
   pop()
   {
     // TODO: handle stack address size
-    u64_t sptr = regread32( 4 );
-    regwrite32( 4, sptr + u64_t( OPSIZE/8 ) );
+    u64_t sptr = regread64( 4 );
+    regwrite64( 4, sptr + u64_t( OPSIZE/8 ) );
     return memread<OPSIZE>( unisim::component::cxx::processor::intel::SS, sptr );
   }
+
+  void shrink_stack( addr_t offset ) { regwrite64( 4, regread64( 4 ) + offset ); }
+  void grow_stack( addr_t offset ) { regwrite64( 4, regread64( 4 ) - offset ); }
 
   template <unsigned OPSIZE>
   void
@@ -551,9 +554,9 @@ struct Arch
   uint64_t rip;
 
   enum ipproc_t { ipjmp = 0, ipcall, ipret };
-  u64_t                       geteip() { return rip; }
-  void                        seteip( u64_t _eip, ipproc_t ipproc = ipjmp ) { rip = _eip; }
-  void                        addeip( u64_t offset ) { rip += offset; }
+  u64_t                       getnip() { return rip; }
+  void                        setnip( u64_t _rip, ipproc_t ipproc = ipjmp ) { rip = _rip; }
+  //void                        addeip( u64_t offset ) { rip += offset; }
   
   void                        interrupt( uint8_t _exc )
   {

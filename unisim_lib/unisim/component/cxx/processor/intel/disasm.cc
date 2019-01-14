@@ -57,7 +57,7 @@ namespace intel {
   void DisasmGq::operator()  ( std::ostream& sink ) const
   {
     if (reg >= 8)
-      sink << "%r" << reg;
+      sink << "%r" << std::dec << reg;
     else
       sink << (&"%rax\0%rcx\0%rdx\0%rbx\0%rsp\0%rbp\0%rsi\0%rdi"[(reg % 8)*5]);
   }

@@ -2,38 +2,39 @@
  * - In 64 bit mode, for some branch instructions (if not all) operand-size is forced to 64 whatever the actual operand size is ...
  * - Some instructions may incoherently depend on StackAddressSize and OperandSize (e.g. Enter & Leave)
  * - some branch struct offsets should depend on operand size
- * - the dissambly of non-default targetting mode needs a suffix
+ * - the dissasembly of non-default targetting mode needs a suffix
  */
-template <class ARCH, unsigned OPSIZE>
+template <class ARCH, unsigned IPSIZE>
 struct NearCallJ : public Operation<ARCH>
 {
-  typedef typename ARCH::u32_t u32_t;
-  NearCallJ( OpBase<ARCH> const& opbase, int32_t _offset ) : Operation<ARCH>( opbase ), offset( _offset ) {} uint32_t offset;
+  NearCallJ( OpBase<ARCH> const& opbase, int32_t _offset ) : Operation<ARCH>( opbase ), offset( _offset ) {} int32_t offset;
     
   void disasm( std::ostream& sink ) const { sink << "call " << "0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); };
     
   void execute( ARCH& arch ) const
   {
-    if (OPSIZE != 32) throw 0;
-    arch.template push<32>( arch.geteip() );
-    arch.seteip( arch.geteip() + u32_t( offset ), ARCH::ipcall );
+    typedef typename ARCH::addr_t addr_t;
+    typedef typename TypeFor<ARCH,IPSIZE>::u ip_t;
+    addr_t nip = arch.getnip();
+    arch.template push<IPSIZE>( ip_t( nip ) );
+    arch.setnip( addr_t( ip_t( nip + addr_t( offset ) ) ), ARCH::ipcall );
   }
 };
   
-template <class ARCH, unsigned OPSIZE>
+template <class ARCH, unsigned IPSIZE>
 struct NearCallE : public Operation<ARCH>
 {
-  typedef typename ARCH::u32_t u32_t;
   NearCallE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
     
-  void disasm( std::ostream& sink ) const { sink << "call *" << DisasmE( UI<OPSIZE>(), rmop ); }
+  void disasm( std::ostream& sink ) const { sink << "call *" << DisasmE( UI<IPSIZE>(), rmop ); }
     
   void execute( ARCH& arch ) const
   {
-    if (OPSIZE != 32) throw 0;
-    u32_t target = arch.template rmread<32>( rmop );
-    arch.template push<32>( arch.geteip() );
-    arch.seteip( target, ARCH::ipcall );
+    typedef typename ARCH::addr_t addr_t;
+    typedef typename TypeFor<ARCH,IPSIZE>::u ip_t;
+    auto target = arch.template rmread<IPSIZE>( rmop );
+    arch.template push<IPSIZE>( ip_t( arch.getnip() ) );
+    arch.setnip( addr_t( target ), ARCH::ipcall );
   }
 };
   
@@ -55,15 +56,17 @@ struct FarCallE : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,CALL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (ic.adsz_67 or (ic.rep != 0)) return 0;
-    
+  if (ic.rep != 0) return 0;
+
   if (auto _ = match( ic, OpSize<16>() & opcode( "\xe8" ) & Imm<16>() ))
     
     return new NearCallJ<ARCH,16>( _.opbase(), _.i( int32_t() ) );
-    
-  if (auto _ = match( ic, OpSize<32>() & opcode( "\xe8" ) & Imm<32>() ))
-    
-    return new NearCallJ<ARCH,32>( _.opbase(), _.i( int32_t() ) );
+
+  if (auto _ = match( ic, opcode( "\xe8" ) & Imm<32>() ))
+    {
+      if    (ic.mode64()) return new NearCallJ<ARCH,64>( _.opbase(), _.i( int32_t() ) );
+      else                return new NearCallJ<ARCH,32>( _.opbase(), _.i( int32_t() ) );
+    }
     
   if (auto _ = match( ic, opcode( "\xff" ) /2 & RM() ))
     {
@@ -94,15 +97,16 @@ template <class ARCH> struct DC<ARCH,CALL> { Operation<ARCH>* get( InputCode<ARC
 template <class ARCH, unsigned OPSIZE>
 struct JccJ : public Operation<ARCH>
 {
-  typedef typename ARCH::u32_t u32_t;
   JccJ( OpBase<ARCH> const& opbase, uint8_t _cond, int32_t _offset ) : Operation<ARCH>( opbase ), offset( _offset ), cond( _cond ) {} int32_t offset; uint8_t cond;
     
   void disasm( std::ostream& sink ) const { sink << 'j' << DisasmCond( cond ) << " 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); }
     
   void execute( ARCH& arch ) const
   {
-    if (OPSIZE != 32) throw 0;
-    if (arch.Cond( eval_cond( arch, cond ) )) arch.seteip( arch.geteip() + u32_t( offset ) ); 
+    typedef typename ARCH::addr_t addr_t;
+    typedef typename TypeFor<ARCH,OPSIZE>::u ip_t;
+    if (arch.Cond( eval_cond( arch, cond ) ))
+      arch.setnip( addr_t( ip_t( arch.getnip() + addr_t( offset ) ) ) ); 
   }
 };
   
@@ -111,9 +115,10 @@ template <class ARCH> struct DC<ARCH,JCC> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, (opcode( "\x70" ) + Var<4>()) & Imm<8>() ))
     
     {
-      if      (ic.opsize() == 16) return new JccJ<ARCH,16>( _.opbase(), _.var(), _.i( int32_t() ) );
-      else if (ic.opsize() == 32) return new JccJ<ARCH,32>( _.opbase(), _.var(), _.i( int32_t() ) );
-      else return 0;
+      if (ic.opsize() == 16) return new JccJ<ARCH,16>( _.opbase(), _.var(), _.i( int32_t() ) );
+      
+      if (ic.mode64()) return new JccJ<ARCH,64>( _.opbase(), _.var(), _.i( int32_t() ) );
+      else             return new JccJ<ARCH,32>( _.opbase(), _.var(), _.i( int32_t() ) );
     }
     
   if (auto _ = match( ic, OpSize<16>() & (opcode( "\x0f\x80" ) + Var<4>()) & Imm<16>() ))
@@ -127,86 +132,85 @@ template <class ARCH> struct DC<ARCH,JCC> { Operation<ARCH>* get( InputCode<ARCH
   return 0;
 }};
 
-template <class ARCH, unsigned MOD>
+template <class ARCH, unsigned MOD, unsigned CNTSIZE, unsigned IPSIZE>
 struct Loop : public Operation<ARCH>
 {
-  int32_t offset;
+  int8_t offset;
     
-  Loop( OpBase<ARCH> const& opbase, int32_t _offset )
+  Loop( OpBase<ARCH> const& opbase, int8_t _offset )
     : Operation<ARCH>( opbase ), offset( _offset )
   {}
     
-  void disasm( std::ostream& sink ) const { sink << "loop" << (&"ne\0e\0\0"[MOD*3]) << " 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); };
+  void disasm( std::ostream& sink ) const
+  {
+    if      (MOD == 0) sink << "loopne ";
+    else if (MOD == 1) sink << "loope ";
+    else if (MOD == 2) sink << "loop ";
+    else if (MOD == 3) sink << "j" << DisasmG<CNTSIZE>(1) << ' ';
+    sink << "0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset);
+  };
     
   void execute( ARCH& arch ) const
   {
-    typedef typename ARCH::u32_t u32_t;
+    typedef typename TypeFor<ARCH,CNTSIZE>::u count_t;
+    typedef typename TypeFor<ARCH,IPSIZE>::u ip_t;
+    typedef typename ARCH::addr_t addr_t;
     typedef typename ARCH::bit_t bit_t;
     
     // Decrement count register
-    u32_t count = arch.regread32( 1 ) - u32_t( 1 );
-    arch.regwrite32( 1, count );
+    count_t count = arch.template regread<CNTSIZE>( 1 );
+    if (MOD != 3)
+      {
+        count -= count_t( 1 );
+        arch.template regwrite<CNTSIZE>( 1, count );
+      }
     // Stop if count is zero
-    if (arch.Cond( count == u32_t(0) )) return;
+    if (arch.Cond( count == count_t(0) )) return;
     // or ZF is set (loopne)
     if ((MOD == 0) and arch.Cond(arch.flagread( ARCH::FLAG::ZF ) == bit_t( 1 ))) return;
     // or ZF is cleared (loope)
     if ((MOD == 1) and arch.Cond(arch.flagread( ARCH::FLAG::ZF ) == bit_t( 0 ))) return;
     // else jump short
-    arch.seteip( arch.geteip() + u32_t( offset ) );
+    arch.setnip( addr_t( ip_t( arch.getnip() + addr_t( offset ) ) ) );
   }
 };
+
+template <class ARCH, unsigned MOD>
+Operation<ARCH>* newLoopMod( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, int8_t offset )
+{
+  if (ic.mode64())
+    {
+      if (ic.opsize() == 32) return new Loop<ARCH,MOD,32,64>( opbase, offset );
+      if (ic.opsize() == 64) return new Loop<ARCH,MOD,64,64>( opbase, offset );
+    }
+  else
+    {
+      if (ic.addrsize() == 16 and ic.opsize() == 16) return new Loop<ARCH,MOD,16,16>( opbase, offset );
+      if (ic.addrsize() == 16 and ic.opsize() == 32) return new Loop<ARCH,MOD,16,32>( opbase, offset );
+      if (ic.addrsize() == 32 and ic.opsize() == 16) return new Loop<ARCH,MOD,32,16>( opbase, offset );
+      if (ic.addrsize() == 32 and ic.opsize() == 32) return new Loop<ARCH,MOD,32,32>( opbase, offset );
+    }
+  return 0;
+}
   
 template <class ARCH> struct DC<ARCH,LOOP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xe0" ) & Imm<8>() ))
-    
-    return new Loop<ARCH,0>( _.opbase(), _.i( int32_t() ) );
+    /* LOOPNE */
+    return newLoopMod<ARCH,0>( ic, _.opbase(), _.i( int8_t() ) );
     
   if (auto _ = match( ic, opcode( "\xe1" ) & Imm<8>() ))
-    
-    return new Loop<ARCH,1>( _.opbase(), _.i( int32_t() ) );
-    
-  if (auto _ = match( ic, opcode( "\xe2" ) & Imm<8>() ))
-    
-    return new Loop<ARCH,2>( _.opbase(), _.i( int32_t() ) );
-    
-  return 0;
-}};
-
-template <class ARCH, unsigned ADDRSZ>
-struct Jcxz : public Operation<ARCH>
-{
-  int32_t offset;
-    
-  Jcxz( OpBase<ARCH> const& opbase, int32_t _offset ) : Operation<ARCH>( opbase ), offset( _offset ) {}
-    
-  void disasm( std::ostream& sink ) const { sink << 'j' << (&"\0\0e\0\0\0r"[(ADDRSZ/16)-1]) << "cxz 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); };
-    
-  void execute( ARCH& arch ) const
-  {
-    typedef typename ARCH::u32_t u32_t;
-    
-    if (ADDRSZ != 32) throw 0;
-    if (arch.Cond( arch.regread32( 1 ) == u32_t( 0 ) ))
-      arch.seteip( arch.geteip() + u32_t( offset ) );
-  }
-};
+    /* LOOPE */
+    return newLoopMod<ARCH,1>( ic, _.opbase(), _.i( int8_t() ) );
   
-template <class ARCH> struct DC<ARCH,JCXZ> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
-{
-  if (auto _ = match( ic, AddrSize<16>() & opcode( "\xe3" ) & Imm<8>() ))
-    
-    return new Jcxz<ARCH,16>( _.opbase(), _.i( int32_t() ) );
-    
-  if (auto _ = match( ic, AddrSize<32>() & opcode( "\xe3" ) & Imm<8>() ))
-    
-    return new Jcxz<ARCH,32>( _.opbase(), _.i( int32_t() ) );
-    
-  if (auto _ = match( ic, AddrSize<64>() & opcode( "\xe3" ) & Imm<8>() ))
-    
-    return new Jcxz<ARCH,64>( _.opbase(), _.i( int32_t() ) );
-    
+  if (auto _ = match( ic, opcode( "\xe2" ) & Imm<8>() ))
+    /* LOOP */
+    return newLoopMod<ARCH,2>( ic, _.opbase(), _.i( int8_t() ) );
+
+  if (auto _ = match( ic, opcode( "\xe3" ) & Imm<8>() ))
+    /* JCX */
+    return newLoopMod<ARCH,3>( ic, _.opbase(), _.i( int8_t() ) );
+
   return 0;
 }};
   
@@ -217,7 +221,11 @@ struct JmpE : public Operation<ARCH>
     
   void disasm( std::ostream& sink ) const { sink << "jmp " << '*' << DisasmE( UI<OPSIZE>(), rmop ); }
      
-  void execute( ARCH& arch ) const { if (OPSIZE != 32) throw 0; arch.seteip( arch.template rmread<32>( rmop ) ); }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename ARCH::addr_t addr_t;
+    arch.setnip( addr_t( arch.template rmread<OPSIZE>( rmop ) ) );
+  }
 };
 
 template <class ARCH, unsigned OPSIZE>
@@ -228,7 +236,12 @@ struct JmpJ : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << "jmp 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); }
      
-  void execute( ARCH& arch ) const { if (OPSIZE != 32) throw 0; arch.seteip( arch.geteip() + u32_t( offset ) ); }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,OPSIZE>::u ip_t;
+    typedef typename ARCH::addr_t addr_t;
+    arch.setnip( addr_t( ip_t( arch.getnip() + addr_t( offset ) ) ) );
+  }
 };
   
 template <class ARCH, unsigned OPSIZE>
@@ -303,27 +316,27 @@ struct NearReturn : public Operation<ARCH>
 
   void execute( ARCH& arch ) const
   {
-    if (OPSIZE != 32) throw 0;
-    u32_t src = arch.regread32( 4 );
-    arch.regwrite32( 4, src + u32_t( 4 ) );
-    arch.seteip( arch.template memread<32>( SS, src ), ARCH::ipret );
+    typedef typename TypeFor<ARCH,OPSIZE>::u ip_t;
+    typedef typename ARCH::addr_t addr_t;
+    ip_t return_address = arch.template pop<OPSIZE>();
+    arch.setnip( addr_t( return_address ), ARCH::ipret );
   }
 };
   
 template <class ARCH, unsigned OPSIZE>
 struct NearParamReturn : public Operation<ARCH>
 {
-  typedef typename ARCH::u32_t u32_t;
   NearParamReturn( OpBase<ARCH> const& opbase, uint16_t _paramsize ) : Operation<ARCH>( opbase ), paramsize( _paramsize ) {} uint16_t paramsize;
 
   void disasm( std::ostream& sink ) const { sink << "ret " << DisasmI( paramsize ); }
 
   void execute( ARCH& arch ) const
   {
-    if (OPSIZE != 32) throw 0;
-    u32_t src = arch.regread32( 4 );
-    arch.regwrite32( 4, src + u32_t( 4 + paramsize ) );
-    arch.seteip( arch.template memread<32>( SS, src ), ARCH::ipret );
+    typedef typename TypeFor<ARCH,OPSIZE>::u ip_t;
+    typedef typename ARCH::addr_t addr_t;
+    ip_t return_address = arch.template pop<OPSIZE>();
+    arch.shrink_stack( paramsize );
+    arch.setnip( addr_t( return_address ), ARCH::ipret );
   }
 };
   
@@ -465,7 +478,8 @@ struct Leave : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << "leave"; }
   
-  void execute( ARCH& arch ) const {
+  void execute( ARCH& arch ) const
+  {
     /* TODO: STACKSIZE */
     if (OPSIZE != 32) throw 0;
     arch.regwrite32( 4, arch.regread32( 5 ) );

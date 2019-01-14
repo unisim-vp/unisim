@@ -80,7 +80,7 @@ struct Movs : public Operation<ARCH>
   
   void execute( ARCH& arch ) const
   {
-    typedef typename ARCH::u32_t u32_t;
+    typedef typename ARCH::addr_t addr_t;
     
     if (REP and not str->tstcounter( arch )) return;
     
@@ -92,7 +92,7 @@ struct Movs : public Operation<ARCH>
     
     if (REP) {
       str->deccounter( arch );
-      arch.seteip( u32_t( Operation<ARCH>::address ) );
+      arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
   }
 };
@@ -127,7 +127,7 @@ struct Stos : public Operation<ARCH>
   
   void execute( ARCH& arch ) const
   {
-    typedef typename ARCH::u32_t u32_t;
+    typedef typename ARCH::addr_t addr_t;
     
     if (REP and not str->tstcounter( arch )) return;
     
@@ -138,7 +138,7 @@ struct Stos : public Operation<ARCH>
     
     if (REP) {
       str->deccounter( arch );
-      arch.seteip( u32_t( Operation<ARCH>::address ) );
+      arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
   }
 };
@@ -178,7 +178,7 @@ struct Cmps : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::bit_t bit_t;
-    typedef typename ARCH::u32_t u32_t;
+    typedef typename ARCH::addr_t addr_t;
     
     if (REP and not str->tstcounter( arch )) return;
     
@@ -191,7 +191,7 @@ struct Cmps : public Operation<ARCH>
     if (REP) {
       str->deccounter( arch );
       if (arch.Cond( bit_t( REP&1 ) ^ arch.flagread( ARCH::FLAG::ZF ) )) return;
-      arch.seteip( u32_t( Operation<ARCH>::address ) );
+      arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
   }
 };
@@ -241,7 +241,7 @@ struct Scas : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::bit_t bit_t;
-    typedef typename ARCH::u32_t u32_t;
+    typedef typename ARCH::addr_t addr_t;
     
     if (REP and not str->tstcounter( arch )) return;
     
@@ -253,7 +253,7 @@ struct Scas : public Operation<ARCH>
     if (REP) {
       str->deccounter( arch );
       if (arch.Cond( bit_t( REP&1 ) ^ arch.flagread( ARCH::FLAG::ZF ) )) return;
-      arch.seteip( u32_t( Operation<ARCH>::address ) );
+      arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
   }
 };
@@ -302,7 +302,7 @@ struct Lods : public Operation<ARCH>
   
   void execute( ARCH& arch ) const
   {
-    typedef typename ARCH::u32_t u32_t;
+    typedef typename ARCH::addr_t addr_t;
     
     if (REP and str->tstcounter( arch )) return;
     
@@ -313,7 +313,7 @@ struct Lods : public Operation<ARCH>
     
     if (REP) {
       str->deccounter( arch );
-      arch.seteip( u32_t( Operation<ARCH>::address ) );
+      arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
   }
 };
