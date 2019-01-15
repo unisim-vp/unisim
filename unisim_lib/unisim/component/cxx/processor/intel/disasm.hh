@@ -37,8 +37,9 @@
 
 #include <unisim/component/cxx/processor/intel/segments.hh>
 #include <unisim/component/cxx/processor/intel/tmp.hh>
-#include <stdint.h>
+#include <limits>
 #include <iosfwd>
+#include <stdint.h>
 
 namespace unisim {
 namespace component {
@@ -182,27 +183,36 @@ namespace intel {
   template <typename T>
   struct DisasmHex : public DisasmObject
   {
-    DisasmHex( T _imm ) : imm( _imm ) {} T imm;
+    DisasmHex( T _value ) : value( _value ) {} T value;
     
     void operator () ( std::ostream& sink ) const
     {
+      typename __unsigned<T>::type rem = value;
+      if (std::numeric_limits<T>::is_signed and value < T(0))
+        { PutChar(sink, '-'); rem = -value; }
       uintptr_t const bcnt = sizeof(T);
       char buf[4+2*bcnt];
       char* ptr = &buf[sizeof(buf)];
       *--ptr = '\0';
-      T val = imm;
       for (uintptr_t idx = 0; idx < 2*sizeof (T); idx++) {
-        *--ptr = "0123456789abcdef"[val&0xf];
-        val >>= 4;
-        if (not val) break;
+        *--ptr = "0123456789abcdef"[rem&0xf];
+        rem >>= 4;
+        if (not rem) break;
       }
       *--ptr = 'x';
       *--ptr = '0';
-      *--ptr = '$';
       PutString( sink, ptr );
     }
   };
-  template <typename T> DisasmHex<T> DisasmI( T imm ) { return DisasmHex<T>( imm ); }
+  
+  template <typename T> struct DisasmImm : public DisasmHex<T>
+  {
+    DisasmImm( T value ) : DisasmHex<T>( value ) {}
+    void operator () (std::ostream& sink) const { PutChar(sink,'$'); DisasmHex<T>::operator() ( sink ); }
+  };
+
+  template <typename T> DisasmHex<T> DisasmX( T imm ) { return DisasmHex<T>( imm ); }
+  template <typename T> DisasmImm<T> DisasmI( T imm ) { return DisasmImm<T>( imm ); }
   
   struct DisasmCond : public DisasmObject
   {
