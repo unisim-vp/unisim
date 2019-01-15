@@ -321,8 +321,12 @@ void MessageLoop::Run(ClientConnection const& conn)
             }
           else if (streat("CSeq", key))
             { cseq = strtoul( val, 0, 0 ); if(http_server.Verbose()) { log << "[" << conn.socket << "] cseq:" << cseq << "\n"; } }
-          else if (streat("Host", key) or
-                   streat("User-Agent", key) or
+          else if (streat("Host", key))
+            {
+              if(http_server.Verbose()) { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; }
+              request.host = val - &ibuf[0];
+            }
+          else if (streat("User-Agent", key) or
                    streat("Referer", key) or
                    streat("Accept", key) or
                    streat("Upgrade-Insecure-Requests",key) or

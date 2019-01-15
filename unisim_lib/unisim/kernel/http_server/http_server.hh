@@ -53,6 +53,7 @@ public:
 	bool HasFragment() const { return has_fragment; }
 	unisim::util::hypapp::Request::request_type_t GetRequestType() const { return req.GetRequestType(); }
 	char const* GetRequestURI() const { return req.GetRequestURI(); }
+	char const* GetHost() const { return req.GetHost(); }
 	char const* GetContentType() const { return req.GetContentType(); }
 	unsigned int GetContentLength() const { return req.GetContentLength(); }
 	char const* GetContent() const { return req.GetContent(); }
@@ -61,6 +62,9 @@ public:
 	const std::string& GetPath() const { return path; }
 	const std::string& GetQuery() const { return query; }
 	const std::string& GetFragment() const { return fragment; }
+	const std::string& GetDomain() const { return domain; }
+	bool HasPort() const { return has_port; }
+	unsigned int GetPort() const { return port; }
 private:
 	friend class HttpServer;
 	friend std::ostream& operator << (std::ostream& os, const HttpRequest& http_request);
@@ -78,6 +82,9 @@ private:
 	std::string path;
 	std::string query;
 	std::string fragment;
+	std::string domain;
+	bool has_port;
+	unsigned int port;
 };
 
 std::ostream& operator << (std::ostream& os, const HttpRequest& http_request);
@@ -111,11 +118,12 @@ private:
 	bool ServeFile(const std::string& path, unisim::util::hypapp::ClientConnection const& conn);
 	bool ServeRootDocument(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 	bool ServeHeader(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
-	void Crawl(std::ostream& os, const std::string& object_url, unisim::kernel::service::Object *object, const std::string& selected_object_name, unsigned int indent_level);
-	void Crawl(std::ostream& os, const std::string& selected_object_name, unsigned int indent_level);
+	void Crawl(std::ostream& os, const std::string& object_url, unisim::kernel::service::Object *object, unsigned int indent_level);
+	void Crawl(std::ostream& os, unsigned int indent_level);
 	//bool ServeBrowser(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 	bool ServeVariables(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn, unisim::kernel::service::VariableBase::Type var_type);
 	bool ServeFooter(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
+	bool Serve404(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 };
 
 } // end of namespace http_server

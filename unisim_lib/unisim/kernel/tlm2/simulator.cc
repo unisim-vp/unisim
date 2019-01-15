@@ -1538,6 +1538,7 @@ bool UserInterface::ServeHttpRequest(unisim::kernel::http_server::HttpRequest co
 		doc_sstr << "\t<head>" << std::endl;
 		doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 		doc_sstr << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
+		doc_sstr << "\t\t<script type=\"text/javascript\">document.domain=\"" << req.GetDomain() << "\";</script>" << std::endl;
 		doc_sstr << "\t</head>" << std::endl;
 		doc_sstr << "\t<body>" << std::endl;
 		doc_sstr << "\t<p>Disconnected</p>" << std::endl;
@@ -1548,13 +1549,13 @@ bool UserInterface::ServeHttpRequest(unisim::kernel::http_server::HttpRequest co
 	else
 	{
 		doc_sstr << "\t<head>" << std::endl;
-				
 		doc_sstr << "\t\t<title>" << String_to_HTML(program_name) << " - " << String_to_HTML(GetName()) << "</title>" << std::endl;
 		doc_sstr << "\t\t<meta name=\"description\" content=\"remote control interface over HTTP of virtual platform hardware signal instrumenter\">" << std::endl;
 		doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 		doc_sstr << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
 		doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
 		doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/kernel/tlm2/style.css\" type=\"text/css\" />" << std::endl;
+		doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 		doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/kernel/tlm2/script.js\"></script>" << std::endl;
 		doc_sstr << "\t</head>" << std::endl;
 		
@@ -1567,7 +1568,7 @@ bool UserInterface::ServeHttpRequest(unisim::kernel::http_server::HttpRequest co
 			doc_sstr << "\t<body>" << std::endl;
 		}
 		
-		doc_sstr << "\t\t<h1>" << String_to_HTML(program_name) << " - " << String_to_HTML(GetName()) << "</h1>" << std::endl;
+		//doc_sstr << "\t\t<h1>" << String_to_HTML(program_name) << " - " << String_to_HTML(GetName()) << "</h1>" << std::endl;
 		
 		doc_sstr << "\t\t<table class=\"status-table\">" << std::endl;
 		doc_sstr << "\t\t\t<thead>" << std::endl;
@@ -1695,7 +1696,7 @@ bool UserInterface::ServeHttpRequest(unisim::kernel::http_server::HttpRequest co
 					<< "Cache-control: no-cache\r\n"
 					<< "Connection: keep-alive\r\n"
 					<< "Content-length: " << doc.length() << "\r\n"
-					<< "Content-Type: text/html\r\n"
+					<< "Content-Type: text/html; charset=utf-8\r\n"
 					<< "\r\n";
 	
 	std::string http_header(http_header_sstr.str());
