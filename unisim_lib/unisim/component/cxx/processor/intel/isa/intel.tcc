@@ -79,9 +79,6 @@ namespace intel {
   template <typename INT>
   struct ImmValue { int index; INT value; ImmValue( int idx ) : index( idx ), value() {} };
   
-  struct GReg { uint8_t idx; GReg() : idx() {} };
-  struct EReg { uint8_t idx; EReg() : idx() {} };
-  
   template <typename LEFT, typename RIGHT>
   struct AndSeq
   {
@@ -206,20 +203,25 @@ namespace intel {
     }
     
     virtual ~RMOpFabric() {}
-    virtual void newB    ( uint8_t base ) = 0;
-    virtual void newSIB  ( uint8_t scale, uint8_t index, uint8_t base ) = 0;
-    virtual void newSID  ( uint8_t scale, uint8_t index, int32_t disp ) = 0;
-    virtual void newD  (                     uint8_t seg, int32_t disp ) = 0;
-    virtual void newBD   ( uint8_t base, int32_t disp ) = 0;
-    virtual void newSIBD ( uint8_t scale, uint8_t index, uint8_t base, int32_t disp ) = 0;
-    virtual void makeROp ( uintptr_t reg ) = 0;
+    virtual void newM    (                               uint8_t base ) { throw 0; }
+    virtual void newSIB  ( uint8_t scale, uint8_t index, uint8_t base ) { throw 0; }
+    virtual void newSID  ( uint8_t scale, uint8_t index,               int32_t disp ) { throw 0; }
+    virtual void newD    (                                             int32_t disp ) { throw 0; }
+    virtual void newRR   (                                             int32_t disp ) { throw 0; }
+    virtual void newBD   (                               uint8_t base, int32_t disp ) { throw 0; }
+    virtual void newSIBD ( uint8_t scale, uint8_t index, uint8_t base, int32_t disp ) { throw 0; }
+    virtual void makeROp ( unsigned reg ) { throw 0; }
 
     uint8_t address_size : 3;
     uint8_t segment      : 3;
     uint8_t rexb         : 1;
     uint8_t rexx         : 1;
     uint8_t rexr         : 1;
-      
+    
+    unsigned get_rm( uint8_t const* bytes ) const { return ((bytes[0] >> 0) & 7) | (rexb << 3); }
+    unsigned get_scale( uint8_t const* bytes ) const { return  (bytes[1] >> 6) & 3; }
+    unsigned get_index( uint8_t const* bytes ) const { return ((bytes[1] >> 3) & 7) | (rexx << 3) ; }
+    unsigned get_base( uint8_t const* bytes ) const  { return ((bytes[1] >> 0) & 7) | (rexb << 3); }
   };
 
   struct VarValue { uint8_t value; VarValue() : value() {} };
@@ -246,9 +248,7 @@ namespace intel {
     template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return bytes + 1; }
 
     uint8_t const* get( CodeBase const& cb, uint8_t const* bytes ) { rexb = cb.rex(); return (bytes[0] >> 3) == code ? bytes + 1 : 0; }
-    uint8_t const* get( EReg& er, uint8_t const* bytes ) { er.idx = get_reg(bytes); return 0; }
-    uint8_t const* get( RMOpFabric& out, uint8_t const* bytes ) { out.makeROp( get_reg(bytes) ); return 0; }
-    unsigned get_reg( uint8_t const* bytes ) const { return (bytes[0] & 7) | (rexb << 3); }
+    uint8_t const* get( RMOpFabric& out, uint8_t const* bytes ) { out.makeROp( (bytes[0] & 7) | (rexb << 3) ); return 0; }
   };
 
   struct Reg { typedef OpCodeReg B; };
@@ -297,11 +297,11 @@ namespace intel {
   struct ModM : public MOp<ARCH>
   {
     typedef typename ARCH::addr_t addr_t;
-    ModM( uint8_t _seg, uint8_t _rm ) : MOp<ARCH>( _seg ), rm( _rm ) {} uint8_t rm;
+    ModM( uint8_t _seg, uint8_t _base ) : MOp<ARCH>( _seg ), base( _base ) {} uint8_t base;
 
-    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << '(' << DisasmG<ADDRSIZE>( rm ) << ')'; };
+    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << '(' << DisasmG<ADDRSIZE>( base ) << ')'; };
     
-    addr_t effective_address( ARCH& arch ) const { return addr_t( arch.template regread<ADDRSIZE>( rm ) ); }
+    addr_t effective_address( ARCH& arch ) const { return addr_t( arch.template regread<ADDRSIZE>( base ) ); }
   };
 
   template <class ARCH,unsigned ADDRSIZE>
@@ -339,7 +339,18 @@ namespace intel {
     typedef typename ARCH::addr_t addr_t;
     ModD( uint8_t _seg, int32_t _disp ) : MOp<ARCH>( _seg ), disp( _disp ) {} int32_t disp;
     
-    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << "0x" << std::hex << uint32_t(disp) << std::dec; }
+    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(uint32_t(disp)); }
+    
+    addr_t effective_address( ARCH& arch ) const { return addr_t( disp ); };
+  };
+
+  template <class ARCH>
+  struct ModRR : public MOp<ARCH>
+  {
+    typedef typename ARCH::addr_t addr_t;
+    ModRR( uint8_t _seg, int32_t _disp ) : MOp<ARCH>( _seg ), disp( _disp ) {} int32_t disp;
+    
+    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << "(%rip)"; }
     
     addr_t effective_address( ARCH& arch ) const { return addr_t( disp ); };
   };
@@ -355,7 +366,7 @@ namespace intel {
     void disasm_memory_operand( std::ostream& sink ) const
     { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << '(' << DisasmGd( base ) << ',' << DisasmGd( index ) << ',' << (1 << scale) << ')'; };
 
-    addr_t effective_address( ARCH& arch ) const { return addr_t(arch.regread<ADDRSIZE>( base ) + (arch.regread<ADDRSIZE>( index ) << scale)) + addr_t( disp ); };
+    addr_t effective_address( ARCH& arch ) const { return addr_t(arch.template regread<ADDRSIZE>( base ) + (arch.template regread<ADDRSIZE>( index ) << scale)) + addr_t( disp ); };
   };
   
   template <class ARCH, unsigned ADDRSIZE>
@@ -366,7 +377,7 @@ namespace intel {
     
     void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << '(' << DisasmGd( base ) << ')'; };
 
-    addr_t effective_address( ARCH& arch ) const { return addr_t( arch.regread<ADDRSIZE>( base ) ) + addr_t( disp ); };
+    addr_t effective_address( ARCH& arch ) const { return addr_t( arch.template regread<ADDRSIZE>( base ) ) + addr_t( disp ); };
   };
   
   template <class ARCH>
@@ -398,6 +409,7 @@ namespace intel {
       else throw 0;
     }
     void newD( int32_t disp ) override { mop = new ModD<ARCH>( segment, disp ); }
+    void newRR( int32_t disp ) override { mop = new ModRR<ARCH>( segment, disp ); }
     void newBD( uint8_t base, int32_t disp ) override
     {
       if      (address_size == 16) mop = new ModBD<ARCH,16>( segment, base, disp );
@@ -412,7 +424,7 @@ namespace intel {
       else if (address_size == 64) mop = new ModSIBD<ARCH,64>( segment, scale, index, base, disp );
       else throw 0;
     }
-    void makeROp( uintptr_t reg ) override { mop = (MOp<ARCH>*)( reg ); }
+    void makeROp( unsigned reg ) override { mop = (MOp<ARCH>*)( uintptr_t( reg ) ); }
   };
   
   struct RM
@@ -421,7 +433,7 @@ namespace intel {
     template <typename RHS>
     AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
     
-    struct Forge { virtual void build( RMOpFabric& out, uint8_t const* bytes ) const = 0; virtual unsigned length() const = 0; };
+    struct Forge { virtual void build( RMOpFabric& out, uint8_t const* bytes ) const = 0; virtual unsigned length() const = 0; virtual bool is_reg() const { return false; }};
     Forge*  forge;
     
     RM() : forge() {}
@@ -455,6 +467,7 @@ namespace intel {
                 static struct : Forge {
                   void build( RMOpFabric& out, uint8_t const* bytes ) const { out.makeROp( out.get_rm(bytes) ); }
                   unsigned length() const { return 1; }
+                  bool is_reg() const { return true; }
                 } _; return &_;
               }
       
@@ -473,14 +486,15 @@ namespace intel {
                       {
                         /* 0b10[2]:gn[3]:0b100[3]:> <:scale[2]:index[3]:base[3]:> <:sext disp[32] */ 
                         static struct : Forge {
-                          void build( RMOpFabric& out, uint8_t const* bytes ) { out.newSIBD(out.get_scale(bytes),out.get_index(bytes),out.get_base(bytes),getimm<int32_t,4>(&bytes[2])); }
+                          void build( RMOpFabric& out, uint8_t const* bytes ) const
+                          { out.newSIBD( out.get_scale(bytes), out.get_index(bytes), out.get_base(bytes), getimm<int32_t,4>( &bytes[2] ) ); }
                           unsigned length() const { return 6; }
                         } _; return &_;
                       }
                     
                     /* 0b10[2]:gn[3]:0b100[3]:> <:scale[2]:0b100[3]:base[3]:> <:sext disp[32] */ 
                     static struct : Forge {
-                      void build( RMOpFabric& out, uint8_t const* bytes ) { out.newBD( out.get_base(bytes), getimm<int32_t,4>( &bytes[2] ) ); }
+                      void build( RMOpFabric& out, uint8_t const* bytes ) const { out.newBD( out.get_base(bytes), getimm<int32_t,4>( &bytes[2] ) ); }
                       unsigned length() const { return 6; }
                     } _; return &_;
                   }
@@ -491,14 +505,15 @@ namespace intel {
                       {
                         /* 0b01[2]:gn[3]:0b100[3]:> <:scale[2]:index[3]:base[3]:> <:sext <32> disp[8] (mod_SIBD8) */
                         static struct : Forge {
-                          void build( RMOpFabric& out, uint8_t const* bytes ) { out.newSIBD(out.get_scale(bytes),out.get_index(bytes),out.get_base(bytes),getimm<int8_t,1>(&bytes[2])); }
+                          void build( RMOpFabric& out, uint8_t const* bytes ) const
+                          { out.newSIBD( out.get_scale(bytes), out.get_index(bytes), out.get_base(bytes), getimm<int8_t,1>( &bytes[2] ) ); }
                           unsigned length() const { return 3; }
                         } _; return &_;
                       }
                     
                     /* 0b01[2]:gn[3]:0b100[3]:> <:scale[2]:0b100[3]:base[3]:> <:sext <32> disp[8] (mod_SIBD8) */
                     static struct : Forge {
-                      void build( RMOpFabric& out, uint8_t const* bytes ) { out.newBD( out.get_base(bytes), getimm<int8_t,1>( &bytes[2] ) ); }
+                      void build( RMOpFabric& out, uint8_t const* bytes ) const { out.newBD( out.get_base(bytes), getimm<int8_t,1>( &bytes[2] ) ); }
                       unsigned length() const { return 3; }
                     } _; return &_;
                   }
@@ -510,14 +525,14 @@ namespace intel {
                       {
                         /* 0b00[2]:gn[3]:0b100[3]:> <:scale[2]:index[3]:0b101[3]:> <:sext disp[32] */
                         static struct : Forge {
-                          void build( RMOpFabric& out, uint8_t const* bytes ) { out.newSID( out.get_scale(bytes), out.get_index(bytes), getimm<int32_t,4>( &bytes[2] ) ); }
+                          void build( RMOpFabric& out, uint8_t const* bytes ) const { out.newSID( out.get_scale(bytes), out.get_index(bytes), getimm<int32_t,4>( &bytes[2] ) ); }
                           unsigned length() const { return 6; }
                         } _; return &_;
                       }
                     
                     /* 0b00[2]:gn[3]:0b100[3]:> <:scale[2]:0b100[3]:0b101[3]:> <:sext disp[32] */
                     static struct : Forge {
-                      void build( RMOpFabric& out, uint8_t const* bytes ) { out.newD( getimm<int32_t,4>( &bytes[2] ) ); }
+                      void build( RMOpFabric& out, uint8_t const* bytes ) const { out.newD( getimm<int32_t,4>( &bytes[2] ) ); }
                       unsigned length() const { return 6; }
                     } _; return &_;
                   }
@@ -526,14 +541,14 @@ namespace intel {
                   {
                     /* 0b00[2]:gn[3]:0b100[3]:> <:scale[2]:index[3]: base[3] */
                     static struct : Forge {
-                      void build( RMOpFabric& out, uint8_t const* bytes ) { out.newSIB( out.get_scale(bytes), out.get_index(bytes), out.get_base(bytes) ); }
+                      void build( RMOpFabric& out, uint8_t const* bytes ) const { out.newSIB( out.get_scale(bytes), out.get_index(bytes), out.get_base(bytes) ); }
                       unsigned length() const { return 2; }
                     } _; return &_;
                   }
                 
                 /* 0b00[2]:gn[3]:0b100[3]:> <:scale[2]:0b100[3]: base[3] */
                 static struct : Forge {
-                  void build( RMOpFabric& out, uint8_t const* bytes ) { out.newB( out.get_base(bytes) ); }
+                  void build( RMOpFabric& out, uint8_t const* bytes ) const { out.newM( out.get_base(bytes) ); }
                   unsigned length() const { return 2; }
                 } _; return &_;
               }
@@ -544,7 +559,7 @@ namespace intel {
               {
                 /* 0b01[2]:gn[3]:   rm[3]:> <:sext<32> disp[8] (mod_M1RxD8) */
                 static struct : Forge {
-                  void build( RMOpFabric& out, uint8_t const* bytes ) { out.newBD( out.get_rm(bytes), getimm<int8_t,1>( &bytes[1] ) ); }
+                  void build( RMOpFabric& out, uint8_t const* bytes ) const { out.newBD( out.get_rm(bytes), getimm<int8_t,1>( &bytes[1] ) ); }
                   unsigned length() const { return 2; }
                 } _; return &_;
               }
@@ -553,7 +568,7 @@ namespace intel {
               {
                 /* 0b10[2]:gn[3]:   rm[3]:> <:sext disp[32] (mod_M2RxD8) */
                 static struct : Forge {
-                  void build( RMOpFabric& out, uint8_t const* bytes ) { out.newBD( out.get_rm(bytes), getimm<int32_t,4>( &bytes[1] ) ); }
+                  void build( RMOpFabric& out, uint8_t const* bytes ) const { out.newBD( out.get_rm(bytes), getimm<int32_t,4>( &bytes[1] ) ); }
                   unsigned length() const { return 5; }
                 } _; return &_;
               }
@@ -562,7 +577,7 @@ namespace intel {
               {
                 /* 0b00[2]:gn[3]:   rm[3] */
                 static struct : Forge {
-                  void build( RMOpFabric& out, uint8_t const* bytes ) { out.newB( get_rm(bytes) ); }
+                  void build( RMOpFabric& out, uint8_t const* bytes ) const { out.newM( out.get_rm(bytes) ); }
                   unsigned length() const { return 1; }
                 } _; return &_;
               }
@@ -572,15 +587,14 @@ namespace intel {
               {
                 /* amd64 RIP-relative mode */
                 static struct : Forge {
-                  void build( RMOpFabric& out, uint8_t const* bytes ) { out.newR( getimm<int32_t,4>( &bytes[1] ) ); }
+                  void build( RMOpFabric& out, uint8_t const* bytes ) const { out.newRR( getimm<int32_t,4>( &bytes[1] ) ); }
                   unsigned length() const { return 5; }
                 } _; return &_;
               }
 
             /* ia32 absolute addressing mode (5 bytes form) */
             static struct : Forge {
-              void build( RMOpFabric& out, uint8_t const* bytes )
-              { out.newD( getimm<int32_t,4>( &bytes[1] ) ); }
+              void build( RMOpFabric& out, uint8_t const* bytes ) const { out.newD( getimm<int32_t,4>( &bytes[1] ) ); }
               unsigned length() const { return 5; }
             } _; return &_;
           }
@@ -598,20 +612,18 @@ namespace intel {
       forge->build( out, bytes );
       return 0;
     }
-    
-    uint8_t const* get( GReg& gr, uint8_t const* bytes ) { gr.idx = get_gn(bytes); return 0; }
-    
-    uint8_t const* get( EReg& er, uint8_t const* bytes ) { if (not is_reg(bytes)) throw 0; er.idx = get_rm(bytes); return 0; }
 
-    unsigned get_rm( uint8_t const* bytes ) const { return ((bytes[0] >> 0) & 7) | (rexb << 3); }
-    unsigned get_gn( uint8_t const* bytes ) const { return ((bytes[0] >> 3) & 7) | (rexr << 3); }
+    struct GN { GN() : idx() {} unsigned idx; };
+    uint8_t const* get( GN& gr, uint8_t const* bytes ) { gr.idx = (bytes[0] >> 3) & 7; return 0; }
+    
+    //    unsigned get_rm( uint8_t const* bytes ) const { return ((bytes[0] >> 0) & 7) | (rexb << 3); }
     bool is_reg( uint8_t const* bytes ) const { return (bytes[0] >> 6) == 3; }
 
-    unsigned get_scale( uint8_t const* bytes ) const { return  (bytes[1] >> 6) & 3; }
-    unsigned get_index( uint8_t const* bytes ) const { return ((bytes[1] >> 3) & 7) | (rexx << 3) ; }
-    unsigned get_base( uint8_t const* bytes ) const  { return ((bytes[1] >> 0) & 7) | (rexb << 3); }
+    // unsigned get_scale( uint8_t const* bytes ) const { return  (bytes[1] >> 6) & 3; }
+    // unsigned get_index( uint8_t const* bytes ) const { return ((bytes[1] >> 3) & 7) | (rexx << 3) ; }
+    // unsigned get_base( uint8_t const* bytes ) const  { return ((bytes[1] >> 0) & 7) | (rexb << 3); }
 
-    unsigned addr_size() { return 8 << adsz; }
+    //    unsigned addr_size() { return 8 << adsz; }
   };
 
   struct Moffs
@@ -634,11 +646,7 @@ namespace intel {
       return bytes + length;
     }
     
-    uint8_t const* get( RMOpFabric& out, uint8_t const* bytes )
-    {
-      out.newD( segment, getimm<int32_t,4>( bytes ) );
-      return 0;
-    }
+    uint8_t const* get( RMOpFabric& out, uint8_t const* bytes ) { out.newD( getimm<int32_t,4>( bytes ) ); return 0; }
   };
   
   template <bool REGONLY>
@@ -648,13 +656,13 @@ namespace intel {
     template <typename RHS>
     AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
     
-    RM memRM;
+    RM rm;
 
-    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return memRM.get( out, bytes ); }
+    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return rm.get( out, bytes ); }
     uint8_t const* get( CodeBase const& cb, uint8_t const* bytes )
     {
-      uint8_t const* res memRM.get( cb, bytes );
-      if (res and ((memRM.is_reg(bytes)) xor (REGONLY))) return 0;
+      uint8_t const* res = rm.get( cb, bytes );
+      if (res and (rm.forge->is_reg() xor (REGONLY))) return 0;
       return res;
     }
   };
@@ -696,13 +704,24 @@ namespace intel {
     template <typename INT>
     int32_t i( INT it, unsigned idx = 0 ) { ImmValue<int32_t> res( idx ); find( res, icode().opcode() ); return res.value; }
     
-    MOp<ARCH>* rmop() { RMOpFabricT<ARCH> res; find( static_cast<RMOpFabric&>(res), icode().opcode() ); return res.mop; }
+    MOp<ARCH>* rmop() { RMOpFabricT<ARCH> res( icode() ); find( static_cast<RMOpFabric&>(res), icode().opcode() ); return res.mop; }
     
     uint8_t var() { VarValue res; find( res, icode().opcode() ); return res.value; }
     
-    uint8_t greg() { GReg res; find( res, icode().opcode() ); return res.idx; }
+    uint8_t greg()
+    {
+      RM::GN gn; 
+      find( gn, icode().opcode() );
+      unsigned rexr = ((icode().rex() << 1) & 8);
+      return gn.idx | rexr;
+    }
     
-    uint8_t ereg() { EReg res; find( res, icode().opcode() ); return res.idx; }
+    uint8_t ereg()
+    {
+      struct _ : RMOpFabric { _( CodeBase const& cb ) : RMOpFabric( cb ), idx() {} unsigned idx; void makeROp(unsigned reg) override { idx = reg; } } res(icode());
+      find( static_cast<RMOpFabric&>(res), icode().opcode() );
+      return res.idx;
+    }
     
     PATTERN pattern;
   };

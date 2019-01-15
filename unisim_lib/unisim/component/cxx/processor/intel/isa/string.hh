@@ -39,7 +39,7 @@ struct _StringEngine : public StringEngine<ARCH>
   typedef typename TypeFor<ARCH,ADDRSIZE>::s saddr_type;
   typedef typename StringEngine<ARCH>::StrOp StrOp;
   
-  ModBase<ARCH,ADDRSIZE> dst, src[6];
+  ModM<ARCH,ADDRSIZE> dst, src[6];
   _StringEngine() : dst( ES, 7 ), src{{0, 6}, {1, 6}, {2, 6}, {3, 6}, {4, 6}, {5, 6}} {}
   
   bool tstcounter( ARCH& arch ) const { return arch.Cond( arch.template regread<ADDRSIZE>( 1 ) != uaddr_type( 0 )); }
