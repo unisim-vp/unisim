@@ -1674,7 +1674,7 @@ struct SetCC : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,SETCC> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, (opcode( "\x0f\x90" ) + Var<4>()) & RM() ))
-  
+    
     return new SetCC<ARCH>( _.opbase(), _.rmop(), _.var() );
   
   return 0;

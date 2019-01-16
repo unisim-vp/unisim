@@ -597,13 +597,14 @@ struct Xchg : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,XCHG> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode("\x90") + Reg() ))
-  
-    {
-      if (ic.opsize()==16) return new Xchg<ARCH,16>( _.opbase(), _.rmop(), 0 );
-      if (ic.opsize()==32) return new Xchg<ARCH,32>( _.opbase(), _.rmop(), 0 ); 
-      if (ic.opsize()==64) return new Xchg<ARCH,64>( _.opbase(), _.rmop(), 0 );
-      return 0;
-    }
+    
+    if (MOp<ARCH>* x = _.rmop()) // xchg %a, %a => see nop
+      {
+        if (ic.opsize()==16) return new Xchg<ARCH,16>( _.opbase(), x, 0 );
+        if (ic.opsize()==32) return new Xchg<ARCH,32>( _.opbase(), x, 0 ); 
+        if (ic.opsize()==64) return new Xchg<ARCH,64>( _.opbase(), x, 0 );
+        return 0;
+      }
   
   if (auto _ = match( ic, opcode( "\x86" ) & RM() ))
   
@@ -658,6 +659,27 @@ template <class ARCH> struct DC<ARCH,XCHG> { Operation<ARCH>* get( InputCode<ARC
 // op nop_ed( 0x0f[8]:> <:0x1f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*rmop[Rmop] );
 // op nop_ew( 0x66[8]:> <:0x0f[8]:> <:0x1f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*rmop[Rmop] );
 
+template <class ARCH>
+struct Nop : public Operation<ARCH>
+{
+  Nop( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
+  void disasm( std::ostream& sink ) const { sink << "nop"; }
+  void execute( ARCH& arch ) const {}
+};
+
+template <class ARCH> struct DC<ARCH,NOP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  // NOP -- No Operation
+  if (auto _ = match( ic, opcode( "\x90" ) ))
+
+    return new Nop<ARCH>( _.opbase() );
+
+  if (auto _ = match( ic, opcode( "\x0f\x1f" ) /0 & RM() ))
+
+    return new Nop<ARCH>( _.opbase() );
+
+  return 0;
+}};
 
 template <class ARCH, unsigned OPSIZE>
 struct XAddEG : public Operation<ARCH>
