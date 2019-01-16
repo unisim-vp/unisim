@@ -97,7 +97,7 @@ var isIE = !!navigator.userAgent.match(/Trident/g) || !!navigator.userAgent.matc
 getWidth = function(el)
 {
 	var style = getComputedStyle(el, null);
-	var width = Math.ceil(parseFloat(style.getPropertyValue('width')));
+	var width = parseFloat(style.getPropertyValue('width'));
 	if(isIE)
 	{
 		var border_left_width = parseFloat(style.getPropertyValue('border-left-width'));
@@ -112,7 +112,7 @@ getWidth = function(el)
 getHeight = function(el)
 {
 	var style = getComputedStyle(el, null);
-	var height = Math.ceil(parseFloat(style.getPropertyValue('height')));
+	var height = parseFloat(style.getPropertyValue('height'));
 	if(isIE)
 	{
 		var border_top_width = parseFloat(style.getPropertyValue('border-top-width'));

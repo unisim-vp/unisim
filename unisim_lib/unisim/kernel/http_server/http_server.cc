@@ -943,7 +943,7 @@ bool HttpServer::ServeRootDocument(HttpRequest const& req, unisim::util::hypapp:
 	doc_sstr << "\t\t\t<div class=\"tab-headers-scroller tab-headers-left-scroller\" id=\"left-tab-headers-left-scroller\"></div>" << std::endl;
 	doc_sstr << "\t\t\t<div class=\"tab-headers-scroller tab-headers-right-scroller\" id=\"left-tab-headers-right-scroller\"></div>" << std::endl;
 	doc_sstr << "\t\t\t<div class=\"tab-headers\" id=\"left-tab-headers-div\">" << std::endl;
-	doc_sstr << "\t\t\t\t<div class=\"tab-header left-tab-header-div\" id=\"browser-tab-header\">" << std::endl;
+	doc_sstr << "\t\t\t\t<div class=\"tab-header noselect left-tab-header-div\" id=\"browser-tab-header\">" << std::endl;
 	doc_sstr << "\t\t\t\t\tBrowser" << std::endl;
 	doc_sstr << "\t\t\t\t</div>" << std::endl;
 	doc_sstr << "\t\t\t</div>" << std::endl;
