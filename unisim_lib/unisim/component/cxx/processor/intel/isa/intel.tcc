@@ -194,34 +194,34 @@ namespace intel {
 
   struct RMOpFabric
   {
-    RMOpFabric( CodeBase const& cb ) : address_size(cb.addrsize()), segment(cb.segment), rexb(0), rexx(0), rexr(0)
+    RMOpFabric( CodeBase const& cb )
+      : addrclass(cb.addrclass()), segment(cb.segment), rexb(0), rexx(0)
     {
       uint8_t rex = cb.rex();
       rexb = rex >> 0;
       rexx = rex >> 1;
-      rexr = rex >> 2;
     }
     
     virtual ~RMOpFabric() {}
     virtual void newM    (                               uint8_t base ) { throw 0; }
     virtual void newSIB  ( uint8_t scale, uint8_t index, uint8_t base ) { throw 0; }
     virtual void newSID  ( uint8_t scale, uint8_t index,               int32_t disp ) { throw 0; }
-    virtual void newD    (                                             int32_t disp ) { throw 0; }
+    virtual void newD    (                                             int64_t disp ) { throw 0; }
     virtual void newRR   (                                             int32_t disp ) { throw 0; }
     virtual void newBD   (                               uint8_t base, int32_t disp ) { throw 0; }
     virtual void newSIBD ( uint8_t scale, uint8_t index, uint8_t base, int32_t disp ) { throw 0; }
     virtual void makeROp ( unsigned reg ) { throw 0; }
 
-    uint8_t address_size : 3;
+    uint8_t addrclass    : 2;
     uint8_t segment      : 3;
     uint8_t rexb         : 1;
     uint8_t rexx         : 1;
-    uint8_t rexr         : 1;
     
     unsigned get_rm( uint8_t const* bytes ) const { return ((bytes[0] >> 0) & 7) | (rexb << 3); }
     unsigned get_scale( uint8_t const* bytes ) const { return  (bytes[1] >> 6) & 3; }
     unsigned get_index( uint8_t const* bytes ) const { return ((bytes[1] >> 3) & 7) | (rexx << 3) ; }
     unsigned get_base( uint8_t const* bytes ) const  { return ((bytes[1] >> 0) & 7) | (rexb << 3); }
+    unsigned address_size() const { return 8 << addrclass; }
   };
 
   struct VarValue { uint8_t value; VarValue() : value() {} };
@@ -327,19 +327,19 @@ namespace intel {
     
     void disasm_memory_operand( std::ostream& sink ) const
     {
-      sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << "(," << DisasmGd( index ) << ',' << (1 << scale) << ')';
+      sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << "(," << DisasmG<ADDRSIZE>( index ) << ',' << (1 << scale) << ')';
     }
 
     addr_t effective_address( ARCH& arch ) const { return addr_t( disp ) + addr_t(arch.template regread<ADDRSIZE>( index ) << scale); }
   };
   
-  template <class ARCH>
+  template <class ARCH, typename DISP>
   struct ModD : public MOp<ARCH>
   {
     typedef typename ARCH::addr_t addr_t;
-    ModD( uint8_t _seg, int32_t _disp ) : MOp<ARCH>( _seg ), disp( _disp ) {} int32_t disp;
+    ModD( uint8_t _seg, DISP _disp ) : MOp<ARCH>( _seg ), disp( _disp ) {} DISP disp;
     
-    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(uint32_t(disp)); }
+    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(typename __unsigned<DISP>::type(disp)); }
     
     addr_t effective_address( ARCH& arch ) const { return addr_t( disp ); };
   };
@@ -364,7 +364,7 @@ namespace intel {
     int32_t disp; uint8_t scale, index, base;
     
     void disasm_memory_operand( std::ostream& sink ) const
-    { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << '(' << DisasmGd( base ) << ',' << DisasmGd( index ) << ',' << (1 << scale) << ')'; };
+    { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << '(' << DisasmG<ADDRSIZE>( base ) << ',' << DisasmG<ADDRSIZE>( index ) << ',' << (1 << scale) << ')'; };
 
     addr_t effective_address( ARCH& arch ) const { return addr_t(arch.template regread<ADDRSIZE>( base ) + (arch.template regread<ADDRSIZE>( index ) << scale)) + addr_t( disp ); };
   };
@@ -375,7 +375,7 @@ namespace intel {
     typedef typename ARCH::addr_t addr_t;
     ModBD( uint8_t _seg, uint8_t _base, int32_t _disp ) : MOp<ARCH>( _seg ), base( _base ), disp( _disp ) {} uint8_t base; int32_t disp;
     
-    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << '(' << DisasmGd( base ) << ')'; };
+    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << '(' << DisasmG<ADDRSIZE>( base ) << ')'; };
 
     addr_t effective_address( ARCH& arch ) const { return addr_t( arch.template regread<ADDRSIZE>( base ) ) + addr_t( disp ); };
   };
@@ -389,39 +389,45 @@ namespace intel {
     RMOpFabricT( CodeBase const& cb ) : RMOpFabric( cb ), mop() {} MOp<ARCH>* mop;
     void newM( uint8_t base ) override
     {
-      if      (address_size == 16) mop = new ModM<ARCH,16>( segment, base );
-      else if (address_size == 32) mop = new ModM<ARCH,32>( segment, base );
-      else if (address_size == 64) mop = new ModM<ARCH,64>( segment, base );
+      if      (address_size() == 16) mop = new ModM<ARCH,16>( segment, base );
+      else if (address_size() == 32) mop = new ModM<ARCH,32>( segment, base );
+      else if (address_size() == 64) mop = new ModM<ARCH,64>( segment, base );
       else throw 0;
     }
     void newSIB( uint8_t scale, uint8_t index, uint8_t base ) override
     {
-      if      (address_size == 16) mop = new ModSIB<ARCH,16>( segment, scale, index, base );
-      else if (address_size == 32) mop = new ModSIB<ARCH,32>( segment, scale, index, base );
-      else if (address_size == 64) mop = new ModSIB<ARCH,64>( segment, scale, index, base );
+      if      (address_size() == 16) mop = new ModSIB<ARCH,16>( segment, scale, index, base );
+      else if (address_size() == 32) mop = new ModSIB<ARCH,32>( segment, scale, index, base );
+      else if (address_size() == 64) mop = new ModSIB<ARCH,64>( segment, scale, index, base );
       else throw 0;
     }
     void newSID( uint8_t scale, uint8_t index, int32_t disp ) override
     {
-      if      (address_size == 16) mop = new ModSID<ARCH,16>( segment, scale, index, disp );
-      else if (address_size == 32) mop = new ModSID<ARCH,32>( segment, scale, index, disp );
-      else if (address_size == 64) mop = new ModSID<ARCH,64>( segment, scale, index, disp );
+      if      (address_size() == 16) mop = new ModSID<ARCH,16>( segment, scale, index, disp );
+      else if (address_size() == 32) mop = new ModSID<ARCH,32>( segment, scale, index, disp );
+      else if (address_size() == 64) mop = new ModSID<ARCH,64>( segment, scale, index, disp );
       else throw 0;
     }
-    void newD( int32_t disp ) override { mop = new ModD<ARCH>( segment, disp ); }
+    void newD( int64_t disp ) override
+    {
+      if      (address_size() == 16) mop = new ModD<ARCH,int16_t>( segment, disp );
+      else if (address_size() == 32) mop = new ModD<ARCH,int32_t>( segment, disp );
+      else if (address_size() == 64) mop = new ModD<ARCH,int64_t>( segment, disp );
+      else throw 0;
+    }
     void newRR( int32_t disp ) override { mop = new ModRR<ARCH>( segment, disp ); }
     void newBD( uint8_t base, int32_t disp ) override
     {
-      if      (address_size == 16) mop = new ModBD<ARCH,16>( segment, base, disp );
-      else if (address_size == 32) mop = new ModBD<ARCH,32>( segment, base, disp );
-      else if (address_size == 64) mop = new ModBD<ARCH,64>( segment, base, disp );
+      if      (address_size() == 16) mop = new ModBD<ARCH,16>( segment, base, disp );
+      else if (address_size() == 32) mop = new ModBD<ARCH,32>( segment, base, disp );
+      else if (address_size() == 64) mop = new ModBD<ARCH,64>( segment, base, disp );
       else throw 0;
     }
     void newSIBD( uint8_t scale, uint8_t index, uint8_t base, int32_t disp ) override
     {
-      if      (address_size == 16) mop = new ModSIBD<ARCH,16>( segment, scale, index, base, disp );
-      else if (address_size == 32) mop = new ModSIBD<ARCH,32>( segment, scale, index, base, disp );
-      else if (address_size == 64) mop = new ModSIBD<ARCH,64>( segment, scale, index, base, disp );
+      if      (address_size() == 16) mop = new ModSIBD<ARCH,16>( segment, scale, index, base, disp );
+      else if (address_size() == 32) mop = new ModSIBD<ARCH,32>( segment, scale, index, base, disp );
+      else if (address_size() == 64) mop = new ModSIBD<ARCH,64>( segment, scale, index, base, disp );
       else throw 0;
     }
     void makeROp( unsigned reg ) override { mop = (MOp<ARCH>*)( uintptr_t( reg ) ); }
@@ -448,13 +454,13 @@ namespace intel {
 
     static Forge* get_forge( CodeBase const& cb, uint8_t const* bytes )
     {
-      switch (cb.addrsize())
+      switch (cb.addrclass())
         {
         default:
           throw std::runtime_error("unsupported address size");
           break;
         
-        case 32: case 64:
+        case 2: case 3:
           {
             uint8_t mod = (*bytes >> 6) & 3;
             // uint8_t gn =  (*bytes >> 3) & 7;
@@ -632,7 +638,7 @@ namespace intel {
     template <typename RHS>
     AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
     
-    uint8_t length, segment;
+    uint8_t length;
     
     Moffs() : length() {}
     
@@ -640,13 +646,18 @@ namespace intel {
     
     uint8_t const* get( CodeBase const& cb, uint8_t const* bytes )
     {
-      length = cb.addrsize() / 8;
-      if (length != 4) throw 0;
-      segment = cb.segment;
+      length = 1 << cb.addrclass();
       return bytes + length;
     }
     
-    uint8_t const* get( RMOpFabric& out, uint8_t const* bytes ) { out.newD( getimm<int32_t,4>( bytes ) ); return 0; }
+    uint8_t const* get( RMOpFabric& out, uint8_t const* bytes )
+    {
+      int64_t value = 0;
+      for (int idx = length; --idx >= 0;)
+        value = (value << 8) | bytes[idx];
+      out.newD( value );
+      return 0;
+    }
   };
   
   template <bool REGONLY>

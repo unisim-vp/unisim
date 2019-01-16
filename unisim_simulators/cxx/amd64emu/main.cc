@@ -981,7 +981,7 @@ struct Decoder
     if (Operation* op = getoperation( unisim::component::cxx::processor::intel::InputCode<Arch>( mode, bytes, Arch::OpHeader( address ) ) ))
       return op;
       
-    std::cerr << "No decoding for " << unisim::component::cxx::processor::intel::DisasmBytes( bytes, 15 ) << " @" << std::hex << address << std::endl;
+    std::cerr << "No decoding for " << std::hex << address << ": " << unisim::component::cxx::processor::intel::DisasmBytes( bytes, 15 ) << std::dec << std::endl;
     throw 0;
     return 0;
   }

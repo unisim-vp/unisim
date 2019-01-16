@@ -60,10 +60,13 @@ namespace {
     static _StringEngine<ARCH,16> se16;
     static _StringEngine<ARCH,32> se32;
     static _StringEngine<ARCH,64> se64;
-    
-    if (ic.addrsize()==16) return &se16;
-    if (ic.addrsize()==32) return &se32;
-    if (ic.addrsize()==64) return &se64;
+
+    switch (ic.addrclass())
+      {
+      case 1: return &se16;
+      case 2: return &se32;
+      case 3: return &se64;
+      }
     throw 0;
     return 0;
   }

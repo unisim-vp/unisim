@@ -147,7 +147,7 @@ namespace intel {
     
     RMOp<ARCH> const& rmop;    
   };
-  
+
   template <class ARCH>
   DisasmRegOrMem<ARCH,DisasmGb>  DisasmEb( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmGb>( rmop ); }
   
@@ -235,6 +235,12 @@ namespace intel {
     
   };
 
+  template <unsigned OPSIZE> struct SizeID {};
+  template <> struct SizeID< 8> { static char chr() { return 'b'; } };
+  template <> struct SizeID<16> { static char chr() { return 'w'; } };
+  template <> struct SizeID<32> { static char chr() { return 'l'; } };
+  template <> struct SizeID<64> { static char chr() { return 'q'; } };
+  
   template <unsigned OPSIZE>
   struct DisasmMnemonic : public DisasmObject
   {
@@ -245,7 +251,7 @@ namespace intel {
     void operator() ( std::ostream& _sink ) const
     {
       PutString( _sink, mnemonic );
-      if (not implicit_size) PutChar( _sink, ("bwlq"[SB<OPSIZE/8>::begin]) );
+      if (not implicit_size) PutChar( _sink, SizeID<OPSIZE>::chr() );
       PutChar( _sink, ' ' );
     }
   };
