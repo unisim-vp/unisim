@@ -178,7 +178,22 @@ namespace intel {
   
   void PutString( std::ostream& sink, char const* string );
   void PutChar( std::ostream& sink, char chr );
-  
+  template <typename T>
+  void PutHex( std::ostream& sink, T value )
+  {
+    uintptr_t const bcnt = sizeof(T);
+    char buf[4+2*bcnt];
+    char* ptr = &buf[sizeof(buf)];
+    *--ptr = '\0';
+    for (uintptr_t idx = 0; idx < 2*sizeof (T); idx++) {
+      *--ptr = "0123456789abcdef"[value&0xf];
+      value >>= 4;
+      if (not value) break;
+    }
+    *--ptr = 'x';
+    *--ptr = '0';
+    PutString( sink, ptr );
+  }
   /* Immediate disassembly */
   template <typename T>
   struct DisasmHex : public DisasmObject
@@ -187,32 +202,26 @@ namespace intel {
     
     void operator () ( std::ostream& sink ) const
     {
-      typename __unsigned<T>::type rem = value;
+      typename __unsigned<T>::type uv = value;
       if (std::numeric_limits<T>::is_signed and value < T(0))
-        { PutChar(sink, '-'); rem = -value; }
-      uintptr_t const bcnt = sizeof(T);
-      char buf[4+2*bcnt];
-      char* ptr = &buf[sizeof(buf)];
-      *--ptr = '\0';
-      for (uintptr_t idx = 0; idx < 2*sizeof (T); idx++) {
-        *--ptr = "0123456789abcdef"[rem&0xf];
-        rem >>= 4;
-        if (not rem) break;
-      }
-      *--ptr = 'x';
-      *--ptr = '0';
-      PutString( sink, ptr );
+        { PutChar(sink, '-'); uv = -value; }
+      PutHex( sink, uv );
     }
   };
   
-  template <typename T> struct DisasmImm : public DisasmHex<T>
+  template <typename T>
+  struct DisasmImm : public DisasmObject
   {
-    DisasmImm( T value ) : DisasmHex<T>( value ) {}
-    void operator () (std::ostream& sink) const { PutChar(sink,'$'); DisasmHex<T>::operator() ( sink ); }
+    DisasmImm( T _value ) : value( _value ) {} T value;
+    void operator () (std::ostream& sink) const
+    {
+      PutChar( sink, '$' );
+      PutHex( sink, value );
+    }
   };
 
   template <typename T> DisasmHex<T> DisasmX( T imm ) { return DisasmHex<T>( imm ); }
-  template <typename T> DisasmImm<T> DisasmI( T imm ) { return DisasmImm<T>( imm ); }
+  template <typename T> DisasmImm<T> DisasmI( T imm ) { return DisasmImm<T>( imm ) ; }
   
   struct DisasmCond : public DisasmObject
   {
