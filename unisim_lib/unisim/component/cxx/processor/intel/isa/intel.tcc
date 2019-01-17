@@ -299,9 +299,10 @@ namespace intel {
     typedef typename ARCH::addr_t addr_t;
     ModM( uint8_t _seg, uint8_t _base ) : MOp<ARCH>( _seg ), base( _base ) {} uint8_t base;
 
-    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << '(' << DisasmG<ADDRSIZE>( base ) << ')'; };
+    typedef typename GTypeFor<ADDRSIZE>::OP OP;
+    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << '(' << DisasmG( OP(), base ) << ')'; };
     
-    addr_t effective_address( ARCH& arch ) const { return addr_t( arch.template regread<ADDRSIZE>( base ) ); }
+    addr_t effective_address( ARCH& arch ) const { return addr_t( arch.regread( OP(), base ) ); }
   };
 
   template <class ARCH,unsigned ADDRSIZE>
@@ -310,12 +311,13 @@ namespace intel {
     typedef typename ARCH::addr_t addr_t;
     ModSIB( uint8_t _seg, uint8_t _scale, uint8_t _index, uint8_t _base ) : MOp<ARCH>( _seg ), scale( _scale ), index( _index ), base( _base ) {} uint8_t scale, index, base;
     
+    typedef typename GTypeFor<ADDRSIZE>::OP OP;
     void disasm_memory_operand( std::ostream& sink ) const
     {
-      sink << DisasmMS( MOp<ARCH>::segment ) << '(' << DisasmG<ADDRSIZE>( base ) << ',' << DisasmG<ADDRSIZE>( index ) << ',' << (1 << scale) << ')';
+      sink << DisasmMS( MOp<ARCH>::segment ) << '(' << DisasmG( OP(), base ) << ',' << DisasmG( OP(), index ) << ',' << (1 << scale) << ')';
     }
     
-    addr_t effective_address( ARCH& arch ) const { return addr_t( arch.template regread<ADDRSIZE>( base ) + (arch.template regread<ADDRSIZE>( index ) << scale) ); }
+    addr_t effective_address( ARCH& arch ) const { return addr_t( arch.regread( OP(), base ) + (arch.regread( OP(), index ) << scale) ); }
   };
   
   template <class ARCH, unsigned ADDRSIZE>
@@ -325,12 +327,13 @@ namespace intel {
     ModSID( uint8_t _seg, uint8_t _scale, uint8_t _index, int32_t _disp ) : MOp<ARCH>( _seg ), scale( _scale ), index( _index ), disp( _disp ) {}
     uint8_t scale, index; int32_t disp;
     
+    typedef typename GTypeFor<ADDRSIZE>::OP OP;
     void disasm_memory_operand( std::ostream& sink ) const
     {
-      sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << "(," << DisasmG<ADDRSIZE>( index ) << ',' << (1 << scale) << ')';
+      sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << "(," << DisasmG( OP(), index ) << ',' << (1 << scale) << ')';
     }
 
-    addr_t effective_address( ARCH& arch ) const { return addr_t( disp ) + addr_t(arch.template regread<ADDRSIZE>( index ) << scale); }
+    addr_t effective_address( ARCH& arch ) const { return addr_t( disp ) + addr_t(arch.regread( OP(), index ) << scale); }
   };
   
   template <class ARCH, typename DISP>
@@ -363,10 +366,11 @@ namespace intel {
       : MOp<ARCH>( _seg ), disp( _disp ), scale( _scale ), index( _index ), base( _base ) {}
     int32_t disp; uint8_t scale, index, base;
     
+    typedef typename GTypeFor<ADDRSIZE>::OP OP;
     void disasm_memory_operand( std::ostream& sink ) const
-    { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << '(' << DisasmG<ADDRSIZE>( base ) << ',' << DisasmG<ADDRSIZE>( index ) << ',' << (1 << scale) << ')'; };
+    { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << '(' << DisasmG( OP(), base ) << ',' << DisasmG( OP(), index ) << ',' << (1 << scale) << ')'; };
 
-    addr_t effective_address( ARCH& arch ) const { return addr_t(arch.template regread<ADDRSIZE>( base ) + (arch.template regread<ADDRSIZE>( index ) << scale)) + addr_t( disp ); };
+    addr_t effective_address( ARCH& arch ) const { return addr_t(arch.regread( OP(), base ) + (arch.regread( OP(), index ) << scale)) + addr_t( disp ); };
   };
   
   template <class ARCH, unsigned ADDRSIZE>
@@ -375,9 +379,10 @@ namespace intel {
     typedef typename ARCH::addr_t addr_t;
     ModBD( uint8_t _seg, uint8_t _base, int32_t _disp ) : MOp<ARCH>( _seg ), base( _base ), disp( _disp ) {} uint8_t base; int32_t disp;
     
-    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << '(' << DisasmG<ADDRSIZE>( base ) << ')'; };
+    typedef typename GTypeFor<ADDRSIZE>::OP OP;
+    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << '(' << DisasmG( OP(), base ) << ')'; };
 
-    addr_t effective_address( ARCH& arch ) const { return addr_t( arch.template regread<ADDRSIZE>( base ) ) + addr_t( disp ); };
+    addr_t effective_address( ARCH& arch ) const { return addr_t( arch.regread( OP(), base ) ) + addr_t( disp ); };
   };
   
   template <class ARCH>

@@ -21,19 +21,19 @@ struct NearCallJ : public Operation<ARCH>
   }
 };
   
-template <class ARCH, unsigned IPSIZE>
+template <class ARCH, class IOP>
 struct NearCallE : public Operation<ARCH>
 {
   NearCallE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
     
-  void disasm( std::ostream& sink ) const { sink << "call *" << DisasmE( UI<IPSIZE>(), rmop ); }
+  void disasm( std::ostream& sink ) const { sink << "call *" << DisasmE( IOP(), rmop ); }
     
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::addr_t addr_t;
-    typedef typename TypeFor<ARCH,IPSIZE>::u ip_t;
-    auto target = arch.template rmread<IPSIZE>( rmop );
-    arch.template push<IPSIZE>( ip_t( arch.getnip() ) );
+    typedef typename TypeFor<ARCH,IOP::OPSIZE>::u ip_t;
+    auto target = arch.rmread( IOP(), rmop );
+    arch.template push<IOP::OPSIZE>( ip_t( arch.getnip() ) );
     arch.setnip( addr_t( target ), ARCH::ipcall );
   }
 };
@@ -70,8 +70,8 @@ template <class ARCH> struct DC<ARCH,CALL> { Operation<ARCH>* get( InputCode<ARC
     
   if (auto _ = match( ic, opcode( "\xff" ) /2 & RM() ))
     {
-      if      (ic.opsize() == 16) return new NearCallE<ARCH,16>( _.opbase(), _.rmop() );
-      else if (ic.opsize() == 32) return new NearCallE<ARCH,32>( _.opbase(), _.rmop() );
+      if      (ic.opsize() == 16) return new NearCallE<ARCH,GOw>( _.opbase(), _.rmop() );
+      else if (ic.opsize() == 32) return new NearCallE<ARCH,GOd>( _.opbase(), _.rmop() );
       else return 0;
     }
     
@@ -214,17 +214,17 @@ template <class ARCH> struct DC<ARCH,LOOP> { Operation<ARCH>* get( InputCode<ARC
   return 0;
 }};
   
-template <class ARCH, unsigned OPSIZE>
+template <class ARCH, class OP>
 struct JmpE : public Operation<ARCH>
 {
   JmpE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
     
-  void disasm( std::ostream& sink ) const { sink << "jmp " << '*' << DisasmE( UI<OPSIZE>(), rmop ); }
+  void disasm( std::ostream& sink ) const { sink << "jmp " << '*' << DisasmE( OP(), rmop ); }
      
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::addr_t addr_t;
-    arch.setnip( addr_t( arch.template rmread<OPSIZE>( rmop ) ) );
+    arch.setnip( addr_t( arch.rmread( OP(), rmop ) ) );
   }
 };
 
@@ -265,9 +265,9 @@ template <class ARCH> struct DC<ARCH,JMP> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xff" ) /4 & RM() ))
     
     {
-      if      (ic.opsize() == 16) return new JmpE<ARCH,16>( _.opbase(), _.rmop() );
-      else if (ic.opsize() == 32) return new JmpE<ARCH,32>( _.opbase(), _.rmop() );
-      else if (ic.opsize() == 64) return new JmpE<ARCH,64>( _.opbase(), _.rmop() );
+      if      (ic.opsize() == 16) return new JmpE<ARCH,GOw>( _.opbase(), _.rmop() );
+      else if (ic.opsize() == 32) return new JmpE<ARCH,GOd>( _.opbase(), _.rmop() );
+      else if (ic.opsize() == 64) return new JmpE<ARCH,GOq>( _.opbase(), _.rmop() );
       else return 0;
     }
     

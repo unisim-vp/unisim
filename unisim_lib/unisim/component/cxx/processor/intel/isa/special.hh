@@ -28,8 +28,8 @@ struct RdTSC : public Operation<ARCH>
     typedef typename ARCH::u32_t u32_t;
     
     u64_t tsc = arch.tscread();
-    arch.template regwrite<32>( 0, u32_t( tsc >> 0 ) );
-    arch.template regwrite<32>( 2, u32_t( tsc >> 32 ) );
+    arch.regwrite( GOd(), 0, u32_t( tsc >> 0 ) );
+    arch.regwrite( GOd(), 2, u32_t( tsc >> 32 ) );
   }
 };
 

@@ -1156,7 +1156,7 @@ struct PMovMskBRV : public Operation<ARCH>
     for (unsigned sub = 0; sub < 16; ++sub)
       res |= u32_t(arch.template xmm_uread<8>( rm, sub ) >> 7) << sub;
     
-    arch.template regwrite<32>( gn, res );
+    arch.regwrite( GOd(), gn, res );
   }
 };
 

@@ -62,7 +62,13 @@ namespace intel {
   struct GOw { enum { OPSIZE=16 }; };
   struct GOd { enum { OPSIZE=32 }; };
   struct GOq { enum { OPSIZE=64 }; };
+
+  template <unsigned SIZE> struct GTypeFor {};
   
+  template <> struct GTypeFor<16> { typedef GOw OP; };
+  template <> struct GTypeFor<32> { typedef GOd OP; };
+  template <> struct GTypeFor<64> { typedef GOq OP; };
+
 } // end of namespace intel
 } // end of namespace processor
 } // end of namespace cxx
