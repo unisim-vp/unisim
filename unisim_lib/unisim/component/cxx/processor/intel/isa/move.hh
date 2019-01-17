@@ -512,7 +512,7 @@ template <class ARCH>
 struct Arpl : public Operation<ARCH>
 {
   Arpl( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "arpl " << DisasmG<16>( gn ) << ',' << DisasmE( UI<16>(), rmop ); }
+  void disasm( std::ostream& sink ) const { sink << "arpl " << DisasmGw( gn ) << ',' << DisasmE( UI<16>(), rmop ); }
 };
 
 template <class ARCH> struct DC<ARCH,ARPL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )

@@ -1,24 +1,28 @@
 // TODO: check for clearing operation (sub and xor with same registers)
-template <class ARCH, unsigned OPSIZE, bool GTOE>
+
+template <class ARCH, class GOP, bool GTOE>
 struct AddRM : public Operation<ARCH>
 {
-  AddRM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
+  AddRM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn )
+    : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {}
+  RMOp<ARCH> rmop; uint8_t gn;
   
-  void disasm( std::ostream& sink ) const {
-    if (GTOE) sink << "add " << DisasmG<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
-    else      sink << "add " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmG<OPSIZE>( gn );
+  void disasm( std::ostream& sink ) const
+  {
+    if (GTOE) sink << "add " << DisasmG( GOP(), gn ) << ',' << DisasmE( GOP(), rmop );
+    else      sink << "add " << DisasmE( GOP(), rmop ) << ',' << DisasmG( GOP(), gn );
   }
   
-  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
+  typedef typename TypeFor<ARCH,GOP::OPSIZE>::u u_type;
   
   void execute( ARCH& arch ) const
   {
     if (GTOE) {
-      u_type res = eval_add( arch, arch.template rmread<OPSIZE>( rmop ), arch.template regread<OPSIZE>( gn ) );
-      arch.template rmwrite<OPSIZE>( rmop, res );
+      u_type res = eval_add( arch, arch.rmread( GOP(), rmop ), arch.regread( GOP(), gn ) );
+      arch.rmwrite( GOP(), rmop, res );
     } else {
-      u_type res = eval_add( arch, arch.template regread<OPSIZE>( gn ), arch.template rmread<OPSIZE>( rmop ) );
-      arch.template regwrite<OPSIZE>( gn, res );
+      u_type res = eval_add( arch, arch.regread( GOP(), gn ), arch.rmread( GOP(), rmop ) );
+      arch.regwrite( GOP(), gn, res );
     }
   }
 };
@@ -38,24 +42,30 @@ struct AddRMI : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,ADD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\000" ) & RM() ))
-    return new AddRM<ARCH,8,true>( _.opbase(), _.rmop(), _.greg() );
+    {
+      if (ic.rex()) return new AddRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
+      else          return new AddRM<ARCH,GObLH,true>( _.opbase(), _.rmop(), _.greg() );
+    }
 
   if (auto _ = match( ic, opcode( "\001" ) & RM() ))
     {
-      if      (ic.opsize() == 16) return new AddRM<ARCH,16,true>( _.opbase(), _.rmop(), _.greg() );
-      else if (ic.opsize() == 32) return new AddRM<ARCH,32,true>( _.opbase(), _.rmop(), _.greg() );
-      else if (ic.opsize() == 64) return new AddRM<ARCH,64,true>( _.opbase(), _.rmop(), _.greg() );
+      if      (ic.opsize() == 16) return new AddRM<ARCH,GOw,true>( _.opbase(), _.rmop(), _.greg() );
+      else if (ic.opsize() == 32) return new AddRM<ARCH,GOd,true>( _.opbase(), _.rmop(), _.greg() );
+      else if (ic.opsize() == 64) return new AddRM<ARCH,GOq,true>( _.opbase(), _.rmop(), _.greg() );
       else throw 0;
     };
 
   if (auto _ = match( ic, opcode( "\002" ) & RM() ))
-    return new AddRM<ARCH,8,false>( _.opbase(), _.rmop(), _.greg() );
-
+    {
+      if (ic.rex()) return new AddRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
+      else          return new AddRM<ARCH,GObLH,false>( _.opbase(), _.rmop(), _.greg() );
+    }
+  
   if (auto _ = match( ic, opcode( "\003" ) & RM() ))
     {
-      if      (ic.opsize() == 16) return new AddRM<ARCH,16,false>( _.opbase(), _.rmop(), _.greg() );
-      else if (ic.opsize() == 32) return new AddRM<ARCH,32,false>( _.opbase(), _.rmop(), _.greg() );
-      else if (ic.opsize() == 64) return new AddRM<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
+      if      (ic.opsize() == 16) return new AddRM<ARCH,GOw,false>( _.opbase(), _.rmop(), _.greg() );
+      else if (ic.opsize() == 32) return new AddRM<ARCH,GOd,false>( _.opbase(), _.rmop(), _.greg() );
+      else if (ic.opsize() == 64) return new AddRM<ARCH,GOq,false>( _.opbase(), _.rmop(), _.greg() );
       else throw 0;
     };
 

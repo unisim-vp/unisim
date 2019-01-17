@@ -37,6 +37,7 @@
 
 #include <unisim/component/cxx/processor/intel/segments.hh>
 #include <unisim/component/cxx/processor/intel/tmp.hh>
+#include <unisim/component/cxx/processor/intel/types.hh>
 #include <limits>
 #include <iosfwd>
 #include <stdint.h>
@@ -56,39 +57,51 @@ namespace intel {
   std::ostream& operator << ( std::ostream& sink, DisasmObject const& dobj );
   
   /* General purpose registers */
-  struct DisasmGb : public DisasmObject
+  template <class OPFACE> struct _DisasmG;
+  
+  template <> struct _DisasmG<GObLH> : public DisasmObject
   {
-    DisasmGb( unsigned _reg ) : reg( _reg ) {} unsigned reg;
+    _DisasmG<GObLH>( unsigned _reg ) : reg( _reg ) {} unsigned reg;
     void operator() ( std::ostream& sink ) const;
   };
-  struct DisasmGw : public DisasmObject
+  
+  typedef _DisasmG<GObLH> DisasmGb;
+
+  template <> struct _DisasmG<GOb> : public DisasmObject
   {
-    DisasmGw( unsigned _reg ) : reg( _reg ) {} unsigned reg;
+    _DisasmG<GOb>( unsigned _reg ) : reg( _reg ) {} unsigned reg;
     void operator() ( std::ostream& sink ) const;
-  };
-  struct DisasmGd : public DisasmObject
-  {
-    DisasmGd( unsigned _reg ) : reg( _reg ) {} unsigned reg;
-    void operator() ( std::ostream& sink ) const;
-  };
-  struct DisasmGq : public DisasmObject
-  {
-    DisasmGq( unsigned _reg ) : reg( _reg ) {} unsigned reg;
-    void operator() (std::ostream& sink ) const;
   };
 
-  template <unsigned OPSIZE>
-  struct DisasmG : public DisasmObject
+  template <>
+  struct _DisasmG<GOw> : public DisasmObject
   {
-    DisasmG( unsigned _reg ) : reg( _reg ) {} unsigned reg;
-    void operator() ( std::ostream& sink ) const {
-      if      (OPSIZE == 8)  sink << DisasmGb( reg );
-      else if (OPSIZE == 16) sink << DisasmGw( reg );
-      else if (OPSIZE == 32) sink << DisasmGd( reg );
-      else if (OPSIZE == 64) sink << DisasmGq( reg );
-      else throw 0;
-    }
+    _DisasmG<GOw>( unsigned _reg ) : reg( _reg ) {} unsigned reg;
+    void operator() ( std::ostream& sink ) const;
   };
+
+  typedef _DisasmG<GOw> DisasmGw;
+  
+  template <>
+  struct _DisasmG<GOd> : public DisasmObject
+  {
+    _DisasmG<GOd>( unsigned _reg ) : reg( _reg ) {} unsigned reg;
+    void operator() ( std::ostream& sink ) const;
+  };
+
+  typedef _DisasmG<GOd> DisasmGd;
+  
+  template <>
+  struct _DisasmG<GOq> : public DisasmObject
+  {
+    _DisasmG<GOq>( unsigned _reg ) : reg( _reg ) {} unsigned reg;
+    void operator() (std::ostream& sink ) const;
+  };
+  
+  typedef _DisasmG<GOq> DisasmGq;
+  
+  template <class GOP>
+  _DisasmG<GOP> DisasmG( GOP const&, unsigned reg ) { return _DisasmG<GOP>( reg ); }
   
   /* Quadword registers*/
   struct DisasmPq : public DisasmObject
@@ -157,9 +170,8 @@ namespace intel {
   template <class ARCH>
   DisasmRegOrMem<ARCH,DisasmGd>  DisasmEd( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmGd>( rmop ); }
   
-  
-  template <class ARCH,unsigned OPSIZE>
-  DisasmRegOrMem<ARCH,DisasmG<OPSIZE> > DisasmE( UI<OPSIZE> const&, RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmG<OPSIZE> >( rmop ); }
+  template <class ARCH, class OPFACE>
+  DisasmRegOrMem<ARCH,_DisasmG<OPFACE>> DisasmE( OPFACE const&, RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,_DisasmG<OPFACE> >( rmop ); }
   
   template <class ARCH>
   DisasmRegOrMem<ARCH,DisasmPq>  DisasmQq( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmPq>( rmop ); }

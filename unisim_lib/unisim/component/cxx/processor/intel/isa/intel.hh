@@ -144,7 +144,7 @@ namespace intel {
       uint8_t last = opcode()[-1];
       return (last & 0xf0) == 0x40 ? last : 0;
     }
-    unsigned opclass() const { return mode64() ? (rex() & 8 ? 3 : 2) : (mode.cs_d ^ opsz_66) ? 2 : 1; }
+    unsigned opclass() const { return (rex() & 8) ? 3 : (mode.cs_l ^ mode.cs_d ^ opsz_66) ? 2 : 1; }
     unsigned opsize() const { return 8 << opclass(); }
     unsigned addrclass() const { return mode64() ? (adsz_67 ? 2 : 3 ) : (mode.cs_d ^ adsz_67) ? 2 : 1; }
     unsigned addrsize() const { return 8 << addrclass(); }

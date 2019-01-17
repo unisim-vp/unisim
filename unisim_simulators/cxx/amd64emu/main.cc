@@ -93,7 +93,12 @@ struct Arch
   typedef double       f64_t;
   typedef long double  f80_t;
 
-
+  typedef unisim::component::cxx::processor::intel::GObLH GObLH;
+  typedef unisim::component::cxx::processor::intel::GOb GOb;
+  typedef unisim::component::cxx::processor::intel::GOw GOw;
+  typedef unisim::component::cxx::processor::intel::GOd GOd;
+  typedef unisim::component::cxx::processor::intel::GOq GOq;
+  
   struct OpHeader
   {
     OpHeader( addr_t _address ) : address( _address ) {} addr_t address;
@@ -440,43 +445,43 @@ struct Arch
   pop()
   {
     // TODO: handle stack address size
-    u64_t sptr = regread64( 4 );
-    regwrite64( 4, sptr + u64_t( OPSIZE/8 ) );
+    u64_t sptr = regread( GOq(), 4 );
+    regwrite( GOq(), 4, sptr + u64_t( OPSIZE/8 ) );
     return memread<OPSIZE>( unisim::component::cxx::processor::intel::SS, sptr );
   }
 
-  void shrink_stack( addr_t offset ) { regwrite64( 4, regread64( 4 ) + offset ); }
-  void grow_stack( addr_t offset ) { regwrite64( 4, regread64( 4 ) - offset ); }
+  void shrink_stack( addr_t offset ) { regwrite( GOq(), 4, regread( GOq(), 4 ) + offset ); }
+  void grow_stack( addr_t offset ) { regwrite( GOq(), 4, regread( GOq(), 4 ) - offset ); }
 
   template <unsigned OPSIZE>
   void
   push( typename TypeFor<Arch,OPSIZE>::u value )
   {
     // TODO: handle stack address size
-    u64_t sptr = regread32( 4 ) - u64_t( OPSIZE/8 );
+    u64_t sptr = regread( GOq(), 4 ) - u64_t( OPSIZE/8 );
     memwrite<OPSIZE>( unisim::component::cxx::processor::intel::SS, sptr, value );
-    regwrite32( 4, sptr );
+    regwrite( GOq(), 4, sptr );
   }
 
 
-  template <unsigned OPSIZE>
-  typename TypeFor<Arch,OPSIZE>::u
-  rmread( RMOp const& rmop )
+  template <class GOP>
+  typename TypeFor<Arch,GOP::OPSIZE>::u
+  rmread( GOP const&, RMOp const& rmop )
   {
     if (not rmop.is_memory_operand())
-      return regread<OPSIZE>( rmop.ereg() );
+      return regread( GOP(), rmop.ereg() );
 
-    return memread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) );
+    return memread<GOP::OPSIZE>( rmop->segment, rmop->effective_address( *this ) );
   }
 
-  template <unsigned OPSIZE>
+  template <class GOP>
   void
-  rmwrite( RMOp const& rmop, typename TypeFor<Arch,OPSIZE>::u value )
+  rmwrite( GOP const&, RMOp const& rmop, typename TypeFor<Arch,GOP::OPSIZE>::u value )
   {
     if (not rmop.is_memory_operand())
-      return regwrite<OPSIZE>( rmop.ereg(), value );
+      return regwrite( GOP(), rmop.ereg(), value );
 
-    return memwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
+    return memwrite<GOP::OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
   }
 
   template<unsigned OPSIZE>
@@ -572,63 +577,36 @@ struct Arch
   
   uint64_t u64regs[16]; ///< extended reg
 
-  u8_t                        regread8( uint32_t idx )
+  template <class GOP>
+  typename TypeFor<Arch,GOP::OPSIZE>::u regread( GOP const&, unsigned idx )
   {
-    uint32_t reg=idx%4, sh=idx*2 & 8;
+    return typename TypeFor<Arch,GOP::OPSIZE>::u( u64regs[idx] );
+  }
+
+  u8_t regread( GObLH const&, unsigned idx )
+  {
+    unsigned reg = idx%4, sh = idx*2 & 8;
     return u8_t( u64regs[reg] >> sh );
   }
-  u16_t                       regread16( uint32_t idx )
+
+  template <class GOP>
+  void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::OPSIZE>::u value )
   {
-    return u16_t( u64regs[idx] );
-  }
-  u32_t                       regread32( uint32_t idx )
-  {
-    return u32_t( u64regs[idx] );
-  }
-  u64_t                       regread64( uint64_t idx )
-  {
-    return u64_t( u64regs[idx] );
+    u64regs[idx] = u64_t( value );
   }
 
-  template <unsigned OPSIZE>
-  typename TypeFor<Arch,OPSIZE>::u
-  regread( unsigned idx )
+  void regwrite( GObLH const&, unsigned idx, u8_t value )
   {
-    if (OPSIZE==8) return regread8( idx );
-    if (OPSIZE==16) return regread16( idx );
-    if (OPSIZE==32) return regread32( idx );
-    if (OPSIZE==64) return regread64( idx );
-    throw 0;
-    return 0;
+    uint32_t reg = idx%4, sh = idx*2 & 8;
+    u64regs[reg] = (u64regs[reg] & ~u64_t(0xff << sh)) | ((value & u64_t(0xff)) << sh);
   }
-
-  template <unsigned OPSIZE>
-      void
-  regwrite( unsigned idx, typename TypeFor<Arch,OPSIZE>::u value )
+  void regwrite( GOb const&, unsigned idx, u8_t value )
   {
-    if (OPSIZE==8) return regwrite8( idx, value );
-    if (OPSIZE==16) return regwrite16( idx, value );
-    if (OPSIZE==32) return regwrite32( idx, value );
-    if (OPSIZE==64) return regwrite64( idx, value );
-    throw 0;
+    u64regs[idx] = (u64regs[idx] & ~u64_t(0xff)) | ((value & u64_t(0xff)));
   }
-
-  void                        regwrite8( uint32_t idx, u8_t val )
+  void regwrite( GOw const&, unsigned idx, u8_t value )
   {
-    uint32_t reg=idx%4, sh=idx*2 & 8;
-    u64regs[reg] = (u64regs[reg] & ~(0xff << sh)) | ((val & 0xff) << sh);
-  }
-  void                        regwrite16( uint32_t idx, u16_t val )
-  {
-    u64regs[idx] = (u64regs[idx] & 0xffff0000) | (val & 0x0000ffff);
-  }
-  void                        regwrite32( uint32_t idx, u32_t val )
-  {
-    u64regs[idx] = val;
-  }
-  void                        regwrite64( uint32_t idx, u64_t val )
-  {
-    u64regs[idx] = val;
+    u64regs[idx] = (u64regs[idx] & ~u64_t(0xff)) | ((value & u64_t(0xff)));
   }
 
   struct FLAG
@@ -1016,9 +994,9 @@ Arch::fetch()
 void
 Arch::cpuid()
 {
-  switch (this->regread32( 0 )) {
+  switch (this->regread( GOd(), 0 )) {
   case 0: {
-    this->regwrite32( 0, u32_t( 1 ) );
+    this->regwrite( GOd(), 0, u32_t( 1 ) );
   
     char const* name = "GenuineIntel";
     { uint32_t word = 0;
@@ -1026,7 +1004,7 @@ Arch::cpuid()
       while (--idx >= 0) {
         word = (word << 8) | name[idx];
         if (idx % 4) continue;
-        this->regwrite32( 3 - (idx/4), u32_t( word ) );
+        this->regwrite( GOd(), 3 - (idx/4), u32_t( word ) );
         word = 0;
       }
     }
@@ -1039,14 +1017,14 @@ Arch::cpuid()
       (0  << 12 /* processor type */) |
       (0  << 16 /* extended model */) |
       (0  << 20 /* extended family */);
-    this->regwrite32( 0, u32_t( eax ) );
+    this->regwrite( GOd(), 0, u32_t( eax ) );
     
     uint32_t const ebx =
       (0 <<  0 /* Brand index */) |
       (4 <<  8 /* Cache line size (/ 64bits) */) |
       (1 << 16 /* Maximum number of addressable IDs for logical processors in this physical package* */) |
       (0 << 24 /* Initial APIC ID */);
-    this->regwrite32( 3, u32_t( ebx ) );
+    this->regwrite( GOd(), 3, u32_t( ebx ) );
     
     uint32_t const ecx =
       (0 << 0x00 /* Streaming SIMD Extensions 3 (SSE3) */) |
@@ -1081,7 +1059,7 @@ Arch::cpuid()
       (1 << 0x1d /* F16C */) |
       (1 << 0x1e /* RDRAND Available */) |
       (1 << 0x1f /* Is virtual machine */);
-    this->regwrite32( 1, u32_t( ecx ) );
+    this->regwrite( GOd(), 1, u32_t( ecx ) );
     
     uint32_t const edx =
       (1 << 0x00 /* Floating Point Unit On-Chip */) |
@@ -1116,61 +1094,61 @@ Arch::cpuid()
       (0 << 0x1d /* Thermal Monitor */) |
       (0 << 0x1e /* Resrved */) |
       (0 << 0x1f /* Pending Break Enable */);
-    this->regwrite32( 2, u32_t( edx ) );
+    this->regwrite( GOd(), 2, u32_t( edx ) );
     
   } break;
   case 2: {
-    this->regwrite32( 0, u32_t( 0 ) );
-    this->regwrite32( 3, u32_t( 0 ) );
-    this->regwrite32( 1, u32_t( 0 ) );
-    this->regwrite32( 2, u32_t( 0 ) );
+    this->regwrite( GOd(), 0, u32_t( 0 ) );
+    this->regwrite( GOd(), 3, u32_t( 0 ) );
+    this->regwrite( GOd(), 1, u32_t( 0 ) );
+    this->regwrite( GOd(), 2, u32_t( 0 ) );
   } break;
   case 4: {
     // Small cache config
-    switch (this->regread32( 1 )) { // %ecx holds requested cache id
+    switch (this->regread( GOd(), 1 )) { // %ecx holds requested cache id
     case 0: { // L1 D-CACHE
-      this->regwrite32( 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (1 << 0) ) ); // 0x4000121
-      this->regwrite32( 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
-      this->regwrite32( 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
-      this->regwrite32( 2, u32_t( 0x0000001 ) ); // 0x0000001
+      this->regwrite( GOd(), 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (1 << 0) ) ); // 0x4000121
+      this->regwrite( GOd(), 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
+      this->regwrite( GOd(), 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
+      this->regwrite( GOd(), 2, u32_t( 0x0000001 ) ); // 0x0000001
     } break;
     case 1: { // L1 I-CACHE
-      this->regwrite32( 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (2 << 0) ) ); // 0x4000122
-      this->regwrite32( 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
-      this->regwrite32( 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
-      this->regwrite32( 2, u32_t( 0x0000001 ) ); // 0x0000001
+      this->regwrite( GOd(), 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (2 << 0) ) ); // 0x4000122
+      this->regwrite( GOd(), 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
+      this->regwrite( GOd(), 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
+      this->regwrite( GOd(), 2, u32_t( 0x0000001 ) ); // 0x0000001
     } break;
     case 2: { // L2 U-CACHE
-      this->regwrite32( 0, u32_t( (1 << 26) | (1 << 14) | (1 << 8) | (2 << 5) | (3 << 0) ) ); // 0x4000143
-      this->regwrite32( 3, u32_t( (1 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x5c0003f
-      this->regwrite32( 1, u32_t( (0 << 22) | (0xfff << 0) ) ); // 0x0000fff
-      this->regwrite32( 2, u32_t( 0x0000001 ) ); // 0x0000001
+      this->regwrite( GOd(), 0, u32_t( (1 << 26) | (1 << 14) | (1 << 8) | (2 << 5) | (3 << 0) ) ); // 0x4000143
+      this->regwrite( GOd(), 3, u32_t( (1 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x5c0003f
+      this->regwrite( GOd(), 1, u32_t( (0 << 22) | (0xfff << 0) ) ); // 0x0000fff
+      this->regwrite( GOd(), 2, u32_t( 0x0000001 ) ); // 0x0000001
     } break;
     case 3: { // TERMINATING NULL ENTRY
       // 0, 0, 0, 0
-      this->regwrite32( 0, u32_t( 0 ) );
-      this->regwrite32( 3, u32_t( 0 ) );
-      this->regwrite32( 1, u32_t( 0 ) );
-      this->regwrite32( 2, u32_t( 0 ) );
+      this->regwrite( GOd(), 0, u32_t( 0 ) );
+      this->regwrite( GOd(), 3, u32_t( 0 ) );
+      this->regwrite( GOd(), 1, u32_t( 0 ) );
+      this->regwrite( GOd(), 2, u32_t( 0 ) );
     } break;
     }
   } break;
   
   case 0x80000000: {
-    this->regwrite32( 0, u32_t( 0x80000001 ) );
-    this->regwrite32( 3, u32_t( 0 ) );
-    this->regwrite32( 1, u32_t( 0 ) );
-    this->regwrite32( 2, u32_t( 0 ) );
+    this->regwrite( GOd(), 0, u32_t( 0x80000001 ) );
+    this->regwrite( GOd(), 3, u32_t( 0 ) );
+    this->regwrite( GOd(), 1, u32_t( 0 ) );
+    this->regwrite( GOd(), 2, u32_t( 0 ) );
   } break;
   case 0x80000001: {
-    this->regwrite32( 0, u32_t( 0 ) );
-    this->regwrite32( 3, u32_t( 0 ) );
-    this->regwrite32( 1, u32_t( 0 ) );
-    this->regwrite32( 2, u32_t( 0 ) );
+    this->regwrite( GOd(), 0, u32_t( 0 ) );
+    this->regwrite( GOd(), 3, u32_t( 0 ) );
+    this->regwrite( GOd(), 1, u32_t( 0 ) );
+    this->regwrite( GOd(), 2, u32_t( 0 ) );
   } break;
   default:
     std::cerr << "Unknown cmd for cpuid, " << std::hex
-              << "%eax=0x" << this->regread32( 0 ) << ", "
+              << "%eax=0x" << this->regread( GOd(), 0 ) << ", "
               << "%eip=0x" << latest_instruction->address << "\n";
     throw "not implemented";
     break;
@@ -1251,7 +1229,7 @@ main( int argc, char *argv[] )
       // std::cerr << std::endl;
       asm volatile ("operation_execute:");
       op->execute( cpu );
-      //{ uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread32( idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
+      //{ uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread( GOd(), idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
       
       // if ((cpu.instruction_count % 0x1000000) == 0)
       //   { std::cerr << "Executed instructions: " << std::dec << cpu.instruction_count << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }

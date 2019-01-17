@@ -132,7 +132,7 @@ template <class ARCH> struct DC<ARCH,JCC> { Operation<ARCH>* get( InputCode<ARCH
   return 0;
 }};
 
-template <class ARCH, unsigned MOD, unsigned CNTSIZE, unsigned IPSIZE>
+template <class ARCH, unsigned MOD, class COUNT, unsigned IPSIZE>
 struct Loop : public Operation<ARCH>
 {
   int8_t offset;
@@ -146,23 +146,23 @@ struct Loop : public Operation<ARCH>
     if      (MOD == 0) sink << "loopne ";
     else if (MOD == 1) sink << "loope ";
     else if (MOD == 2) sink << "loop ";
-    else if (MOD == 3) sink << "j" << DisasmG<CNTSIZE>(1) << ' ';
+    else if (MOD == 3) sink << "j" << DisasmG( COUNT(), 1) << ' ';
     sink << "0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset);
   };
     
   void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<ARCH,CNTSIZE>::u count_t;
+    typedef typename TypeFor<ARCH,COUNT::OPSIZE>::u count_t;
     typedef typename TypeFor<ARCH,IPSIZE>::u ip_t;
     typedef typename ARCH::addr_t addr_t;
     typedef typename ARCH::bit_t bit_t;
     
     // Decrement count register
-    count_t count = arch.template regread<CNTSIZE>( 1 );
+    count_t count = arch.regread( COUNT(), 1 );
     if (MOD != 3)
       {
         count -= count_t( 1 );
-        arch.template regwrite<CNTSIZE>( 1, count );
+        arch.regwrite( COUNT(), 1, count );
       }
     // Stop if count is zero
     if (arch.Cond( count == count_t(0) )) return;
@@ -180,15 +180,15 @@ Operation<ARCH>* newLoopMod( InputCode<ARCH> const& ic, OpBase<ARCH> const& opba
 {
   if (ic.mode64())
     {
-      if (ic.opsize() == 32) return new Loop<ARCH,MOD,32,64>( opbase, offset );
-      if (ic.opsize() == 64) return new Loop<ARCH,MOD,64,64>( opbase, offset );
+      if (ic.opsize() == 32) return new Loop<ARCH,MOD,GOd,64>( opbase, offset );
+      if (ic.opsize() == 64) return new Loop<ARCH,MOD,GOq,64>( opbase, offset );
     }
   else
     {
-      if (ic.addrsize() == 16 and ic.opsize() == 16) return new Loop<ARCH,MOD,16,16>( opbase, offset );
-      if (ic.addrsize() == 16 and ic.opsize() == 32) return new Loop<ARCH,MOD,16,32>( opbase, offset );
-      if (ic.addrsize() == 32 and ic.opsize() == 16) return new Loop<ARCH,MOD,32,16>( opbase, offset );
-      if (ic.addrsize() == 32 and ic.opsize() == 32) return new Loop<ARCH,MOD,32,32>( opbase, offset );
+      if (ic.addrsize() == 16 and ic.opsize() == 16) return new Loop<ARCH,MOD,GOw,16>( opbase, offset );
+      if (ic.addrsize() == 16 and ic.opsize() == 32) return new Loop<ARCH,MOD,GOw,32>( opbase, offset );
+      if (ic.addrsize() == 32 and ic.opsize() == 16) return new Loop<ARCH,MOD,GOd,16>( opbase, offset );
+      if (ic.addrsize() == 32 and ic.opsize() == 32) return new Loop<ARCH,MOD,GOd,32>( opbase, offset );
     }
   return 0;
 }
@@ -470,22 +470,22 @@ struct Enter : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "enter " << DisasmI( allocsize ) << ',' << DisasmI( nestinglevel ); }
 };
 
-template <class ARCH, unsigned OPSIZE/*, unsigned SPSIZE*/>
+template <class ARCH, class GOP/*, unsigned SPSIZE*/>
 struct Leave : public Operation<ARCH>
 {
-  typedef typename ARCH::u32_t u32_t;
   Leave( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   
   void disasm( std::ostream& sink ) const { sink << "leave"; }
   
   void execute( ARCH& arch ) const
   {
+    typedef typename TypeFor<ARCH,GOP::OPSIZE>::u uop_t;
     /* TODO: STACKSIZE */
-    if (OPSIZE != 32) throw 0;
-    arch.regwrite32( 4, arch.regread32( 5 ) );
-    u32_t src = arch.regread32( 4 );
-    arch.regwrite32( 4, src + u32_t( 4 ) );
-    arch.regwrite32( 5, arch.template memread<32>( SS, src ) );
+    if (GOP::OPSIZE != 32) throw 0;
+    arch.regwrite( GOP(), 4, arch.regread( GOP(), 5 ) );
+    uop_t src = arch.regread( GOP(), 4 );
+    arch.regwrite( GOP(), 4, src + uop_t( 4 ) );
+    arch.regwrite( GOP(), 5, arch.template memread<32>( SS, src ) );
   }
 };
 
@@ -503,9 +503,9 @@ template <class ARCH> struct DC<ARCH,ENTER_LEAVE> { Operation<ARCH>* get( InputC
   if (auto _ = match( ic, opcode( "\xc9" ) ))
   
     {
-      if      (ic.opsize() == 16) return new Leave<ARCH,16>( _.opbase() );
-      else if (ic.opsize() == 32) return new Leave<ARCH,32>( _.opbase() );
-      else if (ic.opsize() == 64) return new Leave<ARCH,64>( _.opbase() );
+      if      (ic.opsize() == 16) return new Leave<ARCH,GOw>( _.opbase() );
+      else if (ic.opsize() == 32) return new Leave<ARCH,GOd>( _.opbase() );
+      else if (ic.opsize() == 64) return new Leave<ARCH,GOq>( _.opbase() );
     }
   return 0;
 }};
