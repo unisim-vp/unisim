@@ -59,9 +59,10 @@ namespace intel {
   void _DisasmG<GOb>::operator() ( std::ostream& sink ) const
   {
     if (reg >= 8)
-      sink << "%r" << std::dec << reg << 'b';
-    else
-      sink << (&"%al\0%cl\0%dl\0%bl\0%spl\0%bpl\0%sil\0%dil"[(reg % 8)*4]);
+      { sink << "%r" << std::dec << reg << 'b'; return; }
+    
+    static char const* regname[] = { "%al", "%cl", "%dl", "%bl", "%spl", "%bpl", "%sil", "%dil" };
+    sink << regname[reg];
   }
 
   void _DisasmG<GOw>::operator()  ( std::ostream& sink ) const
