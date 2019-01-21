@@ -60,15 +60,6 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-  // Register names
-  static char const* const kAMD64_rax  = "%rax"; /* syscall arg#1 */
-  static char const* const kAMD64_x1  = "x1"; /* syscall arg#2, argc */
-  static char const* const kAMD64_x2  = "x2"; /* syscall arg#3, argv */
-  static char const* const kAMD64_x3  = "x3"; /* syscall arg#4 */
-  static char const* const kAMD64_x4  = "x4"; /* syscall arg#5 */
-  static char const* const kAMD64_x5  = "x5"; /* syscall arg#6 */
-  static char const* const kAMD64_x8  = "x8"; /* syscall NR */
-
   template <class LINUX>
   struct AMD64TS : public LINUX::TargetSystem
   {
@@ -215,21 +206,20 @@ namespace linux_os {
     }
     
     static void SetAMD64SystemCallStatus(LINUX& _lin, int64_t ret, bool error)
-    { SetRegister(_lin, kAMD64_rax, (parameter_type) ret); }
+    { SetRegister(_lin, "%rax", (parameter_type) ret); }
     
     void SetSystemCallStatus(int64_t ret, bool error) const { SetAMD64SystemCallStatus( lin, ret, error ); }
     
     static parameter_type GetSystemCallParam( LINUX& _lin, int id )
     {
       parameter_type val = 0;
-          
       switch (id) {
-      case 0: GetRegister(_lin, kAMD64_rax, &val); break;
-      case 1: GetRegister(_lin, kAMD64_x1, &val); break;
-      case 2: GetRegister(_lin, kAMD64_x2, &val); break;
-      case 3: GetRegister(_lin, kAMD64_x3, &val); break;
-      case 4: GetRegister(_lin, kAMD64_x4, &val); break;
-      case 5: GetRegister(_lin, kAMD64_x5, &val); break;
+      case 0: GetRegister(_lin, "%rdi", &val); break;
+      case 1: GetRegister(_lin, "%rsi", &val); break;
+      case 2: GetRegister(_lin, "%rdx", &val); break;
+      case 3: GetRegister(_lin, "%r10", &val); break;
+      case 4: GetRegister(_lin, "%r8", &val); break;
+      case 5: GetRegister(_lin, "%r9", &val); break;
       default: throw std::logic_error("internal_error");
       }
           
@@ -348,318 +338,385 @@ namespace linux_os {
 
     SysCall* GetSystemCall( int& id ) const
     {
-      // Amd64 ABI ignores the supplied argument and uses register x8
-      parameter_type id_from_reg;
-      if (not GetRegister(lin, kAMD64_x8, &id_from_reg))
-        return 0;
-      id = int(id_from_reg);
-      
-      // see either arch/amd64/include/asm/unistd.h or arch/amd64/include/uapi/asm/unistd.h in Linux source
+      // see either arch/amd64/include/asm/unistd[_64].h
       switch (id) {
-      case 5:   return this->GetSysCall("setxattr");
-      case 6:   return this->GetSysCall("lsetxattr");
-      case 7:   return this->GetSysCall("fsetxattr");
-      case 8:   return this->GetSysCall("getxattr");
-      case 9:   return this->GetSysCall("lgetxattr");
-      case 10:  return this->GetSysCall("fgetxattr");
-      case 11:  return this->GetSysCall("listxattr");
-      case 12:  return this->GetSysCall("llistxattr");
-      case 13:  return this->GetSysCall("flistxattr");
-      case 14:  return this->GetSysCall("removexattr");
-      case 15:  return this->GetSysCall("lremovexattr");
-      case 16:  return this->GetSysCall("fremovexattr");
-      case 17: return this->GetSysCall("getcwd");
-      case 18: return this->GetSysCall("lookup_dcookie");
-      case 19: return this->GetSysCall("eventfd2");
-      case 20: return this->GetSysCall("epoll_create1");
-      case 21: return this->GetSysCall("epoll_ctl");
-      case 22: return this->GetSysCall("epoll_pwait");
-      case 23: return this->GetSysCall("dup");
-      case 24: return this->GetSysCall("dup3");
-        // #define __NR3264_fcntl 25
-      case 26: return this->GetSysCall("inotify_init1");
-      case 27: return this->GetSysCall("inotify_add_watch");
-      case 28: return this->GetSysCall("inotify_rm_watch");
-      case 29: return this->GetSysCall("ioctl");
-      case 30: return this->GetSysCall("ioprio_set");
-      case 31: return this->GetSysCall("ioprio_get");
-      case 32: return this->GetSysCall("flock");
-      case 33: return this->GetSysCall("mknodat");
-      case 34: return this->GetSysCall("mkdirat");
-      case 35: return this->GetSysCall("unlinkat");
-      case 36: return this->GetSysCall("symlinkat");
-      case 37: return this->GetSysCall("linkat");
-      case 38: return this->GetSysCall("renameat");
-      case 39: return this->GetSysCall("umount2");
-      case 40: return this->GetSysCall("mount");
-      case 41: return this->GetSysCall("pivot_root");
-      case 42: return this->GetSysCall("nfsservctl");
-        // #define __NR3264_statfs 43
-        // #define __NR3264_fstatfs 44
-        // #define __NR3264_truncate 45
-        // #define __NR3264_ftruncate 46
-      case 47: return this->GetSysCall("fallocate");
-      case 48: return this->GetSysCall("faccessat");
-      case 49: return this->GetSysCall("chdir");
-      case 50: return this->GetSysCall("fchdir");
-      case 51: return this->GetSysCall("chroot");
-      case 52: return this->GetSysCall("fchmod");
-      case 53: return this->GetSysCall("fchmodat");
-      case 54: return this->GetSysCall("fchownat");
-      case 55: return this->GetSysCall("fchown");
-      case 56: return this->GetSysCall("openat");
-      case 57: return this->GetSysCall("close");
-      case 58: return this->GetSysCall("vhangup");
-      case 59: return this->GetSysCall("pipe2");
-      case 60: return this->GetSysCall("quotactl");
-      case 61: return this->GetSysCall("getdents64");
-        // #define __NR3264_lseek 62
-      case 63: return this->GetSysCall("read");
-      case 64: return this->GetSysCall("write");
-      case 65: return this->GetSysCall("readv");
-      case 66: return this->GetSysCall("writev");
-      case 67: return this->GetSysCall("pread64");
-      case 68: return this->GetSysCall("pwrite64");
-      case 69: return this->GetSysCall("preadv");
-      case 70: return this->GetSysCall("pwritev");
-        // #define __NR3264_sendfile 71
-      case 72: return this->GetSysCall("pselect6");
-      case 73: return this->GetSysCall("ppoll");
-      case 74: return this->GetSysCall("signalfd4");
-      case 75: return this->GetSysCall("vmsplice");
-      case 76: return this->GetSysCall("splice");
-      case 77: return this->GetSysCall("tee");
-      case 78: return this->GetSysCall("readlinkat");
-        // #define __NR3264_fstatat 79
-        // #define __NR3264_fstat 80
-      case 81: return this->GetSysCall("sync");
-      case 82: return this->GetSysCall("fsync");
-      case 83: return this->GetSysCall("fdatasync");
-      case 84: return this->GetSysCall("sync_file_range2");
-      case 85: return this->GetSysCall("timerfd_create");
-      case 86: return this->GetSysCall("timerfd_settime");
-      case 87: return this->GetSysCall("timerfd_gettime");
-      case 88: return this->GetSysCall("utimensat");
-      case 89: return this->GetSysCall("acct");
-      case 90: return this->GetSysCall("capget");
-      case 91: return this->GetSysCall("capset");
-      case 92: return this->GetSysCall("personality");
-      case 93: return this->GetSysCall("exit");
-      case 94: return this->GetSysCall("exit_group");
-      case 95: return this->GetSysCall("waitid");
-      case 96: return this->GetSysCall("set_tid_address");
-      case 97: return this->GetSysCall("unshare");
-      case 98: return this->GetSysCall("futex");
-      case 99: return this->GetSysCall("set_robust_list");
-      case 100: return this->GetSysCall("get_robust_list");
-      case 101: return this->GetSysCall("nanosleep");
-      case 102: return this->GetSysCall("getitimer");
-      case 103: return this->GetSysCall("setitimer");
-      case 104: return this->GetSysCall("kexec_load");
-      case 105: return this->GetSysCall("init_module");
-      case 106: return this->GetSysCall("delete_module");
-      case 107: return this->GetSysCall("timer_create");
-      case 108: return this->GetSysCall("timer_gettime");
-      case 109: return this->GetSysCall("timer_getoverrun");
-      case 110: return this->GetSysCall("timer_settime");
-      case 111: return this->GetSysCall("timer_delete");
-      case 112: return this->GetSysCall("clock_settime");
-      case 113: return this->GetSysCall("clock_gettime");
-      case 114: return this->GetSysCall("clock_getres");
-      case 115: return this->GetSysCall("clock_nanosleep");
-      case 116: return this->GetSysCall("syslog");
-      case 117: return this->GetSysCall("ptrace");
-      case 118: return this->GetSysCall("sched_setparam");
-      case 119: return this->GetSysCall("sched_setscheduler");
-      case 120: return this->GetSysCall("sched_getscheduler");
-      case 121: return this->GetSysCall("sched_getparam");
-      case 122: return this->GetSysCall("sched_setaffinity");
-      case 123: return this->GetSysCall("sched_getaffinity");
-      case 124: return this->GetSysCall("sched_yield");
-      case 125: return this->GetSysCall("sched_get_priority_max");
-      case 126: return this->GetSysCall("sched_get_priority_min");
-      case 127: return this->GetSysCall("sched_rr_get_interval");
-      case 128: return this->GetSysCall("restart_syscall");
-      case 129: return this->GetSysCall("kill");
-      case 130: return this->GetSysCall("tkill");
-      case 131: return this->GetSysCall("tgkill");
-      case 132: return this->GetSysCall("sigaltstack");
-      case 133: return this->GetSysCall("rt_sigsuspend");
-      case 134: return this->GetSysCall("rt_sigaction");
-      case 135: return this->GetSysCall("rt_sigprocmask");
-      case 136: return this->GetSysCall("rt_sigpending");
-      case 137: return this->GetSysCall("rt_sigtimedwait");
-      case 138: return this->GetSysCall("rt_sigqueueinfo");
-      case 139: return this->GetSysCall("rt_sigreturn");
-      case 140: return this->GetSysCall("setpriority");
-      case 141: return this->GetSysCall("getpriority");
-      case 142: return this->GetSysCall("reboot");
-      case 143: return this->GetSysCall("setregid");
-      case 144: return this->GetSysCall("setgid");
-      case 145: return this->GetSysCall("setreuid");
-      case 146: return this->GetSysCall("setuid");
-      case 147: return this->GetSysCall("setresuid");
-      case 148: return this->GetSysCall("getresuid");
-      case 149: return this->GetSysCall("setresgid");
-      case 150: return this->GetSysCall("getresgid");
-      case 151: return this->GetSysCall("setfsuid");
-      case 152: return this->GetSysCall("setfsgid");
-      case 153: return this->GetSysCall("times");
-      case 154: return this->GetSysCall("setpgid");
-      case 155: return this->GetSysCall("getpgid");
-      case 156: return this->GetSysCall("getsid");
-      case 157: return this->GetSysCall("setsid");
-      case 158: return this->GetSysCall("getgroups");
-      case 159: return this->GetSysCall("setgroups");
-        // case 160: return this->GetSysCall("uname"); Amd64 specific
-      case 161: return this->GetSysCall("sethostname");
-      case 162: return this->GetSysCall("setdomainname");
-      case 163: return this->GetSysCall("getrlimit");
-      case 164: return this->GetSysCall("setrlimit");
-      case 165: return this->GetSysCall("getrusage");
-      case 166: return this->GetSysCall("umask");
-      case 167: return this->GetSysCall("prctl");
-      case 168: return this->GetSysCall("getcpu");
-      case 169: return this->GetSysCall("gettimeofday");
-      case 170: return this->GetSysCall("settimeofday");
-      case 171: return this->GetSysCall("adjtimex");
-      case 172: return this->GetSysCall("getpid");
-      case 173: return this->GetSysCall("getppid");
-      case 174: return this->GetSysCall("getuid");
-      case 175: return this->GetSysCall("geteuid");
-      case 176: return this->GetSysCall("getgid");
-      case 177: return this->GetSysCall("getegid");
-      case 178: return this->GetSysCall("gettid");
-      case 179: return this->GetSysCall("sysinfo");
-      case 180: return this->GetSysCall("mq_open");
-      case 181: return this->GetSysCall("mq_unlink");
-      case 182: return this->GetSysCall("mq_timedsend");
-      case 183: return this->GetSysCall("mq_timedreceive");
-      case 184: return this->GetSysCall("mq_notify");
-      case 185: return this->GetSysCall("mq_getsetattr");
-      case 186: return this->GetSysCall("msgget");
-      case 187: return this->GetSysCall("msgctl");
-      case 188: return this->GetSysCall("msgrcv");
-      case 189: return this->GetSysCall("msgsnd");
-      case 190: return this->GetSysCall("semget");
-      case 191: return this->GetSysCall("semctl");
-      case 192: return this->GetSysCall("semtimedop");
-      case 193: return this->GetSysCall("semop");
-      case 194: return this->GetSysCall("shmget");
-      case 195: return this->GetSysCall("shmctl");
-      case 196: return this->GetSysCall("shmat");
-      case 197: return this->GetSysCall("shmdt");
-      case 198: return this->GetSysCall("socket");
-      case 199: return this->GetSysCall("socketpair");
-      case 200: return this->GetSysCall("bind");
-      case 201: return this->GetSysCall("listen");
-      case 202: return this->GetSysCall("accept");
-      case 203: return this->GetSysCall("connect");
-      case 204: return this->GetSysCall("getsockname");
-      case 205: return this->GetSysCall("getpeername");
-      case 206: return this->GetSysCall("sendto");
-      case 207: return this->GetSysCall("recvfrom");
-      case 208: return this->GetSysCall("setsockopt");
-      case 209: return this->GetSysCall("getsockopt");
-      case 210: return this->GetSysCall("shutdown");
-      case 211: return this->GetSysCall("sendmsg");
-      case 212: return this->GetSysCall("recvmsg");
-      case 213: return this->GetSysCall("readahead");
-      case 214: return this->GetSysCall("brk");
-      case 215: return this->GetSysCall("munmap");
-      case 216: return this->GetSysCall("mremap");
-      case 217: return this->GetSysCall("add_key");
-      case 218: return this->GetSysCall("request_key");
-      case 219: return this->GetSysCall("keyctl");
-      case 220: return this->GetSysCall("clone");
-      case 221: return this->GetSysCall("execve");
-      case 222: return this->GetSysCall("mmap");
-        // #define __NR3264_fadvise64 223
-      case 224: return this->GetSysCall("swapon");
-      case 225: return this->GetSysCall("swapoff");
-      case 226: return this->GetSysCall("mprotect");
-      case 227: return this->GetSysCall("msync");
-      case 228: return this->GetSysCall("mlock");
-      case 229: return this->GetSysCall("munlock");
-      case 230: return this->GetSysCall("mlockall");
-      case 231: return this->GetSysCall("munlockall");
-      case 232: return this->GetSysCall("mincore");
-      case 233: return this->GetSysCall("madvise");
-      case 234: return this->GetSysCall("remap_file_pages");
-      case 235: return this->GetSysCall("mbind");
-      case 236: return this->GetSysCall("get_mempolicy");
-      case 237: return this->GetSysCall("set_mempolicy");
-      case 238: return this->GetSysCall("migrate_pages");
-      case 239: return this->GetSysCall("move_pages");
-      case 240: return this->GetSysCall("rt_tgsigqueueinfo");
-      case 241: return this->GetSysCall("perf_event_open");
-      case 242: return this->GetSysCall("accept4");
-      case 243: return this->GetSysCall("recvmmsg");
-        /* 244-259: Architecture Specific Syscalls */
-      case 260: return this->GetSysCall("wait4");
-      case 261: return this->GetSysCall("prlimit64");
-      case 262: return this->GetSysCall("fanotify_init");
-      case 263: return this->GetSysCall("fanotify_mark");
-      case 264: return this->GetSysCall("name_to_handle_at");
-      case 265: return this->GetSysCall("open_by_handle_at");
-      case 266: return this->GetSysCall("clock_adjtime");
-      case 267: return this->GetSysCall("syncfs");
-      case 268: return this->GetSysCall("setns");
-      case 269: return this->GetSysCall("sendmmsg");
-      case 270: return this->GetSysCall("process_vm_readv");
-      case 271: return this->GetSysCall("process_vm_writev");
-      case 272: return this->GetSysCall("kcmp");
-      case 273: return this->GetSysCall("finit_module");
-      case 274: return this->GetSysCall("sched_setattr");
-      case 275: return this->GetSysCall("sched_getattr");
-      case 276: return this->GetSysCall("renameat2");
-      case 277: return this->GetSysCall("seccomp");
-      case 278: return this->GetSysCall("getrandom");
-      case 279: return this->GetSysCall("memfd_create");
+      case 0:     return this->GetSysCall("read");
+      case 1:     return this->GetSysCall("write");
+      case 2:     return this->GetSysCall("open");
+      case 3:     return this->GetSysCall("close");
+      case 4:     return this->GetSysCall("stat");
+      case 5:     return this->GetSysCall("fstat");
+      case 6:     return this->GetSysCall("lstat");
+      case 7:     return this->GetSysCall("poll");
+      case 8:     return this->GetSysCall("lseek");
+      case 9:     return this->GetSysCall("mmap");
+      case 10:    return this->GetSysCall("mprotect");
+      case 11:    return this->GetSysCall("munmap");
+      case 12:    return this->GetSysCall("brk");
+      case 13:    return this->GetSysCall("rt_sigaction");
+      case 14:    return this->GetSysCall("rt_sigprocmask");
+      case 15:    return this->GetSysCall("rt_sigreturn");
+      case 16:    return this->GetSysCall("ioctl");
+      case 17:    return this->GetSysCall("pread64");
+      case 18:    return this->GetSysCall("pwrite64");
+      case 19:    return this->GetSysCall("readv");
+      case 20:    return this->GetSysCall("writev");
+      case 21:    return this->GetSysCall("access");
+      case 22:    return this->GetSysCall("pipe");
+      case 23:    return this->GetSysCall("select");
+      case 24:    return this->GetSysCall("sched_yield");
+      case 25:    return this->GetSysCall("mremap");
+      case 26:    return this->GetSysCall("msync");
+      case 27:    return this->GetSysCall("mincore");
+      case 28:    return this->GetSysCall("madvise");
+      case 29:    return this->GetSysCall("shmget");
+      case 30:    return this->GetSysCall("shmat");
+      case 31:    return this->GetSysCall("shmctl");
+      case 32:    return this->GetSysCall("dup");
+      case 33:    return this->GetSysCall("dup2");
+      case 34:    return this->GetSysCall("pause");
+      case 35:    return this->GetSysCall("nanosleep");
+      case 36:    return this->GetSysCall("getitimer");
+      case 37:    return this->GetSysCall("alarm");
+      case 38:    return this->GetSysCall("setitimer");
+      case 39:    return this->GetSysCall("getpid");
+      case 40:    return this->GetSysCall("sendfile");
+      case 41:    return this->GetSysCall("socket");
+      case 42:    return this->GetSysCall("connect");
+      case 43:    return this->GetSysCall("accept");
+      case 44:    return this->GetSysCall("sendto");
+      case 45:    return this->GetSysCall("recvfrom");
+      case 46:    return this->GetSysCall("sendmsg");
+      case 47:    return this->GetSysCall("recvmsg");
+      case 48:    return this->GetSysCall("shutdown");
+      case 49:    return this->GetSysCall("bind");
+      case 50:    return this->GetSysCall("listen");
+      case 51:    return this->GetSysCall("getsockname");
+      case 52:    return this->GetSysCall("getpeername");
+      case 53:    return this->GetSysCall("socketpair");
+      case 54:    return this->GetSysCall("setsockopt");
+      case 55:    return this->GetSysCall("getsockopt");
+      case 56:    return this->GetSysCall("clone");
+      case 57:    return this->GetSysCall("fork");
+      case 58:    return this->GetSysCall("vfork");
+      case 59:    return this->GetSysCall("execve");
+      case 60:    return this->GetSysCall("exit");
+      case 61:    return this->GetSysCall("wait4");
+      case 62:    return this->GetSysCall("kill");
+        /*  63: uname (see AMD64 specific) */;
+      case 64:    return this->GetSysCall("semget");
+      case 65:    return this->GetSysCall("semop");
+      case 66:    return this->GetSysCall("semctl");
+      case 67:    return this->GetSysCall("shmdt");
+      case 68:    return this->GetSysCall("msgget");
+      case 69:    return this->GetSysCall("msgsnd");
+      case 70:    return this->GetSysCall("msgrcv");
+      case 71:    return this->GetSysCall("msgctl");
+      case 72:    return this->GetSysCall("fcntl");
+      case 73:    return this->GetSysCall("flock");
+      case 74:    return this->GetSysCall("fsync");
+      case 75:    return this->GetSysCall("fdatasync");
+      case 76:    return this->GetSysCall("truncate");
+      case 77:    return this->GetSysCall("ftruncate");
+      case 78:    return this->GetSysCall("getdents");
+      case 79:    return this->GetSysCall("getcwd");
+      case 80:    return this->GetSysCall("chdir");
+      case 81:    return this->GetSysCall("fchdir");
+      case 82:    return this->GetSysCall("rename");
+      case 83:    return this->GetSysCall("mkdir");
+      case 84:    return this->GetSysCall("rmdir");
+      case 85:    return this->GetSysCall("creat");
+      case 86:    return this->GetSysCall("link");
+      case 87:    return this->GetSysCall("unlink");
+      case 88:    return this->GetSysCall("symlink");
+      case 89:    return this->GetSysCall("readlink");
+      case 90:    return this->GetSysCall("chmod");
+      case 91:    return this->GetSysCall("fchmod");
+      case 92:    return this->GetSysCall("chown");
+      case 93:    return this->GetSysCall("fchown");
+      case 94:    return this->GetSysCall("lchown");
+      case 95:    return this->GetSysCall("umask");
+      case 96:    return this->GetSysCall("gettimeofday");
+      case 97:    return this->GetSysCall("getrlimit");
+      case 98:    return this->GetSysCall("getrusage");
+      case 99:    return this->GetSysCall("sysinfo");
+      case 100:   return this->GetSysCall("times");
+      case 101:   return this->GetSysCall("ptrace");
+      case 102:   return this->GetSysCall("getuid");
+      case 103:   return this->GetSysCall("syslog");
+      case 104:   return this->GetSysCall("getgid");
+      case 105:   return this->GetSysCall("setuid");
+      case 106:   return this->GetSysCall("setgid");
+      case 107:   return this->GetSysCall("geteuid");
+      case 108:   return this->GetSysCall("getegid");
+      case 109:   return this->GetSysCall("setpgid");
+      case 110:   return this->GetSysCall("getppid");
+      case 111:   return this->GetSysCall("getpgrp");
+      case 112:   return this->GetSysCall("setsid");
+      case 113:   return this->GetSysCall("setreuid");
+      case 114:   return this->GetSysCall("setregid");
+      case 115:   return this->GetSysCall("getgroups");
+      case 116:   return this->GetSysCall("setgroups");
+      case 117:   return this->GetSysCall("setresuid");
+      case 118:   return this->GetSysCall("getresuid");
+      case 119:   return this->GetSysCall("setresgid");
+      case 120:   return this->GetSysCall("getresgid");
+      case 121:   return this->GetSysCall("getpgid");
+      case 122:   return this->GetSysCall("setfsuid");
+      case 123:   return this->GetSysCall("setfsgid");
+      case 124:   return this->GetSysCall("getsid");
+      case 125:   return this->GetSysCall("capget");
+      case 126:   return this->GetSysCall("capset");
+      case 127:   return this->GetSysCall("rt_sigpending");
+      case 128:   return this->GetSysCall("rt_sigtimedwait");
+      case 129:   return this->GetSysCall("rt_sigqueueinfo");
+      case 130:   return this->GetSysCall("rt_sigsuspend");
+      case 131:   return this->GetSysCall("sigaltstack");
+      case 132:   return this->GetSysCall("utime");
+      case 133:   return this->GetSysCall("mknod");
+      case 134:   return this->GetSysCall("uselib");
+      case 135:   return this->GetSysCall("personality");
+      case 136:   return this->GetSysCall("ustat");
+      case 137:   return this->GetSysCall("statfs");
+      case 138:   return this->GetSysCall("fstatfs");
+      case 139:   return this->GetSysCall("sysfs");
+      case 140:   return this->GetSysCall("getpriority");
+      case 141:   return this->GetSysCall("setpriority");
+      case 142:   return this->GetSysCall("sched_setparam");
+      case 143:   return this->GetSysCall("sched_getparam");
+      case 144:   return this->GetSysCall("sched_setscheduler");
+      case 145:   return this->GetSysCall("sched_getscheduler");
+      case 146:   return this->GetSysCall("sched_get_priority_max");
+      case 147:   return this->GetSysCall("sched_get_priority_min");
+      case 148:   return this->GetSysCall("sched_rr_get_interval");
+      case 149:   return this->GetSysCall("mlock");
+      case 150:   return this->GetSysCall("munlock");
+      case 151:   return this->GetSysCall("mlockall");
+      case 152:   return this->GetSysCall("munlockall");
+      case 153:   return this->GetSysCall("vhangup");
+      case 154:   return this->GetSysCall("modify_ldt");
+      case 155:   return this->GetSysCall("pivot_root");
+      case 156:   return this->GetSysCall("_sysctl");
+      case 157:   return this->GetSysCall("prctl");
+      case 158:   return this->GetSysCall("arch_prctl");
+      case 159:   return this->GetSysCall("adjtimex");
+      case 160:   return this->GetSysCall("setrlimit");
+      case 161:   return this->GetSysCall("chroot");
+      case 162:   return this->GetSysCall("sync");
+      case 163:   return this->GetSysCall("acct");
+      case 164:   return this->GetSysCall("settimeofday");
+      case 165:   return this->GetSysCall("mount");
+      case 166:   return this->GetSysCall("umount2");
+      case 167:   return this->GetSysCall("swapon");
+      case 168:   return this->GetSysCall("swapoff");
+      case 169:   return this->GetSysCall("reboot");
+      case 170:   return this->GetSysCall("sethostname");
+      case 171:   return this->GetSysCall("setdomainname");
+      case 172:   return this->GetSysCall("iopl");
+      case 173:   return this->GetSysCall("ioperm");
+      case 174:   return this->GetSysCall("create_module");
+      case 175:   return this->GetSysCall("init_module");
+      case 176:   return this->GetSysCall("delete_module");
+      case 177:   return this->GetSysCall("get_kernel_syms");
+      case 178:   return this->GetSysCall("query_module");
+      case 179:   return this->GetSysCall("quotactl");
+      case 180:   return this->GetSysCall("nfsservctl");
+      case 181:   return this->GetSysCall("getpmsg");
+      case 182:   return this->GetSysCall("putpmsg");
+      case 183:   return this->GetSysCall("afs_syscall");
+      case 184:   return this->GetSysCall("tuxcall");
+      case 185:   return this->GetSysCall("security");
+      case 186:   return this->GetSysCall("gettid");
+      case 187:   return this->GetSysCall("readahead");
+      case 188:   return this->GetSysCall("setxattr");
+      case 189:   return this->GetSysCall("lsetxattr");
+      case 190:   return this->GetSysCall("fsetxattr");
+      case 191:   return this->GetSysCall("getxattr");
+      case 192:   return this->GetSysCall("lgetxattr");
+      case 193:   return this->GetSysCall("fgetxattr");
+      case 194:   return this->GetSysCall("listxattr");
+      case 195:   return this->GetSysCall("llistxattr");
+      case 196:   return this->GetSysCall("flistxattr");
+      case 197:   return this->GetSysCall("removexattr");
+      case 198:   return this->GetSysCall("lremovexattr");
+      case 199:   return this->GetSysCall("fremovexattr");
+      case 200:   return this->GetSysCall("tkill");
+      case 201:   return this->GetSysCall("time");
+      case 202:   return this->GetSysCall("futex");
+      case 203:   return this->GetSysCall("sched_setaffinity");
+      case 204:   return this->GetSysCall("sched_getaffinity");
+      case 205:   return this->GetSysCall("set_thread_area");
+      case 206:   return this->GetSysCall("io_setup");
+      case 207:   return this->GetSysCall("io_destroy");
+      case 208:   return this->GetSysCall("io_getevents");
+      case 209:   return this->GetSysCall("io_submit");
+      case 210:   return this->GetSysCall("io_cancel");
+      case 211:   return this->GetSysCall("get_thread_area");
+      case 212:   return this->GetSysCall("lookup_dcookie");
+      case 213:   return this->GetSysCall("epoll_create");
+      case 214:   return this->GetSysCall("epoll_ctl_old");
+      case 215:   return this->GetSysCall("epoll_wait_old");
+      case 216:   return this->GetSysCall("remap_file_pages");
+      case 217:   return this->GetSysCall("getdents64");
+      case 218:   return this->GetSysCall("set_tid_address");
+      case 219:   return this->GetSysCall("restart_syscall");
+      case 220:   return this->GetSysCall("semtimedop");
+      case 221:   return this->GetSysCall("fadvise64");
+      case 222:   return this->GetSysCall("timer_create");
+      case 223:   return this->GetSysCall("timer_settime");
+      case 224:   return this->GetSysCall("timer_gettime");
+      case 225:   return this->GetSysCall("timer_getoverrun");
+      case 226:   return this->GetSysCall("timer_delete");
+      case 227:   return this->GetSysCall("clock_settime");
+      case 228:   return this->GetSysCall("clock_gettime");
+      case 229:   return this->GetSysCall("clock_getres");
+      case 230:   return this->GetSysCall("clock_nanosleep");
+      case 231:   return this->GetSysCall("exit_group");
+      case 232:   return this->GetSysCall("epoll_wait");
+      case 233:   return this->GetSysCall("epoll_ctl");
+      case 234:   return this->GetSysCall("tgkill");
+      case 235:   return this->GetSysCall("utimes");
+      case 236:   return this->GetSysCall("vserver");
+      case 237:   return this->GetSysCall("mbind");
+      case 238:   return this->GetSysCall("set_mempolicy");
+      case 239:   return this->GetSysCall("get_mempolicy");
+      case 240:   return this->GetSysCall("mq_open");
+      case 241:   return this->GetSysCall("mq_unlink");
+      case 242:   return this->GetSysCall("mq_timedsend");
+      case 243:   return this->GetSysCall("mq_timedreceive");
+      case 244:   return this->GetSysCall("mq_notify");
+      case 245:   return this->GetSysCall("mq_getsetattr");
+      case 246:   return this->GetSysCall("kexec_load");
+      case 247:   return this->GetSysCall("waitid");
+      case 248:   return this->GetSysCall("add_key");
+      case 249:   return this->GetSysCall("request_key");
+      case 250:   return this->GetSysCall("keyctl");
+      case 251:   return this->GetSysCall("ioprio_set");
+      case 252:   return this->GetSysCall("ioprio_get");
+      case 253:   return this->GetSysCall("inotify_init");
+      case 254:   return this->GetSysCall("inotify_add_watch");
+      case 255:   return this->GetSysCall("inotify_rm_watch");
+      case 256:   return this->GetSysCall("migrate_pages");
+      case 257:   return this->GetSysCall("openat");
+      case 258:   return this->GetSysCall("mkdirat");
+      case 259:   return this->GetSysCall("mknodat");
+      case 260:   return this->GetSysCall("fchownat");
+      case 261:   return this->GetSysCall("futimesat");
+      case 262:   return this->GetSysCall("newfstatat");
+      case 263:   return this->GetSysCall("unlinkat");
+      case 264:   return this->GetSysCall("renameat");
+      case 265:   return this->GetSysCall("linkat");
+      case 266:   return this->GetSysCall("symlinkat");
+      case 267:   return this->GetSysCall("readlinkat");
+      case 268:   return this->GetSysCall("fchmodat");
+      case 269:   return this->GetSysCall("faccessat");
+      case 270:   return this->GetSysCall("pselect6");
+      case 271:   return this->GetSysCall("ppoll");
+      case 272:   return this->GetSysCall("unshare");
+      case 273:   return this->GetSysCall("set_robust_list");
+      case 274:   return this->GetSysCall("get_robust_list");
+      case 275:   return this->GetSysCall("splice");
+      case 276:   return this->GetSysCall("tee");
+      case 277:   return this->GetSysCall("sync_file_range");
+      case 278:   return this->GetSysCall("vmsplice");
+      case 279:   return this->GetSysCall("move_pages");
+      case 280:   return this->GetSysCall("utimensat");
+      case 281:   return this->GetSysCall("epoll_pwait");
+      case 282:   return this->GetSysCall("signalfd");
+      case 283:   return this->GetSysCall("timerfd_create");
+      case 284:   return this->GetSysCall("eventfd");
+      case 285:   return this->GetSysCall("fallocate");
+      case 286:   return this->GetSysCall("timerfd_settime");
+      case 287:   return this->GetSysCall("timerfd_gettime");
+      case 288:   return this->GetSysCall("accept4");
+      case 289:   return this->GetSysCall("signalfd4");
+      case 290:   return this->GetSysCall("eventfd2");
+      case 291:   return this->GetSysCall("epoll_create1");
+      case 292:   return this->GetSysCall("dup3");
+      case 293:   return this->GetSysCall("pipe2");
+      case 294:   return this->GetSysCall("inotify_init1");
+      case 295:   return this->GetSysCall("preadv");
+      case 296:   return this->GetSysCall("pwritev");
+      case 297:   return this->GetSysCall("rt_tgsigqueueinfo");
+      case 298:   return this->GetSysCall("perf_event_open");
+      case 299:   return this->GetSysCall("recvmmsg");
+      case 300:   return this->GetSysCall("fanotify_init");
+      case 301:   return this->GetSysCall("fanotify_mark");
+      case 302:   return this->GetSysCall("prlimit64");
+      case 303:   return this->GetSysCall("name_to_handle_at");
+      case 304:   return this->GetSysCall("open_by_handle_at");
+      case 305:   return this->GetSysCall("clock_adjtime");
+      case 306:   return this->GetSysCall("syncfs");
+      case 307:   return this->GetSysCall("sendmmsg");
+      case 308:   return this->GetSysCall("setns");
+      case 309:   return this->GetSysCall("getcpu");
+      case 310:   return this->GetSysCall("process_vm_readv");
+      case 311:   return this->GetSysCall("process_vm_writev");
+      case 312:   return this->GetSysCall("kcmp");
+      case 313:   return this->GetSysCall("finit_module");
+      case 314:   return this->GetSysCall("sched_setattr");
+      case 315:   return this->GetSysCall("sched_getattr");
+      case 316:   return this->GetSysCall("renameat2");
+      case 317:   return this->GetSysCall("seccomp");
+      case 318:   return this->GetSysCall("getrandom");
+      case 319:   return this->GetSysCall("memfd_create");
+      case 320:   return this->GetSysCall("kexec_file_load");
+      case 321:   return this->GetSysCall("bpf");
+      case 322:   return this->GetSysCall("execveat");
+      case 323:   return this->GetSysCall("userfaultfd");
+      case 324:   return this->GetSysCall("membarrier");
+      case 325:   return this->GetSysCall("mlock2");
+      case 326:   return this->GetSysCall("copy_file_range");
+      case 327:   return this->GetSysCall("preadv2");
+      case 328:   return this->GetSysCall("pwritev2");
+      case 329:   return this->GetSysCall("pkey_mprotect");
+      case 330:   return this->GetSysCall("pkey_alloc");
+      case 331:   return this->GetSysCall("pkey_free");
+      case 332:   return this->GetSysCall("statx");
 	
-      case 80: /* Amd74 specific stat call */
-        {
-          // asmlinkage long sys_newfstat(unsigned int fd, struct stat __user *statbuf);
-          static struct : public SysCall
-          {
-            char const* GetName() const { return "newfstat"; }
-            struct Args {
-              Args(LINUX& lin) : fd(SysCall::GetParam(lin, 0)), statbuf(SysCall::GetParam(lin, 1)) {};
-              unsigned fd; parameter_type statbuf;
-            };
-            void Describe( LINUX& lin, std::ostream& sink ) const
-            {
-              Args sc(lin);
-              sink << "(unsigned fd=" << std::dec << sc.fd << ", struct stat __user *statbuf=" << std::hex << sc.statbuf << ")";
-            }
-            void Execute( LINUX& lin, int syscall_id ) const
-            {
-              Args sc(lin);
-              int host_fd = SysCall::Target2HostFileDescriptor(lin, sc.fd);
+      // case 80: /* Amd64 specific stat call */
+      //   {
+      //     // asmlinkage long sys_newfstat(unsigned int fd, struct stat __user *statbuf);
+      //     static struct : public SysCall
+      //     {
+      //       char const* GetName() const { return "newfstat"; }
+      //       struct Args {
+      //         Args(LINUX& lin) : fd(SysCall::GetParam(lin, 0)), statbuf(SysCall::GetParam(lin, 1)) {};
+      //         unsigned fd; parameter_type statbuf;
+      //       };
+      //       void Describe( LINUX& lin, std::ostream& sink ) const
+      //       {
+      //         Args sc(lin);
+      //         sink << "(unsigned fd=" << std::dec << sc.fd << ", struct stat __user *statbuf=" << std::hex << sc.statbuf << ")";
+      //       }
+      //       void Execute( LINUX& lin, int syscall_id ) const
+      //       {
+      //         Args sc(lin);
+      //         int host_fd = SysCall::Target2HostFileDescriptor(lin, sc.fd);
 
-              if (host_fd == -1)
-                {
-                  lin.SetSystemCallStatus(-LINUX_EBADF,false);
-                  return;
-                }
+      //         if (host_fd == -1)
+      //           {
+      //             lin.SetSystemCallStatus(-LINUX_EBADF,false);
+      //             return;
+      //           }
         
-              struct amd64_newstat target_stat;
+      //         struct amd64_newstat target_stat;
               
-              int ret = Fstat64(host_fd, &target_stat, lin.GetEndianness());
+      //         int ret = Fstat64(host_fd, &target_stat, lin.GetEndianness());
 
-              if (ret == -1) {
-                lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno),true);
-                return;
-              }
+      //         if (ret == -1) {
+      //           lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno),true);
+      //           return;
+      //         }
   
-              this->WriteMem(lin, sc.statbuf, (uint8_t *)&target_stat, sizeof(target_stat));
+      //         this->WriteMem(lin, sc.statbuf, (uint8_t *)&target_stat, sizeof(target_stat));
 	
-              lin.SetSystemCallStatus(ret, false);
-            }
-          } sc; return &sc;
-        } break;
+      //         lin.SetSystemCallStatus(ret, false);
+      //       }
+      //     } sc; return &sc;
+      //   } break;
         
-      case 160: /* AMD64 specific uname syscall */
+      case 63: /* AMD64 specific uname syscall */
         {
           static struct : public SysCall {
             char const* GetName() const { return "uname"; }

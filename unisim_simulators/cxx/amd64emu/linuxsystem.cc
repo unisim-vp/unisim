@@ -75,7 +75,7 @@ LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string
   linux_impl.SetMemoryPageSize( 0x1000UL );
   linux_impl.SetUname("Linux" /* sysname */,
                       "localhost" /* nodename */,
-                      "3.14.43-unisim" /* release */,
+                      "4.14.89-unisim" /* release */,
                       "#1 SMP Fri Mar 12 05:23:09 UTC 2010" /* version */,
                       "x86_64" /* machine */,
                       "localhost" /* domainname */);

@@ -562,17 +562,16 @@ struct Arch
   u64_t                       getnip() { return rip; }
   void                        setnip( u64_t _rip, ipproc_t ipproc = ipjmp ) { rip = _rip; }
   //void                        addeip( u64_t offset ) { rip += offset; }
+
+  void                        syscall()
+  {
+    this->ExecuteSystemCall( this->regread( GOq(), 0 ) );
+  }
   
   void                        interrupt( uint8_t _exc )
   {
-    switch (_exc) {
-    case 0x80: {
-      this->ExecuteSystemCall( u64regs[0] );
-    } break;
-    default:
-      std::cerr << "Unhandled interruption (0x" << std::hex << uint32_t( _exc ) << ").\n";
-      exit( 0 );
-    }
+    std::cerr << "Unhandled interruption (0x" << std::hex << uint32_t( _exc ) << ").\n";
+    exit( 0 );
   }
   
   uint64_t u64regs[16]; ///< extended reg

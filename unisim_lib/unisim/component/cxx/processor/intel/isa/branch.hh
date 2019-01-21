@@ -20,7 +20,7 @@ struct NearCallJ : public Operation<ARCH>
     arch.setnip( addr_t( ip_t( nip + addr_t( offset ) ) ), ARCH::ipcall );
   }
 };
-  
+
 template <class ARCH, class IOP>
 struct NearCallE : public Operation<ARCH>
 {
@@ -460,6 +460,25 @@ template <class ARCH> struct DC<ARCH,INTERRUPT> { Operation<ARCH>* get( InputCod
   return 0;
 }};
 
+template <class ARCH>
+struct SysCall : public Operation<ARCH>
+{
+  SysCall( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
+
+  void disasm( std::ostream& sink ) const { sink << "syscall"; }
+
+  void execute( ARCH& arch ) const { arch.syscall(); }
+};
+
+template <class ARCH> struct DC<ARCH,SYSCALL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (auto _ = match( ic, opcode( "\x0f\x05" ) ))
+  
+    return new SysCall<ARCH>( _.opbase() );
+
+  return 0;
+}};
+  
 template <class ARCH, unsigned OPSIZE>
 struct Enter : public Operation<ARCH>
 {

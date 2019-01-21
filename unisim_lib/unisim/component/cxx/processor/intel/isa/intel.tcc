@@ -51,7 +51,7 @@ namespace cxx {
 namespace processor {
 namespace intel {
 
-  enum operation_t { CALL = 0, JCC, LOOP, JMP, RETURN, INTRETURN, INTERRUPT, ENTER_LEAVE,
+  enum operation_t { CALL = 0, JCC, LOOP, JMP, RETURN, INTRETURN, INTERRUPT, SYSCALL, ENTER_LEAVE,
                      ADD, OR, ADC, SBB, AND, SUB, XOR, CMP, ROL, ROR, RCL, RCR, SHL, SHR, SAR,
                      TEST, NOT, NEG, DIV, IDIV, MUL, IMUL, LEA, INCDEC, SETCC, SHD, ZCNT, POPCNT,
                      CMC, AHF, CSX, XLAT, ADJUST, BOUND, ADF,
