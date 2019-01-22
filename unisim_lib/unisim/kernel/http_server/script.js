@@ -94,6 +94,8 @@ if (!Array.prototype.findIndex) {
 
 var isIE = !!navigator.userAgent.match(/Trident/g) || !!navigator.userAgent.match(/MSIE/g);
 
+var hasSVG = !!(typeof SVGRect !== undefined);
+
 getWidth = function(el)
 {
 	var style = getComputedStyle(el, null);
@@ -245,7 +247,7 @@ Tab.prototype.create = function(tab_config)
 	this.static = false;
 	this.tab_config = tab_config;
 	this.close_tab = document.createElement('div');
-	this.close_tab.className = 'close-tab';
+	this.close_tab.className = 'close-tab ' + (hasSVG ? 'w-svg' : 'wo-svg');
 	this.tab_header = document.createElement('div');
 	this.tab_header.className = 'tab-header noselect';
 	this.tab_header.textContent = this.tab_config.label;
@@ -293,13 +295,15 @@ Tab.prototype.reuse_static = function(tab_header, tab_content)
 	this.bound_tab_header_onclick = this.tab_header_onclick.bind(this);
 	this.tab_header.addEventListener('click', this.bound_tab_header_onclick, false);
 
-	this.bound_close = this.close.bind(this);
-	var close_tabs = this.tab_header.getElementsByClassName('close-tab');
-	if(close_tabs.length != 0)
-	{
-		this.close_tab = close_tabs[0];
-		this.close_tab.addEventListener('click', this.bound_close);
-	}
+	this.close_tab = null;
+	this.bound_close = null;
+// 	this.bound_close = this.close.bind(this);
+// 	var close_tabs = this.tab_header.getElementsByClassName('close-tab');
+// 	if(close_tabs.length != 0)
+// 	{
+// 		this.close_tab = close_tabs[0];
+// 		this.close_tab.addEventListener('click', this.bound_close);
+// 	}
 }
 
 Tab.prototype.destroy = function()
@@ -308,19 +312,19 @@ Tab.prototype.destroy = function()
 	{
 		this.owner.tab_headers.removeChild(this.tab_header);
 		this.owner.tab_contents.removeChild(this.tab_content);
+		this.tab_header.removeEventListener('click', this.bound_tab_header_onclick);
+		if(this.close_tab)
+		{
+			this.close_tab.removeEventListener('click', this.bound_close);
+		}
+		this.owner = null;
+		this.tab_config = null;
+		this.tab_header = null;
+		this.tab_content = null;
+		this.close_tab = null;
+		this.bound_close = null;
+		this.bound_tab_header_onclick = null;
 	}
-	this.tab_header.removeEventListener('click', this.bound_tab_header_onclick);
-	if(this.close_tab)
-	{
-		this.close_tab.removeEventListener('click', this.bound_close);
-	}
-	this.owner = null;
-	this.tab_config = null;
-	this.tab_header = null;
-	this.tab_content = null;
-	this.close_tab = null;
-	this.bound_close = null;
-	this.bound_tab_header_onclick = null;
 }
 
 Tab.prototype.save = function(prefix)
@@ -475,8 +479,11 @@ Tab.prototype.tab_header_onclick = function(event)
 
 Tab.prototype.close = function(event)
 {
-	this.owner.destroy_tab(this);
-	event.stopImmediatePropagation(); // avoid calling of this.tab_header_onclick after tab destruction
+	if(!this.static)
+	{
+		this.owner.destroy_tab(this);
+		event.stopImmediatePropagation(); // avoid calling of this.tab_header_onclick after tab destruction
+	}
 }
 
 Tab.prototype.tab_content_on_mouseenter = function(event)
@@ -489,6 +496,11 @@ Tab.prototype.tab_content_on_mouseleave = function(event)
 {
 	this.tab_content.setAttribute('scrolling', 'no');
 	this.tab_content.style.overflow = 'hidden';
+}
+
+Tab.prototype.get_width = function()
+{
+	return this.tab_content ? getWidth(this.tab_content) : 0;
 }
 
 // Tabs
@@ -515,8 +527,11 @@ function Tabs(owner, name, tile)
 	this.tab_headers = this.tile.getElementsByClassName('tab-headers')[0];
 	this.tab_contents = this.tile.getElementsByClassName('tab-contents')[0];
 	this.history_shortcut_element = this.tile.getElementsByClassName('tab-headers-history-shortcut')[0];
+	this.history_shortcut_element.classList.add(hasSVG ? 'w-svg' : 'wo-svg');
 	this.tab_headers_left_scroller = this.tile.getElementsByClassName('tab-headers-left-scroller')[0];
+	this.tab_headers_left_scroller.classList.add(hasSVG ? 'w-svg' : 'wo-svg');
 	this.tab_headers_right_scroller = this.tile.getElementsByClassName('tab-headers-right-scroller')[0];
+	this.tab_headers_right_scroller.classList.add(hasSVG ? 'w-svg' : 'wo-svg');
 	this.tabs = new Array();
 	this.tab_config_history = new TabConfigs();
 	this.history_element = null;
@@ -998,12 +1013,12 @@ GUI.prototype.create_bottom_tab = function(label, name, src)
 	return this.bottom_tabs.create_tab(label, name, src);
 }
 
-GUI.prototype.open_object = function(object_url, object_name)
+GUI.prototype.open_object = function(object_url, object_name, label)
 {
 	var tab = this.top_middle_tabs.find_tab_by_object_name(object_name);
 	if(!tab)
 	{
-		tab = this.create_top_middle_tab(object_name, object_name, object_url, object_name);
+		tab = this.create_top_middle_tab(label ? label : object_name, object_name, object_url, object_name);
 	}
 	
 	tab.switch_to();
@@ -1038,7 +1053,7 @@ GUI.prototype.enable_pointer_events = function(v)
 
 GUI.prototype.vert_resizer_on_mousedown = function(e)
 {
-	this.mouse_pos.y = e.screenY;
+	this.mouse_pos.y = window.devicePixelRatio ? Math.round(e.screenY / window.devicePixelRatio) : e.screenY;
 	this.content_div.classList.add('noselect'); // prevent web browser from selecting text/image while resizing interface
 	this.enable_pointer_events(false);
 	this.bound_vert_resize = this.vert_resize.bind(this);
@@ -1047,7 +1062,7 @@ GUI.prototype.vert_resizer_on_mousedown = function(e)
 
 GUI.prototype.left_horiz_resizer_on_mousedown = function(e)
 {
-	this.mouse_pos.x = e.screenX;
+	this.mouse_pos.x = window.devicePixelRatio ? Math.round(e.screenX / window.devicePixelRatio) : e.screenX;
 	this.content_div.classList.add('noselect'); // prevent web browser from selecting text/image while resizing interface
 	this.enable_pointer_events(false);
 	this.bound_left_horiz_resize = this.left_horiz_resize.bind(this);
@@ -1056,7 +1071,7 @@ GUI.prototype.left_horiz_resizer_on_mousedown = function(e)
 
 GUI.prototype.right_horiz_resizer_on_mousedown = function(e)
 {
-	this.mouse_pos.x = e.screenX;
+	this.mouse_pos.x = window.devicePixelRatio ? Math.round(e.screenX / window.devicePixelRatio) : e.screenX;
 	this.content_div.classList.add('noselect'); // prevent web browser from selecting text/image while resizing interface
 	this.enable_pointer_events(false);
 	this.bound_right_horiz_resize = this.right_horiz_resize.bind(this);
@@ -1090,8 +1105,9 @@ GUI.prototype.document_on_mouseup = function(e)
 
 GUI.prototype.vert_resize = function(e)
 {
-	var dy = e.screenY - this.mouse_pos.y;
-	this.mouse_pos.y = e.screenY;
+	var y = window.devicePixelRatio ? Math.round(e.screenY / window.devicePixelRatio) : e.screenY;
+	var dy = y - this.mouse_pos.y;
+	this.mouse_pos.y = y;
 	
 	var top_middle_tab_headers_div_height = getHeight(this.top_middle_tab_headers_div);
 	var top_right_tab_headers_div_height = getHeight(this.top_right_tab_headers_div);
@@ -1125,8 +1141,9 @@ GUI.prototype.vert_resize = function(e)
 
 GUI.prototype.left_horiz_resize = function(e)
 {
-	var dx = e.screenX - this.mouse_pos.x;
-	this.mouse_pos.x = e.screenX;
+	var x = window.devicePixelRatio ? Math.round(e.screenX / window.devicePixelRatio) : e.screenX;
+	var dx = x - this.mouse_pos.x;
+	this.mouse_pos.x = x;
 	
 	var left_tile_div_width = getWidth(this.left_tile_div);
 	var right_div_width = getWidth(this.right_div);
@@ -1154,8 +1171,9 @@ GUI.prototype.left_horiz_resize = function(e)
 
 GUI.prototype.right_horiz_resize = function(e)
 {
-	var dx = e.screenX - this.mouse_pos.x;
-	this.mouse_pos.x = e.screenX;
+	var x = window.devicePixelRatio ? Math.round(e.screenX / window.devicePixelRatio) : e.screenX;
+	var dx = x - this.mouse_pos.x;
+	this.mouse_pos.x = x;
 	
 	var top_middle_tile_div_width = getWidth(this.top_middle_tile_div);
 	var top_right_tile_div_width = getWidth(this.top_right_tile_div);

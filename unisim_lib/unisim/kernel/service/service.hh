@@ -281,7 +281,7 @@ struct nat_ltstr
 	}
 #if 1
 
-	int	pretty_compare( char const* lhs, char const* rhs) const
+	static int pretty_compare( char const* lhs, char const* rhs)
 	{
 		for (;; lhs++, rhs++)
 		{
@@ -292,7 +292,7 @@ struct nat_ltstr
 			}
 			/* *rhs != *lhs */
 			if (not is_digit(*lhs) or not is_digit(*rhs))
-				return *lhs - *rhs;
+				return (std::tolower(*lhs) == std::tolower(*rhs) ? (*lhs - *rhs) : (std::tolower(*lhs) - std::tolower(*rhs)));  //*lhs - *rhs;
 			/*compare numerical value*/
 			char const* lhb = lhs;
 			char const* rhb = rhs;
@@ -315,7 +315,7 @@ struct nat_ltstr
 		return 0;
 	}
 	
-	bool Less(const std::string& s1, const std::string& s2) const
+	static bool Less(const std::string& s1, const std::string& s2)
 	{
 		return pretty_compare(s1.c_str(), s2.c_str()) < 0;
 	}
@@ -382,7 +382,23 @@ struct nat_ltstr
 		return STRING;
 	}
 	
-	bool Less(const std::string& s1, const std::string& s2) const
+	static int Compare(const char *s1, std::size_t s1_len, const char *s2, std::size_t s2_len)
+	{
+		std::size_t n = std::min(s1_len, s2_len);
+		while(n--)
+		{
+			char c1 = *s1++;
+			char c2 = *s2++;
+			if(c1 != c2)
+			{
+				if(std::tolower(c1) < std::tolower(c2)) return -1;
+				if(std::tolower(c1) > std::tolower(c2)) return +1;
+			}
+		}
+		return (s1_len == s2_len) ? 0 : ((s1_len < s2_len) ? -1 : +1);
+	}
+	
+	static bool Less(const std::string& s1, const std::string& s2)
 	{
 		std::size_t s1_len = s1.length();
 		std::size_t s2_len = s2.length();
@@ -403,8 +419,11 @@ struct nat_ltstr
 			}
 			else
 			{
-				if(s1.compare(s1_pos, tok1_len, s2, s2_pos, tok2_len) < 0) return true;
-				else if(s1.compare(s1_pos, tok1_len, s2, s2_pos, tok2_len) > 0) return false;
+				int r = Compare(&s1[s1_pos], tok1_len, &s2[s2_pos], tok2_len);
+				if(r < 0) return true;
+				else if(r > 0) return false;
+// 				if(s1.compare(s1_pos, tok1_len, s2, s2_pos, tok2_len) < 0) return true;
+// 				else if(s1.compare(s1_pos, tok1_len, s2, s2_pos, tok2_len) > 0) return false;
 			}
 			s1_pos += tok1_len;
 			s2_pos += tok2_len;

@@ -1669,9 +1669,6 @@ bool UserInterface::ServeHttpRequest(unisim::kernel::http_server::HttpRequest co
 		doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
 		doc_sstr << "\t\t\t\t</tbody>" << std::endl;
 		doc_sstr << "\t\t\t</table>" << std::endl;
-		doc_sstr << "\t\t\t<script type=\"application/javascript\">" << std::endl;
-		doc_sstr << "\t\t\t\trestoreScrollTop();" << std::endl;
-		doc_sstr << "\t\t\t</script>" << std::endl;
 		doc_sstr << "\t\t</form>" << std::endl;
 		
 		doc_sstr << "\t</body>" << std::endl;

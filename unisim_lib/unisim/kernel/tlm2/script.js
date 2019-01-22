@@ -1,10 +1,14 @@
+itemPrefix = function()
+{
+	return (window.frameElement && window.name) ? (window.name + '.') : '';
+}
 
 saveScrollTop = function()
 {
 	var el = document.querySelector('div.scroller');
 	if(el)
 	{
-		sessionStorage.setItem('div.scroller.scrollTop', el.scrollTop);
+		sessionStorage.setItem(itemPrefix() + 'div.scroller.scrollTop', el.scrollTop);
 	}
 	
 	var own_tab = null;
@@ -15,8 +19,8 @@ saveScrollTop = function()
 	}
 	else
 	{
-		sessionStorage.setItem('window.scrollY', window.scrollY);
-		sessionStorage.setItem('window.scrollX', window.scrollX);
+		sessionStorage.setItem(itemPrefix() + 'window.scrollY', window.scrollY);
+		sessionStorage.setItem(itemPrefix() + 'window.scrollX', window.scrollX);
 	}
 }
 
@@ -25,7 +29,7 @@ restoreScrollTop = function()
 	var el = document.querySelector('div.scroller');
 	if(el)
 	{
-		var t = sessionStorage.getItem('div.scroller.scrollTop');
+		var t = sessionStorage.getItem(itemPrefix() + 'div.scroller.scrollTop');
 		if(t)
 		{
 			el.scrollTop = t;
@@ -40,8 +44,8 @@ restoreScrollTop = function()
 	}
 	else
 	{
-		var y = sessionStorage.getItem('window.scrollY');
-		var x = sessionStorage.getItem('window.scrollX');
+		var y = sessionStorage.getItem(itemPrefix() + 'window.scrollY');
+		var x = sessionStorage.getItem(itemPrefix() + 'window.scrollX');
 		if(x && y)
 		{
 			window.scroll(x, y);
@@ -65,3 +69,33 @@ reloadPage = function()
 		window.location.replace(window.location.href); // reload without POST
 	}
 }
+
+var window_resize_refresh_period = 500;
+var min_scroller_height = 76;
+var window_inner_width = 0;
+var window_inner_height = 0;
+
+resize_content = function(content_width, content_height)
+{
+	var scroller = document.querySelector('div.scroller');
+	if(scroller)
+	{
+		var rect = scroller.getBoundingClientRect();
+		var scroller_height = Math.max(Math.floor(content_height - rect.top - 1), min_scroller_height);
+		scroller.style.height = scroller_height + 'px';
+	}
+}
+
+resize = function()
+{
+	var new_window_inner_width = window.innerWidth;
+	var new_window_inner_height = window.innerHeight;
+	if((new_window_inner_width != window_inner_width) || (new_window_inner_height != window_inner_height))
+	{
+		window_inner_width = new_window_inner_width;
+		window_inner_height = new_window_inner_height;
+		resize_content(window_inner_width, window_inner_height);
+	}
+}
+
+document.addEventListener('DOMContentLoaded', function(event) { resize(); restoreScrollTop(); setInterval(resize, window_resize_refresh_period); });

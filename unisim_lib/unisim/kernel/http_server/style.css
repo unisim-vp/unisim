@@ -100,12 +100,26 @@ body
 	position:absolute;
 	left:0px;
 	top:0px;
+}
+
+.tab-headers-history-shortcut.w-svg
+{
 	background:url('/unisim/kernel/http_server/history-shortcut.svg') center center / cover no-repeat, #eff0f1;
 }
 
-.tab-headers-history-shortcut:hover
+.tab-headers-history-shortcut.wo-svg
+{
+	background:url('/unisim/kernel/http_server/history-shortcut.png') center center / cover no-repeat, #eff0f1;
+}
+
+.tab-headers-history-shortcut.w-svg:hover
 {
 	background:url('/unisim/kernel/http_server/history-shortcut.svg') center center / cover no-repeat, #f9fafa;
+}
+
+.tab-headers-history-shortcut.wo-svg:hover
+{
+	background:url('/unisim/kernel/http_server/history-shortcut.png') center center / cover no-repeat, #f9fafa;
 }
 
 .tab-headers-history
@@ -161,12 +175,26 @@ body
 	position:absolute;
 	top:0px;
 	left:16px;
+}
+
+.tab-headers-left-scroller.w-svg
+{
 	background:url('/unisim/kernel/http_server/left-arrow.svg') center center / cover no-repeat, #eff0f1;
 }
 
-.tab-headers-left-scroller:hover
+.tab-headers-left-scroller.wo-svg
+{
+	background:url('/unisim/kernel/http_server/left-arrow.png') center center / cover no-repeat, #eff0f1;
+}
+
+.tab-headers-left-scroller.w-svg:hover
 {
 	background:url('/unisim/kernel/http_server/left-arrow.svg') center center / cover no-repeat, #f9fafa;
+}
+
+.tab-headers-left-scroller.wo-svg:hover
+{
+	background:url('/unisim/kernel/http_server/left-arrow.png') center center / cover no-repeat, #f9fafa;
 }
 
 .tab-headers-right-scroller
@@ -174,12 +202,26 @@ body
 	position:absolute;
 	top:0px;
 	left:32px;
+}
+
+.tab-headers-right-scroller.w-svg
+{
 	background:url('/unisim/kernel/http_server/right-arrow.svg') center center / cover no-repeat, #eff0f1;
 }
 
-.tab-headers-right-scroller:hover
+.tab-headers-right-scroller.wo-svg
+{
+	background:url('/unisim/kernel/http_server/right-arrow.png') center center / cover no-repeat, #eff0f1;
+}
+
+.tab-headers-right-scroller.w-svg:hover
 {
 	background:url('/unisim/kernel/http_server/right-arrow.svg') center center / cover no-repeat, #f9fafa;
+}
+
+.tab-headers-right-scroller.wo-svg:hover
+{
+	background:url('/unisim/kernel/http_server/right-arrow.png') center center / cover no-repeat, #f9fafa;
 }
 
 .tab-headers
@@ -245,16 +287,66 @@ body
 	width:11px;
 	height:11px;
 	margin-left:4px;
-	background:url('/unisim/kernel/http_server/close-tab.svg') center center / cover no-repeat;
 	display:block;
 	top:50%;
 	transform:translate(0, 50%);
 }
-.close-tab:hover { background:url('/unisim/kernel/http_server/close-tab-hover.svg') center center / cover no-repeat; }
+
+.close-tab.w-svg
+{
+	background:url('/unisim/kernel/http_server/close-tab.svg') center center / cover no-repeat;
+}
+
+.close-tab.wo-svg
+{
+	background:url('/unisim/kernel/http_server/close-tab.png') center center / cover no-repeat;
+}
+
+.close-tab.w-svg:hover
+{
+	background:url('/unisim/kernel/http_server/close-tab-hover.svg') center center / cover no-repeat;
+}
+
+.close-tab.wo-svg:hover
+{
+	background:url('/unisim/kernel/http_server/close-tab-hover.png') center center / cover no-repeat;
+}
 
 #browser { padding:8px 0 0 8px; background:white; }
+
 #browser .browser-item { white-space: nowrap; color:black; cursor:default; }
-#browser ul.tree, browser.ul.tree ul { list-style-type: none; background:url('/unisim/kernel/http_server/vline.svg') 0px 0px / 1px 10px repeat-y; margin:0; padding:0; image-rendering:crisp-edges; }
-#browser ul.tree ul { margin-left: 10px; }
-#browser ul.tree li { margin: 0; padding: 0 12px; line-height: 20px; background:url('/unisim/kernel/http_server/node.svg') 0px 0px / 8px 20px no-repeat; image-rendering:crisp-edges; }
-#browser ul.tree li.last { background: #fff url(lastnode.svg) 0px 0px / 8px 20px no-repeat; image-rendering:crisp-edges; }
+
+#browser ul.tree,
+#browser ul.tree ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+#browser ul.tree ul {
+	margin-left: 1.0em;
+}
+
+#browser ul.tree li {
+	margin-left: 0.35em;
+	border-left: thin solid #000;
+	white-space: nowrap;
+}
+
+#browser ul.tree li:last-child {
+	border-left: none;
+}
+
+#browser ul.tree li:before {
+	width: 0.9em;
+	height: 0.6em;
+	margin-right: 0.1em;
+	vertical-align: top;
+	border-bottom: thin solid #000;
+	content: "";
+	display: inline-block;
+}
+
+#browser ul.tree li:last-child:before {
+	border-left: thin solid #000;
+}
