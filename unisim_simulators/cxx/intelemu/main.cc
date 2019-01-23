@@ -222,7 +222,6 @@ main( int argc, char *argv[] )
     }
   
   std::cerr << "Program exited with status:" << linux32.app_ret_status << std::endl;
-  //  dtlib::osprintf( std::cerr, "Executed instructions: %lld\n", cpu.m_instcount );
   
   
   return 0;

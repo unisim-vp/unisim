@@ -48,10 +48,122 @@ LinuxOS::LinuxOS( std::ostream& log,
 {}
 
 void
-LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs )
+LinuxOS::Core( std::string const& coredump )
+{
+  // Loading a core file (memory + register state)
+  typedef typename unisim::util::loader::elf_loader::StdElf<uint64_t,uint64_t>::Loader Loader;
+  typedef typename Loader::Elf_Ehdr_type Elf_Ehdr;
+  typedef typename Loader::Elf_Phdr_type Elf_Phdr;
+  
+  std::ifstream is(coredump.c_str(), std::ifstream::in | std::ifstream::binary);
+
+  struct hdr { ~hdr() { free(p); } Elf_Ehdr* p; } hdr;
+  hdr.p = Loader::ReadElfHeader(is);
+    
+  if (not hdr.p) throw "Could not read ELF header";
+  
+  struct phdr { ~phdr() { free(p); } Elf_Phdr* p; } phdr_table;
+  
+  phdr_table.p = Loader::ReadProgramHeaders(hdr.p, is);
+  if (not phdr_table.p)
+    throw "Can't read program headers";
+  
+  // Create core blob
+  typedef unisim::util::blob::Blob<uint64_t> Blob;
+  typedef unisim::util::blob::Segment<uint64_t> Segment;
+  Blob* core_blob = new Blob;
+  core_blob->Catch();
+  
+  core_blob->SetFilename(coredump.c_str());
+  core_blob->SetArchitecture(Loader::GetArchitecture(hdr.p));
+  core_blob->SetEndian(unisim::util::endian::E_LITTLE_ENDIAN);
+  core_blob->SetAddressSize(Loader::GetAddressSize(hdr.p));
+  core_blob->SetFileFormat(unisim::util::blob::FFMT_ELF64);
+  core_blob->SetELF_PHOFF(hdr.p->e_phoff);
+  core_blob->SetELF_PHENT(sizeof(Elf_Phdr));
+  core_blob->SetELF_PHNUM(hdr.p->e_phnum);
+  core_blob->SetELF_Flags(hdr.p->e_flags);
+  
+  for (int idx = 0; idx < hdr.p->e_phnum; ++idx)
+    {
+      Elf_Phdr* phdr = &phdr_table.p[idx];
+      switch (Loader::GetSegmentType(phdr))
+        {
+        case PT_LOAD: /* Loadable Program Segment */
+          {
+            uint64_t segaddr =      phdr->p_vaddr;
+            uint64_t segmem_size =  Loader::GetSegmentMemSize(phdr);
+            uint64_t segfile_size = Loader::GetSegmentFileSize(phdr);
+            uint64_t ph_flags =     Loader::GetSegmentFlags(phdr);
+            uint64_t segalignment = Loader::GetSegmentAlignment(phdr);
+            typename Segment::Type segtype = Segment::TY_LOADABLE;
+			
+            typename Segment::Attribute segattr = Segment::SA_NULL;
+            if (ph_flags & PF_W) segattr = (typename Segment::Attribute)(segattr | Segment::SA_W);
+            if (ph_flags & PF_R) segattr = (typename Segment::Attribute)(segattr | Segment::SA_R);
+            if (ph_flags & PF_X) segattr = (typename Segment::Attribute)(segattr | Segment::SA_X);
+			
+            void* segdata = calloc(segmem_size, 1);
+			
+            if (not Loader::LoadSegment(hdr.p, phdr, segdata, is))
+              throw "Can't load segment";
+
+            core_blob->AddSegment(new Segment(segtype,segattr,segalignment,segaddr,segmem_size,segfile_size,segdata));
+          } break;
+          
+        case PT_NOTE:
+          {
+            uintptr_t datasize = Loader::GetSegmentFileSize(phdr);
+            if (datasize > 0x10000) throw "WTF";
+            uint8_t notedata[datasize];
+            if (not Loader::LoadSegment(hdr.p, phdr, &notedata[0], is))
+              throw "Can't load segment";
+
+            for (uint8_t *note = &notedata[0], *end = &notedata[datasize]; note < end;)
+              {
+                Elf_Note* notehdr = (Elf_Note*)( note );
+                if (Loader::NeedEndianSwap(hdr.p))
+                  {
+                    unisim::util::endian::BSwap( notehdr->n_namesz );
+                    unisim::util::endian::BSwap( notehdr->n_descsz );
+                    unisim::util::endian::BSwap( notehdr->n_type );
+                  }
+                switch (notehdr->n_type)
+                  {
+                  default: break; // Ignoring unknown note
+                  case 1: // PRSTATUS note
+                    {
+                      uint32_t base = ((notehdr->n_namesz + 15) & -4);
+                      std::cout << std::hex << base << std::endl;
+                    } break;
+                  }
+              }
+          } break;
+        }
+    }
+
+  // Load the blob into memory
+  for (auto && segment : core_blob->GetSegments())
+    {
+      if (segment->GetType() != segment->TY_LOADABLE) continue;
+      
+      uint64_t start, end;
+      segment->GetAddrRange(start, end);
+      
+      if (linux_impl.verbose_)
+        std::cerr << "--> writing memory segment start = 0x" << std::hex << start << " end = 0x" << end << std::dec << std::endl;
+      
+      uint8_t const * data = (uint8_t const *)segment->GetData();
+      if (not linux_impl.mem_if_->WriteMemory(start, data, end - start + 1))
+        throw "Error while writing the segments into the target memory.";
+    }
+}
+
+void
+LinuxOS::Process( std::vector<std::string> const& simargs, std::vector<std::string> const& envs )
 {
   // Set up the different linuxlib parameters
-  linux_impl.SetVerbose(false);
+  linux_impl.SetVerbose(true);
   
   if (not linux_impl.SetCommandLine(simargs))
     throw 0;

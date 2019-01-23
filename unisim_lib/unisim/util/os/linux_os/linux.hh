@@ -284,7 +284,6 @@ namespace linux_os {
 
     UTSName const& GetUTSName() const { return utsname; }
 	
-  private:
     bool is_load_; // true if a program has been successfully loaded, false
     // otherwise
 	
@@ -380,7 +379,7 @@ namespace linux_os {
                                     unisim::util::blob::Blob<ADDRESS_TYPE> const &blob);
 
     // Merge the contents of the given file blob into the input/output blob
-    bool FillBlobWithFileBlob(
+    static bool FillBlobWithFileBlob(
                               unisim::util::blob::Blob<ADDRESS_TYPE> const &file_blob,
                               unisim::util::blob::Blob<ADDRESS_TYPE> *blob);
 

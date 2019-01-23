@@ -51,8 +51,9 @@ struct LinuxOS
            unisim::service::interfaces::Memory<uint64_t> *mem_if,
            unisim::service::interfaces::MemoryInjection<uint64_t> *mem_inject_if );
   
-  void Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs );
-  
+  void Process( std::vector<std::string> const& simargs, std::vector<std::string> const& envs );
+  void Core( std::string const& coredump );
+
   void ExecuteSystemCall( int id );
 
   unisim::util::os::linux_os::Linux<uint64_t, uint64_t> linux_impl;

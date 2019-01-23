@@ -236,7 +236,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(char const * const filenam
         << "without handling file." << std::endl;
     return false;
   }
-
+  
   // check that the file exists and that the elf loader can create a blob from it
   
   typename unisim::util::loader::elf_loader::StdElf<ADDRESS_TYPE,PARAMETER_TYPE>::Loader loader;
@@ -456,6 +456,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 		debug_info_stream
 			<< "Setting the system blob." << std::endl;
 	}
+        // Add target dependant Segments
 	if (not target_system->SetSystemBlob(blob))
 	{
 		// TODO: Remove non finished state (i.e., unfinished

@@ -699,12 +699,6 @@ namespace intel {
     //             << ", insn: ";
     //   m_latest_insn->disasm( std::cerr );
     //   std::cerr << " (" << m_latest_insn->GetEncoding() << ")" << std::endl;
-    //   for (int reg = 0; reg < 8; ++reg) {
-    //     dtlib::osprintf( std::cerr, "%s: %010x\n", intel::regname( 4, reg ), this->regread32( reg ) );
-    //   }
-    //   for (int reg = 0; reg < 8; ++reg) {
-    //     dtlib::osprintf( std::cerr, "st(%d): %f\n", reg, this->fread( reg ) );
-    //   }
     // }
     
     bool Cond( bool b ) const { return b; }

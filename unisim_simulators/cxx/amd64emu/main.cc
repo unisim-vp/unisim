@@ -592,20 +592,24 @@ struct Arch
   void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::OPSIZE>::u value )
   {
     u64regs[idx] = u64_t( value );
+    gdbchecker.mark( idx );
   }
 
   void regwrite( GObLH const&, unsigned idx, u8_t value )
   {
     uint32_t reg = idx%4, sh = idx*2 & 8;
     u64regs[reg] = (u64regs[reg] & ~u64_t(0xff << sh)) | ((value & u64_t(0xff)) << sh);
+    gdbchecker.mark( reg );
   }
   void regwrite( GOb const&, unsigned idx, u8_t value )
   {
     u64regs[idx] = (u64regs[idx] & ~u64_t(0xff)) | ((value & u64_t(0xff)));
+    gdbchecker.mark( idx );
   }
-  void regwrite( GOw const&, unsigned idx, u8_t value )
+  void regwrite( GOw const&, unsigned idx, u16_t value )
   {
-    u64regs[idx] = (u64regs[idx] & ~u64_t(0xff)) | ((value & u64_t(0xff)));
+    u64regs[idx] = (u64regs[idx] & ~u64_t(0xffff)) | ((value & u64_t(0xffff)));
+    gdbchecker.mark( idx );
   }
 
   struct FLAG
@@ -832,6 +836,48 @@ public:
   uint64_t instruction_count;
 
   bool Cond( bool b ) const { return b; }
+
+  struct GDBChecker
+  {
+    GDBChecker() : dirtmask( 0 ), visited() {}
+    uint32_t dirtmask;
+    std::map<uint64_t,uint64_t> visited;
+    void mark( unsigned reg ) { dirtmask |= (1 << reg); }
+    void step( Arch* cpu )
+    {
+      uint64_t cia = cpu->rip;
+      uint64_t revisit = visited[cia]++;
+      sink() << "stepi\n";
+      if (revisit == 0)
+        sink() << "# advance *0x" << std::hex << cia << "\n";
+      else
+        sink() << "# break *0x" << std::hex << cia << "; cont; cont " << std::dec << revisit << "\n";
+      sink() << "insn_assert " << std::dec << aid(cpu) << " $pc 0x" << std::hex  << cia << '\n';
+      for (unsigned reg = 0; reg < 16; ++reg)
+        {
+          if (not ((dirtmask>>reg) & 1)) continue;
+          uint64_t value = cpu->u64regs[reg];
+          sink() << "insn_assert " << std::dec << aid(cpu) << " " << unisim::component::cxx::processor::intel::DisasmGq(reg) << " 0x" << std::hex << value << '\n';
+        }
+      dirtmask = 0;
+    }
+    uint64_t aid( Arch* cpu )
+    {
+      static uint64_t assertion_id = 0;
+      if (++assertion_id > 0x80000) throw 0;
+      return assertion_id;
+    }
+    struct Sink
+    {
+      Sink() : stream("check.gdb")
+      {
+        stream << "define insn_assert\n  if $arg1 != $arg3\n    printf \"insn_assert %u failed.\n\", $arg0\n    quit\n  end\nend\n\n";
+      }
+      std::ostream& operator() () { return stream; }
+      std::ofstream stream;
+    } sink;
+    
+  } gdbchecker;
 };
 
 Arch::f64_t sine( Arch::f64_t );
@@ -862,7 +908,7 @@ struct ICache : public DECODER
     uint64_t key;
     Operation* operations[NUM_OPERATIONS_PER_PAGE];
     uint8_t bytes[NUM_OPERATIONS_PER_PAGE+15];
-      
+    
     Page( Page* _next, uint64_t _key ) : next( _next ), key( _key ) { memset( operations, 0, sizeof (operations) ); }
     ~Page() { for( unsigned idx = 0; idx < NUM_OPERATIONS_PER_PAGE; ++idx ) delete operations[idx]; delete next; }
   };
@@ -1205,22 +1251,19 @@ main( int argc, char *argv[] )
     return 1;
   }
 
-  std::vector<std::string> envs;
-  envs.push_back( "LANG=C" );
-  
   Arch cpu;
   LinuxOS linux64( std::cerr, &cpu, &cpu, &cpu );
   cpu.SetLinuxOS( &linux64 );
-  
-  linux64.Setup( simargs, envs );
-  
   cpu.do_disasm = true;
   
   // Loading image
   std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
+  // std::vector<std::string> envs;
+  // envs.push_back( "LANG=C" );
+  // linux64.Process( simargs, envs );
+  linux64.Core( simargs[0] );
   
   std::cerr << "\n*** Run ***" << std::endl;
-  
   while (not linux64.exited)
     {
       Arch::Operation* op = cpu.fetch();
@@ -1235,7 +1278,6 @@ main( int argc, char *argv[] )
     }
   
   std::cerr << "Program exited with status:" << linux64.app_ret_status << std::endl;
-  //  dtlib::osprintf( std::cerr, "Executed instructions: %lld\n", cpu.instruction_count );
   
   
   return 0;
