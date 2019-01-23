@@ -128,13 +128,28 @@ LinuxOS::Core( std::string const& coredump )
                     unisim::util::endian::BSwap( notehdr->n_descsz );
                     unisim::util::endian::BSwap( notehdr->n_type );
                   }
+                uint8_t* content = note + 12 + ((notehdr->n_namesz + 3) & -4);
+                note = content + ((notehdr->n_descsz + 3) & -4);
+                
                 switch (notehdr->n_type)
                   {
                   default: break; // Ignoring unknown note
                   case 1: // PRSTATUS note
                     {
-                      uint32_t base = ((notehdr->n_namesz + 15) & -4);
-                      std::cout << std::hex << base << std::endl;
+                      // Registers are stored in a structure (struct
+                      // user_regs_struct) starting at 0x70 from base
+                      // content (struct prstatus).
+                      //
+                      // Register order: { r15, r14, r13, r12, rbp,
+                      //     rbx, r11, r10, r9, r8, rax, rcx, rdx,
+                      //     rsi, rdi, orig_rax, rip, cs, eflags, rsp,
+                      //     ss, fs_base, gs_base, ds, es, fs, gs }
+                      //
+                      uint64_t* regs = (uint64_t*)(content + 0x70);
+                      std::cout << "rip:    " << std::hex << regs[16] << std::endl;
+                      std::cout << "rsp:    " << std::hex << regs[19] << std::endl;
+                      std::cout << "eflags: " << std::hex << regs[18] << std::endl;
+                      
                     } break;
                   }
               }
