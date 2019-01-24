@@ -32,14 +32,14 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/kernel/http_server/http_server.hh>
+#include <unisim/service/http_server/http_server.hh>
 #include <fstream>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 namespace unisim {
-namespace kernel {
+namespace service {
 namespace http_server {
 
 using unisim::kernel::logger::DebugInfo;
@@ -49,115 +49,11 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-HttpRequest::HttpRequest(const unisim::util::hypapp::Request& _req, std::ostream& err_log)
-	: valid(false)
-	, has_query(false)
-	, has_fragment(false)
-	, req(_req)
-	, abs_path()
-	, server_root()
-	, path()
-	, query()
-	, fragment()
-	, domain()
-	, has_port(false)
-	, port(0)
-{
-	valid = unisim::util::hypapp::URL_AbsolutePathDecoder::Decode(req.GetRequestURI(), abs_path, err_log);
-	if(valid)
-	{
-		server_root = "/";
-		path = abs_path.substr(1);
-	}
-	const char *p_request_uri = req.GetRequestURI();
-	if(p_request_uri)
-	{
-		const char *p_query = strchr(p_request_uri, '?');
-		if(p_query) p_query++;
-		const char *p_fragment = strchr(p_query ? p_query : p_request_uri, '#');
-		if(p_fragment) p_fragment++;
-		if(p_fragment)
-		{
-			fragment = std::string(p_fragment);
-			has_fragment = true;
-		}
-		if(p_query)
-		{
-			if(p_fragment)
-			{
-				query = std::string(p_query, p_fragment - p_query);
-			}
-			else
-			{
-				query = std::string(p_query);
-			}
-			has_query = true;
-		}
-	}
-	const char *p_host = req.GetHost();
-	if(p_host)
-	{
-		const char *p_port = strchr(p_host, ':');
-		if(p_port)
-		{
-			domain = std::string(p_host, p_port - p_host);
-			std::istringstream sstr(p_port + 1);
-			sstr >> port;
-			has_port = true;
-		}
-		else
-		{
-			domain = std::string(p_host);
-		}
-	}
-}
-
-HttpRequest::HttpRequest(const std::string& _server_root, const std::string& _path, const HttpRequest& http_request)
-	: valid(http_request.valid)
-	, has_query(http_request.has_query)
-	, has_fragment(http_request.has_fragment)
-	, req(http_request.req)
-	, abs_path(http_request.abs_path)
-	, server_root(_server_root)
-	, path(_path)
-	, query(http_request.query)
-	, fragment(http_request.fragment)
-	, domain(http_request.domain)
-	, has_port(http_request.has_port)
-	, port(http_request.port)
-{
-}
-
-std::ostream& operator << (std::ostream& os, const HttpRequest& http_request)
-{
-	os << http_request.req;
-	os << "Valid: " << http_request.IsValid() << std::endl;
-	if(http_request.IsValid())
-	{
-		os << "Absolute Path: \"" << http_request.GetAbsolutePath() << std::endl;
-		os << "Server Root: \"" << http_request.GetServerRoot() << std::endl;
-		os << "Path: \"" << http_request.GetPath() << std::endl;
-	}
-	if(http_request.HasQuery())
-	{
-		os << "Query: " << http_request.GetQuery() << std::endl;
-	}
-	if(http_request.HasFragment())
-	{
-		os << "Fragment: " << http_request.GetFragment() << std::endl;
-	}
-	os << "Host: " << http_request.GetHost() << std::endl;
-	os << "Domain: " << http_request.GetDomain() << std::endl;
-	if(http_request.HasPort())
-	{
-		os << "Port: " << http_request.GetPort() << std::endl;
-	}
-	return os;
-}
-
 HttpServer::HttpServer(const char *name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::HttpServer>(name, parent)
 	, unisim::util::hypapp::HttpServer()
+	, http_server_import()
 	, logger(*this)
 	, program_name(GetSimulator()->FindVariable("program-name")->operator std::string())
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
@@ -165,6 +61,7 @@ HttpServer::HttpServer(const char *name, unisim::kernel::service::Object *parent
 	, param_http_port("http-port", this, http_port, "HTTP port")
 	, http_max_clients(10)
 	, param_http_max_clients("http-max-clients", this, http_max_clients, "HTTP max clients")
+	, http_server_map()
 {
 	param_http_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_http_port.SetMutable(false);
@@ -184,18 +81,47 @@ HttpServer::HttpServer(const char *name, unisim::kernel::service::Object *parent
 	}
 	this->SetWarnLog(logger.DebugWarningStream());
 	this->SetErrLog(logger.DebugErrorStream());
+	
+	unsigned int i;
+	for(i = 0; i < MAX_HTTP_SERVERS; i++)
+	{
+		std::stringstream http_server_import_name_sstr;
+		http_server_import_name_sstr << "http-server-import[" << i << "]";
+		http_server_import[i] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer>(http_server_import_name_sstr.str().c_str(), this);
+	}
 }
 
 HttpServer::~HttpServer()
 {
 	Kill();
 	JoinLoopThread();
+	
+	unsigned int i;
+	for(i = 0; i < MAX_HTTP_SERVERS; i++)
+	{
+		delete http_server_import[i];
+	}
 }
 
-void HttpServer::Setup()
+bool HttpServer::EndSetup()
 {
+	unsigned int i;
+	for(i = 0; i < MAX_HTTP_SERVERS; i++)
+	{
+		if(*http_server_import[i])
+		{
+			unisim::kernel::service::Object *object = http_server_import[i]->GetService();
+		
+			if(object)
+			{
+				http_server_map[object] = http_server_import[i];
+			}
+		}
+	}
+	
 	StartLoopThread();
 	logger << DebugInfo << "HTTP server started on TCP/IP port #" << http_port << EndDebugInfo;
+	return true;
 }
 
 std::string HttpServer::Href(unisim::kernel::service::Object *object) const
@@ -504,7 +430,7 @@ bool HttpServer::ServeFile(const std::string& path, unisim::util::hypapp::Client
 	return false;
 }
 
-bool HttpServer::ServeHeader(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+bool HttpServer::ServeHeader(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
 	return conn.Send("HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 6\r\n\r\nHead\r\n");
 }
@@ -697,7 +623,7 @@ bool HttpServer::ServeBrowser(HttpRequest const& req, unisim::util::hypapp::Clie
 }
 #endif
 
-bool HttpServer::ServeVariables(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn, unisim::kernel::service::VariableBase::Type var_type)
+bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn, unisim::kernel::service::VariableBase::Type var_type)
 {
 	struct QueryDecoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
 	{
@@ -907,12 +833,12 @@ bool HttpServer::ServeVariables(HttpRequest const& req, unisim::util::hypapp::Cl
 	return true;
 }
 
-bool HttpServer::ServeFooter(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+bool HttpServer::ServeFooter(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
 	return conn.Send("HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 8\r\n\r\nFooter\r\n");
 }
 
-bool HttpServer::ServeRootDocument(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
 	std::ostringstream doc_sstr;
 	
@@ -1027,7 +953,7 @@ bool HttpServer::ServeRootDocument(HttpRequest const& req, unisim::util::hypapp:
 	return true;
 }
 
-bool HttpServer::Serve404(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+bool HttpServer::Serve404(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
 	// Note: When browsing option "Show friendly HTTP error messages" is enabled, IE5+ does not show 404 error document if it is less than 512 bytes long 
 	std::ostringstream doc_sstr;
@@ -1084,7 +1010,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 		
 		virtual bool SendResponse(unisim::util::hypapp::Request const& req, unisim::util::hypapp::ClientConnection const& conn)
 		{
-			HttpRequest http_request(req, http_server.logger.DebugWarningStream());
+			unisim::util::hypapp::HttpRequest http_request(req, http_server.logger.DebugWarningStream());
 			
 			if(http_request.IsValid()) // http request is valid?
 			{
@@ -1120,7 +1046,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 				}
 				else if((http_request.GetAbsolutePath() == "/kernel") || (http_request.GetAbsolutePath() == "/kernel/"))
 				{
-					return http_server.unisim::kernel::service::Object::ServeHttpRequest(http_request, conn);
+					return http_server.ServeDefault(http_request, conn);
 				}
 // 				else if((http_request.GetAbsolutePath() == "/footer") || (http_request.GetAbsolutePath() == "/footer/"))
 // 				{
@@ -1158,8 +1084,8 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 							}
 							std::string object_http_request_server_root(http_request.GetAbsolutePath().substr(0, pos));
 							std::string object_http_request_path(http_request.GetAbsolutePath().substr(pos));
-							HttpRequest object_http_request(object_http_request_server_root, object_http_request_path, http_request);
-							return !object->ServeHttpRequest(object_http_request, conn) || !http_server.killed;
+							unisim::util::hypapp::HttpRequest object_http_request(object_http_request_server_root, object_http_request_path, http_request);
+							return !http_server.RouteHttpRequest(object, object_http_request, conn) || !http_server.killed;
 						}
 						else
 						{
@@ -1199,6 +1125,55 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 	msg_loop.Run(conn);
 }
 
+bool HttpServer::RouteHttpRequest(unisim::kernel::service::Object *object, unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+{
+	std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *>::iterator it = http_server_map.find(object);
+	if(it != http_server_map.end())
+	{
+		unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *import = (*it).second;
+		if(import)
+		{
+			return (*import)->ServeHttpRequest(req, conn);
+		}
+	}
+	
+	return ServeDefault(req, conn);
+}
+
+bool HttpServer::ServeDefault(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+{
+	std::ostringstream doc_sstr;
+	
+	doc_sstr << "<!DOCTYPE html>" << std::endl;
+	doc_sstr << "<html>" << std::endl;
+	doc_sstr << "\t<head>" << std::endl;
+	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	doc_sstr << "\t</head>" << std::endl;
+	doc_sstr << "\t<body>" << std::endl;
+	doc_sstr << "\t</body>" << std::endl;
+	doc_sstr << "</html>" << std::endl;
+
+	std::string doc(doc_sstr.str());
+		
+	std::ostringstream http_header_sstr;
+	http_header_sstr << "HTTP/1.1 200 OK\r\n";
+	http_header_sstr << "Server: UNISIM-VP\r\n";
+	http_header_sstr << "Cache-control: no-cache\r\n";
+	http_header_sstr << "Connection: keep-alive\r\n";
+	http_header_sstr << "Content-length: " << doc.length() << "\r\n";
+	http_header_sstr << "Content-Type: text/html; charset=utf-8\r\n";
+	http_header_sstr << "\r\n";
+	
+	std::string http_header(http_header_sstr.str());
+
+	if(!conn.Send(http_header.c_str(), http_header.length())) return false;
+	
+	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
+			
+	return conn.Send(doc.c_str(), doc.length());
+}
+
 } // end of namespace http_server
-} // end of namespace kernel
+} // end of namespace service
 } // end of namespace unisim

@@ -47,7 +47,6 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger_server.hh"
 #include "unisim/kernel/logger/logger.hh"
-#include "unisim/kernel/http_server/http_server.hh"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -1930,40 +1929,6 @@ void Object::SetDescription(const char *_description)
 	description = _description;
 }
 
-bool Object::ServeHttpRequest(unisim::kernel::http_server::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
-{
-	std::ostringstream doc_sstr;
-	
-	doc_sstr << "<!DOCTYPE html>" << std::endl;
-	doc_sstr << "<html>" << std::endl;
-	doc_sstr << "\t<head>" << std::endl;
-	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-	doc_sstr << "\t</head>" << std::endl;
-	doc_sstr << "\t<body>" << std::endl;
-	doc_sstr << "\t</body>" << std::endl;
-	doc_sstr << "</html>" << std::endl;
-
-	std::string doc(doc_sstr.str());
-		
-	std::ostringstream http_header_sstr;
-	http_header_sstr << "HTTP/1.1 200 OK\r\n";
-	http_header_sstr << "Server: UNISIM-VP\r\n";
-	http_header_sstr << "Cache-control: no-cache\r\n";
-	http_header_sstr << "Connection: keep-alive\r\n";
-	http_header_sstr << "Content-length: " << doc.length() << "\r\n";
-	http_header_sstr << "Content-Type: text/html; charset=utf-8\r\n";
-	http_header_sstr << "\r\n";
-	
-	std::string http_header(http_header_sstr.str());
-
-	if(!conn.Send(http_header.c_str(), http_header.length())) return false;
-	
-	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
-			
-	return conn.Send(doc.c_str(), doc.length());
-}
-
 //=============================================================================
 //=                           ServiceImportBase                               =
 //=============================================================================
@@ -2125,7 +2090,6 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, apis()
 	, cmd_args(0)
 	, param_cmd_args(0)
-	, http_server(0)
 {
 	new unisim::kernel::config::XMLConfigFileHelper(this);
 	new unisim::kernel::config::INIConfigFileHelper(this);
@@ -2602,10 +2566,6 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	// Setup logger server
 	unisim::kernel::logger::LoggerServer *logserv = unisim::kernel::logger::Logger::StaticServerInstance();
 	logserv->Setup();
-	
-	// Setup http server
-	http_server = new unisim::kernel::http_server::HttpServer("http-server");
-	http_server->Setup();
 }
 
 Simulator::~Simulator()
@@ -2669,11 +2629,6 @@ Simulator::~Simulator()
 	if(cmd_args)
 	{
 		delete[] cmd_args;
-	}
-	
-	if(http_server)
-	{
-		delete http_server;
 	}
 	
 	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_iter;

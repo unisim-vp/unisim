@@ -89,7 +89,7 @@ UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
 unisim/kernel/config/xml_config_file_helper.cc \
 unisim/kernel/config/ini_config_file_helper.cc \
-unisim/kernel/http_server/http_server.cc \
+unisim/service/http_server/http_server.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/tlm2/simulator.cc \
 unisim/kernel/tlm2/clock.cc \
@@ -670,7 +670,7 @@ UNISIM_LIB_SIMULATOR_HEADER_FILES="${UNISIM_LIB_SIMULATOR_ISA_FILES} \
 unisim/kernel/service/service.hh \
 unisim/kernel/config/xml_config_file_helper.hh \
 unisim/kernel/config/ini_config_file_helper.hh \
-unisim/kernel/http_server/http_server.hh \
+unisim/service/http_server/http_server.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm2/tlm.hh \
@@ -787,6 +787,7 @@ unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/profiling.hh \
 unisim/service/interfaces/register.hh \
 unisim/service/interfaces/registers.hh \
+unisim/service/interfaces/field.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/synchronizable.hh \
 unisim/service/interfaces/trap_reporting.hh \
@@ -797,6 +798,7 @@ unisim/service/interfaces/led_board.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/subprogram_lookup.hh \
+unisim/service/interfaces/http_server.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
@@ -978,20 +980,20 @@ UNISIM_LIB_SIMULATOR_DATA_FILES="\
 unisim/kernel/tlm2/style.css \
 unisim/kernel/tlm2/script.js \
 unisim/kernel/tlm2/favicon.ico \
-unisim/kernel/http_server/style.css \
-unisim/kernel/http_server/close-tab-hover.svg \
-unisim/kernel/http_server/close-tab.svg \
-unisim/kernel/http_server/history-shortcut.svg \
-unisim/kernel/http_server/left-arrow.svg \
-unisim/kernel/http_server/right-arrow.svg \
-unisim/kernel/http_server/close-tab-hover.png \
-unisim/kernel/http_server/close-tab.png \
-unisim/kernel/http_server/history-shortcut.png \
-unisim/kernel/http_server/left-arrow.png \
-unisim/kernel/http_server/right-arrow.png \
-unisim/kernel/http_server/var_style.css \
-unisim/kernel/http_server/var_script.js \
-unisim/kernel/http_server/script.js \
+unisim/service/http_server/style.css \
+unisim/service/http_server/close-tab-hover.svg \
+unisim/service/http_server/close-tab.svg \
+unisim/service/http_server/history-shortcut.svg \
+unisim/service/http_server/left-arrow.svg \
+unisim/service/http_server/right-arrow.svg \
+unisim/service/http_server/close-tab-hover.png \
+unisim/service/http_server/close-tab.png \
+unisim/service/http_server/history-shortcut.png \
+unisim/service/http_server/left-arrow.png \
+unisim/service/http_server/right-arrow.png \
+unisim/service/http_server/var_style.css \
+unisim/service/http_server/var_script.js \
+unisim/service/http_server/script.js \
 "
 
 SIMULATOR_EXTERNAL_HEADERS="\

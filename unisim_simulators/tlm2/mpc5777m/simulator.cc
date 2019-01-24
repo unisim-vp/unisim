@@ -195,6 +195,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, netstreamer14(0)
 	, netstreamer15(0)
 	, netstreamer16(0)
+	, http_server(0)
 	, enable_core0_reset(true)
 	, enable_core1_reset(true)
 	, enable_core2_reset(true)
@@ -491,6 +492,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	netstreamer14 = enable_serial_terminal14 ? new NETSTREAMER("netstreamer14") : 0;
 	netstreamer15 = enable_serial_terminal15 ? new NETSTREAMER("netstreamer15") : 0;
 	netstreamer16 = enable_serial_terminal16 ? new NETSTREAMER("netstreamer16") : 0;
+	//  - Http Server
+	http_server = new unisim::service::http_server::HttpServer("http-server");
 	
 	//=========================================================================
 	//===                          Port registration                        ===
@@ -4697,6 +4700,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		serial_terminal16->char_io_import >> netstreamer16->char_io_export;
 	}
 	
+	*http_server->http_server_import[0] >> GetInstrumenter()->http_server_export;
+	
 #if HAVE_TVS
 	bool enable_bandwidth_tracing = (*xbar_0)["enable-bandwidth-tracing"] ||
 	                                (*xbar_1)["enable-bandwidth-tracing"] ||
@@ -5107,6 +5112,7 @@ Simulator::~Simulator()
 	if(netstreamer14) delete netstreamer14;
 	if(netstreamer15) delete netstreamer15;
 	if(netstreamer16) delete netstreamer16;
+	if(http_server) delete http_server;
 #if HAVE_TVS
 	if(bandwidth_vcd) delete bandwidth_vcd;
 	if(bandwidth_vcd_file) delete bandwidth_vcd_file;

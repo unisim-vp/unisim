@@ -70,11 +70,6 @@ struct Logger;
 
 }
 
-namespace http_server {
-	class HttpRequest;
-	class HttpServer;
-}
-
 namespace api {
 
 class APIBase;
@@ -621,8 +616,6 @@ private:
 	std::string *cmd_args;
 	ParameterArray<std::string> *param_cmd_args;
 	
-	unisim::kernel::http_server::HttpServer *http_server;
-	
 public:
 	template <typename T> T GetVariable(const char *variable_name, const T *t = 0) const;
 	
@@ -1110,7 +1103,6 @@ public:
 	virtual void Stop(int exit_status, bool asynchronous = false);
 	void SetDescription(const char *description);
 	
-	virtual bool ServeHttpRequest(unisim::kernel::http_server::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 private:
 	std::string object_name;
 	std::string object_base_name;

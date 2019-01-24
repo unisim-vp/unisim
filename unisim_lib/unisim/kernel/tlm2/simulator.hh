@@ -39,6 +39,7 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/clock.hh>
 #include <unisim/util/likely/likely.hh>
+#include <unisim/service/interfaces/http_server.hh>
 #include <systemc>
 #include <tlm>
 #include <stdexcept>
@@ -314,7 +315,7 @@ private:
 	Instrumenter *instrumenter;
 };
 
-class InstrumenterFrontEnd : public unisim::kernel::service::Object
+class InstrumenterFrontEnd : public virtual unisim::kernel::service::Object
 {
 public:
 	InstrumenterFrontEnd(const char *name, Simulator *simulator);
@@ -397,8 +398,11 @@ private:
 
 class UserInterface
 	: public InstrumenterFrontEnd
+	, public unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>
 {
 public:
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
+	
 	UserInterface(const char *name, Instrumenter *instrumenter = 0);
 	virtual ~UserInterface();
 	
@@ -409,7 +413,7 @@ public:
 	virtual void ProcessInputInstruments();
 	virtual void ProcessOutputInstruments();
 	
-	virtual bool ServeHttpRequest(unisim::kernel::http_server::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
+	virtual bool ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 	
 	UserInstrument *FindUserInstrument(const std::string& name);
 	
@@ -541,22 +545,18 @@ private:
 };
 
 class Instrumenter
-	: public virtual unisim::kernel::service::Object
+	: public unisim::kernel::service::Object
 {
 public:
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
+
 	Instrumenter(const char *name, unisim::kernel::service::Object *parent = 0);
 	virtual ~Instrumenter();
 	virtual bool BeginSetup();
 	virtual bool EndSetup();
 	
 	Clock& CreateClock(const std::string& clock_name);
-// 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const T& init_value);
-// 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const T& init_value);
-// 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const std::string& signal_name, const T& init_value);
-// 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const std::string& signal_name, const T& init_value);
-// 	template <typename T> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value);
-// 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value);
-	
+
 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const T& init_value, INSTRUMENTATION_TYPE instr_type = INPUT_OUTPUT_INSTRUMENTATION);
 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const T& init_value, INSTRUMENTATION_TYPE instr_type = INPUT_OUTPUT_INSTRUMENTATION);
 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const std::string& signal_name, const T& init_value, INSTRUMENTATION_TYPE instr_type = INPUT_OUTPUT_INSTRUMENTATION);
