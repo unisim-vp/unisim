@@ -91,6 +91,7 @@ namespace intel {
     typedef int64_t      s64_t;
     typedef Twice<s64_t> s128_t;
     typedef bool         bit_t;
+    typedef uint32_t     addr_t;
     
     typedef float        f32_t;
     typedef double       f64_t;
@@ -115,7 +116,11 @@ namespace intel {
     Operation<Arch>*            fetch();
     
     virtual void ExecuteSystemCall( unsigned id ) = 0;
-    
+
+    void                        syscall()
+    {
+      this->ExecuteSystemCall( m_regs[0] );
+    }
     void                        interrupt( uint8_t _exc )
     {
       switch (_exc) {
@@ -134,9 +139,9 @@ namespace intel {
     
   public:
     enum ipproc_t { ipjmp = 0, ipcall, ipret };
-    u32_t                       geteip() { return m_EIP; }
-    void                        seteip( u32_t _eip, ipproc_t ipproc = ipjmp ) { m_EIP = _eip; }
-    void                        addeip( u32_t offset ) { m_EIP += offset; }
+    u32_t                       getnip() { return m_EIP; }
+    void                        setnip( u32_t _eip, ipproc_t ipproc = ipjmp ) { m_EIP = _eip; }
+    // void                        addeip( u32_t offset ) { m_EIP += offset; }
 
     // INTEGER STATE
     // EFLAGS
@@ -165,53 +170,33 @@ namespace intel {
     uint32_t                    m_regs[8]; ///< extended reg
     
   public:
-    u8_t                        regread8( uint32_t _idx )
+    template <class GOP>
+    typename TypeFor<Arch,GOP::OPSIZE>::u regread( GOP const&, unsigned idx )
     {
-      uint32_t idx=_idx%4, sh=_idx*2 & 8;
-      return u8_t( m_regs[idx] >> sh );
-    }
-    u16_t                       regread16( uint32_t _idx )
-    {
-      return u16_t( m_regs[_idx] );
-    }
-    u32_t                       regread32( uint32_t _idx )
-    {
-      return u32_t( m_regs[_idx] );
+      return typename TypeFor<Arch,GOP::OPSIZE>::u( m_regs[idx] );
     }
     
-    template <unsigned OPSIZE>
-    typename TypeFor<Arch,OPSIZE>::u
-    regread( unsigned idx )
+    u8_t regread( GObLH const&, unsigned idx )
     {
-      if (OPSIZE==8) return regread8( idx );
-      if (OPSIZE==16) return regread16( idx );
-      if (OPSIZE==32) return regread32( idx );
-      throw 0;
-      return 0;
+      unsigned reg = idx%4, sh = idx*2 & 8;
+      return u8_t( m_regs[reg] >> sh );
     }
     
-    template <unsigned OPSIZE>
-    void
-    regwrite( unsigned idx, typename TypeFor<Arch,OPSIZE>::u value )
+    template <class GOP>
+    void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::OPSIZE>::u value )
     {
-      if (OPSIZE==8) return regwrite8( idx, value );
-      if (OPSIZE==16) return regwrite16( idx, value );
-      if (OPSIZE==32) return regwrite32( idx, value );
-      throw 0;
+      m_regs[idx] = u32_t( value );
+    }
+
+    void regwrite( GObLH const&, unsigned idx, u8_t value )
+    {
+      uint32_t reg = idx%4, sh = idx*2 & 8;
+      m_regs[reg] = (m_regs[reg] & ~u32_t(0xff << sh)) | ((value & u32_t(0xff)) << sh);
     }
     
-    void                        regwrite8( uint32_t _idx, u8_t _val )
+    void regwrite( GOw const&, unsigned idx, u16_t value )
     {
-      uint32_t idx=_idx%4, sh=_idx*2 & 8;
-      m_regs[idx] = (m_regs[idx] & ~(0xff << sh)) | ((_val & 0xff) << sh);
-    }
-    void                        regwrite16( uint32_t _idx, u16_t _val )
-    {
-      m_regs[_idx] = (m_regs[_idx] & 0xffff0000) | (_val & 0x0000ffff);
-    }
-    void                        regwrite32( uint32_t _idx, u32_t _val )
-    {
-      m_regs[_idx] = _val;
+      m_regs[idx] = (m_regs[idx] & ~u32_t(0xffff)) | ((value & u32_t(0xffff)));
     }
     
     // low level register access routines
@@ -454,8 +439,8 @@ namespace intel {
     pop()
     {
       // TODO: handle stack address size
-      u32_t sptr = regread32( 4 );
-      regwrite32( 4, sptr + u32_t( OPSIZE/8 ) );
+      u32_t sptr = regread( GOd(), 4 );
+      regwrite( GOd(), 4, sptr + u32_t( OPSIZE/8 ) );
       return memread<OPSIZE>( SS, sptr );
     }
     
@@ -464,30 +449,32 @@ namespace intel {
     push( typename TypeFor<Arch,OPSIZE>::u value )
     {
       // TODO: handle stack address size
-      u32_t sptr = regread32( 4 ) - u32_t( OPSIZE/8 );
+      u32_t sptr = regread( GOd(), 4 ) - u32_t( OPSIZE/8 );
       memwrite<OPSIZE>( SS, sptr, value );
-      regwrite32( 4, sptr );
+      regwrite( GOd(), 4, sptr );
     }
+
+    void shrink_stack( addr_t offset ) { regwrite( GOd(), 4, regread( GOd(), 4 ) + offset ); }
+    void grow_stack( addr_t offset ) { regwrite( GOd(), 4, regread( GOd(), 4 ) - offset ); }
     
-    
-    template <unsigned OPSIZE>
-    typename TypeFor<Arch,OPSIZE>::u
-    rmread( RMOp<Arch> const& rmop )
+    template <class GOP>
+    typename TypeFor<Arch,GOP::OPSIZE>::u
+    rmread( GOP const& g, RMOp<Arch> const& rmop )
     {
       if (not rmop.is_memory_operand())
-        return regread<OPSIZE>( rmop.ereg() );
+        return regread( g, rmop.ereg() );
       
-      return memread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) );
+      return memread<GOP::OPSIZE>( rmop->segment, rmop->effective_address( *this ) );
     }
     
-    template <unsigned OPSIZE>
+    template <class GOP>
     void
-    rmwrite( RMOp<Arch> const& rmop, typename TypeFor<Arch,OPSIZE>::u value )
+    rmwrite( GOP const& g, RMOp<Arch> const& rmop, typename TypeFor<Arch,GOP::OPSIZE>::u value )
     {
       if (not rmop.is_memory_operand())
-        return regwrite<OPSIZE>( rmop.ereg(), value );
+        return regwrite( g, rmop.ereg(), value );
       
-      return memwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
+      return memwrite<GOP::OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
     }
     
     // void

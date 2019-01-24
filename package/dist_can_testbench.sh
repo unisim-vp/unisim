@@ -4,8 +4,8 @@ SIMPKG=can_testbench
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_config_file_helper.cc \
-unisim/kernel/service/ini_config_file_helper.cc \
+unisim/kernel/config/xml_config_file_helper.cc \
+unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/tlm2/clock.cc \
 unisim/kernel/tlm2/simulator.cc \
@@ -13,7 +13,6 @@ unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/backtrace/backtrace.cc \
-unisim/util/hypapp/hypapp.cc \
 unisim/kernel/api/api.cc \
 unisim/util/random/random.cc \
 unisim/service/time/host_time/time.cc \
@@ -22,8 +21,8 @@ unisim/service/time/sc_time/time.cc \
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_config_file_helper.hh \
-unisim/kernel/service/ini_config_file_helper.hh \
+unisim/kernel/config/xml_config_file_helper.hh \
+unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm2/tlm.hh \
@@ -37,7 +36,6 @@ unisim/util/likely/likely.hh \
 unisim/util/inlining/inlining.hh \
 unisim/util/random/random.hh \
 unisim/util/hash_table/hash_table.hh \
-unisim/util/hypapp/hypapp.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
@@ -121,7 +119,7 @@ UNISIM_SIMULATOR_TEMPLATE_FILES="\
 UNISIM_SIMULATOR_EXTRA_FILES="\
 "
 
-UNISIM_SIMULATOR_TOP_DATA_FILES="\
+UNISIM_SIMULATOR_PKG_DATA_FILES="\
 COPYING \
 NEWS \
 ChangeLog \
@@ -202,7 +200,7 @@ for file in ${UNISIM_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
 done
 
-for file in ${UNISIM_SIMULATOR_TOP_DATA_FILES}; do
+for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
 
@@ -454,7 +452,7 @@ libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_TEMPLATE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_TEMPLATE_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
-dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_TOP_DATA_FILES}
+dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_PKG_DATA_FILES}
 nobase_dist_share_DATA = ${UNISIM_SIMULATOR_DATA_FILES}
 
 EOF

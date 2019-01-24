@@ -466,10 +466,10 @@ struct Arch
 
   template <class GOP>
   typename TypeFor<Arch,GOP::OPSIZE>::u
-  rmread( GOP const&, RMOp const& rmop )
+  rmread( GOP const& g, RMOp const& rmop )
   {
     if (not rmop.is_memory_operand())
-      return regread( GOP(), rmop.ereg() );
+      return regread( g, rmop.ereg() );
 
     return memread<GOP::OPSIZE>( rmop->segment, rmop->effective_address( *this ) );
   }

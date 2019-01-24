@@ -54,6 +54,9 @@ impl {
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <iostream>
 
+#include <unisim/util/likely/likely.hh>
+#define evenly(x) (x)
+
 using unisim::util::arithmetic::RotateRight;
 using unisim::util::arithmetic::BitScanReverse;
 

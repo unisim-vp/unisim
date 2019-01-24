@@ -444,6 +444,7 @@ public:
 	VariableBase *FindStatistic(const char *name);
 	const VariableBase *FindFormula(const char *name) const;
 	VariableBase *FindFormula(const char *name);
+	Object *FindObject(const char *name) const;
 
 	void GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
 	void GetRootVariables(std::list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);

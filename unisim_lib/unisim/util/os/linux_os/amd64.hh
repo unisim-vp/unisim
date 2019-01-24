@@ -89,9 +89,6 @@ namespace linux_os {
     typedef typename LINUX::address_type address_type;
     typedef typename LINUX::parameter_type parameter_type;
     typedef typename LINUX::UTSName UTSName;
-    using LINUX::TargetSystem::SetRegister;
-    using LINUX::TargetSystem::GetRegister;
-    using LINUX::TargetSystem::ClearRegister;
     using LINUX::TargetSystem::lin;
     using LINUX::TargetSystem::name;
     
@@ -181,7 +178,7 @@ namespace linux_os {
       // }
       
       // Set PC to the program entry point
-      if (not SetRegister(lin, "%rip", lin.GetEntryPoint()))
+      if (not lin.SetTargetRegister("%rip", lin.GetEntryPoint()))
         return false;
       
       // Set SP to the base of the created stack
@@ -192,34 +189,34 @@ namespace linux_os {
         return false;
       }
       address_type stack_pointer = sp_section->GetAddr();
-      if (not SetRegister(lin, "%rsp", stack_pointer))
+      if (not lin.SetTargetRegister("%rsp", stack_pointer))
         return false;
       parameter_type par1 = 0;
       parameter_type par2 = 0;
       if (not this->MemIF().ReadMemory(stack_pointer +  8, (uint8_t *)&par1, sizeof(par1)) or
           not this->MemIF().ReadMemory(stack_pointer + 16, (uint8_t *)&par2, sizeof(par2)) or
-          not SetRegister(lin, "%rdi", Target2Host(lin.GetEndianness(), par1)) or
-          not SetRegister(lin, "%rsi", Target2Host(lin.GetEndianness(), par2)))
+          not lin.SetTargetRegister("%rdi", Target2Host(lin.GetEndianness(), par1)) or
+          not lin.SetTargetRegister("%rsi", Target2Host(lin.GetEndianness(), par2)))
         return false;
           
       return true;
     }
     
     static void SetAMD64SystemCallStatus(LINUX& _lin, int64_t ret, bool error)
-    { SetRegister(_lin, "%rax", (parameter_type) ret); }
+    { _lin.SetTargetRegister("%rax", (parameter_type) ret); }
     
     void SetSystemCallStatus(int64_t ret, bool error) const { SetAMD64SystemCallStatus( lin, ret, error ); }
     
-    static parameter_type GetSystemCallParam( LINUX& _lin, int id )
+    static parameter_type GetSystemCallParam( LINUX& lin, int id )
     {
       parameter_type val = 0;
       switch (id) {
-      case 0: GetRegister(_lin, "%rdi", &val); break;
-      case 1: GetRegister(_lin, "%rsi", &val); break;
-      case 2: GetRegister(_lin, "%rdx", &val); break;
-      case 3: GetRegister(_lin, "%r10", &val); break;
-      case 4: GetRegister(_lin, "%r8", &val); break;
-      case 5: GetRegister(_lin, "%r9", &val); break;
+      case 0: lin.GetTargetRegister("%rdi", val); break;
+      case 1: lin.GetTargetRegister("%rsi", val); break;
+      case 2: lin.GetTargetRegister("%rdx", val); break;
+      case 3: lin.GetTargetRegister("%r10", val); break;
+      case 4: lin.GetTargetRegister("%r8", val); break;
+      case 5: lin.GetTargetRegister("%r9", val); break;
       default: throw std::logic_error("internal_error");
       }
           

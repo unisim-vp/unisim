@@ -554,7 +554,7 @@ arch.hh \
 testutils.hh \
 "
 
-UNISIM_SIMULATOR_TOP_DATA_FILES="\
+UNISIM_SIMULATOR_PKG_DATA_FILES="\
 COPYING \
 NEWS \
 ChangeLog \
@@ -623,7 +623,7 @@ for file in ${UNISIM_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
 done
 
-for file in ${UNISIM_SIMULATOR_TOP_DATA_FILES}; do
+for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
 

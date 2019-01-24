@@ -7,8 +7,8 @@ unisim/component/cxx/processor/powerpc/isa/disasm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_config_file_helper.cc \
-unisim/kernel/service/ini_config_file_helper.cc \
+unisim/kernel/config/xml_config_file_helper.cc \
+unisim/kernel/config/ini_config_file_helper.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/util/debug/symbol_table_64.cc \
@@ -324,8 +324,8 @@ unisim/component/cxx/processor/powerpc/isa/disasm.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/service/service.hh \
-unisim/kernel/service/ini_config_file_helper.hh \
-unisim/kernel/service/xml_config_file_helper.hh \
+unisim/kernel/config/ini_config_file_helper.hh \
+unisim/kernel/config/xml_config_file_helper.hh \
 unisim/service/debug/debugger/debugger.hh \
 unisim/service/debug/debugger/debugger.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
@@ -567,7 +567,7 @@ simfloat.hh \
 types.hh \
 "
 
-UNISIM_SIMULATOR_TOP_DATA_FILES="\
+UNISIM_SIMULATOR_PKG_DATA_FILES="\
 COPYING \
 NEWS \
 ChangeLog \
@@ -636,7 +636,7 @@ for file in ${UNISIM_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
 done
 
-for file in ${UNISIM_SIMULATOR_TOP_DATA_FILES}; do
+for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
 

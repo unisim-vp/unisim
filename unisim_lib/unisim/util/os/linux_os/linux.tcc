@@ -338,7 +338,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStderrPipeFilename(const char *filename)
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 unisim::service::interfaces::Register*
-Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetDebugRegister( char const* regname )
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetDebugRegister( char const* regname ) const
 {
   if (not regname) return 0;
   
@@ -367,42 +367,46 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>:: TargetSystem::ReadMemory( Linux& lin,
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem::GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE* value )
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetTargetRegister( char const* regname, PARAMETER_TYPE& value ) const
 {
-  if (unisim::service::interfaces::Register* reg = lin.GetDebugRegister(regname)) {
-    if (reg->GetSize() != sizeof(PARAMETER_TYPE)) {
-      lin.debug_error_stream << "Bad register size for " << regname << std::endl;
-      return false;
+  if (unisim::service::interfaces::Register* reg = GetDebugRegister(regname))
+    {
+      if (reg->GetSize() == sizeof(PARAMETER_TYPE))
+        {
+          reg->GetValue(&value);
+          return true;
+        }
+        debug_error_stream << "Bad register size for " << regname << std::endl;
     }
   
-    reg->GetValue(value);
-    return true;
-  }
   return false;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem::SetRegister( Linux& lin, char const* regname, PARAMETER_TYPE value )
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetTargetRegister( char const* regname, PARAMETER_TYPE value ) const
 {
-  if (unisim::service::interfaces::Register* reg = lin.GetDebugRegister(regname)) {
-    if (reg->GetSize() != sizeof(PARAMETER_TYPE)) {
-      lin.debug_error_stream << "Bad register size for " << regname << std::endl;
-      return false;
+  if (unisim::service::interfaces::Register* reg = GetDebugRegister(regname))
+    {
+      if (reg->GetSize() == sizeof(PARAMETER_TYPE))
+        {
+          reg->SetValue(&value);
+          return true;
+        }
+      debug_error_stream << "Bad register size for " << regname << std::endl;
     }
-    
-    reg->SetValue(&value);
-    return true;
-  }
+  
   return false;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem::ClearRegister( Linux& lin, char const* regname )
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ClearTargetRegister( char const* regname ) const
 {
-  if (unisim::service::interfaces::Register* reg = lin.GetDebugRegister(regname)) {
-    reg->Clear();
-    return true;
-  }
+  if (unisim::service::interfaces::Register* reg = GetDebugRegister(regname))
+    {
+      reg->Clear();
+      return true;
+    }
+  
   return false;
 }
 

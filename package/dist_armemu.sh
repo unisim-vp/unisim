@@ -7,8 +7,8 @@ unisim/util/backtrace/backtrace.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_config_file_helper.cc \
-unisim/kernel/service/ini_config_file_helper.cc \
+unisim/kernel/config/xml_config_file_helper.cc \
+unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/service/endian.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
@@ -140,8 +140,8 @@ unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm/tlm.hh \
 unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_config_file_helper.hh \
-unisim/kernel/service/ini_config_file_helper.hh \
+unisim/kernel/config/xml_config_file_helper.hh \
+unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
@@ -411,7 +411,7 @@ UNISIM_SIMULATOR_HEADER_FILES="\
 simulator.hh \
 "
 
-UNISIM_SIMULATOR_TOP_DATA_FILES="\
+UNISIM_SIMULATOR_PKG_DATA_FILES="\
 COPYING \
 NEWS \
 ChangeLog \
@@ -480,7 +480,7 @@ for file in ${UNISIM_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
 done
 
-for file in ${UNISIM_SIMULATOR_TOP_DATA_FILES}; do
+for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
 

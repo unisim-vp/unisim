@@ -106,8 +106,8 @@ vector"
 
 UNISIM_LIB_TMS320C3X_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_config_file_helper.cc \
-unisim/kernel/service/ini_config_file_helper.cc \
+unisim/kernel/config/xml_config_file_helper.cc \
+unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/util/backtrace/backtrace.cc \
@@ -203,8 +203,8 @@ unisim/component/cxx/processor/tms320c3x/isa/tms320c3x.isa"
 
 UNISIM_LIB_TMS320C3X_HEADER_FILES="${UNISIM_LIB_TMS320C3X_ISA_FILES} \
 unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_config_file_helper.hh \
-unisim/kernel/service/ini_config_file_helper.hh \
+unisim/kernel/config/xml_config_file_helper.hh \
+unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/util/backtrace/backtrace.hh \

@@ -1018,7 +1018,7 @@ trace32-multi.cmm.in \
 sim_gtkwave.sh.in \
 "
 
-UNISIM_SIMULATOR_TOP_DATA_FILES="\
+UNISIM_SIMULATOR_PKG_DATA_FILES="\
 COPYING \
 NEWS \
 ChangeLog \
@@ -1186,7 +1186,7 @@ for file in ${UNISIM_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
 done
 
-for file in ${UNISIM_SIMULATOR_TOP_DATA_FILES}; do
+for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
 
@@ -1480,7 +1480,7 @@ nodist_libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = unisim/component
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
-dist_share_DATA = ${UNISIM_LIB_SIMULATOR_TOP_DATA_FILES} ${UNISIM_SIMULATOR_TOP_DATA_FILES}
+dist_share_DATA = ${UNISIM_LIB_SIMULATOR_TOP_DATA_FILES} ${UNISIM_SIMULATOR_PKG_DATA_FILES}
 nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES} trace32-core0.cmm trace32-core1.cmm trace32-core2.cmm trace32-multi.cmm sim_gtkwave.sh
 
 BUILT_SOURCES=\

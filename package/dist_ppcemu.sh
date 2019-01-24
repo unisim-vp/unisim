@@ -5,8 +5,8 @@ SIMPKG=ppcemu
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/component/cxx/processor/powerpc/isa/disasm.cc \
 unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_config_file_helper.cc \
-unisim/kernel/service/ini_config_file_helper.cc \
+unisim/kernel/config/xml_config_file_helper.cc \
+unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
@@ -313,9 +313,9 @@ unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.hh \
 unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.tcc \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
-unisim/kernel/service/ini_config_file_helper.hh \
+unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_config_file_helper.hh \
+unisim/kernel/config/xml_config_file_helper.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/service/debug/debugger/debugger.hh \
 unisim/service/debug/debugger/debugger.tcc \
@@ -570,7 +570,7 @@ UNISIM_SIMULATOR_HEADER_FILES="\
 
 UNISIM_SIMULATOR_TESTBENCH_FILES=""
 
-UNISIM_SIMULATOR_TOP_DATA_FILES="\
+UNISIM_SIMULATOR_PKG_DATA_FILES="\
 COPYING \
 NEWS \
 ChangeLog \
@@ -641,7 +641,7 @@ for file in ${UNISIM_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
 done
 
-for file in ${UNISIM_SIMULATOR_TOP_DATA_FILES}; do
+for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
 

@@ -67,9 +67,6 @@ namespace linux_os {
     typedef typename LINUX::address_type address_type;
     typedef typename LINUX::parameter_type parameter_type;
     typedef typename LINUX::UTSName UTSName;
-    using LINUX::TargetSystem::SetRegister;
-    using LINUX::TargetSystem::GetRegister;
-    using LINUX::TargetSystem::ClearRegister;
     using LINUX::TargetSystem::ReadMemory;
     using LINUX::TargetSystem::lin;
     using LINUX::TargetSystem::name;
@@ -179,16 +176,16 @@ namespace linux_os {
         "cr"
         };
         for (int idx = sizeof(clear_registers)/sizeof(clear_registers[0]); --idx >= 0;)
-          if (not ClearRegister(lin, clear_registers[idx]))
+          if (not lin.ClearTargetRegister(clear_registers[idx]))
             return false;
       }
       
       // Set CIA, TOC and ENVPTR to the program entry point descriptor
       address_type desc_addr = lin.GetEntryPoint();
       parameter_type instruction_address, toc, environment_pointer;
-      if (not ReadMemory(lin, desc_addr +  0, &instruction_address) or not SetRegister(lin, "cia", instruction_address) or
-          not ReadMemory(lin, desc_addr +  8, &toc) or not SetRegister(lin, "r2",  toc) or
-          not ReadMemory(lin, desc_addr + 16, &environment_pointer) or not SetRegister(lin, "r11", environment_pointer)
+      if (not ReadMemory(lin, desc_addr +  0, &instruction_address) or not lin.SetTargetRegister("cia", instruction_address) or
+          not ReadMemory(lin, desc_addr +  8, &toc) or not lin.SetTargetRegister("r2",  toc) or
+          not ReadMemory(lin, desc_addr + 16, &environment_pointer) or not lin.SetTargetRegister("r11", environment_pointer)
           )
         return false;
       
@@ -203,12 +200,12 @@ namespace linux_os {
 
       // SP is register 1 in PowerPC64 ABI
       address_type stack_pointer = sp_section->GetAddr();
-      if (not SetRegister(lin, "r1", stack_pointer))
+      if (not lin.SetTargetRegister("r1", stack_pointer))
         return false;
       parameter_type par1, par2;
       
-      if (not ReadMemory(lin, stack_pointer +  8, &par1) or not SetRegister(lin, "r3", par1) or
-          not ReadMemory(lin, stack_pointer + 16, &par2) or not SetRegister(lin, "r4", par2)
+      if (not ReadMemory(lin, stack_pointer +  8, &par1) or not lin.SetTargetRegister("r3", par1) or
+          not ReadMemory(lin, stack_pointer + 16, &par2) or not lin.SetTargetRegister("r4", par2)
           )
         return false;
 
@@ -566,24 +563,24 @@ namespace linux_os {
   
       if(error)
         {
-          if (not GetRegister(_lin, cr, &val)) return;
+          if (not _lin.GetTargetRegister(cr, val)) return;
     
           val |= (1 << 28); // CR0[SO] <- 1
     
-          if (not SetRegister(_lin, cr, val)) return;
+          if (not _lin.SetTargetRegister(cr, val)) return;
         }
       else
         {
-          if (not GetRegister(_lin, cr, &val)) return;
+          if (not _lin.GetTargetRegister(cr, val)) return;
     
           val &= ~(1 << 28); // CR0[SO] <- 0
     
-          if (not SetRegister(_lin, cr, val)) return;
+          if (not _lin.SetTargetRegister(cr, val)) return;
         }
   
       val = (parameter_type)ret;
   
-      if (not SetRegister(_lin, "r3", val)) return;
+      if (not _lin.SetTargetRegister("r3", val)) return;
     }
     
     void SetSystemCallStatus(int64_t ret, bool error) const { SetPOWERPC64SystemCallStatus(lin, ret, error); }
@@ -593,11 +590,11 @@ namespace linux_os {
       parameter_type val = 0;
           
       switch (id) {
-      case 0: GetRegister(lin, "r3", &val); break;
-      case 1: GetRegister(lin, "r4", &val); break;
-      case 2: GetRegister(lin, "r5", &val); break;
-      case 3: GetRegister(lin, "r6", &val); break;
-      case 4: GetRegister(lin, "r7", &val); break;
+      case 0: lin.GetTargetRegister("r3", val); break;
+      case 1: lin.GetTargetRegister("r4", val); break;
+      case 2: lin.GetTargetRegister("r5", val); break;
+      case 3: lin.GetTargetRegister("r6", val); break;
+      case 4: lin.GetTargetRegister("r7", val); break;
       default: throw std::logic_error("internal error");
       }
           
