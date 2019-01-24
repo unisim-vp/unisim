@@ -956,7 +956,7 @@ struct ICache : public DECODER
       if (certs.insert( buf.str() ).second)
         {
           std::cerr << "unknown instruction: " << buf.str() << '\n';
-          throw 0;
+          return 0;
         }
     }
       
@@ -1020,7 +1020,8 @@ Arch::fetch()
   Decoder::Mode mode( 1, 0, 1 );
     
   Operation* operation = icache.Get( mode, insn_addr, &decbuf[0] );
-    
+  if (not operation) return 0;
+  
   this->rip = insn_addr + operation->length;
     
   if (do_disasm) {
@@ -1267,6 +1268,8 @@ main( int argc, char *argv[] )
   while (not linux64.exited)
     {
       Arch::Operation* op = cpu.fetch();
+      if (not op)
+        return 1;
       // op->disasm( std::cerr );
       // std::cerr << std::endl;
       asm volatile ("operation_execute:");
