@@ -78,9 +78,6 @@ namespace linux_os {
     typedef typename LINUX::address_type address_type;
     typedef typename LINUX::parameter_type parameter_type;
     typedef typename LINUX::UTSName UTSName;
-    using LINUX::TargetSystem::SetRegister;
-    using LINUX::TargetSystem::GetRegister;
-    using LINUX::TargetSystem::ClearRegister;
     using LINUX::TargetSystem::lin;
     using LINUX::TargetSystem::name;
     
@@ -175,11 +172,11 @@ namespace linux_os {
         "cr"
         };
         for (int idx = sizeof(clear_registers)/sizeof(clear_registers[0]); --idx >= 0;)
-          if (not ClearRegister(lin, clear_registers[idx]))
+          if (not lin.ClearTargetRegister(clear_registers[idx]))
             return false;
       }
       // Set PC to the program entry point
-      if (not SetRegister(lin, kPPC_cia, lin.GetEntryPoint()))
+      if (not lin.SetTargetRegister(kPPC_cia, lin.GetEntryPoint()))
         return false;
       // Set SP to the base of the created stack
       unisim::util::blob::Section<address_type> const * sp_section =
@@ -189,7 +186,7 @@ namespace linux_os {
           lin.DebugErrorStream() << "Could not find the stack pointer section." << std::endl;
           return false;
         }
-      if (not SetRegister(lin, kPPC_sp, sp_section->GetAddr()))
+      if (not lin.SetTargetRegister(kPPC_sp, sp_section->GetAddr()))
         return false;
       address_type par1_addr = sp_section->GetAddr() + 4;
       address_type par2_addr = sp_section->GetAddr() + 8;
@@ -197,8 +194,8 @@ namespace linux_os {
       parameter_type par2 = 0;
       if (not this->MemIF().ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)) or
           not this->MemIF().ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2)) or
-          not SetRegister(lin, kPPC_r3, Target2Host(lin.GetEndianness(), par1)) or
-          not SetRegister(lin, kPPC_r4, Target2Host(lin.GetEndianness(), par2)))
+          not lin.SetTargetRegister(kPPC_r3, Target2Host(lin.GetEndianness(), par1)) or
+          not lin.SetTargetRegister(kPPC_r4, Target2Host(lin.GetEndianness(), par2)))
         return false;
 
       return true;
@@ -553,24 +550,24 @@ namespace linux_os {
   
       if(error)
         {
-          if (not GetRegister(_lin, kPPC_cr, &val)) return;
+          if (not _lin.GetTargetRegister(kPPC_cr, val)) return;
     
           val |= (1 << 28); // CR0[SO] <- 1
     
-          if (not SetRegister(_lin, kPPC_cr, val)) return;
+          if (not _lin.SetTargetRegister(kPPC_cr, val)) return;
         }
       else
         {
-          if (not GetRegister(_lin, kPPC_cr, &val)) return;
+          if (not _lin.GetTargetRegister(kPPC_cr, val)) return;
     
           val &= ~(1 << 28); // CR0[SO] <- 0
     
-          if (not SetRegister(_lin, kPPC_cr, val)) return;
+          if (not _lin.SetTargetRegister(kPPC_cr, val)) return;
         }
   
       val = (parameter_type)ret;
   
-      if (not SetRegister(_lin, kPPC_r3, val)) return;
+      if (not _lin.SetTargetRegister(kPPC_r3, val)) return;
     }
     
     void SetSystemCallStatus(int64_t ret, bool error) const { SetPPCSystemCallStatus(lin, ret, error); }
@@ -580,11 +577,11 @@ namespace linux_os {
       parameter_type val = 0;
           
       switch (id) {
-      case 0: GetRegister(lin, kPPC_r3, &val); break;
-      case 1: GetRegister(lin, kPPC_r4, &val); break;
-      case 2: GetRegister(lin, kPPC_r5, &val); break;
-      case 3: GetRegister(lin, kPPC_r6, &val); break;
-      case 4: GetRegister(lin, kPPC_r7, &val); break;
+      case 0: lin.GetTargetRegister(kPPC_r3, val); break;
+      case 1: lin.GetTargetRegister(kPPC_r4, val); break;
+      case 2: lin.GetTargetRegister(kPPC_r5, val); break;
+      case 3: lin.GetTargetRegister(kPPC_r6, val); break;
+      case 4: lin.GetTargetRegister(kPPC_r7, val); break;
       default: throw std::logic_error("internal error");
       }
           

@@ -35,6 +35,7 @@
 #include <linuxsystem.hh>
 #include <unisim/util/os/linux_os/linux.tcc>
 #include <unisim/util/os/linux_os/calls.tcc>
+#include <iomanip>
 
 LinuxOS::LinuxOS( std::ostream& log,
          unisim::service::interfaces::Registers *regs_if,
@@ -59,6 +60,7 @@ LinuxOS::Core( std::string const& coredump )
 
   struct hdr { ~hdr() { free(p); } Elf_Ehdr* p; } hdr;
   hdr.p = Loader::ReadElfHeader(is);
+  bool need_endian_swap = Loader::NeedEndianSwap(hdr.p);
     
   if (not hdr.p) throw "Could not read ELF header";
   
@@ -122,7 +124,7 @@ LinuxOS::Core( std::string const& coredump )
             for (uint8_t *note = &notedata[0], *end = &notedata[datasize]; note < end;)
               {
                 Elf_Note* notehdr = (Elf_Note*)( note );
-                if (Loader::NeedEndianSwap(hdr.p))
+                if (need_endian_swap)
                   {
                     unisim::util::endian::BSwap( notehdr->n_namesz );
                     unisim::util::endian::BSwap( notehdr->n_descsz );
@@ -140,16 +142,32 @@ LinuxOS::Core( std::string const& coredump )
                       // user_regs_struct) starting at 0x70 from base
                       // content (struct prstatus).
                       //
-                      // Register order: { r15, r14, r13, r12, rbp,
-                      //     rbx, r11, r10, r9, r8, rax, rcx, rdx,
-                      //     rsi, rdi, orig_rax, rip, cs, eflags, rsp,
-                      //     ss, fs_base, gs_base, ds, es, fs, gs }
-                      //
+                      // Register order: {  }
+
                       uint64_t* regs = (uint64_t*)(content + 0x70);
-                      std::cout << "rip:    " << std::hex << regs[16] << std::endl;
-                      std::cout << "rsp:    " << std::hex << regs[19] << std::endl;
-                      std::cout << "eflags: " << std::hex << regs[18] << std::endl;
-                      
+
+                      struct { char const* name; unsigned size; } coredumpregs[] =
+                        {
+                          {"%r15",64}, {"%r14",64}, {"%r13",64}, {"%r12",64}, {"%rbp",64}, {"%rbx",64}, {"%r11",64}, {"%r10",64},
+                          {"%r9", 64}, {"%r8", 64}, {"%rax",64}, {"%rcx",64}, {"%rdx",64}, {"%rsi",64}, {"%rdi",64}, {"!orig_rax",64},
+                          {"%rip",64}, {"%cs", 16}, {"%eflags",16}, {"%rsp",64},
+                          {"%ss", 16}, {"%fs_base",64}, {"%gs_base",64}, {"%ds",16}, {"%es",16}, {"%fs",16}, {"%gs",16}
+                        };
+
+                      for (unsigned idx = 0, end = sizeof (coredumpregs) / sizeof coredumpregs[0]; idx < end; ++idx)
+                        {
+                          if (need_endian_swap) unisim::util::endian::BSwap( regs[idx] );
+                          char const* regname = coredumpregs[idx].name;
+                          if (regname[0] == '!') continue;
+                          unsigned regsize = coredumpregs[idx].size;
+                          if (regsize < 64)
+                            regs[idx] &= ((uint64_t(1) << regsize)-1);
+                          std::cout << std::setw(12) << regname << ": " << std::hex << regs[idx] << std::endl;
+                          if (regsize < 64)
+                            continue;
+                          else
+                            linux_impl.SetTargetRegister(regname, regs[idx]);
+                        }                      
                     } break;
                   }
               }
