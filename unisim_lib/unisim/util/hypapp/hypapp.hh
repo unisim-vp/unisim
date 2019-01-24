@@ -65,10 +65,11 @@ struct Request
 	enum request_type_t { GET, HEAD, POST };
 	
 	request_type_t GetRequestType() const { return request_type; }
-	char const* GetRequestURI() const { return ibuf + uri; }
-	char const* GetContentType() const { return ibuf + content_type; }
+	char const* GetRequestURI() const { return uri ? (ibuf + uri) : 0; }
+	char const* GetHost() const { return host ? (ibuf + host) : 0; }
+	char const* GetContentType() const { return content_type ? (ibuf + content_type) : 0; }
 	unsigned int GetContentLength() const { return content_length; }
-	char const* GetContent() const { return ibuf + content; }
+	char const* GetContent() const { return content ? (ibuf + content) : 0; }
 	
 private:
 	Request() {}
@@ -80,6 +81,7 @@ private:
 	char const *ibuf;
 	request_type_t request_type;
 	unsigned int uri;
+	unsigned int host;
 	unsigned int content_type;
 	unsigned int content_length;
 	unsigned int content;

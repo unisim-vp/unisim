@@ -896,12 +896,19 @@ unisim/kernel/tlm2/style.css \
 unisim/kernel/tlm2/script.js \
 unisim/kernel/tlm2/favicon.ico \
 unisim/kernel/http_server/style.css \
-unisim/kernel/http_server/vline.png \
-unisim/kernel/http_server/node.png \
-unisim/kernel/http_server/lastnode.png \
+unisim/kernel/http_server/close-tab-hover.svg \
+unisim/kernel/http_server/close-tab.svg \
+unisim/kernel/http_server/history-shortcut.svg \
+unisim/kernel/http_server/left-arrow.svg \
+unisim/kernel/http_server/right-arrow.svg \
+unisim/kernel/http_server/close-tab-hover.png \
+unisim/kernel/http_server/close-tab.png \
+unisim/kernel/http_server/history-shortcut.png \
+unisim/kernel/http_server/left-arrow.png \
+unisim/kernel/http_server/right-arrow.png \
 unisim/kernel/http_server/var_style.css \
+unisim/kernel/http_server/var_script.js \
 unisim/kernel/http_server/script.js \
-unisim/kernel/http_server/load_object.js \
 "
 
 SIMULATOR_EXTERNAL_HEADERS="\

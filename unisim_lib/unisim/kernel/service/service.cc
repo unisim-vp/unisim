@@ -1750,6 +1750,15 @@ void Object::Remove(ServiceImportBase& srv_import)
 
 void Object::Add(Object& object)
 {
+	std::list<Object *>::iterator object_iter;
+	for(object_iter = leaf_objects.begin(); object_iter != leaf_objects.end(); object_iter++)
+	{
+		if(nat_ltstr::Less(object.GetName(), (*object_iter)->GetName()))
+		{
+			leaf_objects.insert(object_iter, &object);
+			return;
+		}
+	}
 	leaf_objects.push_back(&object);
 }
 
@@ -1769,6 +1778,15 @@ void Object::Remove(Object& object)
 
 void Object::Add(VariableBase& var)
 {
+	std::list<VariableBase *>::iterator variable_iter;
+	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		if(nat_ltstr::Less(var.GetName(), (*variable_iter)->GetName()))
+		{
+			variables.insert(variable_iter, &var);
+			return;
+		}
+	}
 	variables.push_back(&var);
 }
 
@@ -1920,6 +1938,7 @@ bool Object::ServeHttpRequest(unisim::kernel::http_server::HttpRequest const& re
 	doc_sstr << "<html>" << std::endl;
 	doc_sstr << "\t<head>" << std::endl;
 	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 	doc_sstr << "\t</head>" << std::endl;
 	doc_sstr << "\t<body>" << std::endl;
 	doc_sstr << "\t</body>" << std::endl;
@@ -1933,7 +1952,7 @@ bool Object::ServeHttpRequest(unisim::kernel::http_server::HttpRequest const& re
 	http_header_sstr << "Cache-control: no-cache\r\n";
 	http_header_sstr << "Connection: keep-alive\r\n";
 	http_header_sstr << "Content-length: " << doc.length() << "\r\n";
-	http_header_sstr << "Content-Type: text/html\r\n";
+	http_header_sstr << "Content-Type: text/html; charset=utf-8\r\n";
 	http_header_sstr << "\r\n";
 	
 	std::string http_header(http_header_sstr.str());
