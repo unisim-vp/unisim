@@ -46,7 +46,12 @@ LinuxOS::LinuxOS( std::ostream& log,
   , linux_impl( log, log, log, regs_if, mem_if, mem_inject_if )
   , exited( false )
   , app_ret_status( -1 )
-{}
+{
+  // Set the system type of the target simulator (should be the same than the
+  // binary)
+  auto amd64_target = new unisim::util::os::linux_os::AMD64TS<unisim::util::os::linux_os::Linux<uint64_t,uint64_t> >( linux_impl );
+  linux_impl.SetTargetSystem(amd64_target);
+}
 
 void
 LinuxOS::Core( std::string const& coredump )
@@ -162,7 +167,7 @@ LinuxOS::Core( std::string const& coredump )
                           unsigned regsize = coredumpregs[idx].size;
                           if (regsize < 64)
                             regs[idx] &= ((uint64_t(1) << regsize)-1);
-                          std::cout << std::setw(12) << regname << ": " << std::hex << regs[idx] << std::endl;
+                          std::cerr << std::setw(12) << regname << ": " << std::hex << regs[idx] << std::endl;
                           if (regsize < 64)
                             continue;
                           else
@@ -190,6 +195,7 @@ LinuxOS::Core( std::string const& coredump )
       if (not linux_impl.mem_if_->WriteMemory(start, data, end - start + 1))
         throw "Error while writing the segments into the target memory.";
     }
+  linux_impl.is_load_ = true;
 }
 
 void
@@ -210,11 +216,6 @@ LinuxOS::Process( std::vector<std::string> const& simargs, std::vector<std::stri
   if (not linux_impl.AddLoadFile( simargs[0].c_str() ))
     throw 0;
   
-  // Set the system type of the target simulator (should be the same than the
-  // binary)
-  auto amd64_target = new unisim::util::os::linux_os::AMD64TS<unisim::util::os::linux_os::Linux<uint64_t,uint64_t> >( linux_impl );
-  linux_impl.SetTargetSystem(amd64_target);
-    
   linux_impl.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
   linux_impl.SetStackBase( 0x40000000UL );
   linux_impl.SetMemoryPageSize( 0x1000UL );

@@ -1025,11 +1025,11 @@ Arch::fetch()
     
   if (do_disasm) {
     std::ios fmt(NULL);
-    fmt.copyfmt(std::cerr);
-    std::cerr << std::hex << insn_addr << ":\t";
-    operation->disasm( std::cerr );
-    std::cerr << " (" << unisim::component::cxx::processor::intel::DisasmBytes(&decbuf[0],operation->length) << ")\n";
-    std::cerr.copyfmt(fmt);
+    fmt.copyfmt(std::cout);
+    std::cout << std::hex << insn_addr << ":\t";
+    operation->disasm( std::cout );
+    std::cout << " (" << unisim::component::cxx::processor::intel::DisasmBytes(&decbuf[0],operation->length) << ")\n";
+    std::cout.copyfmt(fmt);
   }
     
   ++instruction_count;
