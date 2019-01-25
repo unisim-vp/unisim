@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,24 +33,20 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Rotate Left Word */
 op e_rlw(31[6]:rs[5]:ra[5]:rb[5]:280[10]:rc[1]);
 
 e_rlw.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rs);
-	uint32_t b = cpu->GetGPR(rb);
-	uint32_t n = b & uint32_t( 0x1f);
+	U32 s( cpu->GetGPR(rs) );
+	U8 n = U8(cpu->GetGPR(rb)) & U8(0x1f);
 	
 	// Compute the result
-	uint32_t result = RotateLeft(s, n);
+	U64 result( RotateLeft(s, n) );
+        result |= (result << 32);
 	
 	// Write back the result
-	cpu->SetGPR(ra, result);
+	cpu->SetGPR(ra, UINT(result));
 	
 	if(unlikely(rc))
 	{
@@ -58,9 +54,9 @@ e_rlw.execute = {
 		XER& xer = cpu->GetXER();
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(int32_t( result) < int32_t( 0));
-		cr.Set<CR::CR0::GT>(int32_t( result) > int32_t( 0));
-		cr.Set<CR::CR0::EQ>(result == uint32_t( 0));
+		cr.Set<CR::CR0::LT>(SINT(result) < SINT(0));
+		cr.Set<CR::CR0::GT>(SINT(result) > SINT(0));
+		cr.Set<CR::CR0::EQ>(result == U64(0));
 	}
 	
 	return true;

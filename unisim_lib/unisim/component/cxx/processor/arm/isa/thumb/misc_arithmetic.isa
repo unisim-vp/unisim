@@ -46,7 +46,7 @@ sxtb.disasm = {
 }
 
 sxtb.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -72,7 +72,7 @@ sxth.disasm = {
 };
 
 sxth.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -98,7 +98,7 @@ uxtb.disasm = {
 };
 
 uxtb.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U8  U8;
@@ -123,7 +123,7 @@ uxth.disasm = {
 };
 
 uxth.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;

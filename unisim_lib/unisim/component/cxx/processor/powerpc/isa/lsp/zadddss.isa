@@ -39,5 +39,5 @@ zadddss.execute = {
 	return false;
 }
 zadddss.disasm = {
-	os << "zadddss r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zadddss " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

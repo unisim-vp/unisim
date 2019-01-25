@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,35 +32,27 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
-}
+/* Add Immediate Carrying */
+op addic(12[6]:rd[5]:ra[5]:sext simm[16]);
 
-op addic(12[6]:rd[5]:ra[5]:sext<32> simm[16])
 addic.execute = {
-	uint8_t carry; // carry out
-	uint8_t overflow; // overflow
-	uint8_t sign; // sign
-	uint32_t result;
-	
 	// Read the input operands
-	uint32_t a = cpu->GetGPR(ra);
-	uint32_t xer = cpu->GetXER();
-
-	// Compute the result
-	SignedAdd32(result, carry, overflow, sign, a, simm, 0);
+	SINT a( cpu->GetGPR(ra) ), b( simm );
 	
-	// Write back the result
-	cpu->SetGPR(rd, result);
+	// Compute the result
+	SINT result = a + b;
 	
 	// Generate XER[CA]
-	xer = carry ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+	XER& xer = cpu->GetXER();
+	xer.Set<XER::CA>(UINT(a) > ~UINT(b));
 	
-	// Update XER
-	cpu->SetXER(xer);
+	// Write back the result
+	cpu->SetGPR(rd, UINT(result));
 	
 	return true;
-}
+};
+
 addic.disasm = {
-	os << "addic r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << simm;
-}
+	os << "addic " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << int(simm);
+};
+

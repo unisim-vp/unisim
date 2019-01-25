@@ -36,6 +36,8 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
 #include <iostream>
+#include <vector>
+#include <algorithm>
 
 namespace unisim {
 namespace util {

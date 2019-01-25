@@ -333,7 +333,7 @@ CPU<CONFIG>::InjectReadMemory( uint64_t addr, void* buffer, uint32_t size )
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PrRead(ef_addr, &rbuffer[index], 1))
+      if (not PhysicalReadMemory(ef_addr, &rbuffer[index], 1))
         return false;
     }
 
@@ -358,7 +358,7 @@ CPU<CONFIG>::InjectWriteMemory( uint64_t addr, void const* buffer, uint32_t size
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PrWrite( ef_addr, &wbuffer[index], 1 ))
+      if (not PhysicalWriteMemory( ef_addr, &wbuffer[index], 1 ))
         return false;
     }
 
@@ -523,7 +523,7 @@ CPU<CONFIG>::RefillInsnPrefetchBuffer(uint64_t base_address)
   
   // No instruction cache present, just request the insn to the
   // memory system.
-  if (not PrRead(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE))
+  if (not PhysicalReadMemory(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE))
     return false;
   
   if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
@@ -565,7 +565,7 @@ void
 CPU<CONFIG>::MemRead( uint8_t* buffer, uint64_t addr, unsigned size )
 {
   // Over-simplistic read from memory system
-  if (not PrRead(addr, buffer, size))
+  if (not PhysicalReadMemory(addr, buffer, size))
     {
       throw 0;
     }
@@ -585,7 +585,7 @@ void
 CPU<CONFIG>::MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size )
 {
   // Over-simplistic read from memory system
-  if (not PrWrite( addr, buffer, size ))
+  if (not PhysicalWriteMemory( addr, buffer, size ))
     {
       throw 0;
     }
@@ -612,7 +612,7 @@ CPU<CONFIG>::CallSupervisor( uint16_t imm )
           if (trap_reporting_import)
             trap_reporting_import->ReportTrap(*this, "CallSupervisor");
         }
-      catch (Exception const& e)
+      catch (std::exception const& e)
         {
           std::cerr << e.what() << std::endl;
           this->Stop( -1 );

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,26 +33,23 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Shift Right Algebraic Word Immediate */
 op se_srawi(26[6]:1[1]:ui5[5]:sext srx[4]);
 se_srawi.var rx : {uint8_t} = {srx & 31};
 
 se_srawi.execute = {
 	// Read the input operands
-	int32_t s = int32_t(  cpu->GetGPR(rx) );
+	S32 s( cpu->GetGPR(rx) );
 	
 	// Compute the result
-	int32_t result = s >> ui5;
+	S32 result = s >> ui5;
+	S32 shifted_out = (S32(1) << ui5) - S32(1);
 
 	XER& xer = cpu->GetXER();
-	xer.Set<XER::CA>((s < int32_t( 0)) and ((s & ((int32_t( 1) << ui5) - int32_t( 1))) != int32_t( 0)));
+	xer.Set<XER::CA>((s < S32(0)) and ((s & shifted_out) != S32(0)));
 	
 	// Write back the result
-	cpu->SetGPR(rx, result);
+	cpu->SetGPR(rx, UINT(result));
 	
 	return true;
 }

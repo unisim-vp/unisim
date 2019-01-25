@@ -81,7 +81,7 @@ tw.execute = {
 	return true;
 }
 tw.disasm = {
-	os << "tw " << (unsigned int) to << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "tw " << (unsigned int) to << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op twi(03[6]:to[5]:ra[5]:sext<32> simm[16])
@@ -103,7 +103,7 @@ twi.execute = {
 	return true;
 }
 twi.disasm = {
-	os << "twi " << (unsigned int) to << ", r" << (unsigned int) ra << ", " << simm;
+	os << "twi " << (unsigned int) to << ", " << GPRPrint(ra) << ", " << simm;
 }
 
 /******************************************
@@ -134,7 +134,7 @@ mcrxr.execute = {
 	return true;
 }
 mcrxr.disasm = {
-	os << "mcrxr cr" << (unsigned int) crfD;
+	os << "mcrxr " << CRPrint(crfD);
 }
 
 op mfcr(31[6]:rd[5]:?[10]:19[10]:?[1])
@@ -145,7 +145,7 @@ mfcr.execute = {
 	return true;
 }
 mfcr.disasm = {
-	os << "mfcr r" << (unsigned int) rd;
+	os << "mfcr " << GPRPrint(rd);
 }
 
 op mfmsr(31[6]:rd[5]:?[10]:83[10]:?[1])
@@ -163,7 +163,7 @@ mfmsr.execute = {
 	return true;
 }
 mfmsr.disasm = {
-	os << "mfmsr r" << (unsigned int) rd;
+	os << "mfmsr " << GPRPrint(rd);
 }
 
 op mfspr(31[6]:rd[5]:spr[10]:339[10]:?[1])
@@ -182,7 +182,7 @@ mfspr.execute = {
 			result = cpu->GetCTR();
 			break;
 		default:
-			if(unlikely(!cpu->GetSPR(n, result))) return false;
+			if(unlikely(not cpu->GetSPR(n, result))) return false;
 			break;
 	}
 	
@@ -194,45 +194,45 @@ mfspr.disasm = {
 	uint32_t n = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
 	switch(n)
 	{
-		case 1: os << "mfxer r" << (unsigned int) rd; return;
-		case 8: os << "mflr r" << (unsigned int) rd; return;
-		case 9: os << "mfctr r" << (unsigned int) rd; return;
-		case 22: os << "mfdec r" << (unsigned int) rd; return;
-		case 528: os << "mfibatu r" << (unsigned int) rd << ", 0"; return;
-		case 529: os << "mfibatl r" << (unsigned int) rd << ", 0"; return;
-		case 530: os << "mfibatu r" << (unsigned int) rd << ", 1"; return;
-		case 531: os << "mfibatl r" << (unsigned int) rd << ", 1"; return;
-		case 532: os << "mfibatu r" << (unsigned int) rd << ", 2"; return;
-		case 533: os << "mfibatl r" << (unsigned int) rd << ", 2"; return;
-		case 534: os << "mfibatu r" << (unsigned int) rd << ", 3"; return;
-		case 535: os << "mfibatl r" << (unsigned int) rd << ", 3"; return;
-		case 536: os << "mfdbatu r" << (unsigned int) rd << ", 0"; return;
-		case 537: os << "mfdbatl r" << (unsigned int) rd << ", 0"; return;
-		case 538: os << "mfdbatu r" << (unsigned int) rd << ", 1"; return;
-		case 539: os << "mfdbatl r" << (unsigned int) rd << ", 1"; return;
-		case 540: os << "mfdbatu r" << (unsigned int) rd << ", 2"; return;
-		case 541: os << "mfdbatl r" << (unsigned int) rd << ", 2"; return;
-		case 542: os << "mfdbatu r" << (unsigned int) rd << ", 3"; return;
-		case 543: os << "mfdbatl r" << (unsigned int) rd << ", 3"; return;
-		case 560: os << "mfibatu r" << (unsigned int) rd << ", 4"; return;
-		case 561: os << "mfibatl r" << (unsigned int) rd << ", 4"; return;
-		case 562: os << "mfibatu r" << (unsigned int) rd << ", 5"; return;
-		case 563: os << "mfibatl r" << (unsigned int) rd << ", 5"; return;
-		case 564: os << "mfibatu r" << (unsigned int) rd << ", 6"; return;
-		case 565: os << "mfibatl r" << (unsigned int) rd << ", 6"; return;
-		case 566: os << "mfibatu r" << (unsigned int) rd << ", 7"; return;
-		case 567: os << "mfibatl r" << (unsigned int) rd << ", 7"; return;
-		case 568: os << "mfdbatu r" << (unsigned int) rd << ", 4"; return;
-		case 569: os << "mfdbatl r" << (unsigned int) rd << ", 4"; return;
-		case 570: os << "mfdbatu r" << (unsigned int) rd << ", 5"; return;
-		case 571: os << "mfdbatl r" << (unsigned int) rd << ", 5"; return;
-		case 572: os << "mfdbatu r" << (unsigned int) rd << ", 6"; return;
-		case 573: os << "mfdbatl r" << (unsigned int) rd << ", 6"; return;
-		case 574: os << "mfdbatu r" << (unsigned int) rd << ", 7"; return;
-		case 575: os << "mfdbatl r" << (unsigned int) rd << ", 7"; return;
+		case 1: os << "mfxer " << GPRPrint(rd); return;
+		case 8: os << "mflr " << GPRPrint(rd); return;
+		case 9: os << "mfctr " << GPRPrint(rd); return;
+		case 22: os << "mfdec " << GPRPrint(rd); return;
+		case 528: os << "mfibatu " << GPRPrint(rd) << ", 0"; return;
+		case 529: os << "mfibatl " << GPRPrint(rd) << ", 0"; return;
+		case 530: os << "mfibatu " << GPRPrint(rd) << ", 1"; return;
+		case 531: os << "mfibatl " << GPRPrint(rd) << ", 1"; return;
+		case 532: os << "mfibatu " << GPRPrint(rd) << ", 2"; return;
+		case 533: os << "mfibatl " << GPRPrint(rd) << ", 2"; return;
+		case 534: os << "mfibatu " << GPRPrint(rd) << ", 3"; return;
+		case 535: os << "mfibatl " << GPRPrint(rd) << ", 3"; return;
+		case 536: os << "mfdbatu " << GPRPrint(rd) << ", 0"; return;
+		case 537: os << "mfdbatl " << GPRPrint(rd) << ", 0"; return;
+		case 538: os << "mfdbatu " << GPRPrint(rd) << ", 1"; return;
+		case 539: os << "mfdbatl " << GPRPrint(rd) << ", 1"; return;
+		case 540: os << "mfdbatu " << GPRPrint(rd) << ", 2"; return;
+		case 541: os << "mfdbatl " << GPRPrint(rd) << ", 2"; return;
+		case 542: os << "mfdbatu " << GPRPrint(rd) << ", 3"; return;
+		case 543: os << "mfdbatl " << GPRPrint(rd) << ", 3"; return;
+		case 560: os << "mfibatu " << GPRPrint(rd) << ", 4"; return;
+		case 561: os << "mfibatl " << GPRPrint(rd) << ", 4"; return;
+		case 562: os << "mfibatu " << GPRPrint(rd) << ", 5"; return;
+		case 563: os << "mfibatl " << GPRPrint(rd) << ", 5"; return;
+		case 564: os << "mfibatu " << GPRPrint(rd) << ", 6"; return;
+		case 565: os << "mfibatl " << GPRPrint(rd) << ", 6"; return;
+		case 566: os << "mfibatu " << GPRPrint(rd) << ", 7"; return;
+		case 567: os << "mfibatl " << GPRPrint(rd) << ", 7"; return;
+		case 568: os << "mfdbatu " << GPRPrint(rd) << ", 4"; return;
+		case 569: os << "mfdbatl " << GPRPrint(rd) << ", 4"; return;
+		case 570: os << "mfdbatu " << GPRPrint(rd) << ", 5"; return;
+		case 571: os << "mfdbatl " << GPRPrint(rd) << ", 5"; return;
+		case 572: os << "mfdbatu " << GPRPrint(rd) << ", 6"; return;
+		case 573: os << "mfdbatl " << GPRPrint(rd) << ", 6"; return;
+		case 574: os << "mfdbatu " << GPRPrint(rd) << ", 7"; return;
+		case 575: os << "mfdbatl " << GPRPrint(rd) << ", 7"; return;
 	}
 
-	os << "mfspr r" << (unsigned int) rd << ", " << n;
+	os << "mfspr " << GPRPrint(rd) << ", " << n;
 }
 
 op mtspr(31[6]:rs[5]:spr[10]:467[10]:?[1])
@@ -260,45 +260,45 @@ mtspr.disasm = {
 	uint32_t n = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
 	switch(n)
 	{
-		case 1: os << "mtxer r" << (unsigned int) rs; return;
-		case 8: os << "mtlr r" << (unsigned int) rs; return;
-		case 9: os << "mtctr r" << (unsigned int) rs; return;
-		case 22: os << "mtdec r" << (unsigned int) rs; return;
-		case 528: os << "mtibatu 0, r" << (unsigned int) rs; return;
-		case 529: os << "mtibatl 0, r" << (unsigned int) rs; return;
-		case 530: os << "mtibatu 1, r" << (unsigned int) rs; return;
-		case 531: os << "mtibatl 1, r" << (unsigned int) rs; return;
-		case 532: os << "mtibatu 2, r" << (unsigned int) rs; return;
-		case 533: os << "mtibatl 2, r" << (unsigned int) rs; return;
-		case 534: os << "mtibatu 3, r" << (unsigned int) rs; return;
-		case 535: os << "mtibatl 3, r" << (unsigned int) rs; return;
-		case 536: os << "mtdbatu 0, r" << (unsigned int) rs; return;
-		case 537: os << "mtdbatl 0, r" << (unsigned int) rs; return;
-		case 538: os << "mtdbatu 1, r" << (unsigned int) rs; return;
-		case 539: os << "mtdbatl 1, r" << (unsigned int) rs; return;
-		case 540: os << "mtdbatu 2, r" << (unsigned int) rs; return;
-		case 541: os << "mtdbatl 2, r" << (unsigned int) rs; return;
-		case 542: os << "mtdbatu 3, r" << (unsigned int) rs; return;
-		case 543: os << "mtdbatl 3, r" << (unsigned int) rs; return;
-		case 560: os << "mtibatu 4, r" << (unsigned int) rs; return;
-		case 561: os << "mtibatl 4, r" << (unsigned int) rs; return;
-		case 562: os << "mtibatu 5, r" << (unsigned int) rs; return;
-		case 563: os << "mtibatl 5, r" << (unsigned int) rs; return;
-		case 564: os << "mtibatu 6, r" << (unsigned int) rs; return;
-		case 565: os << "mtibatl 6, r" << (unsigned int) rs; return;
-		case 566: os << "mtibatu 7, r" << (unsigned int) rs; return;
-		case 567: os << "mtibatl 7, r" << (unsigned int) rs; return;
-		case 568: os << "mtdbatu 4, r" << (unsigned int) rs; return;
-		case 569: os << "mtdbatl 4, r" << (unsigned int) rs; return;
-		case 570: os << "mtdbatu 5, r" << (unsigned int) rs; return;
-		case 571: os << "mtdbatl 5, r" << (unsigned int) rs; return;
-		case 572: os << "mtdbatu 6, r" << (unsigned int) rs; return;
-		case 573: os << "mtdbatl 6, r" << (unsigned int) rs; return;
-		case 574: os << "mtdbatu 7, r" << (unsigned int) rs; return;
-		case 575: os << "mtdbatl 7, r" << (unsigned int) rs; return;
+		case 1: os << "mtxer " << GPRPrint(rs); return;
+		case 8: os << "mtlr " << GPRPrint(rs); return;
+		case 9: os << "mtctr " << GPRPrint(rs); return;
+		case 22: os << "mtdec " << GPRPrint(rs); return;
+		case 528: os << "mtibatu 0, " << GPRPrint(rs); return;
+		case 529: os << "mtibatl 0, " << GPRPrint(rs); return;
+		case 530: os << "mtibatu 1, " << GPRPrint(rs); return;
+		case 531: os << "mtibatl 1, " << GPRPrint(rs); return;
+		case 532: os << "mtibatu 2, " << GPRPrint(rs); return;
+		case 533: os << "mtibatl 2, " << GPRPrint(rs); return;
+		case 534: os << "mtibatu 3, " << GPRPrint(rs); return;
+		case 535: os << "mtibatl 3, " << GPRPrint(rs); return;
+		case 536: os << "mtdbatu 0, " << GPRPrint(rs); return;
+		case 537: os << "mtdbatl 0, " << GPRPrint(rs); return;
+		case 538: os << "mtdbatu 1, " << GPRPrint(rs); return;
+		case 539: os << "mtdbatl 1, " << GPRPrint(rs); return;
+		case 540: os << "mtdbatu 2, " << GPRPrint(rs); return;
+		case 541: os << "mtdbatl 2, " << GPRPrint(rs); return;
+		case 542: os << "mtdbatu 3, " << GPRPrint(rs); return;
+		case 543: os << "mtdbatl 3, " << GPRPrint(rs); return;
+		case 560: os << "mtibatu 4, " << GPRPrint(rs); return;
+		case 561: os << "mtibatl 4, " << GPRPrint(rs); return;
+		case 562: os << "mtibatu 5, " << GPRPrint(rs); return;
+		case 563: os << "mtibatl 5, " << GPRPrint(rs); return;
+		case 564: os << "mtibatu 6, " << GPRPrint(rs); return;
+		case 565: os << "mtibatl 6, " << GPRPrint(rs); return;
+		case 566: os << "mtibatu 7, " << GPRPrint(rs); return;
+		case 567: os << "mtibatl 7, " << GPRPrint(rs); return;
+		case 568: os << "mtdbatu 4, " << GPRPrint(rs); return;
+		case 569: os << "mtdbatl 4, " << GPRPrint(rs); return;
+		case 570: os << "mtdbatu 5, " << GPRPrint(rs); return;
+		case 571: os << "mtdbatl 5, " << GPRPrint(rs); return;
+		case 572: os << "mtdbatu 6, " << GPRPrint(rs); return;
+		case 573: os << "mtdbatl 6, " << GPRPrint(rs); return;
+		case 574: os << "mtdbatu 7, " << GPRPrint(rs); return;
+		case 575: os << "mtdbatl 7, " << GPRPrint(rs); return;
 	}
 
-	os << "mtspr " << n << ", r" << (unsigned int) rs;
+	os << "mtspr " << n << ", " << GPRPrint(rs);
 }
 
 op mftb(31[6]:rd[5]:tbr[10]:371[10]:?[1])
@@ -317,7 +317,7 @@ mftb.execute = {
 }
 mftb.disasm = {
 	uint32_t d = ((tbr & 0x1f) << 5) + ((tbr >> 5) & 0x1f);
-	os << "mftb r" << (unsigned int) rd << ", " << (unsigned int) d;
+	os << "mftb " << GPRPrint(rd) << ", " << (unsigned int) d;
 }
 
 op mtcrf(31[6]:rs[5]:?[1]:crm[8]:?[1]:144[10]:?[1])
@@ -345,9 +345,9 @@ mtcrf.execute = {
 }
 mtcrf.disasm = {
 	if(crm == 0xff)
-		os << "mtcr r" << (unsigned int) rs;
+		os << "mtcr " << GPRPrint(rs);
 	else
-		os << "mtcrf " << (unsigned int) crm << ", r" << (unsigned int) rs;
+		os << "mtcrf " << (unsigned int) crm << ", " << GPRPrint(rs);
 }
 
 op mtmsr(31[6]:rs[5]:?[10]:146[10]:?[1])
@@ -364,5 +364,5 @@ mtmsr.execute = {
 	return true;
 }
 mtmsr.disasm = {
-	os << "mtmsr r" << (unsigned int) rs;
+	os << "mtmsr " << GPRPrint(rs);
 }

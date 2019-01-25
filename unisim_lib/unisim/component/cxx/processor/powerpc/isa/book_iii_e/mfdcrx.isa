@@ -40,5 +40,5 @@ mfdcrx.execute = {
 }
 
 mfdcrx.disasm = {
-	os << "mfdcrx r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "mfdcrx " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }

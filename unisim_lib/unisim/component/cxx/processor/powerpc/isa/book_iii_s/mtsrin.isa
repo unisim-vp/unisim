@@ -46,5 +46,5 @@ mtsrin.execute = {
 	return true;
 }
 mtsrin.disasm = {
-	os << "mtsrin r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "mtsrin " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,55 +32,52 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
-}
+/* Add to Zero Extended */
+op addze(31[6]:rd[5]:ra[5]:?[5]:oe[1]:202[9]:rc[1]);
 
-op addze(31[6]:rd[5]:ra[5]:?[5]:oe[1]:202[9]:rc[1])
 addze.execute = {
-	uint8_t carry; // carry out
-	uint8_t overflow; // overflow
-	uint8_t sign; // sign
-	uint32_t result;
-	
 	// Read the input operands
-	uint32_t a = cpu->GetGPR(ra);
 	XER& xer = cpu->GetXER();
-	uint32_t carry_in = uint32_t(  xer.Get<XER::CA>() );
+	bool carry = evenly(xer.Get<XER::CA>());
+	SINT a = SINT(cpu->GetGPR(ra)), b = SINT(0);
 	
 	// Compute the result
-	SignedAdd32(result, carry, overflow, sign, a, carry_in, uint8_t(0));
-	
-	// Write back the result
-	cpu->SetGPR(rd, result);
+	SINT result = a + b + SINT(carry);
 	
 	// Generate XER[CA]
-	xer.Set<XER::CA>(carry);
+	xer.Set<XER::CA>(carry ? UINT(a) >= ~UINT(b) : UINT(a) > ~UINT(b));
 	
 	if(unlikely(oe))
 	{
+		// Overflow: expected result sign and actual result sign differs
+		UINT overflow = UINT((carry ? a <  SINT(~b) : a <= SINT(~b)) xor (result < SINT(0)));
+		
 		// Generate XER[OV] and XER[SO]
 		xer.Set<XER::OV>(overflow);
-		xer.Set<XER::SO>(xer.Get<XER::SO>() | uint32_t( overflow));
+		xer.Set<XER::SO>(xer.Get<XER::SO>() | overflow);
 	}
 	
 	if(unlikely(rc))
 	{
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 		CR& cr = cpu->GetCR();
-		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(int32_t( result) < int32_t( 0));
-		cr.Set<CR::CR0::GT>(int32_t( result) > int32_t( 0));
-		cr.Set<CR::CR0::EQ>(result == uint32_t( 0));
+		cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
+		cr.Set<CR::CR0::LT>(result < SINT(0));
+		cr.Set<CR::CR0::GT>(result > SINT(0));
+		cr.Set<CR::CR0::EQ>((UINT(result) == UINT(0)));
 	}
 	
+	// Write back the result
+	cpu->SetGPR(rd, UINT(result));
+	
 	return true;
-}
-addze.disasm = {
-	os << "addze" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra;
-}
+};
 
-specialize addze(rc=0,oe=0)
-specialize addze(rc=0,oe=1)
-specialize addze(rc=1,oe=0)
-specialize addze(rc=1,oe=1)
+addze.disasm = {
+	os << "addze" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra);
+};
+
+specialize addze(rc=0,oe=0);
+specialize addze(rc=0,oe=1);
+specialize addze(rc=1,oe=0);
+specialize addze(rc=1,oe=1);

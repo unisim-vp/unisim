@@ -35,10 +35,10 @@
 op iccci(31[6]:?[5]:ra[5]:rb[5]:966[10]:?[1])
 iccci.execute = {
 	// compute the effective address
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	return cpu->Iccci(ea);
 }
 iccci.disasm = {
-	os << "iccci r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "iccci " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

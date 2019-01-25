@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,21 +33,18 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Load Byte and Zero Short Form */
 op se_lbz(8[4]:sd[4]:sext srz[4]:sext srx[4]);
 se_lbz.var rx : {uint8_t} = {srx & 31}, rz : {uint8_t} = {srz & 31};
 
 se_lbz.execute = {
 	// compute the effective address
-	ADDRESS ea = cpu->GetGPR(rx) + uint32_t( int32_t( sd));
+	ADDRESS ea( cpu->GetGPR(rx) + UINT( sd ) );
+	
 	// do the memory access
 	return cpu->Int8Load(rz, ea);
-}
+};
 
 se_lbz.disasm = {
 	os << "se_lbz " << GPRPrint(rz) << ',' << unsigned(sd) << "(" << GPRPrint(rx) << ")";
-}
+};

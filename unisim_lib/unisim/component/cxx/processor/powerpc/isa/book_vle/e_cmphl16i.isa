@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,18 +33,13 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Compare Halfword Logical Immediate */
 op e_cmphl16i(28[6]:shl<11> ui_h[5]:ra[5]:23[5]:ui_l[11]);
 e_cmphl16i.var ui : {uint16_t} = { ui_h | ui_l }
 
 e_cmphl16i.execute = {
 	// Read the input unsigned halfword operands
-	uint16_t a = uint16_t(  cpu->GetGPR(ra) );
-	uint16_t b = uint16_t(  ui );
+	U16 a( cpu->GetGPR(ra) ), b( ui );
 
 	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(a<b) CR0[GT]=(a>b) CR0[EQ]=(a==b)
 	XER& xer = cpu->GetXER();

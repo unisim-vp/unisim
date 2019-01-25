@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,27 +33,24 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Shift Right Word Immediate Short Form */
 op se_srwi(26[6]:0[1]:ui5[5]:sext srx[4]);
 se_srwi.var rx : {uint8_t} = {srx & 31};
 
 se_srwi.execute = {
 	// Read the input operands
-	uint32_t x = cpu->GetGPR(rx);
+	U32 x( cpu->GetGPR(rx) );
 	
 	// Compute the result
-	uint32_t result = x >> ui5;
+	U32 result( x >> ui5 );
 
 	// Write back the result
-	cpu->SetGPR(rx, result);
+	cpu->SetGPR(rx, UINT(result));
 	
 	return true;
-}
+};
 
 se_srwi.disasm = {
 	os << "se_srwi " << GPRPrint(rx) << ',' << unsigned(ui5);
-}
+};
+

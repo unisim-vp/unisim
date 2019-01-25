@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,36 +32,27 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
-}
+/* Subtract From Immediate Carrying */
+op subfic(08[6]:rd[5]:ra[5]:sext simm[16]);
 
-op subfic(08[6]:rd[5]:ra[5]:sext<32> simm[16])
 subfic.execute = {
-	uint8_t carry; // carry out
-	uint8_t overflow = 0; // overflow
-	uint8_t sign; // sign
-	uint32_t result;
-
 	// Read the input operands
-	int32_t a = cpu->GetGPR(ra);
-	int32_t b = simm;
-	uint32_t xer = cpu->GetXER();
+	SINT a( cpu->GetGPR(ra) ), b( simm );
 	
 	// Compute the result
-	SignedAdd32(result, carry, overflow, sign, -a, b, 0);
-	
-	// Write back the result
-	cpu->SetGPR(rd, result);
+	SINT result = b - a;
 	
 	// Generate XER[CA]
-	xer = (carry || a == 0) ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
-	
-	// Update XER
-	cpu->SetXER(xer);
+	XER& xer = cpu->GetXER();
+	xer.Set<XER::CA>(UINT(b) >= UINT(a));
+        
+	// Write back the result
+	cpu->SetGPR(rd, UINT(result));
 	
 	return true;
-}
+};
+
 subfic.disasm = {
-	os << "subfic r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << simm;
-}
+	os << "subfic " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << simm;
+};
+

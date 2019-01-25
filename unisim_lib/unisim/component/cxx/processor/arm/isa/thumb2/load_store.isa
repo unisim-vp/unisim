@@ -52,7 +52,7 @@ ldr_imm12.disasm = {
 };
 
 ldr_imm12.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ) + U32( imm );
@@ -68,7 +68,7 @@ ldr_imm.disasm = {
 };
 
 ldr_imm.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr + U32( imm );
@@ -84,7 +84,7 @@ ldr_lit.disasm = {
 };
 
 ldr_lit.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   cpu.SetGPR_mem( rt, cpu.MemURead32( (cpu.GetGPR( 15 ) & U32( -4 )) + U32( imm ) ) );
@@ -98,7 +98,7 @@ ldr_reg.disasm = {
 };
 
 ldr_reg.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::U32 isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), 0, imm );
   cpu.SetGPR_mem( rt, cpu.MemURead32( cpu.GetGPR( rn ) + isval ) );
@@ -120,7 +120,7 @@ ldrh_imm12.disasm = {
 };
 
 ldrh_imm12.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ) + U32( imm );
@@ -136,7 +136,7 @@ ldrh_imm.disasm = {
 };
 
 ldrh_imm.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr + U32( imm );
@@ -153,7 +153,7 @@ ldrh_lit.disasm = {
 };
 
 ldrh_lit.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   cpu.SetGPR_mem( rt, U32( cpu.MemURead16( (cpu.GetGPR( 15 ) & U32( -4 )) + U32( imm ) ) ) );
@@ -167,7 +167,7 @@ ldrh_reg.disasm = {
 };
 
 ldrh_reg.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   
@@ -191,7 +191,7 @@ ldrsh_imm12.disasm = {
 };
 
 ldrsh_imm12.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -209,7 +209,7 @@ ldrsh_imm.disasm = {
 };
 
 ldrsh_imm.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -228,7 +228,7 @@ ldrsh_lit.disasm = {
 };
 
 ldrsh_lit.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -244,7 +244,7 @@ ldrsh_reg.disasm = {
 };
 
 ldrsh_reg.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -269,7 +269,7 @@ ldrb_imm12.disasm = {
 };
 
 ldrb_imm12.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   
@@ -286,7 +286,7 @@ ldrb_imm.disasm = {
 };
 
 ldrb_imm.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   
@@ -304,7 +304,7 @@ ldrb_lit.disasm = {
 };
 
 ldrb_lit.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   cpu.SetGPR_mem( rt, U32( cpu.MemRead8( (cpu.GetGPR( 15 ) & U32( -4 )) + U32( imm ) ) ) );
@@ -318,7 +318,7 @@ ldrb_reg.disasm = {
 };
 
 ldrb_reg.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   
@@ -342,7 +342,7 @@ ldrsb_imm12.disasm = {
 };
 
 ldrsb_imm12.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -360,7 +360,7 @@ ldrsb_imm.disasm = {
 };
 
 ldrsb_imm.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -379,7 +379,7 @@ ldrsb_lit.disasm = {
 };
 
 ldrsb_lit.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -395,7 +395,7 @@ ldrsb_reg.disasm = {
 };
 
 ldrsb_reg.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -422,7 +422,7 @@ ldrd.disasm = {
 };
 
 ldrd.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr + U32( imm );
@@ -440,7 +440,7 @@ ldrd_lit.disasm = {
 };
 
 ldrd_lit.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( 15 ) & U32( -4 ), oaddr = addr + U32( imm );
@@ -464,7 +464,7 @@ str_imm12.disasm = {
 };
 
 str_imm12.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ) + U32( imm );
@@ -480,7 +480,7 @@ str_imm.disasm = {
 };
 
 str_imm.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr + U32( imm );
@@ -496,7 +496,7 @@ str_reg.disasm = {
 };
 
 str_reg.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), 0, imm );
@@ -519,7 +519,7 @@ strh_imm12.disasm = {
 };
 
 strh_imm12.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;
@@ -536,7 +536,7 @@ strh_imm.disasm = {
 };
 
 strh_imm.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;
@@ -553,7 +553,7 @@ strh_reg.disasm = {
 };
 
 strh_reg.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;
@@ -577,7 +577,7 @@ strb_imm12.disasm = {
 };
 
 strb_imm12.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U8  U8;
@@ -594,7 +594,7 @@ strb_imm.disasm = {
 };
 
 strb_imm.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U8  U8;
@@ -611,7 +611,7 @@ strb_reg.disasm = {
 };
 
 strb_reg.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U8  U8;
@@ -639,7 +639,7 @@ strd.disasm = {
 };
 
 strd.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ), oaddr = addr + U32( imm );
@@ -665,7 +665,7 @@ ldrt.disasm = {
 };
 
 ldrt.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ) + U32( imm );
@@ -689,7 +689,7 @@ ldrht.disasm = {
 }
 
 ldrht.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ) + U32( imm );
@@ -713,7 +713,7 @@ ldrsht.disasm = {
 }
 
 ldrsht.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -739,7 +739,7 @@ ldrbt.disasm = {
 }
 
 ldrbt.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ) + U32( imm );
@@ -763,7 +763,7 @@ ldrsbt.disasm = {
 }
 
 ldrsbt.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -789,7 +789,7 @@ strt.disasm = {
 }
 
 strt.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ) + U32( imm );
@@ -813,7 +813,7 @@ strht.disasm = {
 }
 
 strht.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;
@@ -838,7 +838,7 @@ strbt.disasm = {
 }
 
 strbt.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U8  U8;
@@ -961,7 +961,7 @@ ldmdb.disasm = {
 };
 
 ldmdb.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 base = cpu.GetGPR( rn );
@@ -983,7 +983,7 @@ ldmia_w.disasm = {
 };
 
 ldmia_w.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 base = cpu.GetGPR( rn );
@@ -1018,7 +1018,7 @@ stmdb.disasm = {
 };
 
 stmdb.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 base = cpu.GetGPR( rn );
@@ -1040,7 +1040,7 @@ stmia_w.disasm = {
 };
 
 stmia_w.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 base = cpu.GetGPR( rn );
@@ -1097,7 +1097,7 @@ ldrex.disasm = {
 };
 
 ldrex.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ) + U32( imm );
@@ -1122,7 +1122,7 @@ ldrexh.disasm = {
 };
 
 ldrexh.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   
@@ -1143,7 +1143,7 @@ ldrexb.disasm = {
 };
 
 ldrexb.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   
@@ -1168,7 +1168,7 @@ ldrexd.disasm = {
 };
 
 ldrexd.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn );
@@ -1200,7 +1200,7 @@ strex.disasm = {
 };
 
 strex.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn ) + U32(imm);
@@ -1230,7 +1230,7 @@ strexh.disasm = {
 };
 
 strexh.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn );
@@ -1260,7 +1260,7 @@ strexb.disasm = {
 };
 
 strexb.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn );
@@ -1291,7 +1291,7 @@ strexd.disasm = {
 };
 
 strexd.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 addr = cpu.GetGPR( rn );
@@ -1323,7 +1323,7 @@ clrex.disasm = {
 };
 
 clrex.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.ClearExclusiveLocal();
 };

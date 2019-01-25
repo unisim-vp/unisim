@@ -292,7 +292,7 @@ struct CPU
   }
   
   uint8_t GetNZCV() const { return nzcv; }
-  uint32_t GetCarry() const { return (nzcv >> 1) & 1; }
+  uint8_t GetCarry() const { return (nzcv >> 1) & 1; }
   
   /** Get the current Program Counter */
   uint64_t GetPC() { return current_insn_addr; }
@@ -392,7 +392,7 @@ protected:
   /**********************************************************************
    ***                       Architectural state                      ***
    **********************************************************************/
-    
+  
   uint64_t gpr[32];
   uint32_t nzcv;
   uint64_t current_insn_addr, next_insn_addr;
@@ -498,9 +498,9 @@ private:
   unisim::component::cxx::processor::arm::isa::arm64::Decoder<CPU> decoder;
   
   // Intrusive memory accesses
-  virtual bool              PrRead( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
-  virtual bool             PrWrite( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
-  // Non-itrusive memory accesses
+  virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
+  virtual bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
+  // Non-intrusive memory accesses
   virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
   virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
 

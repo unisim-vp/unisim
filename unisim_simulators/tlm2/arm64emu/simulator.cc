@@ -140,11 +140,11 @@ Simulator::Run()
 
   //  double time_start = host_time->GetTime();
 
-  sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
+  sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
   
   try
     {
-      sc_start();
+      sc_core::sc_start();
     }
   catch(std::runtime_error& e)
     {
@@ -169,25 +169,25 @@ Simulator::Run()
   // std::cerr << std::endl;
 
   // std::cerr << "simulation time: " << simulation_spent_time << " seconds" << std::endl;
-  // std::cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << std::endl;
+  // std::cerr << "simulated time : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
   // std::cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
-  // std::cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
+  // std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 
   return exit_status;
 }
 
 int
-Simulator::Run(double time, sc_time_unit unit)
+Simulator::Run(double time, sc_core::sc_time_unit unit)
 {
   if ( unlikely(SimulationFinished()) ) return 0;
 
   // double time_start = host_time->GetTime();
 
-  sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
+  sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
 
   try
     {
-      sc_start(time, unit);
+      sc_core::sc_start(time, unit);
     }
   catch(std::runtime_error& e)
     {
@@ -209,19 +209,19 @@ Simulator::Run(double time, sc_time_unit unit)
 bool
 Simulator::IsRunning() const
 {
-  return sc_is_running();
+  return sc_core::sc_is_running();
 }
 
 bool
 Simulator::SimulationStarted() const
 {
-  return sc_start_of_simulation_invoked();
+  return sc_core::sc_start_of_simulation_invoked();
 }
 
 bool
 Simulator::SimulationFinished() const
 {
-  return sc_end_of_simulation_invoked();
+  return sc_core::sc_end_of_simulation_invoked();
 }
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
@@ -232,23 +232,20 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
     }
 	
   // Build the Linux OS arguments from the command line arguments
-	
-  unisim::kernel::service::VariableBase *cmd_args = FindVariable("cmd-args");
-  unsigned int cmd_args_length = cmd_args->GetLength();
-  if (cmd_args_length > 0)
+  std::vector<std::string> const& simargs = GetCmdArgs();
+  if (not simargs.empty())
     {
-      SetVariable("linux-os.binary", ((std::string)(*cmd_args)[0]).c_str());
-      SetVariable("linux-os.argc", cmd_args_length);
-		
-      unsigned int i;
-      for(i = 0; i < cmd_args_length; i++)
+      SetVariable("linux-os.binary", simargs[0].c_str());
+      SetVariable("linux-os.argc", simargs.size());
+
+      for (unsigned i = 0; i < simargs.size(); i++)
         {
           std::stringstream sstr;
           sstr << "linux-os.argv[" << i << "]";
-          SetVariable(sstr.str().c_str(), ((std::string)(*cmd_args)[i]).c_str());
+          SetVariable(sstr.str().c_str(), simargs[i].c_str());
         }
     }
-
+  
   unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
 	
   return setup_status;
@@ -266,14 +263,14 @@ void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, 
   std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 #endif
   std::cerr << "Program exited with status " << exit_status << std::endl;
-  sc_stop();
+  sc_core::sc_stop();
   if(!asynchronous)
     {
-      sc_process_handle h = sc_get_current_process_handle();
+      sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
       switch(h.proc_kind())
         {
-        case SC_THREAD_PROC_: 
-        case SC_CTHREAD_PROC_:
+        case sc_core::SC_THREAD_PROC_: 
+        case sc_core::SC_CTHREAD_PROC_:
           sc_core::wait();
           break;
         default:
@@ -389,7 +386,7 @@ BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
       stop = true;
       break;
     }
-  if(stop) sc_stop();
+  if(stop) sc_core::sc_stop();
   return stop ? TRUE : FALSE;
 }
 #else

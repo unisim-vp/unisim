@@ -39,7 +39,7 @@ efssub.execute = {
 		return false;
 
 	// Read the input operands
-	SoftFloat result(cpu->GetGPR(ra)), b(cpu->GetGPR(rb));
+	SoftFloat result( SoftFloat::FromRawBits, cpu->GetGPR(ra) ), b( SoftFloat::FromRawBits, cpu->GetGPR(rb) );
 
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().set(result).set(b).proceed())
@@ -54,11 +54,11 @@ efssub.execute = {
 	bool status = cpu->EFPProcessOutput( result, flags );
 	
 	// Write back the result
-	cpu->SetGPR(rd, result.queryValue());
+	cpu->SetGPR(rd, result.queryRawBits());
 
 	return status;
 }
 
 efssub.disasm = {
-	os << "efssub r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efssub " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

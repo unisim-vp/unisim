@@ -39,5 +39,5 @@ zvaddsubfw.execute = {
 	return false;
 }
 zvaddsubfw.disasm = {
-	os << "zvaddsubfw r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zvaddsubfw " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

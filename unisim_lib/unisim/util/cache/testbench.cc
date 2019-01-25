@@ -112,7 +112,7 @@ struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPE
 		static const char *GetCacheName() { return "L1I"; }
 		inline bool IsVerbose() const ALWAYS_INLINE { return true; }
 		inline bool IsEnabled() const ALWAYS_INLINE { return true; }
-		inline bool IsWriteAllocate() const  ALWAYS_INLINE { return false; }
+		inline bool IsWriteAllocate(typename MSS_TYPES::STORAGE_ATTR storage_attr) const  ALWAYS_INLINE { return false; }
 		inline bool ChooseLineToEvict(CacheAccess<MSS_TYPES, L1I>& access) ALWAYS_INLINE
 		{
 			access.way = access.set->Status().lru.Select();
@@ -155,7 +155,7 @@ struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPE
 		static const char *GetCacheName() { return "L1D"; }
 		inline bool IsVerbose() const ALWAYS_INLINE { return true; }
 		inline bool IsEnabled() const ALWAYS_INLINE { return true; }
-		inline bool IsWriteAllocate() const  ALWAYS_INLINE { return false; }
+		inline bool IsWriteAllocate(typename MSS_TYPES::STORAGE_ATTR storage_attr) const  ALWAYS_INLINE { return false; }
 		inline bool ChooseLineToEvict(CacheAccess<MSS_TYPES, L1D>& access) ALWAYS_INLINE
 		{
 			access.way = access.set->Status().lru.Select();
@@ -198,7 +198,7 @@ struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPE
 		static const char *GetCacheName() { return "L2U"; }
 		inline bool IsVerbose() const ALWAYS_INLINE { return true; }
 		inline bool IsEnabled() const ALWAYS_INLINE { return true; }
-		inline bool IsWriteAllocate() const  ALWAYS_INLINE { return false; }
+		inline bool IsWriteAllocate(typename MSS_TYPES::STORAGE_ATTR storage_attr) const  ALWAYS_INLINE { return false; }
 		inline bool ChooseLineToEvict(CacheAccess<MSS_TYPES, L2U>& access) ALWAYS_INLINE
 		{
 			access.way = access.set->Status().lru.Select();

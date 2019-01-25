@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,46 +32,34 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
-}
+/* Add Immediate Carrying and Record */
+op addic_(13[6]:rd[5]:ra[5]:sext simm[16]);
 
-op addic_(13[6]:rd[5]:ra[5]:sext<32> simm[16])
 addic_.execute = {
-	uint8_t carry; // carry out
-	uint8_t overflow; // overflow
-	uint8_t sign; // sign
-	uint32_t result;
-
 	// Read the input operands
-	uint32_t a = cpu->GetGPR(ra);
-	uint32_t xer = cpu->GetXER();
+	SINT a( cpu->GetGPR(ra) ), b( simm );
 	
 	// Compute the result
-	SignedAdd32(result, carry, overflow, sign, a, simm, 0) ;
-	
-	// Write back the result
-	cpu->SetGPR(rd, result);
+	SINT result = a + b;
 	
 	// Generate XER[CA]
-	xer = carry ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+	XER& xer = cpu->GetXER();
+	xer.Set<XER::CA>(UINT(a) > ~UINT(b));
 	
-	// Update XER
-	cpu->SetXER(xer);
-
-	// Read CR
-	uint32_t cr = cpu->GetCR();
+	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+	CR& cr = cpu->GetCR();
+	cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
+	cr.Set<CR::CR0::LT>(result < SINT(0));
+	cr.Set<CR::CR0::GT>(result > SINT(0));
+	cr.Set<CR::CR0::EQ>(result == SINT(0));
 	
-	// Generate CR0
-	cr = (cr & ~CONFIG::CR0_MASK) |
-		((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
-		(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
-			
-	// Update CR
-	cpu->SetCR(cr);
+	// Write back the result
+	cpu->SetGPR(rd, UINT(result));
 	
 	return true;
-}
+};
+
 addic_.disasm = {
-	os << "addic. r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << simm;
-}
+	os << "addic. " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << simm;
+};
+

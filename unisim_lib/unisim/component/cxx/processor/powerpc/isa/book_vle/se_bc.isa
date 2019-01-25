@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,30 +33,26 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Branch Conditional Short Form */
 op se_bc(28[5]:bo[1]:bi[2]:shl<1> sext bd[8]);
 
 se_bc.execute = {
-	bool cond_ok;
+	BOOL cond_ok;
 	
 	if(bo)
 	{
 		/* Branch if condition is true */
-		cond_ok = ((uint32_t( cpu->GetCR()) << bi) & uint32_t(0x80000000UL)) != uint32_t(0);
+		cond_ok = ((U32(cpu->GetCR()) << bi) & U32(0x80000000UL)) != U32(0);
 	}
 	else
 	{
 		/* Branch if condition is false */
-		cond_ok = ((uint32_t( cpu->GetCR()) << bi) & uint32_t(0x80000000UL)) == uint32_t(0);
+		cond_ok = ((U32(cpu->GetCR()) << bi) & U32(0x80000000UL)) == U32(0);
 	}
 	
-	if(cond_ok)
+	if(evenly(cond_ok))
 	{
-		ADDRESS target_addr = cpu->GetCIA() + ADDRESS(bd);
+		ADDRESS target_addr( cpu->GetCIA() + UINT(bd) );
 		cpu->Branch(target_addr);
 	}
 	

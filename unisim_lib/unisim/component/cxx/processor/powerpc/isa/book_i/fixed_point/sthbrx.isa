@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -40,5 +40,5 @@ sthbrx.execute = {
 	return cpu->Int16StoreByteReverse(rs, ea); // 16-bit load/byte reverse
 }
 sthbrx.disasm = {
-	os << "sthbrx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "sthbrx " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

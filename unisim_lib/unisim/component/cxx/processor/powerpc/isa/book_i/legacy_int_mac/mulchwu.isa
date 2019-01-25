@@ -66,5 +66,5 @@ mulchwu.execute = {
 }
 
 mulchwu.disasm = {
-	os << "mulchwu" << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "mulchwu" << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

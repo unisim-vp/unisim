@@ -172,6 +172,7 @@ namespace ut
   struct SourceReg : public unisim::util::symbolic::ExprNode
   {
     SourceReg( unsigned _reg ) : reg( _reg ) {} unsigned reg;
+    virtual SourceReg* Mutate() const { return new SourceReg(*this); }
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 0; }
     virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
@@ -242,6 +243,7 @@ namespace ut
     
     struct NPC : public ExprNode
     {
+      virtual NPC* Mutate() const { return new NPC(*this); }
       virtual void Repr( std::ostream& sink ) const { sink << "@NextInsn"; }
       virtual unsigned SubCount() const { return 0; }
       virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return 0; }
@@ -255,6 +257,7 @@ namespace ut
     struct PSRFlags : public ExprNode
     {
       PSRFlags( uint32_t _mask ) : mask( _mask ) {} uint32_t mask;
+      virtual PSRFlags* Mutate() const { return new PSRFlags(*this); }
       virtual void Repr( std::ostream& sink ) const { sink << "PSR_flags"; }
       virtual unsigned SubCount() const { return 0; }
       virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return 0; }
@@ -294,12 +297,16 @@ namespace ut
     PSRTracer  cpsr;
     PSRTracer& CPSR() { return cpsr; };
     PSRTracer& SPSR() { /* Only work in system mode instruction */ donttest_system(); return cpsr; };
+
+    U32 GetCPSR() { return cpsr.bits(); }
+    void SetCPSR(U32 mask, uint32_t bits) { donttest_system(); }
     
     void SetGPRMapping( uint32_t src_mode, uint32_t tar_mode ) { /* system related */ donttest_system(); }
     
     struct Load : public ExprNode
     {
       Load( Expr const& _address ) : address( _address ) {} Expr address;
+      virtual Load* Mutate() const { return new Load(*this); }
       virtual void Repr( std::ostream& sink ) const { sink << "Load( "; address->Repr( sink ); sink << " )"; }
       virtual unsigned SubCount() const { return 1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx!=0) return ExprNode::GetSub(0); return address; }
@@ -335,10 +342,11 @@ namespace ut
     bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { return true; }
     void ClearExclusiveLocal() {}
     
+    enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
     void donttest_branch();
     bool Check( BOOL condition ) { return true; }
-    void BranchExchange( U32 const& target ) { donttest_branch(); }
-    void Branch( U32 const& target ) { donttest_branch(); }
+    void BranchExchange( U32 const& target, branch_type_t ) { donttest_branch(); }
+    void Branch( U32 const& target, branch_type_t  ) { donttest_branch(); }
     
     void donttest_copro();
     // bool CoprocessorLoad( uint32_t cp_num, uint32_t address) { donttest_copro(); return false; }

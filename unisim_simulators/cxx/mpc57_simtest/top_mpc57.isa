@@ -79,12 +79,29 @@ impl {
 #include <testutils.hh>
 #include <iostream>
 #include <unisim/component/cxx/processor/powerpc/isa/lsp/lsp.hh>
+#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 
 namespace mpc57
 {
+  typedef ut::BOOL  BOOL;
+  typedef ut::U8    U8;
+  typedef ut::U16   U16;
+  typedef ut::U32   U32;
+  typedef ut::U64   U64;
+  typedef ut::S8    S8;
+  typedef ut::S16   S16;
+  typedef ut::S32   S32;
+  typedef ut::S64   S64;
+
+  typedef ut::UINT UINT;
+  typedef ut::SINT SINT;
+  typedef ut::ADDRESS ADDRESS;
+  
   using ut::CPU;
-  using ut::SignedAdd32;
+  //  using ut::SignedAdd32;
   using ut::XER;
+  using ut::LR;
+  using ut::CTR;
   using ut::CR;
   using ut::ADDRESS;
   using ut::Flags;
@@ -161,6 +178,7 @@ namespace mpc57
   }
   
   using unisim::component::cxx::processor::powerpc::LSP_HS_UPPER_LOWER_EXCHANGED;
+  using unisim::component::cxx::processor::powerpc::Mask64;
 }
 
 #if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
@@ -172,16 +190,12 @@ namespace mpc57
 #undef unlikely
 #endif
 
-#if defined(unlikely)
-#undef perhaps
-#endif
-
 #define likely(x)       __builtin_expect(cpu->Cond(x),1)
-#define perhaps(x)      (cpu->Cond(x))
+#define evenly(x)       (cpu->Cond(x))
 #define unlikely(x)     __builtin_expect(cpu->Cond(x),0)
 #else
 #define likely(x)       (cpu->Cond(x))
-#define perhaps(x)      (cpu->Cond(x))
+#define evenly(x)       (cpu->Cond(x))
 #define unlikely(x)     (cpu->Cond(x))
 #endif
 
@@ -691,20 +705,26 @@ include "unisim/component/cxx/processor/powerpc/isa/mpu/mpuwe.isa"
 
 group esr_st(stbux, stbx, sthbrx, sthux, sthx, stwbrx, stwux, stwx, stbcx_, \
              sthcx_, stwcx_, e_stb, e_stbu, e_sth, e_sthu, e_stmw, e_stw, \
-             e_stwu, se_stb, se_sth, se_stw)
+             e_stwu, se_stb, se_sth, se_stw);
 
 esr_st.update_esr_st = {
 	// CPU::ESR& esr = cpu->GetESR();
 	// esr.Set<CPU::ESR::ST>(1);
-}
+};
 
 group esr_spv(efsabs,efsadd, efscfh, efscfsf, efscfsi, efscfuf, efscfui, \
              efscmpeq, efscmpgt, efscmplt, efscth, efsctsf, efsctsi, \
              efsctsiz, efsctuf, efsctui, efsctuiz, efsdiv, efsmadd, \
              efsmsub, efsmax, efsmin, efsmul, efsnabs, efsneg, efsnmadd, \
-             efsnmsub, efssqrt, efssub, efststeq, efststgt, efststlt)
+             efsnmsub, efssqrt, efssub, efststeq, efststgt, efststlt);
 
 esr_spv.update_esr_spv = {
 	// CPU::ESR& esr = cpu->GetESR();
 	// esr.Set<CPU::ESR::SPV>(1);
-}
+};
+
+efsmadd.donttest = { return true; };
+efsmsub.donttest = { return true; };
+efsnmadd.donttest = { return true; };
+efsnmsub.donttest = { return true; };
+efssqrt.donttest = { return true; };

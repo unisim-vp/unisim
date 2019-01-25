@@ -93,18 +93,21 @@ void GDBRegister::SetRegisterInterface(unsigned int prc_num, unisim::service::in
 
 bool GDBRegister::SetValue(unsigned int prc_num, const std::string& hex)
 {
-	int i;
-	unsigned int len = hex.length();
-	unsigned int pos = 0;
+	unisim::service::interfaces::Register* reg = GetRegisterInterface(prc_num);
+
+	if (not reg) return false;
+
+	unsigned int len = hex.length(), pos = 0;
 	int size = bitsize / 8;
 	uint8_t value[size];
+	std::fill(&value[0], &value[size], 0);
 
 	if(endian == GDB_BIG_ENDIAN)
 	{
 #if BYTE_ORDER == BIG_ENDIAN
-		for(i = 0; i < size && pos < len; i++, pos += 2)
+		for (int i = 0; i < size && pos < len; i++, pos += 2)
 #else
-		for(i = size - 1; i >= 0 && pos < len; i--, pos += 2)
+		for (int i = size - 1; i >= 0 && pos < len; i--, pos += 2)
 #endif
 		{
 			if(!IsHexChar(hex[pos]) || !IsHexChar(hex[pos + 1])) return false;
@@ -115,9 +118,9 @@ bool GDBRegister::SetValue(unsigned int prc_num, const std::string& hex)
 	else
 	{
 #if BYTE_ORDER == LITTLE_ENDIAN
-		for(i = 0; i < size && pos < len; i++, pos += 2)
+		for (int i = 0; i < size && pos < len; i++, pos += 2)
 #else
-		for(i = size - 1; i >= 0 && pos < len; i--, pos += 2)
+		for (int i = size - 1; i >= 0 && pos < len; i--, pos += 2)
 #endif
 		{
 			if(!IsHexChar(hex[pos]) || !IsHexChar(hex[pos + 1])) return false;
@@ -126,85 +129,79 @@ bool GDBRegister::SetValue(unsigned int prc_num, const std::string& hex)
 		}
 	}
 
-	unisim::service::interfaces::Register *reg = arch_regs[prc_num];
-	if(reg)	reg->SetValue(&value);
-	return reg != 0;
+	reg->SetValue(&value);
+
+	return true;
 }
 
 bool GDBRegister::SetValue(unsigned int prc_num, const void *buffer)
 {
-	unisim::service::interfaces::Register *reg = arch_regs[prc_num];
-	if(reg) reg->SetValue(buffer);
-	return reg != 0;
+	unisim::service::interfaces::Register* reg = GetRegisterInterface(prc_num);
+
+	if (not reg) return false;
+	
+	reg->SetValue(buffer);
+	
+	return true;
 }
 
 bool GDBRegister::GetValue(unsigned int prc_num, std::string& hex) const
 {
-	int i;
-	int size = bitsize / 8;
-	uint8_t value[size];
-	
-	hex.erase();
-	
-	memset(value, 0, size);
-
-	unisim::service::interfaces::Register *reg = arch_regs[prc_num];
-	if(reg)
+	if (unisim::service::interfaces::Register const* reg = GetRegisterInterface(prc_num))
 	{
-		reg->GetValue(&value);
+		int size = bitsize / 8;
+		uint8_t value[size];
+		std::fill(&value[0], &value[size], 0);
 		
-		char c[2];
-		c[1] = 0;
-
+		reg->GetValue(&value);
+		hex.clear();
+		
 		if(endian == GDB_BIG_ENDIAN)
 		{
 #if BYTE_ORDER == BIG_ENDIAN
-			for(i = 0; i < size; i++)
+			for (int i = 0; i < size; i++)
 #else
-			for(i = size - 1; i >= 0; i--)
+			for (int i = size - 1; i >= 0; i--)
 #endif
 			{
-				c[0] = Nibble2HexChar(value[i] >> 4);
-				hex += c;
-				c[0] = Nibble2HexChar(value[i] & 0xf);
-				hex += c;
+				hex += Nibble2HexChar(value[i] >> 4);
+				hex += Nibble2HexChar(value[i] & 0xf);
 			}
 		}
 		else
 		{
 #if BYTE_ORDER == LITTLE_ENDIAN
-			for(i = 0; i < size; i++)
+			for (int i = 0; i < size; i++)
 #else
-			for(i = size - 1; i >= 0; i--)
+			for (int i = size - 1; i >= 0; i--)
 #endif
 			{
-				c[0] = Nibble2HexChar(value[i] >> 4);
-				hex += c;
-				c[0] = Nibble2HexChar(value[i] & 0xf);
-				hex += c;
+				hex += Nibble2HexChar(value[i] >> 4);
+				hex += Nibble2HexChar(value[i] & 0xf);
 			}
 		}
+		return true;
 	}
-	else
-	{
-		for(i = 0; i < size; i++)
-		{
-			hex += 'x';
-			hex += 'x';
-		}
-	}
+
+	// else no register access
 	
-	return reg != 0;
+	hex = std::string(bitsize/4,'x');
+	
+	return false;
 }
 
 bool GDBRegister::GetValue(unsigned int prc_num, void *buffer) const
 {
 	int size = bitsize / 8;
 	memset(buffer, 0, size);
-	unisim::service::interfaces::Register *reg = arch_regs[prc_num];
-	if(reg)
+	
+	if (unisim::service::interfaces::Register* reg = GetRegisterInterface(prc_num))
+	{
 		reg->GetValue(buffer);
-	return reg != 0;
+		return true;
+	}
+	
+	return false;
 }
 
 std::ostream& GDBRegister::ToXML(std::ostream& os, unsigned int _reg_num) const
@@ -260,9 +257,8 @@ std::ostream& GDBFeature::ToXML(std::ostream& os, std::string req_filename) cons
 		{
 			os << ">";
 			
-			unsigned int i;
 			unsigned int reg_num = (unsigned int) -1;
-			for(i = 0; i < n; i++)
+			for (unsigned i = 0; i < n; i++)
 			{
 				const GDBRegister *gdb_reg = gdb_registers[i];
 				if(gdb_reg)

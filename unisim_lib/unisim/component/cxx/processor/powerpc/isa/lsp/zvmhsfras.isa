@@ -68,7 +68,7 @@ zvmhsfras.execute = {
 	return false;
 }
 zvmhsfras.disasm = {
-	os << "zvmh" << LSP_HS_UPPER_LOWER_EXCHANGED(hs) << "sfr" << LSP_ACC(acc) << "s r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zvmh" << LSP_HS_UPPER_LOWER_EXCHANGED(hs) << "sfr" << LSP_ACC(acc) << "s " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zvmhsfras(hs=0,acc=1)

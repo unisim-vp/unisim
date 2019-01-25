@@ -32,7 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-op mftb(31[6]:rd[5]:tbr[10]:371[10]:?[1])
+/* Move From Time Base */
+op mftb(31[6]:rd[5]:tbr[10]:371[10]:?[1]);
+
 mftb.execute = {
 	uint32_t d = ((tbr & 0x1f) << 5) + ((tbr >> 5) & 0x1f);
 	switch(d)
@@ -45,11 +47,12 @@ mftb.execute = {
 			return false;
 	}
 	return true;
-}
+};
+
 mftb.disasm = {
 	uint32_t d = ((tbr & 0x1f) << 5) + ((tbr >> 5) & 0x1f);
-	os << "mftb r" << (unsigned int) rd << ", " << (unsigned int) d;
-}
+	os << "mftb " << GPRPrint(rd) << ", " << unsigned(d);
+};
 
 specialize mftb(tbr=0x188)
 specialize mftb(tbr=0x1a8)

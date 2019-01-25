@@ -56,8 +56,6 @@
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
-#include <unisim/service/debug/monitor/monitor.hh>
-#include <unisim/service/profiling/addr_profiler/profiler.hh>
 
 #ifdef WIN32
 
@@ -74,14 +72,13 @@ struct Simulator
   Simulator(int argc, char **argv);
   virtual ~Simulator();
   int Run();
-  int Run(double time, sc_time_unit unit);
+  int Run(double time, sc_core::sc_time_unit unit);
   bool IsRunning() const;
   bool SimulationStarted() const;
   bool SimulationFinished() const;
   virtual unisim::kernel::service::Simulator::SetupStatus Setup();
   virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false);
   int GetExitStatus() const;
-  static void EnableMonitor(int (*monitor_callback)(void));
 
  protected:
  private:
@@ -93,15 +90,13 @@ struct Simulator
   {
     typedef uint64_t ADDRESS;
     static const unsigned int NUM_PROCESSORS = 1;
-    /* gdb_server, inline_debugger and/or monitor */
+    /* gdb_server, inline_debugger */
     static const unsigned int MAX_FRONT_ENDS = 2;
   };
   
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
   typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> INLINE_DEBUGGER;
-  typedef unisim::service::debug::monitor::Monitor<uint64_t> MONITOR;
-  typedef unisim::service::profiling::addr_profiler::Profiler<uint64_t> PROFILER;
 
   CPU                                        cpu;
   MEMORY                                     memory;
@@ -126,7 +121,6 @@ struct Simulator
 #else
   static void SigIntHandler(int signum);
 #endif
-  static bool enable_monitor;
 };
 
 #endif /* SIMULATOR_HH_ */

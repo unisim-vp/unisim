@@ -55,40 +55,6 @@
 
 #include <unisim/util/inlining/inlining.hh>
 
-namespace unisim {
-namespace kernel {
-namespace service {
-
-class Object;
-class Simulator;
-
-}
-
-namespace logger {
-
-struct Logger;
-
-}
-
-namespace api {
-
-class APIBase;
-
-}
-}
-
-namespace util {
-namespace hypapp {
-
-struct ClientConnection;
-
-}
-}
-
-}
-
-#include "unisim/kernel/api/api.hh"
-
 #ifdef DEBUG_MEMORY_ALLOCATION
 void *operator new(std::size_t size);
 void *operator new[](std::size_t size);
@@ -100,6 +66,7 @@ namespace unisim {
 namespace kernel {
 namespace service {
 
+class Object;
 class VariableBase;
 class Simulator;
 template <class TYPE> class Variable;
@@ -472,6 +439,7 @@ public:
 	VariableBase *FindStatistic(const char *name);
 	const VariableBase *FindFormula(const char *name) const;
 	VariableBase *FindFormula(const char *name);
+	Object *FindObject(const char *name) const;
 
 	void GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
 	void GetRootVariables(std::list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
@@ -494,6 +462,7 @@ public:
 	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const;
 	const std::string GetSharedDataDirectory() const;
 	std::string SearchSharedDataFile(const char *filename) const;
+	std::vector<std::string> const& GetCmdArgs() const;
 
 	void GenerateLatexDocumentation(std::ostream& os) const;
 	
@@ -507,8 +476,6 @@ public:
 
 	bool IsWarningEnabled() const;
 
-	unisim::kernel::api::APIBase *GetAPIs();
-
 	void Register(ConfigFileHelper *config_file_helper);
 private:
 	friend class Object;
@@ -517,7 +484,6 @@ private:
 	template <class TYPE> friend class VariableArray;
 	friend class ServiceImportBase;
 	friend class ServiceExportBase;
-	friend class unisim::kernel::api::APIBase;
 
 	static Simulator *simulator;
 	VariableBase *void_variable;
@@ -567,24 +533,14 @@ private:
 	void Unregister(ServiceExportBase *srv_export);
 	void Unregister(VariableBase *variable);
 
-	void Register(unisim::kernel::api::APIBase *api);
-	void Unregister(unisim::kernel::api::APIBase *api);
-	
 	void Initialize(VariableBase *variable);
 
 public:
 	bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID);
 	bool SaveVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID);
 
-public:
-	// TOCHECK: this method was previously declared as private,
-	//   and should probably become again private unless we consider
-	//   it part of the simulator API in which case it should
-	//   become public
 	void GetObjects(std::list<Object *>& lst) const;
 	void GetRootObjects(std::list<Object *>& lst) const;
-	Object *FindObject(const char *name) const;
-	void GetAPIs(std::list<unisim::kernel::api::APIBase *> &api_list) const;
 
 private:
 	class CommandLineOption
@@ -610,10 +566,9 @@ private:
 	std::map<std::string, ServiceImportBase *> imports;
 	std::map<std::string, ServiceExportBase *> exports;
 	std::map<std::string, VariableBase *, nat_ltstr /* lex_ltstr*/> variables;
-	std::map<std::string, unisim::kernel::api::APIBase *> apis;
 	std::map<std::string, ConfigFileHelper *> config_file_helpers;
 	
-	std::string *cmd_args;
+	std::vector<std::string> cmd_args;
 	ParameterArray<std::string> *param_cmd_args;
 	
 public:

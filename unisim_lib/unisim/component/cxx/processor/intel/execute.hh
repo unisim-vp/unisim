@@ -78,12 +78,12 @@ namespace intel {
     {
       INT red = res & INT( 0xff );
       for (int shift = 4; shift > 0; shift >>= 1) red ^= (red >> shift);
-      arch.flagwrite( ARCH::PF, not bit_t( red & INT( 1 ) ) );
+      arch.flagwrite( ARCH::FLAG::PF, not bit_t( red & INT( 1 ) ) );
     }
     
     INT const msbmask( INT( 1 ) << (atpinfo<ARCH,INT>::bitsize-1) );
-    arch.flagwrite( ARCH::SF, bit_t( res & msbmask ) );
-    arch.flagwrite( ARCH::ZF, bit_t( res == INT( 0 ) ) );
+    arch.flagwrite( ARCH::FLAG::SF, bit_t( res & msbmask ) );
+    arch.flagwrite( ARCH::FLAG::ZF, bit_t( res == INT( 0 ) ) );
   }
   
   template <class ARCH, typename INT>
@@ -94,10 +94,12 @@ namespace intel {
     INT res = arg1 + arg2;
     
     INT const msbmask( INT( 1 ) << (atpinfo<ARCH,INT>::bitsize-1) );
-    arch.flagwrite( ARCH::OF, bit_t( (((arg1 & arg2 & ~res) | (~arg1 & ~arg2 & res)) & msbmask) == msbmask ) );
-    arch.flagwrite( ARCH::CF, bit_t( ((((arg1 | arg2) & ~res) | (arg1 & arg2 & res)) & msbmask) == msbmask ) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( (((arg1 & arg2 & ~res) | (~arg1 & ~arg2 & res)) & msbmask) == msbmask ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( ((((arg1 | arg2) & ~res) | (arg1 & arg2 & res)) & msbmask) == msbmask ) );
     
     eval_PSZ( arch, res );
+    
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
     
     return res;
   }
@@ -109,8 +111,10 @@ namespace intel {
     typedef typename ARCH::bit_t bit_t;
     INT res = arg1 | arg2;
     
-    arch.flagwrite( ARCH::OF, bit_t( false ) );
-    arch.flagwrite( ARCH::CF, bit_t( false ) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( false ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( false ) );
+    
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
     
     eval_PSZ( arch, res );
       
@@ -122,12 +126,14 @@ namespace intel {
   eval_adc( ARCH& arch, INT const& arg1, INT const& arg2 )
   {
     typedef typename ARCH::bit_t bit_t;
-    INT op2 = arg2 + INT( arch.flagread( ARCH::CF ) );
+    INT op2 = arg2 + INT( arch.flagread( ARCH::FLAG::CF ) );
     INT res = arg1 + op2;
     
     INT const msbmask( INT( 1 ) << (atpinfo<ARCH,INT>::bitsize-1) );
-    arch.flagwrite( ARCH::OF, bit_t( (((arg1 & op2 & ~res) | (~arg1 & ~op2 & res)) & msbmask) == msbmask ) );
-    arch.flagwrite( ARCH::CF, bit_t( ((((arg1 | op2) & ~res) | (arg1 & op2 & res)) & msbmask) == msbmask ) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( (((arg1 & op2 & ~res) | (~arg1 & ~op2 & res)) & msbmask) == msbmask ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( ((((arg1 | op2) & ~res) | (arg1 & op2 & res)) & msbmask) == msbmask ) );
+    
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
     
     eval_PSZ( arch, res );
       
@@ -139,12 +145,14 @@ namespace intel {
   eval_sbb( ARCH& arch, INT const& arg1, INT const& arg2 )
   {
     typedef typename ARCH::bit_t bit_t;
-    INT op2 = arg2 + INT( arch.flagread( ARCH::CF ) );
+    INT op2 = arg2 + INT( arch.flagread( ARCH::FLAG::CF ) );
     INT res = arg1 - op2;
     
     INT const msbmask( INT( 1 ) << (atpinfo<ARCH,INT>::bitsize-1) );
-    arch.flagwrite( ARCH::OF, bit_t( (((arg1 & ~op2 & ~res) | (~arg1 & op2 & res)) & msbmask) == msbmask ) );
-    arch.flagwrite( ARCH::CF, bit_t( ((((~arg1 | op2) & res) | (~arg1 & op2 & ~res)) & msbmask) == msbmask ) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( (((arg1 & ~op2 & ~res) | (~arg1 & op2 & res)) & msbmask) == msbmask ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( ((((~arg1 | op2) & res) | (~arg1 & op2 & ~res)) & msbmask) == msbmask ) );
+    
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
     
     eval_PSZ( arch, res );
       
@@ -158,8 +166,10 @@ namespace intel {
     typedef typename ARCH::bit_t bit_t;
     INT res = arg1 & arg2;
     
-    arch.flagwrite( ARCH::OF, bit_t( false ) );
-    arch.flagwrite( ARCH::CF, bit_t( false ) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( false ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( false ) );
+    
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
     
     eval_PSZ( arch, res );
       
@@ -174,8 +184,10 @@ namespace intel {
     INT res = arg1 - arg2;
     
     INT const msbmask( INT( 1 ) << (atpinfo<ARCH,INT>::bitsize-1) );
-    arch.flagwrite( ARCH::OF, bit_t( (((arg1 & ~arg2 & ~res) | (~arg1 & arg2 & res)) & msbmask) == msbmask ) );
-    arch.flagwrite( ARCH::CF, bit_t( ((((~arg1 | arg2) & res) | (~arg1 & arg2 & ~res)) & msbmask) == msbmask ) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( (((arg1 & ~arg2 & ~res) | (~arg1 & arg2 & res)) & msbmask) == msbmask ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( ((((~arg1 | arg2) & res) | (~arg1 & arg2 & ~res)) & msbmask) == msbmask ) );
+
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
     
     eval_PSZ( arch, res );
       
@@ -189,8 +201,10 @@ namespace intel {
     typedef typename ARCH::bit_t bit_t;
     INT res = arg1 ^ arg2;
     
-    arch.flagwrite( ARCH::OF, bit_t( false ) );
-    arch.flagwrite( ARCH::CF, bit_t( false ) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( false ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( false ) );
+    
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
     
     eval_PSZ( arch, res );
       
@@ -216,9 +230,11 @@ namespace intel {
     
     sharg = sharg % u8bitsize;
     res = (arg1 << sharg) | (arg1 >> (u8bitsize - sharg));
-    arch.flagwrite( ARCH::CF, bit_t( res & INT( 1 ) ) );
-    arch.flagwrite( ARCH::OF, bit_t( (arg1 ^ res) & msb ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( res & INT( 1 ) ) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
       
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     eval_PSZ( arch, res );
       
     return res;
@@ -239,9 +255,11 @@ namespace intel {
     
     sharg = sharg % u8bitsize;
     res = (arg1 << (u8bitsize - sharg)) | (arg1 >> sharg);
-    arch.flagwrite( ARCH::CF, bit_t( res & msb ) );
-    arch.flagwrite( ARCH::OF, bit_t( (arg1 ^ res) & msb ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( res & msb ) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
       
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     eval_PSZ( arch, res );
       
     return res;
@@ -261,12 +279,14 @@ namespace intel {
     
     sharg = sharg % u8_t( bitsize + 1 );
     typename atpinfo<ARCH,INT>::twice tmp( arg1 );
-    tmp |= typename atpinfo<ARCH,INT>::twice( arch.flagread( ARCH::CF ) ) << bitsize;
+    tmp |= typename atpinfo<ARCH,INT>::twice( arch.flagread( ARCH::FLAG::CF ) ) << bitsize;
     tmp = (tmp << sharg) | (tmp >> (u8_t( bitsize + 1 ) - sharg));
     res = INT( tmp );
-    arch.flagwrite( ARCH::CF, bit_t( (tmp >> bitsize) & typename atpinfo<ARCH,INT>::twice( 1 ) ) );
-    arch.flagwrite( ARCH::OF, bit_t( (arg1 ^ res) & msb ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( (tmp >> bitsize) & typename atpinfo<ARCH,INT>::twice( 1 ) ) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
       
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     eval_PSZ( arch, res );
       
     return res;
@@ -289,12 +309,14 @@ namespace intel {
     
     sharg = sharg % u8_t( bitsize + 1 );
     typename atpinfo<ARCH,INT>::twice tmp( arg1 );
-    tmp |= typename atpinfo<ARCH,INT>::twice( arch.flagread( ARCH::CF ) ) << bitsize;
+    tmp |= typename atpinfo<ARCH,INT>::twice( arch.flagread( ARCH::FLAG::CF ) ) << bitsize;
     tmp = (tmp << (u8_t( bitsize + 1 ) - sharg)) | (tmp >> sharg);
     res = INT( tmp );
-    arch.flagwrite( ARCH::CF, bit_t( (tmp >> bitsize) & typename atpinfo<ARCH,INT>::twice( 1 ) ) );
-    arch.flagwrite( ARCH::OF, bit_t( (arg1 ^ res) & msb ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( (tmp >> bitsize) & typename atpinfo<ARCH,INT>::twice( 1 ) ) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
       
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     eval_PSZ( arch, res );
       
     return res;
@@ -316,9 +338,11 @@ namespace intel {
     u8_t sharg = arg2 & u8_t( 0x1f ); 
     
     res = arg1 << sharg;
-    arch.flagwrite( ARCH::CF, bit_t( arch.Cond( sharg >= u8_t( 1 ) ) ? ((arg1 << (sharg - u8_t( 1 ))) & msb) : INT( 0 ) ) );
-    arch.flagwrite( ARCH::OF, bit_t( (arg1 ^ res) & msb ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Cond( sharg >= u8_t( 1 ) ) ? ((arg1 << (sharg - u8_t( 1 ))) & msb) : INT( 0 ) ) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
       
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     eval_PSZ( arch, res );
       
     return res;
@@ -337,9 +361,11 @@ namespace intel {
     u8_t sharg = arg2 & u8_t( 0x1f ); 
     
     res = arg1 >> sharg;
-    arch.flagwrite( ARCH::CF, bit_t( arch.Cond( sharg >= u8_t( 1 ) ) ? ((arg1 >> (sharg - u8_t( 1 ))) & INT( 1 )) : INT( 0 ) ) );
-    arch.flagwrite( ARCH::OF, bit_t( arg1 & msb ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Cond( sharg >= u8_t( 1 ) ) ? ((arg1 >> (sharg - u8_t( 1 ))) & INT( 1 )) : INT( 0 ) ) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( arg1 & msb ) );
       
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     eval_PSZ( arch, res );
       
     return res;
@@ -358,9 +384,11 @@ namespace intel {
     u8_t sharg = arg2 & u8_t( 0x1f ); 
     
     res = INT( (typename atpinfo<ARCH,INT>::stype( arg1 )) >> sharg );
-    arch.flagwrite( ARCH::CF, bit_t( arch.Cond( sharg >= u8_t( 1 ) ) ? ((arg1 >> (sharg - u8_t( 1 ))) & INT( 1 )) : INT( 0 ) ) );
-    arch.flagwrite( ARCH::OF, bit_t( false ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Cond( sharg >= u8_t( 1 ) ) ? ((arg1 >> (sharg - u8_t( 1 ))) & INT( 1 )) : INT( 0 ) ) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( false ) );
       
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     eval_PSZ( arch, res );
       
     return res;
@@ -373,14 +401,14 @@ namespace intel {
     typedef typename ARCH::bit_t bit_t;
     bit_t res = bit_t( _cc & 1 );
     switch ((_cc >> 1) & 0x7) {
-    case 0: res ^= a.flagread( ARCH::OF ); break;
-    case 1: res ^= a.flagread( ARCH::CF ); break;
-    case 2: res ^= a.flagread( ARCH::ZF ); break;
-    case 3: res ^= a.flagread( ARCH::CF ) | a.flagread( ARCH::ZF ); break;
-    case 4: res ^= a.flagread( ARCH::SF ); break;
-    case 5: res ^= a.flagread( ARCH::PF ); break;
-    case 6: res ^= a.flagread( ARCH::SF ) ^ a.flagread( ARCH::OF ); break;
-    case 7: res ^= a.flagread( ARCH::ZF ) | (a.flagread( ARCH::SF ) ^ a.flagread( ARCH::OF )); break;
+    case 0: res ^= a.flagread( ARCH::FLAG::OF ); break;
+    case 1: res ^= a.flagread( ARCH::FLAG::CF ); break;
+    case 2: res ^= a.flagread( ARCH::FLAG::ZF ); break;
+    case 3: res ^= a.flagread( ARCH::FLAG::CF ) | a.flagread( ARCH::FLAG::ZF ); break;
+    case 4: res ^= a.flagread( ARCH::FLAG::SF ); break;
+    case 5: res ^= a.flagread( ARCH::FLAG::PF ); break;
+    case 6: res ^= a.flagread( ARCH::FLAG::SF ) ^ a.flagread( ARCH::FLAG::OF ); break;
+    case 7: res ^= a.flagread( ARCH::FLAG::ZF ) | (a.flagread( ARCH::FLAG::SF ) ^ a.flagread( ARCH::FLAG::OF )); break;
     }
     return res;
   }
@@ -412,8 +440,8 @@ namespace intel {
     INT lores = INT( result );
     lo = lores;
     bit_t flag = twice( lores ) == result;
-    arch.flagwrite( ARCH::OF, flag );
-    arch.flagwrite( ARCH::CF, flag );
+    arch.flagwrite( ARCH::FLAG::OF, flag );
+    arch.flagwrite( ARCH::FLAG::CF, flag );
   }
   
   /* TODO: need to implement very large multiplications */
@@ -426,20 +454,20 @@ namespace intel {
   {
     typedef typename ARCH::u16_t u16_t;
     return
-      (u16_t( 0 )                      <<  0 /* IE */) |
-      (u16_t( 0 )                      <<  1 /* DE */) |
-      (u16_t( 0 )                      <<  2 /* ZE */) |
-      (u16_t( 0 )                      <<  3 /* OE */) |
-      (u16_t( 0 )                      <<  4 /* UE */) |
-      (u16_t( 0 )                      <<  5 /* PE */) |
-      (u16_t( 0 )                      <<  6 /* SF */) |
-      (u16_t( 0 )                      <<  7 /* ES */) |
-      (u16_t( a.flagread( ARCH::C0 ) ) <<  8 /* C0 */) |
-      (u16_t( a.flagread( ARCH::C1 ) ) <<  9 /* C1 */) |
-      (u16_t( a.flagread( ARCH::C2 ) ) << 10 /* C2 */) |
-      (u16_t( a.ftopread() )           << 11 /* ST */) |
-      (u16_t( a.flagread( ARCH::C3 ) ) << 14 /* C3 */) |
-      (u16_t( 0 )                      << 15 /*  B */);
+      (u16_t( 0 )                             <<  0 /* IE */) |
+      (u16_t( 0 )                             <<  1 /* DE */) |
+      (u16_t( 0 )                             <<  2 /* ZE */) |
+      (u16_t( 0 )                             <<  3 /* OE */) |
+      (u16_t( 0 )                             <<  4 /* UE */) |
+      (u16_t( 0 )                             <<  5 /* PE */) |
+      (u16_t( 0 )                             <<  6 /* SF */) |
+      (u16_t( 0 )                             <<  7 /* ES */) |
+      (u16_t( a.flagread( ARCH::FLAG::C0 ) ) <<  8 /* C0 */) |
+      (u16_t( a.flagread( ARCH::FLAG::C1 ) ) <<  9 /* C1 */) |
+      (u16_t( a.flagread( ARCH::FLAG::C2 ) ) << 10 /* C2 */) |
+      (u16_t( a.ftopread() )                  << 11 /* ST */) |
+      (u16_t( a.flagread( ARCH::FLAG::C3 ) ) << 14 /* C3 */) |
+      (u16_t( 0 )                             << 15 /*  B */);
   }
 
   template <class ARCH>
@@ -449,27 +477,27 @@ namespace intel {
     typedef typename ARCH::u32_t u32_t;
     //00000286
     return
-      (u32_t( a.flagread( ARCH::CF ) ) <<  0 /* CF */ ) |
-      (u32_t( 1 )                      <<  1 /*  1 */ ) |
-      (u32_t( a.flagread( ARCH::PF ) ) <<  2 /* PF */ ) |
-      (u32_t( 0 )                      <<  3 /*  0 */ ) |
-      (u32_t( a.flagread( ARCH::AF ) ) <<  4 /* AF */ ) |
-      (u32_t( 0 )                      <<  5 /*  0 */ ) |
-      (u32_t( a.flagread( ARCH::ZF ) ) <<  6 /* ZF */ ) |
-      (u32_t( a.flagread( ARCH::SF ) ) <<  7 /* SF */ ) |
-      (u32_t( 0 )                      <<  8 /* TF */ ) |
-      (u32_t( 0 )                      <<  9 /* IF */ ) |
-      (u32_t( a.flagread( ARCH::DF ) ) << 10 /* DF */ ) |
-      (u32_t( a.flagread( ARCH::OF ) ) << 11 /* OF */ ) |
-      (u32_t( 0 )                      << 12 /*IOPL*/ ) |
-      (u32_t( 0 )                      << 14 /* NT */ ) |
-      (u32_t( 0 )                      << 15 /*  0 */ ) |
-      (u32_t( 0 )                      << 16 /* RF */ ) |
-      (u32_t( 0 )                      << 17 /* VM */ ) |
-      (u32_t( 0 )                      << 18 /* AC */ ) |
-      (u32_t( 0 )                      << 19 /* VIF*/ ) |
-      (u32_t( 0 )                      << 20 /* VIP*/ ) |
-      (u32_t( 0 )                      << 21 /* ID */ );
+      (u32_t( a.flagread( ARCH::FLAG::CF ) ) <<  0 /* CF */ ) |
+      (u32_t( 1 )                             <<  1 /*  1 */ ) |
+      (u32_t( a.flagread( ARCH::FLAG::PF ) ) <<  2 /* PF */ ) |
+      (u32_t( 0 )                             <<  3 /*  0 */ ) |
+      (u32_t( a.flagread( ARCH::FLAG::AF ) ) <<  4 /* AF */ ) |
+      (u32_t( 0 )                             <<  5 /*  0 */ ) |
+      (u32_t( a.flagread( ARCH::FLAG::ZF ) ) <<  6 /* ZF */ ) |
+      (u32_t( a.flagread( ARCH::FLAG::SF ) ) <<  7 /* SF */ ) |
+      (u32_t( 0 )                             <<  8 /* TF */ ) |
+      (u32_t( 0 )                             <<  9 /* IF */ ) |
+      (u32_t( a.flagread( ARCH::FLAG::DF ) ) << 10 /* DF */ ) |
+      (u32_t( a.flagread( ARCH::FLAG::OF ) ) << 11 /* OF */ ) |
+      (u32_t( 0 )                             << 12 /*IOPL*/ ) |
+      (u32_t( 0 )                             << 14 /* NT */ ) |
+      (u32_t( 0 )                             << 15 /*  0 */ ) |
+      (u32_t( 0 )                             << 16 /* RF */ ) |
+      (u32_t( 0 )                             << 17 /* VM */ ) |
+      (u32_t( 0 )                             << 18 /* AC */ ) |
+      (u32_t( 0 )                             << 19 /* VIF*/ ) |
+      (u32_t( 0 )                             << 20 /* VIP*/ ) |
+      (u32_t( 0 )                             << 21 /* ID */ );
   }
 
 } // end of namespace intel

@@ -48,5 +48,5 @@ wrteei.execute = {
 }
 
 wrteei.disasm = {
-	os << "wrteei " << (unsigned int) e;
+	os << "wrteei " << unsigned(e);
 }

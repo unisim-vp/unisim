@@ -56,7 +56,19 @@ namespace intel {
   template <> struct CTypeFor<32> { typedef int32_t s; typedef uint32_t u; typedef float f; };
   template <> struct CTypeFor<64> { typedef int64_t s; typedef uint64_t u; typedef double f; };
   template <> struct CTypeFor<80> { typedef double f; };
+
+  struct GObLH { enum { OPSIZE=8 }; };
+  struct GOb { enum { OPSIZE=8 }; };
+  struct GOw { enum { OPSIZE=16 }; };
+  struct GOd { enum { OPSIZE=32 }; };
+  struct GOq { enum { OPSIZE=64 }; };
+
+  template <unsigned SIZE> struct GTypeFor {};
   
+  template <> struct GTypeFor<16> { typedef GOw OP; };
+  template <> struct GTypeFor<32> { typedef GOd OP; };
+  template <> struct GTypeFor<64> { typedef GOq OP; };
+
 } // end of namespace intel
 } // end of namespace processor
 } // end of namespace cxx

@@ -94,7 +94,7 @@ zvdotphg.execute = {
 	return false;
 }
 zvdotphg.disasm = {
-	os << "zvdotph" << (exchange ? "x" : "") << "g" << (substract ? "s" : "a") << LSP_TY(ty) << LSP_ACC(acc) << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zvdotph" << (exchange ? "x" : "") << "g" << (substract ? "s" : "a") << LSP_TY(ty) << LSP_ACC(acc) << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zvdotphg(substract=0,exchange=0,ty=0,acc=0)

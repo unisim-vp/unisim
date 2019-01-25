@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,31 +32,30 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
-}
+/* AND Immediate */
+op andi_(28[6]:rs[5]:ra[5]:uimm[16]);
 
-op andi_(28[6]:rs[5]:ra[5]:uimm[16])
 andi_.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rs);
-	uint32_t xer = cpu->GetXER();
+	UINT s = cpu->GetGPR(rs), b = UINT(uimm);
 	
 	// Compute the result
-	uint32_t result = s & uimm;
+	UINT result = s & b;
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
 	
 	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 	CR& cr = cpu->GetCR();
-	cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-	cr.Set<CR::CR0::LT>(int32_t(result) < int32_t(0));
-	cr.Set<CR::CR0::GT>(int32_t(result) > int32_t(0));
-	cr.Set<CR::CR0::EQ>(result == uint32_t( 0));
+	cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
+	cr.Set<CR::CR0::LT>(SINT(result) < SINT(0));
+	cr.Set<CR::CR0::GT>(SINT(result) > SINT(0));
+	cr.Set<CR::CR0::EQ>(result == UINT(0));
 	
 	return true;
-}
+};
+
 andi_.disasm = {
-	os << "andi. r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << uimm;
-}
+	os << "andi. " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << uimm;
+};
+

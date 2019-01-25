@@ -38,5 +38,5 @@ evfsmulo.execute = {
 	return false;
 }
 evfsmulo.disasm = {
-	os << "evfsmulo r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "evfsmulo " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

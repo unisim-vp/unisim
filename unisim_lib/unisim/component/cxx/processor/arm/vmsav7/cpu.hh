@@ -97,6 +97,13 @@ struct CPU
   typedef typename CP15CPU::CP15Reg CP15Reg;
   
   enum mem_acc_type_t { mat_write = 0, mat_read, mat_exec };
+  struct AddressDescriptor
+  {
+    uint32_t address;
+    uint32_t attributes;
+
+    AddressDescriptor( uint32_t addr ) : address(addr), attributes(0) {}
+  };
   
 
   //=====================================================================
@@ -177,8 +184,9 @@ struct CPU
   /* Memory access methods       START                          */
   /**************************************************************/
 	
-  virtual bool PrWrite( uint32_t addr, uint8_t const* buffer, uint32_t size ) = 0;
-  virtual bool PrRead( uint32_t addr, uint8_t* buffer, uint32_t size ) = 0;
+  virtual bool PhysicalWriteMemory( uint32_t addr, uint8_t const* buffer, uint32_t size, uint32_t attrs ) = 0;
+  virtual bool PhysicalReadMemory( uint32_t addr, uint8_t* buffer, uint32_t size, uint32_t attrs ) = 0;
+  virtual bool PhysicalFetchMemory( uint32_t addr, uint8_t* buffer, uint32_t size, uint32_t attrs ) = 0;
   
   uint32_t MemURead32( uint32_t address ) { return PerformUReadAccess( address, 4 ); }
   uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4 ); }
@@ -207,7 +215,8 @@ struct CPU
       memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);
   }
   
-  void RefillInsnPrefetchBuffer( uint32_t mva, uint32_t base_address );
+  struct AddressDescriptor;
+  void RefillInsnPrefetchBuffer( uint32_t mva, AddressDescriptor const& line_loc );
   
   void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn );
   void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn );
@@ -261,30 +270,39 @@ protected:
   
   struct MMU
   {
-    MMU() : ttbcr(), ttbr0(0), ttbr1(0), dacr() {}
+    MMU() : ttbcr(), ttbr0(0), ttbr1(0), dacr() { refresh_attr_cache( false ); }
     uint32_t ttbcr; /*< Translation Table Base Control Register */
     uint32_t ttbr0; /*< Translation Table Base Register 0 */
     uint32_t ttbr1; /*< Translation Table Base Register 1 */
     uint32_t prrr;  /*< PRRR, Primary Region Remap Register */
     uint32_t nmrr;  /*< NMRR, Normal Memory Remap Register */
     uint32_t dacr;
+
+    uint16_t attr_cache[64];
+
+    void refresh_attr_cache( bool tre );
   } mmu;
-  
-  struct TransAddrDesc
-  {
-    uint32_t   pa;
-    uint32_t   nG : 1;
-    uint32_t   domain : 4;
-    uint32_t   level : 2;
-    uint32_t   ap : 3;
-    uint32_t   pxn : 1;
-    uint32_t   xn : 1;
-    uint32_t   asid : 8;
-    uint32_t   lsb : 5;
-  };
+
+  template <class POLICY>
+  void  TranslateAddress( AddressDescriptor& ad, bool ispriv, mem_acc_type_t mat, unsigned size );
   
   struct TLB
   {
+    struct Entry
+    {
+      uint32_t   pa;
+      uint32_t   __       : 2;
+      uint32_t   memattrs : 6;
+      uint32_t   domain   : 4;
+      uint32_t   NS       : 1;
+      uint32_t   xn       : 1;
+      uint32_t   pxn      : 1;
+      uint32_t   nG       : 1;
+      uint32_t   asid     : 8;
+      uint32_t   ap       : 3;
+      uint32_t   lsb      : 5;
+    };
+  
     static unsigned const ENTRY_CAPACITY = 128;
     /* KEY:
      * 31 .. 12: tag
@@ -293,11 +311,12 @@ protected:
      */
     unsigned      entry_count;
     uint32_t      keys[ENTRY_CAPACITY];
-    TransAddrDesc vals[ENTRY_CAPACITY];
+    Entry         vals[ENTRY_CAPACITY];
+    
     TLB();
     template <class POLICY>
-    bool GetTranslation( TransAddrDesc& tad, uint32_t mva, uint32_t asid );
-    void AddTranslation( uint32_t mva, TransAddrDesc const& tad );
+    bool GetTranslation( Entry& tad, uint32_t mva, uint32_t asid );
+    void AddTranslation( uint32_t mva, Entry const& tad );
     void InvalidateAll() { entry_count = 0; }
     
     struct Iterator
@@ -315,10 +334,8 @@ protected:
   } tlb;
   
   template <class POLICY>
-  void      TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat, unsigned size );
-  template <class POLICY>
-  uint32_t  TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned size );
-  
+  void      TranslationTableWalk( TLB::Entry& tad, uint32_t mva, mem_acc_type_t mat, unsigned size );
+
   uint32_t  GetASID() const { return CONTEXTIDR & 0xff; }
   
   /*************************/

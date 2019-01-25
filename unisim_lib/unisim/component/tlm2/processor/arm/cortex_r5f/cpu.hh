@@ -147,8 +147,8 @@ private:
 	
     // cache interface implemented by the arm processor to get the request from 
     //   the caches
-    virtual bool PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size);
-    virtual bool PrRead(uint32_t addr, uint8_t *buffer, uint32_t size);
+    virtual bool PhysicalWriteMemory(uint32_t addr, const uint8_t *buffer, uint32_t size, uint32_t attrs);
+    virtual bool PhysicalReadMemory(uint32_t addr, uint8_t *buffer, uint32_t size, uint32_t attrs);
 	
     sc_core::sc_time const& GetCpuCycleTime() const { return cpu_cycle_time; };
 
@@ -157,7 +157,7 @@ private:
     virtual bool ExternalWriteMemory(uint32_t addr, void const* buffer, uint32_t size);
 	
     /** Event used to signalize the end of a read transaction.
-     * Method PrRead waits for this event once the read transaction has been 
+     * Method PhysicalReadMemory waits for this event once the read transaction has been 
      *   sent, and the nb_transport_bw notifies on it when the read transaction 
      *   is finished. 
      */

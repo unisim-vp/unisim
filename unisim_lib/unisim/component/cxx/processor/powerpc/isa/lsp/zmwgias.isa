@@ -62,7 +62,7 @@ zmwgias.execute = {
 	return false;
 }
 zmwgias.disasm = {
-	os << "zmwg" << LSP_TY(ty) << LSP_ACC(acc) << "s r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zmwg" << LSP_TY(ty) << LSP_ACC(acc) << "s " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zmwgias(ty=0,acc=1)

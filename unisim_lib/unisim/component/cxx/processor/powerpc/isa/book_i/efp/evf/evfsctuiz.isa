@@ -38,5 +38,5 @@ evfsctuiz.execute = {
 	return false;
 }
 evfsctuiz.disasm = {
-	os << "evfsctuiz r" << (unsigned int) rd << ", r" << (unsigned int) rb;
+	os << "evfsctuiz " << GPRPrint(rd) << ", " << GPRPrint(rb);
 }

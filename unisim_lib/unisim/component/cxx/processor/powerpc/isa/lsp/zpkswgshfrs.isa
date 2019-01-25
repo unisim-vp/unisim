@@ -39,5 +39,5 @@ zpkswgshfrs.execute = {
 	return false;
 }
 zpkswgshfrs.disasm = {
-	os << "zpkswgshfrs r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zpkswgshfrs " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

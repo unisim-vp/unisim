@@ -39,11 +39,11 @@ efststeq.execute = {
 		return false;
 
 	// Read the input operands
-	uint32_t ua( cpu->GetGPR(ra) ), ub( cpu->GetGPR(rb) );
-	SoftFloat a( ua ), b( ub );
+	U32 ua( cpu->GetGPR(ra) ), ub( cpu->GetGPR(rb) );
+	SoftFloat a( SoftFloat::FromRawBits, ua ), b( SoftFloat::FromRawBits, ub );
 
 	// Compute the result
-	bool result = unlikely(a.hasInftyExponent() or a.isDenormalized() or b.hasInftyExponent() or b.isDenormalized()) ? (ua == ub) : (a == b);
+	bool result = evenly(likely(a.isNormalized() and b.isNormalized()) ? (a == b) : (ua == ub));
 
 	// Write back the result in CR[bf] bit field
 	CR& cr = cpu->GetCR();
@@ -87,5 +87,5 @@ efststeq.execute = {
 }
 
 efststeq.disasm = {
-	os << "efststeq " << (unsigned int) bf << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efststeq " << (unsigned int) bf << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

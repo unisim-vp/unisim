@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,21 +33,17 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* AND Short Form */
 op se_and(17[6]:1[1]:rc[1]:sext sry[4]:sext srx[4]);
 se_and.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
 
 se_and.execute = {
 	// Read the input operands
-	uint32_t x = cpu->GetGPR(rx);
-	uint32_t y = cpu->GetGPR(ry);
+	UINT x = cpu->GetGPR(rx);
+	UINT y = cpu->GetGPR(ry);
 	
 	// Compute the result
-	uint32_t result = x & y;
+	UINT result = x & y;
 	
 	if(rc)
 	{
@@ -55,9 +51,9 @@ se_and.execute = {
 		XER& xer = cpu->GetXER();
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(int32_t( result) < int32_t( 0));
-		cr.Set<CR::CR0::GT>(int32_t( result) > int32_t( 0));
-		cr.Set<CR::CR0::EQ>(result == uint32_t( 0));
+		cr.Set<CR::CR0::LT>(SINT(result) < SINT(0));
+		cr.Set<CR::CR0::GT>(SINT(result) > SINT(0));
+		cr.Set<CR::CR0::EQ>(result == UINT(0));
 	}
 	
 	// Write back the result

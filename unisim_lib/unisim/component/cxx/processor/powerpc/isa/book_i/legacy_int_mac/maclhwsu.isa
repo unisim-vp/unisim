@@ -81,5 +81,5 @@ maclhwsu.execute = {
 }
 
 maclhwsu.disasm = {
-	os << "maclhwsu" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "maclhwsu" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

@@ -78,6 +78,10 @@ template <class MEMORY_ADDR, unsigned int ElfClass, class Elf_Ehdr, class Elf_Ph
 class ElfLoaderImpl
 {
 public:
+	typedef Elf_Ehdr Elf_Ehdr_type;
+	typedef Elf_Phdr Elf_Phdr_type;
+	typedef Elf_Shdr Elf_Shdr_type;
+	typedef Elf_Sym Elf_Sym_type;
 	
 	ElfLoaderImpl(const unisim::util::blob::Blob<MEMORY_ADDR> *blob = 0);
 	virtual ~ElfLoaderImpl();
@@ -145,41 +149,41 @@ private:
 	bool parse_dwarf;
 	bool debug_dwarf;
 	std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> no_stmts;
-	
-	void SwapElfHeader(Elf_Ehdr *hdr);
-	void SwapProgramHeader(Elf_Phdr *phdr);
-	void SwapSectionHeader(Elf_Shdr *shdr);
-	void AdjustElfHeader(Elf_Ehdr *hdr);
-	void AdjustProgramHeader(const Elf_Ehdr *hdr, Elf_Phdr *phdr);
-	void AdjustSectionHeader(const Elf_Ehdr *hdr, Elf_Shdr *shdr);
-	Elf_Ehdr *ReadElfHeader(std::istream& is);
-	Elf_Phdr *ReadProgramHeaders(const Elf_Ehdr *hdr, std::istream& is);
-	Elf_Shdr *ReadSectionHeaders(const Elf_Ehdr *hdr, std::istream& is);
-	const Elf_Shdr *GetNextSectionHeader(const Elf_Ehdr *hdr, const Elf_Shdr *shdr);
-	char *LoadSectionHeaderStringTable(const Elf_Ehdr *hdr, const Elf_Shdr *shdr_table, std::istream& is);
+private:
 	void DumpElfHeader(const Elf_Ehdr *hdr, std::ostream& os);
 	void DumpProgramHeader(const Elf_Phdr *phdr, std::ostream& os);
 	void DumpSectionHeader(const Elf_Shdr *shdr, const char *string_table, std::ostream& os);
 	void DumpSymbol(const Elf_Sym *sym, const char *string_table, std::ostream& os);
 	void DumpSymbolTable(const Elf_Shdr *shdr, const char *content, const char *string_table, std::ostream& os);
-	MEMORY_ADDR GetSectionSize(const Elf_Shdr *shdr);
-	MEMORY_ADDR GetSectionAddr(const Elf_Shdr *shdr);
-	MEMORY_ADDR GetSectionType(const Elf_Shdr *shdr);
-	MEMORY_ADDR GetSectionAlignment(const Elf_Shdr *shdr);
-	MEMORY_ADDR GetSectionLink(const Elf_Shdr *shdr);
-	bool LoadSection(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, void *buffer, std::istream& is);
-	MEMORY_ADDR GetSegmentType(const Elf_Phdr *phdr);
-	MEMORY_ADDR GetSegmentFlags(const Elf_Phdr *phdr);
-	MEMORY_ADDR GetSegmentMemSize(const Elf_Phdr *phdr);
-	MEMORY_ADDR GetSegmentFileSize(const Elf_Phdr *phdr);
-	MEMORY_ADDR GetSegmentAddr(const Elf_Phdr *phdr);
-	MEMORY_ADDR GetSegmentAlignment(const Elf_Phdr *phdr);
-	bool LoadSegment(const Elf_Ehdr *hdr, const Elf_Phdr *phdr, void *buffer, std::istream& is);
-	MEMORY_ADDR GetSectionFlags(const Elf_Shdr *shdr);
-	const char *GetSectionName(const Elf_Shdr *shdr, const char *string_table);
-	void DumpRawData(const void *content, MEMORY_ADDR size);
-	const char *GetArchitecture(const Elf_Ehdr *hdr) const;
-	uint8_t GetAddressSize(const Elf_Ehdr *hdr) const;
+	static void SwapProgramHeader(Elf_Phdr *phdr);
+	static void SwapSectionHeader(Elf_Shdr *shdr);
+	static void SwapElfHeader(Elf_Ehdr *hdr);
+public:	
+	static bool NeedEndianSwap(const Elf_Ehdr *hdr);
+	static Elf_Ehdr *ReadElfHeader(std::istream& is);
+	static Elf_Phdr *ReadProgramHeaders(const Elf_Ehdr *hdr, std::istream& is);
+	static Elf_Shdr *ReadSectionHeaders(const Elf_Ehdr *hdr, std::istream& is);
+	static const Elf_Shdr *GetNextSectionHeader(const Elf_Ehdr *hdr, const Elf_Shdr *shdr);
+	static char *LoadSectionHeaderStringTable(const Elf_Ehdr *hdr, const Elf_Shdr *shdr_table, std::istream& is);
+	static MEMORY_ADDR GetSectionSize(const Elf_Shdr *shdr);
+	static MEMORY_ADDR GetSectionAddr(const Elf_Shdr *shdr);
+	static MEMORY_ADDR GetSectionType(const Elf_Shdr *shdr);
+	static MEMORY_ADDR GetSectionAlignment(const Elf_Shdr *shdr);
+	static MEMORY_ADDR GetSectionLink(const Elf_Shdr *shdr);
+	static bool LoadSection(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, void *buffer, std::istream& is);
+	static MEMORY_ADDR GetSegmentType(const Elf_Phdr *phdr);
+	static MEMORY_ADDR GetSegmentFlags(const Elf_Phdr *phdr);
+	static MEMORY_ADDR GetSegmentMemSize(const Elf_Phdr *phdr);
+	static MEMORY_ADDR GetSegmentFileSize(const Elf_Phdr *phdr);
+  	MEMORY_ADDR GetSegmentAddr(const Elf_Phdr *phdr);
+	static MEMORY_ADDR GetSegmentAlignment(const Elf_Phdr *phdr);
+	static bool LoadSegment(const Elf_Ehdr *hdr, const Elf_Phdr *phdr, void *buffer, std::istream& is);
+	static MEMORY_ADDR GetSectionFlags(const Elf_Shdr *shdr);
+	static const char *GetSectionName(const Elf_Shdr *shdr, const char *string_table);
+	static void DumpRawData(const void *content, MEMORY_ADDR size);
+	static const char *GetArchitecture(const Elf_Ehdr *hdr);
+	static uint8_t GetAddressSize(const Elf_Ehdr *hdr);
+private:
 	std::ostream& GetDebugInfoStream() const;
 	std::ostream& GetDebugWarningStream() const;
 	std::ostream& GetDebugErrorStream() const;

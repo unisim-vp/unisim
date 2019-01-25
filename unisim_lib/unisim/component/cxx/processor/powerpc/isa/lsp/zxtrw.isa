@@ -35,7 +35,7 @@
 /* Extract word */
 op zxtrw(0b000100[6]:rd[5]:ra[5]:rb[5]:0b010011001[9]:offset[2]) /* offset in {01,10,11} */
 zxtrw.execute = {
-	if(unlikely(!offset))
+	if(unlikely(not offset))
 	{
 		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 		return false;
@@ -45,5 +45,5 @@ zxtrw.execute = {
 	return false;
 }
 zxtrw.disasm = {
-	os << "zxtrw r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb << ", " << (unsigned int) offset;
+	os << "zxtrw " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb) << ", " << (unsigned int) offset;
 }

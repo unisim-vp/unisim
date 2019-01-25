@@ -47,5 +47,5 @@ zaddd.execute = {
 	return false;
 }
 zaddd.disasm = {
-	os << "zaddd r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zaddd " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

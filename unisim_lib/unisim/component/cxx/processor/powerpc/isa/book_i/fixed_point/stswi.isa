@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,7 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op stswi(31[6]:rs[5]:ra[5]:nb[5]:725[10]:?[1])
+op stswi(31[6]:rs[5]:ra[5]:nb[5]:725[10]:?[1]);
+
 stswi.execute = {
 	ADDRESS ea = ra ? cpu->GetGPR(ra) : 0;
 
@@ -41,19 +42,16 @@ stswi.execute = {
 	while(n > 0)
 	{
 		uint32_t sz = (n > 4) ? 4 : n;
-		if(unlikely(!cpu->IntStoreMSBFirst(r, ea, sz))) return false;
+		if(unlikely(not cpu->IntStoreMSBFirst(r, ea, sz))) return false;
 		r = (r + 1) & 31;
 		ea += sz;
 		n -= sz;
 	}
 	
 	return true;
-}
+};
+
 stswi.disasm = {
-	os << "stswi r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", " << (unsigned int) nb;
-	if(cpu && (cpu->GetCIA() == this->GetAddr()))
-	{
-		ADDRESS ea = ra ? cpu->GetGPR(ra) : 0;
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+	os << "stswi " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << unsigned(nb);
+};
+

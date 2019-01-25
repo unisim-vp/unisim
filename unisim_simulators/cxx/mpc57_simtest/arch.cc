@@ -44,7 +44,6 @@ namespace ut
   void SourceReg::Repr( std::ostream& sink ) const { sink << 'r' << unsigned( reg ); }
   void MaskNode::Repr( std::ostream& sink ) const { sink << "Mask( " << mb << "," << me << " )"; }
   void CPU::LoadRepr( std::ostream& sink, Expr const& _addr, unsigned bits ) { sink << "Load<"<<bits<<">( " << _addr << " )"; }
-  void BadSource::Repr( std::ostream& sink ) const { sink << "BadSource( \"" << msg << "\" )"; }
   void MixNode::Repr( std::ostream& sink ) const { sink << "Mix( " << left << ", " << right << " )"; }
   void XER::XERNode::Repr( std::ostream& sink ) const { sink << "XER"; }
   void CR::CRNode::Repr( std::ostream& sink ) const { sink << "CR"; }
@@ -72,7 +71,7 @@ namespace ut
     : xer(0), cr(0), spefscr(0), base_register(-1), aligned(false), mem_writes(false), length(op.GetLength()), retfalse(false)
   {
     bool has_valid_path = false;
-    for (PathNode path_root;;)
+    for (ActionNode path_root;;)
       {
         CPU cpu( *this, path_root );
         
@@ -348,59 +347,16 @@ namespace ut
 
   void  CPU::donttest_system()  { throw ut::Untestable("system"); }
   
-  void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, U8 carry_in)
-  {
-    U32 res = x + y + U32(carry_in);
-    U32 carry31 = ((x & y) | ((res ^ x ^ y) & (x | y)));
-    carry_out = U8((carry31 >> 31) & U32(1));
-    result = res;
-    sign = U8(S32(res) > S32(0));
-    overflow = U8(((carry31 ^ (res ^ x ^ y)) >> 31) & U32(1));
-  }
+  // void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, U8 carry_in)
+  // {
+  //   U32 res = x + y + U32(carry_in);
+  //   U32 carry31 = ((x & y) | ((res ^ x ^ y) & (x | y)));
+  //   carry_out = U8((carry31 >> 31) & U32(1));
+  //   result = res;
+  //   sign = U8(S32(res) > S32(0));
+  //   overflow = U8(((carry31 ^ (res ^ x ^ y)) >> 31) & U32(1));
+  // }
   
   inline U32 Mask(U32 mb, U32 me) { return U32(new MaskNode( mb.expr, me.expr )); }
 
-  PathNode::PathNode( PathNode* _previous )
-    : cond(), previous( _previous ), true_nxt(), false_nxt(), complete(false)
-  {}
-    
-  PathNode::~PathNode()
-  {
-    delete false_nxt;
-    delete true_nxt;
-  }
-    
-  bool
-  PathNode::proceed( Expr const& _cond )
-  {
-    if (not cond.node) {
-      cond = _cond;
-      false_nxt = new PathNode( this );
-      true_nxt = new PathNode( this );
-      return false;
-    }
-      
-    if (cond != _cond)
-      throw std::logic_error( "unexpected condition" );
-      
-    if (not false_nxt->complete)
-      return false;
-      
-    if (true_nxt->complete)
-      throw std::logic_error( "unexpected condition" );
-    
-    return true;
-  }
-    
-  bool
-  PathNode::close()
-  {
-    complete = true;
-    if (not previous)
-      return true;
-    if (previous->true_nxt == this)
-      return previous->close();
-    return false;
-  }
-    
 } // end of namespace ut

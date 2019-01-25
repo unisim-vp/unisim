@@ -53,7 +53,7 @@ zlhhsplat.execute = {
 	return false;
 }
 zlhhsplat.disasm = {
-	os << "zlhhsplat" << (u ? "u" : "") << " r" << (unsigned int) rd << ", " << displacement << "(r" << (unsigned int) ra << ")";
+	os << "zlhhsplat" << (u ? "u" : "") << " " << GPRPrint(rd) << ", " << displacement << "(" << GPRPrint(ra) << ")";
 }
 
 specialize zlhhsplat(u=0)

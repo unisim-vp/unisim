@@ -53,7 +53,7 @@ zlwhoud.execute = {
 	return false;
 }
 zlwhoud.disasm = {
-	os << "zlwhoud" << (u ? "u" : "") << " r" << (unsigned int) rd << ", " << displacement << "(r" << (unsigned int) ra << ")";
+	os << "zlwhoud" << (u ? "u" : "") << " " << GPRPrint(rd) << ", " << displacement << "(" << GPRPrint(ra) << ")";
 }
 
 specialize zlwhoud(u=0)

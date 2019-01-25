@@ -58,7 +58,7 @@ struct Arch
   {
     for (int idx = 0; idx < 8; ++idx) {
       std::ostringstream regname;
-      regname << unisim::component::cxx::processor::intel::DisasmRd(idx);
+      regname << unisim::component::cxx::processor::intel::DisasmGd(idx);
       regmap[regname.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(regname.str(), &m_regs[idx]);
     }
     regmap["%eip"] = new unisim::util::debug::SimpleRegister<uint32_t>("%eip", &m_EIP);
@@ -222,7 +222,6 @@ main( int argc, char *argv[] )
     }
   
   std::cerr << "Program exited with status:" << linux32.app_ret_status << std::endl;
-  //  dtlib::osprintf( std::cerr, "Executed instructions: %lld\n", cpu.m_instcount );
   
   
   return 0;

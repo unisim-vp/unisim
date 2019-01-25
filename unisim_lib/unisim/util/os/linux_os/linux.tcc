@@ -236,7 +236,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(char const * const filenam
         << "without handling file." << std::endl;
     return false;
   }
-
+  
   // check that the file exists and that the elf loader can create a blob from it
   
   typename unisim::util::loader::elf_loader::StdElf<ADDRESS_TYPE,PARAMETER_TYPE>::Loader loader;
@@ -338,7 +338,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStderrPipeFilename(const char *filename)
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 unisim::service::interfaces::Register*
-Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetDebugRegister( char const* regname )
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetDebugRegister( char const* regname ) const
 {
   if (not regname) return 0;
   
@@ -356,44 +356,57 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetDebugRegister( char const* regname )
   return reg;
 }
 
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>:: TargetSystem::ReadMemory( Linux& lin, ADDRESS_TYPE addr, PARAMETER_TYPE* value )
+{
+  if (not lin.mem_if_->ReadMemory(addr, (uint8_t *)value, sizeof(PARAMETER_TYPE)) )
+    return false;
+  
+  *value = Target2Host(lin.GetEndianness(), *value);
+  return true;
+}
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem::GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE * const value )
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetTargetRegister( char const* regname, PARAMETER_TYPE& value ) const
 {
-  if (unisim::service::interfaces::Register* reg = lin.GetDebugRegister(regname)) {
-    if (reg->GetSize() != sizeof(PARAMETER_TYPE)) {
-      lin.debug_error_stream << "Bad register size for " << regname << std::endl;
-      return false;
+  if (unisim::service::interfaces::Register* reg = GetDebugRegister(regname))
+    {
+      if (reg->GetSize() == sizeof(PARAMETER_TYPE))
+        {
+          reg->GetValue(&value);
+          return true;
+        }
+        debug_error_stream << "Bad register size for " << regname << std::endl;
     }
   
-    reg->GetValue(value);
-    return true;
-  }
   return false;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem::SetRegister( Linux& lin, char const* regname, PARAMETER_TYPE value )
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetTargetRegister( char const* regname, PARAMETER_TYPE value ) const
 {
-  if (unisim::service::interfaces::Register* reg = lin.GetDebugRegister(regname)) {
-    if (reg->GetSize() != sizeof(PARAMETER_TYPE)) {
-      lin.debug_error_stream << "Bad register size for " << regname << std::endl;
-      return false;
+  if (unisim::service::interfaces::Register* reg = GetDebugRegister(regname))
+    {
+      if (reg->GetSize() == sizeof(PARAMETER_TYPE))
+        {
+          reg->SetValue(&value);
+          return true;
+        }
+      debug_error_stream << "Bad register size for " << regname << std::endl;
     }
-    
-    reg->SetValue(&value);
-    return true;
-  }
+  
   return false;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem::ClearRegister( Linux& lin, char const* regname )
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ClearTargetRegister( char const* regname ) const
 {
-  if (unisim::service::interfaces::Register* reg = lin.GetDebugRegister(regname)) {
-    reg->Clear();
-    return true;
-  }
+  if (unisim::service::interfaces::Register* reg = GetDebugRegister(regname))
+    {
+      reg->Clear();
+      return true;
+    }
+  
   return false;
 }
 
@@ -447,6 +460,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 		debug_info_stream
 			<< "Setting the system blob." << std::endl;
 	}
+        // Add target dependant Segments
 	if (not target_system->SetSystemBlob(blob))
 	{
 		// TODO: Remove non finished state (i.e., unfinished
@@ -603,6 +617,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LogSystemCall(int id)
     debug_info_stream << ", " << "unstranslated id=" << id;
 
   debug_info_stream << "): " << sc->TraceCall( *this ) << std::endl;
+  sc->Release();
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -998,7 +1013,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(unisim::util::blob::Blob<A
     }
     // and finally we put argc into the stack
     ADDRESS_TYPE argc_top = sp;
-    ADDRESS_TYPE argc_value = Host2Target(endianness_, argc_);
+    ADDRESS_TYPE argc_value = Host2Target(endianness_, ADDRESS_TYPE(argc_));
     sp -= sizeof(argc_value);
     if(pass == 2) memcpy(stack_data + sp, &argc_value, sizeof(argc_value));
     ADDRESS_TYPE argc_bottom = sp;

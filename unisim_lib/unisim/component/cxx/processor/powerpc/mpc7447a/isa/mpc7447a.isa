@@ -70,6 +70,10 @@ include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addme.isa
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addze.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divw.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divwu.isa"
+
+divw.var DZResult : {struct { S32 operator () ( S32 a, S32 b ) { return S32(0); } }};
+divwu.var DZResult : {struct { U32 operator () ( U32 a, U32 b ) { return U32(0); } }};
+
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulhw.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulhwu.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulli.isa"

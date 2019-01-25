@@ -56,7 +56,7 @@ zmwluis.execute = {
 	return false;
 }
 zmwluis.disasm = {
-	os << "zmwlui" << LSP_ACC(acc) << "s r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zmwlui" << LSP_ACC(acc) << "s " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zmwluis(acc=0)

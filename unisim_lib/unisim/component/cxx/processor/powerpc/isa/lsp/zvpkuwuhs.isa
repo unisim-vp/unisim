@@ -39,5 +39,5 @@ zvpkuwuhs.execute = {
 	return false;
 }
 zvpkuwuhs.disasm = {
-	os << "zvpkuwuhs r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zvpkuwuhs " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

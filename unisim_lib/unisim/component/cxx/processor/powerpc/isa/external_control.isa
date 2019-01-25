@@ -44,7 +44,7 @@ eciwx.execute = {
 	return false;
 }
 eciwx.disasm = {
-	os << "eciwx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "eciwx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op ecowx(31[6]:rs[5]:ra[5]:rb[5]:438[10]:?[1])
@@ -53,5 +53,5 @@ ecowx.execute = {
 	return false;
 }
 ecowx.disasm = {
-	os << "ecowx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "ecowx " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

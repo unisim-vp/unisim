@@ -41,5 +41,5 @@ icbt.execute = {
 	return cpu->Icbt(ea);
 }
 icbt.disasm = {
-	os << "icbt r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "icbt " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

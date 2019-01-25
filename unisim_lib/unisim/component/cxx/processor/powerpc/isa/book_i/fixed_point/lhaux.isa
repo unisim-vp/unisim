@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,7 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lhaux(31[6]:rd[5]:ra[5]:rb[5]:375[10]:?[1])
+/* Load Halfword Algebraic with Update */
+op lhaux(31[6]:rd[5]:ra[5]:rb[5]:375[10]:?[1]);
+
 lhaux.execute = {
 	if (unlikely((ra == 0) or (ra == rd)))
 	{
@@ -42,12 +44,14 @@ lhaux.execute = {
 	// compute the effective address
 	ADDRESS ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 	// do the memory access
-	if(unlikely(!cpu->SInt16Load(rd, ea))) return false; // 16-bit load/no byte reverse/sign extend
+	if(unlikely(not cpu->SInt16Load(rd, ea))) return false; // 16-bit load/no byte reverse/sign extend
 	// update the address register
 	cpu->SetGPR(ra, ea);
 	
 	return true;
-}
+};
+
 lhaux.disasm = {
-	os << "lhaux r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-}
+	os << "lhaux " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
+};
+

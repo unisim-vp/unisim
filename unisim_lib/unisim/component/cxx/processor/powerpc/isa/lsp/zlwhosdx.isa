@@ -51,7 +51,7 @@ zlwhosdx.execute = {
 	return false;
 }
 zlwhosdx.disasm = {
-	os << "zlwhosd" << (m ? "m" : "") << "x r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zlwhosd" << (m ? "m" : "") << "x " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zlwhosdx(m=0)

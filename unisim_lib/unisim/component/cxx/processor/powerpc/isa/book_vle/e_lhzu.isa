@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,10 +33,6 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Load Halfword and Zero with Update */
 op e_lhzu(6[6]:rd[5]:ra[5]:1[8]:sext d[8]);
 
@@ -47,9 +43,9 @@ e_lhzu.execute = {
 		return false;
 	}
 	// compute the effective address
-	ADDRESS ea = cpu->GetGPR(ra) + uint32_t( d);
+	ADDRESS ea( cpu->GetGPR(ra) + UINT(d) );
 	// do the memory access
-	if(unlikely(!cpu->Int16Load(rd, ea))) return false; // 16-bit load/no byte reverse/no sign extend
+	if(unlikely(not cpu->Int16Load(rd, ea))) return false; // 16-bit load/no byte reverse/no sign extend
 	// update the address register
 	cpu->SetGPR(ra, ea);
 	

@@ -11,9 +11,8 @@ if [ -z "$1" ]; then
 fi
 
 MY_DIR=$(cd $(dirname $0); pwd)
-DEST_DIR=$1
-mkdir -p ${DEST_DIR}
-DEST_DIR=$(cd $DEST_DIR; pwd)
+mkdir -p "$1"
+DEST_DIR=$(cd "$1"; pwd)
 UNISIM_DIR=$(cd ${MY_DIR}/..; pwd)
 UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
 UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
@@ -162,10 +161,12 @@ unisim/util/endian/endian.hh \
 unisim/util/inlining/inlining.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/symbolic/symbolic.hh \
+unisim/util/symbolic/identifier.hh \
 unisim/util/random/random.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
+unisim/component/cxx/processor/arm/isa/decode.hh \
 unisim/component/cxx/processor/arm/models.hh \
 unisim/component/cxx/processor/arm/psr.hh \
 unisim/component/cxx/processor/arm/register_field.hh \

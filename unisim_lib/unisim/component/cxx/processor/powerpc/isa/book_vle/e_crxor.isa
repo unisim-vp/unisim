@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,28 +33,26 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Condition Register XOR */
-op e_crxor(31[6]:crbd[5]:crba[5]:crbb[5]:193[10]:0[1]);
+op e_crxor(31[6]:bt[5]:ba[5]:bb[5]:193[10]:0[1]);
 
 e_crxor.execute = {
-	uint32_t a, b, c, d, m;
+	// Read the input operands
 	CR& cr = cpu->GetCR();
-	c = cr;
-	a = c << crba;
-	b = c << crbb;
-	d = (a ^ b) >> crbd;
-	m = uint32_t( 0x80000000UL >> crbd);
-	cr = (c & ~m) | (d & m);
+	UINT const mask(0x80000000 >> bt), source(cr);
+
+	// Compute the result
+	UINT result = (source & ~mask) | (mask & (((source << ba) ^ (source << bb)) >> bt));
+	
+	// Write back the result
+	cr = result;
+	
 	return true;
-}
+};
 
 e_crxor.disasm = {
-	if ((crbd==crba) and (crba==crbb))
-		os << "e_crclr " << CondPrint(crbd);
+	if ((bt==ba) and (ba==bb))
+		os << "e_crclr " << CondPrint(bt);
 	else
-		os << "e_crxor " << CondPrint(crbd) << ',' << CondPrint(crba) << ',' << CondPrint(crbb);
-}
+		os << "e_crxor " << CondPrint(bt) << ',' << CondPrint(ba) << ',' << CondPrint(bb);
+};

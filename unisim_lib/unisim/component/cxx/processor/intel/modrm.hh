@@ -51,11 +51,11 @@ namespace intel {
   template <class ARCH>
   struct MOp
   {
-    typedef typename ARCH::u32_t u32_t;
+    typedef typename ARCH::addr_t addr_t;
     MOp( uint8_t _segment ) : segment( _segment ) {} uint8_t segment;
     virtual ~MOp() {}
     virtual void  disasm_memory_operand( std::ostream& _sink ) const { throw 0; };
-    virtual u32_t effective_address( ARCH& _arch ) const { throw 0; return u32_t( 0 ); };
+    virtual addr_t effective_address( ARCH& _arch ) const { throw 0; return addr_t( 0 ); };
   };
   
   template <class ARCH>
@@ -72,10 +72,9 @@ namespace intel {
     MOp<ARCH> const* operator -> () const { return mop; }
     // operator MOp<ARCH> const* () const { return mop; }
     MOp<ARCH> const* memop() const { return mop; }
+    MOp<ARCH> const* release() const { MOp<ARCH> const* res = 0; std::swap( mop, res ); return res; }
     unsigned ereg() const { return unsigned( uintptr_t( mop ) ); }
   };
-
-
   
 } // end of namespace intel
 } // end of namespace processor

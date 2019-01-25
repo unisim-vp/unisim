@@ -49,7 +49,7 @@ nop.disasm = {
 };
 
 nop.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
+  if (unlikely( not CheckCondition(cpu, cond) )) return;
 };
 
 /*

@@ -38,10 +38,5 @@ tlbli.execute = {
 	return cpu->Tlbli(ea);
 }
 tlbli.disasm = {
-	os << "tlbli r" << (unsigned int) rb;
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t ea = cpu->GetGPR(rb);
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
+	os << "tlbli " << GPRPrint(rb);
 }

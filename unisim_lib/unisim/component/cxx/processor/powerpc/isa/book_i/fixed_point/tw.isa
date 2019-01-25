@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,16 +32,19 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-op tw(31[6]:to[5]:ra[5]:rb[5]:4[10]:?[1])
+/* Trap Word */
+op tw(31[6]:to[5]:ra[5]:rb[5]:4[10]:?[1]);
+
 tw.execute = {
-	int32_t a = int32_t( cpu->GetGPR(ra));
-	int32_t b = int32_t( cpu->GetGPR(rb));
+	S32 a( cpu->GetGPR(ra) );
+	S32 b( cpu->GetGPR(rb) );
+	
 	bool trap = false;
-	if((to & 16) and (a < b)) trap = true;
-	if((to &  8) and (a > b)) trap = true;
-	if((to &  4) and (a == b)) trap = true;
-	if((to &  2) and (int32_t( a) < int32_t( b))) trap = true;
-	if((to &  1) and (int32_t( a) > int32_t( b))) trap = true;
+	if((to & 16) and evenly(a < b))           trap = true;
+	if((to &  8) and evenly(a > b))           trap = true;
+	if((to &  4) and evenly(a == b))          trap = true;
+	if((to &  2) and evenly(U32(a) < U32(b))) trap = true;
+	if((to &  1) and evenly(U32(a) > U32(b))) trap = true;
 	
 	if(unlikely(trap))
 	{
@@ -49,7 +52,9 @@ tw.execute = {
 		return false;
 	}
 	return true;
-}
+};
+
 tw.disasm = {
-	os << "tw " << (unsigned int) to << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-}
+	os << "tw " << unsigned(to) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
+};
+

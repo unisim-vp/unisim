@@ -764,58 +764,16 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustElfHeader(Elf_Ehdr *hdr)
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::NeedEndianSwap(const Elf_Ehdr *hdr)
 {
-	switch(hdr->e_ident[EI_DATA])
-	{
-		case ELFDATA2LSB:
 #if BYTE_ORDER == BIG_ENDIAN
-			SwapElfHeader(hdr);
+	return hdr->e_ident[EI_DATA] == ELFDATA2LSB;
 #endif
-			break;
-		case ELFDATA2MSB:
-#if BYTE_ORDER == LITTLE_ENDIAN
-			SwapElfHeader(hdr);
-#endif
-			break;
-	}
-}
 
-
-template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustProgramHeader(const Elf_Ehdr *hdr, Elf_Phdr *phdr)
-{
-	switch(hdr->e_ident[EI_DATA])
-	{
-		case ELFDATA2LSB:
-#if BYTE_ORDER == BIG_ENDIAN
-			SwapProgramHeader(phdr);
-#endif
-			break;
-		case ELFDATA2MSB:
 #if BYTE_ORDER == LITTLE_ENDIAN
-			SwapProgramHeader(phdr);
+	return hdr->e_ident[EI_DATA] == ELFDATA2MSB;
 #endif
-			break;
-	}
-}
-
-template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustSectionHeader(const Elf_Ehdr *hdr, Elf_Shdr *shdr)
-{
-	switch(hdr->e_ident[EI_DATA])
-	{
-		case ELFDATA2LSB:
-#if BYTE_ORDER == BIG_ENDIAN
-			SwapSectionHeader(shdr);
-#endif
-			break;
-		case ELFDATA2MSB:
-#if BYTE_ORDER == LITTLE_ENDIAN
-			SwapSectionHeader(shdr);
-#endif
-			break;
-	}
+	return false;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -842,8 +800,9 @@ Elf_Ehdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, El
 		free(hdr);
 		return 0;
 	}
-
-	AdjustElfHeader(hdr);
+	
+	if (NeedEndianSwap(hdr))
+		SwapElfHeader(hdr);
 
 	return hdr;
 }
@@ -854,7 +813,6 @@ Elf_Phdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, El
 {
 	if(hdr->e_phnum > 0)
 	{
-		int i;
 		unsigned long sz;
 		Elf_Phdr *phdr;
 
@@ -870,9 +828,10 @@ Elf_Phdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, El
 			free(phdr);
 			return 0;
 		}
-	
-		for(i = 0; i < hdr->e_phnum; i++)
-			AdjustProgramHeader(hdr, phdr + i);
+		
+		if (NeedEndianSwap(hdr))
+			for(int i = 0; i < hdr->e_phnum; i++)
+				SwapProgramHeader(phdr + i);
 	
 		return phdr;
 	}
@@ -882,7 +841,6 @@ Elf_Phdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, El
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 Elf_Shdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadSectionHeaders(const Elf_Ehdr *hdr, std::istream& is)
 {
-	int i;
 	if(hdr->e_shnum)
 	{
 		unsigned long sz = hdr->e_shnum * hdr->e_shentsize;
@@ -899,8 +857,10 @@ Elf_Shdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, El
 			return 0;
 		}
 	
-		for(i = 0; i < hdr->e_shnum; i++)
-			AdjustSectionHeader(hdr, (Elf_Shdr *)((uint8_t *) shdr + (i * hdr->e_shentsize))); // Note: "shdr + i" is not a way to walk through the table if hdr->e_shentsize != sizeof(Elf_Shdr)
+		// Note: "shdr + i" is not a way to walk through the table if hdr->e_shentsize != sizeof(Elf_Shdr)
+		if (NeedEndianSwap(hdr))
+			for(int i = 0; i < hdr->e_shnum; i++)
+				SwapSectionHeader((Elf_Shdr *)((uint8_t *) shdr + (i * hdr->e_shentsize)));
 	
 		return shdr;
 	}
@@ -1530,7 +1490,7 @@ const unisim::util::debug::SubProgram<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, E
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const char *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetArchitecture(const Elf_Ehdr *hdr) const
+const char *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetArchitecture(const Elf_Ehdr *hdr)
 {
 	switch(hdr->e_machine)
 	{
@@ -1689,7 +1649,7 @@ const char *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, 
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-uint8_t ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetAddressSize(const Elf_Ehdr *hdr) const
+uint8_t ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetAddressSize(const Elf_Ehdr *hdr)
 {
 	switch(hdr->e_machine)
 	{

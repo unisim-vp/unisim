@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,38 +32,37 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lfdux(31[6]:fd[5]:ra[5]:rb[5]:631[10]:?[1])
+/* Load Floating-Point Double with Update Indexed */
+op lfdux(31[6]:fd[5]:ra[5]:rb[5]:631[10]:?[1]);
+
 lfdux.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 		return false;
 	}
 	if(unlikely(ra == 0))
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 		return false;
 	}
-	if(unlikely(!cpu->GetMSR_FP()))
+	if(unlikely(not cpu->GetMSR_FP()))
 	{
-		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		cpu->ThrowException<CPU::FloatingPointUnavailableInterrupt::FloatingPointUnavailable>();
 		return false;
-	}	
+	}
 
 	// compute the effective address
-	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
+	ADDRESS ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 
-	if(unlikely(!cpu->Fp64Load(fd, ea))) return false;
+	if(unlikely(not cpu->Fp64Load(fd, ea))) return false;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 	
 	return true;
-}
+};
+
 lfdux.disasm = {
-	os << "lfdux f" << (unsigned int) fd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+	os << "lfdux " << FPRPrint(fd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
+};
+

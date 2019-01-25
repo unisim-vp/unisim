@@ -32,74 +32,59 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op bclr(19[6]: bo[5]: bi[5]:?[5]:16[10]:lk[1])
+/* Branch Conditional to Link Register */
+op bclr(19[6]: bo[5]: bi[5]:?[5]:16[10]:lk[1]);
+
 bclr.execute = {
-	int ctr_ok, cond_ok ;
-	if(((bo & 16) == 0)) {
+	BOOL ctr_ok = BOOL(true), cond_ok = BOOL(true);
+	
+	if (((bo & 16) == 0))
+	{
 		/* Conditional branch */
 		if(bo & 8) {
 			/* Branch if condition is true */
-			cond_ok = ((cpu->GetCR() << bi) & 0x80000000) != 0;
+			cond_ok = ((U32(cpu->GetCR()) << bi) & U32(0x80000000)) != U32(0);
 		}
 		else {
 			/* Branch if condition is false */
-			cond_ok = ((cpu->GetCR() << bi) & 0x80000000) == 0;
+			cond_ok = ((U32(cpu->GetCR()) << bi) & U32(0x80000000)) == U32(0);
 		}
 	}
-	else {
-		cond_ok = 1;
-	}
-	if((bo & 4) == 0)
+	
+	if ((bo & 4) == 0)
 	{
 		/* Decrement CTR */
-		cpu->SetCTR(cpu->GetCTR() - 1);
+		CTR& ctr = cpu->GetCTR();
+		ctr = UINT(ctr) - UINT(1);
 		/* Test whether to branch if CTR is zero or not */
 		if(bo & 2) {
-			ctr_ok = cpu->GetCTR() == 0;
+			ctr_ok = UINT(cpu->GetCTR()) == UINT(0);
 		}
 		else {
-			ctr_ok = cpu->GetCTR() != 0;
+			ctr_ok = UINT(cpu->GetCTR()) != UINT(0);
 		}
 	}
-	else {
-		ctr_ok = 1;
-	}
 
-	if(ctr_ok && cond_ok) {
-		typename CONFIG::address_t target_addr = cpu->GetLR() & 0xfffffffc;
+	if (evenly(ctr_ok and cond_ok)) {
+		ADDRESS target_addr( UINT(cpu->GetLR()) & UINT(-4) );
 		cpu->Branch(target_addr);
 	}
-	if(lk) cpu->SetLR(cpu->GetCIA() + 4);
+	if (lk) cpu->GetLR() = ADDRESS( cpu->GetCIA() + UINT(4) );
 	
 	return true;
-}
+};
+
 bclr.disasm = {
-	switch(bo)
-	{
-		case 0: os << "bdnzflr"; break;
-		case 2: os << "bdzflr"; break;
-		case 4: os << "bflr"; break;
-		case 8: os << "bdnztlr"; break;
-		case 10: os << "bdztlr"; break;
-		case 12: os << "btlr"; break;
-		case 16: os << "bdnzlr"; break;
-		case 18: os << "bdzlr"; break;
-		case 20: os << "blr"; break;
-		default: os << "bclr"; break;
-	}
-	if(lk) os << "l";
-	switch(bo)
-	{
-		case 0: case 2: case 4: case 8: case 10: case 12: os << " " << (unsigned int) bi; break;
-		case 16: case 18: case 20: break;
-		default: os << " " << (unsigned int) bo << ", " << (unsigned int) bi;
-	}
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t target_addr = cpu->GetLR() & 0xfffffffc;
-		os << " <" << cpu->GetFunctionFriendlyName(target_addr) << ">";
-	}
-}
+	bool cr = (bo & 16) == 0, dc = (bo & 4) == 0;
+	os << "b";
+	if (dc) os << ((bo & 2) ? "dz" : "dnz");
+	if (cr) os << CondPrint(bi & 3,bo & 8);
+	if (lk) os << "l";
+	os << "lr ";
+	if      (cr) { if (unsigned crn = bi >> 2) os << CRPrint(crn); }
+	else if (dc) { os << unsigned(bi); }
+	else         { os << unsigned(bo) << ", " << unsigned(bi); }
+};
 
 specialize bclr(bo=0,aa=2,lk=0)
 specialize bclr(bo=0,aa=2,lk=1)

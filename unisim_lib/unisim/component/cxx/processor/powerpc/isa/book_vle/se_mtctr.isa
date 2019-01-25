@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,21 +33,22 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Move To Count Register */
 op se_mtctr(0[6]:11[6]:sext srx[4]);
 se_mtctr.var rx : {uint8_t} = {srx & 31};
 
 se_mtctr.execute = {
-	uint32_t result = cpu->GetGPR(rx);
+	// Compute the result
+	UINT result( cpu->GetGPR(rx) );
+	
+	// Write back the result
 	CTR& ctr = cpu->GetCTR();
 	ctr = result;
+	
 	return true;
-}
+};
 
 se_mtctr.disasm = {
 	os << "se_mtctr " << GPRPrint(rx);
-}
+};
+

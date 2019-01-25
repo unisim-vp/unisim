@@ -101,9 +101,6 @@ namespace linux_os {
     typedef typename LINUX::address_type address_type;
     typedef typename LINUX::parameter_type parameter_type;
     typedef typename LINUX::UTSName UTSName;
-    using LINUX::TargetSystem::SetRegister;
-    using LINUX::TargetSystem::GetRegister;
-    using LINUX::TargetSystem::ClearRegister;
     using LINUX::TargetSystem::lin;
     using LINUX::TargetSystem::name;
     
@@ -204,7 +201,7 @@ namespace linux_os {
           "r8",  "r9", "sl", "fp", "ip", "sp", "lr"
         };
         for (int idx = sizeof(clear_registers)/sizeof(clear_registers[0]); --idx >= 0;)
-          if (not ClearRegister(lin, clear_registers[idx]))
+          if (not lin.ClearTargetRegister(clear_registers[idx]))
             return false;
       } 
       
@@ -217,7 +214,7 @@ namespace linux_os {
       // AIF <- 0
       // T <- 0 (will be overwritten as a side effect of PC assignment, below)
       // M <- 0b10000 /* USER_MODE */
-      if (not SetRegister(lin, "cpsr", 0x00000010))
+      if (not lin.SetTargetRegister("cpsr", 0x00000010))
         return false;
       
       /* We need to set SCTLR and CPACR as a standard linux would have done. We
@@ -226,7 +223,7 @@ namespace linux_os {
        */
       {
         uint32_t sctlr;
-        if (not GetRegister(lin, "sctlr", &sctlr))
+        if (not lin.GetTargetRegister("sctlr", sctlr))
           return false;
         {
           uint32_t const I = 1<<12;
@@ -237,14 +234,14 @@ namespace linux_os {
           sctlr |=  C; // Cache enable
           sctlr &= ~A; // Alignment check disable
         }
-        if (not SetRegister(lin, "sctlr", sctlr))
+        if (not lin.SetTargetRegister("sctlr", sctlr))
           return false;
-        if (not SetRegister(lin, "cpacr", 0x00f00000))
+        if (not lin.SetTargetRegister("cpacr", 0x00f00000))
           return false;
       }
       
       // Set PC to the program entry point
-      if (not SetRegister(lin, kARM_pc, lin.GetEntryPoint()))
+      if (not lin.SetTargetRegister(kARM_pc, lin.GetEntryPoint()))
         return false;
       // Set SP to the base of the created stack
       unisim::util::blob::Section<address_type> const * sp_section =
@@ -253,7 +250,7 @@ namespace linux_os {
         lin.DebugErrorStream() << "Could not find the stack pointer section." << std::endl;
         return false;
       }
-      if (not SetRegister(lin, kARM_sp, sp_section->GetAddr()))
+      if (not lin.SetTargetRegister(kARM_sp, sp_section->GetAddr()))
         return false;
       address_type par1_addr = sp_section->GetAddr() + 4;
       address_type par2_addr = sp_section->GetAddr() + 8;
@@ -261,14 +258,14 @@ namespace linux_os {
       parameter_type par2 = 0;
       if (not this->MemIF().ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)) or
           not this->MemIF().ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2)) or
-          not SetRegister(lin, kARM_r1, Target2Host(lin.GetEndianness(), par1)) or
-          not SetRegister(lin, kARM_r2, Target2Host(lin.GetEndianness(), par2)))
+          not lin.SetTargetRegister(kARM_r1, Target2Host(lin.GetEndianness(), par1)) or
+          not lin.SetTargetRegister(kARM_r2, Target2Host(lin.GetEndianness(), par2)))
         return false;
           
       return true;
     }
     
-    static void SetARMSystemCallStatus(LINUX& _lin, int ret, bool error) { SetRegister(_lin, kARM_r0, (parameter_type) ret); }
+    static void SetARMSystemCallStatus(LINUX& _lin, int ret, bool error) { _lin.SetTargetRegister(kARM_r0, (parameter_type) ret); }
     
     void SetSystemCallStatus(int64_t ret, bool error) const { SetARMSystemCallStatus( lin, ret, error ); }
     
@@ -277,13 +274,13 @@ namespace linux_os {
       parameter_type val = 0;
           
       switch (id) {
-      case 0: GetRegister(_lin, kARM_r0, &val); break;
-      case 1: GetRegister(_lin, kARM_r1, &val); break;
-      case 2: GetRegister(_lin, kARM_r2, &val); break;
-      case 3: GetRegister(_lin, kARM_r3, &val); break;
-      case 4: GetRegister(_lin, kARM_r4, &val); break;
-      case 5: GetRegister(_lin, kARM_r5, &val); break;
-      case 6: GetRegister(_lin, kARM_r6, &val); break;
+      case 0: _lin.GetTargetRegister(kARM_r0, val); break;
+      case 1: _lin.GetTargetRegister(kARM_r1, val); break;
+      case 2: _lin.GetTargetRegister(kARM_r2, val); break;
+      case 3: _lin.GetTargetRegister(kARM_r3, val); break;
+      case 4: _lin.GetTargetRegister(kARM_r4, val); break;
+      case 5: _lin.GetTargetRegister(kARM_r5, val); break;
+      case 6: _lin.GetTargetRegister(kARM_r6, val); break;
       default: throw std::logic_error("internal_error");
       }
           
@@ -562,7 +559,7 @@ namespace linux_os {
         {
           // The arm eabi ignores the supplied id and uses register 7
           parameter_type id_from_reg;
-          if (not GetRegister(lin, kARM_r7, &id_from_reg))
+          if (not lin.GetTargetRegister(kARM_r7, id_from_reg))
             return 0;
           id = int(id_from_reg);
         }
@@ -1261,7 +1258,7 @@ namespace linux_os {
           void Describe( LINUX& lin, std::ostream& sink ) const
           {
             uint32_t addr = GetSystemCallParam(lin, 0);
-            address_type buf = GetSystemCallParam(lin, 1);
+            //address_type buf = GetSystemCallParam(lin, 1);
             sink << "(void *tls_addr=" << std::hex << addr << std::dec << ")";
           }
           void Execute( LINUX& lin, int syscall_id ) const

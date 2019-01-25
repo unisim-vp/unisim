@@ -88,44 +88,66 @@ namespace intel {
     enum {ES=0, CS=1, SS=2, DS=3, FS=4, GS=5};
     
     /*** PreDecoded ***/
-    uint32_t adsz_67  : 1; /* grp4 */
-    uint32_t opsz_66  : 1; /* grp3 */
-    uint32_t lock_f0  : 1; /* grp1.lock */
-    uint32_t segment  : 3; /* grp2 */
-    uint32_t rep      : 2; /* grp1.rep {0: None, 2: F2, 3: F3} */
-    uint32_t opc_idx  : 4;
-    
-    CodeBase( Mode _mode, uint8_t const* _bytes )
-      : bytes( _bytes ), mode( _mode ),
-        adsz_67( 0 ), opsz_66( 0 ), lock_f0( 0 ), segment( DS ), rep( 0 ), opc_idx( 0 )
+    uint32_t adsz_67        : 1; /* grp4 */
+    uint32_t opsz_66        : 1; /* grp3 */
+    uint32_t lock_f0        : 1; /* grp1.lock */
+    uint32_t segment        : 3; /* grp2 */
+    uint32_t rep            : 2; /* grp1.rep {0: None, 2: F2, 3: F3} */
+    uint32_t opcode_offset  : 4;
+
+    struct PrefixOverFlow {};
+    uint8_t const* opcode() const { return &bytes[opcode_offset]; }
+    void set_opcode( uint8_t const* end )
     {
-      uint8_t const* bptr = _bytes;
-      for (bool inprfx = true; inprfx; ++bptr)
-        {
-          switch (*bptr) {
-          default: inprfx = false; opc_idx = (bptr - _bytes); break;
-            // Group1::lock
-          case 0xf0: lock_f0 = true; break;
-            // Group1::repeat
-          case 0xf2: rep = 2; break;
-          case 0xf3: rep = 3; break;
-            // Group2 (segments)
-          case /*046*/ 0x26: segment = ES; break;
-          case /*056*/ 0x2e: segment = CS; break;
-          case /*066*/ 0x36: segment = SS; break;
-          case /*076*/ 0x3e: segment = DS; break;
-          case /*144*/ 0x64: segment = FS; break;
-          case /*145*/ 0x65: segment = GS; break;
-            // Group3 (alternative operand size)
-          case 0x66: opsz_66 = true; break;
-            // Group4 (alternative address size)
-          case 0x67: adsz_67 = true; break;
-          }
-        }
+      uintptr_t head = (end - bytes);
+      if (head > 15)
+        throw PrefixOverFlow();
+      opcode_offset = head;
     }
     
-    unsigned opsize() const { return opsz_66 ? 16 : 32; }
-    unsigned addrsize() const { return adsz_67 ? 16 : 32; }
+    CodeBase( Mode _mode, uint8_t const* bptr )
+      : bytes( bptr ), mode( _mode ),
+        adsz_67( 0 ), opsz_66( 0 ), lock_f0( 0 ), segment( DS ), rep( 0 ), opcode_offset( 0 )
+    {
+      for (;; ++bptr)
+        {
+          switch (*bptr)
+            {
+              // OpCode
+            default:
+              if (mode64() and (*bptr & 0xf0) == 0x40) 
+                { /* REX prefix */ ++bptr; }
+              set_opcode( bptr );
+              return;
+              // Group1::lock
+            case 0xf0: lock_f0 = true; break;
+              // Group1::repeat
+            case 0xf2: rep = 2; break;
+            case 0xf3: rep = 3; break;
+              // Group2 (segments)
+            case /*046*/ 0x26: segment = ES; break;
+            case /*056*/ 0x2e: segment = CS; break;
+            case /*066*/ 0x36: segment = SS; break;
+            case /*076*/ 0x3e: segment = DS; break;
+            case /*144*/ 0x64: segment = FS; break;
+            case /*145*/ 0x65: segment = GS; break;
+              // Group3 (alternative operand size)
+            case 0x66: opsz_66 = true; break;
+              // Group4 (alternative address size)
+            case 0x67: adsz_67 = true; break;
+            }
+        }
+    }
+    uint8_t rex() const
+    {
+      if (opcode_offset == 0) return 0;
+      uint8_t last = opcode()[-1];
+      return (last & 0xf0) == 0x40 ? last : 0;
+    }
+    unsigned opclass() const { return (rex() & 8) ? 3 : (mode.cs_l ^ mode.cs_d ^ opsz_66) ? 2 : 1; }
+    unsigned opsize() const { return 8 << opclass(); }
+    unsigned addrclass() const { return mode64() ? (adsz_67 ? 2 : 3 ) : (mode.cs_d ^ adsz_67) ? 2 : 1; }
+    unsigned addrsize() const { return 8 << addrclass(); }
     bool f0() const { return lock_f0 == 1; }
     bool f3() const { return rep == 3; }
     bool f2() const { return rep == 2; }

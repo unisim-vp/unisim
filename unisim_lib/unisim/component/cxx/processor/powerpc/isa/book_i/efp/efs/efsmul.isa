@@ -39,33 +39,25 @@ efsmul.execute = {
 		return false;
 
 	// Read the input operands
-	SoftFloat result(cpu->GetGPR(ra)), b(cpu->GetGPR(rb));
+	SoftFloat result( SoftFloat::FromRawBits, cpu->GetGPR(ra) ), b( SoftFloat::FromRawBits, cpu->GetGPR(rb) );
 
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().set(result).set(b).proceed())
 		return false;
 	
 	// Compute the result
-	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
-	if (not result.isZero() and not b.isZero())
-	{
-		result.multAssign(b, flags);
-	}
-	else
-	{
-		result.setZero(result.isNegative() ^ b.isNegative());
-	}
+	Flags flags( Flags::RoundingMode(cpu->GetSPEFSCR().Get<CPU::SPEFSCR::FRMC>()) );
+	result.multAssign(b, flags);
 	
 	// Handle EFP Specific Signaling/Rounding
 	bool status = cpu->EFPProcessOutput( result, flags );
 	
 	// Write back the result
-	cpu->SetGPR(rd, result.queryValue());
+	cpu->SetGPR(rd, result.queryRawBits());
 
 	return status;
 }
 
 efsmul.disasm = {
-	os << "efsmul r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efsmul " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

@@ -254,60 +254,57 @@ Simulator::SimulationFinished() const
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 {
-	if(enable_inline_debugger || enable_monitor)
-	{
-		SetVariable("debugger.parse-dwarf", true);
-	}
-	
-	// Build the Linux OS arguments from the command line arguments
-	
-	unisim::kernel::service::VariableBase *cmd_args = FindVariable("cmd-args");
-	unsigned int cmd_args_length = cmd_args->GetLength();
-	if(cmd_args_length > 0)
-	{
-		SetVariable("linux-os.binary", ((string)(*cmd_args)[0]).c_str());
-		SetVariable("linux-os.argc", cmd_args_length);
-		
-		unsigned int i;
-		for(i = 0; i < cmd_args_length; i++)
-		{
-			std::stringstream sstr;
-			sstr << "linux-os.argv[" << i << "]";
-			SetVariable(sstr.str().c_str(), ((string)(*cmd_args)[i]).c_str());
-		}
-	}
+  if (enable_inline_debugger or enable_monitor)
+    {
+      SetVariable("debugger.parse-dwarf", true);
+    }
+  
+  // Build the Linux OS arguments from the command line arguments
+  std::vector<std::string> const& simargs = GetCmdArgs();
+  if (not simargs.empty())
+    {
+      SetVariable("linux-os.binary", simargs[0].c_str());
+      SetVariable("linux-os.argc", simargs.size());
 
-	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
-	
-	return setup_status;
+      for (unsigned i = 0; i < simargs.size(); i++)
+        {
+          std::stringstream sstr;
+          sstr << "linux-os.argv[" << i << "]";
+          SetVariable(sstr.str().c_str(), simargs[i].c_str());
+        }
+    }
+  
+  unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+  
+  return setup_status;
 }
 
 void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, bool asynchronous)
 {
-	exit_status = _exit_status;
-	if(object)
-	{
-		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
-	}
+  exit_status = _exit_status;
+  if(object)
+    {
+      std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+    }
 #ifdef DEBUG_ARMEMU
-	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
+  std::cerr << "Call stack:" << std::endl;
+  std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 #endif
-	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_core::sc_stop();
-	if(!asynchronous)
-	{
-		sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
-		switch(h.proc_kind())
-		{
-			case sc_core::SC_THREAD_PROC_: 
-			case sc_core::SC_CTHREAD_PROC_:
-				sc_core::wait();
-				break;
-			default:
-				break;
-		}
-	}
+  std::cerr << "Program exited with status " << exit_status << std::endl;
+  sc_core::sc_stop();
+  if(!asynchronous)
+    {
+      sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
+      switch(h.proc_kind())
+        {
+        case sc_core::SC_THREAD_PROC_: 
+        case sc_core::SC_CTHREAD_PROC_:
+          sc_core::wait();
+          break;
+        default:
+          break;
+        }
+    }
 }
 
 void

@@ -39,5 +39,5 @@ zvcmplths.execute = {
 	return false;
 }
 zvcmplths.disasm = {
-	os << "zvcmplths cr" << (unsigned int) crd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zvcmplths " << CRPrint(crd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

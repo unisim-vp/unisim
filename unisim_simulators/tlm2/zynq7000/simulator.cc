@@ -1,20 +1,21 @@
 /*
- *  Copyright (c) 2010, Commissariat a l'Energie Atomique (CEA) All rights
- *  reserved.
+ *  Copyright (c) 2010-2018,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice,
- *   this list of conditions and the following disclaimer.
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
- *   and/or other materials provided with the distribution.
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *   endorse or promote products derived from this software without specific
- *   prior written permission.
+ *     endorse or promote products derived from this software without specific
+ *     prior written permission.
  *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -28,7 +29,7 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #include <simulator.hh>
@@ -608,7 +609,7 @@ PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& u
       d.Access( IMR ); return true;
     case 0x14: {
       if (d.wnr) {
-        uint32_t disable_mask;
+        uint32_t disable_mask = 0;
         d.Access( disable_mask );
         ISR &= ~disable_mask;
         // if (disable_mask & 0x100)
@@ -966,15 +967,15 @@ Simulator::Run()
   double spent_time = time_stop - time_start;
   simulation_spent_time += spent_time;
 
-  // cerr << "Simulation run-time parameters:" << endl;
-  // DumpParameters(cerr);
-  // cerr << endl;
-  // cerr << "Simulation formulas:" << endl;
-  // DumpFormulas(cerr);
-  // cerr << endl;
-  // cerr << "Simulation statistics:" << endl;
-  // DumpStatistics(cerr);
-  // cerr << endl;
+  std::cerr << "Simulation run-time parameters:" << std::endl;
+  DumpParameters(std::cerr);
+  std::cerr << std::endl;
+  std::cerr << "Simulation formulas:" << std::endl;
+  DumpFormulas(std::cerr);
+  std::cerr << std::endl;
+  std::cerr << "Simulation statistics:" << std::endl;
+  DumpStatistics(std::cerr);
+  std::cerr << std::endl;
 
   std::cerr << "simulation time: " << simulation_spent_time << " seconds" << std::endl;
   std::cerr << "simulated time: " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
@@ -982,38 +983,11 @@ Simulator::Run()
   std::cerr << "host simulation speed: " << ((double) cpu["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
   std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
   
+  std::cerr << "WB counts: " << cpu.get_cwp_stats(false) << std::endl;
+  std::cerr << "WT counts: " << cpu.get_cwp_stats(true) << std::endl;
+  
   if (profiler) profiler->Output();
   
-  return exit_status;
-}
-
-int
-Simulator::Run(double time, sc_core::sc_time_unit unit)
-{
-  if ( unlikely(SimulationFinished()) ) return 0;
-
-  double time_start = host_time.GetTime();
-
-  sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
-
-  try
-    {
-      sc_core::sc_start(time, unit);
-    }
-  catch(std::runtime_error& e)
-    {
-      std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
-      std::cerr << e.what() << std::endl;
-    }
-
-  double time_stop = host_time.GetTime();
-  double spent_time = time_stop - time_start;
-  simulation_spent_time += spent_time;
-
-  std::cerr << "Simulation statistics:" << std::endl;
-  DumpStatistics(std::cerr);
-  std::cerr << std::endl;
-
   return exit_status;
 }
 
@@ -1210,3 +1184,287 @@ void Simulator::SigInt()
     }
 }
 
+CPU::CP15Reg&
+CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+{
+  switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
+    {
+    case CP15ENCODE( 0, 0, 0, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "CTR, Cache Type Register"; }
+          uint32_t Read( CP15CPU& _cpu )
+          {
+            /*        FORMAT          CWG         ERG      DminLine        L1Ip       IminLine */
+            /*         ARMv7        8 words     8 words     8 words        PIPT        8 words */
+            return (0b100 << 29) | (3 << 24) | (3 << 20) | (3 << 16) | (0b11 << 14) | (3 <<  0);
+          }
+        } x;
+        return x;
+      } break;
+
+    case CP15ENCODE( 0, 1, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "CCSIDR, Cache Size ID Registers"; }
+          uint32_t Read( CP15CPU& _cpu )
+          {
+            /* 2 L1 caches of 32kB: 32bytes/8words-lines, 128 sets of 4 ways ) */
+            CPU& cpu = static_cast<CPU&>( _cpu );
+            switch (cpu.csselr) {
+              /*              LNSZ      ASSOC       NUMSETS        POLICY      */
+            case 0:  return (1 << 0) | (1 << 3) | ( 127 << 13) | (0b0110 << 28); /* L1 dcache */
+            case 1:  return (1 << 0) | (3 << 3) | ( 127 << 13) | (0b0100 << 28); /* L1 icache */
+            case 2:  return (2 << 0) | (7 << 3) | (1023 << 13) | (0b0110 << 28); /* L2 ucache */
+            default: return 0;
+            }
+          }
+        } x;
+        return x;
+      } break;
+      
+    // case CP15ENCODE( 0, 1, 0, 1 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "CLIDR, Cache Level ID Register"; }
+    //       uint32_t Read( CP15CPU& _cpu )
+    //       {
+    //         //CPU& cpu = static_cast<CPU&>( _cpu );
+    //         uint32_t
+    //           LoUU =   0b010, /* Level of Unification Uniprocessor  */
+    //           LoC =    0b010, /* Level of Coherency */
+    //           LoUIS =  0b010, /* Level of Unification Inner Shareable */
+    //           Ctype2 = 0b100, /* Level2 => unified */
+    //           Ctype1 = 0b011; /* Level1 => Separate instruction and data caches */
+    //         return (LoUU << 27) | (LoC << 24) | (LoUIS << 21) | (Ctype2 << 3) | (Ctype1 << 0);
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 0, 2, 0, 0 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "CSSELR, Cache Size Selection Register"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value ) {
+    //         static_cast<CPU&>( _cpu ).csselr = value;
+    //       }
+    //       uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).csselr; }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    //   /***************************************************************
+    //    * Cache maintenance, address translation, and other functions *
+    //    ***************************************************************/
+    // case CP15ENCODE( 7, 0, 5, 0 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "ICIALLU, Invalidate all instruction caches to PoU"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value ) {
+    //         /* No cache, basically nothing to do */
+    //         //_cpu.logger << DebugWarning << "ICIALLU <- " << std::hex << value << std::dec << EndDebugWarning;
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 7, 0, 5, 1 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "ICIMVAU, Clean data* cache line by MVA to PoU"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value ) {
+    //         /* No cache, basically nothing to do */
+    //         //_cpu.logger << DebugWarning << "ICIMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 7, 0, 5, 6 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "BPIALL, Invalidate all branch predictors"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value ) {
+    //         /* No branch predictor, basically nothing to do */
+    //         //_cpu.logger << DebugWarning << "BPIALL <- " << std::hex << value << std::dec << EndDebugWarning;
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 7, 0, 10, 1 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "DCCMVAC, Clean data* cache line by MVA to PoC"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value ) {
+    //         /* No cache, basically nothing to do */
+    //         //_cpu.logger << DebugWarning << "DCCMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 7, 0, 11, 1 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "DCCMVAU, Clean data* cache line by MVA to PoU"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value ) {
+    //         /* No cache, basically nothing to do */
+    //         //_cpu.logger << DebugWarning << "DCCMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 7, 0, 14, 1 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "DCCIMVAC, Clean and invalidate data cache line by MVA to PoC"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value ) {
+    //         /* No cache, basically nothing to do */
+    //         //_cpu.logger << DebugWarning << "DCCIMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 7, 0, 14, 2 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "DCCISW, Clean and invalidate [d|u]cache line by set/way"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value ) {
+    //         /* No cache, basically nothing to do */
+    //         //_cpu.logger << DebugWarning << "DCCISW <- " << std::hex << value << std::dec << EndDebugWarning;
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    //   /******************************
+    //    * TLB maintenance operations *
+    //    ******************************/
+    // case CP15ENCODE( 8, 0, 7, 0 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "TLBIALL, invalidate unified TLB"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value )
+    //       {
+    //         CPU& cpu( static_cast<CPU&>( _cpu ) );
+    //         if (cpu.verbose)
+    //           cpu.logger << DebugInfo << "TLBIALL" << EndDebugInfo;
+    //         cpu.tlb.InvalidateAll();
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 8, 0, 7, 1 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "TLBIMVA, invalidate unified TLB entry by MVA and ASID"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value )
+    //       {
+    //         CPU& cpu( static_cast<CPU&>( _cpu ) );
+    //         if (cpu.verbose)
+    //           cpu.logger << DebugInfo << "TLBIMVA(0x" << std::hex << value << std::dec << ")" << EndDebugInfo;
+            
+    //         for (TLB::Iterator itr(cpu.tlb); itr.Next();) {
+    //           if (itr.MatchMVA( value ) and (itr.IsGlobal() or itr.MatchASID( value )))
+    //             itr.Invalidate();
+    //         }   
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 8, 0, 7, 2 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "TLBIASID, invalidate unified TLB by ASID match"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value )
+    //       {
+    //         CPU& cpu( static_cast<CPU&>( _cpu ) );
+    //         if (cpu.verbose)
+    //           cpu.logger << DebugInfo << "TLBIASID(0x" << std::hex << value << std::dec << ")" << EndDebugInfo;
+            
+    //         for (TLB::Iterator itr(cpu.tlb); itr.Next();) {
+    //           if (not itr.IsGlobal() and itr.MatchASID( value ))
+    //             itr.Invalidate();
+    //         }
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    //   /**********************************************
+    //    * Memory remapping and TLB control registers *
+    //    **********************************************/
+    // case CP15ENCODE( 10, 0, 2, 0 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "PRRR, Primary Region Remap Register"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value )
+    //       {
+    //         CPU& cpu( static_cast<CPU&>( _cpu ) );
+    //         cpu.mmu.prrr = value;
+    //         cpu.mmu.refresh_attr_cache(sctlr::TRE.Get(cpu.SCTLR));
+    //       }
+    //       uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).mmu.prrr; }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 10, 0, 2, 1 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "NMRR, Normal Memory Remap Register"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value )
+    //       {
+    //         CPU& cpu( static_cast<CPU&>( _cpu ) );
+    //         cpu.mmu.nmrr = value;
+    //         cpu.mmu.refresh_attr_cache(sctlr::TRE.Get(cpu.SCTLR));
+    //       }
+    //       uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).mmu.nmrr; }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    //   /***********************************/
+    //   /* Context and thread ID registers */
+    //   /***********************************/
+      
+    // case CP15ENCODE( 13, 0, 0, 3 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "TPIDRURO, User Read-Only Thread ID Register"; }
+    //       unsigned RequiredPL() { return 0; /* Reading doesn't requires priviledges */ }
+    //       uint32_t Read( CP15CPU& _cpu )
+    //       { return static_cast<CPU&>( _cpu ).MemRead32( 0xffff0ff0 ); }
+    //     } x;
+    //     /* When using linux os emulation, this register overrides the base one */
+    //     if (linux_os_import)
+    //       return x;
+    //   } break;
+    }
+  
+  // Fall back to parent cpu CP15 registers
+  return this->PCPU::CP15GetRegister( crn, opcode1, crm, opcode2 );
+}

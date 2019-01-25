@@ -38,5 +38,5 @@ dcbi.execute = {
 	return cpu->Dcbi(ea);
 }
 dcbi.disasm = {
-	os << "dcbi r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "dcbi " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

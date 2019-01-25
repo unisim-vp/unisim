@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,74 +32,60 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
-}
-
 op fmsub(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:28[5]:rc[1])
 fmsub.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 		return false;
 	}
-	// Check if FPU is enabled
-	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not cpu->GetMSR_FP()))
 	{
-		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		cpu->ThrowException<CPU::FloatingPointUnavailableInterrupt::FloatingPointUnavailable>();
 		return false;
 	}
 
 	// Read the input operands
-	uint32_t fpscr = cpu->GetFPSCR();
-	uint32_t old_fpscr = fpscr;
-	Flags flags;
-	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
+        FPSCR& fpscr = cpu->GetFPSCR();
 	SoftDouble result = cpu->GetFPR(fa);
-	const SoftDouble& b = cpu->GetFPR(fb);
-	const SoftDouble& c = cpu->GetFPR(fc);
+	SoftDouble const& b = cpu->GetFPR(fb);
+	SoftDouble const& c = cpu->GetFPR(fc);
 
 	// Compute the result
+	Flags flags( Flags::RoundingMode(fpscr.Get<FPSCR::RN>()) );
 	result.multAndSubAssign(c, b, flags);
 
 	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FR, FI, FPRF, XX, FX, VX, FEX
-	GenFPSCR_OX<CONFIG>(fpscr, flags);
-	GenFPSCR_UX<CONFIG>(fpscr, flags);
-	GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
-	GenFPSCR_VXISI<CONFIG>(fpscr, flags);
-	GenFPSCR_VXIMZ<CONFIG>(fpscr, flags);
-	GenFPSCR_FR<CONFIG, SoftDouble>(fpscr, result, flags);
-	GenFPSCR_FI<CONFIG>(fpscr, flags);
-	GenFPSCR_FPRF<CONFIG, SoftDouble>(fpscr, result);
-	GenFPSCR_XX<CONFIG>(fpscr);
-	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
-	GenFPSCR_VX<CONFIG>(fpscr);
-	GenFPSCR_FEX<CONFIG>(fpscr);
+	fpscr.SetInexact( flags.isApproximate() );
+	UINT new_fpscr( fpscr ), old_fpscr = new_fpscr;
+	GenFPSCR_OX<FPSCR>(new_fpscr, flags);
+	GenFPSCR_UX<FPSCR>(new_fpscr, flags);
+	GenFPSCR_VXSNAN<FPSCR>(new_fpscr, flags);
+	GenFPSCR_VXISI<FPSCR>(new_fpscr, flags);
+	GenFPSCR_FR<FPSCR, SoftDouble>(new_fpscr, result, flags);
+	GenFPSCR_FPRF<FPSCR, SoftDouble>(new_fpscr, result);
+	GenFPSCR_FX<FPSCR>(new_fpscr, old_fpscr);
+	GenFPSCR_VX<FPSCR>(new_fpscr);
+	GenFPSCR_FEX<FPSCR>(new_fpscr);
 
 	// Update FPSCR
-	cpu->SetFPSCR(fpscr);
+	cpu->SetFPSCR(new_fpscr);
 
-	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
-	            (msr & CONFIG::MSR_FE1_MASK)) &&
-	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
-	{
-		// Raise a floating point exception
-		cpu->SetException(CONFIG::EXC_PROGRAM_FLOATING_POINT);
+	if (unlikely(flags.isInftyMultZero())) fpscr.SetInvalid(FPSCR::VXIMZ());
+	
+	if (not cpu->CheckFloatingPointException())
 		return false;
-	}
 
 	// Write back the result
 	cpu->SetFPR(fd, result);
 
 	// Copy FX, FEX, VX, OX to CR1
-	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
+	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
 	
 	return true;
 }
 fmsub.disasm = {
-	os << "fmsub" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc << ", f" << (unsigned int) fb;
+	os << "fmsub" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fa) << ", " << FPRPrint(fc) << ", " << FPRPrint(fb);
 }
 
 specialize fmsub(rc=0)

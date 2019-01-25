@@ -175,14 +175,11 @@ namespace simfloat {
 
     bool isDivisionByZero() const { return fDivisionByZero; }
     void setDivisionByZero() { fDivisionByZero = true; }
-    bool hasFlowException() const { return feExcept != FENoException; }
     void clearFlowException() { feExcept = FENoException; }
     void setOverflow() { feExcept = FEOverflow; }
     void setUnderflow() { feExcept = FEUnderflow; }
     bool isOverflow() const { return feExcept == FEOverflow; }
     bool isUnderflow() const { return feExcept == FEUnderflow; }
-    void clearUnderflow() { feExcept = FENoException; }
-    void mergeException(const Flags& source) { if (feExcept == FENoException) feExcept = source.feExcept; }
       
     void setRoundingMode(unsigned int rn_mode)
     {
@@ -349,6 +346,7 @@ namespace simfloat {
     void ToBytes( uint8_t* bytes ) const;
     void FromBytes( uint8_t const* bytes );
     void SquareRoot( Flags& rpParams );
+    ComparisonResult compare( SoftDouble const& sdSource ) const;
     
   private:
     typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<SoftDoubleTraits> inherited;
@@ -373,6 +371,7 @@ namespace simfloat {
     void ToBytes( uint8_t* bytes ) const;
     void FromBytes( uint8_t const* bytes ); 
     void SquareRoot( Flags& rpParams );
+    ComparisonResult compare( SoftFloat const& sfSource ) const;
     
   private:
     typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<SoftFloatTraits> inherited;

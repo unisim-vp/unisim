@@ -43,5 +43,5 @@ zmhosfr.execute = {
 	return false;
 }
 zmhosfr.disasm = {
-	os << "zmhosfr r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zmhosfr " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

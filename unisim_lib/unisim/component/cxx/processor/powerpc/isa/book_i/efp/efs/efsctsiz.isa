@@ -39,41 +39,27 @@ efsctsiz.execute = {
 		return false;
 
 	// Read the input operands
-	SoftFloat b(cpu->GetGPR(rb));
+	SoftFloat b( SoftFloat::FromRawBits, cpu->GetGPR(rb) );
 
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().set(b).proceed())
 		return false; // Should not occur
 	
 	// Compute the result
-	Flags flags = Flags( Flags::RoundingMode(RN_ZERO) );
-	int32_t result;
-				if (unlikely(b.isNaN()))
-		result = int32_t(0);
-	else {
-		SoftFloat::IntConversion conversion;
-		conversion.setSigned().setSize(32);
-		b.retrieveInteger(conversion, flags);
-		result = conversion.asInt32();
-	};
+	Flags flags = Flags( Flags::RoundingMode(CPU::SPEFSCR::FRMC::ZERO()) );
+	S32 result( unlikely(b.isNaN()) ? S32(0) : b.queryS32( flags ) );
 
-	// Update flags
-	if (flags.isOverflow())
-	{
-		// Overflow is invalid
-		CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-		if (not spefscr.SetInvalid( true ))
-			return false;
-		flags.clearFlowException();
-	}
+	// Update flags (Overflow is invalid)
+	if (unlikely(flags.takeOverflow() and not cpu->GetSPEFSCR().SetInvalid( true )))
+		return false;
 	cpu->EFPProcessOutput(b, flags);
 
 	// Write back the result
-	cpu->SetGPR(rd, result);
+	cpu->SetGPR(rd, U32(result));
 
 	return true;
 }
 
 efsctsiz.disasm = {
-	os << "efsctsiz r" << (unsigned int) rd << ", r" << (unsigned int) rb;
+	os << "efsctsiz " << GPRPrint(rd) << ", " << GPRPrint(rb);
 }

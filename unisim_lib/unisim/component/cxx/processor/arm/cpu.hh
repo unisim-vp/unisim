@@ -348,7 +348,7 @@ struct CPU
   /************************************************************************/
 
 public:
-  bool     Cond( bool cond ) { return cond; }
+  bool     Concretize( bool cond ) { return cond; }
   void     UnpredictableInsnBehaviour();
   void     CallSupervisor( uint16_t imm );
   bool     IntegerZeroDivide( bool zero_div ) { return zero_div; }

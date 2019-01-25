@@ -43,5 +43,5 @@ mtdcr.execute = {
 
 mtdcr.disasm = {
 	uint32_t dcrn = ((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f);
-	os << "mtdcr " << dcrn << ", r" << (unsigned int) rs;
+	os << "mtdcr " << dcrn << ", " << GPRPrint(rs);
 }

@@ -38,5 +38,5 @@ evfssum.execute = {
 	return false;
 }
 evfssum.disasm = {
-	os << "evfssum r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "evfssum " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

@@ -104,13 +104,12 @@ vector"
 
 UNISIM_LIB_PPCEMU_SYSTEM_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_config_file_helper.cc \
-unisim/kernel/service/ini_config_file_helper.cc \
+unisim/kernel/config/xml_config_file_helper.cc \
+unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/tlm/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/util/backtrace/backtrace.cc \
-unisim/kernel/api/api.cc \
 unisim/util/xml/xml.cc \
 unisim/util/debug/profile_32.cc \
 unisim/util/debug/profile_64.cc \
@@ -340,6 +339,7 @@ unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsb0.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsb1.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsf.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsfi.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fre.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fres.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/frsqrte.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsel.isa \
@@ -453,13 +453,12 @@ unisim/component/cxx/processor/powerpc/isa/book_iii_s/mtsrin.isa \
 
 UNISIM_LIB_PPCEMU_SYSTEM_HEADER_FILES="${UNISIM_LIB_PPCEMU_SYSTEM_ISA_FILES} \
 unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_config_file_helper.hh \
-unisim/kernel/service/ini_config_file_helper.hh \
+unisim/kernel/config/xml_config_file_helper.hh \
+unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm/tlm.hh \
 unisim/util/backtrace/backtrace.hh \
-unisim/kernel/api/api.hh \
 unisim/util/likely/likely.hh \
 unisim/util/inlining/inlining.hh \
 unisim/util/arithmetic/arithmetic.hh \
@@ -799,6 +798,7 @@ string"
 UNISIM_SIMULATORS_PPCEMU_SYSTEM_SOURCE_FILES="\
 main.cc \
 "
+
 UNISIM_SIMULATORS_PPCEMU_SYSTEM_HEADER_FILES="\
 "
 

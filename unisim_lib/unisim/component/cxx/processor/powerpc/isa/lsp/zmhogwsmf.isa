@@ -61,7 +61,7 @@ zmhogwsmf.execute = {
 	return false;
 }
 zmhogwsmf.disasm = {
-	os << "zmhogwsmf" << (r ? "r" : "") << LSP_ACC(acc) << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zmhogwsmf" << (r ? "r" : "") << LSP_ACC(acc) << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zmhogwsmf(acc=0,r=0)

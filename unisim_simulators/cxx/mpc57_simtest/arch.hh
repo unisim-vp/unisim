@@ -59,6 +59,8 @@ namespace ut
   typedef SmartValue<int64_t>  S64;
 
   typedef SmartValue<uint32_t> ADDRESS;
+  typedef SmartValue<uint32_t> UINT;
+  typedef SmartValue<int32_t>  SINT;
   
   template <unsigned BITS> struct TypeFor {};
   template <> struct TypeFor<8> { typedef U8 U; typedef S8 S; };
@@ -71,29 +73,13 @@ namespace ut
     Untestable(std::string const& _reason) : reason(_reason) {}
     std::string reason;
   };
-  
-  struct PathNode
-  {
-    typedef unisim::util::symbolic::Expr Expr;
 
-    PathNode( PathNode* _previous=0 );
-    ~PathNode();
+  struct ActionNode : public unisim::util::symbolic::Choice<ActionNode>  {};
 
-    bool        proceed( Expr const& _cond );
-    bool        close();
-    PathNode*   next( bool predicate ) const { return predicate ? true_nxt : false_nxt; }
-    
-    Expr cond;
-    PathNode* previous;
-    PathNode* true_nxt;
-    PathNode* false_nxt;
-    bool complete;
-  };
-  
   struct Interface
   {
-    typedef unisim::util::symbolic::Expr Expr;
-    typedef unisim::util::symbolic::ExprNode ExprNode;
+    typedef unisim::util::symbolic::Expr       Expr;
+    typedef unisim::util::symbolic::ExprNode   ExprNode;
     
     Interface( mpc57::Operation& op );
     
@@ -152,6 +138,7 @@ namespace ut
   struct SourceReg : public unisim::util::symbolic::ExprNode
   {
     SourceReg( unsigned _reg ) : reg( _reg ) {}
+    virtual SourceReg* Mutate() const { return new SourceReg(*this); }
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 0; };
     virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
@@ -164,26 +151,13 @@ namespace ut
   
   struct CPU;
 
-  struct BadSource : public unisim::util::symbolic::ExprNode
-  {
-    BadSource( char const* _msg ) : msg(_msg) {}
-    virtual void Repr( std::ostream& sink ) const;
-    virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
-    {
-      char const* rmsg = dynamic_cast<BadSource const&>( brhs ).msg;
-      rmsg = rmsg ? rmsg : "";
-      char const* lmsg = msg ? msg : "";
-      return strcmp( lmsg, rmsg );
-    }
-    char const* msg;
-  };
-  
   struct MixNode : public unisim::util::symbolic::ExprNode
   {
     typedef unisim::util::symbolic::Expr Expr;
     typedef unisim::util::symbolic::ExprNode ExprNode;
     
     MixNode( Expr const& _left, Expr const& _right ) : left(_left), right(_right) {}
+    virtual MixNode* Mutate() const { return new MixNode(*this); }
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 2; };
     virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return left; case 1: return right; } return ExprNode::GetSub(idx); };
@@ -202,6 +176,7 @@ namespace ut
     typedef unisim::util::symbolic::ExprNode ExprNode;
     
     Unknown() {}
+    virtual Unknown* Mutate() const { return new Unknown(*this); }
     virtual void Repr( std::ostream& sink ) const { sink << "?"; }
     virtual unsigned SubCount() const { return 0; };
     virtual Expr const& GetSub(unsigned idx) const { return ExprNode::GetSub(idx); };
@@ -230,6 +205,7 @@ namespace ut
     
     struct XERNode : public ExprNode
     {
+      virtual XERNode* Mutate() const { return new XERNode(*this); }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
@@ -264,6 +240,7 @@ namespace ut
     
     struct CRNode : public ExprNode
     {
+      virtual CRNode* Mutate() const { return new CRNode(*this); }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
@@ -311,9 +288,16 @@ namespace ut
 
   struct SPEFSCR
   {
-    struct FRMC {};
+    struct FRMC
+    {
+      static uint32_t NEAREST() { return 0; }
+      static uint32_t ZERO()    { return 1; }
+      static uint32_t UP()      { return 2; }
+      static uint32_t DOWN()    { return 3; }
+    };
     struct FINVE {};
     struct FINV {};
+    struct FINVS {};
     
     typedef unisim::util::symbolic::Expr Expr;
     typedef unisim::util::symbolic::ExprNode ExprNode;
@@ -327,10 +311,21 @@ namespace ut
     
     struct SPEFSCRNode : public ExprNode
     {
+      virtual SPEFSCRNode* Mutate() const { return new SPEFSCRNode(*this); }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
       virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
     };
+    
+    BOOL SetInvalid( bool inv, bool invh=false )
+    {
+      this->template Set<FINV>( U32(inv) );
+      //this->template Set<FINVH>( U32(invh) );
+      return make_unknown<BOOL>();
+    }
+    BOOL SetUnderflow( bool uf ) { return make_unknown<BOOL>(); }
+    BOOL SetOverflow( bool uf ) { return make_unknown<BOOL>(); }
+    BOOL SetDivideByZero( bool uf ) { return make_unknown<BOOL>(); }
     
     SPEFSCR() : spefscr_value( new SPEFSCRNode ) {}
     
@@ -349,14 +344,19 @@ namespace ut
     typedef ut::S16  S16;
     typedef ut::S32  S32;
     typedef ut::S64  S64;
+
+    typedef ut::UINT UINT;
+    typedef ut::SINT SINT;
+    typedef ut::ADDRESS ADDRESS;
     
-    typedef unisim::util::symbolic::Expr Expr;
-    typedef unisim::util::symbolic::ExprNode ExprNode;
+    
+    typedef unisim::util::symbolic::Expr       Expr;
+    typedef unisim::util::symbolic::ExprNode   ExprNode;
     
     typedef MSR MSR;
     typedef SPEFSCR SPEFSCR;
     
-    CPU( Interface& _interface, PathNode& root )
+    CPU( Interface& _interface, ActionNode& root )
       : interface(_interface), path(&root), cia( new CIA )
     {     
       for (unsigned reg = 0; reg < 32; ++reg)
@@ -412,16 +412,16 @@ namespace ut
     
     bool close() { return path->close(); }
 
-    Interface& interface;
-    PathNode*  path;
-    U32        reg_values[32];
-    U32        cia;
+    Interface&   interface;
+    ActionNode*  path;
+    U32          reg_values[32];
+    U32          cia;
     
     
     struct CIA : public ExprNode
     {
       CIA() {}
-      
+      virtual CIA* Mutate() const { return new CIA(*this) ; }
       virtual void Repr( std::ostream& sink ) const { sink << "CIA"; }
       virtual unsigned SubCount() const { return 0; };
       virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return 0; }
@@ -431,7 +431,6 @@ namespace ut
     bool EqualCIA(uint32_t pc) { return false; };
     U32 GetGPR(unsigned n) { gpr_append(n,false); return reg_values[n]; };
     void SetGPR(unsigned n, U32 value) { gpr_append(n,true); reg_values[n] = value; }
-    void SetGPR(unsigned n, S32 value) { gpr_append(n,true); reg_values[n] = U32(value); }
     
     static void LoadRepr( std::ostream& sink, Expr const& _addr, unsigned bits );
     
@@ -439,6 +438,7 @@ namespace ut
     struct Load : public ExprNode
     {
       Load( Expr const& _addr ) : addr(_addr) {}
+      virtual Load* Mutate() const { return new Load(*this); }
       virtual void Repr( std::ostream& sink ) const { LoadRepr( sink, addr, BITS ); }
       virtual unsigned SubCount() const { return 2; };
       virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; } return ExprNode::GetSub(idx); };
@@ -461,8 +461,8 @@ namespace ut
     bool Int16Load(unsigned n, U32 const& address) { SetGPR(n, CPU::U32(CPU::U16(MemRead<16>(address)))); return true; }
     bool Int32Load(unsigned n, U32 const& address) { SetGPR(n, CPU::U32(MemRead<32>(address))); return true; }
     
-    bool SInt8Load(unsigned n, U32 const& address) { SetGPR(n, CPU::S32(CPU::S8(MemRead<8>(address)))); return true; }
-    bool SInt16Load(unsigned n, U32 const& address) { SetGPR(n, CPU::S32(CPU::S16(MemRead<16>(address)))); return true; }
+    bool SInt8Load(unsigned n, U32 const& address) { SetGPR(n, CPU::U32(CPU::S8(MemRead<8>(address)))); return true; }
+    bool SInt16Load(unsigned n, U32 const& address) { SetGPR(n, CPU::U32(CPU::S16(MemRead<16>(address)))); return true; }
 
     bool Int16LoadByteReverse(unsigned n, U32 const& address) { SetGPR(n, ByteSwap(CPU::U32(CPU::U16(MemRead<16>(address))))); return true; }
     bool Int32LoadByteReverse(unsigned n, U32 const& address) { SetGPR(n, ByteSwap(CPU::U32(MemRead<32>(address)))); return true; }
@@ -514,19 +514,116 @@ namespace ut
     bool MoveToSPR(unsigned dcrn, U32 const& result) { donttest_system(); return false; }
     
     bool CheckSPV() { return true; }
+    bool Wait() { return false; }
+
+    struct __EFPProcessInput__
+    {
+      __EFPProcessInput__( CPU& _cpu ) : cpu(_cpu), finv(false) {};
+      template <class FLOAT>
+      __EFPProcessInput__& set( FLOAT& input ) { finv |= not check_input( input ) ; return *this; }
+      template <class FLOAT>
+      static bool check_input( FLOAT& input )
+      {
+        // if (unlikely(input.isDenormalized()))
+        //   {
+        //     input.setZero(input.isNegative());
+        //     return false;
+        //   }
+			
+        // if (unlikely(input.hasInftyExponent()))
+        //   return false;
+			
+        return true;
+      }
+      bool proceed()
+      {
+        // cpu.GetSPEFSCR().Set<typename SPEFSCR::FINV>(finv);
+        // if (finv)
+        //   {
+        //     cpu.GetSPEFSCR().Set<typename SPEFSCR::FINVS>(true);
+        //     if (cpu.GetSPEFSCR().Get<typename SPEFSCR::FINVE>())
+        //       {
+        //         cpu.ThrowException<typename ProgramInterrupt::UnimplementedInstruction>();
+        //         return false;
+        //       }
+        //   }
+        return true;
+      }
+		
+      CPU& cpu;
+      bool finv;
+    };
+	
+    __EFPProcessInput__
+    EFPProcessInput()
+    {
+      // GetSPEFSCR().Set<typename SPEFSCR::FG>(false);
+      // GetSPEFSCR().Set<typename SPEFSCR::FX>(false);
+      // GetSPEFSCR().Set<typename SPEFSCR::FGH>(false);
+      // GetSPEFSCR().Set<typename SPEFSCR::FXH>(false);
+      // GetSPEFSCR().Set<typename SPEFSCR::FDBZ>(false);
+      // GetSPEFSCR().Set<typename SPEFSCR::FDBZH>(false);
+      // GetSPEFSCR().SetDivideByZero( false );
+      return __EFPProcessInput__( *this );
+    }
+	
+    template <class FLOAT, class FLAGS>
+    bool
+    EFPProcessOutput( FLOAT& output, FLAGS const& flags )
+    {
+      // if (output.hasInftyExponent())
+      //   {
+      //     bool neg = output.isNegative();
+      //     output.setInfty();
+      //     output.setToPrevious();
+      //     output.setNegative(neg);
+      //   }
+      // bool inexact = flags.isApproximate() and not spefscr.template Get<typename CPU::SPEFSCR::FINV>();
+      // bool overflow = inexact and flags.isOverflow();
+      // if (not GetSPEFSCR().SetOverflow( overflow ))
+      //   return false;
+      // bool underflow = inexact and flags.isUnderflow();
+      // if (output.isDenormalized())
+      //   {
+      //     output.setZero(output.isNegative());
+      //     inexact = true, underflow = true;
+      //   }
+      // if (not GetSPEFSCR().SetUnderflow( underflow ))
+      //   return false;
+
+      // if (inexact)
+      //   {
+      //     // Compute inexact flags (FG, FX)
+      //     GetSPEFSCR().Set<typename SPEFSCR::FINXS>(true);
+      //     if (spefscr.template Get<typename SPEFSCR::FINXE>())
+      //       {
+      //         this->template ThrowException<typename ProgramInterrupt::UnimplementedInstruction>();
+      //         return false;
+      //       }
+      //   }
+
+      return true;
+    }
+	
     
   };
   
   struct Flags
   {
+    struct RoundingMode { RoundingMode(U32 const& rm) {} RoundingMode(unsigned rm) {} };
+    Flags( RoundingMode const& rm ) {}
+    Flags() {}
     void setRoundingMode(U32 const&) {}
     void setRoundingMode(unsigned) {}
     void setUnderflow() {}
     void setOverflow() {}
     void setDownApproximate() {}
     void setUpApproximate() {}
+    void clearFlowException() {}
     BOOL isUpApproximate() { return make_unknown<BOOL>(); }
     BOOL isDownApproximate() { return make_unknown<BOOL>(); }
+    BOOL isOverflow() { return make_unknown<BOOL>(); }
+    BOOL takeOverflow() { return make_unknown<BOOL>(); }
   };
   
   struct BigInt
@@ -542,28 +639,29 @@ namespace ut
   
   struct SoftFloat
   {
-    struct IntConversion
-    {
-      void assignSigned( S32 const& ) {}
-      void assignUnsigned( U32 const& ) {}
-      IntConversion& setSigned() { return *this; }
-      IntConversion& setUnsigned() { return *this; }
-      IntConversion& setSize(int) { return *this; }
-      S32 asInt32() { return make_unknown<S32>(); }
-      U32 asUInt32() { return make_unknown<U32>(); }
-    };
+    enum __FromRawBits__ { FromRawBits };
+    SoftFloat( __FromRawBits__, U32 const& source ) {}
     
-    SoftFloat( IntConversion const&, Flags const& ) {}
-    SoftFloat( U32 const& ) {}
+    SoftFloat( U32 const&, Flags& ) {}
+    SoftFloat( S32 const&, Flags& ) {}
+    enum __FromFraction__ { FromFraction };
+    SoftFloat( __FromFraction__, U32 const&, Flags& ) {}
+    SoftFloat( __FromFraction__, S32 const&, Flags& ) {}
     SoftFloat( SoftHalfFloat const&, Flags const& ) {}
+
+    U32 queryU32( Flags& flags, unsigned fbits=0 ) { return make_unknown<U32>(); }
+    S32 queryS32( Flags& flags, unsigned fbits=0 ) { return make_unknown<S32>(); }
+
+    // SoftFloat& convertAssign( SoftHalfFloat const&, Flags& );
+    // SoftFloat& fromRawBitsAssign( U32 const& );
     
-    U32 queryValue() { return make_unknown<U32>(); }
+    U32 queryRawBits() { return make_unknown<U32>(); }
     BOOL isNaN() { return make_unknown<BOOL>(); }
     BOOL operator == (SoftFloat const&) { return make_unknown<BOOL>(); }
     BOOL operator < (SoftFloat const&) { return make_unknown<BOOL>(); }
     BOOL operator > (SoftFloat const&) { return make_unknown<BOOL>(); }
-    void retrieveInteger(IntConversion const&, Flags const&) {}
-    BOOL isPositive() { return make_unknown<BOOL>(); }
+    // void retrieveInteger(IntConversion const&, Flags const&) {}
+    // BOOL isPositive() { return make_unknown<BOOL>(); }
     BOOL isNegative() { return make_unknown<BOOL>(); }
     void setNegative(bool=false) {}
     void setNegative(BOOL) {}
@@ -571,27 +669,31 @@ namespace ut
     void divAssign(SoftFloat const&, Flags const& flags) {}
     void multAssign(SoftFloat const&, Flags const& flags) {}
     void minusAssign(SoftFloat const&, Flags const& flags) {}
-    void sqrtAssign() {}
-    void squareAssign(Flags const& flags) {}
+    void sqrtAssign(Flags const& flags) {}
+    // void squareAssign(Flags const& flags) {}
     void multAndAddAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
     void multAndSubAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
-    void multNegativeAndAddAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
-    void multNegativeAndSubAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
+    // void multNegativeAndAddAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
+    // void multNegativeAndSubAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
+    void maxAssign(SoftFloat const&) {}
+    void minAssign(SoftFloat const&) {}
     
-    BigInt querySBasicExponent() { return BigInt(); }
-    BigInt queryBasicExponent() { return BigInt(); }
+    // BigInt querySBasicExponent() { return BigInt(); }
+    // BigInt queryBasicExponent() { return BigInt(); }
     BOOL isZero() { return make_unknown<BOOL>(); }
-    void clear() {}
+    BOOL isNormalized() { return make_unknown<BOOL>(); }
+    // void clear() {}
     
-    BOOL hasInftyExponent() { return make_unknown<BOOL>(); }
-    BOOL isDenormalized() { return make_unknown<BOOL>(); }
+    // BOOL hasInftyExponent() { return make_unknown<BOOL>(); }
+    // BOOL isDenormalized() { return make_unknown<BOOL>(); }
   };
 
   struct SoftHalfFloat
   {
-    SoftHalfFloat( U16 const& ) {}
+    enum __FromRawBits__ { FromRawBits };
+    SoftHalfFloat( __FromRawBits__, U16 const& ) {}
     SoftHalfFloat( SoftFloat const&, Flags const& ) {}
-    U32 queryValue() { return make_unknown<U32>(); }
+    U16 queryRawBits() { return make_unknown<U16>(); }
   };
   
   static const unsigned int RN_NEAREST = 0;
@@ -625,6 +727,7 @@ namespace ut
     typedef unisim::util::symbolic::Expr Expr;
     
     MaskNode( Expr const& _mb, Expr const& _me ) : mb(_mb), me(_me) {}
+    virtual MaskNode* Mutate() const { return new MaskNode(*this); }
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 2; };
     virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return mb; case 1: return me; } return ExprNode::GetSub(idx); };

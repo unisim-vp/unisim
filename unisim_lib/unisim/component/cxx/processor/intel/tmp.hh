@@ -47,6 +47,20 @@ namespace intel {
   
   template <unsigned VAL>
   struct UI {};
+
+  template <typename T> struct __unsigned {};
+  template <> struct __unsigned<char> { typedef unsigned char type; };
+  template <> struct __unsigned<signed char> { typedef unsigned char type; };
+  template <> struct __unsigned<short> { typedef unsigned short type; };
+  template <> struct __unsigned<int> { typedef unsigned int type; };
+  template <> struct __unsigned<long> { typedef unsigned long type; };
+  template <> struct __unsigned<long long> { typedef unsigned long long type; };
+  template <> struct __unsigned<unsigned char> { typedef unsigned char type; };
+  template <> struct __unsigned<unsigned short> { typedef unsigned short type; };
+  template <> struct __unsigned<unsigned int> { typedef unsigned int type; };
+  template <> struct __unsigned<unsigned long> { typedef unsigned long type; };
+  template <> struct __unsigned<unsigned long long> { typedef unsigned long long type; };
+  
 } // end of namespace intel
 } // end of namespace processor
 } // end of namespace cxx

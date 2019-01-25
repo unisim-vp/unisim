@@ -68,8 +68,6 @@ namespace linux_os {
   static char const* const kAARCH64_x4  = "x4"; /* syscall arg#5 */
   static char const* const kAARCH64_x5  = "x5"; /* syscall arg#6 */
   static char const* const kAARCH64_x8  = "x8"; /* syscall NR */
-  static char const* const kAARCH64_sp  = "sp"; /* stack pointer */
-  static char const* const kAARCH64_pc  = "pc"; /* programm counter */
 
   template <class LINUX>
   struct AARCH64TS : public LINUX::TargetSystem
@@ -100,9 +98,6 @@ namespace linux_os {
     typedef typename LINUX::address_type address_type;
     typedef typename LINUX::parameter_type parameter_type;
     typedef typename LINUX::UTSName UTSName;
-    using LINUX::TargetSystem::SetRegister;
-    using LINUX::TargetSystem::GetRegister;
-    using LINUX::TargetSystem::ClearRegister;
     using LINUX::TargetSystem::lin;
     using LINUX::TargetSystem::name;
     
@@ -226,7 +221,7 @@ namespace linux_os {
       for (int idx = 0; idx < 32; ++idx) {
         std::ostringstream buf;
         buf << 'x' << std::dec << idx;
-        if (not ClearRegister(lin, buf.str().c_str()))
+        if (not lin.ClearTargetRegister(buf.str().c_str()))
           return false;
       }
       
@@ -247,7 +242,7 @@ namespace linux_os {
       // //  * are unaffected).
       // {
       //   uint32_t sctlr;
-      //   if (not GetRegister(lin, "sctlr", &sctlr))
+      //   if (not lin.GetTargetRegister("sctlr", &sctlr))
       //     return false;
       //   {
       //     uint32_t const I = 1<<12;
@@ -265,7 +260,7 @@ namespace linux_os {
       // }
       
       // Set PC to the program entry point
-      if (not SetRegister(lin, "pc", lin.GetEntryPoint()))
+      if (not lin.SetTargetRegister("pc", lin.GetEntryPoint()))
         return false;
       
       // Set SP to the base of the created stack
@@ -275,7 +270,7 @@ namespace linux_os {
         lin.DebugErrorStream() << "Could not find the stack pointer section." << std::endl;
         return false;
       }
-      if (not SetRegister(lin, "sp", sp_section->GetAddr()))
+      if (not lin.SetTargetRegister("sp", sp_section->GetAddr()))
         return false;
       address_type par1_addr = sp_section->GetAddr() + 8;
       address_type par2_addr = sp_section->GetAddr() + 16;
@@ -283,14 +278,14 @@ namespace linux_os {
       parameter_type par2 = 0;
       if (not this->MemIF().ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)) or
           not this->MemIF().ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2)) or
-          not SetRegister(lin, "x1", Target2Host(lin.GetEndianness(), par1)) or
-          not SetRegister(lin, "x2", Target2Host(lin.GetEndianness(), par2)))
+          not lin.SetTargetRegister("x1", Target2Host(lin.GetEndianness(), par1)) or
+          not lin.SetTargetRegister("x2", Target2Host(lin.GetEndianness(), par2)))
         return false;
           
       return true;
     }
     
-    static void SetAARCH64SystemCallStatus(LINUX& _lin, int64_t ret, bool error) { SetRegister(_lin, kAARCH64_x0, (parameter_type) ret); }
+    static void SetAARCH64SystemCallStatus(LINUX& _lin, int64_t ret, bool error) { _lin.SetTargetRegister(kAARCH64_x0, (parameter_type) ret); }
     
     void SetSystemCallStatus(int64_t ret, bool error) const { SetAARCH64SystemCallStatus( lin, ret, error ); }
     
@@ -299,12 +294,12 @@ namespace linux_os {
       parameter_type val = 0;
           
       switch (id) {
-      case 0: GetRegister(_lin, kAARCH64_x0, &val); break;
-      case 1: GetRegister(_lin, kAARCH64_x1, &val); break;
-      case 2: GetRegister(_lin, kAARCH64_x2, &val); break;
-      case 3: GetRegister(_lin, kAARCH64_x3, &val); break;
-      case 4: GetRegister(_lin, kAARCH64_x4, &val); break;
-      case 5: GetRegister(_lin, kAARCH64_x5, &val); break;
+      case 0: _lin.GetTargetRegister(kAARCH64_x0, val); break;
+      case 1: _lin.GetTargetRegister(kAARCH64_x1, val); break;
+      case 2: _lin.GetTargetRegister(kAARCH64_x2, val); break;
+      case 3: _lin.GetTargetRegister(kAARCH64_x3, val); break;
+      case 4: _lin.GetTargetRegister(kAARCH64_x4, val); break;
+      case 5: _lin.GetTargetRegister(kAARCH64_x5, val); break;
       default: throw std::logic_error("internal_error");
       }
           
@@ -577,7 +572,7 @@ namespace linux_os {
     {
       // AArch64 ABI ignores the supplied argument and uses register x8
       parameter_type id_from_reg;
-      if (not GetRegister(lin, kAARCH64_x8, &id_from_reg))
+      if (not lin.GetTargetRegister(kAARCH64_x8, id_from_reg))
         return 0;
       id = int(id_from_reg);
       

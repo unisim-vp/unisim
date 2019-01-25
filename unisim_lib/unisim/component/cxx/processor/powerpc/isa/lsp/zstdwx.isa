@@ -51,7 +51,7 @@ zstdwx.execute = {
 	return false;
 }
 zstdwx.disasm = {
-	os << "zstdw" << (m ? "m" : "") << "x r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zstdw" << (m ? "m" : "") << "x " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zstdwx(m=0)

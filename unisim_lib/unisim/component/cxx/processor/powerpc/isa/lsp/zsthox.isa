@@ -51,7 +51,7 @@ zsthox.execute = {
 	return false;
 }
 zsthox.disasm = {
-	os << "zstho" << (m ? "m" : "") << "x r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zstho" << (m ? "m" : "") << "x " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zsthox(m=0)

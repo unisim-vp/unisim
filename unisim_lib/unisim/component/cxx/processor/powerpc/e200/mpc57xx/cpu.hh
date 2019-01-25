@@ -659,13 +659,14 @@ public:
 		template <class FLOAT>
 		static bool check_input( FLOAT& input )
 		{
-			if (unlikely(input.isDenormalized()))
+			typename FLOAT::inherited& iimpl = input.GetImpl();
+			if (unlikely(iimpl.isDenormalized()))
 			{
-				input.setZero(input.isNegative());
+				iimpl.setZero(iimpl.isNegative());
 				return false;
 			}
 			
-			if (unlikely(input.hasInftyExponent()))
+			if (unlikely(iimpl.hasInftyExponent()))
 				return false;
 			
 			return true;
@@ -698,7 +699,7 @@ public:
 		spefscr.template Set<typename SPEFSCR::FXH>(false);
 		spefscr.template Set<typename SPEFSCR::FDBZ>(false);
 		spefscr.template Set<typename SPEFSCR::FDBZH>(false);
-		spefscr.template SetDivideByZero( false );
+		spefscr.SetDivideByZero( false );
 		return __EFPProcessInput__( *this );
 	}
 	
@@ -706,24 +707,25 @@ public:
 	bool
 	EFPProcessOutput( FLOAT& output, FLAGS const& flags )
 	{
-		if (output.hasInftyExponent())
+		typename FLOAT::inherited& oimpl = output.GetImpl();
+		if (oimpl.hasInftyExponent())
 		{
-			bool neg = output.isNegative();
-			output.setInfty();
-			output.setToPrevious();
-			output.setNegative(neg);
+			bool neg = oimpl.isNegative();
+			oimpl.setInfty();
+			oimpl.setToPrevious();
+			oimpl.setNegative(neg);
 		}
 		bool inexact = flags.isApproximate() and not spefscr.template Get<typename CPU::SPEFSCR::FINV>();
 		bool overflow = inexact and flags.isOverflow();
-		if (not spefscr.template SetOverflow( overflow ))
+		if (not spefscr.SetOverflow( overflow ))
 			return false;
 		bool underflow = inexact and flags.isUnderflow();
-		if (output.isDenormalized())
+		if (oimpl.isDenormalized())
 		{
-			output.setZero(output.isNegative());
+			oimpl.setZero(oimpl.isNegative());
 			inexact = true, underflow = true;
 		}
-		if (not spefscr.template SetUnderflow( underflow ))
+		if (not spefscr.SetUnderflow( underflow ))
 			return false;
 
 		if (inexact)

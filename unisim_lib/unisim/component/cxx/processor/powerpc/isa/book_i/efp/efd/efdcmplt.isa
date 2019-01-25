@@ -38,5 +38,5 @@ efdcmplt.execute = {
 	return false;
 }
 efdcmplt.disasm = {
-	os << "efdcmplt " << (unsigned int) bf << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efdcmplt " << (unsigned int) bf << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

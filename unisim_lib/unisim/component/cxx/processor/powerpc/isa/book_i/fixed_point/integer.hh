@@ -43,14 +43,9 @@ namespace cxx {
 namespace processor {
 namespace powerpc {
 
-using unisim::util::arithmetic::SignedAdd32;
-using unisim::util::arithmetic::UnsignedAdd32;
 using unisim::util::arithmetic::RotateLeft;
-using unisim::util::arithmetic::CountLeadingZeros;
+using unisim::util::arithmetic::RotateRight;
 using unisim::util::arithmetic::BitScanReverse;
-using unisim::util::arithmetic::SignExtend;
-using unisim::util::arithmetic::SignedSatAdd32;
-using unisim::util::arithmetic::UnsignedSatAdd32;
 
 inline uint32_t Mask(uint32_t mb, uint32_t me)
 {
@@ -60,6 +55,21 @@ inline uint32_t Mask(uint32_t mb, uint32_t me)
 inline uint32_t Mask(uint32_t n)
 {
 	return (n < 32) ? (n ? (1 << (32 - n)) - 1 : 0xffffffffUL) : 0;
+}
+
+inline uint64_t Mask64(unsigned mb, unsigned me)
+{
+	return RotateRight(uint64_t(-1) << (~(me-mb) & 63), mb);
+}
+
+inline uint64_t RotL32(uint64_t value, uint8_t sh)
+{
+  return 0x100000001ull * RotateLeft(uint32_t(value), sh);
+}
+
+inline uint32_t RotL32(uint32_t value, uint8_t sh)
+{
+  return RotateLeft(value, sh);
 }
 
 } // end of namespace powerpc

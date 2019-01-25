@@ -11,8 +11,8 @@ if [ -z "$1" ]; then
 fi
 
 UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
-DEST_DIR=$(cd $1; pwd)
-mkdir -p ${DEST_DIR}
+mkdir -p "$1"
+DEST_DIR=$(cd "$1"; pwd)
 UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
 UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
 
@@ -104,10 +104,9 @@ unistd.h \
 vector"
 
 UNISIM_LIB_STAR12X_SOURCE_FILES="\
-unisim/kernel/api/api.cc \
 unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_config_file_helper.cc \
-unisim/kernel/service/ini_config_file_helper.cc \
+unisim/kernel/config/xml_config_file_helper.cc \
+unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
@@ -248,10 +247,9 @@ unisim/component/cxx/processor/hcs12x/s12xgate.isa \
 "
 
 UNISIM_LIB_STAR12X_HEADER_FILES="${UNISIM_LIB_STAR12X_ISA_FILES} ${UNISIM_LIB_XB_ISA_FILES} ${UNISIM_LIB_S12XGATE_ISA_FILES} \
-unisim/kernel/api/api.hh \
 unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_config_file_helper.hh \
-unisim/kernel/service/ini_config_file_helper.hh \
+unisim/kernel/config/xml_config_file_helper.hh \
+unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/util/backtrace/backtrace.hh \
@@ -560,6 +558,7 @@ can_stub.cc \
 tle8264_2e.cc \
 simulator_if.cc \
 "
+
 UNISIM_SIMULATORS_STAR12X_HEADER_FILES="\
 simulator.hh \
 atd_pwm_stub.hh \

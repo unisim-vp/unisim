@@ -45,9 +45,9 @@
 
 #include <unisim/util/endian/endian.hh>
 #include <iosfwd>
-#include <limits.h>
-#include <float.h>
-#include <math.h>
+#include <climits>
+#include <cfloat>
+#include <cmath>
 #include <cstdio>
 #include <cassert>
 #if defined(__GNUC__)
@@ -258,13 +258,11 @@ class Access : public Integer::Details::Access {
 
       bool isDivisionByZero() const { return fDivisionByZero; }
       void setDivisionByZero() { fDivisionByZero = true; }
-      bool hasFlowException() const { return feExcept != FENoException; }
       void clearFlowException() { feExcept = FENoException; }
       void setOverflow() { feExcept = FEOverflow; }
       void setUnderflow() { feExcept = FEUnderflow; }
       bool isOverflow() const { return feExcept == FEOverflow; }
       bool isUnderflow() const { return feExcept == FEUnderflow; }
-      void clearUnderflow() { feExcept = FENoException; }
    };
    class WriteParameters {
      private:
@@ -375,7 +373,7 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
    static const int UBitSizeExponent = BitSizeExponent;
    typedef unsigned char CharChunk[BitSizeMantissa+BitSizeExponent+1];
    void setChunkSize(int uChunkSize) const { assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8); }
-   void copyChunk(CharChunk& ccChunk, void* pChunk, int uChunkSize) const
+   void copyChunk(CharChunk& ccChunk, void const* pChunk, int uChunkSize) const
       {  assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8);
          memcpy((unsigned char*) ccChunk, pChunk, uChunkSize);
       }
@@ -463,7 +461,6 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
    static const Exponent& getOneExponent(const Exponent&) { return eOneExponent; }
    static const Exponent& getMinusOneExponent(const Exponent&) { return eMinusOneExponent; }
    static const Exponent& getInftyExponent(const Exponent&) { return eInftyExponent; }
-   static const Exponent& getMaxExponent(const Exponent&) { return eZeroExponent; }
 
    class ExtendedMantissa : public Integer::TBigInt<Integer::Details::TIntegerTraits<BitSizeMantissa+1> > {
      private:
@@ -685,9 +682,9 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
          return *this;
       }
 
-   void setChunk(void* pChunk) { setChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
+   void setChunk(void const* pChunk) { setChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
    void fillChunk(void* pChunk) const { fillChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
-   void setChunk(void* pChunk, bool fLittleEndian); // size(pChunk) = UByteSizeImplantation
+   void setChunk(void const* pChunk, bool fLittleEndian); // size(pChunk) = UByteSizeImplantation
    void fillChunk(void* pChunk, bool fLittleEndian) const;
 
    void setFloat(const FloatConversion& fcValue, StatusAndControlFlags& scfFlags);

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,23 +32,23 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
-}
+/* XOR Immediate Shifted */
+op xoris(27[6]:rs[5]:ra[5]:shl<16> <32> uimm[16]);
 
-op xoris(27[6]:rs[5]:ra[5]:shl<16> <32> uimm[16])
 xoris.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rs);
+	UINT s = cpu->GetGPR(rs), b = UINT(uimm);
 	
 	// Compute the result
-	uint32_t result = s ^ uimm;
+	UINT result = s ^ b;
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
 	
 	return true;
-}
+};
+
 xoris.disasm = {
-	os << "xoris r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << (uimm >> 16);
-}
+	os << "xoris " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << (uimm >> 16);
+};
+

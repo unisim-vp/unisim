@@ -38,5 +38,5 @@ evfscfui.execute = {
 	return false;
 }
 evfscfui.disasm = {
-	os << "evfscfui r" << (unsigned int) rd << ", r" << (unsigned int) rb;
+	os << "evfscfui " << GPRPrint(rd) << ", " << GPRPrint(rb);
 }

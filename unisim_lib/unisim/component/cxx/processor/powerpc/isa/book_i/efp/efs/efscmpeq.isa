@@ -39,8 +39,8 @@ efscmpeq.execute = {
 		return false;
 
 	// Read the input operands
-	uint32_t ua( cpu->GetGPR(ra) ), ub( cpu->GetGPR(rb) );
-	SoftFloat a( ua ), b( ub );
+	U32 ua( cpu->GetGPR(ra) ), ub( cpu->GetGPR(rb) );
+	SoftFloat a( SoftFloat::FromRawBits, ua ), b( SoftFloat::FromRawBits, ub );
 	
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().set(a).set(b).proceed())
@@ -48,7 +48,7 @@ efscmpeq.execute = {
 	
 	// Compute the result
 	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-	bool result = unlikely(spefscr.Get<CPU::SPEFSCR::FINV>()) ? (ua == ub) : (a == b);
+	bool result = evenly(likely(spefscr.Get<CPU::SPEFSCR::FINV>() == UINT(0)) ? (a == b) : (ua == ub));
 	
 	// Update the flags
 	spefscr.SetOverflow( false );
@@ -93,8 +93,8 @@ efscmpeq.execute = {
 	}
 
 	return true;
-}
+};
 
 efscmpeq.disasm = {
-	os << "efscmpeq " << (unsigned int) bf << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-}
+	os << "efscmpeq " << (unsigned int) bf << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
+};

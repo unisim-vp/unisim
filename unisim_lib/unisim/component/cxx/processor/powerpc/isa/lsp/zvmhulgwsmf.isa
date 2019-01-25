@@ -54,5 +54,5 @@ zvmhulgwsmf.execute = {
 	return false;
 }
 zvmhulgwsmf.disasm = {
-	os << "zvmhulgwsmf" << (r ? "r" : "") << LSP_ACC(acc) << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zvmhulgwsmf" << (r ? "r" : "") << LSP_ACC(acc) << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

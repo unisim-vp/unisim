@@ -32,24 +32,24 @@ struct StringEngine
   virtual ~StringEngine() {};
 };
 
-template <class ARCH, unsigned ADDRSIZE>
+template <class ARCH, class OP>
 struct _StringEngine : public StringEngine<ARCH>
 {
-  typedef typename TypeFor<ARCH,ADDRSIZE>::u uaddr_type;
-  typedef typename TypeFor<ARCH,ADDRSIZE>::s saddr_type;
+  typedef typename TypeFor<ARCH,OP::OPSIZE>::u uaddr_type;
+  typedef typename TypeFor<ARCH,OP::OPSIZE>::s saddr_type;
   typedef typename StringEngine<ARCH>::StrOp StrOp;
   
-  ModBase<ARCH,ADDRSIZE> dst, src[6];
+  ModM<ARCH,OP::OPSIZE> dst, src[6];
   _StringEngine() : dst( ES, 7 ), src{{0, 6}, {1, 6}, {2, 6}, {3, 6}, {4, 6}, {5, 6}} {}
   
-  bool tstcounter( ARCH& arch ) const { return arch.Cond( arch.template regread<ADDRSIZE>( 1 ) != uaddr_type( 0 )); }
-  void deccounter( ARCH& arch ) const { arch.template regwrite<ADDRSIZE>( 1, arch.template regread<ADDRSIZE>( 1 ) - uaddr_type( 1 ) ); }
+  bool tstcounter( ARCH& arch ) const { return arch.Cond( arch.regread( OP(), 1 ) != uaddr_type( 0 )); }
+  void deccounter( ARCH& arch ) const { arch.regwrite( OP(), 1, arch.regread( OP(), 1 ) - uaddr_type( 1 ) ); }
   
   StrOp getdst() const { return StrOp( &dst ); }
   StrOp getsrc( uint8_t segment ) const { return StrOp( &src[segment] ); }
   
-  void addsrc( ARCH& arch, int step ) const { arch.template regwrite<ADDRSIZE>( 6, arch.template regread<ADDRSIZE>( 6 ) + uaddr_type( saddr_type( step ) ) ); }
-  void adddst( ARCH& arch, int step ) const { arch.template regwrite<ADDRSIZE>( 7, arch.template regread<ADDRSIZE>( 7 ) + uaddr_type( saddr_type( step ) ) ); }
+  void addsrc( ARCH& arch, int step ) const { arch.regwrite( OP(), 6, arch.regread( OP(), 6 ) + uaddr_type( saddr_type( step ) ) ); }
+  void adddst( ARCH& arch, int step ) const { arch.regwrite( OP(), 7, arch.regread( OP(), 7 ) + uaddr_type( saddr_type( step ) ) ); }
 };
 
 namespace {
@@ -57,42 +57,45 @@ namespace {
   StringEngine<ARCH>*
   mkse( InputCode<ARCH> const& ic )
   {
-    static _StringEngine<ARCH,16> se16;
-    static _StringEngine<ARCH,32> se32;
-    static _StringEngine<ARCH,64> se64;
-    
-    if (ic.addrsize()==16) return &se16;
-    if (ic.addrsize()==32) return &se32;
-    if (ic.addrsize()==64) return &se64;
+    static _StringEngine<ARCH,GOw> se16;
+    static _StringEngine<ARCH,GOd> se32;
+    static _StringEngine<ARCH,GOq> se64;
+
+    switch (ic.addrclass())
+      {
+      case 1: return &se16;
+      case 2: return &se32;
+      case 3: return &se64;
+      }
     throw 0;
     return 0;
   }
 }
 
-template <class ARCH, unsigned OPSIZE, bool REP>
+template <class ARCH, class OP, bool REP>
 struct Movs : public Operation<ARCH>
 {
   Movs( OpBase<ARCH> const& opbase, uint8_t _segment, StringEngine<ARCH>* _str ) : Operation<ARCH>( opbase ), segment( _segment ), str( _str ) {} uint8_t segment; StringEngine<ARCH>* str;
   
   void disasm( std::ostream& _sink ) const {
-    _sink << (REP?"rep ":"") << DisasmMnemonic<OPSIZE>( "movs" ) << DisasmS( segment ) << ":(" << DisasmRd( 6 ) << ")," << DisasmS( 0 ) << ":(" << DisasmRd( 7 ) << ")";
+    _sink << (REP?"rep ":"") << DisasmMnemonic<OP::OPSIZE>( "movs" ) << DisasmS( segment ) << ":(" << DisasmGd( 6 ) << ")," << DisasmS( 0 ) << ":(" << DisasmGd( 7 ) << ")";
   }
   
   void execute( ARCH& arch ) const
   {
-    typedef typename ARCH::u32_t u32_t;
+    typedef typename ARCH::addr_t addr_t;
     
     if (REP and not str->tstcounter( arch )) return;
     
-    arch.template rmwrite<OPSIZE>( str->getdst(), arch.template rmread<OPSIZE>( str->getsrc( segment ) ) );
+    arch.rmwrite( OP(), str->getdst(), arch.rmread( OP(), str->getsrc( segment ) ) );
     
-    int32_t step = arch.Cond( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::OPSIZE/8) : +int32_t(OP::OPSIZE/8);
     str->addsrc( arch, step );
     str->adddst( arch, step );
     
     if (REP) {
       str->deccounter( arch );
-      arch.seteip( u32_t( Operation<ARCH>::address ) );
+      arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
   }
 };
@@ -102,43 +105,43 @@ template <class ARCH> struct DC<ARCH,MOVS> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\xa4" ) ))
   
     {
-      if (ic.rep==0) return new Movs<ARCH,8,false>( _.opbase(), ic.segment, mkse( ic ) );
-      else           return new Movs<ARCH,8, true>( _.opbase(), ic.segment, mkse( ic ) );
+      if (ic.rep==0) return new Movs<ARCH,GOb,false>( _.opbase(), ic.segment, mkse( ic ) );
+      else           return new Movs<ARCH,GOb, true>( _.opbase(), ic.segment, mkse( ic ) );
     }
   
   if (auto _ = match( ic, opcode( "\xa5" ) ))
   
     {
-      if (ic.opsize()==16) { if (ic.rep==0) return new Movs<ARCH,16,false>( _.opbase(), ic.segment, mkse( ic ) ); return new Movs<ARCH,16, true>( _.opbase(), ic.segment, mkse( ic ) ); }
-      if (ic.opsize()==32) { if (ic.rep==0) return new Movs<ARCH,32,false>( _.opbase(), ic.segment, mkse( ic ) ); return new Movs<ARCH,32, true>( _.opbase(), ic.segment, mkse( ic ) ); }
-      if (ic.opsize()==64) { if (ic.rep==0) return new Movs<ARCH,64,false>( _.opbase(), ic.segment, mkse( ic ) ); return new Movs<ARCH,64, true>( _.opbase(), ic.segment, mkse( ic ) ); }
+      if (ic.opsize()==16) { if (ic.rep==0) return new Movs<ARCH,GOw,false>( _.opbase(), ic.segment, mkse( ic ) ); return new Movs<ARCH,GOw, true>( _.opbase(), ic.segment, mkse( ic ) ); }
+      if (ic.opsize()==32) { if (ic.rep==0) return new Movs<ARCH,GOd,false>( _.opbase(), ic.segment, mkse( ic ) ); return new Movs<ARCH,GOd, true>( _.opbase(), ic.segment, mkse( ic ) ); }
+      if (ic.opsize()==64) { if (ic.rep==0) return new Movs<ARCH,GOq,false>( _.opbase(), ic.segment, mkse( ic ) ); return new Movs<ARCH,GOq, true>( _.opbase(), ic.segment, mkse( ic ) ); }
       return 0;
     }
   
   return 0;
 }};
 
-template <class ARCH, unsigned OPSIZE, bool REP>
+template <class ARCH, class OP, bool REP>
 struct Stos : public Operation<ARCH>
 {
   Stos( OpBase<ARCH> const& opbase, StringEngine<ARCH>* _str ) : Operation<ARCH>( opbase ), str( _str ) {} StringEngine<ARCH>* str;
   
-  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << "stos " << DisasmR<OPSIZE>( 0 ) << ',' << DisasmS( 0 ) << ":(" << DisasmRd( 7 ) << ")"; }
+  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << "stos " << DisasmG( OP(), 0 ) << ',' << DisasmS( 0 ) << ":(" << DisasmGd( 7 ) << ")"; }
   
   void execute( ARCH& arch ) const
   {
-    typedef typename ARCH::u32_t u32_t;
+    typedef typename ARCH::addr_t addr_t;
     
     if (REP and not str->tstcounter( arch )) return;
     
-    arch.template rmwrite<OPSIZE>( str->getdst(), arch.template regread<OPSIZE>( 0 ) );
+    arch.rmwrite( OP(), str->getdst(), arch.regread( OP(), 0 ) );
 
-    int32_t step = arch.Cond( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::OPSIZE/8) : +int32_t(OP::OPSIZE/8);
     str->adddst( arch, step );
     
     if (REP) {
       str->deccounter( arch );
-      arch.seteip( u32_t( Operation<ARCH>::address ) );
+      arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
   }
 };
@@ -148,50 +151,50 @@ template <class ARCH> struct DC<ARCH,STOS> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\xaa" ) ))
   
     {
-      if (ic.rep==0) return new Stos<ARCH,8,false>( _.opbase(), mkse( ic ) );
-      else           return new Stos<ARCH,8, true>( _.opbase(), mkse( ic ) );
+      if (ic.rep==0) return new Stos<ARCH,GOb,false>( _.opbase(), mkse( ic ) );
+      else           return new Stos<ARCH,GOb, true>( _.opbase(), mkse( ic ) );
     }
   
   if (auto _ = match( ic, opcode( "\xab" ) ))
   
     {
-      if (ic.opsize()==16) { if (ic.rep==0) return new Stos<ARCH,16,false>( _.opbase(), mkse( ic ) ); return new Stos<ARCH,16, true>( _.opbase(), mkse( ic ) ); }
-      if (ic.opsize()==32) { if (ic.rep==0) return new Stos<ARCH,32,false>( _.opbase(), mkse( ic ) ); return new Stos<ARCH,32, true>( _.opbase(), mkse( ic ) ); }
-      if (ic.opsize()==64) { if (ic.rep==0) return new Stos<ARCH,64,false>( _.opbase(), mkse( ic ) ); return new Stos<ARCH,64, true>( _.opbase(), mkse( ic ) ); }
+      if (ic.opsize()==16) { if (ic.rep==0) return new Stos<ARCH,GOw,false>( _.opbase(), mkse( ic ) ); return new Stos<ARCH,GOw, true>( _.opbase(), mkse( ic ) ); }
+      if (ic.opsize()==32) { if (ic.rep==0) return new Stos<ARCH,GOd,false>( _.opbase(), mkse( ic ) ); return new Stos<ARCH,GOd, true>( _.opbase(), mkse( ic ) ); }
+      if (ic.opsize()==64) { if (ic.rep==0) return new Stos<ARCH,GOq,false>( _.opbase(), mkse( ic ) ); return new Stos<ARCH,GOq, true>( _.opbase(), mkse( ic ) ); }
       return 0;
     }
   
   return 0;
 }};
 
-template <class ARCH, unsigned OPSIZE, unsigned REP>
+template <class ARCH, class OP, unsigned REP>
 struct Cmps : public Operation<ARCH>
 {
   Cmps( OpBase<ARCH> const& opbase, uint8_t _segment, StringEngine<ARCH>* _str ) : Operation<ARCH>( opbase ), segment( _segment ), str( _str ) {} uint8_t segment; StringEngine<ARCH>* str;
   void disasm( std::ostream& _sink ) const
   {
     _sink << ((REP==0) ? "" : (REP&1) ? "repz " : "repnz ") << "cmpsb "
-          << DisasmS( 0 ) << ":(" << DisasmRd( 7 ) << "),"
-          << DisasmS( segment ) << ":(" << DisasmRd( 6 ) << ")";
+          << DisasmS( 0 ) << ":(" << DisasmGd( 7 ) << "),"
+          << DisasmS( segment ) << ":(" << DisasmGd( 6 ) << ")";
   }
   
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::bit_t bit_t;
-    typedef typename ARCH::u32_t u32_t;
+    typedef typename ARCH::addr_t addr_t;
     
     if (REP and not str->tstcounter( arch )) return;
     
-    eval_sub( arch, arch.template rmread<OPSIZE>( str->getsrc( segment ) ), arch.template rmread<OPSIZE>( str->getdst() ) );
+    eval_sub( arch, arch.rmread( OP(), str->getsrc( segment ) ), arch.rmread( OP(), str->getdst() ) );
     
-    int32_t step = arch.Cond( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::OPSIZE/8) : +int32_t(OP::OPSIZE/8);
     str->adddst( arch, step );
     str->addsrc( arch, step );
     
     if (REP) {
       str->deccounter( arch );
-      if (arch.Cond( bit_t( REP&1 ) ^ arch.flagread( ARCH::ZF ) )) return;
-      arch.seteip( u32_t( Operation<ARCH>::address ) );
+      if (arch.Cond( bit_t( REP&1 ) ^ arch.flagread( ARCH::FLAG::ZF ) )) return;
+      arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
   }
 };
@@ -201,9 +204,9 @@ template <class ARCH> struct DC<ARCH,CMPS> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\xa6" ) ))
   
     {
-      if (ic.rep==0) return new Cmps<ARCH,8,3>( _.opbase(), ic.segment, mkse( ic ) );
-      if (ic.rep==2) return new Cmps<ARCH,8,2>( _.opbase(), ic.segment, mkse( ic ) );
-      else           return new Cmps<ARCH,8,0>( _.opbase(), ic.segment, mkse( ic ) );
+      if (ic.rep==0) return new Cmps<ARCH,GOb,3>( _.opbase(), ic.segment, mkse( ic ) );
+      if (ic.rep==2) return new Cmps<ARCH,GOb,2>( _.opbase(), ic.segment, mkse( ic ) );
+      else           return new Cmps<ARCH,GOb,0>( _.opbase(), ic.segment, mkse( ic ) );
     }
 
   
@@ -211,19 +214,19 @@ template <class ARCH> struct DC<ARCH,CMPS> { Operation<ARCH>* get( InputCode<ARC
   
     {
       if (ic.opsize()==16) {
-        if (ic.rep==0) return new Cmps<ARCH,16,0>( _.opbase(), ic.segment, mkse( ic ) );
-        if (ic.rep==2) return new Cmps<ARCH,16,2>( _.opbase(), ic.segment, mkse( ic ) );
-        else           return new Cmps<ARCH,16,3>( _.opbase(), ic.segment, mkse( ic ) );
+        if (ic.rep==0) return new Cmps<ARCH,GOw,0>( _.opbase(), ic.segment, mkse( ic ) );
+        if (ic.rep==2) return new Cmps<ARCH,GOw,2>( _.opbase(), ic.segment, mkse( ic ) );
+        else           return new Cmps<ARCH,GOw,3>( _.opbase(), ic.segment, mkse( ic ) );
       }
       if (ic.opsize()==32) {
-        if (ic.rep==0) return new Cmps<ARCH,32,0>( _.opbase(), ic.segment, mkse( ic ) );
-        if (ic.rep==2) return new Cmps<ARCH,32,2>( _.opbase(), ic.segment, mkse( ic ) );
-        else           return new Cmps<ARCH,32,3>( _.opbase(), ic.segment, mkse( ic ) );
+        if (ic.rep==0) return new Cmps<ARCH,GOd,0>( _.opbase(), ic.segment, mkse( ic ) );
+        if (ic.rep==2) return new Cmps<ARCH,GOd,2>( _.opbase(), ic.segment, mkse( ic ) );
+        else           return new Cmps<ARCH,GOd,3>( _.opbase(), ic.segment, mkse( ic ) );
       }
       if (ic.opsize()==64) {
-        if (ic.rep==0) return new Cmps<ARCH,64,0>( _.opbase(), ic.segment, mkse( ic ) );
-        if (ic.rep==2) return new Cmps<ARCH,64,2>( _.opbase(), ic.segment, mkse( ic ) );
-        else           return new Cmps<ARCH,64,3>( _.opbase(), ic.segment, mkse( ic ) );
+        if (ic.rep==0) return new Cmps<ARCH,GOq,0>( _.opbase(), ic.segment, mkse( ic ) );
+        if (ic.rep==2) return new Cmps<ARCH,GOq,2>( _.opbase(), ic.segment, mkse( ic ) );
+        else           return new Cmps<ARCH,GOq,3>( _.opbase(), ic.segment, mkse( ic ) );
       }
       return 0;
     }
@@ -231,29 +234,29 @@ template <class ARCH> struct DC<ARCH,CMPS> { Operation<ARCH>* get( InputCode<ARC
   return 0;
 }};
 
-template <class ARCH, unsigned OPSIZE, unsigned REP>
+template <class ARCH, class OP, unsigned REP>
 struct Scas : public Operation<ARCH>
 {
   Scas( OpBase<ARCH> const& opbase, StringEngine<ARCH>* _str ) : Operation<ARCH>( opbase ), str( _str ) {} StringEngine<ARCH>* str;
   
-  void disasm( std::ostream& _sink ) const { _sink << "scas " << DisasmS( ES ) << ":(" << DisasmRd( 7 ) << ")," << DisasmR<OPSIZE>( 0 ); }
+  void disasm( std::ostream& _sink ) const { _sink << "scas " << DisasmS( ES ) << ":(" << DisasmGd( 7 ) << ")," << DisasmG( OP(), 0 ); }
   
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::bit_t bit_t;
-    typedef typename ARCH::u32_t u32_t;
+    typedef typename ARCH::addr_t addr_t;
     
     if (REP and not str->tstcounter( arch )) return;
     
-    eval_sub( arch, arch.template rmread<OPSIZE>( str->getdst() ), arch.template regread<OPSIZE>( 0 ) );
+    eval_sub( arch, arch.rmread( OP(), str->getdst() ), arch.regread( OP(), 0 ) );
 
-    int32_t step = arch.Cond( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::OPSIZE/8) : +int32_t(OP::OPSIZE/8);
     str->adddst( arch, step );
     
     if (REP) {
       str->deccounter( arch );
-      if (arch.Cond( bit_t( REP&1 ) ^arch.flagread( ARCH::ZF ) )) return;
-      arch.seteip( u32_t( Operation<ARCH>::address ) );
+      if (arch.Cond( bit_t( REP&1 ) ^ arch.flagread( ARCH::FLAG::ZF ) )) return;
+      arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
   }
 };
@@ -263,9 +266,9 @@ template <class ARCH> struct DC<ARCH,SCAS> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\xae" ) ))
   
     {
-      if (ic.rep==0) return new Scas<ARCH,8,3>( _.opbase(), mkse( ic ) );
-      if (ic.rep==2) return new Scas<ARCH,8,2>( _.opbase(), mkse( ic ) );
-      else           return new Scas<ARCH,8,0>( _.opbase(), mkse( ic ) );
+      if (ic.rep==0) return new Scas<ARCH,GOb,3>( _.opbase(), mkse( ic ) );
+      if (ic.rep==2) return new Scas<ARCH,GOb,2>( _.opbase(), mkse( ic ) );
+      else           return new Scas<ARCH,GOb,0>( _.opbase(), mkse( ic ) );
     }
 
   
@@ -273,19 +276,19 @@ template <class ARCH> struct DC<ARCH,SCAS> { Operation<ARCH>* get( InputCode<ARC
   
     {
       if (ic.opsize()==16) {
-        if (ic.rep==0) return new Scas<ARCH,16,0>( _.opbase(), mkse( ic ) );
-        if (ic.rep==2) return new Scas<ARCH,16,2>( _.opbase(), mkse( ic ) );
-        else           return new Scas<ARCH,16,3>( _.opbase(), mkse( ic ) );
+        if (ic.rep==0) return new Scas<ARCH,GOw,0>( _.opbase(), mkse( ic ) );
+        if (ic.rep==2) return new Scas<ARCH,GOw,2>( _.opbase(), mkse( ic ) );
+        else           return new Scas<ARCH,GOw,3>( _.opbase(), mkse( ic ) );
       }
       if (ic.opsize()==32) {
-        if (ic.rep==0) return new Scas<ARCH,32,0>( _.opbase(), mkse( ic ) );
-        if (ic.rep==2) return new Scas<ARCH,32,2>( _.opbase(), mkse( ic ) );
-        else           return new Scas<ARCH,32,3>( _.opbase(), mkse( ic ) );
+        if (ic.rep==0) return new Scas<ARCH,GOd,0>( _.opbase(), mkse( ic ) );
+        if (ic.rep==2) return new Scas<ARCH,GOd,2>( _.opbase(), mkse( ic ) );
+        else           return new Scas<ARCH,GOd,3>( _.opbase(), mkse( ic ) );
       }
       if (ic.opsize()==64) {
-        if (ic.rep==0) return new Scas<ARCH,64,0>( _.opbase(), mkse( ic ) );
-        if (ic.rep==2) return new Scas<ARCH,64,2>( _.opbase(), mkse( ic ) );
-        else           return new Scas<ARCH,64,3>( _.opbase(), mkse( ic ) );
+        if (ic.rep==0) return new Scas<ARCH,GOq,0>( _.opbase(), mkse( ic ) );
+        if (ic.rep==2) return new Scas<ARCH,GOq,2>( _.opbase(), mkse( ic ) );
+        else           return new Scas<ARCH,GOq,3>( _.opbase(), mkse( ic ) );
       }
       return 0;
     }
@@ -293,27 +296,27 @@ template <class ARCH> struct DC<ARCH,SCAS> { Operation<ARCH>* get( InputCode<ARC
   return 0;
 }};
 
-template <class ARCH, unsigned OPSIZE, bool REP>
+template <class ARCH, class OP, bool REP>
 struct Lods : public Operation<ARCH>
 {
   Lods( OpBase<ARCH> const& opbase, uint8_t _segment, StringEngine<ARCH>* _str ) : Operation<ARCH>( opbase ), segment( _segment ), str( _str ) {} uint8_t segment; StringEngine<ARCH>* str;
   
-  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << "lods " << DisasmS( segment ) << ":(" << DisasmRd( 6 ) << ")," << DisasmRb( 0 ); }
+  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << "lods " << DisasmS( segment ) << ":(" << DisasmGd( 6 ) << ")," << DisasmGb( 0 ); }
   
   void execute( ARCH& arch ) const
   {
-    typedef typename ARCH::u32_t u32_t;
+    typedef typename ARCH::addr_t addr_t;
     
     if (REP and str->tstcounter( arch )) return;
     
-    arch.template regwrite<OPSIZE>( 0, arch.template rmread<OPSIZE>( str->getsrc( segment ) ) );
+    arch.regwrite( OP(), 0, arch.rmread( OP(), str->getsrc( segment ) ) );
     
-    int32_t step = arch.Cond( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::OPSIZE/8) : +int32_t(OP::OPSIZE/8);
     str->addsrc( arch, step );
     
     if (REP) {
       str->deccounter( arch );
-      arch.seteip( u32_t( Operation<ARCH>::address ) );
+      arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
   }
 };
@@ -323,16 +326,16 @@ template <class ARCH> struct DC<ARCH,LODS> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\xac" ) ))
   
     {
-      if (ic.rep==0) return new Lods<ARCH,8,false>( _.opbase(), ic.segment, mkse( ic ) );
-      else           return new Lods<ARCH,8, true>( _.opbase(), ic.segment, mkse( ic ) );
+      if (ic.rep==0) return new Lods<ARCH,GOb,false>( _.opbase(), ic.segment, mkse( ic ) );
+      else           return new Lods<ARCH,GOb, true>( _.opbase(), ic.segment, mkse( ic ) );
     }
   
   if (auto _ = match( ic, opcode( "\xad" ) ))
   
     {
-      if (ic.opsize()==16) { if (ic.rep==0) return new Lods<ARCH,16,false>( _.opbase(), ic.segment, mkse( ic ) ); return new Lods<ARCH,16, true>( _.opbase(), ic.segment, mkse( ic ) ); }
-      if (ic.opsize()==32) { if (ic.rep==0) return new Lods<ARCH,32,false>( _.opbase(), ic.segment, mkse( ic ) ); return new Lods<ARCH,32, true>( _.opbase(), ic.segment, mkse( ic ) ); }
-      if (ic.opsize()==64) { if (ic.rep==0) return new Lods<ARCH,64,false>( _.opbase(), ic.segment, mkse( ic ) ); return new Lods<ARCH,64, true>( _.opbase(), ic.segment, mkse( ic ) ); }
+      if (ic.opsize()==16) { if (ic.rep==0) return new Lods<ARCH,GOw,false>( _.opbase(), ic.segment, mkse( ic ) ); return new Lods<ARCH,GOw, true>( _.opbase(), ic.segment, mkse( ic ) ); }
+      if (ic.opsize()==32) { if (ic.rep==0) return new Lods<ARCH,GOd,false>( _.opbase(), ic.segment, mkse( ic ) ); return new Lods<ARCH,GOd, true>( _.opbase(), ic.segment, mkse( ic ) ); }
+      if (ic.opsize()==64) { if (ic.rep==0) return new Lods<ARCH,GOq,false>( _.opbase(), ic.segment, mkse( ic ) ); return new Lods<ARCH,GOq, true>( _.opbase(), ic.segment, mkse( ic ) ); }
       return 0;
     }
   
@@ -343,7 +346,7 @@ template <class ARCH, unsigned OPSIZE, bool REP>
 struct Outs : public Operation<ARCH>
 {
   Outs( OpBase<ARCH> const& opbase, uint8_t _segment ) : Operation<ARCH>( opbase ), segment( _segment ) {} uint8_t segment;
-  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << DisasmMnemonic<OPSIZE>( "outs" ) << DisasmS( segment ) << ":(" << DisasmRd( 6 ) << "),(" << DisasmRw( 2 ) << ")"; }
+  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << DisasmMnemonic<OPSIZE>( "outs" ) << DisasmS( segment ) << ":(" << DisasmGd( 6 ) << "),(" << DisasmGw( 2 ) << ")"; }
 };
 
 template <class ARCH> struct DC<ARCH,OUTS> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -370,7 +373,7 @@ template <class ARCH, unsigned OPSIZE, bool REP>
 struct Ins : public Operation<ARCH>
 {
   Ins( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {};
-  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << DisasmMnemonic<OPSIZE>( "ins" ) << "(" << DisasmRw( 2 ) << ")," << DisasmS( 0 ) << ":(" << DisasmRd( 7 ) << ")"; }
+  void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << DisasmMnemonic<OPSIZE>( "ins" ) << "(" << DisasmGw( 2 ) << ")," << DisasmS( 0 ) << ":(" << DisasmGd( 7 ) << ")"; }
 };
 
 template <class ARCH> struct DC<ARCH,INS> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
