@@ -1046,7 +1046,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 				}
 				else if((http_request.GetAbsolutePath() == "/kernel") || (http_request.GetAbsolutePath() == "/kernel/"))
 				{
-					return http_server.ServeDefault(http_request, conn);
+					return http_server.Serve404(http_request, conn);
 				}
 // 				else if((http_request.GetAbsolutePath() == "/footer") || (http_request.GetAbsolutePath() == "/footer/"))
 // 				{
@@ -1137,7 +1137,7 @@ bool HttpServer::RouteHttpRequest(unisim::kernel::service::Object *object, unisi
 		}
 	}
 	
-	return ServeDefault(req, conn);
+	return Serve404(req, conn);
 }
 
 bool HttpServer::ServeDefault(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)

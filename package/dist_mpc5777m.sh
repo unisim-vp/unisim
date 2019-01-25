@@ -168,6 +168,7 @@ unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/backtrace/tee_32.cc \
 unisim/service/netstreamer/netstreamer.cc \
 unisim/service/os/linux_os/powerpc_linux32.cc \
+unisim/service/instrumenter/instrumenter.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/floating.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/cpu.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/cpu.cc \
@@ -820,6 +821,7 @@ unisim/service/tee/backtrace/tee.hh \
 unisim/service/netstreamer/netstreamer.hh \
 unisim/service/os/linux_os/linux.hh \
 unisim/service/os/linux_os/powerpc_linux32.hh \
+unisim/service/instrumenter/instrumenter.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/cpu.hh \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.hh \
