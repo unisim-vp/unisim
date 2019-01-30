@@ -197,13 +197,6 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 template <typename TYPES, typename CONFIG>
 CPU<TYPES, CONFIG>::~CPU()
 {
-	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		delete reg_iter->second;
-	}
-	
 }
 
 template <typename TYPES, typename CONFIG>
@@ -455,7 +448,7 @@ bool CPU<TYPES, CONFIG>::MoveToTMR(unsigned int n, uint32_t value)
 template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::AddRegisterInterface(unisim::service::interfaces::Register *reg_if)
 {
-	registers_registry[reg_if->GetName()] = reg_if;
+	registers_registry.AddRegisterInterface(reg_if);
 }
 
 /////////////////////////// ExceptionDispatcher<> /////////////////////////////
@@ -858,25 +851,13 @@ bool CPU<TYPES, CONFIG>::SpecialStore(const REGISTER& reg, typename TYPES::ADDRE
 template <typename TYPES, typename CONFIG>
 unisim::service::interfaces::Register *CPU<TYPES, CONFIG>::GetRegister(const char *name)
 {
-	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter = registers_registry.find(name);
-	if(reg_iter != registers_registry.end())
-	{
-		return (*reg_iter).second;
-	}
-
-	return 0;
+	return registers_registry.GetRegister(name);
 }
 
 template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
 {
-	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter;
-	
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		unisim::service::interfaces::Register *reg_if = (*reg_iter).second;
-		scanner.Append(reg_if);
-	}
+	registers_registry.ScanRegisters(scanner);
 }
 
 template <typename TYPES, typename CONFIG>

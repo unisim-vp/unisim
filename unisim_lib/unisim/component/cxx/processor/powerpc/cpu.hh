@@ -38,6 +38,7 @@
 #include <unisim/util/reg/core/register.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/nat_sort/nat_sort.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -52,6 +53,7 @@
 #include <unisim/service/interfaces/synchronizable.hh>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/inlining/inlining.hh>
+#include <unisim/util/debug/simple_register_registry.hh>
 #include <map>
 #include <stack>
 #include <vector>
@@ -4226,7 +4228,7 @@ protected:
 private:
 	/////////////////////////// Registers Registry ////////////////////////////
 
-	std::map<std::string, unisim::service::interfaces::Register *> registers_registry;       // Every CPU register interfaces
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;       // Every CPU register interfaces
 
 	void AddRegisterInterface(unisim::service::interfaces::Register *reg_if);
 

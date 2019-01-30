@@ -39,6 +39,7 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/clock.hh>
 #include <unisim/util/likely/likely.hh>
+#include <unisim/util/nat_sort/nat_sort.hh>
 #include <unisim/service/interfaces/http_server.hh>
 #include <systemc>
 #include <tlm>
@@ -621,7 +622,7 @@ private:
 	std::string front_ends_priority_order;
 	unisim::kernel::service::Parameter<std::string> param_front_ends_priority_order;
 
-	std::map<std::string, sc_core::sc_interface *, unisim::kernel::service::nat_ltstr /*unisim::kernel::service::lexltstr*/> signal_pool;
+	std::map<std::string, sc_core::sc_interface *, unisim::util::nat_sort::nat_ltstr> signal_pool;
 	std::map<std::string, sc_core::sc_interface *> auto_signal_pool;
 	std::map<std::string, sc_core::sc_port_base *> port_pool;
 	std::map<std::string, std::string> netlist;

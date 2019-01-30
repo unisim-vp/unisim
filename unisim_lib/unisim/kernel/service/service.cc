@@ -1752,7 +1752,7 @@ void Object::Add(Object& object)
 	std::list<Object *>::iterator object_iter;
 	for(object_iter = leaf_objects.begin(); object_iter != leaf_objects.end(); object_iter++)
 	{
-		if(nat_ltstr::Less(object.GetName(), (*object_iter)->GetName()))
+		if(unisim::util::nat_sort::nat_ltstr::Less(object.GetName(), (*object_iter)->GetName()))
 		{
 			leaf_objects.insert(object_iter, &object);
 			return;
@@ -1780,7 +1780,7 @@ void Object::Add(VariableBase& var)
 	std::list<VariableBase *>::iterator variable_iter;
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
-		if(nat_ltstr::Less(var.GetName(), (*variable_iter)->GetName()))
+		if(unisim::util::nat_sort::nat_ltstr::Less(var.GetName(), (*variable_iter)->GetName()))
 		{
 			variables.insert(variable_iter, &var);
 			return;

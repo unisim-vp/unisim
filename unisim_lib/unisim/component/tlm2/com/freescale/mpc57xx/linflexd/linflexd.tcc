@@ -72,6 +72,7 @@ template <typename CONFIG>
 LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_core::sc_module(name)
+	, unisim::kernel::service::Service<unisim::service::interfaces::Registers>(name, parent)
 	, peripheral_slave_if("peripheral_slave_if")
 	, LINTX("LINTX")
 	, LINRX("LINRX")
@@ -83,6 +84,7 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 	, INT_ERR("INT_ERR")
 	, DMA_RX()
 	, DMA_TX()
+	, registers_export("registers-export", this)
 	, logger(*this)
 	, m_clk_prop_proxy(m_clk)
 	, lin_clk_prop_proxy(lin_clk)
@@ -133,6 +135,7 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 	, dma_rx()
 	, dma_tx()
 	, reg_addr_map()
+	, registers_registry()
 	, schedule()
 	, endian(unisim::util::endian::E_BIG_ENDIAN)
 	, param_endian("endian", this, endian, "endian")
@@ -259,6 +262,40 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 	reg_addr_map.MapRegister(linflexd_dmatxe.ADDRESS_OFFSET,  &linflexd_dmatxe); 
 	reg_addr_map.MapRegister(linflexd_dmarxe.ADDRESS_OFFSET,  &linflexd_dmarxe); 
 	reg_addr_map.MapRegister(linflexd_ptd.ADDRESS_OFFSET,     &linflexd_ptd);    
+
+	registers_registry.AddRegisterInterface(linflexd_lincr1.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_linier.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_linsr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_linesr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_uartcr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_uartsr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_lintcsr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_linocr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_lintocr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_linfbrr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_linibrr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_lincfr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_lincr2.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_bidr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_bdrl.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_bdrm.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_ifer.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_ifmi.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_ifmr.CreateRegisterInterface());
+	if(NUM_IDENTIFIERS > 0)
+	{
+		for(unsigned int i = 0; i < NUM_IDENTIFIERS; i++)
+		{
+			registers_registry.AddRegisterInterface(linflexd_ifcr[i].CreateRegisterInterface());
+		}
+	}
+	
+	registers_registry.AddRegisterInterface(linflexd_gcr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_uartpto.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_uartcto.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_dmatxe.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_dmarxe.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_ptd.CreateRegisterInterface());
 
 	SC_METHOD(RESET_B_Process);
 	sensitive << reset_b.pos();
@@ -522,6 +559,20 @@ void LINFlexD<CONFIG>::nb_receive(int id, unisim::kernel::tlm2::tlm_serial_paylo
 			rx_input.fill(payload, t);
 		}
 	}
+}
+
+//////////////// unisim::service::interface::Registers ////////////////////
+
+template <typename CONFIG>
+unisim::service::interfaces::Register *LINFlexD<CONFIG>::GetRegister(const char *name)
+{
+	return registers_registry.GetRegister(name);
+}
+
+template <typename CONFIG>
+void LINFlexD<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 template <typename CONFIG>

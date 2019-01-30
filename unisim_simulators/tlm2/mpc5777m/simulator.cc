@@ -4706,7 +4706,66 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		serial_terminal16->char_io_import >> netstreamer16->char_io_export;
 	}
 	
-	*http_server->http_server_import[0] >> instrumenter->http_server_export;
+	{
+		unsigned int i = 0;
+		*http_server->http_server_import[i++] >> instrumenter->http_server_export;
+	}
+	
+	{
+		unsigned int i = 0;
+		*http_server->registers_import[i++] >> main_core_0->registers_export;
+		*http_server->registers_import[i++] >> main_core_1->registers_export;
+		*http_server->registers_import[i++] >> peripheral_core_2->registers_export;
+		*http_server->registers_import[i++] >> m_can_1->registers_export;
+		*http_server->registers_import[i++] >> m_can_2->registers_export;
+		*http_server->registers_import[i++] >> m_can_3->registers_export;
+		*http_server->registers_import[i++] >> m_can_4->registers_export;
+		*http_server->registers_import[i++] >> dmamux_0->registers_export;
+		*http_server->registers_import[i++] >> dmamux_1->registers_export;
+		*http_server->registers_import[i++] >> dmamux_2->registers_export;
+		*http_server->registers_import[i++] >> dmamux_3->registers_export;
+		*http_server->registers_import[i++] >> dmamux_4->registers_export;
+		*http_server->registers_import[i++] >> dmamux_5->registers_export;
+		*http_server->registers_import[i++] >> dmamux_6->registers_export;
+		*http_server->registers_import[i++] >> dmamux_7->registers_export;
+		*http_server->registers_import[i++] >> dmamux_8->registers_export;
+		*http_server->registers_import[i++] >> dmamux_9->registers_export;
+		*http_server->registers_import[i++] >> edma_0->registers_export;
+		*http_server->registers_import[i++] >> edma_1->registers_export;
+		*http_server->registers_import[i++] >> dspi_0->registers_export;
+		*http_server->registers_import[i++] >> dspi_1->registers_export;
+		*http_server->registers_import[i++] >> dspi_2->registers_export;
+		*http_server->registers_import[i++] >> dspi_3->registers_export;
+		*http_server->registers_import[i++] >> dspi_4->registers_export;
+		*http_server->registers_import[i++] >> dspi_5->registers_export;
+		*http_server->registers_import[i++] >> dspi_6->registers_export;
+		*http_server->registers_import[i++] >> dspi_12->registers_export;
+		*http_server->registers_import[i++] >> ebi->registers_export;
+		*http_server->registers_import[i++] >> xbar_0->registers_export;
+		*http_server->registers_import[i++] >> xbar_0->smpu_registers_export;
+		*http_server->registers_import[i++] >> xbar_1->registers_export;
+		*http_server->registers_import[i++] >> xbar_1->smpu_registers_export;
+		*http_server->registers_import[i++] >> pbridge_a->registers_export;
+		*http_server->registers_import[i++] >> pbridge_b->registers_export;
+		*http_server->registers_import[i++] >> intc_0->registers_export;
+		*http_server->registers_import[i++] >> linflexd_0->registers_export;
+		*http_server->registers_import[i++] >> linflexd_1->registers_export;
+		*http_server->registers_import[i++] >> linflexd_2->registers_export;
+		*http_server->registers_import[i++] >> linflexd_14->registers_export;
+		*http_server->registers_import[i++] >> linflexd_15->registers_export;
+		*http_server->registers_import[i++] >> linflexd_16->registers_export;
+		*http_server->registers_import[i++] >> siul2->registers_export;
+		*http_server->registers_import[i++] >> pit_0->registers_export;
+		*http_server->registers_import[i++] >> pit_1->registers_export;
+		*http_server->registers_import[i++] >> stm_0->registers_export;
+		*http_server->registers_import[i++] >> stm_1->registers_export;
+		*http_server->registers_import[i++] >> stm_2->registers_export;
+		*http_server->registers_import[i++] >> swt_0->registers_export;
+		*http_server->registers_import[i++] >> swt_1->registers_export;
+		*http_server->registers_import[i++] >> swt_2->registers_export;
+		*http_server->registers_import[i++] >> swt_3->registers_export;
+		*http_server->registers_import[i++] >> sema4->registers_export;
+	}
 	
 #if HAVE_TVS
 	bool enable_bandwidth_tracing = (*xbar_0)["enable-bandwidth-tracing"] ||

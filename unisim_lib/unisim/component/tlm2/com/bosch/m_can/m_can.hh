@@ -42,7 +42,10 @@
 #include <unisim/kernel/tlm2/clock.hh>
 #include <unisim/util/reg/core/register.hh>
 #include <unisim/util/likely/likely.hh>
+#include <unisim/util/debug/simple_register_registry.hh>
+#include <unisim/service/interfaces/registers.hh>
 #include <math.h>
+#include <map>
 
 #define SWITCH_ENUM_TRAIT(ENUM_TYPE, CLASS_NAME) template <ENUM_TYPE, bool __SWITCH_TRAIT_DUMMY__ = true> struct CLASS_NAME {}
 #define CASE_ENUM_TRAIT(ENUM_VALUE, CLASS_NAME) template <bool __SWITCH_TRAIT_DUMMY__> struct CLASS_NAME<ENUM_VALUE, __SWITCH_TRAIT_DUMMY__>
@@ -634,6 +637,7 @@ class M_CAN
 	: public tlm_can_core<M_CAN<CONFIG>, M_CAN_TYPES>
 	, public tlm::tlm_bw_transport_if<>
 	, public tlm::tlm_fw_transport_if<>
+	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
 {
 public:
 	typedef tlm_can_core<M_CAN<CONFIG>, M_CAN_TYPES> Super;
@@ -672,6 +676,9 @@ public:
 	sc_core::sc_out<bool>                            DMA_REQ;                     // DMA request output
 	sc_core::sc_vector<sc_core::sc_out<bool> >       FE;                          // Filter Events
 	
+	// services
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+	
 	M_CAN(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
 	virtual ~M_CAN();
 	
@@ -685,6 +692,10 @@ public:
 	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload);
 	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	
+	//////////////// unisim::service::interface::Registers ////////////////////
+	
+	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 protected:
 	friend tlm_can_core<M_CAN<CONFIG>, M_CAN_TYPES>;
 	
@@ -3076,6 +3087,8 @@ private:
 	
 	// M_CAN registers address map
 	RegisterAddressMap<sc_dt::uint64, sc_core::sc_time> reg_addr_map;
+	
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 
 	unisim::kernel::tlm2::Schedule<Event> schedule;         // Payload (processor requests over AHB interface) schedule
 	

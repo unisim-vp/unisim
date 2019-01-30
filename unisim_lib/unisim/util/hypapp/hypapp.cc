@@ -445,7 +445,8 @@ void MessageLoop::Run(ClientConnection const& conn)
                    streat("UA-Disp", key) or
                    streat("UA-OS", key) or
                    streat("UA-Color", key) or
-                   streat("UA-Pixels", key))
+                   streat("UA-Pixels", key) or
+                   streat("Pragma", key))
             { if(http_server.Verbose()) { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; } }
           else if (streat("Range", key))
             { err_log << "[" << conn.socket << "] " << key << ": " << val << "\n"; return; }

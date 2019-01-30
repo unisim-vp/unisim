@@ -4,13 +4,13 @@ var window_resize_refresh_period = 500;
 var window_inner_width = 0;
 var window_inner_height = 0;
 
-resize_var_table = function(var_table_width)
+resize_reg_table = function(reg_table_width)
 {
-	var var_table = document.querySelector('table.var-table');
-	if(var_table)
+	var reg_table = document.querySelector('table.reg-table');
+	if(reg_table)
 	{
-		var_table.style.width = var_table_width + 'px';
-		var_table.style.maxWidth = var_table_width + 'px';
+		reg_table.style.width = reg_table_width + 'px';
+		reg_table.style.maxWidth = reg_table_width + 'px';
 	}
 }
 
@@ -22,7 +22,7 @@ resize = function()
 	{
 		window_inner_width = new_window_inner_width;
 		window_inner_height = new_window_inner_height;
-		resize_var_table(window_inner_width - 32);
+		resize_reg_table(window_inner_width - 32);
 	}
 }
 

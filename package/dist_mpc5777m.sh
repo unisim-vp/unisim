@@ -14,6 +14,7 @@ unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/util/backtrace/backtrace.cc \
 unisim/util/xml/xml.cc \
+unisim/util/debug/simple_register_registry.cc \
 unisim/util/debug/profile_32.cc \
 unisim/util/debug/profile_64.cc \
 unisim/util/debug/symbol_32.cc \
@@ -612,6 +613,7 @@ unisim/util/debug/profile.hh \
 unisim/util/debug/symbol.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/simple_register.hh \
+unisim/util/debug/simple_register_registry.hh \
 unisim/util/debug/watchpoint_registry.hh \
 unisim/util/debug/watchpoint.hh \
 unisim/util/debug/breakpoint_registry.hh \
@@ -693,6 +695,7 @@ unisim/util/parser/parser.hh \
 unisim/util/reg/core/register.hh \
 unisim/util/cache/cache.hh \
 unisim/util/hypapp/hypapp.hh \
+unisim/util/nat_sort/nat_sort.hh \
 unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/debug_selecting.hh \
 unisim/service/interfaces/debug_event.hh \
@@ -893,12 +896,13 @@ UNISIM_LIB_SIMULATOR_TOP_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_powerpc_vle.xml \
 unisim/util/debug/dwarf/powerpc_e500_dwarf_register_number_mapping.xml \
 unisim/util/debug/dwarf/powerpc_e500_gcc_dwarf_register_number_mapping.xml \
+unisim/service/http_server/favicon.ico \
 "
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="\
-unisim/kernel/tlm2/style.css \
-unisim/kernel/tlm2/script.js \
-unisim/kernel/tlm2/favicon.ico \
+unisim/service/instrumenter/style.css \
+unisim/service/instrumenter/script.js \
+unisim/service/instrumenter/favicon.ico \
 unisim/service/http_server/style.css \
 unisim/service/http_server/close-tab-hover.svg \
 unisim/service/http_server/close-tab.svg \
@@ -913,6 +917,9 @@ unisim/service/http_server/right-arrow.png \
 unisim/service/http_server/var_style.css \
 unisim/service/http_server/var_script.js \
 unisim/service/http_server/script.js \
+unisim/service/http_server/reg_style.css \
+unisim/service/http_server/reg_script.js \
+unisim/service/http_server/embedded_script.js \
 "
 
 SIMULATOR_EXTERNAL_HEADERS="\
@@ -1180,7 +1187,7 @@ GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib
 
 mkdir -p ${DEST_DIR}/${SIMPKG}
 
-UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES}"
+UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_LIB_SIMULATOR_TOP_DATA_FILES}"
 
 for file in ${UNISIM_LIB_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"

@@ -39,6 +39,7 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/hypapp/hypapp.hh>
 #include <unisim/service/interfaces/http_server.hh>
+#include <unisim/service/interfaces/registers.hh>
 
 namespace unisim {
 namespace service {
@@ -48,12 +49,14 @@ class HttpServer;
 
 class HttpServer
 	: public unisim::kernel::service::Client<unisim::service::interfaces::HttpServer>
+	, public unisim::kernel::service::Client<unisim::service::interfaces::Registers>
 	, public unisim::util::hypapp::HttpServer
 {
 public:
-	static const unsigned int MAX_HTTP_SERVERS = 256;
+	static const unsigned int MAX_IMPORTS = 256;
 	
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *http_server_import[MAX_HTTP_SERVERS];
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *http_server_import[MAX_IMPORTS];
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *registers_import[MAX_IMPORTS];
 	
 	HttpServer(const char *name, unisim::kernel::service::Object *parent = 0);
 	virtual ~HttpServer();
@@ -73,7 +76,8 @@ private:
 	int http_max_clients;
 	unisim::kernel::service::Parameter<int> param_http_max_clients;
 	
-	std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *> http_server_map;
+	std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *> http_server_import_map;
+	std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *> registers_import_map;
 	
 	std::string Href(unisim::kernel::service::Object *object) const;
 	unisim::kernel::service::Object *FindChildObject(unisim::kernel::service::Object *object, const std::string& child_hierarchical_name, std::size_t& pos);
@@ -89,6 +93,7 @@ private:
 	bool Serve404(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 	bool RouteHttpRequest(unisim::kernel::service::Object *object, unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 	bool ServeDefault(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
+	bool ServeRegisters(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 };
 
 } // end of namespace http_server

@@ -55,6 +55,8 @@ using unisim::component::tlm2::interconnect::generic_router::MEM_ACCESS_WRITE;
 template <typename CONFIG>
 SMPU<CONFIG>::SMPU(const char *name, XBAR *_xbar)
 	: unisim::kernel::service::Object(name, _xbar)
+	, unisim::kernel::service::Service<unisim::service::interfaces::Registers>(name, _xbar)
+	, registers_export("registers-export", this)
 	, xbar(_xbar)
 	, logger(*this)
 	, smpu_cesr0(this)
@@ -62,6 +64,7 @@ SMPU<CONFIG>::SMPU(const char *name, XBAR *_xbar)
 	, smpu_ear(this)
 	, smpu_edr(this)
 	, smpu_rgd(this)
+	, registers_registry()
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 {
@@ -86,6 +89,11 @@ SMPU<CONFIG>::SMPU(const char *name, XBAR *_xbar)
 		xbar->MapRegister(XBAR::SMPU_PERIPHERAL_SLAVE_IF, RegionDescriptorFile::ADDRESS_OFFSET + SMPU_RGD_WORD1::ADDRESS_OFFSET      + (RegionDescriptor::SIZE * region_descriptor_num), &smpu_rgd[region_descriptor_num].smpu_rgd_word1);
 		xbar->MapRegister(XBAR::SMPU_PERIPHERAL_SLAVE_IF, RegionDescriptorFile::ADDRESS_OFFSET + SMPU_RGD_WORD2_FMT0::ADDRESS_OFFSET + (RegionDescriptor::SIZE * region_descriptor_num), &smpu_rgd[region_descriptor_num].smpu_rgd_word2_fmt0);
 		xbar->MapRegister(XBAR::SMPU_PERIPHERAL_SLAVE_IF, RegionDescriptorFile::ADDRESS_OFFSET + SMPU_RGD_WORD3::ADDRESS_OFFSET      + (RegionDescriptor::SIZE * region_descriptor_num), &smpu_rgd[region_descriptor_num].smpu_rgd_word3);
+		
+		registers_registry.AddRegisterInterface(smpu_rgd[region_descriptor_num].smpu_rgd_word0.CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(smpu_rgd[region_descriptor_num].smpu_rgd_word1.CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(smpu_rgd[region_descriptor_num].smpu_rgd_word2_fmt0.CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(smpu_rgd[region_descriptor_num].smpu_rgd_word3.CreateRegisterInterface());
 	}
 }
 
@@ -119,6 +127,20 @@ void SMPU<CONFIG>::Reset()
 	{
 		smpu_rgd[region_descriptor_num].Reset();
 	}
+}
+
+//////////////// unisim::service::interface::Registers ////////////////////
+
+template <typename CONFIG>
+unisim::service::interfaces::Register *SMPU<CONFIG>::GetRegister(const char *name)
+{
+	return registers_registry.GetRegister(name);
+}
+
+template <typename CONFIG>
+void SMPU<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 template <typename CONFIG>
