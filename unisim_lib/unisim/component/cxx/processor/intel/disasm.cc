@@ -87,11 +87,11 @@ namespace intel {
       sink << (&"%rax\0%rcx\0%rdx\0%rbx\0%rsp\0%rbp\0%rsi\0%rdi"[reg*5]);
   }
   
-  void DisasmPq::operator()  ( std::ostream& sink ) const { sink << "%mm" << reg; }
-  void DisasmVdq::operator() ( std::ostream& sink ) const { sink << "%xmm" << reg; }
+  void DisasmPq::operator()  ( std::ostream& sink ) const { sink << "%mm" << std::dec << reg; }
+  void DisasmVdq::operator() ( std::ostream& sink ) const { sink << "%xmm" << std::dec << reg; }
 
-  void DisasmCd::operator()  ( std::ostream& sink ) const { sink << "%cr" << reg; }
-  void DisasmDd::operator()  ( std::ostream& sink ) const { sink << "%db" << reg; }
+  void DisasmCd::operator()  ( std::ostream& sink ) const { sink << "%cr" << std::dec << reg; }
+  void DisasmDd::operator()  ( std::ostream& sink ) const { sink << "%db" << std::dec << reg; }
   
   void
   DisasmS::operator () ( std::ostream& sink ) const

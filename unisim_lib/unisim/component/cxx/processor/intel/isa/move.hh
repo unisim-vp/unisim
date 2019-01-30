@@ -410,7 +410,7 @@ template <class ARCH> struct DC<ARCH,MOV> { Operation<ARCH>* get( InputCode<ARCH
   
     return new MovImm<ARCH,GOd>( _.opbase(), _.rmop(), _.i( int32_t() ) );
   
-  if (auto _ = match( ic, OpSize<64>() & (opcode( "\xb8" ) + Reg()) & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<64>() & (opcode( "\xb8" ) + Reg()) & Imm<64>() ))
   
     return new MovImm<ARCH,GOq>( _.opbase(), _.rmop(), _.i( int64_t() ) );
   
@@ -441,7 +441,7 @@ struct Movzx : public Operation<ARCH>
 {
   Movzx( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   void disasm( std::ostream& sink ) const {
-    sink << "movz" << SizeID<SOP::OPSIZE>::chr() << SizeID<DOP::OPSIZE>::chr() << ' ' << DisasmE( SOP(), rmop ) << ',' << DisasmG( DOP(), gn );
+    sink << "movz" << SizeID<SOP::OPSIZE>::gid() << SizeID<DOP::OPSIZE>::gid() << ' ' << DisasmE( SOP(), rmop ) << ',' << DisasmG( DOP(), gn );
   }
   typedef typename TypeFor<ARCH,DOP::OPSIZE>::u u_type;
   void execute( ARCH& arch ) const { arch.regwrite( DOP(), gn, u_type( arch.rmread( SOP(), rmop ) ) ); }
@@ -451,11 +451,18 @@ template <class ARCH> struct DC<ARCH,MOVZX> { Operation<ARCH>* get( InputCode<AR
 {
   // MOVZX -- Move with Zero-Extend
   if (auto _ = match( ic, opcode( "\x0f\xb6" ) & RM() ))
-  
     {
-      if (ic.rex())        return new Movzx<ARCH,GOb,  GOq>( _.opbase(), _.rmop(), _.greg() );
-      if (ic.opsize()==16) return new Movzx<ARCH,GObLH,GOw>( _.opbase(), _.rmop(), _.greg() );
-      if (ic.opsize()==32) return new Movzx<ARCH,GObLH,GOd>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex())
+        {
+          if (ic.opsize()==16) return new Movzx<ARCH,GOb,GOw>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize()==32) return new Movzx<ARCH,GOb,GOd>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize()==64) return new Movzx<ARCH,GOb,GOq>( _.opbase(), _.rmop(), _.greg() );
+        }
+      else
+        {
+          if (ic.opsize()==16) return new Movzx<ARCH,GObLH,GOw>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize()==32) return new Movzx<ARCH,GObLH,GOd>( _.opbase(), _.rmop(), _.greg() );
+        }
       return 0;
     }
   
@@ -475,7 +482,7 @@ struct Movsx : public Operation<ARCH>
 {
   Movsx( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   void disasm( std::ostream& sink ) const {
-    sink << "movs" << SizeID<SOP::OPSIZE>::chr() << SizeID<DOP::OPSIZE>::chr() << ' ' << DisasmE( SOP(), rmop ) << ',' << DisasmG( DOP(), gn );
+    sink << "movs" << SizeID<SOP::OPSIZE>::gid() << SizeID<DOP::OPSIZE>::gid() << ' ' << DisasmE( SOP(), rmop ) << ',' << DisasmG( DOP(), gn );
   }
   typedef typename TypeFor<ARCH,SOP::OPSIZE>::s ssrc_type;
   typedef typename TypeFor<ARCH,DOP::OPSIZE>::u udst_type;
@@ -489,9 +496,17 @@ template <class ARCH> struct DC<ARCH,MOVSX> { Operation<ARCH>* get( InputCode<AR
   if (auto _ = match( ic, opcode( "\x0f\xbe" ) & RM() ))
   
     {
-      if (ic.rex())        return new Movsx<ARCH,GOb,  GOq>( _.opbase(), _.rmop(), _.greg() );
-      if (ic.opsize()==16) return new Movsx<ARCH,GObLH,GOw>( _.opbase(), _.rmop(), _.greg() );
-      if (ic.opsize()==32) return new Movsx<ARCH,GObLH,GOd>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex())
+        {
+          if (ic.opsize()==16) return new Movsx<ARCH,GOb,GOw>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize()==32) return new Movsx<ARCH,GOb,GOd>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize()==64) return new Movsx<ARCH,GOb,GOq>( _.opbase(), _.rmop(), _.greg() );
+        }
+      else
+        {
+          if (ic.opsize()==16) return new Movsx<ARCH,GObLH,GOw>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize()==32) return new Movsx<ARCH,GObLH,GOd>( _.opbase(), _.rmop(), _.greg() );
+        }
       return 0;
     }
   

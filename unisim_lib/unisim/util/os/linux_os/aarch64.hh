@@ -874,7 +874,7 @@ namespace linux_os {
                 return;
               }
   
-              this->WriteMem(lin, sc.statbuf, (uint8_t *)&target_stat, sizeof(target_stat));
+              lin.WriteMemory(sc.statbuf, (uint8_t *)&target_stat, sizeof(target_stat));
 	
               lin.SetSystemCallStatus(ret, false);
             }
@@ -1004,16 +1004,16 @@ namespace linux_os {
               address_type buf_addr = GetSystemCallParam(lin, 0);
               ret = 0;
 	
-              struct aarch64_utsname value;
-              memset(&value, 0, sizeof(value));
+              struct aarch64_utsname uname_struct;
+              memset(&uname_struct, 0, sizeof(uname_struct));
               UTSName const& utsname = lin.GetUTSName();
               
-              strncpy(value.sysname,  utsname.sysname.c_str(), sizeof(value.sysname) - 1);
-              strncpy(value.nodename, utsname.nodename.c_str(), sizeof(value.nodename) - 1);
-              strncpy(value.release,  utsname.release.c_str(), sizeof(value.release) - 1);
-              strncpy(value.version,  utsname.version.c_str(), sizeof(value.version) - 1);
-              strncpy(value.machine,  utsname.machine.c_str(), sizeof(value.machine));
-              this->WriteMem(lin, buf_addr, (uint8_t *)&value, sizeof(value));
+              strncpy(uname_struct.sysname,  utsname.sysname.c_str(),  sizeof(uname_struct.sysname) - 1);
+              strncpy(uname_struct.nodename, utsname.nodename.c_str(), sizeof(uname_struct.nodename) - 1);
+              strncpy(uname_struct.release,  utsname.release.c_str(),  sizeof(uname_struct.release) - 1);
+              strncpy(uname_struct.version,  utsname.version.c_str(),  sizeof(uname_struct.version) - 1);
+              strncpy(uname_struct.machine,  utsname.machine.c_str(),  sizeof(uname_struct.machine) - 1);
+              lin.WriteMemory(buf_addr, (uint8_t *)&uname_struct, sizeof(uname_struct));
 	
               SetAARCH64SystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }

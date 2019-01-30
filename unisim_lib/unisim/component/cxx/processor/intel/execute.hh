@@ -271,6 +271,7 @@ namespace intel {
   {
     typedef typename ARCH::bit_t bit_t;
     typedef typename ARCH::u8_t u8_t;
+    typedef typename atpinfo<ARCH,INT>::twice twice_type;
     intptr_t const bitsize = atpinfo<ARCH,INT>::bitsize;
     INT const msb = INT( 1 ) << (bitsize-1);
     INT res( 0 );
@@ -278,11 +279,11 @@ namespace intel {
     u8_t sharg = arg2 & u8_t( 0x1f ); 
     
     sharg = sharg % u8_t( bitsize + 1 );
-    typename atpinfo<ARCH,INT>::twice tmp( arg1 );
-    tmp |= typename atpinfo<ARCH,INT>::twice( arch.flagread( ARCH::FLAG::CF ) ) << bitsize;
+    twice_type tmp( arg1 );
+    tmp |= twice_type( arch.flagread( ARCH::FLAG::CF ) ) << bitsize;
     tmp = (tmp << sharg) | (tmp >> (u8_t( bitsize + 1 ) - sharg));
     res = INT( tmp );
-    arch.flagwrite( ARCH::FLAG::CF, bit_t( (tmp >> bitsize) & typename atpinfo<ARCH,INT>::twice( 1 ) ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( (tmp >> bitsize) & twice_type( 1 ) ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
       
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
@@ -439,9 +440,9 @@ namespace intel {
     hi = INT( result >> int(atpinfo<ARCH,INT>::bitsize) );
     INT lores = INT( result );
     lo = lores;
-    bit_t flag = twice( lores ) == result;
-    arch.flagwrite( ARCH::FLAG::OF, flag );
-    arch.flagwrite( ARCH::FLAG::CF, flag );
+    bit_t ovf = twice( lores ) != result;
+    arch.flagwrite( ARCH::FLAG::OF, ovf );
+    arch.flagwrite( ARCH::FLAG::CF, ovf );
   }
   
   /* TODO: need to implement very large multiplications */

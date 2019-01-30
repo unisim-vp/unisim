@@ -57,11 +57,11 @@ namespace intel {
   template <> struct CTypeFor<64> { typedef int64_t s; typedef uint64_t u; typedef double f; };
   template <> struct CTypeFor<80> { typedef double f; };
 
-  struct GObLH { enum { OPSIZE=8 }; };
-  struct GOb { enum { OPSIZE=8 }; };
-  struct GOw { enum { OPSIZE=16 }; };
-  struct GOd { enum { OPSIZE=32 }; };
-  struct GOq { enum { OPSIZE=64 }; };
+  struct GObLH { enum { OPSIZE=8 }; static unsigned size() { return 8; } };
+  struct GOb { enum { OPSIZE=8 };   static unsigned size() { return 8; } };
+  struct GOw { enum { OPSIZE=16 };  static unsigned size() { return 16; } };
+  struct GOd { enum { OPSIZE=32 };  static unsigned size() { return 32; } };
+  struct GOq { enum { OPSIZE=64 };  static unsigned size() { return 64; } };
 
   template <unsigned SIZE> struct GTypeFor {};
   

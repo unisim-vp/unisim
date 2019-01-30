@@ -36,6 +36,7 @@
 #include <unisim/util/os/linux_os/linux.tcc>
 #include <unisim/util/os/linux_os/calls.tcc>
 #include <iomanip>
+#include <sys/utsname.h>
 
 LinuxOS::LinuxOS( std::ostream& log,
          unisim::service::interfaces::Registers *regs_if,
@@ -199,11 +200,37 @@ LinuxOS::Core( std::string const& coredump )
 }
 
 void
-LinuxOS::Process( std::vector<std::string> const& simargs, std::vector<std::string> const& envs )
+LinuxOS::Setup( bool verbose )
 {
   // Set up the different linuxlib parameters
-  linux_impl.SetVerbose(true);
+  linux_impl.SetVerbose(verbose);
   
+  linux_impl.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
+  linux_impl.SetMemoryPageSize( 0x1000UL );
+  struct utsname unm;
+  uname(&unm);
+  linux_impl.SetUname(unm.sysname,
+                      unm.nodename,
+                      unm.release,
+                      unm.version,
+                      unm.machine,
+                      unm.domainname);
+                   
+  
+  // linux_impl.SetUname("Linux" /* sysname */,
+  //                     "localhost" /* nodename */,
+  //                     "4.14.89-unisim" /* release */,
+  //                     "#1 SMP Fri Mar 12 05:23:09 UTC 2010" /* version */,
+  //                     "x86_64" /* machine */,
+  //                     "localhost" /* domainname */);
+  // linux_impl.SetStdinPipeFilename(stdin_pipe_filename.c_str());
+  // linux_impl.SetStdoutPipeFilename(stdout_pipe_filename.c_str());
+  // linux_impl.SetStderrPipeFilename(stderr_pipe_filename.c_str());
+}
+
+void
+LinuxOS::Process( std::vector<std::string> const& simargs, std::vector<std::string> const& envs )
+{
   if (not linux_impl.SetCommandLine(simargs))
     throw 0;
     
@@ -216,18 +243,7 @@ LinuxOS::Process( std::vector<std::string> const& simargs, std::vector<std::stri
   if (not linux_impl.AddLoadFile( simargs[0].c_str() ))
     throw 0;
   
-  linux_impl.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
   linux_impl.SetStackBase( 0x40000000UL );
-  linux_impl.SetMemoryPageSize( 0x1000UL );
-  linux_impl.SetUname("Linux" /* sysname */,
-                      "localhost" /* nodename */,
-                      "4.14.89-unisim" /* release */,
-                      "#1 SMP Fri Mar 12 05:23:09 UTC 2010" /* version */,
-                      "x86_64" /* machine */,
-                      "localhost" /* domainname */);
-  // linux_impl.SetStdinPipeFilename(stdin_pipe_filename.c_str());
-  // linux_impl.SetStdoutPipeFilename(stdout_pipe_filename.c_str());
-  // linux_impl.SetStderrPipeFilename(stderr_pipe_filename.c_str());
 
   // now it is time to try to run the initialization of the linuxlib
   if (not linux_impl.Load())
@@ -241,4 +257,10 @@ void
 LinuxOS::ExecuteSystemCall( int id )
 {
   linux_impl.ExecuteSystemCall( id, exited, app_ret_status );
+}
+
+void
+LinuxOS::SetBrk(addr_t brk)
+{
+  linux_impl.brk_point_ = brk;
 }

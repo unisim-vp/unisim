@@ -495,7 +495,7 @@ namespace linux_os {
       case 155:   return this->GetSysCall("pivot_root");
       case 156:   return this->GetSysCall("_sysctl");
       case 157:   return this->GetSysCall("prctl");
-      case 158:   return this->GetSysCall("arch_prctl");
+        /* 158: arch_prctl (see AMD64 specific) */
       case 159:   return this->GetSysCall("adjtimex");
       case 160:   return this->GetSysCall("setrlimit");
       case 161:   return this->GetSysCall("chroot");
@@ -738,7 +738,7 @@ namespace linux_os {
               strncpy(value.release,  utsname.release.c_str(), sizeof(value.release) - 1);
               strncpy(value.version,  utsname.version.c_str(), sizeof(value.version) - 1);
               strncpy(value.machine,  utsname.machine.c_str(), sizeof(value.machine));
-              this->WriteMem(lin, buf_addr, (uint8_t *)&value, sizeof(value));
+              lin.WriteMemory(buf_addr, (uint8_t *)&value, sizeof(value));
 	
               SetAMD64SystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
@@ -746,6 +746,50 @@ namespace linux_os {
           return &sc;
         } break;
 
+      case 158: /* amd64 specific arch_prctl */
+        {
+          static struct : public SysCall {
+            // asmlinkage long long sys_arch_prctl(int code, unsigned long addr)            
+            char const* GetName() const { return "arch_prctl"; }
+            struct Args {
+              Args(LINUX& lin) : code( SysCall::GetParam(lin, 0) ), addr( SysCall::GetParam(lin, 1) ) {}
+              int code; address_type addr;
+            };
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              Args sc(lin);
+              sink << "(int code=" << std::dec << sc.code << ", unsigned long addr=" << std::hex << sc.addr << ")";
+            }
+            void Execute( LINUX& lin, int syscall_id ) const
+            {
+              Args sc(lin);
+              
+              // #define ARCH_SET_GS 0x1001
+              // #define ARCH_SET_FS 0x1002
+              // #define ARCH_GET_FS 0x1003
+              // #define ARCH_GET_GS 0x1004
+              
+              switch (sc.code)
+                {
+                case 0x1001: // ARCH_SET_FS; Set the 64-bit base for the FS register to addr.
+                  lin.SetTargetRegister( "%fs_base", sc.addr ); // pseudo allocation of a tls descriptor
+                  break;
+                case 0x1002: // ARCH_GET_FS; Return the 64-bit base value for the FS register of the current thread in the unsigned long pointed to by addr.
+                  lin.WriteMemory( sc.addr, lin.GetTargetRegister( "%fs_base" ) );
+                  break;
+                case 0x1003: // ARCH_SET_GS; Set the 64-bit base for the GS register to addr.
+                  lin.SetTargetRegister( "%gs_base", sc.addr ); // pseudo allocation of a tls descriptor
+                  break;
+                case 0x1004: // ARCH_GET_GS; Return the 64-bit base value for the GS register of the current thread in the unsigned long pointed to by addr.
+                  lin.WriteMemory( sc.addr, lin.GetTargetRegister( "%gs_base" ) );
+                  break;
+                }
+              
+              SetAMD64SystemCallStatus( lin, 0, false );
+            }
+          } sc;
+          return &sc;
+        } break;
       }
           
       return 0;

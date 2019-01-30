@@ -494,92 +494,6 @@ PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::GetParam(Linux& lin
   return lin.target_system->GetSystemCallParam(id);
 }
 
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::ReadMem( Linux& lin, ADDRESS_TYPE addr, uint8_t * buffer, uint32_t size )
-{
-  if (lin.mem_inject_if_ == NULL)
-    {
-      lin.debug_warning_stream << "LinuxOS has no memory connection." << std::endl;
-      return false;
-    }
-       
-  if (not lin.mem_inject_if_->InjectReadMemory(addr, buffer, size))
-    {
-      lin.debug_warning_stream
-        << "failed OS read memory:" << std::endl
-        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
-        << "\tsize = " << size
-        << std::endl;
-      return false;
-    }
-  
-  if (unlikely(lin.verbose_))
-    {
-      lin.debug_info_stream
-        << "OS read memory:" << std::endl
-        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
-        << "\tsize = " << size << std::endl
-        << "\tdata =0x" << std::hex;
-                               
-      for (unsigned int i = 0; i < size; i++)
-        {
-          lin.debug_info_stream << " " << (unsigned int)buffer[i];
-        }
-                       
-      lin.debug_info_stream << std::dec << std::endl;
-    }
-      
-  return true;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::WriteMem( Linux& lin, ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size)
-{
-  if (lin.mem_inject_if_ == NULL) return false;
-       
-  if (unlikely(lin.verbose_))
-    {
-      lin.debug_info_stream
-        << "OS write memory:" << std::endl
-        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
-        << "\tsize = " << size << std::endl
-        << "\tdata =0x" << std::hex;
-                       
-      for (unsigned int i = 0; i < size; i++)
-        {
-          lin.debug_info_stream << " " << (unsigned int)buffer[i];
-        }
-               
-      lin.debug_info_stream << std::dec << std::endl;
-    }
-  return lin.mem_inject_if_->InjectWriteMemory(addr, buffer, size);
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::ReadMemString(Linux& lin, ADDRESS_TYPE addr, std::string& str)
-{
-  // Two pass string retrieval
-  int len = 0;
-  for (ADDRESS_TYPE tail = addr; ; len += 1, tail += 1)
-    {
-      if (len >= 0x100000) {
-        lin.debug_error_stream << "Huge string: bailing out" << std::endl;
-        return false;
-      }
-      uint8_t buffer;
-      if (not ReadMem(lin, tail, &buffer, 1))
-        {
-          lin.debug_error_stream << "Can't read memory at 0x" << std::hex << tail << std::endl;
-          return false;
-        }
-      if (buffer == '\0') break;
-    }
-  
-  str.resize( len, '*' );
-  
-  return ReadMem(lin, addr, (uint8_t*)&str[0], len);
-}
-
 namespace {
   template <uintptr_t N>
   bool
@@ -714,7 +628,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
           return;
         }
         if (ret > 0)
-          SysCall::WriteMem(lin, buf_addr, (uint8_t *)buf, ret);
+          lin.WriteMemory(buf_addr, (uint8_t *)buf, ret);
         
         free(buf);
 
@@ -756,7 +670,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
             return;
           }
             
-        SysCall::ReadMem(lin, buf_addr, (uint8_t *)buf, count);
+        lin.ReadMemory(buf_addr, (uint8_t *)buf, count);
                 
         if (unlikely(lin.verbose_))
           {
@@ -791,7 +705,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       {
         Args(Linux& lin)
           : dfd(SysCall::GetParam(lin, 0)), filename(SysCall::GetParam(lin, 1)), flags(SysCall::GetParam(lin, 2)), mode(SysCall::GetParam(lin, 3))
-          , filename_string(), filename_valid(SysCall::ReadMemString(lin, filename, filename_string))
+          , filename_string(), filename_valid(lin.ReadString(filename, filename_string))
         {};
         int dfd; address_type filename; int flags; unsigned short mode; std::string filename_string; bool filename_valid;
         void Describe( std::ostream& sink ) const
@@ -832,7 +746,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       {
         Args(Linux& lin)
           : filename(SysCall::GetParam(lin, 0)), flags(SysCall::GetParam(lin, 1)), mode(SysCall::GetParam(lin, 2))
-          , filename_string(), filename_valid(SysCall::ReadMemString(lin, filename, filename_string))
+          , filename_string(), filename_valid(lin.ReadString(filename, filename_string))
         {};
         address_type filename; int flags; unsigned short mode; std::string filename_string; bool filename_valid;
         void Describe(std::ostream& sink ) const
@@ -1024,7 +938,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         mode_t mode = SysCall::GetParam(lin, 1);
         
         std::string pathname;
-        if (not SysCall::ReadMemString(lin, addr, pathname))
+        if (not lin.ReadString(addr, pathname))
           {
             lin.debug_warning_stream << "Out of memory" << std::endl;
             lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
@@ -1213,7 +1127,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
           }
         
         uint64_t lseek_result64 = unisim::util::endian::Host2Target(lin.endianness_, (uint64_t) ret);
-        SysCall::WriteMem(lin, result_addr, (uint8_t *) &lseek_result64, sizeof(lseek_result64));
+        lin.WriteMemory(result_addr, (uint8_t *) &lseek_result64, sizeof(lseek_result64));
         
         if (unlikely(lin.verbose_))
           lin.debug_info_stream << this->TraceCall(lin) << std::endl;
@@ -1250,13 +1164,13 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         for (int step = count; (--step) >= 0; iovecaddr += 2*parameter_size)
           {
             parameter_type iov_base, iov_len;
-            SysCall::ReadMem( lin, iovecaddr + 0*parameter_size, (uint8_t*)&iov_base, parameter_size );
-            SysCall::ReadMem( lin, iovecaddr + 1*parameter_size, (uint8_t*)&iov_len, parameter_size );
+            lin.ReadMemory(iovecaddr + 0*parameter_size, iov_base );
+            lin.ReadMemory(iovecaddr + 1*parameter_size, iov_len );
             iov_base = unisim::util::endian::Target2Host( lin.endianness_, iov_base );
             iov_len  = unisim::util::endian::Target2Host( lin.endianness_, iov_len );
             assert( iov_len < 0x100000 );
             uint8_t buffer[iov_len];
-            SysCall::ReadMem( lin, iov_base, &buffer[0], iov_len );
+            lin.ReadMemory(iov_base, &buffer[0], iov_len );
           
             int ret = ::write( target_fd, &buffer[0], iov_len );
           
@@ -1614,7 +1528,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
           }
 
         uint32_t len = strlen( ret ) + 1;
-        SysCall::WriteMem(lin, buf_addr, (uint8_t *)&buffer[0], len);
+        lin.WriteMemory(buf_addr, (uint8_t *)&buffer[0], len);
         
         lin.SetSystemCallStatus(len, false);
       }
@@ -1698,7 +1612,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         address_type pathnameaddr = SysCall::GetParam(lin, 0);
         
         std::string pathname;
-        if (not SysCall::ReadMemString(lin, pathnameaddr, pathname))
+        if (not lin.ReadString(pathnameaddr, pathname))
           {
             lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
             return;
@@ -1737,7 +1651,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         Args sc(lin);
         
         std::string oldpath, newpath;
-        if (not SysCall::ReadMemString(lin, sc.oldpath, oldpath) or not SysCall::ReadMemString(lin, sc.newpath, newpath))
+        if (not lin.ReadString(sc.oldpath, oldpath) or not lin.ReadString(sc.newpath, newpath))
           {
             lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
             return;

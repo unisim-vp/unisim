@@ -972,7 +972,7 @@ namespace linux_os {
 
               if(ret >= 0)
                 {
-                  this->WriteMem(lin, buf_addr, (uint8_t *)&target_tms, sizeof(target_tms));
+                  lin.WriteMemory(buf_addr, (uint8_t *)&target_tms, sizeof(target_tms));
                 }
               else
                 {
@@ -1018,11 +1018,11 @@ namespace linux_os {
                 {
                   if(tv_addr)
                     {
-                      this->WriteMem(lin, tv_addr, (const uint8_t *) &target_tv, sizeof(target_tv));
+                      lin.WriteMemory(tv_addr, (const uint8_t *) &target_tv, sizeof(target_tv));
                     }
                   if(tz_addr)
                     {
-                      this->WriteMem(lin, tz_addr, (const uint8_t *) &target_tz, sizeof(target_tz));
+                      lin.WriteMemory(tz_addr, (const uint8_t *) &target_tz, sizeof(target_tz));
                     }
                 }
 
@@ -1113,7 +1113,7 @@ namespace linux_os {
               strncpy(value.release,  utsname.release.c_str(), sizeof(value.release) - 1);
               strncpy(value.version,  utsname.version.c_str(), sizeof(value.version) - 1);
               strncpy(value.machine,  utsname.machine.c_str(), sizeof(value.machine));
-              this->WriteMem(lin, buf_addr, (uint8_t *)&value, sizeof(value));
+              lin.WriteMemory(buf_addr, (uint8_t *)&value, sizeof(value));
 	
               SetARMSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
@@ -1140,11 +1140,11 @@ namespace linux_os {
               address_type pathnameaddr = GetSystemCallParam(lin, 0);
               address_type buf_address = GetSystemCallParam(lin, 1);
               std::string pathname;
-              if (this->ReadMemString(lin, pathnameaddr, pathname))
+              if (lin.ReadString(pathnameaddr, pathname))
                 {
                   struct arm_stat64 target_stat;
                   ret = Stat64(pathname.c_str(), &target_stat, lin.GetEndianness());
-                  this->WriteMem(lin, buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+                  lin.WriteMemory(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
                       
                   if(unlikely(lin.GetVerbose()))
                     {
@@ -1199,7 +1199,7 @@ namespace linux_os {
                   ret = Fstat64(host_fd, &target_stat, lin.GetEndianness());
                   if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
 			
-                  this->WriteMem(lin, buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+                  lin.WriteMemory(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
                 }
 	
               if(unlikely(lin.GetVerbose()))
@@ -1264,7 +1264,7 @@ namespace linux_os {
           void Execute( LINUX& lin, int syscall_id ) const
           {
             uint32_t r0 = Host2Target(lin.GetEndianness(), GetSystemCallParam(lin, 0));
-            this->WriteMem(lin, 0xffff0ff0UL, (uint8_t *)&(r0), sizeof(r0));
+            lin.WriteMemory(0xffff0ff0UL, (uint8_t *)&(r0), sizeof(r0));
             SetARMSystemCallStatus(lin, (parameter_type)0, false);
           }
         } sc;

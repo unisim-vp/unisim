@@ -42,6 +42,43 @@ template <class ARCH> struct DC<ARCH,RDTSC> { Operation<ARCH>* get( InputCode<AR
   return 0;
 }};
 
+// op xgetbv( 0x0f[8]:> <:0x01[8]:> <:0b11[2]:0b010[3]:0b000[3]:> rewind <:*modrm[ModRM] );
+// 
+// xgetbv.disasm = { _sink << "xgetbv "; };
+// 
+// op xsetbv( 0x0f[8]:> <:0x01[8]:> <:0b11[2]:0b010[3]:0b001[3]:> rewind <:*modrm[ModRM] );
+// 
+// xsetbv.disasm = { _sink << "xsetbv "; };
+// 
+
+template <class ARCH>
+struct XGetBV : public Operation<ARCH>
+{
+  XGetBV( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
+  void disasm( std::ostream& sink ) const { sink << "xgetbv"; }
+  void execute( ARCH& arch ) const { arch.xgetbv(); }
+};
+
+template <class ARCH>
+struct XSetBV : public Operation<ARCH>
+{
+  XSetBV( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
+  void disasm( std::ostream& sink ) const { sink << "xsetbv"; }
+};
+
+template <class ARCH> struct DC<ARCH,XBV> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (auto _ = match( ic, opcode( "\x0f\x01\xd0" ) ))
+
+    return new XGetBV<ARCH>( _.opbase() );
+  
+  if (auto _ = match( ic, opcode( "\x0f\x01\xd1" ) ))
+
+    return new XSetBV<ARCH>( _.opbase() );
+  
+  return 0;
+}};
+
 // 
 // op wrmsr( 0x0f[8]:> <:0x30[8] );
 // 
@@ -278,14 +315,6 @@ template <class ARCH> struct DC<ARCH,RDTSC> { Operation<ARCH>* get( InputCode<AR
 // op lgdt_ms( 0x0f[8]:> <:0x01[8]:> <:?[2]:0b010[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // lgdt_ms.disasm = { _sink << "lgdtl " << DisasmM( modrm, segment ); };
-// 
-// op xgetbv( 0x0f[8]:> <:0x01[8]:> <:0b11[2]:0b010[3]:0b000[3]:> rewind <:*modrm[ModRM] );
-// 
-// xgetbv.disasm = { _sink << "xgetbv "; };
-// 
-// op xsetbv( 0x0f[8]:> <:0x01[8]:> <:0b11[2]:0b010[3]:0b001[3]:> rewind <:*modrm[ModRM] );
-// 
-// xsetbv.disasm = { _sink << "xsetbv "; };
 // 
 // op vmfunc( 0x0f[8]:> <:0x01[8]:> <:0b11[2]:0b010[3]:0b100[3]:> rewind <:*modrm[ModRM] );
 // 

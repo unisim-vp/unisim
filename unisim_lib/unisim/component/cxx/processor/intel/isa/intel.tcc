@@ -61,8 +61,8 @@ namespace intel {
                      FLSSTATE, FST, FSTSW, FSUB, FSUBR, FTST, FUCOM, FXAM, FXCH, FOBSOLETE,
                      PUSH, PUSHA, PUSHF, POP, POPA, POPF, MOV, MOVZX, MOVSX, STD, ARPL, CMPXCHG,
                      CMPXCHG8B, XCHG, XADD, NOP, CMOVCC, BT, BTC, BTR, BTS, BSWAP, MOVNTI, LFP,
-                     MOVS, STOS, CMPS, SCAS, LODS, OUTS, INS, CPUID, RDTSC, 
-                     PXOR, MOVDQU, PCMPEQ, PMOVMSKB, VMOVSD,
+                     MOVS, STOS, CMPS, SCAS, LODS, OUTS, INS, CPUID, RDTSC, XBV,
+                     PUNPCK, PSHUFD, PXOR, MOVD, MOVDQ, PCMPEQ, PMOVMSKB, VMOVSD,
                      operation_count };
 
   template <class ARCH>
@@ -112,36 +112,22 @@ namespace intel {
     uint8_t const* get( CodeBase const& cb, uint8_t const* bytes ) { return (cb.opsize() != SIZE) ? 0 : bytes; }
   };
   
-  template <uint8_t REP>
-  struct RP
+  template <uint8_t _66, uint8_t REP>
+  struct SSE_PFX
   {
-    typedef RP<REP> this_type;
-    template <typename RHS>
-    AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
-    
-    template <typename PROPERTY> uint8_t const* get( PROPERTY& value, uint8_t const* bytes ) { return bytes; }
-    
-    uint8_t const* get( CodeBase const& cb, uint8_t const* bytes ) { return (cb.rep != REP) ? 0 : bytes; }
-  };
-  
-  typedef RP<0> RP_;
-  typedef RP<2> RPF2;
-  typedef RP<3> RPF3;
-
-  template <uint8_t _66>
-  struct OP
-  {
-    typedef OP<_66> this_type;
+    typedef SSE_PFX<_66, REP> this_type;
     template <typename RHS>
     AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
 
     template <typename PROPERTY> uint8_t const* get( PROPERTY& value, uint8_t const* bytes ) { return bytes; }
 
-    uint8_t const* get( CodeBase const& cb, uint8_t const* bytes ) { return (cb.opsz_66 != _66) ? 0 : bytes; }
+    uint8_t const* get( CodeBase const& cb, uint8_t const* bytes ) { return (cb.opsz_66 == _66) and (cb.rep == REP) ? bytes : 0; }
   };
-  
-  typedef OP<0> OP_;
-  typedef OP<1> OP66;
+
+  typedef SSE_PFX<0,2> sseF2;
+  typedef SSE_PFX<0,3> sseF3;
+  typedef SSE_PFX<1,0> sse66;
+  typedef SSE_PFX<0,0> sse__;
   
   template <unsigned SIZE>
   struct AddrSize
@@ -355,7 +341,7 @@ namespace intel {
     
     void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << "(%rip)"; }
     
-    addr_t effective_address( ARCH& arch ) const { return addr_t( disp ); };
+    addr_t effective_address( ARCH& arch ) const { return addr_t( disp ) + addr_t( arch.getnip() ); };
   };
 
   template <class ARCH, unsigned ADDRSIZE>
@@ -489,6 +475,8 @@ namespace intel {
                 // uint8_t scale = (*bytes >> 6) & 3;
                 uint8_t index = (*bytes >> 3) & 7;
                 uint8_t base =  (*bytes >> 0) & 7;
+                index |= (cb.rex() & 2) << (3-1); /* rex.x is decoded */
+                
                 
                 bytes += 1;
                 if (mod == 2)
@@ -714,11 +702,11 @@ namespace intel {
       if (pattern.get( out, bytes )) throw 0;
     }
     
-    template <typename INT>
-    INT imm( unsigned idx = 0 ) { ImmValue<INT> res( idx ); find( res, icode().opcode() ); return res.value; }
+    // template <typename INT>
+    // INT imm( unsigned idx = 0 ) { ImmValue<INT> res( idx ); find( res, icode().opcode() ); return res.value; }
     
     template <typename INT>
-    int32_t i( INT it, unsigned idx = 0 ) { ImmValue<int32_t> res( idx ); find( res, icode().opcode() ); return res.value; }
+    INT i( INT it, unsigned idx = 0 ) { ImmValue<INT> res( idx ); find( res, icode().opcode() ); return res.value; }
     
     MOp<ARCH>* rmop() { RMOpFabricT<ARCH> res( icode() ); find( static_cast<RMOpFabric&>(res), icode().opcode() ); return res.mop; }
     

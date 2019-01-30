@@ -357,13 +357,117 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetDebugRegister( char const* regname ) con
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>:: TargetSystem::ReadMemory( Linux& lin, ADDRESS_TYPE addr, PARAMETER_TYPE* value )
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadTargetMemory( ADDRESS_TYPE addr, PARAMETER_TYPE& value ) const
 {
-  if (not lin.mem_if_->ReadMemory(addr, (uint8_t *)value, sizeof(PARAMETER_TYPE)) )
+  if (not this->mem_if_->ReadMemory(addr, (uint8_t *)&value, sizeof(PARAMETER_TYPE)))
     return false;
   
-  *value = Target2Host(lin.GetEndianness(), *value);
+  value = Target2Host(this->GetEndianness(), value);
   return true;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMemory( ADDRESS_TYPE addr, PARAMETER_TYPE value ) const
+{
+  value = Host2Target(this->GetEndianness(), value);
+  
+  return this->WriteMemory(addr, (uint8_t const*)&value, sizeof(PARAMETER_TYPE));
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMemory( ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size ) const
+{
+  if (this->mem_inject_if_ == NULL) return false;
+       
+  if (unlikely(this->verbose_))
+    {
+      this->debug_info_stream
+        << "OS write memory:" << std::endl
+        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
+        << "\tsize = " << size << std::endl
+        << "\tdata =0x" << std::hex;
+                       
+      for (unsigned int i = 0; i < size; i++)
+        {
+          this->debug_info_stream << " " << (unsigned int)buffer[i];
+        }
+               
+      this->debug_info_stream << std::dec << std::endl;
+    }
+  return this->mem_inject_if_->InjectWriteMemory(addr, buffer, size);
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMemory( ADDRESS_TYPE addr, PARAMETER_TYPE& value ) const
+{
+  if (not ReadMemory(addr, (uint8_t *)&value, sizeof(PARAMETER_TYPE)))
+    return false;
+  
+  value = Target2Host(this->GetEndianness(), value);
+  return true;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMemory( ADDRESS_TYPE addr, uint8_t* buffer, uint32_t size ) const
+{
+  if (this->mem_inject_if_ == NULL)
+    {
+      this->debug_warning_stream << "LinuxOS has no memory connection." << std::endl;
+      return false;
+    }
+       
+  if (not this->mem_inject_if_->InjectReadMemory(addr, buffer, size))
+    {
+      this->debug_warning_stream
+        << "failed OS read memory:" << std::endl
+        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
+        << "\tsize = " << size
+        << std::endl;
+      return false;
+    }
+  
+  if (unlikely(this->verbose_))
+    {
+      this->debug_info_stream
+        << "OS read memory:" << std::endl
+        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
+        << "\tsize = " << size << std::endl
+        << "\tdata =0x" << std::hex;
+                               
+      for (unsigned int i = 0; i < size; i++)
+        {
+          this->debug_info_stream << " " << (unsigned int)buffer[i];
+        }
+                       
+      this->debug_info_stream << std::dec << std::endl;
+    }
+      
+  return true;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadString( ADDRESS_TYPE addr, std::string& str ) const
+{
+  // Two pass string retrieval
+  int len = 0;
+  for (ADDRESS_TYPE tail = addr; ; len += 1, tail += 1)
+    {
+      if (len >= 0x100000) {
+        debug_error_stream << "Huge string: bailing out" << std::endl;
+        return false;
+      }
+      uint8_t buffer;
+      if (not ReadMemory(tail, &buffer, 1))
+        {
+          this->debug_error_stream << "Can't read memory at 0x" << std::hex << tail << std::endl;
+          return false;
+        }
+      if (buffer == '\0') break;
+    }
+  
+  str.resize( len, '*' );
+  
+  return ReadMemory(addr, (uint8_t*)&str[0], len);
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -380,6 +484,15 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetTargetRegister( char const* regname
     }
   
   return false;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetTargetRegister( char const* regname ) const
+{
+  PARAMETER_TYPE result;
+  if (not GetTargetRegister(regname, result))
+    throw (unisim::service::interfaces::Register*)0;
+  return result;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>

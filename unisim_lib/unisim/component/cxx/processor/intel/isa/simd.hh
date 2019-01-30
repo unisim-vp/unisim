@@ -353,30 +353,83 @@
 // op movapd_wdq_vdq( 0x66[8]:> <:0x0f[8]:> <:0x29[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // movapd_wdq_vdq.disasm = { _sink << "movapd " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); };
-// 
+//
+
 // /* MOVD/MOVQ -- Move Doubleword/Move Quadword */
-// op movd_pq_ed( 0x0f[8]:> <:0x6e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movd_pq_ed.disasm = { _sink << "movd " << DisasmEd( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// op movd_ed_pq( 0x0f[8]:> <:0x7e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movd_ed_pq.disasm = { _sink << "movd " << DisasmPq( gn ) << ',' << DisasmEd( rmop ); };
-// 
-// op movd_vdq_ed( 0x66[8]:> <:0x0f[8]:> <:0x6e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movd_vdq_ed.disasm = { _sink << "movd " << DisasmEd( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op movd_ed_vdq( 0x66[8]:> <:0x0f[8]:> <:0x7e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movd_ed_vdq.disasm = { _sink << "movd " << DisasmVdq( gn ) << ',' << DisasmEd( rmop ); };
-// 
+template <class ARCH, class GOP>
+struct MovEP : public Operation<ARCH>
+{
+  MovEP( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::OPSIZE==64?'q':'d') << ' ' << DisasmPq( gn ) << ',' << DisasmE( GOP(), rmop ); }
+};
+
+template <class ARCH, class GOP>
+struct MovEV : public Operation<ARCH>
+{
+  MovEV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::OPSIZE==64?'q':'d') << ' ' << DisasmVdq( gn ) << ',' << DisasmE( GOP(), rmop ); }
+  void execute( ARCH& arch ) const { arch.rmwrite( GOP(), rmop, arch.template xmm_uread<GOP::OPSIZE>( gn, 0 ) ); }
+};
+
+template <class ARCH, class GOP>
+struct MovPE : public Operation<ARCH>
+{
+  MovPE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::OPSIZE==64?'q':'d') << ' ' << DisasmE( GOP(), rmop ) << ',' << DisasmPq( gn ); }
+};
+
+template <class ARCH, class GOP>
+struct MovVE : public Operation<ARCH>
+{
+  MovVE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::OPSIZE==64?'q':'d') << ' ' << DisasmE( GOP(), rmop ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    arch.template xmm_uwrite<64>( gn, 0, typename ARCH::u64_t(0) );
+    arch.template xmm_uwrite<64>( gn, 1, typename ARCH::u64_t(0) );
+    arch.template xmm_uwrite<GOP::OPSIZE>( gn, 0, arch.rmread( GOP(), rmop ) );
+  }
+};
+
+template <class ARCH> struct DC<ARCH,MOVD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x6e" ) & RM() ))
+    {
+      if (ic.opsize() == 64) return new MovPE<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
+      else                   return new MovPE<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
+    }
+
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x7e" ) & RM() ))
+    {
+      if (ic.opsize() == 64) return new MovEP<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
+      else                   return new MovEP<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
+    }
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x6e" ) & RM() ))
+    {
+      if (ic.opsize() == 64) return new MovVE<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
+      else                   return new MovVE<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
+    }
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x7e" ) & RM() ))
+    {
+      if (ic.opsize() == 64) return new MovEV<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
+      else                   return new MovEV<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
+    }
+
+  return 0;
+}};
+
+
 // /* MOVDDUP -- Move One Double-FP and Duplicate */
 // 
 // op movddup_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x12[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // movddup_vdq_wdq.disasm = { _sink << "movddup " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
 // 
+
 // /* MOVDQA -- Move Aligned Double Quadword */
 // 
 // op movdqa_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x6f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
@@ -388,11 +441,11 @@
 // movdqa_wdq_vdq.disasm = { _sink << "movdqa " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); };
 
 /* MOVDQU -- Move Unaligned Double Quadword */
-template <class ARCH>
-struct MovdquVW : public Operation<ARCH>
+template <class ARCH, bool ALIGNED>
+struct MovdqVW : public Operation<ARCH>
 {
-  MovdquVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "movdqu " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); }
+  MovdqVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "movdq" << (ALIGNED?"a ":"u ") << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
     arch.template xmm_uwrite<64>( gn, 0,  arch.template xmm_uread<64>( rmop, 0 ) );
@@ -400,11 +453,11 @@ struct MovdquVW : public Operation<ARCH>
   }
 };
 
-template <class ARCH>
-struct MovdquWV : public Operation<ARCH>
+template <class ARCH, bool ALIGNED>
+struct MovdqWV : public Operation<ARCH>
 {
-  MovdquWV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "movdqu " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); }
+  MovdqWV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "movdq" << (ALIGNED?"a ":"u ") << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); }
   void execute( ARCH& arch ) const
   {
     arch.template xmm_uwrite<64>( rmop, 0,  arch.template xmm_uread<64>( gn, 0 ) );
@@ -412,29 +465,29 @@ struct MovdquWV : public Operation<ARCH>
   }
 };
 
-template <class ARCH> struct DC<ARCH,MOVDQU> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+template <class ARCH> struct DC<ARCH,MOVDQ> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
   
-  if (auto _ = match( ic, RPF3() & opcode( "\x0f\x6f" ) & RM() ))
+  if (auto _ = match( ic, sseF3() & opcode( "\x0f\x6f" ) & RM() ))
     
-    return new MovdquVW<ARCH>( _.opbase(), _.rmop(), _.greg() );
+    return new MovdqVW<ARCH,false>( _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( ic, RPF3() & opcode( "\x0f\x7f" ) & RM() ))
+  if (auto _ = match( ic, sseF3() & opcode( "\x0f\x7f" ) & RM() ))
     
-    return new MovdquWV<ARCH>( _.opbase(), _.rmop(), _.greg() );
+    return new MovdqWV<ARCH,false>( _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x6f" ) & RM() ))
+    
+    return new MovdqVW<ARCH,true>( _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x7f" ) & RM() ))
+    
+    return new MovdqWV<ARCH,true>( _.opbase(), _.rmop(), _.greg() );
   
   return 0;
 }};
 
-// op movdqu_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x6f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movdqu_vdq_wdq.disasm = { _sink << "movdqu " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op movdqu_wdq_vdq( 0xf3[8]:> <:0x0f[8]:> <:0x7f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movdqu_wdq_vdq.disasm = { _sink << "movdqu " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); };
-// 
 // /* MOVDQ2Q -- Move Quadword from XMM to MMX Technology Register */
 // op movdq2q_pq_vdq( 0x66[8]:> <:0x0f[8]:> <:0x2d[8]:> <:0b11[2]:gn[3]:rm[3]:> rewind <:*modrm[ModRM] );
 // 
@@ -567,11 +620,11 @@ template <class ARCH> struct DC<ARCH,VMOVSD> { Operation<ARCH>* get( InputCode<A
 {
   if (ic.f0()) return 0;
   
-  if (auto _ = match( ic, RPF2() & opcode( "\x0f\x10" ) & RM() ))
+  if (auto _ = match( ic, sseF2() & opcode( "\x0f\x10" ) & RM() ))
     
     return new Movsd<ARCH>( _.opbase(), make_rop<ARCH>( _.greg() ), _.rmop() );
   
-  if (auto _ = match( ic, RPF2() & opcode( "\x0f\x11" ) & RM() ))
+  if (auto _ = match( ic, sseF2() & opcode( "\x0f\x11" ) & RM() ))
     
     return new Movsd<ARCH>( _.opbase(), _.rmop(), make_rop<ARCH>( _.greg() ) );
   
@@ -872,19 +925,19 @@ template <class ARCH> struct DC<ARCH,PCMPEQ> { Operation<ARCH>* get( InputCode<A
 {
   if (ic.f0()) return 0;
   
-  if (auto _ = match( ic, RP_() & OP66() & opcode( "\x0f\x74" ) & RM() ))
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x74" ) & RM() ))
     
     return new PCmpEqVW<ARCH,8>( _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( ic, RP_() & OP66() & opcode( "\x0f\x75" ) & RM() ))
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x75" ) & RM() ))
     
     return new PCmpEqVW<ARCH,16>( _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( ic, RP_() & OP66() & opcode( "\x0f\x76" ) & RM() ))
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x76" ) & RM() ))
     
     return new PCmpEqVW<ARCH,32>( _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( ic, RP_() & OP66() & opcode( "\x0f\x38\x29" ) & RM() ))
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x38\x29" ) & RM() ))
     
     return new PCmpEqVW<ARCH,64>( _.opbase(), _.rmop(), _.greg() );
   
@@ -1163,13 +1216,14 @@ struct PMovMskBRV : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,PMOVMSKB> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
-  
-  if (auto _ = match( ic, RP_() & opcode( "\x0f\xd7" ) & RM_reg() ))
+
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\xd7" ) & RM_reg() ))
     
-    {
-      if (ic._66()) return new PMovMskBRV<ARCH>( _.opbase(), _.ereg(), _.greg() );
-      else          return new PMovMskBRP<ARCH>( _.opbase(), _.ereg(), _.greg() );
-    }
+    return new PMovMskBRP<ARCH>( _.opbase(), _.ereg(), _.greg() );
+  
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\xd7" ) & RM_reg() ))
+
+    return new PMovMskBRV<ARCH>( _.opbase(), _.ereg(), _.greg() );
   
   return 0;
 }};
@@ -1311,7 +1365,36 @@ template <class ARCH> struct DC<ARCH,PMOVMSKB> { Operation<ARCH>* get( InputCode
 // op pshufd_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x70[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
 // pshufd_vdq_wdq_ib.disasm = { _sink << "pshufd " << DisasmI(imm) << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
+//
+
+template <class ARCH>
+struct Pshufd : public Operation<ARCH>
+{
+  Pshufd( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, uint8_t _oo ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), oo(_oo) {} RMOp<ARCH> rm; uint8_t gn; uint8_t oo;
+  void disasm( std::ostream& sink ) const { sink << "pshufd " << DisasmI(oo) << ',' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0; idx < 4; ++idx)
+      {
+        unsigned part = (oo >> 2*idx) % 4;
+        arch.template xmm_uwrite<32>( gn, idx, arch.template xmm_uread<32>( rm, part ) );
+      }
+  }
+};
+
+template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x70" ) & RM() & Imm<8>() ))
+    
+      return new Pshufd<ARCH>( _.opbase(), _.rmop(), _.greg(), _.i(int8_t()) );
+
+  return 0;
+}};
+
+
+
 // /* PSHUFHW -- Shuffle Packed High Words */
 // op pshufhw_vdq_wdq_ib( 0xf3[8]:> <:0x0f[8]:> <:0x70[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
@@ -1565,64 +1648,81 @@ template <class ARCH> struct DC<ARCH,PMOVMSKB> { Operation<ARCH>* get( InputCode
 // 
 // ptest_vdq_wdq.disasm = { _sink << "ptest " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
 // 
-// /* PUNPCKHBW/PUNPCKHWD/PUNPCKHDQ/PUNPCKHQDQ --  Unpack High Data */
+
 // op punpckhbw_pq_qq( 0x0f[8]:> <:0x68[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // punpckhbw_pq_qq.disasm = { _sink << "punpckhbw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
 // op punpckhwd_pq_qq( 0x0f[8]:> <:0x69[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // punpckhwd_pq_qq.disasm = { _sink << "punpckhwd " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
 // op punpckhdq_pq_qq( 0x0f[8]:> <:0x6a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // punpckhdq_pq_qq.disasm = { _sink << "punpckhdq " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// op punpckhbw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x68[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// punpckhbw_vdq_wdq.disasm = { _sink << "punpckhbw " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op punpckhwd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x69[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// punpckhwd_vdq_wdq.disasm = { _sink << "punpckhwd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op punpckhdq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x6a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// punpckhdq_vdq_wdq.disasm = { _sink << "punpckhdq " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op punpckhqdq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x6d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// punpckhqdq_vdq_wdq.disasm = { _sink << "punpckhqdq " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* PUNPCKLBW/PUNPCKLWD/PUNPCKLDQ/PUNPCKLQDQ -- Unpack Low Data */
 // op punpcklbw_pq_qq( 0x0f[8]:> <:0x60[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // punpcklbw_pq_qq.disasm = { _sink << "punpcklbw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
 // op punpcklwd_pq_qq( 0x0f[8]:> <:0x61[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // punpcklwd_pq_qq.disasm = { _sink << "punpcklwd " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
 // op punpckldq_pq_qq( 0x0f[8]:> <:0x62[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // punpckldq_pq_qq.disasm = { _sink << "punpckldq " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// op punpcklbw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x60[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// punpcklbw_vdq_wdq.disasm = { _sink << "punpcklbw " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op punpcklwd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x61[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// punpcklwd_vdq_wdq.disasm = { _sink << "punpcklwd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op punpckldq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x62[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// punpckldq_vdq_wdq.disasm = { _sink << "punpckldq " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op punpcklqdq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x6c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// punpcklqdq_vdq_wdq.disasm = { _sink << "punpcklqdq " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
+
+template <class ARCH, unsigned OPSIZE, bool HI>
+struct PunpckV : public Operation<ARCH>
+{
+  PunpckV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "punpck" << (HI?'h':'l') << SizeID<OPSIZE>::iid() << SizeID<2*OPSIZE>::iid() << ' ' << DisasmWdq(rmop) << ',' << DisasmVdq(gn); }
+  void execute( ARCH& arch ) const
+  {
+    unsigned const COUNT = 64/OPSIZE;
+    unsigned const RMSK = HI ? 0 : COUNT - 1;
+    unsigned const HALF = HI ? COUNT : 0;
+    
+    for (unsigned chunk = 0; chunk < COUNT; ++chunk)
+      {
+        unsigned idx = chunk & RMSK;
+        arch.template xmm_uwrite<OPSIZE>( gn, 2*idx+0, arch.template xmm_uread<OPSIZE>( gn, HALF+idx ) );
+        arch.template xmm_uwrite<OPSIZE>( gn, 2*idx+1, arch.template xmm_uread<OPSIZE>( rmop, HALF+idx ) );
+      }
+  }
+};
+
+/* PUNPCKHBW/PUNPCKHWD/PUNPCKHDQ/PUNPCKHQDQ/PUNPCKLBW/PUNPCKLWD/PUNPCKLDQ/PUNPCKLQDQ -- Unpack Data */
+template <class ARCH> struct DC<ARCH,PUNPCK> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x68" ) & RM() ))
+
+    return new PunpckV<ARCH,8,true>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x69" ) & RM() ))
+
+    return new PunpckV<ARCH,16,true>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x6a" ) & RM() ))
+
+    return new PunpckV<ARCH,32,true>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x6d" ) & RM() ))
+
+    return new PunpckV<ARCH,64,true>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x60" ) & RM() ))
+
+    return new PunpckV<ARCH,8,false>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x61" ) & RM() ))
+
+    return new PunpckV<ARCH,16,false>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x62" ) & RM() ))
+
+    return new PunpckV<ARCH,32,false>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x6c" ) & RM() ))
+
+    return new PunpckV<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
+
+  return 0;
+}};
+
+
 
 template <class ARCH>
 struct PXorPQ : public Operation<ARCH>
@@ -1648,13 +1748,14 @@ template <class ARCH> struct DC<ARCH,PXOR> { Operation<ARCH>* get( InputCode<ARC
 {
   if (ic.f0()) return 0;
   
-  if (auto _ = match( ic, RP_() & opcode( "\x0f\xef" ) & RM() ))
-    
-    {
-      if (ic._66()) return new PXorVW<ARCH>( _.opbase(), _.rmop(), _.greg() );
-      else          return new PXorPQ<ARCH>( _.opbase(), _.rmop(), _.greg() );
-    }
-  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\xef" ) & RM() ))
+
+    return new PXorPQ<ARCH>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\xef" ) & RM() ))
+
+    return new PXorVW<ARCH>( _.opbase(), _.rmop(), _.greg() );
+
   return 0;
 }};
 
