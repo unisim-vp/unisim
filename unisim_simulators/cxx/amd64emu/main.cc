@@ -538,7 +538,7 @@ struct Arch
     return memwrite<GOP::OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
   }
 
-  template<unsigned OPSIZE>
+  template <unsigned OPSIZE>
   typename TypeFor<Arch,OPSIZE>::u
   memread( unsigned _seg, u64_t _addr )
   {
@@ -646,24 +646,24 @@ struct Arch
   void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::OPSIZE>::u value )
   {
     u64regs[idx] = u64_t( value );
-    gdbchecker.mark( idx );
+    // gdbchecker.mark( idx );
   }
 
   void regwrite( GObLH const&, unsigned idx, u8_t value )
   {
     unsigned reg = idx%4, sh = idx*2 & 8;
     u64regs[reg] = (u64regs[reg] & ~u64_t(0xff << sh)) | ((value & u64_t(0xff)) << sh);
-    gdbchecker.mark( reg );
+    // gdbchecker.mark( reg );
   }
   void regwrite( GOb const&, unsigned idx, u8_t value )
   {
     u64regs[idx] = (u64regs[idx] & ~u64_t(0xff)) | ((value & u64_t(0xff)));
-    gdbchecker.mark( idx );
+    // gdbchecker.mark( idx );
   }
   void regwrite( GOw const&, unsigned idx, u16_t value )
   {
     u64regs[idx] = (u64regs[idx] & ~u64_t(0xffff)) | ((value & u64_t(0xffff)));
-    gdbchecker.mark( idx );
+    // gdbchecker.mark( idx );
   }
 
   struct FLAG
@@ -839,10 +839,10 @@ public:
       
     VUnion() : arrangement( &ToBytes<uint8_t> ) {}
   } umms[16];
-
+  
   uint8_t vmm_storage[16][16];
     
-  template<unsigned OPSIZE>
+  template <unsigned OPSIZE>
   typename TypeFor<Arch,OPSIZE>::u
   xmm_uread( unsigned reg, unsigned sub )
   {
@@ -853,7 +853,7 @@ public:
     return u_array[sub];
   }
     
-  template<unsigned OPSIZE>
+  template <unsigned OPSIZE>
   void
   xmm_uwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::u val )
   {
@@ -863,8 +863,19 @@ public:
       
     u_array[sub] = val;
   }
+
+  template <unsigned OPSIZE>
+  typename TypeFor<Arch,OPSIZE>::f
+  xmm_fread( unsigned reg, unsigned sub )
+  {
+    typedef typename TypeFor<Arch,OPSIZE>::f f_type;
+      
+    f_type* f_array = umms[reg].GetStorage<f_type>( &vmm_storage[reg][0] );
+      
+    return f_array[sub];
+  }
     
-  template<unsigned OPSIZE>
+  template <unsigned OPSIZE>
   typename TypeFor<Arch,OPSIZE>::u
   xmm_uread( RMOp const& rmop, unsigned sub )
   {
@@ -872,7 +883,7 @@ public:
     return memread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8) );
   }
     
-  template<unsigned OPSIZE>
+  template <unsigned OPSIZE>
   void
   xmm_uwrite( RMOp const& rmop, unsigned sub, typename TypeFor<Arch,OPSIZE>::u val )
   {
@@ -892,42 +903,42 @@ public:
 
   bool Cond( bool b ) const { return b; }
 
-  struct GDBChecker
-  {
-    GDBChecker() : sink("check.gdb"), visited(), nassertid(0), dirtmask( 0 ) {}
-    std::ofstream sink;
-    std::map<uint64_t,uint64_t> visited;
-    uint64_t nassertid;
-    uint32_t dirtmask;
-    void mark( unsigned reg ) { dirtmask |= (1 << reg); }
-    uint64_t getnew_aid() { if (++nassertid > 0x80000) throw 0; return nassertid; }
-    void start( Arch const& cpu)
-    {
-      sink << "set pagination off\n\n"
-           << "define insn_assert\n  if $arg1 != $arg2\n    printf \"insn_assert %u failed.\\n\", $arg0\n    bad_assertion\n  end\nend\n\n"
-           << "break *0x" << std::hex << cpu.rip << "\nrun\n\n";
-    }
-    void step( Arch const& cpu )
-    {
-      cpu.latest_instruction->disasm( sink << "# " ); sink << "\n";
-      uint64_t cia = cpu.rip;
-      uint64_t revisit = visited[cia]++;
-      sink << "stepi\n";
-      if (revisit == 0)
-        sink << "# advance *0x" << std::hex << cia << "\n";
-      else
-        sink << "# break *0x" << std::hex << cia << "; cont; cont " << std::dec << revisit << "\n";
-      sink << "insn_assert " << std::dec << getnew_aid() << " $rip 0x" << std::hex  << cia << '\n';
-      for (unsigned reg = 0; reg < 16; ++reg)
-        {
-          if (not ((dirtmask>>reg) & 1)) continue;
-          uint64_t value = cpu.u64regs[reg];
-          std::ostringstream rn; rn << unisim::component::cxx::processor::intel::DisasmGq(reg);
-          sink << "insn_assert " << std::dec << getnew_aid() << " $" << &(rn.str().c_str()[1]) << " 0x" << std::hex << value << '\n';
-        }
-      dirtmask = 0;
-    }
-  } gdbchecker;
+  // struct GDBChecker
+  // {
+  //   GDBChecker() : sink("check.gdb"), visited(), nassertid(0), dirtmask( 0 ) {}
+  //   std::ofstream sink;
+  //   std::map<uint64_t,uint64_t> visited;
+  //   uint64_t nassertid;
+  //   uint32_t dirtmask;
+  //   void mark( unsigned reg ) { dirtmask |= (1 << reg); }
+  //   uint64_t getnew_aid() { if (++nassertid > 0x80000) throw 0; return nassertid; }
+  //   void start( Arch const& cpu)
+  //   {
+  //     sink << "set pagination off\n\n"
+  //          << "define insn_assert\n  if $arg1 != $arg2\n    printf \"insn_assert %u failed.\\n\", $arg0\n    bad_assertion\n  end\nend\n\n"
+  //          << "break *0x" << std::hex << cpu.rip << "\nrun\n\n";
+  //   }
+  //   void step( Arch const& cpu )
+  //   {
+  //     cpu.latest_instruction->disasm( sink << "# " ); sink << "\n";
+  //     uint64_t cia = cpu.rip;
+  //     uint64_t revisit = visited[cia]++;
+  //     sink << "stepi\n";
+  //     if (revisit == 0)
+  //       sink << "# advance *0x" << std::hex << cia << "\n";
+  //     else
+  //       sink << "# break *0x" << std::hex << cia << "; cont; cont " << std::dec << revisit << "\n";
+  //     sink << "insn_assert " << std::dec << getnew_aid() << " $rip 0x" << std::hex  << cia << '\n';
+  //     for (unsigned reg = 0; reg < 16; ++reg)
+  //       {
+  //         if (not ((dirtmask>>reg) & 1)) continue;
+  //         uint64_t value = cpu.u64regs[reg];
+  //         std::ostringstream rn; rn << unisim::component::cxx::processor::intel::DisasmGq(reg);
+  //         sink << "insn_assert " << std::dec << getnew_aid() << " $" << &(rn.str().c_str()[1]) << " 0x" << std::hex << value << '\n';
+  //       }
+  //     dirtmask = 0;
+  //   }
+  // } gdbchecker;
 
   void _DE() { std::cerr << "#DE: Division Error.\n"; throw 0; }
 };
@@ -1071,16 +1082,16 @@ struct ICache : public DECODER
     if (not operation) return 0;
     memcpy( &page->bytes[offset], bytes, operation->length );
     
-    {
-      std::ostringstream buf;
-      buf << std::hex << address << ":\t" << unisim::component::cxx::processor::intel::DisasmBytes(bytes,operation->length) << '\t';
-      operation->disasm( buf );
-      if (certs.insert( buf.str() ).second)
-        {
-          std::cerr << "unknown instruction: " << buf.str() << '\n';
-          return 0;
-        }
-    }
+    // {
+    //   std::ostringstream buf;
+    //   buf << std::hex << address << ":\t" << unisim::component::cxx::processor::intel::DisasmBytes(bytes,operation->length) << '\t';
+    //   operation->disasm( buf );
+    //   if (certs.insert( buf.str() ).second)
+    //     {
+    //       std::cerr << "unknown instruction: " << buf.str() << '\n';
+    //       return 0;
+    //     }
+    // }
     
     return operation;
   }
@@ -1167,177 +1178,181 @@ Arch::xgetbv()
   this->regwrite( GOd(), 2, d );
 }
 
+// void
+// Arch::cpuid()
+// {
+//   uint32_t level = this->regread( GOd(), 0 ), count = this->regread( GOd(), 1 );
+  
+//   uint32_t r[4];
+  
+//   __asm__ ("cpuid\n\t" : "=a" (r[0]), "=c" (r[1]), "=d" (r[2]), "=b" (r[3]) : "0" (level), "1" (count));
+
+//   for (int idx = 0; idx < 4; ++idx)
+//     this->regwrite( GOd(), idx, r[idx] );
+// }
+
 void
 Arch::cpuid()
 {
-  uint32_t level = this->regread( GOd(), 0 ), count = this->regread( GOd(), 1 );
+  switch (this->regread( GOd(), 0 )) {
+  case 0: {
+    this->regwrite( GOd(), 0, u32_t( 4 ) );
   
-  uint32_t r[4];
+    char const* name = "GenuineIntel";
+    { uint32_t word = 0;
+      int idx = 12;
+      while (--idx >= 0) {
+        word = (word << 8) | name[idx];
+        if (idx % 4) continue;
+        this->regwrite( GOd(), 3 - (idx/4), u32_t( word ) );
+        word = 0;
+      }
+    }
+  } break;
+  case 1: {
+    uint32_t const eax =
+      (6  << 0 /* stepping id */) |
+      (0  << 4 /* model */) |
+      (15 << 8 /* family */) |
+      (0  << 12 /* processor type */) |
+      (0  << 16 /* extended model */) |
+      (0  << 20 /* extended family */);
+    this->regwrite( GOd(), 0, u32_t( eax ) );
+    
+    uint32_t const ebx =
+      (0 <<  0 /* Brand index */) |
+      (4 <<  8 /* Cache line size (/ 64bits) */) |
+      (1 << 16 /* Maximum number of addressable IDs for logical processors in this physical package* */) |
+      (0 << 24 /* Initial APIC ID */);
+    this->regwrite( GOd(), 3, u32_t( ebx ) );
+    
+    uint32_t const ecx =
+      (0 << 0x00 /* Streaming SIMD Extensions 3 (SSE3) */) |
+      (0 << 0x01 /* PCLMULQDQ Available */) |
+      (0 << 0x02 /* 64-bit DS Area */) |
+      (0 << 0x03 /* MONITOR/MWAIT */) |
+      (0 << 0x04 /* CPL Qualified Debug Store */) |
+      (0 << 0x05 /* Virtual Machine Extensions */) |
+      (0 << 0x06 /* Safer Mode Extensions */) |
+      (0 << 0x07 /* Enhanced Intel SpeedStep® technology */) |
+      (0 << 0x08 /* Thermal Monitor 2 */) |
+      (0 << 0x09 /* Supplemental Streaming SIMD Extensions 3 (SSSE3) */) |
+      (0 << 0x0a /* L1 Context ID */) |
+      (0 << 0x0b /* Reserved */) |
+      (0 << 0x0c /* FMA */) |
+      (0 << 0x0d /* CMPXCHG16B Available */) |
+      (0 << 0x0e /* xTPR Update Control */) |
+      (0 << 0x0f /* Perfmon and Debug Capability */) |
+      (0 << 0x10 /* Reserved */) |
+      (0 << 0x11 /* Process-context identifiers */) |
+      (0 << 0x12 /* DCA */) |
+      (0 << 0x13 /* SSE4.1 */) |
+      (0 << 0x14 /* SSE4.2 */) |
+      (0 << 0x15 /* x2APIC */) |
+      (1 << 0x16 /* MOVBE Available */) |
+      (1 << 0x17 /* POPCNT Available */) |
+      (0 << 0x18 /* TSC-Deadline */) |
+      (0 << 0x19 /* AESNI */) |
+      (0 << 0x1a /* XSAVE */) |
+      (0 << 0x1b /* OSXSAVE */) |
+      (0 << 0x1c /* AVX */) |
+      (1 << 0x1d /* F16C */) |
+      (1 << 0x1e /* RDRAND Available */) |
+      (1 << 0x1f /* Is virtual machine */);
+    this->regwrite( GOd(), 1, u32_t( ecx ) );
+    
+    uint32_t const edx =
+      (1 << 0x00 /* Floating Point Unit On-Chip */) |
+      (0 << 0x01 /* Virtual 8086 Mode Enhancements */) |
+      (0 << 0x02 /* Debugging Extensions */) |
+      (0 << 0x03 /* Page Size Extension */) |
+      (0 << 0x04 /* Time Stamp Counter */) |
+      (0 << 0x05 /* Model Specific Registers RDMSR and WRMSR Instructions */) |
+      (0 << 0x06 /* Physical Address Extension */) |
+      (0 << 0x07 /* Machine Check Exception */) |
+      (0 << 0x08 /* CMPXCHG8B Available */) |
+      (0 << 0x09 /* APIC On-Chip */) |
+      (0 << 0x0a /* Reserved */) |
+      (0 << 0x0b /* SYSENTER and SYSEXIT Instructions */) |
+      (0 << 0x0c /* Memory Type Range Registers */) |
+      (0 << 0x0d /* Page Global Bit */) |
+      (0 << 0x0e /* Machine Check ARCHitecture */) |
+      (1 << 0x0f /* Conditional Move Instructions */) |
+      (0 << 0x10 /* Page Attribute Table */) |
+      (0 << 0x11 /* 36-Bit Page Size Extension */) |
+      (0 << 0x12 /* Processor Serial Number */) |
+      (0 << 0x13 /* CLFLUSH Instruction */) |
+      (0 << 0x14 /* Reserved */) |
+      (0 << 0x15 /* Debug Store */) |
+      (0 << 0x16 /* Thermal Monitor and Software Controlled Clock Facilities */) |
+      (0 << 0x17 /* Intel MMX Technology */) |
+      (0 << 0x18 /* FXSAVE and FXRSTOR Instructions */) |
+      (0 << 0x19 /* SSE */) |
+      (0 << 0x1a /* SSE2 */) |
+      (0 << 0x1b /* Self Snoop */) |
+      (0 << 0x1c /* Max APIC IDs reserved field is Valid */) |
+      (0 << 0x1d /* Thermal Monitor */) |
+      (0 << 0x1e /* Resrved */) |
+      (0 << 0x1f /* Pending Break Enable */);
+    this->regwrite( GOd(), 2, u32_t( edx ) );
+    
+  } break;
+  case 2: {
+    this->regwrite( GOd(), 0, u32_t( 0 ) );
+    this->regwrite( GOd(), 3, u32_t( 0 ) );
+    this->regwrite( GOd(), 1, u32_t( 0 ) );
+    this->regwrite( GOd(), 2, u32_t( 0 ) );
+  } break;
+  case 4: {
+    // Small cache config
+    switch (this->regread( GOd(), 1 )) { // %ecx holds requested cache id
+    case 0: { // L1 D-CACHE
+      this->regwrite( GOd(), 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (1 << 0) ) ); // 0x4000121
+      this->regwrite( GOd(), 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
+      this->regwrite( GOd(), 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
+      this->regwrite( GOd(), 2, u32_t( 0x0000001 ) ); // 0x0000001
+    } break;
+    case 1: { // L1 I-CACHE
+      this->regwrite( GOd(), 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (2 << 0) ) ); // 0x4000122
+      this->regwrite( GOd(), 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
+      this->regwrite( GOd(), 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
+      this->regwrite( GOd(), 2, u32_t( 0x0000001 ) ); // 0x0000001
+    } break;
+    case 2: { // L2 U-CACHE
+      this->regwrite( GOd(), 0, u32_t( (1 << 26) | (1 << 14) | (1 << 8) | (2 << 5) | (3 << 0) ) ); // 0x4000143
+      this->regwrite( GOd(), 3, u32_t( (1 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x5c0003f
+      this->regwrite( GOd(), 1, u32_t( (0 << 22) | (0xfff << 0) ) ); // 0x0000fff
+      this->regwrite( GOd(), 2, u32_t( 0x0000001 ) ); // 0x0000001
+    } break;
+    case 3: { // TERMINATING NULL ENTRY
+      // 0, 0, 0, 0
+      this->regwrite( GOd(), 0, u32_t( 0 ) );
+      this->regwrite( GOd(), 3, u32_t( 0 ) );
+      this->regwrite( GOd(), 1, u32_t( 0 ) );
+      this->regwrite( GOd(), 2, u32_t( 0 ) );
+    } break;
+    }
+  } break;
   
-  __asm__ ("cpuid\n\t" : "=a" (r[0]), "=c" (r[1]), "=d" (r[2]), "=b" (r[3]) : "0" (level), "1" (count));
-
-  for (int idx = 0; idx < 4; ++idx)
-    this->regwrite( GOd(), idx, r[idx] );
-
-  // switch (this->regread( GOd(), 0 )) {
-  // case 0: {
-  //   this->regwrite( GOd(), 0, u32_t( 13 ) );
-  
-  //   char const* name = "GenuineIntel";
-  //   { uint32_t word = 0;
-  //     int idx = 12;
-  //     while (--idx >= 0) {
-  //       word = (word << 8) | name[idx];
-  //       if (idx % 4) continue;
-  //       this->regwrite( GOd(), 3 - (idx/4), u32_t( word ) );
-  //       word = 0;
-  //     }
-  //   }
-  // } break;
-  // case 1: {
-  //   uint32_t const eax =
-  //     (6  << 0 /* stepping id */) |
-  //     (0  << 4 /* model */) |
-  //     (15 << 8 /* family */) |
-  //     (0  << 12 /* processor type */) |
-  //     (0  << 16 /* extended model */) |
-  //     (0  << 20 /* extended family */);
-  //   this->regwrite( GOd(), 0, u32_t( eax ) );
-    
-  //   uint32_t const ebx =
-  //     (0 <<  0 /* Brand index */) |
-  //     (4 <<  8 /* Cache line size (/ 64bits) */) |
-  //     (1 << 16 /* Maximum number of addressable IDs for logical processors in this physical package* */) |
-  //     (0 << 24 /* Initial APIC ID */);
-  //   this->regwrite( GOd(), 3, u32_t( ebx ) );
-    
-  //   uint32_t const ecx =
-  //     (0 << 0x00 /* Streaming SIMD Extensions 3 (SSE3) */) |
-  //     (0 << 0x01 /* PCLMULQDQ Available */) |
-  //     (0 << 0x02 /* 64-bit DS Area */) |
-  //     (0 << 0x03 /* MONITOR/MWAIT */) |
-  //     (0 << 0x04 /* CPL Qualified Debug Store */) |
-  //     (0 << 0x05 /* Virtual Machine Extensions */) |
-  //     (0 << 0x06 /* Safer Mode Extensions */) |
-  //     (0 << 0x07 /* Enhanced Intel SpeedStep® technology */) |
-  //     (0 << 0x08 /* Thermal Monitor 2 */) |
-  //     (0 << 0x09 /* Supplemental Streaming SIMD Extensions 3 (SSSE3) */) |
-  //     (0 << 0x0a /* L1 Context ID */) |
-  //     (0 << 0x0b /* Reserved */) |
-  //     (0 << 0x0c /* FMA */) |
-  //     (0 << 0x0d /* CMPXCHG16B Available */) |
-  //     (0 << 0x0e /* xTPR Update Control */) |
-  //     (0 << 0x0f /* Perfmon and Debug Capability */) |
-  //     (0 << 0x10 /* Reserved */) |
-  //     (0 << 0x11 /* Process-context identifiers */) |
-  //     (0 << 0x12 /* DCA */) |
-  //     (0 << 0x13 /* SSE4.1 */) |
-  //     (0 << 0x14 /* SSE4.2 */) |
-  //     (0 << 0x15 /* x2APIC */) |
-  //     (1 << 0x16 /* MOVBE Available */) |
-  //     (1 << 0x17 /* POPCNT Available */) |
-  //     (0 << 0x18 /* TSC-Deadline */) |
-  //     (0 << 0x19 /* AESNI */) |
-  //     (0 << 0x1a /* XSAVE */) |
-  //     (0 << 0x1b /* OSXSAVE */) |
-  //     (0 << 0x1c /* AVX */) |
-  //     (1 << 0x1d /* F16C */) |
-  //     (1 << 0x1e /* RDRAND Available */) |
-  //     (1 << 0x1f /* Is virtual machine */);
-  //   this->regwrite( GOd(), 1, u32_t( ecx ) );
-    
-  //   uint32_t const edx =
-  //     (1 << 0x00 /* Floating Point Unit On-Chip */) |
-  //     (0 << 0x01 /* Virtual 8086 Mode Enhancements */) |
-  //     (0 << 0x02 /* Debugging Extensions */) |
-  //     (0 << 0x03 /* Page Size Extension */) |
-  //     (0 << 0x04 /* Time Stamp Counter */) |
-  //     (0 << 0x05 /* Model Specific Registers RDMSR and WRMSR Instructions */) |
-  //     (0 << 0x06 /* Physical Address Extension */) |
-  //     (0 << 0x07 /* Machine Check Exception */) |
-  //     (0 << 0x08 /* CMPXCHG8B Available */) |
-  //     (0 << 0x09 /* APIC On-Chip */) |
-  //     (0 << 0x0a /* Reserved */) |
-  //     (0 << 0x0b /* SYSENTER and SYSEXIT Instructions */) |
-  //     (0 << 0x0c /* Memory Type Range Registers */) |
-  //     (0 << 0x0d /* Page Global Bit */) |
-  //     (0 << 0x0e /* Machine Check ARCHitecture */) |
-  //     (1 << 0x0f /* Conditional Move Instructions */) |
-  //     (0 << 0x10 /* Page Attribute Table */) |
-  //     (0 << 0x11 /* 36-Bit Page Size Extension */) |
-  //     (0 << 0x12 /* Processor Serial Number */) |
-  //     (0 << 0x13 /* CLFLUSH Instruction */) |
-  //     (0 << 0x14 /* Reserved */) |
-  //     (0 << 0x15 /* Debug Store */) |
-  //     (0 << 0x16 /* Thermal Monitor and Software Controlled Clock Facilities */) |
-  //     (0 << 0x17 /* Intel MMX Technology */) |
-  //     (0 << 0x18 /* FXSAVE and FXRSTOR Instructions */) |
-  //     (0 << 0x19 /* SSE */) |
-  //     (0 << 0x1a /* SSE2 */) |
-  //     (0 << 0x1b /* Self Snoop */) |
-  //     (0 << 0x1c /* Max APIC IDs reserved field is Valid */) |
-  //     (0 << 0x1d /* Thermal Monitor */) |
-  //     (0 << 0x1e /* Resrved */) |
-  //     (0 << 0x1f /* Pending Break Enable */);
-  //   this->regwrite( GOd(), 2, u32_t( edx ) );
-    
-  // } break;
-  // case 2: {
-  //   this->regwrite( GOd(), 0, u32_t( 0 ) );
-  //   this->regwrite( GOd(), 3, u32_t( 0 ) );
-  //   this->regwrite( GOd(), 1, u32_t( 0 ) );
-  //   this->regwrite( GOd(), 2, u32_t( 0 ) );
-  // } break;
-  // case 4: {
-  //   // Small cache config
-  //   switch (this->regread( GOd(), 1 )) { // %ecx holds requested cache id
-  //   case 0: { // L1 D-CACHE
-  //     this->regwrite( GOd(), 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (1 << 0) ) ); // 0x4000121
-  //     this->regwrite( GOd(), 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
-  //     this->regwrite( GOd(), 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
-  //     this->regwrite( GOd(), 2, u32_t( 0x0000001 ) ); // 0x0000001
-  //   } break;
-  //   case 1: { // L1 I-CACHE
-  //     this->regwrite( GOd(), 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (2 << 0) ) ); // 0x4000122
-  //     this->regwrite( GOd(), 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
-  //     this->regwrite( GOd(), 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
-  //     this->regwrite( GOd(), 2, u32_t( 0x0000001 ) ); // 0x0000001
-  //   } break;
-  //   case 2: { // L2 U-CACHE
-  //     this->regwrite( GOd(), 0, u32_t( (1 << 26) | (1 << 14) | (1 << 8) | (2 << 5) | (3 << 0) ) ); // 0x4000143
-  //     this->regwrite( GOd(), 3, u32_t( (1 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x5c0003f
-  //     this->regwrite( GOd(), 1, u32_t( (0 << 22) | (0xfff << 0) ) ); // 0x0000fff
-  //     this->regwrite( GOd(), 2, u32_t( 0x0000001 ) ); // 0x0000001
-  //   } break;
-  //   case 3: { // TERMINATING NULL ENTRY
-  //     // 0, 0, 0, 0
-  //     this->regwrite( GOd(), 0, u32_t( 0 ) );
-  //     this->regwrite( GOd(), 3, u32_t( 0 ) );
-  //     this->regwrite( GOd(), 1, u32_t( 0 ) );
-  //     this->regwrite( GOd(), 2, u32_t( 0 ) );
-  //   } break;
-  //   }
-  // } break;
-  
-  // case 0x80000000: {
-  //   this->regwrite( GOd(), 0, u32_t( 0x80000001 ) );
-  //   this->regwrite( GOd(), 3, u32_t( 0 ) );
-  //   this->regwrite( GOd(), 1, u32_t( 0 ) );
-  //   this->regwrite( GOd(), 2, u32_t( 0 ) );
-  // } break;
-  // case 0x80000001: {
-  //   this->regwrite( GOd(), 0, u32_t( 0 ) );
-  //   this->regwrite( GOd(), 3, u32_t( 0 ) );
-  //   this->regwrite( GOd(), 1, u32_t( 0 ) );
-  //   this->regwrite( GOd(), 2, u32_t( 0 ) );
-  // } break;
-  // default:
-  //   std::cerr << "Unknown cmd for cpuid, " << std::hex
-  //             << "%eax=0x" << this->regread( GOd(), 0 ) << ", "
-  //             << "%eip=0x" << latest_instruction->address << "\n";
-  //   throw "not implemented";
-  //   break;
-  // }
+  case 0x80000000: {
+    this->regwrite( GOd(), 0, u32_t( 0x80000001 ) );
+    this->regwrite( GOd(), 3, u32_t( 0 ) );
+    this->regwrite( GOd(), 1, u32_t( 0 ) );
+    this->regwrite( GOd(), 2, u32_t( 0 ) );
+  } break;
+  case 0x80000001: {
+    this->regwrite( GOd(), 0, u32_t( 0 ) );
+    this->regwrite( GOd(), 3, u32_t( 0 ) );
+    this->regwrite( GOd(), 1, u32_t( 0 ) );
+    this->regwrite( GOd(), 2, u32_t( 0 ) );
+  } break;
+  default:
+    std::cerr << "Unknown cmd for cpuid, " << std::hex
+              << "%eax=0x" << this->regread( GOd(), 0 ) << ", "
+              << "%eip=0x" << latest_instruction->address << "\n";
+    throw "not implemented";
+    break;
+  }
 }
 
 struct FPException : public std::exception {};
@@ -1406,7 +1421,7 @@ main( int argc, char *argv[] )
   // linux64.SetBrk(0x6b8000);
   
   std::cerr << "\n*** Run ***" << std::endl;
-  cpu.gdbchecker.start(cpu);
+  // cpu.gdbchecker.start(cpu);
   while (not linux64.exited)
     {
       Arch::Operation* op = cpu.fetch();
@@ -1416,7 +1431,7 @@ main( int argc, char *argv[] )
       // std::cerr << std::endl;
       asm volatile ("operation_execute:");
       op->execute( cpu );
-      cpu.gdbchecker.step(cpu); 
+      // cpu.gdbchecker.step(cpu); 
       // { uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread( GOd(), idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
       // if ((cpu.instruction_count % 0x1000000) == 0)
       //   { std::cerr << "Executed instructions: " << std::dec << cpu.instruction_count << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }

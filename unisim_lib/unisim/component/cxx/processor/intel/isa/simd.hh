@@ -488,6 +488,23 @@ template <class ARCH> struct DC<ARCH,MOVDQ> { Operation<ARCH>* get( InputCode<AR
   return 0;
 }};
 
+/* TODO: should move real floating point value */
+template <class ARCH> struct DC<ARCH,MOVAPD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+  
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x28" ) & RM() ))
+    
+    return new MovdqVW<ARCH,true>( _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x29" ) & RM() ))
+    
+    return new MovdqWV<ARCH,true>( _.opbase(), _.rmop(), _.greg() );
+  
+  return 0;
+}};
+
+
 // /* MOVDQ2Q -- Move Quadword from XMM to MMX Technology Register */
 // op movdq2q_pq_vdq( 0x66[8]:> <:0x0f[8]:> <:0x2d[8]:> <:0b11[2]:gn[3]:rm[3]:> rewind <:*modrm[ModRM] );
 // 
@@ -682,6 +699,39 @@ template <class ARCH> struct DC<ARCH,VMOVSD> { Operation<ARCH>* get( InputCode<A
 // mulpd_vdq_wdq.disasm = { _sink << "mulpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
 // 
 // /* MULS -- Multiply Scalar Single- or Double-Precision Floating-Point Values */
+
+// template <class ARCH, unsigned OPSIZE>
+// struct MulVW : public Operation<ARCH>
+// {
+//   typedef typename ARCH::f64_t f64_t;
+//   MulVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
+//   void disasm( std::ostream& sink ) const {
+//     sink << "muls" << ((OPSIZE==32) ? "s " : "d ") << ' ' << DisasmWdq( rmop ) << ',' << DisasmVdq( gn );
+//   }
+//   void execute( ARCH& arch ) const
+//   {
+//     arch.template xmm_uwrite<64>( gn, 0,  arch.template xmm_uread<64>( gn, 0 ) ^ arch.template xmm_uread<64>( rmop, 0 ) );
+    
+//     arch.fpush( arch.fpop() * f64_t( arch.template frmread<OPSIZE>( rmop ) ) );
+//   }
+// };
+
+// template <class ARCH> struct DC<ARCH,MULS> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+// {
+//   if (ic.f0()) return 0;
+  
+//   if (auto _ = match( ic, sseF3() & opcode( "\x0f\x59" ) & RM() ))
+    
+//     return new MulsVW<ARCH,32>( _.opbase(), _.rmop(), _.greg() );
+  
+//   if (auto _ = match( ic, sseF2() & opcode( "\x0f\x59" ) & RM() ))
+    
+//     return new MulsVW<ARCH,64>( _.opbase(), _.rmop(), _.greg() );
+  
+//   return 0;
+// }};
+
+
 // op mulss_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x59[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // mulss_vdq_wdq.disasm = { _sink << "mulss " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
