@@ -33,6 +33,7 @@
  */
 
 #include <simulator.hh>
+#include <unisim/kernel/logger/logger_server.hh>
 
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
@@ -4709,6 +4710,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	{
 		unsigned int i = 0;
 		*http_server->http_server_import[i++] >> instrumenter->http_server_export;
+		*http_server->http_server_import[i++] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
 	}
 	
 	{

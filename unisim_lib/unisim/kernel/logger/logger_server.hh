@@ -37,6 +37,7 @@
 
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
+#include <unisim/service/interfaces/http_server.hh>
 #include <pthread.h>
 #include <string>
 #include <fstream>
@@ -52,8 +53,11 @@ namespace logger {
 
 struct Logger;
 
-struct LoggerServer : public unisim::kernel::service::Object
+struct LoggerServer : public unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>
 {
+	/** Http server export */
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
+	
 	/** Constructor */
 	LoggerServer(const char *name, unisim::kernel::service::Object *parent = 0);
 	/** Destructor */
@@ -138,6 +142,14 @@ struct LoggerServer : public unisim::kernel::service::Object
 	 */
 	void DebugError( std::string name, const char *buffer );
 
+	/** Serve an HTTP request
+	  * HTTP server calls that interface method to ask for logger to serve an incoming HTTP request intended for logger
+	  * 
+	  * @param req HTTP request
+	  * @param conn Connection with HTTP client (web browser)
+	  */
+	virtual bool ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
+
 private:
 	/** Pointer set to the client loggers */
 	std::set<Logger const*> clients;
@@ -166,6 +178,12 @@ private:
 	 */
 	std::ofstream text_file_;
 
+	/* HTTP logs */
+	typedef std::list<std::string> HTTP_LOG;
+	typedef std::map<std::string, HTTP_LOG *> HTTP_LOGS;
+
+	HTTP_LOGS http_logs;
+	
 	/***************************************************************************
 	 * Parameters                                                        START *
 	 ***************************************************************************/
@@ -179,17 +197,21 @@ public:
 	bool opt_xml_file_;
 	std::string opt_xml_filename_;
 	bool opt_xml_file_gzipped_;
+	bool opt_http_;
+	unsigned int opt_http_max_log_size_;
 	pthread_mutex_t mutex;
 
-	unisim::kernel::service::Parameter<bool>        param_std_err;
-	unisim::kernel::service::Parameter<bool>        param_std_out;
-	unisim::kernel::service::Parameter<bool>        param_std_err_color;
-	unisim::kernel::service::Parameter<bool>        param_std_out_color;
-	unisim::kernel::service::Parameter<bool>        param_file;
-	unisim::kernel::service::Parameter<std::string> param_filename;
-	unisim::kernel::service::Parameter<bool>        param_xml_file;
-	unisim::kernel::service::Parameter<std::string> param_xml_filename;
-	unisim::kernel::service::Parameter<bool>        param_xml_file_gzipped;
+	unisim::kernel::service::Parameter<bool>         param_std_err;
+	unisim::kernel::service::Parameter<bool>         param_std_out;
+	unisim::kernel::service::Parameter<bool>         param_std_err_color;
+	unisim::kernel::service::Parameter<bool>         param_std_out_color;
+	unisim::kernel::service::Parameter<bool>         param_file;
+	unisim::kernel::service::Parameter<std::string>  param_filename;
+	unisim::kernel::service::Parameter<bool>         param_xml_file;
+	unisim::kernel::service::Parameter<std::string>  param_xml_filename;
+	unisim::kernel::service::Parameter<bool>         param_xml_file_gzipped;
+	unisim::kernel::service::Parameter<bool>         param_http;
+	unisim::kernel::service::Parameter<unsigned int> param_http_max_log_size;
 	
 	/***************************************************************************
 	 * Parameters                                                          END *

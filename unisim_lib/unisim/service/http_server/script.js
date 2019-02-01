@@ -159,59 +159,6 @@ var CompatLayer =
 	}
 }
 
-// var isIE = !!navigator.userAgent.match(/Trident/g) || !!navigator.userAgent.match(/MSIE/g);
-// 
-// var hasSVG = !!(typeof SVGRect !== undefined);
-// 
-// getWidth = function(el)
-// {
-// 	var style = getComputedStyle(el, null);
-// 	var width = parseFloat(style.getPropertyValue('width'));
-// 	if(isIE)
-// 	{
-// 		var border_left_width = parseFloat(style.getPropertyValue('border-left-width'));
-// 		var border_right_width = parseFloat(style.getPropertyValue('border-right-width'));
-// 		
-// 		return width + border_left_width + border_right_width;
-// 	}
-// 	
-// 	return width;
-// }
-// 
-// getHeight = function(el)
-// {
-// 	var style = getComputedStyle(el, null);
-// 	var height = parseFloat(style.getPropertyValue('height'));
-// 	if(isIE)
-// 	{
-// 		var border_top_width = parseFloat(style.getPropertyValue('border-top-width'));
-// 		var border_bottom_width = parseFloat(style.getPropertyValue('border-bottom-width'));
-// 		
-// 		return height + border_top_width + border_bottom_width;
-// 	}
-// 	
-// 	return height;
-// }
-// 
-// getWindowScrollPos = function()
-// {
-// 	return isIE ? new Point(this.tab_content.contentDocument.documentElement.scrollLeft, this.tab_content.contentDocument.documentElement.scrollTop)
-// 	            : new Point(this.tab_content.contentWindow.scrollX, this.tab_content.contentWindow.scrollY);
-// }
-// 
-// setWindowScrollPos = function(scroll_pos)
-// {
-// 	if(isIE)
-// 	{
-// 		this.tab_content.contentDocument.documentElement.scrollLeft = scroll_pos.x;
-// 		this.tab_content.contentDocument.documentElement.scrollTop = scroll_pos.y;
-// 	}
-// 	else
-// 	{
-// 		this.tab_content.contentWindow.scrollTo(scroll_pos.x, scroll_pos.y);
-// 	}
-// }
-
 // TabConfig
 TabConfig.prototype.label = null;
 TabConfig.prototype.name = null;
@@ -464,10 +411,8 @@ Tab.prototype.save_scroll_position = function()
 		var scroll_y_item_name = 'gui.' + this.owner.name + '.' + this.tab_config.name;
 		if(this.tab_config.object_name && (this.tab_config.name != this.tab_config.object_name)) scroll_y_item_name += '.' + this.tab_config.object_name;
 		scroll_y_item_name += '.scroll-y';
-
+		
 		var scroll_pos = CompatLayer.get_iframe_scroll_pos(this.tab_content);
-// 		var scroll_x = isIE ? this.tab_content.contentDocument.documentElement.scrollLeft : this.tab_content.contentWindow.scrollX;
-// 		var scroll_y = isIE ? this.tab_content.contentDocument.documentElement.scrollTop : this.tab_content.contentWindow.scrollY;
 		sessionStorage.setItem(scroll_x_item_name, scroll_pos.x);
 		sessionStorage.setItem(scroll_y_item_name, scroll_pos.y);
 	}
@@ -497,15 +442,6 @@ Tab.prototype.restore_scroll_position = function()
 		if(scroll_x && scroll_y)
 		{
 			CompatLayer.set_iframe_scroll_pos(this.tab_content, new Point(scroll_x, scroll_y));
-// 			if(isIE)
-// 			{
-// 				this.tab_content.contentDocument.documentElement.scrollLeft = scroll_x;
-// 				this.tab_content.contentDocument.documentElement.scrollTop = scroll_y;
-// 			}
-// 			else
-// 			{
-// 				this.tab_content.contentWindow.scrollTo(scroll_x, scroll_y);
-// 			}
 		}
 	}
 }
@@ -1060,7 +996,7 @@ function GUI()
 		var config_tab = this.create_bottom_tab('Configuration', 'config', '/config');
 		if(config_tab) config_tab.switch_to();
 		this.create_bottom_tab('Statistics', 'stats', '/stats');
-		this.create_bottom_tab('Log', 'log', '/log');
+		this.create_bottom_tab('Log', 'log', '/logger');
 		this.left_tabs.switch_to_nth_tab(0);
 	}
 	

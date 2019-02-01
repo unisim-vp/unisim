@@ -141,7 +141,9 @@ private:
 	friend class unisim::kernel::service::Simulator;
 	
 	unisim::kernel::logger::LoggerServer* GetServerInstance();
+public:
 	static unisim::kernel::logger::LoggerServer* StaticServerInstance();
+private:
 	static void ReleaseStaticServiceInstance();
 	void PrintMode();
 
