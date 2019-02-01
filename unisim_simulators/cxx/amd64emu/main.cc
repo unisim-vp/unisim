@@ -310,24 +310,23 @@ struct Arch
     return result;
 
   }
-
   
-  f32_t                       fmemread32( unsigned int _seg, u32_t _addr )
+  f32_t                       fmemread32( unsigned int _seg, addr_t _addr )
   {
     union IEEE754_t { float as_f; uint32_t as_u; } word;
     word.as_u = memread<32>( _seg, _addr );
     return word.as_f;
   }
-  f64_t                       fmemread64( unsigned int _seg, u32_t _addr )
+  f64_t                       fmemread64( unsigned int _seg, addr_t _addr )
   {
     union IEEE754_t { double as_f; uint64_t as_u; } word;
     word.as_u = memread<64>( _seg, _addr );
     return word.as_f;
   }
   f64_t
-  fmemread80( unsigned int _seg, u32_t _addr )
+  fmemread80( unsigned int _seg, addr_t _addr )
   {
-    _addr += u32_t( segbase(_seg) );
+    _addr += addr_t( segbase(_seg) );
     uintptr_t const buf_size = 10;
     uint8_t buf[buf_size];
     {
@@ -388,6 +387,16 @@ struct Arch
     
     return word.as_f;
   }
+
+  template <unsigned OPSIZE>
+  typename TypeFor<Arch,OPSIZE>::f
+  fpmemread( unsigned seg, u64_t addr )
+  {
+    if (OPSIZE==32) return this->fmemread32( seg, addr );
+    if (OPSIZE==64) return this->fmemread64( seg, addr );
+    if (OPSIZE==80) return this->fmemread80( seg, addr );
+    throw 0;        return typename TypeFor<Arch,OPSIZE>::f();
+  }
     
   template <unsigned OPSIZE>
   typename TypeFor<Arch,OPSIZE>::f
@@ -395,12 +404,7 @@ struct Arch
   {
     typedef typename TypeFor<Arch,OPSIZE>::f f_type;
     if (not rmop.is_memory_operand()) return f_type( this->fread( rmop.ereg() ) );
-
-    if (OPSIZE==32) return this->fmemread32( rmop->segment, rmop->effective_address( *this ) );
-    if (OPSIZE==64) return this->fmemread64( rmop->segment, rmop->effective_address( *this ) );
-    if (OPSIZE==80) return this->fmemread80( rmop->segment, rmop->effective_address( *this ) );
-    throw 0;
-    return f_type();
+    return this->fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) );
   }
 
   void                        fmemwrite32( unsigned int _seg, u64_t _addr, f32_t _val )
@@ -415,7 +419,7 @@ struct Arch
     word.as_f = _val;
     memwrite<64>( _seg, _addr, word.as_u );
   }
-  void                        fmemwrite80( unsigned int _seg, u64_t _addr, f64_t _val )
+  void                        fmemwrite80( unsigned int _seg, u64_t _addr, f80_t _val )
   {
     _addr += u64_t( segbase(_seg) );
     union IEEE754_t { double as_f; uint64_t as_u; } word;
@@ -461,22 +465,28 @@ struct Arch
         page->m_storage[offset] = byte;
       }
   }
+
   template <unsigned OPSIZE>
-      void
-  frmwrite( RMOp const& rmop,
-            typename TypeFor<Arch,OPSIZE>::f value )
+  void
+  fpmemwrite( unsigned seg, u64_t addr, typename TypeFor<Arch,OPSIZE>::f value )
+  {
+    if (OPSIZE==32) return fmemwrite32( seg, addr, value );
+    if (OPSIZE==64) return fmemwrite64( seg, addr, value );
+    if (OPSIZE==80) return fmemwrite80( seg, addr, value );
+    throw 0;
+  }
+  
+  template <unsigned OPSIZE>
+  void
+  frmwrite( RMOp const& rmop, typename TypeFor<Arch,OPSIZE>::f value )
   {
     if (not rmop.is_memory_operand()) return fwrite( rmop.ereg(), f64_t( value ) );
-
-    if (OPSIZE==32) return fmemwrite32( rmop->segment, rmop->effective_address( *this ), f64_t( value ) );
-    if (OPSIZE==64) return fmemwrite64( rmop->segment, rmop->effective_address( *this ), f64_t( value ) );
-    if (OPSIZE==80) return fmemwrite80( rmop->segment, rmop->effective_address( *this ), f64_t( value ) );
-    throw 0;
+    fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
   }
 
 
   template <unsigned OPSIZE>
-      void
+  void
   memwrite( unsigned _seg, u64_t _addr, typename TypeFor<Arch,OPSIZE>::u _val )
   {
     uintptr_t const int_size = (OPSIZE/8);
@@ -646,24 +656,24 @@ struct Arch
   void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::OPSIZE>::u value )
   {
     u64regs[idx] = u64_t( value );
-    // gdbchecker.mark( idx );
+    gdbchecker.gmark( idx );
   }
 
   void regwrite( GObLH const&, unsigned idx, u8_t value )
   {
     unsigned reg = idx%4, sh = idx*2 & 8;
     u64regs[reg] = (u64regs[reg] & ~u64_t(0xff << sh)) | ((value & u64_t(0xff)) << sh);
-    // gdbchecker.mark( reg );
+    gdbchecker.gmark( reg );
   }
   void regwrite( GOb const&, unsigned idx, u8_t value )
   {
     u64regs[idx] = (u64regs[idx] & ~u64_t(0xff)) | ((value & u64_t(0xff)));
-    // gdbchecker.mark( idx );
+    gdbchecker.gmark( idx );
   }
   void regwrite( GOw const&, unsigned idx, u16_t value )
   {
     u64regs[idx] = (u64regs[idx] & ~u64_t(0xffff)) | ((value & u64_t(0xffff)));
-    // gdbchecker.mark( idx );
+    gdbchecker.gmark( idx );
   }
 
   struct FLAG
@@ -811,10 +821,11 @@ public:
     {
       T const* vec = reinterpret_cast<T const*>( storage );
 
-      for (unsigned idx = 0, stop = ItemCount<T>(); idx < stop; ++idx) {
-        T val = vec[idx]; 
-        VectorTypeInfo<T>::ToBytes( &storage[idx*VectorTypeInfo<T>::bytecount], val );
-      }
+      for (unsigned idx = 0, stop = ItemCount<T>(); idx < stop; ++idx)
+        {
+          T val = vec[idx]; 
+          VectorTypeInfo<T>::ToBytes( &storage[idx*VectorTypeInfo<T>::bytecount], val );
+        }
     }
 
     template <typename T>
@@ -826,11 +837,12 @@ public:
       arrangement_t current = &ToBytes<T>;
       if (arrangement != current) {
         arrangement( storage );   
-        for (int idx = ItemCount<T>(); --idx >= 0;) {
-          T val;
-          VectorTypeInfo<T>::FromBytes( val, &storage[idx*VectorTypeInfo<T>::bytecount] );
-          res[idx] = val;
-        }
+        for (int idx = ItemCount<T>(); --idx >= 0;)
+          {
+            T val;
+            VectorTypeInfo<T>::FromBytes( val, &storage[idx*VectorTypeInfo<T>::bytecount] );
+            res[idx] = val;
+          }
         arrangement = current;
       }  
      
@@ -858,10 +870,12 @@ public:
   xmm_uwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::u val )
   {
     typedef typename TypeFor<Arch,OPSIZE>::u u_type;
-      
+    
     u_type* u_array = umms[reg].GetStorage<u_type>( &vmm_storage[reg][0] );
       
     u_array[sub] = val;
+
+    gdbchecker.xmark(reg);
   }
 
   template <unsigned OPSIZE>
@@ -875,6 +889,19 @@ public:
     return f_array[sub];
   }
     
+  template <unsigned OPSIZE>
+  void
+  xmm_fwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::f val )
+  {
+    typedef typename TypeFor<Arch,OPSIZE>::f f_type;
+      
+    f_type* f_array = umms[reg].GetStorage<f_type>( &vmm_storage[reg][0] );
+      
+    f_array[sub] = val;
+    
+    gdbchecker.xmark(reg);
+  }
+
   template <unsigned OPSIZE>
   typename TypeFor<Arch,OPSIZE>::u
   xmm_uread( RMOp const& rmop, unsigned sub )
@@ -891,8 +918,25 @@ public:
     return memwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8), val );
   }
 
+  template <unsigned OPSIZE>
+  typename TypeFor<Arch,OPSIZE>::f
+  xmm_fread( RMOp const& rmop, unsigned sub )
+  {
+    if (not rmop.is_memory_operand()) return xmm_fread<OPSIZE>( rmop.ereg(), sub );
+    return fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8) );
+  }
+    
+  template <unsigned OPSIZE>
+  void
+  xmm_fwrite( RMOp const& rmop, unsigned sub, typename TypeFor<Arch,OPSIZE>::f val )
+  {
+    if (not rmop.is_memory_operand()) return xmm_fwrite<OPSIZE>( rmop.ereg(), sub, val );
+    fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8), val );
+  }
+
   void xgetbv();
   void cpuid();
+  void _DE() { std::cerr << "#DE: Division Error.\n"; throw 0; }
   
   typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
   Operation* latest_instruction;
@@ -903,44 +947,55 @@ public:
 
   bool Cond( bool b ) const { return b; }
 
-  // struct GDBChecker
-  // {
-  //   GDBChecker() : sink("check.gdb"), visited(), nassertid(0), dirtmask( 0 ) {}
-  //   std::ofstream sink;
-  //   std::map<uint64_t,uint64_t> visited;
-  //   uint64_t nassertid;
-  //   uint32_t dirtmask;
-  //   void mark( unsigned reg ) { dirtmask |= (1 << reg); }
-  //   uint64_t getnew_aid() { if (++nassertid > 0x80000) throw 0; return nassertid; }
-  //   void start( Arch const& cpu)
-  //   {
-  //     sink << "set pagination off\n\n"
-  //          << "define insn_assert\n  if $arg1 != $arg2\n    printf \"insn_assert %u failed.\\n\", $arg0\n    bad_assertion\n  end\nend\n\n"
-  //          << "break *0x" << std::hex << cpu.rip << "\nrun\n\n";
-  //   }
-  //   void step( Arch const& cpu )
-  //   {
-  //     cpu.latest_instruction->disasm( sink << "# " ); sink << "\n";
-  //     uint64_t cia = cpu.rip;
-  //     uint64_t revisit = visited[cia]++;
-  //     sink << "stepi\n";
-  //     if (revisit == 0)
-  //       sink << "# advance *0x" << std::hex << cia << "\n";
-  //     else
-  //       sink << "# break *0x" << std::hex << cia << "; cont; cont " << std::dec << revisit << "\n";
-  //     sink << "insn_assert " << std::dec << getnew_aid() << " $rip 0x" << std::hex  << cia << '\n';
-  //     for (unsigned reg = 0; reg < 16; ++reg)
-  //       {
-  //         if (not ((dirtmask>>reg) & 1)) continue;
-  //         uint64_t value = cpu.u64regs[reg];
-  //         std::ostringstream rn; rn << unisim::component::cxx::processor::intel::DisasmGq(reg);
-  //         sink << "insn_assert " << std::dec << getnew_aid() << " $" << &(rn.str().c_str()[1]) << " 0x" << std::hex << value << '\n';
-  //       }
-  //     dirtmask = 0;
-  //   }
-  // } gdbchecker;
-
-  void _DE() { std::cerr << "#DE: Division Error.\n"; throw 0; }
+  struct GDBChecker
+  {
+    GDBChecker() : sink("check.gdb"), visited(), nassertid(0), gdirtmask( 0 ), xdirtmask( 0 ) {}
+    std::ofstream sink;
+    std::map<uint64_t,uint64_t> visited;
+    uint64_t nassertid;
+    uint32_t gdirtmask;
+    uint32_t xdirtmask;
+    void gmark( unsigned reg ) { gdirtmask |= (1 << reg); }
+    void xmark( unsigned reg ) { xdirtmask |= (1 << reg); }
+    uint64_t getnew_aid() { if (++nassertid > 0x80000) throw 0; return nassertid; }
+    void start( Arch const& cpu)
+    {
+      sink << "set pagination off\n\n"
+           << "define insn_assert\n  if $arg1 != $arg2\n    printf \"insn_assert %u failed.\\n\", $arg0\n    bad_assertion\n  end\nend\n\n"
+           << "break *0x" << std::hex << cpu.rip << "\nrun\n\n";
+    }
+    void step( Arch const& cpu )
+    {
+      cpu.latest_instruction->disasm( sink << "# " ); sink << "\n";
+      uint64_t cia = cpu.rip;
+      uint64_t revisit = visited[cia]++;
+      sink << "stepi\n";
+      if (revisit == 0)
+        sink << "# advance *0x" << std::hex << cia << "\n";
+      else
+        sink << "# break *0x" << std::hex << cia << "; cont; cont " << std::dec << revisit << "\n";
+      sink << "insn_assert " << std::dec << getnew_aid() << " $rip 0x" << std::hex  << cia << '\n';
+      for (unsigned reg = 0; reg < 16; ++reg)
+        {
+          if (not ((gdirtmask>>reg) & 1)) continue;
+          uint64_t value = cpu.u64regs[reg];
+          std::ostringstream rn; rn << unisim::component::cxx::processor::intel::DisasmGq(reg);
+          sink << "insn_assert " << std::dec << getnew_aid() << " $" << &(rn.str().c_str()[1]) << " 0x" << std::hex << value << '\n';
+        }
+      gdirtmask = 0;
+      for (unsigned reg = 0; reg < 16; ++reg)
+        {
+          if (not ((xdirtmask>>reg) & 1)) continue;
+          uint64_t quads[2];
+          uint8_t* bytes = (uint8_t*)&quads[0];
+          std::copy( &cpu.vmm_storage[reg][0], &cpu.vmm_storage[reg][16], bytes );
+          cpu.umms[reg].arrangement( bytes );
+          sink << "insn_assert " << std::dec << getnew_aid() << " $xmm" << reg << ".v2_int64[0] 0x" << std::hex << quads[0] << '\n';
+          sink << "insn_assert " << std::dec << getnew_aid() << " $xmm" << reg << ".v2_int64[1] 0x" << std::hex << quads[1] << '\n';
+        }
+      xdirtmask = 0;
+    }
+  } gdbchecker;
 };
 
 void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor )
@@ -1421,7 +1476,7 @@ main( int argc, char *argv[] )
   // linux64.SetBrk(0x6b8000);
   
   std::cerr << "\n*** Run ***" << std::endl;
-  // cpu.gdbchecker.start(cpu);
+  //  cpu.gdbchecker.start(cpu);
   while (not linux64.exited)
     {
       Arch::Operation* op = cpu.fetch();
@@ -1431,7 +1486,7 @@ main( int argc, char *argv[] )
       // std::cerr << std::endl;
       asm volatile ("operation_execute:");
       op->execute( cpu );
-      // cpu.gdbchecker.step(cpu); 
+      //      cpu.gdbchecker.step(cpu); 
       // { uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread( GOd(), idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
       // if ((cpu.instruction_count % 0x1000000) == 0)
       //   { std::cerr << "Executed instructions: " << std::dec << cpu.instruction_count << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }

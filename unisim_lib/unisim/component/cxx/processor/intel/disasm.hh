@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2015,
+ *  Copyright (c) 2007-2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -250,8 +250,8 @@ namespace intel {
   template <unsigned OPSIZE> struct SizeID {};
   template <> struct SizeID<  8> { static char const* gid() { return "b"; }  static char const* iid() { return "b"; } };
   template <> struct SizeID< 16> { static char const* gid() { return "w"; }  static char const* iid() { return "w"; } };
-  template <> struct SizeID< 32> { static char const* gid() { return "l"; }  static char const* iid() { return "d"; } };
-  template <> struct SizeID< 64> { static char const* gid() { return "q"; }  static char const* iid() { return "q"; } };
+  template <> struct SizeID< 32> { static char const* gid() { return "l"; }  static char const* iid() { return "d"; } static char const* fid() { return "s"; } };
+  template <> struct SizeID< 64> { static char const* gid() { return "q"; }  static char const* iid() { return "q"; } static char const* fid() { return "d"; } };
   template <> struct SizeID<128> { static char const* gid() { return "dq"; } static char const* iid() { return "dq"; } };
   
   template <unsigned OPSIZE>
