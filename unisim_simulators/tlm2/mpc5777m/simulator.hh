@@ -74,7 +74,8 @@
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/netstreamer/netstreamer.hh>
-#include <unisim/service/os/linux_os/powerpc_linux32.hh>
+#include <unisim/service/http_server/http_server.hh>
+#include <unisim/service/instrumenter/instrumenter.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 
@@ -261,6 +262,8 @@ private:
 	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
 	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<CPU_ADDRESS_TYPE> LOADER;
 	typedef unisim::service::netstreamer::NetStreamer NETSTREAMER;
+	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
+	typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
 	
 	//=========================================================================
 	//===                           Components                              ===
@@ -455,6 +458,10 @@ private:
 	NETSTREAMER *netstreamer14;
 	NETSTREAMER *netstreamer15;
 	NETSTREAMER *netstreamer16;
+	//  - Http Server
+	HTTP_SERVER *http_server;
+	//  - Instrumenter
+	INSTRUMENTER *instrumenter;
 	
 	bool enable_core0_reset;
 	bool enable_core1_reset;

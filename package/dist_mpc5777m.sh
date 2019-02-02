@@ -6,7 +6,7 @@ UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
 unisim/kernel/config/xml_config_file_helper.cc \
 unisim/kernel/config/ini_config_file_helper.cc \
-unisim/kernel/http_server/http_server.cc \
+unisim/service/http_server/http_server.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/tlm2/simulator.cc \
 unisim/kernel/tlm2/clock.cc \
@@ -14,6 +14,7 @@ unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/util/backtrace/backtrace.cc \
 unisim/util/xml/xml.cc \
+unisim/util/debug/simple_register_registry.cc \
 unisim/util/debug/profile_32.cc \
 unisim/util/debug/profile_64.cc \
 unisim/util/debug/symbol_32.cc \
@@ -84,6 +85,7 @@ unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/backtrace/tee_32.cc \
 unisim/service/netstreamer/netstreamer.cc \
 unisim/service/os/linux_os/powerpc_linux32.cc \
+unisim/service/instrumenter/instrumenter.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/floating.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/cpu.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/cpu.cc \
@@ -591,7 +593,7 @@ unisim/component/cxx/processor/powerpc/isa/lsp/lsp.hh \
 unisim/kernel/service/service.hh \
 unisim/kernel/config/xml_config_file_helper.hh \
 unisim/kernel/config/ini_config_file_helper.hh \
-unisim/kernel/http_server/http_server.hh \
+unisim/service/http_server/http_server.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm2/tlm.hh \
@@ -611,6 +613,7 @@ unisim/util/debug/profile.hh \
 unisim/util/debug/symbol.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/simple_register.hh \
+unisim/util/debug/simple_register_registry.hh \
 unisim/util/debug/watchpoint_registry.hh \
 unisim/util/debug/watchpoint.hh \
 unisim/util/debug/breakpoint_registry.hh \
@@ -692,6 +695,7 @@ unisim/util/parser/parser.hh \
 unisim/util/reg/core/register.hh \
 unisim/util/cache/cache.hh \
 unisim/util/hypapp/hypapp.hh \
+unisim/util/nat_sort/nat_sort.hh \
 unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/debug_selecting.hh \
 unisim/service/interfaces/debug_event.hh \
@@ -707,6 +711,7 @@ unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/profiling.hh \
 unisim/service/interfaces/register.hh \
 unisim/service/interfaces/registers.hh \
+unisim/service/interfaces/field.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/synchronizable.hh \
 unisim/service/interfaces/trap_reporting.hh \
@@ -717,6 +722,7 @@ unisim/service/interfaces/led_board.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/subprogram_lookup.hh \
+unisim/service/interfaces/http_server.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
@@ -738,6 +744,7 @@ unisim/service/tee/backtrace/tee.hh \
 unisim/service/netstreamer/netstreamer.hh \
 unisim/service/os/linux_os/linux.hh \
 unisim/service/os/linux_os/powerpc_linux32.hh \
+unisim/service/instrumenter/instrumenter.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/cpu.hh \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.hh \
@@ -889,26 +896,32 @@ UNISIM_LIB_SIMULATOR_TOP_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_powerpc_vle.xml \
 unisim/util/debug/dwarf/powerpc_e500_dwarf_register_number_mapping.xml \
 unisim/util/debug/dwarf/powerpc_e500_gcc_dwarf_register_number_mapping.xml \
+unisim/service/http_server/favicon.ico \
 "
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="\
-unisim/kernel/tlm2/style.css \
-unisim/kernel/tlm2/script.js \
-unisim/kernel/tlm2/favicon.ico \
-unisim/kernel/http_server/style.css \
-unisim/kernel/http_server/close-tab-hover.svg \
-unisim/kernel/http_server/close-tab.svg \
-unisim/kernel/http_server/history-shortcut.svg \
-unisim/kernel/http_server/left-arrow.svg \
-unisim/kernel/http_server/right-arrow.svg \
-unisim/kernel/http_server/close-tab-hover.png \
-unisim/kernel/http_server/close-tab.png \
-unisim/kernel/http_server/history-shortcut.png \
-unisim/kernel/http_server/left-arrow.png \
-unisim/kernel/http_server/right-arrow.png \
-unisim/kernel/http_server/var_style.css \
-unisim/kernel/http_server/var_script.js \
-unisim/kernel/http_server/script.js \
+unisim/kernel/logger/style.css \
+unisim/kernel/logger/script.js \
+unisim/service/instrumenter/style.css \
+unisim/service/instrumenter/script.js \
+unisim/service/instrumenter/favicon.ico \
+unisim/service/http_server/style.css \
+unisim/service/http_server/close-tab-hover.svg \
+unisim/service/http_server/close-tab.svg \
+unisim/service/http_server/history-shortcut.svg \
+unisim/service/http_server/left-arrow.svg \
+unisim/service/http_server/right-arrow.svg \
+unisim/service/http_server/close-tab-hover.png \
+unisim/service/http_server/close-tab.png \
+unisim/service/http_server/history-shortcut.png \
+unisim/service/http_server/left-arrow.png \
+unisim/service/http_server/right-arrow.png \
+unisim/service/http_server/var_style.css \
+unisim/service/http_server/var_script.js \
+unisim/service/http_server/script.js \
+unisim/service/http_server/reg_style.css \
+unisim/service/http_server/reg_script.js \
+unisim/service/http_server/embedded_script.js \
 "
 
 SIMULATOR_EXTERNAL_HEADERS="\
@@ -1176,7 +1189,7 @@ GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib
 
 mkdir -p ${DEST_DIR}/${SIMPKG}
 
-UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES}"
+UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_LIB_SIMULATOR_TOP_DATA_FILES}"
 
 for file in ${UNISIM_LIB_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"

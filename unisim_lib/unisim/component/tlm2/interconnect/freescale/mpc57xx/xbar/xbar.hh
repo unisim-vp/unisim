@@ -37,6 +37,7 @@
 
 #include <unisim/component/tlm2/interconnect/programmable_router/router.hh>
 #include <unisim/component/tlm2/interconnect/freescale/mpc57xx/xbar/smpu/smpu.hh>
+#include <unisim/util/debug/simple_register_registry.hh>
 
 #define SWITCH_ENUM_TRAIT(ENUM_TYPE, CLASS_NAME) template <ENUM_TYPE, bool __SWITCH_TRAIT_DUMMY__ = true> struct CLASS_NAME {}
 #define CASE_ENUM_TRAIT(ENUM_VALUE, CLASS_NAME) template <bool __SWITCH_TRAIT_DUMMY__> struct CLASS_NAME<ENUM_VALUE, __SWITCH_TRAIT_DUMMY__>
@@ -95,6 +96,7 @@ struct CONFIG
 template <typename CONFIG>
 class XBAR
 	: public unisim::component::tlm2::interconnect::programmable_router::Router<CONFIG>
+	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
 {
 public:
 	typedef unisim::component::tlm2::interconnect::programmable_router::Router<CONFIG> Super;
@@ -109,9 +111,18 @@ public:
 	static const unsigned int SMPU_PERIPHERAL_SLAVE_IF = CONFIG::SMPU_PERIPHERAL_SLAVE_IF;
 	static const bool threaded_model                = false;
 	
+	// services
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> smpu_registers_export;
+
 	XBAR(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
 	virtual ~XBAR();
 
+	//////////////// unisim::service::interface::Registers ////////////////////
+	
+	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
+	
 protected:
 	friend class smpu::SMPU<CONFIG>;
 	
@@ -295,6 +306,8 @@ protected:
 	AddressableRegisterFile<XBAR_PRS, CONFIG::OUTPUT_SOCKETS, XBAR<CONFIG> > xbar_prs; // XBAR_PRSn
 	AddressableRegisterFile<XBAR_CRS, CONFIG::OUTPUT_SOCKETS, XBAR<CONFIG> > xbar_crs; // XBAR_CRSn
 	
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
+
 	SMPU smpu;
 	
 	bool verbose;

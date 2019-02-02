@@ -78,6 +78,7 @@ template <typename CONFIG>
 DMAMUX<CONFIG>::DMAMUX(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_core::sc_module(name)
+	, unisim::kernel::service::Service<unisim::service::interfaces::Registers>(name, parent)
 	, peripheral_slave_if("peripheral_slave_if")
 	, m_clk("m_clk")
 	, reset_b("reset_b")
@@ -87,10 +88,12 @@ DMAMUX<CONFIG>::DMAMUX(const sc_core::sc_module_name& name, unisim::kernel::serv
 	, dma_trigger()
 	, dma_channel()
 	, dma_source_ack()
+	, registers_export("registers-export", this)
 	, logger(*this)
 	, m_clk_prop_proxy(m_clk)
 	, dmamux_chcfg(this)
 	, reg_addr_map()
+	, registers_registry()
 	, schedule()
 	, disable_dma_source()
 	, dma_source_routing_change_event()
@@ -208,6 +211,11 @@ DMAMUX<CONFIG>::DMAMUX(const sc_core::sc_module_name& name, unisim::kernel::serv
 	reg_addr_map.SetEndian(endian);
 	reg_addr_map.MapRegisterFile(DMAMUX_CHCFG::ADDRESS_OFFSET, &dmamux_chcfg);
 
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		registers_registry.AddRegisterInterface(dmamux_chcfg[dma_channel_num].CreateRegisterInterface());
+	}
+		
 	SC_METHOD(RESET_B_Process);
 	sensitive << reset_b.pos();
 
@@ -452,6 +460,20 @@ tlm::tlm_sync_enum DMAMUX<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& pay
 	}
 	
 	return tlm::TLM_COMPLETED;
+}
+
+//////////////// unisim::service::interface::Registers ////////////////////
+
+template <typename CONFIG>
+unisim::service::interfaces::Register *DMAMUX<CONFIG>::GetRegister(const char *name)
+{
+	return registers_registry.GetRegister(name);
+}
+
+template <typename CONFIG>
+void DMAMUX<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 template <typename CONFIG>

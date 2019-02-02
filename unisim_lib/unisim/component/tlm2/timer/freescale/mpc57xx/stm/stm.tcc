@@ -69,11 +69,13 @@ template <typename CONFIG>
 STM<CONFIG>::STM(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_core::sc_module(name)
+	, unisim::kernel::service::Service<unisim::service::interfaces::Registers>(name, parent)
 	, peripheral_slave_if("peripheral_slave_if")
 	, m_clk("m_clk")
 	, reset_b("reset_b")
 	, debug("debug")
 	, irq()
+	, registers_export("registers-export", this)
 	, logger(*this)
 	, m_clk_prop_proxy(m_clk)
 	, stm_cr(this)
@@ -82,6 +84,7 @@ STM<CONFIG>::STM(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	, stm_cir(this)
 	, stm_cmp(this)
 	, reg_addr_map()
+	, registers_registry()
 	, schedule()
 	, endian(unisim::util::endian::E_BIG_ENDIAN)
 	, param_endian("endian", this, endian, "endian")
@@ -136,6 +139,15 @@ STM<CONFIG>::STM(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	reg_addr_map.MapRegisterFile(STM_CIR::ADDRESS_OFFSET, &stm_cir, /* size */ 4, /* stride */ 16);
 	reg_addr_map.MapRegisterFile(STM_CMP::ADDRESS_OFFSET, &stm_cmp, /* size */ 4, /* stride */ 16);
 
+	registers_registry.AddRegisterInterface(stm_cr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(stm_cnt.CreateRegisterInterface());
+	for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++)
+	{
+		registers_registry.AddRegisterInterface(stm_ccr[channel_num].CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(stm_cir[channel_num].CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(stm_cmp[channel_num].CreateRegisterInterface());
+	}
+	
 	SC_METHOD(RESET_B_Process);
 	sensitive << reset_b.pos();
 
@@ -319,6 +331,20 @@ tlm::tlm_sync_enum STM<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& payloa
 	}
 	
 	return tlm::TLM_COMPLETED;
+}
+
+//////////////// unisim::service::interface::Registers ////////////////////
+
+template <typename CONFIG>
+unisim::service::interfaces::Register *STM<CONFIG>::GetRegister(const char *name)
+{
+	return registers_registry.GetRegister(name);
+}
+
+template <typename CONFIG>
+void STM<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 template <typename CONFIG>

@@ -33,6 +33,7 @@
  */
 
 #include <simulator.hh>
+#include <unisim/kernel/logger/logger_server.hh>
 
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
@@ -41,7 +42,7 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-using unisim::kernel::tlm2::OUTPUT_INSTRUMENTATION;
+using unisim::service::instrumenter::OUTPUT_INSTRUMENTATION;
 
 Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	: unisim::kernel::tlm2::Simulator(name, argc, argv, LoadBuiltInConfig)
@@ -195,6 +196,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, netstreamer14(0)
 	, netstreamer15(0)
 	, netstreamer16(0)
+	, http_server(0)
+	, instrumenter(0)
 	, enable_core0_reset(true)
 	, enable_core1_reset(true)
 	, enable_core2_reset(true)
@@ -313,6 +316,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	unsigned int i;
 
 	//=========================================================================
+	//===                     Instrumenter instantiation                    ===
+	//=========================================================================
+	instrumenter = new INSTRUMENTER("instrumenter", this);
+
+	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
 	//  - PowerPC e200 processors
@@ -417,12 +425,12 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	shared_can_message_ram = new SHARED_CAN_MESSAGE_RAM("SHARED_CAN_MESSAGE_RAM", this);
 	
 	std::vector<sc_core::sc_signal<bool> *> CAN_TX;
-	CAN_TX.push_back(&CreateSignal("CAN_TX_1", true, OUTPUT_INSTRUMENTATION));
-	CAN_TX.push_back(&CreateSignal("CAN_TX_2", true, OUTPUT_INSTRUMENTATION));
-	CAN_TX.push_back(&CreateSignal("CAN_TX_3", true, OUTPUT_INSTRUMENTATION));
-	CAN_TX.push_back(&CreateSignal("CAN_TX_4", true, OUTPUT_INSTRUMENTATION));
+	CAN_TX.push_back(&instrumenter->CreateSignal("CAN_TX_1", true, OUTPUT_INSTRUMENTATION));
+	CAN_TX.push_back(&instrumenter->CreateSignal("CAN_TX_2", true, OUTPUT_INSTRUMENTATION));
+	CAN_TX.push_back(&instrumenter->CreateSignal("CAN_TX_3", true, OUTPUT_INSTRUMENTATION));
+	CAN_TX.push_back(&instrumenter->CreateSignal("CAN_TX_4", true, OUTPUT_INSTRUMENTATION));
 	
-	can_bus = new CAN_BUS("CAN_BUS", CreateSignal("CAN_RX", true, OUTPUT_INSTRUMENTATION), CAN_TX, this);
+	can_bus = new CAN_BUS("CAN_BUS", instrumenter->CreateSignal("CAN_RX", true, OUTPUT_INSTRUMENTATION), CAN_TX, this);
 	
 	// - Semaphores2
 	sema4 = new SEMA4("SEMA4", this);
@@ -491,1305 +499,1307 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	netstreamer14 = enable_serial_terminal14 ? new NETSTREAMER("netstreamer14") : 0;
 	netstreamer15 = enable_serial_terminal15 ? new NETSTREAMER("netstreamer15") : 0;
 	netstreamer16 = enable_serial_terminal16 ? new NETSTREAMER("netstreamer16") : 0;
+	//  - Http Server
+	http_server = new HTTP_SERVER("http-server");
 	
 	//=========================================================================
 	//===                          Port registration                        ===
 	//=========================================================================
 	// - Main_Core_0
-	RegisterPort(main_core_0->m_clk);
-	RegisterPort(main_core_0->m_por);
-	RegisterPort(main_core_0->p_reset_b);
-	RegisterPort(main_core_0->p_nmi_b);
-	RegisterPort(main_core_0->p_mcp_b);
-	RegisterPort(main_core_0->p_rstbase);
-	RegisterPort(main_core_0->p_cpuid);
-	RegisterPort(main_core_0->p_extint_b);
-	RegisterPort(main_core_0->p_crint_b);
-	RegisterPort(main_core_0->p_avec_b);
-	RegisterPort(main_core_0->p_voffset);
-	RegisterPort(main_core_0->p_iack);
+	instrumenter->RegisterPort(main_core_0->m_clk);
+	instrumenter->RegisterPort(main_core_0->m_por);
+	instrumenter->RegisterPort(main_core_0->p_reset_b);
+	instrumenter->RegisterPort(main_core_0->p_nmi_b);
+	instrumenter->RegisterPort(main_core_0->p_mcp_b);
+	instrumenter->RegisterPort(main_core_0->p_rstbase);
+	instrumenter->RegisterPort(main_core_0->p_cpuid);
+	instrumenter->RegisterPort(main_core_0->p_extint_b);
+	instrumenter->RegisterPort(main_core_0->p_crint_b);
+	instrumenter->RegisterPort(main_core_0->p_avec_b);
+	instrumenter->RegisterPort(main_core_0->p_voffset);
+	instrumenter->RegisterPort(main_core_0->p_iack);
 	
 	// - Main_Core_1
-	RegisterPort(main_core_1->m_clk);
-	RegisterPort(main_core_1->m_por);
-	RegisterPort(main_core_1->p_reset_b);
-	RegisterPort(main_core_1->p_nmi_b);
-	RegisterPort(main_core_1->p_mcp_b);
-	RegisterPort(main_core_1->p_rstbase);
-	RegisterPort(main_core_1->p_cpuid);
-	RegisterPort(main_core_1->p_extint_b);
-	RegisterPort(main_core_1->p_crint_b);
-	RegisterPort(main_core_1->p_avec_b);
-	RegisterPort(main_core_1->p_voffset);
-	RegisterPort(main_core_1->p_iack);
+	instrumenter->RegisterPort(main_core_1->m_clk);
+	instrumenter->RegisterPort(main_core_1->m_por);
+	instrumenter->RegisterPort(main_core_1->p_reset_b);
+	instrumenter->RegisterPort(main_core_1->p_nmi_b);
+	instrumenter->RegisterPort(main_core_1->p_mcp_b);
+	instrumenter->RegisterPort(main_core_1->p_rstbase);
+	instrumenter->RegisterPort(main_core_1->p_cpuid);
+	instrumenter->RegisterPort(main_core_1->p_extint_b);
+	instrumenter->RegisterPort(main_core_1->p_crint_b);
+	instrumenter->RegisterPort(main_core_1->p_avec_b);
+	instrumenter->RegisterPort(main_core_1->p_voffset);
+	instrumenter->RegisterPort(main_core_1->p_iack);
 
 	// - Peripheral_Core_2
-	RegisterPort(peripheral_core_2->m_clk);
-	RegisterPort(peripheral_core_2->m_por);
-	RegisterPort(peripheral_core_2->p_reset_b);
-	RegisterPort(peripheral_core_2->p_nmi_b);
-	RegisterPort(peripheral_core_2->p_mcp_b);
-	RegisterPort(peripheral_core_2->p_rstbase);
-	RegisterPort(peripheral_core_2->p_cpuid);
-	RegisterPort(peripheral_core_2->p_extint_b);
-	RegisterPort(peripheral_core_2->p_crint_b);
-	RegisterPort(peripheral_core_2->p_avec_b);
-	RegisterPort(peripheral_core_2->p_voffset);
-	RegisterPort(peripheral_core_2->p_iack);
+	instrumenter->RegisterPort(peripheral_core_2->m_clk);
+	instrumenter->RegisterPort(peripheral_core_2->m_por);
+	instrumenter->RegisterPort(peripheral_core_2->p_reset_b);
+	instrumenter->RegisterPort(peripheral_core_2->p_nmi_b);
+	instrumenter->RegisterPort(peripheral_core_2->p_mcp_b);
+	instrumenter->RegisterPort(peripheral_core_2->p_rstbase);
+	instrumenter->RegisterPort(peripheral_core_2->p_cpuid);
+	instrumenter->RegisterPort(peripheral_core_2->p_extint_b);
+	instrumenter->RegisterPort(peripheral_core_2->p_crint_b);
+	instrumenter->RegisterPort(peripheral_core_2->p_avec_b);
+	instrumenter->RegisterPort(peripheral_core_2->p_voffset);
+	instrumenter->RegisterPort(peripheral_core_2->p_iack);
 	
 	// - XBAR_0
-	RegisterPort(xbar_0->m_clk);
-	RegisterPort(xbar_0->reset_b);
-	RegisterPort(xbar_0->input_if_clock);
-	RegisterPort(xbar_0->output_if_clock);
+	instrumenter->RegisterPort(xbar_0->m_clk);
+	instrumenter->RegisterPort(xbar_0->reset_b);
+	instrumenter->RegisterPort(xbar_0->input_if_clock);
+	instrumenter->RegisterPort(xbar_0->output_if_clock);
 	
 	// - XBAR_1
-	RegisterPort(xbar_1->m_clk);
-	RegisterPort(xbar_1->reset_b);
-	RegisterPort(xbar_1->input_if_clock);
-	RegisterPort(xbar_1->output_if_clock);
+	instrumenter->RegisterPort(xbar_1->m_clk);
+	instrumenter->RegisterPort(xbar_1->reset_b);
+	instrumenter->RegisterPort(xbar_1->input_if_clock);
+	instrumenter->RegisterPort(xbar_1->output_if_clock);
 
 	// - PBRIDGE_A
-	RegisterPort(pbridge_a->m_clk);
-	RegisterPort(pbridge_a->reset_b);
-	RegisterPort(pbridge_a->input_if_clock);
-	RegisterPort(pbridge_a->output_if_clock);
+	instrumenter->RegisterPort(pbridge_a->m_clk);
+	instrumenter->RegisterPort(pbridge_a->reset_b);
+	instrumenter->RegisterPort(pbridge_a->input_if_clock);
+	instrumenter->RegisterPort(pbridge_a->output_if_clock);
 
 	// - PBRIDGE_B
-	RegisterPort(pbridge_b->m_clk);
-	RegisterPort(pbridge_b->reset_b);
-	RegisterPort(pbridge_b->input_if_clock);
-	RegisterPort(pbridge_b->output_if_clock);
+	instrumenter->RegisterPort(pbridge_b->m_clk);
+	instrumenter->RegisterPort(pbridge_b->reset_b);
+	instrumenter->RegisterPort(pbridge_b->input_if_clock);
+	instrumenter->RegisterPort(pbridge_b->output_if_clock);
 
 	// - EBI
-	RegisterPort(ebi->m_clk);
-	RegisterPort(ebi->reset_b);
-	RegisterPort(ebi->input_if_clock);
-	RegisterPort(ebi->output_if_clock);
+	instrumenter->RegisterPort(ebi->m_clk);
+	instrumenter->RegisterPort(ebi->reset_b);
+	instrumenter->RegisterPort(ebi->input_if_clock);
+	instrumenter->RegisterPort(ebi->output_if_clock);
 
 	// - IAHBG_0
-	RegisterPort(iahbg_0->input_if_clock);
-	RegisterPort(iahbg_0->output_if_clock);
+	instrumenter->RegisterPort(iahbg_0->input_if_clock);
+	instrumenter->RegisterPort(iahbg_0->output_if_clock);
 
 	// - IAHBG_1
-	RegisterPort(iahbg_1->input_if_clock);
-	RegisterPort(iahbg_1->output_if_clock);
+	instrumenter->RegisterPort(iahbg_1->input_if_clock);
+	instrumenter->RegisterPort(iahbg_1->output_if_clock);
 
 	// - XBAR_1_M1_CONCENTRATOR
-	RegisterPort(xbar_1_m1_concentrator->input_if_clock);
-	RegisterPort(xbar_1_m1_concentrator->output_if_clock);
+	instrumenter->RegisterPort(xbar_1_m1_concentrator->input_if_clock);
+	instrumenter->RegisterPort(xbar_1_m1_concentrator->output_if_clock);
 
 	// - INTC_0
-	RegisterPort(intc_0->m_clk);
-	RegisterPort(intc_0->reset_b);
+	instrumenter->RegisterPort(intc_0->m_clk);
+	instrumenter->RegisterPort(intc_0->reset_b);
 	
 	for(hw_irq_num = 0; hw_irq_num < INTC_0_CONFIG::NUM_HW_IRQS; hw_irq_num++)
 	{
-		RegisterPort(*intc_0->hw_irq[hw_irq_num]);
+		instrumenter->RegisterPort(*intc_0->hw_irq[hw_irq_num]);
 	}
 	for(prc_num = 0; prc_num < INTC_0_CONFIG::NUM_PROCESSORS; prc_num++)
 	{
-		RegisterPort(*intc_0->p_iack[prc_num]);
-		RegisterPort(*intc_0->p_irq_b[prc_num]);
-		RegisterPort(*intc_0->p_avec_b[prc_num]);
-		RegisterPort(*intc_0->p_voffset[prc_num]);
+		instrumenter->RegisterPort(*intc_0->p_iack[prc_num]);
+		instrumenter->RegisterPort(*intc_0->p_irq_b[prc_num]);
+		instrumenter->RegisterPort(*intc_0->p_avec_b[prc_num]);
+		instrumenter->RegisterPort(*intc_0->p_voffset[prc_num]);
 	}
 	
 	// - STM_0
-	RegisterPort(stm_0->m_clk);
-	RegisterPort(stm_0->reset_b);
-	RegisterPort(stm_0->debug);
+	instrumenter->RegisterPort(stm_0->m_clk);
+	instrumenter->RegisterPort(stm_0->reset_b);
+	instrumenter->RegisterPort(stm_0->debug);
 	for(channel_num = 0; channel_num < STM_0_CONFIG::NUM_CHANNELS; channel_num++)
 	{
-		RegisterPort(*stm_0->irq[channel_num]);
+		instrumenter->RegisterPort(*stm_0->irq[channel_num]);
 	}
 
 	// - STM_1
-	RegisterPort(stm_1->m_clk);
-	RegisterPort(stm_1->reset_b);
-	RegisterPort(stm_1->debug);
+	instrumenter->RegisterPort(stm_1->m_clk);
+	instrumenter->RegisterPort(stm_1->reset_b);
+	instrumenter->RegisterPort(stm_1->debug);
 	for(channel_num = 0; channel_num < STM_1_CONFIG::NUM_CHANNELS; channel_num++)
 	{
-		RegisterPort(*stm_1->irq[channel_num]);
+		instrumenter->RegisterPort(*stm_1->irq[channel_num]);
 	}
 
 	// - STM_2
-	RegisterPort(stm_2->m_clk);
-	RegisterPort(stm_2->reset_b);
-	RegisterPort(stm_2->debug);
+	instrumenter->RegisterPort(stm_2->m_clk);
+	instrumenter->RegisterPort(stm_2->reset_b);
+	instrumenter->RegisterPort(stm_2->debug);
 	for(channel_num = 0; channel_num < STM_2_CONFIG::NUM_CHANNELS; channel_num++)
 	{
-		RegisterPort(*stm_2->irq[channel_num]);
+		instrumenter->RegisterPort(*stm_2->irq[channel_num]);
 	}
 
 	// - SWT_0
-	RegisterPort(swt_0->m_clk);
-	RegisterPort(swt_0->swt_reset_b);
-	RegisterPort(swt_0->stop);
-	RegisterPort(swt_0->debug);
-	RegisterPort(swt_0->irq);
-	RegisterPort(swt_0->reset_b);
+	instrumenter->RegisterPort(swt_0->m_clk);
+	instrumenter->RegisterPort(swt_0->swt_reset_b);
+	instrumenter->RegisterPort(swt_0->stop);
+	instrumenter->RegisterPort(swt_0->debug);
+	instrumenter->RegisterPort(swt_0->irq);
+	instrumenter->RegisterPort(swt_0->reset_b);
 
 	// - STM_1
-	RegisterPort(swt_1->m_clk);
-	RegisterPort(swt_1->swt_reset_b);
-	RegisterPort(swt_1->stop);
-	RegisterPort(swt_1->debug);
-	RegisterPort(swt_1->irq);
-	RegisterPort(swt_1->reset_b);
+	instrumenter->RegisterPort(swt_1->m_clk);
+	instrumenter->RegisterPort(swt_1->swt_reset_b);
+	instrumenter->RegisterPort(swt_1->stop);
+	instrumenter->RegisterPort(swt_1->debug);
+	instrumenter->RegisterPort(swt_1->irq);
+	instrumenter->RegisterPort(swt_1->reset_b);
 
 	// - STM_2
-	RegisterPort(swt_2->m_clk);
-	RegisterPort(swt_2->swt_reset_b);
-	RegisterPort(swt_2->stop);
-	RegisterPort(swt_2->debug);
-	RegisterPort(swt_2->irq);
-	RegisterPort(swt_2->reset_b);
+	instrumenter->RegisterPort(swt_2->m_clk);
+	instrumenter->RegisterPort(swt_2->swt_reset_b);
+	instrumenter->RegisterPort(swt_2->stop);
+	instrumenter->RegisterPort(swt_2->debug);
+	instrumenter->RegisterPort(swt_2->irq);
+	instrumenter->RegisterPort(swt_2->reset_b);
 	
 	// - STM_3
-	RegisterPort(swt_3->m_clk);
-	RegisterPort(swt_3->swt_reset_b);
-	RegisterPort(swt_3->stop);
-	RegisterPort(swt_3->debug);
-	RegisterPort(swt_3->irq);
-	RegisterPort(swt_3->reset_b);
+	instrumenter->RegisterPort(swt_3->m_clk);
+	instrumenter->RegisterPort(swt_3->swt_reset_b);
+	instrumenter->RegisterPort(swt_3->stop);
+	instrumenter->RegisterPort(swt_3->debug);
+	instrumenter->RegisterPort(swt_3->irq);
+	instrumenter->RegisterPort(swt_3->reset_b);
 
 	// - PIT_0
-	RegisterPort(pit_0->m_clk);
-	RegisterPort(pit_0->per_clk);
-	RegisterPort(pit_0->rti_clk);
-	RegisterPort(pit_0->reset_b);
-	RegisterPort(pit_0->debug);
+	instrumenter->RegisterPort(pit_0->m_clk);
+	instrumenter->RegisterPort(pit_0->per_clk);
+	instrumenter->RegisterPort(pit_0->rti_clk);
+	instrumenter->RegisterPort(pit_0->reset_b);
+	instrumenter->RegisterPort(pit_0->debug);
 	for(channel_num = 0; channel_num < PIT_0_CONFIG::MAX_CHANNELS; channel_num++)
 	{
-		RegisterPort(*pit_0->irq[channel_num]);
-		RegisterPort(*pit_0->dma_trigger[channel_num]);
+		instrumenter->RegisterPort(*pit_0->irq[channel_num]);
+		instrumenter->RegisterPort(*pit_0->dma_trigger[channel_num]);
 	}
-	RegisterPort(pit_0->rtirq);
+	instrumenter->RegisterPort(pit_0->rtirq);
 	
 	// - PIT_1
-	RegisterPort(pit_1->m_clk);
-	RegisterPort(pit_1->per_clk);
-	RegisterPort(pit_1->rti_clk);
-	RegisterPort(pit_1->reset_b);
-	RegisterPort(pit_1->debug);
+	instrumenter->RegisterPort(pit_1->m_clk);
+	instrumenter->RegisterPort(pit_1->per_clk);
+	instrumenter->RegisterPort(pit_1->rti_clk);
+	instrumenter->RegisterPort(pit_1->reset_b);
+	instrumenter->RegisterPort(pit_1->debug);
 	for(channel_num = 0; channel_num < PIT_0_CONFIG::MAX_CHANNELS; channel_num++)
 	{
-		RegisterPort(*pit_1->irq[channel_num]);
-		RegisterPort(*pit_1->dma_trigger[channel_num]);
+		instrumenter->RegisterPort(*pit_1->irq[channel_num]);
+		instrumenter->RegisterPort(*pit_1->dma_trigger[channel_num]);
 	}
-	RegisterPort(pit_1->rtirq);
+	instrumenter->RegisterPort(pit_1->rtirq);
 	
 	// - LINFlexD_0
-	RegisterPort(linflexd_0->m_clk);
-	RegisterPort(linflexd_0->lin_clk);
-	RegisterPort(linflexd_0->reset_b);
-	RegisterPort(linflexd_0->INT_RX);
-	RegisterPort(linflexd_0->INT_TX);
-	RegisterPort(linflexd_0->INT_ERR);
+	instrumenter->RegisterPort(linflexd_0->m_clk);
+	instrumenter->RegisterPort(linflexd_0->lin_clk);
+	instrumenter->RegisterPort(linflexd_0->reset_b);
+	instrumenter->RegisterPort(linflexd_0->INT_RX);
+	instrumenter->RegisterPort(linflexd_0->INT_TX);
+	instrumenter->RegisterPort(linflexd_0->INT_ERR);
 	for(dma_req_num = 0; dma_req_num < LINFlexD_0::NUM_DMA_TX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_0->DMA_TX[dma_req_num]);
-		RegisterPort(*linflexd_0->DMA_ACK_TX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_0->DMA_TX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_0->DMA_ACK_TX[dma_req_num]);
 	}
 	for(dma_req_num = 0; dma_req_num < LINFlexD_0::NUM_DMA_RX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_0->DMA_RX[dma_req_num]);
-		RegisterPort(*linflexd_0->DMA_ACK_RX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_0->DMA_RX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_0->DMA_ACK_RX[dma_req_num]);
 	}
 
 	// - LINFlexD_1
-	RegisterPort(linflexd_1->m_clk);
-	RegisterPort(linflexd_1->lin_clk);
-	RegisterPort(linflexd_1->reset_b);
-	RegisterPort(linflexd_1->INT_RX);
-	RegisterPort(linflexd_1->INT_TX);
-	RegisterPort(linflexd_1->INT_ERR);
+	instrumenter->RegisterPort(linflexd_1->m_clk);
+	instrumenter->RegisterPort(linflexd_1->lin_clk);
+	instrumenter->RegisterPort(linflexd_1->reset_b);
+	instrumenter->RegisterPort(linflexd_1->INT_RX);
+	instrumenter->RegisterPort(linflexd_1->INT_TX);
+	instrumenter->RegisterPort(linflexd_1->INT_ERR);
 	for(dma_req_num = 0; dma_req_num < LINFlexD_1::NUM_DMA_TX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_1->DMA_TX[dma_req_num]);
-		RegisterPort(*linflexd_1->DMA_ACK_TX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_1->DMA_TX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_1->DMA_ACK_TX[dma_req_num]);
 	}
 	for(dma_req_num = 0; dma_req_num < LINFlexD_1::NUM_DMA_RX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_1->DMA_RX[dma_req_num]);
-		RegisterPort(*linflexd_1->DMA_ACK_RX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_1->DMA_RX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_1->DMA_ACK_RX[dma_req_num]);
 	}
 
 	// - LINFlexD_2
-	RegisterPort(linflexd_2->m_clk);
-	RegisterPort(linflexd_2->lin_clk);
-	RegisterPort(linflexd_2->reset_b);
-	RegisterPort(linflexd_2->INT_RX);
-	RegisterPort(linflexd_2->INT_TX);
-	RegisterPort(linflexd_2->INT_ERR);
+	instrumenter->RegisterPort(linflexd_2->m_clk);
+	instrumenter->RegisterPort(linflexd_2->lin_clk);
+	instrumenter->RegisterPort(linflexd_2->reset_b);
+	instrumenter->RegisterPort(linflexd_2->INT_RX);
+	instrumenter->RegisterPort(linflexd_2->INT_TX);
+	instrumenter->RegisterPort(linflexd_2->INT_ERR);
 	for(dma_req_num = 0; dma_req_num < LINFlexD_2::NUM_DMA_TX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_2->DMA_TX[dma_req_num]);
-		RegisterPort(*linflexd_2->DMA_ACK_TX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_2->DMA_TX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_2->DMA_ACK_TX[dma_req_num]);
 	}
 	for(dma_req_num = 0; dma_req_num < LINFlexD_2::NUM_DMA_RX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_2->DMA_RX[dma_req_num]);
-		RegisterPort(*linflexd_2->DMA_ACK_RX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_2->DMA_RX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_2->DMA_ACK_RX[dma_req_num]);
 	}
 
 	// - LINFlexD_14
-	RegisterPort(linflexd_14->m_clk);
-	RegisterPort(linflexd_14->lin_clk);
-	RegisterPort(linflexd_14->reset_b);
-	RegisterPort(linflexd_14->INT_RX);
-	RegisterPort(linflexd_14->INT_TX);
-	RegisterPort(linflexd_14->INT_ERR);
+	instrumenter->RegisterPort(linflexd_14->m_clk);
+	instrumenter->RegisterPort(linflexd_14->lin_clk);
+	instrumenter->RegisterPort(linflexd_14->reset_b);
+	instrumenter->RegisterPort(linflexd_14->INT_RX);
+	instrumenter->RegisterPort(linflexd_14->INT_TX);
+	instrumenter->RegisterPort(linflexd_14->INT_ERR);
 	for(dma_req_num = 0; dma_req_num < LINFlexD_14::NUM_DMA_TX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_14->DMA_TX[dma_req_num]);
-		RegisterPort(*linflexd_14->DMA_ACK_TX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_14->DMA_TX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_14->DMA_ACK_TX[dma_req_num]);
 	}
 	for(dma_req_num = 0; dma_req_num < LINFlexD_14::NUM_DMA_RX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_14->DMA_RX[dma_req_num]);
-		RegisterPort(*linflexd_14->DMA_ACK_RX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_14->DMA_RX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_14->DMA_ACK_RX[dma_req_num]);
 	}
 
 	// - LINFlexD_15
-	RegisterPort(linflexd_15->m_clk);
-	RegisterPort(linflexd_15->lin_clk);
-	RegisterPort(linflexd_15->reset_b);
-	RegisterPort(linflexd_15->INT_RX);
-	RegisterPort(linflexd_15->INT_TX);
-	RegisterPort(linflexd_15->INT_ERR);
+	instrumenter->RegisterPort(linflexd_15->m_clk);
+	instrumenter->RegisterPort(linflexd_15->lin_clk);
+	instrumenter->RegisterPort(linflexd_15->reset_b);
+	instrumenter->RegisterPort(linflexd_15->INT_RX);
+	instrumenter->RegisterPort(linflexd_15->INT_TX);
+	instrumenter->RegisterPort(linflexd_15->INT_ERR);
 	for(dma_req_num = 0; dma_req_num < LINFlexD_15::NUM_DMA_TX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_15->DMA_TX[dma_req_num]);
-		RegisterPort(*linflexd_15->DMA_ACK_TX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_15->DMA_TX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_15->DMA_ACK_TX[dma_req_num]);
 	}
 	for(dma_req_num = 0; dma_req_num < LINFlexD_15::NUM_DMA_RX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_15->DMA_RX[dma_req_num]);
-		RegisterPort(*linflexd_15->DMA_ACK_RX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_15->DMA_RX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_15->DMA_ACK_RX[dma_req_num]);
 	}
 
 	// - LINFlexD_16
-	RegisterPort(linflexd_16->m_clk);
-	RegisterPort(linflexd_16->lin_clk);
-	RegisterPort(linflexd_16->reset_b);
-	RegisterPort(linflexd_16->INT_RX);
-	RegisterPort(linflexd_16->INT_TX);
-	RegisterPort(linflexd_16->INT_ERR);
+	instrumenter->RegisterPort(linflexd_16->m_clk);
+	instrumenter->RegisterPort(linflexd_16->lin_clk);
+	instrumenter->RegisterPort(linflexd_16->reset_b);
+	instrumenter->RegisterPort(linflexd_16->INT_RX);
+	instrumenter->RegisterPort(linflexd_16->INT_TX);
+	instrumenter->RegisterPort(linflexd_16->INT_ERR);
 	for(dma_req_num = 0; dma_req_num < LINFlexD_16::NUM_DMA_TX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_16->DMA_TX[dma_req_num]);
-		RegisterPort(*linflexd_16->DMA_ACK_TX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_16->DMA_TX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_16->DMA_ACK_TX[dma_req_num]);
 	}
 	for(dma_req_num = 0; dma_req_num < LINFlexD_16::NUM_DMA_RX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_16->DMA_RX[dma_req_num]);
-		RegisterPort(*linflexd_16->DMA_ACK_RX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_16->DMA_RX[dma_req_num]);
+		instrumenter->RegisterPort(*linflexd_16->DMA_ACK_RX[dma_req_num]);
 	}
 	
 	// - SERIAL_TERMINAL
 	if(enable_serial_terminal0)
 	{
-		RegisterPort(serial_terminal0->CLK);
+		instrumenter->RegisterPort(serial_terminal0->CLK);
 	}
 	if(enable_serial_terminal1)
 	{
-		RegisterPort(serial_terminal1->CLK);
+		instrumenter->RegisterPort(serial_terminal1->CLK);
 	}
 	if(enable_serial_terminal2)
 	{
-		RegisterPort(serial_terminal2->CLK);
+		instrumenter->RegisterPort(serial_terminal2->CLK);
 	}
 	if(enable_serial_terminal14)
 	{
-		RegisterPort(serial_terminal14->CLK);
+		instrumenter->RegisterPort(serial_terminal14->CLK);
 	}
 	if(enable_serial_terminal15)
 	{
-		RegisterPort(serial_terminal15->CLK);
+		instrumenter->RegisterPort(serial_terminal15->CLK);
 	}
 	if(enable_serial_terminal16)
 	{
-		RegisterPort(serial_terminal16->CLK);
+		instrumenter->RegisterPort(serial_terminal16->CLK);
 	}
 
 	// - DMAMUX_0
-	RegisterPort(dmamux_0->m_clk);
-	RegisterPort(dmamux_0->reset_b);
+	instrumenter->RegisterPort(dmamux_0->m_clk);
+	instrumenter->RegisterPort(dmamux_0->reset_b);
 	for(dma_source_num = 0; dma_source_num < DMAMUX_0::NUM_DMA_SOURCES; dma_source_num++)
 	{
-		RegisterPort(*dmamux_0->dma_source[dma_source_num]);
-		RegisterPort(*dmamux_0->dma_source_ack[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_0->dma_source[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_0->dma_source_ack[dma_source_num]);
 	}
 	for(dma_always_num = 0; dma_always_num < DMAMUX_0::NUM_DMA_ALWAYS_ON; dma_always_num++)
 	{
-		RegisterPort(*dmamux_0->dma_always_on[dma_always_num]);
+		instrumenter->RegisterPort(*dmamux_0->dma_always_on[dma_always_num]);
 	}
 	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_0::NUM_DMA_TRIGGERS; dma_trigger_num++)
 	{
-		RegisterPort(*dmamux_0->dma_trigger[dma_trigger_num]);
+		instrumenter->RegisterPort(*dmamux_0->dma_trigger[dma_trigger_num]);
 	}
 	for(dma_channel_num = 0; dma_channel_num < DMAMUX_0::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(*dmamux_0->dma_channel[dma_channel_num]);
-		RegisterPort(*dmamux_0->dma_channel_ack[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_0->dma_channel[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_0->dma_channel_ack[dma_channel_num]);
 	}
 	
 	// - DMAMUX_1
-	RegisterPort(dmamux_1->m_clk);
-	RegisterPort(dmamux_1->reset_b);
+	instrumenter->RegisterPort(dmamux_1->m_clk);
+	instrumenter->RegisterPort(dmamux_1->reset_b);
 	for(dma_source_num = 0; dma_source_num < DMAMUX_1::NUM_DMA_SOURCES; dma_source_num++)
 	{
-		RegisterPort(*dmamux_1->dma_source[dma_source_num]);
-		RegisterPort(*dmamux_1->dma_source_ack[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_1->dma_source[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_1->dma_source_ack[dma_source_num]);
 	}
 	for(dma_always_num = 0; dma_always_num < DMAMUX_1::NUM_DMA_ALWAYS_ON; dma_always_num++)
 	{
-		RegisterPort(*dmamux_1->dma_always_on[dma_always_num]);
+		instrumenter->RegisterPort(*dmamux_1->dma_always_on[dma_always_num]);
 	}
 	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_1::NUM_DMA_TRIGGERS; dma_trigger_num++)
 	{
-		RegisterPort(*dmamux_1->dma_trigger[dma_trigger_num]);
+		instrumenter->RegisterPort(*dmamux_1->dma_trigger[dma_trigger_num]);
 	}
 	for(dma_channel_num = 0; dma_channel_num < DMAMUX_1::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(*dmamux_1->dma_channel[dma_channel_num]);
-		RegisterPort(*dmamux_1->dma_channel_ack[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_1->dma_channel[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_1->dma_channel_ack[dma_channel_num]);
 	}
 
 	// - DMAMUX_2
-	RegisterPort(dmamux_2->m_clk);
-	RegisterPort(dmamux_2->reset_b);
+	instrumenter->RegisterPort(dmamux_2->m_clk);
+	instrumenter->RegisterPort(dmamux_2->reset_b);
 	for(dma_source_num = 0; dma_source_num < DMAMUX_2::NUM_DMA_SOURCES; dma_source_num++)
 	{
-		RegisterPort(*dmamux_2->dma_source[dma_source_num]);
-		RegisterPort(*dmamux_2->dma_source_ack[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_2->dma_source[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_2->dma_source_ack[dma_source_num]);
 	}
 	for(dma_always_num = 0; dma_always_num < DMAMUX_2::NUM_DMA_ALWAYS_ON; dma_always_num++)
 	{
-		RegisterPort(*dmamux_2->dma_always_on[dma_always_num]);
+		instrumenter->RegisterPort(*dmamux_2->dma_always_on[dma_always_num]);
 	}
 	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_2::NUM_DMA_TRIGGERS; dma_trigger_num++)
 	{
-		RegisterPort(*dmamux_2->dma_trigger[dma_trigger_num]);
+		instrumenter->RegisterPort(*dmamux_2->dma_trigger[dma_trigger_num]);
 	}
 	for(dma_channel_num = 0; dma_channel_num < DMAMUX_2::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(*dmamux_2->dma_channel[dma_channel_num]);
-		RegisterPort(*dmamux_2->dma_channel_ack[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_2->dma_channel[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_2->dma_channel_ack[dma_channel_num]);
 	}
 
 	// - DMAMUX_3
-	RegisterPort(dmamux_3->m_clk);
-	RegisterPort(dmamux_3->reset_b);
+	instrumenter->RegisterPort(dmamux_3->m_clk);
+	instrumenter->RegisterPort(dmamux_3->reset_b);
 	for(dma_source_num = 0; dma_source_num < DMAMUX_3::NUM_DMA_SOURCES; dma_source_num++)
 	{
-		RegisterPort(*dmamux_3->dma_source[dma_source_num]);
-		RegisterPort(*dmamux_3->dma_source_ack[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_3->dma_source[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_3->dma_source_ack[dma_source_num]);
 	}
 	for(dma_always_num = 0; dma_always_num < DMAMUX_3::NUM_DMA_ALWAYS_ON; dma_always_num++)
 	{
-		RegisterPort(*dmamux_3->dma_always_on[dma_always_num]);
+		instrumenter->RegisterPort(*dmamux_3->dma_always_on[dma_always_num]);
 	}
 	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_3::NUM_DMA_TRIGGERS; dma_trigger_num++)
 	{
-		RegisterPort(*dmamux_3->dma_trigger[dma_trigger_num]);
+		instrumenter->RegisterPort(*dmamux_3->dma_trigger[dma_trigger_num]);
 	}
 	for(dma_channel_num = 0; dma_channel_num < DMAMUX_3::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(*dmamux_3->dma_channel[dma_channel_num]);
-		RegisterPort(*dmamux_3->dma_channel_ack[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_3->dma_channel[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_3->dma_channel_ack[dma_channel_num]);
 	}
 
 	// - DMAMUX_4
-	RegisterPort(dmamux_4->m_clk);
-	RegisterPort(dmamux_4->reset_b);
+	instrumenter->RegisterPort(dmamux_4->m_clk);
+	instrumenter->RegisterPort(dmamux_4->reset_b);
 	for(dma_source_num = 0; dma_source_num < DMAMUX_4::NUM_DMA_SOURCES; dma_source_num++)
 	{
-		RegisterPort(*dmamux_4->dma_source[dma_source_num]);
-		RegisterPort(*dmamux_4->dma_source_ack[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_4->dma_source[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_4->dma_source_ack[dma_source_num]);
 	}
 	for(dma_always_num = 0; dma_always_num < DMAMUX_4::NUM_DMA_ALWAYS_ON; dma_always_num++)
 	{
-		RegisterPort(*dmamux_4->dma_always_on[dma_always_num]);
+		instrumenter->RegisterPort(*dmamux_4->dma_always_on[dma_always_num]);
 	}
 	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_4::NUM_DMA_TRIGGERS; dma_trigger_num++)
 	{
-		RegisterPort(*dmamux_4->dma_trigger[dma_trigger_num]);
+		instrumenter->RegisterPort(*dmamux_4->dma_trigger[dma_trigger_num]);
 	}
 	for(dma_channel_num = 0; dma_channel_num < DMAMUX_4::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(*dmamux_4->dma_channel[dma_channel_num]);
-		RegisterPort(*dmamux_4->dma_channel_ack[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_4->dma_channel[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_4->dma_channel_ack[dma_channel_num]);
 	}
 
 	// - DMAMUX_5
-	RegisterPort(dmamux_5->m_clk);
-	RegisterPort(dmamux_5->reset_b);
+	instrumenter->RegisterPort(dmamux_5->m_clk);
+	instrumenter->RegisterPort(dmamux_5->reset_b);
 	for(dma_source_num = 0; dma_source_num < DMAMUX_5::NUM_DMA_SOURCES; dma_source_num++)
 	{
-		RegisterPort(*dmamux_5->dma_source[dma_source_num]);
-		RegisterPort(*dmamux_5->dma_source_ack[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_5->dma_source[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_5->dma_source_ack[dma_source_num]);
 	}
 	for(dma_always_num = 0; dma_always_num < DMAMUX_5::NUM_DMA_ALWAYS_ON; dma_always_num++)
 	{
-		RegisterPort(*dmamux_5->dma_always_on[dma_always_num]);
+		instrumenter->RegisterPort(*dmamux_5->dma_always_on[dma_always_num]);
 	}
 	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_5::NUM_DMA_TRIGGERS; dma_trigger_num++)
 	{
-		RegisterPort(*dmamux_5->dma_trigger[dma_trigger_num]);
+		instrumenter->RegisterPort(*dmamux_5->dma_trigger[dma_trigger_num]);
 	}
 	for(dma_channel_num = 0; dma_channel_num < DMAMUX_5::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(*dmamux_5->dma_channel[dma_channel_num]);
-		RegisterPort(*dmamux_5->dma_channel_ack[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_5->dma_channel[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_5->dma_channel_ack[dma_channel_num]);
 	}
 	
 	// - DMAMUX_6
-	RegisterPort(dmamux_6->m_clk);
-	RegisterPort(dmamux_6->reset_b);
+	instrumenter->RegisterPort(dmamux_6->m_clk);
+	instrumenter->RegisterPort(dmamux_6->reset_b);
 	for(dma_source_num = 0; dma_source_num < DMAMUX_6::NUM_DMA_SOURCES; dma_source_num++)
 	{
-		RegisterPort(*dmamux_6->dma_source[dma_source_num]);
-		RegisterPort(*dmamux_6->dma_source_ack[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_6->dma_source[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_6->dma_source_ack[dma_source_num]);
 	}
 	for(dma_always_num = 0; dma_always_num < DMAMUX_6::NUM_DMA_ALWAYS_ON; dma_always_num++)
 	{
-		RegisterPort(*dmamux_6->dma_always_on[dma_always_num]);
+		instrumenter->RegisterPort(*dmamux_6->dma_always_on[dma_always_num]);
 	}
 	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_6::NUM_DMA_TRIGGERS; dma_trigger_num++)
 	{
-		RegisterPort(*dmamux_6->dma_trigger[dma_trigger_num]);
+		instrumenter->RegisterPort(*dmamux_6->dma_trigger[dma_trigger_num]);
 	}
 	for(dma_channel_num = 0; dma_channel_num < DMAMUX_6::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(*dmamux_6->dma_channel[dma_channel_num]);
-		RegisterPort(*dmamux_6->dma_channel_ack[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_6->dma_channel[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_6->dma_channel_ack[dma_channel_num]);
 	}
 
 	// - DMAMUX_7
-	RegisterPort(dmamux_7->m_clk);
-	RegisterPort(dmamux_7->reset_b);
+	instrumenter->RegisterPort(dmamux_7->m_clk);
+	instrumenter->RegisterPort(dmamux_7->reset_b);
 	for(dma_source_num = 0; dma_source_num < DMAMUX_7::NUM_DMA_SOURCES; dma_source_num++)
 	{
-		RegisterPort(*dmamux_7->dma_source[dma_source_num]);
-		RegisterPort(*dmamux_7->dma_source_ack[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_7->dma_source[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_7->dma_source_ack[dma_source_num]);
 	}
 	for(dma_always_num = 0; dma_always_num < DMAMUX_7::NUM_DMA_ALWAYS_ON; dma_always_num++)
 	{
-		RegisterPort(*dmamux_7->dma_always_on[dma_always_num]);
+		instrumenter->RegisterPort(*dmamux_7->dma_always_on[dma_always_num]);
 	}
 	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_7::NUM_DMA_TRIGGERS; dma_trigger_num++)
 	{
-		RegisterPort(*dmamux_7->dma_trigger[dma_trigger_num]);
+		instrumenter->RegisterPort(*dmamux_7->dma_trigger[dma_trigger_num]);
 	}
 	for(dma_channel_num = 0; dma_channel_num < DMAMUX_7::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(*dmamux_7->dma_channel[dma_channel_num]);
-		RegisterPort(*dmamux_7->dma_channel_ack[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_7->dma_channel[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_7->dma_channel_ack[dma_channel_num]);
 	}
 
 	// - DMAMUX_8
-	RegisterPort(dmamux_8->m_clk);
-	RegisterPort(dmamux_8->reset_b);
+	instrumenter->RegisterPort(dmamux_8->m_clk);
+	instrumenter->RegisterPort(dmamux_8->reset_b);
 	for(dma_source_num = 0; dma_source_num < DMAMUX_8::NUM_DMA_SOURCES; dma_source_num++)
 	{
-		RegisterPort(*dmamux_8->dma_source[dma_source_num]);
-		RegisterPort(*dmamux_8->dma_source_ack[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_8->dma_source[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_8->dma_source_ack[dma_source_num]);
 	}
 	for(dma_always_num = 0; dma_always_num < DMAMUX_8::NUM_DMA_ALWAYS_ON; dma_always_num++)
 	{
-		RegisterPort(*dmamux_8->dma_always_on[dma_always_num]);
+		instrumenter->RegisterPort(*dmamux_8->dma_always_on[dma_always_num]);
 	}
 	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_8::NUM_DMA_TRIGGERS; dma_trigger_num++)
 	{
-		RegisterPort(*dmamux_8->dma_trigger[dma_trigger_num]);
+		instrumenter->RegisterPort(*dmamux_8->dma_trigger[dma_trigger_num]);
 	}
 	for(dma_channel_num = 0; dma_channel_num < DMAMUX_8::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(*dmamux_8->dma_channel[dma_channel_num]);
-		RegisterPort(*dmamux_8->dma_channel_ack[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_8->dma_channel[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_8->dma_channel_ack[dma_channel_num]);
 	}
 
 	// - DMAMUX_9
-	RegisterPort(dmamux_9->m_clk);
-	RegisterPort(dmamux_9->reset_b);
+	instrumenter->RegisterPort(dmamux_9->m_clk);
+	instrumenter->RegisterPort(dmamux_9->reset_b);
 	for(dma_source_num = 0; dma_source_num < DMAMUX_9::NUM_DMA_SOURCES; dma_source_num++)
 	{
-		RegisterPort(*dmamux_9->dma_source[dma_source_num]);
-		RegisterPort(*dmamux_9->dma_source_ack[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_9->dma_source[dma_source_num]);
+		instrumenter->RegisterPort(*dmamux_9->dma_source_ack[dma_source_num]);
 	}
 	for(dma_always_num = 0; dma_always_num < DMAMUX_9::NUM_DMA_ALWAYS_ON; dma_always_num++)
 	{
-		RegisterPort(*dmamux_9->dma_always_on[dma_always_num]);
+		instrumenter->RegisterPort(*dmamux_9->dma_always_on[dma_always_num]);
 	}
 	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_9::NUM_DMA_TRIGGERS; dma_trigger_num++)
 	{
-		RegisterPort(*dmamux_9->dma_trigger[dma_trigger_num]);
+		instrumenter->RegisterPort(*dmamux_9->dma_trigger[dma_trigger_num]);
 	}
 	for(dma_channel_num = 0; dma_channel_num < DMAMUX_9::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(*dmamux_9->dma_channel[dma_channel_num]);
-		RegisterPort(*dmamux_9->dma_channel_ack[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_9->dma_channel[dma_channel_num]);
+		instrumenter->RegisterPort(*dmamux_9->dma_channel_ack[dma_channel_num]);
 	}
 	
 	// - EDMA_0
-	RegisterPort(edma_0->m_clk);
-	RegisterPort(edma_0->dma_clk);
-	RegisterPort(edma_0->reset_b);
+	instrumenter->RegisterPort(edma_0->m_clk);
+	instrumenter->RegisterPort(edma_0->dma_clk);
+	instrumenter->RegisterPort(edma_0->reset_b);
 	for(dma_channel_num = 0; dma_channel_num < EDMA_0::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(*edma_0->dma_channel[dma_channel_num]);
-		RegisterPort(*edma_0->dma_channel_ack[dma_channel_num]);
+		instrumenter->RegisterPort(*edma_0->dma_channel[dma_channel_num]);
+		instrumenter->RegisterPort(*edma_0->dma_channel_ack[dma_channel_num]);
 	}
 	for(dma_channel_num = 0; dma_channel_num < EDMA_0::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(*edma_0->irq[dma_channel_num]);
+		instrumenter->RegisterPort(*edma_0->irq[dma_channel_num]);
 	}
 	for(dma_channel_num = 0; dma_channel_num < EDMA_0::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(*edma_0->err_irq[dma_channel_num]);
+		instrumenter->RegisterPort(*edma_0->err_irq[dma_channel_num]);
 	}
 
 	// - EDMA_1
-	RegisterPort(edma_1->m_clk);
-	RegisterPort(edma_1->dma_clk);
-	RegisterPort(edma_1->reset_b);
+	instrumenter->RegisterPort(edma_1->m_clk);
+	instrumenter->RegisterPort(edma_1->dma_clk);
+	instrumenter->RegisterPort(edma_1->reset_b);
 	for(dma_channel_num = 0; dma_channel_num < EDMA_1::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(*edma_1->dma_channel[dma_channel_num]);
-		RegisterPort(*edma_1->dma_channel_ack[dma_channel_num]);
+		instrumenter->RegisterPort(*edma_1->dma_channel[dma_channel_num]);
+		instrumenter->RegisterPort(*edma_1->dma_channel_ack[dma_channel_num]);
 	}
 	for(dma_channel_num = 0; dma_channel_num < EDMA_1::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(*edma_1->irq[dma_channel_num]);
+		instrumenter->RegisterPort(*edma_1->irq[dma_channel_num]);
 	}
 	for(dma_channel_num = 0; dma_channel_num < EDMA_1::NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(*edma_1->err_irq[dma_channel_num]);
+		instrumenter->RegisterPort(*edma_1->err_irq[dma_channel_num]);
 	}
 	
 	// - DSPI_0
-	RegisterPort(dspi_0->m_clk);
-	RegisterPort(dspi_0->dspi_clk);
-	RegisterPort(dspi_0->reset_b);
-	RegisterPort(dspi_0->debug);
-	RegisterPort(dspi_0->HT);
-	RegisterPort(dspi_0->DMA_ACK_RX);
-	RegisterPort(dspi_0->DMA_ACK_TX);
-	RegisterPort(dspi_0->DMA_ACK_CMD);
-	RegisterPort(dspi_0->DMA_ACK_DD);
-	RegisterPort(dspi_0->INT_EOQF);
-	RegisterPort(dspi_0->INT_TFFF);
-	RegisterPort(dspi_0->INT_CMDFFF);
-	RegisterPort(dspi_0->INT_TFIWF);
-	RegisterPort(dspi_0->INT_TCF);
-	RegisterPort(dspi_0->INT_CMDTCF);
-	RegisterPort(dspi_0->INT_SPITCF);
-	RegisterPort(dspi_0->INT_DSITCF);
-	RegisterPort(dspi_0->INT_TFUF);
-	RegisterPort(dspi_0->INT_RFDF);
-	RegisterPort(dspi_0->INT_RFOF);
-	RegisterPort(dspi_0->INT_SPEF);
-	RegisterPort(dspi_0->INT_DPEF);
-	RegisterPort(dspi_0->INT_DDIF);
-	RegisterPort(dspi_0->DMA_RX);
-	RegisterPort(dspi_0->DMA_TX);
-	RegisterPort(dspi_0->DMA_CMD);
-	RegisterPort(dspi_0->DMA_DD);
+	instrumenter->RegisterPort(dspi_0->m_clk);
+	instrumenter->RegisterPort(dspi_0->dspi_clk);
+	instrumenter->RegisterPort(dspi_0->reset_b);
+	instrumenter->RegisterPort(dspi_0->debug);
+	instrumenter->RegisterPort(dspi_0->HT);
+	instrumenter->RegisterPort(dspi_0->DMA_ACK_RX);
+	instrumenter->RegisterPort(dspi_0->DMA_ACK_TX);
+	instrumenter->RegisterPort(dspi_0->DMA_ACK_CMD);
+	instrumenter->RegisterPort(dspi_0->DMA_ACK_DD);
+	instrumenter->RegisterPort(dspi_0->INT_EOQF);
+	instrumenter->RegisterPort(dspi_0->INT_TFFF);
+	instrumenter->RegisterPort(dspi_0->INT_CMDFFF);
+	instrumenter->RegisterPort(dspi_0->INT_TFIWF);
+	instrumenter->RegisterPort(dspi_0->INT_TCF);
+	instrumenter->RegisterPort(dspi_0->INT_CMDTCF);
+	instrumenter->RegisterPort(dspi_0->INT_SPITCF);
+	instrumenter->RegisterPort(dspi_0->INT_DSITCF);
+	instrumenter->RegisterPort(dspi_0->INT_TFUF);
+	instrumenter->RegisterPort(dspi_0->INT_RFDF);
+	instrumenter->RegisterPort(dspi_0->INT_RFOF);
+	instrumenter->RegisterPort(dspi_0->INT_SPEF);
+	instrumenter->RegisterPort(dspi_0->INT_DPEF);
+	instrumenter->RegisterPort(dspi_0->INT_DDIF);
+	instrumenter->RegisterPort(dspi_0->DMA_RX);
+	instrumenter->RegisterPort(dspi_0->DMA_TX);
+	instrumenter->RegisterPort(dspi_0->DMA_CMD);
+	instrumenter->RegisterPort(dspi_0->DMA_DD);
 	
 	for(i = 0; i < DSPI_0::NUM_DSI_INPUTS; i++)
 	{
-		RegisterPort(dspi_0->DSI_INPUT[i]);
+		instrumenter->RegisterPort(dspi_0->DSI_INPUT[i]);
 	}
 	for(i = 0; i < DSPI_0::NUM_DSI_OUTPUTS; i++)
 	{
-		RegisterPort(dspi_0->DSI_OUTPUT[i]);
+		instrumenter->RegisterPort(dspi_0->DSI_OUTPUT[i]);
 	}
 
 	// - DSPI_1
-	RegisterPort(dspi_1->m_clk);
-	RegisterPort(dspi_1->dspi_clk);
-	RegisterPort(dspi_1->reset_b);
-	RegisterPort(dspi_1->debug);
-	RegisterPort(dspi_1->HT);
-	RegisterPort(dspi_1->DMA_ACK_RX);
-	RegisterPort(dspi_1->DMA_ACK_TX);
-	RegisterPort(dspi_1->DMA_ACK_CMD);
-	RegisterPort(dspi_1->DMA_ACK_DD);
-	RegisterPort(dspi_1->INT_EOQF);
-	RegisterPort(dspi_1->INT_TFFF);
-	RegisterPort(dspi_1->INT_CMDFFF);
-	RegisterPort(dspi_1->INT_TFIWF);
-	RegisterPort(dspi_1->INT_TCF);
-	RegisterPort(dspi_1->INT_CMDTCF);
-	RegisterPort(dspi_1->INT_SPITCF);
-	RegisterPort(dspi_1->INT_DSITCF);
-	RegisterPort(dspi_1->INT_TFUF);
-	RegisterPort(dspi_1->INT_RFDF);
-	RegisterPort(dspi_1->INT_RFOF);
-	RegisterPort(dspi_1->INT_SPEF);
-	RegisterPort(dspi_1->INT_DPEF);
-	RegisterPort(dspi_1->INT_DDIF);
-	RegisterPort(dspi_1->DMA_RX);
-	RegisterPort(dspi_1->DMA_TX);
-	RegisterPort(dspi_1->DMA_CMD);
-	RegisterPort(dspi_1->DMA_DD);
+	instrumenter->RegisterPort(dspi_1->m_clk);
+	instrumenter->RegisterPort(dspi_1->dspi_clk);
+	instrumenter->RegisterPort(dspi_1->reset_b);
+	instrumenter->RegisterPort(dspi_1->debug);
+	instrumenter->RegisterPort(dspi_1->HT);
+	instrumenter->RegisterPort(dspi_1->DMA_ACK_RX);
+	instrumenter->RegisterPort(dspi_1->DMA_ACK_TX);
+	instrumenter->RegisterPort(dspi_1->DMA_ACK_CMD);
+	instrumenter->RegisterPort(dspi_1->DMA_ACK_DD);
+	instrumenter->RegisterPort(dspi_1->INT_EOQF);
+	instrumenter->RegisterPort(dspi_1->INT_TFFF);
+	instrumenter->RegisterPort(dspi_1->INT_CMDFFF);
+	instrumenter->RegisterPort(dspi_1->INT_TFIWF);
+	instrumenter->RegisterPort(dspi_1->INT_TCF);
+	instrumenter->RegisterPort(dspi_1->INT_CMDTCF);
+	instrumenter->RegisterPort(dspi_1->INT_SPITCF);
+	instrumenter->RegisterPort(dspi_1->INT_DSITCF);
+	instrumenter->RegisterPort(dspi_1->INT_TFUF);
+	instrumenter->RegisterPort(dspi_1->INT_RFDF);
+	instrumenter->RegisterPort(dspi_1->INT_RFOF);
+	instrumenter->RegisterPort(dspi_1->INT_SPEF);
+	instrumenter->RegisterPort(dspi_1->INT_DPEF);
+	instrumenter->RegisterPort(dspi_1->INT_DDIF);
+	instrumenter->RegisterPort(dspi_1->DMA_RX);
+	instrumenter->RegisterPort(dspi_1->DMA_TX);
+	instrumenter->RegisterPort(dspi_1->DMA_CMD);
+	instrumenter->RegisterPort(dspi_1->DMA_DD);
 	
 	for(i = 0; i < DSPI_1::NUM_DSI_INPUTS; i++)
 	{
-		RegisterPort(dspi_1->DSI_INPUT[i]);
+		instrumenter->RegisterPort(dspi_1->DSI_INPUT[i]);
 	}
 	for(i = 0; i < DSPI_1::NUM_DSI_OUTPUTS; i++)
 	{
-		RegisterPort(dspi_1->DSI_OUTPUT[i]);
+		instrumenter->RegisterPort(dspi_1->DSI_OUTPUT[i]);
 	}
 	
 	// - DSPI_2
-	RegisterPort(dspi_2->m_clk);
-	RegisterPort(dspi_2->dspi_clk);
-	RegisterPort(dspi_2->reset_b);
-	RegisterPort(dspi_2->debug);
-	RegisterPort(dspi_2->HT);
-	RegisterPort(dspi_2->DMA_ACK_RX);
-	RegisterPort(dspi_2->DMA_ACK_TX);
-	RegisterPort(dspi_2->DMA_ACK_CMD);
-	RegisterPort(dspi_2->DMA_ACK_DD);
-	RegisterPort(dspi_2->INT_EOQF);
-	RegisterPort(dspi_2->INT_TFFF);
-	RegisterPort(dspi_2->INT_CMDFFF);
-	RegisterPort(dspi_2->INT_TFIWF);
-	RegisterPort(dspi_2->INT_TCF);
-	RegisterPort(dspi_2->INT_CMDTCF);
-	RegisterPort(dspi_2->INT_SPITCF);
-	RegisterPort(dspi_2->INT_DSITCF);
-	RegisterPort(dspi_2->INT_TFUF);
-	RegisterPort(dspi_2->INT_RFDF);
-	RegisterPort(dspi_2->INT_RFOF);
-	RegisterPort(dspi_2->INT_SPEF);
-	RegisterPort(dspi_2->INT_DPEF);
-	RegisterPort(dspi_2->INT_DDIF);
-	RegisterPort(dspi_2->DMA_RX);
-	RegisterPort(dspi_2->DMA_TX);
-	RegisterPort(dspi_2->DMA_CMD);
-	RegisterPort(dspi_2->DMA_DD);
+	instrumenter->RegisterPort(dspi_2->m_clk);
+	instrumenter->RegisterPort(dspi_2->dspi_clk);
+	instrumenter->RegisterPort(dspi_2->reset_b);
+	instrumenter->RegisterPort(dspi_2->debug);
+	instrumenter->RegisterPort(dspi_2->HT);
+	instrumenter->RegisterPort(dspi_2->DMA_ACK_RX);
+	instrumenter->RegisterPort(dspi_2->DMA_ACK_TX);
+	instrumenter->RegisterPort(dspi_2->DMA_ACK_CMD);
+	instrumenter->RegisterPort(dspi_2->DMA_ACK_DD);
+	instrumenter->RegisterPort(dspi_2->INT_EOQF);
+	instrumenter->RegisterPort(dspi_2->INT_TFFF);
+	instrumenter->RegisterPort(dspi_2->INT_CMDFFF);
+	instrumenter->RegisterPort(dspi_2->INT_TFIWF);
+	instrumenter->RegisterPort(dspi_2->INT_TCF);
+	instrumenter->RegisterPort(dspi_2->INT_CMDTCF);
+	instrumenter->RegisterPort(dspi_2->INT_SPITCF);
+	instrumenter->RegisterPort(dspi_2->INT_DSITCF);
+	instrumenter->RegisterPort(dspi_2->INT_TFUF);
+	instrumenter->RegisterPort(dspi_2->INT_RFDF);
+	instrumenter->RegisterPort(dspi_2->INT_RFOF);
+	instrumenter->RegisterPort(dspi_2->INT_SPEF);
+	instrumenter->RegisterPort(dspi_2->INT_DPEF);
+	instrumenter->RegisterPort(dspi_2->INT_DDIF);
+	instrumenter->RegisterPort(dspi_2->DMA_RX);
+	instrumenter->RegisterPort(dspi_2->DMA_TX);
+	instrumenter->RegisterPort(dspi_2->DMA_CMD);
+	instrumenter->RegisterPort(dspi_2->DMA_DD);
 	
 	for(i = 0; i < DSPI_2::NUM_DSI_INPUTS; i++)
 	{
-		RegisterPort(dspi_2->DSI_INPUT[i]);
+		instrumenter->RegisterPort(dspi_2->DSI_INPUT[i]);
 	}
 	for(i = 0; i < DSPI_2::NUM_DSI_OUTPUTS; i++)
 	{
-		RegisterPort(dspi_2->DSI_OUTPUT[i]);
+		instrumenter->RegisterPort(dspi_2->DSI_OUTPUT[i]);
 	}
 
 	// - DSPI_3
-	RegisterPort(dspi_3->m_clk);
-	RegisterPort(dspi_3->dspi_clk);
-	RegisterPort(dspi_3->reset_b);
-	RegisterPort(dspi_3->debug);
-	RegisterPort(dspi_3->HT);
-	RegisterPort(dspi_3->DMA_ACK_RX);
-	RegisterPort(dspi_3->DMA_ACK_TX);
-	RegisterPort(dspi_3->DMA_ACK_CMD);
-	RegisterPort(dspi_3->DMA_ACK_DD);
-	RegisterPort(dspi_3->INT_EOQF);
-	RegisterPort(dspi_3->INT_TFFF);
-	RegisterPort(dspi_3->INT_CMDFFF);
-	RegisterPort(dspi_3->INT_TFIWF);
-	RegisterPort(dspi_3->INT_TCF);
-	RegisterPort(dspi_3->INT_CMDTCF);
-	RegisterPort(dspi_3->INT_SPITCF);
-	RegisterPort(dspi_3->INT_DSITCF);
-	RegisterPort(dspi_3->INT_TFUF);
-	RegisterPort(dspi_3->INT_RFDF);
-	RegisterPort(dspi_3->INT_RFOF);
-	RegisterPort(dspi_3->INT_SPEF);
-	RegisterPort(dspi_3->INT_DPEF);
-	RegisterPort(dspi_3->INT_DDIF);
-	RegisterPort(dspi_3->DMA_RX);
-	RegisterPort(dspi_3->DMA_TX);
-	RegisterPort(dspi_3->DMA_CMD);
-	RegisterPort(dspi_3->DMA_DD);
+	instrumenter->RegisterPort(dspi_3->m_clk);
+	instrumenter->RegisterPort(dspi_3->dspi_clk);
+	instrumenter->RegisterPort(dspi_3->reset_b);
+	instrumenter->RegisterPort(dspi_3->debug);
+	instrumenter->RegisterPort(dspi_3->HT);
+	instrumenter->RegisterPort(dspi_3->DMA_ACK_RX);
+	instrumenter->RegisterPort(dspi_3->DMA_ACK_TX);
+	instrumenter->RegisterPort(dspi_3->DMA_ACK_CMD);
+	instrumenter->RegisterPort(dspi_3->DMA_ACK_DD);
+	instrumenter->RegisterPort(dspi_3->INT_EOQF);
+	instrumenter->RegisterPort(dspi_3->INT_TFFF);
+	instrumenter->RegisterPort(dspi_3->INT_CMDFFF);
+	instrumenter->RegisterPort(dspi_3->INT_TFIWF);
+	instrumenter->RegisterPort(dspi_3->INT_TCF);
+	instrumenter->RegisterPort(dspi_3->INT_CMDTCF);
+	instrumenter->RegisterPort(dspi_3->INT_SPITCF);
+	instrumenter->RegisterPort(dspi_3->INT_DSITCF);
+	instrumenter->RegisterPort(dspi_3->INT_TFUF);
+	instrumenter->RegisterPort(dspi_3->INT_RFDF);
+	instrumenter->RegisterPort(dspi_3->INT_RFOF);
+	instrumenter->RegisterPort(dspi_3->INT_SPEF);
+	instrumenter->RegisterPort(dspi_3->INT_DPEF);
+	instrumenter->RegisterPort(dspi_3->INT_DDIF);
+	instrumenter->RegisterPort(dspi_3->DMA_RX);
+	instrumenter->RegisterPort(dspi_3->DMA_TX);
+	instrumenter->RegisterPort(dspi_3->DMA_CMD);
+	instrumenter->RegisterPort(dspi_3->DMA_DD);
 	
 	for(i = 0; i < DSPI_3::NUM_DSI_INPUTS; i++)
 	{
-		RegisterPort(dspi_3->DSI_INPUT[i]);
+		instrumenter->RegisterPort(dspi_3->DSI_INPUT[i]);
 	}
 	for(i = 0; i < DSPI_3::NUM_DSI_OUTPUTS; i++)
 	{
-		RegisterPort(dspi_3->DSI_OUTPUT[i]);
+		instrumenter->RegisterPort(dspi_3->DSI_OUTPUT[i]);
 	}
 
 	// - DSPI_4
-	RegisterPort(dspi_4->m_clk);
-	RegisterPort(dspi_4->dspi_clk);
-	RegisterPort(dspi_4->reset_b);
-	RegisterPort(dspi_4->debug);
-	RegisterPort(dspi_4->HT);
-	RegisterPort(dspi_4->DMA_ACK_RX);
-	RegisterPort(dspi_4->DMA_ACK_TX);
-	RegisterPort(dspi_4->DMA_ACK_CMD);
-	RegisterPort(dspi_4->DMA_ACK_DD);
-	RegisterPort(dspi_4->INT_EOQF);
-	RegisterPort(dspi_4->INT_TFFF);
-	RegisterPort(dspi_4->INT_CMDFFF);
-	RegisterPort(dspi_4->INT_TFIWF);
-	RegisterPort(dspi_4->INT_TCF);
-	RegisterPort(dspi_4->INT_CMDTCF);
-	RegisterPort(dspi_4->INT_SPITCF);
-	RegisterPort(dspi_4->INT_DSITCF);
-	RegisterPort(dspi_4->INT_TFUF);
-	RegisterPort(dspi_4->INT_RFDF);
-	RegisterPort(dspi_4->INT_RFOF);
-	RegisterPort(dspi_4->INT_SPEF);
-	RegisterPort(dspi_4->INT_DPEF);
-	RegisterPort(dspi_4->INT_DDIF);
-	RegisterPort(dspi_4->DMA_RX);
-	RegisterPort(dspi_4->DMA_TX);
-	RegisterPort(dspi_4->DMA_CMD);
-	RegisterPort(dspi_4->DMA_DD);
+	instrumenter->RegisterPort(dspi_4->m_clk);
+	instrumenter->RegisterPort(dspi_4->dspi_clk);
+	instrumenter->RegisterPort(dspi_4->reset_b);
+	instrumenter->RegisterPort(dspi_4->debug);
+	instrumenter->RegisterPort(dspi_4->HT);
+	instrumenter->RegisterPort(dspi_4->DMA_ACK_RX);
+	instrumenter->RegisterPort(dspi_4->DMA_ACK_TX);
+	instrumenter->RegisterPort(dspi_4->DMA_ACK_CMD);
+	instrumenter->RegisterPort(dspi_4->DMA_ACK_DD);
+	instrumenter->RegisterPort(dspi_4->INT_EOQF);
+	instrumenter->RegisterPort(dspi_4->INT_TFFF);
+	instrumenter->RegisterPort(dspi_4->INT_CMDFFF);
+	instrumenter->RegisterPort(dspi_4->INT_TFIWF);
+	instrumenter->RegisterPort(dspi_4->INT_TCF);
+	instrumenter->RegisterPort(dspi_4->INT_CMDTCF);
+	instrumenter->RegisterPort(dspi_4->INT_SPITCF);
+	instrumenter->RegisterPort(dspi_4->INT_DSITCF);
+	instrumenter->RegisterPort(dspi_4->INT_TFUF);
+	instrumenter->RegisterPort(dspi_4->INT_RFDF);
+	instrumenter->RegisterPort(dspi_4->INT_RFOF);
+	instrumenter->RegisterPort(dspi_4->INT_SPEF);
+	instrumenter->RegisterPort(dspi_4->INT_DPEF);
+	instrumenter->RegisterPort(dspi_4->INT_DDIF);
+	instrumenter->RegisterPort(dspi_4->DMA_RX);
+	instrumenter->RegisterPort(dspi_4->DMA_TX);
+	instrumenter->RegisterPort(dspi_4->DMA_CMD);
+	instrumenter->RegisterPort(dspi_4->DMA_DD);
 	
 	for(i = 0; i < DSPI_4::NUM_DSI_INPUTS; i++)
 	{
-		RegisterPort(dspi_4->DSI_INPUT[i]);
+		instrumenter->RegisterPort(dspi_4->DSI_INPUT[i]);
 	}
 	for(i = 0; i < DSPI_4::NUM_DSI_OUTPUTS; i++)
 	{
-		RegisterPort(dspi_4->DSI_OUTPUT[i]);
+		instrumenter->RegisterPort(dspi_4->DSI_OUTPUT[i]);
 	}
 	
 	// - DSPI_5
-	RegisterPort(dspi_5->m_clk);
-	RegisterPort(dspi_5->dspi_clk);
-	RegisterPort(dspi_5->reset_b);
-	RegisterPort(dspi_5->debug);
-	RegisterPort(dspi_5->HT);
-	RegisterPort(dspi_5->DMA_ACK_RX);
-	RegisterPort(dspi_5->DMA_ACK_TX);
-	RegisterPort(dspi_5->DMA_ACK_CMD);
-	RegisterPort(dspi_5->DMA_ACK_DD);
-	RegisterPort(dspi_5->INT_EOQF);
-	RegisterPort(dspi_5->INT_TFFF);
-	RegisterPort(dspi_5->INT_CMDFFF);
-	RegisterPort(dspi_5->INT_TFIWF);
-	RegisterPort(dspi_5->INT_TCF);
-	RegisterPort(dspi_5->INT_CMDTCF);
-	RegisterPort(dspi_5->INT_SPITCF);
-	RegisterPort(dspi_5->INT_DSITCF);
-	RegisterPort(dspi_5->INT_TFUF);
-	RegisterPort(dspi_5->INT_RFDF);
-	RegisterPort(dspi_5->INT_RFOF);
-	RegisterPort(dspi_5->INT_SPEF);
-	RegisterPort(dspi_5->INT_DPEF);
-	RegisterPort(dspi_5->INT_DDIF);
-	RegisterPort(dspi_5->DMA_RX);
-	RegisterPort(dspi_5->DMA_TX);
-	RegisterPort(dspi_5->DMA_CMD);
-	RegisterPort(dspi_5->DMA_DD);
+	instrumenter->RegisterPort(dspi_5->m_clk);
+	instrumenter->RegisterPort(dspi_5->dspi_clk);
+	instrumenter->RegisterPort(dspi_5->reset_b);
+	instrumenter->RegisterPort(dspi_5->debug);
+	instrumenter->RegisterPort(dspi_5->HT);
+	instrumenter->RegisterPort(dspi_5->DMA_ACK_RX);
+	instrumenter->RegisterPort(dspi_5->DMA_ACK_TX);
+	instrumenter->RegisterPort(dspi_5->DMA_ACK_CMD);
+	instrumenter->RegisterPort(dspi_5->DMA_ACK_DD);
+	instrumenter->RegisterPort(dspi_5->INT_EOQF);
+	instrumenter->RegisterPort(dspi_5->INT_TFFF);
+	instrumenter->RegisterPort(dspi_5->INT_CMDFFF);
+	instrumenter->RegisterPort(dspi_5->INT_TFIWF);
+	instrumenter->RegisterPort(dspi_5->INT_TCF);
+	instrumenter->RegisterPort(dspi_5->INT_CMDTCF);
+	instrumenter->RegisterPort(dspi_5->INT_SPITCF);
+	instrumenter->RegisterPort(dspi_5->INT_DSITCF);
+	instrumenter->RegisterPort(dspi_5->INT_TFUF);
+	instrumenter->RegisterPort(dspi_5->INT_RFDF);
+	instrumenter->RegisterPort(dspi_5->INT_RFOF);
+	instrumenter->RegisterPort(dspi_5->INT_SPEF);
+	instrumenter->RegisterPort(dspi_5->INT_DPEF);
+	instrumenter->RegisterPort(dspi_5->INT_DDIF);
+	instrumenter->RegisterPort(dspi_5->DMA_RX);
+	instrumenter->RegisterPort(dspi_5->DMA_TX);
+	instrumenter->RegisterPort(dspi_5->DMA_CMD);
+	instrumenter->RegisterPort(dspi_5->DMA_DD);
 	
 	for(i = 0; i < DSPI_5::NUM_DSI_INPUTS; i++)
 	{
-		RegisterPort(dspi_5->DSI_INPUT[i]);
+		instrumenter->RegisterPort(dspi_5->DSI_INPUT[i]);
 	}
 	for(i = 0; i < DSPI_5::NUM_DSI_OUTPUTS; i++)
 	{
-		RegisterPort(dspi_5->DSI_OUTPUT[i]);
+		instrumenter->RegisterPort(dspi_5->DSI_OUTPUT[i]);
 	}
 
 	// - DSPI_6
-	RegisterPort(dspi_6->m_clk);
-	RegisterPort(dspi_6->dspi_clk);
-	RegisterPort(dspi_6->reset_b);
-	RegisterPort(dspi_6->debug);
-	RegisterPort(dspi_6->HT);
-	RegisterPort(dspi_6->DMA_ACK_RX);
-	RegisterPort(dspi_6->DMA_ACK_TX);
-	RegisterPort(dspi_6->DMA_ACK_CMD);
-	RegisterPort(dspi_6->DMA_ACK_DD);
-	RegisterPort(dspi_6->INT_EOQF);
-	RegisterPort(dspi_6->INT_TFFF);
-	RegisterPort(dspi_6->INT_CMDFFF);
-	RegisterPort(dspi_6->INT_TFIWF);
-	RegisterPort(dspi_6->INT_TCF);
-	RegisterPort(dspi_6->INT_CMDTCF);
-	RegisterPort(dspi_6->INT_SPITCF);
-	RegisterPort(dspi_6->INT_DSITCF);
-	RegisterPort(dspi_6->INT_TFUF);
-	RegisterPort(dspi_6->INT_RFDF);
-	RegisterPort(dspi_6->INT_RFOF);
-	RegisterPort(dspi_6->INT_SPEF);
-	RegisterPort(dspi_6->INT_DPEF);
-	RegisterPort(dspi_6->INT_DDIF);
-	RegisterPort(dspi_6->DMA_RX);
-	RegisterPort(dspi_6->DMA_TX);
-	RegisterPort(dspi_6->DMA_CMD);
-	RegisterPort(dspi_6->DMA_DD);
+	instrumenter->RegisterPort(dspi_6->m_clk);
+	instrumenter->RegisterPort(dspi_6->dspi_clk);
+	instrumenter->RegisterPort(dspi_6->reset_b);
+	instrumenter->RegisterPort(dspi_6->debug);
+	instrumenter->RegisterPort(dspi_6->HT);
+	instrumenter->RegisterPort(dspi_6->DMA_ACK_RX);
+	instrumenter->RegisterPort(dspi_6->DMA_ACK_TX);
+	instrumenter->RegisterPort(dspi_6->DMA_ACK_CMD);
+	instrumenter->RegisterPort(dspi_6->DMA_ACK_DD);
+	instrumenter->RegisterPort(dspi_6->INT_EOQF);
+	instrumenter->RegisterPort(dspi_6->INT_TFFF);
+	instrumenter->RegisterPort(dspi_6->INT_CMDFFF);
+	instrumenter->RegisterPort(dspi_6->INT_TFIWF);
+	instrumenter->RegisterPort(dspi_6->INT_TCF);
+	instrumenter->RegisterPort(dspi_6->INT_CMDTCF);
+	instrumenter->RegisterPort(dspi_6->INT_SPITCF);
+	instrumenter->RegisterPort(dspi_6->INT_DSITCF);
+	instrumenter->RegisterPort(dspi_6->INT_TFUF);
+	instrumenter->RegisterPort(dspi_6->INT_RFDF);
+	instrumenter->RegisterPort(dspi_6->INT_RFOF);
+	instrumenter->RegisterPort(dspi_6->INT_SPEF);
+	instrumenter->RegisterPort(dspi_6->INT_DPEF);
+	instrumenter->RegisterPort(dspi_6->INT_DDIF);
+	instrumenter->RegisterPort(dspi_6->DMA_RX);
+	instrumenter->RegisterPort(dspi_6->DMA_TX);
+	instrumenter->RegisterPort(dspi_6->DMA_CMD);
+	instrumenter->RegisterPort(dspi_6->DMA_DD);
 	
 	for(i = 0; i < DSPI_6::NUM_DSI_INPUTS; i++)
 	{
-		RegisterPort(dspi_6->DSI_INPUT[i]);
+		instrumenter->RegisterPort(dspi_6->DSI_INPUT[i]);
 	}
 	for(i = 0; i < DSPI_6::NUM_DSI_OUTPUTS; i++)
 	{
-		RegisterPort(dspi_6->DSI_OUTPUT[i]);
+		instrumenter->RegisterPort(dspi_6->DSI_OUTPUT[i]);
 	}
 
 	// - DSPI_12
-	RegisterPort(dspi_12->m_clk);
-	RegisterPort(dspi_12->dspi_clk);
-	RegisterPort(dspi_12->reset_b);
-	RegisterPort(dspi_12->debug);
-	RegisterPort(dspi_12->HT);
-	RegisterPort(dspi_12->DMA_ACK_RX);
-	RegisterPort(dspi_12->DMA_ACK_TX);
-	RegisterPort(dspi_12->DMA_ACK_CMD);
-	RegisterPort(dspi_12->DMA_ACK_DD);
-	RegisterPort(dspi_12->INT_EOQF);
-	RegisterPort(dspi_12->INT_TFFF);
-	RegisterPort(dspi_12->INT_CMDFFF);
-	RegisterPort(dspi_12->INT_TFIWF);
-	RegisterPort(dspi_12->INT_TCF);
-	RegisterPort(dspi_12->INT_CMDTCF);
-	RegisterPort(dspi_12->INT_SPITCF);
-	RegisterPort(dspi_12->INT_DSITCF);
-	RegisterPort(dspi_12->INT_TFUF);
-	RegisterPort(dspi_12->INT_RFDF);
-	RegisterPort(dspi_12->INT_RFOF);
-	RegisterPort(dspi_12->INT_SPEF);
-	RegisterPort(dspi_12->INT_DPEF);
-	RegisterPort(dspi_12->INT_DDIF);
-	RegisterPort(dspi_12->DMA_RX);
-	RegisterPort(dspi_12->DMA_TX);
-	RegisterPort(dspi_12->DMA_CMD);
-	RegisterPort(dspi_12->DMA_DD);
+	instrumenter->RegisterPort(dspi_12->m_clk);
+	instrumenter->RegisterPort(dspi_12->dspi_clk);
+	instrumenter->RegisterPort(dspi_12->reset_b);
+	instrumenter->RegisterPort(dspi_12->debug);
+	instrumenter->RegisterPort(dspi_12->HT);
+	instrumenter->RegisterPort(dspi_12->DMA_ACK_RX);
+	instrumenter->RegisterPort(dspi_12->DMA_ACK_TX);
+	instrumenter->RegisterPort(dspi_12->DMA_ACK_CMD);
+	instrumenter->RegisterPort(dspi_12->DMA_ACK_DD);
+	instrumenter->RegisterPort(dspi_12->INT_EOQF);
+	instrumenter->RegisterPort(dspi_12->INT_TFFF);
+	instrumenter->RegisterPort(dspi_12->INT_CMDFFF);
+	instrumenter->RegisterPort(dspi_12->INT_TFIWF);
+	instrumenter->RegisterPort(dspi_12->INT_TCF);
+	instrumenter->RegisterPort(dspi_12->INT_CMDTCF);
+	instrumenter->RegisterPort(dspi_12->INT_SPITCF);
+	instrumenter->RegisterPort(dspi_12->INT_DSITCF);
+	instrumenter->RegisterPort(dspi_12->INT_TFUF);
+	instrumenter->RegisterPort(dspi_12->INT_RFDF);
+	instrumenter->RegisterPort(dspi_12->INT_RFOF);
+	instrumenter->RegisterPort(dspi_12->INT_SPEF);
+	instrumenter->RegisterPort(dspi_12->INT_DPEF);
+	instrumenter->RegisterPort(dspi_12->INT_DDIF);
+	instrumenter->RegisterPort(dspi_12->DMA_RX);
+	instrumenter->RegisterPort(dspi_12->DMA_TX);
+	instrumenter->RegisterPort(dspi_12->DMA_CMD);
+	instrumenter->RegisterPort(dspi_12->DMA_DD);
 	
 	for(i = 0; i < DSPI_12::NUM_DSI_INPUTS; i++)
 	{
-		RegisterPort(dspi_12->DSI_INPUT[i]);
+		instrumenter->RegisterPort(dspi_12->DSI_INPUT[i]);
 	}
 	for(i = 0; i < DSPI_12::NUM_DSI_OUTPUTS; i++)
 	{
-		RegisterPort(dspi_12->DSI_OUTPUT[i]);
+		instrumenter->RegisterPort(dspi_12->DSI_OUTPUT[i]);
 	}
 
 	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
 	{
-		RegisterPort(dma_err_irq_combinator->in[dma_channel_num]);
+		instrumenter->RegisterPort(dma_err_irq_combinator->in[dma_channel_num]);
 	}
-	RegisterPort(dma_err_irq_combinator->out);
+	instrumenter->RegisterPort(dma_err_irq_combinator->out);
 	
 	for(i = 0; i < 3; i++)
 	{
-		RegisterPort(DSPI0_0->in[i]);
-		RegisterPort(DSPI1_0->in[i]);
-		RegisterPort(DSPI2_0->in[i]);
-		RegisterPort(DSPI3_0->in[i]);
-		RegisterPort(DSPI4_0->in[i]);
-		RegisterPort(DSPI5_0->in[i]);
-		RegisterPort(DSPI6_0->in[i]);
-		RegisterPort(DSPI12_0->in[i]);
+		instrumenter->RegisterPort(DSPI0_0->in[i]);
+		instrumenter->RegisterPort(DSPI1_0->in[i]);
+		instrumenter->RegisterPort(DSPI2_0->in[i]);
+		instrumenter->RegisterPort(DSPI3_0->in[i]);
+		instrumenter->RegisterPort(DSPI4_0->in[i]);
+		instrumenter->RegisterPort(DSPI5_0->in[i]);
+		instrumenter->RegisterPort(DSPI6_0->in[i]);
+		instrumenter->RegisterPort(DSPI12_0->in[i]);
 	}
 	
 	for(i = 0; i < 2; i++)
 	{
-		RegisterPort(DSPI4_5->in[i]);
-		RegisterPort(DSPI4_6->in[i]);
-		RegisterPort(DSPI4_7->in[i]);
-		RegisterPort(DSPI5_5->in[i]);
-		RegisterPort(DSPI5_6->in[i]);
-		RegisterPort(DSPI5_7->in[i]);
-		RegisterPort(DSPI6_5->in[i]);
-		RegisterPort(DSPI6_6->in[i]);
-		RegisterPort(DSPI6_7->in[i]);
+		instrumenter->RegisterPort(DSPI4_5->in[i]);
+		instrumenter->RegisterPort(DSPI4_6->in[i]);
+		instrumenter->RegisterPort(DSPI4_7->in[i]);
+		instrumenter->RegisterPort(DSPI5_5->in[i]);
+		instrumenter->RegisterPort(DSPI5_6->in[i]);
+		instrumenter->RegisterPort(DSPI5_7->in[i]);
+		instrumenter->RegisterPort(DSPI6_5->in[i]);
+		instrumenter->RegisterPort(DSPI6_6->in[i]);
+		instrumenter->RegisterPort(DSPI6_7->in[i]);
 	}
 	
-	RegisterPort(DSPI0_0->out);
-	RegisterPort(DSPI1_0->out);
-	RegisterPort(DSPI2_0->out);
-	RegisterPort(DSPI3_0->out);
-	RegisterPort(DSPI4_0->out);
-	RegisterPort(DSPI4_5->out);
-	RegisterPort(DSPI4_6->out);
-	RegisterPort(DSPI4_7->out);
-	RegisterPort(DSPI5_0->out);
-	RegisterPort(DSPI5_5->out);
-	RegisterPort(DSPI5_6->out);
-	RegisterPort(DSPI5_7->out);
-	RegisterPort(DSPI6_0->out);
-	RegisterPort(DSPI6_5->out);
-	RegisterPort(DSPI6_6->out);
-	RegisterPort(DSPI6_7->out);
-	RegisterPort(DSPI12_0->out);
+	instrumenter->RegisterPort(DSPI0_0->out);
+	instrumenter->RegisterPort(DSPI1_0->out);
+	instrumenter->RegisterPort(DSPI2_0->out);
+	instrumenter->RegisterPort(DSPI3_0->out);
+	instrumenter->RegisterPort(DSPI4_0->out);
+	instrumenter->RegisterPort(DSPI4_5->out);
+	instrumenter->RegisterPort(DSPI4_6->out);
+	instrumenter->RegisterPort(DSPI4_7->out);
+	instrumenter->RegisterPort(DSPI5_0->out);
+	instrumenter->RegisterPort(DSPI5_5->out);
+	instrumenter->RegisterPort(DSPI5_6->out);
+	instrumenter->RegisterPort(DSPI5_7->out);
+	instrumenter->RegisterPort(DSPI6_0->out);
+	instrumenter->RegisterPort(DSPI6_5->out);
+	instrumenter->RegisterPort(DSPI6_6->out);
+	instrumenter->RegisterPort(DSPI6_7->out);
+	instrumenter->RegisterPort(DSPI12_0->out);
 	
 	// - SIUL2
-	RegisterPort(siul2->m_clk);
-	RegisterPort(siul2->reset_b);
+	instrumenter->RegisterPort(siul2->m_clk);
+	instrumenter->RegisterPort(siul2->reset_b);
 	for(i = 0; i < SIUL2::NUM_PADS; i++)
 	{
-		RegisterPort(siul2->pad_in[i]);
-		RegisterPort(siul2->pad_out[i]);
+		instrumenter->RegisterPort(siul2->pad_in[i]);
+		instrumenter->RegisterPort(siul2->pad_out[i]);
 	}
 	
 	// - CAN subsystem
-	RegisterPort(m_can_1->m_clk);
-	RegisterPort(m_can_1->can_clk);
-	RegisterPort(m_can_1->reset_b);
-	RegisterPort(m_can_1->DMA_ACK);
-	RegisterPort(m_can_1->INT0);
-	RegisterPort(m_can_1->INT1);
-	RegisterPort(m_can_1->DMA_REQ);
+	instrumenter->RegisterPort(m_can_1->m_clk);
+	instrumenter->RegisterPort(m_can_1->can_clk);
+	instrumenter->RegisterPort(m_can_1->reset_b);
+	instrumenter->RegisterPort(m_can_1->DMA_ACK);
+	instrumenter->RegisterPort(m_can_1->INT0);
+	instrumenter->RegisterPort(m_can_1->INT1);
+	instrumenter->RegisterPort(m_can_1->DMA_REQ);
 	for(i = 0; i < M_CAN_1::NUM_FILTER_EVENTS; i++)
 	{
-		RegisterPort(m_can_1->FE[i]);
+		instrumenter->RegisterPort(m_can_1->FE[i]);
 	}
 	
-	RegisterPort(m_can_2->m_clk);
-	RegisterPort(m_can_2->can_clk);
-	RegisterPort(m_can_2->reset_b);
-	RegisterPort(m_can_2->DMA_ACK);
-	RegisterPort(m_can_2->INT0);
-	RegisterPort(m_can_2->INT1);
-	RegisterPort(m_can_2->DMA_REQ);
+	instrumenter->RegisterPort(m_can_2->m_clk);
+	instrumenter->RegisterPort(m_can_2->can_clk);
+	instrumenter->RegisterPort(m_can_2->reset_b);
+	instrumenter->RegisterPort(m_can_2->DMA_ACK);
+	instrumenter->RegisterPort(m_can_2->INT0);
+	instrumenter->RegisterPort(m_can_2->INT1);
+	instrumenter->RegisterPort(m_can_2->DMA_REQ);
 	for(i = 0; i < M_CAN_2::NUM_FILTER_EVENTS; i++)
 	{
-		RegisterPort(m_can_2->FE[i]);
+		instrumenter->RegisterPort(m_can_2->FE[i]);
 	}
 
-	RegisterPort(m_can_3->m_clk);
-	RegisterPort(m_can_3->can_clk);
-	RegisterPort(m_can_3->reset_b);
-	RegisterPort(m_can_3->DMA_ACK);
-	RegisterPort(m_can_3->INT0);
-	RegisterPort(m_can_3->INT1);
-	RegisterPort(m_can_3->DMA_REQ);
+	instrumenter->RegisterPort(m_can_3->m_clk);
+	instrumenter->RegisterPort(m_can_3->can_clk);
+	instrumenter->RegisterPort(m_can_3->reset_b);
+	instrumenter->RegisterPort(m_can_3->DMA_ACK);
+	instrumenter->RegisterPort(m_can_3->INT0);
+	instrumenter->RegisterPort(m_can_3->INT1);
+	instrumenter->RegisterPort(m_can_3->DMA_REQ);
 	for(i = 0; i < M_CAN_3::NUM_FILTER_EVENTS; i++)
 	{
-		RegisterPort(m_can_3->FE[i]);
+		instrumenter->RegisterPort(m_can_3->FE[i]);
 	}
 
-	RegisterPort(m_can_4->m_clk);
-	RegisterPort(m_can_4->can_clk);
-	RegisterPort(m_can_4->reset_b);
-	RegisterPort(m_can_4->DMA_ACK);
-	RegisterPort(m_can_4->INT0);
-	RegisterPort(m_can_4->INT1);
-	RegisterPort(m_can_4->DMA_REQ);
+	instrumenter->RegisterPort(m_can_4->m_clk);
+	instrumenter->RegisterPort(m_can_4->can_clk);
+	instrumenter->RegisterPort(m_can_4->reset_b);
+	instrumenter->RegisterPort(m_can_4->DMA_ACK);
+	instrumenter->RegisterPort(m_can_4->INT0);
+	instrumenter->RegisterPort(m_can_4->INT1);
+	instrumenter->RegisterPort(m_can_4->DMA_REQ);
 	for(i = 0; i < M_CAN_4::NUM_FILTER_EVENTS; i++)
 	{
-		RegisterPort(m_can_4->FE[i]);
+		instrumenter->RegisterPort(m_can_4->FE[i]);
 	}
 	
-	RegisterPort(shared_can_message_ram_router->input_if_clock);
-	RegisterPort(shared_can_message_ram_router->output_if_clock);
+	instrumenter->RegisterPort(shared_can_message_ram_router->input_if_clock);
+	instrumenter->RegisterPort(shared_can_message_ram_router->output_if_clock);
 	
 	// - Semaphores2
-	RegisterPort(sema4->m_clk);
-	RegisterPort(sema4->reset_b);
+	instrumenter->RegisterPort(sema4->m_clk);
+	instrumenter->RegisterPort(sema4->reset_b);
 
 	//=========================================================================
 	//===                         Channels creation                         ===
 	//=========================================================================
 	
-	CreateClock("EBI_CLK");
-	CreateClock("IOP_CLK");
-	CreateClock("COMP_CLK");
-	CreateClock("FXBAR_CLK");
-	CreateClock("SXBAR_CLK");
-	CreateClock("PBRIDGEA_CLK");
-	CreateClock("PBRIDGEB_CLK");
-	CreateClock("PER_CLK");
-	CreateClock("RTI_CLK");
-	CreateClock("LIN_CLK");
-	CreateClock("SERIAL_TERMINAL0_CLK");
-	CreateClock("SERIAL_TERMINAL1_CLK");
-	CreateClock("SERIAL_TERMINAL2_CLK");
-	CreateClock("SERIAL_TERMINAL14_CLK");
-	CreateClock("SERIAL_TERMINAL15_CLK");
-	CreateClock("SERIAL_TERMINAL16_CLK");
-	CreateClock("DSPI_CLK0");
-	CreateClock("DSPI_CLK1");
-	CreateClock("CAN_CLK");
+	instrumenter->CreateClock("EBI_CLK");
+	instrumenter->CreateClock("IOP_CLK");
+	instrumenter->CreateClock("COMP_CLK");
+	instrumenter->CreateClock("FXBAR_CLK");
+	instrumenter->CreateClock("SXBAR_CLK");
+	instrumenter->CreateClock("PBRIDGEA_CLK");
+	instrumenter->CreateClock("PBRIDGEB_CLK");
+	instrumenter->CreateClock("PER_CLK");
+	instrumenter->CreateClock("RTI_CLK");
+	instrumenter->CreateClock("LIN_CLK");
+	instrumenter->CreateClock("SERIAL_TERMINAL0_CLK");
+	instrumenter->CreateClock("SERIAL_TERMINAL1_CLK");
+	instrumenter->CreateClock("SERIAL_TERMINAL2_CLK");
+	instrumenter->CreateClock("SERIAL_TERMINAL14_CLK");
+	instrumenter->CreateClock("SERIAL_TERMINAL15_CLK");
+	instrumenter->CreateClock("SERIAL_TERMINAL16_CLK");
+	instrumenter->CreateClock("DSPI_CLK0");
+	instrumenter->CreateClock("DSPI_CLK1");
+	instrumenter->CreateClock("CAN_CLK");
 	
-	CreateSignal("m_por", false);
-	CreateSignal("stop", false);
-	CreateSignal("debug", false);
-	CreateSignal("reset_b", true);
-	CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_0", true);
-	CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_1", true);
-	CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_2", true);
-	CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_3", true);
-	CreateSignal("p_nmi_b", true);
-	CreateSignal("p_mcp_b", true);
-	CreateSignal("p_rstbase", sc_dt::sc_uint<30>(0));
-	CreateSignal("p_cpuid", sc_dt::sc_uint<8>(0));
-	CreateSignal("p_crint_b", true);
-	CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_irq_b", true);
-	CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_avec_b", true);
-	CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_voffset", sc_dt::sc_uint<INTC_0_CONFIG::VOFFSET_WIDTH>(0));
-	CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_iack", false);
+	instrumenter->CreateSignal("m_por", false);
+	instrumenter->CreateSignal("stop", false);
+	instrumenter->CreateSignal("debug", false);
+	instrumenter->CreateSignal("reset_b", true);
+	instrumenter->CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_0", true);
+	instrumenter->CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_1", true);
+	instrumenter->CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_2", true);
+	instrumenter->CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_3", true);
+	instrumenter->CreateSignal("p_nmi_b", true);
+	instrumenter->CreateSignal("p_mcp_b", true);
+	instrumenter->CreateSignal("p_rstbase", sc_dt::sc_uint<30>(0));
+	instrumenter->CreateSignal("p_cpuid", sc_dt::sc_uint<8>(0));
+	instrumenter->CreateSignal("p_crint_b", true);
+	instrumenter->CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_irq_b", true);
+	instrumenter->CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_avec_b", true);
+	instrumenter->CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_voffset", sc_dt::sc_uint<INTC_0_CONFIG::VOFFSET_WIDTH>(0));
+	instrumenter->CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_iack", false);
 	
-	CreateSignalArray(PIT_0::NUM_CHANNELS, "PIT_0_DMA_TRIGGER", false);
+	instrumenter->CreateSignalArray(PIT_0::NUM_CHANNELS, "PIT_0_DMA_TRIGGER", false);
 	
-	CreateSignalArray(INTC_0::NUM_IRQS, "irq", false);
-	CreateSignalArray(STM_2_CONFIG::NUM_CHANNELS, "stm_2_cir", false);
+	instrumenter->CreateSignalArray(INTC_0::NUM_IRQS, "irq", false);
+	instrumenter->CreateSignalArray(STM_2_CONFIG::NUM_CHANNELS, "stm_2_cir", false);
 
-	CreateSignalArray(LINFlexD_0::NUM_DMA_RX_CHANNELS, "LINFlexD_0_DMA_RX", false);
-	CreateSignalArray(LINFlexD_0::NUM_DMA_TX_CHANNELS, "LINFlexD_0_DMA_TX", false);
-	CreateSignalArray(LINFlexD_0::NUM_DMA_RX_CHANNELS, "LINFlexD_0_DMA_ACK_RX", false);
-	CreateSignalArray(LINFlexD_0::NUM_DMA_TX_CHANNELS, "LINFlexD_0_DMA_ACK_TX", false);
+	instrumenter->CreateSignalArray(LINFlexD_0::NUM_DMA_RX_CHANNELS, "LINFlexD_0_DMA_RX", false);
+	instrumenter->CreateSignalArray(LINFlexD_0::NUM_DMA_TX_CHANNELS, "LINFlexD_0_DMA_TX", false);
+	instrumenter->CreateSignalArray(LINFlexD_0::NUM_DMA_RX_CHANNELS, "LINFlexD_0_DMA_ACK_RX", false);
+	instrumenter->CreateSignalArray(LINFlexD_0::NUM_DMA_TX_CHANNELS, "LINFlexD_0_DMA_ACK_TX", false);
 	
-	CreateSignalArray(LINFlexD_1::NUM_DMA_RX_CHANNELS, "LINFlexD_1_DMA_RX", false);
-	CreateSignalArray(LINFlexD_1::NUM_DMA_TX_CHANNELS, "LINFlexD_1_DMA_TX", false);
-	CreateSignalArray(LINFlexD_1::NUM_DMA_RX_CHANNELS, "LINFlexD_1_DMA_ACK_RX", false);
-	CreateSignalArray(LINFlexD_1::NUM_DMA_TX_CHANNELS, "LINFlexD_1_DMA_ACK_TX", false);
+	instrumenter->CreateSignalArray(LINFlexD_1::NUM_DMA_RX_CHANNELS, "LINFlexD_1_DMA_RX", false);
+	instrumenter->CreateSignalArray(LINFlexD_1::NUM_DMA_TX_CHANNELS, "LINFlexD_1_DMA_TX", false);
+	instrumenter->CreateSignalArray(LINFlexD_1::NUM_DMA_RX_CHANNELS, "LINFlexD_1_DMA_ACK_RX", false);
+	instrumenter->CreateSignalArray(LINFlexD_1::NUM_DMA_TX_CHANNELS, "LINFlexD_1_DMA_ACK_TX", false);
 	
-	CreateSignalArray(LINFlexD_2::NUM_DMA_RX_CHANNELS, "LINFlexD_2_DMA_RX", false);
-	CreateSignalArray(LINFlexD_2::NUM_DMA_TX_CHANNELS, "LINFlexD_2_DMA_TX", false);
-	CreateSignalArray(LINFlexD_2::NUM_DMA_RX_CHANNELS, "LINFlexD_2_DMA_ACK_RX", false);
-	CreateSignalArray(LINFlexD_2::NUM_DMA_TX_CHANNELS, "LINFlexD_2_DMA_ACK_TX", false);
+	instrumenter->CreateSignalArray(LINFlexD_2::NUM_DMA_RX_CHANNELS, "LINFlexD_2_DMA_RX", false);
+	instrumenter->CreateSignalArray(LINFlexD_2::NUM_DMA_TX_CHANNELS, "LINFlexD_2_DMA_TX", false);
+	instrumenter->CreateSignalArray(LINFlexD_2::NUM_DMA_RX_CHANNELS, "LINFlexD_2_DMA_ACK_RX", false);
+	instrumenter->CreateSignalArray(LINFlexD_2::NUM_DMA_TX_CHANNELS, "LINFlexD_2_DMA_ACK_TX", false);
 	
-	CreateSignalArray(LINFlexD_14::NUM_DMA_RX_CHANNELS, "LINFlexD_14_DMA_RX", false);
-	CreateSignalArray(LINFlexD_14::NUM_DMA_TX_CHANNELS, "LINFlexD_14_DMA_TX", false);
-	CreateSignalArray(LINFlexD_14::NUM_DMA_RX_CHANNELS, "LINFlexD_14_DMA_ACK_RX", false);
-	CreateSignalArray(LINFlexD_14::NUM_DMA_TX_CHANNELS, "LINFlexD_14_DMA_ACK_TX", false);
+	instrumenter->CreateSignalArray(LINFlexD_14::NUM_DMA_RX_CHANNELS, "LINFlexD_14_DMA_RX", false);
+	instrumenter->CreateSignalArray(LINFlexD_14::NUM_DMA_TX_CHANNELS, "LINFlexD_14_DMA_TX", false);
+	instrumenter->CreateSignalArray(LINFlexD_14::NUM_DMA_RX_CHANNELS, "LINFlexD_14_DMA_ACK_RX", false);
+	instrumenter->CreateSignalArray(LINFlexD_14::NUM_DMA_TX_CHANNELS, "LINFlexD_14_DMA_ACK_TX", false);
 
-	CreateSignalArray(LINFlexD_15::NUM_DMA_RX_CHANNELS, "LINFlexD_15_DMA_RX", false);
-	CreateSignalArray(LINFlexD_15::NUM_DMA_TX_CHANNELS, "LINFlexD_15_DMA_TX", false);
-	CreateSignalArray(LINFlexD_15::NUM_DMA_RX_CHANNELS, "LINFlexD_15_DMA_ACK_RX", false);
-	CreateSignalArray(LINFlexD_15::NUM_DMA_TX_CHANNELS, "LINFlexD_15_DMA_ACK_TX", false);
+	instrumenter->CreateSignalArray(LINFlexD_15::NUM_DMA_RX_CHANNELS, "LINFlexD_15_DMA_RX", false);
+	instrumenter->CreateSignalArray(LINFlexD_15::NUM_DMA_TX_CHANNELS, "LINFlexD_15_DMA_TX", false);
+	instrumenter->CreateSignalArray(LINFlexD_15::NUM_DMA_RX_CHANNELS, "LINFlexD_15_DMA_ACK_RX", false);
+	instrumenter->CreateSignalArray(LINFlexD_15::NUM_DMA_TX_CHANNELS, "LINFlexD_15_DMA_ACK_TX", false);
 
-	CreateSignalArray(LINFlexD_16::NUM_DMA_RX_CHANNELS, "LINFlexD_16_DMA_RX", false);
-	CreateSignalArray(LINFlexD_16::NUM_DMA_TX_CHANNELS, "LINFlexD_16_DMA_TX", false);
-	CreateSignalArray(LINFlexD_16::NUM_DMA_RX_CHANNELS, "LINFlexD_16_DMA_ACK_RX", false);
-	CreateSignalArray(LINFlexD_16::NUM_DMA_TX_CHANNELS, "LINFlexD_16_DMA_ACK_TX", false);
+	instrumenter->CreateSignalArray(LINFlexD_16::NUM_DMA_RX_CHANNELS, "LINFlexD_16_DMA_RX", false);
+	instrumenter->CreateSignalArray(LINFlexD_16::NUM_DMA_TX_CHANNELS, "LINFlexD_16_DMA_TX", false);
+	instrumenter->CreateSignalArray(LINFlexD_16::NUM_DMA_RX_CHANNELS, "LINFlexD_16_DMA_ACK_RX", false);
+	instrumenter->CreateSignalArray(LINFlexD_16::NUM_DMA_TX_CHANNELS, "LINFlexD_16_DMA_ACK_TX", false);
 
-	CreateSignal("DSPI_0_INT_DDIF", false);
-	CreateSignal("DSPI_0_INT_DPEF", false);
-	CreateSignal("DSPI_0_INT_SPITCF", false);
-	CreateSignal("DSPI_0_INT_DSITCF", false);
+	instrumenter->CreateSignal("DSPI_0_INT_DDIF", false);
+	instrumenter->CreateSignal("DSPI_0_INT_DPEF", false);
+	instrumenter->CreateSignal("DSPI_0_INT_SPITCF", false);
+	instrumenter->CreateSignal("DSPI_0_INT_DSITCF", false);
 	
-	CreateSignal("DSPI_1_INT_DDIF", false);
-	CreateSignal("DSPI_1_INT_DPEF", false);
-	CreateSignal("DSPI_1_INT_SPITCF", false);
-	CreateSignal("DSPI_1_INT_DSITCF", false);
+	instrumenter->CreateSignal("DSPI_1_INT_DDIF", false);
+	instrumenter->CreateSignal("DSPI_1_INT_DPEF", false);
+	instrumenter->CreateSignal("DSPI_1_INT_SPITCF", false);
+	instrumenter->CreateSignal("DSPI_1_INT_DSITCF", false);
 
-	CreateSignal("DSPI_2_INT_DDIF", false);
-	CreateSignal("DSPI_2_INT_DPEF", false);
-	CreateSignal("DSPI_2_INT_SPITCF", false);
-	CreateSignal("DSPI_2_INT_DSITCF", false);
+	instrumenter->CreateSignal("DSPI_2_INT_DDIF", false);
+	instrumenter->CreateSignal("DSPI_2_INT_DPEF", false);
+	instrumenter->CreateSignal("DSPI_2_INT_SPITCF", false);
+	instrumenter->CreateSignal("DSPI_2_INT_DSITCF", false);
 
-	CreateSignal("DSPI_3_INT_DDIF", false);
-	CreateSignal("DSPI_3_INT_DPEF", false);
-	CreateSignal("DSPI_3_INT_SPITCF", false);
-	CreateSignal("DSPI_3_INT_DSITCF", false);
+	instrumenter->CreateSignal("DSPI_3_INT_DDIF", false);
+	instrumenter->CreateSignal("DSPI_3_INT_DPEF", false);
+	instrumenter->CreateSignal("DSPI_3_INT_SPITCF", false);
+	instrumenter->CreateSignal("DSPI_3_INT_DSITCF", false);
 
-	CreateSignal("DSPI_12_INT_DDIF", false);
-	CreateSignal("DSPI_12_INT_DPEF", false);
-	CreateSignal("DSPI_12_INT_SPITCF", false);
-	CreateSignal("DSPI_12_INT_DSITCF", false);
+	instrumenter->CreateSignal("DSPI_12_INT_DDIF", false);
+	instrumenter->CreateSignal("DSPI_12_INT_DPEF", false);
+	instrumenter->CreateSignal("DSPI_12_INT_SPITCF", false);
+	instrumenter->CreateSignal("DSPI_12_INT_DSITCF", false);
 
-	CreateSignalArray(NUM_DMA_CHANNELS, "DMA_CHANNEL", false);
+	instrumenter->CreateSignalArray(NUM_DMA_CHANNELS, "DMA_CHANNEL", false);
 	
-	CreateSignalArray(NUM_DMA_CHANNELS, "DMA_CHANNEL_ACK", false);
+	instrumenter->CreateSignalArray(NUM_DMA_CHANNELS, "DMA_CHANNEL_ACK", false);
 	
-	CreateSignalArray(NUM_DMA_ALWAYS_ON, "DMA_ALWAYS_ON", true);
+	instrumenter->CreateSignalArray(NUM_DMA_ALWAYS_ON, "DMA_ALWAYS_ON", true);
 	
-	CreateSignalArray(NUM_DMA_CHANNELS, "DMA_ERR_IRQ", false);
+	instrumenter->CreateSignalArray(NUM_DMA_CHANNELS, "DMA_ERR_IRQ", false);
 	
-	CreateSignal("DSPI_0_DMA_DD", false);
+	instrumenter->CreateSignal("DSPI_0_DMA_DD", false);
 	
-	CreateSignal("DSPI_0_DMA_ACK_DD", false);
+	instrumenter->CreateSignal("DSPI_0_DMA_ACK_DD", false);
 
-	CreateSignal("DSPI_1_DMA_DD", false);
-	CreateSignal("DSPI_1_DMA_ACK_DD", false);
+	instrumenter->CreateSignal("DSPI_1_DMA_DD", false);
+	instrumenter->CreateSignal("DSPI_1_DMA_ACK_DD", false);
 
-	CreateSignal("DSPI_2_DMA_DD", false);
-	CreateSignal("DSPI_2_DMA_ACK_DD", false);
+	instrumenter->CreateSignal("DSPI_2_DMA_DD", false);
+	instrumenter->CreateSignal("DSPI_2_DMA_ACK_DD", false);
 	
-	CreateSignal("DSPI_3_DMA_DD", false);
-	CreateSignal("DSPI_3_DMA_ACK_DD", false);
+	instrumenter->CreateSignal("DSPI_3_DMA_DD", false);
+	instrumenter->CreateSignal("DSPI_3_DMA_ACK_DD", false);
 
-	CreateSignal("DSPI_4_DMA_DD", false);
-	CreateSignal("DSPI_4_DMA_ACK_DD", false);
+	instrumenter->CreateSignal("DSPI_4_DMA_DD", false);
+	instrumenter->CreateSignal("DSPI_4_DMA_ACK_DD", false);
 	
-	CreateSignal("DSPI_5_DMA_DD", false);
-	CreateSignal("DSPI_5_DMA_ACK_DD", false);
+	instrumenter->CreateSignal("DSPI_5_DMA_DD", false);
+	instrumenter->CreateSignal("DSPI_5_DMA_ACK_DD", false);
 	
-	CreateSignal("DSPI_6_DMA_DD", false);
-	CreateSignal("DSPI_6_DMA_ACK_DD", false);
+	instrumenter->CreateSignal("DSPI_6_DMA_DD", false);
+	instrumenter->CreateSignal("DSPI_6_DMA_ACK_DD", false);
 	
-	CreateSignal("DSPI_12_DMA_DD", false);
-	CreateSignal("DSPI_12_DMA_ACK_DD", false);
+	instrumenter->CreateSignal("DSPI_12_DMA_DD", false);
+	instrumenter->CreateSignal("DSPI_12_DMA_ACK_DD", false);
 	
-	CreateSignal("DSPI_0_INT_TFUF", false);
-	CreateSignal("DSPI_0_INT_RFOF", false);
-	CreateSignal("DSPI_0_INT_TFIWF", false);
-	CreateSignal("DSPI_1_INT_TFUF", false);
-	CreateSignal("DSPI_1_INT_RFOF", false);
-	CreateSignal("DSPI_1_INT_TFIWF", false);
-	CreateSignal("DSPI_2_INT_TFUF", false);
-	CreateSignal("DSPI_2_INT_RFOF", false);
-	CreateSignal("DSPI_2_INT_TFIWF", false);
-	CreateSignal("DSPI_3_INT_TFUF", false);
-	CreateSignal("DSPI_3_INT_RFOF", false);
-	CreateSignal("DSPI_3_INT_TFIWF", false);
-	CreateSignal("DSPI_4_INT_TFUF", false);
-	CreateSignal("DSPI_4_INT_RFOF", false);
-	CreateSignal("DSPI_4_INT_TFIWF", false);
-	CreateSignal("DSPI_4_INT_SPITCF", false);
-	CreateSignal("DSPI_4_INT_CMDTCF", false);
-	CreateSignal("DSPI_4_INT_DSITCF", false);
-	CreateSignal("DSPI_4_INT_CMDFFF", false);
-	CreateSignal("DSPI_4_INT_SPEF", false);
-	CreateSignal("DSPI_4_INT_DPEF", false);
-	CreateSignal("DSPI_5_INT_TFUF", false);
-	CreateSignal("DSPI_5_INT_RFOF", false);
-	CreateSignal("DSPI_5_INT_TFIWF", false);
-	CreateSignal("DSPI_5_INT_SPITCF", false);
-	CreateSignal("DSPI_5_INT_CMDTCF", false);
-	CreateSignal("DSPI_5_INT_DSITCF", false);
-	CreateSignal("DSPI_5_INT_CMDFFF", false);
-	CreateSignal("DSPI_5_INT_SPEF", false);
-	CreateSignal("DSPI_5_INT_DPEF", false);
-	CreateSignal("DSPI_6_INT_TFUF", false);
-	CreateSignal("DSPI_6_INT_RFOF", false);
-	CreateSignal("DSPI_6_INT_TFIWF", false);
-	CreateSignal("DSPI_6_INT_SPITCF", false);
-	CreateSignal("DSPI_6_INT_CMDTCF", false);
-	CreateSignal("DSPI_6_INT_DSITCF", false);
-	CreateSignal("DSPI_6_INT_CMDFFF", false);
-	CreateSignal("DSPI_6_INT_SPEF", false);
-	CreateSignal("DSPI_6_INT_DPEF", false);
-	CreateSignal("DSPI_12_INT_TFUF", false);
-	CreateSignal("DSPI_12_INT_RFOF", false);
-	CreateSignal("DSPI_12_INT_TFIWF", false);
+	instrumenter->CreateSignal("DSPI_0_INT_TFUF", false);
+	instrumenter->CreateSignal("DSPI_0_INT_RFOF", false);
+	instrumenter->CreateSignal("DSPI_0_INT_TFIWF", false);
+	instrumenter->CreateSignal("DSPI_1_INT_TFUF", false);
+	instrumenter->CreateSignal("DSPI_1_INT_RFOF", false);
+	instrumenter->CreateSignal("DSPI_1_INT_TFIWF", false);
+	instrumenter->CreateSignal("DSPI_2_INT_TFUF", false);
+	instrumenter->CreateSignal("DSPI_2_INT_RFOF", false);
+	instrumenter->CreateSignal("DSPI_2_INT_TFIWF", false);
+	instrumenter->CreateSignal("DSPI_3_INT_TFUF", false);
+	instrumenter->CreateSignal("DSPI_3_INT_RFOF", false);
+	instrumenter->CreateSignal("DSPI_3_INT_TFIWF", false);
+	instrumenter->CreateSignal("DSPI_4_INT_TFUF", false);
+	instrumenter->CreateSignal("DSPI_4_INT_RFOF", false);
+	instrumenter->CreateSignal("DSPI_4_INT_TFIWF", false);
+	instrumenter->CreateSignal("DSPI_4_INT_SPITCF", false);
+	instrumenter->CreateSignal("DSPI_4_INT_CMDTCF", false);
+	instrumenter->CreateSignal("DSPI_4_INT_DSITCF", false);
+	instrumenter->CreateSignal("DSPI_4_INT_CMDFFF", false);
+	instrumenter->CreateSignal("DSPI_4_INT_SPEF", false);
+	instrumenter->CreateSignal("DSPI_4_INT_DPEF", false);
+	instrumenter->CreateSignal("DSPI_5_INT_TFUF", false);
+	instrumenter->CreateSignal("DSPI_5_INT_RFOF", false);
+	instrumenter->CreateSignal("DSPI_5_INT_TFIWF", false);
+	instrumenter->CreateSignal("DSPI_5_INT_SPITCF", false);
+	instrumenter->CreateSignal("DSPI_5_INT_CMDTCF", false);
+	instrumenter->CreateSignal("DSPI_5_INT_DSITCF", false);
+	instrumenter->CreateSignal("DSPI_5_INT_CMDFFF", false);
+	instrumenter->CreateSignal("DSPI_5_INT_SPEF", false);
+	instrumenter->CreateSignal("DSPI_5_INT_DPEF", false);
+	instrumenter->CreateSignal("DSPI_6_INT_TFUF", false);
+	instrumenter->CreateSignal("DSPI_6_INT_RFOF", false);
+	instrumenter->CreateSignal("DSPI_6_INT_TFIWF", false);
+	instrumenter->CreateSignal("DSPI_6_INT_SPITCF", false);
+	instrumenter->CreateSignal("DSPI_6_INT_CMDTCF", false);
+	instrumenter->CreateSignal("DSPI_6_INT_DSITCF", false);
+	instrumenter->CreateSignal("DSPI_6_INT_CMDFFF", false);
+	instrumenter->CreateSignal("DSPI_6_INT_SPEF", false);
+	instrumenter->CreateSignal("DSPI_6_INT_DPEF", false);
+	instrumenter->CreateSignal("DSPI_12_INT_TFUF", false);
+	instrumenter->CreateSignal("DSPI_12_INT_RFOF", false);
+	instrumenter->CreateSignal("DSPI_12_INT_TFIWF", false);
 	
-	CreateSignalArray<bool, sc_core::SC_MANY_WRITERS>(SIUL2::NUM_PADS, "pad", false);
+	instrumenter->CreateSignalArray<bool, sc_core::SC_MANY_WRITERS>(SIUL2::NUM_PADS, "pad", false);
 	
-	CreateSignalArray(M_CAN_1::NUM_FILTER_EVENTS, "M_CAN_1_FE", false);
+	instrumenter->CreateSignalArray(M_CAN_1::NUM_FILTER_EVENTS, "M_CAN_1_FE", false);
 
-	CreateSignalArray(M_CAN_2::NUM_FILTER_EVENTS, "M_CAN_2_FE", false);
+	instrumenter->CreateSignalArray(M_CAN_2::NUM_FILTER_EVENTS, "M_CAN_2_FE", false);
 	
-	CreateSignal("M_CAN_3_DMA_REQ", false);
-	CreateSignal("M_CAN_3_DMA_ACK", false);
-	CreateSignalArray(M_CAN_3::NUM_FILTER_EVENTS, "M_CAN_3_FE", false);
+	instrumenter->CreateSignal("M_CAN_3_DMA_REQ", false);
+	instrumenter->CreateSignal("M_CAN_3_DMA_ACK", false);
+	instrumenter->CreateSignalArray(M_CAN_3::NUM_FILTER_EVENTS, "M_CAN_3_FE", false);
 
-	CreateSignal("M_CAN_4_DMA_REQ", false);
-	CreateSignal("M_CAN_4_DMA_ACK", false);
-	CreateSignalArray(M_CAN_4::NUM_FILTER_EVENTS, "M_CAN_4_FE", false);
+	instrumenter->CreateSignal("M_CAN_4_DMA_REQ", false);
+	instrumenter->CreateSignal("M_CAN_4_DMA_ACK", false);
+	instrumenter->CreateSignalArray(M_CAN_4::NUM_FILTER_EVENTS, "M_CAN_4_FE", false);
 	
 	//  - LIN Serial Buses
-	linflexd_0_tx_serial_bus = new LINFlexD_0_TX_SERIAL_BUS("LINFlexD_0_TX_SERIAL_BUS", CreateSignal("LINFlexD_0_TX", true, OUTPUT_INSTRUMENTATION), this);
-	linflexd_0_rx_serial_bus = new LINFlexD_0_RX_SERIAL_BUS("LINFlexD_0_RX_SERIAL_BUS", CreateSignal("LINFlexD_0_RX", true, OUTPUT_INSTRUMENTATION), this);
-	linflexd_1_tx_serial_bus = new LINFlexD_1_TX_SERIAL_BUS("LINFlexD_1_TX_SERIAL_BUS", CreateSignal("LINFlexD_1_TX", true, OUTPUT_INSTRUMENTATION), this);
-	linflexd_1_rx_serial_bus = new LINFlexD_1_RX_SERIAL_BUS("LINFlexD_1_RX_SERIAL_BUS", CreateSignal("LINFlexD_1_RX", true, OUTPUT_INSTRUMENTATION), this);
-	linflexd_2_tx_serial_bus = new LINFlexD_2_TX_SERIAL_BUS("LINFlexD_2_TX_SERIAL_BUS", CreateSignal("LINFlexD_2_TX", true, OUTPUT_INSTRUMENTATION), this);
-	linflexd_2_rx_serial_bus = new LINFlexD_2_RX_SERIAL_BUS("LINFlexD_2_RX_SERIAL_BUS", CreateSignal("LINFlexD_2_RX", true, OUTPUT_INSTRUMENTATION), this);
-	linflexd_14_tx_serial_bus = new LINFlexD_14_TX_SERIAL_BUS("LINFlexD_14_TX_SERIAL_BUS", CreateSignal("LINFlexD_14_TX", true, OUTPUT_INSTRUMENTATION), this);
-	linflexd_14_rx_serial_bus = new LINFlexD_14_RX_SERIAL_BUS("LINFlexD_14_RX_SERIAL_BUS", CreateSignal("LINFlexD_14_RX", true, OUTPUT_INSTRUMENTATION), this);
-	linflexd_15_tx_serial_bus = new LINFlexD_15_TX_SERIAL_BUS("LINFlexD_15_TX_SERIAL_BUS", CreateSignal("LINFlexD_15_TX", true, OUTPUT_INSTRUMENTATION), this);
-	linflexd_15_rx_serial_bus = new LINFlexD_15_RX_SERIAL_BUS("LINFlexD_15_RX_SERIAL_BUS", CreateSignal("LINFlexD_15_RX", true, OUTPUT_INSTRUMENTATION), this);
-	linflexd_16_tx_serial_bus = new LINFlexD_16_TX_SERIAL_BUS("LINFlexD_16_TX_SERIAL_BUS", CreateSignal("LINFlexD_16_TX", true, OUTPUT_INSTRUMENTATION), this);
-	linflexd_16_rx_serial_bus = new LINFlexD_16_RX_SERIAL_BUS("LINFlexD_16_RX_SERIAL_BUS", CreateSignal("LINFlexD_16_RX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_0_tx_serial_bus = new LINFlexD_0_TX_SERIAL_BUS("LINFlexD_0_TX_SERIAL_BUS", instrumenter->CreateSignal("LINFlexD_0_TX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_0_rx_serial_bus = new LINFlexD_0_RX_SERIAL_BUS("LINFlexD_0_RX_SERIAL_BUS", instrumenter->CreateSignal("LINFlexD_0_RX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_1_tx_serial_bus = new LINFlexD_1_TX_SERIAL_BUS("LINFlexD_1_TX_SERIAL_BUS", instrumenter->CreateSignal("LINFlexD_1_TX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_1_rx_serial_bus = new LINFlexD_1_RX_SERIAL_BUS("LINFlexD_1_RX_SERIAL_BUS", instrumenter->CreateSignal("LINFlexD_1_RX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_2_tx_serial_bus = new LINFlexD_2_TX_SERIAL_BUS("LINFlexD_2_TX_SERIAL_BUS", instrumenter->CreateSignal("LINFlexD_2_TX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_2_rx_serial_bus = new LINFlexD_2_RX_SERIAL_BUS("LINFlexD_2_RX_SERIAL_BUS", instrumenter->CreateSignal("LINFlexD_2_RX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_14_tx_serial_bus = new LINFlexD_14_TX_SERIAL_BUS("LINFlexD_14_TX_SERIAL_BUS", instrumenter->CreateSignal("LINFlexD_14_TX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_14_rx_serial_bus = new LINFlexD_14_RX_SERIAL_BUS("LINFlexD_14_RX_SERIAL_BUS", instrumenter->CreateSignal("LINFlexD_14_RX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_15_tx_serial_bus = new LINFlexD_15_TX_SERIAL_BUS("LINFlexD_15_TX_SERIAL_BUS", instrumenter->CreateSignal("LINFlexD_15_TX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_15_rx_serial_bus = new LINFlexD_15_RX_SERIAL_BUS("LINFlexD_15_RX_SERIAL_BUS", instrumenter->CreateSignal("LINFlexD_15_RX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_16_tx_serial_bus = new LINFlexD_16_TX_SERIAL_BUS("LINFlexD_16_TX_SERIAL_BUS", instrumenter->CreateSignal("LINFlexD_16_TX", true, OUTPUT_INSTRUMENTATION), this);
+	linflexd_16_rx_serial_bus = new LINFlexD_16_RX_SERIAL_BUS("LINFlexD_16_RX_SERIAL_BUS", instrumenter->CreateSignal("LINFlexD_16_RX", true, OUTPUT_INSTRUMENTATION), this);
 
 	//  - DSPI serial buses
-	dspi_0_sout_serial_bus  = new DSPI_0_SOUT_SERIAL_BUS ("DSPI_0_SOUT_SERIAL_BUS" , CreateSignal("DSPI_0_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
-	dspi_0_sin_serial_bus   = new DSPI_0_SIN_SERIAL_BUS  ("DSPI_0_SIN_SERIAL_BUS"  , CreateSignal("DSPI_0_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_0_sout_serial_bus  = new DSPI_0_SOUT_SERIAL_BUS ("DSPI_0_SOUT_SERIAL_BUS" , instrumenter->CreateSignal("DSPI_0_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_0_sin_serial_bus   = new DSPI_0_SIN_SERIAL_BUS  ("DSPI_0_SIN_SERIAL_BUS"  , instrumenter->CreateSignal("DSPI_0_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
 	for(i = 0; i < DSPI_0::NUM_CTARS; i++)
 	{
 		std::stringstream dspi_0_pcs_serial_bus_name_sstr;
 		dspi_0_pcs_serial_bus_name_sstr << "DSPI_0_PCS_SERIAL_BUS_" << i;
 		std::stringstream dspi_0_pcs_name_sstr;
 		dspi_0_pcs_name_sstr << "DSPI_0_PCS_" << i;
-		dspi_0_pcs_serial_bus[i] = new DSPI_0_PCS_SERIAL_BUS(dspi_0_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_0_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
+		dspi_0_pcs_serial_bus[i] = new DSPI_0_PCS_SERIAL_BUS(dspi_0_pcs_serial_bus_name_sstr.str().c_str(), instrumenter->CreateSignal(dspi_0_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
 	}
-	dspi_0_ss_serial_bus = new DSPI_0_SS_SERIAL_BUS("DSPI_0_SS_SERIAL_BUS", CreateSignal("DSPI_0_SS", true, OUTPUT_INSTRUMENTATION), this);
+	dspi_0_ss_serial_bus = new DSPI_0_SS_SERIAL_BUS("DSPI_0_SS_SERIAL_BUS", instrumenter->CreateSignal("DSPI_0_SS", true, OUTPUT_INSTRUMENTATION), this);
 	
-	dspi_1_sout_serial_bus  = new DSPI_1_SOUT_SERIAL_BUS ("DSPI_1_SOUT_SERIAL_BUS" , CreateSignal("DSPI_1_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
-	dspi_1_sin_serial_bus   = new DSPI_1_SIN_SERIAL_BUS  ("DSPI_1_SIN_SERIAL_BUS"  , CreateSignal("DSPI_1_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_1_sout_serial_bus  = new DSPI_1_SOUT_SERIAL_BUS ("DSPI_1_SOUT_SERIAL_BUS" , instrumenter->CreateSignal("DSPI_1_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_1_sin_serial_bus   = new DSPI_1_SIN_SERIAL_BUS  ("DSPI_1_SIN_SERIAL_BUS"  , instrumenter->CreateSignal("DSPI_1_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
 	for(i = 0; i < DSPI_1::NUM_CTARS; i++)
 	{
 		std::stringstream dspi_1_pcs_serial_bus_name_sstr;
 		dspi_1_pcs_serial_bus_name_sstr << "DSPI_1_PCS_SERIAL_BUS_" << i;
 		std::stringstream dspi_1_pcs_name_sstr;
 		dspi_1_pcs_name_sstr << "DSPI_1_PCS_" << i;
-		dspi_1_pcs_serial_bus[i] = new DSPI_1_PCS_SERIAL_BUS(dspi_1_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_1_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
+		dspi_1_pcs_serial_bus[i] = new DSPI_1_PCS_SERIAL_BUS(dspi_1_pcs_serial_bus_name_sstr.str().c_str(), instrumenter->CreateSignal(dspi_1_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
 	}
-	dspi_1_ss_serial_bus = new DSPI_1_SS_SERIAL_BUS("DSPI_1_SS_SERIAL_BUS", CreateSignal("DSPI_1_SS", true, OUTPUT_INSTRUMENTATION), this);
+	dspi_1_ss_serial_bus = new DSPI_1_SS_SERIAL_BUS("DSPI_1_SS_SERIAL_BUS", instrumenter->CreateSignal("DSPI_1_SS", true, OUTPUT_INSTRUMENTATION), this);
 	
-	dspi_2_sout_serial_bus  = new DSPI_2_SOUT_SERIAL_BUS ("DSPI_2_SOUT_SERIAL_BUS" , CreateSignal("DSPI_2_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
-	dspi_2_sin_serial_bus   = new DSPI_2_SIN_SERIAL_BUS  ("DSPI_2_SIN_SERIAL_BUS"  , CreateSignal("DSPI_2_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_2_sout_serial_bus  = new DSPI_2_SOUT_SERIAL_BUS ("DSPI_2_SOUT_SERIAL_BUS" , instrumenter->CreateSignal("DSPI_2_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_2_sin_serial_bus   = new DSPI_2_SIN_SERIAL_BUS  ("DSPI_2_SIN_SERIAL_BUS"  , instrumenter->CreateSignal("DSPI_2_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
 	for(i = 0; i < DSPI_2::NUM_CTARS; i++)
 	{
 		std::stringstream dspi_2_pcs_serial_bus_name_sstr;
 		dspi_2_pcs_serial_bus_name_sstr << "DSPI_2_PCS_SERIAL_BUS_" << i;
 		std::stringstream dspi_2_pcs_name_sstr;
 		dspi_2_pcs_name_sstr << "DSPI_2_PCS_" << i;
-		dspi_2_pcs_serial_bus[i] = new DSPI_2_PCS_SERIAL_BUS(dspi_2_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_2_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
+		dspi_2_pcs_serial_bus[i] = new DSPI_2_PCS_SERIAL_BUS(dspi_2_pcs_serial_bus_name_sstr.str().c_str(), instrumenter->CreateSignal(dspi_2_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
 	}
-	dspi_2_ss_serial_bus = new DSPI_2_SS_SERIAL_BUS("DSPI_2_SS_SERIAL_BUS", CreateSignal("DSPI_2_SS", true, OUTPUT_INSTRUMENTATION), this);
+	dspi_2_ss_serial_bus = new DSPI_2_SS_SERIAL_BUS("DSPI_2_SS_SERIAL_BUS", instrumenter->CreateSignal("DSPI_2_SS", true, OUTPUT_INSTRUMENTATION), this);
 	
-	dspi_3_sout_serial_bus  = new DSPI_3_SOUT_SERIAL_BUS ("DSPI_3_SOUT_SERIAL_BUS" , CreateSignal("DSPI_3_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
-	dspi_3_sin_serial_bus   = new DSPI_3_SIN_SERIAL_BUS  ("DSPI_3_SIN_SERIAL_BUS"  , CreateSignal("DSPI_3_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_3_sout_serial_bus  = new DSPI_3_SOUT_SERIAL_BUS ("DSPI_3_SOUT_SERIAL_BUS" , instrumenter->CreateSignal("DSPI_3_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_3_sin_serial_bus   = new DSPI_3_SIN_SERIAL_BUS  ("DSPI_3_SIN_SERIAL_BUS"  , instrumenter->CreateSignal("DSPI_3_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
 	for(i = 0; i < DSPI_3::NUM_CTARS; i++)
 	{
 		std::stringstream dspi_3_pcs_serial_bus_name_sstr;
 		dspi_3_pcs_serial_bus_name_sstr << "DSPI_3_PCS_SERIAL_BUS_" << i;
 		std::stringstream dspi_3_pcs_name_sstr;
 		dspi_3_pcs_name_sstr << "DSPI_3_PCS_" << i;
-		dspi_3_pcs_serial_bus[i] = new DSPI_3_PCS_SERIAL_BUS(dspi_3_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_3_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
+		dspi_3_pcs_serial_bus[i] = new DSPI_3_PCS_SERIAL_BUS(dspi_3_pcs_serial_bus_name_sstr.str().c_str(), instrumenter->CreateSignal(dspi_3_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
 	}
-	dspi_3_ss_serial_bus = new DSPI_3_SS_SERIAL_BUS("DSPI_3_SS_SERIAL_BUS", CreateSignal("DSPI_3_SS", true, OUTPUT_INSTRUMENTATION), this);
+	dspi_3_ss_serial_bus = new DSPI_3_SS_SERIAL_BUS("DSPI_3_SS_SERIAL_BUS", instrumenter->CreateSignal("DSPI_3_SS", true, OUTPUT_INSTRUMENTATION), this);
 	
-	dspi_4_sout_serial_bus  = new DSPI_4_SOUT_SERIAL_BUS ("DSPI_4_SOUT_SERIAL_BUS" , CreateSignal("DSPI_4_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
-	dspi_4_sin_serial_bus   = new DSPI_4_SIN_SERIAL_BUS  ("DSPI_4_SIN_SERIAL_BUS"  , CreateSignal("DSPI_4_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_4_sout_serial_bus  = new DSPI_4_SOUT_SERIAL_BUS ("DSPI_4_SOUT_SERIAL_BUS" , instrumenter->CreateSignal("DSPI_4_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_4_sin_serial_bus   = new DSPI_4_SIN_SERIAL_BUS  ("DSPI_4_SIN_SERIAL_BUS"  , instrumenter->CreateSignal("DSPI_4_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
 	for(i = 0; i < DSPI_4::NUM_CTARS; i++)
 	{
 		std::stringstream dspi_4_pcs_serial_bus_name_sstr;
 		dspi_4_pcs_serial_bus_name_sstr << "DSPI_4_PCS_SERIAL_BUS_" << i;
 		std::stringstream dspi_4_pcs_name_sstr;
 		dspi_4_pcs_name_sstr << "DSPI_4_PCS_" << i;
-		dspi_4_pcs_serial_bus[i] = new DSPI_4_PCS_SERIAL_BUS(dspi_4_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_4_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
+		dspi_4_pcs_serial_bus[i] = new DSPI_4_PCS_SERIAL_BUS(dspi_4_pcs_serial_bus_name_sstr.str().c_str(), instrumenter->CreateSignal(dspi_4_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
 	}
-	dspi_4_ss_serial_bus = new DSPI_4_SS_SERIAL_BUS("DSPI_4_SS_SERIAL_BUS", CreateSignal("DSPI_4_SS", true, OUTPUT_INSTRUMENTATION), this);
+	dspi_4_ss_serial_bus = new DSPI_4_SS_SERIAL_BUS("DSPI_4_SS_SERIAL_BUS", instrumenter->CreateSignal("DSPI_4_SS", true, OUTPUT_INSTRUMENTATION), this);
 	
-	dspi_5_sout_serial_bus  = new DSPI_5_SOUT_SERIAL_BUS ("DSPI_5_SOUT_SERIAL_BUS" , CreateSignal("DSPI_5_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
-	dspi_5_sin_serial_bus   = new DSPI_5_SIN_SERIAL_BUS  ("DSPI_5_SIN_SERIAL_BUS"  , CreateSignal("DSPI_5_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_5_sout_serial_bus  = new DSPI_5_SOUT_SERIAL_BUS ("DSPI_5_SOUT_SERIAL_BUS" , instrumenter->CreateSignal("DSPI_5_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_5_sin_serial_bus   = new DSPI_5_SIN_SERIAL_BUS  ("DSPI_5_SIN_SERIAL_BUS"  , instrumenter->CreateSignal("DSPI_5_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
 	for(i = 0; i < DSPI_5::NUM_CTARS; i++)
 	{
 		std::stringstream dspi_5_pcs_serial_bus_name_sstr;
 		dspi_5_pcs_serial_bus_name_sstr << "DSPI_5_PCS_SERIAL_BUS_" << i;
 		std::stringstream dspi_5_pcs_name_sstr;
 		dspi_5_pcs_name_sstr << "DSPI_5_PCS_" << i;
-		dspi_5_pcs_serial_bus[i] = new DSPI_5_PCS_SERIAL_BUS(dspi_5_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_5_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
+		dspi_5_pcs_serial_bus[i] = new DSPI_5_PCS_SERIAL_BUS(dspi_5_pcs_serial_bus_name_sstr.str().c_str(), instrumenter->CreateSignal(dspi_5_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
 	}
-	dspi_5_ss_serial_bus = new DSPI_5_SS_SERIAL_BUS("DSPI_5_SS_SERIAL_BUS", CreateSignal("DSPI_5_SS", true, OUTPUT_INSTRUMENTATION), this);
+	dspi_5_ss_serial_bus = new DSPI_5_SS_SERIAL_BUS("DSPI_5_SS_SERIAL_BUS", instrumenter->CreateSignal("DSPI_5_SS", true, OUTPUT_INSTRUMENTATION), this);
 	
-	dspi_6_sout_serial_bus  = new DSPI_6_SOUT_SERIAL_BUS ("DSPI_6_SOUT_SERIAL_BUS" , CreateSignal("DSPI_6_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
-	dspi_6_sin_serial_bus   = new DSPI_6_SIN_SERIAL_BUS  ("DSPI_6_SIN_SERIAL_BUS"  , CreateSignal("DSPI_6_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_6_sout_serial_bus  = new DSPI_6_SOUT_SERIAL_BUS ("DSPI_6_SOUT_SERIAL_BUS" , instrumenter->CreateSignal("DSPI_6_SOUT" , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_6_sin_serial_bus   = new DSPI_6_SIN_SERIAL_BUS  ("DSPI_6_SIN_SERIAL_BUS"  , instrumenter->CreateSignal("DSPI_6_SIN"  , true, OUTPUT_INSTRUMENTATION), this);
 	for(i = 0; i < DSPI_6::NUM_CTARS; i++)
 	{
 		std::stringstream dspi_6_pcs_serial_bus_name_sstr;
 		dspi_6_pcs_serial_bus_name_sstr << "DSPI_6_PCS_SERIAL_BUS_" << i;
 		std::stringstream dspi_6_pcs_name_sstr;
 		dspi_6_pcs_name_sstr << "DSPI_6_PCS_" << i;
-		dspi_6_pcs_serial_bus[i] = new DSPI_6_PCS_SERIAL_BUS(dspi_6_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_6_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
+		dspi_6_pcs_serial_bus[i] = new DSPI_6_PCS_SERIAL_BUS(dspi_6_pcs_serial_bus_name_sstr.str().c_str(), instrumenter->CreateSignal(dspi_6_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
 	}
-	dspi_6_ss_serial_bus = new DSPI_6_SS_SERIAL_BUS("DSPI_6_SS_SERIAL_BUS", CreateSignal("DSPI_6_SS", true, OUTPUT_INSTRUMENTATION), this);
+	dspi_6_ss_serial_bus = new DSPI_6_SS_SERIAL_BUS("DSPI_6_SS_SERIAL_BUS", instrumenter->CreateSignal("DSPI_6_SS", true, OUTPUT_INSTRUMENTATION), this);
 	
-	dspi_12_sout_serial_bus = new DSPI_12_SOUT_SERIAL_BUS("DSPI_12_SOUT_SERIAL_BUS", CreateSignal("DSPI_12_SOUT", true, OUTPUT_INSTRUMENTATION), this);
-	dspi_12_sin_serial_bus  = new DSPI_12_SIN_SERIAL_BUS ("DSPI_12_SIN_SERIAL_BUS" , CreateSignal("DSPI_12_SIN" , true, OUTPUT_INSTRUMENTATION), this);
+	dspi_12_sout_serial_bus = new DSPI_12_SOUT_SERIAL_BUS("DSPI_12_SOUT_SERIAL_BUS", instrumenter->CreateSignal("DSPI_12_SOUT", true, OUTPUT_INSTRUMENTATION), this);
+	dspi_12_sin_serial_bus  = new DSPI_12_SIN_SERIAL_BUS ("DSPI_12_SIN_SERIAL_BUS" , instrumenter->CreateSignal("DSPI_12_SIN" , true, OUTPUT_INSTRUMENTATION), this);
 	for(i = 0; i < DSPI_12::NUM_CTARS; i++)
 	{
 		std::stringstream dspi_12_pcs_serial_bus_name_sstr;
 		dspi_12_pcs_serial_bus_name_sstr << "DSPI_12_PCS_SERIAL_BUS_" << i;
 		std::stringstream dspi_12_pcs_name_sstr;
 		dspi_12_pcs_name_sstr << "DSPI_12_PCS_" << i;
-		dspi_12_pcs_serial_bus[i] = new DSPI_12_PCS_SERIAL_BUS(dspi_12_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_12_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
+		dspi_12_pcs_serial_bus[i] = new DSPI_12_PCS_SERIAL_BUS(dspi_12_pcs_serial_bus_name_sstr.str().c_str(), instrumenter->CreateSignal(dspi_12_pcs_name_sstr.str(), true, OUTPUT_INSTRUMENTATION), this);
 	}
-	dspi_12_ss_serial_bus = new DSPI_12_SS_SERIAL_BUS("DSPI_12_SS_SERIAL_BUS", CreateSignal("DSPI_12_SS", true, OUTPUT_INSTRUMENTATION), this);
+	dspi_12_ss_serial_bus = new DSPI_12_SS_SERIAL_BUS("DSPI_12_SS_SERIAL_BUS", instrumenter->CreateSignal("DSPI_12_SS", true, OUTPUT_INSTRUMENTATION), this);
 
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -2107,505 +2117,505 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	}
 	
 	// RTL ports
-	Bind("HARDWARE.Main_Core_0.m_clk"           , "HARDWARE.COMP_CLK");
-	Bind("HARDWARE.Main_Core_0.m_por"           , "HARDWARE.m_por");
-	Bind("HARDWARE.Main_Core_0.p_reset_b"       , "HARDWARE.p_reset_b_0");
-	Bind("HARDWARE.Main_Core_0.p_nmi_b"         , "HARDWARE.p_nmi_b");
-	Bind("HARDWARE.Main_Core_0.p_mcp_b"         , "HARDWARE.p_mcp_b");
-	Bind("HARDWARE.Main_Core_0.p_rstbase"       , "HARDWARE.p_rstbase");
-	Bind("HARDWARE.Main_Core_0.p_cpuid"         , "HARDWARE.p_cpuid");
-	Bind("HARDWARE.Main_Core_0.p_extint_b"      , "HARDWARE.p_irq_b_0");
-	Bind("HARDWARE.Main_Core_0.p_crint_b"       , "HARDWARE.p_crint_b");
-	Bind("HARDWARE.Main_Core_0.p_avec_b"        , "HARDWARE.p_avec_b_0");
-	Bind("HARDWARE.Main_Core_0.p_voffset"       , "HARDWARE.p_voffset_0");
-	Bind("HARDWARE.Main_Core_0.p_iack"          , "HARDWARE.p_iack_0");
+	instrumenter->Bind("HARDWARE.Main_Core_0.m_clk"           , "HARDWARE.COMP_CLK");
+	instrumenter->Bind("HARDWARE.Main_Core_0.m_por"           , "HARDWARE.m_por");
+	instrumenter->Bind("HARDWARE.Main_Core_0.p_reset_b"       , "HARDWARE.p_reset_b_0");
+	instrumenter->Bind("HARDWARE.Main_Core_0.p_nmi_b"         , "HARDWARE.p_nmi_b");
+	instrumenter->Bind("HARDWARE.Main_Core_0.p_mcp_b"         , "HARDWARE.p_mcp_b");
+	instrumenter->Bind("HARDWARE.Main_Core_0.p_rstbase"       , "HARDWARE.p_rstbase");
+	instrumenter->Bind("HARDWARE.Main_Core_0.p_cpuid"         , "HARDWARE.p_cpuid");
+	instrumenter->Bind("HARDWARE.Main_Core_0.p_extint_b"      , "HARDWARE.p_irq_b_0");
+	instrumenter->Bind("HARDWARE.Main_Core_0.p_crint_b"       , "HARDWARE.p_crint_b");
+	instrumenter->Bind("HARDWARE.Main_Core_0.p_avec_b"        , "HARDWARE.p_avec_b_0");
+	instrumenter->Bind("HARDWARE.Main_Core_0.p_voffset"       , "HARDWARE.p_voffset_0");
+	instrumenter->Bind("HARDWARE.Main_Core_0.p_iack"          , "HARDWARE.p_iack_0");
 
-	Bind("HARDWARE.Main_Core_1.m_clk"           , "HARDWARE.COMP_CLK");
-	Bind("HARDWARE.Main_Core_1.m_por"           , "HARDWARE.m_por");
-	Bind("HARDWARE.Main_Core_1.p_reset_b"       , "HARDWARE.p_reset_b_1");
-	Bind("HARDWARE.Main_Core_1.p_nmi_b"         , "HARDWARE.p_nmi_b");
-	Bind("HARDWARE.Main_Core_1.p_mcp_b"         , "HARDWARE.p_mcp_b");
-	Bind("HARDWARE.Main_Core_1.p_rstbase"       , "HARDWARE.p_rstbase");
-	Bind("HARDWARE.Main_Core_1.p_cpuid"         , "HARDWARE.p_cpuid");
-	Bind("HARDWARE.Main_Core_1.p_extint_b"      , "HARDWARE.p_irq_b_1");
-	Bind("HARDWARE.Main_Core_1.p_crint_b"       , "HARDWARE.p_crint_b");
-	Bind("HARDWARE.Main_Core_1.p_avec_b"        , "HARDWARE.p_avec_b_1");
-	Bind("HARDWARE.Main_Core_1.p_voffset"       , "HARDWARE.p_voffset_1");
-	Bind("HARDWARE.Main_Core_1.p_iack"          , "HARDWARE.p_iack_1");
+	instrumenter->Bind("HARDWARE.Main_Core_1.m_clk"           , "HARDWARE.COMP_CLK");
+	instrumenter->Bind("HARDWARE.Main_Core_1.m_por"           , "HARDWARE.m_por");
+	instrumenter->Bind("HARDWARE.Main_Core_1.p_reset_b"       , "HARDWARE.p_reset_b_1");
+	instrumenter->Bind("HARDWARE.Main_Core_1.p_nmi_b"         , "HARDWARE.p_nmi_b");
+	instrumenter->Bind("HARDWARE.Main_Core_1.p_mcp_b"         , "HARDWARE.p_mcp_b");
+	instrumenter->Bind("HARDWARE.Main_Core_1.p_rstbase"       , "HARDWARE.p_rstbase");
+	instrumenter->Bind("HARDWARE.Main_Core_1.p_cpuid"         , "HARDWARE.p_cpuid");
+	instrumenter->Bind("HARDWARE.Main_Core_1.p_extint_b"      , "HARDWARE.p_irq_b_1");
+	instrumenter->Bind("HARDWARE.Main_Core_1.p_crint_b"       , "HARDWARE.p_crint_b");
+	instrumenter->Bind("HARDWARE.Main_Core_1.p_avec_b"        , "HARDWARE.p_avec_b_1");
+	instrumenter->Bind("HARDWARE.Main_Core_1.p_voffset"       , "HARDWARE.p_voffset_1");
+	instrumenter->Bind("HARDWARE.Main_Core_1.p_iack"          , "HARDWARE.p_iack_1");
 
-	Bind("HARDWARE.Peripheral_Core_2.m_clk"           , "HARDWARE.IOP_CLK");
-	Bind("HARDWARE.Peripheral_Core_2.m_por"           , "HARDWARE.m_por");
-	Bind("HARDWARE.Peripheral_Core_2.p_reset_b"       , "HARDWARE.p_reset_b_2");
-	Bind("HARDWARE.Peripheral_Core_2.p_nmi_b"         , "HARDWARE.p_nmi_b");
-	Bind("HARDWARE.Peripheral_Core_2.p_mcp_b"         , "HARDWARE.p_mcp_b");
-	Bind("HARDWARE.Peripheral_Core_2.p_rstbase"       , "HARDWARE.p_rstbase");
-	Bind("HARDWARE.Peripheral_Core_2.p_cpuid"         , "HARDWARE.p_cpuid");
-	Bind("HARDWARE.Peripheral_Core_2.p_extint_b"      , "HARDWARE.p_irq_b_2");
-	Bind("HARDWARE.Peripheral_Core_2.p_crint_b"       , "HARDWARE.p_crint_b");
-	Bind("HARDWARE.Peripheral_Core_2.p_avec_b"        , "HARDWARE.p_avec_b_2");
-	Bind("HARDWARE.Peripheral_Core_2.p_voffset"       , "HARDWARE.p_voffset_2");
-	Bind("HARDWARE.Peripheral_Core_2.p_iack"          , "HARDWARE.p_iack_2");
+	instrumenter->Bind("HARDWARE.Peripheral_Core_2.m_clk"           , "HARDWARE.IOP_CLK");
+	instrumenter->Bind("HARDWARE.Peripheral_Core_2.m_por"           , "HARDWARE.m_por");
+	instrumenter->Bind("HARDWARE.Peripheral_Core_2.p_reset_b"       , "HARDWARE.p_reset_b_2");
+	instrumenter->Bind("HARDWARE.Peripheral_Core_2.p_nmi_b"         , "HARDWARE.p_nmi_b");
+	instrumenter->Bind("HARDWARE.Peripheral_Core_2.p_mcp_b"         , "HARDWARE.p_mcp_b");
+	instrumenter->Bind("HARDWARE.Peripheral_Core_2.p_rstbase"       , "HARDWARE.p_rstbase");
+	instrumenter->Bind("HARDWARE.Peripheral_Core_2.p_cpuid"         , "HARDWARE.p_cpuid");
+	instrumenter->Bind("HARDWARE.Peripheral_Core_2.p_extint_b"      , "HARDWARE.p_irq_b_2");
+	instrumenter->Bind("HARDWARE.Peripheral_Core_2.p_crint_b"       , "HARDWARE.p_crint_b");
+	instrumenter->Bind("HARDWARE.Peripheral_Core_2.p_avec_b"        , "HARDWARE.p_avec_b_2");
+	instrumenter->Bind("HARDWARE.Peripheral_Core_2.p_voffset"       , "HARDWARE.p_voffset_2");
+	instrumenter->Bind("HARDWARE.Peripheral_Core_2.p_iack"          , "HARDWARE.p_iack_2");
 	
-	Bind("HARDWARE.XBAR_0.m_clk"                          , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.XBAR_0.reset_b"                        , "HARDWARE.reset_b");
-	Bind("HARDWARE.XBAR_0.input_if_clock"                 , "HARDWARE.FXBAR_CLK");
-	Bind("HARDWARE.XBAR_0.output_if_clock"                , "HARDWARE.FXBAR_CLK");
+	instrumenter->Bind("HARDWARE.XBAR_0.m_clk"                          , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.XBAR_0.reset_b"                        , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.XBAR_0.input_if_clock"                 , "HARDWARE.FXBAR_CLK");
+	instrumenter->Bind("HARDWARE.XBAR_0.output_if_clock"                , "HARDWARE.FXBAR_CLK");
 	
-	Bind("HARDWARE.XBAR_1.m_clk"                          , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.XBAR_1.reset_b"                        , "HARDWARE.reset_b");
-	Bind("HARDWARE.XBAR_1.input_if_clock"                 , "HARDWARE.SXBAR_CLK");
-	Bind("HARDWARE.XBAR_1.output_if_clock"                , "HARDWARE.SXBAR_CLK");
+	instrumenter->Bind("HARDWARE.XBAR_1.m_clk"                          , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.XBAR_1.reset_b"                        , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.XBAR_1.input_if_clock"                 , "HARDWARE.SXBAR_CLK");
+	instrumenter->Bind("HARDWARE.XBAR_1.output_if_clock"                , "HARDWARE.SXBAR_CLK");
 	
-	Bind("HARDWARE.PBRIDGE_A.m_clk"                       , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.PBRIDGE_A.reset_b"                     , "HARDWARE.reset_b");
-	Bind("HARDWARE.PBRIDGE_A.input_if_clock"              , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.PBRIDGE_A.output_if_clock"             , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.PBRIDGE_A.m_clk"                       , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.PBRIDGE_A.reset_b"                     , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.PBRIDGE_A.input_if_clock"              , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.PBRIDGE_A.output_if_clock"             , "HARDWARE.PBRIDGEA_CLK");
 	
-	Bind("HARDWARE.PBRIDGE_B.m_clk"                       , "HARDWARE.PBRIDGEB_CLK");
-	Bind("HARDWARE.PBRIDGE_B.reset_b"                     , "HARDWARE.reset_b");
-	Bind("HARDWARE.PBRIDGE_B.input_if_clock"              , "HARDWARE.PBRIDGEB_CLK");
-	Bind("HARDWARE.PBRIDGE_B.output_if_clock"             , "HARDWARE.PBRIDGEB_CLK");
+	instrumenter->Bind("HARDWARE.PBRIDGE_B.m_clk"                       , "HARDWARE.PBRIDGEB_CLK");
+	instrumenter->Bind("HARDWARE.PBRIDGE_B.reset_b"                     , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.PBRIDGE_B.input_if_clock"              , "HARDWARE.PBRIDGEB_CLK");
+	instrumenter->Bind("HARDWARE.PBRIDGE_B.output_if_clock"             , "HARDWARE.PBRIDGEB_CLK");
 	
-	Bind("HARDWARE.EBI.m_clk"                             , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.EBI.reset_b"                           , "HARDWARE.reset_b");
-	Bind("HARDWARE.EBI.input_if_clock"                    , "HARDWARE.FXBAR_CLK");
-	Bind("HARDWARE.EBI.output_if_clock"                   , "HARDWARE.EBI_CLK");
+	instrumenter->Bind("HARDWARE.EBI.m_clk"                             , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.EBI.reset_b"                           , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.EBI.input_if_clock"                    , "HARDWARE.FXBAR_CLK");
+	instrumenter->Bind("HARDWARE.EBI.output_if_clock"                   , "HARDWARE.EBI_CLK");
 
-	Bind("HARDWARE.IAHBG_0.input_if_clock"                , "HARDWARE.FXBAR_CLK");
-	Bind("HARDWARE.IAHBG_0.output_if_clock"               , "HARDWARE.SXBAR_CLK");
+	instrumenter->Bind("HARDWARE.IAHBG_0.input_if_clock"                , "HARDWARE.FXBAR_CLK");
+	instrumenter->Bind("HARDWARE.IAHBG_0.output_if_clock"               , "HARDWARE.SXBAR_CLK");
 	
-	Bind("HARDWARE.IAHBG_1.input_if_clock"                , "HARDWARE.SXBAR_CLK");
-	Bind("HARDWARE.IAHBG_1.output_if_clock"               , "HARDWARE.FXBAR_CLK");
+	instrumenter->Bind("HARDWARE.IAHBG_1.input_if_clock"                , "HARDWARE.SXBAR_CLK");
+	instrumenter->Bind("HARDWARE.IAHBG_1.output_if_clock"               , "HARDWARE.FXBAR_CLK");
 	
-	Bind("HARDWARE.XBAR_1_M1_CONCENTRATOR.input_if_clock" , "HARDWARE.SXBAR_CLK");
-	Bind("HARDWARE.XBAR_1_M1_CONCENTRATOR.output_if_clock", "HARDWARE.SXBAR_CLK");
+	instrumenter->Bind("HARDWARE.XBAR_1_M1_CONCENTRATOR.input_if_clock" , "HARDWARE.SXBAR_CLK");
+	instrumenter->Bind("HARDWARE.XBAR_1_M1_CONCENTRATOR.output_if_clock", "HARDWARE.SXBAR_CLK");
 
-	Bind("HARDWARE.INTC_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.INTC_0.reset_b"         , "HARDWARE.reset_b");
-	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_irq_b"  , "HARDWARE.p_irq_b"  );
-	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_avec_b" , "HARDWARE.p_avec_b" );
-	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_voffset", "HARDWARE.p_voffset");
-	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_iack"   , "HARDWARE.p_iack"   );
+	instrumenter->Bind("HARDWARE.INTC_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.INTC_0.reset_b"         , "HARDWARE.reset_b");
+	instrumenter->BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_irq_b"  , "HARDWARE.p_irq_b"  );
+	instrumenter->BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_avec_b" , "HARDWARE.p_avec_b" );
+	instrumenter->BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_voffset", "HARDWARE.p_voffset");
+	instrumenter->BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_iack"   , "HARDWARE.p_iack"   );
 	
-	Bind("HARDWARE.STM_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.STM_0.reset_b"         , "HARDWARE.reset_b");
-	Bind("HARDWARE.STM_0.debug"           , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.STM_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.STM_0.reset_b"         , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.STM_0.debug"           , "HARDWARE.debug");
 
-	Bind("HARDWARE.STM_1.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.STM_1.reset_b"         , "HARDWARE.reset_b");
-	Bind("HARDWARE.STM_1.debug"           , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.STM_1.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.STM_1.reset_b"         , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.STM_1.debug"           , "HARDWARE.debug");
 
-	Bind("HARDWARE.STM_2.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.STM_2.reset_b"         , "HARDWARE.reset_b");
-	Bind("HARDWARE.STM_2.debug"           , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.STM_2.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.STM_2.reset_b"         , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.STM_2.debug"           , "HARDWARE.debug");
 	
-	Bind("HARDWARE.SWT_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.SWT_0.swt_reset_b"     , "HARDWARE.reset_b");
-	Bind("HARDWARE.SWT_0.stop"            , "HARDWARE.stop");
-	Bind("HARDWARE.SWT_0.debug"           , "HARDWARE.debug");
-	Bind("HARDWARE.SWT_0.reset_b"         , "HARDWARE.p_reset_b_0");
+	instrumenter->Bind("HARDWARE.SWT_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.SWT_0.swt_reset_b"     , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.SWT_0.stop"            , "HARDWARE.stop");
+	instrumenter->Bind("HARDWARE.SWT_0.debug"           , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.SWT_0.reset_b"         , "HARDWARE.p_reset_b_0");
 
-	Bind("HARDWARE.SWT_1.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.SWT_1.swt_reset_b"     , "HARDWARE.reset_b");
-	Bind("HARDWARE.SWT_1.stop"            , "HARDWARE.stop");
-	Bind("HARDWARE.SWT_1.debug"           , "HARDWARE.debug");
-	Bind("HARDWARE.SWT_1.reset_b"         , "HARDWARE.p_reset_b_1");
+	instrumenter->Bind("HARDWARE.SWT_1.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.SWT_1.swt_reset_b"     , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.SWT_1.stop"            , "HARDWARE.stop");
+	instrumenter->Bind("HARDWARE.SWT_1.debug"           , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.SWT_1.reset_b"         , "HARDWARE.p_reset_b_1");
 
-	Bind("HARDWARE.SWT_2.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.SWT_2.swt_reset_b"     , "HARDWARE.reset_b");
-	Bind("HARDWARE.SWT_2.stop"            , "HARDWARE.stop");
-	Bind("HARDWARE.SWT_2.debug"           , "HARDWARE.debug");
-	Bind("HARDWARE.SWT_2.reset_b"         , "HARDWARE.p_reset_b_2");
+	instrumenter->Bind("HARDWARE.SWT_2.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.SWT_2.swt_reset_b"     , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.SWT_2.stop"            , "HARDWARE.stop");
+	instrumenter->Bind("HARDWARE.SWT_2.debug"           , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.SWT_2.reset_b"         , "HARDWARE.p_reset_b_2");
 	
-	Bind("HARDWARE.SWT_3.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.SWT_3.swt_reset_b"     , "HARDWARE.reset_b");
-	Bind("HARDWARE.SWT_3.stop"            , "HARDWARE.stop");
-	Bind("HARDWARE.SWT_3.debug"           , "HARDWARE.debug");
-	Bind("HARDWARE.SWT_3.reset_b"         , "HARDWARE.p_reset_b_3");
+	instrumenter->Bind("HARDWARE.SWT_3.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.SWT_3.swt_reset_b"     , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.SWT_3.stop"            , "HARDWARE.stop");
+	instrumenter->Bind("HARDWARE.SWT_3.debug"           , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.SWT_3.reset_b"         , "HARDWARE.p_reset_b_3");
 	
-	Bind("HARDWARE.PIT_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.PIT_0.per_clk"         , "HARDWARE.PER_CLK");
-	Bind("HARDWARE.PIT_0.rti_clk"         , "HARDWARE.RTI_CLK");
-	Bind("HARDWARE.PIT_0.reset_b"         , "HARDWARE.reset_b");
-	Bind("HARDWARE.PIT_0.debug"           , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.PIT_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.PIT_0.per_clk"         , "HARDWARE.PER_CLK");
+	instrumenter->Bind("HARDWARE.PIT_0.rti_clk"         , "HARDWARE.RTI_CLK");
+	instrumenter->Bind("HARDWARE.PIT_0.reset_b"         , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.PIT_0.debug"           , "HARDWARE.debug");
 	
-	Bind("HARDWARE.PIT_0.dma_trigger_0"   , "HARDWARE.PIT_0_DMA_TRIGGER_0");
-	Bind("HARDWARE.PIT_0.dma_trigger_1"   , "HARDWARE.PIT_0_DMA_TRIGGER_1");
-	Bind("HARDWARE.PIT_0.dma_trigger_2"   , "HARDWARE.PIT_0_DMA_TRIGGER_2");
-	Bind("HARDWARE.PIT_0.dma_trigger_3"   , "HARDWARE.PIT_0_DMA_TRIGGER_3");
-	Bind("HARDWARE.PIT_0.dma_trigger_4"   , "HARDWARE.PIT_0_DMA_TRIGGER_4");
-	Bind("HARDWARE.PIT_0.dma_trigger_5"   , "HARDWARE.PIT_0_DMA_TRIGGER_5");
-	Bind("HARDWARE.PIT_0.dma_trigger_6"   , "HARDWARE.PIT_0_DMA_TRIGGER_6");
-	Bind("HARDWARE.PIT_0.dma_trigger_7"   , "HARDWARE.PIT_0_DMA_TRIGGER_7");
+	instrumenter->Bind("HARDWARE.PIT_0.dma_trigger_0"   , "HARDWARE.PIT_0_DMA_TRIGGER_0");
+	instrumenter->Bind("HARDWARE.PIT_0.dma_trigger_1"   , "HARDWARE.PIT_0_DMA_TRIGGER_1");
+	instrumenter->Bind("HARDWARE.PIT_0.dma_trigger_2"   , "HARDWARE.PIT_0_DMA_TRIGGER_2");
+	instrumenter->Bind("HARDWARE.PIT_0.dma_trigger_3"   , "HARDWARE.PIT_0_DMA_TRIGGER_3");
+	instrumenter->Bind("HARDWARE.PIT_0.dma_trigger_4"   , "HARDWARE.PIT_0_DMA_TRIGGER_4");
+	instrumenter->Bind("HARDWARE.PIT_0.dma_trigger_5"   , "HARDWARE.PIT_0_DMA_TRIGGER_5");
+	instrumenter->Bind("HARDWARE.PIT_0.dma_trigger_6"   , "HARDWARE.PIT_0_DMA_TRIGGER_6");
+	instrumenter->Bind("HARDWARE.PIT_0.dma_trigger_7"   , "HARDWARE.PIT_0_DMA_TRIGGER_7");
 	
-	Bind("HARDWARE.PIT_1.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.PIT_1.per_clk"         , "HARDWARE.PER_CLK");
-	Bind("HARDWARE.PIT_1.rti_clk"         , "HARDWARE.RTI_CLK");
-	Bind("HARDWARE.PIT_1.reset_b"         , "HARDWARE.reset_b");
-	Bind("HARDWARE.PIT_1.debug"           , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.PIT_1.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.PIT_1.per_clk"         , "HARDWARE.PER_CLK");
+	instrumenter->Bind("HARDWARE.PIT_1.rti_clk"         , "HARDWARE.RTI_CLK");
+	instrumenter->Bind("HARDWARE.PIT_1.reset_b"         , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.PIT_1.debug"           , "HARDWARE.debug");
 	
-	Bind("HARDWARE.PIT_1.irq_2"           , "HARDWARE.unused");
-	Bind("HARDWARE.PIT_1.irq_3"           , "HARDWARE.unused");
-	Bind("HARDWARE.PIT_1.irq_4"           , "HARDWARE.unused");
-	Bind("HARDWARE.PIT_1.irq_5"           , "HARDWARE.unused");
-	Bind("HARDWARE.PIT_1.irq_6"           , "HARDWARE.unused");
-	Bind("HARDWARE.PIT_1.irq_7"           , "HARDWARE.unused");
+	instrumenter->Bind("HARDWARE.PIT_1.irq_2"           , "HARDWARE.unused");
+	instrumenter->Bind("HARDWARE.PIT_1.irq_3"           , "HARDWARE.unused");
+	instrumenter->Bind("HARDWARE.PIT_1.irq_4"           , "HARDWARE.unused");
+	instrumenter->Bind("HARDWARE.PIT_1.irq_5"           , "HARDWARE.unused");
+	instrumenter->Bind("HARDWARE.PIT_1.irq_6"           , "HARDWARE.unused");
+	instrumenter->Bind("HARDWARE.PIT_1.irq_7"           , "HARDWARE.unused");
 	
-	Bind("HARDWARE.PIT_1.rtirq"           , "HARDWARE.unused");
+	instrumenter->Bind("HARDWARE.PIT_1.rtirq"           , "HARDWARE.unused");
 
-	Bind("HARDWARE.PIT_1.dma_trigger_0"   , "HARDWARE.unused");
-	Bind("HARDWARE.PIT_1.dma_trigger_1"   , "HARDWARE.unused");
-	Bind("HARDWARE.PIT_1.dma_trigger_2"   , "HARDWARE.unused");
-	Bind("HARDWARE.PIT_1.dma_trigger_3"   , "HARDWARE.unused");
-	Bind("HARDWARE.PIT_1.dma_trigger_4"   , "HARDWARE.unused");
-	Bind("HARDWARE.PIT_1.dma_trigger_5"   , "HARDWARE.unused");
-	Bind("HARDWARE.PIT_1.dma_trigger_6"   , "HARDWARE.unused");
-	Bind("HARDWARE.PIT_1.dma_trigger_7"   , "HARDWARE.unused");
+	instrumenter->Bind("HARDWARE.PIT_1.dma_trigger_0"   , "HARDWARE.unused");
+	instrumenter->Bind("HARDWARE.PIT_1.dma_trigger_1"   , "HARDWARE.unused");
+	instrumenter->Bind("HARDWARE.PIT_1.dma_trigger_2"   , "HARDWARE.unused");
+	instrumenter->Bind("HARDWARE.PIT_1.dma_trigger_3"   , "HARDWARE.unused");
+	instrumenter->Bind("HARDWARE.PIT_1.dma_trigger_4"   , "HARDWARE.unused");
+	instrumenter->Bind("HARDWARE.PIT_1.dma_trigger_5"   , "HARDWARE.unused");
+	instrumenter->Bind("HARDWARE.PIT_1.dma_trigger_6"   , "HARDWARE.unused");
+	instrumenter->Bind("HARDWARE.PIT_1.dma_trigger_7"   , "HARDWARE.unused");
 	
-	Bind("HARDWARE.LINFlexD_0.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.LINFlexD_0.lin_clk"  , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_0.reset_b"  , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.LINFlexD_0.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.LINFlexD_0.lin_clk"  , "HARDWARE.LIN_CLK");
+	instrumenter->Bind("HARDWARE.LINFlexD_0.reset_b"  , "HARDWARE.reset_b");
 
-	Bind("HARDWARE.LINFlexD_1.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.LINFlexD_1.lin_clk"  , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_1.reset_b"  , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.LINFlexD_1.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.LINFlexD_1.lin_clk"  , "HARDWARE.LIN_CLK");
+	instrumenter->Bind("HARDWARE.LINFlexD_1.reset_b"  , "HARDWARE.reset_b");
 
-	Bind("HARDWARE.LINFlexD_14.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.LINFlexD_14.lin_clk" , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_14.reset_b" , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.LINFlexD_14.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.LINFlexD_14.lin_clk" , "HARDWARE.LIN_CLK");
+	instrumenter->Bind("HARDWARE.LINFlexD_14.reset_b" , "HARDWARE.reset_b");
 
-	Bind("HARDWARE.LINFlexD_16.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.LINFlexD_16.lin_clk" , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_16.reset_b" , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.LINFlexD_16.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.LINFlexD_16.lin_clk" , "HARDWARE.LIN_CLK");
+	instrumenter->Bind("HARDWARE.LINFlexD_16.reset_b" , "HARDWARE.reset_b");
 
-	Bind("HARDWARE.LINFlexD_2.m_clk"    , "HARDWARE.PBRIDGEB_CLK");
-	Bind("HARDWARE.LINFlexD_2.lin_clk"  , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_2.reset_b"  , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.LINFlexD_2.m_clk"    , "HARDWARE.PBRIDGEB_CLK");
+	instrumenter->Bind("HARDWARE.LINFlexD_2.lin_clk"  , "HARDWARE.LIN_CLK");
+	instrumenter->Bind("HARDWARE.LINFlexD_2.reset_b"  , "HARDWARE.reset_b");
 
-	Bind("HARDWARE.LINFlexD_15.m_clk"   , "HARDWARE.PBRIDGEB_CLK");
-	Bind("HARDWARE.LINFlexD_15.lin_clk" , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_15.reset_b" , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.LINFlexD_15.m_clk"   , "HARDWARE.PBRIDGEB_CLK");
+	instrumenter->Bind("HARDWARE.LINFlexD_15.lin_clk" , "HARDWARE.LIN_CLK");
+	instrumenter->Bind("HARDWARE.LINFlexD_15.reset_b" , "HARDWARE.reset_b");
 	
 	if(enable_serial_terminal0)
 	{
-		Bind("HARDWARE.SERIAL_TERMINAL0.CLK", "HARDWARE.SERIAL_TERMINAL0_CLK");
+		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL0.CLK", "HARDWARE.SERIAL_TERMINAL0_CLK");
 	}
 	if(enable_serial_terminal1)
 	{
-		Bind("HARDWARE.SERIAL_TERMINAL1.CLK", "HARDWARE.SERIAL_TERMINAL1_CLK");
+		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL1.CLK", "HARDWARE.SERIAL_TERMINAL1_CLK");
 	}
 	if(enable_serial_terminal2)
 	{
-		Bind("HARDWARE.SERIAL_TERMINAL2.CLK", "HARDWARE.SERIAL_TERMINAL2_CLK");
+		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL2.CLK", "HARDWARE.SERIAL_TERMINAL2_CLK");
 	}
 	if(enable_serial_terminal14)
 	{
-		Bind("HARDWARE.SERIAL_TERMINAL14.CLK", "HARDWARE.SERIAL_TERMINAL14_CLK");
+		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL14.CLK", "HARDWARE.SERIAL_TERMINAL14_CLK");
 	}
 	if(enable_serial_terminal15)
 	{
-		Bind("HARDWARE.SERIAL_TERMINAL15.CLK", "HARDWARE.SERIAL_TERMINAL15_CLK");
+		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL15.CLK", "HARDWARE.SERIAL_TERMINAL15_CLK");
 	}
 	if(enable_serial_terminal16)
 	{
-		Bind("HARDWARE.SERIAL_TERMINAL16.CLK", "HARDWARE.SERIAL_TERMINAL16_CLK");
+		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL16.CLK", "HARDWARE.SERIAL_TERMINAL16_CLK");
 	}
 	
-	BindArray(DMAMUX_0::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_0.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
-	BindArray(DMAMUX_1::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_1.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 59); // Always 59 - 63
-	BindArray(DMAMUX_2::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_2.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
-	BindArray(DMAMUX_3::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_3.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
-	BindArray(DMAMUX_4::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_4.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
-	BindArray(DMAMUX_5::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_5.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
-	BindArray(DMAMUX_6::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_6.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
-	BindArray(DMAMUX_7::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_7.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
-	BindArray(DMAMUX_8::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_8.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
-	BindArray(DMAMUX_9::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_9.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	instrumenter->BindArray(DMAMUX_0::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_0.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	instrumenter->BindArray(DMAMUX_1::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_1.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 59); // Always 59 - 63
+	instrumenter->BindArray(DMAMUX_2::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_2.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	instrumenter->BindArray(DMAMUX_3::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_3.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	instrumenter->BindArray(DMAMUX_4::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_4.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	instrumenter->BindArray(DMAMUX_5::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_5.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	instrumenter->BindArray(DMAMUX_6::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_6.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	instrumenter->BindArray(DMAMUX_7::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_7.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	instrumenter->BindArray(DMAMUX_8::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_8.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	instrumenter->BindArray(DMAMUX_9::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_9.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
 	
-	BindArray(DMAMUX_1::NUM_DMA_TRIGGERS, "HARDWARE.DMAMUX_1.dma_trigger", 0, "HARDWARE.PIT_0_DMA_TRIGGER", 0); // PIT_0 Trigger 0 - 4
-	BindArray(DMAMUX_2::NUM_DMA_TRIGGERS, "HARDWARE.DMAMUX_2.dma_trigger", 0, "HARDWARE.PIT_0_DMA_TRIGGER", 5); // PIT_0 Trigger 5
-	BindArray(DMAMUX_4::NUM_DMA_TRIGGERS, "HARDWARE.DMAMUX_4.dma_trigger", 0, "HARDWARE.PIT_0_DMA_TRIGGER", 6); // PIT_0 Trigger 6
-	BindArray(DMAMUX_5::NUM_DMA_TRIGGERS, "HARDWARE.DMAMUX_5.dma_trigger", 0, "HARDWARE.PIT_0_DMA_TRIGGER", 7); // PIT_0 Trigger 7
+	instrumenter->BindArray(DMAMUX_1::NUM_DMA_TRIGGERS, "HARDWARE.DMAMUX_1.dma_trigger", 0, "HARDWARE.PIT_0_DMA_TRIGGER", 0); // PIT_0 Trigger 0 - 4
+	instrumenter->BindArray(DMAMUX_2::NUM_DMA_TRIGGERS, "HARDWARE.DMAMUX_2.dma_trigger", 0, "HARDWARE.PIT_0_DMA_TRIGGER", 5); // PIT_0 Trigger 5
+	instrumenter->BindArray(DMAMUX_4::NUM_DMA_TRIGGERS, "HARDWARE.DMAMUX_4.dma_trigger", 0, "HARDWARE.PIT_0_DMA_TRIGGER", 6); // PIT_0 Trigger 6
+	instrumenter->BindArray(DMAMUX_5::NUM_DMA_TRIGGERS, "HARDWARE.DMAMUX_5.dma_trigger", 0, "HARDWARE.PIT_0_DMA_TRIGGER", 7); // PIT_0 Trigger 7
 	
-	BindArray(DMAMUX_0::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_0.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 0);   // DMA channels 0 - 7
-	BindArray(DMAMUX_1::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_1.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 8);   // DMA channels 0 - 15
-	BindArray(DMAMUX_2::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_2.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 16);  // DMA channels 16 - 23
-	BindArray(DMAMUX_3::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_3.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 24);  // DMA channels 24 - 31
-	BindArray(DMAMUX_4::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_4.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 32);  // DMA channels 32 - 47
-	BindArray(DMAMUX_5::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_5.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 48);  // DMA channels 48 - 63
-	BindArray(DMAMUX_6::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_6.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 64);  // DMA channels 64 - 79
-	BindArray(DMAMUX_7::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_7.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 80);  // DMA channels 80 - 95
-	BindArray(DMAMUX_8::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_8.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 96);  // DMA channels 96 - 111
-	BindArray(DMAMUX_9::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_9.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 112); // DMA channels 112 - 127
+	instrumenter->BindArray(DMAMUX_0::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_0.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 0);   // DMA channels 0 - 7
+	instrumenter->BindArray(DMAMUX_1::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_1.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 8);   // DMA channels 0 - 15
+	instrumenter->BindArray(DMAMUX_2::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_2.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 16);  // DMA channels 16 - 23
+	instrumenter->BindArray(DMAMUX_3::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_3.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 24);  // DMA channels 24 - 31
+	instrumenter->BindArray(DMAMUX_4::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_4.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 32);  // DMA channels 32 - 47
+	instrumenter->BindArray(DMAMUX_5::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_5.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 48);  // DMA channels 48 - 63
+	instrumenter->BindArray(DMAMUX_6::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_6.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 64);  // DMA channels 64 - 79
+	instrumenter->BindArray(DMAMUX_7::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_7.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 80);  // DMA channels 80 - 95
+	instrumenter->BindArray(DMAMUX_8::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_8.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 96);  // DMA channels 96 - 111
+	instrumenter->BindArray(DMAMUX_9::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_9.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 112); // DMA channels 112 - 127
 	
-	BindArray(DMAMUX_0::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_0.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 0);   // DMA channels 0 - 7
-	BindArray(DMAMUX_1::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_1.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 8);   // DMA channels 0 - 15
-	BindArray(DMAMUX_2::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_2.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 16);  // DMA channels 16 - 23
-	BindArray(DMAMUX_3::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_3.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 24);  // DMA channels 24 - 31
-	BindArray(DMAMUX_4::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_4.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 32);  // DMA channels 32 - 47
-	BindArray(DMAMUX_5::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_5.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 48);  // DMA channels 48 - 63
-	BindArray(DMAMUX_6::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_6.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 64);  // DMA channels 64 - 79
-	BindArray(DMAMUX_7::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_7.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 80);  // DMA channels 80 - 95
-	BindArray(DMAMUX_8::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_8.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 96);  // DMA channels 96 - 111
-	BindArray(DMAMUX_9::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_9.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 112); // DMA channels 112 - 127
+	instrumenter->BindArray(DMAMUX_0::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_0.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 0);   // DMA channels 0 - 7
+	instrumenter->BindArray(DMAMUX_1::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_1.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 8);   // DMA channels 0 - 15
+	instrumenter->BindArray(DMAMUX_2::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_2.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 16);  // DMA channels 16 - 23
+	instrumenter->BindArray(DMAMUX_3::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_3.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 24);  // DMA channels 24 - 31
+	instrumenter->BindArray(DMAMUX_4::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_4.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 32);  // DMA channels 32 - 47
+	instrumenter->BindArray(DMAMUX_5::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_5.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 48);  // DMA channels 48 - 63
+	instrumenter->BindArray(DMAMUX_6::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_6.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 64);  // DMA channels 64 - 79
+	instrumenter->BindArray(DMAMUX_7::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_7.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 80);  // DMA channels 80 - 95
+	instrumenter->BindArray(DMAMUX_8::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_8.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 96);  // DMA channels 96 - 111
+	instrumenter->BindArray(DMAMUX_9::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_9.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 112); // DMA channels 112 - 127
 
-	Bind("HARDWARE.eDMA_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.eDMA_0.dma_clk"         , "HARDWARE.SXBAR_CLK");
-	Bind("HARDWARE.eDMA_0.reset_b"         , "HARDWARE.reset_b");
-	BindArray(EDMA_0::NUM_DMA_CHANNELS, "HARDWARE.eDMA_0.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 0);  // DMA channels  0 - 63
-	BindArray(EDMA_0::NUM_DMA_CHANNELS, "HARDWARE.eDMA_0.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 0);  // DMA channels  0 - 63
+	instrumenter->Bind("HARDWARE.eDMA_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.eDMA_0.dma_clk"         , "HARDWARE.SXBAR_CLK");
+	instrumenter->Bind("HARDWARE.eDMA_0.reset_b"         , "HARDWARE.reset_b");
+	instrumenter->BindArray(EDMA_0::NUM_DMA_CHANNELS, "HARDWARE.eDMA_0.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 0);  // DMA channels  0 - 63
+	instrumenter->BindArray(EDMA_0::NUM_DMA_CHANNELS, "HARDWARE.eDMA_0.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 0);  // DMA channels  0 - 63
 	
-	Bind("HARDWARE.eDMA_1.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.eDMA_1.dma_clk"         , "HARDWARE.SXBAR_CLK");
-	Bind("HARDWARE.eDMA_1.reset_b"         , "HARDWARE.reset_b");
-	BindArray(EDMA_1::NUM_DMA_CHANNELS, "HARDWARE.eDMA_1.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 64); // DMA channels 64 - 127
-	BindArray(EDMA_1::NUM_DMA_CHANNELS, "HARDWARE.eDMA_1.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 64); // DMA channels 64 - 127
+	instrumenter->Bind("HARDWARE.eDMA_1.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.eDMA_1.dma_clk"         , "HARDWARE.SXBAR_CLK");
+	instrumenter->Bind("HARDWARE.eDMA_1.reset_b"         , "HARDWARE.reset_b");
+	instrumenter->BindArray(EDMA_1::NUM_DMA_CHANNELS, "HARDWARE.eDMA_1.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 64); // DMA channels 64 - 127
+	instrumenter->BindArray(EDMA_1::NUM_DMA_CHANNELS, "HARDWARE.eDMA_1.dma_channel_ack", 0, "HARDWARE.DMA_CHANNEL_ACK", 64); // DMA channels 64 - 127
 	
-	Bind("HARDWARE.DMAMUX_0.reset_b", "HARDWARE.reset_b");
-	Bind("HARDWARE.DMAMUX_1.reset_b", "HARDWARE.reset_b");
-	Bind("HARDWARE.DMAMUX_2.reset_b", "HARDWARE.reset_b");
-	Bind("HARDWARE.DMAMUX_3.reset_b", "HARDWARE.reset_b");
-	Bind("HARDWARE.DMAMUX_4.reset_b", "HARDWARE.reset_b");
-	Bind("HARDWARE.DMAMUX_5.reset_b", "HARDWARE.reset_b");
-	Bind("HARDWARE.DMAMUX_6.reset_b", "HARDWARE.reset_b");
-	Bind("HARDWARE.DMAMUX_7.reset_b", "HARDWARE.reset_b");
-	Bind("HARDWARE.DMAMUX_8.reset_b", "HARDWARE.reset_b");
-	Bind("HARDWARE.DMAMUX_9.reset_b", "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DMAMUX_0.reset_b", "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DMAMUX_1.reset_b", "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DMAMUX_2.reset_b", "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DMAMUX_3.reset_b", "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DMAMUX_4.reset_b", "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DMAMUX_5.reset_b", "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DMAMUX_6.reset_b", "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DMAMUX_7.reset_b", "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DMAMUX_8.reset_b", "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DMAMUX_9.reset_b", "HARDWARE.reset_b");
 	
-	Bind("HARDWARE.DMAMUX_0.m_clk", "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.DMAMUX_1.m_clk", "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.DMAMUX_2.m_clk", "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.DMAMUX_3.m_clk", "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.DMAMUX_4.m_clk", "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.DMAMUX_5.m_clk", "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.DMAMUX_6.m_clk", "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.DMAMUX_7.m_clk", "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.DMAMUX_8.m_clk", "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.DMAMUX_9.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.DMAMUX_0.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.DMAMUX_1.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.DMAMUX_2.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.DMAMUX_3.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.DMAMUX_4.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.DMAMUX_5.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.DMAMUX_6.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.DMAMUX_7.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.DMAMUX_8.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.DMAMUX_9.m_clk", "HARDWARE.PBRIDGEA_CLK");
 	
-	Bind("HARDWARE.DSPI_0.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.DSPI_0.dspi_clk" , "HARDWARE.DSPI_CLK1");
-	Bind("HARDWARE.DSPI_0.reset_b"  , "HARDWARE.reset_b");
-	Bind("HARDWARE.DSPI_0.debug"    , "HARDWARE.debug");
-	Bind("HARDWARE.DSPI_0.HT"       , "HARDWARE.pull_down");
-	Bind("HARDWARE.DSPI_0.INT_TFUF" , "HARDWARE.DSPI_0_INT_TFUF");
-	Bind("HARDWARE.DSPI_0.INT_RFOF" , "HARDWARE.DSPI_0_INT_RFOF");
-	Bind("HARDWARE.DSPI_0.INT_TFIWF", "HARDWARE.DSPI_0_INT_TFIWF");
-	Bind("HARDWARE.DSPI_0.INT_DDIF" , "HARDWARE.DSPI_0_INT_DDIF");
-	Bind("HARDWARE.DSPI_0.INT_DPEF" , "HARDWARE.DSPI_0_INT_DPEF");
-	Bind("HARDWARE.DSPI_0.INT_SPITCF", "HARDWARE.DSPI_0_INT_SPITCF");
-	Bind("HARDWARE.DSPI_0.INT_DSITCF", "HARDWARE.DSPI_0_INT_DSITCF");
-	BindArray(DSPI_0::NUM_DSI_INPUTS, "HARDWARE.DSPI_0.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
-	BindArray(DSPI_0::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_0.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
-	Bind("HARDWARE.DSPI_0.DMA_DD"   , "HARDWARE.DSPI_0_DMA_DD");
-	Bind("HARDWARE.DSPI_0.DMA_ACK_DD", "HARDWARE.DSPI_0_DMA_ACK_DD");
+	instrumenter->Bind("HARDWARE.DSPI_0.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.DSPI_0.dspi_clk" , "HARDWARE.DSPI_CLK1");
+	instrumenter->Bind("HARDWARE.DSPI_0.reset_b"  , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DSPI_0.debug"    , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.DSPI_0.HT"       , "HARDWARE.pull_down");
+	instrumenter->Bind("HARDWARE.DSPI_0.INT_TFUF" , "HARDWARE.DSPI_0_INT_TFUF");
+	instrumenter->Bind("HARDWARE.DSPI_0.INT_RFOF" , "HARDWARE.DSPI_0_INT_RFOF");
+	instrumenter->Bind("HARDWARE.DSPI_0.INT_TFIWF", "HARDWARE.DSPI_0_INT_TFIWF");
+	instrumenter->Bind("HARDWARE.DSPI_0.INT_DDIF" , "HARDWARE.DSPI_0_INT_DDIF");
+	instrumenter->Bind("HARDWARE.DSPI_0.INT_DPEF" , "HARDWARE.DSPI_0_INT_DPEF");
+	instrumenter->Bind("HARDWARE.DSPI_0.INT_SPITCF", "HARDWARE.DSPI_0_INT_SPITCF");
+	instrumenter->Bind("HARDWARE.DSPI_0.INT_DSITCF", "HARDWARE.DSPI_0_INT_DSITCF");
+	instrumenter->BindArray(DSPI_0::NUM_DSI_INPUTS, "HARDWARE.DSPI_0.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
+	instrumenter->BindArray(DSPI_0::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_0.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
+	instrumenter->Bind("HARDWARE.DSPI_0.DMA_DD"   , "HARDWARE.DSPI_0_DMA_DD");
+	instrumenter->Bind("HARDWARE.DSPI_0.DMA_ACK_DD", "HARDWARE.DSPI_0_DMA_ACK_DD");
 	
-	Bind("HARDWARE.DSPI_1.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.DSPI_1.dspi_clk" , "HARDWARE.DSPI_CLK1");
-	Bind("HARDWARE.DSPI_1.reset_b"  , "HARDWARE.reset_b");
-	Bind("HARDWARE.DSPI_1.debug"    , "HARDWARE.debug");
-	Bind("HARDWARE.DSPI_1.HT"       , "HARDWARE.pull_down");
-	Bind("HARDWARE.DSPI_1.INT_TFUF" , "HARDWARE.DSPI_1_INT_TFUF");
-	Bind("HARDWARE.DSPI_1.INT_RFOF" , "HARDWARE.DSPI_1_INT_RFOF");
-	Bind("HARDWARE.DSPI_1.INT_TFIWF", "HARDWARE.DSPI_1_INT_TFIWF");
-	Bind("HARDWARE.DSPI_1.INT_DDIF" , "HARDWARE.DSPI_1_INT_DDIF");
-	Bind("HARDWARE.DSPI_1.INT_DPEF" , "HARDWARE.DSPI_1_INT_DPEF");
-	Bind("HARDWARE.DSPI_1.INT_SPITCF","HARDWARE.DSPI_1_INT_SPITCF");
-	Bind("HARDWARE.DSPI_1.INT_DSITCF","HARDWARE.DSPI_1_INT_DSITCF");
-	BindArray(DSPI_1::NUM_DSI_INPUTS, "HARDWARE.DSPI_1.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
-	BindArray(DSPI_1::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_1.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
-	Bind("HARDWARE.DSPI_1.DMA_DD"   , "HARDWARE.DSPI_1_DMA_DD");
-	Bind("HARDWARE.DSPI_1.DMA_ACK_DD", "HARDWARE.DSPI_1_DMA_ACK_DD");
+	instrumenter->Bind("HARDWARE.DSPI_1.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.DSPI_1.dspi_clk" , "HARDWARE.DSPI_CLK1");
+	instrumenter->Bind("HARDWARE.DSPI_1.reset_b"  , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DSPI_1.debug"    , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.DSPI_1.HT"       , "HARDWARE.pull_down");
+	instrumenter->Bind("HARDWARE.DSPI_1.INT_TFUF" , "HARDWARE.DSPI_1_INT_TFUF");
+	instrumenter->Bind("HARDWARE.DSPI_1.INT_RFOF" , "HARDWARE.DSPI_1_INT_RFOF");
+	instrumenter->Bind("HARDWARE.DSPI_1.INT_TFIWF", "HARDWARE.DSPI_1_INT_TFIWF");
+	instrumenter->Bind("HARDWARE.DSPI_1.INT_DDIF" , "HARDWARE.DSPI_1_INT_DDIF");
+	instrumenter->Bind("HARDWARE.DSPI_1.INT_DPEF" , "HARDWARE.DSPI_1_INT_DPEF");
+	instrumenter->Bind("HARDWARE.DSPI_1.INT_SPITCF","HARDWARE.DSPI_1_INT_SPITCF");
+	instrumenter->Bind("HARDWARE.DSPI_1.INT_DSITCF","HARDWARE.DSPI_1_INT_DSITCF");
+	instrumenter->BindArray(DSPI_1::NUM_DSI_INPUTS, "HARDWARE.DSPI_1.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
+	instrumenter->BindArray(DSPI_1::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_1.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
+	instrumenter->Bind("HARDWARE.DSPI_1.DMA_DD"   , "HARDWARE.DSPI_1_DMA_DD");
+	instrumenter->Bind("HARDWARE.DSPI_1.DMA_ACK_DD", "HARDWARE.DSPI_1_DMA_ACK_DD");
 	
-	Bind("HARDWARE.DSPI_2.m_clk"    , "HARDWARE.PBRIDGEB_CLK");
-	Bind("HARDWARE.DSPI_2.dspi_clk" , "HARDWARE.DSPI_CLK1");
-	Bind("HARDWARE.DSPI_2.reset_b"  , "HARDWARE.reset_b");
-	Bind("HARDWARE.DSPI_2.debug"    , "HARDWARE.debug");
-	Bind("HARDWARE.DSPI_2.HT"       , "HARDWARE.pull_down");
-	Bind("HARDWARE.DSPI_2.INT_TFUF" , "HARDWARE.DSPI_2_INT_TFUF");
-	Bind("HARDWARE.DSPI_2.INT_RFOF" , "HARDWARE.DSPI_2_INT_RFOF");
-	Bind("HARDWARE.DSPI_2.INT_TFIWF", "HARDWARE.DSPI_2_INT_TFIWF");
-	Bind("HARDWARE.DSPI_2.INT_DDIF" , "HARDWARE.DSPI_2_INT_DDIF");
-	Bind("HARDWARE.DSPI_2.INT_DPEF" , "HARDWARE.DSPI_2_INT_DPEF");
-	Bind("HARDWARE.DSPI_2.INT_SPITCF", "HARDWARE.DSPI_2_INT_SPITCF");
-	Bind("HARDWARE.DSPI_2.INT_DSITCF", "HARDWARE.DSPI_2_INT_DSITCF");
-	BindArray(DSPI_2::NUM_DSI_INPUTS, "HARDWARE.DSPI_2.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
-	BindArray(DSPI_2::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_2.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
-	Bind("HARDWARE.DSPI_2.DMA_DD"   , "HARDWARE.DSPI_2_DMA_DD");
-	Bind("HARDWARE.DSPI_2.DMA_ACK_DD", "HARDWARE.DSPI_2_DMA_ACK_DD");
+	instrumenter->Bind("HARDWARE.DSPI_2.m_clk"    , "HARDWARE.PBRIDGEB_CLK");
+	instrumenter->Bind("HARDWARE.DSPI_2.dspi_clk" , "HARDWARE.DSPI_CLK1");
+	instrumenter->Bind("HARDWARE.DSPI_2.reset_b"  , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DSPI_2.debug"    , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.DSPI_2.HT"       , "HARDWARE.pull_down");
+	instrumenter->Bind("HARDWARE.DSPI_2.INT_TFUF" , "HARDWARE.DSPI_2_INT_TFUF");
+	instrumenter->Bind("HARDWARE.DSPI_2.INT_RFOF" , "HARDWARE.DSPI_2_INT_RFOF");
+	instrumenter->Bind("HARDWARE.DSPI_2.INT_TFIWF", "HARDWARE.DSPI_2_INT_TFIWF");
+	instrumenter->Bind("HARDWARE.DSPI_2.INT_DDIF" , "HARDWARE.DSPI_2_INT_DDIF");
+	instrumenter->Bind("HARDWARE.DSPI_2.INT_DPEF" , "HARDWARE.DSPI_2_INT_DPEF");
+	instrumenter->Bind("HARDWARE.DSPI_2.INT_SPITCF", "HARDWARE.DSPI_2_INT_SPITCF");
+	instrumenter->Bind("HARDWARE.DSPI_2.INT_DSITCF", "HARDWARE.DSPI_2_INT_DSITCF");
+	instrumenter->BindArray(DSPI_2::NUM_DSI_INPUTS, "HARDWARE.DSPI_2.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
+	instrumenter->BindArray(DSPI_2::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_2.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
+	instrumenter->Bind("HARDWARE.DSPI_2.DMA_DD"   , "HARDWARE.DSPI_2_DMA_DD");
+	instrumenter->Bind("HARDWARE.DSPI_2.DMA_ACK_DD", "HARDWARE.DSPI_2_DMA_ACK_DD");
 	
-	Bind("HARDWARE.DSPI_3.m_clk"    , "HARDWARE.PBRIDGEB_CLK");
-	Bind("HARDWARE.DSPI_3.dspi_clk" , "HARDWARE.DSPI_CLK1");
-	Bind("HARDWARE.DSPI_3.reset_b"  , "HARDWARE.reset_b");
-	Bind("HARDWARE.DSPI_3.debug"    , "HARDWARE.debug");
-	Bind("HARDWARE.DSPI_3.HT"       , "HARDWARE.pull_down");
-	Bind("HARDWARE.DSPI_3.INT_TFUF" , "HARDWARE.DSPI_3_INT_TFUF");
-	Bind("HARDWARE.DSPI_3.INT_RFOF" , "HARDWARE.DSPI_3_INT_RFOF");
-	Bind("HARDWARE.DSPI_3.INT_TFIWF", "HARDWARE.DSPI_3_INT_TFIWF");
-	Bind("HARDWARE.DSPI_3.INT_DDIF" , "HARDWARE.DSPI_3_INT_DDIF");
-	Bind("HARDWARE.DSPI_3.INT_DPEF" , "HARDWARE.DSPI_3_INT_DPEF");
-	Bind("HARDWARE.DSPI_3.INT_SPITCF", "HARDWARE.DSPI_3_INT_SPITCF");
-	Bind("HARDWARE.DSPI_3.INT_DSITCF", "HARDWARE.DSPI_3_INT_DSITCF");
-	BindArray(DSPI_3::NUM_DSI_INPUTS, "HARDWARE.DSPI_3.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
-	BindArray(DSPI_3::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_3.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
-	Bind("HARDWARE.DSPI_3.DMA_DD"   , "HARDWARE.DSPI_3_DMA_DD");
-	Bind("HARDWARE.DSPI_3.DMA_ACK_DD", "HARDWARE.DSPI_3_DMA_ACK_DD");
+	instrumenter->Bind("HARDWARE.DSPI_3.m_clk"    , "HARDWARE.PBRIDGEB_CLK");
+	instrumenter->Bind("HARDWARE.DSPI_3.dspi_clk" , "HARDWARE.DSPI_CLK1");
+	instrumenter->Bind("HARDWARE.DSPI_3.reset_b"  , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DSPI_3.debug"    , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.DSPI_3.HT"       , "HARDWARE.pull_down");
+	instrumenter->Bind("HARDWARE.DSPI_3.INT_TFUF" , "HARDWARE.DSPI_3_INT_TFUF");
+	instrumenter->Bind("HARDWARE.DSPI_3.INT_RFOF" , "HARDWARE.DSPI_3_INT_RFOF");
+	instrumenter->Bind("HARDWARE.DSPI_3.INT_TFIWF", "HARDWARE.DSPI_3_INT_TFIWF");
+	instrumenter->Bind("HARDWARE.DSPI_3.INT_DDIF" , "HARDWARE.DSPI_3_INT_DDIF");
+	instrumenter->Bind("HARDWARE.DSPI_3.INT_DPEF" , "HARDWARE.DSPI_3_INT_DPEF");
+	instrumenter->Bind("HARDWARE.DSPI_3.INT_SPITCF", "HARDWARE.DSPI_3_INT_SPITCF");
+	instrumenter->Bind("HARDWARE.DSPI_3.INT_DSITCF", "HARDWARE.DSPI_3_INT_DSITCF");
+	instrumenter->BindArray(DSPI_3::NUM_DSI_INPUTS, "HARDWARE.DSPI_3.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
+	instrumenter->BindArray(DSPI_3::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_3.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
+	instrumenter->Bind("HARDWARE.DSPI_3.DMA_DD"   , "HARDWARE.DSPI_3_DMA_DD");
+	instrumenter->Bind("HARDWARE.DSPI_3.DMA_ACK_DD", "HARDWARE.DSPI_3_DMA_ACK_DD");
 	
-	Bind("HARDWARE.DSPI_4.m_clk"     , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.DSPI_4.dspi_clk"  , "HARDWARE.DSPI_CLK0");
-	Bind("HARDWARE.DSPI_4.reset_b"   , "HARDWARE.reset_b");
-	Bind("HARDWARE.DSPI_4.debug"     , "HARDWARE.debug");
-	Bind("HARDWARE.DSPI_4.HT"        , "HARDWARE.pull_down");
-	Bind("HARDWARE.DSPI_4.INT_TFUF"  , "HARDWARE.DSPI_4_INT_TFUF");
-	Bind("HARDWARE.DSPI_4.INT_RFOF"  , "HARDWARE.DSPI_4_INT_RFOF");
-	Bind("HARDWARE.DSPI_4.INT_TFIWF" , "HARDWARE.DSPI_4_INT_TFIWF");
-	Bind("HARDWARE.DSPI_4.INT_SPITCF", "HARDWARE.DSPI_4_INT_SPITCF");
-	Bind("HARDWARE.DSPI_4.INT_DSITCF", "HARDWARE.DSPI_4_INT_DSITCF");
-	Bind("HARDWARE.DSPI_4.INT_CMDTCF", "HARDWARE.DSPI_4_INT_CMDTCF");
-	Bind("HARDWARE.DSPI_4.INT_CMDFFF", "HARDWARE.DSPI_4_INT_CMDFFF");
-	Bind("HARDWARE.DSPI_4.INT_SPEF"  , "HARDWARE.DSPI_4_INT_SPEF");
-	Bind("HARDWARE.DSPI_4.INT_DPEF"  , "HARDWARE.DSPI_4_INT_DPEF");
-	BindArray(DSPI_4::NUM_DSI_INPUTS, "HARDWARE.DSPI_4.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
-	BindArray(DSPI_4::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_4.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
-	Bind("HARDWARE.DSPI_4.DMA_DD"   , "HARDWARE.DSPI_4_DMA_DD");
-	Bind("HARDWARE.DSPI_4.DMA_ACK_DD", "HARDWARE.DSPI_4_DMA_ACK_DD");
+	instrumenter->Bind("HARDWARE.DSPI_4.m_clk"     , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.DSPI_4.dspi_clk"  , "HARDWARE.DSPI_CLK0");
+	instrumenter->Bind("HARDWARE.DSPI_4.reset_b"   , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DSPI_4.debug"     , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.DSPI_4.HT"        , "HARDWARE.pull_down");
+	instrumenter->Bind("HARDWARE.DSPI_4.INT_TFUF"  , "HARDWARE.DSPI_4_INT_TFUF");
+	instrumenter->Bind("HARDWARE.DSPI_4.INT_RFOF"  , "HARDWARE.DSPI_4_INT_RFOF");
+	instrumenter->Bind("HARDWARE.DSPI_4.INT_TFIWF" , "HARDWARE.DSPI_4_INT_TFIWF");
+	instrumenter->Bind("HARDWARE.DSPI_4.INT_SPITCF", "HARDWARE.DSPI_4_INT_SPITCF");
+	instrumenter->Bind("HARDWARE.DSPI_4.INT_DSITCF", "HARDWARE.DSPI_4_INT_DSITCF");
+	instrumenter->Bind("HARDWARE.DSPI_4.INT_CMDTCF", "HARDWARE.DSPI_4_INT_CMDTCF");
+	instrumenter->Bind("HARDWARE.DSPI_4.INT_CMDFFF", "HARDWARE.DSPI_4_INT_CMDFFF");
+	instrumenter->Bind("HARDWARE.DSPI_4.INT_SPEF"  , "HARDWARE.DSPI_4_INT_SPEF");
+	instrumenter->Bind("HARDWARE.DSPI_4.INT_DPEF"  , "HARDWARE.DSPI_4_INT_DPEF");
+	instrumenter->BindArray(DSPI_4::NUM_DSI_INPUTS, "HARDWARE.DSPI_4.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
+	instrumenter->BindArray(DSPI_4::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_4.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
+	instrumenter->Bind("HARDWARE.DSPI_4.DMA_DD"   , "HARDWARE.DSPI_4_DMA_DD");
+	instrumenter->Bind("HARDWARE.DSPI_4.DMA_ACK_DD", "HARDWARE.DSPI_4_DMA_ACK_DD");
 	
-	Bind("HARDWARE.DSPI_5.m_clk"     , "HARDWARE.PBRIDGEB_CLK");
-	Bind("HARDWARE.DSPI_5.dspi_clk"  , "HARDWARE.DSPI_CLK0");
-	Bind("HARDWARE.DSPI_5.reset_b"   , "HARDWARE.reset_b");
-	Bind("HARDWARE.DSPI_5.debug"     , "HARDWARE.debug");
-	Bind("HARDWARE.DSPI_5.HT"        , "HARDWARE.pull_down");
-	Bind("HARDWARE.DSPI_5.INT_TFUF"  , "HARDWARE.DSPI_5_INT_TFUF");
-	Bind("HARDWARE.DSPI_5.INT_RFOF"  , "HARDWARE.DSPI_5_INT_RFOF");
-	Bind("HARDWARE.DSPI_5.INT_TFIWF" , "HARDWARE.DSPI_5_INT_TFIWF");
-	Bind("HARDWARE.DSPI_5.INT_SPITCF", "HARDWARE.DSPI_5_INT_SPITCF");
-	Bind("HARDWARE.DSPI_5.INT_DSITCF", "HARDWARE.DSPI_5_INT_DSITCF");
-	Bind("HARDWARE.DSPI_5.INT_CMDTCF", "HARDWARE.DSPI_5_INT_CMDTCF");
-	Bind("HARDWARE.DSPI_5.INT_CMDFFF", "HARDWARE.DSPI_5_INT_CMDFFF");
-	Bind("HARDWARE.DSPI_5.INT_SPEF"  , "HARDWARE.DSPI_5_INT_SPEF");
-	Bind("HARDWARE.DSPI_5.INT_DPEF"  , "HARDWARE.DSPI_5_INT_DPEF");
-	BindArray(DSPI_5::NUM_DSI_INPUTS, "HARDWARE.DSPI_5.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
-	BindArray(DSPI_5::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_5.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
-	Bind("HARDWARE.DSPI_5.DMA_DD"   , "HARDWARE.DSPI_5_DMA_DD");
-	Bind("HARDWARE.DSPI_5.DMA_ACK_DD", "HARDWARE.DSPI_5_DMA_ACK_DD");
+	instrumenter->Bind("HARDWARE.DSPI_5.m_clk"     , "HARDWARE.PBRIDGEB_CLK");
+	instrumenter->Bind("HARDWARE.DSPI_5.dspi_clk"  , "HARDWARE.DSPI_CLK0");
+	instrumenter->Bind("HARDWARE.DSPI_5.reset_b"   , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DSPI_5.debug"     , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.DSPI_5.HT"        , "HARDWARE.pull_down");
+	instrumenter->Bind("HARDWARE.DSPI_5.INT_TFUF"  , "HARDWARE.DSPI_5_INT_TFUF");
+	instrumenter->Bind("HARDWARE.DSPI_5.INT_RFOF"  , "HARDWARE.DSPI_5_INT_RFOF");
+	instrumenter->Bind("HARDWARE.DSPI_5.INT_TFIWF" , "HARDWARE.DSPI_5_INT_TFIWF");
+	instrumenter->Bind("HARDWARE.DSPI_5.INT_SPITCF", "HARDWARE.DSPI_5_INT_SPITCF");
+	instrumenter->Bind("HARDWARE.DSPI_5.INT_DSITCF", "HARDWARE.DSPI_5_INT_DSITCF");
+	instrumenter->Bind("HARDWARE.DSPI_5.INT_CMDTCF", "HARDWARE.DSPI_5_INT_CMDTCF");
+	instrumenter->Bind("HARDWARE.DSPI_5.INT_CMDFFF", "HARDWARE.DSPI_5_INT_CMDFFF");
+	instrumenter->Bind("HARDWARE.DSPI_5.INT_SPEF"  , "HARDWARE.DSPI_5_INT_SPEF");
+	instrumenter->Bind("HARDWARE.DSPI_5.INT_DPEF"  , "HARDWARE.DSPI_5_INT_DPEF");
+	instrumenter->BindArray(DSPI_5::NUM_DSI_INPUTS, "HARDWARE.DSPI_5.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
+	instrumenter->BindArray(DSPI_5::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_5.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
+	instrumenter->Bind("HARDWARE.DSPI_5.DMA_DD"   , "HARDWARE.DSPI_5_DMA_DD");
+	instrumenter->Bind("HARDWARE.DSPI_5.DMA_ACK_DD", "HARDWARE.DSPI_5_DMA_ACK_DD");
 	
-	Bind("HARDWARE.DSPI_6.m_clk"     , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.DSPI_6.dspi_clk"  , "HARDWARE.DSPI_CLK0");
-	Bind("HARDWARE.DSPI_6.reset_b"   , "HARDWARE.reset_b");
-	Bind("HARDWARE.DSPI_6.debug"     , "HARDWARE.debug");
-	Bind("HARDWARE.DSPI_6.HT"        , "HARDWARE.pull_down");
-	Bind("HARDWARE.DSPI_6.INT_TFUF"  , "HARDWARE.DSPI_6_INT_TFUF");
-	Bind("HARDWARE.DSPI_6.INT_RFOF"  , "HARDWARE.DSPI_6_INT_RFOF");
-	Bind("HARDWARE.DSPI_6.INT_TFIWF" , "HARDWARE.DSPI_6_INT_TFIWF");
-	Bind("HARDWARE.DSPI_6.INT_SPITCF", "HARDWARE.DSPI_6_INT_SPITCF");
-	Bind("HARDWARE.DSPI_6.INT_DSITCF", "HARDWARE.DSPI_6_INT_DSITCF");
-	Bind("HARDWARE.DSPI_6.INT_CMDTCF", "HARDWARE.DSPI_6_INT_CMDTCF");
-	Bind("HARDWARE.DSPI_6.INT_CMDFFF", "HARDWARE.DSPI_6_INT_CMDFFF");
-	Bind("HARDWARE.DSPI_6.INT_SPEF"  , "HARDWARE.DSPI_6_INT_SPEF");
-	Bind("HARDWARE.DSPI_6.INT_DPEF"  , "HARDWARE.DSPI_6_INT_DPEF");
-	BindArray(DSPI_6::NUM_DSI_INPUTS, "HARDWARE.DSPI_6.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
-	BindArray(DSPI_6::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_6.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
-	Bind("HARDWARE.DSPI_6.DMA_DD"   , "HARDWARE.DSPI_6_DMA_DD");
-	Bind("HARDWARE.DSPI_6.DMA_ACK_DD", "HARDWARE.DSPI_6_DMA_ACK_DD");
+	instrumenter->Bind("HARDWARE.DSPI_6.m_clk"     , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.DSPI_6.dspi_clk"  , "HARDWARE.DSPI_CLK0");
+	instrumenter->Bind("HARDWARE.DSPI_6.reset_b"   , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DSPI_6.debug"     , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.DSPI_6.HT"        , "HARDWARE.pull_down");
+	instrumenter->Bind("HARDWARE.DSPI_6.INT_TFUF"  , "HARDWARE.DSPI_6_INT_TFUF");
+	instrumenter->Bind("HARDWARE.DSPI_6.INT_RFOF"  , "HARDWARE.DSPI_6_INT_RFOF");
+	instrumenter->Bind("HARDWARE.DSPI_6.INT_TFIWF" , "HARDWARE.DSPI_6_INT_TFIWF");
+	instrumenter->Bind("HARDWARE.DSPI_6.INT_SPITCF", "HARDWARE.DSPI_6_INT_SPITCF");
+	instrumenter->Bind("HARDWARE.DSPI_6.INT_DSITCF", "HARDWARE.DSPI_6_INT_DSITCF");
+	instrumenter->Bind("HARDWARE.DSPI_6.INT_CMDTCF", "HARDWARE.DSPI_6_INT_CMDTCF");
+	instrumenter->Bind("HARDWARE.DSPI_6.INT_CMDFFF", "HARDWARE.DSPI_6_INT_CMDFFF");
+	instrumenter->Bind("HARDWARE.DSPI_6.INT_SPEF"  , "HARDWARE.DSPI_6_INT_SPEF");
+	instrumenter->Bind("HARDWARE.DSPI_6.INT_DPEF"  , "HARDWARE.DSPI_6_INT_DPEF");
+	instrumenter->BindArray(DSPI_6::NUM_DSI_INPUTS, "HARDWARE.DSPI_6.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
+	instrumenter->BindArray(DSPI_6::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_6.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
+	instrumenter->Bind("HARDWARE.DSPI_6.DMA_DD"   , "HARDWARE.DSPI_6_DMA_DD");
+	instrumenter->Bind("HARDWARE.DSPI_6.DMA_ACK_DD", "HARDWARE.DSPI_6_DMA_ACK_DD");
 	
-	Bind("HARDWARE.DSPI_12.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.DSPI_12.dspi_clk" , "HARDWARE.DSPI_CLK1");
-	Bind("HARDWARE.DSPI_12.reset_b"  , "HARDWARE.reset_b");
-	Bind("HARDWARE.DSPI_12.debug"    , "HARDWARE.debug");
-	Bind("HARDWARE.DSPI_12.HT"       , "HARDWARE.pull_down");
-	Bind("HARDWARE.DSPI_12.INT_TFUF" , "HARDWARE.DSPI_12_INT_TFUF");
-	Bind("HARDWARE.DSPI_12.INT_RFOF" , "HARDWARE.DSPI_12_INT_RFOF");
-	Bind("HARDWARE.DSPI_12.INT_TFIWF", "HARDWARE.DSPI_12_INT_TFIWF");
-	Bind("HARDWARE.DSPI_12.INT_DDIF" , "HARDWARE.DSPI_12_INT_DDIF");
-	Bind("HARDWARE.DSPI_12.INT_DPEF" , "HARDWARE.DSPI_12_INT_DPEF");
-	Bind("HARDWARE.DSPI_12.INT_SPITCF", "HARDWARE.DSPI_12_INT_SPITCF");
-	Bind("HARDWARE.DSPI_12.INT_DSITCF", "HARDWARE.DSPI_12_INT_DSITCF");
-	BindArray(DSPI_12::NUM_DSI_INPUTS, "HARDWARE.DSPI_12.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
-	BindArray(DSPI_12::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_12.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
-	Bind("HARDWARE.DSPI_12.DMA_DD"   , "HARDWARE.DSPI_12_DMA_DD");
-	Bind("HARDWARE.DSPI_12.DMA_ACK_DD", "HARDWARE.DSPI_12_DMA_ACK_DD");
+	instrumenter->Bind("HARDWARE.DSPI_12.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.DSPI_12.dspi_clk" , "HARDWARE.DSPI_CLK1");
+	instrumenter->Bind("HARDWARE.DSPI_12.reset_b"  , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.DSPI_12.debug"    , "HARDWARE.debug");
+	instrumenter->Bind("HARDWARE.DSPI_12.HT"       , "HARDWARE.pull_down");
+	instrumenter->Bind("HARDWARE.DSPI_12.INT_TFUF" , "HARDWARE.DSPI_12_INT_TFUF");
+	instrumenter->Bind("HARDWARE.DSPI_12.INT_RFOF" , "HARDWARE.DSPI_12_INT_RFOF");
+	instrumenter->Bind("HARDWARE.DSPI_12.INT_TFIWF", "HARDWARE.DSPI_12_INT_TFIWF");
+	instrumenter->Bind("HARDWARE.DSPI_12.INT_DDIF" , "HARDWARE.DSPI_12_INT_DDIF");
+	instrumenter->Bind("HARDWARE.DSPI_12.INT_DPEF" , "HARDWARE.DSPI_12_INT_DPEF");
+	instrumenter->Bind("HARDWARE.DSPI_12.INT_SPITCF", "HARDWARE.DSPI_12_INT_SPITCF");
+	instrumenter->Bind("HARDWARE.DSPI_12.INT_DSITCF", "HARDWARE.DSPI_12_INT_DSITCF");
+	instrumenter->BindArray(DSPI_12::NUM_DSI_INPUTS, "HARDWARE.DSPI_12.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
+	instrumenter->BindArray(DSPI_12::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_12.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
+	instrumenter->Bind("HARDWARE.DSPI_12.DMA_DD"   , "HARDWARE.DSPI_12_DMA_DD");
+	instrumenter->Bind("HARDWARE.DSPI_12.DMA_ACK_DD", "HARDWARE.DSPI_12_DMA_ACK_DD");
 	
-	BindArray(EDMA_0::NUM_DMA_CHANNELS, "HARDWARE.eDMA_0.err_irq", 0, "HARDWARE.DMA_ERR_IRQ", 0);
-	BindArray(EDMA_1::NUM_DMA_CHANNELS, "HARDWARE.eDMA_1.err_irq", 0, "HARDWARE.DMA_ERR_IRQ", 64);
-	BindArray(NUM_DMA_CHANNELS, "HARDWARE.DMA_ERR_IRQ_COMBINATOR.in", "HARDWARE.DMA_ERR_IRQ");
+	instrumenter->BindArray(EDMA_0::NUM_DMA_CHANNELS, "HARDWARE.eDMA_0.err_irq", 0, "HARDWARE.DMA_ERR_IRQ", 0);
+	instrumenter->BindArray(EDMA_1::NUM_DMA_CHANNELS, "HARDWARE.eDMA_1.err_irq", 0, "HARDWARE.DMA_ERR_IRQ", 64);
+	instrumenter->BindArray(NUM_DMA_CHANNELS, "HARDWARE.DMA_ERR_IRQ_COMBINATOR.in", "HARDWARE.DMA_ERR_IRQ");
 
-	Bind("HARDWARE.DSPI0_0.in_0" , "HARDWARE.DSPI_0_INT_TFUF");
-	Bind("HARDWARE.DSPI0_0.in_1" , "HARDWARE.DSPI_0_INT_RFOF");
-	Bind("HARDWARE.DSPI0_0.in_2" , "HARDWARE.DSPI_0_INT_TFIWF");
-	Bind("HARDWARE.DSPI1_0.in_0" , "HARDWARE.DSPI_1_INT_TFUF");
-	Bind("HARDWARE.DSPI1_0.in_1" , "HARDWARE.DSPI_1_INT_RFOF");
-	Bind("HARDWARE.DSPI1_0.in_2" , "HARDWARE.DSPI_1_INT_TFIWF");
-	Bind("HARDWARE.DSPI2_0.in_0" , "HARDWARE.DSPI_2_INT_TFUF");
-	Bind("HARDWARE.DSPI2_0.in_1" , "HARDWARE.DSPI_2_INT_RFOF");
-	Bind("HARDWARE.DSPI2_0.in_2" , "HARDWARE.DSPI_2_INT_TFIWF");
-	Bind("HARDWARE.DSPI3_0.in_0" , "HARDWARE.DSPI_3_INT_TFUF");
-	Bind("HARDWARE.DSPI3_0.in_1" , "HARDWARE.DSPI_3_INT_RFOF");
-	Bind("HARDWARE.DSPI3_0.in_2" , "HARDWARE.DSPI_3_INT_TFIWF");
-	Bind("HARDWARE.DSPI4_0.in_0" , "HARDWARE.DSPI_4_INT_TFUF");
-	Bind("HARDWARE.DSPI4_0.in_1" , "HARDWARE.DSPI_4_INT_RFOF");
-	Bind("HARDWARE.DSPI4_0.in_2" , "HARDWARE.DSPI_4_INT_TFIWF");
-	Bind("HARDWARE.DSPI4_5.in_0" , "HARDWARE.DSPI_4_INT_SPITCF");
-	Bind("HARDWARE.DSPI4_5.in_1" , "HARDWARE.DSPI_4_INT_CMDTCF");
-	Bind("HARDWARE.DSPI4_6.in_0" , "HARDWARE.DSPI_4_INT_DSITCF");
-	Bind("HARDWARE.DSPI4_6.in_1" , "HARDWARE.DSPI_4_INT_CMDFFF");
-	Bind("HARDWARE.DSPI4_7.in_0" , "HARDWARE.DSPI_4_INT_SPEF");
-	Bind("HARDWARE.DSPI4_7.in_1" , "HARDWARE.DSPI_4_INT_DPEF");
-	Bind("HARDWARE.DSPI5_0.in_0" , "HARDWARE.DSPI_5_INT_TFUF");
-	Bind("HARDWARE.DSPI5_0.in_1" , "HARDWARE.DSPI_5_INT_RFOF");
-	Bind("HARDWARE.DSPI5_0.in_2" , "HARDWARE.DSPI_5_INT_TFIWF");
-	Bind("HARDWARE.DSPI5_5.in_0" , "HARDWARE.DSPI_5_INT_SPITCF");
-	Bind("HARDWARE.DSPI5_5.in_1" , "HARDWARE.DSPI_5_INT_CMDTCF");
-	Bind("HARDWARE.DSPI5_6.in_0" , "HARDWARE.DSPI_5_INT_DSITCF");
-	Bind("HARDWARE.DSPI5_6.in_1" , "HARDWARE.DSPI_5_INT_CMDFFF");
-	Bind("HARDWARE.DSPI5_7.in_0" , "HARDWARE.DSPI_5_INT_SPEF");
-	Bind("HARDWARE.DSPI5_7.in_1" , "HARDWARE.DSPI_5_INT_DPEF");
-	Bind("HARDWARE.DSPI6_0.in_0" , "HARDWARE.DSPI_6_INT_TFUF");
-	Bind("HARDWARE.DSPI6_0.in_1" , "HARDWARE.DSPI_6_INT_RFOF");
-	Bind("HARDWARE.DSPI6_0.in_2" , "HARDWARE.DSPI_6_INT_TFIWF");
-	Bind("HARDWARE.DSPI6_5.in_0" , "HARDWARE.DSPI_6_INT_SPITCF");
-	Bind("HARDWARE.DSPI6_5.in_1" , "HARDWARE.DSPI_6_INT_CMDTCF");
-	Bind("HARDWARE.DSPI6_6.in_0" , "HARDWARE.DSPI_6_INT_DSITCF");
-	Bind("HARDWARE.DSPI6_6.in_1" , "HARDWARE.DSPI_6_INT_CMDFFF");
-	Bind("HARDWARE.DSPI6_7.in_0" , "HARDWARE.DSPI_6_INT_SPEF");
-	Bind("HARDWARE.DSPI6_7.in_1" , "HARDWARE.DSPI_6_INT_DPEF");
-	Bind("HARDWARE.DSPI12_0.in_0", "HARDWARE.DSPI_12_INT_TFUF");
-	Bind("HARDWARE.DSPI12_0.in_1", "HARDWARE.DSPI_12_INT_RFOF");
-	Bind("HARDWARE.DSPI12_0.in_2", "HARDWARE.DSPI_12_INT_TFIWF");
+	instrumenter->Bind("HARDWARE.DSPI0_0.in_0" , "HARDWARE.DSPI_0_INT_TFUF");
+	instrumenter->Bind("HARDWARE.DSPI0_0.in_1" , "HARDWARE.DSPI_0_INT_RFOF");
+	instrumenter->Bind("HARDWARE.DSPI0_0.in_2" , "HARDWARE.DSPI_0_INT_TFIWF");
+	instrumenter->Bind("HARDWARE.DSPI1_0.in_0" , "HARDWARE.DSPI_1_INT_TFUF");
+	instrumenter->Bind("HARDWARE.DSPI1_0.in_1" , "HARDWARE.DSPI_1_INT_RFOF");
+	instrumenter->Bind("HARDWARE.DSPI1_0.in_2" , "HARDWARE.DSPI_1_INT_TFIWF");
+	instrumenter->Bind("HARDWARE.DSPI2_0.in_0" , "HARDWARE.DSPI_2_INT_TFUF");
+	instrumenter->Bind("HARDWARE.DSPI2_0.in_1" , "HARDWARE.DSPI_2_INT_RFOF");
+	instrumenter->Bind("HARDWARE.DSPI2_0.in_2" , "HARDWARE.DSPI_2_INT_TFIWF");
+	instrumenter->Bind("HARDWARE.DSPI3_0.in_0" , "HARDWARE.DSPI_3_INT_TFUF");
+	instrumenter->Bind("HARDWARE.DSPI3_0.in_1" , "HARDWARE.DSPI_3_INT_RFOF");
+	instrumenter->Bind("HARDWARE.DSPI3_0.in_2" , "HARDWARE.DSPI_3_INT_TFIWF");
+	instrumenter->Bind("HARDWARE.DSPI4_0.in_0" , "HARDWARE.DSPI_4_INT_TFUF");
+	instrumenter->Bind("HARDWARE.DSPI4_0.in_1" , "HARDWARE.DSPI_4_INT_RFOF");
+	instrumenter->Bind("HARDWARE.DSPI4_0.in_2" , "HARDWARE.DSPI_4_INT_TFIWF");
+	instrumenter->Bind("HARDWARE.DSPI4_5.in_0" , "HARDWARE.DSPI_4_INT_SPITCF");
+	instrumenter->Bind("HARDWARE.DSPI4_5.in_1" , "HARDWARE.DSPI_4_INT_CMDTCF");
+	instrumenter->Bind("HARDWARE.DSPI4_6.in_0" , "HARDWARE.DSPI_4_INT_DSITCF");
+	instrumenter->Bind("HARDWARE.DSPI4_6.in_1" , "HARDWARE.DSPI_4_INT_CMDFFF");
+	instrumenter->Bind("HARDWARE.DSPI4_7.in_0" , "HARDWARE.DSPI_4_INT_SPEF");
+	instrumenter->Bind("HARDWARE.DSPI4_7.in_1" , "HARDWARE.DSPI_4_INT_DPEF");
+	instrumenter->Bind("HARDWARE.DSPI5_0.in_0" , "HARDWARE.DSPI_5_INT_TFUF");
+	instrumenter->Bind("HARDWARE.DSPI5_0.in_1" , "HARDWARE.DSPI_5_INT_RFOF");
+	instrumenter->Bind("HARDWARE.DSPI5_0.in_2" , "HARDWARE.DSPI_5_INT_TFIWF");
+	instrumenter->Bind("HARDWARE.DSPI5_5.in_0" , "HARDWARE.DSPI_5_INT_SPITCF");
+	instrumenter->Bind("HARDWARE.DSPI5_5.in_1" , "HARDWARE.DSPI_5_INT_CMDTCF");
+	instrumenter->Bind("HARDWARE.DSPI5_6.in_0" , "HARDWARE.DSPI_5_INT_DSITCF");
+	instrumenter->Bind("HARDWARE.DSPI5_6.in_1" , "HARDWARE.DSPI_5_INT_CMDFFF");
+	instrumenter->Bind("HARDWARE.DSPI5_7.in_0" , "HARDWARE.DSPI_5_INT_SPEF");
+	instrumenter->Bind("HARDWARE.DSPI5_7.in_1" , "HARDWARE.DSPI_5_INT_DPEF");
+	instrumenter->Bind("HARDWARE.DSPI6_0.in_0" , "HARDWARE.DSPI_6_INT_TFUF");
+	instrumenter->Bind("HARDWARE.DSPI6_0.in_1" , "HARDWARE.DSPI_6_INT_RFOF");
+	instrumenter->Bind("HARDWARE.DSPI6_0.in_2" , "HARDWARE.DSPI_6_INT_TFIWF");
+	instrumenter->Bind("HARDWARE.DSPI6_5.in_0" , "HARDWARE.DSPI_6_INT_SPITCF");
+	instrumenter->Bind("HARDWARE.DSPI6_5.in_1" , "HARDWARE.DSPI_6_INT_CMDTCF");
+	instrumenter->Bind("HARDWARE.DSPI6_6.in_0" , "HARDWARE.DSPI_6_INT_DSITCF");
+	instrumenter->Bind("HARDWARE.DSPI6_6.in_1" , "HARDWARE.DSPI_6_INT_CMDFFF");
+	instrumenter->Bind("HARDWARE.DSPI6_7.in_0" , "HARDWARE.DSPI_6_INT_SPEF");
+	instrumenter->Bind("HARDWARE.DSPI6_7.in_1" , "HARDWARE.DSPI_6_INT_DPEF");
+	instrumenter->Bind("HARDWARE.DSPI12_0.in_0", "HARDWARE.DSPI_12_INT_TFUF");
+	instrumenter->Bind("HARDWARE.DSPI12_0.in_1", "HARDWARE.DSPI_12_INT_RFOF");
+	instrumenter->Bind("HARDWARE.DSPI12_0.in_2", "HARDWARE.DSPI_12_INT_TFIWF");
 	
-	Bind("HARDWARE.SIUL2.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.SIUL2.reset_b" , "HARDWARE.reset_b");
-	BindArray(SIUL2::NUM_PADS, "HARDWARE.SIUL2.pad_in", "HARDWARE.pad");
-	BindArray(SIUL2::NUM_PADS, "HARDWARE.SIUL2.pad_out", "HARDWARE.pad");
+	instrumenter->Bind("HARDWARE.SIUL2.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.SIUL2.reset_b" , "HARDWARE.reset_b");
+	instrumenter->BindArray(SIUL2::NUM_PADS, "HARDWARE.SIUL2.pad_in", "HARDWARE.pad");
+	instrumenter->BindArray(SIUL2::NUM_PADS, "HARDWARE.SIUL2.pad_out", "HARDWARE.pad");
 
-	Bind("HARDWARE.M_CAN_1.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.M_CAN_1.can_clk" , "HARDWARE.CAN_CLK");
-	Bind("HARDWARE.M_CAN_1.reset_b" , "HARDWARE.reset_b");
-	BindArray(M_CAN_1::NUM_FILTER_EVENTS, "HARDWARE.M_CAN_1.FE", "HARDWARE.M_CAN_1_FE");
+	instrumenter->Bind("HARDWARE.M_CAN_1.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.M_CAN_1.can_clk" , "HARDWARE.CAN_CLK");
+	instrumenter->Bind("HARDWARE.M_CAN_1.reset_b" , "HARDWARE.reset_b");
+	instrumenter->BindArray(M_CAN_1::NUM_FILTER_EVENTS, "HARDWARE.M_CAN_1.FE", "HARDWARE.M_CAN_1_FE");
 	
-	Bind("HARDWARE.M_CAN_2.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.M_CAN_2.can_clk" , "HARDWARE.CAN_CLK");
-	Bind("HARDWARE.M_CAN_2.reset_b" , "HARDWARE.reset_b");
-	BindArray(M_CAN_2::NUM_FILTER_EVENTS, "HARDWARE.M_CAN_2.FE", "HARDWARE.M_CAN_2_FE");
+	instrumenter->Bind("HARDWARE.M_CAN_2.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.M_CAN_2.can_clk" , "HARDWARE.CAN_CLK");
+	instrumenter->Bind("HARDWARE.M_CAN_2.reset_b" , "HARDWARE.reset_b");
+	instrumenter->BindArray(M_CAN_2::NUM_FILTER_EVENTS, "HARDWARE.M_CAN_2.FE", "HARDWARE.M_CAN_2_FE");
 	
-	Bind("HARDWARE.M_CAN_3.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.M_CAN_3.can_clk" , "HARDWARE.CAN_CLK");
-	Bind("HARDWARE.M_CAN_3.reset_b" , "HARDWARE.reset_b");
-	Bind("HARDWARE.M_CAN_3.DMA_REQ" , "HARDWARE.M_CAN_3_DMA_REQ");
-	Bind("HARDWARE.M_CAN_3.DMA_ACK" , "HARDWARE.M_CAN_3_DMA_ACK");
-	BindArray(M_CAN_3::NUM_FILTER_EVENTS, "HARDWARE.M_CAN_3.FE", "HARDWARE.M_CAN_3_FE");
+	instrumenter->Bind("HARDWARE.M_CAN_3.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.M_CAN_3.can_clk" , "HARDWARE.CAN_CLK");
+	instrumenter->Bind("HARDWARE.M_CAN_3.reset_b" , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.M_CAN_3.DMA_REQ" , "HARDWARE.M_CAN_3_DMA_REQ");
+	instrumenter->Bind("HARDWARE.M_CAN_3.DMA_ACK" , "HARDWARE.M_CAN_3_DMA_ACK");
+	instrumenter->BindArray(M_CAN_3::NUM_FILTER_EVENTS, "HARDWARE.M_CAN_3.FE", "HARDWARE.M_CAN_3_FE");
 	
-	Bind("HARDWARE.M_CAN_4.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.M_CAN_4.can_clk" , "HARDWARE.CAN_CLK");
-	Bind("HARDWARE.M_CAN_4.reset_b" , "HARDWARE.reset_b");
-	Bind("HARDWARE.M_CAN_4.DMA_REQ" , "HARDWARE.M_CAN_4_DMA_REQ");
-	Bind("HARDWARE.M_CAN_4.DMA_ACK" , "HARDWARE.M_CAN_4_DMA_ACK");
-	BindArray(M_CAN_4::NUM_FILTER_EVENTS, "HARDWARE.M_CAN_4.FE", "HARDWARE.M_CAN_4_FE");
+	instrumenter->Bind("HARDWARE.M_CAN_4.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.M_CAN_4.can_clk" , "HARDWARE.CAN_CLK");
+	instrumenter->Bind("HARDWARE.M_CAN_4.reset_b" , "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.M_CAN_4.DMA_REQ" , "HARDWARE.M_CAN_4_DMA_REQ");
+	instrumenter->Bind("HARDWARE.M_CAN_4.DMA_ACK" , "HARDWARE.M_CAN_4_DMA_ACK");
+	instrumenter->BindArray(M_CAN_4::NUM_FILTER_EVENTS, "HARDWARE.M_CAN_4.FE", "HARDWARE.M_CAN_4_FE");
 	
-	Bind("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.input_if_clock", "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.output_if_clock", "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.input_if_clock", "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER.output_if_clock", "HARDWARE.PBRIDGEA_CLK");
 	
-	Bind("HARDWARE.SEMA4.m_clk", "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.SEMA4.reset_b", "HARDWARE.reset_b");
+	instrumenter->Bind("HARDWARE.SEMA4.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	instrumenter->Bind("HARDWARE.SEMA4.reset_b", "HARDWARE.reset_b");
 
 	// Interrupt sources
 	
@@ -4697,6 +4707,68 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		serial_terminal16->char_io_import >> netstreamer16->char_io_export;
 	}
 	
+	{
+		unsigned int i = 0;
+		*http_server->http_server_import[i++] >> instrumenter->http_server_export;
+		*http_server->http_server_import[i++] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
+	}
+	
+	{
+		unsigned int i = 0;
+		*http_server->registers_import[i++] >> main_core_0->registers_export;
+		*http_server->registers_import[i++] >> main_core_1->registers_export;
+		*http_server->registers_import[i++] >> peripheral_core_2->registers_export;
+		*http_server->registers_import[i++] >> m_can_1->registers_export;
+		*http_server->registers_import[i++] >> m_can_2->registers_export;
+		*http_server->registers_import[i++] >> m_can_3->registers_export;
+		*http_server->registers_import[i++] >> m_can_4->registers_export;
+		*http_server->registers_import[i++] >> dmamux_0->registers_export;
+		*http_server->registers_import[i++] >> dmamux_1->registers_export;
+		*http_server->registers_import[i++] >> dmamux_2->registers_export;
+		*http_server->registers_import[i++] >> dmamux_3->registers_export;
+		*http_server->registers_import[i++] >> dmamux_4->registers_export;
+		*http_server->registers_import[i++] >> dmamux_5->registers_export;
+		*http_server->registers_import[i++] >> dmamux_6->registers_export;
+		*http_server->registers_import[i++] >> dmamux_7->registers_export;
+		*http_server->registers_import[i++] >> dmamux_8->registers_export;
+		*http_server->registers_import[i++] >> dmamux_9->registers_export;
+		*http_server->registers_import[i++] >> edma_0->registers_export;
+		*http_server->registers_import[i++] >> edma_1->registers_export;
+		*http_server->registers_import[i++] >> dspi_0->registers_export;
+		*http_server->registers_import[i++] >> dspi_1->registers_export;
+		*http_server->registers_import[i++] >> dspi_2->registers_export;
+		*http_server->registers_import[i++] >> dspi_3->registers_export;
+		*http_server->registers_import[i++] >> dspi_4->registers_export;
+		*http_server->registers_import[i++] >> dspi_5->registers_export;
+		*http_server->registers_import[i++] >> dspi_6->registers_export;
+		*http_server->registers_import[i++] >> dspi_12->registers_export;
+		*http_server->registers_import[i++] >> ebi->registers_export;
+		*http_server->registers_import[i++] >> xbar_0->registers_export;
+		*http_server->registers_import[i++] >> xbar_0->smpu_registers_export;
+		*http_server->registers_import[i++] >> xbar_1->registers_export;
+		*http_server->registers_import[i++] >> xbar_1->smpu_registers_export;
+		*http_server->registers_import[i++] >> pbridge_a->registers_export;
+		*http_server->registers_import[i++] >> pbridge_b->registers_export;
+		*http_server->registers_import[i++] >> intc_0->registers_export;
+		*http_server->registers_import[i++] >> linflexd_0->registers_export;
+		*http_server->registers_import[i++] >> linflexd_1->registers_export;
+		*http_server->registers_import[i++] >> linflexd_2->registers_export;
+		*http_server->registers_import[i++] >> linflexd_14->registers_export;
+		*http_server->registers_import[i++] >> linflexd_15->registers_export;
+		*http_server->registers_import[i++] >> linflexd_16->registers_export;
+		*http_server->registers_import[i++] >> siul2->registers_export;
+		*http_server->registers_import[i++] >> pit_0->registers_export;
+		*http_server->registers_import[i++] >> pit_1->registers_export;
+		*http_server->registers_import[i++] >> stm_0->registers_export;
+		*http_server->registers_import[i++] >> stm_1->registers_export;
+		*http_server->registers_import[i++] >> stm_2->registers_export;
+		*http_server->registers_import[i++] >> swt_0->registers_export;
+		*http_server->registers_import[i++] >> swt_1->registers_export;
+		*http_server->registers_import[i++] >> swt_2->registers_export;
+		*http_server->registers_import[i++] >> swt_3->registers_export;
+		*http_server->registers_import[i++] >> sema4->registers_export;
+	}
+	
 #if HAVE_TVS
 	bool enable_bandwidth_tracing = (*xbar_0)["enable-bandwidth-tracing"] ||
 	                                (*xbar_1)["enable-bandwidth-tracing"] ||
@@ -5107,6 +5179,8 @@ Simulator::~Simulator()
 	if(netstreamer14) delete netstreamer14;
 	if(netstreamer15) delete netstreamer15;
 	if(netstreamer16) delete netstreamer16;
+	if(http_server) delete http_server;
+	if(instrumenter) delete instrumenter;
 #if HAVE_TVS
 	if(bandwidth_vcd) delete bandwidth_vcd;
 	if(bandwidth_vcd_file) delete bandwidth_vcd_file;
@@ -5117,7 +5191,7 @@ void Simulator::Core0ResetProcess()
 {
 	if(enable_core0_reset)
 	{
-		sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& p_reset_b_0 = GetSignal<bool, sc_core::SC_MANY_WRITERS>("HARDWARE.p_reset_b_0");
+		sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& p_reset_b_0 = instrumenter->GetSignal<bool, sc_core::SC_MANY_WRITERS>("HARDWARE.p_reset_b_0");
 		wait(core0_reset_time);
 		p_reset_b_0 = false;
 		wait(sc_core::sc_time(10.0, sc_core::SC_NS));
@@ -5129,7 +5203,7 @@ void Simulator::Core1ResetProcess()
 {
 	if(enable_core1_reset)
 	{
-		sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& p_reset_b_1 = GetSignal<bool, sc_core::SC_MANY_WRITERS>("HARDWARE.p_reset_b_1");
+		sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& p_reset_b_1 = instrumenter->GetSignal<bool, sc_core::SC_MANY_WRITERS>("HARDWARE.p_reset_b_1");
 		wait(core1_reset_time);
 		p_reset_b_1 = false;
 		wait(sc_core::sc_time(10.0, sc_core::SC_NS));
@@ -5141,7 +5215,7 @@ void Simulator::Core2ResetProcess()
 {
 	if(enable_core2_reset)
 	{
-		sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& p_reset_b_2 = GetSignal<bool, sc_core::SC_MANY_WRITERS>("HARDWARE.p_reset_b_2");
+		sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& p_reset_b_2 = instrumenter->GetSignal<bool, sc_core::SC_MANY_WRITERS>("HARDWARE.p_reset_b_2");
 		wait(core2_reset_time);
 		p_reset_b_2 = false;
 		wait(sc_core::sc_time(10.0, sc_core::SC_NS));
@@ -5155,32 +5229,32 @@ void Simulator::InterruptSource(unsigned int irq_num, const std::string& source)
 	irq_signal_name_sstr << "HARDWARE.irq_" << irq_num;
 	if(!source.empty())
 	{
-		Bind(source, irq_signal_name_sstr.str());
+		instrumenter->Bind(source, irq_signal_name_sstr.str());
 	}
 	std::stringstream intc_port_name_sstr;
 	intc_port_name_sstr << "HARDWARE.INTC_0.hw_irq_" << (irq_num - INTC_0::NUM_SW_IRQS);
-	Bind(intc_port_name_sstr.str() , irq_signal_name_sstr.str());
+	instrumenter->Bind(intc_port_name_sstr.str() , irq_signal_name_sstr.str());
 }
 
 void Simulator::DMASource(unsigned int dmamux_num, unsigned int dma_source_num)
 {
 	std::stringstream source_req_signal_basename_sstr;
 	source_req_signal_basename_sstr << "DMAMUX_" << dmamux_num << "_SOURCE_REQ_" << dma_source_num;
-	CreateSignal(source_req_signal_basename_sstr.str(), false);
+	instrumenter->CreateSignal(source_req_signal_basename_sstr.str(), false);
 
 	std::stringstream dmamux_source_req_port_name_sstr;
 	dmamux_source_req_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num << ".dma_source_" << dma_source_num;
 
-	Bind(dmamux_source_req_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
+	instrumenter->Bind(dmamux_source_req_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
 
 	std::stringstream source_ack_signal_basename_sstr;
 	source_ack_signal_basename_sstr << "DMAMUX_" << dmamux_num << "_SOURCE_ACK_" << dma_source_num;
-	CreateSignal(source_ack_signal_basename_sstr.str(), false);
+	instrumenter->CreateSignal(source_ack_signal_basename_sstr.str(), false);
 
 	std::stringstream dmamux_source_ack_port_name_sstr;
 	dmamux_source_ack_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num << ".dma_source_ack_" << dma_source_num;
 
-	Bind(dmamux_source_ack_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_ack_signal_basename_sstr.str());
+	instrumenter->Bind(dmamux_source_ack_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_ack_signal_basename_sstr.str());
 }
 
 void Simulator::DMASource(const std::string& source_req,
@@ -5190,23 +5264,23 @@ void Simulator::DMASource(const std::string& source_req,
 {
 	std::stringstream source_req_signal_basename_sstr;
 	source_req_signal_basename_sstr << "DMAMUX_" << dmamux_num << "_SOURCE_REQ_" << dma_source_num;
-	CreateSignal(source_req_signal_basename_sstr.str(), false);
+	instrumenter->CreateSignal(source_req_signal_basename_sstr.str(), false);
 
 	std::stringstream dmamux_source_req_port_name_sstr;
 	dmamux_source_req_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num << ".dma_source_" << dma_source_num;
 
-	Bind(source_req, std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
-	Bind(dmamux_source_req_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
+	instrumenter->Bind(source_req, std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
+	instrumenter->Bind(dmamux_source_req_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
 
 	std::stringstream source_ack_signal_basename_sstr;
 	source_ack_signal_basename_sstr << "DMAMUX_" << dmamux_num << "_SOURCE_ACK_" << dma_source_num;
-	CreateSignal(source_ack_signal_basename_sstr.str(), false);
+	instrumenter->CreateSignal(source_ack_signal_basename_sstr.str(), false);
 
 	std::stringstream dmamux_source_ack_port_name_sstr;
 	dmamux_source_ack_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num << ".dma_source_ack_" << dma_source_num;
 
-	Bind(dmamux_source_ack_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_ack_signal_basename_sstr.str());
-	Bind(source_ack, std::string(this->sc_core::sc_object::name()) + '.' + source_ack_signal_basename_sstr.str());
+	instrumenter->Bind(dmamux_source_ack_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_ack_signal_basename_sstr.str());
+	instrumenter->Bind(source_ack, std::string(this->sc_core::sc_object::name()) + '.' + source_ack_signal_basename_sstr.str());
 }
 
 void Simulator::LogicalOr2(sc_core::sc_signal<bool>& in0, sc_core::sc_signal<bool>& in1, sc_core::sc_signal<bool>& out)
@@ -5228,7 +5302,7 @@ void Simulator::DMASource(const std::string& source_req,
 {
 	std::stringstream source_req_signal_basename_sstr;
 	source_req_signal_basename_sstr << "DMAMUX_" << dmamux_num0 << "_" << dmamux_num1 << "_SOURCE_REQ_" << dma_source_num0 << "_" << dma_source_num1;
-	CreateSignal(source_req_signal_basename_sstr.str(), false);
+	instrumenter->CreateSignal(source_req_signal_basename_sstr.str(), false);
 
 	std::stringstream dmamux_source_req0_port_name_sstr;
 	dmamux_source_req0_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num0 << ".dma_source_" << dma_source_num0;
@@ -5236,9 +5310,9 @@ void Simulator::DMASource(const std::string& source_req,
 	std::stringstream dmamux_source_req1_port_name_sstr;
 	dmamux_source_req1_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num1 << ".dma_source_" << dma_source_num1;
 
-	Bind(source_req, std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
-	Bind(dmamux_source_req0_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
-	Bind(dmamux_source_req1_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
+	instrumenter->Bind(source_req, std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
+	instrumenter->Bind(dmamux_source_req0_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
+	instrumenter->Bind(dmamux_source_req1_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
 
 	std::stringstream dmamux_ack0_signal_basename_sstr;
 	dmamux_ack0_signal_basename_sstr << "DMAMUX_" << dmamux_num0 << "_DMA_SOURCE_ACK_" << dma_source_num0;
@@ -5249,9 +5323,9 @@ void Simulator::DMASource(const std::string& source_req,
 	std::stringstream source_ack_signal_basename_sstr;
 	source_ack_signal_basename_sstr << "DMAMUX_" << dmamux_num0 << "_" << dmamux_num1 << "_SOURCE_ACK_" << dma_source_num0 << "_" << dma_source_num1;
 	
-	sc_core::sc_signal<bool>& dmamux_ack0_signal = CreateSignal(dmamux_ack0_signal_basename_sstr.str(), false);
-	sc_core::sc_signal<bool>& dmamux_ack1_signal = CreateSignal(dmamux_ack1_signal_basename_sstr.str(), false);
-	sc_core::sc_signal<bool>& source_ack_signal = CreateSignal(source_ack_signal_basename_sstr.str(), false);
+	sc_core::sc_signal<bool>& dmamux_ack0_signal = instrumenter->CreateSignal(dmamux_ack0_signal_basename_sstr.str(), false);
+	sc_core::sc_signal<bool>& dmamux_ack1_signal = instrumenter->CreateSignal(dmamux_ack1_signal_basename_sstr.str(), false);
+	sc_core::sc_signal<bool>& source_ack_signal = instrumenter->CreateSignal(source_ack_signal_basename_sstr.str(), false);
 
 	std::stringstream dmamux_source_ack0_port_name_sstr;
 	dmamux_source_ack0_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num0 << ".dma_source_ack_" << dma_source_num0;
@@ -5259,8 +5333,8 @@ void Simulator::DMASource(const std::string& source_req,
 	std::stringstream dmamux_source_ack1_port_name_sstr;
 	dmamux_source_ack1_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num1 << ".dma_source_ack_" << dma_source_num1;
 
-	Bind(dmamux_source_ack0_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + dmamux_ack0_signal_basename_sstr.str());
-	Bind(dmamux_source_ack1_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + dmamux_ack1_signal_basename_sstr.str());
+	instrumenter->Bind(dmamux_source_ack0_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + dmamux_ack0_signal_basename_sstr.str());
+	instrumenter->Bind(dmamux_source_ack1_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + dmamux_ack1_signal_basename_sstr.str());
 
 	sc_core::sc_spawn_options or_process_spawn_options;
 	or_process_spawn_options.spawn_method();
@@ -5269,7 +5343,7 @@ void Simulator::DMASource(const std::string& source_req,
 	
 	sc_core::sc_spawn(sc_bind(&Simulator::LogicalOr2, this, sc_ref(dmamux_ack0_signal), sc_ref(dmamux_ack1_signal), sc_ref(source_ack_signal)), sc_core::sc_gen_unique_name("Or2Process"), &or_process_spawn_options);
 
-	Bind(source_ack, std::string(this->sc_core::sc_object::name()) + '.' + source_ack_signal_basename_sstr.str());
+	instrumenter->Bind(source_ack, std::string(this->sc_core::sc_object::name()) + '.' + source_ack_signal_basename_sstr.str());
 }
 
 void Simulator::DMASource(const std::string& source_req,
@@ -5283,7 +5357,7 @@ void Simulator::DMASource(const std::string& source_req,
 {
 	std::stringstream source_req_signal_basename_sstr;
 	source_req_signal_basename_sstr << "DMAMUX_" << dmamux_num0 << "_" << dmamux_num1 << "_" << dmamux_num2 << "_SOURCE_REQ_" << dma_source_num0 << "_" << dma_source_num1 << "_" << dma_source_num2;
-	CreateSignal(source_req_signal_basename_sstr.str(), false);
+	instrumenter->CreateSignal(source_req_signal_basename_sstr.str(), false);
 
 	std::stringstream dmamux_source_req0_port_name_sstr;
 	dmamux_source_req0_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num0 << ".dma_source_" << dma_source_num0;
@@ -5294,10 +5368,10 @@ void Simulator::DMASource(const std::string& source_req,
 	std::stringstream dmamux_source_req2_port_name_sstr;
 	dmamux_source_req2_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num2 << ".dma_source_" << dma_source_num2;
 
-	Bind(source_req, std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
-	Bind(dmamux_source_req0_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
-	Bind(dmamux_source_req1_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
-	Bind(dmamux_source_req2_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
+	instrumenter->Bind(source_req, std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
+	instrumenter->Bind(dmamux_source_req0_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
+	instrumenter->Bind(dmamux_source_req1_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
+	instrumenter->Bind(dmamux_source_req2_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + source_req_signal_basename_sstr.str());
 
 	std::stringstream dmamux_ack0_signal_basename_sstr;
 	dmamux_ack0_signal_basename_sstr << "DMAMUX_" << dmamux_num0 << "_DMA_SOURCE_ACK_" << dma_source_num0;
@@ -5311,10 +5385,10 @@ void Simulator::DMASource(const std::string& source_req,
 	std::stringstream source_ack_signal_basename_sstr;
 	source_ack_signal_basename_sstr << "DMAMUX_" << dmamux_num0 << "_" << dmamux_num1 << "_" << dmamux_num2 << "_SOURCE_ACK_" << dma_source_num0 << "_" << dma_source_num1 << "_" << dma_source_num2;
 
-	sc_core::sc_signal<bool>& dmamux_ack0_signal = CreateSignal(dmamux_ack0_signal_basename_sstr.str(), false);
-	sc_core::sc_signal<bool>& dmamux_ack1_signal = CreateSignal(dmamux_ack1_signal_basename_sstr.str(), false);
-	sc_core::sc_signal<bool>& dmamux_ack2_signal = CreateSignal(dmamux_ack2_signal_basename_sstr.str(), false);
-	sc_core::sc_signal<bool>& source_ack_signal = CreateSignal(source_ack_signal_basename_sstr.str(), false);
+	sc_core::sc_signal<bool>& dmamux_ack0_signal = instrumenter->CreateSignal(dmamux_ack0_signal_basename_sstr.str(), false);
+	sc_core::sc_signal<bool>& dmamux_ack1_signal = instrumenter->CreateSignal(dmamux_ack1_signal_basename_sstr.str(), false);
+	sc_core::sc_signal<bool>& dmamux_ack2_signal = instrumenter->CreateSignal(dmamux_ack2_signal_basename_sstr.str(), false);
+	sc_core::sc_signal<bool>& source_ack_signal = instrumenter->CreateSignal(source_ack_signal_basename_sstr.str(), false);
 	
 	std::stringstream dmamux_source_ack0_port_name_sstr;
 	dmamux_source_ack0_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num0 << ".dma_source_ack_" << dma_source_num0;
@@ -5325,9 +5399,9 @@ void Simulator::DMASource(const std::string& source_req,
 	std::stringstream dmamux_source_ack2_port_name_sstr;
 	dmamux_source_ack2_port_name_sstr << this->sc_core::sc_object::name() << ".DMAMUX_" << dmamux_num2 << ".dma_source_ack_" << dma_source_num2;
 
-	Bind(dmamux_source_ack0_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + dmamux_ack0_signal_basename_sstr.str());
-	Bind(dmamux_source_ack1_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + dmamux_ack1_signal_basename_sstr.str());
-	Bind(dmamux_source_ack2_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + dmamux_ack2_signal_basename_sstr.str());
+	instrumenter->Bind(dmamux_source_ack0_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + dmamux_ack0_signal_basename_sstr.str());
+	instrumenter->Bind(dmamux_source_ack1_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + dmamux_ack1_signal_basename_sstr.str());
+	instrumenter->Bind(dmamux_source_ack2_port_name_sstr.str(), std::string(this->sc_core::sc_object::name()) + '.' + dmamux_ack2_signal_basename_sstr.str());
 
 	sc_core::sc_spawn_options or_process_spawn_options;
 	or_process_spawn_options.spawn_method();
@@ -5337,7 +5411,7 @@ void Simulator::DMASource(const std::string& source_req,
 	
 	sc_core::sc_spawn(sc_bind(&Simulator::LogicalOr3, this, sc_ref(dmamux_ack0_signal), sc_ref(dmamux_ack1_signal), sc_ref(dmamux_ack2_signal), sc_ref(source_ack_signal)), sc_core::sc_gen_unique_name("Or3Process"), &or_process_spawn_options);
 
-	Bind(source_ack, std::string(this->sc_core::sc_object::name()) + '.' + source_ack_signal_basename_sstr.str());
+	instrumenter->Bind(source_ack, std::string(this->sc_core::sc_object::name()) + '.' + source_ack_signal_basename_sstr.str());
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)

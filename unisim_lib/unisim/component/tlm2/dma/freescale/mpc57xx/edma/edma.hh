@@ -41,6 +41,7 @@
 #include <unisim/kernel/tlm2/clock.hh>
 #include <unisim/kernel/tlm2/trans_attr.hh>
 #include <unisim/util/reg/core/register.hh>
+#include <unisim/util/debug/simple_register_registry.hh>
 
 #define SWITCH_ENUM_TRAIT(ENUM_TYPE, CLASS_NAME) template <ENUM_TYPE, bool __SWITCH_TRAIT_DUMMY__ = true> struct CLASS_NAME {}
 #define CASE_ENUM_TRAIT(ENUM_VALUE, CLASS_NAME) template <bool __SWITCH_TRAIT_DUMMY__> struct CLASS_NAME<ENUM_VALUE, __SWITCH_TRAIT_DUMMY__>
@@ -121,10 +122,10 @@ enum EDGE
 
 template <typename CONFIG>
 class EDMA
-	: public unisim::kernel::service::Object
-	, public sc_core::sc_module
+	: public sc_core::sc_module
 	, public tlm::tlm_fw_transport_if<>
 	, public tlm::tlm_bw_transport_if<>
+	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
 {
 public:
 	static const unsigned int TLM2_IP_VERSION_MAJOR  = 1;
@@ -149,6 +150,9 @@ public:
 	sc_core::sc_out<bool>    *irq[NUM_DMA_CHANNELS];            // Interrupt requests
 	sc_core::sc_out<bool>    *err_irq[NUM_DMA_CHANNELS];        // Error Interrupt requests
 	
+	// services
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+
 	EDMA(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
 	virtual ~EDMA();
 	
@@ -162,6 +166,10 @@ public:
 	virtual tlm::tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 
+	//////////////// unisim::service::interface::Registers ////////////////////
+	
+	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 private:
 	virtual void end_of_elaboration();
 
@@ -2858,6 +2866,8 @@ private:
 	
 	RegisterAddressMap<sc_dt::uint64, tlm_trans_attr> reg_addr_map;
 	
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
+
 	unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
 	
 	unisim::kernel::tlm2::Schedule<Event> schedule; // Payload (processor requests over AHB interface) schedule

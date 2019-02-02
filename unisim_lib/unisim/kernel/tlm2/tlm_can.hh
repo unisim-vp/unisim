@@ -124,7 +124,7 @@ private:
 // tlm_can_bus
 
 class tlm_can_bus
-	: public unisim::kernel::service::Object
+	: public virtual unisim::kernel::service::Object
 	, public sc_core::sc_module
 {
 public:
@@ -413,7 +413,7 @@ private:
 
 template <typename CAN_MODULE, typename TYPES = TLM_CAN_DEFAULT_TYPES>
 class tlm_can_core
-	: public unisim::kernel::service::Object
+	: public virtual unisim::kernel::service::Object
 	, public sc_core::sc_module
 {
 public:

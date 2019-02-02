@@ -1,3 +1,5 @@
+// needs unisim/service/http_server/embedded_script.js
+
 var window_resize_refresh_period = 500;
 var window_inner_width = 0;
 var window_inner_height = 0;
@@ -24,4 +26,4 @@ resize = function()
 	}
 }
 
-document.addEventListener('DOMContentLoaded', function(event) { resize(); setInterval(resize, window_resize_refresh_period); });
+document.addEventListener('DOMContentLoaded', function(event) { resize(); restore_window_scroll_top(); setInterval(resize, window_resize_refresh_period); });

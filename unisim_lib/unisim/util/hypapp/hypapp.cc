@@ -34,6 +34,7 @@
 
 #include <unisim/util/hypapp/hypapp.hh>
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 #include <cstring>
@@ -136,6 +137,112 @@ std::ostream& operator << (std::ostream& os, const Request& req)
   os << "Content length: " << req.GetContentLength() << std::endl;
   os << "Content: \"" << std::string(req.GetContent(), req.GetContentLength()) << std::endl;
   return os;
+}
+
+HttpRequest::HttpRequest(const Request& _req, std::ostream& err_log)
+	: valid(false)
+	, has_query(false)
+	, has_fragment(false)
+	, req(_req)
+	, abs_path()
+	, server_root()
+	, path()
+	, query()
+	, fragment()
+	, domain()
+	, has_port(false)
+	, port(0)
+{
+	valid = URL_AbsolutePathDecoder::Decode(req.GetRequestURI(), abs_path, err_log);
+	if(valid)
+	{
+		server_root = "/";
+		path = abs_path.substr(1);
+	}
+	const char *p_request_uri = req.GetRequestURI();
+	if(p_request_uri)
+	{
+		const char *p_query = strchr(p_request_uri, '?');
+		if(p_query) p_query++;
+		const char *p_fragment = strchr(p_query ? p_query : p_request_uri, '#');
+		if(p_fragment) p_fragment++;
+		if(p_fragment)
+		{
+			fragment = std::string(p_fragment);
+			has_fragment = true;
+		}
+		if(p_query)
+		{
+			if(p_fragment)
+			{
+				query = std::string(p_query, p_fragment - p_query);
+			}
+			else
+			{
+				query = std::string(p_query);
+			}
+			has_query = true;
+		}
+	}
+	const char *p_host = req.GetHost();
+	if(p_host)
+	{
+		const char *p_port = strchr(p_host, ':');
+		if(p_port)
+		{
+			domain = std::string(p_host, p_port - p_host);
+			std::istringstream sstr(p_port + 1);
+			sstr >> port;
+			has_port = true;
+		}
+		else
+		{
+			domain = std::string(p_host);
+		}
+	}
+}
+
+HttpRequest::HttpRequest(const std::string& _server_root, const std::string& _path, const HttpRequest& http_request)
+	: valid(http_request.valid)
+	, has_query(http_request.has_query)
+	, has_fragment(http_request.has_fragment)
+	, req(http_request.req)
+	, abs_path(http_request.abs_path)
+	, server_root(_server_root)
+	, path(_path)
+	, query(http_request.query)
+	, fragment(http_request.fragment)
+	, domain(http_request.domain)
+	, has_port(http_request.has_port)
+	, port(http_request.port)
+{
+}
+
+std::ostream& operator << (std::ostream& os, const HttpRequest& http_request)
+{
+	os << http_request.req;
+	os << "Valid: " << http_request.IsValid() << std::endl;
+	if(http_request.IsValid())
+	{
+		os << "Absolute Path: \"" << http_request.GetAbsolutePath() << std::endl;
+		os << "Server Root: \"" << http_request.GetServerRoot() << std::endl;
+		os << "Path: \"" << http_request.GetPath() << std::endl;
+	}
+	if(http_request.HasQuery())
+	{
+		os << "Query: " << http_request.GetQuery() << std::endl;
+	}
+	if(http_request.HasFragment())
+	{
+		os << "Fragment: " << http_request.GetFragment() << std::endl;
+	}
+	os << "Host: " << http_request.GetHost() << std::endl;
+	os << "Domain: " << http_request.GetDomain() << std::endl;
+	if(http_request.HasPort())
+	{
+		os << "Port: " << http_request.GetPort() << std::endl;
+	}
+	return os;
 }
 
 struct IPAddrRepr
@@ -338,7 +445,8 @@ void MessageLoop::Run(ClientConnection const& conn)
                    streat("UA-Disp", key) or
                    streat("UA-OS", key) or
                    streat("UA-Color", key) or
-                   streat("UA-Pixels", key))
+                   streat("UA-Pixels", key) or
+                   streat("Pragma", key))
             { if(http_server.Verbose()) { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; } }
           else if (streat("Range", key))
             { err_log << "[" << conn.socket << "] " << key << ": " << val << "\n"; return; }

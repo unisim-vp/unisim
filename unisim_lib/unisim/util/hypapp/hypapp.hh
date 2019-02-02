@@ -90,6 +90,47 @@ private:
 std::ostream& operator << (std::ostream& os, const Request::request_type_t& request_type);
 std::ostream& operator << (std::ostream& os, const Request& req);
 
+struct HttpRequest
+{
+public:
+	HttpRequest(const Request& req, std::ostream& err_log);
+	HttpRequest(const std::string& server_root, const std::string& path, const HttpRequest& http_request);
+	
+	bool IsValid() const { return valid; }
+	bool HasQuery() const { return has_query; }
+	bool HasFragment() const { return has_fragment; }
+	Request::request_type_t GetRequestType() const { return req.GetRequestType(); }
+	char const* GetRequestURI() const { return req.GetRequestURI(); }
+	char const* GetHost() const { return req.GetHost(); }
+	char const* GetContentType() const { return req.GetContentType(); }
+	unsigned int GetContentLength() const { return req.GetContentLength(); }
+	char const* GetContent() const { return req.GetContent(); }
+	const std::string& GetAbsolutePath() const { return abs_path; }
+	const std::string& GetServerRoot() const { return server_root; }
+	const std::string& GetPath() const { return path; }
+	const std::string& GetQuery() const { return query; }
+	const std::string& GetFragment() const { return fragment; }
+	const std::string& GetDomain() const { return domain; }
+	bool HasPort() const { return has_port; }
+	unsigned int GetPort() const { return port; }
+
+	friend std::ostream& operator << (std::ostream& os, const HttpRequest& http_request);
+	
+private:
+	bool valid;
+	bool has_query;
+	bool has_fragment;
+	const Request& req;
+	std::string abs_path;
+	std::string server_root;
+	std::string path;
+	std::string query;
+	std::string fragment;
+	std::string domain;
+	bool has_port;
+	unsigned int port;
+};
+
 struct MessageLoop
 {
   MessageLoop(HttpServer& _http_server, std::ostream& _log = std::cout, std::ostream& _warn_log = std::cout, std::ostream& _err_log = std::cerr)

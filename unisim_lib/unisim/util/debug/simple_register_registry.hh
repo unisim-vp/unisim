@@ -1,6 +1,6 @@
- /*
- *  Copyright (c) 2015-2016,
- *  Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
+/*
+ *  Copyright (c) 2019,
+ *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -31,39 +31,32 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
+ 
+#ifndef __UNISIM_UTIL_DEBUG_SIMPLE_REGISTER_REGISTRY_HH__
+#define __UNISIM_UTIL_DEBUG_SIMPLE_REGISTER_REGISTRY_HH__
 
-#ifndef __UNISIM_KERNEL_TLM2_SIMULATOR_HH__
-#define __UNISIM_KERNEL_TLM2_SIMULATOR_HH__
-
-#include <unisim/kernel/service/service.hh>
-#include <unisim/kernel/logger/logger.hh>
-#include <systemc>
-#include <tlm>
+#include <unisim/service/interfaces/register.hh>
+#include <unisim/service/interfaces/registers.hh>
+#include <string>
+#include <map>
 
 namespace unisim {
-namespace kernel {
-namespace tlm2 {
+namespace util {
+namespace debug {
 
-class Simulator
-	: public unisim::kernel::service::Simulator
-	, public unisim::kernel::service::Object
-	, public sc_core::sc_module
+class SimpleRegisterRegistry
 {
 public:
-	Simulator(sc_core::sc_module_name const& name, int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::service::Simulator *simulator) = 0);
-	virtual ~Simulator();
-protected:
-	unisim::kernel::logger::Logger logger;
+	virtual ~SimpleRegisterRegistry();
+	void AddRegisterInterface(unisim::service::interfaces::Register *reg_if);
+	unisim::service::interfaces::Register *GetRegister(const char *name);
+	void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 private:
-	unisim::kernel::service::Statistic<sc_core::sc_time> stat_cur_sim_time;
-	sc_core::sc_time global_quantum;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_global_quantum;
-	sc_core::sc_time can_global_quantum;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_can_global_quantum;
+	std::map<std::string, unisim::service::interfaces::Register *, unisim::util::nat_sort::nat_ltstr> registers_registry;
 };
 
-} // end of namespace tlm2
-} // end of namespace kernel
+} // end of namespace debug
+} // end of namespace service
 } // end of namespace unisim
 
-#endif // __UNISIM_KERNEL_TLM2_SIMULATOR_HH__
+#endif // __UNISIM_UTIL_DEBUG_SIMPLE_REGISTER_REGISTRY_HH__

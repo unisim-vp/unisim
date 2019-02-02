@@ -98,11 +98,13 @@ template <typename CONFIG>
 SIUL2<CONFIG>::SIUL2(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_core::sc_module(name)
+	, unisim::kernel::service::Service<unisim::service::interfaces::Registers>(name, parent)
 	, peripheral_slave_if("peripheral_slave_if")
 	, m_clk("m_clk")
 	, reset_b("reset_b")
 	, pad_in("pad_in", NUM_PADS)
 	, pad_out("pad_out", NUM_PADS)
+	, registers_export("registers-export", this)
 	, logger(*this)
 	, m_clk_prop_proxy(m_clk)
 	, siul2_midr1(this)
@@ -123,6 +125,7 @@ SIUL2<CONFIG>::SIUL2(const sc_core::sc_module_name& name, unisim::kernel::servic
 	, siul2_pgpdi(this)
 	, siul2_mpgpdo(this)
 	, reg_addr_map()
+	, registers_registry()
 	, pad_out_event("pad_out_event", NUM_PADS)
 	, schedule()
 	, input_buffers()
@@ -182,6 +185,36 @@ SIUL2<CONFIG>::SIUL2(const sc_core::sc_module_name& name, unisim::kernel::servic
 	reg_addr_map.MapRegisterFile(SIUL2_PGPDI::ADDRESS_OFFSET, &siul2_pgpdi);
 	reg_addr_map.MapRegisterFile(SIUL2_MPGPDO::ADDRESS_OFFSET, &siul2_mpgpdo);
 
+	registers_registry.AddRegisterInterface(siul2_midr1.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(siul2_midr2.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(siul2_disr0.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(siul2_direr0.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(siul2_dirsr0.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(siul2_ireer0.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(siul2_ifeer0.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(siul2_ifer0.CreateRegisterInterface());
+	for(i = 0; i < NUM_INTERRUPT_FILTERS; i++)
+	{
+		registers_registry.AddRegisterInterface(siul2_ifmcr[i].CreateRegisterInterface());
+	}
+	registers_registry.AddRegisterInterface(siul2_scr0.CreateRegisterInterface());
+	for(i = 0; i < NUM_MULTIPLEXED_SIGNALS_CONFIGURATIONS; i++)
+	{
+		registers_registry.AddRegisterInterface(siul2_mscr_io[i].CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(siul2_mscr_mux[i].CreateRegisterInterface());
+	}
+	for(i = 0; i < NUM_PADS; i++)
+	{
+		registers_registry.AddRegisterInterface(siul2_gpdo[i].CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(siul2_gpdi[i].CreateRegisterInterface());
+	}
+	for(i = 0; i < (MAX_PADS / 16); i++)
+	{
+		registers_registry.AddRegisterInterface(siul2_pgpdo[i].CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(siul2_pgpdi[i].CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(siul2_mpgpdo[i].CreateRegisterInterface());
+	}
+	
 	if(threaded_model)
 	{
 		SC_THREAD(Process);
@@ -411,6 +444,20 @@ tlm::tlm_sync_enum SIUL2<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& payl
 	}
 	
 	return tlm::TLM_COMPLETED;
+}
+
+//////////////// unisim::service::interface::Registers ////////////////////
+
+template <typename CONFIG>
+unisim::service::interfaces::Register *SIUL2<CONFIG>::GetRegister(const char *name)
+{
+	return registers_registry.GetRegister(name);
+}
+
+template <typename CONFIG>
+void SIUL2<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 template <typename CONFIG>

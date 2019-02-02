@@ -81,6 +81,7 @@ template <typename CONFIG>
 PIT<CONFIG>::PIT(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_core::sc_module(name)
+	, unisim::kernel::service::Service<unisim::service::interfaces::Registers>(name, parent)
 	, peripheral_slave_if("peripheral_slave_if")
 	, m_clk("m_clk")
 	, per_clk("per_clk")
@@ -90,6 +91,7 @@ PIT<CONFIG>::PIT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	, irq()
 	, dma_trigger()
 	, rtirq("rtirq")
+	, registers_export("registers-export", this)
 	, logger(*this)
 	, m_clk_prop_proxy(m_clk)
 	, per_clk_prop_proxy(0)
@@ -106,6 +108,7 @@ PIT<CONFIG>::PIT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	, pit_tctrl(this)
 	, pit_tflg(this)
 	, reg_addr_map()
+	, registers_registry()
 	, schedule()
 	, endian(unisim::util::endian::E_BIG_ENDIAN)
 	, param_endian("endian", this, endian, "endian")
@@ -232,6 +235,27 @@ PIT<CONFIG>::PIT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 		reg_addr_map.MapRegister(PIT_CVAL::ADDRESS_OFFSET + (4 * 4 * channel_num), &pit_cval[channel_num]);
 		reg_addr_map.MapRegister(PIT_TCTRL::ADDRESS_OFFSET + (4 * 4 * channel_num), &pit_tctrl[channel_num]);
 		reg_addr_map.MapRegister(PIT_TFLG::ADDRESS_OFFSET + (4 * 4 * channel_num), &pit_tflg[channel_num]);
+	}
+
+	registers_registry.AddRegisterInterface(pit_mcr.CreateRegisterInterface());
+	if(HAS_64_BIT_TIMER_SUPPORT && (NUM_CHANNELS >= 2))
+	{
+		registers_registry.AddRegisterInterface(pit_ltmr64h.CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(pit_ltmr64l.CreateRegisterInterface());
+	}
+	if(HAS_RTI_SUPPORT)
+	{
+		registers_registry.AddRegisterInterface(pit_rti_ldval.CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(pit_rti_cval.CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(pit_rti_tctrl.CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(pit_rti_tflg.CreateRegisterInterface());
+	}
+	for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++)
+	{
+		registers_registry.AddRegisterInterface(pit_ldval[channel_num].CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(pit_cval[channel_num].CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(pit_tctrl[channel_num].CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(pit_tflg[channel_num].CreateRegisterInterface());
 	}
 
 	SC_METHOD(RESET_B_Process);
@@ -539,6 +563,20 @@ tlm::tlm_sync_enum PIT<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& payloa
 	}
 	
 	return tlm::TLM_COMPLETED;
+}
+
+//////////////// unisim::service::interface::Registers ////////////////////
+
+template <typename CONFIG>
+unisim::service::interfaces::Register *PIT<CONFIG>::GetRegister(const char *name)
+{
+	return registers_registry.GetRegister(name);
+}
+
+template <typename CONFIG>
+void PIT<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 template <typename CONFIG>

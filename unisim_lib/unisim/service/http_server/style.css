@@ -104,22 +104,22 @@ body
 
 .tab-headers-history-shortcut.w-svg
 {
-	background:url('/unisim/kernel/http_server/history-shortcut.svg') center center / cover no-repeat, #eff0f1;
+	background:url('/unisim/service/http_server/history-shortcut.svg') center center / cover no-repeat, #eff0f1;
 }
 
 .tab-headers-history-shortcut.wo-svg
 {
-	background:url('/unisim/kernel/http_server/history-shortcut.png') center center / cover no-repeat, #eff0f1;
+	background:url('/unisim/service/http_server/history-shortcut.png') center center / cover no-repeat, #eff0f1;
 }
 
 .tab-headers-history-shortcut.w-svg:hover
 {
-	background:url('/unisim/kernel/http_server/history-shortcut.svg') center center / cover no-repeat, #f9fafa;
+	background:url('/unisim/service/http_server/history-shortcut.svg') center center / cover no-repeat, #f9fafa;
 }
 
 .tab-headers-history-shortcut.wo-svg:hover
 {
-	background:url('/unisim/kernel/http_server/history-shortcut.png') center center / cover no-repeat, #f9fafa;
+	background:url('/unisim/service/http_server/history-shortcut.png') center center / cover no-repeat, #f9fafa;
 }
 
 .tab-headers-history
@@ -179,22 +179,22 @@ body
 
 .tab-headers-left-scroller.w-svg
 {
-	background:url('/unisim/kernel/http_server/left-arrow.svg') center center / cover no-repeat, #eff0f1;
+	background:url('/unisim/service/http_server/left-arrow.svg') center center / cover no-repeat, #eff0f1;
 }
 
 .tab-headers-left-scroller.wo-svg
 {
-	background:url('/unisim/kernel/http_server/left-arrow.png') center center / cover no-repeat, #eff0f1;
+	background:url('/unisim/service/http_server/left-arrow.png') center center / cover no-repeat, #eff0f1;
 }
 
 .tab-headers-left-scroller.w-svg:hover
 {
-	background:url('/unisim/kernel/http_server/left-arrow.svg') center center / cover no-repeat, #f9fafa;
+	background:url('/unisim/service/http_server/left-arrow.svg') center center / cover no-repeat, #f9fafa;
 }
 
 .tab-headers-left-scroller.wo-svg:hover
 {
-	background:url('/unisim/kernel/http_server/left-arrow.png') center center / cover no-repeat, #f9fafa;
+	background:url('/unisim/service/http_server/left-arrow.png') center center / cover no-repeat, #f9fafa;
 }
 
 .tab-headers-right-scroller
@@ -206,22 +206,22 @@ body
 
 .tab-headers-right-scroller.w-svg
 {
-	background:url('/unisim/kernel/http_server/right-arrow.svg') center center / cover no-repeat, #eff0f1;
+	background:url('/unisim/service/http_server/right-arrow.svg') center center / cover no-repeat, #eff0f1;
 }
 
 .tab-headers-right-scroller.wo-svg
 {
-	background:url('/unisim/kernel/http_server/right-arrow.png') center center / cover no-repeat, #eff0f1;
+	background:url('/unisim/service/http_server/right-arrow.png') center center / cover no-repeat, #eff0f1;
 }
 
 .tab-headers-right-scroller.w-svg:hover
 {
-	background:url('/unisim/kernel/http_server/right-arrow.svg') center center / cover no-repeat, #f9fafa;
+	background:url('/unisim/service/http_server/right-arrow.svg') center center / cover no-repeat, #f9fafa;
 }
 
 .tab-headers-right-scroller.wo-svg:hover
 {
-	background:url('/unisim/kernel/http_server/right-arrow.png') center center / cover no-repeat, #f9fafa;
+	background:url('/unisim/service/http_server/right-arrow.png') center center / cover no-repeat, #f9fafa;
 }
 
 .tab-headers
@@ -294,22 +294,22 @@ body
 
 .close-tab.w-svg
 {
-	background:url('/unisim/kernel/http_server/close-tab.svg') center center / cover no-repeat;
+	background:url('/unisim/service/http_server/close-tab.svg') center center / cover no-repeat;
 }
 
 .close-tab.wo-svg
 {
-	background:url('/unisim/kernel/http_server/close-tab.png') center center / cover no-repeat;
+	background:url('/unisim/service/http_server/close-tab.png') center center / cover no-repeat;
 }
 
 .close-tab.w-svg:hover
 {
-	background:url('/unisim/kernel/http_server/close-tab-hover.svg') center center / cover no-repeat;
+	background:url('/unisim/service/http_server/close-tab-hover.svg') center center / cover no-repeat;
 }
 
 .close-tab.wo-svg:hover
 {
-	background:url('/unisim/kernel/http_server/close-tab-hover.png') center center / cover no-repeat;
+	background:url('/unisim/service/http_server/close-tab-hover.png') center center / cover no-repeat;
 }
 
 #browser { padding:8px 0 0 8px; background:white; }

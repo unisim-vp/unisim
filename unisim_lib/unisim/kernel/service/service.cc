@@ -47,7 +47,6 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger_server.hh"
 #include "unisim/kernel/logger/logger.hh"
-#include "unisim/kernel/http_server/http_server.hh"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -1753,7 +1752,7 @@ void Object::Add(Object& object)
 	std::list<Object *>::iterator object_iter;
 	for(object_iter = leaf_objects.begin(); object_iter != leaf_objects.end(); object_iter++)
 	{
-		if(nat_ltstr::Less(object.GetName(), (*object_iter)->GetName()))
+		if(unisim::util::nat_sort::nat_ltstr::Less(object.GetName(), (*object_iter)->GetName()))
 		{
 			leaf_objects.insert(object_iter, &object);
 			return;
@@ -1781,7 +1780,7 @@ void Object::Add(VariableBase& var)
 	std::list<VariableBase *>::iterator variable_iter;
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
-		if(nat_ltstr::Less(var.GetName(), (*variable_iter)->GetName()))
+		if(unisim::util::nat_sort::nat_ltstr::Less(var.GetName(), (*variable_iter)->GetName()))
 		{
 			variables.insert(variable_iter, &var);
 			return;
@@ -1928,40 +1927,6 @@ void Object::Stop(int exit_status, bool asynchronous)
 void Object::SetDescription(const char *_description)
 {
 	description = _description;
-}
-
-bool Object::ServeHttpRequest(unisim::kernel::http_server::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
-{
-	std::ostringstream doc_sstr;
-	
-	doc_sstr << "<!DOCTYPE html>" << std::endl;
-	doc_sstr << "<html>" << std::endl;
-	doc_sstr << "\t<head>" << std::endl;
-	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-	doc_sstr << "\t</head>" << std::endl;
-	doc_sstr << "\t<body>" << std::endl;
-	doc_sstr << "\t</body>" << std::endl;
-	doc_sstr << "</html>" << std::endl;
-
-	std::string doc(doc_sstr.str());
-		
-	std::ostringstream http_header_sstr;
-	http_header_sstr << "HTTP/1.1 200 OK\r\n";
-	http_header_sstr << "Server: UNISIM-VP\r\n";
-	http_header_sstr << "Cache-control: no-cache\r\n";
-	http_header_sstr << "Connection: keep-alive\r\n";
-	http_header_sstr << "Content-length: " << doc.length() << "\r\n";
-	http_header_sstr << "Content-Type: text/html; charset=utf-8\r\n";
-	http_header_sstr << "\r\n";
-	
-	std::string http_header(http_header_sstr.str());
-
-	if(!conn.Send(http_header.c_str(), http_header.length())) return false;
-	
-	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
-			
-	return conn.Send(doc.c_str(), doc.length());
 }
 
 //=============================================================================
@@ -2122,9 +2087,8 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, imports()
 	, exports()
 	, variables()
-	, cmd_args(0)
+	, cmd_args()
 	, param_cmd_args(0)
-	, http_server(0)
 {
 	new unisim::kernel::config::XMLConfigFileHelper(this);
 	new unisim::kernel::config::INIConfigFileHelper(this);
@@ -2532,10 +2496,6 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	// Setup logger server
 	unisim::kernel::logger::LoggerServer *logserv = unisim::kernel::logger::Logger::StaticServerInstance();
 	logserv->Setup();
-	
-	// Setup http server
-	http_server = new unisim::kernel::http_server::HttpServer("http-server");
-	http_server->Setup();
 }
 
 Simulator::~Simulator()
@@ -2595,12 +2555,7 @@ Simulator::~Simulator()
 	{
 		delete param_enable_press_enter_at_exit;
 	}
-
-	if(http_server)
-	{
-		delete http_server;
-	}
-
+	
 	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_iter;
 	for(config_file_helper_iter = config_file_helpers.begin(); config_file_helper_iter != config_file_helpers.end(); config_file_helper_iter++)
 	{

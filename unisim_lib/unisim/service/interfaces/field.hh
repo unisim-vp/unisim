@@ -1,6 +1,6 @@
- /*
- *  Copyright (c) 2015-2016,
- *  Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
+/*
+ *  Copyright (c) 2019,
+ *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -31,39 +31,28 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
-
-#ifndef __UNISIM_KERNEL_TLM2_SIMULATOR_HH__
-#define __UNISIM_KERNEL_TLM2_SIMULATOR_HH__
+ 
+#ifndef __UNISIM_SERVICE_INTERFACES_FIELD_HH__
+#define __UNISIM_SERVICE_INTERFACES_FIELD_HH__
 
 #include <unisim/kernel/service/service.hh>
-#include <unisim/kernel/logger/logger.hh>
-#include <systemc>
-#include <tlm>
+#include <inttypes.h>
 
 namespace unisim {
-namespace kernel {
-namespace tlm2 {
+namespace service {
+namespace interfaces {
 
-class Simulator
-	: public unisim::kernel::service::Simulator
-	, public unisim::kernel::service::Object
-	, public sc_core::sc_module
+struct Field : public unisim::kernel::service::ServiceInterface
 {
-public:
-	Simulator(sc_core::sc_module_name const& name, int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::service::Simulator *simulator) = 0);
-	virtual ~Simulator();
-protected:
-	unisim::kernel::logger::Logger logger;
-private:
-	unisim::kernel::service::Statistic<sc_core::sc_time> stat_cur_sim_time;
-	sc_core::sc_time global_quantum;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_global_quantum;
-	sc_core::sc_time can_global_quantum;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_can_global_quantum;
+	virtual const char *GetName() const = 0;
+	virtual unsigned int GetBitOffset() const = 0;
+	virtual unsigned int GetBitWidth() const = 0;
+	virtual uint64_t GetValue() const = 0;
+	virtual void SetValue(uint64_t val) = 0;
 };
 
-} // end of namespace tlm2
-} // end of namespace kernel
+} // end of namespace interfaces
+} // end of namespace service
 } // end of namespace unisim
 
-#endif // __UNISIM_KERNEL_TLM2_SIMULATOR_HH__
+#endif

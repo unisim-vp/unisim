@@ -32,14 +32,16 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/kernel/http_server/http_server.hh>
+#include <unisim/service/http_server/http_server.hh>
+#include <unisim/util/endian/endian.hh>
 #include <fstream>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 namespace unisim {
-namespace kernel {
+namespace service {
 namespace http_server {
 
 using unisim::kernel::logger::DebugInfo;
@@ -49,115 +51,132 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-HttpRequest::HttpRequest(const unisim::util::hypapp::Request& _req, std::ostream& err_log)
-	: valid(false)
-	, has_query(false)
-	, has_fragment(false)
-	, req(_req)
-	, abs_path()
-	, server_root()
-	, path()
-	, query()
-	, fragment()
-	, domain()
-	, has_port(false)
-	, port(0)
+namespace {
+
+bool ParseHex(void *buffer, unsigned int buf_size, const std::string& str)
 {
-	valid = unisim::util::hypapp::URL_AbsolutePathDecoder::Decode(req.GetRequestURI(), abs_path, err_log);
-	if(valid)
+	std::size_t l_pos = 0;
+	std::size_t len = str.length();
+	if(l_pos >= len) return false;
+	
+	char c = 0;
+	do
 	{
-		server_root = "/";
-		path = abs_path.substr(1);
-	}
-	const char *p_request_uri = req.GetRequestURI();
-	if(p_request_uri)
-	{
-		const char *p_query = strchr(p_request_uri, '?');
-		if(p_query) p_query++;
-		const char *p_fragment = strchr(p_query ? p_query : p_request_uri, '#');
-		if(p_fragment) p_fragment++;
-		if(p_fragment)
+		c = str[l_pos++];
+		if((c != ' ') && (c != '\t') && (c != '0'))
 		{
-			fragment = std::string(p_fragment);
-			has_fragment = true;
-		}
-		if(p_query)
-		{
-			if(p_fragment)
-			{
-				query = std::string(p_query, p_fragment - p_query);
-			}
-			else
-			{
-				query = std::string(p_query);
-			}
-			has_query = true;
+			return false;
 		}
 	}
-	const char *p_host = req.GetHost();
-	if(p_host)
+	while((l_pos < len) && (c != '0'));
+	
+	if(l_pos >= len) return false;
+	
+	c = str[l_pos++];
+	
+	if((c != 'x') && (c != 'X')) return false;
+	
+	if(l_pos >= len) return false;
+	
+	std::size_t r_pos = (len - 1);
+	
+	if(r_pos >= l_pos)
 	{
-		const char *p_port = strchr(p_host, ':');
-		if(p_port)
+		do
 		{
-			domain = std::string(p_host, p_port - p_host);
-			std::istringstream sstr(p_port + 1);
-			sstr >> port;
-			has_port = true;
+			c = str[r_pos];
+			if((c != ' ') && (c != '\t')) break; 
+		}
+		while(--r_pos >= l_pos);
+	}
+	
+	if(l_pos > r_pos) return false;
+
+#if BYTE_ORDER == BIG_ENDIAN
+	uint8_t *buf = (uint8_t *) buffer + buf_size - 1;
+	uint8_t *buf_end = (uint8_t *) buffer - 1;
+#else
+	uint8_t *buf = (uint8_t *) buffer;
+	uint8_t *buf_end = (uint8_t *) buffer + buf_size;
+#endif
+	
+	bool h, o;
+	for(h = false, o = false; (r_pos >= l_pos); r_pos--, h = !h)
+	{
+		c = str[r_pos];
+		
+		char d;
+		if((c >= '0') && (c <= '9'))
+		{
+			d = (c - '0');
+		}
+		else if((c >= 'a') && (c <= 'f'))
+		{
+			d = 10 + (c - 'a');
+		}
+		else if((c >= 'A') && (c <= 'F'))
+		{
+			d = 10 + (c - 'A');
 		}
 		else
 		{
-			domain = std::string(p_host);
+			return false;
+		}
+		
+		if(!o)
+		{
+			if(h)
+			{
+				*buf |= d << 4;
+#if BYTE_ORDER == BIG_ENDIAN
+				buf--;
+#else
+				buf++;
+#endif
+				o = (r_pos > l_pos) && (buf == buf_end);
+			}
+			else
+			{
+				*buf = d;
+			}
 		}
 	}
+	
+	while(buf != buf_end)
+	{
+		if(h)
+		{
+			h = false;
+		}
+		else
+		{
+			*buf = 0;
+		}
+#if BYTE_ORDER == BIG_ENDIAN
+		buf--;
+#else
+		buf++;
+#endif
+	}
+	
+	return true;
 }
 
-HttpRequest::HttpRequest(const std::string& _server_root, const std::string& _path, const HttpRequest& http_request)
-	: valid(http_request.valid)
-	, has_query(http_request.has_query)
-	, has_fragment(http_request.has_fragment)
-	, req(http_request.req)
-	, abs_path(http_request.abs_path)
-	, server_root(_server_root)
-	, path(_path)
-	, query(http_request.query)
-	, fragment(http_request.fragment)
-	, domain(http_request.domain)
-	, has_port(http_request.has_port)
-	, port(http_request.port)
+template <typename T>
+bool ParseHex(T& value, const std::string& str)
 {
+	return ParseHex(&value, sizeof(value), str);
 }
 
-std::ostream& operator << (std::ostream& os, const HttpRequest& http_request)
-{
-	os << http_request.req;
-	os << "Valid: " << http_request.IsValid() << std::endl;
-	if(http_request.IsValid())
-	{
-		os << "Absolute Path: \"" << http_request.GetAbsolutePath() << std::endl;
-		os << "Server Root: \"" << http_request.GetServerRoot() << std::endl;
-		os << "Path: \"" << http_request.GetPath() << std::endl;
-	}
-	if(http_request.HasQuery())
-	{
-		os << "Query: " << http_request.GetQuery() << std::endl;
-	}
-	if(http_request.HasFragment())
-	{
-		os << "Fragment: " << http_request.GetFragment() << std::endl;
-	}
-	os << "Host: " << http_request.GetHost() << std::endl;
-	os << "Domain: " << http_request.GetDomain() << std::endl;
-	if(http_request.HasPort())
-	{
-		os << "Port: " << http_request.GetPort() << std::endl;
-	}
-	return os;
 }
 
 HttpServer::HttpServer(const char *name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::HttpServer>(name, parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::Registers>(name, parent)
 	, unisim::util::hypapp::HttpServer()
+	, http_server_import()
+	, registers_import()
 	, logger(*this)
 	, program_name(GetSimulator()->FindVariable("program-name")->operator std::string())
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
@@ -165,6 +184,8 @@ HttpServer::HttpServer(const char *name, unisim::kernel::service::Object *parent
 	, param_http_port("http-port", this, http_port, "HTTP port")
 	, http_max_clients(10)
 	, param_http_max_clients("http-max-clients", this, http_max_clients, "HTTP max clients")
+	, http_server_import_map()
+	, registers_import_map()
 {
 	param_http_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_http_port.SetMutable(false);
@@ -184,18 +205,61 @@ HttpServer::HttpServer(const char *name, unisim::kernel::service::Object *parent
 	}
 	this->SetWarnLog(logger.DebugWarningStream());
 	this->SetErrLog(logger.DebugErrorStream());
+	
+	unsigned int i;
+	for(i = 0; i < MAX_IMPORTS; i++)
+	{
+		std::stringstream http_server_import_name_sstr;
+		http_server_import_name_sstr << "http-server-import[" << i << "]";
+		http_server_import[i] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer>(http_server_import_name_sstr.str().c_str(), this);
+		
+		std::stringstream registers_import_name_sstr;
+		registers_import_name_sstr << "registers-import[" << i << "]";
+		registers_import[i] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers>(registers_import_name_sstr.str().c_str(), this);
+	}
 }
 
 HttpServer::~HttpServer()
 {
 	Kill();
 	JoinLoopThread();
+	
+	unsigned int i;
+	for(i = 0; i < MAX_IMPORTS; i++)
+	{
+		delete http_server_import[i];
+		delete registers_import[i];
+	}
 }
 
-void HttpServer::Setup()
+bool HttpServer::EndSetup()
 {
+	unsigned int i;
+	for(i = 0; i < MAX_IMPORTS; i++)
+	{
+		if(*http_server_import[i])
+		{
+			unisim::kernel::service::Object *object = http_server_import[i]->GetService();
+		
+			if(object)
+			{
+				http_server_import_map[object] = http_server_import[i];
+			}
+		}
+		if(*registers_import[i])
+		{
+			unisim::kernel::service::Object *object = registers_import[i]->GetService();
+			
+			if(object)
+			{
+				registers_import_map[object] = registers_import[i];
+			}
+		}
+	}
+	
 	StartLoopThread();
 	logger << DebugInfo << "HTTP server started on TCP/IP port #" << http_port << EndDebugInfo;
+	return true;
 }
 
 std::string HttpServer::Href(unisim::kernel::service::Object *object) const
@@ -504,7 +568,7 @@ bool HttpServer::ServeFile(const std::string& path, unisim::util::hypapp::Client
 	return false;
 }
 
-bool HttpServer::ServeHeader(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+bool HttpServer::ServeHeader(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
 	return conn.Send("HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 6\r\n\r\nHead\r\n");
 }
@@ -587,117 +651,7 @@ void HttpServer::Crawl(std::ostream& os, unsigned int indent_level)
 	}
 }
 
-#if 0
-bool HttpServer::ServeBrowser(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
-{
-	struct QueryDecoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
-	{
-		QueryDecoder(HttpServer& _http_server)
-			: http_server(_http_server)
-			, object_name()
-		{
-		}
-		
-		virtual bool FormAssign(const std::string& name, const std::string& value)
-		{
-			if(name == "object")
-			{
-				object_name = value;
-				return true;
-			}
-			
-			return false;
-		}
-		
-		HttpServer& http_server;
-		std::string object_name;
-	};
-
-	std::ostringstream doc_sstr;
-	doc_sstr << "<!DOCTYPE html>" << std::endl;
-	doc_sstr << "<html>" << std::endl;
-	doc_sstr << "\t<head>" << std::endl;
-	doc_sstr << "\t\t<title>Object browser</title>" << std::endl;
-	doc_sstr << "\t\t<meta name=\"description\" content=\"object browser over HTTP\">" << std::endl;
-	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-	doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
-	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/kernel/http_server/browser_style.css\" type=\"text/css\" />" << std::endl;
-	//doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/kernel/http_server/load_object.js\"></script>" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/kernel/http_server/browser_script.js\"></script>" << std::endl;
-	doc_sstr << "\t</head>" << std::endl;
-	doc_sstr << "\t<body>" << std::endl;
-
-	if(req.HasQuery())
-	{
-		QueryDecoder query_decoder(*this);
-	
-		if(query_decoder.Decode(req.GetQuery(), logger.DebugWarningStream()))
-		{
-			Crawl(doc_sstr, query_decoder.object_name, 2);
-		}
-	}
-	else
-	{
-		if(verbose)
-		{
-			logger << DebugInfo << "missing query" << EndDebugInfo;
-		}
-	}
-	
-	doc_sstr << "\t</body>" << std::endl;
-	doc_sstr << "</html>" << std::endl;
-	
-	std::string doc(doc_sstr.str());
-
-	std::ostringstream http_header_sstr;
-	http_header_sstr << "HTTP/1.1 200 OK\r\n";
-	http_header_sstr << "Server: UNISIM-VP\r\n";
-	http_header_sstr << "Cache-control: no-cache\r\n";
-	http_header_sstr << "Connection: keep-alive\r\n";
-	http_header_sstr << "Content-length: " << doc.length() << "\r\n";
-	http_header_sstr << "Content-Type: text/html\r\n";
-	http_header_sstr << "\r\n";
-	
-	std::string http_header(http_header_sstr.str());
-
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response header: " << std::endl << http_header << EndDebugInfo;
-	}
-	if(!conn.Send(http_header.c_str(), http_header.length()))
-	{
-		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP header" << EndDebugWarning;
-		return false;
-	}
-	
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response header: done" << EndDebugInfo;
-	}
-	
-	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
-	
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response body: " << std::endl << doc << EndDebugInfo;
-	}
-	
-	if(!conn.Send(doc.c_str(), doc.length()))
-	{
-		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response body" << EndDebugWarning;
-		return false;
-	}
-	
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response body: done" << EndDebugInfo;
-	}
-	
-	return true;
-}
-#endif
-
-bool HttpServer::ServeVariables(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn, unisim::kernel::service::VariableBase::Type var_type)
+bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn, unisim::kernel::service::VariableBase::Type var_type)
 {
 	struct QueryDecoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
 	{
@@ -727,14 +681,30 @@ bool HttpServer::ServeVariables(HttpRequest const& req, unisim::util::hypapp::Cl
 	doc_sstr << "<!DOCTYPE html>" << std::endl;
 	doc_sstr << "<html>" << std::endl;
 	doc_sstr << "\t<head>" << std::endl;
-	doc_sstr << "\t\t<title>Object configuration</title>" << std::endl;
-	doc_sstr << "\t\t<meta name=\"description\" content=\"object configurator over HTTP\">" << std::endl;
+	doc_sstr << "\t\t<title>Object ";
+	switch(var_type)
+	{
+		case unisim::kernel::service::VariableBase::VAR_PARAMETER:
+			doc_sstr << "configuration";
+			break;
+			
+		case unisim::kernel::service::VariableBase::VAR_STATISTIC:
+			doc_sstr << "statistics";
+			break;
+			
+		default:
+			doc_sstr << "variables of unknown type";
+			break;
+	}
+	doc_sstr << "</title>" << std::endl;
+	doc_sstr << "\t\t<meta name=\"description\" content=\"user interface for object variables over HTTP\">" << std::endl;
 	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 	doc_sstr << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
 	doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
-	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/kernel/http_server/var_style.css\" type=\"text/css\" />" << std::endl;
+	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/var_style.css\" type=\"text/css\" />" << std::endl;
 	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/kernel/http_server/var_script.js\"></script>" << std::endl;
+	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/var_script.js\"></script>" << std::endl;
 	doc_sstr << "\t</head>" << std::endl;
 	doc_sstr << "\t<body>" << std::endl;
 	
@@ -810,7 +780,7 @@ bool HttpServer::ServeVariables(HttpRequest const& req, unisim::util::hypapp::Cl
 						doc_sstr << "\t\t\t\t\t\t<td class=\"var-value\">" << std::endl;
 						doc_sstr << "\t\t\t\t\t\t\t<form action=\"/config?object=";
 						if(object) doc_sstr << String_to_HTML(object->GetName());
-						doc_sstr << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\">" << std::endl;
+						doc_sstr << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\" onsubmit=\"save_window_scroll_top()\">" << std::endl;
 						doc_sstr << "\t\t\t\t\t\t\t\t<input";
 						if(var->HasEnumeratedValues())
 						{
@@ -907,12 +877,230 @@ bool HttpServer::ServeVariables(HttpRequest const& req, unisim::util::hypapp::Cl
 	return true;
 }
 
-bool HttpServer::ServeFooter(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+{
+	struct QueryDecoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
+	{
+		QueryDecoder(HttpServer& _http_server)
+			: http_server(_http_server)
+			, object_name()
+		{
+		}
+		
+		virtual bool FormAssign(const std::string& name, const std::string& value)
+		{
+			if(name == "object")
+			{
+				object_name = value;
+				return true;
+			}
+			
+			return false;
+		}
+		
+		HttpServer& http_server;
+		std::string object_name;
+	};
+
+	std::ostringstream doc_sstr;
+	
+	doc_sstr << "<!DOCTYPE html>" << std::endl;
+	doc_sstr << "<html>" << std::endl;
+	doc_sstr << "\t<head>" << std::endl;
+	doc_sstr << "\t\t<title>Object registers</title>" << std::endl;
+	doc_sstr << "\t\t<meta name=\"description\" content=\"user interface for object registers over HTTP\">" << std::endl;
+	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+	doc_sstr << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
+	doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
+	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/reg_style.css\" type=\"text/css\" />" << std::endl;
+	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/reg_script.js\"></script>" << std::endl;
+	doc_sstr << "\t</head>" << std::endl;
+	doc_sstr << "\t<body>" << std::endl;
+	
+	if(req.HasQuery())
+	{
+		QueryDecoder query_decoder(*this);
+	
+		if(query_decoder.Decode(req.GetQuery(), logger.DebugWarningStream()))
+		{
+			unisim::kernel::service::Object *object = GetSimulator()->FindObject(query_decoder.object_name.c_str());
+			
+			if(object)
+			{
+				std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *>::iterator it = registers_import_map.find(object);
+				
+				if(it != registers_import_map.end())
+				{
+					unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *import = (*it).second;
+					
+					if(import)
+					{
+						if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
+						{
+							struct Form_URL_Encoded_Decoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
+							{
+								virtual bool FormAssign(const std::string& _name, const std::string& _value)
+								{
+									reg_name = _name;
+									reg_value_str = _value;
+									return true;
+								}
+								
+								std::string reg_name;
+								std::string reg_value_str;
+							};
+
+							Form_URL_Encoded_Decoder decoder;
+							if(decoder.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
+							{
+								struct Setter : unisim::service::interfaces::RegisterScanner
+								{
+									Setter(const std::string _reg_name, const std::string& _reg_value_str, std::ostream& _warn_log) : reg_name(_reg_name), reg_value_str(_reg_value_str), warn_log(_warn_log) {}
+									
+									virtual void Append(unisim::service::interfaces::Register * reg)
+									{
+										if(reg_name == reg->GetName())
+										{
+											unsigned int reg_size = reg->GetSize();
+											uint8_t reg_value[reg_size];
+											if(ParseHex(reg_value, reg_size, reg_value_str))
+											{
+												reg->SetValue(reg_value);
+											}
+											else
+											{
+												warn_log << "parse error in \"" << reg_value_str << "\"" << std::endl;
+											}
+										}
+									}
+								private:
+									const std::string& reg_name;
+									const std::string& reg_value_str;
+									std::ostream& warn_log;
+								};
+								
+								Setter setter(decoder.reg_name, decoder.reg_value_str, logger.DebugWarningStream());
+								(*import)->ScanRegisters(setter);
+							}
+						}
+						
+						struct Printer : unisim::service::interfaces::RegisterScanner
+						{
+							Printer(unisim::kernel::service::Object *_object, std::ostream& _doc_sstr) : object(_object), doc_sstr(_doc_sstr) {}
+							
+							virtual void Append(unisim::service::interfaces::Register * reg)
+							{
+								unsigned int reg_size = reg->GetSize();
+								uint8_t reg_value[reg_size];
+								reg->GetValue(&reg_value);
+								
+								doc_sstr << "\t\t\t\t<tr>" << std::endl;
+								doc_sstr << "\t\t\t\t\t<td class=\"reg-name\">" << String_to_HTML(reg->GetName()) << "</td>" << std::endl;
+								doc_sstr << "\t\t\t\t\t<td class=\"reg-size\">" << (reg->GetSize() * 8) << "</td>" << std::endl;
+								doc_sstr << "\t\t\t\t\t<td class=\"reg-value\">" << std::endl;
+								doc_sstr << "\t\t\t\t\t\t<form action=\"/registers?object=" << String_to_HTML(object->GetName()) << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\" onsubmit=\"save_window_scroll_top()\">" << std::endl;
+								doc_sstr << "\t\t\t\t\t\t\t<input class=\"reg-value-text\" type=\"text\" name=\"" << String_to_HTML(reg->GetName()) << "\" value=\"0x" << std::hex;
+#if BYTE_ORDER == BIG_ENDIAN
+								for(int i = 0; i < (int) reg_size; i++)
+#else
+								for(int i = (reg_size - 1); i >= 0; i--)
+#endif
+								{
+									doc_sstr << (reg_value[i] >> 4);
+									doc_sstr << (reg_value[i] & 15);
+								}
+								
+								doc_sstr << std::dec << "\">" << std::endl;
+								
+								doc_sstr << "\t\t\t\t\t\t</form>" << std::endl;
+								doc_sstr << "\t\t\t\t\t</td>" << std::endl;
+								doc_sstr << "\t\t\t\t</tr>" << std::endl;
+							}
+						private:
+							unisim::kernel::service::Object *object;
+							std::ostream& doc_sstr;
+						};
+						
+						doc_sstr << "\t\t<table class=\"reg-table\">" << std::endl;
+						doc_sstr << "\t\t\t<thead>" << std::endl;
+						doc_sstr << "\t\t\t\t<tr>" << std::endl;
+						doc_sstr << "\t\t\t\t\t<th class=\"reg-name\">Name</th>" << std::endl;
+						doc_sstr << "\t\t\t\t\t<th class=\"reg-size\">Size</th>" << std::endl;
+						doc_sstr << "\t\t\t\t\t<th class=\"reg-value\">Value</th>" << std::endl;
+						doc_sstr << "\t\t\t\t</tr>" << std::endl;
+						doc_sstr << "\t\t\t</thead>" << std::endl;
+						doc_sstr << "\t\t\t<tbody>" << std::endl;
+						Printer printer(object, doc_sstr);
+						(*import)->ScanRegisters(printer);
+						doc_sstr << "\t\t\t</tbody>" << std::endl;
+						doc_sstr << "\t\t</table>" << std::endl;
+					}
+				}
+			}
+		}
+	}
+	
+	doc_sstr << "\t</body>" << std::endl;
+	doc_sstr << "</html>" << std::endl;
+	
+	
+	std::string doc(doc_sstr.str());
+
+	std::ostringstream http_header_sstr;
+	http_header_sstr << "HTTP/1.1 200 OK\r\n";
+	http_header_sstr << "Server: UNISIM-VP\r\n";
+	http_header_sstr << "Cache-control: no-cache\r\n";
+	http_header_sstr << "Connection: keep-alive\r\n";
+	http_header_sstr << "Content-length: " << doc.length() << "\r\n";
+	http_header_sstr << "Content-Type: text/html; charset=utf-8\r\n";
+	http_header_sstr << "\r\n";
+	
+	std::string http_header(http_header_sstr.str());
+
+	if(verbose)
+	{
+		logger << DebugInfo << "sending HTTP response header: " << std::endl << http_header << EndDebugInfo;
+	}
+	if(!conn.Send(http_header.c_str(), http_header.length()))
+	{
+		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP header" << EndDebugWarning;
+		return false;
+	}
+	
+	if(verbose)
+	{
+		logger << DebugInfo << "sending HTTP response header: done" << EndDebugInfo;
+	}
+	
+	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
+	
+	if(verbose)
+	{
+		logger << DebugInfo << "sending HTTP response body: " << std::endl << doc << EndDebugInfo;
+	}
+	
+	if(!conn.Send(doc.c_str(), doc.length()))
+	{
+		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response body" << EndDebugWarning;
+		return false;
+	}
+	
+	if(verbose)
+	{
+		logger << DebugInfo << "sending HTTP response body: done" << EndDebugInfo;
+	}
+	
+	return true;
+}
+
+bool HttpServer::ServeFooter(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
 	return conn.Send("HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 8\r\n\r\nFooter\r\n");
 }
 
-bool HttpServer::ServeRootDocument(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
 	std::ostringstream doc_sstr;
 	
@@ -924,9 +1112,9 @@ bool HttpServer::ServeRootDocument(HttpRequest const& req, unisim::util::hypapp:
 	doc_sstr << "\t\t<meta name=\"description\" content=\"remote control interface over HTTP\">" << std::endl;
 	doc_sstr << "\t\t<title>" << String_to_HTML(program_name) << "</title>" << std::endl;
 	doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
-	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/kernel/http_server/style.css\" type=\"text/css\" />" << std::endl;
+	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/style.css\" type=\"text/css\" />" << std::endl;
 	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/kernel/http_server/script.js\"></script>" << std::endl;
+	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/script.js\"></script>" << std::endl;
 	doc_sstr << "\t</head>" << std::endl;
 	doc_sstr << "\t<body>" << std::endl;
 	
@@ -1027,7 +1215,7 @@ bool HttpServer::ServeRootDocument(HttpRequest const& req, unisim::util::hypapp:
 	return true;
 }
 
-bool HttpServer::Serve404(HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+bool HttpServer::Serve404(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
 	// Note: When browsing option "Show friendly HTTP error messages" is enabled, IE5+ does not show 404 error document if it is less than 512 bytes long 
 	std::ostringstream doc_sstr;
@@ -1084,7 +1272,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 		
 		virtual bool SendResponse(unisim::util::hypapp::Request const& req, unisim::util::hypapp::ClientConnection const& conn)
 		{
-			HttpRequest http_request(req, http_server.logger.DebugWarningStream());
+			unisim::util::hypapp::HttpRequest http_request(req, http_server.logger.DebugWarningStream());
 			
 			if(http_request.IsValid()) // http request is valid?
 			{
@@ -1118,9 +1306,13 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 				{
 					return http_server.ServeVariables(http_request, conn, unisim::kernel::service::VariableBase::VAR_STATISTIC);
 				}
+				else if((http_request.GetAbsolutePath() == "/registers") || (http_request.GetAbsolutePath() == "/registers/"))
+				{
+					return http_server.ServeRegisters(http_request, conn);
+				}
 				else if((http_request.GetAbsolutePath() == "/kernel") || (http_request.GetAbsolutePath() == "/kernel/"))
 				{
-					return http_server.unisim::kernel::service::Object::ServeHttpRequest(http_request, conn);
+					return http_server.Serve404(http_request, conn);
 				}
 // 				else if((http_request.GetAbsolutePath() == "/footer") || (http_request.GetAbsolutePath() == "/footer/"))
 // 				{
@@ -1158,8 +1350,8 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 							}
 							std::string object_http_request_server_root(http_request.GetAbsolutePath().substr(0, pos));
 							std::string object_http_request_path(http_request.GetAbsolutePath().substr(pos));
-							HttpRequest object_http_request(object_http_request_server_root, object_http_request_path, http_request);
-							return !object->ServeHttpRequest(object_http_request, conn) || !http_server.killed;
+							unisim::util::hypapp::HttpRequest object_http_request(object_http_request_server_root, object_http_request_path, http_request);
+							return !http_server.RouteHttpRequest(object, object_http_request, conn) || !http_server.killed;
 						}
 						else
 						{
@@ -1199,6 +1391,55 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 	msg_loop.Run(conn);
 }
 
+bool HttpServer::RouteHttpRequest(unisim::kernel::service::Object *object, unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+{
+	std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *>::iterator it = http_server_import_map.find(object);
+	if(it != http_server_import_map.end())
+	{
+		unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *import = (*it).second;
+		if(import)
+		{
+			return (*import)->ServeHttpRequest(req, conn);
+		}
+	}
+	
+	return Serve404(req, conn);
+}
+
+bool HttpServer::ServeDefault(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+{
+	std::ostringstream doc_sstr;
+	
+	doc_sstr << "<!DOCTYPE html>" << std::endl;
+	doc_sstr << "<html>" << std::endl;
+	doc_sstr << "\t<head>" << std::endl;
+	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	doc_sstr << "\t</head>" << std::endl;
+	doc_sstr << "\t<body>" << std::endl;
+	doc_sstr << "\t</body>" << std::endl;
+	doc_sstr << "</html>" << std::endl;
+
+	std::string doc(doc_sstr.str());
+		
+	std::ostringstream http_header_sstr;
+	http_header_sstr << "HTTP/1.1 200 OK\r\n";
+	http_header_sstr << "Server: UNISIM-VP\r\n";
+	http_header_sstr << "Cache-control: no-cache\r\n";
+	http_header_sstr << "Connection: keep-alive\r\n";
+	http_header_sstr << "Content-length: " << doc.length() << "\r\n";
+	http_header_sstr << "Content-Type: text/html; charset=utf-8\r\n";
+	http_header_sstr << "\r\n";
+	
+	std::string http_header(http_header_sstr.str());
+
+	if(!conn.Send(http_header.c_str(), http_header.length())) return false;
+	
+	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
+			
+	return conn.Send(doc.c_str(), doc.length());
+}
+
 } // end of namespace http_server
-} // end of namespace kernel
+} // end of namespace service
 } // end of namespace unisim

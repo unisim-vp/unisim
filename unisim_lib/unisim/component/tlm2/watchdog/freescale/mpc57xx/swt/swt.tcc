@@ -81,6 +81,7 @@ template <typename CONFIG>
 SWT<CONFIG>::SWT(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_core::sc_module(name)
+	, unisim::kernel::service::Service<unisim::service::interfaces::Registers>(name, parent)
 	, peripheral_slave_if("peripheral_slave_if")
 	, m_clk("m_clk")
 	, swt_reset_b("swt_reset_b")
@@ -88,6 +89,7 @@ SWT<CONFIG>::SWT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	, debug("debug")
 	, irq("irq")
 	, reset_b("reset_b")
+	, registers_export("registers-export", this)
 	, logger(*this)
 	, m_clk_prop_proxy(m_clk)
 	, swt_cr(this)
@@ -98,6 +100,7 @@ SWT<CONFIG>::SWT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	, swt_co(this)
 	, swt_sk(this)
 	, reg_addr_map()
+	, registers_registry()
 	, schedule()
 	, got_initial_timeout(false)
 	, unlock_sequence_index(0)
@@ -150,6 +153,14 @@ SWT<CONFIG>::SWT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	reg_addr_map.MapRegister(swt_co.ADDRESS_OFFSET, &swt_co);
 	reg_addr_map.MapRegister(swt_sk.ADDRESS_OFFSET, &swt_sk);
 
+	registers_registry.AddRegisterInterface(swt_cr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(swt_ir.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(swt_to.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(swt_wn.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(swt_sr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(swt_co.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(swt_sk.CreateRegisterInterface());
+	
 	if(threaded_model)
 	{
 		SC_THREAD(Process);
@@ -284,6 +295,20 @@ tlm::tlm_sync_enum SWT<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& payloa
 	}
 	
 	return tlm::TLM_COMPLETED;
+}
+
+//////////////// unisim::service::interface::Registers ////////////////////
+
+template <typename CONFIG>
+unisim::service::interfaces::Register *SWT<CONFIG>::GetRegister(const char *name)
+{
+	return registers_registry.GetRegister(name);
+}
+
+template <typename CONFIG>
+void SWT<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 template <typename CONFIG>

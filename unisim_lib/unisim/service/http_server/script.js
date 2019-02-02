@@ -92,40 +92,6 @@ if (!Array.prototype.findIndex) {
   });
 }
 
-var isIE = !!navigator.userAgent.match(/Trident/g) || !!navigator.userAgent.match(/MSIE/g);
-
-var hasSVG = !!(typeof SVGRect !== undefined);
-
-getWidth = function(el)
-{
-	var style = getComputedStyle(el, null);
-	var width = parseFloat(style.getPropertyValue('width'));
-	if(isIE)
-	{
-		var border_left_width = parseFloat(style.getPropertyValue('border-left-width'));
-		var border_right_width = parseFloat(style.getPropertyValue('border-right-width'));
-		
-		return width + border_left_width + border_right_width;
-	}
-	
-	return width;
-}
-
-getHeight = function(el)
-{
-	var style = getComputedStyle(el, null);
-	var height = parseFloat(style.getPropertyValue('height'));
-	if(isIE)
-	{
-		var border_top_width = parseFloat(style.getPropertyValue('border-top-width'));
-		var border_bottom_width = parseFloat(style.getPropertyValue('border-bottom-width'));
-		
-		return height + border_top_width + border_bottom_width;
-	}
-	
-	return height;
-}
-
 // Point
 Point.prototype.x = null;
 Point.prototype.y = null;
@@ -134,6 +100,63 @@ function Point(x, y)
 {
 	this.x = x || 0;
 	this.y = y || 0;
+}
+
+// CompatLayer
+var CompatLayer =
+{
+	is_internet_explorer : !!navigator.userAgent.match(/Trident/g) || !!navigator.userAgent.match(/MSIE/g),
+	
+	has_svg : !!(typeof SVGRect !== undefined),
+
+	get_element_width : function(el)
+	{
+		var style = getComputedStyle(el, null);
+		var width = parseFloat(style.getPropertyValue('width'));
+		if(this.is_internet_explorer)
+		{
+			var border_left_width = parseFloat(style.getPropertyValue('border-left-width'));
+			var border_right_width = parseFloat(style.getPropertyValue('border-right-width'));
+			
+			return width + border_left_width + border_right_width;
+		}
+		
+		return width;
+	},
+
+	get_element_height : function(el)
+	{
+		var style = getComputedStyle(el, null);
+		var height = parseFloat(style.getPropertyValue('height'));
+		if(this.is_internet_explorer)
+		{
+			var border_top_width = parseFloat(style.getPropertyValue('border-top-width'));
+			var border_bottom_width = parseFloat(style.getPropertyValue('border-bottom-width'));
+			
+			return height + border_top_width + border_bottom_width;
+		}
+		
+		return height;
+	},
+
+	get_iframe_scroll_pos : function(iframe)
+	{
+		return this.is_internet_explorer ? new Point(iframe.contentDocument.documentElement.scrollLeft, iframe.contentDocument.documentElement.scrollTop)
+		                                 : new Point(iframe.contentWindow.scrollX, iframe.contentWindow.scrollY);
+	},
+
+	set_iframe_scroll_pos : function(iframe, scroll_pos)
+	{
+		if(this.is_internet_explorer)
+		{
+			iframe.contentDocument.documentElement.scrollLeft = scroll_pos.x;
+			iframe.contentDocument.documentElement.scrollTop = scroll_pos.y;
+		}
+		else
+		{
+			iframe.contentWindow.scrollTo(scroll_pos.x, scroll_pos.y);
+		}
+	}
 }
 
 // TabConfig
@@ -247,7 +270,7 @@ Tab.prototype.create = function(tab_config)
 	this.static = false;
 	this.tab_config = tab_config;
 	this.close_tab = document.createElement('div');
-	this.close_tab.className = 'close-tab ' + (hasSVG ? 'w-svg' : 'wo-svg');
+	this.close_tab.className = 'close-tab ' + (CompatLayer.has_svg ? 'w-svg' : 'wo-svg');
 	this.tab_header = document.createElement('div');
 	this.tab_header.className = 'tab-header noselect';
 	this.tab_header.textContent = this.tab_config.label;
@@ -297,13 +320,6 @@ Tab.prototype.reuse_static = function(tab_header, tab_content)
 
 	this.close_tab = null;
 	this.bound_close = null;
-// 	this.bound_close = this.close.bind(this);
-// 	var close_tabs = this.tab_header.getElementsByClassName('close-tab');
-// 	if(close_tabs.length != 0)
-// 	{
-// 		this.close_tab = close_tabs[0];
-// 		this.close_tab.addEventListener('click', this.bound_close);
-// 	}
 }
 
 Tab.prototype.destroy = function()
@@ -395,11 +411,10 @@ Tab.prototype.save_scroll_position = function()
 		var scroll_y_item_name = 'gui.' + this.owner.name + '.' + this.tab_config.name;
 		if(this.tab_config.object_name && (this.tab_config.name != this.tab_config.object_name)) scroll_y_item_name += '.' + this.tab_config.object_name;
 		scroll_y_item_name += '.scroll-y';
-
-		var scroll_x = isIE ? this.tab_content.contentDocument.documentElement.scrollLeft : this.tab_content.contentWindow.scrollX;
-		var scroll_y = isIE ? this.tab_content.contentDocument.documentElement.scrollTop : this.tab_content.contentWindow.scrollY;
-		sessionStorage.setItem(scroll_x_item_name, scroll_x);
-		sessionStorage.setItem(scroll_y_item_name, scroll_y);
+		
+		var scroll_pos = CompatLayer.get_iframe_scroll_pos(this.tab_content);
+		sessionStorage.setItem(scroll_x_item_name, scroll_pos.x);
+		sessionStorage.setItem(scroll_y_item_name, scroll_pos.y);
 	}
 }
 
@@ -426,15 +441,7 @@ Tab.prototype.restore_scroll_position = function()
 		
 		if(scroll_x && scroll_y)
 		{
-			if(isIE)
-			{
-				this.tab_content.contentDocument.documentElement.scrollLeft = scroll_x;
-				this.tab_content.contentDocument.documentElement.scrollTop = scroll_y;
-			}
-			else
-			{
-				this.tab_content.contentWindow.scrollTo(scroll_x, scroll_y);
-			}
+			CompatLayer.set_iframe_scroll_pos(this.tab_content, new Point(scroll_x, scroll_y));
 		}
 	}
 }
@@ -500,7 +507,7 @@ Tab.prototype.tab_content_on_mouseleave = function(event)
 
 Tab.prototype.get_width = function()
 {
-	return this.tab_content ? getWidth(this.tab_content) : 0;
+	return this.tab_content ? CompatLayer.get_element_width(this.tab_content) : 0;
 }
 
 // Tabs
@@ -527,20 +534,20 @@ function Tabs(owner, name, tile)
 	this.tab_headers = this.tile.getElementsByClassName('tab-headers')[0];
 	this.tab_contents = this.tile.getElementsByClassName('tab-contents')[0];
 	this.history_shortcut_element = this.tile.getElementsByClassName('tab-headers-history-shortcut')[0];
-	this.history_shortcut_element.classList.add(hasSVG ? 'w-svg' : 'wo-svg');
+	this.history_shortcut_element.classList.add(CompatLayer.has_svg ? 'w-svg' : 'wo-svg');
 	this.tab_headers_left_scroller = this.tile.getElementsByClassName('tab-headers-left-scroller')[0];
-	this.tab_headers_left_scroller.classList.add(hasSVG ? 'w-svg' : 'wo-svg');
+	this.tab_headers_left_scroller.classList.add(CompatLayer.has_svg ? 'w-svg' : 'wo-svg');
 	this.tab_headers_right_scroller = this.tile.getElementsByClassName('tab-headers-right-scroller')[0];
-	this.tab_headers_right_scroller.classList.add(hasSVG ? 'w-svg' : 'wo-svg');
+	this.tab_headers_right_scroller.classList.add(CompatLayer.has_svg ? 'w-svg' : 'wo-svg');
 	this.tabs = new Array();
 	this.tab_config_history = new TabConfigs();
 	this.history_element = null;
 	var saved_tab_configs = new TabConfigs();
 	saved_tab_configs.restore('gui.' + this.name);
 	
-	var history_shortcut_element_width = getWidth(this.history_shortcut_element);
-	var left_scroller_width = getWidth(this.tab_headers_left_scroller);
-	var right_scroller_width = getWidth(this.tab_headers_right_scroller);
+	var history_shortcut_element_width = CompatLayer.get_element_width(this.history_shortcut_element);
+	var left_scroller_width = CompatLayer.get_element_width(this.tab_headers_left_scroller);
+	var right_scroller_width = CompatLayer.get_element_width(this.tab_headers_right_scroller);
 	this.controls_width = history_shortcut_element_width + left_scroller_width + right_scroller_width;
 	
 	// reuse static tabs
@@ -629,13 +636,13 @@ Tabs.prototype.restore_tab_headers_left = function()
 
 Tabs.prototype.compute_dynamic_widths = function()
 {
-	this.tile_width = this.tile_width = getWidth(this.tile);
+	this.tile_width = this.tile_width = CompatLayer.get_element_width(this.tile);
 	this.tab_headers_width = 0;
 	var tab_headers = this.tab_headers.getElementsByClassName('tab-header');
 	for(var i = 0; i < tab_headers.length; i++)
 	{
 		var tab_header = tab_headers[i];
-		var tab_header_width = getWidth(tab_header);
+		var tab_header_width = CompatLayer.get_element_width(tab_header);
 		this.tab_headers_width = this.tab_headers_width + tab_header_width;
 	}
 }
@@ -879,6 +886,7 @@ Tabs.prototype.refresh_active_tabs = function()
 // |  +-------------------------------+  +-+  +------------------------------------------------------------------------------------------+ |
 // +---------------------------------------------------------------------------------------------------------------------------------------+
 
+GUI.prototype.magic = 0xCAFE;
 GUI.prototype.min_tab_content_width = 64;  // minimum tab content width: enough to display horizontal scrollbar
 GUI.prototype.min_tab_content_height = 64; // minimum tab content width: enough to display vertical scrollbar
 GUI.prototype.window_resize_refresh_period = 500; // interface refresh period (in ms) while window is being resized
@@ -931,7 +939,7 @@ GUI.prototype.window_inner_height = 0;
 function GUI()
 {
 	var magic = sessionStorage.getItem('gui.magic');
-	if(!magic || (magic != 0xCAFE))
+	if(!magic || (magic != this.magic))
 	{
 		sessionStorage.clear();
 	}
@@ -979,38 +987,40 @@ function GUI()
 	
 	setInterval(this.resize.bind(this), this.window_resize_refresh_period);
 	
-	if(!magic || (magic != 0xCAFE))
+	if(!magic || (magic != this.magic))
 	{
 		this.create_left_tab('Documentation', 'documentation');
-		this.create_top_right_tab('Registers', 'registers', '/registers').switch_to();
+		var registers_tab = this.create_top_right_tab('Registers', 'registers', '/registers');
+		if(registers_tab) registers_tab.switch_to();
 		this.create_top_right_tab('Memory', 'memory', '/memory');
-		this.create_bottom_tab('Configuration', 'config', '/config').switch_to();
+		var config_tab = this.create_bottom_tab('Configuration', 'config', '/config');
+		if(config_tab) config_tab.switch_to();
 		this.create_bottom_tab('Statistics', 'stats', '/stats');
-		this.create_bottom_tab('Log', 'log', '/log');
+		this.create_bottom_tab('Log', 'log', '/logger');
 		this.left_tabs.switch_to_nth_tab(0);
 	}
 	
-	sessionStorage.setItem('gui.magic', 0xCAFE);
+	sessionStorage.setItem('gui.magic', this.magic);
 }
 
 GUI.prototype.create_left_tab = function(label, name, src)
 {
-	return this.left_tabs.create_tab(label, name, src);
+	return this.find_tab_by_name(name) ? undefined : this.left_tabs.create_tab(label, name, src);
 }
 
 GUI.prototype.create_top_middle_tab = function(label, name, src, object_name)
 {
-	return this.top_middle_tabs.create_tab(label, name, src, object_name);
+	return this.find_tab_by_name(name) ? undefined : this.top_middle_tabs.create_tab(label, name, src, object_name);
 }
 
 GUI.prototype.create_top_right_tab = function(label, name, src)
 {
-	return this.top_right_tabs.create_tab(label, name, src);
+	return this.find_tab_by_name(name) ? undefined : this.top_right_tabs.create_tab(label, name, src);
 }
 
 GUI.prototype.create_bottom_tab = function(label, name, src)
 {
-	return this.bottom_tabs.create_tab(label, name, src);
+	return this.find_tab_by_name(name) ? undefined : this.bottom_tabs.create_tab(label, name, src);
 }
 
 GUI.prototype.open_object = function(object_url, object_name, label)
@@ -1109,12 +1119,12 @@ GUI.prototype.vert_resize = function(e)
 	var dy = y - this.mouse_pos.y;
 	this.mouse_pos.y = y;
 	
-	var top_middle_tab_headers_div_height = getHeight(this.top_middle_tab_headers_div);
-	var top_right_tab_headers_div_height = getHeight(this.top_right_tab_headers_div);
-	var bottom_tab_headers_div_height = getHeight(this.bottom_tab_headers_div);
+	var top_middle_tab_headers_div_height = CompatLayer.get_element_height(this.top_middle_tab_headers_div);
+	var top_right_tab_headers_div_height = CompatLayer.get_element_height(this.top_right_tab_headers_div);
+	var bottom_tab_headers_div_height = CompatLayer.get_element_height(this.bottom_tab_headers_div);
 	
-	var top_div_height = getHeight(this.top_div);
-	var bottom_tile_div_height = getHeight(this.bottom_tile_div);
+	var top_div_height = CompatLayer.get_element_height(this.top_div);
+	var bottom_tile_div_height = CompatLayer.get_element_height(this.bottom_tile_div);
 	
 	top_div_height = top_div_height + dy;
 	bottom_tile_div_height = bottom_tile_div_height - dy;
@@ -1145,9 +1155,9 @@ GUI.prototype.left_horiz_resize = function(e)
 	var dx = x - this.mouse_pos.x;
 	this.mouse_pos.x = x;
 	
-	var left_tile_div_width = getWidth(this.left_tile_div);
-	var right_div_width = getWidth(this.right_div);
-	var top_middle_tile_div_width = getWidth(this.top_middle_tile_div);
+	var left_tile_div_width = CompatLayer.get_element_width(this.left_tile_div);
+	var right_div_width = CompatLayer.get_element_width(this.right_div);
+	var top_middle_tile_div_width = CompatLayer.get_element_width(this.top_middle_tile_div);
 	
 	left_tile_div_width = left_tile_div_width + dx;
 	right_div_width = right_div_width - dx;
@@ -1175,8 +1185,8 @@ GUI.prototype.right_horiz_resize = function(e)
 	var dx = x - this.mouse_pos.x;
 	this.mouse_pos.x = x;
 	
-	var top_middle_tile_div_width = getWidth(this.top_middle_tile_div);
-	var top_right_tile_div_width = getWidth(this.top_right_tile_div);
+	var top_middle_tile_div_width = CompatLayer.get_element_width(this.top_middle_tile_div);
+	var top_right_tile_div_width = CompatLayer.get_element_width(this.top_right_tile_div);
 	
 	top_middle_tile_div_width = top_middle_tile_div_width + dx;
 	top_right_tile_div_width = top_right_tile_div_width - dx;
@@ -1224,19 +1234,19 @@ GUI.prototype.restore_layout = function()
 
 GUI.prototype.resize_content = function(content_width, content_height)
 {
-	var left_horiz_resizer_div_width = getWidth(this.left_horiz_resizer_div);
-	var right_horiz_resizer_div_width = getWidth(this.right_horiz_resizer_div);
-	var left_tab_headers_div_height = getHeight(this.left_tab_headers_div);
-	var top_div_height = getHeight(this.top_div);
-	var top_middle_tab_headers_div_height = getHeight(this.top_middle_tab_headers_div);
-	var top_right_tab_headers_div_height = getHeight(this.top_right_tab_headers_div);
-	var vert_resizer_div_height = getHeight(this.vert_resizer_div);
-	var bottom_tab_headers_div_height = getHeight(this.bottom_tab_headers_div);
+	var left_horiz_resizer_div_width = CompatLayer.get_element_width(this.left_horiz_resizer_div);
+	var right_horiz_resizer_div_width = CompatLayer.get_element_width(this.right_horiz_resizer_div);
+	var left_tab_headers_div_height = CompatLayer.get_element_height(this.left_tab_headers_div);
+	var top_div_height = CompatLayer.get_element_height(this.top_div);
+	var top_middle_tab_headers_div_height = CompatLayer.get_element_height(this.top_middle_tab_headers_div);
+	var top_right_tab_headers_div_height = CompatLayer.get_element_height(this.top_right_tab_headers_div);
+	var vert_resizer_div_height = CompatLayer.get_element_height(this.vert_resizer_div);
+	var bottom_tab_headers_div_height = CompatLayer.get_element_height(this.bottom_tab_headers_div);
 	
-	var left_tile_div_width = getWidth(this.left_tile_div);
-	var right_div_width = getWidth(this.right_div);
-	var top_middle_tile_div_width = getWidth(this.top_middle_tile_div);
-	var top_right_tile_div_width = getWidth(this.top_right_tile_div);
+	var left_tile_div_width = CompatLayer.get_element_width(this.left_tile_div);
+	var right_div_width = CompatLayer.get_element_width(this.right_div);
+	var top_middle_tile_div_width = CompatLayer.get_element_width(this.top_middle_tile_div);
+	var top_right_tile_div_width = CompatLayer.get_element_width(this.top_right_tile_div);
 	
 	var min_content_width = this.min_tab_content_width + left_horiz_resizer_div_width + this.min_tab_content_width + right_horiz_resizer_div_width + this.min_tab_content_width;
 	var min_content_height = Math.max(left_tab_headers_div_height + this.min_tab_content_height, Math.max(top_middle_tab_headers_div_height, top_right_tab_headers_div_height) + this.min_tab_content_height + vert_resizer_div_height + bottom_tab_headers_div_height + this.min_tab_content_height);

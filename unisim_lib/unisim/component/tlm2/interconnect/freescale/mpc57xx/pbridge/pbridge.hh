@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_INTERCONNECT_FREESCALE_MPC57XX_PBRIDGE_PBRIDGE_HH__
 
 #include <unisim/component/tlm2/interconnect/programmable_router/router.hh>
+#include <unisim/util/debug/simple_register_registry.hh>
 
 #define SWITCH_ENUM_TRAIT(ENUM_TYPE, CLASS_NAME) template <ENUM_TYPE, bool __SWITCH_TRAIT_DUMMY__ = true> struct CLASS_NAME {}
 #define CASE_ENUM_TRAIT(ENUM_VALUE, CLASS_NAME) template <bool __SWITCH_TRAIT_DUMMY__> struct CLASS_NAME<ENUM_VALUE, __SWITCH_TRAIT_DUMMY__>
@@ -117,6 +118,7 @@ inline std::ostream& operator << (std::ostream& os, const AccessControlRegisterM
 template <typename CONFIG>
 class PBRIDGE
 	: public unisim::component::tlm2::interconnect::programmable_router::Router<CONFIG>
+	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
 {
 public:
 	typedef unisim::component::tlm2::interconnect::programmable_router::Router<CONFIG> Super;
@@ -129,8 +131,16 @@ public:
 	static const unsigned int NUM_MASTER_IDS = 16;
 	static const bool threaded_model                = false;
 	
+	// services
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+
 	PBRIDGE(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
 	virtual ~PBRIDGE();
+
+	//////////////// unisim::service::interface::Registers ////////////////////
+	
+	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
 protected:
 	virtual void end_of_elaboration();
@@ -813,6 +823,8 @@ protected:
 	PBRIDGE_OPACRAE pbridge_opacrae;
 	PBRIDGE_OPACRAF pbridge_opacraf;
 	
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
+
 	struct MPROT
 	{
 		struct MTR : unisim::util::reg::core::Field<MTR, 2> {}; // Master trusted for read

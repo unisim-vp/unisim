@@ -51,6 +51,8 @@ static const char *XML_ENCODING = "UTF-8";
 
 LoggerServer::LoggerServer(const char *name, unisim::kernel::service::Object *parent)
   : unisim::kernel::service::Object(name, parent)
+  , unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>(name, parent)
+  , http_server_export("http-server-export", this)
   , xml_writer_(0)
   , opt_std_err_(true)
   , opt_std_out_(false)
@@ -61,6 +63,8 @@ LoggerServer::LoggerServer(const char *name, unisim::kernel::service::Object *pa
   , opt_xml_file_(false)
   , opt_xml_filename_("logger_output.xml")
   , opt_xml_file_gzipped_(false)
+  , opt_http_(false)
+  , opt_http_max_log_size_(256)
   , mutex()
   , param_std_err("std_err", this, opt_std_err_, "Show logger output through the standard error output")
   , param_std_out("std_out", this, opt_std_out_, "Show logger output through the standard output")
@@ -71,7 +75,11 @@ LoggerServer::LoggerServer(const char *name, unisim::kernel::service::Object *pa
   , param_xml_file("xml_file", this, opt_xml_file_, "Keep logger output in a file xml formatted")
   , param_xml_filename("xml_filename", this, opt_xml_filename_, "Filename to keep logger xml output (the option xml_file must be activated)")
   , param_xml_file_gzipped("xml_file_gzipped", this, opt_xml_file_gzipped_, "Compress the xml output (a .gz extension is automatically appended to the xml_filename option)")
+  , param_http("http", this, opt_http_, "Show logger output through HTTP")
+  , param_http_max_log_size("http_max_log_size", this, opt_http_max_log_size_, "Maximum log size for HTTP output")
 {
+	param_http_max_log_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
 	pthread_mutex_init(&mutex, NULL);
 }
 
@@ -79,6 +87,11 @@ LoggerServer::~LoggerServer()
 {
   Close();
   pthread_mutex_destroy(&mutex);
+  for(HTTP_LOGS::iterator it = http_logs.begin(); it != http_logs.end(); it++)
+  {
+    HTTP_LOG *http_log = (*it).second;
+    delete http_log;
+  }
 }
 
 void
@@ -258,6 +271,26 @@ void LoggerServer::Print(mode_t mode, std::string name, const char *buffer)
 {
 	pthread_mutex_lock(&mutex);
 	
+	if(opt_http_)
+	{
+		HTTP_LOGS::iterator it = http_logs.find(name);
+		HTTP_LOG *http_log = 0;
+		if(it != http_logs.end())
+		{
+			http_log = (*it).second;
+		}
+		else
+		{
+			http_logs[name] = http_log = new HTTP_LOG();
+		}
+		
+		while(http_log->size() > opt_http_max_log_size_)
+		{
+			http_log->pop_front();
+		}
+		http_log->push_back(buffer);
+	}
+	
 	if(opt_std_out_)
 	{
 		Print(std::cout, opt_std_out_color_, mode, name, buffer);
@@ -309,6 +342,136 @@ void LoggerServer::DebugWarning(std::string name, const char *buffer)
 void LoggerServer::DebugError(std::string name, const char *buffer)
 {
 	Print(ERROR_MODE, name, buffer);
+}
+
+static std::string String_to_HTML(const std::string& s)
+{
+	std::stringstream sstr;
+	std::size_t pos = 0;
+	std::size_t len = s.length();
+	
+	for(pos = 0; pos < len; pos++)
+	{
+		char c = s[pos];
+
+		switch(c)
+		{
+			case '\n':
+				sstr << "<br>";
+				break;
+			case '<':
+				sstr << "&lt;";
+				break;
+			case '>':
+				sstr << "&gt;";
+				break;
+			case '&':
+				sstr << "&amp;";
+				break;
+			case '"':
+				sstr << "&quot;";
+				break;
+			case '\'':
+				sstr << "&apos;";
+				break;
+			case ' ':
+				sstr << "&nbsp;";
+				break;
+			case '\t':
+				sstr << "&nbsp;&nbsp;&nbsp;&nbsp;";
+			default:
+				sstr << c;
+		}
+	}
+	
+	return sstr.str();
+}
+
+bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+{
+	struct QueryDecoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
+	{
+		QueryDecoder()
+			: object_name()
+		{
+		}
+		
+		virtual bool FormAssign(const std::string& name, const std::string& value)
+		{
+			if(name == "object")
+			{
+				object_name = value;
+				return true;
+			}
+			
+			return false;
+		}
+		
+		std::string object_name;
+	};
+
+	std::ostringstream doc_sstr;
+	
+	doc_sstr << "<!DOCTYPE html>" << std::endl;
+	doc_sstr << "<html>" << std::endl;
+	doc_sstr << "\t<head>" << std::endl;
+	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/kernel/logger/style.css\" type=\"text/css\" />" << std::endl;
+	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+	//doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/kernel/logger/script.js\"></script>" << std::endl;
+	doc_sstr << "\t</head>" << std::endl;
+	doc_sstr << "\t<body>" << std::endl;
+	doc_sstr << "\t\t<div class=\"log\">" << std::endl;
+	
+	if(req.HasQuery())
+	{
+		QueryDecoder query_decoder;
+	
+		if(query_decoder.Decode(req.GetQuery(), std::cerr))
+		{
+			unisim::kernel::service::Object *object = GetSimulator()->FindObject(query_decoder.object_name.c_str());
+			
+			if(object)
+			{
+				pthread_mutex_lock(&mutex);
+				HTTP_LOGS::const_iterator http_log_it = http_logs.find(object->GetName());
+				if(http_log_it != http_logs.end())
+				{
+					HTTP_LOG *http_log = (*http_log_it).second;
+					for(HTTP_LOG::const_iterator it = http_log->begin(); it != http_log->end(); it++)
+					{
+						const std::string& msg = *it;
+						doc_sstr << "\t\t\t<span>" << String_to_HTML(msg) << "<br></span>" << std::endl;
+					}
+				}
+				pthread_mutex_unlock(&mutex);
+			}
+		}
+	}
+
+	doc_sstr << "\t\t</div>" << std::endl;
+	doc_sstr << "\t</body>" << std::endl;
+	doc_sstr << "</html>" << std::endl;
+
+	std::string doc(doc_sstr.str());
+		
+	std::ostringstream http_header_sstr;
+	http_header_sstr << "HTTP/1.1 200 OK\r\n";
+	http_header_sstr << "Server: UNISIM-VP\r\n";
+	http_header_sstr << "Cache-control: no-cache\r\n";
+	http_header_sstr << "Connection: keep-alive\r\n";
+	http_header_sstr << "Content-length: " << doc.length() << "\r\n";
+	http_header_sstr << "Content-Type: text/html; charset=utf-8\r\n";
+	http_header_sstr << "\r\n";
+	
+	std::string http_header(http_header_sstr.str());
+
+	if(!conn.Send(http_header.c_str(), http_header.length())) return false;
+	
+	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
+			
+	return conn.Send(doc.c_str(), doc.length());
 }
 
 } // end of namespace logger

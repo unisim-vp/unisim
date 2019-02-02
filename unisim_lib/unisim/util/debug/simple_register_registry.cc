@@ -1,6 +1,6 @@
- /*
- *  Copyright (c) 2015-2016,
- *  Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
+/*
+ *  Copyright (c) 2019,
+ *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -31,39 +31,50 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
-
-#ifndef __UNISIM_KERNEL_TLM2_SIMULATOR_HH__
-#define __UNISIM_KERNEL_TLM2_SIMULATOR_HH__
-
-#include <unisim/kernel/service/service.hh>
-#include <unisim/kernel/logger/logger.hh>
-#include <systemc>
-#include <tlm>
+ 
+#include <unisim/util/debug/simple_register_registry.hh>
 
 namespace unisim {
-namespace kernel {
-namespace tlm2 {
+namespace util {
+namespace debug {
 
-class Simulator
-	: public unisim::kernel::service::Simulator
-	, public unisim::kernel::service::Object
-	, public sc_core::sc_module
+SimpleRegisterRegistry::~SimpleRegisterRegistry()
 {
-public:
-	Simulator(sc_core::sc_module_name const& name, int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::service::Simulator *simulator) = 0);
-	virtual ~Simulator();
-protected:
-	unisim::kernel::logger::Logger logger;
-private:
-	unisim::kernel::service::Statistic<sc_core::sc_time> stat_cur_sim_time;
-	sc_core::sc_time global_quantum;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_global_quantum;
-	sc_core::sc_time can_global_quantum;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_can_global_quantum;
-};
+	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter;
 
-} // end of namespace tlm2
-} // end of namespace kernel
+	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
+	{
+		delete reg_iter->second;
+	}
+}
+
+void SimpleRegisterRegistry::AddRegisterInterface(unisim::service::interfaces::Register *reg_if)
+{
+	registers_registry[reg_if->GetName()] = reg_if;
+}
+
+unisim::service::interfaces::Register *SimpleRegisterRegistry::GetRegister(const char *name)
+{
+	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter = registers_registry.find(name);
+	if(reg_iter != registers_registry.end())
+	{
+		return (*reg_iter).second;
+	}
+
+	return 0;
+}
+
+void SimpleRegisterRegistry::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter;
+	
+	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
+	{
+		unisim::service::interfaces::Register *reg_if = (*reg_iter).second;
+		scanner.Append(reg_if);
+	}
+}
+
+} // end of namespace debug
+} // end of namespace service
 } // end of namespace unisim
-
-#endif // __UNISIM_KERNEL_TLM2_SIMULATOR_HH__
