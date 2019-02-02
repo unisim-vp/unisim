@@ -406,14 +406,6 @@ template <class ARCH> struct DC<ARCH,XBV> { Operation<ARCH>* get( InputCode<ARCH
 // 
 // verw.disasm = { _sink << "verw " << DisasmEw( modrm, segment ); };
 // 
-// op ldmxcsr( 0x0f[8]:> <:0xae[8]:> <:?[2]:0b010[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// ldmxcsr.disasm = { _sink << "ldmxcsr " << DisasmM( modrm, segment ); };
-// 
-// op stmxcsr( 0x0f[8]:> <:0xae[8]:> <:?[2]:0b011[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// stmxcsr.disasm = { _sink << "stmxcsr " << DisasmM( modrm, segment ); };
-// 
 // op xsave( 0x0f[8]:> <:0xae[8]:> <:?[2]:0b100[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // xsave.disasm = { _sink << "xsave " << DisasmM( modrm, segment ); };

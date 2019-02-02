@@ -232,6 +232,33 @@ template <class ARCH> struct DC<ARCH,CVT> { Operation<ARCH>* get( InputCode<ARCH
   return 0;
 }};
 
+template <class ARCH, bool STORE>
+struct LSMxcsr : public Operation<ARCH>
+{
+  LSMxcsr( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm ) : Operation<ARCH>( opbase ), rm( _rm ) {} RMOp<ARCH> rm;
+  void disasm( std::ostream& sink ) const { sink << (STORE ? "stmxcsr " : "ldmxcsr ") << DisasmE( GOd(), rm ); }
+  void execute( ARCH& arch ) const
+  {
+    if (STORE) arch.rmwrite( GOd(), rm, arch.mxcsr );
+    else       arch.mxcsr = arch.rmread( GOd(), rm );
+  }
+};
+
+template <class ARCH> struct DC<ARCH,MXCSR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\xae" ) /2 & RM_mem() ))
+
+    return new LSMxcsr<ARCH,false>( _.opbase(), _.rmop() );
+  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\xae" ) /3 & RM_mem() ))
+
+    return new LSMxcsr<ARCH,true>( _.opbase(), _.rmop() );
+  
+  return 0;
+}};
+
 /* CVTDQ2PS -- Convert Packed Dword Integers to Packed Single- or Double-Precision FP Values */
 // op cvtdq2ps_vdq_wdq( 0x0f[8]:> <:0x5b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // cvtdq2ps_vdq_wdq.disasm = { _sink << "cvtdq2ps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
@@ -1859,19 +1886,19 @@ template <class ARCH> struct DC<ARCH,PUNPCK> { Operation<ARCH>* get( InputCode<A
 template <class ARCH>
 struct PAndnPQ : public Operation<ARCH>
 {
-  PAndnPQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "pandn " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); }
+  PAndnPQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "pandn " << DisasmQq( rm ) << ',' << DisasmPq( gn ); }
 };
 
-template <class ARCH>
+template <class ARCH, unsigned OPSIZE>
 struct PAndnVW : public Operation<ARCH>
 {
-  PAndnVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "pandn " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); }
+  PAndnVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, char const* _mn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), mn(_mn) {} RMOp<ARCH> rm; uint8_t gn; char const* mn;
+  void disasm( std::ostream& sink ) const { sink << mn << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
-    arch.template xmm_uwrite<64>( gn, 0,  arch.template xmm_uread<64>( gn, 0 ) &~ arch.template xmm_uread<64>( rmop, 0 ) );
-    arch.template xmm_uwrite<64>( gn, 1,  arch.template xmm_uread<64>( gn, 1 ) &~ arch.template xmm_uread<64>( rmop, 1 ) );
+    for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
+      arch.template xmm_uwrite<OPSIZE>( gn, idx,  arch.template xmm_uread<OPSIZE>( gn, idx ) &~ arch.template xmm_uread<OPSIZE>( rm, idx ) );
   }
 };
 
@@ -1886,27 +1913,35 @@ template <class ARCH> struct DC<ARCH,PANDN> { Operation<ARCH>* get( InputCode<AR
 
   if (auto _ = match( ic, sse66() & opcode( "\x0f\xdb" ) & RM() ))
 
-    return new PAndnVW<ARCH>( _.opbase(), _.rmop(), _.greg() );
+    return new PAndnVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "pandn" );
 
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x55" ) & RM() ))
+
+    return new PAndnVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "andnpd" );
+  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x55" ) & RM() ))
+
+    return new PAndnVW<ARCH,32>( _.opbase(), _.rmop(), _.greg(), "andnps" );
+  
   return 0;
 }};
 
 template <class ARCH>
 struct PAndPQ : public Operation<ARCH>
 {
-  PAndPQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "pand " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); }
+  PAndPQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "pand " << DisasmQq( rm ) << ',' << DisasmPq( gn ); }
 };
 
-template <class ARCH>
+template <class ARCH, unsigned OPSIZE>
 struct PAndVW : public Operation<ARCH>
 {
-  PAndVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "pand " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); }
+  PAndVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, char const* _mn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), mn(_mn) {} RMOp<ARCH> rm; uint8_t gn; char const* mn;
+  void disasm( std::ostream& sink ) const { sink << mn << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
-    arch.template xmm_uwrite<64>( gn, 0,  arch.template xmm_uread<64>( gn, 0 ) & arch.template xmm_uread<64>( rmop, 0 ) );
-    arch.template xmm_uwrite<64>( gn, 1,  arch.template xmm_uread<64>( gn, 1 ) & arch.template xmm_uread<64>( rmop, 1 ) );
+    for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
+      arch.template xmm_uwrite<OPSIZE>( gn, idx,  arch.template xmm_uread<OPSIZE>( gn, idx ) & arch.template xmm_uread<OPSIZE>( rm, idx ) );
   }
 };
 
@@ -1921,7 +1956,15 @@ template <class ARCH> struct DC<ARCH,PAND> { Operation<ARCH>* get( InputCode<ARC
 
   if (auto _ = match( ic, sse66() & opcode( "\x0f\xdb" ) & RM() ))
 
-    return new PAndVW<ARCH>( _.opbase(), _.rmop(), _.greg() );
+    return new PAndVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "pand" );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x54" ) & RM() ))
+
+    return new PAndVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "andpd" );
+
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x54" ) & RM() ))
+
+    return new PAndVW<ARCH,32>( _.opbase(), _.rmop(), _.greg(), "andps" );
 
   return 0;
 }};
@@ -1929,19 +1972,19 @@ template <class ARCH> struct DC<ARCH,PAND> { Operation<ARCH>* get( InputCode<ARC
 template <class ARCH>
 struct POrPQ : public Operation<ARCH>
 {
-  POrPQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "por " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); }
+  POrPQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "por " << DisasmQq( rm ) << ',' << DisasmPq( gn ); }
 };
 
-template <class ARCH>
+template <class ARCH, unsigned OPSIZE>
 struct POrVW : public Operation<ARCH>
 {
-  POrVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "por " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); }
+  POrVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, char const* _mn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), mn(_mn) {} RMOp<ARCH> rm; uint8_t gn; char const* mn;
+  void disasm( std::ostream& sink ) const { sink << mn << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
-    arch.template xmm_uwrite<64>( gn, 0,  arch.template xmm_uread<64>( gn, 0 ) | arch.template xmm_uread<64>( rmop, 0 ) );
-    arch.template xmm_uwrite<64>( gn, 1,  arch.template xmm_uread<64>( gn, 1 ) | arch.template xmm_uread<64>( rmop, 1 ) );
+    for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
+      arch.template xmm_uwrite<OPSIZE>( gn, idx,  arch.template xmm_uread<OPSIZE>( gn, idx ) | arch.template xmm_uread<OPSIZE>( rm, idx ) );
   }
 };
 
@@ -1956,7 +1999,15 @@ template <class ARCH> struct DC<ARCH,POR> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, sse66() & opcode( "\x0f\xeb" ) & RM() ))
 
-    return new POrVW<ARCH>( _.opbase(), _.rmop(), _.greg() );
+    return new POrVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "por" );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x56" ) & RM() ))
+
+    return new POrVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "orpd" );
+
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x56" ) & RM() ))
+
+    return new POrVW<ARCH,32>( _.opbase(), _.rmop(), _.greg(), "orps" );
 
   return 0;
 }};
@@ -1964,19 +2015,19 @@ template <class ARCH> struct DC<ARCH,POR> { Operation<ARCH>* get( InputCode<ARCH
 template <class ARCH>
 struct PXorPQ : public Operation<ARCH>
 {
-  PXorPQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "pxor " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); }
+  PXorPQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "pxor " << DisasmQq( rm ) << ',' << DisasmPq( gn ); }
 };
 
-template <class ARCH>
+template <class ARCH, unsigned OPSIZE>
 struct PXorVW : public Operation<ARCH>
 {
-  PXorVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "pxor " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); }
+  PXorVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, char const* _mn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), mn(_mn) {} RMOp<ARCH> rm; uint8_t gn; char const* mn;
+  void disasm( std::ostream& sink ) const { sink << mn << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
-    arch.template xmm_uwrite<64>( gn, 0,  arch.template xmm_uread<64>( gn, 0 ) ^ arch.template xmm_uread<64>( rmop, 0 ) );
-    arch.template xmm_uwrite<64>( gn, 1,  arch.template xmm_uread<64>( gn, 1 ) ^ arch.template xmm_uread<64>( rmop, 1 ) );
+    for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
+      arch.template xmm_uwrite<OPSIZE>( gn, idx,  arch.template xmm_uread<OPSIZE>( gn, idx ) ^ arch.template xmm_uread<OPSIZE>( rm, idx ) );
   }
 };
 
@@ -1991,7 +2042,15 @@ template <class ARCH> struct DC<ARCH,PXOR> { Operation<ARCH>* get( InputCode<ARC
 
   if (auto _ = match( ic, sse66() & opcode( "\x0f\xef" ) & RM() ))
 
-    return new PXorVW<ARCH>( _.opbase(), _.rmop(), _.greg() );
+    return new PXorVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "pxor" );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x57" ) & RM() ))
+
+    return new PXorVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "xorpd" );
+
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x57" ) & RM() ))
+
+    return new PXorVW<ARCH,32>( _.opbase(), _.rmop(), _.greg(), "xorps" );
 
   return 0;
 }};

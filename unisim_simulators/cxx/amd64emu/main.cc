@@ -167,6 +167,9 @@ struct Arch
     , linux_os(0)
     , rip()
     , u64regs()
+    , umms()
+    , vmm_storage()
+    , mxcsr()
     , do_disasm(false)
     , instruction_count(0)
   {
@@ -853,6 +856,7 @@ public:
   } umms[16];
   
   uint8_t vmm_storage[16][16];
+  uint32_t mxcsr;
     
   template <unsigned OPSIZE>
   typename TypeFor<Arch,OPSIZE>::u
