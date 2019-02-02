@@ -212,6 +212,8 @@ unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/os.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/stmt_lookup.hh \
+unisim/service/interfaces/http_server.hh \
+unisim/service/interfaces/field.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/memory.hh \
@@ -220,6 +222,7 @@ unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/subprogram_lookup.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
+unisim/util/hypapp/hypapp.hh \
 unisim/util/likely/likely.hh \
 unisim/util/debug/symbol.hh \
 unisim/util/debug/data_object.hh \
@@ -305,6 +308,7 @@ unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/ieee754/ieee754.hh \
 unisim/util/inlining/inlining.hh \
+unisim/util/nat_sort/nat_sort.hh \
 unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \

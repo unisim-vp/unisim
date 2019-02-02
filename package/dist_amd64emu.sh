@@ -63,12 +63,15 @@ unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/service/service.hh \
 unisim/service/interfaces/data_object_lookup.hh \
+unisim/service/interfaces/http_server.hh \
+unisim/service/interfaces/field.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/register.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/stmt_lookup.hh \
+unisim/util/hypapp/hypapp.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/backtrace/backtrace.hh \
 unisim/util/blob/blob.hh \
@@ -145,6 +148,7 @@ unisim/util/dictionary/dictionary.hh \
 unisim/util/dictionary/dictionary.tcc \
 unisim/util/endian/endian.hh \
 unisim/util/inlining/inlining.hh \
+unisim/util/nat_sort/nat_sort.hh \
 unisim/util/lexer/lexer.hh \
 unisim/util/lexer/lexer.tcc \
 unisim/util/likely/likely.hh \
