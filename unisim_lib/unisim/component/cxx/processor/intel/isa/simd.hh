@@ -59,24 +59,6 @@
 // 
 // addsubps_vdq_wdq.disasm = { _sink << "addsubps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
 // 
-// /* ANDPD -- Bitwise Logical AND of Packed Single- or Double-Precision Floating-Point Values */
-// op andps_vdq_wdq( 0x0f[8]:> <:0x54[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// andps_vdq_wdq.disasm = { _sink << "andps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op andpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x54[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// andpd_vdq_wdq.disasm = { _sink << "andpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* ANDNP -- Bitwise Logical AND NOT of Packed Single- or Double-Precision Floating-Point Values */
-// op andnps_vdq_wdq( 0x0f[8]:> <:0x55[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// andnps_vdq_wdq.disasm = { _sink << "andnps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op andnpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x55[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// andnpd_vdq_wdq.disasm = { _sink << "andnpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
 // /* BLENDP -- Blend Packed Single- or Double-Precision Floating-Point Values */
 // op blendps_vdq_wdq_ib( 0x0f[8]:> <:0x3a[8]:> <:0x0c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
@@ -877,15 +859,6 @@ template <class ARCH> struct DC<ARCH,MULS> { Operation<ARCH>* get( InputCode<ARC
 // op mulsd_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x59[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // mulsd_vdq_wdq.disasm = { _sink << "mulsd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* ORP -- Bitwise Logical OR of Single- or Double-Precision Floating-Point Values */
-// op orps_vdq_wdq( 0x0f[8]:> <:0x56[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// orps_vdq_wdq.disasm = { _sink << "orps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op orpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x56[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// orpd_vdq_wdq.disasm = { _sink << "orpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
 // 
 // /* PABSB/PABSW/PABSD -- Packed Absolute Value */
 // op pabsb_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x1c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
@@ -1903,6 +1876,8 @@ struct PAndnVW : public Operation<ARCH>
 };
 
 /* PANDN -- Bitwise Logical AND NOT */
+/* ANDNPD -- Bitwise Logical AND NOT of Packed Double-Precision Floating-Point Values */
+/* ANDNPS -- Bitwise Logical AND NOT of Packed Single-Precision Floating-Point Values */
 template <class ARCH> struct DC<ARCH,PANDN> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
@@ -1946,6 +1921,8 @@ struct PAndVW : public Operation<ARCH>
 };
 
 /* PAND -- Bitwise Logical AND */
+/* ANDPD -- Bitwise Logical AND of Packed Double-Precision Floating-Point Values */
+/* ANDPS -- Bitwise Logical AND of Packed Single-Precision Floating-Point Values */
 template <class ARCH> struct DC<ARCH,PAND> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
@@ -1989,6 +1966,8 @@ struct POrVW : public Operation<ARCH>
 };
 
 /* POR -- Bitwise Logical OR */
+/* ORPD -- Bitwise Logical OR of Double-Precision Floating-Point Values */
+/* ORPS -- Bitwise Logical OR of Single-Precision Floating-Point Values */
 template <class ARCH> struct DC<ARCH,POR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
@@ -2032,6 +2011,8 @@ struct PXorVW : public Operation<ARCH>
 };
 
 /* PXOR -- Logical Exclusive OR */
+/* XORPD -- Bitwise Logical XOR for Double-Precision Floating-Point Values */
+/* XORPS -- Bitwise Logical XOR for Single-Precision Floating-Point Values */
 template <class ARCH> struct DC<ARCH,PXOR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
@@ -2051,6 +2032,48 @@ template <class ARCH> struct DC<ARCH,PXOR> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, sse__() & opcode( "\x0f\x57" ) & RM() ))
 
     return new PXorVW<ARCH,32>( _.opbase(), _.rmop(), _.greg(), "xorps" );
+
+  return 0;
+}};
+
+template <class ARCH, unsigned OPSZ>
+struct Ucomis : public Operation<ARCH>
+{
+  Ucomis( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "ucomis" << SizeID<OPSZ>::fid() << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
+  
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,OPSZ>::f f_type;
+    typedef typename ARCH::bit_t bit_t;
+    
+    f_type a = arch.template xmm_fread<OPSZ>( gn, 0 );
+    f_type b = arch.template xmm_fread<OPSZ>( rm, 0 );
+    bit_t notle = not (a <= b);
+    bit_t notge = not (a >= b);
+
+    arch.flagwrite( ARCH::FLAG::ZF, notge == notle );
+    arch.flagwrite( ARCH::FLAG::PF, notge and notle );
+    arch.flagwrite( ARCH::FLAG::CF, notge );
+    arch.flagwrite( ARCH::FLAG::OF, false );
+    arch.flagwrite( ARCH::FLAG::SF, false );
+    arch.flagwrite( ARCH::FLAG::AF, false );
+  }
+};
+
+/* UCOMISD -- Unordered Compare Scalar Double-Precision Floating-Point Values and Set EFLAGS */
+/* UCOMISS -- Unordered Compare Scalar Single-Precision Floating-Point Values and Set EFLAGS */
+template <class ARCH> struct DC<ARCH,UCOMIS> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x2e" ) & RM() ))
+    
+    return new Ucomis<ARCH,64>( _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x2e" ) & RM() ))
+    
+    return new Ucomis<ARCH,32>( _.opbase(), _.rmop(), _.greg() );
 
   return 0;
 }};
@@ -2146,16 +2169,6 @@ template <class ARCH> struct DC<ARCH,PXOR> { Operation<ARCH>* get( InputCode<ARC
 // subsd_vdq_wdq.disasm = { _sink << "subsd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
 // 
 // 
-// /* UCOMISS -- Unordered Compare Scalar Single-Precision Floating-Point Values and Set EFLAGS */
-// op ucomiss_vdq_wdq( 0x0f[8]:> <:0x2e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// ucomiss_vdq_wdq.disasm = { _sink << "ucomiss " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* UCOMISD -- Unordered Compare Scalar Double-Precision Floating-Point Values and Set EFLAGS */
-// op ucomisd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x2e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// ucomisd_vdq_wdq.disasm = { _sink << "ucomisd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
 // /* UNPCKHPS -- Unpack and Interleave High Packed Single-Precision Floating-Point Values */
 // op unpckhps_vdq_wdq( 0x0f[8]:> <:0x15[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
@@ -2176,16 +2189,6 @@ template <class ARCH> struct DC<ARCH,PXOR> { Operation<ARCH>* get( InputCode<ARC
 // 
 // unpcklpd_vdq_wdq.disasm = { _sink << "unpcklpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
 // 
-// /* XORPD -- Bitwise Logical XOR for Double-Precision Floating-Point Values */
-// op xorpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x57[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// xorpd_vdq_wdq.disasm = { _sink << "xorpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* XORPS -- Bitwise Logical XOR for Single-Precision Floating-Point Values */
-// op xorps_vdq_wdq( 0x0f[8]:> <:0x57[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// xorps_vdq_wdq.disasm = { _sink << "xorps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-
 // /* MOVDDUP -- Move One Double-FP and Duplicate */
 // op movddup_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x12[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // movddup_vdq_wdq.disasm = { _sink << "movddup " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
