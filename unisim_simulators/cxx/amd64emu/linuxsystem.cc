@@ -175,6 +175,43 @@ LinuxOS::Core( std::string const& coredump )
                             linux_impl.SetTargetRegister(regname, regs[idx]);
                         }                      
                     } break;
+                  case 0x202: // NT_X86_XSTATE note
+                    {
+                      { /* FCW */
+                        uint16_t& fcw = *(uint16_t*)(content);
+                        if (need_endian_swap) unisim::util::endian::BSwap( fcw );
+                        std::cerr << std::setw(12) << "%fcw" << ": " << std::hex << fcw << std::endl;
+                        if (auto reg = linux_impl.GetDebugRegister("%fcw"))
+                          reg->SetValue(&fcw);
+                        else
+                          throw 0;
+                      }
+                      /* XMM registers */
+                      {
+                        uint8_t* xmm_bytes = (uint8_t*)(content + 0xa0);
+                        if (need_endian_swap) throw 0;
+                        for (unsigned reg = 0; reg < 16; ++reg)
+                          {
+                            std::ostringstream buf; buf << "%xmm" << std::dec << reg;
+                            char const* regname = buf.str().c_str();
+                            std::cerr << std::setw(12) << regname << ':';
+                            for (int idx = 16; --idx>= 0;)
+                              {
+                                uint8_t byte = xmm_bytes[16*reg+idx];
+                                std::cerr
+                                  << ' '
+                                  << "0123456789abcdef"[(byte>>0)&0b1111]
+                                  << "0123456789abcdef"[(byte>>4)&0b1111]
+                                  ;
+                              }
+                            std::cerr << std::endl;
+                            if (auto regd = linux_impl.GetDebugRegister(regname))
+                              regd->SetValue(&xmm_bytes[16*reg]);
+                          }
+                      }
+                      
+                    } break;
+                    
                   }
               }
           } break;
@@ -197,6 +234,11 @@ LinuxOS::Core( std::string const& coredump )
         throw "Error while writing the segments into the target memory.";
     }
   linux_impl.is_load_ = true;
+
+  // map std file triplet
+  linux_impl.MapTargetToHostFileDescriptor(0, 0); /* stdin */
+  linux_impl.MapTargetToHostFileDescriptor(1, 1); /* stdout */
+  linux_impl.MapTargetToHostFileDescriptor(2, 2); /* stderr */
 }
 
 void
@@ -258,6 +300,13 @@ LinuxOS::ExecuteSystemCall( int id )
 {
   linux_impl.ExecuteSystemCall( id, exited, app_ret_status );
 }
+
+void
+LinuxOS::LogSystemCall(int id)
+{
+    linux_impl.LogSystemCall(id);
+}
+
 
 void
 LinuxOS::SetBrk(addr_t brk)

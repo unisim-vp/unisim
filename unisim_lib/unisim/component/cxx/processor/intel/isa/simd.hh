@@ -32,24 +32,6 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-// /* ADDP -- Add Packed Single- or Double-Precision Floating-Point Values */
-// op addps_vdq_wdq( 0x0f[8]:> <:0x58[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// addps_vdq_wdq.disasm = { _sink << "addps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op addpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x58[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// addpd_vdq_wdq.disasm = { _sink << "addpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* ADDSD -- Add Scalar Single- or Double-Precision Floating-Point Values */
-// op addss_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x58[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// addss_vdq_wdq.disasm = { _sink << "addss " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op addsd_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x58[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// addsd_vdq_wdq.disasm = { _sink << "addsd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
 // /* ADDSUBPD -- Packed Single- or Double-FP Add/Subtract */
 // op addsubpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xd0[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
@@ -124,35 +106,38 @@
 /* SIMD CVT Functions*/
 /*********************/
 
-template <class ARCH, unsigned DOPSZ, unsigned SOPSZ, bool PACKED>
+template <class ARCH, unsigned DOPSZ, unsigned SOPSZ>
 struct CvtI2F : public Operation<ARCH>
 {
-  CvtI2F( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
-  char const* mnemonic() const
-  {
-    if (PACKED) switch (DOPSZ) { case 32: return "cvtdq2ps"; case 64: return "cvtdq2pd"; }
-    else        switch (DOPSZ)
-                  {
-                  case 32: switch(SOPSZ) { case 32: return "cvtsi2ss"; case 64: return "cvtsi2ss"; }
-                  case 64: switch(SOPSZ) { case 32: return "cvtsi2sd"; case 64: return "cvtsi2sd"; }
-                  }
-    return "cvt<bad>";
-  }
-  void disasm( std::ostream& sink ) const
-  {
-    sink << mnemonic() << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn );
-  }
+  CvtI2F( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {}
+  RMOp<ARCH> rm; uint8_t gn;
+  char const* mnemonic() const { switch (DOPSZ) { case 32: return "cvtdq2ps"; case 64: return "cvtdq2pd"; } return "cvt<bad>"; }
+  void disasm( std::ostream& sink ) const { sink << mnemonic() << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<ARCH,SOPSZ>::u usrc_type;
     typedef typename TypeFor<ARCH,DOPSZ>::f fdst_type;
-    
-    for (unsigned idx = 0; idx < (PACKED ? 128/DOPSZ : 1); ++idx)
+    for (unsigned idx = 0, end = 128/DOPSZ; idx < end; ++idx)
       {
-        usrc_type src = arch.template xmm_uread<SOPSZ>( rm, idx );
+        typename TypeFor<ARCH,SOPSZ>::u src = arch.template xmm_uread<SOPSZ>( rm, idx );
         fdst_type dst = fdst_type(src);
         arch.template xmm_fwrite<DOPSZ>( gn, idx, dst );
       }
+  }
+};
+
+template <class ARCH, unsigned DOPSZ, class SOP>
+struct CvtsI2F : public Operation<ARCH>
+{
+  CvtsI2F( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {}
+  RMOp<ARCH> rm; uint8_t gn;
+  char const* mnemonic() const { switch (DOPSZ) { case 32: return "cvtsi2ss"; case 64: return "cvtsi2sd"; } return "cvt<bad>"; }
+  void disasm( std::ostream& sink ) const { sink << mnemonic() << ' ' << DisasmE( SOP(), rm ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,DOPSZ>::f fdst_type;
+    typename TypeFor<ARCH,SOP::OPSIZE>::u src = arch.rmread( SOP(), rm );
+    fdst_type dst = fdst_type(src);
+    arch.template xmm_fwrite<DOPSZ>( gn, 0, dst );
   }
 };
 
@@ -177,6 +162,22 @@ struct CvtsF2F : public Operation<ARCH>
   }
 };
 
+template <class ARCH, unsigned SOPSZ, class DOP>
+struct CvttF2I : public Operation<ARCH>
+{
+  CvttF2I( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {}
+  RMOp<ARCH> rm; uint8_t gn;
+  char const* mnemonic() const { switch (SOPSZ) { case 32: return "cvttss2si"; case 64: return "cvttsd2si"; } return "cvt<bad>"; }
+  void disasm( std::ostream& sink ) const { sink << mnemonic() << ' ' << DisasmWdq( rm ) << ',' << DisasmG( DOP(), gn ); }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,DOP::OPSIZE>::u udst_type;
+    typename TypeFor<ARCH,SOPSZ>::f src = arch.template xmm_fread<SOPSZ>( rm, 0 );
+    udst_type dst = udst_type(src);
+    arch.regwrite( DOP(), gn, dst );
+  }
+};
+
 template <class ARCH> struct DC<ARCH,CVT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
@@ -191,26 +192,43 @@ template <class ARCH> struct DC<ARCH,CVT> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, sseF3() & opcode( "\x0f\xe6" ) & RM() ))
 
-    return new CvtI2F<ARCH,64,32,true>( _.opbase(), _.rmop(), _.greg() );
+    return new CvtI2F<ARCH,64,32>( _.opbase(), _.rmop(), _.greg() );
   
   if (auto _ = match( ic, sse__() & opcode( "\x0f\x5b" ) & RM() ))
 
-    return new CvtI2F<ARCH,32,32,true>( _.opbase(), _.rmop(), _.greg() );
+    return new CvtI2F<ARCH,32,32>( _.opbase(), _.rmop(), _.greg() );
 
   if (auto _ = match( ic, sseF2() & opcode( "\x0f\x2a" ) & RM() ))
     {
-      if (ic.opsize() == 32) return new CvtI2F<ARCH,64,32,false>( _.opbase(), _.rmop(), _.greg() );
-      if (ic.opsize() == 64) return new CvtI2F<ARCH,64,64,false>( _.opbase(), _.rmop(), _.greg() );
-      return 0;
-    }
-
-  if (auto _ = match( ic, sseF3() & opcode( "\x0f\x2a" ) & RM() ))
-    {
-      if (ic.opsize() == 32) return new CvtI2F<ARCH,32,32,false>( _.opbase(), _.rmop(), _.greg() );
-      if (ic.opsize() == 64) return new CvtI2F<ARCH,32,64,false>( _.opbase(), _.rmop(), _.greg() );
-      return 0;
+      if (ic.f3())
+        {
+          if (ic.opsize() == 32) return new CvtsI2F<ARCH,32,GOd>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize() == 64) return new CvtsI2F<ARCH,32,GOq>( _.opbase(), _.rmop(), _.greg() );
+          return 0;
+        }
+      if (ic.f2())
+        {
+          if (ic.opsize() == 32) return new CvtsI2F<ARCH,64,GOd>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize() == 64) return new CvtsI2F<ARCH,64,GOq>( _.opbase(), _.rmop(), _.greg() );
+          return 0;
+        }
     }
   
+  if (auto _ = match( ic, opcode( "\x0f\x2c" ) & RM() ))
+    {
+      if (ic.f3())
+        {
+          if (ic.opsize() == 32) return new CvttF2I<ARCH,32,GOd>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize() == 64) return new CvttF2I<ARCH,32,GOq>( _.opbase(), _.rmop(), _.greg() );
+          return 0;
+        }
+      if (ic.f2())
+        {
+          if (ic.opsize() == 32) return new CvttF2I<ARCH,64,GOd>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize() == 64) return new CvttF2I<ARCH,64,GOq>( _.opbase(), _.rmop(), _.greg() );
+          return 0;
+        }
+    }
   return 0;
 }};
 
@@ -308,24 +326,7 @@ template <class ARCH> struct DC<ARCH,MXCSR> { Operation<ARCH>* get( InputCode<AR
 // op cvttss2si_gd_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x2c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // cvttss2si_gd_wdq.disasm = { _sink << "cvttss2si " << DisasmWdq( rmop ) << ',' << DisasmGd( gn ); };
 
-// 
-// /* DIVPD -- Divide Packed Floating-Point Values */
-// op divps_vdq_wdq( 0x0f[8]:> <:0x5e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// divps_vdq_wdq.disasm = { _sink << "divps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op divpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x5e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// divpd_vdq_wdq.disasm = { _sink << "divpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op divss_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x5e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// divss_vdq_wdq.disasm = { _sink << "divss " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op divsd_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x5e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// divsd_vdq_wdq.disasm = { _sink << "divsd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
+
 // /* DPPD -- Dot Product of Packed Double Precision Floating-Point Values */
 // op dpps_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x40[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
@@ -809,57 +810,135 @@ template <class ARCH> struct DC<ARCH,VMOVSD> { Operation<ARCH>* get( InputCode<A
 // op mpsadbw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x42[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // mpsadbw_vdq_wdq.disasm = { _sink << "mpsadbw " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* MULP -- Multiply Packed Single- or Double-Precision Floating-Point Values */
-// op mulps_vdq_wdq( 0x0f[8]:> <:0x59[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// mulps_vdq_wdq.disasm = { _sink << "mulps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op mulpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x59[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// mulpd_vdq_wdq.disasm = { _sink << "mulpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* MULS -- Multiply Scalar Single- or Double-Precision Floating-Point Values */
-
-template <class ARCH, unsigned OPSIZE>
-struct MulsVW : public Operation<ARCH>
+//
+template <unsigned OPSZ, bool PACKED>
+struct VMnemo
 {
-  typedef typename ARCH::f64_t f64_t;
-  MulsVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
-  void disasm( std::ostream& sink ) const
+  struct ToPrint
   {
-    sink << "muls" << ((OPSIZE==32) ? "s " : "d ") << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn );
-  }
+    ToPrint( char const* _base ) : base(_base) {} char const* base;
+    friend std::ostream& operator << (std::ostream& sink, ToPrint const& tp)
+    {
+      sink << tp.base << (PACKED ? "p" : "s") << (OPSZ == 32 ? "s" : "d");
+      return sink;
+    }
+  };
+  ToPrint mnemonic( char const* base ) const { return ToPrint( base ); }
+};
+
+template <class ARCH, unsigned OPSZ, bool PACKED>
+struct MulVW : public Operation<ARCH>, VMnemo<OPSZ,PACKED>
+{
+  MulVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << this->mnemonic( "mul" ) << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
-    arch.template xmm_fwrite<OPSIZE>( gn, 0, arch.template xmm_fread<OPSIZE>( gn, 0 ) * arch.template xmm_fread<OPSIZE>( rm, 0 ) );
+    for (unsigned idx = 0, end = PACKED ? 128/OPSZ : 1; idx < end; ++idx)
+      arch.template xmm_fwrite<OPSZ>( gn, idx, arch.template xmm_fread<OPSZ>( gn, idx ) * arch.template xmm_fread<OPSZ>( rm, idx ) );
   }
 };
 
-template <class ARCH> struct DC<ARCH,MULS> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+/* MUL -- Multiply Scalar or Packed Single- or Double-Precision Floating-Point Values */
+template <class ARCH> struct DC<ARCH,VMUL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, opcode( "\x0f\x59" ) & RM() ))
+    {
+      if (match( ic, sse__() )) return new MulVW<ARCH,32, true>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sse66() )) return new MulVW<ARCH,64, true>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sseF3() )) return new MulVW<ARCH,32,false>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sseF2() )) return new MulVW<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
+    }
   
-  if (auto _ = match( ic, sseF3() & opcode( "\x0f\x59" ) & RM() ))
-    
-    return new MulsVW<ARCH,32>( _.opbase(), _.rmop(), _.greg() );
+  return 0;
+}};
+
+template <class ARCH, unsigned OPSZ, bool PACKED>
+struct DivVW : public Operation<ARCH>, VMnemo<OPSZ,PACKED>
+{
+  DivVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << this->mnemonic( "div" ) << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0, end = PACKED ? 128/OPSZ : 1; idx < end; ++idx)
+      arch.template xmm_fwrite<OPSZ>( gn, idx, arch.template xmm_fread<OPSZ>( gn, idx ) / arch.template xmm_fread<OPSZ>( rm, idx ) );
+  }
+};
+
+/* DIV -- Divide Scalar or Packed Single- or Double-Precision Floating-Point Values */
+template <class ARCH> struct DC<ARCH,VDIV> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, opcode( "\x0f\x5e" ) & RM() ))
+    {
+      if (match( ic, sse__() )) return new DivVW<ARCH,32, true>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sse66() )) return new DivVW<ARCH,64, true>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sseF3() )) return new DivVW<ARCH,32,false>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sseF2() )) return new DivVW<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
+    }
   
-  if (auto _ = match( ic, sseF2() & opcode( "\x0f\x59" ) & RM() ))
-    
-    return new MulsVW<ARCH,64>( _.opbase(), _.rmop(), _.greg() );
+  return 0;
+}};
+
+template <class ARCH, unsigned OPSZ, bool PACKED>
+struct SubVW : public Operation<ARCH>, VMnemo<OPSZ,PACKED>
+{
+  SubVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << this->mnemonic( "sub" ) << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0, end = PACKED ? 128/OPSZ : 1; idx < end; ++idx)
+      arch.template xmm_fwrite<OPSZ>( gn, idx, arch.template xmm_fread<OPSZ>( gn, idx ) - arch.template xmm_fread<OPSZ>( rm, idx ) );
+  }
+};
+
+/* SUB -- Substract Scalar or Packed Single- or Double-Precision Floating-Point Values */
+template <class ARCH> struct DC<ARCH,VSUB> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, opcode( "\x0f\x5c" ) & RM() ))
+    {
+      if (match( ic, sse__() )) return new SubVW<ARCH,32, true>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sse66() )) return new SubVW<ARCH,64, true>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sseF3() )) return new SubVW<ARCH,32,false>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sseF2() )) return new SubVW<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
+    }
+  
+  return 0;
+}};
+
+template <class ARCH, unsigned OPSZ, bool PACKED>
+struct AddVW : public Operation<ARCH>, VMnemo<OPSZ,PACKED>
+{
+  AddVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << this->mnemonic( "add" ) << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0, end = PACKED ? 128/OPSZ : 1; idx < end; ++idx)
+      arch.template xmm_fwrite<OPSZ>( gn, idx, arch.template xmm_fread<OPSZ>( gn, idx ) + arch.template xmm_fread<OPSZ>( rm, idx ) );
+  }
+};
+
+/* ADD -- Add Scalar or Packed Single- or Double-Precision Floating-Point Values */
+template <class ARCH> struct DC<ARCH,VADD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, opcode( "\x0f\x58" ) & RM() ))
+    {
+      if (match( ic, sse__() )) return new AddVW<ARCH,32, true>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sse66() )) return new AddVW<ARCH,64, true>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sseF3() )) return new AddVW<ARCH,32,false>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sseF2() )) return new AddVW<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
+    }
   
   return 0;
 }};
 
 
-// op mulss_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x59[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// mulss_vdq_wdq.disasm = { _sink << "mulss " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op mulsd_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x59[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// mulsd_vdq_wdq.disasm = { _sink << "mulsd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
 // /* PABSB/PABSW/PABSD -- Packed Absolute Value */
 // op pabsb_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x1c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
@@ -1799,20 +1878,24 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 template <class ARCH, unsigned OPSIZE, bool HI>
 struct PunpckV : public Operation<ARCH>
 {
-  PunpckV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "punpck" << (HI?'h':'l') << SizeID<OPSIZE>::iid() << SizeID<2*OPSIZE>::iid() << ' ' << DisasmWdq(rmop) << ',' << DisasmVdq(gn); }
+  PunpckV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "punpck" << (HI?'h':'l') << SizeID<OPSIZE>::iid() << SizeID<2*OPSIZE>::iid() << ' ' << DisasmWdq(rm) << ',' << DisasmVdq(gn); }
   void execute( ARCH& arch ) const
   {
     unsigned const COUNT = 64/OPSIZE;
     unsigned const RMSK = HI ? 0 : COUNT - 1;
     unsigned const HALF = HI ? COUNT : 0;
+
+    typename TypeFor<ARCH,OPSIZE>::u res[2*COUNT];
     
     for (unsigned chunk = 0; chunk < COUNT; ++chunk)
       {
         unsigned idx = chunk & RMSK;
-        arch.template xmm_uwrite<OPSIZE>( gn, 2*idx+0, arch.template xmm_uread<OPSIZE>( gn, HALF+idx ) );
-        arch.template xmm_uwrite<OPSIZE>( gn, 2*idx+1, arch.template xmm_uread<OPSIZE>( rmop, HALF+idx ) );
+        res[2*idx+0] = arch.template xmm_uread<OPSIZE>( gn, HALF+idx );
+        res[2*idx+1] = arch.template xmm_uread<OPSIZE>( rm, HALF+idx );
       }
+    for (unsigned idx = 0; idx < 2*COUNT; ++idx)
+      arch.template xmm_uwrite<OPSIZE>( gn, idx, res[idx] );
   }
 };
 

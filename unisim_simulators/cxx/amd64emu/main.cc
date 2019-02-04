@@ -176,6 +176,26 @@ struct Arch
     regmap["%rip"] = new unisim::util::debug::SimpleRegister<uint64_t>("%rip", &this->rip);
     regmap["%fs_base"] = new unisim::util::debug::SimpleRegister<uint64_t>("%fs_base", &this->fs_base);
     regmap["%gs_base"] = new unisim::util::debug::SimpleRegister<uint64_t>("%gs_base", &this->fs_base);
+    regmap["%fcw"] = new unisim::util::debug::SimpleRegister<uint16_t>("%fcw", &this->m_fcw);
+
+    struct XmmRegister : public unisim::service::interfaces::Register
+    {
+      XmmRegister(std::string const& _name, Arch& _cpu, unsigned _reg) : name(_name), cpu(_cpu), reg(_reg) {}
+      std::string name;
+      Arch& cpu;
+      unsigned reg;
+      char const* GetName() const override { return name.c_str(); }
+      void GetValue(void *buffer) const override { memcpy(buffer,&cpu.vmm_storage[reg][0],16); }
+      void SetValue(const void *buffer) { memcpy(&cpu.vmm_storage[reg][0],buffer,16); }
+      int GetSize() const override { return 16; }
+    };
+    
+    for (int idx = 0; idx < 16; ++idx)
+      {
+        std::ostringstream regname;
+        regname << unisim::component::cxx::processor::intel::DisasmVdq(idx);
+        regmap[regname.str()] = new XmmRegister(regname.str(), *this, idx);
+      }
     
     for (int idx = 0; idx < 16; ++idx)
       {
@@ -621,6 +641,8 @@ struct Arch
     if (not linux_os)
       { throw std::logic_error( "No linux OS emulation connected" ); }
     linux_os->ExecuteSystemCall( id );
+    auto los = dynamic_cast<LinuxOS*>( linux_os );
+    los->LogSystemCall( id );
   }
   
   addr_t rip;
@@ -1473,14 +1495,17 @@ main( int argc, char *argv[] )
   
   // Loading image
   std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
-  std::vector<std::string> envs;
-  envs.push_back( "LANG=C" );
-  linux64.Process( simargs, envs );
-  // linux64.Core( simargs[0] );
-  // linux64.SetBrk(0x6b8000);
+  // std::vector<std::string> envs;
+  // envs.push_back( "LANG=C" );
+  // linux64.Process( simargs, envs );
+  linux64.Core( simargs[0] );
+  linux64.SetBrk(0x7b5000);
+  cpu.fs_base = 0x7928c0;
+  cpu.finit();
+   
   
   std::cerr << "\n*** Run ***" << std::endl;
-  //  cpu.gdbchecker.start(cpu);
+  cpu.gdbchecker.start(cpu);
   while (not linux64.exited)
     {
       Arch::Operation* op = cpu.fetch();
@@ -1490,8 +1515,10 @@ main( int argc, char *argv[] )
       // std::cerr << std::endl;
       asm volatile ("operation_execute:");
       op->execute( cpu );
-      //      cpu.gdbchecker.step(cpu); 
+      cpu.gdbchecker.step(cpu);
       // { uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread( GOd(), idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
+      if (cpu.instruction_count >= 0x10000)
+        break;
       // if ((cpu.instruction_count % 0x1000000) == 0)
       //   { std::cerr << "Executed instructions: " << std::dec << cpu.instruction_count << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
     }

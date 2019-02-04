@@ -175,6 +175,7 @@ struct Stos : public Operation<ARCH>
     
     if (REP) {
       str->deccounter( arch );
+      if (not str->tstcounter( arch )) return;
       arch.setnip( arch.getnip() - addr_t( Operation<ARCH>::length ) );
     }
   }

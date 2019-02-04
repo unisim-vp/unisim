@@ -211,9 +211,22 @@ namespace intel {
     return res;
   }
   
-  /* NOTE: since 286, only the 5 lsbs of shift values are considered by
-   * intel shifters (even for words and bytes). TODO: and in mode64 ?
+  /* Intel: The count is masked to 5 bits (or 6 bits if in 64-bit mode
+   * and REX.W is used). The count range is limited to 0 to 31 (or 63
+   * if 64-bit mode and REX.W is used).
    */
+  template <unsigned BSZ> struct c_shift_counter {};
+  template <> struct c_shift_counter< 8> { static uint8_t mask() { return uint8_t(0x1f); } };
+  template <> struct c_shift_counter<16> { static uint8_t mask() { return uint8_t(0x1f); } };
+  template <> struct c_shift_counter<32> { static uint8_t mask() { return uint8_t(0x1f); } };
+  template <> struct c_shift_counter<64> { static uint8_t mask() { return uint8_t(0x3f); } };
+
+  template <class ARCH, class INT> struct shift_counter
+  {
+    typedef typename ARCH::u8_t u8_t;
+    static intptr_t const bitsize = atpinfo<ARCH,INT>::bitsize;
+    static u8_t mask() { return u8_t( c_shift_counter<bitsize>::mask() ); }
+  }; 
 
   template <class ARCH, typename INT>
   INT
@@ -226,7 +239,7 @@ namespace intel {
     INT const msb = INT( 1 ) << (bitsize-1);
     INT res( 0 );
     
-    u8_t sharg = arg2 & u8_t( 0x1f ); 
+    u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
     
     sharg = sharg % u8bitsize;
     res = (arg1 << sharg) | (arg1 >> (u8bitsize - sharg));
@@ -251,7 +264,7 @@ namespace intel {
     INT const msb = INT( 1 ) << (bitsize-1);
     INT res( 0 );
     
-    u8_t sharg = arg2 & u8_t( 0x1f ); 
+    u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
     
     sharg = sharg % u8bitsize;
     res = (arg1 << (u8bitsize - sharg)) | (arg1 >> sharg);
@@ -276,7 +289,7 @@ namespace intel {
     INT const msb = INT( 1 ) << (bitsize-1);
     INT res( 0 );
     
-    u8_t sharg = arg2 & u8_t( 0x1f ); 
+    u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
     
     sharg = sharg % u8_t( bitsize + 1 );
     twice_type tmp( arg1 );
@@ -306,7 +319,7 @@ namespace intel {
     INT const msb = INT( 1 ) << (bitsize-1);
     INT res( 0 );
     
-    u8_t sharg = arg2 & u8_t( 0x1f ); 
+    u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
     
     sharg = sharg % u8_t( bitsize + 1 );
     typename atpinfo<ARCH,INT>::twice tmp( arg1 );
@@ -336,7 +349,7 @@ namespace intel {
     INT const msb = INT( 1 ) << (bitsize-1);
     INT res( 0 );
     
-    u8_t sharg = arg2 & u8_t( 0x1f ); 
+    u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
     
     res = arg1 << sharg;
     arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Cond( sharg >= u8_t( 1 ) ) ? ((arg1 << (sharg - u8_t( 1 ))) & msb) : INT( 0 ) ) );
@@ -359,7 +372,7 @@ namespace intel {
     INT const msb = INT( 1 ) << (bitsize-1);
     INT res( 0 );
     
-    u8_t sharg = arg2 & u8_t( 0x1f ); 
+    u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
     
     res = arg1 >> sharg;
     arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Cond( sharg >= u8_t( 1 ) ) ? ((arg1 >> (sharg - u8_t( 1 ))) & INT( 1 )) : INT( 0 ) ) );
@@ -382,7 +395,7 @@ namespace intel {
     //INT const msb = INT( 1 ) << (bitsize-1);
     INT res( 0 );
     
-    u8_t sharg = arg2 & u8_t( 0x1f ); 
+    u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
     
     res = INT( (typename atpinfo<ARCH,INT>::stype( arg1 )) >> sharg );
     arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Cond( sharg >= u8_t( 1 ) ) ? ((arg1 >> (sharg - u8_t( 1 ))) & INT( 1 )) : INT( 0 ) ) );

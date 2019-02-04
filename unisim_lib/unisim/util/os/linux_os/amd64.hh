@@ -98,28 +98,26 @@ namespace linux_os {
     //   uint32_t tv_nsec; /* Nanoseconds.  (long int) */
     // };
     
-    struct amd64_newstat
-    { // UAPI structure
-      uint64_t ust_dev;           // 00-08 0b0000xxx
-      uint64_t ust_ino;           // 08-10 0b0001xxx
-      uint32_t ust_mode;          // 10-14 0b00100xx
-      uint32_t ust_nlink;         // 14-18 0b00101xx
-      uint32_t ust_uid;           // 18-1c 0b00110xx
-      uint32_t ust_gid;           // 1c-20 0b00111xx
-      uint64_t ust_rdev;          // 20-28 0b0100xxx
-      uint64_t __pad1;            // 28-30 0b0101xxx
-      int64_t  ust_size;          // 30-38 0b0110xxx
-      int32_t  ust_blksize;       // 38-3c 0b01110xx
-      int32_t  __pad2;            // 3c-40 0b01111xx
-      int64_t  ust_blocks;        // 40-48 0b1000xxx
-      int64_t  ust_atime;         // 48-50 0b1001xxx
-      uint64_t ust_atime_nsec;    // 50-58 0b1010xxx
-      int64_t  ust_mtime;         // 58-60 0b1011xxx
-      uint64_t ust_mtime_nsec;    // 60-68 0b1100xxx
-      int64_t  ust_ctime;         // 68-70 0b1101xxx
-      uint64_t ust_ctime_nsec;    // 70-78 0b1110xxx
-      uint32_t __unused4;         // 78-7c 0b11110xx
-      uint32_t __unused5;         // 7c-80 0b11111xx
+    struct amd64_stat
+    {
+      uint64_t ust_dev;        // => 0
+      uint64_t ust_ino;        // => 8
+      uint64_t ust_nlink;      // => 16
+      uint32_t ust_mode;       // => 24
+      uint32_t ust_uid;        // => 28
+      uint32_t ust_gid;        // => 32
+      uint32_t __pad0;         // => 36
+      uint64_t ust_rdev;       // => 40
+      uint64_t ust_size;       // => 48
+      uint64_t ust_blksize;    // => 56
+      int64_t  ust_blocks;     // => 64
+      int64_t  ust_atime;      // => 72
+      uint64_t ust_atime_nsec; // => 80
+      int64_t  ust_mtime;      // => 88
+      uint64_t ust_mtime_nsec; // => 96
+      int64_t  ust_ctime;      // => 104
+      uint64_t ust_ctime_nsec; // => 112
+      uint64_t __unused[3];    // => 120
     };
 
     struct amd64_utsname
@@ -234,7 +232,7 @@ namespace linux_os {
       return 0;
     }
 
-    static int Fstat64(int fd, struct amd64_newstat *target_stat, unisim::util::endian::endian_type endianness)
+    static int Fstat64(int fd, struct amd64_stat *target_stat, unisim::util::endian::endian_type endianness)
     {
       int ret;
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
@@ -249,7 +247,7 @@ namespace linux_os {
 #endif
       if(ret < 0) return ret;
 
-      memset(target_stat, 0, sizeof(struct amd64_newstat));
+      memset(target_stat, 0, sizeof(struct amd64_stat));
 	
 #if defined(__x86_64) || defined(__amd64) || defined(__x86_64__) || defined(__amd64__) || defined(__LP64__) || defined(_LP64)
       // 64-bit host
@@ -342,7 +340,7 @@ namespace linux_os {
       case 2:     return this->GetSysCall("open");
       case 3:     return this->GetSysCall("close");
       case 4:     return this->GetSysCall("stat");
-      case 5:     return this->GetSysCall("fstat");
+        /* 5: fstat (see amd64 specific) */
       case 6:     return this->GetSysCall("lstat");
       case 7:     return this->GetSysCall("poll");
       case 8:     return this->GetSysCall("lseek");
@@ -400,7 +398,7 @@ namespace linux_os {
       case 60:    return this->GetSysCall("exit");
       case 61:    return this->GetSysCall("wait4");
       case 62:    return this->GetSysCall("kill");
-        /*  63: uname (see AMD64 specific) */;
+        /* 63: uname (see AMD64 specific) */;
       case 64:    return this->GetSysCall("semget");
       case 65:    return this->GetSysCall("semop");
       case 66:    return this->GetSysCall("semctl");
@@ -671,47 +669,47 @@ namespace linux_os {
       case 331:   return this->GetSysCall("pkey_free");
       case 332:   return this->GetSysCall("statx");
 	
-      // case 80: /* Amd64 specific stat call */
-      //   {
-      //     // asmlinkage long sys_newfstat(unsigned int fd, struct stat __user *statbuf);
-      //     static struct : public SysCall
-      //     {
-      //       char const* GetName() const { return "newfstat"; }
-      //       struct Args {
-      //         Args(LINUX& lin) : fd(SysCall::GetParam(lin, 0)), statbuf(SysCall::GetParam(lin, 1)) {};
-      //         unsigned fd; parameter_type statbuf;
-      //       };
-      //       void Describe( LINUX& lin, std::ostream& sink ) const
-      //       {
-      //         Args sc(lin);
-      //         sink << "(unsigned fd=" << std::dec << sc.fd << ", struct stat __user *statbuf=" << std::hex << sc.statbuf << ")";
-      //       }
-      //       void Execute( LINUX& lin, int syscall_id ) const
-      //       {
-      //         Args sc(lin);
-      //         int host_fd = SysCall::Target2HostFileDescriptor(lin, sc.fd);
+      case 5: /* Amd64 specific stat call */
+        {
+          // asmlinkage long sys_fstat(unsigned int fd, struct __old_kernel_stat __user *statbuf);
+          static struct : public SysCall
+          {
+            char const* GetName() const { return "fstat"; }
+            struct Args {
+              Args(LINUX& lin) : fd(SysCall::GetParam(lin, 0)), statbuf(SysCall::GetParam(lin, 1)) {};
+              unsigned fd; parameter_type statbuf;
+            };
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              Args sc(lin);
+              sink << "(unsigned fd=" << std::dec << sc.fd << ", struct __old_kernel_stat __user *statbuf=" << std::hex << sc.statbuf << ")";
+            }
+            void Execute( LINUX& lin, int syscall_id ) const
+            {
+              Args sc(lin);
+              int host_fd = SysCall::Target2HostFileDescriptor(lin, sc.fd);
 
-      //         if (host_fd == -1)
-      //           {
-      //             lin.SetSystemCallStatus(-LINUX_EBADF,false);
-      //             return;
-      //           }
+              if (host_fd == -1)
+                {
+                  lin.SetSystemCallStatus(-LINUX_EBADF,false);
+                  return;
+                }
         
-      //         struct amd64_newstat target_stat;
+              struct amd64_stat target_stat;
               
-      //         int ret = Fstat64(host_fd, &target_stat, lin.GetEndianness());
+              int ret = Fstat64(host_fd, &target_stat, lin.GetEndianness());
 
-      //         if (ret == -1) {
-      //           lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno),true);
-      //           return;
-      //         }
+              if (ret == -1) {
+                lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno),true);
+                return;
+              }
   
-      //         this->WriteMem(lin, sc.statbuf, (uint8_t *)&target_stat, sizeof(target_stat));
+              lin.WriteMemory(sc.statbuf, (uint8_t *)&target_stat, sizeof(target_stat));
 	
-      //         lin.SetSystemCallStatus(ret, false);
-      //       }
-      //     } sc; return &sc;
-      //   } break;
+              lin.SetSystemCallStatus(ret, false);
+            }
+          } sc; return &sc;
+        } break;
         
       case 63: /* AMD64 specific uname syscall */
         {
@@ -791,7 +789,7 @@ namespace linux_os {
           return &sc;
         } break;
       }
-          
+      
       return 0;
     }
     

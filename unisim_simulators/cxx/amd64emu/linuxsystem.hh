@@ -57,6 +57,7 @@ struct LinuxOS
   void Core( std::string const& coredump );
 
   void ExecuteSystemCall( int id );
+  void LogSystemCall(int id);
   void SetBrk(addr_t brk_addr);
 
   unisim::util::os::linux_os::Linux<addr_t, addr_t> linux_impl;
