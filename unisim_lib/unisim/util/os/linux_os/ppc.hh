@@ -976,7 +976,7 @@ namespace linux_os {
               ret = Times(&target_tms, lin.GetEndianness());
 
               if (ret >= 0)
-                this->WriteMem(lin, buf_addr, (uint8_t *)&target_tms, sizeof(target_tms));
+                lin.WriteMemory(buf_addr, (uint8_t *)&target_tms, sizeof(target_tms));
               else
                 target_errno = SysCall::HostToLinuxErrno(errno);
 
@@ -1019,11 +1019,11 @@ namespace linux_os {
                 {
                   if(tv_addr)
                     {
-                      this->WriteMem( lin, tv_addr, (const uint8_t *) &target_tv, sizeof(target_tv));
+                      lin.WriteMemory(tv_addr, (const uint8_t *) &target_tv, sizeof(target_tv));
                     }
                   if(tz_addr)
                     {
-                      this->WriteMem( lin, tz_addr, (const uint8_t *) &target_tz, sizeof(target_tz));
+                      lin.WriteMemory(tz_addr, (const uint8_t *) &target_tz, sizeof(target_tz));
                     }
                 }
 
@@ -1074,7 +1074,7 @@ namespace linux_os {
                   struct powerpc_stat target_stat;
                   ret = Stat(host_fd, &target_stat, lin.GetEndianness());
                   if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
-                  if(ret >= 0) this->WriteMem( lin, buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+                  if(ret >= 0) lin.WriteMemory(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
                 }
 
               if(unlikely(lin.GetVerbose()))
@@ -1116,7 +1116,7 @@ namespace linux_os {
               strncpy(value.version,     utsname.version.c_str(), sizeof(value.version) - 1);
               strncpy(value.machine,     utsname.machine.c_str(), sizeof(value.machine) - 1);
               strncpy(value.domainname,  utsname.domainname.c_str(), sizeof(value.domainname) - 1);
-              this->WriteMem( lin, buf_addr, (uint8_t *)&value, sizeof(value));
+              lin.WriteMemory(buf_addr, (uint8_t *)&value, sizeof(value));
   
               SetPPCSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
@@ -1143,11 +1143,11 @@ namespace linux_os {
               int32_t target_errno = 0;
 
               std::string pathname;
-              if (this->ReadMemString(lin, pathnameaddr, pathname))
+              if (lin.ReadString(pathnameaddr, pathname))
                 {
                   struct powerpc_stat64 target_stat;
                   ret = Stat64(pathname.c_str(), &target_stat, lin.GetEndianness());
-                  this->WriteMem( lin, buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+                  lin.WriteMemory(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
     
                   if(unlikely(lin.GetVerbose()))
                     {
@@ -1202,7 +1202,7 @@ namespace linux_os {
                   ret = Fstat64(host_fd, &target_stat, lin.GetEndianness());
                   if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
       
-                  this->WriteMem( lin, buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+                  lin.WriteMemory(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
                 }
   
               if(unlikely(lin.GetVerbose()))
