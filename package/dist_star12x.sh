@@ -272,10 +272,13 @@ unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
 unisim/util/xml/xml.hh \
+unisim/util/hypapp/hypapp.hh \
 unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/ti_c_io.hh \
 unisim/service/interfaces/disassembly.hh \
+unisim/service/interfaces/http_server.hh \
+unisim/service/interfaces/field.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \

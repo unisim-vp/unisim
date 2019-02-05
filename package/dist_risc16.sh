@@ -264,6 +264,7 @@ unisim/util/debug/memory_access_type.hh \
 unisim/util/hash_table/hash_table.hh \
 unisim/util/likely/likely.hh \
 unisim/util/inlining/inlining.hh \
+unisim/util/nat_sort/nat_sort.hh \
 unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \
 unisim/util/parser/parser.hh \
@@ -280,6 +281,7 @@ unisim/util/simfloat/floating.hh \
 unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/ieee754/ieee754.hh \
+unisim/util/hypapp/hypapp.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/subprogram_lookup.hh \
 unisim/service/interfaces/backtrace.hh \
@@ -287,6 +289,8 @@ unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/blob.hh \
+unisim/service/interfaces/http_server.hh \
+unisim/service/interfaces/field.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \

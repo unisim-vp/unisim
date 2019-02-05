@@ -1,3 +1,37 @@
+/*
+ *  Copyright (c) 2007-2019,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without 
+ *  modification, are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, 
+ *     this list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific 
+ *     prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  ARE DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+
 /* TODO:
  * - In 64 bit mode, for some branch instructions (if not all) operand-size is forced to 64 whatever the actual operand size is ...
  * - Some instructions may incoherently depend on StackAddressSize and OperandSize (e.g. Enter & Leave)
@@ -57,22 +91,22 @@ struct FarCallE : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,CALL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.rep != 0) return 0;
-
+  
   if (auto _ = match( ic, OpSize<16>() & opcode( "\xe8" ) & Imm<16>() ))
     
-    return new NearCallJ<ARCH,16>( _.opbase(), _.i( int32_t() ) );
+    return ic.mode64() ? 0 : new NearCallJ<ARCH,16>( _.opbase(), _.i( int32_t() ) );
 
   if (auto _ = match( ic, opcode( "\xe8" ) & Imm<32>() ))
     {
-      if    (ic.mode64()) return new NearCallJ<ARCH,64>( _.opbase(), _.i( int32_t() ) );
-      else                return new NearCallJ<ARCH,32>( _.opbase(), _.i( int32_t() ) );
+      if (ic.mode64()) return new NearCallJ<ARCH,64>( _.opbase(), _.i( int32_t() ) );
+      else             return new NearCallJ<ARCH,32>( _.opbase(), _.i( int32_t() ) );
     }
     
   if (auto _ = match( ic, opcode( "\xff" ) /2 & RM() ))
     {
-      if      (ic.opsize() == 16) return new NearCallE<ARCH,GOw>( _.opbase(), _.rmop() );
-      else if (ic.opsize() == 32) return new NearCallE<ARCH,GOd>( _.opbase(), _.rmop() );
-      else return 0;
+      if      (ic.mode64())       return new NearCallE<ARCH,GOq>( _.opbase(), _.rmop() );
+      else if (ic.opsize() == 16) return new NearCallE<ARCH,GOw>( _.opbase(), _.rmop() );
+      else                        return new NearCallE<ARCH,GOd>( _.opbase(), _.rmop() );
     }
     
   if (auto _ = match( ic, OpSize<16>() & opcode( "\x9a" ) & Imm<16>() & Imm<16>() ))
@@ -113,22 +147,22 @@ struct JccJ : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,JCC> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, (opcode( "\x70" ) + Var<4>()) & Imm<8>() ))
-    
     {
-      if (ic.opsize() == 16) return new JccJ<ARCH,16>( _.opbase(), _.var(), _.i( int32_t() ) );
-      
-      if (ic.mode64()) return new JccJ<ARCH,64>( _.opbase(), _.var(), _.i( int32_t() ) );
-      else             return new JccJ<ARCH,32>( _.opbase(), _.var(), _.i( int32_t() ) );
+      if      (ic.mode64())       return new JccJ<ARCH,64>( _.opbase(), _.var(), _.i( int32_t() ) );
+      else if (ic.opsize() == 16) return new JccJ<ARCH,16>( _.opbase(), _.var(), _.i( int32_t() ) );
+      else                        return new JccJ<ARCH,32>( _.opbase(), _.var(), _.i( int32_t() ) );
     }
     
   if (auto _ = match( ic, OpSize<16>() & (opcode( "\x0f\x80" ) + Var<4>()) & Imm<16>() ))
     
-    return new JccJ<ARCH,16>( _.opbase(), _.var(), _.i( int32_t() ) );
+    return ic.mode64() ? 0 : new JccJ<ARCH,16>( _.opbase(), _.var(), _.i( int32_t() ) );
     
   if (auto _ = match( ic, OpSize<32>() & (opcode( "\x0f\x80" ) + Var<4>()) & Imm<32>() ))
-    
-    return new JccJ<ARCH,32>( _.opbase(), _.var(), _.i( int32_t() ) );
-    
+    {
+      if (ic.mode64()) return new JccJ<ARCH,64>( _.opbase(), _.var(), _.i( int32_t() ) );
+      else             return new JccJ<ARCH,32>( _.opbase(), _.var(), _.i( int32_t() ) );
+    }
+  
   return 0;
 }};
 
@@ -231,7 +265,6 @@ struct JmpE : public Operation<ARCH>
 template <class ARCH, unsigned OPSIZE>
 struct JmpJ : public Operation<ARCH>
 {
-  typedef typename ARCH::u32_t u32_t;
   JmpJ( OpBase<ARCH> const& opbase, int32_t _offset ) : Operation<ARCH>( opbase ), offset( _offset ) {} int32_t offset;
   
   void disasm( std::ostream& sink ) const { sink << "jmp 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); }
@@ -263,43 +296,42 @@ struct JmpM : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,JMP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xff" ) /4 & RM() ))
-    
     {
-      if      (ic.opsize() == 16) return new JmpE<ARCH,GOw>( _.opbase(), _.rmop() );
-      else if (ic.opsize() == 32) return new JmpE<ARCH,GOd>( _.opbase(), _.rmop() );
-      else if (ic.opsize() == 64) return new JmpE<ARCH,GOq>( _.opbase(), _.rmop() );
-      else return 0;
+      if      (ic.mode64())       return new JmpE<ARCH,GOq>( _.opbase(), _.rmop() );
+      else if (ic.opsize() == 16) return new JmpE<ARCH,GOw>( _.opbase(), _.rmop() );
+      else                        return new JmpE<ARCH,GOd>( _.opbase(), _.rmop() );
     }
     
   if (auto _ = match( ic, opcode( "\xeb" ) & Imm<8>() ))
-    
     {
+      if      (ic.mode64())       return new JmpJ<ARCH,64>( _.opbase(), _.i( int32_t() ) );
       if      (ic.opsize() == 16) return new JmpJ<ARCH,16>( _.opbase(), _.i( int32_t() ) );
-      else if (ic.opsize() == 32) return new JmpJ<ARCH,32>( _.opbase(), _.i( int32_t() ) );
-      else return 0;
+      else                        return new JmpJ<ARCH,32>( _.opbase(), _.i( int32_t() ) );
     }
     
   if (auto _ = match( ic, OpSize<16>() & opcode( "\xe9" ) & Imm<16>() ))
     
-    return new JmpJ<ARCH,16>( _.opbase(), _.i( int32_t() ) );
+    return ic.mode64() ? 0 : new JmpJ<ARCH,16>( _.opbase(), _.i( int32_t() ) );
     
   if (auto _ = match( ic, OpSize<32>() & opcode( "\xe9" ) & Imm<32>() ))
-    
-    return new JmpJ<ARCH,32>( _.opbase(), _.i( int32_t() ) );
-    
+    {
+      if (ic.mode64()) return new JmpJ<ARCH,32>( _.opbase(), _.i( int32_t() ) );
+      else             return new JmpJ<ARCH,64>( _.opbase(), _.i( int32_t() ) );
+    }
+  
   if (auto _ = match( ic, OpSize<16>() & opcode( "\xea" ) & Imm<16>() & Imm<16>() ))
     
-    return new JmpA<ARCH,16>( _.opbase(), _.i( int32_t() ), _.i( int16_t() ) );
+    return ic.mode64() ? 0 : new JmpA<ARCH,16>( _.opbase(), _.i( int32_t() ), _.i( int16_t() ) );
     
   if (auto _ = match( ic, OpSize<32>() & opcode( "\xea" ) & Imm<32>() & Imm<16>() ))
     
-    return new JmpA<ARCH,32>( _.opbase(), _.i( int32_t() ), _.i( int16_t() ) );
+    return ic.mode64() ? 0 : new JmpA<ARCH,32>( _.opbase(), _.i( int32_t() ), _.i( int16_t() ) );
     
   if (auto _ = match( ic, opcode( "\xff" ) /5 & RM() ))
-    
     {
       if      (ic.opsize() == 16) return new JmpM<ARCH,16>( _.opbase(), _.rmop() );
       else if (ic.opsize() == 32) return new JmpM<ARCH,32>( _.opbase(), _.rmop() );
+      else if (ic.opsize() == 64) return new JmpM<ARCH,64>( _.opbase(), _.rmop() );
       else return 0;
     }
     
@@ -309,7 +341,6 @@ template <class ARCH> struct DC<ARCH,JMP> { Operation<ARCH>* get( InputCode<ARCH
 template <class ARCH, unsigned OPSIZE>
 struct NearReturn : public Operation<ARCH>
 {
-  typedef typename ARCH::u32_t u32_t;
   NearReturn( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
     
   void disasm( std::ostream& sink ) const { sink << "ret"; }
@@ -359,24 +390,20 @@ struct FarParamReturn : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,RETURN> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xc3" ) ))
-    
     {
-      if      (ic.opsize() == 16) return new NearReturn<ARCH,16>( _.opbase() );
-      else if (ic.opsize() == 32) return new NearReturn<ARCH,32>( _.opbase() );
-      else if (ic.opsize() == 64) return new NearReturn<ARCH,64>( _.opbase() );
-      else return 0;
+      if      (ic.mode64())       return new NearReturn<ARCH,64>( _.opbase() );
+      else if (ic.opsize() == 16) return new NearReturn<ARCH,16>( _.opbase() );
+      else                        return new NearReturn<ARCH,32>( _.opbase() );
     }
     
   if (auto _ = match( ic, opcode( "\xc2" ) & Imm<16>() ))
-    
     {
-      if      (ic.opsize() == 16) return new NearParamReturn<ARCH,16>( _.opbase(), _.i( uint16_t() ) );
-      else if (ic.opsize() == 32) return new NearParamReturn<ARCH,32>( _.opbase(), _.i( uint16_t() ) );
-      else if (ic.opsize() == 64) return new NearParamReturn<ARCH,64>( _.opbase(), _.i( uint16_t() ) );
+      if      (ic.mode64())       return new NearParamReturn<ARCH,64>( _.opbase(), _.i( uint16_t() ) );
+      else if (ic.opsize() == 16) return new NearParamReturn<ARCH,16>( _.opbase(), _.i( uint16_t() ) );
+      else                        return new NearParamReturn<ARCH,32>( _.opbase(), _.i( uint16_t() ) );
     }
     
   if (auto _ = match( ic, opcode( "\xcb" ) ))
-    
     {
       if      (ic.opsize() == 16) return new FarReturn<ARCH,16>( _.opbase() );
       else if (ic.opsize() == 32) return new FarReturn<ARCH,32>( _.opbase() );
@@ -385,7 +412,6 @@ template <class ARCH> struct DC<ARCH,RETURN> { Operation<ARCH>* get( InputCode<A
     }
     
   if (auto _ = match( ic, opcode( "\xca" ) & Imm<16>() ))
-    
     {
       if      (ic.opsize() == 16) return new FarParamReturn<ARCH,16>( _.opbase(), _.i( uint16_t() ) );
       else if (ic.opsize() == 32) return new FarParamReturn<ARCH,32>( _.opbase(), _.i( uint16_t() ) );

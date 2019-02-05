@@ -259,9 +259,12 @@ unisim/util/loader/elf_loader/elf32.h \
 unisim/util/loader/elf_loader/elf64.h \
 unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
+unisim/util/hypapp/hypapp.hh \
 unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/disassembly.hh \
+unisim/service/interfaces/http_server.hh \
+unisim/service/interfaces/field.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \

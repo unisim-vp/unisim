@@ -333,6 +333,8 @@ unisim/service/interfaces/debug_selecting.hh \
 unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/linux_os.hh \
+unisim/service/interfaces/http_server.hh \
+unisim/service/interfaces/field.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/memory.hh \
@@ -365,6 +367,7 @@ unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
+unisim/util/hypapp/hypapp.hh \
 unisim/util/allocator/allocator.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/backtrace/backtrace.hh \
@@ -463,6 +466,7 @@ unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
 unisim/util/ieee754/ieee754.hh \
 unisim/util/inlining/inlining.hh \
+unisim/util/nat_sort/nat_sort.hh \
 unisim/util/lexer/lexer.hh \
 unisim/util/lexer/lexer.tcc \
 unisim/util/likely/likely.hh \

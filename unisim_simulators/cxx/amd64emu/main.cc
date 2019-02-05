@@ -50,22 +50,78 @@
 #include <cmath>
 #include <cctype>
 
-// TODO: should handle twice of 64-bit types
-template <typename T>
-  struct Twice
+struct UInt128
 {
-  struct Error {};
-  Twice() {}
-  Twice( T const& val ) {}
-  template <typename X>
-  Twice operator << (X) { throw Error(); return Twice(); }
-  template <typename X>
-  Twice operator >> (X) { throw Error(); return Twice(); }
-  Twice operator | (Twice const& val) { throw Error(); return Twice(); }
+  UInt128( uint64_t value ) : bits{value,0} {}
+  UInt128( uint64_t hi, uint64_t lo ) : bits{lo,hi} {}
 
-  Twice& operator |= (Twice const& val) { return *this; }
-  operator T () { throw Error(); return T(); }
-  void unimplented();
+  template <typename T> UInt128 operator << (T lshift) const { UInt128 res(*this); res <<= lshift; return res; }
+  template <typename T> UInt128 operator >> (T rshift) const { UInt128 res(*this); res >>= rshift; return res; }
+  
+  template <typename T>
+  UInt128& operator <<= (T lshift)
+  {
+    if (lshift >= 128) { bits[1] = 0; bits[0] = 0; return *this; }
+    if (lshift >= 64) { bits[1] = bits[0]; bits[0] = 0; lshift -= 64; }
+    T rshift = 63 - lshift;
+    bits[1] = (bits[1] << lshift) | (bits[0] >> rshift);
+    bits[0] = (bits[0] << lshift);
+    return *this;
+  }
+
+  template <typename T>
+  UInt128& operator >>= (T rshift)
+  {
+    if (rshift >= 128) { bits[1] = 0; bits[0] = 0; return *this; }
+    if (rshift >= 64) { bits[0] = bits[1]; bits[1] = 0; rshift -= 64; }
+    T lshift = 63 - rshift;
+    bits[0] = (bits[0] >> rshift) | (bits[1] << lshift);
+    bits[1] >>= rshift;
+    return *this;
+  }
+
+  UInt128 operator | (UInt128 const& rhs) { UInt128 res(*this); res |= rhs; return res; }
+  UInt128& operator |= (UInt128 const& rhs) { bits[1] |= rhs.bits[1]; bits[0] |= rhs.bits[0]; return *this; }
+  UInt128 operator & (UInt128 const& rhs) { UInt128 res(*this); res &= rhs; return res; }
+  UInt128& operator &= (UInt128 const& rhs) { bits[1] &= rhs.bits[1]; bits[0] &= rhs.bits[0]; return *this; }
+
+  unsigned clz() const
+  {
+    return bits[1] ?
+       63 - unisim::util::arithmetic::BitScanReverse(bits[1]) :
+      127 - unisim::util::arithmetic::BitScanReverse(bits[0]);
+  }
+  UInt128& neg()
+  {
+    bits[0] = ~bits[0] + 1;
+    bits[1] = ~bits[1] + uint64_t(not bits[0]);
+    return *this;
+  }
+  
+  explicit operator uint64_t () const { return bits[0]; }
+  explicit operator bool () const { return bits[0] or bits[1]; }
+
+  uint64_t bits[2];
+};
+
+struct SInt128 : public UInt128
+{
+  SInt128( int64_t value ) : UInt128( value, value >> 63 ) {}
+  SInt128( uint64_t value ) : UInt128( value, 0 ) {}
+  SInt128( UInt128 const& value ) : UInt128( value ) {}
+  template <typename T> UInt128 operator >> (T rshift) const { UInt128 res(*this); res >>= rshift; return res; }
+  
+  template <typename T>
+  UInt128& operator >>= (T rshift)
+  {
+    if (rshift >= 128) { bits[0] = int64_t(bits[1]) >> 63; bits[1] = bits[0]; return *this; }
+    if (rshift >= 64) { bits[0] = bits[1]; bits[1] = int64_t(bits[1]) >> 63; rshift -= 64; }
+    T lshift = 63 - rshift;
+    bits[0] = (bits[0] >> rshift) | (bits[1] << lshift);
+    bits[1] = int64_t(bits[1]) >> rshift;
+    return *this;
+  }
+  
 };
 
 template <typename T> using VectorTypeInfo = unisim::component::cxx::processor::intel::VectorTypeInfo<T>;
@@ -80,12 +136,12 @@ struct Arch
   typedef uint16_t     u16_t;
   typedef uint32_t     u32_t;
   typedef uint64_t     u64_t;
-  typedef Twice<u64_t> u128_t;
+  typedef UInt128      u128_t;
   typedef int8_t       s8_t;
   typedef int16_t      s16_t;
   typedef int32_t      s32_t;
   typedef int64_t      s64_t;
-  typedef Twice<s64_t> s128_t;
+  typedef SInt128      s128_t;
   typedef bool         bit_t;
   typedef uint64_t     addr_t;
 
@@ -111,10 +167,35 @@ struct Arch
     , linux_os(0)
     , rip()
     , u64regs()
+    , umms()
+    , vmm_storage()
+    , mxcsr()
     , do_disasm(false)
     , instruction_count(0)
   {
     regmap["%rip"] = new unisim::util::debug::SimpleRegister<uint64_t>("%rip", &this->rip);
+    regmap["%fs_base"] = new unisim::util::debug::SimpleRegister<uint64_t>("%fs_base", &this->fs_base);
+    regmap["%gs_base"] = new unisim::util::debug::SimpleRegister<uint64_t>("%gs_base", &this->fs_base);
+    regmap["%fcw"] = new unisim::util::debug::SimpleRegister<uint16_t>("%fcw", &this->m_fcw);
+
+    struct XmmRegister : public unisim::service::interfaces::Register
+    {
+      XmmRegister(std::string const& _name, Arch& _cpu, unsigned _reg) : name(_name), cpu(_cpu), reg(_reg) {}
+      std::string name;
+      Arch& cpu;
+      unsigned reg;
+      char const* GetName() const override { return name.c_str(); }
+      void GetValue(void *buffer) const override { memcpy(buffer,&cpu.vmm_storage[reg][0],16); }
+      void SetValue(const void *buffer) { memcpy(&cpu.vmm_storage[reg][0],buffer,16); }
+      int GetSize() const override { return 16; }
+    };
+    
+    for (int idx = 0; idx < 16; ++idx)
+      {
+        std::ostringstream regname;
+        regname << unisim::component::cxx::processor::intel::DisasmVdq(idx);
+        regmap[regname.str()] = new XmmRegister(regname.str(), *this, idx);
+      }
     
     for (int idx = 0; idx < 16; ++idx)
       {
@@ -178,51 +259,47 @@ struct Arch
   std::map<std::string,unisim::service::interfaces::Register*> regmap;
   
   struct ClearMemSet { void operator() ( uint8_t* base, uintptr_t size ) const { __builtin_bzero(base, size); } };
-  typedef typename unisim::component::cxx::memory::sparse::Memory<uint64_t,15,15,ClearMemSet> Memory;
+  typedef typename unisim::component::cxx::memory::sparse::Memory<addr_t,15,15,ClearMemSet> Memory;
   Memory                      m_mem;
 
-  // unisim::service::interfaces::Memory<uint64_t>
+  // unisim::service::interfaces::Memory<addr_t>
   void Reset() {}
-  bool ReadMemory(uint64_t addr, void* buffer, uint32_t size ) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
-  bool WriteMemory(uint64_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
+  bool ReadMemory(addr_t addr, void* buffer, uint32_t size ) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
+  bool WriteMemory(addr_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
 
   typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;
   
   // MEMORY STATE
   // Segment Registers
-  typedef unisim::component::cxx::processor::intel::SegmentReg SegmentReg;
-  SegmentReg            m_srs[8];
-
-  uint32_t m_gdt_bases[4]; // fake GDT registers used under Linux OS emulation
-
-  void                        segregwrite( uint32_t idx, uint16_t _value )
+  uint16_t segregs[6];
+  addr_t fs_base, gs_base;
+  addr_t segbase(unsigned seg) const { switch(seg){ case 4: return fs_base; case 5: return gs_base; } return 0; }
+  void                        segregwrite( unsigned idx, uint16_t value )
   {
-    uint32_t id = (_value >> 3) & 0x1fff; // entry number
-    uint32_t ti = (_value >> 2) & 0x0001; // global or local
-    uint32_t pl = (_value >> 0) & 0x0003; // requested privilege level
-
-          //if (not GetLinuxOS()) throw 0;
-    if ((idx >= 6) or (id == 0) or (id >= 4) or (ti != 0) or (pl != 3)) throw 0;
-
-    m_srs[idx].update( id, ti, pl, m_gdt_bases[id] );
+    if (idx > 6) throw 0;
+    segregs[idx] = value;
   }
-
-  uint16_t                    segregread( unsigned num ) { throw 0; }
+  uint16_t                    segregread( unsigned idx )
+  {
+    throw 0;
+    if (idx > 6) throw 0;
+    return segregs[idx];
+  }
 
   // Low level memory access routines
   enum LLAException_t { LLAError };
-  void                        lla_memcpy( uint32_t addr, uint8_t const* buf, uint32_t size )
+  void                        lla_memcpy( addr_t addr, uint8_t const* buf, addr_t size )
   { m_mem.write( addr, buf, size ); }
-  void                        lla_memcpy( uint8_t* buf, uint32_t addr, uint32_t size )
+  void                        lla_memcpy( uint8_t* buf, addr_t addr, addr_t size )
   { m_mem.read( buf, addr, size ); }
-  void                        lla_bzero( uint32_t addr, uint32_t size )
+  void                        lla_bzero( addr_t addr, addr_t size )
   { m_mem.clear( addr, size ); }
   template<class INT_t>
-  void                        lla_memwrite( uint32_t _addr, INT_t _val )
+  void                        lla_memwrite( addr_t _addr, INT_t _val )
   {
     uintptr_t const int_size = sizeof( INT_t );
       
-    uint32_t last_addr = _addr, addr = _addr;
+    addr_t last_addr = _addr, addr = _addr;
     typename Memory::Page* page = m_mem.getpage( addr );
       
     for (uintptr_t idx = 0; idx < int_size; ++idx, ++addr)
@@ -230,17 +307,17 @@ struct Arch
         uint8_t byte = (_val >> (idx*8)) & 0xff;
         if ((last_addr ^ addr) >> Memory::Page::s_bits)
           page = m_mem.getpage( addr );
-        uint32_t offset = addr % (1 << Memory::Page::s_bits);
+        addr_t offset = addr % (1 << Memory::Page::s_bits);
         page->m_storage[offset] = byte;
       }
   }
     
   template<class INT_t>
-  INT_t                       lla_memread( uint32_t _addr )
+  INT_t                       lla_memread( addr_t _addr )
   {
     uintptr_t const int_size = sizeof( INT_t );
       
-    uint32_t last_addr = _addr, addr = _addr;
+    addr_t last_addr = _addr, addr = _addr;
     typename Memory::Page* page = m_mem.getpage( addr );
       
     INT_t result = 0;
@@ -249,42 +326,41 @@ struct Arch
       {
         if ((last_addr ^ addr) >> Memory::Page::s_bits)
           page = m_mem.getpage( addr );
-        uint32_t offset = addr % (1 << Memory::Page::s_bits);
+        addr_t offset = addr % (1 << Memory::Page::s_bits);
         result |= (INT_t( page->m_storage[offset] ) << (idx*8));
       }
       
     return result;
 
   }
-
   
-  f32_t                       fmemread32( unsigned int _seg, u32_t _addr )
+  f32_t                       fmemread32( unsigned int _seg, addr_t _addr )
   {
     union IEEE754_t { float as_f; uint32_t as_u; } word;
     word.as_u = memread<32>( _seg, _addr );
     return word.as_f;
   }
-  f64_t                       fmemread64( unsigned int _seg, u32_t _addr )
+  f64_t                       fmemread64( unsigned int _seg, addr_t _addr )
   {
     union IEEE754_t { double as_f; uint64_t as_u; } word;
     word.as_u = memread<64>( _seg, _addr );
     return word.as_f;
   }
   f64_t
-  fmemread80( unsigned int _seg, u32_t _addr )
+  fmemread80( unsigned int _seg, addr_t _addr )
   {
-    _addr += u32_t( m_srs[_seg].m_base );
+    _addr += addr_t( segbase(_seg) );
     uintptr_t const buf_size = 10;
     uint8_t buf[buf_size];
     {
-      uint32_t last_addr = _addr, addr = _addr;
+      addr_t last_addr = _addr, addr = _addr;
       typename Memory::Page* page = m_mem.getpage( addr );
       
       for (uintptr_t idx = 0; idx < buf_size; ++idx, ++ addr)
         {
           if ((last_addr ^ addr) >> Memory::Page::s_bits)
             page = m_mem.getpage( addr );
-          uint32_t offset = addr % (1 << Memory::Page::s_bits);
+          addr_t offset = addr % (1 << Memory::Page::s_bits);
           buf[idx] = page->m_storage[offset];
         }
     }
@@ -334,6 +410,16 @@ struct Arch
     
     return word.as_f;
   }
+
+  template <unsigned OPSIZE>
+  typename TypeFor<Arch,OPSIZE>::f
+  fpmemread( unsigned seg, u64_t addr )
+  {
+    if (OPSIZE==32) return this->fmemread32( seg, addr );
+    if (OPSIZE==64) return this->fmemread64( seg, addr );
+    if (OPSIZE==80) return this->fmemread80( seg, addr );
+    throw 0;        return typename TypeFor<Arch,OPSIZE>::f();
+  }
     
   template <unsigned OPSIZE>
   typename TypeFor<Arch,OPSIZE>::f
@@ -341,12 +427,7 @@ struct Arch
   {
     typedef typename TypeFor<Arch,OPSIZE>::f f_type;
     if (not rmop.is_memory_operand()) return f_type( this->fread( rmop.ereg() ) );
-
-    if (OPSIZE==32) return this->fmemread32( rmop->segment, rmop->effective_address( *this ) );
-    if (OPSIZE==64) return this->fmemread64( rmop->segment, rmop->effective_address( *this ) );
-    if (OPSIZE==80) return this->fmemread80( rmop->segment, rmop->effective_address( *this ) );
-    throw 0;
-    return f_type();
+    return this->fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) );
   }
 
   void                        fmemwrite32( unsigned int _seg, u64_t _addr, f32_t _val )
@@ -361,9 +442,9 @@ struct Arch
     word.as_f = _val;
     memwrite<64>( _seg, _addr, word.as_u );
   }
-  void                        fmemwrite80( unsigned int _seg, u64_t _addr, f64_t _val )
+  void                        fmemwrite80( unsigned int _seg, u64_t _addr, f80_t _val )
   {
-    _addr += u64_t( m_srs[_seg].m_base );
+    _addr += u64_t( segbase(_seg) );
     union IEEE754_t { double as_f; uint64_t as_u; } word;
     word.as_f = _val;
     uint8_t sign = (word.as_u >> 63) & 1;
@@ -395,7 +476,7 @@ struct Arch
     for ( uintptr_t idx = 0; idx < 8; ++idx)
       buf[idx] = uint8_t( mantissa >> (idx*8) );
 
-    uint32_t last_addr = _addr, addr = _addr;
+    addr_t last_addr = _addr, addr = _addr;
     typename Memory::Page* page = m_mem.getpage( addr );
 
     for (uintptr_t idx = 0; idx < buf_size; ++idx, ++addr)
@@ -403,30 +484,36 @@ struct Arch
         uint8_t byte = buf[idx];
         if ((last_addr ^ addr) >> Memory::Page::s_bits)
           page = m_mem.getpage( addr );
-        uint32_t offset = addr % (1 << Memory::Page::s_bits);
+        addr_t offset = addr % (1 << Memory::Page::s_bits);
         page->m_storage[offset] = byte;
       }
   }
+
   template <unsigned OPSIZE>
-      void
-  frmwrite( RMOp const& rmop,
-            typename TypeFor<Arch,OPSIZE>::f value )
+  void
+  fpmemwrite( unsigned seg, u64_t addr, typename TypeFor<Arch,OPSIZE>::f value )
+  {
+    if (OPSIZE==32) return fmemwrite32( seg, addr, value );
+    if (OPSIZE==64) return fmemwrite64( seg, addr, value );
+    if (OPSIZE==80) return fmemwrite80( seg, addr, value );
+    throw 0;
+  }
+  
+  template <unsigned OPSIZE>
+  void
+  frmwrite( RMOp const& rmop, typename TypeFor<Arch,OPSIZE>::f value )
   {
     if (not rmop.is_memory_operand()) return fwrite( rmop.ereg(), f64_t( value ) );
-
-    if (OPSIZE==32) return fmemwrite32( rmop->segment, rmop->effective_address( *this ), f64_t( value ) );
-    if (OPSIZE==64) return fmemwrite64( rmop->segment, rmop->effective_address( *this ), f64_t( value ) );
-    if (OPSIZE==80) return fmemwrite80( rmop->segment, rmop->effective_address( *this ), f64_t( value ) );
-    throw 0;
+    fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
   }
 
 
   template <unsigned OPSIZE>
-      void
+  void
   memwrite( unsigned _seg, u64_t _addr, typename TypeFor<Arch,OPSIZE>::u _val )
   {
     uintptr_t const int_size = (OPSIZE/8);
-    uint32_t addr = _addr + m_srs[_seg].m_base, last_addr = addr;
+    addr_t addr = _addr + segbase(_seg), last_addr = addr;
 
     typename Memory::Page* page = m_mem.getpage( addr );
 
@@ -435,7 +522,7 @@ struct Arch
         uint8_t byte = (_val >> (idx*8)) & 0xff;
         if ((last_addr ^ addr) >> Memory::Page::s_bits)
           page = m_mem.getpage( addr );
-        uint32_t offset = addr % (1 << Memory::Page::s_bits);
+        addr_t offset = addr % (1 << Memory::Page::s_bits);
         page->m_storage[offset] = byte;
       }
   }
@@ -484,12 +571,12 @@ struct Arch
     return memwrite<GOP::OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
   }
 
-  template<unsigned OPSIZE>
+  template <unsigned OPSIZE>
   typename TypeFor<Arch,OPSIZE>::u
   memread( unsigned _seg, u64_t _addr )
   {
     uintptr_t const int_size = (OPSIZE/8);
-    uint32_t addr = _addr + m_srs[_seg].m_base, last_addr = addr;
+    addr_t addr = _addr + segbase(_seg), last_addr = addr;
     typename Memory::Page* page = m_mem.getpage( addr );
 
     typedef typename TypeFor<Arch,OPSIZE>::u u_type;
@@ -499,7 +586,7 @@ struct Arch
       {
         if ((last_addr ^ addr) >> Memory::Page::s_bits)
           page = m_mem.getpage( addr );
-        uint32_t offset = addr % (1 << Memory::Page::s_bits);
+        addr_t offset = addr % (1 << Memory::Page::s_bits);
         result |= (u_type( page->m_storage[offset] ) << (idx*8));
       }
 
@@ -545,8 +632,8 @@ struct Arch
   }
   // unisim::service::interfaces::MemoryInjection<ADDRESS>
 
-  bool InjectReadMemory(uint64_t addr, void *buffer, uint32_t size) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
-  bool InjectWriteMemory(uint64_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
+  bool InjectReadMemory(addr_t addr, void *buffer, uint32_t size) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
+  bool InjectWriteMemory(addr_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
   // Implementation of ExecuteSystemCall
   
   void ExecuteSystemCall( unsigned id )
@@ -554,9 +641,11 @@ struct Arch
     if (not linux_os)
       { throw std::logic_error( "No linux OS emulation connected" ); }
     linux_os->ExecuteSystemCall( id );
+    auto los = dynamic_cast<LinuxOS*>( linux_os );
+    los->LogSystemCall( id );
   }
   
-  uint64_t rip;
+  addr_t rip;
 
   enum ipproc_t { ipjmp = 0, ipcall, ipret };
   u64_t                       getnip() { return rip; }
@@ -570,7 +659,7 @@ struct Arch
   
   void                        interrupt( uint8_t _exc )
   {
-    std::cerr << "Unhandled interruption (0x" << std::hex << uint32_t( _exc ) << ").\n";
+    std::cerr << "Unhandled interruption (0x" << std::hex << unsigned( _exc ) << ").\n";
     exit( 0 );
   }
   
@@ -592,24 +681,24 @@ struct Arch
   void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::OPSIZE>::u value )
   {
     u64regs[idx] = u64_t( value );
-    gdbchecker.mark( idx );
+    gdbchecker.gmark( idx );
   }
 
   void regwrite( GObLH const&, unsigned idx, u8_t value )
   {
-    uint32_t reg = idx%4, sh = idx*2 & 8;
+    unsigned reg = idx%4, sh = idx*2 & 8;
     u64regs[reg] = (u64regs[reg] & ~u64_t(0xff << sh)) | ((value & u64_t(0xff)) << sh);
-    gdbchecker.mark( reg );
+    gdbchecker.gmark( reg );
   }
   void regwrite( GOb const&, unsigned idx, u8_t value )
   {
     u64regs[idx] = (u64regs[idx] & ~u64_t(0xff)) | ((value & u64_t(0xff)));
-    gdbchecker.mark( idx );
+    gdbchecker.gmark( idx );
   }
   void regwrite( GOw const&, unsigned idx, u16_t value )
   {
     u64regs[idx] = (u64regs[idx] & ~u64_t(0xffff)) | ((value & u64_t(0xffff)));
-    gdbchecker.mark( idx );
+    gdbchecker.gmark( idx );
   }
 
   struct FLAG
@@ -633,21 +722,21 @@ public:
   // FLOATING POINT STATE
 protected:
   double                      m_fregs[8];
-  uint32_t                    m_ftop;
+  unsigned                    m_ftop;
   uint16_t                    m_fcw;
     
 public:
   void                        fnanchk( f64_t value ) {};
-  uint32_t                    ftopread() { return m_ftop; }
+  unsigned                    ftopread() { return m_ftop; }
   int                         fcwreadRC() const { return int( (m_fcw >> 10) & 3 ); }
   void                        fpush( f64_t value )
   { fnanchk( value ); m_ftop = ((m_ftop + 0x7) & 0x7); m_fregs[m_ftop] = value; /*m_dirtfregs |= (1 << m_ftop);*/ }
-  void                        fwrite( uint32_t idx, f64_t value )
-  { fnanchk( value ); uint32_t fidx = (m_ftop + idx) & 0x7; m_fregs[fidx] = value; /*m_dirtfregs |= (1 << fidx);*/ }
+  void                        fwrite( unsigned idx, f64_t value )
+  { fnanchk( value ); unsigned fidx = (m_ftop + idx) & 0x7; m_fregs[fidx] = value; /*m_dirtfregs |= (1 << fidx);*/ }
   f64_t                       fpop()
   { f64_t value = m_fregs[m_ftop++]; m_ftop &= 0x7; fnanchk( value ); return value; }
-  f64_t                       fread( uint32_t idx )
-  { uint32_t fidx = (m_ftop + idx) & 0x7; f64_t value = m_fregs[fidx]; fnanchk( value ); return value; }
+  f64_t                       fread( unsigned idx )
+  { unsigned fidx = (m_ftop + idx) & 0x7; f64_t value = m_fregs[fidx]; fnanchk( value ); return value; }
   void                        finit()
   {
     m_ftop = 0;
@@ -757,10 +846,11 @@ public:
     {
       T const* vec = reinterpret_cast<T const*>( storage );
 
-      for (unsigned idx = 0, stop = ItemCount<T>(); idx < stop; ++idx) {
-        T val = vec[idx]; 
-        VectorTypeInfo<T>::ToBytes( &storage[idx*VectorTypeInfo<T>::bytecount], val );
-      }
+      for (unsigned idx = 0, stop = ItemCount<T>(); idx < stop; ++idx)
+        {
+          T val = vec[idx]; 
+          VectorTypeInfo<T>::ToBytes( &storage[idx*VectorTypeInfo<T>::bytecount], val );
+        }
     }
 
     template <typename T>
@@ -772,11 +862,12 @@ public:
       arrangement_t current = &ToBytes<T>;
       if (arrangement != current) {
         arrangement( storage );   
-        for (int idx = ItemCount<T>(); --idx >= 0;) {
-          T val;
-          VectorTypeInfo<T>::FromBytes( val, &storage[idx*VectorTypeInfo<T>::bytecount] );
-          res[idx] = val;
-        }
+        for (int idx = ItemCount<T>(); --idx >= 0;)
+          {
+            T val;
+            VectorTypeInfo<T>::FromBytes( val, &storage[idx*VectorTypeInfo<T>::bytecount] );
+            res[idx] = val;
+          }
         arrangement = current;
       }  
      
@@ -785,10 +876,11 @@ public:
       
     VUnion() : arrangement( &ToBytes<uint8_t> ) {}
   } umms[16];
-
+  
   uint8_t vmm_storage[16][16];
+  uint32_t mxcsr;
     
-  template<unsigned OPSIZE>
+  template <unsigned OPSIZE>
   typename TypeFor<Arch,OPSIZE>::u
   xmm_uread( unsigned reg, unsigned sub )
   {
@@ -799,18 +891,44 @@ public:
     return u_array[sub];
   }
     
-  template<unsigned OPSIZE>
+  template <unsigned OPSIZE>
   void
   xmm_uwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::u val )
   {
     typedef typename TypeFor<Arch,OPSIZE>::u u_type;
-      
+    
     u_type* u_array = umms[reg].GetStorage<u_type>( &vmm_storage[reg][0] );
       
     u_array[sub] = val;
+
+    gdbchecker.xmark(reg);
+  }
+
+  template <unsigned OPSIZE>
+  typename TypeFor<Arch,OPSIZE>::f
+  xmm_fread( unsigned reg, unsigned sub )
+  {
+    typedef typename TypeFor<Arch,OPSIZE>::f f_type;
+      
+    f_type* f_array = umms[reg].GetStorage<f_type>( &vmm_storage[reg][0] );
+      
+    return f_array[sub];
   }
     
-  template<unsigned OPSIZE>
+  template <unsigned OPSIZE>
+  void
+  xmm_fwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::f val )
+  {
+    typedef typename TypeFor<Arch,OPSIZE>::f f_type;
+      
+    f_type* f_array = umms[reg].GetStorage<f_type>( &vmm_storage[reg][0] );
+      
+    f_array[sub] = val;
+    
+    gdbchecker.xmark(reg);
+  }
+
+  template <unsigned OPSIZE>
   typename TypeFor<Arch,OPSIZE>::u
   xmm_uread( RMOp const& rmop, unsigned sub )
   {
@@ -818,7 +936,7 @@ public:
     return memread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8) );
   }
     
-  template<unsigned OPSIZE>
+  template <unsigned OPSIZE>
   void
   xmm_uwrite( RMOp const& rmop, unsigned sub, typename TypeFor<Arch,OPSIZE>::u val )
   {
@@ -826,7 +944,25 @@ public:
     return memwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8), val );
   }
 
+  template <unsigned OPSIZE>
+  typename TypeFor<Arch,OPSIZE>::f
+  xmm_fread( RMOp const& rmop, unsigned sub )
+  {
+    if (not rmop.is_memory_operand()) return xmm_fread<OPSIZE>( rmop.ereg(), sub );
+    return fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8) );
+  }
+    
+  template <unsigned OPSIZE>
+  void
+  xmm_fwrite( RMOp const& rmop, unsigned sub, typename TypeFor<Arch,OPSIZE>::f val )
+  {
+    if (not rmop.is_memory_operand()) return xmm_fwrite<OPSIZE>( rmop.ereg(), sub, val );
+    fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8), val );
+  }
+
+  void xgetbv();
   void cpuid();
+  void _DE() { std::cerr << "#DE: Division Error.\n"; throw 0; }
   
   typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
   Operation* latest_instruction;
@@ -839,46 +975,123 @@ public:
 
   struct GDBChecker
   {
-    GDBChecker() : dirtmask( 0 ), visited() {}
-    uint32_t dirtmask;
+    GDBChecker() : sink("check.gdb"), visited(), nassertid(0), gdirtmask( 0 ), xdirtmask( 0 ) {}
+    std::ofstream sink;
     std::map<uint64_t,uint64_t> visited;
-    void mark( unsigned reg ) { dirtmask |= (1 << reg); }
-    void step( Arch* cpu )
+    uint64_t nassertid;
+    uint32_t gdirtmask;
+    uint32_t xdirtmask;
+    void gmark( unsigned reg ) { gdirtmask |= (1 << reg); }
+    void xmark( unsigned reg ) { xdirtmask |= (1 << reg); }
+    uint64_t getnew_aid() { if (++nassertid > 0x80000) throw 0; return nassertid; }
+    void start( Arch const& cpu)
     {
-      uint64_t cia = cpu->rip;
+      sink << "set pagination off\n\n"
+           << "define insn_assert\n  if $arg1 != $arg2\n    printf \"insn_assert %u failed.\\n\", $arg0\n    bad_assertion\n  end\nend\n\n"
+           << "break *0x" << std::hex << cpu.rip << "\nrun\n\n";
+    }
+    void step( Arch const& cpu )
+    {
+      cpu.latest_instruction->disasm( sink << "# " ); sink << "\n";
+      uint64_t cia = cpu.rip;
       uint64_t revisit = visited[cia]++;
-      sink() << "stepi\n";
+      sink << "stepi\n";
       if (revisit == 0)
-        sink() << "# advance *0x" << std::hex << cia << "\n";
+        sink << "# advance *0x" << std::hex << cia << "\n";
       else
-        sink() << "# break *0x" << std::hex << cia << "; cont; cont " << std::dec << revisit << "\n";
-      sink() << "insn_assert " << std::dec << aid(cpu) << " $pc 0x" << std::hex  << cia << '\n';
+        sink << "# break *0x" << std::hex << cia << "; cont; cont " << std::dec << revisit << "\n";
+      sink << "insn_assert " << std::dec << getnew_aid() << " $rip 0x" << std::hex  << cia << '\n';
       for (unsigned reg = 0; reg < 16; ++reg)
         {
-          if (not ((dirtmask>>reg) & 1)) continue;
-          uint64_t value = cpu->u64regs[reg];
-          sink() << "insn_assert " << std::dec << aid(cpu) << " " << unisim::component::cxx::processor::intel::DisasmGq(reg) << " 0x" << std::hex << value << '\n';
+          if (not ((gdirtmask>>reg) & 1)) continue;
+          uint64_t value = cpu.u64regs[reg];
+          std::ostringstream rn; rn << unisim::component::cxx::processor::intel::DisasmGq(reg);
+          sink << "insn_assert " << std::dec << getnew_aid() << " $" << &(rn.str().c_str()[1]) << " 0x" << std::hex << value << '\n';
         }
-      dirtmask = 0;
+      gdirtmask = 0;
+      for (unsigned reg = 0; reg < 16; ++reg)
+        {
+          if (not ((xdirtmask>>reg) & 1)) continue;
+          uint64_t quads[2];
+          uint8_t* bytes = (uint8_t*)&quads[0];
+          std::copy( &cpu.vmm_storage[reg][0], &cpu.vmm_storage[reg][16], bytes );
+          cpu.umms[reg].arrangement( bytes );
+          sink << "insn_assert " << std::dec << getnew_aid() << " $xmm" << reg << ".v2_int64[0] 0x" << std::hex << quads[0] << '\n';
+          sink << "insn_assert " << std::dec << getnew_aid() << " $xmm" << reg << ".v2_int64[1] 0x" << std::hex << quads[1] << '\n';
+        }
+      xdirtmask = 0;
     }
-    uint64_t aid( Arch* cpu )
-    {
-      static uint64_t assertion_id = 0;
-      if (++assertion_id > 0x80000) throw 0;
-      return assertion_id;
-    }
-    struct Sink
-    {
-      Sink() : stream("check.gdb")
-      {
-        stream << "define insn_assert\n  if $arg1 != $arg3\n    printf \"insn_assert %u failed.\n\", $arg0\n    quit\n  end\nend\n\n";
-      }
-      std::ostream& operator() () { return stream; }
-      std::ofstream stream;
-    } sink;
-    
   } gdbchecker;
 };
+
+void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor )
+{
+  if (not divisor) arch._DE();
+  UInt128 quotient( 0 ), rem( hi, lo );
+
+  for (int pos = 64; pos and rem;)
+    {
+      int shift = rem.clz();
+      if (shift > pos) shift = pos;
+      quotient <<= shift;
+      rem <<= shift;
+      pos = pos - shift;
+
+      if (rem.bits[1] < divisor and pos > 0)
+        {
+          quotient <<= 1;
+          rem <<= 1;
+          pos -= 1;
+          quotient.bits[0] |= 1;
+          rem.bits[1] -= divisor;
+        }
+      else
+        {
+          quotient.bits[0] |= rem.bits[1] / divisor;
+          rem.bits[1] = rem.bits[1] % divisor;
+        }
+    }
+   
+  if (quotient.bits[1]) arch._DE();
+  
+  lo  = quotient.bits[0];
+  hi = rem.bits[1];
+}
+
+void eval_div( Arch& arch, int64_t& hi, int64_t& lo, int64_t divisor )
+{
+  uint64_t uhi = std::abs(hi), ulo = std::abs(lo);
+  int64_t sign = (hi >> 63) ^ (lo >> 63);
+  eval_div( arch, uhi, ulo, uint64_t(divisor) );
+  int64_t shi, slo;
+  if (sign) { shi = -uhi; slo = -ulo; }
+  else      { shi = +uhi; slo = +ulo; }
+  if ((slo >> 63) ^ sign) arch._DE();
+  hi = shi; lo = slo;
+}
+
+void eval_mul( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t multiplier )
+{
+  uint64_t opl = lo, opr = multiplier;
+  uint64_t lhi = uint64_t(opl >> 32), llo = uint64_t(uint32_t(opl)), rhi = uint64_t(opr >> 32), rlo = uint64_t(uint32_t(opr));
+  uint64_t hihi( lhi*rhi ), hilo( lhi*rlo), lohi( llo*rhi ), lolo( llo*rlo );
+  hi = (((lolo >> 32) + uint64_t(uint32_t(hilo)) + uint64_t(uint32_t(lohi))) >> 32) + (hilo >> 32) + (lohi >> 32) + hihi;
+  lo = opl * opr;
+  arch.flagwrite( Arch::FLAG::OF, bool(hi) );
+  arch.flagwrite( Arch::FLAG::OF, bool(hi) );
+}
+
+void eval_mul( Arch& arch, int64_t& hi, int64_t& lo, int64_t multiplier )
+{
+  UInt128 u128( 0, std::abs(lo) );
+  int64_t sign = (hi >> 63) ^ (lo >> 63);
+  eval_mul( arch, u128.bits[1], u128.bits[0], uint64_t(multiplier) );
+  if (sign) u128.neg();
+  hi = u128.bits[1]; lo = u128.bits[0];
+  bool ovf = (int64_t(u128.bits[0]) >> 63) != int64_t(u128.bits[1]);
+  arch.flagwrite( Arch::FLAG::OF, bool(ovf) );
+  arch.flagwrite( Arch::FLAG::OF, bool(ovf) );
+}
 
 Arch::f64_t sine( Arch::f64_t );
 Arch::f64_t cosine( Arch::f64_t );
@@ -947,19 +1160,20 @@ struct ICache : public DECODER
       }
       
     page->operations[offset] = operation = this->Decode( mode, address, bytes );
+    if (not operation) return 0;
     memcpy( &page->bytes[offset], bytes, operation->length );
     
-    {
-      std::ostringstream buf;
-      buf << std::hex << address << ":\t" << unisim::component::cxx::processor::intel::DisasmBytes(bytes,operation->length) << '\t';
-      operation->disasm( buf );
-      if (certs.insert( buf.str() ).second)
-        {
-          std::cerr << "unknown instruction: " << buf.str() << '\n';
-          return 0;
-        }
-    }
-      
+    // {
+    //   std::ostringstream buf;
+    //   buf << std::hex << address << ":\t" << unisim::component::cxx::processor::intel::DisasmBytes(bytes,operation->length) << '\t';
+    //   operation->disasm( buf );
+    //   if (certs.insert( buf.str() ).second)
+    //     {
+    //       std::cerr << "unknown instruction: " << buf.str() << '\n';
+    //       return 0;
+    //     }
+    // }
+    
     return operation;
   }
 
@@ -1005,7 +1219,6 @@ struct Decoder
       return op;
       
     std::cerr << "No decoding for " << std::hex << address << ": " << unisim::component::cxx::processor::intel::DisasmBytes( bytes, 15 ) << std::dec << std::endl;
-    throw 0;
     return 0;
   }
 };
@@ -1014,35 +1227,57 @@ Arch::Operation*
 Arch::fetch()
 {
   static ICache<Decoder> icache;
-  uint64_t insn_addr = this->rip;
+  addr_t insn_addr = this->rip;
   uint8_t decbuf[15];
   lla_memcpy( decbuf, insn_addr, sizeof (decbuf) );
   Decoder::Mode mode( 1, 0, 1 );
-    
-  Operation* operation = icache.Get( mode, insn_addr, &decbuf[0] );
-  if (not operation) return 0;
+
+  latest_instruction = icache.Get( mode, insn_addr, &decbuf[0] );
+  if (not latest_instruction) return 0;
   
-  this->rip = insn_addr + operation->length;
+  this->rip = insn_addr + latest_instruction->length;
     
   if (do_disasm) {
     std::ios fmt(NULL);
     fmt.copyfmt(std::cout);
     std::cout << std::hex << insn_addr << ":\t";
-    operation->disasm( std::cout );
-    std::cout << " (" << unisim::component::cxx::processor::intel::DisasmBytes(&decbuf[0],operation->length) << ")\n";
+    latest_instruction->disasm( std::cout );
+    std::cout << " (" << unisim::component::cxx::processor::intel::DisasmBytes(&decbuf[0],latest_instruction->length) << ")\n";
     std::cout.copyfmt(fmt);
   }
     
   ++instruction_count;
-  return operation;
+  return latest_instruction;
 }
+
+void
+Arch::xgetbv()
+{
+  uint32_t a, d, c = this->regread( GOd(), 1 );
+  __asm__ ("xgetbv\n\t" : "=a" (a), "=d" (d) : "c" (c));
+  this->regwrite( GOd(), 0, a );
+  this->regwrite( GOd(), 2, d );
+}
+
+// void
+// Arch::cpuid()
+// {
+//   uint32_t level = this->regread( GOd(), 0 ), count = this->regread( GOd(), 1 );
+  
+//   uint32_t r[4];
+  
+//   __asm__ ("cpuid\n\t" : "=a" (r[0]), "=c" (r[1]), "=d" (r[2]), "=b" (r[3]) : "0" (level), "1" (count));
+
+//   for (int idx = 0; idx < 4; ++idx)
+//     this->regwrite( GOd(), idx, r[idx] );
+// }
 
 void
 Arch::cpuid()
 {
   switch (this->regread( GOd(), 0 )) {
   case 0: {
-    this->regwrite( GOd(), 0, u32_t( 1 ) );
+    this->regwrite( GOd(), 0, u32_t( 4 ) );
   
     char const* name = "GenuineIntel";
     { uint32_t word = 0;
@@ -1255,7 +1490,8 @@ main( int argc, char *argv[] )
   Arch cpu;
   LinuxOS linux64( std::cerr, &cpu, &cpu, &cpu );
   cpu.SetLinuxOS( &linux64 );
-  cpu.do_disasm = true;
+  cpu.do_disasm = false;
+  linux64.Setup( false );
   
   // Loading image
   std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
@@ -1263,8 +1499,13 @@ main( int argc, char *argv[] )
   // envs.push_back( "LANG=C" );
   // linux64.Process( simargs, envs );
   linux64.Core( simargs[0] );
+  linux64.SetBrk(0x7b5000);
+  cpu.fs_base = 0x7928c0;
+  cpu.finit();
+   
   
   std::cerr << "\n*** Run ***" << std::endl;
+  cpu.gdbchecker.start(cpu);
   while (not linux64.exited)
     {
       Arch::Operation* op = cpu.fetch();
@@ -1274,8 +1515,10 @@ main( int argc, char *argv[] )
       // std::cerr << std::endl;
       asm volatile ("operation_execute:");
       op->execute( cpu );
-      //{ uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread( GOd(), idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
-      
+      cpu.gdbchecker.step(cpu);
+      // { uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread( GOd(), idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
+      if (cpu.instruction_count >= 0x10000)
+        break;
       // if ((cpu.instruction_count % 0x1000000) == 0)
       //   { std::cerr << "Executed instructions: " << std::dec << cpu.instruction_count << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
     }

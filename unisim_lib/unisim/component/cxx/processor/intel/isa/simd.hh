@@ -1,21 +1,37 @@
-// /* ADDP -- Add Packed Single- or Double-Precision Floating-Point Values */
-// op addps_vdq_wdq( 0x0f[8]:> <:0x58[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// addps_vdq_wdq.disasm = { _sink << "addps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op addpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x58[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// addpd_vdq_wdq.disasm = { _sink << "addpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* ADDSD -- Add Scalar Single- or Double-Precision Floating-Point Values */
-// op addss_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x58[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// addss_vdq_wdq.disasm = { _sink << "addss " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op addsd_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x58[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// addsd_vdq_wdq.disasm = { _sink << "addsd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
+/*
+ *  Copyright (c) 2007-2019,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without 
+ *  modification, are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, 
+ *     this list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific 
+ *     prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  ARE DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+
 // /* ADDSUBPD -- Packed Single- or Double-FP Add/Subtract */
 // op addsubpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xd0[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
@@ -24,24 +40,6 @@
 // op addsubps_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0xd0[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // addsubps_vdq_wdq.disasm = { _sink << "addsubps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* ANDPD -- Bitwise Logical AND of Packed Single- or Double-Precision Floating-Point Values */
-// op andps_vdq_wdq( 0x0f[8]:> <:0x54[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// andps_vdq_wdq.disasm = { _sink << "andps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op andpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x54[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// andpd_vdq_wdq.disasm = { _sink << "andpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* ANDNP -- Bitwise Logical AND NOT of Packed Single- or Double-Precision Floating-Point Values */
-// op andnps_vdq_wdq( 0x0f[8]:> <:0x55[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// andnps_vdq_wdq.disasm = { _sink << "andnps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op andnpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x55[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// andnpd_vdq_wdq.disasm = { _sink << "andnpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
 // 
 // /* BLENDP -- Blend Packed Single- or Double-Precision Floating-Point Values */
 // op blendps_vdq_wdq_ib( 0x0f[8]:> <:0x3a[8]:> <:0x0c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
@@ -103,134 +101,232 @@
 // op comiss_vdq_wdq( 0x0f[8]:> <:0x2f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // comiss_vdq_wdq.disasm = { _sink << "comiss " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* CVTDQ2PS -- Convert Packed Dword Integers to Packed Single- or Double-Precision FP Values */
+
+/*********************/
+/* SIMD CVT Functions*/
+/*********************/
+
+template <class ARCH, unsigned DOPSZ, unsigned SOPSZ>
+struct CvtI2F : public Operation<ARCH>
+{
+  CvtI2F( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {}
+  RMOp<ARCH> rm; uint8_t gn;
+  char const* mnemonic() const { switch (DOPSZ) { case 32: return "cvtdq2ps"; case 64: return "cvtdq2pd"; } return "cvt<bad>"; }
+  void disasm( std::ostream& sink ) const { sink << mnemonic() << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,DOPSZ>::f fdst_type;
+    for (unsigned idx = 0, end = 128/DOPSZ; idx < end; ++idx)
+      {
+        typename TypeFor<ARCH,SOPSZ>::u src = arch.template xmm_uread<SOPSZ>( rm, idx );
+        fdst_type dst = fdst_type(src);
+        arch.template xmm_fwrite<DOPSZ>( gn, idx, dst );
+      }
+  }
+};
+
+template <class ARCH, unsigned DOPSZ, class SOP>
+struct CvtsI2F : public Operation<ARCH>
+{
+  CvtsI2F( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {}
+  RMOp<ARCH> rm; uint8_t gn;
+  char const* mnemonic() const { switch (DOPSZ) { case 32: return "cvtsi2ss"; case 64: return "cvtsi2sd"; } return "cvt<bad>"; }
+  void disasm( std::ostream& sink ) const { sink << mnemonic() << ' ' << DisasmE( SOP(), rm ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,DOPSZ>::f fdst_type;
+    typename TypeFor<ARCH,SOP::OPSIZE>::u src = arch.rmread( SOP(), rm );
+    fdst_type dst = fdst_type(src);
+    arch.template xmm_fwrite<DOPSZ>( gn, 0, dst );
+  }
+};
+
+template <class ARCH, unsigned DOPSZ, unsigned SOPSZ>
+struct CvtsF2F : public Operation<ARCH>
+{
+  CvtsF2F( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const
+  {
+    sink << "cvts" << SizeID<SOPSZ>::fid() << "2s" << SizeID<DOPSZ>::fid() << " " << DisasmWdq( rm ) << ',' << DisasmVdq( gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,SOPSZ>::f fsrc_type;
+    typedef typename TypeFor<ARCH,DOPSZ>::f fdst_type;
+
+    fsrc_type src = arch.template xmm_fread<SOPSZ>( rm, 0 );
+    //FPToFP( res, op, cpu, cpu.FPSCR );
+    fdst_type dst = fdst_type(src);
+    
+    arch.template xmm_fwrite<DOPSZ>( gn, 0, dst );
+  }
+};
+
+template <class ARCH, unsigned SOPSZ, class DOP>
+struct CvttF2I : public Operation<ARCH>
+{
+  CvttF2I( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {}
+  RMOp<ARCH> rm; uint8_t gn;
+  char const* mnemonic() const { switch (SOPSZ) { case 32: return "cvttss2si"; case 64: return "cvttsd2si"; } return "cvt<bad>"; }
+  void disasm( std::ostream& sink ) const { sink << mnemonic() << ' ' << DisasmWdq( rm ) << ',' << DisasmG( DOP(), gn ); }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,DOP::OPSIZE>::u udst_type;
+    typename TypeFor<ARCH,SOPSZ>::f src = arch.template xmm_fread<SOPSZ>( rm, 0 );
+    udst_type dst = udst_type(src);
+    arch.regwrite( DOP(), gn, dst );
+  }
+};
+
+template <class ARCH> struct DC<ARCH,CVT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+  
+  if (auto _ = match( ic, sseF2() & opcode( "\x0f\x5a" ) & RM() ))
+
+    return new CvtsF2F<ARCH,32,64>( _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, sseF3() & opcode( "\x0f\x5a" ) & RM() ))
+
+    return new CvtsF2F<ARCH,64,32>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sseF3() & opcode( "\x0f\xe6" ) & RM() ))
+
+    return new CvtI2F<ARCH,64,32>( _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x5b" ) & RM() ))
+
+    return new CvtI2F<ARCH,32,32>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sseF2() & opcode( "\x0f\x2a" ) & RM() ))
+    {
+      if (ic.f3())
+        {
+          if (ic.opsize() == 32) return new CvtsI2F<ARCH,32,GOd>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize() == 64) return new CvtsI2F<ARCH,32,GOq>( _.opbase(), _.rmop(), _.greg() );
+          return 0;
+        }
+      if (ic.f2())
+        {
+          if (ic.opsize() == 32) return new CvtsI2F<ARCH,64,GOd>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize() == 64) return new CvtsI2F<ARCH,64,GOq>( _.opbase(), _.rmop(), _.greg() );
+          return 0;
+        }
+    }
+  
+  if (auto _ = match( ic, opcode( "\x0f\x2c" ) & RM() ))
+    {
+      if (ic.f3())
+        {
+          if (ic.opsize() == 32) return new CvttF2I<ARCH,32,GOd>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize() == 64) return new CvttF2I<ARCH,32,GOq>( _.opbase(), _.rmop(), _.greg() );
+          return 0;
+        }
+      if (ic.f2())
+        {
+          if (ic.opsize() == 32) return new CvttF2I<ARCH,64,GOd>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize() == 64) return new CvttF2I<ARCH,64,GOq>( _.opbase(), _.rmop(), _.greg() );
+          return 0;
+        }
+    }
+  return 0;
+}};
+
+template <class ARCH, bool STORE>
+struct LSMxcsr : public Operation<ARCH>
+{
+  LSMxcsr( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm ) : Operation<ARCH>( opbase ), rm( _rm ) {} RMOp<ARCH> rm;
+  void disasm( std::ostream& sink ) const { sink << (STORE ? "stmxcsr " : "ldmxcsr ") << DisasmE( GOd(), rm ); }
+  void execute( ARCH& arch ) const
+  {
+    if (STORE) arch.rmwrite( GOd(), rm, arch.mxcsr );
+    else       arch.mxcsr = arch.rmread( GOd(), rm );
+  }
+};
+
+template <class ARCH> struct DC<ARCH,MXCSR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\xae" ) /2 & RM_mem() ))
+
+    return new LSMxcsr<ARCH,false>( _.opbase(), _.rmop() );
+  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\xae" ) /3 & RM_mem() ))
+
+    return new LSMxcsr<ARCH,true>( _.opbase(), _.rmop() );
+  
+  return 0;
+}};
+
+/* CVTDQ2PS -- Convert Packed Dword Integers to Packed Single- or Double-Precision FP Values */
 // op cvtdq2ps_vdq_wdq( 0x0f[8]:> <:0x5b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // cvtdq2ps_vdq_wdq.disasm = { _sink << "cvtdq2ps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
 // op cvtdq2pd_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0xe6[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // cvtdq2pd_vdq_wdq.disasm = { _sink << "cvtdq2pd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* CVTPD2DQ -- Convert Packed Double-Precision FP Values to Packed Dword Integers */
-// op cvtpd2dq_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0xe6[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// cvtpd2dq_vdq_wdq.disasm = { _sink << "cvtpd2dq " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* CVTPD2PI -- Convert Packed Double-Precision FP Values to Packed Dword Integers */
-// op cvtpd2pi_pq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x2d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// cvtpd2pi_pq_wdq.disasm = { _sink << "cvtpd2pi " << DisasmWdq( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// /* CVTPD2PS -- Convert Packed Double-Precision FP Values to Packed Single-Precision FP Values */
-// op cvtpd2ps_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x5a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// cvtpd2ps_vdq_wdq.disasm = { _sink << "cvtpd2ps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* CVTPI2P -- Convert Packed Dword Integers to Packed Single- or Double-Precision FP Values */
-// op cvtpi2ps_vdq_qq( 0x0f[8]:> <:0x2a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// cvtpi2ps_vdq_qq.disasm = { _sink << "cvtpi2ps " << DisasmQq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op cvtpi2pd_vdq_qq( 0x66[8]:> <:0x0f[8]:> <:0x2a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// cvtpi2pd_vdq_qq.disasm = { _sink << "cvtpi2pd " << DisasmQq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* CVTPS2DQ -- Convert Packed Single-Precision FP Values to Packed Dword Integers */
-// 
-// op cvtps2dq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x5b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// cvtps2dq_vdq_wdq.disasm = { _sink << "cvtps2dq " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* CVTPS2PD -- Convert Packed Single-Precision FP Values to Packed Double-Precision FP Values */
-// op cvtps2pd_vdq_wdq( 0x0f[8]:> <:0x5a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// cvtps2pd_vdq_wdq.disasm = { _sink << "cvtps2pd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* CVTPS2PI -- Convert Packed Single-Precision FP Values to Packed Dword Integers */
-// op cvtps2pi_pq_wdq( 0x0f[8]:> <:0x2d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// cvtps2pi_pq_wdq.disasm = { _sink << "cvtps2pi " << DisasmWdq( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// /* CVTSD2SI -- Convert Scalar Double-Precision FP Value to Integer */
-// op cvtsd2si_gd_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x2d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// cvtsd2si_gd_wdq.disasm = { _sink << "cvtsd2si " << DisasmWdq( rmop ) << ',' << DisasmGd( gn ); };
-// 
-// /* CVTSD2SS -- Convert Scalar Double-Precision FP Value to Scalar Single-Precision FP Value */
-// op cvtsd2ss_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x5a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// cvtsd2ss_vdq_wdq.disasm = { _sink << "cvtsd2ss " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* CVTSI2SD -- Convert Dword Integer to Scalar Double-Precision FP Value */
+/* CVTSI2SD -- Convert Dword Integer to Scalar Double-Precision FP Value */
 // op cvtsi2sd_vdq_ed( 0xf2[8]:> <:0x0f[8]:> <:0x2a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // cvtsi2sd_vdq_ed.disasm = { _sink << "cvtsi2sd " << DisasmEd( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* CVTSI2SS -- Convert Dword Integer to Scalar Single-Precision FP Value */
+/* CVTSI2SS -- Convert Dword Integer to Scalar Single-Precision FP Value */
 // op cvtsi2ss_vdq_ed( 0xf3[8]:> <:0x0f[8]:> <:0x2a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // cvtsi2ss_vdq_ed.disasm = { _sink << "cvtsi2ss " << DisasmEd( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* CVTSS2SD -- Convert Scalar Single-Precision FP Value to Scalar Double-Precision FP Value */
+
+
+/* CVTSD2SS -- Convert Scalar Double-Precision FP Value to Scalar Single-Precision FP Value */
+// op cvtsd2ss_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x5a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+/* CVTPD2DQ -- Convert Packed Double-Precision FP Values to Packed Dword Integers */
+// op cvtpd2dq_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0xe6[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// cvtpd2dq_vdq_wdq.disasm = { _sink << "cvtpd2dq " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
+/* CVTPD2PI -- Convert Packed Double-Precision FP Values to Packed Dword Integers */
+// op cvtpd2pi_pq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x2d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// cvtpd2pi_pq_wdq.disasm = { _sink << "cvtpd2pi " << DisasmWdq( rmop ) << ',' << DisasmPq( gn ); };
+/* CVTPD2PS -- Convert Packed Double-Precision FP Values to Packed Single-Precision FP Values */
+// op cvtpd2ps_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x5a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// cvtpd2ps_vdq_wdq.disasm = { _sink << "cvtpd2ps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
+/* CVTPI2P -- Convert Packed Dword Integers to Packed Single- or Double-Precision FP Values */
+// op cvtpi2ps_vdq_qq( 0x0f[8]:> <:0x2a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// cvtpi2ps_vdq_qq.disasm = { _sink << "cvtpi2ps " << DisasmQq( rmop ) << ',' << DisasmVdq( gn ); };
+// op cvtpi2pd_vdq_qq( 0x66[8]:> <:0x0f[8]:> <:0x2a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// cvtpi2pd_vdq_qq.disasm = { _sink << "cvtpi2pd " << DisasmQq( rmop ) << ',' << DisasmVdq( gn ); };
+/* CVTPS2DQ -- Convert Packed Single-Precision FP Values to Packed Dword Integers */
+// op cvtps2dq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x5b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// cvtps2dq_vdq_wdq.disasm = { _sink << "cvtps2dq " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
+/* CVTPS2PD -- Convert Packed Single-Precision FP Values to Packed Double-Precision FP Values */
+// op cvtps2pd_vdq_wdq( 0x0f[8]:> <:0x5a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// cvtps2pd_vdq_wdq.disasm = { _sink << "cvtps2pd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
+/* CVTPS2PI -- Convert Packed Single-Precision FP Values to Packed Dword Integers */
+// op cvtps2pi_pq_wdq( 0x0f[8]:> <:0x2d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// cvtps2pi_pq_wdq.disasm = { _sink << "cvtps2pi " << DisasmWdq( rmop ) << ',' << DisasmPq( gn ); };
+/* CVTSD2SI -- Convert Scalar Double-Precision FP Value to Integer */
+// op cvtsd2si_gd_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x2d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// cvtsd2si_gd_wdq.disasm = { _sink << "cvtsd2si " << DisasmWdq( rmop ) << ',' << DisasmGd( gn ); };
+// cvtsd2ss_vdq_wdq.disasm = { _sink << "cvtsd2ss " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
+/* CVTSS2SD -- Convert Scalar Single-Precision FP Value to Scalar Double-Precision FP Value */
 // op cvtss2sd_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x5a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // cvtss2sd_vdq_wdq.disasm = { _sink << "cvtss2sd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* CVTSS2SI -- Convert Scalar Single-Precision FP Value to Dword Integer */
+/* CVTSS2SI -- Convert Scalar Single-Precision FP Value to Dword Integer */
 // op cvtss2si_gd_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x2d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // cvtss2si_gd_wdq.disasm = { _sink << "cvtss2si " << DisasmWdq( rmop ) << ',' << DisasmGd( gn ); };
-// 
-// /* CVTTPD2DQ -- Convert with Truncation Packed Double-Precision FP Values to Packed Dword Integers */
+/* CVTTPD2DQ -- Convert with Truncation Packed Double-Precision FP Values to Packed Dword Integers */
 // op cvttpd2dq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xe6[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // cvttpd2dq_vdq_wdq.disasm = { _sink << "cvttpd2dq " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* CVTTPD2PI -- Convert with Truncation Packed Double-Precision FP Values to Packed Dword Integers */
+/* CVTTPD2PI -- Convert with Truncation Packed Double-Precision FP Values to Packed Dword Integers */
 // op cvttpd2pi_pq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x2c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // cvttpd2pi_pq_wdq.disasm = { _sink << "cvttpd2pi " << DisasmWdq( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// /* CVTTPS2DQ -- Convert with Truncation Packed Single-Precision FP Values to Packed Dword Integers */
-// 
+/* CVTTPS2DQ -- Convert with Truncation Packed Single-Precision FP Values to Packed Dword Integers */
 // op cvttps2dq_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x5b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // cvttps2dq_vdq_wdq.disasm = { _sink << "cvttps2dq " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* CVTTPS2PI -- Convert with Truncation Packed Single-Precision FP Values to Packed Dword Integers */
+/* CVTTPS2PI -- Convert with Truncation Packed Single-Precision FP Values to Packed Dword Integers */
 // op cvttps2pi_pq_wdq( 0x0f[8]:> <:0x2c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // cvttps2pi_pq_wdq.disasm = { _sink << "cvttps2pi " << DisasmWdq( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// /* CVTTSD2SI -- Convert with Truncation Scalar Double-Precision FP Value to Integer */
+/* CVTTSD2SI -- Convert with Truncation Scalar Double-Precision FP Value to Integer */
 // op cvttsd2si_gd_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x2c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // cvttsd2si_gd_wdq.disasm = { _sink << "cvttsd2si " << DisasmWdq( rmop ) << ',' << DisasmGd( gn ); };
-// 
-// /* CVTTSS2SI -- Convert with Truncation Scalar Single-Precision FP Value to Dword Integer */
+/* CVTTSS2SI -- Convert with Truncation Scalar Single-Precision FP Value to Dword Integer */
 // op cvttss2si_gd_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x2c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // cvttss2si_gd_wdq.disasm = { _sink << "cvttss2si " << DisasmWdq( rmop ) << ',' << DisasmGd( gn ); };
-// 
-// /* DIVPD -- Divide Packed Floating-Point Values */
-// op divps_vdq_wdq( 0x0f[8]:> <:0x5e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// divps_vdq_wdq.disasm = { _sink << "divps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op divpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x5e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// divpd_vdq_wdq.disasm = { _sink << "divpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op divss_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x5e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// divss_vdq_wdq.disasm = { _sink << "divss " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op divsd_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x5e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// divsd_vdq_wdq.disasm = { _sink << "divsd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
+
+
 // /* DPPD -- Dot Product of Packed Double Precision Floating-Point Values */
 // op dpps_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x40[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
@@ -337,62 +433,78 @@
 // 
 // minsd_vdq_wdq.disasm = { _sink << "minsd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
 // 
-// /* MOVAP */
-// op movaps_vdq_wdq( 0x0f[8]:> <:0x28[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movaps_vdq_wdq.disasm = { _sink << "movaps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op movaps_wdq_vdq( 0x0f[8]:> <:0x29[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movaps_wdq_vdq.disasm = { _sink << "movaps " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); };
-// 
-// op movapd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x28[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movapd_vdq_wdq.disasm = { _sink << "movapd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op movapd_wdq_vdq( 0x66[8]:> <:0x0f[8]:> <:0x29[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movapd_wdq_vdq.disasm = { _sink << "movapd " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); };
-// 
 // /* MOVD/MOVQ -- Move Doubleword/Move Quadword */
-// op movd_pq_ed( 0x0f[8]:> <:0x6e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movd_pq_ed.disasm = { _sink << "movd " << DisasmEd( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// op movd_ed_pq( 0x0f[8]:> <:0x7e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movd_ed_pq.disasm = { _sink << "movd " << DisasmPq( gn ) << ',' << DisasmEd( rmop ); };
-// 
-// op movd_vdq_ed( 0x66[8]:> <:0x0f[8]:> <:0x6e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movd_vdq_ed.disasm = { _sink << "movd " << DisasmEd( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op movd_ed_vdq( 0x66[8]:> <:0x0f[8]:> <:0x7e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movd_ed_vdq.disasm = { _sink << "movd " << DisasmVdq( gn ) << ',' << DisasmEd( rmop ); };
-// 
-// /* MOVDDUP -- Move One Double-FP and Duplicate */
-// 
-// op movddup_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x12[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movddup_vdq_wdq.disasm = { _sink << "movddup " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* MOVDQA -- Move Aligned Double Quadword */
-// 
-// op movdqa_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x6f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movdqa_vdq_wdq.disasm = { _sink << "movdqa " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op movdqa_wdq_vdq( 0x66[8]:> <:0x0f[8]:> <:0x7f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movdqa_wdq_vdq.disasm = { _sink << "movdqa " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); };
-
-/* MOVDQU -- Move Unaligned Double Quadword */
-template <class ARCH>
-struct MovdquVW : public Operation<ARCH>
+template <class ARCH, class GOP>
+struct MovEP : public Operation<ARCH>
 {
-  MovdquVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "movdqu " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); }
+  MovEP( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::OPSIZE==64?'q':'d') << ' ' << DisasmPq( gn ) << ',' << DisasmE( GOP(), rmop ); }
+};
+
+template <class ARCH, class GOP>
+struct MovEV : public Operation<ARCH>
+{
+  MovEV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::OPSIZE==64?'q':'d') << ' ' << DisasmVdq( gn ) << ',' << DisasmE( GOP(), rmop ); }
+  void execute( ARCH& arch ) const { arch.rmwrite( GOP(), rmop, arch.template xmm_uread<GOP::OPSIZE>( gn, 0 ) ); }
+};
+
+template <class ARCH, class GOP>
+struct MovPE : public Operation<ARCH>
+{
+  MovPE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::OPSIZE==64?'q':'d') << ' ' << DisasmE( GOP(), rmop ) << ',' << DisasmPq( gn ); }
+};
+
+template <class ARCH, class GOP>
+struct MovVE : public Operation<ARCH>
+{
+  MovVE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::OPSIZE==64?'q':'d') << ' ' << DisasmE( GOP(), rmop ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    arch.template xmm_uwrite<64>( gn, 0, typename ARCH::u64_t(0) );
+    arch.template xmm_uwrite<64>( gn, 1, typename ARCH::u64_t(0) );
+    arch.template xmm_uwrite<GOP::OPSIZE>( gn, 0, arch.rmread( GOP(), rmop ) );
+  }
+};
+
+template <class ARCH> struct DC<ARCH,MOVD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x6e" ) & RM() ))
+    {
+      if (ic.opsize() == 64) return new MovPE<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
+      else                   return new MovPE<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
+    }
+
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x7e" ) & RM() ))
+    {
+      if (ic.opsize() == 64) return new MovEP<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
+      else                   return new MovEP<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
+    }
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x6e" ) & RM() ))
+    {
+      if (ic.opsize() == 64) return new MovVE<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
+      else                   return new MovVE<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
+    }
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x7e" ) & RM() ))
+    {
+      if (ic.opsize() == 64) return new MovEV<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
+      else                   return new MovEV<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
+    }
+
+  return 0;
+}};
+
+template <class ARCH, bool ALIGNED>
+struct MovdqVW : public Operation<ARCH>
+{
+  MovdqVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "movdq" << (ALIGNED?"a ":"u ") << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
     arch.template xmm_uwrite<64>( gn, 0,  arch.template xmm_uread<64>( rmop, 0 ) );
@@ -400,11 +512,11 @@ struct MovdquVW : public Operation<ARCH>
   }
 };
 
-template <class ARCH>
-struct MovdquWV : public Operation<ARCH>
+template <class ARCH, bool ALIGNED>
+struct MovdqWV : public Operation<ARCH>
 {
-  MovdquWV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "movdqu " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); }
+  MovdqWV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "movdq" << (ALIGNED?"a ":"u ") << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); }
   void execute( ARCH& arch ) const
   {
     arch.template xmm_uwrite<64>( rmop, 0,  arch.template xmm_uread<64>( gn, 0 ) );
@@ -412,29 +524,126 @@ struct MovdquWV : public Operation<ARCH>
   }
 };
 
-template <class ARCH> struct DC<ARCH,MOVDQU> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+/* MOVDQA/MOVDQU -- Move Aligned Unaligned Double Quadword */
+template <class ARCH> struct DC<ARCH,MOVDQ> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
   
-  if (auto _ = match( ic, RPF3() & opcode( "\x0f\x6f" ) & RM() ))
+  if (auto _ = match( ic, sseF3() & opcode( "\x0f\x6f" ) & RM() ))
     
-    return new MovdquVW<ARCH>( _.opbase(), _.rmop(), _.greg() );
+    return new MovdqVW<ARCH,false>( _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( ic, RPF3() & opcode( "\x0f\x7f" ) & RM() ))
+  if (auto _ = match( ic, sseF3() & opcode( "\x0f\x7f" ) & RM() ))
     
-    return new MovdquWV<ARCH>( _.opbase(), _.rmop(), _.greg() );
+    return new MovdqWV<ARCH,false>( _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x6f" ) & RM() ))
+    
+    return new MovdqVW<ARCH,true>( _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x7f" ) & RM() ))
+    
+    return new MovdqWV<ARCH,true>( _.opbase(), _.rmop(), _.greg() );
   
   return 0;
 }};
 
-// op movdqu_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x6f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movdqu_vdq_wdq.disasm = { _sink << "movdqu " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op movdqu_wdq_vdq( 0xf3[8]:> <:0x0f[8]:> <:0x7f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movdqu_wdq_vdq.disasm = { _sink << "movdqu " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); };
-// 
+
+// /* MOVAP */
+// op movaps_vdq_wdq( 0x0f[8]:> <:0x28[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// movaps_vdq_wdq.disasm = { _sink << "movaps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
+// op movaps_wdq_vdq( 0x0f[8]:> <:0x29[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// movaps_wdq_vdq.disasm = { _sink << "movaps " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); };
+// op movapd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x28[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// movapd_vdq_wdq.disasm = { _sink << "movapd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
+// op movapd_wdq_vdq( 0x66[8]:> <:0x0f[8]:> <:0x29[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// movapd_wdq_vdq.disasm = { _sink << "movapd " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); };
+// op movups_vdq_wdq( 0x0f[8]:> <:0x10[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// movups_vdq_wdq.disasm = { _sink << "movups " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
+// op movups_wdq_vdq( 0x0f[8]:> <:0x11[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// movups_wdq_vdq.disasm = { _sink << "movups " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); };
+// op movupd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x10[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// movupd_vdq_wdq.disasm = { _sink << "movupd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
+// op movupd_wdq_vdq( 0x66[8]:> <:0x0f[8]:> <:0x11[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// movupd_wdq_vdq.disasm = { _sink << "movupd " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); };
+
+template <unsigned OPSIZE, bool ALIGNED>
+struct MovfpMnemo
+{
+  char const* mnemonic() const
+  {
+    if (ALIGNED) switch(OPSIZE) { case 32: return "movaps"; case 64: return "movapd"; }
+    else         switch(OPSIZE) { case 32: return "movups"; case 64: return "movupd"; }
+    return "mov<bad>";
+  }
+};
+
+template <class ARCH, unsigned OPSIZE, bool ALIGNED>
+struct MovfpVW : public Operation<ARCH>, MovfpMnemo<OPSIZE,ALIGNED>
+{
+  MovfpVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << this->mnemonic() << ' '<< DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
+      arch.template xmm_uwrite<OPSIZE>( gn, idx,  arch.template xmm_uread<OPSIZE>( rm, idx ) );
+  }
+};
+
+template <class ARCH, unsigned OPSIZE, bool ALIGNED>
+struct MovfpWV : public Operation<ARCH>, MovfpMnemo<OPSIZE,ALIGNED>
+{
+  MovfpWV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << this->mnemonic() << DisasmVdq( gn ) << ',' << DisasmWdq( rm ); }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
+      arch.template xmm_uwrite<OPSIZE>( rm, idx,  arch.template xmm_uread<OPSIZE>( gn, idx ) );
+  }
+};
+
+/* TODO: should move real floating point value */
+template <class ARCH> struct DC<ARCH,MOVFP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x28" ) & RM() ))
+    
+    return new MovfpVW<ARCH,32,true>( _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x29" ) & RM() ))
+    
+    return new MovfpWV<ARCH,32,true>( _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x28" ) & RM() ))
+    
+    return new MovfpVW<ARCH,64,true>( _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x29" ) & RM() ))
+    
+    return new MovfpWV<ARCH,64,true>( _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x10" ) & RM() ))
+    
+    return new MovfpVW<ARCH,32,false>( _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x11" ) & RM() ))
+    
+    return new MovfpWV<ARCH,32,false>( _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x10" ) & RM() ))
+    
+    return new MovfpVW<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x11" ) & RM() ))
+    
+    return new MovfpWV<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
+  
+  
+  return 0;
+}};
+
+
 // /* MOVDQ2Q -- Move Quadword from XMM to MMX Technology Register */
 // op movdq2q_pq_vdq( 0x66[8]:> <:0x0f[8]:> <:0x2d[8]:> <:0b11[2]:gn[3]:rm[3]:> rewind <:*modrm[ModRM] );
 // 
@@ -567,11 +776,11 @@ template <class ARCH> struct DC<ARCH,VMOVSD> { Operation<ARCH>* get( InputCode<A
 {
   if (ic.f0()) return 0;
   
-  if (auto _ = match( ic, RPF2() & opcode( "\x0f\x10" ) & RM() ))
+  if (auto _ = match( ic, sseF2() & opcode( "\x0f\x10" ) & RM() ))
     
     return new Movsd<ARCH>( _.opbase(), make_rop<ARCH>( _.greg() ), _.rmop() );
   
-  if (auto _ = match( ic, RPF2() & opcode( "\x0f\x11" ) & RM() ))
+  if (auto _ = match( ic, sseF2() & opcode( "\x0f\x11" ) & RM() ))
     
     return new Movsd<ARCH>( _.opbase(), _.rmop(), make_rop<ARCH>( _.greg() ) );
   
@@ -597,55 +806,139 @@ template <class ARCH> struct DC<ARCH,VMOVSD> { Operation<ARCH>* get( InputCode<A
 // 
 // movss_wdq_vdq.disasm = { _sink << "movss " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); };
 // 
-// /* MOVUP -- Move Unaligned Packed Single- or Double-Precision Floating-Point Values */
-// op movups_vdq_wdq( 0x0f[8]:> <:0x10[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movups_vdq_wdq.disasm = { _sink << "movups " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op movups_wdq_vdq( 0x0f[8]:> <:0x11[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movups_wdq_vdq.disasm = { _sink << "movups " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); };
-// 
-// op movupd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x10[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movupd_vdq_wdq.disasm = { _sink << "movupd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op movupd_wdq_vdq( 0x66[8]:> <:0x0f[8]:> <:0x11[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movupd_wdq_vdq.disasm = { _sink << "movupd " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); };
-// 
 // /* MPSADBW -- Compute Multiple Packed Sums of Absolute Difference */
 // op mpsadbw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x42[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // mpsadbw_vdq_wdq.disasm = { _sink << "mpsadbw " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* MULP -- Multiply Packed Single- or Double-Precision Floating-Point Values */
-// op mulps_vdq_wdq( 0x0f[8]:> <:0x59[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// mulps_vdq_wdq.disasm = { _sink << "mulps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op mulpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x59[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// mulpd_vdq_wdq.disasm = { _sink << "mulpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* MULS -- Multiply Scalar Single- or Double-Precision Floating-Point Values */
-// op mulss_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x59[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// mulss_vdq_wdq.disasm = { _sink << "mulss " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op mulsd_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x59[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// mulsd_vdq_wdq.disasm = { _sink << "mulsd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* ORP -- Bitwise Logical OR of Single- or Double-Precision Floating-Point Values */
-// op orps_vdq_wdq( 0x0f[8]:> <:0x56[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// orps_vdq_wdq.disasm = { _sink << "orps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op orpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x56[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// orpd_vdq_wdq.disasm = { _sink << "orpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
+//
+template <unsigned OPSZ, bool PACKED>
+struct VMnemo
+{
+  struct ToPrint
+  {
+    ToPrint( char const* _base ) : base(_base) {} char const* base;
+    friend std::ostream& operator << (std::ostream& sink, ToPrint const& tp)
+    {
+      sink << tp.base << (PACKED ? "p" : "s") << (OPSZ == 32 ? "s" : "d");
+      return sink;
+    }
+  };
+  ToPrint mnemonic( char const* base ) const { return ToPrint( base ); }
+};
+
+template <class ARCH, unsigned OPSZ, bool PACKED>
+struct MulVW : public Operation<ARCH>, VMnemo<OPSZ,PACKED>
+{
+  MulVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << this->mnemonic( "mul" ) << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0, end = PACKED ? 128/OPSZ : 1; idx < end; ++idx)
+      arch.template xmm_fwrite<OPSZ>( gn, idx, arch.template xmm_fread<OPSZ>( gn, idx ) * arch.template xmm_fread<OPSZ>( rm, idx ) );
+  }
+};
+
+/* MUL -- Multiply Scalar or Packed Single- or Double-Precision Floating-Point Values */
+template <class ARCH> struct DC<ARCH,VMUL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, opcode( "\x0f\x59" ) & RM() ))
+    {
+      if (match( ic, sse__() )) return new MulVW<ARCH,32, true>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sse66() )) return new MulVW<ARCH,64, true>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sseF3() )) return new MulVW<ARCH,32,false>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sseF2() )) return new MulVW<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
+    }
+  
+  return 0;
+}};
+
+template <class ARCH, unsigned OPSZ, bool PACKED>
+struct DivVW : public Operation<ARCH>, VMnemo<OPSZ,PACKED>
+{
+  DivVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << this->mnemonic( "div" ) << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0, end = PACKED ? 128/OPSZ : 1; idx < end; ++idx)
+      arch.template xmm_fwrite<OPSZ>( gn, idx, arch.template xmm_fread<OPSZ>( gn, idx ) / arch.template xmm_fread<OPSZ>( rm, idx ) );
+  }
+};
+
+/* DIV -- Divide Scalar or Packed Single- or Double-Precision Floating-Point Values */
+template <class ARCH> struct DC<ARCH,VDIV> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, opcode( "\x0f\x5e" ) & RM() ))
+    {
+      if (match( ic, sse__() )) return new DivVW<ARCH,32, true>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sse66() )) return new DivVW<ARCH,64, true>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sseF3() )) return new DivVW<ARCH,32,false>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sseF2() )) return new DivVW<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
+    }
+  
+  return 0;
+}};
+
+template <class ARCH, unsigned OPSZ, bool PACKED>
+struct SubVW : public Operation<ARCH>, VMnemo<OPSZ,PACKED>
+{
+  SubVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << this->mnemonic( "sub" ) << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0, end = PACKED ? 128/OPSZ : 1; idx < end; ++idx)
+      arch.template xmm_fwrite<OPSZ>( gn, idx, arch.template xmm_fread<OPSZ>( gn, idx ) - arch.template xmm_fread<OPSZ>( rm, idx ) );
+  }
+};
+
+/* SUB -- Substract Scalar or Packed Single- or Double-Precision Floating-Point Values */
+template <class ARCH> struct DC<ARCH,VSUB> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, opcode( "\x0f\x5c" ) & RM() ))
+    {
+      if (match( ic, sse__() )) return new SubVW<ARCH,32, true>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sse66() )) return new SubVW<ARCH,64, true>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sseF3() )) return new SubVW<ARCH,32,false>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sseF2() )) return new SubVW<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
+    }
+  
+  return 0;
+}};
+
+template <class ARCH, unsigned OPSZ, bool PACKED>
+struct AddVW : public Operation<ARCH>, VMnemo<OPSZ,PACKED>
+{
+  AddVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << this->mnemonic( "add" ) << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0, end = PACKED ? 128/OPSZ : 1; idx < end; ++idx)
+      arch.template xmm_fwrite<OPSZ>( gn, idx, arch.template xmm_fread<OPSZ>( gn, idx ) + arch.template xmm_fread<OPSZ>( rm, idx ) );
+  }
+};
+
+/* ADD -- Add Scalar or Packed Single- or Double-Precision Floating-Point Values */
+template <class ARCH> struct DC<ARCH,VADD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, opcode( "\x0f\x58" ) & RM() ))
+    {
+      if (match( ic, sse__() )) return new AddVW<ARCH,32, true>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sse66() )) return new AddVW<ARCH,64, true>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sseF3() )) return new AddVW<ARCH,32,false>( _.opbase(), _.rmop(), _.greg() );
+      if (match( ic, sseF2() )) return new AddVW<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
+    }
+  
+  return 0;
+}};
+
+
 // /* PABSB/PABSW/PABSD -- Packed Absolute Value */
 // op pabsb_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x1c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
@@ -777,24 +1070,6 @@ template <class ARCH> struct DC<ARCH,VMOVSD> { Operation<ARCH>* get( InputCode<A
 // 
 // palignr_vdq_wdq_ib.disasm = { _sink << "palignr " << DisasmI(imm) << ',' << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
 // 
-// /* PAND -- Logical AND */
-// op pand_pq_qq( 0x0f[8]:> <:0xdb[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pand_pq_qq.disasm = { _sink << "pand " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// op pand_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xdb[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pand_vdq_wdq.disasm = { _sink << "pand " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* PANDN -- Logical AND NOT */
-// op pandn_pq_qq( 0x0f[8]:> <:0xdf[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pandn_pq_qq.disasm = { _sink << "pandn " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// op pandn_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xdf[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pandn_vdq_wdq.disasm = { _sink << "pandn " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
 // /* PAVG -- Average Packed Integers */
 // op pavgb_pq_qq( 0x0f[8]:> <:0xe0[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
@@ -872,19 +1147,19 @@ template <class ARCH> struct DC<ARCH,PCMPEQ> { Operation<ARCH>* get( InputCode<A
 {
   if (ic.f0()) return 0;
   
-  if (auto _ = match( ic, RP_() & OP66() & opcode( "\x0f\x74" ) & RM() ))
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x74" ) & RM() ))
     
     return new PCmpEqVW<ARCH,8>( _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( ic, RP_() & OP66() & opcode( "\x0f\x75" ) & RM() ))
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x75" ) & RM() ))
     
     return new PCmpEqVW<ARCH,16>( _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( ic, RP_() & OP66() & opcode( "\x0f\x76" ) & RM() ))
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x76" ) & RM() ))
     
     return new PCmpEqVW<ARCH,32>( _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( ic, RP_() & OP66() & opcode( "\x0f\x38\x29" ) & RM() ))
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x38\x29" ) & RM() ))
     
     return new PCmpEqVW<ARCH,64>( _.opbase(), _.rmop(), _.greg() );
   
@@ -1163,13 +1438,14 @@ struct PMovMskBRV : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,PMOVMSKB> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
-  
-  if (auto _ = match( ic, RP_() & opcode( "\x0f\xd7" ) & RM_reg() ))
+
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\xd7" ) & RM_reg() ))
     
-    {
-      if (ic._66()) return new PMovMskBRV<ARCH>( _.opbase(), _.ereg(), _.greg() );
-      else          return new PMovMskBRP<ARCH>( _.opbase(), _.ereg(), _.greg() );
-    }
+    return new PMovMskBRP<ARCH>( _.opbase(), _.ereg(), _.greg() );
+  
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\xd7" ) & RM_reg() ))
+
+    return new PMovMskBRV<ARCH>( _.opbase(), _.ereg(), _.greg() );
   
   return 0;
 }};
@@ -1280,15 +1556,6 @@ template <class ARCH> struct DC<ARCH,PMOVMSKB> { Operation<ARCH>* get( InputCode
 // 
 // pmuludq_vdq_wdq.disasm = { _sink << "pmuludq " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
 // 
-// /* POR -- Bitwise Logical OR */
-// op por_pq_qq( 0x0f[8]:> <:0xeb[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// por_pq_qq.disasm = { _sink << "por " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// op por_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xeb[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// por_vdq_wdq.disasm = { _sink << "por " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
 // /* PSADBW -- Compute Sum of Absolute Differences */
 // op psadbw_pq_qq( 0x0f[8]:> <:0xf6[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
@@ -1311,7 +1578,36 @@ template <class ARCH> struct DC<ARCH,PMOVMSKB> { Operation<ARCH>* get( InputCode
 // op pshufd_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x70[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
 // pshufd_vdq_wdq_ib.disasm = { _sink << "pshufd " << DisasmI(imm) << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
+//
+
+template <class ARCH>
+struct Pshufd : public Operation<ARCH>
+{
+  Pshufd( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, uint8_t _oo ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), oo(_oo) {} RMOp<ARCH> rm; uint8_t gn; uint8_t oo;
+  void disasm( std::ostream& sink ) const { sink << "pshufd " << DisasmI(oo) << ',' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0; idx < 4; ++idx)
+      {
+        unsigned part = (oo >> 2*idx) % 4;
+        arch.template xmm_uwrite<32>( gn, idx, arch.template xmm_uread<32>( rm, part ) );
+      }
+  }
+};
+
+template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x70" ) & RM() & Imm<8>() ))
+    
+      return new Pshufd<ARCH>( _.opbase(), _.rmop(), _.greg(), _.i(int8_t()) );
+
+  return 0;
+}};
+
+
+
 // /* PSHUFHW -- Shuffle Packed High Words */
 // op pshufhw_vdq_wdq_ib( 0xf3[8]:> <:0x0f[8]:> <:0x70[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
@@ -1565,96 +1861,303 @@ template <class ARCH> struct DC<ARCH,PMOVMSKB> { Operation<ARCH>* get( InputCode
 // 
 // ptest_vdq_wdq.disasm = { _sink << "ptest " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
 // 
-// /* PUNPCKHBW/PUNPCKHWD/PUNPCKHDQ/PUNPCKHQDQ --  Unpack High Data */
+
 // op punpckhbw_pq_qq( 0x0f[8]:> <:0x68[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // punpckhbw_pq_qq.disasm = { _sink << "punpckhbw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
 // op punpckhwd_pq_qq( 0x0f[8]:> <:0x69[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // punpckhwd_pq_qq.disasm = { _sink << "punpckhwd " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
 // op punpckhdq_pq_qq( 0x0f[8]:> <:0x6a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // punpckhdq_pq_qq.disasm = { _sink << "punpckhdq " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// op punpckhbw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x68[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// punpckhbw_vdq_wdq.disasm = { _sink << "punpckhbw " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op punpckhwd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x69[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// punpckhwd_vdq_wdq.disasm = { _sink << "punpckhwd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op punpckhdq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x6a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// punpckhdq_vdq_wdq.disasm = { _sink << "punpckhdq " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op punpckhqdq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x6d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// punpckhqdq_vdq_wdq.disasm = { _sink << "punpckhqdq " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* PUNPCKLBW/PUNPCKLWD/PUNPCKLDQ/PUNPCKLQDQ -- Unpack Low Data */
 // op punpcklbw_pq_qq( 0x0f[8]:> <:0x60[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // punpcklbw_pq_qq.disasm = { _sink << "punpcklbw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
 // op punpcklwd_pq_qq( 0x0f[8]:> <:0x61[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // punpcklwd_pq_qq.disasm = { _sink << "punpcklwd " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
 // op punpckldq_pq_qq( 0x0f[8]:> <:0x62[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
 // punpckldq_pq_qq.disasm = { _sink << "punpckldq " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// op punpcklbw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x60[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// punpcklbw_vdq_wdq.disasm = { _sink << "punpcklbw " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op punpcklwd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x61[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// punpcklwd_vdq_wdq.disasm = { _sink << "punpcklwd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op punpckldq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x62[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// punpckldq_vdq_wdq.disasm = { _sink << "punpckldq " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// op punpcklqdq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x6c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// punpcklqdq_vdq_wdq.disasm = { _sink << "punpcklqdq " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
+
+template <class ARCH, unsigned OPSIZE, bool HI>
+struct PunpckV : public Operation<ARCH>
+{
+  PunpckV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "punpck" << (HI?'h':'l') << SizeID<OPSIZE>::iid() << SizeID<2*OPSIZE>::iid() << ' ' << DisasmWdq(rm) << ',' << DisasmVdq(gn); }
+  void execute( ARCH& arch ) const
+  {
+    unsigned const COUNT = 64/OPSIZE;
+    unsigned const RMSK = HI ? 0 : COUNT - 1;
+    unsigned const HALF = HI ? COUNT : 0;
+
+    typename TypeFor<ARCH,OPSIZE>::u res[2*COUNT];
+    
+    for (unsigned chunk = 0; chunk < COUNT; ++chunk)
+      {
+        unsigned idx = chunk & RMSK;
+        res[2*idx+0] = arch.template xmm_uread<OPSIZE>( gn, HALF+idx );
+        res[2*idx+1] = arch.template xmm_uread<OPSIZE>( rm, HALF+idx );
+      }
+    for (unsigned idx = 0; idx < 2*COUNT; ++idx)
+      arch.template xmm_uwrite<OPSIZE>( gn, idx, res[idx] );
+  }
+};
+
+/* PUNPCKHBW/PUNPCKHWD/PUNPCKHDQ/PUNPCKHQDQ/PUNPCKLBW/PUNPCKLWD/PUNPCKLDQ/PUNPCKLQDQ -- Unpack Data */
+template <class ARCH> struct DC<ARCH,PUNPCK> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x68" ) & RM() ))
+
+    return new PunpckV<ARCH,8,true>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x69" ) & RM() ))
+
+    return new PunpckV<ARCH,16,true>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x6a" ) & RM() ))
+
+    return new PunpckV<ARCH,32,true>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x6d" ) & RM() ))
+
+    return new PunpckV<ARCH,64,true>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x60" ) & RM() ))
+
+    return new PunpckV<ARCH,8,false>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x61" ) & RM() ))
+
+    return new PunpckV<ARCH,16,false>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x62" ) & RM() ))
+
+    return new PunpckV<ARCH,32,false>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x6c" ) & RM() ))
+
+    return new PunpckV<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
+
+  return 0;
+}};
+
+template <class ARCH>
+struct PAndnPQ : public Operation<ARCH>
+{
+  PAndnPQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "pandn " << DisasmQq( rm ) << ',' << DisasmPq( gn ); }
+};
+
+template <class ARCH, unsigned OPSIZE>
+struct PAndnVW : public Operation<ARCH>
+{
+  PAndnVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, char const* _mn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), mn(_mn) {} RMOp<ARCH> rm; uint8_t gn; char const* mn;
+  void disasm( std::ostream& sink ) const { sink << mn << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
+      arch.template xmm_uwrite<OPSIZE>( gn, idx,  arch.template xmm_uread<OPSIZE>( gn, idx ) &~ arch.template xmm_uread<OPSIZE>( rm, idx ) );
+  }
+};
+
+/* PANDN -- Bitwise Logical AND NOT */
+/* ANDNPD -- Bitwise Logical AND NOT of Packed Double-Precision Floating-Point Values */
+/* ANDNPS -- Bitwise Logical AND NOT of Packed Single-Precision Floating-Point Values */
+template <class ARCH> struct DC<ARCH,PANDN> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\xdb" ) & RM() ))
+
+    return new PAndnPQ<ARCH>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\xdb" ) & RM() ))
+
+    return new PAndnVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "pandn" );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x55" ) & RM() ))
+
+    return new PAndnVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "andnpd" );
+  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x55" ) & RM() ))
+
+    return new PAndnVW<ARCH,32>( _.opbase(), _.rmop(), _.greg(), "andnps" );
+  
+  return 0;
+}};
+
+template <class ARCH>
+struct PAndPQ : public Operation<ARCH>
+{
+  PAndPQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "pand " << DisasmQq( rm ) << ',' << DisasmPq( gn ); }
+};
+
+template <class ARCH, unsigned OPSIZE>
+struct PAndVW : public Operation<ARCH>
+{
+  PAndVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, char const* _mn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), mn(_mn) {} RMOp<ARCH> rm; uint8_t gn; char const* mn;
+  void disasm( std::ostream& sink ) const { sink << mn << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
+      arch.template xmm_uwrite<OPSIZE>( gn, idx,  arch.template xmm_uread<OPSIZE>( gn, idx ) & arch.template xmm_uread<OPSIZE>( rm, idx ) );
+  }
+};
+
+/* PAND -- Bitwise Logical AND */
+/* ANDPD -- Bitwise Logical AND of Packed Double-Precision Floating-Point Values */
+/* ANDPS -- Bitwise Logical AND of Packed Single-Precision Floating-Point Values */
+template <class ARCH> struct DC<ARCH,PAND> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\xdb" ) & RM() ))
+
+    return new PAndPQ<ARCH>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\xdb" ) & RM() ))
+
+    return new PAndVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "pand" );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x54" ) & RM() ))
+
+    return new PAndVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "andpd" );
+
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x54" ) & RM() ))
+
+    return new PAndVW<ARCH,32>( _.opbase(), _.rmop(), _.greg(), "andps" );
+
+  return 0;
+}};
+
+template <class ARCH>
+struct POrPQ : public Operation<ARCH>
+{
+  POrPQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "por " << DisasmQq( rm ) << ',' << DisasmPq( gn ); }
+};
+
+template <class ARCH, unsigned OPSIZE>
+struct POrVW : public Operation<ARCH>
+{
+  POrVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, char const* _mn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), mn(_mn) {} RMOp<ARCH> rm; uint8_t gn; char const* mn;
+  void disasm( std::ostream& sink ) const { sink << mn << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
+      arch.template xmm_uwrite<OPSIZE>( gn, idx,  arch.template xmm_uread<OPSIZE>( gn, idx ) | arch.template xmm_uread<OPSIZE>( rm, idx ) );
+  }
+};
+
+/* POR -- Bitwise Logical OR */
+/* ORPD -- Bitwise Logical OR of Double-Precision Floating-Point Values */
+/* ORPS -- Bitwise Logical OR of Single-Precision Floating-Point Values */
+template <class ARCH> struct DC<ARCH,POR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\xeb" ) & RM() ))
+
+    return new POrPQ<ARCH>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\xeb" ) & RM() ))
+
+    return new POrVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "por" );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x56" ) & RM() ))
+
+    return new POrVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "orpd" );
+
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x56" ) & RM() ))
+
+    return new POrVW<ARCH,32>( _.opbase(), _.rmop(), _.greg(), "orps" );
+
+  return 0;
+}};
 
 template <class ARCH>
 struct PXorPQ : public Operation<ARCH>
 {
-  PXorPQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "pxor " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); }
+  PXorPQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "pxor " << DisasmQq( rm ) << ',' << DisasmPq( gn ); }
 };
 
-template <class ARCH>
+template <class ARCH, unsigned OPSIZE>
 struct PXorVW : public Operation<ARCH>
 {
-  PXorVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "pxor " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); }
+  PXorVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, char const* _mn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), mn(_mn) {} RMOp<ARCH> rm; uint8_t gn; char const* mn;
+  void disasm( std::ostream& sink ) const { sink << mn << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
-    arch.template xmm_uwrite<64>( gn, 0,  arch.template xmm_uread<64>( gn, 0 ) ^ arch.template xmm_uread<64>( rmop, 0 ) );
-    arch.template xmm_uwrite<64>( gn, 1,  arch.template xmm_uread<64>( gn, 1 ) ^ arch.template xmm_uread<64>( rmop, 1 ) );
+    for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
+      arch.template xmm_uwrite<OPSIZE>( gn, idx,  arch.template xmm_uread<OPSIZE>( gn, idx ) ^ arch.template xmm_uread<OPSIZE>( rm, idx ) );
   }
 };
 
 /* PXOR -- Logical Exclusive OR */
+/* XORPD -- Bitwise Logical XOR for Double-Precision Floating-Point Values */
+/* XORPS -- Bitwise Logical XOR for Single-Precision Floating-Point Values */
 template <class ARCH> struct DC<ARCH,PXOR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
   
-  if (auto _ = match( ic, RP_() & opcode( "\x0f\xef" ) & RM() ))
-    
-    {
-      if (ic._66()) return new PXorVW<ARCH>( _.opbase(), _.rmop(), _.greg() );
-      else          return new PXorPQ<ARCH>( _.opbase(), _.rmop(), _.greg() );
-    }
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\xef" ) & RM() ))
+
+    return new PXorPQ<ARCH>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\xef" ) & RM() ))
+
+    return new PXorVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "pxor" );
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x57" ) & RM() ))
+
+    return new PXorVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "xorpd" );
+
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x57" ) & RM() ))
+
+    return new PXorVW<ARCH,32>( _.opbase(), _.rmop(), _.greg(), "xorps" );
+
+  return 0;
+}};
+
+template <class ARCH, unsigned OPSZ>
+struct Ucomis : public Operation<ARCH>
+{
+  Ucomis( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "ucomis" << SizeID<OPSZ>::fid() << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,OPSZ>::f f_type;
+    typedef typename ARCH::bit_t bit_t;
+    
+    f_type a = arch.template xmm_fread<OPSZ>( gn, 0 );
+    f_type b = arch.template xmm_fread<OPSZ>( rm, 0 );
+    bit_t notle = not (a <= b);
+    bit_t notge = not (a >= b);
+
+    arch.flagwrite( ARCH::FLAG::ZF, notge == notle );
+    arch.flagwrite( ARCH::FLAG::PF, notge and notle );
+    arch.flagwrite( ARCH::FLAG::CF, notge );
+    arch.flagwrite( ARCH::FLAG::OF, false );
+    arch.flagwrite( ARCH::FLAG::SF, false );
+    arch.flagwrite( ARCH::FLAG::AF, false );
+  }
+};
+
+/* UCOMISD -- Unordered Compare Scalar Double-Precision Floating-Point Values and Set EFLAGS */
+/* UCOMISS -- Unordered Compare Scalar Single-Precision Floating-Point Values and Set EFLAGS */
+template <class ARCH> struct DC<ARCH,UCOMIS> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x2e" ) & RM() ))
+    
+    return new Ucomis<ARCH,64>( _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, sse__() & opcode( "\x0f\x2e" ) & RM() ))
+    
+    return new Ucomis<ARCH,32>( _.opbase(), _.rmop(), _.greg() );
+
   return 0;
 }};
 
@@ -1749,16 +2252,6 @@ template <class ARCH> struct DC<ARCH,PXOR> { Operation<ARCH>* get( InputCode<ARC
 // subsd_vdq_wdq.disasm = { _sink << "subsd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
 // 
 // 
-// /* UCOMISS -- Unordered Compare Scalar Single-Precision Floating-Point Values and Set EFLAGS */
-// op ucomiss_vdq_wdq( 0x0f[8]:> <:0x2e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// ucomiss_vdq_wdq.disasm = { _sink << "ucomiss " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* UCOMISD -- Unordered Compare Scalar Double-Precision Floating-Point Values and Set EFLAGS */
-// op ucomisd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x2e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// ucomisd_vdq_wdq.disasm = { _sink << "ucomisd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
 // /* UNPCKHPS -- Unpack and Interleave High Packed Single-Precision Floating-Point Values */
 // op unpckhps_vdq_wdq( 0x0f[8]:> <:0x15[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
@@ -1779,12 +2272,7 @@ template <class ARCH> struct DC<ARCH,PXOR> { Operation<ARCH>* get( InputCode<ARC
 // 
 // unpcklpd_vdq_wdq.disasm = { _sink << "unpcklpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
 // 
-// /* XORPD -- Bitwise Logical XOR for Double-Precision Floating-Point Values */
-// op xorpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x57[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// xorpd_vdq_wdq.disasm = { _sink << "xorpd " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
-// 
-// /* XORPS -- Bitwise Logical XOR for Single-Precision Floating-Point Values */
-// op xorps_vdq_wdq( 0x0f[8]:> <:0x57[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// xorps_vdq_wdq.disasm = { _sink << "xorps " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
+// /* MOVDDUP -- Move One Double-FP and Duplicate */
+// op movddup_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x12[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
+// movddup_vdq_wdq.disasm = { _sink << "movddup " << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); };
+

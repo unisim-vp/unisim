@@ -46,17 +46,21 @@
 struct LinuxOS
   : public unisim::service::interfaces::LinuxOS
 {
+  typedef uint64_t addr_t;
   LinuxOS( std::ostream& log,
            unisim::service::interfaces::Registers *regs_if,
-           unisim::service::interfaces::Memory<uint64_t> *mem_if,
-           unisim::service::interfaces::MemoryInjection<uint64_t> *mem_inject_if );
+           unisim::service::interfaces::Memory<addr_t> *mem_if,
+           unisim::service::interfaces::MemoryInjection<addr_t> *mem_inject_if );
   
+  void Setup( bool verbose );
   void Process( std::vector<std::string> const& simargs, std::vector<std::string> const& envs );
   void Core( std::string const& coredump );
 
   void ExecuteSystemCall( int id );
+  void LogSystemCall(int id);
+  void SetBrk(addr_t brk_addr);
 
-  unisim::util::os::linux_os::Linux<uint64_t, uint64_t> linux_impl;
+  unisim::util::os::linux_os::Linux<addr_t, addr_t> linux_impl;
   bool exited;
   int app_ret_status;
 };

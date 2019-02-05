@@ -121,9 +121,6 @@ namespace linux_os {
       
     protected:
       // SysCall Friend accessing methods
-      static bool ReadMem(Linux& lin, ADDRESS_TYPE addr, uint8_t * const buffer, uint32_t size);
-      static bool WriteMem(Linux& lin, ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size);
-      static bool ReadMemString(Linux& lin, ADDRESS_TYPE addr, std::string& str);
       static int Target2HostFileDescriptor( Linux& lin, int32_t fd );
       static PARAMETER_TYPE GetParam(Linux& lin, int id); // <getting system call status
     };
@@ -157,7 +154,6 @@ namespace linux_os {
       unisim::service::interfaces::Memory<ADDRESS_TYPE>& MemIF() const { return *lin.mem_if_; }
       std::string GetHWCAP() const { return lin.hwcap_; }
       SysCall* GetSysCall( std::string name ) const { return lin.GetSysCall( name ); }
-      static bool ReadMemory( Linux& lin, ADDRESS_TYPE addr, PARAMETER_TYPE* value );
       std::string name;
       Linux& lin;
     };
@@ -360,10 +356,20 @@ namespace linux_os {
 
     // Retrieve the Debug Register interface from the target processor.
     unisim::service::interfaces::Register* GetDebugRegister( char const* regname ) const;
+
+    // Read/Write From/To target processor
     bool SetTargetRegister( char const* regname, PARAMETER_TYPE value ) const;
     bool GetTargetRegister( char const* regname, PARAMETER_TYPE& value ) const;
+    PARAMETER_TYPE GetTargetRegister( char const* regname ) const;
     bool ClearTargetRegister( char const* regname ) const;
-	
+    bool ReadTargetMemory( ADDRESS_TYPE addr, PARAMETER_TYPE& value ) const;
+    // Read/Write From/To target processor via injection interface
+    bool ReadMemory(ADDRESS_TYPE addr, uint8_t* const buffer, uint32_t size) const;
+    bool ReadMemory(ADDRESS_TYPE addr, PARAMETER_TYPE& value) const;
+    bool ReadString(ADDRESS_TYPE addr, std::string& str) const;
+    bool WriteMemory(ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size) const;
+    bool WriteMemory(ADDRESS_TYPE addr, PARAMETER_TYPE value) const;
+    
     // Load the files set by the user into the given blob. Returns true on sucess,
     // false otherwise.
     bool LoadFiles(unisim::util::blob::Blob<ADDRESS_TYPE> *blob);
@@ -403,8 +409,6 @@ namespace linux_os {
 	
     // The generic linux system call factories
     SysCall* GetSysCall( std::string _name );
-	
-    // handling the brkpoint address (heap end)
   };
 
 } // end of linux namespace

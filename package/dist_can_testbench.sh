@@ -34,6 +34,7 @@ unisim/util/backtrace/backtrace.hh \
 unisim/kernel/api/api.hh \
 unisim/util/likely/likely.hh \
 unisim/util/inlining/inlining.hh \
+unisim/util/nat_sort/nat_sort.hh \
 unisim/util/random/random.hh \
 unisim/util/hash_table/hash_table.hh \
 unisim/service/interfaces/time.hh \

@@ -1,3 +1,37 @@
+/*
+ *  Copyright (c) 2007-2019,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without 
+ *  modification, are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, 
+ *     this list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific 
+ *     prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  ARE DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+
 template <class ARCH, class OP>
 struct PushReg : public Operation<ARCH>
 {
@@ -410,7 +444,7 @@ template <class ARCH> struct DC<ARCH,MOV> { Operation<ARCH>* get( InputCode<ARCH
   
     return new MovImm<ARCH,GOd>( _.opbase(), _.rmop(), _.i( int32_t() ) );
   
-  if (auto _ = match( ic, OpSize<64>() & (opcode( "\xb8" ) + Reg()) & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<64>() & (opcode( "\xb8" ) + Reg()) & Imm<64>() ))
   
     return new MovImm<ARCH,GOq>( _.opbase(), _.rmop(), _.i( int64_t() ) );
   
@@ -441,7 +475,7 @@ struct Movzx : public Operation<ARCH>
 {
   Movzx( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   void disasm( std::ostream& sink ) const {
-    sink << "movz" << SizeID<SOP::OPSIZE>::chr() << SizeID<DOP::OPSIZE>::chr() << ' ' << DisasmE( SOP(), rmop ) << ',' << DisasmG( DOP(), gn );
+    sink << "movz" << SizeID<SOP::OPSIZE>::gid() << SizeID<DOP::OPSIZE>::gid() << ' ' << DisasmE( SOP(), rmop ) << ',' << DisasmG( DOP(), gn );
   }
   typedef typename TypeFor<ARCH,DOP::OPSIZE>::u u_type;
   void execute( ARCH& arch ) const { arch.regwrite( DOP(), gn, u_type( arch.rmread( SOP(), rmop ) ) ); }
@@ -451,11 +485,18 @@ template <class ARCH> struct DC<ARCH,MOVZX> { Operation<ARCH>* get( InputCode<AR
 {
   // MOVZX -- Move with Zero-Extend
   if (auto _ = match( ic, opcode( "\x0f\xb6" ) & RM() ))
-  
     {
-      if (ic.rex())        return new Movzx<ARCH,GOb,  GOq>( _.opbase(), _.rmop(), _.greg() );
-      if (ic.opsize()==16) return new Movzx<ARCH,GObLH,GOw>( _.opbase(), _.rmop(), _.greg() );
-      if (ic.opsize()==32) return new Movzx<ARCH,GObLH,GOd>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex())
+        {
+          if (ic.opsize()==16) return new Movzx<ARCH,GOb,GOw>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize()==32) return new Movzx<ARCH,GOb,GOd>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize()==64) return new Movzx<ARCH,GOb,GOq>( _.opbase(), _.rmop(), _.greg() );
+        }
+      else
+        {
+          if (ic.opsize()==16) return new Movzx<ARCH,GObLH,GOw>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize()==32) return new Movzx<ARCH,GObLH,GOd>( _.opbase(), _.rmop(), _.greg() );
+        }
       return 0;
     }
   
@@ -475,7 +516,7 @@ struct Movsx : public Operation<ARCH>
 {
   Movsx( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   void disasm( std::ostream& sink ) const {
-    sink << "movs" << SizeID<SOP::OPSIZE>::chr() << SizeID<DOP::OPSIZE>::chr() << ' ' << DisasmE( SOP(), rmop ) << ',' << DisasmG( DOP(), gn );
+    sink << "movs" << SizeID<SOP::OPSIZE>::gid() << SizeID<DOP::OPSIZE>::gid() << ' ' << DisasmE( SOP(), rmop ) << ',' << DisasmG( DOP(), gn );
   }
   typedef typename TypeFor<ARCH,SOP::OPSIZE>::s ssrc_type;
   typedef typename TypeFor<ARCH,DOP::OPSIZE>::u udst_type;
@@ -489,9 +530,17 @@ template <class ARCH> struct DC<ARCH,MOVSX> { Operation<ARCH>* get( InputCode<AR
   if (auto _ = match( ic, opcode( "\x0f\xbe" ) & RM() ))
   
     {
-      if (ic.rex())        return new Movsx<ARCH,GOb,  GOq>( _.opbase(), _.rmop(), _.greg() );
-      if (ic.opsize()==16) return new Movsx<ARCH,GObLH,GOw>( _.opbase(), _.rmop(), _.greg() );
-      if (ic.opsize()==32) return new Movsx<ARCH,GObLH,GOd>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex())
+        {
+          if (ic.opsize()==16) return new Movsx<ARCH,GOb,GOw>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize()==32) return new Movsx<ARCH,GOb,GOd>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize()==64) return new Movsx<ARCH,GOb,GOq>( _.opbase(), _.rmop(), _.greg() );
+        }
+      else
+        {
+          if (ic.opsize()==16) return new Movsx<ARCH,GObLH,GOw>( _.opbase(), _.rmop(), _.greg() );
+          if (ic.opsize()==32) return new Movsx<ARCH,GObLH,GOd>( _.opbase(), _.rmop(), _.greg() );
+        }
       return 0;
     }
   

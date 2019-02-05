@@ -1,3 +1,37 @@
+/*
+ *  Copyright (c) 2007-2019,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without 
+ *  modification, are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, 
+ *     this list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific 
+ *     prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  ARE DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+
 // TODO: check for clearing operation (sub and xor with same registers)
 
 template <class ARCH, class OP, bool GTOE>
@@ -2173,7 +2207,7 @@ template <class ARCH> struct DC<ARCH,POPCNT> { Operation<ARCH>* get( InputCode<A
 {
   if (ic.f0()) return 0;
   
-  if (auto _ = match( ic, RPF3() & opcode( "\x0f\xb8" ) & RM() ))
+  if (auto _ = match( ic, sseF3() & opcode( "\x0f\xb8" ) & RM() ))
   
     {
       if      (ic.opsize() == 16) return new Popcnt<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
@@ -2256,31 +2290,32 @@ template <class ARCH> struct DC<ARCH,AHF> { Operation<ARCH>* get( InputCode<ARCH
   return 0;
 }};
 
-template <class ARCH, class OP>
+template <class ARCH, class GOP>
 struct Csxe : public Operation<ARCH>
 {
   Csxe( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
-  
-  void disasm( std::ostream& sink ) const { sink << 'c' << (&"btw\0wtl\0ltq\0"[4*SB<OP::OPSIZE/16>::begin]); }
+  char const* mnemonic () const { switch (GOP::size()) { case 16: return "cbtw"; case 32: return "cwtde"; case 64: return "cdtqe"; } return "c<bad>e"; }
+  void disasm( std::ostream& sink ) const { sink << mnemonic(); }
   void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<ARCH,OP::OPSIZE>::s sop_type;
-    typedef typename TypeFor<ARCH,OP::OPSIZE>::u uop_type;
-    arch.regwrite( OP(), 0, uop_type( sop_type( arch.regread( OP(), 0 )  << (OP::OPSIZE / 2) ) >> (OP::OPSIZE / 2) ) );
+    typedef typename TypeFor<ARCH,GOP::OPSIZE>::s sop_type;
+    typedef typename TypeFor<ARCH,GOP::OPSIZE>::u uop_type;
+    arch.regwrite( GOP(), 0, uop_type( sop_type( arch.regread( GOP(), 0 ) << (GOP::OPSIZE / 2) ) >> (GOP::OPSIZE / 2) ) );
   }
 };
 
-template <class ARCH, class OP>
+template <class ARCH, class GOP>
 struct Csx : public Operation<ARCH>
 {
   Csx( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
-  void disasm( std::ostream& sink ) const { sink << 'c' << (&"wtd\0ltd\0qtd\0"[4*SB<OP::OPSIZE/16>::begin]); }
-  // void execute( ARCH& arch ) const
-  // {
-  //   typedef typename TypeFor<ARCH,OP::OPSIZE>::s sop_type;
-  //   typedef typename TypeFor<ARCH,OP::OPSIZE>::u uop_type;
-  //   arch.regwrite( OP(), 2, uop_type( sop_type( arch.regread( OP(), 0 )  << (OP::OPSIZE - 1) ) >> (OP::OPSIZE - 1) ) );
-  // }
+  char const* mnemonic () const { switch (GOP::size()) { case 16: return "cwtd"; case 32: return "cdtq"; case 64: return "cqto"; } return "c<bad>"; }
+  void disasm( std::ostream& sink ) const { sink << mnemonic(); }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,GOP::OPSIZE>::s sop_type;
+    typedef typename TypeFor<ARCH,GOP::OPSIZE>::u uop_type;
+    arch.regwrite( GOP(), 2, uop_type( sop_type( arch.regread( GOP(), 0 ) ) >> (GOP::OPSIZE-1) ) );
+  }
 };
 
 template <class ARCH> struct DC<ARCH,CSX> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -2288,18 +2323,18 @@ template <class ARCH> struct DC<ARCH,CSX> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\x98" ) ))
   
     {
-      if      (ic.opsize() == 16) return new Csxe<ARCH,GOw>( _.opbase() );
-      else if (ic.opsize() == 32) return new Csxe<ARCH,GOd>( _.opbase() );
-      else if (ic.opsize() == 64) return new Csxe<ARCH,GOq>( _.opbase() );
+      if (ic.opsize() == 16) return new Csxe<ARCH,GOw>( _.opbase() );
+      if (ic.opsize() == 32) return new Csxe<ARCH,GOd>( _.opbase() );
+      if (ic.opsize() == 64) return new Csxe<ARCH,GOq>( _.opbase() );
       return 0;
     }
   
   if (auto _ = match( ic,  opcode( "\x99" ) ))
   
     {
-      if      (ic.opsize() == 16) return new Csx<ARCH,GOw>( _.opbase() );
-      else if (ic.opsize() == 32) return new Csx<ARCH,GOd>( _.opbase() );
-      else if (ic.opsize() == 64) return new Csx<ARCH,GOq>( _.opbase() );
+      if (ic.opsize() == 16) return new Csx<ARCH,GOw>( _.opbase() );
+      if (ic.opsize() == 32) return new Csx<ARCH,GOd>( _.opbase() );
+      if (ic.opsize() == 64) return new Csx<ARCH,GOq>( _.opbase() );
       return 0;
     }
   
@@ -2446,14 +2481,14 @@ template <class ARCH> struct DC<ARCH,ADF> { Operation<ARCH>* get( InputCode<ARCH
   if (ic.f0()) return 0;
   
   /* ADCX -- Unsigned Integer Addition of Two Operands with Carry Flag */
-  if (auto _ = match( ic, RP_() & OP66() & opcode( "\x0f\x38\xf6" ) & RM() ))
+  if (auto _ = match( ic, sse66() & opcode( "\x0f\x38\xf6" ) & RM() ))
   
     {
       if (ic.opsize() == 64) return new Adcx<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
       else                   return new Adcx<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
     }
   
-  if (auto _ = match( ic, RPF3() & opcode( "\x0f\x38\xf6" ) & RM() ))
+  if (auto _ = match( ic, sseF3() & opcode( "\x0f\x38\xf6" ) & RM() ))
   
     {
       if (ic.opsize() == 64) return new Adox<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
