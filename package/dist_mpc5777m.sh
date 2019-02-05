@@ -901,7 +901,6 @@ unisim/service/http_server/favicon.ico \
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="\
 unisim/kernel/logger/style.css \
-unisim/kernel/logger/script.js \
 unisim/service/instrumenter/style.css \
 unisim/service/instrumenter/script.js \
 unisim/service/instrumenter/favicon.ico \

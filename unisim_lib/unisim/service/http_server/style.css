@@ -350,3 +350,28 @@ body
 #browser ul.tree li:last-child:before {
 	border-left: thin solid #000;
 }
+
+.context-menu
+{
+	background:#eff0f1;
+	border-width:1px;
+	border-style:solid;
+	border-top-color:#b7b8b8;
+	border-right-color:#c4c4c5;
+	border-bottom-color:#c4c4c5;
+	border-left-color:#b7b8b8;
+	box-shadow: 1px 1px 1px #ababac;
+	cursor:default;
+}
+
+.context-menu-item
+{
+	padding:4px 4px 4px 4px;
+	width:100%;
+	cursor:default;
+}
+
+.context-menu-item:hover
+{
+	background:#f9fafa;
+}

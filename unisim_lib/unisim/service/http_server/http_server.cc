@@ -576,8 +576,17 @@ bool HttpServer::ServeHeader(unisim::util::hypapp::HttpRequest const& req, unisi
 void HttpServer::Crawl(std::ostream& os, const std::string& object_url, unisim::kernel::service::Object *object, unsigned int indent_level)
 {
 	for(unsigned int i = 0; i < indent_level; i++) os << '\t';
-	os << "<span class=\"browser-item noselect\" ondblclick=\"gui.open_object('" << object_url << "','" <<  String_to_HTML(object->GetName()) << "')\"" << ">" << String_to_HTML(object->GetObjectName()) << "</span>" << std::endl;;
-	
+	os << "<span class=\"browser-item noselect\"";
+	os << " ondblclick=\"gui.open_tab('top-middle-tile','" <<  String_to_HTML(object->GetName()) << "','" << object->GetName() << "','" << object_url << "')\"";
+	os << " oncontextmenu=\"gui.create_context_menu(event, [";
+	os << "{label:'Open', action:function() { gui.open_tab('top-middle-tile','" <<  String_to_HTML(object->GetName()) << "','" << object->GetName() << "','" << object_url << "'); } }";
+	os << ",{label:'Configure', action:function() { gui.open_tab('bottom-tile','Configuration of " <<  String_to_HTML(object->GetName()) << "','config-" << object->GetName() << "','/config?object=" << unisim::util::hypapp::Encoder::Encode(object->GetName()) << "'); } }";
+	os << ",{label:'Show statistics', action:function() { gui.open_tab('bottom-tile','Statistics of " <<  String_to_HTML(object->GetName()) << "','stats-" << object->GetName() << "','/stats?object=" << unisim::util::hypapp::Encoder::Encode(object->GetName()) << "'); } }";
+	os << ",{label:'Show log', action:function() { gui.open_tab('bottom-tile','Log of " <<  String_to_HTML(object->GetName()) << "','log-" << object->GetName() << "','/logger?object=" << unisim::util::hypapp::Encoder::Encode(object->GetName()) << "'); } }";
+	os << ",{label:'Show registers', action:function() { gui.open_tab('top-right-tile','Registers of " <<  String_to_HTML(object->GetName()) << "','registers-" << object->GetName() << "','/registers?object=" << unisim::util::hypapp::Encoder::Encode(object->GetName()) << "'); } }";
+	os << "])\">";
+	os << String_to_HTML(object->GetObjectName());
+	os << "</span>" << std::endl;;
 	const std::list<unisim::kernel::service::Object *>& leaf_objects = object->GetLeafs();
 	
 	if(!leaf_objects.empty())
@@ -619,7 +628,14 @@ void HttpServer::Crawl(std::ostream& os, const std::string& object_url, unisim::
 void HttpServer::Crawl(std::ostream& os, unsigned int indent_level)
 {
 	for(unsigned int i = 0; i < indent_level; i++) os << '\t';
-	os << "<div class=\"browser-item noselect\" ondblclick=\"gui.open_object('/kernel','kernel','" << program_name << "')\"" << ">" << String_to_HTML(program_name) << "</div>" << std::endl;;
+	
+	os << "<span class=\"browser-item noselect\"";
+	os << " oncontextmenu=\"gui.create_context_menu(event, [";
+	os << "{label:'Configure', action:function() { gui.open_tab('bottom-tile','Configuration of " <<  String_to_HTML(program_name) << "','config-kernel','/config?object=kernel'); } }";
+	os << ",{label:'Show statistics', action:function() { gui.open_tab('bottom-tile','Statistics of " <<  String_to_HTML(program_name) << "','stats-kernel','/stats?object=kernel'); } }";
+	os << "])\">";
+	os << String_to_HTML(program_name);
+	os << "</span>" << std::endl;
 
 	std::list<unisim::kernel::service::Object *> root_objects;
 	

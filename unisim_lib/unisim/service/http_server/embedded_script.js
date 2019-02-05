@@ -47,7 +47,14 @@ reload_page = function()
 	{
 		// within tiled GUI
 		own_tab.refresh(); // refresh my own tab
-		parent.gui.refresh_active_tabs(); // refresh active tabs
+// 		parent.gui.refresh_active_tabs(own_tab); // refresh active tabs
+		
+		parent.gui.for_each_tab(
+			function(tab)
+			{
+				if(tab.is_active && (tab != own_tab)) tab.refresh();
+			}
+		);
 	}
 	else
 	{

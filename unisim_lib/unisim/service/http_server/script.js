@@ -163,16 +163,12 @@ var CompatLayer =
 TabConfig.prototype.label = null;
 TabConfig.prototype.name = null;
 TabConfig.prototype.src = null;
-TabConfig.prototype.object_name = null;
-TabConfig.prototype.query = null;
 
-function TabConfig(label, name, src, object_name)
+function TabConfig(label, name, src)
 {
 	this.label = label;
 	this.name = name;
 	this.src = src;
-	this.object_name = object_name;
-	this.query = null;
 }
 
 TabConfig.prototype.save = function(prefix)
@@ -180,8 +176,6 @@ TabConfig.prototype.save = function(prefix)
 	if(this.label) sessionStorage.setItem(prefix + '.label', this.label);
 	if(this.name) sessionStorage.setItem(prefix + '.name', this.name);
 	if(this.src) sessionStorage.setItem(prefix + '.src', this.src);
-	if(this.object_name) sessionStorage.setItem(prefix + '.object-name', this.object_name);
-	if(this.query) sessionStorage.setItem(prefix + '.query', this.query);
 }
 
 TabConfig.prototype.restore = function(prefix)
@@ -189,8 +183,6 @@ TabConfig.prototype.restore = function(prefix)
 	this.label = sessionStorage.getItem(prefix + '.label');
 	this.name = sessionStorage.getItem(prefix + '.name');
 	this.src = sessionStorage.getItem(prefix + '.src');
-	this.object_name = sessionStorage.getItem(prefix + '.object-name');
-	this.query = sessionStorage.getItem(prefix + '.query');
 }
 
 // TabConfigs
@@ -255,10 +247,13 @@ Tab.prototype.tab_header = null;
 Tab.prototype.tab_content = null;
 Tab.prototype.tab_content_bg = null;
 Tab.prototype.close_tab = null;
-Tab.prototype.bound_close = null;
+Tab.prototype.bound_close_tab_onclick = null;
 Tab.prototype.is_active = false;
 Tab.prototype.loaded = false;
 Tab.prototype.bound_tab_header_onclick = null;
+Tab.prototype.bound_tab_header_oncontextmenu = null;
+Tab.prototype.bound_tab_content_on_mouseenter = null;
+Tab.prototype.bound_tab_content_on_mouseleave = null;
 
 function Tab(owner)
 {
@@ -273,7 +268,7 @@ Tab.prototype.create = function(tab_config)
 	this.close_tab.className = 'close-tab ' + (CompatLayer.has_svg ? 'w-svg' : 'wo-svg');
 	this.tab_header = document.createElement('div');
 	this.tab_header.className = 'tab-header noselect';
-	this.tab_header.textContent = this.tab_config.label;
+	this.tab_header.innerHTML = this.tab_config.label;
 	this.tab_header.appendChild(this.close_tab);
 	this.owner.tab_headers.appendChild(this.tab_header);
 	this.tab_content = document.createElement('iframe');
@@ -292,11 +287,17 @@ Tab.prototype.create = function(tab_config)
 	this.bound_tab_header_onclick = this.tab_header_onclick.bind(this);
 	this.tab_header.addEventListener('click', this.bound_tab_header_onclick, false);
 	
-	this.bound_close = this.close.bind(this);
-	this.close_tab.addEventListener('click', this.bound_close);
+	this.bound_tab_header_oncontextmenu = this.tab_header_oncontextmenu.bind(this);
+	this.tab_header.addEventListener('contextmenu', this.bound_tab_header_oncontextmenu);
+	
+	this.bound_close_tab_onclick = this.close_tab_onclick.bind(this);
+	this.close_tab.addEventListener('click', this.bound_close_tab_onclick);
 
-	this.tab_content.addEventListener('mouseenter', this.tab_content_on_mouseenter.bind(this));
-	this.tab_content.addEventListener('mouseleave', this.tab_content_on_mouseleave.bind(this));
+	this.bound_tab_content_on_mouseenter = this.tab_content_on_mouseenter.bind(this);
+	this.tab_content.addEventListener('mouseenter', this.bound_tab_content_on_mouseenter);
+	
+	this.bound_tab_content_on_mouseleave = this.tab_content_on_mouseleave.bind(this);
+	this.tab_content.addEventListener('mouseleave', this.bound_tab_content_on_mouseleave);
 }
 
 Tab.prototype.reuse_static = function(tab_header, tab_content)
@@ -319,7 +320,7 @@ Tab.prototype.reuse_static = function(tab_header, tab_content)
 	this.tab_header.addEventListener('click', this.bound_tab_header_onclick, false);
 
 	this.close_tab = null;
-	this.bound_close = null;
+	this.bound_close_tab_onclick = null;
 }
 
 Tab.prototype.destroy = function()
@@ -331,16 +332,30 @@ Tab.prototype.destroy = function()
 		this.tab_header.removeEventListener('click', this.bound_tab_header_onclick);
 		if(this.close_tab)
 		{
-			this.close_tab.removeEventListener('click', this.bound_close);
+			this.close_tab.removeEventListener('click', this.bound_close_tab_onclick);
 		}
+		this.tab_content.removeEventListener('mouseenter', this.bound_tab_content_on_mouseenter);
+		this.tab_content.removeEventListener('mouseleave', this.bound_tab_content_on_mouseleave);
 		this.owner = null;
 		this.tab_config = null;
 		this.tab_header = null;
 		this.tab_content = null;
 		this.close_tab = null;
-		this.bound_close = null;
+		this.bound_close_tab_onclick = null;
 		this.bound_tab_header_onclick = null;
+		this.bound_tab_content_on_mouseenter = null;
+		this.bound_tab_content_on_mouseleave = null;
 	}
+}
+
+Tab.prototype.detach = function()
+{
+	this.owner.detach_tab(this);
+}
+
+Tab.prototype.attach = function(to)
+{
+	to.attach_tab(this);
 }
 
 Tab.prototype.save = function(prefix)
@@ -360,9 +375,7 @@ Tab.prototype.update_src = function()
 		if(this.tab_content.hasAttribute('src'))
 		{
 			this.loaded = false;
-			var src_attr = this.tab_config.src;
-			if(this.tab_config.query) src_attr += '?' + this.tab_config.query;
-			this.tab_content.setAttribute('src', src_attr);
+			this.tab_content.setAttribute('src', this.tab_config.src);
 		}
 	}
 }
@@ -379,21 +392,6 @@ Tab.prototype.tab_content_on_load = function(event)
 	this.restore_scroll_position();
 }
 
-Tab.prototype.bind_to_object = function(object_name)
-{
-	this.save_scroll_position();
-	this.tab_config.object_name = object_name;
-	if(object_name)
-	{
-		this.tab_config.query = 'object=' + encodeURIComponent(object_name);
-	}
-	else
-	{
-		this.tab_config.query = null;
-	}
-	this.update_src();
-}
-
 Tab.prototype.save_scroll_position = function()
 {
 	if(!this.loaded) return;
@@ -404,13 +402,8 @@ Tab.prototype.save_scroll_position = function()
 	
 	if(!this.static)
 	{
-		var scroll_x_item_name = 'gui.' + this.owner.name + '.' + this.tab_config.name;
-		if(this.tab_config.object_name && (this.tab_config.name != this.tab_config.object_name)) scroll_x_item_name += '.' + this.tab_config.object_name;
-		scroll_x_item_name += '.scroll-x';
-		
-		var scroll_y_item_name = 'gui.' + this.owner.name + '.' + this.tab_config.name;
-		if(this.tab_config.object_name && (this.tab_config.name != this.tab_config.object_name)) scroll_y_item_name += '.' + this.tab_config.object_name;
-		scroll_y_item_name += '.scroll-y';
+		var scroll_x_item_name = 'gui.' + this.owner.name + '.' + this.tab_config.name + '.scroll-x';
+		var scroll_y_item_name = 'gui.' + this.owner.name + '.' + this.tab_config.name + '.scroll-y';
 		
 		var scroll_pos = CompatLayer.get_iframe_scroll_pos(this.tab_content);
 		sessionStorage.setItem(scroll_x_item_name, scroll_pos.x);
@@ -428,13 +421,8 @@ Tab.prototype.restore_scroll_position = function()
 
 	if(!this.static)
 	{
-		var scroll_x_item_name = 'gui.' + this.owner.name + '.' + this.tab_config.name;
-		if(this.tab_config.object_name && (this.tab_config.name != this.tab_config.object_name)) scroll_x_item_name += '.' + this.tab_config.object_name;
-		scroll_x_item_name += '.scroll-x';
-		
-		var scroll_y_item_name = 'gui.' + this.owner.name + '.' + this.tab_config.name;
-		if(this.tab_config.object_name && (this.tab_config.name != this.tab_config.object_name)) scroll_y_item_name += '.' + this.tab_config.object_name;
-		scroll_y_item_name += '.scroll-y';
+		var scroll_x_item_name = 'gui.' + this.owner.name + '.' + this.tab_config.name + '.scroll-x';
+		var scroll_y_item_name = 'gui.' + this.owner.name + '.' + this.tab_config.name + '.scroll-y';
 		
 		var scroll_x = sessionStorage.getItem(scroll_x_item_name);
 		var scroll_y = sessionStorage.getItem(scroll_y_item_name);
@@ -454,7 +442,6 @@ Tab.prototype.set_active = function(v)
 		{
 			this.tab_header.classList.add('tab-header-active');
 			this.tab_content.style.visibility = 'visible';
-			this.owner.owner.on_tab_header_switch(this);
 		}
 		else
 		{
@@ -484,12 +471,79 @@ Tab.prototype.tab_header_onclick = function(event)
 	this.switch_to();
 }
 
-Tab.prototype.close = function(event)
+Tab.prototype.tab_header_oncontextmenu = function(event)
+{
+	var context_menu_items = [
+	{
+		label : 'Close',
+		action : function(event)
+		{
+			this.close();
+		}
+	} ];
+	
+	if(this.owner.name != 'left-tabs')
+	{
+		context_menu_items.push(
+		{
+			label : 'Move to left',
+			action : function(event)
+			{
+				gui.move_tab_to_tile(this, 'left-tile');
+			}
+		});
+	}
+	
+	if(this.owner.name != 'top-middle-tabs')
+	{
+		context_menu_items.push(
+		{
+			label : 'Move to center',
+			action : function(event)
+			{
+				gui.move_tab_to_tile(this, 'top-middle-tile');
+			}
+		});
+	}
+	
+	if(this.owner.name != 'top-right-tabs')
+	{
+		context_menu_items.push(
+		{
+			label : 'Move to right',
+			action : function(event)
+			{
+				gui.move_tab_to_tile(this, 'top-right-tile');
+			}
+		});
+	}
+
+	if(this.owner.name != 'bottom-tabs')
+	{
+		context_menu_items.push(
+		{
+			label : 'Move to bottom',
+			action : function(event)
+			{
+				gui.move_tab_to_tile(this, 'bottom-tile');
+			}
+		});
+	}
+
+	this.owner.owner.create_context_menu(event, context_menu_items, this);
+}
+
+Tab.prototype.close_tab_onclick = function(event)
+{
+	this.close();
+	event.stopImmediatePropagation(); // avoid calling of this.tab_header_onclick after tab destruction
+}
+
+Tab.prototype.close = function()
 {
 	if(!this.static)
 	{
 		this.owner.destroy_tab(this);
-		event.stopImmediatePropagation(); // avoid calling of this.tab_header_onclick after tab destruction
 	}
 }
 
@@ -569,7 +623,6 @@ function Tabs(owner, name, tile)
 		if(!this.find_tab_by_name(tab.tab_config.name))
 		{
 			this.tabs.push(tab);
-			tab.tab_header.addEventListener('click', this.switch_to.bind(this, tab), false);
 			this.save_tabs();
 		}
 	}
@@ -647,7 +700,7 @@ Tabs.prototype.compute_dynamic_widths = function()
 	}
 }
 
-Tabs.prototype.create_tab = function(label, name, src, object_name)
+Tabs.prototype.create_tab = function(label, name, src)
 {
 	var tab = this.find_tab_by_name(name);
 	if(!tab)
@@ -658,17 +711,15 @@ Tabs.prototype.create_tab = function(label, name, src, object_name)
 		{
 			tab_config.label = label;
 			tab_config.src = src;
-			tab_config.object_name = object_name;
 			this.tab_config_history.remove(tab_config);
 			this.save_history();
 		}
 		else
 		{
-			tab_config = new TabConfig(label, name, src, object_name)
+			tab_config = new TabConfig(label, name, src)
 		}
 		tab.create(tab_config);
 		this.tabs.push(tab);
-		tab.tab_header.addEventListener('click', this.switch_to.bind(this, tab), false);
 		this.save_tabs();
 	}
 	return tab;
@@ -748,17 +799,6 @@ Tabs.prototype.find_tab_by_name = function(name)
 	return this.tabs.find(function(tab) { return tab.tab_config.name == name; });
 }
 
-Tabs.prototype.find_tab_by_object_name = function(object_name)
-{
-	return this.tabs.find(function(tab) { return tab.tab_config.object_name == object_name; });
-}
-
-Tabs.prototype.bind_to_object = function(object_name)
-{
-	this.tabs.forEach(function(tab) { tab.bind_to_object(object_name); });
-	this.save_tabs();
-}
-
 Tabs.prototype.scroll_tab_headers = function(dx)
 {
 	this.compute_dynamic_widths();
@@ -812,19 +852,91 @@ Tabs.prototype.history_item_element_on_click = function(tab_config)
 	this.save_history();
 }
 
-Tabs.prototype.refresh_tab_by_name = function(name)
+Tabs.prototype.detach_tab = function(tab_to_detach)
 {
-	var tab = this.find_tab_by_name(name);
-	if(tab)
+	var tab_num = this.tabs.findIndex(function(tab) { return tab == tab_to_detach; });
+	
+	if(tab_num >= 0)
 	{
-		tab.refresh();
+		var is_active = tab_to_detach.is_active;
+		this.tabs.splice(tab_num, 1);
+		this.save_tabs();
+		this.save_history();
+		if(is_active && (this.tabs.length != 0))
+		{
+			this.switch_to_nth_tab((tab_num > 0) ? (tab_num - 1) : tab_num);
+		}
+		this.tab_headers.removeChild(tab_to_detach.tab_header);
+		this.tab_contents.removeChild(tab_to_detach.tab_content);
 	}
 }
 
-Tabs.prototype.refresh_active_tabs = function()
+Tabs.prototype.attach_tab = function(tab)
 {
-	var active_tab = this.tabs.find(function(tab) { return tab.is_active; });
-	if(active_tab) active_tab.refresh();
+	if(tab.owner != this)
+	{
+		tab.owner = this;
+		this.tab_headers.appendChild(tab.tab_header);
+		this.tab_contents.appendChild(tab.tab_content);
+		this.tabs.push(tab);
+		this.save_tabs();
+	}
+}
+
+Tabs.prototype.for_each_tab = function(callback)
+{
+	this.tabs.forEach(callback);
+}
+
+// ContextMenu
+ContextMenu.action_this = null;
+ContextMenu.context_menu_element = null;
+
+function ContextMenu(event, context_menu_items, action_this)
+{
+	this.action_this = action_this;
+	this.context_menu_element = document.createElement('div');
+	this.context_menu_element.className = 'context-menu';
+	this.context_menu_element.style.display = 'block';
+	this.context_menu_element.style.position = 'fixed';
+	this.context_menu_element.style.left = event.clientX + 'px';
+	this.context_menu_element.style.top = event.clientY + 'px';
+	
+	for(var i = 0; i < context_menu_items.length; i++)
+	{
+		var context_menu_item_element = document.createElement('div');
+		context_menu_item_element.className = 'context-menu-item';
+		context_menu_item_element.innerHTML = context_menu_items[i].label;
+		if(this.action_this)
+		{
+			context_menu_item_element.addEventListener('click', context_menu_items[i].action.bind(this.action_this));
+		}
+		else
+		{
+			context_menu_item_element.addEventListener('click', context_menu_items[i].action);
+		}
+		this.context_menu_element.appendChild(context_menu_item_element);
+	}
+	
+	document.body.appendChild(this.context_menu_element);
+	
+	var window_inner_height = window.innerHeight;
+	var style = getComputedStyle(this.context_menu_element, null);
+	var top = parseFloat(style.getPropertyValue('top'));
+	var height = parseFloat(style.getPropertyValue('height'));
+	if((top + height) >= window_inner_height)
+	{
+		this.context_menu_element.style.top = (window_inner_height - height) + 'px';
+	}
+
+	event.preventDefault();
+}
+
+ContextMenu.prototype.destroy = function()
+{
+	document.body.removeChild(this.context_menu_element);
+	this.action_this = null;
+	this.context_menu_element = null;
 }
 
 // GUI
@@ -935,6 +1047,7 @@ GUI.prototype.bound_left_horiz_resize = null;
 GUI.prototype.bound_right_horiz_resize = null;
 GUI.prototype.window_inner_width = 0;
 GUI.prototype.window_inner_height = 0;
+GUI.prototype.context_menu = null;
 
 function GUI()
 {
@@ -979,6 +1092,7 @@ function GUI()
 	this.right_horiz_resizer_div.addEventListener('mousedown', this.right_horiz_resizer_on_mousedown.bind(this));
 
 	document.addEventListener('mouseup', this.document_on_mouseup.bind(this));
+	document.addEventListener('click', this.destroy_context_menu.bind(this));
 	
 	this.restore_layout();
 	this.window_inner_width = window.innerWidth;
@@ -989,14 +1103,6 @@ function GUI()
 	
 	if(!magic || (magic != this.magic))
 	{
-		this.create_left_tab('Documentation', 'documentation');
-		var registers_tab = this.create_top_right_tab('Registers', 'registers', '/registers');
-		if(registers_tab) registers_tab.switch_to();
-		this.create_top_right_tab('Memory', 'memory', '/memory');
-		var config_tab = this.create_bottom_tab('Configuration', 'config', '/config');
-		if(config_tab) config_tab.switch_to();
-		this.create_bottom_tab('Statistics', 'stats', '/stats');
-		this.create_bottom_tab('Log', 'log', '/logger');
 		this.left_tabs.switch_to_nth_tab(0);
 	}
 	
@@ -1008,9 +1114,9 @@ GUI.prototype.create_left_tab = function(label, name, src)
 	return this.find_tab_by_name(name) ? undefined : this.left_tabs.create_tab(label, name, src);
 }
 
-GUI.prototype.create_top_middle_tab = function(label, name, src, object_name)
+GUI.prototype.create_top_middle_tab = function(label, name, src)
 {
-	return this.find_tab_by_name(name) ? undefined : this.top_middle_tabs.create_tab(label, name, src, object_name);
+	return this.find_tab_by_name(name) ? undefined : this.top_middle_tabs.create_tab(label, name, src);
 }
 
 GUI.prototype.create_top_right_tab = function(label, name, src)
@@ -1023,33 +1129,32 @@ GUI.prototype.create_bottom_tab = function(label, name, src)
 	return this.find_tab_by_name(name) ? undefined : this.bottom_tabs.create_tab(label, name, src);
 }
 
-GUI.prototype.open_object = function(object_url, object_name, label)
+GUI.prototype.open_tab = function(tile_name, label, name, src)
 {
-	var tab = this.top_middle_tabs.find_tab_by_object_name(object_name);
+	var tab = this.find_tab_by_name(name);
+	
 	if(!tab)
 	{
-		tab = this.create_top_middle_tab(label ? label : object_name, object_name, object_url, object_name);
+		switch(tile_name)
+		{
+			case 'left-tile':
+				tab = this.create_left_tab(label, name, src);
+				break;
+			case 'top-middle-tile':
+				tab = this.create_top_middle_tab(label, name, src);
+				break;
+			case 'top-right-tile':
+				tab = this.create_top_right_tab(label, name, src);
+				break;
+			case 'bottom-tile':
+				tab = this.create_bottom_tab(label, name, src);
+				break;
+		}
 	}
 	
-	tab.switch_to();
-	this.top_right_tabs.bind_to_object(object_name);
-	this.bottom_tabs.bind_to_object(object_name);
-}
-
-GUI.prototype.on_tab_header_switch = function(tab)
-{
-	if(tab.owner == this.top_middle_tabs)
+	if(tab)
 	{
-		if(tab.tab_config.object_name)
-		{
-			this.top_right_tabs.bind_to_object(tab.tab_config.object_name);
-			this.bottom_tabs.bind_to_object(tab.tab_config.object_name);
-		}
-		else
-		{
-			this.top_right_tabs.bind_to_object(null);
-			this.bottom_tabs.bind_to_object(null);
-		}
+		tab.switch_to();
 	}
 }
 
@@ -1320,12 +1425,58 @@ GUI.prototype.find_tab_by_name = function(name)
 	return this.top_middle_tabs.find_tab_by_name(name) || this.top_right_tabs.find_tab_by_name(name) || this.bottom_tabs.find_tab_by_name(name);
 }
 
-GUI.prototype.refresh_active_tabs = function()
+GUI.prototype.create_context_menu = function(event, context_menu_items, action_this)
 {
-	this.top_middle_tabs.refresh_active_tabs();
-	this.top_right_tabs.refresh_active_tabs();
-	this.bottom_tabs.refresh_active_tabs();
+	this.destroy_context_menu();
+	this.context_menu = new ContextMenu(event, context_menu_items, action_this);
+	this.enable_pointer_events(false);
 }
+
+GUI.prototype.destroy_context_menu = function()
+{
+	if(this.context_menu)
+	{
+		this.context_menu.destroy();
+		this.context_menu = null;
+		this.enable_pointer_events(true);
+	}
+}
+
+GUI.prototype.move_tab_to_tile = function(tab, tile_name)
+{
+	var destination = null;
+	switch(tile_name)
+	{
+		case 'left-tile':
+			destination = this.left_tabs;
+			break;
+		case 'top-middle-tile':
+			destination = this.top_middle_tabs;
+			break;
+		case 'top-right-tile':
+			destination = this.top_right_tabs;
+			break;
+		case 'bottom-tile':
+			destination = this.bottom_tabs;
+			break;
+	}
+	
+	if(destination)
+	{
+		tab.detach();
+		tab.attach(destination);
+		tab.switch_to();
+	}
+}
+
+GUI.prototype.for_each_tab = function(callback)
+{
+	this.left_tabs.for_each_tab(callback);
+	this.top_middle_tabs.for_each_tab(callback);
+	this.top_right_tabs.for_each_tab(callback);
+	this.bottom_tabs.for_each_tab(callback);
+}
+
 
 var gui = null;
 document.addEventListener('DOMContentLoaded', function(event) { gui = new GUI(); });
