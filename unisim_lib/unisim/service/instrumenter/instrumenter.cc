@@ -1595,10 +1595,10 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 		doc_sstr << "\t\t\t<table class=\"command-table\">" << std::endl;
 		doc_sstr << "\t\t\t\t<tbody>" << std::endl;
 		doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<td><button class=\"delta-step\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"delta-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">&delta;</button></td>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<td><button class=\"timed-step\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"timed-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">Step</button>&nbsp;by&nbsp;<input class=\"step-time\" type=\"text\" name=\"step-time\" value=\"" << user_step_time << "\"" << ((cont || halt) ? " disabled" : "") << "></td>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<td><button class=\"" << (cont ? "intr" : "cont") << "\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"" << (cont ? "intr" : "cont") << "\" value=\"on\"" << (halt ? " disabled" : "") << ">" << (cont ? "Interrupt" : "Continue") << "</button></td>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<td><button class=\"halt\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"halt\" value=\"on\"" << (halt ? " disabled" : "")  << ">Halt</button></td>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<td><button class=\"delta-step\" type=\"submit\" onclick=\"on_instrumenter_submit()\" name=\"delta-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">&delta;</button></td>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<td><button class=\"timed-step\" type=\"submit\" onclick=\"on_instrumenter_submit()\" name=\"timed-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">Step</button>&nbsp;by&nbsp;<input class=\"step-time\" type=\"text\" name=\"step-time\" value=\"" << user_step_time << "\"" << ((cont || halt) ? " disabled" : "") << "></td>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<td><button class=\"" << (cont ? "intr" : "cont") << "\" type=\"submit\" onclick=\"on_instrumenter_submit()\" name=\"" << (cont ? "intr" : "cont") << "\" value=\"on\"" << (halt ? " disabled" : "") << ">" << (cont ? "Interrupt" : "Continue") << "</button></td>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<td><button class=\"halt\" type=\"submit\" onclick=\"on_instrumenter_submit()\" name=\"halt\" value=\"on\"" << (halt ? " disabled" : "")  << ">Halt</button></td>" << std::endl;
 		doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
 		doc_sstr << "\t\t\t\t</tbody>" << std::endl;
 		doc_sstr << "\t\t\t</table>" << std::endl;
@@ -1606,8 +1606,8 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 		doc_sstr << "\t\t\t<table class=\"instruments-table1\">" << std::endl;
 		doc_sstr << "\t\t\t\t<thead>" << std::endl;
 		doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-enable\">Enable<br><button class=\"signal-disable-all\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"disable*all\">C</button><button class=\"signal-enable-all\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"enable*all\">A</button></th>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-brkpt-enable\">Brkpt<br><button class=\"signal-brkpt-disable-all\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"disable-brkpt*all\">C</button><button class=\"signal-brkpt-enable-all\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"enable-brkpt*all\">A</button></th>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-enable\">Enable<br><button class=\"signal-disable-all\" type=\"submit\" onclick=\"on_instrumenter_submit()\" name=\"disable*all\">C</button><button class=\"signal-enable-all\" type=\"submit\" onclick=\"on_instrumenter_submit()\" name=\"enable*all\">A</button></th>" << std::endl;
+		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-brkpt-enable\">Brkpt<br><button class=\"signal-brkpt-disable-all\" type=\"submit\" onclick=\"on_instrumenter_submit()\" name=\"disable-brkpt*all\">C</button><button class=\"signal-brkpt-enable-all\" type=\"submit\" onclick=\"on_instrumenter_submit()\" name=\"enable-brkpt*all\">A</button></th>" << std::endl;
 		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-name\">Hardware signal</th>" << std::endl;
 		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-toggle\">Toggle</th>" << std::endl;
 		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-value\">Value</th>" << std::endl;
@@ -1650,7 +1650,7 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-toggle\">";
 				if(is_boolean)
 				{
-					doc_sstr << "<button class=\"signal-toggle-button signal-" << (bool_value ? "on" : "off") << "\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"toggle*" << String_to_HTML(user_instrument->GetName()) << "\"" << ((cont || halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << ">" << (bool_value ? "on" : "off")  << "</button>";
+					doc_sstr << "<button class=\"signal-toggle-button signal-" << (bool_value ? "on" : "off") << "\" type=\"submit\" onclick=\"on_instrumenter_submit()\" name=\"toggle*" << String_to_HTML(user_instrument->GetName()) << "\"" << ((cont || halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << ">" << (bool_value ? "on" : "off")  << "</button>";
 				}
 				doc_sstr << "</td>" << std::endl;
 				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-value\"><input class=\"signal-value-text" << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"text\" name=\"set*" << String_to_HTML(user_instrument->GetName()) << "\" value=\"" << String_to_HTML(value) << "\"" << ((cont || halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << "></td>" << std::endl;
@@ -1729,6 +1729,10 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 	}
 	
 	return true;
+}
+
+void UserInterface::ScanBrowserActions(unisim::service::interfaces::BrowserActionScanner& scanner)
+{
 }
 
 UserInstrument *UserInterface::FindUserInstrument(const std::string& name)

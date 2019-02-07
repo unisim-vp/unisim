@@ -413,6 +413,7 @@ public:
 	virtual void ProcessOutputInstruments();
 	
 	virtual bool ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
+	virtual void ScanBrowserActions(unisim::service::interfaces::BrowserActionScanner& scanner);
 	
 	UserInstrument *FindUserInstrument(const std::string& name);
 	

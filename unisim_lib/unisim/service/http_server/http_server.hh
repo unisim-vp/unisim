@@ -79,6 +79,9 @@ private:
 	std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *> http_server_import_map;
 	std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *> registers_import_map;
 	
+	typedef std::multimap<std::string, unisim::service::interfaces::BrowserAction> BrowserActions;
+	BrowserActions browser_actions;
+	
 	std::string Href(unisim::kernel::service::Object *object) const;
 	unisim::kernel::service::Object *FindChildObject(unisim::kernel::service::Object *object, const std::string& child_hierarchical_name, std::size_t& pos);
 	unisim::kernel::service::Object *FindObject(const std::string& hierarchical_name, std::size_t& pos);

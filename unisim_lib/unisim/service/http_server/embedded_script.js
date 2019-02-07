@@ -47,18 +47,32 @@ reload_page = function()
 	{
 		// within tiled GUI
 		own_tab.refresh(); // refresh my own tab
-// 		parent.gui.refresh_active_tabs(own_tab); // refresh active tabs
-		
-		parent.gui.for_each_tab(
-			function(tab)
-			{
-				if(tab.is_active && (tab != own_tab)) tab.refresh();
-			}
-		);
 	}
 	else
 	{
 		// stand-alone
 		window.location.replace(window.location.href); // reload without POST
+	}
+}
+
+reload_third_tabs = function()
+{
+	var own_tab = null;
+	if(parent.gui && (parent.gui.magic == 0xCAFE) && (own_tab = parent.gui.find_tab_by_name(window.name)))
+	{
+		// within tiled GUI
+		parent.gui.for_each_tab(
+			function(tab)
+			{
+				if(tab.is_active && (tab != own_tab)) tab.refresh(); // refresh other tabs that are active
+			}
+		);
+		
+		parent.gui.for_each_child_window(
+			function(child_window)
+			{
+				child_window.location.replace(child_window.location.href); // reload without POST
+			}
+		);
 	}
 }

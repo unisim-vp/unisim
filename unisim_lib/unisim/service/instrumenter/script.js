@@ -40,6 +40,13 @@ reload_instrumenter_page = function()
 {
 	save_instrumenter_scroller_scroll_top();
 	reload_page();
+	reload_third_tabs();
+}
+
+on_instrumenter_submit = function()
+{
+	save_instrumenter_scroll_top();
+	reload_third_tabs();
 }
 
 var window_resize_refresh_period = 500;

@@ -186,6 +186,7 @@ HttpServer::HttpServer(const char *name, unisim::kernel::service::Object *parent
 	, param_http_max_clients("http-max-clients", this, http_max_clients, "HTTP max clients")
 	, http_server_import_map()
 	, registers_import_map()
+	, browser_actions()
 {
 	param_http_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_http_port.SetMutable(false);
@@ -239,12 +240,34 @@ bool HttpServer::EndSetup()
 	{
 		if(*http_server_import[i])
 		{
-			unisim::kernel::service::Object *object = http_server_import[i]->GetService();
+			unisim::kernel::service::Object *http_server_object = http_server_import[i]->GetService();
 		
-			if(object)
+			if(http_server_object)
 			{
-				http_server_import_map[object] = http_server_import[i];
+				http_server_import_map[http_server_object] = http_server_import[i];
 			}
+			
+			struct BrowserActionScanner : unisim::service::interfaces::BrowserActionScanner
+			{
+				BrowserActionScanner(HttpServer& _http_server, const std::string& _http_server_object_path)
+					: http_server(_http_server)
+					, http_server_object_path(_http_server_object_path)
+				{
+				}
+				
+				virtual void Append(const unisim::service::interfaces::BrowserAction& _browser_action)
+				{
+					unisim::service::interfaces::BrowserAction browser_action(_browser_action);
+					browser_action.SetPath(http_server_object_path + '/' + browser_action.GetPath());
+					http_server.browser_actions.insert(std::pair<std::string, unisim::service::interfaces::BrowserAction>(browser_action.GetObjectName(), browser_action));
+				}
+			private:
+				HttpServer& http_server;
+				std::string http_server_object_path;
+			};
+			
+			BrowserActionScanner browser_scanner(*this, Href(http_server_object));
+			(*http_server_import[i])->ScanBrowserActions(browser_scanner);
 		}
 		if(*registers_import[i])
 		{
@@ -254,6 +277,17 @@ bool HttpServer::EndSetup()
 			{
 				registers_import_map[object] = registers_import[i];
 			}
+		}
+	}
+	
+	if(verbose)
+	{
+		logger << DebugInfo << browser_actions.size() << " browser action(s) defined" << EndDebugInfo;
+		BrowserActions::const_iterator it;
+		for(it = browser_actions.begin(); it != browser_actions.end(); it++)
+		{
+			const unisim::service::interfaces::BrowserAction& browser_action = (*it).second;
+			logger << DebugInfo << browser_action << EndDebugInfo;
 		}
 	}
 	
@@ -582,8 +616,13 @@ void HttpServer::Crawl(std::ostream& os, const std::string& object_url, unisim::
 	os << "{label:'Open', action:function() { gui.open_tab('top-middle-tile','" <<  String_to_HTML(object->GetName()) << "','" << object->GetName() << "','" << object_url << "'); } }";
 	os << ",{label:'Configure', action:function() { gui.open_tab('bottom-tile','Configuration of " <<  String_to_HTML(object->GetName()) << "','config-" << object->GetName() << "','/config?object=" << unisim::util::hypapp::Encoder::Encode(object->GetName()) << "'); } }";
 	os << ",{label:'Show statistics', action:function() { gui.open_tab('bottom-tile','Statistics of " <<  String_to_HTML(object->GetName()) << "','stats-" << object->GetName() << "','/stats?object=" << unisim::util::hypapp::Encoder::Encode(object->GetName()) << "'); } }";
-	os << ",{label:'Show log', action:function() { gui.open_tab('bottom-tile','Log of " <<  String_to_HTML(object->GetName()) << "','log-" << object->GetName() << "','/logger?object=" << unisim::util::hypapp::Encoder::Encode(object->GetName()) << "'); } }";
 	os << ",{label:'Show registers', action:function() { gui.open_tab('top-right-tile','Registers of " <<  String_to_HTML(object->GetName()) << "','registers-" << object->GetName() << "','/registers?object=" << unisim::util::hypapp::Encoder::Encode(object->GetName()) << "'); } }";
+	std::pair<BrowserActions::const_iterator, BrowserActions::const_iterator> browser_actions_range = browser_actions.equal_range(object->GetName());
+	for(BrowserActions::const_iterator it = browser_actions_range.first; it != browser_actions_range.second; it++)
+	{
+		const unisim::service::interfaces::BrowserAction& browser_action = (*it).second;
+		os << ",{label:'" << browser_action.GetLabel() << "', action:function() { gui.open_tab('" << browser_action.GetTile() << "','" << browser_action.GetTabTitle() << "','" << browser_action.GetName() << "','" << browser_action.GetPath() << "'); } }";
+	}
 	os << "])\">";
 	os << String_to_HTML(object->GetObjectName());
 	os << "</span>" << std::endl;;

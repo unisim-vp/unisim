@@ -34,6 +34,7 @@
 
 #include <unisim/kernel/logger/logger_server.hh>
 #include <unisim/kernel/service/service.hh>
+#include <unisim/util/hypapp/hypapp.hh>
 
 #include <libxml/encoding.h>
 #include <libxml/xmlwriter.h>
@@ -50,33 +51,35 @@ namespace logger {
 static const char *XML_ENCODING = "UTF-8"; 
 
 LoggerServer::LoggerServer(const char *name, unisim::kernel::service::Object *parent)
-  : unisim::kernel::service::Object(name, parent)
-  , unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>(name, parent)
-  , http_server_export("http-server-export", this)
-  , xml_writer_(0)
-  , opt_std_err_(true)
-  , opt_std_out_(false)
-  , opt_std_err_color_(false)
-  , opt_std_out_color_(false)
-  , opt_file_(false)
-  , opt_filename_("logger_output.txt")
-  , opt_xml_file_(false)
-  , opt_xml_filename_("logger_output.xml")
-  , opt_xml_file_gzipped_(false)
-  , opt_http_(false)
-  , opt_http_max_log_size_(256)
-  , mutex()
-  , param_std_err("std_err", this, opt_std_err_, "Show logger output through the standard error output")
-  , param_std_out("std_out", this, opt_std_out_, "Show logger output through the standard output")
-  , param_std_err_color("std_err_color", this, opt_std_err_color_, "Colorize logger output through the standard error output (only works if std_err is active)")
-  , param_std_out_color("std_out_color", this, opt_std_out_color_, "Colorize logger output through the standard output (only works if std_out is active)")
-  , param_file("file", this, opt_file_, "Keep logger output in a file")
-  , param_filename("filename", this, opt_filename_, "Filename to keep logger output (the option file must be activated)")
-  , param_xml_file("xml_file", this, opt_xml_file_, "Keep logger output in a file xml formatted")
-  , param_xml_filename("xml_filename", this, opt_xml_filename_, "Filename to keep logger xml output (the option xml_file must be activated)")
-  , param_xml_file_gzipped("xml_file_gzipped", this, opt_xml_file_gzipped_, "Compress the xml output (a .gz extension is automatically appended to the xml_filename option)")
-  , param_http("http", this, opt_http_, "Show logger output through HTTP")
-  , param_http_max_log_size("http_max_log_size", this, opt_http_max_log_size_, "Maximum log size for HTTP output")
+	: unisim::kernel::service::Object(name, parent)
+	, unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>(name, parent)
+	, http_server_export("http-server-export", this)
+	, clients()
+	, browser_actions()
+	, xml_writer_(0)
+	, opt_std_err_(true)
+	, opt_std_out_(false)
+	, opt_std_err_color_(false)
+	, opt_std_out_color_(false)
+	, opt_file_(false)
+	, opt_filename_("logger_output.txt")
+	, opt_xml_file_(false)
+	, opt_xml_filename_("logger_output.xml")
+	, opt_xml_file_gzipped_(false)
+	, opt_http_(false)
+	, opt_http_max_log_size_(256)
+	, mutex()
+	, param_std_err("std_err", this, opt_std_err_, "Show logger output through the standard error output")
+	, param_std_out("std_out", this, opt_std_out_, "Show logger output through the standard output")
+	, param_std_err_color("std_err_color", this, opt_std_err_color_, "Colorize logger output through the standard error output (only works if std_err is active)")
+	, param_std_out_color("std_out_color", this, opt_std_out_color_, "Colorize logger output through the standard output (only works if std_out is active)")
+	, param_file("file", this, opt_file_, "Keep logger output in a file")
+	, param_filename("filename", this, opt_filename_, "Filename to keep logger output (the option file must be activated)")
+	, param_xml_file("xml_file", this, opt_xml_file_, "Keep logger output in a file xml formatted")
+	, param_xml_filename("xml_filename", this, opt_xml_filename_, "Filename to keep logger xml output (the option xml_file must be activated)")
+	, param_xml_file_gzipped("xml_file_gzipped", this, opt_xml_file_gzipped_, "Compress the xml output (a .gz extension is automatically appended to the xml_filename option)")
+	, param_http("http", this, opt_http_, "Show logger output through HTTP")
+	, param_http_max_log_size("http_max_log_size", this, opt_http_max_log_size_, "Maximum log size for HTTP output")
 {
 	param_http_max_log_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
@@ -85,152 +88,178 @@ LoggerServer::LoggerServer(const char *name, unisim::kernel::service::Object *pa
 
 LoggerServer::~LoggerServer()
 {
-  Close();
-  pthread_mutex_destroy(&mutex);
-  for(HTTP_LOGS::iterator it = http_logs.begin(); it != http_logs.end(); it++)
-  {
-    HTTP_LOG *http_log = (*it).second;
-    delete http_log;
-  }
+	Close();
+	pthread_mutex_destroy(&mutex);
+	for(HTTP_LOGS::iterator it = http_logs.begin(); it != http_logs.end(); it++)
+	{
+		HTTP_LOG *http_log = (*it).second;
+		delete http_log;
+	}
 }
 
-void
-LoggerServer::Close()
+void LoggerServer::Close()
 {
-  if (clients.size()) {
-    std::cerr << "Error(LoggerServer::close): "
-              << "client loggers still connected" << std::endl;
-    std::set<Logger const*>::iterator client_iter;
-    for(client_iter = clients.begin(); client_iter != clients.end(); client_iter++)
-    {
-      Logger const* client = *client_iter;
-      std::cerr << "Error(LoggerServer::close): client \"" << client->GetName() << "\" still connected" << std::endl;
-    }
-  }
-  
-  if (xml_writer_ != NULL) {
-    int rc = xmlTextWriterEndElement(xml_writer_);
-    if (rc < 0) {
-      std::cerr << "Error(LoggerServer): "
-                << "could not close the root element of xml output" << std::endl;
-    }
-    rc = xmlTextWriterEndDocument(xml_writer_);
-    if (rc < 0) {
-      std::cerr << "Warning(LoggerServer::Close): "
-                << "could not correctly close the xml output file" << std::endl;
-    }
-    xmlFreeTextWriter(xml_writer_);
-    xml_writer_ = NULL;
-  }
-  
-  if (text_file_.is_open())
-    {
-      text_file_.close();
-      if (text_file_.is_open())
-        {
-          std::cerr << "Error(LoggerServer::Close): "
-                    << "could not correctly close the text output file" << std::endl;
-          throw std::logic_error("internal error");
-        }
-    }
+	if (clients.size())
+	{
+		std::cerr << "Error(LoggerServer::close): "
+		          << "client loggers still connected" << std::endl;
+		std::set<Logger const*>::iterator client_iter;
+		for(client_iter = clients.begin(); client_iter != clients.end(); client_iter++)
+		{
+			Logger const* client = *client_iter;
+			std::cerr << "Error(LoggerServer::close): client \"" << client->GetName() << "\" still connected" << std::endl;
+		}
+	}
+
+	if(xml_writer_ != NULL)
+	{
+		int rc = xmlTextWriterEndElement(xml_writer_);
+		if(rc < 0)
+		{
+			std::cerr << "Error(LoggerServer): "
+			          << "could not close the root element of xml output" << std::endl;
+		}
+		rc = xmlTextWriterEndDocument(xml_writer_);
+		if(rc < 0)
+		{
+			std::cerr << "Warning(LoggerServer::Close): "
+			          << "could not correctly close the xml output file" << std::endl;
+		}
+		xmlFreeTextWriter(xml_writer_);
+		xml_writer_ = NULL;
+	}
+
+	if (text_file_.is_open())
+	{
+		text_file_.close();
+		if (text_file_.is_open())
+		{
+			std::cerr << "Error(LoggerServer::Close): "
+			          << "could not correctly close the text output file" << std::endl;
+			throw std::logic_error("internal error");
+		}
+	}
 }
 
-bool
-LoggerServer::Setup() 
+bool LoggerServer::Setup() 
 {
-  /* check if a xml output needs to be created */
-  if (opt_xml_file_) 
-    {
-      /* create and initialize the xml output */
-      std::stringstream xml_filename;
-      xml_filename << opt_xml_filename_;
-      if (opt_xml_file_gzipped_) xml_filename << ".gz";
-      xml_writer_ = xmlNewTextWriterFilename(xml_filename.str().c_str(), opt_xml_file_gzipped_ ? 1 : 0);
-      if (xml_writer_ == NULL) 
-        {
-          std::cerr << "Error(LoggerServer::Setup): "
-                    << "could not open xml output file for logging" << std::endl;
-          return false;
-        }
-      int rc = xmlTextWriterSetIndent(xml_writer_, 1);
-      if (rc < 0) 
-        {
-          std::cerr << "Warning(LoggerServer::Setup): "
-                    << "could not set indentation" << std::endl;
-        }
-      rc = xmlTextWriterStartDocument(xml_writer_, NULL, XML_ENCODING, NULL);
-      if (rc < 0) 
-        {
-          std::cerr << "Error(LoggerServer::Setup): "
-                    << "error starting the xml document" << std::endl;
-          return false;
-        }
-      rc = xmlTextWriterStartElement(xml_writer_, BAD_CAST "LOGGER");
-      if (rc < 0) 
-        {
-          std::cerr << "Error(LoggerServer::Setup): "
-                    << "error starting the xml document" << std::endl;
-          return false;
-        }
-    }
-  /* check if a file text output needs to be created */
-  if (opt_file_)
-    {
-      /* create and initialize the text output file */
-      std::stringstream filename;
-      filename << opt_filename_;
-      text_file_.open(filename.str().c_str(), std::ios::trunc);
-      if (!text_file_.is_open())
-        {
-          std::cerr << "Error(LoggerServer::Setup): "
-                    << "could not open text output file for logging" << std::endl;
-          return false;
-        }
-    }
-  return true;
+	/* check if a xml output needs to be created */
+	if (opt_xml_file_) 
+	{
+		/* create and initialize the xml output */
+		std::stringstream xml_filename;
+		xml_filename << opt_xml_filename_;
+		if (opt_xml_file_gzipped_) xml_filename << ".gz";
+		xml_writer_ = xmlNewTextWriterFilename(xml_filename.str().c_str(), opt_xml_file_gzipped_ ? 1 : 0);
+		if (xml_writer_ == NULL) 
+		{
+			std::cerr << "Error(LoggerServer::Setup): "
+			          << "could not open xml output file for logging" << std::endl;
+			return false;
+		}
+		int rc = xmlTextWriterSetIndent(xml_writer_, 1);
+		if (rc < 0) 
+		{
+			std::cerr << "Warning(LoggerServer::Setup): "
+			          << "could not set indentation" << std::endl;
+		}
+		rc = xmlTextWriterStartDocument(xml_writer_, NULL, XML_ENCODING, NULL);
+		if (rc < 0) 
+		{
+			std::cerr << "Error(LoggerServer::Setup): "
+			          << "error starting the xml document" << std::endl;
+			return false;
+		}
+		rc = xmlTextWriterStartElement(xml_writer_, BAD_CAST "LOGGER");
+		if (rc < 0) 
+		{
+			std::cerr << "Error(LoggerServer::Setup): "
+			          << "error starting the xml document" << std::endl;
+			return false;
+		}
+	}
+	/* check if a file text output needs to be created */
+	if (opt_file_)
+	{
+		/* create and initialize the text output file */
+		std::stringstream filename;
+		filename << opt_filename_;
+		text_file_.open(filename.str().c_str(), std::ios::trunc);
+		if (!text_file_.is_open())
+		{
+			std::cerr << "Error(LoggerServer::Setup): "
+			          << "could not open text output file for logging" << std::endl;
+			return false;
+		}
+	}
+	return true;
 }
 
-void
-LoggerServer::AddClient( Logger const* client )
+void LoggerServer::AddClient( Logger const* client )
 {
-  if (not clients.insert( client ).second) {
-    std::cerr << "Error(LoggerServer::AddClient): "
-              << "internal issue, client already connected" << std::endl;
-  }
+	if (not clients.insert( client ).second)
+	{
+		std::cerr << "Error(LoggerServer::AddClient): "
+		          << "internal issue, client already connected" << std::endl;
+	}
+	else
+	{
+		browser_actions[client->GetName()] = unisim::service::interfaces::BrowserAction(
+			/* object name */ client->GetName(),
+			/* name        */ std::string(this->GetName()) + "-" + client->GetName(),
+			/* label       */ "Show log",
+			/* tab title   */ std::string("Log of ") + client->GetName(),
+			/* tile        */ unisim::service::interfaces::BrowserAction::BOTTOM_TILE,
+			/* path        */ std::string("?object=") + unisim::util::hypapp::Encoder::Encode(client->GetName())
+		);
+	}
 }
 
-void
-LoggerServer::RemoveClient( Logger const* client )
+void LoggerServer::RemoveClient( Logger const* client )
 {
-  if (not clients.erase( client )) {
-    std::cerr << "Error(LoggerServer::AddClient): "
-              << "internal issue, attempting to disconnect a unknown client" << std::endl;
-  }
+	if (not clients.erase( client ))
+	{
+		std::cerr << "Error(LoggerServer::AddClient): "
+		          << "internal issue, attempting to disconnect a unknown client" << std::endl;
+	}
+	else
+	{
+		browser_actions.erase(client->GetName());
+	}
 }
 
-void
-LoggerServer::XmlDebug(const char *type, std::string name, const char *buffer)
+void LoggerServer::XmlDebug(const char *type, std::string name, const char *buffer)
 {
-  int rc;
-  rc = xmlTextWriterStartElement(xml_writer_, BAD_CAST "DEBUG");
-  if (rc < 0)
-    std::cerr << "Error(LoggerServer): could not add a debug message of type \"" << type << "\"" << std::endl;
-  xmlChar *xml_type = xmlCharStrdup(type);
-  rc = xmlTextWriterWriteAttribute(xml_writer_, BAD_CAST "type", xml_type);
-  free(xml_type);
-  if(rc < 0)
-    std::cerr << "Error(LoggerServer): could not add \"type\" attribute to debug message of type \"" << type << "\"" << std::endl;
-  xmlChar *xml_obj_name = xmlCharStrdup(name.c_str());
-  rc = xmlTextWriterWriteAttribute(xml_writer_, BAD_CAST "source", xml_obj_name);
-  free(xml_obj_name);
-  if (rc < 0)
-    std::cerr << "Error(LoggerServer): could not add \"source\" attribute to debug message of type \"" << type << "\"" << std::endl;
-  rc = xmlTextWriterWriteFormatString(xml_writer_, "%s", buffer);
-  if (rc < 0) 
-    std::cerr << "Error(LoggerServer): could not attach message buffer to debug message of type \"" << type << "\" buffer = \"" << buffer << "\"" << std::endl;
-  rc = xmlTextWriterEndElement(xml_writer_);
-  if (rc < 0)
-    std::cerr << "Error(LoggerServer): could not close debug message of type \"" << type << "\"" << std::endl;
+	int rc;
+	rc = xmlTextWriterStartElement(xml_writer_, BAD_CAST "DEBUG");
+	if (rc < 0)
+	{
+		std::cerr << "Error(LoggerServer): could not add a debug message of type \"" << type << "\"" << std::endl;
+	}
+	xmlChar *xml_type = xmlCharStrdup(type);
+	rc = xmlTextWriterWriteAttribute(xml_writer_, BAD_CAST "type", xml_type);
+	free(xml_type);
+	if(rc < 0)
+	{
+		std::cerr << "Error(LoggerServer): could not add \"type\" attribute to debug message of type \"" << type << "\"" << std::endl;
+	}
+	xmlChar *xml_obj_name = xmlCharStrdup(name.c_str());
+	rc = xmlTextWriterWriteAttribute(xml_writer_, BAD_CAST "source", xml_obj_name);
+	free(xml_obj_name);
+	if (rc < 0)
+	{
+		std::cerr << "Error(LoggerServer): could not add \"source\" attribute to debug message of type \"" << type << "\"" << std::endl;
+	}
+	rc = xmlTextWriterWriteFormatString(xml_writer_, "%s", buffer);
+	if (rc < 0) 
+	{
+		std::cerr << "Error(LoggerServer): could not attach message buffer to debug message of type \"" << type << "\" buffer = \"" << buffer << "\"" << std::endl;
+	}
+	rc = xmlTextWriterEndElement(xml_writer_);
+	if (rc < 0)
+	{
+		std::cerr << "Error(LoggerServer): could not close debug message of type \"" << type << "\"" << std::endl;
+	}
 }
 
 void LoggerServer::Print(std::ostream& os, bool opt_color, mode_t mode, std::string name, const char *buffer)
@@ -472,6 +501,17 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
 			
 	return conn.Send(doc.c_str(), doc.length());
+}
+
+void LoggerServer::ScanBrowserActions(unisim::service::interfaces::BrowserActionScanner& scanner)
+{
+	std::map<std::string, unisim::service::interfaces::BrowserAction>::const_iterator it;
+	for(it = browser_actions.begin(); it != browser_actions.end(); it++)
+	{
+		const unisim::service::interfaces::BrowserAction& browser_action = (*it).second;
+		
+		scanner.Append(browser_action);
+	}
 }
 
 } // end of namespace logger

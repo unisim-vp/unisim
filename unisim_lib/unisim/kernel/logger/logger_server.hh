@@ -149,10 +149,14 @@ struct LoggerServer : public unisim::kernel::service::Service<unisim::service::i
 	  * @param conn Connection with HTTP client (web browser)
 	  */
 	virtual bool ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
+	
+	virtual void ScanBrowserActions(unisim::service::interfaces::BrowserActionScanner& scanner);
 
 private:
 	/** Pointer set to the client loggers */
 	std::set<Logger const*> clients;
+	
+	std::map<std::string, unisim::service::interfaces::BrowserAction> browser_actions;
 
 	/** XML file handler
 	 * The type of this file handler is provided by libxml2.

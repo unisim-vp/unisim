@@ -480,6 +480,13 @@ Tab.prototype.tab_header_oncontextmenu = function(event)
 		{
 			this.close();
 		}
+	},
+	{
+		label : 'Move to new window',
+		action : function(event)
+		{
+			gui.move_tab_to_new_window(this);
+		}
 	} ];
 	
 	if(this.owner.name != 'left-tabs')
@@ -868,6 +875,7 @@ Tabs.prototype.detach_tab = function(tab_to_detach)
 		}
 		this.tab_headers.removeChild(tab_to_detach.tab_header);
 		this.tab_contents.removeChild(tab_to_detach.tab_content);
+		tab_to_detach.owner = null;
 	}
 }
 
@@ -1048,6 +1056,8 @@ GUI.prototype.bound_right_horiz_resize = null;
 GUI.prototype.window_inner_width = 0;
 GUI.prototype.window_inner_height = 0;
 GUI.prototype.context_menu = null;
+GUI.prototype.child_windows_monitoring_period = 500;
+GUI.prototype.child_windows = [];
 
 function GUI()
 {
@@ -1107,6 +1117,8 @@ function GUI()
 	}
 	
 	sessionStorage.setItem('gui.magic', this.magic);
+	
+	setInterval(this.monitor_child_windows.bind(this), this.child_windows_monitoring_period);
 }
 
 GUI.prototype.create_left_tab = function(label, name, src)
@@ -1469,6 +1481,16 @@ GUI.prototype.move_tab_to_tile = function(tab, tile_name)
 	}
 }
 
+GUI.prototype.move_tab_to_new_window = function(tab)
+{
+	tab.detach();
+	var child_window = window.open(tab.tab_config.src);
+	if(child_window)
+	{
+		this.child_windows.push(child_window);
+	}
+}
+
 GUI.prototype.for_each_tab = function(callback)
 {
 	this.left_tabs.for_each_tab(callback);
@@ -1477,6 +1499,28 @@ GUI.prototype.for_each_tab = function(callback)
 	this.bottom_tabs.for_each_tab(callback);
 }
 
+GUI.prototype.for_each_child_window = function(callback)
+{
+	this.child_windows.forEach(function(child_window) { if(!child_window.closed) callback(child_window); } );
+}
+
+GUI.prototype.monitor_child_windows = function()
+{
+	var i = 0;
+	while(i < this.child_windows.length)
+	{
+		var child_window = this.child_windows[i];
+		
+		if(child_window.closed)
+		{
+			this.child_windows.splice(i, 1);
+		}
+		else
+		{
+			i++;
+		}
+	}
+}
 
 var gui = null;
 document.addEventListener('DOMContentLoaded', function(event) { gui = new GUI(); });

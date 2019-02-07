@@ -288,10 +288,12 @@ void MessageLoop::Run(ClientConnection const& conn)
           ibuf.resize(end);
           if(end == resume) throw 0;
           if(http_server.Killed()) return;
+#if 0
           if(http_server.Verbose())
           {
             log << "trying to receive " << (end - resume) << " bytes" << std::endl;
           }
+#endif
           intptr_t bytes = recv(conn.socket, &ibuf[resume], end - resume, 0);
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
           if((bytes == 0) || (bytes == SOCKET_ERROR))
