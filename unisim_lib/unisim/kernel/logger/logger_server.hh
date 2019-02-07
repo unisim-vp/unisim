@@ -183,7 +183,8 @@ private:
 	std::ofstream text_file_;
 
 	/* HTTP logs */
-	typedef std::list<std::string> HTTP_LOG;
+	typedef std::pair<mode_t, std::string> HTTP_LOG_ENTRY;
+	typedef std::list<HTTP_LOG_ENTRY> HTTP_LOG;
 	typedef std::map<std::string, HTTP_LOG *> HTTP_LOGS;
 
 	HTTP_LOGS http_logs;

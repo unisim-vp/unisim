@@ -317,7 +317,7 @@ void LoggerServer::Print(mode_t mode, std::string name, const char *buffer)
 		{
 			http_log->pop_front();
 		}
-		http_log->push_back(buffer);
+		http_log->push_back(HTTP_LOG_ENTRY(mode, buffer));
 	}
 	
 	if(opt_std_out_)
@@ -470,8 +470,26 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 					HTTP_LOG *http_log = (*http_log_it).second;
 					for(HTTP_LOG::const_iterator it = http_log->begin(); it != http_log->end(); it++)
 					{
-						const std::string& msg = *it;
-						doc_sstr << "\t\t\t<span>" << String_to_HTML(msg) << "<br></span>" << std::endl;
+						const HTTP_LOG_ENTRY& http_log_entry = *it;
+						mode_t mode = http_log_entry.first;
+						const std::string& msg = http_log_entry.second;
+						doc_sstr << "\t\t\t<span";
+						switch(mode)
+						{
+							case INFO_MODE   : doc_sstr << " class=\"info\""; break;
+							case WARNING_MODE: doc_sstr << " class=\"warning\""; break;
+							case ERROR_MODE  : doc_sstr << " class=\"error\""; break;
+							default          : break;
+						}
+						
+						doc_sstr << ">";
+						switch(mode)
+						{
+							case WARNING_MODE: doc_sstr << "WARNING! "; break;
+							case ERROR_MODE  : doc_sstr << "ERROR! "; break;
+							default          : break;
+						}
+						doc_sstr << String_to_HTML(msg) << "<br></span>" << std::endl;
 					}
 				}
 				pthread_mutex_unlock(&mutex);
