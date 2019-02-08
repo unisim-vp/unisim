@@ -159,6 +159,214 @@ var CompatLayer =
 	}
 }
 
+// IFrame
+IFrame.prototype.name = null;
+IFrame.prototype.src = null;
+IFrame.prototype.class_name = null;
+IFrame.prototype.storage_item_prefix = null;
+IFrame.prototype.parent_element = null;
+IFrame.prototype.visible = false;
+IFrame.prototype.bg = 0;
+IFrame.prototype.fg = 1;
+IFrame.prototype.iframe_element = null;
+IFrame.prototype.loaded = null;
+
+function IFrame(name, src, class_name, storage_item_prefix, parent_element)
+{
+	this.name = name;
+	this.src = src;
+	this.class_name = class_name;
+	this.storage_item_prefix = storage_item_prefix;
+	this.visible = false;
+	this.bg = 0;
+	this.fg = 1;
+	this.iframe_element = new Array(2);
+	this.load_requested = new Array(2);
+	this.loaded = new Array(2);
+	for(var i = 0; i < 2; i++)
+	{
+		this.iframe_element[i] = document.createElement('iframe');
+		this.iframe_element[i].className = this.class_name;
+		this.iframe_element[i].setAttribute('name', this.name + '-' + i);
+		this.iframe_element[i].setAttribute('id', this.name + '-' + i);
+		this.load_requested[i] = false;
+		this.loaded[i] = false;
+		this.iframe_element[i].addEventListener('load', this.on_load.bind(this, i));
+		this.iframe_element[i].addEventListener('mouseenter', this.on_mouseenter.bind(this));
+		this.iframe_element[i].addEventListener('mouseleave', this.on_mouseleave.bind(this));
+	}
+	this.attach(parent_element);
+}
+
+IFrame.prototype.destroy = function()
+{
+	this.detach();
+	for(var i = 0; i < 2; i++)
+	{
+		this.iframe_element[i] = null;
+		this.loaded[i] = false;
+	}
+	this.name = null;
+	this.src = null;
+	this.class_name = null;
+	this.storage_item_prefix = null;
+	this.parent_element = null;
+}
+
+IFrame.prototype.on_load = function(i)
+{
+//	console.log(this.name + ':frame #' + i + ' loaded');
+	this.bg = i;
+	this.fg = 1 - this.bg;
+	this.loaded[this.bg] = true;
+	this.restore_scroll_position();
+	this.iframe_element[this.bg].setAttribute('style', 'visibility:' + (this.visible ? 'visible' : 'hidden'));
+	if(this.iframe_element[this.fg]) this.iframe_element[this.fg].setAttribute('style', 'visibility:hidden');
+	this.fg = this.bg;
+	this.bg = 1 - this.fg;
+// 	console.log(this.name + ':next frame is frame #' + this.bg);
+}
+
+IFrame.prototype.refresh = function()
+{
+//	console.log(this.name + ':refresh');
+	this.save_scroll_position();
+	this.loaded[this.bg] = false;
+	this.load_requested[this.bg] = true;
+	this.iframe_element[this.bg].setAttribute('src', this.src);
+}
+
+IFrame.prototype.set_visible = function(v)
+{
+	this.visible = v;
+	this.iframe_element[this.fg].style.visibility = (this.visible && this.loaded[this.fg]) ? 'visible' : 'hidden';
+}
+
+IFrame.prototype.on_mouseenter = function()
+{
+	for(var i = 0; i < 2; i++)
+	{
+		this.iframe_element[i].setAttribute('scrolling', 'yes');
+		this.iframe_element[i].style.overflow = 'auto';
+	}
+}
+
+IFrame.prototype.on_mouseleave = function()
+{
+	for(var i = 0; i < 2; i++)
+	{
+		this.iframe_element[i].setAttribute('scrolling', 'no');
+		this.iframe_element[i].style.overflow = 'hidden';
+	}
+}
+
+IFrame.prototype.enable_pointer_events = function(v)
+{
+	for(var i = 0; i < 2; i++)
+	{
+		this.iframe_element[i].style.pointerEvents = (((v === undefined) || v) ? 'auto' : 'none');
+	}
+}
+
+IFrame.prototype.save_scroll_position = function()
+{
+	if(!this.loaded[this.fg]) return;
+	
+	if(!this.iframe_element[this.fg].contentWindow) return;
+	
+	if(!this.iframe_element[this.fg].contentDocument) return;
+	
+	var scroll_x_item_name = this.storage_item_prefix + 'scroll-x';
+	var scroll_y_item_name = this.storage_item_prefix + 'scroll-y';
+	
+	var scroll_pos = CompatLayer.get_iframe_scroll_pos(this.iframe_element[this.fg]);
+	
+// 	console.log(this.name + ':' + scroll_x_item_name + ' <- ' + scroll_pos.x);
+// 	console.log(this.name + ':' + scroll_y_item_name + ' <- ' + scroll_pos.y);
+	
+	sessionStorage.setItem(scroll_x_item_name, scroll_pos.x);
+	sessionStorage.setItem(scroll_y_item_name, scroll_pos.y);
+}
+
+IFrame.prototype.restore_scroll_position = function()
+{
+	if(!this.loaded[this.bg]) return;
+	
+	if(!this.iframe_element[this.bg].contentWindow) return;
+	
+	if(!this.iframe_element[this.bg].contentDocument) return;
+
+	var scroll_x_item_name = this.storage_item_prefix + 'scroll-x';
+	var scroll_y_item_name = this.storage_item_prefix + 'scroll-y';
+	
+	var scroll_x = sessionStorage.getItem(scroll_x_item_name);
+	var scroll_y = sessionStorage.getItem(scroll_y_item_name);
+	
+	if(scroll_x && scroll_y)
+	{
+// 		console.log(this.name + ':' + scroll_x_item_name + ' == ' + scroll_x);
+// 		console.log(this.name + ':' + scroll_y_item_name + ' == ' + scroll_y);
+		
+		CompatLayer.set_iframe_scroll_pos(this.iframe_element[this.bg], new Point(scroll_x, scroll_y));
+	}
+}
+
+IFrame.prototype.set_scroll_pos = function(scroll_pos)
+{
+	for(var i = 0; i < 2; i++)
+	{
+		CompatLayer.set_iframe_scroll_pos(this.iframe_element[i], scroll_pos);
+	}
+}
+
+IFrame.prototype.has_iframe = function(iframe_name)
+{
+	for(var i = 0; i < 2; i++)
+	{
+		if(this.iframe_element[i].hasAttribute('name') && (this.iframe_element[i].getAttribute('name') == iframe_name)) return true;
+	}
+	
+	return false;
+}
+
+IFrame.prototype.get_next_target = function(iframe_name)
+{
+	if(this.iframe_element[0].hasAttribute('name') && this.iframe_element[1].hasAttribute('name'))
+	{
+		if(this.iframe_element[0].getAttribute('name') == iframe_name)
+		{
+			return this.iframe_element[1].getAttribute('name');
+		}
+		else if(this.iframe_element[1].getAttribute('name') == iframe_name)
+		{
+			return this.iframe_element[0].getAttribute('name');
+		}
+	}
+	
+	return '_self';
+}
+
+IFrame.prototype.detach = function()
+{
+	this.save_scroll_position();
+	for(var i = 0; i < 2; i++)
+	{
+		this.parent_element.removeChild(this.iframe_element[i]);
+		this.loaded[i] = false;
+	}
+	this.parent_element = null;
+}
+
+IFrame.prototype.attach = function(parent_element)
+{
+	this.parent_element = parent_element;
+	for(var i = 0; i < 2; i++)
+	{
+		this.parent_element.appendChild(this.iframe_element[i]);
+	}
+	this.restore_scroll_position();
+}
+
 // TabConfig
 TabConfig.prototype.label = null;
 TabConfig.prototype.name = null;
@@ -173,16 +381,16 @@ function TabConfig(label, name, src)
 
 TabConfig.prototype.save = function(prefix)
 {
-	if(this.label) sessionStorage.setItem(prefix + '.label', this.label);
-	if(this.name) sessionStorage.setItem(prefix + '.name', this.name);
-	if(this.src) sessionStorage.setItem(prefix + '.src', this.src);
+	if(this.label) sessionStorage.setItem(prefix + 'label', this.label);
+	if(this.name) sessionStorage.setItem(prefix + 'name', this.name);
+	if(this.src) sessionStorage.setItem(prefix + 'src', this.src);
 }
 
 TabConfig.prototype.restore = function(prefix)
 {
-	this.label = sessionStorage.getItem(prefix + '.label');
-	this.name = sessionStorage.getItem(prefix + '.name');
-	this.src = sessionStorage.getItem(prefix + '.src');
+	this.label = sessionStorage.getItem(prefix + 'label');
+	this.name = sessionStorage.getItem(prefix + 'name');
+	this.src = sessionStorage.getItem(prefix + 'src');
 }
 
 // TabConfigs
@@ -212,17 +420,17 @@ TabConfigs.prototype.remove = function(tab_config)
 
 TabConfigs.prototype.save = function(prefix)
 {
-	sessionStorage.setItem(prefix + '.length', this.tab_configs.length);
-	this.tab_configs.forEach(function(tab_config, index) { tab_config.save(prefix + '.tab' + index); });
+	sessionStorage.setItem(prefix + 'length', this.tab_configs.length);
+	this.tab_configs.forEach(function(tab_config, index) { tab_config.save(prefix + 'tab' + index + '.'); });
 }
 
 TabConfigs.prototype.restore = function(prefix)
 {
-	var length = sessionStorage.getItem(prefix + '.length') || 0;
+	var length = sessionStorage.getItem(prefix + 'length') || 0;
 	for(var i = 0; i < length; i++)
 	{
 		var tab_config = new TabConfig();
-		tab_config.restore(prefix + '.tab' + i);
+		tab_config.restore(prefix + 'tab' + i + '.');
 		if(!this.find_tab_config_by_name(tab_config.name))
 		{
 			this.tab_configs.push(tab_config);
@@ -241,23 +449,33 @@ TabConfigs.prototype.find_tab_config_by_name = function(name)
 }
 
 // Tab
+Tab.prototype.owner = null;
 Tab.prototype.tab_config = null;
 Tab.prototype.static = false;
 Tab.prototype.tab_header = null;
 Tab.prototype.tab_content = null;
-Tab.prototype.tab_content_bg = null;
 Tab.prototype.close_tab = null;
 Tab.prototype.bound_close_tab_onclick = null;
 Tab.prototype.is_active = false;
 Tab.prototype.loaded = false;
 Tab.prototype.bound_tab_header_onclick = null;
 Tab.prototype.bound_tab_header_oncontextmenu = null;
-Tab.prototype.bound_tab_content_on_mouseenter = null;
-Tab.prototype.bound_tab_content_on_mouseleave = null;
+Tab.prototype.storage_item_prefix = null;
 
 function Tab(owner)
 {
 	this.owner = owner;
+	this.tab_config = null;
+	this.static = false;
+	this.tab_header = null;
+	this.tab_content = null;
+	this.close_tab = null;
+	this.bound_close_tab_onclick = null;
+	this.is_active = false;
+	this.loaded = false;
+	this.bound_tab_header_onclick = null;
+	this.bound_tab_header_oncontextmenu = null;
+	this.storage_item_prefix = null;
 }
 
 Tab.prototype.create = function(tab_config)
@@ -271,18 +489,8 @@ Tab.prototype.create = function(tab_config)
 	this.tab_header.innerHTML = this.tab_config.label;
 	this.tab_header.appendChild(this.close_tab);
 	this.owner.tab_headers.appendChild(this.tab_header);
-	this.tab_content = document.createElement('iframe');
-	this.tab_content.className = 'tab-content';
-	this.tab_content.setAttribute('name', this.tab_config.name);
-	this.tab_content.setAttribute('id', this.tab_config.name);
-	this.loaded = false;
-	this.tab_content.addEventListener('load', this.tab_content_on_load.bind(this));
-	this.restore_scroll_position();
-	if(this.tab_config.src)
-	{
-		this.tab_content.setAttribute('src', this.tab_config.src);
-	}
-	this.owner.tab_contents.appendChild(this.tab_content);
+	this.storage_item_prefix = 'gui.' + this.owner.name + '.' + this.tab_config.name + '.';
+	this.tab_content = new IFrame(this.tab_config.name, this.tab_config.src, 'tab-content', this.storage_item_prefix, this.owner.tab_contents);
 	
 	this.bound_tab_header_onclick = this.tab_header_onclick.bind(this);
 	this.tab_header.addEventListener('click', this.bound_tab_header_onclick, false);
@@ -292,12 +500,6 @@ Tab.prototype.create = function(tab_config)
 	
 	this.bound_close_tab_onclick = this.close_tab_onclick.bind(this);
 	this.close_tab.addEventListener('click', this.bound_close_tab_onclick);
-
-	this.bound_tab_content_on_mouseenter = this.tab_content_on_mouseenter.bind(this);
-	this.tab_content.addEventListener('mouseenter', this.bound_tab_content_on_mouseenter);
-	
-	this.bound_tab_content_on_mouseleave = this.tab_content_on_mouseleave.bind(this);
-	this.tab_content.addEventListener('mouseleave', this.bound_tab_content_on_mouseleave);
 }
 
 Tab.prototype.reuse_static = function(tab_header, tab_content)
@@ -328,14 +530,13 @@ Tab.prototype.destroy = function()
 	if(!this.static)
 	{
 		this.owner.tab_headers.removeChild(this.tab_header);
-		this.owner.tab_contents.removeChild(this.tab_content);
+		this.tab_content.destroy();
+		this.tab_content = null;
 		this.tab_header.removeEventListener('click', this.bound_tab_header_onclick);
 		if(this.close_tab)
 		{
 			this.close_tab.removeEventListener('click', this.bound_close_tab_onclick);
 		}
-		this.tab_content.removeEventListener('mouseenter', this.bound_tab_content_on_mouseenter);
-		this.tab_content.removeEventListener('mouseleave', this.bound_tab_content_on_mouseleave);
 		this.owner = null;
 		this.tab_config = null;
 		this.tab_header = null;
@@ -343,8 +544,6 @@ Tab.prototype.destroy = function()
 		this.close_tab = null;
 		this.bound_close_tab_onclick = null;
 		this.bound_tab_header_onclick = null;
-		this.bound_tab_content_on_mouseenter = null;
-		this.bound_tab_content_on_mouseleave = null;
 	}
 }
 
@@ -368,22 +567,12 @@ Tab.prototype.restore = function(prefix)
 	this.tab_config.restore(prefix);
 }
 
-Tab.prototype.update_src = function()
-{
-	if(this.tab_config.src)
-	{
-		if(this.tab_content.hasAttribute('src'))
-		{
-			this.loaded = false;
-			this.tab_content.setAttribute('src', this.tab_config.src);
-		}
-	}
-}
-
 Tab.prototype.refresh = function()
 {
-	this.save_scroll_position();
-	this.update_src();
+	if(!this.static)
+	{
+		this.tab_content.refresh();
+	}
 }
 
 Tab.prototype.tab_content_on_load = function(event)
@@ -394,43 +583,17 @@ Tab.prototype.tab_content_on_load = function(event)
 
 Tab.prototype.save_scroll_position = function()
 {
-	if(!this.loaded) return;
-	
-	if(!this.tab_content.contentWindow) return;
-	
-	if(!this.tab_content.contentDocument) return;
-	
 	if(!this.static)
 	{
-		var scroll_x_item_name = 'gui.' + this.owner.name + '.' + this.tab_config.name + '.scroll-x';
-		var scroll_y_item_name = 'gui.' + this.owner.name + '.' + this.tab_config.name + '.scroll-y';
-		
-		var scroll_pos = CompatLayer.get_iframe_scroll_pos(this.tab_content);
-		sessionStorage.setItem(scroll_x_item_name, scroll_pos.x);
-		sessionStorage.setItem(scroll_y_item_name, scroll_pos.y);
+		this.tab_content.save_scroll_position();
 	}
 }
 
 Tab.prototype.restore_scroll_position = function()
 {
-	if(!this.loaded) return;
-	
-	if(!this.tab_content.contentWindow) return;
-	
-	if(!this.tab_content.contentDocument) return;
-
 	if(!this.static)
 	{
-		var scroll_x_item_name = 'gui.' + this.owner.name + '.' + this.tab_config.name + '.scroll-x';
-		var scroll_y_item_name = 'gui.' + this.owner.name + '.' + this.tab_config.name + '.scroll-y';
-		
-		var scroll_x = sessionStorage.getItem(scroll_x_item_name);
-		var scroll_y = sessionStorage.getItem(scroll_y_item_name);
-		
-		if(scroll_x && scroll_y)
-		{
-			CompatLayer.set_iframe_scroll_pos(this.tab_content, new Point(scroll_x, scroll_y));
-		}
+		this.tab_content.restore_scroll_position();
 	}
 }
 
@@ -441,12 +604,18 @@ Tab.prototype.set_active = function(v)
 		if(v)
 		{
 			this.tab_header.classList.add('tab-header-active');
-			this.tab_content.style.visibility = 'visible';
 		}
 		else
 		{
 			this.tab_header.classList.remove('tab-header-active');
-			this.tab_content.style.visibility = 'hidden';
+		}
+		if(this.static)
+		{
+			this.tab_content.style.visibility = v ? 'visible' : 'hidden';
+		}
+		else
+		{
+			this.tab_content.set_visible(v);
 		}
 		this.is_active = v;
 	}
@@ -456,7 +625,7 @@ Tab.prototype.enable_pointer_events = function(v)
 {
 	if(!this.static)
 	{
-		this.tab_content.style.pointerEvents = (((v === undefined) || v) ? 'auto' : 'none');
+		this.tab_content.enable_pointer_events(v);
 	}
 }
 
@@ -554,21 +723,14 @@ Tab.prototype.close = function()
 	}
 }
 
-Tab.prototype.tab_content_on_mouseenter = function(event)
+Tab.prototype.has_iframe = function(iframe_name)
 {
-	this.tab_content.setAttribute('scrolling', 'yes');
-	this.tab_content.style.overflow = 'auto';
+	return !this.static && this.tab_content.has_iframe(iframe_name);
 }
 
-Tab.prototype.tab_content_on_mouseleave = function(event)
+Tab.prototype.get_next_target = function(iframe_name)
 {
-	this.tab_content.setAttribute('scrolling', 'no');
-	this.tab_content.style.overflow = 'hidden';
-}
-
-Tab.prototype.get_width = function()
-{
-	return this.tab_content ? CompatLayer.get_element_width(this.tab_content) : 0;
+	return this.static ? '_self' : this.tab_content.get_next_target(iframe_name);
 }
 
 // Tabs
@@ -604,7 +766,7 @@ function Tabs(owner, name, tile)
 	this.tab_config_history = new TabConfigs();
 	this.history_element = null;
 	var saved_tab_configs = new TabConfigs();
-	saved_tab_configs.restore('gui.' + this.name);
+	saved_tab_configs.restore('gui.' + this.name + '.');
 	
 	var history_shortcut_element_width = CompatLayer.get_element_width(this.history_shortcut_element);
 	var left_scroller_width = CompatLayer.get_element_width(this.tab_headers_left_scroller);
@@ -659,13 +821,13 @@ Tabs.prototype.save_tabs = function()
 	for(var i = 0; i < this.tabs.length; i++)
 	{
 		var tab = this.tabs[i];
-		tab.save('gui.' + this.name + '.tab' + i);
+		tab.save('gui.' + this.name + '.tab' + i + '.');
 	}
 }
 
 Tabs.prototype.save_history = function()
 {
-	this.tab_config_history.save('gui.' + this.name + '.history');
+	this.tab_config_history.save('gui.' + this.name + '.history' + '.');
 }
 
 Tabs.prototype.save_tab_headers_left = function()
@@ -685,7 +847,7 @@ Tabs.prototype.restore_active_tab = function()
 
 Tabs.prototype.restore_history = function()
 {
-	this.tab_config_history.restore('gui.' + this.name + '.history');
+	this.tab_config_history.restore('gui.' + this.name + '.history' + '.');
 }
 
 Tabs.prototype.restore_tab_headers_left = function()
@@ -787,7 +949,8 @@ Tabs.prototype.switch_to_nth_tab = function(tab_num)
 {
 	if(tab_num < this.tabs.length)
 	{
-		this.switch_to(this.tabs[tab_num]);
+		var tab = this.tabs[tab_num];
+		tab.switch_to();
 	}
 }
 
@@ -804,6 +967,11 @@ Tabs.prototype.find_tab = function(tab)
 Tabs.prototype.find_tab_by_name = function(name)
 {
 	return this.tabs.find(function(tab) { return tab.tab_config.name == name; });
+}
+
+Tabs.prototype.find_tab_by_iframe_name = function(iframe_name)
+{
+	return this.tabs.find(function(elt) { return elt.has_iframe(iframe_name); });
 }
 
 Tabs.prototype.scroll_tab_headers = function(dx)
@@ -874,7 +1042,14 @@ Tabs.prototype.detach_tab = function(tab_to_detach)
 			this.switch_to_nth_tab((tab_num > 0) ? (tab_num - 1) : tab_num);
 		}
 		this.tab_headers.removeChild(tab_to_detach.tab_header);
-		this.tab_contents.removeChild(tab_to_detach.tab_content);
+		if(this.static)
+		{
+			this.tab_contents.removeChild(tab_to_detach.tab_content);
+		}
+		else
+		{
+			tab_to_detach.tab_content.detach();
+		}
 		tab_to_detach.owner = null;
 	}
 }
@@ -885,7 +1060,14 @@ Tabs.prototype.attach_tab = function(tab)
 	{
 		tab.owner = this;
 		this.tab_headers.appendChild(tab.tab_header);
-		this.tab_contents.appendChild(tab.tab_content);
+		if(this.static)
+		{
+			this.tab_contents.appendChild(tab.tab_content);
+		}
+		else
+		{
+			tab.tab_content.attach(this.tab_contents);
+		}
 		this.tabs.push(tab);
 		this.save_tabs();
 	}
@@ -1033,18 +1215,6 @@ GUI.prototype.bottom_tile_div = null;
 GUI.prototype.bottom_tab_headers_div = null;
 GUI.prototype.bottom_tab_header_div = null;
 GUI.prototype.bottom_tab_contents_div = null;
-GUI.prototype.left_tab_headers_history_shortcut = null;
-GUI.prototype.left_tab_headers_left_scroller = null;
-GUI.prototype.left_tab_headers_right_scroller = null;
-GUI.prototype.top_middle_tab_headers_history_shortcut = null;
-GUI.prototype.top_middle_tab_headers_left_scroller = null;
-GUI.prototype.top_middle_tab_headers_right_scroller = null;
-GUI.prototype.top_right_tab_headers_history_shortcut = null;
-GUI.prototype.top_right_tab_headers_left_scroller = null;
-GUI.prototype.top_right_tab_headers_right_scroller = null;
-GUI.prototype.bottom_tab_headers_history_shortcut = null;
-GUI.prototype.bottom_tab_headers_left_scroller = null;
-GUI.prototype.bottom_tab_headers_right_scroller = null;
 GUI.prototype.left_tabs = null;
 GUI.prototype.top_middle_tabs = null;
 GUI.prototype.top_right_tabs = null;
@@ -1057,7 +1227,7 @@ GUI.prototype.window_inner_width = 0;
 GUI.prototype.window_inner_height = 0;
 GUI.prototype.context_menu = null;
 GUI.prototype.child_windows_monitoring_period = 500;
-GUI.prototype.child_windows = [];
+GUI.prototype.child_windows = null;
 
 function GUI()
 {
@@ -1091,6 +1261,13 @@ function GUI()
 	this.bottom_tab_header_div = document.getElementsByClassName('bottom-tab-header-div');
 	this.bottom_tab_contents_div = document.getElementById('bottom-tab-contents-div');
 	this.mouse_pos = new Point(0, 0);
+	this.bound_vert_resize = null;
+	this.bound_left_horiz_resize = null;
+	this.bound_right_horiz_resize = null;
+	this.window_inner_width = 0;
+	this.window_inner_height = 0;
+	this.context_menu = null;
+	this.child_windows = new Array();
 
 	this.left_tabs = new Tabs(this, 'left-tabs', this.left_tile_div);
 	this.top_middle_tabs = new Tabs(this, 'top-middle-tabs', this.top_middle_tile_div);
@@ -1121,26 +1298,6 @@ function GUI()
 	setInterval(this.monitor_child_windows.bind(this), this.child_windows_monitoring_period);
 }
 
-GUI.prototype.create_left_tab = function(label, name, src)
-{
-	return this.find_tab_by_name(name) ? undefined : this.left_tabs.create_tab(label, name, src);
-}
-
-GUI.prototype.create_top_middle_tab = function(label, name, src)
-{
-	return this.find_tab_by_name(name) ? undefined : this.top_middle_tabs.create_tab(label, name, src);
-}
-
-GUI.prototype.create_top_right_tab = function(label, name, src)
-{
-	return this.find_tab_by_name(name) ? undefined : this.top_right_tabs.create_tab(label, name, src);
-}
-
-GUI.prototype.create_bottom_tab = function(label, name, src)
-{
-	return this.find_tab_by_name(name) ? undefined : this.bottom_tabs.create_tab(label, name, src);
-}
-
 GUI.prototype.open_tab = function(tile_name, label, name, src)
 {
 	var tab = this.find_tab_by_name(name);
@@ -1150,16 +1307,16 @@ GUI.prototype.open_tab = function(tile_name, label, name, src)
 		switch(tile_name)
 		{
 			case 'left-tile':
-				tab = this.create_left_tab(label, name, src);
+				tab = this.left_tabs.create_tab(label, name, src);
 				break;
 			case 'top-middle-tile':
-				tab = this.create_top_middle_tab(label, name, src);
+				tab = this.top_middle_tabs.create_tab(label, name, src);
 				break;
 			case 'top-right-tile':
-				tab = this.create_top_right_tab(label, name, src);
+				tab = this.top_right_tabs.create_tab(label, name, src);
 				break;
 			case 'bottom-tile':
-				tab = this.create_bottom_tab(label, name, src);
+				tab = this.bottom_tabs.create_tab(label, name, src);
 				break;
 		}
 	}
@@ -1183,8 +1340,11 @@ GUI.prototype.vert_resizer_on_mousedown = function(e)
 	this.mouse_pos.y = window.devicePixelRatio ? Math.round(e.screenY / window.devicePixelRatio) : e.screenY;
 	this.content_div.classList.add('noselect'); // prevent web browser from selecting text/image while resizing interface
 	this.enable_pointer_events(false);
-	this.bound_vert_resize = this.vert_resize.bind(this);
-	document.addEventListener('mousemove', this.bound_vert_resize);
+	if(this.bound_vert_resize == null)
+	{
+		this.bound_vert_resize = this.vert_resize.bind(this);
+		document.addEventListener('mousemove', this.bound_vert_resize);
+	}
 }
 
 GUI.prototype.left_horiz_resizer_on_mousedown = function(e)
@@ -1192,8 +1352,11 @@ GUI.prototype.left_horiz_resizer_on_mousedown = function(e)
 	this.mouse_pos.x = window.devicePixelRatio ? Math.round(e.screenX / window.devicePixelRatio) : e.screenX;
 	this.content_div.classList.add('noselect'); // prevent web browser from selecting text/image while resizing interface
 	this.enable_pointer_events(false);
-	this.bound_left_horiz_resize = this.left_horiz_resize.bind(this);
-	document.addEventListener('mousemove', this.bound_left_horiz_resize);
+	if(this.bound_left_horiz_resize == null)
+	{
+		this.bound_left_horiz_resize = this.left_horiz_resize.bind(this);
+		document.addEventListener('mousemove', this.bound_left_horiz_resize);
+	}
 }
 
 GUI.prototype.right_horiz_resizer_on_mousedown = function(e)
@@ -1201,8 +1364,11 @@ GUI.prototype.right_horiz_resizer_on_mousedown = function(e)
 	this.mouse_pos.x = window.devicePixelRatio ? Math.round(e.screenX / window.devicePixelRatio) : e.screenX;
 	this.content_div.classList.add('noselect'); // prevent web browser from selecting text/image while resizing interface
 	this.enable_pointer_events(false);
-	this.bound_right_horiz_resize = this.right_horiz_resize.bind(this);
-	document.addEventListener('mousemove', this.bound_right_horiz_resize);
+	if(this.bound_right_horiz_resize == null)
+	{
+		this.bound_right_horiz_resize = this.right_horiz_resize.bind(this);
+		document.addEventListener('mousemove', this.bound_right_horiz_resize);
+	}
 }
 
 GUI.prototype.document_on_mouseup = function(e)
@@ -1434,7 +1600,12 @@ GUI.prototype.resize = function()
 
 GUI.prototype.find_tab_by_name = function(name)
 {
-	return this.top_middle_tabs.find_tab_by_name(name) || this.top_right_tabs.find_tab_by_name(name) || this.bottom_tabs.find_tab_by_name(name);
+	return this.left_tabs.find_tab_by_name(name) || this.top_middle_tabs.find_tab_by_name(name) || this.top_right_tabs.find_tab_by_name(name) || this.bottom_tabs.find_tab_by_name(name);
+}
+
+GUI.prototype.find_tab_by_iframe_name = function(iframe_name)
+{
+	return this.left_tabs.find_tab_by_iframe_name(iframe_name) || this.top_middle_tabs.find_tab_by_iframe_name(iframe_name) || this.top_right_tabs.find_tab_by_iframe_name(iframe_name) || this.bottom_tabs.find_tab_by_iframe_name(iframe_name);
 }
 
 GUI.prototype.create_context_menu = function(event, context_menu_items, action_this)

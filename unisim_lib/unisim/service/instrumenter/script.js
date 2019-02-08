@@ -5,7 +5,7 @@ save_instrumenter_scroller_scroll_top = function()
 	var el = document.querySelector('div.scroller');
 	if(el)
 	{
-		sessionStorage.setItem(item_prefix() + 'div.scroller.scrollTop', el.scrollTop);
+		sessionStorage.setItem(storage_item_prefix() + 'div.scroller.scrollTop', el.scrollTop);
 	}
 }
 
@@ -14,7 +14,7 @@ restore_instrumenter_scroller_scroll_top = function()
 	var el = document.querySelector('div.scroller');
 	if(el)
 	{
-		var t = sessionStorage.getItem(item_prefix() + 'div.scroller.scrollTop');
+		var t = sessionStorage.getItem(storage_item_prefix() + 'div.scroller.scrollTop');
 		if(t)
 		{
 			el.scrollTop = t;
@@ -49,6 +49,17 @@ on_instrumenter_submit = function()
 	reload_third_tabs();
 }
 
+set_form_target = function()
+{
+	var form = document.querySelector('form');
+	if(form)
+	{
+		var target = get_next_target();
+// 		console.log('form target set to ' + target);
+		form.setAttribute('target', target);
+	}
+}
+
 var window_resize_refresh_period = 500;
 var min_scroller_height = 76;
 var window_inner_width = 0;
@@ -77,4 +88,4 @@ resize = function()
 	}
 }
 
-document.addEventListener('DOMContentLoaded', function(event) { resize(); restore_instrumenter_scroll_top(); setInterval(resize, window_resize_refresh_period); });
+document.addEventListener('DOMContentLoaded', function(event) { set_form_target(); resize(); restore_instrumenter_scroll_top(); setInterval(resize, window_resize_refresh_period); });

@@ -439,11 +439,28 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 		std::string object_name;
 	};
 
+	unisim::kernel::service::Object *object = 0;
+	
+	if(req.HasQuery())
+	{
+		QueryDecoder query_decoder;
+	
+		if(query_decoder.Decode(req.GetQuery(), std::cerr))
+		{
+			object = GetSimulator()->FindObject(query_decoder.object_name.c_str());
+		}
+	}
+	
 	std::ostringstream doc_sstr;
 	
 	doc_sstr << "<!DOCTYPE html>" << std::endl;
 	doc_sstr << "<html>" << std::endl;
 	doc_sstr << "\t<head>" << std::endl;
+	if(object)
+	{
+		doc_sstr << "\t\t<title>Log of " << String_to_HTML(object->GetName()) << "</title>" << std::endl;
+	}
+	doc_sstr << "\t\t<meta name=\"description\" content=\"user interface for logs over HTTP\">" << std::endl;
 	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/kernel/logger/style.css\" type=\"text/css\" />" << std::endl;
 	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
@@ -453,48 +470,38 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 	doc_sstr << "\t<body>" << std::endl;
 	doc_sstr << "\t\t<div class=\"log\">" << std::endl;
 	
-	if(req.HasQuery())
+	if(object)
 	{
-		QueryDecoder query_decoder;
-	
-		if(query_decoder.Decode(req.GetQuery(), std::cerr))
+		pthread_mutex_lock(&mutex);
+		HTTP_LOGS::const_iterator http_log_it = http_logs.find(object->GetName());
+		if(http_log_it != http_logs.end())
 		{
-			unisim::kernel::service::Object *object = GetSimulator()->FindObject(query_decoder.object_name.c_str());
-			
-			if(object)
+			HTTP_LOG *http_log = (*http_log_it).second;
+			for(HTTP_LOG::const_iterator it = http_log->begin(); it != http_log->end(); it++)
 			{
-				pthread_mutex_lock(&mutex);
-				HTTP_LOGS::const_iterator http_log_it = http_logs.find(object->GetName());
-				if(http_log_it != http_logs.end())
+				const HTTP_LOG_ENTRY& http_log_entry = *it;
+				mode_t mode = http_log_entry.first;
+				const std::string& msg = http_log_entry.second;
+				doc_sstr << "\t\t\t<span";
+				switch(mode)
 				{
-					HTTP_LOG *http_log = (*http_log_it).second;
-					for(HTTP_LOG::const_iterator it = http_log->begin(); it != http_log->end(); it++)
-					{
-						const HTTP_LOG_ENTRY& http_log_entry = *it;
-						mode_t mode = http_log_entry.first;
-						const std::string& msg = http_log_entry.second;
-						doc_sstr << "\t\t\t<span";
-						switch(mode)
-						{
-							case INFO_MODE   : doc_sstr << " class=\"info\""; break;
-							case WARNING_MODE: doc_sstr << " class=\"warning\""; break;
-							case ERROR_MODE  : doc_sstr << " class=\"error\""; break;
-							default          : break;
-						}
-						
-						doc_sstr << ">";
-						switch(mode)
-						{
-							case WARNING_MODE: doc_sstr << "WARNING! "; break;
-							case ERROR_MODE  : doc_sstr << "ERROR! "; break;
-							default          : break;
-						}
-						doc_sstr << String_to_HTML(msg) << "<br></span>" << std::endl;
-					}
+					case INFO_MODE   : doc_sstr << " class=\"info\""; break;
+					case WARNING_MODE: doc_sstr << " class=\"warning\""; break;
+					case ERROR_MODE  : doc_sstr << " class=\"error\""; break;
+					default          : break;
 				}
-				pthread_mutex_unlock(&mutex);
+				
+				doc_sstr << ">";
+				switch(mode)
+				{
+					case WARNING_MODE: doc_sstr << "WARNING!&nbsp;"; break;
+					case ERROR_MODE  : doc_sstr << "ERROR!&nbsp;"; break;
+					default          : break;
+				}
+				doc_sstr << String_to_HTML(msg) << "<br></span>" << std::endl;
 			}
 		}
+		pthread_mutex_unlock(&mutex);
 	}
 
 	doc_sstr << "\t\t</div>" << std::endl;

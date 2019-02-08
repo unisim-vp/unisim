@@ -1,27 +1,35 @@
-item_prefix = function()
+find_own_tab = function()
 {
-	return (window.frameElement && window.name) ? (window.name + '.') : '';
+	if(!parent.gui) return false;
+	if(parent.gui.magic != 0xCAFE) return false;
+	return parent.gui.find_tab_by_iframe_name(window.name);
+}
+
+storage_item_prefix = function()
+{
+	var own_tab = find_own_tab();
+	return own_tab ? own_tab.name : '';
 }
 
 save_window_scroll_top = function()
 {
-	var own_tab = null;
-	if(parent.gui && (parent.gui.magic == 0xCAFE) && (own_tab = parent.gui.find_tab_by_name(window.name)))
+	var own_tab = find_own_tab();
+	if(own_tab)
 	{
 		// within tiled GUI
 		own_tab.save_scroll_position();
 	}
 	else
 	{
-		sessionStorage.setItem(item_prefix() + 'window.scrollY', window.scrollY);
-		sessionStorage.setItem(item_prefix() + 'window.scrollX', window.scrollX);
+		sessionStorage.setItem(storage_item_prefix() + 'window.scrollY', window.scrollY);
+		sessionStorage.setItem(storage_item_prefix() + 'window.scrollX', window.scrollX);
 	}
 }
 
 restore_window_scroll_top = function()
 {
-	var own_tab = null;
-	if(parent.gui && (parent.gui.magic == 0xCAFE) && (own_tab = parent.gui.find_tab_by_name(window.name)))
+	var own_tab = find_own_tab();
+	if(own_tab)
 	{
 		// within tiled GUI
 		own_tab.loaded = true;
@@ -30,8 +38,8 @@ restore_window_scroll_top = function()
 	else
 	{
 		// stand-alone
-		var y = sessionStorage.getItem(item_prefix() + 'window.scrollY');
-		var x = sessionStorage.getItem(item_prefix() + 'window.scrollX');
+		var y = sessionStorage.getItem(storage_item_prefix() + 'window.scrollY');
+		var x = sessionStorage.getItem(storage_item_prefix() + 'window.scrollX');
 		if(x && y)
 		{
 			window.scroll(x, y);
@@ -42,8 +50,8 @@ restore_window_scroll_top = function()
 reload_page = function()
 {
 	save_window_scroll_top();
-	var own_tab = null;
-	if(parent.gui && (parent.gui.magic == 0xCAFE) && (own_tab = parent.gui.find_tab_by_name(window.name)))
+	var own_tab = find_own_tab();
+	if(own_tab)
 	{
 		// within tiled GUI
 		own_tab.refresh(); // refresh my own tab
@@ -57,8 +65,8 @@ reload_page = function()
 
 reload_third_tabs = function()
 {
-	var own_tab = null;
-	if(parent.gui && (parent.gui.magic == 0xCAFE) && (own_tab = parent.gui.find_tab_by_name(window.name)))
+	var own_tab = find_own_tab();
+	if(own_tab)
 	{
 		// within tiled GUI
 		parent.gui.for_each_tab(
@@ -75,4 +83,10 @@ reload_third_tabs = function()
 			}
 		);
 	}
+}
+
+get_next_target = function()
+{
+	var own_tab = find_own_tab();
+	return own_tab ? own_tab.get_next_target(window.name) : '_self';
 }
