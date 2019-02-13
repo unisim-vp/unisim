@@ -55,8 +55,10 @@ LoggerServer::LoggerServer(const char *name, unisim::kernel::service::Object *pa
 	, unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>(name, parent)
 	, http_server_export("http-server-export", this)
 	, clients()
-	, browser_actions()
 	, xml_writer_(0)
+	, text_file_()
+	, global_http_log()
+	, http_logs_per_client()
 	, opt_std_err_(true)
 	, opt_std_out_(false)
 	, opt_std_err_color_(false)
@@ -90,7 +92,7 @@ LoggerServer::~LoggerServer()
 {
 	Close();
 	pthread_mutex_destroy(&mutex);
-	for(HTTP_LOGS::iterator it = http_logs.begin(); it != http_logs.end(); it++)
+	for(HTTP_LOGS_PER_CLIENT::iterator it = http_logs_per_client.begin(); it != http_logs_per_client.end(); it++)
 	{
 		HTTP_LOG *http_log = (*it).second;
 		delete http_log;
@@ -202,17 +204,6 @@ void LoggerServer::AddClient( Logger const* client )
 		std::cerr << "Error(LoggerServer::AddClient): "
 		          << "internal issue, client already connected" << std::endl;
 	}
-	else
-	{
-		browser_actions[client->GetName()] = unisim::service::interfaces::BrowserAction(
-			/* object name */ client->GetName(),
-			/* name        */ std::string(this->GetName()) + "-" + client->GetName(),
-			/* label       */ "Show log",
-			/* tab title   */ std::string("Log of ") + client->GetName(),
-			/* tile        */ unisim::service::interfaces::BrowserAction::BOTTOM_TILE,
-			/* path        */ std::string("?object=") + unisim::util::hypapp::Encoder::Encode(client->GetName())
-		);
-	}
 }
 
 void LoggerServer::RemoveClient( Logger const* client )
@@ -222,13 +213,9 @@ void LoggerServer::RemoveClient( Logger const* client )
 		std::cerr << "Error(LoggerServer::AddClient): "
 		          << "internal issue, attempting to disconnect a unknown client" << std::endl;
 	}
-	else
-	{
-		browser_actions.erase(client->GetName());
-	}
 }
 
-void LoggerServer::XmlDebug(const char *type, std::string name, const char *buffer)
+void LoggerServer::XmlDebug(const char *type, const char *name, const char *buffer)
 {
 	int rc;
 	rc = xmlTextWriterStartElement(xml_writer_, BAD_CAST "DEBUG");
@@ -243,7 +230,7 @@ void LoggerServer::XmlDebug(const char *type, std::string name, const char *buff
 	{
 		std::cerr << "Error(LoggerServer): could not add \"type\" attribute to debug message of type \"" << type << "\"" << std::endl;
 	}
-	xmlChar *xml_obj_name = xmlCharStrdup(name.c_str());
+	xmlChar *xml_obj_name = xmlCharStrdup(name);
 	rc = xmlTextWriterWriteAttribute(xml_writer_, BAD_CAST "source", xml_obj_name);
 	free(xml_obj_name);
 	if (rc < 0)
@@ -262,7 +249,7 @@ void LoggerServer::XmlDebug(const char *type, std::string name, const char *buff
 	}
 }
 
-void LoggerServer::Print(std::ostream& os, bool opt_color, mode_t mode, std::string name, const char *buffer)
+void LoggerServer::Print(std::ostream& os, bool opt_color, mode_t mode, const char *name, const char *buffer)
 {
 	if(opt_color)
 	{
@@ -282,7 +269,7 @@ void LoggerServer::Print(std::ostream& os, bool opt_color, mode_t mode, std::str
 		case ERROR_MODE: os << "ERROR! "; break;
 		default: break;
 	}
-	int prefix_length = name.size() + 2;
+	int prefix_length = strlen(name) + 2;
 	std::string prefix(prefix_length, ' ');
 	const char *b = buffer;
 	for (const char *p = strchr(b, '\n'); p != NULL; p = strchr(b, '\n'))
@@ -296,28 +283,37 @@ void LoggerServer::Print(std::ostream& os, bool opt_color, mode_t mode, std::str
 	if (opt_color) os << "\033[0m";
 }
 
-void LoggerServer::Print(mode_t mode, std::string name, const char *buffer)
+void LoggerServer::Print(mode_t mode, const char *name, const char *buffer)
 {
 	pthread_mutex_lock(&mutex);
 	
 	if(opt_http_)
 	{
-		HTTP_LOGS::iterator it = http_logs.find(name);
+		
+		HTTP_LOGS_PER_CLIENT::iterator it = http_logs_per_client.find(name);
 		HTTP_LOG *http_log = 0;
-		if(it != http_logs.end())
+		if(it != http_logs_per_client.end())
 		{
 			http_log = (*it).second;
 		}
 		else
 		{
-			http_logs[name] = http_log = new HTTP_LOG();
+			http_logs_per_client[name] = http_log = new HTTP_LOG();
 		}
 		
+		while(global_http_log.size() > opt_http_max_log_size_)
+		{
+			global_http_log.pop_front();
+		}
 		while(http_log->size() > opt_http_max_log_size_)
 		{
 			http_log->pop_front();
 		}
-		http_log->push_back(HTTP_LOG_ENTRY(mode, buffer));
+		
+		HTTP_LOG_ENTRY http_log_entry(mode, name, buffer);
+		
+		global_http_log.push_back(http_log_entry);
+		http_log->push_back(http_log_entry);
 	}
 	
 	if(opt_std_out_)
@@ -354,66 +350,86 @@ void LoggerServer::Print(mode_t mode, std::string name, const char *buffer)
 	pthread_mutex_unlock(&mutex);
 }
 
-void LoggerServer::DebugNull( std::string name, const char *buffer )
+void LoggerServer::DebugNull( const char *name, const char *buffer )
 {
 }
 
-void LoggerServer::DebugInfo(std::string name, const char *buffer)
+void LoggerServer::DebugInfo(const char *name, const char *buffer)
 {
 	Print(INFO_MODE, name, buffer);
 }
 
-void LoggerServer::DebugWarning(std::string name, const char *buffer)
+void LoggerServer::DebugWarning(const char *name, const char *buffer)
 {
 	Print(WARNING_MODE, name, buffer);
 }
 
-void LoggerServer::DebugError(std::string name, const char *buffer)
+void LoggerServer::DebugError(const char *name, const char *buffer)
 {
 	Print(ERROR_MODE, name, buffer);
 }
 
-static std::string String_to_HTML(const std::string& s)
+void LoggerServer::PrintHttpLog(std::ostream& os, const HTTP_LOG& http_log, bool global)
 {
-	std::stringstream sstr;
-	std::size_t pos = 0;
-	std::size_t len = s.length();
-	
-	for(pos = 0; pos < len; pos++)
+	for(HTTP_LOG::const_iterator it = http_log.begin(); it != http_log.end(); it++)
 	{
-		char c = s[pos];
-
-		switch(c)
+		std::string s;
+		
+		const HTTP_LOG_ENTRY& http_log_entry = *it;
+		mode_t mode = http_log_entry.GetMode();
+		const std::string& msg = http_log_entry.GetMessage();
+		os << "\t\t\t<span";
+		switch(mode)
 		{
-			case '\n':
-				sstr << "<br>";
-				break;
-			case '<':
-				sstr << "&lt;";
-				break;
-			case '>':
-				sstr << "&gt;";
-				break;
-			case '&':
-				sstr << "&amp;";
-				break;
-			case '"':
-				sstr << "&quot;";
-				break;
-			case '\'':
-				sstr << "&apos;";
-				break;
-			case ' ':
-				sstr << "&nbsp;";
-				break;
-			case '\t':
-				sstr << "&nbsp;&nbsp;&nbsp;&nbsp;";
-			default:
-				sstr << c;
+			case INFO_MODE   : os << " class=\"info\""; break;
+			case WARNING_MODE: os << " class=\"warning\""; break;
+			case ERROR_MODE  : os << " class=\"error\""; break;
+			default          : break;
 		}
+		
+		os << ">";
+		if(global)
+		{
+			std::string s;
+			
+			const std::string& name = http_log_entry.GetName();
+			s.append(name);
+			s.append(1, ':');
+			s.append(1, ' ');
+			switch(mode)
+			{
+				case WARNING_MODE: s.append("WARNING! "); break;
+				case ERROR_MODE  : s.append("ERROR! "); break;
+				default          : break;
+			}
+			std::size_t prefix_length = name.length();
+			std::string prefix(prefix_length, ' ');
+			std::size_t msg_length = msg.length();
+			std::size_t base_pos = 0;
+			for(std::size_t pos = msg.find_first_of('\n'); pos != std::string::npos; pos = msg.find_first_of('\n', base_pos))
+			{
+				s.append(msg, base_pos, pos - base_pos);
+				s.append(1, '\n');
+				s.append(prefix);
+				base_pos = pos + 1;
+			}
+			
+			s.append(msg, base_pos, std::string::npos);
+			os << unisim::util::hypapp::HTML_Encoder::Encode(s);
+		}
+		else
+		{
+			switch(mode)
+			{
+				case WARNING_MODE: os << "WARNING!&nbsp;"; break;
+				case ERROR_MODE  : os << "ERROR!&nbsp;"; break;
+				default          : break;
+			}
+			os << unisim::util::hypapp::HTML_Encoder::Encode(msg) << "<br>";
+		}
+		
+		os << "</span>" << std::endl;
 	}
-	
-	return sstr.str();
 }
 
 bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
@@ -458,7 +474,11 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 	doc_sstr << "\t<head>" << std::endl;
 	if(object)
 	{
-		doc_sstr << "\t\t<title>Log of " << String_to_HTML(object->GetName()) << "</title>" << std::endl;
+		doc_sstr << "\t\t<title>Log of " << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "</title>" << std::endl;
+	}
+	else
+	{
+		doc_sstr << "\t\t<title>Log</title>" << std::endl;
 	}
 	doc_sstr << "\t\t<meta name=\"description\" content=\"user interface for logs over HTTP\">" << std::endl;
 	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
@@ -470,37 +490,24 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 	doc_sstr << "\t<body>" << std::endl;
 	doc_sstr << "\t\t<div class=\"log\">" << std::endl;
 	
-	if(object)
+	if(req.HasQuery())
+	{
+		if(object)
+		{
+			pthread_mutex_lock(&mutex);
+			HTTP_LOGS_PER_CLIENT::const_iterator http_log_it = http_logs_per_client.find(object->GetName());
+			if(http_log_it != http_logs_per_client.end())
+			{
+				HTTP_LOG *http_log = (*http_log_it).second;
+				PrintHttpLog(doc_sstr, *http_log, false);
+			}
+			pthread_mutex_unlock(&mutex);
+		}
+	}
+	else
 	{
 		pthread_mutex_lock(&mutex);
-		HTTP_LOGS::const_iterator http_log_it = http_logs.find(object->GetName());
-		if(http_log_it != http_logs.end())
-		{
-			HTTP_LOG *http_log = (*http_log_it).second;
-			for(HTTP_LOG::const_iterator it = http_log->begin(); it != http_log->end(); it++)
-			{
-				const HTTP_LOG_ENTRY& http_log_entry = *it;
-				mode_t mode = http_log_entry.first;
-				const std::string& msg = http_log_entry.second;
-				doc_sstr << "\t\t\t<span";
-				switch(mode)
-				{
-					case INFO_MODE   : doc_sstr << " class=\"info\""; break;
-					case WARNING_MODE: doc_sstr << " class=\"warning\""; break;
-					case ERROR_MODE  : doc_sstr << " class=\"error\""; break;
-					default          : break;
-				}
-				
-				doc_sstr << ">";
-				switch(mode)
-				{
-					case WARNING_MODE: doc_sstr << "WARNING!&nbsp;"; break;
-					case ERROR_MODE  : doc_sstr << "ERROR!&nbsp;"; break;
-					default          : break;
-				}
-				doc_sstr << String_to_HTML(msg) << "<br></span>" << std::endl;
-			}
-		}
+		PrintHttpLog(doc_sstr, global_http_log, true);
 		pthread_mutex_unlock(&mutex);
 	}
 
@@ -528,14 +535,29 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 	return conn.Send(doc.c_str(), doc.length());
 }
 
-void LoggerServer::ScanBrowserActions(unisim::service::interfaces::BrowserActionScanner& scanner)
+void LoggerServer::ScanWebInterfaceModdings(unisim::service::interfaces::WebInterfaceModdingScanner& scanner)
 {
-	std::map<std::string, unisim::service::interfaces::BrowserAction>::const_iterator it;
-	for(it = browser_actions.begin(); it != browser_actions.end(); it++)
+	scanner.Append(unisim::service::interfaces::ToolbarOpenTabAction(
+		/* name */      GetName(), 
+		/* label */     "<img src=\"/unisim/kernel/logger/icon.svg\">",
+		/* tab title */ GetName(),
+		/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+		/* uri */       URI()
+	));
+
+	std::set<Logger const*>::const_iterator it;
+	for(it = clients.begin(); it != clients.end(); it++)
 	{
-		const unisim::service::interfaces::BrowserAction& browser_action = (*it).second;
+		Logger const *client = *it;
 		
-		scanner.Append(browser_action);
+		scanner.Append(unisim::service::interfaces::BrowserOpenTabAction(
+			/* name        */ std::string(this->GetName()) + "-" + client->GetName(),
+			/* object name */ client->GetName(),
+			/* label       */ "Show log",
+			/* tab title   */ std::string("Log of ") + client->GetName(),
+			/* tile        */ unisim::service::interfaces::OpenTabAction::BOTTOM_TILE,
+			/* uri         */ URI() + std::string("?object=") + unisim::util::hypapp::URI_Encoder::EncodeComponent(client->GetName())
+		));
 	}
 }
 

@@ -18,7 +18,70 @@ body
 	background-color:white;
 }
 
-#content-div { position:fixed; left:0px; top:0px; width:1156px; height:768px; }
+#toolbar-div
+{
+	position:fixed;
+	left:0px;
+	top:0px;
+	width:1156px;
+	height:40px;
+	border-width:0;
+	box-shadow:inset 0px -1px #ababac, inset 0px 1px white;
+	background-image:linear-gradient(#f9fafa, #eaebec);
+	background-image:-webkit-linear-gradient(#f9fafa, #eaebec); /* for old versions of Safari */
+}
+
+.toolbar
+{
+	height:100%;
+	display:table;
+	border-collapse:collapse;
+}
+
+.toolbar-item
+{
+	padding-left:2px;
+	display:table-cell;
+	vertical-align:middle;
+}
+
+.toolbar-button
+{
+	width:42px;
+	height:36px;
+	padding:1px 4px 1px 4px;
+	border-radius:3px;
+	border-style:solid;
+	border-color:#918e8c;
+	border-width:1px;
+	background:linear-gradient(to bottom right, #fdfcfc, #e9e8e7);
+}
+
+.toolbar-button:hover
+{
+	background:#fdfcfc;
+}
+
+.toolbar-button:active
+{
+	background:#e9e8e7;
+}
+
+.toolbar-button img
+{
+	width:32px;
+	height:32px;
+	pointer-events:none;
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+}
+
+#content-div { position:fixed; left:0px; top:40px; width:1156px; height:768px; }
 
 .tile
 {

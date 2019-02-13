@@ -65,6 +65,13 @@ public:
 	
 	virtual void Serve(unisim::util::hypapp::ClientConnection const& conn);
 	
+	void AddCSSFile(const unisim::service::interfaces::CSSFile& f);
+	void AddJSFile(const unisim::service::interfaces::JSFile& f);
+	void AddJSAction(const unisim::service::interfaces::BrowserDoAction& a);
+	void AddJSAction(const unisim::service::interfaces::BrowserOpenTabAction& a);
+	void AddJSAction(const unisim::service::interfaces::ToolbarDoAction& a);
+	void AddJSAction(const unisim::service::interfaces::ToolbarOpenTabAction& a);
+	
 private:
 	unisim::kernel::logger::Logger logger;
 	
@@ -79,20 +86,24 @@ private:
 	std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *> http_server_import_map;
 	std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *> registers_import_map;
 	
-	typedef std::multimap<std::string, unisim::service::interfaces::BrowserAction> BrowserActions;
+	bool kernel_has_parameters;
+	bool kernel_has_statistics;
+	typedef std::vector<unisim::service::interfaces::CSSFile> CSSFiles;
+	CSSFiles css_files;
+	typedef std::vector<unisim::service::interfaces::JSFile> JSFiles;
+	JSFiles js_files;
+	typedef std::multimap<std::string, unisim::service::interfaces::BrowserAction *> BrowserActions;
 	BrowserActions browser_actions;
+	typedef std::vector<unisim::service::interfaces::ToolbarAction *> ToolbarActions;
+	ToolbarActions toolbar_actions;
 	
-	std::string Href(unisim::kernel::service::Object *object) const;
 	unisim::kernel::service::Object *FindChildObject(unisim::kernel::service::Object *object, const std::string& child_hierarchical_name, std::size_t& pos);
 	unisim::kernel::service::Object *FindObject(const std::string& hierarchical_name, std::size_t& pos);
 	bool ServeFile(const std::string& path, unisim::util::hypapp::ClientConnection const& conn);
 	bool ServeRootDocument(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
-	bool ServeHeader(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
-	void Crawl(std::ostream& os, const std::string& object_url, unisim::kernel::service::Object *object, unsigned int indent_level);
+	void Crawl(std::ostream& os, unisim::kernel::service::Object *object, unsigned int indent_level);
 	void Crawl(std::ostream& os, unsigned int indent_level);
-	//bool ServeBrowser(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 	bool ServeVariables(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn, unisim::kernel::service::VariableBase::Type var_type);
-	bool ServeFooter(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 	bool Serve404(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 	bool RouteHttpRequest(unisim::kernel::service::Object *object, unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 	bool ServeDefault(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);

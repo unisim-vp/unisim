@@ -855,6 +855,7 @@ public:
 
 	const char *GetName() const;
 	const char *GetObjectName() const;
+	std::string URI() const;
 
 	void Add(ServiceImportBase& srv_import);
 	void Remove(ServiceImportBase& srv_import);

@@ -186,7 +186,12 @@ HttpServer::HttpServer(const char *name, unisim::kernel::service::Object *parent
 	, param_http_max_clients("http-max-clients", this, http_max_clients, "HTTP max clients")
 	, http_server_import_map()
 	, registers_import_map()
+	, kernel_has_parameters(false)
+	, kernel_has_statistics(false)
+	, css_files()
+	, js_files()
 	, browser_actions()
+	, toolbar_actions()
 {
 	param_http_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_http_port.SetMutable(false);
@@ -231,11 +236,34 @@ HttpServer::~HttpServer()
 		delete http_server_import[i];
 		delete registers_import[i];
 	}
+	
+	for(ToolbarActions::const_iterator it = toolbar_actions.begin(); it != toolbar_actions.end(); it++)
+	{
+		const unisim::service::interfaces::ToolbarAction *a = *it;
+		delete a;
+	}
+
+	
+	for(BrowserActions::const_iterator it = browser_actions.begin(); it != browser_actions.end(); it++)
+	{
+		const unisim::service::interfaces::BrowserAction *a = (*it).second;
+		delete a;
+	}
 }
 
 bool HttpServer::EndSetup()
 {
+	std::list<unisim::kernel::service::VariableBase *> kernel_param_lst;
+	std::list<unisim::kernel::service::VariableBase *> kernel_stat_lst;
+	
+	GetSimulator()->GetRootVariables(kernel_param_lst, unisim::kernel::service::VariableBase::VAR_PARAMETER);
+	kernel_has_parameters = !kernel_param_lst.empty();
+	
+	GetSimulator()->GetRootVariables(kernel_stat_lst, unisim::kernel::service::VariableBase::VAR_STATISTIC);
+	kernel_has_statistics = !kernel_stat_lst.empty();
+	
 	unsigned int i;
+
 	for(i = 0; i < MAX_IMPORTS; i++)
 	{
 		if(*http_server_import[i])
@@ -245,30 +273,22 @@ bool HttpServer::EndSetup()
 			if(http_server_object)
 			{
 				http_server_import_map[http_server_object] = http_server_import[i];
+			
+				AddJSAction(
+					unisim::service::interfaces::BrowserOpenTabAction(
+					/* name        */ http_server_object->GetName(),
+					/* object name */ http_server_object->GetName(),
+					/* label       */ "Open",
+					/* tab title   */ unisim::util::hypapp::HTML_Encoder::Encode(http_server_object->GetName()),
+					/* tile        */ unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+					/* uri         */ http_server_object->URI()
+				));
 			}
-			
-			struct BrowserActionScanner : unisim::service::interfaces::BrowserActionScanner
-			{
-				BrowserActionScanner(HttpServer& _http_server, const std::string& _http_server_object_path)
-					: http_server(_http_server)
-					, http_server_object_path(_http_server_object_path)
-				{
-				}
-				
-				virtual void Append(const unisim::service::interfaces::BrowserAction& _browser_action)
-				{
-					unisim::service::interfaces::BrowserAction browser_action(_browser_action);
-					browser_action.SetPath(http_server_object_path + '/' + browser_action.GetPath());
-					http_server.browser_actions.insert(std::pair<std::string, unisim::service::interfaces::BrowserAction>(browser_action.GetObjectName(), browser_action));
-				}
-			private:
-				HttpServer& http_server;
-				std::string http_server_object_path;
-			};
-			
-			BrowserActionScanner browser_scanner(*this, Href(http_server_object));
-			(*http_server_import[i])->ScanBrowserActions(browser_scanner);
 		}
+	}
+	
+	for(i = 0; i < MAX_IMPORTS; i++)
+	{
 		if(*registers_import[i])
 		{
 			unisim::kernel::service::Object *object = registers_import[i]->GetService();
@@ -279,15 +299,124 @@ bool HttpServer::EndSetup()
 			}
 		}
 	}
+
+	std::list<unisim::kernel::service::Object *> objects;
+	GetSimulator()->GetObjects(objects);
 	
-	if(verbose)
+	std::list<unisim::kernel::service::Object *>::const_iterator object_it;
+	for(object_it = objects.begin(); object_it != objects.end(); object_it++)
+	{
+		unisim::kernel::service::Object *object = *object_it;
+		
+		std::list<unisim::kernel::service::VariableBase *> param_lst;
+		std::list<unisim::kernel::service::VariableBase *> stat_lst;
+		object->GetVariables(param_lst, unisim::kernel::service::VariableBase::VAR_PARAMETER);
+		object->GetVariables(stat_lst, unisim::kernel::service::VariableBase::VAR_STATISTIC);
+
+		if(!param_lst.empty())
+		{
+			AddJSAction(
+				unisim::service::interfaces::BrowserOpenTabAction(
+				/* name        */ std::string("config-") + object->GetName(),
+				/* object name */ object->GetName(),
+				/* label       */ "Configure",
+				/* tab title   */ std::string("Configuration of ") + unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()),
+				/* tile        */ unisim::service::interfaces::OpenTabAction::BOTTOM_TILE,
+				/* uri         */ std::string("/config?object=") + unisim::util::hypapp::URI_Encoder::EncodeComponent(object->GetName())
+			));
+		}
+		
+		if(!stat_lst.empty())
+		{
+			AddJSAction(
+				unisim::service::interfaces::BrowserOpenTabAction(
+				/* name        */ std::string("stats-") + object->GetName(),
+				/* object name */ object->GetName(),
+				/* label       */ "Show statistics",
+				/* tab title   */ std::string("Statistics of ") + unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()),
+				/* tile        */ unisim::service::interfaces::OpenTabAction::BOTTOM_TILE,
+				/* uri         */ std::string("/stats?object=") + unisim::util::hypapp::URI_Encoder::EncodeComponent(object->GetName())
+			));
+		}
+
+		std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *>::iterator it = registers_import_map.find(object);
+				
+		if(it != registers_import_map.end())
+		{
+			unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *import = (*it).second;
+			
+			if(import)
+			{
+				AddJSAction(
+					unisim::service::interfaces::BrowserOpenTabAction(
+					/* name        */ std::string("registers-") + object->GetName(),
+					/* object name */ object->GetName(),
+					/* label       */ "Show registers",
+					/* tab title   */ std::string("Registers of ") + unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()),
+					/* tile        */ unisim::service::interfaces::OpenTabAction::TOP_RIGHT_TILE,
+					/* uri         */ std::string("/registers?object=") + unisim::util::hypapp::URI_Encoder::EncodeComponent(object->GetName())
+				));
+			}
+		}
+	}
+	
+	for(i = 0; i < MAX_IMPORTS; i++)
+	{
+		if(*http_server_import[i])
+		{
+			struct WebInterfaceModdingScanner : unisim::service::interfaces::WebInterfaceModdingScanner
+			{
+				WebInterfaceModdingScanner(HttpServer& _http_server)
+					: http_server(_http_server)
+				{
+				}
+				
+				virtual void Append(const unisim::service::interfaces::CSSFile& f)
+				{
+					http_server.AddCSSFile(f);
+				}
+				
+				virtual void Append(const unisim::service::interfaces::JSFile& f)
+				{
+					http_server.AddJSFile(f);
+				}
+				
+				virtual void Append(const unisim::service::interfaces::BrowserDoAction& a)
+				{
+					http_server.AddJSAction(a);
+				}
+				
+				virtual void Append(const unisim::service::interfaces::BrowserOpenTabAction& a)
+				{
+					http_server.AddJSAction(a);
+				}
+				
+				virtual void Append(const unisim::service::interfaces::ToolbarDoAction& a)
+				{
+					http_server.AddJSAction(a);
+				}
+
+				virtual void Append(const unisim::service::interfaces::ToolbarOpenTabAction& a)
+				{
+					http_server.AddJSAction(a);
+				}
+			private:
+				HttpServer& http_server;
+			};
+			
+			WebInterfaceModdingScanner scanner(*this);
+			(*http_server_import[i])->ScanWebInterfaceModdings(scanner);
+		}
+	}
+	
+	//if(verbose)
 	{
 		logger << DebugInfo << browser_actions.size() << " browser action(s) defined" << EndDebugInfo;
 		BrowserActions::const_iterator it;
 		for(it = browser_actions.begin(); it != browser_actions.end(); it++)
 		{
-			const unisim::service::interfaces::BrowserAction& browser_action = (*it).second;
-			logger << DebugInfo << browser_action << EndDebugInfo;
+			const unisim::service::interfaces::BrowserAction *a = (*it).second;
+			logger << DebugInfo << (*a) << EndDebugInfo;
 		}
 	}
 	
@@ -296,28 +425,37 @@ bool HttpServer::EndSetup()
 	return true;
 }
 
-std::string HttpServer::Href(unisim::kernel::service::Object *object) const
+void HttpServer::AddCSSFile(const unisim::service::interfaces::CSSFile& f)
 {
-	std::string href;
-	
-	if(object)
-	{
-		unisim::kernel::service::Object *parent = object->GetParent();
-		
-		if(parent)
-		{
-			href = Href(parent);
-		}
-		
-		href += '/';
-		href += object->GetObjectName();
-	}
-	else
-	{
-		href = "/kernel";
-	}
-	
-	return href;
+	css_files.push_back(f);
+}
+
+void HttpServer::AddJSFile(const unisim::service::interfaces::JSFile& f)
+{
+	js_files.push_back(f);
+}
+
+void HttpServer::AddJSAction(const unisim::service::interfaces::BrowserDoAction& a)
+{
+	browser_actions.insert(std::pair<std::string, unisim::service::interfaces::BrowserAction *>(a.GetObjectName(), new unisim::service::interfaces::BrowserDoAction(a)));
+}
+
+void HttpServer::AddJSAction(const unisim::service::interfaces::BrowserOpenTabAction& a)
+{
+	browser_actions.insert(std::pair<std::string, unisim::service::interfaces::BrowserAction *>(
+		a.GetObjectName(),
+		new unisim::service::interfaces::BrowserOpenTabAction(a, std::string("gui.open_tab('") + unisim::service::interfaces::to_string(a.GetTile()) + "','" + a.GetTabTitle() + "','" + a.GetName() + "','" + a.GetURI() + "')")
+	));
+}
+
+void HttpServer::AddJSAction(const unisim::service::interfaces::ToolbarDoAction& a)
+{
+	toolbar_actions.push_back(new unisim::service::interfaces::ToolbarDoAction(a));
+}
+
+void HttpServer::AddJSAction(const unisim::service::interfaces::ToolbarOpenTabAction& a)
+{
+	toolbar_actions.push_back(new unisim::service::interfaces::ToolbarOpenTabAction(a, std::string("gui.open_tab('") + unisim::service::interfaces::to_string(a.GetTile()) + "','" + a.GetTabTitle() + "','" + a.GetName() + "','" + a.GetURI() + "')"));
 }
 
 unisim::kernel::service::Object *HttpServer::FindChildObject(unisim::kernel::service::Object *object, const std::string& hierarchical_name, std::size_t& pos)
@@ -446,49 +584,6 @@ unisim::kernel::service::Object *HttpServer::FindObject(const std::string& hiera
 	return found_object ? found_object : found_root_object;
 }
 
-static std::string String_to_HTML(const std::string& s)
-{
-	std::stringstream sstr;
-	std::size_t pos = 0;
-	std::size_t len = s.length();
-	
-	for(pos = 0; pos < len; pos++)
-	{
-		char c = s[pos];
-
-		switch(c)
-		{
-			case '\n':
-				sstr << "<br>";
-				break;
-			case '<':
-				sstr << "&lt;";
-				break;
-			case '>':
-				sstr << "&gt;";
-				break;
-			case '&':
-				sstr << "&amp;";
-				break;
-			case '"':
-				sstr << "&quot;";
-				break;
-			case '\'':
-				sstr << "&apos;";
-				break;
-			case ' ':
-				sstr << "&nbsp;";
-				break;
-			case '\t':
-				sstr << "&nbsp;&nbsp;&nbsp;&nbsp;";
-			default:
-				sstr << c;
-		}
-	}
-	
-	return sstr.str();
-}
-
 bool HttpServer::ServeFile(const std::string& path, unisim::util::hypapp::ClientConnection const& conn)
 {
 	if(Verbose())
@@ -602,29 +697,34 @@ bool HttpServer::ServeFile(const std::string& path, unisim::util::hypapp::Client
 	return false;
 }
 
-bool HttpServer::ServeHeader(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
-{
-	return conn.Send("HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 6\r\n\r\nHead\r\n");
-}
-
-void HttpServer::Crawl(std::ostream& os, const std::string& object_url, unisim::kernel::service::Object *object, unsigned int indent_level)
+void HttpServer::Crawl(std::ostream& os, unisim::kernel::service::Object *object, unsigned int indent_level)
 {
 	for(unsigned int i = 0; i < indent_level; i++) os << '\t';
 	os << "<span class=\"browser-item noselect\"";
-	os << " ondblclick=\"gui.open_tab('top-middle-tile','" <<  String_to_HTML(object->GetName()) << "','" << object->GetName() << "','" << object_url << "')\"";
-	os << " oncontextmenu=\"gui.create_context_menu(event, [";
-	os << "{label:'Open', action:function() { gui.open_tab('top-middle-tile','" <<  String_to_HTML(object->GetName()) << "','" << object->GetName() << "','" << object_url << "'); } }";
-	os << ",{label:'Configure', action:function() { gui.open_tab('bottom-tile','Configuration of " <<  String_to_HTML(object->GetName()) << "','config-" << object->GetName() << "','/config?object=" << unisim::util::hypapp::Encoder::Encode(object->GetName()) << "'); } }";
-	os << ",{label:'Show statistics', action:function() { gui.open_tab('bottom-tile','Statistics of " <<  String_to_HTML(object->GetName()) << "','stats-" << object->GetName() << "','/stats?object=" << unisim::util::hypapp::Encoder::Encode(object->GetName()) << "'); } }";
-	os << ",{label:'Show registers', action:function() { gui.open_tab('top-right-tile','Registers of " <<  String_to_HTML(object->GetName()) << "','registers-" << object->GetName() << "','/registers?object=" << unisim::util::hypapp::Encoder::Encode(object->GetName()) << "'); } }";
-	std::pair<BrowserActions::const_iterator, BrowserActions::const_iterator> browser_actions_range = browser_actions.equal_range(object->GetName());
-	for(BrowserActions::const_iterator it = browser_actions_range.first; it != browser_actions_range.second; it++)
+	
+	std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *>::iterator it = http_server_import_map.find(object);
+	if(it != http_server_import_map.end())
 	{
-		const unisim::service::interfaces::BrowserAction& browser_action = (*it).second;
-		os << ",{label:'" << browser_action.GetLabel() << "', action:function() { gui.open_tab('" << browser_action.GetTile() << "','" << browser_action.GetTabTitle() << "','" << browser_action.GetName() << "','" << browser_action.GetPath() << "'); } }";
+		unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *import = (*it).second;
+		if(import)
+		{
+			os << " ondblclick=\"gui.open_tab('top-middle-tile','" <<  unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "','" << object->GetName() << "','" << object->URI() << "')\"";
+		}
 	}
-	os << "])\">";
-	os << String_to_HTML(object->GetObjectName());
+
+	std::pair<BrowserActions::const_iterator, BrowserActions::const_iterator> browser_actions_range = browser_actions.equal_range(object->GetName());
+	if(browser_actions_range.first != browser_actions_range.second)
+	{
+		os << " oncontextmenu=\"gui.create_context_menu(event, [";
+		for(BrowserActions::const_iterator it = browser_actions_range.first; it != browser_actions_range.second; it++)
+		{
+			if(it != browser_actions_range.first) os << ",";
+			const unisim::service::interfaces::BrowserAction *a = (*it).second;
+			os << "{label:'" << a->GetLabel() << "', action:function() { " << a->GetJSCodeSnippet() << "; } }";
+		}
+		os << "])\"";
+	}
+	os << ">" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetObjectName());
 	os << "</span>" << std::endl;;
 	const std::list<unisim::kernel::service::Object *>& leaf_objects = object->GetLeafs();
 	
@@ -650,10 +750,7 @@ void HttpServer::Crawl(std::ostream& os, const std::string& object_url, unisim::
 				os << " class=\"last\"";
 			}
 			os << ">" << std::endl;
-			std::string child_url(object_url);
-			child_url += '/';
-			child_url += child->GetObjectName();
-			Crawl(os, child_url, child, indent_level + 1);
+			Crawl(os, child, indent_level + 1);
 			for(unsigned int i = 0; i < indent_level; i++) os << '\t';
 			os << "</li>" << std::endl;
 		}
@@ -669,11 +766,24 @@ void HttpServer::Crawl(std::ostream& os, unsigned int indent_level)
 	for(unsigned int i = 0; i < indent_level; i++) os << '\t';
 	
 	os << "<span class=\"browser-item noselect\"";
-	os << " oncontextmenu=\"gui.create_context_menu(event, [";
-	os << "{label:'Configure', action:function() { gui.open_tab('bottom-tile','Configuration of " <<  String_to_HTML(program_name) << "','config-kernel','/config?object=kernel'); } }";
-	os << ",{label:'Show statistics', action:function() { gui.open_tab('bottom-tile','Statistics of " <<  String_to_HTML(program_name) << "','stats-kernel','/stats?object=kernel'); } }";
-	os << "])\">";
-	os << String_to_HTML(program_name);
+	if(kernel_has_parameters || kernel_has_statistics)
+	{
+		os << " oncontextmenu=\"gui.create_context_menu(event, [";
+		if(kernel_has_parameters)
+		{
+			os << "{label:'Configure', action:function() { gui.open_tab('bottom-tile','Configuration of " <<  unisim::util::hypapp::HTML_Encoder::Encode(program_name) << "','config-kernel','/config?object=kernel'); } }";
+		}
+		if(kernel_has_parameters && kernel_has_statistics)
+		{
+			os << ",";
+		}
+		if(kernel_has_statistics)
+		{
+			os << "{label:'Show statistics', action:function() { gui.open_tab('bottom-tile','Statistics of " <<  unisim::util::hypapp::HTML_Encoder::Encode(program_name) << "','stats-kernel','/stats?object=kernel'); } }";
+		}
+		os << "])\"";
+	}
+	os << ">" << unisim::util::hypapp::HTML_Encoder::Encode(program_name);
 	os << "</span>" << std::endl;
 
 	std::list<unisim::kernel::service::Object *> root_objects;
@@ -694,9 +804,7 @@ void HttpServer::Crawl(std::ostream& os, unsigned int indent_level)
 			
 			for(unsigned int i = 0; i < indent_level; i++) os << '\t';
 			os << "<li>" << std::endl;
-			std::string root_object_url("/");
-			root_object_url += root_object->GetObjectName();
-			Crawl(os, root_object_url, root_object, indent_level + 1);
+			Crawl(os, root_object, indent_level + 1);
 			for(unsigned int i = 0; i < indent_level; i++) os << '\t';
 			os << "</li>" << std::endl;
 		}
@@ -831,17 +939,17 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 						unisim::kernel::service::VariableBase *var = *var_iter;
 						
 						doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
-						doc_sstr << "\t\t\t\t\t\t<td class=\"var-name\">" << String_to_HTML(var->GetVarName()) << "</td>" << std::endl;
+						doc_sstr << "\t\t\t\t\t\t<td class=\"var-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "</td>" << std::endl;
 						doc_sstr << "\t\t\t\t\t\t<td class=\"var-value\">" << std::endl;
 						doc_sstr << "\t\t\t\t\t\t\t<form action=\"/config?object=";
-						if(object) doc_sstr << String_to_HTML(object->GetName());
+						if(object) doc_sstr << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName());
 						doc_sstr << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\" onsubmit=\"save_window_scroll_top()\">" << std::endl;
 						doc_sstr << "\t\t\t\t\t\t\t\t<input";
 						if(var->HasEnumeratedValues())
 						{
 							doc_sstr << " list=\"input-list-" << var_id << "\"";
 						}
-						doc_sstr << " class=\"var-value-text" << (var->IsMutable() ? "" : " disabled") << "\" type=\"text\" name=\"" << String_to_HTML(var->GetVarName()) << "\" value=\"" << String_to_HTML(std::string(*var)) << "\"" /*<< (var->IsMutable() ? "" : " disabled")*/ << (var->IsMutable() ? "" : " readonly") << ">" << std::endl;
+						doc_sstr << " class=\"var-value-text" << (var->IsMutable() ? "" : " disabled") << "\" type=\"text\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "\" value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(std::string(*var)) << "\"" /*<< (var->IsMutable() ? "" : " disabled")*/ << (var->IsMutable() ? "" : " readonly") << ">" << std::endl;
 						if(var->HasEnumeratedValues())
 						{
 							doc_sstr << "\t\t\t\t\t\t\t\t<datalist id=\"input-list-" << var_id << "\">" << std::endl;
@@ -852,16 +960,15 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 							for(it = values.begin(); it != values.end(); it++)
 							{
 								const std::string& value = (*it);
-								doc_sstr << "\t\t\t\t\t\t\t\t\t\t<option value=\"" << String_to_HTML(value) << "\">" << String_to_HTML(value) << "</option>" << std::endl;
+								doc_sstr << "\t\t\t\t\t\t\t\t\t\t<option value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "\">" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "</option>" << std::endl;
 							}
 							doc_sstr << "\t\t\t\t\t\t\t\t</datalist>" << std::endl;
 						}
 						
 						doc_sstr << "\t\t\t\t\t\t\t</form>" << std::endl;
 						doc_sstr << "\t\t\t\t\t\t</td>" << std::endl;
-//						doc_sstr << "\t\t\t\t\t\t<td>" << String_to_HTML(std::string(*var)) << "</td>" << std::endl;
-						doc_sstr << "\t\t\t\t\t\t<td class=\"var-data-type\">" << String_to_HTML(var->GetDataTypeName()) << "</td>" << std::endl;
-						doc_sstr << "\t\t\t\t\t\t<td class=\"var-description\">" << String_to_HTML(var->GetDescription()) << "</td>" << std::endl;
+						doc_sstr << "\t\t\t\t\t\t<td class=\"var-data-type\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetDataTypeName()) << "</td>" << std::endl;
+						doc_sstr << "\t\t\t\t\t\t<td class=\"var-description\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetDescription()) << "</td>" << std::endl;
 						doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
 					}
 					
@@ -1052,11 +1159,11 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 								reg->GetValue(&reg_value);
 								
 								doc_sstr << "\t\t\t\t<tr>" << std::endl;
-								doc_sstr << "\t\t\t\t\t<td class=\"reg-name\">" << String_to_HTML(reg->GetName()) << "</td>" << std::endl;
+								doc_sstr << "\t\t\t\t\t<td class=\"reg-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "</td>" << std::endl;
 								doc_sstr << "\t\t\t\t\t<td class=\"reg-size\">" << (reg->GetSize() * 8) << "</td>" << std::endl;
 								doc_sstr << "\t\t\t\t\t<td class=\"reg-value\">" << std::endl;
-								doc_sstr << "\t\t\t\t\t\t<form action=\"/registers?object=" << String_to_HTML(object->GetName()) << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\" onsubmit=\"save_window_scroll_top()\">" << std::endl;
-								doc_sstr << "\t\t\t\t\t\t\t<input class=\"reg-value-text\" type=\"text\" name=\"" << String_to_HTML(reg->GetName()) << "\" value=\"0x" << std::hex;
+								doc_sstr << "\t\t\t\t\t\t<form action=\"/registers?object=" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\" onsubmit=\"save_window_scroll_top()\">" << std::endl;
+								doc_sstr << "\t\t\t\t\t\t\t<input class=\"reg-value-text\" type=\"text\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "\" value=\"0x" << std::hex;
 #if BYTE_ORDER == BIG_ENDIAN
 								for(int i = 0; i < (int) reg_size; i++)
 #else
@@ -1150,11 +1257,6 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 	return true;
 }
 
-bool HttpServer::ServeFooter(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
-{
-	return conn.Send("HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 8\r\n\r\nFooter\r\n");
-}
-
 bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
 	std::ostringstream doc_sstr;
@@ -1165,14 +1267,43 @@ bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req,
 	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 	doc_sstr << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
 	doc_sstr << "\t\t<meta name=\"description\" content=\"remote control interface over HTTP\">" << std::endl;
-	doc_sstr << "\t\t<title>" << String_to_HTML(program_name) << "</title>" << std::endl;
+	doc_sstr << "\t\t<title>" << unisim::util::hypapp::HTML_Encoder::Encode(program_name) << "</title>" << std::endl;
 	doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
 	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/style.css\" type=\"text/css\" />" << std::endl;
+	
+	for(CSSFiles::const_iterator it = css_files.begin(); it != css_files.end(); it++)
+	{
+		const unisim::service::interfaces::CSSFile& css_file = *it;
+		doc_sstr << "<link rel=\"stylesheet\" type=\"text/css\" href=\"" << css_file.GetFilename() << "\" />" << std::endl;
+	}
+	
 	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/script.js\"></script>" << std::endl;
-	doc_sstr << "\t</head>" << std::endl;
-	doc_sstr << "\t<body>" << std::endl;
 	
+	for(JSFiles::const_iterator it = js_files.begin(); it != js_files.end(); it++)
+	{
+		const unisim::service::interfaces::JSFile& js_file = *it;
+		doc_sstr << "\t\t<script type=\"application/javascript\" src=\"" << js_file.GetFilename() << "\"></script>" << std::endl;
+	}
+	
+	doc_sstr << "\t</head>" << std::endl;
+	doc_sstr << "\t<body";
+#if 0
+	doc_sstr << " oncontextmenu=\"return false;\"" << std::endl; // this disables right-clicks
+#endif
+	doc_sstr << ">" << std::endl;
+	
+	doc_sstr << "\t<div id=\"toolbar-div\">" << std::endl;
+	doc_sstr << "\t\t<div class=\"toolbar\">" << std::endl;
+	for(ToolbarActions::const_iterator it = toolbar_actions.begin(); it != toolbar_actions.end(); it++)
+	{
+		const unisim::service::interfaces::ToolbarAction *a = *it;
+		doc_sstr << "\t\t\t<div class=\"toolbar-item\">" << std::endl;
+		doc_sstr << "\t\t\t\t<div id=\"" << a->GetName() << "\" class=\"toolbar-button\" onclick=\"" << a->GetJSCodeSnippet() << "\">" << a->GetLabel() << "</div>" << std::endl;
+		doc_sstr << "\t\t\t</div>" << std::endl;
+	}
+	doc_sstr << "\t\t</div>" << std::endl;
+	doc_sstr << "\t</div>" << std::endl;
 	doc_sstr << "\t<div id=\"content-div\">" << std::endl;
 	doc_sstr << "\t\t<div class=\"tile\" id=\"left-tile-div\">" << std::endl;
 	doc_sstr << "\t\t\t<div class=\"tab-headers-history-shortcut\" id=\"left-tab-headers-history-shortcut\"></div>" << std::endl;
@@ -1345,14 +1476,6 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 					
 					return http_server.ServeRootDocument(http_request, conn);
 				}
-// 				else if((http_request.GetAbsolutePath() == "/header") || (http_request.GetAbsolutePath() == "/header/"))
-// 				{
-// 					return http_server.ServeHeader(http_request, conn);
-// 				}
-// 				else if((http_request.GetAbsolutePath() == "/browser") || (http_request.GetAbsolutePath() == "/browser/"))
-// 				{
-// 					return http_server.ServeBrowser(http_request, conn);
-// 				}
 				else if((http_request.GetAbsolutePath() == "/config") || (http_request.GetAbsolutePath() == "/config/"))
 				{
 					return http_server.ServeVariables(http_request, conn, unisim::kernel::service::VariableBase::VAR_PARAMETER);
@@ -1369,10 +1492,6 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 				{
 					return http_server.Serve404(http_request, conn);
 				}
-// 				else if((http_request.GetAbsolutePath() == "/footer") || (http_request.GetAbsolutePath() == "/footer/"))
-// 				{
-// 					return http_server.ServeFooter(http_request, conn);
-// 				}
 				else
 				{
 					std::string path = http_server.GetSimulator()->GetSharedDataDirectory() + http_request.GetAbsolutePath();

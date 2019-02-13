@@ -42,7 +42,50 @@ namespace unisim {
 namespace service {
 namespace interfaces {
 
-struct BrowserAction
+struct CSSFile
+{
+	CSSFile() : filename() {}
+	CSSFile(const std::string& _filename) : filename(_filename) {}
+	void SetFilename(const std::string& _filename) { filename = _filename; }
+	const std::string& GetFilename() const { return filename; }
+private:
+	std::string filename;
+};
+
+struct JSFile
+{
+	JSFile() : filename() {}
+	JSFile(const std::string& _filename) : filename(_filename) {}
+	void SetFilename(const std::string& _filename) { filename = _filename; }
+	const std::string& GetFilename() const { return filename; }
+private:
+	std::string filename;
+};
+
+struct JSAction
+{
+	enum Location
+	{
+		BROWSER,
+		TOOLBAR
+	};
+	
+	JSAction() : location(BROWSER), name(), js_code_snippet() {}
+	JSAction(Location _location, const std::string& _name) : location(_location), name(_name), js_code_snippet() {} 
+	JSAction(Location _location, const std::string& _name, const std::string& _js_code_snippet) : location(_location), name(_name), js_code_snippet(_js_code_snippet) {} 
+	void SetLocation(Location _location) { location = _location; }
+	void SetName(const std::string& _name) { name = _name; }
+	void SetJSCodeSnippet(const std::string& _js_code_snippet) { js_code_snippet = _js_code_snippet; }
+	Location GetLocation() const { return location; }
+	const std::string& GetName() const { return name; }
+	const std::string& GetJSCodeSnippet() const { return js_code_snippet; }
+private:
+	Location location;
+	std::string name;
+	std::string js_code_snippet;
+};
+
+struct OpenTabAction : JSAction
 {
 	enum Tile
 	{
@@ -52,158 +95,249 @@ struct BrowserAction
 		BOTTOM_TILE
 	};
 	
-	inline BrowserAction();
-	inline BrowserAction(const std::string& object_name, const std::string& name, const std::string& label, const std::string& tab_title, Tile tile, const std::string& path);
-	inline BrowserAction(const BrowserAction& browser_action);
-	inline void SetObjectName(const std::string& object_name);
-	inline void SetName(const std::string& name);
-	inline void SetLabel(const std::string& label);
-	inline void SetTabTitle(const std::string& tab_title);
-	inline void SetTile(Tile tile);
-	inline void SetPath(const std::string& path);
-	inline const std::string& GetObjectName() const;
-	inline const std::string& GetName() const;
-	inline const std::string& GetLabel() const;
-	inline const std::string& GetTabTitle() const;
-	inline Tile GetTile() const;
-	inline const std::string& GetPath() const;
+	OpenTabAction()
+		: JSAction()
+		, tab_title()
+		, tile(TOP_MIDDLE_TILE)
+		, uri()
+	{
+	}
+	
+	OpenTabAction(Location location, const std::string& name, const std::string& _tab_title, Tile _tile, const std::string& _uri)
+		: JSAction(location, name)
+		, tab_title(_tab_title)
+		, tile(_tile)
+		, uri(_uri)
+	{
+	}
+	
+	void SetTabTitle(const std::string& _tab_title) { tab_title = _tab_title; }
+	void SetTile(Tile _tile) { tile = _tile; }
+	void SetURI(const std::string& _uri) { uri = _uri; }
+	const std::string& GetTabTitle() const { return tab_title; }
+	Tile GetTile() const { return tile; }
+	const std::string& GetURI() const { return uri; }
 private:
-	std::string object_name;
-	std::string name;
-	std::string label;
 	std::string tab_title;
 	Tile tile;
-	std::string path;
+	std::string uri;
 };
 
-inline std::ostream& operator << (std::ostream& os, const BrowserAction::Tile& tile);
-inline std::ostream& operator << (std::ostream& os, const BrowserAction& browser_action);
-
-struct BrowserActionScanner : public unisim::kernel::service::ServiceInterface
+struct BrowserAction
 {
-  virtual void Append(const BrowserAction& browser_action) = 0;
+	BrowserAction()
+		: object_name()
+		, label()
+	{
+	}
+	
+	virtual ~BrowserAction()
+	{
+	}
+	
+	BrowserAction(const std::string& _object_name, const std::string& _label)
+		: object_name(_object_name)
+		, label(_label)
+	{
+	}
+	
+	void SetObjectName(const std::string& _object_name) { object_name = _object_name; }
+	void SetLabel(const std::string& _label) { label = _label; }
+	const std::string& GetObjectName() const { return object_name; }
+	const std::string& GetLabel() const { return label; }
+	
+	virtual const std::string& GetJSCodeSnippet() const
+	{
+		static std::string null_str;
+		return null_str;
+	}
+private:
+	std::string object_name;
+	std::string label;
+};
+
+struct BrowserDoAction : BrowserAction, JSAction
+{
+	BrowserDoAction()
+		: BrowserAction()
+		, JSAction()
+	{
+	}
+
+	BrowserDoAction(Location location, const std::string& name, const std::string& object_name, const std::string& label, const std::string& js_code_snippet)
+		: BrowserAction(object_name, label)
+		, JSAction(location, name, js_code_snippet)
+	{
+	}
+	
+	virtual const std::string& GetJSCodeSnippet() const
+	{
+		return JSAction::GetJSCodeSnippet();
+	}
+};
+
+struct BrowserOpenTabAction : BrowserAction, OpenTabAction
+{
+	BrowserOpenTabAction()
+		: BrowserAction()
+		, OpenTabAction()
+	{
+	}
+	
+	BrowserOpenTabAction(const std::string& name, const std::string& object_name, const std::string& label, const std::string& tab_title, Tile tile, const std::string& uri)
+		: BrowserAction(object_name, label)
+		, OpenTabAction(BROWSER, name, tab_title, tile, uri)
+	{
+	}
+	
+	BrowserOpenTabAction(const BrowserOpenTabAction& o, const std::string& js_code_snippet)
+		: BrowserAction(o)
+		, OpenTabAction(o)
+	{
+		SetJSCodeSnippet(js_code_snippet);
+	}
+	
+	virtual const std::string& GetJSCodeSnippet() const
+	{
+		return JSAction::GetJSCodeSnippet();
+	}
+};
+
+struct ToolbarAction
+{
+	ToolbarAction()
+		: label()
+	{
+	}
+	
+	ToolbarAction(const std::string& _label)
+		: label(_label)
+	{
+	}
+	
+	virtual ~ToolbarAction()
+	{
+	}
+	
+	void SetLabel(const std::string& _label) { label = _label; }
+	const std::string& GetLabel() const { return label; }
+	
+	virtual const std::string& GetName() const
+	{
+		static std::string null_str;
+		return null_str;
+	}
+	
+	virtual const std::string& GetJSCodeSnippet() const
+	{
+		static std::string null_str;
+		return null_str;
+	}
+private:
+	std::string label;
+};
+
+struct ToolbarDoAction : ToolbarAction, JSAction
+{
+	ToolbarDoAction()
+		: ToolbarAction()
+		, JSAction()
+	{
+	}
+	
+	ToolbarDoAction(const std::string& name, const std::string& label, const std::string& js_code_snippet)
+		: ToolbarAction(label)
+		, JSAction(TOOLBAR, name, js_code_snippet)
+	{
+	}
+	
+	virtual const std::string& GetName() const
+	{
+		return JSAction::GetName();
+	}
+
+	virtual const std::string& GetJSCodeSnippet() const
+	{
+		return JSAction::GetJSCodeSnippet();
+	}
+};
+
+struct ToolbarOpenTabAction : ToolbarAction, OpenTabAction
+{
+	ToolbarOpenTabAction()
+		: ToolbarAction()
+		, OpenTabAction()
+	{
+	}
+	
+	ToolbarOpenTabAction(const std::string& name, const std::string& label, const std::string& tab_title, Tile tile, const std::string& uri)
+		: ToolbarAction(label)
+		, OpenTabAction(TOOLBAR, name, tab_title, tile, uri)
+	{
+	}
+	
+	ToolbarOpenTabAction(const ToolbarOpenTabAction& o, const std::string& js_code_snippet)
+		: ToolbarAction(o)
+		, OpenTabAction(o)
+	{
+		SetJSCodeSnippet(js_code_snippet);
+	}
+	
+	virtual const std::string& GetName() const
+	{
+		return JSAction::GetName();
+	}
+
+	virtual const std::string& GetJSCodeSnippet() const
+	{
+		return JSAction::GetJSCodeSnippet();
+	}
+};
+
+inline std::ostream& operator << (std::ostream& os, const JSAction& a)
+{
+	return os << "JSAction(location=" << a.GetLocation() << ",name=\"" << a.GetName() << "\",js_code_snippet=\"" << a.GetJSCodeSnippet() << "\")";
+}
+
+inline std::string to_string(const OpenTabAction::Tile& tile)
+{
+	switch(tile)
+	{
+		case OpenTabAction::LEFT_TILE      : return "left-tile";
+		case OpenTabAction::TOP_MIDDLE_TILE: return "top-middle-tile";
+		case OpenTabAction::TOP_RIGHT_TILE : return "top-right-tile";
+		case OpenTabAction::BOTTOM_TILE    : return "bottom-tile";
+		default                            : return "unknown-tile";
+	}
+	
+	return "";
+}
+
+inline std::ostream& operator << (std::ostream& os, const OpenTabAction::Tile& tile)
+{
+	return os << to_string(tile);
+}
+
+inline std::ostream& operator << (std::ostream& os, const BrowserAction& a)
+{
+	return os << "BrowserAction(object_name=\"" << a.GetObjectName() << "\",label=\"" << a.GetLabel() << "\",js_code_snippet=\"" << a.GetJSCodeSnippet() << "\")";
+}
+
+struct WebInterfaceModdingScanner
+{
+	virtual void Append(const CSSFile&) = 0;              // include CSS file in main document HTML head section
+	virtual void Append(const JSFile&) = 0;               // include JS file in main document HTML head section
+	virtual void Append(const BrowserDoAction&) = 0;      // add JS code snippet in browser
+	virtual void Append(const BrowserOpenTabAction&) = 0; // add open tab action in browser
+	virtual void Append(const ToolbarDoAction&) = 0;      // add JS code snippet in toolbar
+	virtual void Append(const ToolbarOpenTabAction&) = 0; // add open tab action in toolbar
 };
 
 struct HttpServer : unisim::kernel::service::ServiceInterface
 {
 	virtual bool ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn) = 0;
-	virtual void ScanBrowserActions(BrowserActionScanner& scanner) = 0;
+	virtual void ScanWebInterfaceModdings(WebInterfaceModdingScanner& scanner) = 0;
 };
-
-inline std::ostream& operator << (std::ostream& os, const BrowserAction::Tile& tile)
-{
-	switch(tile)
-	{
-		case BrowserAction::LEFT_TILE      : os << "left-tile";       break;
-		case BrowserAction::TOP_MIDDLE_TILE: os << "top-middle-tile"; break;
-		case BrowserAction::TOP_RIGHT_TILE : os << "top-right-tile";  break;
-		case BrowserAction::BOTTOM_TILE    : os << "bottom-tile";     break;
-		default                            : os << "unknown-tile";    break;
-	}
-	
-	return os;
-}
-
-inline BrowserAction::BrowserAction()
-	: object_name()
-	, name()
-	, label()
-	, tab_title()
-	, tile(TOP_MIDDLE_TILE)
-	, path()
-{
-}
-
-inline BrowserAction::BrowserAction(const std::string& _object_name, const std::string& _name, const std::string& _label, const std::string& _tab_title, Tile _tile, const std::string& _path)
-	: object_name(_object_name)
-	, name(_name)
-	, label(_label)
-	, tab_title(_tab_title)
-	, tile(_tile)
-	, path(_path)
-{
-}
-
-inline BrowserAction::BrowserAction(const BrowserAction& browser_action)
-	: object_name(browser_action.object_name)
-	, name(browser_action.name)
-	, label(browser_action.label)
-	, tab_title(browser_action.tab_title)
-	, tile(browser_action.tile)
-	, path(browser_action.path)
-{
-}
-
-inline void BrowserAction::SetObjectName(const std::string& _object_name)
-{
-	object_name = _object_name;
-}
-
-inline void BrowserAction::SetName(const std::string& _name)
-{
-	name = _name;
-}
-
-inline void BrowserAction::SetLabel(const std::string& _label)
-{
-	label = _label;
-}
-
-inline void BrowserAction::SetTabTitle(const std::string& _tab_title)
-{
-	tab_title = _tab_title;
-}
-
-inline void BrowserAction::SetTile(Tile _tile)
-{
-	tile = _tile;
-}
-
-inline void BrowserAction::SetPath(const std::string& _path)
-{
-	path = _path;
-}
-
-inline const std::string& BrowserAction::GetObjectName() const
-{
-	return object_name;
-}
-
-inline const std::string& BrowserAction::GetName() const
-{
-	return name;
-}
-
-inline const std::string& BrowserAction::GetLabel() const
-{
-	return label;
-}
-
-inline const std::string& BrowserAction::GetTabTitle() const
-{
-	return tab_title;
-}
-
-inline BrowserAction::Tile BrowserAction::GetTile() const
-{
-	return tile;
-}
-
-inline const std::string& BrowserAction::GetPath() const
-{
-	return path;
-}
-
-inline std::ostream& operator << (std::ostream& os, const BrowserAction& browser_action)
-{
-	os << "BrowserAction(object_name=\"" << browser_action.GetObjectName() << "\"";
-	os << ",name=\"" << browser_action.GetName() << "\"";
-	os << ",label=\"" << browser_action.GetLabel() << "\"";
-	os << ",tab_title=\"" << browser_action.GetTabTitle() << "\"";
-	os << ",tile=" << browser_action.GetTile();
-	os << ",path=\"" << browser_action.GetPath() << "\"";
-	return os << ")";
-}
 
 } // end of namespace interfaces
 } // end of namespace service

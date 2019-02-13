@@ -850,49 +850,6 @@ bool UserInstrument::IsBoolean() const
 	return (input_instrument && (input_instrument->GetTypeInfo() == typeid(bool))) || (output_instrument && (output_instrument->GetTypeInfo() == typeid(bool)));
 }
 
-static std::string String_to_HTML(const std::string& s)
-{
-	std::stringstream sstr;
-	std::size_t pos = 0;
-	std::size_t len = s.length();
-	
-	for(pos = 0; pos < len; pos++)
-	{
-		char c = s[pos];
-
-		switch(c)
-		{
-			case '\n':
-				sstr << "<br>";
-				break;
-			case '<':
-				sstr << "&lt;";
-				break;
-			case '>':
-				sstr << "&gt;";
-				break;
-			case '&':
-				sstr << "&amp;";
-				break;
-			case '"':
-				sstr << "&quot;";
-				break;
-			case '\'':
-				sstr << "&apos;";
-				break;
-			case ' ':
-				sstr << "&nbsp;";
-				break;
-			case '\t':
-				sstr << "&nbsp;&nbsp;&nbsp;&nbsp;";
-			default:
-				sstr << c;
-		}
-	}
-	
-	return sstr.str();
-}
-
 UserInterface::UserInterface(const char *name, Instrumenter *instrumenter)
 	: unisim::kernel::service::Object(name, instrumenter)
 	, InstrumenterFrontEnd(name, instrumenter)
@@ -1545,7 +1502,7 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 	else
 	{
 		doc_sstr << "\t<head>" << std::endl;
-		doc_sstr << "\t\t<title>" << String_to_HTML(program_name) << " - " << String_to_HTML(GetName()) << "</title>" << std::endl;
+		doc_sstr << "\t\t<title>" << unisim::util::hypapp::HTML_Encoder::Encode(program_name) << " - " << unisim::util::hypapp::HTML_Encoder::Encode(GetName()) << "</title>" << std::endl;
 		doc_sstr << "\t\t<meta name=\"description\" content=\"remote control interface over HTTP of virtual platform hardware signal instrumenter\">" << std::endl;
 		doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 		doc_sstr << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
@@ -1565,8 +1522,6 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 			doc_sstr << "\t<body>" << std::endl;
 		}
 		
-		//doc_sstr << "\t\t<h1>" << String_to_HTML(program_name) << " - " << String_to_HTML(GetName()) << "</h1>" << std::endl;
-		
 		doc_sstr << "\t\t<table class=\"status-table\">" << std::endl;
 		doc_sstr << "\t\t\t<thead>" << std::endl;
 		doc_sstr << "\t\t\t\t<tr>" << std::endl;
@@ -1585,7 +1540,7 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 		doc_sstr << "\t\t\t\t\t<td class=\"time\">" << curr_time_stamp.to_seconds() << " seconds</td>" << std::endl;
 		doc_sstr.flags(ff);
 		
-		doc_sstr << "\t\t\t\t\t<td class=\"time\">(" << String_to_HTML(curr_time_stamp.to_string()) << ")</td>" << std::endl;
+		doc_sstr << "\t\t\t\t\t<td class=\"time\">(" << unisim::util::hypapp::HTML_Encoder::Encode(curr_time_stamp.to_string()) << ")</td>" << std::endl;
 		doc_sstr << "\t\t\t\t</tr>" << std::endl;
 		doc_sstr << "\t\t\t</tbody>" << std::endl;
 		doc_sstr << "\t\t</table>" << std::endl;
@@ -1644,16 +1599,16 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 				bool bool_value = false;
 				if(is_boolean) user_instrument->Get(bool_value);
 				doc_sstr << "\t\t\t\t\t\t\t\t\t\t<tr class=\"signal" << (user_instrument->HasBreakpointCondition() ? " brkpt-cond" : "") << "\">" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-enable\"><input class=\"signal-enable-checkbox\" type=\"checkbox\" name=\"enable*" << String_to_HTML(user_instrument->GetName()) << "\"" << (user_instrument->IsInjectionEnabled() ? " checked" : "") << (user_instrument->IsReadOnly() ? " disabled" : "") << "></td>" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-brkpt-enable\"><input class=\"signal-brkpt-enable-checkbox\" type=\"checkbox\" name=\"enable-brkpt*" << String_to_HTML(user_instrument->GetName()) << "\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : "") << "></td>" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-name\">" << String_to_HTML(user_instrument->GetName()) << "</td>" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-enable\"><input class=\"signal-enable-checkbox\" type=\"checkbox\" name=\"enable*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << (user_instrument->IsInjectionEnabled() ? " checked" : "") << (user_instrument->IsReadOnly() ? " disabled" : "") << "></td>" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-brkpt-enable\"><input class=\"signal-brkpt-enable-checkbox\" type=\"checkbox\" name=\"enable-brkpt*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : "") << "></td>" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "</td>" << std::endl;
 				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-toggle\">";
 				if(is_boolean)
 				{
-					doc_sstr << "<button class=\"signal-toggle-button signal-" << (bool_value ? "on" : "off") << "\" type=\"submit\" onclick=\"on_instrumenter_submit()\" name=\"toggle*" << String_to_HTML(user_instrument->GetName()) << "\"" << ((cont || halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << ">" << (bool_value ? "on" : "off")  << "</button>";
+					doc_sstr << "<button class=\"signal-toggle-button signal-" << (bool_value ? "on" : "off") << "\" type=\"submit\" onclick=\"on_instrumenter_submit()\" name=\"toggle*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << ">" << (bool_value ? "on" : "off")  << "</button>";
 				}
 				doc_sstr << "</td>" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-value\"><input class=\"signal-value-text" << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"text\" name=\"set*" << String_to_HTML(user_instrument->GetName()) << "\" value=\"" << String_to_HTML(value) << "\"" << ((cont || halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << "></td>" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-value\"><input class=\"signal-value-text" << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"text\" name=\"set*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\" value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "\"" << ((cont || halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << "></td>" << std::endl;
 				doc_sstr << "\t\t\t\t\t\t\t\t\t\t</tr>" << std::endl;
 			}
 		}
@@ -1731,8 +1686,15 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 	return true;
 }
 
-void UserInterface::ScanBrowserActions(unisim::service::interfaces::BrowserActionScanner& scanner)
+void UserInterface::ScanWebInterfaceModdings(unisim::service::interfaces::WebInterfaceModdingScanner& scanner)
 {
+	scanner.Append(unisim::service::interfaces::ToolbarOpenTabAction(
+		/* name */      GetName(), 
+		/* label */     "<img src=\"/unisim/service/instrumenter/icon.svg\">",
+		/* tab title */ GetName(),
+		/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+		/* uri */       URI()
+	));
 }
 
 UserInstrument *UserInterface::FindUserInstrument(const std::string& name)

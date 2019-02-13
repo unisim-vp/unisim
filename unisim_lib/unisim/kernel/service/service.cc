@@ -47,6 +47,7 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger_server.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include "unisim/util/hypapp/hypapp.hh"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -1692,6 +1693,11 @@ const char *Object::GetName() const
 const char *Object::GetObjectName() const
 {
 	return object_base_name.c_str();
+}
+
+std::string Object::URI() const
+{
+	return (parent ? parent->URI() : std::string()) + '/' + unisim::util::hypapp::URI_Encoder::EncodeComponent(object_base_name);
 }
 
 Object *Object::GetParent() const

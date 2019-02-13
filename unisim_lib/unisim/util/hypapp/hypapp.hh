@@ -154,7 +154,13 @@ struct Form_URL_Encoded_Decoder
 	virtual bool FormAssign(const std::string& name, const std::string& value) = 0;
 };
 
-struct Encoder
+struct URI_Encoder
+{
+	static std::string Encode(const std::string& s);
+	static std::string EncodeComponent(const std::string& s);
+};
+
+struct HTML_Encoder
 {
 	static std::string Encode(const std::string& s);
 };

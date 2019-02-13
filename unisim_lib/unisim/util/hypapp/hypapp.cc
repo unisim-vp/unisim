@@ -570,14 +570,24 @@ static bool IsHexDigit(char c)
   return ((c >= '0') && (c <= '9')) || ((c >= 'a') && (c <= 'f')) || ((c >= 'A') && (c <= 'F'));
 }
 
-static bool IsSafe(char c)
-{
-  return (c == '$') || (c == '-') || (c == '_') || (c == '.') || (c == '+') || (c == '!') || (c == '*') || (c == '\'') || (c == '(') || (c == ')') || (c == ',');
-}
-
 static bool IsAlphaNumeric(char c)
 {
   return ((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')) || ((c >= '0') && (c <= '9'));
+}
+
+static bool IsReserved(char c)
+{
+  return (c == '!') || (c == '*') || (c == '\'') || (c == '(') || (c == ')') || (c == ';') || (c == ':') || (c == '@') || (c == '&') || (c == '=') || (c == '+') || (c == '$') || (c == ',') || (c == '/') || (c == '?') || (c == '#') || (c == '[') || (c == ']');
+}
+
+static bool IsUnreserved(char c)
+{
+  return IsAlphaNumeric(c) || (c == '-') || (c == '_') || (c == '.') || (c == '~');
+}
+
+static bool IsSafe(char c)
+{
+  return IsAlphaNumeric(c) || (c == '$') || (c == '-') || (c == '_') || (c == '.') || (c == '+') || (c == '!') || (c == '*') || (c == '\'') || (c == '(') || (c == ')') || (c == ',');
 }
 
 static unsigned int AsciiHexToUInt(char c)
@@ -637,7 +647,7 @@ bool Form_URL_Encoded_Decoder::Decode(const std::string& s, std::ostream& err_lo
             return false;
           }
         }
-        else if(IsAlphaNumeric(c) || IsSafe(c))
+        else if(IsSafe(c))
         {
           name.append(1, c);
           if(pos == eos_pos)
@@ -696,7 +706,7 @@ bool Form_URL_Encoded_Decoder::Decode(const std::string& s, std::ostream& err_lo
         {
           state = 4;
         }
-        else if(IsAlphaNumeric(c) || IsSafe(c))
+        else if(IsSafe(c))
         {
           value.append(1, c);
         }
@@ -758,7 +768,7 @@ bool Form_URL_Encoded_Decoder::Decode(const std::string& s, std::ostream& err_lo
   return true;
 }
 
-std::string Encoder::Encode(const std::string& s)
+std::string URI_Encoder::Encode(const std::string& s)
 {
 	std::string r;
 	std::size_t len = s.length();
@@ -766,7 +776,7 @@ std::string Encoder::Encode(const std::string& s)
 	for(pos = 0; pos < len; pos++)
 	{
 		char c = s[pos];
-		if(IsSafe(c) || IsAlphaNumeric(c))
+		if(IsReserved(c) || IsUnreserved(c))
 		{
 			r.append(1, c);
 		}
@@ -780,6 +790,73 @@ std::string Encoder::Encode(const std::string& s)
 		}
 	}
 	return r;
+}
+
+std::string URI_Encoder::EncodeComponent(const std::string& s)
+{
+	std::string r;
+	std::size_t len = s.length();
+	std::size_t pos;
+	for(pos = 0; pos < len; pos++)
+	{
+		char c = s[pos];
+		if(IsSafe(c))
+		{
+			r.append(1, c);
+		}
+		else
+		{
+			char h = (c >> 4) & 15;
+			char l = c & 15;
+			r.append(1, '%');
+			r.append(1, ((h < 10) ? ('0' + h) : ('a' + h - 10)));
+			r.append(1, ((l < 10) ? ('0' + l) : ('a' + l - 10)));
+		}
+	}
+	return r;
+}
+
+std::string HTML_Encoder::Encode(const std::string& s)
+{
+	std::stringstream sstr;
+	std::size_t pos = 0;
+	std::size_t len = s.length();
+	
+	for(pos = 0; pos < len; pos++)
+	{
+		char c = s[pos];
+
+		switch(c)
+		{
+			case '\n':
+				sstr << "<br>";
+				break;
+			case '<':
+				sstr << "&lt;";
+				break;
+			case '>':
+				sstr << "&gt;";
+				break;
+			case '&':
+				sstr << "&amp;";
+				break;
+			case '"':
+				sstr << "&quot;";
+				break;
+			case '\'':
+				sstr << "&apos;";
+				break;
+			case ' ':
+				sstr << "&nbsp;";
+				break;
+			case '\t':
+				sstr << "&nbsp;&nbsp;&nbsp;&nbsp;";
+			default:
+				sstr << c;
+		}
+	}
+	
+	return sstr.str();
 }
 
 

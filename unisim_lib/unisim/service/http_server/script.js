@@ -160,6 +160,7 @@ var CompatLayer =
 }
 
 // IFrame
+IFrame.prototype.owner = null;
 IFrame.prototype.name = null;
 IFrame.prototype.src = null;
 IFrame.prototype.class_name = null;
@@ -171,8 +172,9 @@ IFrame.prototype.fg = 1;
 IFrame.prototype.iframe_element = null;
 IFrame.prototype.loaded = null;
 
-function IFrame(name, src, class_name, storage_item_prefix, parent_element)
+function IFrame(owner, name, src, class_name, storage_item_prefix, parent_element)
 {
+	this.owner = owner;
 	this.name = name;
 	this.src = src;
 	this.class_name = class_name;
@@ -216,12 +218,24 @@ IFrame.prototype.destroy = function()
 IFrame.prototype.on_load = function(i)
 {
 //	console.log(this.name + ':frame #' + i + ' loaded');
-	this.bg = i;
+	this.bg = i; // last loaded iframe is the background iframe at the moment
 	this.fg = 1 - this.bg;
-	this.loaded[this.bg] = true;
-	this.restore_scroll_position();
+	this.loaded[this.bg] = true; // mark background iframe as loaded
+	this.restore_scroll_position(); // restore scroll position
+	// update tab src (it may have changed because of user click on hyperlink within iframe of tab)
+	try
+	{
+		this.owner.tab_config.src = this.iframe_element[this.bg].contentWindow.location.href;
+	}
+	catch(e)
+	{
+		this.owner.tab_config.src = this.iframe_element[this.bg].getAttribute('src');
+	}
+	// show freshly loaded iframe
 	this.iframe_element[this.bg].setAttribute('style', 'visibility:' + (this.visible ? 'visible' : 'hidden'));
+	// hide old iframe
 	if(this.iframe_element[this.fg]) this.iframe_element[this.fg].setAttribute('style', 'visibility:hidden');
+	// swap iframe role (background/foreground)
 	this.fg = this.bg;
 	this.bg = 1 - this.fg;
 // 	console.log(this.name + ':next frame is frame #' + this.bg);
@@ -490,7 +504,7 @@ Tab.prototype.create = function(tab_config)
 	this.tab_header.appendChild(this.close_tab);
 	this.owner.tab_headers.appendChild(this.tab_header);
 	this.storage_item_prefix = 'gui.' + this.owner.name + '.' + this.tab_config.name + '.';
-	this.tab_content = new IFrame(this.tab_config.name, this.tab_config.src, 'tab-content', this.storage_item_prefix, this.owner.tab_contents);
+	this.tab_content = new IFrame(this, this.tab_config.name, this.tab_config.src, 'tab-content', this.storage_item_prefix, this.owner.tab_contents);
 	
 	this.bound_tab_header_onclick = this.tab_header_onclick.bind(this);
 	this.tab_header.addEventListener('click', this.bound_tab_header_onclick, false);
@@ -1131,6 +1145,9 @@ ContextMenu.prototype.destroy = function()
 
 // GUI
 // +---------------------------------------------------------------------------------------------------------------------------------------+
+// |                                                   toolbar-div                                                                         |
+// +---------------------------------------------------------------------------------------------------------------------------------------+
+// +---------------------------------------------------------------------------------------------------------------------------------------+
 // | content-div                                                                                                                           |
 // |  +-------------------------------+  +-+  +------------------------------------------------------------------------------------------+ |
 // |  | left-tile-div                 |  | |  | right-div                                                                                | |
@@ -1191,7 +1208,8 @@ ContextMenu.prototype.destroy = function()
 GUI.prototype.magic = 0xCAFE;
 GUI.prototype.min_tab_content_width = 64;  // minimum tab content width: enough to display horizontal scrollbar
 GUI.prototype.min_tab_content_height = 64; // minimum tab content width: enough to display vertical scrollbar
-GUI.prototype.window_resize_refresh_period = 500; // interface refresh period (in ms) while window is being resized
+GUI.prototype.window_size_monitoring_period = 500; // interface refresh period (in ms) while window is being resized
+GUI.prototype.toolbar_div = null;
 GUI.prototype.content_div = null;
 GUI.prototype.left_tile_div = null;
 GUI.prototype.left_tab_headers_div = null;
@@ -1237,6 +1255,7 @@ function GUI()
 		sessionStorage.clear();
 	}
 	
+	this.toolbar_div = document.getElementById('toolbar-div');
 	this.content_div = document.getElementById('content-div');
 	this.left_tile_div = document.getElementById('left-tile-div');
 	this.left_tab_headers_div = document.getElementById('left-tab-headers-div');
@@ -1284,9 +1303,9 @@ function GUI()
 	this.restore_layout();
 	this.window_inner_width = window.innerWidth;
 	this.window_inner_height = window.innerHeight;
-	this.resize_content(this.window_inner_width, this.window_inner_height);
+	this.resize();
 	
-	setInterval(this.resize.bind(this), this.window_resize_refresh_period);
+	setInterval(this.monitor_window_size.bind(this), this.window_size_monitoring_period);
 	
 	if(!magic || (magic != this.magic))
 	{
@@ -1588,13 +1607,20 @@ GUI.prototype.resize_content = function(content_width, content_height)
 
 GUI.prototype.resize = function()
 {
+	var toolbar_div_height = CompatLayer.get_element_height(this.toolbar_div);
+	this.toolbar_div.style.width = this.window_inner_width + 'px';
+	this.resize_content(this.window_inner_width, Math.max(this.window_inner_height - toolbar_div_height, toolbar_div_height));
+}
+
+GUI.prototype.monitor_window_size = function()
+{
 	var new_window_inner_width = window.innerWidth;
 	var new_window_inner_height = window.innerHeight;
 	if((new_window_inner_width != this.window_inner_width) || (new_window_inner_height != this.window_inner_height))
 	{
 		this.window_inner_width = new_window_inner_width;
 		this.window_inner_height = new_window_inner_height;
-		this.resize_content(this.window_inner_width, this.window_inner_height);
+		this.resize();
 	}
 }
 
