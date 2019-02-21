@@ -38,6 +38,7 @@
 #include <unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
+#include <unisim/component/tlm2/interconnect/generic_router/config.hh>
 #include <unisim/component/cxx/processor/arm/memattrs.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
@@ -314,13 +315,14 @@ protected:
   /**************************/
 };
 
-struct ZynqRouterConfig
+struct ZynqRouterConfig : public unisim::component::tlm2::interconnect::generic_router::Config
 {
   typedef uint32_t ADDRESS;
   static unsigned const OUTPUT_PORTS = 9;
   static unsigned const INPUT_SOCKETS = 1;
   static unsigned const OUTPUT_SOCKETS = OUTPUT_PORTS;
   static unsigned const MAX_NUM_MAPPINGS = OUTPUT_PORTS;
+  static unsigned const NUM_MAPPINGS = OUTPUT_PORTS;
   static unsigned const BUSWIDTH = 32;
   typedef tlm::tlm_base_protocol_types TYPES;
   static const bool VERBOSE = false;
