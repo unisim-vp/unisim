@@ -121,10 +121,12 @@ std::ostream& operator << (std::ostream& os, const Request::request_type_t& requ
 {
   switch(request_type)
   {
-    case Request::GET : os << "GET"; break;
-    case Request::HEAD: os << "HEAD"; break;
-    case Request::POST: os << "POST"; break;
-    default           : os << "unknown"; break;
+    case Request::NO_REQ : os << "Not a request"; break;
+    case Request::OPTIONS: os << "OPTIONS"; break;
+    case Request::GET    : os << "GET"; break;
+    case Request::HEAD   : os << "HEAD"; break;
+    case Request::POST   : os << "POST"; break;
+    default              : os << "unknown"; break;
   }
   return os;
 }
@@ -135,7 +137,7 @@ std::ostream& operator << (std::ostream& os, const Request& req)
   os << "Request URI: \"" << req.GetRequestURI() << "\"" << std::endl;
   os << "Content Type: \"" << req.GetContentType() << "\"" << std::endl;
   os << "Content length: " << req.GetContentLength() << std::endl;
-  os << "Content: \"" << std::string(req.GetContent(), req.GetContentLength()) << std::endl;
+  os << "Content: \"" << std::string(req.GetContent(), req.GetContentLength()) << "\"" << std::endl;
   return os;
 }
 
@@ -224,20 +226,20 @@ std::ostream& operator << (std::ostream& os, const HttpRequest& http_request)
 	os << "Valid: " << http_request.IsValid() << std::endl;
 	if(http_request.IsValid())
 	{
-		os << "Absolute Path: \"" << http_request.GetAbsolutePath() << std::endl;
-		os << "Server Root: \"" << http_request.GetServerRoot() << std::endl;
-		os << "Path: \"" << http_request.GetPath() << std::endl;
+		os << "Absolute Path: \"" << http_request.GetAbsolutePath() << "\"" <<std::endl;
+		os << "Server Root: \"" << http_request.GetServerRoot() << "\"" <<std::endl;
+		os << "Path: \"" << http_request.GetPath() << "\"" << std::endl;
 	}
 	if(http_request.HasQuery())
 	{
-		os << "Query: " << http_request.GetQuery() << std::endl;
+		os << "Query: \"" << http_request.GetQuery() << "\"" << std::endl;
 	}
 	if(http_request.HasFragment())
 	{
-		os << "Fragment: " << http_request.GetFragment() << std::endl;
+		os << "Fragment: \"" << http_request.GetFragment() << "\"" << std::endl;
 	}
-	os << "Host: " << http_request.GetHost() << std::endl;
-	os << "Domain: " << http_request.GetDomain() << std::endl;
+	os << "Host: \"" << http_request.GetHost() << "\"" << std::endl;
+	os << "Domain: \"" << http_request.GetDomain() << "\"" << std::endl;
 	if(http_request.HasPort())
 	{
 		os << "Port: " << http_request.GetPort() << std::endl;
@@ -361,9 +363,10 @@ void MessageLoop::Run(ClientConnection const& conn)
       request_size += 2; // second "\r\n" before next part
 
       Request request;
-      if      (char const* p = streat("GET ", ptr))  { ptr = p; request.request_type = Request::GET; }
-      else if (char const* p = streat("HEAD ", ptr)) { ptr = p; request.request_type = Request::HEAD; }
-      else if (char const* p = streat("POST ", ptr)) { ptr = p; request.request_type = Request::POST; }
+      if      (char const* p = streat("OPTIONS ", ptr)) { ptr = p; request.request_type = Request::OPTIONS; }
+      else if (char const* p = streat("GET ", ptr))     { ptr = p; request.request_type = Request::GET; }
+      else if (char const* p = streat("HEAD ", ptr))    { ptr = p; request.request_type = Request::HEAD; }
+      else if (char const* p = streat("POST ", ptr))    { ptr = p; request.request_type = Request::POST; }
       else {
         if (char const* p = strchr(ptr, '\r'))
           ibuf[p-soh] = '\0';
@@ -448,7 +451,10 @@ void MessageLoop::Run(ClientConnection const& conn)
                    streat("UA-OS", key) or
                    streat("UA-Color", key) or
                    streat("UA-Pixels", key) or
-                   streat("Pragma", key))
+                   streat("Pragma", key) or
+                   streat("Keep-Alive", key) or
+                   streat("TE", key) or
+                   streat("Range", key))
             { if(http_server.Verbose()) { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; } }
           else if (streat("Range", key))
             { err_log << "[" << conn.socket << "] " << key << ": " << val << "\n"; return; }
@@ -471,9 +477,11 @@ void MessageLoop::Run(ClientConnection const& conn)
       {
         log << "Header (size: " << request_size << ") received and processed.\n";
         switch (request.request_type) {
-        case Request::GET: log << "Get request." << std::endl; break;
-        case Request::HEAD: log << "Head request." << std::endl; break;
-        case Request::POST: log << "Post request." << std::endl; break;
+        case Request::OPTIONS: log << "Options request." << std::endl; break;
+        case Request::GET    : log << "Get request." << std::endl; break;
+        case Request::HEAD   : log << "Head request." << std::endl; break;
+        case Request::POST   : log << "Post request." << std::endl; break;
+        default: break;
         }
       }
       
@@ -851,8 +859,10 @@ std::string HTML_Encoder::Encode(const std::string& s)
 				break;
 			case '\t':
 				sstr << "&nbsp;&nbsp;&nbsp;&nbsp;";
+				break;
 			default:
 				sstr << c;
+				break;
 		}
 	}
 	

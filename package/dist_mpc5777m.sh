@@ -923,6 +923,22 @@ unisim/service/http_server/script.js \
 unisim/service/http_server/reg_style.css \
 unisim/service/http_server/reg_script.js \
 unisim/service/http_server/embedded_script.js \
+unisim/service/http_server/embedded_style.css \
+unisim/service/debug/profiler/by_address.css \
+unisim/service/debug/profiler/by_function_histogram.css \
+unisim/service/debug/profiler/by_function_table.css \
+unisim/service/debug/profiler/disassembly.css \
+unisim/service/debug/profiler/index.css \
+unisim/service/debug/profiler/source_code.css \
+unisim/service/debug/profiler/icon_profile_cpu0.svg \
+unisim/service/debug/profiler/icon_profile_cpu1.svg \
+unisim/service/debug/profiler/icon_profile_cpu2.svg \
+unisim/service/debug/profiler/icon_svg_histogram.svg \
+unisim/service/debug/profiler/icon_csv_table.svg \
+unisim/service/debug/profiler/script.js \
+unisim/service/debug/profiler/by_function_histogram.js \
+unisim/service/debug/profiler/by_function_table.js \
+unisim/service/debug/profiler/index.js \
 "
 
 SIMULATOR_EXTERNAL_HEADERS="\

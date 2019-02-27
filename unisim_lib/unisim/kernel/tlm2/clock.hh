@@ -58,6 +58,7 @@ class Clock
 	: public sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>
 	, public ClockPropertiesInterface
 	, virtual public unisim::kernel::service::Object
+	, public unisim::kernel::service::VariableBaseListener
 {
 public:
 	typedef sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS> Super;
@@ -84,6 +85,8 @@ public:
 	virtual bool IsClockFrozen() const;
 	virtual bool IsClockLazy() const;
 	virtual const sc_core::sc_event& GetClockPropertiesChangedEvent() const;
+	
+	virtual void VariableBaseNotify(const unisim::kernel::service::VariableBase *var);
 protected:
 	virtual void before_end_of_elaboration();
 private:

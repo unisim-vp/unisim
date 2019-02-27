@@ -390,7 +390,12 @@ body
 	background-image:url('/unisim/service/http_server/close-tab-hover.png');
 }
 
-#browser { padding:8px 0 0 8px; background-color:white; }
+#browser-tab-content
+{
+	background-color:white;
+}
+
+#browser { padding:8px 0 0 8px; margin:0 0 16px 0; background-color:white; }
 
 #browser .browser-item { white-space: nowrap; color:black; cursor:default; }
 

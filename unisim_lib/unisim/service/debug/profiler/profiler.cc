@@ -48,121 +48,34 @@ namespace service {
 namespace debug {
 namespace profiler {
 
-//////////////////////////////// Format ///////////////////////////////////////
+////////////////////////////// FileFormat /////////////////////////////////////
 
-std::ostream& operator << (std::ostream& os, OutputFormat o_fmt)
+std::ostream& operator << (std::ostream& os, FileFormat f_fmt)
 {
-	switch(o_fmt)
+	switch(f_fmt)
 	{
-		case O_FMT_TEXT: os << "text"; break;
-		case O_FMT_HTML: os << "html"; break;
-		case O_FMT_CSV: os << "csv"; break;
+		case F_FMT_TEXT: os << "text"; break;
+		case F_FMT_HTML: os << "html"; break;
+		case F_FMT_CSV: os << "csv"; break;
+		case F_FMT_SVG: os << "svg"; break;
 		default: os << "?"; break;
 	}
 	
 	return os;
 }
 
-std::string OutputFormatSuffix(OutputFormat o_fmt)
+std::string FileFormatSuffix(FileFormat f_fmt)
 {
-	switch(o_fmt)
+	switch(f_fmt)
 	{
-		case O_FMT_TEXT: return std::string(".txt");
-		case O_FMT_HTML: return std::string(".html");
-		case O_FMT_CSV: return std::string(".csv");
+		case F_FMT_TEXT: return std::string(".txt");
+		case F_FMT_HTML: return std::string(".html");
+		case F_FMT_CSV: return std::string(".csv");
+		case F_FMT_SVG: return std::string(".svg");
+		default: return std::string();
 	}
 	
 	return std::string();
-}
-
-/////////////////////////// c_string_to_HTML //////////////////////////////////
-
-std::string c_string_to_HTML(const char *s)
-{
-	std::stringstream sstr;
-	char c = *s;
-
-	if(c)
-	{
-		do
-		{
-			switch(c)
-			{
-				case '\n':
-					sstr << "<br>";
-					break;
-				case '<':
-					sstr << "&lt;";
-					break;
-				case '>':
-					sstr << "&gt;";
-					break;
-				case '&':
-					sstr << "&amp;";
-					break;
-				case '"':
-					sstr << "&quot;";
-					break;
-				case '\'':
-					sstr << "&apos;";
-					break;
-				case ' ':
-					sstr << "&nbsp;";
-					break;
-				case '\t':
-					sstr << "&nbsp;&nbsp;&nbsp;&nbsp;";
-				default:
-					sstr << c;
-			}
-		}
-		while((c = *(++s)));
-	}
-	
-	return sstr.str();
-}
-
-///////////////////////////// c_string_to_URL /////////////////////////////////
-
-std::string c_string_to_URL(const char *s)
-{
-	static const char reserved_char[] = { ';', '/', '|', '?', ':', '@', '&', '=', '+', '$', ',', '%', '#' };
-	static const char hex_digit[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-	
-	std::stringstream sstr;
-	char c = *s;
-
-	if(c)
-	{
-		do
-		{
-			unsigned int i;
-			bool is_reserved_char = false;
-			for(i = 0; i < sizeof(reserved_char) / sizeof(reserved_char[0]); i++)
-			{
-				if(c == reserved_char[i])
-				{
-					sstr << '%' << hex_digit[(c >> 4) & 0xf] << hex_digit[c & 0xf];
-					is_reserved_char = true;
-					break;
-				}
-			}
-			
-			if(!is_reserved_char)
-			{
-				if((c >= 32) && (c < 127))
-				{
-					sstr << c;
-				}
-				else
-				{
-					sstr << '_';
-				}
-			}
-		}
-		while((c = *(++s)));
-	}
-	
-	return sstr.str();
 }
 
 ///////////////////////////// c_string_to_CSV /////////////////////////////////
@@ -207,9 +120,34 @@ void MakeDir(const char *dirname)
 #endif
 }
 
+/////////////////////////////// RealPath //////////////////////////////////////
+
+std::string RealPath(const char *dirname)
+{
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
+	char dir_path[FILENAME_MAX + 1];
+#elif defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	char dir_path[PATH_MAX + 1];
+#endif
+
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
+	char *dir_path_pointer = realpath(dirname, dir_path);
+	if(dir_path_pointer == dir_path)
+	{
+		return std::string(dir_path);
+	}
+#elif defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	if(GetFullPathName(dirname, sizeof(dir_path), dir_path, NULL))
+	{
+		return std::string(dir_path);
+	}
+#endif
+	return std::string(dirname);
+}
+
 //////////////////////////// FilenameIndex ////////////////////////////////////
 
-unsigned int FilenameIndex::IndexFilename(const char *filename)
+unsigned int FilenameIndex::IndexFilename(const std::string& filename)
 {
 	typename std::map<std::string, unsigned int>::const_iterator it = index.find(filename);
 	
@@ -223,147 +161,86 @@ unsigned int FilenameIndex::IndexFilename(const char *filename)
 	return filename_id;
 }
 
+/////////////////////////////// FileVisitor ////////////////////////////////////
+
+FileVisitor::FileVisitor(const std::string& _output_directory, ReportFormat _r_fmt, const std::string& _csv_delimiter, std::ostream& _warn_log)
+	: file()
+	, output_directory(_output_directory)
+	, r_fmt(_r_fmt)
+	, csv_delimiter(_csv_delimiter)
+	, warn_log(_warn_log)
+	, dir_path(output_directory)
+{
+	MakeDir(output_directory.c_str());
+	output_directory = RealPath(output_directory.c_str());
+}
+
+const std::string& FileVisitor::GetCSVDelimiter() const
+{
+	return csv_delimiter;
+}
+
+const std::string& FileVisitor::GetRoot() const
+{
+	static std::string null_str;
+	return null_str;
+}
+
+const std::string& FileVisitor::GetDomain() const
+{
+	static std::string null_str;
+	return null_str;
+}
+
+ReportFormat FileVisitor::GetReportFormat() const
+{
+	return r_fmt;
+}
+
+std::string FileVisitor::GetFilePath(const std::string& filename) const
+{
+	return unisim::kernel::service::Simulator::Instance()->SearchSharedDataFile(filename.c_str());
+}
+
+const std::string& FileVisitor::GetDirPath() const
+{
+	return dir_path;
+}
+
+bool FileVisitor::Visit(const std::string& dirname, const std::string& filename, const Printer& printer)
+{
+	dir_path = output_directory;
+	if(!dirname.empty())
+	{
+		dir_path += '/';
+		dir_path += dirname;
+	}
+	MakeDir(dir_path.c_str());
+	std::string file_path(output_directory);
+	if(!dirname.empty())
+	{
+		file_path += '/';
+		file_path += dirname;
+	}
+	file_path += '/';
+	file_path += filename;
+	
+	file.open(file_path.c_str(), std::ios::out);
+	
+	if(file.fail())
+	{
+		warn_log << "Can't create \"" << file_path << "\"" << std::endl;
+		return false;
+	}
+	
+	printer.Print(file, *this);
+	
+	file.close();
+	
+	return true;
+}
+
 } // end of namespace profiler
 } // end of namespace debug
 } // end of namespace service
 } // end of namespace unisim
-
-namespace unisim {
-namespace kernel {
-namespace service {
-
-using unisim::service::debug::profiler::OutputFormat;
-using unisim::service::debug::profiler::O_FMT_TEXT;
-using unisim::service::debug::profiler::O_FMT_HTML;
-using unisim::service::debug::profiler::O_FMT_CSV;
-
-template <> Variable<OutputFormat>::Variable(const char *_name, Object *_object, OutputFormat& _storage, Type type, const char *_description) :
-	VariableBase(_name, _object, type, _description), storage(&_storage)
-{
-	Simulator::Instance()->Initialize(this);
-	AddEnumeratedValue("text");
-	AddEnumeratedValue("html");
-}
-
-template <>
-const char *Variable<OutputFormat>::GetDataTypeName() const
-{
-	return "output-format";
-}
-
-template <>
-unsigned int Variable<OutputFormat>::GetBitSize() const
-{
-	return 1;
-}
-
-template <> Variable<OutputFormat>::operator bool () const { return *storage != O_FMT_TEXT; }
-template <> Variable<OutputFormat>::operator long long () const { return *storage; }
-template <> Variable<OutputFormat>::operator unsigned long long () const { return *storage; }
-template <> Variable<OutputFormat>::operator double () const { return (double)(*storage); }
-template <> Variable<OutputFormat>::operator std::string () const
-{
-	switch(*storage)
-	{
-		case O_FMT_TEXT: return std::string("text");
-		case O_FMT_HTML: return std::string("html");
-		case O_FMT_CSV: return std::string("csv");
-	}
-	return std::string("?");
-}
-
-template <> VariableBase& Variable<OutputFormat>::operator = (bool value)
-{
-	if(IsMutable())
-	{
-		OutputFormat tmp = *storage;
-		switch((unsigned int) value)
-		{
-			case O_FMT_TEXT:
-			case O_FMT_HTML:
-			case O_FMT_CSV:
-				tmp = (OutputFormat)(unsigned int) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
-	}
-	return *this;
-}
-
-template <> VariableBase& Variable<OutputFormat>::operator = (long long value)
-{
-	if(IsMutable())
-	{
-		OutputFormat tmp = *storage;
-		switch(value)
-		{
-			case O_FMT_TEXT:
-			case O_FMT_HTML:
-			case O_FMT_CSV:
-				tmp = (OutputFormat) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
-	}
-	return *this;
-}
-
-template <> VariableBase& Variable<OutputFormat>::operator = (unsigned long long value)
-{
-	if(IsMutable())
-	{
-		OutputFormat tmp = *storage;
-		switch(value)
-		{
-			case O_FMT_TEXT:
-			case O_FMT_HTML:
-			case O_FMT_CSV:
-				tmp = (OutputFormat) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
-	}
-	return *this;
-}
-
-template <> VariableBase& Variable<OutputFormat>::operator = (double value)
-{
-	if(IsMutable())
-	{
-		OutputFormat tmp = *storage;
-		switch((unsigned int) value)
-		{
-			case O_FMT_TEXT:
-			case O_FMT_HTML:
-			case O_FMT_CSV:
-				tmp = (OutputFormat)(unsigned int) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
-	}
-	return *this;
-}
-
-template <> VariableBase& Variable<OutputFormat>::operator = (const char *value)
-{
-	if(IsMutable())
-	{
-		OutputFormat tmp = *storage;
-		if(std::string(value) == std::string("text")) tmp = O_FMT_TEXT;
-		else if(std::string(value) == std::string("html")) tmp = O_FMT_HTML;
-		else if(std::string(value) == std::string("csv")) tmp = O_FMT_CSV;
-		SetModified(*storage != tmp);
-		*storage = tmp;
-	}
-	return *this;
-}
-
-template class Variable<OutputFormat>;
-
-} // end of service namespace
-} // end of kernel namespace
-} // end of unisim namespace

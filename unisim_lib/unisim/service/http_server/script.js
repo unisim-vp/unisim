@@ -159,6 +159,111 @@ var CompatLayer =
 	}
 }
 
+function rewrite_uri_with_fragment(uri)
+{
+	// if URI has a fragment, we rewrite it so that it has a query with an argument foo
+	// which value is incremented so that browser is forced to reload content from server:
+	//   /path/to/resource#label             => /path/to/resource?foo=0#label
+	//   /path/to/resource?foo=5&bar=z#label => /path/to/resource?foo=6&bar=z#label
+	var query_pos = uri.indexOf("?");
+
+	var fragment_pos = -1;
+	if(query_pos != -1)
+	{
+		// URI has a query
+		var end = uri.slice(query_pos);
+		fragment_pos = end.indexOf("#");
+		if(fragment_pos != - 1)
+		{
+			// URI has a fragment
+			fragment_pos += query_pos;
+		}
+	}
+	else
+	{
+		// URI has no query
+		fragment_pos = uri.indexOf("#");
+	}
+
+	if(fragment_pos != -1)
+	{
+		// URI has a fragment
+		
+		var fragment = uri.slice(fragment_pos);
+		
+		var new_uri;
+		
+		if(query_pos != -1)
+		{
+			// URI has a query
+			var abs_path = uri.slice(0, query_pos);
+			var query = uri.substring(query_pos + 1, fragment_pos);
+			
+			// rebuild src adding/updating foo=x
+			new_uri = abs_path;
+			new_uri += '?';
+			
+			var assignments = query.split('&');
+			
+			var found_foo = false;
+			var i;
+			for(i = 0; i < assignments.length; i++)
+			{
+				if(i != 0)
+				{
+					new_uri += '&';
+				}
+				
+				var assignment_str = assignments[i];
+				
+				var assignment = assignment_str.split('=');
+				
+				if((assignment.length == 2) && (assignment[0].trim() == 'foo'))
+				{
+					found_foo = true;
+					
+					var foo = parseInt(assignment[1].trim(), 10);
+					if(!isNaN(foo))
+					{
+						new_uri += 'foo=' + (foo + 1);
+					}
+					else
+					{
+						new_uri += 'foo=0';
+					}
+				}
+				else
+				{
+					new_uri += assignment_str;
+				}
+			}
+			
+			if(!found_foo)
+			{
+				if(assignments.length != 0)
+				{
+					new_uri += '&';
+				}
+				new_uri += 'foo=0';
+			}
+			
+			new_uri += fragment;
+		}
+		else
+		{
+			// URI has no query: add a query foo=0
+			var abs_path = uri.slice(0, fragment_pos);
+			new_uri = abs_path;
+			new_uri += '?foo=0';
+			new_uri += fragment;
+		}
+		
+		return new_uri;
+	}
+	
+	return uri;
+}
+
 // IFrame
 IFrame.prototype.owner = null;
 IFrame.prototype.name = null;
@@ -170,7 +275,12 @@ IFrame.prototype.visible = false;
 IFrame.prototype.bg = 0;
 IFrame.prototype.fg = 1;
 IFrame.prototype.iframe_element = null;
+IFrame.prototype.load_requested = null;
+IFrame.prototype.cancelled_load = null;
 IFrame.prototype.loaded = null;
+IFrame.prototype.bound_on_load = null;
+IFrame.prototype.bound_on_mouseenter = null;
+IFrame.prototype.bound_on_mouseleave = null;
 
 function IFrame(owner, name, src, class_name, storage_item_prefix, parent_element)
 {
@@ -184,18 +294,26 @@ function IFrame(owner, name, src, class_name, storage_item_prefix, parent_elemen
 	this.fg = 1;
 	this.iframe_element = new Array(2);
 	this.load_requested = new Array(2);
+	this.load_cancelled = new Array(2);
 	this.loaded = new Array(2);
+	this.bound_on_load = new Array(2);
+	this.bound_on_mouseenter = new Array(2);
+	this.bound_on_mouseleave = new Array(2);
 	for(var i = 0; i < 2; i++)
 	{
 		this.iframe_element[i] = document.createElement('iframe');
 		this.iframe_element[i].className = this.class_name;
 		this.iframe_element[i].setAttribute('name', this.name + '-' + i);
 		this.iframe_element[i].setAttribute('id', this.name + '-' + i);
-		this.load_requested[i] = false;
+		this.load_requested[i] = true; // load is fired twice: on iframe creation, on assignment of src attribute
+		this.load_cancelled[i] = false;
 		this.loaded[i] = false;
-		this.iframe_element[i].addEventListener('load', this.on_load.bind(this, i));
-		this.iframe_element[i].addEventListener('mouseenter', this.on_mouseenter.bind(this));
-		this.iframe_element[i].addEventListener('mouseleave', this.on_mouseleave.bind(this));
+		this.bound_on_load[i] = this.on_load.bind(this, i);
+		this.iframe_element[i].addEventListener('load', this.bound_on_load[i]);
+		this.bound_on_mouseenter[i] = this.on_mouseenter.bind(this);
+		this.iframe_element[i].addEventListener('mouseenter', this.bound_on_mouseenter[i]);
+		this.bound_on_mouseleave[i] = this.on_mouseleave.bind(this);
+		this.iframe_element[i].addEventListener('mouseleave', this.bound_on_mouseleave[i]);
 	}
 	this.attach(parent_element);
 }
@@ -205,9 +323,14 @@ IFrame.prototype.destroy = function()
 	this.detach();
 	for(var i = 0; i < 2; i++)
 	{
+		this.iframe_element[i].removeEventListener('load', this.bound_on_load[i]);
+		this.iframe_element[i].removeEventListener('mouseenter', this.bound_on_mouseenter[i]);
+		this.iframe_element[i].removeEventListener('mouseleave', this.bound_on_mouseleave[i]);
 		this.iframe_element[i] = null;
-		this.loaded[i] = false;
 	}
+	this.load_requested = null;
+	this.load_cancelled = null;
+	this.loaded = null;
 	this.name = null;
 	this.src = null;
 	this.class_name = null;
@@ -217,20 +340,51 @@ IFrame.prototype.destroy = function()
 
 IFrame.prototype.on_load = function(i)
 {
-//	console.log(this.name + ':frame #' + i + ' loaded');
+	console.log(this.name + ':frame #' + i + ' loaded');
+	if(this.load_cancelled[i])
+	{
+		this.load_cancelled[i] = false;
+		return;
+	}
+
+	this.save_scroll_position();
 	this.bg = i; // last loaded iframe is the background iframe at the moment
 	this.fg = 1 - this.bg;
+	if(!this.load_requested[this.bg] && this.load_requested[this.fg])
+	{
+		// this is not a load we've requested but we've already requested a load on another iframe: user may have click an hyperlink in the iframe, so cancel our refresh in other iframe
+		this.load_cancelled[this.fg] = true;
+	}
+	var src = null;
+	if(!this.load_requested[this.bg])
+	{
+		// this is not a load we've requested: src may have changed
+		try
+		{
+			src = this.iframe_element[this.bg].contentWindow.location.href;
+		}
+		catch(e)
+		{
+			src = this.iframe_element[this.bg].getAttribute('src');
+		}
+	}
 	this.loaded[this.bg] = true; // mark background iframe as loaded
-	this.restore_scroll_position(); // restore scroll position
+	this.load_requested[this.bg] = false;
+	this.load_cancelled[this.bg] = false;
 	// update tab src (it may have changed because of user click on hyperlink within iframe of tab)
-	try
+	if(src && (src != this.src))
 	{
-		this.owner.tab_config.src = this.iframe_element[this.bg].contentWindow.location.href;
+		this.src = src;
+		this.owner.tab_config.src = src;
+		this.owner.owner.save_tabs();
 	}
-	catch(e)
+	else
 	{
-		this.owner.tab_config.src = this.iframe_element[this.bg].getAttribute('src');
+		this.restore_scroll_position(); // restore scroll position
 	}
+	
+	// simulate unloading before flipping
+	this.trigger_on_unload();
 	// show freshly loaded iframe
 	this.iframe_element[this.bg].setAttribute('style', 'visibility:' + (this.visible ? 'visible' : 'hidden'));
 	// hide old iframe
@@ -238,16 +392,66 @@ IFrame.prototype.on_load = function(i)
 	// swap iframe role (background/foreground)
 	this.fg = this.bg;
 	this.bg = 1 - this.fg;
+	// simulate loading after flipping
+	this.trigger_on_load();
 // 	console.log(this.name + ':next frame is frame #' + this.bg);
+}
+
+IFrame.prototype.update_src = function()
+{
+	var new_src = rewrite_uri_with_fragment(this.src);
+	
+	if(new_src != this.src)
+	{
+		this.src = new_src;
+		this.owner.tab_config.src = new_src;
+		this.owner.owner.save_tabs();
+	}
+
+	// update src attribute of iframe
+	if(this.iframe_element[this.bg].hasAttribute('src'))
+	{
+		this.iframe_element[this.bg].contentWindow.location.replace(this.src);
+	}
+	else
+	{
+		this.iframe_element[this.bg].setAttribute('src', this.src);
+	}
 }
 
 IFrame.prototype.refresh = function()
 {
 //	console.log(this.name + ':refresh');
-	this.save_scroll_position();
+// 	this.save_scroll_position();
+// 	this.trigger_on_unload();
 	this.loaded[this.bg] = false;
 	this.load_requested[this.bg] = true;
-	this.iframe_element[this.bg].setAttribute('src', this.src);
+	this.load_cancelled[this.bg] = false;
+	this.update_src();
+}
+
+IFrame.prototype.trigger_on_unload = function()
+{
+	if(this.loaded[this.fg])
+	{
+		var fg_iframe = this.iframe_element[this.fg];
+		if(fg_iframe.contentWindow && fg_iframe.contentWindow.gui && (fg_iframe.contentWindow.gui.magic == 0xC0CA))
+		{
+			fg_iframe.contentWindow.gui.__on_unload__();
+		}
+	}
+}
+
+IFrame.prototype.trigger_on_load = function()
+{
+	if(this.loaded[this.fg])
+	{
+		var fg_iframe = this.iframe_element[this.fg];
+		if(fg_iframe.contentWindow && fg_iframe.contentWindow.gui && (fg_iframe.contentWindow.gui.magic == 0xC0CA))
+		{
+			fg_iframe.contentWindow.gui.__on_load__();
+		}
+	}
 }
 
 IFrame.prototype.set_visible = function(v)
@@ -343,6 +547,11 @@ IFrame.prototype.has_iframe = function(iframe_name)
 	return false;
 }
 
+IFrame.prototype.is_foreground_iframe = function(iframe_name)
+{
+	return this.iframe_element[this.fg].hasAttribute('name') && (this.iframe_element[this.fg].getAttribute('name') == iframe_name);
+}
+
 IFrame.prototype.get_next_target = function(iframe_name)
 {
 	if(this.iframe_element[0].hasAttribute('name') && this.iframe_element[1].hasAttribute('name'))
@@ -363,12 +572,16 @@ IFrame.prototype.get_next_target = function(iframe_name)
 IFrame.prototype.detach = function()
 {
 	this.save_scroll_position();
-	for(var i = 0; i < 2; i++)
+	
+	if(this.parent_element)
 	{
-		this.parent_element.removeChild(this.iframe_element[i]);
-		this.loaded[i] = false;
+		for(var i = 0; i < 2; i++)
+		{
+			this.parent_element.removeChild(this.iframe_element[i]);
+			this.loaded[i] = false;
+		}
+		this.parent_element = null;
 	}
-	this.parent_element = null;
 }
 
 IFrame.prototype.attach = function(parent_element)
@@ -379,6 +592,25 @@ IFrame.prototype.attach = function(parent_element)
 		this.parent_element.appendChild(this.iframe_element[i]);
 	}
 	this.restore_scroll_position();
+}
+
+// ChildWindow
+ChildWindow.prototype.wnd = null;
+
+function ChildWindow(wnd)
+{
+	this.wnd = wnd;
+}
+
+ChildWindow.prototype.refresh = function()
+{
+	var href = rewrite_uri_with_fragment(this.wnd.location.href);
+	this.wnd.location.replace(href); // reload without POST
+}
+
+ChildWindow.prototype.closed = function()
+{
+	return this.wnd.closed;
 }
 
 // TabConfig
@@ -543,7 +775,10 @@ Tab.prototype.destroy = function()
 {
 	if(!this.static)
 	{
-		this.owner.tab_headers.removeChild(this.tab_header);
+		if(this.owner)
+		{
+			this.owner.tab_headers.removeChild(this.tab_header);
+		}
 		this.tab_content.destroy();
 		this.tab_content = null;
 		this.tab_header.removeEventListener('click', this.bound_tab_header_onclick);
@@ -740,6 +975,11 @@ Tab.prototype.close = function()
 Tab.prototype.has_iframe = function(iframe_name)
 {
 	return !this.static && this.tab_content.has_iframe(iframe_name);
+}
+
+Tab.prototype.is_foreground_iframe = function(iframe_name)
+{
+	return !this.static && this.tab_content.is_foreground_iframe(iframe_name);
 }
 
 Tab.prototype.get_next_target = function(iframe_name)
@@ -1680,11 +1920,11 @@ GUI.prototype.move_tab_to_tile = function(tab, tile_name)
 
 GUI.prototype.move_tab_to_new_window = function(tab)
 {
-	tab.detach();
-	var child_window = window.open(tab.tab_config.src);
-	if(child_window)
+	var wnd = window.open(tab.tab_config.src);
+	if(wnd)
 	{
-		this.child_windows.push(child_window);
+		tab.close();
+		this.child_windows.push(new ChildWindow(wnd));
 	}
 }
 
@@ -1698,7 +1938,7 @@ GUI.prototype.for_each_tab = function(callback)
 
 GUI.prototype.for_each_child_window = function(callback)
 {
-	this.child_windows.forEach(function(child_window) { if(!child_window.closed) callback(child_window); } );
+	this.child_windows.forEach(function(child_window) { if(!child_window.closed()) callback(child_window); } );
 }
 
 GUI.prototype.monitor_child_windows = function()
@@ -1708,7 +1948,7 @@ GUI.prototype.monitor_child_windows = function()
 	{
 		var child_window = this.child_windows[i];
 		
-		if(child_window.closed)
+		if(child_window.closed())
 		{
 			this.child_windows.splice(i, 1);
 		}

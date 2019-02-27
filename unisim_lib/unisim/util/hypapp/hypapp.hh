@@ -62,17 +62,26 @@ struct MessageLoop;
 
 struct Request
 {
-	enum request_type_t { GET, HEAD, POST };
+	enum request_type_t { NO_REQ = 0, OPTIONS, GET, HEAD, POST };
 	
 	request_type_t GetRequestType() const { return request_type; }
-	char const* GetRequestURI() const { return uri ? (ibuf + uri) : 0; }
-	char const* GetHost() const { return host ? (ibuf + host) : 0; }
-	char const* GetContentType() const { return content_type ? (ibuf + content_type) : 0; }
+	char const* GetRequestURI() const { return (ibuf && uri) ? (ibuf + uri) : ""; }
+	char const* GetHost() const { return (ibuf && host) ? (ibuf + host) : ""; }
+	char const* GetContentType() const { return (ibuf && content_type) ? (ibuf + content_type) : ""; }
 	unsigned int GetContentLength() const { return content_length; }
-	char const* GetContent() const { return content ? (ibuf + content) : 0; }
+	char const* GetContent() const { return (ibuf && content) ? (ibuf + content) : ""; }
 	
 private:
-	Request() {}
+	Request()
+		: ibuf(0)
+		, request_type(NO_REQ)
+		, uri(0)
+		, host(0)
+		, content_type(0)
+		, content_length(0)
+		, content(0)
+	{
+	}
 	Request(Request const &) {}
 	Request& operator = (Request const&) { return *this; }
 	

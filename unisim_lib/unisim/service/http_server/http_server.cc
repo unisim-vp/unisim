@@ -512,6 +512,7 @@ unisim::kernel::service::Object *HttpServer::FindChildObject(unisim::kernel::ser
 	
 	if(hierarchical_delimiter_pos == std::string::npos)
 	{
+		pos = hierarchical_name.length();
 		return found_child;
 	}
 	
@@ -574,6 +575,7 @@ unisim::kernel::service::Object *HttpServer::FindObject(const std::string& hiera
 	
 	if(hierarchical_delimiter_pos == std::string::npos)
 	{
+		pos = hierarchical_name.length();
 		return found_root_object;
 	}
 	
@@ -724,6 +726,10 @@ void HttpServer::Crawl(std::ostream& os, unisim::kernel::service::Object *object
 		}
 		os << "])\"";
 	}
+	else
+	{
+		os << " oncontextmenu=\"return false\"";
+	}
 	os << ">" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetObjectName());
 	os << "</span>" << std::endl;;
 	const std::list<unisim::kernel::service::Object *>& leaf_objects = object->GetLeafs();
@@ -839,26 +845,47 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 		std::string object_name;
 	};
 	
+	bool is_kernel = false;
+	unisim::kernel::service::Object *object = 0;
+	if(req.HasQuery())
+	{
+		QueryDecoder query_decoder(*this);
+	
+		if(query_decoder.Decode(req.GetQuery(), logger.DebugWarningStream()))
+		{
+			is_kernel = (query_decoder.object_name == "kernel");
+			object = is_kernel ? 0 : GetSimulator()->FindObject(query_decoder.object_name.c_str());
+		}
+	}
+	else
+	{
+		if(verbose)
+		{
+			logger << DebugInfo << "missing query" << EndDebugInfo;
+		}
+	}
+
 	std::ostringstream doc_sstr;
 	
 	doc_sstr << "<!DOCTYPE html>" << std::endl;
 	doc_sstr << "<html>" << std::endl;
 	doc_sstr << "\t<head>" << std::endl;
-	doc_sstr << "\t\t<title>Object ";
+	doc_sstr << "\t\t<title>";
 	switch(var_type)
 	{
 		case unisim::kernel::service::VariableBase::VAR_PARAMETER:
-			doc_sstr << "configuration";
+			doc_sstr << "Configuration of ";
 			break;
 			
 		case unisim::kernel::service::VariableBase::VAR_STATISTIC:
-			doc_sstr << "statistics";
+			doc_sstr << "Statistics of ";
 			break;
 			
 		default:
-			doc_sstr << "variables of unknown type";
+			doc_sstr << "Variables of unknown type of";
 			break;
 	}
+	doc_sstr << (object ? unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) : "an unknown object");
 	doc_sstr << "</title>" << std::endl;
 	doc_sstr << "\t\t<meta name=\"description\" content=\"user interface for object variables over HTTP\">" << std::endl;
 	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
@@ -871,118 +898,101 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 	doc_sstr << "\t</head>" << std::endl;
 	doc_sstr << "\t<body>" << std::endl;
 	
-	if(req.HasQuery())
+	if(object || is_kernel)
 	{
-		QueryDecoder query_decoder(*this);
-	
-		if(query_decoder.Decode(req.GetQuery(), logger.DebugWarningStream()))
+		std::list<unisim::kernel::service::VariableBase *> var_lst;
+		if(object)
 		{
-			bool is_kernel = (query_decoder.object_name == "kernel");
-			unisim::kernel::service::Object *object = is_kernel ? 0 : GetSimulator()->FindObject(query_decoder.object_name.c_str());
-			if(object || is_kernel)
+			object->GetVariables(var_lst, var_type);
+		}
+		else
+		{
+			GetSimulator()->GetRootVariables(var_lst, var_type);
+		}
+		
+		if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
+		{
+			struct Form_URL_Encoded_Decoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
 			{
-				std::list<unisim::kernel::service::VariableBase *> var_lst;
+				virtual bool FormAssign(const std::string& _name, const std::string& _value)
+				{
+					name = _name;
+					value = _value;
+					return true;
+				}
+				
+				std::string name;
+				std::string value;
+			};
+
+			Form_URL_Encoded_Decoder decoder;
+			if(decoder.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
+			{
 				if(object)
 				{
-					object->GetVariables(var_lst, var_type);
+					(*object)[decoder.name] = decoder.value.c_str();
 				}
 				else
 				{
-					GetSimulator()->GetRootVariables(var_lst, var_type);
-				}
-				
-				if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
-				{
-					struct Form_URL_Encoded_Decoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
-					{
-						virtual bool FormAssign(const std::string& _name, const std::string& _value)
-						{
-							name = _name;
-							value = _value;
-							return true;
-						}
-						
-						std::string name;
-						std::string value;
-					};
-
-					Form_URL_Encoded_Decoder decoder;
-					if(decoder.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
-					{
-						if(object)
-						{
-							(*object)[decoder.name] = decoder.value.c_str();
-						}
-						else
-						{
-							*GetSimulator()->FindVariable(decoder.name.c_str()) = decoder.value.c_str();
-						}
-					}
-				}
-				
-				if(!var_lst.empty())
-				{
-					doc_sstr << "\t\t\t<table class=\"var-table\">" << std::endl;
-					doc_sstr << "\t\t\t\t<thead>" << std::endl;
-					doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<th class=\"var-name\">Name</th>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<th class=\"var-value\">Value</th>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<th class=\"var-data-type\">Data Type</th>" << std::endl;
-					doc_sstr << "\t\t\t\t\t\t<th class=\"var-description\">Description</th>" << std::endl;
-					doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
-					doc_sstr << "\t\t\t\t</thead>" << std::endl;
-					doc_sstr << "\t\t\t\t<tbody>" << std::endl;
-					std::list<unisim::kernel::service::VariableBase *>::const_iterator var_iter;
-					unsigned int var_id;
-					for(var_id = 0, var_iter = var_lst.begin(); var_iter != var_lst.end(); var_id++, var_iter++)
-					{
-						unisim::kernel::service::VariableBase *var = *var_iter;
-						
-						doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
-						doc_sstr << "\t\t\t\t\t\t<td class=\"var-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "</td>" << std::endl;
-						doc_sstr << "\t\t\t\t\t\t<td class=\"var-value\">" << std::endl;
-						doc_sstr << "\t\t\t\t\t\t\t<form action=\"/config?object=";
-						if(object) doc_sstr << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName());
-						doc_sstr << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\" onsubmit=\"save_window_scroll_top()\">" << std::endl;
-						doc_sstr << "\t\t\t\t\t\t\t\t<input";
-						if(var->HasEnumeratedValues())
-						{
-							doc_sstr << " list=\"input-list-" << var_id << "\"";
-						}
-						doc_sstr << " class=\"var-value-text" << (var->IsMutable() ? "" : " disabled") << "\" type=\"text\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "\" value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(std::string(*var)) << "\"" /*<< (var->IsMutable() ? "" : " disabled")*/ << (var->IsMutable() ? "" : " readonly") << ">" << std::endl;
-						if(var->HasEnumeratedValues())
-						{
-							doc_sstr << "\t\t\t\t\t\t\t\t<datalist id=\"input-list-" << var_id << "\">" << std::endl;
-							std::vector<std::string> values;
-							var->GetEnumeratedValues(values);
-							
-							std::vector<std::string>::const_iterator it;
-							for(it = values.begin(); it != values.end(); it++)
-							{
-								const std::string& value = (*it);
-								doc_sstr << "\t\t\t\t\t\t\t\t\t\t<option value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "\">" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "</option>" << std::endl;
-							}
-							doc_sstr << "\t\t\t\t\t\t\t\t</datalist>" << std::endl;
-						}
-						
-						doc_sstr << "\t\t\t\t\t\t\t</form>" << std::endl;
-						doc_sstr << "\t\t\t\t\t\t</td>" << std::endl;
-						doc_sstr << "\t\t\t\t\t\t<td class=\"var-data-type\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetDataTypeName()) << "</td>" << std::endl;
-						doc_sstr << "\t\t\t\t\t\t<td class=\"var-description\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetDescription()) << "</td>" << std::endl;
-						doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
-					}
-					
-					doc_sstr << "\t\t\t\t</tbody>" << std::endl;
-					doc_sstr << "\t\t\t</table>" << std::endl;
+					*GetSimulator()->FindVariable(decoder.name.c_str()) = decoder.value.c_str();
 				}
 			}
 		}
-	}
-	else
-	{
-		if(verbose)
+		
+		if(!var_lst.empty())
 		{
-			logger << DebugInfo << "missing query" << EndDebugInfo;
+			doc_sstr << "\t\t\t<table class=\"var-table\">" << std::endl;
+			doc_sstr << "\t\t\t\t<thead>" << std::endl;
+			doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
+			doc_sstr << "\t\t\t\t\t\t<th class=\"var-name\">Name</th>" << std::endl;
+			doc_sstr << "\t\t\t\t\t\t<th class=\"var-value\">Value</th>" << std::endl;
+			doc_sstr << "\t\t\t\t\t\t<th class=\"var-data-type\">Data Type</th>" << std::endl;
+			doc_sstr << "\t\t\t\t\t\t<th class=\"var-description\">Description</th>" << std::endl;
+			doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
+			doc_sstr << "\t\t\t\t</thead>" << std::endl;
+			doc_sstr << "\t\t\t\t<tbody>" << std::endl;
+			std::list<unisim::kernel::service::VariableBase *>::const_iterator var_iter;
+			unsigned int var_id;
+			for(var_id = 0, var_iter = var_lst.begin(); var_iter != var_lst.end(); var_id++, var_iter++)
+			{
+				unisim::kernel::service::VariableBase *var = *var_iter;
+				
+				doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t<td class=\"var-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "</td>" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t<td class=\"var-value\">" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t\t<form action=\"/config?object=";
+				if(object) doc_sstr << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName());
+				doc_sstr << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\" onsubmit=\"save_window_scroll_top()\">" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t\t\t<input";
+				if(var->HasEnumeratedValues())
+				{
+					doc_sstr << " list=\"input-list-" << var_id << "\"";
+				}
+				doc_sstr << " class=\"var-value-text" << (var->IsMutable() ? "" : " disabled") << "\" type=\"text\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "\" value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(std::string(*var)) << "\"" /*<< (var->IsMutable() ? "" : " disabled")*/ << (var->IsMutable() ? "" : " readonly") << ">" << std::endl;
+				if(var->HasEnumeratedValues())
+				{
+					doc_sstr << "\t\t\t\t\t\t\t\t<datalist id=\"input-list-" << var_id << "\">" << std::endl;
+					std::vector<std::string> values;
+					var->GetEnumeratedValues(values);
+					
+					std::vector<std::string>::const_iterator it;
+					for(it = values.begin(); it != values.end(); it++)
+					{
+						const std::string& value = (*it);
+						doc_sstr << "\t\t\t\t\t\t\t\t\t\t<option value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "\">" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "</option>" << std::endl;
+					}
+					doc_sstr << "\t\t\t\t\t\t\t\t</datalist>" << std::endl;
+				}
+				
+				doc_sstr << "\t\t\t\t\t\t\t</form>" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t</td>" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t<td class=\"var-data-type\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetDataTypeName()) << "</td>" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t<td class=\"var-description\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetDescription()) << "</td>" << std::endl;
+				doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
+			}
+			
+			doc_sstr << "\t\t\t\t</tbody>" << std::endl;
+			doc_sstr << "\t\t\t</table>" << std::endl;
 		}
 	}
 
@@ -1064,13 +1074,24 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 		std::string object_name;
 	};
 
+	unisim::kernel::service::Object *object = 0;
+	if(req.HasQuery())
+	{
+		QueryDecoder query_decoder(*this);
+	
+		if(query_decoder.Decode(req.GetQuery(), logger.DebugWarningStream()))
+		{
+			object = GetSimulator()->FindObject(query_decoder.object_name.c_str());
+		}
+	}
+			
 	std::ostringstream doc_sstr;
 	
 	doc_sstr << "<!DOCTYPE html>" << std::endl;
 	doc_sstr << "<html>" << std::endl;
 	doc_sstr << "\t<head>" << std::endl;
-	doc_sstr << "\t\t<title>Object registers</title>" << std::endl;
-	doc_sstr << "\t\t<meta name=\"description\" content=\"user interface for object registers over HTTP\">" << std::endl;
+	doc_sstr << "\t\t<title>Registers of " << (object ? unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) : "an unknown object") << "</title>" << std::endl;
+	doc_sstr << "\t\t<meta name=\"description\" content=\"user interface for " << (object ? unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) : "object") << " registers over HTTP\">" << std::endl;
 	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 	doc_sstr << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
 	doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
@@ -1081,125 +1102,115 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 	doc_sstr << "\t</head>" << std::endl;
 	doc_sstr << "\t<body>" << std::endl;
 	
-	if(req.HasQuery())
+	if(object)
 	{
-		QueryDecoder query_decoder(*this);
-	
-		if(query_decoder.Decode(req.GetQuery(), logger.DebugWarningStream()))
+		std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *>::iterator it = registers_import_map.find(object);
+		
+		if(it != registers_import_map.end())
 		{
-			unisim::kernel::service::Object *object = GetSimulator()->FindObject(query_decoder.object_name.c_str());
+			unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *import = (*it).second;
 			
-			if(object)
+			if(import)
 			{
-				std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *>::iterator it = registers_import_map.find(object);
-				
-				if(it != registers_import_map.end())
+				if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
 				{
-					unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *import = (*it).second;
-					
-					if(import)
+					struct Form_URL_Encoded_Decoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
 					{
-						if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
+						virtual bool FormAssign(const std::string& _name, const std::string& _value)
 						{
-							struct Form_URL_Encoded_Decoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
-							{
-								virtual bool FormAssign(const std::string& _name, const std::string& _value)
-								{
-									reg_name = _name;
-									reg_value_str = _value;
-									return true;
-								}
-								
-								std::string reg_name;
-								std::string reg_value_str;
-							};
-
-							Form_URL_Encoded_Decoder decoder;
-							if(decoder.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
-							{
-								struct Setter : unisim::service::interfaces::RegisterScanner
-								{
-									Setter(const std::string _reg_name, const std::string& _reg_value_str, std::ostream& _warn_log) : reg_name(_reg_name), reg_value_str(_reg_value_str), warn_log(_warn_log) {}
-									
-									virtual void Append(unisim::service::interfaces::Register * reg)
-									{
-										if(reg_name == reg->GetName())
-										{
-											unsigned int reg_size = reg->GetSize();
-											uint8_t reg_value[reg_size];
-											if(ParseHex(reg_value, reg_size, reg_value_str))
-											{
-												reg->SetValue(reg_value);
-											}
-											else
-											{
-												warn_log << "parse error in \"" << reg_value_str << "\"" << std::endl;
-											}
-										}
-									}
-								private:
-									const std::string& reg_name;
-									const std::string& reg_value_str;
-									std::ostream& warn_log;
-								};
-								
-								Setter setter(decoder.reg_name, decoder.reg_value_str, logger.DebugWarningStream());
-								(*import)->ScanRegisters(setter);
-							}
+							reg_name = _name;
+							reg_value_str = _value;
+							return true;
 						}
 						
-						struct Printer : unisim::service::interfaces::RegisterScanner
+						std::string reg_name;
+						std::string reg_value_str;
+					};
+
+					Form_URL_Encoded_Decoder decoder;
+					if(decoder.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
+					{
+						struct Setter : unisim::service::interfaces::RegisterScanner
 						{
-							Printer(unisim::kernel::service::Object *_object, std::ostream& _doc_sstr) : object(_object), doc_sstr(_doc_sstr) {}
+							Setter(const std::string _reg_name, const std::string& _reg_value_str, std::ostream& _warn_log) : reg_name(_reg_name), reg_value_str(_reg_value_str), warn_log(_warn_log) {}
 							
 							virtual void Append(unisim::service::interfaces::Register * reg)
 							{
-								unsigned int reg_size = reg->GetSize();
-								uint8_t reg_value[reg_size];
-								reg->GetValue(&reg_value);
-								
-								doc_sstr << "\t\t\t\t<tr>" << std::endl;
-								doc_sstr << "\t\t\t\t\t<td class=\"reg-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "</td>" << std::endl;
-								doc_sstr << "\t\t\t\t\t<td class=\"reg-size\">" << (reg->GetSize() * 8) << "</td>" << std::endl;
-								doc_sstr << "\t\t\t\t\t<td class=\"reg-value\">" << std::endl;
-								doc_sstr << "\t\t\t\t\t\t<form action=\"/registers?object=" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\" onsubmit=\"save_window_scroll_top()\">" << std::endl;
-								doc_sstr << "\t\t\t\t\t\t\t<input class=\"reg-value-text\" type=\"text\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "\" value=\"0x" << std::hex;
-#if BYTE_ORDER == BIG_ENDIAN
-								for(int i = 0; i < (int) reg_size; i++)
-#else
-								for(int i = (reg_size - 1); i >= 0; i--)
-#endif
+								if(reg_name == reg->GetName())
 								{
-									doc_sstr << (reg_value[i] >> 4);
-									doc_sstr << (reg_value[i] & 15);
+									unsigned int reg_size = reg->GetSize();
+									uint8_t reg_value[reg_size];
+									if(ParseHex(reg_value, reg_size, reg_value_str))
+									{
+										reg->SetValue(reg_value);
+									}
+									else
+									{
+										warn_log << "parse error in \"" << reg_value_str << "\"" << std::endl;
+									}
 								}
-								
-								doc_sstr << std::dec << "\">" << std::endl;
-								
-								doc_sstr << "\t\t\t\t\t\t</form>" << std::endl;
-								doc_sstr << "\t\t\t\t\t</td>" << std::endl;
-								doc_sstr << "\t\t\t\t</tr>" << std::endl;
 							}
 						private:
-							unisim::kernel::service::Object *object;
-							std::ostream& doc_sstr;
+							const std::string& reg_name;
+							const std::string& reg_value_str;
+							std::ostream& warn_log;
 						};
 						
-						doc_sstr << "\t\t<table class=\"reg-table\">" << std::endl;
-						doc_sstr << "\t\t\t<thead>" << std::endl;
-						doc_sstr << "\t\t\t\t<tr>" << std::endl;
-						doc_sstr << "\t\t\t\t\t<th class=\"reg-name\">Name</th>" << std::endl;
-						doc_sstr << "\t\t\t\t\t<th class=\"reg-size\">Size</th>" << std::endl;
-						doc_sstr << "\t\t\t\t\t<th class=\"reg-value\">Value</th>" << std::endl;
-						doc_sstr << "\t\t\t\t</tr>" << std::endl;
-						doc_sstr << "\t\t\t</thead>" << std::endl;
-						doc_sstr << "\t\t\t<tbody>" << std::endl;
-						Printer printer(object, doc_sstr);
-						(*import)->ScanRegisters(printer);
-						doc_sstr << "\t\t\t</tbody>" << std::endl;
-						doc_sstr << "\t\t</table>" << std::endl;
+						Setter setter(decoder.reg_name, decoder.reg_value_str, logger.DebugWarningStream());
+						(*import)->ScanRegisters(setter);
 					}
 				}
+				
+				struct Printer : unisim::service::interfaces::RegisterScanner
+				{
+					Printer(unisim::kernel::service::Object *_object, std::ostream& _doc_sstr) : object(_object), doc_sstr(_doc_sstr) {}
+					
+					virtual void Append(unisim::service::interfaces::Register * reg)
+					{
+						unsigned int reg_size = reg->GetSize();
+						uint8_t reg_value[reg_size];
+						reg->GetValue(&reg_value);
+						
+						doc_sstr << "\t\t\t\t<tr>" << std::endl;
+						doc_sstr << "\t\t\t\t\t<td class=\"reg-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "</td>" << std::endl;
+						doc_sstr << "\t\t\t\t\t<td class=\"reg-size\">" << (reg->GetSize() * 8) << "</td>" << std::endl;
+						doc_sstr << "\t\t\t\t\t<td class=\"reg-value\">" << std::endl;
+						doc_sstr << "\t\t\t\t\t\t<form action=\"/registers?object=" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\" onsubmit=\"save_window_scroll_top()\">" << std::endl;
+						doc_sstr << "\t\t\t\t\t\t\t<input class=\"reg-value-text\" type=\"text\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "\" value=\"0x" << std::hex;
+#if BYTE_ORDER == BIG_ENDIAN
+						for(int i = 0; i < (int) reg_size; i++)
+#else
+						for(int i = (reg_size - 1); i >= 0; i--)
+#endif
+						{
+							doc_sstr << (reg_value[i] >> 4);
+							doc_sstr << (reg_value[i] & 15);
+						}
+						
+						doc_sstr << std::dec << "\">" << std::endl;
+						
+						doc_sstr << "\t\t\t\t\t\t</form>" << std::endl;
+						doc_sstr << "\t\t\t\t\t</td>" << std::endl;
+						doc_sstr << "\t\t\t\t</tr>" << std::endl;
+					}
+				private:
+					unisim::kernel::service::Object *object;
+					std::ostream& doc_sstr;
+				};
+				
+				doc_sstr << "\t\t<table class=\"reg-table\">" << std::endl;
+				doc_sstr << "\t\t\t<thead>" << std::endl;
+				doc_sstr << "\t\t\t\t<tr>" << std::endl;
+				doc_sstr << "\t\t\t\t\t<th class=\"reg-name\">Name</th>" << std::endl;
+				doc_sstr << "\t\t\t\t\t<th class=\"reg-size\">Size</th>" << std::endl;
+				doc_sstr << "\t\t\t\t\t<th class=\"reg-value\">Value</th>" << std::endl;
+				doc_sstr << "\t\t\t\t</tr>" << std::endl;
+				doc_sstr << "\t\t\t</thead>" << std::endl;
+				doc_sstr << "\t\t\t<tbody>" << std::endl;
+				Printer printer(object, doc_sstr);
+				(*import)->ScanRegisters(printer);
+				doc_sstr << "\t\t\t</tbody>" << std::endl;
+				doc_sstr << "\t\t</table>" << std::endl;
 			}
 		}
 	}
@@ -1315,8 +1326,10 @@ bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req,
 	doc_sstr << "\t\t\t\t</div>" << std::endl;
 	doc_sstr << "\t\t\t</div>" << std::endl;
 	doc_sstr << "\t\t\t<div class=\"tab-contents\" id=\"left-tab-contents-div\">" << std::endl;
-	doc_sstr << "\t\t\t\t<div name=\"browser\" class=\"tab-content left-tab-content-div\" id=\"browser\">" << std::endl;
-	Crawl(doc_sstr, 5);
+	doc_sstr << "\t\t\t\t<div name=\"browser-tab-content\" class=\"tab-content left-tab-content-div\" id=\"browser-tab-content\">" << std::endl;
+	doc_sstr << "\t\t\t\t\t<div id=\"browser\">" << std::endl;
+	Crawl(doc_sstr, 6);
+	doc_sstr << "\t\t\t\t\t</div>" << std::endl;
 	doc_sstr << "\t\t\t\t</div>" << std::endl;
 	doc_sstr << "\t\t\t</div>" << std::endl;
 	doc_sstr << "\t\t</div>" << std::endl;

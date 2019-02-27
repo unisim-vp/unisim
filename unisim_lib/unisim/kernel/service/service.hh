@@ -280,7 +280,7 @@ public:
 	bool GetExecutablePath(const char *argv0, std::string& out_execute_path) const;
 	bool GetBinPath(const char *argv0, std::string& out_bin_dir, std::string& out_bin_program) const;
 	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const;
-	const std::string GetSharedDataDirectory() const;
+	const std::string& GetSharedDataDirectory() const;
 	std::string SearchSharedDataFile(const char *filename) const;
 	std::vector<std::string> const& GetCmdArgs() const;
 

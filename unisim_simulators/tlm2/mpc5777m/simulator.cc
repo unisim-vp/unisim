@@ -4711,6 +4711,13 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		unsigned int i = 0;
 		*http_server->http_server_import[i++] >> instrumenter->http_server_export;
 		*http_server->http_server_import[i++] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
+		if(enable_profiler)
+		{
+			for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
+			{
+				*http_server->http_server_import[i++] >> profiler[prc_num]->http_server_export;
+			}
+		}
 	}
 	
 	{
@@ -6267,6 +6274,39 @@ void Simulator::Run()
 		profiler[1]->Output();
 		profiler[2]->Output();
 	}
+}
+
+bool Simulator::EndSetup()
+{
+	if(http_server)
+	{
+		unsigned int prc_num;
+		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+		{
+			if(profiler[prc_num])
+			{
+				std::string tab_title("Profile of ");
+				switch(prc_num)
+				{
+					case 0: tab_title += main_core_0->GetName(); break;
+					case 1: tab_title += main_core_1->GetName(); break;
+					case 2: tab_title += peripheral_core_2->GetName(); break;
+				}
+				std::stringstream label_sstr;
+				label_sstr << "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu" << prc_num << ".svg\">";
+				http_server->AddJSAction(
+					unisim::service::interfaces::ToolbarOpenTabAction(
+							/* name */      profiler[prc_num]->GetName(), 
+							/* label */     label_sstr.str(),
+							/* tab title */ tab_title,
+							/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+							/* uri */       profiler[prc_num]->URI()
+				));
+			}
+		}
+	}
+	
+	return true;
 }
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()

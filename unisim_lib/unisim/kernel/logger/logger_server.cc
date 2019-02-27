@@ -91,12 +91,12 @@ LoggerServer::LoggerServer(const char *name, unisim::kernel::service::Object *pa
 LoggerServer::~LoggerServer()
 {
 	Close();
-	pthread_mutex_destroy(&mutex);
 	for(HTTP_LOGS_PER_CLIENT::iterator it = http_logs_per_client.begin(); it != http_logs_per_client.end(); it++)
 	{
 		HTTP_LOG *http_log = (*it).second;
 		delete http_log;
 	}
+	pthread_mutex_destroy(&mutex);
 }
 
 void LoggerServer::Close()
@@ -404,7 +404,6 @@ void LoggerServer::PrintHttpLog(std::ostream& os, const HTTP_LOG& http_log, bool
 			}
 			std::size_t prefix_length = name.length();
 			std::string prefix(prefix_length, ' ');
-			std::size_t msg_length = msg.length();
 			std::size_t base_pos = 0;
 			for(std::size_t pos = msg.find_first_of('\n'); pos != std::string::npos; pos = msg.find_first_of('\n', base_pos))
 			{

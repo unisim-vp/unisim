@@ -432,6 +432,8 @@ private:
 	unisim::kernel::service::Parameter<std::string> param_instrumentation;
 	sc_core::sc_time intr_poll_period;
 	unisim::kernel::service::Parameter<sc_core::sc_time> param_intr_poll_period;
+	double cont_refresh_period;
+	unisim::kernel::service::Parameter<double> param_cont_refresh_period;
 	std::vector<std::string> instrumented_signal_names;
 	std::map<std::string, UserInstrument *> user_instruments;
 	sc_core::sc_time user_step_time;

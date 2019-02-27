@@ -118,6 +118,7 @@ class Simulator : public unisim::kernel::tlm2::Simulator, Config
 public:
 	Simulator(const sc_core::sc_module_name& name, int argc, char **argv);
 	virtual ~Simulator();
+	virtual bool EndSetup();
 	void Run();
 	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
 	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);

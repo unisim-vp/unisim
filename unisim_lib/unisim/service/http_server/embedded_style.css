@@ -1,0 +1,48 @@
+html { box-sizing:border-box; }
+*, *:before, *:after { box-sizing: inherit; }
+
+div.button
+{
+	width:42px;
+	height:36px;
+	padding:1px 4px 1px 4px;
+	border-radius:3px;
+	border-style:solid;
+	border-color:#918e8c;
+	border-width:1px;
+	background:linear-gradient(to bottom right, #fdfcfc, #e9e8e7);
+}
+
+div.button:hover
+{
+	background:#fdfcfc;
+}
+
+div.button:active
+{
+	background:#e9e8e7;
+}
+
+div.button a
+{
+	width:32px;
+	height:32px;
+	display:block;
+	cursor:default;
+	text-decoration:none;
+	outline:0;
+}
+
+div.button img
+{
+	width:32px;
+	height:32px;
+	pointer-events:none;
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+}

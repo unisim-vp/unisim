@@ -270,6 +270,10 @@ const sc_core::sc_event& Clock::GetClockPropertiesChangedEvent() const
 	return clock_properties_changed_event;
 }
 
+void Clock::VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
+{
+	clock_properties_changed_event.notify(sc_core::SC_ZERO_TIME);
+}
 
 ClockPropertiesProxy::ClockPropertiesProxy(sc_core::sc_in<bool>& clk_port_)
 	: clk_port(clk_port_)

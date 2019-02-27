@@ -3412,7 +3412,7 @@ bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_
 	return ResolvePath(bin_dir, std::string(BIN_TO_SHARED_DATA_PATH), out_share_dir);
 }
 
-const std::string Simulator::GetSharedDataDirectory() const
+const std::string& Simulator::GetSharedDataDirectory() const
 {
 	return shared_data_dir;
 }
