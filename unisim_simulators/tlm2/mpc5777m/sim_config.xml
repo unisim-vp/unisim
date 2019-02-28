@@ -8230,6 +8230,12 @@
 				</variable>
 			</object>
 			<object name="HARDWARE.instrumenter.user-interface">
+				<variable name="cont-refresh-period">
+					<type>parameter</type>
+					<data_type>double precision floating-point</data_type>
+					<value>1</value>
+					<description>Refresh period (host time) in seconds while continue</description>
+				</variable>
 				<variable name="instrumentation">
 					<type>parameter</type>
 					<data_type>string</data_type>
@@ -8240,7 +8246,7 @@
 					<type>parameter</type>
 					<data_type>sc_time</data_type>
 					<value>1 us</value>
-					<description>Polling period for user interrupt request while continue</description>
+					<description>Polling period (target time) for user interrupt request while continue</description>
 				</variable>
 				<variable name="verbose">
 					<type>parameter</type>
@@ -14451,6 +14457,36 @@
 			<value>,</value>
 			<description>CSV delimiter</description>
 		</variable>
+		<variable name="enable-csv-report">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable CSV report</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-html-report">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable HTML report</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-text-report">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable text report</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
@@ -14462,16 +14498,6 @@
 			<data_type>string</data_type>
 			<value>profile_Z7_0</value>
 			<description>Output directory where to generate profiling report</description>
-		</variable>
-		<variable name="output-format">
-			<type>parameter</type>
-			<data_type>output-format</data_type>
-			<value>html</value>
-			<description>Output format (text, html or csv)</description>
-			<enumeration>
-				<item>text</item>
-				<item>html</item>
-			</enumeration>
 		</variable>
 		<variable name="sampled-variables">
 			<type>parameter</type>
@@ -14493,6 +14519,36 @@
 			<value>,</value>
 			<description>CSV delimiter</description>
 		</variable>
+		<variable name="enable-csv-report">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable CSV report</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-html-report">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable HTML report</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-text-report">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable text report</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
@@ -14504,16 +14560,6 @@
 			<data_type>string</data_type>
 			<value>profile_Z7_1</value>
 			<description>Output directory where to generate profiling report</description>
-		</variable>
-		<variable name="output-format">
-			<type>parameter</type>
-			<data_type>output-format</data_type>
-			<value>html</value>
-			<description>Output format (text, html or csv)</description>
-			<enumeration>
-				<item>text</item>
-				<item>html</item>
-			</enumeration>
 		</variable>
 		<variable name="sampled-variables">
 			<type>parameter</type>
@@ -14535,6 +14581,36 @@
 			<value>,</value>
 			<description>CSV delimiter</description>
 		</variable>
+		<variable name="enable-csv-report">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable CSV report</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-html-report">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable HTML report</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-text-report">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable text report</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
@@ -14546,16 +14622,6 @@
 			<data_type>string</data_type>
 			<value>profile_Z4_2</value>
 			<description>Output directory where to generate profiling report</description>
-		</variable>
-		<variable name="output-format">
-			<type>parameter</type>
-			<data_type>output-format</data_type>
-			<value>html</value>
-			<description>Output format (text, html or csv)</description>
-			<enumeration>
-				<item>text</item>
-				<item>html</item>
-			</enumeration>
 		</variable>
 		<variable name="sampled-variables">
 			<type>parameter</type>

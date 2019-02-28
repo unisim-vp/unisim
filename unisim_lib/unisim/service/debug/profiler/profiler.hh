@@ -395,6 +395,7 @@ public:
 	virtual void Capture(ADDRESS addr, unsigned int length) = 0;
 	virtual const char *GetSampledVariableName() const = 0;
 	virtual unisim::kernel::service::VariableBase *GetSampledVariable() const = 0;
+	virtual std::string GetCumulativeValueAsString() const = 0;
 	virtual InstructionProfileBase *CreateInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv) const = 0;
 	virtual FunctionInstructionProfileBase *CreateFunctionInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const = 0;
 	virtual SourceCodeProfileBase<ADDRESS> *CreateSourceCodeProfile() const = 0;
@@ -415,6 +416,7 @@ public:
 	virtual void Capture(ADDRESS addr, unsigned int length);
 	virtual const char *GetSampledVariableName() const { return sample.GetSampledVariableName(); }
 	virtual unisim::kernel::service::VariableBase *GetSampledVariable() const { return sample.GetSampledVariable(); }
+	virtual std::string GetCumulativeValueAsString() const { return to_string(this->GetWeight()); }
 	virtual InstructionProfileBase *CreateInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv) const;
 	virtual FunctionInstructionProfileBase *CreateFunctionInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const;
 	virtual SourceCodeProfileBase<ADDRESS> *CreateSourceCodeProfile() const;
@@ -476,7 +478,7 @@ public:
 	unsigned int Quantize(const T& value)
 	{
 		return ((value_range.first != value_range.second) && (value >= value_range.first) && (value <= value_range.second))
-			? ceil(factor * ((double)(value - value_range.first) / (double)(value_range.second - value_range.first)))
+			? floor/*ceil*/(((double)(value - value_range.first) / (double)(value_range.second - value_range.first)) * factor)
 			: 0;
 	}
 private:

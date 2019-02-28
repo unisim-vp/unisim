@@ -933,8 +933,11 @@ unisim/service/debug/profiler/source_code.css \
 unisim/service/debug/profiler/icon_profile_cpu0.svg \
 unisim/service/debug/profiler/icon_profile_cpu1.svg \
 unisim/service/debug/profiler/icon_profile_cpu2.svg \
+unisim/service/debug/profiler/icon_histogram.svg \
 unisim/service/debug/profiler/icon_svg_histogram.svg \
+unisim/service/debug/profiler/icon_table.svg \
 unisim/service/debug/profiler/icon_csv_table.svg \
+unisim/service/debug/profiler/icon_pc_table.svg \
 unisim/service/debug/profiler/script.js \
 unisim/service/debug/profiler/by_function_histogram.js \
 unisim/service/debug/profiler/by_function_table.js \

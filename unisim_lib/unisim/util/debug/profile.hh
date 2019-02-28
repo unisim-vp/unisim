@@ -73,6 +73,7 @@ public:
 	void Cover(ADDRESS offset, unsigned int length);
 	void Accumulate(ADDRESS offset, const WEIGHT& weight);
 	const WEIGHT& GetWeight(unsigned int offset) const;
+	const WEIGHT& GetWeight() const;
 	
 	//friend std::ostream& operator << <ADDRESS, WEIGHT, PAGE_SIZE> (std::ostream& os, const ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>& page);
 private:
@@ -84,6 +85,7 @@ private:
 	
 	uint64_t *weight_coverage_map;
 	WEIGHT *weights;
+	WEIGHT cumulative_weight;
 };
 
 template <typename ADDRESS, typename WEIGHT = uint64_t, uint32_t PAGE_SIZE = DEFAULT_PROFILE_PAGE_SIZE>
@@ -98,6 +100,7 @@ public:
 	bool IsCovered(ADDRESS addr) const;
 	void Accumulate(ADDRESS addr, const WEIGHT& weight);
 	bool GetWeight(ADDRESS addr, WEIGHT& weight) const;
+	const WEIGHT& GetWeight() const;
 	void GetAddressRanges(std::vector<std::pair<ADDRESS, ADDRESS> >& addr_ranges) const;
 	friend std::ostream& operator << <ADDRESS, WEIGHT, PAGE_SIZE> (std::ostream& os, const Profile<ADDRESS, WEIGHT, PAGE_SIZE>& prof);
 	operator std::map<ADDRESS, WEIGHT>() const;
@@ -105,6 +108,7 @@ public:
 private:
 	unisim::util::hash_table::HashTable<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> > hash_table;
 	std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *> page_map;
+	WEIGHT cumulative_weight;
 	
 	ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *AllocatePage(ADDRESS addr);
 	ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *GetPage(ADDRESS addr) const;

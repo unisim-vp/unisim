@@ -26,6 +26,7 @@
    <glyph unicode="V" horiz-adv-x="1350" d="M 834,0 L 535,0 14,1409 322,1409 612,504 C 630,445 655,357 686,238 L 707,324 758,504 1047,1409 1352,1409 834,0 Z"/>
    <glyph unicode="S" horiz-adv-x="1244" d="M 1286,406 C 1286,268 1235,163 1133,90 1030,17 880,-20 682,-20 501,-20 360,12 257,76 154,140 88,237 59,367 L 344,414 C 363,339 401,285 457,252 513,218 591,201 690,201 896,201 999,264 999,389 999,429 987,462 964,488 940,514 907,536 864,553 821,570 738,591 616,616 511,641 437,661 396,676 355,691 317,708 284,729 251,749 222,773 199,802 176,831 158,864 145,903 132,942 125,986 125,1036 125,1163 173,1261 269,1329 364,1396 503,1430 686,1430 861,1430 992,1403 1080,1348 1167,1293 1224,1203 1249,1077 L 963,1038 C 948,1099 919,1144 874,1175 829,1206 764,1221 680,1221 501,1221 412,1165 412,1053 412,1016 422,986 441,963 460,940 488,920 525,904 562,887 638,867 752,842 887,813 984,787 1043,763 1101,738 1147,710 1181,678 1215,645 1241,607 1259,562 1277,517 1286,465 1286,406 Z"/>
    <glyph unicode="C" horiz-adv-x="1351" d="M 795,212 C 973,212 1097,301 1166,480 L 1423,383 C 1368,247 1287,146 1180,80 1073,13 944,-20 795,-20 568,-20 393,44 270,173 146,301 84,480 84,711 84,942 144,1120 263,1244 382,1368 555,1430 782,1430 947,1430 1082,1397 1186,1331 1290,1264 1363,1167 1405,1038 L 1145,967 C 1123,1038 1080,1094 1016,1136 951,1177 875,1198 788,1198 655,1198 554,1157 485,1074 416,991 381,870 381,711 381,549 417,425 488,340 559,255 661,212 795,212 Z"/>
+   <glyph unicode="." horiz-adv-x="319" d="M 139,0 L 139,305 428,305 428,0 139,0 Z"/>
   </font>
  </defs>
  <defs class="TextShapeIndex">
@@ -77,9 +78,9 @@
      <g class="Page">
       <g class="com.sun.star.drawing.CustomShape">
        <g id="id3">
-        <rect class="BoundingBox" stroke="none" fill="none" x="457" y="61" width="2237" height="1002"/>
-        <path fill="rgb(255,255,255)" stroke="none" d="M 636,79 C 555,79 475,159 475,240 L 475,883 C 475,963 555,1044 636,1044 L 2514,1044 C 2594,1044 2675,963 2675,883 L 2675,240 C 2675,159 2594,79 2514,79 L 636,79 Z"/>
-        <path fill="none" stroke="rgb(0,0,0)" stroke-width="35" stroke-linejoin="round" d="M 636,79 C 555,79 475,159 475,240 L 475,883 C 475,963 555,1044 636,1044 L 2514,1044 C 2594,1044 2675,963 2675,883 L 2675,240 C 2675,159 2594,79 2514,79 L 636,79 Z"/>
+        <rect class="BoundingBox" stroke="none" fill="none" x="295" y="61" width="2527" height="1002"/>
+        <path fill="rgb(255,255,255)" stroke="none" d="M 474,79 C 393,79 313,159 313,240 L 313,883 C 313,963 393,1044 474,1044 L 2642,1044 C 2722,1044 2803,963 2803,883 L 2803,240 C 2803,159 2722,79 2642,79 L 474,79 Z"/>
+        <path fill="none" stroke="rgb(0,0,0)" stroke-width="35" stroke-linejoin="round" d="M 474,79 C 393,79 313,159 313,240 L 313,883 C 313,963 393,1044 474,1044 L 2642,1044 C 2722,1044 2803,963 2803,883 L 2803,240 C 2803,159 2722,79 2642,79 L 474,79 Z"/>
        </g>
       </g>
       <g class="com.sun.star.drawing.CustomShape">
@@ -204,8 +205,8 @@
       </g>
       <g class="com.sun.star.drawing.TextShape">
        <g id="id19">
-        <rect class="BoundingBox" stroke="none" fill="none" x="376" y="83" width="2446" height="1116"/>
-        <text class="TextShape"><tspan class="TextParagraph" font-family="Liberation Sans, sans-serif" font-size="917px" font-weight="700"><tspan class="TextPosition" x="626" y="877"><tspan fill="rgb(0,0,0)" stroke="none">CSV</tspan></tspan></tspan></text>
+        <rect class="BoundingBox" stroke="none" fill="none" x="206" y="85" width="2649" height="1116"/>
+        <text class="TextShape"><tspan class="TextParagraph" font-family="Liberation Sans, sans-serif" font-size="917px" font-weight="700"><tspan class="TextPosition" x="456" y="879"><tspan fill="rgb(0,0,0)" stroke="none">.CSV</tspan></tspan></tspan></text>
        </g>
       </g>
      </g>
