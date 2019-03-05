@@ -483,6 +483,7 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/kernel/logger/style.css\" type=\"text/css\" />" << std::endl;
 	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
 	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
 	//doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/kernel/logger/script.js\"></script>" << std::endl;
 	doc_sstr << "\t</head>" << std::endl;
@@ -539,8 +540,7 @@ void LoggerServer::ScanWebInterfaceModdings(unisim::service::interfaces::WebInte
 	scanner.Append(unisim::service::interfaces::ToolbarOpenTabAction(
 		/* name */      GetName(), 
 		/* label */     "<img src=\"/unisim/kernel/logger/icon.svg\">",
-		/* tab title */ GetName(),
-		/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+		/* tile */      unisim::service::interfaces::OpenTabAction::BOTTOM_TILE,
 		/* uri */       URI()
 	));
 
@@ -553,7 +553,6 @@ void LoggerServer::ScanWebInterfaceModdings(unisim::service::interfaces::WebInte
 			/* name        */ std::string(this->GetName()) + "-" + client->GetName(),
 			/* object name */ client->GetName(),
 			/* label       */ "Show log",
-			/* tab title   */ std::string("Log of ") + client->GetName(),
 			/* tile        */ unisim::service::interfaces::OpenTabAction::BOTTOM_TILE,
 			/* uri         */ URI() + std::string("?object=") + unisim::util::hypapp::URI_Encoder::EncodeComponent(client->GetName())
 		));

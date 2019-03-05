@@ -97,28 +97,23 @@ struct OpenTabAction : JSAction
 	
 	OpenTabAction()
 		: JSAction()
-		, tab_title()
 		, tile(TOP_MIDDLE_TILE)
 		, uri()
 	{
 	}
 	
-	OpenTabAction(Location location, const std::string& name, const std::string& _tab_title, Tile _tile, const std::string& _uri)
+	OpenTabAction(Location location, const std::string& name, Tile _tile, const std::string& _uri)
 		: JSAction(location, name)
-		, tab_title(_tab_title)
 		, tile(_tile)
 		, uri(_uri)
 	{
 	}
 	
-	void SetTabTitle(const std::string& _tab_title) { tab_title = _tab_title; }
 	void SetTile(Tile _tile) { tile = _tile; }
 	void SetURI(const std::string& _uri) { uri = _uri; }
-	const std::string& GetTabTitle() const { return tab_title; }
 	Tile GetTile() const { return tile; }
 	const std::string& GetURI() const { return uri; }
 private:
-	std::string tab_title;
 	Tile tile;
 	std::string uri;
 };
@@ -184,9 +179,9 @@ struct BrowserOpenTabAction : BrowserAction, OpenTabAction
 	{
 	}
 	
-	BrowserOpenTabAction(const std::string& name, const std::string& object_name, const std::string& label, const std::string& tab_title, Tile tile, const std::string& uri)
+	BrowserOpenTabAction(const std::string& name, const std::string& object_name, const std::string& label, Tile tile, const std::string& uri)
 		: BrowserAction(object_name, label)
-		, OpenTabAction(BROWSER, name, tab_title, tile, uri)
+		, OpenTabAction(BROWSER, name, tile, uri)
 	{
 	}
 	
@@ -270,9 +265,9 @@ struct ToolbarOpenTabAction : ToolbarAction, OpenTabAction
 	{
 	}
 	
-	ToolbarOpenTabAction(const std::string& name, const std::string& label, const std::string& tab_title, Tile tile, const std::string& uri)
+	ToolbarOpenTabAction(const std::string& name, const std::string& label, Tile tile, const std::string& uri)
 		: ToolbarAction(label)
-		, OpenTabAction(TOOLBAR, name, tab_title, tile, uri)
+		, OpenTabAction(TOOLBAR, name, tile, uri)
 	{
 	}
 	

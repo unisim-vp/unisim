@@ -449,10 +449,6 @@ private:
 	bool disable_all_input_instruments;
 	bool enable_all_value_changed_breakpoints;
 	bool disable_all_value_changed_breakpoints;
-	std::map<UserInstrument *, bool> enable_input_instruments;
-	std::map<UserInstrument *, bool> enable_value_changed_breakpoints;
-	std::map<UserInstrument *, std::string> set_input_instruments;
-	std::map<UserInstrument *, bool> toggle_input_instruments;
 	
 	pthread_mutex_t mutex_instruments;
 	pthread_mutex_t mutex_post;

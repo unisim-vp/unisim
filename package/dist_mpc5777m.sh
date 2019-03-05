@@ -906,6 +906,9 @@ unisim/service/instrumenter/style.css \
 unisim/service/instrumenter/script.js \
 unisim/service/instrumenter/favicon.ico \
 unisim/service/instrumenter/icon.svg \
+unisim/service/instrumenter/icon_cont.svg \
+unisim/service/instrumenter/icon_intr.svg \
+unisim/service/instrumenter/icon_halt.svg \
 unisim/service/http_server/style.css \
 unisim/service/http_server/close-tab-hover.svg \
 unisim/service/http_server/close-tab.svg \
@@ -924,6 +927,7 @@ unisim/service/http_server/reg_style.css \
 unisim/service/http_server/reg_script.js \
 unisim/service/http_server/embedded_script.js \
 unisim/service/http_server/embedded_style.css \
+unisim/service/http_server/uri.js \
 unisim/service/debug/profiler/by_address.css \
 unisim/service/debug/profiler/by_function_histogram.css \
 unisim/service/debug/profiler/by_function_table.css \
@@ -938,6 +942,9 @@ unisim/service/debug/profiler/icon_svg_histogram.svg \
 unisim/service/debug/profiler/icon_table.svg \
 unisim/service/debug/profiler/icon_csv_table.svg \
 unisim/service/debug/profiler/icon_pc_table.svg \
+unisim/service/debug/profiler/icon_index.svg \
+unisim/service/debug/profiler/icon_to_table.svg \
+unisim/service/debug/profiler/icon_to_histogram.svg \
 unisim/service/debug/profiler/script.js \
 unisim/service/debug/profiler/by_function_histogram.js \
 unisim/service/debug/profiler/by_function_table.js \

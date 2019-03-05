@@ -279,7 +279,6 @@ bool HttpServer::EndSetup()
 					/* name        */ http_server_object->GetName(),
 					/* object name */ http_server_object->GetName(),
 					/* label       */ "Open",
-					/* tab title   */ unisim::util::hypapp::HTML_Encoder::Encode(http_server_object->GetName()),
 					/* tile        */ unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
 					/* uri         */ http_server_object->URI()
 				));
@@ -320,7 +319,6 @@ bool HttpServer::EndSetup()
 				/* name        */ std::string("config-") + object->GetName(),
 				/* object name */ object->GetName(),
 				/* label       */ "Configure",
-				/* tab title   */ std::string("Configuration of ") + unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()),
 				/* tile        */ unisim::service::interfaces::OpenTabAction::BOTTOM_TILE,
 				/* uri         */ std::string("/config?object=") + unisim::util::hypapp::URI_Encoder::EncodeComponent(object->GetName())
 			));
@@ -333,7 +331,6 @@ bool HttpServer::EndSetup()
 				/* name        */ std::string("stats-") + object->GetName(),
 				/* object name */ object->GetName(),
 				/* label       */ "Show statistics",
-				/* tab title   */ std::string("Statistics of ") + unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()),
 				/* tile        */ unisim::service::interfaces::OpenTabAction::BOTTOM_TILE,
 				/* uri         */ std::string("/stats?object=") + unisim::util::hypapp::URI_Encoder::EncodeComponent(object->GetName())
 			));
@@ -352,7 +349,6 @@ bool HttpServer::EndSetup()
 					/* name        */ std::string("registers-") + object->GetName(),
 					/* object name */ object->GetName(),
 					/* label       */ "Show registers",
-					/* tab title   */ std::string("Registers of ") + unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()),
 					/* tile        */ unisim::service::interfaces::OpenTabAction::TOP_RIGHT_TILE,
 					/* uri         */ std::string("/registers?object=") + unisim::util::hypapp::URI_Encoder::EncodeComponent(object->GetName())
 				));
@@ -409,7 +405,7 @@ bool HttpServer::EndSetup()
 		}
 	}
 	
-	//if(verbose)
+	if(verbose)
 	{
 		logger << DebugInfo << browser_actions.size() << " browser action(s) defined" << EndDebugInfo;
 		BrowserActions::const_iterator it;
@@ -444,7 +440,7 @@ void HttpServer::AddJSAction(const unisim::service::interfaces::BrowserOpenTabAc
 {
 	browser_actions.insert(std::pair<std::string, unisim::service::interfaces::BrowserAction *>(
 		a.GetObjectName(),
-		new unisim::service::interfaces::BrowserOpenTabAction(a, std::string("gui.open_tab('") + unisim::service::interfaces::to_string(a.GetTile()) + "','" + a.GetTabTitle() + "','" + a.GetName() + "','" + a.GetURI() + "')")
+		new unisim::service::interfaces::BrowserOpenTabAction(a, std::string("return gui && gui.open_tab('") + unisim::service::interfaces::to_string(a.GetTile()) + "','" + a.GetName() + "','" + a.GetURI() + "')")
 	));
 }
 
@@ -455,7 +451,7 @@ void HttpServer::AddJSAction(const unisim::service::interfaces::ToolbarDoAction&
 
 void HttpServer::AddJSAction(const unisim::service::interfaces::ToolbarOpenTabAction& a)
 {
-	toolbar_actions.push_back(new unisim::service::interfaces::ToolbarOpenTabAction(a, std::string("gui.open_tab('") + unisim::service::interfaces::to_string(a.GetTile()) + "','" + a.GetTabTitle() + "','" + a.GetName() + "','" + a.GetURI() + "')"));
+	toolbar_actions.push_back(new unisim::service::interfaces::ToolbarOpenTabAction(a, std::string("return gui && gui.open_tab('") + unisim::service::interfaces::to_string(a.GetTile()) + "','" + a.GetName() + "','" + a.GetURI() + "')"));
 }
 
 unisim::kernel::service::Object *HttpServer::FindChildObject(unisim::kernel::service::Object *object, const std::string& hierarchical_name, std::size_t& pos)
@@ -893,6 +889,7 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 	doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
 	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/var_style.css\" type=\"text/css\" />" << std::endl;
 	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
 	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
 	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/var_script.js\"></script>" << std::endl;
 	doc_sstr << "\t</head>" << std::endl;
@@ -1097,6 +1094,7 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 	doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
 	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/reg_style.css\" type=\"text/css\" />" << std::endl;
 	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
 	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
 	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/reg_script.js\"></script>" << std::endl;
 	doc_sstr << "\t</head>" << std::endl;
@@ -1289,6 +1287,7 @@ bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req,
 	}
 	
 	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
 	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/script.js\"></script>" << std::endl;
 	
 	for(JSFiles::const_iterator it = js_files.begin(); it != js_files.end(); it++)
@@ -1327,7 +1326,7 @@ bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req,
 	doc_sstr << "\t\t\t</div>" << std::endl;
 	doc_sstr << "\t\t\t<div class=\"tab-contents\" id=\"left-tab-contents-div\">" << std::endl;
 	doc_sstr << "\t\t\t\t<div name=\"browser-tab-content\" class=\"tab-content left-tab-content-div\" id=\"browser-tab-content\">" << std::endl;
-	doc_sstr << "\t\t\t\t\t<div id=\"browser\">" << std::endl;
+	doc_sstr << "\t\t\t\t\t<div class=\"noselect\" id=\"browser\">" << std::endl;
 	Crawl(doc_sstr, 6);
 	doc_sstr << "\t\t\t\t\t</div>" << std::endl;
 	doc_sstr << "\t\t\t\t</div>" << std::endl;

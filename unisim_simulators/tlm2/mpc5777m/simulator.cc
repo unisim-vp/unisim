@@ -6298,7 +6298,6 @@ bool Simulator::EndSetup()
 					unisim::service::interfaces::ToolbarOpenTabAction(
 							/* name */      profiler[prc_num]->GetName(), 
 							/* label */     label_sstr.str(),
-							/* tab title */ tab_title,
 							/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
 							/* uri */       profiler[prc_num]->URI()
 				));

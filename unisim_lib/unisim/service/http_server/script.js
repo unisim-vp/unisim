@@ -1,3 +1,5 @@
+// needs unisim/service/http_server/uri.js
+
 // https://tc39.github.io/ecma262/#sec-array.prototype.find
 if (!Array.prototype.find) {
   Object.defineProperty(Array.prototype, 'find', {
@@ -107,6 +109,8 @@ var CompatLayer =
 {
 	is_internet_explorer : !!navigator.userAgent.match(/Trident/g) || !!navigator.userAgent.match(/MSIE/g),
 	
+	is_firefox : !!navigator.userAgent.match(/Firefox/g),
+	
 	has_svg : !!(typeof SVGRect !== undefined),
 
 	get_element_width : function(el)
@@ -117,8 +121,10 @@ var CompatLayer =
 		{
 			var border_left_width = parseFloat(style.getPropertyValue('border-left-width'));
 			var border_right_width = parseFloat(style.getPropertyValue('border-right-width'));
+			var padding_left = parseFloat(style.getPropertyValue('padding-left'));
+			var padding_right = parseFloat(style.getPropertyValue('padding-right'));
 			
-			return width + border_left_width + border_right_width;
+			return width + border_left_width + border_right_width + padding_left + padding_right;
 		}
 		
 		return width;
@@ -132,11 +138,21 @@ var CompatLayer =
 		{
 			var border_top_width = parseFloat(style.getPropertyValue('border-top-width'));
 			var border_bottom_width = parseFloat(style.getPropertyValue('border-bottom-width'));
+			var padding_top = parseFloat(style.getPropertyValue('padding-top'));
+			var padding_bottom = parseFloat(style.getPropertyValue('padding-bottom'));
 			
-			return height + border_top_width + border_bottom_width;
+			return height + border_top_width + border_bottom_width + padding_top + padding_bottom;
 		}
 		
 		return height;
+	},
+	
+	get_element_pos : function(el)
+	{
+	    var rect = el.getBoundingClientRect();
+	    var scroll_left = window.pageXOffset || document.documentElement.scrollLeft;
+	    var scroll_top = window.pageYOffset || document.documentElement.scrollTop;
+	    return new Point(rect.left + scroll_left, rect.top + scroll_top);
 	},
 
 	get_iframe_scroll_pos : function(iframe)
@@ -165,45 +181,16 @@ function rewrite_uri_with_fragment(uri)
 	// which value is incremented so that browser is forced to reload content from server:
 	//   /path/to/resource#label             => /path/to/resource?foo=0#label
 	//   /path/to/resource?foo=5&bar=z#label => /path/to/resource?foo=6&bar=z#label
-	var query_pos = uri.indexOf("?");
 
-	var fragment_pos = -1;
-	if(query_pos != -1)
+	// rebuild uri adding/updating foo=x
+	var new_uri = new URI(uri);
+	
+	if(new_uri.fragment)
 	{
-		// URI has a query
-		var end = uri.slice(query_pos);
-		fragment_pos = end.indexOf("#");
-		if(fragment_pos != - 1)
+		if(new_uri.query)
 		{
-			// URI has a fragment
-			fragment_pos += query_pos;
-		}
-	}
-	else
-	{
-		// URI has no query
-		fragment_pos = uri.indexOf("#");
-	}
-
-	if(fragment_pos != -1)
-	{
-		// URI has a fragment
-		
-		var fragment = uri.slice(fragment_pos);
-		
-		var new_uri;
-		
-		if(query_pos != -1)
-		{
-			// URI has a query
-			var abs_path = uri.slice(0, query_pos);
-			var query = uri.substring(query_pos + 1, fragment_pos);
-			
-			// rebuild src adding/updating foo=x
-			new_uri = abs_path;
-			new_uri += '?';
-			
-			var assignments = query.split('&');
+			var assignments = new_uri.query.split('&');
+			new_uri.query = '';
 			
 			var found_foo = false;
 			var i;
@@ -211,7 +198,7 @@ function rewrite_uri_with_fragment(uri)
 			{
 				if(i != 0)
 				{
-					new_uri += '&';
+					new_uri.query += '&';
 				}
 				
 				var assignment_str = assignments[i];
@@ -225,16 +212,16 @@ function rewrite_uri_with_fragment(uri)
 					var foo = parseInt(assignment[1].trim(), 10);
 					if(!isNaN(foo))
 					{
-						new_uri += 'foo=' + (foo + 1);
+						new_uri.query += 'foo=' + (foo + 1);
 					}
 					else
 					{
-						new_uri += 'foo=0';
+						new_uri.query += 'foo=0';
 					}
 				}
 				else
 				{
-					new_uri += assignment_str;
+					new_uri.query += assignment_str;
 				}
 			}
 			
@@ -242,153 +229,179 @@ function rewrite_uri_with_fragment(uri)
 			{
 				if(assignments.length != 0)
 				{
-					new_uri += '&';
+					new_uri.query += '&';
 				}
-				new_uri += 'foo=0';
+				new_uri.query += 'foo=0';
 			}
-			
-			new_uri += fragment;
 		}
 		else
 		{
 			// URI has no query: add a query foo=0
-			var abs_path = uri.slice(0, fragment_pos);
-			new_uri = abs_path;
-			new_uri += '?foo=0';
-			new_uri += fragment;
+			new_uri.query = 'foo=0';
 		}
-		
-		return new_uri;
 	}
 	
-	return uri;
+	return new_uri;
 }
 
 // IFrame
 IFrame.prototype.owner = null;
-IFrame.prototype.name = null;
-IFrame.prototype.src = null;
-IFrame.prototype.class_name = null;
-IFrame.prototype.storage_item_prefix = null;
-IFrame.prototype.parent_element = null;
-IFrame.prototype.visible = false;
-IFrame.prototype.bg = 0;
-IFrame.prototype.fg = 1;
+IFrame.prototype.index = 0;
 IFrame.prototype.iframe_element = null;
-IFrame.prototype.load_requested = null;
-IFrame.prototype.cancelled_load = null;
-IFrame.prototype.loaded = null;
+IFrame.prototype.load_requested = false;
+IFrame.prototype.cancelled_load = false;
+IFrame.prototype.loaded = false;
+IFrame.prototype.previously_loaded = false;
 IFrame.prototype.bound_on_load = null;
 IFrame.prototype.bound_on_mouseenter = null;
 IFrame.prototype.bound_on_mouseleave = null;
 
-function IFrame(owner, name, src, class_name, storage_item_prefix, parent_element)
+function IFrame(owner,index)
+{
+	this.owner = owner;
+	this.index = index;
+	this.iframe_element = document.createElement('iframe');
+	this.iframe_element.className = this.owner.class_name;
+	this.iframe_element.setAttribute('name', this.owner.name + '-' + index);
+	this.iframe_element.setAttribute('id', this.owner.name + '-' + index);
+	this.load_requested = true; // load is fired twice: on iframe creation, on assignment of src attribute
+	this.load_cancelled = false;
+	this.loaded = false;
+	this.previously_loaded = false;
+	this.bound_on_load = this.owner.on_load.bind(owner, index);
+	this.iframe_element.addEventListener('load', this.bound_on_load);
+	if(CompatLayer.is_firefox)
+	{
+		this.bound_on_mouseenter = this.owner.on_mouseenter.bind(owner);
+		this.iframe_element.addEventListener('mouseenter', this.bound_on_mouseenter);
+		this.bound_on_mouseleave = this.owner.on_mouseleave.bind(owner);
+		this.iframe_element.addEventListener('mouseleave', this.bound_on_mouseleave);
+	}
+	else
+	{
+		this.bound_on_mouseenter = null;
+		this.bound_on_mouseleave = null;
+		//this.iframe_element.setAttribute('scrolling', 'yes');
+		this.iframe_element.style.overflow = 'auto';
+	}
+}
+
+IFrame.prototype.destroy = function()
+{
+	this.iframe_element.removeEventListener('load', this.bound_on_load);
+	if(this.bound_on_mouseenter) this.iframe_element.removeEventListener('mouseenter', this.bound_on_mouseenter);
+	if(this.bound_on_mouseleave) this.iframe_element.removeEventListener('mouseleave', this.bound_on_mouseleave);
+	this.iframe_element = null;
+	this.load_requested = false;
+	this.load_cancelled = false;
+	this.loaded = false;
+	this.previously_loaded = false;
+}
+
+// DoubleIFrame
+DoubleIFrame.prototype.owner = null;
+DoubleIFrame.prototype.name = null;
+DoubleIFrame.prototype.uri = null;
+DoubleIFrame.prototype.class_name = null;
+DoubleIFrame.prototype.storage_item_prefix = null;
+DoubleIFrame.prototype.parent_element = null;
+DoubleIFrame.prototype.visible = false;
+DoubleIFrame.prototype.bg = 0;
+DoubleIFrame.prototype.fg = 1;
+DoubleIFrame.prototype.iframes = null;
+
+function DoubleIFrame(owner, name, uri, class_name, storage_item_prefix, parent_element)
 {
 	this.owner = owner;
 	this.name = name;
-	this.src = src;
+	this.uri = uri;
 	this.class_name = class_name;
 	this.storage_item_prefix = storage_item_prefix;
 	this.visible = false;
 	this.bg = 0;
 	this.fg = 1;
-	this.iframe_element = new Array(2);
-	this.load_requested = new Array(2);
-	this.load_cancelled = new Array(2);
-	this.loaded = new Array(2);
-	this.bound_on_load = new Array(2);
-	this.bound_on_mouseenter = new Array(2);
-	this.bound_on_mouseleave = new Array(2);
+	this.iframes = new Array(2);
 	for(var i = 0; i < 2; i++)
 	{
-		this.iframe_element[i] = document.createElement('iframe');
-		this.iframe_element[i].className = this.class_name;
-		this.iframe_element[i].setAttribute('name', this.name + '-' + i);
-		this.iframe_element[i].setAttribute('id', this.name + '-' + i);
-		this.load_requested[i] = true; // load is fired twice: on iframe creation, on assignment of src attribute
-		this.load_cancelled[i] = false;
-		this.loaded[i] = false;
-		this.bound_on_load[i] = this.on_load.bind(this, i);
-		this.iframe_element[i].addEventListener('load', this.bound_on_load[i]);
-		this.bound_on_mouseenter[i] = this.on_mouseenter.bind(this);
-		this.iframe_element[i].addEventListener('mouseenter', this.bound_on_mouseenter[i]);
-		this.bound_on_mouseleave[i] = this.on_mouseleave.bind(this);
-		this.iframe_element[i].addEventListener('mouseleave', this.bound_on_mouseleave[i]);
+		this.iframes[i] = new IFrame(this, i);
 	}
 	this.attach(parent_element);
 }
 
-IFrame.prototype.destroy = function()
+DoubleIFrame.prototype.destroy = function()
 {
 	this.detach();
 	for(var i = 0; i < 2; i++)
 	{
-		this.iframe_element[i].removeEventListener('load', this.bound_on_load[i]);
-		this.iframe_element[i].removeEventListener('mouseenter', this.bound_on_mouseenter[i]);
-		this.iframe_element[i].removeEventListener('mouseleave', this.bound_on_mouseleave[i]);
-		this.iframe_element[i] = null;
+		this.iframes[i].destroy();
+		this.iframes[i] = null;
 	}
-	this.load_requested = null;
-	this.load_cancelled = null;
-	this.loaded = null;
 	this.name = null;
-	this.src = null;
+	this.uri = null;
 	this.class_name = null;
 	this.storage_item_prefix = null;
 	this.parent_element = null;
 }
 
-IFrame.prototype.on_load = function(i)
+DoubleIFrame.prototype.on_load = function(i)
 {
-	console.log(this.name + ':frame #' + i + ' loaded');
-	if(this.load_cancelled[i])
+//	console.log(this.name + ':frame #' + i + ' loaded');
+	if(this.iframes[i].load_cancelled)
 	{
-		this.load_cancelled[i] = false;
+		this.iframes[i].load_cancelled = false;
 		return;
 	}
 
-	this.save_scroll_position();
+	if(this.iframes[i].previously_loaded)
+	{
+		this.save_scroll_position();
+	}
 	this.bg = i; // last loaded iframe is the background iframe at the moment
 	this.fg = 1 - this.bg;
-	if(!this.load_requested[this.bg] && this.load_requested[this.fg])
+	if(!this.iframes[this.bg].load_requested && this.iframes[this.fg].load_requested)
 	{
 		// this is not a load we've requested but we've already requested a load on another iframe: user may have click an hyperlink in the iframe, so cancel our refresh in other iframe
-		this.load_cancelled[this.fg] = true;
+		this.iframes[this.fg].load_cancelled = true;
 	}
-	var src = null;
-	if(!this.load_requested[this.bg])
+	var uri = null;
+	if(!this.iframes[this.bg].load_requested)
 	{
-		// this is not a load we've requested: src may have changed
+		// this is not a load we've requested: uri may have changed
 		try
 		{
-			src = this.iframe_element[this.bg].contentWindow.location.href;
+			uri = new URI(this.iframes[this.bg].iframe_element.contentWindow.location.href);
+//			uri_str = this.iframes[this.bg].iframe_element.contentWindow.location.pathname;
 		}
 		catch(e)
 		{
-			src = this.iframe_element[this.bg].getAttribute('src');
+			uri = new URI(this.iframes[this.bg].iframe_element.getAttribute('src'));
 		}
 	}
-	this.loaded[this.bg] = true; // mark background iframe as loaded
-	this.load_requested[this.bg] = false;
-	this.load_cancelled[this.bg] = false;
-	// update tab src (it may have changed because of user click on hyperlink within iframe of tab)
-	if(src && (src != this.src))
+	this.iframes[this.bg].loaded = true; // mark background iframe as loaded
+	this.iframes[this.bg].load_requested = false;
+	this.iframes[this.bg].load_cancelled = false;
+	// update tab uri (it may have changed because of user click on hyperlink within iframe of tab)
+	if(uri && (uri != this.uri))
 	{
-		this.src = src;
-		this.owner.tab_config.src = src;
+		this.uri = uri;
+		this.owner.tab_config.uri = uri;
 		this.owner.owner.save_tabs();
 	}
-	else
+	else if(this.iframes[this.bg].previously_loaded)
 	{
 		this.restore_scroll_position(); // restore scroll position
 	}
 	
+	this.iframes[this.bg].previously_loaded = true;
+	
+	this.patch_anchors();
 	// simulate unloading before flipping
 	this.trigger_on_unload();
+	this.owner.set_label(this.iframes[this.bg].iframe_element.contentDocument.title);
 	// show freshly loaded iframe
-	this.iframe_element[this.bg].setAttribute('style', 'visibility:' + (this.visible ? 'visible' : 'hidden'));
+	this.iframes[this.bg].iframe_element.setAttribute('style', 'visibility:' + (this.visible ? 'visible' : 'hidden'));
 	// hide old iframe
-	if(this.iframe_element[this.fg]) this.iframe_element[this.fg].setAttribute('style', 'visibility:hidden');
+	if(this.iframes[this.fg].iframe_element) this.iframes[this.fg].iframe_element.setAttribute('style', 'visibility:hidden');
 	// swap iframe role (background/foreground)
 	this.fg = this.bg;
 	this.bg = 1 - this.fg;
@@ -397,44 +410,87 @@ IFrame.prototype.on_load = function(i)
 // 	console.log(this.name + ':next frame is frame #' + this.bg);
 }
 
-IFrame.prototype.update_src = function()
+DoubleIFrame.prototype.patch_anchors = function()
 {
-	var new_src = rewrite_uri_with_fragment(this.src);
-	
-	if(new_src != this.src)
+	var iframe_element = this.iframes[this.bg].iframe_element;
+	var anchor_elements = iframe_element.contentDocument.documentElement.getElementsByTagName('a');
+	for(var i = 0; i < anchor_elements.length; i++)
 	{
-		this.src = new_src;
-		this.owner.tab_config.src = new_src;
-		this.owner.owner.save_tabs();
-	}
-
-	// update src attribute of iframe
-	if(this.iframe_element[this.bg].hasAttribute('src'))
-	{
-		this.iframe_element[this.bg].contentWindow.location.replace(this.src);
-	}
-	else
-	{
-		this.iframe_element[this.bg].setAttribute('src', this.src);
+		var anchor_element = anchor_elements[i];
+		
+		if(anchor_element.hasAttribute('href'))
+		{
+			var href = anchor_element.getAttribute('href');
+			var uri = new URI(href, iframe_element.contentWindow);
+// 			console.log('on_dom_content_loaded:\'' + href + '\' => \'' + uri.toString() + '\'');
+			var uri_str = uri.toString();
+			anchor_element.addEventListener('contextmenu',
+				function(uri_str, event)
+				{
+					var rect = iframe_element.getBoundingClientRect();
+					var scroll_left = window.pageXOffset || window.document.documentElement.scrollLeft;
+					var scroll_top = window.pageYOffset || window.document.documentElement.scrollTop;
+					var offset_x = rect.left + scroll_left;
+					var offset_y = rect.top + scroll_top;
+					gui.create_context_menu(event,
+					[
+						{
+							label:'Open in new tab',
+							action:function() { gui.open_tab(this.owner.owner.name, this.owner.tab_config.name_seed, uri_str); },
+							arg:uri_str
+						}
+					], this, window.document, offset_x, offset_y);
+				}.bind(this, uri_str)
+			);
+		}
 	}
 }
 
-IFrame.prototype.refresh = function()
+DoubleIFrame.prototype.update_uri = function()
+{
+	var new_uri = rewrite_uri_with_fragment(this.uri);
+	
+	if(new_uri != this.uri)
+	{
+		this.uri = new_uri;
+		this.owner.tab_config.uri = new_uri;
+		this.owner.owner.save_tabs();
+	}
+
+	if(this.uri != window.location.href)
+	{
+		// update src attribute of iframe
+		if(this.iframes[this.bg].iframe_element.hasAttribute('src'))
+		{
+			this.iframes[this.bg].iframe_element.contentWindow.location.replace(this.uri.toString());
+		}
+		else
+		{
+			this.iframes[this.bg].iframe_element.setAttribute('src', this.uri.toString());
+		}
+	}
+	else
+	{
+		window.alert("Error! recursive iframe problem detected");
+	}
+}
+
+DoubleIFrame.prototype.refresh = function()
 {
 //	console.log(this.name + ':refresh');
 // 	this.save_scroll_position();
 // 	this.trigger_on_unload();
-	this.loaded[this.bg] = false;
-	this.load_requested[this.bg] = true;
-	this.load_cancelled[this.bg] = false;
-	this.update_src();
+	this.iframes[this.bg].loaded = false;
+	this.iframes[this.bg].load_requested = true;
+	this.iframes[this.bg].load_cancelled = false;
+	this.update_uri();
 }
 
-IFrame.prototype.trigger_on_unload = function()
+DoubleIFrame.prototype.trigger_on_unload = function()
 {
-	if(this.loaded[this.fg])
+	if(this.iframes[this.fg].loaded)
 	{
-		var fg_iframe = this.iframe_element[this.fg];
+		var fg_iframe = this.iframes[this.fg].iframe_element;
 		if(fg_iframe.contentWindow && fg_iframe.contentWindow.gui && (fg_iframe.contentWindow.gui.magic == 0xC0CA))
 		{
 			fg_iframe.contentWindow.gui.__on_unload__();
@@ -442,11 +498,11 @@ IFrame.prototype.trigger_on_unload = function()
 	}
 }
 
-IFrame.prototype.trigger_on_load = function()
+DoubleIFrame.prototype.trigger_on_load = function()
 {
-	if(this.loaded[this.fg])
+	if(this.iframes[this.fg].loaded)
 	{
-		var fg_iframe = this.iframe_element[this.fg];
+		var fg_iframe = this.iframes[this.fg].iframe_element;
 		if(fg_iframe.contentWindow && fg_iframe.contentWindow.gui && (fg_iframe.contentWindow.gui.magic == 0xC0CA))
 		{
 			fg_iframe.contentWindow.gui.__on_load__();
@@ -454,50 +510,50 @@ IFrame.prototype.trigger_on_load = function()
 	}
 }
 
-IFrame.prototype.set_visible = function(v)
+DoubleIFrame.prototype.set_visible = function(v)
 {
 	this.visible = v;
-	this.iframe_element[this.fg].style.visibility = (this.visible && this.loaded[this.fg]) ? 'visible' : 'hidden';
+	this.iframes[this.fg].iframe_element.style.visibility = (this.visible && this.iframes[this.fg].loaded) ? 'visible' : 'hidden';
 }
 
-IFrame.prototype.on_mouseenter = function()
+DoubleIFrame.prototype.on_mouseenter = function()
 {
 	for(var i = 0; i < 2; i++)
 	{
-		this.iframe_element[i].setAttribute('scrolling', 'yes');
-		this.iframe_element[i].style.overflow = 'auto';
+		this.iframes[i].iframe_element.setAttribute('scrolling', 'yes');
+		this.iframes[i].iframe_element.style.overflow = 'auto';
 	}
 }
 
-IFrame.prototype.on_mouseleave = function()
+DoubleIFrame.prototype.on_mouseleave = function()
 {
 	for(var i = 0; i < 2; i++)
 	{
-		this.iframe_element[i].setAttribute('scrolling', 'no');
-		this.iframe_element[i].style.overflow = 'hidden';
+		this.iframes[i].iframe_element.setAttribute('scrolling', 'no');
+		this.iframes[i].iframe_element.style.overflow = 'hidden';
 	}
 }
 
-IFrame.prototype.enable_pointer_events = function(v)
+DoubleIFrame.prototype.enable_pointer_events = function(v)
 {
 	for(var i = 0; i < 2; i++)
 	{
-		this.iframe_element[i].style.pointerEvents = (((v === undefined) || v) ? 'auto' : 'none');
+		this.iframes[i].iframe_element.style.pointerEvents = (((v === undefined) || v) ? 'auto' : 'none');
 	}
 }
 
-IFrame.prototype.save_scroll_position = function()
+DoubleIFrame.prototype.save_scroll_position = function()
 {
-	if(!this.loaded[this.fg]) return;
+	if(!this.iframes[this.fg].loaded) return;
 	
-	if(!this.iframe_element[this.fg].contentWindow) return;
+	if(!this.iframes[this.fg].iframe_element.contentWindow) return;
 	
-	if(!this.iframe_element[this.fg].contentDocument) return;
+	if(!this.iframes[this.fg].iframe_element.contentDocument) return;
 	
 	var scroll_x_item_name = this.storage_item_prefix + 'scroll-x';
 	var scroll_y_item_name = this.storage_item_prefix + 'scroll-y';
 	
-	var scroll_pos = CompatLayer.get_iframe_scroll_pos(this.iframe_element[this.fg]);
+	var scroll_pos = CompatLayer.get_iframe_scroll_pos(this.iframes[this.fg].iframe_element);
 	
 // 	console.log(this.name + ':' + scroll_x_item_name + ' <- ' + scroll_pos.x);
 // 	console.log(this.name + ':' + scroll_y_item_name + ' <- ' + scroll_pos.y);
@@ -506,13 +562,13 @@ IFrame.prototype.save_scroll_position = function()
 	sessionStorage.setItem(scroll_y_item_name, scroll_pos.y);
 }
 
-IFrame.prototype.restore_scroll_position = function()
+DoubleIFrame.prototype.restore_scroll_position = function()
 {
-	if(!this.loaded[this.bg]) return;
+	if(!this.iframes[this.bg].loaded) return;
 	
-	if(!this.iframe_element[this.bg].contentWindow) return;
+	if(!this.iframes[this.bg].iframe_element.contentWindow) return;
 	
-	if(!this.iframe_element[this.bg].contentDocument) return;
+	if(!this.iframes[this.bg].iframe_element.contentDocument) return;
 
 	var scroll_x_item_name = this.storage_item_prefix + 'scroll-x';
 	var scroll_y_item_name = this.storage_item_prefix + 'scroll-y';
@@ -525,51 +581,51 @@ IFrame.prototype.restore_scroll_position = function()
 // 		console.log(this.name + ':' + scroll_x_item_name + ' == ' + scroll_x);
 // 		console.log(this.name + ':' + scroll_y_item_name + ' == ' + scroll_y);
 		
-		CompatLayer.set_iframe_scroll_pos(this.iframe_element[this.bg], new Point(scroll_x, scroll_y));
+		CompatLayer.set_iframe_scroll_pos(this.iframes[this.bg].iframe_element, new Point(scroll_x, scroll_y));
 	}
 }
 
-IFrame.prototype.set_scroll_pos = function(scroll_pos)
+DoubleIFrame.prototype.set_scroll_pos = function(scroll_pos)
 {
 	for(var i = 0; i < 2; i++)
 	{
-		CompatLayer.set_iframe_scroll_pos(this.iframe_element[i], scroll_pos);
+		CompatLayer.set_iframe_scroll_pos(this.iframes[i].iframe_element, scroll_pos);
 	}
 }
 
-IFrame.prototype.has_iframe = function(iframe_name)
+DoubleIFrame.prototype.has_iframe = function(iframe_name)
 {
 	for(var i = 0; i < 2; i++)
 	{
-		if(this.iframe_element[i].hasAttribute('name') && (this.iframe_element[i].getAttribute('name') == iframe_name)) return true;
+		if(this.iframes[i].iframe_element.hasAttribute('name') && (this.iframes[i].iframe_element.getAttribute('name') == iframe_name)) return true;
 	}
 	
 	return false;
 }
 
-IFrame.prototype.is_foreground_iframe = function(iframe_name)
+DoubleIFrame.prototype.is_foreground_iframe = function(iframe_name)
 {
-	return this.iframe_element[this.fg].hasAttribute('name') && (this.iframe_element[this.fg].getAttribute('name') == iframe_name);
+	return this.iframes[this.fg].iframe_element.hasAttribute('name') && (this.iframes[this.fg].iframe_element.getAttribute('name') == iframe_name);
 }
 
-IFrame.prototype.get_next_target = function(iframe_name)
+DoubleIFrame.prototype.get_next_target = function(iframe_name)
 {
-	if(this.iframe_element[0].hasAttribute('name') && this.iframe_element[1].hasAttribute('name'))
+	if(this.iframes[0].iframe_element.hasAttribute('name') && this.iframes[1].iframe_element.hasAttribute('name'))
 	{
-		if(this.iframe_element[0].getAttribute('name') == iframe_name)
+		if(this.iframes[0].iframe_element.getAttribute('name') == iframe_name)
 		{
-			return this.iframe_element[1].getAttribute('name');
+			return this.iframes[1].iframe_element.getAttribute('name');
 		}
-		else if(this.iframe_element[1].getAttribute('name') == iframe_name)
+		else if(this.iframes[1].iframe_element.getAttribute('name') == iframe_name)
 		{
-			return this.iframe_element[0].getAttribute('name');
+			return this.iframes[0].iframe_element.getAttribute('name');
 		}
 	}
 	
 	return '_self';
 }
 
-IFrame.prototype.detach = function()
+DoubleIFrame.prototype.detach = function()
 {
 	this.save_scroll_position();
 	
@@ -577,21 +633,31 @@ IFrame.prototype.detach = function()
 	{
 		for(var i = 0; i < 2; i++)
 		{
-			this.parent_element.removeChild(this.iframe_element[i]);
-			this.loaded[i] = false;
+			this.parent_element.removeChild(this.iframes[i].iframe_element);
+			this.iframes[i].loaded = false;
 		}
 		this.parent_element = null;
 	}
 }
 
-IFrame.prototype.attach = function(parent_element)
+DoubleIFrame.prototype.attach = function(parent_element)
 {
 	this.parent_element = parent_element;
 	for(var i = 0; i < 2; i++)
 	{
-		this.parent_element.appendChild(this.iframe_element[i]);
+		this.parent_element.appendChild(this.iframes[i].iframe_element);
 	}
 	this.restore_scroll_position();
+}
+
+DoubleIFrame.prototype.get_foreground_iframe = function()
+{
+	return this.iframes[this.fg];
+}
+
+DoubleIFrame.prototype.get_background_iframe = function()
+{
+	return this.iframes[this.bg];
 }
 
 // ChildWindow
@@ -614,29 +680,33 @@ ChildWindow.prototype.closed = function()
 }
 
 // TabConfig
-TabConfig.prototype.label = null;
+TabConfig.prototype.name_seed = null;
 TabConfig.prototype.name = null;
-TabConfig.prototype.src = null;
+TabConfig.prototype.uri = null;
+TabConfig.prototype.label = null;
 
-function TabConfig(label, name, src)
+function TabConfig(name_seed, name, uri)
 {
-	this.label = label;
+	this.name_seed = name_seed;
 	this.name = name;
-	this.src = src;
+	this.uri = uri;
+	this.label = null;
 }
 
 TabConfig.prototype.save = function(prefix)
 {
-	if(this.label) sessionStorage.setItem(prefix + 'label', this.label);
+	if(this.name_seed) sessionStorage.setItem(prefix + 'name_seed', this.name_seed);
 	if(this.name) sessionStorage.setItem(prefix + 'name', this.name);
-	if(this.src) sessionStorage.setItem(prefix + 'src', this.src);
+	if(this.uri) sessionStorage.setItem(prefix + 'uri', this.uri.toString());
+	if(this.label) sessionStorage.setItem(prefix + 'label', this.label);
 }
 
 TabConfig.prototype.restore = function(prefix)
 {
-	this.label = sessionStorage.getItem(prefix + 'label');
+	this.name_seed = sessionStorage.getItem(prefix + 'name_seed');
 	this.name = sessionStorage.getItem(prefix + 'name');
-	this.src = sessionStorage.getItem(prefix + 'src');
+	this.uri = new URI(sessionStorage.getItem(prefix + 'uri'));
+	this.label = sessionStorage.getItem(prefix + 'label');
 }
 
 // TabConfigs
@@ -694,16 +764,21 @@ TabConfigs.prototype.find_tab_config_by_name = function(name)
 	return this.tab_configs.find(function(tab_config) { return tab_config.name == name; });
 }
 
+TabConfigs.prototype.find_tab_config_by_uri = function(uri)
+{
+	return this.tab_configs.find(function(tab_config) { return tab_config.uri && tab_config.uri.compare(uri); });
+}
+
 // Tab
 Tab.prototype.owner = null;
 Tab.prototype.tab_config = null;
 Tab.prototype.static = false;
 Tab.prototype.tab_header = null;
 Tab.prototype.tab_content = null;
+Tab.prototype.tab_header_label = null;
 Tab.prototype.close_tab = null;
 Tab.prototype.bound_close_tab_onclick = null;
 Tab.prototype.is_active = false;
-Tab.prototype.loaded = false;
 Tab.prototype.bound_tab_header_onclick = null;
 Tab.prototype.bound_tab_header_oncontextmenu = null;
 Tab.prototype.storage_item_prefix = null;
@@ -715,10 +790,10 @@ function Tab(owner)
 	this.static = false;
 	this.tab_header = null;
 	this.tab_content = null;
+	this.tab_header_label = null;
 	this.close_tab = null;
 	this.bound_close_tab_onclick = null;
 	this.is_active = false;
-	this.loaded = false;
 	this.bound_tab_header_onclick = null;
 	this.bound_tab_header_oncontextmenu = null;
 	this.storage_item_prefix = null;
@@ -732,11 +807,13 @@ Tab.prototype.create = function(tab_config)
 	this.close_tab.className = 'close-tab ' + (CompatLayer.has_svg ? 'w-svg' : 'wo-svg');
 	this.tab_header = document.createElement('div');
 	this.tab_header.className = 'tab-header noselect';
-	this.tab_header.innerHTML = this.tab_config.label;
+	this.tab_header_label = document.createElement('span');
+	this.tab_header_label.innerHTML = 'Loading&hellip;';
+	this.tab_header.appendChild(this.tab_header_label);
 	this.tab_header.appendChild(this.close_tab);
 	this.owner.tab_headers.appendChild(this.tab_header);
 	this.storage_item_prefix = 'gui.' + this.owner.name + '.' + this.tab_config.name + '.';
-	this.tab_content = new IFrame(this, this.tab_config.name, this.tab_config.src, 'tab-content', this.storage_item_prefix, this.owner.tab_contents);
+	this.tab_content = new DoubleIFrame(this, this.tab_config.name, this.tab_config.uri, 'tab-content', this.storage_item_prefix, this.owner.tab_contents);
 	
 	this.bound_tab_header_onclick = this.tab_header_onclick.bind(this);
 	this.tab_header.addEventListener('click', this.bound_tab_header_onclick, false);
@@ -790,6 +867,7 @@ Tab.prototype.destroy = function()
 		this.tab_config = null;
 		this.tab_header = null;
 		this.tab_content = null;
+		this.tab_header_label = null;
 		this.close_tab = null;
 		this.bound_close_tab_onclick = null;
 		this.bound_tab_header_onclick = null;
@@ -822,12 +900,6 @@ Tab.prototype.refresh = function()
 	{
 		this.tab_content.refresh();
 	}
-}
-
-Tab.prototype.tab_content_on_load = function(event)
-{
-	this.loaded = true;
-	this.restore_scroll_position();
 }
 
 Tab.prototype.save_scroll_position = function()
@@ -907,7 +979,7 @@ Tab.prototype.tab_header_oncontextmenu = function(event)
 		}
 	} ];
 	
-	if(this.owner.name != 'left-tabs')
+	if(this.owner.name != 'left-tile')
 	{
 		context_menu_items.push(
 		{
@@ -919,7 +991,7 @@ Tab.prototype.tab_header_oncontextmenu = function(event)
 		});
 	}
 	
-	if(this.owner.name != 'top-middle-tabs')
+	if(this.owner.name != 'top-middle-tile')
 	{
 		context_menu_items.push(
 		{
@@ -931,7 +1003,7 @@ Tab.prototype.tab_header_oncontextmenu = function(event)
 		});
 	}
 	
-	if(this.owner.name != 'top-right-tabs')
+	if(this.owner.name != 'top-right-tile')
 	{
 		context_menu_items.push(
 		{
@@ -943,7 +1015,7 @@ Tab.prototype.tab_header_oncontextmenu = function(event)
 		});
 	}
 
-	if(this.owner.name != 'bottom-tabs')
+	if(this.owner.name != 'bottom-tile')
 	{
 		context_menu_items.push(
 		{
@@ -987,34 +1059,50 @@ Tab.prototype.get_next_target = function(iframe_name)
 	return this.static ? '_self' : this.tab_content.get_next_target(iframe_name);
 }
 
-// Tabs
-Tabs.prototype.owner = null;
-Tabs.prototype.name = null;
-Tabs.prototype.tile = null;
-Tabs.prototype.tab_headers = null;
-Tabs.prototype.tab_contents = null;
-Tabs.prototype.tab_headers_left_scroller = null;
-Tabs.prototype.tab_headers_right_scroller = null;
-Tabs.prototype.tabs = null;
-Tabs.prototype.tile_width = 0;
-Tabs.prototype.controls_width = 0;
-Tabs.prototype.tab_headers_width = 0;
-Tabs.prototype.tab_config_history = null;
-Tabs.prototype.history_shortcut_element = null;
-Tabs.prototype.history_element = null;
+Tab.prototype.get_foreground_iframe = function()
+{
+	return this.static ? null : this.tab_content.get_foreground_iframe();
+}
 
-function Tabs(owner, name, tile)
+Tab.prototype.get_background_iframe = function()
+{
+	return this.static ? null : this.tab_content.get_background_iframe();
+}
+
+Tab.prototype.set_label = function(label)
+{
+	this.tab_config.label = label;
+	this.tab_header_label.textContent = label;
+}
+
+// Tile
+Tile.prototype.owner = null;
+Tile.prototype.name = null;
+Tile.prototype.tile_element = null;
+Tile.prototype.tab_headers = null;
+Tile.prototype.tab_contents = null;
+Tile.prototype.tab_headers_left_scroller = null;
+Tile.prototype.tab_headers_right_scroller = null;
+Tile.prototype.tabs = null;
+Tile.prototype.tile_width = 0;
+Tile.prototype.controls_width = 0;
+Tile.prototype.tab_headers_width = 0;
+Tile.prototype.tab_config_history = null;
+Tile.prototype.history_shortcut_element = null;
+Tile.prototype.history_element = null;
+
+function Tile(owner, name, tile_element)
 {
 	this.owner = owner;
 	this.name = name;
-	this.tile = tile;
-	this.tab_headers = this.tile.getElementsByClassName('tab-headers')[0];
-	this.tab_contents = this.tile.getElementsByClassName('tab-contents')[0];
-	this.history_shortcut_element = this.tile.getElementsByClassName('tab-headers-history-shortcut')[0];
+	this.tile_element = tile_element;
+	this.tab_headers = this.tile_element.getElementsByClassName('tab-headers')[0];
+	this.tab_contents = this.tile_element.getElementsByClassName('tab-contents')[0];
+	this.history_shortcut_element = this.tile_element.getElementsByClassName('tab-headers-history-shortcut')[0];
 	this.history_shortcut_element.classList.add(CompatLayer.has_svg ? 'w-svg' : 'wo-svg');
-	this.tab_headers_left_scroller = this.tile.getElementsByClassName('tab-headers-left-scroller')[0];
+	this.tab_headers_left_scroller = this.tile_element.getElementsByClassName('tab-headers-left-scroller')[0];
 	this.tab_headers_left_scroller.classList.add(CompatLayer.has_svg ? 'w-svg' : 'wo-svg');
-	this.tab_headers_right_scroller = this.tile.getElementsByClassName('tab-headers-right-scroller')[0];
+	this.tab_headers_right_scroller = this.tile_element.getElementsByClassName('tab-headers-right-scroller')[0];
 	this.tab_headers_right_scroller.classList.add(CompatLayer.has_svg ? 'w-svg' : 'wo-svg');
 	this.tabs = new Array();
 	this.tab_config_history = new TabConfigs();
@@ -1062,14 +1150,20 @@ function Tabs(owner, name, tile)
 	this.restore_history();
 	this.restore_active_tab();
 	this.restore_tab_headers_left();
+	this.tabs.forEach(function(tab) { if(!tab.is_active) tab.refresh(); });
 }
 
-Tabs.prototype.save_active_tab = function(tab)
+Tile.prototype.has_tabs = function()
+{
+	return this.tabs.length != 0;
+}
+
+Tile.prototype.save_active_tab = function(tab)
 {
 	sessionStorage.setItem('gui.' + this.name + '.active-tab', tab.tab_config.name);
 }
 
-Tabs.prototype.save_tabs = function()
+Tile.prototype.save_tabs = function()
 {
 	sessionStorage.setItem('gui.' + this.name + '.length', this.tabs.length);
 	for(var i = 0; i < this.tabs.length; i++)
@@ -1079,17 +1173,17 @@ Tabs.prototype.save_tabs = function()
 	}
 }
 
-Tabs.prototype.save_history = function()
+Tile.prototype.save_history = function()
 {
 	this.tab_config_history.save('gui.' + this.name + '.history' + '.');
 }
 
-Tabs.prototype.save_tab_headers_left = function()
+Tile.prototype.save_tab_headers_left = function()
 {
 	sessionStorage.setItem('gui.' + this.name + '.tab-headers.style.left', this.tab_headers.style.left);
 }
 
-Tabs.prototype.restore_active_tab = function()
+Tile.prototype.restore_active_tab = function()
 {
 	var name = sessionStorage.getItem('gui.' + this.name + '.active-tab');
 	var tab = this.find_tab_by_name(name);
@@ -1099,56 +1193,55 @@ Tabs.prototype.restore_active_tab = function()
 	}
 }
 
-Tabs.prototype.restore_history = function()
+Tile.prototype.restore_history = function()
 {
 	this.tab_config_history.restore('gui.' + this.name + '.history' + '.');
 }
 
-Tabs.prototype.restore_tab_headers_left = function()
+Tile.prototype.restore_tab_headers_left = function()
 {
 	var tab_headers_left = sessionStorage.getItem('gui.' + this.name + '.tab-headers.style.left');
 	if(tab_headers_left) this.tab_headers.style.left = tab_headers_left;
 }
 
-Tabs.prototype.compute_dynamic_widths = function()
+Tile.prototype.compute_dynamic_widths = function()
 {
-	this.tile_width = this.tile_width = CompatLayer.get_element_width(this.tile);
+	this.tile_width = CompatLayer.get_element_width(this.tile_element);
 	this.tab_headers_width = 0;
 	var tab_headers = this.tab_headers.getElementsByClassName('tab-header');
 	for(var i = 0; i < tab_headers.length; i++)
 	{
 		var tab_header = tab_headers[i];
 		var tab_header_width = CompatLayer.get_element_width(tab_header);
-		this.tab_headers_width = this.tab_headers_width + tab_header_width;
+		this.tab_headers_width += tab_header_width;
 	}
 }
 
-Tabs.prototype.create_tab = function(label, name, src)
+Tile.prototype.find_tab_config_history_by_name = function(name)
 {
-	var tab = this.find_tab_by_name(name);
-	if(!tab)
+	return this.tab_config_history.find_tab_config_by_name(name);
+}
+
+Tile.prototype.create_tab = function(name_seed, name, uri)
+{
+	tab = new Tab(this);
+	var tab_config = this.tab_config_history.find_tab_config_by_uri(uri);
+	if(tab_config)
 	{
-		tab = new Tab(this);
-		var tab_config = this.tab_config_history.find_tab_config_by_name(name);
-		if(tab_config)
-		{
-			tab_config.label = label;
-			tab_config.src = src;
-			this.tab_config_history.remove(tab_config);
-			this.save_history();
-		}
-		else
-		{
-			tab_config = new TabConfig(label, name, src)
-		}
-		tab.create(tab_config);
-		this.tabs.push(tab);
-		this.save_tabs();
+		this.tab_config_history.remove(tab_config);
+		this.save_history();
 	}
+	else
+	{
+		tab_config = new TabConfig(name_seed, name, uri)
+	}
+	tab.create(tab_config);
+	this.tabs.push(tab);
+	this.save_tabs();
 	return tab;
 }
 
-Tabs.prototype.create_tab_from_config = function(tab_config)
+Tile.prototype.create_tab_from_config = function(tab_config)
 {
 	var tab = this.find_tab_by_name(tab_config.name);
 	
@@ -1162,7 +1255,7 @@ Tabs.prototype.create_tab_from_config = function(tab_config)
 	return tab;
 }
 
-Tabs.prototype.destroy_tab = function(tab_to_destroy)
+Tile.prototype.destroy_tab = function(tab_to_destroy)
 {
 	var tab_num = this.tabs.findIndex(function(tab) { return tab == tab_to_destroy; });
 	
@@ -1181,12 +1274,12 @@ Tabs.prototype.destroy_tab = function(tab_to_destroy)
 	}
 }
 
-Tabs.prototype.destroy_nth_tab = function(tab_num)
+Tile.prototype.destroy_nth_tab = function(tab_num)
 {
 	this.destroy_tab(this.tabs[tab_num]);
 }
 
-Tabs.prototype.switch_to = function(tab)
+Tile.prototype.switch_to = function(tab)
 {
 	for(var tab_num = 0; tab_num < this.tabs.length; tab_num++)
 	{
@@ -1194,12 +1287,13 @@ Tabs.prototype.switch_to = function(tab)
 		this.tabs[tab_num].set_active(is_active);
 		if(is_active)
 		{
+			this.ensure_tab_header_is_in_visible_scope(tab);
 			this.save_active_tab(tab);
 		}
 	}
 }
 
-Tabs.prototype.switch_to_nth_tab = function(tab_num)
+Tile.prototype.switch_to_nth_tab = function(tab_num)
 {
 	if(tab_num < this.tabs.length)
 	{
@@ -1208,27 +1302,32 @@ Tabs.prototype.switch_to_nth_tab = function(tab_num)
 	}
 }
 
-Tabs.prototype.enable_pointer_events = function(v)
+Tile.prototype.enable_pointer_events = function(v)
 {
 	this.tabs.forEach(function(tab) { tab.enable_pointer_events(v); });
 }
 
-Tabs.prototype.find_tab = function(tab)
+Tile.prototype.find_tab = function(tab)
 {
 	return this.tabs.find(function(elt) { return elt == tab; });
 }
 
-Tabs.prototype.find_tab_by_name = function(name)
+Tile.prototype.find_tab_by_name = function(name)
 {
 	return this.tabs.find(function(tab) { return tab.tab_config.name == name; });
 }
 
-Tabs.prototype.find_tab_by_iframe_name = function(iframe_name)
+Tile.prototype.find_tab_by_iframe_name = function(iframe_name)
 {
 	return this.tabs.find(function(elt) { return elt.has_iframe(iframe_name); });
 }
 
-Tabs.prototype.scroll_tab_headers = function(dx)
+Tile.prototype.find_tab_by_uri = function(uri)
+{
+	return this.tabs.find(function(tab) { return tab.tab_config.uri && tab.tab_config.uri.compare(uri); });
+}
+
+Tile.prototype.scroll_tab_headers = function(dx)
 {
 	this.compute_dynamic_widths();
 	var left = parseFloat(getComputedStyle(this.tab_headers, '').left);
@@ -1239,11 +1338,51 @@ Tabs.prototype.scroll_tab_headers = function(dx)
 	this.save_tab_headers_left();
 }
 
-Tabs.prototype.history_shortcut_onclick = function()
+Tile.prototype.ensure_tab_header_is_in_visible_scope = function(tab)
+{
+	this.compute_dynamic_widths();
+	var tile_element_pos = CompatLayer.get_element_pos(this.tile_element);
+	var tab_header_pos = CompatLayer.get_element_pos(tab.tab_header);
+	var tab_headers_pos = CompatLayer.get_element_pos(this.tab_headers);
+	var tile_width = CompatLayer.get_element_width(this.tile_element);
+	var tab_header_width = CompatLayer.get_element_width(tab.tab_header);
+	var tab_headers_left = 0;
+	var out_of_scope_by_left = (tab_header_pos.x < (tile_element_pos.x + this.controls_width));
+	var out_of_scope_by_right = ((tab_header_pos.x + tab_header_width) > (tile_element_pos.x + tile_width));
+	var fix_tab_headers_left = false;
+
+	if(tab_header_width < (tile_width - this.controls_width))
+	{
+		if(out_of_scope_by_left)
+		{
+			// out of visible scope by the left
+			var dx = tab_headers_pos.x - tab_header_pos.x;
+			tab_header_pos.x = tile_element_pos.x + this.controls_width; 
+			tab_headers_left = tab_header_pos.x - tile_element_pos.x + dx;
+			fix_tab_headers_left = true;
+		}
+		else if(out_of_scope_by_right)
+		{
+			// out of visible scope by the right
+			var dx = tab_headers_pos.x - tab_header_pos.x;
+			tab_header_pos.x = tile_element_pos.x + tile_width - tab_header_width;
+			tab_headers_left = tab_header_pos.x - tile_element_pos.x + dx;
+			fix_tab_headers_left = true;
+		}
+	}
+
+	if(fix_tab_headers_left)
+	{
+		this.tab_headers.style.left = tab_headers_left + 'px';
+		this.save_tab_headers_left();
+	}
+}
+
+Tile.prototype.history_shortcut_onclick = function()
 {
 	if(this.history_element)
 	{
-		this.tile.removeChild(this.history_element);
+		document.body.removeChild(this.history_element);
 		this.history_element = null;
 	}
 	else if(this.tab_config_history.tab_configs.length > 0)
@@ -1251,10 +1390,10 @@ Tabs.prototype.history_shortcut_onclick = function()
 		// create an 'history' below the 'history shortcut'
 		this.history_element = document.createElement('div');
 		this.history_element.className = 'tab-headers-history';
-		this.history_element.style.position = 'absolute';
-		this.history_element.style.left = this.history_shortcut_element.offsetLeft + 'px';
-		this.history_element.style.top = (this.history_shortcut_element.offsetTop + this.history_shortcut_element.offsetHeight) + 'px';
-		
+		this.history_element.style.position = 'fixed';
+		var history_shortcut_element_pos = CompatLayer.get_element_pos(this.history_shortcut_element);
+		this.history_element.style.left = history_shortcut_element_pos.x + 'px';
+		this.history_element.style.top = history_shortcut_element_pos.y + CompatLayer.get_element_height(this.history_shortcut_element) + 'px';
 		this.history_element.className = 'tab-headers-history';
 		for(var i = 0; i < this.tab_config_history.tab_configs.length; i++)
 		{
@@ -1265,15 +1404,15 @@ Tabs.prototype.history_shortcut_onclick = function()
 			history_item_element.addEventListener('click', this.history_item_element_on_click.bind(this, tab_config));
 			this.history_element.appendChild(history_item_element);
 		}
-		this.tile.appendChild(this.history_element);
+		document.body.appendChild(this.history_element);
 	}
 }
 
-Tabs.prototype.history_item_element_on_click = function(tab_config)
+Tile.prototype.history_item_element_on_click = function(tab_config)
 {
 	if(this.history_element)
 	{
-		this.tile.removeChild(this.history_element);
+		document.body.removeChild(this.history_element);
 		this.history_element = null;
 	}
 	this.create_tab_from_config(tab_config).switch_to();
@@ -1281,7 +1420,7 @@ Tabs.prototype.history_item_element_on_click = function(tab_config)
 	this.save_history();
 }
 
-Tabs.prototype.detach_tab = function(tab_to_detach)
+Tile.prototype.detach_tab = function(tab_to_detach)
 {
 	var tab_num = this.tabs.findIndex(function(tab) { return tab == tab_to_detach; });
 	
@@ -1308,7 +1447,7 @@ Tabs.prototype.detach_tab = function(tab_to_detach)
 	}
 }
 
-Tabs.prototype.attach_tab = function(tab)
+Tile.prototype.attach_tab = function(tab)
 {
 	if(tab.owner != this)
 	{
@@ -1327,7 +1466,7 @@ Tabs.prototype.attach_tab = function(tab)
 	}
 }
 
-Tabs.prototype.for_each_tab = function(callback)
+Tile.prototype.for_each_tab = function(callback)
 {
 	this.tabs.forEach(callback);
 }
@@ -1335,34 +1474,51 @@ Tabs.prototype.for_each_tab = function(callback)
 // ContextMenu
 ContextMenu.action_this = null;
 ContextMenu.context_menu_element = null;
+ContextMenu.document = null;
 
-function ContextMenu(event, context_menu_items, action_this)
+function ContextMenu(event, context_menu_items, action_this, document, offset_x, offset_y)
 {
+	this.document = document || window.document;
 	this.action_this = action_this;
-	this.context_menu_element = document.createElement('div');
+	this.context_menu_element = this.document.createElement('div');
 	this.context_menu_element.className = 'context-menu';
 	this.context_menu_element.style.display = 'block';
 	this.context_menu_element.style.position = 'fixed';
-	this.context_menu_element.style.left = event.clientX + 'px';
-	this.context_menu_element.style.top = event.clientY + 'px';
+	this.context_menu_element.style.left = event.clientX + (offset_x || 0) + 'px';
+	this.context_menu_element.style.top = event.clientY + (offset_y || 0) + 'px';
 	
 	for(var i = 0; i < context_menu_items.length; i++)
 	{
-		var context_menu_item_element = document.createElement('div');
+		var context_menu_item_element = this.document.createElement('div');
 		context_menu_item_element.className = 'context-menu-item';
-		context_menu_item_element.innerHTML = context_menu_items[i].label;
+		context_menu_item_element.textContent = context_menu_items[i].label;
 		if(this.action_this)
 		{
-			context_menu_item_element.addEventListener('click', context_menu_items[i].action.bind(this.action_this));
+			if(context_menu_items[i].arg)
+			{
+				context_menu_item_element.addEventListener('click', context_menu_items[i].action.bind(this.action_this, context_menu_items[i].arg));
+			}
+			else
+			{
+				context_menu_item_element.addEventListener('click', context_menu_items[i].action.bind(this.action_this));
+			}
 		}
 		else
 		{
-			context_menu_item_element.addEventListener('click', context_menu_items[i].action);
+			if(context_menu_items[i].arg)
+			{
+				context_menu_item_element.addEventListener('click', context_menu_items[i].action.bind(context_menu_item_element, context_menu_items[i].arg));
+			}
+			else
+			{
+				context_menu_item_element.addEventListener('click', context_menu_items[i].action);
+			}
+//			context_menu_item_element.addEventListener('click', context_menu_items[i].action);
 		}
 		this.context_menu_element.appendChild(context_menu_item_element);
 	}
 	
-	document.body.appendChild(this.context_menu_element);
+	this.document.body.appendChild(this.context_menu_element);
 	
 	var window_inner_height = window.innerHeight;
 	var style = getComputedStyle(this.context_menu_element, null);
@@ -1378,7 +1534,7 @@ function ContextMenu(event, context_menu_items, action_this)
 
 ContextMenu.prototype.destroy = function()
 {
-	document.body.removeChild(this.context_menu_element);
+	this.document.body.removeChild(this.context_menu_element);
 	this.action_this = null;
 	this.context_menu_element = null;
 }
@@ -1446,8 +1602,8 @@ ContextMenu.prototype.destroy = function()
 // +---------------------------------------------------------------------------------------------------------------------------------------+
 
 GUI.prototype.magic = 0xCAFE;
-GUI.prototype.min_tab_content_width = 64;  // minimum tab content width: enough to display horizontal scrollbar
-GUI.prototype.min_tab_content_height = 64; // minimum tab content width: enough to display vertical scrollbar
+GUI.prototype.min_tab_content_width = 48;  // minimum tab content width: enough to display tab header history and scrollers
+GUI.prototype.min_tab_content_height = 0; // minimum tab content width
 GUI.prototype.window_size_monitoring_period = 500; // interface refresh period (in ms) while window is being resized
 GUI.prototype.toolbar_div = null;
 GUI.prototype.content_div = null;
@@ -1473,10 +1629,10 @@ GUI.prototype.bottom_tile_div = null;
 GUI.prototype.bottom_tab_headers_div = null;
 GUI.prototype.bottom_tab_header_div = null;
 GUI.prototype.bottom_tab_contents_div = null;
-GUI.prototype.left_tabs = null;
-GUI.prototype.top_middle_tabs = null;
-GUI.prototype.top_right_tabs = null;
-GUI.prototype.bottom_tabs = null;
+GUI.prototype.left_tile = null;
+GUI.prototype.top_middle_tile = null;
+GUI.prototype.top_right_tile = null;
+GUI.prototype.bottom_tile = null;
 GUI.prototype.mouse_pos = null;
 GUI.prototype.bound_vert_resize = null;
 GUI.prototype.bound_left_horiz_resize = null;
@@ -1489,6 +1645,11 @@ GUI.prototype.child_windows = null;
 
 function GUI()
 {
+	if(window.frameElement && window.parent.gui && window.parent.gui.magic == this.magic)
+	{
+		window.alert("Warning! GUI should not be run within itself");
+	}
+	
 	var magic = sessionStorage.getItem('gui.magic');
 	if(!magic || (magic != this.magic))
 	{
@@ -1528,10 +1689,10 @@ function GUI()
 	this.context_menu = null;
 	this.child_windows = new Array();
 
-	this.left_tabs = new Tabs(this, 'left-tabs', this.left_tile_div);
-	this.top_middle_tabs = new Tabs(this, 'top-middle-tabs', this.top_middle_tile_div);
-	this.top_right_tabs = new Tabs(this, 'top-right-tabs', this.top_right_tile_div);
-	this.bottom_tabs = new Tabs(this, 'bottom-tabs', this.bottom_tile_div);
+	this.left_tile = new Tile(this, 'left-tile', this.left_tile_div);
+	this.top_middle_tile = new Tile(this, 'top-middle-tile', this.top_middle_tile_div);
+	this.top_right_tile = new Tile(this, 'top-right-tile', this.top_right_tile_div);
+	this.bottom_tile = new Tile(this, 'bottom-tile', this.bottom_tile_div);
 
 	this.vert_resizer_div.addEventListener('mousedown', this.vert_resizer_on_mousedown.bind(this));
 	this.left_horiz_resizer_div.addEventListener('mousedown', this.left_horiz_resizer_on_mousedown.bind(this));
@@ -1549,7 +1710,7 @@ function GUI()
 	
 	if(!magic || (magic != this.magic))
 	{
-		this.left_tabs.switch_to_nth_tab(0);
+		this.left_tile.switch_to_nth_tab(0);
 	}
 	
 	sessionStorage.setItem('gui.magic', this.magic);
@@ -1557,41 +1718,56 @@ function GUI()
 	setInterval(this.monitor_child_windows.bind(this), this.child_windows_monitoring_period);
 }
 
-GUI.prototype.open_tab = function(tile_name, label, name, src)
+GUI.prototype.open_tab = function(tile_name, name, uri_str, dont_switch_to)
 {
-	var tab = this.find_tab_by_name(name);
+	var uri = new URI(uri_str);
+// 	console.log('open_tab: \'' + uri_str + '\' => \'' + uri.toString());
+	var tab = this.find_tab_by_uri(uri);
 	
 	if(!tab)
 	{
 		switch(tile_name)
 		{
 			case 'left-tile':
-				tab = this.left_tabs.create_tab(label, name, src);
+				if(!this.left_tile.has_tabs()) dont_switch_to = false;
+				tab = this.left_tile.create_tab(name, this.gen_unique_tab_name(name), uri);
 				break;
 			case 'top-middle-tile':
-				tab = this.top_middle_tabs.create_tab(label, name, src);
+				if(!this.top_middle_tile.has_tabs()) dont_switch_to = false;
+				tab = this.top_middle_tile.create_tab(name, this.gen_unique_tab_name(name), uri);
 				break;
 			case 'top-right-tile':
-				tab = this.top_right_tabs.create_tab(label, name, src);
+				if(!this.top_right_tile.has_tabs()) dont_switch_to = false;
+				tab = this.top_right_tile.create_tab(name, this.gen_unique_tab_name(name), uri);
 				break;
 			case 'bottom-tile':
-				tab = this.bottom_tabs.create_tab(label, name, src);
+				if(!this.bottom_tile.has_tabs()) dont_switch_to = false;
+				tab = this.bottom_tile.create_tab(name, this.gen_unique_tab_name(name), uri);
 				break;
 		}
 	}
 	
 	if(tab)
 	{
-		tab.switch_to();
+		if(dont_switch_to)
+		{
+			tab.refresh();
+		}
+		else
+		{
+			tab.switch_to();
+		}
 	}
+	
+	return tab;
 }
 
 GUI.prototype.enable_pointer_events = function(v)
 {
-	this.left_tabs.enable_pointer_events(v);
-	this.top_middle_tabs.enable_pointer_events(v);
-	this.top_right_tabs.enable_pointer_events(v);
-	this.bottom_tabs.enable_pointer_events(v);
+	this.left_tile.enable_pointer_events(v);
+	this.top_middle_tile.enable_pointer_events(v);
+	this.top_right_tile.enable_pointer_events(v);
+	this.bottom_tile.enable_pointer_events(v);
 }
 
 GUI.prototype.vert_resizer_on_mousedown = function(e)
@@ -1864,20 +2040,43 @@ GUI.prototype.monitor_window_size = function()
 	}
 }
 
+GUI.prototype.gen_unique_tab_name = function(seed)
+{
+	var name = seed;
+	var i = 0;
+	while(this.find_tab_by_name(name) || this.find_tab_config_history_by_name(name))
+	{
+		name = seed + '_' + i;
+		i++;
+	}
+	
+	return name;
+}
+
 GUI.prototype.find_tab_by_name = function(name)
 {
-	return this.left_tabs.find_tab_by_name(name) || this.top_middle_tabs.find_tab_by_name(name) || this.top_right_tabs.find_tab_by_name(name) || this.bottom_tabs.find_tab_by_name(name);
+	return this.left_tile.find_tab_by_name(name) || this.top_middle_tile.find_tab_by_name(name) || this.top_right_tile.find_tab_by_name(name) || this.bottom_tile.find_tab_by_name(name);
+}
+
+GUI.prototype.find_tab_config_history_by_name = function(name)
+{
+	return this.left_tile.find_tab_config_history_by_name(name) || this.top_middle_tile.find_tab_config_history_by_name(name) || this.top_right_tile.find_tab_config_history_by_name(name) || this.bottom_tile.find_tab_config_history_by_name(name);
 }
 
 GUI.prototype.find_tab_by_iframe_name = function(iframe_name)
 {
-	return this.left_tabs.find_tab_by_iframe_name(iframe_name) || this.top_middle_tabs.find_tab_by_iframe_name(iframe_name) || this.top_right_tabs.find_tab_by_iframe_name(iframe_name) || this.bottom_tabs.find_tab_by_iframe_name(iframe_name);
+	return this.left_tile.find_tab_by_iframe_name(iframe_name) || this.top_middle_tile.find_tab_by_iframe_name(iframe_name) || this.top_right_tile.find_tab_by_iframe_name(iframe_name) || this.bottom_tile.find_tab_by_iframe_name(iframe_name);
 }
 
-GUI.prototype.create_context_menu = function(event, context_menu_items, action_this)
+GUI.prototype.find_tab_by_uri = function(uri)
+{
+	return this.left_tile.find_tab_by_uri(uri) || this.top_middle_tile.find_tab_by_uri(uri) || this.top_right_tile.find_tab_by_uri(uri) || this.bottom_tile.find_tab_by_uri(uri);
+}
+
+GUI.prototype.create_context_menu = function(event, context_menu_items, action_this, document, offset_x, offset_y)
 {
 	this.destroy_context_menu();
-	this.context_menu = new ContextMenu(event, context_menu_items, action_this);
+	this.context_menu = new ContextMenu(event, context_menu_items, action_this, document, offset_x, offset_y);
 	this.enable_pointer_events(false);
 }
 
@@ -1897,16 +2096,16 @@ GUI.prototype.move_tab_to_tile = function(tab, tile_name)
 	switch(tile_name)
 	{
 		case 'left-tile':
-			destination = this.left_tabs;
+			destination = this.left_tile;
 			break;
 		case 'top-middle-tile':
-			destination = this.top_middle_tabs;
+			destination = this.top_middle_tile;
 			break;
 		case 'top-right-tile':
-			destination = this.top_right_tabs;
+			destination = this.top_right_tile;
 			break;
 		case 'bottom-tile':
-			destination = this.bottom_tabs;
+			destination = this.bottom_tile;
 			break;
 	}
 	
@@ -1920,7 +2119,7 @@ GUI.prototype.move_tab_to_tile = function(tab, tile_name)
 
 GUI.prototype.move_tab_to_new_window = function(tab)
 {
-	var wnd = window.open(tab.tab_config.src);
+	var wnd = window.open(tab.tab_config.uri.toString());
 	if(wnd)
 	{
 		tab.close();
@@ -1930,10 +2129,10 @@ GUI.prototype.move_tab_to_new_window = function(tab)
 
 GUI.prototype.for_each_tab = function(callback)
 {
-	this.left_tabs.for_each_tab(callback);
-	this.top_middle_tabs.for_each_tab(callback);
-	this.top_right_tabs.for_each_tab(callback);
-	this.bottom_tabs.for_each_tab(callback);
+	this.left_tile.for_each_tab(callback);
+	this.top_middle_tile.for_each_tab(callback);
+	this.top_right_tile.for_each_tab(callback);
+	this.bottom_tile.for_each_tab(callback);
 }
 
 GUI.prototype.for_each_child_window = function(callback)

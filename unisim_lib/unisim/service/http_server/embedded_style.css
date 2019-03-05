@@ -3,14 +3,17 @@ html { box-sizing:border-box; }
 
 div.button
 {
+	overflow:hidden;
+	margin:0;
+	padding:0;
 	width:42px;
 	height:36px;
-	padding:1px 4px 1px 4px;
 	border-radius:3px;
 	border-style:solid;
 	border-color:#918e8c;
 	border-width:1px;
 	background:linear-gradient(to bottom right, #fdfcfc, #e9e8e7);
+	box-shadow:inset -1px -1px 1px 0px #ababac, inset 1px 1px 1px 0px white;
 }
 
 div.button:hover
@@ -18,31 +21,50 @@ div.button:hover
 	background:#fdfcfc;
 }
 
-div.button:active
+div.button a:active
 {
 	background:#e9e8e7;
+	box-shadow:unset;
 }
 
 div.button a
 {
-	width:32px;
-	height:32px;
+	margin:0;
+	padding:0;
+	width:42px;
+	height:36px;
 	display:block;
 	cursor:default;
 	text-decoration:none;
 	outline:0;
+	user-drag:none; /* Safari only */
+	-webkit-touch-callout:none; /* iOS Safari */
+	-webkit-user-select:none;   /* Safari */
+	-khtml-user-select:none;    /* Konqueror HTML */
+	-moz-user-select:none;      /* Firefox */
+	-ms-user-select:none;       /* Internet Explorer/Edge */
+	user-select:none;           /* Non-prefixed version, currently
+                                    supported by Chrome and Opera */
 }
 
 div.button img
 {
+	margin:1px 4px 1px 4px;
 	width:32px;
 	height:32px;
 	pointer-events:none;
-  -webkit-touch-callout: none; /* iOS Safari */
-    -webkit-user-select: none; /* Safari */
-     -khtml-user-select: none; /* Konqueror HTML */
-       -moz-user-select: none; /* Firefox */
-        -ms-user-select: none; /* Internet Explorer/Edge */
-            user-select: none; /* Non-prefixed version, currently
-                                  supported by Chrome and Opera */
+	user-drag:none; /* Safari only */
+	-webkit-touch-callout:none; /* iOS Safari */
+	-webkit-user-select:none;   /* Safari */
+	-khtml-user-select:none;    /* Konqueror HTML */
+	-moz-user-select:none;      /* Firefox */
+	-ms-user-select:none;       /* Internet Explorer/Edge */
+	user-select:none;           /* Non-prefixed version, currently
+                                    supported by Chrome and Opera */
+}
+
+div.button a:active img
+{
+	margin-left:5px;
+	margin-top:2px;
 }

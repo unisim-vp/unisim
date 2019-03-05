@@ -113,7 +113,8 @@ enum FileFormat
 	F_FMT_HTML,
 	F_FMT_CSV,
 	F_FMT_SVG,
-	NUM_FILE_FORMATS
+	F_FMT_NONE,
+	NUM_FILE_FORMATS = F_FMT_NONE
 };
 
 std::ostream& operator << (std::ostream& os, FileFormat f_fmt);
@@ -300,7 +301,7 @@ template <typename ADDRESS, typename T>
 class InstructionProfile : public InstructionProfileBase
 {
 public:
-	InstructionProfile(const AddressProfile<ADDRESS, T> *addr_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, unisim::service::interfaces::Disassembly<ADDRESS> *disasm_if);
+	InstructionProfile(const AddressProfile<ADDRESS, T> *addr_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, unisim::service::interfaces::Disassembly<ADDRESS> *disasm_if);
 	virtual ~InstructionProfile();
 	
 	virtual const char *GetSampledVariableName() const { return addr_profile->GetSampledVariableName(); }
@@ -319,6 +320,8 @@ private:
 
 	const AddressProfile<ADDRESS, T> *addr_profile;
 	const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv;
+	FilenameIndex *filename_index;
+
 	unisim::service::interfaces::Disassembly<ADDRESS> *disasm_if;
 	InstructionProfilePrinter *instruction_profile_printers[NUM_FILE_FORMATS];
 	
@@ -396,7 +399,7 @@ public:
 	virtual const char *GetSampledVariableName() const = 0;
 	virtual unisim::kernel::service::VariableBase *GetSampledVariable() const = 0;
 	virtual std::string GetCumulativeValueAsString() const = 0;
-	virtual InstructionProfileBase *CreateInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv) const = 0;
+	virtual InstructionProfileBase *CreateInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const = 0;
 	virtual FunctionInstructionProfileBase *CreateFunctionInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const = 0;
 	virtual SourceCodeProfileBase<ADDRESS> *CreateSourceCodeProfile() const = 0;
 	virtual const Printer& GetPrinter(FileFormat) const = 0;
@@ -417,7 +420,7 @@ public:
 	virtual const char *GetSampledVariableName() const { return sample.GetSampledVariableName(); }
 	virtual unisim::kernel::service::VariableBase *GetSampledVariable() const { return sample.GetSampledVariable(); }
 	virtual std::string GetCumulativeValueAsString() const { return to_string(this->GetWeight()); }
-	virtual InstructionProfileBase *CreateInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv) const;
+	virtual InstructionProfileBase *CreateInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const;
 	virtual FunctionInstructionProfileBase *CreateFunctionInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const;
 	virtual SourceCodeProfileBase<ADDRESS> *CreateSourceCodeProfile() const;
 	

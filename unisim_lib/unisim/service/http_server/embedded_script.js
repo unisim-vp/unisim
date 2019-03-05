@@ -152,4 +152,3 @@ GUI.prototype.on_window_unload = function()
 		this.__on_unload__();
 	}
 }
-

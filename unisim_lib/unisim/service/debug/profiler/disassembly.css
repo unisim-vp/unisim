@@ -1,4 +1,4 @@
-h1 { font-size:16px }
+h1 { font-size:16px; white-space:nowrap; }
 body{ font-family:Arial, Helvetica, sans-serif;font-style:normal;font-size:14px;text-align:left;font-weight:400;color:#000;margin:0;background:#FFF; }
 table{ width:512px; margin:0; }
 table th { text-align:center; }
@@ -29,11 +29,15 @@ th, td { border-width:0px; }
 .scale14 { background-color:#ff2020; }
 .scale15 { background-color:#ff1010; }
 .scale16 { background-color:#ff0000; }
-a:link { text-decoration:none }
+a:link, a:visited { color:black; text-decoration:none; }
+a:hover, a:active { text-decoration:underline; }
 #content { width:512px; padding:0.5em 0.25em 0.5em 0.25em; }
-#title { position:absolute; left:64px; top:4px; margin:0; } 
-#save { position:absolute; left:4px; top:4px; }
+#show-table { position:absolute; left:4px; top:4px; }
+#show-histogram { position:absolute; left:50px; top:4px; }
+#save { position:absolute; left:96px; top:4px; }
+#title { position:absolute; left:164px; top:4px; margin:0; } 
 #disassembly { position:absolute; left:4px; top:64px; margin:0; }
+.function { }
 .address {}
 .value {}
 .source-code { font-family:"Courier New",Courier,monospace; }

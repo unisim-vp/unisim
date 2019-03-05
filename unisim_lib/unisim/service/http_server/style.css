@@ -55,6 +55,7 @@ body
 	border-color:#918e8c;
 	border-width:1px;
 	background:linear-gradient(to bottom right, #fdfcfc, #e9e8e7);
+	box-shadow:inset -1px -1px 1px 0px #ababac, inset 1px 1px 1px 0px white;
 }
 
 .toolbar-button:hover
@@ -65,20 +66,29 @@ body
 .toolbar-button:active
 {
 	background:#e9e8e7;
+	box-shadow:unset;
 }
 
 .toolbar-button img
 {
+	margin:0;
 	width:32px;
 	height:32px;
 	pointer-events:none;
-  -webkit-touch-callout: none; /* iOS Safari */
-    -webkit-user-select: none; /* Safari */
-     -khtml-user-select: none; /* Konqueror HTML */
-       -moz-user-select: none; /* Firefox */
-        -ms-user-select: none; /* Internet Explorer/Edge */
-            user-select: none; /* Non-prefixed version, currently
-                                  supported by Chrome and Opera */
+	user-drag:none;              /* Safari only */
+	-webkit-touch-callout:none; /* iOS Safari */
+	-webkit-user-select:none;   /* Safari */
+	-khtml-user-select:none;    /* Konqueror HTML */
+	-moz-user-select:none;      /* Firefox */
+	-ms-user-select:none;       /* Internet Explorer/Edge */
+	user-select:none;           /* Non-prefixed version, currently
+                                    supported by Chrome and Opera */
+}
+
+.toolbar-button:active img
+{
+	margin-left:1px;
+	margin-top:1px;
 }
 
 #content-div { position:fixed; left:0px; top:40px; width:1156px; height:768px; }
@@ -339,6 +349,20 @@ body
 	border-width:0px 1px 0px 1px;
 }
 
+.tab-header span
+{
+	display:inline-block;
+	max-width:200px;
+	white-space:nowrap;
+	overflow:hidden;
+	text-overflow:ellipsis;
+}
+
+.tab-header-active span
+{
+	max-width:1024px;
+}
+
 .tab-contents { position:absolute; left:0px; top:24px; display:block; overflow:hidden; }
 
 .tab-content { position:absolute; left:0px; top:0px; width:100%; height:100%; display:block; visibility:hidden; border-width:0; overflow:hidden; }
@@ -346,13 +370,14 @@ body
 .tab-content:hover { overflow:auto; }
 
 .noselect {
-  -webkit-touch-callout: none; /* iOS Safari */
-    -webkit-user-select: none; /* Safari */
-     -khtml-user-select: none; /* Konqueror HTML */
-       -moz-user-select: none; /* Firefox */
-        -ms-user-select: none; /* Internet Explorer/Edge */
-            user-select: none; /* Non-prefixed version, currently
-                                  supported by Chrome and Opera */
+	user-drag:none; /* Safari only */
+	-webkit-touch-callout:none; /* iOS Safari */
+	-webkit-user-select:none;   /* Safari */
+	-khtml-user-select:none;    /* Konqueror HTML */
+	-moz-user-select:none;      /* Firefox */
+	-ms-user-select:none;       /* Internet Explorer/Edge */
+	user-select:none;           /* Non-prefixed version, currently
+                                    supported by Chrome and Opera */
 }
 
 .close-tab
