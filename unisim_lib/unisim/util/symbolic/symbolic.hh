@@ -521,7 +521,7 @@ namespace symbolic {
     {
       sink << op.c_str() << "( ";
       char const* sep = "";
-      for (unsigned idx = 0; idx < SUBCOUNT; ++idx)
+      for (unsigned idx = 0; idx < SUBCOUNT; sep = ", ", ++idx)
         sink << sep << subs[idx];
       sink << " )";
     }
@@ -557,9 +557,9 @@ namespace symbolic {
     
     virtual ConstNodeBase const* GetConstNode() const
     {
-      
       if (ConstNodeBase const* cnb = src->GetConstNode())
         {
+          Expr cexp(cnb);
           if (CmpTypes<DST_VALUE_TYPE,   float>::same) return new ConstNode<   float>( cnb->GetFloat() );
           if (CmpTypes<DST_VALUE_TYPE,  double>::same) return new ConstNode<  double>( cnb->GetDouble() );
           if (CmpTypes<DST_VALUE_TYPE,    bool>::same) return new ConstNode<    bool>( cnb->GetBoolean() );

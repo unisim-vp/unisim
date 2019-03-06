@@ -264,7 +264,7 @@ namespace intel {
       word.as_u = memread<64>( _seg, _addr );
       return word.as_f;
     }
-    f64_t
+    f80_t
     fmemread80( unsigned int _seg, u32_t _addr )
     {
       _addr += u32_t( m_srs[_seg].m_base );
@@ -328,6 +328,16 @@ namespace intel {
     
       return word.as_f;
     }
+
+    template <unsigned OPSIZE>
+    typename TypeFor<Arch,OPSIZE>::f
+    fpmemread( unsigned seg, u64_t addr )
+    {
+      if (OPSIZE==32) return this->fmemread32( seg, addr );
+      if (OPSIZE==64) return this->fmemread64( seg, addr );
+      if (OPSIZE==80) return this->fmemread80( seg, addr );
+      throw 0;        return typename TypeFor<Arch,OPSIZE>::f();
+    }
     
     template <unsigned OPSIZE>
     typename TypeFor<Arch,OPSIZE>::f
@@ -335,12 +345,7 @@ namespace intel {
     {
       typedef typename TypeFor<Arch,OPSIZE>::f f_type;
       if (not rmop.is_memory_operand()) return f_type( fread( rmop.ereg() ) );
-      
-      if (OPSIZE==32) return fmemread32( rmop->segment, rmop->effective_address( *this ) );
-      if (OPSIZE==64) return fmemread64( rmop->segment, rmop->effective_address( *this ) );
-      if (OPSIZE==80) return fmemread80( rmop->segment, rmop->effective_address( *this ) );
-      throw 0;
-      return f_type();
+      return this->fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) );
     }
 
     void                        fmemwrite32( unsigned int _seg, u32_t _addr, f32_t _val )
@@ -355,7 +360,7 @@ namespace intel {
       word.as_f = _val;
       memwrite<64>( _seg, _addr, word.as_u );
     }
-    void                        fmemwrite80( unsigned int _seg, u32_t _addr, f64_t _val )
+    void                        fmemwrite80( unsigned int _seg, u32_t _addr, f80_t _val )
     {
       _addr += u32_t( m_srs[_seg].m_base );
       union IEEE754_t { double as_f; uint64_t as_u; } word;
@@ -404,17 +409,22 @@ namespace intel {
 
     template <unsigned OPSIZE>
     void
+    fpmemwrite( unsigned seg, u64_t addr, typename TypeFor<Arch,OPSIZE>::f value )
+    {
+      if (OPSIZE==32) return fmemwrite32( seg, addr, value );
+      if (OPSIZE==64) return fmemwrite64( seg, addr, value );
+      if (OPSIZE==80) return fmemwrite80( seg, addr, value );
+      throw 0;
+    }
+    
+    template <unsigned OPSIZE>
+    void
     frmwrite( RMOp<Arch> const& rmop, typename TypeFor<Arch,OPSIZE>::f value )
     {
       if (not rmop.is_memory_operand()) return fwrite( rmop.ereg(), f64_t( value ) );
-      
-      if (OPSIZE==32) return fmemwrite32( rmop->segment, rmop->effective_address( *this ), f64_t( value ) );
-      if (OPSIZE==64) return fmemwrite64( rmop->segment, rmop->effective_address( *this ), f64_t( value ) );
-      if (OPSIZE==80) return fmemwrite80( rmop->segment, rmop->effective_address( *this ), f64_t( value ) );
-      throw 0;
+      fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
     }
 
-    
     template <unsigned OPSIZE>
     void
     memwrite( unsigned _seg, u32_t _addr, typename TypeFor<Arch,OPSIZE>::u _val )
@@ -677,7 +687,8 @@ namespace intel {
     }
     
     u64_t tscread() { return m_instcount; }
-    
+
+    void  xgetbv();
     void  cpuid();
     // void                        fpdump()
     // {
@@ -744,6 +755,7 @@ namespace intel {
     } umms[16];
 
     uint8_t vmm_storage[16][16];
+    uint32_t mxcsr;
     
     template<unsigned OPSIZE>
     typename TypeFor<Arch,OPSIZE>::u
@@ -782,6 +794,46 @@ namespace intel {
       if (not rmop.is_memory_operand()) return xmm_uwrite<OPSIZE>( rmop.ereg(), sub, val );
       return memwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8), val );
     }
+
+    template <unsigned OPSIZE>
+    typename TypeFor<Arch,OPSIZE>::f
+    xmm_fread( unsigned reg, unsigned sub )
+    {
+      typedef typename TypeFor<Arch,OPSIZE>::f f_type;
+      
+      f_type* f_array = umms[reg].GetStorage<f_type>( &vmm_storage[reg][0] );
+      
+      return f_array[sub];
+    }
+    
+    template <unsigned OPSIZE>
+    void
+    xmm_fwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::f val )
+    {
+      typedef typename TypeFor<Arch,OPSIZE>::f f_type;
+      
+      f_type* f_array = umms[reg].GetStorage<f_type>( &vmm_storage[reg][0] );
+      
+      f_array[sub] = val;
+    }
+
+    template <unsigned OPSIZE>
+    typename TypeFor<Arch,OPSIZE>::f
+    xmm_fread( RMOp<Arch> const& rmop, unsigned sub )
+    {
+      if (not rmop.is_memory_operand()) return xmm_fread<OPSIZE>( rmop.ereg(), sub );
+      return fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8) );
+    }
+    
+    template <unsigned OPSIZE>
+    void
+    xmm_fwrite( RMOp<Arch> const& rmop, unsigned sub, typename TypeFor<Arch,OPSIZE>::f val )
+    {
+      if (not rmop.is_memory_operand()) return xmm_fwrite<OPSIZE>( rmop.ereg(), sub, val );
+      fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8), val );
+    }
+
+    
   };
   
 

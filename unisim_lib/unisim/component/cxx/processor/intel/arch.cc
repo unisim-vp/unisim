@@ -54,8 +54,8 @@ namespace intel {
   
   Arch::Arch()
     : m_running( true ), m_instcount( 0 ), m_disasm( false ), m_latest_insn( 0 )
-    , m_EIP( 0 ), m_ftop( 0 ), m_fcw( 0x23f )
-    , m_dirtfregs( 0 )
+    , m_EIP( 0 ), m_ftop( 0 ), m_fcw( 0x23f ), m_dirtfregs( 0 )
+    , umms(), vmm_storage(), mxcsr()
   {
     std::memset( static_cast<void*>( &m_flags[0] ), 0, sizeof (m_flags) );
     std::memset( static_cast<void*>( &m_regs[0] ), 0, sizeof (m_regs) );
@@ -180,6 +180,17 @@ namespace intel {
     ++m_instcount;
     return operation;
   }
+
+  void
+  Arch::xgetbv()
+  {
+    // uint32_t a, d, c = this->regread( GOd(), 1 );
+    // __asm__ ("xgetbv\n\t" : "=a" (a), "=d" (d) : "c" (c));
+    // this->regwrite( GOd(), 0, a );
+    // this->regwrite( GOd(), 2, d );
+    throw 0;
+  }
+  
   
   void
   Arch::cpuid()

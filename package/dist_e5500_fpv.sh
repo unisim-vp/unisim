@@ -11,6 +11,7 @@ unisim/kernel/config/xml_config_file_helper.cc \
 unisim/kernel/config/ini_config_file_helper.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
+unisim/util/hypapp/hypapp.cc \
 unisim/util/debug/symbol_table_64.cc \
 unisim/util/debug/symbol_table_32.cc \
 unisim/util/debug/dwarf/class.cc \
@@ -355,6 +356,7 @@ unisim/service/interfaces/subprogram_lookup.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
 unisim/service/interfaces/trap_reporting.hh \
 unisim/util/hypapp/hypapp.hh \
+unisim/util/nat_sort/nat_sort.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/backtrace/backtrace.hh \
 unisim/util/blob/blob.hh \

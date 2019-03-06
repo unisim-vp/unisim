@@ -468,10 +468,10 @@ public:
     }
   } erb;
 
-  U32 const&  GetVU32( unsigned idx )                 { return erb.eu32.GetReg( erb, idx ); }
-  void        SetVU32( unsigned idx, U32 const& val ) { erb.eu32.SetReg( erb, idx, val ); }
-  U64 const&  GetVU64( unsigned idx )                 { return erb.eu64.GetReg( erb, idx ); }
-  void        SetVU64( unsigned idx, U64 const& val ) { erb.eu64.SetReg( erb, idx, val ); }
+  U32 const&  GetVSU( unsigned idx )                  { return erb.eu32.GetReg( erb, idx ); }
+  void        SetVSU( unsigned idx, U32 const& val )  { erb.eu32.SetReg( erb, idx, val ); }
+  U64 const&  GetVDU( unsigned idx )                  { return erb.eu64.GetReg( erb, idx ); }
+  void        SetVDU( unsigned idx, U64 const& val )  { erb.eu64.SetReg( erb, idx, val ); }
   F32 const&  GetVSR(  unsigned idx )                 { return erb.ef32.GetReg( erb, idx ); }
   void        SetVSR(  unsigned idx, F32 const& val ) { erb.ef32.SetReg( erb, idx, val ); }
   F64 const&  GetVDR(  unsigned idx )                 { return erb.ef64.GetReg( erb, idx ); }

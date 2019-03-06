@@ -368,48 +368,46 @@ namespace binsec {
   RegRead::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
     unsigned bitsize = ScalarType(GetType()).bitsize;
-    sink << GetRegName() << "<" << bitsize << ">";
+    GetRegName( sink );
+    sink << "<" << bitsize << ">";
     return bitsize;
   }
   
   void
   RegRead::Repr( std::ostream& sink ) const
   {
-    sink << GetRegName();
+    GetRegName( sink );
   }
   
   int
   RegWrite::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
-    sink << GetRegName() << "<" << std::dec << ScalarType(value->GetType()).bitsize << "> := " << GetCode(value, vars, label);
+    GetRegName( sink );
+    sink << "<" << std::dec << ScalarType(value->GetType()).bitsize << "> := " << GetCode(value, vars, label);
     return 0;
   }
   
-  void
-  RegWrite::Repr( std::ostream& sink ) const
-  {
-    sink << GetRegName() << " := "; value->Repr(sink);
-  }
+  void RegWrite::Repr( std::ostream& sink ) const { GetRegName( sink ); sink << " := "; value->Repr(sink); }
   
   int
   Load::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
     /* TODO: exploit alignment info */
-    sink << "@[" << GetCode(addr, vars, label) << ',' << (bigendian?"->":"<-") << ',' << bitsize() << "]";
-    return 8*bitsize();
+    sink << "@[" << GetCode(addr, vars, label) << ',' << (bigendian?"->":"<-") << ',' << bytecount() << "]";
+    return 8*bytecount();
   }
 
   void
   Load::Repr( std::ostream& sink ) const
   {
-    sink << "[" << addr << ',' << bitsize() << ",^" << alignment << ',' << (bigendian ? "be" : "le") << "]";
+    sink << "[" << addr << ',' << bytecount() << ",^" << alignment << ',' << (bigendian ? "be" : "le") << "]";
   }
   
   int
   Store::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   {
     /* TODO: exploit alignment info */
-    sink << "@[" << GetCode(addr, vars, label) << ',' << (bigendian?"->":"<-") << ',' << bitsize() << "] := " << GetCode(value, vars, label);
+    sink << "@[" << GetCode(addr, vars, label) << ',' << (bigendian?"->":"<-") << ',' << bytecount() << "] := " << GetCode(value, vars, label);
     return 0;
   }
 
@@ -540,7 +538,7 @@ namespace binsec {
         place = new TmpVar( name, size );
         return place;
       }      
-      std::string nxtname( char const* rname, unsigned rsize ) { std::ostringstream buffer; buffer << "nxt_" << rname << "<" << rsize << ">"; return buffer.str(); }
+      std::string nxtname( RegWrite const* rw, unsigned rsize ) { std::ostringstream buf; rw->GetRegName( buf << "nxt_" ); buf << "<" << rsize << ">"; return buf.str(); }
       std::string tmpname( unsigned size ) { std::ostringstream buffer; buffer << "tmp" << size << '_' << (next_tmp[size]++) << "<" << size << ">"; return buffer.str(); }
 
       void GenCode( ActionNode const* action_tree, Label const& start, Label const& after )
@@ -584,11 +582,11 @@ namespace binsec {
           // Keeping track of expressions involved in register
           // assignment. Their temporary name will differ from regular
           // temporary.
-          std::map<Expr,char const*> rtmps;
+          std::map<Expr,RegWrite const*> rtmps;
           for (std::set<Expr>::const_iterator itr = action_tree->sinks.begin(), end = action_tree->sinks.end(); itr != end; ++itr)
             {
               if (RegWrite const* rw = dynamic_cast<RegWrite const*>( itr->node ))
-                rtmps[rw->value] = rw->GetRegName();
+                rtmps[rw->value] = rw;
             }
           
           // Ordering Sub Expressions by size of expressions (so that
@@ -625,7 +623,7 @@ namespace binsec {
                 std::ostringstream buffer;
                 retsize = ASExprNode::GenerateCode( itr->second, this->vars, head.current(), buffer );
                 tmp_src = buffer.str();
-                std::map<Expr,char const*>::const_iterator rtmp = rtmps.find(itr->second);
+                std::map<Expr,RegWrite const*>::const_iterator rtmp = rtmps.find(itr->second);
                 tmp_dst = rtmp != rtmps.end() ? this->nxtname( rtmp->second, retsize ) : this->tmpname( retsize );
                 this->addvar( tmp_dst, retsize, itr->second );
               }
@@ -641,13 +639,12 @@ namespace binsec {
           {
             if (RegWrite const* rw = dynamic_cast<RegWrite const*>( itr->node ))
               {
-                char const* rname = rw->GetRegName();
                 Expr        value = rw->value;
                 unsigned    rsize = ScalarType(value->GetType()).bitsize;
 
                 if (not value.ConstSimplify() and not this->vars.count(value))
                   {
-                    std::string vname = this->nxtname( rname, rsize );
+                    std::string vname = this->nxtname( rw, rsize );
                     std::ostringstream buffer;
                     buffer << vname << " := " << GetCode(value, this->vars, head.current()) << "; goto <next>";
                     head.write( buffer.str() );

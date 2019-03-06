@@ -2138,9 +2138,9 @@ struct Ucomis : public Operation<ARCH>
     arch.flagwrite( ARCH::FLAG::ZF, notge == notle );
     arch.flagwrite( ARCH::FLAG::PF, notge and notle );
     arch.flagwrite( ARCH::FLAG::CF, notge );
-    arch.flagwrite( ARCH::FLAG::OF, false );
-    arch.flagwrite( ARCH::FLAG::SF, false );
-    arch.flagwrite( ARCH::FLAG::AF, false );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::SF, bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(false) );
   }
 };
 

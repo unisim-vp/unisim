@@ -2119,16 +2119,29 @@ vld1_8bp.disasm = {
   else if (ra != 15) buffer << ", " << DisasmRegister(ra);
 };
 
-op vld1_8d( 0b11110100[8]: 0b0[1]: shl<4> vm1[1]: 0b10[2]: rb[4]: vm0[4]: 0b101000[6]: len[2]: ra[4] );
-vld1_8d.var vm : {uint32_t} = {vm1|vm0};
+op vld1_8d( 0b11110100[8]: 0b0[1]: shl<4> vd1[1]: 0b10[2]: rn[4]: vd0[4]: 0b101000[6]: len[2]: rm[4] );
+vld1_8d.var vd : {uint32_t} = {vd1|vd0};
 
 vld1_8d.disasm = {
-  buffer << "vld1.8\t{d" << vm << "-d" << (vm+1) << "}, [" << DisasmRegister(rb);
+  buffer << "vld1.8\t{d" << vd << "-d" << (vd+1) << "}, [" << DisasmRegister(rn);
   if (len) buffer << " :" << ((32 << len));
   buffer << "]";
-  if      (ra == 13) buffer << "!";
-  else if (ra != 15) buffer << ", " << DisasmRegister(ra);
+  if      (rm == 13) buffer << "!";
+  else if (rm != 15) buffer << ", " << DisasmRegister(rm);
 };
+
+vld1_8d.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U32 U32;
+  
+  U32 addr = cpu.GetGPR( rn );
+  if (rm != 15)
+    cpu.SetGPR( rn, addr + (rm == 13 ? U32(16) : cpu.GetGPR(rm)) );
+
+  for (unsigned dd = 0; dd < 2; ++dd)
+    for (unsigned idx = 0; idx < 8; ++idx)
+      cpu.SetVDE( vd + dd, idx, U8(cpu.MemRead8( addr + U32( dd*8+idx ) )) );
+};                      
 
 op vld1_8t( 0b11110100[8]: 0b0[1]: shl<4> vm1[1]: 0b10[2]: rb[4]: vm0[4]: 0b011000[6]: len[2]: ra[4] );
 vld1_8t.var vm : {uint32_t} = {vm1|vm0};
@@ -3275,12 +3288,21 @@ vmov_i8di.disasm = {
 };
 
 op vmov_i8qi( 0b1111[4]: 0b001[3]: shl<7> imm2[1]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b0[1]: shl <4> imm1[3]: vd0[4]: 0b11100101[8]: imm0[4] );
-vmov_i8qi.var vd : {uint32_t} = {(vd1|vd0)>>1}, imm : {uint32_t} = {imm2|imm1|imm0};
+vmov_i8qi.var vd : {unsigned} = {vd1|vd0}, imm : {uint32_t} = {imm2|imm1|imm0};
 vmov_i8qi.var reject : {Reject} = {vd0 & 1};
 
 vmov_i8qi.disasm = {
-  buffer << "vmov.i8\tq" << vd << ", " << DisasmI(imm);
+  buffer << "vmov.i8\tq" << (vd>>1) << ", " << DisasmI(imm);
 };
+
+vmov_i8qi.execute = { 
+  typedef typename ARCH::U8 U8;
+
+  for (unsigned dd = 0; dd < 2; ++dd)
+    for (unsigned idx = 0; idx < 8; ++idx)
+      cpu.SetVDE( vd | dd, idx, U8(imm) );
+};
+                                          
 
 op vmov_i16di( 0b1111[4]: 0b001[3]: shl<7> imm2[1]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: 0b0[1]: shl <4> imm1[3]: vd0[4]: 0b10[2]: shl<3> shift[1]: 0b0[1]: 0b0001[4]: imm0[4] );
 vmov_i16di.var vd : {uint32_t} = {vd1|vd0}, imm : {uint32_t} = {(imm2|imm1|imm0) << shift};
@@ -7608,11 +7630,23 @@ vsubl_s32qd.disasm = {
 };
 
 op vsubl_u8qd( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b00[2]: vn0[4]: vd0[4]: 0b0010[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
-vsubl_u8qd.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {(vd1|vd0)>>1}, vn : {uint32_t} = {vn1|vn0};
+vsubl_u8qd.var vm : {uint32_t} = {vm1|vm0}, vd : {uint32_t} = {vd1|vd0}, vn : {uint32_t} = {vn1|vn0};
 vsubl_u8qd.var reject : {Reject} = {vd0 & 1};
 
 vsubl_u8qd.disasm = {
-  buffer << "vsubl.u8\tq" << vd << ", d" << vn << ", d" << vm;
+  buffer << "vsubl.u8\tq" << (vd>>1) << ", d" << vn << ", d" << vm;
+};
+
+vsubl_u8qd.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U16 U16;
+  
+  // CheckAdvSIMDEnabled();
+  for (unsigned idx = 0; idx < 8; ++idx)
+    {
+      U16 op1( cpu.GetVDE( vn, idx, U8() ) ), op2( cpu.GetVDE( vm, idx, U8() ) ), res = op1 - op2;
+      cpu.SetVDE( vd + (idx >= 4), idx % 4, res );
+    }
 };
 
 op vsubl_u16qd( 0b11110011[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]: vd0[4]: 0b0010[4]: shl<4> vn1[1]: 0b0[1]: shl<4> vm1[1]: 0b0[1]: vm0[4] );
@@ -7894,3 +7928,12 @@ vzip_32q.disasm = {
 
 group neon_cond(vdup8_dr,vdup16_dr,vdup32_dr,vdup8_qr,vdup16_qr,vdup32_qr);
 unconditional.specialize(neon_cond);
+
+group neon_over_cdp2(vcvtb_f16f32, vcvtb_f32f16);
+neon_over_cdp2.specialize(cdp2);
+group neon_over_mcr2(vmov32_dr, vmov16_dr, vmov8_dr);
+neon_over_mcr2.specialize(mcr2);
+group neon_over_mrc2(vmov_32rd, vmov_s16rd, vmov_u16rd, vmov_s8rd, vmov_u8rd);
+neon_over_mrc2.specialize(mrc2);
+
+

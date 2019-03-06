@@ -2348,8 +2348,9 @@ struct Xlat : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "xlat"; }
   void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<ARCH,OP::OPSIZE>::u addr_type;
-    arch.regwrite( GOb(), 0, arch.template memread<8>( segment, arch.regread( OP(), 3 ) + addr_type( arch.regread( GOb(), 0 ) ) ) );
+    typedef typename TypeFor<ARCH,OP::OPSIZE>::u uop_t;
+    typedef typename ARCH::addr_t addr_t;
+    arch.regwrite( GOb(), 0, arch.template memread<8>( segment, addr_t( arch.regread( OP(), 3 ) + uop_t( arch.regread( GOb(), 0 ) ) ) ) );
   }
 };
 

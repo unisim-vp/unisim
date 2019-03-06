@@ -21,6 +21,7 @@ unisim/service/trap_handler/trap_handler.cc \
 unisim/service/trap_handler/trap_handler_identifier.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
+unisim/util/hypapp/hypapp.cc \
 unisim/util/debug/symbol_table_32.cc \
 unisim/util/debug/symbol_table_64.cc \
 unisim/util/debug/dwarf/class.cc \

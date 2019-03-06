@@ -346,7 +346,7 @@ struct Arch
     word.as_u = memread<64>( _seg, _addr );
     return word.as_f;
   }
-  f64_t
+  f80_t
   fmemread80( unsigned int _seg, addr_t _addr )
   {
     _addr += addr_t( segbase(_seg) );
@@ -905,6 +905,22 @@ public:
   }
 
   template <unsigned OPSIZE>
+  typename TypeFor<Arch,OPSIZE>::u
+  xmm_uread( RMOp const& rmop, unsigned sub )
+  {
+    if (not rmop.is_memory_operand()) return xmm_uread<OPSIZE>( rmop.ereg(), sub );
+    return memread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8) );
+  }
+    
+  template <unsigned OPSIZE>
+  void
+  xmm_uwrite( RMOp const& rmop, unsigned sub, typename TypeFor<Arch,OPSIZE>::u val )
+  {
+    if (not rmop.is_memory_operand()) return xmm_uwrite<OPSIZE>( rmop.ereg(), sub, val );
+    return memwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8), val );
+  }
+
+  template <unsigned OPSIZE>
   typename TypeFor<Arch,OPSIZE>::f
   xmm_fread( unsigned reg, unsigned sub )
   {
@@ -926,22 +942,6 @@ public:
     f_array[sub] = val;
     
     gdbchecker.xmark(reg);
-  }
-
-  template <unsigned OPSIZE>
-  typename TypeFor<Arch,OPSIZE>::u
-  xmm_uread( RMOp const& rmop, unsigned sub )
-  {
-    if (not rmop.is_memory_operand()) return xmm_uread<OPSIZE>( rmop.ereg(), sub );
-    return memread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8) );
-  }
-    
-  template <unsigned OPSIZE>
-  void
-  xmm_uwrite( RMOp const& rmop, unsigned sub, typename TypeFor<Arch,OPSIZE>::u val )
-  {
-    if (not rmop.is_memory_operand()) return xmm_uwrite<OPSIZE>( rmop.ereg(), sub, val );
-    return memwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8), val );
   }
 
   template <unsigned OPSIZE>

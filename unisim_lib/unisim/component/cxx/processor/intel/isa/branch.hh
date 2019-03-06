@@ -366,7 +366,7 @@ struct NearParamReturn : public Operation<ARCH>
     typedef typename TypeFor<ARCH,OPSIZE>::u ip_t;
     typedef typename ARCH::addr_t addr_t;
     ip_t return_address = arch.template pop<OPSIZE>();
-    arch.shrink_stack( paramsize );
+    arch.shrink_stack( addr_t( paramsize ) );
     arch.setnip( addr_t( return_address ), ARCH::ipret );
   }
 };
@@ -524,13 +524,10 @@ struct Leave : public Operation<ARCH>
   
   void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<ARCH,GOP::OPSIZE>::u uop_t;
     /* TODO: STACKSIZE */
     if (GOP::OPSIZE != 32) throw 0;
     arch.regwrite( GOP(), 4, arch.regread( GOP(), 5 ) );
-    uop_t src = arch.regread( GOP(), 4 );
-    arch.regwrite( GOP(), 4, src + uop_t( 4 ) );
-    arch.regwrite( GOP(), 5, arch.template memread<32>( SS, src ) );
+    arch.regwrite( GOP(), 5, arch.template pop<GOP::OPSIZE>() );
   }
 };
 

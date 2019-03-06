@@ -11,6 +11,7 @@ unisim/kernel/config/xml_config_file_helper.cc \
 unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/service/endian.cc \
 unisim/kernel/tlm2/tlm.cc \
+unisim/kernel/tlm2/clock.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
