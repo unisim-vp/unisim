@@ -86,7 +86,7 @@ struct Processor
   {
     typedef RegRead<RID> this_type;
     typedef unisim::util::symbolic::binsec::RegRead Super;
-    RegRead( Processor& p, RID _id, ScalarType::id_t _tp ) : Super(), Input(p), tp(_tp) {}
+    RegRead( Processor& p, RID _id, ScalarType::id_t _tp ) : Super(), Input(p), tp(_tp), id(_id) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
     virtual ScalarType::id_t GetType() const { return tp; }
     virtual void GetRegName( std::ostream& sink ) const { sink << id.c_str(); }
