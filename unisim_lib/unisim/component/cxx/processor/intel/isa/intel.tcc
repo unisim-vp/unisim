@@ -285,35 +285,36 @@ namespace intel {
 
     Vex( uint8_t const* _ref ) : len(0) { for (unsigned idx = 0; idx < LENGTH; ++idx ) ref[idx] = _ref[idx]; }
     
-    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return bytes + LENGTH; }
+    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return bytes + len; }
     
     uint8_t const*
     get( CodeBase const& cb, uint8_t const* bytes )
     {
       // SSE mandatory prefix
       unsigned ridx = 1, bidx = 0;
-      if      (ref[0] == '\x66') { if (not cb.opsz_66 or cb.rep) return 0; }
-      else if (ref[0] == '\xf2') { if (cb.opsz_66 or cb.rep != 2) return 0; }
-      else if (ref[0] == '\xf3') { if (cb.opsz_66 or cb.rep != 3) return 0; }
-      else     ridx = 0;
+      if      (ref[0] == 0x66) { if (not cb.opsz_66 or cb.rep) return 0; }
+      else if (ref[0] == 0xf2) { if (cb.opsz_66 or cb.rep != 2) return 0; }
+      else if (ref[0] == 0xf3) { if (cb.opsz_66 or cb.rep != 3) return 0; }
+      else   { ridx = 0; }
       
-      if   (bytes[0] == '\xc5')
-        {
-          bidx = 1;
-          if (ref[ridx++] != '\x0f') return 0;
-        }
-      else if (bytes[0] == '\xc4')
+      if      (bytes[0] == 0xc5)
         {
           bidx = 2;
-          if (ref[ridx++] != '\x0f') return 0;
+          if (ref[ridx++] != 0x0f) return 0;
+        }
+      else if (bytes[0] == 0xc4)
+        {
+          bidx = 3;
+          if (ref[ridx++] != 0x0f) return 0;
           switch (bytes[1] & 0x1f)
             {
             default : return 0;
             case 0b00001: break;
-            case 0b00010: if (ref[ridx++] != '\x38') return 0; break;
-            case 0b00011: if (ref[ridx++] != '\x3a') return 0; break;
+            case 0b00010: if (ref[ridx++] != 0x38) return 0; break;
+            case 0b00011: if (ref[ridx++] != 0x3a) return 0; break;
             }
         }
+      
       for (; ridx < LENGTH; ++ridx, ++bidx)
         if (ref[ridx] != bytes[bidx]) return 0;
 

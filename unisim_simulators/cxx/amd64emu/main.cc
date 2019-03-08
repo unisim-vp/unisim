@@ -186,7 +186,7 @@ struct Arch
       unsigned reg;
       char const* GetName() const override { return name.c_str(); }
       void GetValue(void *buffer) const override { memcpy(buffer,&cpu.vmm_storage[reg][0],16); }
-      void SetValue(const void *buffer) { memcpy(&cpu.vmm_storage[reg][0],buffer,16); }
+      void SetValue(const void *buffer) override { memcpy(&cpu.vmm_storage[reg][0],buffer,16); }
       int GetSize() const override { return 16; }
     };
     
@@ -1501,7 +1501,7 @@ main( int argc, char *argv[] )
   Arch cpu;
   LinuxOS linux64( std::cerr, &cpu, &cpu, &cpu );
   cpu.SetLinuxOS( &linux64 );
-  cpu.do_disasm = true;
+  cpu.do_disasm = false;
   linux64.Setup( false );
   
   // Loading image
