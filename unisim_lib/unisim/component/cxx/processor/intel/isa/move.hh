@@ -351,7 +351,7 @@ template <class ARCH> struct DC<ARCH,MOV> { Operation<ARCH>* get( InputCode<ARCH
   // MOV -- Move
   if (auto _ = match( ic, opcode( "\x88" ) & RM() ))
     {
-      if (ic.rex()) return new MovRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new MovRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
       else          return new MovRM<ARCH,GObLH,true>( _.opbase(), _.rmop(), _.greg() );
     }
   if (auto _ = match( ic, opcode( "\x89" ) & RM() ))
@@ -366,7 +366,7 @@ template <class ARCH> struct DC<ARCH,MOV> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\x8a" ) & RM() ))
   
     {
-      if (ic.rex()) return new MovRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new MovRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
       else          return new MovRM<ARCH,GObLH,false>( _.opbase(), _.rmop(), _.greg() );
     }
   
@@ -400,7 +400,7 @@ template <class ARCH> struct DC<ARCH,MOV> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xa0" ) & Moffs() ))
   
     {
-      if (ic.rex()) return new MovRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), 0 );
+      if (ic.rex_p) return new MovRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), 0 );
       else          return new MovRM<ARCH,GObLH,false>( _.opbase(), _.rmop(), 0 );
     }
   
@@ -416,7 +416,7 @@ template <class ARCH> struct DC<ARCH,MOV> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xa2" ) & Moffs() ))
   
     {
-      if (ic.rex()) return new MovRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), 0 );
+      if (ic.rex_p) return new MovRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), 0 );
       else          return new MovRM<ARCH,GObLH,true>( _.opbase(), _.rmop(), 0 );
     }
 
@@ -432,7 +432,7 @@ template <class ARCH> struct DC<ARCH,MOV> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, (opcode( "\xb0" ) + Reg()) & Imm<8>() ))
   
     {
-      if (ic.rex()) return new MovImm<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new MovImm<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new MovImm<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
   
@@ -451,7 +451,7 @@ template <class ARCH> struct DC<ARCH,MOV> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xc6" ) /0 & RM() & Imm<8>() ))
   
     {
-      if (ic.rex()) return new MovImm<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new MovImm<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new MovImm<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
   
@@ -486,7 +486,7 @@ template <class ARCH> struct DC<ARCH,MOVZX> { Operation<ARCH>* get( InputCode<AR
   // MOVZX -- Move with Zero-Extend
   if (auto _ = match( ic, opcode( "\x0f\xb6" ) & RM() ))
     {
-      if (ic.rex())
+      if (ic.rex_p)
         {
           if (ic.opsize()==16) return new Movzx<ARCH,GOb,GOw>( _.opbase(), _.rmop(), _.greg() );
           if (ic.opsize()==32) return new Movzx<ARCH,GOb,GOd>( _.opbase(), _.rmop(), _.greg() );
@@ -530,7 +530,7 @@ template <class ARCH> struct DC<ARCH,MOVSX> { Operation<ARCH>* get( InputCode<AR
   if (auto _ = match( ic, opcode( "\x0f\xbe" ) & RM() ))
   
     {
-      if (ic.rex())
+      if (ic.rex_p)
         {
           if (ic.opsize()==16) return new Movsx<ARCH,GOb,GOw>( _.opbase(), _.rmop(), _.greg() );
           if (ic.opsize()==32) return new Movsx<ARCH,GOb,GOd>( _.opbase(), _.rmop(), _.greg() );
@@ -615,7 +615,7 @@ template <class ARCH> struct DC<ARCH,CMPXCHG> { Operation<ARCH>* get( InputCode<
   // CMPXCHG -- Compare and Exchange
   if (auto _ = match( ic, opcode( "\x0f\xb0" ) & RM() ))
     {
-      if (ic.rex()) return new CmpXchg<ARCH,GOb>  ( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new CmpXchg<ARCH,GOb>  ( _.opbase(), _.rmop(), _.greg() );
       else          return new CmpXchg<ARCH,GObLH>( _.opbase(), _.rmop(), _.greg() );
     }
   
@@ -680,7 +680,7 @@ template <class ARCH> struct DC<ARCH,XCHG> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\x86" ) & RM() ))
   
     {
-      if (ic.rex()) return new Xchg<ARCH,GOb>  ( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new Xchg<ARCH,GOb>  ( _.opbase(), _.rmop(), _.greg() );
       else          return new Xchg<ARCH,GObLH>( _.opbase(), _.rmop(), _.greg() );
     }
   
@@ -738,7 +738,7 @@ template <class ARCH> struct DC<ARCH,XADD> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\x0f\xc0" ) & RM() ))
   
     {
-      if (ic.rex()) return new XAddEG<ARCH,GOb>  ( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new XAddEG<ARCH,GOb>  ( _.opbase(), _.rmop(), _.greg() );
       else          return new XAddEG<ARCH,GObLH>( _.opbase(), _.rmop(), _.greg() );
     }
   

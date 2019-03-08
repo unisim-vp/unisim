@@ -641,8 +641,8 @@ struct Arch
     if (not linux_os)
       { throw std::logic_error( "No linux OS emulation connected" ); }
     linux_os->ExecuteSystemCall( id );
-    auto los = dynamic_cast<LinuxOS*>( linux_os );
-    los->LogSystemCall( id );
+    // auto los = dynamic_cast<LinuxOS*>( linux_os );
+    // los->LogSystemCall( id );
   }
   
   addr_t rip;
@@ -656,7 +656,7 @@ struct Arch
   {
     this->ExecuteSystemCall( this->regread( GOq(), 0 ) );
   }
-  
+
   void                        interrupt( uint8_t _exc )
   {
     std::cerr << "Unhandled interruption (0x" << std::hex << unsigned( _exc ) << ").\n";
@@ -968,6 +968,16 @@ public:
   Operation* latest_instruction;
   Operation* fetch();
   
+  void  noexec( Operation const& op )
+  {
+    std::cerr
+      << "error: no execute method in `" << typeid(op).name() << "'\n"
+      << std::hex << op.address << ":\t";
+    op.disasm( std::cerr );
+    std::cerr << '\n';
+    throw 0;
+  }
+  
   bool do_disasm;
   uint64_t instruction_count;
 
@@ -1237,14 +1247,15 @@ Arch::fetch()
   
   this->rip = insn_addr + latest_instruction->length;
     
-  if (do_disasm) {
-    std::ios fmt(NULL);
-    fmt.copyfmt(std::cout);
-    std::cout << std::hex << insn_addr << ":\t";
-    latest_instruction->disasm( std::cout );
-    std::cout << " (" << unisim::component::cxx::processor::intel::DisasmBytes(&decbuf[0],latest_instruction->length) << ")\n";
-    std::cout.copyfmt(fmt);
-  }
+  if (do_disasm)
+    {
+      std::ios fmt(NULL);
+      fmt.copyfmt(std::cout);
+      std::cout << std::hex << insn_addr << ":\t";
+      latest_instruction->disasm( std::cout );
+      std::cout << " (" << unisim::component::cxx::processor::intel::DisasmBytes(&decbuf[0],latest_instruction->length) << ")\n";
+      std::cout.copyfmt(fmt);
+    }
     
   ++instruction_count;
   return latest_instruction;
@@ -1490,19 +1501,26 @@ main( int argc, char *argv[] )
   Arch cpu;
   LinuxOS linux64( std::cerr, &cpu, &cpu, &cpu );
   cpu.SetLinuxOS( &linux64 );
-  cpu.do_disasm = false;
+  cpu.do_disasm = true;
   linux64.Setup( false );
   
   // Loading image
   std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
-  // std::vector<std::string> envs;
-  // envs.push_back( "LANG=C" );
-  // linux64.Process( simargs, envs );
-  linux64.Core( simargs[0] );
-  linux64.SetBrk(0x7b5000);
-  cpu.fs_base = 0x7928c0;
-  cpu.finit();
-   
+  if (char* var = getenv("CORE_SETUP"))
+    {
+      linux64.Core( simargs[0] );
+      linux64.SetBrk( strtoull(var,&var,0) );
+      if (*var != ':')  throw 0;
+      cpu.fs_base = strtoull(var+1,&var,0);
+      if (*var != '\0') throw 0;
+      cpu.finit();
+    }
+  else
+    {
+      std::vector<std::string> envs;
+      envs.push_back( "LANG=C" );
+      linux64.Process( simargs, envs );
+    }
   
   std::cerr << "\n*** Run ***" << std::endl;
   cpu.gdbchecker.start(cpu);
@@ -1522,7 +1540,7 @@ main( int argc, char *argv[] )
       // if ((cpu.instruction_count % 0x1000000) == 0)
       //   { std::cerr << "Executed instructions: " << std::dec << cpu.instruction_count << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
     }
-  
+
   std::cerr << "Program exited with status:" << linux64.app_ret_status << std::endl;
   
   

@@ -614,10 +614,17 @@ template <class ARCH> struct DC<ARCH,MOVFP> { Operation<ARCH>* get( InputCode<AR
   if (auto _ = match( ic, sse__() & opcode( "\x0f\x29" ) & RM() ))
     
     return new MovfpWV<ARCH,32,true>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x28" ) & RM() ))
+    {
+      if (not ic.vex()) return new MovfpVW<ARCH,64,true>( _.opbase(), _.rmop(), _.greg() );
+      std::cerr << "Yes!!!!!\n";
+      return 0;
+    }
   
-  if (auto _ = match( ic, sse66() & opcode( "\x0f\x28" ) & RM() ))
+  // if (auto _ = match( ic, sse66() & opcode( "\x0f\x28" ) & RM() ))
     
-    return new MovfpVW<ARCH,64,true>( _.opbase(), _.rmop(), _.greg() );
+  //   return new MovfpVW<ARCH,64,true>( _.opbase(), _.rmop(), _.greg() );
   
   if (auto _ = match( ic, sse66() & opcode( "\x0f\x29" ) & RM() ))
     
@@ -638,8 +645,7 @@ template <class ARCH> struct DC<ARCH,MOVFP> { Operation<ARCH>* get( InputCode<AR
   if (auto _ = match( ic, sse66() & opcode( "\x0f\x11" ) & RM() ))
     
     return new MovfpWV<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
-  
-  
+
   return 0;
 }};
 

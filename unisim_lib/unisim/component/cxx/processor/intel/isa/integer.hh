@@ -78,7 +78,7 @@ template <class ARCH> struct DC<ARCH,ADD> { Operation<ARCH>* get( InputCode<ARCH
 {
   if (auto _ = match( ic, opcode( "\000" ) & RM() ))
     {
-      if (ic.rex()) return new AddRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new AddRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
       else          return new AddRM<ARCH,GObLH,true>( _.opbase(), _.rmop(), _.greg() );
     }
 
@@ -92,7 +92,7 @@ template <class ARCH> struct DC<ARCH,ADD> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\002" ) & RM() ))
     {
-      if (ic.rex()) return new AddRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new AddRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
       else          return new AddRM<ARCH,GObLH,false>( _.opbase(), _.rmop(), _.greg() );
     }
   
@@ -106,7 +106,7 @@ template <class ARCH> struct DC<ARCH,ADD> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\004" ) & Imm<8>() ))
     {
-      if (ic.rex()) return new AddRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
+      if (ic.rex_p) return new AddRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
       else          return new AddRMI<ARCH,GObLH>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
     }
   
@@ -121,7 +121,7 @@ template <class ARCH> struct DC<ARCH,ADD> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\x80" ) /0 & RM() & Imm<8>() ))
     {
-      if (ic.rex()) return new AddRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new AddRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new AddRMI<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
   
@@ -185,7 +185,7 @@ template <class ARCH> struct DC<ARCH,OR> { Operation<ARCH>* get( InputCode<ARCH>
 {
   if (auto _ = match( ic, opcode( "\010" ) & RM() ))
     {
-      if (ic.rex()) return new OrRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new OrRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
       else          return new OrRM<ARCH,GObLH,true>( _.opbase(), _.rmop(), _.greg() );
     }
 
@@ -199,7 +199,7 @@ template <class ARCH> struct DC<ARCH,OR> { Operation<ARCH>* get( InputCode<ARCH>
 
   if (auto _ = match( ic, opcode( "\012" ) & RM() ))
     {
-      if (ic.rex()) return new OrRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new OrRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
       else          return new OrRM<ARCH,GObLH,false>( _.opbase(), _.rmop(), _.greg() );
     }
 
@@ -213,7 +213,7 @@ template <class ARCH> struct DC<ARCH,OR> { Operation<ARCH>* get( InputCode<ARCH>
 
   if (auto _ = match( ic, opcode( "\014" ) & Imm<8>() ))
     {
-      if (ic.rex()) return new OrRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
+      if (ic.rex_p) return new OrRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
       else          return new OrRMI<ARCH,GObLH>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
     }
   
@@ -228,7 +228,7 @@ template <class ARCH> struct DC<ARCH,OR> { Operation<ARCH>* get( InputCode<ARCH>
 
   if (auto _ = match( ic, opcode( "\x80" ) /1 & RM() & Imm<8>() ))
     {
-      if (ic.rex()) return new OrRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new OrRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new OrRMI<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
 
@@ -292,7 +292,7 @@ template <class ARCH> struct DC<ARCH,ADC> { Operation<ARCH>* get( InputCode<ARCH
 {
   if (auto _ = match( ic, opcode( "\020" ) & RM() ))
     {
-      if (ic.rex()) return new AdcRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new AdcRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
       else          return new AdcRM<ARCH,GObLH,true>( _.opbase(), _.rmop(), _.greg() );
     }
 
@@ -306,7 +306,7 @@ template <class ARCH> struct DC<ARCH,ADC> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\022" ) & RM() ))
     {
-      if (ic.rex()) return new AdcRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new AdcRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
       else          return new AdcRM<ARCH,GObLH,false>( _.opbase(), _.rmop(), _.greg() );
     }
 
@@ -320,7 +320,7 @@ template <class ARCH> struct DC<ARCH,ADC> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\024" ) & Imm<8>() ))
     {
-      if (ic.rex()) return new AdcRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
+      if (ic.rex_p) return new AdcRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
       else          return new AdcRMI<ARCH,GObLH>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
     }
   
@@ -335,7 +335,7 @@ template <class ARCH> struct DC<ARCH,ADC> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\x80" ) /2 & RM() & Imm<8>() ))
     {
-      if (ic.rex()) return new AdcRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new AdcRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new AdcRMI<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
 
@@ -399,7 +399,7 @@ template <class ARCH> struct DC<ARCH,SBB> { Operation<ARCH>* get( InputCode<ARCH
 {
   if (auto _ = match( ic, opcode( "\030" ) & RM() ))
     {
-      if (ic.rex()) return new SbbRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new SbbRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
       else          return new SbbRM<ARCH,GObLH,true>( _.opbase(), _.rmop(), _.greg() );
     }
 
@@ -413,7 +413,7 @@ template <class ARCH> struct DC<ARCH,SBB> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\032" ) & RM() ))
     {
-      if (ic.rex()) return new SbbRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new SbbRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
       else          return new SbbRM<ARCH,GObLH,false>( _.opbase(), _.rmop(), _.greg() );
     }
 
@@ -427,7 +427,7 @@ template <class ARCH> struct DC<ARCH,SBB> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\034" ) & Imm<8>() ))
     {
-      if (ic.rex()) return new SbbRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
+      if (ic.rex_p) return new SbbRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
       else          return new SbbRMI<ARCH,GObLH>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
     }
   
@@ -442,7 +442,7 @@ template <class ARCH> struct DC<ARCH,SBB> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\x80" ) /3 & RM() & Imm<8>() ))
     {
-      if (ic.rex()) return new SbbRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new SbbRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new SbbRMI<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
 
@@ -506,7 +506,7 @@ template <class ARCH> struct DC<ARCH,AND> { Operation<ARCH>* get( InputCode<ARCH
 {
   if (auto _ = match( ic, opcode( "\040" ) & RM() ))
     {
-      if (ic.rex()) return new AndRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new AndRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
       else          return new AndRM<ARCH,GObLH,true>( _.opbase(), _.rmop(), _.greg() );
     }
 
@@ -520,7 +520,7 @@ template <class ARCH> struct DC<ARCH,AND> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\042" ) & RM() ))
     {
-      if (ic.rex()) return new AndRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new AndRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
       else          return new AndRM<ARCH,GObLH,false>( _.opbase(), _.rmop(), _.greg() );
     }
 
@@ -534,7 +534,7 @@ template <class ARCH> struct DC<ARCH,AND> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\044" ) & Imm<8>() ))
     {
-      if (ic.rex()) return new AndRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
+      if (ic.rex_p) return new AndRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
       else          return new AndRMI<ARCH,GObLH>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
     }
   
@@ -549,7 +549,7 @@ template <class ARCH> struct DC<ARCH,AND> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\x80" ) /4 & RM() & Imm<8>() ))
     {
-      if (ic.rex()) return new AndRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new AndRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new AndRMI<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
 
@@ -613,7 +613,7 @@ template <class ARCH> struct DC<ARCH,SUB> { Operation<ARCH>* get( InputCode<ARCH
 {
   if (auto _ = match( ic, opcode( "\050" ) & RM() ))
     {
-      if (ic.rex()) return new SubRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new SubRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
       else          return new SubRM<ARCH,GObLH,true>( _.opbase(), _.rmop(), _.greg() );
     }
 
@@ -627,7 +627,7 @@ template <class ARCH> struct DC<ARCH,SUB> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\052" ) & RM() ))
     {
-      if (ic.rex()) return new SubRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new SubRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
       else          return new SubRM<ARCH,GObLH,false>( _.opbase(), _.rmop(), _.greg() );
     }
 
@@ -641,7 +641,7 @@ template <class ARCH> struct DC<ARCH,SUB> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\054" ) & Imm<8>() ))
     {
-      if (ic.rex()) return new SubRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
+      if (ic.rex_p) return new SubRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
       else          return new SubRMI<ARCH,GObLH>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
     }
   
@@ -656,7 +656,7 @@ template <class ARCH> struct DC<ARCH,SUB> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\x80" ) /5 & RM() & Imm<8>() ))
     {
-      if (ic.rex()) return new SubRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new SubRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new SubRMI<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
 
@@ -720,7 +720,7 @@ template <class ARCH> struct DC<ARCH,XOR> { Operation<ARCH>* get( InputCode<ARCH
 {
   if (auto _ = match( ic, opcode( "\060" ) & RM() ))
     {
-      if (ic.rex()) return new XorRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new XorRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
       else          return new XorRM<ARCH,GObLH,true>( _.opbase(), _.rmop(), _.greg() );
     }
 
@@ -734,7 +734,7 @@ template <class ARCH> struct DC<ARCH,XOR> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\062" ) & RM() ))
     {
-      if (ic.rex()) return new XorRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new XorRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
       else          return new XorRM<ARCH,GObLH,false>( _.opbase(), _.rmop(), _.greg() );
     }
 
@@ -748,7 +748,7 @@ template <class ARCH> struct DC<ARCH,XOR> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\064" ) & Imm<8>() ))
     {
-      if (ic.rex()) return new XorRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
+      if (ic.rex_p) return new XorRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
       else          return new XorRMI<ARCH,GObLH>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
     }
   
@@ -763,7 +763,7 @@ template <class ARCH> struct DC<ARCH,XOR> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\x80" ) /6 & RM() & Imm<8>() ))
     {
-      if (ic.rex()) return new XorRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new XorRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new XorRMI<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
 
@@ -822,7 +822,7 @@ template <class ARCH> struct DC<ARCH,CMP> { Operation<ARCH>* get( InputCode<ARCH
 {
   if (auto _ = match( ic, opcode( "\070" ) & RM() ))
     {
-      if (ic.rex()) return new CmpRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new CmpRM<ARCH,GOb,  true>( _.opbase(), _.rmop(), _.greg() );
       else          return new CmpRM<ARCH,GObLH,true>( _.opbase(), _.rmop(), _.greg() );
     }
 
@@ -836,7 +836,7 @@ template <class ARCH> struct DC<ARCH,CMP> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\072" ) & RM() ))
     {
-      if (ic.rex()) return new CmpRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new CmpRM<ARCH,GOb,  false>( _.opbase(), _.rmop(), _.greg() );
       else          return new CmpRM<ARCH,GObLH,false>( _.opbase(), _.rmop(), _.greg() );
     }
 
@@ -850,7 +850,7 @@ template <class ARCH> struct DC<ARCH,CMP> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\074" ) & Imm<8>() ))
     {
-      if (ic.rex()) return new CmpRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
+      if (ic.rex_p) return new CmpRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
       else          return new CmpRMI<ARCH,GObLH>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
     }
   
@@ -865,7 +865,7 @@ template <class ARCH> struct DC<ARCH,CMP> { Operation<ARCH>* get( InputCode<ARCH
 
   if (auto _ = match( ic, opcode( "\x80" ) /7 & RM() & Imm<8>() ))
     {
-      if (ic.rex()) return new CmpRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new CmpRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new CmpRMI<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
 
@@ -916,7 +916,7 @@ template <class ARCH> struct DC<ARCH,ROL> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xc0" ) /0 & RM() & Imm<8>() ))
   
     {
-      if (ic.rex()) return new RolRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new RolRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new RolRMI<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
   
@@ -932,7 +932,7 @@ template <class ARCH> struct DC<ARCH,ROL> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xd0" ) /0 & RM() ))
   
     {
-      if (ic.rex()) return new RolRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), 1 );
+      if (ic.rex_p) return new RolRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), 1 );
       else          return new RolRMI<ARCH,GObLH>( _.opbase(), _.rmop(), 1 );
     }
   
@@ -948,7 +948,7 @@ template <class ARCH> struct DC<ARCH,ROL> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xd2" ) /0 & RM() ))
   
     {
-      if (ic.rex()) return new RolRMCL<ARCH,GOb>  ( _.opbase(), _.rmop() );
+      if (ic.rex_p) return new RolRMCL<ARCH,GOb>  ( _.opbase(), _.rmop() );
       else          return new RolRMCL<ARCH,GObLH>( _.opbase(), _.rmop() );
     }
   
@@ -992,7 +992,7 @@ template <class ARCH> struct DC<ARCH,ROR> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xc0" ) /1 & RM() & Imm<8>() ))
   
     {
-      if (ic.rex()) return new RorRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new RorRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new RorRMI<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
   
@@ -1008,7 +1008,7 @@ template <class ARCH> struct DC<ARCH,ROR> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xd0" ) /1 & RM() ))
   
     {
-      if (ic.rex()) return new RorRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), 1 );
+      if (ic.rex_p) return new RorRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), 1 );
       else          return new RorRMI<ARCH,GObLH>( _.opbase(), _.rmop(), 1 );
     }
   
@@ -1024,7 +1024,7 @@ template <class ARCH> struct DC<ARCH,ROR> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xd2" ) /1 & RM() ))
   
     {
-      if (ic.rex()) return new RorRMCL<ARCH,GOb>  ( _.opbase(), _.rmop() );
+      if (ic.rex_p) return new RorRMCL<ARCH,GOb>  ( _.opbase(), _.rmop() );
       else          return new RorRMCL<ARCH,GObLH>( _.opbase(), _.rmop() );
     }
   
@@ -1068,7 +1068,7 @@ template <class ARCH> struct DC<ARCH,RCL> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xc0" ) /2 & RM() & Imm<8>() ))
   
     {
-      if (ic.rex()) return new RclRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new RclRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new RclRMI<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
   
@@ -1084,7 +1084,7 @@ template <class ARCH> struct DC<ARCH,RCL> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xd0" ) /2 & RM() ))
   
     {
-      if (ic.rex()) return new RclRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), 1 );
+      if (ic.rex_p) return new RclRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), 1 );
       else          return new RclRMI<ARCH,GObLH>( _.opbase(), _.rmop(), 1 );
     }
   
@@ -1100,7 +1100,7 @@ template <class ARCH> struct DC<ARCH,RCL> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xd2" ) /2 & RM() ))
   
     {
-      if (ic.rex()) return new RclRMCL<ARCH,GOb>  ( _.opbase(), _.rmop() );
+      if (ic.rex_p) return new RclRMCL<ARCH,GOb>  ( _.opbase(), _.rmop() );
       else          return new RclRMCL<ARCH,GObLH>( _.opbase(), _.rmop() );
     }
   
@@ -1144,7 +1144,7 @@ template <class ARCH> struct DC<ARCH,RCR> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xc0" ) /3 & RM() & Imm<8>() ))
   
     {
-      if (ic.rex()) return new RcrRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new RcrRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new RcrRMI<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
   
@@ -1160,7 +1160,7 @@ template <class ARCH> struct DC<ARCH,RCR> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xd0" ) /3 & RM() ))
   
     {
-      if (ic.rex()) return new RcrRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), 1 );
+      if (ic.rex_p) return new RcrRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), 1 );
       else          return new RcrRMI<ARCH,GObLH>( _.opbase(), _.rmop(), 1 );
     }
   
@@ -1176,7 +1176,7 @@ template <class ARCH> struct DC<ARCH,RCR> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xd2" ) /3 & RM() ))
   
     {
-      if (ic.rex()) return new RcrRMCL<ARCH,GOb>  ( _.opbase(), _.rmop() );
+      if (ic.rex_p) return new RcrRMCL<ARCH,GOb>  ( _.opbase(), _.rmop() );
       else          return new RcrRMCL<ARCH,GObLH>( _.opbase(), _.rmop() );
     }
   
@@ -1220,7 +1220,7 @@ template <class ARCH> struct DC<ARCH,SHL> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xc0" ) /4 & RM() & Imm<8>() ))
   
     {
-      if (ic.rex()) return new ShlRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new ShlRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new ShlRMI<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
   
@@ -1236,7 +1236,7 @@ template <class ARCH> struct DC<ARCH,SHL> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xd0" ) /4 & RM() ))
   
     {
-      if (ic.rex()) return new ShlRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), 1 );
+      if (ic.rex_p) return new ShlRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), 1 );
       else          return new ShlRMI<ARCH,GObLH>( _.opbase(), _.rmop(), 1 );
     }
   
@@ -1252,7 +1252,7 @@ template <class ARCH> struct DC<ARCH,SHL> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xd2" ) /4 & RM() ))
   
     {
-      if (ic.rex()) return new ShlRMCL<ARCH,GOb>  ( _.opbase(), _.rmop() );
+      if (ic.rex_p) return new ShlRMCL<ARCH,GOb>  ( _.opbase(), _.rmop() );
       else          return new ShlRMCL<ARCH,GObLH>( _.opbase(), _.rmop() );
     }
   
@@ -1296,7 +1296,7 @@ template <class ARCH> struct DC<ARCH,SHR> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xc0" ) /5 & RM() & Imm<8>() ))
   
     {
-      if (ic.rex()) return new ShrRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new ShrRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new ShrRMI<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
   
@@ -1312,7 +1312,7 @@ template <class ARCH> struct DC<ARCH,SHR> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xd0" ) /5 & RM() ))
   
     {
-      if (ic.rex()) return new ShrRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), 1 );
+      if (ic.rex_p) return new ShrRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), 1 );
       else          return new ShrRMI<ARCH,GObLH>( _.opbase(), _.rmop(), 1 );
     }
   
@@ -1328,7 +1328,7 @@ template <class ARCH> struct DC<ARCH,SHR> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xd2" ) /5 & RM() ))
   
     {
-      if (ic.rex()) return new ShrRMCL<ARCH,GOb>  ( _.opbase(), _.rmop() );
+      if (ic.rex_p) return new ShrRMCL<ARCH,GOb>  ( _.opbase(), _.rmop() );
       else          return new ShrRMCL<ARCH,GObLH>( _.opbase(), _.rmop() );
     }
   
@@ -1372,7 +1372,7 @@ template <class ARCH> struct DC<ARCH,SAR> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xc0" ) /7 & RM() & Imm<8>() ))
   
     {
-      if (ic.rex()) return new SarRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new SarRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new SarRMI<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
   
@@ -1388,7 +1388,7 @@ template <class ARCH> struct DC<ARCH,SAR> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xd0" ) /7 & RM() ))
   
     {
-      if (ic.rex()) return new SarRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), 1 );
+      if (ic.rex_p) return new SarRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), 1 );
       else          return new SarRMI<ARCH,GObLH>( _.opbase(), _.rmop(), 1 );
     }
   
@@ -1404,7 +1404,7 @@ template <class ARCH> struct DC<ARCH,SAR> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xd2" ) /7 & RM() ))
   
     {
-      if (ic.rex()) return new SarRMCL<ARCH,GOb>  ( _.opbase(), _.rmop() );
+      if (ic.rex_p) return new SarRMCL<ARCH,GOb>  ( _.opbase(), _.rmop() );
       else          return new SarRMCL<ARCH,GObLH>( _.opbase(), _.rmop() );
     }
   
@@ -1448,7 +1448,7 @@ template <class ARCH> struct DC<ARCH,TEST> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\x84" ) & RM() ))
   
     {
-      if (ic.rex()) return new TestRMG<ARCH,GOb>  ( _.opbase(), _.rmop(), _.greg() );
+      if (ic.rex_p) return new TestRMG<ARCH,GOb>  ( _.opbase(), _.rmop(), _.greg() );
       else          return new TestRMG<ARCH,GObLH>( _.opbase(), _.rmop(), _.greg() );
     }
   
@@ -1464,7 +1464,7 @@ template <class ARCH> struct DC<ARCH,TEST> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\xf6" ) /0 & RM() & Imm<8>() ))
   
     {
-      if (ic.rex()) return new TestRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
+      if (ic.rex_p) return new TestRMI<ARCH,GOb>  ( _.opbase(), _.rmop(), _.i( int8_t() ) );
       else          return new TestRMI<ARCH,GObLH>( _.opbase(), _.rmop(), _.i( int8_t() ) );
     }
   
@@ -1483,7 +1483,7 @@ template <class ARCH> struct DC<ARCH,TEST> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\xa8" ) & Imm<8>() ))
   
     {
-      if (ic.rex()) return new TestRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
+      if (ic.rex_p) return new TestRMI<ARCH,GOb>  ( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
       else          return new TestRMI<ARCH,GObLH>( _.opbase(), make_rop<ARCH>( 0 ), _.i( int8_t() ) );
     }
   
@@ -1517,7 +1517,7 @@ template <class ARCH> struct DC<ARCH,NOT> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xf6" ) /2 & RM() ))
   
     {
-      if (ic.rex()) return new NotRM<ARCH,GOb>  ( _.opbase(), _.rmop() );
+      if (ic.rex_p) return new NotRM<ARCH,GOb>  ( _.opbase(), _.rmop() );
       else          return new NotRM<ARCH,GObLH>( _.opbase(), _.rmop() );
     }
   
@@ -1548,7 +1548,7 @@ template <class ARCH> struct DC<ARCH,NEG> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xf6" ) /3 & RM() ))
   
     {
-      if (ic.rex()) return new NegRM<ARCH,GOb>  ( _.opbase(), _.rmop() );
+      if (ic.rex_p) return new NegRM<ARCH,GOb>  ( _.opbase(), _.rmop() );
       else          return new NegRM<ARCH,GObLH>( _.opbase(), _.rmop() );
     }
   
@@ -1602,7 +1602,7 @@ template <class ARCH> struct DC<ARCH,DIV> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xf6" ) /6 & RM() ))
   
     {
-      if (ic.rex()) return new DivE8<ARCH,GOb>  ( _.opbase(), _.rmop() );
+      if (ic.rex_p) return new DivE8<ARCH,GOb>  ( _.opbase(), _.rmop() );
       else          return new DivE8<ARCH,GObLH>( _.opbase(), _.rmop() );
     }
   
@@ -1659,7 +1659,7 @@ template <class ARCH> struct DC<ARCH,IDIV> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\xf6" ) /7 & RM() ))
   
     {
-      if (ic.rex()) return new IDivE8<ARCH,GOb>  ( _.opbase(), _.rmop() );
+      if (ic.rex_p) return new IDivE8<ARCH,GOb>  ( _.opbase(), _.rmop() );
       else          return new IDivE8<ARCH,GObLH>( _.opbase(), _.rmop() );
     }
   
@@ -1712,7 +1712,7 @@ template <class ARCH> struct DC<ARCH,MUL> { Operation<ARCH>* get( InputCode<ARCH
   if (auto _ = match( ic, opcode( "\xf6" ) /4 & RM() ))
   
     {
-      if (ic.rex()) return new MulE8<ARCH,GOb>  ( _.opbase(), _.rmop() );
+      if (ic.rex_p) return new MulE8<ARCH,GOb>  ( _.opbase(), _.rmop() );
       else          return new MulE8<ARCH,GObLH>( _.opbase(), _.rmop() );
     }
   
@@ -1804,7 +1804,7 @@ template <class ARCH> struct DC<ARCH,IMUL> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\xf6" ) /5 & RM() ))
   
     {
-      if (ic.rex()) return new IMulE8<ARCH,GOb>  ( _.opbase(), _.rmop() );
+      if (ic.rex_p) return new IMulE8<ARCH,GOb>  ( _.opbase(), _.rmop() );
       else          return new IMulE8<ARCH,GObLH>( _.opbase(), _.rmop() );
     }
   
@@ -1923,7 +1923,7 @@ template <class ARCH> struct DC<ARCH,INCDEC> { Operation<ARCH>* get( InputCode<A
   if (auto _ = match( ic, opcode( "\xfe" ) /0 & RM() ))
   
     {
-      if (ic.rex()) return new Inc<ARCH,GOb>  ( _.opbase(), _.rmop() );
+      if (ic.rex_p) return new Inc<ARCH,GOb>  ( _.opbase(), _.rmop() );
       else          return new Inc<ARCH,GObLH>( _.opbase(), _.rmop() );
     }
 
@@ -1947,7 +1947,7 @@ template <class ARCH> struct DC<ARCH,INCDEC> { Operation<ARCH>* get( InputCode<A
   if (auto _ = match( ic, opcode( "\xfe" ) /1 & RM() ))
   
     {
-      if (ic.rex()) return new Dec<ARCH,GOb>  ( _.opbase(), _.rmop() );
+      if (ic.rex_p) return new Dec<ARCH,GOb>  ( _.opbase(), _.rmop() );
       else          return new Dec<ARCH,GObLH>( _.opbase(), _.rmop() );
     }
 
@@ -1978,7 +1978,7 @@ template <class ARCH> struct DC<ARCH,SETCC> { Operation<ARCH>* get( InputCode<AR
 {
   if (auto _ = match( ic, (opcode( "\x0f\x90" ) + Var<4>()) & RM() ))
     {
-      if (ic.rex()) return new SetCC<ARCH,GOb>  ( _.opbase(), _.rmop(), _.var() );
+      if (ic.rex_p) return new SetCC<ARCH,GOb>  ( _.opbase(), _.rmop(), _.var() );
       else          return new SetCC<ARCH,GObLH>( _.opbase(), _.rmop(), _.var() );
     }
   
