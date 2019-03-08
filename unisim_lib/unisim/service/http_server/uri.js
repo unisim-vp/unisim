@@ -76,9 +76,10 @@ function URI(uri, window_context)
 				this.scheme = null;
 			}
 			
+			var delimiter_pos = trimed_uri.indexOf('/');
 			if(this.scheme)
 			{
-				var delimiter_pos = trimed_uri.indexOf('/');
+				// absolute URI
 				if(delimiter_pos != -1)
 				{
 					this.authority = trimed_uri.substr(0, delimiter_pos).trim();
@@ -91,13 +92,21 @@ function URI(uri, window_context)
 				}
 				this.path = '';
 			}
+			else if(delimiter_pos == 0)
+			{
+				// URI relative to server root
+				var wnd_ctx = window_context || window;
+				this.authority = wnd_ctx.location.host;
+				this.scheme = wnd_ctx.location.protocol.slice(0, -1);
+				this.path = '';
+			}
 			else
 			{
+				// URI relative to current directory
 				var wnd_ctx = window_context || window;
 				this.authority = wnd_ctx.location.host;
 				this.scheme = wnd_ctx.location.protocol.slice(0, -1);
 				this.path = wnd_ctx.location.pathname.substr(0, wnd_ctx.location.pathname.lastIndexOf('/')).trim();
-//				console.log('path=' + this.path);
 			}
 			
 			var stack_underflow = false;

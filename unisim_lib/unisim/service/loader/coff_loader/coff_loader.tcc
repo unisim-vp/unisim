@@ -52,7 +52,7 @@ using namespace unisim::kernel::logger;
 
 template <class MEMORY_ADDR>
 CoffLoader<MEMORY_ADDR>::CoffLoader(const char *name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "COFF loader")
 	, Client<Memory<MEMORY_ADDR> >(name, parent)
 	, Service<Loader>(name, parent)
 	, Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent)

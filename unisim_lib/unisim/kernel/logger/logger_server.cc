@@ -51,7 +51,7 @@ namespace logger {
 static const char *XML_ENCODING = "UTF-8"; 
 
 LoggerServer::LoggerServer(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::service::Object(name, parent, "Logger")
 	, unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>(name, parent)
 	, http_server_export("http-server-export", this)
 	, clients()
@@ -540,6 +540,7 @@ void LoggerServer::ScanWebInterfaceModdings(unisim::service::interfaces::WebInte
 	scanner.Append(unisim::service::interfaces::ToolbarOpenTabAction(
 		/* name */      GetName(), 
 		/* label */     "<img src=\"/unisim/kernel/logger/icon.svg\">",
+		/* tips */      "Log",
 		/* tile */      unisim::service::interfaces::OpenTabAction::BOTTOM_TILE,
 		/* uri */       URI()
 	));

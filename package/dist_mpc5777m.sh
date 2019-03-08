@@ -1252,6 +1252,10 @@ done
 
 cat << EOF > "${DEST_DIR}/AUTHORS"
 Gilles Mouchard <gilles.mouchard@cea.fr>
+Yves Lhuillier <yves.lhuillier@cea.fr>
+Franck Vedrine <franck.vedrine@cea.fr>
+Réda Nouacer <reda.nouacer@cea.fr>
+Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>
 EOF
 
 cat << EOF > "${DEST_DIR}/README"

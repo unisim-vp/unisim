@@ -49,7 +49,7 @@ namespace debugger {
 
 template <typename CONFIG>
 Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::service::Object(name, parent, "Debugger back-end")
 	, unisim::kernel::service::Client<unisim::service::interfaces::Blob<ADDRESS> >(name, parent)
 	, debug_yielding_export()
 	, memory_access_reporting_export()

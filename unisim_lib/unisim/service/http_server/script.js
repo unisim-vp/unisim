@@ -251,7 +251,6 @@ IFrame.prototype.iframe_element = null;
 IFrame.prototype.load_requested = false;
 IFrame.prototype.cancelled_load = false;
 IFrame.prototype.loaded = false;
-IFrame.prototype.previously_loaded = false;
 IFrame.prototype.bound_on_load = null;
 IFrame.prototype.bound_on_mouseenter = null;
 IFrame.prototype.bound_on_mouseleave = null;
@@ -264,10 +263,10 @@ function IFrame(owner,index)
 	this.iframe_element.className = this.owner.class_name;
 	this.iframe_element.setAttribute('name', this.owner.name + '-' + index);
 	this.iframe_element.setAttribute('id', this.owner.name + '-' + index);
-	this.load_requested = true; // load is fired twice: on iframe creation, on assignment of src attribute
+	this.iframe_element.setAttribute('src', this.owner.uri);
+	this.load_requested = false; //true; // load is fired twice: on iframe creation, on assignment of src attribute
 	this.load_cancelled = false;
 	this.loaded = false;
-	this.previously_loaded = false;
 	this.bound_on_load = this.owner.on_load.bind(owner, index);
 	this.iframe_element.addEventListener('load', this.bound_on_load);
 	if(CompatLayer.is_firefox)
@@ -295,7 +294,6 @@ IFrame.prototype.destroy = function()
 	this.load_requested = false;
 	this.load_cancelled = false;
 	this.loaded = false;
-	this.previously_loaded = false;
 }
 
 // DoubleIFrame
@@ -345,64 +343,75 @@ DoubleIFrame.prototype.destroy = function()
 
 DoubleIFrame.prototype.on_load = function(i)
 {
-//	console.log(this.name + ':frame #' + i + ' loaded');
-	if(this.iframes[i].load_cancelled)
+// 	console.log(this.name + ':frame #' + i + ' loaded');
+	var iframe = this.iframes[i];
+	if(!iframe.iframe_element.hasAttribute('src'))
 	{
-		this.iframes[i].load_cancelled = false;
+// 		console.log(this.name + ':frame #' + i + ' has no src attribute');
+		// Initially our iframe elements have no src attribute;
+		// A load event may be triggered after iframe creation with a blank content, like if src='#blank': ignore such load event
+		return;
+	}
+	if(iframe.load_cancelled)
+	{
+// 		console.log(this.name + ':frame #' + i + ' load cancelled');
+		iframe.loaded = false;
+		iframe.load_requested = false;
+		iframe.load_cancelled = false;
 		return;
 	}
 
-	if(this.iframes[i].previously_loaded)
-	{
-		this.save_scroll_position();
-	}
+// 	console.log(this.name + ':frame #' + i + ' will show');
+	
+	// save scroll position of foreground iframe if loaded
+	this.save_scroll_position();
 	this.bg = i; // last loaded iframe is the background iframe at the moment
 	this.fg = 1 - this.bg;
-	if(!this.iframes[this.bg].load_requested && this.iframes[this.fg].load_requested)
+	
+	var bg_iframe = this.iframes[this.bg];
+	var fg_iframe = this.iframes[this.fg];
+	if(!bg_iframe.load_requested && fg_iframe.load_requested)
 	{
 		// this is not a load we've requested but we've already requested a load on another iframe: user may have click an hyperlink in the iframe, so cancel our refresh in other iframe
-		this.iframes[this.fg].load_cancelled = true;
+		fg_iframe.load_cancelled = true;
 	}
 	var uri = null;
-	if(!this.iframes[this.bg].load_requested)
+	if(!bg_iframe.load_requested)
 	{
 		// this is not a load we've requested: uri may have changed
 		try
 		{
-			uri = new URI(this.iframes[this.bg].iframe_element.contentWindow.location.href);
-//			uri_str = this.iframes[this.bg].iframe_element.contentWindow.location.pathname;
+			uri = new URI(bg_iframe.iframe_element.contentWindow.location.href);
 		}
 		catch(e)
 		{
-			uri = new URI(this.iframes[this.bg].iframe_element.getAttribute('src'));
+			uri = new URI(bg_iframe.iframe_element.getAttribute('src'));
 		}
 	}
-	this.iframes[this.bg].loaded = true; // mark background iframe as loaded
-	this.iframes[this.bg].load_requested = false;
-	this.iframes[this.bg].load_cancelled = false;
+	bg_iframe.loaded = true; // mark background iframe as loaded
+	bg_iframe.load_requested = false;
+	bg_iframe.load_cancelled = false;
 	// update tab uri (it may have changed because of user click on hyperlink within iframe of tab)
-	if(uri && (uri != this.uri))
+	if(uri && !uri.compare(this.uri))
 	{
 		this.uri = uri;
 		this.owner.tab_config.uri = uri;
 		this.owner.owner.save_tabs();
+		if(fg_iframe.load_requested) fg_iframe.load_cancelled = true; // cancel foreground iframe if there's a pending because URI has changed
 	}
-	else if(this.iframes[this.bg].previously_loaded)
-	{
-		this.restore_scroll_position(); // restore scroll position
-	}
+
+	this.restore_scroll_position(); // restore scroll position for background iframe
 	
-	this.iframes[this.bg].previously_loaded = true;
-	
+	// patch anchors within iframe to provide user with a context menu for each anchor
 	this.patch_anchors();
 	// simulate unloading before flipping
 	this.trigger_on_unload();
 	this.owner.set_label(this.iframes[this.bg].iframe_element.contentDocument.title);
-	// show freshly loaded iframe
-	this.iframes[this.bg].iframe_element.setAttribute('style', 'visibility:' + (this.visible ? 'visible' : 'hidden'));
-	// hide old iframe
-	if(this.iframes[this.fg].iframe_element) this.iframes[this.fg].iframe_element.setAttribute('style', 'visibility:hidden');
-	// swap iframe role (background/foreground)
+	// flipping: show freshly loaded iframe
+	bg_iframe.iframe_element.setAttribute('style', 'visibility:' + (this.visible ? 'visible' : 'hidden'));
+	// flipping: hide old iframe
+	if(fg_iframe.iframe_element) fg_iframe.iframe_element.setAttribute('style', 'visibility:hidden');
+	// flipping: swap iframe role (background/foreground)
 	this.fg = this.bg;
 	this.bg = 1 - this.fg;
 	// simulate loading after flipping
@@ -412,7 +421,8 @@ DoubleIFrame.prototype.on_load = function(i)
 
 DoubleIFrame.prototype.patch_anchors = function()
 {
-	var iframe_element = this.iframes[this.bg].iframe_element;
+	var bg_iframe = this.iframes[this.bg];
+	var iframe_element = bg_iframe.iframe_element;
 	var anchor_elements = iframe_element.contentDocument.documentElement.getElementsByTagName('a');
 	for(var i = 0; i < anchor_elements.length; i++)
 	{
@@ -432,14 +442,39 @@ DoubleIFrame.prototype.patch_anchors = function()
 					var scroll_top = window.pageYOffset || window.document.documentElement.scrollTop;
 					var offset_x = rect.left + scroll_left;
 					var offset_y = rect.top + scroll_top;
-					gui.create_context_menu(event,
-					[
+					var context_menu_items = new Array();
+					context_menu_items.push(
 						{
 							label:'Open in new tab',
 							action:function() { gui.open_tab(this.owner.owner.name, this.owner.tab_config.name_seed, uri_str); },
 							arg:uri_str
 						}
-					], this, window.document, offset_x, offset_y);
+					);
+					
+					var tiles = {
+						left_tile       : { name : 'left-tile',       label: 'left' },
+						top_middle_tile : { name : 'top-middle-tile', label: 'center' },
+						top_right_tile  : { name : 'top-right-tile',  label: 'right' },
+						bottom          : { name : 'bottom-tile',     label: 'bottom' }
+					};
+					
+					for(var tile in tiles)
+					{
+						var tile_name = tiles[tile].name;
+						var tile_label = tiles[tile].label;
+						if(this.owner.owner.name != tile_name)
+						{
+							context_menu_items.push(
+								{
+									label:'Open to the ' + tile_label,
+									action:function(tile_name) { gui.open_tab(tile_name, this.owner.tab_config.name_seed, uri_str); },
+									arg: tile_name
+								}
+							);
+						}
+					}
+					
+					gui.create_context_menu(event, context_menu_items, this, window.document, offset_x, offset_y);
 				}.bind(this, uri_str)
 			);
 		}
@@ -448,25 +483,26 @@ DoubleIFrame.prototype.patch_anchors = function()
 
 DoubleIFrame.prototype.update_uri = function()
 {
-	var new_uri = rewrite_uri_with_fragment(this.uri);
-	
-	if(new_uri != this.uri)
+	if(this.uri.fragment)
 	{
+		var new_uri = rewrite_uri_with_fragment(this.uri);
+		
 		this.uri = new_uri;
 		this.owner.tab_config.uri = new_uri;
 		this.owner.owner.save_tabs();
 	}
 
-	if(this.uri != window.location.href)
+	if(!this.uri.compare(new URI(window.location.href)))
 	{
+		var bg_iframe = this.iframes[this.bg];
 		// update src attribute of iframe
-		if(this.iframes[this.bg].iframe_element.hasAttribute('src'))
+		if(bg_iframe.iframe_element.hasAttribute('src'))
 		{
-			this.iframes[this.bg].iframe_element.contentWindow.location.replace(this.uri.toString());
+			bg_iframe.iframe_element.contentWindow.location.replace(this.uri.toString());
 		}
 		else
 		{
-			this.iframes[this.bg].iframe_element.setAttribute('src', this.uri.toString());
+			bg_iframe.iframe_element.setAttribute('src', this.uri.toString());
 		}
 	}
 	else
@@ -480,32 +516,35 @@ DoubleIFrame.prototype.refresh = function()
 //	console.log(this.name + ':refresh');
 // 	this.save_scroll_position();
 // 	this.trigger_on_unload();
-	this.iframes[this.bg].loaded = false;
-	this.iframes[this.bg].load_requested = true;
-	this.iframes[this.bg].load_cancelled = false;
+	var bg_iframe = this.iframes[this.bg];
+	bg_iframe.loaded = false;
+	bg_iframe.load_requested = true;
+	bg_iframe.load_cancelled = false;
 	this.update_uri();
 }
 
 DoubleIFrame.prototype.trigger_on_unload = function()
 {
-	if(this.iframes[this.fg].loaded)
+	var fg_iframe = this.iframes[this.fg];
+	if(fg_iframe.loaded)
 	{
-		var fg_iframe = this.iframes[this.fg].iframe_element;
-		if(fg_iframe.contentWindow && fg_iframe.contentWindow.gui && (fg_iframe.contentWindow.gui.magic == 0xC0CA))
+		var fg_iframe_element = fg_iframe.iframe_element;
+		if(fg_iframe_element.contentWindow && fg_iframe_element.contentWindow.gui && (fg_iframe_element.contentWindow.gui.magic == 0xC0CA))
 		{
-			fg_iframe.contentWindow.gui.__on_unload__();
+			fg_iframe_element.contentWindow.gui.__on_unload__();
 		}
 	}
 }
 
 DoubleIFrame.prototype.trigger_on_load = function()
 {
-	if(this.iframes[this.fg].loaded)
+	var fg_iframe = this.iframes[this.fg];
+	if(fg_iframe.loaded)
 	{
-		var fg_iframe = this.iframes[this.fg].iframe_element;
-		if(fg_iframe.contentWindow && fg_iframe.contentWindow.gui && (fg_iframe.contentWindow.gui.magic == 0xC0CA))
+		var fg_iframe_element = fg_iframe.iframe_element;
+		if(fg_iframe_element.contentWindow && fg_iframe_element.contentWindow.gui && (fg_iframe_element.contentWindow.gui.magic == 0xC0CA))
 		{
-			fg_iframe.contentWindow.gui.__on_load__();
+			fg_iframe_element.contentWindow.gui.__on_load__();
 		}
 	}
 }
@@ -513,15 +552,17 @@ DoubleIFrame.prototype.trigger_on_load = function()
 DoubleIFrame.prototype.set_visible = function(v)
 {
 	this.visible = v;
-	this.iframes[this.fg].iframe_element.style.visibility = (this.visible && this.iframes[this.fg].loaded) ? 'visible' : 'hidden';
+	var fg_iframe = this.iframes[this.fg];
+	fg_iframe.iframe_element.style.visibility = (this.visible && fg_iframe.loaded) ? 'visible' : 'hidden';
 }
 
 DoubleIFrame.prototype.on_mouseenter = function()
 {
 	for(var i = 0; i < 2; i++)
 	{
-		this.iframes[i].iframe_element.setAttribute('scrolling', 'yes');
-		this.iframes[i].iframe_element.style.overflow = 'auto';
+		var iframe = this.iframes[i];
+		iframe.iframe_element.setAttribute('scrolling', 'yes');
+		iframe.iframe_element.style.overflow = 'auto';
 	}
 }
 
@@ -529,8 +570,9 @@ DoubleIFrame.prototype.on_mouseleave = function()
 {
 	for(var i = 0; i < 2; i++)
 	{
-		this.iframes[i].iframe_element.setAttribute('scrolling', 'no');
-		this.iframes[i].iframe_element.style.overflow = 'hidden';
+		var iframe = this.iframes[i];
+		iframe.iframe_element.setAttribute('scrolling', 'no');
+		iframe.iframe_element.style.overflow = 'hidden';
 	}
 }
 
@@ -538,22 +580,24 @@ DoubleIFrame.prototype.enable_pointer_events = function(v)
 {
 	for(var i = 0; i < 2; i++)
 	{
-		this.iframes[i].iframe_element.style.pointerEvents = (((v === undefined) || v) ? 'auto' : 'none');
+		var iframe = this.iframes[i];
+		iframe.iframe_element.style.pointerEvents = (((v === undefined) || v) ? 'auto' : 'none');
 	}
 }
 
 DoubleIFrame.prototype.save_scroll_position = function()
 {
-	if(!this.iframes[this.fg].loaded) return;
+	var fg_iframe = this.iframes[this.fg];
+	if(!fg_iframe.loaded) return;
 	
-	if(!this.iframes[this.fg].iframe_element.contentWindow) return;
+	if(!fg_iframe.iframe_element.contentWindow) return;
 	
-	if(!this.iframes[this.fg].iframe_element.contentDocument) return;
+	if(!fg_iframe.iframe_element.contentDocument) return;
 	
 	var scroll_x_item_name = this.storage_item_prefix + 'scroll-x';
 	var scroll_y_item_name = this.storage_item_prefix + 'scroll-y';
 	
-	var scroll_pos = CompatLayer.get_iframe_scroll_pos(this.iframes[this.fg].iframe_element);
+	var scroll_pos = CompatLayer.get_iframe_scroll_pos(fg_iframe.iframe_element);
 	
 // 	console.log(this.name + ':' + scroll_x_item_name + ' <- ' + scroll_pos.x);
 // 	console.log(this.name + ':' + scroll_y_item_name + ' <- ' + scroll_pos.y);
@@ -564,11 +608,12 @@ DoubleIFrame.prototype.save_scroll_position = function()
 
 DoubleIFrame.prototype.restore_scroll_position = function()
 {
-	if(!this.iframes[this.bg].loaded) return;
+	var bg_iframe = this.iframes[this.bg];
+	if(!bg_iframe.loaded) return;
 	
-	if(!this.iframes[this.bg].iframe_element.contentWindow) return;
+	if(!bg_iframe.iframe_element.contentWindow) return;
 	
-	if(!this.iframes[this.bg].iframe_element.contentDocument) return;
+	if(!bg_iframe.iframe_element.contentDocument) return;
 
 	var scroll_x_item_name = this.storage_item_prefix + 'scroll-x';
 	var scroll_y_item_name = this.storage_item_prefix + 'scroll-y';
@@ -576,12 +621,12 @@ DoubleIFrame.prototype.restore_scroll_position = function()
 	var scroll_x = sessionStorage.getItem(scroll_x_item_name);
 	var scroll_y = sessionStorage.getItem(scroll_y_item_name);
 	
-	if(scroll_x && scroll_y)
+	if((scroll_x !== null) && (scroll_y !== null))
 	{
 // 		console.log(this.name + ':' + scroll_x_item_name + ' == ' + scroll_x);
 // 		console.log(this.name + ':' + scroll_y_item_name + ' == ' + scroll_y);
 		
-		CompatLayer.set_iframe_scroll_pos(this.iframes[this.bg].iframe_element, new Point(scroll_x, scroll_y));
+		CompatLayer.set_iframe_scroll_pos(bg_iframe.iframe_element, new Point(scroll_x, scroll_y));
 	}
 }
 
@@ -589,7 +634,8 @@ DoubleIFrame.prototype.set_scroll_pos = function(scroll_pos)
 {
 	for(var i = 0; i < 2; i++)
 	{
-		CompatLayer.set_iframe_scroll_pos(this.iframes[i].iframe_element, scroll_pos);
+		var iframe = this.iframes[i];
+		CompatLayer.set_iframe_scroll_pos(iframe.iframe_element, scroll_pos);
 	}
 }
 
@@ -597,7 +643,8 @@ DoubleIFrame.prototype.has_iframe = function(iframe_name)
 {
 	for(var i = 0; i < 2; i++)
 	{
-		if(this.iframes[i].iframe_element.hasAttribute('name') && (this.iframes[i].iframe_element.getAttribute('name') == iframe_name)) return true;
+		var iframe = this.iframes[i];
+		if(iframe.iframe_element.hasAttribute('name') && (iframe.iframe_element.getAttribute('name') == iframe_name)) return true;
 	}
 	
 	return false;
@@ -605,7 +652,8 @@ DoubleIFrame.prototype.has_iframe = function(iframe_name)
 
 DoubleIFrame.prototype.is_foreground_iframe = function(iframe_name)
 {
-	return this.iframes[this.fg].iframe_element.hasAttribute('name') && (this.iframes[this.fg].iframe_element.getAttribute('name') == iframe_name);
+	var fg_iframe = this.iframes[this.fg];
+	return fg_iframe.iframe_element.hasAttribute('name') && (fg_iframe.iframe_element.getAttribute('name') == iframe_name);
 }
 
 DoubleIFrame.prototype.get_next_target = function(iframe_name)
@@ -633,8 +681,9 @@ DoubleIFrame.prototype.detach = function()
 	{
 		for(var i = 0; i < 2; i++)
 		{
-			this.parent_element.removeChild(this.iframes[i].iframe_element);
-			this.iframes[i].loaded = false;
+			var iframe = this.iframes[i];
+			this.parent_element.removeChild(iframe.iframe_element);
+			iframe.loaded = false;
 		}
 		this.parent_element = null;
 	}
@@ -645,7 +694,8 @@ DoubleIFrame.prototype.attach = function(parent_element)
 	this.parent_element = parent_element;
 	for(var i = 0; i < 2; i++)
 	{
-		this.parent_element.appendChild(this.iframes[i].iframe_element);
+		var iframe = this.iframes[i];
+		this.parent_element.appendChild(iframe.iframe_element);
 	}
 	this.restore_scroll_position();
 }
@@ -1073,6 +1123,7 @@ Tab.prototype.set_label = function(label)
 {
 	this.tab_config.label = label;
 	this.tab_header_label.textContent = label;
+	this.tab_header_label.setAttribute('title', label + '\n\nTips:\n- Click on tab to switch to it\n- Right click to show a context menu\n- Click on the cross to close the tab');
 }
 
 // Tile
@@ -1633,6 +1684,7 @@ GUI.prototype.left_tile = null;
 GUI.prototype.top_middle_tile = null;
 GUI.prototype.top_right_tile = null;
 GUI.prototype.bottom_tile = null;
+GUI.prototype.overlay = null; // an overlay div to prevent iframes from capturing mouse events while a menu is opened
 GUI.prototype.mouse_pos = null;
 GUI.prototype.bound_vert_resize = null;
 GUI.prototype.bound_left_horiz_resize = null;
@@ -1680,6 +1732,14 @@ function GUI()
 	this.bottom_tab_headers_div = document.getElementById('bottom-tab-headers-div');
 	this.bottom_tab_header_div = document.getElementsByClassName('bottom-tab-header-div');
 	this.bottom_tab_contents_div = document.getElementById('bottom-tab-contents-div');
+	this.overlay = document.createElement('div');
+	this.overlay.setAttribute('id', 'overlay');
+	this.overlay.style.zIndex = 2;
+	this.overlay.style.position = 'fixed';
+	this.overlay.style.left = 0 + 'px';
+	this.overlay.style.right = 0 + 'px';
+	this.overlay.style.display = 'none';
+	document.body.appendChild(this.overlay);
 	this.mouse_pos = new Point(0, 0);
 	this.bound_vert_resize = null;
 	this.bound_left_horiz_resize = null;
@@ -1760,6 +1820,18 @@ GUI.prototype.open_tab = function(tile_name, name, uri_str, dont_switch_to)
 	}
 	
 	return tab;
+}
+
+GUI.prototype.enable_events = function(v)
+{
+	if((v === undefined) || v)
+	{
+		this.overlay.style.display = 'none';
+	}
+	else
+	{
+		this.overlay.style.display = 'block';
+	}
 }
 
 GUI.prototype.enable_pointer_events = function(v)
@@ -2023,6 +2095,8 @@ GUI.prototype.resize_content = function(content_width, content_height)
 
 GUI.prototype.resize = function()
 {
+	this.overlay.style.width = this.window_inner_width + 'px';
+	this.overlay.style.height = this.window_inner_height + 'px';
 	var toolbar_div_height = CompatLayer.get_element_height(this.toolbar_div);
 	this.toolbar_div.style.width = this.window_inner_width + 'px';
 	this.resize_content(this.window_inner_width, Math.max(this.window_inner_height - toolbar_div_height, toolbar_div_height));
@@ -2077,7 +2151,7 @@ GUI.prototype.create_context_menu = function(event, context_menu_items, action_t
 {
 	this.destroy_context_menu();
 	this.context_menu = new ContextMenu(event, context_menu_items, action_this, document, offset_x, offset_y);
-	this.enable_pointer_events(false);
+	this.enable_events(false);
 }
 
 GUI.prototype.destroy_context_menu = function()
@@ -2086,7 +2160,7 @@ GUI.prototype.destroy_context_menu = function()
 	{
 		this.context_menu.destroy();
 		this.context_menu = null;
-		this.enable_pointer_events(true);
+		this.enable_events(true);
 	}
 }
 

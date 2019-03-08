@@ -55,7 +55,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
 Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent)
-	: Object(name, parent, "This service/client implements a tee ('T'). It unifies the statement lookup capability of several services that individually provides their own statement lookup capability" )
+	: Object(name, parent, "This service/client implements a tee ('T'). It unifies the blob interface of several services that individually provides their own blob interface" )
 	, Client<Blob<ADDRESS> >(name, parent)
 	, Service<Blob<ADDRESS> >(name, parent)
 	, blob_export("blob-export", this)

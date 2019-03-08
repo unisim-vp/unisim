@@ -56,7 +56,16 @@ namespace e200 {
 namespace mpc57xx {
 namespace e200z710n3 {
 
-typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::CPU<unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z710n3::TYPES, unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z710n3::CONFIG> CPU;
+struct CPU : unisim::component::tlm2::processor::powerpc::e200::mpc57xx::CPU<unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z710n3::TYPES, unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z710n3::CONFIG>
+{
+	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::CPU<unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z710n3::TYPES, unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z710n3::CONFIG> Super;
+	
+	CPU(const sc_core::sc_module_name& name, Object *parent)
+		: unisim::kernel::service::Object(name, parent, "e200z710n3 PowerPC core")
+		, Super(name, parent)
+	{
+	}
+};
 
 } // end of namespace e200z710n3
 } // end of namespace mpc57xx

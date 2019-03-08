@@ -171,14 +171,19 @@ bool ParseHex(T& value, const std::string& str)
 }
 
 HttpServer::HttpServer(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::service::Object(name, parent, "HTTP server")
 	, unisim::kernel::service::Client<unisim::service::interfaces::HttpServer>(name, parent)
 	, unisim::kernel::service::Client<unisim::service::interfaces::Registers>(name, parent)
 	, unisim::util::hypapp::HttpServer()
 	, http_server_import()
 	, registers_import()
 	, logger(*this)
-	, program_name(GetSimulator()->FindVariable("program-name")->operator std::string())
+	, sim_program_name(GetSimulator()->FindVariable("program-name")->operator std::string())
+	, sim_authors(GetSimulator()->FindVariable("authors")->operator std::string())
+	, sim_copyright(GetSimulator()->FindVariable("copyright")->operator std::string())
+	, sim_version(GetSimulator()->FindVariable("version")->operator std::string())
+	, sim_description(GetSimulator()->FindVariable("version")->operator std::string())
+	, sim_license(GetSimulator()->FindVariable("license")->operator std::string())
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, http_port(0)
 	, param_http_port("http-port", this, http_port, "HTTP port")
@@ -695,71 +700,84 @@ bool HttpServer::ServeFile(const std::string& path, unisim::util::hypapp::Client
 	return false;
 }
 
-void HttpServer::Crawl(std::ostream& os, unisim::kernel::service::Object *object, unsigned int indent_level)
+void HttpServer::Crawl(std::ostream& os, unisim::kernel::service::Object *object, unsigned int indent_level, bool last)
 {
-	for(unsigned int i = 0; i < indent_level; i++) os << '\t';
-	os << "<span class=\"browser-item noselect\"";
+	const std::list<unisim::kernel::service::Object *>& leaf_objects = object->GetLeafs();
 	
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *import = 0;
 	std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *>::iterator it = http_server_import_map.find(object);
 	if(it != http_server_import_map.end())
 	{
-		unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *import = (*it).second;
+		import = (*it).second;
+	}
+	
+	std::pair<BrowserActions::const_iterator, BrowserActions::const_iterator> browser_actions_range = browser_actions.equal_range(object->GetName());
+	
+	if(import || (browser_actions_range.first != browser_actions_range.second) || !leaf_objects.empty())
+	{
+		for(unsigned int i = 0; i < indent_level; i++) os << '\t';
+		os << "<li";
+		if(last)
+		{
+			os << " class=\"last\"";
+		}
+		os << ">" << std::endl;
+		
+		indent_level++;
+		
+		for(unsigned int i = 0; i < indent_level; i++) os << '\t';
+		os << "<span title=\"" << object->GetDescription() << "\" class=\"browser-item noselect\"";
+		
 		if(import)
 		{
 			os << " ondblclick=\"gui.open_tab('top-middle-tile','" <<  unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "','" << object->GetName() << "','" << object->URI() << "')\"";
 		}
-	}
 
-	std::pair<BrowserActions::const_iterator, BrowserActions::const_iterator> browser_actions_range = browser_actions.equal_range(object->GetName());
-	if(browser_actions_range.first != browser_actions_range.second)
-	{
-		os << " oncontextmenu=\"gui.create_context_menu(event, [";
-		for(BrowserActions::const_iterator it = browser_actions_range.first; it != browser_actions_range.second; it++)
+		if(browser_actions_range.first != browser_actions_range.second)
 		{
-			if(it != browser_actions_range.first) os << ",";
-			const unisim::service::interfaces::BrowserAction *a = (*it).second;
-			os << "{label:'" << a->GetLabel() << "', action:function() { " << a->GetJSCodeSnippet() << "; } }";
-		}
-		os << "])\"";
-	}
-	else
-	{
-		os << " oncontextmenu=\"return false\"";
-	}
-	os << ">" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetObjectName());
-	os << "</span>" << std::endl;;
-	const std::list<unisim::kernel::service::Object *>& leaf_objects = object->GetLeafs();
-	
-	if(!leaf_objects.empty())
-	{
-		for(unsigned int i = 0; i < indent_level; i++) os << '\t';
-		os << "<ul class=\"tree\">" << std::endl;
-		indent_level++;
-		
-		std::list<unisim::kernel::service::Object *>::const_iterator it;
-		std::list<unisim::kernel::service::Object *>::const_iterator next_it;
-		
-		for(it = leaf_objects.begin(); it != leaf_objects.end(); it = next_it)
-		{
-			unisim::kernel::service::Object *child = *it;
-			next_it = it;
-			next_it++;
-			
-			for(unsigned int i = 0; i < indent_level; i++) os << '\t';
-			os << "<li";
-			if(next_it == leaf_objects.end())
+			os << " oncontextmenu=\"gui.create_context_menu(event, [";
+			for(BrowserActions::const_iterator it = browser_actions_range.first; it != browser_actions_range.second; it++)
 			{
-				os << " class=\"last\"";
+				if(it != browser_actions_range.first) os << ",";
+				const unisim::service::interfaces::BrowserAction *a = (*it).second;
+				os << "{label:'" << a->GetLabel() << "', action:function() { " << a->GetJSCodeSnippet() << "; } }";
 			}
-			os << ">" << std::endl;
-			Crawl(os, child, indent_level + 1);
+			os << "])\"";
+		}
+		else
+		{
+			os << " oncontextmenu=\"return false\"";
+		}
+		os << ">" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetObjectName());
+		os << "</span>" << std::endl;;
+		const std::list<unisim::kernel::service::Object *>& leaf_objects = object->GetLeafs();
+		
+		if(!leaf_objects.empty())
+		{
+			for(unsigned int i = 0; i < indent_level; i++) os << '\t';
+			os << "<ul class=\"tree\">" << std::endl;
+			indent_level++;
+			
+			std::list<unisim::kernel::service::Object *>::const_iterator it;
+			std::list<unisim::kernel::service::Object *>::const_iterator next_it;
+			
+			for(it = leaf_objects.begin(); it != leaf_objects.end(); it = next_it)
+			{
+				unisim::kernel::service::Object *child = *it;
+				next_it = it;
+				next_it++;
+				
+				Crawl(os, child, indent_level + 1, next_it == leaf_objects.end());
+			}
+			
+			indent_level--;
+			for(unsigned int i = 0; i < indent_level; i++) os << '\t';
+			os << "</ul>" << std::endl;
+			
+			indent_level--;
 			for(unsigned int i = 0; i < indent_level; i++) os << '\t';
 			os << "</li>" << std::endl;
 		}
-		
-		indent_level--;
-		for(unsigned int i = 0; i < indent_level; i++) os << '\t';
-		os << "</ul>" << std::endl;
 	}
 }
 
@@ -767,13 +785,40 @@ void HttpServer::Crawl(std::ostream& os, unsigned int indent_level)
 {
 	for(unsigned int i = 0; i < indent_level; i++) os << '\t';
 	
-	os << "<span class=\"browser-item noselect\"";
+	os << "<span";
+	if(!sim_program_name.empty() || !sim_authors.empty() || !sim_copyright.empty() || !sim_version.empty() || !sim_description.empty() || !sim_license.empty())
+	{
+		os << " title=\"";
+		if(!sim_program_name.empty())
+		{
+			os << sim_program_name;
+			if(!sim_version.empty())
+			{
+				os << " " << sim_version;
+			}
+			os << std::endl;
+		}
+		if(!sim_copyright.empty())
+		{
+			os << sim_copyright << std::endl;
+		}
+		if(!sim_license.empty())
+		{
+			os << "License: " << sim_license << std::endl;
+		}
+		if(!sim_authors.empty())
+		{
+			os << "Authors: " << sim_authors << std::endl;
+		}
+		os << "\"";
+	}
+	os << " class=\"browser-item noselect\"";
 	if(kernel_has_parameters || kernel_has_statistics)
 	{
 		os << " oncontextmenu=\"gui.create_context_menu(event, [";
 		if(kernel_has_parameters)
 		{
-			os << "{label:'Configure', action:function() { gui.open_tab('bottom-tile','Configuration of " <<  unisim::util::hypapp::HTML_Encoder::Encode(program_name) << "','config-kernel','/config?object=kernel'); } }";
+			os << "{label:'Configure', action:function() { gui.open_tab('bottom-tile','Configuration of " <<  unisim::util::hypapp::HTML_Encoder::Encode(sim_program_name) << "','config-kernel','/config?object=kernel'); } }";
 		}
 		if(kernel_has_parameters && kernel_has_statistics)
 		{
@@ -781,11 +826,11 @@ void HttpServer::Crawl(std::ostream& os, unsigned int indent_level)
 		}
 		if(kernel_has_statistics)
 		{
-			os << "{label:'Show statistics', action:function() { gui.open_tab('bottom-tile','Statistics of " <<  unisim::util::hypapp::HTML_Encoder::Encode(program_name) << "','stats-kernel','/stats?object=kernel'); } }";
+			os << "{label:'Show statistics', action:function() { gui.open_tab('bottom-tile','Statistics of " <<  unisim::util::hypapp::HTML_Encoder::Encode(sim_program_name) << "','stats-kernel','/stats?object=kernel'); } }";
 		}
 		os << "])\"";
 	}
-	os << ">" << unisim::util::hypapp::HTML_Encoder::Encode(program_name);
+	os << ">" << unisim::util::hypapp::HTML_Encoder::Encode(sim_program_name);
 	os << "</span>" << std::endl;
 
 	std::list<unisim::kernel::service::Object *> root_objects;
@@ -799,16 +844,15 @@ void HttpServer::Crawl(std::ostream& os, unsigned int indent_level)
 		indent_level++;
 		
 		std::list<unisim::kernel::service::Object *>::const_iterator it;
+		std::list<unisim::kernel::service::Object *>::const_iterator next_it;
 		
-		for(it = root_objects.begin(); it != root_objects.end(); it++)
+		for(it = root_objects.begin(); it != root_objects.end(); it = next_it)
 		{
 			unisim::kernel::service::Object *root_object = *it;
+			next_it = it;
+			next_it++;
 			
-			for(unsigned int i = 0; i < indent_level; i++) os << '\t';
-			os << "<li>" << std::endl;
-			Crawl(os, root_object, indent_level + 1);
-			for(unsigned int i = 0; i < indent_level; i++) os << '\t';
-			os << "</li>" << std::endl;
+			Crawl(os, root_object, indent_level + 1, next_it == root_objects.end());
 		}
 		indent_level--;
 		for(unsigned int i = 0; i < indent_level; i++) os << '\t';
@@ -1276,7 +1320,7 @@ bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req,
 	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 	doc_sstr << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
 	doc_sstr << "\t\t<meta name=\"description\" content=\"remote control interface over HTTP\">" << std::endl;
-	doc_sstr << "\t\t<title>" << unisim::util::hypapp::HTML_Encoder::Encode(program_name) << "</title>" << std::endl;
+	doc_sstr << "\t\t<title>" << unisim::util::hypapp::HTML_Encoder::Encode(sim_program_name) << "</title>" << std::endl;
 	doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
 	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/style.css\" type=\"text/css\" />" << std::endl;
 	
@@ -1309,7 +1353,7 @@ bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req,
 	{
 		const unisim::service::interfaces::ToolbarAction *a = *it;
 		doc_sstr << "\t\t\t<div class=\"toolbar-item\">" << std::endl;
-		doc_sstr << "\t\t\t\t<div id=\"" << a->GetName() << "\" class=\"toolbar-button\" onclick=\"" << a->GetJSCodeSnippet() << "\">" << a->GetLabel() << "</div>" << std::endl;
+		doc_sstr << "\t\t\t\t<div id=\"" << a->GetName() << "\" title=\"" << a->GetTips() << "\" class=\"toolbar-button\" onclick=\"" << a->GetJSCodeSnippet() << "\">" << a->GetLabel() << "</div>" << std::endl;
 		doc_sstr << "\t\t\t</div>" << std::endl;
 	}
 	doc_sstr << "\t\t</div>" << std::endl;
@@ -1321,7 +1365,7 @@ bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req,
 	doc_sstr << "\t\t\t<div class=\"tab-headers-scroller tab-headers-right-scroller\" id=\"left-tab-headers-right-scroller\"></div>" << std::endl;
 	doc_sstr << "\t\t\t<div class=\"tab-headers\" id=\"left-tab-headers-div\">" << std::endl;
 	doc_sstr << "\t\t\t\t<div class=\"tab-header noselect left-tab-header-div\" id=\"browser-tab-header\">" << std::endl;
-	doc_sstr << "\t\t\t\t\tBrowser" << std::endl;
+	doc_sstr << "\t\t\t\t\t<span title=\"Browser of the hierarchy of simulation objects" << std::endl << std::endl << "Tips:" << std::endl << "- Hover over the object to display its description" << std::endl << "- Double click on the object to open it" << std::endl << "- Right click on the object to show a context menu\">Browser</span>" << std::endl;
 	doc_sstr << "\t\t\t\t</div>" << std::endl;
 	doc_sstr << "\t\t\t</div>" << std::endl;
 	doc_sstr << "\t\t\t<div class=\"tab-contents\" id=\"left-tab-contents-div\">" << std::endl;

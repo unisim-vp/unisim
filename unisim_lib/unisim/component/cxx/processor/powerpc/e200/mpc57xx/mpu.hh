@@ -182,7 +182,7 @@ private:
 
 template <typename TYPES, typename CONFIG>
 MPU<TYPES, CONFIG>::MPU(CPU *_cpu, unsigned int _sel)
-	: unisim::kernel::service::Object("MPU", _cpu)
+	: unisim::kernel::service::Object("MPU", _cpu, "Memory Protection Unit")
 	, cpu(_cpu)
 	, sel(_sel)
 	, mas0(_cpu)

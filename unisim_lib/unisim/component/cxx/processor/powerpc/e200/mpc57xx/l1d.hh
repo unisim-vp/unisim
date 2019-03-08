@@ -60,7 +60,7 @@ struct L1D
 	static const char *GetCacheName() { return "L1D"; }
 	
 	L1D(CPU *_cpu)
-		: unisim::kernel::service::Object("L1D", _cpu)
+		: unisim::kernel::service::Object("L1D", _cpu, "L1 Data Cache")
 		, SuperCache()
 		, cpu(_cpu)
 		, l1finv0(_cpu, this)

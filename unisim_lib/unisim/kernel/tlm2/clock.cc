@@ -42,7 +42,7 @@ namespace tlm2 {
 //////////////////////////////////// Clock /////////////////////////////////////////////
 
 Clock::Clock(const char *name_, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name_, parent)
+	: unisim::kernel::service::Object(name_, parent, "Clock")
 	, Super(name_)
 	, clock_period(sc_core::sc_time(1.0, sc_core::SC_NS))
 	, clock_duty_cycle(0.5)

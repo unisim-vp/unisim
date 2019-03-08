@@ -205,7 +205,7 @@ body
 {
 	display:block;
 	margin:0;
-	z-index:1;
+	z-index:3;
 	background-color:#eff0f1;
 	border-style:solid;
 	border-width:1px;
@@ -459,8 +459,16 @@ body
 	border-left: thin solid #000;
 }
 
+#browser abbr[title]
+{
+	border-bottom:none !important;
+	cursor:inherit !important;
+	text-decoration:none !important;
+}
+
 .context-menu
 {
+	z-index:3;
 	background-color:#eff0f1;
 	border-width:1px;
 	border-style:solid;

@@ -707,7 +707,7 @@ inline std::ostream& operator << (std::ostream& os, const tlm_can_value& value)
 // tlm_can_bus
 
 inline tlm_can_bus::tlm_can_bus(const sc_core::sc_module_name& name, sc_core::sc_signal<bool>& _observable_signal, const std::vector<sc_core::sc_signal<bool> *>& _observable_input_signals, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::service::Object(name, parent, "CAN bus")
 	, sc_core::sc_module(name)
 	, CAN_TX("CAN_TX")
 	, CAN_RX("CAN_RX")
@@ -1345,7 +1345,7 @@ inline std::ostream& operator << (std::ostream& os, const tlm_can_core_config& c
 
 template <typename CAN_MODULE, typename TYPES>
 tlm_can_core<CAN_MODULE, TYPES>::tlm_can_core(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::service::Object(name, parent, "CAN core")
 	, sc_module(name)
 	, CAN_TX("CAN_TX")
 	, CAN_RX("CAN_RX")

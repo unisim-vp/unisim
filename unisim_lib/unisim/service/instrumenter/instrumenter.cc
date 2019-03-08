@@ -39,7 +39,7 @@ namespace service {
 namespace instrumenter {
 
 Instrumenter::Instrumenter(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::service::Object(name, parent, "Hardware instrumenter")
 	, http_server_export("http-server-export", this)
 	, logger(*this)
 	, verbose(false)
@@ -851,7 +851,7 @@ bool UserInstrument::IsBoolean() const
 }
 
 UserInterface::UserInterface(const char *name, Instrumenter *instrumenter)
-	: unisim::kernel::service::Object(name, instrumenter)
+	: unisim::kernel::service::Object(name, instrumenter, "Hardware Instrumenter user interface")
 	, InstrumenterFrontEnd(name, instrumenter)
 	, unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>(name, instrumenter)
 	, http_server_export("http-server-export", this)
@@ -1379,12 +1379,12 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 							if(user_instrument_action == "enable")
 							{
 								user_interface.EnableInjection();
-								user_interface.delta_steps = 3;
+// 								user_interface.delta_steps = 3;
 							}
 							else if(user_instrument_action == "disable")
 							{
 								user_interface.DisableInjection();
-								user_interface.delta_steps = 3;
+// 								user_interface.delta_steps = 3;
 							}
 							else if(user_instrument_action == "enable-brkpt")
 							{
@@ -1404,12 +1404,12 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 								if(user_instrument_action == "enable")
 								{
 									user_instrument->EnableInjection();
-									user_interface.delta_steps = 3;
+// 									user_interface.delta_steps = 3;
 								}
 								else if(user_instrument_action == "disable")
 								{
 									user_instrument->DisableInjection();
-									user_interface.delta_steps = 3;
+// 									user_interface.delta_steps = 3;
 								}
 								else if(user_instrument_action == "enable-brkpt")
 								{
@@ -1542,10 +1542,10 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 		std::ios_base::fmtflags ff = doc_sstr.flags();
 		doc_sstr.setf(std::ios::fixed);
 		doc_sstr.precision(3);
-		doc_sstr << "\t\t\t\t\t<td class=\"time\">" << curr_time_stamp.to_seconds() << " seconds</td>" << std::endl;
+		doc_sstr << "\t\t\t\t\t<td class=\"time\" title=\"Target time\">" << curr_time_stamp.to_seconds() << " seconds</td>" << std::endl;
 		doc_sstr.flags(ff);
 		
-		doc_sstr << "\t\t\t\t\t<td class=\"time\">(" << unisim::util::hypapp::HTML_Encoder::Encode(curr_time_stamp.to_string()) << ")</td>" << std::endl;
+		doc_sstr << "\t\t\t\t\t<td class=\"time\" title=\"Target time\">(" << unisim::util::hypapp::HTML_Encoder::Encode(curr_time_stamp.to_string()) << ")</td>" << std::endl;
 		doc_sstr << "\t\t\t\t</tr>" << std::endl;
 		doc_sstr << "\t\t\t</tbody>" << std::endl;
 		doc_sstr << "\t\t</table>" << std::endl;
@@ -1555,18 +1555,18 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 		doc_sstr << "\t\t<table class=\"command-table\">" << std::endl;
 		doc_sstr << "\t\t\t<tbody>" << std::endl;
 		doc_sstr << "\t\t\t\t<tr>" << std::endl;
-		doc_sstr << "\t\t\t\t\t<td><form id=\"delta-step-form\" action=\"" << form_action << "\" method=\"post\"><button id=\"delta-step\" type=\"submit\" name=\"delta-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">&delta;</button></form></td>" << std::endl;
-		doc_sstr << "\t\t\t\t\t<td><form id=\"timed-step-form\" action=\"" << form_action << "\" method=\"post\"><button id=\"timed-step\" type=\"submit\" name=\"timed-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">Step</button>&nbsp;by&nbsp;<input class=\"step-time\" type=\"text\" name=\"step-time\" value=\"" << user_step_time << "\"" << ((cont || halt) ? " disabled" : "") << "></form></td>" << std::endl;
-		doc_sstr << "\t\t\t\t\t<td><form id=\"" << (cont ? "intr" : "cont") << "-form\" action=\"" << form_action << "\" method=\"post\"><button id=\"" << (cont ? "intr" : "cont") << "\" type=\"submit\" name=\"" << (cont ? "intr" : "cont") << "\" value=\"on\"" << (halt ? " disabled" : "") << ">" << (cont ? "Interrupt" : "Continue") << "</button></form></td>" << std::endl;
-		doc_sstr << "\t\t\t\t\t<td><form id=\"halt-form\" action=\"" << form_action << "\" method=\"post\"><button id=\"halt\" type=\"submit\" name=\"halt\" value=\"on\"" << (halt ? " disabled" : "")  << ">Halt</button></form></td>" << std::endl;
+		doc_sstr << "\t\t\t\t\t<td><form id=\"delta-step-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"Step some delta cycles\" id=\"delta-step\" type=\"submit\" name=\"delta-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">&delta;</button></form></td>" << std::endl;
+		doc_sstr << "\t\t\t\t\t<td><form id=\"timed-step-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"Step by time\" id=\"timed-step\" type=\"submit\" name=\"timed-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">Step</button>&nbsp;by&nbsp;<input class=\"step-time\" type=\"text\" name=\"step-time\" value=\"" << user_step_time << "\"" << ((cont || halt) ? " disabled" : "") << "></form></td>" << std::endl;
+		doc_sstr << "\t\t\t\t\t<td><form id=\"" << (cont ? "intr" : "cont") << "-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"" << (cont ? "Interrupt" : "Continue") << "\" id=\"" << (cont ? "intr" : "cont") << "\" type=\"submit\" name=\"" << (cont ? "intr" : "cont") << "\" value=\"on\"" << (halt ? " disabled" : "") << ">" << (cont ? "Interrupt" : "Continue") << "</button></form></td>" << std::endl;
+		doc_sstr << "\t\t\t\t\t<td><form id=\"halt-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"Halt\" id=\"halt\" type=\"submit\" name=\"halt\" value=\"on\"" << (halt ? " disabled" : "")  << ">Halt</button></form></td>" << std::endl;
 		doc_sstr << "\t\t\t\t</tr>" << std::endl;
 		doc_sstr << "\t\t\t</tbody>" << std::endl;
 		doc_sstr << "\t\t</table>" << std::endl;
 		doc_sstr << "\t\t<h2>Instruments</h2>" << std::endl;
 		doc_sstr << "\t\t<div class=\"instruments-table\">" << std::endl;
 		doc_sstr << "\t\t\t<div class=\"instruments-table-head\">" << std::endl;
-		doc_sstr << "\t\t\t\t<div class=\"signal-enable\">Enable<br><form action=\"" << form_action << "\" method=\"post\"><button class=\"signal-disable-all\" type=\"submit\" name=\"disable*all\">C</button><button class=\"signal-enable-all\" type=\"submit\" name=\"enable*all\">A</button></form></div>" << std::endl;
-		doc_sstr << "\t\t\t\t<div class=\"signal-brkpt-enable\">Brkpt<br><form action=\"" << form_action << "\" method=\"post\"><button class=\"signal-brkpt-disable-all\" type=\"submit\" name=\"disable-brkpt*all\">C</button><button class=\"signal-brkpt-enable-all\" type=\"submit\" name=\"enable-brkpt*all\">A</button></form></div>" << std::endl;
+		doc_sstr << "\t\t\t\t<div class=\"signal-enable\">Enable<br><form action=\"" << form_action << "\" method=\"post\"><button title=\"Disable injection for all instruments\" class=\"signal-disable-all\" type=\"submit\" name=\"disable*all\" value=\"on\">C</button><button title=\"Enable injection for all instruments\" class=\"signal-enable-all\" type=\"submit\" name=\"enable*all\" value=\"on\">A</button></form></div>" << std::endl;
+		doc_sstr << "\t\t\t\t<div class=\"signal-brkpt-enable\">Brkpt<br><form action=\"" << form_action << "\" method=\"post\"><button title=\"Disable breakpoints for all instruments\" class=\"signal-brkpt-disable-all\" type=\"submit\" name=\"disable-brkpt*all\" value=\"on\">C</button><button title=\"Enable breakpoints for all instruments\" class=\"signal-brkpt-enable-all\" type=\"submit\" name=\"enable-brkpt*all\" value=\"on\">A</button></form></div>" << std::endl;
 		doc_sstr << "\t\t\t\t<div class=\"signal-name\">Hardware signal</div>" << std::endl;
 		doc_sstr << "\t\t\t\t<div class=\"signal-toggle\">Toggle</div>" << std::endl;
 		doc_sstr << "\t\t\t\t<div class=\"signal-value\">Value</div>" << std::endl;
@@ -1598,16 +1598,16 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 				bool bool_value = false;
 				if(is_boolean) user_instrument->Get(bool_value);
 				doc_sstr << "\t\t\t\t<div class=\"signal" << (user_instrument->HasBreakpointCondition() ? " brkpt-cond" : "") << "\">" << std::endl;
-				doc_sstr << "\t\t\t\t\t<div class=\"signal-enable\"><form action=\"" << form_action << "\" method=\"post\"><button class=\"signal-enable" << (user_instrument->IsInjectionEnabled() ? " checked" : " unchecked") << "\" type=\"submit\" name=\"" << (user_instrument->IsInjectionEnabled() ? "disable" : "enable") << "*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></button></form></div>" << std::endl;
-				doc_sstr << "\t\t\t\t\t<div class=\"signal-brkpt-enable\"><form action=\"" << form_action << "\" method=\"post\"><button class=\"signal-brkpt-enable" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : " unchecked") << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"submit\" name=\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? "disable" : "enable") << "-brkpt*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></button></form></div>" << std::endl;
+				doc_sstr << "\t\t\t\t\t<div class=\"signal-enable\"><form action=\"" << form_action << "\" method=\"post\"><button title=\"Enable/Disable injection\" class=\"signal-enable" << (user_instrument->IsInjectionEnabled() ? " checked" : " unchecked") << "\" type=\"submit\" name=\"" << (user_instrument->IsInjectionEnabled() ? "disable" : "enable") << "*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></button></form></div>" << std::endl;
+				doc_sstr << "\t\t\t\t\t<div class=\"signal-brkpt-enable\"><form action=\"" << form_action << "\" method=\"post\"><button title=\"Enable/Disable breakpoint\" class=\"signal-brkpt-enable" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : " unchecked") << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"submit\" name=\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? "disable" : "enable") << "-brkpt*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></button></form></div>" << std::endl;
 				doc_sstr << "\t\t\t\t\t<div class=\"signal-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "</div>" << std::endl;
 				doc_sstr << "\t\t\t\t\t<div class=\"signal-toggle\">";
 				if(is_boolean)
 				{
-					doc_sstr << "<form action=\"" << form_action << "\" method=\"post\"><button class=\"signal-toggle-button signal-" << (bool_value ? "on" : "off") << "\" type=\"submit\" name=\"toggle*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << ">" << (bool_value ? "on" : "off")  << "</button></form>";
+					doc_sstr << "<form action=\"" << form_action << "\" method=\"post\"><button title=\"Click to toggle\" class=\"signal-toggle-button signal-" << (bool_value ? "on" : "off") << "\" type=\"submit\" name=\"toggle*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << ">" << (bool_value ? "on" : "off")  << "</button></form>";
 				}
 				doc_sstr << "</div>" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t<div class=\"signal-value\"><form action=\"" << form_action << "\" method=\"post\"><input class=\"signal-value-text" << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"text\" name=\"set*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\" value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></form></div>" << std::endl;
+				doc_sstr << "\t\t\t\t\t\t<div class=\"signal-value\"><form action=\"" << form_action << "\" method=\"post\"><input title=\"Type a value then press enter\" class=\"signal-value-text" << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"text\" name=\"set*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\" value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></form></div>" << std::endl;
 				doc_sstr << "\t\t\t\t</div>" << std::endl;
 			}
 		}
@@ -1687,6 +1687,7 @@ void UserInterface::ScanWebInterfaceModdings(unisim::service::interfaces::WebInt
 	scanner.Append(unisim::service::interfaces::ToolbarOpenTabAction(
 		/* name */      GetName(), 
 		/* label */     "<img src=\"/unisim/service/instrumenter/icon.svg\">",
+		/* tips */      "Hardware instrumenter",
 		/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
 		/* uri */       URI()
 	));
@@ -1694,18 +1695,21 @@ void UserInterface::ScanWebInterfaceModdings(unisim::service::interfaces::WebInt
 	scanner.Append(unisim::service::interfaces::ToolbarDoAction(
 		/* name */      std::string("cont-") + GetName(), 
 		/* label */     "<img src=\"/unisim/service/instrumenter/icon_cont.svg\">",
+		/* tips */      "Continue",
 		/* js action */ "return gui && gui.instrumenter_toolbar_actions && gui.instrumenter_toolbar_actions.execute('cont')"
 	));
 	
 	scanner.Append(unisim::service::interfaces::ToolbarDoAction(
 		/* name */      std::string("intr-") + GetName(), 
 		/* label */     "<img src=\"/unisim/service/instrumenter/icon_intr.svg\">",
+		/* tips */      "Interrupt",
 		/* js action */ "return gui && gui.instrumenter_toolbar_actions && gui.instrumenter_toolbar_actions.execute('intr')"
 	));
 	
 	scanner.Append(unisim::service::interfaces::ToolbarDoAction(
 		/* name */      std::string("halt-") + GetName(), 
 		/* label */     "<img src=\"/unisim/service/instrumenter/icon_halt.svg\">",
+		/* tips */      "Halt",
 		/* js action */ "return gui && gui.instrumenter_toolbar_actions && gui.instrumenter_toolbar_actions.execute('halt')"
 	));
 }
@@ -1773,7 +1777,7 @@ void UserInterface::DisableValueChangedBreakpoint()
 }
 
 CSV_Reader::CSV_Reader(const char *name, Instrumenter *instrumenter)
-	: unisim::kernel::service::Object(name, instrumenter)
+	: unisim::kernel::service::Object(name, instrumenter, "Hardware instrument .CSV file reader")
 	, InstrumenterFrontEnd(name, instrumenter)
 	, logger(*this)
 	, filename()
@@ -2043,7 +2047,7 @@ bool CSV_Reader::ParseCSV(sc_core::sc_time& deadline)
 }
 
 CSV_Writer::CSV_Writer(const char *name, Instrumenter *instrumenter)
-	: unisim::kernel::service::Object(name, instrumenter)
+	: unisim::kernel::service::Object(name, instrumenter, "Hardware instrumenter .CSV file writer")
 	, InstrumenterFrontEnd(name, instrumenter)
 	, logger(*this)
 	, filename()

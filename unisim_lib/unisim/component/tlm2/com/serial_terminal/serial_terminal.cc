@@ -50,7 +50,7 @@ using unisim::kernel::logger::EndDebugError;
 using unisim::kernel::tlm2::TLM_INPUT_BITSTREAM_NEED_SYNC;
 
 SerialTerminal::SerialTerminal(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::service::Object(name, parent, "Serial terminal")
 	, sc_core::sc_module(name)
 	, unisim::kernel::service::Client<unisim::service::interfaces::CharIO>(name, parent)
 	, TX("TX")

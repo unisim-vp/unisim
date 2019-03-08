@@ -45,7 +45,7 @@ namespace mpc57xx {
 namespace e200z425bn3 {
 
 CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::service::Object(name, parent, "e200z425bn3 PowerPC core")
 	, SuperCPU(name, parent)
 	, mpu(this, 0x2)
 	, l1i(this)

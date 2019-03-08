@@ -288,6 +288,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 #endif
 	, exit_status(0)
 {
+	SetDescription("MPC5777M Simulator");
+	
 	param_dspi_0_master.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_dspi_1_master.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_dspi_2_master.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -5425,9 +5427,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM MPC5777M");
-	simulator->SetVariable("copyright", "Copyright (C) 2017, Commissariat a l'Energie Atomique (CEA)");
+	simulator->SetVariable("copyright", "Copyright (C) 2007-2019, Commissariat à l'Energie Atomique (CEA)");
 	simulator->SetVariable("license", "BSD (see file COPYING)");
-	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>");
+	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Yves Lhuillier <yves.lhuillier@cea.fr>, Franck Vedrine <franck.vedrine@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
 	simulator->SetVariable("version", VERSION);
 	simulator->SetVariable("description", "UNISIM MPC5777M, MPC5777M SoC simulator");
 	simulator->SetVariable("schematic", "mpc5777m/fig_schematic.pdf");
@@ -6298,6 +6300,7 @@ bool Simulator::EndSetup()
 					unisim::service::interfaces::ToolbarOpenTabAction(
 							/* name */      profiler[prc_num]->GetName(), 
 							/* label */     label_sstr.str(),
+							/* tips */      tab_title,
 							/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
 							/* uri */       profiler[prc_num]->URI()
 				));

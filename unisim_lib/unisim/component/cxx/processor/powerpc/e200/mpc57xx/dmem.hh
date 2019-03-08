@@ -66,7 +66,7 @@ struct DMEM
 	bool IsVerbose() const ALWAYS_INLINE { return verbose; }
 
 	DMEM(CPU *_cpu)
-		: unisim::kernel::service::Object("DMEM", _cpu)
+		: unisim::kernel::service::Object("DMEM", _cpu, "Data local memory")
 		, cpu(_cpu)
 		, dmemcfg0(_cpu, this)
 		, dmemctl0(_cpu, this)

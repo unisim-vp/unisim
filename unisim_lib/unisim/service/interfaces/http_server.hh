@@ -205,8 +205,9 @@ struct ToolbarAction
 	{
 	}
 	
-	ToolbarAction(const std::string& _label)
+	ToolbarAction(const std::string& _label, const std::string& _tips)
 		: label(_label)
+		, tips(_tips)
 	{
 	}
 	
@@ -215,7 +216,9 @@ struct ToolbarAction
 	}
 	
 	void SetLabel(const std::string& _label) { label = _label; }
+	void SetTips(const std::string& _tips) { tips = _tips; }
 	const std::string& GetLabel() const { return label; }
+	const std::string& GetTips() const { return tips; }
 	
 	virtual const std::string& GetName() const
 	{
@@ -230,6 +233,7 @@ struct ToolbarAction
 	}
 private:
 	std::string label;
+	std::string tips;
 };
 
 struct ToolbarDoAction : ToolbarAction, JSAction
@@ -240,8 +244,8 @@ struct ToolbarDoAction : ToolbarAction, JSAction
 	{
 	}
 	
-	ToolbarDoAction(const std::string& name, const std::string& label, const std::string& js_code_snippet)
-		: ToolbarAction(label)
+	ToolbarDoAction(const std::string& name, const std::string& label, const std::string& tips, const std::string& js_code_snippet)
+		: ToolbarAction(label, tips)
 		, JSAction(TOOLBAR, name, js_code_snippet)
 	{
 	}
@@ -265,8 +269,8 @@ struct ToolbarOpenTabAction : ToolbarAction, OpenTabAction
 	{
 	}
 	
-	ToolbarOpenTabAction(const std::string& name, const std::string& label, Tile tile, const std::string& uri)
-		: ToolbarAction(label)
+	ToolbarOpenTabAction(const std::string& name, const std::string& label, const std::string& tips, Tile tile, const std::string& uri)
+		: ToolbarAction(label, tips)
 		, OpenTabAction(TOOLBAR, name, tile, uri)
 	{
 	}

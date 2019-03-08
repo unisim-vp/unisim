@@ -65,7 +65,7 @@ using unisim::service::interfaces::Memory;
 template <class MEMORY_ADDR>
 RawLoader<MEMORY_ADDR> ::
 RawLoader(const char *name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "Raw loader")
 	, Service<Loader>(name, parent)
 	, Service<Blob<MEMORY_ADDR> >(name, parent)
 	, Client<Memory<MEMORY_ADDR> >(name, parent)

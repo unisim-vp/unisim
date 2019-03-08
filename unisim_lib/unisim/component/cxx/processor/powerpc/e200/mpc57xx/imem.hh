@@ -66,7 +66,7 @@ struct IMEM
 	bool IsVerbose() const ALWAYS_INLINE { return verbose; }
 
 	IMEM(CPU *_cpu)
-		: unisim::kernel::service::Object("IMEM", _cpu)
+		: unisim::kernel::service::Object("IMEM", _cpu, "Instruction local memory")
 		, cpu(_cpu)
 		, imemcfg0(_cpu, this)
 		, imemctl0(_cpu, this)

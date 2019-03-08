@@ -75,7 +75,12 @@ public:
 private:
 	unisim::kernel::logger::Logger logger;
 	
-	std::string program_name;
+	std::string sim_program_name;
+	std::string sim_authors;
+	std::string sim_copyright;
+	std::string sim_version;
+	std::string sim_description;
+	std::string sim_license;
 	
 	unisim::kernel::service::Parameter<bool> param_verbose;
 	int http_port;
@@ -101,7 +106,7 @@ private:
 	unisim::kernel::service::Object *FindObject(const std::string& hierarchical_name, std::size_t& pos);
 	bool ServeFile(const std::string& path, unisim::util::hypapp::ClientConnection const& conn);
 	bool ServeRootDocument(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
-	void Crawl(std::ostream& os, unisim::kernel::service::Object *object, unsigned int indent_level);
+	void Crawl(std::ostream& os, unisim::kernel::service::Object *object, unsigned int indent_level, bool last);
 	void Crawl(std::ostream& os, unsigned int indent_level);
 	bool ServeVariables(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn, unisim::kernel::service::VariableBase::Type var_type);
 	bool Serve404(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
