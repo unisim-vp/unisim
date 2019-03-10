@@ -104,7 +104,7 @@ private:
 	
 	unisim::kernel::service::Object *FindChildObject(unisim::kernel::service::Object *object, const std::string& child_hierarchical_name, std::size_t& pos);
 	unisim::kernel::service::Object *FindObject(const std::string& hierarchical_name, std::size_t& pos);
-	bool ServeFile(const std::string& path, unisim::util::hypapp::ClientConnection const& conn);
+	bool ServeFile(unisim::util::hypapp::HttpRequest const& req, const std::string& path, unisim::util::hypapp::ClientConnection const& conn);
 	bool ServeRootDocument(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 	void Crawl(std::ostream& os, unisim::kernel::service::Object *object, unsigned int indent_level, bool last);
 	void Crawl(std::ostream& os, unsigned int indent_level);

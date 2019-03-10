@@ -466,29 +466,29 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 		}
 	}
 	
-	std::ostringstream doc_sstr;
+	unisim::util::hypapp::HttpResponse response;
 	
-	doc_sstr << "<!DOCTYPE html>" << std::endl;
-	doc_sstr << "<html>" << std::endl;
-	doc_sstr << "\t<head>" << std::endl;
+	response << "<!DOCTYPE html>" << std::endl;
+	response << "<html>" << std::endl;
+	response << "\t<head>" << std::endl;
 	if(object)
 	{
-		doc_sstr << "\t\t<title>Log of " << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "</title>" << std::endl;
+		response << "\t\t<title>Log of " << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "</title>" << std::endl;
 	}
 	else
 	{
-		doc_sstr << "\t\t<title>Log</title>" << std::endl;
+		response << "\t\t<title>Log</title>" << std::endl;
 	}
-	doc_sstr << "\t\t<meta name=\"description\" content=\"user interface for logs over HTTP\">" << std::endl;
-	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/kernel/logger/style.css\" type=\"text/css\" />" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
-	//doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/kernel/logger/script.js\"></script>" << std::endl;
-	doc_sstr << "\t</head>" << std::endl;
-	doc_sstr << "\t<body>" << std::endl;
-	doc_sstr << "\t\t<div class=\"log\">" << std::endl;
+	response << "\t\t<meta name=\"description\" content=\"user interface for logs over HTTP\">" << std::endl;
+	response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+	response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/kernel/logger/style.css\" type=\"text/css\" />" << std::endl;
+	response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
+	response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+	//response << "\t\t<script type=\"application/javascript\" src=\"/unisim/kernel/logger/script.js\"></script>" << std::endl;
+	response << "\t</head>" << std::endl;
+	response << "\t<body>" << std::endl;
+	response << "\t\t<div class=\"log\">" << std::endl;
 	
 	if(req.HasQuery())
 	{
@@ -499,7 +499,7 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 			if(http_log_it != http_logs_per_client.end())
 			{
 				HTTP_LOG *http_log = (*http_log_it).second;
-				PrintHttpLog(doc_sstr, *http_log, false);
+				PrintHttpLog(response, *http_log, false);
 			}
 			pthread_mutex_unlock(&mutex);
 		}
@@ -507,32 +507,15 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 	else
 	{
 		pthread_mutex_lock(&mutex);
-		PrintHttpLog(doc_sstr, global_http_log, true);
+		PrintHttpLog(response, global_http_log, true);
 		pthread_mutex_unlock(&mutex);
 	}
 
-	doc_sstr << "\t\t</div>" << std::endl;
-	doc_sstr << "\t</body>" << std::endl;
-	doc_sstr << "</html>" << std::endl;
+	response << "\t\t</div>" << std::endl;
+	response << "\t</body>" << std::endl;
+	response << "</html>" << std::endl;
 
-	std::string doc(doc_sstr.str());
-		
-	std::ostringstream http_header_sstr;
-	http_header_sstr << "HTTP/1.1 200 OK\r\n";
-	http_header_sstr << "Server: UNISIM-VP\r\n";
-	http_header_sstr << "Cache-control: no-cache\r\n";
-	http_header_sstr << "Connection: keep-alive\r\n";
-	http_header_sstr << "Content-length: " << doc.length() << "\r\n";
-	http_header_sstr << "Content-Type: text/html; charset=utf-8\r\n";
-	http_header_sstr << "\r\n";
-	
-	std::string http_header(http_header_sstr.str());
-
-	if(!conn.Send(http_header.c_str(), http_header.length())) return false;
-	
-	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
-			
-	return conn.Send(doc.c_str(), doc.length());
+	return (req.GetRequestType() == unisim::util::hypapp::Request::HEAD) ? response.SendHeader(conn) : response.Send(conn);
 }
 
 void LoggerServer::ScanWebInterfaceModdings(unisim::service::interfaces::WebInterfaceModdingScanner& scanner)

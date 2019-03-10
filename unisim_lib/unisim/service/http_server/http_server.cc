@@ -587,7 +587,7 @@ unisim::kernel::service::Object *HttpServer::FindObject(const std::string& hiera
 	return found_object ? found_object : found_root_object;
 }
 
-bool HttpServer::ServeFile(const std::string& path, unisim::util::hypapp::ClientConnection const& conn)
+bool HttpServer::ServeFile(unisim::util::hypapp::HttpRequest const& req, const std::string& path, unisim::util::hypapp::ClientConnection const& conn)
 {
 	if(Verbose())
 	{
@@ -604,53 +604,26 @@ bool HttpServer::ServeFile(const std::string& path, unisim::util::hypapp::Client
 			
 			if(file.seekg(0, file.beg))
 			{
-				std::ostringstream http_header_sstr;
+				unisim::util::hypapp::HttpResponse response;
+				
 				std::string ext = path.substr(path.find_last_of("/."));
 				
-				http_header_sstr << "HTTP/1.1 200 OK\r\n";
-				http_header_sstr << "Connection: keep-alive\r\n";
-				http_header_sstr << "Content-Type: ";
 				if((ext == ".htm") || (ext == ".html"))
-					http_header_sstr << "text/html; charset=utf-8";
+					response.SetContentType("text/html; charset=utf-8");
 				else if(ext == ".css")
-					http_header_sstr << "text/css";
+					response.SetContentType("text/css");
 				else if(ext == ".js")
-					http_header_sstr << "application/javascript";
+					response.SetContentType("application/javascript");
 				else if(ext == ".png")
-					http_header_sstr << "image/png";
+					response.SetContentType("image/png");
 				else if((ext == ".jpg") || (ext == ".jpeg"))
-					http_header_sstr << "image/jpeg";
+					response.SetContentType("image/jpeg");
 				else if(ext == ".svg")
-					http_header_sstr << "image/svg+xml";
+					response.SetContentType("image/svg+xml");
 				else if(ext == ".ico")
-					http_header_sstr << "image/x-icon";
+					response.SetContentType("image/x-icon");
 				else
-					http_header_sstr << "application/octet-stream";
-				
-				http_header_sstr << "\r\nContent-Length: " << length << "\r\n\r\n";
-				
-				std::string http_header(http_header_sstr.str());
-
-				if(Verbose())
-				{
-					logger << DebugInfo << "sending HTTP response header: " << std::endl << http_header << EndDebugInfo;
-				}
-				
-				if(!conn.Send(http_header.c_str(), http_header.length()))
-				{
-					logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response header" << EndDebugWarning;
-					return false;
-				}
-				
-				if(Verbose())
-				{
-					logger << DebugInfo << "sending HTTP response header: done" << EndDebugInfo;
-				}
-
-				if(Verbose())
-				{
-					logger << DebugInfo << "sending HTTP response body" << EndDebugInfo;
-				}
+					response.SetContentType("application/octet-stream");
 
 				if(length > 0)
 				{
@@ -664,23 +637,28 @@ bool HttpServer::ServeFile(const std::string& path, unisim::util::hypapp::Client
 						
 						if(n > 0)
 						{
-							if(!conn.Send(buffer, n))
-							{
-								logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response body" << EndDebugWarning;
-								return false;
-							}
+							response.write(buffer, n);
 							count -= n;
 						}
 					}
 					while(count > 0);
 				}
 				
-				if(Verbose())
-				{
-					logger << DebugInfo << "sending HTTP response body: done" << EndDebugInfo;
-				}
+				bool send_status = (req.GetRequestType() == unisim::util::hypapp::Request::HEAD) ? response.SendHeader(conn) : response.Send(conn);
 
-				return true;
+				if(send_status)
+				{
+					if(verbose)
+					{
+						logger << DebugInfo << "sending HTTP response: done" << EndDebugInfo;
+					}
+				}
+				else
+				{
+					logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response" << EndDebugWarning;
+				}
+				
+				return send_status;
 			}
 			else
 			{
@@ -905,39 +883,39 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 		}
 	}
 
-	std::ostringstream doc_sstr;
+	unisim::util::hypapp::HttpResponse response;
 	
-	doc_sstr << "<!DOCTYPE html>" << std::endl;
-	doc_sstr << "<html>" << std::endl;
-	doc_sstr << "\t<head>" << std::endl;
-	doc_sstr << "\t\t<title>";
+	response << "<!DOCTYPE html>" << std::endl;
+	response << "<html>" << std::endl;
+	response << "\t<head>" << std::endl;
+	response << "\t\t<title>";
 	switch(var_type)
 	{
 		case unisim::kernel::service::VariableBase::VAR_PARAMETER:
-			doc_sstr << "Configuration of ";
+			response << "Configuration of ";
 			break;
 			
 		case unisim::kernel::service::VariableBase::VAR_STATISTIC:
-			doc_sstr << "Statistics of ";
+			response << "Statistics of ";
 			break;
 			
 		default:
-			doc_sstr << "Variables of unknown type of";
+			response << "Variables of unknown type of";
 			break;
 	}
-	doc_sstr << (object ? unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) : "an unknown object");
-	doc_sstr << "</title>" << std::endl;
-	doc_sstr << "\t\t<meta name=\"description\" content=\"user interface for object variables over HTTP\">" << std::endl;
-	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-	doc_sstr << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
-	doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
-	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/var_style.css\" type=\"text/css\" />" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/var_script.js\"></script>" << std::endl;
-	doc_sstr << "\t</head>" << std::endl;
-	doc_sstr << "\t<body>" << std::endl;
+	response << (object ? unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) : "an unknown object");
+	response << "</title>" << std::endl;
+	response << "\t\t<meta name=\"description\" content=\"user interface for object variables over HTTP\">" << std::endl;
+	response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+	response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
+	response << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
+	response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/var_style.css\" type=\"text/css\" />" << std::endl;
+	response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
+	response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+	response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/var_script.js\"></script>" << std::endl;
+	response << "\t</head>" << std::endl;
+	response << "\t<body>" << std::endl;
 	
 	if(object || is_kernel)
 	{
@@ -982,37 +960,41 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 		
 		if(!var_lst.empty())
 		{
-			doc_sstr << "\t\t\t<table class=\"var-table\">" << std::endl;
-			doc_sstr << "\t\t\t\t<thead>" << std::endl;
-			doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
-			doc_sstr << "\t\t\t\t\t\t<th class=\"var-name\">Name</th>" << std::endl;
-			doc_sstr << "\t\t\t\t\t\t<th class=\"var-value\">Value</th>" << std::endl;
-			doc_sstr << "\t\t\t\t\t\t<th class=\"var-data-type\">Data Type</th>" << std::endl;
-			doc_sstr << "\t\t\t\t\t\t<th class=\"var-description\">Description</th>" << std::endl;
-			doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
-			doc_sstr << "\t\t\t\t</thead>" << std::endl;
-			doc_sstr << "\t\t\t\t<tbody>" << std::endl;
+			response << "\t\t\t<table class=\"var-table\">" << std::endl;
+			response << "\t\t\t\t<thead>" << std::endl;
+			response << "\t\t\t\t\t<tr>" << std::endl;
+			response << "\t\t\t\t\t\t<th class=\"var-name\">Name</th>" << std::endl;
+			response << "\t\t\t\t\t\t<th class=\"var-value\">Value</th>" << std::endl;
+			response << "\t\t\t\t\t\t<th class=\"var-data-type\">Data Type</th>" << std::endl;
+			response << "\t\t\t\t\t\t<th class=\"var-description\">Description</th>" << std::endl;
+			response << "\t\t\t\t\t</tr>" << std::endl;
+			response << "\t\t\t\t</thead>" << std::endl;
+			response << "\t\t\t\t<tbody>" << std::endl;
 			std::list<unisim::kernel::service::VariableBase *>::const_iterator var_iter;
 			unsigned int var_id;
 			for(var_id = 0, var_iter = var_lst.begin(); var_iter != var_lst.end(); var_id++, var_iter++)
 			{
 				unisim::kernel::service::VariableBase *var = *var_iter;
 				
-				doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t<td class=\"var-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "</td>" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t<td class=\"var-value\">" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t\t<form action=\"/config?object=";
-				if(object) doc_sstr << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName());
-				doc_sstr << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\" onsubmit=\"save_window_scroll_top()\">" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t\t\t<input";
-				if(var->HasEnumeratedValues())
+				response << "\t\t\t\t\t<tr>" << std::endl;
+				response << "\t\t\t\t\t\t<td class=\"var-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "</td>" << std::endl;
+				response << "\t\t\t\t\t\t<td class=\"var-value\">" << std::endl;
+				response << "\t\t\t\t\t\t\t<form action=\"/config?object=";
+				if(object) response << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName());
+				response << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\" onsubmit=\"save_window_scroll_top()\">" << std::endl;
+				response << "\t\t\t\t\t\t\t\t<input";
+				if(var->IsMutable())
 				{
-					doc_sstr << " list=\"input-list-" << var_id << "\"";
+					response << " title=\"Type a value then press enter\"";
 				}
-				doc_sstr << " class=\"var-value-text" << (var->IsMutable() ? "" : " disabled") << "\" type=\"text\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "\" value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(std::string(*var)) << "\"" /*<< (var->IsMutable() ? "" : " disabled")*/ << (var->IsMutable() ? "" : " readonly") << ">" << std::endl;
 				if(var->HasEnumeratedValues())
 				{
-					doc_sstr << "\t\t\t\t\t\t\t\t<datalist id=\"input-list-" << var_id << "\">" << std::endl;
+					response << " list=\"input-list-" << var_id << "\"";
+				}
+				response << " class=\"var-value-text" << (var->IsMutable() ? "" : " disabled") << "\" type=\"text\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "\" value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(std::string(*var)) << "\"" /*<< (var->IsMutable() ? "" : " disabled")*/ << (var->IsMutable() ? "" : " readonly") << ">" << std::endl;
+				if(var->HasEnumeratedValues())
+				{
+					response << "\t\t\t\t\t\t\t\t<datalist id=\"input-list-" << var_id << "\">" << std::endl;
 					std::vector<std::string> values;
 					var->GetEnumeratedValues(values);
 					
@@ -1020,74 +1002,41 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 					for(it = values.begin(); it != values.end(); it++)
 					{
 						const std::string& value = (*it);
-						doc_sstr << "\t\t\t\t\t\t\t\t\t\t<option value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "\">" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "</option>" << std::endl;
+						response << "\t\t\t\t\t\t\t\t\t\t<option value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "\">" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "</option>" << std::endl;
 					}
-					doc_sstr << "\t\t\t\t\t\t\t\t</datalist>" << std::endl;
+					response << "\t\t\t\t\t\t\t\t</datalist>" << std::endl;
 				}
 				
-				doc_sstr << "\t\t\t\t\t\t\t</form>" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t</td>" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t<td class=\"var-data-type\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetDataTypeName()) << "</td>" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t<td class=\"var-description\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetDescription()) << "</td>" << std::endl;
-				doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
+				response << "\t\t\t\t\t\t\t</form>" << std::endl;
+				response << "\t\t\t\t\t\t</td>" << std::endl;
+				response << "\t\t\t\t\t\t<td class=\"var-data-type\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetDataTypeName()) << "</td>" << std::endl;
+				response << "\t\t\t\t\t\t<td class=\"var-description\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetDescription()) << "</td>" << std::endl;
+				response << "\t\t\t\t\t</tr>" << std::endl;
 			}
 			
-			doc_sstr << "\t\t\t\t</tbody>" << std::endl;
-			doc_sstr << "\t\t\t</table>" << std::endl;
+			response << "\t\t\t\t</tbody>" << std::endl;
+			response << "\t\t\t</table>" << std::endl;
 		}
 	}
 
-	doc_sstr << "\t</body>" << std::endl;
-	doc_sstr << "</html>" << std::endl;
+	response << "\t</body>" << std::endl;
+	response << "</html>" << std::endl;
 	
-	
-	std::string doc(doc_sstr.str());
+	bool send_status = (req.GetRequestType() == unisim::util::hypapp::Request::HEAD) ? response.SendHeader(conn) : response.Send(conn);
 
-	std::ostringstream http_header_sstr;
-	http_header_sstr << "HTTP/1.1 200 OK\r\n";
-	http_header_sstr << "Server: UNISIM-VP\r\n";
-	http_header_sstr << "Cache-control: no-cache\r\n";
-	http_header_sstr << "Connection: keep-alive\r\n";
-	http_header_sstr << "Content-length: " << doc.length() << "\r\n";
-	http_header_sstr << "Content-Type: text/html; charset=utf-8\r\n";
-	http_header_sstr << "\r\n";
-	
-	std::string http_header(http_header_sstr.str());
-
-	if(verbose)
+	if(send_status)
 	{
-		logger << DebugInfo << "sending HTTP response header: " << std::endl << http_header << EndDebugInfo;
+		if(verbose)
+		{
+			logger << DebugInfo << "sending HTTP response: done" << EndDebugInfo;
+		}
 	}
-	if(!conn.Send(http_header.c_str(), http_header.length()))
+	else
 	{
-		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP header" << EndDebugWarning;
-		return false;
+		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response" << EndDebugWarning;
 	}
 	
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response header: done" << EndDebugInfo;
-	}
-	
-	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
-	
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response body: " << std::endl << doc << EndDebugInfo;
-	}
-	
-	if(!conn.Send(doc.c_str(), doc.length()))
-	{
-		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response body" << EndDebugWarning;
-		return false;
-	}
-	
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response body: done" << EndDebugInfo;
-	}
-	
-	return true;
+	return send_status;
 }
 
 bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
@@ -1125,24 +1074,24 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 			object = GetSimulator()->FindObject(query_decoder.object_name.c_str());
 		}
 	}
-			
-	std::ostringstream doc_sstr;
 	
-	doc_sstr << "<!DOCTYPE html>" << std::endl;
-	doc_sstr << "<html>" << std::endl;
-	doc_sstr << "\t<head>" << std::endl;
-	doc_sstr << "\t\t<title>Registers of " << (object ? unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) : "an unknown object") << "</title>" << std::endl;
-	doc_sstr << "\t\t<meta name=\"description\" content=\"user interface for " << (object ? unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) : "object") << " registers over HTTP\">" << std::endl;
-	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-	doc_sstr << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
-	doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
-	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/reg_style.css\" type=\"text/css\" />" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/reg_script.js\"></script>" << std::endl;
-	doc_sstr << "\t</head>" << std::endl;
-	doc_sstr << "\t<body>" << std::endl;
+	unisim::util::hypapp::HttpResponse response;
+	
+	response << "<!DOCTYPE html>" << std::endl;
+	response << "<html>" << std::endl;
+	response << "\t<head>" << std::endl;
+	response << "\t\t<title>Registers of " << (object ? unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) : "an unknown object") << "</title>" << std::endl;
+	response << "\t\t<meta name=\"description\" content=\"user interface for " << (object ? unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) : "object") << " registers over HTTP\">" << std::endl;
+	response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+	response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
+	response << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
+	response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/reg_style.css\" type=\"text/css\" />" << std::endl;
+	response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
+	response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+	response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/reg_script.js\"></script>" << std::endl;
+	response << "\t</head>" << std::endl;
+	response << "\t<body>" << std::endl;
 	
 	if(object)
 	{
@@ -1205,7 +1154,7 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 				
 				struct Printer : unisim::service::interfaces::RegisterScanner
 				{
-					Printer(unisim::kernel::service::Object *_object, std::ostream& _doc_sstr) : object(_object), doc_sstr(_doc_sstr) {}
+					Printer(unisim::kernel::service::Object *_object, std::ostream& _response) : object(_object), response(_response) {}
 					
 					virtual void Append(unisim::service::interfaces::Register * reg)
 					{
@@ -1213,289 +1162,210 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 						uint8_t reg_value[reg_size];
 						reg->GetValue(&reg_value);
 						
-						doc_sstr << "\t\t\t\t<tr>" << std::endl;
-						doc_sstr << "\t\t\t\t\t<td class=\"reg-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "</td>" << std::endl;
-						doc_sstr << "\t\t\t\t\t<td class=\"reg-size\">" << (reg->GetSize() * 8) << "</td>" << std::endl;
-						doc_sstr << "\t\t\t\t\t<td class=\"reg-value\">" << std::endl;
-						doc_sstr << "\t\t\t\t\t\t<form action=\"/registers?object=" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\" onsubmit=\"save_window_scroll_top()\">" << std::endl;
-						doc_sstr << "\t\t\t\t\t\t\t<input class=\"reg-value-text\" type=\"text\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "\" value=\"0x" << std::hex;
+						response << "\t\t\t\t<tr>" << std::endl;
+						response << "\t\t\t\t\t<td class=\"reg-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "</td>" << std::endl;
+						response << "\t\t\t\t\t<td class=\"reg-size\">" << (reg->GetSize() * 8) << "</td>" << std::endl;
+						response << "\t\t\t\t\t<td class=\"reg-value\">" << std::endl;
+						response << "\t\t\t\t\t\t<form action=\"/registers?object=" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\" onsubmit=\"save_window_scroll_top()\">" << std::endl;
+						response << "\t\t\t\t\t\t\t<input title=\"Type a value then press enter\" class=\"reg-value-text\" type=\"text\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "\" value=\"0x" << std::hex;
 #if BYTE_ORDER == BIG_ENDIAN
 						for(int i = 0; i < (int) reg_size; i++)
 #else
 						for(int i = (reg_size - 1); i >= 0; i--)
 #endif
 						{
-							doc_sstr << (reg_value[i] >> 4);
-							doc_sstr << (reg_value[i] & 15);
+							response << (reg_value[i] >> 4);
+							response << (reg_value[i] & 15);
 						}
 						
-						doc_sstr << std::dec << "\">" << std::endl;
+						response << std::dec << "\">" << std::endl;
 						
-						doc_sstr << "\t\t\t\t\t\t</form>" << std::endl;
-						doc_sstr << "\t\t\t\t\t</td>" << std::endl;
-						doc_sstr << "\t\t\t\t</tr>" << std::endl;
+						response << "\t\t\t\t\t\t</form>" << std::endl;
+						response << "\t\t\t\t\t</td>" << std::endl;
+						response << "\t\t\t\t</tr>" << std::endl;
 					}
 				private:
 					unisim::kernel::service::Object *object;
-					std::ostream& doc_sstr;
+					std::ostream& response;
 				};
 				
-				doc_sstr << "\t\t<table class=\"reg-table\">" << std::endl;
-				doc_sstr << "\t\t\t<thead>" << std::endl;
-				doc_sstr << "\t\t\t\t<tr>" << std::endl;
-				doc_sstr << "\t\t\t\t\t<th class=\"reg-name\">Name</th>" << std::endl;
-				doc_sstr << "\t\t\t\t\t<th class=\"reg-size\">Size</th>" << std::endl;
-				doc_sstr << "\t\t\t\t\t<th class=\"reg-value\">Value</th>" << std::endl;
-				doc_sstr << "\t\t\t\t</tr>" << std::endl;
-				doc_sstr << "\t\t\t</thead>" << std::endl;
-				doc_sstr << "\t\t\t<tbody>" << std::endl;
-				Printer printer(object, doc_sstr);
+				response << "\t\t<table class=\"reg-table\">" << std::endl;
+				response << "\t\t\t<thead>" << std::endl;
+				response << "\t\t\t\t<tr>" << std::endl;
+				response << "\t\t\t\t\t<th class=\"reg-name\">Name</th>" << std::endl;
+				response << "\t\t\t\t\t<th class=\"reg-size\">Size</th>" << std::endl;
+				response << "\t\t\t\t\t<th class=\"reg-value\">Value</th>" << std::endl;
+				response << "\t\t\t\t</tr>" << std::endl;
+				response << "\t\t\t</thead>" << std::endl;
+				response << "\t\t\t<tbody>" << std::endl;
+				Printer printer(object, response);
 				(*import)->ScanRegisters(printer);
-				doc_sstr << "\t\t\t</tbody>" << std::endl;
-				doc_sstr << "\t\t</table>" << std::endl;
+				response << "\t\t\t</tbody>" << std::endl;
+				response << "\t\t</table>" << std::endl;
 			}
 		}
 	}
 	
-	doc_sstr << "\t</body>" << std::endl;
-	doc_sstr << "</html>" << std::endl;
+	response << "\t</body>" << std::endl;
+	response << "</html>" << std::endl;
 	
-	
-	std::string doc(doc_sstr.str());
+	bool send_status = (req.GetRequestType() == unisim::util::hypapp::Request::HEAD) ? response.SendHeader(conn) : response.Send(conn);
 
-	std::ostringstream http_header_sstr;
-	http_header_sstr << "HTTP/1.1 200 OK\r\n";
-	http_header_sstr << "Server: UNISIM-VP\r\n";
-	http_header_sstr << "Cache-control: no-cache\r\n";
-	http_header_sstr << "Connection: keep-alive\r\n";
-	http_header_sstr << "Content-length: " << doc.length() << "\r\n";
-	http_header_sstr << "Content-Type: text/html; charset=utf-8\r\n";
-	http_header_sstr << "\r\n";
-	
-	std::string http_header(http_header_sstr.str());
-
-	if(verbose)
+	if(send_status)
 	{
-		logger << DebugInfo << "sending HTTP response header: " << std::endl << http_header << EndDebugInfo;
+		if(verbose)
+		{
+			logger << DebugInfo << "sending HTTP response: done" << EndDebugInfo;
+		}
 	}
-	if(!conn.Send(http_header.c_str(), http_header.length()))
+	else
 	{
-		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP header" << EndDebugWarning;
-		return false;
+		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response" << EndDebugWarning;
 	}
 	
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response header: done" << EndDebugInfo;
-	}
-	
-	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
-	
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response body: " << std::endl << doc << EndDebugInfo;
-	}
-	
-	if(!conn.Send(doc.c_str(), doc.length()))
-	{
-		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response body" << EndDebugWarning;
-		return false;
-	}
-	
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response body: done" << EndDebugInfo;
-	}
-	
-	return true;
+	return send_status;
 }
 
 bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
-	std::ostringstream doc_sstr;
+	unisim::util::hypapp::HttpResponse response;
 	
-	doc_sstr << "<!DOCTYPE html>" << std::endl;
-	doc_sstr << "<html>" << std::endl;
-	doc_sstr << "\t<head>" << std::endl;
-	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-	doc_sstr << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
-	doc_sstr << "\t\t<meta name=\"description\" content=\"remote control interface over HTTP\">" << std::endl;
-	doc_sstr << "\t\t<title>" << unisim::util::hypapp::HTML_Encoder::Encode(sim_program_name) << "</title>" << std::endl;
-	doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
-	doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/style.css\" type=\"text/css\" />" << std::endl;
+	response << "<!DOCTYPE html>" << std::endl;
+	response << "<html>" << std::endl;
+	response << "\t<head>" << std::endl;
+	response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+	response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
+	response << "\t\t<meta name=\"description\" content=\"remote control interface over HTTP\">" << std::endl;
+	response << "\t\t<title>" << unisim::util::hypapp::HTML_Encoder::Encode(sim_program_name) << "</title>" << std::endl;
+	response << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
+	response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/style.css\" type=\"text/css\" />" << std::endl;
 	
 	for(CSSFiles::const_iterator it = css_files.begin(); it != css_files.end(); it++)
 	{
 		const unisim::service::interfaces::CSSFile& css_file = *it;
-		doc_sstr << "<link rel=\"stylesheet\" type=\"text/css\" href=\"" << css_file.GetFilename() << "\" />" << std::endl;
+		response << "<link rel=\"stylesheet\" type=\"text/css\" href=\"" << css_file.GetFilename() << "\" />" << std::endl;
 	}
 	
-	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/script.js\"></script>" << std::endl;
+	response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
+	response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/script.js\"></script>" << std::endl;
 	
 	for(JSFiles::const_iterator it = js_files.begin(); it != js_files.end(); it++)
 	{
 		const unisim::service::interfaces::JSFile& js_file = *it;
-		doc_sstr << "\t\t<script type=\"application/javascript\" src=\"" << js_file.GetFilename() << "\"></script>" << std::endl;
+		response << "\t\t<script type=\"application/javascript\" src=\"" << js_file.GetFilename() << "\"></script>" << std::endl;
 	}
 	
-	doc_sstr << "\t</head>" << std::endl;
-	doc_sstr << "\t<body";
+	response << "\t</head>" << std::endl;
+	response << "\t<body";
 #if 0
-	doc_sstr << " oncontextmenu=\"return false;\"" << std::endl; // this disables right-clicks
+	response << " oncontextmenu=\"return false;\"" << std::endl; // this disables right-clicks
 #endif
-	doc_sstr << ">" << std::endl;
+	response << ">" << std::endl;
 	
-	doc_sstr << "\t<div id=\"toolbar-div\">" << std::endl;
-	doc_sstr << "\t\t<div class=\"toolbar\">" << std::endl;
+	response << "\t<div id=\"toolbar-div\">" << std::endl;
+	response << "\t\t<div class=\"toolbar\">" << std::endl;
 	for(ToolbarActions::const_iterator it = toolbar_actions.begin(); it != toolbar_actions.end(); it++)
 	{
 		const unisim::service::interfaces::ToolbarAction *a = *it;
-		doc_sstr << "\t\t\t<div class=\"toolbar-item\">" << std::endl;
-		doc_sstr << "\t\t\t\t<div id=\"" << a->GetName() << "\" title=\"" << a->GetTips() << "\" class=\"toolbar-button\" onclick=\"" << a->GetJSCodeSnippet() << "\">" << a->GetLabel() << "</div>" << std::endl;
-		doc_sstr << "\t\t\t</div>" << std::endl;
+		response << "\t\t\t<div class=\"toolbar-item\">" << std::endl;
+		response << "\t\t\t\t<div id=\"" << a->GetName() << "\" title=\"" << a->GetTips() << "\" class=\"toolbar-button\" onclick=\"" << a->GetJSCodeSnippet() << "\">" << a->GetLabel() << "</div>" << std::endl;
+		response << "\t\t\t</div>" << std::endl;
 	}
-	doc_sstr << "\t\t</div>" << std::endl;
-	doc_sstr << "\t</div>" << std::endl;
-	doc_sstr << "\t<div id=\"content-div\">" << std::endl;
-	doc_sstr << "\t\t<div class=\"tile\" id=\"left-tile-div\">" << std::endl;
-	doc_sstr << "\t\t\t<div class=\"tab-headers-history-shortcut\" id=\"left-tab-headers-history-shortcut\"></div>" << std::endl;
-	doc_sstr << "\t\t\t<div class=\"tab-headers-scroller tab-headers-left-scroller\" id=\"left-tab-headers-left-scroller\"></div>" << std::endl;
-	doc_sstr << "\t\t\t<div class=\"tab-headers-scroller tab-headers-right-scroller\" id=\"left-tab-headers-right-scroller\"></div>" << std::endl;
-	doc_sstr << "\t\t\t<div class=\"tab-headers\" id=\"left-tab-headers-div\">" << std::endl;
-	doc_sstr << "\t\t\t\t<div class=\"tab-header noselect left-tab-header-div\" id=\"browser-tab-header\">" << std::endl;
-	doc_sstr << "\t\t\t\t\t<span title=\"Browser of the hierarchy of simulation objects" << std::endl << std::endl << "Tips:" << std::endl << "- Hover over the object to display its description" << std::endl << "- Double click on the object to open it" << std::endl << "- Right click on the object to show a context menu\">Browser</span>" << std::endl;
-	doc_sstr << "\t\t\t\t</div>" << std::endl;
-	doc_sstr << "\t\t\t</div>" << std::endl;
-	doc_sstr << "\t\t\t<div class=\"tab-contents\" id=\"left-tab-contents-div\">" << std::endl;
-	doc_sstr << "\t\t\t\t<div name=\"browser-tab-content\" class=\"tab-content left-tab-content-div\" id=\"browser-tab-content\">" << std::endl;
-	doc_sstr << "\t\t\t\t\t<div class=\"noselect\" id=\"browser\">" << std::endl;
-	Crawl(doc_sstr, 6);
-	doc_sstr << "\t\t\t\t\t</div>" << std::endl;
-	doc_sstr << "\t\t\t\t</div>" << std::endl;
-	doc_sstr << "\t\t\t</div>" << std::endl;
-	doc_sstr << "\t\t</div>" << std::endl;
-	doc_sstr << "\t\t<div class=\"resizer\" id=\"left-horiz-resizer-div\"></div>" << std::endl;
-	doc_sstr << "\t\t<div id=\"right-div\">" << std::endl;
-	doc_sstr << "\t\t\t<div id=\"top-div\">" << std::endl;
-	doc_sstr << "\t\t\t\t<div class=\"tile\" id=\"top-middle-tile-div\">" << std::endl;
-	doc_sstr << "\t\t\t\t\t<div class=\"tab-headers-history-shortcut\" id=\"top-middle-tab-headers-history-shortcut\"></div>" << std::endl;
-	doc_sstr << "\t\t\t\t\t<div class=\"tab-headers-scroller tab-headers-left-scroller\" id=\"top-middle-tab-headers-left-scroller\"></div>" << std::endl;
-	doc_sstr << "\t\t\t\t\t<div class=\"tab-headers-scroller tab-headers-right-scroller\" id=\"top-middle-tab-headers-right-scroller\"></div>" << std::endl;
-	doc_sstr << "\t\t\t\t\t<div class=\"tab-headers\" id=\"top-middle-tab-headers-div\"></div>" << std::endl;
-	doc_sstr << "\t\t\t\t\t<div class=\"tab-contents\" id=\"top-middle-tab-contents-div\"></div>" << std::endl;
-	doc_sstr << "\t\t\t\t</div>" << std::endl;
-	doc_sstr << "\t\t\t\t<div class=\"resizer\" id=\"right-horiz-resizer-div\"></div>" << std::endl;
-	doc_sstr << "\t\t\t\t<div class=\"tile\" id=\"top-right-tile-div\">" << std::endl;
-	doc_sstr << "\t\t\t\t\t<div class=\"tab-headers-history-shortcut\" id=\"top-right-tab-headers-history-shortcut\"></div>" << std::endl;
-	doc_sstr << "\t\t\t\t\t<div class=\"tab-headers-scroller tab-headers-left-scroller\" id=\"top-right-tab-headers-left-scroller\"></div>" << std::endl;
-	doc_sstr << "\t\t\t\t\t<div class=\"tab-headers-scroller tab-headers-right-scroller\" id=\"top-right-tab-headers-right-scroller\"></div>" << std::endl;
-	doc_sstr << "\t\t\t\t\t<div class=\"tab-headers\" id=\"top-right-tab-headers-div\"></div>" << std::endl;
-	doc_sstr << "\t\t\t\t\t<div class=\"tab-contents\" id=\"top-right-tab-contents-div\"></div>" << std::endl;
-	doc_sstr << "\t\t\t\t</div>" << std::endl;
-	doc_sstr << "\t\t\t</div>" << std::endl;
-	doc_sstr << "\t\t\t<div class=\"resizer\" id=\"vert-resizer-div\"></div>" << std::endl;
-	doc_sstr << "\t\t\t<div class=\"tile\" id=\"bottom-tile-div\">" << std::endl;
-	doc_sstr << "\t\t\t\t<div class=\"tab-headers-history-shortcut\" id=\"bottom-tab-headers-history-shortcut\"></div>" << std::endl;
-	doc_sstr << "\t\t\t\t<div class=\"tab-headers-scroller tab-headers-left-scroller\" id=\"bottom-tab-headers-left-scroller\"></div>" << std::endl;
-	doc_sstr << "\t\t\t\t<div class=\"tab-headers-scroller tab-headers-right-scroller\" id=\"bottom-tab-headers-right-scroller\"></div>" << std::endl;
-	doc_sstr << "\t\t\t\t<div class=\"tab-headers\" id=\"bottom-tab-headers-div\"></div>" << std::endl;
-	doc_sstr << "\t\t\t\t<div class=\"tab-contents\" id=\"bottom-tab-contents-div\"></div>" << std::endl;
-	doc_sstr << "\t\t\t</div>" << std::endl;
-	doc_sstr << "\t\t</div>" << std::endl;
-	doc_sstr << "\t</div>" << std::endl;
-	doc_sstr << "\t</body>" << std::endl;
-	doc_sstr << "</html>" << std::endl;
+	response << "\t\t</div>" << std::endl;
+	response << "\t</div>" << std::endl;
+	response << "\t<div id=\"content-div\">" << std::endl;
+	response << "\t\t<div class=\"tile\" id=\"left-tile-div\">" << std::endl;
+	response << "\t\t\t<div title=\"History of closed tabs\" class=\"tab-headers-history-shortcut\" id=\"left-tab-headers-history-shortcut\"></div>" << std::endl;
+	response << "\t\t\t<div title=\"Scroll tab headers to the left\" class=\"tab-headers-scroller tab-headers-left-scroller\" id=\"left-tab-headers-left-scroller\"></div>" << std::endl;
+	response << "\t\t\t<div title=\"Scroll tab headers to the right\" class=\"tab-headers-scroller tab-headers-right-scroller\" id=\"left-tab-headers-right-scroller\"></div>" << std::endl;
+	response << "\t\t\t<div class=\"tab-headers\" id=\"left-tab-headers-div\">" << std::endl;
+	response << "\t\t\t\t<div class=\"tab-header noselect left-tab-header-div\" id=\"browser-tab-header\">" << std::endl;
+	response << "\t\t\t\t\t<span title=\"Browser of the hierarchy of simulation objects" << std::endl << std::endl << "Tips:" << std::endl << "- Hover over the object to display its description" << std::endl << "- Double click on the object to open it" << std::endl << "- Right click on the object to show a context menu\">Browser</span>" << std::endl;
+	response << "\t\t\t\t</div>" << std::endl;
+	response << "\t\t\t</div>" << std::endl;
+	response << "\t\t\t<div class=\"tab-contents\" id=\"left-tab-contents-div\">" << std::endl;
+	response << "\t\t\t\t<div name=\"browser-tab-content\" class=\"tab-content left-tab-content-div\" id=\"browser-tab-content\">" << std::endl;
+	response << "\t\t\t\t\t<div class=\"noselect\" id=\"browser\">" << std::endl;
+	Crawl(response, 6);
+	response << "\t\t\t\t\t</div>" << std::endl;
+	response << "\t\t\t\t</div>" << std::endl;
+	response << "\t\t\t</div>" << std::endl;
+	response << "\t\t</div>" << std::endl;
+	response << "\t\t<div title=\"drag horizontally to resize tiles on both sides\" class=\"resizer\" id=\"left-horiz-resizer-div\"></div>" << std::endl;
+	response << "\t\t<div id=\"right-div\">" << std::endl;
+	response << "\t\t\t<div id=\"top-div\">" << std::endl;
+	response << "\t\t\t\t<div class=\"tile\" id=\"top-middle-tile-div\">" << std::endl;
+	response << "\t\t\t\t\t<div title=\"History of closed tabs\" class=\"tab-headers-history-shortcut\" id=\"top-middle-tab-headers-history-shortcut\"></div>" << std::endl;
+	response << "\t\t\t\t\t<div title=\"Scroll tab headers to the left\" class=\"tab-headers-scroller tab-headers-left-scroller\" id=\"top-middle-tab-headers-left-scroller\"></div>" << std::endl;
+	response << "\t\t\t\t\t<div title=\"Scroll tab headers to the right\" class=\"tab-headers-scroller tab-headers-right-scroller\" id=\"top-middle-tab-headers-right-scroller\"></div>" << std::endl;
+	response << "\t\t\t\t\t<div class=\"tab-headers\" id=\"top-middle-tab-headers-div\"></div>" << std::endl;
+	response << "\t\t\t\t\t<div class=\"tab-contents\" id=\"top-middle-tab-contents-div\"></div>" << std::endl;
+	response << "\t\t\t\t</div>" << std::endl;
+	response << "\t\t\t\t<div title=\"drag horizontally to resize tiles on both sides\" class=\"resizer\" id=\"right-horiz-resizer-div\"></div>" << std::endl;
+	response << "\t\t\t\t<div class=\"tile\" id=\"top-right-tile-div\">" << std::endl;
+	response << "\t\t\t\t\t<div title=\"History of closed tabs\" class=\"tab-headers-history-shortcut\" id=\"top-right-tab-headers-history-shortcut\"></div>" << std::endl;
+	response << "\t\t\t\t\t<div title=\"Scroll tab headers to the left\" class=\"tab-headers-scroller tab-headers-left-scroller\" id=\"top-right-tab-headers-left-scroller\"></div>" << std::endl;
+	response << "\t\t\t\t\t<div title=\"Scroll tab headers to the right\" class=\"tab-headers-scroller tab-headers-right-scroller\" id=\"top-right-tab-headers-right-scroller\"></div>" << std::endl;
+	response << "\t\t\t\t\t<div class=\"tab-headers\" id=\"top-right-tab-headers-div\"></div>" << std::endl;
+	response << "\t\t\t\t\t<div class=\"tab-contents\" id=\"top-right-tab-contents-div\"></div>" << std::endl;
+	response << "\t\t\t\t</div>" << std::endl;
+	response << "\t\t\t</div>" << std::endl;
+	response << "\t\t\t<div title=\"drag vertically to resize tiles on both sides\" class=\"resizer\" id=\"vert-resizer-div\"></div>" << std::endl;
+	response << "\t\t\t<div class=\"tile\" id=\"bottom-tile-div\">" << std::endl;
+	response << "\t\t\t\t<div title=\"History of closed tabs\" class=\"tab-headers-history-shortcut\" id=\"bottom-tab-headers-history-shortcut\"></div>" << std::endl;
+	response << "\t\t\t\t<div title=\"Scroll tab headers to the left\" class=\"tab-headers-scroller tab-headers-left-scroller\" id=\"bottom-tab-headers-left-scroller\"></div>" << std::endl;
+	response << "\t\t\t\t<div title=\"Scroll tab headers to the right\" class=\"tab-headers-scroller tab-headers-right-scroller\" id=\"bottom-tab-headers-right-scroller\"></div>" << std::endl;
+	response << "\t\t\t\t<div class=\"tab-headers\" id=\"bottom-tab-headers-div\"></div>" << std::endl;
+	response << "\t\t\t\t<div class=\"tab-contents\" id=\"bottom-tab-contents-div\"></div>" << std::endl;
+	response << "\t\t\t</div>" << std::endl;
+	response << "\t\t</div>" << std::endl;
+	response << "\t</div>" << std::endl;
+	response << "\t</body>" << std::endl;
+	response << "</html>" << std::endl;
 	
-	std::string doc(doc_sstr.str());
+	bool send_status = (req.GetRequestType() == unisim::util::hypapp::Request::HEAD) ? response.SendHeader(conn) : response.Send(conn);
 
-	std::ostringstream http_header_sstr;
-	http_header_sstr << "HTTP/1.1 200 OK\r\n";
-	http_header_sstr << "Server: UNISIM-VP\r\n";
-	http_header_sstr << "Cache-control: no-cache\r\n";
-	http_header_sstr << "Connection: keep-alive\r\n";
-	http_header_sstr << "Content-length: " << doc.length() << "\r\n";
-	http_header_sstr << "Content-Type: text/html; charset=utf-8\r\n";
-	http_header_sstr << "\r\n";
-	
-	std::string http_header(http_header_sstr.str());
-
-	if(verbose)
+	if(send_status)
 	{
-		logger << DebugInfo << "sending HTTP response header: " << std::endl << http_header << EndDebugInfo;
+		if(verbose)
+		{
+			logger << DebugInfo << "sending HTTP response: done" << EndDebugInfo;
+		}
 	}
-	if(!conn.Send(http_header.c_str(), http_header.length()))
+	else
 	{
-		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP header" << EndDebugWarning;
-		return false;
+		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response" << EndDebugWarning;
 	}
 	
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response header: done" << EndDebugInfo;
-	}
-	
-	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
-			
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response body: " << std::endl << doc << EndDebugInfo;
-	}
-	
-	if(!conn.Send(doc.c_str(), doc.length()))
-	{
-		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response body" << EndDebugWarning;
-		return false;
-	}
-	
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response body: done" << EndDebugInfo;
-	}
-	
-	return true;
+	return send_status;
 }
 
 bool HttpServer::Serve404(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
 	// Note: When browsing option "Show friendly HTTP error messages" is enabled, IE5+ does not show 404 error document if it is less than 512 bytes long 
-	std::ostringstream doc_sstr;
-	doc_sstr << "<!DOCTYPE html>" << std::endl;
-	doc_sstr << "<html>" << std::endl;
-	doc_sstr << "\t<head>" << std::endl;
-	doc_sstr << "\t\t<title>Error 404 (Not Found)</title>" << std::endl;
-	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-	doc_sstr << "\t\t<meta name=\"description\" content=\"Error 404 (Not Found)\">" << std::endl;
-	doc_sstr << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-	doc_sstr << "\t\t<style>" << std::endl;
-	doc_sstr << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
-	doc_sstr << "\t\t</style>" << std::endl;
-	doc_sstr << "\t</head>" << std::endl;
-	doc_sstr << "\t<body>" << std::endl;
-	doc_sstr << "\t\t<p>Unavailable</p>" << std::endl;
-	doc_sstr << "\t</body>" << std::endl;
-	doc_sstr << "</html>" << std::endl;
+	unisim::util::hypapp::HttpResponse response;
+	
+	response.SetStatus(unisim::util::hypapp::HttpResponse::NOT_FOUND);
+	
+	response << "<!DOCTYPE html>" << std::endl;
+	response << "<html>" << std::endl;
+	response << "\t<head>" << std::endl;
+	response << "\t\t<title>Error 404 (Not Found)</title>" << std::endl;
+	response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+	response << "\t\t<meta name=\"description\" content=\"Error 404 (Not Found)\">" << std::endl;
+	response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+	response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	response << "\t\t<style>" << std::endl;
+	response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+	response << "\t\t</style>" << std::endl;
+	response << "\t</head>" << std::endl;
+	response << "\t<body>" << std::endl;
+	response << "\t\t<p>Unavailable</p>" << std::endl;
+	response << "\t</body>" << std::endl;
+	response << "</html>" << std::endl;
 
-	std::string doc(doc_sstr.str());
-	
-	std::ostringstream http_header_sstr;
-	http_header_sstr << "HTTP/1.1 404 Not Found\r\n";
-	http_header_sstr << "Server: UNISIM-VP\r\n";
-	http_header_sstr << "Cache-control: no-cache\r\n";
-	http_header_sstr << "Connection: keep-alive\r\n";
-	http_header_sstr << "Content-length: " << doc.length() << "\r\n";
-	http_header_sstr << "Content-Type: text/html; charset=utf-8\r\n";
-	http_header_sstr << "\r\n";
-	
-	std::string http_header(http_header_sstr.str());
-
-	if(!conn.Send(http_header.c_str(), http_header.length())) return false;
-	
-	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
-			
-	return conn.Send(doc.c_str(), doc.length());
+	return (req.GetRequestType() == unisim::util::hypapp::Request::HEAD) ? response.SendHeader(conn) : response.Send(conn);
 }
 
 void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
@@ -1560,7 +1430,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 					struct stat st;
 					if((stat(path.c_str(), &st) == 0) && S_ISREG(st.st_mode))
 					{
-						if(http_server.ServeFile(path, conn)) return true;
+						if(http_server.ServeFile(http_request, path, conn)) return true;
 					}
 					else
 					{
@@ -1638,36 +1508,19 @@ bool HttpServer::RouteHttpRequest(unisim::kernel::service::Object *object, unisi
 
 bool HttpServer::ServeDefault(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
-	std::ostringstream doc_sstr;
+	unisim::util::hypapp::HttpResponse response;
 	
-	doc_sstr << "<!DOCTYPE html>" << std::endl;
-	doc_sstr << "<html>" << std::endl;
-	doc_sstr << "\t<head>" << std::endl;
-	doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-	doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-	doc_sstr << "\t</head>" << std::endl;
-	doc_sstr << "\t<body>" << std::endl;
-	doc_sstr << "\t</body>" << std::endl;
-	doc_sstr << "</html>" << std::endl;
+	response << "<!DOCTYPE html>" << std::endl;
+	response << "<html>" << std::endl;
+	response << "\t<head>" << std::endl;
+	response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+	response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	response << "\t</head>" << std::endl;
+	response << "\t<body>" << std::endl;
+	response << "\t</body>" << std::endl;
+	response << "</html>" << std::endl;
 
-	std::string doc(doc_sstr.str());
-		
-	std::ostringstream http_header_sstr;
-	http_header_sstr << "HTTP/1.1 200 OK\r\n";
-	http_header_sstr << "Server: UNISIM-VP\r\n";
-	http_header_sstr << "Cache-control: no-cache\r\n";
-	http_header_sstr << "Connection: keep-alive\r\n";
-	http_header_sstr << "Content-length: " << doc.length() << "\r\n";
-	http_header_sstr << "Content-Type: text/html; charset=utf-8\r\n";
-	http_header_sstr << "\r\n";
-	
-	std::string http_header(http_header_sstr.str());
-
-	if(!conn.Send(http_header.c_str(), http_header.length())) return false;
-	
-	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
-			
-	return conn.Send(doc.c_str(), doc.length());
+	return (req.GetRequestType() == unisim::util::hypapp::Request::HEAD) ? response.SendHeader(conn) : response.Send(conn);
 }
 
 } // end of namespace http_server

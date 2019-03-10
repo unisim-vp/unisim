@@ -2114,7 +2114,7 @@ void Profiler<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *
 template <typename ADDRESS>
 bool Profiler<ADDRESS>::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
-	std::ostringstream doc_sstr;
+	unisim::util::hypapp::HttpResponse response;
 	
 	class HttpVisitor : public Visitor
 	{
@@ -2209,64 +2209,45 @@ bool Profiler<ADDRESS>::ServeHttpRequest(unisim::util::hypapp::HttpRequest const
 		std::string dir_path;
 	};
 	
-	HttpVisitor http_visitor(*this, doc_sstr, req.GetHost(), URI(), req.GetPath(), req.GetDomain());
+	HttpVisitor http_visitor(*this, response, req.GetHost(), URI(), req.GetPath(), req.GetDomain());
 	Output(http_visitor);
 	
-	std::string doc(doc_sstr.str());
+	bool available = (response.str().length() != 0);
 	
-	bool available = !doc.empty();
-	
-	if(!available)
-	{
-		Indent indent;
-		
-		doc_sstr << indent << "<!DOCTYPE html>" << std::endl;
-		doc_sstr << indent << "<html>" << std::endl;
-		doc_sstr << ++indent << "<head>" << std::endl;
-		doc_sstr << ++indent << "<title>Error 404 (Not Found)</title>" << std::endl;
-		doc_sstr << indent << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-		doc_sstr << indent << "<meta name=\"description\" content=\"Error 404 (Not Found)\">" << std::endl;
-		doc_sstr << indent << "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
-		doc_sstr << indent << "<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-		doc_sstr << indent << "<style>" << std::endl;
-		doc_sstr << ++indent << "body { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
-		doc_sstr << --indent << "</style>" << std::endl;
-		doc_sstr << --indent << "</head>" << std::endl;
-		doc_sstr << indent << "<body>" << std::endl;
-		doc_sstr << ++indent << "<p>Unavailable</p>" << std::endl;
-		doc_sstr << --indent << "</body>" << std::endl;
-		doc_sstr << --indent << "</html>" << std::endl;
-		doc = doc_sstr.str();
-	}
-	
-	std::ostringstream http_header_sstr;
 	if(available)
 	{
-		http_header_sstr << "HTTP/1.1 200 OK\r\n";
+		response.SetContentType(http_visitor.GetContentType());
 	}
 	else
 	{
-		http_header_sstr << "HTTP/1.1 404 Not Found\r\n";
+		response.SetStatus(unisim::util::hypapp::HttpResponse::NOT_FOUND);
+
+		Indent indent;
+		
+		response << indent << "<!DOCTYPE html>" << std::endl;
+		response << indent << "<html>" << std::endl;
+		response << ++indent << "<head>" << std::endl;
+		response << ++indent << "<title>Error 404 (Not Found)</title>" << std::endl;
+		response << indent << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		response << indent << "<meta name=\"description\" content=\"Error 404 (Not Found)\">" << std::endl;
+		response << indent << "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+		response << indent << "<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+		response << indent << "<style>" << std::endl;
+		response << ++indent << "body { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+		response << --indent << "</style>" << std::endl;
+		response << --indent << "</head>" << std::endl;
+		response << indent << "<body>" << std::endl;
+		response << ++indent << "<p>Unavailable</p>" << std::endl;
+		response << --indent << "</body>" << std::endl;
+		response << --indent << "</html>" << std::endl;
 	}
-	http_header_sstr << "Server: UNISIM-VP\r\n";
+
 	if(req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)
 	{
-		http_header_sstr << "Allow: OPTIONS, GET, HEAD, POST\r\n";
+		response.Allow("OPTIONS, GET, HEAD, POST");
 	}
-	http_header_sstr << "Accept-Ranges: none\r\n";
-	http_header_sstr << "Cache-control: no-cache\r\n";
-	http_header_sstr << "Connection: keep-alive\r\n";
-	http_header_sstr << "Content-length: " << doc.length() << "\r\n";
-	http_header_sstr << "Content-Type: " << http_visitor.GetContentType() << "\r\n";
-	http_header_sstr << "\r\n";
 	
-	std::string http_header(http_header_sstr.str());
-
-	if(!conn.Send(http_header.c_str(), http_header.length())) return false;
-	
-	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
-			
-	return conn.Send(doc.c_str(), doc.length());
+	return (req.GetRequestType() == unisim::util::hypapp::Request::HEAD) ? response.SendHeader(conn) : response.Send(conn);
 }
 
 template <typename ADDRESS>

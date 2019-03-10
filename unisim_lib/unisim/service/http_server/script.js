@@ -175,6 +175,68 @@ var CompatLayer =
 	}
 }
 
+URI.prototype.custom_compare = function(uri)
+{
+	if(!this.compare(uri))
+	{
+		// no strictly equal
+		
+		if(!this.fragment || !uri.fragment || (this.fragment != uri.fragment)) return false; // fragments differ
+
+		// try to match key=value in queries excluding key foo for the match
+		var own_map = new Map();
+		var map = new Map();
+			
+		if(this.query)
+		{
+			var own_assignments = this.query.split('&');
+			for(var i = 0; i < own_assignments.length; i++)
+			{
+				var own_assignment = own_assignments[i].split('=');
+				if(own_assignment.length == 2)
+				{
+					own_map[own_assignment[0].trim()] = own_assignment[1].trim();
+				}
+			}
+		}
+
+		if(uri.query)
+		{
+			var assignments = uri.query.split('&');
+			for(var i = 0; i < assignments.length; i++)
+			{
+				var assignment = assignments[i].split('=');
+				if(assignment.length == 2)
+				{
+					map[assignment[0].trim()] = assignment[1].trim();
+				}
+			}
+		}
+		
+		// this.query <= uri.query ?
+		for(var key in own_map)
+		{
+			if(key != 'foo')
+			{
+				if(!map.hasOwnProperty(key)) return false;
+				if(this.map[key] != map[key]) return false;
+			}
+		}
+
+		// uri.query <= this.query ?
+		for(var key in map)
+		{
+			if(key != 'foo')
+			{
+				if(!map.hasOwnProperty(key)) return false;
+				if(this.map[key] != map[key]) return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 function rewrite_uri_with_fragment(uri)
 {
 	// if URI has a fragment, we rewrite it so that it has a query with an argument foo
@@ -406,7 +468,8 @@ DoubleIFrame.prototype.on_load = function(i)
 	this.patch_anchors();
 	// simulate unloading before flipping
 	this.trigger_on_unload();
-	this.owner.set_label(this.iframes[this.bg].iframe_element.contentDocument.title);
+	var title = this.iframes[this.bg].iframe_element.contentDocument.title;
+	this.owner.set_label(title ? title : 'Untitled');
 	// flipping: show freshly loaded iframe
 	bg_iframe.iframe_element.setAttribute('style', 'visibility:' + (this.visible ? 'visible' : 'hidden'));
 	// flipping: hide old iframe
@@ -816,7 +879,7 @@ TabConfigs.prototype.find_tab_config_by_name = function(name)
 
 TabConfigs.prototype.find_tab_config_by_uri = function(uri)
 {
-	return this.tab_configs.find(function(tab_config) { return tab_config.uri && tab_config.uri.compare(uri); });
+	return this.tab_configs.find(function(tab_config) { return tab_config.uri && tab_config.uri.custom_compare(uri); });
 }
 
 // Tab
@@ -855,6 +918,7 @@ Tab.prototype.create = function(tab_config)
 	this.tab_config = tab_config;
 	this.close_tab = document.createElement('div');
 	this.close_tab.className = 'close-tab ' + (CompatLayer.has_svg ? 'w-svg' : 'wo-svg');
+	this.close_tab.setAttribute('title', 'Close');
 	this.tab_header = document.createElement('div');
 	this.tab_header.className = 'tab-header noselect';
 	this.tab_header_label = document.createElement('span');
@@ -1016,14 +1080,21 @@ Tab.prototype.tab_header_oncontextmenu = function(event)
 	var context_menu_items = [
 	{
 		label : 'Close',
-		action : function(event)
+		action : function()
 		{
 			this.close();
 		}
 	},
 	{
+		label : 'Close all',
+		action : function()
+		{
+			this.owner.close_all_tabs();
+		}
+	},
+	{
 		label : 'Move to new window',
-		action : function(event)
+		action : function()
 		{
 			gui.move_tab_to_new_window(this);
 		}
@@ -1034,7 +1105,7 @@ Tab.prototype.tab_header_oncontextmenu = function(event)
 		context_menu_items.push(
 		{
 			label : 'Move to left',
-			action : function(event)
+			action : function()
 			{
 				gui.move_tab_to_tile(this, 'left-tile');
 			}
@@ -1046,7 +1117,7 @@ Tab.prototype.tab_header_oncontextmenu = function(event)
 		context_menu_items.push(
 		{
 			label : 'Move to center',
-			action : function(event)
+			action : function()
 			{
 				gui.move_tab_to_tile(this, 'top-middle-tile');
 			}
@@ -1058,7 +1129,7 @@ Tab.prototype.tab_header_oncontextmenu = function(event)
 		context_menu_items.push(
 		{
 			label : 'Move to right',
-			action : function(event)
+			action : function()
 			{
 				gui.move_tab_to_tile(this, 'top-right-tile');
 			}
@@ -1070,7 +1141,7 @@ Tab.prototype.tab_header_oncontextmenu = function(event)
 		context_menu_items.push(
 		{
 			label : 'Move to bottom',
-			action : function(event)
+			action : function()
 			{
 				gui.move_tab_to_tile(this, 'bottom-tile');
 			}
@@ -1375,7 +1446,7 @@ Tile.prototype.find_tab_by_iframe_name = function(iframe_name)
 
 Tile.prototype.find_tab_by_uri = function(uri)
 {
-	return this.tabs.find(function(tab) { return tab.tab_config.uri && tab.tab_config.uri.compare(uri); });
+	return this.tabs.find(function(tab) { return tab.tab_config.uri && tab.tab_config.uri.custom_compare(uri); });
 }
 
 Tile.prototype.scroll_tab_headers = function(dx)
@@ -1517,9 +1588,17 @@ Tile.prototype.attach_tab = function(tab)
 	}
 }
 
-Tile.prototype.for_each_tab = function(callback)
+Tile.prototype.for_each_tab = function(callback, callback_this)
 {
-	this.tabs.forEach(callback);
+	this.tabs.forEach(callback, callback_this);
+}
+
+Tile.prototype.close_all_tabs = function()
+{
+	while(this.tabs.length)
+	{
+		this.tabs[0].close();
+	}
 }
 
 // ContextMenu
@@ -1782,7 +1861,21 @@ GUI.prototype.open_tab = function(tile_name, name, uri_str, dont_switch_to)
 {
 	var uri = new URI(uri_str);
 // 	console.log('open_tab: \'' + uri_str + '\' => \'' + uri.toString());
-	var tab = this.find_tab_by_uri(uri);
+	switch(tile_name)
+	{
+		case 'left-tile':
+			tab = this.left_tile.find_tab_by_uri(uri);
+			break;
+		case 'top-middle-tile':
+			tab = this.top_middle_tile.find_tab_by_uri(uri);
+			break;
+		case 'top-right-tile':
+			tab = this.top_right_tile.find_tab_by_uri(uri);
+			break;
+		case 'bottom-tile':
+			tab = this.bottom_tile.find_tab_by_uri(uri);
+			break;
+	}
 	
 	if(!tab)
 	{
@@ -2142,11 +2235,6 @@ GUI.prototype.find_tab_by_iframe_name = function(iframe_name)
 	return this.left_tile.find_tab_by_iframe_name(iframe_name) || this.top_middle_tile.find_tab_by_iframe_name(iframe_name) || this.top_right_tile.find_tab_by_iframe_name(iframe_name) || this.bottom_tile.find_tab_by_iframe_name(iframe_name);
 }
 
-GUI.prototype.find_tab_by_uri = function(uri)
-{
-	return this.left_tile.find_tab_by_uri(uri) || this.top_middle_tile.find_tab_by_uri(uri) || this.top_right_tile.find_tab_by_uri(uri) || this.bottom_tile.find_tab_by_uri(uri);
-}
-
 GUI.prototype.create_context_menu = function(event, context_menu_items, action_this, document, offset_x, offset_y)
 {
 	this.destroy_context_menu();
@@ -2201,12 +2289,12 @@ GUI.prototype.move_tab_to_new_window = function(tab)
 	}
 }
 
-GUI.prototype.for_each_tab = function(callback)
+GUI.prototype.for_each_tab = function(callback, callback_this)
 {
-	this.left_tile.for_each_tab(callback);
-	this.top_middle_tile.for_each_tab(callback);
-	this.top_right_tile.for_each_tab(callback);
-	this.bottom_tile.for_each_tab(callback);
+	this.left_tile.for_each_tab(callback, callback_this);
+	this.top_middle_tile.for_each_tab(callback, callback_this);
+	this.top_right_tile.for_each_tab(callback, callback_this);
+	this.bottom_tile.for_each_tab(callback, callback_this);
 }
 
 GUI.prototype.for_each_child_window = function(callback)

@@ -154,7 +154,10 @@ HttpRequest::HttpRequest(const Request& _req, std::ostream& err_log)
 	, domain()
 	, has_port(false)
 	, port(0)
+	, content_stream_buffer(req)
 {
+	rdbuf(&content_stream_buffer);
+	
 	valid = URL_AbsolutePathDecoder::Decode(req.GetRequestURI(), abs_path, err_log);
 	if(valid)
 	{
@@ -217,7 +220,42 @@ HttpRequest::HttpRequest(const std::string& _server_root, const std::string& _pa
 	, domain(http_request.domain)
 	, has_port(http_request.has_port)
 	, port(http_request.port)
+	, content_stream_buffer(req)
 {
+	rdbuf(&content_stream_buffer);
+}
+
+HttpRequest::StreamBuffer::StreamBuffer(const Request& _req)
+	: req(_req)
+	, pos(0)
+{
+}
+
+HttpRequest::StreamBuffer::int_type HttpRequest::StreamBuffer::underflow()
+{
+	unsigned int content_length = req.GetContentLength();
+	if(pos < content_length)
+	{
+		const char *content = req.GetContent();
+		int_type c = content[pos];
+		pos += 1;
+		return c;
+	}
+	
+	return std::char_traits<char>::eof();
+}
+
+std::streamsize HttpRequest::StreamBuffer::xsgetn(char* s, std::streamsize n)
+{
+	unsigned int content_length = req.GetContentLength();
+	std::streamsize m = ((pos + n) > content_length) ? (content_length - pos) : n;
+	if(m > 0)
+	{
+		const char *content = req.GetContent();
+		memcpy(s, content + pos, m);
+		pos += m;
+	}
+	return m;
 }
 
 std::ostream& operator << (std::ostream& os, const HttpRequest& http_request)
@@ -245,6 +283,155 @@ std::ostream& operator << (std::ostream& os, const HttpRequest& http_request)
 		os << "Port: " << http_request.GetPort() << std::endl;
 	}
 	return os;
+}
+
+HttpResponse::HttpResponse()
+  : status_code(OK)
+  , content_type("text/html; charset=utf-8")
+  , enable_cache(false)
+  , keep_alive(true)
+  , allow()
+  , accept_ranges("none")
+  , content_stream_buffer()
+  , header_fields()
+{
+  rdbuf(&content_stream_buffer);
+}
+
+bool HttpResponse::Send(ClientConnection const& conn, bool header_only) const
+{
+  std::ostringstream header_stream;
+  const std::string& content(content_stream_buffer.str());
+  header_stream << "HTTP/1.1 " << status_code << "\r\n";
+  header_stream << "Server: UNISIM-VP\r\n";
+  if(!allow.empty())
+  {
+    header_stream << "Allow: " << allow << "\r\n";
+  }
+  if(!accept_ranges.empty())
+  {
+    header_stream << "Accept-Ranges: " << accept_ranges << "\r\n";
+  }
+  if(!enable_cache)
+  {
+    header_stream << "Cache-control: no-cache\r\n";
+  }
+  if(keep_alive)
+  {
+    header_stream << "Connection: keep-alive\r\n";
+  }
+  header_stream << "Content-length: " << content.length() << "\r\n";
+  if(content_type.length())
+  {
+    header_stream << "Content-Type: " << content_type << "\r\n";
+  }
+  
+  for(HeaderFields::const_iterator it = header_fields.begin(); it != header_fields.end(); it++)
+  {
+    const HeaderField& header_field = *it;
+    const std::string& key = header_field.first;
+    const std::string& value = header_field.second;
+    
+    header_stream << key << ": " << value << "\r\n";
+  }
+  
+  header_stream << "\r\n";
+  
+  std::string response(header_stream.str());
+  if(!header_only)
+  {
+    response.append(content);
+  }
+  
+  return conn.Send(response);
+}
+
+HttpResponse::StreamBuffer::StreamBuffer()
+  : buffer()
+{
+}
+
+HttpResponse::StreamBuffer::int_type HttpResponse::StreamBuffer::overflow(int_type c)
+{
+  reserve(1);
+  buffer.append(1, c);
+  return c;
+}
+
+std::streamsize HttpResponse::StreamBuffer::xsputn(const char* s, std::streamsize n)
+{
+  if(n)
+  {
+    reserve(n);
+    buffer.append(s, n);
+  }
+  
+  return n;
+}
+
+void HttpResponse::StreamBuffer::reserve(std::streamsize n)
+{
+  std::size_t m = ((buffer.size() + n + 4095) & -4096);
+  if(m > buffer.capacity()) buffer.reserve(m);
+}
+
+std::ostream& operator << (std::ostream& os, const HttpResponse::StatusCode& status_code)
+{
+  os << (unsigned int) status_code << ' ';
+  switch(status_code)
+  {
+    case HttpResponse::CONTINUE                     : os << "Continue"; break;
+    case HttpResponse::SWITCHING_PROTOCOLS          : os << "Switching Protocols"; break;
+    
+    // successful
+    case HttpResponse::OK                           : os << "OK"; break;
+    case HttpResponse::CREATED                      : os << "Created"; break;
+    case HttpResponse::ACCEPTED                     : os << "Accepted"; break;
+    case HttpResponse::NON_AUTHORITATIVE_INFORMATION: os << "Non-Authoritative Information"; break;
+    case HttpResponse::NO_CONTENT                   : os << "No Content"; break;
+    case HttpResponse::RESET_CONTENT                : os << "Reset Content"; break;
+    case HttpResponse::PARTIAL_CONTENT              : os << "Partial Content"; break;
+
+    // redirection
+    case HttpResponse::MULTIPLE_CHOICES             : os << "Multiple Choices"; break;
+    case HttpResponse::MOVED_PERMANENTLY            : os << "Moved Permanently"; break;
+    case HttpResponse::FOUND                        : os << "Found"; break;
+    case HttpResponse::SEE_OTHER                    : os << "See Other"; break;
+    case HttpResponse::NOT_MODIFIED                 : os << "Not Modified"; break;
+    case HttpResponse::USE_PROXY                    : os << "Use Proxy"; break;
+    case HttpResponse::UNUSED                       : os << "Unused"; break;
+    case HttpResponse::TEMPORARY_REDIRECT           : os << "Temporary Redirect"; break;
+
+    // client error
+    case HttpResponse::BAD_REQUEST                  : os << "Bad Request"; break;
+    case HttpResponse::UNAUTHORIZED                 : os << "Unauthorized"; break;
+    case HttpResponse::PAYMENT_REQUIRED             : os << "Payment Required"; break;
+    case HttpResponse::FORBIDDEN                    : os << "Forbidden"; break;
+    case HttpResponse::NOT_FOUND                    : os << "Not Found"; break;
+    case HttpResponse::METHOD_NOT_ALLOWED           : os << "Method Not Allowed"; break;
+    case HttpResponse::NOT_ACCEPTABLE               : os << "Not Acceptable"; break;
+    case HttpResponse::PROXY_AUTHENTICATION_REQUIRED: os << "Proxy Authentication Required"; break;
+    case HttpResponse::REQUEST_TIMEOUT              : os << "Request Timeout"; break;
+    case HttpResponse::CONFLICT                     : os << "Conflict"; break;
+    case HttpResponse::GONE                         : os << "Gone"; break;
+    case HttpResponse::LENGH_REQUIRED               : os << "Lengh Required"; break;
+    case HttpResponse::PRECONDITION_FAILED          : os << "Precondition Failed"; break;
+    case HttpResponse::REQUEST_ENTITY_TOO_LARGE     : os << "Request Entity Too Large"; break;
+    case HttpResponse::UNSUPPORTED_MEDIA_TYPE       : os << "Unsupported Media Type"; break;
+    case HttpResponse::REQUEST_RANGE_NOT_SATISFIABLE: os << "Request Range Not Satisfiable"; break;
+    case HttpResponse::EXPECTATION_FAILED           : os << "Expectation Failed"; break;
+
+    // server error
+    case HttpResponse::INTERNAL_SERVER_ERROR        : os << "Internal Server Error"; break;
+    case HttpResponse::NOT_IMPLEMENTED              : os << "Not Implemented"; break;
+    case HttpResponse::BAD_GATEWAY                  : os << "Bad Gateway"; break;
+    case HttpResponse::SERVICE_UNAVAILABLE          : os << "Service Unavailable"; break;
+    case HttpResponse::GATEWAY_TIMEOUT              : os << "Gateway Timeout"; break;
+    case HttpResponse::HTTP_VERSION_NOT_SUPPORTED   : os << "HTTP Version Not Supported"; break;
+    
+    default                                         : break;
+  }
+  return os;
 }
 
 struct IPAddrRepr
@@ -1360,7 +1547,7 @@ HttpServer::LoopThread()
           socket = accept(server.socket, (struct sockaddr*)&addr, &addrlen);
           if (socket < 0) return;
           ipaddr = addr.sin_addr.s_addr;
-#if 0
+#if 1
           /* set short latency */
           int opt_tcp_nodelay = 1;
           setsockopt(socket, IPPROTO_TCP, TCP_NODELAY, (char *) &opt_tcp_nodelay, sizeof(opt_tcp_nodelay));
