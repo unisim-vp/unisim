@@ -312,7 +312,11 @@ bool HttpResponse::Send(ClientConnection const& conn, bool header_only) const
   {
     header_stream << "Accept-Ranges: " << accept_ranges << "\r\n";
   }
-  if(!enable_cache)
+  if(enable_cache)
+  {
+    header_stream << "Cache-control: public, max-age=600\r\n";
+  }
+  else
   {
     header_stream << "Cache-control: no-cache\r\n";
   }

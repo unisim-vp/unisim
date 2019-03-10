@@ -4,6 +4,7 @@ GUI.prototype.window_inner_height = 0;
 GUI.prototype.vertical_scrollbar_width = 24;
 GUI.prototype.horizontal_scrollbar_height = 0;
 GUI.prototype.magic = 0xC0CA;
+GUI.prototype.timeout = null;
 
 function GUI()
 {
@@ -65,7 +66,10 @@ GUI.prototype.reload = function()
 		window.parent.gui.for_each_tab(
 			function(tab)
 			{
-				if(tab.is_active && (tab != own_tab)) tab.refresh();
+				if(tab.is_active && (tab != own_tab))
+				{
+					tab.refresh();
+				}
 			}
 		);
 		
@@ -86,7 +90,11 @@ GUI.prototype.reload = function()
 
 GUI.prototype.reload_after = function(delay)
 {
-	setTimeout(this.reload.bind(this), delay);
+	if(this.timeout)
+	{
+		clearTimeout(this.timeout);
+	}
+	this.timeout = setTimeout(this.reload.bind(this), delay);
 }
 
 GUI.prototype.get_next_target = function()
@@ -116,6 +124,11 @@ GUI.prototype.on_unload = function()
 
 GUI.prototype.__on_unload__ = function()
 {
+	if(this.timeout)
+	{
+		clearTimeout(this.timeout);
+		this.timeout = null;
+	}
 	this.on_unload();
 }
 

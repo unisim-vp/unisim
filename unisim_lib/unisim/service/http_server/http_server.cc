@@ -606,6 +606,8 @@ bool HttpServer::ServeFile(unisim::util::hypapp::HttpRequest const& req, const s
 			{
 				unisim::util::hypapp::HttpResponse response;
 				
+				response.EnableCache();
+				
 				std::string ext = path.substr(path.find_last_of("/."));
 				
 				if((ext == ".htm") || (ext == ".html"))

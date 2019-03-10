@@ -577,8 +577,6 @@ DoubleIFrame.prototype.update_uri = function()
 DoubleIFrame.prototype.refresh = function()
 {
 //	console.log(this.name + ':refresh');
-// 	this.save_scroll_position();
-// 	this.trigger_on_unload();
 	var bg_iframe = this.iframes[this.bg];
 	bg_iframe.loaded = false;
 	bg_iframe.load_requested = true;
