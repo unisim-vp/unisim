@@ -618,7 +618,9 @@ template <class ARCH> struct DC<ARCH,MOVFP> { Operation<ARCH>* get( InputCode<AR
   if (auto _ = match( ic, vex( "\x66\x0f\x28" ) & RM() ))
     {
       if (not ic.vex()) return new MovfpVW<ARCH,64,true>( _.opbase(), _.rmop(), _.greg() );
+      if (_.vreg()) return 0;
       std::cerr << "Yes!!!!!\n";
+      throw false;
       return 0;
     }
   

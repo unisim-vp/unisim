@@ -76,60 +76,60 @@ namespace intel {
     static void FromBytes( double& dst, uint8_t const* src ) { VectorTypeInfo<uint64_t>::FromBytes( reinterpret_cast<uint64_t&>( dst ), src ); }
   };
   
-  struct FlushInvalidate
-  {
-    FlushInvalidate( unsigned _idx, uint8_t* _buffer, uint8_t const* _data )
-      : idx(_idx), buffer(_buffer), data(_data)
-    {}
+  // struct FlushInvalidate
+  // {
+  //   FlushInvalidate( unsigned _idx, uint8_t* _buffer, uint8_t const* _data )
+  //     : idx(_idx), buffer(_buffer), data(_data)
+  //   {}
     
-    unsigned       idx;
-    uint8_t*       buffer;
-    uint8_t const* data;
-  };
+  //   unsigned       idx;
+  //   uint8_t*       buffer;
+  //   uint8_t const* data;
+  // };
   
-  template <typename valT, unsigned _RegCount, unsigned _RegSize>
-  struct VectorBankCache
-  {
-    static uintptr_t const sub_count = _RegSize / VectorTypeInfo<valT>::bytecount;
-    bool     valid[_RegCount];
+  // template <typename valT, unsigned _RegCount, unsigned _RegSize>
+  // struct VectorBankCache
+  // {
+  //   static uintptr_t const sub_count = _RegSize / VectorTypeInfo<valT>::bytecount;
+  //   bool     valid[_RegCount];
     
-    VectorBankCache() { for (unsigned idx = 0; idx < _RegCount; ++idx) valid[idx] = true; }
+  //   VectorBankCache() { for (unsigned idx = 0; idx < _RegCount; ++idx) valid[idx] = true; }
     
-    template <typename dirT>
-    valT*
-    GetStorage( dirT& dir, unsigned idx )
-    {
-      uint8_t* data = &dir.storage[idx][0];
-      valT* regvec = static_cast<valT*>( data );
+  //   template <typename dirT>
+  //   valT*
+  //   GetStorage( dirT& dir, unsigned idx )
+  //   {
+  //     uint8_t* data = &dir.storage[idx][0];
+  //     valT* regvec = static_cast<valT*>( data );
       
-      // Force validity
-      if (not valid[idx]) {
-        uint8_t buffer[_RegSize];
-        FlushInvalidate copy( idx, buffer, data );
-        dir.DoAll( copy );
-        valid[idx] = true;
-        for (unsigned sub = 0; sub < sub_count; ++sub)
-          VectorTypeInfo<valT>::FromBytes( regvec[sub], &buffer[sub*VectorTypeInfo<valT>::bytecount] );
-      }
+  //     // Force validity
+  //     if (not valid[idx]) {
+  //       uint8_t buffer[_RegSize];
+  //       FlushInvalidate copy( idx, buffer, data );
+  //       dir.DoAll( copy );
+  //       valid[idx] = true;
+  //       for (unsigned sub = 0; sub < sub_count; ++sub)
+  //         VectorTypeInfo<valT>::FromBytes( regvec[sub], &buffer[sub*VectorTypeInfo<valT>::bytecount] );
+  //     }
       
-      return regvec;
-    }
+  //     return regvec;
+  //   }
     
-    void Do( FlushInvalidate& copy )
-    {
-      unsigned idx = copy.idx;
-      valT* regvec = static_cast<valT*>( copy.data );
+  //   void Do( FlushInvalidate& copy )
+  //   {
+  //     unsigned idx = copy.idx;
+  //     valT* regvec = static_cast<valT*>( copy.data );
       
-      if (not valid[idx]) return;
-      valid[idx] = false;
-      if (not copy.buffer) return;
+  //     if (not valid[idx]) return;
+  //     valid[idx] = false;
+  //     if (not copy.buffer) return;
       
-      for (unsigned sub = 0; sub < sub_count; ++sub)
-        VectorTypeInfo<valT>::ToBytes( &copy.buffer[sub*VectorTypeInfo<valT>::bytecount], regvec[sub] );
+  //     for (unsigned sub = 0; sub < sub_count; ++sub)
+  //       VectorTypeInfo<valT>::ToBytes( &copy.buffer[sub*VectorTypeInfo<valT>::bytecount], regvec[sub] );
       
-      copy.buffer = 0;
-    }
-  };
+  //     copy.buffer = 0;
+  //   }
+  // };
 
 } // end of namespace intel
 } // end of namespace processor

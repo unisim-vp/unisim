@@ -133,6 +133,8 @@ namespace intel {
       }
     }
     
+    void  noexec( Operation<Arch> const& op );
+    
     // PROCESSOR STATE
   protected:
     uint32_t                    m_EIP;

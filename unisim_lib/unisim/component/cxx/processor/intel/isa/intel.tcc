@@ -275,6 +275,8 @@ namespace intel {
   template <unsigned LENGTH>
   OpCode<LENGTH-1> opcode( char const (&ref)[LENGTH] )
   { return OpCode<LENGTH-1>( reinterpret_cast<uint8_t const*>( &ref[0] ) ); }
+
+  struct VexV { VexV() : idx() {} unsigned idx; };
   
   template <unsigned LENGTH>
   struct Vex
@@ -320,6 +322,12 @@ namespace intel {
 
       len = bidx;
       return bytes + len;
+    }
+  
+    uint8_t const* get( VexV& v, uint8_t const* bytes )
+    {
+      v.idx = (bytes[2-(bytes[0] & 1)] >> 3) % 16;
+      return (bytes[0] | 1) == 0xc5 ? 0 : bytes + len;
     }
     uint8_t ref[LENGTH];
     uint8_t len;
@@ -774,6 +782,13 @@ namespace intel {
       struct _ : RMOpFabric { _( CodeBase const& cb ) : RMOpFabric( cb ), idx() {} unsigned idx; void makeROp(unsigned reg) override { idx = reg; } } res(icode());
       find( static_cast<RMOpFabric&>(res), icode().opcode() );
       return res.idx;
+    }
+
+    uint8_t vreg()
+    {
+      VexV v;
+      find( v, icode().opcode() );
+      return v.idx ^ 15;
     }
     
     PATTERN pattern;

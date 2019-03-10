@@ -182,6 +182,17 @@ namespace intel {
   }
 
   void
+  Arch::noexec( Operation<Arch> const& op )
+  {
+    std::cerr
+      << "error: no execute method in `" << typeid(op).name() << "'\n"
+      << std::hex << op.address << ":\t";
+    op.disasm( std::cerr );
+    std::cerr << '\n';
+    throw 0;
+  }
+    
+  void
   Arch::xgetbv()
   {
     // uint32_t a, d, c = this->regread( GOd(), 1 );

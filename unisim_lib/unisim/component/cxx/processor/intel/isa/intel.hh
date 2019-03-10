@@ -138,13 +138,13 @@ namespace intel {
               else if (bptr[0] == 0xc5 and (mode64() or (bptr[1] >> 6) == 3))
                 {
                   /* Two-bytes VEX prefix */
-                  rex_r = bptr[1] >> 7;
+                  rex_r = ~bptr[1] >> 7;
                   set_vexpp( bptr[1] & 3 );
                 }
               else if (bptr[0] == 0xc4 and (mode64() or (bptr[1] >> 6) == 3))
                 {
                   /* Three-bytes VEX prefix */
-                  rex_b = bptr[1] >> 5; rex_x = bptr[1] >> 6; rex_r = bptr[1] >> 7; rex_w = bptr[2] >> 7;
+                  rex_b = ~bptr[1] >> 5; rex_x = ~bptr[1] >> 6; rex_r = ~bptr[1] >> 7; rex_w = bptr[2] >> 7;
                   set_vexpp( bptr[2] & 3 );
                 }
               set_opcode( bptr );
