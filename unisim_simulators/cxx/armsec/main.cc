@@ -1828,9 +1828,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "CFGBAR, Configuration Base Address"; }
-          U32 Read( Processor& proc ) { return proc.SReg("cfgbar"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("cfgbar") = value; }
+          char const* Describe() { return "CBAR, Configuration Base Address"; }
+          U32 Read( Processor& proc ) { return proc.SReg("cbar"); }
+          void Write( Processor& proc, U32 const& value ) { proc.SReg("cbar") = value; }
         } x;
         return x;
       } break;
