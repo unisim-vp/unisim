@@ -905,7 +905,7 @@ public:
     ELEM*
     GetStorage( uint8_t* storage, ELEM const&, unsigned final_size )
     {
-      return rearrange<ELEM>( storage, size );
+      return rearrange<ELEM>( storage, final_size );
     }
 
     template <class ELEM>
@@ -932,7 +932,7 @@ public:
   ELEM
   vmm_read( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
   {
-    ELEM const* elems = umms[reg].GetConstStorage( &vmm_storage[reg][0], e, vr.size() );
+    ELEM const* elems = umms[reg].GetConstStorage( &vmm_storage[reg][0], e, vr.size() / 8 );
     return elems[sub];
   }
   
