@@ -60,6 +60,7 @@ namespace intel {
         { tmp <<= 8; tmp |= uint32_t( src[idx] ); }
       dst = tmp;
     }
+    static void Destroy( T const& obj ) { /* Base scalar types don't need any specific destructor */ }
   };
 
   template <> struct VectorTypeInfo<float>
@@ -67,6 +68,7 @@ namespace intel {
     enum bytecount_t { bytecount = 4 };
     static void ToBytes( uint8_t* dst, float const& src ) { VectorTypeInfo<uint32_t>::ToBytes( dst, reinterpret_cast<uint32_t const&>( src ) ); }
     static void FromBytes( float& dst, uint8_t const* src ) { VectorTypeInfo<uint32_t>::FromBytes( reinterpret_cast<uint32_t&>( dst ), src ); }
+    static void Destroy( float const& obj ) { /* float type doesn't need any specific destructor */ }
   };
 
   template <> struct VectorTypeInfo<double>
@@ -74,6 +76,7 @@ namespace intel {
     enum bytecount_t { bytecount = 8 };
     static void ToBytes( uint8_t* dst, double const& src ) { VectorTypeInfo<uint64_t>::ToBytes( dst, reinterpret_cast<uint64_t const&>( src ) ); }
     static void FromBytes( double& dst, uint8_t const* src ) { VectorTypeInfo<uint64_t>::FromBytes( reinterpret_cast<uint64_t&>( dst ), src ); }
+    static void Destroy( double const& obj ) { /* double types doesn't need any specific destructor */ }
   };
   
   // struct FlushInvalidate

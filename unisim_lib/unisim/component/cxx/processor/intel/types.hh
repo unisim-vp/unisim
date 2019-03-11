@@ -63,6 +63,10 @@ namespace intel {
   struct GOd { enum { OPSIZE=32 };  static unsigned size() { return 32; } };
   struct GOq { enum { OPSIZE=64 };  static unsigned size() { return 64; } };
 
+  struct SSE { enum { OPSIZE=128 }; static unsigned size() { return 128; } };
+  struct XMM { enum { OPSIZE=128 }; static unsigned size() { return 128; } };
+  struct YMM { enum { OPSIZE=256 }; static unsigned size() { return 256; } };
+
   template <unsigned SIZE> struct GTypeFor {};
   
   template <> struct GTypeFor<16> { typedef GOw OP; };

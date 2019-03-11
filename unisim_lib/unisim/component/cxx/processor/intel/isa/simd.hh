@@ -116,11 +116,12 @@ struct CvtI2F : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,DOPSZ>::f fdst_type;
+    typedef typename TypeFor<ARCH,SOPSZ>::u usrc_type;
     for (unsigned idx = 0, end = 128/DOPSZ; idx < end; ++idx)
       {
-        typename TypeFor<ARCH,SOPSZ>::u src = arch.template xmm_uread<SOPSZ>( rm, idx );
+        usrc_type src = arch.vmm_read( SSE(), rm, idx, usrc_type() );
         fdst_type dst = fdst_type(src);
-        arch.template xmm_fwrite<DOPSZ>( gn, idx, dst );
+        arch.vmm_write( SSE(), gn, idx, dst );
       }
   }
 };
@@ -137,7 +138,7 @@ struct CvtsI2F : public Operation<ARCH>
     typedef typename TypeFor<ARCH,DOPSZ>::f fdst_type;
     typename TypeFor<ARCH,SOP::OPSIZE>::u src = arch.rmread( SOP(), rm );
     fdst_type dst = fdst_type(src);
-    arch.template xmm_fwrite<DOPSZ>( gn, 0, dst );
+    arch.vmm_write( SSE(), gn, 0, dst );
   }
 };
 
@@ -154,11 +155,11 @@ struct CvtsF2F : public Operation<ARCH>
     typedef typename TypeFor<ARCH,SOPSZ>::f fsrc_type;
     typedef typename TypeFor<ARCH,DOPSZ>::f fdst_type;
 
-    fsrc_type src = arch.template xmm_fread<SOPSZ>( rm, 0 );
+    fsrc_type src = arch.vmm_read( SSE(), rm, 0, fsrc_type() );
     //FPToFP( res, op, cpu, cpu.FPSCR );
     fdst_type dst = fdst_type(src);
     
-    arch.template xmm_fwrite<DOPSZ>( gn, 0, dst );
+    arch.vmm_write( SSE(), gn, 0, dst );
   }
 };
 
@@ -172,7 +173,8 @@ struct CvttF2I : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,DOP::OPSIZE>::u udst_type;
-    typename TypeFor<ARCH,SOPSZ>::f src = arch.template xmm_fread<SOPSZ>( rm, 0 );
+    typedef typename TypeFor<ARCH,SOPSZ>::f fsrc_type;
+    fsrc_type src = arch.vmm_read( SSE(), rm, 0, fsrc_type() );
     udst_type dst = udst_type(src);
     arch.regwrite( DOP(), gn, dst );
   }
@@ -446,7 +448,7 @@ struct MovEV : public Operation<ARCH>
 {
   MovEV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::OPSIZE==64?'q':'d') << ' ' << DisasmVdq( gn ) << ',' << DisasmE( GOP(), rmop ); }
-  void execute( ARCH& arch ) const { arch.rmwrite( GOP(), rmop, arch.template xmm_uread<GOP::OPSIZE>( gn, 0 ) ); }
+  void execute( ARCH& arch ) const { arch.rmwrite( GOP(), rmop, arch.vmm_read( SSE(), gn, 0, typename TypeFor<ARCH,GOP::OPSIZE>::u() ) ); }
 };
 
 template <class ARCH, class GOP>
@@ -463,9 +465,9 @@ struct MovVE : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::OPSIZE==64?'q':'d') << ' ' << DisasmE( GOP(), rmop ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
-    arch.template xmm_uwrite<64>( gn, 0, typename ARCH::u64_t(0) );
-    arch.template xmm_uwrite<64>( gn, 1, typename ARCH::u64_t(0) );
-    arch.template xmm_uwrite<GOP::OPSIZE>( gn, 0, arch.rmread( GOP(), rmop ) );
+    arch.vmm_write( SSE(), gn, 0, typename ARCH::u64_t(0) );
+    arch.vmm_write( SSE(), gn, 1, typename ARCH::u64_t(0) );
+    arch.vmm_write( SSE(), gn, 0, arch.rmread( GOP(), rmop ) );
   }
 };
 
@@ -507,8 +509,8 @@ struct MovdqVW : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "movdq" << (ALIGNED?"a ":"u ") << DisasmWdq( rmop ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
-    arch.template xmm_uwrite<64>( gn, 0,  arch.template xmm_uread<64>( rmop, 0 ) );
-    arch.template xmm_uwrite<64>( gn, 1,  arch.template xmm_uread<64>( rmop, 1 ) );
+    arch.vmm_write( SSE(), gn, 0,  arch.vmm_read( SSE(), rmop, 0, typename ARCH::u64_t() ) );
+    arch.vmm_write( SSE(), gn, 1,  arch.vmm_read( SSE(), rmop, 1, typename ARCH::u64_t() ) );
   }
 };
 
@@ -519,8 +521,8 @@ struct MovdqWV : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "movdq" << (ALIGNED?"a ":"u ") << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); }
   void execute( ARCH& arch ) const
   {
-    arch.template xmm_uwrite<64>( rmop, 0,  arch.template xmm_uread<64>( gn, 0 ) );
-    arch.template xmm_uwrite<64>( rmop, 1,  arch.template xmm_uread<64>( gn, 1 ) );
+    arch.vmm_write( SSE(), rmop, 0, arch.vmm_read( SSE(), gn, 0, typename ARCH::u64_t() ) );
+    arch.vmm_write( SSE(), rmop, 1, arch.vmm_read( SSE(), gn, 1, typename ARCH::u64_t() ) );
   }
 };
 
@@ -585,8 +587,9 @@ struct MovfpVW : public Operation<ARCH>, MovfpMnemo<OPSIZE,ALIGNED>
   void disasm( std::ostream& sink ) const { sink << this->mnemonic() << ' '<< DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
     for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
-      arch.template xmm_uwrite<OPSIZE>( gn, idx,  arch.template xmm_uread<OPSIZE>( rm, idx ) );
+      arch.vmm_write( SSE(), gn, idx,  arch.vmm_read( SSE(), rm, idx, u_type() ) );
   }
 };
 
@@ -597,8 +600,9 @@ struct MovfpWV : public Operation<ARCH>, MovfpMnemo<OPSIZE,ALIGNED>
   void disasm( std::ostream& sink ) const { sink << this->mnemonic() << DisasmVdq( gn ) << ',' << DisasmWdq( rm ); }
   void execute( ARCH& arch ) const
   {
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
     for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
-      arch.template xmm_uwrite<OPSIZE>( rm, idx,  arch.template xmm_uread<OPSIZE>( gn, idx ) );
+      arch.vmm_write( SSE(), rm, idx,  arch.vmm_read( SSE(), gn, idx, u_type() ) );
   }
 };
 
@@ -774,9 +778,9 @@ struct Movsd : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "movsd " << DisasmWdq( src ) << ',' << DisasmWdq( dst ); }
   void execute( ARCH& arch ) const
   {
-    arch.template xmm_uwrite<64>( dst, 0,  arch.template xmm_uread<64>( src, 0 ) );
+    arch.vmm_write( SSE(), dst, 0,  arch.vmm_read( SSE(), src, 0, typename ARCH::u64_t() ) );
     if (not dst.is_memory_operand())
-      arch.template xmm_uwrite<64>( dst, 1, typename ARCH::u64_t(0) );
+      arch.vmm_write( SSE(), dst, 1, typename ARCH::u64_t(0) );
   }
 };
 
@@ -841,8 +845,9 @@ struct MulVW : public Operation<ARCH>, VMnemo<OPSZ,PACKED>
   void disasm( std::ostream& sink ) const { sink << this->mnemonic( "mul" ) << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
+    typedef typename TypeFor<ARCH,OPSZ>::f f_type;
     for (unsigned idx = 0, end = PACKED ? 128/OPSZ : 1; idx < end; ++idx)
-      arch.template xmm_fwrite<OPSZ>( gn, idx, arch.template xmm_fread<OPSZ>( gn, idx ) * arch.template xmm_fread<OPSZ>( rm, idx ) );
+      arch.vmm_write( SSE(), gn, idx, arch.vmm_read( SSE(), gn, idx, f_type() ) * arch.vmm_read( SSE(), rm, idx, f_type() ) );
   }
 };
 
@@ -869,8 +874,9 @@ struct DivVW : public Operation<ARCH>, VMnemo<OPSZ,PACKED>
   void disasm( std::ostream& sink ) const { sink << this->mnemonic( "div" ) << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
+    typedef typename TypeFor<ARCH,OPSZ>::f f_type;
     for (unsigned idx = 0, end = PACKED ? 128/OPSZ : 1; idx < end; ++idx)
-      arch.template xmm_fwrite<OPSZ>( gn, idx, arch.template xmm_fread<OPSZ>( gn, idx ) / arch.template xmm_fread<OPSZ>( rm, idx ) );
+      arch.vmm_write( SSE(), gn, idx, arch.vmm_read( SSE(), gn, idx, f_type() ) / arch.vmm_read( SSE(), rm, idx, f_type() ) );
   }
 };
 
@@ -897,8 +903,9 @@ struct SubVW : public Operation<ARCH>, VMnemo<OPSZ,PACKED>
   void disasm( std::ostream& sink ) const { sink << this->mnemonic( "sub" ) << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
+    typedef typename TypeFor<ARCH,OPSZ>::f f_type;
     for (unsigned idx = 0, end = PACKED ? 128/OPSZ : 1; idx < end; ++idx)
-      arch.template xmm_fwrite<OPSZ>( gn, idx, arch.template xmm_fread<OPSZ>( gn, idx ) - arch.template xmm_fread<OPSZ>( rm, idx ) );
+      arch.vmm_write( SSE(), gn, idx, arch.vmm_read( SSE(), gn, idx, f_type() ) - arch.vmm_read( SSE(), rm, idx, f_type() ) );
   }
 };
 
@@ -925,8 +932,9 @@ struct AddVW : public Operation<ARCH>, VMnemo<OPSZ,PACKED>
   void disasm( std::ostream& sink ) const { sink << this->mnemonic( "add" ) << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
+    typedef typename TypeFor<ARCH,OPSZ>::f f_type;
     for (unsigned idx = 0, end = PACKED ? 128/OPSZ : 1; idx < end; ++idx)
-      arch.template xmm_fwrite<OPSZ>( gn, idx, arch.template xmm_fread<OPSZ>( gn, idx ) + arch.template xmm_fread<OPSZ>( rm, idx ) );
+      arch.vmm_write( SSE(), gn, idx, arch.vmm_read( SSE(), gn, idx, f_type() ) + arch.vmm_read( SSE(), rm, idx, f_type() ) );
   }
 };
 
@@ -1145,8 +1153,8 @@ struct PCmpEqVW : public Operation<ARCH>
     
     for (unsigned sub = 0; sub < (128/OPSIZE); ++sub)
       {
-        u_type msk = u_type(arch.template xmm_uread<OPSIZE>( gn, sub ) != arch.template xmm_uread<OPSIZE>( rmop, sub )) - u_type(1);
-        arch.template xmm_uwrite<OPSIZE>( gn, sub, msk );
+        u_type msk = u_type(arch.vmm_read( SSE(), gn, sub, u_type() ) != arch.vmm_read( SSE(), rmop, sub, u_type() )) - u_type(1);
+        arch.vmm_write( SSE(), gn, sub, msk );
       }
   }
 };
@@ -1433,11 +1441,12 @@ struct PMovMskBRV : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::u32_t u32_t;
+    typedef typename ARCH::u8_t  u8_t;
     
     u32_t res = u32_t(0);
     
     for (unsigned sub = 0; sub < 16; ++sub)
-      res |= u32_t(arch.template xmm_uread<8>( rm, sub ) >> 7) << sub;
+      res |= u32_t(arch.vmm_read( SSE(), rm, sub, u8_t() ) >> 7) << sub;
     
     arch.regwrite( GOd(), gn, res );
   }
@@ -1595,10 +1604,12 @@ struct Pshufd : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "pshufd " << DisasmI(oo) << ',' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
+    typedef typename ARCH::u32_t u32_t;
+    
     for (unsigned idx = 0; idx < 4; ++idx)
       {
         unsigned part = (oo >> 2*idx) % 4;
-        arch.template xmm_uwrite<32>( gn, idx, arch.template xmm_uread<32>( rm, part ) );
+        arch.vmm_write( SSE(), gn, idx, arch.vmm_read( SSE(), rm, part, u32_t() ) );
       }
   }
 };
@@ -1894,16 +1905,18 @@ struct PunpckV : public Operation<ARCH>
     unsigned const RMSK = HI ? 0 : COUNT - 1;
     unsigned const HALF = HI ? COUNT : 0;
 
-    typename TypeFor<ARCH,OPSIZE>::u res[2*COUNT];
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
+    
+    u_type res[2*COUNT];
     
     for (unsigned chunk = 0; chunk < COUNT; ++chunk)
       {
         unsigned idx = chunk & RMSK;
-        res[2*idx+0] = arch.template xmm_uread<OPSIZE>( gn, HALF+idx );
-        res[2*idx+1] = arch.template xmm_uread<OPSIZE>( rm, HALF+idx );
+        res[2*idx+0] = arch.vmm_read( SSE(), gn, HALF+idx, u_type() );
+        res[2*idx+1] = arch.vmm_read( SSE(), rm, HALF+idx, u_type() );
       }
     for (unsigned idx = 0; idx < 2*COUNT; ++idx)
-      arch.template xmm_uwrite<OPSIZE>( gn, idx, res[idx] );
+      arch.vmm_write( SSE(), gn, idx, res[idx] );
   }
 };
 
@@ -1961,8 +1974,9 @@ struct PAndnVW : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << mn << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
     for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
-      arch.template xmm_uwrite<OPSIZE>( gn, idx,  arch.template xmm_uread<OPSIZE>( gn, idx ) &~ arch.template xmm_uread<OPSIZE>( rm, idx ) );
+      arch.vmm_write( SSE(), gn, idx,  arch.vmm_read( SSE(), gn, idx, u_type() ) &~ arch.vmm_read( SSE(), rm, idx, u_type() ) );
   }
 };
 
@@ -2006,8 +2020,9 @@ struct PAndVW : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << mn << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
     for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
-      arch.template xmm_uwrite<OPSIZE>( gn, idx,  arch.template xmm_uread<OPSIZE>( gn, idx ) & arch.template xmm_uread<OPSIZE>( rm, idx ) );
+      arch.vmm_write( SSE(), gn, idx, arch.vmm_read( SSE(), gn, idx, u_type() ) & arch.vmm_read( SSE(), rm, idx, u_type() ) );
   }
 };
 
@@ -2051,8 +2066,9 @@ struct POrVW : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << mn << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
     for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
-      arch.template xmm_uwrite<OPSIZE>( gn, idx,  arch.template xmm_uread<OPSIZE>( gn, idx ) | arch.template xmm_uread<OPSIZE>( rm, idx ) );
+      arch.vmm_write( SSE(), gn, idx, arch.vmm_read( SSE(), gn, idx, u_type() ) | arch.vmm_read( SSE(), rm, idx, u_type() ) );
   }
 };
 
@@ -2096,8 +2112,9 @@ struct PXorVW : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << mn << ' ' << DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
     for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
-      arch.template xmm_uwrite<OPSIZE>( gn, idx,  arch.template xmm_uread<OPSIZE>( gn, idx ) ^ arch.template xmm_uread<OPSIZE>( rm, idx ) );
+      arch.vmm_write( SSE(), gn, idx,  arch.vmm_read( SSE(), gn, idx, u_type() ) ^ arch.vmm_read( SSE(), rm, idx, u_type() ) );
   }
 };
 
@@ -2138,8 +2155,8 @@ struct Ucomis : public Operation<ARCH>
     typedef typename TypeFor<ARCH,OPSZ>::f f_type;
     typedef typename ARCH::bit_t bit_t;
     
-    f_type a = arch.template xmm_fread<OPSZ>( gn, 0 );
-    f_type b = arch.template xmm_fread<OPSZ>( rm, 0 );
+    f_type a = arch.vmm_read( SSE(), gn, 0, f_type() );
+    f_type b = arch.vmm_read( SSE(), rm, 0, f_type() );
     bit_t notle = not (a <= b);
     bit_t notge = not (a >= b);
 
