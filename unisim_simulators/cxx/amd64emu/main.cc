@@ -859,7 +859,7 @@ public:
     {
       ELEM const* vec = reinterpret_cast<ELEM const*>( storage );
       
-      uint8_t* dst_end = &bytes[size / VectorTypeInfo<ELEM>::bytecount];
+      uint8_t* dst_end = &bytes[size];
       for (unsigned idx = 0, end = BYTECOUNT / VectorTypeInfo<ELEM>::bytecount; idx < end; ++idx)
         {
           uint8_t* dst = &bytes[idx*VectorTypeInfo<ELEM>::bytecount];
@@ -885,10 +885,10 @@ public:
           uint8_t const* src_end = &buf[valid_size];
           for (unsigned idx = 0, end = BYTECOUNT / elem_size; idx < end; ++idx)
             {
-              uint8_t const* src = &buf[idx*VectorTypeInfo<ELEM>::bytecount];
+              uint8_t const* src = &buf[idx*elem_size];
               new (&res[idx]) ELEM();
               if (src < src_end)
-                VectorTypeInfo<ELEM>::FromBytes( res[idx], &storage[idx*VectorTypeInfo<ELEM>::bytecount] );
+                VectorTypeInfo<ELEM>::FromBytes( res[idx], src );
             }
           transfer = current;
         }
