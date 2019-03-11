@@ -569,40 +569,44 @@ template <class ARCH> struct DC<ARCH,MOVDQ> { Operation<ARCH>* get( InputCode<AR
 // op movupd_wdq_vdq( 0x66[8]:> <:0x0f[8]:> <:0x11[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // movupd_wdq_vdq.disasm = { _sink << "movupd " << DisasmVdq( gn ) << ',' << DisasmWdq( rmop ); };
 
-template <unsigned OPSIZE, bool ALIGNED>
+template <class VR, unsigned OPSIZE, bool ALIGNED>
 struct MovfpMnemo
 {
-  char const* mnemonic() const
+  struct S
   {
-    if (ALIGNED) switch(OPSIZE) { case 32: return "movaps"; case 64: return "movapd"; }
-    else         switch(OPSIZE) { case 32: return "movups"; case 64: return "movupd"; }
-    return "mov<bad>";
-  }
+    friend std::ostream& operator << ( std::ostream& sink, S const& )
+    {
+      sink << (VR::vex() ? "v" : "") << "mov" << (ALIGNED ? 'a' : 'u')
+           << 'p' << (OPSIZE == 32 ? "s" : OPSIZE == 64 ? "d" : "<bad>");
+      return sink;
+    }
+  };
+  S mnemonic() const { return S(); }
 };
 
-template <class ARCH, unsigned OPSIZE, bool ALIGNED>
-struct MovfpVW : public Operation<ARCH>, MovfpMnemo<OPSIZE,ALIGNED>
+template <class ARCH, class VR, unsigned OPSIZE, bool ALIGNED>
+struct MovfpVW : public Operation<ARCH>, MovfpMnemo<VR,OPSIZE,ALIGNED>
 {
   MovfpVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << this->mnemonic() << ' '<< DisasmWdq( rm ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
-    for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
-      arch.vmm_write( SSE(), gn, idx,  arch.vmm_read( SSE(), rm, idx, u_type() ) );
+    for (unsigned idx = 0, end = VR::size()/OPSIZE; idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx,  arch.vmm_read( SSE(), rm, idx, u_type() ) );
   }
 };
 
-template <class ARCH, unsigned OPSIZE, bool ALIGNED>
-struct MovfpWV : public Operation<ARCH>, MovfpMnemo<OPSIZE,ALIGNED>
+template <class ARCH, class VR, unsigned OPSIZE, bool ALIGNED>
+struct MovfpWV : public Operation<ARCH>, MovfpMnemo<VR,OPSIZE,ALIGNED>
 {
   MovfpWV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << this->mnemonic() << DisasmVdq( gn ) << ',' << DisasmWdq( rm ); }
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
-    for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
-      arch.vmm_write( SSE(), rm, idx,  arch.vmm_read( SSE(), gn, idx, u_type() ) );
+    for (unsigned idx = 0, end = VR::size()/OPSIZE; idx < end; ++idx)
+      arch.vmm_write( VR(), rm, idx,  arch.vmm_read( VR(), gn, idx, u_type() ) );
   }
 };
 
@@ -613,18 +617,18 @@ template <class ARCH> struct DC<ARCH,MOVFP> { Operation<ARCH>* get( InputCode<AR
   
   if (auto _ = match( ic, sse__() & opcode( "\x0f\x28" ) & RM() ))
     
-    return new MovfpVW<ARCH,32,true>( _.opbase(), _.rmop(), _.greg() );
+    return new MovfpVW<ARCH,SSE,32,true>( _.opbase(), _.rmop(), _.greg() );
   
   if (auto _ = match( ic, sse__() & opcode( "\x0f\x29" ) & RM() ))
     
-    return new MovfpWV<ARCH,32,true>( _.opbase(), _.rmop(), _.greg() );
+    return new MovfpWV<ARCH,SSE,32,true>( _.opbase(), _.rmop(), _.greg() );
 
   if (auto _ = match( ic, vex( "\x66\x0f\x28" ) & RM() ))
     {
-      if (not ic.vex()) return new MovfpVW<ARCH,64,true>( _.opbase(), _.rmop(), _.greg() );
+      if (not ic.vex()) return new MovfpVW<ARCH,SSE,64,true>( _.opbase(), _.rmop(), _.greg() );
       if (_.vreg()) return 0;
-      std::cerr << "Yes!!!!!\n";
-      throw false;
+      if (ic.vlen() == 128) { std::cerr << "XMM!YES!\n"; return new MovfpVW<ARCH,XMM,64,true>( _.opbase(), _.rmop(), _.greg() ); }
+      if (ic.vlen() == 256) { std::cerr << "YMM!YES!\n"; return new MovfpVW<ARCH,YMM,64,true>( _.opbase(), _.rmop(), _.greg() ); }
       return 0;
     }
   
@@ -634,23 +638,23 @@ template <class ARCH> struct DC<ARCH,MOVFP> { Operation<ARCH>* get( InputCode<AR
   
   if (auto _ = match( ic, sse66() & opcode( "\x0f\x29" ) & RM() ))
     
-    return new MovfpWV<ARCH,64,true>( _.opbase(), _.rmop(), _.greg() );
+    return new MovfpWV<ARCH,SSE,64,true>( _.opbase(), _.rmop(), _.greg() );
   
   if (auto _ = match( ic, sse__() & opcode( "\x0f\x10" ) & RM() ))
     
-    return new MovfpVW<ARCH,32,false>( _.opbase(), _.rmop(), _.greg() );
+    return new MovfpVW<ARCH,SSE,32,false>( _.opbase(), _.rmop(), _.greg() );
   
   if (auto _ = match( ic, sse__() & opcode( "\x0f\x11" ) & RM() ))
     
-    return new MovfpWV<ARCH,32,false>( _.opbase(), _.rmop(), _.greg() );
+    return new MovfpWV<ARCH,SSE,32,false>( _.opbase(), _.rmop(), _.greg() );
   
   if (auto _ = match( ic, sse66() & opcode( "\x0f\x10" ) & RM() ))
     
-    return new MovfpVW<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
+    return new MovfpVW<ARCH,SSE,64,false>( _.opbase(), _.rmop(), _.greg() );
   
   if (auto _ = match( ic, sse66() & opcode( "\x0f\x11" ) & RM() ))
     
-    return new MovfpWV<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
+    return new MovfpWV<ARCH,SSE,64,false>( _.opbase(), _.rmop(), _.greg() );
 
   return 0;
 }};
