@@ -2207,7 +2207,7 @@ template <class ARCH> struct DC<ARCH,POPCNT> { Operation<ARCH>* get( InputCode<A
 {
   if (ic.f0()) return 0;
   
-  if (auto _ = match( ic, sseF3() & opcode( "\x0f\xb8" ) & RM() ))
+  if (auto _ = match( ic, simdF3() & opcode( "\x0f\xb8" ) & RM() ))
   
     {
       if      (ic.opsize() == 16) return new Popcnt<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
@@ -2482,14 +2482,14 @@ template <class ARCH> struct DC<ARCH,ADF> { Operation<ARCH>* get( InputCode<ARCH
   if (ic.f0()) return 0;
   
   /* ADCX -- Unsigned Integer Addition of Two Operands with Carry Flag */
-  if (auto _ = match( ic, sse66() & opcode( "\x0f\x38\xf6" ) & RM() ))
+  if (auto _ = match( ic, simd66() & opcode( "\x0f\x38\xf6" ) & RM() ))
   
     {
       if (ic.opsize() == 64) return new Adcx<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
       else                   return new Adcx<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
     }
   
-  if (auto _ = match( ic, sseF3() & opcode( "\x0f\x38\xf6" ) & RM() ))
+  if (auto _ = match( ic, simdF3() & opcode( "\x0f\x38\xf6" ) & RM() ))
   
     {
       if (ic.opsize() == 64) return new Adox<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );

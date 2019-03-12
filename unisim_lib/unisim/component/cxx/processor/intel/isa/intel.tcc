@@ -123,10 +123,10 @@ namespace intel {
     uint8_t const* get( CodeBase const& cb, uint8_t const* bytes ) { return (cb.opsz_66 == _66) and (cb.rep == REP) ? bytes : 0; }
   };
 
-  typedef SSE_PFX<0,2> sseF2;
-  typedef SSE_PFX<0,3> sseF3;
-  typedef SSE_PFX<1,0> sse66;
-  typedef SSE_PFX<0,0> sse__;
+  typedef SSE_PFX<0,2> simdF2;
+  typedef SSE_PFX<0,3> simdF3;
+  typedef SSE_PFX<1,0> simd66;
+  typedef SSE_PFX<0,0> simd__;
 
   template <unsigned SIZE>
   struct AddrSize
@@ -297,10 +297,11 @@ namespace intel {
     {
       // SSE mandatory prefix
       unsigned ridx = 1, bidx = 0;
-      if      (ref[0] == 0x66) { if (not cb.opsz_66 or cb.rep) return 0; }
-      else if (ref[0] == 0xf2) { if (cb.opsz_66 or cb.rep != 2) return 0; }
-      else if (ref[0] == 0xf3) { if (cb.opsz_66 or cb.rep != 3) return 0; }
-      else   { ridx = 0; }
+      if (char(ref[0]) == '*') { /* prefix wildcard, x86 abuse ('*' == 0x2a) */ }
+      else if (ref[0] == 0x66) { if (not cb.opsz_66 or cb.rep)      return 0; }
+      else if (ref[0] == 0xf2) { if (    cb.opsz_66 or cb.rep != 2) return 0; }
+      else if (ref[0] == 0xf3) { if (    cb.opsz_66 or cb.rep != 3) return 0; }
+      else   { ridx = 0;         if (    cb.opsz_66 or cb.rep)      return 0; }
       
       if      (bytes[0] == 0xc5)
         {

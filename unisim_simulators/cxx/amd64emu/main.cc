@@ -207,14 +207,16 @@ struct Arch
     for (int idx = 0; idx < 16; ++idx)
       {
         std::ostringstream regname;
-        regname << unisim::component::cxx::processor::intel::DisasmVdq(idx);
+        using unisim::component::cxx::processor::intel::DisasmV;
+        typedef unisim::component::cxx::processor::intel::XMM XMM;
+        regname << DisasmV( XMM(), idx );
         regmap[regname.str()] = new XmmRegister(regname.str(), *this, idx);
       }
     
     for (int idx = 0; idx < 16; ++idx)
       {
         std::ostringstream regname;
-        regname << unisim::component::cxx::processor::intel::DisasmGq(idx);
+        regname << unisim::component::cxx::processor::intel::DisasmG(GOq(), idx);
         regmap[regname.str()] = new unisim::util::debug::SimpleRegister<uint64_t>(regname.str(), &u64regs[idx]);
       }
     
@@ -1032,7 +1034,7 @@ public:
         {
           if (not ((gdirtmask>>reg) & 1)) continue;
           uint64_t value = cpu.u64regs[reg];
-          std::ostringstream rn; rn << unisim::component::cxx::processor::intel::DisasmGq(reg);
+          std::ostringstream rn; rn << unisim::component::cxx::processor::intel::DisasmG(GOq(),reg);
           sink << "insn_assert " << std::dec << getnew_aid() << " $" << &(rn.str().c_str()[1]) << " 0x" << std::hex << value << '\n';
         }
       gdirtmask = 0;
