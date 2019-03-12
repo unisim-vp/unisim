@@ -566,23 +566,23 @@ struct Arch
 
 
   template <class GOP>
-  typename TypeFor<Arch,GOP::OPSIZE>::u
+  typename TypeFor<Arch,GOP::SIZE>::u
   rmread( GOP const& g, RMOp const& rmop )
   {
     if (not rmop.is_memory_operand())
       return regread( g, rmop.ereg() );
 
-    return memread<GOP::OPSIZE>( rmop->segment, rmop->effective_address( *this ) );
+    return memread<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ) );
   }
 
   template <class GOP>
   void
-  rmwrite( GOP const&, RMOp const& rmop, typename TypeFor<Arch,GOP::OPSIZE>::u value )
+  rmwrite( GOP const&, RMOp const& rmop, typename TypeFor<Arch,GOP::SIZE>::u value )
   {
     if (not rmop.is_memory_operand())
       return regwrite( GOP(), rmop.ereg(), value );
 
-    return memwrite<GOP::OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
+    return memwrite<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ), value );
   }
 
   template <unsigned OPSIZE>
@@ -680,9 +680,9 @@ struct Arch
   uint64_t u64regs[16]; ///< extended reg
 
   template <class GOP>
-  typename TypeFor<Arch,GOP::OPSIZE>::u regread( GOP const&, unsigned idx )
+  typename TypeFor<Arch,GOP::SIZE>::u regread( GOP const&, unsigned idx )
   {
-    return typename TypeFor<Arch,GOP::OPSIZE>::u( u64regs[idx] );
+    return typename TypeFor<Arch,GOP::SIZE>::u( u64regs[idx] );
   }
 
   u8_t regread( GObLH const&, unsigned idx )
@@ -692,7 +692,7 @@ struct Arch
   }
 
   template <class GOP>
-  void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::OPSIZE>::u value )
+  void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::SIZE>::u value )
   {
     u64regs[idx] = u64_t( value );
     gdbchecker.gmark( idx );

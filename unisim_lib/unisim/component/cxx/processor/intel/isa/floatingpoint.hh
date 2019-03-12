@@ -98,8 +98,8 @@ struct Fiadd : public Operation<ARCH>
 {
   typedef typename ARCH::f64_t f64_t;
   Fiadd( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
-  void disasm( std::ostream& sink ) const { sink << "fiadd" << ((OP::OPSIZE==32) ? "l " : " ") << DisasmM( rmop ); }
-  typedef typename TypeFor<ARCH,OP::OPSIZE>::s s_type;
+  void disasm( std::ostream& sink ) const { sink << "fiadd" << ((OP::SIZE==32) ? "l " : " ") << DisasmM( rmop ); }
+  typedef typename TypeFor<ARCH,OP::SIZE>::s s_type;
   void execute( ARCH& arch ) const { arch.fwrite( 0, arch.fread( 0 ) + f64_t( s_type( arch.rmread( OP(), rmop ) ) ) ); }
 };
 
@@ -510,7 +510,7 @@ struct Fidiv : public Operation<ARCH>
   typedef typename ARCH::f64_t f64_t;
   Fidiv( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fidiv " << DisasmM( rmop ); }
-  typedef typename TypeFor<ARCH,OP::OPSIZE>::s s_type;
+  typedef typename TypeFor<ARCH,OP::SIZE>::s s_type;
   void execute( ARCH& arch ) const { arch.fwrite( 0, arch.fread( 0 ) / f64_t( s_type( arch.rmread( OP(), rmop ) ) ) ); }
 };
 
@@ -572,8 +572,8 @@ struct Fidivr : public Operation<ARCH>
 {
   typedef typename ARCH::f64_t f64_t;
   Fidivr( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
-  void disasm( std::ostream& sink ) const { sink << "fidivr" << ((OP::OPSIZE==32) ? "l " : " ") << DisasmM( rmop ); }
-  typedef typename TypeFor<ARCH,OP::OPSIZE>::s s_type;
+  void disasm( std::ostream& sink ) const { sink << "fidivr" << ((OP::SIZE==32) ? "l " : " ") << DisasmM( rmop ); }
+  typedef typename TypeFor<ARCH,OP::SIZE>::s s_type;
   void execute( ARCH& arch ) const { arch.fwrite( 0, f64_t( s_type( arch.rmread( OP(), rmop ) ) ) / arch.fread( 0 ) ); }
 };
 
@@ -676,8 +676,8 @@ struct Fild : public Operation<ARCH>
   typedef typename ARCH::f64_t f64_t;
   Fild( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   
-  void disasm( std::ostream& sink ) const { sink << "fild" << (&"ll "[2-SB<OP::OPSIZE/16>::begin]) << DisasmM( rmop ); }
-  void execute( ARCH& arch ) const { arch.fpush( f64_t( typename TypeFor<ARCH,OP::OPSIZE>::s( arch.rmread( OP(), rmop ) ) ) ); }
+  void disasm( std::ostream& sink ) const { sink << "fild" << (&"ll "[2-SB<OP::SIZE/16>::begin]) << DisasmM( rmop ); }
+  void execute( ARCH& arch ) const { arch.fpush( f64_t( typename TypeFor<ARCH,OP::SIZE>::s( arch.rmread( OP(), rmop ) ) ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,FILD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -981,7 +981,7 @@ struct Fimul : public Operation<ARCH>
   typedef typename ARCH::f64_t f64_t;
   Fimul( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fimul " << DisasmM( rmop ); }
-  void execute( ARCH& arch ) const { arch.fwrite( 0, arch.fread( 0 ) * f64_t( typename TypeFor<ARCH,OP::OPSIZE>::s( arch.rmread( OP(), rmop ) ) ) ); }
+  void execute( ARCH& arch ) const { arch.fwrite( 0, arch.fread( 0 ) * f64_t( typename TypeFor<ARCH,OP::SIZE>::s( arch.rmread( OP(), rmop ) ) ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,FMUL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -1475,8 +1475,8 @@ struct Fisub : public Operation<ARCH>
 {
   typedef typename ARCH::f64_t f64_t;
   Fisub( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
-  void disasm( std::ostream& sink ) const { sink << "fisub" << ((OP::OPSIZE==32) ? "l " : " ") << DisasmM( rmop ); }
-  typedef typename TypeFor<ARCH,OP::OPSIZE>::s s_type;
+  void disasm( std::ostream& sink ) const { sink << "fisub" << ((OP::SIZE==32) ? "l " : " ") << DisasmM( rmop ); }
+  typedef typename TypeFor<ARCH,OP::SIZE>::s s_type;
   void execute( ARCH& arch ) const { arch.fwrite( 0, arch.fread( 0 ) - f64_t( s_type( arch.rmread( OP(), rmop ) ) ) ); }
 };
 

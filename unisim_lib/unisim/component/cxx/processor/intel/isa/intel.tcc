@@ -285,6 +285,9 @@ namespace intel {
     template <typename RHS>
     AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
 
+    typedef AndSeq<this_type, MRMOpCode> WithMRMOpCode;
+    WithMRMOpCode operator / ( int code ) { return WithMRMOpCode( *this, MRMOpCode( code ) ); }
+    
     Vex( uint8_t const* _ref ) : len(0) { for (unsigned idx = 0; idx < LENGTH; ++idx ) ref[idx] = _ref[idx]; }
     
     template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return bytes + len; }

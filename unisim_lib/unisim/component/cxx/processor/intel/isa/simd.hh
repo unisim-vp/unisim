@@ -136,7 +136,7 @@ struct CvtsI2F : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,DOPSZ>::f fdst_type;
-    typename TypeFor<ARCH,SOP::OPSIZE>::u src = arch.rmread( SOP(), rm );
+    typename TypeFor<ARCH,SOP::SIZE>::u src = arch.rmread( SOP(), rm );
     fdst_type dst = fdst_type(src);
     arch.vmm_write( SSE(), gn, 0, dst );
   }
@@ -172,7 +172,7 @@ struct CvttF2I : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << mnemonic() << ' ' << DisasmWdq( rm ) << ',' << DisasmG( DOP(), gn ); }
   void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<ARCH,DOP::OPSIZE>::u udst_type;
+    typedef typename TypeFor<ARCH,DOP::SIZE>::u udst_type;
     typedef typename TypeFor<ARCH,SOPSZ>::f fsrc_type;
     fsrc_type src = arch.vmm_read( SSE(), rm, 0, fsrc_type() );
     udst_type dst = udst_type(src);
@@ -234,15 +234,15 @@ template <class ARCH> struct DC<ARCH,CVT> { Operation<ARCH>* get( InputCode<ARCH
   return 0;
 }};
 
-template <class ARCH, bool STORE>
+template <class ARCH>
 struct LSMxcsr : public Operation<ARCH>
 {
-  LSMxcsr( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm ) : Operation<ARCH>( opbase ), rm( _rm ) {} RMOp<ARCH> rm;
-  void disasm( std::ostream& sink ) const { sink << (STORE ? "stmxcsr " : "ldmxcsr ") << DisasmE( GOd(), rm ); }
+  LSMxcsr( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, bool _st, bool _vex ) : Operation<ARCH>( opbase ), rm( _rm ), st(_st), vex(_vex) {} RMOp<ARCH> rm; bool st, vex;
+  void disasm( std::ostream& sink ) const { sink << (vex ? "v" : "") << (st ? "st" : "ld") << "mxcsr " << DisasmE( GOd(), rm ); }
   void execute( ARCH& arch ) const
   {
-    if (STORE) arch.rmwrite( GOd(), rm, arch.mxcsr );
-    else       arch.mxcsr = arch.rmread( GOd(), rm );
+    if (st) arch.rmwrite( GOd(), rm, arch.mxcsr );
+    else    arch.mxcsr = arch.rmread( GOd(), rm );
   }
 };
 
@@ -250,14 +250,15 @@ template <class ARCH> struct DC<ARCH,MXCSR> { Operation<ARCH>* get( InputCode<AR
 {
   if (ic.f0()) return 0;
   
-  if (auto _ = match( ic, sse__() & opcode( "\x0f\xae" ) /2 & RM_mem() ))
-
-    return new LSMxcsr<ARCH,false>( _.opbase(), _.rmop() );
-  
-  if (auto _ = match( ic, sse__() & opcode( "\x0f\xae" ) /3 & RM_mem() ))
-
-    return new LSMxcsr<ARCH,true>( _.opbase(), _.rmop() );
-  
+  if (auto _ = match( ic, vex( "\x0f\xae" ) & RM_mem() ))
+    {
+      bool vex = ic.vex();
+      if (vex and (ic.vlen() != 128 or _.vreg())) return 0;
+      unsigned rmopc = _.greg();
+      if ((rmopc|1) != 3) return 0;
+      return new LSMxcsr<ARCH>( _.opbase(), _.rmop(), rmopc&1, vex );
+    }
+      
   return 0;
 }};
 
@@ -440,34 +441,37 @@ template <class ARCH, class GOP>
 struct MovEP : public Operation<ARCH>
 {
   MovEP( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::OPSIZE==64?'q':'d') << ' ' << DisasmPq( gn ) << ',' << DisasmE( GOP(), rmop ); }
-};
-
-template <class ARCH, class GOP>
-struct MovEV : public Operation<ARCH>
-{
-  MovEV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::OPSIZE==64?'q':'d') << ' ' << DisasmVdq( gn ) << ',' << DisasmE( GOP(), rmop ); }
-  void execute( ARCH& arch ) const { arch.rmwrite( GOP(), rmop, arch.vmm_read( SSE(), gn, 0, typename TypeFor<ARCH,GOP::OPSIZE>::u() ) ); }
+  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::SIZE==64?'q':'d') << ' ' << DisasmPq( gn ) << ',' << DisasmE( GOP(), rmop ); }
 };
 
 template <class ARCH, class GOP>
 struct MovPE : public Operation<ARCH>
 {
   MovPE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::OPSIZE==64?'q':'d') << ' ' << DisasmE( GOP(), rmop ) << ',' << DisasmPq( gn ); }
+  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::SIZE==64?'q':'d') << ' ' << DisasmE( GOP(), rmop ) << ',' << DisasmPq( gn ); }
 };
 
-template <class ARCH, class GOP>
+template <class ARCH, class VR, class GOP>
+struct MovEV : public Operation<ARCH>
+{
+  MovEV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << (VR::vex()?"v":"") << "mov" << SizeID<GOP::SIZE>::iid() << ' ' << DisasmVdq( gn ) << ',' << DisasmE( GOP(), rmop ); }
+  void execute( ARCH& arch ) const
+  {
+    arch.rmwrite( GOP(), rmop, arch.vmm_read( VR(), gn, 0, typename TypeFor<ARCH,GOP::SIZE>::u() ) );
+  }
+};
+
+template <class ARCH, class VR, class GOP>
 struct MovVE : public Operation<ARCH>
 {
   MovVE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::OPSIZE==64?'q':'d') << ' ' << DisasmE( GOP(), rmop ) << ',' << DisasmVdq( gn ); }
+  void disasm( std::ostream& sink ) const { sink << (VR::vex()?"v":"") << "mov" << SizeID<GOP::SIZE>::iid() << ' ' << DisasmE( GOP(), rmop ) << ',' << DisasmVdq( gn ); }
   void execute( ARCH& arch ) const
   {
-    arch.vmm_write( SSE(), gn, 0, typename ARCH::u64_t(0) );
-    arch.vmm_write( SSE(), gn, 1, typename ARCH::u64_t(0) );
-    arch.vmm_write( SSE(), gn, 0, arch.rmread( GOP(), rmop ) );
+    for (unsigned idx = 0, end = VR::size() / GOP::SIZE; idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx, typename TypeFor<ARCH,GOP::SIZE>::u(0) );
+    arch.vmm_write( VR(), gn, 0, arch.rmread( GOP(), rmop ) );
   }
 };
 
@@ -475,29 +479,43 @@ template <class ARCH> struct DC<ARCH,MOVD> { Operation<ARCH>* get( InputCode<ARC
 {
   if (ic.f0()) return 0;
 
+  bool vex_p = ic.vex();
+  if (vex_p and (ic.vlen() != 128 or ic.vreg())) return 0;
+  enum { SD = 0, SQ, VD, VQ } kind = ic.opsize() == 64 ? (vex_p ? VQ : VD) : (vex_p ? SQ : SD);
+  
   if (auto _ = match( ic, sse__() & opcode( "\x0f\x6e" ) & RM() ))
-    {
-      if (ic.opsize() == 64) return new MovPE<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
-      else                   return new MovPE<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
-    }
+    switch (kind)
+      {
+      case SD: return new MovPE<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
+      case SQ: return new MovPE<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
+      default: return 0;
+      }
 
   if (auto _ = match( ic, sse__() & opcode( "\x0f\x7e" ) & RM() ))
-    {
-      if (ic.opsize() == 64) return new MovEP<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
-      else                   return new MovEP<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
-    }
+    switch (kind)
+      {
+      case SD: return new MovEP<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
+      case SQ: return new MovEP<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
+      default: return 0;
+      }
 
-  if (auto _ = match( ic, sse66() & opcode( "\x0f\x6e" ) & RM() ))
-    {
-      if (ic.opsize() == 64) return new MovVE<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
-      else                   return new MovVE<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
-    }
+  if (auto _ = match( ic, vex( "\x66\x0f\x6e" ) & RM() ))
+    switch (kind)
+      {
+      case SD: return new MovVE<ARCH,SSE,GOd>( _.opbase(), _.rmop(), _.greg() );
+      case SQ: return new MovVE<ARCH,SSE,GOq>( _.opbase(), _.rmop(), _.greg() );
+      case VD: return new MovVE<ARCH,XMM,GOd>( _.opbase(), _.rmop(), _.greg() );
+      case VQ: return new MovVE<ARCH,XMM,GOq>( _.opbase(), _.rmop(), _.greg() );
+      }
 
-  if (auto _ = match( ic, sse66() & opcode( "\x0f\x7e" ) & RM() ))
-    {
-      if (ic.opsize() == 64) return new MovEV<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
-      else                   return new MovEV<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
-    }
+  if (auto _ = match( ic, vex( "\x66\x0f\x7e" ) & RM() ))
+    switch (kind)
+      {
+      case SD: return new MovEV<ARCH,SSE,GOd>( _.opbase(), _.rmop(), _.greg() );
+      case SQ: return new MovEV<ARCH,SSE,GOq>( _.opbase(), _.rmop(), _.greg() );
+      case VD: return new MovEV<ARCH,XMM,GOd>( _.opbase(), _.rmop(), _.greg() );
+      case VQ: return new MovEV<ARCH,XMM,GOq>( _.opbase(), _.rmop(), _.greg() );
+      }
 
   return 0;
 }};
@@ -615,46 +633,77 @@ template <class ARCH> struct DC<ARCH,MOVFP> { Operation<ARCH>* get( InputCode<AR
 {
   if (ic.f0()) return 0;
   
-  if (auto _ = match( ic, sse__() & opcode( "\x0f\x28" ) & RM() ))
-    
-    return new MovfpVW<ARCH,SSE,32,true>( _.opbase(), _.rmop(), _.greg() );
+  if (auto _ = match( ic, vex( "\x0f\x28" ) & RM() ))
+    {
+      if (not ic.vex()) return new MovfpVW<ARCH,SSE,32,true>( _.opbase(), _.rmop(), _.greg() );
+      if (_.vreg()) return 0;
+      if (ic.vlen() == 128) return new MovfpVW<ARCH,XMM,32,true>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.vlen() == 256) return new MovfpVW<ARCH,YMM,32,true>( _.opbase(), _.rmop(), _.greg() );
+      return 0;
+    }
   
-  if (auto _ = match( ic, sse__() & opcode( "\x0f\x29" ) & RM() ))
-    
-    return new MovfpWV<ARCH,SSE,32,true>( _.opbase(), _.rmop(), _.greg() );
+  if (auto _ = match( ic, vex( "\x0f\x29" ) & RM() ))
+    {
+      if (not ic.vex()) return new MovfpWV<ARCH,SSE,32,true>( _.opbase(), _.rmop(), _.greg() );
+      if (_.vreg()) return 0;
+      if (ic.vlen() == 128) return new MovfpWV<ARCH,XMM,32,true>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.vlen() == 256) return new MovfpWV<ARCH,YMM,32,true>( _.opbase(), _.rmop(), _.greg() );
+      return 0;
+    }
 
   if (auto _ = match( ic, vex( "\x66\x0f\x28" ) & RM() ))
     {
       if (not ic.vex()) return new MovfpVW<ARCH,SSE,64,true>( _.opbase(), _.rmop(), _.greg() );
       if (_.vreg()) return 0;
-      if (ic.vlen() == 128) { std::cerr << "XMM!YES!\n"; return new MovfpVW<ARCH,XMM,64,true>( _.opbase(), _.rmop(), _.greg() ); }
-      if (ic.vlen() == 256) { std::cerr << "YMM!YES!\n"; return new MovfpVW<ARCH,YMM,64,true>( _.opbase(), _.rmop(), _.greg() ); }
+      if (ic.vlen() == 128) return new MovfpVW<ARCH,XMM,64,true>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.vlen() == 256) return new MovfpVW<ARCH,YMM,64,true>( _.opbase(), _.rmop(), _.greg() );
       return 0;
     }
   
-  // if (auto _ = match( ic, sse66() & opcode( "\x0f\x28" ) & RM() ))
-    
-  //   return new MovfpVW<ARCH,64,true>( _.opbase(), _.rmop(), _.greg() );
+  if (auto _ = match( ic, vex( "\x66\x0f\x29" ) & RM() ))
+    {
+      if (not ic.vex()) return new MovfpWV<ARCH,SSE,64,true>( _.opbase(), _.rmop(), _.greg() );
+      if (_.vreg()) return 0;
+      if (ic.vlen() == 128) return new MovfpWV<ARCH,XMM,64,true>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.vlen() == 256) return new MovfpWV<ARCH,YMM,64,true>( _.opbase(), _.rmop(), _.greg() );
+      return 0;
+    }
   
-  if (auto _ = match( ic, sse66() & opcode( "\x0f\x29" ) & RM() ))
-    
-    return new MovfpWV<ARCH,SSE,64,true>( _.opbase(), _.rmop(), _.greg() );
+  if (auto _ = match( ic, vex( "\x0f\x10" ) & RM() ))
+    {
+      if (not ic.vex()) return new MovfpVW<ARCH,SSE,32,false>( _.opbase(), _.rmop(), _.greg() );
+      if (_.vreg()) return 0;
+      if (ic.vlen() == 128) return new MovfpVW<ARCH,XMM,32,false>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.vlen() == 256) return new MovfpVW<ARCH,YMM,32,false>( _.opbase(), _.rmop(), _.greg() );
+      return 0;
+    }
   
-  if (auto _ = match( ic, sse__() & opcode( "\x0f\x10" ) & RM() ))
-    
-    return new MovfpVW<ARCH,SSE,32,false>( _.opbase(), _.rmop(), _.greg() );
-  
-  if (auto _ = match( ic, sse__() & opcode( "\x0f\x11" ) & RM() ))
-    
-    return new MovfpWV<ARCH,SSE,32,false>( _.opbase(), _.rmop(), _.greg() );
-  
-  if (auto _ = match( ic, sse66() & opcode( "\x0f\x10" ) & RM() ))
-    
-    return new MovfpVW<ARCH,SSE,64,false>( _.opbase(), _.rmop(), _.greg() );
-  
-  if (auto _ = match( ic, sse66() & opcode( "\x0f\x11" ) & RM() ))
-    
-    return new MovfpWV<ARCH,SSE,64,false>( _.opbase(), _.rmop(), _.greg() );
+  if (auto _ = match( ic, vex( "\x0f\x11" ) & RM() ))
+    {
+      if (not ic.vex()) return new MovfpWV<ARCH,SSE,32,false>( _.opbase(), _.rmop(), _.greg() );
+      if (_.vreg()) return 0;
+      if (ic.vlen() == 128) return new MovfpWV<ARCH,XMM,32,false>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.vlen() == 256) return new MovfpWV<ARCH,YMM,32,false>( _.opbase(), _.rmop(), _.greg() );
+      return 0;
+    }
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x10" ) & RM() ))
+    {
+      if (not ic.vex()) return new MovfpVW<ARCH,SSE,64,false>( _.opbase(), _.rmop(), _.greg() );
+      if (_.vreg()) return 0;
+      if (ic.vlen() == 128) return new MovfpVW<ARCH,XMM,64,false>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.vlen() == 256) return new MovfpVW<ARCH,YMM,64,false>( _.opbase(), _.rmop(), _.greg() );
+      return 0;
+    }
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x11" ) & RM() ))
+    {
+      if (not ic.vex()) return new MovfpWV<ARCH,SSE,64,false>( _.opbase(), _.rmop(), _.greg() );
+      if (_.vreg()) return 0;
+      if (ic.vlen() == 128) return new MovfpWV<ARCH,XMM,64,false>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.vlen() == 256) return new MovfpWV<ARCH,YMM,64,false>( _.opbase(), _.rmop(), _.greg() );
+      return 0;
+    }
 
   return 0;
 }};

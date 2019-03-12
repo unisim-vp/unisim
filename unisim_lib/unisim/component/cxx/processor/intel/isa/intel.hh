@@ -179,6 +179,7 @@ namespace intel {
     bool mode64() const { return mode.cs_l != 0; }
     bool vex() const { return (*opcode() | 1) == 0xc5; }
     unsigned vlen() const { uint8_t const* v = opcode(); return (v[2 - (v[0] & 1)] & 4) ? 256 : 128; }
+    unsigned vreg() const { uint8_t const* v = opcode(); return ~(v[2 - (v[0] & 1)] >> 3) & 15; }
   };
   
   template <class ARCH>

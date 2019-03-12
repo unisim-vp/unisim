@@ -69,11 +69,11 @@ struct StringEngine
 template <class ARCH, class OP>
 struct _StringEngine : public StringEngine<ARCH>
 {
-  typedef typename TypeFor<ARCH,OP::OPSIZE>::u uaddr_type;
-  typedef typename TypeFor<ARCH,OP::OPSIZE>::s saddr_type;
+  typedef typename TypeFor<ARCH,OP::SIZE>::u uaddr_type;
+  typedef typename TypeFor<ARCH,OP::SIZE>::s saddr_type;
   typedef typename StringEngine<ARCH>::StrOp StrOp;
   
-  ModM<ARCH,OP::OPSIZE> dst, src[6];
+  ModM<ARCH,OP::SIZE> dst, src[6];
   _StringEngine() : dst( ES, 7 ), src{{0, 6}, {1, 6}, {2, 6}, {3, 6}, {4, 6}, {5, 6}} {}
   
   bool tstcounter( ARCH& arch ) const { return arch.Cond( arch.regread( OP(), 1 ) != uaddr_type( 0 )); }
@@ -112,7 +112,7 @@ struct Movs : public Operation<ARCH>
   Movs( OpBase<ARCH> const& opbase, uint8_t _segment, StringEngine<ARCH>* _str ) : Operation<ARCH>( opbase ), segment( _segment ), str( _str ) {} uint8_t segment; StringEngine<ARCH>* str;
   
   void disasm( std::ostream& _sink ) const {
-    _sink << (REP?"rep ":"") << DisasmMnemonic<OP::OPSIZE>( "movs" ) << DisasmS( segment ) << ":(" << DisasmGd( 6 ) << ")," << DisasmS( 0 ) << ":(" << DisasmGd( 7 ) << ")";
+    _sink << (REP?"rep ":"") << DisasmMnemonic<OP::SIZE>( "movs" ) << DisasmS( segment ) << ":(" << DisasmGd( 6 ) << ")," << DisasmS( 0 ) << ":(" << DisasmGd( 7 ) << ")";
   }
   
   void execute( ARCH& arch ) const
@@ -123,7 +123,7 @@ struct Movs : public Operation<ARCH>
     
     arch.rmwrite( OP(), str->getdst(), arch.rmread( OP(), str->getsrc( segment ) ) );
     
-    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::OPSIZE/8) : +int32_t(OP::OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::SIZE/8) : +int32_t(OP::SIZE/8);
     str->addsrc( arch, step );
     str->adddst( arch, step );
     
@@ -170,7 +170,7 @@ struct Stos : public Operation<ARCH>
     
     arch.rmwrite( OP(), str->getdst(), arch.regread( OP(), 0 ) );
 
-    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::OPSIZE/8) : +int32_t(OP::OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::SIZE/8) : +int32_t(OP::SIZE/8);
     str->adddst( arch, step );
     
     if (REP) {
@@ -222,7 +222,7 @@ struct Cmps : public Operation<ARCH>
     
     eval_sub( arch, arch.rmread( OP(), str->getsrc( segment ) ), arch.rmread( OP(), str->getdst() ) );
     
-    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::OPSIZE/8) : +int32_t(OP::OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::SIZE/8) : +int32_t(OP::SIZE/8);
     str->adddst( arch, step );
     str->addsrc( arch, step );
     
@@ -285,7 +285,7 @@ struct Scas : public Operation<ARCH>
     
     eval_sub( arch, arch.rmread( OP(), str->getdst() ), arch.regread( OP(), 0 ) );
 
-    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::OPSIZE/8) : +int32_t(OP::OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::SIZE/8) : +int32_t(OP::SIZE/8);
     str->adddst( arch, step );
     
     if (REP) {
@@ -346,7 +346,7 @@ struct Lods : public Operation<ARCH>
     
     arch.regwrite( OP(), 0, arch.rmread( OP(), str->getsrc( segment ) ) );
     
-    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::OPSIZE/8) : +int32_t(OP::OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OP::SIZE/8) : +int32_t(OP::SIZE/8);
     str->addsrc( arch, step );
     
     if (REP) {
