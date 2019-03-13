@@ -1255,10 +1255,12 @@ Arch::fetch()
 {
   static ICache<Decoder> icache;
   addr_t insn_addr = this->rip;
+  asm volatile ("operation_fetch:");
   uint8_t decbuf[15];
   lla_memcpy( decbuf, insn_addr, sizeof (decbuf) );
   Decoder::Mode mode( 1, 0, 1 );
 
+  asm volatile ("operation_decode:");
   latest_instruction = icache.Get( mode, insn_addr, &decbuf[0] );
   if (not latest_instruction) return 0;
   

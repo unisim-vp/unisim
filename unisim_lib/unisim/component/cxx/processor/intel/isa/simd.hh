@@ -606,12 +606,12 @@ template <class ARCH, class VR, unsigned OPSIZE, bool ALIGNED>
 struct MovfpVW : public Operation<ARCH>, MovfpMnemo<VR,OPSIZE,ALIGNED>
 {
   MovfpVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << this->mnemonic() << ' '<< DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); }
+  void disasm( std::ostream& sink ) const { sink << this->mnemonic() << ' '<< DisasmW( VR(), rm ) << ',' << DisasmV( VR(), gn ); }
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
     for (unsigned idx = 0, end = VR::size()/OPSIZE; idx < end; ++idx)
-      arch.vmm_write( VR(), gn, idx,  arch.vmm_read( SSE(), rm, idx, u_type() ) );
+      arch.vmm_write( VR(), gn, idx,  arch.vmm_read( VR(), rm, idx, u_type() ) );
   }
 };
 
@@ -619,7 +619,7 @@ template <class ARCH, class VR, unsigned OPSIZE, bool ALIGNED>
 struct MovfpWV : public Operation<ARCH>, MovfpMnemo<VR,OPSIZE,ALIGNED>
 {
   MovfpWV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << this->mnemonic() << DisasmV( SSE(), gn ) << ',' << DisasmW( SSE(), rm ); }
+  void disasm( std::ostream& sink ) const { sink << this->mnemonic() << DisasmV( VR(), gn ) << ',' << DisasmW( VR(), rm ); }
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
@@ -823,34 +823,110 @@ template <class ARCH> struct DC<ARCH,MOVFP> { Operation<ARCH>* get( InputCode<AR
 // op movsd_wdq_vdq( 0xf2[8]:> <:0x0f[8]:> <:0x11[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // movsd_wdq_vdq.disasm = { _sink << "movsd " << DisasmV( SSE(), gn ) << ',' << DisasmW( SSE(), rmop ); };
-// 
-template <class ARCH>
-struct Movsd : public Operation<ARCH>
+
+template <class VR, unsigned OPSIZE>
+struct LSMnemo
 {
-  Movsd( OpBase<ARCH> const& opbase, MOp<ARCH> const* _dst, MOp<ARCH> const* _src ) : Operation<ARCH>( opbase ), dst( _dst ), src( _src ) {} RMOp<ARCH> dst; RMOp<ARCH> src;
-  void disasm( std::ostream& sink ) const { sink << "movsd " << DisasmW( SSE(), src ) << ',' << DisasmW( SSE(), dst ); }
+  typedef LSMnemo<VR,OPSIZE> this_type;
+  friend std::ostream& operator << ( std::ostream& sink, this_type const& ) { sink << (VR::vex() ? "v" : "") << "movs" << SizeID<OPSIZE>::fid(); return sink; };
+  this_type const& mnemonic() const { return *this; }
+};
+
+template <class ARCH, class VR, unsigned OPSIZE>
+struct LSFPS : public Operation<ARCH>
+{
+  LSFPS( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {}
+  RMOp<ARCH> rm; unsigned gn;
+};
+
+template <class ARCH, class VR, unsigned OPSIZE>
+struct StoreFPS : public LSFPS<ARCH,VR,OPSIZE>, public LSMnemo<VR,OPSIZE>
+{
+  typedef LSFPS<ARCH,VR,OPSIZE> LSBASE; using LSBASE::LSFPS; using LSBASE::rm; using LSBASE::gn;
+  void disasm( std::ostream& sink ) const { sink << this->mnemonic() << ' ' << DisasmV( VR(), gn ) << ',' << DisasmW( VR(), rm ); }
   void execute( ARCH& arch ) const
   {
-    arch.vmm_write( SSE(), dst, 0,  arch.vmm_read( SSE(), src, 0, typename ARCH::u64_t() ) );
-    if (not dst.is_memory_operand())
-      arch.vmm_write( SSE(), dst, 1, typename ARCH::u64_t(0) );
+    arch.vmm_write( VR(), rm, 0, arch.vmm_read( VR(), gn, 0, typename TypeFor<ARCH,OPSIZE>::f() ) );
   }
 };
+
+template <class ARCH, class VR, unsigned OPSIZE>
+struct LoadFPS : public LSFPS<ARCH,VR,OPSIZE>, public LSMnemo<VR,OPSIZE>
+{
+  typedef LSFPS<ARCH,VR,OPSIZE> LSBASE; using LSBASE::LSFPS; using LSBASE::rm; using LSBASE::gn;
+  void disasm( std::ostream& sink ) const { sink << this->mnemonic() << ' ' << DisasmW( VR(), rm ) << ',' << DisasmV( VR(), gn ); }
+  void execute( ARCH& arch ) const
+  {
+    arch.vmm_write( VR(), gn, 0, arch.vmm_read( VR(), rm, 0, typename TypeFor<ARCH,OPSIZE>::f() ) );
+    for (unsigned idx = 1, end = VR::size()/OPSIZE; idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx, typename TypeFor<ARCH,OPSIZE>::f(0) );
+  }
+};
+
+template <class ARCH, unsigned OPSIZE>
+struct MergeFPS : public Operation<ARCH>, public LSMnemo<XMM,OPSIZE>
+{
+  MergeFPS(OpBase<ARCH> const& opbase, unsigned _dst, unsigned _src1, unsigned _src2)
+    : Operation<ARCH>(opbase), dst(_dst), src1(_src1), src2(_src2)
+  {}
+  void disasm( std::ostream& sink ) const { sink << this->mnemonic() << ' ' << DisasmV( XMM(), src1 ) << ',' << DisasmV( XMM(), src2 ) << ',' << DisasmV( XMM(), dst ); }
+  void execute( ARCH& arch ) const
+  {
+    arch.vmm_write( XMM(), dst, 0, arch.vmm_read( XMM(), src2, 0, typename TypeFor<ARCH,OPSIZE>::f() ) );
+    for (unsigned idx = 1, end = XMM::size()/OPSIZE; idx < end; ++idx)
+      arch.vmm_write( XMM(), dst, idx, arch.vmm_read( XMM(), src1, idx, typename TypeFor<ARCH,OPSIZE>::f() ) );
+  }
+  uint8_t dst, src1, src2;
+};
+
 
 template <class ARCH> struct DC<ARCH,VMOVSD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
-  
-  if (auto _ = match( ic, simdF2() & opcode( "\x0f\x10" ) & RM() ))
+
+  if (auto _ = match( ic, vex( "\xf3\x0f\x10" ) & RM() ))
     
-    return new Movsd<ARCH>( _.opbase(), make_rop<ARCH>( _.greg() ), _.rmop() );
+    return newMovs<32>( ic, false, _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( ic, simdF2() & opcode( "\x0f\x11" ) & RM() ))
+  if (auto _ = match( ic, vex( "\xf3\x0f\x11" ) & RM() ))
     
-    return new Movsd<ARCH>( _.opbase(), _.rmop(), make_rop<ARCH>( _.greg() ) );
+    return newMovs<32>( ic,  true, _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, vex( "\xf2\x0f\x10" ) & RM() ))
+    
+    return newMovs<64>( ic, false, _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, vex( "\xf2\x0f\x11" ) & RM() ))
+    
+    return newMovs<64>( ic,  true, _.opbase(), _.rmop(), _.greg() );
   
   return 0;
-}};
+}
+template <unsigned OPSIZE>
+Operation<ARCH>* newMovs( InputCode<ARCH> const& ic, bool store, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned gn )
+{
+  bool is_mem; { RMOp<ARCH> _rm(rm); is_mem = _rm.is_memory_operand(); _rm.release(); }
+
+  if (is_mem ? store : not ic.vex())
+    {
+      // Store
+      if (not ic.vex()) return new StoreFPS<ARCH,SSE,OPSIZE>( opbase, rm, gn );
+      else              return new StoreFPS<ARCH,XMM,OPSIZE>( opbase, rm, gn );
+    }
+
+  if (is_mem)
+    {
+      // Load
+      if (not ic.vex()) return new LoadFPS<ARCH,SSE,OPSIZE>( opbase, rm, gn );
+      else              return new LoadFPS<ARCH,XMM,OPSIZE>( opbase, rm, gn );
+    }
+
+  // Merger (AVX only)
+  unsigned dst = gn, src1 = ic.vreg(), src2 = unsigned(uintptr_t(rm));
+  if (store) std::swap(dst,src2);
+  return new MergeFPS<ARCH,OPSIZE>( opbase, dst, src1, src2 );
+}
+};
 
 // /* MOVSHDUP -- Move Packed Single-FP High and Duplicate */
 // op movshdup_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x16[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
@@ -1023,7 +1099,7 @@ Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
 
-  if (auto _ = match( ic, opcode( "\x0f\x5c" ) & RM() ))
+  if (auto _ = match( ic, vex( "*\x0f\x5c" ) & RM() ))
     {
       unsigned greg = _.greg();
       if (not ic.vex())     return newSubVVW<SSE>( ic, _.opbase(), greg, greg, _.rmop() );
@@ -1071,7 +1147,7 @@ Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
 
-  if (auto _ = match( ic, opcode( "\x0f\x58" ) & RM() ))
+  if (auto _ = match( ic, vex( "*\x0f\x58" ) & RM() ))
     {
       unsigned greg = _.greg();
       if (not ic.vex())     return newAddVVW<SSE>( ic, _.opbase(), greg, greg, _.rmop() );
@@ -2276,8 +2352,8 @@ template <class ARCH> struct DC<ARCH,PXOR> { Operation<ARCH>* get( InputCode<ARC
 template <class ARCH, unsigned OPSZ>
 struct Ucomis : public Operation<ARCH>
 {
-  Ucomis( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {} RMOp<ARCH> rm; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "ucomis" << SizeID<OPSZ>::fid() << ' ' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); }
+  Ucomis( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, bool _v ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {} RMOp<ARCH> rm; uint8_t gn; bool v;
+  void disasm( std::ostream& sink ) const { sink << (v?"v":"") << "ucomis" << SizeID<OPSZ>::fid() << ' ' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); }
   
   void execute( ARCH& arch ) const
   {
@@ -2304,13 +2380,12 @@ template <class ARCH> struct DC<ARCH,UCOMIS> { Operation<ARCH>* get( InputCode<A
 {
   if (ic.f0()) return 0;
 
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x2e" ) & RM() ))
-    
-    return new Ucomis<ARCH,64>( _.opbase(), _.rmop(), _.greg() );
-  
-  if (auto _ = match( ic, simd__() & opcode( "\x0f\x2e" ) & RM() ))
-    
-    return new Ucomis<ARCH,32>( _.opbase(), _.rmop(), _.greg() );
+  if (auto _ = match( ic, vex( "*\x0f\x2e" ) & RM() ))
+    {
+      if (ic.vex() and ic.vreg()) return 0;
+      if (match( ic, simd__() )) return new Ucomis<ARCH,32>( _.opbase(), _.rmop(), _.greg(), ic.vex() );
+      if (match( ic, simd66() )) return new Ucomis<ARCH,64>( _.opbase(), _.rmop(), _.greg(), ic.vex() );
+    }
 
   return 0;
 }};

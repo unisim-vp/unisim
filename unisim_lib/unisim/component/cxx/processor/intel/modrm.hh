@@ -72,7 +72,7 @@ namespace intel {
     MOp<ARCH> const* operator -> () const { return mop; }
     // operator MOp<ARCH> const* () const { return mop; }
     MOp<ARCH> const* memop() const { return mop; }
-    MOp<ARCH> const* release() const { MOp<ARCH> const* res = 0; std::swap( mop, res ); return res; }
+    MOp<ARCH> const* release() { MOp<ARCH> const* res = 0; std::swap( mop, res ); return res; }
     unsigned ereg() const { return unsigned( uintptr_t( mop ) ); }
   };
   
