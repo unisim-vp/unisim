@@ -786,14 +786,15 @@ template <class ARCH> struct DC<ARCH,CMOVCC> { Operation<ARCH>* get( InputCode<A
 template <class ARCH, class OP>
 struct BtImm : public Operation<ARCH>
 {
-  BtImm( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( _imm ) {} RMOp<ARCH> rmop; uint8_t imm;
-  void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OP::SIZE>( "bt", rmop.isreg() ) << DisasmI( imm ) << ',' << DisasmE( OP(), rmop ); }
-  typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
-  // void execute( ARCH& arch ) const {
-  //   unsigned bitoffset = imm % OPSIZE;
-  //   u_type opr = arch.rmread( OP(), rmop )
-  //   arch.flagwrite( ARCH::FLAG::CF, bit_t( (opr >> bitoffset) & u_type( 1 ) ) );
-  // }
+  BtImm( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _imm ) : Operation<ARCH>( opbase ), rm( _rm ), imm( _imm ) {} RMOp<ARCH> rm; uint8_t imm;
+  void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OP::SIZE>( "bt", rm.isreg() ) << DisasmI( imm ) << ',' << DisasmE( OP(), rm ); }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,OP::SIZE>::u valtype;
+    typedef typename ARCH::bit_t bit_t;
+    valtype opr = rm.is_memory_operand() ? arch.vmm_memread( rm->segment, rm->effective_address( arch ) + (imm / OP::SIZE), valtype() ) : arch.rmread( OP(), rm );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( (opr >> (imm % OP::SIZE)) & valtype( 1 ) ) );
+  }
 };
 
 template <class ARCH, class OP>
@@ -803,7 +804,8 @@ struct BtRM : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "bt " << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rmop ); }
   typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
   typedef typename TypeFor<ARCH,OP::SIZE>::s s_type;
-  // void execute( ARCH& arch ) const {
+  // void execute( ARCH& arch ) const
+  // {
   //   s_type str_bit = s_type( arch.regread( OP(), _gn ) );
   //   int64_t addr_offset = int64_t( (bt_offset >> TypeFor<ARCH,OP::SIZE>::logsize) * (OPSIZE / 8) );
   //   u_type str_opr = arch.template rmstrread<OPSIZE>( rmop, addr_offset );

@@ -814,15 +814,10 @@ template <class ARCH> struct DC<ARCH,MOVFP> { Operation<ARCH>* get( InputCode<AR
 // op movq2dq_vdq_pq( 0xf3[8]:> <:0x0f[8]:> <:0xd6[8]:> <:0b11[2]:gn[3]:rm[3]:> rewind <:*modrm[ModRM] );
 // 
 // movq2dq_vdq_pq.disasm = { _sink << "movq2dq " << DisasmV( SSE(), gn ) << ',' << DisasmPq( rm ); };
-// 
+//
+
+// /* MOVSS -- Move Scalar Single-Precision Floating-Point Values */
 // /* MOVSD -- Move Scalar Double-Precision Floating-Point Value */
-// op movsd_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x10[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movsd_vdq_wdq.disasm = { _sink << "movsd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// op movsd_wdq_vdq( 0xf2[8]:> <:0x0f[8]:> <:0x11[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movsd_wdq_vdq.disasm = { _sink << "movsd " << DisasmV( SSE(), gn ) << ',' << DisasmW( SSE(), rmop ); };
 
 template <class VR, unsigned OPSIZE>
 struct LSMnemo
@@ -937,15 +932,6 @@ Operation<ARCH>* newMovs( InputCode<ARCH> const& ic, bool store, OpBase<ARCH> co
 // op movsldup_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x12[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // movsldup_vdq_wdq.disasm = { _sink << "movsldup " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* MOVSS -- Move Scalar Single-Precision Floating-Point Values */
-// op movss_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x10[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movss_vdq_wdq.disasm = { _sink << "movss " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// op movss_wdq_vdq( 0xf3[8]:> <:0x0f[8]:> <:0x11[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// movss_wdq_vdq.disasm = { _sink << "movss " << DisasmV( SSE(), gn ) << ',' << DisasmW( SSE(), rmop ); };
 // 
 // /* MPSADBW -- Compute Multiple Packed Sums of Absolute Difference */
 // op mpsadbw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x42[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
@@ -2165,51 +2151,39 @@ template <class ARCH> struct DC<ARCH,PUNPCK> { Operation<ARCH>* get( InputCode<A
   return 0;
 }};
 
+struct VAND {}; struct VANDN {}; struct VOR {}; struct VXOR {};
+
+/* TODO: this operation will always blow the vector typing, but is this avoidable ? */
+template <class ARCH, class VR, class MANIP, unsigned OPSIZE>
+struct PBitManipVVW : public Operation<ARCH>
+{
+  typedef typename TypeFor<ARCH,OPSIZE>::u valtype;
+  valtype eval (  VXOR const&, valtype const& src1, valtype const& src2 ) const { return src1 ^ src2; }
+  valtype eval (  VAND const&, valtype const& src1, valtype const& src2 ) const { return src1 & src2; }
+  valtype eval ( VANDN const&, valtype const& src1, valtype const& src2 ) const { return src1 &~ src2; }
+  valtype eval (   VOR const&, valtype const& src1, valtype const& src2 ) const { return src1 | src2; }
+  
+  PBitManipVVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _vn, unsigned _gn, char const* _mn ) : Operation<ARCH>(opbase), rm(_rm), mn(_mn), vn(_vn), gn(_gn) {}
+  RMOp<ARCH> rm; char const* mn; uint8_t vn, gn; 
+  void disasm( std::ostream& sink ) const
+  {
+    sink << mn << ' ' << DisasmW( VR(), rm );
+    if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
+    sink << ',' << DisasmV( VR(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0, end = VR::size()/OPSIZE; idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx, eval( MANIP(), arch.vmm_read( VR(), vn, idx, valtype() ), arch.vmm_read( VR(), rm, idx, valtype() ) ) );
+  }
+};
+
 template <class ARCH>
 struct PAndnPQ : public Operation<ARCH>
 {
   PAndnPQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {} RMOp<ARCH> rm; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << "pandn " << DisasmQq( rm ) << ',' << DisasmPq( gn ); }
 };
-
-template <class ARCH, unsigned OPSIZE>
-struct PAndnVW : public Operation<ARCH>
-{
-  PAndnVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, char const* _mn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), mn(_mn) {} RMOp<ARCH> rm; uint8_t gn; char const* mn;
-  void disasm( std::ostream& sink ) const { sink << mn << ' ' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); }
-  void execute( ARCH& arch ) const
-  {
-    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
-    for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
-      arch.vmm_write( SSE(), gn, idx,  arch.vmm_read( SSE(), gn, idx, u_type() ) &~ arch.vmm_read( SSE(), rm, idx, u_type() ) );
-  }
-};
-
-/* PANDN -- Bitwise Logical AND NOT */
-/* ANDNPD -- Bitwise Logical AND NOT of Packed Double-Precision Floating-Point Values */
-/* ANDNPS -- Bitwise Logical AND NOT of Packed Single-Precision Floating-Point Values */
-template <class ARCH> struct DC<ARCH,PANDN> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
-{
-  if (ic.f0()) return 0;
-  
-  if (auto _ = match( ic, simd__() & opcode( "\x0f\xdb" ) & RM() ))
-
-    return new PAndnPQ<ARCH>( _.opbase(), _.rmop(), _.greg() );
-
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\xdb" ) & RM() ))
-
-    return new PAndnVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "pandn" );
-
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x55" ) & RM() ))
-
-    return new PAndnVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "andnpd" );
-  
-  if (auto _ = match( ic, simd__() & opcode( "\x0f\x55" ) & RM() ))
-
-    return new PAndnVW<ARCH,32>( _.opbase(), _.rmop(), _.greg(), "andnps" );
-  
-  return 0;
-}};
 
 template <class ARCH>
 struct PAndPQ : public Operation<ARCH>
@@ -2218,90 +2192,12 @@ struct PAndPQ : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "pand " << DisasmQq( rm ) << ',' << DisasmPq( gn ); }
 };
 
-template <class ARCH, unsigned OPSIZE>
-struct PAndVW : public Operation<ARCH>
-{
-  PAndVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, char const* _mn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), mn(_mn) {} RMOp<ARCH> rm; uint8_t gn; char const* mn;
-  void disasm( std::ostream& sink ) const { sink << mn << ' ' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); }
-  void execute( ARCH& arch ) const
-  {
-    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
-    for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
-      arch.vmm_write( SSE(), gn, idx, arch.vmm_read( SSE(), gn, idx, u_type() ) & arch.vmm_read( SSE(), rm, idx, u_type() ) );
-  }
-};
-
-/* PAND -- Bitwise Logical AND */
-/* ANDPD -- Bitwise Logical AND of Packed Double-Precision Floating-Point Values */
-/* ANDPS -- Bitwise Logical AND of Packed Single-Precision Floating-Point Values */
-template <class ARCH> struct DC<ARCH,PAND> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
-{
-  if (ic.f0()) return 0;
-  
-  if (auto _ = match( ic, simd__() & opcode( "\x0f\xdb" ) & RM() ))
-
-    return new PAndPQ<ARCH>( _.opbase(), _.rmop(), _.greg() );
-
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\xdb" ) & RM() ))
-
-    return new PAndVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "pand" );
-
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x54" ) & RM() ))
-
-    return new PAndVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "andpd" );
-
-  if (auto _ = match( ic, simd__() & opcode( "\x0f\x54" ) & RM() ))
-
-    return new PAndVW<ARCH,32>( _.opbase(), _.rmop(), _.greg(), "andps" );
-
-  return 0;
-}};
-
 template <class ARCH>
 struct POrPQ : public Operation<ARCH>
 {
   POrPQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {} RMOp<ARCH> rm; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << "por " << DisasmQq( rm ) << ',' << DisasmPq( gn ); }
 };
-
-template <class ARCH, unsigned OPSIZE>
-struct POrVW : public Operation<ARCH>
-{
-  POrVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, char const* _mn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), mn(_mn) {} RMOp<ARCH> rm; uint8_t gn; char const* mn;
-  void disasm( std::ostream& sink ) const { sink << mn << ' ' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); }
-  void execute( ARCH& arch ) const
-  {
-    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
-    for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
-      arch.vmm_write( SSE(), gn, idx, arch.vmm_read( SSE(), gn, idx, u_type() ) | arch.vmm_read( SSE(), rm, idx, u_type() ) );
-  }
-};
-
-/* POR -- Bitwise Logical OR */
-/* ORPD -- Bitwise Logical OR of Double-Precision Floating-Point Values */
-/* ORPS -- Bitwise Logical OR of Single-Precision Floating-Point Values */
-template <class ARCH> struct DC<ARCH,POR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
-{
-  if (ic.f0()) return 0;
-  
-  if (auto _ = match( ic, simd__() & opcode( "\x0f\xeb" ) & RM() ))
-
-    return new POrPQ<ARCH>( _.opbase(), _.rmop(), _.greg() );
-
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\xeb" ) & RM() ))
-
-    return new POrVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "por" );
-
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x56" ) & RM() ))
-
-    return new POrVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "orpd" );
-
-  if (auto _ = match( ic, simd__() & opcode( "\x0f\x56" ) & RM() ))
-
-    return new POrVW<ARCH,32>( _.opbase(), _.rmop(), _.greg(), "orps" );
-
-  return 0;
-}};
 
 template <class ARCH>
 struct PXorPQ : public Operation<ARCH>
@@ -2310,44 +2206,105 @@ struct PXorPQ : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "pxor " << DisasmQq( rm ) << ',' << DisasmPq( gn ); }
 };
 
-template <class ARCH, unsigned OPSIZE>
-struct PXorVW : public Operation<ARCH>
-{
-  PXorVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, char const* _mn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), mn(_mn) {} RMOp<ARCH> rm; uint8_t gn; char const* mn;
-  void disasm( std::ostream& sink ) const { sink << mn << ' ' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); }
-  void execute( ARCH& arch ) const
-  {
-    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
-    for (unsigned idx = 0, end = 128/OPSIZE; idx < end; ++idx)
-      arch.vmm_write( SSE(), gn, idx,  arch.vmm_read( SSE(), gn, idx, u_type() ) ^ arch.vmm_read( SSE(), rm, idx, u_type() ) );
-  }
-};
-
+/**** Packed Bit Manipulations ****/
+/* PAND -- Bitwise Logical AND */
+/* ANDPD -- Bitwise Logical AND of Packed Double-Precision Floating-Point Values */
+/* ANDPS -- Bitwise Logical AND of Packed Single-Precision Floating-Point Values */
+/* PANDN -- Bitwise Logical AND NOT */
+/* ANDNPD -- Bitwise Logical AND NOT of Packed Double-Precision Floating-Point Values */
+/* ANDNPS -- Bitwise Logical AND NOT of Packed Single-Precision Floating-Point Values */
+/* POR -- Bitwise Logical OR */
+/* ORPD -- Bitwise Logical OR of Double-Precision Floating-Point Values */
+/* ORPS -- Bitwise Logical OR of Single-Precision Floating-Point Values */
 /* PXOR -- Logical Exclusive OR */
 /* XORPD -- Bitwise Logical XOR for Double-Precision Floating-Point Values */
 /* XORPS -- Bitwise Logical XOR for Single-Precision Floating-Point Values */
-template <class ARCH> struct DC<ARCH,PXOR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+template <class ARCH> struct DC<ARCH,PBM> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
+
+  /* MMX */
   
+  if (auto _ = match( ic, simd__() & opcode( "\x0f\xeb" ) & RM() ))
+
+    return new POrPQ<ARCH>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, simd__() & opcode( "\x0f\xdb" ) & RM() ))
+
+    return new PAndPQ<ARCH>( _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, simd__() & opcode( "\x0f\xdb" ) & RM() ))
+
+    return new PAndnPQ<ARCH>( _.opbase(), _.rmop(), _.greg() );
+
   if (auto _ = match( ic, simd__() & opcode( "\x0f\xef" ) & RM() ))
 
     return new PXorPQ<ARCH>( _.opbase(), _.rmop(), _.greg() );
 
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\xef" ) & RM() ))
+  /* SSE/AVX Integer */
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\xdb" ) & RM() ))
+    
+    return newPBitManipVVW<VAND,64>( ic, _.opbase(), _.rmop(), _.greg(), ic.vex() ? "vpand" : "pand" );
 
-    return new PXorVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "pxor" );
+  if (auto _ = match( ic, vex( "\x66\x0f\xdf" ) & RM() ))
 
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x57" ) & RM() ))
+    return newPBitManipVVW<VANDN,64>( ic, _.opbase(), _.rmop(), _.greg(), ic.vex() ? "vpandn" : "pandn" );
 
-    return new PXorVW<ARCH,64>( _.opbase(), _.rmop(), _.greg(), "xorpd" );
+  if (auto _ = match( ic, vex( "\x66\x0f\xeb" ) & RM() ))
 
-  if (auto _ = match( ic, simd__() & opcode( "\x0f\x57" ) & RM() ))
+    return newPBitManipVVW<VOR,64>( ic, _.opbase(), _.rmop(), _.greg(), ic.vex() ? "vpor" : "por" );
 
-    return new PXorVW<ARCH,32>( _.opbase(), _.rmop(), _.greg(), "xorps" );
+  if (auto _ = match( ic, vex( "\x66\x0f\xef" ) & RM() ))
+    
+    return newPBitManipVVW<VXOR,64>( ic, _.opbase(), _.rmop(), _.greg(), ic.vex() ? "vpxor" : "pxor" );
+
+  /* SSE/AVX Floating Point */
+  
+  if (auto _ = match( ic, vex( "\x0f\x54" ) & RM() ))
+
+    return newPBitManipVVW<VAND,32>( ic, _.opbase(), _.rmop(), _.greg(), ic.vex() ? "vandps" : "andps" );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x54" ) & RM() ))
+
+    return newPBitManipVVW<VAND,64>( ic, _.opbase(), _.rmop(), _.greg(), ic.vex() ? "vandpd" : "andpd" );
+
+  if (auto _ = match( ic, vex( "\x0f\x55" ) & RM() ))
+
+    return newPBitManipVVW<VANDN,32>( ic, _.opbase(), _.rmop(), _.greg(), ic.vex() ? "vandnps" : "andnps" );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\x55" ) & RM() ))
+
+    return newPBitManipVVW<VANDN,64>( ic, _.opbase(), _.rmop(), _.greg(), ic.vex() ? "vandnpd" : "andnpd" );
+  
+  if (auto _ = match( ic, vex( "\x0f\x56" ) & RM() ))
+
+    return newPBitManipVVW<VOR,32>( ic, _.opbase(), _.rmop(), _.greg(), ic.vex() ? "vorps" : "orps" );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x56" ) & RM() ))
+
+    return newPBitManipVVW<VOR,64>( ic, _.opbase(), _.rmop(), _.greg(), ic.vex() ? "vorpd" : "orpd" );
+
+  if (auto _ = match( ic, vex( "\x0f\x57" ) & RM() ))
+
+    return newPBitManipVVW<VXOR,32>( ic, _.opbase(), _.rmop(), _.greg(), ic.vex() ? "vxorps" : "xorps" );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x57" ) & RM() ))
+
+    return newPBitManipVVW<VXOR,64>( ic, _.opbase(), _.rmop(), _.greg(), ic.vex() ? "vxorpd" : "xorpd" );
 
   return 0;
-}};
+}
+template <class MANIP, unsigned OPSIZE>
+Operation<ARCH>* newPBitManipVVW( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, char const* _mn )
+{
+  if (not ic.vex())     return new PBitManipVVW<ARCH,SSE,VXOR,OPSIZE>( opbase, _rm, _gn, _gn, _mn );
+  unsigned vn = ic.vreg();
+  if (ic.vlen() == 128) return new PBitManipVVW<ARCH,XMM,VXOR,OPSIZE>( opbase, _rm,  vn, _gn, _mn );
+  if (ic.vlen() == 256) return new PBitManipVVW<ARCH,YMM,VXOR,OPSIZE>( opbase, _rm,  vn, _gn, _mn );
+  return 0;
+}
+};
 
 template <class ARCH, unsigned OPSZ>
 struct Ucomis : public Operation<ARCH>

@@ -115,7 +115,7 @@ namespace intel {
     {
       if (opsz_66 or rep) throw 0;
       else if (pp == 1) opsz_66 = 1;
-      else if (pp != 0) rep = pp;
+      else if (pp != 0) rep = pp ^ 1;
     }
     
     CodeBase( Mode _mode, uint8_t const* bptr )
@@ -133,7 +133,7 @@ namespace intel {
                 {
                   /* REX prefix */
                   rex_p = 1; rex_b = bptr[0] >> 0; rex_x = bptr[0] >> 1; rex_r = bptr[0] >> 2; rex_w = bptr[0] >> 3;
-                  ++bptr; /* REX not implied in opcode */
+                  ++bptr; /* REX not implicated in opcode */
                 }
               else if (bptr[0] == 0xc5 and (mode64() or (bptr[1] >> 6) == 3))
                 {
