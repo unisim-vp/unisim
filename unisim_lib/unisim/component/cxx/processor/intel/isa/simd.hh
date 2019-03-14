@@ -475,50 +475,38 @@ struct MovVE : public Operation<ARCH>
   }
 };
 
-template <class ARCH> struct DC<ARCH,MOVD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+template <class ARCH> struct DC<ARCH,MOVGV> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
-
-  bool vex_p = ic.vex();
-  if (vex_p and (ic.vlen() != 128 or ic.vreg())) return 0;
-  enum { SD = 0, SQ, VD, VQ } kind = ic.opsize() == 64 ? (vex_p ? VQ : VD) : (vex_p ? SQ : SD);
-  
+  bool vex_p = ic.vex(), quad_p = (ic.opsize() == 64);
+  if (not vex_p and not quad_p) return getMOVGV<SSE,GOd>( ic );
+  if (not vex_p and     quad_p) return getMOVGV<SSE,GOq>( ic );
+  if (    vex_p and (ic.vlen() != 128 or ic.vreg())) return 0;
+  if (    vex_p and not quad_p) return getMOVGV<XMM,GOd>( ic );
+  if (    vex_p and     quad_p) return getMOVGV<XMM,GOq>( ic );
+  return 0;
+}
+template <typename VR, typename GOP> Operation<ARCH>* getMOVGV( InputCode<ARCH> const& ic )
+{
   if (auto _ = match( ic, simd__() & opcode( "\x0f\x6e" ) & RM() ))
-    switch (kind)
-      {
-      case SD: return new MovPE<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
-      case SQ: return new MovPE<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
-      default: return 0;
-      }
-
+  
+    return ic.vex() ? 0 : new MovPE<ARCH,GOP>( _.opbase(), _.rmop(), _.greg() );
+  
   if (auto _ = match( ic, simd__() & opcode( "\x0f\x7e" ) & RM() ))
-    switch (kind)
-      {
-      case SD: return new MovEP<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
-      case SQ: return new MovEP<ARCH,GOq>( _.opbase(), _.rmop(), _.greg() );
-      default: return 0;
-      }
-
+  
+    return ic.vex() ? 0 : new MovEP<ARCH,GOP>( _.opbase(), _.rmop(), _.greg() );
+  
   if (auto _ = match( ic, vex( "\x66\x0f\x6e" ) & RM() ))
-    switch (kind)
-      {
-      case SD: return new MovVE<ARCH,SSE,GOd>( _.opbase(), _.rmop(), _.greg() );
-      case SQ: return new MovVE<ARCH,SSE,GOq>( _.opbase(), _.rmop(), _.greg() );
-      case VD: return new MovVE<ARCH,XMM,GOd>( _.opbase(), _.rmop(), _.greg() );
-      case VQ: return new MovVE<ARCH,XMM,GOq>( _.opbase(), _.rmop(), _.greg() );
-      }
+  
+    return new MovVE<ARCH,VR,GOP>( _.opbase(), _.rmop(), _.greg() );
 
   if (auto _ = match( ic, vex( "\x66\x0f\x7e" ) & RM() ))
-    switch (kind)
-      {
-      case SD: return new MovEV<ARCH,SSE,GOd>( _.opbase(), _.rmop(), _.greg() );
-      case SQ: return new MovEV<ARCH,SSE,GOq>( _.opbase(), _.rmop(), _.greg() );
-      case VD: return new MovEV<ARCH,XMM,GOd>( _.opbase(), _.rmop(), _.greg() );
-      case VQ: return new MovEV<ARCH,XMM,GOq>( _.opbase(), _.rmop(), _.greg() );
-      }
-
+  
+    return new MovEV<ARCH,VR,GOP>( _.opbase(), _.rmop(), _.greg() );
+  
   return 0;
-}};
+}
+};
 
 template <class ARCH, bool ALIGNED>
 struct MovdqVW : public Operation<ARCH>
@@ -2298,10 +2286,10 @@ template <class ARCH> struct DC<ARCH,PBM> { Operation<ARCH>* get( InputCode<ARCH
 template <class MANIP, unsigned OPSIZE>
 Operation<ARCH>* newPBitManipVVW( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, char const* _mn )
 {
-  if (not ic.vex())     return new PBitManipVVW<ARCH,SSE,VXOR,OPSIZE>( opbase, _rm, _gn, _gn, _mn );
+  if (not ic.vex())     return new PBitManipVVW<ARCH,SSE,MANIP,OPSIZE>( opbase, _rm, _gn, _gn, _mn );
   unsigned vn = ic.vreg();
-  if (ic.vlen() == 128) return new PBitManipVVW<ARCH,XMM,VXOR,OPSIZE>( opbase, _rm,  vn, _gn, _mn );
-  if (ic.vlen() == 256) return new PBitManipVVW<ARCH,YMM,VXOR,OPSIZE>( opbase, _rm,  vn, _gn, _mn );
+  if (ic.vlen() == 128) return new PBitManipVVW<ARCH,XMM,MANIP,OPSIZE>( opbase, _rm,  vn, _gn, _mn );
+  if (ic.vlen() == 256) return new PBitManipVVW<ARCH,YMM,MANIP,OPSIZE>( opbase, _rm,  vn, _gn, _mn );
   return 0;
 }
 };

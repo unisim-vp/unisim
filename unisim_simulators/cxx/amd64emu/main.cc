@@ -1582,7 +1582,7 @@ main( int argc, char *argv[] )
       op->execute( cpu );
       cpu.gdbchecker.step(cpu);
       // { uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread( GOd(), idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
-      if (cpu.instruction_count >= 0x10000)
+      if (cpu.instruction_count >= 0x100000)
         break;
       // if ((cpu.instruction_count % 0x1000000) == 0)
       //   { std::cerr << "Executed instructions: " << std::dec << cpu.instruction_count << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
