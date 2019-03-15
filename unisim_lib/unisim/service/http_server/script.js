@@ -180,6 +180,7 @@ URI.prototype.custom_compare = function(uri)
 	if(!this.compare(uri))
 	{
 		// no strictly equal
+		if((this.scheme != uri.scheme) || (this.authority != uri.authority) || (this.path != uri.path)) return false; // scheme, authority or path differ
 		
 		if(!this.fragment || !uri.fragment || (this.fragment != uri.fragment)) return false; // fragments differ
 
