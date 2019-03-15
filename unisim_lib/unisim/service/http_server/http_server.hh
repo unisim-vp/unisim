@@ -71,6 +71,7 @@ public:
 	void AddJSAction(const unisim::service::interfaces::BrowserOpenTabAction& a);
 	void AddJSAction(const unisim::service::interfaces::ToolbarDoAction& a);
 	void AddJSAction(const unisim::service::interfaces::ToolbarOpenTabAction& a);
+	void AddStatusBarItem(const unisim::service::interfaces::StatusBarItem& i);
 	
 private:
 	unisim::kernel::logger::Logger logger;
@@ -87,6 +88,8 @@ private:
 	unisim::kernel::service::Parameter<int> param_http_port;
 	int http_max_clients;
 	unisim::kernel::service::Parameter<int> param_http_max_clients;
+	bool enable_cache;
+	unisim::kernel::service::Parameter<bool> param_enable_cache;
 	
 	std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *> http_server_import_map;
 	std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *> registers_import_map;
@@ -101,6 +104,8 @@ private:
 	BrowserActions browser_actions;
 	typedef std::vector<unisim::service::interfaces::ToolbarAction *> ToolbarActions;
 	ToolbarActions toolbar_actions;
+	typedef std::vector<unisim::service::interfaces::StatusBarItem *> StatusBarItems;
+	StatusBarItems statusbar_items;
 	
 	unisim::kernel::service::Object *FindChildObject(unisim::kernel::service::Object *object, const std::string& child_hierarchical_name, std::size_t& pos);
 	unisim::kernel::service::Object *FindObject(const std::string& hierarchical_name, std::size_t& pos);

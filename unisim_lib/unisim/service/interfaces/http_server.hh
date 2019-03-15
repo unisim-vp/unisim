@@ -322,6 +322,23 @@ inline std::ostream& operator << (std::ostream& os, const BrowserAction& a)
 	return os << "BrowserAction(object_name=\"" << a.GetObjectName() << "\",label=\"" << a.GetLabel() << "\",js_code_snippet=\"" << a.GetJSCodeSnippet() << "\")";
 }
 
+struct StatusBarItem
+{
+	StatusBarItem() : name(), class_name(), html_code_snippet() {}
+	StatusBarItem(const StatusBarItem& o) : name(o.name), class_name(o.class_name), html_code_snippet(o.html_code_snippet) {}
+	StatusBarItem(const std::string& _name, const std::string& _class_name, const std::string& _html_code_snippet) : name(_name), class_name(_class_name), html_code_snippet(_html_code_snippet) {}
+	void SetName(const std::string& _name) { name = _name; }
+	void SetClassName(const std::string& _class_name) { class_name = _class_name; }
+	void SetHTMLCodeSnippet(const std::string& _html_code_snippet) { html_code_snippet = _html_code_snippet; }
+	const std::string& GetName() const { return name; }
+	const std::string& GetClassName() const { return class_name; }
+	const std::string& GetHTMLCodeSnippet() const { return html_code_snippet; }
+private:
+	std::string name;
+	std::string class_name;
+	std::string html_code_snippet;
+};
+
 struct WebInterfaceModdingScanner
 {
 	virtual void Append(const CSSFile&) = 0;              // include CSS file in main document HTML head section
@@ -330,6 +347,7 @@ struct WebInterfaceModdingScanner
 	virtual void Append(const BrowserOpenTabAction&) = 0; // add open tab action in browser
 	virtual void Append(const ToolbarDoAction&) = 0;      // add JS code snippet in toolbar
 	virtual void Append(const ToolbarOpenTabAction&) = 0; // add open tab action in toolbar
+	virtual void Append(const StatusBarItem&) = 0;        // add a status bar item
 };
 
 struct HttpServer : unisim::kernel::service::ServiceInterface

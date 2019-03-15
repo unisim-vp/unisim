@@ -31,6 +31,7 @@ GUI.prototype.on_load = function()
 //	console.log('load ' + window.name);
 	this.set_form_target();
 	this.restore_instrumenter_scroller_scroll_top();
+	this.set_status();
 }
 
 GUI.prototype.on_unload = function()

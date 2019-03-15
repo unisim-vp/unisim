@@ -33,6 +33,7 @@
  */
 
 #include <unisim/service/instrumenter/instrumenter.hh>
+#include <unisim/kernel/tlm2/tlm.hh>
 
 namespace unisim {
 namespace service {
@@ -865,36 +866,31 @@ UserInterface::UserInterface(const char *name, Instrumenter *instrumenter)
 	, param_intr_poll_period("intr-poll-period", this, intr_poll_period, "Polling period (target time) for user interrupt request while continue")
 	, cont_refresh_period(1.0)
 	, param_cont_refresh_period("cont-refresh-period", this, cont_refresh_period, "Refresh period (host time) in seconds while continue")
+	, enable_cache(true)
+	, param_enable_cache("enable-cache", this, enable_cache, "Enable/Disable web browser caching")
 	, instrumented_signal_names()
 	, user_instruments()
+	, schedule()
 	, user_step_time(sc_core::SC_ZERO_TIME)
 	, curr_time_stamp(sc_core::SC_ZERO_TIME)
-	, bad_user_step_time(false)
-	, timed_step(false)
 	, delta_steps(0)
 	, cont(false)
 	, intr(true)
 	, halt(false)
-	, has_breakpoint_cond(false)
-	, enable_all_input_instruments(false)
-	, disable_all_input_instruments(false)
-	, enable_all_value_changed_breakpoints(false)
-	, disable_all_value_changed_breakpoints(false)
+	, refresh_period(0.125)
 	, mutex_instruments()
+	, mutex_schedule()
+	, mutex_delta_steps()
 	, mutex_post()
-	, run(false)
-	, cond_run()
-	, mutex_run()
-	, user(false)
-	, cond_user()
-	, mutex_user()
+	, cond_cont()
+	, mutex_cont()
 {
 	pthread_mutex_init(&mutex_instruments, NULL);
+	pthread_mutex_init(&mutex_schedule, NULL);
+	pthread_mutex_init(&mutex_delta_steps, NULL);
 	pthread_mutex_init(&mutex_post, NULL);
-	pthread_cond_init(&cond_run, NULL);
-	pthread_mutex_init(&mutex_run, NULL);
-	pthread_cond_init(&cond_user, NULL);
-	pthread_mutex_init(&mutex_user, NULL);
+	pthread_cond_init(&cond_cont, NULL);
+	pthread_mutex_init(&mutex_cont, NULL);
 	
 	std::stringstream sstr(instrumentation);
 	
@@ -907,8 +903,6 @@ UserInterface::UserInterface(const char *name, Instrumenter *instrumenter)
 
 UserInterface::~UserInterface()
 {
-	UnblockUser();
-	
 	std::map<std::string, UserInstrument *>::iterator user_instrument_it;
 	for(user_instrument_it = user_instruments.begin(); user_instrument_it != user_instruments.end(); user_instrument_it++)
 	{
@@ -918,11 +912,11 @@ UserInterface::~UserInterface()
 	}
 
 	pthread_mutex_destroy(&mutex_instruments);
+	pthread_mutex_destroy(&mutex_schedule);
+	pthread_mutex_destroy(&mutex_delta_steps);
 	pthread_mutex_destroy(&mutex_post);
-	pthread_cond_destroy(&cond_run);
-	pthread_mutex_destroy(&mutex_run);
-	pthread_cond_destroy(&cond_user);
-	pthread_mutex_destroy(&mutex_user);
+	pthread_cond_destroy(&cond_cont);
+	pthread_mutex_destroy(&mutex_cont);
 }
 
 bool UserInterface::EndSetup()
@@ -932,7 +926,7 @@ bool UserInterface::EndSetup()
 
 void UserInterface::SigInt()
 {
-	Run();
+	Continue();
 }
 
 bool UserInterface::SetupInstrumentation()
@@ -984,55 +978,27 @@ bool UserInterface::SetupInstrumentation()
 void UserInterface::WaitForUser()
 {
 	//std::cerr << sc_core::sc_time_stamp() << ":WaitForUser: start" << std::endl;
-	pthread_mutex_lock(&mutex_user);
-	user = true;
-	pthread_cond_signal(&cond_user);
-	pthread_mutex_lock(&mutex_run);
-	run = false;
-	pthread_mutex_unlock(&mutex_user);
+	pthread_mutex_lock(&mutex_cont);
+	cont = false;
+	intr = false;
+	halt = false;
+	delta_steps = 0;
 	do
 	{
-		pthread_cond_wait(&cond_run, &mutex_run);
+		pthread_cond_wait(&cond_cont, &mutex_cont);
 	}
-	while(!run);
-	pthread_mutex_unlock(&mutex_run);
+	while(!cont);
+	pthread_mutex_unlock(&mutex_cont);
 	//std::cerr << sc_core::sc_time_stamp() << ":WaitForUser: end" << std::endl;
 }
 
-void UserInterface::WaitForSimulation()
-{
-	//std::cerr << "WaitForSimulation: start" << std::endl;
-	pthread_mutex_lock(&mutex_run);
-	run = true;
-	pthread_cond_signal(&cond_run);
-	pthread_mutex_lock(&mutex_user);
-	user = false;
-	pthread_mutex_unlock(&mutex_run);
-	do
-	{
-		pthread_cond_wait(&cond_user, &mutex_user);
-	}
-	while(!user);
-	pthread_mutex_unlock(&mutex_user);
-	//std::cerr << "WaitForSimulation: end" << std::endl;
-}
-
-void UserInterface::Run()
+void UserInterface::Continue()
 {
 	//std::cerr << "Run" << std::endl;
-	pthread_mutex_lock(&mutex_run);
-	run = true;
-	pthread_cond_signal(&cond_run);
-	pthread_mutex_unlock(&mutex_run);
-}
-
-void UserInterface::UnblockUser()
-{
-	//std::cerr << "UnblockUser" << std::endl;
-	pthread_mutex_lock(&mutex_user);
-	user = true;
-	pthread_cond_signal(&cond_user);
-	pthread_mutex_unlock(&mutex_user);
+	pthread_mutex_lock(&mutex_cont);
+	cont = true;
+	pthread_cond_signal(&cond_cont);
+	pthread_mutex_unlock(&mutex_cont);
 }
 
 void UserInterface::LockInstruments()
@@ -1070,22 +1036,58 @@ void UserInterface::ProcessInputInstruments()
 {
 	if(unlikely(halt))
 	{
-		UnblockUser();
 		return;
 	}
+	LockInstruments();
 	curr_time_stamp = sc_core::sc_time_stamp();
-	if(unlikely(timed_step || (delta_steps == 1) || intr))
+	sc_core::sc_time deadline(sc_core::sc_max_time());
+	Schedule::iterator it = schedule.begin();
+	if(unlikely(it != schedule.end()))
 	{
-		WaitForUser();
-		LockInstruments();
-		Commit();
-		UnlockInstruments();
+		deadline = *it;
+		if(curr_time_stamp >= deadline)
+		{
+			intr = true;
+			schedule.erase(it);
+			Schedule::iterator next_it = schedule.begin();
+			deadline = (next_it != schedule.end()) ? (*next_it) : sc_core::sc_max_time();
+		}
 	}
-	if(delta_steps > 1) delta_steps--;
+	if(unlikely(delta_steps > 0))
+	{
+		if((delta_steps > 0) && (--delta_steps == 0))
+		{
+			intr = true;
+		}
+	}
+	if(unlikely(intr))
+	{
+		do
+		{
+			UnlockInstruments();
+			WaitForUser();
+			LockInstruments();
+			Commit();
+			if(unlikely(halt))
+			{
+				UnlockInstruments();
+				return;
+			}
+		}
+		while(unlikely(intr));
+		
+		Schedule::iterator it = schedule.begin();
+		if(unlikely(it != schedule.end()))
+		{
+			deadline = *it;
+		}
+	}
 
-	sc_core::sc_time t = timed_step ? user_step_time : ((delta_steps || intr || halt) ? sc_core::SC_ZERO_TIME : intr_poll_period);
-	
+	sc_core::sc_time time_to_deadline(deadline);
+	time_to_deadline -= curr_time_stamp;
+	sc_core::sc_time t(std::min(time_to_deadline, (delta_steps || intr || halt) ? sc_core::SC_ZERO_TIME : intr_poll_period));
 	//std::cerr << sc_core::sc_time_stamp() << ": next input instrumentation after " << t << std::endl;
+	UnlockInstruments();
 	NextInputTrigger(t);
 }
 
@@ -1113,7 +1115,6 @@ void UserInterface::Sample()
 
 void UserInterface::Fetch()
 {
-	has_breakpoint_cond = false;
 	std::map<std::string, UserInstrument *>::iterator user_instrument_it;
 	for(user_instrument_it = user_instruments.begin(); user_instrument_it != user_instruments.end(); user_instrument_it++)
 	{
@@ -1125,10 +1126,6 @@ void UserInterface::Fetch()
 		{
 			//std::cerr << "\"" << user_instrument->GetName() << "\" has breakpoint condition" << std::endl;
 			intr = true;
-			timed_step = false;
-			delta_steps = 0;
-			cont = false;
-			has_breakpoint_cond = true;
 			NextInputTrigger(sc_core::SC_ZERO_TIME);
 		}
 	}
@@ -1147,6 +1144,10 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 	
 	if(req.GetPath() == "toolbar_actions.js")
 	{
+		if(enable_cache)
+		{
+			response.EnableCache();
+		}
 		response.SetContentType("application/javascript");
 		
 		response << "InstrumenterToobarActions.prototype.bound_background_iframe_onload = null;" << std::endl;
@@ -1237,201 +1238,24 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 		{
 			LockPost();
 			LockInstruments();
-			//std::cerr << "content length=" << req.GetContentLength() << std::endl;
+			Sample();
 			
-			struct PropertySetter : public unisim::util::hypapp::Form_URL_Encoded_Decoder
-			{
-				PropertySetter(UserInterface& _user_interface)
-					: user_interface(_user_interface)
-				{
-				}
-				
-				virtual bool FormAssign(const std::string& name, const std::string& value)
-				{
-					if(name.compare("step-time") == 0)
-					{
-						std::stringstream value_sstr(value);
-						double time_value = 0.0;
-						std::string time_unit;
-						
-						if((value_sstr >> time_value) && (value_sstr >> time_unit))
-						{
-							if(time_unit.compare("s") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_SEC);
-							else if(time_unit.compare("ms") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_MS);
-							else if(time_unit.compare("us") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_US);
-							else if(time_unit.compare("ns") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_NS);
-							else if(time_unit.compare("ps") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_PS);
-							else if(time_unit.compare("fs") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_FS);
-							else
-							{
-								user_interface.logger << DebugWarning << "malformed time unit ('" << time_unit << "'): expecting 's', 'ms', 'us', 'ns', 'ps', or 'fs'." << EndDebugWarning;
-								user_interface.bad_user_step_time = true;
-								return false;
-							}
-						}
-						else
-						{
-							user_interface.logger << DebugWarning << "expecting a time in time-step" << EndDebugWarning;
-							user_interface.bad_user_step_time = true;
-							return false;
-						}
-						
-						if(!value_sstr.eof())
-						{
-							user_interface.logger << DebugWarning << "ignoring extra characters after time step" << EndDebugWarning;
-						}
-					}
-					else if((name.compare("timed-step") == 0) && (value.compare("on") == 0))
-					{
-						if(user_interface.verbose)
-						{
-							user_interface.logger << DebugInfo << "Timed Step" << EndDebugInfo;
-						}
-						user_interface.timed_step = true;
-					}
-					else if((name.compare("delta-step") == 0) && (value.compare("on") == 0))
-					{
-						if(user_interface.verbose)
-						{
-							user_interface.logger << DebugInfo << "Delta Step" << EndDebugInfo;
-						}
-						user_interface.delta_steps = 3;
-					}
-					else if((name.compare("cont") == 0) && (value.compare("on") == 0))
-					{
-						if(user_interface.verbose)
-						{
-							user_interface.logger << DebugInfo << "Continue" << EndDebugInfo;
-						}
-						user_interface.cont = true;
-					}
-					else if((name.compare("intr") == 0) && (value.compare("on") == 0))
-					{
-						if(user_interface.verbose)
-						{
-							user_interface.logger << DebugInfo << "Interrupt" << EndDebugInfo;
-						}
-						user_interface.intr = true;
-					}
-					else if((name.compare("halt") == 0) && (value.compare("on") == 0))
-					{
-						if(user_interface.verbose)
-						{
-							user_interface.logger << DebugInfo << "Halt" << EndDebugInfo;
-						}
-						user_interface.halt = true;
-					}
-					else
-					{
-						std::size_t delim_pos = name.find_first_of('*');
-						if(delim_pos != std::string::npos)
-						{
-							std::string user_instrument_action = name.substr(0, delim_pos);
-							std::string user_instrument_name = name.substr(delim_pos + 1);
-							
-							if(user_instrument_name == "all")
-							{
-								if(user_instrument_action == "enable")
-								{
-									user_interface.EnableInjection();
-	// 								user_interface.delta_steps = 3;
-								}
-								else if(user_instrument_action == "disable")
-								{
-									user_interface.DisableInjection();
-	// 								user_interface.delta_steps = 3;
-								}
-								else if(user_instrument_action == "enable-brkpt")
-								{
-									user_interface.EnableValueChangedBreakpoint();
-								}
-								else if(user_instrument_action == "disable-brkpt")
-								{
-									user_interface.DisableValueChangedBreakpoint();
-								}
-							}
-							else
-							{
-								UserInstrument *user_instrument = user_interface.FindUserInstrument(user_instrument_name);
-								
-								if(user_instrument)
-								{
-									if(user_instrument_action == "enable")
-									{
-										user_instrument->EnableInjection();
-	// 									user_interface.delta_steps = 3;
-									}
-									else if(user_instrument_action == "disable")
-									{
-										user_instrument->DisableInjection();
-	// 									user_interface.delta_steps = 3;
-									}
-									else if(user_instrument_action == "enable-brkpt")
-									{
-										user_instrument->EnableValueChangedBreakpoint();
-									}
-									else if(user_instrument_action == "disable-brkpt")
-									{
-										user_instrument->DisableValueChangedBreakpoint();
-									}
-									else if(user_instrument_action == "set")
-									{
-										user_instrument->Set(value);
-										user_interface.delta_steps = 3;
-									}
-									else if(user_instrument_action == "toggle")
-									{
-										user_instrument->Toggle();
-										user_interface.delta_steps = 3;
-									}
-									else
-									{
-										user_interface.logger << DebugWarning << "unknown Action \"" << user_instrument_action << "\" on User instrument \"" << user_instrument_name << "\"" << EndDebugWarning;
-										return false;
-									}
-								}
-								else
-								{
-									user_interface.logger << DebugWarning << "Can't find User instrument \"" << user_instrument_name << "\"" << EndDebugWarning;
-									return false;
-								}
-							}
-						}
-					}
-					
-					return true;
-				}
-				
-				UserInterface& user_interface;
-			};
-			
-			bad_user_step_time = false;
-			timed_step = false;
-			delta_steps = 0;
-			cont = false;
-			intr = false;
-			halt = false;
-
 			PropertySetter property_setter(*this);
-			if(!property_setter.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
+			if(property_setter.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
+			{
+				property_setter.Apply();
+			}
+			else
 			{
 				logger << DebugWarning << "parse error in POST data" << EndDebugWarning;
-				timed_step = false;
-				delta_steps = 0;
-				cont = false;
-				intr = false;
-				halt = false;
 			}
 			
 			UnlockInstruments();
 			
-			if(cont)
+			if(property_setter.cont || halt)
 			{
-				Run();
-			}
-			else if(timed_step || delta_steps || intr || halt)
-			{
-				WaitForSimulation();
+				refresh_period = 0.125;
+				Continue();
 			}
 			
 			UnlockPost();
@@ -1458,6 +1282,8 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 		}
 		else
 		{
+			LockInstruments();
+			
 			response << "\t<head>" << std::endl;
 			response << "\t\t<title>Hardware instrumenter</title>" << std::endl;
 			response << "\t\t<meta name=\"description\" content=\"remote control interface over HTTP of virtual platform hardware signal instrumenter\">" << std::endl;
@@ -1468,12 +1294,48 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 			response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
 			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+			response << "\t\t<script type=\"application/javascript\">" << std::endl;
+			response << "\t\t\tGUI.prototype.set_status = function()" << std::endl;
+			response << "\t\t\t{" << std::endl;
+			response << "\t\t\t\tvar status_item = gui.find_statusbar_item_by_name('status-" << GetName() << "');" << std::endl;
+			response << "\t\t\t\tif(status_item)" << std::endl;
+			response << "\t\t\t\t{" << std::endl;
+			response << "\t\t\t\t\tvar child_nodes = status_item.div_element.childNodes;" << std::endl;
+			response << "\t\t\t\t\tfor(var i = 0; i < child_nodes.length; i++)" << std::endl;
+			response << "\t\t\t\t\t{" << std::endl;
+			response << "\t\t\t\t\t\tvar child_node = child_nodes[i];" << std::endl;
+			response << "\t\t\t\t\t\tif(child_node.className == 'state')" << std::endl;
+			response << "\t\t\t\t\t\t{" << std::endl;
+			response << "\t\t\t\t\t\t\tchild_node.innerHTML = '<span>" << (cont ? "running" : "paused") << "</span>';" << std::endl;
+			response << "\t\t\t\t\t\t}" << std::endl;
+			response << "\t\t\t\t\t\telse if(child_node.className == 'time')" << std::endl;
+			response << "\t\t\t\t\t\t{" << std::endl;
+			{
+				std::ios_base::fmtflags ff = response.flags();
+				response.setf(std::ios::fixed);
+				response.precision(3);
+				response << "\t\t\t\t\t\t\t\tchild_node.innerHTML = '<span>" << curr_time_stamp.to_seconds() << " seconds</span>';" << std::endl;
+				response.flags(ff);
+			}
+			response << "\t\t\t\t\t\t}" << std::endl;
+			response << "\t\t\t\t\t\telse if(child_node.className == 'time-exact')" << std::endl;
+			response << "\t\t\t\t\t\t{" << std::endl;
+			response << "\t\t\t\t\t\t\tchild_node.innerHTML = '<span>(" << curr_time_stamp << ")</span>';" << std::endl;
+			response << "\t\t\t\t\t\t}" << std::endl;
+			response << "\t\t\t\t\t}" << std::endl;
+			response << "\t\t\t\t}" << std::endl;
+			response << "\t\t\t}" << std::endl;
+			response << "\t\t</script>" << std::endl;
 			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/instrumenter/script.js\"></script>" << std::endl;
 			response << "\t</head>" << std::endl;
 			
 			if(cont)
 			{
-				response << "\t<body onload=\"gui.reload_after(" << (unsigned int)(cont_refresh_period * 1000) << ")\">" << std::endl; // while in continue mode, reload page every seconds
+				response << "\t<body onload=\"gui.reload_after(" << (unsigned int)(refresh_period * 1000) << ")\">" << std::endl; // while in continue mode, reload page every seconds
+				if(refresh_period < cont_refresh_period)
+				{
+					refresh_period = std::min(2.0 * refresh_period, cont_refresh_period);
+				}
 			}
 			else
 			{
@@ -1490,13 +1352,15 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 			response << "\t\t\t</thead>" << std::endl;
 			response << "\t\t\t<tbody>" << std::endl;
 			response << "\t\t\t\t<tr>" << std::endl;
-			response << "\t\t\t\t\t<td class=\"status\">" << (bad_user_step_time ? "bad step time" : (cont ? "running" : "ready")) << "</td>" << std::endl;
+			response << "\t\t\t\t\t<td class=\"status\">" << (cont ? "running" : "paused") << "</td>" << std::endl;
 			
-			std::ios_base::fmtflags ff = response.flags();
-			response.setf(std::ios::fixed);
-			response.precision(3);
-			response << "\t\t\t\t\t<td class=\"time\" title=\"Target time\">" << curr_time_stamp.to_seconds() << " seconds</td>" << std::endl;
-			response.flags(ff);
+			{
+				std::ios_base::fmtflags ff = response.flags();
+				response.setf(std::ios::fixed);
+				response.precision(3);
+				response << "\t\t\t\t\t<td class=\"time\" title=\"Target time\">" << curr_time_stamp.to_seconds() << " seconds</td>" << std::endl;
+				response.flags(ff);
+			}
 			
 			response << "\t\t\t\t\t<td class=\"time\" title=\"Target time\">(" << unisim::util::hypapp::HTML_Encoder::Encode(curr_time_stamp.to_string()) << ")</td>" << std::endl;
 			response << "\t\t\t\t</tr>" << std::endl;
@@ -1509,7 +1373,7 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 			response << "\t\t\t<tbody>" << std::endl;
 			response << "\t\t\t\t<tr>" << std::endl;
 			response << "\t\t\t\t\t<td><form id=\"delta-step-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"Step some delta cycles\" id=\"delta-step\" type=\"submit\" name=\"delta-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">&delta;</button></form></td>" << std::endl;
-			response << "\t\t\t\t\t<td><form id=\"timed-step-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"Step by time\" id=\"timed-step\" type=\"submit\" name=\"timed-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">Step</button>&nbsp;by&nbsp;<input class=\"step-time\" type=\"text\" name=\"step-time\" value=\"" << user_step_time << "\"" << ((cont || halt) ? " disabled" : "") << "></form></td>" << std::endl;
+			response << "\t\t\t\t\t<td><form id=\"timed-step-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"Step by time\" id=\"timed-step\" type=\"submit\" name=\"timed-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">Step</button>&nbsp;by&nbsp;<input class=\"step-time\" type=\"text\" name=\"step-time\" value=\"" << user_step_time << "\"" << ((cont || halt) ? " disabled" : "") << "><input style=\"display:none;\" type=\"text\" name=\"curr-time-stamp\" value=\"" << curr_time_stamp << "\" readonly></form></td>" << std::endl;
 			response << "\t\t\t\t\t<td><form id=\"" << (cont ? "intr" : "cont") << "-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"" << (cont ? "Interrupt" : "Continue") << "\" id=\"" << (cont ? "intr" : "cont") << "\" type=\"submit\" name=\"" << (cont ? "intr" : "cont") << "\" value=\"on\"" << (halt ? " disabled" : "") << ">" << (cont ? "Interrupt" : "Continue") << "</button></form></td>" << std::endl;
 			response << "\t\t\t\t\t<td><form id=\"halt-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"Halt\" id=\"halt\" type=\"submit\" name=\"halt\" value=\"on\"" << (halt ? " disabled" : "")  << ">Halt</button></form></td>" << std::endl;
 			response << "\t\t\t\t</tr>" << std::endl;
@@ -1526,13 +1390,6 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 			response << "\t\t\t\t<div class=\"scrollbar\"></div>" << std::endl;
 			response << "\t\t\t</div>" << std::endl;
 			response << "\t\t\t<div class=\"instruments-table-body scroller\">" << std::endl;
-
-			LockInstruments();
-			if(likely(!has_breakpoint_cond))
-			{
-				Sample();
-			}
-			has_breakpoint_cond = false;
 
 			std::stringstream sstr(instrumentation);
 			
@@ -1565,12 +1422,13 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 				}
 			}
 
-			UnlockInstruments();
 			
 			response << "\t\t\t</div>" << std::endl;
 			response << "\t\t</div>" << std::endl;
 			
 			response << "\t</body>" << std::endl;
+			
+			UnlockInstruments();
 		}
 			
 		response << "</html>" << std::endl;
@@ -1603,6 +1461,8 @@ void UserInterface::ScanWebInterfaceModdings(unisim::service::interfaces::WebInt
 {
 	scanner.Append(unisim::service::interfaces::JSFile(URI() + "/toolbar_actions.js"));
 	
+	scanner.Append(unisim::service::interfaces::CSSFile("/unisim/service/instrumenter/status_style.css"));
+	
 	scanner.Append(unisim::service::interfaces::ToolbarOpenTabAction(
 		/* name */      GetName(), 
 		/* label */     "<img src=\"/unisim/service/instrumenter/icon.svg\">",
@@ -1630,6 +1490,18 @@ void UserInterface::ScanWebInterfaceModdings(unisim::service::interfaces::WebInt
 		/* label */     "<img src=\"/unisim/service/instrumenter/icon_halt.svg\">",
 		/* tips */      "Halt",
 		/* js action */ "return gui && gui.instrumenter_toolbar_actions && gui.instrumenter_toolbar_actions.execute('halt')"
+	));
+
+	std::ostringstream status_sstr;
+	status_sstr << "<div class=\"state\"></div>";
+	status_sstr << "<div class=\"time\"></div>";
+	status_sstr << "<div class=\"time-exact\"></div>";
+	std::string status(status_sstr.str());
+	
+	scanner.Append(unisim::service::interfaces::StatusBarItem(
+		/* name */       std::string("status-") + GetName(),
+		/* class name */ "instrumenter-status",
+		/* HTML */       status
 	));
 }
 
@@ -1693,6 +1565,245 @@ void UserInterface::DisableValueChangedBreakpoint()
 		
 		user_instrument->DisableValueChangedBreakpoint();
 	}
+}
+
+void UserInterface::PropertySetter::UserInstrumentCommand::Apply(PropertySetter& property_setter) const
+{
+	UserInterface& user_interface = property_setter.user_interface;
+	
+	switch(type)
+	{
+		case NOP:
+			break;
+		case ENABLE_ALL:
+			user_interface.EnableInjection();
+			break;
+		case DISABLE_ALL:
+			user_interface.DisableInjection();
+			break;
+		case ENABLE_ALL_VALUE_CHANGED_BREAKPOINTS:
+			user_interface.EnableValueChangedBreakpoint();
+			break;
+		case DISABLE_ALL_VALUE_CHANGED_BREAKPOINTS:
+			user_interface.DisableValueChangedBreakpoint();
+			break;
+		case ENABLE:
+			user_instrument->EnableInjection();
+			break;
+		case DISABLE:
+			user_instrument->DisableInjection();
+			break;
+		case ENABLE_VALUE_CHANGED_BRKPT:
+			user_instrument->EnableValueChangedBreakpoint();
+			break;
+		case DISABLE_VALUE_CHANGED_BRKPT:
+			user_instrument->DisableValueChangedBreakpoint();
+			break;
+		case SET:
+			user_instrument->Set(value);
+			property_setter.delta_steps = std::max(3u, property_setter.delta_steps);
+			break;
+		case TOGGLE:
+			user_instrument->Toggle();
+			property_setter.delta_steps = std::max(3u, property_setter.delta_steps);
+			break;
+	}
+}
+
+UserInterface::PropertySetter::PropertySetter(UserInterface& _user_interface)
+	: user_interface(_user_interface)
+	, curr_time_stamp()
+	, valid_curr_time_stamp(false)
+	, user_step_time()
+	, valid_user_step_time(false)
+	, timed_step(false)
+	, delta_steps(0)
+	, cont(false)
+	, intr(false)
+	, halt(false)
+	, user_instrument_commands()
+{
+}
+	
+bool UserInterface::PropertySetter::FormAssign(const std::string& name, const std::string& value)
+{
+	if(name.compare("curr-time-stamp") == 0)
+	{
+		std::istringstream curr_time_stamp_sstr(value);
+		valid_curr_time_stamp = !(curr_time_stamp_sstr >> curr_time_stamp).bad()/* && curr_time_stamp_sstr.eof()*/;
+		
+		if(!valid_curr_time_stamp)
+		{
+			user_interface.logger << DebugWarning << "expecting a time in curr-time-stamp, got '" << value << "'" << EndDebugWarning;
+			return false;
+		}
+	}
+	else if(name.compare("step-time") == 0)
+	{
+		std::istringstream value_sstr(value);
+		valid_user_step_time = !(value_sstr >> user_step_time).bad()/* && !value_sstr.eof()*/;
+		
+		if(!valid_user_step_time)
+		{
+			user_interface.logger << DebugWarning << "expecting a time in time-step, got '" << value << "'" << EndDebugWarning;
+			return false;
+		}
+	}
+	else if((name.compare("timed-step") == 0) && (value.compare("on") == 0))
+	{
+		if(user_interface.verbose)
+		{
+			user_interface.logger << DebugInfo << "Timed Step" << EndDebugInfo;
+		}
+		timed_step = true;
+	}
+	else if((name.compare("delta-step") == 0) && (value.compare("on") == 0))
+	{
+		if(user_interface.verbose)
+		{
+			user_interface.logger << DebugInfo << "Delta Step" << EndDebugInfo;
+		}
+		delta_steps = std::max(3u, delta_steps);
+	}
+	else if((name.compare("cont") == 0) && (value.compare("on") == 0))
+	{
+		if(user_interface.verbose)
+		{
+			user_interface.logger << DebugInfo << "Continue" << EndDebugInfo;
+		}
+		cont = true;
+	}
+	else if((name.compare("intr") == 0) && (value.compare("on") == 0))
+	{
+		if(user_interface.verbose)
+		{
+			user_interface.logger << DebugInfo << "Interrupt" << EndDebugInfo;
+		}
+		intr = true;
+	}
+	else if((name.compare("halt") == 0) && (value.compare("on") == 0))
+	{
+		if(user_interface.verbose)
+		{
+			user_interface.logger << DebugInfo << "Halt" << EndDebugInfo;
+		}
+		halt = true;
+	}
+	else
+	{
+		std::size_t delim_pos = name.find_first_of('*');
+		if(delim_pos != std::string::npos)
+		{
+			std::string user_instrument_action = name.substr(0, delim_pos);
+			std::string user_instrument_name = name.substr(delim_pos + 1);
+			
+			if(user_instrument_name == "all")
+			{
+				if(user_instrument_action == "enable")
+				{
+					user_instrument_commands.push_back(UserInstrumentCommand(ENABLE_ALL));
+				}
+				else if(user_instrument_action == "disable")
+				{
+					user_instrument_commands.push_back(UserInstrumentCommand(DISABLE_ALL));
+				}
+				else if(user_instrument_action == "enable-brkpt")
+				{
+					user_instrument_commands.push_back(UserInstrumentCommand(ENABLE_ALL_VALUE_CHANGED_BREAKPOINTS));
+				}
+				else if(user_instrument_action == "disable-brkpt")
+				{
+					user_instrument_commands.push_back(UserInstrumentCommand(DISABLE_ALL_VALUE_CHANGED_BREAKPOINTS));
+				}
+			}
+			else
+			{
+				UserInstrument *user_instrument = user_interface.FindUserInstrument(user_instrument_name);
+				
+				if(user_instrument)
+				{
+					if(user_instrument_action == "enable")
+					{
+						user_instrument_commands.push_back(UserInstrumentCommand(ENABLE, user_instrument));
+					}
+					else if(user_instrument_action == "disable")
+					{
+						user_instrument_commands.push_back(UserInstrumentCommand(DISABLE, user_instrument));
+					}
+					else if(user_instrument_action == "enable-brkpt")
+					{
+						user_instrument_commands.push_back(UserInstrumentCommand(ENABLE_VALUE_CHANGED_BRKPT, user_instrument));
+					}
+					else if(user_instrument_action == "disable-brkpt")
+					{
+						user_instrument_commands.push_back(UserInstrumentCommand(DISABLE_VALUE_CHANGED_BRKPT, user_instrument));
+					}
+					else if(user_instrument_action == "set")
+					{
+						user_instrument_commands.push_back(UserInstrumentCommand(SET, user_instrument, value));
+					}
+					else if(user_instrument_action == "toggle")
+					{
+						user_instrument_commands.push_back(UserInstrumentCommand(TOGGLE, user_instrument));
+					}
+					else
+					{
+						user_interface.logger << DebugWarning << "unknown Action \"" << user_instrument_action << "\" on User instrument \"" << user_instrument_name << "\"" << EndDebugWarning;
+						return false;
+					}
+				}
+				else
+				{
+					user_interface.logger << DebugWarning << "Can't find User instrument \"" << user_instrument_name << "\"" << EndDebugWarning;
+					return false;
+				}
+			}
+		}
+	}
+	
+	return true;
+}
+
+void UserInterface::PropertySetter::Apply()
+{
+	for(UserInstrumentCommands::const_iterator it = user_instrument_commands.begin(); it != user_instrument_commands.end(); it++)
+	{
+		const UserInstrumentCommand& user_instrument_command = *it;
+		user_instrument_command.Apply(*this);
+	}
+	if(valid_user_step_time)
+	{
+		user_interface.user_step_time = user_step_time;
+	}
+	
+	if(timed_step)
+	{
+		if(valid_user_step_time && valid_curr_time_stamp)
+		{
+			sc_core::sc_time deadline(curr_time_stamp);
+			deadline += user_step_time;
+			if(user_interface.curr_time_stamp < deadline)
+			{
+				cont = true;
+				user_interface.schedule.insert(deadline);
+			}
+			else
+			{
+				user_interface.intr = true;
+			}
+		}
+		else
+		{
+			cont = false;
+		}
+	}
+	else if(delta_steps)
+	{
+		user_interface.delta_steps = delta_steps;
+		cont = true;
+	}
+	if(intr) user_interface.intr = true;
+	if(halt) user_interface.halt = true;
 }
 
 CSV_Reader::CSV_Reader(const char *name, Instrumenter *instrumenter)

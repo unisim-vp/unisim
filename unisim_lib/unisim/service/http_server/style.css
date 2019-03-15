@@ -33,16 +33,22 @@ body
 
 .toolbar
 {
+	position:absolute;
+	left:0px;
+	top:0px;
 	height:100%;
-	display:table;
-	border-collapse:collapse;
+	display:flex;
 }
 
 .toolbar-item
 {
-	padding-left:2px;
-	display:table-cell;
-	vertical-align:middle;
+	position:relative;
+	left:2px;
+	top:2px;
+	width:44px;
+	height:36px;
+	border-width:0;
+	display:inline-block;
 }
 
 .toolbar-button
@@ -177,6 +183,7 @@ body
 	background-size:cover;
 	background-repeat:no-repeat;
 	background-color:#eff0f1;
+	border-radius:2px;
 }
 
 .tab-headers-history-shortcut.w-svg
@@ -246,6 +253,7 @@ body
 	background-size:cover;
 	background-repeat:no-repeat;
 	background-color:#eff0f1;
+	border-radius:2px;
 }
 
 .tab-headers-scroller:hover
@@ -323,6 +331,7 @@ body
 
 .tab-header
 {
+	border-radius:3px 3px 0px 0px;
 	height:24px;
 	float:left;
 	cursor:default;
@@ -490,4 +499,38 @@ body
 .context-menu-item:hover
 {
 	background-color:#f9fafa;
+}
+
+#statusbar-div
+{
+	position:fixed;
+	left:0px;
+	top:808px;
+	width:1156px;
+	height:24px;
+	border-width:0;
+	box-shadow:inset 0px 1px #ababac, inset 0px 1px white;
+	background-image:linear-gradient(#f9fafa, #eaebec);
+	background-image:-webkit-linear-gradient(#f9fafa, #eaebec); /* for old versions of Safari */
+}
+
+.statusbar
+{
+	position:absolute;
+	left:0px;
+	top:0px;
+	height:100%;
+	display:flex;
+	flex-direction:row;
+}
+
+.statusbar .statusbar-item
+{
+	position:absolute;
+	left:6px;
+	top:0px;
+	height:100%;
+	border-width:0;
+	display:flex;
+	flex-direction:row;
 }

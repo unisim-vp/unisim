@@ -189,6 +189,8 @@ HttpServer::HttpServer(const char *name, unisim::kernel::service::Object *parent
 	, param_http_port("http-port", this, http_port, "HTTP port")
 	, http_max_clients(10)
 	, param_http_max_clients("http-max-clients", this, http_max_clients, "HTTP max clients")
+	, enable_cache(true)
+	, param_enable_cache("enable-cache", this, enable_cache, "Enable/Disable web browser caching for files")
 	, http_server_import_map()
 	, registers_import_map()
 	, kernel_has_parameters(false)
@@ -197,6 +199,7 @@ HttpServer::HttpServer(const char *name, unisim::kernel::service::Object *parent
 	, js_files()
 	, browser_actions()
 	, toolbar_actions()
+	, statusbar_items()
 {
 	param_http_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_http_port.SetMutable(false);
@@ -253,6 +256,12 @@ HttpServer::~HttpServer()
 	{
 		const unisim::service::interfaces::BrowserAction *a = (*it).second;
 		delete a;
+	}
+	
+	for(StatusBarItems::const_iterator it = statusbar_items.begin(); it != statusbar_items.end(); it++)
+	{
+		const unisim::service::interfaces::StatusBarItem *item = *it;
+		delete item;
 	}
 }
 
@@ -401,6 +410,12 @@ bool HttpServer::EndSetup()
 				{
 					http_server.AddJSAction(a);
 				}
+				
+				virtual void Append(const unisim::service::interfaces::StatusBarItem& i)
+				{
+					http_server.AddStatusBarItem(i);
+				}
+				
 			private:
 				HttpServer& http_server;
 			};
@@ -457,6 +472,11 @@ void HttpServer::AddJSAction(const unisim::service::interfaces::ToolbarDoAction&
 void HttpServer::AddJSAction(const unisim::service::interfaces::ToolbarOpenTabAction& a)
 {
 	toolbar_actions.push_back(new unisim::service::interfaces::ToolbarOpenTabAction(a, std::string("return gui && gui.open_tab('") + unisim::service::interfaces::to_string(a.GetTile()) + "','" + a.GetName() + "','" + a.GetURI() + "')"));
+}
+
+void HttpServer::AddStatusBarItem(const unisim::service::interfaces::StatusBarItem& i)
+{
+	statusbar_items.push_back(new unisim::service::interfaces::StatusBarItem(i));
 }
 
 unisim::kernel::service::Object *HttpServer::FindChildObject(unisim::kernel::service::Object *object, const std::string& hierarchical_name, std::size_t& pos)
@@ -606,7 +626,10 @@ bool HttpServer::ServeFile(unisim::util::hypapp::HttpRequest const& req, const s
 			{
 				unisim::util::hypapp::HttpResponse response;
 				
-				response.EnableCache();
+				if(enable_cache)
+				{
+					response.EnableCache();
+				}
 				
 				std::string ext = path.substr(path.find_last_of("/."));
 				
@@ -1321,6 +1344,23 @@ bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req,
 	response << "\t\t\t\t<div class=\"tab-headers\" id=\"bottom-tab-headers-div\"></div>" << std::endl;
 	response << "\t\t\t\t<div class=\"tab-contents\" id=\"bottom-tab-contents-div\"></div>" << std::endl;
 	response << "\t\t\t</div>" << std::endl;
+	response << "\t\t</div>" << std::endl;
+	response << "\t</div>" << std::endl;
+	response << "\t<div id=\"statusbar-div\">" << std::endl;
+	response << "\t\t<div class=\"statusbar\">" << std::endl;
+	for(StatusBarItems::const_iterator it = statusbar_items.begin(); it != statusbar_items.end(); it++)
+	{
+		const unisim::service::interfaces::StatusBarItem *item = *it;
+		response << "\t\t\t<div class=\"statusbar-item";
+		const std::string class_name = item->GetClassName();
+		if(!class_name.empty())
+		{
+			response << ' ' << class_name;
+		}
+		response << "\" name=\"" << item->GetName() << "\">" << std::endl;
+		response << "\t\t\t\t" << item->GetHTMLCodeSnippet() << std::endl; 
+		response << "\t\t\t</div>" << std::endl;
+	}
 	response << "\t\t</div>" << std::endl;
 	response << "\t</div>" << std::endl;
 	response << "\t</body>" << std::endl;

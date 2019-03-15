@@ -790,6 +790,16 @@ ChildWindow.prototype.closed = function()
 	return this.wnd.closed;
 }
 
+// StatusBarItem
+StatusBarItem.prototype.name = null;
+StatusBarItem.prototype.div_element = null;
+
+function StatusBarItem(div_element)
+{
+	this.name = div_element.hasAttribute('name') ? div_element.getAttribute('name') : null;
+	this.div_element = div_element;
+}
+
 // TabConfig
 TabConfig.prototype.name_seed = null;
 TabConfig.prototype.name = null;
@@ -1735,6 +1745,7 @@ GUI.prototype.min_tab_content_height = 0; // minimum tab content width
 GUI.prototype.window_size_monitoring_period = 500; // interface refresh period (in ms) while window is being resized
 GUI.prototype.toolbar_div = null;
 GUI.prototype.content_div = null;
+GUI.prototype.statusbar_div = null;
 GUI.prototype.left_tile_div = null;
 GUI.prototype.left_tab_headers_div = null;
 GUI.prototype.left_tab_header_div = null;
@@ -1761,6 +1772,7 @@ GUI.prototype.left_tile = null;
 GUI.prototype.top_middle_tile = null;
 GUI.prototype.top_right_tile = null;
 GUI.prototype.bottom_tile = null;
+GUI.prototype.statusbar_items = null;
 GUI.prototype.overlay = null; // an overlay div to prevent iframes from capturing mouse events while a menu is opened
 GUI.prototype.mouse_pos = null;
 GUI.prototype.bound_vert_resize = null;
@@ -1787,6 +1799,7 @@ function GUI()
 	
 	this.toolbar_div = document.getElementById('toolbar-div');
 	this.content_div = document.getElementById('content-div');
+	this.statusbar_div = document.getElementById('statusbar-div');
 	this.left_tile_div = document.getElementById('left-tile-div');
 	this.left_tab_headers_div = document.getElementById('left-tab-headers-div');
 	this.left_tab_header_div = document.getElementsByClassName('left-tab-header-div');
@@ -1809,6 +1822,13 @@ function GUI()
 	this.bottom_tab_headers_div = document.getElementById('bottom-tab-headers-div');
 	this.bottom_tab_header_div = document.getElementsByClassName('bottom-tab-header-div');
 	this.bottom_tab_contents_div = document.getElementById('bottom-tab-contents-div');
+	this.statusbar_items = new Array();
+	var statusbar_item_elements = document.getElementsByClassName('statusbar-item');
+	for(var i = 0; i < statusbar_item_elements.length; i++)
+	{
+		var statusbar_item_element = statusbar_item_elements[i];
+		this.statusbar_items.push(new StatusBarItem(statusbar_item_element));
+	}
 	this.overlay = document.createElement('div');
 	this.overlay.setAttribute('id', 'overlay');
 	this.overlay.style.zIndex = 2;
@@ -2190,7 +2210,10 @@ GUI.prototype.resize = function()
 	this.overlay.style.height = this.window_inner_height + 'px';
 	var toolbar_div_height = CompatLayer.get_element_height(this.toolbar_div);
 	this.toolbar_div.style.width = this.window_inner_width + 'px';
-	this.resize_content(this.window_inner_width, Math.max(this.window_inner_height - toolbar_div_height, toolbar_div_height));
+	var statusbar_div_height = CompatLayer.get_element_height(this.statusbar_div);
+	this.statusbar_div.style.width = this.window_inner_width + 'px';
+	this.statusbar_div.style.top = Math.max(this.window_inner_height - statusbar_div_height, toolbar_div_height) + 'px';
+	this.resize_content(this.window_inner_width, Math.max(this.window_inner_height - toolbar_div_height - statusbar_div_height, toolbar_div_height + statusbar_div_height));
 }
 
 GUI.prototype.monitor_window_size = function()
@@ -2316,6 +2339,11 @@ GUI.prototype.monitor_child_windows = function()
 			i++;
 		}
 	}
+}
+
+GUI.prototype.find_statusbar_item_by_name = function(name)
+{
+	return this.statusbar_items.find(function(other_item) { return other_item.name == name; });
 }
 
 var gui = null;

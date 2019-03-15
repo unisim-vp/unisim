@@ -789,6 +789,7 @@ FunctionInstructionProfile<ADDRESS, T>::FunctionInstructionProfile(const Address
 	, symbol_table_lookup_if(_symbol_table_lookup_if)
 	, func_insn_profile()
 	, value_range()
+	, cumulative_value()
 	, table_printers()
 	, histogram_printers()
 {
@@ -819,8 +820,9 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visito
 	const std::string& csv_delimiter = visitor.GetCSVDelimiter();
 	ReportFormat r_fmt = visitor.GetReportFormat();
 	Indent indent;
-	Quantizer<T> quant16 = Quantizer<T>(16, value_range);
 	std::multimap<T, std::string> sorted_func_insn_profile;
+	RatioCalculator<T, 100> percent_calc(cumulative_value);
+	RatioCalculator<T> ratio_calc(cumulative_value);
 	
 	typename std::map<std::string, T>::size_type num_functions = func_insn_profile.size();
 	std::size_t func_name_max_length = 0;
@@ -849,7 +851,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visito
 			break;
 			
 		case F_FMT_CSV:
-			os << "Function" << csv_delimiter << "Value" << csv_delimiter << "Disassembly" << csv_delimiter << "Source code" << std::endl;
+			os << "Function" << csv_delimiter << "Ratio" << csv_delimiter << "Value" << csv_delimiter << "Disassembly" << csv_delimiter << "Source code" << std::endl;
 			break;
 			
 		case F_FMT_HTML:
@@ -882,6 +884,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visito
 			os << ++indent << "<tr>" << std::endl;
 			os << ++indent << "<th>Function</th>" << std::endl;
 			//os << "<th>" << unisim::util::hypapp::HTML_Encoder::Encode(GetSampledVariableName()) << "</th>" << std::endl;
+			os << indent << "<th>Ratio</th>" << std::endl;
 			os << indent << "<th>Value</th>" << std::endl;
 			os << indent << "<th>Annotated<br>disassembly</th>" << std::endl;
 			os << indent << "<th>Annotated<br>source code</th>" << std::endl;
@@ -898,21 +901,51 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visito
 		const std::string func_name = (*func_prof_it).second;
 		const SLoc *sloc = func_name_loc_conv->FunctionNameToSLoc(func_name.c_str());
 		
+		std::stringstream value_sstr;
+		value_sstr << value;
+		std::string value_str(value_sstr.str());
+		
+		std::stringstream percent_sstr;
+		percent_sstr.setf(std::ios::fixed);
+		percent_sstr.precision(3);
+		double percent = percent_calc.Compute(value);
+		percent_sstr << percent;
+		std::string percent_str(percent_sstr.str());
+		
+		std::stringstream ratio_sstr;
+		ratio_sstr.setf(std::ios::fixed);
+		ratio_sstr.precision(16);
+		double ratio = ratio_calc.Compute(value);
+		ratio_sstr << ratio;
+		std::string ratio_str(ratio_sstr.str());
+		
+		std::stringstream func_addr_sstr;
+		ADDRESS func_addr = 0;
+		if(func_name_loc_conv->FunctionNameToAddress(func_name.c_str(), func_addr))
+		{
+			func_addr_sstr << "@0x" << std::hex << func_addr;
+		}
+		else
+		{
+			func_addr_sstr << "?";
+		}
+		std::string func_addr_str(func_addr_sstr.str());
+		
 		switch(f_fmt)
 		{
 			case F_FMT_TEXT:
-				os << StringPadder(func_name, func_name_max_length) << ':' << std::dec << value << std::endl;
+				os << StringPadder(func_name, func_name_max_length) << ':' << percent_str << "%:" << func_addr_str << ':' << sloc->GetFilename() << ':' << value_str << std::endl;
 				break;
 				
 			case F_FMT_CSV:
 			{
-				os << c_string_to_CSV(func_name.c_str()) << csv_delimiter << std::dec << value << csv_delimiter << "=HYPERLINK(\"" << ((r_fmt = R_FMT_HTTP) ? "http://" : "file://");;
+				os << c_string_to_CSV(func_name.c_str()) << csv_delimiter << ratio_str << csv_delimiter << value_str << csv_delimiter << "=HYPERLINK(\"" << ((r_fmt = R_FMT_HTTP) ? "http://" : "file://");;
 				const std::string& dir_path = visitor.GetDirPath();
 				std::string href(dir_path);
 				href += '/';
 				href += "disassembly.csv";
 				
-				os << unisim::util::hypapp::URI_Encoder::Encode(href) << "\";\"link\")" << csv_delimiter;
+				os << unisim::util::hypapp::URI_Encoder::Encode(href) << "\";\"" << func_addr_str << "\")" << csv_delimiter;
 				if(sloc)
 				{
 					os << "=HYPERLINK(\"" << ((r_fmt = R_FMT_HTTP) ? "http://" : "file://");
@@ -922,7 +955,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visito
 					href += to_string(filename_index->IndexFilename(sloc->GetFilename()));
 					href += ".csv";
 					
-					os << unisim::util::hypapp::URI_Encoder::Encode(href) << "\";\"link\")";
+					os << unisim::util::hypapp::URI_Encoder::Encode(href) << "\";\"" << sloc->GetFilename() << "\")";
 				}
 				os << std::endl;
 				break;
@@ -931,40 +964,19 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visito
 			case F_FMT_HTML:
 			{
 
-				if(value >= value_range.first)
-				{
-					unsigned int scale16 = quant16.Quantize(value);
-					//std::cerr << value << " -> " << scale << std::endl;
-					
-					os << indent << "<tr class=\"scale" << scale16 << "\">";
-				}
-				else
-				{
-					os << indent << "<tr>";
-				}
+				os << indent << "<tr>";
 				
 				// Function
 				os << "<td class=\"function\">" << unisim::util::hypapp::HTML_Encoder::Encode(func_name.c_str()) << "</td>";
+				
+				// Ratio
+				os << "<td class=\"ratio\">" << unisim::util::hypapp::HTML_Encoder::Encode(percent_str.c_str()) << "&percnt;</td>";
 			
 				// Value
-				std::stringstream value_sstr;
-				value_sstr << value;
-
-				os << "<td class=\"value\">" << unisim::util::hypapp::HTML_Encoder::Encode(value_sstr.str().c_str()) << "</td>";
+				os << "<td class=\"value\">" << unisim::util::hypapp::HTML_Encoder::Encode(value_str.c_str()) << "</td>";
 
 				// Annotated disassembly
-				std::stringstream func_addr_sstr;
-				ADDRESS func_addr = 0;
-				if(func_name_loc_conv->FunctionNameToAddress(func_name.c_str(), func_addr))
-				{
-					func_addr_sstr << "@0x" << std::hex << func_addr;
-				}
-				else
-				{
-					func_addr_sstr << "?";
-				}
-				
-				os << "<td class=\"disasm\"><a title=\"Show annotated disassembly\" href=\"disassembly.html#" << unisim::util::hypapp::URI_Encoder::Encode(func_name.c_str()) << "\">" << unisim::util::hypapp::HTML_Encoder::Encode(func_addr_sstr.str().c_str()) << "</td>";
+				os << "<td class=\"disasm\"><a title=\"Show annotated disassembly\" href=\"disassembly.html#" << unisim::util::hypapp::URI_Encoder::Encode(func_name.c_str()) << "\">" << unisim::util::hypapp::HTML_Encoder::Encode(func_addr_str.c_str()) << "</td>";
 				
 				// Annotated souce code
 				os << "<td class=\"source\">";
@@ -987,7 +999,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visito
 	switch(f_fmt)
 	{
 		case F_FMT_HTML:
-			os << indent << "<tr><td>" << num_functions << " functions</td><td>" << addr_profile->GetCumulativeValueAsString() << "</td><td></td><td></td></tr>" << std::endl;
+			os << indent << "<tr><td>" << num_functions << " functions</td><td>100.00 &percnt;</td><td>" << cumulative_value << "</td><td></td><td></td></tr>" << std::endl;
 			os << --indent << "</table>" << std::endl;
 			os << --indent << "</div>" << std::endl;
 			os << --indent << "</body>" << std::endl;
@@ -1069,7 +1081,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintHistogram(std::ostream& os, Vi
 	double font_size_px = 12.0;
 	double font_scale = font_size_px / 14.0;
 	
-	double svg_margin = 12;
+	double svg_margin = 6;
 	double svg_text_height = font_scale * 8.5 * func_name_max_length;
 	double svg_value_height = font_scale * 8.5 * value_max_length;
 	double svg_histogram_height = 0.5 * svg_text_height;
@@ -1077,17 +1089,24 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintHistogram(std::ostream& os, Vi
 	double svg_height = svg_histogram_height + svg_value_height + svg_text_height + (2 * svg_margin);
 	
 	double svg_bar_width = 16 * font_scale;
-	double svg_width = (2 * svg_margin) + ((svg_bar_width * 1.25) * func_insn_profile.size());
+	double svg_histogram_width = ((svg_bar_width * 1.25) * func_insn_profile.size());
+	double svg_width = (2 * svg_margin) + (font_scale * 8.5 * 7) + svg_histogram_width;
 	double axis_y = svg_margin + svg_histogram_height + svg_value_height;
 	
-	Quantizer<T> histogram_quant = Quantizer<T>(svg_histogram_height, value_range);
+	double svg_histogram_x = svg_margin + (font_scale * 8.5 * 7);
+	double level_axis_x = svg_margin + (font_scale * 8.5 * 6);
+	
+	std::pair<T, T> histogram_value_range(T(), value_range.second); // from 0 to max value
+	Quantizer<T> histogram_quant = Quantizer<T>(svg_histogram_height, histogram_value_range);
 	
 	os << indent << "<svg version=\"1.2\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"" << svg_width << "\" height=\"" << svg_height << "\" viewBox=\"0 0 " << svg_width << " " << svg_height << "\">" << std::endl;
 	os << ++indent << "<defs>" << std::endl;
 	os << ++indent << "<style type=\"text/css\">" << std::endl;
 	os << ++indent << "<![CDATA[" << std::endl;
 	os << ++indent << ".background { fill:#ffffff; }" << std::endl;
-	os << indent << ".axis { stroke:rgb(0,0,0); stroke-width:1; }" << std::endl;
+	os << indent << ".axis { stroke:#000000; stroke-width:1; }" << std::endl;
+	os << indent << ".level-axis { stroke:#c0c0c0; stroke-width:1; stroke-dasharray:2,2; }" << std::endl;
+	os << indent << ".level-axis-text { font-size:" << font_size_px << "px; font-family:'Courier New',Courier,monospace; font-weight:bold; fill:#000000; }" << std::endl;
 	os << indent << ".func-name { font-size:" << font_size_px << "px; font-family:'Courier New',Courier,monospace; font-weight:bold; fill:#000000; }" << std::endl;
 	os << indent << ".bar { fill:#ff0000; }" << std::endl;
 	os << indent << ".value { font-size:" << font_size_px << "px; font-family:'Courier New',Courier,monospace; font-weight:bold; fill:#000000; }" << std::endl;
@@ -1096,6 +1115,28 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintHistogram(std::ostream& os, Vi
 	os << --indent << "</defs>" << std::endl;
 	os << indent << "<title>Instruction profile by function for " << unisim::util::hypapp::HTML_Encoder::Encode(GetSampledVariableName()) << "</title>" << std::endl;
 	os << indent << "<rect class=\"background\" x=\"0\" y=\"0\" width=\"" << svg_width << "\" height=\"" << svg_height << "\"/>" << std::endl;
+	
+	if(value_range.second != T())
+	{
+		double ideal_num_levels = (svg_histogram_height / (8.5 * font_scale * 2)) * (cumulative_value / value_range.second);
+		unsigned int num_levels = (ideal_num_levels >= 100) ? 100 : ((ideal_num_levels >= 50) ? 50 : ((ideal_num_levels >= 40) ? 40 : ((ideal_num_levels >= 20) ? 20 : ((ideal_num_levels >= 10) ? 10 : 5))));
+		unsigned int level;
+		for(level = 1; level <= num_levels; level++)
+		{
+			T level_value((cumulative_value * level) / num_levels);
+			if(level_value > value_range.second) break;
+			
+			double level_height = histogram_quant.Quantize(level_value);
+			double level_axis_y = axis_y - level_height;
+			os << indent << "<line class=\"level-axis\" x1=\"" << level_axis_x << "\" y1=\"" << level_axis_y << "\" x2=\"" << svg_width << "\" y2=\"" << level_axis_y << "\"/>" << std::endl;
+			
+			double level_text_x = svg_margin + (font_scale * 8.5 * 5);
+			double level_text_y = level_axis_y + (8.5 * font_scale / 2.0);
+			unsigned int int_part = (level * 100) / num_levels;
+			unsigned int frac_part = (level * 100) % num_levels;
+			os << indent << "<text class=\"level-axis-text\" text-anchor=\"end\" x=\"" << level_text_x << "\" y=\"" << level_text_y << "\">" << int_part << '.' << ((10 * frac_part) / num_levels) << "&percnt;</text>" << std::endl;
+		}
+	}
 	
 	unsigned int histogram_column = 0;
 	
@@ -1118,7 +1159,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintHistogram(std::ostream& os, Vi
 			
 			// draw bar
 			double svg_bar_height = histogram_quant.Quantize(value);
-			double svg_bar_x = svg_margin + ((svg_bar_width * 1.25) * histogram_column);
+			double svg_bar_x = svg_histogram_x + ((svg_bar_width * 1.25) * histogram_column);
 			double svg_bar_y = (axis_y - svg_bar_height);
 			os << indent << "<rect class=\"bar\" x=\"" << svg_bar_x << "\" y=\"" << svg_bar_y << "\" width=\"" << svg_bar_width << "\" height=\"" << svg_bar_height << "\"/>" << std::endl;
 			
@@ -1172,6 +1213,7 @@ void FunctionInstructionProfile<ADDRESS, T>::Init()
 		if(func_symbol)
 		{
 			func_insn_profile[func_symbol->GetName()] += value;
+			cumulative_value += value;
 		}
 	}
 	

@@ -903,6 +903,7 @@ UNISIM_LIB_SIMULATOR_DATA_FILES="\
 unisim/kernel/logger/style.css \
 unisim/kernel/logger/icon.svg \
 unisim/service/instrumenter/style.css \
+unisim/service/instrumenter/status_style.css \
 unisim/service/instrumenter/script.js \
 unisim/service/instrumenter/favicon.ico \
 unisim/service/instrumenter/icon.svg \

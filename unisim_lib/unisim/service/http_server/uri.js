@@ -106,7 +106,8 @@ function URI(uri, window_context)
 				var wnd_ctx = window_context || window;
 				this.authority = wnd_ctx.location.host;
 				this.scheme = wnd_ctx.location.protocol.slice(0, -1);
-				this.path = wnd_ctx.location.pathname.substr(0, wnd_ctx.location.pathname.lastIndexOf('/')).trim();
+				this.path = '';
+				trimed_uri = wnd_ctx.location.pathname.substr(0, wnd_ctx.location.pathname.lastIndexOf('/')).trim() + '/' + trimed_uri;
 			}
 			
 			var stack_underflow = false;

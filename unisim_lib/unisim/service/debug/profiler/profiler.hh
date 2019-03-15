@@ -258,6 +258,18 @@ private:
 	std::map<std::string, unsigned int> index;
 };
 
+//////////////////////////////// Ratio ////////////////////////////////////////
+
+template <typename T, unsigned int SCALE = 1>
+class RatioCalculator
+{
+public:
+	RatioCalculator(const T& _divisor) : divisor(_divisor) {}
+	double Compute(const T& value) { return (value * (double) SCALE) / divisor; }
+private:
+	const T& divisor;
+};
+
 //////////////////////////////// Sample ///////////////////////////////////////
 
 template <typename T>
@@ -420,6 +432,7 @@ public:
 	virtual const char *GetSampledVariableName() const { return sample.GetSampledVariableName(); }
 	virtual unisim::kernel::service::VariableBase *GetSampledVariable() const { return sample.GetSampledVariable(); }
 	virtual std::string GetCumulativeValueAsString() const { return to_string(this->GetWeight()); }
+	const T& GetCumulativeValue() const { return this->GetWeight(); }
 	virtual InstructionProfileBase *CreateInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const;
 	virtual FunctionInstructionProfileBase *CreateFunctionInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const;
 	virtual SourceCodeProfileBase<ADDRESS> *CreateSourceCodeProfile() const;
@@ -544,6 +557,7 @@ private:
 	unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if;
 	std::map<std::string, T> func_insn_profile;
 	std::pair<T, T> value_range;
+	T cumulative_value;
 	
 	TablePrinter *table_printers[NUM_FILE_FORMATS];
 	HistogramPrinter *histogram_printers[NUM_FILE_FORMATS];

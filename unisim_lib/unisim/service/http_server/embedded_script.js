@@ -165,3 +165,13 @@ GUI.prototype.on_window_unload = function()
 		this.__on_unload__();
 	}
 }
+
+GUI.prototype.find_statusbar_item_by_name = function(name)
+{
+	if(this.within_tiled_gui())
+	{
+		return window.parent.gui.find_statusbar_item_by_name(name);
+	}
+	
+	return null;
+}
