@@ -503,8 +503,8 @@ DoubleIFrame.prototype.patch_anchors = function()
 					var rect = iframe_element.getBoundingClientRect();
 					var scroll_left = window.pageXOffset || window.document.documentElement.scrollLeft;
 					var scroll_top = window.pageYOffset || window.document.documentElement.scrollTop;
-					var offset_x = rect.left + scroll_left;
-					var offset_y = rect.top + scroll_top;
+					var x = event.clientX + rect.left + scroll_left;
+					var y = event.clientY + rect.top + scroll_top;
 					var context_menu_items = new Array();
 					context_menu_items.push(
 						{
@@ -537,7 +537,8 @@ DoubleIFrame.prototype.patch_anchors = function()
 						}
 					}
 					
-					gui.create_context_menu(event, context_menu_items, this, window.document, offset_x, offset_y);
+					gui.create_context_menu_at(x, y, context_menu_items, this, window.document);
+					event.preventDefault();
 				}.bind(this, uri_str)
 			);
 		}
@@ -1219,7 +1220,6 @@ Tile.prototype.controls_width = 0;
 Tile.prototype.tab_headers_width = 0;
 Tile.prototype.tab_config_history = null;
 Tile.prototype.history_shortcut_element = null;
-Tile.prototype.history_element = null;
 
 function Tile(owner, name, tile_element)
 {
@@ -1236,7 +1236,6 @@ function Tile(owner, name, tile_element)
 	this.tab_headers_right_scroller.classList.add(CompatLayer.has_svg ? 'w-svg' : 'wo-svg');
 	this.tabs = new Array();
 	this.tab_config_history = new TabConfigs();
-	this.history_element = null;
 	var saved_tab_configs = new TabConfigs();
 	saved_tab_configs.restore('gui.' + this.name + '.');
 	
@@ -1508,46 +1507,36 @@ Tile.prototype.ensure_tab_header_is_in_visible_scope = function(tab)
 	}
 }
 
-Tile.prototype.history_shortcut_onclick = function()
+Tile.prototype.history_shortcut_onclick = function(event)
 {
-	if(this.history_element)
-	{
-		document.body.removeChild(this.history_element);
-		this.history_element = null;
-	}
-	else if(this.tab_config_history.tab_configs.length > 0)
+	if(this.tab_config_history.tab_configs.length > 0)
 	{
 		// create an 'history' below the 'history shortcut'
-		this.history_element = document.createElement('div');
-		this.history_element.className = 'tab-headers-history';
-		this.history_element.style.position = 'fixed';
 		var history_shortcut_element_pos = CompatLayer.get_element_pos(this.history_shortcut_element);
-		this.history_element.style.left = history_shortcut_element_pos.x + 'px';
-		this.history_element.style.top = history_shortcut_element_pos.y + CompatLayer.get_element_height(this.history_shortcut_element) + 'px';
-		this.history_element.className = 'tab-headers-history';
+		var x = history_shortcut_element_pos.x;
+		var y = history_shortcut_element_pos.y + CompatLayer.get_element_height(this.history_shortcut_element);
+		var history_items = new Array();
 		for(var i = 0; i < this.tab_config_history.tab_configs.length; i++)
 		{
 			var tab_config = this.tab_config_history.tab_configs[i];
-			var history_item_element = document.createElement('div');
-			history_item_element.className = 'tab-headers-history-item';
-			history_item_element.textContent = tab_config.label;
-			history_item_element.addEventListener('click', this.history_item_element_on_click.bind(this, tab_config));
-			this.history_element.appendChild(history_item_element);
+			
+			history_items.push(
+				{
+					label: tab_config.label,
+					action:function(tab_config)
+					{
+						this.create_tab_from_config(tab_config).switch_to();
+						this.tab_config_history.remove(tab_config);
+						this.save_history();
+					},
+					arg: tab_config
+				}
+			);
 		}
-		document.body.appendChild(this.history_element);
+		
+		event.stopPropagation();
+		this.owner.create_context_menu_at(x, y, history_items, this);
 	}
-}
-
-Tile.prototype.history_item_element_on_click = function(tab_config)
-{
-	if(this.history_element)
-	{
-		document.body.removeChild(this.history_element);
-		this.history_element = null;
-	}
-	this.create_tab_from_config(tab_config).switch_to();
-	this.tab_config_history.remove(tab_config);
-	this.save_history();
 }
 
 Tile.prototype.detach_tab = function(tab_to_detach)
@@ -1614,7 +1603,7 @@ ContextMenu.action_this = null;
 ContextMenu.context_menu_element = null;
 ContextMenu.document = null;
 
-function ContextMenu(event, context_menu_items, action_this, document, offset_x, offset_y)
+function ContextMenu(x, y, context_menu_items, action_this, document)
 {
 	this.document = document || window.document;
 	this.action_this = action_this;
@@ -1622,8 +1611,8 @@ function ContextMenu(event, context_menu_items, action_this, document, offset_x,
 	this.context_menu_element.className = 'context-menu';
 	this.context_menu_element.style.display = 'block';
 	this.context_menu_element.style.position = 'fixed';
-	this.context_menu_element.style.left = event.clientX + (offset_x || 0) + 'px';
-	this.context_menu_element.style.top = event.clientY + (offset_y || 0) + 'px';
+	this.context_menu_element.style.left = x + 'px';
+	this.context_menu_element.style.top = y + 'px';
 	
 	for(var i = 0; i < context_menu_items.length; i++)
 	{
@@ -1666,8 +1655,6 @@ function ContextMenu(event, context_menu_items, action_this, document, offset_x,
 	{
 		this.context_menu_element.style.top = (window_inner_height - height) + 'px';
 	}
-
-	event.preventDefault();
 }
 
 ContextMenu.prototype.destroy = function()
@@ -2256,10 +2243,18 @@ GUI.prototype.find_tab_by_iframe_name = function(iframe_name)
 	return this.left_tile.find_tab_by_iframe_name(iframe_name) || this.top_middle_tile.find_tab_by_iframe_name(iframe_name) || this.top_right_tile.find_tab_by_iframe_name(iframe_name) || this.bottom_tile.find_tab_by_iframe_name(iframe_name);
 }
 
-GUI.prototype.create_context_menu = function(event, context_menu_items, action_this, document, offset_x, offset_y)
+GUI.prototype.create_context_menu = function(event, context_menu_items, action_this, document)
 {
 	this.destroy_context_menu();
-	this.context_menu = new ContextMenu(event, context_menu_items, action_this, document, offset_x, offset_y);
+	this.context_menu = new ContextMenu(event.clientX, event.clientY, context_menu_items, action_this, document);
+	event.preventDefault();
+	this.enable_events(false);
+}
+
+GUI.prototype.create_context_menu_at = function(x, y, context_menu_items, action_this, document)
+{
+	this.destroy_context_menu();
+	this.context_menu = new ContextMenu(x, y, context_menu_items, action_this, document);
 	this.enable_events(false);
 }
 

@@ -183,7 +183,7 @@ body
 	background-size:cover;
 	background-repeat:no-repeat;
 	background-color:#eff0f1;
-	border-radius:2px;
+	border-radius:2px 2px 0px 0px;
 }
 
 .tab-headers-history-shortcut.w-svg
@@ -253,7 +253,7 @@ body
 	background-size:cover;
 	background-repeat:no-repeat;
 	background-color:#eff0f1;
-	border-radius:2px;
+	border-radius:2px 2px 0px 0px;
 }
 
 .tab-headers-scroller:hover
