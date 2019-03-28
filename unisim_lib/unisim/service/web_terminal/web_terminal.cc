@@ -164,6 +164,30 @@ std::ostream& operator << (std::ostream& os, const UnicodeCharacter& uc)
 	return os;
 }
 
+///////////////////////////// ScreenBufferLine ////////////////////////////////
+
+ScreenBufferLine::ScreenBufferLine(unsigned int _display_width)
+	: display_width(_display_width)
+	, storage(new ScreenBufferCharacter[display_width])
+{
+	Erase();
+}
+
+ScreenBufferLine::~ScreenBufferLine()
+{
+	delete storage;
+}
+
+void ScreenBufferLine::Erase()
+{
+	memset(storage, 0, display_width * sizeof(ScreenBufferCharacter));
+}
+
+ScreenBufferCharacter& ScreenBufferLine::operator [] (unsigned int colno)
+{
+	return storage[colno - 1];
+}
+
 ///////////////////////////// ScreenBufferIterator ////////////////////////////
 
 ScreenBufferIterator::ScreenBufferIterator(const ScreenBufferIterator& o)
@@ -612,6 +636,77 @@ void ScreenBuffer::RestoreCursorPosition()
 {
 	cursor_colno = save_cursor_colno;
 	cursor_lineno = save_cursor_lineno;
+}
+
+///////////////////////////////// InputBuffer /////////////////////////////////
+
+InputBuffer::InputBuffer(unsigned int _size)
+	: size(_size)
+	, front_index(0)
+	, back_index(0)
+	, fill_level(0)
+	, storage(size)
+{
+}
+
+void InputBuffer::Push(char c)
+{
+	if(fill_level != size)
+	{
+// 			std::cerr << "Pushing " << (unsigned int)(unsigned char) c << std::endl;
+		storage[back_index] = c;
+		++back_index;
+		if(back_index >= size) back_index = 0;
+		fill_level++;
+	}
+}
+
+void InputBuffer::Push(const char *s)
+{
+	char c = *s++;
+	if(c)
+	{
+		do
+		{
+			Push(c);
+			c = *s++;
+		}
+		while(c);
+	}
+}
+
+void InputBuffer::Push(const std::string& s)
+{
+	std::size_t n = s.length();
+	for(std::size_t i = 0; i < n; i++)
+	{
+		Push(s[i]);
+	}
+}
+
+bool InputBuffer::Empty() const
+{
+	return fill_level == 0;
+}
+
+bool InputBuffer::Full() const
+{
+	return fill_level == size;
+}
+
+char InputBuffer::Front() const
+{
+	return storage[front_index];
+}
+
+void InputBuffer::Pop()
+{
+	if(fill_level)
+	{
+		++front_index;
+		if(front_index >= size) front_index = 0;
+		fill_level--;
+	}
 }
 
 ///////////////////////////////// WebTerminal /////////////////////////////////

@@ -243,30 +243,14 @@ struct ScreenBufferCharacter
 
 struct ScreenBufferLine
 {
+	ScreenBufferLine(unsigned int _display_width);
+	~ScreenBufferLine();
+	void Erase();
+	ScreenBufferCharacter& operator [] (unsigned int colno);
+	
+private:
 	unsigned int display_width;
 	ScreenBufferCharacter *storage;
-	
-	ScreenBufferLine(unsigned int _display_width)
-		: display_width(_display_width)
-		, storage(new ScreenBufferCharacter[display_width])
-	{
-		Erase();
-	}
-	
-	~ScreenBufferLine()
-	{
-		delete storage;
-	}
-	
-	void Erase()
-	{
-		memset(storage, 0, display_width * sizeof(ScreenBufferCharacter));
-	}
-	
-	ScreenBufferCharacter& operator [] (unsigned int colno)
-	{
-		return storage[colno - 1];
-	}
 };
 
 ///////////////////////////// ScreenBufferIterator ////////////////////////////
@@ -385,75 +369,17 @@ struct ScreenBuffer
 
 struct InputBuffer
 {
-	InputBuffer(unsigned int _size)
-		: size(_size)
-		, front_index(0)
-		, back_index(0)
-		, fill_level(0)
-		, storage(size)
-	{
-	}
+	InputBuffer(unsigned int _size);
 	
-	void Push(char c)
-	{
-		if(fill_level != size)
-		{
-// 			std::cerr << "Pushing " << (unsigned int)(unsigned char) c << std::endl;
-			storage[back_index] = c;
-			++back_index;
-			if(back_index >= size) back_index = 0;
-			fill_level++;
-		}
-	}
-	
-	void Push(const char *s)
-	{
-		char c = *s++;
-		if(c)
-		{
-			do
-			{
-				Push(c);
-				c = *s++;
-			}
-			while(c);
-		}
-	}
-	
-	void Push(const std::string& s)
-	{
-		std::size_t n = s.length();
-		for(std::size_t i = 0; i < n; i++)
-		{
-			Push(s[i]);
-		}
-	}
-	
-	bool Empty() const
-	{
-		return fill_level == 0;
-	}
-	
-	bool Full() const
-	{
-		return fill_level == size;
-	}
-	
-	char Front() const
-	{
-		return storage[front_index];
-	}
-	
-	void Pop()
-	{
-		if(fill_level)
-		{
-			++front_index;
-			if(front_index >= size) front_index = 0;
-			fill_level--;
-		}
-	}
-	
+	void Push(char c);
+	void Push(const char *s);
+	void Push(const std::string& s);
+	bool Empty() const;
+	bool Full() const;
+	char Front() const;
+	void Pop();
+
+private:
 	unsigned int size;
 	unsigned int front_index;
 	unsigned int back_index;
