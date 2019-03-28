@@ -86,6 +86,7 @@ unisim/service/tee/backtrace/tee_32.cc \
 unisim/service/netstreamer/netstreamer.cc \
 unisim/service/os/linux_os/powerpc_linux32.cc \
 unisim/service/instrumenter/instrumenter.cc \
+unisim/service/web_terminal/web_terminal.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/floating.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/cpu.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/cpu.cc \
@@ -741,10 +742,12 @@ unisim/service/tee/symbol_table_lookup/tee.hh \
 unisim/service/tee/blob/tee.hh \
 unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/backtrace/tee.hh \
+unisim/service/tee/char_io/tee.hh \
 unisim/service/netstreamer/netstreamer.hh \
 unisim/service/os/linux_os/linux.hh \
 unisim/service/os/linux_os/powerpc_linux32.hh \
 unisim/service/instrumenter/instrumenter.hh \
+unisim/service/web_terminal/web_terminal.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/cpu.hh \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.hh \
@@ -950,6 +953,14 @@ unisim/service/debug/profiler/script.js \
 unisim/service/debug/profiler/by_function_histogram.js \
 unisim/service/debug/profiler/by_function_table.js \
 unisim/service/debug/profiler/index.js \
+unisim/service/web_terminal/style.css \
+unisim/service/web_terminal/script.js \
+unisim/service/web_terminal/icon_term0.svg \
+unisim/service/web_terminal/icon_term1.svg \
+unisim/service/web_terminal/icon_term2.svg \
+unisim/service/web_terminal/icon_term14.svg \
+unisim/service/web_terminal/icon_term15.svg \
+unisim/service/web_terminal/icon_term16.svg \
 "
 
 SIMULATOR_EXTERNAL_HEADERS="\

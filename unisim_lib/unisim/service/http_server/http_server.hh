@@ -45,8 +45,6 @@ namespace unisim {
 namespace service {
 namespace http_server {
 
-class HttpServer;
-
 class HttpServer
 	: public unisim::kernel::service::Client<unisim::service::interfaces::HttpServer>
 	, public unisim::kernel::service::Client<unisim::service::interfaces::Registers>
@@ -65,6 +63,7 @@ public:
 	
 	virtual void Serve(unisim::util::hypapp::ClientConnection const& conn);
 	
+
 	void AddCSSFile(const unisim::service::interfaces::CSSFile& f);
 	void AddJSFile(const unisim::service::interfaces::JSFile& f);
 	void AddJSAction(const unisim::service::interfaces::BrowserDoAction& a);

@@ -54,47 +54,29 @@ GUI.prototype.restore_window_scroll_top = function()
 
 GUI.prototype.reload = function()
 {
+	window.location.replace(window.location.href); // reload without POST
+}
+
+GUI.prototype.auto_reload = function(period, mode)
+{
 	var own_tab = this.find_own_tab();
 	if(own_tab)
 	{
 		// within tiled GUI
-		
-		// refresh my own tab
-		own_tab.refresh();
-		
-		// refresh other tabs that are active
-		window.parent.gui.for_each_tab(
-			function(tab)
-			{
-				if(tab.is_active && (tab != own_tab))
-				{
-					tab.refresh();
-				}
-			}
-		);
-		
-		// refresh child windows
-		window.parent.gui.for_each_child_window(
-			function(child_window)
-			{
-				child_window.refresh();
-			}
-		);
+		own_tab.auto_reload(period, mode);
 	}
 	else
 	{
 		// stand-alone
-		window.location.replace(window.location.href); // reload without POST
+		if(this.timeout)
+		{
+			clearTimeout(this.timeout);
+		}
+		if(period)
+		{
+			this.timeout = setTimeout(this.reload.bind(this), period);
+		}
 	}
-}
-
-GUI.prototype.reload_after = function(delay)
-{
-	if(this.timeout)
-	{
-		clearTimeout(this.timeout);
-	}
-	this.timeout = setTimeout(this.reload.bind(this), delay);
 }
 
 GUI.prototype.get_next_target = function()

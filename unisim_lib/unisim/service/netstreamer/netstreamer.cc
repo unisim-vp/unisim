@@ -967,7 +967,7 @@ bool NetStreamer::GetChar(char& c)
 				if(unlikely(verbose))
 				{
 					logger << DebugInfo << "Getting character ";
-					if((v >= 32) && (v < 128))
+					if((v >= 32) && (v < 127))
 						logger << "'" << c << "'";
 					else
 						logger << "0x" << std::hex << (unsigned int) v << std::dec;

@@ -304,30 +304,36 @@ bool HttpResponse::Send(ClientConnection const& conn, bool header_only) const
   const std::string& content(content_stream_buffer.str());
   header_stream << "HTTP/1.1 " << status_code << "\r\n";
   header_stream << "Server: UNISIM-VP\r\n";
-  if(!allow.empty())
+  
+  if(IsSuccessful())
   {
-    header_stream << "Allow: " << allow << "\r\n";
+    if(!allow.empty())
+    {
+      header_stream << "Allow: " << allow << "\r\n";
+    }
+    if(!accept_ranges.empty())
+    {
+      header_stream << "Accept-Ranges: " << accept_ranges << "\r\n";
+    }
+    if(enable_cache)
+    {
+      header_stream << "Cache-control: public, max-age=600\r\n";
+    }
+    else
+    {
+      header_stream << "Cache-control: no-cache\r\n";
+    }
+    if(content_type.length())
+    {
+      header_stream << "Content-Type: " << content_type << "\r\n";
+    }
   }
-  if(!accept_ranges.empty())
-  {
-    header_stream << "Accept-Ranges: " << accept_ranges << "\r\n";
-  }
-  if(enable_cache)
-  {
-    header_stream << "Cache-control: public, max-age=600\r\n";
-  }
-  else
-  {
-    header_stream << "Cache-control: no-cache\r\n";
-  }
+  
+  header_stream << "Content-length: " << content.length() << "\r\n";
+   
   if(keep_alive)
   {
     header_stream << "Connection: keep-alive\r\n";
-  }
-  header_stream << "Content-length: " << content.length() << "\r\n";
-  if(content_type.length())
-  {
-    header_stream << "Content-Type: " << content_type << "\r\n";
   }
   
   for(HeaderFields::const_iterator it = header_fields.begin(); it != header_fields.end(); it++)
@@ -1052,7 +1058,14 @@ std::string HTML_Encoder::Encode(const std::string& s)
 				sstr << "&nbsp;&nbsp;&nbsp;&nbsp;";
 				break;
 			default:
-				sstr << c;
+				if((c >= 32) && (c < 127))
+				{
+					sstr << c;
+				}
+				else
+				{
+					sstr << "&nbsp;";
+				}
 				break;
 		}
 	}

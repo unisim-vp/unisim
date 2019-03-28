@@ -56,7 +56,6 @@ struct Config
 	                                         + NUM_PROCESSORS // for inline-debugger
 	                                         + NUM_PROCESSORS // for profiler
 	                                         ;
-
 	static const unsigned int NUM_DMA_CHANNELS  = 128;
 	static const unsigned int NUM_DMA_TRIGGERS  = 8;
 	static const unsigned int NUM_DMA_ALWAYS_ON = 64;

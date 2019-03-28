@@ -487,6 +487,14 @@ body
 	border-left-color:#b7b8b8;
 	box-shadow: 1px 1px 1px #ababac;
 	cursor:default;
+	user-drag:none; /* Safari only */
+	-webkit-touch-callout:none; /* iOS Safari */
+	-webkit-user-select:none;   /* Safari */
+	-khtml-user-select:none;    /* Konqueror HTML */
+	-moz-user-select:none;      /* Firefox */
+	-ms-user-select:none;       /* Internet Explorer/Edge */
+	user-select:none;           /* Non-prefixed version, currently
+                                    supported by Chrome and Opera */
 }
 
 .context-menu-item

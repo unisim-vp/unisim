@@ -829,7 +829,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visito
 	std::size_t value_max_length = 0;
 	for(typename std::map<std::string, T>::const_iterator func_prof_it = func_insn_profile.begin(); func_prof_it != func_insn_profile.end(); func_prof_it++)
 	{
-		const std::string func_name = (*func_prof_it).first;
+		const std::string& func_name = (*func_prof_it).first;
 		const T& value = (*func_prof_it).second;
 		if(func_name.length() > func_name_max_length)
 		{
@@ -898,7 +898,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visito
 	for(typename std::multimap<T, std::string>::const_reverse_iterator func_prof_it = sorted_func_insn_profile.rbegin(); func_prof_it != sorted_func_insn_profile.rend(); func_prof_it++)
 	{
 		const T& value = (*func_prof_it).first;
-		const std::string func_name = (*func_prof_it).second;
+		const std::string& func_name = (*func_prof_it).second;
 		const SLoc *sloc = func_name_loc_conv->FunctionNameToSLoc(func_name.c_str());
 		
 		std::stringstream value_sstr;
@@ -934,7 +934,15 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visito
 		switch(f_fmt)
 		{
 			case F_FMT_TEXT:
-				os << StringPadder(func_name, func_name_max_length) << ':' << percent_str << "%:" << func_addr_str << ':' << sloc->GetFilename() << ':' << value_str << std::endl;
+				os << StringPadder(func_name, func_name_max_length);
+				os << ':' << percent_str << "%";
+				os << ':' << func_addr_str;
+				os << ':';
+				if(sloc)
+				{
+					os << sloc->GetFilename();
+				}
+				os << ':' << value_str << std::endl;
 				break;
 				
 			case F_FMT_CSV:
@@ -1062,7 +1070,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintHistogram(std::ostream& os, Vi
 	std::size_t value_max_length = 0;
 	for(typename std::map<std::string, T>::const_iterator func_prof_it = func_insn_profile.begin(); func_prof_it != func_insn_profile.end(); func_prof_it++)
 	{
-		const std::string func_name = (*func_prof_it).first;
+		const std::string& func_name = (*func_prof_it).first;
 		const T& value = (*func_prof_it).second;
 		if(func_name.length() > func_name_max_length)
 		{
@@ -1143,7 +1151,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintHistogram(std::ostream& os, Vi
 	for(typename std::multimap<T, std::string>::const_reverse_iterator func_prof_it = sorted_func_insn_profile.rbegin(); func_prof_it != sorted_func_insn_profile.rend(); func_prof_it++)
 	{
 		const T& value = (*func_prof_it).first;
-		const std::string func_name = (*func_prof_it).second;
+		const std::string& func_name = (*func_prof_it).second;
 		
 		const SLoc *sloc = func_name_loc_conv->FunctionNameToSLoc(func_name.c_str());
 
@@ -2236,7 +2244,7 @@ bool Profiler<ADDRESS>::ServeHttpRequest(unisim::util::hypapp::HttpRequest const
 			return true;
 		}
 		
-		const std::string GetContentType() const
+		const std::string& GetContentType() const
 		{
 			return content_type;
 		}

@@ -14656,6 +14656,168 @@
 			<description>Search path for source (separated by ';')</description>
 		</variable>
 	</object>
+	<object name="web-terminal0">
+		<variable name="buffer-height">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>100</value>
+			<description>Number of lines in buffer</description>
+		</variable>
+		<variable name="display-height">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>25</value>
+			<description>Number of displayed lines</description>
+		</variable>
+		<variable name="display-width">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>80</value>
+			<description>Number of displayed columns</description>
+		</variable>
+		<variable name="input-buffer-size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>256</value>
+			<description>Input buffer size</description>
+		</variable>
+		<variable name="max-display-refresh-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>1</value>
+			<description>Maximum refresh period of display (in seconds)</description>
+		</variable>
+		<variable name="min-display-refresh-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>0.125</value>
+			<description>Minimum refresh period of display (in seconds)</description>
+		</variable>
+		<variable name="title">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>Serial Terminal over LINFlexD_0</value>
+			<description>Title of this web terminal instance</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="web-terminal1">
+		<variable name="buffer-height">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>100</value>
+			<description>Number of lines in buffer</description>
+		</variable>
+		<variable name="display-height">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>25</value>
+			<description>Number of displayed lines</description>
+		</variable>
+		<variable name="display-width">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>80</value>
+			<description>Number of displayed columns</description>
+		</variable>
+		<variable name="input-buffer-size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>256</value>
+			<description>Input buffer size</description>
+		</variable>
+		<variable name="max-display-refresh-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>1</value>
+			<description>Maximum refresh period of display (in seconds)</description>
+		</variable>
+		<variable name="min-display-refresh-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>0.125</value>
+			<description>Minimum refresh period of display (in seconds)</description>
+		</variable>
+		<variable name="title">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>Serial Terminal over LINFlexD_1</value>
+			<description>Title of this web terminal instance</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="web-terminal2">
+		<variable name="buffer-height">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>100</value>
+			<description>Number of lines in buffer</description>
+		</variable>
+		<variable name="display-height">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>25</value>
+			<description>Number of displayed lines</description>
+		</variable>
+		<variable name="display-width">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>80</value>
+			<description>Number of displayed columns</description>
+		</variable>
+		<variable name="input-buffer-size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>256</value>
+			<description>Input buffer size</description>
+		</variable>
+		<variable name="max-display-refresh-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>1</value>
+			<description>Maximum refresh period of display (in seconds)</description>
+		</variable>
+		<variable name="min-display-refresh-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>0.125</value>
+			<description>Minimum refresh period of display (in seconds)</description>
+		</variable>
+		<variable name="title">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>Serial Terminal over LINFlexD_2</value>
+			<description>Title of this web terminal instance</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
 	<variable name="dspi_0-is-slave">
 		<type>parameter</type>
 		<data_type>boolean</data_type>

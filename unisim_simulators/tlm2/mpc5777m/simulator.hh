@@ -76,6 +76,8 @@
 #include <unisim/service/netstreamer/netstreamer.hh>
 #include <unisim/service/http_server/http_server.hh>
 #include <unisim/service/instrumenter/instrumenter.hh>
+#include <unisim/service/tee/char_io/tee.hh>
+#include <unisim/service/web_terminal/web_terminal.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 
@@ -265,6 +267,8 @@ private:
 	typedef unisim::service::netstreamer::NetStreamer NETSTREAMER;
 	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
 	typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
+	typedef unisim::service::tee::char_io::Tee<2> CHAR_IO_TEE;
+	typedef unisim::service::web_terminal::WebTerminal WEB_TERMINAL;
 	
 	//=========================================================================
 	//===                           Components                              ===
@@ -463,6 +467,20 @@ private:
 	HTTP_SERVER *http_server;
 	//  - Instrumenter
 	INSTRUMENTER *instrumenter;
+	//  - Char I/O tees
+	CHAR_IO_TEE *char_io_tee0;
+	CHAR_IO_TEE *char_io_tee1;
+	CHAR_IO_TEE *char_io_tee2;
+	CHAR_IO_TEE *char_io_tee14;
+	CHAR_IO_TEE *char_io_tee15;
+	CHAR_IO_TEE *char_io_tee16;
+	//  - Web Terminals
+	WEB_TERMINAL *web_terminal0;
+	WEB_TERMINAL *web_terminal1;
+	WEB_TERMINAL *web_terminal2;
+	WEB_TERMINAL *web_terminal14;
+	WEB_TERMINAL *web_terminal15;
+	WEB_TERMINAL *web_terminal16;
 	
 	bool enable_core0_reset;
 	bool enable_core1_reset;

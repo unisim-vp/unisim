@@ -222,6 +222,11 @@ struct HttpResponse : public std::ostream
   bool Send(ClientConnection const& conn) const { return Send(conn, false); }
   
   const std::string& str() const { return content_stream_buffer.str(); }
+  
+  bool IsSuccessful() const { return (status_code >= OK) && (status_code <= PARTIAL_CONTENT); }
+  bool IsRedirection() const { return (status_code >= MULTIPLE_CHOICES) && (status_code <= TEMPORARY_REDIRECT); }
+  bool IsClientError() const { return (status_code >= BAD_REQUEST) && (status_code <= EXPECTATION_FAILED); }
+  bool IsServerError() const { return (status_code >= INTERNAL_SERVER_ERROR) && (status_code <= HTTP_VERSION_NOT_SUPPORTED); }
 private:
   typedef std::pair<std::string, std::string> HeaderField;
   typedef std::vector<HeaderField> HeaderFields;

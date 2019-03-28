@@ -157,20 +157,20 @@ var CompatLayer =
 
 	get_iframe_scroll_pos : function(iframe)
 	{
-		return this.is_internet_explorer ? new Point(iframe.contentDocument.documentElement.scrollLeft, iframe.contentDocument.documentElement.scrollTop)
-		                                 : new Point(iframe.contentWindow.scrollX, iframe.contentWindow.scrollY);
+		return this.is_internet_explorer ? new Point(iframe.contentDocument ? iframe.contentDocument.documentElement.scrollLeft : 0, iframe.contentDocument ? iframe.contentDocument.documentElement.scrollTop : 0)
+		                                 : new Point(iframe.contentWindow ? iframe.contentWindow.scrollX : 0, iframe.contentWindow ? iframe.contentWindow.scrollY : 0);
 	},
 
 	set_iframe_scroll_pos : function(iframe, scroll_pos)
 	{
 		if(this.is_internet_explorer)
 		{
-			iframe.contentDocument.documentElement.scrollLeft = scroll_pos.x;
-			iframe.contentDocument.documentElement.scrollTop = scroll_pos.y;
+			if(iframe.contentDocument) iframe.contentDocument.documentElement.scrollLeft = scroll_pos.x;
+			if(iframe.contentDocument) iframe.contentDocument.documentElement.scrollTop = scroll_pos.y;
 		}
 		else
 		{
-			iframe.contentWindow.scrollTo(scroll_pos.x, scroll_pos.y);
+			if(iframe.contentWindow) iframe.contentWindow.scrollTo(scroll_pos.x, scroll_pos.y);
 		}
 	}
 }
@@ -469,7 +469,7 @@ DoubleIFrame.prototype.on_load = function(i)
 	this.patch_anchors();
 	// simulate unloading before flipping
 	this.trigger_on_unload();
-	var title = this.iframes[this.bg].iframe_element.contentDocument.title;
+	var title = bg_iframe.iframe_element.contentDocument ? bg_iframe.iframe_element.contentDocument.title : null;
 	this.owner.set_label(title ? title : 'Untitled');
 	// flipping: show freshly loaded iframe
 	bg_iframe.iframe_element.setAttribute('style', 'visibility:' + (this.visible ? 'visible' : 'hidden'));
@@ -487,61 +487,65 @@ DoubleIFrame.prototype.patch_anchors = function()
 {
 	var bg_iframe = this.iframes[this.bg];
 	var iframe_element = bg_iframe.iframe_element;
-	var anchor_elements = iframe_element.contentDocument.documentElement.getElementsByTagName('a');
-	for(var i = 0; i < anchor_elements.length; i++)
+	
+	if(iframe_element.contentDocument)
 	{
-		var anchor_element = anchor_elements[i];
-		
-		if(anchor_element.hasAttribute('href'))
+		var anchor_elements = iframe_element.contentDocument.documentElement.getElementsByTagName('a');
+		for(var i = 0; i < anchor_elements.length; i++)
 		{
-			var href = anchor_element.getAttribute('href');
-			var uri = new URI(href, iframe_element.contentWindow);
-// 			console.log('on_dom_content_loaded:\'' + href + '\' => \'' + uri.toString() + '\'');
-			var uri_str = uri.toString();
-			anchor_element.addEventListener('contextmenu',
-				function(uri_str, event)
-				{
-					var rect = iframe_element.getBoundingClientRect();
-					var scroll_left = window.pageXOffset || window.document.documentElement.scrollLeft;
-					var scroll_top = window.pageYOffset || window.document.documentElement.scrollTop;
-					var x = event.clientX + rect.left + scroll_left;
-					var y = event.clientY + rect.top + scroll_top;
-					var context_menu_items = new Array();
-					context_menu_items.push(
-						{
-							label:'Open in new tab',
-							action:function() { gui.open_tab(this.owner.owner.name, this.owner.tab_config.name_seed, uri_str); },
-							arg:uri_str
-						}
-					);
-					
-					var tiles = {
-						left_tile       : { name : 'left-tile',       label: 'left' },
-						top_middle_tile : { name : 'top-middle-tile', label: 'center' },
-						top_right_tile  : { name : 'top-right-tile',  label: 'right' },
-						bottom          : { name : 'bottom-tile',     label: 'bottom' }
-					};
-					
-					for(var tile in tiles)
+			var anchor_element = anchor_elements[i];
+			
+			if(anchor_element.hasAttribute('href'))
+			{
+				var href = anchor_element.getAttribute('href');
+				var uri = new URI(href, iframe_element.contentWindow);
+	// 			console.log('on_dom_content_loaded:\'' + href + '\' => \'' + uri.toString() + '\'');
+				var uri_str = uri.toString();
+				anchor_element.addEventListener('contextmenu',
+					function(uri_str, event)
 					{
-						var tile_name = tiles[tile].name;
-						var tile_label = tiles[tile].label;
-						if(this.owner.owner.name != tile_name)
+						var rect = iframe_element.getBoundingClientRect();
+						var scroll_left = window.pageXOffset || window.document.documentElement.scrollLeft;
+						var scroll_top = window.pageYOffset || window.document.documentElement.scrollTop;
+						var x = event.clientX + rect.left + scroll_left;
+						var y = event.clientY + rect.top + scroll_top;
+						var context_menu_items = new Array();
+						context_menu_items.push(
+							{
+								label:'Open in new tab',
+								action:function() { gui.open_tab(this.owner.owner.name, this.owner.tab_config.name_seed, uri_str); },
+								arg:uri_str
+							}
+						);
+						
+						var tiles = {
+							left_tile       : { name : 'left-tile',       label: 'left' },
+							top_middle_tile : { name : 'top-middle-tile', label: 'center' },
+							top_right_tile  : { name : 'top-right-tile',  label: 'right' },
+							bottom          : { name : 'bottom-tile',     label: 'bottom' }
+						};
+						
+						for(var tile in tiles)
 						{
-							context_menu_items.push(
-								{
-									label:'Open to the ' + tile_label,
-									action:function(tile_name) { gui.open_tab(tile_name, this.owner.tab_config.name_seed, uri_str); },
-									arg: tile_name
-								}
-							);
+							var tile_name = tiles[tile].name;
+							var tile_label = tiles[tile].label;
+							if(this.owner.owner.name != tile_name)
+							{
+								context_menu_items.push(
+									{
+										label:'Open to the ' + tile_label,
+										action:function(tile_name) { gui.open_tab(tile_name, this.owner.tab_config.name_seed, uri_str); },
+										arg: tile_name
+									}
+								);
+							}
 						}
-					}
-					
-					gui.create_context_menu_at(x, y, context_menu_items, this, window.document);
-					event.preventDefault();
-				}.bind(this, uri_str)
-			);
+						
+						gui.create_context_menu_at(x, y, context_menu_items, this, window.document);
+						event.preventDefault();
+					}.bind(this, uri_str)
+				);
+			}
 		}
 	}
 }
@@ -578,7 +582,7 @@ DoubleIFrame.prototype.update_uri = function()
 
 DoubleIFrame.prototype.refresh = function()
 {
-//	console.log(this.name + ':refresh');
+	//console.log(this.name + ':refresh');
 	var bg_iframe = this.iframes[this.bg];
 	bg_iframe.loaded = false;
 	bg_iframe.load_requested = true;
@@ -636,15 +640,6 @@ DoubleIFrame.prototype.on_mouseleave = function()
 		var iframe = this.iframes[i];
 		iframe.iframe_element.setAttribute('scrolling', 'no');
 		iframe.iframe_element.style.overflow = 'hidden';
-	}
-}
-
-DoubleIFrame.prototype.enable_pointer_events = function(v)
-{
-	for(var i = 0; i < 2; i++)
-	{
-		var iframe = this.iframes[i];
-		iframe.iframe_element.style.pointerEvents = (((v === undefined) || v) ? 'auto' : 'none');
 	}
 }
 
@@ -775,10 +770,12 @@ DoubleIFrame.prototype.get_background_iframe = function()
 
 // ChildWindow
 ChildWindow.prototype.wnd = null;
+ChildWindow.prototype.refresh_called = false;
 
 function ChildWindow(wnd)
 {
 	this.wnd = wnd;
+	this.refresh_called = false;
 }
 
 ChildWindow.prototype.refresh = function()
@@ -905,6 +902,12 @@ Tab.prototype.is_active = false;
 Tab.prototype.bound_tab_header_onclick = null;
 Tab.prototype.bound_tab_header_oncontextmenu = null;
 Tab.prototype.storage_item_prefix = null;
+Tab.prototype.refresh_mode = null; // - 'self-refresh': tab is periodically refreshed periodically regardless of whether is active or not
+                                   // - 'self-refresh-when-active': tab is periodically refreshed periodically if it's active
+                                   // - 'global': all tabs and child windows are refreshed periodically regardless of whether tab that initiate the refresh is active or not
+                                   // - 'global-refresh-when-active': all tabs and child windows are refreshed periodically if tab that initiate the refresh is active
+Tab.prototype.refresh_period = 0;
+Tab.prototype.refresh_called = false;
 
 function Tab(owner)
 {
@@ -920,6 +923,9 @@ function Tab(owner)
 	this.bound_tab_header_onclick = null;
 	this.bound_tab_header_oncontextmenu = null;
 	this.storage_item_prefix = null;
+	this.refresh_mode = 'self-refresh-when-active';
+	this.refresh_period = 0;
+	this.refresh_called = false;
 }
 
 Tab.prototype.create = function(tab_config)
@@ -976,6 +982,9 @@ Tab.prototype.destroy = function()
 {
 	if(!this.static)
 	{
+		this.refresh_period = 0;
+		this.owner.owner.auto_reload_tab(this);
+		
 		if(this.owner)
 		{
 			this.owner.tab_headers.removeChild(this.tab_header);
@@ -1026,6 +1035,13 @@ Tab.prototype.refresh = function()
 	}
 }
 
+Tab.prototype.auto_reload = function(period, mode)
+{
+	this.refresh_mode = mode;
+	this.refresh_period = period;
+	this.owner.owner.auto_reload_tab(this);
+}
+
 Tab.prototype.save_scroll_position = function()
 {
 	if(!this.static)
@@ -1063,14 +1079,6 @@ Tab.prototype.set_active = function(v)
 			this.tab_content.set_visible(v);
 		}
 		this.is_active = v;
-	}
-}
-
-Tab.prototype.enable_pointer_events = function(v)
-{
-	if(!this.static)
-	{
-		this.tab_content.enable_pointer_events(v);
 	}
 }
 
@@ -1432,11 +1440,6 @@ Tile.prototype.switch_to_nth_tab = function(tab_num)
 	}
 }
 
-Tile.prototype.enable_pointer_events = function(v)
-{
-	this.tabs.forEach(function(tab) { tab.enable_pointer_events(v); });
-}
-
 Tile.prototype.find_tab = function(tab)
 {
 	return this.tabs.find(function(elt) { return elt == tab; });
@@ -1665,6 +1668,204 @@ ContextMenu.prototype.destroy = function()
 	this.context_menu_element = null;
 }
 
+// RefreshEvent
+RefreshEvent.prototype.time_stamp = null;
+RefreshEvent.prototype.tab = null;
+
+function RefreshEvent(time_stamp, tab)
+{
+	this.time_stamp = time_stamp;
+	this.tab = tab;
+}
+
+// RefreshScheduler
+RefreshScheduler.prototype.owner = null;
+RefreshScheduler.prototype.time_stamp = 0;
+RefreshScheduler.prototype.time_resolution = null; // in milliseconds
+RefreshScheduler.prototype.new_time_resolution = null; 
+RefreshScheduler.prototype.refresh_events = null;
+RefreshScheduler.prototype.tabs = null;
+RefreshScheduler.prototype.interval_id = null;
+
+function RefreshScheduler(owner)
+{
+	this.owner = owner;
+	this.time_stamp = 0;
+	this.time_resolution = 100;
+	this.new_time_resolution = null;
+	this.refresh_events = new Array();
+	this.tabs = new Array();
+	this.interval_id = window.setInterval(this.schedule.bind(this), this.time_resolution);
+}
+
+RefreshScheduler.prototype.set_time_resolution = function(time_resolution)
+{
+	this.new_time_resolution = time_resolution;
+}
+
+RefreshScheduler.prototype.schedule = function()
+{
+	this.time_stamp += this.time_resolution;
+	if(this.refresh_events.length)
+	{
+		this.owner.for_each_tab(
+			function(tab)
+			{
+				tab.refresh_called = false;
+			}
+		);
+		
+		var refresh_event = this.refresh_events[0];
+		if(this.time_stamp >= refresh_event.time_stamp)
+		{
+			do
+			{
+				var tab = refresh_event.tab;
+				//console.log(this.time_stamp + ' ms:' + tab.refresh_mode + ' refresh from ' + tab.tab_config.name);
+				switch(tab.refresh_mode)
+				{
+					case 'self-refresh':
+					case 'self-refresh-when-active':
+						if(((tab.refresh_mode != 'self-refresh-when-active') || tab.is_active) && !tab.refresh_called)
+						{
+							tab.refresh();
+							tab.refresh_called = true;
+						}
+						break;
+						
+					case 'global-refresh':
+					case 'global-refresh-when-active':
+						if((tab.refresh_mode != 'global-refresh-when-active') || tab.is_active)
+						{
+							// refresh tab
+							this.refresh_tab(tab);
+							if(!tab.refresh_called)
+							{
+								tab.refresh();
+								tab.refresh_called = true;
+							}
+							
+							// refresh other tabs that are active
+							this.owner.for_each_tab(
+								function(other_tab)
+								{
+									if(!other_tab.refresh_called && other_tab.is_active && (other_tab != tab) && !other_tab.refresh_period)
+									{
+										this.refresh_tab(other_tab);
+									}
+								}, this
+							);
+							
+							// refresh child windows
+							this.owner.for_each_child_window(
+								function(child_window)
+								{
+									if(!child_window.refresh_called)
+									{
+										child_window.refresh();
+										child_window.refresh_called = true;
+									}
+								}
+							);
+						}
+						break;
+				}
+				this.refresh_events.splice(0, 1);
+				
+				refresh_event = this.refresh_events.length ? this.refresh_events[0] : null;
+			}
+			while(refresh_event && (this.time_stamp >= refresh_event.time_stamp));
+		}
+	}
+	if(this.new_time_resolution && (this.time_resolution != this.new_time_resolution))
+	{
+		this.time_resolution = this.new_time_resolution;
+		this.new_time_resolution = null;
+		if(this.interval_id)
+		{
+			window.clearInterval(this.interval_id);
+		}
+		this.interval_id = window.setInterval(this.bind.schedule(this), this.time_resolution);
+	}
+}
+
+RefreshScheduler.prototype.refresh_tab = function(tab)
+{
+	if(!tab.refresh_called)
+	{
+		tab.refresh();
+		tab.refresh_called = true;
+		if(tab.refresh_period)
+		{
+			this.auto_reload_tab(tab);
+		}
+	}
+}
+
+RefreshScheduler.prototype.refresh_tab_after = function(tab)
+{
+	var delay = tab.refresh_period;
+	var skew = delay % this.time_resolution;
+	if(skew) delay += this.time_resolution - skew;
+	var time_stamp = this.time_stamp + delay;
+	if(this.refresh_events.length)
+	{
+		for(var i = 0; i < this.refresh_events.length; i++)
+		{
+			var refresh_event = this.refresh_events[i];
+			if(((refresh_event.tab.refresh_mode == 'global-refresh') || (refresh_event.tab.refresh_mode == 'global-refresh-when-active')) &&
+			   (time_stamp < refresh_event.time_stamp) &&
+			   (refresh_event.time_stamp - time_stamp < (2 * delay)))
+			{
+				time_stamp = refresh_event.time_stamp;
+				break;
+			}
+		}
+		for(var i = 0; i < this.refresh_events.length; i++)
+		{
+			var refresh_event = this.refresh_events[i];
+			if(time_stamp < refresh_event.time_stamp)
+			{
+				this.refresh_events.splice(i, 0, new RefreshEvent(time_stamp, tab));
+				return;
+			}
+		}
+	}
+	
+	this.refresh_events.push(new RefreshEvent(time_stamp, tab));
+}
+
+RefreshScheduler.prototype.auto_reload_tab = function(tab)
+{
+	if(tab.refresh_period)
+	{
+		for(var i = 0; i < this.refresh_events.length; i++)
+		{
+			var refresh_event = this.refresh_events[i];
+			if(refresh_event.tab == tab) return; // already scheduled
+		}
+		
+		this.refresh_tab_after(tab);
+	}
+	else
+	{
+		// deschedule
+		var i = 0;
+		while(i < this.refresh_events.length)
+		{
+			var refresh_event = this.refresh_events[i];
+			if(refresh_event.tab == tab)
+			{
+				this.refresh_events.splice(i, 1);
+			}
+			else
+			{
+				i++;
+			}
+		}
+	}
+}
+
 // GUI
 // +---------------------------------------------------------------------------------------------------------------------------------------+
 // |                                                   toolbar-div                                                                         |
@@ -1771,6 +1972,7 @@ GUI.prototype.window_inner_height = 0;
 GUI.prototype.context_menu = null;
 GUI.prototype.child_windows_monitoring_period = 500;
 GUI.prototype.child_windows = null;
+GUI.prototype.refresh_scheduler = null;
 
 function GUI()
 {
@@ -1833,6 +2035,8 @@ function GUI()
 	this.window_inner_height = 0;
 	this.context_menu = null;
 	this.child_windows = new Array();
+	
+	this.refresh_scheduler = new RefreshScheduler(this);
 
 	this.left_tile = new Tile(this, 'left-tile', this.left_tile_div);
 	this.top_middle_tile = new Tile(this, 'top-middle-tile', this.top_middle_tile_div);
@@ -1844,7 +2048,7 @@ function GUI()
 	this.right_horiz_resizer_div.addEventListener('mousedown', this.right_horiz_resizer_on_mousedown.bind(this));
 
 	document.addEventListener('mouseup', this.document_on_mouseup.bind(this));
-	document.addEventListener('click', this.destroy_context_menu.bind(this));
+	document.addEventListener('click', function(event) { if(event.button == 0) this.destroy_context_menu(); }.bind(this));
 	
 	this.restore_layout();
 	this.window_inner_width = window.innerWidth;
@@ -1921,6 +2125,11 @@ GUI.prototype.open_tab = function(tile_name, name, uri_str, dont_switch_to)
 	return tab;
 }
 
+GUI.prototype.set_cursor = function(cursor)
+{
+	this.overlay.style.cursor = cursor;
+}
+
 GUI.prototype.enable_events = function(v)
 {
 	if((v === undefined) || v)
@@ -1933,19 +2142,12 @@ GUI.prototype.enable_events = function(v)
 	}
 }
 
-GUI.prototype.enable_pointer_events = function(v)
-{
-	this.left_tile.enable_pointer_events(v);
-	this.top_middle_tile.enable_pointer_events(v);
-	this.top_right_tile.enable_pointer_events(v);
-	this.bottom_tile.enable_pointer_events(v);
-}
-
 GUI.prototype.vert_resizer_on_mousedown = function(e)
 {
 	this.mouse_pos.y = window.devicePixelRatio ? Math.round(e.screenY / window.devicePixelRatio) : e.screenY;
 	this.content_div.classList.add('noselect'); // prevent web browser from selecting text/image while resizing interface
-	this.enable_pointer_events(false);
+	this.enable_events(false);
+	this.set_cursor('row-resize');
 	if(this.bound_vert_resize == null)
 	{
 		this.bound_vert_resize = this.vert_resize.bind(this);
@@ -1957,7 +2159,8 @@ GUI.prototype.left_horiz_resizer_on_mousedown = function(e)
 {
 	this.mouse_pos.x = window.devicePixelRatio ? Math.round(e.screenX / window.devicePixelRatio) : e.screenX;
 	this.content_div.classList.add('noselect'); // prevent web browser from selecting text/image while resizing interface
-	this.enable_pointer_events(false);
+	this.enable_events(false);
+	this.set_cursor('col-resize');
 	if(this.bound_left_horiz_resize == null)
 	{
 		this.bound_left_horiz_resize = this.left_horiz_resize.bind(this);
@@ -1969,7 +2172,8 @@ GUI.prototype.right_horiz_resizer_on_mousedown = function(e)
 {
 	this.mouse_pos.x = window.devicePixelRatio ? Math.round(e.screenX / window.devicePixelRatio) : e.screenX;
 	this.content_div.classList.add('noselect'); // prevent web browser from selecting text/image while resizing interface
-	this.enable_pointer_events(false);
+	this.enable_events(false);
+	this.set_cursor('col-resize');
 	if(this.bound_right_horiz_resize == null)
 	{
 		this.bound_right_horiz_resize = this.right_horiz_resize.bind(this);
@@ -1983,21 +2187,24 @@ GUI.prototype.document_on_mouseup = function(e)
 	{
 		document.removeEventListener('mousemove', this.bound_vert_resize);
 		this.content_div.classList.remove('noselect');
-		this.enable_pointer_events();
+		this.set_cursor('auto');
+		this.enable_events();
 		this.bound_vert_resize = null;
 	}
 	if(this.bound_left_horiz_resize != null)
 	{
 		document.removeEventListener('mousemove', this.bound_left_horiz_resize);
 		this.content_div.classList.remove('noselect');
-		this.enable_pointer_events();
+		this.set_cursor('auto');
+		this.enable_events();
 		this.bound_left_horiz_resize = null;
 	}
 	if(this.bound_right_horiz_resize != null)
 	{
 		document.removeEventListener('mousemove', this.bound_right_horiz_resize);
 		this.content_div.classList.remove('noselect');
-		this.enable_pointer_events();
+		this.set_cursor('auto');
+		this.enable_events();
 		this.bound_right_horiz_resize = null;
 	}
 }
@@ -2340,6 +2547,11 @@ GUI.prototype.monitor_child_windows = function()
 GUI.prototype.find_statusbar_item_by_name = function(name)
 {
 	return this.statusbar_items.find(function(other_item) { return other_item.name == name; });
+}
+
+GUI.prototype.auto_reload_tab = function(tab)
+{
+	this.refresh_scheduler.auto_reload_tab(tab);
 }
 
 var gui = null;

@@ -198,6 +198,18 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, netstreamer16(0)
 	, http_server(0)
 	, instrumenter(0)
+	, char_io_tee0(0)
+	, char_io_tee1(0)
+	, char_io_tee2(0)
+	, char_io_tee14(0)
+	, char_io_tee15(0)
+	, char_io_tee16(0)
+	, web_terminal0(0)
+	, web_terminal1(0)
+	, web_terminal2(0)
+	, web_terminal14(0)
+	, web_terminal15(0)
+	, web_terminal16(0)
 	, enable_core0_reset(true)
 	, enable_core1_reset(true)
 	, enable_core2_reset(true)
@@ -503,6 +515,20 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	netstreamer16 = enable_serial_terminal16 ? new NETSTREAMER("netstreamer16") : 0;
 	//  - Http Server
 	http_server = new HTTP_SERVER("http-server");
+	//  - Char I/O Tees
+	char_io_tee0 = new CHAR_IO_TEE("char-io-tee0");
+	char_io_tee1 = new CHAR_IO_TEE("char-io-tee1");
+	char_io_tee2 = new CHAR_IO_TEE("char-io-tee2");
+	char_io_tee14 = new CHAR_IO_TEE("char-io-tee14");
+	char_io_tee15 = new CHAR_IO_TEE("char-io-tee15");
+	char_io_tee16 = new CHAR_IO_TEE("char-io-tee16");
+	//  - Web Terminals
+	web_terminal0 = enable_serial_terminal0 ? new WEB_TERMINAL("web-terminal0") : 0;
+	web_terminal1 = enable_serial_terminal1 ? new WEB_TERMINAL("web-terminal1") : 0;
+	web_terminal2 = enable_serial_terminal2 ? new WEB_TERMINAL("web-terminal2") : 0;
+	web_terminal14 = enable_serial_terminal14 ? new WEB_TERMINAL("web-terminal14") : 0;
+	web_terminal15 = enable_serial_terminal15 ? new WEB_TERMINAL("web-terminal15") : 0;
+	web_terminal16 = enable_serial_terminal16 ? new WEB_TERMINAL("web-terminal16") : 0;
 	
 	//=========================================================================
 	//===                          Port registration                        ===
@@ -4686,27 +4712,39 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	if(enable_serial_terminal0)
 	{
-		serial_terminal0->char_io_import >> netstreamer0->char_io_export;
+		serial_terminal0->char_io_import >> char_io_tee0->char_io_export;
+		(*char_io_tee0->char_io_import[0]) >> netstreamer0->char_io_export;
+		(*char_io_tee0->char_io_import[1]) >> web_terminal0->char_io_export;
 	}
 	if(enable_serial_terminal1)
 	{
-		serial_terminal1->char_io_import >> netstreamer1->char_io_export;
+		serial_terminal1->char_io_import >> char_io_tee1->char_io_export;
+		(*char_io_tee1->char_io_import[0]) >> netstreamer1->char_io_export;
+		(*char_io_tee1->char_io_import[1]) >> web_terminal1->char_io_export;
 	}
 	if(enable_serial_terminal2)
 	{
-		serial_terminal2->char_io_import >> netstreamer2->char_io_export;
+		serial_terminal2->char_io_import >> char_io_tee2->char_io_export;
+		(*char_io_tee2->char_io_import[0]) >> netstreamer2->char_io_export;
+		(*char_io_tee2->char_io_import[1]) >> web_terminal2->char_io_export;
 	}
 	if(enable_serial_terminal14)
 	{
-		serial_terminal14->char_io_import >> netstreamer14->char_io_export;
+		serial_terminal14->char_io_import >> char_io_tee14->char_io_export;
+		(*char_io_tee14->char_io_import[0]) >> netstreamer14->char_io_export;
+		(*char_io_tee14->char_io_import[1]) >> web_terminal14->char_io_export;
 	}
 	if(enable_serial_terminal15)
 	{
-		serial_terminal15->char_io_import >> netstreamer15->char_io_export;
+		serial_terminal15->char_io_import >> char_io_tee15->char_io_export;
+		(*char_io_tee15->char_io_import[0]) >> netstreamer15->char_io_export;
+		(*char_io_tee15->char_io_import[1]) >> web_terminal15->char_io_export;
 	}
 	if(enable_serial_terminal16)
 	{
-		serial_terminal16->char_io_import >> netstreamer16->char_io_export;
+		serial_terminal16->char_io_import >> char_io_tee16->char_io_export;
+		(*char_io_tee16->char_io_import[0]) >> netstreamer16->char_io_export;
+		(*char_io_tee16->char_io_import[1]) >> web_terminal16->char_io_export;
 	}
 	
 	{
@@ -4720,6 +4758,12 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 				*http_server->http_server_import[i++] >> profiler[prc_num]->http_server_export;
 			}
 		}
+		if(enable_serial_terminal0) *http_server->http_server_import[i++] >> web_terminal0->http_server_export;
+		if(enable_serial_terminal1) *http_server->http_server_import[i++] >> web_terminal1->http_server_export;
+		if(enable_serial_terminal2) *http_server->http_server_import[i++] >> web_terminal2->http_server_export;
+		if(enable_serial_terminal14) *http_server->http_server_import[i++] >> web_terminal14->http_server_export;
+		if(enable_serial_terminal15) *http_server->http_server_import[i++] >> web_terminal15->http_server_export;
+		if(enable_serial_terminal16) *http_server->http_server_import[i++] >> web_terminal16->http_server_export;
 	}
 	
 	{
@@ -5189,6 +5233,18 @@ Simulator::~Simulator()
 	if(netstreamer15) delete netstreamer15;
 	if(netstreamer16) delete netstreamer16;
 	if(http_server) delete http_server;
+	if(char_io_tee0) delete char_io_tee0;
+	if(char_io_tee1) delete char_io_tee1;
+	if(char_io_tee2) delete char_io_tee2;
+	if(char_io_tee14) delete char_io_tee14;
+	if(char_io_tee15) delete char_io_tee15;
+	if(char_io_tee16) delete char_io_tee16;
+	if(web_terminal0) delete web_terminal0;
+	if(web_terminal1) delete web_terminal1;
+	if(web_terminal2) delete web_terminal2;
+	if(web_terminal14) delete web_terminal14;
+	if(web_terminal15) delete web_terminal15;
+	if(web_terminal16) delete web_terminal16;
 	if(instrumenter) delete instrumenter;
 #if HAVE_TVS
 	if(bandwidth_vcd) delete bandwidth_vcd;
@@ -6217,6 +6273,14 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	
 	// Instrumenter
 	simulator->SetVariable("http-server.http-port", 12360);
+	
+	// Web terminals
+	simulator->SetVariable("web-terminal0.title", "Serial Terminal over LINFlexD_0");
+	simulator->SetVariable("web-terminal1.title", "Serial Terminal over LINFlexD_1");
+	simulator->SetVariable("web-terminal2.title", "Serial Terminal over LINFlexD_2");
+	simulator->SetVariable("web-terminal14.title", "Serial Terminal over LINFlexD_14");
+	simulator->SetVariable("web-terminal15.title", "Serial Terminal over LINFlexD_15");
+	simulator->SetVariable("web-terminal16.title", "Serial Terminal over LINFlexD_16");
 }
 
 void Simulator::Run()
@@ -6298,13 +6362,80 @@ bool Simulator::EndSetup()
 				label_sstr << "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu" << prc_num << ".svg\">";
 				http_server->AddJSAction(
 					unisim::service::interfaces::ToolbarOpenTabAction(
-							/* name */      profiler[prc_num]->GetName(), 
-							/* label */     label_sstr.str(),
-							/* tips */      tab_title,
-							/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
-							/* uri */       profiler[prc_num]->URI()
+						/* name */      profiler[prc_num]->GetName(), 
+						/* label */     label_sstr.str(),
+						/* tips */      tab_title,
+						/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+						/* uri */       profiler[prc_num]->URI()
 				));
 			}
+		}
+		
+		if(enable_serial_terminal0)
+		{
+			http_server->AddJSAction(
+				unisim::service::interfaces::ToolbarOpenTabAction(
+					/* name */      web_terminal0->GetName(),
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term0.svg\">",
+					/* tips */      "Serial Terminal over LINFlexD_0",
+					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+					/* uri */       web_terminal0->URI()
+			));
+		}
+		if(enable_serial_terminal1)
+		{
+			http_server->AddJSAction(
+				unisim::service::interfaces::ToolbarOpenTabAction(
+					/* name */      web_terminal1->GetName(),
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term1.svg\">",
+					/* tips */      "Serial Terminal over LINFlexD_1",
+					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+					/* uri */       web_terminal1->URI()
+			));
+		}
+		if(enable_serial_terminal2)
+		{
+			http_server->AddJSAction(
+				unisim::service::interfaces::ToolbarOpenTabAction(
+					/* name */      web_terminal2->GetName(),
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term2.svg\">",
+					/* tips */      "Serial Terminal over LINFlexD_2",
+					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+					/* uri */       web_terminal2->URI()
+			));
+		}
+		if(enable_serial_terminal14)
+		{
+			http_server->AddJSAction(
+				unisim::service::interfaces::ToolbarOpenTabAction(
+					/* name */      web_terminal14->GetName(),
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term14.svg\">",
+					/* tips */      "Serial Terminal over LINFlexD_14",
+					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+					/* uri */       web_terminal14->URI()
+			));
+		}
+		if(enable_serial_terminal15)
+		{
+			http_server->AddJSAction(
+				unisim::service::interfaces::ToolbarOpenTabAction(
+					/* name */      web_terminal15->GetName(),
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term15.svg\">",
+					/* tips */      "Serial Terminal over LINFlexD_15",
+					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+					/* uri */       web_terminal15->URI()
+			));
+		}
+		if(enable_serial_terminal16)
+		{
+			http_server->AddJSAction(
+				unisim::service::interfaces::ToolbarOpenTabAction(
+					/* name */      web_terminal16->GetName(),
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term16.svg\">",
+					/* tips */      "Serial Terminal over LINFlexD_16",
+					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+					/* uri */       web_terminal16->URI()
+			));
 		}
 	}
 	

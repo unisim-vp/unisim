@@ -481,8 +481,10 @@ private:
 	unisim::kernel::service::Parameter<std::string> param_instrumentation;
 	sc_core::sc_time intr_poll_period;
 	unisim::kernel::service::Parameter<sc_core::sc_time> param_intr_poll_period;
-	double cont_refresh_period;
-	unisim::kernel::service::Parameter<double> param_cont_refresh_period;
+	double min_cont_refresh_period;
+	unisim::kernel::service::Parameter<double> param_min_cont_refresh_period;
+	double max_cont_refresh_period;
+	unisim::kernel::service::Parameter<double> param_max_cont_refresh_period;
 	bool enable_cache;
 	unisim::kernel::service::Parameter<bool> param_enable_cache;
 	std::vector<std::string> instrumented_signal_names;
