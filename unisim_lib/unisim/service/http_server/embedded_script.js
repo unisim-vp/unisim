@@ -157,3 +157,14 @@ GUI.prototype.find_statusbar_item_by_name = function(name)
 	
 	return null;
 }
+
+GUI.prototype.create_context_menu = function(x, y, context_menu_items, action_this, on_destroy_action)
+{
+	var own_tab = this.find_own_tab();
+	if(own_tab)
+	{
+		// within tiled GUI
+		var own_tab_pos = own_tab.get_pos();
+		window.parent.gui.create_context_menu(own_tab_pos.x + x, own_tab_pos.y + y, context_menu_items, action_this, on_destroy_action);
+	}
+}

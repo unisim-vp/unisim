@@ -1043,6 +1043,8 @@ bool WebTerminal::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req,
 	{
 		struct PropertySetter : public unisim::util::hypapp::Form_URL_Encoded_Decoder
 		{
+			PropertySetter() : key_event(), text() {}
+			
 			virtual bool FormAssign(const std::string& name, const std::string& value)
 			{
 				if(name == "key")
@@ -1065,18 +1067,27 @@ bool WebTerminal::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req,
 				{
 					key_event.META(value == "1");
 				}
+				else if(name == "text")
+				{
+					text = value;
+				}
 				
 				return true;
 			}
 			
 			KeyEvent key_event;
+			std::string text;
 		};
 		
 		// Decode POST data
 		PropertySetter property_setter;
 		if(property_setter.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
 		{
-			if(!property_setter.key_event.GetKey().empty())
+			if(!property_setter.text.empty())
+			{
+				input_buffer.Push(property_setter.text);
+			}
+			else if(!property_setter.key_event.GetKey().empty())
 			{
 				// Update input buffer with informations of keydown event in POST data
 				Receive(property_setter.key_event);

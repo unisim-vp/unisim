@@ -504,11 +504,10 @@ DoubleIFrame.prototype.patch_anchors = function()
 				anchor_element.addEventListener('contextmenu',
 					function(uri_str, event)
 					{
-						var rect = iframe_element.getBoundingClientRect();
-						var scroll_left = window.pageXOffset || window.document.documentElement.scrollLeft;
-						var scroll_top = window.pageYOffset || window.document.documentElement.scrollTop;
-						var x = event.clientX + rect.left + scroll_left;
-						var y = event.clientY + rect.top + scroll_top;
+						this.owner.freeze();
+						var pos = CompatLayer.get_element_pos(iframe_element);
+						pos.x += event.clientX;
+						pos.y += event.clientY;
 						var context_menu_items = new Array();
 						context_menu_items.push(
 							{
@@ -541,7 +540,16 @@ DoubleIFrame.prototype.patch_anchors = function()
 							}
 						}
 						
-						gui.create_context_menu_at(x, y, context_menu_items, this, window.document);
+						gui.create_context_menu(
+							pos.x,
+							pos.y,
+							context_menu_items,
+							this,
+							function()
+							{
+								this.owner.unfreeze();
+							}
+						);
 						event.preventDefault();
 					}.bind(this, uri_str)
 				);
@@ -908,6 +916,7 @@ Tab.prototype.refresh_mode = null; // - 'self-refresh': tab is periodically refr
                                    // - 'global-refresh-when-active': all tabs and child windows are refreshed periodically if tab that initiate the refresh is active
 Tab.prototype.refresh_period = 0;
 Tab.prototype.refresh_called = false;
+Tab.prototype.frozen = false;
 
 function Tab(owner)
 {
@@ -926,6 +935,7 @@ function Tab(owner)
 	this.refresh_mode = 'self-refresh-when-active';
 	this.refresh_period = 0;
 	this.refresh_called = false;
+	this.frozen = false;
 }
 
 Tab.prototype.create = function(tab_config)
@@ -1166,7 +1176,8 @@ Tab.prototype.tab_header_oncontextmenu = function(event)
 		});
 	}
 
-	this.owner.owner.create_context_menu(event, context_menu_items, this);
+	event.preventDefault();
+	this.owner.owner.create_context_menu(event.clientX, event.clientY, context_menu_items, this);
 }
 
 Tab.prototype.close_tab_onclick = function(event)
@@ -1213,6 +1224,21 @@ Tab.prototype.set_label = function(label)
 	this.tab_config.label = label;
 	this.tab_header_label.textContent = label;
 	this.tab_header_label.setAttribute('title', label + '\n\nTips:\n- Click on tab to switch to it\n- Right click to show a context menu\n- Click on the cross to close the tab');
+}
+
+Tab.prototype.get_pos = function()
+{
+	return this.owner.get_tab_contents_pos();
+}
+
+Tab.prototype.freeze = function()
+{
+	this.frozen = true;
+}
+
+Tab.prototype.unfreeze = function()
+{
+	this.frozen = false;
 }
 
 // Tile
@@ -1539,7 +1565,7 @@ Tile.prototype.history_shortcut_onclick = function(event)
 		}
 		
 		event.stopPropagation();
-		this.owner.create_context_menu_at(x, y, history_items, this);
+		this.owner.create_context_menu(x, y, history_items, this);
 	}
 }
 
@@ -1602,16 +1628,21 @@ Tile.prototype.close_all_tabs = function()
 	}
 }
 
+Tile.prototype.get_tab_contents_pos = function()
+{
+	return CompatLayer.get_element_pos(this.tab_contents);
+}
+
 // ContextMenu
 ContextMenu.action_this = null;
+ContextMenu.on_destroy_action = null;
 ContextMenu.context_menu_element = null;
-ContextMenu.document = null;
 
-function ContextMenu(x, y, context_menu_items, action_this, document)
+function ContextMenu(x, y, context_menu_items, action_this, on_destroy_action)
 {
-	this.document = document || window.document;
 	this.action_this = action_this;
-	this.context_menu_element = this.document.createElement('div');
+	this.on_destroy_action = on_destroy_action;
+	this.context_menu_element = document.createElement('div');
 	this.context_menu_element.className = 'context-menu';
 	this.context_menu_element.style.display = 'block';
 	this.context_menu_element.style.position = 'fixed';
@@ -1620,7 +1651,7 @@ function ContextMenu(x, y, context_menu_items, action_this, document)
 	
 	for(var i = 0; i < context_menu_items.length; i++)
 	{
-		var context_menu_item_element = this.document.createElement('div');
+		var context_menu_item_element = document.createElement('div');
 		context_menu_item_element.className = 'context-menu-item';
 		context_menu_item_element.textContent = context_menu_items[i].label;
 		if(this.action_this)
@@ -1649,12 +1680,19 @@ function ContextMenu(x, y, context_menu_items, action_this, document)
 		this.context_menu_element.appendChild(context_menu_item_element);
 	}
 	
-	this.document.body.appendChild(this.context_menu_element);
+	document.body.appendChild(this.context_menu_element);
 	
+	var window_inner_width = window.innerWidth;
 	var window_inner_height = window.innerHeight;
 	var style = getComputedStyle(this.context_menu_element, null);
+	var left = parseFloat(style.getPropertyValue('left'));
 	var top = parseFloat(style.getPropertyValue('top'));
+	var width = parseFloat(style.getPropertyValue('width'));
 	var height = parseFloat(style.getPropertyValue('height'));
+	if((left + width) >= window_inner_width)
+	{
+		this.context_menu_element.style.left = (window_inner_width - width) + 'px';
+	}
 	if((top + height) >= window_inner_height)
 	{
 		this.context_menu_element.style.top = (window_inner_height - height) + 'px';
@@ -1663,7 +1701,11 @@ function ContextMenu(x, y, context_menu_items, action_this, document)
 
 ContextMenu.prototype.destroy = function()
 {
-	this.document.body.removeChild(this.context_menu_element);
+	if(this.on_destroy_action)
+	{
+		this.on_destroy_action.call(this.action_this);
+	}
+	document.body.removeChild(this.context_menu_element);
 	this.action_this = null;
 	this.context_menu_element = null;
 }
@@ -1720,57 +1762,62 @@ RefreshScheduler.prototype.schedule = function()
 		{
 			do
 			{
-				var tab = refresh_event.tab;
-				//console.log(this.time_stamp + ' ms:' + tab.refresh_mode + ' refresh from ' + tab.tab_config.name);
-				switch(tab.refresh_mode)
-				{
-					case 'self-refresh':
-					case 'self-refresh-when-active':
-						if(((tab.refresh_mode != 'self-refresh-when-active') || tab.is_active) && !tab.refresh_called)
-						{
-							tab.refresh();
-							tab.refresh_called = true;
-						}
-						break;
-						
-					case 'global-refresh':
-					case 'global-refresh-when-active':
-						if((tab.refresh_mode != 'global-refresh-when-active') || tab.is_active)
-						{
-							// refresh tab
-							this.refresh_tab(tab);
-							if(!tab.refresh_called)
-							{
-								tab.refresh();
-								tab.refresh_called = true;
-							}
-							
-							// refresh other tabs that are active
-							this.owner.for_each_tab(
-								function(other_tab)
-								{
-									if(!other_tab.refresh_called && other_tab.is_active && (other_tab != tab) && !other_tab.refresh_period)
-									{
-										this.refresh_tab(other_tab);
-									}
-								}, this
-							);
-							
-							// refresh child windows
-							this.owner.for_each_child_window(
-								function(child_window)
-								{
-									if(!child_window.refresh_called)
-									{
-										child_window.refresh();
-										child_window.refresh_called = true;
-									}
-								}
-							);
-						}
-						break;
-				}
 				this.refresh_events.splice(0, 1);
+				
+				var tab = refresh_event.tab;
+				if(tab.frozen)
+				{
+					this.refresh_tab_after(tab);
+				}
+				else
+				{
+					//console.log(this.time_stamp + ' ms:' + tab.refresh_mode + ' refresh from ' + tab.tab_config.name);
+					switch(tab.refresh_mode)
+					{
+						case 'self-refresh':
+						case 'self-refresh-when-active':
+							if(((tab.refresh_mode != 'self-refresh-when-active') || tab.is_active) && !tab.frozen && !tab.refresh_called)
+							{
+								this.refresh_tab(tab);
+							}
+							break;
+							
+						case 'global-refresh':
+						case 'global-refresh-when-active':
+							if((tab.refresh_mode != 'global-refresh-when-active') || tab.is_active)
+							{
+								// refresh tab
+								if(!tab.frozen && !tab.refresh_called)
+								{
+									this.refresh_tab(tab);
+								}
+								
+								// refresh other tabs that are active
+								this.owner.for_each_tab(
+									function(other_tab)
+									{
+										if(!other_tab.frozen && !other_tab.refresh_called && other_tab.is_active && (other_tab != tab) && !other_tab.refresh_period)
+										{
+											this.refresh_tab(other_tab);
+										}
+									}, this
+								);
+								
+								// refresh child windows
+								this.owner.for_each_child_window(
+									function(child_window)
+									{
+										if(!child_window.refresh_called)
+										{
+											child_window.refresh();
+											child_window.refresh_called = true;
+										}
+									}
+								);
+							}
+							break;
+					}
+				}
 				
 				refresh_event = this.refresh_events.length ? this.refresh_events[0] : null;
 			}
@@ -2451,18 +2498,10 @@ GUI.prototype.find_tab_by_iframe_name = function(iframe_name)
 	return this.left_tile.find_tab_by_iframe_name(iframe_name) || this.top_middle_tile.find_tab_by_iframe_name(iframe_name) || this.top_right_tile.find_tab_by_iframe_name(iframe_name) || this.bottom_tile.find_tab_by_iframe_name(iframe_name);
 }
 
-GUI.prototype.create_context_menu = function(event, context_menu_items, action_this, document)
+GUI.prototype.create_context_menu = function(x, y, context_menu_items, action_this, on_destroy_action)
 {
 	this.destroy_context_menu();
-	this.context_menu = new ContextMenu(event.clientX, event.clientY, context_menu_items, action_this, document);
-	event.preventDefault();
-	this.enable_events(false);
-}
-
-GUI.prototype.create_context_menu_at = function(x, y, context_menu_items, action_this, document)
-{
-	this.destroy_context_menu();
-	this.context_menu = new ContextMenu(x, y, context_menu_items, action_this, document);
+	this.context_menu = new ContextMenu(x, y, context_menu_items, action_this, on_destroy_action);
 	this.enable_events(false);
 }
 

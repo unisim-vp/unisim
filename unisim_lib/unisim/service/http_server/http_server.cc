@@ -738,7 +738,7 @@ void HttpServer::Crawl(std::ostream& os, unisim::kernel::service::Object *object
 
 		if(browser_actions_range.first != browser_actions_range.second)
 		{
-			os << " oncontextmenu=\"gui.create_context_menu(event, [";
+			os << " oncontextmenu=\"event.preventDefault(); gui.create_context_menu(event.clientX, event.clientY, [";
 			for(BrowserActions::const_iterator it = browser_actions_range.first; it != browser_actions_range.second; it++)
 			{
 				if(it != browser_actions_range.first) os << ",";
@@ -818,10 +818,10 @@ void HttpServer::Crawl(std::ostream& os, unsigned int indent_level)
 	os << " class=\"browser-item noselect\"";
 	if(kernel_has_parameters || kernel_has_statistics)
 	{
-		os << " oncontextmenu=\"gui.create_context_menu(event, [";
+		os << " oncontextmenu=\"event.preventDefault(); gui.create_context_menu(event.clientX, event.clientY, [";
 		if(kernel_has_parameters)
 		{
-			os << "{label:'Configure', action:function() { gui.open_tab('bottom-tile','Configuration of " <<  unisim::util::hypapp::HTML_Encoder::Encode(sim_program_name) << "','config-kernel','/config?object=kernel'); } }";
+			os << "{label:'Configure', action:function() { gui.open_tab('bottom-tile','config-kernel','/config?object=kernel'); } }";
 		}
 		if(kernel_has_parameters && kernel_has_statistics)
 		{
@@ -829,7 +829,7 @@ void HttpServer::Crawl(std::ostream& os, unsigned int indent_level)
 		}
 		if(kernel_has_statistics)
 		{
-			os << "{label:'Show statistics', action:function() { gui.open_tab('bottom-tile','Statistics of " <<  unisim::util::hypapp::HTML_Encoder::Encode(sim_program_name) << "','stats-kernel','/stats?object=kernel'); } }";
+			os << "{label:'Show statistics', action:function() { gui.open_tab('bottom-tile','stats-kernel','/stats?object=kernel'); } }";
 		}
 		os << "])\"";
 	}
@@ -963,7 +963,7 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 				response << "Variables of unknown type of";
 				break;
 		}
-		response << (object ? unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) : "an unknown object");
+		response << (object ? unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) : (is_kernel ? unisim::util::hypapp::HTML_Encoder::Encode(sim_program_name): "an unknown object"));
 		response << "</title>" << std::endl;
 		response << "\t\t<meta name=\"description\" content=\"user interface for object variables over HTTP\">" << std::endl;
 		response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
@@ -991,41 +991,33 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 			
 			if(!var_lst.empty())
 			{
-				response << "\t\t\t<table class=\"var-table\">" << std::endl;
-				response << "\t\t\t\t<thead>" << std::endl;
-				response << "\t\t\t\t\t<tr>" << std::endl;
-				response << "\t\t\t\t\t\t<th class=\"var-name\">Name</th>" << std::endl;
-				response << "\t\t\t\t\t\t<th class=\"var-value\">Value</th>" << std::endl;
-				response << "\t\t\t\t\t\t<th class=\"var-data-type\">Data Type</th>" << std::endl;
-				response << "\t\t\t\t\t\t<th class=\"var-description\">Description</th>" << std::endl;
-				response << "\t\t\t\t\t</tr>" << std::endl;
-				response << "\t\t\t\t</thead>" << std::endl;
-				response << "\t\t\t\t<tbody>" << std::endl;
+				response << "\t\t<table class=\"var-table\">" << std::endl;
+				response << "\t\t\t<thead>" << std::endl;
+				response << "\t\t\t\t<tr>" << std::endl;
+				response << "\t\t\t\t\t<th class=\"var-name\">Name</th>" << std::endl;
+				response << "\t\t\t\t\t<th class=\"var-value\">Value</th>" << std::endl;
+				response << "\t\t\t\t\t<th class=\"var-data-type\">Data Type</th>" << std::endl;
+				response << "\t\t\t\t\t<th class=\"var-description\">Description</th>" << std::endl;
+				response << "\t\t\t\t</tr>" << std::endl;
+				response << "\t\t\t</thead>" << std::endl;
+				response << "\t\t\t<tbody>" << std::endl;
 				std::list<unisim::kernel::service::VariableBase *>::const_iterator var_iter;
 				unsigned int var_id;
 				for(var_id = 0, var_iter = var_lst.begin(); var_iter != var_lst.end(); var_id++, var_iter++)
 				{
 					unisim::kernel::service::VariableBase *var = *var_iter;
 					
-					response << "\t\t\t\t\t<tr>" << std::endl;
-					response << "\t\t\t\t\t\t<td class=\"var-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "</td>" << std::endl;
-					response << "\t\t\t\t\t\t<td class=\"var-value\">" << std::endl;
-					response << "\t\t\t\t\t\t\t<form action=\"/config?object=";
+					response << "\t\t\t\t<tr>" << std::endl;
+					response << "\t\t\t\t\t<td class=\"var-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "</td>" << std::endl;
+					response << "\t\t\t\t\t<td class=\"var-value\">" << std::endl;
+					response << "\t\t\t\t\t\t<form action=\"/config?object=";
 					if(object) response << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName());
-					response << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\" onsubmit=\"gui.save_window_scroll_top()\">" << std::endl;
-					response << "\t\t\t\t\t\t\t\t<input";
-					if(var->IsMutable())
-					{
-						response << " title=\"Type a value then press enter\"";
-					}
+					response << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\">" << std::endl;
+					
+					std::string current_value = std::string(*var);
 					if(var->HasEnumeratedValues())
 					{
-						response << " list=\"input-list-" << var_id << "\"";
-					}
-					response << " class=\"var-value-text" << (var->IsMutable() ? "" : " disabled") << "\" type=\"text\" spellcheck=\"false\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "\" value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(std::string(*var)) << "\"" /*<< (var->IsMutable() ? "" : " disabled")*/ << (var->IsMutable() ? "" : " readonly") << ">" << std::endl;
-					if(var->HasEnumeratedValues())
-					{
-						response << "\t\t\t\t\t\t\t\t<datalist id=\"input-list-" << var_id << "\">" << std::endl;
+						response << "\t\t\t\t\t\t\t<select onchange=\"this.form.submit()\"" << (var->IsMutable() ? " title=\"Choose a value\"" : "") << " class=\"var-value-select" << (var->IsMutable() ? "" : " disabled") << "\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "\"" << (var->IsMutable() ? "" : " readonly") << ">" << std::endl;
 						std::vector<std::string> values;
 						var->GetEnumeratedValues(values);
 						
@@ -1033,20 +1025,24 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 						for(it = values.begin(); it != values.end(); it++)
 						{
 							const std::string& value = (*it);
-							response << "\t\t\t\t\t\t\t\t\t\t<option value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "\">" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "</option>" << std::endl;
+							response << "\t\t\t\t\t\t\t\t<option value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "\""<< ((current_value == value) ? " selected": "") << ">" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "</option>" << std::endl;
 						}
-						response << "\t\t\t\t\t\t\t\t</datalist>" << std::endl;
+						response << "\t\t\t\t\t\t\t</select>" << std::endl;
+					}
+					else
+					{
+						response << "\t\t\t\t\t\t\t<input" << (var->IsMutable() ? " title=\"Type a value then press enter\"" : "") << " class=\"var-value-text" << (var->IsMutable() ? "" : " disabled") << "\" type=\"text\" spellcheck=\"false\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "\" value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(current_value) << "\"" << (var->IsMutable() ? "" : " readonly") << ">" << std::endl;
 					}
 					
-					response << "\t\t\t\t\t\t\t</form>" << std::endl;
-					response << "\t\t\t\t\t\t</td>" << std::endl;
-					response << "\t\t\t\t\t\t<td class=\"var-data-type\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetDataTypeName()) << "</td>" << std::endl;
-					response << "\t\t\t\t\t\t<td class=\"var-description\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetDescription()) << "</td>" << std::endl;
-					response << "\t\t\t\t\t</tr>" << std::endl;
+					response << "\t\t\t\t\t\t</form>" << std::endl;
+					response << "\t\t\t\t\t</td>" << std::endl;
+					response << "\t\t\t\t\t<td class=\"var-data-type\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetDataTypeName()) << "</td>" << std::endl;
+					response << "\t\t\t\t\t<td class=\"var-description\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetDescription()) << "</td>" << std::endl;
+					response << "\t\t\t\t</tr>" << std::endl;
 				}
 				
-				response << "\t\t\t\t</tbody>" << std::endl;
-				response << "\t\t\t</table>" << std::endl;
+				response << "\t\t\t</tbody>" << std::endl;
+				response << "\t\t</table>" << std::endl;
 			}
 		}
 
@@ -1210,7 +1206,7 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 					response << "\t\t\t\t\t<td class=\"reg-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "</td>" << std::endl;
 					response << "\t\t\t\t\t<td class=\"reg-size\">" << (reg->GetSize() * 8) << "</td>" << std::endl;
 					response << "\t\t\t\t\t<td class=\"reg-value\">" << std::endl;
-					response << "\t\t\t\t\t\t<form action=\"/registers?object=" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\" onsubmit=\"gui.save_window_scroll_top()\">" << std::endl;
+					response << "\t\t\t\t\t\t<form action=\"/registers?object=" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\">" << std::endl;// onsubmit=\"gui.save_window_scroll_top()\">" << std::endl;
 					response << "\t\t\t\t\t\t\t<input title=\"Type a value then press enter\" class=\"reg-value-text\" type=\"text\" spellcheck=\"false\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "\" value=\"0x" << std::hex;
 #if BYTE_ORDER == BIG_ENDIAN
 					for(int i = 0; i < (int) reg_size; i++)
