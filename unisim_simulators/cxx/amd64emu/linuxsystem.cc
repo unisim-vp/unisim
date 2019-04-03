@@ -284,15 +284,25 @@ LinuxOS::Setup( bool verbose )
 }
 
 void
-LinuxOS::Process( std::vector<std::string> const& simargs, std::vector<std::string> const& envs )
+LinuxOS::ApplyHostEnvironment()
 {
-  if (not linux_impl.SetCommandLine(simargs))
-    throw 0;
-    
+  linux_impl.SetApplyHostEnvironment(true);
+}
+
+void
+LinuxOS::SetEnvironment( std::vector<std::string> const& envs )
+{
   // Set the linuxlib option to set the target environment with the
   // host environment
   linux_impl.SetApplyHostEnvironment(false);
   linux_impl.SetEnvironment(envs);
+}
+
+void
+LinuxOS::Process( std::vector<std::string> const& simargs )
+{
+  if (not linux_impl.SetCommandLine(simargs))
+    throw 0;
     
   // Set the binary that will be simulated in the target simulator
   if (not linux_impl.AddLoadFile( simargs[0].c_str() ))

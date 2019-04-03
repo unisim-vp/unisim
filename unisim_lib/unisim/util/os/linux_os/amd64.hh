@@ -762,28 +762,31 @@ namespace linux_os {
             {
               Args sc(lin);
               
-              // #define ARCH_SET_GS 0x1001
-              // #define ARCH_SET_FS 0x1002
-              // #define ARCH_GET_FS 0x1003
-              // #define ARCH_GET_GS 0x1004
-              
               switch (sc.code)
                 {
-                case 0x1001: // ARCH_SET_FS; Set the 64-bit base for the FS register to addr.
+                case 0x1001: // ARCH_SET_GS; Set the 64-bit base for the GS register to addr.
+                  lin.SetTargetRegister( "%gs_base", sc.addr ); // pseudo allocation of a tls descriptor
+                  break;
+                case 0x1002: // ARCH_SET_FS; Set the 64-bit base for the FS register to addr.
                   lin.SetTargetRegister( "%fs_base", sc.addr ); // pseudo allocation of a tls descriptor
                   break;
-                case 0x1002: // ARCH_GET_FS; Return the 64-bit base value for the FS register of the current thread in the unsigned long pointed to by addr.
+                case 0x1003: // ARCH_GET_FS; Return the 64-bit base value for the FS register of the current thread in the unsigned long pointed to by addr.
                   lin.WriteMemory( sc.addr, lin.GetTargetRegister( "%fs_base" ) );
-                  break;
-                case 0x1003: // ARCH_SET_GS; Set the 64-bit base for the GS register to addr.
-                  lin.SetTargetRegister( "%gs_base", sc.addr ); // pseudo allocation of a tls descriptor
                   break;
                 case 0x1004: // ARCH_GET_GS; Return the 64-bit base value for the GS register of the current thread in the unsigned long pointed to by addr.
                   lin.WriteMemory( sc.addr, lin.GetTargetRegister( "%gs_base" ) );
                   break;
+                case 0x1011: // ARCH_GET_CPUID;
+                case 0x1012: // ARCH_SET_CPUID;
+                case 0x2001: // ARCH_MAP_VDSO_X32;
+                case 0x2002: // ARCH_MAP_VDSO_32;
+                case 0x2003: // ARCH_MAP_VDSO_64;
+                default:  
+                  lin.SetSystemCallStatus(-LINUX_EINVAL,true);
+                  return;
                 }
               
-              SetAMD64SystemCallStatus( lin, 0, false );
+              lin.SetSystemCallStatus( 0, false );
             }
           } sc;
           return &sc;

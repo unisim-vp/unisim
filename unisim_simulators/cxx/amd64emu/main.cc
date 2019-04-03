@@ -1564,9 +1564,12 @@ main( int argc, char *argv[] )
     }
   else
     {
-      std::vector<std::string> envs;
-      envs.push_back( "LANG=C" );
-      linux64.Process( simargs, envs );
+      //linux64.ApplyHostEnvironment();
+      {
+        std::vector<std::string> envs{"LANG=C"};
+        linux64.SetEnvironment( envs );
+      }
+      linux64.Process( simargs );
     }
   
   std::cerr << "\n*** Run ***" << std::endl;

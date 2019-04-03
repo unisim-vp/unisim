@@ -3089,7 +3089,7 @@ vmlal_s16qd.execute = {
   // CheckAdvSIMDEnabled();
 
   for (unsigned idx = 0; idx < 4; ++idx)
-    cpu.SetVDE( vd+idx/2, idx%2, cpu.GetVDE( vd+idx/2, idx%2, U32() ) + U32(cpu.GetVDE( vn, idx, U16() )) * U32(cpu.GetVDE( vm, idx, U16() )) );
+    cpu.SetVDE( vd+idx/2, idx%2, cpu.GetVDE( vd+idx/2, idx%2, S32() ) + S32(cpu.GetVDE( vn, idx, S16() )) * S32(cpu.GetVDE( vm, idx, S16() )) );
 };
 
 op vmlal_s16qdp( 0b11110010[8]: 0b1[1]: shl<4> vd1[1]: 0b01[2]: vn0[4]: vd0[4]: 0b0010[4]: shl<4> vn1[1]: 0b1[1]: shl<1> part1[1]: 0b0[1]: part0[1]: vm[3] );
