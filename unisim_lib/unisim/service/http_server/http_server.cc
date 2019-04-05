@@ -267,6 +267,32 @@ HttpServer::~HttpServer()
 
 bool HttpServer::EndSetup()
 {
+	AddJSAction(unisim::service::interfaces::ToolbarDoAction(
+		/* name */      std::string("export-config-file-") + GetName(), 
+		/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=XML\" download=\"sim_config.xml\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_xml.svg\"></a>",
+		/* tips */      "Export configuration as .XML file"
+	));
+	
+	AddJSAction(unisim::service::interfaces::ToolbarDoAction(
+		/* name */      std::string("import-config-file-") + GetName(), 
+		/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_xml.svg\">",
+		/* tips */      "Import configuration from .XML file",
+		/* js action */ "new FileUploader('/import-config-file?format=XML', '.xml', true)"
+	));
+
+	AddJSAction(unisim::service::interfaces::ToolbarDoAction(
+		/* name */      std::string("export-config-file-") + GetName(), 
+		/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=INI\" download=\"sim_config.ini\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_ini.svg\"></a>",
+		/* tips */      "Export configuration as .INI file"
+	));
+	
+	AddJSAction(unisim::service::interfaces::ToolbarDoAction(
+		/* name */      std::string("import-config-file-") + GetName(), 
+		/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_ini.svg\">",
+		/* tips */      "Import configuration from .INI file",
+		/* js action */ "new FileUploader('/import-config-file?format=INI', '.ini', true)"
+	));
+
 	std::list<unisim::kernel::service::VariableBase *> kernel_param_lst;
 	std::list<unisim::kernel::service::VariableBase *> kernel_stat_lst;
 	
@@ -1011,8 +1037,9 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 					response << "\t\t\t\t\t<td class=\"var-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "</td>" << std::endl;
 					response << "\t\t\t\t\t<td class=\"var-value\">" << std::endl;
 					response << "\t\t\t\t\t\t<form action=\"/config?object=";
-					if(object) response << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName());
-					response << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\">" << std::endl;
+					if(is_kernel) response << "kernel";
+					else if(object) response << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName());
+					response << "\" method=\"post\">" << std::endl;
 					
 					std::string current_value = std::string(*var);
 					if(var->HasEnumeratedValues())
@@ -1206,7 +1233,7 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 					response << "\t\t\t\t\t<td class=\"reg-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "</td>" << std::endl;
 					response << "\t\t\t\t\t<td class=\"reg-size\">" << (reg->GetSize() * 8) << "</td>" << std::endl;
 					response << "\t\t\t\t\t<td class=\"reg-value\">" << std::endl;
-					response << "\t\t\t\t\t\t<form action=\"/registers?object=" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\">" << std::endl;// onsubmit=\"gui.save_window_scroll_top()\">" << std::endl;
+					response << "\t\t\t\t\t\t<form action=\"/registers?object=" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "\" method=\"post\">" << std::endl;
 					response << "\t\t\t\t\t\t\t<input title=\"Type a value then press enter\" class=\"reg-value-text\" type=\"text\" spellcheck=\"false\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "\" value=\"0x" << std::hex;
 #if BYTE_ORDER == BIG_ENDIAN
 					for(int i = 0; i < (int) reg_size; i++)
@@ -1307,8 +1334,11 @@ bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req,
 	for(ToolbarActions::const_iterator it = toolbar_actions.begin(); it != toolbar_actions.end(); it++)
 	{
 		const unisim::service::interfaces::ToolbarAction *a = *it;
+		const std::string& js_code_snippet = a->GetJSCodeSnippet();
 		response << "\t\t\t<div class=\"toolbar-item\">" << std::endl;
-		response << "\t\t\t\t<div id=\"" << a->GetName() << "\" title=\"" << a->GetTips() << "\" class=\"toolbar-button\" onclick=\"" << a->GetJSCodeSnippet() << "\">" << a->GetLabel() << "</div>" << std::endl;
+		response << "\t\t\t\t<div id=\"" << a->GetName() << "\" title=\"" << a->GetTips() << "\" class=\"toolbar-button\"";
+		if(!js_code_snippet.empty()) response << " onclick=\"" << a->GetJSCodeSnippet() << "\"";
+		response << ">" << a->GetLabel() << "</div>" << std::endl;
 		response << "\t\t\t</div>" << std::endl;
 	}
 	response << "\t\t</div>" << std::endl;
@@ -1424,6 +1454,118 @@ bool HttpServer::Serve404(unisim::util::hypapp::HttpRequest const& req, unisim::
 	return (req.GetRequestType() == unisim::util::hypapp::Request::HEAD) ? response.SendHeader(conn) : response.Send(conn);
 }
 
+bool HttpServer::ServeExportConfigFile(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+{
+	std::string format;
+	
+	if(req.HasQuery())
+	{
+		struct QueryDecoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
+		{
+			QueryDecoder(HttpServer& _http_server)
+				: http_server(_http_server)
+				, format()
+			{
+			}
+			
+			virtual bool FormAssign(const std::string& name, const std::string& value)
+			{
+				if(name == "format")
+				{
+					format = value;
+					return true;
+				}
+				
+				return false;
+			}
+			
+			HttpServer& http_server;
+			std::string format;
+		};
+		
+		QueryDecoder query_decoder(*this);
+	
+		if(query_decoder.Decode(req.GetQuery(), logger.DebugWarningStream()))
+		{
+			format = query_decoder.format;
+		}
+	}
+
+	unisim::util::hypapp::HttpResponse response;
+	
+	response.SetContentType("application/octet-stream");
+	if(format == "XML")
+	{
+		response.SetHeaderField("Content-Disposition", "attachment;filename=\"sim_config.xml\"");
+	}
+	else if(format == "INI")
+	{
+		response.SetHeaderField("Content-Disposition", "attachment;filename=\"sim_config.ini\"");
+	}
+	
+	GetSimulator()->SaveVariables(response, unisim::kernel::service::VariableBase::VAR_PARAMETER, format);
+	
+	return (req.GetRequestType() == unisim::util::hypapp::Request::HEAD) ? response.SendHeader(conn) : response.Send(conn);
+}
+
+bool HttpServer::ServeImportConfigFile(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+{
+	std::string format;
+	
+	if(req.HasQuery())
+	{
+		struct QueryDecoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
+		{
+			QueryDecoder(HttpServer& _http_server)
+				: http_server(_http_server)
+				, format()
+			{
+			}
+			
+			virtual bool FormAssign(const std::string& name, const std::string& value)
+			{
+				if(name == "format")
+				{
+					format = value;
+					return true;
+				}
+				
+				return false;
+			}
+			
+			HttpServer& http_server;
+			std::string format;
+		};
+		
+		QueryDecoder query_decoder(*this);
+	
+		if(query_decoder.Decode(req.GetQuery(), logger.DebugWarningStream()))
+		{
+			format = query_decoder.format;
+		}
+	}
+	
+	unsigned int n = req.GetPartCount();
+	for(unsigned int i = 0; i < n; i++)
+	{
+		unisim::util::hypapp::HttpRequestPart const& part = req.GetPart(i);
+
+		std::stringstream content_part_sstr(std::string(part.GetContent(), part.GetContentLength()));
+		GetSimulator()->LoadVariables(content_part_sstr, unisim::kernel::service::VariableBase::VAR_PARAMETER, format);
+	}
+
+	unisim::util::hypapp::HttpResponse response;
+	
+	if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
+	{
+		// Post/Redirect/Get pattern: got Post, so do Redirect
+		response.SetStatus(unisim::util::hypapp::HttpResponse::SEE_OTHER);
+		response.SetHeaderField("Location", std::string("http://") + req.GetHost());
+	}
+	
+	return (req.GetRequestType() == unisim::util::hypapp::Request::HEAD) ? response.SendHeader(conn) : response.Send(conn);
+}
+
 void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 {
 	struct MessageLoop : public unisim::util::hypapp::MessageLoop
@@ -1473,6 +1615,14 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 				else if((http_request.GetAbsolutePath() == "/kernel") || (http_request.GetAbsolutePath() == "/kernel/"))
 				{
 					return http_server.Serve404(http_request, conn);
+				}
+				else if(http_request.GetAbsolutePath() == "/export-config-file")
+				{
+					return http_server.ServeExportConfigFile(http_request, conn);
+				}
+				else if(http_request.GetAbsolutePath() == "/import-config-file")
+				{
+					return http_server.ServeImportConfigFile(http_request, conn);
 				}
 				else
 				{

@@ -55,7 +55,8 @@ body
 {
 	width:42px;
 	height:36px;
-	padding:1px 4px 1px 4px;
+	margin:0;
+	padding:0;
 	border-radius:3px;
 	border-style:solid;
 	border-color:#918e8c;
@@ -75,9 +76,29 @@ body
 	box-shadow:unset;
 }
 
-.toolbar-button img
+.toolbar-button a
 {
 	margin:0;
+	padding:0;
+	width:42px;
+	height:36px;
+	display:block;
+	cursor:default;
+	text-decoration:none;
+	outline:0;
+	user-drag:none; /* Safari only */
+	-webkit-touch-callout:none; /* iOS Safari */
+	-webkit-user-select:none;   /* Safari */
+	-khtml-user-select:none;    /* Konqueror HTML */
+	-moz-user-select:none;      /* Firefox */
+	-ms-user-select:none;       /* Internet Explorer/Edge */
+	user-select:none;           /* Non-prefixed version, currently
+                                    supported by Chrome and Opera */
+}
+
+.toolbar-button img
+{
+	margin:1px 4px 1px 4px;
 	width:32px;
 	height:32px;
 	pointer-events:none;
@@ -93,8 +114,8 @@ body
 
 .toolbar-button:active img
 {
-	margin-left:1px;
-	margin-top:1px;
+	margin-left:5px;
+	margin-top:2px;
 }
 
 #content-div { position:fixed; left:0px; top:40px; width:1156px; height:768px; }

@@ -85,11 +85,36 @@ namespace
   }
   
   char const*
-  streat( char const* ptr, char const* from )
+  streat( char const* ptr, char const* from, bool case_sensitive = false )
   {
-    while (*ptr and tolower(*ptr) == tolower(*from))
+    while (*ptr and ((case_sensitive && ((*ptr) == (*from))) || (!case_sensitive && (tolower(*ptr) == tolower(*from)))))
       ++ptr, ++from;
     return *ptr ? 0 : from;
+  }
+  
+  char const*
+  strseek( char const* search_for, char const* ptr, bool case_sensitive = false, bool after = false)
+  {
+    if((*search_for) == 0) return ptr;
+    while(*ptr)
+    {
+      char const *ptr1 = ptr;
+      char const *ptr2 = search_for;
+      while(*ptr2)
+      {
+        if((*ptr1) == 0) return 0;
+        if(((case_sensitive && ((*ptr1) != (*ptr2)))) || (!case_sensitive && (tolower(*ptr1) == tolower(*ptr2)))) break;
+        ++ptr1;
+        ++ptr2;
+      }
+      if((*ptr2) == 0)
+      {
+        return after ? ptr1 : ptr;
+      }
+      
+      ++ptr;
+    }
+    return 0;
   }
   
   void sleep(unsigned int msec)
@@ -117,6 +142,77 @@ namespace
   }
 }
 
+InputStreamBuffer::InputStreamBuffer()
+	: buffer(0)
+	, length(0)
+	, pos(0)
+{
+}
+
+InputStreamBuffer::InputStreamBuffer(char const* _buffer, std::streamsize _length, std::streampos _pos)
+{
+	Initialize(_buffer, _length, _pos);
+}
+
+void InputStreamBuffer::Initialize(char const* _buffer, std::streamsize _length, std::streampos _pos)
+{
+	buffer = _buffer;
+	length = _length;
+	pos = _pos;
+}
+
+InputStreamBuffer::int_type InputStreamBuffer::underflow()
+{
+	if(pos < length)
+	{
+		int_type c = buffer[pos];
+		pos += 1;
+		return c;
+	}
+	
+	return std::char_traits<char>::eof();
+}
+
+std::streamsize InputStreamBuffer::xsgetn(char* s, std::streamsize n)
+{
+	std::streamsize m = ((pos + n) > length) ? (length - pos) : n;
+	if(m > 0)
+	{
+		memcpy(s, buffer + pos, m);
+		pos += m;
+	}
+	return m;
+}
+
+OutputStreamBuffer::OutputStreamBuffer()
+  : buffer()
+{
+}
+
+OutputStreamBuffer::int_type OutputStreamBuffer::overflow(int_type c)
+{
+  reserve(1);
+  buffer.append(1, c);
+  return c;
+}
+
+std::streamsize OutputStreamBuffer::xsputn(const char* s, std::streamsize n)
+{
+  if(n)
+  {
+    reserve(n);
+    buffer.append(s, n);
+  }
+  
+  return n;
+}
+
+void OutputStreamBuffer::reserve(std::streamsize n)
+{
+  std::size_t m = ((buffer.size() + n + 4095) & -4096);
+  if(m > buffer.capacity()) buffer.reserve(m);
+}
+
 std::ostream& operator << (std::ostream& os, const Request::request_type_t& request_type)
 {
   switch(request_type)
@@ -142,147 +238,137 @@ std::ostream& operator << (std::ostream& os, const Request& req)
 }
 
 HttpRequest::HttpRequest(const Request& _req, std::ostream& err_log)
-	: valid(false)
-	, has_query(false)
-	, has_fragment(false)
-	, req(_req)
-	, abs_path()
-	, server_root()
-	, path()
-	, query()
-	, fragment()
-	, domain()
-	, has_port(false)
-	, port(0)
-	, content_stream_buffer(req)
+  : valid(false)
+  , has_query(false)
+  , has_fragment(false)
+  , req(_req)
+  , abs_path()
+  , server_root()
+  , path()
+  , query()
+  , fragment()
+  , domain()
+  , has_port(false)
+  , port(0)
+  , content_stream_buffer(req.GetContent(), req.GetContentLength(), 0)
+  , parts()
 {
-	rdbuf(&content_stream_buffer);
-	
-	valid = URL_AbsolutePathDecoder::Decode(req.GetRequestURI(), abs_path, err_log);
-	if(valid)
-	{
-		server_root = "/";
-		path = abs_path.substr(1);
-	}
-	const char *p_request_uri = req.GetRequestURI();
-	if(p_request_uri)
-	{
-		const char *p_query = strchr(p_request_uri, '?');
-		if(p_query) p_query++;
-		const char *p_fragment = strchr(p_query ? p_query : p_request_uri, '#');
-		if(p_fragment) p_fragment++;
-		if(p_fragment)
-		{
-			fragment = std::string(p_fragment);
-			has_fragment = true;
-		}
-		if(p_query)
-		{
-			if(p_fragment)
-			{
-				query = std::string(p_query, p_fragment - p_query);
-			}
-			else
-			{
-				query = std::string(p_query);
-			}
-			has_query = true;
-		}
-	}
-	const char *p_host = req.GetHost();
-	if(p_host)
-	{
-		const char *p_port = strchr(p_host, ':');
-		if(p_port)
-		{
-			domain = std::string(p_host, p_port - p_host);
-			std::istringstream sstr(p_port + 1);
-			sstr >> port;
-			has_port = true;
-		}
-		else
-		{
-			domain = std::string(p_host);
-		}
-	}
+  rdbuf(&content_stream_buffer);
+  
+  unsigned int part_count = req.GetPartCount();
+  parts.reserve(part_count);
+  for(unsigned int part_num = 0; part_num < part_count; part_num++)
+  {
+    parts.push_back(new HttpRequestPart(req.GetPart(part_num)));
+  }
+  
+  valid = URL_AbsolutePathDecoder::Decode(req.GetRequestURI(), abs_path, err_log);
+  if(valid)
+  {
+    server_root = "/";
+    path = abs_path.substr(1);
+  }
+  const char *p_request_uri = req.GetRequestURI();
+  if(p_request_uri)
+  {
+    const char *p_query = strchr(p_request_uri, '?');
+    if(p_query) p_query++;
+    const char *p_fragment = strchr(p_query ? p_query : p_request_uri, '#');
+    if(p_fragment) p_fragment++;
+    if(p_fragment)
+    {
+      fragment = std::string(p_fragment);
+      has_fragment = true;
+    }
+    if(p_query)
+    {
+      if(p_fragment)
+      {
+        query = std::string(p_query, p_fragment - p_query);
+      }
+      else
+      {
+        query = std::string(p_query);
+      }
+      has_query = true;
+    }
+  }
+  const char *p_host = req.GetHost();
+  if(p_host)
+  {
+    const char *p_port = strchr(p_host, ':');
+    if(p_port)
+    {
+      domain = std::string(p_host, p_port - p_host);
+      std::istringstream sstr(p_port + 1);
+      sstr >> port;
+      has_port = true;
+    }
+    else
+    {
+      domain = std::string(p_host);
+    }
+  }
 }
 
 HttpRequest::HttpRequest(const std::string& _server_root, const std::string& _path, const HttpRequest& http_request)
-	: valid(http_request.valid)
-	, has_query(http_request.has_query)
-	, has_fragment(http_request.has_fragment)
-	, req(http_request.req)
-	, abs_path(http_request.abs_path)
-	, server_root(_server_root)
-	, path(_path)
-	, query(http_request.query)
-	, fragment(http_request.fragment)
-	, domain(http_request.domain)
-	, has_port(http_request.has_port)
-	, port(http_request.port)
-	, content_stream_buffer(req)
+  : valid(http_request.valid)
+  , has_query(http_request.has_query)
+  , has_fragment(http_request.has_fragment)
+  , req(http_request.req)
+  , abs_path(http_request.abs_path)
+  , server_root(_server_root)
+  , path(_path)
+  , query(http_request.query)
+  , fragment(http_request.fragment)
+  , domain(http_request.domain)
+  , has_port(http_request.has_port)
+  , port(http_request.port)
+  , content_stream_buffer(req.GetContent(), req.GetContentLength(), 0)
 {
-	rdbuf(&content_stream_buffer);
+  rdbuf(&content_stream_buffer);
+  
+  unsigned int part_count = req.GetPartCount();
+  for(unsigned int part_num = 0; part_num < part_count; part_num++)
+  {
+    parts.push_back(new HttpRequestPart(req.GetPart(part_num)));
+  }
 }
 
-HttpRequest::StreamBuffer::StreamBuffer(const Request& _req)
-	: req(_req)
-	, pos(0)
+HttpRequest::~HttpRequest()
 {
-}
-
-HttpRequest::StreamBuffer::int_type HttpRequest::StreamBuffer::underflow()
-{
-	unsigned int content_length = req.GetContentLength();
-	if(pos < content_length)
-	{
-		const char *content = req.GetContent();
-		int_type c = content[pos];
-		pos += 1;
-		return c;
-	}
-	
-	return std::char_traits<char>::eof();
-}
-
-std::streamsize HttpRequest::StreamBuffer::xsgetn(char* s, std::streamsize n)
-{
-	unsigned int content_length = req.GetContentLength();
-	std::streamsize m = ((pos + n) > content_length) ? (content_length - pos) : n;
-	if(m > 0)
-	{
-		const char *content = req.GetContent();
-		memcpy(s, content + pos, m);
-		pos += m;
-	}
-	return m;
+  unsigned int part_count = parts.size();
+  for(unsigned int part_num = 0; part_num < part_count; part_num++)
+  {
+    delete parts[part_num];
+  }
 }
 
 std::ostream& operator << (std::ostream& os, const HttpRequest& http_request)
 {
-	os << http_request.req;
-	os << "Valid: " << http_request.IsValid() << std::endl;
-	if(http_request.IsValid())
-	{
-		os << "Absolute Path: \"" << http_request.GetAbsolutePath() << "\"" <<std::endl;
-		os << "Server Root: \"" << http_request.GetServerRoot() << "\"" <<std::endl;
-		os << "Path: \"" << http_request.GetPath() << "\"" << std::endl;
-	}
-	if(http_request.HasQuery())
-	{
-		os << "Query: \"" << http_request.GetQuery() << "\"" << std::endl;
-	}
-	if(http_request.HasFragment())
-	{
-		os << "Fragment: \"" << http_request.GetFragment() << "\"" << std::endl;
-	}
-	os << "Host: \"" << http_request.GetHost() << "\"" << std::endl;
-	os << "Domain: \"" << http_request.GetDomain() << "\"" << std::endl;
-	if(http_request.HasPort())
-	{
-		os << "Port: " << http_request.GetPort() << std::endl;
-	}
-	return os;
+  os << http_request.req;
+  os << "Valid: " << http_request.IsValid() << std::endl;
+  if(http_request.IsValid())
+  {
+    os << "Absolute Path: \"" << http_request.GetAbsolutePath() << "\"" <<std::endl;
+    os << "Server Root: \"" << http_request.GetServerRoot() << "\"" <<std::endl;
+    os << "Path: \"" << http_request.GetPath() << "\"" << std::endl;
+  }
+  if(http_request.HasQuery())
+  {
+    os << "Query: \"" << http_request.GetQuery() << "\"" << std::endl;
+  }
+  if(http_request.HasFragment())
+  {
+    os << "Fragment: \"" << http_request.GetFragment() << "\"" << std::endl;
+  }
+  os << "Host: \"" << http_request.GetHost() << "\"" << std::endl;
+  os << "Domain: \"" << http_request.GetDomain() << "\"" << std::endl;
+  if(http_request.HasPort())
+  {
+    os << "Port: " << http_request.GetPort() << std::endl;
+  }
+  return os;
 }
 
 HttpResponse::HttpResponse()
@@ -339,8 +425,8 @@ bool HttpResponse::Send(ClientConnection const& conn, bool header_only) const
   for(HeaderFields::const_iterator it = header_fields.begin(); it != header_fields.end(); it++)
   {
     const HeaderField& header_field = *it;
-    const std::string& key = header_field.first;
-    const std::string& value = header_field.second;
+    const std::string& key = header_field.key;
+    const std::string& value = header_field.value;
     
     header_stream << key << ": " << value << "\r\n";
   }
@@ -354,35 +440,6 @@ bool HttpResponse::Send(ClientConnection const& conn, bool header_only) const
   }
   
   return conn.Send(response);
-}
-
-HttpResponse::StreamBuffer::StreamBuffer()
-  : buffer()
-{
-}
-
-HttpResponse::StreamBuffer::int_type HttpResponse::StreamBuffer::overflow(int_type c)
-{
-  reserve(1);
-  buffer.append(1, c);
-  return c;
-}
-
-std::streamsize HttpResponse::StreamBuffer::xsputn(const char* s, std::streamsize n)
-{
-  if(n)
-  {
-    reserve(n);
-    buffer.append(s, n);
-  }
-  
-  return n;
-}
-
-void HttpResponse::StreamBuffer::reserve(std::streamsize n)
-{
-  std::size_t m = ((buffer.size() + n + 4095) & -4096);
-  if(m > buffer.capacity()) buffer.reserve(m);
 }
 
 std::ostream& operator << (std::ostream& os, const HttpResponse::StatusCode& status_code)
@@ -460,7 +517,9 @@ struct IPAddrRepr
 void MessageLoop::Run(ClientConnection const& conn)
 {
   std::vector<char> ibuf;
+  std::vector<HeaderField> header_fields;
   ibuf.reserve(4096);
+  header_fields.reserve(16);
     
   for (;;)
     {
@@ -560,6 +619,7 @@ void MessageLoop::Run(ClientConnection const& conn)
       request_size += 2; // second "\r\n" before next part
 
       Request request;
+      header_fields.clear();
       if      (char const* p = streat("OPTIONS ", ptr)) { ptr = p; request.request_type = Request::OPTIONS; }
       else if (char const* p = streat("GET ", ptr))     { ptr = p; request.request_type = Request::GET; }
       else if (char const* p = streat("HEAD ", ptr))    { ptr = p; request.request_type = Request::HEAD; }
@@ -579,7 +639,7 @@ void MessageLoop::Run(ClientConnection const& conn)
         {
           log << "[" << conn.socket << "] URI: " << uri << std::endl;
         }
-        request.uri = uri - &ibuf[0];
+        request.uri = (char const *)(uri - &ibuf[0]);
       }
       
       if (not (ptr = streat("HTTP/1.", ptr))) { err_log << "[" << conn.socket << "] HTTP version parse error\n"; return; }
@@ -597,8 +657,9 @@ void MessageLoop::Run(ClientConnection const& conn)
         
       bool keep_alive = false;
       int cseq = 0;
-	  unsigned content_length = 0;
-	  bool var_content = false;
+      unsigned content_length = 0;
+      bool var_content = false;
+      char const* multipart_boundary = 0;
         
       while (ptr < eoh)
         {
@@ -613,6 +674,11 @@ void MessageLoop::Run(ClientConnection const& conn)
           if (*ptr++ != '\n') { err_log << "[" << conn.socket << "] HTTP headers parse error\n"; return; }
             
           // header field parsed
+          if(header_fields.capacity() == header_fields.size())
+          {
+            header_fields.reserve(header_fields.capacity() + 16);
+          }
+          header_fields.push_back(HeaderField((char const *)(key - soh), (char const *)(val - soh)));
             
           if      (streat("Connection", key))
             {
@@ -624,16 +690,16 @@ void MessageLoop::Run(ClientConnection const& conn)
             }
           else if (streat("Content-Type", key))
             {
-              if (char const* b = streat("multipart/form-data; boundary=",val))
-                { err_log << "[" << conn.socket << "] MP boundary:" << b << "\n"; return; }
-              else { if(http_server.Verbose()) { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; request.content_type = val - &ibuf[0]; } }
+              multipart_boundary = streat("multipart/form-data; boundary=",val);
+              if(multipart_boundary) multipart_boundary = (char const *)(multipart_boundary - &ibuf[0]);
+              if(http_server.Verbose()) { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; } request.content_type = (char const *)(val - &ibuf[0]);
             }
           else if (streat("CSeq", key))
             { cseq = strtoul( val, 0, 0 ); if(http_server.Verbose()) { log << "[" << conn.socket << "] cseq:" << cseq << "\n"; } }
           else if (streat("Host", key))
             {
               if(http_server.Verbose()) { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; }
-              request.host = val - &ibuf[0];
+              request.host = (char const *)(val - &ibuf[0]);
             }
           else if (streat("User-Agent", key) or
                    streat("Referer", key) or
@@ -651,7 +717,8 @@ void MessageLoop::Run(ClientConnection const& conn)
                    streat("Pragma", key) or
                    streat("Keep-Alive", key) or
                    streat("TE", key) or
-                   streat("Range", key))
+                   streat("Range", key) or
+                   streat("Purpose", key))
             { if(http_server.Verbose()) { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; } }
           else if (streat("Range", key))
             { err_log << "[" << conn.socket << "] " << key << ": " << val << "\n"; return; }
@@ -760,10 +827,91 @@ void MessageLoop::Run(ClientConnection const& conn)
         }
         
         request.content_length = content_length;
-        request.content = request_size;
+        request.content = &ibuf[request_size];
+        
+        soh = &ibuf[0];
+      }
+      
+      if(request.uri) request.uri = &ibuf[(uintptr_t) request.uri];
+      if(request.host) request.host = &ibuf[(uintptr_t) request.host];
+      if(request.content_type) request.content_type = &ibuf[(uintptr_t) request.content_type];
+      if(multipart_boundary) multipart_boundary = &ibuf[(uintptr_t) multipart_boundary];
+      request.header_field_count = header_fields.size();
+
+      if(request.content && multipart_boundary)
+      {
+        bool last_part = false;
+        ptr = request.content;
+        if((ptr = strseek("--", ptr, true, true)) == 0) break;
+        if((ptr = streat(multipart_boundary, ptr, true)) == 0) break;
+        while (isblank(*ptr)) ptr += 1;
+        if((ptr = streat("\r\n", ptr)) == 0) break;
+        char const *start_of_part = ptr;
+        
+        do
+        {
+          if((ptr = strseek("--", ptr, true)) == 0) break;
+          char const *end_of_part = ptr;
+          ptr += 2;
+          if((ptr = streat(multipart_boundary, ptr, true)) == 0) break;
+          if(char const* p = streat("--", ptr)) { ptr = p; last_part = true; }
+          while (isblank(*ptr)) ptr += 1;
+          if((ptr = streat("\r\n", ptr)) == 0) break;
+          char const *start_of_next_part = last_part ? 0 : ptr;
+          ptr = start_of_part;
+          char const* end_of_part_header = GetHeaderEnd(ptr, end_of_part - start_of_part);
+          if(!end_of_part_header) break;
+          unsigned int part_num = request.parts.size();
+          request.parts.resize(part_num + 1);
+          RequestPart& part = request.parts[part_num];
+          while (ptr < end_of_part_header)
+          {
+            char const* key = ptr;
+            if (not (ptr = strchr(ptr, ':'))) { err_log << "[" << conn.socket << "] HTTP Part header field parse error\n"; return; }
+            ibuf[ptr++-soh] = '\0';
+            while (isblank(*ptr)) ptr += 1;
+            char const* val = ptr;
+            if (not (ptr = strchr(ptr, '\r'))) { err_log << "[" << conn.socket << "] HTTP Part header field parse error\n"; return; }
+            for (char const* p = ptr; (--p > val) and isspace(*p);) ibuf[p-soh] = '\0';
+            ibuf[ptr++-soh] = '\0';
+            if (*ptr++ != '\n') { err_log << "[" << conn.socket << "] HTTP Part header field parse error\n"; return; }
+            if(header_fields.capacity() == header_fields.size())
+            {
+              header_fields.reserve(header_fields.capacity() + 16);
+            }
+            header_fields.push_back(HeaderField((char const *)(key - soh), (char const *)(val - soh)));
+            part.header_field_count++;
+          }
+          
+          end_of_part_header += 4; // skip "\r\n\r\n"
+          part.ibuf = &ibuf[0];
+          part.header_fields = part.header_field_count ? (HeaderField const *)(&header_fields[header_fields.size() - part.header_field_count] - &header_fields[0]) : 0;
+          part.content = (char const *)(end_of_part_header - &ibuf[0]);
+          part.content_length = end_of_part - end_of_part_header;
+          
+          start_of_part = ptr = start_of_next_part;
+        }
+        while(!last_part);
+        
+        unsigned int part_count = request.parts.size();
+        for(unsigned int part_num = 0; part_num < part_count; part_num++)
+        {
+          RequestPart& part = request.parts[part_num];
+          part.header_fields = part.header_field_count ? &header_fields[(uintptr_t) part.header_fields] : 0;
+          part.content = &ibuf[(uintptr_t) part.content];
+        }
+      }
+      
+      unsigned int header_field_count = header_fields.size();
+      for(unsigned int header_field_num = 0; header_field_num < header_field_count; header_field_num++)
+      {
+        HeaderField& header_field = header_fields[header_field_num];
+        header_field.key = &ibuf[(uintptr_t) header_field.key];
+        header_field.value = &ibuf[(uintptr_t) header_field.value];
       }
   
-      request.ibuf = &ibuf[0];
+      request.header_fields = request.header_field_count ? &header_fields[0] : 0;
+
       if (not SendResponse(request, conn) or not keep_alive) return;
 
       ibuf.erase(ibuf.begin(), ibuf.begin() + request_size + content_length);

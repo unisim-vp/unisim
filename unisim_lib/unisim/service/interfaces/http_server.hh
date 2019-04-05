@@ -244,6 +244,12 @@ struct ToolbarDoAction : ToolbarAction, JSAction
 	{
 	}
 	
+	ToolbarDoAction(const std::string& name, const std::string& label, const std::string& tips)
+		: ToolbarAction(label, tips)
+		, JSAction(TOOLBAR, name)
+	{
+	}
+
 	ToolbarDoAction(const std::string& name, const std::string& label, const std::string& tips, const std::string& js_code_snippet)
 		: ToolbarAction(label, tips)
 		, JSAction(TOOLBAR, name, js_code_snippet)

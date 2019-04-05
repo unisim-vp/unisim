@@ -39,6 +39,7 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
+#include <cstring>
 #include <inttypes.h>
 
 namespace unisim {
@@ -62,26 +63,163 @@ struct ClientConnection
 
 struct MessageLoop;
 
+struct InputStreamBuffer : std::streambuf
+{
+  InputStreamBuffer();
+  InputStreamBuffer(char const* buffer, std::streamsize length, std::streampos _pos);
+  
+  void Initialize(char const* _buffer, std::streamsize _length, std::streampos _pos);
+
+protected:
+  virtual int_type underflow();
+  virtual std::streamsize xsgetn(char* s, std::streamsize n);
+
+private:
+  char const *buffer;
+  std::streamsize length;
+  std::streampos pos;
+};
+
+struct OutputStreamBuffer : std::streambuf
+{
+  OutputStreamBuffer();
+  const std::string& str() const { return buffer; }
+
+protected:
+  virtual int_type overflow(int_type c);
+  virtual std::streamsize xsputn(const char* s, std::streamsize n);
+
+private:
+  std::string buffer;
+
+  void reserve(std::streamsize n);
+};
+
+struct HeaderField
+{
+  HeaderField(char const* _key, char const* _value)
+    : key(_key)
+    , value(_value)
+  {
+  }
+  
+  char const* key;
+  char const* value;
+};
+
+struct RequestPart
+{
+public:
+  RequestPart()
+    : ibuf(0)
+    , header_fields(0)
+    , header_field_count(0)
+    , content(0)
+    , content_length(0)
+  {
+  }
+
+  unsigned int GetContentLength() const { return content_length; }
+  char const* GetContent() const { return content; }
+
+  unsigned int GetHeaderFieldCount() const
+  {
+    return header_field_count;
+  }
+  
+  HeaderField const *GetHeaderField(unsigned int i) const
+  {
+    return (i < header_field_count) ? &header_fields[i] : 0;
+  }
+  
+  char const *GetHeaderFieldValue(char const* key) const
+  {
+    if(header_field_count)
+    {
+      unsigned int n = header_field_count;
+      HeaderField const* header_field = header_fields;
+      do
+      {
+        if(strcasecmp(header_field->key, key) == 0)
+        {
+          return header_field->value;
+        }
+      }
+      while(++header_field, --n);
+    }
+    return "";
+  }
+  
+private:
+  friend struct MessageLoop;
+
+  char const *ibuf;
+  HeaderField const* header_fields;
+  unsigned int header_field_count;
+  char const *content;
+  unsigned int content_length;
+};
+
 struct Request
 {
   enum request_type_t { NO_REQ = 0, OPTIONS, GET, HEAD, POST };
-  
+
   request_type_t GetRequestType() const { return request_type; }
-  char const* GetRequestURI() const { return (ibuf && uri) ? (ibuf + uri) : ""; }
-  char const* GetHost() const { return (ibuf && host) ? (ibuf + host) : ""; }
-  char const* GetContentType() const { return (ibuf && content_type) ? (ibuf + content_type) : ""; }
+  char const* GetRequestURI() const { return uri; }
+  char const* GetHost() const { return host; }
+  char const* GetContentType() const { return content_type; }
   unsigned int GetContentLength() const { return content_length; }
-  char const* GetContent() const { return (ibuf && content) ? (ibuf + content) : ""; }
+  char const* GetContent() const { return content; }
+  
+  unsigned int GetHeaderFieldCount() const
+  {
+    return header_field_count;
+  }
+  
+  HeaderField const *GetHeaderField(unsigned int i) const
+  {
+    return (i < header_field_count) ? &header_fields[i] : 0;
+  }
+  
+  char const *GetHeaderFieldValue(char const* key) const
+  {
+    if(header_field_count)
+    {
+      unsigned int n = header_field_count;
+      HeaderField const* header_field = header_fields;
+      do
+      {
+        if(strcasecmp(header_field->key, key) == 0)
+        {
+          return header_field->value;
+        }
+      }
+      while(++header_field, --n);
+    }
+    return "";
+  }
+  
+  unsigned int GetPartCount() const
+  {
+    return parts.size();
+  }
+  
+  RequestPart const& GetPart(unsigned int i) const
+  {
+    return parts[i];
+  }
   
 private:
   Request()
-    : ibuf(0)
+    : header_fields(0)
+    , header_field_count(0)
     , request_type(NO_REQ)
     , uri(0)
     , host(0)
     , content_type(0)
     , content_length(0)
     , content(0)
+    , parts()
   {
   }
   Request(Request const &) {}
@@ -89,23 +227,50 @@ private:
   
   friend struct MessageLoop;
   
-  char const *ibuf;
+  HeaderField const* header_fields;
+  unsigned int header_field_count;
   request_type_t request_type;
-  unsigned int uri;
-  unsigned int host;
-  unsigned int content_type;
+  char const *uri;
+  char const *host;
+  char const *content_type;
   unsigned int content_length;
-  unsigned int content;
+  char const *content;
+  typedef std::vector<RequestPart> Parts;
+  Parts parts;
 };
 
 std::ostream& operator << (std::ostream& os, const Request::request_type_t& request_type);
 std::ostream& operator << (std::ostream& os, const Request& req);
+
+
+struct HttpRequestPart : std::istream
+{
+public:
+  HttpRequestPart(const RequestPart& _part)
+    : part(_part)
+    , content_stream_buffer(part.GetContent(), part.GetContentLength(), 0)
+  {
+    rdbuf(&content_stream_buffer);
+  }
+
+  unsigned int GetContentLength() const { return part.GetContentLength(); }
+  char const* GetContent() const { return part.GetContent(); }
+
+  unsigned int GetHeaderFieldCount() const { return part.GetHeaderFieldCount(); }
+  HeaderField const *GetHeaderField(unsigned int i) const { return part.GetHeaderField(i); }
+  char const *GetHeaderFieldValue(char const* key) const { return part.GetHeaderFieldValue(key); }
+  
+private:
+	const RequestPart& part;
+	InputStreamBuffer content_stream_buffer;
+};
 
 struct HttpRequest : std::istream
 {
 public:
   HttpRequest(const Request& req, std::ostream& err_log);
   HttpRequest(const std::string& server_root, const std::string& path, const HttpRequest& http_request);
+  ~HttpRequest();
   
   bool IsValid() const { return valid; }
   bool HasQuery() const { return has_query; }
@@ -116,6 +281,7 @@ public:
   char const* GetContentType() const { return req.GetContentType(); }
   unsigned int GetContentLength() const { return req.GetContentLength(); }
   char const* GetContent() const { return req.GetContent(); }
+  char const *GetHeaderFieldValue(char const* key) const { return req.GetHeaderFieldValue(key); }
   const std::string& GetAbsolutePath() const { return abs_path; }
   const std::string& GetServerRoot() const { return server_root; }
   const std::string& GetPath() const { return path; }
@@ -124,22 +290,12 @@ public:
   const std::string& GetDomain() const { return domain; }
   bool HasPort() const { return has_port; }
   unsigned int GetPort() const { return port; }
+  unsigned int GetPartCount() const { return parts.size(); }
+  HttpRequestPart const& GetPart(unsigned int i) const { return *parts[i]; }
 
   friend std::ostream& operator << (std::ostream& os, const HttpRequest& http_request);
   
 private:
-  struct StreamBuffer : std::streambuf
-  {
-    StreamBuffer(const Request& req);
-
-  protected:
-    virtual int_type underflow();
-    virtual std::streamsize xsgetn(char* s, std::streamsize n);
-    
-  private:
-    const Request& req;
-	std::streampos pos;
-  };
 
   bool valid;
   bool has_query;
@@ -153,7 +309,21 @@ private:
   std::string domain;
   bool has_port;
   unsigned int port;
-  StreamBuffer content_stream_buffer;
+  InputStreamBuffer content_stream_buffer;
+  typedef std::vector<HttpRequestPart *> Parts;
+  Parts parts;
+};
+
+struct HttpResponseHeaderField
+{
+  HttpResponseHeaderField(const std::string& _key, const std::string& _value)
+    : key(_key)
+    , value(_value)
+  {
+  }
+  
+  std::string key;
+  std::string value;
 };
 
 struct HttpResponse : public std::ostream
@@ -228,23 +398,8 @@ struct HttpResponse : public std::ostream
   bool IsClientError() const { return (status_code >= BAD_REQUEST) && (status_code <= EXPECTATION_FAILED); }
   bool IsServerError() const { return (status_code >= INTERNAL_SERVER_ERROR) && (status_code <= HTTP_VERSION_NOT_SUPPORTED); }
 private:
-  typedef std::pair<std::string, std::string> HeaderField;
-  typedef std::vector<HeaderField> HeaderFields;
-  
-  struct StreamBuffer : std::streambuf
-  {
-    StreamBuffer();
-    const std::string& str() const { return buffer; }
-    
-  protected:
-    virtual int_type overflow(int_type c);
-    virtual std::streamsize xsputn(const char* s, std::streamsize n);
-    
-  private:
-    std::string buffer;
-    
-    void reserve(std::streamsize n);
-  };
+  typedef HttpResponseHeaderField HeaderField;
+  typedef std::vector<HttpResponseHeaderField> HeaderFields;
   
   StatusCode status_code;
   std::string content_type;
@@ -252,7 +407,7 @@ private:
   bool keep_alive;
   std::string allow;
   std::string accept_ranges;
-  StreamBuffer content_stream_buffer;
+  OutputStreamBuffer content_stream_buffer;
   HeaderFields header_fields;
   
   bool Send(ClientConnection const& conn, bool header_only) const;

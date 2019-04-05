@@ -218,7 +218,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, core2_reset_time(sc_core::SC_ZERO_TIME)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
-	, enable_profiler(false)
+	, enable_profiler0(false)
+	, enable_profiler1(false)
+	, enable_profiler2(false)
 	, enable_serial_terminal0(false)
 	, enable_serial_terminal1(false)
 	, enable_serial_terminal2(false)
@@ -258,7 +260,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, param_core2_reset_time("core2-reset-time", this, core2_reset_time, "When Core #2 receives reset signal")
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
-	, param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable/Disable profiling")
+	, param_enable_profiler0("enable-profiler0", 0, enable_profiler0, "Enable/Disable profiling of Core #0")
+	, param_enable_profiler1("enable-profiler1", 0, enable_profiler1, "Enable/Disable profiling of Core #1")
+	, param_enable_profiler2("enable-profiler2", 0, enable_profiler2, "Enable/Disable profiling of Core #2")
 	, param_enable_serial_terminal0("enable-serial-terminal0", 0, enable_serial_terminal0, "Enable/Disable serial terminal over LINFlexD_0 UART serial interface")
 	, param_enable_serial_terminal1("enable-serial-terminal1", 0, enable_serial_terminal1, "Enable/Disable serial terminal over LINFlexD_1 UART serial interface")
 	, param_enable_serial_terminal2("enable-serial-terminal2", 0, enable_serial_terminal2, "Enable/Disable serial terminal over LINFlexD_2 UART serial interface")
@@ -319,6 +323,46 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	param_dspi_6_slave.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_dspi_12_slave.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
+	param_enable_gdb_server.SetMutable(false);
+	param_enable_inline_debugger.SetMutable(false);
+	param_enable_profiler0.SetMutable(false);
+	param_enable_profiler1.SetMutable(false);
+	param_enable_profiler2.SetMutable(false);
+	param_enable_serial_terminal0.SetMutable(false);
+	param_enable_serial_terminal1.SetMutable(false);
+	param_enable_serial_terminal2.SetMutable(false);
+	param_enable_serial_terminal14.SetMutable(false);
+	param_enable_serial_terminal15.SetMutable(false);
+	param_enable_serial_terminal16.SetMutable(false);
+	param_dspi_0_is_slave.SetMutable(false);
+	param_dspi_1_is_slave.SetMutable(false);
+	param_dspi_2_is_slave.SetMutable(false);
+	param_dspi_3_is_slave.SetMutable(false);
+	param_dspi_4_is_slave.SetMutable(false);
+	param_dspi_5_is_slave.SetMutable(false);
+	param_dspi_6_is_slave.SetMutable(false);
+	param_dspi_12_is_slave.SetMutable(false);
+	param_dspi_0_master.SetMutable(false);
+	param_dspi_1_master.SetMutable(false);
+	param_dspi_2_master.SetMutable(false);
+	param_dspi_3_master.SetMutable(false);
+	param_dspi_4_master.SetMutable(false);
+	param_dspi_5_master.SetMutable(false);
+	param_dspi_6_master.SetMutable(false);
+	param_dspi_12_master.SetMutable(false);
+	param_dspi_0_slave.SetMutable(false);
+	param_dspi_1_slave.SetMutable(false);
+	param_dspi_2_slave.SetMutable(false);
+	param_dspi_3_slave.SetMutable(false);
+	param_dspi_4_slave.SetMutable(false);
+	param_dspi_5_slave.SetMutable(false);
+	param_dspi_6_slave.SetMutable(false);
+	param_dspi_12_slave.SetMutable(false);
+#if HAVE_TVS
+	param_bandwidth_vcd_filename.SetMutable(false);
+	param_bandwidth_gtkwave_init_script.SetMutable(false);
+#endif
+	
 	unsigned int channel_num;
 	unsigned int hw_irq_num;
 	unsigned int prc_num;
@@ -489,7 +533,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//  - Multiformat loader
 	loader = new LOADER("loader");
 	//  - debugger
-	debugger = (enable_inline_debugger || enable_gdb_server || enable_profiler) ? new DEBUGGER("debugger") : 0;
+	debugger = (enable_inline_debugger || enable_gdb_server || (enable_profiler0 || enable_profiler1 || enable_profiler2)) ? new DEBUGGER("debugger") : 0;
 	//  - GDB server
 	gdb_server[0] = enable_gdb_server ? new GDB_SERVER("gdb-server0") : 0;
 	gdb_server[1] = enable_gdb_server ? new GDB_SERVER("gdb-server1") : 0;
@@ -499,9 +543,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	inline_debugger[1] = enable_inline_debugger ? new INLINE_DEBUGGER("inline-debugger1") : 0;
 	inline_debugger[2] = enable_inline_debugger ? new INLINE_DEBUGGER("inline-debugger2") : 0;
 	//  - profiler
-	profiler[0] = enable_profiler ? new PROFILER("profiler0") : 0;
-	profiler[1] = enable_profiler ? new PROFILER("profiler1") : 0;
-	profiler[2] = enable_profiler ? new PROFILER("profiler2") : 0;
+	profiler[0] = enable_profiler0 ? new PROFILER("profiler0") : 0;
+	profiler[1] = enable_profiler1 ? new PROFILER("profiler1") : 0;
+	profiler[2] = enable_profiler2 ? new PROFILER("profiler2") : 0;
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
@@ -827,27 +871,27 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	}
 	
 	// - SERIAL_TERMINAL
-	if(enable_serial_terminal0)
+	if(serial_terminal0)
 	{
 		instrumenter->RegisterPort(serial_terminal0->CLK);
 	}
-	if(enable_serial_terminal1)
+	if(serial_terminal1)
 	{
 		instrumenter->RegisterPort(serial_terminal1->CLK);
 	}
-	if(enable_serial_terminal2)
+	if(serial_terminal2)
 	{
 		instrumenter->RegisterPort(serial_terminal2->CLK);
 	}
-	if(enable_serial_terminal14)
+	if(serial_terminal14)
 	{
 		instrumenter->RegisterPort(serial_terminal14->CLK);
 	}
-	if(enable_serial_terminal15)
+	if(serial_terminal15)
 	{
 		instrumenter->RegisterPort(serial_terminal15->CLK);
 	}
-	if(enable_serial_terminal16)
+	if(serial_terminal16)
 	{
 		instrumenter->RegisterPort(serial_terminal16->CLK);
 	}
@@ -2324,27 +2368,27 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	instrumenter->Bind("HARDWARE.LINFlexD_15.lin_clk" , "HARDWARE.LIN_CLK");
 	instrumenter->Bind("HARDWARE.LINFlexD_15.reset_b" , "HARDWARE.reset_b");
 	
-	if(enable_serial_terminal0)
+	if(serial_terminal0)
 	{
 		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL0.CLK", "HARDWARE.SERIAL_TERMINAL0_CLK");
 	}
-	if(enable_serial_terminal1)
+	if(serial_terminal1)
 	{
 		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL1.CLK", "HARDWARE.SERIAL_TERMINAL1_CLK");
 	}
-	if(enable_serial_terminal2)
+	if(serial_terminal2)
 	{
 		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL2.CLK", "HARDWARE.SERIAL_TERMINAL2_CLK");
 	}
-	if(enable_serial_terminal14)
+	if(serial_terminal14)
 	{
 		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL14.CLK", "HARDWARE.SERIAL_TERMINAL14_CLK");
 	}
-	if(enable_serial_terminal15)
+	if(serial_terminal15)
 	{
 		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL15.CLK", "HARDWARE.SERIAL_TERMINAL15_CLK");
 	}
-	if(enable_serial_terminal16)
+	if(serial_terminal16)
 	{
 		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL16.CLK", "HARDWARE.SERIAL_TERMINAL16_CLK");
 	}
@@ -4628,10 +4672,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	unsigned int front_end_num = 0;
 	
-	if(enable_gdb_server)
+	// Connect gdb-server to debugger
+	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
 	{
-		// Connect gdb-server to debugger
-		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
+		if(gdb_server[prc_num])
 		{
 			*debugger->debug_yielding_import[front_end_num]       >> gdb_server[prc_num]->debug_yielding_export;
 			*debugger->debug_event_listener_import[front_end_num] >> gdb_server[prc_num]->debug_event_listener_export;
@@ -4642,15 +4686,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 			gdb_server[prc_num]->registers_import                 >> *debugger->registers_export[front_end_num];
 		}
 	}
-	else
-	{
-		front_end_num += NUM_PROCESSORS;
-	}
 
-	if(enable_inline_debugger)
+	// Connect inline-debugger to debugger
+	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
 	{
-		// Connect inline-debugger to debugger
-		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
+		if(inline_debugger[prc_num])
 		{
 			*debugger->debug_event_listener_import[front_end_num]   >> inline_debugger[prc_num]->debug_event_listener_export;
 			*debugger->debug_yielding_import[front_end_num]         >> inline_debugger[prc_num]->debug_yielding_export;
@@ -4667,15 +4707,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 			inline_debugger[prc_num]->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[front_end_num];
 		}
 	}
-	else
-	{
-		front_end_num += NUM_PROCESSORS;
-	}
 
-	if(enable_profiler)
+	// Connect profiler to debugger
+	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
 	{
-		// Connect profiler to debugger
-		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
+		if(profiler[prc_num])
 		{
 			*debugger->debug_event_listener_import[front_end_num] >> profiler[prc_num]->debug_event_listener_export;
 			*debugger->debug_yielding_import[front_end_num]       >> profiler[prc_num]->debug_yielding_export;
@@ -4692,10 +4728,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 			profiler[prc_num]->subprogram_lookup_import           >> *debugger->subprogram_lookup_export[front_end_num];
 		}
 	}
-	else
-	{
-		front_end_num += NUM_PROCESSORS;
-	}
 
 	(*loader->memory_import[0]) >> flash->memory_export;
 	(*loader->memory_import[1]) >> system_sram->memory_export;
@@ -4710,37 +4742,37 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	main_core_1->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	peripheral_core_2->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	
-	if(enable_serial_terminal0)
+	if(serial_terminal0 && char_io_tee0 && web_terminal0)
 	{
 		serial_terminal0->char_io_import >> char_io_tee0->char_io_export;
 		(*char_io_tee0->char_io_import[0]) >> netstreamer0->char_io_export;
 		(*char_io_tee0->char_io_import[1]) >> web_terminal0->char_io_export;
 	}
-	if(enable_serial_terminal1)
+	if(serial_terminal1 && char_io_tee1 && web_terminal1)
 	{
 		serial_terminal1->char_io_import >> char_io_tee1->char_io_export;
 		(*char_io_tee1->char_io_import[0]) >> netstreamer1->char_io_export;
 		(*char_io_tee1->char_io_import[1]) >> web_terminal1->char_io_export;
 	}
-	if(enable_serial_terminal2)
+	if(serial_terminal2 && char_io_tee2 && web_terminal2)
 	{
 		serial_terminal2->char_io_import >> char_io_tee2->char_io_export;
 		(*char_io_tee2->char_io_import[0]) >> netstreamer2->char_io_export;
 		(*char_io_tee2->char_io_import[1]) >> web_terminal2->char_io_export;
 	}
-	if(enable_serial_terminal14)
+	if(serial_terminal14 && char_io_tee14 && web_terminal14)
 	{
 		serial_terminal14->char_io_import >> char_io_tee14->char_io_export;
 		(*char_io_tee14->char_io_import[0]) >> netstreamer14->char_io_export;
 		(*char_io_tee14->char_io_import[1]) >> web_terminal14->char_io_export;
 	}
-	if(enable_serial_terminal15)
+	if(serial_terminal15 && char_io_tee15 && web_terminal15)
 	{
 		serial_terminal15->char_io_import >> char_io_tee15->char_io_export;
 		(*char_io_tee15->char_io_import[0]) >> netstreamer15->char_io_export;
 		(*char_io_tee15->char_io_import[1]) >> web_terminal15->char_io_export;
 	}
-	if(enable_serial_terminal16)
+	if(serial_terminal16 && char_io_tee16 && web_terminal16)
 	{
 		serial_terminal16->char_io_import >> char_io_tee16->char_io_export;
 		(*char_io_tee16->char_io_import[0]) >> netstreamer16->char_io_export;
@@ -4751,19 +4783,19 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		unsigned int i = 0;
 		*http_server->http_server_import[i++] >> instrumenter->http_server_export;
 		*http_server->http_server_import[i++] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
-		if(enable_profiler)
+		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
 		{
-			for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
+			if(profiler[prc_num])
 			{
 				*http_server->http_server_import[i++] >> profiler[prc_num]->http_server_export;
 			}
 		}
-		if(enable_serial_terminal0) *http_server->http_server_import[i++] >> web_terminal0->http_server_export;
-		if(enable_serial_terminal1) *http_server->http_server_import[i++] >> web_terminal1->http_server_export;
-		if(enable_serial_terminal2) *http_server->http_server_import[i++] >> web_terminal2->http_server_export;
-		if(enable_serial_terminal14) *http_server->http_server_import[i++] >> web_terminal14->http_server_export;
-		if(enable_serial_terminal15) *http_server->http_server_import[i++] >> web_terminal15->http_server_export;
-		if(enable_serial_terminal16) *http_server->http_server_import[i++] >> web_terminal16->http_server_export;
+		if(web_terminal0) *http_server->http_server_import[i++] >> web_terminal0->http_server_export;
+		if(web_terminal1) *http_server->http_server_import[i++] >> web_terminal1->http_server_export;
+		if(web_terminal2) *http_server->http_server_import[i++] >> web_terminal2->http_server_export;
+		if(web_terminal14) *http_server->http_server_import[i++] >> web_terminal14->http_server_export;
+		if(web_terminal15) *http_server->http_server_import[i++] >> web_terminal15->http_server_export;
+		if(web_terminal16) *http_server->http_server_import[i++] >> web_terminal16->http_server_export;
 	}
 	
 	{
@@ -6333,12 +6365,13 @@ void Simulator::Run()
 	std::cerr << "target speed: " << (instruction_counter / (run_time - idle_time) / 1000000.0) << " MIPS" << std::endl;
 	std::cerr << "host simulation speed: " << ((double) instruction_counter / spent_time / 1000000.0) << " MIPS" << std::endl;
 	std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
-	
-	if(enable_profiler)
+
+	for(unsigned int prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 	{
-		profiler[0]->Output();
-		profiler[1]->Output();
-		profiler[2]->Output();
+		if(profiler[prc_num])
+		{
+			profiler[prc_num]->Output();
+		}
 	}
 }
 
@@ -6444,7 +6477,7 @@ bool Simulator::EndSetup()
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 {
-	if(enable_inline_debugger || enable_profiler)
+	if(enable_inline_debugger || (enable_profiler0 || enable_profiler1 || enable_profiler2))
 	{
 		SetVariable("debugger.parse-dwarf", true);
 	}

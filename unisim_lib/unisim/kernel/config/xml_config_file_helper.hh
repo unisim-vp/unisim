@@ -52,10 +52,15 @@ public:
 	
 	virtual const char *GetName() const;
 	virtual bool SaveVariables(const char *filename, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
+	virtual bool SaveVariables(std::ostream& os, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
 	virtual bool LoadVariables(const char *filename, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
+	virtual bool LoadVariables(std::istream& is, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
 	
 private:
 	static const char *XML_ENCODING; 
+
+	bool SaveVariables(xmlTextWriterPtr writer, unisim::kernel::service::VariableBase::Type type);
+	bool LoadVariables(xmlTextReaderPtr reader, unisim::kernel::service::VariableBase::Type type);
 
 	bool HasVariable(const unisim::kernel::service::Object *obj,
 	                 unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);

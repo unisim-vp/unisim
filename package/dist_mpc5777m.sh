@@ -932,6 +932,10 @@ unisim/service/http_server/reg_script.js \
 unisim/service/http_server/embedded_script.js \
 unisim/service/http_server/embedded_style.css \
 unisim/service/http_server/uri.js \
+unisim/service/http_server/icon_export_config_xml.svg \
+unisim/service/http_server/icon_export_config_ini.svg \
+unisim/service/http_server/icon_import_config_xml.svg \
+unisim/service/http_server/icon_import_config_ini.svg \
 unisim/service/debug/profiler/by_address.css \
 unisim/service/debug/profiler/by_function_histogram.css \
 unisim/service/debug/profiler/by_function_table.css \

@@ -2593,5 +2593,41 @@ GUI.prototype.auto_reload_tab = function(tab)
 	this.refresh_scheduler.auto_reload_tab(tab);
 }
 
+FileUploader.prototype.form = null;
+FileUploader.prototype.input_file = null;
+
+function FileUploader(action, accept, multiple)
+{
+	this.form = document.createElement('form');
+	this.form.setAttribute('action', action);
+	this.form.setAttribute('method', 'post');
+	this.form.setAttribute('enctype', 'multipart/form-data');
+	this.form.setAttribute('style', 'display:none');
+	
+	this.input_file = document.createElement('input');
+	this.input_file.setAttribute('type', 'file');
+	this.input_file.setAttribute('name', 'file');
+	this.input_file.setAttribute('accept', accept);
+	this.input_file.setAttribute('multiple', multiple ? 'true' : 'false');
+	
+	this.form.appendChild(this.input_file);
+	document.body.appendChild(this.form);
+	
+	this.input_file.addEventListener('change', this.on_change.bind(this));
+	
+	this.input_file.click();
+}
+
+FileUploader.prototype.destroy = function()
+{
+	document.body.removeChild(this.form);
+}
+
+FileUploader.prototype.on_change = function()
+{
+	this.form.submit();
+	this.destroy();
+}
+
 var gui = null;
 document.addEventListener('DOMContentLoaded', function(event) { gui = new GUI(); });

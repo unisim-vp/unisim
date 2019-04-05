@@ -175,7 +175,7 @@ ScreenBufferLine::ScreenBufferLine(unsigned int _display_width)
 
 ScreenBufferLine::~ScreenBufferLine()
 {
-	delete storage;
+	delete[] storage;
 }
 
 void ScreenBufferLine::Erase()

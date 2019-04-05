@@ -221,7 +221,9 @@ public:
 	virtual ~ConfigFileHelper() {}
 	virtual const char *GetName() const = 0;
 	virtual bool SaveVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
+	virtual bool SaveVariables(std::ostream& os, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
 	virtual bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
+	virtual bool LoadVariables(std::istream& is, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
 };
 
 //=============================================================================
@@ -356,8 +358,10 @@ private:
 	void Initialize(VariableBase *variable);
 
 public:
-	bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID);
-	bool SaveVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID);
+	bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
+	bool LoadVariables(std::istream& is, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
+	bool SaveVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
+	bool SaveVariables(std::ostream& os, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
 
 	void GetObjects(std::list<Object *>& lst) const;
 	void GetRootObjects(std::list<Object *>& lst) const;

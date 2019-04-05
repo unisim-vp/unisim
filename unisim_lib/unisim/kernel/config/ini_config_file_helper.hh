@@ -49,7 +49,9 @@ public:
 	
 	virtual const char *GetName() const;
 	virtual bool SaveVariables(const char *filename, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
+	virtual bool SaveVariables(std::ostream& os, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
 	virtual bool LoadVariables(const char *filename, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
+	virtual bool LoadVariables(std::istream& is, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
 	
 private:
 	unisim::kernel::service::Simulator *simulator;

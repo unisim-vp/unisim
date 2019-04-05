@@ -61,7 +61,12 @@ bool INIConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 	std::ofstream file(filename);
 	
 	if(file.fail()) return false;
-		
+	
+	return SaveVariables(file, type);
+}
+
+bool INIConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::service::VariableBase::Type type)
+{
 	std::list<unisim::kernel::service::VariableBase *> variables;
 	std::list<unisim::kernel::service::VariableBase *>::iterator variable_iter;
 	simulator->GetVariables(variables, type);
@@ -71,13 +76,13 @@ bool INIConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 		
 		if(!variable->GetOwner())
 		{
-			file << variable->GetVarName() << "=" << (std::string)(*variable) << std::endl;
+			os << variable->GetVarName() << "=" << (std::string)(*variable) << std::endl;
 		}
 	}
 	
 	if(!variables.empty())
 	{
-		file << std::endl;
+		os << std::endl;
 	}
 	
 	std::list<unisim::kernel::service::Object *> objects;
@@ -87,7 +92,7 @@ bool INIConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 	{
 		unisim::kernel::service::Object *object = *object_iter;
 		
-		SaveVariables(file, object, type);
+		SaveVariables(os, object, type);
 	}
 	
 	return true;
@@ -122,6 +127,11 @@ bool INIConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::s
 	
 	if(file.fail()) return false;
 	
+	return LoadVariables(file, type);
+}
+
+bool INIConfigFileHelper::LoadVariables(std::istream& is, unisim::kernel::service::VariableBase::Type type)
+{
 	std::size_t lineno = 1;
 	std::string line;
 	std::string section;
@@ -129,7 +139,7 @@ bool INIConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::s
 	std::string value;
 	int state = 0;
 	
-	while(std::getline(file, line)) // note: line delimiter is not stored
+	while(std::getline(is, line)) // note: line delimiter is not stored
 	{
 		std::size_t pos = 0;
 		std::size_t len = line.length();
@@ -153,7 +163,7 @@ bool INIConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::s
 					}
 					else if(c == '=')
 					{
-						std::cerr << "In File \"" << filename << "\", Line #" << lineno << ", missing key before assignment operator ('=')" << std::endl;
+						std::cerr << "Line #" << lineno << ", missing key before assignment operator ('=')" << std::endl;
 						return false;
 					}
 					else
@@ -201,7 +211,7 @@ bool INIConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::s
 						key.append(1, c);
 						if(pos == eol_pos)
 						{
-							std::cerr << "In File \"" << filename << "\", Line #" << lineno << ", expecting assignment operator ('=') after key \"" << key << "\"" << std::endl;
+							std::cerr << "Line #" << lineno << ", expecting assignment operator ('=') after key \"" << key << "\"" << std::endl;
 							return false;
 						}
 					}
@@ -223,7 +233,7 @@ bool INIConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::s
 		lineno++;
 	}
 	
-	return file.eof();
+	return is.eof();
 }
 
 void INIConfigFileHelper::Assign(const std::string& section, const std::string& key, const std::string& value)

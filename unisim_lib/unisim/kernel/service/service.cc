@@ -2890,9 +2890,10 @@ void Simulator::DumpFormulas(std::ostream &os)
 	DumpVariables(os, VariableBase::VAR_FORMULA);
 }
 
-bool Simulator::LoadVariables(const char *filename, VariableBase::Type type)
+bool Simulator::LoadVariables(const char *filename, VariableBase::Type type, const std::string& _config_file_format)
 {
-	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(input_config_file_format);
+	std::string config_file_format = _config_file_format.empty() ? input_config_file_format : _config_file_format;
+	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(config_file_format);
 	
 	if(config_file_helper_it != config_file_helpers.end())
 	{
@@ -2904,15 +2905,46 @@ bool Simulator::LoadVariables(const char *filename, VariableBase::Type type)
 	return false;
 }
 
-bool Simulator::SaveVariables(const char *filename, VariableBase::Type type)
+bool Simulator::LoadVariables(std::istream& is, VariableBase::Type type, const std::string& _config_file_format)
 {
-	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(output_config_file_format);
+	std::string config_file_format = _config_file_format.empty() ? input_config_file_format : _config_file_format;
+	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(config_file_format);
+	
+	if(config_file_helper_it != config_file_helpers.end())
+	{
+		 ConfigFileHelper *config_file_helper = (*config_file_helper_it).second;
+		 
+		 return config_file_helper->LoadVariables(is, type);
+	}
+	
+	return false;
+}
+
+bool Simulator::SaveVariables(const char *filename, VariableBase::Type type, const std::string& _config_file_format)
+{
+	std::string config_file_format = _config_file_format.empty() ? output_config_file_format : _config_file_format;
+	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(config_file_format);
 	
 	if(config_file_helper_it != config_file_helpers.end())
 	{
 		 ConfigFileHelper *config_file_helper = (*config_file_helper_it).second;
 		 
 		 return config_file_helper->SaveVariables(filename, type);
+	}
+	
+	return false;
+}
+
+bool Simulator::SaveVariables(std::ostream& os, VariableBase::Type type, const std::string& _config_file_format)
+{
+	std::string config_file_format = _config_file_format.empty() ? output_config_file_format : _config_file_format;
+	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(config_file_format);
+	
+	if(config_file_helper_it != config_file_helpers.end())
+	{
+		 ConfigFileHelper *config_file_helper = (*config_file_helper_it).second;
+		 
+		 return config_file_helper->SaveVariables(os, type);
 	}
 	
 	return false;

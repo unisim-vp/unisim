@@ -490,7 +490,9 @@ private:
 	sc_core::sc_time core2_reset_time;
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
-	bool enable_profiler;
+	bool enable_profiler0;
+	bool enable_profiler1;
+	bool enable_profiler2;
 	bool enable_serial_terminal0;
 	bool enable_serial_terminal1;
 	bool enable_serial_terminal2;
@@ -533,7 +535,9 @@ private:
 	unisim::kernel::service::Parameter<sc_core::sc_time> param_core2_reset_time;
 	unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
 	unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
-	unisim::kernel::service::Parameter<bool> param_enable_profiler;
+	unisim::kernel::service::Parameter<bool> param_enable_profiler0;
+	unisim::kernel::service::Parameter<bool> param_enable_profiler1;
+	unisim::kernel::service::Parameter<bool> param_enable_profiler2;
 	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal0;
 	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal1;
 	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal2;

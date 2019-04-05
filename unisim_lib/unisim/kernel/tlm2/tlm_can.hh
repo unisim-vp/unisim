@@ -744,7 +744,7 @@ inline tlm_can_bus::~tlm_can_bus()
 	for(i = 0; i < bitstreams.size(); i++)
 	{
 		delete bitstreams[i];
-		if(tlm_can_bus_observer::instance()->enable) delete observable_input_signal_bitstream[i];
+		delete observable_input_signal_bitstream[i];
 	}
 	
 	tlm_can_bus_observer::instance()->release();
@@ -758,11 +758,8 @@ inline void tlm_can_bus::end_of_elaboration()
 	
 	bitstream_count = CAN_TX.size();
 	bitstreams.resize(bitstream_count);
-	if(tlm_can_bus_observer::instance()->enable)
-	{
-		assert(observable_input_signals.size() == bitstream_count);
-		observable_input_signal_bitstream.resize(bitstream_count);
-	}
+	assert(observable_input_signals.size() == bitstream_count);
+	observable_input_signal_bitstream.resize(bitstream_count);
 	bitstream_index = 0;
 	min_next_time_stamp = sc_core::sc_max_time();
 	output_value = true;
@@ -774,35 +771,28 @@ inline void tlm_can_bus::end_of_elaboration()
 		bitstreams[i] = new tlm_input_bitstream();
 		process_spawn_options.set_sensitivity(&bitstreams[i]->event());
 		
-		if(unlikely(tlm_can_bus_observer::instance()->enable))
-		{
-			sc_core::sc_signal<bool> *observable_input_signal = (i < observable_input_signals.size()) ? observable_input_signals[i] : 0;
-			
-			if(observable_input_signal)
-			{
-				observable_input_signal_bitstream[i] = new tlm_input_bitstream();
-				
-				std::stringstream observable_input_signal_process_name_sstr;
-				observable_input_signal_process_name_sstr << "observable_input_signal_process_" << i;
-				sc_core::sc_spawn_options observable_input_signal_process_spawn_options;
-				observable_input_signal_process_spawn_options.spawn_method();
-				observable_input_signal_process_spawn_options.dont_initialize();
-				observable_input_signal_process_spawn_options.set_sensitivity(&observable_input_signal_bitstream[i]->event());
-				sc_core::sc_spawn(sc_bind(&tlm_can_bus::observable_input_signal_process, this, i), observable_input_signal_process_name_sstr.str().c_str(), &observable_input_signal_process_spawn_options);
-			}
-		}
+		sc_core::sc_signal<bool> *observable_input_signal = observable_input_signals[i];
+		
+		assert(observable_input_signal);
+		
+		observable_input_signal_bitstream[i] = new tlm_input_bitstream();
+		
+		std::stringstream observable_input_signal_process_name_sstr;
+		observable_input_signal_process_name_sstr << "observable_input_signal_process_" << i;
+		sc_core::sc_spawn_options observable_input_signal_process_spawn_options;
+		observable_input_signal_process_spawn_options.spawn_method();
+		observable_input_signal_process_spawn_options.dont_initialize();
+		observable_input_signal_process_spawn_options.set_sensitivity(&observable_input_signal_bitstream[i]->event());
+		sc_core::sc_spawn(sc_bind(&tlm_can_bus::observable_input_signal_process, this, i), observable_input_signal_process_name_sstr.str().c_str(), &observable_input_signal_process_spawn_options);
 	}
 	
 	sc_core::sc_spawn(sc_bind(&tlm_can_bus::process, this), "process", &process_spawn_options);
 	
-	if(tlm_can_bus_observer::instance()->enable)
-	{
-		sc_core::sc_spawn_options observable_signal_process_spawn_options;
-		observable_signal_process_spawn_options.spawn_method();
-		observable_signal_process_spawn_options.dont_initialize();
-		observable_signal_process_spawn_options.set_sensitivity(&observable_signal_bitstream.event());
-		sc_core::sc_spawn(sc_bind(&tlm_can_bus::observable_signal_process, this), "observable_signal_process", &observable_signal_process_spawn_options);
-	}
+	sc_core::sc_spawn_options observable_signal_process_spawn_options;
+	observable_signal_process_spawn_options.spawn_method();
+	observable_signal_process_spawn_options.dont_initialize();
+	observable_signal_process_spawn_options.set_sensitivity(&observable_signal_bitstream.event());
+	sc_core::sc_spawn(sc_bind(&tlm_can_bus::observable_signal_process, this), "observable_signal_process", &observable_signal_process_spawn_options);
 }
 
 inline void tlm_can_bus::can_tx_nb_send(int id, tlm_serial_payload& payload, const sc_core::sc_time& t)
