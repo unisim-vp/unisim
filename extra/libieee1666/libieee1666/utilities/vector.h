@@ -39,6 +39,7 @@
 #include "core/object.h"
 #include "utilities/fwd.h"
 #include <stdexcept>
+#include <vector>
 
 namespace sc_core {
 
@@ -49,11 +50,21 @@ namespace sc_core {
 class sc_vector_base : public sc_object
 {
 public:
-	typedef int size_type; // implementation-defined HACK
+	typedef std::vector<sc_object *>::size_type size_type; // implementation-defined
 
 	virtual const char *kind() const;
 	size_type size() const;
 	const std::vector<sc_object *>& get_elements() const;
+protected:
+	sc_vector_base();
+	explicit sc_vector_base(const char *name);
+	
+	void push_back(sc_object *);
+	sc_object *at(size_type);
+	const sc_object *at(size_type) const;
+	void clear();
+private:
+	std::vector<sc_object *> elements;
 };
 
 ///////////////////////////// sc_vector_iter<> ////////////////////////////////
@@ -64,8 +75,18 @@ class sc_vector_iter : public std::iterator<std::random_access_iterator_tag, T>
 // Conforms to Random Access Iterator category.
 // See ISO/IEC 14882:2003(E), 24.1 [lib.iterator.requirements]
 // implementation-defined
+	typedef std::iterator<std::random_access_iterator_tag, T> base_type;
 	
-	typedef void *reference; // HACK
+	typedef base_type::reference reference;
+	
+	sc_vector_iter& operator ++ () { ++obj_iter; return *this; }
+	sc_vector_iter& operator ++ (int)  { sc_vector_iter prev(*this); ++obj_iter; return prev; };
+	reference operator * () const { *static_cast<T *>(*obj_iter); }
+	
+private:
+	std::vector<sc_object *>::iterator obj_iter;
+	
+	sc_vector_iter(const sc_vector_iter& other) : obj_iter(other.obj_iter) {}
 };
 
 //////////////////////////////// sc_vector<> //////////////////////////////////
@@ -118,6 +139,8 @@ private:
 	// Disabled
 	sc_vector(const sc_vector&);
 	sc_vector<T>& operator = (const sc_vector&);
+	
+	void clear();
 };
 
 template <typename T, typename MT>
@@ -178,62 +201,88 @@ sc_vector_assembly<T,MT> sc_assemble_vector(sc_vector<T>& , MT(T::*member_ptr));
 
 template <typename T>
 sc_vector<T>::sc_vector()
+	: sc_vector_base()
 {
 }
 
 template <typename T>
-sc_vector<T>::sc_vector(const char *)
+sc_vector<T>::sc_vector(const char *name)
+	: sc_vector_base(name)
 {
 }
 
 template <typename T>
-sc_vector<T>::sc_vector(const char *, size_type)
+sc_vector<T>::sc_vector(const char *nm, size_type sz)
+	: sc_vector_base(nm)
 {
+	init(nm, sz, sc_vector::create_element);
 }
 
 template <typename T>
-template <typename Creator> sc_vector<T>::sc_vector(const char *, size_type, Creator)
+template <typename Creator> sc_vector<T>::sc_vector(const char *nm, size_type sz, Creator c)
+	: sc_vector_base(nm)
 {
+	init(nm, sz, c);
 }
 
 template <typename T>
 sc_vector<T>::~sc_vector()
 {
+	clear();
 }
 
 template <typename T>
-void sc_vector<T>::init(size_type)
+void sc_vector<T>::init(size_type sz)
 {
+	init(sz, &sc_vector<T>::create_element);
 }
 
 template <typename T>
-T *sc_vector<T>::create_element(const char *, size_type)
+T *sc_vector<T>::create_element(const char *nm, size_type idx)
 {
+	return new T(nm);
 }
 
 template <typename T>
-template <typename Creator> void sc_vector<T>::init(size_type, Creator)
+template <typename Creator> void sc_vector<T>::init(size_type sz, Creator c)
 {
+	if(sz && get_elements().size())
+	{
+		throw std::runtime_error("function sc_vector<T>::init called more than once with an argument value greater than 0");
+	}
+	
+	size_type idx;
+	
+	for(idx = 0; idx < sz; idx++)
+	{
+		T *element = c(sc_gen_unique_name(this->base_name()), idx);
+		
+		sc_vector_base::push_back(element);
+	}
 }
 
 template <typename T>
-T& sc_vector<T>::operator [] (size_type)
+T& sc_vector<T>::operator [] (size_type idx)
 {
+	return at(idx);
 }
 
 template <typename T>
-const T& sc_vector<T>::operator [] (size_type) const
+const T& sc_vector<T>::operator [] (size_type idx) const
 {
+	return at(idx);
 }
 
 template <typename T>
-T& sc_vector<T>::at(size_type)
+T& sc_vector<T>::at(size_type idx)
 {
+	return *static_cast<T *>((sc_object *) sc_vector_base::at(idx));
 }
 
 template <typename T>
-const T& sc_vector<T>::at(size_type) const
+const T& sc_vector<T>::at(size_type idx) const
 {
+	return *static_cast<const T *>((const sc_object *) sc_vector_base::at(idx));
 }
 
 template <typename T>
@@ -315,6 +364,21 @@ sc_vector<T>::sc_vector(const sc_vector&)
 template <typename T>
 sc_vector<T>& sc_vector<T>::operator = (const sc_vector&)
 {
+}
+
+template <typename T>
+void sc_vector<T>::clear()
+{
+	size_type sz = size();
+	size_type idx;
+	
+	for(idx = 0; idx < sz; idx++)
+	{
+		sc_object *obj = at(idx);
+		delete obj;
+	}
+	
+	sc_vector_base::clear();
 }
 
 /////////////////////////// sc_vector_assembly<> //////////////////////////////
