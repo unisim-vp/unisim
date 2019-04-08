@@ -299,6 +299,7 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 				{
 					state = 15;
 					code_point_digits = 4;
+					code_point = 0;
 					break;
 				}
 				
