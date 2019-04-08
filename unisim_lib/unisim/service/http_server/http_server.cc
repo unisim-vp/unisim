@@ -1052,7 +1052,7 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 						for(it = values.begin(); it != values.end(); it++)
 						{
 							const std::string& value = (*it);
-							response << "\t\t\t\t\t\t\t\t<option value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "\""<< ((current_value == value) ? " selected": "") << ">" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "</option>" << std::endl;
+							response << "\t\t\t\t\t\t\t\t<option value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "\""<< ((current_value == value) ? " selected": "") << (var->IsMutable() ? "" : " disabled") << ">" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "</option>" << std::endl;
 						}
 						response << "\t\t\t\t\t\t\t</select>" << std::endl;
 					}
