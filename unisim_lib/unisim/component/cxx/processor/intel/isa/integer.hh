@@ -1788,14 +1788,14 @@ struct IMulGEI : public Operation<ARCH>
   {
     typedef typename TypeFor<ARCH,OP::SIZE>::s s_type;
     typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
-    typedef typename atpinfo<ARCH,s_type>::twice twice;
-    typedef typename ARCH::bit_t bit_t;
-    
-    twice res  = twice( imm ) * twice( s_type( arch.rmread( OP(), rmop ) ) );
-    arch.rmwrite( OP(), rmop, u_type( res ) );
-    bit_t flag = res != twice( s_type( res ) );
-    arch.flagwrite( ARCH::FLAG::OF, flag );
-    arch.flagwrite( ARCH::FLAG::CF, flag );
+
+    s_type acc( arch.rmread( OP(), rmop ) ), src( imm ), msr;
+    eval_mul( arch, msr, acc, src );
+    arch.rmwrite( OP(), rmop, u_type( acc ) );
+    // twice res  = twice( imm ) * twice( s_type( arch.rmread( OP(), rmop ) ) );
+    // bit_t flag = res != twice( s_type( res ) );
+    // arch.flagwrite( ARCH::FLAG::OF, flag );
+    // arch.flagwrite( ARCH::FLAG::CF, flag );
   }
 };
 
@@ -1831,7 +1831,7 @@ template <class ARCH> struct DC<ARCH,IMUL> { Operation<ARCH>* get( InputCode<ARC
     {
       if      (ic.opsize() == 16) return new IMulGEI<ARCH,GOw>( _.opbase(), _.rmop(), _.greg(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new IMulGEI<ARCH,GOd>( _.opbase(), _.rmop(), _.greg(), _.i( int32_t() ) );
-      //else if (ic.opsize() == 64) return new IMulGEI<ARCH,GOq>( _.opbase(), _.rmop(), _.greg(), _.i( int64_t() ) );
+      else if (ic.opsize() == 64) return new IMulGEI<ARCH,GOq>( _.opbase(), _.rmop(), _.greg(), _.i( int64_t() ) );
       return 0;
     }
   

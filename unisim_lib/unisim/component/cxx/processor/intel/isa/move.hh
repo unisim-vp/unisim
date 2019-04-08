@@ -1118,3 +1118,41 @@ template <class ARCH> struct DC<ARCH,LFP> { Operation<ARCH>* get( InputCode<ARCH
   return 0;
 }};
 
+template <class ARCH>
+struct PrefetchNop : public Operation<ARCH>
+{
+  PrefetchNop( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, char const* _mnemo ) : Operation<ARCH>( opbase ), rmop( _rmop ), mnemo( _mnemo ) {} RMOp<ARCH> rmop; char const* mnemo;
+  void disasm( std::ostream& sink ) const { sink << mnemo << " " << DisasmM( rmop ); }
+  void execute( ARCH& arch ) const {}
+};
+
+template <class ARCH> struct DC<ARCH,PREFETCH> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  // PREFETCH -- Prefetch Data Into Caches
+  if (auto _ = match( ic, opcode( "\x0f\x18" ) /1 & RM_mem() ))
+
+    return new PrefetchNop<ARCH>( _.opbase(), _.rmop(), "prefetcht0" );
+
+  if (auto _ = match( ic, opcode( "\x0f\x18" ) /2 & RM_mem() ))
+
+    return new PrefetchNop<ARCH>( _.opbase(), _.rmop(), "prefetcht1" );
+
+  if (auto _ = match( ic, opcode( "\x0f\x18" ) /3 & RM_mem() ))
+
+    return new PrefetchNop<ARCH>( _.opbase(), _.rmop(), "prefetcht2" );
+
+  if (auto _ = match( ic, opcode( "\x0f\x18" ) /0 & RM_mem() ))
+
+    return new PrefetchNop<ARCH>( _.opbase(), _.rmop(), "prefetchnta" );
+
+  if (auto _ = match( ic, opcode( "\x0f\x0d" ) /1 & RM_mem() ))
+
+    return new PrefetchNop<ARCH>( _.opbase(), _.rmop(), "prefetchw" );
+  
+  if (auto _ = match( ic, opcode( "\x0f\x0d" ) /2 & RM_mem() ))
+
+    return new PrefetchNop<ARCH>( _.opbase(), _.rmop(), "prefetchwt1" );
+  
+  return 0;
+}};
+

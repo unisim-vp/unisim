@@ -35,45 +35,45 @@
 // /* ADDSUBPD -- Packed Single- or Double-FP Add/Subtract */
 // op addsubpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xd0[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// addsubpd_vdq_wdq.disasm = { _sink << "addsubpd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// addsubpd_vdq_wdq.disasm = { _sink << "addsubpd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 //  
 // op addsubps_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0xd0[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// addsubps_vdq_wdq.disasm = { _sink << "addsubps " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// addsubps_vdq_wdq.disasm = { _sink << "addsubps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* BLENDP -- Blend Packed Single- or Double-Precision Floating-Point Values */
 // op blendps_vdq_wdq_ib( 0x0f[8]:> <:0x3a[8]:> <:0x0c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// blendps_vdq_wdq_ib.disasm = { _sink << "blendps " << DisasmI( imm ) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// blendps_vdq_wdq_ib.disasm = { _sink << "blendps " << DisasmI( imm ) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op blendpd_vdq_wdq_ib( 0x0f[8]:> <:0x3a[8]:> <:0x0d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// blendpd_vdq_wdq_ib.disasm = { _sink << "blendpd " << DisasmI( imm ) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// blendpd_vdq_wdq_ib.disasm = { _sink << "blendpd " << DisasmI( imm ) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* BLENDVPD -- Variable Blend Packed Double Precision Floating-Point Values */
 // op blendvps_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x14[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// blendvps_vdq_wdq.disasm = { _sink << "blendvps %xmm0," << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// blendvps_vdq_wdq.disasm = { _sink << "blendvps %xmm0," << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op blendvpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x15[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// blendvpd_vdq_wdq.disasm = { _sink << "blendvpd %xmm0," << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// blendvpd_vdq_wdq.disasm = { _sink << "blendvpd %xmm0," << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* CMPP -- Compare Packed Single- or Double-Precision Floating-Point Values */
 // op cmpps_vdq_wdq_ib( 0x0f[8]:> <:0xc2[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
 // cmpps_vdq_wdq_ib.disasm = {
 //   char const* op[] = {"eq", "lt", "le", "unord", "neq","nlt","nle","ord"};
-//   if (imm >= 8)  _sink << "cmpps " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn );
-//   else           _sink << "cmp" << op[imm&7] << "ps " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn );
+//   if (imm >= 8)  _sink << "cmpps " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn );
+//   else           _sink << "cmp" << op[imm&7] << "ps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn );
 // };
 // 
 // op cmppd_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0xc2[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
 // cmppd_vdq_wdq_ib.disasm = {
 //   char const* op[] = {"eq", "lt", "le", "unord", "neq","nlt","nle","ord"};
-//   if (imm >= 8)  _sink << "cmppd " << DisasmI( imm ) << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn );
-//   else           _sink << "cmp" << op[imm&7] << "pd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn );
+//   if (imm >= 8)  _sink << "cmppd " << DisasmI( imm ) << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn );
+//   else           _sink << "cmp" << op[imm&7] << "pd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn );
 // };
 // 
 // /* CMPSD -- Compare Scalar Single- Double-Precision Floating-Point Values */
@@ -81,26 +81,26 @@
 // 
 // cmpss_vdq_wdq_ib.disasm = {
 //   char const* op[] = {"eq", "lt", "le", "unord", "neq","nlt","nle","ord"};
-//   if (imm >= 8)  _sink << "cmpss " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn );
-//   else           _sink << "cmp" << op[imm&7] << "ss " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn );
+//   if (imm >= 8)  _sink << "cmpss " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn );
+//   else           _sink << "cmp" << op[imm&7] << "ss " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn );
 // };
 // 
 // op cmpsd_vdq_wdq_ib( 0xf2[8]:> <:0x0f[8]:> <:0xc2[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
 // cmpsd_vdq_wdq_ib.disasm = {
 //   char const* op[] = {"eq", "lt", "le", "unord", "neq","nlt","nle","ord"};
-//   if (imm >= 8)  _sink << "cmpsd " << DisasmI( imm ) << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn );
-//   else           _sink << "cmp" << op[imm&7] << "sd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn );
+//   if (imm >= 8)  _sink << "cmpsd " << DisasmI( imm ) << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn );
+//   else           _sink << "cmp" << op[imm&7] << "sd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn );
 // };
 // 
 // /* COMISD -- Compare Scalar Ordered Single- or Double-Precision Floating-Point Values and Set EFLAGS */
 // op comisd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x2f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// comisd_vdq_wdq.disasm = { _sink << "comisd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// comisd_vdq_wdq.disasm = { _sink << "comisd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op comiss_vdq_wdq( 0x0f[8]:> <:0x2f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// comiss_vdq_wdq.disasm = { _sink << "comiss " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// comiss_vdq_wdq.disasm = { _sink << "comiss " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 
 /*********************/
 /* SIMD CVT Functions*/
@@ -264,80 +264,80 @@ template <class ARCH> struct DC<ARCH,MXCSR> { Operation<ARCH>* get( InputCode<AR
 
 /* CVTDQ2PS -- Convert Packed Dword Integers to Packed Single- or Double-Precision FP Values */
 // op cvtdq2ps_vdq_wdq( 0x0f[8]:> <:0x5b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvtdq2ps_vdq_wdq.disasm = { _sink << "cvtdq2ps " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// cvtdq2ps_vdq_wdq.disasm = { _sink << "cvtdq2ps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // op cvtdq2pd_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0xe6[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvtdq2pd_vdq_wdq.disasm = { _sink << "cvtdq2pd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// cvtdq2pd_vdq_wdq.disasm = { _sink << "cvtdq2pd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 /* CVTSI2SD -- Convert Dword Integer to Scalar Double-Precision FP Value */
 // op cvtsi2sd_vdq_ed( 0xf2[8]:> <:0x0f[8]:> <:0x2a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvtsi2sd_vdq_ed.disasm = { _sink << "cvtsi2sd " << DisasmEd( rmop ) << ',' << DisasmV( SSE(), gn ); };
+// cvtsi2sd_vdq_ed.disasm = { _sink << "cvtsi2sd " << DisasmEd( rm ) << ',' << DisasmV( SSE(), gn ); };
 /* CVTSI2SS -- Convert Dword Integer to Scalar Single-Precision FP Value */
 // op cvtsi2ss_vdq_ed( 0xf3[8]:> <:0x0f[8]:> <:0x2a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvtsi2ss_vdq_ed.disasm = { _sink << "cvtsi2ss " << DisasmEd( rmop ) << ',' << DisasmV( SSE(), gn ); };
+// cvtsi2ss_vdq_ed.disasm = { _sink << "cvtsi2ss " << DisasmEd( rm ) << ',' << DisasmV( SSE(), gn ); };
 
 
 /* CVTSD2SS -- Convert Scalar Double-Precision FP Value to Scalar Single-Precision FP Value */
 // op cvtsd2ss_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x5a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 /* CVTPD2DQ -- Convert Packed Double-Precision FP Values to Packed Dword Integers */
 // op cvtpd2dq_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0xe6[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvtpd2dq_vdq_wdq.disasm = { _sink << "cvtpd2dq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// cvtpd2dq_vdq_wdq.disasm = { _sink << "cvtpd2dq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 /* CVTPD2PI -- Convert Packed Double-Precision FP Values to Packed Dword Integers */
 // op cvtpd2pi_pq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x2d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvtpd2pi_pq_wdq.disasm = { _sink << "cvtpd2pi " << DisasmW( SSE(), rmop ) << ',' << DisasmPq( gn ); };
+// cvtpd2pi_pq_wdq.disasm = { _sink << "cvtpd2pi " << DisasmW( SSE(), rm ) << ',' << DisasmPq( gn ); };
 /* CVTPD2PS -- Convert Packed Double-Precision FP Values to Packed Single-Precision FP Values */
 // op cvtpd2ps_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x5a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvtpd2ps_vdq_wdq.disasm = { _sink << "cvtpd2ps " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// cvtpd2ps_vdq_wdq.disasm = { _sink << "cvtpd2ps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 /* CVTPI2P -- Convert Packed Dword Integers to Packed Single- or Double-Precision FP Values */
 // op cvtpi2ps_vdq_qq( 0x0f[8]:> <:0x2a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvtpi2ps_vdq_qq.disasm = { _sink << "cvtpi2ps " << DisasmQq( rmop ) << ',' << DisasmV( SSE(), gn ); };
+// cvtpi2ps_vdq_qq.disasm = { _sink << "cvtpi2ps " << DisasmQq( rm ) << ',' << DisasmV( SSE(), gn ); };
 // op cvtpi2pd_vdq_qq( 0x66[8]:> <:0x0f[8]:> <:0x2a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvtpi2pd_vdq_qq.disasm = { _sink << "cvtpi2pd " << DisasmQq( rmop ) << ',' << DisasmV( SSE(), gn ); };
+// cvtpi2pd_vdq_qq.disasm = { _sink << "cvtpi2pd " << DisasmQq( rm ) << ',' << DisasmV( SSE(), gn ); };
 /* CVTPS2DQ -- Convert Packed Single-Precision FP Values to Packed Dword Integers */
 // op cvtps2dq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x5b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvtps2dq_vdq_wdq.disasm = { _sink << "cvtps2dq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// cvtps2dq_vdq_wdq.disasm = { _sink << "cvtps2dq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 /* CVTPS2PD -- Convert Packed Single-Precision FP Values to Packed Double-Precision FP Values */
 // op cvtps2pd_vdq_wdq( 0x0f[8]:> <:0x5a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvtps2pd_vdq_wdq.disasm = { _sink << "cvtps2pd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// cvtps2pd_vdq_wdq.disasm = { _sink << "cvtps2pd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 /* CVTPS2PI -- Convert Packed Single-Precision FP Values to Packed Dword Integers */
 // op cvtps2pi_pq_wdq( 0x0f[8]:> <:0x2d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvtps2pi_pq_wdq.disasm = { _sink << "cvtps2pi " << DisasmW( SSE(), rmop ) << ',' << DisasmPq( gn ); };
+// cvtps2pi_pq_wdq.disasm = { _sink << "cvtps2pi " << DisasmW( SSE(), rm ) << ',' << DisasmPq( gn ); };
 /* CVTSD2SI -- Convert Scalar Double-Precision FP Value to Integer */
 // op cvtsd2si_gd_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x2d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvtsd2si_gd_wdq.disasm = { _sink << "cvtsd2si " << DisasmW( SSE(), rmop ) << ',' << DisasmGd( gn ); };
-// cvtsd2ss_vdq_wdq.disasm = { _sink << "cvtsd2ss " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// cvtsd2si_gd_wdq.disasm = { _sink << "cvtsd2si " << DisasmW( SSE(), rm ) << ',' << DisasmGd( gn ); };
+// cvtsd2ss_vdq_wdq.disasm = { _sink << "cvtsd2ss " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 /* CVTSS2SD -- Convert Scalar Single-Precision FP Value to Scalar Double-Precision FP Value */
 // op cvtss2sd_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x5a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvtss2sd_vdq_wdq.disasm = { _sink << "cvtss2sd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// cvtss2sd_vdq_wdq.disasm = { _sink << "cvtss2sd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 /* CVTSS2SI -- Convert Scalar Single-Precision FP Value to Dword Integer */
 // op cvtss2si_gd_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x2d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvtss2si_gd_wdq.disasm = { _sink << "cvtss2si " << DisasmW( SSE(), rmop ) << ',' << DisasmGd( gn ); };
+// cvtss2si_gd_wdq.disasm = { _sink << "cvtss2si " << DisasmW( SSE(), rm ) << ',' << DisasmGd( gn ); };
 /* CVTTPD2DQ -- Convert with Truncation Packed Double-Precision FP Values to Packed Dword Integers */
 // op cvttpd2dq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xe6[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvttpd2dq_vdq_wdq.disasm = { _sink << "cvttpd2dq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// cvttpd2dq_vdq_wdq.disasm = { _sink << "cvttpd2dq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 /* CVTTPD2PI -- Convert with Truncation Packed Double-Precision FP Values to Packed Dword Integers */
 // op cvttpd2pi_pq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x2c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvttpd2pi_pq_wdq.disasm = { _sink << "cvttpd2pi " << DisasmW( SSE(), rmop ) << ',' << DisasmPq( gn ); };
+// cvttpd2pi_pq_wdq.disasm = { _sink << "cvttpd2pi " << DisasmW( SSE(), rm ) << ',' << DisasmPq( gn ); };
 /* CVTTPS2DQ -- Convert with Truncation Packed Single-Precision FP Values to Packed Dword Integers */
 // op cvttps2dq_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x5b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvttps2dq_vdq_wdq.disasm = { _sink << "cvttps2dq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// cvttps2dq_vdq_wdq.disasm = { _sink << "cvttps2dq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 /* CVTTPS2PI -- Convert with Truncation Packed Single-Precision FP Values to Packed Dword Integers */
 // op cvttps2pi_pq_wdq( 0x0f[8]:> <:0x2c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvttps2pi_pq_wdq.disasm = { _sink << "cvttps2pi " << DisasmW( SSE(), rmop ) << ',' << DisasmPq( gn ); };
+// cvttps2pi_pq_wdq.disasm = { _sink << "cvttps2pi " << DisasmW( SSE(), rm ) << ',' << DisasmPq( gn ); };
 /* CVTTSD2SI -- Convert with Truncation Scalar Double-Precision FP Value to Integer */
 // op cvttsd2si_gd_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x2c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvttsd2si_gd_wdq.disasm = { _sink << "cvttsd2si " << DisasmW( SSE(), rmop ) << ',' << DisasmGd( gn ); };
+// cvttsd2si_gd_wdq.disasm = { _sink << "cvttsd2si " << DisasmW( SSE(), rm ) << ',' << DisasmGd( gn ); };
 /* CVTTSS2SI -- Convert with Truncation Scalar Single-Precision FP Value to Dword Integer */
 // op cvttss2si_gd_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x2c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// cvttss2si_gd_wdq.disasm = { _sink << "cvttss2si " << DisasmW( SSE(), rmop ) << ',' << DisasmGd( gn ); };
+// cvttss2si_gd_wdq.disasm = { _sink << "cvttss2si " << DisasmW( SSE(), rm ) << ',' << DisasmGd( gn ); };
 
 
 // /* DPPD -- Dot Product of Packed Double Precision Floating-Point Values */
 // op dpps_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x40[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// dpps_vdq_wdq_ib.disasm = { _sink << "dpps " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// dpps_vdq_wdq_ib.disasm = { _sink << "dpps " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op dppd_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x41[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// dppd_vdq_wdq_ib.disasm = { _sink << "dppd " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// dppd_vdq_wdq_ib.disasm = { _sink << "dppd " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* EMMS -- Empty MMX Technology State */
 // op emms( 0x0f[8]:> <:0x77[8] );
@@ -347,44 +347,44 @@ template <class ARCH> struct DC<ARCH,MXCSR> { Operation<ARCH>* get( InputCode<AR
 // /* EXTRACTPS -- Extract Packed Single Precision Floating-Point Value */
 // op extractps_rd_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x17[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// extractps_rd_wdq_ib.disasm = { _sink << "extractps " << DisasmI(imm) << ',' << DisasmV( SSE(), gn ) << ',' << DisasmEd( rmop ); };
+// extractps_rd_wdq_ib.disasm = { _sink << "extractps " << DisasmI(imm) << ',' << DisasmV( SSE(), gn ) << ',' << DisasmEd( rm ); };
 // 
 // /* FXSAVE/FXRSTOR -- Save/Restore x87 FPU, MMX Technology, and SSE State */
 // op fxrstor( 0x0f[8]:> <:0xae[8]:> <:?[2]:1[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// fxrstor.disasm = { _sink << "fxrstor " << DisasmM( rmop ); };
+// fxrstor.disasm = { _sink << "fxrstor " << DisasmM( rm ); };
 // 
 // op fxsave( 0x0f[8]:> <:0xae[8]:> <:?[2]:0[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// fxsave.disasm = { _sink << "fxsave " << DisasmM( rmop ); };
+// fxsave.disasm = { _sink << "fxsave " << DisasmM( rm ); };
 // 
 // /* HADDPD -- Packed Single- or Double-FP Horizontal Add */
 // op haddps_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x7c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// haddps_vdq_wdq.disasm = { _sink << "haddps " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// haddps_vdq_wdq.disasm = { _sink << "haddps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op haddpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x7c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// haddpd_vdq_wdq.disasm = { _sink << "haddpd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// haddpd_vdq_wdq.disasm = { _sink << "haddpd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* HSUBPD -- Packed Single- or Double-FP Horizontal Substract */
 // op hsubps_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x7d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// hsubps_vdq_wdq.disasm = { _sink << "hsubps " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// hsubps_vdq_wdq.disasm = { _sink << "hsubps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op hsubpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x7d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// hsubpd_vdq_wdq.disasm = { _sink << "hsubpd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// hsubpd_vdq_wdq.disasm = { _sink << "hsubpd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* INSERTPS -- Insert Packed Single Precision Floating-Point Value */
 // op insertps_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x21[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// insertps_vdq_wdq_ib.disasm = { _sink << "insertps " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// insertps_vdq_wdq_ib.disasm = { _sink << "insertps " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* LDDQU -- Load Unaligned Integer 128 Bits */
 // op lddqu_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0xf0[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// lddqu_vdq_wdq.disasm = { _sink << "lddqu " << DisasmM( rmop ) << ',' << DisasmV( SSE(), gn ); };
+// lddqu_vdq_wdq.disasm = { _sink << "lddqu " << DisasmM( rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* MASKMOVDQU -- Store Selected Bytes of Double Quadword */
 // op maskmovdqu_vdq_vdq( 0x66[8]:> <:0x0f[8]:> <:0xf7[8]:> <:0b11[2]:gn[3]:rm[3] );
@@ -396,83 +396,93 @@ template <class ARCH> struct DC<ARCH,MXCSR> { Operation<ARCH>* get( InputCode<AR
 // 
 // maskmovq_pq_nq.disasm = { _sink << "maskmovq " << DisasmPq( rm ) << ',' << DisasmPq( gn ); };
 // 
-// /* MAXPS -- Return Maximum Packed Single-Precision Floating-Point Values */
-// op maxps_vdq_wdq( 0x0f[8]:> <:0x5f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// maxps_vdq_wdq.disasm = { _sink << "maxps " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* MAXPD -- Return Maximum Packed Double-Precision Floating-Point Values */
-// op maxpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x5f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// maxpd_vdq_wdq.disasm = { _sink << "maxpd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* MAXSS -- Return Maximum Scalar Single-Precision Floating-Point Values */
-// op maxss_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x5f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// maxss_vdq_wdq.disasm = { _sink << "maxss " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* MAXSD -- Return Maximum Scalar Double-Precision Floating-Point Values */
-// op maxsd_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x5f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// maxsd_vdq_wdq.disasm = { _sink << "maxsd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* MINPS -- Return Minimum Packed Single-Precision Floating-Point Values */
-// op minps_vdq_wdq( 0x0f[8]:> <:0x5d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// minps_vdq_wdq.disasm = { _sink << "minps " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* MINPD -- Return Minimum Packed Double-Precision Floating-Point Values */
-// op minpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x5d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// minpd_vdq_wdq.disasm = { _sink << "minpd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* MINSS -- Return Minimum Scalar Single-Precision Floating-Point Values */
-// op minss_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x5d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// minss_vdq_wdq.disasm = { _sink << "minss " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* MINSD -- Return Minimum Scalar Double-Precision Floating-Point Values */
-// op minsd_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x5d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// minsd_vdq_wdq.disasm = { _sink << "minsd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
 // /* MOVD/MOVQ -- Move Doubleword/Move Quadword */
 template <class ARCH, class GOP>
 struct MovEP : public Operation<ARCH>
 {
-  MovEP( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::SIZE==64?'q':'d') << ' ' << DisasmPq( gn ) << ',' << DisasmE( GOP(), rmop ); }
+  MovEP( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::SIZE==64?'q':'d') << ' ' << DisasmPq( gn ) << ',' << DisasmE( GOP(), rm ); }
 };
 
 template <class ARCH, class GOP>
 struct MovPE : public Operation<ARCH>
 {
-  MovPE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::SIZE==64?'q':'d') << ' ' << DisasmE( GOP(), rmop ) << ',' << DisasmPq( gn ); }
+  MovPE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << "mov" << (GOP::SIZE==64?'q':'d') << ' ' << DisasmE( GOP(), rm ) << ',' << DisasmPq( gn ); }
 };
 
 template <class ARCH, class VR, class GOP>
 struct MovEV : public Operation<ARCH>
 {
-  MovEV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << (VR::vex()?"v":"") << "mov" << SizeID<GOP::SIZE>::iid() << ' ' << DisasmV( SSE(), gn ) << ',' << DisasmE( GOP(), rmop ); }
+  MovEV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << (VR::vex()?"v":"") << "mov" << SizeID<GOP::SIZE>::iid() << ' ' << DisasmV( SSE(), gn ) << ',' << DisasmE( GOP(), rm ); }
   void execute( ARCH& arch ) const
   {
-    arch.rmwrite( GOP(), rmop, arch.vmm_read( VR(), gn, 0, typename TypeFor<ARCH,GOP::SIZE>::u() ) );
+    arch.rmwrite( GOP(), rm, arch.vmm_read( VR(), gn, 0, typename TypeFor<ARCH,GOP::SIZE>::u() ) );
   }
 };
 
 template <class ARCH, class VR, class GOP>
 struct MovVE : public Operation<ARCH>
 {
-  MovVE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << (VR::vex()?"v":"") << "mov" << SizeID<GOP::SIZE>::iid() << ' ' << DisasmE( GOP(), rmop ) << ',' << DisasmV( SSE(), gn ); }
+  MovVE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << (VR::vex()?"v":"") << "mov" << SizeID<GOP::SIZE>::iid() << ' ' << DisasmE( GOP(), rm ) << ',' << DisasmV( VR(), gn ); }
   void execute( ARCH& arch ) const
   {
-    for (unsigned idx = 0, end = VR::size() / GOP::SIZE; idx < end; ++idx)
+    arch.vmm_write( VR(), gn, 0, arch.rmread( GOP(), rm ) );
+    for (unsigned idx = 1, end = VR::size() / GOP::SIZE; idx < end; ++idx)
       arch.vmm_write( VR(), gn, idx, typename TypeFor<ARCH,GOP::SIZE>::u(0) );
-    arch.vmm_write( VR(), gn, 0, arch.rmread( GOP(), rmop ) );
   }
+};
+
+template <class ARCH, class VR>
+struct MovQ : public Operation<ARCH>
+{
+  MovQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm(_rm), gn(_gn) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << (VR::vex()?"v":"") << "movq" << ' ' << DisasmW( VR(), rm ) << ',' << DisasmV( VR(), gn ); }
+  void execute( ARCH& arch ) const
+  {
+    arch.vmm_write( VR(), gn, 0, arch.vmm_read( VR(), rm, 0, typename ARCH::u64_t() ) );
+    for (unsigned idx = 1, end = VR::size() / 64; idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx, typename ARCH::u64_t(0) );
+  }
+};
+
+template <class ARCH> struct DC<ARCH,MOVQ> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex("\xf3\x0f\x7e") & RM() ))
+    
+    return newMovQ( ic, true, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex("\x66\x0f\xd6") & RM() ))
+
+    return newMovQ( ic, false, _.opbase(), _.rmop(), _.greg() );
+
+  return 0;
+}
+Operation<ARCH>* newMovQ( InputCode<ARCH> const& ic, bool load, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t gn )
+{
+  if (not ic.vex())     return newMovQ2<SSE>( load, opbase, rm, gn );
+  if (ic.vreg()) return 0;
+  if (ic.vlen() == 128) return newMovQ2<XMM>( load, opbase, rm, gn );
+  if (ic.vlen() == 256) return newMovQ2<YMM>( load, opbase, rm, gn );
+  return 0;
+}
+template <class VR>
+Operation<ARCH>* newMovQ2( bool load, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t gn )
+{
+  if (load)
+    return new MovQ<ARCH,VR>( opbase, rm, gn );
+  
+  RMOp<ARCH> _rm(rm);
+  Operation<ARCH>* res = _rm.is_memory_operand()
+    ? static_cast<Operation<ARCH>*>( new MovEV<ARCH,VR,GOq>( opbase, rm, gn ) )
+    : new MovQ<ARCH,VR>( opbase, make_rop<ARCH>(gn), _rm.ereg() );
+  _rm.release();
+  return res;
+}
 };
 
 template <class ARCH> struct DC<ARCH,MOVGV> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -508,72 +518,97 @@ template <typename VR, typename GOP> Operation<ARCH>* getMOVGV( InputCode<ARCH> 
 }
 };
 
-template <class ARCH, bool ALIGNED>
-struct MovdqVW : public Operation<ARCH>
+struct MovDQU { char const* name() { return "movdqu"; } bool aligned() { return false; } };
+struct MovDQA { char const* name() { return "movdqa"; } bool aligned() { return  true; } };
+struct  LdDQU { char const* name() { return  "lddqu"; } bool aligned() { return false; } };
+
+template <class ARCH, class IMPL, class VR>
+struct VLd : public Operation<ARCH>
 {
-  MovdqVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "movdq" << (ALIGNED?"a ":"u ") << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); }
+  VLd( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; char const* mn; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << IMPL().name() << ' ' << DisasmW( VR(), rm ) << ',' << DisasmV( VR(), gn ); }
   void execute( ARCH& arch ) const
   {
-    arch.vmm_write( SSE(), gn, 0,  arch.vmm_read( SSE(), rmop, 0, typename ARCH::u64_t() ) );
-    arch.vmm_write( SSE(), gn, 1,  arch.vmm_read( SSE(), rmop, 1, typename ARCH::u64_t() ) );
+    for (unsigned idx = 0, end = VR::size() / 64; idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx,  arch.vmm_read( VR(), rm, idx, typename ARCH::u64_t() ) );
   }
 };
 
-template <class ARCH, bool ALIGNED>
-struct MovdqWV : public Operation<ARCH>
+template <class ARCH, class IMPL, class VR>
+struct VSt : public Operation<ARCH>
 {
-  MovdqWV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "movdq" << (ALIGNED?"a ":"u ") << DisasmV( SSE(), gn ) << ',' << DisasmW( SSE(), rmop ); }
+  VSt( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
+  void disasm( std::ostream& sink ) const { sink << IMPL().name() << ' ' << DisasmV( VR(), gn ) << ',' << DisasmW( VR(), rm ); }
   void execute( ARCH& arch ) const
   {
-    arch.vmm_write( SSE(), rmop, 0, arch.vmm_read( SSE(), gn, 0, typename ARCH::u64_t() ) );
-    arch.vmm_write( SSE(), rmop, 1, arch.vmm_read( SSE(), gn, 1, typename ARCH::u64_t() ) );
+    for (unsigned idx = 0, end = VR::size() / 64; idx < end; ++idx)
+      arch.vmm_write( VR(), rm, idx, arch.vmm_read( VR(), gn, idx, typename ARCH::u64_t() ) );
   }
 };
 
 /* MOVDQA/MOVDQU -- Move Aligned Unaligned Double Quadword */
+/* LDDQU -- Load Unaligned Integer 128 Bits */
 template <class ARCH> struct DC<ARCH,MOVDQ> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
   
-  if (auto _ = match( ic, simdF3() & opcode( "\x0f\x6f" ) & RM() ))
+  if (auto _ = match( ic, vex( "\xf3\x0f\x6f" ) & RM() ))
     
-    return new MovdqVW<ARCH,false>( _.opbase(), _.rmop(), _.greg() );
+    return newMov<MovDQU>( ic, true, _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( ic, simdF3() & opcode( "\x0f\x7f" ) & RM() ))
+  if (auto _ = match( ic, vex( "\xf3\x0f\x7f" ) & RM() ))
     
-    return new MovdqWV<ARCH,false>( _.opbase(), _.rmop(), _.greg() );
+    return newMov<MovDQU>( ic, false, _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x6f" ) & RM() ))
+  if (auto _ = match( ic, vex( "\x66\x0f\x6f" ) & RM() ))
     
-    return new MovdqVW<ARCH,true>( _.opbase(), _.rmop(), _.greg() );
+    return newMov<MovDQA>( ic, true, _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x7f" ) & RM() ))
+  if (auto _ = match( ic, vex( "\x66\x0f\x7f" ) & RM() ))
     
-    return new MovdqWV<ARCH,true>( _.opbase(), _.rmop(), _.greg() );
+    return newMov<MovDQA>( ic, false, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\xf2\x0f\xf0" ) & RM() ))
+
+    return newMov<LdDQU>( ic, false, _.opbase(), _.rmop(), _.greg() );
   
   return 0;
-}};
+}
+template <class IMPL>
+Operation<ARCH>* newMov( InputCode<ARCH> const& ic, bool load, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t gn )
+{
+  if (not ic.vex())     return newMov2<IMPL,SSE>( load, opbase, rm, gn );
+  if (ic.vreg()) return 0;
+  if (ic.vlen() == 128) return newMov2<IMPL,XMM>( load, opbase, rm, gn );
+  if (ic.vlen() == 256) return newMov2<IMPL,YMM>( load, opbase, rm, gn );
+  return 0;
+}
+  template <class IMPL, class VR>
+Operation<ARCH>* newMov2( bool load, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t gn )
+{
+  if (load) return new VLd<ARCH,IMPL,VR>( opbase, rm, gn );
+  else      return new VSt<ARCH,IMPL,VR>( opbase, rm, gn );
+}
+};
 
 
 // /* MOVAP */
 // op movaps_vdq_wdq( 0x0f[8]:> <:0x28[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// movaps_vdq_wdq.disasm = { _sink << "movaps " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// movaps_vdq_wdq.disasm = { _sink << "movaps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // op movaps_wdq_vdq( 0x0f[8]:> <:0x29[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// movaps_wdq_vdq.disasm = { _sink << "movaps " << DisasmV( SSE(), gn ) << ',' << DisasmW( SSE(), rmop ); };
+// movaps_wdq_vdq.disasm = { _sink << "movaps " << DisasmV( SSE(), gn ) << ',' << DisasmW( SSE(), rm ); };
 // op movapd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x28[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// movapd_vdq_wdq.disasm = { _sink << "movapd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// movapd_vdq_wdq.disasm = { _sink << "movapd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // op movapd_wdq_vdq( 0x66[8]:> <:0x0f[8]:> <:0x29[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// movapd_wdq_vdq.disasm = { _sink << "movapd " << DisasmV( SSE(), gn ) << ',' << DisasmW( SSE(), rmop ); };
+// movapd_wdq_vdq.disasm = { _sink << "movapd " << DisasmV( SSE(), gn ) << ',' << DisasmW( SSE(), rm ); };
 // op movups_vdq_wdq( 0x0f[8]:> <:0x10[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// movups_vdq_wdq.disasm = { _sink << "movups " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// movups_vdq_wdq.disasm = { _sink << "movups " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // op movups_wdq_vdq( 0x0f[8]:> <:0x11[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// movups_wdq_vdq.disasm = { _sink << "movups " << DisasmV( SSE(), gn ) << ',' << DisasmW( SSE(), rmop ); };
+// movups_wdq_vdq.disasm = { _sink << "movups " << DisasmV( SSE(), gn ) << ',' << DisasmW( SSE(), rm ); };
 // op movupd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x10[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// movupd_vdq_wdq.disasm = { _sink << "movupd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// movupd_vdq_wdq.disasm = { _sink << "movupd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // op movupd_wdq_vdq( 0x66[8]:> <:0x0f[8]:> <:0x11[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// movupd_wdq_vdq.disasm = { _sink << "movupd " << DisasmV( SSE(), gn ) << ',' << DisasmW( SSE(), rmop ); };
+// movupd_wdq_vdq.disasm = { _sink << "movupd " << DisasmV( SSE(), gn ) << ',' << DisasmW( SSE(), rm ); };
 
 template <class VR, unsigned OPSIZE, bool ALIGNED>
 struct MovfpMnemo
@@ -710,20 +745,20 @@ template <class ARCH> struct DC<ARCH,MOVFP> { Operation<ARCH>* get( InputCode<AR
 // /* MOVHPD -- Move High Packed Double-Precision Floating-Point Value */
 // op movhpd_vdq_mdq( 0x66[8]:> <:0x0f[8]:> <:0x16[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movhpd_vdq_mdq.disasm = { _sink << "movhpd " << DisasmM( rmop ) << ',' << DisasmV( SSE(), gn ); };
+// movhpd_vdq_mdq.disasm = { _sink << "movhpd " << DisasmM( rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op movhpd_mdq_vdq( 0x66[8]:> <:0x0f[8]:> <:0x17[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movhpd_mdq_vdq.disasm = { _sink << "movhpd " << DisasmV( SSE(), gn ) << ',' << DisasmM( rmop ); };
+// movhpd_mdq_vdq.disasm = { _sink << "movhpd " << DisasmV( SSE(), gn ) << ',' << DisasmM( rm ); };
 // 
 // /* MOVHPS -- Move High Packed Single-Precision Floating-Point Value */
 // op movhps_vdq_mdq( 0x0f[8]:> <:0x16[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movhps_vdq_mdq.disasm = { _sink << "movhps " << DisasmM( rmop ) << ',' << DisasmV( SSE(), gn ); };
+// movhps_vdq_mdq.disasm = { _sink << "movhps " << DisasmM( rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op movhps_mdq_vdq( 0x0f[8]:> <:0x17[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movhps_mdq_vdq.disasm = { _sink << "movhps " << DisasmV( SSE(), gn ) << ',' << DisasmM( rmop ); };
+// movhps_mdq_vdq.disasm = { _sink << "movhps " << DisasmV( SSE(), gn ) << ',' << DisasmM( rm ); };
 // 
 // /* MOVLHPS -- Move Packed Single-Precision Floating-Point Values Low to High */
 // op movlhps_vdq_wdq( 0x0f[8]:> <:0x16[8]:> <:0b11[2]:gn[3]:rm[3] );
@@ -733,20 +768,20 @@ template <class ARCH> struct DC<ARCH,MOVFP> { Operation<ARCH>* get( InputCode<AR
 // /* MOVLPD -- Move Low Packed Double-Precision Floating-Point Value */
 // op movlpd_vdq_mdq( 0x66[8]:> <:0x0f[8]:> <:0x12[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movlpd_vdq_mdq.disasm = { _sink << "movlpd " << DisasmM( rmop ) << ',' << DisasmV( SSE(), gn ); };
+// movlpd_vdq_mdq.disasm = { _sink << "movlpd " << DisasmM( rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op movlpd_mdq_vdq( 0x66[8]:> <:0x0f[8]:> <:0x13[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movlpd_mdq_vdq.disasm = { _sink << "movlpd " << DisasmV( SSE(), gn ) << ',' << DisasmM( rmop ); };
+// movlpd_mdq_vdq.disasm = { _sink << "movlpd " << DisasmV( SSE(), gn ) << ',' << DisasmM( rm ); };
 // 
 // /* MOVLPS -- Move Low Packed Single-Precision Floating-Point Value */
 // op movlps_vdq_mdq( 0x0f[8]:> <:0x12[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movlps_vdq_mdq.disasm = { _sink << "movlps " << DisasmM( rmop ) << ',' << DisasmV( SSE(), gn ); };
+// movlps_vdq_mdq.disasm = { _sink << "movlps " << DisasmM( rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op movlps_mdq_vdq( 0x0f[8]:> <:0x13[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movlps_mdq_vdq.disasm = { _sink << "movlps " << DisasmV( SSE(), gn ) << ',' << DisasmM( rmop ); };
+// movlps_mdq_vdq.disasm = { _sink << "movlps " << DisasmV( SSE(), gn ) << ',' << DisasmM( rm ); };
 // 
 // /* MOVMSKPD -- Extract Packed Single- or Double-Precision Floating-Point Sign Mask */
 // op movmskpd_gd_vdq( 0x66[8]:> <:0x0f[8]:> <:0x50[8]:> <:0b11[2]:gn[3]:rm[3] );
@@ -760,43 +795,43 @@ template <class ARCH> struct DC<ARCH,MOVFP> { Operation<ARCH>* get( InputCode<AR
 // /* MOVNTDQA  --  Load Double Quadword Non-Temporal Aligned Hint */
 // op movntdqa_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x2a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movntdqa_vdq_wdq.disasm = { _sink << "movntdqa " << DisasmM( rmop ) << ',' << DisasmV( SSE(), gn ); };
+// movntdqa_vdq_wdq.disasm = { _sink << "movntdqa " << DisasmM( rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* MOVNTDQ -- Store Double Quadword Using Non-Temporal Hint */
 // op movntdq_wdq_vdq( 0x66[8]:> <:0x0f[8]:> <:0xe7[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movntdq_wdq_vdq.disasm = { _sink << "movntdq " << DisasmV( SSE(), gn ) << ',' << DisasmM( rmop ); };
+// movntdq_wdq_vdq.disasm = { _sink << "movntdq " << DisasmV( SSE(), gn ) << ',' << DisasmM( rm ); };
 // 
 // /* MOVNTPD -- Store Packed Single- or Double-Precision Floating-Point Values Using Non-Temporal Hint */
 // op movntpd_mdq_vdq( 0x66[8]:> <:0x0f[8]:> <:0x2b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movntpd_mdq_vdq.disasm = { _sink << "movntpd " << DisasmV( SSE(), gn ) << ',' << DisasmM( rmop ); };
+// movntpd_mdq_vdq.disasm = { _sink << "movntpd " << DisasmV( SSE(), gn ) << ',' << DisasmM( rm ); };
 // 
 // op movntps_mdq_vdq( 0x0f[8]:> <:0x2b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movntps_mdq_vdq.disasm = { _sink << "movntps " << DisasmV( SSE(), gn ) << ',' << DisasmM( rmop ); };
+// movntps_mdq_vdq.disasm = { _sink << "movntps " << DisasmV( SSE(), gn ) << ',' << DisasmM( rm ); };
 // 
 // /* MOVNTQ -- Store Double Quadword Using Non-Temporal Hint */
 // op movntq_mq_pq( 0x0f[8]:> <:0xe7[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movntq_mq_pq.disasm = { _sink << "movntq " << DisasmPq( gn ) << ',' << DisasmM( rmop ); };
+// movntq_mq_pq.disasm = { _sink << "movntq " << DisasmPq( gn ) << ',' << DisasmM( rm ); };
 // 
 // /* MOVQ -- Move Quadword (MMX) */
 // op movq_pq_mq( 0x0f[8]:> <:0x6f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movq_pq_mq.disasm = { _sink << "movq " << DisasmM( rmop ) << ',' << DisasmPq( gn ); };
+// movq_pq_mq.disasm = { _sink << "movq " << DisasmM( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op movq_mq_pq( 0x0f[8]:> <:0x7f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movq_mq_pq.disasm = { _sink << "movq " << DisasmPq( gn ) << ',' << DisasmM( rmop ); };
+// movq_mq_pq.disasm = { _sink << "movq " << DisasmPq( gn ) << ',' << DisasmM( rm ); };
 // 
 // op movq_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x7e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movq_vdq_wdq.disasm = { _sink << "movq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// movq_vdq_wdq.disasm = { _sink << "movq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op movq_wdq_vdq( 0x66[8]:> <:0x0f[8]:> <:0xd6[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movq_wdq_vdq.disasm = { _sink << "movq " << DisasmV( SSE(), gn ) << ',' << DisasmW( SSE(), rmop ); };
+// movq_wdq_vdq.disasm = { _sink << "movq " << DisasmV( SSE(), gn ) << ',' << DisasmW( SSE(), rm ); };
 // 
 // /* MOVQ2DQ -- Move Quadword from MMX Technology to XMM Register */
 // op movq2dq_vdq_pq( 0xf3[8]:> <:0x0f[8]:> <:0xd6[8]:> <:0b11[2]:gn[3]:rm[3]:> rewind <:*modrm[ModRM] );
@@ -914,508 +949,575 @@ Operation<ARCH>* newMovs( InputCode<ARCH> const& ic, bool store, OpBase<ARCH> co
 // /* MOVSHDUP -- Move Packed Single-FP High and Duplicate */
 // op movshdup_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x16[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movshdup_vdq_wdq.disasm = { _sink << "movshdup " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// movshdup_vdq_wdq.disasm = { _sink << "movshdup " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* MOVSLDUP -- Move Packed Single-FP Low and Duplicate */
 // op movsldup_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x12[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// movsldup_vdq_wdq.disasm = { _sink << "movsldup " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// movsldup_vdq_wdq.disasm = { _sink << "movsldup " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* MPSADBW -- Compute Multiple Packed Sums of Absolute Difference */
 // op mpsadbw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x42[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// mpsadbw_vdq_wdq.disasm = { _sink << "mpsadbw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-//
-template <class VR, unsigned OPSZ, bool PACKED>
-struct VMnemo
-{
-  struct ToPrint
-  {
-    ToPrint( char const* _base ) : base(_base) {} char const* base;
-    friend std::ostream& operator << (std::ostream& sink, ToPrint const& tp)
-    {
-      sink << (VR::vex() ? "v" : "") << tp.base << (PACKED ? "p" : "s") << (OPSZ == 32 ? "s" : "d");
-      return sink;
-    }
-  };
-  ToPrint mnemonic( char const* base ) const { return ToPrint( base ); }
-};
+// mpsadbw_vdq_wdq.disasm = { _sink << "mpsadbw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 
-template <class ARCH, class VR, unsigned OPSZ, bool PACKED>
-struct MulVVW : public Operation<ARCH>, VMnemo<VR,OPSZ,PACKED>
+struct VADD { char const* n() { return "add"; } }; struct VMUL { char const* n() { return "mul"; } }; struct VMIN { char const* n() { return "min"; } };
+struct VSUB { char const* n() { return "sub"; } }; struct VDIV { char const* n() { return "div"; } }; struct VMAX { char const* n() { return "max"; } };
+
+template <class ARCH, class OPERATION, class VR, unsigned OPSZ, bool PACKED>
+struct VArithmeticVVW : public Operation<ARCH>
 {
-  MulVVW( OpBase<ARCH> const& opbase, uint8_t _gn, uint8_t _vn, MOp<ARCH> const* _rm )
-    : Operation<ARCH>( opbase ), rm( _rm ), vn( _vn ), gn( _gn )
-  {}
+  typedef typename TypeFor<ARCH,OPSZ>::f valtype;
+  valtype eval ( VADD const&, valtype const& src1, valtype const& src2 ) const { return src1 + src2; }
+  valtype eval ( VDIV const&, valtype const& src1, valtype const& src2 ) const { return src1 / src2; }
+  valtype eval ( VMAX const&, valtype const& src1, valtype const& src2 ) const { return std::max(src1, src2); }
+  valtype eval ( VMIN const&, valtype const& src1, valtype const& src2 ) const { return std::min(src1, src2); }
+  valtype eval ( VMUL const&, valtype const& src1, valtype const& src2 ) const { return src1 * src2; }
+  valtype eval ( VSUB const&, valtype const& src1, valtype const& src2 ) const { return src1 - src2; }
+  
+
+  VArithmeticVVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _vn, unsigned _gn ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn) {}
   void disasm( std::ostream& sink ) const
   {
-    sink << this->mnemonic( "mul" ) << ' ' << DisasmW( VR(), rm );
+    sink << (VR::vex() ? "v" : "") << OPERATION().n() << (PACKED ? "p" : "s") << (OPSZ == 32 ? "s" : "d")
+         <<                ' ' << DisasmW( VR(), rm );
     if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
-    sink << ',' << DisasmV( VR(), gn );
+    sink <<                ',' << DisasmV( VR(), gn );
   }
   void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<ARCH,OPSZ>::f f_type;
     for (unsigned idx = 0, end = PACKED ? VR::size()/OPSZ : 1; idx < end; ++idx)
-      arch.vmm_write( VR(), gn, idx, arch.vmm_read( VR(), vn, idx, f_type() ) * arch.vmm_read( VR(), rm, idx, f_type() ) );
-  }
-  RMOp<ARCH> rm; uint8_t vn, gn;
-};
-
-/* MUL -- Multiply Scalar or Packed Single- or Double-Precision Floating-Point Values */
-template <class ARCH> struct DC<ARCH,VMUL> {
-template <class VR> Operation<ARCH>*
-newMulVVW( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned greg, unsigned vreg, MOp<ARCH> const* _rm )
-{
-  if (match( ic, simd__() )) return new MulVVW<ARCH,VR,32, true>( opbase, greg, vreg, _rm );
-  if (match( ic, simd66() )) return new MulVVW<ARCH,VR,64, true>( opbase, greg, vreg, _rm );
-  if (match( ic, simdF3() )) return new MulVVW<ARCH,VR,32,false>( opbase, greg, vreg, _rm );
-  if (match( ic, simdF2() )) return new MulVVW<ARCH,VR,64,false>( opbase, greg, vreg, _rm );
-  return 0;
-}
-Operation<ARCH>* get( InputCode<ARCH> const& ic )
-{
-  if (ic.f0()) return 0;
-  
-  if (auto _ = match( ic, vex( "*\x0f\x59" ) & RM() ))
-    {
-      unsigned greg = _.greg();
-      if (not ic.vex())     return newMulVVW<SSE>( ic, _.opbase(), greg, greg, _.rmop() );
-      unsigned vreg = ic.vreg();
-      if (ic.vlen() == 128) return newMulVVW<XMM>( ic, _.opbase(), greg, vreg, _.rmop() );
-      if (ic.vlen() == 256) return newMulVVW<YMM>( ic, _.opbase(), greg, vreg, _.rmop() );
-    }
-  
-  return 0;
-}};
-
-template <class ARCH, class VR, unsigned OPSZ, bool PACKED>
-struct DivVVW : public Operation<ARCH>, VMnemo<VR,OPSZ,PACKED>
-{
-  DivVVW( OpBase<ARCH> const& opbase, uint8_t _gn, uint8_t _vn, MOp<ARCH> const* _rm )
-    : Operation<ARCH>( opbase ), rm( _rm ), vn( _vn ), gn( _gn )
-  {}
-  void disasm( std::ostream& sink ) const
-  {
-    sink << this->mnemonic( "div" ) << ' ' << DisasmW( VR(), rm );
-    if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
-    sink << ',' << DisasmV( VR(), gn );
-  }
-  void execute( ARCH& arch ) const
-  {
-    typedef typename TypeFor<ARCH,OPSZ>::f f_type;
-    for (unsigned idx = 0, end = PACKED ? VR::size()/OPSZ : 1; idx < end; ++idx)
-      arch.vmm_write( VR(), gn, idx, arch.vmm_read( VR(), gn, idx, f_type() ) / arch.vmm_read( VR(), rm, idx, f_type() ) );
-  }
-  RMOp<ARCH> rm; uint8_t vn, gn;
-};
-
-/* DIV -- Divide Scalar or Packed Single- or Double-Precision Floating-Point Values */
-template <class ARCH> struct DC<ARCH,VDIV> {
-template <class VR> Operation<ARCH>*
-newDivVVW( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned greg, unsigned vreg, MOp<ARCH> const* _rm )
-{
-  if (match( ic, simd__() )) return new DivVVW<ARCH,VR,32, true>( opbase, greg, vreg, _rm );
-  if (match( ic, simd66() )) return new DivVVW<ARCH,VR,64, true>( opbase, greg, vreg, _rm );
-  if (match( ic, simdF3() )) return new DivVVW<ARCH,VR,32,false>( opbase, greg, vreg, _rm );
-  if (match( ic, simdF2() )) return new DivVVW<ARCH,VR,64,false>( opbase, greg, vreg, _rm );
-  return 0;
-}
-Operation<ARCH>* get( InputCode<ARCH> const& ic )
-{
-  if (ic.f0()) return 0;
-
-  if (auto _ = match( ic, vex( "*\x0f\x5e" ) & RM() ))
-    {
-      unsigned greg = _.greg();
-      if (not ic.vex())     return newDivVVW<SSE>( ic, _.opbase(), greg, greg, _.rmop() );
-      unsigned vreg = ic.vreg();
-      if (ic.vlen() == 128) return newDivVVW<XMM>( ic, _.opbase(), greg, vreg, _.rmop() );
-      if (ic.vlen() == 256) return newDivVVW<YMM>( ic, _.opbase(), greg, vreg, _.rmop() );
-    }
-  
-  return 0;
-}};
-
-template <class ARCH, class VR, unsigned OPSZ, bool PACKED>
-struct SubVVW : public Operation<ARCH>, VMnemo<VR,OPSZ,PACKED>
-{
-  SubVVW( OpBase<ARCH> const& opbase, uint8_t _gn, uint8_t _vn, MOp<ARCH> const* _rm )
-    : Operation<ARCH>( opbase ), rm( _rm ), vn( _vn ), gn( _gn )
-  {}
-  void disasm( std::ostream& sink ) const
-  {
-    sink << this->mnemonic( "sub" ) << ' ' << DisasmW( VR(), rm );
-    if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
-    sink << ',' << DisasmV( VR(), gn );
-  }
-  void execute( ARCH& arch ) const
-  {
-    typedef typename TypeFor<ARCH,OPSZ>::f f_type;
-    for (unsigned idx = 0, end = PACKED ? VR::size()/OPSZ : 1; idx < end; ++idx)
-      arch.vmm_write( VR(), gn, idx, arch.vmm_read( VR(), vn, idx, f_type() ) - arch.vmm_read( VR(), rm, idx, f_type() ) );
-  }
-  RMOp<ARCH> rm; uint8_t vn, gn;
-};
-
-/* SUB -- Substract Scalar or Packed Single- or Double-Precision Floating-Point Values */
-template <class ARCH> struct DC<ARCH,VSUB> {
-template <class VR> Operation<ARCH>*
-newSubVVW( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned greg, unsigned vreg, MOp<ARCH> const* _rm )
-{
-  if (match( ic, simd__() )) return new SubVVW<ARCH,VR,32, true>( opbase, greg, vreg, _rm );
-  if (match( ic, simd66() )) return new SubVVW<ARCH,VR,64, true>( opbase, greg, vreg, _rm );
-  if (match( ic, simdF3() )) return new SubVVW<ARCH,VR,32,false>( opbase, greg, vreg, _rm );
-  if (match( ic, simdF2() )) return new SubVVW<ARCH,VR,64,false>( opbase, greg, vreg, _rm );
-  return 0;
-}
-Operation<ARCH>* get( InputCode<ARCH> const& ic )
-{
-  if (ic.f0()) return 0;
-
-  if (auto _ = match( ic, vex( "*\x0f\x5c" ) & RM() ))
-    {
-      unsigned greg = _.greg();
-      if (not ic.vex())     return newSubVVW<SSE>( ic, _.opbase(), greg, greg, _.rmop() );
-      unsigned vreg = ic.vreg();
-      if (ic.vlen() == 128) return newSubVVW<XMM>( ic, _.opbase(), greg, vreg, _.rmop() );
-      if (ic.vlen() == 256) return newSubVVW<YMM>( ic, _.opbase(), greg, vreg, _.rmop() );
-    }
-  
-  return 0;
-}};
-
-template <class ARCH, class VR, unsigned OPSZ, bool PACKED>
-struct AddVVW : public Operation<ARCH>, VMnemo<VR,OPSZ,PACKED>
-{
-  AddVVW( OpBase<ARCH> const& opbase, uint8_t _gn, uint8_t _vn, MOp<ARCH> const* _rm )
-    : Operation<ARCH>( opbase ), rm( _rm ), vn( _vn ), gn( _gn )
-  {}
-  void disasm( std::ostream& sink ) const
-  {
-    sink << this->mnemonic( "add" ) << ' ' << DisasmW( VR(), rm );
-    if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
-    sink << ',' << DisasmV( VR(), gn );
-  }
-  void execute( ARCH& arch ) const
-  {
-    typedef typename TypeFor<ARCH,OPSZ>::f f_type;
-    for (unsigned idx = 0, end = PACKED ? VR::size()/OPSZ : 1; idx < end; ++idx)
-      arch.vmm_write( VR(), gn, idx, arch.vmm_read( VR(), vn, idx, f_type() ) + arch.vmm_read( VR(), rm, idx, f_type() ) );
+      arch.vmm_write( VR(), gn, idx, eval( OPERATION(), arch.vmm_read( VR(), vn, idx, valtype() ), arch.vmm_read( VR(), rm, idx, valtype() ) ) );
   }
   RMOp<ARCH> rm; uint8_t vn, gn;
 };
 
 /* ADD -- Add Scalar or Packed Single- or Double-Precision Floating-Point Values */
-template <class ARCH> struct DC<ARCH,VADD> {
-template <class VR> Operation<ARCH>*
-newAddVVW( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned greg, unsigned vreg, MOp<ARCH> const* _rm )
-{
-  if (match( ic, simd__() )) return new AddVVW<ARCH,VR,32, true>( opbase, greg, vreg, _rm );
-  if (match( ic, simd66() )) return new AddVVW<ARCH,VR,64, true>( opbase, greg, vreg, _rm );
-  if (match( ic, simdF3() )) return new AddVVW<ARCH,VR,32,false>( opbase, greg, vreg, _rm );
-  if (match( ic, simdF2() )) return new AddVVW<ARCH,VR,64,false>( opbase, greg, vreg, _rm );
-  return 0;
-}
-Operation<ARCH>* get( InputCode<ARCH> const& ic )
+/* MUL -- Multiply Scalar or Packed Single- or Double-Precision Floating-Point Values */
+/* SUB -- Substract Scalar or Packed Single- or Double-Precision Floating-Point Values */
+/* MIN -- Return Minimum Scalar or Packed Single- or Double-Precision Floating-Point Values */
+/* DIV -- Divide Scalar or Packed Single- or Double-Precision Floating-Point Values */
+/* MAX -- Return Maximum Scalar or Packed Single- or Double-Precision Floating-Point Values */
+
+template <class ARCH> struct DC<ARCH,VFP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
 
   if (auto _ = match( ic, vex( "*\x0f\x58" ) & RM() ))
-    {
-      unsigned greg = _.greg();
-      if (not ic.vex())     return newAddVVW<SSE>( ic, _.opbase(), greg, greg, _.rmop() );
-      unsigned vreg = ic.vreg();
-      if (ic.vlen() == 128) return newAddVVW<XMM>( ic, _.opbase(), greg, vreg, _.rmop() );
-      if (ic.vlen() == 256) return newAddVVW<YMM>( ic, _.opbase(), greg, vreg, _.rmop() );
-    }
+
+    return newVFP<VADD>(ic, _.opbase(), _.greg(), _.rmop());
   
+  if (auto _ = match( ic, vex( "*\x0f\x59" ) & RM() ))
+
+    return newVFP<VMUL>(ic, _.opbase(), _.greg(), _.rmop());
+  
+  if (auto _ = match( ic, vex( "*\x0f\x5c" ) & RM() ))
+
+    return newVFP<VMIN>(ic, _.opbase(), _.greg(), _.rmop());
+      
+  if (auto _ = match( ic, vex( "*\x0f\x5d" ) & RM() ))
+
+    return newVFP<VSUB>(ic, _.opbase(), _.greg(), _.rmop());
+    
+  if (auto _ = match( ic, vex( "*\x0f\x5e" ) & RM() ))
+
+    return newVFP<VDIV>(ic, _.opbase(), _.greg(), _.rmop());
+
+  if (auto _ = match( ic, vex( "*\x0f\x5f" ) & RM() ))
+
+    return newVFP<VMAX>(ic, _.opbase(), _.greg(), _.rmop());
+  
+  return 0;
+}
+template <class OPERATION> Operation<ARCH>* newVFP( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned greg, MOp<ARCH> const* rm )
+{
+  if (not ic.vex())     return newVArithmeticVVW<OPERATION,SSE>( ic, opbase, greg, greg, rm );
+  unsigned vreg = ic.vreg();
+  if (ic.vlen() == 128) return newVArithmeticVVW<OPERATION,XMM>( ic, opbase, greg, vreg, rm );
+  if (ic.vlen() == 256) return newVArithmeticVVW<OPERATION,YMM>( ic, opbase, greg, vreg, rm );
+  return 0;
+}
+template <class OPERATION, class VR> Operation<ARCH>*
+newVArithmeticVVW( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsigned greg, unsigned vreg, MOp<ARCH> const* rm )
+{
+  if (match( ic, simd__() )) return new VArithmeticVVW<ARCH,OPERATION,VR,32, true>( opbase, rm, vreg, greg );
+  if (match( ic, simd66() )) return new VArithmeticVVW<ARCH,OPERATION,VR,64, true>( opbase, rm, vreg, greg );
+  if (match( ic, simdF3() )) return new VArithmeticVVW<ARCH,OPERATION,VR,32,false>( opbase, rm, vreg, greg );
+  if (match( ic, simdF2() )) return new VArithmeticVVW<ARCH,OPERATION,VR,64,false>( opbase, rm, vreg, greg );
   return 0;
 }};
 
+template <class ARCH, class VR, unsigned SOPSZ, unsigned DOPSZ>
+struct VFPCvtp : public Operation<ARCH>
+{
+  typedef typename TypeFor<ARCH,SOPSZ>::f srctype;
+  typedef typename TypeFor<ARCH,DOPSZ>::f dsttype;
+  
+  VFPCvtp( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {}
+  void disasm( std::ostream& sink ) const
+  {
+    sink << (VR::vex() ? "vcvt" : "cvt") << (SOPSZ == 32 ? "ps" : "pd") << (DOPSZ == 32 ? "ps" : "pd")
+         << ' ' << DisasmW( VR(), rm ) << ',' << DisasmV( VR(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    unsigned const dcount = VR::size()/DOPSZ;
+    unsigned const scount = VR::size()/SOPSZ;
+
+    dsttype res[dcount];
+    unsigned idx = 0;
+    for (unsigned end = std::min(scount,dcount); idx < end; ++idx)
+      res[idx] = dsttype( arch.vmm_read( VR(), rm, idx, srctype() ) );
+    for (; idx < dcount; ++ idx)
+      res[idx] = dsttype();
+    for (idx = 0; idx < dcount; ++ idx)
+      arch.vmm_write( VR(), gn, idx, res[idx] );
+  }
+  RMOp<ARCH> rm; uint8_t gn;
+};
+
+template <class ARCH, class VR, unsigned SOPSZ, unsigned DOPSZ>
+struct VFPCvts : public Operation<ARCH>
+{
+  typedef typename TypeFor<ARCH,SOPSZ>::f srctype;
+  typedef typename TypeFor<ARCH,DOPSZ>::f dsttype;
+  
+  VFPCvts( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _vn, unsigned _gn ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn) {}
+  void disasm( std::ostream& sink ) const
+  {
+    sink << (VR::vex() ? "vcvt" : "cvt") << (SOPSZ == 32 ? "ss" : "sd") << (DOPSZ == 32 ? "ss" : "sd")
+         <<                ' ' << DisasmW( VR(), rm );
+    if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
+    sink <<                ',' << DisasmV( VR(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    arch.vmm_write( VR(), gn, 0, dsttype( arch.vmm_read( VR(), rm, 0, srctype() ) ) );
+    for (unsigned idx = 1, end = VR::size()/DOPSZ; idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx, arch.vmm_read( VR(), vn, idx, dsttype() ) );
+  }
+  RMOp<ARCH> rm; uint8_t vn, gn;
+};
+
+/* FP conversions */
+
+template <class ARCH> struct DC<ARCH,VFPCVT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "*\x0f\x5a" ) & RM() ))
+    {
+      unsigned gn = _.greg();
+      if (not ic.vex())     return newVFPCvt<SSE>( ic, _.opbase(), _.rmop(), gn, gn );
+      unsigned vn = ic.vreg();
+      if (ic.vlen() == 128) return newVFPCvt<XMM>( ic, _.opbase(), _.rmop(), vn, gn );
+      if (ic.vlen() == 256) return newVFPCvt<YMM>( ic, _.opbase(), _.rmop(), vn, gn );
+      return 0;
+      return 0;
+    }
+  
+  return 0;
+}
+template <class VR>
+Operation<ARCH>*
+newVFPCvt( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t vn, uint8_t gn )
+{
+  if (match( ic, simdF3() )) return new VFPCvts<ARCH,VR,32,64>( opbase, rm, vn, gn );
+  if (match( ic, simdF2() )) return new VFPCvts<ARCH,VR,32,64>( opbase, rm, vn, gn );
+  if (vn and ic.vex()) return 0; // No vreg for packed operation
+  if (match( ic, simd__() )) return new VFPCvtp<ARCH,VR,32,64>( opbase, rm, gn );
+  if (match( ic, simd66() )) return new VFPCvtp<ARCH,VR,32,64>( opbase, rm, gn );
+  return 0;
+}
+};
+
+// Todo: Fusion all binary operation (FP and Int)
+template <class ARCH, class VR, unsigned OPSZ, class OPERATION>
+struct VIntBin : public Operation<ARCH>
+{
+  typedef typename TypeFor<ARCH,OPSZ>::u valtype;
+  valtype eval ( VADD const&, valtype const& src1, valtype const& src2 ) const { return src1 + src2; }
+  // valtype eval ( VDIV const&, valtype const& src1, valtype const& src2 ) const { return src1 / src2; }
+  // valtype eval ( VMAX const&, valtype const& src1, valtype const& src2 ) const { return std::max(src1, src2); }
+  // valtype eval ( VMIN const&, valtype const& src1, valtype const& src2 ) const { return std::min(src1, src2); }
+  // valtype eval ( VMUL const&, valtype const& src1, valtype const& src2 ) const { return src1 * src2; }
+  valtype eval ( VSUB const&, valtype const& src1, valtype const& src2 ) const { return src1 - src2; }
+
+  VIntBin( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _vn, unsigned _gn ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn) {}
+  void disasm( std::ostream& sink ) const
+  {
+    sink << (VR::vex() ? "vp" : "p") << OPERATION().n() << SizeID<OPSZ>::iid()
+         <<                ' ' << DisasmW( VR(), rm );
+    if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
+    sink <<                ',' << DisasmV( VR(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0, end = VR::size()/OPSZ; idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx, eval( OPERATION(), arch.vmm_read( VR(), vn, idx, valtype() ), arch.vmm_read( VR(), rm, idx, valtype() ) ) );
+  }
+  RMOp<ARCH> rm; uint8_t vn, gn;
+};
+
+template <class ARCH> struct DC<ARCH,VINTBIN> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "\x66\x0f\xfc" ) & RM() ))
+
+    return newVIntBin<VADD, 8>( ic, _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\xfd" ) & RM() ))
+
+    return newVIntBin<VADD,16>( ic, _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\xfe" ) & RM() ))
+
+    return newVIntBin<VADD,32>( ic, _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\xd4" ) & RM() ))
+
+    return newVIntBin<VADD,64>( ic, _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\xf8" ) & RM() ))
+
+    return newVIntBin<VSUB, 8>( ic, _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\xf9" ) & RM() ))
+
+    return newVIntBin<VSUB,16>( ic, _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\xfa" ) & RM() ))
+
+    return newVIntBin<VSUB,32>( ic, _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\xfb" ) & RM() ))
+
+    return newVIntBin<VSUB,64>( ic, _.opbase(), _.rmop(), _.greg() );
+  
+  return 0;
+}
+template <class OPERATION, unsigned OPSIZE>
+Operation<ARCH>* newVIntBin( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned gn )
+{
+  if (not ic.vex())     return new VIntBin<ARCH,SSE,OPSIZE,OPERATION>( opbase, rm, gn, gn );
+  unsigned vn = ic.vreg();
+  if (ic.vlen() == 128) return new VIntBin<ARCH,XMM,OPSIZE,OPERATION>( opbase, rm, vn, gn );
+  if (ic.vlen() == 256) return new VIntBin<ARCH,YMM,OPSIZE,OPERATION>( opbase, rm, vn, gn );
+  return 0;
+}
+};
 
 // /* PABSB/PABSW/PABSD -- Packed Absolute Value */
 // op pabsb_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x1c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pabsb_pq_qq.disasm = { _sink << "pabsb " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pabsb_pq_qq.disasm = { _sink << "pabsb " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pabsw_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x1d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pabsw_pq_qq.disasm = { _sink << "pabsw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pabsw_pq_qq.disasm = { _sink << "pabsw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pabsd_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x1e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pabsd_pq_qq.disasm = { _sink << "pabsd " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pabsd_pq_qq.disasm = { _sink << "pabsd " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pabsb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x1c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pabsb_vdq_wdq.disasm = { _sink << "pabsb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pabsb_vdq_wdq.disasm = { _sink << "pabsb " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pabsw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x1d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pabsw_vdq_wdq.disasm = { _sink << "pabsw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pabsw_vdq_wdq.disasm = { _sink << "pabsw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pabsd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x1e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pabsd_vdq_wdq.disasm = { _sink << "pabsd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pabsd_vdq_wdq.disasm = { _sink << "pabsd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PACKSSWB/PACKSSDW -- Pack with Signed Saturation */
 // op packsswb_pq_qq( 0x0f[8]:> <:0x63[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// packsswb_pq_qq.disasm = { _sink << "packsswb " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// packsswb_pq_qq.disasm = { _sink << "packsswb " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op packssdw_pq_qq( 0x0f[8]:> <:0x6b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// packssdw_pq_qq.disasm = { _sink << "packssdw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// packssdw_pq_qq.disasm = { _sink << "packssdw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op packsswb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x63[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// packsswb_vdq_wdq.disasm = { _sink << "packsswb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// packsswb_vdq_wdq.disasm = { _sink << "packsswb " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op packssdw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x6b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// packssdw_vdq_wdq.disasm = { _sink << "packssdw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// packssdw_vdq_wdq.disasm = { _sink << "packssdw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PACKUSWB/PACKUSDW -- Pack with Unsigned Saturation */
 // op packuswb_pq_qq( 0x0f[8]:> <:0x67[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// packuswb_pq_qq.disasm = { _sink << "packuswb " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// packuswb_pq_qq.disasm = { _sink << "packuswb " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op packuswb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x67[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// packuswb_vdq_wdq.disasm = { _sink << "packuswb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// packuswb_vdq_wdq.disasm = { _sink << "packuswb " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op packusdw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x2b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// packusdw_vdq_wdq.disasm = { _sink << "packusdw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// packusdw_vdq_wdq.disasm = { _sink << "packusdw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PADDB/PADDW/PADDD/PADDQ -- Add Packed Integers */
 // op paddb_pq_qq( 0x0f[8]:> <:0xfc[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// paddb_pq_qq.disasm = { _sink << "paddb " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// paddb_pq_qq.disasm = { _sink << "paddb " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op paddw_pq_qq( 0x0f[8]:> <:0xfd[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// paddw_pq_qq.disasm = { _sink << "paddw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// paddw_pq_qq.disasm = { _sink << "paddw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op paddd_pq_qq( 0x0f[8]:> <:0xfe[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// paddd_pq_qq.disasm = { _sink << "paddd " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// paddd_pq_qq.disasm = { _sink << "paddd " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op paddq_pq_qq( 0x0f[8]:> <:0xd4[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// paddq_pq_qq.disasm = { _sink << "paddq " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// paddq_pq_qq.disasm = { _sink << "paddq " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op paddb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xfc[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// paddb_vdq_wdq.disasm = { _sink << "paddb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// paddb_vdq_wdq.disasm = { _sink << "paddb " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op paddw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xfd[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// paddw_vdq_wdq.disasm = { _sink << "paddw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// paddw_vdq_wdq.disasm = { _sink << "paddw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op paddd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xfe[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// paddd_vdq_wdq.disasm = { _sink << "paddd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// paddd_vdq_wdq.disasm = { _sink << "paddd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op paddq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xd4[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// paddq_vdq_wdq.disasm = { _sink << "paddq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// paddq_vdq_wdq.disasm = { _sink << "paddq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PADDSB/PADDSW -- Add Packed Signed Integers with Signed Saturation */
 // op paddsb_pq_qq( 0x0f[8]:> <:0xec[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// paddsb_pq_qq.disasm = { _sink << "paddsb " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// paddsb_pq_qq.disasm = { _sink << "paddsb " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op paddsw_pq_qq( 0x0f[8]:> <:0xed[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// paddsw_pq_qq.disasm = { _sink << "paddsw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// paddsw_pq_qq.disasm = { _sink << "paddsw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op paddsb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xec[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// paddsb_vdq_wdq.disasm = { _sink << "paddsb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// paddsb_vdq_wdq.disasm = { _sink << "paddsb " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op paddsw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xed[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// paddsw_vdq_wdq.disasm = { _sink << "paddsw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// paddsw_vdq_wdq.disasm = { _sink << "paddsw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PADDUSB/PADDUSW -- Add Packed Unsigned Integers with Unsigned Saturation */
 // op paddusb_pq_qq( 0x0f[8]:> <:0xdc[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// paddusb_pq_qq.disasm = { _sink << "paddusb " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// paddusb_pq_qq.disasm = { _sink << "paddusb " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op paddusw_pq_qq( 0x0f[8]:> <:0xdd[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// paddusw_pq_qq.disasm = { _sink << "paddusw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// paddusw_pq_qq.disasm = { _sink << "paddusw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op paddusb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xdc[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// paddusb_vdq_wdq.disasm = { _sink << "paddusb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// paddusb_vdq_wdq.disasm = { _sink << "paddusb " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op paddusw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xdd[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// paddusw_vdq_wdq.disasm = { _sink << "paddusw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* PALIGNR -- Packed Align Right */
-// op palignr_pq_qq_ib( 0x0f[8]:> <:0x3a[8]:> <:0x0f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// 
-// palignr_pq_qq_ib.disasm = { _sink << "palignr " << DisasmI(imm) << ',' << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// op palignr_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x0f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// 
-// palignr_vdq_wdq_ib.disasm = { _sink << "palignr " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// paddusw_vdq_wdq.disasm = { _sink << "paddusw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PAVG -- Average Packed Integers */
 // op pavgb_pq_qq( 0x0f[8]:> <:0xe0[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pavgb_pq_qq.disasm = { _sink << "pavgb " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pavgb_pq_qq.disasm = { _sink << "pavgb " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pavgw_pq_qq( 0x0f[8]:> <:0xe3[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pavgw_pq_qq.disasm = { _sink << "pavgw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pavgw_pq_qq.disasm = { _sink << "pavgw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pavgb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xe0[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pavgb_vdq_wdq.disasm = { _sink << "pavgb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pavgb_vdq_wdq.disasm = { _sink << "pavgb " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pavgw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xe3[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pavgw_vdq_wdq.disasm = { _sink << "pavgw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pavgw_vdq_wdq.disasm = { _sink << "pavgw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PBLENDVB -- Variable Blend Packed Bytes */
 // op pblenvb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x10[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pblenvb_vdq_wdq.disasm = { _sink << "pblenvb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pblenvb_vdq_wdq.disasm = { _sink << "pblenvb " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PBLENDW -- Blend Packed Words */
 // op pblendw_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x0e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// pblendw_vdq_wdq_ib.disasm = { _sink << "pblendw " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pblendw_vdq_wdq_ib.disasm = { _sink << "pblendw " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PCLMULQDQ - Carry-Less Multiplication Quadword */
 // op pclmulqdq_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x44[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// pclmulqdq_vdq_wdq_ib.disasm = { _sink << "pclmulqdq " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pclmulqdq_vdq_wdq_ib.disasm = { _sink << "pclmulqdq " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PCMPESTRM -- Packed Compare Explicit Length Strings, Return Mask */
 // op pcmpestrm_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x60[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// pcmpestrm_vdq_wdq_ib.disasm = { _sink << "pcmpestrm " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pcmpestrm_vdq_wdq_ib.disasm = { _sink << "pcmpestrm " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PCMPESTRI -- Packed Compare Explicit Length Strings, Return Index */
 // op pcmpestri_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x61[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// pcmpestri_vdq_wdq_ib.disasm = { _sink << "pcmpestri " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pcmpestri_vdq_wdq_ib.disasm = { _sink << "pcmpestri " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PCMPISTRM -- Packed Compare Implicit Length Strings, Return Mask */
 // op pcmpistrm_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x62[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// pcmpistrm_vdq_wdq_ib.disasm = { _sink << "pcmpistrm " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pcmpistrm_vdq_wdq_ib.disasm = { _sink << "pcmpistrm " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PCMPISTRI -- Packed Compare Implicit Length Strings, Return Index */
 // op pcmpistri_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x63[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// pcmpistri_vdq_wdq_ib.disasm = { _sink << "pcmpistri " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pcmpistri_vdq_wdq_ib.disasm = { _sink << "pcmpistri " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 
 /* PCMPEQB/PCMPEQW/PCMPEQD/PCMEQQ -- Compare Packed Data for Equal */
-template <class ARCH, unsigned OPSIZE>
-struct PCmpEqVW : public Operation<ARCH>
+
+struct PCmpEQ { static char const* name() { return "pcmpeq"; } };
+struct PCmpGT { static char const* name() { return "pcmpgt"; } };
+
+template <class ARCH, class VR, class TYPE, class OPERATION>
+struct PCmpVW : public Operation<ARCH>
 {
-  PCmpEqVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
-  void disasm( std::ostream& sink ) const {
-    sink << "pcmpeq" << ("bwdq"[SB<OPSIZE/8>::begin]) << ' ' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn );
+  typedef TYPE valtype;
+  enum { bitsize = atpinfo<ARCH,TYPE>::bitsize };
+  valtype eval( PCmpEQ const&, valtype const& a, valtype const& b ) const { return valtype(a != b) - valtype(1); }
+  valtype eval( PCmpGT const&, valtype const& a, valtype const& b ) const { return valtype(a <= b) - valtype(1); }
+  
+  PCmpVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), vn( _vn ), gn( _gn ) {}
+  
+  void disasm( std::ostream& sink ) const
+  {
+    sink << (VR::vex() ? "v" : "") << OPERATION::name() << SizeID<bitsize>::iid()
+         <<                ' ' << DisasmW( VR(), rm );
+    if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
+    sink <<                ',' << DisasmV( VR(), gn );
   }
   void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
-    
-    for (unsigned sub = 0; sub < (128/OPSIZE); ++sub)
-      {
-        u_type msk = u_type(arch.vmm_read( SSE(), gn, sub, u_type() ) != arch.vmm_read( SSE(), rmop, sub, u_type() )) - u_type(1);
-        arch.vmm_write( SSE(), gn, sub, msk );
-      }
+    for (unsigned sub = 0; sub < (VR::size()/bitsize); ++sub)
+      arch.vmm_write( VR(), gn, sub, eval( OPERATION(), arch.vmm_read( VR(), vn, sub, valtype() ), arch.vmm_read( VR(), rm, sub, valtype() ) ) );
   }
+  RMOp<ARCH> rm; uint8_t vn, gn;
 };
 
 template <class ARCH> struct DC<ARCH,PCMPEQ> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
   
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x74" ) & RM() ))
+  if (auto _ = match( ic, vex( "\x66\x0f\x74" ) & RM() ))
     
-    return new PCmpEqVW<ARCH,8>( _.opbase(), _.rmop(), _.greg() );
+    return newPCmp<PCmpEQ,  typename ARCH::u8_t>( ic, _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x75" ) & RM() ))
+  if (auto _ = match( ic, vex( "\x66\x0f\x75" ) & RM() ))
     
-    return new PCmpEqVW<ARCH,16>( _.opbase(), _.rmop(), _.greg() );
+    return newPCmp<PCmpEQ, typename ARCH::u16_t>( ic, _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x76" ) & RM() ))
+  if (auto _ = match( ic, vex( "\x66\x0f\x76" ) & RM() ))
     
-    return new PCmpEqVW<ARCH,32>( _.opbase(), _.rmop(), _.greg() );
+    return newPCmp<PCmpEQ, typename ARCH::u32_t>( ic, _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x38\x29" ) & RM() ))
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x29" ) & RM() ))
     
-    return new PCmpEqVW<ARCH,64>( _.opbase(), _.rmop(), _.greg() );
+    return newPCmp<PCmpEQ, typename ARCH::u64_t>( ic, _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\x64" ) & RM() ))
+    
+    return newPCmp<PCmpGT,  typename ARCH::s8_t>( ic, _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\x65" ) & RM() ))
+    
+    return newPCmp<PCmpGT, typename ARCH::s16_t>( ic, _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\x66" ) & RM() ))
+    
+    return newPCmp<PCmpGT, typename ARCH::s32_t>( ic, _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x37" ) & RM() ))
+    
+    return newPCmp<PCmpGT, typename ARCH::s64_t>( ic, _.opbase(), _.rmop(), _.greg() );
   
   return 0;
-}};
+}
+template <class OPERATION, class TYPE>
+Operation<ARCH>* newPCmp( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t gn )
+{
+  if (not ic.vex())     return new PCmpVW<ARCH,SSE,TYPE,OPERATION>( opbase, rm, gn, gn );
+  unsigned vn = ic.vreg();
+  if (ic.vlen() == 128) return new PCmpVW<ARCH,XMM,TYPE,OPERATION>( opbase, rm, vn, gn );
+  if (ic.vlen() == 256) return new PCmpVW<ARCH,YMM,TYPE,OPERATION>( opbase, rm, vn, gn );
+  return 0;
+}
+};
+
 // op pcmpeqb_pq_qq( 0x0f[8]:> <:0x74[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pcmpeqb_pq_qq.disasm = { _sink << "pcmpeqb " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pcmpeqb_pq_qq.disasm = { _sink << "pcmpeqb " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pcmpeqw_pq_qq( 0x0f[8]:> <:0x75[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pcmpeqw_pq_qq.disasm = { _sink << "pcmpeqw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pcmpeqw_pq_qq.disasm = { _sink << "pcmpeqw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pcmpeqd_pq_qq( 0x0f[8]:> <:0x76[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pcmpeqd_pq_qq.disasm = { _sink << "pcmpeqd " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pcmpeqd_pq_qq.disasm = { _sink << "pcmpeqd " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pcmpeqb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x74[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pcmpeqb_vdq_wdq.disasm = { _sink << "pcmpeqb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pcmpeqb_vdq_wdq.disasm = { _sink << "pcmpeqb " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pcmpeqw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x75[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pcmpeqw_vdq_wdq.disasm = { _sink << "pcmpeqw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pcmpeqw_vdq_wdq.disasm = { _sink << "pcmpeqw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pcmpeqd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x76[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pcmpeqd_vdq_wdq.disasm = { _sink << "pcmpeqd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pcmpeqd_vdq_wdq.disasm = { _sink << "pcmpeqd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pcmpeqq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x29[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pcmpeqq_vdq_wdq.disasm = { _sink << "pcmpeqq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pcmpeqq_vdq_wdq.disasm = { _sink << "pcmpeqq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PCMPGTB/PCMPGTW/PCMPGTD/PCMPGTQ -- Compare Packed Signed Integers for Greater Than */
 // op pcmpgtb_pq_qq( 0x0f[8]:> <:0x64[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pcmpgtb_pq_qq.disasm = { _sink << "pcmpgtb " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pcmpgtb_pq_qq.disasm = { _sink << "pcmpgtb " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pcmpgtw_pq_qq( 0x0f[8]:> <:0x65[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pcmpgtw_pq_qq.disasm = { _sink << "pcmpgtw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pcmpgtw_pq_qq.disasm = { _sink << "pcmpgtw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pcmpgtd_pq_qq( 0x0f[8]:> <:0x66[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pcmpgtd_pq_qq.disasm = { _sink << "pcmpgtd " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pcmpgtd_pq_qq.disasm = { _sink << "pcmpgtd " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pcmpgtb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x64[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pcmpgtb_vdq_wdq.disasm = { _sink << "pcmpgtb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pcmpgtb_vdq_wdq.disasm = { _sink << "pcmpgtb " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pcmpgtw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x65[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pcmpgtw_vdq_wdq.disasm = { _sink << "pcmpgtw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pcmpgtw_vdq_wdq.disasm = { _sink << "pcmpgtw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pcmpgtd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x66[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pcmpgtd_vdq_wdq.disasm = { _sink << "pcmpgtd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pcmpgtd_vdq_wdq.disasm = { _sink << "pcmpgtd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pcmpgtq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x37[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pcmpgtq_vdq_wdq.disasm = { _sink << "pcmpgtq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pcmpgtq_vdq_wdq.disasm = { _sink << "pcmpgtq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PEXTRB/PEXTRW/PEXTRD/PEXTRQ -- Extract Byte/Dword/Qword */
 // op pextrw_rd_pq_ib( 0x0f[8]:> <:0xc5[8]:> <:0b11[2]:gn[3]:rm[3]:> <:imm[8] );
@@ -1428,181 +1530,212 @@ template <class ARCH> struct DC<ARCH,PCMPEQ> { Operation<ARCH>* get( InputCode<A
 // 
 // op pextrb_eb_vdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x14[8]:> <:?[2]:gn[3]:rm[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// pextrb_eb_vdq_ib.disasm = { _sink << "pextrw " << DisasmI( imm ) << ',' << DisasmV( SSE(), gn ) << ',' << DisasmEb( rmop ); };
+// pextrb_eb_vdq_ib.disasm = { _sink << "pextrw " << DisasmI( imm ) << ',' << DisasmV( SSE(), gn ) << ',' << DisasmEb( rm ); };
 // 
 // op pextrw_ew_vdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x15[8]:> <:?[2]:gn[3]:rm[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// pextrw_ew_vdq_ib.disasm = { _sink << "pextrw " << DisasmI( imm ) << ',' << DisasmV( SSE(), gn ) << ',' << DisasmEw( rmop ); };
+// pextrw_ew_vdq_ib.disasm = { _sink << "pextrw " << DisasmI( imm ) << ',' << DisasmV( SSE(), gn ) << ',' << DisasmEw( rm ); };
 // 
 // op pextrd_ed_vdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x16[8]:> <:?[2]:gn[3]:rm[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// pextrd_ed_vdq_ib.disasm = { _sink << "pextrd " << DisasmI( imm ) << ',' << DisasmV( SSE(), gn ) << ',' << DisasmEd( rmop ); };
+// pextrd_ed_vdq_ib.disasm = { _sink << "pextrd " << DisasmI( imm ) << ',' << DisasmV( SSE(), gn ) << ',' << DisasmEd( rm ); };
 // 
 // // op pextrq_eb_vdq_ib( 0x66[8]:> <:0x48[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x16[8]:> <:?[2]:gn[3]:rm[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// // pextrq_eb_vdq_ib.disasm = { _sink << "pextrq " << DisasmI( imm ) << ',' << DisasmV( SSE(), gn ) << ',' << DisasmEq( rmop ); };
+// // pextrq_eb_vdq_ib.disasm = { _sink << "pextrq " << DisasmI( imm ) << ',' << DisasmV( SSE(), gn ) << ',' << DisasmEq( rm ); };
 // 
 // /* PHADDW/PHADDD -- Packed Horizontal Add */
 // op phaddw_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x01[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// phaddw_pq_qq.disasm = { _sink << "phaddw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// phaddw_pq_qq.disasm = { _sink << "phaddw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op phaddd_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x02[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// phaddd_pq_qq.disasm = { _sink << "phaddd " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// phaddd_pq_qq.disasm = { _sink << "phaddd " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op phaddw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x01[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// phaddw_vdq_wdq.disasm = { _sink << "phaddw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// phaddw_vdq_wdq.disasm = { _sink << "phaddw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op phaddd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x02[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// phaddd_vdq_wdq.disasm = { _sink << "phaddd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// phaddd_vdq_wdq.disasm = { _sink << "phaddd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PHADDSW -- Packed Horizontal Add and Saturate */
 // op phaddsw_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x03[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// phaddsw_pq_qq.disasm = { _sink << "phaddsw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// phaddsw_pq_qq.disasm = { _sink << "phaddsw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op phaddsw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x03[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// phaddsw_vdq_wdq.disasm = { _sink << "phaddsw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// phaddsw_vdq_wdq.disasm = { _sink << "phaddsw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PHMINPOSUW -- Packed Horizontal Word Minimum */
 // op phminposuw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x41[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// phminposuw_vdq_wdq.disasm = { _sink << "phminposuw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// phminposuw_vdq_wdq.disasm = { _sink << "phminposuw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // 
 // /* PHSUBW/PHSUBD -- Packed Horizontal Subtract */
 // op phsubw_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x05[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// phsubw_pq_qq.disasm = { _sink << "phsubw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// phsubw_pq_qq.disasm = { _sink << "phsubw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op phsubd_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x06[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// phsubd_pq_qq.disasm = { _sink << "phsubd " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// phsubd_pq_qq.disasm = { _sink << "phsubd " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op phsubw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x05[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// phsubw_vdq_wdq.disasm = { _sink << "phsubw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// phsubw_vdq_wdq.disasm = { _sink << "phsubw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op phsubd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x06[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// phsubd_vdq_wdq.disasm = { _sink << "phsubd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// phsubd_vdq_wdq.disasm = { _sink << "phsubd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PHSUBSW -- Packed Horizontal Subtract and Saturate */
 // op phsubsw_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x07[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// phsubsw_pq_qq.disasm = { _sink << "phsubsw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// phsubsw_pq_qq.disasm = { _sink << "phsubsw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op phsubsw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x07[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// phsubsw_vdq_wdq.disasm = { _sink << "phsubsw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// phsubsw_vdq_wdq.disasm = { _sink << "phsubsw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PINSRB/PINSRW/PINSRD/PINSRQ -- Insert Byte/Word/Dword/Qword */
 // op pinsrw_pq_ed_ib( 0x0f[8]:> <:0xc4[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// pinsrw_pq_ed_ib.disasm = { _sink << "pinsrw " << DisasmI( imm ) << ',' << DisasmEd( rmop ) << ',' << DisasmPq( gn ); };
+// pinsrw_pq_ed_ib.disasm = { _sink << "pinsrw " << DisasmI( imm ) << ',' << DisasmEd( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pinsrb_vdq_ed_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x20[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// pinsrb_vdq_ed_ib.disasm = { _sink << "pinsrb " << DisasmI( imm ) << ',' << DisasmEd( rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pinsrb_vdq_ed_ib.disasm = { _sink << "pinsrb " << DisasmI( imm ) << ',' << DisasmEd( rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pinsrw_vdq_ed_ib( 0x66[8]:> <:0x0f[8]:> <:0xc4[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// pinsrw_vdq_ed_ib.disasm = { _sink << "pinsrw " << DisasmI( imm ) << ',' << DisasmEd( rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pinsrw_vdq_ed_ib.disasm = { _sink << "pinsrw " << DisasmI( imm ) << ',' << DisasmEd( rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pinsrd_vdq_ed_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x22[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// pinsrd_vdq_ed_ib.disasm = { _sink << "pinsrd " << DisasmI( imm ) << ',' << DisasmEd( rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pinsrd_vdq_ed_ib.disasm = { _sink << "pinsrd " << DisasmI( imm ) << ',' << DisasmEd( rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PMADDUBSW -- PINSRB/PINSRD/PINSRQ -- Insert Byte/Dword/Qword */
 // op pmaddubsw_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x04[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmaddubsw_pq_qq.disasm = { _sink << "pmaddubsw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pmaddubsw_pq_qq.disasm = { _sink << "pmaddubsw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pmaddubsw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x04[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmaddubsw_vdq_wdq.disasm = { _sink << "pmaddubsw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmaddubsw_vdq_wdq.disasm = { _sink << "pmaddubsw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PMADDWD -- Multiply and Add Packed Integers */
 // op pmaddwd_pq_qq( 0x0f[8]:> <:0xf5[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmaddwd_pq_qq.disasm = { _sink << "pmaddwd " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pmaddwd_pq_qq.disasm = { _sink << "pmaddwd " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pmaddwd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xf5[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmaddwd_vdq_wdq.disasm = { _sink << "pmaddwd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmaddwd_vdq_wdq.disasm = { _sink << "pmaddwd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
-// /* PMAXS -- Maximum of Packed Signed Byte/Word/DWord/QWord Integers */
+
+struct PMax { static char const* name() { return "pmax"; } }; struct PMin { static char const* name() { return "pmin"; } };
+
+template <class ARCH, class VR, class TYPE, class OPERATION>
+struct PMinMax : public Operation<ARCH>
+{
+  typedef TYPE valtype;
+  enum { is_signed = atpinfo<ARCH,TYPE>::is_signed, bitsize = atpinfo<ARCH,TYPE>::bitsize };
+  valtype const& eval( PMax const&, valtype const& a, valtype const& b ) const { return std::max(a, b); }
+  valtype const& eval( PMin const&, valtype const& a, valtype const& b ) const { return std::min(a, b); }
+  
+  PMinMax( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint32_t _vn, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), vn( _vn ), gn( _gn ) {}
+  void disasm( std::ostream& sink ) const
+  {
+    sink << (VR::vex() ? "v" : "") << OPERATION::name()
+         << (is_signed ? "s" : "u") << SizeID<bitsize>::iid()
+         <<                ' ' << DisasmW( VR(), rm );
+    if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
+    sink <<                ',' << DisasmV( VR(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    for (unsigned idx = 0, end = VR::size()/bitsize; idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx, eval( OPERATION(), arch.vmm_read( VR(), vn, idx, valtype() ), arch.vmm_read( VR(), rm, idx, valtype() ) ) );
+  }
+  RMOp<ARCH> rm; uint8_t vn, gn;
+};
+
 // op pmaxsw_pq_qq( 0x0f[8]:> <:0xee[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pmaxsw_pq_qq.disasm = { _sink << "pmaxsw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// op pmaxsb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x3c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pmaxsb_vdq_wdq.disasm = { _sink << "pmaxsb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// op pmaxsw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xee[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pmaxsw_vdq_wdq.disasm = { _sink << "pmaxsw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// op pmaxsd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x3d[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pmaxsd_vdq_wdq.disasm = { _sink << "pmaxsd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* PMAXU -- Maximum of Packed Unsigned Byte/Word/DWord Integers */
 // op pmaxub_pq_qq( 0x0f[8]:> <:0xde[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pmaxub_pq_qq.disasm = { _sink << "pmaxub " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// op pmaxub_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xde[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pmaxub_vdq_wdq.disasm = { _sink << "pmaxub " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// op pmaxuw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x3e[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pmaxuw_vdq_wdq.disasm = { _sink << "pmaxuw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// op pmaxud_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x3f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pmaxud_vdq_wdq.disasm = { _sink << "pmaxud " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* PMINS -- Minimum of Packed Signed Byte/Word/DWord Integers */
 // op pminsw_pq_qq( 0x0f[8]:> <:0xea[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pminsw_pq_qq.disasm = { _sink << "pminsw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// op pminsb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x38[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pminsb_vdq_wdq.disasm = { _sink << "pminsb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// op pminsw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xea[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pminsw_vdq_wdq.disasm = { _sink << "pminsw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// op pminsd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x39[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pminsd_vdq_wdq.disasm = { _sink << "pminsd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* PMINU -- Minimum of Packed Unsigned Byte/Word/DWord Integers */
 // op pminub_pq_qq( 0x0f[8]:> <:0xda[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pminub_pq_qq.disasm = { _sink << "pminub " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
-// 
-// op pminub_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xda[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pminub_vdq_wdq.disasm = { _sink << "pminub " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// op pminuw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x3a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pminuw_vdq_wdq.disasm = { _sink << "pminuw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// op pminud_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x3b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// pminud_vdq_wdq.disasm = { _sink << "pminud " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
-// 
+
+// /* P{MAX|MIN}[US][BWD],  -- Maximum/Minimum of Packed Unsigned/Signed Byte/Word/DWord Integers */
+
+template <class ARCH> struct DC<ARCH,PMINMAX> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x3c" ) & RM() ))
+
+    return newMinMax<typename ARCH::s8_t,PMax>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\xee" ) & RM() ))
+  
+    return newMinMax<typename ARCH::s16_t,PMax>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x3d" ) & RM() ))
+
+    return newMinMax<typename ARCH::s32_t,PMax>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\xde" ) & RM() ))
+
+    return newMinMax<typename ARCH::u8_t,PMax>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x3e" ) & RM() ))
+
+    return newMinMax<typename ARCH::u16_t,PMax>( ic, _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x3f" ) & RM() ))
+
+    return newMinMax<typename ARCH::u32_t,PMax>( ic, _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x38" ) & RM() ))
+
+    return newMinMax<typename ARCH::s8_t,PMin>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\xea" ) & RM() ))
+  
+    return newMinMax<typename ARCH::s16_t,PMin>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x39" ) & RM() ))
+
+    return newMinMax<typename ARCH::s32_t,PMin>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\xda" ) & RM() ))
+
+    return newMinMax<typename ARCH::u8_t,PMin>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x3a" ) & RM() ))
+
+    return newMinMax<typename ARCH::u16_t,PMin>( ic, _.opbase(), _.rmop(), _.greg() );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x3b" ) & RM() ))
+
+    return newMinMax<typename ARCH::u32_t,PMin>( ic, _.opbase(), _.rmop(), _.greg() );
+  
+  return 0;
+}
+template <class TYPE, class OPERATION>
+Operation<ARCH>* newMinMax( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t gn )
+{
+  if (not ic.vex())     return new PMinMax<ARCH,SSE,TYPE,OPERATION>( opbase, rm, gn, gn );
+  unsigned vn = ic.vreg();
+  if (ic.vlen() == 128) return new PMinMax<ARCH,XMM,TYPE,OPERATION>( opbase, rm, vn, gn );
+  if (ic.vlen() == 256) return new PMinMax<ARCH,YMM,TYPE,OPERATION>( opbase, rm, vn, gn );
+  return 0;
+}
+};
 
 // /* PMOVMSKB -- Move Byte Mask */
 template <class ARCH>
@@ -1650,130 +1783,130 @@ template <class ARCH> struct DC<ARCH,PMOVMSKB> { Operation<ARCH>* get( InputCode
 // /* PMOVSX -- Packed Move with Sign Extend */
 // op pmovsxbw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x20[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmovsxbw_vdq_wdq.disasm = { _sink << "pmovsxbw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmovsxbw_vdq_wdq.disasm = { _sink << "pmovsxbw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pmovsxbd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x21[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmovsxbd_vdq_wdq.disasm = { _sink << "pmovsxbd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmovsxbd_vdq_wdq.disasm = { _sink << "pmovsxbd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pmovsxbq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x22[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmovsxbq_vdq_wdq.disasm = { _sink << "pmovsxbq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmovsxbq_vdq_wdq.disasm = { _sink << "pmovsxbq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pmovsxwd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x23[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmovsxwd_vdq_wdq.disasm = { _sink << "pmovsxwd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmovsxwd_vdq_wdq.disasm = { _sink << "pmovsxwd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pmovsxwq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x24[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmovsxwq_vdq_wdq.disasm = { _sink << "pmovsxwq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmovsxwq_vdq_wdq.disasm = { _sink << "pmovsxwq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pmovsxdq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x25[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmovsxdq_vdq_wdq.disasm = { _sink << "pmovsxdq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmovsxdq_vdq_wdq.disasm = { _sink << "pmovsxdq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PMOVZX -- Packed Move with Sign Extend */
 // op pmovzxbw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x30[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmovzxbw_vdq_wdq.disasm = { _sink << "pmovzxbw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmovzxbw_vdq_wdq.disasm = { _sink << "pmovzxbw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pmovzxbd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x31[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmovzxbd_vdq_wdq.disasm = { _sink << "pmovzxbd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmovzxbd_vdq_wdq.disasm = { _sink << "pmovzxbd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pmovzxbq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x32[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmovzxbq_vdq_wdq.disasm = { _sink << "pmovzxbq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmovzxbq_vdq_wdq.disasm = { _sink << "pmovzxbq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pmovzxwd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x33[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmovzxwd_vdq_wdq.disasm = { _sink << "pmovzxwd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmovzxwd_vdq_wdq.disasm = { _sink << "pmovzxwd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pmovzxwq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x34[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmovzxwq_vdq_wdq.disasm = { _sink << "pmovzxwq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmovzxwq_vdq_wdq.disasm = { _sink << "pmovzxwq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pmovzxdq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x35[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmovzxdq_vdq_wdq.disasm = { _sink << "pmovzxdq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmovzxdq_vdq_wdq.disasm = { _sink << "pmovzxdq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PMULDQ -- Multiply Packed Signed Dword Integers */
 // op pmuldq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x28[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmuldq_vdq_wdq.disasm = { _sink << "pmuldq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmuldq_vdq_wdq.disasm = { _sink << "pmuldq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PMULHRSW -- Packed Multiply High with Round and Scale */
 // op pmulhrsw_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x0b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmulhrsw_pq_qq.disasm = { _sink << "pmulhrsw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pmulhrsw_pq_qq.disasm = { _sink << "pmulhrsw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pmulhrsw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x0b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmulhrsw_vdq_wdq.disasm = { _sink << "pmulhrsw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmulhrsw_vdq_wdq.disasm = { _sink << "pmulhrsw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PMULHUW -- Multiply Packed Unsigned Integers and Store High Result */
 // op pmulhuw_pq_qq( 0x0f[8]:> <:0xe4[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmulhuw_pq_qq.disasm = { _sink << "pmulhuw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pmulhuw_pq_qq.disasm = { _sink << "pmulhuw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pmulhuw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xe4[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmulhuw_vdq_wdq.disasm = { _sink << "pmulhuw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmulhuw_vdq_wdq.disasm = { _sink << "pmulhuw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PMULHW -- Multiply Packed Signed Integers and Store High Result */
 // op pmulhw_pq_qq( 0x0f[8]:> <:0xe5[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmulhw_pq_qq.disasm = { _sink << "pmulhw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pmulhw_pq_qq.disasm = { _sink << "pmulhw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pmulhw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xe5[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmulhw_vdq_wdq.disasm = { _sink << "pmulhw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmulhw_vdq_wdq.disasm = { _sink << "pmulhw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PMULLD -- Multiply Packed Signed Dword Integers and Store Low Result */
 // op pmulld_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x40[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmulld_vdq_wdq.disasm = { _sink << "pmulld " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmulld_vdq_wdq.disasm = { _sink << "pmulld " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PMULLW -- Multiply Packed Signed Integers and Store Low Result */
 // op pmullw_pq_qq( 0x0f[8]:> <:0xd5[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmullw_pq_qq.disasm = { _sink << "pmullw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pmullw_pq_qq.disasm = { _sink << "pmullw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pmullw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xd5[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmullw_vdq_wdq.disasm = { _sink << "pmullw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmullw_vdq_wdq.disasm = { _sink << "pmullw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PMULUDQ -- Multiply Packed Unsigned Doubleword Integers */
 // op pmuludq_pq_qq( 0x0f[8]:> <:0xf4[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmuludq_pq_qq.disasm = { _sink << "pmuludq " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pmuludq_pq_qq.disasm = { _sink << "pmuludq " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pmuludq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xf4[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pmuludq_vdq_wdq.disasm = { _sink << "pmuludq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pmuludq_vdq_wdq.disasm = { _sink << "pmuludq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PSADBW -- Compute Sum of Absolute Differences */
 // op psadbw_pq_qq( 0x0f[8]:> <:0xf6[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psadbw_pq_qq.disasm = { _sink << "psadbw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psadbw_pq_qq.disasm = { _sink << "psadbw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psadbw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xf6[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psadbw_vdq_wdq.disasm = { _sink << "psadbw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psadbw_vdq_wdq.disasm = { _sink << "psadbw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PSHUFB -- Packed Shuffle Bytes */
 // op pshufb_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x00[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pshufb_pq_qq.disasm = { _sink << "pshufb " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pshufb_pq_qq.disasm = { _sink << "pshufb " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pshufb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x00[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pshufb_vdq_wdq.disasm = { _sink << "pshufb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pshufb_vdq_wdq.disasm = { _sink << "pshufb " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PSHUFD -- Shuffle Packed Doublewords */
 // op pshufd_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x70[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// pshufd_vdq_wdq_ib.disasm = { _sink << "pshufd " << DisasmI(imm) << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pshufd_vdq_wdq_ib.disasm = { _sink << "pshufd " << DisasmI(imm) << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 //
 
 template <class ARCH>
@@ -1809,42 +1942,42 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // /* PSHUFHW -- Shuffle Packed High Words */
 // op pshufhw_vdq_wdq_ib( 0xf3[8]:> <:0x0f[8]:> <:0x70[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// pshufhw_vdq_wdq_ib.disasm = { _sink << "pshufhw " << DisasmI(imm) << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pshufhw_vdq_wdq_ib.disasm = { _sink << "pshufhw " << DisasmI(imm) << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PSHUFLW -- Shuffle Packed Low Words */
 // op pshuflw_vdq_wdq_ib( 0xf2[8]:> <:0x0f[8]:> <:0x70[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// pshuflw_vdq_wdq_ib.disasm = { _sink << "pshuflw " << DisasmI(imm) << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pshuflw_vdq_wdq_ib.disasm = { _sink << "pshuflw " << DisasmI(imm) << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PSHUFW -- Shuffle Packed Words */
 // op pshufw_pq_qq( 0x0f[8]:> <:0x70[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pshufw_pq_qq.disasm = { _sink << "pshufw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pshufw_pq_qq.disasm = { _sink << "pshufw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // /* PSIGNB/PSIGNW/PSIGND -- Packed SIGN */
 // op psignb_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x08[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psignb_pq_qq.disasm = { _sink << "psignb " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psignb_pq_qq.disasm = { _sink << "psignb " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psignw_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x09[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psignw_pq_qq.disasm = { _sink << "psignw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psignw_pq_qq.disasm = { _sink << "psignw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psignd_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x0a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psignd_pq_qq.disasm = { _sink << "psignd " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psignd_pq_qq.disasm = { _sink << "psignd " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psignb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x08[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psignb_vdq_wdq.disasm = { _sink << "psignb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psignb_vdq_wdq.disasm = { _sink << "psignb " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op psignw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x09[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psignw_vdq_wdq.disasm = { _sink << "psignw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psignw_vdq_wdq.disasm = { _sink << "psignw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op psignd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x0a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psignd_vdq_wdq.disasm = { _sink << "psignd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psignd_vdq_wdq.disasm = { _sink << "psignd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PSLLDQ -- Shift Double Quadword Left Logical */
 // op pslldq_vdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x73[8]:> <:0b11[2]:7[3]:rm[3]:> <:imm[8] );
@@ -1854,7 +1987,7 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // /* PSLLW/PSLLD/PSLLQ -- Shift Packed Data Left Logical */
 // op psllw_pq_qq( 0x0f[8]:> <:0xf1[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psllw_pq_qq.disasm = { _sink << "psllw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psllw_pq_qq.disasm = { _sink << "psllw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psllw_pq_ib( 0x0f[8]:> <:0x71[8]:> <:0b11[2]:6[3]:rm[3]:> <:imm[8] );
 // 
@@ -1862,7 +1995,7 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // 
 // op pslld_pq_qq( 0x0f[8]:> <:0xf2[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pslld_pq_qq.disasm = { _sink << "pslld " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// pslld_pq_qq.disasm = { _sink << "pslld " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op pslld_pq_ib( 0x0f[8]:> <:0x72[8]:> <:0b11[2]:6[3]:rm[3]:> <:imm[8] );
 // 
@@ -1870,7 +2003,7 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // 
 // op psllq_pq_qq( 0x0f[8]:> <:0xf3[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psllq_pq_qq.disasm = { _sink << "psllq " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psllq_pq_qq.disasm = { _sink << "psllq " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psllq_pq_ib( 0x0f[8]:> <:0x73[8]:> <:0b11[2]:6[3]:rm[3]:> <:imm[8] );
 // 
@@ -1878,7 +2011,7 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // 
 // op psllw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xf1[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psllw_vdq_wdq.disasm = { _sink << "psllw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psllw_vdq_wdq.disasm = { _sink << "psllw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op psllw_vdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x71[8]:> <:0b11[2]:6[3]:rm[3]:> <:imm[8] );
 // 
@@ -1886,7 +2019,7 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // 
 // op pslld_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xf2[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// pslld_vdq_wdq.disasm = { _sink << "pslld " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// pslld_vdq_wdq.disasm = { _sink << "pslld " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op pslld_vdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x72[8]:> <:0b11[2]:6[3]:rm[3]:> <:imm[8] );
 // 
@@ -1894,7 +2027,7 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // 
 // op psllq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xf3[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psllq_vdq_wdq.disasm = { _sink << "psllq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psllq_vdq_wdq.disasm = { _sink << "psllq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op psllq_vdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x73[8]:> <:0b11[2]:6[3]:rm[3]:> <:imm[8] );
 // 
@@ -1903,7 +2036,7 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // /* PSRAW/PSRAD -- Shift Packed Data Right Arithmetic */
 // op psraw_pq_qq( 0x0f[8]:> <:0xe1[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psraw_pq_qq.disasm = { _sink << "psraw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psraw_pq_qq.disasm = { _sink << "psraw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psraw_pq_ib( 0x0f[8]:> <:0x71[8]:> <:0b11[2]:4[3]:rm[3]:> <:imm[8] );
 // 
@@ -1911,7 +2044,7 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // 
 // op psrad_pq_qq( 0x0f[8]:> <:0xe2[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psrad_pq_qq.disasm = { _sink << "psrad " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psrad_pq_qq.disasm = { _sink << "psrad " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psrad_pq_ib( 0x0f[8]:> <:0x72[8]:> <:0b11[2]:4[3]:rm[3]:> <:imm[8] );
 // 
@@ -1919,7 +2052,7 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // 
 // op psraw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xe1[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psraw_vdq_wdq.disasm = { _sink << "psraw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psraw_vdq_wdq.disasm = { _sink << "psraw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op psraw_vdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x71[8]:> <:0b11[2]:4[3]:rm[3]:> <:imm[8] );
 // 
@@ -1927,7 +2060,7 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // 
 // op psrad_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xe2[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psrad_vdq_wdq.disasm = { _sink << "psrad " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psrad_vdq_wdq.disasm = { _sink << "psrad " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op psrad_vdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x72[8]:> <:0b11[2]:4[3]:rm[3]:> <:imm[8] );
 // 
@@ -1941,7 +2074,7 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // /* PSRLW/PSRLD/PSRLQ -- Shift Packed Data Right Logical */
 // op psrlw_pq_qq( 0x0f[8]:> <:0xd1[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psrlw_pq_qq.disasm = { _sink << "psrlw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psrlw_pq_qq.disasm = { _sink << "psrlw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psrlw_pq_ib( 0x0f[8]:> <:0x71[8]:> <:0b11[2]:2[3]:rm[3]:> <:imm[8] );
 // 
@@ -1949,7 +2082,7 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // 
 // op psrld_pq_qq( 0x0f[8]:> <:0xd2[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psrld_pq_qq.disasm = { _sink << "psrld " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psrld_pq_qq.disasm = { _sink << "psrld " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psrld_pq_ib( 0x0f[8]:> <:0x72[8]:> <:0b11[2]:2[3]:rm[3]:> <:imm[8] );
 // 
@@ -1957,7 +2090,7 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // 
 // op psrlq_pq_qq( 0x0f[8]:> <:0xd3[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psrlq_pq_qq.disasm = { _sink << "psrlq " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psrlq_pq_qq.disasm = { _sink << "psrlq " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psrlq_pq_ib( 0x0f[8]:> <:0x73[8]:> <:0b11[2]:2[3]:rm[3]:> <:imm[8] );
 // 
@@ -1965,7 +2098,7 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // 
 // op psrlw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xd1[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psrlw_vdq_wdq.disasm = { _sink << "psrlw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psrlw_vdq_wdq.disasm = { _sink << "psrlw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op psrlw_vdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x71[8]:> <:0b11[2]:2[3]:rm[3]:> <:imm[8] );
 // 
@@ -1973,7 +2106,7 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // 
 // op psrld_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xd2[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psrld_vdq_wdq.disasm = { _sink << "psrld " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psrld_vdq_wdq.disasm = { _sink << "psrld " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op psrld_vdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x72[8]:> <:0b11[2]:2[3]:rm[3]:> <:imm[8] );
 // 
@@ -1981,7 +2114,7 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // 
 // op psrlq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xd3[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psrlq_vdq_wdq.disasm = { _sink << "psrlq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psrlq_vdq_wdq.disasm = { _sink << "psrlq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op psrlq_vdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x73[8]:> <:0b11[2]:2[3]:rm[3]:> <:imm[8] );
 // 
@@ -1990,88 +2123,88 @@ template <class ARCH> struct DC<ARCH,PSHUFD> { Operation<ARCH>* get( InputCode<A
 // /* PSUBB/PSUBW/PSUBD/PSUBQ -- Subtract Packed Integers */
 // op psubb_pq_qq( 0x0f[8]:> <:0xf8[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psubb_pq_qq.disasm = { _sink << "psubb " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psubb_pq_qq.disasm = { _sink << "psubb " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psubw_pq_qq( 0x0f[8]:> <:0xf9[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psubw_pq_qq.disasm = { _sink << "psubw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psubw_pq_qq.disasm = { _sink << "psubw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psubd_pq_qq( 0x0f[8]:> <:0xfa[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psubd_pq_qq.disasm = { _sink << "psubd " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psubd_pq_qq.disasm = { _sink << "psubd " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psubq_pq_qq( 0x0f[8]:> <:0xfb[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psubq_pq_qq.disasm = { _sink << "psubq " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psubq_pq_qq.disasm = { _sink << "psubq " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psubb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xf8[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psubb_vdq_wdq.disasm = { _sink << "psubb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psubb_vdq_wdq.disasm = { _sink << "psubb " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op psubw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xf9[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psubw_vdq_wdq.disasm = { _sink << "psubw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psubw_vdq_wdq.disasm = { _sink << "psubw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op psubd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xfa[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psubd_vdq_wdq.disasm = { _sink << "psubd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psubd_vdq_wdq.disasm = { _sink << "psubd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op psubq_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xfb[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psubq_vdq_wdq.disasm = { _sink << "psubq " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psubq_vdq_wdq.disasm = { _sink << "psubq " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PSUBSB/PSUBSW -- Subtract Packed Signed Integers with Signed Saturation */
 // op psubsb_pq_qq( 0x0f[8]:> <:0xe8[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psubsb_pq_qq.disasm = { _sink << "psubsb " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psubsb_pq_qq.disasm = { _sink << "psubsb " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psubsw_pq_qq( 0x0f[8]:> <:0xe9[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psubsw_pq_qq.disasm = { _sink << "psubsw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psubsw_pq_qq.disasm = { _sink << "psubsw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psubsb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xe8[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psubsb_vdq_wdq.disasm = { _sink << "psubsb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psubsb_vdq_wdq.disasm = { _sink << "psubsb " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op psubsw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xe9[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psubsw_vdq_wdq.disasm = { _sink << "psubsw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psubsw_vdq_wdq.disasm = { _sink << "psubsw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PSUBUSB/PSUBUSW -- Subtract Packed Unsigned Integers with Unsigned Saturation */
 // op psubusb_pq_qq( 0x0f[8]:> <:0xd8[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psubusb_pq_qq.disasm = { _sink << "psubusb " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psubusb_pq_qq.disasm = { _sink << "psubusb " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psubusw_pq_qq( 0x0f[8]:> <:0xd9[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psubusw_pq_qq.disasm = { _sink << "psubusw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// psubusw_pq_qq.disasm = { _sink << "psubusw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // 
 // op psubusb_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xd8[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psubusb_vdq_wdq.disasm = { _sink << "psubusb " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psubusb_vdq_wdq.disasm = { _sink << "psubusb " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // op psubusw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xd9[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// psubusw_vdq_wdq.disasm = { _sink << "psubusw " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// psubusw_vdq_wdq.disasm = { _sink << "psubusw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* PTEST -- Logical Compare */
 // op ptest_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x17[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// ptest_vdq_wdq.disasm = { _sink << "ptest " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// ptest_vdq_wdq.disasm = { _sink << "ptest " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 
 // op punpckhbw_pq_qq( 0x0f[8]:> <:0x68[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// punpckhbw_pq_qq.disasm = { _sink << "punpckhbw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// punpckhbw_pq_qq.disasm = { _sink << "punpckhbw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // op punpckhwd_pq_qq( 0x0f[8]:> <:0x69[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// punpckhwd_pq_qq.disasm = { _sink << "punpckhwd " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// punpckhwd_pq_qq.disasm = { _sink << "punpckhwd " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // op punpckhdq_pq_qq( 0x0f[8]:> <:0x6a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// punpckhdq_pq_qq.disasm = { _sink << "punpckhdq " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// punpckhdq_pq_qq.disasm = { _sink << "punpckhdq " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // op punpcklbw_pq_qq( 0x0f[8]:> <:0x60[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// punpcklbw_pq_qq.disasm = { _sink << "punpcklbw " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// punpcklbw_pq_qq.disasm = { _sink << "punpcklbw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // op punpcklwd_pq_qq( 0x0f[8]:> <:0x61[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// punpcklwd_pq_qq.disasm = { _sink << "punpcklwd " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// punpcklwd_pq_qq.disasm = { _sink << "punpcklwd " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // op punpckldq_pq_qq( 0x0f[8]:> <:0x62[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// punpckldq_pq_qq.disasm = { _sink << "punpckldq " << DisasmQq( rmop ) << ',' << DisasmPq( gn ); };
+// punpckldq_pq_qq.disasm = { _sink << "punpckldq " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 
 template <class ARCH, unsigned OPSIZE, bool HI>
 struct PunpckV : public Operation<ARCH>
@@ -2105,7 +2238,6 @@ template <class ARCH> struct DC<ARCH,PUNPCK> { Operation<ARCH>* get( InputCode<A
   if (ic.f0()) return 0;
 
   if (auto _ = match( ic, simd66() & opcode( "\x0f\x68" ) & RM() ))
-
     return new PunpckV<ARCH,8,true>( _.opbase(), _.rmop(), _.greg() );
 
   if (auto _ = match( ic, simd66() & opcode( "\x0f\x69" ) & RM() ))
@@ -2139,10 +2271,87 @@ template <class ARCH> struct DC<ARCH,PUNPCK> { Operation<ARCH>* get( InputCode<A
   return 0;
 }};
 
+template <class ARCH, class VR, unsigned OPSIZE>
+struct Palignr : public Operation<ARCH>
+{
+  Palignr( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn, uint8_t _im ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn), im(_im) {}
+  RMOp<ARCH> rm; uint8_t vn, gn, im;
+  void disasm( std::ostream& sink ) const
+  {
+    sink << (VR::vex() ? "v" : "") << "palignr"
+         <<                ' ' << DisasmI(im)
+         <<                ',' << DisasmW( VR(), rm );
+    if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
+    sink <<                ',' << DisasmV( VR(), gn );
+  }
+  
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,OPSIZE>::u uint_t;
+    unsigned const size =  128 / OPSIZE;
+    
+    for (unsigned step = 0, end = VR::size() / 128; step < end; ++step)
+      {
+        uint_t res[size];
+    
+        {
+          unsigned sidx, ridx = 0;
+          // SRC2 part
+          sidx = im*8/OPSIZE;
+          for (; sidx < size; ++sidx, ++ridx)
+            res[ridx] = arch.vmm_read( VR(), rm, sidx+step*size, uint_t() );
+          // SRC1 part
+          sidx -= size;
+          for (unsigned end = size - (ridx > sidx ? ridx - sidx : 0); sidx < end; ++sidx, ++ridx)
+            res[ridx] = arch.vmm_read( VR(), vn, sidx+step*size, uint_t() );
+          // Zero part
+          for (; ridx < size; ++ridx)
+            res[ridx] = uint_t(0u);
+        }
+    
+        for (unsigned idx = 0; idx < size; ++idx)
+          arch.vmm_write( VR(), gn, idx+step*size, res[idx] );
+      }
+  }
+};
+
+// op palignr_pq_qq_ib( 0x0f[8]:> <:0x3a[8]:> <:0x0f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
+// op palignr_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x0f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
+
+/* PALIGNR -- Packed Align Right */
+template <class ARCH> struct DC<ARCH,PALIGNR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x0f" ) & RM() & Imm<8>() ))
+    {
+      uint8_t imm = _.i(int8_t());
+      switch ((imm^(imm-1)) & 15)
+        {
+        case 1:  return newPalignr <8>( ic, _.opbase(), _.rmop(), _.greg(), imm );
+        case 3:  return newPalignr<16>( ic, _.opbase(), _.rmop(), _.greg(), imm );
+        case 7:  return newPalignr<32>( ic, _.opbase(), _.rmop(), _.greg(), imm );
+        case 15: return newPalignr<64>( ic, _.opbase(), _.rmop(), _.greg(), imm );
+        }
+    }
+
+  return 0;
+}
+template <unsigned OPSIZE>
+Operation<ARCH>* newPalignr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, uint8_t _im )
+{
+  if (not ic.vex())     return new Palignr<ARCH,SSE,OPSIZE>( opbase, _rm, _gn, _gn, _im );
+  unsigned vn = ic.vreg();
+  if (ic.vlen() == 128) return new Palignr<ARCH,XMM,OPSIZE>( opbase, _rm,  vn, _gn, _im );
+  if (ic.vlen() == 256) return new Palignr<ARCH,YMM,OPSIZE>( opbase, _rm,  vn, _gn, _im );
+  return 0;
+}
+};
+
 struct VAND {}; struct VANDN {}; struct VOR {}; struct VXOR {};
 
 /* TODO: this operation will always blow the vector typing, but is this avoidable ? */
-template <class ARCH, class VR, class MANIP, unsigned OPSIZE>
+template <class ARCH, class VR, class OPERATION, unsigned OPSIZE>
 struct PBitManipVVW : public Operation<ARCH>
 {
   typedef typename TypeFor<ARCH,OPSIZE>::u valtype;
@@ -2162,7 +2371,7 @@ struct PBitManipVVW : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     for (unsigned idx = 0, end = VR::size()/OPSIZE; idx < end; ++idx)
-      arch.vmm_write( VR(), gn, idx, eval( MANIP(), arch.vmm_read( VR(), vn, idx, valtype() ), arch.vmm_read( VR(), rm, idx, valtype() ) ) );
+      arch.vmm_write( VR(), gn, idx, eval( OPERATION(), arch.vmm_read( VR(), vn, idx, valtype() ), arch.vmm_read( VR(), rm, idx, valtype() ) ) );
   }
 };
 
@@ -2283,13 +2492,13 @@ template <class ARCH> struct DC<ARCH,PBM> { Operation<ARCH>* get( InputCode<ARCH
 
   return 0;
 }
-template <class MANIP, unsigned OPSIZE>
+template <class OPERATION, unsigned OPSIZE>
 Operation<ARCH>* newPBitManipVVW( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, char const* _mn )
 {
-  if (not ic.vex())     return new PBitManipVVW<ARCH,SSE,MANIP,OPSIZE>( opbase, _rm, _gn, _gn, _mn );
+  if (not ic.vex())     return new PBitManipVVW<ARCH,SSE,OPERATION,OPSIZE>( opbase, _rm, _gn, _gn, _mn );
   unsigned vn = ic.vreg();
-  if (ic.vlen() == 128) return new PBitManipVVW<ARCH,XMM,MANIP,OPSIZE>( opbase, _rm,  vn, _gn, _mn );
-  if (ic.vlen() == 256) return new PBitManipVVW<ARCH,YMM,MANIP,OPSIZE>( opbase, _rm,  vn, _gn, _mn );
+  if (ic.vlen() == 128) return new PBitManipVVW<ARCH,XMM,OPERATION,OPSIZE>( opbase, _rm,  vn, _gn, _mn );
+  if (ic.vlen() == 256) return new PBitManipVVW<ARCH,YMM,OPERATION,OPSIZE>( opbase, _rm,  vn, _gn, _mn );
   return 0;
 }
 };
@@ -2338,115 +2547,115 @@ template <class ARCH> struct DC<ARCH,UCOMIS> { Operation<ARCH>* get( InputCode<A
 // /* RCPPS -- Compute Reciprocals of Packed Single-Precision Floating-Point Values */
 // op rcpps_vdq_wdq( 0x0f[8]:> <:0x53[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// rcpps_vdq_wdq.disasm = { _sink << "rcpps " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// rcpps_vdq_wdq.disasm = { _sink << "rcpps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
-// /* RCPSS—Compute Reciprocal of Scalar Single-Precision Floating-Point Values */
+// /* RCPSS -- Compute Reciprocal of Scalar Single-Precision Floating-Point Values */
 // op rcpss_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x53[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// rcpss_vdq_wdq.disasm = { _sink << "rcpss " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// rcpss_vdq_wdq.disasm = { _sink << "rcpss " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* ROUNDPS -- Round Packed Single-Precision Floating-Point Values */
 // op roundps_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x08[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// roundps_vdq_wdq_ib.disasm = { _sink << "roundps " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// roundps_vdq_wdq_ib.disasm = { _sink << "roundps " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* ROUNDPD -- Round Packed Double-Precision Floating-Point Values */
 // op roundpd_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x09[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// roundpd_vdq_wdq_ib.disasm = { _sink << "roundpd " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// roundpd_vdq_wdq_ib.disasm = { _sink << "roundpd " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* ROUNDSS -- Round Scalar Single-Precision Floating-Point Values */
 // op roundss_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x0a[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// roundss_vdq_wdq_ib.disasm = { _sink << "roundss " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// roundss_vdq_wdq_ib.disasm = { _sink << "roundss " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* ROUNDSD -- Round Scalar Double-Precision Floating-Point Values */
 // op roundsd_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x0b[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// roundsd_vdq_wdq_ib.disasm = { _sink << "roundsd " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// roundsd_vdq_wdq_ib.disasm = { _sink << "roundsd " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* RSQRTPS -- Compute Reciprocals of Square Roots of Packed Single-Precision Floating-Point Values */
 // op rsqrtps_vdq_wdq( 0x0f[8]:> <:0x52[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// rsqrtps_vdq_wdq.disasm = { _sink << "rsqrtps " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// rsqrtps_vdq_wdq.disasm = { _sink << "rsqrtps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* RSQRTSS -- Compute Reciprocal of Square Root of Scalar Single-Precision Floating-Point Value */
 // op rsqrtss_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x52[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// rsqrtss_vdq_wdq.disasm = { _sink << "rsqrtss " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// rsqrtss_vdq_wdq.disasm = { _sink << "rsqrtss " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* SHUFPS -- Shuffle Packed Single-Precision Floating-Point Values */
 // op shufps_vdq_wdq_ib( 0x0f[8]:> <:0xc6[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// shufps_vdq_wdq_ib.disasm = { _sink << "shufps " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// shufps_vdq_wdq_ib.disasm = { _sink << "shufps " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* SHUFPD -- Shuffle Packed Double-Precision Floating-Point Values */
 // op shufpd_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0xc6[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
-// shufpd_vdq_wdq_ib.disasm = { _sink << "shufpd " << DisasmI(imm) << ',' << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// shufpd_vdq_wdq_ib.disasm = { _sink << "shufpd " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* SQRTPS -- Compute Square Roots of Packed Single-Precision Floating-Point Values */
 // op sqrtps_vdq_wdq( 0x0f[8]:> <:0x51[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// sqrtps_vdq_wdq.disasm = { _sink << "sqrtps " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// sqrtps_vdq_wdq.disasm = { _sink << "sqrtps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* SQRTPD -- Compute Square Roots of Packed Double-Precision Floating-Point Values */
 // op sqrtpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x51[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// sqrtpd_vdq_wdq.disasm = { _sink << "sqrtpd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// sqrtpd_vdq_wdq.disasm = { _sink << "sqrtpd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* SQRTSS -- Compute Square Roots of Packed Single-Precision Floating-Point Values */
 // op sqrtss_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x51[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// sqrtss_vdq_wdq.disasm = { _sink << "sqrtss " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// sqrtss_vdq_wdq.disasm = { _sink << "sqrtss " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* SQRTSD -- Compute Square Roots of Packed Double-Precision Floating-Point Values */
 // op sqrtsd_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x51[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// sqrtsd_vdq_wdq.disasm = { _sink << "sqrtsd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// sqrtsd_vdq_wdq.disasm = { _sink << "sqrtsd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* SUBPS -- Subtract Packed Single-Precision Floating-Point Values */
 // op subps_vdq_wdq( 0x0f[8]:> <:0x5c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// subps_vdq_wdq.disasm = { _sink << "subps " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// subps_vdq_wdq.disasm = { _sink << "subps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* SUBPD -- Subtract Packed Double-Precision Floating-Point Values */
 // op subpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x5c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// subpd_vdq_wdq.disasm = { _sink << "subpd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// subpd_vdq_wdq.disasm = { _sink << "subpd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* SUBSS -- Subtract Scalar Single-Precision Floating-Point Values */
 // op subss_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x5c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// subss_vdq_wdq.disasm = { _sink << "subss " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// subss_vdq_wdq.disasm = { _sink << "subss " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* SUBSD -- Subtract Scalar Double-Precision Floating-Point Values */
 // op subsd_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x5c[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// subsd_vdq_wdq.disasm = { _sink << "subsd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// subsd_vdq_wdq.disasm = { _sink << "subsd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // 
 // /* UNPCKHPS -- Unpack and Interleave High Packed Single-Precision Floating-Point Values */
 // op unpckhps_vdq_wdq( 0x0f[8]:> <:0x15[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// unpckhps_vdq_wdq.disasm = { _sink << "unpckhps " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// unpckhps_vdq_wdq.disasm = { _sink << "unpckhps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* UNPCKHPD -- Unpack and Interleave High Packed Double-Precision Floating-Point Values */
 // op unpckhpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x15[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// unpckhpd_vdq_wdq.disasm = { _sink << "unpckhpd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// unpckhpd_vdq_wdq.disasm = { _sink << "unpckhpd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* UNPCKLPS -- Unpack and Interleave Low Packed Single-Precision Floating-Point Values */
 // op unpcklps_vdq_wdq( 0x0f[8]:> <:0x14[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// unpcklps_vdq_wdq.disasm = { _sink << "unpcklps " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// unpcklps_vdq_wdq.disasm = { _sink << "unpcklps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* UNPCKLPD -- Unpack and Interleave Low Packed Double-Precision Floating-Point Values */
 // op unpcklpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x14[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// unpcklpd_vdq_wdq.disasm = { _sink << "unpcklpd " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// unpcklpd_vdq_wdq.disasm = { _sink << "unpcklpd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* MOVDDUP -- Move One Double-FP and Duplicate */
 // op movddup_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x12[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// movddup_vdq_wdq.disasm = { _sink << "movddup " << DisasmW( SSE(), rmop ) << ',' << DisasmV( SSE(), gn ); };
+// movddup_vdq_wdq.disasm = { _sink << "movddup " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 
