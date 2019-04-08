@@ -36,85 +36,121 @@
 #define __UNISIM_UTIL_JSON_JSON_HH__
 
 #include <iostream>
+#include <sstream>
 #include <stdint.h>
 
 namespace unisim {
 namespace util {
 namespace json {
 
-// JSON Parser visitor for printing
-struct JSON_Printer
+// Utility functions
+
+template <typename T>
+std::string ToString(const T& v)
 {
-	void BeginObject() { std::cout << "{"; }
-	void EndObject() { std::cout << "}"; }
-	void BeginArray() { std::cout << "["; }
-	void EndArray() { std::cout << "]"; }
-	void Comma() { std::cout << ","; }
-	void Member(const std::string& name) { std::cout << "\"" << name << "\":"; }
-	void Value(const std::string& value) { std::cout << "\""; PrintEscape(std::cout, value); std::cout << "\""; }
-	void Value(uint64_t value) { std::cout << value; }
-	void Value(int64_t value) { std::cout << value; }
-	void Value(double value) { std::cout << value; }
-	void Value(bool value) { std::cout << (value ? "true" : "false"); }
-	void Value() { std::cout << "null"; }
-	void Error(const std::string& msg) { std::cerr << msg << std::endl; }
-	
-	void PrintEscape(std::ostream& os, const std::string& s)
-	{
-		for(std::size_t i = 0; i < s.length(); ++i)
-		{
-			char c = s[i];
-			switch(c)
-			{
-				case '\\': os << "\\\\";break;
-				case '\r': os << "\\r"; break;
-				case '\n': os << "\\n"; break;
-				case '\t': os << "\\t"; break;
-				case '\b': os << "\\b"; break;
-				default: os << c; break;
-			}
-		}
-	}
+	std::ostringstream sstr;
+	sstr << v;
+	return sstr.str();
+}
+
+std::string Escape(const std::string& s);
+
+// JSON Parser visitor
+struct JSON_Visitor
+{
+	void BeginObject() {}
+	void EndObject() {}
+	void BeginArray() {}
+	void EndArray() {}
+	void Comma() {}
+	void Member(const std::string& name) {}
+	void Value(const std::string& value) {}
+	void Value(uint64_t value) {}
+	void Value(int64_t value) {}
+	void Value(double value) {}
+	void Value(bool value) {}
+	void Value() {}
+	void Error(const std::string& msg) {}
 };
 
+// JSON Parser visitor for printing
+struct JSON_Printer : JSON_Visitor
+{
+	JSON_Printer(std::ostream& out = std::cout, std::ostream& err = std::cerr);
+	
+	void BeginObject();
+	void EndObject();
+	void BeginArray();
+	void EndArray();
+	void Comma();
+	void Member(const std::string& name);
+	void Value(const std::string& value);
+	void Value(uint64_t value);
+	void Value(int64_t value);
+	void Value(double value);
+	void Value(bool value);
+	void Value();
+	void Error(const std::string& msg);
+private:
+	std::ostream& out;
+	std::ostream& err;
+};
+
+// Token
 enum Token
 {
-	TOK_IO_ERROR = -2,
-	TOK_ERROR = -1,
-	TOK_VOID = 0,
-	TOK_STRING = 1,
-	TOK_INT = 2,
-	TOK_UINT = 3,
-	TOK_FLOAT = 4,
-	TOK_TRUE = 5,
-	TOK_FALSE = 6,
-	TOK_NULL = 7,
-	TOK_LEFT_BRACE = '{',
-	TOK_RIGHT_BRACE = '}',
-	TOK_LEFT_BRACKET = '[',
+	TOK_IO_ERROR      = -2,
+	TOK_ERROR         = -1,
+	TOK_VOID          = 0,
+	TOK_STRING        = 1,
+	TOK_INT           = 2,
+	TOK_UINT          = 3,
+	TOK_FLOAT         = 4,
+	TOK_TRUE          = 5,
+	TOK_FALSE         = 6,
+	TOK_NULL          = 7,
+	TOK_LEFT_BRACE    = '{',
+	TOK_RIGHT_BRACE   = '}',
+	TOK_LEFT_BRACKET  = '[',
 	TOK_RIGHT_BRACKET = ']',
-	TOK_COMMA = ',',
-	TOK_COLON = ':',
-	TOK_EOF = 127
+	TOK_COMMA         = ',',
+	TOK_COLON         = ':',
+	TOK_EOF           = 127
 };
 
+std::ostream& operator << (std::ostream& os, const Token& token);
+
+std::string PrettyString(const Token& token, const std::string& text);
+
+// JSON Lexer
+template <class VISITOR>
 struct JSON_Lexer
 {
 	JSON_Lexer();
 	~JSON_Lexer();
+	
+	void Reset();
 protected:
-	Token Next(std::istream& stream);
+	Token Next(std::istream& stream, VISITOR& visitor);
 	void Back();
 	const std::string& GetText() const { return text; }
 	const std::string& GetStringValue() const { return str_value; }
 	int64_t GetIntValue() const { return int_value; }
 	uint64_t GetUIntValue() const { return uint_value; }
 	double GetFloatValue() const { return float_value; }
+	unsigned int GetLineNo() const { return lineno; }
+	unsigned int GetColNo() const { return colno; }
+	unsigned int GetTokenLineNo() const { return token_lineno; }
+	unsigned int GetTokenColNo() const { return token_colno; }
+	void ParseError(std::istream& stream, VISITOR& visitor, const std::string& msg);
 private:
-	void Scan(std::istream& stream);
+	void Scan(std::istream& stream, VISITOR& visitor);
+	void ScanError(std::istream& stream, VISITOR& visitor, const std::string& msg);
+	void Error(std::istream& stream, VISITOR& visitor, const std::string& msg, bool parse_error);
 	
 	Token token;
 	Token look_ahead;
+	std::string line;
 	std::string text;
 	std::string str_value;
 	int64_t int_value;
@@ -122,11 +158,16 @@ private:
 	double float_value;
 	unsigned int lineno;
 	unsigned int colno;
+	unsigned int token_lineno;
+	unsigned int token_colno;
 };
 
+// JSON Parser
 template <class VISITOR>
-struct JSON_Parser : JSON_Lexer
+struct JSON_Parser : JSON_Lexer<VISITOR>
 {
+	typedef JSON_Lexer<VISITOR> Lexer;
+	
 	JSON_Parser();
 	~JSON_Parser();
 	
