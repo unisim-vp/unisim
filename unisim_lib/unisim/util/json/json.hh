@@ -37,7 +37,10 @@
 
 #include <iostream>
 #include <sstream>
+#include <vector>
+#include <string>
 #include <stdint.h>
+#include <unisim/util/dictionary/dictionary.hh>
 
 namespace unisim {
 namespace util {
@@ -144,10 +147,13 @@ protected:
 	unsigned int GetTokenColNo() const { return token_colno; }
 	void ParseError(std::istream& stream, VISITOR& visitor, const std::string& msg);
 private:
+	void Append(char c);
 	void Scan(std::istream& stream, VISITOR& visitor);
 	void ScanError(std::istream& stream, VISITOR& visitor, const std::string& msg);
+	void UnclosedStringError(std::istream& stream, VISITOR& visitor, const std::string& msg);
 	void Error(std::istream& stream, VISITOR& visitor, const std::string& msg, bool parse_error);
 	
+	bool eof;
 	Token token;
 	Token look_ahead;
 	std::string line;
@@ -160,6 +166,7 @@ private:
 	unsigned int colno;
 	unsigned int token_lineno;
 	unsigned int token_colno;
+	unisim::util::dictionary::Dictionary<Token> token_dictionary;
 };
 
 // JSON Parser

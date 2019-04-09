@@ -1,5 +1,5 @@
 {
-	"name" : "HARDWAR\u0190 \u007b",
+	"name" : "HARDWAR\u0190\u007b1\u007d",
 	"verbose":true,
 	"childs":
 	[
@@ -15,7 +15,7 @@
 			"listener":null
 		},
 		{
-			"name" : "HARDWARE.MEM",
+			"name" : "\u001b[32mHARDWARE.MEM\u001b[0m",
 			"verbose":false,
 			"listener":
 			{
@@ -33,4 +33,3 @@
 		}
 	]
 }
-
