@@ -53,6 +53,7 @@
 
 struct UInt128
 {
+  UInt128() : bits{0,0} {}
   UInt128( uint64_t value ) : bits{value,0} {}
   UInt128( uint64_t hi, uint64_t lo ) : bits{lo,hi} {}
 
@@ -124,6 +125,18 @@ struct SInt128 : public UInt128
   }
   
 };
+
+namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
+
+template <> struct VectorTypeInfo<UInt128>
+{
+  enum bytecount_t { bytecount = 16 };
+  static void ToBytes( uint8_t* dst, UInt128 const& src ) { VectorTypeInfo<uint64_t>::ToBytes( dst+0, src.bits[0] ); VectorTypeInfo<uint64_t>::ToBytes( dst+8, src.bits[1] ); }
+  static void FromBytes( UInt128& dst, uint8_t const* src ) { VectorTypeInfo<uint64_t>::FromBytes( dst.bits[0], src+0 ); VectorTypeInfo<uint64_t>::FromBytes( dst.bits[1], src+8 ); }
+  static void Destroy( UInt128 const& obj ) { /* float type doesn't need any specific destructor */ }
+};
+
+} /* end intel namespace */ } /* end processor namespace */ } /* end cxx namespace */ } /* end component namespace */ } /* end unisim namespace */
 
 template <typename T> using VectorTypeInfo = unisim::component::cxx::processor::intel::VectorTypeInfo<T>;
 template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
