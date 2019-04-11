@@ -168,6 +168,7 @@ namespace intel {
             }
         }
     }
+    unsigned w() const { return rex_w; }
     unsigned opclass() const { return rex_w ? 3 : (mode.cs_l ^ mode.cs_d ^ opsz_66) ? 2 : 1; }
     unsigned opsize() const { return 8 << opclass(); }
     unsigned addrclass() const { return mode64() ? (adsz_67 ? 2 : 3 ) : (mode.cs_d ^ adsz_67) ? 2 : 1; }

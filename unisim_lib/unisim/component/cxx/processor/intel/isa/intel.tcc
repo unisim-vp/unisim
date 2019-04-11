@@ -64,7 +64,7 @@ namespace intel {
                      MOVS, STOS, CMPS, SCAS, LODS, OUTS, INS, CPUID, RDTSC, XBV, CVT, HLT, FENCE,
                      PUNPCK, PBM, MOVGV, MOVDQ, MOVFP, MOVFPC, PCMPEQ, PALIGNR, VFP,
                      PMOVMSKB, VMOVSD, MXCSR, UCOMIS, PREFETCH, VFPCVT, PMINMAX, VINTBIN, MOVQ,
-                     PSHUFD, PSHUFB, PSHDQ,
+                     PSHUFD, PSHUFB, PSHDQ, PTEST, PINSR, PCMPSTR,
                      operation_count };
 
   template <class ARCH>

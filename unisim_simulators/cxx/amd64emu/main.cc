@@ -171,6 +171,9 @@ struct Arch
   typedef unisim::component::cxx::processor::intel::SSE SSE;
   typedef unisim::component::cxx::processor::intel::XMM XMM;
   typedef unisim::component::cxx::processor::intel::YMM YMM;
+
+  typedef GOq   GR;
+  typedef u64_t gr_type;
   
   struct OpHeader
   {

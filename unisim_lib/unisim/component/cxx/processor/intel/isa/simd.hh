@@ -200,37 +200,36 @@ template <class ARCH> struct DC<ARCH,CVT> { Operation<ARCH>* get( InputCode<ARCH
 
     return new CvtI2F<ARCH,32,32>( _.opbase(), _.rmop(), _.greg() );
 
-  if (auto _ = match( ic, simdF2() & opcode( "\x0f\x2a" ) & RM() ))
+  if (auto _ = match( ic, opcode( "\x0f\x2a" ) & RM() ))
     {
       if (ic.f3())
         {
-          if (ic.opsize() == 32) return new CvtsI2F<ARCH,32,GOd>( _.opbase(), _.rmop(), _.greg() );
-          if (ic.opsize() == 64) return new CvtsI2F<ARCH,32,GOq>( _.opbase(), _.rmop(), _.greg() );
-          return 0;
+          if (ic.w()) return new CvtsI2F<ARCH,32,GOq>( _.opbase(), _.rmop(), _.greg() );
+          /*else*/    return new CvtsI2F<ARCH,32,GOd>( _.opbase(), _.rmop(), _.greg() );
         }
       if (ic.f2())
         {
-          if (ic.opsize() == 32) return new CvtsI2F<ARCH,64,GOd>( _.opbase(), _.rmop(), _.greg() );
-          if (ic.opsize() == 64) return new CvtsI2F<ARCH,64,GOq>( _.opbase(), _.rmop(), _.greg() );
-          return 0;
+          if (ic.w()) return new CvtsI2F<ARCH,64,GOq>( _.opbase(), _.rmop(), _.greg() );
+          /*else*/    return new CvtsI2F<ARCH,64,GOd>( _.opbase(), _.rmop(), _.greg() );
         }
+      return 0;
     }
   
   if (auto _ = match( ic, opcode( "\x0f\x2c" ) & RM() ))
     {
       if (ic.f3())
         {
-          if (ic.opsize() == 32) return new CvttF2I<ARCH,32,GOd>( _.opbase(), _.rmop(), _.greg() );
-          if (ic.opsize() == 64) return new CvttF2I<ARCH,32,GOq>( _.opbase(), _.rmop(), _.greg() );
-          return 0;
+          if (ic.w()) return new CvttF2I<ARCH,32,GOq>( _.opbase(), _.rmop(), _.greg() );
+          /*else*/    return new CvttF2I<ARCH,32,GOd>( _.opbase(), _.rmop(), _.greg() );
         }
       if (ic.f2())
         {
-          if (ic.opsize() == 32) return new CvttF2I<ARCH,64,GOd>( _.opbase(), _.rmop(), _.greg() );
-          if (ic.opsize() == 64) return new CvttF2I<ARCH,64,GOq>( _.opbase(), _.rmop(), _.greg() );
-          return 0;
+          if (ic.w()) return new CvttF2I<ARCH,64,GOq>( _.opbase(), _.rmop(), _.greg() );
+          /*else*/    return new CvttF2I<ARCH,64,GOd>( _.opbase(), _.rmop(), _.greg() );
         }
+      return 0;
     }
+  
   return 0;
 }};
 
@@ -488,7 +487,7 @@ Operation<ARCH>* newMovQ( bool load, OpBase<ARCH> const& opbase, MOp<ARCH> const
 template <class ARCH> struct DC<ARCH,MOVGV> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
-  bool vex_p = ic.vex(), quad_p = (ic.opsize() == 64);
+  bool vex_p = ic.vex(), quad_p = ic.w();
   if (not vex_p and not quad_p) return getMOVGV<SSE,GOd>( ic );
   if (not vex_p and     quad_p) return getMOVGV<SSE,GOq>( ic );
   if (    vex_p and (ic.vlen() != 128 or ic.vreg())) return 0;
@@ -1373,27 +1372,189 @@ Operation<ARCH>* newVIntBin( InputCode<ARCH> const& ic, OpBase<ARCH> const& opba
 // op pclmulqdq_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x44[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
 // 
 // pclmulqdq_vdq_wdq_ib.disasm = { _sink << "pclmulqdq " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
+
+namespace PCmpStrUtil
+{
+  template <typename ARCH, unsigned COUNT>
+  void explicit_validity( typename ARCH::bit_t(&result)[COUNT], ARCH& arch, unsigned reg )
+  {
+    typename ARCH::gr_type count = arch.regread( typename ARCH::GR(), reg );
+    if (count < typename ARCH::gr_type(0)) count = -count;
+    for (unsigned idx = 0; idx < COUNT; ++idx)
+      result[idx] = typename ARCH::gr_type(idx) < count;
+  }
+}
+
+template <class ARCH, class VR, class TYPE>
+struct PCmpStr : public Operation<ARCH>
+{
+  enum { is_signed = atpinfo<ARCH,TYPE>::is_signed, bitsize = atpinfo<ARCH,TYPE>::bitsize, count = VR::SIZE / bitsize };
+  
+  PCmpStr( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, uint8_t _im, bool _implicit, bool _index )
+    : Operation<ARCH>( opbase ), rm(_rm), gn(_gn), im(_im), implicit(_implicit), index(_index)
+  {}
+
+  RMOp<ARCH> rm;
+  uint8_t    gn;
+  uint8_t    im;
+  bool       implicit;
+  bool       index;
+  
+  enum Cmp { EqualAny = 0, Ranges = 0b01, EqualEach = 0b10, EqualOrdered = 0b11 }; Cmp comparison() const { return Cmp((im >> 2) & 3); }
+  enum Neg { NegateNothing = 0, NegateAll = 0b01, NegateValid = 0b11 };            Neg negation()   const { return Neg((im&0x20) ? NegateValid : (im&0x10) ? NegateAll : NegateNothing); }
+  enum Res { BitMask = 0, CharMask = 0b01, MaskLSB = 0b10, MaskMSB = 0b11 };       Res result()     const { return Res((index << 1) | ((im >> 6) & 1)); }
+
+  void disasm( std::ostream& sink ) const
+  {
+    sink << (VR::vex() ? "v" : "") << "pcmp" << (implicit ? 'i' : 'e') << "str" << (index ? 'i' : 'm') << ' ' << DisasmI(im) << ',' << DisasmW( VR(), rm ) << ',' << DisasmV( VR(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename ARCH::bit_t bit_t;
+    TYPE const null_char(0);
+    bit_t gnv[count], rmv[count], intres[count];
+    if (implicit)
+      {
+        bit_t rmv_b(true), gnv_b(true);
+        for (unsigned idx = 0; idx < count; ++idx)
+          {
+            gnv_b = gnv[idx] = gnv_b and (arch.vmm_read( VR(), gn, idx, null_char ) != null_char);
+            rmv_b = rmv[idx] = rmv_b and (arch.vmm_read( VR(), rm, idx, null_char ) != null_char);
+          }
+      }
+    else
+      {
+        PCmpStrUtil::explicit_validity( gnv, arch, 0 );
+        PCmpStrUtil::explicit_validity( rmv, arch, 2 );
+      }
+
+    switch (comparison())
+      {
+      case EqualAny: // find characters from a set
+        for (unsigned rmi = 0; rmi < count; ++rmi)
+          {
+            bit_t res = false;
+            TYPE rmval = arch.vmm_read( VR(), rm, rmi, null_char );
+            for (unsigned gni = 0; gni < count; ++gni)
+              res = res or ((arch.vmm_read( VR(), gn, gni, null_char ) == rmval) and gnv[gni]);
+            intres[rmi] = res and rmv[rmi];
+          }
+        break;
+        
+      case Ranges: // find characters from ranges
+        for (unsigned rmi = 0; rmi < count; ++rmi) // Reg/Mem
+          {
+            bit_t res = false;
+            TYPE rmval = arch.vmm_read( VR(), rm, rmi, null_char );
+            for (unsigned gni = 0; gni < count; gni += 2) // Reg
+              {
+                bit_t lower = (arch.vmm_read( VR(), gn, gni+0, null_char ) >= rmval);
+                bit_t upper = (arch.vmm_read( VR(), gn, gni+1, null_char ) <= rmval);
+                res = res or (lower and gnv[gni+0] and upper and gnv[gni+1]);
+              }
+            intres[rmi] = res and rmv[rmi];
+          }
+        break;
+        
+      case EqualEach: // string compare
+        for (unsigned idx = 0; idx < count; ++idx) // Reg/Mem
+          intres[idx] = ((arch.vmm_read( VR(), gn, idx, null_char ) == arch.vmm_read( VR(), rm, idx, null_char )) and gnv[idx] and rmv[idx]) or (not gnv[idx] and not rmv[idx]);
+        break;
+        
+      case EqualOrdered: // substring search
+        for (unsigned idx = 0; idx < count; ++idx)
+          {
+            bit_t res = true;
+            for (unsigned rmi = idx, gni = 0; rmi < count; ++rmi, ++gni)
+              res = res and (((arch.vmm_read( VR(), gn, gni, null_char ) == arch.vmm_read( VR(), rm, rmi, null_char )) and gnv[gni] and rmv[rmi]) or (not gnv[idx] and not rmv[idx]));
+            intres[idx] = res;
+          }
+        break;
+      }
+
+    switch (negation())
+      {
+      case NegateAll:   for (unsigned idx = 0; idx < count; ++idx) intres[idx] = not intres[idx]; break;
+      case NegateValid: for (unsigned idx = 0; idx < count; ++idx) intres[idx] = intres[idx] xor rmv[idx]; break;
+      case NegateNothing: break;
+      }
+
+    switch (result())
+      {
+      case BitMask:
+        {
+          typedef typename TypeFor<ARCH,count>::u bf_type;
+          bf_type bf(0);
+          for (unsigned idx = 0; idx < count; ++idx)
+            bf |= TYPE(intres[idx]) << idx;
+          arch.vmm_write( VR(), 0, 0, bf );
+          for (unsigned idx = 1; idx < bitsize; ++idx)
+            arch.vmm_write( VR(), 0, 0, bf_type(0) );
+        }
+        break;
+      case CharMask:
+        for (unsigned idx = 0; idx < count; ++idx)
+          arch.vmm_write( VR(), 0, idx, TYPE(TYPE(not intres[idx]) - TYPE(1)) );
+        break;
+      case MaskLSB:
+        for (unsigned idx = 0; idx < count; ++idx)
+          if (arch.Cond( intres[idx] ))
+            arch.regwrite( typename ARCH::GR(), 1, typename ARCH::gr_type(idx) );
+        break;
+      case MaskMSB:
+        for (int idx = count; --idx >= 0;)
+          if (arch.Cond( intres[idx] ))
+            arch.regwrite( typename ARCH::GR(), 1, typename ARCH::gr_type(idx) );
+        break;
+      }
+  }
+};
+
 // /* PCMPESTRM -- Packed Compare Explicit Length Strings, Return Mask */
-// op pcmpestrm_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x60[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// 
-// pcmpestrm_vdq_wdq_ib.disasm = { _sink << "pcmpestrm " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
 // /* PCMPESTRI -- Packed Compare Explicit Length Strings, Return Index */
-// op pcmpestri_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x61[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// 
-// pcmpestri_vdq_wdq_ib.disasm = { _sink << "pcmpestri " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
 // /* PCMPISTRM -- Packed Compare Implicit Length Strings, Return Mask */
-// op pcmpistrm_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x62[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// 
-// pcmpistrm_vdq_wdq_ib.disasm = { _sink << "pcmpistrm " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
 // /* PCMPISTRI -- Packed Compare Implicit Length Strings, Return Index */
-// op pcmpistri_vdq_wdq_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x63[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// 
-// pcmpistri_vdq_wdq_ib.disasm = { _sink << "pcmpistri " << DisasmI(imm) << ',' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
+
+template <class ARCH> struct DC<ARCH,PCMPSTR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x60" ) & RM() & Imm<8>() ))
+
+    return newPCmpStr( ic, _.opbase(), _.rmop(), _.greg(), _.i(uint8_t()), false, false );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x61" ) & RM() & Imm<8>() ))
+
+    return newPCmpStr( ic, _.opbase(), _.rmop(), _.greg(), _.i(uint8_t()), false, true );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x62" ) & RM() & Imm<8>() ))
+
+    return newPCmpStr( ic, _.opbase(), _.rmop(), _.greg(), _.i(uint8_t()),  true, false );
+  
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x63" ) & RM() & Imm<8>() ))
+    
+    return newPCmpStr( ic, _.opbase(), _.rmop(), _.greg(), _.i(uint8_t()),  true, true );
+
+  return 0;
+}
+Operation<ARCH>* newPCmpStr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t gn, uint8_t im, bool implicit, bool index )
+{
+  if (not ic.vex())     return newPCmpStr<SSE>( opbase, rm, gn, im, implicit, index );
+  if (ic.vreg()) return 0;
+  if (ic.vlen() == 128) return newPCmpStr<XMM>( opbase, rm, gn, im, implicit, index );
+  return 0;
+}
+template <class VR>
+Operation<ARCH>* newPCmpStr( OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t gn, uint8_t im, bool implicit, bool index )
+{
+  switch (im&3)
+    {
+    case 0b00: return new PCmpStr<ARCH,VR,typename ARCH:: u8_t>( opbase, rm, gn, im, implicit, index );
+    case 0b01: return new PCmpStr<ARCH,VR,typename ARCH::u16_t>( opbase, rm, gn, im, implicit, index );
+    case 0b10: return new PCmpStr<ARCH,VR,typename ARCH:: s8_t>( opbase, rm, gn, im, implicit, index );
+    case 0b11: return new PCmpStr<ARCH,VR,typename ARCH::s16_t>( opbase, rm, gn, im, implicit, index );
+    }
+  return 0;
+}
+};
 
 struct PCmpEQ { static char const* name() { return "pcmpeq"; } };
 struct PCmpGT { static char const* name() { return "pcmpgt"; } };
@@ -1582,24 +1743,7 @@ Operation<ARCH>* newPCmp( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase,
 // 
 // phsubsw_vdq_wdq.disasm = { _sink << "phsubsw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
-// /* PINSRB/PINSRW/PINSRD/PINSRQ -- Insert Byte/Word/Dword/Qword */
-// op pinsrw_pq_ed_ib( 0x0f[8]:> <:0xc4[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// 
-// pinsrw_pq_ed_ib.disasm = { _sink << "pinsrw " << DisasmI( imm ) << ',' << DisasmEd( rm ) << ',' << DisasmPq( gn ); };
-// 
-// op pinsrb_vdq_ed_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x20[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// 
-// pinsrb_vdq_ed_ib.disasm = { _sink << "pinsrb " << DisasmI( imm ) << ',' << DisasmEd( rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// op pinsrw_vdq_ed_ib( 0x66[8]:> <:0x0f[8]:> <:0xc4[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// 
-// pinsrw_vdq_ed_ib.disasm = { _sink << "pinsrw " << DisasmI( imm ) << ',' << DisasmEd( rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// op pinsrd_vdq_ed_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x22[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
-// 
-// pinsrd_vdq_ed_ib.disasm = { _sink << "pinsrd " << DisasmI( imm ) << ',' << DisasmEd( rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* PMADDUBSW -- PINSRB/PINSRD/PINSRQ -- Insert Byte/Dword/Qword */
+// /* PMADDUBSW --  */
 // op pmaddubsw_pq_qq( 0x0f[8]:> <:0x38[8]:> <:0x04[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // pmaddubsw_pq_qq.disasm = { _sink << "pmaddubsw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
@@ -1618,6 +1762,68 @@ Operation<ARCH>* newPCmp( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase,
 // pmaddwd_vdq_wdq.disasm = { _sink << "pmaddwd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 
+template <class ARCH, class VR, class GR>
+struct PInsr : public Operation<ARCH>
+{
+  PInsr( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn, uint8_t _im ) : Operation<ARCH>( opbase ), rm(_rm), vn(_vn), gn(_gn), im(_im) {}
+  void disasm( std::ostream& sink ) const
+  {
+    sink << (VR::vex() ? "v" : "") << "pinsr" << SizeID<GR::SIZE>::iid()
+         <<                ' ' << DisasmI( im )
+         <<                ',' << DisasmE( GR(), rm ); // TODO: for register, stays disassembled as doubleword below doubleword
+    if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
+    sink <<                ',' << DisasmV( VR(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,GR::SIZE>::u u_type;
+    for (unsigned idx = 0, end = VR::size() / GR::SIZE; idx < end; ++idx )
+      {
+        if (((idx ^ im) % end) == 0)
+          arch.vmm_write( VR(), gn, idx, arch.rmread( GR(), rm ) );
+        else if (gn != vn)
+          arch.vmm_write( VR(), gn, idx, arch.vmm_read( VR(), vn, idx, u_type() ) );
+      }
+  }
+  RMOp<ARCH> rm; uint8_t vn, gn, im;
+};
+
+// /* PINSRB/PINSRW/PINSRD/PINSRQ -- Insert Byte/Word/Dword/Qword */
+// op pinsrw_pq_ed_ib( 0x0f[8]:> <:0xc4[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
+// op pinsrb_vdq_ed_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x20[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
+// op pinsrw_vdq_ed_ib( 0x66[8]:> <:0x0f[8]:> <:0xc4[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
+// op pinsrd_vdq_ed_ib( 0x66[8]:> <:0x0f[8]:> <:0x3a[8]:> <:0x22[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM]:> <:imm[8] );
+
+template <class ARCH> struct DC<ARCH,PINSR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "\x66\x0f\xc4" ) & RM() & Imm<8>() ))
+
+    return newPInsr<GOw>( ic, _.opbase(), _.rmop(), _.greg(), _.i(uint8_t()) );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x20" ) & RM() & Imm<8>() ))
+
+    return newPInsr<GOb>( ic, _.opbase(), _.rmop(), _.greg(), _.i(uint8_t()) );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x3a\x22" ) & RM() & Imm<8>() ))
+    {
+      if (ic.w()) return newPInsr<GOq>( ic, _.opbase(), _.rmop(), _.greg(), _.i(uint8_t()) );
+      /* else */  return newPInsr<GOd>( ic, _.opbase(), _.rmop(), _.greg(), _.i(uint8_t()) );
+    }
+
+  return 0;
+}
+template <class GR>
+Operation<ARCH>* newPInsr( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t gn, uint8_t im )
+{
+  if (not ic.vex())     return new PInsr<ARCH,SSE,GR>( opbase, rm, gn, gn, im );
+  unsigned vn = ic.vreg();
+  if (ic.vlen() == 128) return new PInsr<ARCH,XMM,GR>( opbase, rm, vn, gn, im );
+  return 0;
+}
+};
+
 struct PMax { static char const* name() { return "pmax"; } }; struct PMin { static char const* name() { return "pmin"; } };
 
 template <class ARCH, class VR, class TYPE, class OPERATION>
@@ -1628,7 +1834,7 @@ struct PMinMax : public Operation<ARCH>
   valtype const& eval( PMax const&, valtype const& a, valtype const& b ) const { return std::max(a, b); }
   valtype const& eval( PMin const&, valtype const& a, valtype const& b ) const { return std::min(a, b); }
   
-  PMinMax( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint32_t _vn, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), vn( _vn ), gn( _gn ) {}
+  PMinMax( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), vn( _vn ), gn( _gn ) {}
   void disasm( std::ostream& sink ) const
   {
     sink << (VR::vex() ? "v" : "") << OPERATION::name()
@@ -2002,12 +2208,8 @@ struct Pshdq : public Operation<ARCH>
       }
   }
 };
-// pslldq_vdq_ib.disasm = { _sink << "pslldq " << DisasmI(imm) << ',' << DisasmV( SSE(), rm ); };
-// psrldq_vdq_ib.disasm = { _sink << "psrldq " << DisasmI(imm) << ',' << DisasmV( SSE(), rm ); };
-// 
 
-/* PSLLDQ -- Shift Double Quadword Left Logical */
-/* PSRLDQ -- Shift Double Quadword Right Logical */
+/* PSLLDQ/PSRLDQ -- Shift Double Quadword Left/Right Logical */
 template <class ARCH> struct DC<ARCH,PSHDQ> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
@@ -2269,13 +2471,52 @@ Operation<ARCH>* newPshdq( InputCode<ARCH> const& ic, bool right, OpBase<ARCH> c
 // op psubusw_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0xd9[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // psubusw_vdq_wdq.disasm = { _sink << "psubusw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* PTEST -- Logical Compare */
-// op ptest_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x38[8]:> <:0x17[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// ptest_vdq_wdq.disasm = { _sink << "ptest " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
+//
 
+template <class ARCH, class VR>
+struct PTest : public Operation<ARCH>
+{
+  PTest( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {}
+  void disasm( std::ostream& sink ) const
+  {
+    sink << (VR::vex() ? "v" : "") << "ptest " << DisasmW( VR(), rm ) << ',' << DisasmV( VR(), gn );
+  }
+  void execute( ARCH& arch ) const
+  {  
+    typedef typename ARCH::u64_t u64_t;
+    typedef typename ARCH::bit_t bit_t;
+    bit_t zf = true, cf = true;
+    for (unsigned idx = 0, end = VR::size()/64; idx < end; ++idx)
+      {
+        u64_t lhs = arch.vmm_read( VR(), rm, idx, u64_t() );
+        u64_t rhs = arch.vmm_read( VR(), gn, idx, u64_t() );
+        zf &= (lhs &  rhs) == u64_t(0);
+        cf &= (lhs & ~rhs) == u64_t(0);
+      }
+    arch.flagwrite( ARCH::FLAG::ZF, zf );
+    arch.flagwrite( ARCH::FLAG::CF, cf );
+    arch.flagwrite( ARCH::FLAG::PF, bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::SF, bit_t(false) );
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(false) );
+  }
+  RMOp<ARCH> rm; uint8_t gn;
+};
+
+template <class ARCH> struct DC<ARCH,PTEST> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.f0()) return 0;
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x38\x17" ) & RM() ))
+    {
+      if (not ic.vex())     return new PTest<ARCH,SSE>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.vreg()) return 0;
+      if (ic.vlen() == 128) return new PTest<ARCH,XMM>( _.opbase(), _.rmop(), _.greg() );
+      if (ic.vlen() == 256) return new PTest<ARCH,YMM>( _.opbase(), _.rmop(), _.greg() );
+    }
+
+  return 0;
+}};
 // op punpckhbw_pq_qq( 0x0f[8]:> <:0x68[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // punpckhbw_pq_qq.disasm = { _sink << "punpckhbw " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 // op punpckhwd_pq_qq( 0x0f[8]:> <:0x69[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
@@ -2289,70 +2530,102 @@ Operation<ARCH>* newPshdq( InputCode<ARCH> const& ic, bool right, OpBase<ARCH> c
 // op punpckldq_pq_qq( 0x0f[8]:> <:0x62[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // punpckldq_pq_qq.disasm = { _sink << "punpckldq " << DisasmQq( rm ) << ',' << DisasmPq( gn ); };
 
-template <class ARCH, unsigned OPSIZE, bool HI>
-struct PunpckV : public Operation<ARCH>
+template <class ARCH, class VR, class TYPE, bool HI>
+struct Unpack : public Operation<ARCH>
 {
-  PunpckV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
-  void disasm( std::ostream& sink ) const { sink << "punpck" << (HI?'h':'l') << SizeID<OPSIZE>::iid() << SizeID<2*OPSIZE>::iid() << ' ' << DisasmW(SSE(),rm) << ',' << DisasmV(SSE(),gn); }
+  typedef TYPE val_type;
+  typedef atpinfo<ARCH,TYPE> CFG;
+  Unpack( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), vn( _vn ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t vn, gn;
+  template <typename T, typename std::enable_if<T::is_integral == 1, int>::type = 0>
+  std::ostream& mnemonic( T const&, std::ostream& sink ) const { sink << 'p' << "unpck" << "lh"[HI] << SizeID<T::bitsize>::iid() << SizeID<2*T::bitsize>::iid(); return sink; }
+  template <typename T, typename std::enable_if<T::is_integral == 0, int>::type = 0>
+  std::ostream& mnemonic( T const&, std::ostream& sink ) const { sink << "unpck" << "lh"[HI] << 'p' << SizeID<T::bitsize>::fid(); return sink; }
+  void disasm( std::ostream& sink ) const { this->mnemonic(CFG(), sink << (VR::vex() ? "v" : "") ) << ' ' << DisasmW(VR(),rm) << ',' << DisasmV(VR(),gn); }
   void execute( ARCH& arch ) const
   {
-    unsigned const COUNT = 64/OPSIZE;
-    unsigned const RMSK = HI ? 0 : COUNT - 1;
+    unsigned const COUNT = 128/CFG::bitsize/2;
     unsigned const HALF = HI ? COUNT : 0;
 
-    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
-    
-    u_type res[2*COUNT];
-    
-    for (unsigned chunk = 0; chunk < COUNT; ++chunk)
+    for (unsigned chunk = 0, cend = VR::size()/128; chunk < cend; ++chunk)
       {
-        unsigned idx = chunk & RMSK;
-        res[2*idx+0] = arch.vmm_read( SSE(), gn, HALF+idx, u_type() );
-        res[2*idx+1] = arch.vmm_read( SSE(), rm, HALF+idx, u_type() );
+        val_type res[COUNT];
+        for (unsigned idx = 0; idx < COUNT; ++idx)
+          {
+            unsigned sidx = idx + HALF + chunk*2*COUNT, didx = 2*idx;
+            res[didx+0] = arch.vmm_read( VR(), vn, sidx, val_type() );
+            res[didx+1] = arch.vmm_read( VR(), rm, sidx, val_type() );
+          }
+        for (unsigned idx = 0; idx < 2*COUNT; ++idx)
+          arch.vmm_write( VR(), gn, idx, res[idx] );
       }
-    for (unsigned idx = 0; idx < 2*COUNT; ++idx)
-      arch.vmm_write( SSE(), gn, idx, res[idx] );
   }
 };
 
-/* PUNPCKHBW/PUNPCKHWD/PUNPCKHDQ/PUNPCKHQDQ/PUNPCKLBW/PUNPCKLWD/PUNPCKLDQ/PUNPCKLQDQ -- Unpack Data */
+/* PUNPCKHBW/PUNPCKHWD/PUNPCKHDQ/PUNPCKHQDQ/PUNPCKLBW/PUNPCKLWD/PUNPCKLDQ/PUNPCKLQDQ/UNPCKHPS/UNPCKHPD/UNPCKLPS/UNPCKLPD -- Unpack and Interleave Data */
 template <class ARCH> struct DC<ARCH,PUNPCK> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (ic.f0()) return 0;
 
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x68" ) & RM() ))
-    return new PunpckV<ARCH,8,true>( _.opbase(), _.rmop(), _.greg() );
+  if (auto _ = match( ic, vex( "\x66\x0f\x60" ) & RM() ))
 
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x69" ) & RM() ))
+    return newUnpack<typename ARCH::u8_t,false>( ic, _.opbase(), _.rmop(), _.greg() );
 
-    return new PunpckV<ARCH,16,true>( _.opbase(), _.rmop(), _.greg() );
+  if (auto _ = match( ic, vex( "\x66\x0f\x61" ) & RM() ))
 
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x6a" ) & RM() ))
+    return newUnpack<typename ARCH::u16_t,false>( ic, _.opbase(), _.rmop(), _.greg() );
 
-    return new PunpckV<ARCH,32,true>( _.opbase(), _.rmop(), _.greg() );
+  if (auto _ = match( ic, vex( "\x66\x0f\x62" ) & RM() ))
 
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x6d" ) & RM() ))
+    return newUnpack<typename ARCH::u32_t,false>( ic, _.opbase(), _.rmop(), _.greg() );
 
-    return new PunpckV<ARCH,64,true>( _.opbase(), _.rmop(), _.greg() );
+  if (auto _ = match( ic, vex( "\x66\x0f\x6c" ) & RM() ))
 
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x60" ) & RM() ))
+    return newUnpack<typename ARCH::u64_t,false>( ic, _.opbase(), _.rmop(), _.greg() );
 
-    return new PunpckV<ARCH,8,false>( _.opbase(), _.rmop(), _.greg() );
+  if (auto _ = match( ic, vex( "\x66\x0f\x68" ) & RM() ))
 
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x61" ) & RM() ))
+    return newUnpack<typename ARCH::u8_t,true>( ic, _.opbase(), _.rmop(), _.greg() );
 
-    return new PunpckV<ARCH,16,false>( _.opbase(), _.rmop(), _.greg() );
+  if (auto _ = match( ic, vex( "\x66\x0f\x69" ) & RM() ))
 
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x62" ) & RM() ))
+    return newUnpack<typename ARCH::u16_t,true>( ic, _.opbase(), _.rmop(), _.greg() );
 
-    return new PunpckV<ARCH,32,false>( _.opbase(), _.rmop(), _.greg() );
+  if (auto _ = match( ic, vex( "\x66\x0f\x6a" ) & RM() ))
 
-  if (auto _ = match( ic, simd66() & opcode( "\x0f\x6c" ) & RM() ))
+    return newUnpack<typename ARCH::u32_t,true>( ic, _.opbase(), _.rmop(), _.greg() );
 
-    return new PunpckV<ARCH,64,false>( _.opbase(), _.rmop(), _.greg() );
+  if (auto _ = match( ic, vex( "\x66\x0f\x6d" ) & RM() ))
+
+    return newUnpack<typename ARCH::u64_t,true>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x0f\x14" ) & RM() ))
+
+    return newUnpack<typename ARCH::f32_t,false>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x14" ) & RM() ))
+
+    return newUnpack<typename ARCH::f64_t,false>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x0f\x15" ) & RM() ))
+
+    return newUnpack<typename ARCH::f32_t,true>( ic, _.opbase(), _.rmop(), _.greg() );
+
+  if (auto _ = match( ic, vex( "\x66\x0f\x15" ) & RM() ))
+
+    return newUnpack<typename ARCH::f64_t,true>( ic, _.opbase(), _.rmop(), _.greg() );
 
   return 0;
-}};
+}
+template <class TYPE,bool LOHI>
+Operation<ARCH>* newUnpack( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn )
+{
+  if (not ic.vex())     return new Unpack<ARCH,SSE,TYPE,LOHI>( opbase, _rm, _gn, _gn );
+  unsigned vn = ic.vreg();
+  if (ic.vlen() == 128) return new Unpack<ARCH,XMM,TYPE,LOHI>( opbase, _rm,  vn, _gn );
+  if (ic.vlen() == 256) return new Unpack<ARCH,YMM,TYPE,LOHI>( opbase, _rm,  vn, _gn );
+  return 0;
+}
+};
 
 template <class ARCH, class VR, unsigned OPSIZE>
 struct Palignr : public Operation<ARCH>
@@ -2717,26 +2990,6 @@ template <class ARCH> struct DC<ARCH,UCOMIS> { Operation<ARCH>* get( InputCode<A
 // 
 // subsd_vdq_wdq.disasm = { _sink << "subsd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
-// 
-// /* UNPCKHPS -- Unpack and Interleave High Packed Single-Precision Floating-Point Values */
-// op unpckhps_vdq_wdq( 0x0f[8]:> <:0x15[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// unpckhps_vdq_wdq.disasm = { _sink << "unpckhps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* UNPCKHPD -- Unpack and Interleave High Packed Double-Precision Floating-Point Values */
-// op unpckhpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x15[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// unpckhpd_vdq_wdq.disasm = { _sink << "unpckhpd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* UNPCKLPS -- Unpack and Interleave Low Packed Single-Precision Floating-Point Values */
-// op unpcklps_vdq_wdq( 0x0f[8]:> <:0x14[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// unpcklps_vdq_wdq.disasm = { _sink << "unpcklps " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
-// 
-// /* UNPCKLPD -- Unpack and Interleave Low Packed Double-Precision Floating-Point Values */
-// op unpcklpd_vdq_wdq( 0x66[8]:> <:0x0f[8]:> <:0x14[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// unpcklpd_vdq_wdq.disasm = { _sink << "unpcklpd " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 // 
 // /* MOVDDUP -- Move One Double-FP and Duplicate */
 // op movddup_vdq_wdq( 0xf2[8]:> <:0x0f[8]:> <:0x12[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );

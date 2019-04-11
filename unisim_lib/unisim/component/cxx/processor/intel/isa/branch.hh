@@ -226,7 +226,7 @@ Operation<ARCH>* newLoopMod( InputCode<ARCH> const& ic, OpBase<ARCH> const& opba
     }
   return 0;
 }
-  
+
 template <class ARCH> struct DC<ARCH,LOOP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xe0" ) & Imm<8>() ))
