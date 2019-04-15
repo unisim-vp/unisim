@@ -1036,14 +1036,15 @@ public:
 
   void xgetbv();
   void cpuid();
-  void _DE() { std::cerr << "#DE: Division Error.\n"; throw 0; }
+  void _DE() { std::cerr << "#DE: Division Error.\n"; throw std::runtime_error("diverr"); }
   
   typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
   Operation* latest_instruction;
   Operation* fetch();
 
   void stop() { std::cerr << "Processor halt.\n"; throw 0; }
-  
+
+  struct Unimplemented {};
   void noexec( Operation const& op )
   {
     std::cerr
@@ -1051,7 +1052,7 @@ public:
       << std::hex << op.address << ":\t";
     op.disasm( std::cerr );
     std::cerr << '\n';
-    throw 0;
+    throw Unimplemented();
   }
   
   bool do_disasm;
@@ -1189,6 +1190,7 @@ Arch::f64_t square_root( Arch::f64_t );
 
 using unisim::util::arithmetic::BitScanForward;
 using unisim::util::arithmetic::BitScanReverse;
+using unisim::util::endian::ByteSwap;
 
 #include <unisim/component/cxx/processor/intel/isa/intel.tcc>
 #include <unisim/component/cxx/processor/intel/math.hh>
@@ -1518,7 +1520,6 @@ Arch::cpuid()
     std::cerr << "Unknown cmd for cpuid, " << std::hex
               << "%eax=0x" << this->regread( GOd(), 0 ) << ", "
               << "%eip=0x" << latest_instruction->address << "\n";
-    throw "not implemented";
     break;
   }
 }
@@ -40262,6 +40263,8 @@ limours()
     };
 
   Decoder decoder;
+
+  Arch arch;
   
   for (uintptr_t idx = 0, end = sizeof(insns) / sizeof(insns[0]); idx < end; ++idx)
   {
@@ -40269,12 +40272,33 @@ limours()
     memcpy(&decbuf[0],insns[idx].bytecode,insns[idx].length);
     Decoder::Mode mode( 1, 0, 1 );
     Decoder::Operation* op = decoder.Decode(mode, 0x4000, &decbuf[0] );
+    arch.latest_instruction = op;
     if (not op)
       {
         std::cerr << insns[idx].sourcecode << std::endl;
+        continue;
         //break;
       }
-    else
-      delete op;
+    try
+      {
+        
+        op->execute(arch);
+      }
+    catch (Arch::Unimplemented const&)
+      {
+        op->disasm(std::cerr << "unimplemented error: ");
+        std::cerr << std::endl;
+      }
+    catch (std::exception const& x)
+      {
+        op->disasm(std::cerr << "weak exec error: ");
+        std::cerr << " (" << x.what() << "\n" << std::endl;
+      }
+    catch (int)
+      {
+        op->disasm(std::cerr << "strong exec error: ");
+        std::cerr << std::endl;
+      }
+    delete op;
   }
 }

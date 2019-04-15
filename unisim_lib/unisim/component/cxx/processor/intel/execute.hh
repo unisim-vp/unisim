@@ -437,11 +437,13 @@ namespace intel {
   template <class ARCH, typename INT>
   void eval_div( ARCH& arch, INT& hi, INT& lo, INT const& divisor )
   {
+    if (divisor == INT(0)) arch._DE();
+    
     typedef typename atpinfo<ARCH,INT>::utype utype;
     typedef typename atpinfo<ARCH,INT>::twice twice;
     twice dividend = (twice( hi ) << int(atpinfo<ARCH,INT>::bitsize)) | twice( utype( lo ) );
     twice result = twice( dividend ) / twice( divisor );
-    //if (twice( INT( result ) ) != result) arch.DivError();
+    //if (twice( INT( result ) ) != result) arch._DE();
     lo = INT( result );
     hi = INT( twice( dividend ) % twice( divisor ) );
   }

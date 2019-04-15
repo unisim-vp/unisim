@@ -1946,7 +1946,7 @@ struct PMovMskBRV : public Operation<ARCH>
     
     u32_t res = u32_t(0);
     
-    for (unsigned sub = 0; VR::size() / 8; ++sub)
+    for (unsigned sub = 0, end = VR::size() / 8; sub < end; ++sub)
       res |= u32_t(arch.vmm_read( VR(), rm, sub, u8_t() ) >> 7) << sub;
     
     arch.regwrite( GOd(), gn, res );
@@ -1962,7 +1962,7 @@ template <class ARCH> struct DC<ARCH,PMOVMSKB> { Operation<ARCH>* get( InputCode
     return new PMovMskBRP<ARCH>( _.opbase(), _.ereg(), _.greg() );
   
   if (auto _ = match( ic, vex("\x66\x0f\xd7" ) & RM_reg() ))
-
+    
     return newPMovMsk( ic, _.opbase(), _.ereg(), _.greg() );
   
   return 0;
