@@ -11,6 +11,7 @@ unisim/kernel/config/xml_config_file_helper.cc \
 unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/service/endian.cc \
 unisim/kernel/tlm2/tlm.cc \
+unisim/kernel/tlm2/clock.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
@@ -25,6 +26,7 @@ unisim/service/trap_handler/trap_handler.cc \
 unisim/service/trap_handler/trap_handler_identifier.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
+unisim/util/hypapp/hypapp.cc \
 unisim/util/debug/symbol_table_64.cc \
 unisim/util/debug/symbol_table_32.cc \
 unisim/util/debug/dwarf/class.cc \
@@ -163,6 +165,7 @@ unisim/kernel/service/service.hh \
 unisim/kernel/config/xml_config_file_helper.hh \
 unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/tlm2/tlm.hh \
+unisim/kernel/tlm2/clock.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
@@ -318,6 +321,9 @@ unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/symbol_table_lookup/tee.hh \
 unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/loader/tee.hh \
+unisim/component/tlm2/interconnect/generic_router/config.hh \
+unisim/component/tlm2/interconnect/generic_router/mapping.hh \
+unisim/component/tlm2/interconnect/generic_router/protection.hh \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
 unisim/component/tlm2/interconnect/generic_router/router.hh \
 unisim/service/telnet/telnet.hh \

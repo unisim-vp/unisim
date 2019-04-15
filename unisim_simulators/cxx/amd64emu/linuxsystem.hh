@@ -53,7 +53,9 @@ struct LinuxOS
            unisim::service::interfaces::MemoryInjection<addr_t> *mem_inject_if );
   
   void Setup( bool verbose );
-  void Process( std::vector<std::string> const& simargs, std::vector<std::string> const& envs );
+  void ApplyHostEnvironment();
+  void SetEnvironment( std::vector<std::string> const& envs );
+  void Process( std::vector<std::string> const& simargs );
   void Core( std::string const& coredump );
 
   void ExecuteSystemCall( int id );

@@ -65,9 +65,9 @@ struct NearCallE : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::addr_t addr_t;
-    typedef typename TypeFor<ARCH,IOP::OPSIZE>::u ip_t;
+    typedef typename TypeFor<ARCH,IOP::SIZE>::u ip_t;
     auto target = arch.rmread( IOP(), rmop );
-    arch.template push<IOP::OPSIZE>( ip_t( arch.getnip() ) );
+    arch.template push<IOP::SIZE>( ip_t( arch.getnip() ) );
     arch.setnip( addr_t( target ), ARCH::ipcall );
   }
 };
@@ -186,7 +186,7 @@ struct Loop : public Operation<ARCH>
     
   void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<ARCH,COUNT::OPSIZE>::u count_t;
+    typedef typename TypeFor<ARCH,COUNT::SIZE>::u count_t;
     typedef typename TypeFor<ARCH,IPSIZE>::u ip_t;
     typedef typename ARCH::addr_t addr_t;
     typedef typename ARCH::bit_t bit_t;
@@ -226,7 +226,7 @@ Operation<ARCH>* newLoopMod( InputCode<ARCH> const& ic, OpBase<ARCH> const& opba
     }
   return 0;
 }
-  
+
 template <class ARCH> struct DC<ARCH,LOOP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   if (auto _ = match( ic, opcode( "\xe0" ) & Imm<8>() ))
@@ -366,7 +366,7 @@ struct NearParamReturn : public Operation<ARCH>
     typedef typename TypeFor<ARCH,OPSIZE>::u ip_t;
     typedef typename ARCH::addr_t addr_t;
     ip_t return_address = arch.template pop<OPSIZE>();
-    arch.shrink_stack( paramsize );
+    arch.shrink_stack( addr_t( paramsize ) );
     arch.setnip( addr_t( return_address ), ARCH::ipret );
   }
 };
@@ -524,13 +524,10 @@ struct Leave : public Operation<ARCH>
   
   void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<ARCH,GOP::OPSIZE>::u uop_t;
     /* TODO: STACKSIZE */
-    if (GOP::OPSIZE != 32) throw 0;
+    if (GOP::SIZE != 32) throw 0;
     arch.regwrite( GOP(), 4, arch.regread( GOP(), 5 ) );
-    uop_t src = arch.regread( GOP(), 4 );
-    arch.regwrite( GOP(), 4, src + uop_t( 4 ) );
-    arch.regwrite( GOP(), 5, arch.template memread<32>( SS, src ) );
+    arch.regwrite( GOP(), 5, arch.template pop<GOP::SIZE>() );
   }
 };
 

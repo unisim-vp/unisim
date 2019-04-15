@@ -94,6 +94,7 @@ include "unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa"
 include "unisim/component/cxx/processor/arm/isa/arm32/exception.isa"
 include "unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa"
 include "unisim/component/cxx/processor/arm/isa/arm32/vfp.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/neon.isa"
 
 include "unisim/component/cxx/processor/arm/isa/arm32/ordering.isa"
 

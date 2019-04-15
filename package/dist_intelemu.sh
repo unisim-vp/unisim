@@ -72,6 +72,7 @@ unisim/service/interfaces/register.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/stmt_lookup.hh \
 unisim/util/hypapp/hypapp.hh \
+unisim/util/nat_sort/nat_sort.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/backtrace/backtrace.hh \
 unisim/util/blob/blob.hh \

@@ -17,6 +17,13 @@
 
 #define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
 
+// template <typename ARCH, unsigned OPSIZE> struct TypeFor {};
+
+// template <typename ARCH> struct TypeFor<ARCH, 8> { typedef typename ARCH:: S8 S; typedef typename ARCH:: U8 U; };
+// template <typename ARCH> struct TypeFor<ARCH,16> { typedef typename ARCH::S16 S; typedef typename ARCH::U16 U; };
+// template <typename ARCH> struct TypeFor<ARCH,32> { typedef typename ARCH::S32 S; typedef typename ARCH::U32 U; typedef typename ARCH::F32 F; };
+// template <typename ARCH> struct TypeFor<ARCH,64> { typedef typename ARCH::S64 S; typedef typename ARCH::U64 U; typedef typename ARCH::F64 F; };
+
 struct Processor
 {
   //   =====================================================================
@@ -79,10 +86,10 @@ struct Processor
   {
     typedef RegRead<RID> this_type;
     typedef unisim::util::symbolic::binsec::RegRead Super;
-    RegRead( Processor& p, RID _id, ScalarType::id_t _tp ) : Super(), Input(p), tp(_tp) {}
+    RegRead( Processor& p, RID _id, ScalarType::id_t _tp ) : Super(), Input(p), tp(_tp), id(_id) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
     virtual ScalarType::id_t GetType() const { return tp; }
-    virtual char const* GetRegName() const { return id.c_str(); }
+    virtual void GetRegName( std::ostream& sink ) const { sink << id.c_str(); }
     virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
     intptr_t compare( this_type const& rhs ) const { if (int delta = int(tp) - int(rhs.tp)) return delta; return id.cmp( rhs.id ); }
     virtual Expr Simplify() const { return this; }
@@ -98,12 +105,9 @@ struct Processor
   {
     typedef unisim::util::symbolic::binsec::RegRead Super;
     ForeignRegister( uint8_t _mode, unsigned _idx )
-      : Super(), name(), idx(_idx), mode(_mode)
+      : Super(), idx(_idx), mode(_mode)
     {
       if (mode == SYSTEM_MODE) mode = USER_MODE;
-      std::ostringstream buf;
-      buf << (RegID("r0") + idx).c_str() << '_' << mode_ident();
-      strncpy(&name[0],buf.str().c_str(),sizeof(name)-1);
     }
     virtual ForeignRegister* Mutate() const { return new ForeignRegister( *this ); }
     virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
@@ -125,7 +129,10 @@ struct Processor
       return "";
     }
 
-    virtual char const* GetRegName() const { return &name[0]; }
+    virtual void GetRegName( std::ostream& sink ) const
+    {
+      sink << (RegID("r0") + idx).c_str() << '_' << mode_ident();
+    }
     virtual intptr_t cmp( ExprNode const& brhs ) const
     {
       ForeignRegister const& rhs =  dynamic_cast<ForeignRegister const&>( brhs );
@@ -134,7 +141,6 @@ struct Processor
     }
     virtual Expr Simplify() const { return this; }
     
-    char name[8];
     unsigned idx;
     uint8_t mode;
   };
@@ -147,7 +153,7 @@ struct Processor
     RegWrite( RID _id, Expr const& _value ) : Super(_value), id(_id) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
     virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
-    virtual char const* GetRegName() const { return id.c_str(); }
+    virtual void GetRegName( std::ostream& sink ) const { sink << id.c_str(); }
     virtual intptr_t cmp( ExprNode const& brhs ) const
     { if (intptr_t delta = id.cmp( dynamic_cast<RegWrite const&>( brhs ).id )) return delta; return Super::cmp( brhs ); }
     virtual Expr Simplify() const
@@ -166,7 +172,7 @@ struct Processor
   {
     PCWrite( Expr const& value, Br::type_t bt ) : Br( value, bt ) {}
     virtual PCWrite* Mutate() const { return new PCWrite( *this ); }
-    virtual char const* GetRegName() const { return "pc"; }
+    virtual void GetRegName( std::ostream& sink ) const { sink << "pc"; }
     virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
     virtual Expr Simplify() const
     {
@@ -344,6 +350,7 @@ public:
     , is_it_assigned(false)
     , mode()
     , foreign_registers()
+    , neonregs()
   {
     // GPR regs
     for (unsigned reg = 0; reg < 15; ++reg)
@@ -352,6 +359,9 @@ public:
     // Special registers
     for (SRegID reg; reg.next();)
       sregs[reg.idx()] = U32( newRegRead( *this, reg, ScalarType::U32 ) );
+
+    for (unsigned reg = 0; reg < 32; ++reg)
+      neonregs[reg][0] = new NeonRead( *this, reg );
   }
 
   bool close( Processor const& ref )
@@ -384,10 +394,11 @@ public:
       path->sinks.insert( newRegWrite( RegID("fpscr"), FPSCR.expr ) );
     if (FPEXC.expr != ref.FPEXC.expr)
       path->sinks.insert( newRegWrite( RegID("fpexc"), FPEXC.expr ) );
-    for (unsigned reg = 0; reg < 15; ++reg) {
-      if (reg_values[reg].expr != ref.reg_values[reg].expr)
-        path->sinks.insert( newRegWrite( RegID("r0") + reg, reg_values[reg].expr ) );
-    }
+    for (unsigned reg = 0; reg < 15; ++reg)
+      {
+        if (reg_values[reg].expr != ref.reg_values[reg].expr)
+          path->sinks.insert( newRegWrite( RegID("r0") + reg, reg_values[reg].expr ) );
+      }
     for (ForeignRegisters::iterator itr = foreign_registers.begin(), end = foreign_registers.end(); itr != end; ++itr)
       {
         ForeignRegister ref(itr->first.first, itr->first.second);
@@ -397,6 +408,11 @@ public:
         std::ostringstream buf;
         ref.Repr( buf );
         path->sinks.insert( newRegWrite( RegID(buf.str().c_str()), itr->second ) );
+      }
+    for (unsigned reg = 0; reg < 32; ++reg)
+      {
+        if (neonregs[reg][0] != ref.neonregs[reg][0])
+          GetNeonSinks(reg);
       }
     for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
       path->sinks.insert( *itr );
@@ -582,15 +598,228 @@ public:
     
   // U32 StandardValuedFPSCR() const   { return AHP.Mask( FPSCR ) | 0x03000000; }
     
-  U32  GetVU32( unsigned idx ) { return U32(); }
-  void SetVU32( unsigned idx, U32 val ) {}
-  U64  GetVU64( unsigned idx ) { return U64(); }
-  void SetVU64( unsigned idx, U64 val ) {}
+  struct NeonName
+  { // Convenience class for name construction
+    NeonName( unsigned idx ) : begin(&buf[sizeof(buf)]) { _('\0'); do { _('0'+idx%10); idx /= 10; } while (idx); _('d'); }
+    void _(char c) { *--begin = c; } operator char const* () const { return begin; } char buf[4]; char* begin;
+  };
+  struct NeonRead : public unisim::util::symbolic::binsec::RegRead, Input
+  {
+    typedef NeonRead this_type;
+    typedef unisim::util::symbolic::binsec::RegRead Super;
+    NeonRead( Processor& p, unsigned _reg ) : Super(), Input(p), reg(_reg) {}
+    virtual this_type* Mutate() const { return new this_type( *this ); }
+    virtual ScalarType::id_t GetType() const { return ScalarType::U64; }
+    virtual void GetRegName( std::ostream& sink ) const { sink << 'd' << std::dec << reg; }
+    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<NeonRead const&>( rhs ) ); }
+    intptr_t compare( this_type const& rhs ) const { return int(reg) - int(rhs.reg); }
+    virtual Expr Simplify() const { return this; }
+    unsigned reg;
+  };
+
+  struct NeonWrite : public unisim::util::symbolic::binsec::RegWrite
+  {
+    typedef NeonWrite this_type;
+    typedef unisim::util::symbolic::binsec::RegWrite Super;
+    NeonWrite( unsigned _reg, Expr const& value ) : Super(value), reg(_reg) {}
+    virtual this_type* Mutate() const { return new this_type( *this ); }
+    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
+    virtual void GetRegName( std::ostream& sink ) const { sink << 'd' << std::dec << reg; }
+    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<this_type const&>( rhs ) ); }
+    intptr_t compare( this_type const& rhs ) const { if (int delta = int(reg) - int(rhs.reg)) return delta; return Super::compare( rhs ); }
+    virtual Expr Simplify() const
+    {
+      Expr nvalue( ASExprNode::Simplify( value ) );
+      return nvalue != value ? new this_type( reg, nvalue ) : this;
+    }
+    unsigned reg;
+  };
+
+  struct NeonPartialWrite : public unisim::util::symbolic::binsec::RegWrite
+  {
+    typedef NeonPartialWrite this_type;
+    typedef unisim::util::symbolic::binsec::RegWrite Super;
+    typedef unisim::util::symbolic::binsec::Label Label;
+    typedef unisim::util::symbolic::binsec::Variables Variables;
+    typedef unisim::util::symbolic::binsec::GetCode GetCode;
+
+    NeonPartialWrite( unsigned _reg, unsigned _beg, unsigned _end, Expr const& _value ) : Super(_value), reg(_reg), beg(_beg), end(_end) {}
+    virtual this_type* Mutate() const { return new this_type( *this ); }
+    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
+    virtual void GetRegName( std::ostream& sink ) const { sink << 'd' << std::dec << reg << '_' << beg << '_' << end; }
+    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const
+    {
+      sink << 'd' << std::dec << reg << '{' << beg << ',' << end << '}' << " := " << GetCode(value, vars, label);
+      return 0;
+    }
+    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<this_type const&>( rhs ) ); }
+    intptr_t compare( this_type const& rhs ) const
+    {
+      if (int delta = int(reg) - int(rhs.reg)) return delta;
+      if (int delta = int(beg) - int(rhs.beg)) return delta;
+      if (int delta = int(end) - int(rhs.end)) return delta;
+      return Super::compare( rhs );
+    }
+    virtual Expr Simplify() const
+    {
+      Expr nvalue( ASExprNode::Simplify( value ) );
+      return nvalue != value ? new this_type( reg, beg, end, nvalue ) : this;
+    }
+    unsigned reg, beg, end;
+  };
+  
+  static unsigned const NEONSIZE = 8;
+
+  void
+  GetNeonSinks( unsigned reg )
+  {
+    using unisim::util::symbolic::binsec::BitFilter;
+    // using unisim::util::symbolic::make_const;
+    
+    { // Check for constant values
+      Expr dr = unisim::util::symbolic::binsec::ASExprNode::Simplify( GetVDU(reg).expr );
+      if (dr.ConstSimplify())
+        {
+          path->sinks.insert( new NeonWrite( reg, dr ) );
+          return;
+        }
+    }
+
+    // Check for monolithic value
+    if (not neonregs[reg][NEONSIZE/2].node)
+      {
+        path->sinks.insert( new NeonWrite( reg, eneonread(reg,NEONSIZE,0) ) );
+        return;
+      }
+    
+    // Requested read is a concatenation of multiple source values
+    struct _
+    {
+      _( Processor& _core, unsigned _reg ) : core(_core), reg(_reg) { Process( 0, NEONSIZE ); } Processor& core; unsigned reg;
+      void Process( unsigned pos, unsigned size )
+      {
+        unsigned half = size / 2, mid = pos+half;
+        if (size > 1 and core.neonregs[reg][mid].node)
+          {
+            Process( pos, half );
+            Process( mid, half );
+          }
+        else
+          {
+            unsigned begin = pos*8, end = begin+size*8;
+            Expr value( new BitFilter( core.eneonread(reg,size,pos), 64, size*8, size*8, false ) );
+            core.path->sinks.insert( new NeonPartialWrite( reg, begin, end, value ) );
+          }
+      }
+    } concat( *this, reg );
+  }
+ 
+  Expr eneonread( unsigned reg, unsigned size, unsigned pos )
+  {
+    using unisim::util::symbolic::ExprNode;
+    using unisim::util::symbolic::make_const;
+    
+    struct
+    {
+      Expr ui( unsigned sz, Expr const& src ) const
+      {
+        switch (sz) {
+        default: throw 0;
+        case 1: return new unisim::util::symbolic::CastNode<uint8_t,uint64_t>( src );
+        case 2: return new unisim::util::symbolic::CastNode<uint16_t,uint64_t>( src );
+        case 4: return new unisim::util::symbolic::CastNode<uint32_t,uint64_t>( src );
+        case 8: return new unisim::util::symbolic::CastNode<uint64_t,uint64_t>( src );
+        }
+        return 0;
+      }
+    } cast;
+    
+    if (not neonregs[reg][pos].node)
+      {
+        // requested read is in the middle of a larger value
+        unsigned src = pos;
+        do { src = src & (src-1); } while (not neonregs[reg][src].node);
+        // unsigned nxt = pos;
+        // do { nxt += 1; } while (nxt < NEONSIZE and not neonregs[reg][nxt].node);
+        unsigned shift = 8*(pos - src);
+        return cast.ui( size, make_operation( "Lsr", neonregs[reg][src], make_const( shift ) ) );
+      }
+    else if (not neonregs[reg][(pos|size)&(NEONSIZE-1)].node)
+      {
+        // requested read is in lower bits of a larger value
+        return cast.ui( size, neonregs[reg][pos] );
+      }
+    else if ((size > 1) and (neonregs[reg][pos|(size >> 1)].node))
+      {
+        // requested read is a concatenation of multiple source values
+        Expr concat = cast.ui( size, neonregs[reg][pos] );
+        for (unsigned idx = 0; ++idx < size;)
+          {
+            if (not neonregs[reg][pos+idx].node)
+              continue;
+            concat = make_operation( "Or", make_operation( "Lsl", cast.ui( size, neonregs[reg][idx] ), make_const( 8*idx ) ), concat );
+          }
+        return concat;
+      }
+    
+    // requested read is directly available
+    return neonregs[reg][pos];
+  }
+  
+  void eneonwrite( unsigned reg, unsigned size, unsigned pos, Expr const& xpr )
+  {
+    Expr nxt[NEONSIZE];
+    
+    for (unsigned ipos = pos, isize = size, cpos;
+         cpos = ipos^isize, (not neonregs[reg][ipos].node) or (not neonregs[reg][cpos&(NEONSIZE-1)].node);
+         isize *= 2, ipos &= -isize
+         )
+      {
+        nxt[cpos] = eneonread( reg, isize, cpos );
+      }
+    
+    for (unsigned ipos = 0; ipos < NEONSIZE; ++ipos)
+      {
+        if (nxt[ipos].node)
+          neonregs[reg][ipos] = nxt[ipos];
+      }
+    
+    neonregs[reg][pos] = xpr;
+    
+    for (unsigned rem = 1; rem < size; ++rem)
+      {
+        neonregs[reg][pos+rem] = 0;
+      }
+  }
+
+  U32  GetVSU( unsigned idx ) { return U32( U64( eneonread( idx / 2, 4, (idx*4) & 4 ) ) ); }
+  void SetVSU( unsigned idx, U32 val ) { eneonwrite( idx / 2, 4, (idx*4) & 4, U64(val).expr ); }
+  U64  GetVDU( unsigned idx ) { return U64( eneonread( idx, 8, 0 ) ); }
+  void SetVDU( unsigned idx, U64 val ) { eneonwrite( idx, 8, 0, U64(val).expr ); }
   F32  GetVSR( unsigned idx ) { return F32(); }
   void SetVSR( unsigned idx, F32 val ) {}
   F64  GetVDR( unsigned idx ) { return F64(); }
   void SetVDR( unsigned idx, F64 val ) {}
-    
+
+  static unsigned usizeof( U8 const& )  { return  1; }
+  static unsigned usizeof( U16 const& ) { return  2; }
+  static unsigned usizeof( U32 const& ) { return  4; }
+  static unsigned usizeof( U64 const& ) { return  8; }
+  // Get|Set elements
+  template <class ELEMT>
+  void
+  SetVDE( unsigned reg, unsigned idx, ELEMT const& value )
+  {
+    using unisim::util::symbolic::binsec::BitFilter;
+    unsigned usz = usizeof( value );
+    Expr neonval( new BitFilter( value.expr, usz*8, usz*8, 64, false ) );
+    eneonwrite( reg, usz, usz*idx, neonval );
+  }
+
+  template <class ELEMT>
+  ELEMT GetVDE( unsigned reg, unsigned idx, ELEMT const& trait )
+  { unsigned usz = usizeof( trait ); return ELEMT( U64( eneonread( reg, usz, usz*idx ) ) ); }
+  
   //   =====================================================================
   //   =                      Control Transfer methods                     =
   //   =====================================================================
@@ -837,7 +1066,7 @@ public:
     RegID( Code _code ) : code(_code) {}
     RegID( char const* _code ) : code(end) { init( _code ); }
   };
-    
+
   ActionNode*      path;
   U32              reg_values[16];
   U32              next_insn_addr;
@@ -851,6 +1080,7 @@ public:
   bool             is_it_assigned; /* determines wether current instruction is an IT one. */
   Mode             mode;
   ForeignRegisters foreign_registers;
+  Expr             neonregs[32][NEONSIZE];
 };
 
 Processor::BOOL CheckCondition( Processor& state, unsigned cond )
@@ -1598,9 +1828,9 @@ Processor::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t o
       {
         static struct : public CP15Reg
         {
-          char const* Describe() { return "CFGBAR, Configuration Base Address"; }
-          U32 Read( Processor& proc ) { return proc.SReg("cfgbar"); }
-          void Write( Processor& proc, U32 const& value ) { proc.SReg("cfgbar") = value; }
+          char const* Describe() { return "CBAR, Configuration Base Address"; }
+          U32 Read( Processor& proc ) { return proc.SReg("cbar"); }
+          void Write( Processor& proc, U32 const& value ) { proc.SReg("cbar") = value; }
         } x;
         return x;
       } break;

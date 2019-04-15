@@ -727,7 +727,7 @@ namespace linux_os {
               strncpy(&value.version[0],    utsname.version.c_str(), sizeof(value.version) - 1);
               strncpy(&value.machine[0],    utsname.machine.c_str(), sizeof(value.machine));
               strncpy(&value.domainname[0], utsname.domainname.c_str(), sizeof(value.domainname) - 1);
-              this->WriteMem( lin, buf_addr, (uint8_t *)&value, sizeof(value));
+              lin.WriteMemory( buf_addr, (uint8_t *)&value, sizeof(value) );
   
               SetI386SystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
@@ -766,7 +766,7 @@ namespace linux_os {
                   ret = Fstat64(host_fd, &target_stat, lin.GetEndianness());
                   if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
 			
-                  this->WriteMem(lin, buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+                  lin.WriteMemory( buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
                 }
 	
               if(unlikely(lin.GetVerbose()))
@@ -795,25 +795,24 @@ namespace linux_os {
             {
               uint32_t user_desc_ptr = GetSystemCallParam(lin, 0);
                   
-              int32_t  entry_number;
-              uint32_t base_addr, limit, attributes;
-              this->ReadMem( lin, user_desc_ptr + 0x0, (uint8_t*)&entry_number, 4 );
-              this->ReadMem( lin, user_desc_ptr + 0x4, (uint8_t*)&base_addr, 4 );
-              this->ReadMem( lin, user_desc_ptr + 0x8, (uint8_t*)&limit, 4 );
-              this->ReadMem( lin, user_desc_ptr + 0xc, (uint8_t*)&attributes, 4 );
+              parameter_type entry_number, base_addr, limit, attributes;
+              lin.ReadMemory( user_desc_ptr + 0x0, entry_number );
+              lin.ReadMemory( user_desc_ptr + 0x4, base_addr );
+              lin.ReadMemory( user_desc_ptr + 0x8, limit );
+              lin.ReadMemory( user_desc_ptr + 0xc, attributes );
               entry_number = unisim::util::endian::Target2Host( lin.GetEndianness(), entry_number );
               base_addr    = unisim::util::endian::Target2Host( lin.GetEndianness(), base_addr );
               limit        = unisim::util::endian::Target2Host( lin.GetEndianness(), limit );
               attributes   = unisim::util::endian::Target2Host( lin.GetEndianness(), attributes );
                   
-              if (entry_number != -1)
+              if (entry_number != parameter_type(-1))
                 throw std::logic_error("internal error in i686 segment descriptors");
                   
               set_tls_base( lin, base_addr );
                   
               entry_number = 3;
               entry_number = unisim::util::endian::Host2Target( lin.GetEndianness(), entry_number );
-              this->WriteMem( lin, user_desc_ptr + 0x0, (uint8_t*)&entry_number, 4 );
+              lin.WriteMemory( user_desc_ptr + 0x0, (uint8_t*)&entry_number, 4 );
 
               SetI386SystemCallStatus( lin, 0, false );
             }

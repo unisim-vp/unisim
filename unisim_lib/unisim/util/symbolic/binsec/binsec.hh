@@ -151,8 +151,7 @@ namespace binsec {
 
   struct RegRead : public ASExprNode
   {
-    virtual char const* GetRegName() const = 0;
-      
+    virtual void GetRegName( std::ostream& ) const = 0;
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 0; }
@@ -162,7 +161,7 @@ namespace binsec {
   {
     RegWrite( Expr const& _value ) : value(_value) {}
       
-    virtual char const* GetRegName() const = 0;
+    virtual void GetRegName( std::ostream& ) const = 0;
       
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     virtual void Repr( std::ostream& sink ) const;
@@ -205,8 +204,8 @@ namespace binsec {
     virtual Load* Mutate() const { return new Load( *this ); }
     
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
-    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
-    unsigned bitsize() const { return 1<<size; }
+    virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false, 8*bytecount()); }
+    unsigned bytecount() const { return 1<<size; }
     virtual void Repr( std::ostream& sink ) const;
     intptr_t cmp( ExprNode const& brhs ) const
     {
@@ -271,6 +270,36 @@ namespace binsec {
     }
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return input; }
+
+    virtual ConstNodeBase const* GetConstNode() const
+    {
+      if (ConstNodeBase const* cnb = input->GetConstNode())
+        {
+          Expr cexp(cnb);
+          unsigned ext = extend - select;
+          if (extend == 64)
+            {
+              if (sxtend) return new ConstNode<int64_t>( (cnb->GetS64() << ext) >> ext );
+              return new ConstNode<uint64_t>( (cnb->GetU64() << ext) >> ext );
+            }
+          if (extend == 32)
+            {
+              if (sxtend) return new ConstNode<int32_t>( (cnb->GetS32() << ext) >> ext );
+              return new ConstNode<uint32_t>( (cnb->GetU32() << ext) >> ext );
+            }
+          if (extend == 16)
+            {
+              if (sxtend) return new ConstNode<int16_t>( (cnb->GetS16() << ext) >> ext );
+              return new ConstNode<uint16_t>( (cnb->GetU16() << ext) >> ext );
+            }
+          if (extend == 8)
+            {
+              if (sxtend) return new ConstNode<int8_t>( (cnb->GetS8() << ext) >> ext );
+              return new ConstNode<uint8_t>( (cnb->GetU8() << ext) >> ext );
+            }
+        }
+      return 0;
+    }
     
     Expr     input;
     uint32_t source   : 10;
@@ -295,7 +324,7 @@ namespace binsec {
       
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
-    unsigned bitsize() const { return 1<<size; }
+    unsigned bytecount() const { return 1<<size; }
     virtual void Repr( std::ostream& sink ) const;
     intptr_t cmp( ExprNode const& brhs ) const
     {

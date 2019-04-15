@@ -132,12 +132,27 @@ template <class ARCH> struct DC<ARCH,XBV> { Operation<ARCH>* get( InputCode<ARCH
 // 
 // rdpmc.disasm = { _sink << "rdpmc"; };
 // 
-// op hlt( 0xf4[8] );
-// 
-// hlt.disasm = { _sink << "hlt"; };
-// 
-// hlt.execute = { arch.stop(); };
-// 
+
+template <class ARCH>
+struct Hlt : public Operation<ARCH>
+{
+  Hlt( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
+
+  void disasm( std::ostream& sink ) const { sink << "hlt"; }
+
+  void execute( ARCH& arch ) const { arch.stop(); }
+};
+
+template <class ARCH> struct DC<ARCH,HLT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.lock_f0) return 0;
+
+  if (auto _ = match( ic, opcode( "\xf4" ) )) return new Hlt<ARCH>( _.opbase() );
+
+  return 0;
+}};
+
+
 // op in_al_ib( 0xe4[8]:> <:port[8] );
 // 
 // in_al_ib.disasm = { _sink << "in " << DisasmI( port ) << ',' << DisasmGb( 0 ); };
@@ -442,15 +457,30 @@ template <class ARCH> struct DC<ARCH,XBV> { Operation<ARCH>* get( InputCode<ARCH
 // 
 // vmptrst2.disasm = { _sink << "vmptrst " << DisasmM( modrm, segment ); };
 // 
-// op lfence( 0x0f[8]:> <:0xae[8]:> <:0xe8[8] );
-// 
-// lfence.disasm = { _sink << "lfence"; };
-// 
-// op mfence( 0x0f[8]:> <:0xae[8]:> <:0xf0[8] );
-// 
-// mfence.disasm = { _sink << "mfence"; };
-// 
-// op sfence( 0x0f[8]:> <:0xae[8]:> <:0xf8[8] );
-// 
-// sfence.disasm = { _sink << "sfence"; };
-// 
+
+template <class ARCH>
+struct Fence : public Operation<ARCH>
+{
+  Fence( OpBase<ARCH> const& opbase, char const* _mnemo ) : Operation<ARCH>( opbase ), mnemo(_mnemo) {}
+  void disasm( std::ostream& sink ) const { sink << mnemo; }
+  void execute( ARCH& arch ) const { /*arch.fence();*/ }
+  char const* mnemo;
+};
+
+template <class ARCH> struct DC<ARCH,FENCE> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (auto _ = match( ic, opcode( "\x0f\xae\xe8" ) ))
+
+    return new Fence<ARCH>( _.opbase(), "lfence" );
+  
+  if (auto _ = match( ic, opcode( "\x0f\xae\xf0" ) ))
+
+    return new Fence<ARCH>( _.opbase(), "mfence" );
+  
+  if (auto _ = match( ic, opcode( "\x0f\xae\xf8" ) ))
+
+    return new Fence<ARCH>( _.opbase(), "sfence" );
+  
+  return 0;
+}};
+

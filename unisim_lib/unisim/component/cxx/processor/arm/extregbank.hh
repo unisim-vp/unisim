@@ -44,7 +44,7 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-  
+
   template <typename T>
   struct ExtTypeInfo
   {

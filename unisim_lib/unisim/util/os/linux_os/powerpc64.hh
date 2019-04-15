@@ -67,7 +67,6 @@ namespace linux_os {
     typedef typename LINUX::address_type address_type;
     typedef typename LINUX::parameter_type parameter_type;
     typedef typename LINUX::UTSName UTSName;
-    using LINUX::TargetSystem::ReadMemory;
     using LINUX::TargetSystem::lin;
     using LINUX::TargetSystem::name;
     
@@ -183,9 +182,12 @@ namespace linux_os {
       // Set CIA, TOC and ENVPTR to the program entry point descriptor
       address_type desc_addr = lin.GetEntryPoint();
       parameter_type instruction_address, toc, environment_pointer;
-      if (not ReadMemory(lin, desc_addr +  0, &instruction_address) or not lin.SetTargetRegister("cia", instruction_address) or
-          not ReadMemory(lin, desc_addr +  8, &toc) or not lin.SetTargetRegister("r2",  toc) or
-          not ReadMemory(lin, desc_addr + 16, &environment_pointer) or not lin.SetTargetRegister("r11", environment_pointer)
+      if (not lin.ReadTargetMemory(desc_addr +  0, instruction_address) or
+          not lin.SetTargetRegister("cia", instruction_address) or
+          not lin.ReadTargetMemory(desc_addr +  8, toc) or
+          not lin.SetTargetRegister("r2",  toc) or
+          not lin.ReadTargetMemory(desc_addr + 16, environment_pointer) or
+          not lin.SetTargetRegister("r11", environment_pointer)
           )
         return false;
       
@@ -204,11 +206,12 @@ namespace linux_os {
         return false;
       parameter_type par1, par2;
       
-      if (not ReadMemory(lin, stack_pointer +  8, &par1) or not lin.SetTargetRegister("r3", par1) or
-          not ReadMemory(lin, stack_pointer + 16, &par2) or not lin.SetTargetRegister("r4", par2)
-          )
+      if (not lin.ReadTargetMemory(stack_pointer +  8, par1) or
+          not lin.SetTargetRegister("r3", par1) or
+          not lin.ReadTargetMemory(stack_pointer + 16, par2) or
+          not lin.SetTargetRegister("r4", par2))
         return false;
-
+      
       return true;
     }
 
@@ -989,7 +992,7 @@ namespace linux_os {
               ret = Times(&target_tms, lin.GetEndianness());
 
               if (ret >= 0)
-                this->WriteMem(lin, buf_addr, (uint8_t *)&target_tms, sizeof(target_tms));
+                lin.WriteMemory(buf_addr, (uint8_t *)&target_tms, sizeof(target_tms));
               else
                 target_errno = SysCall::HostToLinuxErrno(errno);
 
@@ -1032,11 +1035,11 @@ namespace linux_os {
                 {
                   if(tv_addr)
                     {
-                      this->WriteMem( lin, tv_addr, (const uint8_t *) &target_tv, sizeof(target_tv));
+                      lin.WriteMemory( tv_addr, (const uint8_t *) &target_tv, sizeof(target_tv));
                     }
                   if(tz_addr)
                     {
-                      this->WriteMem( lin, tz_addr, (const uint8_t *) &target_tz, sizeof(target_tz));
+                      lin.WriteMemory( tz_addr, (const uint8_t *) &target_tz, sizeof(target_tz));
                     }
                 }
 
@@ -1064,8 +1067,8 @@ namespace linux_os {
             {
               Args(LINUX& lin)
                 : filename(SysCall::GetParam(lin, 0)), statbuf(SysCall::GetParam(lin, 1))
-                , filename_string(), filename_valid(SysCall::ReadMemString(lin, filename, filename_string))
-              {};
+                , filename_string(), filename_valid(lin.ReadString(filename, filename_string))
+              {}
               address_type filename; address_type statbuf; std::string filename_string; bool filename_valid;
               void Describe( std::ostream& sink ) const
               {
@@ -1094,7 +1097,7 @@ namespace linux_os {
                   return;
                 }
               
-              if (not this->WriteMem( lin, args.statbuf, (uint8_t *)&target_stat, sizeof(target_stat)))
+              if (not lin.WriteMemory( args.statbuf, (uint8_t *)&target_stat, sizeof(target_stat)))
                 {
                   lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
                   return;
@@ -1148,7 +1151,7 @@ namespace linux_os {
                   return;
                 }
               
-              if (not this->WriteMem( lin, args.statbuf, (uint8_t *)&target_stat, sizeof(target_stat)))
+              if (not lin.WriteMemory( args.statbuf, (uint8_t *)&target_stat, sizeof(target_stat)))
                 {
                   lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
                   return;
@@ -1188,7 +1191,7 @@ namespace linux_os {
               strncpy(value.version,     utsname.version.c_str(), sizeof(value.version) - 1);
               strncpy(value.machine,     utsname.machine.c_str(), sizeof(value.machine) - 1);
               strncpy(value.domainname,  utsname.domainname.c_str(), sizeof(value.domainname) - 1);
-              this->WriteMem( lin, buf_addr, (uint8_t *)&value, sizeof(value));
+              lin.WriteMemory( buf_addr, (uint8_t *)&value, sizeof(value));
   
               SetPOWERPC64SystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
@@ -1219,7 +1222,7 @@ namespace linux_os {
         //         {
         //           struct powerpc64_stat64 target_stat;
         //           ret = Stat64(pathname.c_str(), &target_stat, lin.GetEndianness());
-        //           this->WriteMem( lin, buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+        //           lin.WriteMemory( buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
     
         //           if(unlikely(lin.GetVerbose()))
         //             {
@@ -1275,7 +1278,7 @@ namespace linux_os {
                   ret = Fstat64(host_fd, &target_stat, lin.GetEndianness());
                   if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
       
-                  this->WriteMem( lin, buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+                  lin.WriteMemory( buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
                 }
   
               if(unlikely(lin.GetVerbose()))

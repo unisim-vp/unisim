@@ -93,9 +93,16 @@ namespace intel {
     uint32_t lock_f0        : 1; /* grp1.lock */
     uint32_t segment        : 3; /* grp2 */
     uint32_t rep            : 2; /* grp1.rep {0: None, 2: F2, 3: F3} */
-    uint32_t opcode_offset  : 4;
+    uint32_t opcode_offset  : 4; /* opcode offset from starting byte (prefix length). */
+    uint32_t rex_b          : 1;
+    uint32_t rex_x          : 1;
+    uint32_t rex_r          : 1;
+    uint32_t rex_w          : 1;
+    uint32_t rex_p          : 1; /* rex present */
+    
 
     struct PrefixOverFlow {};
+    
     uint8_t const* opcode() const { return &bytes[opcode_offset]; }
     void set_opcode( uint8_t const* end )
     {
@@ -104,10 +111,17 @@ namespace intel {
         throw PrefixOverFlow();
       opcode_offset = head;
     }
+    void set_vexpp( uint8_t pp )
+    {
+      if (opsz_66 or rep) throw 0;
+      else if (pp == 1) opsz_66 = 1;
+      else if (pp != 0) rep = pp ^ 1;
+    }
     
     CodeBase( Mode _mode, uint8_t const* bptr )
-      : bytes( bptr ), mode( _mode ),
-        adsz_67( 0 ), opsz_66( 0 ), lock_f0( 0 ), segment( DS ), rep( 0 ), opcode_offset( 0 )
+      : bytes( bptr ), mode( _mode )
+      , adsz_67( 0 ), opsz_66( 0 ), lock_f0( 0 ), segment( DS ), rep( 0 ), opcode_offset( 0 )
+      , rex_b(0), rex_x(0), rex_r(0), rex_w(0), rex_p(0)
     {
       for (;; ++bptr)
         {
@@ -115,8 +129,24 @@ namespace intel {
             {
               // OpCode
             default:
-              if (mode64() and (*bptr & 0xf0) == 0x40) 
-                { /* REX prefix */ ++bptr; }
+              if (mode64() and (*bptr & 0xf0) == 0x40)
+                {
+                  /* REX prefix */
+                  rex_p = 1; rex_b = bptr[0] >> 0; rex_x = bptr[0] >> 1; rex_r = bptr[0] >> 2; rex_w = bptr[0] >> 3;
+                  ++bptr; /* REX not implicated in opcode */
+                }
+              else if (bptr[0] == 0xc5 and (mode64() or (bptr[1] >> 6) == 3))
+                {
+                  /* Two-bytes VEX prefix */
+                  rex_r = ~bptr[1] >> 7;
+                  set_vexpp( bptr[1] & 3 );
+                }
+              else if (bptr[0] == 0xc4 and (mode64() or (bptr[1] >> 6) == 3))
+                {
+                  /* Three-bytes VEX prefix */
+                  rex_b = ~bptr[1] >> 5; rex_x = ~bptr[1] >> 6; rex_r = ~bptr[1] >> 7; rex_w = bptr[2] >> 7;
+                  set_vexpp( bptr[2] & 3 );
+                }
               set_opcode( bptr );
               return;
               // Group1::lock
@@ -138,13 +168,8 @@ namespace intel {
             }
         }
     }
-    uint8_t rex() const
-    {
-      if (opcode_offset == 0) return 0;
-      uint8_t last = opcode()[-1];
-      return (last & 0xf0) == 0x40 ? last : 0;
-    }
-    unsigned opclass() const { return (rex() & 8) ? 3 : (mode.cs_l ^ mode.cs_d ^ opsz_66) ? 2 : 1; }
+    unsigned w() const { return rex_w; }
+    unsigned opclass() const { return rex_w ? 3 : (mode.cs_l ^ mode.cs_d ^ opsz_66) ? 2 : 1; }
     unsigned opsize() const { return 8 << opclass(); }
     unsigned addrclass() const { return mode64() ? (adsz_67 ? 2 : 3 ) : (mode.cs_d ^ adsz_67) ? 2 : 1; }
     unsigned addrsize() const { return 8 << addrclass(); }
@@ -153,6 +178,9 @@ namespace intel {
     bool f2() const { return rep == 2; }
     bool _66() const { return opsz_66; }
     bool mode64() const { return mode.cs_l != 0; }
+    bool vex() const { return (*opcode() | 1) == 0xc5; }
+    unsigned vlen() const { uint8_t const* v = opcode(); return (v[2 - (v[0] & 1)] & 4) ? 256 : 128; }
+    unsigned vreg() const { uint8_t const* v = opcode(); return ~(v[2 - (v[0] & 1)] >> 3) & 15; }
   };
   
   template <class ARCH>

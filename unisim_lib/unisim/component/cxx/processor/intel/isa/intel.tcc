@@ -61,20 +61,17 @@ namespace intel {
                      FLSSTATE, FST, FSTSW, FSUB, FSUBR, FTST, FUCOM, FXAM, FXCH, FOBSOLETE,
                      PUSH, PUSHA, PUSHF, POP, POPA, POPF, MOV, MOVZX, MOVSX, STD, ARPL, CMPXCHG,
                      CMPXCHG8B, XCHG, XADD, NOP, CMOVCC, BT, BTC, BTR, BTS, BSWAP, MOVNTI, LFP,
-                     MOVS, STOS, CMPS, SCAS, LODS, OUTS, INS, CPUID, RDTSC, XBV, CVT,
-                     PUNPCK, PSHUFD, PXOR, POR, PAND, PANDN, MOVD, MOVDQ, MOVFP, PCMPEQ,
-                     VMUL, VSUB, VADD, VDIV,
-                     PMOVMSKB, VMOVSD, MXCSR, UCOMIS,
+                     MOVS, STOS, CMPS, SCAS, LODS, OUTS, INS, CPUID, RDTSC, XBV, CVT, HLT, FENCE,
+                     PUNPCK, PBM, MOVGV, MOVDQ, MOVFP, MOVFPC, PCMPEQ, PALIGNR, VFP,
+                     PMOVMSKB, VMOVSD, MXCSR, UCOMIS, PREFETCH, VFPCVT, PMINMAX, VINTBIN, MOVQ,
+                     PSHUFD, PSHUFB, PSHDQ, PTEST, PINSR, PCMPSTR,
                      operation_count };
 
   template <class ARCH>
   void
   Operation<ARCH>::execute( ARCH& arch ) const
   {
-    std::cerr << "error: no execute method for `";
-    this->disasm( std::cerr );
-    std::cerr << "' in " << (typeid(*this).name()) << "\n";
-    throw 0;
+    arch.noexec( *this );
   };
   
   
@@ -126,11 +123,11 @@ namespace intel {
     uint8_t const* get( CodeBase const& cb, uint8_t const* bytes ) { return (cb.opsz_66 == _66) and (cb.rep == REP) ? bytes : 0; }
   };
 
-  typedef SSE_PFX<0,2> sseF2;
-  typedef SSE_PFX<0,3> sseF3;
-  typedef SSE_PFX<1,0> sse66;
-  typedef SSE_PFX<0,0> sse__;
-  
+  typedef SSE_PFX<0,2> simdF2;
+  typedef SSE_PFX<0,3> simdF3;
+  typedef SSE_PFX<1,0> simd66;
+  typedef SSE_PFX<0,0> simd__;
+
   template <unsigned SIZE>
   struct AddrSize
   {
@@ -185,9 +182,8 @@ namespace intel {
     RMOpFabric( CodeBase const& cb )
       : addrclass(cb.addrclass()), segment(cb.segment), rexb(0), rexx(0)
     {
-      uint8_t rex = cb.rex();
-      rexb = rex >> 0;
-      rexx = rex >> 1;
+      rexb = cb.rex_b;
+      rexx = cb.rex_x;
     }
     
     virtual ~RMOpFabric() {}
@@ -235,7 +231,7 @@ namespace intel {
     
     template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return bytes + 1; }
 
-    uint8_t const* get( CodeBase const& cb, uint8_t const* bytes ) { rexb = cb.rex(); return (bytes[0] >> 3) == code ? bytes + 1 : 0; }
+    uint8_t const* get( CodeBase const& cb, uint8_t const* bytes ) { rexb = cb.rex_b; return (bytes[0] >> 3) == code ? bytes + 1 : 0; }
     uint8_t const* get( RMOpFabric& out, uint8_t const* bytes ) { out.makeROp( (bytes[0] & 7) | (rexb << 3) ); return 0; }
   };
 
@@ -252,18 +248,15 @@ namespace intel {
   struct OpCode
   {
     typedef OpCode<LENGTH> this_type;
-    template <typename RHS>
-    AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
+    template <typename RHS> AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
 
     typedef OpCode<LENGTH-1> Head;
     template <typename RHS>
     AndSeq<Head, typename RHS::B> operator + ( RHS const& rhs ) { return AndSeq<Head, typename RHS::B>( &ref[0], ref[LENGTH-1] ); }
-    // WithReg operator + ( Reg const& rhs ) { return WithReg( OpCode<LENGTH-1>( &ref[0] ), OpCodeReg( ref[LENGTH-1] ) ); }
 
     typedef AndSeq<this_type, MRMOpCode> WithMRMOpCode;
     WithMRMOpCode operator / ( int code ) { return WithMRMOpCode( *this, MRMOpCode( code ) ); }
     
-    uint8_t ref[LENGTH];
     OpCode( uint8_t const* _ref ) { for (unsigned idx = 0; idx < LENGTH; ++idx ) ref[idx] = _ref[idx]; }
     
     template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return bytes + LENGTH; }
@@ -275,11 +268,78 @@ namespace intel {
         if (ref[idx] != bytes[idx]) return 0;
       return bytes + LENGTH;
     }
+    
+    uint8_t ref[LENGTH];
   };
   
   template <unsigned LENGTH>
   OpCode<LENGTH-1> opcode( char const (&ref)[LENGTH] )
   { return OpCode<LENGTH-1>( reinterpret_cast<uint8_t const*>( &ref[0] ) ); }
+
+  struct VexV { VexV() : idx() {} unsigned idx; };
+  
+  template <unsigned LENGTH>
+  struct Vex
+  {
+    typedef Vex<LENGTH> this_type;
+    template <typename RHS>
+    AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
+
+    typedef AndSeq<this_type, MRMOpCode> WithMRMOpCode;
+    WithMRMOpCode operator / ( int code ) { return WithMRMOpCode( *this, MRMOpCode( code ) ); }
+    
+    Vex( uint8_t const* _ref ) : len(0) { for (unsigned idx = 0; idx < LENGTH; ++idx ) ref[idx] = _ref[idx]; }
+    
+    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return bytes + len; }
+    
+    uint8_t const*
+    get( CodeBase const& cb, uint8_t const* bytes )
+    {
+      // SSE mandatory prefix
+      unsigned ridx = 1, bidx = 0;
+      if (char(ref[0]) == '*') { /* prefix wildcard, x86 abuse ('*' == 0x2a) */ }
+      else if (ref[0] == 0x66) { if (not cb.opsz_66 or cb.rep)      return 0; }
+      else if (ref[0] == 0xf2) { if (    cb.opsz_66 or cb.rep != 2) return 0; }
+      else if (ref[0] == 0xf3) { if (    cb.opsz_66 or cb.rep != 3) return 0; }
+      else   { ridx = 0;         if (    cb.opsz_66 or cb.rep)      return 0; }
+      
+      if      (bytes[0] == 0xc5)
+        {
+          bidx = 2;
+          if (ref[ridx++] != 0x0f) return 0;
+        }
+      else if (bytes[0] == 0xc4)
+        {
+          bidx = 3;
+          if (ref[ridx++] != 0x0f) return 0;
+          switch (bytes[1] & 0x1f)
+            {
+            default : return 0;
+            case 0b00001: break;
+            case 0b00010: if (ref[ridx++] != 0x38) return 0; break;
+            case 0b00011: if (ref[ridx++] != 0x3a) return 0; break;
+            }
+        }
+      
+      for (; ridx < LENGTH; ++ridx, ++bidx)
+        if (ref[ridx] != bytes[bidx]) return 0;
+
+      len = bidx;
+      return bytes + len;
+    }
+  
+    uint8_t const* get( VexV& v, uint8_t const* bytes )
+    {
+      v.idx = (bytes[2-(bytes[0] & 1)] >> 3) % 16;
+      return (bytes[0] | 1) == 0xc5 ? 0 : bytes + len;
+    }
+    uint8_t ref[LENGTH];
+    uint8_t len;
+  };
+  
+  template <unsigned LENGTH>
+  Vex<LENGTH-1> vex( char const (&ref)[LENGTH] )
+  { return Vex<LENGTH-1>( reinterpret_cast<uint8_t const*>( &ref[0] ) ); }
   
   template <class ARCH,unsigned ADDRSIZE>
   struct ModM : public MOp<ARCH>
@@ -477,7 +537,7 @@ namespace intel {
                 // uint8_t scale = (*bytes >> 6) & 3;
                 uint8_t index = (*bytes >> 3) & 7;
                 uint8_t base =  (*bytes >> 0) & 7;
-                index |= (cb.rex() & 2) << (3-1); /* rex.x is decoded */
+                index |= cb.rex_x << 3; /* rex.x is decoded */
                 
                 
                 bytes += 1;
@@ -716,10 +776,9 @@ namespace intel {
     
     uint8_t greg()
     {
-      RM::GN gn; 
+      RM::GN gn;
       find( gn, icode().opcode() );
-      unsigned rexr = ((icode().rex() << 1) & 8);
-      return gn.idx | rexr;
+      return (icode().rex_r << 3) | gn.idx;
     }
     
     uint8_t ereg()
@@ -727,6 +786,13 @@ namespace intel {
       struct _ : RMOpFabric { _( CodeBase const& cb ) : RMOpFabric( cb ), idx() {} unsigned idx; void makeROp(unsigned reg) override { idx = reg; } } res(icode());
       find( static_cast<RMOpFabric&>(res), icode().opcode() );
       return res.idx;
+    }
+
+    uint8_t vreg()
+    {
+      VexV v;
+      find( v, icode().opcode() );
+      return v.idx ^ 15;
     }
     
     PATTERN pattern;

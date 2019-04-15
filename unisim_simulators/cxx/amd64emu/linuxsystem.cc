@@ -156,8 +156,8 @@ LinuxOS::Core( std::string const& coredump )
                         {
                           {"%r15",64}, {"%r14",64}, {"%r13",64}, {"%r12",64}, {"%rbp",64}, {"%rbx",64}, {"%r11",64}, {"%r10",64},
                           {"%r9", 64}, {"%r8", 64}, {"%rax",64}, {"%rcx",64}, {"%rdx",64}, {"%rsi",64}, {"%rdi",64}, {"!orig_rax",64},
-                          {"%rip",64}, {"%cs", 16}, {"%eflags",16}, {"%rsp",64},
-                          {"%ss", 16}, {"%fs_base",64}, {"%gs_base",64}, {"%ds",16}, {"%es",16}, {"%fs",16}, {"%gs",16}
+                          {"%rip",64}, {"!cs", 16}, {"%eflags",32}, {"%rsp",64},
+                          {"!ss", 16}, {"%fs_base",64}, {"%gs_base",64}, {"!ds",16}, {"!es",16}, {"!fs",16}, {"!gs",16}
                         };
 
                       for (unsigned idx = 0, end = sizeof (coredumpregs) / sizeof coredumpregs[0]; idx < end; ++idx)
@@ -170,7 +170,20 @@ LinuxOS::Core( std::string const& coredump )
                             regs[idx] &= ((uint64_t(1) << regsize)-1);
                           std::cerr << std::setw(12) << regname << ": " << std::hex << regs[idx] << std::endl;
                           if (regsize < 64)
-                            continue;
+                            {
+                              char const* err = 0;
+                              if (unisim::service::interfaces::Register* reg = linux_impl.GetDebugRegister(regname))
+                                {
+                                  if (unsigned(reg->GetSize()) == regsize)
+                                    reg->SetValue(&regs[idx]);
+                                  else
+                                    err = "bad size";
+                                }
+                              else
+                                err = "missing";
+                              if (err)
+                                std::cerr << "Warning: skipping " << regname << " initialization (" << err << ").\n";
+                            }
                           else
                             linux_impl.SetTargetRegister(regname, regs[idx]);
                         }                      
@@ -271,15 +284,25 @@ LinuxOS::Setup( bool verbose )
 }
 
 void
-LinuxOS::Process( std::vector<std::string> const& simargs, std::vector<std::string> const& envs )
+LinuxOS::ApplyHostEnvironment()
 {
-  if (not linux_impl.SetCommandLine(simargs))
-    throw 0;
-    
+  linux_impl.SetApplyHostEnvironment(true);
+}
+
+void
+LinuxOS::SetEnvironment( std::vector<std::string> const& envs )
+{
   // Set the linuxlib option to set the target environment with the
   // host environment
   linux_impl.SetApplyHostEnvironment(false);
   linux_impl.SetEnvironment(envs);
+}
+
+void
+LinuxOS::Process( std::vector<std::string> const& simargs )
+{
+  if (not linux_impl.SetCommandLine(simargs))
+    throw 0;
     
   // Set the binary that will be simulated in the target simulator
   if (not linux_impl.AddLoadFile( simargs[0].c_str() ))
