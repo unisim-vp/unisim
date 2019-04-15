@@ -74,7 +74,7 @@ bool INIConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::servic
 	{
 		unisim::kernel::service::VariableBase *variable = *variable_iter;
 		
-		if(!variable->GetOwner())
+		if(!variable->GetOwner() && variable->IsSerializable() && ((type == unisim::kernel::service::VariableBase::VAR_VOID) || (type == variable->GetType())))
 		{
 			os << variable->GetVarName() << "=" << (std::string)(*variable) << std::endl;
 		}
@@ -112,7 +112,10 @@ void INIConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::servic
 		{
 			unisim::kernel::service::VariableBase *variable = *variable_iter;
 			
-			os << variable->GetVarName() << "=" << (std::string)(*variable) << std::endl;
+			if(variable->IsSerializable() && ((type == unisim::kernel::service::VariableBase::VAR_VOID) || (type == variable->GetType())))
+			{
+				os << variable->GetVarName() << "=" << (std::string)(*variable) << std::endl;
+			}
 		}
 		
 		os << std::endl;

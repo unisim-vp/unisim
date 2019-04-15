@@ -46,14 +46,38 @@ int main(int argc, const char *argv[])
 		file = new std::ifstream(argv[1]);
 		stream = file;
 	}
+
+#if 1
+	unisim::util::json::JSON_Parser<unisim::util::json::JSON_AST_Builder> json_parser;
+	unisim::util::json::JSON_AST_Builder json_ast_builder;
 	
-	unisim::util::json::JSON_Parser<unisim::util::json::JSON_Printer> json_parser;
-	unisim::util::json::JSON_Printer json_printer;
-			
-	if(!json_parser.Parse(*stream, json_printer))
+	unisim::util::json::JSON_Value *root = json_parser.Parse(*stream, json_ast_builder);
+	if(root)
+	{
+		unisim::util::json::JSON_AST_Printer json_ast_printer;
+		json_ast_printer.Print(std::cout, *root);
+		
+		std::cout << std::endl << std::endl;
+		std::cout << *root << std::endl;
+
+		std::cerr << "Parse success" << std::endl;
+		
+		delete root;
+	}
+	else
 	{
 		std::cerr << "Parse error" << std::endl;
 	}
+#else
+	unisim::util::json::JSON_Parser<unisim::util::json::JSON_Parser_Printer> json_parser;
+	unisim::util::json::JSON_Parser_Printer json_parser_printer;
+	
+			
+	if(!json_parser.Parse(*stream, json_parser_printer))
+	{
+		std::cerr << "Parse error" << std::endl;
+	}
+#endif
 
 	if(file) delete file;
 	return 0;

@@ -6,6 +6,7 @@ UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
 unisim/kernel/config/xml_config_file_helper.cc \
 unisim/kernel/config/ini_config_file_helper.cc \
+unisim/kernel/config/json_config_file_helper.cc \
 unisim/service/http_server/http_server.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/tlm2/simulator.cc \
@@ -62,6 +63,7 @@ unisim/util/lexer/lexer.cc \
 unisim/util/ieee754/ieee754.cc \
 unisim/util/reg/core/register.cc \
 unisim/util/hypapp/hypapp.cc \
+unisim/util/json/json.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
@@ -594,6 +596,7 @@ unisim/component/cxx/processor/powerpc/isa/lsp/lsp.hh \
 unisim/kernel/service/service.hh \
 unisim/kernel/config/xml_config_file_helper.hh \
 unisim/kernel/config/ini_config_file_helper.hh \
+unisim/kernel/config/json_config_file_helper.hh \
 unisim/service/http_server/http_server.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
@@ -697,6 +700,7 @@ unisim/util/reg/core/register.hh \
 unisim/util/cache/cache.hh \
 unisim/util/hypapp/hypapp.hh \
 unisim/util/nat_sort/nat_sort.hh \
+unisim/util/json/json.hh \
 unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/debug_selecting.hh \
 unisim/service/interfaces/debug_event.hh \
@@ -835,6 +839,7 @@ unisim/util/dictionary/dictionary.tcc \
 unisim/util/lexer/lexer.tcc \
 unisim/util/parser/parser.tcc \
 unisim/util/reg/core/register.tcc \
+unisim/util/json/json.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
@@ -934,8 +939,10 @@ unisim/service/http_server/embedded_style.css \
 unisim/service/http_server/uri.js \
 unisim/service/http_server/icon_export_config_xml.svg \
 unisim/service/http_server/icon_export_config_ini.svg \
+unisim/service/http_server/icon_export_config_json.svg \
 unisim/service/http_server/icon_import_config_xml.svg \
 unisim/service/http_server/icon_import_config_ini.svg \
+unisim/service/http_server/icon_import_config_json.svg \
 unisim/service/debug/profiler/by_address.css \
 unisim/service/debug/profiler/by_function_histogram.css \
 unisim/service/debug/profiler/by_function_table.css \

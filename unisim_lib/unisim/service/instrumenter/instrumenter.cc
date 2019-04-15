@@ -880,6 +880,7 @@ UserInterface::UserInterface(const char *name, Instrumenter *instrumenter)
 	, intr(true)
 	, halt(false)
 	, refresh_period(0.125)
+	, auto_reload(false)
 	, mutex_instruments()
 	, mutex_schedule()
 	, mutex_delta_steps()
@@ -1146,99 +1147,149 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 	
 	if(req.GetPath() == "toolbar_actions.js")
 	{
-		if(enable_cache)
+		if((req.GetRequestType() == unisim::util::hypapp::Request::GET) ||
+		   (req.GetRequestType() == unisim::util::hypapp::Request::HEAD))
 		{
-			response.EnableCache();
+			if(enable_cache)
+			{
+				response.EnableCache();
+			}
+			response.SetContentType("application/javascript");
+			
+			response << "InstrumenterToobarActions.prototype.bound_background_iframe_onload = null;" << std::endl;
+			response << "InstrumenterToobarActions.prototype.pending_cmd = null;" << std::endl;
+			response << "InstrumenterToobarActions.prototype.background_iframe = null;" << std::endl;
+			response << "InstrumenterToobarActions.prototype.retry_count = 0;" << std::endl;
+			response << "" << std::endl;
+			response << "function InstrumenterToobarActions()" << std::endl;
+			response << "{" << std::endl;
+			response << "\tthis.bound_background_iframe_onload = new Map();" << std::endl;
+			response << "\tthis.pending_cmd = null;" << std::endl;
+			response << "\tthis.background_iframe = null;" << std::endl;
+			response << "\tthis.retry_count = 0;" << std::endl;
+			response << "}" << std::endl;
+			response << "" << std::endl;
+			response << "InstrumenterToobarActions.prototype.get_instrumenter_tab = function()" << std::endl;
+			response << "{" << std::endl;
+			response << "\treturn gui.find_tab_by_uri('" << URI() << "/control') || gui.find_tab_by_uri('" << URI() << "') || gui.open_tab('top-middle-tile','control-" << GetName() << "','" << URI() << "/control',true);" << std::endl;
+			response << "}" << std::endl;
+			response << "" << std::endl;
+			response << "InstrumenterToobarActions.prototype.execute = function(cmd)" << std::endl;
+			response << "{" << std::endl;
+			response << "\tif(this.pending_cmd)" << std::endl;
+			response << "\t{" << std::endl;
+			response << "\t\t// if new command is same as the pending command, let pending command execute" << std::endl;
+			response << "\t\tif(this.pending_cmd == cmd) return;" << std::endl;
+			response << "\t\t// cancel pending command" << std::endl;
+			response << "\t\tif(this.bound_background_iframe_onload[this.pending_cmd])" << std::endl;
+			response << "\t\t{" << std::endl;
+			response << "\t\t\tthis.background_iframe.iframe_element.removeEventListener('load', this.bound_background_iframe_onload[this.pending_cmd]);" << std::endl;
+			response << "\t\t}" << std::endl;
+			response << "\t\tthis.pending_cmd = null;" << std::endl;
+			response << "\t}" << std::endl;
+			response << "\t" << std::endl;
+			response << "\tvar tab = this.get_instrumenter_tab();" << std::endl;
+			response << "\tif(tab)" << std::endl;
+			response << "\t{" << std::endl;
+			response << "\t\tvar foreground_iframe = tab.get_foreground_iframe();" << std::endl;
+			response << "\t\tif(foreground_iframe)" << std::endl;
+			response << "\t\t{" << std::endl;
+			response << "\t\t\tif(foreground_iframe.loaded)" << std::endl;
+			response << "\t\t\t{" << std::endl;
+			response << "\t\t\t\tvar cmd_button = foreground_iframe.iframe_element.contentWindow.document.getElementById(cmd);" << std::endl;
+			response << "\t\t\t\tif(cmd_button)" << std::endl;
+			response << "\t\t\t\t{" << std::endl;
+			response << "\t\t\t\t\t// simulate a submit" << std::endl;
+			response << "\t\t\t\t\tcmd_button.click();" << std::endl;
+			response << "\t\t\t\t\tthis.retry_count = 0;" << std::endl;
+			response << "\t\t\t\t\treturn true;" << std::endl;
+			response << "\t\t\t\t}" << std::endl;
+			response << "\t\t\t}" << std::endl;
+			response << "\t\t\tif(this.retry_count < 2)" << std::endl;
+			response << "\t\t\t{" << std::endl;
+			response << "\t\t\t\t// instrumenter page is either not yet loaded or command button is not available yet" << std::endl;
+			response << "\t\t\t\t++this.retry_count;" << std::endl;
+			response << "\t\t\t\tthis.background_iframe = tab.get_background_iframe();" << std::endl;
+			response << "\t\t\t\tif(this.background_iframe)" << std::endl;
+			response << "\t\t\t\t{" << std::endl;
+			response << "\t\t\t\t\t// try to execute command once instrumenter page is loaded" << std::endl;
+			response << "\t\t\t\t\tthis.pending_cmd = cmd;" << std::endl;
+			response << "\t\t\t\t\tthis.bound_background_iframe_onload[cmd] = this.onload.bind(this)" << std::endl;
+			response << "\t\t\t\t\tthis.background_iframe.iframe_element.addEventListener('load', this.bound_background_iframe_onload[cmd]);" << std::endl;
+			response << "\t\t\t\t}" << std::endl;
+			response << "\t\t\t}" << std::endl;
+			response << "\t\t}" << std::endl;
+			response << "\t}" << std::endl;
+			response << "\treturn false;" << std::endl;
+			response << "}" << std::endl;
+			response << "" << std::endl;
+			response << "InstrumenterToobarActions.prototype.onload = function()" << std::endl;
+			response << "{" << std::endl;
+			response << "\tvar cmd = this.pending_cmd;" << std::endl;
+			response << "\tif(this.bound_background_iframe_onload[cmd])" << std::endl;
+			response << "\t{" << std::endl;
+			response << "\t\tthis.background_iframe.iframe_element.removeEventListener('load', this.bound_background_iframe_onload[cmd]);" << std::endl;
+			response << "\t}" << std::endl;
+			response << "\tthis.pending_cmd = null;" << std::endl;
+			response << "\t// instrumenter page is loaded: retry execution of command" << std::endl;
+			response << "\tthis.execute(cmd);" << std::endl;
+			response << "}" << std::endl;
+			response << "" << std::endl;
+			response << "if(GUI.prototype.constructor)" << std::endl;
+			response << "{" << std::endl;
+			response << "\tGUI.prototype.instrumenter_toolbar_actions = new InstrumenterToobarActions();" << std::endl;
+			response << "}" << std::endl;
 		}
-		response.SetContentType("application/javascript");
-		
-		response << "InstrumenterToobarActions.prototype.bound_background_iframe_onload = null;" << std::endl;
-		response << "InstrumenterToobarActions.prototype.pending_cmd = null;" << std::endl;
-		response << "InstrumenterToobarActions.prototype.background_iframe = null;" << std::endl;
-		response << "InstrumenterToobarActions.prototype.retry_count = 0;" << std::endl;
-		response << "" << std::endl;
-		response << "function InstrumenterToobarActions()" << std::endl;
-		response << "{" << std::endl;
-		response << "\tthis.bound_background_iframe_onload = new Map();" << std::endl;
-		response << "\tthis.pending_cmd = null;" << std::endl;
-		response << "\tthis.background_iframe = null;" << std::endl;
-		response << "\tthis.retry_count = 0;" << std::endl;
-		response << "}" << std::endl;
-		response << "" << std::endl;
-		response << "InstrumenterToobarActions.prototype.get_instrumenter_tab = function()" << std::endl;
-		response << "{" << std::endl;
-		response << "\ttab = gui.find_tab_by_name('" << GetName() << "');" << std::endl;
-		response << "\treturn tab || gui.open_tab('top-middle-tile','" << GetName() << "','" << URI() << "',true);" << std::endl;
-		response << "}" << std::endl;
-		response << "" << std::endl;
-		response << "InstrumenterToobarActions.prototype.execute = function(cmd)" << std::endl;
-		response << "{" << std::endl;
-		response << "\tif(this.pending_cmd)" << std::endl;
-		response << "\t{" << std::endl;
-		response << "\t\t// if new command is same as the pending command, let pending command execute" << std::endl;
-		response << "\t\tif(this.pending_cmd == cmd) return;" << std::endl;
-		response << "\t\t// cancel pending command" << std::endl;
-		response << "\t\tif(this.bound_background_iframe_onload[this.pending_cmd])" << std::endl;
-		response << "\t\t{" << std::endl;
-		response << "\t\t\tthis.background_iframe.iframe_element.removeEventListener('load', this.bound_background_iframe_onload[this.pending_cmd]);" << std::endl;
-		response << "\t\t}" << std::endl;
-		response << "\t\tthis.pending_cmd = null;" << std::endl;
-		response << "\t}" << std::endl;
-		response << "\t" << std::endl;
-		response << "\tvar tab = this.get_instrumenter_tab();" << std::endl;
-		response << "\tif(tab)" << std::endl;
-		response << "\t{" << std::endl;
-		response << "\t\tvar foreground_iframe = tab.get_foreground_iframe();" << std::endl;
-		response << "\t\tif(foreground_iframe)" << std::endl;
-		response << "\t\t{" << std::endl;
-		response << "\t\t\tif(foreground_iframe.loaded)" << std::endl;
-		response << "\t\t\t{" << std::endl;
-		response << "\t\t\t\tvar cmd_button = foreground_iframe.iframe_element.contentWindow.document.getElementById(cmd);" << std::endl;
-		response << "\t\t\t\tif(cmd_button)" << std::endl;
-		response << "\t\t\t\t{" << std::endl;
-		response << "\t\t\t\t\t// simulate a submit" << std::endl;
-		response << "\t\t\t\t\tcmd_button.click();" << std::endl;
-		response << "\t\t\t\t\tthis.retry_count = 0;" << std::endl;
-		response << "\t\t\t\t\treturn true;" << std::endl;
-		response << "\t\t\t\t}" << std::endl;
-		response << "\t\t\t}" << std::endl;
-		response << "\t\t\tif(this.retry_count < 2)" << std::endl;
-		response << "\t\t\t{" << std::endl;
-		response << "\t\t\t\t// instrumenter page is either not yet loaded or command button is not available yet" << std::endl;
-		response << "\t\t\t\t++this.retry_count;" << std::endl;
-		response << "\t\t\t\tthis.background_iframe = tab.get_background_iframe();" << std::endl;
-		response << "\t\t\t\tif(this.background_iframe)" << std::endl;
-		response << "\t\t\t\t{" << std::endl;
-		response << "\t\t\t\t\t// try to execute command once instrumenter page is loaded" << std::endl;
-		response << "\t\t\t\t\tthis.pending_cmd = cmd;" << std::endl;
-		response << "\t\t\t\t\tthis.bound_background_iframe_onload[cmd] = this.onload.bind(this)" << std::endl;
-		response << "\t\t\t\t\tthis.background_iframe.iframe_element.addEventListener('load', this.bound_background_iframe_onload[cmd]);" << std::endl;
-		response << "\t\t\t\t}" << std::endl;
-		response << "\t\t\t}" << std::endl;
-		response << "\t\t}" << std::endl;
-		response << "\t}" << std::endl;
-		response << "\treturn false;" << std::endl;
-		response << "}" << std::endl;
-		response << "" << std::endl;
-		response << "InstrumenterToobarActions.prototype.onload = function()" << std::endl;
-		response << "{" << std::endl;
-		response << "\tvar cmd = this.pending_cmd;" << std::endl;
-		response << "\tif(this.bound_background_iframe_onload[cmd])" << std::endl;
-		response << "\t{" << std::endl;
-		response << "\t\tthis.background_iframe.iframe_element.removeEventListener('load', this.bound_background_iframe_onload[cmd]);" << std::endl;
-		response << "\t}" << std::endl;
-		response << "\tthis.pending_cmd = null;" << std::endl;
-		response << "\t// instrumenter page is loaded: retry execution of command" << std::endl;
-		response << "\tthis.execute(cmd);" << std::endl;
-		response << "}" << std::endl;
-		response << "" << std::endl;
-		response << "if(GUI.prototype.constructor)" << std::endl;
-		response << "{" << std::endl;
-		response << "\tGUI.prototype.instrumenter_toolbar_actions = new InstrumenterToobarActions();" << std::endl;
-		response << "}" << std::endl;
+		else if(req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)
+		{
+			response.SetContentType("");
+			response.Allow("OPTIONS, GET, HEAD");
+		}
+		else
+		{
+			response.SetStatus(unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED);
+			response.Allow("OPTIONS, GET, HEAD");
+			
+			response << "<!DOCTYPE html>" << std::endl;
+			response << "<html>" << std::endl;
+			response << "\t<head>" << std::endl;
+			response << "\t\t<title>Error " << (unsigned int) unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << " (" << unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << ")</title>" << std::endl;
+			response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+			response << "\t\t<meta name=\"description\" content=\"Error " << (unsigned int) unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << " (" << unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << ")\">" << std::endl;
+			response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+			response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+			response << "\t\t<style>" << std::endl;
+			response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+			response << "\t\t</style>" << std::endl;
+			response << "\t</head>" << std::endl;
+			response << "\t<body>" << std::endl;
+			response << "\t\t<p>Method not allowed</p>" << std::endl;
+			response << "\t</body>" << std::endl;
+			response << "</html>" << std::endl;
+		}
 	}
-	else
+	else if((req.GetPath() == "") || (req.GetPath() == "control") || (req.GetPath() == "instrument"))
 	{
+		std::string form_action;
+		bool enable_control_interface = false;
+		bool enable_instrument_interface = false;
+		if(req.GetPath() == "")
+		{
+			enable_control_interface = true;
+			enable_instrument_interface = true;
+			form_action = URI();
+		}
+		else if(req.GetPath() == "control")
+		{
+			enable_control_interface = true;
+			form_action = URI() + "/control";
+		}
+		else if(req.GetPath() == "instrument")
+		{
+			enable_instrument_interface = true;
+			form_action = URI() + "/instrument";
+		}
+		
 		if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
 		{
 			LockPost();
@@ -1263,14 +1314,31 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 				Continue();
 			}
 			
+			auto_reload = true;
+
 			UnlockPost();
 
 			// Post/Redirect/Get pattern: got Post, so do Redirect
 			response.SetStatus(unisim::util::hypapp::HttpResponse::SEE_OTHER);
-			response.SetHeaderField("Location", URI());
+			response.SetHeaderField("Location", form_action);
 		}
-		else
+		else if((req.GetRequestType() == unisim::util::hypapp::Request::GET) ||
+		        (req.GetRequestType() == unisim::util::hypapp::Request::HEAD))
 		{
+			std::string title;
+			if(enable_control_interface && enable_instrument_interface)
+			{
+				title = "Hardware instrumenter";
+			}
+			else if(enable_control_interface)
+			{
+				title = "Simulation controls";
+			}
+			else if(enable_instrument_interface)
+			{
+				title = "Signals instrumenter";
+			}
+			
 			response << "<!DOCTYPE html>" << std::endl;
 			response << "<html>" << std::endl;
 			
@@ -1279,7 +1347,7 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 				Stop(-1, /* asynchronous */ true);
 				
 				response << "\t<head>" << std::endl;
-				response << "\t\t<title>Hardware instrumenter</title>" << std::endl;
+				response << "\t\t<title>" << title << "</title>" << std::endl;
 				response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 				response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
 				response << "\t\t<script type=\"text/javascript\">document.domain=\"" << req.GetDomain() << "\";</script>" << std::endl;
@@ -1299,8 +1367,8 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 				LockInstruments();
 				
 				response << "\t<head>" << std::endl;
-				response << "\t\t<title>Hardware instrumenter</title>" << std::endl;
-				response << "\t\t<meta name=\"description\" content=\"remote control interface over HTTP of virtual platform hardware signal instrumenter\">" << std::endl;
+				response << "\t\t<title>" << title << "</title>" << std::endl;
+				response << "\t\t<meta name=\"description\" content=\"remote control interface over HTTP of virtual platform simulation instrumenter\">" << std::endl;
 				response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 				response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
 				response << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
@@ -1343,12 +1411,16 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 				response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/instrumenter/script.js\"></script>" << std::endl;
 				response << "\t</head>" << std::endl;
 				
-				if(cont)
+				if(auto_reload)
 				{
 					response << "\t<body onload=\"gui.auto_reload(" << (unsigned int)(refresh_period * 1000) << ", 'global-refresh')\">" << std::endl; // while in continue mode, reload page every seconds
 					if(refresh_period < max_cont_refresh_period)
 					{
 						refresh_period = std::min(2.0 * refresh_period, max_cont_refresh_period);
+					}
+					if(!cont)
+					{
+						auto_reload = false;
 					}
 				}
 				else
@@ -1356,89 +1428,95 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 					response << "\t<body onload=\"gui.auto_reload(0)\">" << std::endl;
 				}
 				
-				response << "\t\t<table class=\"status-table\">" << std::endl;
-				response << "\t\t\t<thead>" << std::endl;
-				response << "\t\t\t\t<tr>" << std::endl;
-				response << "\t\t\t\t\t<th class=\"status\">Status</th>" << std::endl;
-				response << "\t\t\t\t\t<th class=\"time\">Time</th>" << std::endl;
-				response << "\t\t\t\t\t<th class=\"time\">(exactly)</th>" << std::endl;
-				response << "\t\t\t\t</tr>" << std::endl;
-				response << "\t\t\t</thead>" << std::endl;
-				response << "\t\t\t<tbody>" << std::endl;
-				response << "\t\t\t\t<tr>" << std::endl;
-				response << "\t\t\t\t\t<td class=\"status\">" << (cont ? "running" : "paused") << "</td>" << std::endl;
-				
+				if(enable_control_interface)
 				{
-					std::ios_base::fmtflags ff = response.flags();
-					response.setf(std::ios::fixed);
-					response.precision(3);
-					response << "\t\t\t\t\t<td class=\"time\" title=\"Target time\">" << curr_time_stamp.to_seconds() << " seconds</td>" << std::endl;
-					response.flags(ff);
-				}
-				
-				response << "\t\t\t\t\t<td class=\"time\" title=\"Target time\">(" << unisim::util::hypapp::HTML_Encoder::Encode(curr_time_stamp.to_string()) << ")</td>" << std::endl;
-				response << "\t\t\t\t</tr>" << std::endl;
-				response << "\t\t\t</tbody>" << std::endl;
-				response << "\t\t</table>" << std::endl;
-				
-				std::string form_action = URI();
-				response << "\t\t<h2>Commands</h2>" << std::endl;
-				response << "\t\t<table class=\"command-table\">" << std::endl;
-				response << "\t\t\t<tbody>" << std::endl;
-				response << "\t\t\t\t<tr>" << std::endl;
-				response << "\t\t\t\t\t<td><form id=\"delta-step-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"Step some delta cycles\" id=\"delta-step\" type=\"submit\" name=\"delta-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">&delta;</button></form></td>" << std::endl;
-				response << "\t\t\t\t\t<td><form id=\"timed-step-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"Step by time\" id=\"timed-step\" type=\"submit\" name=\"timed-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">Step</button>&nbsp;by&nbsp;<input class=\"step-time\" type=\"text\" spellcheck=\"false\" name=\"step-time\" value=\"" << user_step_time << "\"" << ((cont || halt) ? " disabled" : "") << "><input style=\"display:none;\" type=\"text\" name=\"curr-time-stamp\" value=\"" << curr_time_stamp << "\" readonly></form></td>" << std::endl;
-				response << "\t\t\t\t\t<td><form id=\"" << (cont ? "intr" : "cont") << "-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"" << (cont ? "Interrupt" : "Continue") << "\" id=\"" << (cont ? "intr" : "cont") << "\" type=\"submit\" name=\"" << (cont ? "intr" : "cont") << "\" value=\"on\"" << (halt ? " disabled" : "") << ">" << (cont ? "Interrupt" : "Continue") << "</button></form></td>" << std::endl;
-				response << "\t\t\t\t\t<td><form id=\"halt-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"Halt\" id=\"halt\" type=\"submit\" name=\"halt\" value=\"on\"" << (halt ? " disabled" : "")  << ">Halt</button></form></td>" << std::endl;
-				response << "\t\t\t\t</tr>" << std::endl;
-				response << "\t\t\t</tbody>" << std::endl;
-				response << "\t\t</table>" << std::endl;
-				response << "\t\t<h2>Instruments</h2>" << std::endl;
-				response << "\t\t<div class=\"instruments-table\">" << std::endl;
-				response << "\t\t\t<div class=\"instruments-table-head\">" << std::endl;
-				response << "\t\t\t\t<div class=\"signal-enable\">Enable<br><form action=\"" << form_action << "\" method=\"post\"><button title=\"Disable injection for all instruments\" class=\"signal-disable-all\" type=\"submit\" name=\"disable*all\" value=\"on\">C</button><button title=\"Enable injection for all instruments\" class=\"signal-enable-all\" type=\"submit\" name=\"enable*all\" value=\"on\">A</button></form></div>" << std::endl;
-				response << "\t\t\t\t<div class=\"signal-brkpt-enable\">Brkpt<br><form action=\"" << form_action << "\" method=\"post\"><button title=\"Disable breakpoints for all instruments\" class=\"signal-brkpt-disable-all\" type=\"submit\" name=\"disable-brkpt*all\" value=\"on\">C</button><button title=\"Enable breakpoints for all instruments\" class=\"signal-brkpt-enable-all\" type=\"submit\" name=\"enable-brkpt*all\" value=\"on\">A</button></form></div>" << std::endl;
-				response << "\t\t\t\t<div class=\"signal-name\">Hardware signal</div>" << std::endl;
-				response << "\t\t\t\t<div class=\"signal-toggle\">Toggle</div>" << std::endl;
-				response << "\t\t\t\t<div class=\"signal-value\">Value</div>" << std::endl;
-				response << "\t\t\t\t<div class=\"scrollbar\"></div>" << std::endl;
-				response << "\t\t\t</div>" << std::endl;
-				response << "\t\t\t<div class=\"instruments-table-body scroller\">" << std::endl;
-
-				std::stringstream sstr(instrumentation);
-				
-				std::vector<std::string>::iterator instrumented_signal_name_it;
-				for(instrumented_signal_name_it = instrumented_signal_names.begin(); instrumented_signal_name_it != instrumented_signal_names.end(); instrumented_signal_name_it++)
-				{
-					const std::string& instrumented_signal_name = *instrumented_signal_name_it;
-
-					UserInstrument *user_instrument = FindUserInstrument(instrumented_signal_name);
+					response << "\t\t<table class=\"status-table\">" << std::endl;
+					response << "\t\t\t<thead>" << std::endl;
+					response << "\t\t\t\t<tr>" << std::endl;
+					response << "\t\t\t\t\t<th class=\"status\">Status</th>" << std::endl;
+					response << "\t\t\t\t\t<th class=\"time\">Time</th>" << std::endl;
+					response << "\t\t\t\t\t<th class=\"time\">(exactly)</th>" << std::endl;
+					response << "\t\t\t\t</tr>" << std::endl;
+					response << "\t\t\t</thead>" << std::endl;
+					response << "\t\t\t<tbody>" << std::endl;
+					response << "\t\t\t\t<tr>" << std::endl;
+					response << "\t\t\t\t\t<td class=\"status\">" << (cont ? "running" : "paused") << "</td>" << std::endl;
 					
-					if(user_instrument)
 					{
-						std::string value;
-						user_instrument->Get(value);
-						bool is_boolean = user_instrument->IsBoolean();
-						bool bool_value = false;
-						if(is_boolean) user_instrument->Get(bool_value);
-						response << "\t\t\t\t<div class=\"signal" << (user_instrument->HasBreakpointCondition() ? " brkpt-cond" : "") << "\">" << std::endl;
-						response << "\t\t\t\t\t<div class=\"signal-enable\"><form action=\"" << form_action << "\" method=\"post\"><button title=\"Enable/Disable injection\" class=\"signal-enable" << (user_instrument->IsInjectionEnabled() ? " checked" : " unchecked") << "\" type=\"submit\" name=\"" << (user_instrument->IsInjectionEnabled() ? "disable" : "enable") << "*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></button></form></div>" << std::endl;
-						response << "\t\t\t\t\t<div class=\"signal-brkpt-enable\"><form action=\"" << form_action << "\" method=\"post\"><button title=\"Enable/Disable breakpoint\" class=\"signal-brkpt-enable" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : " unchecked") << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"submit\" name=\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? "disable" : "enable") << "-brkpt*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></button></form></div>" << std::endl;
-						response << "\t\t\t\t\t<div class=\"signal-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "</div>" << std::endl;
-						response << "\t\t\t\t\t<div class=\"signal-toggle\">";
-						if(is_boolean)
-						{
-							response << "<form action=\"" << form_action << "\" method=\"post\"><button title=\"Click to toggle\" class=\"signal-toggle-button signal-" << (bool_value ? "on" : "off") << "\" type=\"submit\" name=\"toggle*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << ">" << (bool_value ? "on" : "off")  << "</button></form>";
-						}
-						response << "</div>" << std::endl;
-						response << "\t\t\t\t\t\t<div class=\"signal-value\"><form action=\"" << form_action << "\" method=\"post\"><input title=\"Type a value then press enter\" class=\"signal-value-text" << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"text\" spellcheck=\"false\" name=\"set*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\" value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></form></div>" << std::endl;
-						response << "\t\t\t\t</div>" << std::endl;
+						std::ios_base::fmtflags ff = response.flags();
+						response.setf(std::ios::fixed);
+						response.precision(3);
+						response << "\t\t\t\t\t<td class=\"time\" title=\"Target time\">" << curr_time_stamp.to_seconds() << " seconds</td>" << std::endl;
+						response.flags(ff);
 					}
-				}
-
+					
+					response << "\t\t\t\t\t<td class=\"time\" title=\"Target time\">(" << unisim::util::hypapp::HTML_Encoder::Encode(curr_time_stamp.to_string()) << ")</td>" << std::endl;
+					response << "\t\t\t\t</tr>" << std::endl;
+					response << "\t\t\t</tbody>" << std::endl;
+					response << "\t\t</table>" << std::endl;
 				
-				response << "\t\t\t</div>" << std::endl;
-				response << "\t\t</div>" << std::endl;
+					response << "\t\t<h2>Commands</h2>" << std::endl;
+					response << "\t\t<table class=\"command-table\">" << std::endl;
+					response << "\t\t\t<tbody>" << std::endl;
+					response << "\t\t\t\t<tr>" << std::endl;
+					response << "\t\t\t\t\t<td><form id=\"delta-step-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"Step some delta cycles\" id=\"delta-step\" type=\"submit\" name=\"delta-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">&delta;</button></form></td>" << std::endl;
+					response << "\t\t\t\t\t<td><form id=\"timed-step-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"Step by time\" id=\"timed-step\" type=\"submit\" name=\"timed-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">Step</button>&nbsp;by&nbsp;<input class=\"step-time\" type=\"text\" spellcheck=\"false\" name=\"step-time\" value=\"" << user_step_time << "\"" << ((cont || halt) ? " disabled" : "") << "><input style=\"display:none;\" type=\"text\" name=\"curr-time-stamp\" value=\"" << curr_time_stamp << "\" readonly></form></td>" << std::endl;
+					response << "\t\t\t\t\t<td><form id=\"" << (cont ? "intr" : "cont") << "-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"" << (cont ? "Interrupt" : "Continue") << "\" id=\"" << (cont ? "intr" : "cont") << "\" type=\"submit\" name=\"" << (cont ? "intr" : "cont") << "\" value=\"on\"" << (halt ? " disabled" : "") << ">" << (cont ? "Interrupt" : "Continue") << "</button></form></td>" << std::endl;
+					response << "\t\t\t\t\t<td><form id=\"halt-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"Halt\" id=\"halt\" type=\"submit\" name=\"halt\" value=\"on\"" << (halt ? " disabled" : "")  << ">Halt</button></form></td>" << std::endl;
+					response << "\t\t\t\t</tr>" << std::endl;
+					response << "\t\t\t</tbody>" << std::endl;
+					response << "\t\t</table>" << std::endl;
+				}
+				
+				if(enable_instrument_interface)
+				{
+					response << "\t\t<h2>Instruments</h2>" << std::endl;
+					response << "\t\t<div class=\"instruments-table\">" << std::endl;
+					response << "\t\t\t<div class=\"instruments-table-head\">" << std::endl;
+					response << "\t\t\t\t<div class=\"signal-enable\">Enable<br><form action=\"" << form_action << "\" method=\"post\"><button title=\"Disable injection for all instruments\" class=\"signal-disable-all\" type=\"submit\" name=\"disable*all\" value=\"on\">C</button><button title=\"Enable injection for all instruments\" class=\"signal-enable-all\" type=\"submit\" name=\"enable*all\" value=\"on\">A</button></form></div>" << std::endl;
+					response << "\t\t\t\t<div class=\"signal-brkpt-enable\">Brkpt<br><form action=\"" << form_action << "\" method=\"post\"><button title=\"Disable breakpoints for all instruments\" class=\"signal-brkpt-disable-all\" type=\"submit\" name=\"disable-brkpt*all\" value=\"on\">C</button><button title=\"Enable breakpoints for all instruments\" class=\"signal-brkpt-enable-all\" type=\"submit\" name=\"enable-brkpt*all\" value=\"on\">A</button></form></div>" << std::endl;
+					response << "\t\t\t\t<div class=\"signal-name\">Hardware signal</div>" << std::endl;
+					response << "\t\t\t\t<div class=\"signal-toggle\">Toggle</div>" << std::endl;
+					response << "\t\t\t\t<div class=\"signal-value\">Value</div>" << std::endl;
+					response << "\t\t\t\t<div class=\"scrollbar\"></div>" << std::endl;
+					response << "\t\t\t</div>" << std::endl;
+					response << "\t\t\t<div class=\"instruments-table-body scroller\">" << std::endl;
+
+					std::stringstream sstr(instrumentation);
+					
+					std::vector<std::string>::iterator instrumented_signal_name_it;
+					for(instrumented_signal_name_it = instrumented_signal_names.begin(); instrumented_signal_name_it != instrumented_signal_names.end(); instrumented_signal_name_it++)
+					{
+						const std::string& instrumented_signal_name = *instrumented_signal_name_it;
+
+						UserInstrument *user_instrument = FindUserInstrument(instrumented_signal_name);
+						
+						if(user_instrument)
+						{
+							std::string value;
+							user_instrument->Get(value);
+							bool is_boolean = user_instrument->IsBoolean();
+							bool bool_value = false;
+							if(is_boolean) user_instrument->Get(bool_value);
+							response << "\t\t\t\t<div class=\"signal" << (user_instrument->HasBreakpointCondition() ? " brkpt-cond" : "") << "\">" << std::endl;
+							response << "\t\t\t\t\t<div class=\"signal-enable\"><form action=\"" << form_action << "\" method=\"post\"><button title=\"Enable/Disable injection\" class=\"signal-enable" << (user_instrument->IsInjectionEnabled() ? " checked" : " unchecked") << "\" type=\"submit\" name=\"" << (user_instrument->IsInjectionEnabled() ? "disable" : "enable") << "*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></button></form></div>" << std::endl;
+							response << "\t\t\t\t\t<div class=\"signal-brkpt-enable\"><form action=\"" << form_action << "\" method=\"post\"><button title=\"Enable/Disable breakpoint\" class=\"signal-brkpt-enable" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : " unchecked") << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"submit\" name=\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? "disable" : "enable") << "-brkpt*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></button></form></div>" << std::endl;
+							response << "\t\t\t\t\t<div class=\"signal-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "</div>" << std::endl;
+							response << "\t\t\t\t\t<div class=\"signal-toggle\">";
+							if(is_boolean)
+							{
+								response << "<form action=\"" << form_action << "\" method=\"post\"><button title=\"Click to toggle\" class=\"signal-toggle-button signal-" << (bool_value ? "on" : "off") << "\" type=\"submit\" name=\"toggle*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << ">" << (bool_value ? "on" : "off")  << "</button></form>";
+							}
+							response << "</div>" << std::endl;
+							response << "\t\t\t\t\t\t<div class=\"signal-value\"><form action=\"" << form_action << "\" method=\"post\"><input title=\"Type a value then press enter\" class=\"signal-value-text" << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"text\" spellcheck=\"false\" name=\"set*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\" value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></form></div>" << std::endl;
+							response << "\t\t\t\t</div>" << std::endl;
+						}
+					}
+
+					
+					response << "\t\t\t</div>" << std::endl;
+					response << "\t\t</div>" << std::endl;
+				}
 				
 				response << "\t</body>" << std::endl;
 				
@@ -1448,6 +1526,54 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 			response << "</html>" << std::endl;
 			response << std::endl;
 		}
+		else if(req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)
+		{
+			response.SetContentType("");
+			response.Allow("OPTIONS, POST, GET, HEAD");
+		}
+		else
+		{
+			response.SetStatus(unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED);
+			response.Allow("OPTIONS, POST, GET, HEAD");
+			
+			response << "<!DOCTYPE html>" << std::endl;
+			response << "<html>" << std::endl;
+			response << "\t<head>" << std::endl;
+			response << "\t\t<title>Error " << (unsigned int) unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << " (" << unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << ")</title>" << std::endl;
+			response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+			response << "\t\t<meta name=\"description\" content=\"Error " << (unsigned int) unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << " (" << unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << ")\">" << std::endl;
+			response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+			response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+			response << "\t\t<style>" << std::endl;
+			response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+			response << "\t\t</style>" << std::endl;
+			response << "\t</head>" << std::endl;
+			response << "\t<body>" << std::endl;
+			response << "\t\t<p>Method not allowed</p>" << std::endl;
+			response << "\t</body>" << std::endl;
+			response << "</html>" << std::endl;
+		}
+	}
+	else
+	{
+		response.SetStatus(unisim::util::hypapp::HttpResponse::NOT_FOUND);
+		
+		response << "<!DOCTYPE html>" << std::endl;
+		response << "<html>" << std::endl;
+		response << "\t<head>" << std::endl;
+		response << "\t\t<title>Error " << (unsigned int) unisim::util::hypapp::HttpResponse::NOT_FOUND << " (" << unisim::util::hypapp::HttpResponse::NOT_FOUND << ")</title>" << std::endl;
+		response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		response << "\t\t<meta name=\"description\" content=\"Error " << (unsigned int) unisim::util::hypapp::HttpResponse::NOT_FOUND << " (" << unisim::util::hypapp::HttpResponse::NOT_FOUND << ")\">" << std::endl;
+		response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+		response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+		response << "\t\t<style>" << std::endl;
+		response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+		response << "\t\t</style>" << std::endl;
+		response << "\t</head>" << std::endl;
+		response << "\t<body>" << std::endl;
+		response << "\t\t<p>Unavailable</p>" << std::endl;
+		response << "\t</body>" << std::endl;
+		response << "</html>" << std::endl;
 	}
 	
 	bool send_status = (req.GetRequestType() == unisim::util::hypapp::Request::HEAD) ? response.SendHeader(conn) : response.Send(conn);
@@ -1476,9 +1602,9 @@ void UserInterface::ScanWebInterfaceModdings(unisim::service::interfaces::WebInt
 	scanner.Append(unisim::service::interfaces::ToolbarOpenTabAction(
 		/* name */      GetName(), 
 		/* label */     "<img src=\"/unisim/service/instrumenter/icon.svg\">",
-		/* tips */      "Hardware instrumenter",
+		/* tips */      "Signal instrumenter",
 		/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
-		/* uri */       URI()
+		/* uri */       URI() + "/instrument"
 	));
 	
 	scanner.Append(unisim::service::interfaces::ToolbarDoAction(
@@ -1587,9 +1713,11 @@ void UserInterface::PropertySetter::UserInstrumentCommand::Apply(PropertySetter&
 			break;
 		case ENABLE_ALL:
 			user_interface.EnableInjection();
+			property_setter.delta_steps = std::max(3u, property_setter.delta_steps);
 			break;
 		case DISABLE_ALL:
 			user_interface.DisableInjection();
+			property_setter.delta_steps = std::max(3u, property_setter.delta_steps);
 			break;
 		case ENABLE_ALL_VALUE_CHANGED_BREAKPOINTS:
 			user_interface.EnableValueChangedBreakpoint();
@@ -1599,9 +1727,11 @@ void UserInterface::PropertySetter::UserInstrumentCommand::Apply(PropertySetter&
 			break;
 		case ENABLE:
 			user_instrument->EnableInjection();
+			property_setter.delta_steps = std::max(3u, property_setter.delta_steps);
 			break;
 		case DISABLE:
 			user_instrument->DisableInjection();
+			property_setter.delta_steps = std::max(3u, property_setter.delta_steps);
 			break;
 		case ENABLE_VALUE_CHANGED_BRKPT:
 			user_instrument->EnableValueChangedBreakpoint();
@@ -1812,8 +1942,14 @@ void UserInterface::PropertySetter::Apply()
 		user_interface.delta_steps = delta_steps;
 		cont = true;
 	}
-	if(intr) user_interface.intr = true;
-	if(halt) user_interface.halt = true;
+	if(intr)
+	{
+		user_interface.intr = true;
+	}
+	if(halt)
+	{
+		user_interface.halt = true;
+	}
 }
 
 CSV_Reader::CSV_Reader(const char *name, Instrumenter *instrumenter)

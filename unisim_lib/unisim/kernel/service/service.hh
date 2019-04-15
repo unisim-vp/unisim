@@ -120,6 +120,7 @@ class VariableBase
 public:
 	typedef enum { VAR_VOID, VAR_ARRAY, VAR_PARAMETER, VAR_STATISTIC, VAR_REGISTER, VAR_FORMULA, VAR_SIGNAL } Type;
 	typedef enum { FMT_DEFAULT, FMT_HEX, FMT_DEC } Format;
+	typedef enum { DT_USER, DT_BOOL, DT_SCHAR, DT_SHORT, DT_INT, DT_LONG, DT_LONG_LONG, DT_UCHAR, DT_USHORT, DT_UINT, DT_ULONG, DT_ULONG_LONG, DT_FLOAT, DT_DOUBLE, DT_STRING } DataType;
 
 	VariableBase();
 	VariableBase(const char *name, Object *owner, Type type, const char *description = 0);
@@ -135,6 +136,7 @@ public:
 	const char *GetTypeName() const;
 	Format GetFormat() const;
 	virtual const char *GetDataTypeName() const;
+	virtual DataType GetDataType() const;
 	bool HasEnumeratedValues() const;
 	bool HasEnumeratedValue(const char *value) const;
 	void GetEnumeratedValues(std::vector<std::string> &values) const;
@@ -341,6 +343,8 @@ private:
 	Parameter<std::string> *var_license;
 	Parameter<std::string> *var_schematic;
 	Parameter<bool> *param_enable_press_enter_at_exit;
+	Parameter<std::string> *param_input_config_file_format;
+	Parameter<std::string> *param_output_config_file_format;
 	
 	void Version(std::ostream& os) const;
 	void Help(std::ostream& os) const;
@@ -442,6 +446,7 @@ public:
 	Variable(const char *name, Object *owner, TYPE& storage, VariableBase::Type type, const char *description = NULL);
 
 	virtual const char *GetDataTypeName() const;
+	virtual DataType GetDataType() const;
 	virtual unsigned int GetBitSize() const;
 	virtual operator bool () const;
 	virtual operator long long () const;
@@ -462,12 +467,17 @@ private:
 };
 
 template <class TYPE>
-void
-Variable<TYPE>::Set( TYPE const& value )
+void Variable<TYPE>::Set( TYPE const& value )
 {
 	SetModified(*storage != value);
 	*storage = value;
 	NotifyListeners();
+}
+
+template <class TYPE>
+VariableBase::DataType Variable<TYPE>::GetDataType() const
+{
+	return DT_USER;
 }
 
 template <class TYPE>

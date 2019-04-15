@@ -46,12 +46,13 @@ std::string Escape(const std::string& s)
 		char c = s[i];
 		switch(c)
 		{
-			case '\\': r += "\\"; break;
+			case '\"': r += "\\\""; break;
+			case '\\': r += "\\\\"; break;
 			case '\r': r += "\\r"; break;
 			case '\n': r += "\\n"; break;
 			case '\t': r += "\\t"; break;
 			case '\b': r += "\\b"; break;
-			default: r.append(1, c); break;
+			default: r += c; break;
 		}
 	}
 	return r;
@@ -80,6 +81,8 @@ std::ostream& operator << (std::ostream& os, const Token& token)
 		case TOK_EOF          : os << "an end-of-file"; break;
 		default               : os << "an unknown token"; break;
 	}
+	
+	return os;
 }
 
 std::string PrettyString(const Token& token, const std::string& text)
@@ -89,7 +92,7 @@ std::string PrettyString(const Token& token, const std::string& text)
 		case TOK_IO_ERROR     : break;
 		case TOK_ERROR        : break;
 		case TOK_VOID         : break;
-		case TOK_STRING       : return std::string("string ") + Escape(text); break;
+		case TOK_STRING       : return std::string("string \"") + Escape(text) + "\""; break;
 		case TOK_INT          : return std::string("number ") + text; break;
 		case TOK_UINT         : return std::string("number ") + text; break;
 		case TOK_FLOAT        : return std::string("number ") + text; break;
@@ -108,90 +111,146 @@ std::string PrettyString(const Token& token, const std::string& text)
 	return std::string();
 }
 
-/////////////////////////////// JSON_Printer //////////////////////////////////
-
-JSON_Printer::JSON_Printer(std::ostream& _out, std::ostream& _err)
-	: out(_out)
-	, err(_err)
+std::ostream& operator << (std::ostream& os, const JSON_ValueType& type)
 {
-}
-
-void JSON_Printer::BeginObject()
-{
-	out << "{";
-}
-
-void JSON_Printer::EndObject()
-{
-	out << "}";
-}
-void JSON_Printer::BeginArray()
-{
-	out << "[";
-}
-
-void JSON_Printer::EndArray()
-{
-	out << "]";
-}
-
-void JSON_Printer::Comma()
-{
-	out << ",";
-}
-
-void JSON_Printer::Member(const std::string& name)
-{
-	out << "\"" << name << "\":";
-}
-
-void JSON_Printer::Value(const std::string& value)
-{
-	out << "\"";
-	for(std::size_t i = 0; i < value.length(); ++i)
+	switch(type)
 	{
-		char c = value[i];
-		switch(c)
-		{
-			case '\\': out << "\\\\";break;
-			case '\r': out << "\\r"; break;
-			case '\n': out << "\\n"; break;
-			case '\t': out << "\\t"; break;
-			case '\b': out << "\\b"; break;
-			default: out << c; break;
-		}
+		case JSON_VALUE  : os << "value"; break;
+		case JSON_STRING : os << "string"; break;
+		case JSON_INT    : os << "integer"; break;
+		case JSON_UINT   : os << "unsigned integer"; break;
+		case JSON_FLOAT  : os << "float"; break;
+		case JSON_OBJECT : os << "object"; break;
+		case JSON_ARRAY  : os << "array"; break;
+		case JSON_BOOLEAN: os << "boolean"; break;
+		case JSON_NULL   : os << "null"; break;
+		default          : os << "value of unknown type"; break;
 	}
-	out << "\"";
+	return os;
 }
 
-void JSON_Printer::Value(uint64_t value)
+std::ostream& operator << (std::ostream& os, const JSON_Value& value)
 {
-	out << value;
+	switch(value.GetType())
+	{
+		case JSON_VALUE  : break;
+		case JSON_STRING : os << value.AsString(); break;
+		case JSON_INT    : os << value.AsInteger(); break;
+		case JSON_UINT   : os << value.AsUnsignedInteger(); break;
+		case JSON_FLOAT  : os << value.AsFloat(); break;
+		case JSON_OBJECT : os << value.AsObject(); break;
+		case JSON_ARRAY  : os << value.AsArray(); break;
+		case JSON_BOOLEAN: os << value.AsBoolean(); break;
+		case JSON_NULL   : os << value.AsNull(); break;
+		default          : break;
+	}
+	return os;
 }
 
-void JSON_Printer::Value(int64_t value)
+std::ostream& operator << (std::ostream& os, const JSON_Object& object)
 {
-	out << value;
+	os << '{';
+	const JSON_Object::Members& members = object.GetMembers();
+	JSON_Object::Members::const_iterator it = members.begin();
+	while(it != members.end())
+	{
+		const JSON_Member& member = **it;
+		os << member;
+		if(++it != members.end()) os << ',';
+	}
+	return os << '}';
 }
 
-void JSON_Printer::Value(double value)
+std::ostream& operator << (std::ostream& os, const JSON_Array& array)
 {
-	out << value;
+	os << '[';
+	const JSON_Array::Elements& elements = array.GetElements();
+	JSON_Array::Elements::const_iterator it = elements.begin();
+	while(it != elements.end())
+	{
+		const JSON_Value& value = **it;
+		os << value;
+		if(++it != elements.end()) os << ',';
+	}
+	return os << ']';
 }
 
-void JSON_Printer::Value(bool value)
+bool JSON_AST_Printer::Visit(const JSON_String& value)
 {
-	out << (value ? "true" : "false");
+	std::cout << '"' << Escape(value) << '"';
+	return true;
 }
 
-void JSON_Printer::Value()
+bool JSON_AST_Printer::Visit(const JSON_Integer& value)
 {
-	out << "null";
+	std::cout << value;
+	return true;
 }
 
-void JSON_Printer::Error(const std::string& msg)
+bool JSON_AST_Printer::Visit(const JSON_UnsignedInteger& value)
 {
-	err << std::endl << msg;
+	std::cout << value;
+	return true;
+}
+
+bool JSON_AST_Printer::Visit(const JSON_Float& value)
+{
+	std::cout << value;
+	return true;
+}
+
+bool JSON_AST_Printer::Visit(const JSON_Boolean& value)
+{
+	std::cout << (value ? "true" : "false");
+	return true;
+}
+
+bool JSON_AST_Printer::Visit(const JSON_Null& value)
+{
+	std::cout << "null";
+	return true;
+}
+
+bool JSON_AST_Printer::Visit(const JSON_Object& object)
+{
+	std::cout << '{';
+	const JSON_Object::Members& members = object.GetMembers();
+	JSON_Object::Members::const_iterator it = members.begin();
+	while(it != members.end())
+	{
+		const JSON_Member& member = **it;
+		if(!member.Scan(*this)) return false;
+		if(++it != members.end()) std::cout << ',';
+	}
+	std::cout << '}';
+	return true;
+}
+
+bool JSON_AST_Printer::Visit(const JSON_Member& member)
+{
+	std::cout << '"' << Escape(member.GetName()) << "\":";
+	member.GetValue().Scan(*this);
+	return true;
+}
+
+bool JSON_AST_Printer::Visit(const JSON_Array& array)
+{
+	std::cout << '[';
+	const JSON_Array::Elements& elements = array.GetElements();
+	JSON_Array::Elements::const_iterator it = elements.begin();
+	while(it != elements.end())
+	{
+		const JSON_Value& value = **it;
+		if(!value.Scan(*this)) return false;
+		if(++it != elements.end()) std::cout << ',';
+	}
+	std::cout << ']';
+	return true;
+}
+
+void JSON_AST_Printer::Print(std::ostream& os, const JSON_Value& root)
+{
+	root.Scan(*this);
 }
 
 } // end of namespace json

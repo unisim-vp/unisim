@@ -1757,6 +1757,13 @@ RefreshScheduler.prototype.schedule = function()
 			}
 		);
 		
+		this.owner.for_each_child_window(
+			function(child_window)
+			{
+				child_window.refresh_called = false;
+			}
+		);
+		
 		var refresh_event = this.refresh_events[0];
 		if(this.time_stamp >= refresh_event.time_stamp)
 		{
@@ -1861,8 +1868,7 @@ RefreshScheduler.prototype.refresh_tab_after = function(tab)
 		{
 			var refresh_event = this.refresh_events[i];
 			if(((refresh_event.tab.refresh_mode == 'global-refresh') || (refresh_event.tab.refresh_mode == 'global-refresh-when-active')) &&
-			   (time_stamp < refresh_event.time_stamp) &&
-			   (refresh_event.time_stamp - time_stamp < (2 * delay)))
+			   Math.abs(refresh_event.time_stamp - time_stamp <= delay))
 			{
 				time_stamp = refresh_event.time_stamp;
 				break;
@@ -1871,7 +1877,7 @@ RefreshScheduler.prototype.refresh_tab_after = function(tab)
 		for(var i = 0; i < this.refresh_events.length; i++)
 		{
 			var refresh_event = this.refresh_events[i];
-			if(time_stamp < refresh_event.time_stamp)
+			if((time_stamp != refresh_event.time_stamp) && (refresh_event.tab != tab) && (time_stamp < refresh_event.time_stamp))
 			{
 				this.refresh_events.splice(i, 0, new RefreshEvent(time_stamp, tab));
 				return;
@@ -2481,6 +2487,13 @@ GUI.prototype.gen_unique_tab_name = function(seed)
 	}
 	
 	return name;
+}
+
+GUI.prototype.find_tab_by_uri = function(uri_str)
+{
+	var uri = new URI(uri_str);
+// 	console.log('open_tab: \'' + uri_str + '\' => \'' + uri.toString());
+	return this.left_tile.find_tab_by_uri(uri) || this.top_middle_tile.find_tab_by_uri(uri) || this.top_right_tile.find_tab_by_uri(uri) || this.bottom_tile.find_tab_by_uri(uri);
 }
 
 GUI.prototype.find_tab_by_name = function(name)

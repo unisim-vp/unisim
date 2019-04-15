@@ -39,13 +39,12 @@
 #include <unisim/util/dictionary/dictionary.tcc>
 #include <ctype.h>
 #include <stdlib.h>
-#include <assert.h>
 
 namespace unisim {
 namespace util {
 namespace json {
 
-template <class VISITOR>
+template <typename VISITOR>
 JSON_Lexer<VISITOR>::JSON_Lexer()
 	: eof(false)
 	, token(TOK_VOID)
@@ -73,12 +72,12 @@ JSON_Lexer<VISITOR>::JSON_Lexer()
 	token_dictionary.Add(":", TOK_COLON);
 }
 
-template <class VISITOR>
+template <typename VISITOR>
 JSON_Lexer<VISITOR>::~JSON_Lexer()
 {
 }
 
-template <class VISITOR>
+template <typename VISITOR>
 void JSON_Lexer<VISITOR>::Reset()
 {
 	eof = false;
@@ -96,7 +95,7 @@ void JSON_Lexer<VISITOR>::Reset()
 	token_colno = 1;
 }
 
-template <class VISITOR>
+template <typename VISITOR>
 Token JSON_Lexer<VISITOR>::Next(std::istream& stream, VISITOR& visitor)
 {
 	if(look_ahead)
@@ -112,20 +111,20 @@ Token JSON_Lexer<VISITOR>::Next(std::istream& stream, VISITOR& visitor)
 	return token;
 }
 
-template <class VISITOR>
+template <typename VISITOR>
 void JSON_Lexer<VISITOR>::Back()
 {
 	look_ahead = token;
 }
 
-template <class VISITOR>
+template <typename VISITOR>
 void JSON_Lexer<VISITOR>::Append(char c)
 {
 	text += c;
 	line += c;
 }
 
-template <class VISITOR>
+template <typename VISITOR>
 void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 {
 	if(eof)
@@ -387,6 +386,7 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 					if(isxdigit(c))
 					{
 						colno++;
+						Append(c);
 						if(isdigit(c))
 						{
 							code_point = (code_point << 4) | (c - '0');
@@ -405,7 +405,6 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 							{
 								// 1-byte UTF-8 character
 								char c0 = (char)(code_point & 0xff);
-								Append(c0);
 								str_value += c0;
 							}
 							else if(code_point <= 0x7ff)
@@ -414,9 +413,7 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 								uint16_t v = 0xc080 | ((code_point << 2) & 0x1f00) | (code_point & 0x3f);
 								char c0 = (char)((v >> 8) & 0xff);
 								char c1 = (char)(v & 0xff);
-								Append(c0);
 								str_value += c0;
-								Append(c1);
 								str_value += c1;
 							}
 							else if(code_point <= 0xffff)
@@ -426,11 +423,8 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 								char c0 = (char)((v >> 16) & 0xff);
 								char c1 = (char)((v >> 8) & 0xff);
 								char c2 = (char)(v & 0xff);
-								Append(c0);
 								str_value += c0;
-								Append(c1);
 								str_value += c1;
-								Append(c2);
 								str_value += c2;
 							}
 							state = 10;
@@ -500,7 +494,7 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 					const char *nptr = text.c_str();
 					char *endptr = 0;
 					int_value = ::strtoll(nptr, &endptr, 10);
-					assert((endptr - nptr) == text.length());
+					assert((uintptr_t)(endptr - nptr) == text.length());
 					token = TOK_INT;
 					break;
 				}
@@ -509,7 +503,7 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 					const char *nptr = text.c_str();
 					char *endptr = 0;
 					uint_value = ::strtoull(nptr, &endptr, 10);
-					assert((endptr - nptr) == text.length());
+					assert((uintptr_t)(endptr - nptr) == text.length());
 					token = TOK_UINT;
 					break;
 				}
@@ -566,7 +560,7 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 					const char *nptr = text.c_str();
 					char *endptr = 0;
 					float_value = ::strtod(nptr, &endptr);
-					assert((endptr - nptr) == text.length());
+					assert((uintptr_t)(endptr - nptr) == text.length());
 				}
 				token = TOK_FLOAT;
 				break;
@@ -605,7 +599,7 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 					const char *nptr = text.c_str();
 					char *endptr = 0;
 					float_value = ::strtod(nptr, &endptr);
-					assert((endptr - nptr) == text.length());
+					assert((uintptr_t)(endptr - nptr) == text.length());
 				}
 				token = TOK_FLOAT;
 				break;
@@ -637,19 +631,19 @@ void JSON_Lexer<VISITOR>::Scan(std::istream& stream, VISITOR& visitor)
 	}
 }
 
-template <class VISITOR>
+template <typename VISITOR>
 void JSON_Lexer<VISITOR>::ParseError(std::istream& stream, VISITOR& visitor, const std::string& msg)
 {
 	Error(stream, visitor, msg, true);
 }
 
-template <class VISITOR>
+template <typename VISITOR>
 void JSON_Lexer<VISITOR>::ScanError(std::istream& stream, VISITOR& visitor, const std::string& msg)
 {
 	Error(stream, visitor, msg, false);
 }
 
-template <class VISITOR>
+template <typename VISITOR>
 void JSON_Lexer<VISITOR>::Error(std::istream& stream, VISITOR& visitor, const std::string& msg, bool parse_error)
 {
 	std::ostringstream sstr;
@@ -680,66 +674,61 @@ void JSON_Lexer<VISITOR>::Error(std::istream& stream, VISITOR& visitor, const st
 	visitor.Error(sstr.str());
 }
 
-template <class VISITOR>
+template <typename VISITOR>
 JSON_Parser<VISITOR>::JSON_Parser()
 {
 }
 
-template <class VISITOR>
+template <typename VISITOR>
 JSON_Parser<VISITOR>::~JSON_Parser()
 {
 }
 
-template <class VISITOR>
-bool JSON_Parser<VISITOR>::Parse(std::istream& stream, VISITOR& visitor)
+template <typename VISITOR>
+typename VISITOR::JSON_VALUE_TYPE JSON_Parser<VISITOR>::Parse(std::istream& stream, VISITOR& visitor)
 {
-	if(!ParseValue(stream, visitor)) return false;
+	JSON_VALUE_TYPE value = ParseValue(stream, visitor);
+	if(!value) return JSON_VALUE_TYPE();
 	
 	Token token = Lexer::Next(stream, visitor);
 	if(token != TOK_EOF)
 	{
 		Lexer::ParseError(stream, visitor, std::string("expecting end-of-file, got ") + PrettyString(token, Lexer::GetText()));
-		return false;
+		visitor.Release(value);
+		return JSON_VALUE_TYPE();
 	}
 	
-	return true;
+	return value;
 }
 
-template <class VISITOR>
-bool JSON_Parser<VISITOR>::ParseValue(std::istream& stream, VISITOR& visitor)
+template <typename VISITOR>
+typename VISITOR::JSON_VALUE_TYPE JSON_Parser<VISITOR>::ParseValue(std::istream& stream, VISITOR& visitor)
 {
 	Token token = Lexer::Next(stream, visitor);
-	if(token < 0) return false;
+	if(token < 0) return JSON_VALUE_TYPE();
 	
 	switch(token)
 	{
 		case TOK_STRING:
-			visitor.Value(Lexer::GetStringValue());
-			return true;
+			return visitor.Value(Lexer::GetStringValue());
 			
 		case TOK_INT:
-			visitor.Value(Lexer::GetIntValue());
-			return true;
+			return visitor.Value(Lexer::GetIntValue());
 			
 		case TOK_UINT:
-			visitor.Value(Lexer::GetUIntValue());
-			return true;
+			return visitor.Value(Lexer::GetUIntValue());
 
 		case TOK_FLOAT:
-			visitor.Value(Lexer::GetFloatValue());
-			return true;
+			return visitor.Value(Lexer::GetFloatValue());
 
 		case TOK_TRUE:
-			visitor.Value(true);
-			return true;
+			return visitor.Value(true);
 
 		case TOK_FALSE:
-			visitor.Value(false);
-			return true;
+			return visitor.Value(false);
 			
 		case TOK_NULL:
-			visitor.Value();
-			return true;
+			return visitor.Value();
 			
 		case TOK_LEFT_BRACE:
 			return ParseObject(stream, visitor);
@@ -749,134 +738,185 @@ bool JSON_Parser<VISITOR>::ParseValue(std::istream& stream, VISITOR& visitor)
 			
 		default:
 			Lexer::ParseError(stream, visitor, std::string("unexpected ") + PrettyString(token, Lexer::GetText()) + ", expecting a value");
-			return false;
+			return JSON_VALUE_TYPE();
 	}
 	
-	return false;
+	return JSON_VALUE_TYPE();
 }
 
-template <class VISITOR>
-bool JSON_Parser<VISITOR>::ParseObject(std::istream& stream, VISITOR& visitor)
+template <typename VISITOR>
+typename VISITOR::JSON_OBJECT_TYPE JSON_Parser<VISITOR>::ParseObject(std::istream& stream, VISITOR& visitor)
 {
 	visitor.BeginObject();
 	
 	Token token = Lexer::Next(stream, visitor);
-	if(token < 0) return false;
+	if(token < 0) return JSON_OBJECT_TYPE();
 	
 	if(token == TOK_RIGHT_BRACE)
 	{
 		visitor.EndObject();
-		return true;
+		return visitor.Object();
 	}
 	
 	Lexer::Back();
 	
-	if(!ParseMembers(stream, visitor)) return false;
+	JSON_MEMBERS_TYPE members = ParseMembers(stream, visitor);
+	if(!members)
+	{
+		return JSON_OBJECT_TYPE();
+	}
 	
 	token = Lexer::Next(stream, visitor);
 	
 	if(token != TOK_RIGHT_BRACE)
 	{
 		Lexer::ParseError(stream, visitor, std::string("unexpected ") + PrettyString(token, Lexer::GetText()) + ", expecting " + ToString(TOK_RIGHT_BRACE));
-		return false;
+		visitor.Release(members);
+		return JSON_OBJECT_TYPE();
 	}
 	
 	visitor.EndObject();
-	return true;
+	
+	return visitor.Object(members);
 }
 
-template <class VISITOR>
-bool JSON_Parser<VISITOR>::ParseMembers(std::istream& stream, VISITOR& visitor)
+template <typename VISITOR>
+typename VISITOR::JSON_MEMBERS_TYPE JSON_Parser<VISITOR>::ParseMembers(std::istream& stream, VISITOR& visitor, JSON_MEMBERS_TYPE _members)
 {
-	if(!ParseMember(stream, visitor)) return false;
+	JSON_MEMBER_TYPE member = ParseMember(stream, visitor);
+	if(!member)
+	{
+		visitor.Release(_members);
+		return JSON_MEMBERS_TYPE();
+	}
+	
+	JSON_MEMBERS_TYPE members = visitor.Members(_members, member);
 	
 	Token token = Lexer::Next(stream, visitor);
-	if(token < 0) return false;
+	if(token < 0)
+	{
+		visitor.Release(members);
+		return JSON_MEMBERS_TYPE();
+	}
 	
 	if(token == TOK_COMMA)
 	{
 		visitor.Comma();
-		return ParseMembers(stream, visitor);
+		return ParseMembers(stream, visitor, members);
 	}
 
 	Lexer::Back();
 	
-	return true;
+	return members;
 }
 
-template <class VISITOR>
-bool JSON_Parser<VISITOR>::ParseMember(std::istream& stream, VISITOR& visitor)
+template <typename VISITOR>
+typename VISITOR::JSON_MEMBER_TYPE JSON_Parser<VISITOR>::ParseMember(std::istream& stream, VISITOR& visitor)
 {
 	Token token = Lexer::Next(stream, visitor);
-	if(token < 0) return false;
+	if(token < 0) return JSON_MEMBER_TYPE();
 	
 	if(token != TOK_STRING)
 	{
 		Lexer::ParseError(stream, visitor, std::string("unexpected ") + PrettyString(token, Lexer::GetText()) + ", expecting " + ToString(TOK_STRING));
-		return false;
+		return JSON_MEMBER_TYPE();
 	}
 	
-	visitor.Member(Lexer::GetStringValue());
+	JSON_STRING_TYPE member_name = visitor.MemberName(Lexer::GetStringValue());
 	
 	token = Lexer::Next(stream, visitor);
-	if(token < 0) return false;
+	if(token < 0)
+	{
+		visitor.Release(member_name);
+		return JSON_MEMBER_TYPE();
+	}
 	
 	if(token != TOK_COLON)
 	{
 		Lexer::ParseError(stream, visitor, std::string("unexpected ") + PrettyString(token, Lexer::GetText()) + ", expecting " + ToString(TOK_COLON));
-		return false;
+		visitor.Release(member_name);
+		return JSON_MEMBER_TYPE();
 	}
 	
-	return ParseValue(stream, visitor);
+	JSON_VALUE_TYPE member_value = ParseValue(stream, visitor);
+	if(!member_value)
+	{
+		visitor.Release(member_name);
+		return JSON_MEMBER_TYPE();
+	}
+	
+	JSON_MEMBER_TYPE member = visitor.Member(member_name, member_value);
+	if(!member)
+	{
+		visitor.Release(member_name);
+		visitor.Release(member_value);
+		return JSON_MEMBER_TYPE();
+	}
+	
+	return member;
 }
 
-template <class VISITOR>
-bool JSON_Parser<VISITOR>::ParseArray(std::istream& stream, VISITOR& visitor)
+template <typename VISITOR>
+typename VISITOR::JSON_ARRAY_TYPE JSON_Parser<VISITOR>::ParseArray(std::istream& stream, VISITOR& visitor)
 {
 	visitor.BeginArray();
 	
 	Token token = Lexer::Next(stream, visitor);
-	if(token < 0) return false;
+	if(token < 0) return JSON_ARRAY_TYPE();
 	
 	if(token == TOK_RIGHT_BRACKET)
 	{
 		visitor.EndArray();
-		return true;
+		return visitor.Array();
 	}
 	
 	Lexer::Back();
 	
-	if(!ParseElements(stream, visitor)) return false;
+	JSON_ELEMENTS_TYPE elements = ParseElements(stream, visitor);
+	if(!elements) return JSON_ARRAY_TYPE();
 	
 	token = Lexer::Next(stream, visitor);
 	
 	if(token != TOK_RIGHT_BRACKET)
 	{
 		Lexer::ParseError(stream, visitor, std::string("unexpected ") + PrettyString(token, Lexer::GetText()) + ", expecting " + ToString(TOK_RIGHT_BRACKET));
-		return false;
+		visitor.Release(elements);
+		return JSON_ARRAY_TYPE();
 	}
 	
 	visitor.EndArray();
-	return true;
+	
+	return visitor.Array(elements);
 }
 
-template <class VISITOR>
-bool JSON_Parser<VISITOR>::ParseElements(std::istream& stream, VISITOR& visitor)
+template <typename VISITOR>
+typename VISITOR::JSON_ELEMENTS_TYPE JSON_Parser<VISITOR>::ParseElements(std::istream& stream, VISITOR& visitor, JSON_ELEMENTS_TYPE _elements)
 {
-	if(!ParseValue(stream, visitor)) return false;
+	JSON_VALUE_TYPE value = ParseValue(stream, visitor);
+	if(!value)
+	{
+		visitor.Release(_elements);
+		return JSON_ELEMENTS_TYPE();
+	}
+	
+	JSON_ELEMENTS_TYPE elements = visitor.Elements(_elements, value);
 	
 	Token token = Lexer::Next(stream, visitor);
-	if(token < 0) return false;
+	if(token < 0)
+	{
+		visitor.Release(value);
+		return JSON_ELEMENTS_TYPE();
+	}
 	
 	if(token == TOK_COMMA)
 	{
 		visitor.Comma();
-		return ParseElements(stream, visitor);
+		return ParseElements(stream, visitor, elements);
 	}
 	
 	Lexer::Back();
 	
-	return true;
+	return elements;
 }
 
 } // end of namespace json

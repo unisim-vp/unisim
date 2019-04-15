@@ -267,31 +267,65 @@ HttpServer::~HttpServer()
 
 bool HttpServer::EndSetup()
 {
-	AddJSAction(unisim::service::interfaces::ToolbarDoAction(
-		/* name */      std::string("export-config-file-") + GetName(), 
-		/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=XML\" download=\"sim_config.xml\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_xml.svg\"></a>",
-		/* tips */      "Export configuration as .XML file"
-	));
+	std::string input_config_file_format = *GetSimulator()->FindVariable("input-config-file-format");
+	std::string output_config_file_format = *GetSimulator()->FindVariable("output-config-file-format");
 	
-	AddJSAction(unisim::service::interfaces::ToolbarDoAction(
-		/* name */      std::string("import-config-file-") + GetName(), 
-		/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_xml.svg\">",
-		/* tips */      "Import configuration from .XML file",
-		/* js action */ "new FileUploader('/import-config-file?format=XML', '.xml', true)"
-	));
+	if(output_config_file_format == "XML")
+	{
+		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
+			/* name */      std::string("export-config-file-") + GetName(), 
+			/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=XML\" download=\"sim_config.xml\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_xml.svg\"></a>",
+			/* tips */      "Export configuration as .XML file"
+		));
+	}
+	
+	if(input_config_file_format == "XML")
+	{
+		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
+			/* name */      std::string("import-config-file-") + GetName(), 
+			/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_xml.svg\">",
+			/* tips */      "Import configuration from .XML file",
+			/* js action */ "new FileUploader('/import-config-file?format=XML', '.xml', true)"
+		));
+	}
 
-	AddJSAction(unisim::service::interfaces::ToolbarDoAction(
-		/* name */      std::string("export-config-file-") + GetName(), 
-		/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=INI\" download=\"sim_config.ini\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_ini.svg\"></a>",
-		/* tips */      "Export configuration as .INI file"
-	));
+	if(output_config_file_format == "INI")
+	{
+		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
+			/* name */      std::string("export-config-file-") + GetName(), 
+			/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=INI\" download=\"sim_config.ini\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_ini.svg\"></a>",
+			/* tips */      "Export configuration as .INI file"
+		));
+	}
 	
-	AddJSAction(unisim::service::interfaces::ToolbarDoAction(
-		/* name */      std::string("import-config-file-") + GetName(), 
-		/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_ini.svg\">",
-		/* tips */      "Import configuration from .INI file",
-		/* js action */ "new FileUploader('/import-config-file?format=INI', '.ini', true)"
-	));
+	if(input_config_file_format == "INI")
+	{
+		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
+			/* name */      std::string("import-config-file-") + GetName(), 
+			/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_ini.svg\">",
+			/* tips */      "Import configuration from .INI file",
+			/* js action */ "new FileUploader('/import-config-file?format=INI', '.ini', true)"
+		));
+	}
+
+	if(output_config_file_format == "JSON")
+	{
+		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
+			/* name */      std::string("export-config-file-") + GetName(), 
+			/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=JSON\" download=\"sim_config.json\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_json.svg\"></a>",
+			/* tips */      "Export configuration as .JSON file"
+		));
+	}
+	
+	if(input_config_file_format == "JSON")
+	{
+		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
+			/* name */      std::string("import-config-file-") + GetName(), 
+			/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_json.svg\">",
+			/* tips */      "Import configuration from .JSON file",
+			/* js action */ "new FileUploader('/import-config-file?format=JSON', '.json', true)"
+		));
+	}
 
 	std::list<unisim::kernel::service::VariableBase *> kernel_param_lst;
 	std::list<unisim::kernel::service::VariableBase *> kernel_stat_lst;
@@ -759,7 +793,7 @@ void HttpServer::Crawl(std::ostream& os, unisim::kernel::service::Object *object
 		
 		if(import)
 		{
-			os << " ondblclick=\"gui.open_tab('top-middle-tile','" <<  unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "','" << object->GetName() << "','" << object->URI() << "')\"";
+			os << " ondblclick=\"gui.open_tab('top-middle-tile','" << object->GetName() << "','" << object->URI() << "')\"";
 		}
 
 		if(browser_actions_range.first != browser_actions_range.second)
@@ -1502,6 +1536,10 @@ bool HttpServer::ServeExportConfigFile(unisim::util::hypapp::HttpRequest const& 
 	{
 		response.SetHeaderField("Content-Disposition", "attachment;filename=\"sim_config.ini\"");
 	}
+	else if(format == "JSON")
+	{
+		response.SetHeaderField("Content-Disposition", "attachment;filename=\"sim_config.json\"");
+	}
 	
 	GetSimulator()->SaveVariables(response, unisim::kernel::service::VariableBase::VAR_PARAMETER, format);
 	
@@ -1551,7 +1589,17 @@ bool HttpServer::ServeImportConfigFile(unisim::util::hypapp::HttpRequest const& 
 		unisim::util::hypapp::HttpRequestPart const& part = req.GetPart(i);
 
 		std::stringstream content_part_sstr(std::string(part.GetContent(), part.GetContentLength()));
-		GetSimulator()->LoadVariables(content_part_sstr, unisim::kernel::service::VariableBase::VAR_PARAMETER, format);
+		if(GetSimulator()->LoadVariables(content_part_sstr, unisim::kernel::service::VariableBase::VAR_PARAMETER, format))
+		{
+			if(verbose)
+			{
+				logger << DebugInfo << "Successful loading parameters set from part #" << i << " of a multipart HTTP request" << EndDebugInfo;
+			}
+		}
+		else
+		{
+			logger << DebugWarning << "Loading parameters set from part #" << i << " of a multipart HTTP request failed" << EndDebugWarning;
+		}
 	}
 
 	unisim::util::hypapp::HttpResponse response;

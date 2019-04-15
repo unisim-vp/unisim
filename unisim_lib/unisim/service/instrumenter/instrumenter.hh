@@ -498,6 +498,7 @@ private:
 	bool intr;
 	bool halt;
 	double refresh_period;
+	bool auto_reload;
 	
 	pthread_mutex_t mutex_instruments;
 	pthread_mutex_t mutex_schedule;
