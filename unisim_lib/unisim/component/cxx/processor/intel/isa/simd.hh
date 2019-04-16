@@ -972,8 +972,9 @@ Operation<ARCH>* newMovs( InputCode<ARCH> const& ic, bool store, OpBase<ARCH> co
 // 
 // mpsadbw_vdq_wdq.disasm = { _sink << "mpsadbw " << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); };
 
-struct VADD { char const* n() { return "add"; } }; struct VMUL { char const* n() { return "mul"; } }; struct VMIN { char const* n() { return "min"; } };
-struct VSUB { char const* n() { return "sub"; } }; struct VDIV { char const* n() { return "div"; } }; struct VMAX { char const* n() { return "max"; } };
+struct VADD { char const* n() { return "add"; } }; struct VSUB { char const* n() { return "sub"; } };
+struct VMUL { char const* n() { return "mul"; } }; struct VDIV { char const* n() { return "div"; } };
+struct VMIN { char const* n() { return "min"; } }; struct VMAX { char const* n() { return "max"; } };
 
 template <class ARCH, class OPERATION, class VR, unsigned OPSZ, bool PACKED>
 struct VArithmeticVVW : public Operation<ARCH>
@@ -1024,12 +1025,12 @@ template <class ARCH> struct DC<ARCH,VFP> { Operation<ARCH>* get( InputCode<ARCH
   
   if (auto _ = match( ic, vex( "*\x0f\x5c" ) & RM() ))
 
-    return newVFP<VMIN>(ic, _.opbase(), _.greg(), _.rmop());
-      
-  if (auto _ = match( ic, vex( "*\x0f\x5d" ) & RM() ))
-
     return newVFP<VSUB>(ic, _.opbase(), _.greg(), _.rmop());
     
+  if (auto _ = match( ic, vex( "*\x0f\x5d" ) & RM() ))
+
+    return newVFP<VMIN>(ic, _.opbase(), _.greg(), _.rmop());
+      
   if (auto _ = match( ic, vex( "*\x0f\x5e" ) & RM() ))
 
     return newVFP<VDIV>(ic, _.opbase(), _.greg(), _.rmop());
@@ -1067,7 +1068,7 @@ struct VFPCvtp : public Operation<ARCH>
   VFPCvtp( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _gn ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {}
   void disasm( std::ostream& sink ) const
   {
-    sink << (VR::vex() ? "vcvt" : "cvt") << (SOPSZ == 32 ? "ps" : "pd") << (DOPSZ == 32 ? "ps" : "pd")
+    sink << (VR::vex() ? "vcvt" : "cvt") << (SOPSZ == 32 ? "ps" : "pd") << '2' << (DOPSZ == 32 ? "ps" : "pd")
          << ' ' << DisasmW( VR(), rm ) << ',' << DisasmV( VR(), gn );
   }
   void execute( ARCH& arch ) const
@@ -1096,7 +1097,7 @@ struct VFPCvts : public Operation<ARCH>
   VFPCvts( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, unsigned _vn, unsigned _gn ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn) {}
   void disasm( std::ostream& sink ) const
   {
-    sink << (VR::vex() ? "vcvt" : "cvt") << (SOPSZ == 32 ? "ss" : "sd") << (DOPSZ == 32 ? "ss" : "sd")
+    sink << (VR::vex() ? "vcvt" : "cvt") << (SOPSZ == 32 ? "ss" : "sd") << '2' << (DOPSZ == 32 ? "ss" : "sd")
          <<                ' ' << DisasmW( VR(), rm );
     if (VR::vex()) sink << ',' << DisasmV( VR(), vn );
     sink <<                ',' << DisasmV( VR(), gn );
@@ -1134,10 +1135,10 @@ Operation<ARCH>*
 newVFPCvt( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, uint8_t vn, uint8_t gn )
 {
   if (match( ic, simdF3() )) return new VFPCvts<ARCH,VR,32,64>( opbase, rm, vn, gn );
-  if (match( ic, simdF2() )) return new VFPCvts<ARCH,VR,32,64>( opbase, rm, vn, gn );
+  if (match( ic, simdF2() )) return new VFPCvts<ARCH,VR,64,32>( opbase, rm, vn, gn );
   if (vn and ic.vex()) return 0; // No vreg for packed operation
   if (match( ic, simd__() )) return new VFPCvtp<ARCH,VR,32,64>( opbase, rm, gn );
-  if (match( ic, simd66() )) return new VFPCvtp<ARCH,VR,32,64>( opbase, rm, gn );
+  if (match( ic, simd66() )) return new VFPCvtp<ARCH,VR,64,32>( opbase, rm, gn );
   return 0;
 }
 };
@@ -2548,7 +2549,7 @@ struct Unpack : public Operation<ARCH>
 
     for (unsigned chunk = 0, cend = VR::size()/128; chunk < cend; ++chunk)
       {
-        val_type res[COUNT];
+        val_type res[2*COUNT];
         for (unsigned idx = 0; idx < COUNT; ++idx)
           {
             unsigned sidx = idx + HALF + chunk*2*COUNT, didx = 2*idx;

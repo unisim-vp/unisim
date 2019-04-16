@@ -192,7 +192,7 @@ struct Arch
     , umms(), vmm_storage(), mxcsr(0x1fa0)
     , latest_instruction(0), do_disasm(false)
     , instruction_count(0)
-    , gdbchecker()
+      //    , gdbchecker()
   {
     regmap["%rip"] = new unisim::util::debug::SimpleRegister<uint64_t>("%rip", &this->rip);
     regmap["%fs_base"] = new unisim::util::debug::SimpleRegister<uint64_t>("%fs_base", &this->fs_base);
@@ -740,24 +740,24 @@ struct Arch
   void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::SIZE>::u value )
   {
     u64regs[idx] = u64_t( value );
-    gdbchecker.gmark( idx );
+    //gdbchecker.gmark( idx );
   }
 
   void regwrite( GObLH const&, unsigned idx, u8_t value )
   {
     unsigned reg = idx%4, sh = idx*2 & 8;
     u64regs[reg] = (u64regs[reg] & ~u64_t(0xff << sh)) | ((value & u64_t(0xff)) << sh);
-    gdbchecker.gmark( reg );
+    //gdbchecker.gmark( reg );
   }
   void regwrite( GOb const&, unsigned idx, u8_t value )
   {
     u64regs[idx] = (u64regs[idx] & ~u64_t(0xff)) | ((value & u64_t(0xff)));
-    gdbchecker.gmark( idx );
+    //gdbchecker.gmark( idx );
   }
   void regwrite( GOw const&, unsigned idx, u16_t value )
   {
     u64regs[idx] = (u64regs[idx] & ~u64_t(0xffff)) | ((value & u64_t(0xffff)));
-    gdbchecker.gmark( idx );
+    //gdbchecker.gmark( idx );
   }
 
   struct FLAG
@@ -987,8 +987,7 @@ public:
   {
     ELEM* elems = umms[reg].GetStorage( &vmm_storage[reg][0], e, vmm_wsize( vr ) );
     elems[sub] = e;
-    
-    gdbchecker.xmark(reg);
+    //gdbchecker.xmark(reg);
   }
 
   // Integer case
@@ -1060,53 +1059,53 @@ public:
 
   bool Cond( bool b ) const { return b; }
 
-  struct GDBChecker
-  {
-    GDBChecker() : sink("check.gdb"), visited(), nassertid(0), gdirtmask( 0 ), xdirtmask( 0 ) {}
-    std::ofstream sink;
-    std::map<uint64_t,uint64_t> visited;
-    uint64_t nassertid;
-    uint32_t gdirtmask;
-    uint32_t xdirtmask;
-    void gmark( unsigned reg ) { gdirtmask |= (1 << reg); }
-    void xmark( unsigned reg ) { xdirtmask |= (1 << reg); }
-    uint64_t getnew_aid() { if (++nassertid > 0x80000) throw 0; return nassertid; }
-    void start( Arch const& cpu)
-    {
-      sink << "set pagination off\n\n"
-           << "define insn_assert\n  if $arg1 != $arg2\n    printf \"insn_assert %u failed.\\n\", $arg0\n    bad_assertion\n  end\nend\n\n"
-           << "break *0x" << std::hex << cpu.rip << "\nrun\n\n";
-    }
-    void step( Arch const& cpu )
-    {
-      cpu.latest_instruction->disasm( sink << "# " ); sink << "\n";
-      uint64_t cia = cpu.rip;
-      uint64_t revisit = visited[cia]++;
-      sink << "stepi\n";
-      if (revisit == 0)
-        sink << "# advance *0x" << std::hex << cia << "\n";
-      else
-        sink << "# break *0x" << std::hex << cia << "; cont; cont " << std::dec << revisit << "\n";
-      sink << "insn_assert " << std::dec << getnew_aid() << " $rip 0x" << std::hex  << cia << '\n';
-      for (unsigned reg = 0; reg < 16; ++reg)
-        {
-          if (not ((gdirtmask>>reg) & 1)) continue;
-          uint64_t value = cpu.u64regs[reg];
-          std::ostringstream rn; rn << unisim::component::cxx::processor::intel::DisasmG(GOq(),reg);
-          sink << "insn_assert " << std::dec << getnew_aid() << " $" << &(rn.str().c_str()[1]) << " 0x" << std::hex << value << '\n';
-        }
-      gdirtmask = 0;
-      for (unsigned reg = 0; reg < 16; ++reg)
-        {
-          if (not ((xdirtmask>>reg) & 1)) continue;
-          uint64_t quads[2] = {0};
-          cpu.umms[reg].transfer( (uint8_t*)&quads[0], &cpu.vmm_storage[reg][0], 16, false );
-          sink << "insn_assert " << std::dec << getnew_aid() << " $xmm" << reg << ".v2_int64[0] 0x" << std::hex << quads[0] << '\n';
-          sink << "insn_assert " << std::dec << getnew_aid() << " $xmm" << reg << ".v2_int64[1] 0x" << std::hex << quads[1] << '\n';
-        }
-      xdirtmask = 0;
-    }
-  } gdbchecker;
+  // struct GDBChecker
+  // {
+  //   GDBChecker() : sink("check.gdb"), visited(), nassertid(0), gdirtmask( 0 ), xdirtmask( 0 ) {}
+  //   std::ofstream sink;
+  //   std::map<uint64_t,uint64_t> visited;
+  //   uint64_t nassertid;
+  //   uint32_t gdirtmask;
+  //   uint32_t xdirtmask;
+  //   void gmark( unsigned reg ) { gdirtmask |= (1 << reg); }
+  //   void xmark( unsigned reg ) { xdirtmask |= (1 << reg); }
+  //   uint64_t getnew_aid() { if (++nassertid > 0x80000) throw 0; return nassertid; }
+  //   void start( Arch const& cpu)
+  //   {
+  //     sink << "set pagination off\n\n"
+  //          << "define insn_assert\n  if $arg1 != $arg2\n    printf \"insn_assert %u failed.\\n\", $arg0\n    bad_assertion\n  end\nend\n\n"
+  //          << "break *0x" << std::hex << cpu.rip << "\nrun\n\n";
+  //   }
+  //   void step( Arch const& cpu )
+  //   {
+  //     cpu.latest_instruction->disasm( sink << "# " ); sink << "\n";
+  //     uint64_t cia = cpu.rip;
+  //     uint64_t revisit = visited[cia]++;
+  //     sink << "stepi\n";
+  //     if (revisit == 0)
+  //       sink << "# advance *0x" << std::hex << cia << "\n";
+  //     else
+  //       sink << "# break *0x" << std::hex << cia << "; cont; cont " << std::dec << revisit << "\n";
+  //     sink << "insn_assert " << std::dec << getnew_aid() << " $rip 0x" << std::hex  << cia << '\n';
+  //     for (unsigned reg = 0; reg < 16; ++reg)
+  //       {
+  //         if (not ((gdirtmask>>reg) & 1)) continue;
+  //         uint64_t value = cpu.u64regs[reg];
+  //         std::ostringstream rn; rn << unisim::component::cxx::processor::intel::DisasmG(GOq(),reg);
+  //         sink << "insn_assert " << std::dec << getnew_aid() << " $" << &(rn.str().c_str()[1]) << " 0x" << std::hex << value << '\n';
+  //       }
+  //     gdirtmask = 0;
+  //     for (unsigned reg = 0; reg < 16; ++reg)
+  //       {
+  //         if (not ((xdirtmask>>reg) & 1)) continue;
+  //         uint64_t quads[2] = {0};
+  //         cpu.umms[reg].transfer( (uint8_t*)&quads[0], &cpu.vmm_storage[reg][0], 16, false );
+  //         sink << "insn_assert " << std::dec << getnew_aid() << " $xmm" << reg << ".v2_int64[0] 0x" << std::hex << quads[0] << '\n';
+  //         sink << "insn_assert " << std::dec << getnew_aid() << " $xmm" << reg << ".v2_int64[1] 0x" << std::hex << quads[1] << '\n';
+  //       }
+  //     xdirtmask = 0;
+  //   }
+  // } gdbchecker;
 };
 
 void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor )
@@ -1602,7 +1601,7 @@ main( int argc, char *argv[] )
     }
   
   std::cerr << "\n*** Run ***" << std::endl;
-  cpu.gdbchecker.start(cpu);
+  //cpu.gdbchecker.start(cpu);
   while (not linux64.exited)
     {
       Arch::Operation* op = cpu.fetch();
@@ -1612,7 +1611,7 @@ main( int argc, char *argv[] )
       // std::cerr << std::endl;
       asm volatile ("operation_execute:");
       op->execute( cpu );
-      cpu.gdbchecker.step(cpu);
+      //cpu.gdbchecker.step(cpu);
       // { uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread( GOd(), idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
       if (cpu.instruction_count >= 0x100000)
         break;
