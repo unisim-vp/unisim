@@ -982,8 +982,8 @@ struct VArithmeticVVW : public Operation<ARCH>
   typedef typename TypeFor<ARCH,OPSZ>::f valtype;
   valtype eval ( VADD const&, valtype const& src1, valtype const& src2 ) const { return src1 + src2; }
   valtype eval ( VDIV const&, valtype const& src1, valtype const& src2 ) const { return src1 / src2; }
-  valtype eval ( VMAX const&, valtype const& src1, valtype const& src2 ) const { return std::max(src1, src2); }
-  valtype eval ( VMIN const&, valtype const& src1, valtype const& src2 ) const { return std::min(src1, src2); }
+  valtype eval ( VMAX const&, valtype const& src1, valtype const& src2 ) const { return Maximum(src1, src2); }
+  valtype eval ( VMIN const&, valtype const& src1, valtype const& src2 ) const { return Minimum(src1, src2); }
   valtype eval ( VMUL const&, valtype const& src1, valtype const& src2 ) const { return src1 * src2; }
   valtype eval ( VSUB const&, valtype const& src1, valtype const& src2 ) const { return src1 - src2; }
   
@@ -1380,7 +1380,7 @@ namespace PCmpStrUtil
   void explicit_validity( typename ARCH::bit_t(&result)[COUNT], ARCH& arch, unsigned reg )
   {
     typename ARCH::gr_type count = arch.regread( typename ARCH::GR(), reg );
-    if (count < typename ARCH::gr_type(0)) count = -count;
+    if (arch.Cond(count < typename ARCH::gr_type(0))) count = -count;
     for (unsigned idx = 0; idx < COUNT; ++idx)
       result[idx] = typename ARCH::gr_type(idx) < count;
   }
@@ -1434,7 +1434,7 @@ struct PCmpStr : public Operation<ARCH>
       case EqualAny: // find characters from a set
         for (unsigned rmi = 0; rmi < count; ++rmi)
           {
-            bit_t res = false;
+            bit_t res( false );
             TYPE rmval = arch.vmm_read( VR(), rm, rmi, null_char );
             for (unsigned gni = 0; gni < count; ++gni)
               res = res or ((arch.vmm_read( VR(), gn, gni, null_char ) == rmval) and gnv[gni]);
@@ -1445,7 +1445,7 @@ struct PCmpStr : public Operation<ARCH>
       case Ranges: // find characters from ranges
         for (unsigned rmi = 0; rmi < count; ++rmi) // Reg/Mem
           {
-            bit_t res = false;
+            bit_t res( false );
             TYPE rmval = arch.vmm_read( VR(), rm, rmi, null_char );
             for (unsigned gni = 0; gni < count; gni += 2) // Reg
               {
@@ -1465,7 +1465,7 @@ struct PCmpStr : public Operation<ARCH>
       case EqualOrdered: // substring search
         for (unsigned idx = 0; idx < count; ++idx)
           {
-            bit_t res = true;
+            bit_t res( true );
             for (unsigned rmi = idx, gni = 0; rmi < count; ++rmi, ++gni)
               res = res and (((arch.vmm_read( VR(), gn, gni, null_char ) == arch.vmm_read( VR(), rm, rmi, null_char )) and gnv[gni] and rmv[rmi]) or (not gnv[idx] and not rmv[idx]));
             intres[idx] = res;
@@ -1487,7 +1487,7 @@ struct PCmpStr : public Operation<ARCH>
           typedef typename TypeFor<ARCH,count>::u bf_type;
           bf_type bf(0);
           for (unsigned idx = 0; idx < count; ++idx)
-            bf |= TYPE(intres[idx]) << idx;
+            bf |= bf_type(intres[idx]) << idx;
           arch.vmm_write( VR(), 0, 0, bf );
           for (unsigned idx = 1; idx < bitsize; ++idx)
             arch.vmm_write( VR(), 0, 0, bf_type(0) );
@@ -1832,8 +1832,8 @@ struct PMinMax : public Operation<ARCH>
 {
   typedef TYPE valtype;
   enum { is_signed = atpinfo<ARCH,TYPE>::is_signed, bitsize = atpinfo<ARCH,TYPE>::bitsize };
-  valtype const& eval( PMax const&, valtype const& a, valtype const& b ) const { return std::max(a, b); }
-  valtype const& eval( PMin const&, valtype const& a, valtype const& b ) const { return std::min(a, b); }
+  valtype eval( PMax const&, valtype const& a, valtype const& b ) const { return Maximum(a, b); }
+  valtype eval( PMin const&, valtype const& a, valtype const& b ) const { return Minimum(a, b); }
   
   PMinMax( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), vn( _vn ), gn( _gn ) {}
   void disasm( std::ostream& sink ) const
@@ -2146,21 +2146,23 @@ struct Pshufb : public Operation<ARCH>
   {
     typedef typename ARCH::u8_t u8_t;
     typedef typename ARCH::s8_t s8_t;
-
-    for (unsigned chunk = 0, cend = VR::size() / 128; chunk < cend; ++ chunk)
+    
+    unsigned const size = 128 / 8;
+    
+    for (unsigned chunk = 0, cend = VR::size(); chunk < cend; chunk += size)
       {
-        unsigned const size = 128 / 8;
-        u8_t src[16];
-        for (unsigned idx = 0; idx < size; ++idx)
-          src[idx] = arch.vmm_read( VR(), vn, chunk, u8_t() );
+        u8_t res[size];
+        
         for (unsigned idx = 0; idx < size; ++idx)
           {
-            unsigned didx = idx + chunk*size;
-            u8_t sidx = arch.vmm_read( VR(), rm, didx, u8_t() );
+            u8_t sidx = arch.vmm_read( VR(), rm, chunk + idx, u8_t() );
             u8_t mask = ~u8_t(s8_t(sidx) >> 7);
-            sidx &= u8_t(0xf);
-            arch.vmm_write( VR(), gn, didx, src[sidx] & mask );
+            sidx = (sidx & u8_t(0xf)) + u8_t(chunk);
+            res[idx] = arch.vmm_read( VR(), vn, sidx, u8_t() ) & mask;
           }
+        
+        for (unsigned idx = 0; idx < size; ++idx)
+          arch.vmm_write( VR(), gn, idx+chunk, res[idx] );
       }
   }
 };
@@ -2488,7 +2490,7 @@ struct PTest : public Operation<ARCH>
   {  
     typedef typename ARCH::u64_t u64_t;
     typedef typename ARCH::bit_t bit_t;
-    bit_t zf = true, cf = true;
+    bit_t zf(true), cf( true );
     for (unsigned idx = 0, end = VR::size()/64; idx < end; ++idx)
       {
         u64_t lhs = arch.vmm_read( VR(), rm, idx, u64_t() );

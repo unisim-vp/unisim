@@ -126,7 +126,7 @@ namespace symbolic {
       {
         Xor, And, Or,
         Ror, Rol, Lsl, Asr, Lsr,
-        Add, Sub, Div, Mod, Mul,
+        Add, Sub, Div, Mod, Mul, Min, Max,
         Teq, Tne, Tge, Tgt, Tle, Tlt, Tgeu, Tgtu, Tleu, Tltu,
         BSwp, BSR, BSF, Not, Neg,
         FCmp,FSQB, FFZ, FNeg, FSqrt, FAbs, FDen,
@@ -146,6 +146,8 @@ namespace symbolic {
         case   Div: return "Div";
         case   Mod: return "Mod";
         case   Mul: return "Mul";
+        case   Min: return "Min";
+        case   Max: return "Max";
         case   Ror: return "Ror";
         case   Rol: return "Rol";
         case   Lsl: return "Lsl";
@@ -351,14 +353,15 @@ namespace symbolic {
         case Op::BSwp: case Op::Not: case Op::Neg:  case Op::BSR:   case Op::BSF:
         case Op::FSQB: case Op::FFZ: case Op::FNeg: case Op::FSqrt: case Op::FAbs:
         case Op::Xor:  case Op::And: case Op::Or:
-        case Op::Lsl:  case Op::Lsr: case Op::Asr: case Op::Ror: case Op::Rol:
-        case Op::Add:  case Op::Sub:
+        case Op::Lsl:  case Op::Lsr: case Op::Asr:  case Op::Ror:   case Op::Rol:
+        case Op::Add:  case Op::Sub: case Op::Min:  case Op::Max:
         case Op::Mul:  case Op::Div: case Op::Mod:
+       
           return GetSub(0)->GetType();
           
         case Op::FDen:
-        case Op::Teq: case Op::Tne: case Op::Tleu: case Op::Tle: case Op::Tltu:
-        case Op::Tlt: case Op::Tgeu: case Op::Tge: case Op::Tgtu: case Op::Tgt:
+        case Op::Teq: case Op::Tne:  case Op::Tleu: case Op::Tle:  case Op::Tltu:
+        case Op::Tlt: case Op::Tgeu: case Op::Tge:  case Op::Tgtu: case Op::Tgt:
           return ScalarType::BOOL;
             
         case Op::FCmp:
@@ -410,6 +413,8 @@ namespace symbolic {
         case Op::FSqrt: break;
         case Op::FAbs:  break;
         case Op::FDen:  break;
+        case Op::Min:   return new this_type( std::min( value, GetValue( args[1] ) ) );
+        case Op::Max:   return new this_type( std::max( value, GetValue( args[1] ) ) );
         case Op::Xor:   return new this_type( EvalXor( value, GetValue( args[1] ) ) );
         case Op::And:   return new this_type( EvalAnd( value, GetValue( args[1] ) ) );
         case Op::Or:    return new this_type( EvalOr( value, GetValue( args[1] ) ) );
@@ -677,6 +682,9 @@ namespace symbolic {
     SmartValue<bool> operator || ( SmartValue<bool> const& other ) const
     { AssertBool<value_type>::check(); return SmartValue<bool>( Expr(  make_operation( "Or", expr, other.expr ) ) ); }
   };
+
+  template <typename T> SmartValue<T> Minimum( SmartValue<T> const& l, SmartValue<T> const& r ) { return SmartValue<T>( make_operation( "Min", l.expr, r.expr ) ); }
+  template <typename T> SmartValue<T> Maximum( SmartValue<T> const& l, SmartValue<T> const& r ) { return SmartValue<T>( make_operation( "Max", l.expr, r.expr ) ); }
   
   template <typename UTP>
   UTP ByteSwap( UTP const& value ) { return UTP( make_operation( "BSwp", value.expr ) ); }

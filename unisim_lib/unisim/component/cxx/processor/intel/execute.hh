@@ -297,7 +297,7 @@ namespace intel {
     
     INT res = (arg1 << lsh) | (INT(arch.flagread( ARCH::FLAG::CF )) << (lsh - u8_t(1))) | (arg1 >> rsh);
 
-    if (lsh != u8_t(0))
+    if (arch.Cond(lsh != u8_t(0)))
       arch.flagwrite( ARCH::FLAG::CF, bit_t( (arg1 >> (rsh - u8_t(1))) & INT(1) ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
@@ -426,7 +426,7 @@ namespace intel {
   template <class ARCH, typename INT>
   void eval_div( ARCH& arch, INT& hi, INT& lo, INT const& divisor )
   {
-    if (divisor == INT(0)) arch._DE();
+    if (arch.Cond(divisor == INT(0))) arch._DE();
     
     typedef typename atpinfo<ARCH,INT>::utype utype;
     typedef typename atpinfo<ARCH,INT>::twice twice;
@@ -512,6 +512,9 @@ namespace intel {
       (u32_t( 0 )                             << 21 /* ID */ );
   }
 
+  template <typename T> T const& Minimum( T const& l, T const& r ) { return std::min( l, r ); }
+  template <typename T> T const& Maximum( T const& l, T const& r ) { return std::max( l, r ); }
+  
 } // end of namespace intel
 } // end of namespace processor
 } // end of namespace cxx

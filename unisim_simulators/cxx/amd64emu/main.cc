@@ -51,10 +51,6 @@
 #include <cmath>
 #include <cctype>
 
-namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
-
-} /* end intel namespace */ } /* end processor namespace */ } /* end cxx namespace */ } /* end component namespace */ } /* end unisim namespace */
-
 template <typename T> using VectorTypeInfo = unisim::component::cxx::processor::intel::VectorTypeInfo<T>;
 template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
 
@@ -63,18 +59,14 @@ struct Arch
   , public unisim::service::interfaces::Memory<uint64_t>
   , public unisim::service::interfaces::Registers
 {
-  // typedef unisim::component::cxx::processor::intel::UInt128 UInt128;
-  // typedef unisim::component::cxx::processor::intel::SInt128 SInt128;
   typedef uint8_t      u8_t;
   typedef uint16_t     u16_t;
   typedef uint32_t     u32_t;
   typedef uint64_t     u64_t;
-  //  typedef UInt128      u128_t;
   typedef int8_t       s8_t;
   typedef int16_t      s16_t;
   typedef int32_t      s32_t;
   typedef int64_t      s64_t;
-  //  typedef SInt128      s128_t;
   typedef bool         bit_t;
   typedef uint64_t     addr_t;
   typedef float        f32_t;
