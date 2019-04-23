@@ -35,7 +35,6 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_VECTORBANK_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_VECTORBANK_HH__
 
-#include <cstring>
 #include <inttypes.h>
 
 namespace unisim {

@@ -2146,18 +2146,20 @@ struct Pshufb : public Operation<ARCH>
   {
     typedef typename ARCH::u8_t u8_t;
     typedef typename ARCH::s8_t s8_t;
-    typedef typename ARCH::u128_t u128_t;
 
     for (unsigned chunk = 0, cend = VR::size() / 128; chunk < cend; ++ chunk)
       {
-        u128_t src = arch.vmm_read( VR(), vn, chunk, u128_t() );
-        for (unsigned idx = 0, end = 128 / 32; idx < end; ++idx)
+        unsigned const size = 128 / 8;
+        u8_t src[16];
+        for (unsigned idx = 0; idx < size; ++idx)
+          src[idx] = arch.vmm_read( VR(), vn, chunk, u8_t() );
+        for (unsigned idx = 0; idx < size; ++idx)
           {
-            unsigned didx = idx + chunk*end;
+            unsigned didx = idx + chunk*size;
             u8_t sidx = arch.vmm_read( VR(), rm, didx, u8_t() );
             u8_t mask = ~u8_t(s8_t(sidx) >> 7);
             sidx &= u8_t(0xf);
-            arch.vmm_write( VR(), gn, didx, (src >> sidx) & mask );
+            arch.vmm_write( VR(), gn, didx, src[sidx] & mask );
           }
       }
   }

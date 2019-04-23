@@ -39,6 +39,7 @@
 #include <unisim/component/cxx/processor/intel/segments.hh>
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
+#include <unisim/component/cxx/processor/intel/execute.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -60,23 +61,23 @@ namespace intel {
   
   template <class ARCH> struct Operation;
   
-  // TODO: should handle twice of 64-bit types
-  template <typename T>
-  struct Twice
-  {
-    struct Error {};
-    Twice() {}
-    Twice( T const& val ) {}
-    template <typename X>
-    Twice operator << (X) { throw Error(); return Twice(); }
-    template <typename X>
-    Twice operator >> (X) { throw Error(); return Twice(); }
-    Twice operator | (Twice const& val) { throw Error(); return Twice(); }
+  // // TODO: should handle twice of 64-bit types
+  // template <typename T>
+  // struct Twice
+  // {
+  //   struct Error {};
+  //   Twice() {}
+  //   Twice( T const& val ) {}
+  //   template <typename X>    Twice operator <<  (X) { throw Error(); return Twice(); }
+  //   template <typename X>     void operator <<= (X) { throw Error(); }
+  //   template <typename X>    Twice operator >>  (X) { throw Error(); return Twice(); }
+  //   template <typename X>     void operator >>= (X) { throw Error(); }
+  //   Twice operator | (Twice const& val) { throw Error(); return Twice(); }
     
-    Twice& operator |= (Twice const& val) { return *this; }
-    operator T () { throw Error(); return T(); }
-    void unimplented();
-  };
+  //   Twice& operator |= (Twice const& val) { return *this; }
+  //   operator T () { throw Error(); return T(); }
+  //   void unimplented();
+  // };
 
   struct Arch
   {
@@ -84,12 +85,12 @@ namespace intel {
     typedef uint16_t     u16_t;
     typedef uint32_t     u32_t;
     typedef uint64_t     u64_t;
-    typedef Twice<u64_t> u128_t;
+    //    typedef Twice<u64_t> u128_t;
     typedef int8_t       s8_t;
     typedef int16_t      s16_t;
     typedef int32_t      s32_t;
     typedef int64_t      s64_t;
-    typedef Twice<s64_t> s128_t;
+    //    typedef Twice<s64_t> s128_t;
     typedef bool         bit_t;
     typedef uint32_t     addr_t;
     
@@ -97,6 +98,9 @@ namespace intel {
     typedef double       f64_t;
     typedef long double  f80_t;
     
+    typedef GOq   GR;
+    typedef u64_t gr_type;
+  
     struct OpHeader
     {
       OpHeader( uint32_t _address ) : address( _address ) {} uint32_t address;
@@ -173,9 +177,9 @@ namespace intel {
     
   public:
     template <class GOP>
-    typename TypeFor<Arch,GOP::OPSIZE>::u regread( GOP const&, unsigned idx )
+    typename TypeFor<Arch,GOP::SIZE>::u regread( GOP const&, unsigned idx )
     {
-      return typename TypeFor<Arch,GOP::OPSIZE>::u( m_regs[idx] );
+      return typename TypeFor<Arch,GOP::SIZE>::u( m_regs[idx] );
     }
     
     u8_t regread( GObLH const&, unsigned idx )
@@ -185,7 +189,7 @@ namespace intel {
     }
     
     template <class GOP>
-    void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::OPSIZE>::u value )
+    void regwrite( GOP const&, unsigned idx, typename TypeFor<Arch,GOP::SIZE>::u value )
     {
       m_regs[idx] = u32_t( value );
     }
@@ -341,9 +345,11 @@ namespace intel {
       throw 0;        return typename TypeFor<Arch,OPSIZE>::f();
     }
     
+    typedef unisim::component::cxx::processor::intel::RMOp<Arch> RMOp;
+    
     template <unsigned OPSIZE>
     typename TypeFor<Arch,OPSIZE>::f
-    frmread( RMOp<Arch> const& rmop )
+    frmread( RMOp const& rmop )
     {
       typedef typename TypeFor<Arch,OPSIZE>::f f_type;
       if (not rmop.is_memory_operand()) return f_type( fread( rmop.ereg() ) );
@@ -421,7 +427,7 @@ namespace intel {
     
     template <unsigned OPSIZE>
     void
-    frmwrite( RMOp<Arch> const& rmop, typename TypeFor<Arch,OPSIZE>::f value )
+    frmwrite( RMOp const& rmop, typename TypeFor<Arch,OPSIZE>::f value )
     {
       if (not rmop.is_memory_operand()) return fwrite( rmop.ereg(), f64_t( value ) );
       fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
@@ -470,23 +476,23 @@ namespace intel {
     void grow_stack( addr_t offset ) { regwrite( GOd(), 4, regread( GOd(), 4 ) - offset ); }
     
     template <class GOP>
-    typename TypeFor<Arch,GOP::OPSIZE>::u
-    rmread( GOP const& g, RMOp<Arch> const& rmop )
+    typename TypeFor<Arch,GOP::SIZE>::u
+    rmread( GOP const& g, RMOp const& rmop )
     {
       if (not rmop.is_memory_operand())
         return regread( g, rmop.ereg() );
       
-      return memread<GOP::OPSIZE>( rmop->segment, rmop->effective_address( *this ) );
+      return memread<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ) );
     }
     
     template <class GOP>
     void
-    rmwrite( GOP const& g, RMOp<Arch> const& rmop, typename TypeFor<Arch,GOP::OPSIZE>::u value )
+    rmwrite( GOP const& g, RMOp const& rmop, typename TypeFor<Arch,GOP::SIZE>::u value )
     {
       if (not rmop.is_memory_operand())
         return regwrite( g, rmop.ereg(), value );
       
-      return memwrite<GOP::OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
+      return memwrite<GOP::SIZE>( rmop->segment, rmop->effective_address( *this ), value );
     }
     
     // void
@@ -692,6 +698,7 @@ namespace intel {
 
     void  xgetbv();
     void  cpuid();
+    void _DE() { std::cerr << "#DE: Division Error.\n"; throw std::runtime_error("diverr"); }
     // void                        fpdump()
     // {
     //   std::cerr << ": #insn: " << std::dec << m_instcount
@@ -710,132 +717,150 @@ namespace intel {
   public:
     uint32_t                    pop_dirtfregs() { uint32_t r = m_dirtfregs; m_dirtfregs = 0; return r; }
     
-    
   public: 
     struct VUnion
     {
-      static unsigned const BYTECOUNT = 16;
+      static unsigned const BYTECOUNT = 32;
       
-      typedef void (*arrangement_t)( uint8_t* storage );
-      arrangement_t arrangement;
-
-      template <typename T>
-      static unsigned ItemCount() { return BYTECOUNT / VectorTypeInfo<T>::bytecount; }
-
-      template <typename T>
-      static void ToBytes( uint8_t* storage )
+      typedef void (*transfer_t)( uint8_t* dst, uint8_t const* src, unsigned size, bool destroy );
+    
+      template <typename ELEM>
+      static unsigned ItemCount() { return BYTECOUNT / VectorTypeInfo<ELEM>::bytecount; }
+    
+      template <typename ELEM>
+      static void Transfer( uint8_t* bytes, uint8_t const* storage, unsigned size, bool destroy )
       {
-        T const* vec = reinterpret_cast<T const*>( storage );
-
-        for (unsigned idx = 0, stop = ItemCount<T>(); idx < stop; ++idx) {
-          T val = vec[idx]; 
-          VectorTypeInfo<T>::ToBytes( &storage[idx*VectorTypeInfo<T>::bytecount], val );
-        }
+        ELEM const* vec = reinterpret_cast<ELEM const*>( storage );
+      
+        uint8_t* dst_end = &bytes[size];
+        for (unsigned idx = 0, end = BYTECOUNT / VectorTypeInfo<ELEM>::bytecount; idx < end; ++idx)
+          {
+            uint8_t* dst = &bytes[idx*VectorTypeInfo<ELEM>::bytecount];
+            if (dst < dst_end)
+              VectorTypeInfo<ELEM>::ToBytes( dst, vec[idx] );
+            if (destroy)
+              VectorTypeInfo<ELEM>::Destroy( vec[idx] );
+          }
       }
 
-      template <typename T>
-      T*
-      GetStorage( uint8_t* storage )
+      template <class ELEM>
+      ELEM*
+      rearrange( uint8_t* storage, unsigned final_size )
       {
-        T* res = reinterpret_cast<T*>( storage );
-
-        arrangement_t current = &ToBytes<T>;
-        if (arrangement != current) {
-          arrangement( storage );   
-          for (int idx = ItemCount<T>(); --idx >= 0;) {
-            T val;
-            VectorTypeInfo<T>::FromBytes( val, &storage[idx*VectorTypeInfo<T>::bytecount] );
-            res[idx] = val;
+        ELEM* res = reinterpret_cast<ELEM*>( storage );
+        transfer_t current = &Transfer<ELEM>;
+        unsigned const elem_size = VectorTypeInfo<ELEM>::bytecount;
+        if (transfer != current)
+          {
+            uint8_t buf[BYTECOUNT];
+            unsigned valid_size = std::min(final_size,size);
+            transfer( &buf[0], storage, valid_size, true );
+            uint8_t const* src_end = &buf[valid_size];
+            for (unsigned idx = 0, end = BYTECOUNT / elem_size; idx < end; ++idx)
+              {
+                uint8_t const* src = &buf[idx*elem_size];
+                new (&res[idx]) ELEM();
+                if (src < src_end)
+                  VectorTypeInfo<ELEM>::FromBytes( res[idx], src );
+              }
+            transfer = current;
           }
-          arrangement = current;
-        }  
-     
+        else if (size < final_size)
+          {
+            for (unsigned idx = size / elem_size, end = final_size / elem_size; idx < end; ++idx)
+              res[idx] = ELEM();
+          }
+        size = final_size;
         return res;
       }
+
+      template <typename ELEM>
+      ELEM*
+      GetStorage( uint8_t* storage, ELEM const&, unsigned final_size )
+      {
+        return rearrange<ELEM>( storage, final_size );
+      }
+
+      template <class ELEM>
+      ELEM* GetConstStorage( uint8_t* storage, ELEM const&, unsigned required_size )
+      {
+        return rearrange<ELEM>( storage, std::max(size, required_size) );
+      }
+
+      static void initial( uint8_t*, uint8_t const*, unsigned, bool ) {}
       
-      VUnion() : arrangement( &ToBytes<uint8_t> ) {}
+      VUnion() : transfer( &initial ), size(0) {}
+
+      transfer_t transfer;
+      unsigned   size;
     } umms[16];
-
-    uint8_t vmm_storage[16][16];
+  
+    uint8_t vmm_storage[16][VUnion::BYTECOUNT];
     uint32_t mxcsr;
-    
-    template<unsigned OPSIZE>
-    typename TypeFor<Arch,OPSIZE>::u
-    xmm_uread( unsigned reg, unsigned sub )
+
+    template <class VR> static unsigned vmm_wsize( VR const& vr ) { return VR::size() / 8; }
+    static unsigned vmm_wsize( unisim::component::cxx::processor::intel::SSE const& ) { return VUnion::BYTECOUNT; }
+  
+    template <class VR, class ELEM>
+    ELEM
+    vmm_read( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
     {
-      typedef typename TypeFor<Arch,OPSIZE>::u u_type;
-      
-      u_type* u_array = umms[reg].GetStorage<u_type>( &vmm_storage[reg][0] );
-      
-      return u_array[sub];
+      ELEM const* elems = umms[reg].GetConstStorage( &vmm_storage[reg][0], e, vr.size() / 8 );
+      return elems[sub];
     }
-    
-    template<unsigned OPSIZE>
+  
+    template <class VR, class ELEM>
     void
-    xmm_uwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::u val )
+    vmm_write( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
     {
-      typedef typename TypeFor<Arch,OPSIZE>::u u_type;
-      
-      u_type* u_array = umms[reg].GetStorage<u_type>( &vmm_storage[reg][0] );
-      
-      u_array[sub] = val;
-    }
-    
-    template<unsigned OPSIZE>
-    typename TypeFor<Arch,OPSIZE>::u
-    xmm_uread( RMOp<Arch> const& rmop, unsigned sub )
-    {
-      if (not rmop.is_memory_operand()) return xmm_uread<OPSIZE>( rmop.ereg(), sub );
-      return memread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8) );
-    }
-    
-    template<unsigned OPSIZE>
-    void
-    xmm_uwrite( RMOp<Arch> const& rmop, unsigned sub, typename TypeFor<Arch,OPSIZE>::u val )
-    {
-      if (not rmop.is_memory_operand()) return xmm_uwrite<OPSIZE>( rmop.ereg(), sub, val );
-      return memwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8), val );
+      ELEM* elems = umms[reg].GetStorage( &vmm_storage[reg][0], e, vmm_wsize( vr ) );
+      elems[sub] = e;
+      //gdbchecker.xmark(reg);
     }
 
-    template <unsigned OPSIZE>
-    typename TypeFor<Arch,OPSIZE>::f
-    xmm_fread( unsigned reg, unsigned sub )
+    // Integer case
+    template <class TYPE> TYPE vmm_memread( unsigned seg, u64_t addr, TYPE const& e )
     {
-      typedef typename TypeFor<Arch,OPSIZE>::f f_type;
-      
-      f_type* f_array = umms[reg].GetStorage<f_type>( &vmm_storage[reg][0] );
-      
-      return f_array[sub];
+      typedef unisim::component::cxx::processor::intel::atpinfo<Arch,TYPE> atpinfo;
+      return TYPE(memread<atpinfo::bitsize>(seg,addr));
+    }
+  
+    f32_t vmm_memread( unsigned seg, u64_t addr, f32_t const& e ) { return fmemread32( seg, addr ); }
+    f64_t vmm_memread( unsigned seg, u64_t addr, f64_t const& e ) { return fmemread64( seg, addr ); }
+    f80_t vmm_memread( unsigned seg, u64_t addr, f80_t const& e ) { return fmemread80( seg, addr ); }
+  
+    // Integer case
+    template <class TYPE> void vmm_memwrite( unsigned seg, u64_t addr, TYPE const& e )
+    {
+      typedef unisim::component::cxx::processor::intel::atpinfo<Arch,TYPE> atpinfo;
+      memwrite<atpinfo::bitsize>(seg,addr,typename atpinfo::utype(e));
+    }
+  
+    void vmm_memwrite( unsigned seg, u64_t addr, f32_t const& e ) { return fmemwrite32( seg, addr, e ); }
+    void vmm_memwrite( unsigned seg, u64_t addr, f64_t const& e ) { return fmemwrite64( seg, addr, e ); }
+    void vmm_memwrite( unsigned seg, u64_t addr, f80_t const& e ) { return fmemwrite80( seg, addr, e ); }
+
+    // void vmm_memwrite( unsigned seg, u64_t addr, u8_t  const& e ) { return memwrite< 8>( seg, addr, e ); }
+    // void vmm_memwrite( unsigned seg, u64_t addr, u16_t const& e ) { return memwrite<16>( seg, addr, e ); }
+    // void vmm_memwrite( unsigned seg, u64_t addr, u32_t const& e ) { return memwrite<32>( seg, addr, e ); }
+    // void vmm_memwrite( unsigned seg, u64_t addr, u64_t const& e ) { return memwrite<64>( seg, addr, e ); }
+  
+    template <class VR, class ELEM>
+    ELEM
+    vmm_read( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
+    {
+      if (not rmop.is_memory_operand()) return vmm_read( vr, rmop.ereg(), sub, e );
+      return vmm_memread( rmop->segment, rmop->effective_address( *this ) + sub*VectorTypeInfo<ELEM>::bytecount, e );
     }
     
-    template <unsigned OPSIZE>
+    template <class VR, class ELEM>
     void
-    xmm_fwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::f val )
+    vmm_write( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
-      typedef typename TypeFor<Arch,OPSIZE>::f f_type;
-      
-      f_type* f_array = umms[reg].GetStorage<f_type>( &vmm_storage[reg][0] );
-      
-      f_array[sub] = val;
+      if (not rmop.is_memory_operand()) return vmm_write( vr, rmop.ereg(), sub, e );
+      return vmm_memwrite( rmop->segment, rmop->effective_address( *this ) + sub*VectorTypeInfo<ELEM>::bytecount, e );
     }
 
-    template <unsigned OPSIZE>
-    typename TypeFor<Arch,OPSIZE>::f
-    xmm_fread( RMOp<Arch> const& rmop, unsigned sub )
-    {
-      if (not rmop.is_memory_operand()) return xmm_fread<OPSIZE>( rmop.ereg(), sub );
-      return fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8) );
-    }
-    
-    template <unsigned OPSIZE>
-    void
-    xmm_fwrite( RMOp<Arch> const& rmop, unsigned sub, typename TypeFor<Arch,OPSIZE>::f val )
-    {
-      if (not rmop.is_memory_operand()) return xmm_fwrite<OPSIZE>( rmop.ereg(), sub, val );
-      fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8), val );
-    }
-
-    
   };
   
 

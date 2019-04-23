@@ -33,12 +33,18 @@
  */
 
 #include <unisim/component/cxx/processor/intel/arch.hh>
-
-
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <stdexcept>
+
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
 using unisim::util::arithmetic::BitScanForward;
 using unisim::util::arithmetic::BitScanReverse;
+using unisim::util::endian::ByteSwap;
+
+void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor )    { throw std::runtime_error( "operation unvailable in 32 bit mode" ); }
+void eval_div( Arch& arch, int64_t& hi, int64_t& lo, int64_t divisor )       { throw std::runtime_error( "operation unvailable in 32 bit mode" ); }
+void eval_mul( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t multiplier ) { throw std::runtime_error( "operation unvailable in 32 bit mode" ); }
+void eval_mul( Arch& arch, int64_t& hi, int64_t& lo, int64_t multiplier )    { throw std::runtime_error( "operation unvailable in 32 bit mode" ); }
 }}}}}
 
 #include <unisim/component/cxx/processor/intel/isa/intel.tcc>

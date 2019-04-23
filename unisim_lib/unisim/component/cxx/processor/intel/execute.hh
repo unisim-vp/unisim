@@ -66,9 +66,9 @@ namespace intel {
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::s32_t>
   { typedef typename ARCH::s32_t stype; typedef typename ARCH::u32_t utype; typedef typename ARCH:: s64_t twice; enum nfo { is_signed = 1, is_integral = 1, bitsize = 32 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::u64_t>
-  { typedef typename ARCH::s64_t stype; typedef typename ARCH::u64_t utype; typedef typename ARCH::u128_t twice; enum nfo { is_signed = 0, is_integral = 1, bitsize = 64 }; };
+  { typedef typename ARCH::s64_t stype; typedef typename ARCH::u64_t utype;                                      enum nfo { is_signed = 0, is_integral = 1, bitsize = 64 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::s64_t>
-  { typedef typename ARCH::s64_t stype; typedef typename ARCH::u64_t utype; typedef typename ARCH::s128_t twice; enum nfo { is_signed = 1, is_integral = 1, bitsize = 64 }; };
+  { typedef typename ARCH::s64_t stype; typedef typename ARCH::u64_t utype;                                      enum nfo { is_signed = 1, is_integral = 1, bitsize = 64 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::u128_t>
   { typedef typename ARCH::s128_t stype; typedef typename ARCH::u128_t utype; typedef typename ARCH::u128_t twice; enum nfo { is_signed = 0, is_integral = 1, bitsize = 128 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::s128_t>
@@ -291,21 +291,15 @@ namespace intel {
   {
     typedef typename ARCH::bit_t bit_t;
     typedef typename ARCH::u8_t u8_t;
-    typedef typename atpinfo<ARCH,INT>::twice twice_type;
     intptr_t const bitsize = atpinfo<ARCH,INT>::bitsize;
     INT const msb = INT( 1 ) << (bitsize-1);
-    INT res( 0 );
+    u8_t lsh = (arg2 & shift_counter<ARCH,INT>::mask()) % u8_t( bitsize + 1 ), rsh = u8_t( bitsize + 1 ) - lsh;
     
-    u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
-    
-    sharg = sharg % u8_t( bitsize + 1 );
-    twice_type tmp( arg1 );
-    tmp |= twice_type( arch.flagread( ARCH::FLAG::CF ) ) << bitsize;
-    tmp = (tmp << sharg) | (tmp >> (u8_t( bitsize + 1 ) - sharg));
-    res = INT( tmp );
-    arch.flagwrite( ARCH::FLAG::CF, bit_t( (tmp >> bitsize) & twice_type( 1 ) ) );
+    INT res = (arg1 << lsh) | (INT(arch.flagread( ARCH::FLAG::CF )) << (lsh - u8_t(1))) | (arg1 >> rsh);
+
+    if (lsh != u8_t(0))
+      arch.flagwrite( ARCH::FLAG::CF, bit_t( (arg1 >> (rsh - u8_t(1))) & INT(1) ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
-      
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
     
     eval_PSZ( arch, res );
@@ -324,18 +318,13 @@ namespace intel {
     typedef typename ARCH::u8_t u8_t;
     intptr_t const bitsize = atpinfo<ARCH,INT>::bitsize;
     INT const msb = INT( 1 ) << (bitsize-1);
-    INT res( 0 );
+    u8_t rsh = (arg2 & shift_counter<ARCH,INT>::mask()) % u8_t( bitsize + 1 ), lsh = u8_t( bitsize ) - rsh;
     
-    u8_t sharg = arg2 & shift_counter<ARCH,INT>::mask();
-    
-    sharg = sharg % u8_t( bitsize + 1 );
-    typename atpinfo<ARCH,INT>::twice tmp( arg1 );
-    tmp |= typename atpinfo<ARCH,INT>::twice( arch.flagread( ARCH::FLAG::CF ) ) << bitsize;
-    tmp = (tmp << (u8_t( bitsize + 1 ) - sharg)) | (tmp >> sharg);
-    res = INT( tmp );
-    arch.flagwrite( ARCH::FLAG::CF, bit_t( (tmp >> bitsize) & typename atpinfo<ARCH,INT>::twice( 1 ) ) );
+    INT res = (arg1 >> rsh) | (INT(arch.flagread( ARCH::FLAG::CF )) << lsh) | (arg1 << (lsh + u8_t(1)));
+
+    if (arch.Cond(rsh != u8_t(0)))
+      arch.flagwrite( ARCH::FLAG::CF, bit_t( (arg1 >> (rsh - u8_t(1))) & INT(1) ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
-      
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
     
     eval_PSZ( arch, res );
@@ -530,3 +519,4 @@ namespace intel {
 } // end of namespace unisim
 
 #endif // __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_EXECUTE_HH__
+

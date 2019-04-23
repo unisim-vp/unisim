@@ -51,90 +51,7 @@
 #include <cmath>
 #include <cctype>
 
-struct UInt128
-{
-  UInt128() : bits{0,0} {}
-  UInt128( uint64_t value ) : bits{value,0} {}
-  UInt128( uint64_t hi, uint64_t lo ) : bits{lo,hi} {}
-
-  template <typename T> UInt128 operator << (T lshift) const { UInt128 res(*this); res <<= lshift; return res; }
-  template <typename T> UInt128 operator >> (T rshift) const { UInt128 res(*this); res >>= rshift; return res; }
-  
-  template <typename T>
-  UInt128& operator <<= (T lshift)
-  {
-    if (lshift >= 128) { bits[1] = 0; bits[0] = 0; return *this; }
-    if (lshift >= 64) { bits[1] = bits[0]; bits[0] = 0; lshift -= 64; }
-    T rshift = 63 - lshift;
-    bits[1] = (bits[1] << lshift) | (bits[0] >> rshift);
-    bits[0] = (bits[0] << lshift);
-    return *this;
-  }
-
-  template <typename T>
-  UInt128& operator >>= (T rshift)
-  {
-    if (rshift >= 128) { bits[1] = 0; bits[0] = 0; return *this; }
-    if (rshift >= 64) { bits[0] = bits[1]; bits[1] = 0; rshift -= 64; }
-    T lshift = 63 - rshift;
-    bits[0] = (bits[0] >> rshift) | (bits[1] << lshift);
-    bits[1] >>= rshift;
-    return *this;
-  }
-
-  UInt128 operator | (UInt128 const& rhs) { UInt128 res(*this); res |= rhs; return res; }
-  UInt128& operator |= (UInt128 const& rhs) { bits[1] |= rhs.bits[1]; bits[0] |= rhs.bits[0]; return *this; }
-  UInt128 operator & (UInt128 const& rhs) { UInt128 res(*this); res &= rhs; return res; }
-  UInt128& operator &= (UInt128 const& rhs) { bits[1] &= rhs.bits[1]; bits[0] &= rhs.bits[0]; return *this; }
-
-  unsigned clz() const
-  {
-    return bits[1] ?
-       63 - unisim::util::arithmetic::BitScanReverse(bits[1]) :
-      127 - unisim::util::arithmetic::BitScanReverse(bits[0]);
-  }
-  UInt128& neg()
-  {
-    bits[0] = ~bits[0] + 1;
-    bits[1] = ~bits[1] + uint64_t(not bits[0]);
-    return *this;
-  }
-  
-  explicit operator uint64_t () const { return bits[0]; }
-  explicit operator bool () const { return bits[0] or bits[1]; }
-
-  uint64_t bits[2];
-};
-
-struct SInt128 : public UInt128
-{
-  SInt128( int64_t value ) : UInt128( value, value >> 63 ) {}
-  SInt128( uint64_t value ) : UInt128( value, 0 ) {}
-  SInt128( UInt128 const& value ) : UInt128( value ) {}
-  template <typename T> UInt128 operator >> (T rshift) const { UInt128 res(*this); res >>= rshift; return res; }
-  
-  template <typename T>
-  UInt128& operator >>= (T rshift)
-  {
-    if (rshift >= 128) { bits[0] = int64_t(bits[1]) >> 63; bits[1] = bits[0]; return *this; }
-    if (rshift >= 64) { bits[0] = bits[1]; bits[1] = int64_t(bits[1]) >> 63; rshift -= 64; }
-    T lshift = 63 - rshift;
-    bits[0] = (bits[0] >> rshift) | (bits[1] << lshift);
-    bits[1] = int64_t(bits[1]) >> rshift;
-    return *this;
-  }
-  
-};
-
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
-
-template <> struct VectorTypeInfo<UInt128>
-{
-  enum bytecount_t { bytecount = 16 };
-  static void ToBytes( uint8_t* dst, UInt128 const& src ) { VectorTypeInfo<uint64_t>::ToBytes( dst+0, src.bits[0] ); VectorTypeInfo<uint64_t>::ToBytes( dst+8, src.bits[1] ); }
-  static void FromBytes( UInt128& dst, uint8_t const* src ) { VectorTypeInfo<uint64_t>::FromBytes( dst.bits[0], src+0 ); VectorTypeInfo<uint64_t>::FromBytes( dst.bits[1], src+8 ); }
-  static void Destroy( UInt128 const& obj ) { /* float type doesn't need any specific destructor */ }
-};
 
 } /* end intel namespace */ } /* end processor namespace */ } /* end cxx namespace */ } /* end component namespace */ } /* end unisim namespace */
 
@@ -146,16 +63,18 @@ struct Arch
   , public unisim::service::interfaces::Memory<uint64_t>
   , public unisim::service::interfaces::Registers
 {
+  // typedef unisim::component::cxx::processor::intel::UInt128 UInt128;
+  // typedef unisim::component::cxx::processor::intel::SInt128 SInt128;
   typedef uint8_t      u8_t;
   typedef uint16_t     u16_t;
   typedef uint32_t     u32_t;
   typedef uint64_t     u64_t;
-  typedef UInt128      u128_t;
+  //  typedef UInt128      u128_t;
   typedef int8_t       s8_t;
   typedef int16_t      s16_t;
   typedef int32_t      s32_t;
   typedef int64_t      s64_t;
-  typedef SInt128      s128_t;
+  //  typedef SInt128      s128_t;
   typedef bool         bit_t;
   typedef uint64_t     addr_t;
   typedef float        f32_t;
@@ -1108,6 +1027,81 @@ public:
   // } gdbchecker;
 };
 
+struct UInt128
+{
+  UInt128() : bits{0,0} {}
+  UInt128( uint64_t value ) : bits{value,0} {}
+  UInt128( uint64_t hi, uint64_t lo ) : bits{lo,hi} {}
+
+  template <typename T> UInt128 operator << (T lshift) const { UInt128 res(*this); res <<= lshift; return res; }
+  template <typename T> UInt128 operator >> (T rshift) const { UInt128 res(*this); res >>= rshift; return res; }
+  
+  template <typename T>
+  UInt128& operator <<= (T lshift)
+  {
+    if (lshift >= 128) { bits[1] = 0; bits[0] = 0; return *this; }
+    if (lshift >= 64) { bits[1] = bits[0]; bits[0] = 0; lshift -= 64; }
+    T rshift = 63 - lshift;
+    bits[1] = (bits[1] << lshift) | (bits[0] >> rshift);
+    bits[0] = (bits[0] << lshift);
+    return *this;
+  }
+
+  template <typename T>
+  UInt128& operator >>= (T rshift)
+  {
+    if (rshift >= 128) { bits[1] = 0; bits[0] = 0; return *this; }
+    if (rshift >= 64) { bits[0] = bits[1]; bits[1] = 0; rshift -= 64; }
+    T lshift = 63 - rshift;
+    bits[0] = (bits[0] >> rshift) | (bits[1] << lshift);
+    bits[1] >>= rshift;
+    return *this;
+  }
+
+  UInt128 operator | (UInt128 const& rhs) { UInt128 res(*this); res |= rhs; return res; }
+  UInt128& operator |= (UInt128 const& rhs) { bits[1] |= rhs.bits[1]; bits[0] |= rhs.bits[0]; return *this; }
+  UInt128 operator & (UInt128 const& rhs) { UInt128 res(*this); res &= rhs; return res; }
+  UInt128& operator &= (UInt128 const& rhs) { bits[1] &= rhs.bits[1]; bits[0] &= rhs.bits[0]; return *this; }
+
+  unsigned clz() const
+  {
+    return bits[1] ?
+      63 - unisim::util::arithmetic::BitScanReverse(bits[1]) :
+      127 - unisim::util::arithmetic::BitScanReverse(bits[0]);
+  }
+  UInt128& neg()
+  {
+    bits[0] = ~bits[0] + 1;
+    bits[1] = ~bits[1] + uint64_t(not bits[0]);
+    return *this;
+  }
+  
+  explicit operator uint64_t () const { return bits[0]; }
+  explicit operator bool () const { return bits[0] or bits[1]; }
+
+  uint64_t bits[2];
+};
+
+struct SInt128 : public UInt128
+{
+  SInt128( int64_t value ) : UInt128( value, value >> 63 ) {}
+  SInt128( uint64_t value ) : UInt128( value, 0 ) {}
+  SInt128( UInt128 const& value ) : UInt128( value ) {}
+  template <typename T> UInt128 operator >> (T rshift) const { UInt128 res(*this); res >>= rshift; return res; }
+  
+  template <typename T>
+  UInt128& operator >>= (T rshift)
+  {
+    if (rshift >= 128) { bits[0] = int64_t(bits[1]) >> 63; bits[1] = bits[0]; return *this; }
+    if (rshift >= 64) { bits[0] = bits[1]; bits[1] = int64_t(bits[1]) >> 63; rshift -= 64; }
+    T lshift = 63 - rshift;
+    bits[0] = (bits[0] >> rshift) | (bits[1] << lshift);
+    bits[1] = int64_t(bits[1]) >> rshift;
+    return *this;
+  }
+  
+};
+
 void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor )
 {
   if (not divisor) arch._DE();
@@ -1187,9 +1181,11 @@ Arch::f64_t power( Arch::f64_t, Arch::f64_t );
 Arch::f64_t logarithm( Arch::f64_t );
 Arch::f64_t square_root( Arch::f64_t );
 
+namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
 using unisim::util::arithmetic::BitScanForward;
 using unisim::util::arithmetic::BitScanReverse;
 using unisim::util::endian::ByteSwap;
+}}}}}
 
 #include <unisim/component/cxx/processor/intel/isa/intel.tcc>
 #include <unisim/component/cxx/processor/intel/math.hh>
@@ -1218,12 +1214,6 @@ struct ICache : public DECODER
     : mru_page( 0 )
   {
     memset( hash_table, 0, sizeof (hash_table) );
-    std::ifstream source( "certs.txt" );
-    for (std::string line; std::getline( source, line );)
-      {
-        line.erase(std::find_if(line.rbegin(), line.rend(), [](int c) { return not isspace(c); }).base(), line.end());
-        certs.insert( line );
-      }
   }
   ~ICache()
   {

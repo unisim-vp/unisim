@@ -84,9 +84,11 @@ string \
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
+arch.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
+arch.hh \
 "
 
 UNISIM_SIMULATOR_DATA_FILES="\
@@ -146,6 +148,7 @@ for file in ${UNISIM_SIMULATOR_FILES}; do
 done
 
 mkdir -p ${DEST_DIR}/config
+mkdir -p ${DEST_DIR}/m4
 
 # Some imported files (m4 macros) impact configure generation
 has_to_build_configure=no
