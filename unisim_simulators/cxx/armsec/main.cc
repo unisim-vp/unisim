@@ -739,8 +739,6 @@ public:
         // requested read is in the middle of a larger value
         unsigned src = pos;
         do { src = src & (src-1); } while (not neonregs[reg][src].node);
-        // unsigned nxt = pos;
-        // do { nxt += 1; } while (nxt < NEONSIZE and not neonregs[reg][nxt].node);
         unsigned shift = 8*(pos - src);
         return cast.ui( size, make_operation( "Lsr", neonregs[reg][src], make_const( shift ) ) );
       }
@@ -805,20 +803,30 @@ public:
   static unsigned usizeof( U16 const& ) { return  2; }
   static unsigned usizeof( U32 const& ) { return  4; }
   static unsigned usizeof( U64 const& ) { return  8; }
+
+  template <typename T> T ucast( T const& x ) { return x; }
+  U8 ucast( S8 const& x ) { return U8(x); }
+  U16 ucast( S16 const& x ) { return U16(x); }
+  U32 ucast( S32 const& x ) { return U32(x); }
+  U64 ucast( S64 const& x ) { return U64(x); }
   // Get|Set elements
   template <class ELEMT>
   void
   SetVDE( unsigned reg, unsigned idx, ELEMT const& value )
   {
     using unisim::util::symbolic::binsec::BitFilter;
-    unsigned usz = usizeof( value );
-    Expr neonval( new BitFilter( value.expr, usz*8, usz*8, 64, false ) );
+    auto uvalue = ucast( value );
+    unsigned usz = usizeof( uvalue );
+    Expr neonval( new BitFilter( uvalue.expr, usz*8, usz*8, 64, false ) );
     eneonwrite( reg, usz, usz*idx, neonval );
   }
 
   template <class ELEMT>
   ELEMT GetVDE( unsigned reg, unsigned idx, ELEMT const& trait )
-  { unsigned usz = usizeof( trait ); return ELEMT( U64( eneonread( reg, usz, usz*idx ) ) ); }
+  {
+    unsigned usz = usizeof( ucast(trait) );
+    return ELEMT( U64( eneonread( reg, usz, usz*idx ) ) );
+  }
   
   //   =====================================================================
   //   =                      Control Transfer methods                     =
