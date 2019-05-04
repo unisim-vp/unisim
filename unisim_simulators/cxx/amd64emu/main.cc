@@ -507,17 +507,17 @@ struct Arch
     return memread<OPSIZE>( unisim::component::cxx::processor::intel::SS, sptr );
   }
 
-  void shrink_stack( addr_t offset ) { regwrite( GOq(), 4, regread( GOq(), 4 ) + offset ); }
-  void grow_stack( addr_t offset ) { regwrite( GOq(), 4, regread( GOq(), 4 ) - offset ); }
+  void shrink_stack( addr_t offset ) { regwrite( GR(), 4, regread( GR(), 4 ) + offset ); }
+  void grow_stack( addr_t offset ) { regwrite( GR(), 4, regread( GR(), 4 ) - offset ); }
 
   template <unsigned OPSIZE>
   void
   push( typename TypeFor<Arch,OPSIZE>::u value )
   {
     // TODO: handle stack address size
-    u64_t sptr = regread( GOq(), 4 ) - u64_t( OPSIZE/8 );
+    u64_t sptr = regread( GR(), 4 ) - u64_t( OPSIZE/8 );
     memwrite<OPSIZE>( unisim::component::cxx::processor::intel::SS, sptr, value );
-    regwrite( GOq(), 4, sptr );
+    regwrite( GR(), 4, sptr );
   }
 
 
@@ -618,13 +618,13 @@ struct Arch
   addr_t rip;
 
   enum ipproc_t { ipjmp = 0, ipcall, ipret };
-  u64_t                       getnip() { return rip; }
-  void                        setnip( u64_t _rip, ipproc_t ipproc = ipjmp ) { rip = _rip; }
+  addr_t                      getnip() { return rip; }
+  void                        setnip( addr_t _rip, ipproc_t ipproc = ipjmp ) { rip = _rip; }
   //void                        addeip( u64_t offset ) { rip += offset; }
 
   void                        syscall()
   {
-    this->ExecuteSystemCall( this->regread( GOq(), 0 ) );
+    this->ExecuteSystemCall( this->regread( GR(), 0 ) );
   }
 
   void                        interrupt( uint8_t _exc )
@@ -1002,7 +1002,7 @@ public:
   //       {
   //         if (not ((gdirtmask>>reg) & 1)) continue;
   //         uint64_t value = cpu.u64regs[reg];
-  //         std::ostringstream rn; rn << unisim::component::cxx::processor::intel::DisasmG(GOq(),reg);
+  //         std::ostringstream rn; rn << unisim::component::cxx::processor::intel::DisasmG(GR(),reg);
   //         sink << "insn_assert " << std::dec << getnew_aid() << " $" << &(rn.str().c_str()[1]) << " 0x" << std::hex << value << '\n';
   //       }
   //     gdirtmask = 0;

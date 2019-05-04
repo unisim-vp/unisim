@@ -145,9 +145,8 @@ namespace intel {
     
   public:
     enum ipproc_t { ipjmp = 0, ipcall, ipret };
-    u32_t                       getnip() { return m_EIP; }
-    void                        setnip( u32_t _eip, ipproc_t ipproc = ipjmp ) { m_EIP = _eip; }
-    // void                        addeip( u32_t offset ) { m_EIP += offset; }
+    addr_t                      getnip() { return m_EIP; }
+    void                        setnip( addr_t _eip, ipproc_t ipproc = ipjmp ) { m_EIP = _eip; }
 
     // INTEGER STATE
     // EFLAGS
@@ -258,22 +257,22 @@ namespace intel {
     }
     
   public:
-    f32_t                       fmemread32( unsigned int _seg, u32_t _addr )
+    f32_t                       fmemread32( unsigned int _seg, addr_t _addr )
     {
       union IEEE754_t { float as_f; uint32_t as_u; } word;
       word.as_u = memread<32>( _seg, _addr );
       return word.as_f;
     }
-    f64_t                       fmemread64( unsigned int _seg, u32_t _addr )
+    f64_t                       fmemread64( unsigned int _seg, addr_t _addr )
     {
       union IEEE754_t { double as_f; uint64_t as_u; } word;
       word.as_u = memread<64>( _seg, _addr );
       return word.as_f;
     }
     f80_t
-    fmemread80( unsigned int _seg, u32_t _addr )
+    fmemread80( unsigned int _seg, addr_t _addr )
     {
-      _addr += u32_t( m_srs[_seg].m_base );
+      _addr += addr_t( m_srs[_seg].m_base );
       uintptr_t const buf_size = 10;
       uint8_t buf[buf_size];
       {
@@ -356,21 +355,21 @@ namespace intel {
       return this->fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) );
     }
 
-    void                        fmemwrite32( unsigned int _seg, u32_t _addr, f32_t _val )
+    void                        fmemwrite32( unsigned int _seg, addr_t _addr, f32_t _val )
     {
       union IEEE754_t { float as_f; uint32_t as_u; } word;
       word.as_f = _val;
       memwrite<32>( _seg, _addr, word.as_u );
     }
-    void                        fmemwrite64( unsigned int _seg, u32_t _addr, f64_t _val )
+    void                        fmemwrite64( unsigned int _seg, addr_t _addr, f64_t _val )
     {
       union IEEE754_t { double as_f; uint64_t as_u; } word;
       word.as_f = _val;
       memwrite<64>( _seg, _addr, word.as_u );
     }
-    void                        fmemwrite80( unsigned int _seg, u32_t _addr, f80_t _val )
+    void                        fmemwrite80( unsigned int _seg, addr_t _addr, f80_t _val )
     {
-      _addr += u32_t( m_srs[_seg].m_base );
+      _addr += addr_t( m_srs[_seg].m_base );
       union IEEE754_t { double as_f; uint64_t as_u; } word;
       word.as_f = _val;
       uint8_t sign = (word.as_u >> 63) & 1;
@@ -435,7 +434,7 @@ namespace intel {
 
     template <unsigned OPSIZE>
     void
-    memwrite( unsigned _seg, u32_t _addr, typename TypeFor<Arch,OPSIZE>::u _val )
+    memwrite( unsigned _seg, addr_t _addr, typename TypeFor<Arch,OPSIZE>::u _val )
     {
       uintptr_t const int_size = (OPSIZE/8);
       uint32_t addr = _addr + m_srs[_seg].m_base, last_addr = addr;
@@ -457,9 +456,9 @@ namespace intel {
     pop()
     {
       // TODO: handle stack address size
-      u32_t sptr = regread( GOd(), 4 );
-      regwrite( GOd(), 4, sptr + u32_t( OPSIZE/8 ) );
-      return memread<OPSIZE>( SS, sptr );
+      gr_type sptr = regread( GR(), 4 );
+      regwrite( GR(), 4, sptr + gr_type( OPSIZE/8 ) );
+      return memread<OPSIZE>( SS, addr_t( sptr ) );
     }
     
     template <unsigned OPSIZE>
@@ -467,13 +466,13 @@ namespace intel {
     push( typename TypeFor<Arch,OPSIZE>::u value )
     {
       // TODO: handle stack address size
-      u32_t sptr = regread( GOd(), 4 ) - u32_t( OPSIZE/8 );
-      memwrite<OPSIZE>( SS, sptr, value );
-      regwrite( GOd(), 4, sptr );
+      gr_type sptr = regread( GR(), 4 ) - gr_type( OPSIZE/8 );
+      memwrite<OPSIZE>( SS, addr_t( sptr ), value );
+      regwrite( GR(), 4, sptr );
     }
 
-    void shrink_stack( addr_t offset ) { regwrite( GOd(), 4, regread( GOd(), 4 ) + offset ); }
-    void grow_stack( addr_t offset ) { regwrite( GOd(), 4, regread( GOd(), 4 ) - offset ); }
+    void shrink_stack( addr_t offset ) { regwrite( GR(), 4, regread( GR(), 4 ) + offset ); }
+    void grow_stack( addr_t offset ) { regwrite( GR(), 4, regread( GR(), 4 ) - offset ); }
     
     template <class GOP>
     typename TypeFor<Arch,GOP::SIZE>::u
@@ -510,7 +509,7 @@ namespace intel {
   
     template<unsigned OPSIZE>
     typename TypeFor<Arch,OPSIZE>::u
-    memread( unsigned _seg, u32_t _addr )
+    memread( unsigned _seg, addr_t _addr )
     {
       uintptr_t const int_size = (OPSIZE/8);
       uint32_t addr = _addr + m_srs[_seg].m_base, last_addr = addr;

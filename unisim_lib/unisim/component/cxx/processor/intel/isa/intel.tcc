@@ -403,7 +403,7 @@ namespace intel {
     
     void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << DisasmX(disp) << "(%rip)"; }
     
-    addr_t effective_address( ARCH& arch ) const { return addr_t( disp ) + addr_t( arch.getnip() ); };
+    addr_t effective_address( ARCH& arch ) const { return addr_t( disp ) + arch.getnip(); };
   };
 
   template <class ARCH, unsigned ADDRSIZE>

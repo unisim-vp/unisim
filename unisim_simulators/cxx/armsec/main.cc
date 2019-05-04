@@ -769,7 +769,7 @@ public:
     Expr nxt[NEONSIZE];
     
     for (unsigned ipos = pos, isize = size, cpos;
-         cpos = ipos^isize, (not neonregs[reg][ipos].node) or (not neonregs[reg][cpos&(NEONSIZE-1)].node);
+         cpos = (ipos^isize) & (NEONSIZE-1), (not neonregs[reg][ipos].node) or (not neonregs[reg][cpos].node);
          isize *= 2, ipos &= -isize
          )
       {
