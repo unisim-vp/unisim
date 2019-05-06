@@ -125,31 +125,71 @@ struct AMD64
   struct MemCode
   {
     uint8_t     bytes[15];
+    unsigned    length;
+
+    MemCode() : bytes(), length() {}
+    MemCode( uint8_t fill ) : length(sizeof (bytes)) { std::fill( &bytes[0], &bytes[length], fill ); }
     
     bool get( std::istream& source )
     {
-      uintptr_t bytecount = 0; bool nibble = false;
+      unsigned bytecount = 0; bool nibble = false;
       for (;;)
         {
           char ch;
           if (not source.get( ch ).good()) return false;
           if (ch == ' ')     { if (nibble) return false; continue; }
           if (ch == '\t')    { if (nibble) return false; break; }
-
+          if (bytecount >= sizeof(bytes)) throw 0;
+          
           uint8_t nval;
           if      ('0' <= ch and ch <= '9') nval = ch - '0';
           else if ('a' <= ch and ch <= 'f') nval = ch - 'a' + 10;
           else return false;
         
-          if (nibble) { bytes[bytecount] = bytes[bytecount] << 4 | nval; nibble = false; }
-          else        { bytes[bytecount] =                         nval; nibble =  true; }
+          if (nibble) { bytes[bytecount] = nval | bytes[bytecount] << 4; nibble = false; }
+          else        { bytes[bytecount] = nval;        bytecount  += 1; nibble =  true; }
         }
-
+      
+      length = bytecount;
       return true;
     }
+
+    uint8_t getbyte( unsigned idx, uint8_t _default ) const { return idx < length ? bytes[idx] : _default; }
+
+    bool maximize( MemCode const& lo, MemCode const& hi )
+    {
+      MemCode delta(0);
+
+      int carry = 0, dcarry = 0;
+      for (unsigned idx = sizeof (bytes); idx-- > 0;)
+        {
+          carry = carry + int(hi.getbyte(idx, 0x00)) - int(lo.getbyte(idx,0xff));
+          uint8_t byte = carry;
+          delta.bytes[idx] = byte;
+          carry >>= 8;
+          dcarry  = dcarry + int(bytes[idx]) - int(byte);
+          dcarry >>= 8;
+        }
+      if (dcarry == 0)
+        return false;
+      
+      *this = delta;
+      return true;
+    }
+
+    int compare( MemCode const& rhs ) const
+    {
+      for (unsigned idx = 0, end = sizeof (bytes); idx < end; ++idx)
+        if (int delta = int(getbyte(idx,0)) - int(rhs.getbyte(idx,0)))
+          return delta;
+      return 0;
+    }
+
+    bool operator < ( MemCode const& rhs ) const { return compare( rhs ) < 0; }
+    
     friend std::ostream& operator << ( std::ostream& sink, MemCode const& mc )
     {
-      for (unsigned idx = 0; idx < sizeof(bytes); ++idx)
+      for (unsigned idx = 0; idx < mc.length; ++idx)
         {
           uint8_t byte = mc.bytes[idx];
           for (unsigned nibble = 0; nibble < 2; ++nibble)
@@ -164,9 +204,11 @@ struct AMD64
   Operation* decode( uint64_t addr, MemCode const& ct, std::string& disasm )
   {
     Operation* op = ut::Arch::fetch( addr, &ct.bytes[0] );
+    if (not op) throw ut::Untestable("#UD");
     std::ostringstream buf;
     op->disasm(buf);
     disasm = buf.str();
+    return op;
   }
   
   static char const* Name() { return "amd64"; }
@@ -205,7 +247,7 @@ struct Checker
   typedef typename ISA::Operation Operation;
   struct InsnCode
   {
-    InsnCode( MemCode const& mc, std::string const& ac ) : memcode(mc), asmcode(ac) {}
+    InsnCode( Operation const& op, MemCode const& mc, std::string const& ac ) : memcode(), asmcode(ac) { memcode.length = op.length; }
     MemCode memcode;
     std::string asmcode;
   };
@@ -213,8 +255,41 @@ struct Checker
   
   unisim::util::random::Random random;
   ISA isa;
-
+  std::set<MemCode> done;
   TestDB testdb;
+
+  InsnCode const& insert( Operation const& op, MemCode const& code, std::string const& disasm )
+  {
+    // Performing an abstract execution to check the validity of
+    // the opcode, and to compute the interface of the operation
+    ut::Interface interface( op );
+    return testdb.emplace( std::piecewise_construct, std::forward_as_tuple( std::move( interface ) ), std::forward_as_tuple( op, code, disasm ) )->second;
+  }
+
+  bool test( MemCode const& trial )
+  {
+    static uintptr_t counter = 0;
+    //    if (++counter % 1000) {} else {
+      std::cerr << "\r\e[K#" << testdb.size() <<  "/" << done.size();
+      std::cerr.flush();
+      //    }
+    try
+      {
+        std::string disasm;
+        std::unique_ptr<Operation> codeop = std::unique_ptr<Operation>( isa.decode( 0x4000, trial, disasm ) );
+        InsnCode const& ic = insert( *codeop, trial, disasm );
+        done.insert( ic.memcode );
+      }
+    catch (ut::Untestable const& denial)
+      {
+        done.insert( trial );
+        //        std::cerr << fl << ": behavioral rejection for " << disasm << " <" << denial.reason << ">\n";
+        return false;
+      }
+    
+    return true;
+  }
+  
   std::ofstream logger;
   
   Checker()
@@ -222,8 +297,45 @@ struct Checker
     , logger((std::string( ISA::Name() ) + ".log").c_str())
   {}
   
-  void discover( uintptr_t ttl )
+  void discover( uintptr_t maxttl )
   {
+    test( MemCode( 0 ) );
+    test( MemCode( -1 ) );
+    
+    for (uintptr_t ttl = maxttl; ttl-- > 0;)
+      {
+        MemCode candidate( 0 );
+        typedef decltype (done.begin()) Iterator;
+        Iterator best;
+        for (Iterator itr, next = done.begin(), end = best = done.end(); itr = next, ++next != end;)
+          if (candidate.maximize( *itr, *next ))
+            best = itr;
+        if (best == done.end()) throw 0;
+        MemCode const& a = *best++;
+        MemCode const& b = *best++;
+        /* Computing a randomly weighted mean to draw a random value
+         * in between the two bounds.  The weighted mean is computed
+         * using fix point arithmetic with 16 fractional bits.
+         */
+        uint32_t x = (random.Generate() >> 11) & 0xffff, y= 0x10000-x, carry = 0;
+        if (x == 0) { x = y = 0x8000; }
+
+        uint8_t bytes[sizeof (MemCode::bytes) + 2];
+        for (unsigned idx = sizeof (MemCode::bytes); idx-- > 0;)
+          {
+            uint32_t ax = x * a.getbyte(idx, 0xff), by = y * b.getbyte(idx, 0x00);
+            carry = carry + ax + by;
+            bytes[idx+2] = carry;
+            carry >>= 8;
+          }
+        bytes[1] = carry; carry >>= 8;
+        bytes[0] = carry; carry >>= 8;
+        if (carry) throw 0;
+        for (unsigned idx = sizeof (MemCode::bytes); idx-- > 0;)
+          candidate.bytes[idx] = bytes[idx];
+        test( candidate );
+      }
+    
     uint64_t step = 0;
     // auto const& dectable = isa.GetDecodeTable();
     throw 0;
@@ -339,34 +451,26 @@ struct Checker
   void
   read_repos( std::string const& reposname )
   {
+    // Parsing incoming repository
     FileLoc fl( reposname );
     std::ifstream source( fl.name );
     
     while (source)
       {
         fl.newline();
-        // Parsing incoming repository
+        
         MemCode code;
         if (not code.get(source)) break;
-        std::unique_ptr<Operation> codeop;
         std::string disasm;
-        {
-          std::string old_disasm;
-          std::getline( source, old_disasm, '\n' );
-          codeop = std::unique_ptr<Operation>( isa.decode( 0x4000, code, disasm ) );
-          if (old_disasm != disasm)
-            std::cerr << "Warning: assembly code divergence.\n   new: " << disasm << "\n   old: " << old_disasm << "\n";
-        }
+        std::getline( source, disasm, '\n' );
         
-        // Performing an abstract execution to check the validity of
-        // the opcode, and to compute the interface of the operation
         try
           {
-            ut::Interface interface( *codeop );
-            // Finally recording the operation test
-            testdb.emplace( std::piecewise_construct,
-                            std::forward_as_tuple( std::move( interface ) ),
-                            std::forward_as_tuple( code, disasm ) );
+            std::string updated_disasm;
+            std::unique_ptr<Operation> codeop = std::unique_ptr<Operation>( isa.decode( 0x4000, code, updated_disasm ) );
+            if (disasm != updated_disasm)
+              std::cerr << "Warning: assembly code divergence.\n   new: " << updated_disasm << "\n   old: " << disasm << "\n";
+            insert( *codeop, code, updated_disasm );
           }
         catch (ut::Untestable const& denial)
           {
