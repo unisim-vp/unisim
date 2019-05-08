@@ -167,32 +167,41 @@ namespace ut
       return 0;
     }
     
-    struct EIRegID : public unisim::util::symbolic::Identifier<EIRegID>
-    {
-      typedef uint32_t register_type;
-      enum Code { eax = 0, ecx = 1, edx = 2, ebx = 3, esp = 4, ebp = 5, esi = 6, edi = 7, end } code;
+    // struct RIRegID : public unisim::util::symbolic::Identifier<RIRegID>
+    // {
+    //   typedef uint64_t register_type;
+    //   enum Code { rax = 0, rcx = 1, rdx = 2,  rbx = 3,  rsp = 4,  rbp = 5,  rsi = 6,  rdi = 7,
+    //               r8 = 8,  r9 = 9,  r10 = 10, r11 = 11, r12 = 12, r13 = 13, r14 = 14, r15 = 15, end } code;
 
-      char const* c_str() const
-      {
-        switch (code)
-          {
-          case eax: return "eax";
-          case ecx: return "ecx";
-          case edx: return "edx";
-          case ebx: return "ebx";
-          case esp: return "esp";
-          case ebp: return "ebp";
-          case esi: return "esi";
-          case edi: return "edi";
-          case end: break;
-          }
-        return "NA";
-      }
+    //   char const* c_str() const
+    //   {
+    //     switch (code)
+    //       {
+    //       case rax: return "rax";
+    //       case rcx: return "rcx";
+    //       case rdx: return "rdx";
+    //       case rbx: return "rbx";
+    //       case rsp: return "rsp";
+    //       case rbp: return "rbp";
+    //       case rsi: return "rsi";
+    //       case rdi: return "rdi";
+    //       case r8:  return "r8";
+    //       case r9:  return "r9";
+    //       case r10: return "r10";
+    //       case r11: return "r11";
+    //       case r12: return "r12";
+    //       case r13: return "r13";
+    //       case r14: return "r14";
+    //       case r15: return "r15";
+    //       case end: break;
+    //       }
+    //     return "NA";
+    //   }
       
-      EIRegID() : code(end) {}
-      EIRegID( Code _code ) : code(_code) {}
-      EIRegID( char const* _code ) : code(end) { init( _code ); }
-    };
+    //   RIRegID() : code(end) {}
+    //   RIRegID( Code _code ) : code(_code) {}
+    //   RIRegID( char const* _code ) : code(end) { init( _code ); }
+    // };
 
     //    typedef UWT::FLAG FLAG;
     
@@ -326,12 +335,16 @@ namespace ut
     u16_t                       segregread( unsigned idx ) { return u16_t(segment_registers[idx]); }
     void                        segregwrite( unsigned idx, u16_t value ) { segment_registers[idx] = value.expr; }
     
+    static unsigned const REGCOUNT = 16;
     static unsigned const REGSIZE = 8;
 
-    Expr                        regvalues[16][REGSIZE];
-
+    void                        eregtouch( unsigned reg );
+    bool                        eregdiff( unsigned reg );
     Expr                        eregread( unsigned reg, unsigned size, unsigned pos );
     void                        eregwrite( unsigned reg, unsigned size, unsigned pos, Expr const& xpr );
+
+    Expr                        regvalues[REGCOUNT][REGSIZE];
+    std::map<unsigned,unsigned> regmap;
 
     template <class GOP>
     typename TypeFor<Arch,GOP::SIZE>::u regread( GOP const&, unsigned idx )
@@ -649,48 +662,76 @@ namespace ut
     
     u32_t mxcsr;
 
-    template <class VALUE>
-    VALUE vmm_memread( unsigned seg, addr_t const& addr, VALUE const& )
+    struct VUConfig
+    {
+      static unsigned const BYTECOUNT = 32;
+      struct Byte
+      {
+        Expr             src;
+        ScalarType::id_t tp;
+      };
+      template <typename T>
+      struct TypeInfo
+      {
+        enum { bytecount = unisim::component::cxx::processor::intel::atpinfo<Arch,T>::bitsize / 8 };
+        static void ToBytes( Byte* dst, T& src ) { dst->src = src.expr; dst->tp = unisim::util::symbolic::TypeInfo<T>::GetType(); }
+        static void FromBytes( T& dst, Byte const* src ) { throw 0; }
+        static void Destroy( T& obj ) { obj.~T(); }
+        static void Allocate( T& obj ) { new (&obj) T(); }
+      };
+    };
+
+    struct VmmBrick { char _[sizeof(u8_t)]; };
+    unisim::component::cxx::processor::intel::VUnion<VUConfig> umms[16];
+    VmmBrick vmm_storage[16][VUConfig::BYTECOUNT];
+    
+    template <class VR> static unsigned vmm_wsize( VR const& vr ) { return VR::size() / 8; }
+    static unsigned vmm_wsize( unisim::component::cxx::processor::intel::SSE const& ) { return VUConfig::BYTECOUNT; }
+
+    template <class VR, class ELEM>
+    ELEM vmm_read( VR const& vr, unsigned reg, u8_t const& sub, ELEM const& e )
     {
       throw 0;
-      return VALUE();
+      return ELEM();
     }
     
-    template <class VALUE>
-    void vmm_memwrite( unsigned seg, addr_t const& addr, VALUE const& )
+    template <class VR, class ELEM>
+    ELEM vmm_read( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
     {
-      throw 0;
+      ELEM const* elems = umms[reg].GetConstStorage( &vmm_storage[reg][0], e, vr.size() / 8 );
+      return elems[sub];
     }
     
-    template <class VR, class VALUE>
-    VALUE vmm_read( VR const&, RMOp const& rm, unsigned sub, VALUE const& )
+    template <class VR, class ELEM>
+    void vmm_write( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
+    {
+      ELEM* elems = umms[reg].GetStorage( &vmm_storage[reg][0], e, vmm_wsize( vr ) );
+      elems[sub] = e;
+    }
+    
+    template <class VR, class ELEM>
+    ELEM vmm_read( VR const&, RMOp const& rm, unsigned sub, ELEM const& )
     {
       throw 0;
-      return VALUE();
+      return ELEM();
     }
 
-    template <class VR, class VALUE>
-    VALUE vmm_read( VR const&, unsigned gn, u8_t const& sub, VALUE const& )
+    template <class ELEM>
+    ELEM vmm_memread( unsigned seg, addr_t const& addr, ELEM const& )
     {
+      
       throw 0;
-      return VALUE();
+      return ELEM();
     }
     
-    template <class VR, class VALUE>
-    VALUE vmm_read( VR const&, unsigned gn, unsigned sub, VALUE const& )
-    {
-      throw 0;
-      return VALUE();
-    }
-    
-    template <class VR, class VALUE>
-    void vmm_write( VR const&, RMOp const& rm, unsigned sub, VALUE const& )
+    template <class ELEM>
+    void vmm_memwrite( unsigned seg, addr_t const& addr, ELEM const& )
     {
       throw 0;
     }
     
-    template <class VR, class VALUE>
-    void vmm_write( VR const&, unsigned gn, unsigned sub, VALUE const& )
+    template <class VR, class ELEM>
+    void vmm_write( VR const&, RMOp const& rm, unsigned sub, ELEM const& )
     {
       throw 0;
     }
@@ -757,12 +798,12 @@ namespace ut
       fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8), val );
     }
 
-    void    interrupt( uint8_t _exc )   { throw 0; }
-    void    syscall()                   { throw 0; }
-    void    cpuid()                     { throw 0; }
-    void    xgetbv()                    { throw 0; }
-    void    stop() { throw 0; }
-    void    _DE() { std::cerr << "Unimplemented division error trap.\n"; throw 0; }
+    void    interrupt( uint8_t _exc )   { throw ut::Untestable("system"); }
+    void    syscall()                   { throw ut::Untestable("system"); }
+    void    cpuid()                     { throw ut::Untestable("hardware"); }
+    void    xgetbv()                    { throw ut::Untestable("hardware"); }
+    void    stop()                      { throw ut::Untestable("hardware"); }
+    void    _DE() { std::cerr << "Unimplemented division error trap.\n"; throw ut::Untestable("system"); }
     
     // bool Cond( bit_t b ) { return false; }
       

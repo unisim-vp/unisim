@@ -51,7 +51,7 @@
 #include <cmath>
 #include <cctype>
 
-template <typename T> using VectorTypeInfo = unisim::component::cxx::processor::intel::VectorTypeInfo<T>;
+//template <typename T> using VectorTypeInfo = unisim::component::cxx::processor::intel::VectorTypeInfo<T>;
 template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;
 
 struct Arch
@@ -152,7 +152,7 @@ struct Arch
       }
       void SetValue(const void *buffer) override
       {
-        uint8_t* elems = cpu.umms[reg].GetStorage( &cpu.vmm_storage[reg][0], uint8_t(), VUnion::BYTECOUNT );
+        uint8_t* elems = cpu.umms[reg].GetStorage( &cpu.vmm_storage[reg][0], uint8_t(), VUConfig::BYTECOUNT );
         memcpy(elems,buffer,16);
       }
       int GetSize() const override { return 16; }
@@ -801,88 +801,20 @@ public:
   u64_t tscread() { return instruction_count; }
     
 public: 
-  struct VUnion
+  struct VUConfig
   {
     static unsigned const BYTECOUNT = 32;
-      
-    typedef void (*transfer_t)( uint8_t* dst, uint8_t const* src, unsigned size, bool destroy );
-    
-    template <typename ELEM>
-    static unsigned ItemCount() { return BYTECOUNT / VectorTypeInfo<ELEM>::bytecount; }
-    
-    template <typename ELEM>
-    static void Transfer( uint8_t* bytes, uint8_t const* storage, unsigned size, bool destroy )
-    {
-      ELEM const* vec = reinterpret_cast<ELEM const*>( storage );
-      
-      uint8_t* dst_end = &bytes[size];
-      for (unsigned idx = 0, end = BYTECOUNT / VectorTypeInfo<ELEM>::bytecount; idx < end; ++idx)
-        {
-          uint8_t* dst = &bytes[idx*VectorTypeInfo<ELEM>::bytecount];
-          if (dst < dst_end)
-            VectorTypeInfo<ELEM>::ToBytes( dst, vec[idx] );
-          if (destroy)
-            VectorTypeInfo<ELEM>::Destroy( vec[idx] );
-        }
-    }
+    template <typename T> using TypeInfo = unisim::component::cxx::processor::intel::VectorTypeInfo<T>;
+    typedef u8_t Byte;
+  };
 
-    template <class ELEM>
-    ELEM*
-    rearrange( uint8_t* storage, unsigned final_size )
-    {
-      ELEM* res = reinterpret_cast<ELEM*>( storage );
-      transfer_t current = &Transfer<ELEM>;
-      unsigned const elem_size = VectorTypeInfo<ELEM>::bytecount;
-      if (transfer != current)
-        {
-          uint8_t buf[BYTECOUNT];
-          unsigned valid_size = std::min(final_size,size);
-          transfer( &buf[0], storage, valid_size, true );
-          uint8_t const* src_end = &buf[valid_size];
-          for (unsigned idx = 0, end = BYTECOUNT / elem_size; idx < end; ++idx)
-            {
-              uint8_t const* src = &buf[idx*elem_size];
-              new (&res[idx]) ELEM();
-              if (src < src_end)
-                VectorTypeInfo<ELEM>::FromBytes( res[idx], src );
-            }
-          transfer = current;
-        }
-      else if (size < final_size)
-        {
-          for (unsigned idx = size / elem_size, end = final_size / elem_size; idx < end; ++idx)
-            res[idx] = ELEM();
-        }
-      size = final_size;
-      return res;
-    }
-
-    template <typename ELEM>
-    ELEM*
-    GetStorage( uint8_t* storage, ELEM const&, unsigned final_size )
-    {
-      return rearrange<ELEM>( storage, final_size );
-    }
-
-    template <class ELEM>
-    ELEM* GetConstStorage( uint8_t* storage, ELEM const&, unsigned required_size )
-    {
-      return rearrange<ELEM>( storage, std::max(size, required_size) );
-    }
-
-    static void initial( uint8_t*, uint8_t const*, unsigned, bool ) {}
-      
-    VUnion() : transfer( &initial ), size(0) {}
-
-    transfer_t transfer;
-    unsigned   size;
-  } umms[16];
+  unisim::component::cxx::processor::intel::VUnion<VUConfig> umms[16];
   
-  uint8_t vmm_storage[16][VUnion::BYTECOUNT];
+  uint8_t vmm_storage[16][VUConfig::BYTECOUNT];
   uint32_t mxcsr;
 
   template <class VR> static unsigned vmm_wsize( VR const& vr ) { return VR::size() / 8; }
-  static unsigned vmm_wsize( unisim::component::cxx::processor::intel::SSE const& ) { return VUnion::BYTECOUNT; }
+  static unsigned vmm_wsize( unisim::component::cxx::processor::intel::SSE const& ) { return VUConfig::BYTECOUNT; }
   
   template <class VR, class ELEM>
   ELEM
@@ -933,7 +865,7 @@ public:
   vmm_read( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
   {
     if (not rmop.is_memory_operand()) return vmm_read( vr, rmop.ereg(), sub, e );
-    return vmm_memread( rmop->segment, rmop->effective_address( *this ) + sub*VectorTypeInfo<ELEM>::bytecount, e );
+    return vmm_memread( rmop->segment, rmop->effective_address( *this ) + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
   }
     
   template <class VR, class ELEM>
@@ -941,7 +873,7 @@ public:
   vmm_write( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
   {
     if (not rmop.is_memory_operand()) return vmm_write( vr, rmop.ereg(), sub, e );
-    return vmm_memwrite( rmop->segment, rmop->effective_address( *this ) + sub*VectorTypeInfo<ELEM>::bytecount, e );
+    return vmm_memwrite( rmop->segment, rmop->effective_address( *this ) + sub*VUConfig::TypeInfo<ELEM>::bytecount, e );
   }
 
   void xgetbv();

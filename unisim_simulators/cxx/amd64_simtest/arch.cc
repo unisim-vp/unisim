@@ -1,4 +1,5 @@
 #include <arch.hh>
+
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
 
 template <typename FPT> FPT firound( FPT const& src, int x87frnd_mode )
@@ -23,10 +24,87 @@ namespace ut
   {
     sink << "FIRound<" << ScalarType(GetType()).name << ">( " << src << ", " << rmode << ")";
   }
+
+  namespace
+  {
+    struct GRegRead : public unisim::util::symbolic::ExprNode
+    {
+      typedef unisim::util::symbolic::ExprNode   ExprNode;
+      typedef unisim::util::symbolic::Expr       Expr;
+      typedef unisim::util::symbolic::ScalarType ScalarType;
+      typedef GRegRead this_type;
+      
+      GRegRead( unsigned _idx ) : idx(_idx) {} unsigned idx;
+      virtual void Repr( std::ostream& sink ) const override
+      {
+        sink << "GRegRead(" << idx << ")";
+      }
+      virtual unsigned SubCount() const override { return 0; }
+      virtual intptr_t cmp(ExprNode const& brhs) const override { return compare( dynamic_cast<this_type const&>( brhs ) ); }
+      intptr_t compare(this_type const& rhs) const { return int(idx) - int(rhs.idx); }
+      virtual ExprNode* Mutate() const override { return new this_type(*this); }
+      ScalarType::id_t GetType() const { return ScalarType::U64; }
+    };
+
+    struct GRegWrite : public Arch::Update
+    {
+      typedef unisim::util::symbolic::ExprNode   ExprNode;
+      typedef unisim::util::symbolic::Expr       Expr;
+      typedef unisim::util::symbolic::ScalarType ScalarType;
+      typedef GRegWrite this_type;
+      GRegWrite( unsigned _idx, Expr const& _value ) : value(_value), idx(_idx) {}
+      virtual this_type* Mutate() const override { return new this_type( *this ); }
+      virtual void Repr( std::ostream& sink ) const override
+      {
+        sink << "GRegWrite(" << idx << ") := " << value;
+      }
+      virtual unsigned SubCount() const { return 1; }
+      virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
+      virtual intptr_t compare( GRegWrite const& rhs ) const
+      {
+        if (intptr_t delta = value.cmp( rhs.value )) return delta;
+        return int(idx) - int(rhs.idx);
+      }
+      virtual intptr_t cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<GRegWrite const&>( rhs ) ); }
+      Expr value;
+      unsigned idx;
+    };
+  }
+  
+  void
+  Arch::eregtouch( unsigned reg )
+  {
+    unsigned idx;
+    {
+      auto itr = regmap.lower_bound( reg );
+      if (itr == regmap.end() or reg < itr->first)
+        regmap.insert( itr, std::make_pair( reg, (idx = regmap.size()) ) );
+      else
+        idx = itr->second;
+    }
+    
+    if (not regvalues[reg][0].node)
+      regvalues[reg][0] = new GRegRead( idx );
+  }
+
+  bool
+  Arch::eregdiff( unsigned reg )
+  {
+    if (not regvalues[reg][0].node)
+      return false;
+    for (unsigned ipos = 1; ipos < REGSIZE; ++ipos)
+      if (regvalues[reg][ipos].node)
+        return true;
+    if (auto rr = dynamic_cast<GRegRead const*>( regvalues[reg][0].node ))
+      return rr->idx == regmap.at(reg);
+    return true;
+  }
   
   Arch::Expr
   Arch::eregread( unsigned reg, unsigned size, unsigned pos )
   {
+    eregtouch( reg );
+
     using unisim::util::symbolic::ExprNode;
     using unisim::util::symbolic::make_const;
     
@@ -78,6 +156,7 @@ namespace ut
   void
   Arch::eregwrite( unsigned reg, unsigned size, unsigned pos, Expr const& xpr )
   {
+    eregtouch( reg );
     Expr nxt[REGSIZE];
     
     for (unsigned ipos = pos, isize = size, cpos;
@@ -115,9 +194,6 @@ namespace ut
   {
     for (SRegID reg; reg.next();)
       segment_registers[reg.idx()] = newRegRead( reg );
-
-    for (EIRegID reg; reg.next();)
-      regvalues[reg.idx()][0] = newRegRead( reg );
 
     for (FLAG reg; reg.next();)
       flagvalues[reg.idx()] = newRegRead( reg );
@@ -189,12 +265,9 @@ namespace ut
     path->updates.insert( Expr( new RIPWrite( next_insn_addr, next_insn_mode ) ) );
     
     // Scalar integer registers
-    struct { bool operator()( Expr const* a, Expr const* b )
-      { for (unsigned ipos = 0; ipos < REGSIZE; ++ipos) { if (a[ipos] != b[ipos]) return true; } return false; }
-    } regdiff;
-    for (EIRegID reg; reg.next();)
-      if (regdiff( regvalues[reg.idx()], ref.regvalues[reg.idx()] ))
-        path->updates.insert( newRegWrite( reg, eregread( reg.idx(), 4, 0 ) ) );
+    for (unsigned reg = 0; reg < REGCOUNT; ++reg)
+      if (eregdiff(reg))
+        path->updates.insert( new GRegWrite( reg, eregread( reg, REGSIZE, 0 ) ) );
     
     // Flags
     for (FLAG reg; reg.next();)

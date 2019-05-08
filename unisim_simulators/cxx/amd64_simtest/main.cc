@@ -129,6 +129,8 @@ struct AMD64
 
     MemCode() : bytes(), length() {}
     MemCode( uint8_t fill ) : length(sizeof (bytes)) { std::fill( &bytes[0], &bytes[length], fill ); }
+
+    MemCode( uint8_t const* _bytes, unsigned _length ) : length(_length) { std::copy( &_bytes[0], &_bytes[_length], &bytes[0] ); }
     
     bool get( std::istream& source )
     {
@@ -193,9 +195,10 @@ struct AMD64
         {
           uint8_t byte = mc.bytes[idx];
           for (unsigned nibble = 0; nibble < 2; ++nibble)
-            sink << ("0123456789abcdef"[(byte >> nibble*4)]);
+            sink << ("0123456789abcdef"[(byte >> nibble*4)&0xf]);
           sink << ' ';
         }
+      return sink;
     }
   };
   
@@ -247,7 +250,7 @@ struct Checker
   typedef typename ISA::Operation Operation;
   struct InsnCode
   {
-    InsnCode( Operation const& op, MemCode const& mc, std::string const& ac ) : memcode(), asmcode(ac) { memcode.length = op.length; }
+    InsnCode( Operation const& op, MemCode const& mc, std::string const& ac ) : memcode(&mc.bytes[0],op.length), asmcode(ac) {}
     MemCode memcode;
     std::string asmcode;
   };
@@ -269,10 +272,15 @@ struct Checker
   bool test( MemCode const& trial )
   {
     static uintptr_t counter = 0;
-    //    if (++counter % 1000) {} else {
-      std::cerr << "\r\e[K#" << testdb.size() <<  "/" << done.size();
-      std::cerr.flush();
-      //    }
+    counter += 1;
+    // if (counter) {} else {
+    std::cerr << "\r\e[K#" << testdb.size() <<  " / " << done.size();
+    std::cerr.flush();
+    // }
+    if (counter == 100000)
+      for (MemCode const& mc : done)
+        std::cerr << mc << std::endl;
+    
     try
       {
         std::string disasm;
@@ -331,9 +339,8 @@ struct Checker
         bytes[1] = carry; carry >>= 8;
         bytes[0] = carry; carry >>= 8;
         if (carry) throw 0;
-        for (unsigned idx = sizeof (MemCode::bytes); idx-- > 0;)
-          candidate.bytes[idx] = bytes[idx];
-        test( candidate );
+        if (test( MemCode( &bytes[0], sizeof (MemCode::bytes) ) ))
+          ttl = maxttl;
       }
     
     uint64_t step = 0;
@@ -519,21 +526,15 @@ void Update( std::string const& reposname )
 int
 main( int argc, char** argv )
 {
-  try
+  
+  if (argc != 2)
     {
-      if (argc != 2) {
-        std::cerr << "Wrong number of argument.\n";
-        throw 0;
-      }
-      
-      Update<AMD64>( argv[1] );
-    }
-  catch (...)
-    {
-      std::cerr << argv[0] << " <path_to_test_file>\n";
-      return 1;
-    }
+    std::cerr << "Wrong number of argument.\n";
+    std::cerr << argv[0] << " <path_to_test_file>\n";
+    return 1;
+  }      
 
+  Update<AMD64>( argv[1] );
   std::cout << "nothing.\n";
   
   return 0;

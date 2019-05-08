@@ -381,21 +381,11 @@ template <class ARCH> struct DC<ARCH,MOV> { Operation<ARCH>* get( InputCode<ARCH
   
   if (auto _ = match( ic, opcode( "\x8c" ) & RM() ))
   
-    {
-      if (ic.opsize()==16) return new MovSeg<ARCH,GOw,true>( _.opbase(), _.rmop(), _.greg() );
-      if (ic.opsize()==32) return new MovSeg<ARCH,GOd,true>( _.opbase(), _.rmop(), _.greg() );
-      if (ic.opsize()==64) return new MovSeg<ARCH,GOq,true>( _.opbase(), _.rmop(), _.greg() );
-      return 0;
-    }
+    return newMovSeg<true>( ic, _.opbase(), _.rmop(), _.greg() );
   
   if (auto _ = match( ic, opcode( "\x8e" ) & RM() ))
 
-    {
-      if (ic.opsize()==16) return new MovSeg<ARCH,GOw,false>( _.opbase(), _.rmop(), _.greg() );
-      if (ic.opsize()==32) return new MovSeg<ARCH,GOd,false>( _.opbase(), _.rmop(), _.greg() );
-      if (ic.opsize()==64) return new MovSeg<ARCH,GOq,false>( _.opbase(), _.rmop(), _.greg() );
-      return 0;
-    }
+    return newMovSeg<false>( ic, _.opbase(), _.rmop(), _.greg() );
   
   if (auto _ = match( ic, opcode( "\xa0" ) & Moffs() ))
   
@@ -468,7 +458,16 @@ template <class ARCH> struct DC<ARCH,MOV> { Operation<ARCH>* get( InputCode<ARCH
     return new MovImm<ARCH,GOq>( _.opbase(), _.rmop(), _.i( int64_t() ) );
   
   return 0;
-}};
+}
+template <bool DIR> Operation<ARCH>* newMovSeg( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned gn )
+{
+  if (gn >= 6) return 0; /* Intel manual only says encoding reserved, do not use... */
+  if (ic.opsize()==16) return new MovSeg<ARCH,GOw,DIR>( opbase, rm, gn );
+  if (ic.opsize()==32) return new MovSeg<ARCH,GOd,DIR>( opbase, rm, gn );
+  if (ic.opsize()==64) return new MovSeg<ARCH,GOq,DIR>( opbase, rm, gn );
+  return 0;
+}
+};
 
 template <class ARCH, class SOP, class DOP>
 struct Movzx : public Operation<ARCH>

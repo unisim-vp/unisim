@@ -44,39 +44,6 @@ namespace cxx {
 namespace processor {
 namespace intel {
   
-  // template <typename T> struct tpinfo {};
-  // template <> struct tpinfo< u8_t> { typedef  s8_t stype; typedef  u8_t utype; typedef u16_t twice; enum { is_signed = 0, bitsize =  8 }; };
-  // template <> struct tpinfo< s8_t> { typedef  s8_t stype; typedef  u8_t utype; typedef s16_t twice; enum { is_signed = 1, bitsize =  8 }; };
-  // template <> struct tpinfo<u16_t> { typedef s16_t stype; typedef u16_t utype; typedef u32_t twice; enum { is_signed = 0, bitsize = 16 }; };
-  // template <> struct tpinfo<s16_t> { typedef s16_t stype; typedef u16_t utype; typedef s32_t twice; enum { is_signed = 1, bitsize = 16 }; };
-  // template <> struct tpinfo<u32_t> { typedef s32_t stype; typedef u32_t utype; typedef u64_t twice; enum { is_signed = 0, bitsize = 32 }; };
-  // template <> struct tpinfo<s32_t> { typedef s32_t stype; typedef u32_t utype; typedef s64_t twice; enum { is_signed = 1, bitsize = 32 }; };
-
-  template <typename ARCH, typename T> struct atpinfo {};
-  template <typename ARCH> struct atpinfo<ARCH,typename ARCH:: u8_t>
-  { typedef typename ARCH:: s8_t stype; typedef typename ARCH:: u8_t utype; typedef typename ARCH:: u16_t twice; enum nfo { is_signed = 0, is_integral = 1, bitsize =  8 }; };
-  template <typename ARCH> struct atpinfo<ARCH,typename ARCH:: s8_t>
-  { typedef typename ARCH:: s8_t stype; typedef typename ARCH:: u8_t utype; typedef typename ARCH:: s16_t twice; enum nfo { is_signed = 1, is_integral = 1, bitsize =  8 }; };
-  template <typename ARCH> struct atpinfo<ARCH,typename ARCH::u16_t>
-  { typedef typename ARCH::s16_t stype; typedef typename ARCH::u16_t utype; typedef typename ARCH:: u32_t twice; enum nfo { is_signed = 0, is_integral = 1, bitsize = 16 }; };
-  template <typename ARCH> struct atpinfo<ARCH,typename ARCH::s16_t>
-  { typedef typename ARCH::s16_t stype; typedef typename ARCH::u16_t utype; typedef typename ARCH:: s32_t twice; enum nfo { is_signed = 1, is_integral = 1, bitsize = 16 }; };
-  template <typename ARCH> struct atpinfo<ARCH,typename ARCH::u32_t>
-  { typedef typename ARCH::s32_t stype; typedef typename ARCH::u32_t utype; typedef typename ARCH:: u64_t twice; enum nfo { is_signed = 0, is_integral = 1, bitsize = 32 }; };
-  template <typename ARCH> struct atpinfo<ARCH,typename ARCH::s32_t>
-  { typedef typename ARCH::s32_t stype; typedef typename ARCH::u32_t utype; typedef typename ARCH:: s64_t twice; enum nfo { is_signed = 1, is_integral = 1, bitsize = 32 }; };
-  template <typename ARCH> struct atpinfo<ARCH,typename ARCH::u64_t>
-  { typedef typename ARCH::s64_t stype; typedef typename ARCH::u64_t utype;                                      enum nfo { is_signed = 0, is_integral = 1, bitsize = 64 }; };
-  template <typename ARCH> struct atpinfo<ARCH,typename ARCH::s64_t>
-  { typedef typename ARCH::s64_t stype; typedef typename ARCH::u64_t utype;                                      enum nfo { is_signed = 1, is_integral = 1, bitsize = 64 }; };
-  template <typename ARCH> struct atpinfo<ARCH,typename ARCH::u128_t>
-  { typedef typename ARCH::s128_t stype; typedef typename ARCH::u128_t utype; typedef typename ARCH::u128_t twice; enum nfo { is_signed = 0, is_integral = 1, bitsize = 128 }; };
-  template <typename ARCH> struct atpinfo<ARCH,typename ARCH::s128_t>
-  { typedef typename ARCH::s128_t stype; typedef typename ARCH::u128_t utype; typedef typename ARCH::s128_t twice; enum nfo { is_signed = 1, is_integral = 1, bitsize = 128 }; };
-  template <typename ARCH> struct atpinfo<ARCH,typename ARCH::f32_t> { enum nfo { is_signed = 1, is_integral = 0, bitsize = 32 }; };
-  template <typename ARCH> struct atpinfo<ARCH,typename ARCH::f64_t> { enum nfo { is_signed = 1, is_integral = 0, bitsize = 64 }; };
-  template <typename ARCH> struct atpinfo<ARCH,typename ARCH::f80_t> { enum nfo { is_signed = 1, is_integral = 0, bitsize = 80 }; };
-  
   template <class ARCH, typename INT>
   void
   eval_PSZ( ARCH& arch, INT const& res )
