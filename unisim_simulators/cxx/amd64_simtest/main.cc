@@ -266,6 +266,7 @@ struct Checker
     // Performing an abstract execution to check the validity of
     // the opcode, and to compute the interface of the operation
     ut::Interface interface( op );
+    std::cerr << disasm << "\n" << (*interface.action) << std::endl;
     return testdb.emplace( std::piecewise_construct, std::forward_as_tuple( std::move( interface ) ), std::forward_as_tuple( op, code, disasm ) )->second;
   }
 

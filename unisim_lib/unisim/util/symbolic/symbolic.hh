@@ -195,6 +195,7 @@ namespace symbolic {
            << (8*sizeof(VALUE_TYPE)) << "( 0x"
            << std::hex << uint64_t(v) << " )"<< std::dec;
     };
+    enum { BYTECOUNT = sizeof(VALUE_TYPE) };
     static unsigned bitsize() { return 8*sizeof(VALUE_TYPE); }
     static ScalarType::id_t GetType()
     {
@@ -218,12 +219,14 @@ namespace symbolic {
   template <> struct TypeInfo<float>
   {
     static void Repr( std::ostream& sink, float v ) { sink << "F32( " << v << " )"; }
+    enum { BYTECOUNT = 4 };
     static unsigned bitsize() { return 32; }
     static ScalarType::id_t GetType() { return ScalarType::F32; }
   };
   template <> struct TypeInfo<double>
   {
     static void Repr( std::ostream& sink, double v ) { sink << "F64( " << v << " )"; }
+    enum { BYTECOUNT = 8 };
     static unsigned bitsize() { return 64; }
     static ScalarType::id_t GetType() { return ScalarType::F64; }
   };

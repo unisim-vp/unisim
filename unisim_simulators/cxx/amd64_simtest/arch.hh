@@ -77,7 +77,37 @@ namespace ut
           if (intptr_t delta = update.cmp( *rci )) return delta;
           ++rci;
         }
+      if (cond.node)
+        {
+          if (intptr_t delta = cond.cmp( rhs.cond )) return delta;
+          for (int idx = 0; idx < 2; ++idx)
+            {
+              if     (not nexts[idx])
+                {
+                  if (rhs.nexts[idx]) return -1;
+                }
+              else if(rhs.nexts[idx])
+                {
+                  if (intptr_t delta = nexts[idx]->cmp( *rhs.nexts[idx] )) return delta;
+                }
+            }
+        }
+        
       return 0;
+    }
+
+    friend std::ostream& operator << (std::ostream& sink, ActionNode const& an)
+    {
+      for (auto && update : an.updates)
+        sink << update << ";\n";
+      if (not an.cond.node)
+        return sink;
+      sink << "if (" << an.cond << ")\n{\n";
+      if (auto nxt = an.nexts[0]) sink << *nxt;
+      sink << "}\nelse\n{\n";
+      if (auto nxt = an.nexts[1]) sink << *nxt;
+      sink << "}\n";
+      return sink;
     }
     
     void simplify();
@@ -94,6 +124,28 @@ namespace ut
     std::shared_ptr<ActionNode> action;
   };
 
+  template <typename T>
+  struct SmartValueTraits
+  {
+    typedef typename unisim::util::symbolic::TypeInfo<typename T::value_type> traits;
+    enum { bytecount = traits::BYTECOUNT };
+    static unisim::util::symbolic::ScalarType::id_t GetType() { return traits::GetType(); }
+  };
+
+  struct VmmRegister
+  {
+    VmmRegister() = default;
+    VmmRegister(unisim::util::symbolic::Expr const& _expr) : expr(_expr) {}
+    unisim::util::symbolic::Expr expr;
+  };
+    
+  template <>
+  struct SmartValueTraits<VmmRegister>
+  {
+    enum { bytecount = 32 };
+    static unisim::util::symbolic::ScalarType::id_t GetType() { return unisim::util::symbolic::ScalarType::VOID; }
+  };
+      
   struct Arch
   {
     typedef SmartValue<uint8_t>     u8_t;
@@ -334,7 +386,9 @@ namespace ut
     
     u16_t                       segregread( unsigned idx ) { return u16_t(segment_registers[idx]); }
     void                        segregwrite( unsigned idx, u16_t value ) { segment_registers[idx] = value.expr; }
-    
+
+    typedef std::map<unsigned,unsigned> RegMap;
+
     static unsigned const REGCOUNT = 16;
     static unsigned const REGSIZE = 8;
 
@@ -344,7 +398,7 @@ namespace ut
     void                        eregwrite( unsigned reg, unsigned size, unsigned pos, Expr const& xpr );
 
     Expr                        regvalues[REGCOUNT][REGSIZE];
-    std::map<unsigned,unsigned> regmap;
+    RegMap                      eregmap;
 
     template <class GOP>
     typename TypeFor<Arch,GOP::SIZE>::u regread( GOP const&, unsigned idx )
@@ -664,40 +718,137 @@ namespace ut
 
     struct VUConfig
     {
-      static unsigned const BYTECOUNT = 32;
+      static unsigned const BYTECOUNT = SmartValueTraits<VmmRegister>::bytecount;
+      static unsigned const REGCOUNT = 16;
       struct Byte
       {
+        Byte() : src(), tp() {}
+        Byte( Expr const& _src, ScalarType::id_t _tp ) : src(src), tp(_tp) {}
         Expr             src;
         ScalarType::id_t tp;
       };
+
+      struct VTransBase : public Byte, public ExprNode
+      {
+        VTransBase( Expr const& _src, ScalarType::id_t _tp, unsigned _shift ) : Byte( _src, _tp ), shift(_shift) {}
+        VTransBase( Byte const& byte, unsigned _shift ) : Byte( byte ), shift(_shift) {}
+        virtual unsigned SubCount() const override { return 0; }
+        virtual void Repr( std::ostream& sink ) const override { sink << "VTrans<"  << ScalarType(GetType()).name << ">(" << src << ", " << ScalarType(tp).name << ", " << shift << ")"; }
+        unsigned shift;        
+      };
+      
+      template <typename T>
+      struct VTrans : public VTransBase
+      {
+        VTrans( Byte const& byte, unsigned _shift ) : VTransBase( byte, _shift ) {}
+        typedef VTrans<T> this_type;
+        virtual this_type* Mutate() const override { return new this_type( *this ); }
+        virtual ScalarType::id_t GetType() const override { return SmartValueTraits<T>::GetType(); }
+        virtual intptr_t cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<this_type const&>(brhs) ); }
+        intptr_t compare( this_type const& rhs ) const
+        {
+          if (intptr_t delta = src.cmp( rhs.src)) return delta;
+          if (intptr_t delta = int(tp) - int(rhs.tp)) return delta;
+          return int(shift) - int(rhs.shift);
+        }
+      };
+
       template <typename T>
       struct TypeInfo
       {
-        enum { bytecount = unisim::component::cxx::processor::intel::atpinfo<Arch,T>::bitsize / 8 };
-        static void ToBytes( Byte* dst, T& src ) { dst->src = src.expr; dst->tp = unisim::util::symbolic::TypeInfo<T>::GetType(); }
-        static void FromBytes( T& dst, Byte const* src ) { throw 0; }
+        enum { bytecount = SmartValueTraits<T>::bytecount };
+        static void ToBytes( Byte* dst, T& src ) { dst->src = src.expr; dst->tp = SmartValueTraits<T>::GetType(); }
+        static void FromBytes( T& dst, Byte const* src )
+        {
+          unsigned shift = 0;
+          while (not src[-shift].src.node) shift += 1;
+          dst = T(Expr(new VTrans<T>(src[-shift], shift)));
+        }
         static void Destroy( T& obj ) { obj.~T(); }
         static void Allocate( T& obj ) { new (&obj) T(); }
       };
     };
 
+    struct VRegRead : public unisim::util::symbolic::ExprNode
+    {
+      VRegRead( unsigned _idx ) : idx(_idx) {} unsigned idx;
+      virtual void Repr( std::ostream& sink ) const override { sink << "VRegRead(" << idx << ")"; }
+      virtual unsigned SubCount() const override { return 0; }
+      virtual intptr_t cmp(ExprNode const& brhs) const override { return compare( dynamic_cast<VRegRead const&>( brhs ) ); }
+      intptr_t compare(VRegRead const& rhs) const { return int(idx) - int(rhs.idx); }
+      virtual ExprNode* Mutate() const override { return new VRegRead(*this); }
+      ScalarType::id_t GetType() const { return ScalarType::VOID; }
+    };
+
+    struct VRegWrite : public Arch::Update
+    {
+      VRegWrite( unsigned _idx, Expr const& _value ) : value(_value), idx(_idx) {}
+      virtual VRegWrite* Mutate() const override { return new VRegWrite( *this ); }
+      virtual void Repr( std::ostream& sink ) const override { sink << "VRegWrite(" << idx << ") := " << value; }
+      virtual unsigned SubCount() const { return 1; }
+      virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
+      virtual intptr_t cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<VRegWrite const&>( rhs ) ); }
+      intptr_t compare( VRegWrite const& rhs ) const
+      {
+        if (intptr_t delta = value.cmp( rhs.value )) return delta;
+        return int(idx) - int(rhs.idx);
+      }
+      Expr value;
+      unsigned idx;
+    };
+    
+    RegMap vregmap;
     struct VmmBrick { char _[sizeof(u8_t)]; };
-    unisim::component::cxx::processor::intel::VUnion<VUConfig> umms[16];
-    VmmBrick vmm_storage[16][VUConfig::BYTECOUNT];
+    unisim::component::cxx::processor::intel::VUnion<VUConfig> umms[VUConfig::REGCOUNT];
+    VmmBrick vmm_storage[VUConfig::REGCOUNT][VUConfig::BYTECOUNT];
     
     template <class VR> static unsigned vmm_wsize( VR const& vr ) { return VR::size() / 8; }
     static unsigned vmm_wsize( unisim::component::cxx::processor::intel::SSE const& ) { return VUConfig::BYTECOUNT; }
 
     template <class VR, class ELEM>
+    struct VmmIndirectRead : public ExprNode
+    {
+      typedef unisim::util::symbolic::TypeInfo<typename ELEM::value_type> traits;
+      enum { elemcount = VR::SIZE / 8 / traits::BYTECOUNT };
+      VmmIndirectRead( ELEM const* elems, u8_t const& _sub) : sub(_sub.expr) { for (unsigned idx = 0, end = elemcount; idx < end; ++idx) sources[idx] = elems[idx].expr; }
+      typedef VmmIndirectRead<VR,ELEM> this_type;
+      virtual this_type* Mutate() const override { return new this_type( *this ); }
+      virtual void Repr( std::ostream& sink ) const override
+      {
+        sink << "VmmIndirectRead<" << VR::SIZE << ","  << ScalarType(GetType()).name << ">(";
+        for (unsigned idx = 0, end = elemcount; idx < end; ++idx)
+          sink << sources[idx] << ", ";
+        sink << sub << ")";
+      }
+      virtual unsigned SubCount() const { return elemcount+1; }
+      virtual Expr const& GetSub(unsigned idx) const { if (idx < elemcount) return sources[idx]; if (idx == elemcount) return sub; return ExprNode::GetSub(idx); }
+      virtual ScalarType::id_t GetType() const override { return traits::GetType(); }
+      virtual intptr_t cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<this_type const&>(brhs) ); }
+      intptr_t compare( this_type const& rhs ) const
+      {
+        for (unsigned idx = 0, end = elemcount; idx < end; ++idx)
+          if (intptr_t delta = sources[idx].cmp(rhs.sources[idx])) return delta;
+        return sub.cmp( rhs.sub );
+      }
+      Expr sources[elemcount];
+      Expr sub;
+    };
+      
+    void vmm_touch( unsigned reg );
+    bool vmm_diff( unsigned reg );
+
+    template <class VR, class ELEM>
     ELEM vmm_read( VR const& vr, unsigned reg, u8_t const& sub, ELEM const& e )
     {
-      throw 0;
-      return ELEM();
+      vmm_touch( reg );
+      ELEM const* elems = umms[reg].GetConstStorage( &vmm_storage[reg][0], e, vr.size() / 8 );
+      return ELEM(Expr(new VmmIndirectRead<VR, ELEM>( elems, sub.expr )));
     }
     
     template <class VR, class ELEM>
     ELEM vmm_read( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
     {
+      vmm_touch( reg );
       ELEM const* elems = umms[reg].GetConstStorage( &vmm_storage[reg][0], e, vr.size() / 8 );
       return elems[sub];
     }
@@ -705,98 +856,108 @@ namespace ut
     template <class VR, class ELEM>
     void vmm_write( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
     {
+      vmm_touch( reg );
       ELEM* elems = umms[reg].GetStorage( &vmm_storage[reg][0], e, vmm_wsize( vr ) );
       elems[sub] = e;
     }
     
     template <class VR, class ELEM>
-    ELEM vmm_read( VR const&, RMOp const& rm, unsigned sub, ELEM const& )
+    ELEM vmm_read( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
-      throw 0;
-      return ELEM();
+      if (not rmop.is_memory_operand()) return vmm_read( vr, rmop.ereg(), sub, e );
+      return vmm_memread( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*VUConfig::TypeInfo<ELEM>::bytecount), e );
     }
 
-    template <class ELEM>
-    ELEM vmm_memread( unsigned seg, addr_t const& addr, ELEM const& )
-    {
-      
-      throw 0;
-      return ELEM();
-    }
-    
-    template <class ELEM>
-    void vmm_memwrite( unsigned seg, addr_t const& addr, ELEM const& )
-    {
-      throw 0;
-    }
-    
     template <class VR, class ELEM>
-    void vmm_write( VR const&, RMOp const& rm, unsigned sub, ELEM const& )
+    void vmm_write( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
     {
-      throw 0;
+      if (not rmop.is_memory_operand()) return vmm_write( vr, rmop.ereg(), sub, e );
+      return vmm_memwrite( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*VUConfig::TypeInfo<ELEM>::bytecount), e );
     }
     
-    template<unsigned OPSIZE>
-    typename TypeFor<Arch,OPSIZE>::u
-    xmm_uread( unsigned reg, unsigned sub )
+    // Integer case
+    template <class ELEM> ELEM vmm_memread( unsigned seg, addr_t addr, ELEM const& e )
     {
-      throw 0;
-      return typename TypeFor<Arch,OPSIZE>::u( 0 );
+      typedef unisim::component::cxx::processor::intel::atpinfo<Arch,ELEM> atpinfo;
+      return ELEM(memread<atpinfo::bitsize>(seg,addr));
     }
-
-    template<unsigned OPSIZE>
-    void
-    xmm_uwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::u const& val )
+  
+    f32_t vmm_memread( unsigned seg, addr_t addr, f32_t const& e ) { return fmemread32( seg, addr ); }
+    f64_t vmm_memread( unsigned seg, addr_t addr, f64_t const& e ) { return fmemread64( seg, addr ); }
+    f80_t vmm_memread( unsigned seg, addr_t addr, f80_t const& e ) { return fmemread80( seg, addr ); }
+  
+    // Integer case
+    template <class ELEM> void vmm_memwrite( unsigned seg, addr_t addr, ELEM const& e )
     {
-      throw 0;
+      typedef unisim::component::cxx::processor::intel::atpinfo<Arch,ELEM> atpinfo;
+      memwrite<atpinfo::bitsize>(seg,addr,typename atpinfo::utype(e));
     }
-
-    template<unsigned OPSIZE>
-    typename TypeFor<Arch,OPSIZE>::u
-    xmm_uread( RMOp const& rmop, unsigned sub )
-    {
-      if (not rmop.is_memory_operand()) return xmm_uread<OPSIZE>( rmop.ereg(), sub );
-      return memread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8) );
-    }
-
-    template<unsigned OPSIZE>
-    void
-    xmm_uwrite( RMOp const& rmop, unsigned sub, typename TypeFor<Arch,OPSIZE>::u const& val )
-    {
-      if (not rmop.is_memory_operand()) return xmm_uwrite<OPSIZE>( rmop.ereg(), sub, val );
-      return memwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8), val );
-    }
+  
+    void vmm_memwrite( unsigned seg, addr_t addr, f32_t const& e ) { return fmemwrite32( seg, addr, e ); }
+    void vmm_memwrite( unsigned seg, addr_t addr, f64_t const& e ) { return fmemwrite64( seg, addr, e ); }
+    void vmm_memwrite( unsigned seg, addr_t addr, f80_t const& e ) { return fmemwrite80( seg, addr, e ); }
     
-    template <unsigned OPSIZE>
-    typename TypeFor<Arch,OPSIZE>::f
-    xmm_fread( unsigned reg, unsigned sub )
-    {
-      throw 0;
-      return typename TypeFor<Arch,OPSIZE>::f( 0 );
-    }
-    
-    template <unsigned OPSIZE>
-    void
-    xmm_fwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::f const& val )
-    {
-      throw 0;
-    }
+    // template<unsigned OPSIZE>
+    // typename TypeFor<Arch,OPSIZE>::u
+    // xmm_uread( unsigned reg, unsigned sub )
+    // {
+    //   throw 0;
+    //   return typename TypeFor<Arch,OPSIZE>::u( 0 );
+    // }
 
-    template <unsigned OPSIZE>
-    typename TypeFor<Arch,OPSIZE>::f
-    xmm_fread( RMOp const& rmop, unsigned sub )
-    {
-      if (not rmop.is_memory_operand()) return xmm_fread<OPSIZE>( rmop.ereg(), sub );
-      return fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8) );
-    }
+    // template<unsigned OPSIZE>
+    // void
+    // xmm_uwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::u const& val )
+    // {
+    //   throw 0;
+    // }
+
+    // template<unsigned OPSIZE>
+    // typename TypeFor<Arch,OPSIZE>::u
+    // xmm_uread( RMOp const& rmop, unsigned sub )
+    // {
+    //   if (not rmop.is_memory_operand()) return xmm_uread<OPSIZE>( rmop.ereg(), sub );
+    //   return memread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8) );
+    // }
+
+    // template<unsigned OPSIZE>
+    // void
+    // xmm_uwrite( RMOp const& rmop, unsigned sub, typename TypeFor<Arch,OPSIZE>::u const& val )
+    // {
+    //   if (not rmop.is_memory_operand()) return xmm_uwrite<OPSIZE>( rmop.ereg(), sub, val );
+    //   return memwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8), val );
+    // }
     
-    template <unsigned OPSIZE>
-    void
-    xmm_fwrite( RMOp const& rmop, unsigned sub, typename TypeFor<Arch,OPSIZE>::f const& val )
-    {
-      if (not rmop.is_memory_operand()) return xmm_fwrite<OPSIZE>( rmop.ereg(), sub, val );
-      fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8), val );
-    }
+    // template <unsigned OPSIZE>
+    // typename TypeFor<Arch,OPSIZE>::f
+    // xmm_fread( unsigned reg, unsigned sub )
+    // {
+    //   throw 0;
+    //   return typename TypeFor<Arch,OPSIZE>::f( 0 );
+    // }
+    
+    // template <unsigned OPSIZE>
+    // void
+    // xmm_fwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::f const& val )
+    // {
+    //   throw 0;
+    // }
+
+    // template <unsigned OPSIZE>
+    // typename TypeFor<Arch,OPSIZE>::f
+    // xmm_fread( RMOp const& rmop, unsigned sub )
+    // {
+    //   if (not rmop.is_memory_operand()) return xmm_fread<OPSIZE>( rmop.ereg(), sub );
+    //   return fpmemread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8) );
+    // }
+    
+    // template <unsigned OPSIZE>
+    // void
+    // xmm_fwrite( RMOp const& rmop, unsigned sub, typename TypeFor<Arch,OPSIZE>::f const& val )
+    // {
+    //   if (not rmop.is_memory_operand()) return xmm_fwrite<OPSIZE>( rmop.ereg(), sub, val );
+    //   fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8), val );
+    // }
 
     void    interrupt( uint8_t _exc )   { throw ut::Untestable("system"); }
     void    syscall()                   { throw ut::Untestable("system"); }

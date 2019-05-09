@@ -60,7 +60,7 @@ namespace ut
       }
       virtual unsigned SubCount() const { return 1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
-      virtual intptr_t compare( GRegWrite const& rhs ) const
+      intptr_t compare( GRegWrite const& rhs ) const
       {
         if (intptr_t delta = value.cmp( rhs.value )) return delta;
         return int(idx) - int(rhs.idx);
@@ -72,19 +72,34 @@ namespace ut
   }
   
   void
+  Arch::vmm_touch( unsigned reg )
+  {
+    auto itr = vregmap.lower_bound( reg );
+    if (itr != vregmap.end() and reg == itr->first)
+      {
+        VmmRegister v( new VRegRead( vregmap.insert( itr, std::make_pair( reg, vregmap.size() ) )->second ) );
+        *(umms[reg].GetStorage( &vmm_storage[reg][0], v, VUConfig::BYTECOUNT )) = v;
+      }
+  }
+
+  bool
+  Arch::vmm_diff( unsigned reg )
+  {
+    auto itr = vregmap.lower_bound( reg );
+    if (itr == vregmap.end() or reg < itr->first)
+      return false;
+    VmmRegister const* vi = umms[reg].GetConstStorage( &vmm_storage[reg][0], VmmRegister(), VUConfig::BYTECOUNT );
+    if (VRegRead const* rr = dynamic_cast<VRegRead const*>( vi->expr.node ))
+      return rr->idx != vregmap.at(reg);
+    return true;
+  }
+
+  void
   Arch::eregtouch( unsigned reg )
   {
-    unsigned idx;
-    {
-      auto itr = regmap.lower_bound( reg );
-      if (itr == regmap.end() or reg < itr->first)
-        regmap.insert( itr, std::make_pair( reg, (idx = regmap.size()) ) );
-      else
-        idx = itr->second;
-    }
-    
-    if (not regvalues[reg][0].node)
-      regvalues[reg][0] = new GRegRead( idx );
+    auto itr = eregmap.lower_bound( reg );
+    if (itr == eregmap.end() or reg < itr->first)
+      regvalues[reg][0] = new GRegRead( eregmap.insert( itr, std::make_pair( reg, eregmap.size() ) )->second );
   }
 
   bool
@@ -96,7 +111,7 @@ namespace ut
       if (regvalues[reg][ipos].node)
         return true;
     if (auto rr = dynamic_cast<GRegRead const*>( regvalues[reg][0].node ))
-      return rr->idx == regmap.at(reg);
+      return rr->idx != eregmap.at(reg);
     return true;
   }
   
@@ -268,6 +283,11 @@ namespace ut
     for (unsigned reg = 0; reg < REGCOUNT; ++reg)
       if (eregdiff(reg))
         path->updates.insert( new GRegWrite( reg, eregread( reg, REGSIZE, 0 ) ) );
+
+    // Vector Registers
+    for (unsigned reg = 0; reg < VUConfig::REGCOUNT; ++reg)
+      if (vmm_diff(reg))
+        path->updates.insert( new VRegWrite( reg, umms[reg].GetConstStorage( &vmm_storage[reg][0], VmmRegister(), VUConfig::BYTECOUNT )->expr ) );
     
     // Flags
     for (FLAG reg; reg.next();)

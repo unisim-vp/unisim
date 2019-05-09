@@ -383,7 +383,7 @@ struct Arch
 
   template <unsigned OPSIZE>
   typename TypeFor<Arch,OPSIZE>::f
-  fpmemread( unsigned seg, u64_t addr )
+  fpmemread( unsigned seg, addr_t addr )
   {
     if (OPSIZE==32) return this->fmemread32( seg, addr );
     if (OPSIZE==64) return this->fmemread64( seg, addr );
@@ -461,7 +461,7 @@ struct Arch
 
   template <unsigned OPSIZE>
   void
-  fpmemwrite( unsigned seg, u64_t addr, typename TypeFor<Arch,OPSIZE>::f value )
+  fpmemwrite( unsigned seg, addr_t addr, typename TypeFor<Arch,OPSIZE>::f value )
   {
     if (OPSIZE==32) return fmemwrite32( seg, addr, value );
     if (OPSIZE==64) return fmemwrite64( seg, addr, value );
@@ -834,32 +834,27 @@ public:
   }
 
   // Integer case
-  template <class TYPE> TYPE vmm_memread( unsigned seg, u64_t addr, TYPE const& e )
+  template <class TYPE> TYPE vmm_memread( unsigned seg, addr_t addr, TYPE const& e )
   {
     typedef unisim::component::cxx::processor::intel::atpinfo<Arch,TYPE> atpinfo;
     return TYPE(memread<atpinfo::bitsize>(seg,addr));
   }
   
-  f32_t vmm_memread( unsigned seg, u64_t addr, f32_t const& e ) { return fmemread32( seg, addr ); }
-  f64_t vmm_memread( unsigned seg, u64_t addr, f64_t const& e ) { return fmemread64( seg, addr ); }
-  f80_t vmm_memread( unsigned seg, u64_t addr, f80_t const& e ) { return fmemread80( seg, addr ); }
+  f32_t vmm_memread( unsigned seg, addr_t addr, f32_t const& e ) { return fmemread32( seg, addr ); }
+  f64_t vmm_memread( unsigned seg, addr_t addr, f64_t const& e ) { return fmemread64( seg, addr ); }
+  f80_t vmm_memread( unsigned seg, addr_t addr, f80_t const& e ) { return fmemread80( seg, addr ); }
   
   // Integer case
-  template <class TYPE> void vmm_memwrite( unsigned seg, u64_t addr, TYPE const& e )
+  template <class TYPE> void vmm_memwrite( unsigned seg, addr_t addr, TYPE const& e )
   {
     typedef unisim::component::cxx::processor::intel::atpinfo<Arch,TYPE> atpinfo;
     memwrite<atpinfo::bitsize>(seg,addr,typename atpinfo::utype(e));
   }
   
-  void vmm_memwrite( unsigned seg, u64_t addr, f32_t const& e ) { return fmemwrite32( seg, addr, e ); }
-  void vmm_memwrite( unsigned seg, u64_t addr, f64_t const& e ) { return fmemwrite64( seg, addr, e ); }
-  void vmm_memwrite( unsigned seg, u64_t addr, f80_t const& e ) { return fmemwrite80( seg, addr, e ); }
+  void vmm_memwrite( unsigned seg, addr_t addr, f32_t const& e ) { return fmemwrite32( seg, addr, e ); }
+  void vmm_memwrite( unsigned seg, addr_t addr, f64_t const& e ) { return fmemwrite64( seg, addr, e ); }
+  void vmm_memwrite( unsigned seg, addr_t addr, f80_t const& e ) { return fmemwrite80( seg, addr, e ); }
 
-  // void vmm_memwrite( unsigned seg, u64_t addr, u8_t  const& e ) { return memwrite< 8>( seg, addr, e ); }
-  // void vmm_memwrite( unsigned seg, u64_t addr, u16_t const& e ) { return memwrite<16>( seg, addr, e ); }
-  // void vmm_memwrite( unsigned seg, u64_t addr, u32_t const& e ) { return memwrite<32>( seg, addr, e ); }
-  // void vmm_memwrite( unsigned seg, u64_t addr, u64_t const& e ) { return memwrite<64>( seg, addr, e ); }
-  
   template <class VR, class ELEM>
   ELEM
   vmm_read( VR const& vr, RMOp const& rmop, unsigned sub, ELEM const& e )
