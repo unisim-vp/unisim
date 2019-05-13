@@ -111,6 +111,8 @@ var CompatLayer =
 	
 	is_firefox : !!navigator.userAgent.match(/Firefox/g),
 	
+	is_chrome : !!navigator.userAgent.match(/Chrome/g) && !!navigator.vendor.match(/Google Inc/g),
+	
 	has_svg : !!(typeof SVGRect !== undefined),
 
 	get_element_width : function(el)
@@ -172,6 +174,18 @@ var CompatLayer =
 		{
 			if(iframe.contentWindow) iframe.contentWindow.scrollTo(scroll_pos.x, scroll_pos.y);
 		}
+	},
+	
+	get_iframe_content_height : function(iframe)
+	{
+		return Math.max(iframe.contentDocument.documentElement.scrollHeight,
+		                iframe.contentDocument.documentElement.offsetHeight,
+                        iframe.contentDocument.documentElement.clientHeight);
+	},
+	
+	scroll_iframe_to_bottom : function(iframe)
+	{
+		CompatLayer.set_iframe_scroll_pos(iframe, new Point(CompatLayer.get_iframe_scroll_pos(iframe).x, CompatLayer.get_iframe_content_height(iframe) - CompatLayer.get_element_height(iframe) - 4));
 	}
 }
 
@@ -776,6 +790,11 @@ DoubleIFrame.prototype.get_background_iframe = function()
 	return this.iframes[this.bg];
 }
 
+DoubleIFrame.prototype.scroll_to_bottom = function()
+{
+	CompatLayer.scroll_iframe_to_bottom(this.iframes[this.fg].iframe_element);
+}
+
 // ChildWindow
 ChildWindow.prototype.wnd = null;
 ChildWindow.prototype.refresh_called = false;
@@ -1239,6 +1258,14 @@ Tab.prototype.freeze = function()
 Tab.prototype.unfreeze = function()
 {
 	this.frozen = false;
+}
+
+Tab.prototype.scroll_to_bottom = function()
+{
+	if(!this.static)
+	{
+		this.tab_content.scroll_to_bottom();
+	}
 }
 
 // Tile

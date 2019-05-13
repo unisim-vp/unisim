@@ -1,0 +1,5 @@
+unisim/component/cxx/processor/powerpc/mpc7447a/config.cc
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu.cc
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debug.cc
+unisim/component/cxx/processor/powerpc/mpc7447a/tb_debug_if.cc
+unisim/component/cxx/processor/powerpc/mpc7447a/vr_debug_if.cc

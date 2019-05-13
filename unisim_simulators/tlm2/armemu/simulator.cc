@@ -32,6 +32,7 @@
  */
 
 #include <simulator.hh>
+#include <unisim/kernel/logger/logger_server.hh>
 #include <unisim/service/debug/debugger/debugger.tcc>
 #include <stdexcept>
 
@@ -41,28 +42,38 @@ using namespace std;
 
 bool Simulator::enable_monitor = false;
 
-Simulator::Simulator(int argc, char **argv)
-  : unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
-  , cpu("cpu")
-  , memory("memory")
+Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
+  : unisim::kernel::tlm2::Simulator(name, argc, argv, Simulator::DefaultConfiguration)
+  , cpu("cpu", this)
+  , memory("memory", this)
   , time("time")
   , host_time("host-time")
   , linux_os("linux-os")
-  , nirq_signal("nIRQm")
-  , nfiq_signal("nFIQm")
   , simulation_spent_time(0.0)
   , debugger(0)
   , gdb_server(0)
   , inline_debugger(0)
   , monitor(0)
+  , profiler(0)
+  , http_server(0)
+  , instrumenter(0)
   , enable_gdb_server(false)
   , param_enable_gdb_server("enable-gdb-server", 0,enable_gdb_server,"Enable GDB server.")
   , enable_inline_debugger(false)
   , param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable inline debugger.")
+  , enable_profiler(false)
+  , param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable profiler.")
   , exit_status(0)
 {
+  param_enable_gdb_server.SetMutable(false);
+  param_enable_inline_debugger.SetMutable(false);
+  param_enable_profiler.SetMutable(false);
+
+  instrumenter = new INSTRUMENTER("instrumenter", this);
+  http_server = new HTTP_SERVER("http-server");
+  
   //  - Debug and Monitor
-  if (enable_inline_debugger or enable_gdb_server or enable_monitor)
+  if (enable_inline_debugger or enable_gdb_server or enable_monitor or enable_profiler)
     debugger = new DEBUGGER("debugger");
   if (enable_gdb_server)
     gdb_server = new GDB_SERVER("gdb-server");
@@ -70,17 +81,24 @@ Simulator::Simulator(int argc, char **argv)
     inline_debugger = new INLINE_DEBUGGER("inline-debugger");
   if (enable_monitor)
     monitor = new MONITOR("monitor");
+  if (enable_profiler)
+    profiler = new PROFILER("profiler");
   
-  nfiq_signal = true; 
-  nirq_signal = true; 
-  nrst_signal = true;
+  instrumenter->CreateSignal("nIRQm", true);
+  instrumenter->CreateSignal("nFIQm", true);
+  instrumenter->CreateSignal("nRESETm", true);
+  
+  instrumenter->RegisterPort(cpu.nIRQm);
+  instrumenter->RegisterPort(cpu.nFIQm);
+  instrumenter->RegisterPort(cpu.nRESETm);
   
   // In Linux mode, the system is not entirely simulated.
   // This mode allows to run Linux applications without simulating all the peripherals.
   cpu.master_socket( memory.slave_sock );
-  cpu.nIRQm( nirq_signal );
-  cpu.nFIQm( nfiq_signal );
-  cpu.nRESETm( nrst_signal );
+  instrumenter->Bind("HARDWARE.cpu.nIRQm", "HARDWARE.nIRQm");
+  instrumenter->Bind("HARDWARE.cpu.nFIQm", "HARDWARE.nFIQm");
+  instrumenter->Bind("HARDWARE.cpu.nRESETm", "HARDWARE.nRESETm");
+  
   
   // CPU <-> Memory connections
   cpu.memory_import >> memory.memory_export;
@@ -108,7 +126,7 @@ Simulator::Simulator(int argc, char **argv)
       debugger->blob_import >> linux_os.blob_export_;
     }
   
-  if (enable_inline_debugger)
+  if (inline_debugger)
     {
       // inline-debugger <-> debugger connections
       *debugger->debug_event_listener_import[0]      >> inline_debugger->debug_event_listener_export;
@@ -126,7 +144,7 @@ Simulator::Simulator(int argc, char **argv)
       inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
     }
   
-  if (enable_gdb_server)
+  if (gdb_server)
     {
       // gdb-server <-> debugger connections
       *debugger->debug_event_listener_import[1] >> gdb_server->debug_event_listener_export;
@@ -137,7 +155,7 @@ Simulator::Simulator(int argc, char **argv)
       gdb_server->registers_import              >> *debugger->registers_export[1];
     }
   
-  if (enable_monitor)
+  if (monitor)
     {
       // monitor <-> debugger connections
       *debugger->debug_event_listener_import[2] >> monitor->debug_event_listener_export;
@@ -151,14 +169,43 @@ Simulator::Simulator(int argc, char **argv)
       monitor->data_object_lookup_import        >> *debugger->data_object_lookup_export[2];
       monitor->subprogram_lookup_import         >> *debugger->subprogram_lookup_export[2];
     }
+    
+   if (profiler)
+   {
+      *debugger->debug_event_listener_import[3] >> profiler->debug_event_listener_export;
+      *debugger->debug_yielding_import[3]       >> profiler->debug_yielding_export;
+      profiler->debug_yielding_request_import   >> *debugger->debug_yielding_request_export[3];
+      profiler->debug_event_trigger_import      >> *debugger->debug_event_trigger_export[3];
+      profiler->disasm_import                   >> *debugger->disasm_export[3];
+      profiler->memory_import                   >> *debugger->memory_export[3];
+      profiler->registers_import                >> *debugger->registers_export[3];
+      profiler->stmt_lookup_import              >> *debugger->stmt_lookup_export[3];
+      profiler->symbol_table_lookup_import      >> *debugger->symbol_table_lookup_export[3];
+      profiler->backtrace_import                >> *debugger->backtrace_export[3];
+      profiler->debug_info_loading_import       >> *debugger->debug_info_loading_export[3];
+      profiler->data_object_lookup_import       >> *debugger->data_object_lookup_export[3];
+      profiler->subprogram_lookup_import        >> *debugger->subprogram_lookup_export[3];
+   }
+   
+   *http_server->http_server_import[0] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
+   *http_server->http_server_import[1] >> instrumenter->http_server_export;
+   if (profiler)
+   {
+     *http_server->http_server_import[3] >> profiler->http_server_export;
+   }
+   
+   *http_server->registers_import[0] >> cpu.registers_export;
 }
 
 Simulator::~Simulator()
 {
-  delete debugger;
   delete gdb_server;
   delete inline_debugger;
   delete monitor;
+  delete profiler;
+  delete debugger;
+  delete http_server;
+  delete instrumenter;
 }
 
 int
@@ -201,6 +248,11 @@ Simulator::Run()
   cerr << "host simulation speed: " << ((double) cpu["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
   cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 
+  if (profiler)
+  {
+    profiler->Output();
+  }
+  
   return exit_status;
 }
 
@@ -231,6 +283,11 @@ Simulator::Run(double time, sc_core::sc_time_unit unit)
   DumpStatistics(cerr);
   cerr << endl;
 
+  if (profiler)
+  {
+    profiler->Output();
+  }
+  
   return exit_status;
 }
 
@@ -279,6 +336,23 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
   return setup_status;
 }
 
+bool Simulator::EndSetup()
+{
+  if (profiler)
+  {
+    http_server->AddJSAction(
+      unisim::service::interfaces::ToolbarOpenTabAction(
+        /* name */      profiler->GetName(), 
+        /* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\">",
+        /* tips */      std::string("Profile of ") + cpu.GetName(),
+        /* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+        /* uri */       profiler->URI()
+    ));
+  }
+  
+  return true;
+}
+
 void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, bool asynchronous)
 {
   exit_status = _exit_status;
@@ -325,19 +399,19 @@ Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable("kernel_logger.std_err", true);
   sim->SetVariable("kernel_logger.std_err_color", true);
 
-  sim->SetVariable("cpu.default-endianness",   "little-endian");
-  sim->SetVariable("cpu.cpu-cycle-time",       "31250 ps"); // 32Mhz
-  sim->SetVariable("cpu.bus-cycle-time",       "31250 ps"); // 32Mhz
-  sim->SetVariable("cpu.icache.size",          0x020000); // 128 KB
-  sim->SetVariable("cpu.dcache.size",          0x020000); // 128 KB
-  sim->SetVariable("cpu.nice-time",            "1 ms"); // 1ms
-  sim->SetVariable("cpu.ipc",                  1.0);
-  sim->SetVariable("cpu.voltage",              1.8 * 1e3); // 1800 mV
-  sim->SetVariable("cpu.enable-dmi",           true); // Enable SystemC TLM 2.0 DMI
-  sim->SetVariable("memory.bytesize",          0xffffffffUL); 
-  sim->SetVariable("memory.cycle-time",        "31250 ps");
-  sim->SetVariable("memory.read-latency",      "31250 ps");
-  sim->SetVariable("memory.write-latency",     "0 ps");
+  sim->SetVariable("HARDWARE.cpu.default-endianness",   "little-endian");
+  sim->SetVariable("HARDWARE.cpu.cpu-cycle-time",       "31250 ps"); // 32Mhz
+  sim->SetVariable("HARDWARE.cpu.bus-cycle-time",       "31250 ps"); // 32Mhz
+  sim->SetVariable("HARDWARE.cpu.icache.size",          0x020000); // 128 KB
+  sim->SetVariable("HARDWARE.cpu.dcache.size",          0x020000); // 128 KB
+  sim->SetVariable("HARDWARE.cpu.nice-time",            "1 ms"); // 1ms
+  sim->SetVariable("HARDWARE.cpu.ipc",                  1.0);
+  sim->SetVariable("HARDWARE.cpu.voltage",              1.8 * 1e3); // 1800 mV
+  sim->SetVariable("HARDWARE.cpu.enable-dmi",           true); // Enable SystemC TLM 2.0 DMI
+  sim->SetVariable("HARDWARE.memory.bytesize",          0xffffffffUL); 
+  sim->SetVariable("HARDWARE.memory.cycle-time",        "31250 ps");
+  sim->SetVariable("HARDWARE.memory.read-latency",      "31250 ps");
+  sim->SetVariable("HARDWARE.memory.write-latency",     "0 ps");
   sim->SetVariable("linux-os.system",          "arm-eabi");
   sim->SetVariable("linux-os.endianness",      "little-endian");
   sim->SetVariable("linux-os.memory-page-size",0x01000UL);
@@ -385,45 +459,17 @@ Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable("dl1-power-estimator.tag-width", 32); // to fix
   sim->SetVariable("dl1-power-estimator.access-mode", "fast");
   sim->SetVariable("dl1-power-estimator.verbose", false);
+  
+  sim->SetVariable("http-server.http-port", 12360);
 }
 
-#ifdef WIN32
-BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
+void Simulator::SigInt()
 {
-	bool stop = false;
-	switch(dwCtrlType)
-	{
-		case CTRL_C_EVENT:
-			cerr << "Interrupted by Ctrl-C" << endl;
-			stop = true;
-			break;
-		case CTRL_BREAK_EVENT:
-			cerr << "Interrupted by Ctrl-Break" << endl;
-			stop = true;
-			break;
-		case CTRL_CLOSE_EVENT:
-			cerr << "Interrupted by a console close" << endl;
-			stop = true;
-			break;
-		case CTRL_LOGOFF_EVENT:
-			cerr << "Interrupted because of logoff" << endl;
-			stop = true;
-			break;
-		case CTRL_SHUTDOWN_EVENT:
-			cerr << "Interrupted because of shutdown" << endl;
-			stop = true;
-			break;
-	}
-	if(stop) sc_core::sc_stop();
-	return stop ? TRUE : FALSE;
+  if(!inline_debugger)
+  {
+    unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+  }
 }
-#else
-void Simulator::SigIntHandler(int signum)
-{
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
-}
-#endif
 
 void Simulator::EnableMonitor(int (*_monitor_callback)(void))
 {

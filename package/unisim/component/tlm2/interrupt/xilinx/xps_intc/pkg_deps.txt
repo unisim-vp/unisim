@@ -1,0 +1,3 @@
+unisim/component/cxx/interrupt/xilinx/xps_intc
+unisim/component/tlm2/interrupt
+unisim/kernel/tlm2

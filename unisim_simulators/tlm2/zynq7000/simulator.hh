@@ -44,12 +44,18 @@
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include <unisim/service/trap_handler/trap_handler.hh>
-#include <unisim/service/telnet/telnet.hh>
+#include <unisim/service/netstreamer/netstreamer.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/profiler/profiler.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/interfaces/char_io.hh>
+#include <unisim/service/debug/profiler/profiler.hh>
+#include <unisim/service/http_server/http_server.hh>
+#include <unisim/service/instrumenter/instrumenter.hh>
+#include <unisim/service/tee/char_io/tee.hh>
+#include <unisim/service/web_terminal/web_terminal.hh>
+#include <unisim/kernel/tlm2/simulator.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/util/cache/cache.hh>
 #include <unisim/util/likely/likely.hh>
@@ -527,9 +533,9 @@ struct L2C : public MMDevice
   bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
 };
 
-struct Simulator : public unisim::kernel::service::Simulator
+struct Simulator : public unisim::kernel::tlm2::Simulator
 {
-  Simulator( int argc, char **argv );
+  Simulator( int argc, char **argv, const sc_core::sc_module_name& name = "HARDWARE" );
   virtual ~Simulator();
   
   int Run();
@@ -537,6 +543,7 @@ struct Simulator : public unisim::kernel::service::Simulator
   bool SimulationStarted() const;
   bool SimulationFinished() const;
   virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+  virtual bool EndSetup();
   virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false);
   int GetExitStatus() const;
   void UpdateClocks();
@@ -561,9 +568,13 @@ struct Simulator : public unisim::kernel::service::Simulator
   typedef unisim::service::debug::gdb_server::GDBServer<DEBUGGER_CONFIG::ADDRESS> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<DEBUGGER_CONFIG::ADDRESS> INLINE_DEBUGGER;
   typedef unisim::service::debug::profiler::Profiler<DEBUGGER_CONFIG::ADDRESS> PROFILER;
+  typedef unisim::service::http_server::HttpServer HTTP_SERVER;
+  typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
   typedef unisim::service::time::sc_time::ScTime ScTime;
   typedef unisim::service::time::host_time::HostTime HostTime;
-  typedef unisim::service::telnet::Telnet Telnet;
+  typedef unisim::service::netstreamer::NetStreamer NETSTREAMER;
+  typedef unisim::service::tee::char_io::Tee<2> CHAR_IO_TEE;
+  typedef unisim::service::web_terminal::WebTerminal WEB_TERMINAL;
   
   sc_core::sc_time             ps_clk_period;
   CPU                          cpu;
@@ -577,11 +588,13 @@ struct Simulator : public unisim::kernel::service::Simulator
   PS_UART                      uart0;
   PS_UART                      uart1;
   L2C                          l2c;
-  Telnet                       telnet;
-  
-  sc_core::sc_signal<bool>              nirq_signal;
-  sc_core::sc_signal<bool>              nfiq_signal;
-  sc_core::sc_signal<bool>              nrst_signal;
+  NETSTREAMER                  netstreamer0;
+  NETSTREAMER                  netstreamer1;
+  CHAR_IO_TEE                  char_io_tee0;
+  CHAR_IO_TEE                  char_io_tee1;
+  HTTP_SERVER                  http_server;
+  WEB_TERMINAL                 web_terminal0;
+  WEB_TERMINAL                 web_terminal1;
   
   ScTime                       time;
   HostTime                     host_time;
@@ -594,6 +607,7 @@ struct Simulator : public unisim::kernel::service::Simulator
   GDB_SERVER*                  gdb_server;
   INLINE_DEBUGGER*             inline_debugger;
   PROFILER*                    profiler;
+  INSTRUMENTER*                instrumenter;
   
   bool                                     enable_gdb_server;
   unisim::kernel::service::Parameter<bool> param_enable_gdb_server;

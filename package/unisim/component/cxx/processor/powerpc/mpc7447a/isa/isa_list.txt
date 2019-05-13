@@ -1,0 +1,5 @@
+unisim/component/cxx/processor/powerpc/mpc7447a/isa/misc.isa
+unisim/component/cxx/processor/powerpc/mpc7447a/isa/mpc7447a.isa
+unisim/component/cxx/processor/powerpc/mpc7447a/isa/perf.isa
+unisim/component/cxx/processor/powerpc/mpc7447a/isa/synchronization.isa
+unisim/component/cxx/processor/powerpc/mpc7447a/isa/tlb_management.isa

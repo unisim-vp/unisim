@@ -118,7 +118,7 @@ enum SerialTerminalProtocol
 class Simulator : public unisim::kernel::tlm2::Simulator, Config
 {
 public:
-	Simulator(const sc_core::sc_module_name& name, int argc, char **argv);
+	Simulator(int argc, char **argv, const sc_core::sc_module_name& name = "HARDWARE");
 	virtual ~Simulator();
 	virtual bool EndSetup();
 	void Run();

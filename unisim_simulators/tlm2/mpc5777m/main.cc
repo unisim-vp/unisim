@@ -52,7 +52,7 @@ int sc_main(int argc, char *argv[])
 		return -1;
 	}
 #endif
-	SIMULATOR *simulator = new SIMULATOR("HARDWARE", argc, argv);
+	SIMULATOR *simulator = new SIMULATOR(argc, argv);
 
 	switch(simulator->Setup())
 	{

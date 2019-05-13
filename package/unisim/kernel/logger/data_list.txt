@@ -1,0 +1,2 @@
+unisim/kernel/logger/icon.svg
+unisim/kernel/logger/style.css

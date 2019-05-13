@@ -1235,7 +1235,7 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 			response << "\tthis.execute(cmd);" << std::endl;
 			response << "}" << std::endl;
 			response << "" << std::endl;
-			response << "if(GUI.prototype.constructor)" << std::endl;
+			response << "if((typeof GUI !== 'undefined') && GUI.prototype.constructor)" << std::endl;
 			response << "{" << std::endl;
 			response << "\tGUI.prototype.instrumenter_toolbar_actions = new InstrumenterToobarActions();" << std::endl;
 			response << "}" << std::endl;

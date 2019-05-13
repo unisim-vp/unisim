@@ -36,6 +36,7 @@
 #define SIMULATOR_HH_
 
 #include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/tlm2/simulator.hh>
 #include <unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/util/likely/likely.hh>
@@ -47,6 +48,9 @@
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/monitor/monitor.hh>
+#include <unisim/service/debug/profiler/profiler.hh>
+#include <unisim/service/http_server/http_server.hh>
+#include <unisim/service/instrumenter/instrumenter.hh>
 
 #include <iostream>
 #include <sstream>
@@ -69,10 +73,10 @@
 #endif
 
 class Simulator
-  : public unisim::kernel::service::Simulator
+  : public unisim::kernel::tlm2::Simulator
 {
  public:
-  Simulator(int argc, char **argv);
+  Simulator(int argc, char **argv, const sc_core::sc_module_name& name = "HARDWARE");
   virtual ~Simulator();
   int Run();
   int Run(double time, sc_core::sc_time_unit unit);
@@ -80,6 +84,7 @@ class Simulator
   bool SimulationStarted() const;
   bool SimulationFinished() const;
   virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+  virtual bool EndSetup();
   virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false);
   int GetExitStatus() const;
   static void EnableMonitor(int (*monitor_callback)(void));
@@ -93,13 +98,16 @@ class Simulator
 
   typedef unisim::service::debug::gdb_server::GDBServer<uint32_t> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint32_t> INLINE_DEBUGGER;
+  typedef unisim::service::debug::profiler::Profiler<uint32_t> PROFILER;
+  typedef unisim::service::http_server::HttpServer HTTP_SERVER;
+  typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
 
   struct DEBUGGER_CONFIG
   {
     typedef uint32_t ADDRESS;
     static const unsigned int NUM_PROCESSORS = 1;
     /* gdb_server, inline_debugger and/or monitor */
-    static const unsigned int MAX_FRONT_ENDS = 3;
+    static const unsigned int MAX_FRONT_ENDS = 4;
   };
   
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
@@ -113,28 +121,25 @@ class Simulator
   HostTime              host_time;
   ArmLinux32            linux_os;
 
-  sc_core::sc_signal<bool>       nirq_signal;
-  sc_core::sc_signal<bool>       nfiq_signal;
-  sc_core::sc_signal<bool>       nrst_signal;
-  
   double                simulation_spent_time;
 
   DEBUGGER*             debugger;
   GDB_SERVER*           gdb_server;
   INLINE_DEBUGGER*      inline_debugger;
   MONITOR*              monitor;
+  PROFILER*             profiler;
+  HTTP_SERVER*          http_server;
+  INSTRUMENTER*         instrumenter;
   
   bool                                     enable_gdb_server;
   unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
   bool                                     enable_inline_debugger;
   unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
+  bool                                     enable_profiler;
+  unisim::kernel::service::Parameter<bool> param_enable_profiler;
   
   int exit_status;
-#ifdef WIN32
-  static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
-#else
-  static void SigIntHandler(int signum);
-#endif
+  virtual void SigInt();
   static bool enable_monitor;
 };
 

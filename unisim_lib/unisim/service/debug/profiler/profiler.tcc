@@ -2679,7 +2679,7 @@ void Profiler<ADDRESS>::Output(Visitor& visitor)
 template <typename ADDRESS>
 void Profiler<ADDRESS>::Output()
 {
-	if(output_directory.empty())
+	if((enable_text_report || enable_csv_report || enable_html_report) && output_directory.empty())
 	{
 		logger << DebugWarning << "No output directory was specified in \"" << param_output_directory.GetName() << "\"" << EndDebugWarning;
 		return;

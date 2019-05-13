@@ -1,346 +1,36 @@
 #!/bin/bash
+source "$(dirname $0)/dist_common.sh"
 
 SIMPKG=armemu
 
-UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
-unisim/util/backtrace/backtrace.cc \
-unisim/kernel/logger/logger.cc \
-unisim/kernel/logger/logger_server.cc \
-unisim/kernel/service/service.cc \
-unisim/kernel/config/xml_config_file_helper.cc \
-unisim/kernel/config/ini_config_file_helper.cc \
-unisim/kernel/service/endian.cc \
-unisim/kernel/tlm2/tlm.cc \
-unisim/service/debug/inline_debugger/inline_debugger_32.cc \
-unisim/service/debug/inline_debugger/inline_debugger_64.cc \
-unisim/service/debug/inline_debugger/inline_debugger.cc \
-unisim/service/debug/gdb_server/gdb_server.cc \
-unisim/service/debug/gdb_server/gdb_server_32.cc \
-unisim/service/debug/gdb_server/gdb_server_64.cc \
-unisim/service/debug/debugger/debugger32.cc \
-unisim/service/debug/monitor/monitor.cc \
-unisim/service/debug/monitor/monitor_32.cc \
-unisim/service/debug/monitor/monitor_64.cc \
-unisim/service/profiling/addr_profiler/profiler32.cc \
-unisim/service/os/linux_os/arm_linux32.cc \
-unisim/service/trap_handler/trap_handler.cc \
-unisim/service/trap_handler/trap_handler_identifier.cc \
-unisim/service/time/host_time/time.cc \
-unisim/service/time/sc_time/time.cc \
-unisim/util/hypapp/hypapp.cc \
-unisim/util/debug/symbol_table_64.cc \
-unisim/util/debug/symbol_table_32.cc \
-unisim/util/debug/dwarf/class.cc \
-unisim/util/debug/dwarf/dwarf64.cc \
-unisim/util/debug/dwarf/encoding.cc \
-unisim/util/debug/dwarf/ml.cc \
-unisim/util/debug/dwarf/attr.cc \
-unisim/util/debug/dwarf/filename.cc \
-unisim/util/debug/dwarf/leb128.cc \
-unisim/util/debug/dwarf/abbrev.cc \
-unisim/util/debug/dwarf/dwarf32.cc \
-unisim/util/debug/dwarf/register_number_mapping.cc \
-unisim/util/debug/dwarf/data_object.cc \
-unisim/util/debug/dwarf/c_loc_expr_parser.cc \
-unisim/util/debug/breakpoint_registry_64.cc \
-unisim/util/blob/section32.cc \
-unisim/util/blob/blob32.cc \
-unisim/util/blob/section64.cc \
-unisim/util/blob/segment32.cc \
-unisim/util/blob/segment64.cc \
-unisim/util/blob/blob64.cc \
-unisim/util/debug/profile_64.cc \
-unisim/util/debug/watchpoint_registry_32.cc \
-unisim/util/debug/stmt_32.cc \
-unisim/util/debug/elf_symtab/elf_symtab32.cc \
-unisim/util/debug/elf_symtab/elf_symtab64.cc \
-unisim/util/debug/coff_symtab/coff_symtab32.cc \
-unisim/util/debug/breakpoint_registry_32.cc \
-unisim/util/debug/profile_32.cc \
-unisim/util/debug/stmt_64.cc \
-unisim/util/debug/symbol_64.cc \
-unisim/util/debug/watchpoint_registry_64.cc \
-unisim/util/debug/symbol_32.cc \
-unisim/util/debug/type.cc \
-unisim/util/loader/elf_loader/elf32_loader.cc \
-unisim/util/loader/elf_loader/elf64_loader.cc \
-unisim/util/loader/coff_loader/coff_loader32.cc \
-unisim/util/os/linux_os/environment.cc \
-unisim/util/os/linux_os/linux.cc \
-unisim/util/lexer/lexer.cc \
-unisim/util/ieee754/ieee754.cc \
-unisim/util/xml/xml.cc \
-unisim/util/garbage_collector/garbage_collector.cc \
-unisim/util/random/random.cc \
-unisim/util/queue/queue.cc \
-unisim/component/tlm2/processor/arm/cortex_a9/cpu.cc \
-unisim/component/tlm2/memory/ram/memory.cc \
-unisim/component/tlm2/memory/ram/memory_debug.cc \
-unisim/component/cxx/processor/arm/disasm.cc \
-unisim/component/cxx/processor/arm/simfloat.cc \
-unisim/component/cxx/processor/arm/vmsav7/cpu.cc \
-unisim/component/cxx/processor/arm/vmsav7/isa_arm32.cc \
-unisim/component/cxx/processor/arm/vmsav7/isa_thumb.cc \
-unisim/component/cxx/memory/ram/memory_64.cc \
-unisim/component/cxx/memory/ram/memory_32.cc \
-"
+import unisim/kernel/service || exit
+import unisim/kernel/tlm2 || exit
+import unisim/component/tlm2/processor/arm/cortex_a9 || exit
+import unisim/component/tlm2/memory/ram || exit
+import unisim/util/likely || exit
+import unisim/service/time/sc_time || exit
+import unisim/service/time/host_time || exit
+import unisim/service/os/linux_os || exit
+import unisim/service/trap_handler || exit
+import unisim/service/debug/gdb_server || exit
+import unisim/service/debug/inline_debugger || exit
+import unisim/service/debug/debugger || exit
+import unisim/service/debug/monitor || exit
+import unisim/service/debug/profiler || exit
+import unisim/service/http_server || exit
+import unisim/service/instrumenter || exit
 
-UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES="\
-unisim/component/cxx/processor/arm/isa/thumb/thumb.isa \
-unisim/component/cxx/processor/arm/isa/thumb/exception.isa \
-unisim/component/cxx/processor/arm/isa/thumb/load_store.isa \
-unisim/component/cxx/processor/arm/isa/thumb/multiply.isa \
-unisim/component/cxx/processor/arm/isa/thumb/misc_arithmetic.isa \
-unisim/component/cxx/processor/arm/isa/thumb/branch.isa \
-unisim/component/cxx/processor/arm/isa/thumb/branch_T1.isa \
-unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa \
-unisim/component/cxx/processor/arm/isa/thumb/ordering.isa \
-unisim/component/cxx/processor/arm/isa/thumb/profiling.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/branch.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/coprocessor.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/data_processing.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/exception.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/hints.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/load_store.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/misc_arithmetic.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/multiply.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/neon.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/ordering.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/status_register_access.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/thumb.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/vfp.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/xscale.isa \
-"
+UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
 
-UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES="\
-unisim/component/cxx/processor/arm/isa/arm32/branch.isa \
-unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa \
-unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa \
-unisim/component/cxx/processor/arm/isa/arm32/dependency.isa \
-unisim/component/cxx/processor/arm/isa/arm32/exception.isa \
-unisim/component/cxx/processor/arm/isa/arm32/execution_latency.isa \
-unisim/component/cxx/processor/arm/isa/arm32/hints.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store.isa \
-unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa \
-unisim/component/cxx/processor/arm/isa/arm32/multiply.isa \
-unisim/component/cxx/processor/arm/isa/arm32/neon.isa \
-unisim/component/cxx/processor/arm/isa/arm32/ordering.isa \
-unisim/component/cxx/processor/arm/isa/arm32/profiling.isa \
-unisim/component/cxx/processor/arm/isa/arm32/specialization.isa \
-unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa \
-unisim/component/cxx/processor/arm/isa/arm32/vfp.isa \
-unisim/component/cxx/processor/arm/isa/arm32/xscale.isa \
-unisim/component/cxx/processor/arm/isa/arm32/arm32.isa \
-"
+UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES="$(files isa_thumb) $(files isa_thumb2)"
+
+UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES="$(files isa_arm32)"
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES} \
 ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES} \
-unisim/util/backtrace/backtrace.hh \
-unisim/kernel/logger/logger.hh \
-unisim/kernel/logger/logger_server.hh \
-unisim/kernel/tlm/tlm.hh \
-unisim/kernel/service/service.hh \
-unisim/kernel/config/xml_config_file_helper.hh \
-unisim/kernel/config/ini_config_file_helper.hh \
-unisim/kernel/tlm2/tlm.hh \
-unisim/service/debug/inline_debugger/inline_debugger.hh \
-unisim/service/debug/gdb_server/gdb_server.hh \
-unisim/service/debug/debugger/debugger.hh \
-unisim/service/debug/monitor/monitor.hh \
-unisim/service/profiling/addr_profiler/profiler.hh \
-unisim/service/os/linux_os/linux.hh \
-unisim/service/os/linux_os/arm_linux32.hh \
-unisim/service/trap_handler/trap_handler.hh \
-unisim/service/trap_handler/trap_handler_identifier.hh \
-unisim/service/trap_handler/trap_handler_identifier_interface.hh \
-unisim/service/interfaces/debug_selecting.hh \
-unisim/service/interfaces/debug_yielding.hh \
-unisim/service/interfaces/debug_event.hh \
-unisim/service/interfaces/debug_info_loading.hh \
-unisim/service/interfaces/profiling.hh \
-unisim/service/interfaces/blob.hh \
-unisim/service/interfaces/trap_reporting.hh \
-unisim/service/interfaces/power_mode.hh \
-unisim/service/interfaces/memory_access_reporting.hh \
-unisim/service/interfaces/time.hh \
-unisim/service/interfaces/backtrace.hh \
-unisim/service/interfaces/disassembly.hh \
-unisim/service/interfaces/memory_injection.hh \
-unisim/service/interfaces/os.hh \
-unisim/service/interfaces/linux_os.hh \
-unisim/service/interfaces/stmt_lookup.hh \
-unisim/service/interfaces/http_server.hh \
-unisim/service/interfaces/field.hh \
-unisim/service/interfaces/loader.hh \
-unisim/service/interfaces/register.hh \
-unisim/service/interfaces/registers.hh \
-unisim/service/interfaces/memory.hh \
-unisim/service/interfaces/symbol_table_lookup.hh \
-unisim/service/interfaces/data_object_lookup.hh \
-unisim/service/interfaces/subprogram_lookup.hh \
-unisim/service/time/host_time/time.hh \
-unisim/service/time/sc_time/time.hh \
-unisim/util/hypapp/hypapp.hh \
-unisim/util/likely/likely.hh \
-unisim/util/debug/data_object.hh \
-unisim/util/debug/dwarf/fwd.hh \
-unisim/util/debug/dwarf/addr_range.hh \
-unisim/util/debug/dwarf/fmt.hh \
-unisim/util/debug/dwarf/range.hh \
-unisim/util/debug/dwarf/call_frame_vm.hh \
-unisim/util/debug/dwarf/encoding.hh \
-unisim/util/debug/dwarf/stmt_vm.hh \
-unisim/util/debug/dwarf/call_frame_prog.hh \
-unisim/util/debug/dwarf/expr_vm.hh \
-unisim/util/debug/dwarf/filename.hh \
-unisim/util/debug/dwarf/fde.hh \
-unisim/util/debug/dwarf/cu.hh \
-unisim/util/debug/dwarf/stmt_prog.hh \
-unisim/util/debug/dwarf/abbrev.hh \
-unisim/util/debug/dwarf/leb128.hh \
-unisim/util/debug/dwarf/attr.hh \
-unisim/util/debug/dwarf/die.hh \
-unisim/util/debug/dwarf/macinfo.hh \
-unisim/util/debug/dwarf/pub.hh \
-unisim/util/debug/dwarf/ml.hh \
-unisim/util/debug/dwarf/cie.hh \
-unisim/util/debug/dwarf/dwarf.hh \
-unisim/util/debug/dwarf/loc.hh \
-unisim/util/debug/dwarf/class.hh \
-unisim/util/debug/dwarf/register_number_mapping.hh \
-unisim/util/debug/dwarf/frame.hh \
-unisim/util/debug/dwarf/util.hh \
-unisim/util/debug/dwarf/version.hh \
-unisim/util/debug/dwarf/option.hh \
-unisim/util/debug/dwarf/cfa.hh \
-unisim/util/debug/dwarf/data_object.hh \
-unisim/util/debug/dwarf/subprogram.hh \
-unisim/util/debug/dwarf/c_loc_expr_parser.hh \
-unisim/util/debug/fetch_insn_event.hh \
-unisim/util/debug/commit_insn_event.hh \
-unisim/util/debug/trap_event.hh \
-unisim/util/debug/memory_access_type.hh \
-unisim/util/debug/symbol.hh \
-unisim/util/debug/symbol_table.hh \
-unisim/util/blob/segment.hh \
-unisim/util/blob/blob.hh \
-unisim/util/blob/section.hh \
-unisim/util/debug/stmt.hh \
-unisim/util/debug/breakpoint_registry.hh \
-unisim/util/debug/elf_symtab/elf_symtab.hh \
-unisim/util/debug/coff_symtab/coff_symtab.hh \
-unisim/util/debug/breakpoint.hh \
-unisim/util/debug/event.hh \
-unisim/util/debug/simple_register.hh \
-unisim/util/debug/watchpoint.hh \
-unisim/util/debug/profile.hh \
-unisim/util/debug/watchpoint_registry.hh \
-unisim/util/debug/type.hh \
-unisim/util/debug/data_object_initializer.hh \
-unisim/util/debug/subprogram.hh \
-unisim/util/loader/elf_loader/elf32_loader.hh \
-unisim/util/loader/elf_loader/elf_loader.hh \
-unisim/util/loader/elf_loader/elf64_loader.hh \
-unisim/util/loader/elf_loader/elf_common.h \
-unisim/util/loader/elf_loader/elf32.h \
-unisim/util/loader/elf_loader/elf64.h \
-unisim/util/loader/coff_loader/coff_loader.hh \
-unisim/util/loader/coff_loader/ti/ti.hh \
-unisim/util/os/linux_os/arm.hh \
-unisim/util/os/linux_os/aux_table.hh \
-unisim/util/os/linux_os/environment.hh \
-unisim/util/os/linux_os/files_flags.hh \
-unisim/util/os/linux_os/linux.hh \
-unisim/util/os/linux_os/errno.hh \
-unisim/util/dictionary/dictionary.hh \
-unisim/util/lexer/lexer.hh \
-unisim/util/parser/parser.hh \
-unisim/util/xml/xml.hh \
-unisim/util/endian/endian.hh \
-unisim/util/garbage_collector/garbage_collector.hh \
-unisim/util/arithmetic/arithmetic.hh \
-unisim/util/truth_table/truth_table.hh \
-unisim/util/random/random.hh \
-unisim/util/hash_table/hash_table.hh \
-unisim/util/queue/queue.hh \
-unisim/util/simfloat/floating.hh \
-unisim/util/simfloat/integer.hh \
-unisim/util/simfloat/host_floating.hh \
-unisim/util/ieee754/ieee754.hh \
-unisim/util/inlining/inlining.hh \
-unisim/util/nat_sort/nat_sort.hh \
-unisim/component/tlm2/memory/ram/memory.hh \
-unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh \
-unisim/component/cxx/processor/arm/psr.hh \
-unisim/component/cxx/processor/arm/register_field.hh \
-unisim/component/cxx/processor/arm/cpu.hh \
-unisim/component/cxx/processor/arm/memattrs.hh \
-unisim/component/cxx/processor/arm/vmsav7/cpu.hh \
-unisim/component/cxx/processor/arm/cp15.hh \
-unisim/component/cxx/processor/arm/vmsav7/cp15.hh \
-unisim/component/cxx/processor/arm/exception.hh \
-unisim/component/cxx/processor/arm/execute.hh \
-unisim/component/cxx/processor/arm/isa/decode.hh \
-unisim/component/cxx/processor/arm/models.hh \
-unisim/component/cxx/processor/arm/disasm.hh \
-unisim/component/cxx/processor/arm/simfloat.hh \
-unisim/component/cxx/processor/arm/extregbank.hh \
-unisim/component/cxx/processor/arm/hostfloat.hh \
-unisim/component/cxx/memory/ram/memory.hh \
-unisim/service/debug/inline_debugger/inline_debugger.tcc \
-unisim/service/debug/gdb_server/gdb_server.tcc \
-unisim/service/debug/debugger/debugger.tcc \
-unisim/service/debug/monitor/monitor.tcc \
-unisim/service/profiling/addr_profiler/profiler.tcc \
-unisim/service/os/linux_os/linux.tcc \
-unisim/util/debug/profile.tcc \
-unisim/util/debug/data_object_initializer.tcc \
-unisim/util/debug/dwarf/die.tcc \
-unisim/util/debug/dwarf/range.tcc \
-unisim/util/debug/dwarf/addr_range.tcc \
-unisim/util/debug/dwarf/call_frame_vm.tcc \
-unisim/util/debug/dwarf/fde.tcc \
-unisim/util/debug/dwarf/attr.tcc \
-unisim/util/debug/dwarf/pub.tcc \
-unisim/util/debug/dwarf/cu.tcc \
-unisim/util/debug/dwarf/stmt_vm.tcc \
-unisim/util/debug/dwarf/call_frame_prog.tcc \
-unisim/util/debug/dwarf/expr_vm.tcc \
-unisim/util/debug/dwarf/cie.tcc \
-unisim/util/debug/dwarf/stmt_prog.tcc \
-unisim/util/debug/dwarf/macinfo.tcc \
-unisim/util/debug/dwarf/loc.tcc \
-unisim/util/debug/dwarf/dwarf.tcc \
-unisim/util/debug/dwarf/frame.tcc \
-unisim/util/debug/dwarf/data_object.tcc \
-unisim/util/debug/dwarf/subprogram.tcc \
-unisim/util/debug/watchpoint_registry.tcc \
-unisim/util/debug/breakpoint_registry.tcc \
-unisim/util/debug/symbol_table.tcc \
-unisim/util/blob/section.tcc \
-unisim/util/blob/blob.tcc \
-unisim/util/blob/segment.tcc \
-unisim/util/debug/symbol.tcc \
-unisim/util/debug/elf_symtab/elf_symtab.tcc \
-unisim/util/debug/coff_symtab/coff_symtab.tcc \
-unisim/util/debug/stmt.tcc \
-unisim/util/loader/elf_loader/elf_loader.tcc \
-unisim/util/loader/coff_loader/coff_loader.tcc \
-unisim/util/loader/coff_loader/ti/ti.tcc \
-unisim/util/simfloat/floating.tcc \
-unisim/util/simfloat/integer.tcc \
-unisim/util/simfloat/host_floating.tcc \
-unisim/util/os/linux_os/calls.tcc \
-unisim/util/os/linux_os/linux.tcc \
-unisim/util/dictionary/dictionary.tcc \
-unisim/util/lexer/lexer.tcc \
-unisim/util/parser/parser.tcc \
-unisim/util/queue/queue.tcc \
-unisim/component/cxx/processor/arm/cpu.tcc \
-unisim/component/tlm2/memory/ram/memory.tcc \
-unisim/component/cxx/memory/ram/memory.tcc \
-"
+$(files header) \
+$(files template)"
 
 UNISIM_LIB_SIMULATOR_M4_FILES="\
 m4/times.m4 \
@@ -361,11 +51,13 @@ m4/real_path.m4 \
 m4/pthread.m4 \
 "
 
-UNISIM_LIB_SIMULATOR_DATA_FILES="\
+UNISIM_LIB_SIMULATOR_TOP_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_arm_with_fpa.xml \
 unisim/service/debug/gdb_server/gdb_arm_with_neon.xml \
 unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml \
 "
+
+UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
 SIMULATOR_EXTERNAL_HEADERS="\
 assert.h \
@@ -473,13 +165,17 @@ GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib
 
 mkdir -p ${DEST_DIR}/${SIMPKG}
 
-UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES}"
+UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_LIB_SIMULATOR_TOP_DATA_FILES}"
 
 for file in ${UNISIM_LIB_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
 done
 
-UNISIM_SIMULATOR_FILES="${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_DATA_FILES}"
+UNISIM_SIMULATOR_FILES="\
+${UNISIM_SIMULATOR_SOURCE_FILES} \
+${UNISIM_SIMULATOR_HEADER_FILES} \
+${UNISIM_SIMULATOR_DATA_FILES} \
+"
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
@@ -761,7 +457,7 @@ libtool: \$(LIBTOOL_DEPS)
 # Program
 bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION}
 unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
-unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
+#unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
 unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 
 # Static Library
@@ -778,7 +474,8 @@ libunisim_${SIMPKG}_plugin_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -shared -no-unde
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
-dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
+dist_share_DATA = ${UNISIM_LIB_SIMULATOR_TOP_DATA_FILES} ${UNISIM_SIMULATOR_PKG_DATA_FILES}
+nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
 
 BUILT_SOURCES=\
 	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh\

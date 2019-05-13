@@ -1,0 +1,8 @@
+unisim/component/cxx/processor/powerpc/ppc440/cpu_cache.tcc
+unisim/component/cxx/processor/powerpc/ppc440/cpu_dcr.tcc
+unisim/component/cxx/processor/powerpc/ppc440/cpu_debugging.tcc
+unisim/component/cxx/processor/powerpc/ppc440/cpu_exception_handling.tcc
+unisim/component/cxx/processor/powerpc/ppc440/cpu_fetch.tcc
+unisim/component/cxx/processor/powerpc/ppc440/cpu_load_store.tcc
+unisim/component/cxx/processor/powerpc/ppc440/cpu_mmu.tcc
+unisim/component/cxx/processor/powerpc/ppc440/cpu.tcc

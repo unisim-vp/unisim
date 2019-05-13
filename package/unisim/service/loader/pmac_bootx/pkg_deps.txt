@@ -1,0 +1,9 @@
+unisim/kernel/logger
+unisim/kernel/service
+unisim/service/interfaces/blob
+unisim/service/interfaces/loader
+unisim/service/interfaces/memory
+unisim/service/interfaces/register
+unisim/service/interfaces/registers
+unisim/util/endian
+unisim/util/xml

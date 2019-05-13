@@ -16,15 +16,16 @@ GUI.prototype.bound_on_contextmenu = null;
 
 GUI.prototype.on_load = function()
 {
-// 	console.log('load');
+	console.log(window.name + ':load');
 	
 	this.dummy_iframe = document.createElement('iframe');
 	this.dummy_iframe.setAttribute('name', 'dummy');
-	this.dummy_iframe.setAttribute('style', 'display:block');
-	this.dummy_iframe.setAttribute('style', 'visibility:hidden');
+	this.dummy_iframe.setAttribute('src', 'about:blank');
+	this.dummy_iframe.setAttribute('style', 'display:block;visibility:hidden;width:0px;height:0px;');
 	document.body.appendChild(this.dummy_iframe);
 	
 	this.form = document.createElement('form');
+	this.form.setAttribute('tabindex', '-1000');
 	this.form.setAttribute('action', window.location.href);
 	this.form.setAttribute('method', 'post');
 	this.form.setAttribute('target', 'dummy');
@@ -81,7 +82,7 @@ GUI.prototype.on_load = function()
 		var focused = !this.within_tiled_gui() || parseInt(sessionStorage.getItem(this.storage_item_prefix() + 'focused'));
 		if(focused)
 		{
-// 			console.log('focus');
+			console.log(window.name + ':focus');
 			this.screen_buffer.focus();
 		}
 		
@@ -104,11 +105,19 @@ GUI.prototype.on_load = function()
 		this.bound_on_focus_in = null;
 		this.bound_on_focus_out = null;
 	}
+	if(activity)
+	{
+		var own_tab = this.find_own_tab();
+		if(own_tab)
+		{
+			own_tab.scroll_to_bottom();
+		}
+	}
 }
 
 GUI.prototype.on_unload = function()
 {
-// 	console.log('unload');
+	console.log(window.name + ':unload');
 	if(this.bound_on_focus_in)
 	{
 		this.screen_buffer.removeEventListener('focusin', this.bound_on_focus_in);
@@ -138,6 +147,7 @@ GUI.prototype.on_unload = function()
 GUI.prototype.on_keypress = function(event)
 {
 	this.send_key(event.key, event.ctrlKey, event.shiftKey, event.altKey, event.metaKey);
+	event.preventDefault();
 }
 
 GUI.prototype.send_key = function(key, ctrl, shift, alt, meta)
@@ -170,13 +180,13 @@ GUI.prototype.send_text = function(text)
 
 GUI.prototype.on_focus_in = function()
 {
-// 	console.log('focus in');
+	console.log(window.name + ':focus in');
 	sessionStorage.setItem(this.storage_item_prefix() + 'focused', 1);
 }
 
 GUI.prototype.on_focus_out = function()
 {
-// 	console.log('focus out');
+	console.log(window.name + ':focus out');
 	sessionStorage.setItem(this.storage_item_prefix() + 'focused', 0);
 }
 

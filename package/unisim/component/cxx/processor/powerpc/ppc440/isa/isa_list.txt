@@ -1,0 +1,7 @@
+unisim/component/cxx/processor/powerpc/ppc440/isa/cache_management.isa
+unisim/component/cxx/processor/powerpc/ppc440/isa/esr.isa
+unisim/component/cxx/processor/powerpc/ppc440/isa/integer.isa
+unisim/component/cxx/processor/powerpc/ppc440/isa/misc.isa
+unisim/component/cxx/processor/powerpc/ppc440/isa/ppc440.isa
+unisim/component/cxx/processor/powerpc/ppc440/isa/synchronization.isa
+unisim/component/cxx/processor/powerpc/ppc440/isa/tlb_management.isa

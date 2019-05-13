@@ -1,0 +1,2 @@
+unisim/util/generic_peripheral_register/generic_peripheral_register.cc
+unisim/util/generic_peripheral_register/generic_peripheral_register_variable.cc

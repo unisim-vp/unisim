@@ -44,7 +44,7 @@ using unisim::kernel::logger::EndDebugError;
 
 using unisim::service::instrumenter::OUTPUT_INSTRUMENTATION;
 
-Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
+Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	: unisim::kernel::tlm2::Simulator(name, argc, argv, LoadBuiltInConfig)
 	, main_core_0(0)
 	, main_core_1(0)

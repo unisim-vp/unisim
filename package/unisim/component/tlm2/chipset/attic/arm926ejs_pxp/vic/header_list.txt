@@ -1,0 +1,3 @@
+unisim/component/tlm2/chipset/attic/arm926ejs_pxp/vic/vic.hh
+unisim/component/tlm2/chipset/attic/arm926ejs_pxp/vic/vic_int_source_identifier.hh
+unisim/component/tlm2/chipset/attic/arm926ejs_pxp/vic/vic_stubs.hh

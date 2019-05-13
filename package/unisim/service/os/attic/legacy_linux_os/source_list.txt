@@ -1,0 +1,2 @@
+unisim/service/os/attic/legacy_linux_os/linux_os_32.cc
+unisim/service/os/attic/legacy_linux_os/linux_os_exception.cc

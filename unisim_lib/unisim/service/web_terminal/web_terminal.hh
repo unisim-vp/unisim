@@ -48,8 +48,10 @@ namespace web_terminal {
 /////////////////////////// Forward declarations //////////////////////////////
 
 struct UTF8_Parser;
+struct GraphicRendition;
 struct ScreenBuffer;
 struct InputBuffer;
+struct WebTerminal;
 
 //////////////////////////////// to_string<> //////////////////////////////////
 
@@ -70,12 +72,16 @@ enum Intensity
 	INCREASED_INTENSITY = +1
 };
 
+std::ostream& operator << (std::ostream& os, const Intensity& intensity);
+
 enum Blink
 {
 	NO_BLINK    = 0,
 	SLOW_BLINK  = 1,
 	RAPID_BLINK = 2,
 };
+
+std::ostream& operator << (std::ostream& os, const Blink& blink);
 
 ///////////////////////////// OStreamContext //////////////////////////////////
 
@@ -110,12 +116,51 @@ struct Field
 	}
 };
 
+///////////////////////////////////// Theme ///////////////////////////////////
+
+struct Theme : unisim::kernel::service::Object
+{
+public:
+	Theme(const char *name, unisim::kernel::service::Object *parent = 0);
+	virtual ~Theme();
+	
+	Intensity GetIntensity() const { return intensity; }
+	bool GetItalic() const { return italic; }
+	bool GetUnderline() const { return underline; }
+	Blink GetBlink() const { return blink; }
+	bool GetReverseVideo() const { return reverse_video; }
+	bool GetCrossedOut() const { return crossed_out; }
+	unsigned int GetBackgroundColor() const { return background_color; }
+	unsigned int GetForegroundColor() const { return foreground_color; }
+	const std::string& GetColor(unsigned int color) { return color_table[color]; }
+	
+	GraphicRendition MakeGraphicRendition() const;
+private:
+	Intensity intensity;
+	bool italic;
+	bool underline;
+	Blink blink;
+	bool reverse_video;
+	bool crossed_out;
+	unsigned int background_color;
+	unsigned int foreground_color;
+	std::string color_table[16];
+	
+	unisim::kernel::service::Parameter<Intensity> param_intensity;
+	unisim::kernel::service::Parameter<bool> param_italic;
+	unisim::kernel::service::Parameter<bool> param_underline;
+	unisim::kernel::service::Parameter<Blink> param_blink;
+	unisim::kernel::service::Parameter<bool> param_reverse_video;
+	unisim::kernel::service::Parameter<bool> param_crossed_out;
+	unisim::kernel::service::Parameter<unsigned int> param_background_color;
+	unisim::kernel::service::Parameter<unsigned int> param_foreground_color;
+	unisim::kernel::service::ParameterArray<std::string> *param_color_table;
+};
+
 /////////////////////////////// GraphicRendition //////////////////////////////
 
 struct GraphicRendition
 {
-	static const char *color_table[16];
-	
 	GraphicRendition() : packed_value(0) {}
 	GraphicRendition(const GraphicRendition& o) : packed_value(o.packed_value) {}
 	
@@ -123,38 +168,45 @@ struct GraphicRendition
 	bool GetItalic() const { return Get<ITALIC>(); }
 	bool GetUnderline() const { return Get<UNDERLINE>(); }
 	Blink GetBlink() const { return Get<BLINK>(); }
-	bool GetReverse() const { return Get<REVERSE>(); }
+	bool GetReverseVideo() const { return Get<REVERSE_VIDEO>(); }
 	bool GetCrossedOut() const { return Get<CROSSED_OUT>(); }
-	unsigned int GetForeground() const { return Get<FOREGROUND>(); }
-	unsigned int GetBackground() const { return Get<BACKGROUND>(); }
+	unsigned int GetForegroundColor() const { return Get<FOREGROUND_COLOR>(); }
+	unsigned int GetBackgroundColor() const { return Get<BACKGROUND_COLOR>(); }
 	
 	void SetIntensity(Intensity intensity) { Set<INTENSITY>(intensity); }
 	void SetItalic(bool v = true) { Set<ITALIC>(v); }
 	void SetUnderline(bool v = true) { Set<UNDERLINE>(v); }
 	void SetBlink(Blink blink) { Set<BLINK>(blink); }
-	void SetReverse(bool v = true) { Set<REVERSE>(v); }
+	void SetReverseVideo(bool v = true) { Set<REVERSE_VIDEO>(v); }
 	void SetCrossedOut(bool v = true) { Set<CROSSED_OUT>(v); }
-	void SetForeground(unsigned int fg) { Set<FOREGROUND>(fg); }
-	void SetBackground(unsigned int bg) { Set<BACKGROUND>(bg); }
+	void SetForegroundColor(unsigned int fg_color) { Set<FOREGROUND_COLOR>(fg_color); }
+	void SetBackgroundColor(unsigned int bg_color) { Set<BACKGROUND_COLOR>(bg_color); }
 	
 	GraphicRendition& operator = (const GraphicRendition& o) { packed_value = o.packed_value; return *this; }
 	int operator == (const GraphicRendition& o) const { return packed_value == o.packed_value; }
 	int operator != (const GraphicRendition& o) const { return packed_value != o.packed_value; }
 	int operator < (const GraphicRendition& o) const { return packed_value < o.packed_value; }
 	
-	void Reset()
+	void Reset(const Theme& theme)
 	{
-		packed_value = 0;
+		SetIntensity(theme.GetIntensity());
+		SetItalic(theme.GetItalic());
+		SetUnderline(theme.GetUnderline());
+		SetBlink(theme.GetBlink());
+		SetReverseVideo(theme.GetReverseVideo());
+		SetCrossedOut(theme.GetCrossedOut());
+		SetForegroundColor(theme.GetForegroundColor());
+		SetBackgroundColor(theme.GetBackgroundColor());
 	}
 private:
 	typedef Field<Intensity, 0, 2>  INTENSITY;
 	typedef Field<bool, 2, 1>  ITALIC;
 	typedef Field<bool, 3, 1>  UNDERLINE;
 	typedef Field<Blink, 4, 2>  BLINK;
-	typedef Field<bool, 6, 1>  REVERSE;
+	typedef Field<bool, 6, 1>  REVERSE_VIDEO;
 	typedef Field<bool, 7, 1>  CROSSED_OUT;
-	typedef Field<unsigned int, 8, 4> FOREGROUND;
-	typedef Field<unsigned int, 12, 4> BACKGROUND;
+	typedef Field<unsigned int, 8, 4> FOREGROUND_COLOR;
+	typedef Field<unsigned int, 12, 4> BACKGROUND_COLOR;
 	
 	template <typename FIELD>
 	typename FIELD::TYPE Get() const
@@ -232,10 +284,10 @@ struct ScreenBufferCharacter
 	UnicodeCharacter c;
 	GraphicRendition gr;
 	
-	void Erase()
+	void Erase(const Theme& theme)
 	{
 		c = 0u;
-		gr.Reset();
+		gr.Reset(theme);
 	}
 };
 
@@ -243,9 +295,9 @@ struct ScreenBufferCharacter
 
 struct ScreenBufferLine
 {
-	ScreenBufferLine(unsigned int _display_width);
+	ScreenBufferLine(unsigned int _display_width, const Theme& theme);
 	~ScreenBufferLine();
-	void Erase();
+	void Erase(const Theme& theme);
 	ScreenBufferCharacter& operator [] (unsigned int colno);
 	
 private:
@@ -278,8 +330,65 @@ private:
 
 //////////////////////////////// ScreenBuffer /////////////////////////////////
 
-struct ScreenBuffer
+struct ScreenBuffer : unisim::kernel::service::Object
 {
+	ScreenBuffer(const char *name, WebTerminal *web_terminal);
+	~ScreenBuffer();
+	
+	const ScreenBufferIterator& Begin() const;
+	const ScreenBufferIterator& End() const;
+	unsigned int Next(unsigned int line_index) const;
+	
+	unsigned int GetCursorColNo() const;
+	unsigned int GetCursorLineNo() const;
+	
+	unsigned int GetDisplayWidth() const { return display_width; }
+	unsigned int GetDisplayHeight() const { return display_height; }
+	unsigned int GetBufferHeight() const { return buffer_height; }
+
+	void SetDefaultGraphicRendition();
+	void SetIntensity(Intensity intensity);
+	void SetItalic(bool italic = true);
+	void SetUnderline(bool underline = true);
+	void SetBlink(Blink blink);
+	void SetReverseVideo(bool reverse_video = true);
+	void SetCrossedOut(bool crossed_out = true);
+	void SetBackgroundColor(unsigned int bg_color);
+	void SetForegroundColor(unsigned int fg_color);
+	void CarriageReturn();
+	void LineFeed();
+	void Backspace();
+	void Delete();
+	
+	ScreenBufferLine& GetLine(unsigned int line_index);
+	bool IsAtCursorLinePos(const ScreenBufferIterator& it) const;
+	unsigned int TranslateLineNoToLineIndex(unsigned int lineno) const;
+	ScreenBufferLine& operator [] (unsigned int lineno);
+	
+	void PutChar(char c);
+	void PutString(const std::string& s);
+	void MoveCursorUp(unsigned int n = 1);
+	void MoveCursorDown(unsigned int n = 1);
+	void MoveCursorForward(unsigned int n = 1);
+	void MoveCursorBack(unsigned int n = 1);
+	void MoveCursorNextLine(unsigned int n = 1);
+	void MoveCursorPreviousLine(unsigned int n = 1);
+	void MoveCursorHorizontalAbsolute(unsigned int colno);
+	void MoveCursorTo(unsigned int lineno = 1, unsigned int colno = 1);
+	void EraseInDisplay(unsigned int n = 0);
+	void EraseInLine(unsigned int n = 0);
+	void Reserve(unsigned int line_index);
+	void NewLine();
+	void ScrollUp(unsigned int n = 1);
+	void ScrollDown(unsigned int n = 1);
+	void SelectGraphicsRendition(unsigned int n);
+	void ReportCursorPosition(InputBuffer& input_buffer);
+	void SaveCursorPosition();
+	void RestoreCursorPosition();
+	void MoveCursorDownScrollUp();
+	void MoveCursorUpScrollDown();
+	
+private:
 //         index
 //   
 //           0        --> +--------------------------------+        +<-+
@@ -308,6 +417,9 @@ struct ScreenBuffer
 //                        |                                |        V  |
 //    max_height - 1  --> +--------------------------------+        +-->
 
+	WebTerminal *web_terminal;
+	unisim::kernel::logger::Logger logger;
+
 	unsigned int display_width;
 	unsigned int display_height;
 	unsigned int height;
@@ -316,6 +428,7 @@ struct ScreenBuffer
 	unsigned int cursor_lineno;
 	unsigned int save_cursor_colno;
 	unsigned int save_cursor_lineno;
+	GraphicRendition save_gr;
 	typedef std::vector<ScreenBufferLine *> ScreenBufferLines;
 	unsigned int window_start_index;
 	unsigned int top_line_index;
@@ -326,43 +439,12 @@ struct ScreenBuffer
 	GraphicRendition gr;
 	UTF8_Parser utf8_parser;
 	
-	ScreenBuffer(unsigned int _display_width, unsigned int _display_height, unsigned int _max_height);
-	~ScreenBuffer();
-	
-	const ScreenBufferIterator& Begin() const;
-	const ScreenBufferIterator& End() const;
-	unsigned int Next(unsigned int line_index) const;
-	
-	unsigned int GetCursorColNo() const;
-	unsigned int GetCursorLineNo() const;
-
-	void CarriageReturn();
-	void LineFeed();
-	
-	ScreenBufferLine& GetLine(unsigned int line_index);
-	bool IsAtCursorLinePos(const ScreenBufferIterator& it) const;
-	unsigned int TranslateLineNoToLineIndex(unsigned int lineno) const;
-	ScreenBufferLine& operator [] (unsigned int lineno);
-	
-	void PutChar(char c);
-	void MoveCursorUp(unsigned int n);
-	void MoveCursorDown(unsigned int n);
-	void MoveCursorForward(unsigned int n);
-	void MoveCursorBack(unsigned int n);
-	void MoveCursorNextLine(unsigned int n);
-	void MoveCursorPreviousLine(unsigned int n);
-	void MoveCursorHorizontalAbsolute(unsigned int colno);
-	void MoveCursorTo(unsigned int colno, unsigned int lineno);
-	void EraseInDisplay(unsigned int n);
-	void EraseInLine(unsigned int n);
-	void Reserve(unsigned int line_index);
-	void NewLine();
-	void ScrollUp(unsigned int n);
-	void ScrollDown(unsigned int n);
-	void SelectGraphicsRendition(unsigned int n);
-	void ReportDeviceStatus(InputBuffer& input_buffer);
-	void SaveCursorPosition();
-	void RestoreCursorPosition();
+	bool verbose;
+	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::service::Parameter<unsigned int> param_display_width;
+	unisim::kernel::service::Parameter<unsigned int> param_display_height;
+	unsigned int buffer_height;
+	unisim::kernel::service::Parameter<unsigned int> param_buffer_height;
 };
 
 ///////////////////////////////// InputBuffer /////////////////////////////////
@@ -464,17 +546,14 @@ public:
 	virtual bool ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 	virtual void ScanWebInterfaceModdings(unisim::service::interfaces::WebInterfaceModdingScanner& scanner);
 	
+	const Theme& GetTheme() const { return theme; }
+	
 private:
 	unisim::kernel::logger::Logger logger;
 
+	Theme theme;
 	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;
-	unsigned int display_width;
-	unisim::kernel::service::Parameter<unsigned int> param_display_width;
-	unsigned int display_height;
-	unisim::kernel::service::Parameter<unsigned int> param_display_height;
-	unsigned int buffer_height;
-	unisim::kernel::service::Parameter<unsigned int> param_buffer_height;
 	unsigned int input_buffer_size;
 	unisim::kernel::service::Parameter<unsigned int> param_input_buffer_size;
 	double min_display_refresh_period;
@@ -488,13 +567,14 @@ private:
 	
 	bool activity;
 	double refresh_period;
+	std::string str;
 	int state;
 	bool got_arg;
 	unsigned int arg;
-	unsigned int num_args;
-	unsigned int args[2];
+	std::vector<unsigned int> args;
 	ScreenBuffer screen_buffer;
-//	ScreenBuffer alt_screen_buffer;
+	ScreenBuffer alt_screen_buffer;
+	ScreenBuffer *curr_screen_buffer;
 	InputBuffer input_buffer;
 
 	typedef std::map<KeyEvent, std::string> KEVT2ANSI;
@@ -505,6 +585,7 @@ private:
 	void Receive(const KeyEvent& key_event);
 	void Lock();
 	void Unlock();
+	void GenerateStyle(std::ostream& os, const GraphicRendition& gr, bool under_cursor, const std::string& class_name);
 };
 
 } // end of namespace web_terminal
