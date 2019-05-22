@@ -527,7 +527,7 @@ namespace binsec {
           virtual TmpVar* Mutate() const { return new TmpVar(*this); }
           virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const { sink << ref; return dsz; }
           virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false, dsz); }
-          virtual intptr_t cmp( ExprNode const& rhs ) const { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
+          virtual int cmp( ExprNode const& rhs ) const override { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
           virtual unsigned SubCount() const { return 0; }
           virtual void Repr( std::ostream& sink ) const { sink << ref; }
           virtual Expr Simplify() const { return this; }

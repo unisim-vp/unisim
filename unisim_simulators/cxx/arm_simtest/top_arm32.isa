@@ -59,6 +59,10 @@ impl {
 #include <testutils.hh>
 #include <iostream>
 #include <iomanip>
+
+#define evenly(x)    cpu.Concretize(x)
+#define likely(x)    cpu.Concretize(x)
+#define unlikely(x)  cpu.Concretize(x)
 } // end of impl
 
 action {void} execute({ARCH &} {cpu}) {

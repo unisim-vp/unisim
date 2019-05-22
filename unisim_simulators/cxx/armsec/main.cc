@@ -47,7 +47,6 @@ struct Processor
   //   =====================================================================
   //   =                             Data Types                            =
   //   =====================================================================
-    
   typedef unisim::util::symbolic::SmartValue<double>   F64;
   typedef unisim::util::symbolic::SmartValue<float>    F32;
   typedef unisim::util::symbolic::SmartValue<bool>     BOOL;
@@ -90,8 +89,8 @@ struct Processor
     virtual this_type* Mutate() const { return new this_type( *this ); }
     virtual ScalarType::id_t GetType() const { return tp; }
     virtual void GetRegName( std::ostream& sink ) const { sink << id.c_str(); }
-    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
-    intptr_t compare( this_type const& rhs ) const { if (int delta = int(tp) - int(rhs.tp)) return delta; return id.cmp( rhs.id ); }
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
+    int compare( RegRead const& rhs ) const { if (int delta = int(tp) - int(rhs.tp)) return delta; if (int delta = id.cmp( rhs.id )) return delta; return Super::compare(rhs); }
     virtual Expr Simplify() const { return this; }
 
     ScalarType::id_t tp;
@@ -133,9 +132,9 @@ struct Processor
     {
       sink << (RegID("r0") + idx).c_str() << '_' << mode_ident();
     }
-    virtual intptr_t cmp( ExprNode const& brhs ) const
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<ForeignRegister const&>( rhs ) ); }
+    int compare( ForeignRegister const& rhs ) const
     {
-      ForeignRegister const& rhs =  dynamic_cast<ForeignRegister const&>( brhs );
       if (int delta = int(mode) - int(rhs.mode)) return delta;
       return idx - rhs.idx;
     }
@@ -154,8 +153,8 @@ struct Processor
     virtual this_type* Mutate() const { return new this_type( *this ); }
     virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
     virtual void GetRegName( std::ostream& sink ) const { sink << id.c_str(); }
-    virtual intptr_t cmp( ExprNode const& brhs ) const
-    { if (intptr_t delta = id.cmp( dynamic_cast<RegWrite const&>( brhs ).id )) return delta; return Super::cmp( brhs ); }
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
+    int compare( RegWrite const& rhs ) const { if (int delta = id.cmp( rhs.id )) return delta; return Super::compare( rhs ); }
     virtual Expr Simplify() const
     {
       Expr nvalue( ASExprNode::Simplify( value ) );
@@ -611,8 +610,8 @@ public:
     virtual this_type* Mutate() const { return new this_type( *this ); }
     virtual ScalarType::id_t GetType() const { return ScalarType::U64; }
     virtual void GetRegName( std::ostream& sink ) const { sink << 'd' << std::dec << reg; }
-    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<NeonRead const&>( rhs ) ); }
-    intptr_t compare( this_type const& rhs ) const { return int(reg) - int(rhs.reg); }
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<NeonRead const&>( rhs ) ); }
+    int compare( this_type const& rhs ) const { return int(reg) - int(rhs.reg); }
     virtual Expr Simplify() const { return this; }
     unsigned reg;
   };
@@ -625,8 +624,8 @@ public:
     virtual this_type* Mutate() const { return new this_type( *this ); }
     virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
     virtual void GetRegName( std::ostream& sink ) const { sink << 'd' << std::dec << reg; }
-    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<this_type const&>( rhs ) ); }
-    intptr_t compare( this_type const& rhs ) const { if (int delta = int(reg) - int(rhs.reg)) return delta; return Super::compare( rhs ); }
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
+    int compare( this_type const& rhs ) const { if (int delta = int(reg) - int(rhs.reg)) return delta; return Super::compare( rhs ); }
     virtual Expr Simplify() const
     {
       Expr nvalue( ASExprNode::Simplify( value ) );
@@ -652,8 +651,8 @@ public:
       sink << 'd' << std::dec << reg << '{' << beg << ',' << end << '}' << " := " << GetCode(value, vars, label);
       return 0;
     }
-    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<this_type const&>( rhs ) ); }
-    intptr_t compare( this_type const& rhs ) const
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
+    int compare( this_type const& rhs ) const
     {
       if (int delta = int(reg) - int(rhs.reg)) return delta;
       if (int delta = int(beg) - int(rhs.beg)) return delta;
@@ -1224,7 +1223,8 @@ struct InstructionAddress : public unisim::util::symbolic::binsec::ASExprNode
 {
   InstructionAddress() {}
   virtual void Repr( std::ostream& sink ) const { sink << "insn_addr"; }
-  virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { dynamic_cast<InstructionAddress const&>( brhs ); return 0; }
+  virtual int cmp( unisim::util::symbolic::ExprNode const& rhs ) const override { return compare( dynamic_cast<InstructionAddress const&>( rhs ) ); }
+  int compare( InstructionAddress const& rhs ) const { return 0; }
 };
 
 struct Translator

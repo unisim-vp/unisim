@@ -144,11 +144,8 @@ namespace ut
     virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 0; };
-    virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
-    {
-      unsigned ref = dynamic_cast<SourceReg const&>( brhs ).reg;
-      return (reg < ref) ? -1 : (reg > ref) ? +1 : 0;
-    }
+    virtual int cmp( unisim::util::symbolic::ExprNode const& rhs ) const override { return compare( dynamic_cast<SourceReg const&>( rhs ) ); }
+    int compare( SourceReg const& rhs ) const { return int(reg) - int(rhs.reg); }
     unsigned reg;
   };
   
@@ -165,12 +162,8 @@ namespace ut
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 2; };
     virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return left; case 1: return right; } return ExprNode::GetSub(idx); };
-    virtual intptr_t cmp( ExprNode const& brhs ) const { return compare(static_cast<MixNode const&>( brhs )); }
-    intptr_t compare( MixNode const& rhs ) const
-    {
-      if (intptr_t delta = left.cmp( rhs.left )) return delta;
-      return right.cmp( rhs.right );
-    }
+    virtual int cmp( ExprNode const& brhs ) const override { return compare(static_cast<MixNode const&>( brhs )); }
+    int compare( MixNode const& rhs ) const { return 0; }
     Expr left, right;
   };
   
@@ -183,7 +176,7 @@ namespace ut
     virtual void Repr( std::ostream& sink ) const { sink << "?"; }
     virtual unsigned SubCount() const { return 0; };
     virtual Expr const& GetSub(unsigned idx) const { return ExprNode::GetSub(idx); };
-    virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+    virtual int cmp( ExprNode const& brhs ) const override { return 0; }
   };
 
   template <typename T>
@@ -219,7 +212,7 @@ namespace ut
       virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
-      virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+      virtual int cmp( ExprNode const& brhs ) const override { return 0; }
     };
     
     XER() : xer_value( new XERNode ) {}
@@ -255,7 +248,7 @@ namespace ut
       virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
-      virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+      virtual int cmp( ExprNode const& brhs ) const override { return 0; }
     };
 
     CR() : cr_value( new CRNode ) {}
@@ -327,7 +320,7 @@ namespace ut
       virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
       virtual void Repr( std::ostream& sink ) const;
       virtual unsigned SubCount() const { return 0; };
-      virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+      virtual int cmp( ExprNode const& brhs ) const override { return 0; }
     };
     
     BOOL SetInvalid( bool inv, bool invh=false )
@@ -438,7 +431,7 @@ namespace ut
       virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
       virtual void Repr( std::ostream& sink ) const { sink << "CIA"; }
       virtual unsigned SubCount() const { return 0; };
-      virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return 0; }
+      virtual int cmp( unisim::util::symbolic::ExprNode const& rhs ) const override { return 0; }
     };
     
     U32 GetCIA() { return cia; };
@@ -457,8 +450,7 @@ namespace ut
       virtual void Repr( std::ostream& sink ) const { LoadRepr( sink, addr, BITS ); }
       virtual unsigned SubCount() const { return 2; };
       virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; } return ExprNode::GetSub(idx); };
-      virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
-      { return addr.cmp( dynamic_cast<Load<BITS> const&>( brhs ).addr ); }
+      virtual int cmp( unisim::util::symbolic::ExprNode const& brhs ) const override { return 0; }
       Expr addr;
     };
     
@@ -747,12 +739,8 @@ namespace ut
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 2; };
     virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return mb; case 1: return me; } return ExprNode::GetSub(idx); };
-    virtual intptr_t cmp( ExprNode const& brhs ) const
-    {
-      MaskNode const& rhs = dynamic_cast<MaskNode const&>( brhs );
-      if (intptr_t delta = mb.cmp( rhs.mb )) return delta;
-      return me.cmp( rhs.me );
-    }
+    virtual int cmp( ExprNode const& brhs ) const override { return 0; }
+    
     Expr mb, me;
   };
   

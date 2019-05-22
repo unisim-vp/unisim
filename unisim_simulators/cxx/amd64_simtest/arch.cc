@@ -1,10 +1,19 @@
 #include <arch.hh>
+#include <sstream>
 
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
-
+          
+struct FIRoundOp
+{
+  FIRoundOp(int _rm) : rm(_rm) {} int rm;
+  friend int strcmp( FIRoundOp const& a, FIRoundOp const&b ) { return a.rm - b.rm; }
+  friend std::ostream& operator << (std::ostream& sink, FIRoundOp const& op) { return (sink << "firound." << op.rm); }
+};
+  
 template <typename FPT> FPT firound( FPT const& src, int x87frnd_mode )
 {
-  return FPT( unisim::util::symbolic::Expr( new ut::FIRound<typename FPT::value_type>( src.expr, x87frnd_mode ) ) );
+  //return FPT( unisim::util::symbolic::Expr( new ut::FIRound<typename FPT::value_type>( src.expr, x87frnd_mode ) ) );
+  return ut::make_weirdop<FPT>( FIRoundOp(x87frnd_mode), src );
 }
 
 } /* namespace unisim */ } /* namespace component */ } /* namespace cxx */ } /* namespace processor */ } /* namespace intel */
@@ -15,15 +24,27 @@ template <typename FPT> FPT firound( FPT const& src, int x87frnd_mode )
 namespace ut
 {
   void
+  Arch::fxam()
+  {
+    f64_t value = this->fread( 0 );
+    u8_t fpclass = u8_t( ut::make_weirdop<u8_t>( "fxam", value ) );
+
+    flagwrite( FLAG::C0, ut::make_weirdop<bit_t>( "fxam.C0", fpclass ) );
+    flagwrite( FLAG::C1, ut::make_weirdop<bit_t>( "fxam.sign", value ) );
+    flagwrite( FLAG::C2, ut::make_weirdop<bit_t>( "fxam.C2", fpclass ) );
+    flagwrite( FLAG::C3, ut::make_weirdop<bit_t>( "fxam.C3", fpclass ) );
+  }
+  
+  void
   Arch::FTop::Repr( std::ostream& sink ) const
   {
     sink << "FpuStackTop";
   }
 
-  void FIRoundBase::Repr( std::ostream& sink ) const
-  {
-    sink << "FIRound<" << ScalarType(GetType()).name << ">( " << src << ", " << rmode << ")";
-  }
+  // void FIRoundBase::Repr( std::ostream& sink ) const
+  // {
+  //   sink << "FIRound<" << ScalarType(GetType()).name << ">( " << src << ", " << rmode << ")";
+  // }
 
   namespace
   {
@@ -40,8 +61,8 @@ namespace ut
         sink << "GRegRead(" << idx << ")";
       }
       virtual unsigned SubCount() const override { return 0; }
-      virtual intptr_t cmp(ExprNode const& brhs) const override { return compare( dynamic_cast<this_type const&>( brhs ) ); }
-      intptr_t compare(this_type const& rhs) const { return int(idx) - int(rhs.idx); }
+      virtual int cmp(ExprNode const& brhs) const override { return compare( dynamic_cast<this_type const&>( brhs ) ); }
+      int compare(this_type const& rhs) const { return int(idx) - int(rhs.idx); }
       virtual ExprNode* Mutate() const override { return new this_type(*this); }
       ScalarType::id_t GetType() const { return ScalarType::U64; }
     };
@@ -60,22 +81,20 @@ namespace ut
       }
       virtual unsigned SubCount() const { return 1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
-      intptr_t compare( GRegWrite const& rhs ) const
-      {
-        if (intptr_t delta = value.cmp( rhs.value )) return delta;
-        return int(idx) - int(rhs.idx);
-      }
-      virtual intptr_t cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<GRegWrite const&>( rhs ) ); }
+      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<GRegWrite const&>( rhs ) ); }
+      int compare( GRegWrite const& rhs ) const { return int(idx) - int(rhs.idx); }
       Expr value;
       unsigned idx;
     };
   }
   
   void
-  Arch::vmm_touch( unsigned reg )
+  Arch::vmm_touch( unsigned reg, bool write )
   {
+    
+    if (write) vwriteset[reg] = true;
     auto itr = vregmap.lower_bound( reg );
-    if (itr != vregmap.end() and reg == itr->first)
+    if (itr == vregmap.end() or reg < itr->first)
       {
         VmmRegister v( new VRegRead( vregmap.insert( itr, std::make_pair( reg, vregmap.size() ) )->second ) );
         *(umms[reg].GetStorage( &vmm_storage[reg][0], v, VUConfig::BYTECOUNT )) = v;
@@ -85,13 +104,14 @@ namespace ut
   bool
   Arch::vmm_diff( unsigned reg )
   {
-    auto itr = vregmap.lower_bound( reg );
-    if (itr == vregmap.end() or reg < itr->first)
-      return false;
-    VmmRegister const* vi = umms[reg].GetConstStorage( &vmm_storage[reg][0], VmmRegister(), VUConfig::BYTECOUNT );
-    if (VRegRead const* rr = dynamic_cast<VRegRead const*>( vi->expr.node ))
-      return rr->idx != vregmap.at(reg);
-    return true;
+    return vwriteset[reg];
+    // auto itr = vregmap.lower_bound( reg );
+    // if (itr == vregmap.end() or reg < itr->first)
+    //   return false;
+    // VmmRegister const* vi = umms[reg].GetConstStorage( &vmm_storage[reg][0], VmmRegister(), VUConfig::BYTECOUNT );
+    // if (VRegRead const* rr = dynamic_cast<VRegRead const*>( vi->expr.node ))
+    //   return rr->idx != vregmap.at(reg);
+    // return true;
   }
 
   void
@@ -197,14 +217,27 @@ namespace ut
   }
 
   Operation*
-  Arch::fetch( uint64_t address, uint8_t const* bytes )
+  AMD64::decode( uint64_t addr, MemCode& ct, std::string& disasm )
   {
-    typedef  unisim::component::cxx::processor::intel::InputCode<Arch> InputCode;
-    return getoperation( InputCode( unisim::component::cxx::processor::intel::Mode( 1, 0, 1 ), bytes, OpHeader( address ) ) );
+    unisim::component::cxx::processor::intel::Mode mode( 1, 0, 1 ); // x86_64
+    unisim::component::cxx::processor::intel::InputCode<ut::Arch> ic( mode, &ct.bytes[0], addr );
+    Operation* op = getoperation( ic );
+    if (not op)
+      {
+        uint8_t const* oc = ic.opcode();
+        unsigned opcode_length = ic.vex() ? 5 - (oc[0] & 1) : oc[0] == 0x0f ? (oc[1] & ~2) == 0x38 ? 4 : 3 : 2;
+        ct.length = ic.opcode_offset + opcode_length;
+        throw ut::Untestable("#UD");
+      }
+    ct.length = op->length;
+    std::ostringstream buf;
+    op->disasm(buf);
+    disasm = buf.str();
+    return op;
   }
 
-  Arch::Arch( ActionNode* actions )
-    : path(actions)
+  Arch::Arch( Interface& iif )
+    : interface(iif), path(iif.behavior.get())
     , next_insn_addr(new RIPRead), fcw(new FCWRead), ftop_source(new FTop), ftop(0), mxcsr(new MXCSRRead)
   {
     for (SRegID reg; reg.next();)
@@ -217,12 +250,6 @@ namespace ut
       fpuregs[reg.idx()] = newRegRead( reg );
   }
 
-  void
-  DMopBase::Repr( std::ostream& sink ) const
-  {
-    sink << "DMop<" << GetType() << ',' <<  opname() << ',' << prodname() << ">( " << hi << ", " << lo << ", " << ro << ")";
-  }
-  
   namespace {
     struct UpdatesMerger
     {
@@ -277,17 +304,19 @@ namespace ut
   Arch::close( Arch const& ref )
   {
     bool complete = path->close();
-    path->updates.insert( Expr( new RIPWrite( next_insn_addr, next_insn_mode ) ) );
+    
+    if (next_insn_addr != ref.next_insn_addr)
+      path->updates.insert( Expr( new RIPWrite( next_insn_addr, next_insn_mode ) ) );
     
     // Scalar integer registers
     for (unsigned reg = 0; reg < REGCOUNT; ++reg)
       if (eregdiff(reg))
-        path->updates.insert( new GRegWrite( reg, eregread( reg, REGSIZE, 0 ) ) );
+        path->updates.insert( new GRegWrite( eregmap[reg], eregread( reg, REGSIZE, 0 ) ) );
 
     // Vector Registers
     for (unsigned reg = 0; reg < VUConfig::REGCOUNT; ++reg)
       if (vmm_diff(reg))
-        path->updates.insert( new VRegWrite( reg, umms[reg].GetConstStorage( &vmm_storage[reg][0], VmmRegister(), VUConfig::BYTECOUNT )->expr ) );
+        path->updates.insert( new VRegWrite( vregmap[reg], umms[reg].GetConstStorage( &vmm_storage[reg][0], VmmRegister(), VUConfig::BYTECOUNT )->expr ) );
     
     // Flags
     for (FLAG reg; reg.next();)
@@ -338,19 +367,101 @@ namespace ut
     return predicate;
   }
 
-  Interface::Interface( Operation const& op )
-    : action(std::make_shared<ActionNode>())
+  void
+  Interface::finalize()
   {
-    Arch reference( action.get() );
-
-    for (bool end = false; not end;)
-      {
-        Arch arch( action.get() );
-        arch.step( op );
-        end = arch.close( reference );
-      }
-    
-    action->simplify();
+    behavior->simplify();
   }
+
+  bool
+  Interface::TestLess::operator () ( Interface const& a, Interface const& b ) const
+  {
+    typedef ActionNode::Expr Expr;
+    
+    struct Comparator
+    {
+
+      int process( ActionNode const& a, ActionNode const& b ) const
+      {
+        if (int delta = a.updates.size() - b.updates.size()) return delta;
+        auto rci = b.updates.begin();
+        for (Expr const& update : a.updates)
+          {
+            if (int delta = process( update,  *rci )) return delta;
+            ++rci;
+          }
+        if (int delta = process( a.cond, b.cond )) return delta;
+        for (int idx = 0; idx < 2; ++idx)
+          {
+            if     (not a.nexts[idx])
+              {
+                if (b.nexts[idx]) return -1;
+              }
+            else if(b.nexts[idx])
+              {
+                if (int delta = process( *a.nexts[idx], *b.nexts[idx] )) return delta;
+              }
+          }
+        return 0;
+      }
+
+      int process( Expr const& a, Expr const& b ) const
+      {
+        // Do not compare null expressions
+        if (not b.node) return a.node ?  1 : 0;
+        if (not a.node) return b.node ? -1 : 0;
+      
+        /* First compare actual types */
+        const std::type_info* til = &typeid(*a.node);
+        const std::type_info* tir = &typeid(*b.node);
+        if (til < tir) return -1;
+        if (til > tir) return +1;
+        
+        /* Same types, call derived comparator except for Constants (compare popcount)*/
+        typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
+        if (auto an = dynamic_cast<ConstNodeBase const*>(a.node))
+          {
+            uint64_t av = an->GetU64(), bv = dynamic_cast<ConstNodeBase const&>(*b.node).GetU64();
+            if (int delta = __builtin_popcountll(av) - __builtin_popcountll(bv))
+              return delta;
+          }
+        else if (int delta = a.node->cmp( *b.node ))
+          return delta;
+
+        /* Compare sub operands recursively */
+        unsigned subcount = a.node->SubCount();
+        if (int delta = int(subcount) - int(b.node->SubCount()))
+          return delta;
+        for (unsigned idx = 0; idx < subcount; ++idx)
+          if (int delta = a.node->GetSub(idx).compare(b.node->GetSub(idx)))
+            return delta;
+
+        /* equal to us*/
+        return 0;
+      }
+    } comparator;
+
+    return comparator.process( *a.behavior, *b.behavior ) < 0;
+    
+
+    //  if ()
+    //   {
+    //     Expr cexp( node );
+    //     switch (node->GetType())
+    //       {
+    //       case ScalarType::S8:  return make_const( node-> GetU8() );
+    //       case ScalarType::S16: return make_const( node->GetU16() );
+    //       case ScalarType::S32: return make_const( node->GetU32() );
+    //       default: break;
+    //       }
+    //     return cexp;
+    //   }
+    
+    // return expr;
+  }
+
+  Interface::Interface()
+    : behavior(std::make_shared<ActionNode>())
+  {}
 
 }

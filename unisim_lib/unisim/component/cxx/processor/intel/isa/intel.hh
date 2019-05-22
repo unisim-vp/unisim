@@ -79,7 +79,7 @@ namespace intel {
     virtual void disasm( std::ostream& _sink ) const = 0;
     virtual void execute( ARCH& arch ) const;
   };
-  
+
   struct CodeBase
   {
     uint8_t const* bytes;
@@ -99,21 +99,20 @@ namespace intel {
     uint32_t rex_r          : 1;
     uint32_t rex_w          : 1;
     uint32_t rex_p          : 1; /* rex present */
-    
 
-    struct PrefixOverFlow {};
+    struct PrefixError {};
     
     uint8_t const* opcode() const { return &bytes[opcode_offset]; }
     void set_opcode( uint8_t const* end )
     {
       uintptr_t head = (end - bytes);
       if (head > 15)
-        throw PrefixOverFlow();
+        throw PrefixError();
       opcode_offset = head;
     }
     void set_vexpp( uint8_t pp )
     {
-      if (opsz_66 or rep) throw 0;
+      if (opsz_66 or rep) throw PrefixError();
       else if (pp == 1) opsz_66 = 1;
       else if (pp != 0) rep = pp ^ 1;
     }

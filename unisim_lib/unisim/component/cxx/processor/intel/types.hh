@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_TYPES_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_TYPES_HH__
 
+#include <cstdint>
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -105,6 +107,8 @@ namespace intel {
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::f32_t> { enum nfo { is_signed = 1, is_integral = 0, bitsize = 32 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::f64_t> { enum nfo { is_signed = 1, is_integral = 0, bitsize = 64 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::f80_t> { enum nfo { is_signed = 1, is_integral = 0, bitsize = 80 }; };
+
+  enum x87frnd_mode_t { x87frnd_error = -1, x87frnd_nearest = 0, x87frnd_down = 1, x87frnd_up = 2, x87frnd_toward0 = 3 };
   
 } // end of namespace intel
 } // end of namespace processor

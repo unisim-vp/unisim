@@ -108,14 +108,17 @@ template <class ARCH> struct DC<ARCH,CALL> { Operation<ARCH>* get( InputCode<ARC
       else if (ic.opsize() == 16) return new NearCallE<ARCH,GOw>( _.opbase(), _.rmop() );
       else                        return new NearCallE<ARCH,GOd>( _.opbase(), _.rmop() );
     }
+
+  if (not ic.mode64())
+    {
+      if (auto _ = match( ic, OpSize<16>() & opcode( "\x9a" ) & Imm<16>() & Imm<16>() ))
     
-  if (auto _ = match( ic, OpSize<16>() & opcode( "\x9a" ) & Imm<16>() & Imm<16>() ))
+        return new FarCallA<ARCH,16>( _.opbase(), _.i( int32_t(), 0 ), _.i( int16_t(), 1 ) );
     
-    return new FarCallA<ARCH,16>( _.opbase(), _.i( int32_t(), 0 ), _.i( int16_t(), 1 ) );
+      if (auto _ = match( ic, OpSize<32>() & opcode( "\x9a" ) & Imm<32>() & Imm<16>() ))
     
-  if (auto _ = match( ic, OpSize<32>() & opcode( "\x9a" ) & Imm<32>() & Imm<16>() ))
-    
-    return new FarCallA<ARCH,32>( _.opbase(), _.i( int32_t(), 0 ), _.i( int16_t(), 1 ) );
+        return new FarCallA<ARCH,32>( _.opbase(), _.i( int32_t(), 0 ), _.i( int16_t(), 1 ) );
+    }
     
   if (auto _ = match( ic, opcode( "\xff" ) /3 & RM() ))
     {
@@ -174,13 +177,13 @@ struct Loop : public Operation<ARCH>
   Loop( OpBase<ARCH> const& opbase, int8_t _offset )
     : Operation<ARCH>( opbase ), offset( _offset )
   {}
-    
+  
   void disasm( std::ostream& sink ) const
   {
     if      (MOD == 0) sink << "loopne ";
     else if (MOD == 1) sink << "loope ";
     else if (MOD == 2) sink << "loop ";
-    else if (MOD == 3) sink << "j" << DisasmG( COUNT(), 1) << ' ';
+    else if (MOD == 3) sink << "j" << (&"\0\0c\0ec\0\0rc"[COUNT::SIZE/8]) << "x ";
     sink << "0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset);
   };
     
@@ -209,7 +212,27 @@ struct Loop : public Operation<ARCH>
   }
 };
 
-template <class ARCH, unsigned MOD>
+template <class ARCH> struct DC<ARCH,LOOP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (auto _ = match( ic, opcode( "\xe0" ) & Imm<8>() ))
+    /* LOOPNE */
+    return newLoopMod<0>( ic, _.opbase(), _.i( int8_t() ) );
+    
+  if (auto _ = match( ic, opcode( "\xe1" ) & Imm<8>() ))
+    /* LOOPE */
+    return newLoopMod<1>( ic, _.opbase(), _.i( int8_t() ) );
+  
+  if (auto _ = match( ic, opcode( "\xe2" ) & Imm<8>() ))
+    /* LOOP */
+    return newLoopMod<2>( ic, _.opbase(), _.i( int8_t() ) );
+
+  if (auto _ = match( ic, opcode( "\xe3" ) & Imm<8>() ))
+    /* JCX */
+    return newLoopMod<3>( ic, _.opbase(), _.i( int8_t() ) );
+
+  return 0;
+}
+template <unsigned MOD>
 Operation<ARCH>* newLoopMod( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, int8_t offset )
 {
   if (ic.mode64())
@@ -224,27 +247,6 @@ Operation<ARCH>* newLoopMod( InputCode<ARCH> const& ic, OpBase<ARCH> const& opba
       if (ic.addrsize() == 32 and ic.opsize() == 16) return new Loop<ARCH,MOD,GOd,16>( opbase, offset );
       if (ic.addrsize() == 32 and ic.opsize() == 32) return new Loop<ARCH,MOD,GOd,32>( opbase, offset );
     }
-  return 0;
-}
-
-template <class ARCH> struct DC<ARCH,LOOP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
-{
-  if (auto _ = match( ic, opcode( "\xe0" ) & Imm<8>() ))
-    /* LOOPNE */
-    return newLoopMod<ARCH,0>( ic, _.opbase(), _.i( int8_t() ) );
-    
-  if (auto _ = match( ic, opcode( "\xe1" ) & Imm<8>() ))
-    /* LOOPE */
-    return newLoopMod<ARCH,1>( ic, _.opbase(), _.i( int8_t() ) );
-  
-  if (auto _ = match( ic, opcode( "\xe2" ) & Imm<8>() ))
-    /* LOOP */
-    return newLoopMod<ARCH,2>( ic, _.opbase(), _.i( int8_t() ) );
-
-  if (auto _ = match( ic, opcode( "\xe3" ) & Imm<8>() ))
-    /* JCX */
-    return newLoopMod<ARCH,3>( ic, _.opbase(), _.i( int8_t() ) );
-
   return 0;
 }};
   
@@ -481,7 +483,7 @@ template <class ARCH> struct DC<ARCH,INTERRUPT> { Operation<ARCH>* get( InputCod
   
   if (auto _ = match( ic, opcode( "\xce" ) ))
   
-    return new Interrupt3<ARCH>( _.opbase() );
+    return ic.mode64() ? 0 : new Interrupt3<ARCH>( _.opbase() );
   
   return 0;
 }};
@@ -525,7 +527,7 @@ struct Leave : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     /* TODO: STACKSIZE */
-    if (GOP::SIZE != 32) throw 0;
+    if (GOP::size() != ARCH::GR::size()) throw 0;
     arch.regwrite( GOP(), 4, arch.regread( GOP(), 5 ) );
     arch.regwrite( GOP(), 5, arch.template pop<GOP::SIZE>() );
   }
@@ -533,6 +535,9 @@ struct Leave : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,ENTER_LEAVE> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
+  if (ic.opsize() != ARCH::GR::SIZE)
+    return 0;
+  
   if (auto _ = match( ic, opcode( "\xc8" ) & Imm<16>() & Imm<8>() ))
   
     {

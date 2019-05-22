@@ -87,7 +87,7 @@ template <class ARCH> struct DC<ARCH,ADD> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new AddRM<ARCH,GOw,true>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 32) return new AddRM<ARCH,GOd,true>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 64) return new AddRM<ARCH,GOq,true>( _.opbase(), _.rmop(), _.greg() );
-      else throw 0;
+      return 0;
     };
 
   if (auto _ = match( ic, opcode( "\002" ) & RM() ))
@@ -101,7 +101,7 @@ template <class ARCH> struct DC<ARCH,ADD> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new AddRM<ARCH,GOw,false>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 32) return new AddRM<ARCH,GOd,false>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 64) return new AddRM<ARCH,GOq,false>( _.opbase(), _.rmop(), _.greg() );
-      else throw 0;
+      return 0;
     };
 
   if (auto _ = match( ic, opcode( "\004" ) & Imm<8>() ))
@@ -139,8 +139,9 @@ template <class ARCH> struct DC<ARCH,ADD> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new AddRMI<ARCH,GOw>( _.opbase(), _.rmop(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new AddRMI<ARCH,GOd>( _.opbase(), _.rmop(), _.i( int32_t() ) );
       else if (ic.opsize() == 64) return new AddRMI<ARCH,GOq>( _.opbase(), _.rmop(), _.i( int32_t() ) );
-      else throw 0;
+      return 0;
     }
+
   return 0;
 }};
 
@@ -194,7 +195,7 @@ template <class ARCH> struct DC<ARCH,OR> { Operation<ARCH>* get( InputCode<ARCH>
       if      (ic.opsize() == 16) return new OrRM<ARCH,GOw,true>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 32) return new OrRM<ARCH,GOd,true>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 64) return new OrRM<ARCH,GOq,true>( _.opbase(), _.rmop(), _.greg() );
-      else throw 0;
+      return 0;
     };
 
   if (auto _ = match( ic, opcode( "\012" ) & RM() ))
@@ -208,7 +209,7 @@ template <class ARCH> struct DC<ARCH,OR> { Operation<ARCH>* get( InputCode<ARCH>
       if      (ic.opsize() == 16) return new OrRM<ARCH,GOw,false>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 32) return new OrRM<ARCH,GOd,false>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 64) return new OrRM<ARCH,GOq,false>( _.opbase(), _.rmop(), _.greg() );
-      else throw 0;
+      return 0;
     };
 
   if (auto _ = match( ic, opcode( "\014" ) & Imm<8>() ))
@@ -246,8 +247,9 @@ template <class ARCH> struct DC<ARCH,OR> { Operation<ARCH>* get( InputCode<ARCH>
       if      (ic.opsize() == 16) return new OrRMI<ARCH,GOw>( _.opbase(), _.rmop(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new OrRMI<ARCH,GOd>( _.opbase(), _.rmop(), _.i( int32_t() ) );
       else if (ic.opsize() == 64) return new OrRMI<ARCH,GOq>( _.opbase(), _.rmop(), _.i( int32_t() ) );
-      else throw 0;
+      return 0;
     }
+
   return 0;
 }};
 
@@ -301,7 +303,7 @@ template <class ARCH> struct DC<ARCH,ADC> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new AdcRM<ARCH,GOw,true>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 32) return new AdcRM<ARCH,GOd,true>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 64) return new AdcRM<ARCH,GOq,true>( _.opbase(), _.rmop(), _.greg() );
-      else throw 0;
+      return 0;
     };
 
   if (auto _ = match( ic, opcode( "\022" ) & RM() ))
@@ -315,7 +317,7 @@ template <class ARCH> struct DC<ARCH,ADC> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new AdcRM<ARCH,GOw,false>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 32) return new AdcRM<ARCH,GOd,false>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 64) return new AdcRM<ARCH,GOq,false>( _.opbase(), _.rmop(), _.greg() );
-      else throw 0;
+      return 0;
     };
 
   if (auto _ = match( ic, opcode( "\024" ) & Imm<8>() ))
@@ -353,8 +355,9 @@ template <class ARCH> struct DC<ARCH,ADC> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new AdcRMI<ARCH,GOw>( _.opbase(), _.rmop(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new AdcRMI<ARCH,GOd>( _.opbase(), _.rmop(), _.i( int32_t() ) );
       else if (ic.opsize() == 64) return new AdcRMI<ARCH,GOq>( _.opbase(), _.rmop(), _.i( int32_t() ) );
-      else throw 0;
+      return 0;
     }
+
   return 0;
 }};
 
@@ -408,7 +411,7 @@ template <class ARCH> struct DC<ARCH,SBB> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new SbbRM<ARCH,GOw,true>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 32) return new SbbRM<ARCH,GOd,true>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 64) return new SbbRM<ARCH,GOq,true>( _.opbase(), _.rmop(), _.greg() );
-      else throw 0;
+      return 0;
     };
 
   if (auto _ = match( ic, opcode( "\032" ) & RM() ))
@@ -422,7 +425,7 @@ template <class ARCH> struct DC<ARCH,SBB> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new SbbRM<ARCH,GOw,false>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 32) return new SbbRM<ARCH,GOd,false>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 64) return new SbbRM<ARCH,GOq,false>( _.opbase(), _.rmop(), _.greg() );
-      else throw 0;
+      return 0;
     };
 
   if (auto _ = match( ic, opcode( "\034" ) & Imm<8>() ))
@@ -460,8 +463,9 @@ template <class ARCH> struct DC<ARCH,SBB> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new SbbRMI<ARCH,GOw>( _.opbase(), _.rmop(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new SbbRMI<ARCH,GOd>( _.opbase(), _.rmop(), _.i( int32_t() ) );
       else if (ic.opsize() == 64) return new SbbRMI<ARCH,GOq>( _.opbase(), _.rmop(), _.i( int32_t() ) );
-      else throw 0;
+      return 0;
     }
+
   return 0;
 }};
 
@@ -515,7 +519,7 @@ template <class ARCH> struct DC<ARCH,AND> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new AndRM<ARCH,GOw,true>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 32) return new AndRM<ARCH,GOd,true>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 64) return new AndRM<ARCH,GOq,true>( _.opbase(), _.rmop(), _.greg() );
-      else throw 0;
+      return 0;
     };
 
   if (auto _ = match( ic, opcode( "\042" ) & RM() ))
@@ -529,7 +533,7 @@ template <class ARCH> struct DC<ARCH,AND> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new AndRM<ARCH,GOw,false>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 32) return new AndRM<ARCH,GOd,false>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 64) return new AndRM<ARCH,GOq,false>( _.opbase(), _.rmop(), _.greg() );
-      else throw 0;
+      return 0;
     };
 
   if (auto _ = match( ic, opcode( "\044" ) & Imm<8>() ))
@@ -567,8 +571,9 @@ template <class ARCH> struct DC<ARCH,AND> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new AndRMI<ARCH,GOw>( _.opbase(), _.rmop(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new AndRMI<ARCH,GOd>( _.opbase(), _.rmop(), _.i( int32_t() ) );
       else if (ic.opsize() == 64) return new AndRMI<ARCH,GOq>( _.opbase(), _.rmop(), _.i( int32_t() ) );
-      else throw 0;
+      return 0;
     }
+
   return 0;
 }};
 
@@ -622,7 +627,7 @@ template <class ARCH> struct DC<ARCH,SUB> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new SubRM<ARCH,GOw,true>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 32) return new SubRM<ARCH,GOd,true>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 64) return new SubRM<ARCH,GOq,true>( _.opbase(), _.rmop(), _.greg() );
-      else throw 0;
+      return 0;
     };
 
   if (auto _ = match( ic, opcode( "\052" ) & RM() ))
@@ -636,7 +641,7 @@ template <class ARCH> struct DC<ARCH,SUB> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new SubRM<ARCH,GOw,false>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 32) return new SubRM<ARCH,GOd,false>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 64) return new SubRM<ARCH,GOq,false>( _.opbase(), _.rmop(), _.greg() );
-      else throw 0;
+      return 0;
     };
 
   if (auto _ = match( ic, opcode( "\054" ) & Imm<8>() ))
@@ -674,8 +679,9 @@ template <class ARCH> struct DC<ARCH,SUB> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new SubRMI<ARCH,GOw>( _.opbase(), _.rmop(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new SubRMI<ARCH,GOd>( _.opbase(), _.rmop(), _.i( int32_t() ) );
       else if (ic.opsize() == 64) return new SubRMI<ARCH,GOq>( _.opbase(), _.rmop(), _.i( int32_t() ) );
-      else throw 0;
+      return 0;
     }
+
   return 0;
 }};
 
@@ -729,7 +735,7 @@ template <class ARCH> struct DC<ARCH,XOR> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new XorRM<ARCH,GOw,true>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 32) return new XorRM<ARCH,GOd,true>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 64) return new XorRM<ARCH,GOq,true>( _.opbase(), _.rmop(), _.greg() );
-      else throw 0;
+      return 0;
     };
 
   if (auto _ = match( ic, opcode( "\062" ) & RM() ))
@@ -743,7 +749,7 @@ template <class ARCH> struct DC<ARCH,XOR> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new XorRM<ARCH,GOw,false>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 32) return new XorRM<ARCH,GOd,false>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 64) return new XorRM<ARCH,GOq,false>( _.opbase(), _.rmop(), _.greg() );
-      else throw 0;
+      return 0;
     };
 
   if (auto _ = match( ic, opcode( "\064" ) & Imm<8>() ))
@@ -781,8 +787,9 @@ template <class ARCH> struct DC<ARCH,XOR> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new XorRMI<ARCH,GOw>( _.opbase(), _.rmop(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new XorRMI<ARCH,GOd>( _.opbase(), _.rmop(), _.i( int32_t() ) );
       else if (ic.opsize() == 64) return new XorRMI<ARCH,GOq>( _.opbase(), _.rmop(), _.i( int32_t() ) );
-      else throw 0;
+      return 0;
     }
+
   return 0;
 }};
 
@@ -831,7 +838,7 @@ template <class ARCH> struct DC<ARCH,CMP> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new CmpRM<ARCH,GOw,true>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 32) return new CmpRM<ARCH,GOd,true>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 64) return new CmpRM<ARCH,GOq,true>( _.opbase(), _.rmop(), _.greg() );
-      else throw 0;
+      return 0;
     };
 
   if (auto _ = match( ic, opcode( "\072" ) & RM() ))
@@ -845,7 +852,7 @@ template <class ARCH> struct DC<ARCH,CMP> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new CmpRM<ARCH,GOw,false>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 32) return new CmpRM<ARCH,GOd,false>( _.opbase(), _.rmop(), _.greg() );
       else if (ic.opsize() == 64) return new CmpRM<ARCH,GOq,false>( _.opbase(), _.rmop(), _.greg() );
-      else throw 0;
+      return 0;
     };
 
   if (auto _ = match( ic, opcode( "\074" ) & Imm<8>() ))
@@ -883,8 +890,9 @@ template <class ARCH> struct DC<ARCH,CMP> { Operation<ARCH>* get( InputCode<ARCH
       if      (ic.opsize() == 16) return new CmpRMI<ARCH,GOw>( _.opbase(), _.rmop(), _.i( int16_t() ) );
       else if (ic.opsize() == 32) return new CmpRMI<ARCH,GOd>( _.opbase(), _.rmop(), _.i( int32_t() ) );
       else if (ic.opsize() == 64) return new CmpRMI<ARCH,GOq>( _.opbase(), _.rmop(), _.i( int32_t() ) );
-      else throw 0;
+      return 0;
     }
+
   return 0;
 }};
 

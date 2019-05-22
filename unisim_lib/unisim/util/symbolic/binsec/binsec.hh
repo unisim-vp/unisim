@@ -155,6 +155,8 @@ namespace binsec {
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 0; }
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
+    int compare( RegRead const& rhs ) const { return 0; }
   };
 
   struct RegWrite : public ASExprNode
@@ -167,8 +169,8 @@ namespace binsec {
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
-    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
-    intptr_t compare( RegWrite const& rhs ) const { return value.cmp( rhs.value ); }
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
+    int compare( RegWrite const& rhs ) const { return 0; /* Expr only */ }
     
     Expr value;
   };
@@ -190,7 +192,7 @@ namespace binsec {
     }
     virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
 
-    virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+    virtual int cmp( ExprNode const& brhs ) const override { return 0; }
     virtual unsigned SubCount() const { return 0; }
     virtual void Repr( std::ostream& sink ) const { sink << "assert (false)"; }
     virtual Expr Simplify() const { return this; }
@@ -207,12 +209,11 @@ namespace binsec {
     virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false, 8*bytecount()); }
     unsigned bytecount() const { return 1<<size; }
     virtual void Repr( std::ostream& sink ) const;
-    intptr_t cmp( ExprNode const& brhs ) const
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
+    int compare( Load const& rhs ) const
     {
-      Load const& rhs = dynamic_cast<Load const&>( brhs );
-      if (intptr_t delta = addr.cmp( rhs.addr )) return delta;
-      if (intptr_t delta = int(size - rhs.size)) return delta;
-      if (intptr_t delta = int(alignment - rhs.alignment)) return delta;
+      if (int delta = int(size) - int(rhs.size)) return delta;
+      if (int delta = int(alignment) - int(rhs.alignment)) return delta;
       return (int(bigendian) - int(rhs.bigendian));
     }
     virtual unsigned SubCount() const { return 1; }
@@ -259,13 +260,12 @@ namespace binsec {
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     
     virtual void Repr( std::ostream& sink ) const;
-    intptr_t cmp( ExprNode const& brhs ) const
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<BitFilter const&>( rhs ) ); }
+    int compare( BitFilter const& rhs ) const
     {
-      BitFilter const& rhs = dynamic_cast<BitFilter const&>( brhs );
-      if (intptr_t delta = input.cmp( rhs.input )) return delta;
-      if (intptr_t delta = int(source) - int(rhs.source)) return delta;
-      if (intptr_t delta = int(select) - int(rhs.select)) return delta;
-      if (intptr_t delta = int(extend) - int(rhs.extend)) return delta;
+      if (int delta = int(source) - int(rhs.source)) return delta;
+      if (int delta = int(select) - int(rhs.select)) return delta;
+      if (int delta = int(extend) - int(rhs.extend)) return delta;
       return int(sxtend) - int(rhs.sxtend);
     }
     virtual unsigned SubCount() const { return 1; }
@@ -326,14 +326,12 @@ namespace binsec {
     virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
     unsigned bytecount() const { return 1<<size; }
     virtual void Repr( std::ostream& sink ) const;
-    intptr_t cmp( ExprNode const& brhs ) const
+    int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Store const&>( rhs ) ); }
+    int compare( Store const& rhs ) const
     {
-      Store const& rhs = dynamic_cast<Store const&>( brhs );
-      if (intptr_t delta = value.cmp( rhs.value )) return delta;
-      if (intptr_t delta = addr.cmp( rhs.addr )) return delta;
-      if (intptr_t delta = int(size - rhs.size)) return delta;
-      if (intptr_t delta = int(alignment - rhs.alignment)) return delta;
-      return (int(bigendian) - int(rhs.bigendian));
+      if (int delta = int(size) - int(rhs.size)) return delta;
+      if (int delta = int(alignment) - int(rhs.alignment)) return delta;
+      return int(bigendian) - int(rhs.bigendian);
     }
     virtual unsigned SubCount() const { return 2; }
     virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }

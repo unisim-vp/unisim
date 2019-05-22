@@ -42,7 +42,6 @@
 #include <unisim/util/random/random.hh>
 #include <fstream>
 #include <iostream>
-#include <sstream>
 #include <set>
 #include <memory>
 #include <inttypes.h>
@@ -73,7 +72,7 @@ struct TestConfig
   
   // bool wide() const { return iif.length == 32; }
   
-  std::string prologue() const {}
+  std::string prologue() const { return ""; }
   // {
   //   if (iif.usemem()) {
   //     std::ostringstream sink;
@@ -120,129 +119,6 @@ struct TestConfig
   std::string epilogue() const { return ""; }
 };
 
-struct AMD64
-{
-  struct MemCode
-  {
-    uint8_t     bytes[15];
-    unsigned    length;
-
-    MemCode() : bytes(), length() {}
-    MemCode( uint8_t fill ) : length(sizeof (bytes)) { std::fill( &bytes[0], &bytes[length], fill ); }
-
-    MemCode( uint8_t const* _bytes, unsigned _length ) : length(_length) { std::copy( &_bytes[0], &_bytes[_length], &bytes[0] ); }
-    
-    bool get( std::istream& source )
-    {
-      unsigned bytecount = 0; bool nibble = false;
-      for (;;)
-        {
-          char ch;
-          if (not source.get( ch ).good()) return false;
-          if (ch == ' ')     { if (nibble) return false; continue; }
-          if (ch == '\t')    { if (nibble) return false; break; }
-          if (bytecount >= sizeof(bytes)) throw 0;
-          
-          uint8_t nval;
-          if      ('0' <= ch and ch <= '9') nval = ch - '0';
-          else if ('a' <= ch and ch <= 'f') nval = ch - 'a' + 10;
-          else return false;
-        
-          if (nibble) { bytes[bytecount] = nval | bytes[bytecount] << 4; nibble = false; }
-          else        { bytes[bytecount] = nval;        bytecount  += 1; nibble =  true; }
-        }
-      
-      length = bytecount;
-      return true;
-    }
-
-    uint8_t getbyte( unsigned idx, uint8_t _default ) const { return idx < length ? bytes[idx] : _default; }
-
-    bool maximize( MemCode const& lo, MemCode const& hi )
-    {
-      MemCode delta(0);
-
-      int carry = 0, dcarry = 0;
-      for (unsigned idx = sizeof (bytes); idx-- > 0;)
-        {
-          carry = carry + int(hi.getbyte(idx, 0x00)) - int(lo.getbyte(idx,0xff));
-          uint8_t byte = carry;
-          delta.bytes[idx] = byte;
-          carry >>= 8;
-          dcarry  = dcarry + int(bytes[idx]) - int(byte);
-          dcarry >>= 8;
-        }
-      if (dcarry == 0)
-        return false;
-      
-      *this = delta;
-      return true;
-    }
-
-    int compare( MemCode const& rhs ) const
-    {
-      for (unsigned idx = 0, end = sizeof (bytes); idx < end; ++idx)
-        if (int delta = int(getbyte(idx,0)) - int(rhs.getbyte(idx,0)))
-          return delta;
-      return 0;
-    }
-
-    bool operator < ( MemCode const& rhs ) const { return compare( rhs ) < 0; }
-    
-    friend std::ostream& operator << ( std::ostream& sink, MemCode const& mc )
-    {
-      for (unsigned idx = 0; idx < mc.length; ++idx)
-        {
-          uint8_t byte = mc.bytes[idx];
-          for (unsigned nibble = 0; nibble < 2; ++nibble)
-            sink << ("0123456789abcdef"[(byte >> nibble*4)&0xf]);
-          sink << ' ';
-        }
-      return sink;
-    }
-  };
-  
-  typedef unisim::component::cxx::processor::intel::Operation<ut::Arch> Operation;
-
-  Operation* decode( uint64_t addr, MemCode const& ct, std::string& disasm )
-  {
-    Operation* op = ut::Arch::fetch( addr, &ct.bytes[0] );
-    if (not op) throw ut::Untestable("#UD");
-    std::ostringstream buf;
-    op->disasm(buf);
-    disasm = buf.str();
-    return op;
-  }
-  
-  static char const* Name() { return "amd64"; }
-  
-  // void
-  // write_test( Sink& sink, TestConfig const& cfg, CodeType code )
-  // {
-  //   std::string hexcode;
-  //   {
-  //     uint32_t codebits = code >> (cfg.wide() ? 0 : 16);
-  //     std::ostringstream oss;
-  //     oss << std::hex << codebits;
-  //     hexcode = oss.str();
-  //   }
-  //   std::string opfunc_name = sink.test_prefix() + cfg.ident + '_' + hexcode;
-    
-  //   sink.macros << "ENTRY(" << opfunc_name << ",0x" << hexcode << ")\n";
-    
-  //   sink.sources << "\t.text\n\t.align\t2\n\t.global\t" << opfunc_name
-  //                << "\n\t.type\t" << opfunc_name
-  //                << ", @function\n" << opfunc_name
-  //                << ":\n"
-  //                << cfg.prologue()
-  //                << "\t." << (cfg.wide() ? "long" : "short") << "\t0x" << hexcode << '\t' << "/* " << cfg.disasm << " */\n"
-  //                << cfg.epilogue()
-  //                << "\tse_blr\n"
-  //                << "\t.size\t" << opfunc_name
-  //                << ", .-" << opfunc_name << "\n\n";
-  // }
-};
-
 template <typename ISA>
 struct Checker
 {
@@ -250,53 +126,65 @@ struct Checker
   typedef typename ISA::Operation Operation;
   struct InsnCode
   {
-    InsnCode( Operation const& op, MemCode const& mc, std::string const& ac ) : memcode(&mc.bytes[0],op.length), asmcode(ac) {}
+    InsnCode( MemCode const& mc, std::string const& ac ) : memcode(mc), asmcode(ac) {}
     MemCode memcode;
     std::string asmcode;
   };
-  typedef std::multimap<ut::Interface, InsnCode> TestDB;
+  typedef std::multimap<ut::Interface, InsnCode, ut::Interface::TestLess> TestDB;
   
   unisim::util::random::Random random;
   ISA isa;
   std::set<MemCode> done;
   TestDB testdb;
 
-  InsnCode const& insert( Operation const& op, MemCode const& code, std::string const& disasm )
+  bool insert( Operation const& op, MemCode const& code, std::string const& disasm )
   {
-    // Performing an abstract execution to check the validity of
-    // the opcode, and to compute the interface of the operation
-    ut::Interface interface( op );
-    std::cerr << disasm << "\n" << (*interface.action) << std::endl;
-    return testdb.emplace( std::piecewise_construct, std::forward_as_tuple( std::move( interface ) ), std::forward_as_tuple( op, code, disasm ) )->second;
+    ut::Interface iif;
+
+    {
+      // Performing an abstract execution to check the validity of
+      // the opcode, and to compute the interface of the operation
+      ut::Arch reference( iif );
+      
+      for (bool end = false; not end;)
+        {
+          ut::Arch arch( iif );
+          arch.step( op );
+          end = arch.close( reference );
+        }
+
+      iif.finalize();
+    }
+    
+    auto p = testdb.equal_range(iif);
+    auto count = std::distance(p.first, p.second);
+    if (count > 1)
+      return false;
+    testdb.emplace_hint( p.second, std::piecewise_construct, std::forward_as_tuple( std::move( iif ) ), std::forward_as_tuple( code, disasm ) );
+    return true;
   }
 
-  bool test( MemCode const& trial )
+  bool test( MemCode&& trial )
   {
     static uintptr_t counter = 0;
-    counter += 1;
-    // if (counter) {} else {
-    std::cerr << "\r\e[K#" << testdb.size() <<  " / " << done.size();
-    std::cerr.flush();
-    // }
-    if (counter == 100000)
-      for (MemCode const& mc : done)
-        std::cerr << mc << std::endl;
     
+    counter += 1;
+    std::cerr << "\r\e[K#" << testdb.size() <<  " / " << counter;
+    std::cerr.flush();
+
+    bool found = false;
     try
       {
         std::string disasm;
         std::unique_ptr<Operation> codeop = std::unique_ptr<Operation>( isa.decode( 0x4000, trial, disasm ) );
-        InsnCode const& ic = insert( *codeop, trial, disasm );
-        done.insert( ic.memcode );
+        found = insert( *codeop, trial, disasm );
       }
-    catch (ut::Untestable const& denial)
-      {
-        done.insert( trial );
-        //        std::cerr << fl << ": behavioral rejection for " << disasm << " <" << denial.reason << ">\n";
-        return false;
-      }
+    catch (ut::Untestable const& denial) {}
+    catch (unisim::component::cxx::processor::intel::CodeBase::PrefixError const& denial) {}
     
-    return true;
+    done.insert( trial );
+    
+    return found;
   }
   
   std::ofstream logger;
@@ -306,12 +194,34 @@ struct Checker
     , logger((std::string( ISA::Name() ) + ".log").c_str())
   {}
   
-  void discover( uintptr_t maxttl )
+  void discover( uintptr_t maxttl, uintptr_t maxtrials )
   {
-    test( MemCode( 0 ) );
-    test( MemCode( -1 ) );
-    
-    for (uintptr_t ttl = maxttl; ttl-- > 0;)
+    test( 0 );
+    test( -1 );
+
+    // a posteriori intel knowledge
+    done.emplace("\x06",1);
+    done.emplace("\x07",1);
+    done.emplace("\x0e",1);
+    done.emplace("\x16",1);
+    done.emplace("\x17",1);
+    done.emplace("\x1e",1);
+    done.emplace("\x1f",1);
+    done.emplace("\x27",1);
+    done.emplace("\x2f",1);
+    done.emplace("\x37",1);
+    done.emplace("\x3f",1);
+    done.emplace("\x60",1);
+    done.emplace("\x61",1);
+    done.emplace("\x62",1);
+    done.emplace("\x82",1);
+    done.emplace("\x9a",1);
+    done.emplace("\xce",1);
+    done.emplace("\xd4",1);
+    done.emplace("\xd5",1);
+    done.emplace("\xea",1);
+
+    for (uintptr_t ttl = maxttl; ttl-- > 0 and done.size() < maxtrials;)
       {
         MemCode candidate( 0 );
         typedef decltype (done.begin()) Iterator;
@@ -343,96 +253,20 @@ struct Checker
         if (test( MemCode( &bytes[0], sizeof (MemCode::bytes) ) ))
           ttl = maxttl;
       }
-    
-    uint64_t step = 0;
-    // auto const& dectable = isa.GetDecodeTable();
-    throw 0;
-    //    for (auto&& opc : isa.GetDecodeTable())
-      // {
-      //   uint32_t mask = opc.opcode_mask, bits = opc.opcode & mask;
-      //   auto testclass = testclasses.end();
-      //   std::map<std::string,uintptr_t> fails;
-        
-      //   for (uintptr_t trial = 0; trial < ttl; ++trial)
-      //     {
-      //       step += 1;
-      //       try
-      //         {
-      //           CodeType code;
-      //           ISA::mkcode( code, (random.Generate() & ~mask) | bits );
-                
-      //           std::unique_ptr<Operation> codeop( opc.decode( code, 0 ) );
-                
-      //           {
-      //             std::string name( codeop->GetName() );
-      //             if (testclass == testclasses.end()) {
-      //               testclasses[name];
-      //               testclass = testclasses.find(name);
-      //               std::cerr << "Tests[" << ISA::Name() << "::" << name << "]: ";
-      //             } else if (testclass->first != name) {
-      //               std::cerr << "Incoherent Operation names: " << testclass->first << " and " << name << std::endl;
-      //               throw 0;
-      //             }
-      //           }
-                
-      //           if (codeop->donttest())
-      //             {
-      //               fails["not under test"] += 1;
-      //               break;
-      //             }
-                
-      //           {
-      //             std::unique_ptr<Operation> realop( isa.NCDecode( 0, code ) );
-      //             if (strcmp( realop->GetName(), codeop->GetName() ) != 0)
-      //               {
-      //                 fails["hidden"] += 1;
-      //                 continue; /* Not the op we were looking for. */
-      //               }
-      //             code = ISA::cleancode( *codeop );
-      //           }
-                
-      //           if (testclass->second.size() >= 256) {
-      //             std::cerr << "Possible issue: too many tests for" << testclass->first << "...\n";
-      //             throw 0;
-      //           }
-                
-      //           // We need to perform an abstract execution of the
-      //           // instruction to 1/ further check testability and 2/
-      //           // compute operation interface.
-      //           ut::Interface interface( *codeop );
 
-      //           // At this point, code corresponds to valid operation
-      //           // to be tested. Nevertheless, if the interface of
-      //           // this operation matches an existing test, we don't
-      //           // add the operation since the new test is unlikely to
-      //           // reveal new bugs.
-      //           if (testclass->second.find( interface ) != testclass->second.end()) continue;
-      //           testclass->second.insert( std::make_pair( interface, code ) );
-      //           trial = 0;
-      //         }
-      //       catch (ut::Untestable const& denial)
-      //         {
-      //           fails[denial.reason] += 1;
-      //           if (denial.reason == "not implemented")
-      //             break;
-      //         }
-      //     }
-      //   if (testclass == testclasses.end())
-      //     std::cerr << "Tests[" << ISA::Name() << "::?]: nothing found...\n";
-      //   else if (testclass->second.size() == 0)
-      //     {
-      //       std::ostringstream msg;
-            
-      //       msg << "nothing found";
-      //       for (auto&& reason : fails)
-      //         msg << " <" << reason.first << ">";
-      //       msg << "\n";
-      //       std::cerr << msg.str();
-      //       logger << testclass->first << " : " << msg.str();
-      //     }
-      //   else
-      //     std::cerr << testclass->second.size() << " patterns found." << std::endl;
-      // }
+    {
+      std::ofstream dbg("dbg.txt");
+      std::map<MemCode,char const*> rtdb;
+      for (auto const& kv : testdb)
+        rtdb[kv.second.memcode] = kv.second.asmcode.c_str();
+      for (MemCode const&  mc : done)
+        {
+          char const* ac = rtdb[mc];
+          if (not ac) ac = "";
+          dbg << mc << '\t' << ac << '\n';
+        }
+      std::cerr << "Wrote debug file.\n";
+    }
   }
   
   void
@@ -491,13 +325,13 @@ struct Checker
   void
   write_tests( Sink& sink )
   {
-    for (auto && test : testdb)
-      {
-        // std::string name = tcitem.first;
+    // for (auto && test : testdb)
+    //   {
+    //     // std::string name = tcitem.first;
         
-        // TestConfig cfg( ccitem.first, std::string( ISA::Name() ) + '_' + name, disasm( ccitem.second ) );
-        // isa.write_test( sink, cfg, ccitem.second );
-      }
+    //     // TestConfig cfg( ccitem.first, std::string( ISA::Name() ) + '_' + name, disasm( ccitem.second ) );
+    //     // isa.write_test( sink, cfg, ccitem.second );
+    //   }
   }
 };
 
@@ -517,7 +351,7 @@ void Update( std::string const& reposname )
   
   Checker<T> checker;
   checker.read_repos( reposname );
-  checker.discover( ttl );
+  checker.discover( ttl, 16384 );
   checker.write_repos( reposname );
   std::string basename( reposname.substr( 0, reposname.size() - suffix.size() ) );
   Sink sink( basename );
@@ -527,7 +361,6 @@ void Update( std::string const& reposname )
 int
 main( int argc, char** argv )
 {
-  
   if (argc != 2)
     {
     std::cerr << "Wrong number of argument.\n";
@@ -535,7 +368,7 @@ main( int argc, char** argv )
     return 1;
   }      
 
-  Update<AMD64>( argv[1] );
+  Update<ut::AMD64>( argv[1] );
   std::cout << "nothing.\n";
   
   return 0;

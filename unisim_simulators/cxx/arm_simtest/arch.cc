@@ -324,15 +324,15 @@ namespace ut
   int
   Interface::cmp( Interface const& b ) const
   {
-    if (int _cmp = _Cmp( iruse.size(), b.iruse.size() )) { return _cmp; }
-    if (int _cmp = _Cmp( irmap.size(), b.irmap.size() )) { return _cmp; }
+    if (int delta = _Cmp( iruse.size(), b.iruse.size() )) { return delta; }
+    if (int delta = _Cmp( irmap.size(), b.irmap.size() )) { return delta; }
     
     for (unsigned idx = 0; idx < iruse.size(); ++idx) {
       unsigned areg = iruse[idx], breg = b.iruse[idx];
-      if (int _cmp = _Cmp( int( areg == 15 ), int( breg == 15 ) )) { return _cmp; }
-      if (int _cmp = irmap.at(areg).cmp( b.irmap.at(breg) )) { return _cmp; }
+      if (int delta = _Cmp( int( areg == 15 ), int( breg == 15 ) )) { return delta; }
+      if (int delta = irmap.at(areg).cmp( b.irmap.at(breg) )) { return delta; }
     }
-    if (int _cmp = psr.cmp( b.psr )) return _cmp;
+    if (int delta = psr.cmp( b.psr )) return delta;
     
     return 0; // All equal
   }
@@ -341,9 +341,9 @@ namespace ut
   VirtualRegister::cmp( VirtualRegister const& b ) const
   {
     if (bad or b.bad) throw 0;
-    if (int _cmp = _Cmp( vindex, b.vindex )) return _cmp;
-    if (int _cmp = _Cmp( source, b.source )) return _cmp;
-    if (int _cmp = _Cmp( destination, b.destination )) return _cmp;
+    if (int delta = _Cmp( vindex, b.vindex )) return delta;
+    if (int delta = _Cmp( source, b.source )) return delta;
+    if (int delta = _Cmp( destination, b.destination )) return delta;
     
     return 0; // All equal
   }

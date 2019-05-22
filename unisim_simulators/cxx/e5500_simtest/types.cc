@@ -53,7 +53,7 @@ namespace ut
   }
   
   int
-  FunctionNodeBase::NameCompare( FunctionNodeBase const& b ) const
+  FunctionNodeBase::compare( FunctionNodeBase const& b ) const
   {
     return strcmp( ident, b.ident );
   }

@@ -130,7 +130,6 @@ struct Processor
     virtual void Repr( std::ostream& sink ) const { sink << GetRegName(); }
     
     virtual unsigned SubCount() const { return 0; }
-    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<CNode const&>( rhs ) ); }
   };
 
   template <typename RID>
@@ -141,13 +140,13 @@ struct Processor
     virtual this_type* Mutate() const { return new this_type( *this ); }
     virtual ScalarType::id_t GetType() const { return tid; }
     virtual char const* GetRegName() const { return id.c_str(); }
-    intptr_t compare( this_type const& rhs ) const
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
+    int compare( this_type const& rhs ) const
     {
       if (int delta = int(tid) - int(rhs.tid)) return delta;
-      if (intptr_t delta = id.cmp( rhs.id )) return delta;
+      if (int delta = id.cmp( rhs.id )) return delta;
       return RegReadBase::compare( rhs );
     }
-    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<this_type const&>( rhs ) ); }
 
     ScalarType::id_t tid;
     RID id;
@@ -186,8 +185,8 @@ struct Processor
 
     virtual char const* GetRegName() const { return &name[0]; }
     
-    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<ForeignRegister const&>( rhs ) ); }
-    intptr_t compare( ForeignRegister const& rhs ) const
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<ForeignRegister const&>( rhs ) ); }
+    int compare( ForeignRegister const& rhs ) const
     {
       if (int delta = int(mode) - int(rhs.mode)) return delta;
       if (int delta = int(idx) - int(rhs.idx)) return delta;
@@ -208,8 +207,8 @@ struct Processor
     virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const { srcmgr << '$' << GetRegName() << " = " << ccode(value) << ";\n"; }
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
-    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<RegWriteBase const&>( rhs ) ); }
-    intptr_t compare( RegWriteBase const& rhs ) const { return value.cmp( rhs.value ); }
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWriteBase const&>( rhs ) ); }
+    int compare( RegWriteBase const& rhs ) const { return 0; }
       
     Expr value;
   };
@@ -221,12 +220,12 @@ struct Processor
     RegWrite( RID _id, Expr const& _value ) : RegWriteBase(_value), id(_id) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
     virtual char const* GetRegName() const { return id.c_str(); }
-    intptr_t compare( this_type const& rhs ) const
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
+    int compare( this_type const& rhs ) const
     {
-      if (intptr_t delta = id.cmp( rhs.id )) return delta;
+      if (int delta = id.cmp( rhs.id )) return delta;
       return RegWriteBase::cmp( rhs );
     }
-    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
 
     RID id;
   };
@@ -267,13 +266,13 @@ struct Processor
     virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::ScalarType::IntegerType( false, 8 << size ); }
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
-    virtual intptr_t cmp( ExprNode const& rhs ) const { return compare( dynamic_cast<Load const&>( rhs ) ); }
-    intptr_t compare( Load const& rhs ) const
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
+    int compare( Load const& rhs ) const
     {
-      if (intptr_t delta = addr.cmp( rhs.addr )) return delta;
-      if (intptr_t delta = int(size - rhs.size)) return delta;
-      if (intptr_t delta = int(alignment - rhs.alignment)) return delta;
-      return (int(bigendian) - int(rhs.bigendian));
+      if (int delta = CNode::compare( rhs )) return delta;
+      if (int delta = int(size) - int(rhs.size)) return delta;
+      if (int delta = int(alignment) - int(rhs.alignment)) return delta;
+      return int(bigendian) - int(rhs.bigendian);
     }
     
     Expr addr;
@@ -290,14 +289,12 @@ struct Processor
     {}
     virtual Store* Mutate() const { return new Store( *this ); }
     virtual void Repr( std::ostream& sink ) const { sink << "Store(" << addr << ", " << value << ", " << size << ", " << alignment << ", " << bigendian << ")"; }
-    intptr_t cmp( ExprNode const& brhs ) const
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Store const&>( rhs ) ); }
+    int compare( Store const& rhs ) const
     {
-      Store const& rhs = dynamic_cast<Store const&>( brhs );
-      if (intptr_t delta = value.cmp( rhs.value )) return delta;
-      if (intptr_t delta = addr.cmp( rhs.addr )) return delta;
-      if (intptr_t delta = int(size - rhs.size)) return delta;
-      if (intptr_t delta = int(alignment - rhs.alignment)) return delta;
-      return (int(bigendian) - int(rhs.bigendian));
+      if (int delta = int(size) - int(rhs.size)) return delta;
+      if (int delta = int(alignment) - int(rhs.alignment)) return delta;
+      return int(bigendian) - int(rhs.bigendian);
     }
     virtual unsigned SubCount() const { return 2; }
     virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
@@ -491,7 +488,6 @@ struct Processor
     AssertFalse() {}
     virtual AssertFalse* Mutate() const { return new AssertFalse( *this ); }
     virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
-    virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
     virtual unsigned SubCount() const { return 0; }
     virtual void Repr( std::ostream& sink ) const { sink << "assert (false)"; }
     virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const { throw 0; }
@@ -734,6 +730,11 @@ struct Processor
   F64  GetVDR( unsigned idx ) { return F64(); }
   void SetVDR( unsigned idx, F64 val ) {}
     
+  U32 const&  GetVSU( unsigned idx ) { return U32(); }
+  void SetVSU( unsigned idx, U32 val ) {}
+  U64 const&  GetVDU( unsigned idx ) { return U64(); }
+  void SetVDU( unsigned idx, U64 val ) {}
+  
   //   =====================================================================
   //   =                      Control Transfer methods                     =
   //   =====================================================================

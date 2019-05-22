@@ -162,7 +162,8 @@ namespace ccode {
   struct CNode : public unisim::util::symbolic::ExprNode
   {
     virtual void translate( SrcMgr& srcmgr, CCode& ccode ) const = 0;
-    virtual intptr_t compare( CNode const& rhs ) const { return 0; }
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<CNode const&>( rhs ) ); }
+    int compare( CNode const& rhs ) const { return 0; }
   };
 
   struct Update : public CNode

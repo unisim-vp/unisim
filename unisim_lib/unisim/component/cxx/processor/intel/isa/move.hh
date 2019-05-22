@@ -143,6 +143,8 @@ struct PushAll : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,PUSHA> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
+  if (ic.mode64()) return 0;
+
   if (auto _ = match( ic, opcode( "\x60" ) ))
   
     {
@@ -262,6 +264,8 @@ struct PopAll : public Operation<ARCH>
 
 template <class ARCH> struct DC<ARCH,POPA> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
+  if (ic.mode64()) return 0;
+
   if (auto _ = match( ic, opcode( "\x61" ) ))
   
     {

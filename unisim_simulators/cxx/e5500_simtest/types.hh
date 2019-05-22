@@ -68,7 +68,8 @@ namespace ut
     
     FunctionNodeBase( char const* _ident ) : ident(_ident) {}
     virtual void Repr( std::ostream& sink ) const;
-    int NameCompare( FunctionNodeBase const& b ) const;
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<FunctionNodeBase const&>( rhs ) ); }
+    int compare( FunctionNodeBase const& b ) const;
 
     char const* ident;
   };
@@ -78,6 +79,7 @@ namespace ut
   {
     typedef unisim::util::symbolic::ExprNode ExprNode;
     typedef unisim::util::symbolic::Expr Expr;
+    typedef unisim::util::symbolic::ScalarType ScalarType;
     typedef FunctionNode<SUBS> this_type;
     
     FunctionNode( char const* _ident ) : FunctionNodeBase(_ident) {}
@@ -85,13 +87,7 @@ namespace ut
     this_type* src(unsigned idx, Expr const& x) { srcs[idx] = x; return this; }
     virtual unsigned SubCount() const { return SUBS; };
     virtual Expr const& GetSub(unsigned idx) const { if (idx < SUBS) return srcs[idx]; return ExprNode::GetSub(idx); };
-    virtual intptr_t cmp( ExprNode const& brhs ) const
-    {
-      auto && rhs = dynamic_cast<this_type const&>( brhs );
-      for (unsigned idx = 0; idx < SUBS; ++idx)
-        if (intptr_t delta = srcs[idx].cmp( rhs.srcs[idx] )) return delta;
-      return NameCompare( rhs );
-    }
+    virtual ScalarType::id_t GetType() const { return GetSub(0)->GetType(); }
     Expr srcs[SUBS];
   };
 
@@ -117,6 +113,7 @@ namespace ut
 
   struct ArchExprNode : public unisim::util::symbolic::ExprNode
   {
+    typedef unisim::util::symbolic::ScalarType ScalarType;
     ArchExprNode( Arch& _arch ) : arch(_arch) {} Arch& arch;
 
     static Arch* SeekArch( unisim::util::symbolic::Expr const& expr )

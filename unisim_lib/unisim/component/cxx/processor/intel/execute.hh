@@ -482,6 +482,68 @@ namespace intel {
   template <typename T> T const& Minimum( T const& l, T const& r ) { return std::min( l, r ); }
   template <typename T> T const& Maximum( T const& l, T const& r ) { return std::max( l, r ); }
   
+  template <class ARCH>
+  typename ARCH::f64_t
+  eval_fprem1( ARCH& arch, typename ARCH::f64_t const& dividend, typename ARCH::f64_t const& modulus )
+  {
+    typedef typename ARCH::f64_t f64_t;
+    typedef typename ARCH::u64_t u64_t;
+    typedef typename ARCH::bit_t bit_t;
+    
+    f64_t res;
+    f64_t const threshold = power( f64_t( 2. ), f64_t( 64. ) ); // should be 2**64
+    if (arch.Cond( (modulus * threshold) > dividend ))
+      {
+        f64_t quotient = firound( dividend / modulus, intel::x87frnd_nearest );
+        res = fmodulo( dividend, modulus );
+        u64_t uq = (arch.Cond( quotient < f64_t( 0.0 ) )) ? u64_t( -quotient ) : u64_t( quotient );
+        arch.flagwrite( ARCH::FLAG::C2, bit_t( false ) );
+        arch.flagwrite( ARCH::FLAG::C0, bit_t( (uq >> 2) & u64_t( 1 ) ) );
+        arch.flagwrite( ARCH::FLAG::C3, bit_t( (uq >> 1) & u64_t( 1 ) ) );
+        arch.flagwrite( ARCH::FLAG::C1, bit_t( (uq >> 0) & u64_t( 1 ) ) );
+      }
+    else
+      {
+        f64_t const step = power( f64_t( 2. ), f64_t( 32. ) ); // should be 2**32
+        f64_t pmodulus = modulus;
+        while (arch.Cond( (pmodulus *step) <= dividend )) pmodulus = pmodulus * f64_t( 2. );
+        res = fmodulo( dividend, pmodulus );
+        arch.flagwrite( ARCH::FLAG::C2, bit_t( true ) );
+      }
+    return res;
+  }
+  
+  template <class ARCH>
+  typename ARCH::f64_t
+  eval_fprem( ARCH& arch, typename ARCH::f64_t const& dividend, typename ARCH::f64_t const& modulus )
+  {
+    typedef typename ARCH::f64_t f64_t;
+    typedef typename ARCH::u64_t u64_t;
+    typedef typename ARCH::bit_t bit_t;
+    
+    f64_t res;
+    f64_t const threshold = power( f64_t( 2. ), f64_t( 64. ) ); // should be 2**64
+    if (arch.Cond( (modulus * threshold) > dividend ))
+      {
+        f64_t quotient = firound( dividend / modulus, intel::x87frnd_toward0 );
+        res = fmodulo( dividend, modulus );
+        u64_t uq = (arch.Cond( quotient < f64_t( 0.0 ) )) ? u64_t( -quotient ) : u64_t( quotient );
+        arch.flagwrite( ARCH::FLAG::C2, bit_t( false ) );
+        arch.flagwrite( ARCH::FLAG::C0, bit_t( (uq >> 2) & u64_t( 1 ) ) );
+        arch.flagwrite( ARCH::FLAG::C3, bit_t( (uq >> 1) & u64_t( 1 ) ) );
+        arch.flagwrite( ARCH::FLAG::C1, bit_t( (uq >> 0) & u64_t( 1 ) ) );
+      }
+    else
+      {
+        f64_t const step = power( f64_t( 2. ), f64_t( 32. ) ); // should be 2**32
+        f64_t pmodulus = modulus;
+        while (arch.Cond( (pmodulus *step) <= dividend )) pmodulus = pmodulus * f64_t( 2. );
+        res = fmodulo( dividend, pmodulus );
+        arch.flagwrite( ARCH::FLAG::C2, bit_t( true ) );
+      }
+    return res;
+  }
+  
 } // end of namespace intel
 } // end of namespace processor
 } // end of namespace cxx

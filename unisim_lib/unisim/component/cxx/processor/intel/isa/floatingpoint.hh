@@ -834,29 +834,31 @@ struct FldConst : public Operation<ARCH>
   FldConst( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const
   {
-    switch (FLDCONST) {
-    default: throw 0;
-    case FLD1:   sink << "fld1";   break;
-    case FLDL2T: sink << "fldl2t"; break;
-    case FLDL2E: sink << "fldl2e"; break;
-    case FLDPI:  sink << "fldpi";  break;
-    case FLDLG2: sink << "fldlg2"; break;
-    case FLDLN2: sink << "fldln2"; break;
-    case FLDZ:   sink << "fldz";   break;
-    }
+    switch (FLDCONST)
+      {
+      default:     sink << "fld<bad>"; break;
+      case FLD1:   sink << "fld1";     break;
+      case FLDL2T: sink << "fldl2t";   break;
+      case FLDL2E: sink << "fldl2e";   break;
+      case FLDPI:  sink << "fldpi";    break;
+      case FLDLG2: sink << "fldlg2";   break;
+      case FLDLN2: sink << "fldln2";   break;
+      case FLDZ:   sink << "fldz";     break;
+      }
   }
   void execute( ARCH& arch ) const
   {
-    switch (FLDCONST) {
-    default: throw 0;
-    case FLD1:   arch.fpush( f64_t( 1.0 ) );                    break;
-    case FLDL2T: throw 0;                                       break;
-    case FLDL2E: arch.fpush( f64_t( 1.4426950408889634 ) );     break;
-    case FLDPI:  arch.fpush( f64_t( 3.14159265358979323846 ) ); break;
-    case FLDLG2: throw 0;                                       break;
-    case FLDLN2: arch.fpush( f64_t( 0.69314718055994530941 ) ); break;
-    case FLDZ:   arch.fpush( f64_t( 0.0 ) );                    break;
-    }
+    switch (FLDCONST)
+      {
+      default:     arch.unimplemented();                          break;
+      case FLD1:   arch.fpush( f64_t( 1.0 ) );                    break;
+      case FLDL2T: arch.unimplemented();                          break;
+      case FLDL2E: arch.fpush( f64_t( 1.4426950408889634 ) );     break;
+      case FLDPI:  arch.fpush( f64_t( 3.14159265358979323846 ) ); break;
+      case FLDLG2: arch.unimplemented();                          break;
+      case FLDLN2: arch.fpush( f64_t( 0.69314718055994530941 ) ); break;
+      case FLDZ:   arch.fpush( f64_t( 0.0 ) );                    break;
+      }
   }
 };
 
@@ -1206,31 +1208,9 @@ struct Fprem1 : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "fprem1"; }
   void execute( ARCH& arch ) const
   {
-    typedef typename ARCH::f64_t f64_t;
-    typedef typename ARCH::u64_t u64_t;
-    typedef typename ARCH::bit_t bit_t;
+    typename ARCH::f64_t res = eval_fprem1( arch, arch.fread( 0 ), arch.fread( 1 ) );
     
-    f64_t dividend = arch.fread( 0 );
-    f64_t modulus = arch.fread( 1 );
-    f64_t const threshold = power( f64_t( 2. ), f64_t( 64. ) ); // should be 2**64
-    if (arch.Cond( (modulus * threshold) > dividend ))
-      {
-        f64_t quotient = firound( dividend / modulus, intel::x87frnd_nearest );
-        arch.fwrite( 0, fmodulo( dividend, modulus ) );
-        u64_t uq = (arch.Cond( quotient < f64_t( 0.0 ) )) ? u64_t( -quotient ) : u64_t( quotient );
-        arch.flagwrite( ARCH::FLAG::C2, bit_t( false ) );
-        arch.flagwrite( ARCH::FLAG::C0, bit_t( (uq >> 2) & u64_t( 1 ) ) );
-        arch.flagwrite( ARCH::FLAG::C3, bit_t( (uq >> 1) & u64_t( 1 ) ) );
-        arch.flagwrite( ARCH::FLAG::C1, bit_t( (uq >> 0) & u64_t( 1 ) ) );
-      }
-    else
-      {
-        f64_t const step = power( f64_t( 2. ), f64_t( 32. ) ); // should be 2**32
-        f64_t pmodulus = modulus;
-        while (arch.Cond( (pmodulus *step) <= dividend )) pmodulus = pmodulus * f64_t( 2. );
-        arch.fwrite( 0, fmodulo( dividend, pmodulus ) );
-        arch.flagwrite( ARCH::FLAG::C2, bit_t( true ) );
-      }
+    arch.fwrite( 0, res );
   }
 };
 
@@ -1241,28 +1221,9 @@ struct Fprem : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "fprem"; }
   void execute( ARCH& arch ) const
   {
-    typedef typename ARCH::f64_t f64_t;
-    typedef typename ARCH::u64_t u64_t;
-    typedef typename ARCH::bit_t bit_t;
+    typename ARCH::f64_t res = eval_fprem( arch, arch.fread( 0 ), arch.fread( 1 ) );
     
-    f64_t dividend = arch.fread( 0 );
-    f64_t modulus = arch.fread( 1 );
-    f64_t const threshold = power( f64_t( 2. ), f64_t( 64. ) ); // should be 2**64
-    if (arch.Cond( (modulus * threshold) > dividend )) {
-      f64_t quotient = firound( dividend / modulus, intel::x87frnd_toward0 );
-      arch.fwrite( 0, fmodulo( dividend, modulus ) );
-      u64_t uq = (arch.Cond( quotient < f64_t( 0.0 ) )) ? u64_t( -quotient ) : u64_t( quotient );
-      arch.flagwrite( ARCH::FLAG::C2, bit_t( false ) );
-      arch.flagwrite( ARCH::FLAG::C0, bit_t( (uq >> 2) & u64_t( 1 ) ) );
-      arch.flagwrite( ARCH::FLAG::C3, bit_t( (uq >> 1) & u64_t( 1 ) ) );
-      arch.flagwrite( ARCH::FLAG::C1, bit_t( (uq >> 0) & u64_t( 1 ) ) );
-    } else {
-      f64_t const step = power( f64_t( 2. ), f64_t( 32. ) ); // should be 2**32
-      f64_t pmodulus = modulus;
-      while (arch.Cond( (pmodulus *step) <= dividend )) pmodulus = pmodulus * f64_t( 2. );
-      arch.fwrite( 0, fmodulo( dividend, pmodulus ) );
-      arch.flagwrite( ARCH::FLAG::C2, bit_t( true ) );
-    }
+    arch.fwrite( 0, res );
   }
 };
 

@@ -38,7 +38,6 @@
 #include <unisim/component/cxx/processor/intel/disasm.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
 #include <unisim/component/cxx/processor/intel/types.hh>
-#include <unisim/component/cxx/processor/intel/execute.hh>
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/debug/simple_register.hh>
@@ -91,6 +90,27 @@ struct Arch
     OpHeader( addr_t _address ) : address( _address ) {} addr_t address;
   };
 
+  struct EFlagsRegister  : public unisim::service::interfaces::Register
+  {
+    uint32_t eflagsread() const;
+    EFlagsRegister(Arch& _cpu) : cpu(_cpu) {}
+    Arch& cpu;
+    char const* GetName() const override { return "%eflags"; }
+    void GetValue(void* buffer) const override { *((uint32_t*)buffer) = eflagsread(); }
+    void SetValue(void const* buffer) override
+    {
+      uint32_t bits = *((uint32_t*)buffer);
+      struct { unsigned bit; FLAG::Code flag; }
+      ffs[] = {{0, FLAG::CF}, {2, FLAG::PF}, {4, FLAG::AF}, {6, FLAG::ZF}, {7, FLAG::SF}, {10, FLAG::DF}, {11, FLAG::OF}};
+      for (unsigned idx = 0, end = sizeof(ffs)/sizeof(ffs[0]); idx < end; ++idx)
+        cpu.flagwrite( ffs[idx].flag, bit_t((bits >> ffs[idx].bit) & 1u) );
+      uint32_t chk = eflagsread();
+      if (bits != chk)
+        std::cerr << "Warning: imported eflags " << std::hex << bits << " ended with " << chk << std::endl;
+    }
+    int GetSize() const override { return 32; }
+  };
+  
   Arch()
     : unisim::service::interfaces::MemoryInjection<uint64_t>()
     , unisim::service::interfaces::Memory<uint64_t>()
@@ -109,27 +129,6 @@ struct Arch
     regmap["%fs_base"] = new unisim::util::debug::SimpleRegister<uint64_t>("%fs_base", &this->fs_base);
     regmap["%gs_base"] = new unisim::util::debug::SimpleRegister<uint64_t>("%gs_base", &this->fs_base);
     regmap["%fcw"] = new unisim::util::debug::SimpleRegister<uint16_t>("%fcw", &this->m_fcw);
-
-    struct EFlagsRegister  : public unisim::service::interfaces::Register
-    {
-      uint32_t eflagsread() const { return unisim::component::cxx::processor::intel::eflagsread( cpu ); }
-      EFlagsRegister(Arch& _cpu) : cpu(_cpu) {}
-      Arch& cpu;
-      char const* GetName() const override { return "%eflags"; }
-      void GetValue(void* buffer) const override { *((uint32_t*)buffer) = eflagsread(); }
-      void SetValue(void const* buffer) override
-      {
-        uint32_t bits = *((uint32_t*)buffer);
-        struct { unsigned bit; FLAG::Code flag; }
-        ffs[] = {{0, FLAG::CF}, {2, FLAG::PF}, {4, FLAG::AF}, {6, FLAG::ZF}, {7, FLAG::SF}, {10, FLAG::DF}, {11, FLAG::OF}};
-        for (unsigned idx = 0, end = sizeof(ffs)/sizeof(ffs[0]); idx < end; ++idx)
-          cpu.flagwrite( ffs[idx].flag, bit_t((bits >> ffs[idx].bit) & 1u) );
-        uint32_t chk = eflagsread();
-        if (bits != chk)
-          std::cerr << "Warning: imported eflags " << std::hex << bits << " ended with " << chk << std::endl;
-      }
-      int GetSize() const override { return 32; }
-    };
 
     {
       EFlagsRegister* reg = new EFlagsRegister(*this);
@@ -874,6 +873,7 @@ public:
   void xgetbv();
   void cpuid();
   void _DE() { std::cerr << "#DE: Division Error.\n"; throw std::runtime_error("diverr"); }
+  void unimplemented() { std::cerr << "Unimplemented.\n"; throw 0; }
   
   typedef unisim::component::cxx::processor::intel::Operation<Arch> Operation;
   Operation* latest_instruction;
@@ -1107,6 +1107,7 @@ using unisim::util::endian::ByteSwap;
 }}}}}
 
 #include <unisim/component/cxx/processor/intel/isa/intel.tcc>
+#include <unisim/component/cxx/processor/intel/execute.hh>
 #include <unisim/component/cxx/processor/intel/math.hh>
 
 template <typename DECODER>
@@ -1534,3 +1535,5 @@ main( int argc, char *argv[] )
   return 0;
 }
 
+
+Arch::u32_t Arch::EFlagsRegister::eflagsread() const { return unisim::component::cxx::processor::intel::eflagsread( cpu ); }

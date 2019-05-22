@@ -51,7 +51,7 @@ namespace symbolic {
         if (strcmp(self.c_str(), src) == 0)
           return;
     }
-    intptr_t cmp( T rhs ) const { return int(static_cast<T const*>(this)->code) - int(rhs.code); }
+    int cmp( T rhs ) const { return int(static_cast<T const*>(this)->code) - int(rhs.code); }
     T operator + ( int offset ) const { return T( typename T::Code(int(static_cast<T const*>(this)->code) + offset) ); }
     bool next()
     {

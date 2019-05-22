@@ -41,6 +41,7 @@
 #include <unisim/component/cxx/processor/intel/types.hh>
 #include <unisim/util/symbolic/symbolic.hh>
 #include <vector>
+#include <bitset>
 #include <set>
 #include <memory>
 #include <inttypes.h>
@@ -50,6 +51,122 @@ namespace ut
   struct Arch;
   
   typedef unisim::component::cxx::processor::intel::Operation<ut::Arch> Operation;
+
+  struct AMD64
+  {
+    typedef ut::Operation Operation;
+    struct MemCode
+    {
+      uint8_t     bytes[15];
+      unsigned    length;
+
+      MemCode() : bytes(), length() {}
+      MemCode( uint8_t fill ) : length(sizeof (bytes)) { std::fill( &bytes[0], &bytes[length], fill ); }
+      MemCode( MemCode const& ) = default;
+      MemCode( uint8_t const* _bytes, unsigned _length ) : length(_length) { std::copy( &_bytes[0], &_bytes[_length], &bytes[0] ); }
+      MemCode( char const* _bytes, unsigned _length ) : length(_length) { std::copy( &_bytes[0], &_bytes[_length], &bytes[0] ); }
+    
+      bool get( std::istream& source )
+      {
+        unsigned bytecount = 0; bool nibble = false;
+        for (;;)
+          {
+            char ch;
+            if (not source.get( ch ).good()) return false;
+            if (ch == ' ')     { if (nibble) return false; continue; }
+            if (ch == '\t')    { if (nibble) return false; break; }
+            if (bytecount >= sizeof(bytes)) throw 0;
+          
+            uint8_t nval;
+            if      ('0' <= ch and ch <= '9') nval = ch - '0';
+            else if ('a' <= ch and ch <= 'f') nval = ch - 'a' + 10;
+            else return false;
+        
+            if (nibble) { bytes[bytecount] = nval | bytes[bytecount] << 4; nibble = false; }
+            else        { bytes[bytecount] = nval;        bytecount  += 1; nibble =  true; }
+          }
+      
+        length = bytecount;
+        return true;
+      }
+
+      uint8_t getbyte( unsigned idx, uint8_t _default ) const { return idx < length ? bytes[idx] : _default; }
+
+      bool maximize( MemCode const& lo, MemCode const& hi )
+      {
+        MemCode delta(0);
+
+        int carry = 0, dcarry = 0;
+        for (unsigned idx = sizeof (bytes); idx-- > 0;)
+          {
+            carry = carry + int(hi.getbyte(idx, 0x00)) - int(lo.getbyte(idx,0xff));
+            uint8_t byte = carry;
+            delta.bytes[idx] = byte;
+            carry >>= 8;
+            dcarry  = dcarry + int(bytes[idx]) - int(byte);
+            dcarry >>= 8;
+          }
+        if (dcarry == 0)
+          return false;
+      
+        *this = delta;
+        return true;
+      }
+
+      int compare( MemCode const& rhs ) const
+      {
+        for (unsigned idx = 0, end = std::min(length,rhs.length); idx < end; ++idx)
+          if (int delta = int(bytes[idx]) - int(rhs.bytes[idx]))
+            return delta;
+        if (length != rhs.length) throw 0;
+        return 0;
+      }
+
+      bool operator < ( MemCode const& rhs ) const { return compare( rhs ) < 0; }
+    
+      friend std::ostream& operator << ( std::ostream& sink, MemCode const& mc )
+      {
+        for (unsigned idx = 0; idx < mc.length; ++idx)
+          {
+            uint8_t byte = mc.bytes[idx];
+            for (unsigned nibble = 2; nibble-- > 0;)
+              sink << ("0123456789abcdef"[(byte >> nibble*4)&0xf]);
+            sink << ' ';
+          }
+        return sink;
+      }
+    };
+  
+    Operation* decode( uint64_t addr, MemCode& ct, std::string& disasm );
+  
+    static char const* Name() { return "amd64"; }
+  
+    // void
+    // write_test( Sink& sink, TestConfig const& cfg, CodeType code )
+    // {
+    //   std::string hexcode;
+    //   {
+    //     uint32_t codebits = code >> (cfg.wide() ? 0 : 16);
+    //     std::ostringstream oss;
+    //     oss << std::hex << codebits;
+    //     hexcode = oss.str();
+    //   }
+    //   std::string opfunc_name = sink.test_prefix() + cfg.ident + '_' + hexcode;
+    
+    //   sink.macros << "ENTRY(" << opfunc_name << ",0x" << hexcode << ")\n";
+    
+    //   sink.sources << "\t.text\n\t.align\t2\n\t.global\t" << opfunc_name
+    //                << "\n\t.type\t" << opfunc_name
+    //                << ", @function\n" << opfunc_name
+    //                << ":\n"
+    //                << cfg.prologue()
+    //                << "\t." << (cfg.wide() ? "long" : "short") << "\t0x" << hexcode << '\t' << "/* " << cfg.disasm << " */\n"
+    //                << cfg.epilogue()
+    //                << "\tse_blr\n"
+    //                << "\t.size\t" << opfunc_name
+    //                << ", .-" << opfunc_name << "\n\n";
+    // }
+  };
 
   using unisim::util::symbolic::SmartValue;
 
@@ -67,34 +184,6 @@ namespace ut
     typedef unisim::util::symbolic::Expr Expr;
 
     ActionNode() : Choice<ActionNode>(), updates() {}
-
-    intptr_t cmp( ActionNode const& rhs ) const
-    {
-      if (intptr_t delta = updates.size() - rhs.updates.size()) return delta;
-      auto rci = rhs.updates.begin();
-      for (auto && update : updates)
-        {
-          if (intptr_t delta = update.cmp( *rci )) return delta;
-          ++rci;
-        }
-      if (cond.node)
-        {
-          if (intptr_t delta = cond.cmp( rhs.cond )) return delta;
-          for (int idx = 0; idx < 2; ++idx)
-            {
-              if     (not nexts[idx])
-                {
-                  if (rhs.nexts[idx]) return -1;
-                }
-              else if(rhs.nexts[idx])
-                {
-                  if (intptr_t delta = nexts[idx]->cmp( *rhs.nexts[idx] )) return delta;
-                }
-            }
-        }
-        
-      return 0;
-    }
 
     friend std::ostream& operator << (std::ostream& sink, ActionNode const& an)
     {
@@ -117,13 +206,18 @@ namespace ut
 
   struct Interface
   {
-    Interface( Operation const& op );
+    std::shared_ptr<ActionNode> behavior;
 
-    int  cmp( Interface const& rhs ) const { return action->cmp( *rhs.action ); }
-    bool operator < ( Interface const& b ) const { return cmp( b ) < 0; }
-    std::shared_ptr<ActionNode> action;
+    Interface();
+
+    void finalize();
+
+    struct TestLess
+    {
+      bool operator () ( Interface const& a, Interface const& b ) const;
+    };
   };
-
+  
   template <typename T>
   struct SmartValueTraits
   {
@@ -145,7 +239,37 @@ namespace ut
     enum { bytecount = 32 };
     static unisim::util::symbolic::ScalarType::id_t GetType() { return unisim::util::symbolic::ScalarType::VOID; }
   };
-      
+
+  template <typename T>
+  struct Operand
+  {
+    Operand() : raw(0) {}
+
+    T raw;
+
+    struct Good { unsigned const bit = 0; static T mask() { return T(1); } }; static Good good() { return Good(); }
+    struct Src { unsigned const bit = 1; static T mask() { return T(1); } }; static Src source() { return Src(); }
+    struct Dst { unsigned const bit = 2; static T mask() { return T(1); } }; static Dst sink() { return Dst(); }
+    struct Index { unsigned const bit = 3; static T mask() { return T(-1); } }; static Index index() { return Index(); }
+
+    template <typename F> void Get( F const& ) { return (raw >> F::bit) & F::mask(); }
+    template <typename F> void Set( F const&, T const& v ) { raw &= ~(F::mask() << F::bit); raw |= (v & F::mask()) << F::bit; }
+    
+    void addaccess( bool w )
+    {
+      Set( Src(), Get( Src() ) or not w );
+      Set( Dst(), Get( Dst() ) or w );
+    }
+
+    // int  cmp( VirtualRegister const& ) const;
+  };
+
+  template <typename T, unsigned COUNT>
+  struct OperandMap
+  {
+    Operand<T> omap[COUNT];
+  };
+  
   struct Arch
   {
     typedef SmartValue<uint8_t>     u8_t;
@@ -188,8 +312,6 @@ namespace ut
       OpHeader( uint64_t _address ) : address( _address ) {} uint64_t address;
     };
 
-    static Operation* fetch( uint64_t _address, uint8_t const* bytes );
-
     void noexec( Operation const& op )
     {
       throw Untestable("Not implemented");
@@ -200,8 +322,9 @@ namespace ut
       virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
     };
 
-    Arch( ActionNode* actions );
-    
+    Arch( Interface& iif );
+
+    Interface&      interface;
     ActionNode*     path;
     
     bool close( Arch const& ref );
@@ -296,6 +419,8 @@ namespace ut
     {
       virtual char const* GetRegName() const = 0;
       virtual void Repr( std::ostream& sink ) const override { sink << "RegRead(" << GetRegName() << ")"; }
+      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegReadBase const&>( rhs ) ); };
+      int compare( RegReadBase const& rhs ) const { return 0; }
     };
 
     template <typename RID>
@@ -307,7 +432,8 @@ namespace ut
       virtual ScalarType::id_t GetType() const
       { return unisim::util::symbolic::TypeInfo<typename RID::register_type>::GetType(); }
       virtual unsigned SubCount() const override { return 0; }
-      virtual intptr_t cmp( ExprNode const& rhs ) const override { return id.cmp( dynamic_cast<RegRead const&>( rhs ).id ); }
+      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); };
+      int compare( RegRead const& rhs ) const { if (int delta = RegReadBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
 
       RID id;
     };
@@ -318,12 +444,12 @@ namespace ut
     struct RegWriteBase : public Update
     {
       RegWriteBase( Expr const& _value ) : value( _value ) {}
-      virtual unsigned SubCount() const { return 1; }
-      virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
+      virtual unsigned SubCount() const override { return 1; }
+      virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return value; }
       virtual char const* GetRegName() const = 0;
       virtual void Repr( std::ostream& sink ) const override { sink << GetRegName() << " := " << value; }
-      virtual intptr_t compare( RegWriteBase const& rhs ) const { return value.cmp( rhs.value ); }
-      virtual intptr_t cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWriteBase const&>( rhs ) ); }
+      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWriteBase const&>( rhs ) ); }
+      int compare( RegWriteBase const& rhs ) const { return 0; }
       Expr value;
     };
 
@@ -334,8 +460,8 @@ namespace ut
       RegWrite( RID _id, Expr const& _value ) : RegWriteBase( _value ), id( _id ) {}
       virtual this_type* Mutate() const override { return new this_type( *this ); }
       virtual char const* GetRegName() const override { return id.c_str(); };
-      virtual intptr_t compare( this_type const& rhs ) const { if (intptr_t delta = RegWriteBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
-      virtual intptr_t cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
+      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
+      int compare( this_type const& rhs ) const { if (int delta = RegWriteBase::compare( rhs )) return delta; return id.cmp( rhs.id ); }
       
       RID id;
     };
@@ -344,7 +470,7 @@ namespace ut
 
     int hash();
     
-    u64_t                       tscread() { throw 0; return u64_t( 0 ); }
+    u64_t                       tscread() { throw ut::Untestable("hardware"); return u64_t( 0 ); }
     
     struct FLAG : public unisim::util::symbolic::Identifier<FLAG>
     {
@@ -428,7 +554,6 @@ namespace ut
       virtual char const* GetRegName() const override { return "rip"; };
       virtual ScalarType::id_t GetType() const override { return ScalarType::U64; }
       virtual unsigned SubCount() const override { return 0; }
-      virtual intptr_t cmp( ExprNode const& brhs ) const override { return 0; }
     };
 
     struct RIPWrite : public RegWriteBase
@@ -436,8 +561,8 @@ namespace ut
       RIPWrite( Expr const& _value, ipproc_t _hint ) : RegWriteBase( _value ), hint(_hint) {}
       virtual RIPWrite* Mutate() const override { return new RIPWrite( *this ); }
       virtual char const* GetRegName() const override { return "rip"; }
-      intptr_t compare( RIPWrite const& rhs ) const { if (intptr_t delta = RegWriteBase::compare( rhs )) return delta; return int(hint) - int(rhs.hint); }
-      virtual intptr_t cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RIPWrite const&>( rhs ) ); }
+      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RIPWrite const&>( rhs ) ); }
+      int compare( RIPWrite const& rhs ) const { if (int delta = RegWriteBase::compare( rhs )) return delta; return int(hint) - int(rhs.hint); }
       ipproc_t hint;
     };
 
@@ -449,7 +574,6 @@ namespace ut
       virtual char const* GetRegName() const override { return "fcw"; };
       virtual ScalarType::id_t GetType() const override { return ScalarType::U16; }
       virtual unsigned SubCount() const override { return 0; }
-      virtual intptr_t cmp( ExprNode const& brhs ) const override { return 0; }
     };
 
     struct FCWWrite : public RegWriteBase
@@ -480,7 +604,7 @@ namespace ut
       // fpuopcode = 0
     }
 
-    void                        fxam() { throw 0; }
+    void                        fxam();
 
     struct LoadBase : public ExprNode
     {
@@ -488,11 +612,10 @@ namespace ut
       virtual void Repr( std::ostream& sink ) const override { sink << "Load" << (8*bytes) << "(" << (int)segment << "," << addr << ")"; }
       virtual unsigned SubCount() const override { return 1; }
       virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
-      intptr_t cmp( ExprNode const& brhs ) const override
+      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<LoadBase const&>( rhs ) ); }
+      int compare( LoadBase const& rhs ) const
       {
-        LoadBase const& rhs = dynamic_cast<LoadBase const&>( brhs );
-        if (intptr_t delta = addr.cmp( rhs.addr )) return delta;
-        if (intptr_t delta = int(bytes) - int(rhs.bytes)) return delta;
+        if (int delta = int(bytes) - int(rhs.bytes)) return delta;
         return int(segment) - int(rhs.segment);
       }
       
@@ -507,7 +630,6 @@ namespace ut
       Load( unsigned bytes, unsigned segment, Expr const& addr ) : LoadBase(bytes, segment, addr) {}
       virtual this_type* Mutate() const override { return new this_type( *this ); }
       virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<dstT>::GetType(); }
-      intptr_t cmp( ExprNode const& rhs ) const override { return LoadBase::cmp( rhs ); }
     };
       
     struct FRegWrite : public Update
@@ -519,8 +641,8 @@ namespace ut
       virtual void Repr( std::ostream& sink ) const override { sink << "FRegWrite( " << freg << ", " << value << " )"; }
       virtual unsigned SubCount() const override { return 2; }
       virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return value; case 1: return freg; } return ExprNode::GetSub(idx); }
-      intptr_t compare( FRegWrite const& rhs ) const { if (intptr_t delta = value.cmp(rhs.value)) return delta; return freg.cmp(rhs.freg); }
-      intptr_t cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<FRegWrite const&>( rhs ) ); }
+      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<FRegWrite const&>( rhs ) ); }
+      int compare( FRegWrite const& rhs ) const { return 0; }
       Expr value, freg;
     };
 
@@ -533,13 +655,10 @@ namespace ut
       virtual void Repr( std::ostream& sink ) const override { sink << "Store" << (8*bytes) << "( " << (int)segment << ", " << addr << ", " << value <<  " )"; }
       virtual unsigned SubCount() const override { return 2; }
       virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
-      
-      intptr_t cmp( ExprNode const& brhs ) const override
+      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<Store const&>( rhs ) ); }
+      int compare( Store const& rhs ) const
       {
-        Store const& rhs = dynamic_cast<Store const&>( brhs );
-        if (intptr_t delta = addr.cmp( rhs.addr )) return delta;
-        if (intptr_t delta = value.cmp( rhs.value )) return delta;
-        if (intptr_t delta = int(bytes) - int(rhs.bytes)) return delta;
+        if (int delta = int(bytes) - int(rhs.bytes)) return delta;
         return int(segment) - int(rhs.segment);
       }
       
@@ -570,7 +689,7 @@ namespace ut
     {
       virtual FTop* Mutate() const { return new FTop(*this); }
       virtual unsigned SubCount() const { return 0; }
-      virtual intptr_t cmp(ExprNode const&) const { return 0; }
+      virtual int cmp(ExprNode const&) const override { return 0; }
       virtual ScalarType::id_t GetType() const { return ScalarType::U8; }
       virtual void Repr( std::ostream& sink ) const;
     };
@@ -704,7 +823,6 @@ namespace ut
       virtual char const* GetRegName() const override { return "mxcsr"; };
       virtual ScalarType::id_t GetType() const override { return ScalarType::U16; }
       virtual unsigned SubCount() const override { return 0; }
-      virtual intptr_t cmp( ExprNode const& brhs ) const override { return 0; }
     };
     
     struct MXCSRWrite : public RegWriteBase
@@ -722,47 +840,94 @@ namespace ut
       static unsigned const REGCOUNT = 16;
       struct Byte
       {
-        Byte() : src(), tp() {}
-        Byte( Expr const& _src, ScalarType::id_t _tp ) : src(src), tp(_tp) {}
-        Expr             src;
-        ScalarType::id_t tp;
+        Byte() : sexp(), span() {}
+        Byte( Expr const& _sexp, int _span ) : sexp(_sexp), span(_span) {}
+        Byte(unsigned value) : sexp(unisim::util::symbolic::make_const(uint8_t(value))), span(1) {}
+        
+        void source( Expr const& _sexp, unsigned _span ) { sexp = _sexp; span = _span; }
+        void repeat( unsigned dist ) { sexp = Expr(); span = dist; }
+
+        unsigned is_source() const { return sexp.node ? span : 0; }
+        unsigned is_repeat() const { return sexp.node ? 0 : span; }
+        bool     is_none() const   { return not sexp.node and not span; }
+        ExprNode const* get_node() const { return sexp.node; }
+        
+      protected:
+        Expr     sexp;
+        unsigned span;
       };
 
       struct VTransBase : public Byte, public ExprNode
       {
-        VTransBase( Expr const& _src, ScalarType::id_t _tp, unsigned _shift ) : Byte( _src, _tp ), shift(_shift) {}
-        VTransBase( Byte const& byte, unsigned _shift ) : Byte( byte ), shift(_shift) {}
+        VTransBase( Byte const& byte, int _rshift ) : Byte( byte ), rshift(_rshift) {}
         virtual unsigned SubCount() const override { return 0; }
-        virtual void Repr( std::ostream& sink ) const override { sink << "VTrans<"  << ScalarType(GetType()).name << ">(" << src << ", " << ScalarType(tp).name << ", " << shift << ")"; }
-        unsigned shift;        
+        virtual void Repr( std::ostream& sink ) const override { sink << "VTrans<"  << ScalarType(GetType()).name << ">({" << sexp << "," << span << "}, " << rshift << ")"; }
+        virtual int cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<VTransBase const&>(brhs) ); }
+        int compare( VTransBase const& rhs ) const
+        {
+          if (int delta = int(span) - int(rhs.span)) return delta;
+          return rshift - rhs.rshift;
+        }
+        int rshift;
       };
       
       template <typename T>
       struct VTrans : public VTransBase
       {
-        VTrans( Byte const& byte, unsigned _shift ) : VTransBase( byte, _shift ) {}
+        VTrans( Byte const& byte, int rshift ) : VTransBase( byte, rshift ) {}
         typedef VTrans<T> this_type;
         virtual this_type* Mutate() const override { return new this_type( *this ); }
         virtual ScalarType::id_t GetType() const override { return SmartValueTraits<T>::GetType(); }
-        virtual intptr_t cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<this_type const&>(brhs) ); }
-        intptr_t compare( this_type const& rhs ) const
-        {
-          if (intptr_t delta = src.cmp( rhs.src)) return delta;
-          if (intptr_t delta = int(tp) - int(rhs.tp)) return delta;
-          return int(shift) - int(rhs.shift);
-        }
       };
 
       template <typename T>
       struct TypeInfo
       {
         enum { bytecount = SmartValueTraits<T>::bytecount };
-        static void ToBytes( Byte* dst, T& src ) { dst->src = src.expr; dst->tp = SmartValueTraits<T>::GetType(); }
-        static void FromBytes( T& dst, Byte const* src )
+        static void ToBytes( Byte* dst, T& src )
         {
-          unsigned shift = 0;
-          while (not src[-shift].src.node) shift += 1;
-          dst = T(Expr(new VTrans<T>(src[-shift], shift)));
+          dst->source( src.expr, SmartValueTraits<T>::bytecount );
+          for (unsigned idx = 1, end = SmartValueTraits<T>::bytecount; idx < end; ++idx)
+            dst[idx].repeat(idx);
+        }
+        static void FromBytes( T& dst, Byte const* byte )
+        {
+          if (byte->is_none())
+            {
+              /* leave uninitialized */
+              return;
+            }
+          
+          if (int pos = byte->is_repeat())
+            {
+              Byte const* base = byte - pos;
+              if (not base->is_source()) throw 0;
+              dst = T(Expr(new VTrans<T>(*base, -pos)));
+              return;
+            }
+          
+          if (unsigned src_size = byte->is_source())
+            {
+              Expr res = new VTrans<T>(*byte, 0);
+              for (unsigned next = src_size, idx = 1; next < bytecount; ++idx)
+                {
+                  // Requested read is a concatenation of multiple source values
+                  for (;idx < next; ++idx)
+                    if (byte[idx].get_node()) throw "corrupted source";
+                  if (ExprNode const* node = byte[idx].get_node())
+                    res = make_operation( "Or", new VTrans<T>(byte[idx], int(idx)), res );
+                  else
+                    throw "missing value";
+                  if (unsigned span = byte[idx].is_source())
+                    next = idx + span;
+                  else
+                    throw "corrupted source";
+                }
+              dst = T(res);
+              return;
+            }
+
+          throw "corrupted source";
         }
         static void Destroy( T& obj ) { obj.~T(); }
         static void Allocate( T& obj ) { new (&obj) T(); }
@@ -774,8 +939,8 @@ namespace ut
       VRegRead( unsigned _idx ) : idx(_idx) {} unsigned idx;
       virtual void Repr( std::ostream& sink ) const override { sink << "VRegRead(" << idx << ")"; }
       virtual unsigned SubCount() const override { return 0; }
-      virtual intptr_t cmp(ExprNode const& brhs) const override { return compare( dynamic_cast<VRegRead const&>( brhs ) ); }
-      intptr_t compare(VRegRead const& rhs) const { return int(idx) - int(rhs.idx); }
+      virtual int cmp(ExprNode const& brhs) const override { return compare( dynamic_cast<VRegRead const&>( brhs ) ); }
+      int compare(VRegRead const& rhs) const { return int(idx) - int(rhs.idx); }
       virtual ExprNode* Mutate() const override { return new VRegRead(*this); }
       ScalarType::id_t GetType() const { return ScalarType::VOID; }
     };
@@ -787,17 +952,14 @@ namespace ut
       virtual void Repr( std::ostream& sink ) const override { sink << "VRegWrite(" << idx << ") := " << value; }
       virtual unsigned SubCount() const { return 1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
-      virtual intptr_t cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<VRegWrite const&>( rhs ) ); }
-      intptr_t compare( VRegWrite const& rhs ) const
-      {
-        if (intptr_t delta = value.cmp( rhs.value )) return delta;
-        return int(idx) - int(rhs.idx);
-      }
+      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<VRegWrite const&>( rhs ) ); }
+      int compare( VRegWrite const& rhs ) const { return int(idx) - int(rhs.idx); }
       Expr value;
       unsigned idx;
     };
     
     RegMap vregmap;
+    std::bitset<VUConfig::REGCOUNT> vwriteset;
     struct VmmBrick { char _[sizeof(u8_t)]; };
     unisim::component::cxx::processor::intel::VUnion<VUConfig> umms[VUConfig::REGCOUNT];
     VmmBrick vmm_storage[VUConfig::REGCOUNT][VUConfig::BYTECOUNT];
@@ -823,24 +985,19 @@ namespace ut
       virtual unsigned SubCount() const { return elemcount+1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx < elemcount) return sources[idx]; if (idx == elemcount) return sub; return ExprNode::GetSub(idx); }
       virtual ScalarType::id_t GetType() const override { return traits::GetType(); }
-      virtual intptr_t cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<this_type const&>(brhs) ); }
-      intptr_t compare( this_type const& rhs ) const
-      {
-        for (unsigned idx = 0, end = elemcount; idx < end; ++idx)
-          if (intptr_t delta = sources[idx].cmp(rhs.sources[idx])) return delta;
-        return sub.cmp( rhs.sub );
-      }
+      virtual int cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<this_type const&>(brhs) ); }
+      int compare( this_type const& rhs ) const { return 0; }
       Expr sources[elemcount];
       Expr sub;
     };
-      
-    void vmm_touch( unsigned reg );
+
+    void vmm_touch( unsigned reg, bool write );
     bool vmm_diff( unsigned reg );
 
     template <class VR, class ELEM>
     ELEM vmm_read( VR const& vr, unsigned reg, u8_t const& sub, ELEM const& e )
     {
-      vmm_touch( reg );
+      vmm_touch( reg, false );
       ELEM const* elems = umms[reg].GetConstStorage( &vmm_storage[reg][0], e, vr.size() / 8 );
       return ELEM(Expr(new VmmIndirectRead<VR, ELEM>( elems, sub.expr )));
     }
@@ -848,7 +1005,7 @@ namespace ut
     template <class VR, class ELEM>
     ELEM vmm_read( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
     {
-      vmm_touch( reg );
+      vmm_touch( reg, false );
       ELEM const* elems = umms[reg].GetConstStorage( &vmm_storage[reg][0], e, vr.size() / 8 );
       return elems[sub];
     }
@@ -856,7 +1013,7 @@ namespace ut
     template <class VR, class ELEM>
     void vmm_write( VR const& vr, unsigned reg, unsigned sub, ELEM const& e )
     {
-      vmm_touch( reg );
+      vmm_touch( reg, true );
       ELEM* elems = umms[reg].GetStorage( &vmm_storage[reg][0], e, vmm_wsize( vr ) );
       elems[sub] = e;
     }
@@ -959,12 +1116,13 @@ namespace ut
     //   fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + addr_t(sub*OPSIZE/8), val );
     // }
 
+    void    unimplemented()             { throw ut::Untestable("unimplemented"); }
     void    interrupt( uint8_t _exc )   { throw ut::Untestable("system"); }
     void    syscall()                   { throw ut::Untestable("system"); }
     void    cpuid()                     { throw ut::Untestable("hardware"); }
     void    xgetbv()                    { throw ut::Untestable("hardware"); }
     void    stop()                      { throw ut::Untestable("hardware"); }
-    void    _DE() { std::cerr << "Unimplemented division error trap.\n"; throw ut::Untestable("system"); }
+    void    _DE()                       { throw ut::Untestable("system"); }
     
     // bool Cond( bit_t b ) { return false; }
       
@@ -1037,85 +1195,116 @@ namespace ut
     //    void store( Expr const& addr ) { mem_addrs.insert( addr ); mem_writes = true; }
   };
 
-  struct FIRoundBase : public unisim::util::symbolic::ExprNode
+  // struct FIRoundBase : public unisim::util::symbolic::ExprNode
+  // {
+  //   typedef unisim::util::symbolic::ScalarType ScalarType;
+  //   typedef unisim::util::symbolic::Expr Expr;
+  //   FIRoundBase( Expr const& _src, int _rmode ) : src(_src), rmode(_rmode) {} Expr src; int rmode;
+  //   virtual void Repr( std::ostream& sink ) const;
+  //   virtual unsigned SubCount() const { return 1; }
+  //   virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; }
+  // };
+
+  // template <typename fpT>
+  // struct FIRound : public FIRoundBase
+  // {
+  //   typedef FIRound<fpT> this_type;
+  //   FIRound( Expr const& src, int rmode ) : FIRoundBase(src, rmode) {}
+  //   virtual this_type* Mutate() const override { return new this_type( *this ); }
+  //   virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<fpT>::GetType(); }
+  //   virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
+  //   int compare ( this_type const& rhs ) const { return rmode - rhs.rmode; }
+  // };
+
+  template <unsigned SUBCOUNT, class OP>
+  struct WeirdOpBase : public unisim::util::symbolic::ExprNode
   {
     typedef unisim::util::symbolic::ScalarType ScalarType;
     typedef unisim::util::symbolic::Expr Expr;
-    FIRoundBase( Expr const& _src, int _rmode ) : src(_src), rmode(_rmode) {} Expr src; int rmode;
-    virtual void Repr( std::ostream& sink ) const;
-    virtual unsigned SubCount() const { return 1; }
-    virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; }
-  };
-
-  template <typename fpT>
-  struct FIRound : public FIRoundBase
-  {
-    typedef FIRound<fpT> this_type;
-    FIRound( Expr const& src, int rmode ) : FIRoundBase(src, rmode) {}
-    virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<fpT>::GetType(); }
-    virtual intptr_t cmp( ExprNode const& brhs ) const
+    typedef WeirdOpBase<SUBCOUNT,OP> this_type;
+    WeirdOpBase( OP && _op ) : op(_op) {}
+    virtual void Repr(std::ostream& sink) const override
     {
-      this_type const& rhs = dynamic_cast<this_type const&>( brhs );
-      if (intptr_t delta = rmode - rhs.rmode) return delta;
-      return src.cmp( rhs.src );
+      sink << "WeirdOp<" << ScalarType(GetType()).name << "," << SUBCOUNT << "," << op << ">( ";
+      char const* sep = "";
+      for (unsigned idx = 0; idx < SUBCOUNT; sep = ", ", ++idx)
+        sink << sep << subs[idx];
+      sink << " )";
     }
+    virtual unsigned SubCount() const override { return SUBCOUNT; }
+    virtual Expr const& GetSub(unsigned idx) const override { if (idx >= SUBCOUNT) return ExprNode::GetSub(idx); return subs[idx]; }
+    virtual int cmp( ExprNode const& brhs ) const override { return compare( dynamic_cast<WeirdOpBase const&>( brhs )); }
+    int compare( this_type const& rhs ) const { return strcmp( op, rhs.op ); }
+    
+    OP op;
+    Expr subs[SUBCOUNT];
   };
 
-  struct DIV { static char const* name() { return "div;"; } };
-  struct MUL { static char const* name() { return "mul;"; } };
-  struct HI { static char const* name() { return "hi"; } };
-  struct LO { static char const* name() { return "lo"; } };
-  struct OF { static char const* name() { return "of"; } };
-
-  struct DMopBase : public unisim::util::symbolic::ExprNode
+  template <class T, unsigned SUBCOUNT, class OP>
+  struct WeirdOp : public WeirdOpBase<SUBCOUNT,OP>
   {
-    typedef unisim::util::symbolic::Expr Expr;
-    DMopBase( Expr const& _hi, Expr const& _lo, Expr const& _ro ) : hi(_hi), lo(_lo), ro(_ro) {} Expr hi, lo, ro;
-    virtual ~DMopBase() {}
-    virtual void Repr( std::ostream& sink ) const;
-    virtual unsigned SubCount() const { return 3; }
-    virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return hi; case 1: return lo; case 2: return ro; } return ExprNode::GetSub(idx); }
-    virtual char const* opname() const = 0;
-    virtual char const* prodname() const = 0;
+    typedef WeirdOpBase<SUBCOUNT,OP> base_type;
+    typedef WeirdOp<T,SUBCOUNT,OP>   this_type;
+    
+    WeirdOp( OP && name ) : base_type(std::move(name)) {}
+    virtual this_type* Mutate() const override { return new this_type( *this ); }
+    virtual typename base_type::ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<typename T::value_type>::GetType(); }
   };
+
+  template <class OUT, class OP, class T1>
+  unisim::util::symbolic::Expr
+  make_weirdop( OP && op, T1 const& op1 )
+  {
+    auto x = new WeirdOp<OUT,1,OP>(std::move(op));
+    x->subs[0] = op1.expr;
+    return x;
+  }
   
-  template <typename T, class OP, class PROD>
-  struct DMop : public DMopBase
+  template <class OUT, class OP, class T1, class T2>
+  unisim::util::symbolic::Expr
+  make_weirdop( OP && op, T1 const& op1, T2 const& op2 )
   {
-    typedef unisim::util::symbolic::ScalarType ScalarType;
-    typedef DMop<T,OP,PROD> this_type;
-    DMop( Expr const& hi, Expr const& lo, Expr const& ro ) : DMopBase( hi, lo, ro ) {}
-    virtual this_type* Mutate() const override { return new this_type( *this ); }
-    virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<T>::GetType(); }
-    virtual intptr_t cmp( ExprNode const& brhs ) const { return compare( dynamic_cast<this_type const&>( brhs ) ); }
-    intptr_t compare( this_type const& rhs ) const
-    {
-      if (intptr_t delta = hi.cmp( rhs.hi )) return delta;
-      if (intptr_t delta = lo.cmp( rhs.lo )) return delta;
-      return ro.cmp( ro );
-    }
-    virtual char const* opname() const { return OP::name(); };
-    virtual char const* prodname() const { return PROD::name(); };
-  };
+    auto x = new WeirdOp<OUT,2,OP>(op);
+    x->subs[0] = op1.expr;
+    x->subs[1] = op2.expr;
+    return x;
+  }
+  
+  template <class OUT, class OP, class T1, class T2, class T3>
+  unisim::util::symbolic::Expr
+  make_weirdop( OP && op, T1 const& op1, T2 const& op2, T3 const& op3 )
+  {
+    auto x = new WeirdOp<OUT,3,OP>(op);
+    x->subs[0] = op1.expr;
+    x->subs[1] = op2.expr;
+    x->subs[2] = op3.expr;
+    return x;
+  }
   
   template <class ARCH, typename INT>
   void eval_div64( ARCH& arch, INT& hi, INT& lo, INT const& divisor )
   {
     if (arch.Cond(divisor == INT(0))) arch._DE();
-    lo = INT( unisim::util::symbolic::Expr( new DMop<INT,DIV,LO>( hi.expr, lo.expr, divisor.expr ) ) );
-    hi = INT( unisim::util::symbolic::Expr( new DMop<INT,DIV,HI>( hi.expr, lo.expr, divisor.expr ) ) );
+    
+    INT nlo = make_weirdop<INT>("div.lo",hi,lo,divisor);
+    INT nhi = make_weirdop<INT>("div.hi",hi,lo,divisor);
+    lo = nlo;
+    hi = nhi;
   }
 
   template <class ARCH, typename INT>
   void eval_mul64( ARCH& arch, INT& hi, INT& lo, INT const& multiplier )
   {
     typedef typename ARCH::bit_t bit_t;
-    /*INT*/lo =   INT( unisim::util::symbolic::Expr( new DMop<INT,MUL,LO>( hi.expr, lo.expr, multiplier.expr ) ) );
-    /*INT*/hi =   INT( unisim::util::symbolic::Expr( new DMop<INT,MUL,HI>( hi.expr, lo.expr, multiplier.expr ) ) );
-    bit_t  of = bit_t( unisim::util::symbolic::Expr( new DMop<INT,MUL,OF>( hi.expr, lo.expr, multiplier.expr ) ) );
-    arch.flagwrite( ARCH::FLAG::OF, of );
-    arch.flagwrite( ARCH::FLAG::CF, of );
+    
+    INT   nlo = make_weirdop<INT>("mul.lo",lo,multiplier);
+    INT   nhi = make_weirdop<INT>("mul.hi",lo,multiplier);
+    lo = nlo;
+    hi = nhi;
+    
+    bit_t ovf = make_weirdop<bit_t>("mul.of",nlo,nhi);
+    arch.flagwrite( ARCH::FLAG::OF, ovf );
+    arch.flagwrite( ARCH::FLAG::CF, ovf );
   }
   
   inline void eval_div( Arch& arch, Arch::u64_t& hi, Arch::u64_t& lo, Arch::u64_t const& divisor )    { eval_div64( arch, hi, lo, divisor ); }
@@ -1123,6 +1312,9 @@ namespace ut
   inline void eval_mul( Arch& arch, Arch::u64_t& hi, Arch::u64_t& lo, Arch::u64_t const& multiplier ) { eval_mul64( arch, hi, lo, multiplier ); }
   inline void eval_mul( Arch& arch, Arch::s64_t& hi, Arch::s64_t& lo, Arch::s64_t const& multiplier ) { eval_mul64( arch, hi, lo, multiplier ); }
   
+  inline Arch::f64_t eval_fprem ( Arch& arch, Arch::f64_t const& dividend, Arch::f64_t const& modulus ) { return make_weirdop<Arch::f64_t>("fprem", dividend, modulus); }
+  inline Arch::f64_t eval_fprem1( Arch& arch, Arch::f64_t const& dividend, Arch::f64_t const& modulus ) { return make_weirdop<Arch::f64_t>("fprem1", dividend, modulus); }
+
 } // end of namespace ut
 
 #endif // ARCH_HH

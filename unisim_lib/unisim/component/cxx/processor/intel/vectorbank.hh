@@ -119,9 +119,11 @@ namespace intel {
       if (transfer != current)
         {
           Byte buf[CONFIG::BYTECOUNT];
-          unsigned src_size = std::min( size, final_size );
-          transfer( &buf[0], storage, src_size, true );
-          Byte const* src_end = &buf[src_size];
+          transfer( &buf[0], storage, size, true );
+          // if destination element is wider than source vector:
+          for (unsigned idx = size; idx < elem_size; ++idx)
+            buf[idx] = Byte(0u);
+          Byte const* src_end = &buf[std::min(size, final_size)];
           for (unsigned idx = 0, end = CONFIG::BYTECOUNT / elem_size; idx < end; ++idx)
             {
               Byte const* src = &buf[idx*elem_size];
