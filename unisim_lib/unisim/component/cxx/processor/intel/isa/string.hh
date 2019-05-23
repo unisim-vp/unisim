@@ -278,7 +278,10 @@ struct Scas : public Operation<ARCH>
 {
   Scas( OpBase<ARCH> const& opbase, StringEngine<ARCH>* _str ) : Operation<ARCH>( opbase ), str( _str ) {} StringEngine<ARCH>* str;
   
-  void disasm( std::ostream& _sink ) const { _sink << "scas " << str->getdst() << ',' << DisasmG( OP(), 0 ); }
+  void disasm( std::ostream& _sink ) const
+  {
+    _sink << ((REP==0) ? "" : (REP&1) ? "repz " : "repnz ") << "scas " << str->getdst() << ',' << DisasmG( OP(), 0 );
+  }
   
   void execute( ARCH& arch ) const
   {
@@ -305,9 +308,9 @@ template <class ARCH> struct DC<ARCH,SCAS> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\xae" ) ))
   
     {
-      if (ic.rep==0) return new Scas<ARCH,GOb,3>( _.opbase(), mkse( ic ) );
+      if (ic.rep==0) return new Scas<ARCH,GOb,0>( _.opbase(), mkse( ic ) );
       if (ic.rep==2) return new Scas<ARCH,GOb,2>( _.opbase(), mkse( ic ) );
-      else           return new Scas<ARCH,GOb,0>( _.opbase(), mkse( ic ) );
+      else           return new Scas<ARCH,GOb,3>( _.opbase(), mkse( ic ) );
     }
 
   

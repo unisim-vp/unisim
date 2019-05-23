@@ -2867,7 +2867,7 @@ Operation<ARCH>* newPBitManipVVW( InputCode<ARCH> const& ic, OpBase<ARCH> const&
 template <class ARCH, unsigned OPSZ>
 struct Ucomis : public Operation<ARCH>
 {
-  Ucomis( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, bool _v ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn) {} RMOp<ARCH> rm; uint8_t gn; bool v;
+  Ucomis( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, bool _v ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), v(_v) {} RMOp<ARCH> rm; uint8_t gn; bool v;
   void disasm( std::ostream& sink ) const { sink << (v?"v":"") << "ucomis" << SizeID<OPSZ>::fid() << ' ' << DisasmW( SSE(), rm ) << ',' << DisasmV( SSE(), gn ); }
   
   void execute( ARCH& arch ) const

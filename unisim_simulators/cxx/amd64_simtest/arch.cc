@@ -101,10 +101,10 @@ namespace ut
   bool
   Arch::vmm_diff( unsigned reg )
   {
-    if (not interface.vregs.modified(reg))
-      return false;
-    auto& umm = umms[reg];
+    auto const& umm = umms[reg];
     if (umm.transfer == umm.initial)
+      return false;
+    if (not interface.vregs.modified(reg))
       return false;
     if (umm.size != VUConfig::BYTECOUNT)
       return true; /* some parts have been zeroed */
@@ -173,9 +173,9 @@ namespace ut
   bool
   Arch::eregdiff( unsigned reg )
   {
-    if (not interface.gregs.modified(reg))
-      return false;
     if (not regvalues[reg][0].node)
+      return false;
+    if (not interface.gregs.modified(reg))
       return false;
     
     for (unsigned ipos = 1; ipos < REGSIZE; ++ipos)
@@ -289,7 +289,8 @@ namespace ut
 
   Arch::Arch( Interface& iif )
     : interface(iif), path(iif.behavior.get())
-    , next_insn_addr(new RIPRead), fcw(new FCWRead), ftop_source(new FTop), ftop(0), mxcsr(new MXCSRRead)
+    , next_insn_addr(new RIPRead), next_insn_mode(ipnone)
+    , fcw(new FCWRead), ftop_source(new FTop), ftop(0), mxcsr(new MXCSRRead)
   {
     for (SRegID reg; reg.next();)
       segment_registers[reg.idx()] = newRegRead( reg );
@@ -355,9 +356,12 @@ namespace ut
   Arch::close( Arch const& ref )
   {
     bool complete = path->close();
-    
+
+    // Instruction Pointer
     if (next_insn_addr != ref.next_insn_addr)
       path->updates.insert( Expr( new RIPWrite( next_insn_addr, next_insn_mode ) ) );
+    if (next_insn_mode != ipnone)
+      interface.has_jump = true;
     
     // Scalar integer registers
     for (unsigned reg = 0; reg < REGCOUNT; ++reg)
@@ -421,6 +425,11 @@ namespace ut
   void
   Interface::finalize()
   {
+    if (gregs.accessed(4))
+      throw ut::Untestable("SP access");
+    if (has_jump)
+      throw ut::Untestable("has jump");
+    
     behavior->simplify();
   }
 
@@ -512,7 +521,11 @@ namespace ut
   }
 
   Interface::Interface()
-    : behavior(std::make_shared<ActionNode>())
+    : gregs()
+    , fregs()
+    , vregs()
+    , has_jump(false)
+    , behavior(std::make_shared<ActionNode>())
   {}
 
 }

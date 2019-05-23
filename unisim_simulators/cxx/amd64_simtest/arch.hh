@@ -223,7 +223,7 @@ namespace ut
       return src or dst;
     }
 
-    //    bool is_accessed() const { return Get( Dst() ) | Get( Src() ); }
+    bool is_accessed() const { return Get( Dst() ) | Get( Src() ); }
     bool is_modified() const { return Get( Dst() ); }
 
     T get_index() const { return Get( Idx() ); }
@@ -259,6 +259,12 @@ namespace ut
       return omap[idx].is_modified();
     }
 
+    bool accessed(unsigned idx) const
+    {
+      if (idx >= COUNT) throw "ouch";
+      return omap[idx].is_accessed();
+    }
+
     T index(unsigned idx) const
     {
       if (idx >= COUNT) throw "ouch";
@@ -284,7 +290,7 @@ namespace ut
     OperandMap<uint8_t,AMD64::GREGCOUNT> gregs; /* integer (x86) registers */
     OperandMap<uint8_t,AMD64::FREGCOUNT> fregs; /* floating (x87) registers */
     OperandMap<uint8_t,AMD64::VREGCOUNT> vregs; /* vector (sse/avx) registers */
-    
+    bool has_jump;
     std::shared_ptr<ActionNode> behavior;
   };
   
@@ -550,8 +556,16 @@ namespace ut
 
     Expr                        segment_registers[6];
     
-    u16_t                       segregread( unsigned idx ) { return u16_t(segment_registers[idx]); }
-    void                        segregwrite( unsigned idx, u16_t value ) { segment_registers[idx] = value.expr; }
+    u16_t                       segregread( unsigned idx )
+    {
+      throw ut::Untestable("segment register");
+      return u16_t(segment_registers[idx]);
+    }
+    void                        segregwrite( unsigned idx, u16_t value )
+    {
+      throw ut::Untestable("segment register");
+      segment_registers[idx] = value.expr;
+    }
 
     typedef std::map<unsigned,unsigned> RegMap;
 
@@ -580,7 +594,7 @@ namespace ut
     void regwrite( GOb const&, unsigned idx, u8_t val )   { eregwrite( idx, 1, 0, val.expr ); }
     void regwrite( GOw const&, unsigned idx, u16_t val )  { eregwrite( idx, 2, 0, val.expr ); }
 
-    enum ipproc_t { ipjmp = 0, ipcall, ipret };
+    enum ipproc_t { ipnone = 0, ipjmp, ipcall, ipret };
     Expr                        next_insn_addr;
     ipproc_t                    next_insn_mode;
 
@@ -647,7 +661,11 @@ namespace ut
 
     struct LoadBase : public ExprNode
     {
-      LoadBase( unsigned _bytes, unsigned _segment, Expr const& _addr ) : addr(_addr), bytes(_bytes), segment(_segment) {}
+      LoadBase( unsigned _bytes, unsigned _segment, Expr const& _addr )
+        : addr(_addr), bytes(_bytes), segment(_segment)
+      {
+        if (segment >= 4) throw ut::Untestable("FS|GS relative addressing");
+      }
       virtual void Repr( std::ostream& sink ) const override { sink << "Load" << (8*bytes) << "(" << (int)segment << "," << addr << ")"; }
       virtual unsigned SubCount() const override { return 1; }
       virtual Expr const& GetSub(unsigned idx) const override { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
@@ -689,7 +707,9 @@ namespace ut
     {
       Store( unsigned _bytes, unsigned _segment, Expr const& _addr, Expr const& _value )
         : addr( _addr ), value( _value ), bytes(_bytes), segment(_segment)
-      {}
+      {
+        if (segment >= 4) throw ut::Untestable("FS|GS relative addressing");
+      }
       virtual Store* Mutate() const override { return new Store( *this ); }
       virtual void Repr( std::ostream& sink ) const override { sink << "Store" << (8*bytes) << "( " << (int)segment << ", " << addr << ", " << value <<  " )"; }
       virtual unsigned SubCount() const override { return 2; }
@@ -1189,7 +1209,7 @@ namespace ut
     void
     step( Operation const& op )
     {
-      setnip( getnip() + addr_t(op.length) );
+      setnip( getnip() + addr_t(op.length), ipnone );
       op.execute( *this );
     }
     // std::set<Expr>                     mem_addrs;

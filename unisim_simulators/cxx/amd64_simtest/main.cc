@@ -250,10 +250,15 @@ struct Checker
         bytes[1] = carry; carry >>= 8;
         bytes[0] = carry; carry >>= 8;
         if (carry) throw 0;
-        if (test( MemCode( &bytes[0], sizeof (MemCode::bytes) ) ))
+        MemCode mc( &bytes[0], sizeof (MemCode::bytes) );
+        if (not (a < mc and mc < b))
+          continue;
+        if (test( std::move(mc) ))
           ttl = maxttl;
       }
 
+    std::cerr << '\n';
+    
     {
       std::ofstream dbg("dbg.txt");
       std::map<MemCode,char const*> rtdb;
@@ -265,7 +270,6 @@ struct Checker
           if (not ac) ac = "";
           dbg << mc << '\t' << ac << '\n';
         }
-      std::cerr << "Wrote debug file.\n";
     }
   }
   
@@ -311,7 +315,7 @@ struct Checker
             std::string updated_disasm;
             std::unique_ptr<Operation> codeop = std::unique_ptr<Operation>( isa.decode( 0x4000, code, updated_disasm ) );
             if (disasm != updated_disasm)
-              std::cerr << "Warning: assembly code divergence.\n   new: " << updated_disasm << "\n   old: " << disasm << "\n";
+              std::cerr << fl << ": warning, assembly code divergence (" << code << ").\n   new: " << updated_disasm << "\n   old: " << disasm << "\n";
             insert( *codeop, code, updated_disasm );
           }
         catch (ut::Untestable const& denial)
@@ -319,6 +323,7 @@ struct Checker
             std::cerr << fl << ": behavioral rejection for " << disasm << " <" << denial.reason << ">\n";
             continue;
           }
+        done.insert( code );
       }
   }
   
@@ -369,7 +374,6 @@ main( int argc, char** argv )
   }
 
   Update<ut::AMD64>( argv[1] );
-  std::cout << "nothing.\n";
   
   return 0;
 }
