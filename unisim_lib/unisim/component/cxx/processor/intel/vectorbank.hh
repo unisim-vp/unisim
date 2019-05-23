@@ -126,10 +126,13 @@ namespace intel {
           Byte const* src_end = &buf[std::min(size, final_size)];
           for (unsigned idx = 0, end = CONFIG::BYTECOUNT / elem_size; idx < end; ++idx)
             {
-              Byte const* src = &buf[idx*elem_size];
+              unsigned pos = idx*elem_size;
+              Byte const* src = &buf[pos];
               TypeInfo<ELEM>::Allocate( res[idx] );
               if (src < src_end)
                 TypeInfo<ELEM>::FromBytes( res[idx], src );
+              else if (pos < final_size)
+                res[idx] = ELEM(0);
             }
           transfer = current;
         }

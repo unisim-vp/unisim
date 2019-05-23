@@ -199,7 +199,7 @@ struct Checker
     test( 0 );
     test( -1 );
 
-    // a posteriori intel knowledge
+    // a priori intel knowledge
     done.emplace("\x06",1);
     done.emplace("\x07",1);
     done.emplace("\x0e",1);
@@ -366,7 +366,7 @@ main( int argc, char** argv )
     std::cerr << "Wrong number of argument.\n";
     std::cerr << argv[0] << " <path_to_test_file>\n";
     return 1;
-  }      
+  }
 
   Update<ut::AMD64>( argv[1] );
   std::cout << "nothing.\n";

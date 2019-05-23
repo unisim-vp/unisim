@@ -91,12 +91,9 @@ namespace ut
   void
   Arch::vmm_touch( unsigned reg, bool write )
   {
-    
-    if (write) vwriteset[reg] = true;
-    auto itr = vregmap.lower_bound( reg );
-    if (itr == vregmap.end() or reg < itr->first)
+    if (umms[reg].transfer == umms[reg].initial)
       {
-        VmmRegister v( new VRegRead( vregmap.insert( itr, std::make_pair( reg, vregmap.size() ) )->second ) );
+        VmmRegister v( new VRegRead( interface.vregs.open(reg,write) ) );
         *(umms[reg].GetStorage( &vmm_storage[reg][0], v, VUConfig::BYTECOUNT )) = v;
       }
   }
@@ -104,41 +101,95 @@ namespace ut
   bool
   Arch::vmm_diff( unsigned reg )
   {
-    return vwriteset[reg];
-    // auto itr = vregmap.lower_bound( reg );
-    // if (itr == vregmap.end() or reg < itr->first)
-    //   return false;
-    // VmmRegister const* vi = umms[reg].GetConstStorage( &vmm_storage[reg][0], VmmRegister(), VUConfig::BYTECOUNT );
-    // if (VRegRead const* rr = dynamic_cast<VRegRead const*>( vi->expr.node ))
-    //   return rr->idx != vregmap.at(reg);
-    // return true;
+    if (not interface.vregs.modified(reg))
+      return false;
+    auto& umm = umms[reg];
+    if (umm.transfer == umm.initial)
+      return false;
+    if (umm.size != VUConfig::BYTECOUNT)
+      return true; /* some parts have been zeroed */
+
+    struct
+    {
+      bool seek( Expr const& from, int at )
+      {
+        if (auto vt = dynamic_cast<VUConfig::VTransBase const*>( from.node ))
+          {
+            at -= vt->rshift;
+            if (at < 0 or at >= int(vt->size()))
+              return false;
+            return seek( vt->expr(), at );
+          }
+        if (auto vm = dynamic_cast<VUConfig::VMix const*>( from.node ))
+          {
+            return (seek( vm->l, at ) or seek( vm->r, at ));
+          }
+        if (auto vr = dynamic_cast<VRegRead const*>( from.node ))
+          {
+            rpos = at;
+            ridx = vr->idx;
+            return true;
+          }
+        return false;
+      }
+      bool check( Expr const& from, unsigned idx, unsigned pos )
+      {
+        return seek( from, 0 ) and ridx == idx and rpos == pos;
+      }
+      unsigned ridx, rpos;
+    } source;
+
+    unsigned vidx = interface.vregs.index(reg);
+    if (umm.transfer != &VUnion::Transfer<u8_t>)
+      {
+        VUConfig::Byte buf[VUConfig::BYTECOUNT];
+        umm.transfer( &buf[0], &vmm_storage[reg][0], VUConfig::BYTECOUNT, false );
+        for (unsigned idx = 0; idx < VUConfig::BYTECOUNT; ++idx)
+          {
+            u8_t regbyte;
+            VUConfig::TypeInfo<u8_t>::FromBytes( regbyte, &buf[idx] );
+            if (not source.check(regbyte.expr, vidx, idx ))
+              return true;
+          }
+      }
+    else
+      {
+        u8_t const* regbytes = reinterpret_cast<u8_t const*>( &vmm_storage[reg][0] );
+        for (unsigned idx = 0; idx < VUConfig::BYTECOUNT; ++idx)
+          if (not source.check(regbytes[idx].expr, vidx, idx ))
+            return true;
+      }
+    
+    return false;
   }
 
   void
-  Arch::eregtouch( unsigned reg )
+  Arch::eregtouch( unsigned reg, bool write )
   {
-    auto itr = eregmap.lower_bound( reg );
-    if (itr == eregmap.end() or reg < itr->first)
-      regvalues[reg][0] = new GRegRead( eregmap.insert( itr, std::make_pair( reg, eregmap.size() ) )->second );
+    if (not regvalues[reg][0].node)
+      regvalues[reg][0] = new GRegRead( interface.gregs.open(reg,write) );
   }
 
   bool
   Arch::eregdiff( unsigned reg )
   {
+    if (not interface.gregs.modified(reg))
+      return false;
     if (not regvalues[reg][0].node)
       return false;
+    
     for (unsigned ipos = 1; ipos < REGSIZE; ++ipos)
       if (regvalues[reg][ipos].node)
         return true;
     if (auto rr = dynamic_cast<GRegRead const*>( regvalues[reg][0].node ))
-      return rr->idx != eregmap.at(reg);
+      return rr->idx != interface.gregs.index(reg);
     return true;
   }
   
   Arch::Expr
   Arch::eregread( unsigned reg, unsigned size, unsigned pos )
   {
-    eregtouch( reg );
+    eregtouch( reg, false );
 
     using unisim::util::symbolic::ExprNode;
     using unisim::util::symbolic::make_const;
@@ -191,7 +242,7 @@ namespace ut
   void
   Arch::eregwrite( unsigned reg, unsigned size, unsigned pos, Expr const& xpr )
   {
-    eregtouch( reg );
+    eregtouch( reg, true );
     Expr nxt[REGSIZE];
     
     for (unsigned ipos = pos, isize = size, cpos;
@@ -311,12 +362,12 @@ namespace ut
     // Scalar integer registers
     for (unsigned reg = 0; reg < REGCOUNT; ++reg)
       if (eregdiff(reg))
-        path->updates.insert( new GRegWrite( eregmap[reg], eregread( reg, REGSIZE, 0 ) ) );
+        path->updates.insert( new GRegWrite( interface.gregs.index(reg), eregread( reg, REGSIZE, 0 ) ) );
 
     // Vector Registers
     for (unsigned reg = 0; reg < VUConfig::REGCOUNT; ++reg)
       if (vmm_diff(reg))
-        path->updates.insert( new VRegWrite( vregmap[reg], umms[reg].GetConstStorage( &vmm_storage[reg][0], VmmRegister(), VUConfig::BYTECOUNT )->expr ) );
+        path->updates.insert( new VRegWrite( interface.vregs.index(reg), umms[reg].GetConstStorage( &vmm_storage[reg][0], VmmRegister(), VUConfig::BYTECOUNT )->expr ) );
     
     // Flags
     for (FLAG reg; reg.next();)

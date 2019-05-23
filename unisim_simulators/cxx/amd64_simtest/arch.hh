@@ -68,25 +68,26 @@ namespace ut
     
       bool get( std::istream& source )
       {
-        unsigned bytecount = 0; bool nibble = false;
-        for (;;)
+        unsigned idx = 0;
+        
+        for (bool nibble = false;;)
           {
             char ch;
             if (not source.get( ch ).good()) return false;
             if (ch == ' ')     { if (nibble) return false; continue; }
             if (ch == '\t')    { if (nibble) return false; break; }
-            if (bytecount >= sizeof(bytes)) throw 0;
-          
-            uint8_t nval;
-            if      ('0' <= ch and ch <= '9') nval = ch - '0';
-            else if ('a' <= ch and ch <= 'f') nval = ch - 'a' + 10;
+            if (idx >= sizeof(bytes)) throw 0;
+
+            bytes[idx] <<= 4;
+            if      ('0' <= ch and ch <= '9') bytes[idx] |= ch - '0';
+            else if ('a' <= ch and ch <= 'f') bytes[idx] |= ch - 'a' + 10;
             else return false;
-        
-            if (nibble) { bytes[bytecount] = nval | bytes[bytecount] << 4; nibble = false; }
-            else        { bytes[bytecount] = nval;        bytecount  += 1; nibble =  true; }
+
+            idx += nibble;
+            nibble = not nibble;
           }
       
-        length = bytecount;
+        length = idx;
         return true;
       }
 
@@ -166,6 +167,8 @@ namespace ut
     //                << "\t.size\t" << opfunc_name
     //                << ", .-" << opfunc_name << "\n\n";
     // }
+
+    enum {VREGCOUNT = 16, GREGCOUNT = 16, FREGCOUNT=8};
   };
 
   using unisim::util::symbolic::SmartValue;
@@ -204,10 +207,71 @@ namespace ut
     std::set<Expr>           updates;
   };
 
+  template <typename T>
+  struct Operand
+  {
+    Operand() : raw(0) {}
+
+    template <typename F> T Get( F const& f ) const { return (raw >> f.bit) & f.mask(); }
+    template <typename F> void Set( F const& f, T v ) { raw &= ~(f.mask() << f.bit); raw |= (v & f.mask()) << f.bit; }
+    
+    bool access( bool w )
+    {
+      bool src = Get( Src() ), dst = Get( Dst() );
+      Set( Src(), src or not w );
+      Set( Dst(), dst or w );
+      return src or dst;
+    }
+
+    //    bool is_accessed() const { return Get( Dst() ) | Get( Src() ); }
+    bool is_modified() const { return Get( Dst() ); }
+
+    T get_index() const { return Get( Idx() ); }
+    T set_index( T idx ) { Set( Idx(), idx ); return idx; }
+
+  private:
+    struct Src { unsigned const bit = 0; static T mask() { return T( 1); } };
+    struct Dst { unsigned const bit = 1; static T mask() { return T( 1); } };
+    struct Idx { unsigned const bit = 2; static T mask() { return T(-1); } };
+
+    T raw;
+  };
+
+  template <typename T, unsigned COUNT>
+  struct OperandMap
+  {
+    typedef Operand<T> Op;
+
+    OperandMap() : omap(), count() {}
+
+    T open(unsigned idx, bool w)
+    {
+      if (idx >= COUNT) throw "ouch";
+      Operand<T>& op = omap[idx];
+      if (op.access(w))
+        return op.get_index();
+      return op.set_index( count++ );
+    }
+
+    bool modified(unsigned idx) const
+    {
+      if (idx >= COUNT) throw "ouch";
+      return omap[idx].is_modified();
+    }
+
+    T index(unsigned idx) const
+    {
+      if (idx >= COUNT) throw "ouch";
+      return omap[idx].get_index();
+    }
+
+  private:
+    Op omap[COUNT];
+    T count;
+  };
+  
   struct Interface
   {
-    std::shared_ptr<ActionNode> behavior;
-
     Interface();
 
     void finalize();
@@ -216,6 +280,12 @@ namespace ut
     {
       bool operator () ( Interface const& a, Interface const& b ) const;
     };
+
+    OperandMap<uint8_t,AMD64::GREGCOUNT> gregs; /* integer (x86) registers */
+    OperandMap<uint8_t,AMD64::FREGCOUNT> fregs; /* floating (x87) registers */
+    OperandMap<uint8_t,AMD64::VREGCOUNT> vregs; /* vector (sse/avx) registers */
+    
+    std::shared_ptr<ActionNode> behavior;
   };
   
   template <typename T>
@@ -240,36 +310,6 @@ namespace ut
     static unisim::util::symbolic::ScalarType::id_t GetType() { return unisim::util::symbolic::ScalarType::VOID; }
   };
 
-  template <typename T>
-  struct Operand
-  {
-    Operand() : raw(0) {}
-
-    T raw;
-
-    struct Good { unsigned const bit = 0; static T mask() { return T(1); } }; static Good good() { return Good(); }
-    struct Src { unsigned const bit = 1; static T mask() { return T(1); } }; static Src source() { return Src(); }
-    struct Dst { unsigned const bit = 2; static T mask() { return T(1); } }; static Dst sink() { return Dst(); }
-    struct Index { unsigned const bit = 3; static T mask() { return T(-1); } }; static Index index() { return Index(); }
-
-    template <typename F> void Get( F const& ) { return (raw >> F::bit) & F::mask(); }
-    template <typename F> void Set( F const&, T const& v ) { raw &= ~(F::mask() << F::bit); raw |= (v & F::mask()) << F::bit; }
-    
-    void addaccess( bool w )
-    {
-      Set( Src(), Get( Src() ) or not w );
-      Set( Dst(), Get( Dst() ) or w );
-    }
-
-    // int  cmp( VirtualRegister const& ) const;
-  };
-
-  template <typename T, unsigned COUNT>
-  struct OperandMap
-  {
-    Operand<T> omap[COUNT];
-  };
-  
   struct Arch
   {
     typedef SmartValue<uint8_t>     u8_t;
@@ -515,16 +555,15 @@ namespace ut
 
     typedef std::map<unsigned,unsigned> RegMap;
 
-    static unsigned const REGCOUNT = 16;
+    static unsigned const REGCOUNT = AMD64::GREGCOUNT;
     static unsigned const REGSIZE = 8;
 
-    void                        eregtouch( unsigned reg );
+    void                        eregtouch( unsigned reg, bool w );
     bool                        eregdiff( unsigned reg );
     Expr                        eregread( unsigned reg, unsigned size, unsigned pos );
     void                        eregwrite( unsigned reg, unsigned size, unsigned pos, Expr const& xpr );
 
     Expr                        regvalues[REGCOUNT][REGSIZE];
-    RegMap                      eregmap;
 
     template <class GOP>
     typename TypeFor<Arch,GOP::SIZE>::u regread( GOP const&, unsigned idx )
@@ -837,7 +876,7 @@ namespace ut
     struct VUConfig
     {
       static unsigned const BYTECOUNT = SmartValueTraits<VmmRegister>::bytecount;
-      static unsigned const REGCOUNT = 16;
+      static unsigned const REGCOUNT = AMD64::VREGCOUNT;
       struct Byte
       {
         Byte() : sexp(), span() {}
@@ -851,10 +890,23 @@ namespace ut
         unsigned is_repeat() const { return sexp.node ? 0 : span; }
         bool     is_none() const   { return not sexp.node and not span; }
         ExprNode const* get_node() const { return sexp.node; }
+        unsigned size() const { if (not sexp.good()) throw 0; return span; }
+        Expr const& expr() const { return sexp; }
         
       protected:
         Expr     sexp;
         unsigned span;
+      };
+
+      struct VMix : public ExprNode
+      {
+        VMix( Expr const& _l, Expr const& _r ) : l(_l), r(_r) {}
+        virtual unsigned SubCount() const override { return 0; }
+        virtual void Repr( std::ostream& sink ) const override { sink << "VMix( " << l << ", " << r << " )"; }
+        virtual int cmp( ExprNode const& brhs ) const override { return 0; }
+        virtual VMix* Mutate() const override { return new VMix( *this ); }
+        virtual ScalarType::id_t GetType() const override { return l->GetType(); }
+        Expr l, r;
       };
 
       struct VTransBase : public Byte, public ExprNode
@@ -915,7 +967,7 @@ namespace ut
                   for (;idx < next; ++idx)
                     if (byte[idx].get_node()) throw "corrupted source";
                   if (ExprNode const* node = byte[idx].get_node())
-                    res = make_operation( "Or", new VTrans<T>(byte[idx], int(idx)), res );
+                    res = new VMix( new VTrans<T>(byte[idx], int(idx)), res );
                   else
                     throw "missing value";
                   if (unsigned span = byte[idx].is_source())
@@ -958,10 +1010,9 @@ namespace ut
       unsigned idx;
     };
     
-    RegMap vregmap;
-    std::bitset<VUConfig::REGCOUNT> vwriteset;
     struct VmmBrick { char _[sizeof(u8_t)]; };
-    unisim::component::cxx::processor::intel::VUnion<VUConfig> umms[VUConfig::REGCOUNT];
+    typedef unisim::component::cxx::processor::intel::VUnion<VUConfig> VUnion;
+    VUnion umms[VUConfig::REGCOUNT];
     VmmBrick vmm_storage[VUConfig::REGCOUNT][VUConfig::BYTECOUNT];
     
     template <class VR> static unsigned vmm_wsize( VR const& vr ) { return VR::size() / 8; }
@@ -993,6 +1044,7 @@ namespace ut
 
     void vmm_touch( unsigned reg, bool write );
     bool vmm_diff( unsigned reg );
+    bool _vmm_diff( unsigned reg );
 
     template <class VR, class ELEM>
     ELEM vmm_read( VR const& vr, unsigned reg, u8_t const& sub, ELEM const& e )
@@ -1140,10 +1192,6 @@ namespace ut
       setnip( getnip() + addr_t(op.length) );
       op.execute( *this );
     }
-    // typedef unisim::util::symbolic::Expr       Expr;
-    // std::map<unsigned,VirtualRegister> irmap;
-    // std::vector<unsigned>              iruse;
-    // VirtualRegister                    xer, cr, spefscr;
     // std::set<Expr>                     mem_addrs;
     // uint8_t                            base_register;
     // bool                               aligned;
@@ -1152,30 +1200,6 @@ namespace ut
     // bool                               retfalse;
 
   
-    // typedef unisim::util::symbolic::ExprNode   ExprNode;
-    
-    // struct VirtualRegister
-    // {
-    //   VirtualRegister() : vindex(0), source(false), destination(false), bad(true) { throw 0; }
-    //   VirtualRegister( unsigned _index ) : vindex(_index), source(false), destination(false), bad(false) {}
-    
-    //   uint8_t vindex      : 5;
-    //   uint8_t source      : 1;
-    //   uint8_t destination : 1;
-    //   uint8_t bad         : 1;
-    
-    //   void addaccess( bool w ) { source |= not w; destination |= w; }
-    
-    //   int  cmp( VirtualRegister const& ) const;
-    // };
-
-    
-    
-    // void irappend( uint8_t _index, bool w );
-    
-    // //    bool usemem() const { return mem_addrs.size(); }
-    
-    
     // struct Prologue
     // {
     //   struct Error {};
@@ -1194,28 +1218,7 @@ namespace ut
     //    void load( Expr const& addr ) { mem_addrs.insert( addr ); }
     //    void store( Expr const& addr ) { mem_addrs.insert( addr ); mem_writes = true; }
   };
-
-  // struct FIRoundBase : public unisim::util::symbolic::ExprNode
-  // {
-  //   typedef unisim::util::symbolic::ScalarType ScalarType;
-  //   typedef unisim::util::symbolic::Expr Expr;
-  //   FIRoundBase( Expr const& _src, int _rmode ) : src(_src), rmode(_rmode) {} Expr src; int rmode;
-  //   virtual void Repr( std::ostream& sink ) const;
-  //   virtual unsigned SubCount() const { return 1; }
-  //   virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; }
-  // };
-
-  // template <typename fpT>
-  // struct FIRound : public FIRoundBase
-  // {
-  //   typedef FIRound<fpT> this_type;
-  //   FIRound( Expr const& src, int rmode ) : FIRoundBase(src, rmode) {}
-  //   virtual this_type* Mutate() const override { return new this_type( *this ); }
-  //   virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<fpT>::GetType(); }
-  //   virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
-  //   int compare ( this_type const& rhs ) const { return rmode - rhs.rmode; }
-  // };
-
+  
   template <unsigned SUBCOUNT, class OP>
   struct WeirdOpBase : public unisim::util::symbolic::ExprNode
   {
