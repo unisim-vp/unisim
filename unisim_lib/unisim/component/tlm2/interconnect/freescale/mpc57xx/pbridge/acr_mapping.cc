@@ -106,6 +106,11 @@ template <> const char *Variable<unisim::component::tlm2::interconnect::freescal
 	return "unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping";
 }
 
+template <> VariableBase::DataType Variable<unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping>::GetDataType() const
+{
+	return DT_USER;
+}
+
 template class Variable<unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping>;
 
 

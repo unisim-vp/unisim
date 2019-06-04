@@ -172,10 +172,13 @@ function crawl_directory
 		for FILENAME in *; do
 			FILEPATH="${DIRPATH}/${FILENAME}"
 			if [ -d "${FILEPATH}" ]; then
-				if [ -z "${BASE}" ]; then
-					crawl_directory "${FILENAME}"
-				else
-					crawl_directory "${BASE}/${FILENAME}"
+				TRACKED_FILES_COUNT=$(git ls-files "${FILENAME}" | wc -l)
+				if [ "${INCLUDE_UNTRACKED_FILES}" = "yes" ] || git ls-files --error-unmatch "${FILENAME}" &> /dev/null; then
+					if [ -z "${BASE}" ]; then
+						crawl_directory "${FILENAME}"
+					else
+						crawl_directory "${BASE}/${FILENAME}"
+					fi
 				fi
 			elif [ -f "${FILEPATH}" ]; then
 				discover_file_deps "${BASE}" "${FILENAME}"

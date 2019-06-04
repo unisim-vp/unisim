@@ -529,6 +529,12 @@ const char *Variable<ParityType>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Variable<ParityType>::GetDataType() const
+{
+	return DT_USER;
+}
+
+template <>
 unsigned int Variable<ParityType>::GetBitSize() const
 {
 	return 2;
@@ -657,6 +663,12 @@ template <>
 const char *Variable<BitOrder>::GetDataTypeName() const
 {
 	return "bit-order";
+}
+
+template <>
+VariableBase::DataType Variable<BitOrder>::GetDataType() const
+{
+	return DT_USER;
 }
 
 template <>

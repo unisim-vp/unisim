@@ -1197,6 +1197,12 @@ const char *Variable<NetStreamerProtocol>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Variable<NetStreamerProtocol>::GetDataType() const
+{
+	return DT_USER;
+}
+
+template <>
 unsigned int Variable<NetStreamerProtocol>::GetBitSize() const
 {
 	return 1;

@@ -168,6 +168,11 @@ template <> const char *Variable<unisim::component::tlm2::interconnect::generic_
 	return "unisim::component::tlm2::interconnect::generic_router::Mapping";
 }
 
+template <> VariableBase::DataType Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::GetDataType() const
+{
+	return DT_USER;
+}
+
 template class Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>;
 
 } // end of namespace unisim

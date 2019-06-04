@@ -8234,7 +8234,7 @@
 					<type>parameter</type>
 					<data_type>double precision floating-point</data_type>
 					<value>1</value>
-					<description>Refresh period (host time) in seconds while continue</description>
+					<description>Maximum refresh period (host time) in seconds while continue</description>
 				</variable>
 				<variable name="enable-cache">
 					<type>parameter</type>
@@ -8257,6 +8257,12 @@
 					<data_type>sc_time</data_type>
 					<value>1 us</value>
 					<description>Polling period (target time) for user interrupt request while continue</description>
+				</variable>
+				<variable name="min-cont-refresh-period">
+					<type>parameter</type>
+					<data_type>double precision floating-point</data_type>
+					<value>0.125</value>
+					<description>Minimum refresh period (host time) in seconds while continue</description>
 				</variable>
 				<variable name="verbose">
 					<type>parameter</type>
@@ -8312,7 +8318,7 @@
 			<variable name="enable-user-interface">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
-				<value>false</value>
+				<value>true</value>
 				<description>Enable/Disable User interface over HTTP</description>
 				<enumeration>
 					<item>true</item>
@@ -14657,23 +14663,247 @@
 		</variable>
 	</object>
 	<object name="web-terminal0">
-		<variable name="buffer-height">
+		<object name="web-terminal0.alt-screen-buffer">
+			<variable name="buffer-height">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>100</value>
+				<description>Number of lines in buffer</description>
+			</variable>
+			<variable name="display-height">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>25</value>
+				<description>Number of displayed lines</description>
+			</variable>
+			<variable name="display-width">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>80</value>
+				<description>Number of displayed columns</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="web-terminal0.screen-buffer">
+			<variable name="buffer-height">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>100</value>
+				<description>Number of lines in buffer</description>
+			</variable>
+			<variable name="display-height">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>25</value>
+				<description>Number of displayed lines</description>
+			</variable>
+			<variable name="display-width">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>80</value>
+				<description>Number of displayed columns</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="web-terminal0.theme">
+			<variable name="background-color">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0</value>
+				<description>background color (0-15)</description>
+			</variable>
+			<variable name="blink">
+				<type>parameter</type>
+				<data_type>unisim::service::web_terminal::Blink</data_type>
+				<value>none</value>
+				<description>enable/disable blink</description>
+				<enumeration>
+					<item>none</item>
+					<item>slow</item>
+					<item>rapid</item>
+				</enumeration>
+			</variable>
+			<variable name="color-table[0]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(0,0,0)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[1]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(170,0,0)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[2]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(0,170,0)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[3]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(170,85,0)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[4]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(0,0,170)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[5]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(170,0,170)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[6]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(0,170,170)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[7]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(170,170,170)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[8]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(85,85,85)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[9]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(255,85,85)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[10]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(85,255,85)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[11]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(255,255,85)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[12]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(85,85,255)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[13]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(255,85,255)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[14]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(85,255,255)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[15]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(255,255,255)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="crossed-out">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable crossed-out</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="foreground-color">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>7</value>
+				<description>foreground color (0-15)</description>
+			</variable>
+			<variable name="intensity">
+				<type>parameter</type>
+				<data_type>unisim::service::web_terminal::Intensity</data_type>
+				<value>normal</value>
+				<description>intensity</description>
+				<enumeration>
+					<item>decreased</item>
+					<item>normal</item>
+					<item>increased</item>
+				</enumeration>
+			</variable>
+			<variable name="italic">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable italic</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="reverse-video">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable reverse video</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="underline">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable underline</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<variable name="implicit-cr-in-every-lf">
 			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>100</value>
-			<description>Number of lines in buffer</description>
-		</variable>
-		<variable name="display-height">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>25</value>
-			<description>Number of displayed lines</description>
-		</variable>
-		<variable name="display-width">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>80</value>
-			<description>Number of displayed columns</description>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Implicit Carriage Return (CR, '\r') in every Line Feed (LF, '\n')</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
 		</variable>
 		<variable name="input-buffer-size">
 			<type>parameter</type>
@@ -14684,13 +14914,13 @@
 		<variable name="max-display-refresh-period">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
-			<value>1</value>
+			<value>0.32</value>
 			<description>Maximum refresh period of display (in seconds)</description>
 		</variable>
 		<variable name="min-display-refresh-period">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
-			<value>0.125</value>
+			<value>0.04</value>
 			<description>Minimum refresh period of display (in seconds)</description>
 		</variable>
 		<variable name="title">
@@ -14711,23 +14941,247 @@
 		</variable>
 	</object>
 	<object name="web-terminal1">
-		<variable name="buffer-height">
+		<object name="web-terminal1.alt-screen-buffer">
+			<variable name="buffer-height">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>100</value>
+				<description>Number of lines in buffer</description>
+			</variable>
+			<variable name="display-height">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>25</value>
+				<description>Number of displayed lines</description>
+			</variable>
+			<variable name="display-width">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>80</value>
+				<description>Number of displayed columns</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="web-terminal1.screen-buffer">
+			<variable name="buffer-height">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>100</value>
+				<description>Number of lines in buffer</description>
+			</variable>
+			<variable name="display-height">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>25</value>
+				<description>Number of displayed lines</description>
+			</variable>
+			<variable name="display-width">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>80</value>
+				<description>Number of displayed columns</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="web-terminal1.theme">
+			<variable name="background-color">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0</value>
+				<description>background color (0-15)</description>
+			</variable>
+			<variable name="blink">
+				<type>parameter</type>
+				<data_type>unisim::service::web_terminal::Blink</data_type>
+				<value>none</value>
+				<description>enable/disable blink</description>
+				<enumeration>
+					<item>none</item>
+					<item>slow</item>
+					<item>rapid</item>
+				</enumeration>
+			</variable>
+			<variable name="color-table[0]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(0,0,0)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[1]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(170,0,0)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[2]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(0,170,0)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[3]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(170,85,0)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[4]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(0,0,170)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[5]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(170,0,170)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[6]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(0,170,170)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[7]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(170,170,170)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[8]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(85,85,85)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[9]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(255,85,85)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[10]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(85,255,85)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[11]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(255,255,85)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[12]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(85,85,255)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[13]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(255,85,255)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[14]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(85,255,255)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[15]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(255,255,255)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="crossed-out">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable crossed-out</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="foreground-color">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>7</value>
+				<description>foreground color (0-15)</description>
+			</variable>
+			<variable name="intensity">
+				<type>parameter</type>
+				<data_type>unisim::service::web_terminal::Intensity</data_type>
+				<value>normal</value>
+				<description>intensity</description>
+				<enumeration>
+					<item>decreased</item>
+					<item>normal</item>
+					<item>increased</item>
+				</enumeration>
+			</variable>
+			<variable name="italic">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable italic</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="reverse-video">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable reverse video</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="underline">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable underline</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<variable name="implicit-cr-in-every-lf">
 			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>100</value>
-			<description>Number of lines in buffer</description>
-		</variable>
-		<variable name="display-height">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>25</value>
-			<description>Number of displayed lines</description>
-		</variable>
-		<variable name="display-width">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>80</value>
-			<description>Number of displayed columns</description>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Implicit Carriage Return (CR, '\r') in every Line Feed (LF, '\n')</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
 		</variable>
 		<variable name="input-buffer-size">
 			<type>parameter</type>
@@ -14738,13 +15192,13 @@
 		<variable name="max-display-refresh-period">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
-			<value>1</value>
+			<value>0.32</value>
 			<description>Maximum refresh period of display (in seconds)</description>
 		</variable>
 		<variable name="min-display-refresh-period">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
-			<value>0.125</value>
+			<value>0.04</value>
 			<description>Minimum refresh period of display (in seconds)</description>
 		</variable>
 		<variable name="title">
@@ -14765,23 +15219,247 @@
 		</variable>
 	</object>
 	<object name="web-terminal2">
-		<variable name="buffer-height">
+		<object name="web-terminal2.alt-screen-buffer">
+			<variable name="buffer-height">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>100</value>
+				<description>Number of lines in buffer</description>
+			</variable>
+			<variable name="display-height">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>25</value>
+				<description>Number of displayed lines</description>
+			</variable>
+			<variable name="display-width">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>80</value>
+				<description>Number of displayed columns</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="web-terminal2.screen-buffer">
+			<variable name="buffer-height">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>100</value>
+				<description>Number of lines in buffer</description>
+			</variable>
+			<variable name="display-height">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>25</value>
+				<description>Number of displayed lines</description>
+			</variable>
+			<variable name="display-width">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>80</value>
+				<description>Number of displayed columns</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="web-terminal2.theme">
+			<variable name="background-color">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0</value>
+				<description>background color (0-15)</description>
+			</variable>
+			<variable name="blink">
+				<type>parameter</type>
+				<data_type>unisim::service::web_terminal::Blink</data_type>
+				<value>none</value>
+				<description>enable/disable blink</description>
+				<enumeration>
+					<item>none</item>
+					<item>slow</item>
+					<item>rapid</item>
+				</enumeration>
+			</variable>
+			<variable name="color-table[0]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(0,0,0)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[1]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(170,0,0)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[2]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(0,170,0)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[3]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(170,85,0)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[4]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(0,0,170)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[5]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(170,0,170)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[6]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(0,170,170)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[7]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(170,170,170)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[8]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(85,85,85)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[9]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(255,85,85)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[10]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(85,255,85)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[11]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(255,255,85)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[12]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(85,85,255)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[13]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(255,85,255)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[14]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(85,255,255)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="color-table[15]">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>rgb(255,255,255)</value>
+				<description>color table</description>
+			</variable>
+			<variable name="crossed-out">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable crossed-out</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="foreground-color">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>7</value>
+				<description>foreground color (0-15)</description>
+			</variable>
+			<variable name="intensity">
+				<type>parameter</type>
+				<data_type>unisim::service::web_terminal::Intensity</data_type>
+				<value>normal</value>
+				<description>intensity</description>
+				<enumeration>
+					<item>decreased</item>
+					<item>normal</item>
+					<item>increased</item>
+				</enumeration>
+			</variable>
+			<variable name="italic">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable italic</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="reverse-video">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable reverse video</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="underline">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable underline</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<variable name="implicit-cr-in-every-lf">
 			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>100</value>
-			<description>Number of lines in buffer</description>
-		</variable>
-		<variable name="display-height">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>25</value>
-			<description>Number of displayed lines</description>
-		</variable>
-		<variable name="display-width">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>80</value>
-			<description>Number of displayed columns</description>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Implicit Carriage Return (CR, '\r') in every Line Feed (LF, '\n')</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
 		</variable>
 		<variable name="input-buffer-size">
 			<type>parameter</type>
@@ -14792,13 +15470,13 @@
 		<variable name="max-display-refresh-period">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
-			<value>1</value>
+			<value>0.32</value>
 			<description>Maximum refresh period of display (in seconds)</description>
 		</variable>
 		<variable name="min-display-refresh-period">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
-			<value>0.125</value>
+			<value>0.04</value>
 			<description>Minimum refresh period of display (in seconds)</description>
 		</variable>
 		<variable name="title">
@@ -15024,11 +15702,31 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="enable-profiler">
+	<variable name="enable-profiler0">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
-		<description>Enable/Disable profiling</description>
+		<description>Enable/Disable profiling of Core #0</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-profiler1">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable profiling of Core #1</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-profiler2">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable profiling of Core #2</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>

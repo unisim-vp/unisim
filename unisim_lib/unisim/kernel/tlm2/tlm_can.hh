@@ -3883,6 +3883,12 @@ inline const char *Variable<tlm_can_model_accuracy>::GetDataTypeName() const
 }
 
 template <>
+inline VariableBase::DataType Variable<tlm_can_model_accuracy>::GetDataType() const
+{
+	return DT_USER;
+}
+
+template <>
 inline unsigned int Variable<tlm_can_model_accuracy>::GetBitSize() const
 {
 	return 2;

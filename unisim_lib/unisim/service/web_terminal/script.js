@@ -16,7 +16,7 @@ GUI.prototype.bound_on_contextmenu = null;
 
 GUI.prototype.on_load = function()
 {
-	console.log(window.name + ':load');
+// 	console.log(window.name + ':load');
 	
 	this.dummy_iframe = document.createElement('iframe');
 	this.dummy_iframe.setAttribute('name', 'dummy');
@@ -82,7 +82,7 @@ GUI.prototype.on_load = function()
 		var focused = !this.within_tiled_gui() || parseInt(sessionStorage.getItem(this.storage_item_prefix() + 'focused'));
 		if(focused)
 		{
-			console.log(window.name + ':focus');
+// 			console.log(window.name + ':focus');
 			this.screen_buffer.focus();
 		}
 		
@@ -117,7 +117,7 @@ GUI.prototype.on_load = function()
 
 GUI.prototype.on_unload = function()
 {
-	console.log(window.name + ':unload');
+// 	console.log(window.name + ':unload');
 	if(this.bound_on_focus_in)
 	{
 		this.screen_buffer.removeEventListener('focusin', this.bound_on_focus_in);
@@ -146,6 +146,7 @@ GUI.prototype.on_unload = function()
 
 GUI.prototype.on_keypress = function(event)
 {
+// 	console.log('keydown: key=' + event.key + ' ctrlKey=' + event.ctrlKey + ', shiftKey=' + event.shiftKey + ' altKey=' + event.altKey + ' metaKey=' + event.metaKey);
 	this.send_key(event.key, event.ctrlKey, event.shiftKey, event.altKey, event.metaKey);
 	event.preventDefault();
 }
@@ -180,13 +181,13 @@ GUI.prototype.send_text = function(text)
 
 GUI.prototype.on_focus_in = function()
 {
-	console.log(window.name + ':focus in');
+// 	console.log(window.name + ':focus in');
 	sessionStorage.setItem(this.storage_item_prefix() + 'focused', 1);
 }
 
 GUI.prototype.on_focus_out = function()
 {
-	console.log(window.name + ':focus out');
+// 	console.log(window.name + ':focus out');
 	sessionStorage.setItem(this.storage_item_prefix() + 'focused', 0);
 }
 
@@ -197,7 +198,7 @@ GUI.prototype.copy_screen_buffer_to_clipboard = function()
 		navigator.clipboard.writeText(this.screen_buffer.textContent).then(
 			function()
 			{
-				console.log('done copy screen buffer to clipboard');
+// 				console.log('done copy screen buffer to clipboard');
 			},
 			function()
 			{
@@ -219,7 +220,7 @@ GUI.prototype.copy_clipboard_to_screen_buffer = function()
 			function(text)
 			{
 				this.send_text(text);
-				console.log('done copy clipboard to screen buffer');
+// 				console.log('done copy clipboard to screen buffer');
 			},
 			function()
 			{
@@ -254,7 +255,7 @@ GUI.prototype.on_contextmenu = function(event)
 					label:'Copy screen to clipboard',
 					action:function()
 					{
-						console.log('Copy screen to clipboard');
+// 						console.log('Copy screen to clipboard');
 						if(navigator.permissions && navigator.permissions.query)
 						{
 							navigator.permissions.query({ name: 'clipboard-write', allowWithoutGesture:true }).then(

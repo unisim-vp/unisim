@@ -475,12 +475,6 @@ void Variable<TYPE>::Set( TYPE const& value )
 }
 
 template <class TYPE>
-VariableBase::DataType Variable<TYPE>::GetDataType() const
-{
-	return DT_USER;
-}
-
-template <class TYPE>
 class Parameter : public Variable<TYPE>
 {
 public:

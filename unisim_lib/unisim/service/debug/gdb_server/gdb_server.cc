@@ -367,6 +367,12 @@ const char *Variable<GDBWaitConnectionMode>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Variable<GDBWaitConnectionMode>::GetDataType() const
+{
+	return DT_USER;
+}
+
+template <>
 unsigned int Variable<GDBWaitConnectionMode>::GetBitSize() const
 {
 	return 2;
@@ -497,6 +503,12 @@ template <>
 const char *Variable<GDBMode>::GetDataTypeName() const
 {
 	return "gdb-mode";
+}
+
+template <>
+VariableBase::DataType Variable<GDBMode>::GetDataType() const
+{
+	return DT_USER;
 }
 
 template <>

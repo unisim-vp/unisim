@@ -3175,6 +3175,12 @@ inline typename Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE Register
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
+inline void Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Set(TYPE _value)
+{
+	value = (value & ~GetAssignMask()) | (_value & GetAssignMask());
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 inline bool Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::HasBit(unsigned int bit_offset) const
 {
 	return REGISTER::ALL::template GetMask<TYPE>() & (TYPE(1) << bit_offset);
@@ -3245,7 +3251,7 @@ void Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Initialize(TYPE _value)
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 inline Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>& Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::operator = (const TYPE& _value)
 {
-	value = (value & ~GetAssignMask()) | (_value & GetAssignMask());
+	Set(_value);
 	return *this;
 }
 

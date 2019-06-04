@@ -64,6 +64,12 @@ const char *Variable<endian_type>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Variable<endian_type>::GetDataType() const
+{
+	return DT_USER;
+}
+
+template <>
 unsigned int Variable<endian_type>::GetBitSize() const
 {
 	return 1;

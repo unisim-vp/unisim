@@ -947,21 +947,18 @@ protected:
 		virtual bool MoveTo(uint32_t value) { cpu->DCRWrite(n, value); return true; }
 		virtual bool MoveFrom(uint32_t& value) { cpu->DCRRead(n, value); return true; }
 	};
-
-	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM, SLR_Access_Type _SLR_ACCESS = SLR_RW, SLR_Privilege_Type _SLR_PRIVILEGE = SLR_NON_PRIVILEGED>
-	struct SLR : unisim::util::reg::core::Register<SLR_REGISTER, 32, unisim::util::reg::core::Access(_SLR_ACCESS), SLRBase>
+	
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, SLR_Access_Type _SLR_ACCESS = SLR_RW, SLR_Privilege_Type _SLR_PRIVILEGE = SLR_NON_PRIVILEGED>
+	struct UnnumberedSLR : unisim::util::reg::core::Register<SLR_REGISTER, 32, unisim::util::reg::core::Access(_SLR_ACCESS), SLRBase>
 	{
 		typedef unisim::util::reg::core::Register<SLR_REGISTER, 32, unisim::util::reg::core::Access(_SLR_ACCESS), SLRBase> Super;
 		static const SLR_Space_Type SLR_SPACE = _SLR_SPACE;
-		static const unsigned int SLR_NUM = _SLR_NUM;
-		static const unsigned int REG_NUM = _SLR_NUM;
 		static const SLR_Access_Type SLR_ACCESS = _SLR_ACCESS;
 		static const SLR_Privilege_Type SLR_PRIVILEGE = _SLR_PRIVILEGE;
 		
-		SLR(typename CONFIG::CPU *_cpu) : Super(), cpu(_cpu) { Init(); }
-		SLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_value), cpu(_cpu) { Init(); }
+		UnnumberedSLR(typename CONFIG::CPU *_cpu) : Super(), cpu(_cpu) {}
+		UnnumberedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_value), cpu(_cpu) {}
 		virtual bool IsValid() const { return true; }
-		virtual unsigned int GetRegNum() const { return _SLR_NUM; }
 		virtual SLR_Space_Type GetSpace() const { return _SLR_SPACE; }
 		virtual bool IsPrivileged() const { return SLR_PRIVILEGE == SLR_PRIVILEGED; }
 		virtual bool IsReadOnly() const { return SLR_ACCESS == SLR_RO; }
@@ -1068,11 +1065,25 @@ protected:
 		
 	protected:
 		typename CONFIG::CPU *cpu;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM, SLR_Access_Type _SLR_ACCESS = SLR_RW, SLR_Privilege_Type _SLR_PRIVILEGE = SLR_NON_PRIVILEGED>
+	struct SLR : UnnumberedSLR<SLR_REGISTER, _SLR_SPACE, _SLR_ACCESS, _SLR_PRIVILEGE>
+	{
+		typedef UnnumberedSLR<SLR_REGISTER, _SLR_SPACE, _SLR_ACCESS, _SLR_PRIVILEGE> Super;
+		static const unsigned int SLR_NUM = _SLR_NUM;
+		static const unsigned int REG_NUM = _SLR_NUM;
+		
+		SLR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		SLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		virtual unsigned int GetRegNum() const { return _SLR_NUM; }
+		
+		using Super::operator =;
 	private:
 		
 		void Init()
 		{
-			cpu->RegisterSLR(_SLR_NUM, this);
+			this->cpu->RegisterSLR(_SLR_NUM, this);
 		}
 	};
 	
@@ -1099,6 +1110,17 @@ protected:
 	};
 
 	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct WriteOnlyPrivilegedSLR : SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_PRIVILEGED>
+	{
+		typedef SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_PRIVILEGED> Super;
+
+		WriteOnlyPrivilegedSLR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		WriteOnlyPrivilegedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
 	struct NonPrivilegedSLR : SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_NON_PRIVILEGED>
 	{
 		typedef SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_NON_PRIVILEGED> Super;
@@ -1116,6 +1138,164 @@ protected:
 
 		ReadOnlyNonPrivilegedSLR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
 		ReadOnlyNonPrivilegedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct WriteOnlyNonPrivilegedSLR : SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_NON_PRIVILEGED>
+	{
+		typedef SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_NON_PRIVILEGED> Super;
+
+		WriteOnlyNonPrivilegedSLR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		WriteOnlyNonPrivilegedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM, SLR_Access_Type _SLR_ACCESS = SLR_RW, SLR_Privilege_Type _SLR_PRIVILEGE = SLR_NON_PRIVILEGED>
+	struct AltSLR : SLRBase
+	{
+		static const SLR_Space_Type SLR_SPACE = _SLR_SPACE;
+		static const unsigned int SLR_NUM = _SLR_NUM;
+		static const unsigned int REG_NUM = _SLR_NUM;
+		static const SLR_Access_Type SLR_ACCESS = _SLR_ACCESS;
+		static const SLR_Privilege_Type SLR_PRIVILEGE = _SLR_PRIVILEGE;
+
+		AltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : cpu(_cpu), slr(_slr) { Init(); }
+		virtual bool IsValid() const { return true; }
+		virtual unsigned int GetRegNum() const { return _SLR_NUM; }
+		virtual SLR_Space_Type GetSpace() const { return _SLR_SPACE; }
+		virtual bool IsPrivileged() const { return SLR_PRIVILEGE == SLR_PRIVILEGED; }
+		virtual bool IsReadOnly() const { return SLR_ACCESS == SLR_RO; }
+		virtual bool IsWriteOnly() const { return SLR_ACCESS == SLR_WO; }
+
+		virtual bool CheckMoveToLegality()
+		{
+			if(cpu->GetMSR().template Get<typename CONFIG::CPU::MSR::PR>() && (SLR_PRIVILEGE == SLR_PRIVILEGED))
+			{
+				// Privilege Violation
+				if(cpu->verbose_move_to_slr)
+				{
+					cpu->GetDebugWarningStream() << "Move to " << this->GetName() << " is a privileged operation" << std::endl;
+				}
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::PrivilegeViolation>();
+				return false;
+			}
+
+			if(SLR_ACCESS == SLR_RO)
+			{
+				// Illegal Instruction
+				if(cpu->verbose_move_to_slr)
+				{
+					cpu->GetDebugWarningStream() << "Move to " << this->GetName() << " is an illegal operation" << std::endl;
+				}
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
+				return false;
+			}
+			
+			return true;
+		}
+		
+		virtual bool CheckMoveFromLegality()
+		{
+			if(cpu->GetMSR().template Get<typename CONFIG::CPU::MSR::PR>() && (SLR_PRIVILEGE == SLR_PRIVILEGED))
+			{
+				// Privilege Violation
+				if(cpu->verbose_move_from_slr)
+				{
+					cpu->GetDebugWarningStream() << "Move from " << this->GetName() << " is a privileged operation" << std::endl;
+				}
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::PrivilegeViolation>();
+				return false;
+			}
+			
+			if(SLR_ACCESS == SLR_WO)
+			{
+				// Illegal Instruction
+				if(cpu->verbose_move_from_slr)
+				{
+					cpu->GetDebugWarningStream() << "Move from " << this->GetName() << " is an illegal operation" << std::endl;
+				}
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
+				return false;
+			}
+
+			return true;
+		}
+		
+		virtual bool MoveTo(uint32_t value) { return slr->MoveTo(value); }
+		virtual bool MoveFrom(uint32_t& value) { return slr->MoveFrom(value); }
+		
+		typename CONFIG::CPU *GetCPU() const { return cpu; }
+		
+	protected:
+		typename CONFIG::CPU *cpu;
+	private:
+		SLR_REGISTER *slr;
+		
+		void Init()
+		{
+			cpu->RegisterSLR(_SLR_NUM, this);
+		}
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct PrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_PRIVILEGED> Super;
+		
+		PrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct ReadOnlyPrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RO, SLR_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RO, SLR_PRIVILEGED> Super;
+
+		ReadOnlyPrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct WriteOnlyPrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_PRIVILEGED> Super;
+
+		WriteOnlyPrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct NonPrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_NON_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_NON_PRIVILEGED> Super;
+
+		NonPrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
+		
+		using Super::operator =;
+	};
+	
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct ReadOnlyNonPrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RO, SLR_NON_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RO, SLR_NON_PRIVILEGED> Super;
+
+		ReadOnlyNonPrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
+		
+		using Super::operator =;
+	};
+	
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct WriteOnlyNonPrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_NON_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_NON_PRIVILEGED> Super;
+
+		WriteOnlyNonPrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
 		
 		using Super::operator =;
 	};
@@ -1192,6 +1372,17 @@ protected:
 	};
 
 	template <typename SPR_REGISTER, unsigned int _SPR_NUM>
+	struct WriteOnlyPrivilegedSPR : WriteOnlyPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM>
+	{
+		typedef WriteOnlyPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM> Super;
+
+		WriteOnlyPrivilegedSPR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		WriteOnlyPrivilegedSPR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SPR_REGISTER, unsigned int _SPR_NUM>
 	struct NonPrivilegedSPR : NonPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM>
 	{
 		typedef NonPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM> Super;
@@ -1209,6 +1400,17 @@ protected:
 
 		ReadOnlyNonPrivilegedSPR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
 		ReadOnlyNonPrivilegedSPR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SPR_REGISTER, unsigned int _SPR_NUM>
+	struct WriteOnlyNonPrivilegedSPR : WriteOnlyNonPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM>
+	{
+		typedef WriteOnlyNonPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM> Super;
+
+		WriteOnlyNonPrivilegedSPR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		WriteOnlyNonPrivilegedSPR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1847,6 +2049,106 @@ protected:
 	private:
 		void Init() { this->SetName("sprg3"); this->SetDescription("SPR General 3"); }
 	};
+	
+	// SPR General 4
+	struct SPRG4 : PrivilegedSPR<SPRG4, 276>
+	{
+		typedef PrivilegedSPR<SPRG4, 276> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR260 : AltSLR<SPRG4, SLR_SPR_SPACE, 260, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<SPRG4, SLR_SPR_SPACE, 260, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR260(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) : Super(_cpu, _sprg4) {}
+		};
+
+		SPRG4(typename CONFIG::CPU *_cpu) : Super(_cpu), spr260(_cpu, this) { Init(); }
+		SPRG4(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr260(_cpu, this) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init() { this->SetName("SPRG4"); this->SetDescription("SPR General 4"); }
+		
+		SPR260 spr260;
+	};
+
+	// SPR General 5
+	struct SPRG5 : PrivilegedSPR<SPRG5, 277>
+	{
+		typedef PrivilegedSPR<SPRG5, 277> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR261 : AltSLR<SPRG5, SLR_SPR_SPACE, 261, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<SPRG5, SLR_SPR_SPACE, 261, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR261(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) : Super(_cpu, _sprg5) {}
+		};
+
+		SPRG5(typename CONFIG::CPU *_cpu) : Super(_cpu), spr261(_cpu, this) { Init(); }
+		SPRG5(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr261(_cpu, this) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init() { this->SetName("SPRG5"); this->SetDescription("SPR General 5"); }
+		
+		SPR261 spr261;
+	};
+
+	// SPR General 6
+	struct SPRG6 : PrivilegedSPR<SPRG6, 278>
+	{
+		typedef PrivilegedSPR<SPRG6, 278> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR262 : AltSLR<SPRG6, SLR_SPR_SPACE, 262, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<SPRG6, SLR_SPR_SPACE, 262, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR262(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) : Super(_cpu, _sprg6) {}
+		};
+
+		SPRG6(typename CONFIG::CPU *_cpu) : Super(_cpu), spr262(_cpu, this) { Init(); }
+		SPRG6(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr262(_cpu, this) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init() { this->SetName("SPRG6"); this->SetDescription("SPR General 6"); }
+		
+		SPR262 spr262;
+	};
+
+	// SPR General 7
+	struct SPRG7 : PrivilegedSPR<SPRG7, 279>
+	{
+		typedef PrivilegedSPR<SPRG7, 279> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR263 : AltSLR<SPRG7, SLR_SPR_SPACE, 263, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<SPRG7, SLR_SPR_SPACE, 263, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR263(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) : Super(_cpu, _sprg7) {}
+		};
+
+		SPRG7(typename CONFIG::CPU *_cpu) : Super(_cpu), spr263(_cpu, this) { Init(); }
+		SPRG7(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr263(_cpu, this) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init() { this->SetName("SPRG7"); this->SetDescription("SPR General 7"); }
+		
+		SPR263 spr263;
+	};
 
 	// Processor ID Register
 	struct PIR : PrivilegedSPR<PIR, 286>
@@ -2387,6 +2689,23 @@ protected:
 			this->SetDescription(desc_sstr.str());
 		}
 	};
+	
+	typedef IVOR<0> IVOR0;
+	typedef IVOR<1> IVOR1;
+	typedef IVOR<2> IVOR2;
+	typedef IVOR<3> IVOR3;
+	typedef IVOR<4> IVOR4;
+	typedef IVOR<5> IVOR5;
+	typedef IVOR<6> IVOR6;
+	typedef IVOR<7> IVOR7;
+	typedef IVOR<8> IVOR8;
+	typedef IVOR<9> IVOR9;
+	typedef IVOR<10> IVOR10;
+	typedef IVOR<11> IVOR11;
+	typedef IVOR<12> IVOR12;
+	typedef IVOR<13> IVOR13;
+	typedef IVOR<14> IVOR14;
+	typedef IVOR<15> IVOR15;
 
 	// Thread ID
 	struct TIR : ReadOnlyPrivilegedSPR<TIR, 446>
@@ -3570,12 +3889,9 @@ protected:
 		}
 	};
 
-	// Instruction Cache Normal Victim Register
-	template <unsigned int INV_NUM>
-	struct INV : PrivilegedSPR<INV<INV_NUM>, 880 + INV_NUM>
+	struct CacheVictimRegister : UnnumberedSLR<CacheVictimRegister, SLR_SPR_SPACE, SLR_RW, SLR_PRIVILEGED>
 	{
-		typedef PrivilegedSPR<INV<INV_NUM>, 880 + INV_NUM> Super;
-		
+		typedef UnnumberedSLR<CacheVictimRegister, SLR_SPR_SPACE, SLR_RW, SLR_PRIVILEGED> Super;
 		struct VNDXA : Field<VNDXA, 0 , 7 > {}; // Victim Index A
 		struct VNDXB : Field<VNDXB, 8 , 15> {}; // Victim Index B
 		struct VNDXC : Field<VNDXC, 16, 23> {}; // Victim Index C
@@ -3583,14 +3899,46 @@ protected:
 		
 		typedef FieldSet<VNDXA, VNDXB, VNDXC, VNDXD> ALL;
 		
-		INV(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
-		INV(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
-		using Super::operator =;
+		CacheVictimRegister(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		CacheVictimRegister(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		
 		virtual void Reset() { /* unaffected */ }
+		
+		unsigned int GetVictimIndex(unsigned int i) const { return (this->Get() >> (8 * (3 - i))) & 0xff; }
+		void SetVictimIndex(unsigned int i, unsigned int vndx) { unsigned int bofs = 8 * (3 - i); this->Set((this->Get() & ~(0xff << bofs)) | ((vndx & 0xff) << bofs)); }
+		void ClearVictimIndex(unsigned i) { unsigned int bofs = 8 * (3 - i); this->Set(this->Get() & ~(0xff << bofs)); }
+		
+		using Super::operator =;
 	private:
 		void Init()
 		{
+			VNDXA::SetName("VNDXA"); VNDXA::SetDescription("Victim Index A");
+			VNDXB::SetName("VNDXB"); VNDXB::SetDescription("Victim Index B");
+			VNDXC::SetName("VNDXC"); VNDXC::SetDescription("Victim Index C");
+			VNDXD::SetName("VNDXD"); VNDXD::SetDescription("Victim Index D");
+		}
+	};
+
+	// Instruction Cache Normal Victim Register
+	template <unsigned int INV_NUM>
+	struct INV : CacheVictimRegister
+	{
+		typedef CacheVictimRegister Super;
+		
+		static const unsigned int SLR_NUM = 880 + INV_NUM;
+		static const unsigned int REG_NUM = SLR_NUM;
+
+		INV(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		INV(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual unsigned int GetRegNum() const { return SLR_NUM; }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->cpu->RegisterSLR(SLR_NUM, this);
+
 			std::stringstream name_sstr;
 			name_sstr << "inv" << INV_NUM;
 			
@@ -3599,32 +3947,30 @@ protected:
 			
 			this->SetName(name_sstr.str());
 			this->SetDescription(desc_sstr.str());
-			
-			VNDXA::SetName("VNDXA"); VNDXA::SetDescription("Victim Index A");
-			VNDXB::SetName("VNDXB"); VNDXB::SetDescription("Victim Index B");
-			VNDXC::SetName("VNDXC"); VNDXC::SetDescription("Victim Index C");
-			VNDXD::SetName("VNDXD"); VNDXD::SetDescription("Victim Index D");
 		}
 	};
+	
+	typedef INV<0> INV0;
+	typedef INV<1> INV1;
+	typedef INV<2> INV2;
+	typedef INV<3> INV3;
 
 	// Instruction Cache Transient Victim Register
 	template <unsigned int ITV_NUM>
-	struct ITV : PrivilegedSPR<ITV<ITV_NUM>, 884 + ITV_NUM>
+	struct ITV : CacheVictimRegister
 	{
-		typedef PrivilegedSPR<ITV<ITV_NUM>, 884 + ITV_NUM> Super;
+		typedef CacheVictimRegister Super;
 		
-		struct VNDXA : Field<VNDXA, 0 , 7 > {}; // Victim Index A
-		struct VNDXB : Field<VNDXB, 8 , 15> {}; // Victim Index B
-		struct VNDXC : Field<VNDXC, 16, 23> {}; // Victim Index C
-		struct VNDXD : Field<VNDXD, 24, 31> {}; // Victim Index D
-		
-		typedef FieldSet<VNDXA, VNDXB, VNDXC, VNDXD> ALL;
-		
+		static const unsigned int SLR_NUM = 884 + ITV_NUM;
+		static const unsigned int REG_NUM = SLR_NUM;
+
 		ITV(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
 		ITV(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
-		using Super::operator =;
 		
+		virtual unsigned int GetRegNum() const { return SLR_NUM; }
 		virtual void Reset() { /* unaffected */ }
+		
+		using Super::operator =;
 	private:
 		void Init()
 		{
@@ -3636,13 +3982,13 @@ protected:
 			
 			this->SetName(name_sstr.str());
 			this->SetDescription(desc_sstr.str());
-			
-			VNDXA::SetName("VNDXA"); VNDXA::SetDescription("Victim Index A");
-			VNDXB::SetName("VNDXB"); VNDXB::SetDescription("Victim Index B");
-			VNDXC::SetName("VNDXC"); VNDXC::SetDescription("Victim Index C");
-			VNDXD::SetName("VNDXD"); VNDXD::SetDescription("Victim Index D");
 		}
 	};
+	
+	typedef ITV<0> ITV0;
+	typedef ITV<1> ITV1;
+	typedef ITV<2> ITV2;
+	typedef ITV<3> ITV3;
 	
 	// Core Configuration Register 1
 	struct CCR1 : PrivilegedSPR<CCR1, 888>
@@ -3687,25 +4033,25 @@ protected:
 
 	// Data Cache Normal Victim Register
 	template <unsigned int DNV_NUM>
-	struct DNV : PrivilegedSPR<DNV<DNV_NUM>, 912 + DNV_NUM>
+	struct DNV : CacheVictimRegister
 	{
-		typedef PrivilegedSPR<DNV<DNV_NUM>, 912 + DNV_NUM> Super;
+		typedef CacheVictimRegister Super;
 		
-		struct VNDXA : Field<VNDXA, 0 , 7 > {}; // Victim Index A
-		struct VNDXB : Field<VNDXB, 8 , 15> {}; // Victim Index B
-		struct VNDXC : Field<VNDXC, 16, 23> {}; // Victim Index C
-		struct VNDXD : Field<VNDXD, 24, 31> {}; // Victim Index D
-		
-		typedef FieldSet<VNDXA, VNDXB, VNDXC, VNDXD> ALL;
-		
+		static const unsigned int SLR_NUM = 912 + DNV_NUM;
+		static const unsigned int REG_NUM = SLR_NUM;
+
 		DNV(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
 		DNV(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
-		using Super::operator =;
 		
+		virtual unsigned int GetRegNum() const { return SLR_NUM; }
 		virtual void Reset() { /* unaffected */ }
+		
+		using Super::operator =;
 	private:
 		void Init()
 		{
+			this->cpu->RegisterSLR(912 + DNV_NUM, this);
+			
 			std::stringstream name_sstr;
 			name_sstr << "dnv" << DNV_NUM;
 			
@@ -3714,32 +4060,30 @@ protected:
 			
 			this->SetName(name_sstr.str());
 			this->SetDescription(desc_sstr.str());
-			
-			VNDXA::SetName("VNDXA"); VNDXA::SetDescription("Victim Index A");
-			VNDXB::SetName("VNDXB"); VNDXB::SetDescription("Victim Index B");
-			VNDXC::SetName("VNDXC"); VNDXC::SetDescription("Victim Index C");
-			VNDXD::SetName("VNDXD"); VNDXD::SetDescription("Victim Index D");
 		}
 	};
+	
+	typedef DNV<0> DNV0;
+	typedef DNV<1> DNV1;
+	typedef DNV<2> DNV2;
+	typedef DNV<3> DNV3;
 
 	// Data Cache Transient Victim Register
 	template <unsigned int DTV_NUM>
-	struct DTV : PrivilegedSPR<DTV<DTV_NUM>, 916 + DTV_NUM>
+	struct DTV : CacheVictimRegister
 	{
 		typedef PrivilegedSPR<DTV<DTV_NUM>, 916 + DTV_NUM> Super;
 		
-		struct VNDXA : Field<VNDXA, 0 , 7 > {}; // Victim Index A
-		struct VNDXB : Field<VNDXB, 8 , 15> {}; // Victim Index B
-		struct VNDXC : Field<VNDXC, 16, 23> {}; // Victim Index C
-		struct VNDXD : Field<VNDXD, 24, 31> {}; // Victim Index D
-		
-		typedef FieldSet<VNDXA, VNDXB, VNDXC, VNDXD> ALL;
+		static const unsigned int SLR_NUM = 916 + DTV_NUM;
+		static const unsigned int REG_NUM = SLR_NUM;
 		
 		DTV(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
 		DTV(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
-		using Super::operator =;
 		
+		virtual unsigned int GetRegNum() const { return SLR_NUM; }
 		virtual void Reset() { /* unaffected */ }
+		
+		using Super::operator =;
 	private:
 		void Init()
 		{
@@ -3751,13 +4095,13 @@ protected:
 			
 			this->SetName(name_sstr.str());
 			this->SetDescription(desc_sstr.str());
-			
-			VNDXA::SetName("VNDXA"); VNDXA::SetDescription("Victim Index A");
-			VNDXB::SetName("VNDXB"); VNDXB::SetDescription("Victim Index B");
-			VNDXC::SetName("VNDXC"); VNDXC::SetDescription("Victim Index C");
-			VNDXD::SetName("VNDXD"); VNDXD::SetDescription("Victim Index D");
 		}
 	};
+	
+	typedef DTV<0> DTV0;
+	typedef DTV<1> DTV1;
+	typedef DTV<2> DTV2;
+	typedef DTV<3> DTV3;
 	
 	// Data Cache Victim Limit
 	struct DVLIM : PrivilegedSPR<DVLIM, 920>
@@ -4677,7 +5021,75 @@ protected:
 	};
 
 	// Nexus 3 DCRs are voluntary missing
+
+	/////////////////////////// Time Base Registers ///////////////////////////
 	
+	// Time Base Lower
+	struct TBL : ReadOnlyNonPrivilegedTBR<TBL, 268>
+	{
+		typedef ReadOnlyNonPrivilegedTBR<TBL, 268> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR268 : AltSLR<TBL, SLR_SPR_SPACE, 268, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<TBL, SLR_SPR_SPACE, 268, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR268(typename CONFIG::CPU *_cpu, TBL *_tbl) : Super(_cpu, _tbl) {}
+		};
+		
+		struct SPR284 : AltSLR<TBL, SLR_SPR_SPACE, 284, SLR_WO, SLR_PRIVILEGED>
+		{
+			typedef AltSLR<TBL, SLR_SPR_SPACE, 284, SLR_WO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR284(typename CONFIG::CPU *_cpu, TBL *_tbl) : Super(_cpu, _tbl) {}
+		};
+		
+		TBL(typename CONFIG::CPU *_cpu) : Super(_cpu), spr268(_cpu, this), spr284(_cpu, this) { Init(); }
+		TBL(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr268(_cpu, this), spr284(_cpu, this) { Init(); }
+	private:
+		void Init()
+		{
+			this->SetName("TBL"); this->SetDescription("Time Base Lower");
+		}
+		
+		SPR268 spr268;
+		SPR284 spr284;
+	};
+	
+	// Time Base Upper
+	struct TBR : ReadOnlyNonPrivilegedTBR<TBR, 269>
+	{
+		typedef ReadOnlyNonPrivilegedTBR<TBR, 269> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR269 : AltSLR<TBR, SLR_SPR_SPACE, 269, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<TBR, SLR_SPR_SPACE, 269, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR269(typename CONFIG::CPU *_cpu, TBR *_tbr) : Super(_cpu, _tbr) {}
+		};
+		
+		struct SPR285 : AltSLR<TBR, SLR_SPR_SPACE, 284, SLR_WO, SLR_PRIVILEGED>
+		{
+			typedef AltSLR<TBR, SLR_SPR_SPACE, 284, SLR_WO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR285(typename CONFIG::CPU *_cpu, TBR *_tbr) : Super(_cpu, _tbr) {}
+		};
+		
+		TBR(typename CONFIG::CPU *_cpu) : Super(_cpu), spr269(_cpu, this), spr285(_cpu, this) { Init(); }
+		TBR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr269(_cpu, this), spr285(_cpu, this) { Init(); }
+	private:
+		void Init()
+		{
+			this->SetName("TBR"); this->SetDescription("Time Base Upper");
+		}
+		
+		SPR269 spr269;
+		SPR285 spr285;
+	};
+
 	/////////////////////// Performance Monitor Registers /////////////////////
 	
 	//  Performance Monitor Counter registers 0-3

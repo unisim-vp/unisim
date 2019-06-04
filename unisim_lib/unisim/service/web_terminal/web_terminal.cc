@@ -1865,6 +1865,12 @@ const char *Variable<Intensity>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Variable<Intensity>::GetDataType() const
+{
+	return DT_USER;
+}
+
+template <>
 unsigned int Variable<Intensity>::GetBitSize() const
 {
 	return 2;
@@ -1995,6 +2001,12 @@ template <>
 const char *Variable<Blink>::GetDataTypeName() const
 {
 	return "unisim::service::web_terminal::Blink";
+}
+
+template <>
+VariableBase::DataType Variable<Blink>::GetDataType() const
+{
+	return DT_USER;
 }
 
 template <>

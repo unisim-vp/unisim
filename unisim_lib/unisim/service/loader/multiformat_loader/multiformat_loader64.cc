@@ -67,6 +67,12 @@ const char *Variable<AddressRange64 >::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Variable<AddressRange64>::GetDataType() const
+{
+	return DT_USER;
+}
+
+template <>
 unsigned int Variable<AddressRange64 >::GetBitSize() const
 {
 	return 8;

@@ -71,6 +71,11 @@ GetDataTypeName() const
 	return "generic_peripheral_byte_register";
 }
 
+template <>
+VariableBase::DataType Variable<GenericPeripheralByteRegister>::GetDataType() const
+{
+	return DT_USER;
+}
 
 template <> 
 Variable<GenericPeripheralByteRegister> ::
@@ -202,6 +207,11 @@ GetDataTypeName() const
 	return "generic_peripheral_halfword_register";
 }
 
+template <>
+VariableBase::DataType Variable<GenericPeripheralHalfWordRegister>::GetDataType() const
+{
+	return DT_USER;
+}
 
 template <> 
 Variable<GenericPeripheralHalfWordRegister> ::
@@ -333,6 +343,11 @@ GetDataTypeName() const
 	return "generic_peripheral_word_register";
 }
 
+template <>
+VariableBase::DataType Variable<GenericPeripheralWordRegister>::GetDataType() const
+{
+	return DT_USER;
+}
 
 template <> 
 Variable<GenericPeripheralWordRegister> ::
@@ -464,6 +479,11 @@ GetDataTypeName() const
 	return "generic_peripheral_doubleword_register";
 }
 
+template <>
+VariableBase::DataType Variable<GenericPeripheralDoubleWordRegister>::GetDataType() const
+{
+	return DT_USER;
+}
 
 template <> 
 Variable<GenericPeripheralDoubleWordRegister> ::
