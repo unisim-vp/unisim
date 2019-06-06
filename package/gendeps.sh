@@ -138,7 +138,7 @@ function list_interfaces_files()
 		if [ "${INCLUDE_UNTRACKED_FILES}" = "yes" ] || git ls-files --error-unmatch "${UNISIM_LIB_DIR}/unisim/service/interfaces/${HEADER_FILENAME}" &> /dev/null; then
 			local PKG_NAME=$(echo "${HEADER_FILENAME}" | sed -e 's/\.hh$//')
 			mkdir -p "${PACKAGE_DIR}/unisim/service/interfaces/${PKG_NAME}"
-			echo "unisim/service/interfaces/${HEADER_FILENAME}" >> "${PACKAGE_DIR}/unisim/service/interfaces/${PKG_NAME}/header_list.txt"
+			echo "unisim/service/interfaces/${HEADER_FILENAME}" > "${PACKAGE_DIR}/unisim/service/interfaces/${PKG_NAME}/header_list.txt"
 		fi
 	done
 }
@@ -152,6 +152,7 @@ function discover_interfaces_file_deps()
 		if [ "${INCLUDE_UNTRACKED_FILES}" = "yes" ] || git ls-files --error-unmatch "${UNISIM_LIB_DIR}/unisim/service/interfaces/${HEADER_FILENAME}" &> /dev/null; then
 			local PKG_NAME=$(echo "${HEADER_FILENAME}" | sed -e 's/\.hh$//')
 			local PKG_DEPS_TXT="${PACKAGE_DIR}/unisim/service/interfaces/${PKG_NAME}/pkg_deps.txt"
+			printf "" > "${PKG_DEPS_TXT}"
 			for INCLUDE_DEP in $(grep -e '^# *include' "${HEADER_FILENAME}" | grep "unisim/" | sed -e 's/^# *include *"//g' -e 's/^# *include *<//g' -e 's/".*$//g' -e 's/>.*$//g'); do
 				local PKG_DEP
 				if [[ "${INCLUDE_DEP}" =~ ${interfaces_regex} ]]; then
