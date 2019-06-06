@@ -1246,9 +1246,9 @@ Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable( "loader.memory-mapper.mapping", "HARDWARE.main_ram:0x00000000-0x3fffffff,HARDWARE.boot_rom:0xffff0000-0xffffffff:+0xffff0000" );
   
   
-  sim->SetVariable( "gdb-server.architecture-description-filename", "gdb_arm_with_neon.xml" );
+  sim->SetVariable( "gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_arm_with_neon.xml" );
   sim->SetVariable( "debugger.parse-dwarf", false );
-  sim->SetVariable( "debugger.dwarf-register-number-mapping-filename", "arm_eabi_dwarf_register_number_mapping.xml" );
+  sim->SetVariable( "debugger.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml" );
 
   sim->SetVariable( "inline-debugger.num-loaders", 1 );
   sim->SetVariable( "inline-debugger.search-path", "" );

@@ -1,3 +1,4 @@
+m4/systemc
 unisim/component/cxx/bridge/pci_isa
 unisim/component/tlm/message
 unisim/kernel/service

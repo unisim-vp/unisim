@@ -1648,6 +1648,10 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 					
 					return http_server.ServeRootDocument(http_request, conn);
 				}
+				else if(http_request.GetAbsolutePath() == "/favicon.ico")
+				{
+					return http_server.ServeFile(http_request, http_server.GetSimulator()->GetSharedDataDirectory() + "/unisim/service/http_server/favicon.ico", conn);
+				}
 				else if((http_request.GetAbsolutePath() == "/config") || (http_request.GetAbsolutePath() == "/config/"))
 				{
 					return http_server.ServeVariables(http_request, conn, unisim::kernel::service::VariableBase::VAR_PARAMETER);

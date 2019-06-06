@@ -1,3 +1,4 @@
+m4/systemc
 unisim/component/cxx/processor/powerpc/mpc7447a
 unisim/component/tlm2/interrupt
 unisim/kernel/logger

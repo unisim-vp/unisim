@@ -1,3 +1,5 @@
+m4/libxml2
+m4/pthread
 unisim/kernel/service
 unisim/service/interfaces/http_server
 unisim/util/hypapp

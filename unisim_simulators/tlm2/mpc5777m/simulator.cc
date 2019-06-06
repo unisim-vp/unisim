@@ -6271,15 +6271,15 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	//  - GDB Server run-time configuration
 	simulator->SetVariable("gdb-server0.tcp-port", 12345);
-	simulator->SetVariable("gdb-server0.architecture-description-filename", "gdb_powerpc_vle.xml");
+	simulator->SetVariable("gdb-server0.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_powerpc_vle.xml");
 	simulator->SetVariable("gdb-server1.tcp-port", 12346);
-	simulator->SetVariable("gdb-server1.architecture-description-filename", "gdb_powerpc_vle.xml");
+	simulator->SetVariable("gdb-server1.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_powerpc_vle.xml");
 	simulator->SetVariable("gdb-server2.tcp-port", 12347);
-	simulator->SetVariable("gdb-server2.architecture-description-filename", "gdb_powerpc_vle.xml");
+	simulator->SetVariable("gdb-server2.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_powerpc_vle.xml");
 	
 	//  - Debugger run-time configuration
 	simulator->SetVariable("debugger.parse-dwarf", false);
-	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", "powerpc_e500_gcc_dwarf_register_number_mapping.xml");
+	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/powerpc_e500_gcc_dwarf_register_number_mapping.xml");
 	simulator->SetVariable("debugger.sel-cpu[0]", 0); // gdb-server
 	simulator->SetVariable("debugger.sel-cpu[1]", 1); // gdb-server
 	simulator->SetVariable("debugger.sel-cpu[2]", 2); // gdb-server

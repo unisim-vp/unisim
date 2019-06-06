@@ -1,3 +1,4 @@
+m4/systemc
 unisim/component/tlm2/chipset/arm926ejs_pxp/sic
 unisim/component/tlm2/chipset/arm926ejs_pxp/vic
 unisim/kernel/logger

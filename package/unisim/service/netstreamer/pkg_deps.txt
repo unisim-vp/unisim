@@ -1,3 +1,5 @@
+m4/bsd_sockets
+m4/pthread
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/char_io

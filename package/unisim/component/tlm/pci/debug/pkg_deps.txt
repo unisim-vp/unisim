@@ -1,3 +1,4 @@
+m4/systemc
 unisim/component/cxx/pci/debug
 unisim/component/tlm/message
 unisim/kernel/service

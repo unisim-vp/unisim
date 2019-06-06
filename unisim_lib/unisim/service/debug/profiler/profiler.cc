@@ -48,6 +48,20 @@ namespace service {
 namespace debug {
 namespace profiler {
 
+template class Sample<signed char>;
+template class Sample<short>;
+template class Sample<int>;
+template class Sample<long>;
+template class Sample<long long>;
+template class Sample<unsigned char>;
+template class Sample<bool>;
+template class Sample<unsigned short>;
+template class Sample<unsigned int>;
+template class Sample<unsigned long>;
+template class Sample<unsigned long long>;
+template class Sample<double>;
+template class Sample<sc_core::sc_time>;
+
 ////////////////////////////// FileFormat /////////////////////////////////////
 
 std::ostream& operator << (std::ostream& os, FileFormat f_fmt)

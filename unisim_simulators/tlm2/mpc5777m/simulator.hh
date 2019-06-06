@@ -109,12 +109,6 @@ static const bool DEBUG_ENABLE = true;
 //===                        Top level class                            ===
 //=========================================================================
 
-enum SerialTerminalProtocol
-{
-	SERIAL_TERMINAL_PROTOCOL_TELNET,
-	SERIAL_TERMINAL_PROTOCOL_NETCAT
-};
-
 class Simulator : public unisim::kernel::tlm2::Simulator, Config
 {
 public:

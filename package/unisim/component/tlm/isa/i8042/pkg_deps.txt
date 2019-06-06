@@ -1,3 +1,4 @@
+m4/systemc
 unisim/component/cxx/isa/i8042
 unisim/component/tlm/message
 unisim/kernel/service

@@ -1,3 +1,4 @@
+m4/systemc
 unisim/component/cxx/timer/xilinx/xps_timer
 unisim/component/tlm2/interrupt
 unisim/kernel/tlm2

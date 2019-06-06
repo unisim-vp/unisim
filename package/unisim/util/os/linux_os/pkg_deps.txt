@@ -1,3 +1,4 @@
+m4/times
 unisim/service/interfaces/memory
 unisim/service/interfaces/memory_injection
 unisim/service/interfaces/registers

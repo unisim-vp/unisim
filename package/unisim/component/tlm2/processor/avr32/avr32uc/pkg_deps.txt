@@ -1,3 +1,4 @@
+m4/systemc
 unisim/component/cxx/processor/avr32/avr32a/avr32uc
 unisim/component/tlm2/interrupt
 unisim/kernel/logger

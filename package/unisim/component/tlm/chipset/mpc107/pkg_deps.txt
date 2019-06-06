@@ -1,3 +1,4 @@
+m4/systemc
 unisim/component/cxx/chipset/mpc107
 unisim/component/cxx/chipset/mpc107/atu
 unisim/component/cxx/chipset/mpc107/dma

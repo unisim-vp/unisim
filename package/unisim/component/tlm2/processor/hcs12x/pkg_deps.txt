@@ -1,3 +1,5 @@
+m4/libxml2
+m4/systemc
 unisim/component/cxx/processor/hcs12x
 unisim/component/tlm2/memory/ram
 unisim/kernel/logger

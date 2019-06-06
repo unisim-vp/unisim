@@ -32,30 +32,7 @@ ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES} \
 $(files header) \
 $(files template)"
 
-UNISIM_LIB_SIMULATOR_M4_FILES="\
-m4/times.m4 \
-m4/endian.m4 \
-m4/cxxabi.m4 \
-m4/libxml2.m4 \
-m4/zlib.m4 \
-m4/boost_graph.m4 \
-m4/bsd_sockets.m4 \
-m4/curses.m4 \
-m4/libedit.m4 \
-m4/systemc.m4 \
-m4/with_boost.m4 \
-m4/cacti.m4 \
-m4/check_lib.m4 \
-m4/get_exec_path.m4 \
-m4/real_path.m4 \
-m4/pthread.m4 \
-"
-
-UNISIM_LIB_SIMULATOR_TOP_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_arm_with_fpa.xml \
-unisim/service/debug/gdb_server/gdb_arm_with_neon.xml \
-unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml \
-"
+UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
@@ -143,29 +120,11 @@ UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/${SIMPKG}
 
 SIMULATOR_VERSION=$(cat ${UNISIM_SIMULATOR_DIR}/VERSION)
 
-if [ -z "${DISTCOPY}" ]; then
-	DISTCOPY=cp
-fi
-
-has_to_build() {
-	[ ! -e "$1" -o "$2" -nt "$1" ]
-}
-
-dist_copy() {
-	if has_to_build "$2" "$1"; then
-		echo "$1 ==> $2"
-		mkdir -p "$(dirname $2)"
-		${DISTCOPY} -f "$1" "$2" || exit
-		true
-	fi
-	false
-}
-
 GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib
 
 mkdir -p ${DEST_DIR}/${SIMPKG}
 
-UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_LIB_SIMULATOR_TOP_DATA_FILES}"
+UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES}"
 
 for file in ${UNISIM_LIB_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
@@ -191,6 +150,7 @@ mkdir -p ${DEST_DIR}/${SIMPKG}/m4
 
 # Some imported files (m4 macros) impact configure generation
 has_to_build_simulator_configure=no
+pkg_deps_changed "${CONFIGURE_AC}" && pkg_deps_changed "${MAKEFILE_AM}" && has_to_build_configure=yes
 
 for file in ${UNISIM_LIB_SIMULATOR_M4_FILES}; do
 	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}" && has_to_build_simulator_configure=yes
@@ -281,111 +241,7 @@ fi
 
 if has_to_build "${CONFIGURE_CROSS}" "$0"; then
 	echo "Building configure.cross"
-	cat << EOF_CONFIGURE_CROSS > "${CONFIGURE_CROSS}"
-#!/bin/bash
-HERE=\$(pwd)
-MY_DIR=\$(cd \$(dirname \$0); pwd)
-
-# remove --host from command line arguments
-host=""
-help=""
-i=0
-j=0
-for arg in "\$@"
-do
-	case "\${arg}" in
-		--host=*)
-			host=\$(printf "%s" "\${arg}" | cut -f 2- -d '=')
-			;;
-		--help=* | --help)
-			help="yes"
-			args[\${j}]=\${arg}
-			j=\$((\${j}+1))
-			;;
-		*)
-			args[\${j}]=\${arg}
-			j=\$((\${j}+1))
-			;;
-	esac
-	i=\$((\${i}+1))
-done
-
-if test "\${help}" != "yes"; then
-	if test -z "\${host}"; then
-		echo "ERROR: No canonical name for the host system type was specified. Use --host=<canonical name> to specify a host system type (e.g. --host=i586-pc-mingw32)"
-		exit -1
-	fi
-fi
-
-if test "\${help}" = "yes"; then
-	echo "=== configure help for genisslib"
-else
-	echo "=== configuring in genisslib (\${HERE}/genisslib)"
-	echo "\$(basename \$0): running \${MY_DIR}/genisslib/configure \${args[@]}"
-fi
-if test ! -d \${HERE}/genisslib; then
-	mkdir "\${HERE}/genisslib"
-fi
-cd "\${HERE}/genisslib"
-\${MY_DIR}/genisslib/configure --disable-option-checking "\${args[@]}"
-STATUS="\$?"
-cd "\${HERE}"
-if test \${STATUS} -ne 0; then
-	exit \${STATUS}
-fi
-
-if test "\${help}" = "yes"; then
-	echo "=== configure help for ${SIMPKG}"
-else
-	echo "=== configuring in ${SIMPKG} (\${HERE}/${SIMPKG}) for \${host} host system type"
-	echo "\$(basename \$0): running \${MY_DIR}/${SIMPKG}/configure \$@"
-fi
-
-if test ! -d \${HERE}/${SIMPKG}; then
-	mkdir \${HERE}/${SIMPKG}
-fi
-cd \${HERE}/${SIMPKG}
-\${MY_DIR}/${SIMPKG}/configure "\$@"
-STATUS="\$?"
-cd "\${HERE}"
-if test \${STATUS} -ne 0; then
-	exit \${STATUS}
-fi
-
-if test "\${help}" = "yes"; then
-	exit 0
-fi
-
-echo "\$(basename \$0): creating Makefile.cross"
-cat << EOF_MAKEFILE_CROSS > Makefile.cross
-#!/usr/bin/make -f
-all: ${SIMPKG}-all
-clean: genisslib-clean ${SIMPKG}-clean
-distclean: genisslib-distclean ${SIMPKG}-distclean
-	rm -f \${HERE}/Makefile.cross
-install: ${SIMPKG}-install
-
-genisslib-all:
-	@\\\$(MAKE) -C \${HERE}/genisslib all
-${SIMPKG}-all: genisslib-all
-	@\\\$(MAKE) -C \${HERE}/${SIMPKG} all
-genisslib-clean:
-	@\\\$(MAKE) -C \${HERE}/genisslib clean
-${SIMPKG}-clean:
-	@\\\$(MAKE) -C \${HERE}/${SIMPKG} clean
-genisslib-distclean:
-	@\\\$(MAKE) -C \${HERE}/genisslib distclean
-${SIMPKG}-distclean:
-	@\\\$(MAKE) -C \${HERE}/${SIMPKG} distclean
-${SIMPKG}-install:
-	@\\\$(MAKE) -C \${HERE}/${SIMPKG} install
-EOF_MAKEFILE_CROSS
-
-chmod +x Makefile.cross
-
-echo "\$(basename \$0): run 'make -f \${HERE}/Makefile.cross' or '\${HERE}/Makefile.cross' to build for \${host} host system type"
-EOF_CONFIGURE_CROSS
-	chmod +x "${CONFIGURE_CROSS}"
+	make_pkg_configure_cross "${SIMPKG}" "${CONFIGURE_CROSS}"
 fi  # has to build configure cross
 
 # Simulator
@@ -420,21 +276,7 @@ case "\${host}" in
 	*)
 		;;
 esac
-UNISIM_CHECK_PTHREAD(main)
-UNISIM_CHECK_TIMES(main)
-UNISIM_CHECK_ENDIAN(main)
-UNISIM_CHECK_CURSES(main)
-UNISIM_CHECK_LIBEDIT(main)
-UNISIM_CHECK_BSD_SOCKETS(main)
-UNISIM_CHECK_ZLIB(main)
-UNISIM_CHECK_LIBXML2(main)
-UNISIM_CHECK_CXXABI(main)
-UNISIM_WITH_BOOST(main)
-UNISIM_CHECK_BOOST_GRAPH(main)
-UNISIM_CHECK_CACTI(main)
-UNISIM_CHECK_GET_EXECUTABLE_PATH(main)
-UNISIM_CHECK_REAL_PATH(main)
-UNISIM_CHECK_SYSTEMC
+$(lines ac)
 GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
 AC_SUBST(GENISSLIB_PATH)
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
@@ -474,7 +316,7 @@ libunisim_${SIMPKG}_plugin_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -shared -no-unde
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
-dist_share_DATA = ${UNISIM_LIB_SIMULATOR_TOP_DATA_FILES} ${UNISIM_SIMULATOR_PKG_DATA_FILES}
+dist_share_DATA = ${UNISIM_SIMULATOR_PKG_DATA_FILES}
 nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
 
 BUILT_SOURCES=\

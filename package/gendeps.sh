@@ -51,6 +51,42 @@ function discover_file_deps
 					echo "${PKG_DEP}" >> "${PKG_DEPS_TXT}"
 				fi
 			done
+			if grep -e '^# *include *<systemc>' "${FILEPATH}" &> /dev/null; then
+				echo "m4/systemc" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<sys/socket\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "m4/bsd_sockets" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<sys/times\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "m4/times" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<cxxabi\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "m4/cxxabi" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<libxml/.*\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "m4/libxml2" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<dlfcn\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "m4/get_exec_path" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<tvs/.*\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "m4/tvs" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<editline/.*\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "m4/libedit" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<pthread.h>' "${FILEPATH}" &> /dev/null; then
+				echo "m4/pthread" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<boost/.*\.hpp>' "${FILEPATH}" &> /dev/null; then
+				echo "m4/boost" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<cacti.*\.hh>' "${FILEPATH}" &> /dev/null; then
+				echo "m4/cacti" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<SDL\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "m4/sdl" >> "${PKG_DEPS_TXT}"
+			fi
 		fi
 		
 		if [[ "${FILEPATH}" =~ ${isa_regex} ]]; then
@@ -188,6 +224,80 @@ function crawl_directory
 	cd "${SAVE_PWD}"
 }
 
+mkdir -p "${PACKAGE_DIR}/m4"
+
+mkdir -p "${PACKAGE_DIR}/m4/times"
+echo "m4/times.m4" > "${PACKAGE_DIR}/m4/times/m4_list.txt"
+echo "UNISIM_CHECK_TIMES" > "${PACKAGE_DIR}/m4/times/ac_list.txt"
+
+mkdir -p "${PACKAGE_DIR}/m4/endian"
+echo "m4/endian.m4" > "${PACKAGE_DIR}/m4/endian/m4_list.txt"
+echo "UNISIM_CHECK_ENDIAN" > "${PACKAGE_DIR}/m4/endian/ac_list.txt"
+
+mkdir -p "${PACKAGE_DIR}/m4/cxxabi"
+echo "m4/cxxabi.m4" > "${PACKAGE_DIR}/m4/cxxabi/m4_list.txt"
+echo "m4/check_lib" > "${PACKAGE_DIR}/m4/cxxabi/pkg_deps.txt"
+echo "UNISIM_CHECK_CXXABI" > "${PACKAGE_DIR}/m4/cxxabi/ac_list.txt"
+
+mkdir -p "${PACKAGE_DIR}/m4/libxml2"
+echo "m4/libxml2.m4" > "${PACKAGE_DIR}/m4/libxml2/m4_list.txt"
+echo "m4/check_lib" > "${PACKAGE_DIR}/m4/libxml2/pkg_deps.txt"
+echo "m4/zlib" > "${PACKAGE_DIR}/m4/libxml2/pkg_deps.txt"
+echo "UNISIM_CHECK_LIBXML2" > "${PACKAGE_DIR}/m4/libxml2/ac_list.txt"
+
+mkdir -p "${PACKAGE_DIR}/m4/zlib"
+echo "m4/zlib.m4" > "${PACKAGE_DIR}/m4/zlib/m4_list.txt"
+echo "m4/check_lib" > "${PACKAGE_DIR}/m4/zlib/pkg_deps.txt"
+echo "UNISIM_CHECK_ZLIB" > "${PACKAGE_DIR}/m4/zlib/ac_list.txt"
+
+mkdir -p "${PACKAGE_DIR}/m4/bsd_sockets"
+echo "m4/bsd_sockets.m4" > "${PACKAGE_DIR}/m4/bsd_sockets/m4_list.txt"
+echo "UNISIM_CHECK_BSD_SOCKETS" > "${PACKAGE_DIR}/m4/bsd_sockets/ac_list.txt"
+
+mkdir -p "${PACKAGE_DIR}/m4/curses"
+echo "m4/curses.m4" > "${PACKAGE_DIR}/m4/curses/m4_list.txt"
+echo "m4/check_lib" > "${PACKAGE_DIR}/m4/curses/pkg_deps.txt"
+
+mkdir -p "${PACKAGE_DIR}/m4/libedit"
+echo "m4/libedit.m4" > "${PACKAGE_DIR}/m4/libedit/m4_list.txt"
+echo "m4/check_lib" > "${PACKAGE_DIR}/m4/libedit/pkg_deps.txt"
+echo "UNISIM_CHECK_LIBEDIT" > "${PACKAGE_DIR}/m4/libedit/ac_list.txt"
+
+mkdir -p "${PACKAGE_DIR}/m4/systemc"
+echo "m4/systemc.m4" > "${PACKAGE_DIR}/m4/systemc/m4_list.txt"
+echo "UNISIM_CHECK_SYSTEMC" > "${PACKAGE_DIR}/m4/systemc/ac_list.txt"
+echo "m4/pthread" > "${PACKAGE_DIR}/m4/systemc/pkg_deps.txt"
+
+mkdir -p "${PACKAGE_DIR}/m4/check_lib"
+echo "m4/check_lib.m4" > "${PACKAGE_DIR}/m4/check_lib/m4_list.txt"
+
+mkdir -p "${PACKAGE_DIR}/m4/get_exec_path"
+echo "m4/get_exec_path.m4" > "${PACKAGE_DIR}/m4/get_exec_path/m4_list.txt"
+echo "m4/check_lib" > "${PACKAGE_DIR}/m4/get_exec_path/pkg_deps.txt"
+echo "UNISIM_CHECK_GET_EXECUTABLE_PATH" > "${PACKAGE_DIR}/m4/get_exec_path/ac_list.txt"
+
+mkdir -p "${PACKAGE_DIR}/m4/real_path"
+echo "m4/real_path.m4" > "${PACKAGE_DIR}/m4/real_path/m4_list.txt"
+echo "UNISIM_CHECK_REAL_PATH" > "${PACKAGE_DIR}/m4/real_path/ac_list.txt"
+echo "m4/check_lib" > "${PACKAGE_DIR}/m4/real_path/pkg_deps.txt"
+
+mkdir -p "${PACKAGE_DIR}/m4/pthread"
+echo "m4/pthread.m4" > "${PACKAGE_DIR}/m4/pthread/m4_list.txt"
+echo "UNISIM_CHECK_PTHREAD" > "${PACKAGE_DIR}/m4/pthread/ac_list.txt"
+echo "m4/check_lib" > "${PACKAGE_DIR}/m4/pthread/pkg_deps.txt"
+
+mkdir -p "${PACKAGE_DIR}/m4/tvs"
+echo "m4/tvs.m4" > "${PACKAGE_DIR}/m4/tvs/m4_list.txt"
+echo "UNISIM_CHECK_TVS" > "${PACKAGE_DIR}/m4/tvs/ac_list.txt"
+
+mkdir -p "${PACKAGE_DIR}/m4/boost"
+echo "m4/boost.m4" > "${PACKAGE_DIR}/m4/boost/m4_list.txt"
+echo "UNISIM_CHECK_BOOST(1.53.0)" > "${PACKAGE_DIR}/m4/boost/ac_list.txt"
+
+mkdir -p "${PACKAGE_DIR}/m4/cacti"
+echo "m4/cacti.m4" > "${PACKAGE_DIR}/m4/cacti/m4_list.txt"
+echo "UNISIM_CHECK_CACTI" > "${PACKAGE_DIR}/m4/cacti/ac_list.txt"
+
 crawl_directory "unisim"
 
 echo "unisim/component/cxx/processor/arm/isa/arm32" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/vmsav7/pkg_deps.txt"
@@ -199,6 +309,9 @@ echo "unisim/component/cxx/processor/arm/isa/thumb" >> "${PACKAGE_DIR}/unisim/co
 echo "unisim/component/cxx/processor/arm/isa/thumb2" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/pmsav7/pkg_deps.txt"
 
 echo "unisim/component/cxx/processor/arm/isa/arm64" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/vmsav8/pkg_deps.txt"
+
+echo "m4/endian" > "${PACKAGE_DIR}/unisim/util/endian/pkg_deps.txt"
+echo "m4/real_path" >> "${PACKAGE_DIR}/unisim/kernel/service/pkg_deps.txt"
 
 sed -i '/unisim\/component\/cxx\/processor\/arm\/cache/d' "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/pkg_deps.txt"
 

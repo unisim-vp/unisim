@@ -191,7 +191,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
    *http_server->http_server_import[1] >> instrumenter->http_server_export;
    if (profiler)
    {
-     *http_server->http_server_import[3] >> profiler->http_server_export;
+     *http_server->http_server_import[2] >> profiler->http_server_export;
    }
    
    *http_server->registers_import[0] >> cpu.registers_export;
@@ -396,8 +396,8 @@ Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   //===                     Component run-time configuration              ===
   //=========================================================================
 
-  sim->SetVariable("kernel_logger.std_err", true);
-  sim->SetVariable("kernel_logger.std_err_color", true);
+  sim->SetVariable("logger.std_err", true);
+  sim->SetVariable("logger.std_err_color", true);
 
   sim->SetVariable("HARDWARE.cpu.default-endianness",   "little-endian");
   sim->SetVariable("HARDWARE.cpu.cpu-cycle-time",       "31250 ps"); // 32Mhz
@@ -426,9 +426,9 @@ Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable("linux-os.apply-host-environment", false);
   sim->SetVariable("linux-os.hwcap", "swp half fastmult");
 
-  sim->SetVariable("gdb-server.architecture-description-filename", "gdb_arm_with_neon.xml");
+  sim->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_arm_with_neon.xml");
   sim->SetVariable("debugger.parse-dwarf", false);
-  sim->SetVariable("debugger.dwarf-register-number-mapping-filename", "arm_eabi_dwarf_register_number_mapping.xml");
+  sim->SetVariable("debugger.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml");
 
   sim->SetVariable("inline-debugger.num-loaders", 1);
   sim->SetVariable("inline-debugger.search-path", "");

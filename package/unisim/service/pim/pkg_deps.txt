@@ -1,3 +1,6 @@
+m4/bsd_sockets
+m4/libxml2
+m4/times
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/debug_event

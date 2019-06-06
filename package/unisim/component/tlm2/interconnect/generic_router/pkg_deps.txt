@@ -1,3 +1,5 @@
+m4/systemc
+m4/tvs
 unisim/kernel/logger
 unisim/kernel/service
 unisim/kernel/tlm2

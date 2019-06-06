@@ -1,3 +1,4 @@
+m4/boost
 unisim/component/cxx/processor/tesla/hostfloat
 unisim/kernel/logger
 unisim/kernel/service

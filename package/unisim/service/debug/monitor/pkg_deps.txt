@@ -1,3 +1,4 @@
+m4/systemc
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/backtrace

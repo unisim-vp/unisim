@@ -1,5 +1,4 @@
 ## UNISIM_CHECK_ARTIMON
-## Takes one parameter: the main function name
 #####################################################
 AC_DEFUN([UNISIM_CHECK_ARTIMON], [
 	# Check if ARTIMON path has been overloaded
@@ -12,7 +11,7 @@ AC_DEFUN([UNISIM_CHECK_ARTIMON], [
 	fi
 
 	# Check for function 'artimon_refresh_time' in libARTIMON.a
-	UNISIM_CHECK_LIB(ARTIMON,artimon_refresh_time,$1,broken_artimon=no,broken_artimon=yes)
+	UNISIM_CHECK_LIB(ARTIMON,artimon_refresh_time,broken_artimon=no,broken_artimon=yes)
 
 	if test "$broken_artimon" == "yes"; then
 		AC_MSG_NOTICE([ARTIMON not found. Support for ARTIMON will be disabled.])
