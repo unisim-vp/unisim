@@ -46,7 +46,7 @@ Instrumenter::Instrumenter(const char *name, unisim::kernel::service::Object *pa
 	, verbose(false)
 	, debug(false)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
-	, param_debug("debug", this, verbose, "Enable/Disable debugging (intended for developper)")
+	, param_debug("debug", this, debug, "Enable/Disable debugging (intended for developper)")
 	, vcd_trace_filename()
 	, param_vcd_trace_filename("vcd-trace-file", this, vcd_trace_filename, "VCD output filename for signals trace")
 	, trace_signals()
@@ -1966,8 +1966,10 @@ CSV_Reader::CSV_Reader(const char *name, Instrumenter *instrumenter)
 	, param_instrumentation_end_time("instrumentation-end-time", this, instrumentation_end_time, "End time of instrumentation")
 	, csv_delimiter(",")
 	, param_csv_delimiter("csv-delimiter", this, csv_delimiter, "delimiter in CSV file")
+	, lineno(1)
 	, file(0)
 	, time_resolution(sc_core::SC_ZERO_TIME)
+	, csv_instrument_names()
 	, csv_instrument_map()
 	, csv_time_stamp(sc_core::SC_ZERO_TIME)
 {
@@ -1975,12 +1977,17 @@ CSV_Reader::CSV_Reader(const char *name, Instrumenter *instrumenter)
 		
 	if(file->fail())
 	{
+		delete file;
 		file = 0;
 		logger << DebugWarning << "Can't open File \"" << filename << "\"" << EndDebugWarning;
 		return;
 	}
-
-	ParseCSVHeaderAndInstrumentInput(0);
+	
+	if(!ParseCSVHeaderAndInstrumentInput())
+	{
+		delete file;
+		file = 0;
+	}
 }
 
 CSV_Reader::~CSV_Reader()
@@ -1991,17 +1998,30 @@ CSV_Reader::~CSV_Reader()
 bool CSV_Reader::SetupInstrumentation()
 {
 	if(!file) return false;
-		
-	if(ParseCSVHeaderAndInstrumentInput(1))
+	
+	csv_instrument_map.resize(csv_instrument_names.size());
+	
+	for(unsigned int i = 0; i < csv_instrument_names.size(); i++)
 	{
-		do
-		{
-			if(!ParseCSV(csv_time_stamp)) return false;
-		}
-		while(csv_time_stamp < instrumentation_start_time);
+		const std::string& csv_instrument_name = csv_instrument_names[i];
+		InputInstrumentBase *input_instrument = InstrumentInputSignal(csv_instrument_name);
+		//std::cerr << "CSV column " << csv_column << " is for instrument " << (input_instrument ? input_instrument->GetName() : "unknown") << std::endl;
 		
-		instrumentation_start_time = csv_time_stamp; // crop interval
+		if(!input_instrument)
+		{
+			logger << DebugWarning << "Input Signal \"" << csv_instrument_name << "\" can't be instrumented or does not exists" << EndDebugWarning;
+		}
+		
+		csv_instrument_map[i] = input_instrument;
 	}
+	
+	do
+	{
+		if(!ParseCSV(csv_time_stamp)) return false;
+	}
+	while(csv_time_stamp < instrumentation_start_time);
+	
+	instrumentation_start_time = csv_time_stamp; // crop interval
 	
 	return true;
 }
@@ -2046,20 +2066,10 @@ void CSV_Reader::ProcessOutputInstruments()
 {
 }
 
-bool CSV_Reader::ParseCSVHeaderAndInstrumentInput(int pass)
+bool CSV_Reader::ParseCSVHeaderAndInstrumentInput()
 {
 	if(file)
 	{
-		switch(pass)
-		{
-			case 0:
-				break;
-				
-			case 1:
-				csv_instrument_map.clear();
-				break;
-		}
-		
 		std::string line;
 		
 		if(std::getline(*file, line))
@@ -2085,62 +2095,39 @@ bool CSV_Reader::ParseCSVHeaderAndInstrumentInput(int pass)
 				//std::cerr << "value is \"" << value << "\"" << std::endl;
 				if(csv_column)
 				{
-					switch(pass)
-					{
-						case 0:
-							PrepareInstrumentation(value, INPUT_INSTRUMENTATION);
-							break;
-						case 1:
-						{
-							InputInstrumentBase *input_instrument = InstrumentInputSignal(value);
-							//std::cerr << "CSV column " << csv_column << " is for instrument " << (input_instrument ? input_instrument->GetName() : "unknown") << std::endl;
-							
-							csv_instrument_map.resize(csv_column);
-							csv_instrument_map[csv_column - 1] = input_instrument;
-							break;
-						}
-					}
+					PrepareInstrumentation(value, INPUT_INSTRUMENTATION);
+					csv_instrument_names.push_back(value);
 				}
 				else
 				{
-					switch(pass)
+					// first column is time unit
+					std::stringstream value_sstr(value);
+					double time_value;
+					std::string time_unit;
+					
+					if((value_sstr >> time_value) && (value_sstr >> time_unit))
 					{
-						case 0:
-							break;
-							
-						case 1:
+						if(time_unit.compare("s") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_SEC);
+						else if(time_unit.compare("ms") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_MS);
+						else if(time_unit.compare("us") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_US);
+						else if(time_unit.compare("ns") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_NS);
+						else if(time_unit.compare("ps") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_PS);
+						else if(time_unit.compare("fs") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_FS);
+						else
 						{
-							std::stringstream value_sstr(value);
-							double time_value;
-							std::string time_unit;
-							
-							if((value_sstr >> time_value) && (value_sstr >> time_unit))
-							{
-								if(time_unit.compare("s") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_SEC);
-								else if(time_unit.compare("ms") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_MS);
-								else if(time_unit.compare("us") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_US);
-								else if(time_unit.compare("ns") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_NS);
-								else if(time_unit.compare("ps") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_PS);
-								else if(time_unit.compare("fs") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_FS);
-								else
-								{
-									logger << DebugWarning << "In input CSV file, first line, first column, malformed time_unit ('" << time_unit << "'): expecting 's', 'ms', 'us', 'ns', 'ps', or 'fs'." << EndDebugWarning;
-									return false;
-								}
-							}
-							else
-							{
-								logger << DebugWarning << "expecting a time resolution in first line, first column (e.g. 1 ps) of input CSV file" << EndDebugWarning;
-								return false;
-							}
-							
-							if(!value_sstr.eof())
-							{
-								logger << DebugWarning << "ignoring extra characters after time resolution in first line, first column of input CSV file" << EndDebugWarning;
-							}
-							
-							break;
+							logger << DebugWarning << "In input CSV file, first line, first column, malformed time_unit ('" << time_unit << "'): expecting 's', 'ms', 'us', 'ns', 'ps', or 'fs'." << EndDebugWarning;
+							return false;
 						}
+					}
+					else
+					{
+						logger << DebugWarning << "expecting a time resolution in first line, first column (e.g. 1 ps) of input CSV file" << EndDebugWarning;
+						return false;
+					}
+					
+					if(!value_sstr.eof())
+					{
+						logger << DebugWarning << "ignoring extra characters after time resolution in first line, first column of input CSV file" << EndDebugWarning;
 					}
 				}
 				
@@ -2148,6 +2135,7 @@ bool CSV_Reader::ParseCSVHeaderAndInstrumentInput(int pass)
 				csv_column++;
 			}
 			while(delim_pos != std::string::npos);
+			lineno++;
 			
 			return true;
 		}
@@ -2185,13 +2173,20 @@ bool CSV_Reader::ParseCSV(sc_core::sc_time& deadline)
 				//std::cerr << "value is \"" << value << "\"" << std::endl;
 				if(csv_column)
 				{
-					InputInstrumentBase *input_instrument = csv_instrument_map[csv_column - 1];
-					
-					if(input_instrument)
+					if((csv_column - 1) < csv_instrument_map.size())
 					{
-						//std::cerr << "value is for " << input_instrument->GetName() << std::endl;
-						std::stringstream value_sstr(value);
-						input_instrument->Input(value_sstr);
+						InputInstrumentBase *input_instrument = csv_instrument_map[csv_column - 1];
+						
+						if(input_instrument)
+						{
+							//std::cerr << "value is for " << input_instrument->GetName() << std::endl;
+							std::stringstream value_sstr(value);
+							input_instrument->Input(value_sstr);
+						}
+					}
+					else
+					{
+						logger << DebugWarning << "At Line #" << lineno << ", ignoring Column #" << csv_column << EndDebugWarning;
 					}
 				}
 				else
@@ -2216,6 +2211,7 @@ bool CSV_Reader::ParseCSV(sc_core::sc_time& deadline)
 			}
 			while(delim_pos != std::string::npos);
 			
+			lineno++;
 			return true;
 		}
 	}
@@ -2382,9 +2378,9 @@ void CSV_Writer::OutputInstrumentsAsCSV(std::ostream& os, const sc_core::sc_time
 		if(force_output || output_instrument->ValueChanged())
 		{
 			output_instrument->Output(os);
-			force_output = false;
 		}
 	}
+	force_output = false;
 	os << std::endl;
 }
 

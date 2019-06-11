@@ -544,12 +544,14 @@ private:
 	std::string csv_delimiter;
 	unisim::kernel::service::Parameter<std::string> param_csv_delimiter;
 	
+	unsigned int lineno;
 	std::ifstream *file;
 	sc_core::sc_time time_resolution;
+	std::vector<std::string> csv_instrument_names;
 	std::vector<InputInstrumentBase *> csv_instrument_map;
 	sc_core::sc_time csv_time_stamp;
 	
-	bool ParseCSVHeaderAndInstrumentInput(int pass);
+	bool ParseCSVHeaderAndInstrumentInput();
 	bool ParseCSV(sc_core::sc_time& deadline);
 };
 
