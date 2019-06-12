@@ -14,7 +14,7 @@
 		<variable name="dwarf-register-number-mapping-filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>powerpc_e500_gcc_dwarf_register_number_mapping.xml</value>
+			<value>unisim/util/debug/dwarf/powerpc_e500_gcc_dwarf_register_number_mapping.xml</value>
 			<description>DWARF register number mapping filename</description>
 		</variable>
 		<variable name="dwarf-to-html-output-directory">
@@ -102,7 +102,7 @@
 		<variable name="architecture-description-filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>gdb_powerpc_vle.xml</value>
+			<value>unisim/service/debug/gdb_server/gdb_powerpc_vle.xml</value>
 			<description>filename of a XML description of the connected processor</description>
 		</variable>
 		<variable name="debug">
@@ -201,7 +201,7 @@
 		<variable name="architecture-description-filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>gdb_powerpc_vle.xml</value>
+			<value>unisim/service/debug/gdb_server/gdb_powerpc_vle.xml</value>
 			<description>filename of a XML description of the connected processor</description>
 		</variable>
 		<variable name="debug">
@@ -300,7 +300,7 @@
 		<variable name="architecture-description-filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>gdb_powerpc_vle.xml</value>
+			<value>unisim/service/debug/gdb_server/gdb_powerpc_vle.xml</value>
 			<description>filename of a XML description of the connected processor</description>
 		</variable>
 		<variable name="debug">
