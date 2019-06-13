@@ -978,7 +978,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visito
 				os << "<td class=\"function\">" << unisim::util::hypapp::HTML_Encoder::Encode(func_name.c_str()) << "</td>";
 				
 				// Ratio
-				os << "<td class=\"ratio\">" << unisim::util::hypapp::HTML_Encoder::Encode(percent_str.c_str()) << "&percnt;</td>";
+				os << "<td class=\"ratio\">" << unisim::util::hypapp::HTML_Encoder::Encode(percent_str.c_str()) << "&#37;</td>";
 			
 				// Value
 				os << "<td class=\"value\">" << unisim::util::hypapp::HTML_Encoder::Encode(value_str.c_str()) << "</td>";
@@ -1007,7 +1007,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visito
 	switch(f_fmt)
 	{
 		case F_FMT_HTML:
-			os << indent << "<tr><td>" << num_functions << " functions</td><td>100.00 &percnt;</td><td>" << cumulative_value << "</td><td></td><td></td></tr>" << std::endl;
+			os << indent << "<tr><td>" << num_functions << " functions</td><td>100.00 &#37;</td><td>" << cumulative_value << "</td><td></td><td></td></tr>" << std::endl;
 			os << --indent << "</table>" << std::endl;
 			os << --indent << "</div>" << std::endl;
 			os << --indent << "</body>" << std::endl;
@@ -1105,7 +1105,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintHistogram(std::ostream& os, Vi
 	double level_axis_x = svg_margin + (font_scale * 8.5 * 6);
 	
 	std::pair<T, T> histogram_value_range(T(), value_range.second); // from 0 to max value
-	Quantizer<T> histogram_quant = Quantizer<T>(svg_histogram_height, histogram_value_range);
+	Scaler<T> histogram_scaler = Scaler<T>(svg_histogram_height, histogram_value_range);
 	
 	os << indent << "<svg version=\"1.2\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"" << svg_width << "\" height=\"" << svg_height << "\" viewBox=\"0 0 " << svg_width << " " << svg_height << "\">" << std::endl;
 	os << ++indent << "<defs>" << std::endl;
@@ -1126,7 +1126,8 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintHistogram(std::ostream& os, Vi
 	
 	if(value_range.second != T())
 	{
-		double ideal_num_levels = (svg_histogram_height / (8.5 * font_scale * 2)) * (cumulative_value / value_range.second);
+		double ratio = Divider<T>::Divide(cumulative_value, value_range.second);
+		unsigned int ideal_num_levels = (ratio * svg_histogram_height) / (8.5 * font_scale * 3);
 		unsigned int num_levels = (ideal_num_levels >= 100) ? 100 : ((ideal_num_levels >= 50) ? 50 : ((ideal_num_levels >= 40) ? 40 : ((ideal_num_levels >= 20) ? 20 : ((ideal_num_levels >= 10) ? 10 : 5))));
 		unsigned int level;
 		for(level = 1; level <= num_levels; level++)
@@ -1134,7 +1135,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintHistogram(std::ostream& os, Vi
 			T level_value((cumulative_value * level) / num_levels);
 			if(level_value > value_range.second) break;
 			
-			double level_height = histogram_quant.Quantize(level_value);
+			double level_height = Divider<T>::Divide(cumulative_value * level, num_levels * value_range.second) * svg_histogram_height;
 			double level_axis_y = axis_y - level_height;
 			os << indent << "<line class=\"level-axis\" x1=\"" << level_axis_x << "\" y1=\"" << level_axis_y << "\" x2=\"" << svg_width << "\" y2=\"" << level_axis_y << "\"/>" << std::endl;
 			
@@ -1142,7 +1143,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintHistogram(std::ostream& os, Vi
 			double level_text_y = level_axis_y + (8.5 * font_scale / 2.0);
 			unsigned int int_part = (level * 100) / num_levels;
 			unsigned int frac_part = (level * 100) % num_levels;
-			os << indent << "<text class=\"level-axis-text\" text-anchor=\"end\" x=\"" << level_text_x << "\" y=\"" << level_text_y << "\">" << int_part << '.' << ((10 * frac_part) / num_levels) << "&percnt;</text>" << std::endl;
+			os << indent << "<text class=\"level-axis-text\" text-anchor=\"end\" x=\"" << level_text_x << "\" y=\"" << level_text_y << "\">" << int_part << '.' << ((10 * frac_part) / num_levels) << "&#37;</text>" << std::endl;
 		}
 	}
 	
@@ -1166,7 +1167,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintHistogram(std::ostream& os, Vi
 			}
 			
 			// draw bar
-			double svg_bar_height = histogram_quant.Quantize(value);
+			double svg_bar_height = histogram_scaler.Scale(value);
 			double svg_bar_x = svg_histogram_x + ((svg_bar_width * 1.25) * histogram_column);
 			double svg_bar_y = (axis_y - svg_bar_height);
 			os << indent << "<rect class=\"bar\" x=\"" << svg_bar_x << "\" y=\"" << svg_bar_y << "\" width=\"" << svg_bar_width << "\" height=\"" << svg_bar_height << "\"/>" << std::endl;

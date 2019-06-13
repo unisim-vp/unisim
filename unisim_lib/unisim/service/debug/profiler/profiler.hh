@@ -487,6 +487,56 @@ public:
 };
 
 template <typename T>
+struct Divider
+{
+	static double Divide(const T& dividend, const T& divisor)
+	{
+		return (double) dividend / (double) divisor;
+	}
+};
+
+template <>
+struct Divider<sc_core::sc_time>
+{
+	static double Divide(const sc_core::sc_time& dividend, const sc_core::sc_time& divisor)
+	{
+		return dividend / divisor;
+	}
+};
+
+template <typename T>
+class Scaler
+{
+public:
+	Scaler(double _factor, const std::pair<T, T>& _value_range) : factor(_factor), value_range(_value_range) {}
+	double Scale(const T& value)
+	{
+		return ((value_range.first != value_range.second) && (value >= value_range.first) && (value <= value_range.second))
+			? ((double)(value - value_range.first) / (double)(value_range.second - value_range.first)) * factor
+			: 0.0;
+	}
+private:
+	double factor;
+	std::pair<T, T> value_range;
+};
+
+template <>
+class Scaler<sc_core::sc_time>
+{
+public:
+	Scaler(unsigned int _factor, const std::pair<sc_core::sc_time, sc_core::sc_time>& _value_range) : factor(_factor), value_range(_value_range) {}
+	double Scale(const sc_core::sc_time& value)
+	{
+		return ((value_range.first != value_range.second) && (value >= value_range.first) && (value <= value_range.second))
+			? factor * ((value - value_range.first) / (value_range.second - value_range.first))
+			: 0.0;
+	}
+private:
+	unsigned int factor;
+	std::pair<sc_core::sc_time, sc_core::sc_time> value_range;
+};
+
+template <typename T>
 class Quantizer
 {
 public:
@@ -510,7 +560,7 @@ public:
 	unsigned int Quantize(const sc_core::sc_time& value)
 	{
 		return ((value_range.first != value_range.second) && (value >= value_range.first) && (value <= value_range.second))
-			? ceil(factor * ((value - value_range.first) / (value_range.second - value_range.first)))
+			? floor/*ceil*/(factor * ((value - value_range.first) / (value_range.second - value_range.first)))
 			: 0;
 	}
 private:

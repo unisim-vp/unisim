@@ -5251,6 +5251,7 @@ Simulator::~Simulator()
 	if(inline_debugger[0]) delete inline_debugger[0];
 	if(inline_debugger[1]) delete inline_debugger[1];
 	if(inline_debugger[2]) delete inline_debugger[2];
+	if(http_server) delete http_server;
 	if(profiler[0]) delete profiler[0];
 	if(profiler[1]) delete profiler[1];
 	if(profiler[2]) delete profiler[2];
@@ -5264,7 +5265,6 @@ Simulator::~Simulator()
 	if(netstreamer14) delete netstreamer14;
 	if(netstreamer15) delete netstreamer15;
 	if(netstreamer16) delete netstreamer16;
-	if(http_server) delete http_server;
 	if(char_io_tee0) delete char_io_tee0;
 	if(char_io_tee1) delete char_io_tee1;
 	if(char_io_tee2) delete char_io_tee2;
