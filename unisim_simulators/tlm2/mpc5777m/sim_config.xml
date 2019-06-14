@@ -13515,6 +13515,12 @@
 			<value>200 ns</value>
 			<description>SystemC TLM-2.0 global quantum</description>
 		</variable>
+		<variable name="num-dsi">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>Number of DSI modules</description>
+		</variable>
 	</object>
 	<object name="http-server">
 		<variable name="enable-cache">
@@ -14477,11 +14483,33 @@
 		</variable>
 	</object>
 	<object name="profiler0">
+		<variable name="csv-arg-separator">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>;</value>
+			<description>CSV argument separator in formulas (e.g. ';' or ',')</description>
+		</variable>
 		<variable name="csv-delimiter">
 			<type>parameter</type>
 			<data_type>string</data_type>
 			<value>,</value>
 			<description>CSV delimiter</description>
+		</variable>
+		<variable name="csv-hyperlink">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>HYPERLINK</value>
+			<description>CSV hyperlink macro (e.g. HYPERLINK or LIEN_HYPERTEXTE)</description>
+		</variable>
+		<variable name="csv-reader">
+			<type>parameter</type>
+			<data_type>unisim::service::debug::profiler::CSV_Reader</data_type>
+			<value>ms-excel</value>
+			<description>CSV reader (ms-excel or libre-office)</description>
+			<enumeration>
+				<item>libre-office</item>
+				<item>ms-excel</item>
+			</enumeration>
 		</variable>
 		<variable name="enable-csv-report">
 			<type>parameter</type>
@@ -14539,11 +14567,33 @@
 		</variable>
 	</object>
 	<object name="profiler1">
+		<variable name="csv-arg-separator">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>;</value>
+			<description>CSV argument separator in formulas (e.g. ';' or ',')</description>
+		</variable>
 		<variable name="csv-delimiter">
 			<type>parameter</type>
 			<data_type>string</data_type>
 			<value>,</value>
 			<description>CSV delimiter</description>
+		</variable>
+		<variable name="csv-hyperlink">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>HYPERLINK</value>
+			<description>CSV hyperlink macro (e.g. HYPERLINK or LIEN_HYPERTEXTE)</description>
+		</variable>
+		<variable name="csv-reader">
+			<type>parameter</type>
+			<data_type>unisim::service::debug::profiler::CSV_Reader</data_type>
+			<value>ms-excel</value>
+			<description>CSV reader (ms-excel or libre-office)</description>
+			<enumeration>
+				<item>libre-office</item>
+				<item>ms-excel</item>
+			</enumeration>
 		</variable>
 		<variable name="enable-csv-report">
 			<type>parameter</type>
@@ -14601,11 +14651,33 @@
 		</variable>
 	</object>
 	<object name="profiler2">
+		<variable name="csv-arg-separator">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>;</value>
+			<description>CSV argument separator in formulas (e.g. ';' or ',')</description>
+		</variable>
 		<variable name="csv-delimiter">
 			<type>parameter</type>
 			<data_type>string</data_type>
 			<value>,</value>
 			<description>CSV delimiter</description>
+		</variable>
+		<variable name="csv-hyperlink">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>HYPERLINK</value>
+			<description>CSV hyperlink macro (e.g. HYPERLINK or LIEN_HYPERTEXTE)</description>
+		</variable>
+		<variable name="csv-reader">
+			<type>parameter</type>
+			<data_type>unisim::service::debug::profiler::CSV_Reader</data_type>
+			<value>ms-excel</value>
+			<description>CSV reader (ms-excel or libre-office)</description>
+			<enumeration>
+				<item>libre-office</item>
+				<item>ms-excel</item>
+			</enumeration>
 		</variable>
 		<variable name="enable-csv-report">
 			<type>parameter</type>

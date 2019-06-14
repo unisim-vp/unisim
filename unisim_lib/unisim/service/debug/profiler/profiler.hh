@@ -131,6 +131,16 @@ enum ReportFormat
 	R_FMT_HTTP
 };
 
+////////////////////////////// CSV_Reader /////////////////////////////////////
+
+enum CSV_Reader
+{
+	MS_EXCEL,
+	LIBRE_OFFICE
+};
+
+std::ostream& operator << (std::ostream& os, CSV_Reader csv_reader);
+
 ////////////////////////////// to_string<> ////////////////////////////////////
 
 template <typename T>
@@ -205,6 +215,9 @@ class Visitor
 public:
 	virtual ~Visitor() {}
 	virtual const std::string& GetCSVDelimiter() const = 0;
+	virtual CSV_Reader GetCSVReader() const = 0;
+	virtual const std::string& GetCSVHyperlink() const = 0;
+	virtual const std::string& GetCSVArgSeparator() const = 0;
 	virtual const std::string& GetRoot() const = 0;
 	virtual const std::string& GetDomain() const = 0;
 	virtual ReportFormat GetReportFormat() const = 0;
@@ -218,8 +231,11 @@ public:
 class FileVisitor : public Visitor
 {
 public:
-	FileVisitor(const std::string& output_directory, ReportFormat r_fmt, const std::string& csv_delimiter, std::ostream& warn_log);
+	FileVisitor(const std::string& output_directory, ReportFormat r_fmt, const std::string& csv_delimiter, CSV_Reader csv_reader, const std::string& csv_hyperlink, const std::string& csv_arg_separator, std::ostream& warn_log);
 	virtual const std::string& GetCSVDelimiter() const;
+	virtual CSV_Reader GetCSVReader() const;
+	virtual const std::string& GetCSVHyperlink() const;
+	virtual const std::string& GetCSVArgSeparator() const;
 	virtual const std::string& GetRoot() const;
 	virtual const std::string& GetDomain() const;
 	virtual ReportFormat GetReportFormat() const;
@@ -231,6 +247,9 @@ private:
 	std::string output_directory;
 	ReportFormat r_fmt;
 	std::string csv_delimiter;
+	CSV_Reader csv_reader;
+	std::string csv_hyperlink;
+	std::string csv_arg_separator;
 	std::ostream& warn_log;
 	std::string dir_path;
 };
@@ -805,6 +824,9 @@ private:
 	std::string sampled_variables;
 	std::string output_directory;
 	std::string csv_delimiter;
+	CSV_Reader csv_reader;
+	std::string csv_hyperlink;
+	std::string csv_arg_separator;
 	bool enable_text_report;
 	bool enable_html_report;
 	bool enable_csv_report;
@@ -813,6 +835,9 @@ private:
 	unisim::kernel::service::Parameter<std::string> param_sampled_variables;
 	unisim::kernel::service::Parameter<std::string> param_output_directory;
 	unisim::kernel::service::Parameter<std::string> param_csv_delimiter;
+	unisim::kernel::service::Parameter<CSV_Reader> param_csv_reader;
+	unisim::kernel::service::Parameter<std::string> param_csv_hyperlink;
+	unisim::kernel::service::Parameter<std::string> param_csv_arg_separator;
 	unisim::kernel::service::Parameter<bool> param_enable_text_report;
 	unisim::kernel::service::Parameter<bool> param_enable_html_report;
 	unisim::kernel::service::Parameter<bool> param_enable_csv_report;

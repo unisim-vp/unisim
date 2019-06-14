@@ -818,6 +818,9 @@ template <typename ADDRESS, typename T>
 void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visitor& visitor, FileFormat f_fmt) const
 {
 	const std::string& csv_delimiter = visitor.GetCSVDelimiter();
+	CSV_Reader csv_reader = visitor.GetCSVReader();
+	const std::string& csv_hyperlink = visitor.GetCSVHyperlink();
+	const std::string& csv_arg_separator = visitor.GetCSVArgSeparator();
 	ReportFormat r_fmt = visitor.GetReportFormat();
 	Indent indent;
 	std::multimap<T, std::string> sorted_func_insn_profile;
@@ -947,23 +950,23 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visito
 				
 			case F_FMT_CSV:
 			{
-				os << c_string_to_CSV(func_name.c_str()) << csv_delimiter << ratio_str << csv_delimiter << value_str << csv_delimiter << "=HYPERLINK(\"" << ((r_fmt = R_FMT_HTTP) ? "http://" : "file://");;
+				os << c_string_to_CSV(func_name.c_str()) << csv_delimiter << ratio_str << csv_delimiter << value_str << csv_delimiter << ((csv_reader == MS_EXCEL) ? "\"" : "") << "=" << csv_hyperlink << "(" << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\"" << ((r_fmt = R_FMT_HTTP) ? "http://" : "file://");;
 				const std::string& dir_path = visitor.GetDirPath();
 				std::string href(dir_path);
 				href += '/';
 				href += "disassembly.csv";
 				
-				os << unisim::util::hypapp::URI_Encoder::Encode(href) << "\";\"" << func_addr_str << "\")" << csv_delimiter;
+				os << unisim::util::hypapp::URI_Encoder::Encode(href) << "" << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\"" << csv_arg_separator << "" << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\"" << func_addr_str << "" << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\")" << ((csv_reader == MS_EXCEL) ? "\"" : "") << csv_delimiter;
 				if(sloc)
 				{
-					os << "=HYPERLINK(\"" << ((r_fmt = R_FMT_HTTP) ? "http://" : "file://");
+					os << ((csv_reader == MS_EXCEL) ? "\"" : "") << "=" << csv_hyperlink << "(" << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\"" << ((r_fmt = R_FMT_HTTP) ? "http://" : "file://");
 					std::string href(dir_path);
 					href += '/';
 					href += "source";
 					href += to_string(filename_index->IndexFilename(sloc->GetFilename()));
 					href += ".csv";
 					
-					os << unisim::util::hypapp::URI_Encoder::Encode(href) << "\";\"" << sloc->GetFilename() << "\")";
+					os << unisim::util::hypapp::URI_Encoder::Encode(href) << "" << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\"" << csv_arg_separator << "" << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\"" << sloc->GetFilename() << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\")" << ((csv_reader == MS_EXCEL) ? "\"" : "");
 				}
 				os << std::endl;
 				break;
@@ -1963,6 +1966,9 @@ Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	, sampled_variables()
 	, output_directory()
 	, csv_delimiter(",")
+	, csv_reader(MS_EXCEL)
+	, csv_hyperlink("HYPERLINK")
+	, csv_arg_separator(";")
 	, enable_text_report(false)
 	, enable_html_report(false)
 	, enable_csv_report(false)
@@ -1971,6 +1977,9 @@ Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	, param_sampled_variables("sampled-variables", this, sampled_variables, "Variables to sample (separated by spaces)")
 	, param_output_directory("output-directory", this, output_directory, "Output directory where to generate profiling report")
 	, param_csv_delimiter("csv-delimiter", this, csv_delimiter, "CSV delimiter")
+	, param_csv_reader("csv-reader", this, csv_reader, "CSV reader (ms-excel or libre-office)")
+	, param_csv_hyperlink("csv-hyperlink", this, csv_hyperlink, "CSV hyperlink macro (e.g. HYPERLINK or LIEN_HYPERTEXTE)")
+	, param_csv_arg_separator("csv-arg-separator", this, csv_arg_separator, "CSV argument separator in formulas (e.g. ';' or ',')")
 	, param_enable_text_report("enable-text-report", this, enable_text_report, "Enable/Disable text report")
 	, param_enable_html_report("enable-html-report", this, enable_html_report, "Enable/Disable HTML report")
 	, param_enable_csv_report("enable-csv-report", this, enable_csv_report, "Enable/Disable CSV report")
@@ -2184,6 +2193,21 @@ bool Profiler<ADDRESS>::ServeHttpRequest(unisim::util::hypapp::HttpRequest const
 		virtual const std::string& GetCSVDelimiter() const
 		{
 			return profiler.csv_delimiter;
+		}
+		
+		virtual CSV_Reader GetCSVReader() const
+		{
+			return profiler.csv_reader;
+		}
+
+		virtual const std::string& GetCSVHyperlink() const
+		{
+			return profiler.csv_hyperlink;
+		}
+		
+		virtual const std::string& GetCSVArgSeparator() const
+		{
+			return profiler.csv_arg_separator;
 		}
 		
 		virtual const std::string& GetRoot() const
@@ -2688,19 +2712,19 @@ void Profiler<ADDRESS>::Output()
 	
 	if(enable_text_report)
 	{
-		FileVisitor file_visitor(output_directory, R_FMT_TEXT, csv_delimiter, logger.DebugErrorStream());
+		FileVisitor file_visitor(output_directory, R_FMT_TEXT, csv_delimiter, csv_reader, csv_hyperlink, csv_arg_separator, logger.DebugErrorStream());
 		Output(file_visitor);
 	}
 	
 	if(enable_csv_report)
 	{
-		FileVisitor file_visitor(output_directory, R_FMT_CSV, csv_delimiter, logger.DebugErrorStream());
+		FileVisitor file_visitor(output_directory, R_FMT_CSV, csv_delimiter, csv_reader, csv_hyperlink, csv_arg_separator, logger.DebugErrorStream());
 		Output(file_visitor);
 	}
 
 	if(enable_html_report)
 	{
-		FileVisitor file_visitor(output_directory, R_FMT_HTML, csv_delimiter, logger.DebugErrorStream());
+		FileVisitor file_visitor(output_directory, R_FMT_HTML, csv_delimiter, csv_reader, csv_hyperlink, csv_arg_separator, logger.DebugErrorStream());
 		Output(file_visitor);
 	}
 }

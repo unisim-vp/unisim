@@ -92,6 +92,19 @@ std::string FileFormatSuffix(FileFormat f_fmt)
 	return std::string();
 }
 
+////////////////////////////// CSV_Reader /////////////////////////////////////
+
+std::ostream& operator << (std::ostream& os, CSV_Reader csv_reader)
+{
+	switch(csv_reader)
+	{
+		case MS_EXCEL    : os << "Microsoft Excel"; break;
+		case LIBRE_OFFICE: os << "Libre Office"; break;
+		default          : os << "Unknown CSV reader"; break;
+	}
+	return os;
+}
+
 ///////////////////////////// c_string_to_CSV /////////////////////////////////
 
 std::string c_string_to_CSV(const char *s)
@@ -177,11 +190,14 @@ unsigned int FilenameIndex::IndexFilename(const std::string& filename)
 
 /////////////////////////////// FileVisitor ////////////////////////////////////
 
-FileVisitor::FileVisitor(const std::string& _output_directory, ReportFormat _r_fmt, const std::string& _csv_delimiter, std::ostream& _warn_log)
+FileVisitor::FileVisitor(const std::string& _output_directory, ReportFormat _r_fmt, const std::string& _csv_delimiter, CSV_Reader _csv_reader, const std::string& _csv_hyperlink, const std::string& _csv_arg_separator, std::ostream& _warn_log)
 	: file()
 	, output_directory(_output_directory)
 	, r_fmt(_r_fmt)
 	, csv_delimiter(_csv_delimiter)
+	, csv_reader(_csv_reader)
+	, csv_hyperlink(_csv_hyperlink)
+	, csv_arg_separator(_csv_arg_separator)
 	, warn_log(_warn_log)
 	, dir_path(output_directory)
 {
@@ -192,6 +208,21 @@ FileVisitor::FileVisitor(const std::string& _output_directory, ReportFormat _r_f
 const std::string& FileVisitor::GetCSVDelimiter() const
 {
 	return csv_delimiter;
+}
+
+CSV_Reader FileVisitor::GetCSVReader() const
+{
+	return csv_reader;
+}
+
+const std::string& FileVisitor::GetCSVHyperlink() const
+{
+	return csv_hyperlink;
+}
+
+const std::string& FileVisitor::GetCSVArgSeparator() const
+{
+	return csv_arg_separator;
 }
 
 const std::string& FileVisitor::GetRoot() const
@@ -258,3 +289,144 @@ bool FileVisitor::Visit(const std::string& dirname, const std::string& filename,
 } // end of namespace debug
 } // end of namespace service
 } // end of namespace unisim
+
+namespace unisim {
+namespace kernel {
+namespace service {
+
+//////////////////////////// Variable<CSV_Reader> ////////////////////////////////
+
+using unisim::service::debug::profiler::CSV_Reader;
+using unisim::service::debug::profiler::LIBRE_OFFICE;
+using unisim::service::debug::profiler::MS_EXCEL;
+
+template <> Variable<CSV_Reader>::Variable(const char *_name, Object *_object, CSV_Reader& _storage, Type type, const char *_description) :
+	VariableBase(_name, _object, type, _description), storage(&_storage)
+{
+	Simulator::Instance()->Initialize(this);
+	AddEnumeratedValue("libre-office");
+	AddEnumeratedValue("ms-excel");
+}
+
+template <>
+const char *Variable<CSV_Reader>::GetDataTypeName() const
+{
+	return "unisim::service::debug::profiler::CSV_Reader";
+}
+
+template <>
+VariableBase::DataType Variable<CSV_Reader>::GetDataType() const
+{
+	return DT_USER;
+}
+
+template <>
+unsigned int Variable<CSV_Reader>::GetBitSize() const
+{
+	return 1;
+}
+
+template <> Variable<CSV_Reader>::operator bool () const { return *storage != MS_EXCEL; }
+template <> Variable<CSV_Reader>::operator long long () const { return *storage; }
+template <> Variable<CSV_Reader>::operator unsigned long long () const { return *storage; }
+template <> Variable<CSV_Reader>::operator double () const { return (double)(*storage); }
+template <> Variable<CSV_Reader>::operator std::string () const
+{
+	switch(*storage)
+	{
+		case MS_EXCEL: return std::string("ms-excel");
+		case LIBRE_OFFICE: return std::string("libre-office");
+	}
+	return std::string("?");
+}
+
+template <> VariableBase& Variable<CSV_Reader>::operator = (bool value)
+{
+	if(IsMutable())
+	{
+		CSV_Reader tmp = *storage;
+		switch((unsigned int) value)
+		{
+			case MS_EXCEL:
+			case LIBRE_OFFICE:
+				tmp = (CSV_Reader)(unsigned int) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<CSV_Reader>::operator = (long long value)
+{
+	if(IsMutable())
+	{
+		CSV_Reader tmp = *storage;
+		switch(value)
+		{
+			case MS_EXCEL:
+			case LIBRE_OFFICE:
+				tmp = (CSV_Reader) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<CSV_Reader>::operator = (unsigned long long value)
+{
+	if(IsMutable())
+	{
+		CSV_Reader tmp = *storage;
+		switch(value)
+		{
+			case MS_EXCEL:
+			case LIBRE_OFFICE:
+				tmp = (CSV_Reader) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<CSV_Reader>::operator = (double value)
+{
+	if(IsMutable())
+	{
+		CSV_Reader tmp = *storage;
+		switch((unsigned int) value)
+		{
+			case MS_EXCEL:
+			case LIBRE_OFFICE:
+				tmp = (CSV_Reader)(unsigned int) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<CSV_Reader>::operator = (const char *value)
+{
+	if(IsMutable())
+	{
+		CSV_Reader tmp = *storage;
+		if(std::string(value) == std::string("ms-excel")) tmp = MS_EXCEL;
+		else if(std::string(value) == std::string("libre-office")) tmp = LIBRE_OFFICE;
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template class Variable<CSV_Reader>;
+
+} // end of service namespace
+} // end of kernel namespace
+} // end of unisim namespace
