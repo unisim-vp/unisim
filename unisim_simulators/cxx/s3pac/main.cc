@@ -566,7 +566,7 @@ struct Processor
 
     Expr cexp( BOOL(cond).expr );
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-      return cnode->GetBoolean();
+      return cnode->Get( bool() );
 
     return Choose( cexp );
   }
@@ -579,7 +579,7 @@ struct Processor
 
     Expr cexp( BOOL(cond).expr );
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-      return cnode->GetBoolean();
+      return cnode->Get( bool() );
 
     Processor* proc = Processor::FindRoot(cexp);
     if (not proc)
@@ -730,9 +730,9 @@ struct Processor
   F64  GetVDR( unsigned idx ) { return F64(); }
   void SetVDR( unsigned idx, F64 val ) {}
     
-  U32 const&  GetVSU( unsigned idx ) { return U32(); }
+  U32  GetVSU( unsigned idx ) { return U32(); }
   void SetVSU( unsigned idx, U32 val ) {}
-  U64 const&  GetVDU( unsigned idx ) { return U64(); }
+  U64  GetVDU( unsigned idx ) { return U64(); }
   void SetVDU( unsigned idx, U64 val ) {}
   
   //   =====================================================================
@@ -1309,7 +1309,7 @@ struct Translator
               {
                 Expr value = ud.GetSub(idx);
                 
-                if (value.ConstSimplify() or ccode.tmps.count( value ))
+                if (value->AsConstNode() or ccode.tmps.count( value ))
                   continue;
                 
                 ccode.make_temp( srcmgr, value );

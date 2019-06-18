@@ -812,6 +812,9 @@ public:
   uint8_t vmm_storage[16][VUConfig::BYTECOUNT];
   uint32_t mxcsr;
 
+  void mxcswrite(uint32_t v) { mxcsr = v; }
+  uint32_t mxcsread() { return mxcsr; }
+
   template <class VR> static unsigned vmm_wsize( VR const& vr ) { return VR::size() / 8; }
   static unsigned vmm_wsize( unisim::component::cxx::processor::intel::SSE const& ) { return VUConfig::BYTECOUNT; }
   

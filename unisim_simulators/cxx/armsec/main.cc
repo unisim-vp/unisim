@@ -442,7 +442,7 @@ public:
 
     Expr cexp( BOOL(cond).expr );
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-      return cnode->GetBoolean();
+      return cnode->Get( bool() );
 
     return Choose( cexp );
   }
@@ -455,7 +455,7 @@ public:
 
     Expr cexp( BOOL(cond).expr );
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-      return cnode->GetBoolean();
+      return cnode->Get( bool() );
 
     Processor* proc = Processor::FindRoot(cexp);
     if (not proc)

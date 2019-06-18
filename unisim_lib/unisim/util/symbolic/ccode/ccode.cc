@@ -272,17 +272,17 @@ namespace ccode {
         Expr cexp( node );
         switch (node->GetType())
           {
-          case ScalarType::BOOL: srcmgr << (node->GetU8() ? "true" : "false"); break;
-          case ScalarType::U8:   srcmgr << hex( node->GetU8() );         break;
-          case ScalarType::U16:  srcmgr << hex( node->GetU16() );        break;
-          case ScalarType::U32:  srcmgr << hex( node->GetU32() );        break;
-          case ScalarType::U64:  srcmgr << hex( node->GetU64() );        break;
-          case ScalarType::S8:   srcmgr << dec( node->GetS8() );         break;
-          case ScalarType::S16:  srcmgr << dec( node->GetS16() );        break;
-          case ScalarType::S32:  srcmgr << dec( node->GetS32() );        break;
-          case ScalarType::S64:  srcmgr << dec( node->GetS64() );        break;
+          case ScalarType::BOOL: srcmgr << (node->Get( uint8_t() ) ? "true" : "false"); break;
+          case ScalarType::U8:   srcmgr << hex( node->Get( uint8_t() ) );         break;
+          case ScalarType::U16:  srcmgr << hex( node->Get( uint16_t() ) );        break;
+          case ScalarType::U32:  srcmgr << hex( node->Get( uint32_t() ) );        break;
+          case ScalarType::U64:  srcmgr << hex( node->Get( uint64_t() ) );        break;
+          case ScalarType::S8:   srcmgr << dec( node->Get( int8_t() ) );         break;
+          case ScalarType::S16:  srcmgr << dec( node->Get( int16_t() ) );        break;
+          case ScalarType::S32:  srcmgr << dec( node->Get( int32_t() ) );        break;
+          case ScalarType::S64:  srcmgr << dec( node->Get( int64_t() ) );        break;
           case ScalarType::F32:
-          case ScalarType::F64:  srcmgr << fpt( node->GetF64() );      break;  
+          case ScalarType::F64:  srcmgr << fpt( node->Get( double() ) );      break;
           default: throw std::logic_error("can't encode type");
           }
         return srcmgr;

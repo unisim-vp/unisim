@@ -483,7 +483,7 @@ namespace ut
 
       Expr cexp( BOOL(cond).expr );
       if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-        return cnode->GetBoolean();
+        return cnode->Get( bool() );
       
       Arch* arch = ArchExprNode::SeekArch(cexp);
       if (not arch)

@@ -1,5 +1,6 @@
 #include <arch.hh>
 #include <sstream>
+#include <fstream>
 
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
           
@@ -41,59 +42,13 @@ namespace ut
     sink << "FpuStackTop";
   }
 
-  // void FIRoundBase::Repr( std::ostream& sink ) const
-  // {
-  //   sink << "FIRound<" << ScalarType(GetType()).name << ">( " << src << ", " << rmode << ")";
-  // }
-
-  namespace
-  {
-    struct GRegRead : public unisim::util::symbolic::ExprNode
-    {
-      typedef unisim::util::symbolic::ExprNode   ExprNode;
-      typedef unisim::util::symbolic::Expr       Expr;
-      typedef unisim::util::symbolic::ScalarType ScalarType;
-      typedef GRegRead this_type;
-      
-      GRegRead( unsigned _idx ) : idx(_idx) {} unsigned idx;
-      virtual void Repr( std::ostream& sink ) const override
-      {
-        sink << "GRegRead(" << idx << ")";
-      }
-      virtual unsigned SubCount() const override { return 0; }
-      virtual int cmp(ExprNode const& brhs) const override { return compare( dynamic_cast<this_type const&>( brhs ) ); }
-      int compare(this_type const& rhs) const { return int(idx) - int(rhs.idx); }
-      virtual ExprNode* Mutate() const override { return new this_type(*this); }
-      ScalarType::id_t GetType() const { return ScalarType::U64; }
-    };
-
-    struct GRegWrite : public Arch::Update
-    {
-      typedef unisim::util::symbolic::ExprNode   ExprNode;
-      typedef unisim::util::symbolic::Expr       Expr;
-      typedef unisim::util::symbolic::ScalarType ScalarType;
-      typedef GRegWrite this_type;
-      GRegWrite( unsigned _idx, Expr const& _value ) : value(_value), idx(_idx) {}
-      virtual this_type* Mutate() const override { return new this_type( *this ); }
-      virtual void Repr( std::ostream& sink ) const override
-      {
-        sink << "GRegWrite(" << idx << ") := " << value;
-      }
-      virtual unsigned SubCount() const { return 1; }
-      virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
-      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<GRegWrite const&>( rhs ) ); }
-      int compare( GRegWrite const& rhs ) const { return int(idx) - int(rhs.idx); }
-      Expr value;
-      unsigned idx;
-    };
-  }
-  
   void
   Arch::vmm_touch( unsigned reg, bool write )
   {
+    unsigned idx = interface.vregs.touch(reg,write);
     if (umms[reg].transfer == umms[reg].initial)
       {
-        VmmRegister v( new VRegRead( interface.vregs.open(reg,write) ) );
+        VmmRegister v( new VRegRead( reg, idx ) );
         *(umms[reg].GetStorage( &vmm_storage[reg][0], v, VUConfig::BYTECOUNT )) = v;
       }
   }
@@ -163,11 +118,36 @@ namespace ut
     return false;
   }
 
+  unisim::util::symbolic::Expr&
+  Arch::fpaccess( unsigned reg, bool write )
+  {
+    unsigned idx = interface.fregs.touch(reg,write);
+    unisim::util::symbolic::Expr& res = fpregs[reg];
+    if (not res.node)
+      res = new FRegRead( reg, idx );
+    return res;
+  }
+
+  bool
+  Arch::fpdiff( unsigned reg )
+  {
+    if (not fpregs[reg].node)
+      return false;
+    if (not interface.fregs.modified(reg))
+      return false;
+
+    if (auto fr = dynamic_cast<FRegRead const*>( fpregs[reg].node ))
+      return fr->idx != interface.fregs.index(reg);
+
+    return true;
+  }
+
   void
   Arch::eregtouch( unsigned reg, bool write )
   {
+    unsigned idx = interface.gregs.touch(reg,write);
     if (not regvalues[reg][0].node)
-      regvalues[reg][0] = new GRegRead( interface.gregs.open(reg,write) );
+      regvalues[reg][0] = new GRegRead( reg, idx );
   }
 
   bool
@@ -289,17 +269,11 @@ namespace ut
 
   Arch::Arch( Interface& iif )
     : interface(iif), path(iif.behavior.get())
-    , next_insn_addr(new RIPRead), next_insn_mode(ipnone)
-    , fcw(new FCWRead), ftop_source(new FTop), ftop(0), mxcsr(new MXCSRRead)
+    , next_insn_addr(new RIPRead), next_insn_mode(ipjmp)
+    , ftop(0)
   {
-    for (SRegID reg; reg.next();)
-      segment_registers[reg.idx()] = newRegRead( reg );
-
     for (FLAG reg; reg.next();)
       flagvalues[reg.idx()] = newRegRead( reg );
-
-    for (FRegID reg; reg.next();)
-      fpuregs[reg.idx()] = newRegRead( reg );
   }
 
   namespace {
@@ -358,73 +332,127 @@ namespace ut
     bool complete = path->close();
 
     // Instruction Pointer
-    if (next_insn_addr != ref.next_insn_addr)
-      path->updates.insert( Expr( new RIPWrite( next_insn_addr, next_insn_mode ) ) );
-    if (next_insn_mode != ipnone)
-      interface.has_jump = true;
+    path->updates.insert( Expr( new RIPWrite( next_insn_addr, next_insn_mode ) ) );
     
     // Scalar integer registers
     for (unsigned reg = 0; reg < REGCOUNT; ++reg)
       if (eregdiff(reg))
-        path->updates.insert( new GRegWrite( interface.gregs.index(reg), eregread( reg, REGSIZE, 0 ) ) );
+        path->updates.insert( new GRegWrite( reg, interface.gregs.index(reg), eregread( reg, REGSIZE, 0 ) ) );
 
     // Vector Registers
     for (unsigned reg = 0; reg < VUConfig::REGCOUNT; ++reg)
       if (vmm_diff(reg))
-        path->updates.insert( new VRegWrite( interface.vregs.index(reg), umms[reg].GetConstStorage( &vmm_storage[reg][0], VmmRegister(), VUConfig::BYTECOUNT )->expr ) );
+        path->updates.insert( new VRegWrite( reg, interface.vregs.index(reg), umms[reg].GetConstStorage( &vmm_storage[reg][0], VmmRegister(), VUConfig::BYTECOUNT )->expr ) );
     
+    // FPU registers
+    for (unsigned reg = 0; reg < 8; ++reg)
+      if (fpdiff(reg))
+        path->updates.insert( new FRegWrite( reg, interface.fregs.index(reg), fpregs[reg] ) );
+
     // Flags
     for (FLAG reg; reg.next();)
       if (flagvalues[reg.idx()] != ref.flagvalues[reg.idx()])
         path->updates.insert( newRegWrite( reg, flagvalues[reg.idx()] ) );
 
-    // Segment registers
-    for (SRegID reg; reg.next();)
-      if (segment_registers[reg.idx()] != ref.segment_registers[reg.idx()])
-        path->updates.insert( newRegWrite( reg, segment_registers[reg.idx()] ) );
-
-    // FPU Control Word
-    if (fcw != ref.fcw)
-      path->updates.insert( new FCWWrite( fcw ) );
-
-    if (mxcsr.expr != ref.mxcsr.expr)
-      path->updates.insert( new MXCSRWrite( mxcsr.expr ) );
-    
-    // FPU registers
-    for (FRegID reg; reg.next();)
-      if (fpuregs[reg.idx()] != ref.fpuregs[reg.idx()])
-        path->updates.insert( new FRegWrite( *this, fpuregs[reg.idx()], Arch::ftop_update(ftop_source, reg.idx()).expr ) );
-
-    if (ftop)
-      path->updates.insert( new FTopWrite( Arch::ftop_update(ftop_source, ftop).expr ) );
-
-    for (auto && store : stores)
+    for (Expr const& store : stores)
       path->updates.insert( store );
     
     return complete;
   }
 
-  void
-  Arch::setnip( addr_t eip, ipproc_t ipproc )
-  {
-    next_insn_addr = eip.expr;
-    next_insn_mode = ipproc;
-  }
-  
   bool
   Arch::Cond(unisim::util::symbolic::Expr cond)
   {
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cond.ConstSimplify())
-      return cnode->GetBoolean();
+      return cnode->Get( bool() );
 
     bool predicate = path->proceed( cond );
     path = path->next( predicate );
     return predicate;
   }
 
-  void
-  Interface::finalize()
+  namespace
   {
+    struct ExpectedAddress : public unisim::util::symbolic::ExprNode
+    {
+      ExpectedAddress() : unisim::util::symbolic::ExprNode() {}
+      virtual ExpectedAddress* Mutate() const override { return new ExpectedAddress( *this ); }
+      virtual int cmp(ExprNode const& rhs) const override { return 0; }
+      virtual unsigned SubCount() const override { return 0; }
+      virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
+      typedef unisim::util::symbolic::ScalarType ScalarType;
+      virtual ScalarType::id_t GetType() const override { return ScalarType::U64; }
+    };
+  }
+
+
+  Interface::Interface( Operation const& op, MemCode const& code, std::string const& disasm )
+    : memcode(code)
+    , asmcode(disasm)
+    , gregs()
+    , fregs()
+    , vregs()
+    , behavior(std::make_shared<ActionNode>())
+    , base_addr()
+    , relocs()
+    , has_write(false)
+    , has_jump(false)
+  {
+    // Performing an abstract execution to check the validity of
+    // the opcode, and to compute the interface of the operation
+    ut::Arch reference( *this );
+      
+    for (bool end = false; not end;)
+      {
+        ut::Arch arch( *this );
+        arch.step( op );
+        end = arch.close( reference );
+      }
+
+    if (addrs.size())
+      {
+        typedef decltype(this->relocs) Relocs;
+        
+        struct AG
+        {
+          typedef unisim::util::symbolic::Expr Expr;
+      
+          void process (Expr const& front, Expr const& back)
+          {
+            if (auto vr = dynamic_cast<Arch::VirtualRegister const*>(front.node))
+              {
+                unsigned target = vr->reg;
+                auto itr = relocs.lower_bound(target);
+                if (itr == relocs.end() or itr->first > target)
+                  relocs.emplace_hint(itr, Relocs::value_type( target, back ));
+                else
+                  itr->second = Expr();
+              }
+            else if (unisim::util::symbolic::OpNodeBase const* onb = front->AsOpNode())
+              {
+                if      (onb->op.code == onb->op.Add)
+                  {
+                    process( front->GetSub(0), make_operation( "Sub", back, front->GetSub(1) ) );
+                    process( front->GetSub(1), make_operation( "Sub", back, front->GetSub(0) ) );
+                  }
+                else if (onb->op.code == onb->op.Sub)
+                  {
+                    process( front->GetSub(0), make_operation( "Add", back, front->GetSub(1) ) );
+                    process( front->GetSub(1), make_operation( "Sub", front->GetSub(0), back ) );
+                  }
+              }
+          }
+          
+          AG(Relocs& _relocs) : relocs(_relocs) {} Relocs& relocs;
+        } ag(relocs);
+        ag.process( base_addr, new ExpectedAddress() );
+        // remove the invalid relocations
+        for (Relocs::iterator itr = relocs.begin(), end = relocs.end(); itr != end; )
+          {
+            if (itr->second.good()) ++itr; else itr = relocs.erase(itr);
+          }
+      }
+
     if (gregs.accessed(4))
       throw ut::Untestable("SP access");
     if (has_jump)
@@ -432,100 +460,84 @@ namespace ut
     
     behavior->simplify();
   }
-
-  bool
-  Interface::TestLess::operator () ( Interface const& a, Interface const& b ) const
-  {
-    typedef ActionNode::Expr Expr;
     
-    struct Comparator
+  struct AddrLess
+  {
+    typedef unisim::util::symbolic::Expr Expr;
+
+    bool operator () ( Expr const& a, Expr const& b ) const
     {
-
-      int process( ActionNode const& a, ActionNode const& b ) const
+      struct Comparator
       {
-        if (int delta = a.updates.size() - b.updates.size()) return delta;
-        auto rci = b.updates.begin();
-        for (Expr const& update : a.updates)
+        struct VI
+        {
+          std::map<int,int> dic;
+          int operator [] (int x)
           {
-            if (int delta = process( update,  *rci )) return delta;
-            ++rci;
+            auto itr = dic.lower_bound(x);
+            if (itr == dic.end() or itr->first > x)
+              itr = dic.insert( itr, std::map<int,int>::value_type(x, int(dic.size())) );
+            return itr->second;
           }
-        if (int delta = process( a.cond, b.cond )) return delta;
-        for (int idx = 0; idx < 2; ++idx)
-          {
-            if     (not a.nexts[idx])
-              {
-                if (b.nexts[idx]) return -1;
-              }
-            else if(b.nexts[idx])
-              {
-                if (int delta = process( *a.nexts[idx], *b.nexts[idx] )) return delta;
-              }
-          }
-        return 0;
-      }
-
-      int process( Expr const& a, Expr const& b ) const
-      {
-        // Do not compare null expressions
-        if (not b.node) return a.node ?  1 : 0;
-        if (not a.node) return b.node ? -1 : 0;
-      
-        /* First compare actual types */
-        const std::type_info* til = &typeid(*a.node);
-        const std::type_info* tir = &typeid(*b.node);
-        if (til < tir) return -1;
-        if (til > tir) return +1;
-        
-        /* Same types, call derived comparator except for Constants (compare popcount)*/
-        typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-        if (auto an = dynamic_cast<ConstNodeBase const*>(a.node))
-          {
-            uint64_t av = an->GetU64(), bv = dynamic_cast<ConstNodeBase const&>(*b.node).GetU64();
-            if (int delta = __builtin_popcountll(av) - __builtin_popcountll(bv))
-              return delta;
-          }
-        else if (int delta = a.node->cmp( *b.node ))
-          return delta;
-
-        /* Compare sub operands recursively */
-        unsigned subcount = a.node->SubCount();
-        if (int delta = int(subcount) - int(b.node->SubCount()))
-          return delta;
-        for (unsigned idx = 0; idx < subcount; ++idx)
-          if (int delta = a.node->GetSub(idx).compare(b.node->GetSub(idx)))
+        } avi, bvi;
+    
+        int process( Expr const& a, Expr const& b )
+        {
+          // Do not compare null expressions
+          if (not b.node) return a.node ?  1 : 0;
+          if (not a.node) return b.node ? -1 : 0;
+          
+          /* First compare actual types */
+          const std::type_info* til = &typeid(*a.node);
+          const std::type_info* tir = &typeid(*b.node);
+          if (til < tir) return -1;
+          if (til > tir) return +1;
+          
+          if (dynamic_cast<unisim::util::symbolic::ConstNodeBase const*>(a.node))
+            return 0;
+          
+          if (auto vr = dynamic_cast<Arch::VirtualRegister const*>(a.node))
+            {
+              if (int delta = avi[vr->idx] - bvi[dynamic_cast<Arch::VirtualRegister const&>(*b.node).idx])
+                return delta;
+            }
+         else if (int delta = a.node->cmp( *b.node ))
             return delta;
 
-        /* equal to us*/
-        return 0;
-      }
-    } comparator;
+          /* Compare sub operands recursively */
+          unsigned subcount = a.node->SubCount();
+          if (int delta = int(subcount) - int(b.node->SubCount()))
+            return delta;
+          for (unsigned idx = 0; idx < subcount; ++idx)
+            if (int delta = process( a.node->GetSub(idx), b.node->GetSub(idx)))
+              return delta;
 
-    return comparator.process( *a.behavior, *b.behavior ) < 0;
-    
+          /* equal to us*/
+          return 0;
+        }
+      } comparator;
+      
+      return comparator.process( a, b ) < 0;
+    }
+  };
 
-    //  if ()
-    //   {
-    //     Expr cexp( node );
-    //     switch (node->GetType())
-    //       {
-    //       case ScalarType::S8:  return make_const( node-> GetU8() );
-    //       case ScalarType::S16: return make_const( node->GetU16() );
-    //       case ScalarType::S32: return make_const( node->GetU32() );
-    //       default: break;
-    //       }
-    //     return cexp;
-    //   }
+  void
+  Interface::memaccess( unisim::util::symbolic::Expr const& addr, bool is_write )
+  {
+    has_write |= is_write;
+
+    uint64_t zaddr;
+    if (auto z = addr.Eval( Arch::ZeroedRegisters() ))
+      { Expr dispose(z); zaddr = z->Get( uint64_t() ); }
+    else
+      throw "WTF";
+    addrs.insert(zaddr);
+    if (zaddr == *addrs.begin())
+      base_addr = addr;
     
-    // return expr;
+    static std::ofstream sink( "addresses.txt" );
+    static std::set<unisim::util::symbolic::Expr,AddrLess> addrs;
+    if (addrs.insert(addr).second)
+      sink << addr << std::endl;
   }
-
-  Interface::Interface()
-    : gregs()
-    , fregs()
-    , vregs()
-    , has_jump(false)
-    , behavior(std::make_shared<ActionNode>())
-  {}
-
 }

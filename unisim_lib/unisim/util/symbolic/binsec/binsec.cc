@@ -60,20 +60,20 @@ namespace binsec {
   }
 
   Expr
-  ASExprNode::Simplify( Expr const& expr )
+  ASExprNode::Simplify( Expr const& _expr )
   {
-    if (ConstNodeBase const* node = expr->GetConstNode())
+    Expr expr( _expr );
+    if (ConstNodeBase const* node = expr.ConstSimplify())
       {
-        Expr cexp( node );
         switch (node->GetType())
           {
-          case ScalarType::S8:  return make_const( node-> GetU8() );
-          case ScalarType::S16: return make_const( node->GetU16() );
-          case ScalarType::S32: return make_const( node->GetU32() );
-          case ScalarType::S64: return make_const( node->GetU64() );
+          case ScalarType::S8:  return make_const( node-> Get( uint8_t() ) );
+          case ScalarType::S16: return make_const( node->Get( uint16_t() ) );
+          case ScalarType::S32: return make_const( node->Get( uint32_t() ) );
+          case ScalarType::S64: return make_const( node->Get( uint64_t() ) );
           default: break;
           }
-        return cexp;
+        return expr;
       }
     else if (OpNodeBase const* node = expr->AsOpNode())
       {
@@ -91,7 +91,7 @@ namespace binsec {
                 for (unsigned idx = 0; idx < 2; ++idx)
                   if (ConstNodeBase const* node = subs[idx]->GetConstNode())
                     {
-                      uint64_t v = node->GetU64();
+                      uint64_t v = node->Get( uint64_t() );
                       if (v & (v+1))
                         continue;
                       if (v == 0)
@@ -100,7 +100,7 @@ namespace binsec {
                       if (select >= bitsize)
                         return subs[idx^1];
                       BitFilter bf( subs[idx^1], bitsize, select, bitsize, false );
-                      bf.Retain(); // Not a heap-allocated object (never delete)
+                      bf.Retain(); // Prevent deletion of this stack-allocated object
                       Expr res( bf.Simplify() );
                       return (res.node == &bf) ? new BitFilter( bf ) : res.node;
                     }
@@ -176,11 +176,11 @@ namespace binsec {
         Expr cexp( node );
         switch (node->GetType())
           {
-          case ScalarType::BOOL: sink << node->GetS32() << "<1>";  return 1;
-          case ScalarType::U8:  case ScalarType::S8:  sink << dbx(1,node-> GetU8());  return 8;
-          case ScalarType::U16: case ScalarType::S16: sink << dbx(2,node->GetU16()); return 16;
-          case ScalarType::U32: case ScalarType::S32: sink << dbx(4,node->GetU32()); return 32;
-          case ScalarType::U64: case ScalarType::S64: sink << dbx(8,node->GetU64()); return 64;
+          case ScalarType::BOOL: sink << node->Get( int32_t() ) << "<1>";  return 1;
+          case ScalarType::U8:  case ScalarType::S8:  sink << dbx(1,node-> Get( uint8_t() ));  return 8;
+          case ScalarType::U16: case ScalarType::S16: sink << dbx(2,node->Get( uint16_t() )); return 16;
+          case ScalarType::U32: case ScalarType::S32: sink << dbx(4,node->Get( uint32_t() )); return 32;
+          case ScalarType::U64: case ScalarType::S64: sink << dbx(8,node->Get( uint64_t() )); return 64;
           default: break;
           }
         throw std::logic_error("can't encode type");
@@ -433,7 +433,7 @@ namespace binsec {
     
     if (not cond.good())
       return;
-
+    
     cond = ASExprNode::Simplify( cond );
     
     for (unsigned choice = 0; choice < 2; ++choice)
@@ -639,10 +639,10 @@ namespace binsec {
           {
             if (RegWrite const* rw = dynamic_cast<RegWrite const*>( itr->node ))
               {
-                Expr        value = rw->value;
+                Expr const  value = rw->value;
                 unsigned    rsize = ScalarType(value->GetType()).bitsize;
 
-                if (not value.ConstSimplify() and not this->vars.count(value))
+                if (not value->AsConstNode() and not this->vars.count(value))
                   {
                     std::string vname = this->nxtname( rw, rsize );
                     std::ostringstream buffer;
@@ -741,7 +741,7 @@ namespace binsec {
           }
 
         std::ostringstream buffer;
-        buffer << "goto (" << GetCode(nia, this->vars, current) << (nia.ConstSimplify() ? ",0" : "") << ")";
+        buffer << "goto (" << GetCode(nia, this->vars, current) << (nia->AsConstNode() ? ",0" : "") << ")";
         if (bt == Branch::Call) buffer << " // call";
         current.write( buffer.str() );
       }

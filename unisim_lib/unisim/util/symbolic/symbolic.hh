@@ -101,6 +101,8 @@ namespace symbolic {
   
   struct ConstNodeBase;
   struct OpNodeBase;
+
+  struct EvalSpace { virtual ~EvalSpace() {} };
   
   struct ExprNode
   {
@@ -115,7 +117,9 @@ namespace symbolic {
     virtual void Repr( std::ostream& sink ) const = 0;
     virtual int cmp( ExprNode const& ) const = 0;
     virtual ConstNodeBase const* GetConstNode() const { return 0; };
-    virtual OpNodeBase const* AsOpNode() const { return 0; }
+    virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** ) const { return 0; }
+    virtual ConstNodeBase const* AsConstNode() const { return 0; }
+    virtual OpNodeBase const*    AsOpNode() const { return 0; }
     virtual ExprNode* Mutate() const = 0;
     virtual ScalarType::id_t GetType() const = 0;
   };
@@ -237,54 +241,59 @@ namespace symbolic {
   {
     virtual unsigned SubCount() const { return 0; };
     ConstNodeBase const* GetConstNode() const { return this; };
+    virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** ) const override { return this; }
+    ConstNodeBase const* AsConstNode() const { return this; };
     virtual ConstNodeBase* apply( Op op, ConstNodeBase const** args ) const = 0;
-    virtual float GetFloat() const = 0;
-    virtual double GetDouble() const = 0;
-    virtual bool GetBoolean() const = 0;
-    virtual uint8_t GetU8() const = 0;
-    virtual uint16_t GetU16() const = 0;
-    virtual uint32_t GetU32() const = 0;
-    virtual uint64_t GetU64() const = 0;
-    virtual int8_t GetS8() const = 0;
-    virtual int16_t GetS16() const = 0;
-    virtual int32_t GetS32() const = 0;
-    virtual int64_t GetS64() const = 0;
-    virtual float GetF32() const = 0;
-    virtual double GetF64() const = 0;
+    virtual float Get( float ) const = 0;
+    virtual double Get( double ) const = 0;
+    virtual long double Get( long double ) const = 0;
+    virtual bool Get( bool ) const = 0;
+    virtual uint8_t Get( uint8_t ) const = 0;
+    virtual uint16_t Get( uint16_t ) const = 0;
+    virtual uint32_t Get( uint32_t ) const = 0;
+    virtual uint64_t Get( uint64_t ) const = 0;
+    virtual int8_t Get( int8_t ) const = 0;
+    virtual int16_t Get( int16_t ) const = 0;
+    virtual int32_t Get( int32_t ) const = 0;
+    virtual int64_t Get( int64_t ) const = 0;
     static std::ostream& warn();
-    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<ConstNodeBase const&>( rhs ) ); }
-    int compare( ConstNodeBase const& rhs ) const { return 0; }
-    
   };
   
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalMod( VALUE_TYPE l, VALUE_TYPE r ) { return l % r; }
+  long double EvalMod( long double l, long double r );
   double     EvalMod( double l, double r );
   float      EvalMod( float l, float r );
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalXor( VALUE_TYPE l, VALUE_TYPE r ) { return l ^ r; }
+  long double EvalXor( long double l, long double r );
   double     EvalXor( double l, double r );
   float      EvalXor( float l, float r );
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalAnd( VALUE_TYPE l, VALUE_TYPE r ) { return l & r; }
+  long double EvalAnd( long double l, long double r );
   double     EvalAnd( double l, double r );
   float      EvalAnd( float l, float r );
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalOr( VALUE_TYPE l, VALUE_TYPE r ) { return l | r; }
+  long double EvalOr( long double l, long double r );
   double     EvalOr( double l, double r );
   float      EvalOr( float l, float r );
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalNot( VALUE_TYPE val ) { return ~val; }
   inline bool EvalNot( bool val ) { return not val; }
+  long double EvalNot( long double val );
   double     EvalNot( double val );
   float      EvalNot( float val );
 
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalSHL( VALUE_TYPE l, uint8_t shift ) { return l << shift; }
+  long double EvalSHL( long double, uint8_t );
   double     EvalSHL( double, uint8_t );
   float      EvalSHL( float, uint8_t );
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalSHR( VALUE_TYPE l, uint8_t shift ) { return l >> shift; }
+  long double EvalSHR( long double, uint8_t );
   double     EvalSHR( double, uint8_t );
   float      EvalSHR( float, uint8_t );
   template <typename VALUE_TYPE>
@@ -350,6 +359,21 @@ namespace symbolic {
 
       /* equal to us*/
       return 0;
+    }
+    
+    ConstNodeBase const*
+    Eval( EvalSpace const& evs ) const
+    {
+      unsigned subcount = node->SubCount();
+      Expr dispose[subcount];
+      ConstNodeBase const* cnbs[subcount];
+      for (unsigned idx = 0; idx < subcount; ++idx)
+        {
+          if (not (cnbs[idx] = node->GetSub(idx).Eval( evs )))
+            return 0;
+          dispose[idx] = cnbs[idx];
+        }
+      return node->Eval( evs, &cnbs[0] );
     }
     
     bool operator != ( Expr const& rhs ) const { return compare( rhs ) != 0; }
@@ -437,9 +461,9 @@ namespace symbolic {
         case Op::Xor:   return new this_type( EvalXor( value, GetValue( args[1] ) ) );
         case Op::And:   return new this_type( EvalAnd( value, GetValue( args[1] ) ) );
         case Op::Or:    return new this_type( EvalOr( value, GetValue( args[1] ) ) );
-        case Op::Lsl:   return new this_type( EvalSHL( value, args[1]->GetU8() ) );
+        case Op::Lsl:   return new this_type( EvalSHL( value, args[1]->Get( uint8_t() ) ) );
         case Op::Lsr:   
-        case Op::Asr:   return new this_type( EvalSHR( value, args[1]->GetU8() ) );
+        case Op::Asr:   return new this_type( EvalSHR( value, args[1]->Get( uint8_t() ) ) );
         case Op::Add:   return new this_type( value + GetValue( args[1] ) );
         case Op::Sub:   return new this_type( value - GetValue( args[1] ) );
         case Op::Mul:   return new this_type( value * GetValue( args[1] ) );
@@ -456,8 +480,8 @@ namespace symbolic {
         case Op::Tge:   return new ConstNode   <bool>   ( value >= GetValue( args[1] ) );
         case Op::Tgtu:  
         case Op::Tgt:   return new ConstNode   <bool>   ( value >  GetValue( args[1] ) );
-        case Op::Ror:   return new this_type( EvalRotateRight( value, args[1]->GetU8() ) );
-        case Op::Rol:   return new this_type( EvalRotateLeft( value, args[1]->GetU8() ) );
+        case Op::Ror:   return new this_type( EvalRotateRight( value, args[1]->Get( uint8_t() ) ) );
+        case Op::Rol:   return new this_type( EvalRotateLeft( value, args[1]->Get( uint8_t() ) ) );
           
         case Op::FSQB:  break;
         case Op::FFZ:   break;
@@ -476,20 +500,21 @@ namespace symbolic {
       warn() << "Unhandled unary operation: " << op.c_str() << "\n";
       return 0;
     }
-    float GetFloat() const { return value; }
-    double GetDouble() const { return value; }
-    bool GetBoolean() const { return value; }
-    uint8_t GetU8() const { return value; }
-    uint16_t GetU16() const { return value; }
-    uint32_t GetU32() const { return value; }
-    uint64_t GetU64() const { return value; }
-    int8_t GetS8() const { return value; }
-    int16_t GetS16() const { return value; }
-    int32_t GetS32() const { return value; }
-    int64_t GetS64() const { return value; }
-    float GetF32() const { return value; }
-    double GetF64() const { return value; }
+    float Get( float ) const { return value; }
+    double Get( double ) const { return value; }
+    long double Get( long double ) const { return value; }
+    bool Get( bool ) const { return value; }
+    uint8_t Get( uint8_t ) const { return value; }
+    uint16_t Get( uint16_t ) const { return value; }
+    uint32_t Get( uint32_t ) const { return value; }
+    uint64_t Get( uint64_t ) const { return value; }
+    int8_t Get( int8_t ) const { return value; }
+    int16_t Get( int16_t ) const { return value; }
+    int32_t Get( int32_t ) const { return value; }
+    int64_t Get( int64_t ) const { return value; }
     ScalarType::id_t GetType() const { return TypeInfo<VALUE_TYPE>::GetType(); }
+    virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
+    int compare( this_type const& rhs ) const { return (value < rhs.value) ? -1 : (value > rhs.value) ? +1 : 0; }
   };
 
   inline
@@ -531,6 +556,8 @@ namespace symbolic {
         }
       return cnbs[0]->apply( op, &cnbs[0] );
     }
+    virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** cnbs ) const override { return cnbs[0]->apply( op, &cnbs[0] ); }
+    
     virtual unsigned SubCount() const { return SUBCOUNT; };
     virtual Expr const& GetSub(unsigned idx) const
     {
@@ -570,21 +597,11 @@ namespace symbolic {
       if (ConstNodeBase const* cnb = src->GetConstNode())
         {
           Expr cexp(cnb);
-          if (CmpTypes<DST_VALUE_TYPE,   float>::same) return new ConstNode<   float>( cnb->GetFloat() );
-          if (CmpTypes<DST_VALUE_TYPE,  double>::same) return new ConstNode<  double>( cnb->GetDouble() );
-          if (CmpTypes<DST_VALUE_TYPE,    bool>::same) return new ConstNode<    bool>( cnb->GetBoolean() );
-          if (CmpTypes<DST_VALUE_TYPE, uint8_t>::same) return new ConstNode< uint8_t>( cnb->GetU8() );
-          if (CmpTypes<DST_VALUE_TYPE,uint16_t>::same) return new ConstNode<uint16_t>( cnb->GetU16() );
-          if (CmpTypes<DST_VALUE_TYPE,uint32_t>::same) return new ConstNode<uint32_t>( cnb->GetU32() );
-          if (CmpTypes<DST_VALUE_TYPE,uint64_t>::same) return new ConstNode<uint64_t>( cnb->GetU64() );
-          if (CmpTypes<DST_VALUE_TYPE,  int8_t>::same) return new ConstNode<  int8_t>( cnb->GetS8() );
-          if (CmpTypes<DST_VALUE_TYPE, int16_t>::same) return new ConstNode< int16_t>( cnb->GetS16() );
-          if (CmpTypes<DST_VALUE_TYPE, int32_t>::same) return new ConstNode< int32_t>( cnb->GetS32() );
-          if (CmpTypes<DST_VALUE_TYPE, int64_t>::same) return new ConstNode< int64_t>( cnb->GetS64() );
-          throw std::logic_error("Unkown Type");
+          return new ConstNode<DST_VALUE_TYPE>( cnb->Get( DST_VALUE_TYPE() ) );
         }
       return 0;
     }
+    virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** cnbs ) const override { return new ConstNode<DST_VALUE_TYPE>( cnbs[0]->Get( DST_VALUE_TYPE() ) ); }
   };
   
   /* 1 operand operation */

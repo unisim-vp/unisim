@@ -39,7 +39,6 @@
 #include <unisim/component/cxx/processor/intel/segments.hh>
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
-#include <unisim/component/cxx/processor/intel/execute.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -694,10 +693,10 @@ namespace intel {
     }
     
     u64_t tscread() { return m_instcount; }
-
     void  xgetbv();
     void  cpuid();
     void _DE() { std::cerr << "#DE: Division Error.\n"; throw std::runtime_error("diverr"); }
+    
     // void                        fpdump()
     // {
     //   std::cerr << ": #insn: " << std::dec << m_instcount
@@ -706,6 +705,8 @@ namespace intel {
     //   m_latest_insn->disasm( std::cerr );
     //   std::cerr << " (" << m_latest_insn->GetEncoding() << ")" << std::endl;
     // }
+    
+    void unimplemented() { throw std::runtime_error("unimplemented"); }
     
     bool Cond( bool b ) const { return b; }
     
@@ -728,6 +729,9 @@ namespace intel {
     uint8_t vmm_storage[8][VUConfig::BYTECOUNT];
     uint32_t mxcsr;
 
+    void mxcswrite( uint32_t v ) { mxcsr = v; }
+    uint32_t mxcsread() { return mxcsr; }
+    
     template <class VR> static unsigned vmm_wsize( VR const& vr ) { return VR::size() / 8; }
     static unsigned vmm_wsize( unisim::component::cxx::processor::intel::SSE const& ) { return VUConfig::BYTECOUNT; }
   

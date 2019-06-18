@@ -214,7 +214,7 @@ struct Cmps : public Operation<ARCH>
   Cmps( OpBase<ARCH> const& opbase, uint8_t _segment, StringEngine<ARCH>* _str ) : Operation<ARCH>( opbase ), segment( _segment ), str( _str ) {} uint8_t segment; StringEngine<ARCH>* str;
   void disasm( std::ostream& _sink ) const
   {
-    _sink << ((REP==0) ? "" : (REP&1) ? "repz " : "repnz ") << "cmpsb " << str->getdst() << ',' << str->getsrc(segment);
+    _sink << ((REP==0) ? "" : (REP&1) ? "repz " : "repnz ") << "cmps" << SizeID<OP::SIZE>::iid() << ' ' << str->getdst() << ',' << str->getsrc(segment);
   }
   
   void execute( ARCH& arch ) const

@@ -244,7 +244,7 @@ namespace ut
 
     OperandMap() : omap(), count() {}
 
-    T open(unsigned idx, bool w)
+    T touch(unsigned idx, bool w)
     {
       if (idx >= COUNT) throw "ouch";
       Operand<T>& op = omap[idx];
@@ -278,20 +278,23 @@ namespace ut
   
   struct Interface
   {
-    Interface();
+    typedef AMD64::MemCode MemCode;
+    typedef unisim::util::symbolic::Expr Expr;
+    
+    Interface( Operation const& op, MemCode const& code, std::string const& disasm );
 
-    void finalize();
-
-    struct TestLess
-    {
-      bool operator () ( Interface const& a, Interface const& b ) const;
-    };
-
+    void memaccess( Expr const& addr, bool iswrite );
+    
+    MemCode memcode;
+    std::string asmcode;
     OperandMap<uint8_t,AMD64::GREGCOUNT> gregs; /* integer (x86) registers */
     OperandMap<uint8_t,AMD64::FREGCOUNT> fregs; /* floating (x87) registers */
     OperandMap<uint8_t,AMD64::VREGCOUNT> vregs; /* vector (sse/avx) registers */
-    bool has_jump;
     std::shared_ptr<ActionNode> behavior;
+    std::set<uint64_t> addrs;
+    Expr base_addr;
+    std::map<unsigned,Expr> relocs;
+    bool has_write, has_jump;
   };
   
   template <typename T>
@@ -375,92 +378,6 @@ namespace ut
     
     bool close( Arch const& ref );
     
-    struct OfArch { OfArch( Arch& _core ) : core( _core ) {} Arch& core; };
-    
-    static Arch* FindRoot( unisim::util::symbolic::Expr const& expr )
-    {
-      if (OfArch const* node = dynamic_cast<OfArch const*>( expr.node ))
-        return &node->core;
-      
-      for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
-        if (Arch* found = FindRoot( expr->GetSub(idx)))
-          return found;
-      return 0;
-    }
-    
-    // struct RIRegID : public unisim::util::symbolic::Identifier<RIRegID>
-    // {
-    //   typedef uint64_t register_type;
-    //   enum Code { rax = 0, rcx = 1, rdx = 2,  rbx = 3,  rsp = 4,  rbp = 5,  rsi = 6,  rdi = 7,
-    //               r8 = 8,  r9 = 9,  r10 = 10, r11 = 11, r12 = 12, r13 = 13, r14 = 14, r15 = 15, end } code;
-
-    //   char const* c_str() const
-    //   {
-    //     switch (code)
-    //       {
-    //       case rax: return "rax";
-    //       case rcx: return "rcx";
-    //       case rdx: return "rdx";
-    //       case rbx: return "rbx";
-    //       case rsp: return "rsp";
-    //       case rbp: return "rbp";
-    //       case rsi: return "rsi";
-    //       case rdi: return "rdi";
-    //       case r8:  return "r8";
-    //       case r9:  return "r9";
-    //       case r10: return "r10";
-    //       case r11: return "r11";
-    //       case r12: return "r12";
-    //       case r13: return "r13";
-    //       case r14: return "r14";
-    //       case r15: return "r15";
-    //       case end: break;
-    //       }
-    //     return "NA";
-    //   }
-      
-    //   RIRegID() : code(end) {}
-    //   RIRegID( Code _code ) : code(_code) {}
-    //   RIRegID( char const* _code ) : code(end) { init( _code ); }
-    // };
-
-    //    typedef UWT::FLAG FLAG;
-    
-    struct SRegID : public unisim::util::symbolic::Identifier<SRegID>
-    {
-      typedef uint16_t register_type;
-      enum Code { es, cs, ss, ds, fs, gs, end } code;
-      
-      char const* c_str() const
-      {
-        switch (code)
-          {
-          case  es: return "es";
-          case  cs: return "cs";
-          case  ss: return "ss";
-          case  ds: return "ds";
-          case  fs: return "fs";
-          case  gs: return "gs";
-          case end: break;
-          }
-        return "NA";
-      }
-      
-      SRegID() : code(end) {}
-      SRegID( Code _code ) : code(_code) {}
-      SRegID( char const* _code ) : code(end) { init( _code ); }
-    };
-
-    struct FRegID : public unisim::util::symbolic::Identifier<FRegID>
-    {
-      typedef double register_type;
-      enum Code { st0=0, st1, st2, st3, st4, st5, st6, st7, end } code;
-      char const* c_str() const { return &"st0\0st1\0st2\0st3\0st4\0st5\0st6\0st7"[(unsigned(code) % 8)*4]; }
-      FRegID() : code(end) {}
-      FRegID( Code _code ) : code(_code) {}
-      FRegID( char const* _code ) : code(end) { init( _code ); }
-    };
-    
     struct RegReadBase : public unisim::util::symbolic::ExprNode
     {
       virtual char const* GetRegName() const = 0;
@@ -483,9 +400,77 @@ namespace ut
 
       RID id;
     };
-    
+
     template <typename RID>
     RegRead<RID>* newRegRead( RID _id ) { return new RegRead<RID>(_id); }
+
+    struct VirtualRegister
+    {
+      VirtualRegister( unsigned _reg,  unsigned _idx ) : reg(_reg), idx(_idx) {} unsigned reg, idx;
+      int compare(VirtualRegister const& rhs) const
+      {
+        if (int delta = int(idx) - int(rhs.idx)) return delta;
+        return int(reg) - int(rhs.reg);
+      }
+    };
+    
+    struct VRReadBase : public VirtualRegister, public ExprNode
+    {
+      VRReadBase( unsigned reg,  unsigned idx ) : VirtualRegister(reg, idx), ExprNode() {}
+      virtual int cmp(ExprNode const& rhs) const override { return compare( dynamic_cast<VirtualRegister const&>( rhs ) ); }
+      virtual unsigned SubCount() const override { return 0; }
+    };
+    
+    template <class T>
+    struct VRRead : public VRReadBase
+    {
+      typedef VRRead<T> this_type;
+      VRRead( unsigned reg,  unsigned idx ) : VRReadBase(reg, idx) {}
+      virtual ExprNode* Mutate() const override { return new this_type(*this); }
+      virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Read( " << idx << ", " << reg << " )"; }
+      virtual ScalarType::id_t GetType() const override { return T::scalar_type; }
+    };
+
+    struct VRWriteBase : public VirtualRegister, public Update
+    {
+      VRWriteBase( unsigned reg, unsigned idx, Expr const& _val ) : VirtualRegister(reg, idx), Update(), val(_val) {}
+      virtual int cmp(ExprNode const& rhs) const override { return compare( dynamic_cast<VirtualRegister const&>( rhs ) ); }
+      virtual unsigned SubCount() const override { return 1; }
+      virtual Expr const& GetSub(unsigned idx) const override { if (idx == 0) return val; return ExprNode::GetSub(idx); }
+      Expr val;
+    };
+
+    template <class T>
+    struct VRWrite : public VRWriteBase
+    {
+      typedef VRWrite<T> this_type;
+      VRWrite( unsigned reg,  unsigned idx, Expr const& val ) : VRWriteBase(reg, idx, val) {}
+      virtual ExprNode* Mutate() const override { return new this_type(*this); }
+      virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Write( " << reg << ", " << idx << ", " << val << " )"; }
+    };
+    
+    struct VReg { static ScalarType::id_t const scalar_type = ScalarType::U64;  static char const* name() { return "VReg"; } };
+    struct FReg { static ScalarType::id_t const scalar_type = ScalarType::F64;  static char const* name() { return "FReg"; } };
+    struct GReg { static ScalarType::id_t const scalar_type = ScalarType::VOID; static char const* name() { return "GReg"; } };
+    
+    typedef VRRead<VReg> VRegRead; typedef VRWrite<VReg> VRegWrite;
+    typedef VRRead<FReg> FRegRead; typedef VRWrite<FReg> FRegWrite;
+    /**/                           typedef VRWrite<GReg> GRegWrite;
+    
+    struct ZeroedRegisters : public unisim::util::symbolic::EvalSpace {};
+
+    struct GRegRead : public VRRead<GReg>
+    {
+      GRegRead( unsigned reg, unsigned idx ) : VRRead<GReg>( reg, idx ) {}
+      typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
+      virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evp, ConstNodeBase const** ) const override
+      {
+        if (dynamic_cast<ZeroedRegisters const*>( &evp ))
+          return new unisim::util::symbolic::ConstNode<uint64_t>( 0 );
+        return 0;
+      };
+    };
+
 
     struct RegWriteBase : public Update
     {
@@ -550,22 +535,11 @@ namespace ut
 
     Expr                        flagvalues[FLAG::end];
     
-  
     bit_t                       flagread( FLAG flag ) { return bit_t(flagvalues[flag.idx()]); }
     void                        flagwrite( FLAG flag, bit_t fval ) { flagvalues[flag.idx()] = fval.expr; }
 
-    Expr                        segment_registers[6];
-    
-    u16_t                       segregread( unsigned idx )
-    {
-      throw ut::Untestable("segment register");
-      return u16_t(segment_registers[idx]);
-    }
-    void                        segregwrite( unsigned idx, u16_t value )
-    {
-      throw ut::Untestable("segment register");
-      segment_registers[idx] = value.expr;
-    }
+    u16_t                       segregread( unsigned idx ) { throw ut::Untestable("segment register"); return u16_t(); }
+    void                        segregwrite( unsigned idx, u16_t value ) { throw ut::Untestable("segment register"); }
 
     typedef std::map<unsigned,unsigned> RegMap;
 
@@ -594,21 +568,29 @@ namespace ut
     void regwrite( GOb const&, unsigned idx, u8_t val )   { eregwrite( idx, 1, 0, val.expr ); }
     void regwrite( GOw const&, unsigned idx, u16_t val )  { eregwrite( idx, 2, 0, val.expr ); }
 
-    enum ipproc_t { ipnone = 0, ipjmp, ipcall, ipret };
+    enum ipproc_t { ipjmp, ipcall, ipret };
     Expr                        next_insn_addr;
     ipproc_t                    next_insn_mode;
-
-    addr_t                      getnip() { return addr_t(next_insn_addr); }
-    void                        setnip( addr_t nip, ipproc_t ipproc = ipjmp );
     
-    struct RIPRead : public RegReadBase
+    addr_t                      getnip() { return addr_t(next_insn_addr); }
+    void                        setnip( addr_t nip, ipproc_t ipproc = ipjmp ) { throw ut::Untestable("has jump"); }
+
+    
+    template <class T>
+    struct SPRRead : public unisim::util::symbolic::ExprNode
     {
-      virtual RIPRead* Mutate() const override { return new RIPRead( *this ); }
-      virtual char const* GetRegName() const override { return "rip"; };
-      virtual ScalarType::id_t GetType() const override { return ScalarType::U64; }
+      typedef SPRRead<T> this_type;
+      virtual this_type* Mutate() const override { return new this_type( *this ); }
       virtual unsigned SubCount() const override { return 0; }
+      virtual int cmp( unisim::util::symbolic::ExprNode const& rhs ) const override { return 0; }
+      virtual void Repr( std::ostream& sink ) const override { sink << "SPRRead<" << typeid(T()).name() << " >()"; }
+      virtual ScalarType::id_t GetType() const override { return T::scalar_type; }
     };
 
+    struct RIP { static ScalarType::id_t const scalar_type = ScalarType::U64; };
+
+    typedef SPRRead<RIP> RIPRead;
+    
     struct RIPWrite : public RegWriteBase
     {
       RIPWrite( Expr const& _value, ipproc_t _hint ) : RegWriteBase( _value ), hint(_hint) {}
@@ -618,44 +600,13 @@ namespace ut
       int compare( RIPWrite const& rhs ) const { if (int delta = RegWriteBase::compare( rhs )) return delta; return int(hint) - int(rhs.hint); }
       ipproc_t hint;
     };
-
+    
     void                        fnanchk( f64_t value ) {};
 
-    struct FCWRead : public RegReadBase
-    {
-      virtual FCWRead* Mutate() const override { return new FCWRead( *this ); }
-      virtual char const* GetRegName() const override { return "fcw"; };
-      virtual ScalarType::id_t GetType() const override { return ScalarType::U16; }
-      virtual unsigned SubCount() const override { return 0; }
-    };
-
-    struct FCWWrite : public RegWriteBase
-    {
-      FCWWrite( Expr const& _value ) : RegWriteBase( _value ) {}
-      virtual FCWWrite* Mutate() const override { return new FCWWrite( *this ); }
-      virtual char const* GetRegName() const override { return "fcw"; }
-    };
-
-    Expr                        fcw;
     int                         fcwreadRC() const { return 0; }
-    u16_t                       fcwread() const { return u16_t(fcw); }
-    void                        fcwwrite( u16_t value ) { fcw = value.expr; }
-    void                        finit()
-    {
-      // FPU initialization
-      flagwrite( FLAG::C0, bit_t(0) );
-      flagwrite( FLAG::C1, bit_t(0) );
-      flagwrite( FLAG::C2, bit_t(0) );
-      flagwrite( FLAG::C3, bit_t(0) );
-      fcwwrite( u16_t(0x037f) );
-      // TODO: Complete FPU initialization
-      // ftop = 0
-      // fpustatus = 0
-      // fputag = 0xffff
-      // fpuoptr = 0
-      // fpuiptr = 0
-      // fpuopcode = 0
-    }
+    u16_t                       fcwread() const { throw ut::Untestable("FCW access"); return u16_t(); }
+    void                        fcwwrite( u16_t value ) { throw ut::Untestable("FCW access"); }
+    void                        finit() { throw ut::Untestable("FCW access"); }
 
     void                        fxam();
 
@@ -688,20 +639,21 @@ namespace ut
       virtual this_type* Mutate() const override { return new this_type( *this ); }
       virtual ScalarType::id_t GetType() const { return unisim::util::symbolic::TypeInfo<dstT>::GetType(); }
     };
-      
-    struct FRegWrite : public Update
-    {
-      FRegWrite( Arch& core, Expr const& _value, Expr const& _freg )
-        : value(_value), freg(_freg)
-      {}
-      virtual FRegWrite* Mutate() const override { return new FRegWrite(*this); }
-      virtual void Repr( std::ostream& sink ) const override { sink << "FRegWrite( " << freg << ", " << value << " )"; }
-      virtual unsigned SubCount() const override { return 2; }
-      virtual Expr const& GetSub(unsigned idx) const override { switch (idx) { case 0: return value; case 1: return freg; } return ExprNode::GetSub(idx); }
-      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<FRegWrite const&>( rhs ) ); }
-      int compare( FRegWrite const& rhs ) const { return 0; }
-      Expr value, freg;
-    };
+    
+    // struct FRegWrite : public Update
+    // {
+    //   FRegWrite( unsigned _idx, Expr const& _value )
+    //     : value(_value), idx(_idx)
+    //   {}
+    //   virtual FRegWrite* Mutate() const override { return new FRegWrite(*this); }
+    //   virtual void Repr( std::ostream& sink ) const override { sink << "FRegWrite( " << idx << ", " << value << " )"; }
+    //   virtual unsigned SubCount() const override { return 1; }
+    //   virtual Expr const& GetSub(unsigned idx) const override { if (idx == 0) return value; return ExprNode::GetSub(idx); }
+    //   virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<FRegWrite const&>( rhs ) ); }
+    //   int compare( FRegWrite const& rhs ) const { return int(idx) - int(rhs.idx); }
+    //   Expr value;
+    //   unsigned idx;
+    // };
 
     struct Store : public Update
     {
@@ -728,20 +680,31 @@ namespace ut
 
     std::set<Expr> stores;
     
+    template <typename dstT> Expr PerformLoad( dstT const&, unsigned bytes, unsigned segment, addr_t const& addr )
+    {
+      interface.memaccess( addr.expr, false );
+      return new Load<dstT>( bytes, segment, addr.expr );
+    }
+    void PerformStore( unsigned bytes, unsigned segment, addr_t const& addr, Expr const& value )
+    {
+      interface.memaccess( addr.expr, true );
+      stores.insert( Expr( new Store( bytes, segment, addr.expr, value ) ) );
+    }
+
     template<unsigned OPSIZE>
     typename TypeFor<Arch,OPSIZE>::u
     memread( unsigned seg, addr_t const& addr )
     {
       typedef typename TypeFor<Arch,OPSIZE>::u u_type;
       typedef typename u_type::value_type uval_type;
-      return u_type( Expr( new Load<uval_type>( OPSIZE/8, seg, addr.expr ) ) );
+      return u_type( PerformLoad( uval_type(), OPSIZE/8, seg, addr.expr ) );
     }
 
     template <unsigned OPSIZE>
     void
     memwrite( unsigned seg, addr_t const& addr, typename TypeFor<Arch,OPSIZE>::u val )
     {
-      stores.insert( new Store( OPSIZE/8, seg, addr.expr, val.expr ) );
+      PerformStore( OPSIZE/8, seg, addr, val.expr );
     }
     
     struct FTop : public unisim::util::symbolic::ExprNode
@@ -755,30 +718,31 @@ namespace ut
 
     struct FTopWrite : public RegWriteBase
     {
-      FTopWrite( Expr const& ftop ) : RegWriteBase( ftop ) {}
+      FTopWrite( u8_t const& ftop ) : RegWriteBase( ftop.expr ) {}
       virtual FTopWrite* Mutate() const override { return new FTopWrite(*this); }
       virtual char const* GetRegName() const { return "ftop"; }
     };
-    
-    Expr                        ftop_source;
-    unsigned                    ftop;
-    static u8_t                 ftop_update( Expr const& ftopsrc, unsigned ftop ) { if (ftop == 0) return ftopsrc; return (u8_t(ftopsrc) + u8_t(ftop)) & u8_t(7); }
-    u8_t                        ftopread() { return ftop_update( ftop_source, ftop ); }
-    
-    Expr                        fpuregs[8];
-    void                        fpush( f64_t value ) { ftop = (ftop+8-1) % 8; fpuregs[ftop] = value.expr; }
-    void                        fwrite( unsigned idx, f64_t value ) { fpuregs[(ftop + idx) % 8] = value.expr; }
-    f64_t                       fpop() { f64_t res( fpuregs[ftop] ); ftop = (ftop+1) % 8; return res; }
-    f64_t                       fread( unsigned idx ) { return f64_t(fpuregs[(ftop + idx) % 8]); }
-    
-    void                        fmemwrite32( unsigned seg, addr_t const& addr, f32_t val ) { stores.insert( new Store(  4, seg, addr.expr, val.expr ) ); }
-    void                        fmemwrite64( unsigned seg, addr_t const& addr, f64_t val ) { stores.insert( new Store(  8, seg, addr.expr, val.expr ) ); }
-    void                        fmemwrite80( unsigned seg, addr_t const& addr, f80_t val ) { stores.insert( new Store( 10, seg, addr.expr, val.expr ) ); }
-    
-    f32_t                       fmemread32( unsigned seg, addr_t const& addr ) { return f32_t( Expr( new Load<float>( 4, seg, addr.expr ) ) ); }
-    f64_t                       fmemread64( unsigned seg, addr_t const& addr ) { return f64_t( Expr( new Load<double>(  8, seg, addr.expr ) ) ); }
-    f80_t                       fmemread80( unsigned seg, addr_t const& addr ) { return f80_t( Expr( new Load<long double>( 10, seg, addr.expr ) ) ); }
 
+    u16_t                       ftopread() { throw ut::Untestable("FCW access"); return u16_t(); }
+    unsigned                    ftop;
+
+    Expr&                       fpaccess(unsigned r, bool w);
+    bool                        fpdiff(unsigned r);
+    
+    Expr                        fpregs[8];
+    void                        fpush( f64_t value ) { ftop = (ftop+8-1) % 8; fpaccess(ftop,true) = value.expr; }
+    void                        fwrite( unsigned idx, f64_t value ) { fpaccess((ftop + idx) % 8,true) = value.expr; }
+    f64_t                       fpop() { f64_t res( fpaccess(ftop,false) ); ftop = (ftop+1) % 8; return res; }
+    f64_t                       fread( unsigned idx ) { return f64_t(fpaccess((ftop + idx) % 8,false)); }
+    
+    void                        fmemwrite32( unsigned seg, addr_t const& addr, f32_t val ) { PerformStore(  4, seg, addr, val.expr ); }
+    void                        fmemwrite64( unsigned seg, addr_t const& addr, f64_t val ) { PerformStore(  8, seg, addr, val.expr ); }
+    void                        fmemwrite80( unsigned seg, addr_t const& addr, f80_t val ) { PerformStore( 10, seg, addr, val.expr ); }
+    
+    f32_t                       fmemread32( unsigned seg, addr_t const& addr ) { return f32_t( PerformLoad( (float)0,        4, seg, addr ) ); }
+    f64_t                       fmemread64( unsigned seg, addr_t const& addr ) { return f64_t( PerformLoad( (double)0,       8, seg, addr ) ); }
+    f80_t                       fmemread80( unsigned seg, addr_t const& addr ) { return f80_t( PerformLoad( (long double)0, 10, seg, addr ) ); }
+ 
     template <unsigned OPSIZE>
     typename TypeFor<Arch,OPSIZE>::u
     regread( unsigned idx )
@@ -849,7 +813,7 @@ namespace ut
     {
       typedef typename TypeFor<Arch,OPSIZE>::f f_type;
       typedef typename f_type::value_type f_ctype;
-      return f_type( Expr( new Load<f_ctype>( OPSIZE/8, seg, addr.expr ) ) );
+      return f_type( PerformLoad( f_ctype(), OPSIZE/8, seg, addr ) );
     }
 
     template <unsigned OPSIZE>
@@ -865,7 +829,7 @@ namespace ut
     void
     fpmemwrite( unsigned seg, addr_t const& addr, typename TypeFor<Arch,OPSIZE>::f const& value )
     {
-      stores.insert( new Store( OPSIZE/8, seg, addr.expr, value.expr ) );
+      PerformStore( OPSIZE/8, seg, addr, value.expr );
     }
     
     template <unsigned OPSIZE>
@@ -876,22 +840,23 @@ namespace ut
       fpmemwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ), value );
     }
 
-    struct MXCSRRead : public RegReadBase
-    {
-      virtual MXCSRRead* Mutate() const override { return new MXCSRRead( *this ); }
-      virtual char const* GetRegName() const override { return "mxcsr"; };
-      virtual ScalarType::id_t GetType() const override { return ScalarType::U16; }
-      virtual unsigned SubCount() const override { return 0; }
-    };
+    // struct MXCSRRead : public RegReadBase
+    // {
+    //   virtual MXCSRRead* Mutate() const override { return new MXCSRRead( *this ); }
+    //   virtual char const* GetRegName() const override { return "mxcsr"; };
+    //   virtual ScalarType::id_t GetType() const override { return ScalarType::U16; }
+    //   virtual unsigned SubCount() const override { return 0; }
+    // };
     
-    struct MXCSRWrite : public RegWriteBase
-    {
-      MXCSRWrite( Expr const& _value ) : RegWriteBase( _value ) {}
-      virtual MXCSRWrite* Mutate() const override { return new MXCSRWrite( *this ); }
-      virtual char const* GetRegName() const override { return "mxcsr"; }
-    };
+    // struct MXCSRWrite : public RegWriteBase
+    // {
+    //   MXCSRWrite( Expr const& _value ) : RegWriteBase( _value ) {}
+    //   virtual MXCSRWrite* Mutate() const override { return new MXCSRWrite( *this ); }
+    //   virtual char const* GetRegName() const override { return "mxcsr"; }
+    // };
     
-    u32_t mxcsr;
+    u32_t mxcsread() { throw ut::Untestable("mxcsr access"); return u32_t(); };
+    void mxcswrite( u32_t const& value ) { throw ut::Untestable("mxcsr access"); }
 
     struct VUConfig
     {
@@ -1006,29 +971,18 @@ namespace ut
       };
     };
 
-    struct VRegRead : public unisim::util::symbolic::ExprNode
-    {
-      VRegRead( unsigned _idx ) : idx(_idx) {} unsigned idx;
-      virtual void Repr( std::ostream& sink ) const override { sink << "VRegRead(" << idx << ")"; }
-      virtual unsigned SubCount() const override { return 0; }
-      virtual int cmp(ExprNode const& brhs) const override { return compare( dynamic_cast<VRegRead const&>( brhs ) ); }
-      int compare(VRegRead const& rhs) const { return int(idx) - int(rhs.idx); }
-      virtual ExprNode* Mutate() const override { return new VRegRead(*this); }
-      ScalarType::id_t GetType() const { return ScalarType::VOID; }
-    };
-
-    struct VRegWrite : public Arch::Update
-    {
-      VRegWrite( unsigned _idx, Expr const& _value ) : value(_value), idx(_idx) {}
-      virtual VRegWrite* Mutate() const override { return new VRegWrite( *this ); }
-      virtual void Repr( std::ostream& sink ) const override { sink << "VRegWrite(" << idx << ") := " << value; }
-      virtual unsigned SubCount() const { return 1; }
-      virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
-      virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<VRegWrite const&>( rhs ) ); }
-      int compare( VRegWrite const& rhs ) const { return int(idx) - int(rhs.idx); }
-      Expr value;
-      unsigned idx;
-    };
+    // struct VRegWrite : public Arch::Update
+    // {
+    //   VRegWrite( unsigned _idx, Expr const& _value ) : value(_value), idx(_idx) {}
+    //   virtual VRegWrite* Mutate() const override { return new VRegWrite( *this ); }
+    //   virtual void Repr( std::ostream& sink ) const override { sink << "VRegWrite(" << idx << ") := " << value; }
+    //   virtual unsigned SubCount() const { return 1; }
+    //   virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
+    //   virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<VRegWrite const&>( rhs ) ); }
+    //   int compare( VRegWrite const& rhs ) const { return int(idx) - int(rhs.idx); }
+    //   Expr value;
+    //   unsigned idx;
+    // };
     
     struct VmmBrick { char _[sizeof(u8_t)]; };
     typedef unisim::component::cxx::processor::intel::VUnion<VUConfig> VUnion;
@@ -1209,10 +1163,9 @@ namespace ut
     void
     step( Operation const& op )
     {
-      setnip( getnip() + addr_t(op.length), ipnone );
+      next_insn_addr = (getnip() + addr_t(op.length)).expr;
       op.execute( *this );
     }
-    // std::set<Expr>                     mem_addrs;
     // uint8_t                            base_register;
     // bool                               aligned;
     // bool                               mem_writes;
@@ -1235,8 +1188,6 @@ namespace ut
     
     // void PCRelPrologue( Prologue const& pc ) const;
     
-    //    void load( Expr const& addr ) { mem_addrs.insert( addr ); }
-    //    void store( Expr const& addr ) { mem_addrs.insert( addr ); mem_writes = true; }
   };
   
   template <unsigned SUBCOUNT, class OP>

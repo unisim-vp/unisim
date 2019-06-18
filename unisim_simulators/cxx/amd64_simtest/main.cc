@@ -34,11 +34,6 @@
 
 #include <arch.hh>
 #include <unisim/component/cxx/processor/intel/isa/intel.hh>
-// #include <unisim/component/cxx/processor/intel/modrm.hh>
-// #include <unisim/component/cxx/processor/intel/disasm.hh>
-// #include <unisim/component/cxx/processor/intel/vectorbank.hh>
-// #include <unisim/component/cxx/processor/intel/types.hh>
-// #include <unisim/component/cxx/processor/intel/execute.hh>
 #include <unisim/util/random/random.hh>
 #include <fstream>
 #include <iostream>
@@ -124,13 +119,80 @@ struct Checker
 {
   typedef typename ISA::MemCode MemCode;
   typedef typename ISA::Operation Operation;
-  struct InsnCode
+  typedef unisim::util::symbolic::Expr Expr;
+  
+  struct TestLess
   {
-    InsnCode( MemCode const& mc, std::string const& ac ) : memcode(mc), asmcode(ac) {}
-    MemCode memcode;
-    std::string asmcode;
+    bool operator () ( ut::Interface const& a, ut::Interface const& b ) const
+    {
+      struct Comparator
+      {
+        int process( ut::ActionNode const& a, ut::ActionNode const& b ) const
+        {
+          if (int delta = a.updates.size() - b.updates.size()) return delta;
+          auto rci = b.updates.begin();
+          for (Expr const& update : a.updates)
+            { if (int delta = process( update,  *rci )) return delta; ++rci; }
+          
+          if (int delta = process( a.cond, b.cond )) return delta;
+          for (int idx = 0; idx < 2; ++idx)
+            {
+              if     (not a.nexts[idx])
+                { if (b.nexts[idx]) return -1; }
+              else if(b.nexts[idx])
+                { if (int delta = process( *a.nexts[idx], *b.nexts[idx] )) return delta; }
+            }
+          return 0;
+        }
+
+        int process( Expr const& a, Expr const& b ) const
+        {
+          // Do not compare null expressions
+          if (not b.node) return a.node ?  1 : 0;
+          if (not a.node) return b.node ? -1 : 0;
+      
+          /* First compare actual types */
+          const std::type_info* til = &typeid(*a.node);
+          const std::type_info* tir = &typeid(*b.node);
+          if (til < tir) return -1;
+          if (til > tir) return +1;
+        
+          /* Same types, call derived comparator except for Constants (compare popcount)*/
+          typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
+          if (auto an = dynamic_cast<ConstNodeBase const*>(a.node))
+            {
+              uint64_t av = an->Get(uint64_t()), bv = dynamic_cast<ConstNodeBase const&>(*b.node).Get( uint64_t() );
+              if (int delta = __builtin_popcountll(av) - __builtin_popcountll(bv))
+                return delta;
+            }
+          else if (auto vr = dynamic_cast<ut::Arch::VirtualRegister const*>(a.node))
+            {
+              unsigned ai = vr->idx, bi = dynamic_cast<ut::Arch::VirtualRegister const&>(*b.node).idx;
+              if (int delta = int(ai) - int(bi))
+                return delta;
+            }
+          else if (int delta = a.node->cmp( *b.node ))
+            return delta;
+
+          /* Compare sub operands recursively */
+          unsigned subcount = a.node->SubCount();
+          if (int delta = int(subcount) - int(b.node->SubCount()))
+            return delta;
+          for (unsigned idx = 0; idx < subcount; ++idx)
+            if (int delta = process( a.node->GetSub(idx), b.node->GetSub(idx)))
+              return delta;
+
+          /* equal to us*/
+          return 0;
+        }
+      } comparator;
+
+      return comparator.process( *a.behavior, *b.behavior ) < 0;
+    }
+    
   };
-  typedef std::multimap<ut::Interface, InsnCode, ut::Interface::TestLess> TestDB;
+  
+  typedef std::multiset<ut::Interface, TestLess> TestDB;
   
   unisim::util::random::Random random;
   ISA isa;
@@ -139,28 +201,22 @@ struct Checker
 
   bool insert( Operation const& op, MemCode const& code, std::string const& disasm )
   {
-    ut::Interface iif;
+    ut::Interface iif(op, code, disasm);
 
-    {
-      // Performing an abstract execution to check the validity of
-      // the opcode, and to compute the interface of the operation
-      ut::Arch reference( iif );
-      
-      for (bool end = false; not end;)
-        {
-          ut::Arch arch( iif );
-          arch.step( op );
-          end = arch.close( reference );
-        }
-
-      iif.finalize();
-    }
-    
-    auto p = testdb.equal_range(iif);
-    auto count = std::distance(p.first, p.second);
+    decltype(testdb.begin()) tstbeg, tstend;
+    std::tie(tstbeg,tstend) = testdb.equal_range(iif);
+    // if (code.length == 1 and code.bytes[0] == 0x90)
+    // {
+    //   std::for_each(tstbeg,tstend,[&](typename TestDB::value_type& v){
+    //       std::cout << "Equiv: " << v.second.asmcode << std::endl;
+    //       std::cout << *v.first.behavior << std::endl;
+    //     });
+    // }
+ 
+    auto count = std::distance(tstbeg, tstend);
     if (count > 1)
-      return false;
-    testdb.emplace_hint( p.second, std::piecewise_construct, std::forward_as_tuple( std::move( iif ) ), std::forward_as_tuple( code, disasm ) );
+        return false;
+    testdb.emplace_hint( tstend, std::move( iif ) );
     return true;
   }
 
@@ -262,8 +318,8 @@ struct Checker
     {
       std::ofstream dbg("dbg.txt");
       std::map<MemCode,char const*> rtdb;
-      for (auto const& kv : testdb)
-        rtdb[kv.second.memcode] = kv.second.asmcode.c_str();
+      for (ut::Interface const& test : testdb)
+        rtdb[test.memcode] = test.asmcode.c_str();
       for (MemCode const&  mc : done)
         {
           char const* ac = rtdb[mc];
@@ -278,10 +334,8 @@ struct Checker
   {
     std::ofstream sink( reposname );
 
-    for (typename TestDB::value_type const& test : testdb)
-      {
-        sink << test.second.memcode << "\t" << test.second.asmcode << '\n';
-      }
+    for (ut::Interface const& test : testdb)
+      sink << test.memcode << "\t" << test.asmcode << '\n';
   }
 
   struct FileLoc
@@ -316,7 +370,9 @@ struct Checker
             std::unique_ptr<Operation> codeop = std::unique_ptr<Operation>( isa.decode( 0x4000, code, updated_disasm ) );
             if (disasm != updated_disasm)
               std::cerr << fl << ": warning, assembly code divergence (" << code << ").\n   new: " << updated_disasm << "\n   old: " << disasm << "\n";
-            insert( *codeop, code, updated_disasm );
+            if (not insert( *codeop, code, updated_disasm ))
+              std::cerr << fl << ": warning " << code << ", " << disasm << " not inserted\n";
+            
           }
         catch (ut::Untestable const& denial)
           {
@@ -358,9 +414,9 @@ void Update( std::string const& reposname )
   checker.read_repos( reposname );
   checker.discover( ttl, 16384 );
   checker.write_repos( reposname );
-  std::string basename( reposname.substr( 0, reposname.size() - suffix.size() ) );
-  Sink sink( basename );
-  checker.write_tests( sink );
+  // std::string basename( reposname.substr( 0, reposname.size() - suffix.size() ) );
+  // Sink sink( basename );
+  // checker.write_tests( sink );
 }
 
 int

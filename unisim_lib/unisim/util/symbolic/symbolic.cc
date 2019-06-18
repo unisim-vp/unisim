@@ -55,24 +55,31 @@ namespace symbolic {
   }
   std::ostream& ConstNodeBase::warn() { return std::cerr; }
   
+  long double   EvalMod( long double l, long double r ) { throw std::logic_error( "No ^ for long double." ); }
   double   EvalMod( double l, double r ) { throw std::logic_error( "No ^ for double." ); }
   float    EvalMod( float l, float r ) { throw std::logic_error( "No ^ for float." ); }
   
+  long double   EvalXor( long double l, long double r ) { throw std::logic_error( "No ^ for long double." ); }
   double   EvalXor( double l, double r ) { throw std::logic_error( "No ^ for double." ); }
   float    EvalXor( float l, float r ) { throw std::logic_error( "No ^ for float." ); }
   
+  long double   EvalAnd( long double l, long double r ) { throw std::logic_error( "No & for long double." ); }
   double   EvalAnd( double l, double r ) { throw std::logic_error( "No & for double." ); }
   float    EvalAnd( float l, float r ) { throw std::logic_error( "No & for float." ); }
   
+  long double   EvalOr( long double l, long double r ) { throw std::logic_error( "No | for long double." ); }
   double   EvalOr( double l, double r ) { throw std::logic_error( "No | for double." ); }
   float    EvalOr( float l, float r ) { throw std::logic_error( "No | for float." ); }
   
+  long double   EvalNot( long double val ) { throw std::logic_error( "No ~ for long double." ); }
   double   EvalNot( double val ) { throw std::logic_error( "No ~ for double." ); }
   float    EvalNot( float val ) { throw std::logic_error( "No ~ for float." ); }
   
+  long double   EvalSHL( long double, uint8_t ) { throw std::logic_error( "No << for long double." ); }
   double   EvalSHL( double, uint8_t ) { throw std::logic_error( "No << for double." ); }
   float    EvalSHL( float, uint8_t ) { throw std::logic_error( "No << for float." ); }
   
+  long double   EvalSHR( long double, uint8_t ) { throw std::logic_error( "No >> for long double." ); }
   double   EvalSHR( double, uint8_t ) { throw std::logic_error( "No >> for double." ); }
   float    EvalSHR( float, uint8_t ) { throw std::logic_error( "No >> for float." ); }
   

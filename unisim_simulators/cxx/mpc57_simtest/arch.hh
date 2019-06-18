@@ -407,7 +407,7 @@ namespace ut
 
       Expr cexp( BOOL(cond).expr );
       if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-        return cnode->GetBoolean();
+        return cnode->Get( bool() );
 
       bool predicate = path->proceed( cexp );
       path = path->next( predicate );

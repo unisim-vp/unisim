@@ -279,23 +279,23 @@ namespace binsec {
           unsigned ext = extend - select;
           if (extend == 64)
             {
-              if (sxtend) return new ConstNode<int64_t>( (cnb->GetS64() << ext) >> ext );
-              return new ConstNode<uint64_t>( (cnb->GetU64() << ext) >> ext );
+              if (sxtend) return new ConstNode<int64_t>( (cnb->Get( int64_t() ) << ext) >> ext );
+              return new ConstNode<uint64_t>( (cnb->Get( uint64_t() ) << ext) >> ext );
             }
           if (extend == 32)
             {
-              if (sxtend) return new ConstNode<int32_t>( (cnb->GetS32() << ext) >> ext );
-              return new ConstNode<uint32_t>( (cnb->GetU32() << ext) >> ext );
+              if (sxtend) return new ConstNode<int32_t>( (cnb->Get( int32_t() ) << ext) >> ext );
+              return new ConstNode<uint32_t>( (cnb->Get( uint32_t() ) << ext) >> ext );
             }
           if (extend == 16)
             {
-              if (sxtend) return new ConstNode<int16_t>( (cnb->GetS16() << ext) >> ext );
-              return new ConstNode<uint16_t>( (cnb->GetU16() << ext) >> ext );
+              if (sxtend) return new ConstNode<int16_t>( (cnb->Get( int16_t() ) << ext) >> ext );
+              return new ConstNode<uint16_t>( (cnb->Get( uint16_t() ) << ext) >> ext );
             }
           if (extend == 8)
             {
-              if (sxtend) return new ConstNode<int8_t>( (cnb->GetS8() << ext) >> ext );
-              return new ConstNode<uint8_t>( (cnb->GetU8() << ext) >> ext );
+              if (sxtend) return new ConstNode<int8_t>( (cnb->Get( int8_t() ) << ext) >> ext );
+              return new ConstNode<uint8_t>( (cnb->Get( uint8_t() ) << ext) >> ext );
             }
         }
       return 0;

@@ -175,7 +175,7 @@ struct Processor
 
     Expr cexp( BOOL(cond).expr );
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-      return cnode->GetBoolean();
+      return cnode->Get( bool() );
 
     return Choose( cexp );
   }
@@ -188,7 +188,7 @@ struct Processor
 
     Expr cexp( BOOL(cond).expr );
     if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-      return cnode->GetBoolean();
+      return cnode->Get( bool() );
 
     Processor* proc = Processor::FindRoot(cexp);
     if (not proc)
@@ -205,7 +205,7 @@ struct Processor
       
   //   Expr cexp( BOOL(cond).expr );
   //   if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
-  //     return cnode->GetBoolean();
+  //     return cnode->Get( bool() );
       
   //   bool predicate = path->proceed( cexp );
   //   path = path->next( predicate );

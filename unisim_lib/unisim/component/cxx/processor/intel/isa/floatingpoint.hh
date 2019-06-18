@@ -1253,7 +1253,7 @@ struct Frndint : public Operation<ARCH>
     typedef typename ARCH::f64_t f64_t;
     
     f64_t value = arch.fread( 0 );
-    value = firound( value, intel::x87frnd_mode_t( arch.fcwreadRC() ) );
+    value = firound( value, arch.fcwreadRC() );
     arch.fwrite( 0, value );
   }
 };

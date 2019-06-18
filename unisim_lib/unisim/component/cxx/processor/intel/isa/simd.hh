@@ -240,8 +240,8 @@ struct LSMxcsr : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << (vex ? "v" : "") << (st ? "st" : "ld") << "mxcsr " << DisasmE( GOd(), rm ); }
   void execute( ARCH& arch ) const
   {
-    if (st) arch.rmwrite( GOd(), rm, arch.mxcsr );
-    else    arch.mxcsr = arch.rmread( GOd(), rm );
+    if (st) arch.rmwrite( GOd(), rm, arch.mxcsread() );
+    else    arch.mxcswrite( arch.rmread( GOd(), rm ) );
   }
 };
 
