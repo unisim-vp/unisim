@@ -1576,7 +1576,7 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 		response << "</html>" << std::endl;
 	}
 	
-	bool send_status = (req.GetRequestType() == unisim::util::hypapp::Request::HEAD) ? response.SendHeader(conn) : response.Send(conn);
+	bool send_status = conn.Send(response.ToString(req.GetRequestType() == unisim::util::hypapp::Request::HEAD));
 
 	if(send_status)
 	{

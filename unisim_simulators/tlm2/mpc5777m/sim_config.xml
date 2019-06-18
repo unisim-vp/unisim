@@ -14224,7 +14224,7 @@
 		<variable name="protocol">
 			<type>parameter</type>
 			<data_type>netstreamer-protocol</data_type>
-			<value>raw</value>
+			<value>telnet</value>
 			<description>network protocol (raw or telnet)</description>
 			<enumeration>
 				<item>raw</item>
@@ -14338,7 +14338,7 @@
 		<variable name="protocol">
 			<type>parameter</type>
 			<data_type>netstreamer-protocol</data_type>
-			<value>raw</value>
+			<value>telnet</value>
 			<description>network protocol (raw or telnet)</description>
 			<enumeration>
 				<item>raw</item>
@@ -14452,7 +14452,7 @@
 		<variable name="protocol">
 			<type>parameter</type>
 			<data_type>netstreamer-protocol</data_type>
-			<value>raw</value>
+			<value>telnet</value>
 			<description>network protocol (raw or telnet)</description>
 			<enumeration>
 				<item>raw</item>

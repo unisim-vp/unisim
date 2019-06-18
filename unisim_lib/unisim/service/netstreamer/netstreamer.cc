@@ -109,7 +109,7 @@ NetStreamer::NetStreamer(const char *name, unisim::kernel::service::Object *pare
 	, debug(false)
 	, is_server(true)
 	, server_name("localhost")
-	, protocol(NETSTREAMER_PROTOCOL_RAW)
+	, protocol(NETSTREAMER_PROTOCOL_TELNET)
 	, filter_null_character(false)
 	, filter_line_feed(false)
 	, enable_telnet_binary(true)

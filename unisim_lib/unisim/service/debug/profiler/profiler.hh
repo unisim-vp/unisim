@@ -830,6 +830,7 @@ private:
 	bool enable_text_report;
 	bool enable_html_report;
 	bool enable_csv_report;
+	bool verbose;
 	unisim::kernel::service::Parameter<std::string> param_search_path;
 	unisim::kernel::service::Parameter<std::string> param_filename;
 	unisim::kernel::service::Parameter<std::string> param_sampled_variables;
@@ -841,6 +842,7 @@ private:
 	unisim::kernel::service::Parameter<bool> param_enable_text_report;
 	unisim::kernel::service::Parameter<bool> param_enable_html_report;
 	unisim::kernel::service::Parameter<bool> param_enable_csv_report;
+	unisim::kernel::service::Parameter<bool> param_verbose;
 
 	bool listening_commit;
 	bool trap;

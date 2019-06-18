@@ -433,89 +433,125 @@ void LoggerServer::PrintHttpLog(std::ostream& os, const HTTP_LOG& http_log, bool
 
 bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
-	struct QueryDecoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
-	{
-		QueryDecoder()
-			: object_name()
-		{
-		}
-		
-		virtual bool FormAssign(const std::string& name, const std::string& value)
-		{
-			if(name == "object")
-			{
-				object_name = value;
-				return true;
-			}
-			
-			return false;
-		}
-		
-		std::string object_name;
-	};
-
-	unisim::kernel::service::Object *object = 0;
-	
-	if(req.HasQuery())
-	{
-		QueryDecoder query_decoder;
-	
-		if(query_decoder.Decode(req.GetQuery(), std::cerr))
-		{
-			object = GetSimulator()->FindObject(query_decoder.object_name.c_str());
-		}
-	}
-	
 	unisim::util::hypapp::HttpResponse response;
 	
-	response << "<!DOCTYPE html>" << std::endl;
-	response << "<html>" << std::endl;
-	response << "\t<head>" << std::endl;
-	if(object)
+	if((req.GetRequestType() == unisim::util::hypapp::Request::GET) ||
+	   (req.GetRequestType() == unisim::util::hypapp::Request::HEAD) ||
+	   (req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS))
 	{
-		response << "\t\t<title>Log of " << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "</title>" << std::endl;
-	}
-	else
-	{
-		response << "\t\t<title>Log</title>" << std::endl;
-	}
-	response << "\t\t<meta name=\"description\" content=\"user interface for logs over HTTP\">" << std::endl;
-	response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-	response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/kernel/logger/style.css\" type=\"text/css\" />" << std::endl;
-	response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-	response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
-	response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
-	//response << "\t\t<script type=\"application/javascript\" src=\"/unisim/kernel/logger/script.js\"></script>" << std::endl;
-	response << "\t</head>" << std::endl;
-	response << "\t<body>" << std::endl;
-	response << "\t\t<div class=\"log\">" << std::endl;
-	
-	if(req.HasQuery())
-	{
-		if(object)
+		if(req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)
 		{
-			pthread_mutex_lock(&mutex);
-			HTTP_LOGS_PER_CLIENT::const_iterator http_log_it = http_logs_per_client.find(object->GetName());
-			if(http_log_it != http_logs_per_client.end())
-			{
-				HTTP_LOG *http_log = (*http_log_it).second;
-				PrintHttpLog(response, *http_log, false);
-			}
-			pthread_mutex_unlock(&mutex);
+			response.Allow("OPTIONS, GET, HEAD");
 		}
+		else
+		{
+			struct QueryDecoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
+			{
+				QueryDecoder()
+					: object_name()
+				{
+				}
+				
+				virtual bool FormAssign(const std::string& name, const std::string& value)
+				{
+					if(name == "object")
+					{
+						object_name = value;
+						return true;
+					}
+					
+					return false;
+				}
+				
+				std::string object_name;
+			};
+
+			unisim::kernel::service::Object *object = 0;
+			
+			if(req.HasQuery())
+			{
+				QueryDecoder query_decoder;
+			
+				if(query_decoder.Decode(req.GetQuery(), std::cerr))
+				{
+					object = GetSimulator()->FindObject(query_decoder.object_name.c_str());
+				}
+			}
+			
+			response << "<!DOCTYPE html>" << std::endl;
+			response << "<html>" << std::endl;
+			response << "\t<head>" << std::endl;
+			if(object)
+			{
+				response << "\t\t<title>Log of " << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "</title>" << std::endl;
+			}
+			else
+			{
+				response << "\t\t<title>Log</title>" << std::endl;
+			}
+			response << "\t\t<meta name=\"description\" content=\"user interface for logs over HTTP\">" << std::endl;
+			response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+			response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/kernel/logger/style.css\" type=\"text/css\" />" << std::endl;
+			response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
+			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+			//response << "\t\t<script type=\"application/javascript\" src=\"/unisim/kernel/logger/script.js\"></script>" << std::endl;
+			response << "\t</head>" << std::endl;
+			response << "\t<body>" << std::endl;
+			response << "\t\t<div class=\"log\">" << std::endl;
+			
+			if(req.HasQuery())
+			{
+				if(object)
+				{
+					pthread_mutex_lock(&mutex);
+					HTTP_LOGS_PER_CLIENT::const_iterator http_log_it = http_logs_per_client.find(object->GetName());
+					if(http_log_it != http_logs_per_client.end())
+					{
+						HTTP_LOG *http_log = (*http_log_it).second;
+						PrintHttpLog(response, *http_log, false);
+					}
+					pthread_mutex_unlock(&mutex);
+				}
+			}
+			else
+			{
+				pthread_mutex_lock(&mutex);
+				PrintHttpLog(response, global_http_log, true);
+				pthread_mutex_unlock(&mutex);
+			}
+
+			response << "\t\t</div>" << std::endl;
+			response << "\t</body>" << std::endl;
+			response << "</html>" << std::endl;
+		}
+
+		return conn.Send(response.ToString(req.GetRequestType() == unisim::util::hypapp::Request::HEAD));
 	}
 	else
 	{
-		pthread_mutex_lock(&mutex);
-		PrintHttpLog(response, global_http_log, true);
-		pthread_mutex_unlock(&mutex);
+		response.SetStatus(unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED);
+		response.Allow("OPTIONS, GET, HEAD");
+		
+		response << "<!DOCTYPE html>" << std::endl;
+		response << "<html>" << std::endl;
+		response << "\t<head>" << std::endl;
+		response << "\t\t<title>Error 405 (Method Not Allowed)</title>" << std::endl;
+		response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		response << "\t\t<meta name=\"description\" content=\"Error 405 (Method Not Allowed)\">" << std::endl;
+		response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+		response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+		response << "\t\t<style>" << std::endl;
+		response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+		response << "\t\t</style>" << std::endl;
+		response << "\t</head>" << std::endl;
+		response << "\t<body>" << std::endl;
+		response << "\t\t<p>HTTP Method not allowed</p>" << std::endl;
+		response << "\t</body>" << std::endl;
+		response << "</html>" << std::endl;
+		
+		return conn.Send(response.ToString());
 	}
-
-	response << "\t\t</div>" << std::endl;
-	response << "\t</body>" << std::endl;
-	response << "</html>" << std::endl;
-
-	return (req.GetRequestType() == unisim::util::hypapp::Request::HEAD) ? response.SendHeader(conn) : response.Send(conn);
 }
 
 void LoggerServer::ScanWebInterfaceModdings(unisim::service::interfaces::WebInterfaceModdingScanner& scanner)

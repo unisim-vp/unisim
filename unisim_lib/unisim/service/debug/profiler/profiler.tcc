@@ -950,7 +950,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visito
 				
 			case F_FMT_CSV:
 			{
-				os << c_string_to_CSV(func_name.c_str()) << csv_delimiter << ratio_str << csv_delimiter << value_str << csv_delimiter << ((csv_reader == MS_EXCEL) ? "\"" : "") << "=" << csv_hyperlink << "(" << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\"" << ((r_fmt = R_FMT_HTTP) ? "http://" : "file://");;
+				os << c_string_to_CSV(func_name.c_str()) << csv_delimiter << ratio_str << csv_delimiter << value_str << csv_delimiter << ((csv_reader == MS_EXCEL) ? "\"" : "") << "=" << csv_hyperlink << "(" << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\"" << ((r_fmt = R_FMT_HTTP) ? "http://" : "file://");
 				const std::string& dir_path = visitor.GetDirPath();
 				std::string href(dir_path);
 				href += '/';
@@ -1972,6 +1972,7 @@ Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	, enable_text_report(false)
 	, enable_html_report(false)
 	, enable_csv_report(false)
+	, verbose(false)
 	, param_search_path("search-path", this, search_path, "Search path for source (separated by ';')")
 	, param_filename("filename", this, filename, "List of (binary) files (preferably ELF) to profile (separated by ',')")
 	, param_sampled_variables("sampled-variables", this, sampled_variables, "Variables to sample (separated by spaces)")
@@ -1983,6 +1984,7 @@ Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	, param_enable_text_report("enable-text-report", this, enable_text_report, "Enable/Disable text report")
 	, param_enable_html_report("enable-html-report", this, enable_html_report, "Enable/Disable HTML report")
 	, param_enable_csv_report("enable-csv-report", this, enable_csv_report, "Enable/Disable CSV report")
+	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, listening_commit(false)
 	, trap(false)
 	, commit_insn_event(0)
@@ -2179,10 +2181,10 @@ bool Profiler<ADDRESS>::ServeHttpRequest(unisim::util::hypapp::HttpRequest const
 	class HttpVisitor : public Visitor
 	{
 	public:
-		HttpVisitor(Profiler<ADDRESS>& _profiler, std::ostream& _stream, const std::string& _host, const std::string& _root, const std::string& _req_path, const std::string& _domain)
+		HttpVisitor(Profiler<ADDRESS>& _profiler, std::ostream& _stream, const char *_host, const std::string& _root, const std::string& _req_path, const std::string& _domain)
 			: profiler(_profiler)
 			, stream(_stream)
-			, host(_host)
+			, host(_host ? _host : "")
 			, root(_root)
 			, req_path(_req_path)
 			, domain(_domain)
@@ -2276,7 +2278,7 @@ bool Profiler<ADDRESS>::ServeHttpRequest(unisim::util::hypapp::HttpRequest const
 	private:
 		Profiler<ADDRESS>& profiler;
 		std::ostream& stream;
-		const std::string& host;
+		const char *host;
 		const std::string& root;
 		const std::string& req_path;
 		const std::string& domain;
@@ -2291,9 +2293,25 @@ bool Profiler<ADDRESS>::ServeHttpRequest(unisim::util::hypapp::HttpRequest const
 	
 	if(available)
 	{
-		response.SetContentType(http_visitor.GetContentType());
+		if(req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)
+		{
+			response.ClearContent();
+			response.SetContentType("");
+			response.Allow("OPTIONS, GET, HEAD");
+		}
+		else if((req.GetRequestType() == unisim::util::hypapp::Request::GET) ||
+	        (req.GetRequestType() == unisim::util::hypapp::Request::HEAD))
+		{
+			response.SetContentType(http_visitor.GetContentType());
+		}
 	}
-	else
+	else if(req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)
+	{
+			response.SetStatus(unisim::util::hypapp::HttpResponse::NOT_FOUND);
+			response.Allow("OPTIONS");
+	}
+	else if((req.GetRequestType() == unisim::util::hypapp::Request::GET) ||
+			(req.GetRequestType() == unisim::util::hypapp::Request::HEAD))
 	{
 		response.SetStatus(unisim::util::hypapp::HttpResponse::NOT_FOUND);
 
@@ -2316,13 +2334,31 @@ bool Profiler<ADDRESS>::ServeHttpRequest(unisim::util::hypapp::HttpRequest const
 		response << --indent << "</body>" << std::endl;
 		response << --indent << "</html>" << std::endl;
 	}
-
-	if(req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)
+	else
 	{
-		response.Allow("OPTIONS, GET, HEAD, POST");
+		response.SetStatus(unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED);
+
+		Indent indent;
+		
+		response << indent << "<!DOCTYPE html>" << std::endl;
+		response << indent << "<html>" << std::endl;
+		response << ++indent << "<head>" << std::endl;
+		response << ++indent << "<title>Error 405 (Method Not Allowed)</title>" << std::endl;
+		response << indent << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		response << indent << "<meta name=\"description\" content=\"Error 405 (Method Not Allowed)\">" << std::endl;
+		response << indent << "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+		response << indent << "<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+		response << indent << "<style>" << std::endl;
+		response << ++indent << "body { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+		response << --indent << "</style>" << std::endl;
+		response << --indent << "</head>" << std::endl;
+		response << indent << "<body>" << std::endl;
+		response << ++indent << "<p>Method Not Allowed</p>" << std::endl;
+		response << --indent << "</body>" << std::endl;
+		response << --indent << "</html>" << std::endl;
 	}
 	
-	return (req.GetRequestType() == unisim::util::hypapp::Request::HEAD) ? response.SendHeader(conn) : response.Send(conn);
+	return conn.Send(response.ToString((req.GetRequestType() == unisim::util::hypapp::Request::HEAD) || (req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)));
 }
 
 template <typename ADDRESS>

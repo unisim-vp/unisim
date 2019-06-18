@@ -213,6 +213,11 @@ void OutputStreamBuffer::reserve(std::streamsize n)
   if(m > buffer.capacity()) buffer.reserve(m);
 }
 
+std::ostream& operator << (std::ostream& os, const HeaderField& f) 
+{
+	return os << f.key << ": " << f.value;
+}
+
 std::ostream& operator << (std::ostream& os, const Request::request_type_t& request_type)
 {
   switch(request_type)
@@ -229,15 +234,21 @@ std::ostream& operator << (std::ostream& os, const Request::request_type_t& requ
 
 std::ostream& operator << (std::ostream& os, const Request& req)
 {
-  os << "Request type: " << req.GetRequestType() << std::endl;
-  os << "Request URI: \"" << req.GetRequestURI() << "\"" << std::endl;
-  os << "Content Type: \"" << req.GetContentType() << "\"" << std::endl;
-  os << "Content length: " << req.GetContentLength() << std::endl;
-  os << "Content: \"" << std::string(req.GetContent(), req.GetContentLength()) << "\"" << std::endl;
+  os << req.GetRequestType() << " " << req.GetRequestURI() << " HTTP/1.1" << std::endl;
+  for(unsigned int i = 0; i < req.GetHeaderFieldCount(); i++)
+  {
+	  HeaderField const *header_field = req.GetHeaderField(i);
+	  os << (*header_field) << std::endl;
+  }
+  os << std::endl;
+  if(req.GetContentLength())
+  {
+    os << std::string(req.GetContent(), req.GetContentLength()) << std::endl;
+  }
   return os;
 }
 
-HttpRequest::HttpRequest(const Request& _req, std::ostream& err_log)
+HttpRequest::HttpRequest(const Request& _req, std::ostream& _log, std::ostream& _warn_log, std::ostream& _err_log)
   : valid(false)
   , has_query(false)
   , has_fragment(false)
@@ -252,6 +263,9 @@ HttpRequest::HttpRequest(const Request& _req, std::ostream& err_log)
   , port(0)
   , content_stream_buffer(req.GetContent(), req.GetContentLength(), 0)
   , parts()
+  , log(_log)
+  , warn_log(_warn_log)
+  , err_log(_err_log)
 {
   rdbuf(&content_stream_buffer);
   
@@ -262,7 +276,7 @@ HttpRequest::HttpRequest(const Request& _req, std::ostream& err_log)
     parts.push_back(new HttpRequestPart(req.GetPart(part_num)));
   }
   
-  valid = URL_AbsolutePathDecoder::Decode(req.GetRequestURI(), abs_path, err_log);
+  valid = URL_AbsolutePathDecoder::Decode(req.GetRequestURI(), abs_path, warn_log);
   if(valid)
   {
     server_root = "/";
@@ -325,6 +339,10 @@ HttpRequest::HttpRequest(const std::string& _server_root, const std::string& _pa
   , has_port(http_request.has_port)
   , port(http_request.port)
   , content_stream_buffer(req.GetContent(), req.GetContentLength(), 0)
+  , parts()
+  , log(http_request.log)
+  , warn_log(http_request.warn_log)
+  , err_log(http_request.err_log)
 {
   rdbuf(&content_stream_buffer);
   
@@ -384,42 +402,48 @@ HttpResponse::HttpResponse()
   rdbuf(&content_stream_buffer);
 }
 
-bool HttpResponse::Send(ClientConnection const& conn, bool header_only) const
+std::string HttpResponse::ToString(bool header_only) const
 {
-  std::ostringstream header_stream;
+  std::ostringstream sstr;
+  Print(sstr, header_only);
+  return sstr.str();
+}
+
+void HttpResponse::Print(std::ostream& os, bool header_only) const
+{
   const std::string& content(content_stream_buffer.str());
-  header_stream << "HTTP/1.1 " << status_code << "\r\n";
-  header_stream << "Server: UNISIM-VP\r\n";
+  os << "HTTP/1.1 " << status_code << "\r\n";
+  os << "Server: UNISIM-VP\r\n";
   
   if(IsSuccessful())
   {
     if(!allow.empty())
     {
-      header_stream << "Allow: " << allow << "\r\n";
+      os << "Allow: " << allow << "\r\n";
     }
     if(!accept_ranges.empty())
     {
-      header_stream << "Accept-Ranges: " << accept_ranges << "\r\n";
+      os << "Accept-Ranges: " << accept_ranges << "\r\n";
     }
     if(enable_cache)
     {
-      header_stream << "Cache-control: public, max-age=600\r\n";
+      os << "Cache-control: public, max-age=600\r\n";
     }
     else
     {
-      header_stream << "Cache-control: no-cache\r\n";
+      os << "Cache-control: no-cache\r\n";
     }
     if(content_type.length())
     {
-      header_stream << "Content-Type: " << content_type << "\r\n";
+      os << "Content-Type: " << content_type << "\r\n";
     }
   }
   
-  header_stream << "Content-length: " << content.length() << "\r\n";
+  os << "Content-length: " << (header_only ? 0 : content.length()) << "\r\n";
    
   if(keep_alive)
   {
-    header_stream << "Connection: keep-alive\r\n";
+    os << "Connection: keep-alive\r\n";
   }
   
   for(HeaderFields::const_iterator it = header_fields.begin(); it != header_fields.end(); it++)
@@ -428,18 +452,15 @@ bool HttpResponse::Send(ClientConnection const& conn, bool header_only) const
     const std::string& key = header_field.key;
     const std::string& value = header_field.value;
     
-    header_stream << key << ": " << value << "\r\n";
+    os << key << ": " << value << "\r\n";
   }
   
-  header_stream << "\r\n";
+  os << "\r\n";
   
-  std::string response(header_stream.str());
   if(!header_only)
   {
-    response.append(content);
+    os << content;
   }
-  
-  return conn.Send(response);
 }
 
 std::ostream& operator << (std::ostream& os, const HttpResponse::StatusCode& status_code)
@@ -499,6 +520,12 @@ std::ostream& operator << (std::ostream& os, const HttpResponse::StatusCode& sta
     default                                         : break;
   }
   return os;
+}
+
+std::ostream& operator << (std::ostream& os, const HttpResponse& http_response)
+{
+	http_response.Print(os, false);
+	return os;
 }
 
 struct IPAddrRepr
@@ -701,25 +728,6 @@ void MessageLoop::Run(ClientConnection const& conn)
               if(http_server.Verbose()) { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; }
               request.host = (char const *)(val - &ibuf[0]);
             }
-          else if (streat("User-Agent", key) or
-                   streat("Referer", key) or
-                   streat("Accept", key) or
-                   streat("Upgrade-Insecure-Requests",key) or
-                   streat("If-Modified-Since", key) or
-                   streat("Cache-Control", key) or
-                   streat("DNT", key) or
-                   streat("Origin", key) or
-                   streat("UA-CPU", key) or
-                   streat("UA-Disp", key) or
-                   streat("UA-OS", key) or
-                   streat("UA-Color", key) or
-                   streat("UA-Pixels", key) or
-                   streat("Pragma", key) or
-                   streat("Keep-Alive", key) or
-                   streat("TE", key) or
-                   streat("Range", key) or
-                   streat("Purpose", key))
-            { if(http_server.Verbose()) { log << "[" << conn.socket << "] " << key << ": " << val << "\n"; } }
           else if (streat("Range", key))
             { err_log << "[" << conn.socket << "] " << key << ": " << val << "\n"; return; }
           else if (streat("Content-Length", key))
@@ -730,11 +738,11 @@ void MessageLoop::Run(ClientConnection const& conn)
                 content_length = 10*content_length+digit;
               }
               if(content_length) request.content_length = content_length;
-              var_content = (content_length == 0);
+              var_content = (request.request_type == Request::POST) && (content_length == 0);
               if(var_content) keep_alive = false;
             }
-          else
-            { err_log << "[" << conn.socket << "] error: {key:" << key << ", val:" << val << "}\n"; return; }
+          else if(http_server.Verbose())
+            { log << "[" << conn.socket << "] unhandled: {key:" << key << ", val:" << val << "}\n"; }
         }
         
       if(http_server.Verbose())
@@ -758,17 +766,17 @@ void MessageLoop::Run(ClientConnection const& conn)
         
         unsigned int rem_content_length = content_length;
 
-        unsigned int lookead_size = ibuf.size() - request_size;
+        unsigned int lookahead_size = ibuf.size() - request_size;
         
-        if(lookead_size != 0)
+        if(lookahead_size != 0)
         {
           if(var_content)
           {
-            content_length = lookead_size;
+            content_length = lookahead_size;
           }
           else
           {
-            rem_content_length -= lookead_size;
+            rem_content_length -= lookahead_size;
           }
         }
       
@@ -912,6 +920,10 @@ void MessageLoop::Run(ClientConnection const& conn)
   
       request.header_fields = request.header_field_count ? &header_fields[0] : 0;
 
+      if(http_server.Verbose())
+      {
+        log << "Received HTTP request:" << std::endl << request << "8<--8<--8<--8<--8<--8<--8<--8<" << std::endl;
+      }
       if (not SendResponse(request, conn) or not keep_alive) return;
 
       ibuf.erase(ibuf.begin(), ibuf.begin() + request_size + content_length);
@@ -1537,6 +1549,10 @@ bool HttpServer::Verbose() const
 
 bool ClientConnection::Send( char const* buf, uintptr_t size ) const
 {
+  if(http_server.Verbose())
+  {
+    http_server.GetLog() << "Sending HTTP response:" << std::endl << std::string(buf, size) << "8<--8<--8<--8<--8<--8<--8<--8<" << std::endl;
+  }
   for (intptr_t done; size > 0; size -= done)
     {
       if(http_server.Killed()) return false;
@@ -1641,7 +1657,7 @@ HttpServer::LoopThread()
       (*err_log) << "Error: can't listen on port " << this->port << " with socket " << socket << "\n";
       return;
     }
-  (*log) << "Listening on port " << this->port << " with socket " << socket << "\n";
+  if(Verbose()) (*log) << "Listening on port " << this->port << " with socket " << socket << "\n";
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
   WSAPOLLFD listenpoll;
@@ -1678,18 +1694,18 @@ HttpServer::LoopThread()
           
           /* Client's Connection Data are Saved, release the caller */
           pthread_mutex_unlock( &shuttle.server.mutex );
-          (*shuttle.server.log) << "[" << shuttle.socket << "] Client Connection from IP: " << IPAddrRepr(shuttle.ipaddr) << "\n";
+          if(shuttle.server.Verbose()) (*shuttle.server.log) << "[" << shuttle.socket << "] Client Connection from IP: " << IPAddrRepr(shuttle.ipaddr) << "\n";
           
           /* Finish servicing client */
           ClientConnection conn(shuttle.server, shuttle.socket);
           shuttle.server.Serve(conn);
           
-          (*shuttle.server.log) << "[" << shuttle.socket << "] closing connection\n";
+          if(shuttle.server.Verbose()) (*shuttle.server.log) << "[" << shuttle.socket << "] closing connection\n";
           
           pthread_mutex_lock(&shuttle.server.mutex);
           shuttle.server.clients -= 1;
           pthread_mutex_unlock(&shuttle.server.mutex);
-          (*shuttle.server.log) << "Connected clients: " << shuttle.server.clients << "\n";
+          if(shuttle.server.Verbose()) (*shuttle.server.log) << "Connected clients: " << shuttle.server.clients << "\n";
           
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
           closesocket( shuttle.socket );
@@ -1724,13 +1740,13 @@ HttpServer::LoopThread()
 #else
           fcntl(socket, F_SETFL, fcntl(socket, F_GETFL, 0) | O_NONBLOCK);
 #endif
-          (*server.log) << "[" << socket << "] connection accepted\n";
+          if(server.Verbose()) (*server.log) << "[" << socket << "] connection accepted\n";
       
           pthread_mutex_lock(&server.mutex);
           server.clients += 1;
           pthread_mutex_unlock(&server.mutex);
       
-          (*server.log) << "Connected clients: " << server.clients << "\n";
+          if(server.Verbose()) (*server.log) << "Connected clients: " << server.clients << "\n";
       
         }
         HttpServer&        server;
@@ -1766,7 +1782,7 @@ HttpServer::LoopThread()
     }
   
   // Leaving main processing loop
- (*log) << "Cleaning up...\n";
+  if(Verbose()) (*log) << "Cleaning up...\n";
   
   if (this->socket)
   {

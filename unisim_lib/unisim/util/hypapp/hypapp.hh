@@ -84,6 +84,7 @@ struct OutputStreamBuffer : std::streambuf
 {
   OutputStreamBuffer();
   const std::string& str() const { return buffer; }
+  void ClearContent() { buffer.clear(); }
 
 protected:
   virtual int_type overflow(int_type c);
@@ -106,6 +107,8 @@ struct HeaderField
   char const* key;
   char const* value;
 };
+
+std::ostream& operator << (std::ostream& os, const HeaderField& f);
 
 struct RequestPart
 {
@@ -268,7 +271,7 @@ private:
 struct HttpRequest : std::istream
 {
 public:
-  HttpRequest(const Request& req, std::ostream& err_log);
+  HttpRequest(const Request& req, std::ostream& log = std::cout, std::ostream& warn_log = std::cerr, std::ostream& err_log = std::cerr);
   HttpRequest(const std::string& server_root, const std::string& path, const HttpRequest& http_request);
   ~HttpRequest();
   
@@ -312,6 +315,9 @@ private:
   InputStreamBuffer content_stream_buffer;
   typedef std::vector<HttpRequestPart *> Parts;
   Parts parts;
+  std::ostream& log;
+  std::ostream& warn_log;
+  std::ostream& err_log;
 };
 
 struct HttpResponseHeaderField
@@ -388,18 +394,20 @@ struct HttpResponse : public std::ostream
   HttpResponse& Allow(const std::string& _allow) { allow = _allow; return *this; }
   HttpResponse& AcceptRanges(const std::string& _accept_ranges) { accept_ranges = _accept_ranges; return *this; }
   HttpResponse& SetHeaderField(const std::string& key, const std::string& value) { header_fields.push_back(HeaderField(key, value)); return *this; } 
-  bool SendHeader(ClientConnection const& conn) const { return Send(conn, true); }
-  bool Send(ClientConnection const& conn) const { return Send(conn, false); }
   
   const std::string& str() const { return content_stream_buffer.str(); }
+  void ClearContent() { content_stream_buffer.ClearContent(); }
   
   bool IsSuccessful() const { return (status_code >= OK) && (status_code <= PARTIAL_CONTENT); }
   bool IsRedirection() const { return (status_code >= MULTIPLE_CHOICES) && (status_code <= TEMPORARY_REDIRECT); }
   bool IsClientError() const { return (status_code >= BAD_REQUEST) && (status_code <= EXPECTATION_FAILED); }
   bool IsServerError() const { return (status_code >= INTERNAL_SERVER_ERROR) && (status_code <= HTTP_VERSION_NOT_SUPPORTED); }
+  
+  std::string ToString(bool header_only = false) const;
 private:
   typedef HttpResponseHeaderField HeaderField;
   typedef std::vector<HttpResponseHeaderField> HeaderFields;
+  friend std::ostream& operator << (std::ostream&, const HttpResponse&);
   
   StatusCode status_code;
   std::string content_type;
@@ -410,10 +418,11 @@ private:
   OutputStreamBuffer content_stream_buffer;
   HeaderFields header_fields;
   
-  bool Send(ClientConnection const& conn, bool header_only) const;
+  void Print(std::ostream& os, bool header_only) const;
 };
 
 std::ostream& operator << (std::ostream& os, const HttpResponse::StatusCode& status_code);
+std::ostream& operator << (std::ostream&, const HttpResponse&);
 
 struct MessageLoop
 {
@@ -473,6 +482,10 @@ struct HttpServer
 
   // Content exchange callbacks
   virtual void Serve(ClientConnection const& conn) = 0;
+  
+  std::ostream& GetLog() const { return *log; }
+  std::ostream& GetWarnLog() const { return *warn_log; }
+  std::ostream& GetErrLog() const { return *err_log; }
 
 protected:
   // Loop Thread
