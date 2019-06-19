@@ -527,7 +527,7 @@ namespace ut
     has_write |= is_write;
 
     uint64_t zaddr;
-    if (auto z = addr.Eval( Arch::ZeroedRegisters() ))
+    if (auto z = addr.Eval( Arch::AddrEval() ))
       { Expr dispose(z); zaddr = z->Get( uint64_t() ); }
     else
       throw "WTF";

@@ -457,15 +457,15 @@ namespace ut
     typedef VRRead<FReg> FRegRead; typedef VRWrite<FReg> FRegWrite;
     /**/                           typedef VRWrite<GReg> GRegWrite;
     
-    struct ZeroedRegisters : public unisim::util::symbolic::EvalSpace {};
+    struct AddrEval : public unisim::util::symbolic::EvalSpace {};
 
     struct GRegRead : public VRRead<GReg>
     {
       GRegRead( unsigned reg, unsigned idx ) : VRRead<GReg>( reg, idx ) {}
       typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-      virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evp, ConstNodeBase const** ) const override
+      virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
       {
-        if (dynamic_cast<ZeroedRegisters const*>( &evp ))
+        if (dynamic_cast<AddrEval const*>( &evs ))
           return new unisim::util::symbolic::ConstNode<uint64_t>( 0 );
         return 0;
       };
@@ -583,13 +583,22 @@ namespace ut
       virtual this_type* Mutate() const override { return new this_type( *this ); }
       virtual unsigned SubCount() const override { return 0; }
       virtual int cmp( unisim::util::symbolic::ExprNode const& rhs ) const override { return 0; }
-      virtual void Repr( std::ostream& sink ) const override { sink << "SPRRead<" << typeid(T()).name() << " >()"; }
+      virtual void Repr( std::ostream& sink ) const override { sink << T::name() << "Read()"; }
       virtual ScalarType::id_t GetType() const override { return T::scalar_type; }
     };
 
-    struct RIP { static ScalarType::id_t const scalar_type = ScalarType::U64; };
+    struct RIP { static ScalarType::id_t const scalar_type = ScalarType::U64; static char const* name() { return "RIP"; } };
 
-    typedef SPRRead<RIP> RIPRead;
+    struct RIPRead : public SPRRead<RIP> 
+    {
+      typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
+      virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
+      {
+        if (dynamic_cast<AddrEval const*>( &evs ))
+          throw ut::Untestable("RIP relative addressing");
+        return 0;
+      }
+    };
     
     struct RIPWrite : public RegWriteBase
     {

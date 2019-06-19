@@ -660,11 +660,14 @@ struct Xchg : public Operation<ARCH>
   Xchg( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << "xchg " << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rm ); }
   typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
-  void execute( ARCH& arch ) const {
+  void execute( ARCH& arch ) const
+  {
+    // Perform all reads before any write occurs
     u_type a = arch.regread( OP(), gn );
     u_type b = arch.rmread( OP(), rm );
-    arch.regwrite( OP(), gn, b );
+    // rmwrite must go first as it may perform additional register reads for ModR/M address generation
     arch.rmwrite( OP(), rm, a );
+    arch.regwrite( OP(), gn, b );
   }
 };
 
