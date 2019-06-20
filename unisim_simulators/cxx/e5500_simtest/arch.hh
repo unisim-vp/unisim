@@ -54,9 +54,7 @@ namespace ut
     std::string reason;
   };
 
-  struct ActionNode : public unisim::util::symbolic::Choice<ActionNode>
-  {
-  };
+  struct ActionNode : public unisim::util::symbolic::Choice<ActionNode> {};
 
   struct Interface
   {

@@ -332,30 +332,30 @@ namespace ut
     bool complete = path->close();
 
     // Instruction Pointer
-    path->updates.insert( Expr( new RIPWrite( next_insn_addr, next_insn_mode ) ) );
+    path->add_update( new RIPWrite( next_insn_addr, next_insn_mode ) );
     
     // Scalar integer registers
     for (unsigned reg = 0; reg < REGCOUNT; ++reg)
       if (eregdiff(reg))
-        path->updates.insert( new GRegWrite( reg, interface.gregs.index(reg), eregread( reg, REGSIZE, 0 ) ) );
+        path->add_update( new GRegWrite( reg, interface.gregs.index(reg), eregread( reg, REGSIZE, 0 ) ) );
 
     // Vector Registers
     for (unsigned reg = 0; reg < VUConfig::REGCOUNT; ++reg)
       if (vmm_diff(reg))
-        path->updates.insert( new VRegWrite( reg, interface.vregs.index(reg), umms[reg].GetConstStorage( &vmm_storage[reg][0], VmmRegister(), VUConfig::BYTECOUNT )->expr ) );
+        path->add_update( new VRegWrite( reg, interface.vregs.index(reg), umms[reg].GetConstStorage( &vmm_storage[reg][0], VmmRegister(), VUConfig::BYTECOUNT )->expr ) );
     
     // FPU registers
     for (unsigned reg = 0; reg < 8; ++reg)
       if (fpdiff(reg))
-        path->updates.insert( new FRegWrite( reg, interface.fregs.index(reg), fpregs[reg] ) );
+        path->add_update( new FRegWrite( reg, interface.fregs.index(reg), fpregs[reg] ) );
 
     // Flags
     for (FLAG reg; reg.next();)
       if (flagvalues[reg.idx()] != ref.flagvalues[reg.idx()])
-        path->updates.insert( newRegWrite( reg, flagvalues[reg.idx()] ) );
+        path->add_update( newRegWrite( reg, flagvalues[reg.idx()] ) );
 
     for (Expr const& store : stores)
-      path->updates.insert( store );
+      path->add_update( store );
     
     return complete;
   }

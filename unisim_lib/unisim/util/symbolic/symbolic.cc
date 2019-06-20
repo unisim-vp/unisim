@@ -55,6 +55,57 @@ namespace symbolic {
   }
   std::ostream& ConstNodeBase::warn() { return std::cerr; }
   
+  ConstNodeBase const*
+  Expr::Eval( EvalSpace const& evs ) const
+  {
+    unsigned subcount = node->SubCount();
+    Expr dispose[subcount];
+    ConstNodeBase const* cnbs[subcount];
+    for (unsigned idx = 0; idx < subcount; ++idx)
+      {
+        if (not (cnbs[idx] = node->GetSub(idx).Eval( evs )))
+          return 0;
+        dispose[idx] = cnbs[idx];
+      }
+    return node->Eval( evs, &cnbs[0] );
+  }
+    
+  ConstNodeBase const*
+  Expr::ConstSimplify()
+  {
+    unsigned subcount = node->SubCount();
+    Expr args[subcount];
+    ConstNodeBase const* cnbs[subcount];
+    bool const_args = true, simplified = false;
+    for (unsigned idx = 0; idx < subcount; ++idx)
+      {
+        if (not (cnbs[idx] = (args[idx] = node->GetSub(idx)).ConstSimplify()))
+          const_args = false;
+        if (args[idx] != node->GetSub(idx))
+          simplified = true;
+      }
+    
+    if (const_args)
+      {
+        if (ConstNodeBase const* cn = node->Eval( EvalSpace(), &cnbs[0] ))
+          {
+            *this = Expr( cn );
+            return cn;
+          }
+      }
+
+    if (simplified)
+      {
+        ExprNode* nn = node->Mutate();
+        for (unsigned idx = 0; idx < subcount; ++idx)
+          const_cast<Expr&>( nn->GetSub(idx) ) = args[idx];
+        *this = Expr( nn );
+      }
+    
+    return 0;
+  }
+    
+  
   long double   EvalMod( long double l, long double r ) { throw std::logic_error( "No ^ for long double." ); }
   double   EvalMod( double l, double r ) { throw std::logic_error( "No ^ for double." ); }
   float    EvalMod( float l, float r ) { throw std::logic_error( "No ^ for float." ); }

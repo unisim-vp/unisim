@@ -67,7 +67,7 @@ namespace ccode {
   {
     if (not cond.good())
       return;
-    
+
     for (unsigned choice = 0; choice < 2; ++choice)
       if (ActionNode* next = nexts[choice])
         next->simplify();
@@ -267,7 +267,7 @@ namespace ccode {
     }
     
     /*** Sub expression process ***/
-    if (ConstNodeBase const* node = ep.expr->GetConstNode())
+    if (ConstNodeBase const* node = ep.expr.Eval(unisim::util::symbolic::EvalSpace()))
       {
         Expr cexp( node );
         switch (node->GetType())

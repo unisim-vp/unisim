@@ -91,7 +91,6 @@ struct Processor
     virtual void GetRegName( std::ostream& sink ) const { sink << id.c_str(); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegRead const&>( rhs ) ); }
     int compare( RegRead const& rhs ) const { if (int delta = int(tp) - int(rhs.tp)) return delta; if (int delta = id.cmp( rhs.id )) return delta; return Super::compare(rhs); }
-    virtual Expr Simplify() const { return this; }
 
     ScalarType::id_t tp;
     RID id;
@@ -138,7 +137,6 @@ struct Processor
       if (int delta = int(mode) - int(rhs.mode)) return delta;
       return idx - rhs.idx;
     }
-    virtual Expr Simplify() const { return this; }
     
     unsigned idx;
     uint8_t mode;
@@ -155,11 +153,6 @@ struct Processor
     virtual void GetRegName( std::ostream& sink ) const { sink << id.c_str(); }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<RegWrite const&>( rhs ) ); }
     int compare( RegWrite const& rhs ) const { if (int delta = id.cmp( rhs.id )) return delta; return Super::compare( rhs ); }
-    virtual Expr Simplify() const
-    {
-      Expr nvalue( ASExprNode::Simplify( value ) );
-      return nvalue != value ? new RegWrite<RID>( id, nvalue ) : this;
-    }
     
     RID id;
   };
@@ -173,11 +166,6 @@ struct Processor
     virtual PCWrite* Mutate() const { return new PCWrite( *this ); }
     virtual void GetRegName( std::ostream& sink ) const { sink << "pc"; }
     virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
-    virtual Expr Simplify() const
-    {
-      Expr nvalue( ASExprNode::Simplify(value) );
-      return nvalue != value ? new PCWrite( nvalue, type ) : this;
-    }
   };
 
   struct ITCond {};
@@ -366,37 +354,37 @@ public:
   bool close( Processor const& ref )
   {
     bool complete = path->close();
-    path->sinks.insert( Expr( new PCWrite( next_insn_addr.expr, branch_type ) ) );
+    path->add_sink( new PCWrite( next_insn_addr.expr, branch_type ) );
     if (unpredictable)
       {
-        path->sinks.insert( Expr( new unisim::util::symbolic::binsec::AssertFalse() ) );
+        path->add_sink( new unisim::util::symbolic::binsec::AssertFalse() );
         return complete;
       }
     if (cpsr.n != ref.cpsr.n)
-      path->sinks.insert( newRegWrite( RegID("n"), cpsr.n ) );
+      path->add_sink( newRegWrite( RegID("n"), cpsr.n ) );
     if (cpsr.z != ref.cpsr.z)
-      path->sinks.insert( newRegWrite( RegID("z"), cpsr.z ) );
+      path->add_sink( newRegWrite( RegID("z"), cpsr.z ) );
     if (cpsr.c != ref.cpsr.c)
-      path->sinks.insert( newRegWrite( RegID("c"), cpsr.c ) );
+      path->add_sink( newRegWrite( RegID("c"), cpsr.c ) );
     if (cpsr.v != ref.cpsr.v)
-      path->sinks.insert( newRegWrite( RegID("v"), cpsr.v ) );
+      path->add_sink( newRegWrite( RegID("v"), cpsr.v ) );
     if (cpsr.itstate.expr != ref.cpsr.itstate.expr)
-      path->sinks.insert( newRegWrite( RegID("itstate"), cpsr.itstate.expr ) );
+      path->add_sink( newRegWrite( RegID("itstate"), cpsr.itstate.expr ) );
     if (cpsr.bg.expr != ref.cpsr.bg.expr)
-      path->sinks.insert( newRegWrite( RegID("cpsr"), cpsr.bg.expr ) );
+      path->add_sink( newRegWrite( RegID("cpsr"), cpsr.bg.expr ) );
     if (spsr.expr != ref.spsr.expr)
-      path->sinks.insert( newRegWrite( RegID("spsr"), spsr.expr ) );
+      path->add_sink( newRegWrite( RegID("spsr"), spsr.expr ) );
     for (SRegID reg; reg.next();)
       if (sregs[reg.idx()].expr != ref.sregs[reg.idx()].expr)
-        path->sinks.insert( newRegWrite( reg, sregs[reg.idx()].expr ) );
+        path->add_sink( newRegWrite( reg, sregs[reg.idx()].expr ) );
     if (FPSCR.expr != ref.FPSCR.expr)
-      path->sinks.insert( newRegWrite( RegID("fpscr"), FPSCR.expr ) );
+      path->add_sink( newRegWrite( RegID("fpscr"), FPSCR.expr ) );
     if (FPEXC.expr != ref.FPEXC.expr)
-      path->sinks.insert( newRegWrite( RegID("fpexc"), FPEXC.expr ) );
+      path->add_sink( newRegWrite( RegID("fpexc"), FPEXC.expr ) );
     for (unsigned reg = 0; reg < 15; ++reg)
       {
         if (reg_values[reg].expr != ref.reg_values[reg].expr)
-          path->sinks.insert( newRegWrite( RegID("r0") + reg, reg_values[reg].expr ) );
+          path->add_sink( newRegWrite( RegID("r0") + reg, reg_values[reg].expr ) );
       }
     for (ForeignRegisters::iterator itr = foreign_registers.begin(), end = foreign_registers.end(); itr != end; ++itr)
       {
@@ -406,7 +394,7 @@ public:
         if (itr->second == Expr(&ref)) continue;
         std::ostringstream buf;
         ref.Repr( buf );
-        path->sinks.insert( newRegWrite( RegID(buf.str().c_str()), itr->second ) );
+        path->add_sink( newRegWrite( RegID(buf.str().c_str()), itr->second ) );
       }
     for (unsigned reg = 0; reg < 32; ++reg)
       {
@@ -414,7 +402,7 @@ public:
           GetNeonSinks(reg);
       }
     for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
-      path->sinks.insert( *itr );
+      path->add_sink( *itr );
     return complete;
   }
   
@@ -612,7 +600,7 @@ public:
     virtual void GetRegName( std::ostream& sink ) const { sink << 'd' << std::dec << reg; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<NeonRead const&>( rhs ) ); }
     int compare( this_type const& rhs ) const { return int(reg) - int(rhs.reg); }
-    virtual Expr Simplify() const { return this; }
+    
     unsigned reg;
   };
 
@@ -626,11 +614,7 @@ public:
     virtual void GetRegName( std::ostream& sink ) const { sink << 'd' << std::dec << reg; }
     virtual int cmp( ExprNode const& rhs ) const override { return compare( dynamic_cast<this_type const&>( rhs ) ); }
     int compare( this_type const& rhs ) const { if (int delta = int(reg) - int(rhs.reg)) return delta; return Super::compare( rhs ); }
-    virtual Expr Simplify() const
-    {
-      Expr nvalue( ASExprNode::Simplify( value ) );
-      return nvalue != value ? new this_type( reg, nvalue ) : this;
-    }
+    
     unsigned reg;
   };
 
@@ -659,11 +643,7 @@ public:
       if (int delta = int(end) - int(rhs.end)) return delta;
       return Super::compare( rhs );
     }
-    virtual Expr Simplify() const
-    {
-      Expr nvalue( ASExprNode::Simplify( value ) );
-      return nvalue != value ? new this_type( reg, beg, end, nvalue ) : this;
-    }
+    
     unsigned reg, beg, end;
   };
   
@@ -679,7 +659,7 @@ public:
       Expr dr = unisim::util::symbolic::binsec::ASExprNode::Simplify( GetVDU(reg).expr );
       if (dr.ConstSimplify())
         {
-          path->sinks.insert( new NeonWrite( reg, dr ) );
+          path->add_sink( new NeonWrite( reg, dr ) );
           return;
         }
     }
@@ -687,7 +667,7 @@ public:
     // Check for monolithic value
     if (not neonregs[reg][NEONSIZE/2].node)
       {
-        path->sinks.insert( new NeonWrite( reg, eneonread(reg,NEONSIZE,0) ) );
+        path->add_sink( new NeonWrite( reg, eneonread(reg,NEONSIZE,0) ) );
         return;
       }
     
@@ -707,7 +687,7 @@ public:
           {
             unsigned begin = pos*8, end = begin+size*8;
             Expr value( new BitFilter( core.eneonread(reg,size,pos), 64, size*8, size*8, false ) );
-            core.path->sinks.insert( new NeonPartialWrite( reg, begin, end, value ) );
+            core.path->add_sink( new NeonPartialWrite( reg, begin, end, value ) );
           }
       }
     } concat( *this, reg );

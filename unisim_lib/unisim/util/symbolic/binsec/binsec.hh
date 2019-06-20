@@ -67,11 +67,12 @@ namespace binsec {
   {
     ActionNode() : Choice<ActionNode>(), sinks(), sestats() {}
 
-    std::set<Expr>          sinks;
-    std::map<Expr,unsigned> sestats;
-
+    void                    add_sink( Expr expr ) { expr.ConstSimplify(); sinks.insert( expr ); }
     void                    simplify();
     void                    commit_stats();
+    
+    std::set<Expr>          sinks;
+    std::map<Expr,unsigned> sestats;
   };
 
   struct Program : public std::map<int,std::string>
@@ -135,7 +136,7 @@ namespace binsec {
   {
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const = 0;
     static  int GenerateCode( Expr const& expr, Variables& vars, Label& label, std::ostream& sink );
-    virtual Expr Simplify() const = 0;
+    virtual Expr Simplify() const { return 0; };
     static  Expr Simplify( Expr const& );
   };
 
@@ -195,7 +196,6 @@ namespace binsec {
     virtual int cmp( ExprNode const& brhs ) const override { return 0; }
     virtual unsigned SubCount() const { return 0; }
     virtual void Repr( std::ostream& sink ) const { sink << "assert (false)"; }
-    virtual Expr Simplify() const { return this; }
   };
     
   struct Load : public ASExprNode
@@ -218,11 +218,6 @@ namespace binsec {
     }
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
-    virtual Expr Simplify() const
-    {
-      Expr naddr( ASExprNode::Simplify( addr ) );
-      return (naddr != addr) ? new Load( naddr, size, alignment, bigendian ) : this;
-    }
     
     Expr addr;
     uint32_t size      :  4; // (log2) [1,2,4,8,...,32768] bytes
@@ -271,32 +266,28 @@ namespace binsec {
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return input; }
 
-    virtual ConstNodeBase const* GetConstNode() const
+    virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** cnbs ) const
     {
-      if (ConstNodeBase const* cnb = input->GetConstNode())
+      unsigned ext = extend - select;
+      if (extend == 64)
         {
-          Expr cexp(cnb);
-          unsigned ext = extend - select;
-          if (extend == 64)
-            {
-              if (sxtend) return new ConstNode<int64_t>( (cnb->Get( int64_t() ) << ext) >> ext );
-              return new ConstNode<uint64_t>( (cnb->Get( uint64_t() ) << ext) >> ext );
-            }
-          if (extend == 32)
-            {
-              if (sxtend) return new ConstNode<int32_t>( (cnb->Get( int32_t() ) << ext) >> ext );
-              return new ConstNode<uint32_t>( (cnb->Get( uint32_t() ) << ext) >> ext );
-            }
-          if (extend == 16)
-            {
-              if (sxtend) return new ConstNode<int16_t>( (cnb->Get( int16_t() ) << ext) >> ext );
-              return new ConstNode<uint16_t>( (cnb->Get( uint16_t() ) << ext) >> ext );
-            }
-          if (extend == 8)
-            {
-              if (sxtend) return new ConstNode<int8_t>( (cnb->Get( int8_t() ) << ext) >> ext );
-              return new ConstNode<uint8_t>( (cnb->Get( uint8_t() ) << ext) >> ext );
-            }
+          if (sxtend) return new ConstNode<int64_t>( (cnbs[0]->Get( int64_t() ) << ext) >> ext );
+          return new ConstNode<uint64_t>( (cnbs[0]->Get( uint64_t() ) << ext) >> ext );
+        }
+      if (extend == 32)
+        {
+          if (sxtend) return new ConstNode<int32_t>( (cnbs[0]->Get( int32_t() ) << ext) >> ext );
+          return new ConstNode<uint32_t>( (cnbs[0]->Get( uint32_t() ) << ext) >> ext );
+        }
+      if (extend == 16)
+        {
+          if (sxtend) return new ConstNode<int16_t>( (cnbs[0]->Get( int16_t() ) << ext) >> ext );
+          return new ConstNode<uint16_t>( (cnbs[0]->Get( uint16_t() ) << ext) >> ext );
+        }
+      if (extend == 8)
+        {
+          if (sxtend) return new ConstNode<int8_t>( (cnbs[0]->Get( int8_t() ) << ext) >> ext );
+          return new ConstNode<uint8_t>( (cnbs[0]->Get( uint8_t() ) << ext) >> ext );
         }
       return 0;
     }
@@ -315,13 +306,6 @@ namespace binsec {
       : value(_value), addr(_addr), size(_size), alignment(_alignment), bigendian(_bigendian)
     {}
     virtual Store* Mutate() const { return new Store( *this ); }
-    
-    virtual Expr Simplify() const
-    {
-      Expr nvalue( ASExprNode::Simplify( value ) ), naddr( ASExprNode::Simplify( addr ) );
-      return (nvalue != value) or (naddr != addr) ? new Store( nvalue, naddr, size, alignment, bigendian ) : this;
-    }
-      
     virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
     virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
     unsigned bytecount() const { return 1<<size; }

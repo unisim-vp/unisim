@@ -60,14 +60,15 @@ namespace binsec {
   }
 
   Expr
-  ASExprNode::Simplify( Expr const& _expr )
+  ASExprNode::Simplify( Expr const& expr )
   {
-    Expr expr( _expr );
-    if (ConstNodeBase const* node = expr.ConstSimplify())
+    unsigned subcount = expr->SubCount();
+    
+    if (ConstNodeBase const* node = expr->AsConstNode())
       {
         switch (node->GetType())
           {
-          case ScalarType::S8:  return make_const( node-> Get( uint8_t() ) );
+          case ScalarType::S8:  return make_const( node->Get(  uint8_t() ) );
           case ScalarType::S16: return make_const( node->Get( uint16_t() ) );
           case ScalarType::S32: return make_const( node->Get( uint32_t() ) );
           case ScalarType::S64: return make_const( node->Get( uint64_t() ) );
@@ -77,20 +78,19 @@ namespace binsec {
       }
     else if (OpNodeBase const* node = expr->AsOpNode())
       {
-        switch (node->SubCount())
+        switch (node->op.code)
           {
           default: break;
             
-          case 2: {
-            Expr subs[2] = {ASExprNode::Simplify( node->GetSub(0) ), ASExprNode::Simplify( node->GetSub(1) )};
-
-            switch (node->op.code)
+          case Op::And:
+            if (subcount == 2)
               {
-              default: break;
-              case Op::And:
+                Expr subs[2] = {ASExprNode::Simplify( node->GetSub(0) ), ASExprNode::Simplify( node->GetSub(1) )};
+                  
                 for (unsigned idx = 0; idx < 2; ++idx)
-                  if (ConstNodeBase const* node = subs[idx]->GetConstNode())
+                  if (ConstNodeBase const* node = subs[idx].Eval(EvalSpace()))
                     {
+                      Expr dispose(node);
                       uint64_t v = node->Get( uint64_t() );
                       if (v & (v+1))
                         continue;
@@ -104,60 +104,68 @@ namespace binsec {
                       Expr res( bf.Simplify() );
                       return (res.node == &bf) ? new BitFilter( bf ) : res.node;
                     }
-                break;
                 
-                // case Op::Mod: break;
+                return (subs[0] != node->GetSub(0)) or (subs[1] != node->GetSub(1)) ? make_operation( node->op.code, subs[0], subs[1] ) : node;
               }
+            break;
 
-            return (subs[0] != node->GetSub(0)) or (subs[1] != node->GetSub(1)) ? make_operation( node->op.code, subs[0], subs[1] ) : node;
-          } break;
-
-          case 1: {
-            Expr sub = ASExprNode::Simplify( node->GetSub(0) );
-            
-            switch (node->op.code)
+          case Op::Cast:
+            if (subcount == 1)
               {
-              default: break;
-              
-              case Op::Cast:
-                {
-                  CastNodeBase const& cnb = dynamic_cast<CastNodeBase const&>( *expr.node );
-                  ScalarType src( cnb.GetSrcType() ), dst( cnb.GetType() );
-                  if (not dst.is_integer or not src.is_integer or (dst.bitsize == 1 and src.bitsize != 1))
-                    {
-                      // Complex casts
-                      if (sub == node->GetSub(0))
-                        return expr;
-                      ExprNode* en = cnb.Mutate();
-                      Expr res(en); // Exception safety
-                      dynamic_cast<CastNodeBase&>( *en ).src = sub;
-                      return res;
-                    }
-
-                  if (src.bitsize == dst.bitsize)
-                    return sub;
-                  
-                  
-                  BitFilter bf( sub, src.bitsize, std::min(src.bitsize, dst.bitsize), dst.bitsize, dst.bitsize > src.bitsize ? src.is_signed : false );
-                  bf.Retain(); // Not a heap-allocated object (never delete);
-                  Expr res( bf.Simplify() );
-                  return (res.node == &bf) ? new BitFilter( bf ) : res.node;
-                } break;
-              }
+                Expr sub = ASExprNode::Simplify( node->GetSub(0) );
             
-            return (sub != node->GetSub(0)) ? make_operation( node->op.code, sub ) : node;
-          } break;
+                CastNodeBase const& cnb = dynamic_cast<CastNodeBase const&>( *expr.node );
+                ScalarType src( cnb.GetSrcType() ), dst( cnb.GetType() );
+                if (not dst.is_integer or not src.is_integer or (dst.bitsize == 1 and src.bitsize != 1))
+                  {
+                    // Complex casts
+                    if (sub == node->GetSub(0))
+                      return expr;
+                    ExprNode* en = cnb.Mutate();
+                    Expr res(en); // Exception safety
+                    dynamic_cast<CastNodeBase&>( *en ).src = sub;
+                    return res;
+                  }
 
+                if (src.bitsize == dst.bitsize)
+                  return sub;
+                  
+                  
+                BitFilter bf( sub, src.bitsize, std::min(src.bitsize, dst.bitsize), dst.bitsize, dst.bitsize > src.bitsize ? src.is_signed : false );
+                bf.Retain(); // Not a heap-allocated object (never delete);
+                Expr res( bf.Simplify() );
+                return (res.node == &bf) ? new BitFilter( bf ) : res.node;
+              }
+            break;
           }
-
-        return expr;
       }
     else if (ASExprNode const* node = dynamic_cast<ASExprNode const*>( expr.node ))
       {
-        return node->Simplify();
+        Expr res = node->Simplify();
+        if (res.good())
+          return res;
       }
     
-    return expr;
+    Expr subs[subcount];
+
+    bool simplified = false;
+    
+    for (unsigned idx = 0; idx < subcount; ++idx)
+      {
+        Expr const& sub = expr->GetSub(idx);
+        if (sub != (subs[idx] = ASExprNode::Simplify( sub )))
+          simplified = true;
+      }
+    
+    if (not simplified)
+      return expr;
+
+    ExprNode* res = expr->Mutate();
+
+    for (unsigned idx = 0; idx < subcount; ++idx)
+      const_cast<Expr&>(res->GetSub(idx)) = subs[idx];
+    
+    return Expr(res);
   }
 
   int
@@ -171,9 +179,9 @@ namespace binsec {
       }
     
     /*** Sub expression process ***/
-    if (ConstNodeBase const* node = expr->GetConstNode())
+    if (ConstNodeBase const* node = expr.Eval(EvalSpace()))
       {
-        Expr cexp( node );
+        Expr dispose( node );
         switch (node->GetType())
           {
           case ScalarType::BOOL: sink << node->Get( int32_t() ) << "<1>";  return 1;
@@ -424,17 +432,43 @@ namespace binsec {
   void
   ActionNode::simplify()
   {
+    while (cond.good())
+      {
+        cond = ASExprNode::Simplify( cond );
+        if (ConstNodeBase const* c = cond.ConstSimplify())
+          {
+            //            std::cerr << "warning: post simplification of if-then-else condition\n";
+            bool eval = c->Get(bool());
+            ActionNode* always = nexts[eval];
+            ActionNode* never = nexts[not eval];
+            delete never;
+            // Import always branch
+            for (unsigned idx = 0; idx < 2; ++idx)
+              {
+                nexts[idx] = always->nexts[idx];
+                always->nexts[idx] = 0;
+              }
+            cond = always->cond;
+            sinks.insert(always->sinks.begin(), always->sinks.end());
+            delete always;
+          }
+        else
+          break;
+      }
+    
     {
       std::set<Expr> nsinks;
       for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
-        nsinks.insert( ASExprNode::Simplify( *itr ) );
+        {
+          Expr x = ASExprNode::Simplify( *itr );
+          x.ConstSimplify();
+          nsinks.insert( x );
+        }
       std::swap(nsinks, sinks);
     }
     
     if (not cond.good())
       return;
-    
-    cond = ASExprNode::Simplify( cond );
     
     for (unsigned choice = 0; choice < 2; ++choice)
       if (ActionNode* next = nexts[choice])
@@ -530,7 +564,7 @@ namespace binsec {
           virtual int cmp( ExprNode const& rhs ) const override { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
           virtual unsigned SubCount() const { return 0; }
           virtual void Repr( std::ostream& sink ) const { sink << ref; }
-          virtual Expr Simplify() const { return this; }
+          virtual Expr Simplify() const { return 0; }
           std::string ref;
           int dsz;
         };

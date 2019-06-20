@@ -201,6 +201,8 @@ namespace ut
       sink << "}\n";
       return sink;
     }
+
+    void add_update( Expr expr ) { expr.ConstSimplify(); updates.insert( expr ); }
     
     void simplify();
     

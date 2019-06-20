@@ -116,7 +116,6 @@ namespace symbolic {
     virtual Expr const& GetSub(unsigned idx) const { throw std::logic_error("out of bound sub expression"); }
     virtual void Repr( std::ostream& sink ) const = 0;
     virtual int cmp( ExprNode const& ) const = 0;
-    virtual ConstNodeBase const* GetConstNode() const { return 0; };
     virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** ) const { return 0; }
     virtual ConstNodeBase const* AsConstNode() const { return 0; }
     virtual OpNodeBase const*    AsOpNode() const { return 0; }
@@ -240,7 +239,6 @@ namespace symbolic {
   struct ConstNodeBase : public ExprNode
   {
     virtual unsigned SubCount() const { return 0; };
-    ConstNodeBase const* GetConstNode() const { return this; };
     virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** ) const override { return this; }
     ConstNodeBase const* AsConstNode() const { return this; };
     virtual ConstNodeBase* apply( Op op, ConstNodeBase const** args ) const = 0;
@@ -361,26 +359,12 @@ namespace symbolic {
       return 0;
     }
     
-    ConstNodeBase const*
-    Eval( EvalSpace const& evs ) const
-    {
-      unsigned subcount = node->SubCount();
-      Expr dispose[subcount];
-      ConstNodeBase const* cnbs[subcount];
-      for (unsigned idx = 0; idx < subcount; ++idx)
-        {
-          if (not (cnbs[idx] = node->GetSub(idx).Eval( evs )))
-            return 0;
-          dispose[idx] = cnbs[idx];
-        }
-      return node->Eval( evs, &cnbs[0] );
-    }
-    
     bool operator != ( Expr const& rhs ) const { return compare( rhs ) != 0; }
     bool operator == ( Expr const& rhs ) const { return compare( rhs ) == 0; }
     bool operator  < ( Expr const& rhs ) const { return compare( rhs )  < 0; }
     bool operator  > ( Expr const& rhs ) const { return compare( rhs )  > 0; }
     
+    ConstNodeBase const* Eval( EvalSpace const& evs ) const;
     ConstNodeBase const* ConstSimplify();
     
     bool good() const { return node; }
@@ -517,19 +501,6 @@ namespace symbolic {
     int compare( this_type const& rhs ) const { return (value < rhs.value) ? -1 : (value > rhs.value) ? +1 : 0; }
   };
 
-  inline
-  ConstNodeBase const*
-  Expr::ConstSimplify()
-  {
-    if (ConstNodeBase const* cn = node->GetConstNode())
-      {
-        *this = Expr( cn );
-        return cn;
-      }
-    
-    return 0;
-  }
-    
   template <typename VALUE_TYPE>
   VALUE_TYPE ConstNode<VALUE_TYPE>::GetValue( ConstNodeBase const* cnb ) { return dynamic_cast<ConstNode<VALUE_TYPE> const&>( *cnb ).value; }
 
@@ -544,18 +515,6 @@ namespace symbolic {
     OpNode( Op _op ) : OpNodeBase(_op) {}
     virtual this_type* Mutate() const { return new this_type( *this ); }
 
-    virtual ConstNodeBase const* GetConstNode() const
-    {
-      Expr args[SUBCOUNT];
-      ConstNodeBase const* cnbs[SUBCOUNT];
-      for (unsigned idx = 0; idx < SUBCOUNT; ++idx)
-        {
-          args[idx] = subs[idx];
-          if (not (cnbs[idx] = args[idx].ConstSimplify()))
-            return 0;
-        }
-      return cnbs[0]->apply( op, &cnbs[0] );
-    }
     virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** cnbs ) const override { return cnbs[0]->apply( op, &cnbs[0] ); }
     
     virtual unsigned SubCount() const { return SUBCOUNT; };
@@ -590,17 +549,6 @@ namespace symbolic {
     virtual this_type* Mutate() const { return new this_type( *this ); }
     virtual ScalarType::id_t GetSrcType() const { return TypeInfo<SRC_VALUE_TYPE>::GetType(); }
     virtual ScalarType::id_t GetType() const { return TypeInfo<DST_VALUE_TYPE>::GetType(); }
-    
-    
-    virtual ConstNodeBase const* GetConstNode() const
-    {
-      if (ConstNodeBase const* cnb = src->GetConstNode())
-        {
-          Expr cexp(cnb);
-          return new ConstNode<DST_VALUE_TYPE>( cnb->Get( DST_VALUE_TYPE() ) );
-        }
-      return 0;
-    }
     virtual ConstNodeBase const* Eval( EvalSpace const&, ConstNodeBase const** cnbs ) const override { return new ConstNode<DST_VALUE_TYPE>( cnbs[0]->Get( DST_VALUE_TYPE() ) ); }
   };
   
