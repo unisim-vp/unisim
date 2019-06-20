@@ -402,6 +402,11 @@ namespace ut
     // the opcode, and to compute the interface of the operation
     ut::Arch reference( *this );
       
+    if (gregs.accessed(4))
+      throw ut::Untestable("SP access");
+    if (has_jump)
+      throw ut::Untestable("has jump");
+    
     for (bool end = false; not end;)
       {
         ut::Arch arch( *this );
@@ -411,6 +416,12 @@ namespace ut
 
     if (addrs.size())
       {
+        uint64_t span = (*addrs.rbegin() - *addrs.begin());
+        if (span > uint64_t(1024))
+          {
+            std::cerr << "[SOMA] span: " << std::hex << span << std::dec << "; " << disasm << std::endl;
+            throw ut::Untestable("spread out memory accesses");
+          }
         typedef decltype(this->relocs) Relocs;
         
         struct AG
@@ -445,19 +456,21 @@ namespace ut
           
           AG(Relocs& _relocs) : relocs(_relocs) {} Relocs& relocs;
         } ag(relocs);
+        
         ag.process( base_addr, new ExpectedAddress() );
-        // remove the invalid relocations
-        for (Relocs::iterator itr = relocs.begin(), end = relocs.end(); itr != end; )
+        
+        // Remove the invalid relocations
+        for (Relocs::iterator itr = relocs.begin(), end = relocs.end(); itr != end;)
           {
             if (itr->second.good()) ++itr; else itr = relocs.erase(itr);
           }
+        
+        if (relocs.size() == 0)
+          {
+            throw ut::Untestable("malformed address");
+          }
       }
 
-    if (gregs.accessed(4))
-      throw ut::Untestable("SP access");
-    if (has_jump)
-      throw ut::Untestable("has jump");
-    
     behavior->simplify();
   }
     

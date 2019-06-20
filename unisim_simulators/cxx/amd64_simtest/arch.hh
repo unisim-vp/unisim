@@ -293,7 +293,11 @@ namespace ut
     OperandMap<uint8_t,AMD64::FREGCOUNT> fregs; /* floating (x87) registers */
     OperandMap<uint8_t,AMD64::VREGCOUNT> vregs; /* vector (sse/avx) registers */
     std::shared_ptr<ActionNode> behavior;
-    std::set<uint64_t> addrs;
+    struct RelCmp
+    {
+      bool operator () (uint64_t l, uint64_t r) const { return int64_t(l - r) < 0; }
+    };
+    std::set<uint64_t,RelCmp> addrs;
     Expr base_addr;
     std::map<unsigned,Expr> relocs;
     bool has_write, has_jump;
@@ -468,7 +472,7 @@ namespace ut
       virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
       {
         if (dynamic_cast<AddrEval const*>( &evs ))
-          return new unisim::util::symbolic::ConstNode<uint64_t>( 0 );
+          return new unisim::util::symbolic::ConstNode<uint64_t>( uint64_t(reg) << 60 );
         return 0;
       };
     };

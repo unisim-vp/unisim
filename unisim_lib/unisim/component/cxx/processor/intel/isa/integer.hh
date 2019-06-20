@@ -1790,7 +1790,7 @@ struct IMulGEI : public Operation<ARCH>
   IMulGEI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn, imm_type _imm )
     : Operation<ARCH>( opbase ), rmop( _rmop ), imm(_imm), gn( _gn ) {} RMOp<ARCH> rmop; imm_type imm; uint8_t gn;
   
-  void disasm( std::ostream& sink ) const { sink << "imul" << DisasmI( imm ) << ',' << DisasmE( OP(), rmop )  << ',' << DisasmG( OP(), gn ); }
+  void disasm( std::ostream& sink ) const { sink << "imul " << DisasmI( imm ) << ',' << DisasmE( OP(), rmop )  << ',' << DisasmG( OP(), gn ); }
   
   void execute( ARCH& arch ) const
   {

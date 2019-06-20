@@ -201,6 +201,9 @@ struct Checker
 
   bool insert( Operation const& op, MemCode const& code, std::string const& disasm )
   {
+    if (done.count(code))
+      throw ut::Untestable("duplicate");
+    
     ut::Interface iif(op, code, disasm);
 
     decltype(testdb.begin()) tstbeg, tstend;
