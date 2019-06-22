@@ -41,84 +41,10 @@
 #include <memory>
 #include <inttypes.h>
 
-struct Sink
-{
-  Sink( std::string const& gendir )
-    : macros( gendir + ".inc" ), sources( gendir + ".S" )
-  {
-  }
-  
-  ~Sink() {}
-  
-  std::ofstream macros;
-  std::ofstream sources;
-  
-  char const* test_prefix() const { return "iut_"; }
-};
-
-struct TestConfig
-{
-  ut::Interface const& iif;
-  std::string ident, disasm;
-  
-  TestConfig( ut::Interface const& _iif, std::string const& _ident, std::string const& _disasm )
-    : iif( _iif ), ident( _ident ), disasm( _disasm )
-  {}
-  
-  // bool wide() const { return iif.length == 32; }
-  
-  std::string prologue() const { return ""; }
-  // {
-  //   if (iif.usemem()) {
-  //     std::ostringstream sink;
-  //     try {
-  //       auto const& p = iif.GetPrologue();
-  //       mpc57::GPRPrint br( p.base );
-  //       if      ((p.offset & -128) == 0)
-  //         {
-  //           // a suitable 7 bit unsigned immediate (cost 2 bytes)
-  //           sink << "\tse_li\t" << br << ", " << p.offset << "\n";
-  //         }
-  //       else if (((p.offset + 0x80000) >> 20) == 0)
-  //         {
-  //           // a suitable 20 bit signed immediate (cost 4 bytes)
-  //           sink << "\te_li\t" << br << ", " << int32_t(p.offset) << "\n";
-  //         }
-  //       else
-  //         {
-  //           // a full n raw 32 bit immediate (8 bytes)
-  //           mpc57::HexPrint xoff( p.offset );
-  //           sink << "\te_lis\t" << br << ", " << xoff << "@h\n";
-  //           sink << "\te_or2i\t" << br << ", " << xoff << "@l\n";
-  //         }
-        
-  //       mpc57::GPRPrint buffer( iif.aligned ? 3 : 0 );
-
-  //       sink << "\t" << (p.sign ? "sub" : "add") << "\t" << br << ", " << br << ", " << buffer << "\n";
-        
-  //       for (auto reg : p.regs) {
-  //         mpc57::GPRPrint rname( reg.first );
-  //         mpc57::HexPrint rvalue( reg.second );
-  //         if (reg.second & -128) { std::cerr << "IE immediate generation.\n"; throw 0; }
-  //         sink << "\tse_li\t" << rname << ", " << rvalue << "\n";
-  //       }
-  //     } catch (ut::Interface::Prologue::Error const& x) {
-  //       std::cerr << "Prologue error in: " << disasm << ".\n";
-  //       throw x;
-  //     }
-  //     return sink.str();
-  //   }
-  //   return "";
-  // }
-  
-  std::string epilogue() const { return ""; }
-};
-
-template <typename ISA>
 struct Checker
 {
-  typedef typename ISA::MemCode MemCode;
-  typedef typename ISA::Operation Operation;
+  typedef typename ut::AMD64::MemCode MemCode;
+  typedef typename ut::AMD64::Operation Operation;
   typedef unisim::util::symbolic::Expr Expr;
   
   struct TestLess
@@ -195,7 +121,7 @@ struct Checker
   typedef std::multiset<ut::Interface, TestLess> TestDB;
   
   unisim::util::random::Random random;
-  ISA isa;
+  ut::AMD64 isa;
   std::set<MemCode> done;
   TestDB testdb;
 
@@ -208,13 +134,6 @@ struct Checker
 
     decltype(testdb.begin()) tstbeg, tstend;
     std::tie(tstbeg,tstend) = testdb.equal_range(iif);
-    // if (code.length == 1 and code.bytes[0] == 0x90)
-    // {
-    //   std::for_each(tstbeg,tstend,[&](typename TestDB::value_type& v){
-    //       std::cout << "Equiv: " << v.second.asmcode << std::endl;
-    //       std::cout << *v.first.behavior << std::endl;
-    //     });
-    // }
  
     auto count = std::distance(tstbeg, tstend);
     if (count > 1)
@@ -246,12 +165,7 @@ struct Checker
     return found;
   }
   
-  std::ofstream logger;
-  
-  Checker()
-    : random( 1, 2, 3, 4 )
-    , logger((std::string( ISA::Name() ) + ".log").c_str())
-  {}
+  Checker() : random( 1, 2, 3, 4 ) {}
   
   void discover( uintptr_t maxttl, uintptr_t maxtrials )
   {
@@ -317,19 +231,6 @@ struct Checker
       }
 
     std::cerr << '\n';
-    
-    {
-      std::ofstream dbg("dbg.txt");
-      std::map<MemCode,char const*> rtdb;
-      for (ut::Interface const& test : testdb)
-        rtdb[test.memcode] = test.asmcode.c_str();
-      for (MemCode const&  mc : done)
-        {
-          char const* ac = rtdb[mc];
-          if (not ac) ac = "";
-          dbg << mc << '\t' << ac << '\n';
-        }
-    }
   }
   
   void
@@ -385,27 +286,30 @@ struct Checker
         done.insert( code );
       }
   }
-  
-  void
-  write_tests( Sink& sink )
+
+  void run_tests()
   {
-    // for (auto && test : testdb)
-    //   {
-    //     // std::string name = tcitem.first;
-        
-    //     // TestConfig cfg( ccitem.first, std::string( ISA::Name() ) + '_' + name, disasm( ccitem.second ) );
-    //     // isa.write_test( sink, cfg, ccitem.second );
-    //   }
+    for (;;)
+      {
+        for (ut::Interface const& utest : testdb)
+          {
+            std::cout << utest.asmcode << std::endl;
+          }
+      }
   }
 };
 
-template <typename T>
-void Update( std::string const& reposname )
+int
+main( int argc, char** argv )
 {
-  uintptr_t ttl = 10000;
-  if (char const* ttl_cfg = getenv("TTL_CFG")) { ttl = strtoull(ttl_cfg,0,0); }
-  
-  std::string suffix(".tests");
+  if (argc != 2)
+    {
+      std::cerr << "Wrong number of argument.\n";
+      std::cerr << argv[0] << " <path_to_test_file>\n";
+      return 1;
+    }
+
+  std::string reposname(argv[1]), suffix(".tests");
   
   if ((suffix.size() >= reposname.size()) or not std::equal(suffix.rbegin(), suffix.rend(), reposname.rbegin()))
     {
@@ -413,26 +317,18 @@ void Update( std::string const& reposname )
       throw 0;
     }
   
-  Checker<T> checker;
-  checker.read_repos( reposname );
-  checker.discover( ttl, 16384 );
-  checker.write_repos( reposname );
-  // std::string basename( reposname.substr( 0, reposname.size() - suffix.size() ) );
-  // Sink sink( basename );
-  // checker.write_tests( sink );
-}
-
-int
-main( int argc, char** argv )
-{
-  if (argc != 2)
-    {
-    std::cerr << "Wrong number of argument.\n";
-    std::cerr << argv[0] << " <path_to_test_file>\n";
-    return 1;
-  }
-
-  Update<ut::AMD64>( argv[1] );
+  uintptr_t ttl = 10000;
+  if (char const* ttl_cfg = getenv("TTL_CFG")) { ttl = strtoull(ttl_cfg,0,0); }
   
+  Checker checker;
+  
+  checker.read_repos( reposname );
+  
+  checker.discover( ttl, 16384 );
+  
+  checker.write_repos( reposname );
+
+  checker.run_tests();
+
   return 0;
 }

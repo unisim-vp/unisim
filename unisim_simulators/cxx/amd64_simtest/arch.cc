@@ -121,6 +121,7 @@ namespace ut
   unisim::util::symbolic::Expr&
   Arch::fpaccess( unsigned reg, bool write )
   {
+    throw ut::Untestable("X87");
     unsigned idx = interface.fregs.touch(reg,write);
     unisim::util::symbolic::Expr& res = fpregs[reg];
     if (not res.node)
@@ -401,12 +402,7 @@ namespace ut
     // Performing an abstract execution to check the validity of
     // the opcode, and to compute the interface of the operation
     ut::Arch reference( *this );
-      
-    if (gregs.accessed(4))
-      throw ut::Untestable("SP access");
-    if (has_jump)
-      throw ut::Untestable("has jump");
-    
+
     for (bool end = false; not end;)
       {
         ut::Arch arch( *this );
@@ -414,12 +410,28 @@ namespace ut
         end = arch.close( reference );
       }
 
+    unsigned grexcl[] = {3,4,5,7,12,13,14,15};
+    for (unsigned idx = 0, end = sizeof grexcl / sizeof grexcl[0]; idx < end; ++idx)
+      {
+        if (gregs.accessed(grexcl[idx]))
+          {
+            std::ostringstream buf;
+            buf << "reserved register access ("
+                << unisim::component::cxx::processor::intel::DisasmG( unisim::component::cxx::processor::intel::GOq(), grexcl[idx] )
+                << ")";
+            throw ut::Untestable(buf.str());
+          }
+      }
+    
+    if (has_jump)
+      throw ut::Untestable("has jump");
+    
     if (addrs.size())
       {
         uint64_t span = (*addrs.rbegin() - *addrs.begin());
         if (span > uint64_t(1024))
           {
-            std::cerr << "[SOMA] span: " << std::hex << span << std::dec << "; " << disasm << std::endl;
+            //std::cerr << "[SOMA] span: " << std::hex << span << std::dec << "; " << disasm << std::endl;
             throw ut::Untestable("spread out memory accesses");
           }
         typedef decltype(this->relocs) Relocs;
@@ -472,6 +484,123 @@ namespace ut
       }
 
     behavior->simplify();
+    
+    unsigned offset = 0;
+    /* Load GP registers */
+    for (unsigned reg = 0; reg < gregs.count(); ++reg)
+      {
+        if (not gregs.accessed(reg))
+          continue;
+        // if (reg == 4 or reg == 7) continue; /* rsp or rdi */
+        struct { uint8_t rex; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t disp; } i;
+        i.rex = 0x48 + 4*(reg >= 8);
+        i.opcode = 0x8b;
+        i.mod = 1;
+        i.reg = reg % 8;
+        i.r_m = 7; /*%rdi*/
+        i.disp = offset + ut::Arch::REGSIZE*gregs.index(reg);
+        uint8_t const* ptr = &i.rex;
+        testcode.insert(testcode.end(),ptr,ptr+4);
+      }
+    offset += ut::Arch::REGSIZE*gregs.used();
+    
+    /* Load AVX registers */
+    for (unsigned reg = 0; reg < vregs.used(); ++reg)
+      {
+        if (not vregs.accessed(reg))
+          continue;
+        struct { uint8_t vex; uint8_t pp : 2; uint8_t L : 1; uint8_t vvvv : 4; uint8_t R : 1; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t disp; } i;
+        // VEX.256.F3.0F.WIG 6F /r
+        i.vex = 0xc5; /* 2bytes VEX */
+        i.pp = 2; /*F3*/
+        i.L = 1; /*256*/
+        i.vvvv = 0b1111;
+        i.R = reg < 8;
+        i.opcode = 0x6f; /*6F*/
+        i.mod = 1;
+        i.reg = reg % 8;
+        i.r_m = 7; /*%rdi*/
+        i.disp = offset + ut::Arch::VUConfig::BYTECOUNT*vregs.index(reg);
+        uint8_t const* ptr = &i.vex;
+        testcode.insert(testcode.end(),ptr,ptr+5);
+      }
+    offset += ut::Arch::VUConfig::BYTECOUNT*vregs.used();
+
+    /* Load EFLAGS register */
+    {
+      struct { uint8_t opcode; uint8_t r_m : 3; uint8_t r_o : 3; uint8_t mod : 2; uint8_t disp; uint8_t popf; } i;
+      /* FF /6, PUSH r/m64 x(%rdi) */
+      i.opcode = 0xff; /* FF */
+      i.mod = 1;
+      i.r_o = 6; /* /6 */
+      i.r_m = 7; /* %rdi */
+      i.disp = offset;
+      i.popf = 0x9d;
+      uint8_t const* ptr = &i.opcode;
+      testcode.insert(testcode.end(),ptr,ptr+4);
+    }
+    offset += 8;
+    
+    testcode.insert(testcode.end(),memcode.begin(),memcode.end());
+    
+    /* Store GP registers */
+    for (unsigned reg = 0; reg < gregs.count(); ++reg)
+      {
+        if (not gregs.accessed(reg))
+          continue;
+        // if (reg == 4 or reg == 7) continue; /* rsp or rdi */
+        struct { uint8_t rex; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t disp; } i;
+        i.rex = 0x48 + 4*(reg >= 8);
+        i.opcode = 0x89;
+        i.mod = 1;
+        i.reg = reg % 8;
+        i.r_m = 7; /*%rdi*/
+        i.disp = offset + ut::Arch::REGSIZE*gregs.index(reg);
+        uint8_t const* ptr = &i.rex;
+        testcode.insert(testcode.end(),ptr,ptr+4);
+      }
+    offset += ut::Arch::REGSIZE*gregs.used();
+    
+    /* Store AVX registers */
+    for (unsigned reg = 0; reg < vregs.used(); ++reg)
+      {
+        if (not vregs.accessed(reg))
+          continue;
+        struct { uint8_t vex; uint8_t pp : 2; uint8_t L : 1; uint8_t vvvv : 4; uint8_t R : 1; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t disp; } i;
+        // VEX.256.F3.0F.WIG 7F /r
+        i.vex = 0xc5; /* 2bytes VEX */
+        i.pp = 2; /*F3*/
+        i.L = 1; /*256*/
+        i.vvvv = 0b1111;
+        i.R = reg < 8;
+        i.opcode = 0x7f; /*7F*/
+        i.mod = 1;
+        i.reg = reg % 8;
+        i.r_m = 7; /*%rdi*/
+        i.disp = offset + ut::Arch::VUConfig::BYTECOUNT*vregs.index(reg);
+        uint8_t const* ptr = &i.vex;
+        testcode.insert(testcode.end(),ptr,ptr+5);
+      }
+    offset += ut::Arch::VUConfig::BYTECOUNT*vregs.used();
+
+    /* Store EFLAGS register */
+    {
+      struct { uint8_t pushf; uint8_t opcode; uint8_t r_m : 3; uint8_t r_o : 3; uint8_t mod : 2; uint8_t disp; } i;
+      /* 8F /0, POP r/m64 x(%rdi) */
+      i.pushf = 0x9c;
+      i.opcode = 0x8f; /* 8F */
+      i.mod = 1;
+      i.r_o = 0; /* /0 */
+      i.r_m = 7; /* %rdi */
+      i.disp = offset;
+      uint8_t const* ptr = &i.pushf;
+      testcode.insert(testcode.end(),ptr,ptr+4);
+    }
+    offset += 8;
+    
+    if (offset >= 256) throw 0;
+    
+    testcode.push_back(0xc3);
   }
     
   struct AddrLess
@@ -553,4 +682,5 @@ namespace ut
     if (addrs.insert(addr).second)
       sink << addr << std::endl;
   }
+
 }

@@ -85,10 +85,12 @@ string \
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
 arch.cc \
+testrun.cc
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
 arch.hh \
+testrun.hh
 "
 
 UNISIM_SIMULATOR_DATA_FILES="\

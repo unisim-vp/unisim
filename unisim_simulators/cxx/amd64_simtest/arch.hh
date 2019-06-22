@@ -65,7 +65,10 @@ namespace ut
       MemCode( MemCode const& ) = default;
       MemCode( uint8_t const* _bytes, unsigned _length ) : length(_length) { std::copy( &_bytes[0], &_bytes[_length], &bytes[0] ); }
       MemCode( char const* _bytes, unsigned _length ) : length(_length) { std::copy( &_bytes[0], &_bytes[_length], &bytes[0] ); }
-    
+
+      uint8_t const* begin() const { return &bytes[0]; }
+      uint8_t const* end() const { return &bytes[length]; }
+      
       bool get( std::istream& source )
       {
         unsigned idx = 0;
@@ -141,32 +144,6 @@ namespace ut
     Operation* decode( uint64_t addr, MemCode& ct, std::string& disasm );
   
     static char const* Name() { return "amd64"; }
-  
-    // void
-    // write_test( Sink& sink, TestConfig const& cfg, CodeType code )
-    // {
-    //   std::string hexcode;
-    //   {
-    //     uint32_t codebits = code >> (cfg.wide() ? 0 : 16);
-    //     std::ostringstream oss;
-    //     oss << std::hex << codebits;
-    //     hexcode = oss.str();
-    //   }
-    //   std::string opfunc_name = sink.test_prefix() + cfg.ident + '_' + hexcode;
-    
-    //   sink.macros << "ENTRY(" << opfunc_name << ",0x" << hexcode << ")\n";
-    
-    //   sink.sources << "\t.text\n\t.align\t2\n\t.global\t" << opfunc_name
-    //                << "\n\t.type\t" << opfunc_name
-    //                << ", @function\n" << opfunc_name
-    //                << ":\n"
-    //                << cfg.prologue()
-    //                << "\t." << (cfg.wide() ? "long" : "short") << "\t0x" << hexcode << '\t' << "/* " << cfg.disasm << " */\n"
-    //                << cfg.epilogue()
-    //                << "\tse_blr\n"
-    //                << "\t.size\t" << opfunc_name
-    //                << ", .-" << opfunc_name << "\n\n";
-    // }
 
     enum {VREGCOUNT = 16, GREGCOUNT = 16, FREGCOUNT=8};
   };
@@ -244,7 +221,7 @@ namespace ut
   {
     typedef Operand<T> Op;
 
-    OperandMap() : omap(), count() {}
+    OperandMap() : omap(), allocated() {}
 
     T touch(unsigned idx, bool w)
     {
@@ -252,7 +229,7 @@ namespace ut
       Operand<T>& op = omap[idx];
       if (op.access(w))
         return op.get_index();
-      return op.set_index( count++ );
+      return op.set_index( allocated++ );
     }
 
     bool modified(unsigned idx) const
@@ -273,11 +250,14 @@ namespace ut
       return omap[idx].get_index();
     }
 
+    unsigned count() const { return COUNT; }
+    unsigned used() const { return allocated; }
+
   private:
     Op omap[COUNT];
-    T count;
+    T allocated;
   };
-  
+
   struct Interface
   {
     typedef AMD64::MemCode MemCode;
@@ -286,6 +266,7 @@ namespace ut
     Interface( Operation const& op, MemCode const& code, std::string const& disasm );
 
     void memaccess( Expr const& addr, bool iswrite );
+
     
     MemCode memcode;
     std::string asmcode;
@@ -301,6 +282,7 @@ namespace ut
     Expr base_addr;
     std::map<unsigned,Expr> relocs;
     bool has_write, has_jump;
+    std::vector<uint8_t> testcode;
   };
   
   template <typename T>
