@@ -381,6 +381,13 @@ namespace ut
       virtual int cmp(ExprNode const& rhs) const override { return 0; }
       virtual unsigned SubCount() const override { return 0; }
       virtual void Repr( std::ostream& sink ) const override { sink << "ExpectedAddress()"; }
+      typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
+      virtual ConstNodeBase const* Eval( unisim::util::symbolic::EvalSpace const& evs, ConstNodeBase const** ) const override
+      {
+        if (auto l = dynamic_cast<Arch::RelocEval const*>( &evs ))
+          return new unisim::util::symbolic::ConstNode<uint64_t>( l->address );
+        return 0;
+      };
       typedef unisim::util::symbolic::ScalarType ScalarType;
       virtual ScalarType::id_t GetType() const override { return ScalarType::U64; }
     };
@@ -439,6 +446,18 @@ namespace ut
         struct AG
         {
           typedef unisim::util::symbolic::Expr Expr;
+
+          void check(Expr const& front)
+          {
+            if (auto vr = dynamic_cast<Arch::VirtualRegister const*>(front.node))
+              {
+                /* Permanently invalidate relocation */
+                relocs[vr->reg] = Expr();
+                return;
+              }
+            for (unsigned idx = 0, end = front->SubCount(); idx < end; ++idx)
+              check( front->GetSub(idx) );
+          }
       
           void process (Expr const& front, Expr const& back)
           {
@@ -463,7 +482,11 @@ namespace ut
                     process( front->GetSub(0), make_operation( "Add", back, front->GetSub(1) ) );
                     process( front->GetSub(1), make_operation( "Sub", front->GetSub(0), back ) );
                   }
+                else
+                  check( front );
               }
+            else
+              check( front );
           }
           
           AG(Relocs& _relocs) : relocs(_relocs) {} Relocs& relocs;
@@ -484,7 +507,10 @@ namespace ut
       }
 
     behavior->simplify();
-    
+  }
+  
+  void Interface::gencode(Text& text) const
+  {
     unsigned offset = 0;
     /* Load GP registers */
     for (unsigned reg = 0; reg < gregs.count(); ++reg)
@@ -500,12 +526,12 @@ namespace ut
         i.r_m = 7; /*%rdi*/
         i.disp = offset + ut::Arch::REGSIZE*gregs.index(reg);
         uint8_t const* ptr = &i.rex;
-        testcode.insert(testcode.end(),ptr,ptr+4);
+        text.write(ptr,4);
       }
     offset += ut::Arch::REGSIZE*gregs.used();
     
     /* Load AVX registers */
-    for (unsigned reg = 0; reg < vregs.used(); ++reg)
+    for (unsigned reg = 0; reg < vregs.count(); ++reg)
       {
         if (not vregs.accessed(reg))
           continue;
@@ -522,7 +548,7 @@ namespace ut
         i.r_m = 7; /*%rdi*/
         i.disp = offset + ut::Arch::VUConfig::BYTECOUNT*vregs.index(reg);
         uint8_t const* ptr = &i.vex;
-        testcode.insert(testcode.end(),ptr,ptr+5);
+        text.write(ptr,5);
       }
     offset += ut::Arch::VUConfig::BYTECOUNT*vregs.used();
 
@@ -537,12 +563,29 @@ namespace ut
       i.disp = offset;
       i.popf = 0x9d;
       uint8_t const* ptr = &i.opcode;
-      testcode.insert(testcode.end(),ptr,ptr+4);
+      text.write(ptr,4);
     }
     offset += 8;
     
-    testcode.insert(testcode.end(),memcode.begin(),memcode.end());
+    if (offset >= 128) throw 0;
     
+    text.write(memcode.text(),memcode.length);
+
+    /* Fix RDI to destination zone */
+    {
+      /* REX.W + 83 /0 ib ADD r/m64, imm8 */
+      struct { uint8_t rex; uint8_t opcode; uint8_t r_m : 3; uint8_t reg : 3; uint8_t mod : 2; uint8_t imm; } i;
+      i.rex = 0x48;
+      i.opcode = 0x83; /* 83 */
+      i.r_m = 7; /* %rdi */
+      i.reg = 0; /* /0 */
+      i.mod = 3; 
+      i.imm = offset; /* ib */
+      uint8_t const* ptr = &i.rex;
+      text.write(ptr,4);
+    }
+    
+    offset = 0;
     /* Store GP registers */
     for (unsigned reg = 0; reg < gregs.count(); ++reg)
       {
@@ -557,12 +600,12 @@ namespace ut
         i.r_m = 7; /*%rdi*/
         i.disp = offset + ut::Arch::REGSIZE*gregs.index(reg);
         uint8_t const* ptr = &i.rex;
-        testcode.insert(testcode.end(),ptr,ptr+4);
+        text.write(ptr,4);
       }
     offset += ut::Arch::REGSIZE*gregs.used();
     
     /* Store AVX registers */
-    for (unsigned reg = 0; reg < vregs.used(); ++reg)
+    for (unsigned reg = 0; reg < vregs.count(); ++reg)
       {
         if (not vregs.accessed(reg))
           continue;
@@ -579,7 +622,7 @@ namespace ut
         i.r_m = 7; /*%rdi*/
         i.disp = offset + ut::Arch::VUConfig::BYTECOUNT*vregs.index(reg);
         uint8_t const* ptr = &i.vex;
-        testcode.insert(testcode.end(),ptr,ptr+5);
+        text.write(ptr,5);
       }
     offset += ut::Arch::VUConfig::BYTECOUNT*vregs.used();
 
@@ -594,13 +637,22 @@ namespace ut
       i.r_m = 7; /* %rdi */
       i.disp = offset;
       uint8_t const* ptr = &i.pushf;
-      testcode.insert(testcode.end(),ptr,ptr+4);
+      text.write(ptr,4);
     }
     offset += 8;
     
-    if (offset >= 256) throw 0;
-    
-    testcode.push_back(0xc3);
+    text.write((uint8_t const*)"\xc3",1);
+  }
+
+  uintptr_t
+  Interface::workquads() const
+  {
+    uintptr_t offset = 0;
+    offset += 8;
+    offset += ut::Arch::REGSIZE*gregs.used();
+    offset += ut::Arch::VUConfig::BYTECOUNT*vregs.used();
+    if (offset % 8) throw "WTF";
+    return offset / 8;
   }
     
   struct AddrLess

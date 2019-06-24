@@ -33,12 +33,14 @@
  */
 
 #include <arch.hh>
+#include <testrun.hh>
 #include <unisim/component/cxx/processor/intel/isa/intel.hh>
 #include <unisim/util/random/random.hh>
 #include <fstream>
 #include <iostream>
 #include <set>
 #include <memory>
+#include <sys/mman.h>
 #include <inttypes.h>
 
 struct Checker
@@ -287,14 +289,132 @@ struct Checker
       }
   }
 
-  void run_tests()
+  void run_tests(char const* seed)
   {
-    for (;;)
+    /* First pass; computing memory requirements */
+    uintptr_t textsize, workquads = 0;
+    {
+      struct Text : public ut::Interface::Text
       {
-        for (ut::Interface const& utest : testdb)
+        Text() : size() {} uintptr_t size;
+        virtual void write(uint8_t const*, unsigned sz) { size += sz; }
+        void process( ut::Interface const& t ) { t.gencode(*this); size = (size + 7) & -8; }
+      } text;
+      
+      for (ut::Interface const& test : testdb)
+        {
+          workquads = std::max( workquads, 2*test.workquads() );
+          text.process( test );
+        }
+      
+      textsize = text.size;
+    }
+
+    /* Manage executable code zone */
+    struct TextZone
+    {
+      TextZone(uintptr_t size)
+        : p(mmap(0, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0)), sz(size)
+      { if (p == MAP_FAILED) throw 0; }
+      void activate() { mprotect(p, sz, PROT_EXEC); }
+      ~TextZone() { munmap(p, sz); }
+      uint8_t* chunk(uintptr_t idx) { return &((uint8_t*)p)[idx]; }
+      void* p; uintptr_t sz;
+    } textzone(textsize);
+
+    /* Organize test data */
+    struct Test
+    {
+      typedef ut::Interface::testcode_t testcode_t;
+      
+      Test(ut::Interface const* _test, testcode_t _code)
+        : code(_code), relval(), relreg(), workquads(_test->workquads())
+      {}
+      Test(ut::Interface const* _test, testcode_t _code, unsigned _relreg, unisim::util::symbolic::Expr const& _relval)
+        : code(_code), relval(_relval), relreg(_test->gregs.index(_relreg)), workquads(_test->workquads())
+      {}
+      uint64_t get_reloc(std::vector<uint64_t> const& ws, uint64_t address) const
+      {
+        if (not relval.good()) return 0;
+        
+        uint64_t value;
+        if (auto v = relval.Eval( ut::Arch::RelocEval(ws, address) ))
+          { Expr dispose(v); value = v->Get( uint64_t() ); }
+        else
+          throw "WTF";
+
+        return value;
+      }
+      void patch(std::vector<uint64_t>& ws, uint64_t reloc) const
+      {
+        if (relval.good())
+          ws[relreg] = reloc;
+      }
+      void load(std::vector<uint64_t>& ws, ut::Testbed<4096ul> const& testbed) const
+      {
+        testbed.load(&ws[0], workquads);
+      }
+
+      ut::Interface::testcode_t code;
+      Expr relval;
+      unsigned relreg, workquads;
+    };
+
+    std::vector<Test> tests;
+    
+    /* 2nd pass; generating tests (data and code)*/
+    textsize = 0;
+    for (ut::Interface const& test : testdb)
+      {
+        /* generating test code */
+        struct Text : public ut::Interface::Text
+        {
+          Text(uint8_t* _mem) : mem(_mem), size(0) {}
+          virtual void write(uint8_t const* bytes, unsigned sz)
           {
-            std::cout << utest.asmcode << std::endl;
+            std::copy( bytes, bytes+sz, &mem[size] );
+            size += sz;
           }
+          ut::Interface::testcode_t code() const { return (ut::Interface::testcode_t)mem; }
+          uint8_t* mem;
+          uintptr_t size;
+        } text( textzone.chunk(textsize) );
+        test.gencode( text );
+        textsize = (textsize + text.size + 7) & -8;
+
+        /* Fill out test data */
+        if (test.base_addr.good())
+          for (auto const& reloc : test.relocs)
+            tests.push_back( Test(&test, text.code(), reloc.first, reloc.second) );
+        else
+          tests.push_back( Test(&test, text.code()) );
+      }
+
+    /* Now, undergo real tests */
+    textzone.activate();
+    
+    std::vector<uint64_t> reference(workquads), workspace(workquads);
+    
+    for (ut::Testbed<4096> testbed( seed );; testbed.next())
+      {
+        Test const& test = testbed.select(tests);
+        uint64_t* data = &workspace[0];
+        
+        /* Perform native test */
+        test.load(workspace, testbed);
+        // TODO: handle alignment policy [+ ((testbed.counter % tests.size()) % 8)]
+        uint64_t reloc = test.get_reloc( workspace, uint64_t(data) );
+        test.patch(workspace,reloc);
+        test.code(data);
+        std::copy(workspace.begin(),workspace.end(),reference.begin());
+        
+        /* Perform simulation test */
+        test.load(workspace, testbed);
+        test.patch(workspace,reloc);
+        /* TODO: Perform test here */
+        
+        /* Check for differences */
+        if (testbed.counter >= tests.size()) break;
       }
   }
 };
@@ -314,7 +434,7 @@ main( int argc, char** argv )
   if ((suffix.size() >= reposname.size()) or not std::equal(suffix.rbegin(), suffix.rend(), reposname.rbegin()))
     {
       std::cerr << "Bad test repository name (should ends with " << suffix << ").\n";
-      throw 0;
+      return 1;
     }
   
   uintptr_t ttl = 10000;
@@ -323,12 +443,15 @@ main( int argc, char** argv )
   Checker checker;
   
   checker.read_repos( reposname );
-  
-  checker.discover( ttl, 16384 );
-  
-  checker.write_repos( reposname );
 
-  checker.run_tests();
+  if (getenv("INSN_SCAN"))
+    {
+      checker.discover( ttl, 16384 );
+      
+      checker.write_repos( reposname );
+    }
+
+  checker.run_tests("01234567890123456789012345678901000000000000000000000000");
 
   return 0;
 }

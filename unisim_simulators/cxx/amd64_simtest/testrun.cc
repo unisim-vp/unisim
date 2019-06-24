@@ -33,3 +33,61 @@
  */
 
 #include <testrun.hh>
+#include <ostream>
+
+namespace ut
+{
+  namespace
+  {
+    template <typename T>
+    void HexStore( std::ostream& sink, T value )
+    {
+      unsigned const digits = 2*sizeof (T);
+      char buf[1 + digits];
+      buf[digits] = '\0';
+      for (int idx = digits; --idx >= 0;)
+        {
+          buf[idx] = "0123456789abcdef"[value & 0xf];
+          value >>= 4;
+        }
+      sink << &buf[0];
+    }
+
+    template <typename T>
+    void HexLoad( T& value, char const*& buf )
+    {
+      unsigned const digits = 2*sizeof (T);
+      T scratch = 0;
+      char const* ptr = buf;
+      for (char const* end = &buf[digits]; ptr < end; ++ptr)
+        {
+          char ch = *ptr;
+          if      ('0' <= ch and ch <= '9') scratch = (scratch << 4) | T( ch - '0' +  0 );
+          else if ('a' <= ch and ch <= 'f') scratch = (scratch << 4) | T( ch - 'a' + 10 );
+          else if ('A' <= ch and ch <= 'F') scratch = (scratch << 4) | T( ch - 'A' + 10 );
+          else break;
+        }
+      value = scratch;
+      buf = ptr;
+    }
+  }
+
+  TestbedBase::TestbedBase(char const* seed, uint64_t* elems, uintptr_t count)
+  {
+    for (unsigned idx = 0, end = 5; idx < end; ++idx)
+      HexLoad( rng.State(idx), seed );
+    for (unsigned idx = 0, end = count; idx < end; ++idx)
+      HexLoad( elems[idx], seed );
+    HexLoad( counter, seed );
+  }
+
+  void TestbedBase::serial( std::ostream& sink, uint64_t* elems, uintptr_t count ) const
+  {
+    for (unsigned idx = 0, end = 5; idx < end; ++idx)
+      HexStore( sink, rng.State(idx) );
+    for (unsigned idx = 0, end = count; idx < end; ++idx)
+      HexStore( sink, elems[idx] );
+    HexStore( sink, counter );
+  }
+  
+} /* end of namespace ut */

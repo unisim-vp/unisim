@@ -66,8 +66,7 @@ namespace ut
       MemCode( uint8_t const* _bytes, unsigned _length ) : length(_length) { std::copy( &_bytes[0], &_bytes[_length], &bytes[0] ); }
       MemCode( char const* _bytes, unsigned _length ) : length(_length) { std::copy( &_bytes[0], &_bytes[_length], &bytes[0] ); }
 
-      uint8_t const* begin() const { return &bytes[0]; }
-      uint8_t const* end() const { return &bytes[length]; }
+      uint8_t const* text() const { return &bytes[0]; }
       
       bool get( std::istream& source )
       {
@@ -266,7 +265,7 @@ namespace ut
     Interface( Operation const& op, MemCode const& code, std::string const& disasm );
 
     void memaccess( Expr const& addr, bool iswrite );
-
+    uintptr_t workquads() const;
     
     MemCode memcode;
     std::string asmcode;
@@ -282,7 +281,11 @@ namespace ut
     Expr base_addr;
     std::map<unsigned,Expr> relocs;
     bool has_write, has_jump;
-    std::vector<uint8_t> testcode;
+    struct Text { virtual void write(uint8_t const*,unsigned) = 0; virtual ~Text() {} };
+    void gencode(Text& text) const;
+    //  std::vector<uint8_t> text;
+    typedef void (*testcode_t)(uint64_t*);
+    //  testcode_t testcode() const { return testcode_t(&text[0]); }
   };
   
   template <typename T>
@@ -444,8 +447,14 @@ namespace ut
     typedef VRRead<VReg> VRegRead; typedef VRWrite<VReg> VRegWrite;
     typedef VRRead<FReg> FRegRead; typedef VRWrite<FReg> FRegWrite;
     /**/                           typedef VRWrite<GReg> GRegWrite;
-    
+
     struct AddrEval : public unisim::util::symbolic::EvalSpace {};
+    struct RelocEval : public unisim::util::symbolic::EvalSpace
+    {
+      RelocEval( std::vector<uint64_t> const& _regvalues, uint64_t _address ) : regvalues(_regvalues), address(_address) {}
+      std::vector<uint64_t> const& regvalues;
+      uint64_t address;
+    };
 
     struct GRegRead : public VRRead<GReg>
     {
@@ -455,6 +464,8 @@ namespace ut
       {
         if (dynamic_cast<AddrEval const*>( &evs ))
           return new unisim::util::symbolic::ConstNode<uint64_t>( uint64_t(reg) << 60 );
+        if (auto l = dynamic_cast<RelocEval const*>( &evs ))
+          return new unisim::util::symbolic::ConstNode<uint64_t>( l->regvalues[idx] );
         return 0;
       };
     };
