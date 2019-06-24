@@ -616,13 +616,13 @@ struct CmpXchg : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,CMPXCHG> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // CMPXCHG -- Compare and Exchange
-  if (auto _ = match( ic, opcode( "\x0f\xb0" ) & RM() ))
+  if (auto _ = match( ic, lockable( opcode( "\x0f\xb0" ) & RM() ) ))
     {
       if (ic.rex_p) return new CmpXchg<ARCH,GOb>  ( _.opbase(), _.rmop(), _.greg() );
       else          return new CmpXchg<ARCH,GObLH>( _.opbase(), _.rmop(), _.greg() );
     }
   
-  if (auto _ = match( ic, opcode( "\x0f\xb1" ) & RM() ))
+  if (auto _ = match( ic, lockable( opcode( "\x0f\xb1" ) & RM() ) ))
     {
       if (ic.opsize()==16) return new CmpXchg<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
       if (ic.opsize()==32) return new CmpXchg<ARCH,GOd>( _.opbase(), _.rmop(), _.greg() );
@@ -643,7 +643,7 @@ struct CmpXchgBytes : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,CMPXCHG8B> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // CMPXCHG8B/CMPXCHG16B -- Compare and Exchange Bytes
-  if (auto _ = match( ic, opcode( "\x0f\xc7" ) /1 & RM_mem() ))
+  if (auto _ = match( ic, lockable( opcode( "\x0f\xc7" ) /1 & RM_mem() ) ))
   
     {
       if (ic.opsize()==32) return new CmpXchgBytes<ARCH,8>( _.opbase(), _.rmop() );
@@ -683,14 +683,14 @@ template <class ARCH> struct DC<ARCH,XCHG> { Operation<ARCH>* get( InputCode<ARC
         return 0;
       }
   
-  if (auto _ = match( ic, opcode( "\x86" ) & RM() ))
+  if (auto _ = match( ic, lockable( opcode( "\x86" ) & RM() ) ))
   
     {
       if (ic.rex_p) return new Xchg<ARCH,GOb>  ( _.opbase(), _.rmop(), _.greg() );
       else          return new Xchg<ARCH,GObLH>( _.opbase(), _.rmop(), _.greg() );
     }
   
-  if (auto _ = match( ic, opcode( "\x87" ) & RM() ))
+  if (auto _ = match( ic, lockable( opcode( "\x87" ) & RM() ) ))
   
     {
       if (ic.opsize()==16) return new Xchg<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
@@ -741,14 +741,14 @@ struct XAddEG : public Operation<ARCH>
 template <class ARCH> struct DC<ARCH,XADD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
   // XADD -- Exchange and Add
-  if (auto _ = match( ic, opcode( "\x0f\xc0" ) & RM() ))
+  if (auto _ = match( ic, lockable( opcode( "\x0f\xc0" ) & RM() ) ))
   
     {
       if (ic.rex_p) return new XAddEG<ARCH,GOb>  ( _.opbase(), _.rmop(), _.greg() );
       else          return new XAddEG<ARCH,GObLH>( _.opbase(), _.rmop(), _.greg() );
     }
   
-  if (auto _ = match( ic, opcode( "\x0f\xc1" ) & RM() ))
+  if (auto _ = match( ic, lockable( opcode( "\x0f\xc1" ) & RM() ) ))
   
     {
       if (ic.opsize()==16) return new XAddEG<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
@@ -884,7 +884,7 @@ template <class ARCH> struct DC<ARCH,BTC> { Operation<ARCH>* get( InputCode<ARCH
 {
   // BTC -- Bit Test and Complement
   
-  if (auto _ = match( ic, opcode( "\x0f\xba" ) /7 & RM() & Imm<8>() ))
+  if (auto _ = match( ic, lockable( opcode( "\x0f\xba" ) /7 & RM() ) & Imm<8>() ))
   
     {
       if (ic.opsize()==16) return new BtcImm<ARCH,GOw>( _.opbase(), _.rmop(), _.i( uint8_t() ) );
@@ -893,7 +893,7 @@ template <class ARCH> struct DC<ARCH,BTC> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\x0f\xbb" ) & RM() ))
+  if (auto _ = match( ic, lockable( opcode( "\x0f\xbb" ) & RM() ) ))
   
     {
       if (ic.opsize()==16) return new BtcRM<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
@@ -940,7 +940,7 @@ template <class ARCH> struct DC<ARCH,BTR> { Operation<ARCH>* get( InputCode<ARCH
 {
   // BTR -- Bit Test and Reset
   
-  if (auto _ = match( ic, opcode( "\x0f\xba" ) /6 & RM() & Imm<8>() ))
+  if (auto _ = match( ic, lockable( opcode( "\x0f\xba" ) /6 & RM() ) & Imm<8>() ))
   
     {
       if (ic.opsize()==16) return new BtrImm<ARCH,GOw>( _.opbase(), _.rmop(), _.i( uint8_t() ) );
@@ -949,7 +949,7 @@ template <class ARCH> struct DC<ARCH,BTR> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\x0f\xb3" ) & RM() ))
+  if (auto _ = match( ic, lockable( opcode( "\x0f\xb3" ) & RM() ) ))
   
     {
       if (ic.opsize()==16) return new BtrRM<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );
@@ -996,7 +996,7 @@ template <class ARCH> struct DC<ARCH,BTS> { Operation<ARCH>* get( InputCode<ARCH
 {
   // BTS -- Bit Test and Reset
   
-  if (auto _ = match( ic, opcode( "\x0f\xba" ) /5 & RM() & Imm<8>() ))
+  if (auto _ = match( ic, lockable( opcode( "\x0f\xba" ) /5 & RM() ) & Imm<8>() ))
   
     {
       if (ic.opsize()==16) return new BtsImm<ARCH,GOw>( _.opbase(), _.rmop(), _.i( uint8_t() ) );
@@ -1005,7 +1005,7 @@ template <class ARCH> struct DC<ARCH,BTS> { Operation<ARCH>* get( InputCode<ARCH
       return 0;
     }
   
-  if (auto _ = match( ic, opcode( "\x0f\xab" ) & RM() ))
+  if (auto _ = match( ic, lockable( opcode( "\x0f\xab" ) & RM() ) ))
   
     {
       if (ic.opsize()==16) return new BtsRM<ARCH,GOw>( _.opbase(), _.rmop(), _.greg() );

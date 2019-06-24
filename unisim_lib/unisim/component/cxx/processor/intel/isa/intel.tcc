@@ -244,6 +244,8 @@ namespace intel {
     uint8_t const* get( CodeBase const& cb, uint8_t const* bytes ) { return ((bytes[0] >> 3) & 7) == code ? bytes + 0 : 0; }
   };
   
+  struct Lockable {};
+  
   template <unsigned LENGTH>
   struct OpCode
   {
@@ -257,19 +259,29 @@ namespace intel {
     typedef AndSeq<this_type, MRMOpCode> WithMRMOpCode;
     WithMRMOpCode operator / ( int code ) { return WithMRMOpCode( *this, MRMOpCode( code ) ); }
     
-    OpCode( uint8_t const* _ref ) { for (unsigned idx = 0; idx < LENGTH; ++idx ) ref[idx] = _ref[idx]; }
+    OpCode( uint8_t const* _ref ) : ref(), lockable(false) { for (unsigned idx = 0; idx < LENGTH; ++idx ) ref[idx] = _ref[idx]; }
     
     template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return bytes + LENGTH; }
     
     uint8_t const*
     get( CodeBase const& cb, uint8_t const* bytes )
     {
+      if (cb.f0() and not lockable)
+        return 0;
       for (unsigned idx = 0; idx < LENGTH; ++idx)
         if (ref[idx] != bytes[idx]) return 0;
       return bytes + LENGTH;
     }
+
+    uint8_t const*
+    get( Lockable&, uint8_t const* bytes )
+    {
+      lockable = true;
+      return bytes+2;
+    }
     
     uint8_t ref[LENGTH];
+    bool lockable;
   };
   
   template <unsigned LENGTH>
@@ -288,13 +300,15 @@ namespace intel {
     typedef AndSeq<this_type, MRMOpCode> WithMRMOpCode;
     WithMRMOpCode operator / ( int code ) { return WithMRMOpCode( *this, MRMOpCode( code ) ); }
     
-    Vex( uint8_t const* _ref ) : len(0) { for (unsigned idx = 0; idx < LENGTH; ++idx ) ref[idx] = _ref[idx]; }
+    Vex( uint8_t const* _ref ) : ref(), len(0) { for (unsigned idx = 0; idx < LENGTH; ++idx ) ref[idx] = _ref[idx]; }
     
     template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return bytes + len; }
     
     uint8_t const*
     get( CodeBase const& cb, uint8_t const* bytes )
     {
+      if (cb.f0())
+        return 0;
       // SSE mandatory prefix
       unsigned ridx = 1, bidx = 0;
       if (char(ref[0]) == '*') { /* prefix wildcard, x86 abuse ('*' == 0x2a) */ }
@@ -486,6 +500,16 @@ namespace intel {
     void makeROp( unsigned reg ) override { mop = (MOp<ARCH>*)( uintptr_t( reg ) ); }
   };
   
+  template <typename PATTERN>
+  PATTERN lockable( PATTERN&& pattern )
+  {
+    auto _ = (uint8_t const*)"";
+    Lockable l;
+    if ((pattern.get( l, _ ) - _) != 5)
+      throw 0;
+    return PATTERN( pattern );
+  }
+  
   struct RM
   {
     typedef RM this_type;
@@ -495,13 +519,23 @@ namespace intel {
     struct Forge { virtual void build( RMOpFabric& out, uint8_t const* bytes ) const = 0; virtual unsigned length() const = 0; virtual bool is_reg() const { return false; }};
     Forge*  forge;
     
-    RM() : forge() {}
+    enum accept_t { standard, regonly, memonly, lockable };
+    accept_t accept;
+    
+    RM(accept_t _accept = standard) : forge(), accept(_accept) {}
 
     template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return bytes + forge->length(); }
 
     uint8_t const* get( CodeBase const& cb, uint8_t const* bytes )
     {
       forge = get_forge( cb, bytes );
+      switch (accept)
+        {
+        default: break;
+        case regonly:  if (not forge->is_reg()) return 0; break;
+        case lockable: if (not cb.f0()) break; /* else continue with memonly */
+        case memonly:  if (    forge->is_reg()) return 0; break;
+        }
       return bytes + forge->length();
     }
 
@@ -674,6 +708,18 @@ namespace intel {
       return 0;
     }
 
+    uint8_t const*
+    get( Lockable&, uint8_t const* bytes )
+    {
+      switch (accept)
+        {
+        default: break;
+        case regonly: throw 0;
+        case standard: accept = lockable; break;
+        }
+      return bytes + 3;
+    }
+    
     struct GN { GN() : idx() {} unsigned idx; };
     uint8_t const* get( GN& gr, uint8_t const* bytes ) { gr.idx = (bytes[0] >> 3) & 7; return 0; }
     
@@ -715,27 +761,30 @@ namespace intel {
     }
   };
   
-  template <bool REGONLY>
-  struct RM_RegOrMem
-  {
-    typedef RM_RegOrMem<REGONLY> this_type;
-    template <typename RHS>
-    AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
+  // template <bool REGONLY>
+  // struct RM_RegOrMem
+  // {
+  //   typedef RM_RegOrMem<REGONLY> this_type;
+  //   template <typename RHS>
+  //   AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
     
-    RM rm;
+  //   RM rm;
 
-    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return rm.get( out, bytes ); }
-    uint8_t const* get( CodeBase const& cb, uint8_t const* bytes )
-    {
-      uint8_t const* res = rm.get( cb, bytes );
-      if (res and (rm.forge->is_reg() xor (REGONLY))) return 0;
-      return res;
-    }
-  };
+  //   template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return rm.get( out, bytes ); }
+  //   uint8_t const* get( CodeBase const& cb, uint8_t const* bytes )
+  //   {
+  //     uint8_t const* res = rm.get( cb, bytes );
+  //     if (res and (rm.forge->is_reg() xor (REGONLY))) return 0;
+  //     return res;
+  //   }
+  // };
   
-  typedef RM_RegOrMem<true>  RM_reg;
-  typedef RM_RegOrMem<false> RM_mem;
+  // typedef RM_RegOrMem<true>  RM_reg;
+  // typedef RM_RegOrMem<false> RM_mem;
 
+  inline RM RM_reg() { return RM(RM::regonly); }
+  inline RM RM_mem() { return RM(RM::memonly); }
+  
   template <class ARCH>
   struct BaseMatch
   {
@@ -799,9 +848,8 @@ namespace intel {
   };
   
   template <class ARCH, typename PATTERN>
-  Match<ARCH,PATTERN> match( InputCode<ARCH> const& ic, PATTERN const& _pattern )
+  Match<ARCH,PATTERN> match( InputCode<ARCH> const& ic, PATTERN&& pattern )
   {
-    PATTERN pattern( _pattern );
     bool good = bool( pattern.get( static_cast<CodeBase const&>( ic ), ic.opcode() ) );
     return Match<ARCH,PATTERN>( good ? &ic : 0, pattern );
   }
