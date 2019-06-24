@@ -818,7 +818,6 @@ template <typename ADDRESS, typename T>
 void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visitor& visitor, FileFormat f_fmt) const
 {
 	const std::string& csv_delimiter = visitor.GetCSVDelimiter();
-	CSV_Reader csv_reader = visitor.GetCSVReader();
 	const std::string& csv_hyperlink = visitor.GetCSVHyperlink();
 	const std::string& csv_arg_separator = visitor.GetCSVArgSeparator();
 	ReportFormat r_fmt = visitor.GetReportFormat();
@@ -950,23 +949,23 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visito
 				
 			case F_FMT_CSV:
 			{
-				os << c_string_to_CSV(func_name.c_str()) << csv_delimiter << ratio_str << csv_delimiter << value_str << csv_delimiter << ((csv_reader == MS_EXCEL) ? "\"" : "") << "=" << csv_hyperlink << "(" << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\"" << ((r_fmt = R_FMT_HTTP) ? "http://" : "file://");
+				os << c_string_to_CSV(func_name.c_str()) << csv_delimiter << ratio_str << csv_delimiter << value_str << csv_delimiter << "\"=" << csv_hyperlink << "(" << "\"\"" << ((r_fmt = R_FMT_HTTP) ? "http://" : "file://");
 				const std::string& dir_path = visitor.GetDirPath();
 				std::string href(dir_path);
 				href += '/';
 				href += "disassembly.csv";
 				
-				os << unisim::util::hypapp::URI_Encoder::Encode(href) << "" << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\"" << csv_arg_separator << "" << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\"" << func_addr_str << "" << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\")" << ((csv_reader == MS_EXCEL) ? "\"" : "") << csv_delimiter;
+				os << unisim::util::hypapp::URI_Encoder::Encode(href) << "" << "\"\"" << csv_arg_separator << "\"\"" << func_addr_str << "\"\")\"" << csv_delimiter;
 				if(sloc)
 				{
-					os << ((csv_reader == MS_EXCEL) ? "\"" : "") << "=" << csv_hyperlink << "(" << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\"" << ((r_fmt = R_FMT_HTTP) ? "http://" : "file://");
+					os << "\"=" << csv_hyperlink << "(\"\"" << ((r_fmt = R_FMT_HTTP) ? "http://" : "file://");
 					std::string href(dir_path);
 					href += '/';
 					href += "source";
 					href += to_string(filename_index->IndexFilename(sloc->GetFilename()));
 					href += ".csv";
 					
-					os << unisim::util::hypapp::URI_Encoder::Encode(href) << "" << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\"" << csv_arg_separator << "" << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\"" << sloc->GetFilename() << ((csv_reader == MS_EXCEL) ? "\"" : "") << "\")" << ((csv_reader == MS_EXCEL) ? "\"" : "");
+					os << unisim::util::hypapp::URI_Encoder::Encode(href) << "\"\"" << csv_arg_separator << "\"\"" << sloc->GetFilename() << "\"\")\"";
 				}
 				os << std::endl;
 				break;
@@ -1966,7 +1965,6 @@ Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	, sampled_variables()
 	, output_directory()
 	, csv_delimiter(",")
-	, csv_reader(MS_EXCEL)
 	, csv_hyperlink("HYPERLINK")
 	, csv_arg_separator(";")
 	, enable_text_report(false)
@@ -1978,7 +1976,6 @@ Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	, param_sampled_variables("sampled-variables", this, sampled_variables, "Variables to sample (separated by spaces)")
 	, param_output_directory("output-directory", this, output_directory, "Output directory where to generate profiling report")
 	, param_csv_delimiter("csv-delimiter", this, csv_delimiter, "CSV delimiter")
-	, param_csv_reader("csv-reader", this, csv_reader, "CSV reader (ms-excel or libre-office)")
 	, param_csv_hyperlink("csv-hyperlink", this, csv_hyperlink, "CSV hyperlink macro (e.g. HYPERLINK or LIEN_HYPERTEXTE)")
 	, param_csv_arg_separator("csv-arg-separator", this, csv_arg_separator, "CSV argument separator in formulas (e.g. ';' or ',')")
 	, param_enable_text_report("enable-text-report", this, enable_text_report, "Enable/Disable text report")
@@ -2197,11 +2194,6 @@ bool Profiler<ADDRESS>::ServeHttpRequest(unisim::util::hypapp::HttpRequest const
 			return profiler.csv_delimiter;
 		}
 		
-		virtual CSV_Reader GetCSVReader() const
-		{
-			return profiler.csv_reader;
-		}
-
 		virtual const std::string& GetCSVHyperlink() const
 		{
 			return profiler.csv_hyperlink;
@@ -2293,25 +2285,45 @@ bool Profiler<ADDRESS>::ServeHttpRequest(unisim::util::hypapp::HttpRequest const
 	
 	if(available)
 	{
-		if(req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)
+		switch(req.GetRequestType())
 		{
-			response.ClearContent();
-			response.SetContentType("");
-			response.Allow("OPTIONS, GET, HEAD");
-		}
-		else if((req.GetRequestType() == unisim::util::hypapp::Request::GET) ||
-	        (req.GetRequestType() == unisim::util::hypapp::Request::HEAD))
-		{
-			response.SetContentType(http_visitor.GetContentType());
+			case unisim::util::hypapp::Request::OPTIONS:
+				response.ClearContent();
+				response.Allow("OPTIONS, GET, HEAD");
+				break;
+				
+			case unisim::util::hypapp::Request::GET:
+			case unisim::util::hypapp::Request::HEAD:
+				response.SetContentType(http_visitor.GetContentType());
+				break;
+				
+			default:
+			{
+				response.SetStatus(unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED);
+
+				Indent indent;
+				
+				response << indent << "<!DOCTYPE html>" << std::endl;
+				response << indent << "<html>" << std::endl;
+				response << ++indent << "<head>" << std::endl;
+				response << ++indent << "<title>Error 405 (Method Not Allowed)</title>" << std::endl;
+				response << indent << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+				response << indent << "<meta name=\"description\" content=\"Error 405 (Method Not Allowed)\">" << std::endl;
+				response << indent << "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+				response << indent << "<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+				response << indent << "<style>" << std::endl;
+				response << ++indent << "body { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+				response << --indent << "</style>" << std::endl;
+				response << --indent << "</head>" << std::endl;
+				response << indent << "<body>" << std::endl;
+				response << ++indent << "<p>Method Not Allowed</p>" << std::endl;
+				response << --indent << "</body>" << std::endl;
+				response << --indent << "</html>" << std::endl;
+				break;
+			}
 		}
 	}
-	else if(req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)
-	{
-			response.SetStatus(unisim::util::hypapp::HttpResponse::NOT_FOUND);
-			response.Allow("OPTIONS");
-	}
-	else if((req.GetRequestType() == unisim::util::hypapp::Request::GET) ||
-			(req.GetRequestType() == unisim::util::hypapp::Request::HEAD))
+	else
 	{
 		response.SetStatus(unisim::util::hypapp::HttpResponse::NOT_FOUND);
 
@@ -2331,29 +2343,6 @@ bool Profiler<ADDRESS>::ServeHttpRequest(unisim::util::hypapp::HttpRequest const
 		response << --indent << "</head>" << std::endl;
 		response << indent << "<body>" << std::endl;
 		response << ++indent << "<p>Unavailable</p>" << std::endl;
-		response << --indent << "</body>" << std::endl;
-		response << --indent << "</html>" << std::endl;
-	}
-	else
-	{
-		response.SetStatus(unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED);
-
-		Indent indent;
-		
-		response << indent << "<!DOCTYPE html>" << std::endl;
-		response << indent << "<html>" << std::endl;
-		response << ++indent << "<head>" << std::endl;
-		response << ++indent << "<title>Error 405 (Method Not Allowed)</title>" << std::endl;
-		response << indent << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-		response << indent << "<meta name=\"description\" content=\"Error 405 (Method Not Allowed)\">" << std::endl;
-		response << indent << "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
-		response << indent << "<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-		response << indent << "<style>" << std::endl;
-		response << ++indent << "body { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
-		response << --indent << "</style>" << std::endl;
-		response << --indent << "</head>" << std::endl;
-		response << indent << "<body>" << std::endl;
-		response << ++indent << "<p>Method Not Allowed</p>" << std::endl;
 		response << --indent << "</body>" << std::endl;
 		response << --indent << "</html>" << std::endl;
 	}
@@ -2748,19 +2737,19 @@ void Profiler<ADDRESS>::Output()
 	
 	if(enable_text_report)
 	{
-		FileVisitor file_visitor(output_directory, R_FMT_TEXT, csv_delimiter, csv_reader, csv_hyperlink, csv_arg_separator, logger.DebugErrorStream());
+		FileVisitor file_visitor(output_directory, R_FMT_TEXT, csv_delimiter, csv_hyperlink, csv_arg_separator, logger.DebugErrorStream());
 		Output(file_visitor);
 	}
 	
 	if(enable_csv_report)
 	{
-		FileVisitor file_visitor(output_directory, R_FMT_CSV, csv_delimiter, csv_reader, csv_hyperlink, csv_arg_separator, logger.DebugErrorStream());
+		FileVisitor file_visitor(output_directory, R_FMT_CSV, csv_delimiter, csv_hyperlink, csv_arg_separator, logger.DebugErrorStream());
 		Output(file_visitor);
 	}
 
 	if(enable_html_report)
 	{
-		FileVisitor file_visitor(output_directory, R_FMT_HTML, csv_delimiter, csv_reader, csv_hyperlink, csv_arg_separator, logger.DebugErrorStream());
+		FileVisitor file_visitor(output_directory, R_FMT_HTML, csv_delimiter, csv_hyperlink, csv_arg_separator, logger.DebugErrorStream());
 		Output(file_visitor);
 	}
 }

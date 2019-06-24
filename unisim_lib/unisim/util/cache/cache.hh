@@ -391,7 +391,6 @@ public:
 	~CacheBlock();
 	inline uint8_t& operator [] (unsigned int offset) ALWAYS_INLINE;
 	inline uint8_t& GetByteByOffset(unsigned int offset) ALWAYS_INLINE;
-	static inline void DecodeAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& base_phys_addr, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
 	inline typename TYPES::PHYSICAL_ADDRESS GetBaseAddress() const ALWAYS_INLINE;
 	inline void Zero() ALWAYS_INLINE;
 	inline void Write(const void *buffer, unsigned int offset, unsigned int size) ALWAYS_INLINE;
@@ -428,7 +427,6 @@ public:
 	inline void SetWay(unsigned int way) ALWAYS_INLINE;
 	inline void SetBaseAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr) ALWAYS_INLINE;
 	inline typename TYPES::PHYSICAL_ADDRESS GetBaseAddress() const ALWAYS_INLINE;
-	static inline void DecodeAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& line_base_phys_addr, typename TYPES::PHYSICAL_ADDRESS& block_base_phys_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
 	inline CacheBlock<TYPES, CONFIG>& GetBlockBySector(unsigned int sector) ALWAYS_INLINE;
 	inline CacheBlock<TYPES, CONFIG>& operator [] (unsigned int sector) ALWAYS_INLINE;
 
@@ -459,7 +457,6 @@ public:
 	CacheSet();
 	~CacheSet();
 
-	static inline void DecodeAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& line_base_phys_addr, typename TYPES::PHYSICAL_ADDRESS& block_base_phys_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
 	inline CacheLine<TYPES, CONFIG>& GetLineByWay(unsigned int way) ALWAYS_INLINE;
 	inline CacheLine<TYPES, CONFIG>& operator [] (unsigned int way) ALWAYS_INLINE;
 

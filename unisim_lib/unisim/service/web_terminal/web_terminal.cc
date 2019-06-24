@@ -1614,196 +1614,274 @@ bool WebTerminal::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req,
 {
 	unisim::util::hypapp::HttpResponse response;
 	
-	Lock();
-	
-	if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
+	if(req.GetPath() == "")
 	{
-		struct PropertySetter : public unisim::util::hypapp::Form_URL_Encoded_Decoder
+		switch(req.GetRequestType())
 		{
-			PropertySetter() : key_event(), text() {}
-			
-			virtual bool FormAssign(const std::string& name, const std::string& value)
-			{
-				if(name == "key")
-				{
-					key_event.KEY(value);
-				}
-				else if(name == "ctrl")
-				{
-					key_event.CTRL(value == "1");
-				}
-				else if(name == "shift")
-				{
-					key_event.SHIFT(value == "1");
-				}
-				else if(name == "alt")
-				{
-					key_event.ALT(value == "1");
-				}
-				else if(name == "meta")
-				{
-					key_event.META(value == "1");
-				}
-				else if(name == "text")
-				{
-					text = value;
-				}
+			case unisim::util::hypapp::Request::GET:
+			case unisim::util::hypapp::Request::HEAD:
+			case unisim::util::hypapp::Request::POST:
+				Lock();
+				break;
 				
-				return true;
-			}
-			
-			KeyEvent key_event;
-			std::string text;
-		};
-		
-		// Decode POST data
-		PropertySetter property_setter;
-		if(property_setter.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
-		{
-			if(!property_setter.text.empty())
-			{
-				input_buffer.Push(property_setter.text);
-			}
-			else if(!property_setter.key_event.GetKey().empty())
-			{
-				// Update input buffer with informations of keydown event in POST data
-				Receive(property_setter.key_event);
-			}
+			default:
+				break;
 		}
 		
-		// Post/Redirect/Get pattern: got Post, so do Redirect
-// 		response.SetStatus(unisim::util::hypapp::HttpResponse::SEE_OTHER);
-// 		response.SetHeaderField("Location", URI());
+		switch(req.GetRequestType())
+		{
+			case unisim::util::hypapp::Request::OPTIONS:
+				response.Allow("OPTIONS, GET, HEAD, POST");
+				break;
+				
+			case unisim::util::hypapp::Request::POST:
+			{
+				struct PropertySetter : public unisim::util::hypapp::Form_URL_Encoded_Decoder
+				{
+					PropertySetter() : key_event(), text() {}
+					
+					virtual bool FormAssign(const std::string& name, const std::string& value)
+					{
+						if(name == "key")
+						{
+							key_event.KEY(value);
+						}
+						else if(name == "ctrl")
+						{
+							key_event.CTRL(value == "1");
+						}
+						else if(name == "shift")
+						{
+							key_event.SHIFT(value == "1");
+						}
+						else if(name == "alt")
+						{
+							key_event.ALT(value == "1");
+						}
+						else if(name == "meta")
+						{
+							key_event.META(value == "1");
+						}
+						else if(name == "text")
+						{
+							text = value;
+						}
+						
+						return true;
+					}
+					
+					KeyEvent key_event;
+					std::string text;
+				};
+				
+				// Decode POST data
+				PropertySetter property_setter;
+				if(property_setter.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
+				{
+					if(!property_setter.text.empty())
+					{
+						input_buffer.Push(property_setter.text);
+					}
+					else if(!property_setter.key_event.GetKey().empty())
+					{
+						// Update input buffer with informations of keydown event in POST data
+						Receive(property_setter.key_event);
+					}
+				}
+				
+				break;
+			}
+			
+			case unisim::util::hypapp::Request::GET:
+			case unisim::util::hypapp::Request::HEAD:
+			{
+				// Compute the set of graphic rendition
+				std::set<std::pair<GraphicRendition, bool> > gr_set;
+				for(ScreenBufferIterator it = curr_screen_buffer->Begin(); it != curr_screen_buffer->End(); ++it)
+				{
+					ScreenBufferLine& sbl = (*it);
+					for(unsigned int colno = 1; colno <= curr_screen_buffer->GetDisplayWidth(); colno++)
+					{
+						ScreenBufferCharacter& sbc = sbl[colno];
+						bool under_cursor = curr_screen_buffer->IsAtCursorLinePos(it) && (colno == curr_screen_buffer->GetCursorColNo());
+						gr_set.insert(std::pair<GraphicRendition, bool>(sbc.gr, under_cursor));
+					}
+				}
+				
+				response << "<!DOCTYPE html>" << std::endl;
+				response << "<html>" << std::endl;
+				response << "\t<head>" << std::endl;
+				response << "\t\t<title>" << unisim::util::hypapp::HTML_Encoder::Encode(title) << "</title>" << std::endl;
+				response << "\t\t<meta name=\"description\" content=\"terminal emulator over HTTP\">" << std::endl;
+				response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+				response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
+				response << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
+				response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/web_terminal/style.css\" type=\"text/css\" />" << std::endl;
+				response << "\t\t<style>" << std::endl;
+				
+				// Generate CSS style for each graphic rendition
+				GraphicRendition theme_gr = theme.MakeGraphicRendition();
+				
+				bool theme_style_class_generated = false;
+				unsigned int theme_style_class_num = 0;
+				std::map<std::pair<GraphicRendition, bool>, unsigned int> gr_class_map;
+				unsigned int class_num = 0;
+				for(std::set<std::pair<GraphicRendition, bool> >::const_iterator it = gr_set.begin(); it != gr_set.end(); it++, class_num++)
+				{
+					const std::pair<GraphicRendition, bool>& pair = *it;
+					const GraphicRendition& gr = pair.first;
+					bool under_cursor = pair.second;
+					gr_class_map[pair] = class_num;
+					
+					GenerateStyle(response, gr, under_cursor, std::string("c") + to_string(class_num));
+					if((theme_gr == gr) && !under_cursor)
+					{
+						theme_style_class_generated = true;
+						theme_style_class_num = class_num;
+					}
+				}
+				if(!theme_style_class_generated)
+				{
+					GenerateStyle(response, theme_gr, false, std::string("c") + to_string(class_num));
+					theme_style_class_generated = true;
+					theme_style_class_num = class_num;
+				}
+				
+				response << "\t\t</style>" << std::endl;
+				response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';var activity = " << (activity ? "true" : "false") << ";</script>" << std::endl;
+				response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+				response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/web_terminal/script.js\"></script>" << std::endl;
+				response << "\t</head>" << std::endl;
+				response << "\t<body class=\"c" << theme_style_class_num << "\" onload=\"gui.auto_reload(" << (unsigned int)(refresh_period * 1000) << ", 'self-refresh-when-active')\">" << std::endl;
+				refresh_period = activity ? min_display_refresh_period : std::min(refresh_period * 2.0, max_display_refresh_period);
+				activity = false;
+				response << "\t\t<div id=\"screen-buffer\" tabindex=\"-999\">" << std::endl;
+				
+				// Generate screen buffer graphical representation line by line
+				GraphicRendition gr;
+				bool open = false;
+				// Iterate over each line of screen buffer
+				for(ScreenBufferIterator it = curr_screen_buffer->Begin(); it != curr_screen_buffer->End(); ++it)
+				{
+					response << "\t\t\t";
+					
+					ScreenBufferLine& sbl = (*it);
+					
+					// Iterate over each column of screen buffer line
+					for(unsigned int colno = 1; colno <= curr_screen_buffer->GetDisplayWidth(); colno++)
+					{
+						ScreenBufferCharacter& sbc = sbl[colno];
+						
+						// Detect whether current line and column is under the cursor
+						bool under_cursor = curr_screen_buffer->IsAtCursorLinePos(it) && (colno == curr_screen_buffer->GetCursorColNo());
+						
+						if(!open || (sbc.gr != gr) || under_cursor)
+						{
+							// close pre tag if it's open and when graphic rendition changes or the current line and column is under the cursor
+							if(open)
+							{
+								response << "</pre>";
+								open = false;
+							}
+							
+							gr = sbc.gr; // remember what's the current graphic rendition
+
+							// Find the CSS class corresponding to the current graphic rendition
+							std::map<std::pair<GraphicRendition, bool>, unsigned int>::const_iterator gr_class_it = gr_class_map.find(std::pair<GraphicRendition, bool>(gr, under_cursor));
+							if(gr_class_it != gr_class_map.end())
+							{
+								unsigned int class_num = (*gr_class_it).second;
+								response << "<pre class=\"c" << class_num << "\">"; // open a pre with the right CSS class corresponding to the current graphic rendition
+								open = true;
+							}
+						}
+						
+						// emit an UTF-8 character
+						const UnicodeCharacter& c = sbc.c;
+						if(c == (uint32_t) '<') response << "&lt;"; // print '<'
+						else if((c >= 32u) && (c != 127u)) response << c; // printable ASCII/UTF-8 character
+						else response << ' '; // unprintable ASCII/UTF-8 character
+						if(under_cursor)
+						{
+							// close pre tag right after when the last emitted line and column is under the cursor
+							response << "</pre>";
+							open = false;
+						}
+					}
+					if(open)
+					{
+						// close pre tag at the end of line if not already closed
+						response << "</pre>";
+						open = false;
+					}
+					response << "<br>" << std::endl; // insert line break
+				}
+				response << "\t\t</div>" << std::endl;
+				response << "\t</body>" << std::endl;
+				response << "</html>" << std::endl;
+				
+				break;
+			}
+			
+			default:
+				logger << DebugWarning << "Method not allowed" << EndDebugWarning;
+				response.SetStatus(unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED);
+				response.Allow("OPTIONS, GET, HEAD, POST");
+				
+				response << "<!DOCTYPE html>" << std::endl;
+				response << "<html>" << std::endl;
+				response << "\t<head>" << std::endl;
+				response << "\t\t<title>Error " << (unsigned int) unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << " (" << unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << ")</title>" << std::endl;
+				response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+				response << "\t\t<meta name=\"description\" content=\"Error " << (unsigned int) unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << " (" << unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << ")\">" << std::endl;
+				response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+				response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+				response << "\t\t<style>" << std::endl;
+				response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+				response << "\t\t</style>" << std::endl;
+				response << "\t</head>" << std::endl;
+				response << "\t<body>" << std::endl;
+				response << "\t\t<p>Method not allowed</p>" << std::endl;
+				response << "\t</body>" << std::endl;
+				response << "</html>" << std::endl;
+				break;
+		}
+		
+		switch(req.GetRequestType())
+		{
+			case unisim::util::hypapp::Request::GET:
+			case unisim::util::hypapp::Request::HEAD:
+			case unisim::util::hypapp::Request::POST:
+				Unlock();
+				break;
+				
+			default:
+				break;
+		}
 	}
 	else
 	{
-		// Compute the set of graphic rendition
-		std::set<std::pair<GraphicRendition, bool> > gr_set;
-		for(ScreenBufferIterator it = curr_screen_buffer->Begin(); it != curr_screen_buffer->End(); ++it)
-		{
-			ScreenBufferLine& sbl = (*it);
-			for(unsigned int colno = 1; colno <= curr_screen_buffer->GetDisplayWidth(); colno++)
-			{
-				ScreenBufferCharacter& sbc = sbl[colno];
-				bool under_cursor = curr_screen_buffer->IsAtCursorLinePos(it) && (colno == curr_screen_buffer->GetCursorColNo());
-				gr_set.insert(std::pair<GraphicRendition, bool>(sbc.gr, under_cursor));
-			}
-		}
+		response.SetStatus(unisim::util::hypapp::HttpResponse::NOT_FOUND);
 		
 		response << "<!DOCTYPE html>" << std::endl;
 		response << "<html>" << std::endl;
 		response << "\t<head>" << std::endl;
-		response << "\t\t<title>" << unisim::util::hypapp::HTML_Encoder::Encode(title) << "</title>" << std::endl;
-		response << "\t\t<meta name=\"description\" content=\"terminal emulator over HTTP\">" << std::endl;
+		response << "\t\t<title>Error " << (unsigned int) unisim::util::hypapp::HttpResponse::NOT_FOUND << " (" << unisim::util::hypapp::HttpResponse::NOT_FOUND << ")</title>" << std::endl;
 		response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-		response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
-		response << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
-		response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/web_terminal/style.css\" type=\"text/css\" />" << std::endl;
+		response << "\t\t<meta name=\"description\" content=\"Error " << (unsigned int) unisim::util::hypapp::HttpResponse::NOT_FOUND << " (" << unisim::util::hypapp::HttpResponse::NOT_FOUND << ")\">" << std::endl;
+		response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+		response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 		response << "\t\t<style>" << std::endl;
-		
-		// Generate CSS style for each graphic rendition
-		GraphicRendition theme_gr = theme.MakeGraphicRendition();
-		
-		bool theme_style_class_generated = false;
-		unsigned int theme_style_class_num = 0;
-		std::map<std::pair<GraphicRendition, bool>, unsigned int> gr_class_map;
-		unsigned int class_num = 0;
-		for(std::set<std::pair<GraphicRendition, bool> >::const_iterator it = gr_set.begin(); it != gr_set.end(); it++, class_num++)
-		{
-			const std::pair<GraphicRendition, bool>& pair = *it;
-			const GraphicRendition& gr = pair.first;
-			bool under_cursor = pair.second;
-			gr_class_map[pair] = class_num;
-			
-			GenerateStyle(response, gr, under_cursor, std::string("c") + to_string(class_num));
-			if((theme_gr == gr) && !under_cursor)
-			{
-				theme_style_class_generated = true;
-				theme_style_class_num = class_num;
-			}
-		}
-		if(!theme_style_class_generated)
-		{
-			GenerateStyle(response, theme_gr, false, std::string("c") + to_string(class_num));
-			theme_style_class_generated = true;
-			theme_style_class_num = class_num;
-		}
-		
+		response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
 		response << "\t\t</style>" << std::endl;
-		response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';var activity = " << (activity ? "true" : "false") << ";</script>" << std::endl;
-		response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
-		response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/web_terminal/script.js\"></script>" << std::endl;
 		response << "\t</head>" << std::endl;
-		response << "\t<body class=\"c" << theme_style_class_num << "\" onload=\"gui.auto_reload(" << (unsigned int)(refresh_period * 1000) << ", 'self-refresh-when-active')\">" << std::endl;
-		refresh_period = activity ? min_display_refresh_period : std::min(refresh_period * 2.0, max_display_refresh_period);
-		activity = false;
-		response << "\t\t<div id=\"screen-buffer\" tabindex=\"-999\">" << std::endl;
-		
-		// Generate screen buffer graphical representation line by line
-		GraphicRendition gr;
-		bool open = false;
-		// Iterate over each line of screen buffer
-		for(ScreenBufferIterator it = curr_screen_buffer->Begin(); it != curr_screen_buffer->End(); ++it)
-		{
-			response << "\t\t\t";
-			
-			ScreenBufferLine& sbl = (*it);
-			
-			// Iterate over each column of screen buffer line
-			for(unsigned int colno = 1; colno <= curr_screen_buffer->GetDisplayWidth(); colno++)
-			{
-				ScreenBufferCharacter& sbc = sbl[colno];
-				
-				// Detect whether current line and column is under the cursor
-				bool under_cursor = curr_screen_buffer->IsAtCursorLinePos(it) && (colno == curr_screen_buffer->GetCursorColNo());
-				
-				if(!open || (sbc.gr != gr) || under_cursor)
-				{
-					// close pre tag if it's open and when graphic rendition changes or the current line and column is under the cursor
-					if(open)
-					{
-						response << "</pre>";
-						open = false;
-					}
-					
-					gr = sbc.gr; // remember what's the current graphic rendition
-
-					// Find the CSS class corresponding to the current graphic rendition
-					std::map<std::pair<GraphicRendition, bool>, unsigned int>::const_iterator gr_class_it = gr_class_map.find(std::pair<GraphicRendition, bool>(gr, under_cursor));
-					if(gr_class_it != gr_class_map.end())
-					{
-						unsigned int class_num = (*gr_class_it).second;
-						response << "<pre class=\"c" << class_num << "\">"; // open a pre with the right CSS class corresponding to the current graphic rendition
-						open = true;
-					}
-				}
-				
-				// emit an UTF-8 character
-				const UnicodeCharacter& c = sbc.c;
-				if(c == (uint32_t) '<') response << "&lt;"; // print '<'
-				else if((c >= 32u) && (c != 127u)) response << c; // printable ASCII/UTF-8 character
-				else response << ' '; // unprintable ASCII/UTF-8 character
-				if(under_cursor)
-				{
-					// close pre tag right after when the last emitted line and column is under the cursor
-					response << "</pre>";
-					open = false;
-				}
-			}
-			if(open)
-			{
-				// close pre tag at the end of line if not already closed
-				response << "</pre>";
-				open = false;
-			}
-			response << "<br>" << std::endl; // insert line break
-		}
-		response << "\t\t</div>" << std::endl;
+		response << "\t<body>" << std::endl;
+		response << "\t\t<p>Unavailable</p>" << std::endl;
 		response << "\t</body>" << std::endl;
 		response << "</html>" << std::endl;
 	}
-
-	bool send_status = conn.Send(response.ToString(req.GetRequestType() == unisim::util::hypapp::Request::HEAD));
+	
+	bool send_status = conn.Send(response.ToString((req.GetRequestType() == unisim::util::hypapp::Request::HEAD) || (req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)));
 
 	if(send_status)
 	{
@@ -1817,7 +1895,6 @@ bool WebTerminal::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req,
 		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response" << EndDebugWarning;
 	}
 	
-	Unlock();
 	
 	return send_status;
 }

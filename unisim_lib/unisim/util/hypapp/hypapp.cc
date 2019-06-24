@@ -433,13 +433,21 @@ void HttpResponse::Print(std::ostream& os, bool header_only) const
     {
       os << "Cache-control: no-cache\r\n";
     }
+  }
+  
+  if(content.length())
+  {
     if(content_type.length())
     {
       os << "Content-Type: " << content_type << "\r\n";
     }
+    else
+    {
+      os << "Content-Type: application/octet-stream\r\n";
+    }
   }
   
-  os << "Content-length: " << (header_only ? 0 : content.length()) << "\r\n";
+  os << "Content-length: " << content.length() << "\r\n";
    
   if(keep_alive)
   {
