@@ -53,6 +53,8 @@ public:
 	Random();
 	Random(int32_t seed_x, int32_t seed_y, int32_t seed_z, int32_t seed_w);
 	void Seed(int32_t seed_x, int32_t seed_y, int32_t seed_z, int32_t seed_w);
+	int32_t const& State(unsigned idx) const;
+        int32_t& State(unsigned idx) { return const_cast<int32_t&>( const_cast<Random const*>(this)->State(idx) ); };
 	int32_t Generate();
 	int32_t Generate(uint32_t radius);
 private:
