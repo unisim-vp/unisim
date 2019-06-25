@@ -38,6 +38,7 @@
 #include <unisim/util/random/random.hh>
 #include <fstream>
 #include <iostream>
+#include <vector>
 #include <set>
 #include <memory>
 #include <sys/mman.h>
@@ -322,23 +323,25 @@ struct Checker
       void* p; uintptr_t sz;
     } textzone(textsize);
 
+    typedef ut::Testbed<4096> Testbed;
+
     /* Organize test data */
     struct Test
     {
       typedef ut::Interface::testcode_t testcode_t;
       
       Test(ut::Interface const* _test, testcode_t _code)
-        : code(_code), relval(), relreg(), workquads(_test->workquads())
+        : disasm(_test->asmcode), code(_code), relval(), relreg(), workquads(_test->workquads())
       {}
       Test(ut::Interface const* _test, testcode_t _code, unsigned _relreg, unisim::util::symbolic::Expr const& _relval)
-        : code(_code), relval(_relval), relreg(_test->gregs.index(_relreg)), workquads(_test->workquads())
+        : disasm(_test->asmcode), code(_code), relval(_relval), relreg(_test->gregs.index(_relreg)), workquads(_test->workquads())
       {}
       uint64_t get_reloc(std::vector<uint64_t> const& ws, uint64_t address) const
       {
         if (not relval.good()) return 0;
         
         uint64_t value;
-        if (auto v = relval.Eval( ut::Arch::RelocEval(ws, address) ))
+        if (auto v = relval.Eval( ut::Arch::RelocEval(&ws[1], address) ))
           { Expr dispose(v); value = v->Get( uint64_t() ); }
         else
           throw "WTF";
@@ -347,14 +350,38 @@ struct Checker
       }
       void patch(std::vector<uint64_t>& ws, uint64_t reloc) const
       {
+        ws[0] = (ws[0] & 0xcff) | 2;
         if (relval.good())
-          ws[relreg] = reloc;
+          ws[relreg+1] = reloc;
       }
-      void load(std::vector<uint64_t>& ws, ut::Testbed<4096ul> const& testbed) const
+      void load(std::vector<uint64_t>& ws, Testbed const& testbed) const
       {
         testbed.load(&ws[0], workquads);
       }
+      void check(Testbed const& tb, std::vector<uint64_t> const& ref, std::vector<uint64_t> const& sim) const
+      {
+        for (unsigned idx = 0, end = workquads*2; idx < end; ++idx)
+          {
+            if (ref[idx] != sim[idx])
+              error(tb,ref,sim);
+          }
+      }
+      void error(Testbed const& tb, std::vector<uint64_t> const& ref, std::vector<uint64_t> const& sim) const
+      {
+        std::cerr << tb.counter << ": error in " << disasm << '\n';
+        for (unsigned idx = 0, end = workquads*2; idx < end; ++idx)
+          {
+            uint64_t r = ref[idx], s = sim[idx];
+            std::cerr << idx << ": " << std::hex << r;
+            if (r != s)
+              std::cerr << " <> " << s << '\n';
+            else
+              std::cerr << '\n';
+          }
+        throw 0;
+      }
 
+      std::string disasm;
       ut::Interface::testcode_t code;
       Expr relval;
       unsigned relreg, workquads;
@@ -388,16 +415,20 @@ struct Checker
             tests.push_back( Test(&test, text.code(), reloc.first, reloc.second) );
         else
           tests.push_back( Test(&test, text.code()) );
+
       }
 
     /* Now, undergo real tests */
     textzone.activate();
+
+    ut::concrete::Arch amd64;
     
     std::vector<uint64_t> reference(workquads), workspace(workquads);
-    
-    for (ut::Testbed<4096> testbed( seed );; testbed.next())
+    for (Testbed testbed(seed);; testbed.next())
       {
         Test const& test = testbed.select(tests);
+        if ((testbed.counter % 0x100000) == 0)
+          std::cout << testbed.counter << ": " << test.disasm << std::endl;
         uint64_t* data = &workspace[0];
         
         /* Perform native test */
@@ -411,10 +442,12 @@ struct Checker
         /* Perform simulation test */
         test.load(workspace, testbed);
         test.patch(workspace,reloc);
+        
         /* TODO: Perform test here */
+        amd64.run( test.code, data );
         
         /* Check for differences */
-        if (testbed.counter >= tests.size()) break;
+        test.check(testbed,reference,workspace);
       }
   }
 };

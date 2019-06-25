@@ -40,7 +40,6 @@
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/types.hh>
 #include <unisim/util/symbolic/symbolic.hh>
-#include <vector>
 #include <bitset>
 #include <set>
 #include <memory>
@@ -451,8 +450,8 @@ namespace ut
     struct AddrEval : public unisim::util::symbolic::EvalSpace {};
     struct RelocEval : public unisim::util::symbolic::EvalSpace
     {
-      RelocEval( std::vector<uint64_t> const& _regvalues, uint64_t _address ) : regvalues(_regvalues), address(_address) {}
-      std::vector<uint64_t> const& regvalues;
+      RelocEval( uint64_t const* _regvalues, uint64_t _address ) : regvalues(_regvalues), address(_address) {}
+      uint64_t const* regvalues;
       uint64_t address;
     };
 

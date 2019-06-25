@@ -162,11 +162,23 @@ struct Pushf : public Operation<ARCH>
 {
   Pushf( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "pushf" << ((OPSIZE==16) ? "w" : (OPSIZE==32) ? "" : "q"); }
-  // void execute( ARCH& arch ) const {
-  //   u32_t dst = arch.regread32( 4 ) - u32_t( OPSIZE/8 );
-  //   arch.template memwrite<OPSIZE>( segment, dst, eflagsread<OPSIZE>( arch ) );
-  //   arch.regwrite32( 4, dst );
-  // }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
+    u_type flags =
+      /*CF*/ (u_type(arch.flagread( ARCH::FLAG::CF )) <<  0) |
+      /* 1*/ (u_type(1)                          <<  1) |
+      /*PF*/ (u_type(arch.flagread( ARCH::FLAG::PF )) <<  2) |
+      /* 0*/ (u_type(0)                          <<  3) |
+      /*AF*/ (u_type(arch.flagread( ARCH::FLAG::AF )) <<  4) |
+      /* 0*/ (u_type(0)                          <<  5) |
+      /*ZF*/ (u_type(arch.flagread( ARCH::FLAG::ZF )) <<  6) |
+      /*SF*/ (u_type(arch.flagread( ARCH::FLAG::SF )) <<  7) |
+      /*DF*/ (u_type(arch.flagread( ARCH::FLAG::DF )) << 10) |
+      /*OF*/ (u_type(arch.flagread( ARCH::FLAG::OF )) << 11);
+
+    arch.template push<OPSIZE>( flags );
+  }
 };
 
 template <class ARCH> struct DC<ARCH,PUSHF> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -174,9 +186,9 @@ template <class ARCH> struct DC<ARCH,PUSHF> { Operation<ARCH>* get( InputCode<AR
   if (auto _ = match( ic, opcode( "\x9c" ) ))
   
     {
-      if (ic.opsize()==16) return new Pushf<ARCH,16>( _.opbase() );
-      if (ic.opsize()==32) return new Pushf<ARCH,32>( _.opbase() );
-      if (ic.opsize()==64) return new Pushf<ARCH,64>( _.opbase() );
+      if (ic.opsize()==64)                return new Pushf<ARCH,64>( _.opbase() );
+      if (ic.opsize()==16 or ic.mode64()) return new Pushf<ARCH,16>( _.opbase() );
+      if (ic.opsize()==32)                return new Pushf<ARCH,32>( _.opbase() );
     }
   
   return 0;
@@ -283,18 +295,21 @@ struct Popf : public Operation<ARCH>
 {
   Popf( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "popf"; }
-  // void execute( ARCH& arch ) const {
-  //   u32_t src = arch.regread32( 4 );
-  //   arch.regwrite32( 4, src + u32_t( OPSIZE/8 ) );
-  //   u16_t word = arch.template memread<16>( SS, src );
-  //   arch.flagwrite( CF, bit_t( (word >>  0) & u32_t( 1 ) ) );
-  //   arch.flagwrite( PF, bit_t( (word >>  2) & u32_t( 1 ) ) );
-  //   arch.flagwrite( AF, bit_t( (word >>  4) & u32_t( 1 ) ) );
-  //   arch.flagwrite( ZF, bit_t( (word >>  6) & u32_t( 1 ) ) );
-  //   arch.flagwrite( SF, bit_t( (word >>  7) & u32_t( 1 ) ) );
-  //   arch.flagwrite( DF, bit_t( (word >> 10) & u32_t( 1 ) ) );
-  //   arch.flagwrite( OF, bit_t( (word >> 11) & u32_t( 1 ) ) );
-  // }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
+    typedef typename ARCH::bit_t bit_t;
+    u_type flags = arch.template pop<OPSIZE>();
+    u_type const bitmask(1);
+    
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( (flags >>  0) & bitmask ) );
+    arch.flagwrite( ARCH::FLAG::PF, bit_t( (flags >>  2) & bitmask ) );
+    arch.flagwrite( ARCH::FLAG::AF, bit_t( (flags >>  4) & bitmask ) );
+    arch.flagwrite( ARCH::FLAG::ZF, bit_t( (flags >>  6) & bitmask ) );
+    arch.flagwrite( ARCH::FLAG::SF, bit_t( (flags >>  7) & bitmask ) );
+    arch.flagwrite( ARCH::FLAG::DF, bit_t( (flags >> 10) & bitmask ) );
+    arch.flagwrite( ARCH::FLAG::OF, bit_t( (flags >> 11) & bitmask ) );
+  }
 };
 
 template <class ARCH> struct DC<ARCH,POPF> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -302,9 +317,9 @@ template <class ARCH> struct DC<ARCH,POPF> { Operation<ARCH>* get( InputCode<ARC
   if (auto _ = match( ic, opcode( "\x9d" ) ))
   
     {
-      if (ic.opsize()==16) return new Popf<ARCH,16>( _.opbase() );
-      if (ic.opsize()==32) return new Popf<ARCH,32>( _.opbase() );
-      if (ic.opsize()==64) return new Popf<ARCH,64>( _.opbase() );
+      if (ic.opsize()==64)                return new Popf<ARCH,64>( _.opbase() );
+      if (ic.opsize()==16 or ic.mode64()) return new Popf<ARCH,16>( _.opbase() );
+      if (ic.opsize()==32)                return new Popf<ARCH,32>( _.opbase() );
     }
   
   return 0;
@@ -813,11 +828,11 @@ struct BtRM : public Operation<ARCH>
     typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
     typedef typename ARCH::addr_t addr_t;
     
-    enum { BYTESIZE = (OP::SIZE / 8) };
+    enum { BITSHIFT = SB<OP::SIZE>::begin, LOGOPBYTES = SB<OP::SIZE/8>::begin };
     
     typename TypeFor<ARCH,OP::SIZE>::s str_bit( arch.regread( OP(), gn ) );
-  
-    addr_t offset  = (addr_t(str_bit) / addr_t(BYTESIZE)) * addr_t(BYTESIZE);
+
+    addr_t offset = addr_t((str_bit >> BITSHIFT) << LOGOPBYTES);
     u_type opr_bit = u_type(str_bit) % u_type(OP::SIZE);
     u_type str_opr = rm.is_memory_operand() ? arch.vmm_memread( rm->segment, rm->effective_address( arch ) + offset, u_type() ) : arch.regread( OP(), rm.ereg() );
     

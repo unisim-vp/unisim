@@ -1849,11 +1849,11 @@ template <class ARCH> struct DC<ARCH,IMUL> { Operation<ARCH>* get( InputCode<ARC
   
   if (auto _ = match( ic, OpSize<32>() & opcode( "\x69" ) & RM() & Imm<32>() ))
   
-    return new IMulGEI<ARCH,GOw>( _.opbase(), _.rmop(), _.greg(), _.i( int32_t() ) );
+    return new IMulGEI<ARCH,GOd>( _.opbase(), _.rmop(), _.greg(), _.i( int32_t() ) );
   
   if (auto _ = match( ic, OpSize<64>() & opcode( "\x69" ) & RM() & Imm<32>() ))
   
-    return new IMulGEI<ARCH,GOw>( _.opbase(), _.rmop(), _.greg(), _.i( int64_t() ) );
+    return new IMulGEI<ARCH,GOq>( _.opbase(), _.rmop(), _.greg(), _.i( int64_t() ) );
   
   return 0;
 }};

@@ -512,6 +512,22 @@ namespace ut
   void Interface::gencode(Text& text) const
   {
     unsigned offset = 0;
+    
+    /* Load EFLAGS register */
+    {
+      struct { uint8_t opcode; uint8_t r_m : 3; uint8_t r_o : 3; uint8_t mod : 2; uint8_t disp; uint8_t popf; } i;
+      /* FF /6, PUSH r/m64 x(%rdi) */
+      i.opcode = 0xff; /* FF */
+      i.mod = 1;
+      i.r_o = 6; /* /6 */
+      i.r_m = 7; /* %rdi */
+      i.disp = offset;
+      i.popf = 0x9d;
+      uint8_t const* ptr = &i.opcode;
+      text.write(ptr,4);
+    }
+    offset += 8;
+    
     /* Load GP registers */
     for (unsigned reg = 0; reg < gregs.count(); ++reg)
       {
@@ -552,21 +568,6 @@ namespace ut
       }
     offset += ut::Arch::VUConfig::BYTECOUNT*vregs.used();
 
-    /* Load EFLAGS register */
-    {
-      struct { uint8_t opcode; uint8_t r_m : 3; uint8_t r_o : 3; uint8_t mod : 2; uint8_t disp; uint8_t popf; } i;
-      /* FF /6, PUSH r/m64 x(%rdi) */
-      i.opcode = 0xff; /* FF */
-      i.mod = 1;
-      i.r_o = 6; /* /6 */
-      i.r_m = 7; /* %rdi */
-      i.disp = offset;
-      i.popf = 0x9d;
-      uint8_t const* ptr = &i.opcode;
-      text.write(ptr,4);
-    }
-    offset += 8;
-    
     if (offset >= 128) throw 0;
     
     text.write(memcode.text(),memcode.length);
@@ -584,6 +585,21 @@ namespace ut
       uint8_t const* ptr = &i.rex;
       text.write(ptr,4);
     }
+    
+    /* Store EFLAGS register */
+    {
+      struct { uint8_t pushf; uint8_t opcode; uint8_t r_m : 3; uint8_t r_o : 3; uint8_t mod : 2; uint8_t disp; } i;
+      /* 8F /0, POP r/m64 x(%rdi) */
+      i.pushf = 0x9c;
+      i.opcode = 0x8f; /* 8F */
+      i.mod = 1;
+      i.r_o = 0; /* /0 */
+      i.r_m = 7; /* %rdi */
+      i.disp = offset;
+      uint8_t const* ptr = &i.pushf;
+      text.write(ptr,4);
+    }
+    offset += 8;
     
     offset = 0;
     /* Store GP registers */
@@ -626,21 +642,6 @@ namespace ut
       }
     offset += ut::Arch::VUConfig::BYTECOUNT*vregs.used();
 
-    /* Store EFLAGS register */
-    {
-      struct { uint8_t pushf; uint8_t opcode; uint8_t r_m : 3; uint8_t r_o : 3; uint8_t mod : 2; uint8_t disp; } i;
-      /* 8F /0, POP r/m64 x(%rdi) */
-      i.pushf = 0x9c;
-      i.opcode = 0x8f; /* 8F */
-      i.mod = 1;
-      i.r_o = 0; /* /0 */
-      i.r_m = 7; /* %rdi */
-      i.disp = offset;
-      uint8_t const* ptr = &i.pushf;
-      text.write(ptr,4);
-    }
-    offset += 8;
-    
     text.write((uint8_t const*)"\xc3",1);
   }
 
