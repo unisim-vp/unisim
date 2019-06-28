@@ -104,14 +104,6 @@ struct CPU
     , l1i(*this)
   {}
   
-  struct ACCESS_CONTROLLER
-  {
-    template <bool debug>
-    bool ControlAccess(unisim::util::cache::AccessControl<MSSConfig>& ac) { return true; }
-  } access_controller;
-  
-  ACCESS_CONTROLLER* GetAccessController() { return &access_controller; }
-  
   typedef CPU CACHE_CPU;
 
   template <class ACTUAL_CACHE>
@@ -136,6 +128,8 @@ struct CPU
   {
     static const unsigned int SIZE                                      = 4096;
     static const unisim::util::cache::CacheWritingPolicy WRITING_POLICY = unisim::util::cache::CACHE_WRITE_BACK_AND_NO_WRITE_ALLOCATE_POLICY;
+    static const unisim::util::cache::CacheIndexScheme INDEX_SCHEME     = unisim::util::cache::CACHE_PHYSICALLY_INDEXED;
+    static const unisim::util::cache::CacheTagScheme TAG_SCHEME         = unisim::util::cache::CACHE_PHYSICALLY_TAGGED;
     static const unisim::util::cache::CacheType TYPE                    = unisim::util::cache::DATA_CACHE;
     static const unsigned int ASSOCIATIVITY                             = 4;
     static const unsigned int BLOCK_SIZE                                = 32;
@@ -183,6 +177,8 @@ struct CPU
   {
     static const unsigned int SIZE                                      = 4096;
     static const unisim::util::cache::CacheWritingPolicy WRITING_POLICY = unisim::util::cache::CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
+    static const unisim::util::cache::CacheIndexScheme INDEX_SCHEME     = unisim::util::cache::CACHE_VIRTUALLY_INDEXED;
+    static const unisim::util::cache::CacheTagScheme TAG_SCHEME         = unisim::util::cache::CACHE_PHYSICALLY_TAGGED;
     static const unisim::util::cache::CacheType TYPE                    = unisim::util::cache::INSTRUCTION_CACHE;
     static const unsigned int ASSOCIATIVITY                             = 4;
     static const unsigned int BLOCK_SIZE                                = 32;
@@ -246,64 +242,37 @@ struct CPU
 
   uint64_t get_cwp_stats( bool wt ) const { return wt_stats[wt]; }
 
-  virtual bool PhysicalWriteMemory(uint32_t addr, const uint8_t* buffer, uint32_t size, uint32_t attrs)
+  virtual bool PhysicalWriteMemory(uint32_t addr, uint32_t paddr, const uint8_t* buffer, uint32_t size, uint32_t attrs)
   {
-    if (unlikely(IsVerboseDataStore()))
-      Trace("Storing Data", addr, buffer, size);
-
     STORAGE_ATTR storage_attr( attrs );
-    if (not StoreInMSS<DATA_LOCAL_MEMORIES, DATA_CACHE_HIERARCHY, DATA_LOCAL_MEMORIES::LOC_MEM1, DATA_CACHE_HIERARCHY::L1CACHE>(addr, buffer, size, storage_attr))
-      return false;
-	
-    num_data_store_accesses++;
-    num_data_store_xfered_bytes += size;
-	
-    return true;
+    return DataStore(addr, paddr, buffer, size, storage_attr);
   }
 
   bool DataBusWrite(uint32_t phys_addr, void const* buffer, unsigned int size, STORAGE_ATTR storage_attr)
   {
-    return PCPU::PhysicalWriteMemory(phys_addr, (uint8_t const*)buffer, size, storage_attr.attributes);
+    return PCPU::PhysicalWriteMemory(phys_addr, phys_addr, (uint8_t const*)buffer, size, storage_attr.attributes);
   }
   
-  bool PhysicalReadMemory(uint32_t addr, uint8_t* buffer, uint32_t size, uint32_t attrs)
+  bool PhysicalReadMemory(uint32_t addr, uint32_t paddr, uint8_t* buffer, uint32_t size, uint32_t attrs)
   {
-    if (unlikely(IsVerboseDataLoad()))
-      Trace("Loading Data", addr, buffer, size);
-	
     STORAGE_ATTR storage_attr( attrs );
-    if (not LoadFromMSS<DATA_LOCAL_MEMORIES, DATA_CACHE_HIERARCHY, DATA_LOCAL_MEMORIES::LOC_MEM1, DATA_CACHE_HIERARCHY::L1CACHE>(addr, buffer, size, storage_attr))
-      return false;
-    
-    num_data_load_accesses++;
-    num_data_load_xfered_bytes += size;
-	
-    return true;
+	return DataLoad(addr, paddr, buffer, size, storage_attr);
   }
 	
   bool DataBusRead(uint32_t phys_addr, void* buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm)
   {
-    return PCPU::PhysicalReadMemory(phys_addr, (uint8_t*)buffer, size, storage_attr.attributes);
+    return PCPU::PhysicalReadMemory(phys_addr, phys_addr, (uint8_t*)buffer, size, storage_attr.attributes);
   }
 
-  bool PhysicalFetchMemory(uint32_t addr, uint8_t* buffer, uint32_t size, uint32_t attrs)
+  bool PhysicalFetchMemory(uint32_t addr, uint32_t paddr, uint8_t* buffer, uint32_t size, uint32_t attrs)
   {
-    if (unlikely(IsVerboseInstructionFetch()))
-      Trace("Fetching Instruction", addr, buffer, size);
-
     STORAGE_ATTR storage_attr( attrs );
-    if (not LoadFromMSS<INSTRUCTION_LOCAL_MEMORIES, INSTRUCTION_CACHE_HIERARCHY, INSTRUCTION_LOCAL_MEMORIES::LOC_MEM1, INSTRUCTION_CACHE_HIERARCHY::L1CACHE>(addr, buffer, size, storage_attr))
-      return false;
-    
-    num_instruction_fetch_accesses++;
-    num_instruction_fetch_xfered_bytes += size;
-
-    return true;
+    return InstructionFetch(addr, paddr, buffer, size, storage_attr);
   }
 
   bool InstructionBusRead(uint32_t phys_addr, void* buffer, unsigned int size, STORAGE_ATTR storage_attr)
   {
-    return PCPU::PhysicalReadMemory(phys_addr, (uint8_t*)buffer, size, storage_attr.attributes);
+    return PCPU::PhysicalReadMemory(phys_addr, phys_addr, (uint8_t*)buffer, size, storage_attr.attributes);
   }
   
   // virtual bool ExternalReadMemory(uint32_t addr, void* buffer, uint32_t size) { return DebugDataLoad(addr, buffer, size); }

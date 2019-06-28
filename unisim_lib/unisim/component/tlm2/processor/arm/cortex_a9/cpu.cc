@@ -651,7 +651,7 @@ CPU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
  * @param size    the size of the read
  */
 bool
-CPU::PhysicalReadMemory(uint32_t addr, uint8_t *buffer, uint32_t size, uint32_t attrs)
+CPU::PhysicalReadMemory(uint32_t addr, uint32_t paddr, uint8_t *buffer, uint32_t size, uint32_t attrs)
 {
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
@@ -676,7 +676,7 @@ CPU::PhysicalReadMemory(uint32_t addr, uint8_t *buffer, uint32_t size, uint32_t 
   
   if(likely(enable_dmi))
   {
-    dmi_region = dmi_region_cache.Lookup(addr, size);
+    dmi_region = dmi_region_cache.Lookup(paddr, size);
     
     if(likely(dmi_region))
     {
@@ -685,7 +685,7 @@ CPU::PhysicalReadMemory(uint32_t addr, uint8_t *buffer, uint32_t size, uint32_t 
         tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
         if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_READ) == tlm::tlm_dmi::DMI_ACCESS_READ))
         {
-          memcpy(buffer, dmi_data->get_dmi_ptr() + (addr - dmi_data->get_start_address()), size);
+          memcpy(buffer, dmi_data->get_dmi_ptr() + (paddr - dmi_data->get_start_address()), size);
           quantum_time += dmi_region->GetReadLatency(size);
           if (quantum_time > nice_time)
             Sync();
@@ -699,7 +699,7 @@ CPU::PhysicalReadMemory(uint32_t addr, uint8_t *buffer, uint32_t size, uint32_t 
   Transaction trans( payload_fabric );
   
   //uint32_t byte_enable = 0xffffffffUL;
-  trans->set_address(addr);
+  trans->set_address(paddr);
   trans->set_read();
   trans->set_data_ptr(buffer);
   trans->set_data_length(size);
@@ -723,7 +723,7 @@ CPU::PhysicalReadMemory(uint32_t addr, uint8_t *buffer, uint32_t size, uint32_t 
     if(likely(not dmi_region and trans->is_dmi_allowed()))
     {
       tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
-      trans->set_address(addr);
+      trans->set_address(paddr);
       trans->set_data_length(size);
       unisim::kernel::tlm2::DMIGrant dmi_grant = master_socket->get_direct_mem_ptr(*trans, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
       
@@ -742,7 +742,7 @@ CPU::PhysicalReadMemory(uint32_t addr, uint8_t *buffer, uint32_t size, uint32_t 
 }
 
 bool
-CPU::PhysicalWriteMemory(uint32_t addr, const uint8_t *buffer, uint32_t size, uint32_t attrs)
+CPU::PhysicalWriteMemory(uint32_t addr, uint32_t paddr, const uint8_t *buffer, uint32_t size, uint32_t attrs)
 {
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
@@ -765,7 +765,7 @@ CPU::PhysicalWriteMemory(uint32_t addr, const uint8_t *buffer, uint32_t size, ui
   
   if(likely(enable_dmi))
   {
-    dmi_region = dmi_region_cache.Lookup(addr, size);
+    dmi_region = dmi_region_cache.Lookup(paddr, size);
     
     if(likely(dmi_region))
     {
@@ -774,7 +774,7 @@ CPU::PhysicalWriteMemory(uint32_t addr, const uint8_t *buffer, uint32_t size, ui
         tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
         if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_WRITE) == tlm::tlm_dmi::DMI_ACCESS_WRITE))
         {
-          memcpy(dmi_data->get_dmi_ptr() + (addr - dmi_data->get_start_address()), buffer, size);
+          memcpy(dmi_data->get_dmi_ptr() + (paddr - dmi_data->get_start_address()), buffer, size);
           quantum_time += dmi_region->GetWriteLatency(size);
           if (quantum_time > nice_time)
             Sync();
@@ -788,7 +788,7 @@ CPU::PhysicalWriteMemory(uint32_t addr, const uint8_t *buffer, uint32_t size, ui
   Transaction trans( payload_fabric );
   
   //uint32_t byte_enable = 0xffffffffUL;
-  trans->set_address(addr);
+  trans->set_address(paddr);
   trans->set_write();
   trans->set_data_ptr((unsigned char *)buffer);
   trans->set_data_length(size);
@@ -810,7 +810,7 @@ CPU::PhysicalWriteMemory(uint32_t addr, const uint8_t *buffer, uint32_t size, ui
     if (likely(not dmi_region and trans->is_dmi_allowed()))
     {
       tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
-      trans->set_address(addr);
+      trans->set_address(paddr);
       trans->set_data_length(size);
       unisim::kernel::tlm2::DMIGrant dmi_grant = master_socket->get_direct_mem_ptr(*trans, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
       

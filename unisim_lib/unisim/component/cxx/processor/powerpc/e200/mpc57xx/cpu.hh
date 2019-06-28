@@ -643,7 +643,17 @@ public:
 	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataLoad(T& value, ADDRESS ea);
 	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataStore(T value, ADDRESS ea);
 	
+	bool DataLoad(ADDRESS ea, void *buffer, unsigned int size);
+	bool DataStore(ADDRESS ea, const void *buffer, unsigned int size);
+	bool InstructionFetch(ADDRESS ea, void *buffer, unsigned int size);
+	
+	bool DebugDataLoad(ADDRESS ea, void *buffer, unsigned int size);
+	bool DebugDataStore(ADDRESS ea, const void *buffer, unsigned int size);
+	bool DebugInstructionFetch(ADDRESS ea, void *buffer, unsigned int size);
+
 	virtual void InvalidateDirectMemPtr(PHYSICAL_ADDRESS start_addr, PHYSICAL_ADDRESS end_addr) {}
+	
+	template <bool DEBUG, bool EXEC, bool WRITE> inline bool ControlAccess(ADDRESS addr, ADDRESS& size_to_protection_boundary, STORAGE_ATTR& storage_attr);
 
 public:
 

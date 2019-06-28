@@ -460,11 +460,12 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
         }
     }
 
-  AddressDescriptor loc( addr & ~lo_mask );
+  uint32_t mva = addr & ~lo_mask;
+  AddressDescriptor loc( mva );
   TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != USER_MODE, mat_write, size );
   
   // Send the request to the memory interface
-  if (not PhysicalWriteMemory( loc.address, data, size, loc.attributes )) {
+  if (not PhysicalWriteMemory( mva, loc.address, data, size, loc.attributes )) {
     DataAbort(addr, loc.address, 0, 0, mat_write, DAbort_SyncExternal, false, false, true, false, false);
   }
   
@@ -521,14 +522,15 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
     }
   }
 
-  AddressDescriptor loc( addr & ~lo_mask );
+  uint32_t mva = addr & ~lo_mask;
+  AddressDescriptor loc( mva );
   
   TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != USER_MODE, mat_read, size );
   
   uint8_t data[4];
 
   // just read the data from the memory system
-  if (not PhysicalReadMemory(loc.address, &data[0], size, loc.attributes)) {
+  if (not PhysicalReadMemory(mva, loc.address, &data[0], size, loc.attributes)) {
     DataAbort(addr, loc.address, 0, 0, mat_read, DAbort_SyncExternal, false, false, true, false, false);
   }
 
@@ -688,7 +690,7 @@ CPU::InjectReadMemory( uint32_t addr, void* buffer, uint32_t size )
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PhysicalReadMemory(ef_addr, &rbuffer[index], 1, 0))
+      if (not PhysicalReadMemory(ef_addr, ef_addr, &rbuffer[index], 1, 0))
         return false;
     }
 
@@ -712,7 +714,7 @@ CPU::InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t size )
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PhysicalWriteMemory( ef_addr, &wbuffer[index], 1, 0 ))
+      if (not PhysicalWriteMemory( ef_addr, ef_addr, &wbuffer[index], 1, 0 ))
         return false;
     }
 
@@ -917,7 +919,7 @@ CPU::RefillInsnPrefetchBuffer(uint32_t mva, AddressDescriptor const& line_loc)
   
   // No instruction cache present, just request the insn to the
   // memory system.
-  if (not PhysicalFetchMemory(line_loc.address, &this->ipb_bytes[0], IPB_LINE_SIZE, line_loc.attributes)) {
+  if (not PhysicalFetchMemory(mva & -(IPB_LINE_SIZE), line_loc.address, &this->ipb_bytes[0], IPB_LINE_SIZE, line_loc.attributes)) {
     DataAbort(mva, line_loc.address, 0, 0, mat_exec, DAbort_SyncExternal, false, false, true, false, false);
   }
   
@@ -1417,7 +1419,7 @@ CPU::TranslationTableWalk( CPU::TLB::Entry& tlbe, uint32_t mva, mem_acc_type_t m
     MemAttrs::type().Set(attrs,MemAttrs::Normal);
     
     if (POLICY::DEBUG) success = ExternalReadMemory( l1descaddr, erd.data(), 4 );
-    else               success = PhysicalReadMemory( l1descaddr, erd.data(), 4, 0 );
+    else               success = PhysicalReadMemory( l1descaddr, l1descaddr, erd.data(), 4, 0 );
     if (not success)
       DataAbort(l1descaddr, l1descaddr, 0, 0, mat_read, DAbort_SyncExternalonWalk, false, false, false, false, false);
   }
@@ -1440,7 +1442,7 @@ CPU::TranslationTableWalk( CPU::TLB::Entry& tlbe, uint32_t mva, mem_acc_type_t m
     {
       bool success;
       if (POLICY::DEBUG) success = ExternalReadMemory( l2descaddr, erd.data(), 4 );
-      else               success = PhysicalReadMemory( l2descaddr, erd.data(), 4, 0 );
+      else               success = PhysicalReadMemory( l2descaddr, l2descaddr, erd.data(), 4, 0 );
       if (not success)
         DataAbort(l2descaddr, 0, tlbe.domain, 0, mat_read, DAbort_SyncExternalonWalk, false,false,false,false,false);
     }

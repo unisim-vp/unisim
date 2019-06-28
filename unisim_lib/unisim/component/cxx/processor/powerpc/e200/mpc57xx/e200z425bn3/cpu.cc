@@ -119,7 +119,7 @@ bool CPU::Icbi(ADDRESS addr)
 		return false;
 	}
 	
-	MPU_ENTRY *mpu_entry = mpu.Lookup(addr, /* exec */ false, /* write */ false); // icbi is treated as a load for the purpose of access protection
+	MPU_ENTRY *mpu_entry = mpu.Lookup</* exec */ false, /* write */ false>(addr); // icbi is treated as a load for the purpose of access protection
 	
 	if(!mpu_entry)
 	{
@@ -127,7 +127,7 @@ bool CPU::Icbi(ADDRESS addr)
 		return false;
 	}
 
-	InvalidateLineByAddress<L1I>(addr);
+	InvalidateLineByAddress<L1I>(addr, addr);
 	return true;
 }
 
@@ -135,7 +135,7 @@ bool CPU::Icbt(ADDRESS addr)
 {
 	if(hid0.Get<HID0::NOPTI>()) return true; // icbt is treated as a no-op if HID0[NOPTI]=1
 	
-	MPU_ENTRY *mpu_entry = mpu.Lookup(addr, /* exec */ false, /* write */ false); // icbt is treated as a load for the purpose of access protection
+	MPU_ENTRY *mpu_entry = mpu.Lookup</* exec */ false, /* write */ false>(addr); // icbt is treated as a load for the purpose of access protection
 	
 	if(!mpu_entry)
 	{

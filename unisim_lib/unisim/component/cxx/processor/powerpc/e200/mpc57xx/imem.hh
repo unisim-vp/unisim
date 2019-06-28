@@ -59,7 +59,7 @@ struct IMEM
 	
 	static const char *GetLocalMemoryName() { return "IMEM"; }
 	
-	inline PHYSICAL_ADDRESS GetBaseAddress() const ALWAYS_INLINE { return cur_base_addr; }
+	inline PHYSICAL_ADDRESS GetBasePhysicalAddress() const ALWAYS_INLINE { return cur_base_addr; }
 	
 	inline unsigned int GetSize() const ALWAYS_INLINE { return size; }
 

@@ -78,7 +78,7 @@ bool CPU::Dcbi(ADDRESS addr)
 
 	if(!l1d.IsEnabled()) return true; // dcbi is treated as a no-op in supervisor mode if the data cache is disabled
 	
-	MPU_ENTRY *mpu_entry = mpu.Lookup(addr, /* exec */ false, /* write */ true); // dcbi is treated as a store for the purpose of access protection
+	MPU_ENTRY *mpu_entry = mpu.Lookup</* exec */ false, /* write */ true>(addr); // dcbi is treated as a store for the purpose of access protection
 	
 	if(!mpu_entry)
 	{
@@ -86,7 +86,7 @@ bool CPU::Dcbi(ADDRESS addr)
 		return false;
 	}
 	
-	InvalidateLineByAddress<L1D>(addr);
+	InvalidateLineByAddress<L1D>(addr, addr);
 	return true;
 }
 
@@ -94,7 +94,7 @@ bool CPU::Dcbf(ADDRESS addr)
 {
 	if(!l1d.IsEnabled()) return true; // dcbf is treated as a no-op if the data cache is disabled
 	
-	MPU_ENTRY *mpu_entry = mpu.Lookup(addr, /* exec */ false, /* write */ false); // dcbf is treated as a load for the purpose of access protection
+	MPU_ENTRY *mpu_entry = mpu.Lookup</* exec */ false, /* write */ false>(addr); // dcbf is treated as a load for the purpose of access protection
 	
 	if(!mpu_entry)
 	{
@@ -102,14 +102,14 @@ bool CPU::Dcbf(ADDRESS addr)
 		return false;
 	}
 	
-	return GlobalWriteBackLineByAddress<DATA_CACHE_HIERARCHY, L1D, L1D, /* invalidate */ true>(addr);
+	return GlobalWriteBackLineByAddress<DATA_CACHE_HIERARCHY, L1D, L1D, /* invalidate */ true>(addr, addr);
 }
 
 bool CPU::Dcbst(ADDRESS addr)
 {
 	if(!l1d.IsEnabled()) return true; // dcbst is treated as a no-op if the data cache is disabled
 	
-	MPU_ENTRY *mpu_entry = mpu.Lookup(addr, /* exec */ false, /* write */ false); // dcbst is treated as a load for the purpose of access protection
+	MPU_ENTRY *mpu_entry = mpu.Lookup</* exec */ false, /* write */ false>(addr); // dcbst is treated as a load for the purpose of access protection
 	
 	if(!mpu_entry)
 	{
@@ -117,7 +117,7 @@ bool CPU::Dcbst(ADDRESS addr)
 		return false;
 	}
 
-	return GlobalWriteBackLineByAddress<DATA_CACHE_HIERARCHY, L1D, L1D, /* invalidate */ false>(addr); // line is not invalidated
+	return GlobalWriteBackLineByAddress<DATA_CACHE_HIERARCHY, L1D, L1D, /* invalidate */ false>(addr, addr); // line is not invalidated
 }
 
 bool CPU::Dcbt(ADDRESS addr)
@@ -151,7 +151,7 @@ bool CPU::Icbi(ADDRESS addr)
 		return false;
 	}
 	
-	MPU_ENTRY *mpu_entry = mpu.Lookup(addr, /* exec */ false, /* write */ false); // icbi is treated as a load for the purpose of access protection
+	MPU_ENTRY *mpu_entry = mpu.Lookup</* exec */ false, /* write */ false>(addr); // icbi is treated as a load for the purpose of access protection
 	
 	if(!mpu_entry)
 	{
@@ -159,7 +159,7 @@ bool CPU::Icbi(ADDRESS addr)
 		return false;
 	}
 
-	InvalidateLineByAddress<L1I>(addr);
+	InvalidateLineByAddress<L1I>(addr, addr);
 	return true;
 }
 
@@ -167,7 +167,7 @@ bool CPU::Icbt(ADDRESS addr)
 {
 	if(hid0.Get<HID0::NOPTI>()) return true; // icbt is treated as a no-op if HID0[NOPTI]=1
 	
-	MPU_ENTRY *mpu_entry = mpu.Lookup(addr, /* exec */ false, /* write */ false); // icbt is treated as a load for the purpose of access protection
+	MPU_ENTRY *mpu_entry = mpu.Lookup</* exec */ false, /* write */ false>(addr); // icbt is treated as a load for the purpose of access protection
 	
 	if(!mpu_entry)
 	{

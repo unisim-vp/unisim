@@ -741,6 +741,97 @@ void CPU<TYPES, CONFIG>::SetVectorOffset(ADDRESS value)
 }
 
 template <typename TYPES, typename CONFIG>
+template <bool DEBUG, bool EXEC, bool WRITE>
+inline bool CPU<TYPES, CONFIG>::ControlAccess(ADDRESS addr, ADDRESS& size_to_protection_boundary, STORAGE_ATTR& storage_attr)
+{
+	return static_cast<typename CONFIG::CPU *>(this)->template ControlAccess<DEBUG, EXEC, WRITE>(addr, size_to_protection_boundary, storage_attr);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DataLoad(ADDRESS ea, void *buffer, unsigned int size)
+{
+	do
+	{
+		ADDRESS size_to_protection_boundary;
+		STORAGE_ATTR storage_attr;
+		if(unlikely((!ControlAccess</* debug */ false, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, storage_attr)))) return false;
+		
+		unsigned int sz = std::min(size, size_to_protection_boundary);
+
+		if(unlikely(!this->SuperMSS::DataLoad(ea, ea, buffer, sz, storage_attr))) return false;
+	
+		ea += sz;
+		size -= sz;
+	}
+	while(unlikely(size));
+	
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DataStore(ADDRESS ea, const void *buffer, unsigned int size)
+{
+	do
+	{
+		ADDRESS size_to_protection_boundary;
+		STORAGE_ATTR storage_attr;
+		if(unlikely((!ControlAccess</* debug */ false, /* exec */ false, /* write */ true>(ea, size_to_protection_boundary, storage_attr)))) return false;
+		
+		unsigned int sz = std::min(size, size_to_protection_boundary);
+
+		if(unlikely(!this->SuperMSS::DataStore(ea, ea, buffer, sz, storage_attr))) return false;
+	
+		ea += sz;
+		size -= sz;
+	}
+	while(unlikely(size));
+	
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DebugDataLoad(ADDRESS ea, void *buffer, unsigned int size)
+{
+	do
+	{
+		ADDRESS size_to_protection_boundary;
+		STORAGE_ATTR storage_attr;
+		if(unlikely((!ControlAccess</* debug */ true, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, storage_attr)))) return false;
+		
+		unsigned int sz = std::min(size, size_to_protection_boundary);
+
+		if(unlikely(!this->SuperMSS::DebugDataLoad(ea, ea, buffer, sz, storage_attr))) return false;
+	
+		ea += sz;
+		size -= sz;
+	}
+	while(unlikely(size));
+	
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DebugDataStore(ADDRESS ea, const void *buffer, unsigned int size)
+{
+	do
+	{
+		ADDRESS size_to_protection_boundary;
+		STORAGE_ATTR storage_attr;
+		if(unlikely((!ControlAccess</* debug */ true, /* exec */ false, /* write */ true>(ea, size_to_protection_boundary, storage_attr)))) return false;
+		
+		unsigned int sz = std::min(size, size_to_protection_boundary);
+
+		if(unlikely(!this->SuperMSS::DebugDataStore(ea, ea, buffer, sz, storage_attr))) return false;
+	
+		ea += sz;
+		size -= sz;
+	}
+	while(unlikely(size));
+	
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
 template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN>
 inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, ADDRESS ea)
 {
@@ -750,17 +841,17 @@ inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, ADDRESS ea)
 	if(likely(size_to_fsb_boundary >= sizeof(T)))
 	{
 		// Memory load does not cross a FSB boundary
-		if(unlikely(!this->SuperMSS::DataLoad(ea, &value, sizeof(T)))) return false;
+		if(unlikely(!DataLoad(ea, &value, sizeof(T)))) return false;
 	}
 	else
 	{
 		// Memory load crosses a FSB boundary
 
-		if(unlikely(!this->SuperMSS::DataLoad(ea, &value, size_to_fsb_boundary))) return false;
+		if(unlikely(!DataLoad(ea, &value, size_to_fsb_boundary))) return false;
 		
 		ADDRESS ea2 = ea + size_to_fsb_boundary;
 		
-		if(unlikely(!this->SuperMSS::DataLoad(ea2, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary))) return false;
+		if(unlikely(!DataLoad(ea2, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary))) return false;
 	}
 
 #if BYTE_ORDER == LITTLE_ENDIAN
@@ -794,17 +885,17 @@ inline bool CPU<TYPES, CONFIG>::DataStore(T value, ADDRESS ea)
 	if(likely(size_to_fsb_boundary >= sizeof(T)))
 	{
 		// Memory store does not cross a FSB boundary
-		if(unlikely(!this->SuperMSS::DataStore(ea, &value, sizeof(T)))) return false;
+		if(unlikely(!DataStore(ea, &value, sizeof(T)))) return false;
 	}
 	else
 	{
 		// Memory store crosses a FSB boundary
 
-		if(unlikely(!this->SuperMSS::DataStore(ea, &value, size_to_fsb_boundary))) return false;
+		if(unlikely(!DataStore(ea, &value, size_to_fsb_boundary))) return false;
 		
 		ADDRESS ea2 = ea + size_to_fsb_boundary;
 		
-		if(unlikely(!this->SuperMSS::DataStore(ea2, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary))) return false;
+		if(unlikely(!DataStore(ea2, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary))) return false;
 	}
 	
 	return true;
@@ -1243,6 +1334,48 @@ void CPU<TYPES, CONFIG>::FlushInstructionBuffer()
 }
 
 template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::InstructionFetch(ADDRESS ea, void *buffer, unsigned int size)
+{
+	do
+	{
+		ADDRESS size_to_protection_boundary;
+		STORAGE_ATTR storage_attr;
+		if(unlikely((!ControlAccess</* debug */ false, /* exec */ true, /* write */ false>(ea, size_to_protection_boundary, storage_attr)))) return false;
+		
+		unsigned int sz = std::min(size, size_to_protection_boundary);
+
+		if(unlikely(!this->SuperMSS::InstructionFetch(ea, ea, buffer, sz, storage_attr))) return false;
+	
+		ea += sz;
+		size -= sz;
+	}
+	while(unlikely(size));
+	
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DebugInstructionFetch(ADDRESS ea, void *buffer, unsigned int size)
+{
+	do
+	{
+		ADDRESS size_to_protection_boundary;
+		STORAGE_ATTR storage_attr;
+		if(unlikely((!ControlAccess</* debug */ true, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, storage_attr)))) return false;
+		
+		unsigned int sz = std::min(size, size_to_protection_boundary);
+
+		if(unlikely(!this->SuperMSS::DebugInstructionFetch(ea, ea, buffer, sz, storage_attr))) return false;
+	
+		ea += sz;
+		size -= sz;
+	}
+	while(unlikely(size));
+	
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::InstructionFetch(ADDRESS addr, typename CONFIG::VLE_CODE_TYPE& insn)
 {
 	ADDRESS base_addr = addr & ~(CONFIG::INSTRUCTION_BUFFER_SIZE - 1);
@@ -1250,7 +1383,7 @@ bool CPU<TYPES, CONFIG>::InstructionFetch(ADDRESS addr, typename CONFIG::VLE_COD
 	
 	if(base_addr != instruction_buffer_base_addr)
 	{
-		if(!this->SuperMSS::InstructionFetch(base_addr, instruction_buffer, CONFIG::INSTRUCTION_BUFFER_SIZE)) return false;
+		if(!InstructionFetch(base_addr, instruction_buffer, CONFIG::INSTRUCTION_BUFFER_SIZE)) return false;
 		
 		instruction_buffer_base_addr = base_addr;
 	}
@@ -1273,7 +1406,7 @@ bool CPU<TYPES, CONFIG>::InstructionFetch(ADDRESS addr, typename CONFIG::VLE_COD
 	{
 		base_addr += CONFIG::INSTRUCTION_BUFFER_SIZE;
 
-		if(!this->SuperMSS::InstructionFetch(base_addr, instruction_buffer, CONFIG::INSTRUCTION_BUFFER_SIZE)) return false;
+		if(!InstructionFetch(base_addr, instruction_buffer, CONFIG::INSTRUCTION_BUFFER_SIZE)) return false;
 
 		instruction_buffer_base_addr = base_addr;
 		instruction_buffer_index = -1;

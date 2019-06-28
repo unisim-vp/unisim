@@ -122,6 +122,8 @@ struct CONFIG
 		typedef unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z710n3::CPU CPU;
 		static const unsigned int SIZE                                      = 16384;
 		static const unisim::util::cache::CacheWritingPolicy WRITING_POLICY = unisim::util::cache::CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
+		static const unisim::util::cache::CacheIndexScheme INDEX_SCHEME     = unisim::util::cache::CACHE_PHYSICALLY_INDEXED;
+		static const unisim::util::cache::CacheTagScheme TAG_SCHEME         = unisim::util::cache::CACHE_PHYSICALLY_TAGGED;
 		static const unisim::util::cache::CacheType TYPE                    = unisim::util::cache::INSTRUCTION_CACHE;
 		static const unsigned int ASSOCIATIVITY                             = 2;
 		static const unsigned int BLOCK_SIZE                                = 32;
@@ -146,6 +148,8 @@ struct CONFIG
 		typedef unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z710n3::CPU CPU;
 		static const unsigned int SIZE                                      = 4096;
 		static const unisim::util::cache::CacheWritingPolicy WRITING_POLICY = unisim::util::cache::CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
+		static const unisim::util::cache::CacheIndexScheme INDEX_SCHEME     = unisim::util::cache::CACHE_PHYSICALLY_INDEXED;
+		static const unisim::util::cache::CacheTagScheme TAG_SCHEME         = unisim::util::cache::CACHE_PHYSICALLY_TAGGED;
 		static const unisim::util::cache::CacheType TYPE                    = unisim::util::cache::DATA_CACHE;
 		static const unsigned int ASSOCIATIVITY                             = 2;
 		static const unsigned int BLOCK_SIZE                                = 32;
@@ -213,6 +217,11 @@ public:
 	bool Mpuwe();
 	bool Mpusync();
 
+	template <bool DEBUG, bool EXEC, bool WRITE> inline bool ControlAccess(ADDRESS addr, ADDRESS& size_to_protection_boundary, STORAGE_ATTR& storage_attr)
+	{
+		return mpu.template ControlAccess<DEBUG, EXEC, WRITE>(addr, size_to_protection_boundary, storage_attr);
+	}
+	
 	////////////////////// Special Purpose Registers //////////////////////////
 	
 	// L1 Cache Configuration Register 0
