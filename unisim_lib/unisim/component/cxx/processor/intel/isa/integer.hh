@@ -1923,7 +1923,8 @@ template <class ARCH> struct DC<ARCH,INCDEC> { Operation<ARCH>* get( InputCode<A
   if (auto _ = match( ic, opcode( "\x40" ) + Reg() ))
 
     {
-      if      (ic.opsize() == 16) return new Inc<ARCH,GOw>( _.opbase(), make_rop<ARCH>( _.ereg() ) );
+      if      (ic.mode64())       return 0;
+      else if (ic.opsize() == 16) return new Inc<ARCH,GOw>( _.opbase(), make_rop<ARCH>( _.ereg() ) );
       else if (ic.opsize() == 32) return new Inc<ARCH,GOd>( _.opbase(), make_rop<ARCH>( _.ereg() ) );
       return 0;
     }
@@ -1947,6 +1948,7 @@ template <class ARCH> struct DC<ARCH,INCDEC> { Operation<ARCH>* get( InputCode<A
   if (auto _ = match( ic, opcode( "\x48" ) + Reg() ))
 
     {
+      if      (ic.mode64())       return 0;
       if      (ic.opsize() == 16) return new Dec<ARCH,GOw>( _.opbase(), make_rop<ARCH>( _.ereg() ) );
       else if (ic.opsize() == 32) return new Dec<ARCH,GOd>( _.opbase(), make_rop<ARCH>( _.ereg() ) );
       return 0;

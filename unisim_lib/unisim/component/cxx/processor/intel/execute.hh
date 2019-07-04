@@ -260,12 +260,17 @@ namespace intel {
     typedef typename ARCH::u8_t u8_t;
     intptr_t const bitsize = atpinfo<ARCH,INT>::bitsize;
     INT const msb = INT( 1 ) << (bitsize-1);
-    u8_t lsh = (arg2 & shift_counter<ARCH,INT>::mask()) % u8_t( bitsize + 1 ), rsh = u8_t( bitsize + 1 ) - lsh;
-    
-    INT res = (arg1 << lsh) | (INT(arch.flagread( ARCH::FLAG::CF )) << (lsh - u8_t(1))) | (arg1 >> rsh);
+    u8_t lsh = (arg2 & shift_counter<ARCH,INT>::mask()) % u8_t( bitsize + 1 ), rsh = u8_t( bitsize ) - lsh;
 
+    INT res;
     if (arch.Cond(lsh != u8_t(0)))
-      arch.flagwrite( ARCH::FLAG::CF, bit_t( (arg1 >> (rsh - u8_t(1))) & INT(1) ) );
+      {
+        res = (arg1 << lsh) | (INT(arch.flagread( ARCH::FLAG::CF )) << lsh >> 1) | (arg1 >> 1 >> rsh);
+        arch.flagwrite( ARCH::FLAG::CF, bit_t( (arg1 >> rsh) & INT(1) ) );
+      }
+    else
+      res = arg1;
+
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
     
@@ -273,9 +278,6 @@ namespace intel {
       
     return res;
   }
-  
-  /* TODO: should implement large rotate through carry */
-  //  template <> u64_t eval_rcl( ARCH& arch, u64_t const& arg1, u8_t const& arg2 ) { throw 0; }
   
   template <class ARCH, typename INT>
   INT
@@ -287,10 +289,16 @@ namespace intel {
     INT const msb = INT( 1 ) << (bitsize-1);
     u8_t rsh = (arg2 & shift_counter<ARCH,INT>::mask()) % u8_t( bitsize + 1 ), lsh = u8_t( bitsize ) - rsh;
     
-    INT res = (arg1 >> rsh) | (INT(arch.flagread( ARCH::FLAG::CF )) << lsh) | (arg1 << (lsh + u8_t(1)));
-
+    INT res;
     if (arch.Cond(rsh != u8_t(0)))
-      arch.flagwrite( ARCH::FLAG::CF, bit_t( (arg1 >> (rsh - u8_t(1))) & INT(1) ) );
+      {
+        res = (arg1 >> rsh) | (INT(arch.flagread( ARCH::FLAG::CF )) << lsh) | (arg1 << 1 << lsh);
+        arch.flagwrite( ARCH::FLAG::CF, bit_t( (arg1 << lsh) & msb ) );
+      }
+    else
+      res = arg1;
+    
+
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
     arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
     

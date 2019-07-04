@@ -702,7 +702,7 @@ Operation<ARCH>* newMovfp( bool load, OpBase<ARCH> const& opbase, MOp<ARCH> cons
 template <class ARCH, class VR, unsigned OPSIZE>
 struct MovfpcVW : public Operation<ARCH>
 {
-  MovfpcVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn, bool _hi ) : Operation<ARCH>(opbase), rm(_rm), gn(_gn), hi(_hi) {} RMOp<ARCH> rm; uint8_t gn; bool hi;
+  MovfpcVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _vn, uint8_t _gn, bool _hi ) : Operation<ARCH>(opbase), rm(_rm), vn(_vn), gn(_gn), hi(_hi) {} RMOp<ARCH> rm; uint8_t vn, gn; bool hi;
   void disasm( std::ostream& sink ) const
   {
     sink << (VR::vex() ? "v" : "") << (hi ? "movhp" : "movlp") << SizeID<OPSIZE>::fid() << ' ' << DisasmW( VR(), rm ) << ',' << DisasmV( VR(), gn );
@@ -710,8 +710,11 @@ struct MovfpcVW : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,OPSIZE>::f f_type;
-    for (unsigned idx = 0, end = VR::size()/OPSIZE/2; idx < end; ++idx)
-      arch.vmm_write( VR(), gn, idx + hi*end, arch.vmm_read( VR(), rm, idx + hi*end, f_type() ) );
+    for (unsigned idx = 0, end = VR::size()/2/OPSIZE, withrm = hi*end, withvn = end-withrm; idx < end; ++idx)
+      {
+        arch.vmm_write( VR(), gn, idx + withrm, arch.vmm_read( VR(), rm, idx, f_type() ) );
+        arch.vmm_write( VR(), gn, idx + withvn, arch.vmm_read( VR(), vn, idx, f_type() ) );
+      }
   }
 };
 
@@ -726,8 +729,8 @@ struct MovfpcWV : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<ARCH,OPSIZE>::f f_type;
-    for (unsigned idx = 0, end = VR::size()/OPSIZE; idx < end; ++idx)
-      arch.vmm_write( VR(), rm, idx + hi*end, arch.vmm_read( VR(), gn, idx + hi*end, f_type() ) );
+    for (unsigned idx = 0, end = VR::size()/2/OPSIZE, mux = hi*end; idx < end; ++idx)
+      arch.vmm_write( VR(), rm, idx, arch.vmm_read( VR(), gn, idx + mux, f_type() ) );
   }
 };
 
@@ -776,15 +779,16 @@ template <class ARCH> struct DC<ARCH,MOVFPC> { Operation<ARCH>* get( InputCode<A
 template <unsigned OPSIZE>
 Operation<ARCH>* newMovFPC( InputCode<ARCH> const& ic, bool load, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned gn, unsigned lohi )
 {
-  if (not ic.vex())     return newMovFPC<SSE,OPSIZE>( load, opbase, rm, gn, lohi );
-  if (ic.vreg()) return 0;
-  if (ic.vlen() == 128) return newMovFPC<XMM,OPSIZE>( load, opbase, rm, gn, lohi );
+  unsigned vn = 0;
+  if (not ic.vex())     return newMovFPC<SSE,OPSIZE>( load, opbase, rm, vn, gn, lohi );
+  if ((vn = ic.vreg()) and not load) return 0;
+  if (ic.vlen() == 128) return newMovFPC<XMM,OPSIZE>( load, opbase, rm, vn, gn, lohi );
   return 0;
 }
 template <class VR, unsigned OPSIZE>
-Operation<ARCH>* newMovFPC( bool load, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned gn, unsigned lohi )
+Operation<ARCH>* newMovFPC( bool load, OpBase<ARCH> const& opbase, MOp<ARCH> const* rm, unsigned vn, unsigned gn, unsigned lohi )
 {
-  if (load) return new MovfpcVW<ARCH,VR,OPSIZE>( opbase, rm, gn, lohi );
+  if (load) return new MovfpcVW<ARCH,VR,OPSIZE>( opbase, rm, vn, gn, lohi );
   else      return new MovfpcWV<ARCH,VR,OPSIZE>( opbase, rm, gn, lohi );
 }
 };
@@ -939,15 +943,17 @@ Operation<ARCH>* newMovs( InputCode<ARCH> const& ic, bool store, OpBase<ARCH> co
   if (is_mem ? store : not ic.vex())
     {
       // Store
-      if (not ic.vex()) return new StoreFPS<ARCH,SSE,OPSIZE>( opbase, rm, gn );
-      else              return new StoreFPS<ARCH,XMM,OPSIZE>( opbase, rm, gn );
+      if      (not ic.vex())  return new StoreFPS<ARCH,SSE,OPSIZE>( opbase, rm, gn );
+      else if (not ic.vreg()) return new StoreFPS<ARCH,XMM,OPSIZE>( opbase, rm, gn );
+      else                    return 0;
     }
 
   if (is_mem)
     {
       // Load
-      if (not ic.vex()) return new LoadFPS<ARCH,SSE,OPSIZE>( opbase, rm, gn );
-      else              return new LoadFPS<ARCH,XMM,OPSIZE>( opbase, rm, gn );
+      if      (not ic.vex())  return new LoadFPS<ARCH,SSE,OPSIZE>( opbase, rm, gn );
+      else if (not ic.vreg()) return new LoadFPS<ARCH,XMM,OPSIZE>( opbase, rm, gn );
+      else                    return 0;
     }
 
   // Merger (AVX only)

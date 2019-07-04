@@ -154,10 +154,11 @@ namespace intel {
             case 0xf2: rep = 2; break;
             case 0xf3: rep = 3; break;
               // Group2 (segments)
-            case /*046*/ 0x26: segment = ES; break;
-            case /*056*/ 0x2e: segment = CS; break;
-            case /*066*/ 0x36: segment = SS; break;
-            case /*076*/ 0x3e: segment = DS; break;
+              // In 64-bit the CS, SS, DS and ES segment overrides are ignored.
+            case /*046*/ 0x26: if (not mode64()) segment = ES; break;
+            case /*056*/ 0x2e: if (not mode64()) segment = CS; break;
+            case /*066*/ 0x36: if (not mode64()) segment = SS; break;
+            case /*076*/ 0x3e: if (not mode64()) segment = DS; break;
             case /*144*/ 0x64: segment = FS; break;
             case /*145*/ 0x65: segment = GS; break;
               // Group3 (alternative operand size)

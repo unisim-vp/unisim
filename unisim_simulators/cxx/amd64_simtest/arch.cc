@@ -585,6 +585,7 @@ namespace ut
       uint8_t const* ptr = &i.rex;
       text.write(ptr,4);
     }
+    offset = 0;
     
     /* Store EFLAGS register */
     {
@@ -601,7 +602,6 @@ namespace ut
     }
     offset += 8;
     
-    offset = 0;
     /* Store GP registers */
     for (unsigned reg = 0; reg < gregs.count(); ++reg)
       {

@@ -783,9 +783,9 @@ struct Cmovcc : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "cmov" << DisasmCond( cc ) << ' ' << DisasmE( OP(), rm ) << ',' << DisasmG( OP(), gn ); }
   void execute( ARCH& arch ) const
   {
-    if (arch.Cond( eval_cond( arch, cc ) )) {
-      arch.regwrite( OP(), gn, arch.rmread( OP(), rm ) );
-    }
+    typedef typename TypeFor<ARCH,OP::SIZE>::u valtype;
+    valtype res = (arch.Cond( eval_cond( arch, cc ) )) ? arch.rmread( OP(), rm ) : arch.regread( OP(), gn );
+    arch.regwrite( OP(), gn, res );
   }
 };
 
@@ -1064,7 +1064,7 @@ struct Movnti : public Operation<ARCH>
 {
   Movnti( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} RMOp<ARCH> rm; uint8_t gn;
   void disasm( std::ostream& sink ) const override { sink << "movnti " << DisasmG( OP(), gn ) << ',' << DisasmM( rm ); }
-  void execute( ARCH& arch ) const override { arch.regwrite( OP(), gn, arch.rmread( OP(), rm ) ); }
+  void execute( ARCH& arch ) const override { arch.rmwrite( OP(), rm, arch.regread( OP(), gn ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,MOVNTI> { Operation<ARCH>* get( InputCode<ARCH> const& ic )

@@ -127,7 +127,8 @@ struct Checker
   ut::AMD64 isa;
   std::set<MemCode> done;
   TestDB testdb;
-
+  std::map<std::string,uintptr_t> stats;
+  
   bool insert( Operation const& op, MemCode const& code, std::string const& disasm )
   {
     if (done.count(code))
@@ -160,7 +161,10 @@ struct Checker
         std::unique_ptr<Operation> codeop = std::unique_ptr<Operation>( isa.decode( 0x4000, trial, disasm ) );
         found = insert( *codeop, trial, disasm );
       }
-    catch (ut::Untestable const& denial) {}
+    catch (ut::Untestable const& denial)
+      {
+        stats[denial.reason] += 1;
+      }
     catch (unisim::component::cxx::processor::intel::CodeBase::PrefixError const& denial) {}
     
     done.insert( trial );
@@ -234,6 +238,15 @@ struct Checker
       }
 
     std::cerr << '\n';
+
+    {
+      std::ofstream sink( "stats.csv" );
+      for (auto kv: stats)
+        {
+          sink << kv.first << ',' << kv.second << '\n';
+        }
+      sink.close();
+    }
   }
   
   void
@@ -348,9 +361,10 @@ struct Checker
 
         return value;
       }
+      static void fixflags( uint64_t& flags ) { flags = (flags & 0xcff) | 2; }
       void patch(std::vector<uint64_t>& ws, uint64_t reloc) const
       {
-        ws[0] = (ws[0] & 0xcff) | 2;
+        fixflags(ws[0]);
         if (relval.good())
           ws[relreg+1] = reloc;
       }
@@ -358,8 +372,10 @@ struct Checker
       {
         testbed.load(&ws[0], workquads);
       }
-      void check(Testbed const& tb, std::vector<uint64_t> const& ref, std::vector<uint64_t> const& sim) const
+      void check(Testbed const& tb, std::vector<uint64_t>& ref, std::vector<uint64_t>& sim) const
       {
+        fixflags(ref[workquads]);
+        fixflags(sim[workquads]);
         for (unsigned idx = 0, end = workquads*2; idx < end; ++idx)
           {
             if (ref[idx] != sim[idx])
@@ -471,7 +487,7 @@ main( int argc, char** argv )
     }
   
   uintptr_t ttl = 10000;
-  if (char const* ttl_cfg = getenv("TTL_CFG")) { ttl = strtoull(ttl_cfg,0,0); }
+  if (char const* ttl_cfg = getenv("TTL_CFG")) { ttl = strtoull(ttl_cfg,0,0); std::cerr << "using TTL of: " << ttl << std::endl; }
   
   Checker checker;
   
@@ -479,7 +495,7 @@ main( int argc, char** argv )
 
   if (getenv("INSN_SCAN"))
     {
-      checker.discover( ttl, 16384 );
+      checker.discover( ttl, 100000 );
       
       checker.write_repos( reposname );
     }
