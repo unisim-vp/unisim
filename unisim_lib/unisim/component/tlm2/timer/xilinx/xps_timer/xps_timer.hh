@@ -58,6 +58,7 @@ using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::tlm2::Schedule;
 using unisim::component::tlm2::interrupt::InterruptPayload;
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
+using namespace sc_core;
 
 typedef unisim::kernel::tlm2::SimplePayload<bool> GenerateOutPayload;
 typedef unisim::kernel::tlm2::SimplePayload<bool> CaptureTriggerPayload;

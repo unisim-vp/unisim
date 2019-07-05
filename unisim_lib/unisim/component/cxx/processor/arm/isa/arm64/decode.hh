@@ -90,6 +90,7 @@ struct DecodeBitMasks
     wmask = welem;
     tmask = telem;
   }
+  void reject();
 };
 
 

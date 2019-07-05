@@ -85,15 +85,15 @@ template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::o
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator long long () const { return (long long)(*storage); }
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator unsigned long long () const { return (unsigned long long)(*storage); }
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator double () const { return (double)(unsigned int)(*storage); }
-template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator string () const
+template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator std::string () const
 {
 	switch(*storage)
 	{
-		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL: return string("normal");
-		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL: return string("sequential");
-		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST: return string("fast");
+		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL: return std::string("normal");
+		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL: return std::string("sequential");
+		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST: return std::string("fast");
 	}
-	return string("?");
+	return std::string("?");
 }
 
 template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (unsigned long long value)
@@ -177,8 +177,6 @@ using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
-using std::endl;
-using std::string;
 
 CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
 	Object(name, parent, "this service implements an SRAM/Cache power estimator (dynamic energy and leakage power)"),

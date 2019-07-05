@@ -62,6 +62,8 @@ using unisim::kernel::logger::Logger;
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
 using unisim::component::tlm2::interrupt::InterruptPayload;
 
+using namespace sc_core;
+
 template <class CONFIG, bool DEBUG = false>
 class CPU
 	: public sc_module

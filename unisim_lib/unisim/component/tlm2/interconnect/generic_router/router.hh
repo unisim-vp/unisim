@@ -126,7 +126,7 @@ public:
 	typedef typename CONFIG::MAPPING MAPPING;
 	static const unsigned int INPUT_SOCKETS = CONFIG::INPUT_SOCKETS;
 	static const unsigned int OUTPUT_SOCKETS = CONFIG::OUTPUT_SOCKETS;
-	static const unsigned int NUM_MAPPINGS = CONFIG::NUM_MAPPINGS; 
+	static const unsigned int NUM_MAPPINGS = CONFIG::NUM_MAPPINGS;
 	static const unsigned int INPUT_BUSWIDTH = CONFIG::INPUT_BUSWIDTH;
 	static const unsigned int OUTPUT_BUSWIDTH = CONFIG::OUTPUT_BUSWIDTH;
 	static const bool VERBOSE = CONFIG::VERBOSE;

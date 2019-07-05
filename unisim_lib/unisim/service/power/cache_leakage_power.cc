@@ -141,7 +141,7 @@ Variable<unisim::service::power::CacheLeakagePower>::operator double () const
 }
 
 template <>
-Variable<unisim::service::power::CacheLeakagePower>::operator string () const
+Variable<unisim::service::power::CacheLeakagePower>::operator std::string () const
 {
 	std::stringstream data;
 	data << storage->GetLeakagePower();

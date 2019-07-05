@@ -46,6 +46,8 @@
 #include <stack>
 #include <vector>
 
+using namespace sc_core;
+
 namespace unisim {
 namespace component {
 namespace tlm2 {
@@ -65,7 +67,7 @@ using unisim::component::tlm2::interrupt::InterruptPayload;
 
 template <class CONFIG>
 class CPU
-	: public sc_module
+	: public sc_core::sc_module
 	, public unisim::component::cxx::processor::powerpc::mpc7447a::CPU<CONFIG>
 	, public tlm::tlm_bw_transport_if<>
 {
@@ -83,7 +85,7 @@ public:
 	irq_slave_socket mcp_slave_sock;                // MCP signal
 	irq_slave_socket smi_slave_sock;                // SMI signal
 	
-	CPU(const sc_module_name& name, Object *parent = 0);
+	CPU(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~CPU();
 	
 	virtual bool EndSetup();
@@ -104,7 +106,7 @@ public:
 	void Run();
 	
 protected:
-	sc_time GetBurstLatency(uint32_t size, const sc_time& latency) const;
+	sc_time GetBurstLatency(uint32_t size, sc_time const& latency) const;
 	virtual bool BusRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg = CONFIG::WIMG_DEFAULT, bool rwitm = false);
 	virtual bool BusWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg = CONFIG::WIMG_DEFAULT);
 	virtual bool BusZeroBlock(typename CONFIG::physical_address_t physical_addr);

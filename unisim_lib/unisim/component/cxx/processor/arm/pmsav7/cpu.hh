@@ -165,7 +165,7 @@ struct CPU
   /* Memory access methods       START                          */
   /**************************************************************/
 	
-  virtual bool PhysicalWriteMemory( uint32_t addr, uint8_t const* buffer, uint32_t size, uintr32_t attrs ) = 0;
+  virtual bool PhysicalWriteMemory( uint32_t addr, uint8_t const* buffer, uint32_t size, uint32_t attrs ) = 0;
   virtual bool PhysicalReadMemory( uint32_t addr, uint8_t* buffer, uint32_t size, uint32_t attrs ) = 0;
   
   uint32_t MemURead32( uint32_t address ) { return PerformUReadAccess( address, 4 ); }

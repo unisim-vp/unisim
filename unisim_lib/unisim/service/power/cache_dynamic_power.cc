@@ -118,7 +118,7 @@ Variable<unisim::service::power::CacheDynamicPower>::operator double () const
 }
 
 template <>
-Variable<unisim::service::power::CacheDynamicPower>::operator string () const
+Variable<unisim::service::power::CacheDynamicPower>::operator std::string () const
 {
 	std::stringstream data;
 	data << storage->GetDynamicPower();
