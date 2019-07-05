@@ -53,7 +53,7 @@ struct Logger;
 
 enum mode_t { NO_MODE = 0, INFO_MODE, WARNING_MODE, ERROR_MODE };
 
-typedef void (LoggerServer::*LoggerServerOutputMethodPtr)(std::string, const char *);
+typedef void (LoggerServer::*LoggerServerOutputMethodPtr)(const char *, const char *);
 
 class LoggerStreamBuffer : public std::streambuf
 {
@@ -135,7 +135,7 @@ struct Logger
 	LoggerStream& DebugWarningStream() { return warning_stream; }
 	LoggerStream& DebugErrorStream() { return error_stream; }
 	
-	const std::string& GetName() const { return name; }
+	const char *GetName() const { return name.c_str(); }
 private:
 	friend class LoggerStreamBuffer;
 	friend class unisim::kernel::service::Simulator;

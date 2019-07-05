@@ -16,8 +16,8 @@ AC_DEFUN([UNISIM_CHECK_LIBEDIT], [
     AC_CHECK_HEADER(editline/readline.h, broken_libedit=no, broken_libedit=yes)
 
     # Check for functions readline and add_history in libedit
-    UNISIM_CHECK_LIB(edit, readline, $1,
-    UNISIM_CHECK_LIB(edit, add_history, $1, broken_libedit=no,
+    UNISIM_CHECK_LIB(edit, readline,
+    UNISIM_CHECK_LIB(edit, add_history, broken_libedit=no,
     broken_libedit=yes),
     broken_libedit=yes)
 	

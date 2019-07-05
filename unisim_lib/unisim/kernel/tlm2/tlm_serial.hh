@@ -1525,7 +1525,7 @@ void tlm_output_bitstream::write(const T& v, bool& parity_bit, unsigned int leng
 // tlm_simple_serial_bus
 
 inline tlm_simple_serial_bus::tlm_simple_serial_bus(const sc_core::sc_module_name& name, sc_core::sc_signal<bool>& _observable_signal, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::service::Object(name, parent, "Serial bus")
 	, sc_core::sc_module(name)
 	, serial_socket("serial_socket")
 	, bitstream()

@@ -121,6 +121,8 @@ struct CONFIG
 		typedef unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z425bn3::CPU CPU;
 		static const unsigned int SIZE                                      = 8192;
 		static const unisim::util::cache::CacheWritingPolicy WRITING_POLICY = unisim::util::cache::CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
+		static const unisim::util::cache::CacheIndexScheme INDEX_SCHEME     = unisim::util::cache::CACHE_PHYSICALLY_INDEXED;
+		static const unisim::util::cache::CacheTagScheme TAG_SCHEME         = unisim::util::cache::CACHE_PHYSICALLY_TAGGED;
 		static const unisim::util::cache::CacheType TYPE                    = unisim::util::cache::INSTRUCTION_CACHE;
 		static const unsigned int ASSOCIATIVITY                             = 2;
 		static const unsigned int BLOCK_SIZE                                = 32;
@@ -161,13 +163,11 @@ public:
 	typedef unisim::component::cxx::processor::powerpc::e200::mpc57xx::DMEM<TYPES, CONFIG::DMEM_CONFIG> DMEM;
 	typedef unisim::component::cxx::processor::powerpc::e200::mpc57xx::L1I<TYPES, CONFIG::L1I_CONFIG> L1I;
 	
-	typedef MPU ACCESS_CONTROLLER;
 	typedef unisim::util::cache::LocalMemorySet<TYPES, DMEM> DATA_LOCAL_MEMORIES;
 	typedef unisim::util::cache::LocalMemorySet<TYPES, IMEM> INSTRUCTION_LOCAL_MEMORIES;
 	typedef unisim::util::cache::CacheHierarchy<TYPES> DATA_CACHE_HIERARCHY;
 	typedef unisim::util::cache::CacheHierarchy<TYPES, L1I> INSTRUCTION_CACHE_HIERARCHY;
 	
-	inline MPU *GetAccessController() ALWAYS_INLINE { return &mpu; }
 	inline IMEM *GetLocalMemory(const IMEM *) ALWAYS_INLINE { return &imem; }
 	inline DMEM *GetLocalMemory(const DMEM *) ALWAYS_INLINE { return &dmem; }
 	inline L1I *GetCache(const L1I *) ALWAYS_INLINE { return &l1i; }
@@ -185,6 +185,11 @@ public:
 	bool Mpuwe();
 	bool Mpusync();
 
+	template <bool DEBUG, bool EXEC, bool WRITE> inline bool ControlAccess(ADDRESS addr, ADDRESS& size_to_protection_boundary, STORAGE_ATTR& storage_attr)
+	{
+		return mpu.template ControlAccess<DEBUG, EXEC, WRITE>(addr, size_to_protection_boundary, storage_attr);
+	}
+	
 	////////////////////// Special Purpose Registers //////////////////////////
 	
 	// L1 Cache Configuration Register 0

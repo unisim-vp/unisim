@@ -84,6 +84,7 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 		CPPFLAGS=${CPPFLAGS}" -DSC_INCLUDE_DYNAMIC_PROCESSES"
 		CXXFLAGS="${CXXFLAGS} ${SystemC_CFLAGS}"
 		LIBS="${LIBS} ${SystemC_LIBS}"
+		UNISIM_CHECK_LIB_MAIN="sc_main"
 	else
 		CPPFLAGS=${CPPFLAGS}" -DSC_INCLUDE_DYNAMIC_PROCESSES"
 		LDFLAGS="${LDFLAGS} -L$with_systemc/lib-${SYSTEMC_TARGET_ARCH}"
@@ -115,10 +116,11 @@ int main(int argc, char *argv[])
 		LIBS="${unisim_check_systemc_save_LIBS}"; AC_MSG_RESULT([yes]); [broken_systemc=no],
 		LIBS="${unisim_check_systemc_save_LIBS}"; AC_MSG_RESULT([no]); [broken_systemc=yes])
 
-		if test "$broken_systemc" == "yes"; then
+		if test "x$broken_systemc" = "xyes"; then
 			AC_MSG_ERROR([installed SystemC is broken. Please install the SystemC library (version > 2.3.0). Use --with-systemc=<path> to overload default search path.])
 		else
 			LIBS="-lsystemc ${LIBS}"
+			UNISIM_CHECK_LIB_MAIN="sc_main"
 		fi
 	fi
 ])

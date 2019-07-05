@@ -44,7 +44,7 @@ using unisim::kernel::logger::EndDebugError;
 
 using unisim::service::instrumenter::OUTPUT_INSTRUMENTATION;
 
-Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
+Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	: unisim::kernel::tlm2::Simulator(name, argc, argv, LoadBuiltInConfig)
 	, main_core_0(0)
 	, main_core_1(0)
@@ -198,6 +198,18 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, netstreamer16(0)
 	, http_server(0)
 	, instrumenter(0)
+	, char_io_tee0(0)
+	, char_io_tee1(0)
+	, char_io_tee2(0)
+	, char_io_tee14(0)
+	, char_io_tee15(0)
+	, char_io_tee16(0)
+	, web_terminal0(0)
+	, web_terminal1(0)
+	, web_terminal2(0)
+	, web_terminal14(0)
+	, web_terminal15(0)
+	, web_terminal16(0)
 	, enable_core0_reset(true)
 	, enable_core1_reset(true)
 	, enable_core2_reset(true)
@@ -206,7 +218,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, core2_reset_time(sc_core::SC_ZERO_TIME)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
-	, enable_profiler(false)
+	, enable_profiler0(false)
+	, enable_profiler1(false)
+	, enable_profiler2(false)
 	, enable_serial_terminal0(false)
 	, enable_serial_terminal1(false)
 	, enable_serial_terminal2(false)
@@ -246,7 +260,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, param_core2_reset_time("core2-reset-time", this, core2_reset_time, "When Core #2 receives reset signal")
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
-	, param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable/Disable profiling")
+	, param_enable_profiler0("enable-profiler0", 0, enable_profiler0, "Enable/Disable profiling of Core #0")
+	, param_enable_profiler1("enable-profiler1", 0, enable_profiler1, "Enable/Disable profiling of Core #1")
+	, param_enable_profiler2("enable-profiler2", 0, enable_profiler2, "Enable/Disable profiling of Core #2")
 	, param_enable_serial_terminal0("enable-serial-terminal0", 0, enable_serial_terminal0, "Enable/Disable serial terminal over LINFlexD_0 UART serial interface")
 	, param_enable_serial_terminal1("enable-serial-terminal1", 0, enable_serial_terminal1, "Enable/Disable serial terminal over LINFlexD_1 UART serial interface")
 	, param_enable_serial_terminal2("enable-serial-terminal2", 0, enable_serial_terminal2, "Enable/Disable serial terminal over LINFlexD_2 UART serial interface")
@@ -288,6 +304,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 #endif
 	, exit_status(0)
 {
+	SetDescription("MPC5777M Simulator");
+	
 	param_dspi_0_master.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_dspi_1_master.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_dspi_2_master.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -305,6 +323,46 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	param_dspi_6_slave.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_dspi_12_slave.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
+	param_enable_gdb_server.SetMutable(false);
+	param_enable_inline_debugger.SetMutable(false);
+	param_enable_profiler0.SetMutable(false);
+	param_enable_profiler1.SetMutable(false);
+	param_enable_profiler2.SetMutable(false);
+	param_enable_serial_terminal0.SetMutable(false);
+	param_enable_serial_terminal1.SetMutable(false);
+	param_enable_serial_terminal2.SetMutable(false);
+	param_enable_serial_terminal14.SetMutable(false);
+	param_enable_serial_terminal15.SetMutable(false);
+	param_enable_serial_terminal16.SetMutable(false);
+	param_dspi_0_is_slave.SetMutable(false);
+	param_dspi_1_is_slave.SetMutable(false);
+	param_dspi_2_is_slave.SetMutable(false);
+	param_dspi_3_is_slave.SetMutable(false);
+	param_dspi_4_is_slave.SetMutable(false);
+	param_dspi_5_is_slave.SetMutable(false);
+	param_dspi_6_is_slave.SetMutable(false);
+	param_dspi_12_is_slave.SetMutable(false);
+	param_dspi_0_master.SetMutable(false);
+	param_dspi_1_master.SetMutable(false);
+	param_dspi_2_master.SetMutable(false);
+	param_dspi_3_master.SetMutable(false);
+	param_dspi_4_master.SetMutable(false);
+	param_dspi_5_master.SetMutable(false);
+	param_dspi_6_master.SetMutable(false);
+	param_dspi_12_master.SetMutable(false);
+	param_dspi_0_slave.SetMutable(false);
+	param_dspi_1_slave.SetMutable(false);
+	param_dspi_2_slave.SetMutable(false);
+	param_dspi_3_slave.SetMutable(false);
+	param_dspi_4_slave.SetMutable(false);
+	param_dspi_5_slave.SetMutable(false);
+	param_dspi_6_slave.SetMutable(false);
+	param_dspi_12_slave.SetMutable(false);
+#if HAVE_TVS
+	param_bandwidth_vcd_filename.SetMutable(false);
+	param_bandwidth_gtkwave_init_script.SetMutable(false);
+#endif
+	
 	unsigned int channel_num;
 	unsigned int hw_irq_num;
 	unsigned int prc_num;
@@ -475,7 +533,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//  - Multiformat loader
 	loader = new LOADER("loader");
 	//  - debugger
-	debugger = (enable_inline_debugger || enable_gdb_server || enable_profiler) ? new DEBUGGER("debugger") : 0;
+	debugger = (enable_inline_debugger || enable_gdb_server || (enable_profiler0 || enable_profiler1 || enable_profiler2)) ? new DEBUGGER("debugger") : 0;
 	//  - GDB server
 	gdb_server[0] = enable_gdb_server ? new GDB_SERVER("gdb-server0") : 0;
 	gdb_server[1] = enable_gdb_server ? new GDB_SERVER("gdb-server1") : 0;
@@ -485,9 +543,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	inline_debugger[1] = enable_inline_debugger ? new INLINE_DEBUGGER("inline-debugger1") : 0;
 	inline_debugger[2] = enable_inline_debugger ? new INLINE_DEBUGGER("inline-debugger2") : 0;
 	//  - profiler
-	profiler[0] = enable_profiler ? new PROFILER("profiler0") : 0;
-	profiler[1] = enable_profiler ? new PROFILER("profiler1") : 0;
-	profiler[2] = enable_profiler ? new PROFILER("profiler2") : 0;
+	profiler[0] = enable_profiler0 ? new PROFILER("profiler0") : 0;
+	profiler[1] = enable_profiler1 ? new PROFILER("profiler1") : 0;
+	profiler[2] = enable_profiler2 ? new PROFILER("profiler2") : 0;
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
@@ -501,6 +559,20 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	netstreamer16 = enable_serial_terminal16 ? new NETSTREAMER("netstreamer16") : 0;
 	//  - Http Server
 	http_server = new HTTP_SERVER("http-server");
+	//  - Char I/O Tees
+	char_io_tee0 = new CHAR_IO_TEE("char-io-tee0");
+	char_io_tee1 = new CHAR_IO_TEE("char-io-tee1");
+	char_io_tee2 = new CHAR_IO_TEE("char-io-tee2");
+	char_io_tee14 = new CHAR_IO_TEE("char-io-tee14");
+	char_io_tee15 = new CHAR_IO_TEE("char-io-tee15");
+	char_io_tee16 = new CHAR_IO_TEE("char-io-tee16");
+	//  - Web Terminals
+	web_terminal0 = enable_serial_terminal0 ? new WEB_TERMINAL("web-terminal0") : 0;
+	web_terminal1 = enable_serial_terminal1 ? new WEB_TERMINAL("web-terminal1") : 0;
+	web_terminal2 = enable_serial_terminal2 ? new WEB_TERMINAL("web-terminal2") : 0;
+	web_terminal14 = enable_serial_terminal14 ? new WEB_TERMINAL("web-terminal14") : 0;
+	web_terminal15 = enable_serial_terminal15 ? new WEB_TERMINAL("web-terminal15") : 0;
+	web_terminal16 = enable_serial_terminal16 ? new WEB_TERMINAL("web-terminal16") : 0;
 	
 	//=========================================================================
 	//===                          Port registration                        ===
@@ -799,27 +871,27 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	}
 	
 	// - SERIAL_TERMINAL
-	if(enable_serial_terminal0)
+	if(serial_terminal0)
 	{
 		instrumenter->RegisterPort(serial_terminal0->CLK);
 	}
-	if(enable_serial_terminal1)
+	if(serial_terminal1)
 	{
 		instrumenter->RegisterPort(serial_terminal1->CLK);
 	}
-	if(enable_serial_terminal2)
+	if(serial_terminal2)
 	{
 		instrumenter->RegisterPort(serial_terminal2->CLK);
 	}
-	if(enable_serial_terminal14)
+	if(serial_terminal14)
 	{
 		instrumenter->RegisterPort(serial_terminal14->CLK);
 	}
-	if(enable_serial_terminal15)
+	if(serial_terminal15)
 	{
 		instrumenter->RegisterPort(serial_terminal15->CLK);
 	}
-	if(enable_serial_terminal16)
+	if(serial_terminal16)
 	{
 		instrumenter->RegisterPort(serial_terminal16->CLK);
 	}
@@ -2296,27 +2368,27 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	instrumenter->Bind("HARDWARE.LINFlexD_15.lin_clk" , "HARDWARE.LIN_CLK");
 	instrumenter->Bind("HARDWARE.LINFlexD_15.reset_b" , "HARDWARE.reset_b");
 	
-	if(enable_serial_terminal0)
+	if(serial_terminal0)
 	{
 		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL0.CLK", "HARDWARE.SERIAL_TERMINAL0_CLK");
 	}
-	if(enable_serial_terminal1)
+	if(serial_terminal1)
 	{
 		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL1.CLK", "HARDWARE.SERIAL_TERMINAL1_CLK");
 	}
-	if(enable_serial_terminal2)
+	if(serial_terminal2)
 	{
 		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL2.CLK", "HARDWARE.SERIAL_TERMINAL2_CLK");
 	}
-	if(enable_serial_terminal14)
+	if(serial_terminal14)
 	{
 		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL14.CLK", "HARDWARE.SERIAL_TERMINAL14_CLK");
 	}
-	if(enable_serial_terminal15)
+	if(serial_terminal15)
 	{
 		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL15.CLK", "HARDWARE.SERIAL_TERMINAL15_CLK");
 	}
-	if(enable_serial_terminal16)
+	if(serial_terminal16)
 	{
 		instrumenter->Bind("HARDWARE.SERIAL_TERMINAL16.CLK", "HARDWARE.SERIAL_TERMINAL16_CLK");
 	}
@@ -4600,10 +4672,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	unsigned int front_end_num = 0;
 	
-	if(enable_gdb_server)
+	// Connect gdb-server to debugger
+	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
 	{
-		// Connect gdb-server to debugger
-		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
+		if(gdb_server[prc_num])
 		{
 			*debugger->debug_yielding_import[front_end_num]       >> gdb_server[prc_num]->debug_yielding_export;
 			*debugger->debug_event_listener_import[front_end_num] >> gdb_server[prc_num]->debug_event_listener_export;
@@ -4614,15 +4686,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 			gdb_server[prc_num]->registers_import                 >> *debugger->registers_export[front_end_num];
 		}
 	}
-	else
-	{
-		front_end_num += NUM_PROCESSORS;
-	}
 
-	if(enable_inline_debugger)
+	// Connect inline-debugger to debugger
+	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
 	{
-		// Connect inline-debugger to debugger
-		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
+		if(inline_debugger[prc_num])
 		{
 			*debugger->debug_event_listener_import[front_end_num]   >> inline_debugger[prc_num]->debug_event_listener_export;
 			*debugger->debug_yielding_import[front_end_num]         >> inline_debugger[prc_num]->debug_yielding_export;
@@ -4639,15 +4707,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 			inline_debugger[prc_num]->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[front_end_num];
 		}
 	}
-	else
-	{
-		front_end_num += NUM_PROCESSORS;
-	}
 
-	if(enable_profiler)
+	// Connect profiler to debugger
+	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
 	{
-		// Connect profiler to debugger
-		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
+		if(profiler[prc_num])
 		{
 			*debugger->debug_event_listener_import[front_end_num] >> profiler[prc_num]->debug_event_listener_export;
 			*debugger->debug_yielding_import[front_end_num]       >> profiler[prc_num]->debug_yielding_export;
@@ -4664,10 +4728,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 			profiler[prc_num]->subprogram_lookup_import           >> *debugger->subprogram_lookup_export[front_end_num];
 		}
 	}
-	else
-	{
-		front_end_num += NUM_PROCESSORS;
-	}
 
 	(*loader->memory_import[0]) >> flash->memory_export;
 	(*loader->memory_import[1]) >> system_sram->memory_export;
@@ -4682,35 +4742,60 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	main_core_1->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	peripheral_core_2->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	
-	if(enable_serial_terminal0)
+	if(serial_terminal0 && char_io_tee0 && web_terminal0)
 	{
-		serial_terminal0->char_io_import >> netstreamer0->char_io_export;
+		serial_terminal0->char_io_import >> char_io_tee0->char_io_export;
+		(*char_io_tee0->char_io_import[0]) >> netstreamer0->char_io_export;
+		(*char_io_tee0->char_io_import[1]) >> web_terminal0->char_io_export;
 	}
-	if(enable_serial_terminal1)
+	if(serial_terminal1 && char_io_tee1 && web_terminal1)
 	{
-		serial_terminal1->char_io_import >> netstreamer1->char_io_export;
+		serial_terminal1->char_io_import >> char_io_tee1->char_io_export;
+		(*char_io_tee1->char_io_import[0]) >> netstreamer1->char_io_export;
+		(*char_io_tee1->char_io_import[1]) >> web_terminal1->char_io_export;
 	}
-	if(enable_serial_terminal2)
+	if(serial_terminal2 && char_io_tee2 && web_terminal2)
 	{
-		serial_terminal2->char_io_import >> netstreamer2->char_io_export;
+		serial_terminal2->char_io_import >> char_io_tee2->char_io_export;
+		(*char_io_tee2->char_io_import[0]) >> netstreamer2->char_io_export;
+		(*char_io_tee2->char_io_import[1]) >> web_terminal2->char_io_export;
 	}
-	if(enable_serial_terminal14)
+	if(serial_terminal14 && char_io_tee14 && web_terminal14)
 	{
-		serial_terminal14->char_io_import >> netstreamer14->char_io_export;
+		serial_terminal14->char_io_import >> char_io_tee14->char_io_export;
+		(*char_io_tee14->char_io_import[0]) >> netstreamer14->char_io_export;
+		(*char_io_tee14->char_io_import[1]) >> web_terminal14->char_io_export;
 	}
-	if(enable_serial_terminal15)
+	if(serial_terminal15 && char_io_tee15 && web_terminal15)
 	{
-		serial_terminal15->char_io_import >> netstreamer15->char_io_export;
+		serial_terminal15->char_io_import >> char_io_tee15->char_io_export;
+		(*char_io_tee15->char_io_import[0]) >> netstreamer15->char_io_export;
+		(*char_io_tee15->char_io_import[1]) >> web_terminal15->char_io_export;
 	}
-	if(enable_serial_terminal16)
+	if(serial_terminal16 && char_io_tee16 && web_terminal16)
 	{
-		serial_terminal16->char_io_import >> netstreamer16->char_io_export;
+		serial_terminal16->char_io_import >> char_io_tee16->char_io_export;
+		(*char_io_tee16->char_io_import[0]) >> netstreamer16->char_io_export;
+		(*char_io_tee16->char_io_import[1]) >> web_terminal16->char_io_export;
 	}
 	
 	{
 		unsigned int i = 0;
 		*http_server->http_server_import[i++] >> instrumenter->http_server_export;
 		*http_server->http_server_import[i++] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
+		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
+		{
+			if(profiler[prc_num])
+			{
+				*http_server->http_server_import[i++] >> profiler[prc_num]->http_server_export;
+			}
+		}
+		if(web_terminal0) *http_server->http_server_import[i++] >> web_terminal0->http_server_export;
+		if(web_terminal1) *http_server->http_server_import[i++] >> web_terminal1->http_server_export;
+		if(web_terminal2) *http_server->http_server_import[i++] >> web_terminal2->http_server_export;
+		if(web_terminal14) *http_server->http_server_import[i++] >> web_terminal14->http_server_export;
+		if(web_terminal15) *http_server->http_server_import[i++] >> web_terminal15->http_server_export;
+		if(web_terminal16) *http_server->http_server_import[i++] >> web_terminal16->http_server_export;
 	}
 	
 	{
@@ -5166,6 +5251,7 @@ Simulator::~Simulator()
 	if(inline_debugger[0]) delete inline_debugger[0];
 	if(inline_debugger[1]) delete inline_debugger[1];
 	if(inline_debugger[2]) delete inline_debugger[2];
+	if(http_server) delete http_server;
 	if(profiler[0]) delete profiler[0];
 	if(profiler[1]) delete profiler[1];
 	if(profiler[2]) delete profiler[2];
@@ -5179,7 +5265,18 @@ Simulator::~Simulator()
 	if(netstreamer14) delete netstreamer14;
 	if(netstreamer15) delete netstreamer15;
 	if(netstreamer16) delete netstreamer16;
-	if(http_server) delete http_server;
+	if(char_io_tee0) delete char_io_tee0;
+	if(char_io_tee1) delete char_io_tee1;
+	if(char_io_tee2) delete char_io_tee2;
+	if(char_io_tee14) delete char_io_tee14;
+	if(char_io_tee15) delete char_io_tee15;
+	if(char_io_tee16) delete char_io_tee16;
+	if(web_terminal0) delete web_terminal0;
+	if(web_terminal1) delete web_terminal1;
+	if(web_terminal2) delete web_terminal2;
+	if(web_terminal14) delete web_terminal14;
+	if(web_terminal15) delete web_terminal15;
+	if(web_terminal16) delete web_terminal16;
 	if(instrumenter) delete instrumenter;
 #if HAVE_TVS
 	if(bandwidth_vcd) delete bandwidth_vcd;
@@ -5418,9 +5515,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM MPC5777M");
-	simulator->SetVariable("copyright", "Copyright (C) 2017, Commissariat a l'Energie Atomique (CEA)");
+	simulator->SetVariable("copyright", "Copyright (C) 2007-2019, Commissariat à l'Energie Atomique (CEA)");
 	simulator->SetVariable("license", "BSD (see file COPYING)");
-	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>");
+	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Yves Lhuillier <yves.lhuillier@cea.fr>, Franck Vedrine <franck.vedrine@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
 	simulator->SetVariable("version", VERSION);
 	simulator->SetVariable("description", "UNISIM MPC5777M, MPC5777M SoC simulator");
 	simulator->SetVariable("schematic", "mpc5777m/fig_schematic.pdf");
@@ -6174,15 +6271,15 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	//  - GDB Server run-time configuration
 	simulator->SetVariable("gdb-server0.tcp-port", 12345);
-	simulator->SetVariable("gdb-server0.architecture-description-filename", "gdb_powerpc_vle.xml");
+	simulator->SetVariable("gdb-server0.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_powerpc_vle.xml");
 	simulator->SetVariable("gdb-server1.tcp-port", 12346);
-	simulator->SetVariable("gdb-server1.architecture-description-filename", "gdb_powerpc_vle.xml");
+	simulator->SetVariable("gdb-server1.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_powerpc_vle.xml");
 	simulator->SetVariable("gdb-server2.tcp-port", 12347);
-	simulator->SetVariable("gdb-server2.architecture-description-filename", "gdb_powerpc_vle.xml");
+	simulator->SetVariable("gdb-server2.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_powerpc_vle.xml");
 	
 	//  - Debugger run-time configuration
 	simulator->SetVariable("debugger.parse-dwarf", false);
-	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", "powerpc_e500_gcc_dwarf_register_number_mapping.xml");
+	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/powerpc_e500_gcc_dwarf_register_number_mapping.xml");
 	simulator->SetVariable("debugger.sel-cpu[0]", 0); // gdb-server
 	simulator->SetVariable("debugger.sel-cpu[1]", 1); // gdb-server
 	simulator->SetVariable("debugger.sel-cpu[2]", 2); // gdb-server
@@ -6208,6 +6305,14 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	
 	// Instrumenter
 	simulator->SetVariable("http-server.http-port", 12360);
+	
+	// Web terminals
+	simulator->SetVariable("web-terminal0.title", "Serial Terminal over LINFlexD_0");
+	simulator->SetVariable("web-terminal1.title", "Serial Terminal over LINFlexD_1");
+	simulator->SetVariable("web-terminal2.title", "Serial Terminal over LINFlexD_2");
+	simulator->SetVariable("web-terminal14.title", "Serial Terminal over LINFlexD_14");
+	simulator->SetVariable("web-terminal15.title", "Serial Terminal over LINFlexD_15");
+	simulator->SetVariable("web-terminal16.title", "Serial Terminal over LINFlexD_16");
 }
 
 void Simulator::Run()
@@ -6260,18 +6365,119 @@ void Simulator::Run()
 	std::cerr << "target speed: " << (instruction_counter / (run_time - idle_time) / 1000000.0) << " MIPS" << std::endl;
 	std::cerr << "host simulation speed: " << ((double) instruction_counter / spent_time / 1000000.0) << " MIPS" << std::endl;
 	std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
-	
-	if(enable_profiler)
+
+	for(unsigned int prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 	{
-		profiler[0]->Output();
-		profiler[1]->Output();
-		profiler[2]->Output();
+		if(profiler[prc_num])
+		{
+			profiler[prc_num]->Output();
+		}
 	}
+}
+
+bool Simulator::EndSetup()
+{
+	if(http_server)
+	{
+		unsigned int prc_num;
+		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+		{
+			if(profiler[prc_num])
+			{
+				std::string tab_title("Profile of ");
+				switch(prc_num)
+				{
+					case 0: tab_title += main_core_0->GetName(); break;
+					case 1: tab_title += main_core_1->GetName(); break;
+					case 2: tab_title += peripheral_core_2->GetName(); break;
+				}
+				std::stringstream label_sstr;
+				label_sstr << "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu" << prc_num << ".svg\">";
+				http_server->AddJSAction(
+					unisim::service::interfaces::ToolbarOpenTabAction(
+						/* name */      profiler[prc_num]->GetName(), 
+						/* label */     label_sstr.str(),
+						/* tips */      tab_title,
+						/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+						/* uri */       profiler[prc_num]->URI()
+				));
+			}
+		}
+		
+		if(enable_serial_terminal0)
+		{
+			http_server->AddJSAction(
+				unisim::service::interfaces::ToolbarOpenTabAction(
+					/* name */      web_terminal0->GetName(),
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term0.svg\">",
+					/* tips */      "Serial Terminal over LINFlexD_0",
+					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+					/* uri */       web_terminal0->URI()
+			));
+		}
+		if(enable_serial_terminal1)
+		{
+			http_server->AddJSAction(
+				unisim::service::interfaces::ToolbarOpenTabAction(
+					/* name */      web_terminal1->GetName(),
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term1.svg\">",
+					/* tips */      "Serial Terminal over LINFlexD_1",
+					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+					/* uri */       web_terminal1->URI()
+			));
+		}
+		if(enable_serial_terminal2)
+		{
+			http_server->AddJSAction(
+				unisim::service::interfaces::ToolbarOpenTabAction(
+					/* name */      web_terminal2->GetName(),
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term2.svg\">",
+					/* tips */      "Serial Terminal over LINFlexD_2",
+					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+					/* uri */       web_terminal2->URI()
+			));
+		}
+		if(enable_serial_terminal14)
+		{
+			http_server->AddJSAction(
+				unisim::service::interfaces::ToolbarOpenTabAction(
+					/* name */      web_terminal14->GetName(),
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term14.svg\">",
+					/* tips */      "Serial Terminal over LINFlexD_14",
+					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+					/* uri */       web_terminal14->URI()
+			));
+		}
+		if(enable_serial_terminal15)
+		{
+			http_server->AddJSAction(
+				unisim::service::interfaces::ToolbarOpenTabAction(
+					/* name */      web_terminal15->GetName(),
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term15.svg\">",
+					/* tips */      "Serial Terminal over LINFlexD_15",
+					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+					/* uri */       web_terminal15->URI()
+			));
+		}
+		if(enable_serial_terminal16)
+		{
+			http_server->AddJSAction(
+				unisim::service::interfaces::ToolbarOpenTabAction(
+					/* name */      web_terminal16->GetName(),
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term16.svg\">",
+					/* tips */      "Serial Terminal over LINFlexD_16",
+					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+					/* uri */       web_terminal16->URI()
+			));
+		}
+	}
+	
+	return true;
 }
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 {
-	if(enable_inline_debugger || enable_profiler)
+	if(enable_inline_debugger || (enable_profiler0 || enable_profiler1 || enable_profiler2))
 	{
 		SetVariable("debugger.parse-dwarf", true);
 	}

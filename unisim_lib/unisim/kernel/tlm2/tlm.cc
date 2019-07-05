@@ -57,6 +57,12 @@ const char *Variable<sc_core::sc_time>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Variable<sc_core::sc_time>::GetDataType() const
+{
+	return DT_USER;
+}
+
+template <>
 unsigned int Variable<sc_core::sc_time>::GetBitSize() const { return sizeof(sc_dt::uint64) * 8; }
 
 template <> 

@@ -33,19 +33,20 @@
  */
 
 #include <unisim/service/instrumenter/instrumenter.hh>
+#include <unisim/kernel/tlm2/tlm.hh>
 
 namespace unisim {
 namespace service {
 namespace instrumenter {
 
 Instrumenter::Instrumenter(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::service::Object(name, parent, "Hardware instrumenter")
 	, http_server_export("http-server-export", this)
 	, logger(*this)
 	, verbose(false)
 	, debug(false)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
-	, param_debug("debug", this, verbose, "Enable/Disable debugging (intended for developper)")
+	, param_debug("debug", this, debug, "Enable/Disable debugging (intended for developper)")
 	, vcd_trace_filename()
 	, param_vcd_trace_filename("vcd-trace-file", this, vcd_trace_filename, "VCD output filename for signals trace")
 	, trace_signals()
@@ -850,51 +851,8 @@ bool UserInstrument::IsBoolean() const
 	return (input_instrument && (input_instrument->GetTypeInfo() == typeid(bool))) || (output_instrument && (output_instrument->GetTypeInfo() == typeid(bool)));
 }
 
-static std::string String_to_HTML(const std::string& s)
-{
-	std::stringstream sstr;
-	std::size_t pos = 0;
-	std::size_t len = s.length();
-	
-	for(pos = 0; pos < len; pos++)
-	{
-		char c = s[pos];
-
-		switch(c)
-		{
-			case '\n':
-				sstr << "<br>";
-				break;
-			case '<':
-				sstr << "&lt;";
-				break;
-			case '>':
-				sstr << "&gt;";
-				break;
-			case '&':
-				sstr << "&amp;";
-				break;
-			case '"':
-				sstr << "&quot;";
-				break;
-			case '\'':
-				sstr << "&apos;";
-				break;
-			case ' ':
-				sstr << "&nbsp;";
-				break;
-			case '\t':
-				sstr << "&nbsp;&nbsp;&nbsp;&nbsp;";
-			default:
-				sstr << c;
-		}
-	}
-	
-	return sstr.str();
-}
-
 UserInterface::UserInterface(const char *name, Instrumenter *instrumenter)
-	: unisim::kernel::service::Object(name, instrumenter)
+	: unisim::kernel::service::Object(name, instrumenter, "Hardware Instrumenter user interface")
 	, InstrumenterFrontEnd(name, instrumenter)
 	, unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>(name, instrumenter)
 	, http_server_export("http-server-export", this)
@@ -905,39 +863,37 @@ UserInterface::UserInterface(const char *name, Instrumenter *instrumenter)
 	, instrumentation()
 	, param_instrumentation("instrumentation", this, instrumentation, "Instrumented signals (wildcards '*' and '?' are allowed in signal names) that are controlled by user over HTTP")
 	, intr_poll_period(1.0, sc_core::SC_US)
-	, param_intr_poll_period("intr-poll-period", this, intr_poll_period, "Polling period for user interrupt request while continue")
+	, param_intr_poll_period("intr-poll-period", this, intr_poll_period, "Polling period (target time) for user interrupt request while continue")
+	, min_cont_refresh_period(0.125)
+	, param_min_cont_refresh_period("min-cont-refresh-period", this, min_cont_refresh_period, "Minimum refresh period (host time) in seconds while continue")
+	, max_cont_refresh_period(1.0)
+	, param_max_cont_refresh_period("cont-refresh-period", this, max_cont_refresh_period, "Maximum refresh period (host time) in seconds while continue")
+	, enable_cache(true)
+	, param_enable_cache("enable-cache", this, enable_cache, "Enable/Disable web browser caching")
 	, instrumented_signal_names()
 	, user_instruments()
+	, schedule()
 	, user_step_time(sc_core::SC_ZERO_TIME)
 	, curr_time_stamp(sc_core::SC_ZERO_TIME)
-	, bad_user_step_time(false)
-	, timed_step(false)
 	, delta_steps(0)
 	, cont(false)
 	, intr(true)
 	, halt(false)
-	, has_breakpoint_cond(false)
-	, enable_all_input_instruments(false)
-	, disable_all_input_instruments(false)
-	, enable_all_value_changed_breakpoints(false)
-	, disable_all_value_changed_breakpoints(false)
-	, enable_input_instruments()
-	, enable_value_changed_breakpoints()
+	, refresh_period(0.125)
+	, auto_reload(false)
 	, mutex_instruments()
+	, mutex_schedule()
+	, mutex_delta_steps()
 	, mutex_post()
-	, run(false)
-	, cond_run()
-	, mutex_run()
-	, user(false)
-	, cond_user()
-	, mutex_user()
+	, cond_cont()
+	, mutex_cont()
 {
 	pthread_mutex_init(&mutex_instruments, NULL);
+	pthread_mutex_init(&mutex_schedule, NULL);
+	pthread_mutex_init(&mutex_delta_steps, NULL);
 	pthread_mutex_init(&mutex_post, NULL);
-	pthread_cond_init(&cond_run, NULL);
-	pthread_mutex_init(&mutex_run, NULL);
-	pthread_cond_init(&cond_user, NULL);
-	pthread_mutex_init(&mutex_user, NULL);
+	pthread_cond_init(&cond_cont, NULL);
+	pthread_mutex_init(&mutex_cont, NULL);
 	
 	std::stringstream sstr(instrumentation);
 	
@@ -950,8 +906,6 @@ UserInterface::UserInterface(const char *name, Instrumenter *instrumenter)
 
 UserInterface::~UserInterface()
 {
-	UnblockUser();
-	
 	std::map<std::string, UserInstrument *>::iterator user_instrument_it;
 	for(user_instrument_it = user_instruments.begin(); user_instrument_it != user_instruments.end(); user_instrument_it++)
 	{
@@ -961,11 +915,11 @@ UserInterface::~UserInterface()
 	}
 
 	pthread_mutex_destroy(&mutex_instruments);
+	pthread_mutex_destroy(&mutex_schedule);
+	pthread_mutex_destroy(&mutex_delta_steps);
 	pthread_mutex_destroy(&mutex_post);
-	pthread_cond_destroy(&cond_run);
-	pthread_mutex_destroy(&mutex_run);
-	pthread_cond_destroy(&cond_user);
-	pthread_mutex_destroy(&mutex_user);
+	pthread_cond_destroy(&cond_cont);
+	pthread_mutex_destroy(&mutex_cont);
 }
 
 bool UserInterface::EndSetup()
@@ -975,7 +929,7 @@ bool UserInterface::EndSetup()
 
 void UserInterface::SigInt()
 {
-	Run();
+	Continue();
 }
 
 bool UserInterface::SetupInstrumentation()
@@ -1002,10 +956,6 @@ bool UserInterface::SetupInstrumentation()
 		{
 			UserInstrument *user_instrument = new UserInstrument(instrumented_signal_name, input_instrument, output_instrument);
 			user_instruments[instrumented_signal_name] = user_instrument;
-			enable_input_instruments[user_instrument] = false;
-			enable_value_changed_breakpoints[user_instrument] = false;
-			set_input_instruments[user_instrument] = std::string();
-			toggle_input_instruments[user_instrument] = false;
 			if(!input_instrument)
 			{
 				logger << DebugWarning << "User instrument \"" << user_instrument->GetName() << "\" is read-only" << EndDebugWarning;
@@ -1031,55 +981,27 @@ bool UserInterface::SetupInstrumentation()
 void UserInterface::WaitForUser()
 {
 	//std::cerr << sc_core::sc_time_stamp() << ":WaitForUser: start" << std::endl;
-	pthread_mutex_lock(&mutex_user);
-	user = true;
-	pthread_cond_signal(&cond_user);
-	pthread_mutex_lock(&mutex_run);
-	run = false;
-	pthread_mutex_unlock(&mutex_user);
+	pthread_mutex_lock(&mutex_cont);
+	cont = false;
+	intr = false;
+	halt = false;
+	delta_steps = 0;
 	do
 	{
-		pthread_cond_wait(&cond_run, &mutex_run);
+		pthread_cond_wait(&cond_cont, &mutex_cont);
 	}
-	while(!run);
-	pthread_mutex_unlock(&mutex_run);
+	while(!cont);
+	pthread_mutex_unlock(&mutex_cont);
 	//std::cerr << sc_core::sc_time_stamp() << ":WaitForUser: end" << std::endl;
 }
 
-void UserInterface::WaitForSimulation()
-{
-	//std::cerr << "WaitForSimulation: start" << std::endl;
-	pthread_mutex_lock(&mutex_run);
-	run = true;
-	pthread_cond_signal(&cond_run);
-	pthread_mutex_lock(&mutex_user);
-	user = false;
-	pthread_mutex_unlock(&mutex_run);
-	do
-	{
-		pthread_cond_wait(&cond_user, &mutex_user);
-	}
-	while(!user);
-	pthread_mutex_unlock(&mutex_user);
-	//std::cerr << "WaitForSimulation: end" << std::endl;
-}
-
-void UserInterface::Run()
+void UserInterface::Continue()
 {
 	//std::cerr << "Run" << std::endl;
-	pthread_mutex_lock(&mutex_run);
-	run = true;
-	pthread_cond_signal(&cond_run);
-	pthread_mutex_unlock(&mutex_run);
-}
-
-void UserInterface::UnblockUser()
-{
-	//std::cerr << "UnblockUser" << std::endl;
-	pthread_mutex_lock(&mutex_user);
-	user = true;
-	pthread_cond_signal(&cond_user);
-	pthread_mutex_unlock(&mutex_user);
+	pthread_mutex_lock(&mutex_cont);
+	cont = true;
+	pthread_cond_signal(&cond_cont);
+	pthread_mutex_unlock(&mutex_cont);
 }
 
 void UserInterface::LockInstruments()
@@ -1117,22 +1039,58 @@ void UserInterface::ProcessInputInstruments()
 {
 	if(unlikely(halt))
 	{
-		UnblockUser();
 		return;
 	}
+	LockInstruments();
 	curr_time_stamp = sc_core::sc_time_stamp();
-	if(unlikely(timed_step || (delta_steps == 1) || intr))
+	sc_core::sc_time deadline(sc_core::sc_max_time());
+	Schedule::iterator it = schedule.begin();
+	if(unlikely(it != schedule.end()))
 	{
-		WaitForUser();
-		LockInstruments();
-		Commit();
-		UnlockInstruments();
+		deadline = *it;
+		if(curr_time_stamp >= deadline)
+		{
+			intr = true;
+			schedule.erase(it);
+			Schedule::iterator next_it = schedule.begin();
+			deadline = (next_it != schedule.end()) ? (*next_it) : sc_core::sc_max_time();
+		}
 	}
-	if(delta_steps > 1) delta_steps--;
+	if(unlikely(delta_steps > 0))
+	{
+		if((delta_steps > 0) && (--delta_steps == 0))
+		{
+			intr = true;
+		}
+	}
+	if(unlikely(intr))
+	{
+		do
+		{
+			UnlockInstruments();
+			WaitForUser();
+			LockInstruments();
+			Commit();
+			if(unlikely(halt))
+			{
+				UnlockInstruments();
+				return;
+			}
+		}
+		while(unlikely(intr));
+		
+		Schedule::iterator it = schedule.begin();
+		if(unlikely(it != schedule.end()))
+		{
+			deadline = *it;
+		}
+	}
 
-	sc_core::sc_time t = timed_step ? user_step_time : ((delta_steps || intr || halt) ? sc_core::SC_ZERO_TIME : intr_poll_period);
-	
+	sc_core::sc_time time_to_deadline(deadline);
+	time_to_deadline -= curr_time_stamp;
+	sc_core::sc_time t(std::min(time_to_deadline, (delta_steps || intr || halt) ? sc_core::SC_ZERO_TIME : intr_poll_period));
 	//std::cerr << sc_core::sc_time_stamp() << ": next input instrumentation after " << t << std::endl;
+	UnlockInstruments();
 	NextInputTrigger(t);
 }
 
@@ -1160,7 +1118,6 @@ void UserInterface::Sample()
 
 void UserInterface::Fetch()
 {
-	has_breakpoint_cond = false;
 	std::map<std::string, UserInstrument *>::iterator user_instrument_it;
 	for(user_instrument_it = user_instruments.begin(); user_instrument_it != user_instruments.end(); user_instrument_it++)
 	{
@@ -1172,10 +1129,6 @@ void UserInterface::Fetch()
 		{
 			//std::cerr << "\"" << user_instrument->GetName() << "\" has breakpoint condition" << std::endl;
 			intr = true;
-			timed_step = false;
-			delta_steps = 0;
-			cont = false;
-			has_breakpoint_cond = true;
 			NextInputTrigger(sc_core::SC_ZERO_TIME);
 		}
 	}
@@ -1190,545 +1143,512 @@ void UserInterface::ProcessOutputInstruments()
 
 bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
-	if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
+	unisim::util::hypapp::HttpResponse response;
+	
+	if(req.GetPath() == "toolbar_actions.js")
 	{
-		LockPost();
-		LockInstruments();
-		//std::cerr << "content length=" << req.GetContentLength() << std::endl;
-		
-		struct PropertySetter : public unisim::util::hypapp::Form_URL_Encoded_Decoder
+		switch(req.GetRequestType())
 		{
-			PropertySetter(UserInterface& _user_interface)
-				: user_interface(_user_interface)
-			{
-			}
+			case unisim::util::hypapp::Request::GET:
+			case unisim::util::hypapp::Request::HEAD:
+				if(enable_cache)
+				{
+					response.EnableCache();
+				}
+				response.SetContentType("application/javascript");
+				
+				response << "InstrumenterToobarActions.prototype.bound_background_iframe_onload = null;" << std::endl;
+				response << "InstrumenterToobarActions.prototype.pending_cmd = null;" << std::endl;
+				response << "InstrumenterToobarActions.prototype.background_iframe = null;" << std::endl;
+				response << "InstrumenterToobarActions.prototype.retry_count = 0;" << std::endl;
+				response << "" << std::endl;
+				response << "function InstrumenterToobarActions()" << std::endl;
+				response << "{" << std::endl;
+				response << "\tthis.bound_background_iframe_onload = new Map();" << std::endl;
+				response << "\tthis.pending_cmd = null;" << std::endl;
+				response << "\tthis.background_iframe = null;" << std::endl;
+				response << "\tthis.retry_count = 0;" << std::endl;
+				response << "}" << std::endl;
+				response << "" << std::endl;
+				response << "InstrumenterToobarActions.prototype.get_instrumenter_tab = function()" << std::endl;
+				response << "{" << std::endl;
+				response << "\treturn gui.find_tab_by_uri('" << URI() << "/control') || gui.find_tab_by_uri('" << URI() << "') || gui.open_tab('top-middle-tile','control-" << GetName() << "','" << URI() << "/control',true);" << std::endl;
+				response << "}" << std::endl;
+				response << "" << std::endl;
+				response << "InstrumenterToobarActions.prototype.execute = function(cmd)" << std::endl;
+				response << "{" << std::endl;
+				response << "\tif(this.pending_cmd)" << std::endl;
+				response << "\t{" << std::endl;
+				response << "\t\t// if new command is same as the pending command, let pending command execute" << std::endl;
+				response << "\t\tif(this.pending_cmd == cmd) return;" << std::endl;
+				response << "\t\t// cancel pending command" << std::endl;
+				response << "\t\tif(this.bound_background_iframe_onload[this.pending_cmd])" << std::endl;
+				response << "\t\t{" << std::endl;
+				response << "\t\t\tthis.background_iframe.iframe_element.removeEventListener('load', this.bound_background_iframe_onload[this.pending_cmd]);" << std::endl;
+				response << "\t\t}" << std::endl;
+				response << "\t\tthis.pending_cmd = null;" << std::endl;
+				response << "\t}" << std::endl;
+				response << "\t" << std::endl;
+				response << "\tvar tab = this.get_instrumenter_tab();" << std::endl;
+				response << "\tif(tab)" << std::endl;
+				response << "\t{" << std::endl;
+				response << "\t\tvar foreground_iframe = tab.get_foreground_iframe();" << std::endl;
+				response << "\t\tif(foreground_iframe)" << std::endl;
+				response << "\t\t{" << std::endl;
+				response << "\t\t\tif(foreground_iframe.loaded)" << std::endl;
+				response << "\t\t\t{" << std::endl;
+				response << "\t\t\t\tvar cmd_button = foreground_iframe.iframe_element.contentWindow.document.getElementById(cmd);" << std::endl;
+				response << "\t\t\t\tif(cmd_button)" << std::endl;
+				response << "\t\t\t\t{" << std::endl;
+				response << "\t\t\t\t\t// simulate a submit" << std::endl;
+				response << "\t\t\t\t\tcmd_button.click();" << std::endl;
+				response << "\t\t\t\t\tthis.retry_count = 0;" << std::endl;
+				response << "\t\t\t\t\treturn true;" << std::endl;
+				response << "\t\t\t\t}" << std::endl;
+				response << "\t\t\t}" << std::endl;
+				response << "\t\t\tif(this.retry_count < 2)" << std::endl;
+				response << "\t\t\t{" << std::endl;
+				response << "\t\t\t\t// instrumenter page is either not yet loaded or command button is not available yet" << std::endl;
+				response << "\t\t\t\t++this.retry_count;" << std::endl;
+				response << "\t\t\t\tthis.background_iframe = tab.get_background_iframe();" << std::endl;
+				response << "\t\t\t\tif(this.background_iframe)" << std::endl;
+				response << "\t\t\t\t{" << std::endl;
+				response << "\t\t\t\t\t// try to execute command once instrumenter page is loaded" << std::endl;
+				response << "\t\t\t\t\tthis.pending_cmd = cmd;" << std::endl;
+				response << "\t\t\t\t\tthis.bound_background_iframe_onload[cmd] = this.onload.bind(this)" << std::endl;
+				response << "\t\t\t\t\tthis.background_iframe.iframe_element.addEventListener('load', this.bound_background_iframe_onload[cmd]);" << std::endl;
+				response << "\t\t\t\t}" << std::endl;
+				response << "\t\t\t}" << std::endl;
+				response << "\t\t}" << std::endl;
+				response << "\t}" << std::endl;
+				response << "\treturn false;" << std::endl;
+				response << "}" << std::endl;
+				response << "" << std::endl;
+				response << "InstrumenterToobarActions.prototype.onload = function()" << std::endl;
+				response << "{" << std::endl;
+				response << "\tvar cmd = this.pending_cmd;" << std::endl;
+				response << "\tif(this.bound_background_iframe_onload[cmd])" << std::endl;
+				response << "\t{" << std::endl;
+				response << "\t\tthis.background_iframe.iframe_element.removeEventListener('load', this.bound_background_iframe_onload[cmd]);" << std::endl;
+				response << "\t}" << std::endl;
+				response << "\tthis.pending_cmd = null;" << std::endl;
+				response << "\t// instrumenter page is loaded: retry execution of command" << std::endl;
+				response << "\tthis.execute(cmd);" << std::endl;
+				response << "}" << std::endl;
+				response << "" << std::endl;
+				response << "if((typeof GUI !== 'undefined') && GUI.prototype.constructor)" << std::endl;
+				response << "{" << std::endl;
+				response << "\tGUI.prototype.instrumenter_toolbar_actions = new InstrumenterToobarActions();" << std::endl;
+				response << "}" << std::endl;
+				
+				break;
 			
-			virtual bool FormAssign(const std::string& name, const std::string& value)
+			case unisim::util::hypapp::Request::OPTIONS:
+				response.Allow("OPTIONS, GET, HEAD");
+				break;
+				
+			default:
+				response.SetStatus(unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED);
+				response.Allow("OPTIONS, GET, HEAD");
+				
+				response << "<!DOCTYPE html>" << std::endl;
+				response << "<html>" << std::endl;
+				response << "\t<head>" << std::endl;
+				response << "\t\t<title>Error " << (unsigned int) unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << " (" << unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << ")</title>" << std::endl;
+				response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+				response << "\t\t<meta name=\"description\" content=\"Error " << (unsigned int) unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << " (" << unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << ")\">" << std::endl;
+				response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+				response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+				response << "\t\t<style>" << std::endl;
+				response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+				response << "\t\t</style>" << std::endl;
+				response << "\t</head>" << std::endl;
+				response << "\t<body>" << std::endl;
+				response << "\t\t<p>Method not allowed</p>" << std::endl;
+				response << "\t</body>" << std::endl;
+				response << "</html>" << std::endl;
+				break;
+		}
+	}
+	else if((req.GetPath() == "") || (req.GetPath() == "control") || (req.GetPath() == "instrument"))
+	{
+		std::string form_action;
+		bool enable_control_interface = false;
+		bool enable_instrument_interface = false;
+		if(req.GetPath() == "")
+		{
+			enable_control_interface = true;
+			enable_instrument_interface = true;
+			form_action = URI();
+		}
+		else if(req.GetPath() == "control")
+		{
+			enable_control_interface = true;
+			form_action = URI() + "/control";
+		}
+		else if(req.GetPath() == "instrument")
+		{
+			enable_instrument_interface = true;
+			form_action = URI() + "/instrument";
+		}
+		
+		switch(req.GetRequestType())
+		{
+			case unisim::util::hypapp::Request::POST:
 			{
-				if(name.compare("step-time") == 0)
+				LockPost();
+				LockInstruments();
+				Sample();
+				
+				PropertySetter property_setter(*this);
+				if(property_setter.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
 				{
-					std::stringstream value_sstr(value);
-					double time_value = 0.0;
-					std::string time_unit;
-					
-					if((value_sstr >> time_value) && (value_sstr >> time_unit))
-					{
-						if(time_unit.compare("s") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_SEC);
-						else if(time_unit.compare("ms") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_MS);
-						else if(time_unit.compare("us") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_US);
-						else if(time_unit.compare("ns") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_NS);
-						else if(time_unit.compare("ps") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_PS);
-						else if(time_unit.compare("fs") == 0) user_interface.user_step_time = sc_core::sc_time(time_value, sc_core::SC_FS);
-						else
-						{
-							user_interface.logger << DebugWarning << "malformed time unit ('" << time_unit << "'): expecting 's', 'ms', 'us', 'ns', 'ps', or 'fs'." << EndDebugWarning;
-							user_interface.bad_user_step_time = true;
-							return false;
-						}
-					}
-					else
-					{
-						user_interface.logger << DebugWarning << "expecting a time in time-step" << EndDebugWarning;
-						user_interface.bad_user_step_time = true;
-						return false;
-					}
-					
-					if(!value_sstr.eof())
-					{
-						user_interface.logger << DebugWarning << "ignoring extra characters after time step" << EndDebugWarning;
-					}
-				}
-				else if((name.compare("timed-step") == 0) && (value.compare("on") == 0))
-				{
-					if(user_interface.verbose)
-					{
-						user_interface.logger << DebugInfo << "Timed Step" << EndDebugInfo;
-					}
-					user_interface.timed_step = true;
-				}
-				else if((name.compare("delta-step") == 0) && (value.compare("on") == 0))
-				{
-					if(user_interface.verbose)
-					{
-						user_interface.logger << DebugInfo << "Delta Step" << EndDebugInfo;
-					}
-					user_interface.delta_steps = 3;
-				}
-				else if((name.compare("cont") == 0) && (value.compare("on") == 0))
-				{
-					if(user_interface.verbose)
-					{
-						user_interface.logger << DebugInfo << "Continue" << EndDebugInfo;
-					}
-					user_interface.cont = true;
-				}
-				else if((name.compare("intr") == 0) && (value.compare("on") == 0))
-				{
-					if(user_interface.verbose)
-					{
-						user_interface.logger << DebugInfo << "Interrupt" << EndDebugInfo;
-					}
-					user_interface.intr = true;
-				}
-				else if((name.compare("halt") == 0) && (value.compare("on") == 0))
-				{
-					if(user_interface.verbose)
-					{
-						user_interface.logger << DebugInfo << "Halt" << EndDebugInfo;
-					}
-					user_interface.halt = true;
+					property_setter.Apply();
 				}
 				else
 				{
-					std::size_t delim_pos = name.find_first_of('*');
-					if(delim_pos != std::string::npos)
+					logger << DebugWarning << "parse error in POST data" << EndDebugWarning;
+				}
+				
+				UnlockInstruments();
+				
+				if(property_setter.cont || halt)
+				{
+					refresh_period = min_cont_refresh_period;
+					Continue();
+				}
+				
+				auto_reload = true;
+
+				UnlockPost();
+
+				// Post/Redirect/Get pattern: got Post, so do Redirect
+				response.SetStatus(unisim::util::hypapp::HttpResponse::SEE_OTHER);
+				response.SetHeaderField("Location", form_action);
+				
+				break;
+			}
+			
+			case unisim::util::hypapp::Request::GET:
+			case unisim::util::hypapp::Request::HEAD:
+			{
+				std::string title;
+				if(enable_control_interface && enable_instrument_interface)
+				{
+					title = "Hardware instrumenter";
+				}
+				else if(enable_control_interface)
+				{
+					title = "Simulation controls";
+				}
+				else if(enable_instrument_interface)
+				{
+					title = "Signals instrumenter";
+				}
+				
+				response << "<!DOCTYPE html>" << std::endl;
+				response << "<html>" << std::endl;
+				
+				if(halt)
+				{
+					Stop(-1, /* asynchronous */ true);
+					
+					response << "\t<head>" << std::endl;
+					response << "\t\t<title>" << title << "</title>" << std::endl;
+					response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+					response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
+					response << "\t\t<script type=\"text/javascript\">document.domain=\"" << req.GetDomain() << "\";</script>" << std::endl;
+					if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
 					{
-						std::string user_instrument_action = name.substr(0, delim_pos);
-						std::string user_instrument_name = name.substr(delim_pos + 1);
-						
-						if(user_instrument_name == "all")
+						response << "\t\t<script type=\"application/javascript\">window.history.back();</script>" << std::endl;
+					}
+					response << "\t</head>" << std::endl;
+					response << "\t<body>" << std::endl;
+					response << "\t<p>Disconnected</p>" << std::endl;
+					response << "\t<script type=\"application/javascript\">Reload = function() { window.location.href=window.location.href; }</script>" << std::endl;
+					response << "\t<button onclick=\"Reload()\">Reconnect</button>" << std::endl;
+					response << "\t</body>" << std::endl;
+				}
+				else
+				{
+					LockInstruments();
+					
+					response << "\t<head>" << std::endl;
+					response << "\t\t<title>" << title << "</title>" << std::endl;
+					response << "\t\t<meta name=\"description\" content=\"remote control interface over HTTP of virtual platform simulation instrumenter\">" << std::endl;
+					response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+					response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
+					response << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
+					response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/instrumenter/style.css\" type=\"text/css\" />" << std::endl;
+					response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+					response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
+					response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+					response << "\t\t<script type=\"application/javascript\">" << std::endl;
+					response << "\t\t\tGUI.prototype.set_status = function()" << std::endl;
+					response << "\t\t\t{" << std::endl;
+					response << "\t\t\t\tvar status_item = gui.find_statusbar_item_by_name('status-" << GetName() << "');" << std::endl;
+					response << "\t\t\t\tif(status_item)" << std::endl;
+					response << "\t\t\t\t{" << std::endl;
+					response << "\t\t\t\t\tvar child_nodes = status_item.div_element.childNodes;" << std::endl;
+					response << "\t\t\t\t\tfor(var i = 0; i < child_nodes.length; i++)" << std::endl;
+					response << "\t\t\t\t\t{" << std::endl;
+					response << "\t\t\t\t\t\tvar child_node = child_nodes[i];" << std::endl;
+					response << "\t\t\t\t\t\tif(child_node.className == 'state')" << std::endl;
+					response << "\t\t\t\t\t\t{" << std::endl;
+					response << "\t\t\t\t\t\t\tchild_node.innerHTML = '<span>" << (cont ? "running" : "paused") << "</span>';" << std::endl;
+					response << "\t\t\t\t\t\t}" << std::endl;
+					response << "\t\t\t\t\t\telse if(child_node.className == 'time')" << std::endl;
+					response << "\t\t\t\t\t\t{" << std::endl;
+					{
+						std::ios_base::fmtflags ff = response.flags();
+						response.setf(std::ios::fixed);
+						response.precision(3);
+						response << "\t\t\t\t\t\t\t\tchild_node.innerHTML = '<span>" << curr_time_stamp.to_seconds() << " seconds</span>';" << std::endl;
+						response.flags(ff);
+					}
+					response << "\t\t\t\t\t\t}" << std::endl;
+					response << "\t\t\t\t\t\telse if(child_node.className == 'time-exact')" << std::endl;
+					response << "\t\t\t\t\t\t{" << std::endl;
+					response << "\t\t\t\t\t\t\tchild_node.innerHTML = '<span>(" << curr_time_stamp << ")</span>';" << std::endl;
+					response << "\t\t\t\t\t\t}" << std::endl;
+					response << "\t\t\t\t\t}" << std::endl;
+					response << "\t\t\t\t}" << std::endl;
+					response << "\t\t\t}" << std::endl;
+					response << "\t\t</script>" << std::endl;
+					response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/instrumenter/script.js\"></script>" << std::endl;
+					response << "\t</head>" << std::endl;
+					
+					if(auto_reload)
+					{
+						response << "\t<body onload=\"gui.auto_reload(" << (unsigned int)(refresh_period * 1000) << ", 'global-refresh')\">" << std::endl; // while in continue mode, reload page every seconds
+						if(refresh_period < max_cont_refresh_period)
 						{
-							if(user_instrument_action == "enable")
-							{
-								user_interface.enable_all_input_instruments = true;
-							}
-							else if(user_instrument_action == "disable")
-							{
-								user_interface.disable_all_input_instruments = true;
-							}
-							else if(user_instrument_action == "enable-brkpt")
-							{
-								user_interface.enable_all_value_changed_breakpoints = true;
-							}
-							else if(user_instrument_action == "disable-brkpt")
-							{
-								user_interface.disable_all_value_changed_breakpoints = true;
-							}
+							refresh_period = std::min(2.0 * refresh_period, max_cont_refresh_period);
 						}
-						else
+						if(!cont)
 						{
-							UserInstrument *user_instrument = user_interface.FindUserInstrument(user_instrument_name);
+							auto_reload = false;
+						}
+					}
+					else
+					{
+						response << "\t<body onload=\"gui.auto_reload(0)\">" << std::endl;
+					}
+					
+					if(enable_control_interface)
+					{
+						response << "\t\t<table class=\"status-table\">" << std::endl;
+						response << "\t\t\t<thead>" << std::endl;
+						response << "\t\t\t\t<tr>" << std::endl;
+						response << "\t\t\t\t\t<th class=\"status\">Status</th>" << std::endl;
+						response << "\t\t\t\t\t<th class=\"time\">Time</th>" << std::endl;
+						response << "\t\t\t\t\t<th class=\"time\">(exactly)</th>" << std::endl;
+						response << "\t\t\t\t</tr>" << std::endl;
+						response << "\t\t\t</thead>" << std::endl;
+						response << "\t\t\t<tbody>" << std::endl;
+						response << "\t\t\t\t<tr>" << std::endl;
+						response << "\t\t\t\t\t<td class=\"status\">" << (cont ? "running" : "paused") << "</td>" << std::endl;
+						
+						{
+							std::ios_base::fmtflags ff = response.flags();
+							response.setf(std::ios::fixed);
+							response.precision(3);
+							response << "\t\t\t\t\t<td class=\"time\" title=\"Target time\">" << curr_time_stamp.to_seconds() << " seconds</td>" << std::endl;
+							response.flags(ff);
+						}
+						
+						response << "\t\t\t\t\t<td class=\"time\" title=\"Target time\">(" << unisim::util::hypapp::HTML_Encoder::Encode(curr_time_stamp.to_string()) << ")</td>" << std::endl;
+						response << "\t\t\t\t</tr>" << std::endl;
+						response << "\t\t\t</tbody>" << std::endl;
+						response << "\t\t</table>" << std::endl;
+					
+						response << "\t\t<h2>Commands</h2>" << std::endl;
+						response << "\t\t<table class=\"command-table\">" << std::endl;
+						response << "\t\t\t<tbody>" << std::endl;
+						response << "\t\t\t\t<tr>" << std::endl;
+						response << "\t\t\t\t\t<td><form id=\"delta-step-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"Step some delta cycles\" id=\"delta-step\" type=\"submit\" name=\"delta-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">&delta;</button></form></td>" << std::endl;
+						response << "\t\t\t\t\t<td><form id=\"timed-step-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"Step by time\" id=\"timed-step\" type=\"submit\" name=\"timed-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">Step</button>&nbsp;by&nbsp;<input class=\"step-time\" type=\"text\" spellcheck=\"false\" name=\"step-time\" value=\"" << user_step_time << "\"" << ((cont || halt) ? " disabled" : "") << "><input style=\"display:none;\" type=\"text\" name=\"curr-time-stamp\" value=\"" << curr_time_stamp << "\" readonly></form></td>" << std::endl;
+						response << "\t\t\t\t\t<td><form id=\"" << (cont ? "intr" : "cont") << "-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"" << (cont ? "Interrupt" : "Continue") << "\" id=\"" << (cont ? "intr" : "cont") << "\" type=\"submit\" name=\"" << (cont ? "intr" : "cont") << "\" value=\"on\"" << (halt ? " disabled" : "") << ">" << (cont ? "Interrupt" : "Continue") << "</button></form></td>" << std::endl;
+						response << "\t\t\t\t\t<td><form id=\"halt-form\" action=\"" << form_action << "\" method=\"post\"><button title=\"Halt\" id=\"halt\" type=\"submit\" name=\"halt\" value=\"on\"" << (halt ? " disabled" : "")  << ">Halt</button></form></td>" << std::endl;
+						response << "\t\t\t\t</tr>" << std::endl;
+						response << "\t\t\t</tbody>" << std::endl;
+						response << "\t\t</table>" << std::endl;
+					}
+					
+					if(enable_instrument_interface)
+					{
+						response << "\t\t<h2>Instruments</h2>" << std::endl;
+						response << "\t\t<div class=\"instruments-table\">" << std::endl;
+						response << "\t\t\t<div class=\"instruments-table-head\">" << std::endl;
+						response << "\t\t\t\t<div class=\"signal-enable\">Enable<br><form action=\"" << form_action << "\" method=\"post\"><button title=\"Disable injection for all instruments\" class=\"signal-disable-all\" type=\"submit\" name=\"disable*all\" value=\"on\">C</button><button title=\"Enable injection for all instruments\" class=\"signal-enable-all\" type=\"submit\" name=\"enable*all\" value=\"on\">A</button></form></div>" << std::endl;
+						response << "\t\t\t\t<div class=\"signal-brkpt-enable\">Brkpt<br><form action=\"" << form_action << "\" method=\"post\"><button title=\"Disable breakpoints for all instruments\" class=\"signal-brkpt-disable-all\" type=\"submit\" name=\"disable-brkpt*all\" value=\"on\">C</button><button title=\"Enable breakpoints for all instruments\" class=\"signal-brkpt-enable-all\" type=\"submit\" name=\"enable-brkpt*all\" value=\"on\">A</button></form></div>" << std::endl;
+						response << "\t\t\t\t<div class=\"signal-name\">Hardware signal</div>" << std::endl;
+						response << "\t\t\t\t<div class=\"signal-toggle\">Toggle</div>" << std::endl;
+						response << "\t\t\t\t<div class=\"signal-value\">Value</div>" << std::endl;
+						response << "\t\t\t\t<div class=\"scrollbar\"></div>" << std::endl;
+						response << "\t\t\t</div>" << std::endl;
+						response << "\t\t\t<div class=\"instruments-table-body scroller\">" << std::endl;
+
+						std::stringstream sstr(instrumentation);
+						
+						std::vector<std::string>::iterator instrumented_signal_name_it;
+						for(instrumented_signal_name_it = instrumented_signal_names.begin(); instrumented_signal_name_it != instrumented_signal_names.end(); instrumented_signal_name_it++)
+						{
+							const std::string& instrumented_signal_name = *instrumented_signal_name_it;
+
+							UserInstrument *user_instrument = FindUserInstrument(instrumented_signal_name);
 							
 							if(user_instrument)
 							{
-								if(user_instrument_action == "enable")
+								std::string value;
+								user_instrument->Get(value);
+								bool is_boolean = user_instrument->IsBoolean();
+								bool bool_value = false;
+								if(is_boolean) user_instrument->Get(bool_value);
+								response << "\t\t\t\t<div class=\"signal" << (user_instrument->HasBreakpointCondition() ? " brkpt-cond" : "") << "\">" << std::endl;
+								response << "\t\t\t\t\t<div class=\"signal-enable\"><form action=\"" << form_action << "\" method=\"post\"><button title=\"Enable/Disable injection\" class=\"signal-enable" << (user_instrument->IsInjectionEnabled() ? " checked" : " unchecked") << "\" type=\"submit\" name=\"" << (user_instrument->IsInjectionEnabled() ? "disable" : "enable") << "*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></button></form></div>" << std::endl;
+								response << "\t\t\t\t\t<div class=\"signal-brkpt-enable\"><form action=\"" << form_action << "\" method=\"post\"><button title=\"Enable/Disable breakpoint\" class=\"signal-brkpt-enable" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : " unchecked") << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"submit\" name=\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? "disable" : "enable") << "-brkpt*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></button></form></div>" << std::endl;
+								response << "\t\t\t\t\t<div class=\"signal-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "</div>" << std::endl;
+								response << "\t\t\t\t\t<div class=\"signal-toggle\">";
+								if(is_boolean)
 								{
-									user_interface.enable_input_instruments[user_instrument] = true;
+									response << "<form action=\"" << form_action << "\" method=\"post\"><button title=\"Click to toggle\" class=\"signal-toggle-button signal-" << (bool_value ? "on" : "off") << "\" type=\"submit\" name=\"toggle*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << ">" << (bool_value ? "on" : "off")  << "</button></form>";
 								}
-								else if(user_instrument_action == "enable-brkpt")
-								{
-									user_interface.enable_value_changed_breakpoints[user_instrument] = true;
-								}
-								else if(user_instrument_action == "set")
-								{
-									user_interface.set_input_instruments[user_instrument] = value;
-								}
-								else if(user_instrument_action == "toggle")
-								{
-									user_interface.toggle_input_instruments[user_instrument] = true;
-								}
-								else
-								{
-									user_interface.logger << DebugWarning << "unknown Action \"" << user_instrument_action << "\" on User instrument \"" << user_instrument_name << "\"" << EndDebugWarning;
-									return false;
-								}
-							}
-							else
-							{
-								user_interface.logger << DebugWarning << "Can't find User instrument \"" << user_instrument_name << "\"" << EndDebugWarning;
-								return false;
+								response << "</div>" << std::endl;
+								response << "\t\t\t\t\t\t<div class=\"signal-value\"><form action=\"" << form_action << "\" method=\"post\"><input title=\"Type a value then press enter\" class=\"signal-value-text" << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"text\" spellcheck=\"false\" name=\"set*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\" value=\"" << unisim::util::hypapp::HTML_Encoder::Encode(value) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></form></div>" << std::endl;
+								response << "\t\t\t\t</div>" << std::endl;
 							}
 						}
+
+						
+						response << "\t\t\t</div>" << std::endl;
+						response << "\t\t</div>" << std::endl;
 					}
+					
+					response << "\t</body>" << std::endl;
+					
+					UnlockInstruments();
 				}
+					
+				response << "</html>" << std::endl;
+				response << std::endl;
 				
-				return true;
+				break;
 			}
 			
-			UserInterface& user_interface;
-		};
-		
-		DisableInjection();
-		DisableValueChangedBreakpoint();
-		bad_user_step_time = false;
-		timed_step = false;
-		delta_steps = 0;
-		cont = false;
-		intr = false;
-		halt = false;
-		enable_all_input_instruments = false;
-		disable_all_input_instruments = false;
-		enable_all_value_changed_breakpoints = false;
-		disable_all_value_changed_breakpoints = false;
-		
-		std::map<UserInstrument *, bool>::iterator enable_input_instrument_it;
-		for(enable_input_instrument_it = enable_input_instruments.begin(); enable_input_instrument_it != enable_input_instruments.end(); enable_input_instrument_it++)
-		{
-			(*enable_input_instrument_it).second = false;
-		}
-		
-		std::map<UserInstrument *, bool>::iterator enable_value_changed_breakpoint_it;
-		for(enable_value_changed_breakpoint_it = enable_value_changed_breakpoints.begin(); enable_value_changed_breakpoint_it != enable_value_changed_breakpoints.end(); enable_value_changed_breakpoint_it++)
-		{
-			(*enable_value_changed_breakpoint_it).second = false;
-		}
-
-		std::map<UserInstrument *, std::string>::iterator set_input_instruments_it;
-		for(set_input_instruments_it = set_input_instruments.begin(); set_input_instruments_it != set_input_instruments.end(); set_input_instruments_it++)
-		{
-			(*set_input_instruments_it).second = std::string();
-		}
-
-		std::map<UserInstrument *, bool>::iterator toggle_input_instrument_it;
-		for(toggle_input_instrument_it = toggle_input_instruments.begin(); toggle_input_instrument_it != toggle_input_instruments.end(); toggle_input_instrument_it++)
-		{
-			(*toggle_input_instrument_it).second = false;
-		}
-
-		PropertySetter property_setter(*this);
-		if(property_setter.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
-		{
-			if(enable_all_input_instruments || disable_all_input_instruments)
-			{
-				std::map<std::string, UserInstrument *>::iterator user_instrument_it;
-				for(user_instrument_it = user_instruments.begin(); user_instrument_it != user_instruments.end(); user_instrument_it++)
-				{
-					UserInstrument *user_instrument = (*user_instrument_it).second;
-					if(enable_all_input_instruments)
-					{
-						user_instrument->EnableInjection();
-					}
-					else if(disable_all_input_instruments)
-					{
-						user_instrument->DisableInjection();
-					}
-				}
-			}
-			else
-			{
-				std::map<UserInstrument *, bool>::iterator enable_input_instrument_it;
-				for(enable_input_instrument_it = enable_input_instruments.begin(); enable_input_instrument_it != enable_input_instruments.end(); enable_input_instrument_it++)
-				{
-					UserInstrument *user_instrument = (*enable_input_instrument_it).first;
-					bool enable_injection = (*enable_input_instrument_it).second;
-
-					if(enable_injection)
-					{
-						user_instrument->EnableInjection();
-					}
-					else
-					{
-						user_instrument->DisableInjection();
-					}
-				}
-			}
-			
-			if(enable_all_value_changed_breakpoints || disable_all_value_changed_breakpoints)
-			{
-				std::map<std::string, UserInstrument *>::iterator user_instrument_it;
-				for(user_instrument_it = user_instruments.begin(); user_instrument_it != user_instruments.end(); user_instrument_it++)
-				{
-					UserInstrument *user_instrument = (*user_instrument_it).second;
-					if(enable_all_value_changed_breakpoints)
-					{
-						user_instrument->EnableValueChangedBreakpoint();
-					}
-					else if(disable_all_value_changed_breakpoints)
-					{
-						user_instrument->DisableValueChangedBreakpoint();
-					}
-				}
-			}
-			else
-			{
-				std::map<UserInstrument *, bool>::iterator enable_value_changed_breakpoint_it;
-				for(enable_value_changed_breakpoint_it = enable_value_changed_breakpoints.begin(); enable_value_changed_breakpoint_it != enable_value_changed_breakpoints.end(); enable_value_changed_breakpoint_it++)
-				{
-					UserInstrument *user_instrument = (*enable_value_changed_breakpoint_it).first;
-					bool enable_injection = (*enable_value_changed_breakpoint_it).second;
-
-					if(enable_injection)
-					{
-						user_instrument->EnableValueChangedBreakpoint();
-					}
-					else
-					{
-						user_instrument->DisableValueChangedBreakpoint();
-					}
-				}
-			}
-			
-			std::map<UserInstrument *, std::string>::iterator set_input_instrument_it;
-			for(set_input_instrument_it = set_input_instruments.begin(); set_input_instrument_it != set_input_instruments.end(); set_input_instrument_it++)
-			{
-				UserInstrument *user_instrument = (*set_input_instrument_it).first;
+			case unisim::util::hypapp::Request::OPTIONS:
+				response.Allow("OPTIONS, POST, GET, HEAD");
+				break;
 				
-				std::map<UserInstrument *, bool>::iterator toggle_input_instrument_it = toggle_input_instruments.find(user_instrument);
+			default:
+				response.SetStatus(unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED);
+				response.Allow("OPTIONS, POST, GET, HEAD");
 				
-				bool toggle = (toggle_input_instrument_it == toggle_input_instruments.end()) ? (*toggle_input_instrument_it).second : false;
-				if(!toggle)
-				{
-					const std::string set_value = (*set_input_instrument_it).second;
-					if(!set_value.empty())
-					{
-						if(verbose)
-						{
-							logger << DebugInfo << "set \"" << user_instrument->GetName() << "\" <- \"" << set_value << "\"" << EndDebugInfo;
-						}
-						user_instrument->Set(set_value);
-						if(!cont && !timed_step) delta_steps = 3;
-					}
-				}
-			}
-
-			std::map<UserInstrument *, bool>::iterator toggle_input_instrument_it;
-			for(toggle_input_instrument_it = toggle_input_instruments.begin(); toggle_input_instrument_it != toggle_input_instruments.end(); toggle_input_instrument_it++)
-			{
-				UserInstrument *user_instrument = (*toggle_input_instrument_it).first;
-				bool toggle = (*toggle_input_instrument_it).second;
-
-				if(toggle)
-				{
-					if(verbose)
-					{
-						logger << DebugInfo << "toggling \"" << user_instrument->GetName() << "\"" << EndDebugInfo;
-					}
-					user_instrument->Toggle();
-					if(!cont && !timed_step) delta_steps = 3;
-				}
-			}
+				response << "<!DOCTYPE html>" << std::endl;
+				response << "<html>" << std::endl;
+				response << "\t<head>" << std::endl;
+				response << "\t\t<title>Error " << (unsigned int) unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << " (" << unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << ")</title>" << std::endl;
+				response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+				response << "\t\t<meta name=\"description\" content=\"Error " << (unsigned int) unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << " (" << unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << ")\">" << std::endl;
+				response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+				response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+				response << "\t\t<style>" << std::endl;
+				response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+				response << "\t\t</style>" << std::endl;
+				response << "\t</head>" << std::endl;
+				response << "\t<body>" << std::endl;
+				response << "\t\t<p>Method not allowed</p>" << std::endl;
+				response << "\t</body>" << std::endl;
+				response << "</html>" << std::endl;
+				
+				break;
 		}
-		else
-		{
-			logger << DebugWarning << "parse error in POST data" << EndDebugWarning;
-			timed_step = false;
-			delta_steps = 0;
-			cont = false;
-			intr = false;
-			halt = false;
-		}
-		
-		UnlockInstruments();
-		
-		if(cont)
-		{
-			Run();
-		}
-		else if(timed_step || delta_steps || intr || halt)
-		{
-			WaitForSimulation();
-		}
-		
-		UnlockPost();
-	}
-	
-	std::ostringstream doc_sstr;
-	
-	doc_sstr << "<!DOCTYPE html>" << std::endl;
-	doc_sstr << "<html>" << std::endl;
-	
-	if(halt)
-	{
-		Stop(-1, /* asynchronous */ true);
-		
-		doc_sstr << "\t<head>" << std::endl;
-		doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-		doc_sstr << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
-		doc_sstr << "\t\t<script type=\"text/javascript\">document.domain=\"" << req.GetDomain() << "\";</script>" << std::endl;
-		doc_sstr << "\t</head>" << std::endl;
-		doc_sstr << "\t<body>" << std::endl;
-		doc_sstr << "\t<p>Disconnected</p>" << std::endl;
-		doc_sstr << "\t<script type=\"application/javascript\">Reload = function() { window.location.href=window.location.href; }</script>" << std::endl;
-		doc_sstr << "\t<button onclick=\"Reload()\">Reconnect</button>" << std::endl;
-		doc_sstr << "\t</body>" << std::endl;
 	}
 	else
 	{
-		doc_sstr << "\t<head>" << std::endl;
-		doc_sstr << "\t\t<title>" << String_to_HTML(program_name) << " - " << String_to_HTML(GetName()) << "</title>" << std::endl;
-		doc_sstr << "\t\t<meta name=\"description\" content=\"remote control interface over HTTP of virtual platform hardware signal instrumenter\">" << std::endl;
-		doc_sstr << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-		doc_sstr << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
-		doc_sstr << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
-		doc_sstr << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/instrumenter/style.css\" type=\"text/css\" />" << std::endl;
-		doc_sstr << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-		doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
-		doc_sstr << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/instrumenter/script.js\"></script>" << std::endl;
-		doc_sstr << "\t</head>" << std::endl;
+		response.SetStatus(unisim::util::hypapp::HttpResponse::NOT_FOUND);
 		
-		if(cont)
-		{
-			doc_sstr << "\t<body onload=\"setTimeout(reload_instrumenter_page, 1000)\">" << std::endl; // while in continue mode, reload page every seconds
-		}
-		else
-		{
-			doc_sstr << "\t<body>" << std::endl;
-		}
-		
-		//doc_sstr << "\t\t<h1>" << String_to_HTML(program_name) << " - " << String_to_HTML(GetName()) << "</h1>" << std::endl;
-		
-		doc_sstr << "\t\t<table class=\"status-table\">" << std::endl;
-		doc_sstr << "\t\t\t<thead>" << std::endl;
-		doc_sstr << "\t\t\t\t<tr>" << std::endl;
-		doc_sstr << "\t\t\t\t\t<th class=\"status\">Status</th>" << std::endl;
-		doc_sstr << "\t\t\t\t\t<th class=\"time\">Time</th>" << std::endl;
-		doc_sstr << "\t\t\t\t\t<th class=\"time\">(exactly)</th>" << std::endl;
-		doc_sstr << "\t\t\t\t</tr>" << std::endl;
-		doc_sstr << "\t\t\t</thead>" << std::endl;
-		doc_sstr << "\t\t\t<tbody>" << std::endl;
-		doc_sstr << "\t\t\t\t<tr>" << std::endl;
-		doc_sstr << "\t\t\t\t\t<td class=\"status\">" << (bad_user_step_time ? "bad step time" : (cont ? "running" : "ready")) << "</td>" << std::endl;
-		
-		std::ios_base::fmtflags ff = doc_sstr.flags();
-		doc_sstr.setf(std::ios::fixed);
-		doc_sstr.precision(3);
-		doc_sstr << "\t\t\t\t\t<td class=\"time\">" << curr_time_stamp.to_seconds() << " seconds</td>" << std::endl;
-		doc_sstr.flags(ff);
-		
-		doc_sstr << "\t\t\t\t\t<td class=\"time\">(" << String_to_HTML(curr_time_stamp.to_string()) << ")</td>" << std::endl;
-		doc_sstr << "\t\t\t\t</tr>" << std::endl;
-		doc_sstr << "\t\t\t</tbody>" << std::endl;
-		doc_sstr << "\t\t</table>" << std::endl;
-		
-		doc_sstr << "\t\t<form action=\"" << req.GetRequestURI() << "\" method=\"post\" enctype=\"application/x-www-form-urlencoded\">" << std::endl;
-		doc_sstr << "\t\t\t<h2>Commands</h2>" << std::endl;
-		doc_sstr << "\t\t\t<table class=\"command-table\">" << std::endl;
-		doc_sstr << "\t\t\t\t<tbody>" << std::endl;
-		doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<td><button class=\"delta-step\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"delta-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">&delta;</button></td>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<td><button class=\"timed-step\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"timed-step\" value=\"on\"" << ((cont || halt) ? " disabled" : "") << ">Step</button>&nbsp;by&nbsp;<input class=\"step-time\" type=\"text\" name=\"step-time\" value=\"" << user_step_time << "\"" << ((cont || halt) ? " disabled" : "") << "></td>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<td><button class=\"" << (cont ? "intr" : "cont") << "\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"" << (cont ? "intr" : "cont") << "\" value=\"on\"" << (halt ? " disabled" : "") << ">" << (cont ? "Interrupt" : "Continue") << "</button></td>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<td><button class=\"halt\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"halt\" value=\"on\"" << (halt ? " disabled" : "")  << ">Halt</button></td>" << std::endl;
-		doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
-		doc_sstr << "\t\t\t\t</tbody>" << std::endl;
-		doc_sstr << "\t\t\t</table>" << std::endl;
-		doc_sstr << "\t\t\t<h2>Instruments</h2>" << std::endl;
-		doc_sstr << "\t\t\t<table class=\"instruments-table1\">" << std::endl;
-		doc_sstr << "\t\t\t\t<thead>" << std::endl;
-		doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-enable\">Enable<br><button class=\"signal-disable-all\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"disable*all\">C</button><button class=\"signal-enable-all\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"enable*all\">A</button></th>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-brkpt-enable\">Brkpt<br><button class=\"signal-brkpt-disable-all\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"disable-brkpt*all\">C</button><button class=\"signal-brkpt-enable-all\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"enable-brkpt*all\">A</button></th>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-name\">Hardware signal</th>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-toggle\">Toggle</th>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<th class=\"signal-value\">Value</th>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<th class=\"scrollbar\"></th>" << std::endl;
-		doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
-		doc_sstr << "\t\t\t\t</thead>" << std::endl;
-		doc_sstr << "\t\t\t\t<tbody>" << std::endl;
-		doc_sstr << "\t\t\t\t\t<tr>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t<td colspan=\"6\">" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t\t<div class=\"scroller\">" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t\t\t<table class=\"instruments-table2\">" << std::endl;
-
-		LockInstruments();
-		if(likely(!has_breakpoint_cond))
-		{
-			Sample();
-		}
-		has_breakpoint_cond = false;
-
-		std::stringstream sstr(instrumentation);
-		
-		std::vector<std::string>::iterator instrumented_signal_name_it;
-		for(instrumented_signal_name_it = instrumented_signal_names.begin(); instrumented_signal_name_it != instrumented_signal_names.end(); instrumented_signal_name_it++)
-		{
-			const std::string& instrumented_signal_name = *instrumented_signal_name_it;
-
-			UserInstrument *user_instrument = FindUserInstrument(instrumented_signal_name);
-			
-			if(user_instrument)
-			{
-				std::string value;
-				user_instrument->Get(value);
-				bool is_boolean = user_instrument->IsBoolean();
-				bool bool_value = false;
-				if(is_boolean) user_instrument->Get(bool_value);
-				doc_sstr << "\t\t\t\t\t\t\t\t\t\t<tr class=\"signal" << (user_instrument->HasBreakpointCondition() ? " brkpt-cond" : "") << "\">" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-enable\"><input class=\"signal-enable-checkbox\" type=\"checkbox\" name=\"enable*" << String_to_HTML(user_instrument->GetName()) << "\"" << (user_instrument->IsInjectionEnabled() ? " checked" : "") << (user_instrument->IsReadOnly() ? " disabled" : "") << "></td>" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-brkpt-enable\"><input class=\"signal-brkpt-enable-checkbox\" type=\"checkbox\" name=\"enable-brkpt*" << String_to_HTML(user_instrument->GetName()) << "\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : "") << "></td>" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-name\">" << String_to_HTML(user_instrument->GetName()) << "</td>" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-toggle\">";
-				if(is_boolean)
-				{
-					doc_sstr << "<button class=\"signal-toggle-button signal-" << (bool_value ? "on" : "off") << "\" type=\"submit\" onclick=\"save_instrumenter_scroll_top()\" name=\"toggle*" << String_to_HTML(user_instrument->GetName()) << "\"" << ((cont || halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << ">" << (bool_value ? "on" : "off")  << "</button>";
-				}
-				doc_sstr << "</td>" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t\t\t\t\t\t<td class=\"signal-value\"><input class=\"signal-value-text" << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"text\" name=\"set*" << String_to_HTML(user_instrument->GetName()) << "\" value=\"" << String_to_HTML(value) << "\"" << ((cont || halt) ? " disabled" : "") << (user_instrument->IsReadOnly() ? " readonly" : "") << "></td>" << std::endl;
-				doc_sstr << "\t\t\t\t\t\t\t\t\t\t</tr>" << std::endl;
-			}
-		}
-
-		UnlockInstruments();
-		
-		doc_sstr << "\t\t\t\t\t\t\t\t</table>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t\t</div>" << std::endl;
-		doc_sstr << "\t\t\t\t\t\t</td>" << std::endl;
-		doc_sstr << "\t\t\t\t\t</tr>" << std::endl;
-		doc_sstr << "\t\t\t\t</tbody>" << std::endl;
-		doc_sstr << "\t\t\t</table>" << std::endl;
-		doc_sstr << "\t\t</form>" << std::endl;
-		
-		doc_sstr << "\t</body>" << std::endl;
+		response << "<!DOCTYPE html>" << std::endl;
+		response << "<html>" << std::endl;
+		response << "\t<head>" << std::endl;
+		response << "\t\t<title>Error " << (unsigned int) unisim::util::hypapp::HttpResponse::NOT_FOUND << " (" << unisim::util::hypapp::HttpResponse::NOT_FOUND << ")</title>" << std::endl;
+		response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		response << "\t\t<meta name=\"description\" content=\"Error " << (unsigned int) unisim::util::hypapp::HttpResponse::NOT_FOUND << " (" << unisim::util::hypapp::HttpResponse::NOT_FOUND << ")\">" << std::endl;
+		response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+		response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+		response << "\t\t<style>" << std::endl;
+		response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+		response << "\t\t</style>" << std::endl;
+		response << "\t</head>" << std::endl;
+		response << "\t<body>" << std::endl;
+		response << "\t\t<p>Unavailable</p>" << std::endl;
+		response << "\t</body>" << std::endl;
+		response << "</html>" << std::endl;
 	}
-		
-	doc_sstr << "</html>" << std::endl;
-	doc_sstr << std::endl;
 	
-	std::string doc(doc_sstr.str());
-		
-	std::ostringstream http_header_sstr;
-	if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
+	bool send_status = conn.Send(response.ToString(req.GetRequestType() == unisim::util::hypapp::Request::HEAD));
+
+	if(send_status)
 	{
-		http_header_sstr << "HTTP/1.1 201 Created\r\n";
+		if(verbose)
+		{
+			logger << DebugInfo << "sending HTTP response: done" << EndDebugInfo;
+		}
 	}
 	else
 	{
-		http_header_sstr << "HTTP/1.1 200 OK\r\n";
+		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response" << EndDebugWarning;
 	}
-		
-	http_header_sstr << "Server: UNISIM-VP\r\n"
-					<< "Cache-control: no-cache\r\n"
-					<< "Connection: keep-alive\r\n"
-					<< "Content-length: " << doc.length() << "\r\n"
-					<< "Content-Type: text/html; charset=utf-8\r\n"
-					<< "\r\n";
 	
-	std::string http_header(http_header_sstr.str());
+	return send_status;
+}
 
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response header: " << std::endl << http_header << EndDebugInfo;
-	}
-	if(!conn.Send(http_header.c_str(), http_header.length()))
-	{
-		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP header" << EndDebugWarning;
-		return false;
-	}
+void UserInterface::ScanWebInterfaceModdings(unisim::service::interfaces::WebInterfaceModdingScanner& scanner)
+{
+	scanner.Append(unisim::service::interfaces::JSFile(URI() + "/toolbar_actions.js"));
 	
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response header: done" << EndDebugInfo;
-	}
+	scanner.Append(unisim::service::interfaces::CSSFile("/unisim/service/instrumenter/status_style.css"));
 	
-	if(req.GetRequestType() == unisim::util::hypapp::Request::HEAD) return true;
-			
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response body: " << std::endl << doc << EndDebugInfo;
-	}
+	scanner.Append(unisim::service::interfaces::ToolbarOpenTabAction(
+		/* name */      GetName(), 
+		/* label */     "<img src=\"/unisim/service/instrumenter/icon.svg\">",
+		/* tips */      "Signal instrumenter",
+		/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+		/* uri */       URI() + "/instrument"
+	));
 	
-	if(!conn.Send(doc.c_str(), doc.length()))
-	{
-		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response body" << EndDebugWarning;
-		return false;
-	}
+	scanner.Append(unisim::service::interfaces::ToolbarDoAction(
+		/* name */      std::string("cont-") + GetName(), 
+		/* label */     "<img src=\"/unisim/service/instrumenter/icon_cont.svg\">",
+		/* tips */      "Continue",
+		/* js action */ "return gui && gui.instrumenter_toolbar_actions && gui.instrumenter_toolbar_actions.execute('cont')"
+	));
 	
-	if(verbose)
-	{
-		logger << DebugInfo << "sending HTTP response body: done" << EndDebugInfo;
-	}
+	scanner.Append(unisim::service::interfaces::ToolbarDoAction(
+		/* name */      std::string("intr-") + GetName(), 
+		/* label */     "<img src=\"/unisim/service/instrumenter/icon_intr.svg\">",
+		/* tips */      "Interrupt",
+		/* js action */ "return gui && gui.instrumenter_toolbar_actions && gui.instrumenter_toolbar_actions.execute('intr')"
+	));
 	
-	return true;
+	scanner.Append(unisim::service::interfaces::ToolbarDoAction(
+		/* name */      std::string("halt-") + GetName(), 
+		/* label */     "<img src=\"/unisim/service/instrumenter/icon_halt.svg\">",
+		/* tips */      "Halt",
+		/* js action */ "return gui && gui.instrumenter_toolbar_actions && gui.instrumenter_toolbar_actions.execute('halt')"
+	));
+
+	std::ostringstream status_sstr;
+	status_sstr << "<div class=\"state\"></div>";
+	status_sstr << "<div class=\"time\"></div>";
+	status_sstr << "<div class=\"time-exact\"></div>";
+	std::string status(status_sstr.str());
+	
+	scanner.Append(unisim::service::interfaces::StatusBarItem(
+		/* name */       std::string("status-") + GetName(),
+		/* class name */ "instrumenter-status",
+		/* HTML */       status
+	));
 }
 
 UserInstrument *UserInterface::FindUserInstrument(const std::string& name)
@@ -1793,8 +1713,257 @@ void UserInterface::DisableValueChangedBreakpoint()
 	}
 }
 
+void UserInterface::PropertySetter::UserInstrumentCommand::Apply(PropertySetter& property_setter) const
+{
+	UserInterface& user_interface = property_setter.user_interface;
+	
+	switch(type)
+	{
+		case NOP:
+			break;
+		case ENABLE_ALL:
+			user_interface.EnableInjection();
+			property_setter.delta_steps = std::max(3u, property_setter.delta_steps);
+			break;
+		case DISABLE_ALL:
+			user_interface.DisableInjection();
+			property_setter.delta_steps = std::max(3u, property_setter.delta_steps);
+			break;
+		case ENABLE_ALL_VALUE_CHANGED_BREAKPOINTS:
+			user_interface.EnableValueChangedBreakpoint();
+			break;
+		case DISABLE_ALL_VALUE_CHANGED_BREAKPOINTS:
+			user_interface.DisableValueChangedBreakpoint();
+			break;
+		case ENABLE:
+			user_instrument->EnableInjection();
+			property_setter.delta_steps = std::max(3u, property_setter.delta_steps);
+			break;
+		case DISABLE:
+			user_instrument->DisableInjection();
+			property_setter.delta_steps = std::max(3u, property_setter.delta_steps);
+			break;
+		case ENABLE_VALUE_CHANGED_BRKPT:
+			user_instrument->EnableValueChangedBreakpoint();
+			break;
+		case DISABLE_VALUE_CHANGED_BRKPT:
+			user_instrument->DisableValueChangedBreakpoint();
+			break;
+		case SET:
+			user_instrument->Set(value);
+			property_setter.delta_steps = std::max(3u, property_setter.delta_steps);
+			break;
+		case TOGGLE:
+			user_instrument->Toggle();
+			property_setter.delta_steps = std::max(3u, property_setter.delta_steps);
+			break;
+	}
+}
+
+UserInterface::PropertySetter::PropertySetter(UserInterface& _user_interface)
+	: user_interface(_user_interface)
+	, curr_time_stamp()
+	, valid_curr_time_stamp(false)
+	, user_step_time()
+	, valid_user_step_time(false)
+	, timed_step(false)
+	, delta_steps(0)
+	, cont(false)
+	, intr(false)
+	, halt(false)
+	, user_instrument_commands()
+{
+}
+	
+bool UserInterface::PropertySetter::FormAssign(const std::string& name, const std::string& value)
+{
+	if(name.compare("curr-time-stamp") == 0)
+	{
+		std::istringstream curr_time_stamp_sstr(value);
+		valid_curr_time_stamp = !(curr_time_stamp_sstr >> curr_time_stamp).bad()/* && curr_time_stamp_sstr.eof()*/;
+		
+		if(!valid_curr_time_stamp)
+		{
+			user_interface.logger << DebugWarning << "expecting a time in curr-time-stamp, got '" << value << "'" << EndDebugWarning;
+			return false;
+		}
+	}
+	else if(name.compare("step-time") == 0)
+	{
+		std::istringstream value_sstr(value);
+		valid_user_step_time = !(value_sstr >> user_step_time).bad()/* && !value_sstr.eof()*/;
+		
+		if(!valid_user_step_time)
+		{
+			user_interface.logger << DebugWarning << "expecting a time in time-step, got '" << value << "'" << EndDebugWarning;
+			return false;
+		}
+	}
+	else if((name.compare("timed-step") == 0) && (value.compare("on") == 0))
+	{
+		if(user_interface.verbose)
+		{
+			user_interface.logger << DebugInfo << "Timed Step" << EndDebugInfo;
+		}
+		timed_step = true;
+	}
+	else if((name.compare("delta-step") == 0) && (value.compare("on") == 0))
+	{
+		if(user_interface.verbose)
+		{
+			user_interface.logger << DebugInfo << "Delta Step" << EndDebugInfo;
+		}
+		delta_steps = std::max(3u, delta_steps);
+	}
+	else if((name.compare("cont") == 0) && (value.compare("on") == 0))
+	{
+		if(user_interface.verbose)
+		{
+			user_interface.logger << DebugInfo << "Continue" << EndDebugInfo;
+		}
+		cont = true;
+	}
+	else if((name.compare("intr") == 0) && (value.compare("on") == 0))
+	{
+		if(user_interface.verbose)
+		{
+			user_interface.logger << DebugInfo << "Interrupt" << EndDebugInfo;
+		}
+		intr = true;
+	}
+	else if((name.compare("halt") == 0) && (value.compare("on") == 0))
+	{
+		if(user_interface.verbose)
+		{
+			user_interface.logger << DebugInfo << "Halt" << EndDebugInfo;
+		}
+		halt = true;
+	}
+	else
+	{
+		std::size_t delim_pos = name.find_first_of('*');
+		if(delim_pos != std::string::npos)
+		{
+			std::string user_instrument_action = name.substr(0, delim_pos);
+			std::string user_instrument_name = name.substr(delim_pos + 1);
+			
+			if(user_instrument_name == "all")
+			{
+				if(user_instrument_action == "enable")
+				{
+					user_instrument_commands.push_back(UserInstrumentCommand(ENABLE_ALL));
+				}
+				else if(user_instrument_action == "disable")
+				{
+					user_instrument_commands.push_back(UserInstrumentCommand(DISABLE_ALL));
+				}
+				else if(user_instrument_action == "enable-brkpt")
+				{
+					user_instrument_commands.push_back(UserInstrumentCommand(ENABLE_ALL_VALUE_CHANGED_BREAKPOINTS));
+				}
+				else if(user_instrument_action == "disable-brkpt")
+				{
+					user_instrument_commands.push_back(UserInstrumentCommand(DISABLE_ALL_VALUE_CHANGED_BREAKPOINTS));
+				}
+			}
+			else
+			{
+				UserInstrument *user_instrument = user_interface.FindUserInstrument(user_instrument_name);
+				
+				if(user_instrument)
+				{
+					if(user_instrument_action == "enable")
+					{
+						user_instrument_commands.push_back(UserInstrumentCommand(ENABLE, user_instrument));
+					}
+					else if(user_instrument_action == "disable")
+					{
+						user_instrument_commands.push_back(UserInstrumentCommand(DISABLE, user_instrument));
+					}
+					else if(user_instrument_action == "enable-brkpt")
+					{
+						user_instrument_commands.push_back(UserInstrumentCommand(ENABLE_VALUE_CHANGED_BRKPT, user_instrument));
+					}
+					else if(user_instrument_action == "disable-brkpt")
+					{
+						user_instrument_commands.push_back(UserInstrumentCommand(DISABLE_VALUE_CHANGED_BRKPT, user_instrument));
+					}
+					else if(user_instrument_action == "set")
+					{
+						user_instrument_commands.push_back(UserInstrumentCommand(SET, user_instrument, value));
+					}
+					else if(user_instrument_action == "toggle")
+					{
+						user_instrument_commands.push_back(UserInstrumentCommand(TOGGLE, user_instrument));
+					}
+					else
+					{
+						user_interface.logger << DebugWarning << "unknown Action \"" << user_instrument_action << "\" on User instrument \"" << user_instrument_name << "\"" << EndDebugWarning;
+						return false;
+					}
+				}
+				else
+				{
+					user_interface.logger << DebugWarning << "Can't find User instrument \"" << user_instrument_name << "\"" << EndDebugWarning;
+					return false;
+				}
+			}
+		}
+	}
+	
+	return true;
+}
+
+void UserInterface::PropertySetter::Apply()
+{
+	for(UserInstrumentCommands::const_iterator it = user_instrument_commands.begin(); it != user_instrument_commands.end(); it++)
+	{
+		const UserInstrumentCommand& user_instrument_command = *it;
+		user_instrument_command.Apply(*this);
+	}
+	if(valid_user_step_time)
+	{
+		user_interface.user_step_time = user_step_time;
+	}
+	
+	if(timed_step)
+	{
+		if(valid_user_step_time && valid_curr_time_stamp)
+		{
+			sc_core::sc_time deadline(curr_time_stamp);
+			deadline += user_step_time;
+			if(user_interface.curr_time_stamp < deadline)
+			{
+				cont = true;
+				user_interface.schedule.insert(deadline);
+			}
+			else
+			{
+				user_interface.intr = true;
+			}
+		}
+		else
+		{
+			cont = false;
+		}
+	}
+	else if(delta_steps)
+	{
+		user_interface.delta_steps = delta_steps;
+		cont = true;
+	}
+	if(intr)
+	{
+		user_interface.intr = true;
+	}
+	if(halt)
+	{
+		user_interface.halt = true;
+	}
+}
+
 CSV_Reader::CSV_Reader(const char *name, Instrumenter *instrumenter)
-	: unisim::kernel::service::Object(name, instrumenter)
+	: unisim::kernel::service::Object(name, instrumenter, "Hardware instrument .CSV file reader")
 	, InstrumenterFrontEnd(name, instrumenter)
 	, logger(*this)
 	, filename()
@@ -1807,8 +1976,10 @@ CSV_Reader::CSV_Reader(const char *name, Instrumenter *instrumenter)
 	, param_instrumentation_end_time("instrumentation-end-time", this, instrumentation_end_time, "End time of instrumentation")
 	, csv_delimiter(",")
 	, param_csv_delimiter("csv-delimiter", this, csv_delimiter, "delimiter in CSV file")
+	, lineno(1)
 	, file(0)
 	, time_resolution(sc_core::SC_ZERO_TIME)
+	, csv_instrument_names()
 	, csv_instrument_map()
 	, csv_time_stamp(sc_core::SC_ZERO_TIME)
 {
@@ -1816,12 +1987,17 @@ CSV_Reader::CSV_Reader(const char *name, Instrumenter *instrumenter)
 		
 	if(file->fail())
 	{
+		delete file;
 		file = 0;
 		logger << DebugWarning << "Can't open File \"" << filename << "\"" << EndDebugWarning;
 		return;
 	}
-
-	ParseCSVHeaderAndInstrumentInput(0);
+	
+	if(!ParseCSVHeaderAndInstrumentInput())
+	{
+		delete file;
+		file = 0;
+	}
 }
 
 CSV_Reader::~CSV_Reader()
@@ -1832,17 +2008,30 @@ CSV_Reader::~CSV_Reader()
 bool CSV_Reader::SetupInstrumentation()
 {
 	if(!file) return false;
-		
-	if(ParseCSVHeaderAndInstrumentInput(1))
+	
+	csv_instrument_map.resize(csv_instrument_names.size());
+	
+	for(unsigned int i = 0; i < csv_instrument_names.size(); i++)
 	{
-		do
-		{
-			if(!ParseCSV(csv_time_stamp)) return false;
-		}
-		while(csv_time_stamp < instrumentation_start_time);
+		const std::string& csv_instrument_name = csv_instrument_names[i];
+		InputInstrumentBase *input_instrument = InstrumentInputSignal(csv_instrument_name);
+		//std::cerr << "CSV column " << csv_column << " is for instrument " << (input_instrument ? input_instrument->GetName() : "unknown") << std::endl;
 		
-		instrumentation_start_time = csv_time_stamp; // crop interval
+		if(!input_instrument)
+		{
+			logger << DebugWarning << "Input Signal \"" << csv_instrument_name << "\" can't be instrumented or does not exists" << EndDebugWarning;
+		}
+		
+		csv_instrument_map[i] = input_instrument;
 	}
+	
+	do
+	{
+		if(!ParseCSV(csv_time_stamp)) return false;
+	}
+	while(csv_time_stamp < instrumentation_start_time);
+	
+	instrumentation_start_time = csv_time_stamp; // crop interval
 	
 	return true;
 }
@@ -1887,20 +2076,10 @@ void CSV_Reader::ProcessOutputInstruments()
 {
 }
 
-bool CSV_Reader::ParseCSVHeaderAndInstrumentInput(int pass)
+bool CSV_Reader::ParseCSVHeaderAndInstrumentInput()
 {
 	if(file)
 	{
-		switch(pass)
-		{
-			case 0:
-				break;
-				
-			case 1:
-				csv_instrument_map.clear();
-				break;
-		}
-		
 		std::string line;
 		
 		if(std::getline(*file, line))
@@ -1926,62 +2105,39 @@ bool CSV_Reader::ParseCSVHeaderAndInstrumentInput(int pass)
 				//std::cerr << "value is \"" << value << "\"" << std::endl;
 				if(csv_column)
 				{
-					switch(pass)
-					{
-						case 0:
-							PrepareInstrumentation(value, INPUT_INSTRUMENTATION);
-							break;
-						case 1:
-						{
-							InputInstrumentBase *input_instrument = InstrumentInputSignal(value);
-							//std::cerr << "CSV column " << csv_column << " is for instrument " << (input_instrument ? input_instrument->GetName() : "unknown") << std::endl;
-							
-							csv_instrument_map.resize(csv_column);
-							csv_instrument_map[csv_column - 1] = input_instrument;
-							break;
-						}
-					}
+					PrepareInstrumentation(value, INPUT_INSTRUMENTATION);
+					csv_instrument_names.push_back(value);
 				}
 				else
 				{
-					switch(pass)
+					// first column is time unit
+					std::stringstream value_sstr(value);
+					double time_value;
+					std::string time_unit;
+					
+					if((value_sstr >> time_value) && (value_sstr >> time_unit))
 					{
-						case 0:
-							break;
-							
-						case 1:
+						if(time_unit.compare("s") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_SEC);
+						else if(time_unit.compare("ms") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_MS);
+						else if(time_unit.compare("us") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_US);
+						else if(time_unit.compare("ns") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_NS);
+						else if(time_unit.compare("ps") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_PS);
+						else if(time_unit.compare("fs") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_FS);
+						else
 						{
-							std::stringstream value_sstr(value);
-							double time_value;
-							std::string time_unit;
-							
-							if((value_sstr >> time_value) && (value_sstr >> time_unit))
-							{
-								if(time_unit.compare("s") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_SEC);
-								else if(time_unit.compare("ms") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_MS);
-								else if(time_unit.compare("us") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_US);
-								else if(time_unit.compare("ns") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_NS);
-								else if(time_unit.compare("ps") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_PS);
-								else if(time_unit.compare("fs") == 0) time_resolution = sc_core::sc_time(time_value, sc_core::SC_FS);
-								else
-								{
-									logger << DebugWarning << "In input CSV file, first line, first column, malformed time_unit ('" << time_unit << "'): expecting 's', 'ms', 'us', 'ns', 'ps', or 'fs'." << EndDebugWarning;
-									return false;
-								}
-							}
-							else
-							{
-								logger << DebugWarning << "expecting a time resolution in first line, first column (e.g. 1 ps) of input CSV file" << EndDebugWarning;
-								return false;
-							}
-							
-							if(!value_sstr.eof())
-							{
-								logger << DebugWarning << "ignoring extra characters after time resolution in first line, first column of input CSV file" << EndDebugWarning;
-							}
-							
-							break;
+							logger << DebugWarning << "In input CSV file, first line, first column, malformed time_unit ('" << time_unit << "'): expecting 's', 'ms', 'us', 'ns', 'ps', or 'fs'." << EndDebugWarning;
+							return false;
 						}
+					}
+					else
+					{
+						logger << DebugWarning << "expecting a time resolution in first line, first column (e.g. 1 ps) of input CSV file" << EndDebugWarning;
+						return false;
+					}
+					
+					if(!value_sstr.eof())
+					{
+						logger << DebugWarning << "ignoring extra characters after time resolution in first line, first column of input CSV file" << EndDebugWarning;
 					}
 				}
 				
@@ -1989,6 +2145,7 @@ bool CSV_Reader::ParseCSVHeaderAndInstrumentInput(int pass)
 				csv_column++;
 			}
 			while(delim_pos != std::string::npos);
+			lineno++;
 			
 			return true;
 		}
@@ -2026,13 +2183,20 @@ bool CSV_Reader::ParseCSV(sc_core::sc_time& deadline)
 				//std::cerr << "value is \"" << value << "\"" << std::endl;
 				if(csv_column)
 				{
-					InputInstrumentBase *input_instrument = csv_instrument_map[csv_column - 1];
-					
-					if(input_instrument)
+					if((csv_column - 1) < csv_instrument_map.size())
 					{
-						//std::cerr << "value is for " << input_instrument->GetName() << std::endl;
-						std::stringstream value_sstr(value);
-						input_instrument->Input(value_sstr);
+						InputInstrumentBase *input_instrument = csv_instrument_map[csv_column - 1];
+						
+						if(input_instrument)
+						{
+							//std::cerr << "value is for " << input_instrument->GetName() << std::endl;
+							std::stringstream value_sstr(value);
+							input_instrument->Input(value_sstr);
+						}
+					}
+					else
+					{
+						logger << DebugWarning << "At Line #" << lineno << ", ignoring Column #" << csv_column << EndDebugWarning;
 					}
 				}
 				else
@@ -2057,6 +2221,7 @@ bool CSV_Reader::ParseCSV(sc_core::sc_time& deadline)
 			}
 			while(delim_pos != std::string::npos);
 			
+			lineno++;
 			return true;
 		}
 	}
@@ -2064,7 +2229,7 @@ bool CSV_Reader::ParseCSV(sc_core::sc_time& deadline)
 }
 
 CSV_Writer::CSV_Writer(const char *name, Instrumenter *instrumenter)
-	: unisim::kernel::service::Object(name, instrumenter)
+	: unisim::kernel::service::Object(name, instrumenter, "Hardware instrumenter .CSV file writer")
 	, InstrumenterFrontEnd(name, instrumenter)
 	, logger(*this)
 	, filename()
@@ -2223,9 +2388,9 @@ void CSV_Writer::OutputInstrumentsAsCSV(std::ostream& os, const sc_core::sc_time
 		if(force_output || output_instrument->ValueChanged())
 		{
 			output_instrument->Output(os);
-			force_output = false;
 		}
 	}
+	force_output = false;
 	os << std::endl;
 }
 

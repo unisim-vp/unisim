@@ -1,0 +1,3 @@
+unisim/component/cxx/processor/arm/pmsav7/cpu.cc
+unisim/component/cxx/processor/arm/pmsav7/isa_arm32.cc
+unisim/component/cxx/processor/arm/pmsav7/isa_thumb.cc

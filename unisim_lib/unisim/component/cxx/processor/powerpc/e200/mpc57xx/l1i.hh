@@ -60,7 +60,7 @@ struct L1I
 	static const char *GetCacheName() { return "L1I"; }
 
 	L1I(CPU *_cpu)
-		: unisim::kernel::service::Object("L1I", _cpu)
+		: unisim::kernel::service::Object("L1I", _cpu, "L1 Instruction Cache")
 		, SuperCache()
 		, cpu(_cpu)
 		, l1csr1(_cpu, this)

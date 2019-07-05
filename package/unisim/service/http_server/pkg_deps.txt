@@ -1,0 +1,6 @@
+unisim/kernel/logger
+unisim/kernel/service
+unisim/service/interfaces/http_server
+unisim/service/interfaces/registers
+unisim/util/endian
+unisim/util/hypapp

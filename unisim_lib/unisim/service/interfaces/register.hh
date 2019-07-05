@@ -36,12 +36,20 @@
 #define __UNISIM_SERVICE_INTERFACES_REGISTER_HH__
 
 #include <unisim/kernel/service/service.hh>
-#include <unisim/service/interfaces/field.hh>
 #include <inttypes.h>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
+
+struct Field : public unisim::kernel::service::ServiceInterface
+{
+	virtual const char *GetName() const = 0;
+	virtual unsigned int GetBitOffset() const = 0;
+	virtual unsigned int GetBitWidth() const = 0;
+	virtual uint64_t GetValue() const = 0;
+	virtual void SetValue(uint64_t val) = 0;
+};
 
 struct FieldScanner : public unisim::kernel::service::ServiceInterface
 {

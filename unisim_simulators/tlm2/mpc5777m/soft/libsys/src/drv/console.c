@@ -428,7 +428,12 @@ int con_read(struct con_t *con, void *ptr, int len, int nonblock)
 		{
 			if(con_rx_fifo_empty(con))
 			{
-				if(nonblock) return p - (char *) ptr;
+				if(nonblock)
+				{
+					int l = p - (char *) ptr;
+					if(l > 0) con_write(con, ptr, l);
+					return l;
+				}
 				
 				do
 				{
@@ -439,7 +444,9 @@ int con_read(struct con_t *con, void *ptr, int len, int nonblock)
 			
 			char ch = con_rx_fifo_front(con);
 			con_rx_fifo_pop(con);
-			*p++ = ch;
+			*p = ch;
+			con_write(con, p, 1);
+			p++;
 		}
 		while(p < end);
 		

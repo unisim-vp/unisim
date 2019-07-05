@@ -413,6 +413,7 @@ public:
 	virtual void ProcessOutputInstruments();
 	
 	virtual bool ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
+	virtual void ScanWebInterfaceModdings(unisim::service::interfaces::WebInterfaceModdingScanner& scanner);
 	
 	UserInstrument *FindUserInstrument(const std::string& name);
 	
@@ -421,6 +422,55 @@ public:
 	void EnableValueChangedBreakpoint();
 	void DisableValueChangedBreakpoint();
 private:
+	struct PropertySetter : public unisim::util::hypapp::Form_URL_Encoded_Decoder
+	{
+		enum UserInstrumentCommandType
+		{
+			NOP = 0,
+			ENABLE_ALL,
+			DISABLE_ALL,
+			ENABLE_ALL_VALUE_CHANGED_BREAKPOINTS,
+			DISABLE_ALL_VALUE_CHANGED_BREAKPOINTS,
+			ENABLE,
+			DISABLE,
+			ENABLE_VALUE_CHANGED_BRKPT,
+			DISABLE_VALUE_CHANGED_BRKPT,
+			SET,
+			TOGGLE
+		};
+		
+		struct UserInstrumentCommand
+		{
+			UserInstrumentCommandType type;
+			UserInstrument *user_instrument;
+			std::string value;
+			
+			UserInstrumentCommand() : type(NOP), user_instrument(0), value() {}
+			UserInstrumentCommand(UserInstrumentCommandType _type) : type(_type), user_instrument(0), value() {}
+			UserInstrumentCommand(UserInstrumentCommandType _type, UserInstrument *_user_instrument) : type(_type), user_instrument(_user_instrument), value() {}
+			UserInstrumentCommand(UserInstrumentCommandType _type, UserInstrument *_user_instrument, const std::string& _value) : type(_type), user_instrument(_user_instrument), value(_value) {}
+			
+			void Apply(PropertySetter& property_setter) const;
+		};
+		
+		PropertySetter(UserInterface& _user_interface);
+		virtual bool FormAssign(const std::string& name, const std::string& value);
+		void Apply();
+		
+		UserInterface& user_interface;
+		sc_core::sc_time curr_time_stamp;
+		bool valid_curr_time_stamp;
+		sc_core::sc_time user_step_time;
+		bool valid_user_step_time;
+		bool timed_step;
+		unsigned int delta_steps;
+		bool cont;
+		bool intr;
+		bool halt;
+		typedef std::vector<UserInstrumentCommand, std::allocator<UserInstrumentCommand> > UserInstrumentCommands;
+		UserInstrumentCommands user_instrument_commands;
+	};
+	
 	unisim::kernel::logger::Logger logger;
 	
 	std::string program_name;
@@ -431,45 +481,39 @@ private:
 	unisim::kernel::service::Parameter<std::string> param_instrumentation;
 	sc_core::sc_time intr_poll_period;
 	unisim::kernel::service::Parameter<sc_core::sc_time> param_intr_poll_period;
+	double min_cont_refresh_period;
+	unisim::kernel::service::Parameter<double> param_min_cont_refresh_period;
+	double max_cont_refresh_period;
+	unisim::kernel::service::Parameter<double> param_max_cont_refresh_period;
+	bool enable_cache;
+	unisim::kernel::service::Parameter<bool> param_enable_cache;
 	std::vector<std::string> instrumented_signal_names;
 	std::map<std::string, UserInstrument *> user_instruments;
+	typedef std::set<sc_core::sc_time> Schedule;
+	Schedule schedule;
 	sc_core::sc_time user_step_time;
 	sc_core::sc_time curr_time_stamp;
-	bool bad_user_step_time;
-	bool timed_step;
 	unsigned int delta_steps;
 	bool cont;
 	bool intr;
 	bool halt;
-	bool has_breakpoint_cond;
-	bool enable_all_input_instruments;
-	bool disable_all_input_instruments;
-	bool enable_all_value_changed_breakpoints;
-	bool disable_all_value_changed_breakpoints;
-	std::map<UserInstrument *, bool> enable_input_instruments;
-	std::map<UserInstrument *, bool> enable_value_changed_breakpoints;
-	std::map<UserInstrument *, std::string> set_input_instruments;
-	std::map<UserInstrument *, bool> toggle_input_instruments;
+	double refresh_period;
+	bool auto_reload;
 	
 	pthread_mutex_t mutex_instruments;
+	pthread_mutex_t mutex_schedule;
+	pthread_mutex_t mutex_delta_steps;
 	pthread_mutex_t mutex_post;
 	
-	bool run;
-	pthread_cond_t cond_run;
-	pthread_mutex_t mutex_run;
+	pthread_cond_t cond_cont;
+	pthread_mutex_t mutex_cont;
 	
-	bool user;
-	pthread_cond_t cond_user;
-	pthread_mutex_t mutex_user;
-
 	void InitialFetch();
 	void Sample();
 	void Fetch();
 	void Commit();
 	void WaitForUser();
-	void WaitForSimulation();
-	void Run();
-	void UnblockUser();
+	void Continue();
 	void LockInstruments();
 	void UnlockInstruments();
 	void LockPost();
@@ -500,12 +544,14 @@ private:
 	std::string csv_delimiter;
 	unisim::kernel::service::Parameter<std::string> param_csv_delimiter;
 	
+	unsigned int lineno;
 	std::ifstream *file;
 	sc_core::sc_time time_resolution;
+	std::vector<std::string> csv_instrument_names;
 	std::vector<InputInstrumentBase *> csv_instrument_map;
 	sc_core::sc_time csv_time_stamp;
 	
-	bool ParseCSVHeaderAndInstrumentInput(int pass);
+	bool ParseCSVHeaderAndInstrumentInput();
 	bool ParseCSV(sc_core::sc_time& deadline);
 };
 

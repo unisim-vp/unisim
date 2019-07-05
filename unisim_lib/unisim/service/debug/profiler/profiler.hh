@@ -51,6 +51,7 @@
 #include <unisim/service/interfaces/debug_info_loading.hh>
 #include <unisim/service/interfaces/data_object_lookup.hh>
 #include <unisim/service/interfaces/subprogram_lookup.hh>
+#include <unisim/service/interfaces/http_server.hh>
 
 #include <unisim/util/debug/profile.hh>
 #include <unisim/util/debug/commit_insn_event.hh>
@@ -63,6 +64,8 @@
 
 #include <systemc>
 
+#include <pthread.h>
+
 #include <inttypes.h>
 #include <string>
 #include <vector>
@@ -70,6 +73,8 @@
 #include <list>
 #include <stack>
 #include <set>
+#include <iostream>
+#include <fstream>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <windef.h>
@@ -82,6 +87,8 @@ namespace profiler {
 
 ////////////////////////// Forward Declarations ///////////////////////////////
 
+class Printer;
+class Visitor;
 template <typename ADDRESS> class AddressProfileBase;
 template <typename T> class Sample;
 template <typename ADDRESS, typename T> class AddressProfile;
@@ -98,26 +105,36 @@ template <typename ADDRESS, typename T> class AnnotatedSourceCodeFileSet;
 template <typename ADDRESS> class Profiler;
 class FilenameIndex;
 
-//////////////////////////////// Format ///////////////////////////////////////
+////////////////////////////// FileFormat /////////////////////////////////////
 
-enum OutputFormat
+enum FileFormat
 {
-	O_FMT_TEXT,
-	O_FMT_HTML,
-	O_FMT_CSV
+	F_FMT_TEXT = 0,
+	F_FMT_HTML,
+	F_FMT_CSV,
+	F_FMT_SVG,
+	F_FMT_NONE,
+	NUM_FILE_FORMATS = F_FMT_NONE
 };
 
-std::ostream& operator << (std::ostream& os, OutputFormat o_fmt);
+std::ostream& operator << (std::ostream& os, FileFormat f_fmt);
 
-std::string OutputFormatSuffix(OutputFormat o_fmt);
+std::string FileFormatSuffix(FileFormat f_fmt);
 
-/////////////////////////// c_string_to_HTML //////////////////////////////////
+////////////////////////////// ReportFormat ///////////////////////////////////
 
-std::string c_string_to_HTML(const char *s);
+enum ReportFormat
+{
+	R_FMT_TEXT,
+	R_FMT_HTML,
+	R_FMT_CSV,
+	R_FMT_HTTP
+};
 
-///////////////////////////// c_string_to_URL /////////////////////////////////
+////////////////////////////// to_string<> ////////////////////////////////////
 
-std::string c_string_to_URL(const char *s);
+template <typename T>
+std::string to_string(const T& v);
 
 ///////////////////////////// c_string_to_CSV /////////////////////////////////
 
@@ -126,6 +143,103 @@ std::string c_string_to_CSV(const char *s);
 //////////////////////////////// MakeDir //////////////////////////////////////
 
 void MakeDir(const char *dirname);
+
+//////////////////////////////// RealPath ////////////////////////////////////
+
+std::string RealPath(const char *dirname);
+
+//////////////////////////////// Indent /////////////////////////////////////
+
+class Indent
+{
+public:
+	Indent() : count(0) {}
+	Indent& operator ++ () { ++count; return *this; }
+	Indent& operator -- () { if(count) --count; return *this; }
+private:
+	friend std::ostream& operator << (std::ostream& os, const Indent& indent);
+	unsigned int count;
+};
+
+inline std::ostream& operator << (std::ostream& os, const Indent& indent)
+{
+	for(unsigned int i = 0; i < indent.count; i++) os << '\t';
+	return os;
+}
+
+////////////////////////////// StringPadder ///////////////////////////////////
+
+class StringPadder
+{
+public:
+	StringPadder(const std::string& _str, std::size_t _width) : str(_str), width(_width) {}
+private:
+	friend std::ostream& operator << (std::ostream& os, const StringPadder& string_padded);
+	const std::string& str;
+	std::size_t width;
+};
+
+inline std::ostream& operator << (std::ostream& os, const StringPadder& string_padded)
+{
+	std::size_t len = string_padded.str.length();
+	std::size_t n = (len < string_padded.width) ? (string_padded.width - len) : 0;
+	os << string_padded.str;
+	for(unsigned int i = 0; i < n; i++) os << ' ';
+	return os;
+}
+
+///////////////////////////////// Printer /////////////////////////////////////
+
+class Printer
+{
+public:
+	virtual ~Printer() {}
+	virtual FileFormat GetFileFormat() const = 0;
+	virtual void Print(std::ostream& os, Visitor& visitor) const = 0;
+};
+
+///////////////////////////////// Visitor /////////////////////////////////////
+
+class Visitor
+{
+public:
+	virtual ~Visitor() {}
+	virtual const std::string& GetCSVDelimiter() const = 0;
+	virtual const std::string& GetCSVHyperlink() const = 0;
+	virtual const std::string& GetCSVArgSeparator() const = 0;
+	virtual const std::string& GetRoot() const = 0;
+	virtual const std::string& GetDomain() const = 0;
+	virtual ReportFormat GetReportFormat() const = 0;
+	virtual std::string GetFilePath(const std::string& filename) const = 0;
+	virtual const std::string& GetDirPath() const = 0;
+	virtual bool Visit(const std::string& dirname, const std::string& filename, const Printer& printer) = 0;
+};
+
+/////////////////////////////// FileVisitor ////////////////////////////////////
+
+class FileVisitor : public Visitor
+{
+public:
+	FileVisitor(const std::string& output_directory, ReportFormat r_fmt, const std::string& csv_delimiter, const std::string& csv_hyperlink, const std::string& csv_arg_separator, std::ostream& warn_log);
+	virtual const std::string& GetCSVDelimiter() const;
+	virtual const std::string& GetCSVHyperlink() const;
+	virtual const std::string& GetCSVArgSeparator() const;
+	virtual const std::string& GetRoot() const;
+	virtual const std::string& GetDomain() const;
+	virtual ReportFormat GetReportFormat() const;
+	virtual std::string GetFilePath(const std::string& filename) const;
+	virtual const std::string& GetDirPath() const;
+	virtual bool Visit(const std::string& dirname, const std::string& filename, const Printer& printer);
+private:
+	std::ofstream file;
+	std::string output_directory;
+	ReportFormat r_fmt;
+	std::string csv_delimiter;
+	std::string csv_hyperlink;
+	std::string csv_arg_separator;
+	std::ostream& warn_log;
+	std::string dir_path;
+};
 
 ///////////////////////////// OStreamContext //////////////////////////////////
 
@@ -145,9 +259,21 @@ private:
 class FilenameIndex
 {
 public:
-	unsigned int IndexFilename(const char *filename);
+	unsigned int IndexFilename(const std::string& filename);
 private:
 	std::map<std::string, unsigned int> index;
+};
+
+//////////////////////////////// Ratio ////////////////////////////////////////
+
+template <typename T, unsigned int SCALE = 1>
+class RatioCalculator
+{
+public:
+	RatioCalculator(const T& _divisor) : divisor(_divisor) {}
+	double Compute(const T& value) { return (value * (double) SCALE) / divisor; }
+private:
+	const T& divisor;
 };
 
 //////////////////////////////// Sample ///////////////////////////////////////
@@ -184,7 +310,7 @@ class InstructionProfileBase
 public:
 	virtual ~InstructionProfileBase() {}
 	virtual const char *GetSampledVariableName() const = 0;
-	virtual void Print(std::ostream& os, OutputFormat o_fmt = O_FMT_TEXT, const char *csv_delimiter = ",") const = 0;
+	virtual const Printer& GetPrinter(FileFormat f_fmt) const = 0;
 };
 
 //////////////////////////// InstructionProfile<> /////////////////////////////
@@ -193,14 +319,31 @@ template <typename ADDRESS, typename T>
 class InstructionProfile : public InstructionProfileBase
 {
 public:
-	InstructionProfile(const AddressProfile<ADDRESS, T> *addr_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, unisim::service::interfaces::Disassembly<ADDRESS> *disasm_if);
+	InstructionProfile(const AddressProfile<ADDRESS, T> *addr_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, unisim::service::interfaces::Disassembly<ADDRESS> *disasm_if);
+	virtual ~InstructionProfile();
 	
 	virtual const char *GetSampledVariableName() const { return addr_profile->GetSampledVariableName(); }
-	virtual void Print(std::ostream& os, OutputFormat o_fmt, const char *csv_delimiter) const;
+	virtual const Printer& GetPrinter(FileFormat f_fmt) const;
 private:
+	struct InstructionProfilePrinter : Printer
+	{
+		InstructionProfilePrinter(InstructionProfile<ADDRESS, T>& instruction_profile, FileFormat f_fmt);
+		virtual FileFormat GetFileFormat() const;
+		virtual void Print(std::ostream& os, Visitor& visitor) const;
+		
+	private:
+		InstructionProfile<ADDRESS, T>& instruction_profile;
+		FileFormat f_fmt;
+	};
+
 	const AddressProfile<ADDRESS, T> *addr_profile;
 	const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv;
+	FilenameIndex *filename_index;
+
 	unisim::service::interfaces::Disassembly<ADDRESS> *disasm_if;
+	InstructionProfilePrinter *instruction_profile_printers[NUM_FILE_FORMATS];
+	
+	void Print(std::ostream& os, Visitor& visitor, FileFormat f_fmt) const;
 };
 
 //////////////////////////////// SLoc //////////////////////////////////////
@@ -249,7 +392,7 @@ template <typename ADDRESS>
 class FunctionNameLocationConversion : public FunctionNameLocationConversionBase<ADDRESS>
 {
 public:
-	FunctionNameLocationConversion(unisim::service::interfaces::StatementLookup<ADDRESS> *stmt_lookup_if, unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if);
+	FunctionNameLocationConversion(unisim::service::interfaces::StatementLookup<ADDRESS> *stmt_lookup_if, unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if, std::ostream& warn_log);
 	
 	virtual bool FunctionNameToAddress(const char *func_name, ADDRESS& addr) const;
 	virtual const char *AddressToFunctionName(ADDRESS addr, bool& is_entry_point) const;
@@ -273,10 +416,11 @@ public:
 	virtual void Capture(ADDRESS addr, unsigned int length) = 0;
 	virtual const char *GetSampledVariableName() const = 0;
 	virtual unisim::kernel::service::VariableBase *GetSampledVariable() const = 0;
-	virtual void Print(std::ostream& os, OutputFormat o_fmt = O_FMT_TEXT, const char *csv_delimiter = ",") const = 0;
-	virtual InstructionProfileBase *CreateInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv) const = 0;
+	virtual std::string GetCumulativeValueAsString() const = 0;
+	virtual InstructionProfileBase *CreateInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const = 0;
 	virtual FunctionInstructionProfileBase *CreateFunctionInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const = 0;
 	virtual SourceCodeProfileBase<ADDRESS> *CreateSourceCodeProfile() const = 0;
+	virtual const Printer& GetPrinter(FileFormat) const = 0;
 };
 
 ///////////////////////////// AddressProfile<> ////////////////////////////////
@@ -287,24 +431,42 @@ class AddressProfile : public AddressProfileBase<ADDRESS>, public unisim::util::
 public:
 	typedef unisim::util::debug::Profile<ADDRESS, T> Super;
 	
-	AddressProfile(unisim::kernel::service::Variable<T> *stat, unisim::service::interfaces::Disassembly<ADDRESS> *disasm_if, unisim::service::interfaces::StatementLookup<ADDRESS> *stmt_lookup_if, unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if);
+	AddressProfile(unisim::kernel::service::Variable<T> *stat, unisim::service::interfaces::Disassembly<ADDRESS> *disasm_if, unisim::service::interfaces::StatementLookup<ADDRESS> *stmt_lookup_if, unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if, std::ostream& warn_log);
+	virtual ~AddressProfile();
 	
 	virtual void Capture(ADDRESS addr, unsigned int length);
 	virtual const char *GetSampledVariableName() const { return sample.GetSampledVariableName(); }
 	virtual unisim::kernel::service::VariableBase *GetSampledVariable() const { return sample.GetSampledVariable(); }
-	virtual void Print(std::ostream& os, OutputFormat o_fmt, const char *csv_delimiter) const;
-	virtual InstructionProfileBase *CreateInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv) const;
+	virtual std::string GetCumulativeValueAsString() const { return to_string(this->GetWeight()); }
+	const T& GetCumulativeValue() const { return this->GetWeight(); }
+	virtual InstructionProfileBase *CreateInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const;
 	virtual FunctionInstructionProfileBase *CreateFunctionInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const;
 	virtual SourceCodeProfileBase<ADDRESS> *CreateSourceCodeProfile() const;
 	
 	bool GetValue(ADDRESS addr, T& value) const;
 	std::pair<T, T> GetValueRange() const;
 	
+	virtual const Printer& GetPrinter(FileFormat) const;
 private:
+	struct AddressProfilePrinter : Printer
+	{
+		AddressProfilePrinter(AddressProfile<ADDRESS, T>& addr_profile, FileFormat f_fmt);
+		virtual FileFormat GetFileFormat() const;
+		virtual void Print(std::ostream& os, Visitor& visitor) const;
+		
+	private:
+		AddressProfile<ADDRESS, T>& addr_profile;
+		FileFormat f_fmt;
+	};
+
+	std::ostream& warn_log;
 	unisim::service::interfaces::Disassembly<ADDRESS> *disasm_if;
 	unisim::service::interfaces::StatementLookup<ADDRESS> *stmt_lookup_if;
 	unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if;
 	Sample<T> sample;
+	AddressProfilePrinter *addr_profile_printers[NUM_FILE_FORMATS];
+	
+	void Print(std::ostream& os, Visitor& visitor, FileFormat f_fmt) const;
 };
 
 ////////////////////////// SourceCodeProfileBase<> ////////////////////////////
@@ -315,7 +477,6 @@ class SourceCodeProfileBase
 public:
 	virtual ~SourceCodeProfileBase() {}
 	virtual const char *GetSampledVariableName() const = 0;
-	virtual void Print(std::ostream& os) const = 0;
 	virtual void Update() = 0;
 	virtual AnnotatedSourceCodeFileSetBase *CreateAnnotatedSourceCodeFileSet(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const char *search_path) const = 0;
 };
@@ -327,7 +488,58 @@ class FunctionInstructionProfileBase
 public:
 	virtual ~FunctionInstructionProfileBase() {}
 	virtual const char *GetSampledVariableName() const = 0;
-	virtual void Print(std::ostream& os, OutputFormat o_fmt = O_FMT_TEXT, const char *csv_delimiter = ",") const = 0;
+	virtual const Printer& GetTablePrinter(FileFormat f_fmt) const = 0;
+	virtual const Printer& GetHistogramPrinter(FileFormat f_fmt) const = 0;
+};
+
+template <typename T>
+struct Divider
+{
+	static double Divide(const T& dividend, const T& divisor)
+	{
+		return (double) dividend / (double) divisor;
+	}
+};
+
+template <>
+struct Divider<sc_core::sc_time>
+{
+	static double Divide(const sc_core::sc_time& dividend, const sc_core::sc_time& divisor)
+	{
+		return dividend / divisor;
+	}
+};
+
+template <typename T>
+class Scaler
+{
+public:
+	Scaler(double _factor, const std::pair<T, T>& _value_range) : factor(_factor), value_range(_value_range) {}
+	double Scale(const T& value)
+	{
+		return ((value_range.first != value_range.second) && (value >= value_range.first) && (value <= value_range.second))
+			? ((double)(value - value_range.first) / (double)(value_range.second - value_range.first)) * factor
+			: 0.0;
+	}
+private:
+	double factor;
+	std::pair<T, T> value_range;
+};
+
+template <>
+class Scaler<sc_core::sc_time>
+{
+public:
+	Scaler(unsigned int _factor, const std::pair<sc_core::sc_time, sc_core::sc_time>& _value_range) : factor(_factor), value_range(_value_range) {}
+	double Scale(const sc_core::sc_time& value)
+	{
+		return ((value_range.first != value_range.second) && (value >= value_range.first) && (value <= value_range.second))
+			? factor * ((value - value_range.first) / (value_range.second - value_range.first))
+			: 0.0;
+	}
+private:
+	unsigned int factor;
+	std::pair<sc_core::sc_time, sc_core::sc_time> value_range;
 };
 
 template <typename T>
@@ -338,7 +550,7 @@ public:
 	unsigned int Quantize(const T& value)
 	{
 		return ((value_range.first != value_range.second) && (value >= value_range.first) && (value <= value_range.second))
-			? ceil(factor * ((double)(value - value_range.first) / (double)(value_range.second - value_range.first)))
+			? floor/*ceil*/(((double)(value - value_range.first) / (double)(value_range.second - value_range.first)) * factor)
 			: 0;
 	}
 private:
@@ -354,7 +566,7 @@ public:
 	unsigned int Quantize(const sc_core::sc_time& value)
 	{
 		return ((value_range.first != value_range.second) && (value >= value_range.first) && (value <= value_range.second))
-			? ceil(factor * ((value - value_range.first) / (value_range.second - value_range.first)))
+			? floor/*ceil*/(factor * ((value - value_range.first) / (value_range.second - value_range.first)))
 			: 0;
 	}
 private:
@@ -369,18 +581,47 @@ class FunctionInstructionProfile : public FunctionInstructionProfileBase
 {
 public:
 	FunctionInstructionProfile(const AddressProfile<ADDRESS, T> *addr_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if);
+	virtual ~FunctionInstructionProfile();
 	
 	virtual const char *GetSampledVariableName() const { return addr_profile->GetSampledVariableName(); }
-	virtual void Print(std::ostream& os, OutputFormat o_fmt, const char *csv_delimiter) const;
+	virtual const Printer& GetTablePrinter(FileFormat f_fmt) const;
+	virtual const Printer& GetHistogramPrinter(FileFormat f_fmt) const;
 private:
+	struct TablePrinter : Printer
+	{
+		TablePrinter(FunctionInstructionProfile<ADDRESS, T>& func_insn_profile, FileFormat f_fmt);
+		virtual FileFormat GetFileFormat() const;
+		virtual void Print(std::ostream& os, Visitor& visitor) const;
+	private:
+		FunctionInstructionProfile<ADDRESS, T>& func_insn_profile;
+		FileFormat f_fmt;
+	};
+	
+	struct HistogramPrinter : Printer
+	{
+		HistogramPrinter(FunctionInstructionProfile<ADDRESS, T>& func_insn_profile, FileFormat f_fmt);
+		virtual FileFormat GetFileFormat() const;
+		virtual void Print(std::ostream& os, Visitor& visitor) const;
+	private:
+		FunctionInstructionProfile<ADDRESS, T>& func_insn_profile;
+		FileFormat f_fmt;
+	};
+
 	const AddressProfile<ADDRESS, T> *addr_profile;
 	const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv;
 	FilenameIndex *filename_index;
 	unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if;
 	std::map<std::string, T> func_insn_profile;
 	std::pair<T, T> value_range;
+	T cumulative_value;
+	
+	TablePrinter *table_printers[NUM_FILE_FORMATS];
+	HistogramPrinter *histogram_printers[NUM_FILE_FORMATS];
 	
 	void Init();
+	void Clear();
+	void PrintTable(std::ostream& os, Visitor& visitor, FileFormat f_fmt) const;
+	void PrintHistogram(std::ostream& os, Visitor& visitor, FileFormat f_fmt) const;
 };
 
 //////////////////////////// SourceCodeProfile<> //////////////////////////////
@@ -389,10 +630,10 @@ template <typename ADDRESS, typename T>
 class SourceCodeProfile : public SourceCodeProfileBase<ADDRESS>
 {
 public:
-	SourceCodeProfile(const AddressProfile<ADDRESS, T> *addr_profile, unisim::service::interfaces::StatementLookup<ADDRESS> *stmt_lookup_if, unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if);
+	SourceCodeProfile(const AddressProfile<ADDRESS, T> *addr_profile, unisim::service::interfaces::StatementLookup<ADDRESS> *stmt_lookup_if, unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if, std::ostream& warn_log);
 	
 	virtual const char *GetSampledVariableName() const { return addr_profile->GetSampledVariableName(); }
-	virtual void Print(std::ostream& os) const;
+	virtual void Print(std::ostream& os, Visitor& visitor) const;
 	virtual void Update();
 	virtual AnnotatedSourceCodeFileSetBase *CreateAnnotatedSourceCodeFileSet(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const char *search_path) const;
 	
@@ -403,6 +644,7 @@ private:
 
 	bool FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *>& stmts, ADDRESS addr);
 	
+	std::ostream& warn_log;
 	const AddressProfile<ADDRESS, T> *addr_profile;
 	unisim::service::interfaces::StatementLookup<ADDRESS> *stmt_lookup_if;
 	unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if;
@@ -421,7 +663,7 @@ public:
 	virtual const char *GetSampledVariableName() const = 0;
 	virtual const char *GetFilename() const = 0;
 	virtual const char *GetRealFilename() const = 0;
-	virtual void Print(std::ostream& os, OutputFormat o_fmt = O_FMT_TEXT, const char *csv_delimiter = ",") const = 0;
+	virtual const Printer& GetPrinter(FileFormat) const = 0;
 };
 
 ///////////////////////// AnnotatedSourceCodeFile<> ///////////////////////////
@@ -430,23 +672,40 @@ template <typename ADDRESS, typename T>
 class AnnotatedSourceCodeFile : public AnnotatedSourceCodeFileBase
 {
 public:
-	AnnotatedSourceCodeFile(const char *_filename, const SourceCodeProfile<ADDRESS, T> *_source_code_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, const char *search_path);
+	AnnotatedSourceCodeFile(const char *_filename, const SourceCodeProfile<ADDRESS, T> *_source_code_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const char *search_path, std::ostream& warn_log);
+	virtual ~AnnotatedSourceCodeFile();
 	
 	virtual const char *GetSampledVariableName() const { return source_code_profile->GetSampledVariableName(); }
 	virtual const char *GetFilename() const { return filename.c_str(); }
 	virtual const char *GetRealFilename() const { return real_filename.c_str(); }
-	virtual void Print(std::ostream& os, OutputFormat o_fmt = O_FMT_TEXT, const char *csv_delimiter = ",") const;
+	virtual const Printer& GetPrinter(FileFormat f_fmt) const;
 private:
+	struct AnnotatedSourceCodeFilePrinter : Printer
+	{
+		AnnotatedSourceCodeFilePrinter(AnnotatedSourceCodeFile<ADDRESS, T>& annotated_source_code_file, FileFormat f_fmt);
+		virtual FileFormat GetFileFormat() const;
+		virtual void Print(std::ostream& os, Visitor& visitor) const;
+		
+	private:
+		AnnotatedSourceCodeFile<ADDRESS, T>& annotated_source_code_file;
+		FileFormat f_fmt;
+	};
+
+	std::ostream& warn_log;
 	std::string filename;
 	std::string real_filename;
 	std::string search_path;
 	const SourceCodeProfile<ADDRESS, T> *source_code_profile;
 	const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv;
+	FilenameIndex *filename_index;
 	std::vector<std::string> content;
 	std::pair<T, T> value_range;
+	AnnotatedSourceCodeFilePrinter *annotated_source_code_file_printers[NUM_FILE_FORMATS];
 
 	bool LocateFile(const char *filename, std::string& match_file_path);
 	void Init();
+	void Clear();
+	void Print(std::ostream& os, Visitor& visitor, FileFormat f_fmt) const;
 };
 
 /////////////////////// AnnotatedSourceCodeFileSetBase ////////////////////////
@@ -456,8 +715,7 @@ class AnnotatedSourceCodeFileSetBase
 public:
 	virtual ~AnnotatedSourceCodeFileSetBase() {}
 	virtual const char *GetSampledVariableName() = 0;
-	virtual void Print(std::ostream& os) const = 0;
-	virtual void Output(const char *output_directory, OutputFormat o_fmt = O_FMT_TEXT, const char *csv_delimiter = ",") = 0;
+	virtual void Output(Visitor& visitor) = 0;
 };
 
 /////////////////////// AnnotatedSourceCodeFileSet<> //////////////////////////
@@ -466,13 +724,13 @@ template <typename ADDRESS, typename T>
 class AnnotatedSourceCodeFileSet : public AnnotatedSourceCodeFileSetBase
 {
 public:
-	AnnotatedSourceCodeFileSet(const SourceCodeProfile<ADDRESS, T> *source_code_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const char *search_path);
+	AnnotatedSourceCodeFileSet(const SourceCodeProfile<ADDRESS, T> *source_code_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const char *search_path, std::ostream& warn_log);
 	virtual ~AnnotatedSourceCodeFileSet();
 	
 	virtual const char *GetSampledVariableName() { return source_code_profile->GetSampledVariableName(); }
-	virtual void Print(std::ostream& os) const;
-	virtual void Output(const char *output_directory, OutputFormat o_fmt, const char *csv_delimiter = ",");
+	virtual void Output(Visitor& visitor);
 private:
+	std::ostream& warn_log;
 	const SourceCodeProfile<ADDRESS, T> *source_code_profile;
 	const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv;
 	FilenameIndex *filename_index;
@@ -489,6 +747,7 @@ template <typename ADDRESS>
 class Profiler
 	: public unisim::kernel::service::Service<unisim::service::interfaces::DebugYielding>
 	, public unisim::kernel::service::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
+	, public unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>
 	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugYieldingRequest>
 	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
 	, public unisim::kernel::service::Client<unisim::service::interfaces::Disassembly<ADDRESS> >
@@ -506,6 +765,9 @@ public:
 	// Exports to debugger
 	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugYielding>                debug_yielding_export;
 	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
+	
+	// Exports to HTTP server
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer>                   http_server_export;
 	
 	// Imports from debugger
 	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugYieldingRequest>         debug_yielding_request_import;
@@ -529,6 +791,10 @@ public:
 	
 	// unisim::service::interfaces::DebugEventListener<ADDRESS>
 	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event);
+	
+	// unisim::service::interfaces::HttpServer
+	virtual bool ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
+	virtual void ScanWebInterfaceModdings(unisim::service::interfaces::WebInterfaceModdingScanner& scanner);
 
 	virtual bool EndSetup();
 	virtual void OnDisconnect();
@@ -544,14 +810,24 @@ private:
 	std::string filename;
 	std::string sampled_variables;
 	std::string output_directory;
-	OutputFormat output_format;
 	std::string csv_delimiter;
+	std::string csv_hyperlink;
+	std::string csv_arg_separator;
+	bool enable_text_report;
+	bool enable_html_report;
+	bool enable_csv_report;
+	bool verbose;
 	unisim::kernel::service::Parameter<std::string> param_search_path;
 	unisim::kernel::service::Parameter<std::string> param_filename;
 	unisim::kernel::service::Parameter<std::string> param_sampled_variables;
 	unisim::kernel::service::Parameter<std::string> param_output_directory;
-	unisim::kernel::service::Parameter<OutputFormat> param_output_format;
 	unisim::kernel::service::Parameter<std::string> param_csv_delimiter;
+	unisim::kernel::service::Parameter<std::string> param_csv_hyperlink;
+	unisim::kernel::service::Parameter<std::string> param_csv_arg_separator;
+	unisim::kernel::service::Parameter<bool> param_enable_text_report;
+	unisim::kernel::service::Parameter<bool> param_enable_html_report;
+	unisim::kernel::service::Parameter<bool> param_enable_csv_report;
+	unisim::kernel::service::Parameter<bool> param_verbose;
 
 	bool listening_commit;
 	bool trap;
@@ -567,11 +843,17 @@ private:
 	std::vector<AnnotatedSourceCodeFileSetBase *> annotated_source_code_file_sets; // annotated source code file set for each variable
 	std::vector<FilenameIndex *> filename_indexes; // filename index for each variable
 	
+	pthread_mutex_t mutex;
+	
 	bool ListenCommit();
 	bool UnlistenCommit();
 	void LoadDebugInfo();
 	void Update();
-	void Print(std::ostream& os);
+	void PrintIndex(std::ostream& os, Visitor& visitor) const;
+	//void Print(std::ostream& os, DebugVisitor& dbg_visitor);
+	void Output(Visitor& visitor);
+	void Lock();
+	void Unlock();
 };
 
 } // end of namespace profiler

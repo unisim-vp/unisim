@@ -1,0 +1,9 @@
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_cache.tcc
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debugging.tcc
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_exception_handling.tcc
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_fetch.tcc
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_load_store.tcc
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_mmu.tcc
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_perf_model.tcc
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc
+unisim/component/cxx/processor/powerpc/mpc7447a/exception.tcc

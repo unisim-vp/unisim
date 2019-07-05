@@ -1,0 +1,10 @@
+m4/sdl
+unisim/kernel/logger
+unisim/kernel/service
+unisim/service/interfaces/keyboard
+unisim/service/interfaces/memory
+unisim/service/interfaces/mouse
+unisim/service/interfaces/video
+unisim/util/endian
+unisim/util/likely
+unisim/util/xml

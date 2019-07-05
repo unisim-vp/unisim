@@ -76,6 +76,8 @@
 #include <unisim/service/netstreamer/netstreamer.hh>
 #include <unisim/service/http_server/http_server.hh>
 #include <unisim/service/instrumenter/instrumenter.hh>
+#include <unisim/service/tee/char_io/tee.hh>
+#include <unisim/service/web_terminal/web_terminal.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 
@@ -107,17 +109,12 @@ static const bool DEBUG_ENABLE = true;
 //===                        Top level class                            ===
 //=========================================================================
 
-enum SerialTerminalProtocol
-{
-	SERIAL_TERMINAL_PROTOCOL_TELNET,
-	SERIAL_TERMINAL_PROTOCOL_NETCAT
-};
-
 class Simulator : public unisim::kernel::tlm2::Simulator, Config
 {
 public:
-	Simulator(const sc_core::sc_module_name& name, int argc, char **argv);
+	Simulator(int argc, char **argv, const sc_core::sc_module_name& name = "HARDWARE");
 	virtual ~Simulator();
+	virtual bool EndSetup();
 	void Run();
 	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
 	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
@@ -264,6 +261,8 @@ private:
 	typedef unisim::service::netstreamer::NetStreamer NETSTREAMER;
 	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
 	typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
+	typedef unisim::service::tee::char_io::Tee<2> CHAR_IO_TEE;
+	typedef unisim::service::web_terminal::WebTerminal WEB_TERMINAL;
 	
 	//=========================================================================
 	//===                           Components                              ===
@@ -462,6 +461,20 @@ private:
 	HTTP_SERVER *http_server;
 	//  - Instrumenter
 	INSTRUMENTER *instrumenter;
+	//  - Char I/O tees
+	CHAR_IO_TEE *char_io_tee0;
+	CHAR_IO_TEE *char_io_tee1;
+	CHAR_IO_TEE *char_io_tee2;
+	CHAR_IO_TEE *char_io_tee14;
+	CHAR_IO_TEE *char_io_tee15;
+	CHAR_IO_TEE *char_io_tee16;
+	//  - Web Terminals
+	WEB_TERMINAL *web_terminal0;
+	WEB_TERMINAL *web_terminal1;
+	WEB_TERMINAL *web_terminal2;
+	WEB_TERMINAL *web_terminal14;
+	WEB_TERMINAL *web_terminal15;
+	WEB_TERMINAL *web_terminal16;
 	
 	bool enable_core0_reset;
 	bool enable_core1_reset;
@@ -471,7 +484,9 @@ private:
 	sc_core::sc_time core2_reset_time;
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
-	bool enable_profiler;
+	bool enable_profiler0;
+	bool enable_profiler1;
+	bool enable_profiler2;
 	bool enable_serial_terminal0;
 	bool enable_serial_terminal1;
 	bool enable_serial_terminal2;
@@ -514,7 +529,9 @@ private:
 	unisim::kernel::service::Parameter<sc_core::sc_time> param_core2_reset_time;
 	unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
 	unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
-	unisim::kernel::service::Parameter<bool> param_enable_profiler;
+	unisim::kernel::service::Parameter<bool> param_enable_profiler0;
+	unisim::kernel::service::Parameter<bool> param_enable_profiler1;
+	unisim::kernel::service::Parameter<bool> param_enable_profiler2;
 	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal0;
 	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal1;
 	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal2;

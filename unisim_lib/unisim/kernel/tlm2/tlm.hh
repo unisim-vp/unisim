@@ -49,6 +49,41 @@
 #include <iostream>
 #include <unisim/util/backtrace/backtrace.hh>
 
+namespace sc_core
+{
+
+inline std::istream& operator >> (std::istream& is, sc_time_unit& time_unit)
+{
+	std::string time_unit_str;
+	if(is >> time_unit_str)
+	{
+		if(time_unit_str.compare("s") == 0) time_unit = sc_core::SC_SEC;
+		else if(time_unit_str.compare("ms") == 0) time_unit = SC_MS;
+		else if(time_unit_str.compare("us") == 0) time_unit = SC_US;
+		else if(time_unit_str.compare("ns") == 0) time_unit = SC_NS;
+		else if(time_unit_str.compare("ps") == 0) time_unit = SC_PS;
+		else if(time_unit_str.compare("fs") == 0) time_unit = SC_FS;
+		else time_unit = SC_FS;
+	}
+
+	return is;
+}
+
+inline std::istream& operator >> (std::istream& is, sc_time& t)
+{
+	double time_value = 0.0;
+	sc_time_unit time_unit = SC_FS;
+	
+	if((is >> time_value) && (is >> time_unit))
+	{
+		t = sc_time(time_value, time_unit);
+	}
+
+	return is;
+}
+
+} // end of namespace sc_core
+
 namespace unisim {
 namespace kernel {
 namespace tlm2 {

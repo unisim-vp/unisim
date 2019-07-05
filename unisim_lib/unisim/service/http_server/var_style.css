@@ -22,3 +22,5 @@ th, td { border-width:1px; }
 .var-description { overflow:hidden; white-space:nowrap; max-width:260px; text-overflow: ellipsis; }
 input.var-value-text { width:100%; height:21px; border: 1px solid #a9a5a2; border-radius: 3px; box-shadow:inset 0px 2px 0px #e4e3e1; }
 input.disabled { background-color:#edeceb; width:100%; height:21px; border: 1px solid #a9a5a2; border-radius: 3px; box-shadow:inset 0px 2px 0px #dedddd; }
+select.var-value-select { width:100%; height:21px; background:white; border: 1px solid #a9a5a2; border-radius: 3px; box-shadow:inset 0px 2px 0px #e4e3e1; }
+select.disabled { background-color:#edeceb; width:100%; height:21px; border: 1px solid #a9a5a2; border-radius: 3px; box-shadow:inset 0px 2px 0px #dedddd; }

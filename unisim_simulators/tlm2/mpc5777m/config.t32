@@ -1,8 +1,8 @@
 PBI=GDB
 
-OS=
-SYS=.
-TMP=.
+;OS=
+;SYS=.
+;TMP=.
 
 SCREEN=
 FONT=SMALL

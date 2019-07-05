@@ -1,0 +1,6 @@
+m4/cacti
+unisim/kernel/logger
+unisim/kernel/service
+unisim/service/interfaces/cache_power_estimator
+unisim/service/interfaces/power_mode
+unisim/service/interfaces/time

@@ -47,6 +47,7 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger_server.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include "unisim/util/hypapp/hypapp.hh"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -82,6 +83,8 @@
 #include "unisim/util/likely/likely.hh"
 
 #include <unisim/kernel/config/ini_config_file_helper.hh>
+
+#include <unisim/kernel/config/json_config_file_helper.hh>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <fcntl.h>
@@ -399,6 +402,11 @@ VariableBase::Format VariableBase::GetFormat() const
 const char *VariableBase::GetDataTypeName() const
 {
 	return "";
+}
+
+VariableBase::DataType VariableBase::GetDataType() const
+{
+	return DT_USER;
 }
 
 bool VariableBase::HasEnumeratedValues() const {
@@ -1155,6 +1163,12 @@ const char *Variable<bool>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Variable<bool>::GetDataType() const
+{
+	return DT_BOOL;
+}
+
+template <>
 Variable<signed char>::Variable(const char *_name, Object *_owner, signed char& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
@@ -1165,6 +1179,12 @@ template <>
 const char *Variable<signed char>::GetDataTypeName() const
 {
 	return GetSignedDataTypeName<signed char>(); //"char";
+}
+
+template <>
+VariableBase::DataType Variable<signed char>::GetDataType() const
+{
+	return DT_SCHAR;
 }
 
 template <>
@@ -1181,6 +1201,12 @@ const char *Variable<short>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Variable<short>::GetDataType() const
+{
+	return DT_SHORT;
+}
+
+template <>
 Variable<int>::Variable(const char *_name, Object *_owner, int& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
@@ -1191,6 +1217,12 @@ template <>
 const char *Variable<int>::GetDataTypeName() const
 {
 	return GetSignedDataTypeName<int>(); //"int";
+}
+
+template <>
+VariableBase::DataType Variable<int>::GetDataType() const
+{
+	return DT_INT;
 }
 
 template <>
@@ -1207,6 +1239,12 @@ const char *Variable<long>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Variable<long>::GetDataType() const
+{
+	return DT_LONG;
+}
+
+template <>
 Variable<long long>::Variable(const char *_name, Object *_owner, long long& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
@@ -1219,6 +1257,11 @@ const char *Variable<long long>::GetDataTypeName() const
 	return GetSignedDataTypeName<long long>(); //"long long";
 }
 
+template <>
+VariableBase::DataType Variable<long long>::GetDataType() const
+{
+	return DT_LONG_LONG;
+}
 
 template <>
 Variable<unsigned char>::Variable(const char *_name, Object *_owner, unsigned char& _storage, Type type, const char *_description) :
@@ -1231,6 +1274,12 @@ template <>
 const char *Variable<unsigned char>::GetDataTypeName() const
 {
 	return GetUnsignedDataTypeName<unsigned char>(); //"unsigned char";
+}
+
+template <>
+VariableBase::DataType Variable<unsigned char>::GetDataType() const
+{
+	return DT_UCHAR;
 }
 
 template <>
@@ -1247,6 +1296,12 @@ const char *Variable<unsigned short>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Variable<unsigned short>::GetDataType() const
+{
+	return DT_USHORT;
+}
+
+template <>
 Variable<unsigned int>::Variable(const char *_name, Object *_owner, unsigned int& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
@@ -1257,6 +1312,12 @@ template <>
 const char *Variable<unsigned int>::GetDataTypeName() const
 {
 	return GetUnsignedDataTypeName<unsigned int>(); //"unsigned int";
+}
+
+template <>
+VariableBase::DataType Variable<unsigned int>::GetDataType() const
+{
+	return DT_UINT;
 }
 
 template <>
@@ -1273,6 +1334,12 @@ const char *Variable<unsigned long>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Variable<unsigned long>::GetDataType() const
+{
+	return DT_ULONG;
+}
+
+template <>
 Variable<unsigned long long>::Variable(const char *_name, Object *_owner, unsigned long long& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
@@ -1283,6 +1350,12 @@ template <>
 const char *Variable<unsigned long long>::GetDataTypeName() const
 {
 	return GetUnsignedDataTypeName<unsigned long long>(); //"unsigned long long";
+}
+
+template <>
+VariableBase::DataType Variable<unsigned long long>::GetDataType() const
+{
+	return DT_ULONG_LONG;
 }
 
 template <> 
@@ -1296,6 +1369,12 @@ template <>
 const char *Variable<double>::GetDataTypeName() const
 {
 	return "double precision floating-point";
+}
+
+template <>
+VariableBase::DataType Variable<double>::GetDataType() const
+{
+	return DT_DOUBLE;
 }
 
 template <>
@@ -1320,6 +1399,12 @@ const char *Variable<float>::GetDataTypeName() const
 }
 
 template <>
+VariableBase::DataType Variable<float>::GetDataType() const
+{
+	return DT_FLOAT;
+}
+
+template <>
 Variable<float>::operator std::string () const
 {
 	std::stringstream sstr;
@@ -1338,6 +1423,12 @@ template <>
 const char *Variable<std::string>::GetDataTypeName() const
 {
 	return "string";
+}
+
+template <>
+VariableBase::DataType Variable<std::string>::GetDataType() const
+{
+	return DT_STRING;
 }
 
 template <> Variable<bool>::operator std::string () const
@@ -1692,6 +1783,11 @@ const char *Object::GetName() const
 const char *Object::GetObjectName() const
 {
 	return object_base_name.c_str();
+}
+
+std::string Object::URI() const
+{
+	return (parent ? parent->URI() : std::string()) + '/' + unisim::util::hypapp::URI_Encoder::EncodeComponent(object_base_name);
 }
 
 Object *Object::GetParent() const
@@ -2082,6 +2178,8 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, var_license(0)
 	, var_schematic(0)
 	, param_enable_press_enter_at_exit(0)
+	, param_input_config_file_format(0)
+	, param_output_config_file_format(0)
 	, command_line_options()
 	, objects()
 	, imports()
@@ -2092,6 +2190,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 {
 	new unisim::kernel::config::XMLConfigFileHelper(this);
 	new unisim::kernel::config::INIConfigFileHelper(this);
+	new unisim::kernel::config::JSONConfigFileHelper(this);
 	
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
@@ -2111,8 +2210,8 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	command_line_options.push_back(CommandLineOption('s', "set", "set value of parameter 'param' to 'value'", "param=value"));
 	command_line_options.push_back(CommandLineOption('c', "config", "configures the simulator with the given configuration file", "file"));
 	command_line_options.push_back(CommandLineOption('g', "get-config", "get the simulator configuration file (you can use it to create your own configuration. This option can be combined with -c to get a new configuration file with existing variables from another file", "file"));
-	command_line_options.push_back(CommandLineOption('f', "input-config-file-format", "set the simulator input configuration file format", "XML | INI"));
-	command_line_options.push_back(CommandLineOption('F', "output-config-file-format", "set the simulator output configuration file format", "XML | INI"));
+	command_line_options.push_back(CommandLineOption('f', "input-config-file-format", "set the simulator input configuration file format", "XML | INI | JSON"));
+	command_line_options.push_back(CommandLineOption('F', "output-config-file-format", "set the simulator output configuration file format", "XML | INI | JSON"));
 	command_line_options.push_back(CommandLineOption('l', "list", "lists all available parameters, their type, and their current value"));
 	command_line_options.push_back(CommandLineOption('w', "warn", "enable printing of kernel warnings"));
 	command_line_options.push_back(CommandLineOption('d', "doc", "enable printing a latex documentation", "Latex file"));
@@ -2173,6 +2272,16 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 
 	param_enable_press_enter_at_exit = new Parameter<bool>("enable-press-enter-at-exit", 0, enable_press_enter_at_exit, "Enable/Disable pressing key enter at exit");
 	
+	param_input_config_file_format = new Parameter<std::string>("input-config-file-format", 0, input_config_file_format, "Input configuration file format");
+	param_input_config_file_format->SetMutable(false);
+	param_input_config_file_format->SetVisible(false);
+	param_input_config_file_format->SetSerializable(false);
+	
+	param_output_config_file_format = new Parameter<std::string>("output-config-file-format", 0, output_config_file_format, "Output configuration file format");
+	param_output_config_file_format->SetMutable(false);
+	param_output_config_file_format->SetVisible(false);
+	param_output_config_file_format->SetSerializable(false);
+
 	// parse command line arguments (first pass)
 	char **arg_end = argv + argc;
 	
@@ -2556,6 +2665,16 @@ Simulator::~Simulator()
 		delete param_enable_press_enter_at_exit;
 	}
 	
+	if(param_input_config_file_format)
+	{
+		delete param_input_config_file_format;
+	}
+	
+	if(param_output_config_file_format)
+	{
+		delete param_output_config_file_format;
+	}
+	
 	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_iter;
 	for(config_file_helper_iter = config_file_helpers.begin(); config_file_helper_iter != config_file_helpers.end(); config_file_helper_iter++)
 	{
@@ -2884,9 +3003,10 @@ void Simulator::DumpFormulas(std::ostream &os)
 	DumpVariables(os, VariableBase::VAR_FORMULA);
 }
 
-bool Simulator::LoadVariables(const char *filename, VariableBase::Type type)
+bool Simulator::LoadVariables(const char *filename, VariableBase::Type type, const std::string& _config_file_format)
 {
-	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(input_config_file_format);
+	std::string config_file_format = _config_file_format.empty() ? input_config_file_format : _config_file_format;
+	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(config_file_format);
 	
 	if(config_file_helper_it != config_file_helpers.end())
 	{
@@ -2898,15 +3018,46 @@ bool Simulator::LoadVariables(const char *filename, VariableBase::Type type)
 	return false;
 }
 
-bool Simulator::SaveVariables(const char *filename, VariableBase::Type type)
+bool Simulator::LoadVariables(std::istream& is, VariableBase::Type type, const std::string& _config_file_format)
 {
-	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(output_config_file_format);
+	std::string config_file_format = _config_file_format.empty() ? input_config_file_format : _config_file_format;
+	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(config_file_format);
+	
+	if(config_file_helper_it != config_file_helpers.end())
+	{
+		 ConfigFileHelper *config_file_helper = (*config_file_helper_it).second;
+		 
+		 return config_file_helper->LoadVariables(is, type);
+	}
+	
+	return false;
+}
+
+bool Simulator::SaveVariables(const char *filename, VariableBase::Type type, const std::string& _config_file_format)
+{
+	std::string config_file_format = _config_file_format.empty() ? output_config_file_format : _config_file_format;
+	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(config_file_format);
 	
 	if(config_file_helper_it != config_file_helpers.end())
 	{
 		 ConfigFileHelper *config_file_helper = (*config_file_helper_it).second;
 		 
 		 return config_file_helper->SaveVariables(filename, type);
+	}
+	
+	return false;
+}
+
+bool Simulator::SaveVariables(std::ostream& os, VariableBase::Type type, const std::string& _config_file_format)
+{
+	std::string config_file_format = _config_file_format.empty() ? output_config_file_format : _config_file_format;
+	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(config_file_format);
+	
+	if(config_file_helper_it != config_file_helpers.end())
+	{
+		 ConfigFileHelper *config_file_helper = (*config_file_helper_it).second;
+		 
+		 return config_file_helper->SaveVariables(os, type);
 	}
 	
 	return false;
@@ -3406,7 +3557,7 @@ bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_
 	return ResolvePath(bin_dir, std::string(BIN_TO_SHARED_DATA_PATH), out_share_dir);
 }
 
-const std::string Simulator::GetSharedDataDirectory() const
+const std::string& Simulator::GetSharedDataDirectory() const
 {
 	return shared_data_dir;
 }

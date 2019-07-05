@@ -1,0 +1,5 @@
+m4/systemc
+unisim/component/cxx/processor/powerpc/e200/mpc57xx
+unisim/kernel/logger
+unisim/kernel/service
+unisim/kernel/tlm2

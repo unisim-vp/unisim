@@ -33,6 +33,7 @@
  */
 
 #include <simulator.hh>
+#include <unisim/kernel/logger/logger_server.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 #include <unisim/component/cxx/processor/arm/register_field.hh>
@@ -794,24 +795,27 @@ L2C::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& updat
   return false;
 }
 
-Simulator::Simulator(int argc, char **argv)
-  : unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
+Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
+  : unisim::kernel::tlm2::Simulator(name, argc, argv, Simulator::DefaultConfiguration)
   , ps_clk_period(sc_core::SC_ZERO_TIME)
-  , cpu( "cpu" )
-  , router( "router" )
-  , mpcore( "mpcore" )
-  , main_ram( "main_ram" )
-  , boot_rom( "boot_rom" )
+  , cpu( "cpu", this )
+  , router( "router", this )
+  , mpcore( "mpcore", this )
+  , main_ram( "main_ram", this )
+  , boot_rom( "boot_rom", this )
   , slcr( "slcr", *this )
   , ttc0( "ttc0", 0, mpcore, 0, 42 )
   , ttc1( "ttc1", 0, mpcore, 1, 69 )
   , uart0( "uart0", 0, mpcore, 59 )
   , uart1( "uart1", 0, mpcore, 82 )
   , l2c( "l2c", 0 )
-  , telnet("telnet", 0)
-  , nirq_signal("nIRQm")
-  , nfiq_signal("nFIQm")
-  , nrst_signal("nRESETm")
+  , netstreamer0("netstreamer0", 0)
+  , netstreamer1("netstreamer1", 0)
+  , char_io_tee0("char-io-tee0", 0)
+  , char_io_tee1("char-io-tee1", 0)
+  , http_server("http-server", 0)
+  , web_terminal0("web-terminal0", 0)
+  , web_terminal1("web-terminal1", 0)
   , time("time")
   , host_time("host-time")
   , loader("loader")
@@ -820,6 +824,7 @@ Simulator::Simulator(int argc, char **argv)
   , gdb_server(0)
   , inline_debugger(0)
   , profiler(0)
+  , instrumenter(0)
   , enable_gdb_server(false)
   , param_enable_gdb_server( "enable-gdb-server", 0, enable_gdb_server, "Enable GDB server." )
   , enable_inline_debugger(false)
@@ -828,6 +833,12 @@ Simulator::Simulator(int argc, char **argv)
   , param_enable_profiler( "enable-profiler", 0, enable_profiler, "Enable inline debugger." )
   , exit_status(0)
 {
+  param_enable_gdb_server.SetMutable(false);
+  param_enable_inline_debugger.SetMutable(false);
+  param_enable_profiler.SetMutable(false);
+  
+  instrumenter = new INSTRUMENTER("instrumenter", this);
+  
   // - debugger
   if (enable_gdb_server)
     gdb_server = new GDB_SERVER("gdb-server");
@@ -838,15 +849,25 @@ Simulator::Simulator(int argc, char **argv)
   if (gdb_server or inline_debugger or profiler)
     debugger = new DEBUGGER( "debugger" );
 
+  instrumenter->CreateSignal("nIRQm", true);
+  instrumenter->CreateSignal("nFIQm", true);
+  instrumenter->CreateSignal("nRESETm", true);
+  instrumenter->CreateClock("CLK");
   
-  nfiq_signal = true; 
-  nirq_signal = true; 
-  nrst_signal = true;
-  
+  instrumenter->RegisterPort(cpu.nIRQm);
+  instrumenter->RegisterPort(cpu.nFIQm);
+  instrumenter->RegisterPort(cpu.nRESETm);
+
   cpu.master_socket( *router.targ_socket[0] );
-  cpu.nIRQm( nirq_signal );
-  cpu.nFIQm( nfiq_signal );
-  cpu.nRESETm( nrst_signal );
+  instrumenter->Bind("HARDWARE.cpu.nIRQm", "HARDWARE.nIRQm");
+  instrumenter->Bind("HARDWARE.cpu.nFIQm", "HARDWARE.nFIQm");
+  instrumenter->Bind("HARDWARE.cpu.nRESETm", "HARDWARE.nRESETm");
+  
+  instrumenter->RegisterPort(router.input_if_clock);
+  instrumenter->RegisterPort(router.output_if_clock);
+  
+  instrumenter->Bind("HARDWARE.router.input_if_clock", "HARDWARE.CLK");
+  instrumenter->Bind("HARDWARE.router.output_if_clock", "HARDWARE.CLK");
   
   router.relative_mapping( 0, 0x00000000, 0x3fffffff, main_ram.slave_sock ); /* Main OCM RAM */
   router.absolute_mapping( 1, 0xffff0000, 0xffffffff, boot_rom.slave_sock ); /* Boot OCM ROM */
@@ -858,11 +879,20 @@ Simulator::Simulator(int argc, char **argv)
   router.relative_mapping( 7, 0xe0000000, 0xe0000fff, uart0.socket ); /* uart0 */
   router.relative_mapping( 8, 0xe0001000, 0xe0001fff, uart1.socket ); /* uart1 */
   
-  mpcore.nIRQ( nirq_signal );
-  mpcore.nFIQ( nfiq_signal );
+  instrumenter->RegisterPort(mpcore.nIRQ);
+  instrumenter->RegisterPort(mpcore.nFIQ);
   
-  uart0.char_io_import >> telnet.char_io_export;
+  instrumenter->Bind("HARDWARE.mpcore.nIRQ", "HARDWARE.nIRQm");
+  instrumenter->Bind("HARDWARE.mpcore.nFIQ", "HARDWARE.nFIQm");
   
+  uart0.char_io_import >> char_io_tee0.char_io_export;
+  (*char_io_tee0.char_io_import[0]) >> netstreamer0.char_io_export;
+  (*char_io_tee0.char_io_import[1]) >> web_terminal0.char_io_export;
+  
+  uart1.char_io_import >> char_io_tee1.char_io_export;
+  (*char_io_tee1.char_io_import[0]) >> netstreamer1.char_io_export;
+  (*char_io_tee1.char_io_import[1]) >> web_terminal1.char_io_export;
+
   cpu.symbol_table_lookup_import >> loader.symbol_table_lookup_export;
   *loader.memory_import[0] >> main_ram.memory_export;
   *loader.memory_import[1] >> boot_rom.memory_export;
@@ -932,6 +962,17 @@ Simulator::Simulator(int argc, char **argv)
       profiler->data_object_lookup_import          >> *debugger->data_object_lookup_export[2];
       profiler->subprogram_lookup_import           >> *debugger->subprogram_lookup_export[2];
     }
+    
+   *http_server.http_server_import[0] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
+   *http_server.http_server_import[1] >> instrumenter->http_server_export;
+   *http_server.http_server_import[2] >> web_terminal0.http_server_export;
+   *http_server.http_server_import[3] >> web_terminal1.http_server_export;
+   if (profiler)
+   {
+     *http_server.http_server_import[4] >> profiler->http_server_export;
+   }
+   
+   *http_server.registers_import[0] >> cpu.registers_export;
 }
 
 Simulator::~Simulator()
@@ -940,6 +981,7 @@ Simulator::~Simulator()
   delete inline_debugger;
   delete profiler;
   delete debugger;
+  delete instrumenter;
 }
 
 int
@@ -1066,7 +1108,7 @@ Simulator::UpdateClocks()
   }
   /* UART clock */
   // Whatever control registers are we provide a 115200 bauds clock
-  uart0.bit_period = uart0.bit_period = sc_core::sc_time( 9, sc_core::SC_US ); /* Approx 115200 bauds ;-) */
+  uart1.bit_period = uart0.bit_period = sc_core::sc_time( 9, sc_core::SC_US ); /* Approx 115200 bauds ;-) */
   /* TTC Clock */
   
   
@@ -1096,6 +1138,40 @@ Simulator::Setup()
   UpdateClocks();
   
   return setup_status;
+}
+
+bool Simulator::EndSetup()
+{
+  if (profiler)
+  {
+    http_server.AddJSAction(
+      unisim::service::interfaces::ToolbarOpenTabAction(
+        /* name */      profiler->GetName(), 
+        /* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\">",
+        /* tips */      std::string("Profile of ") + cpu.GetName(),
+        /* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+        /* uri */       profiler->URI()
+    ));
+  }
+  
+  http_server.AddJSAction(
+    unisim::service::interfaces::ToolbarOpenTabAction(
+      /* name */      web_terminal0.GetName(),
+      /* label */     "<img src=\"/unisim/service/web_terminal/icon_term0.svg\">",
+      /* tips */      web_terminal0["title"],
+      /* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+      /* uri */       web_terminal0.URI()
+  ));
+
+  http_server.AddJSAction(
+    unisim::service::interfaces::ToolbarOpenTabAction(
+      /* name */      web_terminal1.GetName(),
+      /* label */     "<img src=\"/unisim/service/web_terminal/icon_term1.svg\">",
+      /* tips */      web_terminal1["title"],
+      /* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+      /* uri */       web_terminal1.URI()
+  ));
+  return true;
 }
 
 void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, bool asynchronous)
@@ -1142,38 +1218,45 @@ Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable( "kernel_logger.std_err", true );
   sim->SetVariable( "kernel_logger.std_err_color", true );
   
-  sim->SetVariable( "router.cycle_time",        "10 ns" );
+  sim->SetVariable( "HARDWARE.router.cycle_time",        "10 ns" );
+  sim->SetVariable( "HARDWARE.CLK.clock-period", "10 ns");
+  sim->SetVariable( "HARDWARE.CLK.lazy-clock", true);
   
-  sim->SetVariable( "cpu.SCTLR",                0x00c52078 );
-  sim->SetVariable( "cpu.default-endianness",   "little-endian" );
-  sim->SetVariable( "cpu.cpu-cycle-time",       "1.5 ns" ); // 666Mhz
-  sim->SetVariable( "cpu.bus-cycle-time",       "10 ns" ); // 32Mhz
-  sim->SetVariable( "cpu.icache.size",          0x020000 ); // 128 KB
-  sim->SetVariable( "cpu.dcache.size",          0x020000 ); // 128 KB
-  sim->SetVariable( "cpu.nice-time",            "1 us" ); // 1us
-  sim->SetVariable( "cpu.ipc",                  1.0  );
-  sim->SetVariable( "cpu.voltage",              1.8 * 1e3 ); // 1800 mV
-  sim->SetVariable( "cpu.enable-dmi",           true ); // Enable SystemC TLM 2.0 DMI
-  sim->SetVariable( "cpu.verbose",              true );
-  sim->SetVariable( "cpu.verbose-tlm",          false );
-  sim->SetVariable( "main_ram.bytesize",          0x40000000UL ); 
-  sim->SetVariable( "main_ram.cycle-time",        "10 ns" );
-  sim->SetVariable( "main_ram.read-latency",      "10 ns" );
-  sim->SetVariable( "main_ram.write-latency",     "0 ps" );
-  sim->SetVariable( "boot_rom.org",               0xffff0000UL );
-  sim->SetVariable( "boot_rom.bytesize",          0x00010000UL ); 
-  sim->SetVariable( "boot_rom.cycle-time",        "10 ns" );
-  sim->SetVariable( "boot_rom.read-latency",      "10 ns" );
-  sim->SetVariable( "boot_rom.write-latency",     "0 ps" );
-  sim->SetVariable( "loader.memory-mapper.mapping", "main_ram:0x00000000-0x3fffffff,boot_rom:0xffff0000-0xffffffff:+0xffff0000" );
+  sim->SetVariable( "HARDWARE.cpu.SCTLR",                0x00c52078 );
+  sim->SetVariable( "HARDWARE.cpu.default-endianness",   "little-endian" );
+  sim->SetVariable( "HARDWARE.cpu.cpu-cycle-time",       "1.5 ns" ); // 666Mhz
+  sim->SetVariable( "HARDWARE.cpu.bus-cycle-time",       "10 ns" ); // 32Mhz
+  sim->SetVariable( "HARDWARE.cpu.icache.size",          0x020000 ); // 128 KB
+  sim->SetVariable( "HARDWARE.cpu.dcache.size",          0x020000 ); // 128 KB
+  sim->SetVariable( "HARDWARE.cpu.nice-time",            "1 us" ); // 1us
+  sim->SetVariable( "HARDWARE.cpu.ipc",                  1.0  );
+  sim->SetVariable( "HARDWARE.cpu.voltage",              1.8 * 1e3 ); // 1800 mV
+  sim->SetVariable( "HARDWARE.cpu.enable-dmi",           true ); // Enable SystemC TLM 2.0 DMI
+  sim->SetVariable( "HARDWARE.cpu.verbose",              true );
+  sim->SetVariable( "HARDWARE.cpu.verbose-tlm",          false );
+  sim->SetVariable( "HARDWARE.main_ram.bytesize",          0x40000000UL ); 
+  sim->SetVariable( "HARDWARE.main_ram.cycle-time",        "10 ns" );
+  sim->SetVariable( "HARDWARE.main_ram.read-latency",      "10 ns" );
+  sim->SetVariable( "HARDWARE.main_ram.write-latency",     "0 ps" );
+  sim->SetVariable( "HARDWARE.boot_rom.org",               0xffff0000UL );
+  sim->SetVariable( "HARDWARE.boot_rom.bytesize",          0x00010000UL ); 
+  sim->SetVariable( "HARDWARE.boot_rom.cycle-time",        "10 ns" );
+  sim->SetVariable( "HARDWARE.boot_rom.read-latency",      "10 ns" );
+  sim->SetVariable( "HARDWARE.boot_rom.write-latency",     "0 ps" );
+  sim->SetVariable( "loader.memory-mapper.mapping", "HARDWARE.main_ram:0x00000000-0x3fffffff,HARDWARE.boot_rom:0xffff0000-0xffffffff:+0xffff0000" );
   
   
-  sim->SetVariable( "gdb-server.architecture-description-filename", "gdb_arm_with_neon.xml" );
+  sim->SetVariable( "gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_arm_with_neon.xml" );
   sim->SetVariable( "debugger.parse-dwarf", false );
-  sim->SetVariable( "debugger.dwarf-register-number-mapping-filename", "arm_eabi_dwarf_register_number_mapping.xml" );
+  sim->SetVariable( "debugger.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml" );
 
   sim->SetVariable( "inline-debugger.num-loaders", 1 );
   sim->SetVariable( "inline-debugger.search-path", "" );
+  
+  sim->SetVariable("http-server.http-port", 12360);
+  
+  sim->SetVariable("web-terminal0.title", "Serial Terminal over uart0");
+  sim->SetVariable("web-terminal1.title", "Serial Terminal over uart1");
 }
 
 void Simulator::SigInt()

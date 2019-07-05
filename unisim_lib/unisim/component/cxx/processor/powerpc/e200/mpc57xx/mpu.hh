@@ -61,7 +61,6 @@ struct MPU_ENTRY
 template <typename TYPES, typename CONFIG>
 struct MPU
 	: unisim::kernel::service::Object
-	, unisim::util::cache::AccessController<TYPES, MPU<TYPES, CONFIG> >
 {
 	typedef typename CONFIG::CPU CPU;
 	typedef typename TYPES::ADDRESS ADDRESS;
@@ -80,8 +79,9 @@ struct MPU
 	void WriteEntry();
 	void ReadEntry();
 	template <bool force> void Invalidate();
-	MPU_ENTRY *Lookup(ADDRESS addr, bool exec, bool write);
-	template <bool DEBUG> inline bool ControlAccess(unisim::util::cache::AccessControl<TYPES>& access_control) ALWAYS_INLINE;
+	template <bool EXEC, bool WRITE> MPU_ENTRY *Lookup(ADDRESS addr);
+	template <bool DEBUG, bool EXEC, bool WRITE> inline bool ControlAccess(ADDRESS addr, ADDRESS& size_to_protection_boundary, STORAGE_ATTR& storage_attr);
+
 	void DumpEntry(std::ostream& os, MPU_ENTRY *mpu_entry);
 	void Dump(std::ostream& os);
 protected:
@@ -159,7 +159,7 @@ protected:
 		MPU *mpu;
 	};
 private:
-	bool Match(MPU_ENTRY *mpu_entry, ADDRESS addr, bool exec, bool write);
+	template <bool EXEC, bool WRITE> bool Match(MPU_ENTRY *mpu_entry, ADDRESS addr);
 	
 	CPU *cpu;
 	unsigned int sel;
@@ -182,7 +182,7 @@ private:
 
 template <typename TYPES, typename CONFIG>
 MPU<TYPES, CONFIG>::MPU(CPU *_cpu, unsigned int _sel)
-	: unisim::kernel::service::Object("MPU", _cpu)
+	: unisim::kernel::service::Object("MPU", _cpu, "Memory Protection Unit")
 	, cpu(_cpu)
 	, sel(_sel)
 	, mas0(_cpu)
@@ -335,7 +335,8 @@ void MPU<TYPES, CONFIG>::Invalidate()
 }
 
 template <typename TYPES, typename CONFIG>
-bool MPU<TYPES, CONFIG>::Match(MPU_ENTRY *mpu_entry, ADDRESS addr, bool exec, bool write)
+template <bool EXEC, bool WRITE>
+bool MPU<TYPES, CONFIG>::Match(MPU_ENTRY *mpu_entry, ADDRESS addr)
 {
 	MSR& msr = cpu->msr;
 	PID0& pid0 = cpu->pid0;
@@ -346,9 +347,9 @@ bool MPU<TYPES, CONFIG>::Match(MPU_ENTRY *mpu_entry, ADDRESS addr, bool exec, bo
 		// valid MPU entry
 		unsigned int pr = msr.template Get<typename MSR::PR>();
 		
-		if(( exec && ((pr && (mpu0csr0.template Get<typename MPU0CSR0::BYPUX>()            || MAS0::UX_UR::Get(mpu_entry->mas0))) || (!pr && (mpu0csr0.template Get<typename MPU0CSR0::BYPSX>()    || MAS0::SX_SR::Get(mpu_entry->mas0))))) ||
-		   (!exec && ((pr && ((write && (mpu0csr0.template Get<typename MPU0CSR0::BYPUW>() || MAS0::UW::Get(mpu_entry->mas0)))    || (!write && (mpu0csr0.template Get<typename MPU0CSR0::BYPUR>() || MAS0::UX_UR::Get(mpu_entry->mas0))))) ||
-		             (!pr && ((write && (mpu0csr0.template Get<typename MPU0CSR0::BYPSW>() || MAS0::SW::Get(mpu_entry->mas0)))    || (!write && (mpu0csr0.template Get<typename MPU0CSR0::BYPSR>() || MAS0::SX_SR::Get(mpu_entry->mas0))))))))
+		if(( EXEC && ((pr && (mpu0csr0.template Get<typename MPU0CSR0::BYPUX>()            || MAS0::UX_UR::Get(mpu_entry->mas0))) || (!pr && (mpu0csr0.template Get<typename MPU0CSR0::BYPSX>()    || MAS0::SX_SR::Get(mpu_entry->mas0))))) ||
+		   (!EXEC && ((pr && ((WRITE && (mpu0csr0.template Get<typename MPU0CSR0::BYPUW>() || MAS0::UW::Get(mpu_entry->mas0)))    || (!WRITE && (mpu0csr0.template Get<typename MPU0CSR0::BYPUR>() || MAS0::UX_UR::Get(mpu_entry->mas0))))) ||
+		             (!pr && ((WRITE && (mpu0csr0.template Get<typename MPU0CSR0::BYPSW>() || MAS0::SW::Get(mpu_entry->mas0)))    || (!WRITE && (mpu0csr0.template Get<typename MPU0CSR0::BYPSR>() || MAS0::SX_SR::Get(mpu_entry->mas0))))))))
 		{
 			// Access right match
 			unsigned int tid = MAS1::TID::Get(mpu_entry->mas1);
@@ -383,88 +384,24 @@ bool MPU<TYPES, CONFIG>::Match(MPU_ENTRY *mpu_entry, ADDRESS addr, bool exec, bo
 	return false;
 }
 
-#if 0
-template <typename CONFIG>
-template <bool exec, bool write>
-MPU_ENTRY *MPU<CONFIG>::CheckPermissions(ADDRESS addr)
-{
-	if(mpu0csr0.template Get<typename MPU0CSR0::MPUEN>())
-	{
-		unsigned int esel;
-
-		if(exec)
-		{
-			// instruction
-			if(Match(mru_inst_mpu_entry, addr, exec, write)) return mru_inst_mpu_entry;
-			
-			for(esel = 0; esel < NUM_INST_MPU_ENTRIES; esel++)
-			{
-				MPU_ENTRY *mpu_entry = &inst_mpu_entries[esel];
-				
-				if(Match(mpu_entry, addr, exec, write))
-				{
-					mru_inst_mpu_entry = mpu_entry;
-					return mpu_entry;
-				}
-			}
-		}
-		else
-		{
-			// data
-			if(Match(mru_data_mpu_entry, addr, exec, write)) return mru_data_mpu_entry;
-			
-			for(esel = 0; esel < NUM_DATA_MPU_ENTRIES; esel++)
-			{
-				MPU_ENTRY *mpu_entry = &data_mpu_entries[esel];
-				
-				if(Match(mpu_entry, addr, exec, write))
-				{
-					mru_data_mpu_entry = mpu_entry;
-					return mpu_entry;
-				}
-			}
-		}
-		
-		// shared
-		if(Match(mru_shd_mpu_entry, addr, exec, write)) return mru_shd_mpu_entry;
-
-		for(esel = 0; esel < NUM_SHARED_MPU_ENTRIES; esel++)
-		{
-			MPU_ENTRY *mpu_entry = &shd_mpu_entries[esel];
-			
-			if(Match(mpu_entry, addr, exec, write))
-			{
-				mru_shd_mpu_entry = mpu_entry;
-				return mpu_entry;
-			}
-		}
-	}
-	else
-	{
-		return &hole_mpu_entry;
-	}
-
-	return 0;
-}
-#endif
-
 template <typename TYPES, typename CONFIG>
-MPU_ENTRY *MPU<TYPES, CONFIG>::Lookup(ADDRESS addr, bool exec, bool write)
+template <bool EXEC, bool WRITE>
+MPU_ENTRY *MPU<TYPES, CONFIG>::Lookup(ADDRESS addr)
 {
 	if(mpu0csr0.template Get<typename MPU0CSR0::MPUEN>())
 	{
 		unsigned int esel;
 
-		if(exec)
+		if(EXEC)
 		{
 			// instruction
-			if(Match(mru_inst_mpu_entry, addr, exec, write)) return mru_inst_mpu_entry;
+			if(Match<EXEC, WRITE>(mru_inst_mpu_entry, addr)) return mru_inst_mpu_entry;
 			
 			for(esel = 0; esel < NUM_INST_MPU_ENTRIES; esel++)
 			{
 				MPU_ENTRY *mpu_entry = &inst_mpu_entries[esel];
 				
-				if(Match(mpu_entry, addr, exec, write))
+				if(Match<EXEC, WRITE>(mpu_entry, addr))
 				{
 					mru_inst_mpu_entry = mpu_entry;
 					return mpu_entry;
@@ -474,13 +411,13 @@ MPU_ENTRY *MPU<TYPES, CONFIG>::Lookup(ADDRESS addr, bool exec, bool write)
 		else
 		{
 			// data
-			if(Match(mru_data_mpu_entry, addr, exec, write)) return mru_data_mpu_entry;
+			if(Match<EXEC, WRITE>(mru_data_mpu_entry, addr)) return mru_data_mpu_entry;
 			
 			for(esel = 0; esel < NUM_DATA_MPU_ENTRIES; esel++)
 			{
 				MPU_ENTRY *mpu_entry = &data_mpu_entries[esel];
 				
-				if(Match(mpu_entry, addr, exec, write))
+				if(Match<EXEC, WRITE>(mpu_entry, addr))
 				{
 					mru_data_mpu_entry = mpu_entry;
 					return mpu_entry;
@@ -489,13 +426,13 @@ MPU_ENTRY *MPU<TYPES, CONFIG>::Lookup(ADDRESS addr, bool exec, bool write)
 		}
 		
 		// shared
-		if(Match(mru_shd_mpu_entry, addr, exec, write)) return mru_shd_mpu_entry;
+		if(Match<EXEC, WRITE>(mru_shd_mpu_entry, addr)) return mru_shd_mpu_entry;
 
 		for(esel = 0; esel < NUM_SHARED_MPU_ENTRIES; esel++)
 		{
 			MPU_ENTRY *mpu_entry = &shd_mpu_entries[esel];
 			
-			if(Match(mpu_entry, addr, exec, write))
+			if(Match<EXEC, WRITE>(mpu_entry, addr))
 			{
 				mru_shd_mpu_entry = mpu_entry;
 				return mpu_entry;
@@ -511,10 +448,10 @@ MPU_ENTRY *MPU<TYPES, CONFIG>::Lookup(ADDRESS addr, bool exec, bool write)
 }
 
 template <typename TYPES, typename CONFIG>
-template <bool DEBUG>
-inline bool MPU<TYPES, CONFIG>::ControlAccess(unisim::util::cache::AccessControl<TYPES>& access_control)
+template <bool DEBUG, bool EXEC, bool WRITE>
+inline bool MPU<TYPES, CONFIG>::ControlAccess(ADDRESS addr, ADDRESS& size_to_protection_boundary, STORAGE_ATTR& storage_attr)
 {
-	MPU_ENTRY *mpu_entry = Lookup(access_control.addr, access_control.mem_access_type == unisim::util::cache::MAT_EXEC, access_control.mem_access_type == unisim::util::cache::MAT_WRITE);
+	MPU_ENTRY *mpu_entry = Lookup<EXEC, WRITE>(addr);
 	
 	if(unlikely(!mpu_entry))
 	{
@@ -524,23 +461,20 @@ inline bool MPU<TYPES, CONFIG>::ControlAccess(unisim::util::cache::AccessControl
 		}
 		else
 		{
-			switch(access_control.mem_access_type)
+			if(EXEC)
 			{
-				case unisim::util::cache::MAT_WRITE:
-				case unisim::util::cache::MAT_READ:
-					cpu->template ThrowException<typename CPU::DataStorageInterrupt::AccessControl>().SetAddress(access_control.addr);
-					break;
-				case unisim::util::cache::MAT_EXEC:
-					cpu->template ThrowException<typename CPU::InstructionStorageInterrupt::AccessControl>();
-					break;
+				cpu->template ThrowException<typename CPU::InstructionStorageInterrupt::AccessControl>();
+			}
+			else
+			{
+				cpu->template ThrowException<typename CPU::DataStorageInterrupt::AccessControl>().SetAddress(addr);
 			}
 			return false;
 		}
 	}
 	
-	access_control.size_to_protection_boundary = MAS2::UPPER_BOUND::Get(mpu_entry->mas2) - access_control.addr + 1;
-	access_control.phys_addr = access_control.addr;
-	access_control.storage_attr = STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? TYPES::SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? TYPES::SA_G : 0));
+	size_to_protection_boundary = MAS2::UPPER_BOUND::Get(mpu_entry->mas2) - addr + 1;
+	storage_attr = STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? TYPES::SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? TYPES::SA_G : 0));
 	
 	return true;
 }

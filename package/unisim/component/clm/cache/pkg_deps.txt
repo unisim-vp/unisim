@@ -1,0 +1,7 @@
+unisim/component/clm/debug
+unisim/component/clm/interfaces
+unisim/component/clm/memory
+unisim/component/clm/utility
+unisim/kernel/clm/engine
+unisim/kernel/service
+unisim/service/interfaces/memory_injection

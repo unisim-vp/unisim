@@ -1,29 +1,35 @@
 // needs unisim/service/http_server/embedded_script.js
 
-var window_resize_refresh_period = 500;
-var window_inner_width = 0;
-var window_inner_height = 0;
-
-resize_reg_table = function(reg_table_width)
+GUI.prototype.on_resize = function(width, height)
 {
 	var reg_table = document.querySelector('table.reg-table');
 	if(reg_table)
 	{
+		var reg_table_width = width - 8;
 		reg_table.style.width = reg_table_width + 'px';
 		reg_table.style.maxWidth = reg_table_width + 'px';
 	}
 }
 
-resize = function()
+GUI.prototype.on_load = function()
 {
-	var new_window_inner_width = window.innerWidth;
-	var new_window_inner_height = window.innerHeight;
-	if((new_window_inner_width != window_inner_width) || (new_window_inner_height != window_inner_height))
+//	console.log('load ' + window.name);
+	this.set_form_target();
+}
+
+GUI.prototype.set_form_target = function()
+{
+	var forms = document.getElementsByTagName('form');
+	if(forms)
 	{
-		window_inner_width = new_window_inner_width;
-		window_inner_height = new_window_inner_height;
-		resize_reg_table(window_inner_width - 32);
+		var target = this.get_next_target();
+		for(var i = 0; i < forms.length; i++)
+		{
+			var form = forms[i];
+// 		console.log('form target set to ' + target);
+			form.setAttribute('target', target);
+		}
 	}
 }
 
-document.addEventListener('DOMContentLoaded', function(event) { resize(); restore_window_scroll_top(); setInterval(resize, window_resize_refresh_period); });
+var gui = new GUI();

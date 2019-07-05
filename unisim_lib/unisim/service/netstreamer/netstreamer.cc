@@ -109,7 +109,7 @@ NetStreamer::NetStreamer(const char *name, unisim::kernel::service::Object *pare
 	, debug(false)
 	, is_server(true)
 	, server_name("localhost")
-	, protocol(NETSTREAMER_PROTOCOL_RAW)
+	, protocol(NETSTREAMER_PROTOCOL_TELNET)
 	, filter_null_character(false)
 	, filter_line_feed(false)
 	, enable_telnet_binary(true)
@@ -967,7 +967,7 @@ bool NetStreamer::GetChar(char& c)
 				if(unlikely(verbose))
 				{
 					logger << DebugInfo << "Getting character ";
-					if((v >= 32) && (v < 128))
+					if((v >= 32) && (v < 127))
 						logger << "'" << c << "'";
 					else
 						logger << "0x" << std::hex << (unsigned int) v << std::dec;
@@ -1194,6 +1194,12 @@ template <>
 const char *Variable<NetStreamerProtocol>::GetDataTypeName() const
 {
 	return "netstreamer-protocol";
+}
+
+template <>
+VariableBase::DataType Variable<NetStreamerProtocol>::GetDataType() const
+{
+	return DT_USER;
 }
 
 template <>

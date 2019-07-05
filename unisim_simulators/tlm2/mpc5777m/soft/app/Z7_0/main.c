@@ -129,7 +129,7 @@ int main(void)
 	} while(1);
 #endif
 
-	printf("CPU#0 says Hello world!\n");
+	printf("CPU#0 says Hello world!\r\n");
 	/* Loop forever */
 	for(;;)
 	{

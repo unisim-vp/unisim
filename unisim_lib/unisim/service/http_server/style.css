@@ -18,7 +18,107 @@ body
 	background-color:white;
 }
 
-#content-div { position:fixed; left:0px; top:0px; width:1156px; height:768px; }
+#toolbar-div
+{
+	position:fixed;
+	left:0px;
+	top:0px;
+	width:1156px;
+	height:40px;
+	border-width:0;
+	box-shadow:inset 0px -1px #ababac, inset 0px 1px white;
+	background-image:linear-gradient(#f9fafa, #eaebec);
+	background-image:-webkit-linear-gradient(#f9fafa, #eaebec); /* for old versions of Safari */
+}
+
+.toolbar
+{
+	position:absolute;
+	left:0px;
+	top:0px;
+	height:100%;
+	display:flex;
+}
+
+.toolbar-item
+{
+	position:relative;
+	left:2px;
+	top:2px;
+	width:44px;
+	height:36px;
+	border-width:0;
+	display:inline-block;
+}
+
+.toolbar-button
+{
+	width:42px;
+	height:36px;
+	margin:0;
+	padding:0;
+	border-radius:3px;
+	border-style:solid;
+	border-color:#918e8c;
+	border-width:1px;
+	background:linear-gradient(to bottom right, #fdfcfc, #e9e8e7);
+	box-shadow:inset -1px -1px 1px 0px #ababac, inset 1px 1px 1px 0px white;
+}
+
+.toolbar-button:hover
+{
+	background:#fdfcfc;
+}
+
+.toolbar-button:active
+{
+	background:#e9e8e7;
+	box-shadow:unset;
+}
+
+.toolbar-button a
+{
+	margin:0;
+	padding:0;
+	width:42px;
+	height:36px;
+	display:block;
+	cursor:default;
+	text-decoration:none;
+	outline:0;
+	user-drag:none; /* Safari only */
+	-webkit-touch-callout:none; /* iOS Safari */
+	-webkit-user-select:none;   /* Safari */
+	-khtml-user-select:none;    /* Konqueror HTML */
+	-moz-user-select:none;      /* Firefox */
+	-ms-user-select:none;       /* Internet Explorer/Edge */
+	user-select:none;           /* Non-prefixed version, currently
+                                    supported by Chrome and Opera */
+}
+
+.toolbar-button img
+{
+	margin:1px 4px 1px 4px;
+	width:32px;
+	height:32px;
+	pointer-events:none;
+	user-drag:none;              /* Safari only */
+	-webkit-touch-callout:none; /* iOS Safari */
+	-webkit-user-select:none;   /* Safari */
+	-khtml-user-select:none;    /* Konqueror HTML */
+	-moz-user-select:none;      /* Firefox */
+	-ms-user-select:none;       /* Internet Explorer/Edge */
+	user-select:none;           /* Non-prefixed version, currently
+                                    supported by Chrome and Opera */
+}
+
+.toolbar-button:active img
+{
+	margin-left:5px;
+	margin-top:2px;
+}
+
+#content-div { position:fixed; left:0px; top:40px; width:1156px; height:768px; }
 
 .tile
 {
@@ -100,34 +200,41 @@ body
 	position:absolute;
 	left:0px;
 	top:0px;
+	background-position:center center;
+	background-size:cover;
+	background-repeat:no-repeat;
+	background-color:#eff0f1;
+	border-radius:2px 2px 0px 0px;
 }
 
 .tab-headers-history-shortcut.w-svg
 {
-	background:url('/unisim/service/http_server/history-shortcut.svg') center center / cover no-repeat, #eff0f1;
+	background-image:url('/unisim/service/http_server/history-shortcut.svg');
 }
 
 .tab-headers-history-shortcut.wo-svg
 {
-	background:url('/unisim/service/http_server/history-shortcut.png') center center / cover no-repeat, #eff0f1;
+	background-image:url('/unisim/service/http_server/history-shortcut.png');
 }
 
 .tab-headers-history-shortcut.w-svg:hover
 {
-	background:url('/unisim/service/http_server/history-shortcut.svg') center center / cover no-repeat, #f9fafa;
+	background-image:url('/unisim/service/http_server/history-shortcut.svg');
+	background-color:#f9fafa;
 }
 
 .tab-headers-history-shortcut.wo-svg:hover
 {
-	background:url('/unisim/service/http_server/history-shortcut.png') center center / cover no-repeat, #f9fafa;
+	background-image:url('/unisim/service/http_server/history-shortcut.png');
+	background-color:#f9fafa;
 }
 
 .tab-headers-history
 {
 	display:block;
 	margin:0;
-	z-index:1;
-	background:#eff0f1;
+	z-index:3;
+	background-color:#eff0f1;
 	border-style:solid;
 	border-width:1px;
 	border-top-color:#b7b8b8;
@@ -147,7 +254,7 @@ body
 
 .tab-headers-history-item:hover
 {
-	background:#f9fafa;
+	background-color:#f9fafa;
 }
 
 .tab-headers-scroller
@@ -163,6 +270,11 @@ body
 	border-color:#ababac;
 	z-index:1;
 	box-shadow:inset 0px -1px #ababac, inset 0px 1px white;
+	background-position:center center;
+	background-size:cover;
+	background-repeat:no-repeat;
+	background-color:#eff0f1;
+	border-radius:2px 2px 0px 0px;
 }
 
 .tab-headers-scroller:hover
@@ -179,22 +291,22 @@ body
 
 .tab-headers-left-scroller.w-svg
 {
-	background:url('/unisim/service/http_server/left-arrow.svg') center center / cover no-repeat, #eff0f1;
+	background-image:url('/unisim/service/http_server/left-arrow.svg');
 }
 
 .tab-headers-left-scroller.wo-svg
 {
-	background:url('/unisim/service/http_server/left-arrow.png') center center / cover no-repeat, #eff0f1;
+	background-image:url('/unisim/service/http_server/left-arrow.png');
 }
 
 .tab-headers-left-scroller.w-svg:hover
 {
-	background:url('/unisim/service/http_server/left-arrow.svg') center center / cover no-repeat, #f9fafa;
+	background-color:#f9fafa;
 }
 
 .tab-headers-left-scroller.wo-svg:hover
 {
-	background:url('/unisim/service/http_server/left-arrow.png') center center / cover no-repeat, #f9fafa;
+	background-color:#f9fafa;
 }
 
 .tab-headers-right-scroller
@@ -206,22 +318,22 @@ body
 
 .tab-headers-right-scroller.w-svg
 {
-	background:url('/unisim/service/http_server/right-arrow.svg') center center / cover no-repeat, #eff0f1;
+	background-image:url('/unisim/service/http_server/right-arrow.svg');
 }
 
 .tab-headers-right-scroller.wo-svg
 {
-	background:url('/unisim/service/http_server/right-arrow.png') center center / cover no-repeat, #eff0f1;
+	background-image:url('/unisim/service/http_server/right-arrow.png');
 }
 
 .tab-headers-right-scroller.w-svg:hover
 {
-	background:url('/unisim/service/http_server/right-arrow.svg') center center / cover no-repeat, #f9fafa;
+	background-color:#f9fafa;
 }
 
 .tab-headers-right-scroller.wo-svg:hover
 {
-	background:url('/unisim/service/http_server/right-arrow.png') center center / cover no-repeat, #f9fafa;
+	background-color:#f9fafa;
 }
 
 .tab-headers
@@ -234,11 +346,13 @@ body
 	overflow:hidden;
 	border-width:0;
 	box-shadow:inset 0px -1px #ababac, inset 0px 1px white;
-	background-image: linear-gradient(#f9fafa, #eaebec);
+	background-image:linear-gradient(#f9fafa, #eaebec);
+	background-image:-webkit-linear-gradient(#f9fafa, #eaebec); /* for old versions of Safari */
 }
 
 .tab-header
 {
+	border-radius:3px 3px 0px 0px;
 	height:24px;
 	float:left;
 	cursor:default;
@@ -265,6 +379,20 @@ body
 	border-width:0px 1px 0px 1px;
 }
 
+.tab-header span
+{
+	display:inline-block;
+	max-width:200px;
+	white-space:nowrap;
+	overflow:hidden;
+	text-overflow:ellipsis;
+}
+
+.tab-header-active span
+{
+	max-width:1024px;
+}
+
 .tab-contents { position:absolute; left:0px; top:24px; display:block; overflow:hidden; }
 
 .tab-content { position:absolute; left:0px; top:0px; width:100%; height:100%; display:block; visibility:hidden; border-width:0; overflow:hidden; }
@@ -272,13 +400,14 @@ body
 .tab-content:hover { overflow:auto; }
 
 .noselect {
-  -webkit-touch-callout: none; /* iOS Safari */
-    -webkit-user-select: none; /* Safari */
-     -khtml-user-select: none; /* Konqueror HTML */
-       -moz-user-select: none; /* Firefox */
-        -ms-user-select: none; /* Internet Explorer/Edge */
-            user-select: none; /* Non-prefixed version, currently
-                                  supported by Chrome and Opera */
+	user-drag:none; /* Safari only */
+	-webkit-touch-callout:none; /* iOS Safari */
+	-webkit-user-select:none;   /* Safari */
+	-khtml-user-select:none;    /* Konqueror HTML */
+	-moz-user-select:none;      /* Firefox */
+	-ms-user-select:none;       /* Internet Explorer/Edge */
+	user-select:none;           /* Non-prefixed version, currently
+                                    supported by Chrome and Opera */
 }
 
 .close-tab
@@ -290,29 +419,38 @@ body
 	display:block;
 	top:50%;
 	transform:translate(0, 50%);
+	-webkit-transform:translate(0, 50%); /* for old versions of safari */
+	background-position:center center;
+	background-size:cover;
+	background-repeat:no-repeat;
 }
 
 .close-tab.w-svg
 {
-	background:url('/unisim/service/http_server/close-tab.svg') center center / cover no-repeat;
+	background-image:url('/unisim/service/http_server/close-tab.svg');
 }
 
 .close-tab.wo-svg
 {
-	background:url('/unisim/service/http_server/close-tab.png') center center / cover no-repeat;
+	background-image:url('/unisim/service/http_server/close-tab.png');
 }
 
 .close-tab.w-svg:hover
 {
-	background:url('/unisim/service/http_server/close-tab-hover.svg') center center / cover no-repeat;
+	background-image:url('/unisim/service/http_server/close-tab-hover.svg');
 }
 
 .close-tab.wo-svg:hover
 {
-	background:url('/unisim/service/http_server/close-tab-hover.png') center center / cover no-repeat;
+	background-image:url('/unisim/service/http_server/close-tab-hover.png');
 }
 
-#browser { padding:8px 0 0 8px; background:white; }
+#browser-tab-content
+{
+	background-color:white;
+}
+
+#browser { padding:8px 0 0 8px; margin:0 0 16px 0; background-color:white; }
 
 #browser .browser-item { white-space: nowrap; color:black; cursor:default; }
 
@@ -351,9 +489,17 @@ body
 	border-left: thin solid #000;
 }
 
+#browser abbr[title]
+{
+	border-bottom:none !important;
+	cursor:inherit !important;
+	text-decoration:none !important;
+}
+
 .context-menu
 {
-	background:#eff0f1;
+	z-index:3;
+	background-color:#eff0f1;
 	border-width:1px;
 	border-style:solid;
 	border-top-color:#b7b8b8;
@@ -362,6 +508,14 @@ body
 	border-left-color:#b7b8b8;
 	box-shadow: 1px 1px 1px #ababac;
 	cursor:default;
+	user-drag:none; /* Safari only */
+	-webkit-touch-callout:none; /* iOS Safari */
+	-webkit-user-select:none;   /* Safari */
+	-khtml-user-select:none;    /* Konqueror HTML */
+	-moz-user-select:none;      /* Firefox */
+	-ms-user-select:none;       /* Internet Explorer/Edge */
+	user-select:none;           /* Non-prefixed version, currently
+                                    supported by Chrome and Opera */
 }
 
 .context-menu-item
@@ -373,5 +527,39 @@ body
 
 .context-menu-item:hover
 {
-	background:#f9fafa;
+	background-color:#f9fafa;
+}
+
+#statusbar-div
+{
+	position:fixed;
+	left:0px;
+	top:808px;
+	width:1156px;
+	height:24px;
+	border-width:0;
+	box-shadow:inset 0px 1px #ababac, inset 0px 1px white;
+	background-image:linear-gradient(#f9fafa, #eaebec);
+	background-image:-webkit-linear-gradient(#f9fafa, #eaebec); /* for old versions of Safari */
+}
+
+.statusbar
+{
+	position:absolute;
+	left:0px;
+	top:0px;
+	height:100%;
+	display:flex;
+	flex-direction:row;
+}
+
+.statusbar .statusbar-item
+{
+	position:absolute;
+	left:6px;
+	top:0px;
+	height:100%;
+	border-width:0;
+	display:flex;
+	flex-direction:row;
 }

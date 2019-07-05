@@ -59,14 +59,14 @@ struct IMEM
 	
 	static const char *GetLocalMemoryName() { return "IMEM"; }
 	
-	inline PHYSICAL_ADDRESS GetBaseAddress() const ALWAYS_INLINE { return cur_base_addr; }
+	inline PHYSICAL_ADDRESS GetBasePhysicalAddress() const ALWAYS_INLINE { return cur_base_addr; }
 	
 	inline unsigned int GetSize() const ALWAYS_INLINE { return size; }
 
 	bool IsVerbose() const ALWAYS_INLINE { return verbose; }
 
 	IMEM(CPU *_cpu)
-		: unisim::kernel::service::Object("IMEM", _cpu)
+		: unisim::kernel::service::Object("IMEM", _cpu, "Instruction local memory")
 		, cpu(_cpu)
 		, imemcfg0(_cpu, this)
 		, imemctl0(_cpu, this)

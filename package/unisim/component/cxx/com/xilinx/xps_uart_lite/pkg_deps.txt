@@ -1,0 +1,7 @@
+unisim/kernel/logger
+unisim/kernel/service
+unisim/service/interfaces/char_io
+unisim/service/interfaces/memory
+unisim/util/arithmetic
+unisim/util/endian
+unisim/util/queue

@@ -1,0 +1,6 @@
+m4/systemc
+unisim/component/cxx/processor/tms320c3x
+unisim/component/tlm2/interrupt
+unisim/kernel/logger
+unisim/kernel/service
+unisim/kernel/tlm2

@@ -120,6 +120,7 @@ class VariableBase
 public:
 	typedef enum { VAR_VOID, VAR_ARRAY, VAR_PARAMETER, VAR_STATISTIC, VAR_REGISTER, VAR_FORMULA, VAR_SIGNAL } Type;
 	typedef enum { FMT_DEFAULT, FMT_HEX, FMT_DEC } Format;
+	typedef enum { DT_USER, DT_BOOL, DT_SCHAR, DT_SHORT, DT_INT, DT_LONG, DT_LONG_LONG, DT_UCHAR, DT_USHORT, DT_UINT, DT_ULONG, DT_ULONG_LONG, DT_FLOAT, DT_DOUBLE, DT_STRING } DataType;
 
 	VariableBase();
 	VariableBase(const char *name, Object *owner, Type type, const char *description = 0);
@@ -135,6 +136,7 @@ public:
 	const char *GetTypeName() const;
 	Format GetFormat() const;
 	virtual const char *GetDataTypeName() const;
+	virtual DataType GetDataType() const;
 	bool HasEnumeratedValues() const;
 	bool HasEnumeratedValue(const char *value) const;
 	void GetEnumeratedValues(std::vector<std::string> &values) const;
@@ -221,7 +223,9 @@ public:
 	virtual ~ConfigFileHelper() {}
 	virtual const char *GetName() const = 0;
 	virtual bool SaveVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
+	virtual bool SaveVariables(std::ostream& os, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
 	virtual bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
+	virtual bool LoadVariables(std::istream& is, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
 };
 
 //=============================================================================
@@ -280,7 +284,7 @@ public:
 	bool GetExecutablePath(const char *argv0, std::string& out_execute_path) const;
 	bool GetBinPath(const char *argv0, std::string& out_bin_dir, std::string& out_bin_program) const;
 	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const;
-	const std::string GetSharedDataDirectory() const;
+	const std::string& GetSharedDataDirectory() const;
 	std::string SearchSharedDataFile(const char *filename) const;
 	std::vector<std::string> const& GetCmdArgs() const;
 
@@ -339,6 +343,8 @@ private:
 	Parameter<std::string> *var_license;
 	Parameter<std::string> *var_schematic;
 	Parameter<bool> *param_enable_press_enter_at_exit;
+	Parameter<std::string> *param_input_config_file_format;
+	Parameter<std::string> *param_output_config_file_format;
 	
 	void Version(std::ostream& os) const;
 	void Help(std::ostream& os) const;
@@ -356,8 +362,10 @@ private:
 	void Initialize(VariableBase *variable);
 
 public:
-	bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID);
-	bool SaveVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID);
+	bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
+	bool LoadVariables(std::istream& is, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
+	bool SaveVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
+	bool SaveVariables(std::ostream& os, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
 
 	void GetObjects(std::list<Object *>& lst) const;
 	void GetRootObjects(std::list<Object *>& lst) const;
@@ -438,6 +446,7 @@ public:
 	Variable(const char *name, Object *owner, TYPE& storage, VariableBase::Type type, const char *description = NULL);
 
 	virtual const char *GetDataTypeName() const;
+	virtual DataType GetDataType() const;
 	virtual unsigned int GetBitSize() const;
 	virtual operator bool () const;
 	virtual operator long long () const;
@@ -458,8 +467,7 @@ private:
 };
 
 template <class TYPE>
-void
-Variable<TYPE>::Set( TYPE const& value )
+void Variable<TYPE>::Set( TYPE const& value )
 {
 	SetModified(*storage != value);
 	*storage = value;
@@ -855,6 +863,7 @@ public:
 
 	const char *GetName() const;
 	const char *GetObjectName() const;
+	std::string URI() const;
 
 	void Add(ServiceImportBase& srv_import);
 	void Remove(ServiceImportBase& srv_import);

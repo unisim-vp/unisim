@@ -101,6 +101,29 @@ const char *XMLConfigFileHelper::GetName() const
 	return "XML";
 }
 
+bool XMLConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::service::VariableBase::Type type)
+{
+	xmlTextWriterPtr writer;
+	
+	xmlBuffer *buffer = xmlBufferCreate();
+	xmlOutputBuffer *output_buffer = xmlOutputBufferCreateBuffer(buffer, NULL);
+	
+	writer = xmlNewTextWriter(output_buffer);
+	
+	bool ret = SaveVariables(writer, type);
+	
+	if(ret)
+	{
+		std::string str((char *) buffer->content, buffer->use);
+		os << str;
+	}
+	
+	xmlBufferFree(buffer);
+	
+	return ret;
+}
+
+
 bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::service::VariableBase::Type type)
 {
 	xmlTextWriterPtr writer;
@@ -112,6 +135,16 @@ bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 			<< filename << ")" << std::endl;
 		return false;
 	}
+	
+	bool ret = SaveVariables(writer, type);
+	
+	xmlFreeTextWriter(writer);
+	
+	return ret;
+}
+
+bool XMLConfigFileHelper::SaveVariables(xmlTextWriterPtr writer, unisim::kernel::service::VariableBase::Type type)
+{
 	int rc = xmlTextWriterSetIndent(writer, 1);
 	if(rc < 0) {
 		std::cerr << "Warning(XMLConfigFileHelper::SaveVariables): "
@@ -128,7 +161,6 @@ bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 	if(rc < 0) {
 		std::cerr << "Error(XMLConfigFileHelper::SaveVariables): "
 			<< "error starting the xml document" << std::endl;
-		xmlFreeTextWriter(writer);
 		return false;
 	}
 	// rc = xmlTextWriterStartElement(writer, BAD_CAST "VARIABLES");
@@ -136,7 +168,6 @@ bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 	if(rc < 0) {
 		std::cerr << "Error(XMLConfigFileHelper::SaveVariables): "
 			<< "error starting the xml document" << std::endl;
-		xmlFreeTextWriter(writer);
 		return false;
 	}
 
@@ -160,7 +191,6 @@ bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 				std::cerr << "Error(ServiceManage::SaveVariables): "
 					<< "error writing root object"
 					<< std::endl;
-				xmlFreeTextWriter(writer);
 				return false;
 			}
 		}
@@ -185,7 +215,6 @@ bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 				std::cerr << "Error(XMLConfigFileHelper::SaveVariables): "
 						<< "error writing variable"
 						<< std::endl;
-				xmlFreeTextWriter(writer);
 				return false;
 			}
 		}
@@ -195,7 +224,6 @@ bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 	if(rc < 0) {
 		std::cerr << "Error(XMLConfigFileHelper::SaveVariables): "
 			<< "could not close the root element" << std::endl;
-		xmlFreeTextWriter(writer);
 		return false;
 	}
 	rc = xmlTextWriterEndDocument(writer);
@@ -204,7 +232,6 @@ bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 			<< "could not correctly close the XMLWriter"
 			<< std::endl;
 	}
-	xmlFreeTextWriter(writer);
 
 	return true;
 }
@@ -425,7 +452,6 @@ bool XMLConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::s
 	std::string filename = simulator->SearchSharedDataFile(_filename);
 	
 	xmlTextReaderPtr reader;
-	int ret;
 
 	std::cerr << "Loading xml parameters from: " << filename << std::endl;
 	
@@ -435,25 +461,57 @@ bool XMLConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::s
 	 */
 	reader = xmlReaderForFile(filename.c_str(), NULL, 0);
 	if (reader != NULL) {
-		cur_status = NONE;
-		cur_var = NULL;
-		ret = xmlTextReaderRead(reader);
-		while (ret == 1) {
-			if(ProcessXmlVariableNode(reader, type))
-				ret = xmlTextReaderRead(reader);
-			else
-				ret = 0;
-		}
-		xmlFreeTextReader(reader);
-		if (ret != 0) {
-			std::cerr << filename << ": failed to parse" << std::endl;
-			return false;
-		}
-		return true;
+		return LoadVariables(reader, type);
 	} else {
 		std::cerr << "Unable to open " << filename << std::endl;
 		return false;
 	}
+}
+
+bool XMLConfigFileHelper::LoadVariables(xmlTextReaderPtr reader, unisim::kernel::service::VariableBase::Type type)
+{
+	int ret;
+	cur_status = NONE;
+	cur_var = NULL;
+	ret = xmlTextReaderRead(reader);
+	while (ret == 1) {
+		if(ProcessXmlVariableNode(reader, type))
+			ret = xmlTextReaderRead(reader);
+		else
+			ret = 0;
+	}
+	xmlFreeTextReader(reader);
+	if (ret != 0) {
+		std::cerr << "failed to parse" << std::endl;
+		return false;
+	}
+	return true;
+}
+
+bool XMLConfigFileHelper::LoadVariables(std::istream& is, unisim::kernel::service::VariableBase::Type type)
+{
+	xmlTextReaderPtr reader;
+	
+	std::string str;
+	
+	char buffer[4096];
+	do
+	{
+		std::streamsize n = is.readsome(buffer, sizeof(buffer));
+		
+		if(is.fail()) return false;
+		if(n <= 0) break;
+		
+		if(n > 0)
+		{
+			str.append(buffer, n);
+		}
+	}
+	while(1);
+	
+	reader = xmlReaderForMemory(&str[0], str.length(), "", XML_ENCODING, 0);
+	
+	return LoadVariables(reader, type);
 }
 
 bool 

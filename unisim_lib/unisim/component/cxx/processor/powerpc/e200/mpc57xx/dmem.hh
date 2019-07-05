@@ -59,14 +59,14 @@ struct DMEM
 	
 	static const char *GetLocalMemoryName() { return "DMEM"; }
 	
-	inline PHYSICAL_ADDRESS GetBaseAddress() const ALWAYS_INLINE { return cur_base_addr; }
+	inline PHYSICAL_ADDRESS GetBasePhysicalAddress() const ALWAYS_INLINE { return cur_base_addr; }
 	
 	inline unsigned int GetSize() const ALWAYS_INLINE { return size; }
 
 	bool IsVerbose() const ALWAYS_INLINE { return verbose; }
 
 	DMEM(CPU *_cpu)
-		: unisim::kernel::service::Object("DMEM", _cpu)
+		: unisim::kernel::service::Object("DMEM", _cpu, "Data local memory")
 		, cpu(_cpu)
 		, dmemcfg0(_cpu, this)
 		, dmemctl0(_cpu, this)

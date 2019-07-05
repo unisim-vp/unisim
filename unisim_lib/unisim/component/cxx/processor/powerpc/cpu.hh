@@ -385,6 +385,79 @@ private:
 	}
 };
 
+struct FPSCR : Register<FPSCR, 32>
+{
+public:
+	typedef Register<FPSCR, 32> Super;
+	
+	struct FX     : Field<FX    , 0     > {}; // Floating-point exception summary
+	struct FEX    : Field<FEX   , 1     > {}; // Floating-point enabled exception summary
+	struct VX     : Field<VX    , 2     > {}; // Floating-point invalid operation exception summary
+	struct OX     : Field<OX    , 3     > {}; // Floating-point overflow exception
+	struct UX     : Field<UX    , 4     > {}; // Floating-point underflow exception
+	struct ZX     : Field<ZX    , 5     > {}; // Floating-point zero divide exception
+	struct XX     : Field<XX    , 6     > {}; // Floating-point inexact exception
+	struct VXSNAN : Field<VXSNAN, 7     > {}; // Floating-point invalid operation exception for SNaN
+	struct VXISI  : Field<VXISI , 8     > {}; // Floating-point invalid operation exception for infinity - infinity
+	struct VXIDI  : Field<VXIDI , 9     > {}; // Floating-point invalid operation exception for infinity / infinity
+	struct VXZDZ  : Field<VXZDZ , 10    > {}; // Floating-point invalid operation exception for zero / zero
+	struct VXIMZ  : Field<VXIMZ , 11    > {}; // Floating-point invalid operation exception for infinity * zero
+	struct VXVC   : Field<VXVC  , 12    > {}; // Floating-point invalid operation exception for invalid compare
+	struct FR     : Field<FR    , 13    > {}; // Floating-point fraction rounded
+	struct FI     : Field<FI    , 14    > {}; // Floating-point fraction inexact
+	struct FPRF   : Field<FPRF  , 15, 19> {}; // Floating-point result flags
+	struct VXSOFT : Field<VXSOFT, 21    > {}; // Floating-point invalid operation exception for software request
+	struct VXSQRT : Field<VXSQRT, 22    > {}; // Floating-point invalid operation exception for invalid square root
+	struct VXCVI  : Field<VXCVI , 23    > {}; // Floating-point invalid operation exception for invalid integer convert
+	struct VE     : Field<VE    , 24    > {}; // Floating-point invalid operation exception enable
+	struct OE     : Field<OE    , 25    > {}; // IEEE floating-point overflow exception enable
+	struct UE     : Field<UE    , 26    > {}; // IEEE floating-point underflow exception enable
+	struct ZE     : Field<ZE    , 27    > {}; // IEEE floating-point zero divide exception enable
+	struct XE     : Field<XE    , 28    > {}; // Floating-point inexact exception enable
+	struct NI     : Field<NI    , 29    > {}; // Floating-point non-IEEE mode
+	struct RN     : Field<RN    , 30, 31> {}; // Floating-point rounding control
+
+	typedef FieldSet< FX, FEX, VX, OX, UX, ZX, XX, VXSNAN, VXISI, VXIDI, VXZDZ, VXIMZ, VXVC  
+	                , FR, FI, FPRF, VXSOFT, VXSQRT, VXCVI, VE, OE, UE, ZE, XE, NI, RN > ALL;
+	
+	FPSCR() : Super() { Init(); }
+	FPSCR(uint32_t _value) : Super(_value) { Init(); }
+	using Super::operator =;
+private:
+	void Init()
+	{
+		this->SetName("fpscr");
+		this->SetDescription("Floating-point Status and Control Register");
+		
+		FX    ::SetName("FX");     FX    ::SetDescription("Floating-point exception summary");
+		FEX   ::SetName("FEX");    FEX   ::SetDescription("Floating-point enabled exception summary");
+		VX    ::SetName("VX");     VX    ::SetDescription("Floating-point invalid operation exception summary");
+		OX    ::SetName("OX");     OX    ::SetDescription("Floating-point overflow exception");
+		UX    ::SetName("UX");     UX    ::SetDescription("Floating-point underflow exception");
+		ZX    ::SetName("ZX");     ZX    ::SetDescription("Floating-point zero divide exception");
+		XX    ::SetName("XX");     XX    ::SetDescription("Floating-point inexact exception");
+		VXSNAN::SetName("VXSNAN"); VXSNAN::SetDescription("Floating-point invalid operation exception for SNaN");
+		VXISI ::SetName("VXISI");  VXISI ::SetDescription("Floating-point invalid operation exception for infinity - infinity");
+		VXIDI ::SetName("VXIDI");  VXIDI ::SetDescription("Floating-point invalid operation exception for infinity / infinity");
+		VXZDZ ::SetName("VXZDZ");  VXZDZ ::SetDescription("Floating-point invalid operation exception for zero / zero");
+		VXIMZ ::SetName("VXIMZ");  VXIMZ ::SetDescription("Floating-point invalid operation exception for infinity * zero");
+		VXVC  ::SetName("VXVC");   VXVC  ::SetDescription("Floating-point invalid operation exception for invalid compare");
+		FR    ::SetName("FR");     FR    ::SetDescription("Floating-point fraction rounded");
+		FI    ::SetName("FI");     FI    ::SetDescription("Floating-point fraction inexact");
+		FPRF  ::SetName("FPRF");   FPRF  ::SetDescription("Floating-point result flags");
+		VXSOFT::SetName("VXSOFT"); VXSOFT::SetDescription("Floating-point invalid operation exception for software request");
+		VXSQRT::SetName("VXSQRT"); VXSQRT::SetDescription("Floating-point invalid operation exception for invalid square root");
+		VXCVI ::SetName("VXCVI");  VXCVI ::SetDescription("Floating-point invalid operation exception for invalid integer convert");
+		VE    ::SetName("VE");     VE    ::SetDescription("Floating-point invalid operation exception enable");
+		OE    ::SetName("OE");     OE    ::SetDescription("IEEE floating-point overflow exception enable");
+		UE    ::SetName("UE");     UE    ::SetDescription("IEEE floating-point underflow exception enable");
+		ZE    ::SetName("ZE");     ZE    ::SetDescription("IEEE floating-point zero divide exception enable");
+		XE    ::SetName("XE");     XE    ::SetDescription("Floating-point inexact exception enable");
+		NI    ::SetName("NI");     NI    ::SetDescription("Floating-point non-IEEE mode");
+		RN    ::SetName("RN");     RN    ::SetDescription("Floating-point rounding control");
+	}
+};
+
 ///////////////////////////// TypeForByteSize<> ///////////////////////////////
 
 template <unsigned int BYTE_SIZE> struct TypeForByteSize {};
@@ -874,21 +947,18 @@ protected:
 		virtual bool MoveTo(uint32_t value) { cpu->DCRWrite(n, value); return true; }
 		virtual bool MoveFrom(uint32_t& value) { cpu->DCRRead(n, value); return true; }
 	};
-
-	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM, SLR_Access_Type _SLR_ACCESS = SLR_RW, SLR_Privilege_Type _SLR_PRIVILEGE = SLR_NON_PRIVILEGED>
-	struct SLR : unisim::util::reg::core::Register<SLR_REGISTER, 32, unisim::util::reg::core::Access(_SLR_ACCESS), SLRBase>
+	
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, SLR_Access_Type _SLR_ACCESS = SLR_RW, SLR_Privilege_Type _SLR_PRIVILEGE = SLR_NON_PRIVILEGED>
+	struct UnnumberedSLR : unisim::util::reg::core::Register<SLR_REGISTER, 32, unisim::util::reg::core::Access(_SLR_ACCESS), SLRBase>
 	{
 		typedef unisim::util::reg::core::Register<SLR_REGISTER, 32, unisim::util::reg::core::Access(_SLR_ACCESS), SLRBase> Super;
 		static const SLR_Space_Type SLR_SPACE = _SLR_SPACE;
-		static const unsigned int SLR_NUM = _SLR_NUM;
-		static const unsigned int REG_NUM = _SLR_NUM;
 		static const SLR_Access_Type SLR_ACCESS = _SLR_ACCESS;
 		static const SLR_Privilege_Type SLR_PRIVILEGE = _SLR_PRIVILEGE;
 		
-		SLR(typename CONFIG::CPU *_cpu) : Super(), cpu(_cpu) { Init(); }
-		SLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_value), cpu(_cpu) { Init(); }
+		UnnumberedSLR(typename CONFIG::CPU *_cpu) : Super(), cpu(_cpu) {}
+		UnnumberedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_value), cpu(_cpu) {}
 		virtual bool IsValid() const { return true; }
-		virtual unsigned int GetRegNum() const { return _SLR_NUM; }
 		virtual SLR_Space_Type GetSpace() const { return _SLR_SPACE; }
 		virtual bool IsPrivileged() const { return SLR_PRIVILEGE == SLR_PRIVILEGED; }
 		virtual bool IsReadOnly() const { return SLR_ACCESS == SLR_RO; }
@@ -995,11 +1065,25 @@ protected:
 		
 	protected:
 		typename CONFIG::CPU *cpu;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM, SLR_Access_Type _SLR_ACCESS = SLR_RW, SLR_Privilege_Type _SLR_PRIVILEGE = SLR_NON_PRIVILEGED>
+	struct SLR : UnnumberedSLR<SLR_REGISTER, _SLR_SPACE, _SLR_ACCESS, _SLR_PRIVILEGE>
+	{
+		typedef UnnumberedSLR<SLR_REGISTER, _SLR_SPACE, _SLR_ACCESS, _SLR_PRIVILEGE> Super;
+		static const unsigned int SLR_NUM = _SLR_NUM;
+		static const unsigned int REG_NUM = _SLR_NUM;
+		
+		SLR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		SLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		virtual unsigned int GetRegNum() const { return _SLR_NUM; }
+		
+		using Super::operator =;
 	private:
 		
 		void Init()
 		{
-			cpu->RegisterSLR(_SLR_NUM, this);
+			this->cpu->RegisterSLR(_SLR_NUM, this);
 		}
 	};
 	
@@ -1026,6 +1110,17 @@ protected:
 	};
 
 	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct WriteOnlyPrivilegedSLR : SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_PRIVILEGED>
+	{
+		typedef SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_PRIVILEGED> Super;
+
+		WriteOnlyPrivilegedSLR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		WriteOnlyPrivilegedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
 	struct NonPrivilegedSLR : SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_NON_PRIVILEGED>
 	{
 		typedef SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_NON_PRIVILEGED> Super;
@@ -1043,6 +1138,164 @@ protected:
 
 		ReadOnlyNonPrivilegedSLR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
 		ReadOnlyNonPrivilegedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct WriteOnlyNonPrivilegedSLR : SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_NON_PRIVILEGED>
+	{
+		typedef SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_NON_PRIVILEGED> Super;
+
+		WriteOnlyNonPrivilegedSLR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		WriteOnlyNonPrivilegedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM, SLR_Access_Type _SLR_ACCESS = SLR_RW, SLR_Privilege_Type _SLR_PRIVILEGE = SLR_NON_PRIVILEGED>
+	struct AltSLR : SLRBase
+	{
+		static const SLR_Space_Type SLR_SPACE = _SLR_SPACE;
+		static const unsigned int SLR_NUM = _SLR_NUM;
+		static const unsigned int REG_NUM = _SLR_NUM;
+		static const SLR_Access_Type SLR_ACCESS = _SLR_ACCESS;
+		static const SLR_Privilege_Type SLR_PRIVILEGE = _SLR_PRIVILEGE;
+
+		AltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : cpu(_cpu), slr(_slr) { Init(); }
+		virtual bool IsValid() const { return true; }
+		virtual unsigned int GetRegNum() const { return _SLR_NUM; }
+		virtual SLR_Space_Type GetSpace() const { return _SLR_SPACE; }
+		virtual bool IsPrivileged() const { return SLR_PRIVILEGE == SLR_PRIVILEGED; }
+		virtual bool IsReadOnly() const { return SLR_ACCESS == SLR_RO; }
+		virtual bool IsWriteOnly() const { return SLR_ACCESS == SLR_WO; }
+
+		virtual bool CheckMoveToLegality()
+		{
+			if(cpu->GetMSR().template Get<typename CONFIG::CPU::MSR::PR>() && (SLR_PRIVILEGE == SLR_PRIVILEGED))
+			{
+				// Privilege Violation
+				if(cpu->verbose_move_to_slr)
+				{
+					cpu->GetDebugWarningStream() << "Move to " << this->GetName() << " is a privileged operation" << std::endl;
+				}
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::PrivilegeViolation>();
+				return false;
+			}
+
+			if(SLR_ACCESS == SLR_RO)
+			{
+				// Illegal Instruction
+				if(cpu->verbose_move_to_slr)
+				{
+					cpu->GetDebugWarningStream() << "Move to " << this->GetName() << " is an illegal operation" << std::endl;
+				}
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
+				return false;
+			}
+			
+			return true;
+		}
+		
+		virtual bool CheckMoveFromLegality()
+		{
+			if(cpu->GetMSR().template Get<typename CONFIG::CPU::MSR::PR>() && (SLR_PRIVILEGE == SLR_PRIVILEGED))
+			{
+				// Privilege Violation
+				if(cpu->verbose_move_from_slr)
+				{
+					cpu->GetDebugWarningStream() << "Move from " << this->GetName() << " is a privileged operation" << std::endl;
+				}
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::PrivilegeViolation>();
+				return false;
+			}
+			
+			if(SLR_ACCESS == SLR_WO)
+			{
+				// Illegal Instruction
+				if(cpu->verbose_move_from_slr)
+				{
+					cpu->GetDebugWarningStream() << "Move from " << this->GetName() << " is an illegal operation" << std::endl;
+				}
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
+				return false;
+			}
+
+			return true;
+		}
+		
+		virtual bool MoveTo(uint32_t value) { return slr->MoveTo(value); }
+		virtual bool MoveFrom(uint32_t& value) { return slr->MoveFrom(value); }
+		
+		typename CONFIG::CPU *GetCPU() const { return cpu; }
+		
+	protected:
+		typename CONFIG::CPU *cpu;
+	private:
+		SLR_REGISTER *slr;
+		
+		void Init()
+		{
+			cpu->RegisterSLR(_SLR_NUM, this);
+		}
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct PrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_PRIVILEGED> Super;
+		
+		PrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct ReadOnlyPrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RO, SLR_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RO, SLR_PRIVILEGED> Super;
+
+		ReadOnlyPrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct WriteOnlyPrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_PRIVILEGED> Super;
+
+		WriteOnlyPrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct NonPrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_NON_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_NON_PRIVILEGED> Super;
+
+		NonPrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
+		
+		using Super::operator =;
+	};
+	
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct ReadOnlyNonPrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RO, SLR_NON_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RO, SLR_NON_PRIVILEGED> Super;
+
+		ReadOnlyNonPrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
+		
+		using Super::operator =;
+	};
+	
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct WriteOnlyNonPrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_NON_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_NON_PRIVILEGED> Super;
+
+		WriteOnlyNonPrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
 		
 		using Super::operator =;
 	};
@@ -1119,6 +1372,17 @@ protected:
 	};
 
 	template <typename SPR_REGISTER, unsigned int _SPR_NUM>
+	struct WriteOnlyPrivilegedSPR : WriteOnlyPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM>
+	{
+		typedef WriteOnlyPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM> Super;
+
+		WriteOnlyPrivilegedSPR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		WriteOnlyPrivilegedSPR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SPR_REGISTER, unsigned int _SPR_NUM>
 	struct NonPrivilegedSPR : NonPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM>
 	{
 		typedef NonPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM> Super;
@@ -1136,6 +1400,17 @@ protected:
 
 		ReadOnlyNonPrivilegedSPR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
 		ReadOnlyNonPrivilegedSPR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SPR_REGISTER, unsigned int _SPR_NUM>
+	struct WriteOnlyNonPrivilegedSPR : WriteOnlyNonPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM>
+	{
+		typedef WriteOnlyNonPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM> Super;
+
+		WriteOnlyNonPrivilegedSPR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		WriteOnlyNonPrivilegedSPR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1427,15 +1702,17 @@ public:
 		struct PR  : Field<PR ,17> {}; // Problem State
 		struct FP  : Field<FP ,18> {}; // Floating-Point Available
 		struct ME  : Field<ME ,19> {}; // Machine Check Enable
-		struct FE0 : Field<FE0,20> {}; // Floating-point exception mode 0 (not used)
+		struct FE0 : Field<FE0,20> {}; // Floating-point exception mode 0
+		struct DWE : Field<DWE,21> {}; // Debug Wait Enable
 		struct DE  : Field<DE ,22> {}; // Debug Interrupt Enable
-		struct FE1 : Field<FE1,23> {}; // Floating-point exception mode 1 (not used)
+		struct FE1 : Field<FE1,23> {}; // Floating-point exception mode 1
 		struct IS  : Field<IS ,26> {}; // Instruction Address Space
 		struct DS  : Field<DS ,27> {}; // Data Address Space
 		struct PMM : Field<PMM,29> {}; // PMM Performance monitor mark bit
 		struct RI  : Field<RI ,30> {}; // Recoverable Interrupt
 		
 		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<WE, CE, EE, PR, FP, ME, FE0, DWE, DE, FE1, IS, DS> ALL; };
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<SPV, WE, CE, EE, PR, FP, ME, FE0, DE, FE1, IS, DS, PMM, RI> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<CE, EE, PR, ME, DE, PMM, RI> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
@@ -1449,27 +1726,45 @@ public:
 		
 		void Init()
 		{
-			     this->SetName("msr");      this->SetDescription("Machine State Register");
-			SPV::SetName("spv"); SPV::SetDescription("SP/Embedded FP/Vector available");
-			WE ::SetName("we");  WE ::SetDescription("Wait state (Power management) enable");
-			CE ::SetName("ce");  CE ::SetDescription("Critical Interrupt Enable");
-			EE ::SetName("ee");  EE ::SetDescription("External Interrupt Enable");
-			PR ::SetName("pr");  PR ::SetDescription("Problem State");
-			FP ::SetName("fp");  FP ::SetDescription("Floating-Point Available");
-			ME ::SetName("me");  ME ::SetDescription("Machine Check Enable");
-			FE0::SetName("fe0"); FE0::SetDescription("Floating-point exception mode 0 (not used)");
-			DE ::SetName("de");  DE ::SetDescription("Debug Interrupt Enable");
-			FE1::SetName("fe1"); FE1::SetDescription("Floating-point exception mode 1 (not used)");
-			IS ::SetName("is");  IS ::SetDescription("Instruction Address Space");
-			DS ::SetName("ds");  DS ::SetDescription("Data Address Space");
-			PMM::SetName("pmm"); PMM::SetDescription("PMM Performance monitor mark bit");
-			RI ::SetName("ri");  RI ::SetDescription("Recoverable Interrupt");
+			this->SetName("msr"); this->SetDescription("Machine State Register");
+			SPV::SetName("spv");  SPV::SetDescription("SP/Embedded FP/Vector available");
+			WE ::SetName("we");   WE ::SetDescription("Wait state (Power management) enable");
+			CE ::SetName("ce");   CE ::SetDescription("Critical Interrupt Enable");
+			EE ::SetName("ee");   EE ::SetDescription("External Interrupt Enable");
+			PR ::SetName("pr");   PR ::SetDescription("Problem State");
+			FP ::SetName("fp");   FP ::SetDescription("Floating-Point Available");
+			ME ::SetName("me");   ME ::SetDescription("Machine Check Enable");
+			FE0::SetName("fe0");  FE0::SetDescription("Floating-point exception mode 0");
+			DWE::SetName("dwe");  DWE::SetDescription("Debug Wait Enable");
+			DE ::SetName("de");   DE ::SetDescription("Debug Interrupt Enable");
+			FE1::SetName("fe1");  FE1::SetDescription("Floating-point exception mode 1");
+			IS ::SetName("is");   IS ::SetDescription("Instruction Address Space");
+			DS ::SetName("ds");   DS ::SetDescription("Data Address Space");
+			PMM::SetName("pmm");  PMM::SetDescription("PMM Performance monitor mark bit");
+			RI ::SetName("ri");   RI ::SetDescription("Recoverable Interrupt");
 			
 			cpu->AddRegisterInterface(this->CreateRegisterInterface());
 		}
 	};
 
 	////////////////////////// Special Purpose Registers //////////////////////
+	
+	// Decrementer
+	struct DEC : PrivilegedSPR<DEC, 22>
+	{
+		typedef PrivilegedSPR<DEC, 22> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		DEC(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DEC(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init() { this->SetName("DEC"); this->SetDescription("Decrementer"); }
+	};
+	
 	
 	// Save/Restore Register 0
 	struct SRR0 : PrivilegedSPR<SRR0, 26>
@@ -1523,6 +1818,22 @@ public:
 		virtual void Reset() { this->Initialize(0x00000000); }
 	private:
 		void Init() { this->SetName("pid0"); this->SetDescription("Process ID Register"); Process_ID::SetName("process_id"); }
+	};
+	
+	// Decrementer Auto-Reload
+	struct DECAR : PrivilegedSPR<DECAR, 54>
+	{
+		typedef PrivilegedSPR<DECAR, 54> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		DECAR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DECAR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init() { this->SetName("DECAR"); this->SetDescription("Decrementer Auto-Reload"); }
 	};
 	
 	// Critical Save/Restore Register 0
@@ -1582,16 +1893,25 @@ public:
 	{
 		typedef PrivilegedSPR<ESR, 62> Super;
 		
-		struct PIL   : Field<PIL  ,4>  {}; // Illegal Instruction exception
-		struct PPR   : Field<PPR  ,5>  {}; // Privileged Instruction exception
-		struct PTR   : Field<PTR  ,6>  {}; // Trap exception
-		struct FP    : Field<FP   ,7>  {}; // Floating-point operation
-		struct ST    : Field<ST   ,8>  {}; // Store operation
-		struct BO    : Field<BO   ,14> {}; // Byte Ordering exception/Mismatched Instruction Storage exception
-		struct SPV   : Field<SPV  ,24> {}; // EFPU APU Operation
-		struct VLEMI : Field<VLEMI,26> {}; // VLE Mode Instruction
+		struct MCI   : Field<MCI  , 0     > {}; // Machine Check Instruction Fetch Exception
+		struct PIL   : Field<PIL  , 4     > {}; // Illegal Instruction exception
+		struct PPR   : Field<PPR  , 5     > {}; // Privileged Instruction exception
+		struct PTR   : Field<PTR  , 6     > {}; // Trap exception
+		struct FP    : Field<FP   , 7     > {}; // Floating-point operation
+		struct ST    : Field<ST   , 8     > {}; // Store operation
+		struct DLK   : Field<DLK  , 10, 11> {}; // Data Storage Interrupt Locking Exception
+		struct AP    : Field<AP   , 12    > {}; // Auxiliary Processor Operation
+		struct PUO   : Field<PUO  , 13    > {}; // Program Interrupt Unimplemented Operation Exception
+		struct BO    : Field<BO   , 14    > {}; // Byte Ordering exception/Mismatched Instruction Storage exception
+		struct PIE   : Field<PIE  , 15    > {}; // Program Interrupt Imprecise Exception
+		struct SPV   : Field<SPV  , 24    > {}; // EFPU APU Operation
+		struct VLEMI : Field<VLEMI, 26    > {}; // VLE Mode Instruction
+		struct PCRE  : Field<PCRE , 27    > {}; // Program Interrupt Condition Register Enable
+		struct PCMP  : Field<PCMP , 28    > {}; // Program Interrupt Compare
+		struct PCRF  : Field<PCRF , 29, 31> {}; // Program Interrupt Condition Register Field
 		
 		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<MCI, PIL, PPR, PTR, FP, ST, DLK, AP, PUO, BO, PIE, PCRE, PCMP, PCRF> ALL; };
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<PIL, PPR, PTR, FP, ST, BO, SPV, VLEMI> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<PIL, PPR, PTR, FP, ST, BO, SPV, VLEMI> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
@@ -1604,15 +1924,23 @@ public:
 	private:
 		void Init()
 		{
-			       this->SetName("esr");          this->SetDescription("Exception Syndrome Register");
+			 this->SetName("esr");    this->SetDescription("Exception Syndrome Register");
+			MCI  ::SetName("mci");   MCI  ::SetDescription("Machine Check Instruction Fetch Exception");
 			PIL  ::SetName("pil");   PIL  ::SetDescription("Illegal Instruction exception");
 			PPR  ::SetName("ppr");   PPR  ::SetDescription("Privileged Instruction exception");
 			PTR  ::SetName("ptr");   PTR  ::SetDescription("Trap exception");
 			FP   ::SetName("fp");    FP   ::SetDescription("Floating-point operation");
 			ST   ::SetName("st");    ST   ::SetDescription("Store operation");
+			DLK  ::SetName("dlk");   DLK  ::SetDescription("Data Storage Interrupt Locking Exception");
+			AP   ::SetName("ap");    AP   ::SetDescription("Auxiliary Processor Operation");
+			PUO  ::SetName("puo");   PUO  ::SetDescription("Program Interrupt Unimplemented Operation Exception");
 			BO   ::SetName("bo");    BO   ::SetDescription("Byte Ordering exception/Mismatched Instruction Storage exception");
+			PIE  ::SetName("pie");   PIE  ::SetDescription("Program Interrupt Imprecise Exception");
 			SPV  ::SetName("spv");   SPV  ::SetDescription("EFPU APU Operation");
 			VLEMI::SetName("vlemi"); VLEMI::SetDescription("VLE Mode Instruction");
+			PCRE ::SetName("pcre");  PCRE ::SetDescription("Program Interrupt Condition Register Enable");
+			PCMP ::SetName("pcmp");  PCMP ::SetDescription("Program Interrupt Compare");
+			PCRF ::SetName("pcrf");  PCRF ::SetDescription("Program Interrupt Condition Register Field");
 		}
 	};
 protected:
@@ -1721,6 +2049,106 @@ protected:
 	private:
 		void Init() { this->SetName("sprg3"); this->SetDescription("SPR General 3"); }
 	};
+	
+	// SPR General 4
+	struct SPRG4 : PrivilegedSPR<SPRG4, 276>
+	{
+		typedef PrivilegedSPR<SPRG4, 276> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR260 : AltSLR<SPRG4, SLR_SPR_SPACE, 260, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<SPRG4, SLR_SPR_SPACE, 260, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR260(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) : Super(_cpu, _sprg4) {}
+		};
+
+		SPRG4(typename CONFIG::CPU *_cpu) : Super(_cpu), spr260(_cpu, this) { Init(); }
+		SPRG4(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr260(_cpu, this) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init() { this->SetName("SPRG4"); this->SetDescription("SPR General 4"); }
+		
+		SPR260 spr260;
+	};
+
+	// SPR General 5
+	struct SPRG5 : PrivilegedSPR<SPRG5, 277>
+	{
+		typedef PrivilegedSPR<SPRG5, 277> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR261 : AltSLR<SPRG5, SLR_SPR_SPACE, 261, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<SPRG5, SLR_SPR_SPACE, 261, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR261(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) : Super(_cpu, _sprg5) {}
+		};
+
+		SPRG5(typename CONFIG::CPU *_cpu) : Super(_cpu), spr261(_cpu, this) { Init(); }
+		SPRG5(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr261(_cpu, this) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init() { this->SetName("SPRG5"); this->SetDescription("SPR General 5"); }
+		
+		SPR261 spr261;
+	};
+
+	// SPR General 6
+	struct SPRG6 : PrivilegedSPR<SPRG6, 278>
+	{
+		typedef PrivilegedSPR<SPRG6, 278> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR262 : AltSLR<SPRG6, SLR_SPR_SPACE, 262, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<SPRG6, SLR_SPR_SPACE, 262, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR262(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) : Super(_cpu, _sprg6) {}
+		};
+
+		SPRG6(typename CONFIG::CPU *_cpu) : Super(_cpu), spr262(_cpu, this) { Init(); }
+		SPRG6(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr262(_cpu, this) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init() { this->SetName("SPRG6"); this->SetDescription("SPR General 6"); }
+		
+		SPR262 spr262;
+	};
+
+	// SPR General 7
+	struct SPRG7 : PrivilegedSPR<SPRG7, 279>
+	{
+		typedef PrivilegedSPR<SPRG7, 279> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR263 : AltSLR<SPRG7, SLR_SPR_SPACE, 263, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<SPRG7, SLR_SPR_SPACE, 263, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR263(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) : Super(_cpu, _sprg7) {}
+		};
+
+		SPRG7(typename CONFIG::CPU *_cpu) : Super(_cpu), spr263(_cpu, this) { Init(); }
+		SPRG7(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr263(_cpu, this) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init() { this->SetName("SPRG7"); this->SetDescription("SPR General 7"); }
+		
+		SPR263 spr263;
+	};
 
 	// Processor ID Register
 	struct PIR : PrivilegedSPR<PIR, 286>
@@ -1796,6 +2224,7 @@ protected:
 		struct IAC1     : Field<IAC1    , 8>      {}; // Instruction Address Compare 1 Debug Event
 		struct IAC2     : Field<IAC2    , 9>      {}; // Instruction Address Compare 2 Debug Event
 		struct IAC3     : Field<IAC3    , 10>     {}; // Instruction Address Compare 3 Debug Event
+		struct IAC4     : Field<IAC4    , 11>     {}; // Instruction Address Compare 4 Debug Event
 		struct IAC4_8   : Field<IAC4_8  , 11>     {}; // Instruction Address Compare 4-8 Debug Event
 		struct DAC1R    : Field<DAC1R   , 12>     {}; // Data Address Compare 1 Read Debug Event
 		struct DAC1W    : Field<DAC1W   , 13>     {}; // Data Address Compare 1 Write Debug Event
@@ -1810,8 +2239,12 @@ protected:
 		struct CRET     : Field<CRET    , 26>     {}; // Critical Return Debug Event
 		struct DNI      : Field<DNI     , 27>     {}; // Debug Notify Interrupt (se_dni)
 		struct DAC_OFST : Field<DAC_OFST, 28, 30> {}; // Data Address Compare Offset
+		struct IAC12ATS : Field<IAC12ATS, 30>     {}; // Instruction Address Compare 1/2 Auto-Toggle Status
+		struct IAC34ATS : Field<IAC34ATS, 31>     {}; // Instruction Address Compare 3/4 Auto-Toggle Status
 		
 		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet< IDE, UDE, MRR, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4, DAC1R, DAC1W
+		                                                  , DAC2R, DAC2W, RET, IAC12ATS, IAC34ATS> ALL; };
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet< IDE, UDE, MRR, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4_8, DAC1R, DAC1W
 		                                                  , DAC2R, DAC2W, RET, DEVT1, DEVT2, PMI, MPU, CIRPT, CRET, DNI, DAC_OFST> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet< IDE, UDE, MRR, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4_8, DAC1R, DAC1W
@@ -1837,6 +2270,7 @@ protected:
 			IAC1    ::SetName("iac1");     IAC1    ::SetDescription("Instruction Address Compare 1 Debug Event");
 			IAC2    ::SetName("iac2");     IAC2    ::SetDescription("Instruction Address Compare 2 Debug Event");
 			IAC3    ::SetName("iac3");     IAC3    ::SetDescription("Instruction Address Compare 3 Debug Event");
+			IAC4    ::SetName("iac4");     IAC4    ::SetDescription("Instruction Address Compare 4 Debug Event");
 			IAC4_8  ::SetName("iac4_8");   IAC4_8  ::SetDescription("Instruction Address Compare 4-8 Debug Event");
 			DAC1R   ::SetName("dac1r");    DAC1R   ::SetDescription("Data Address Compare 1 Read Debug Event");
 			DAC1W   ::SetName("dac1w");    DAC1W   ::SetDescription("Data Address Compare 1 Write Debug Event");
@@ -1851,6 +2285,8 @@ protected:
 			CRET    ::SetName("cret");     CRET    ::SetDescription("Critical Return Debug Event");
 			DNI     ::SetName("dni");      DNI     ::SetDescription("Debug Notify Interrupt (se_dni)");
 			DAC_OFST::SetName("dac_ofst"); DAC_OFST::SetDescription("Data Address Compare Offset");
+			IAC12ATS::SetName("iac12ats"); IAC12ATS::SetDescription("Instruction Address Compare 1/2 Auto-Toggle Status");
+			IAC34ATS::SetName("iac34ats"); IAC34ATS::SetDescription("Instruction Address Compare 3/4 Auto-Toggle Status");
 		}
 	};
 	
@@ -1871,7 +2307,11 @@ protected:
 		struct IAC3  : Field<IAC3 , 10>     {}; // Instruction Address Compare 3 Debug Event Enable
 		struct IAC4  : Field<IAC4 , 11>     {}; // Instruction Address Compare 4 Debug Event Enable
 		struct DAC1  : Field<DAC1 , 12, 13> {}; // Data Address Compare 1 Debug Event Enable
+		struct DAC1R : Field<DAC1 , 12    > {}; // Data Address Compare 1 Read Debug Event Enable
+		struct DAC1W : Field<DAC1 , 13    > {}; // Data Address Compare 1 Write Debug Event Enable
 		struct DAC2  : Field<DAC2 , 14, 15> {}; // Data Address Compare 2 Debug Event Enable
+		struct DAC2R : Field<DAC2 , 14    > {}; // Data Address Compare 2 Read Debug Event Enable
+		struct DAC2W : Field<DAC2 , 15    > {}; // Data Address Compare 2 Write Debug Event Enable
 		struct RET   : Field<RET  , 16>     {}; // Return Debug Event Enable
 		struct IAC5  : Field<IAC5 , 17>     {}; // Instruction Address Compare 5 Debug Event Enable
 		struct IAC6  : Field<IAC6 , 18>     {}; // Instruction Address Compare 6 Debug Event Enable
@@ -1886,6 +2326,7 @@ protected:
 		struct FT    : Field<FT   , 31>     {}; // Freeze Timers on Debug Event
 		
 		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet< EDM, IDM, RST, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4, DAC1R, DAC1W, DAC2R, DAC2W> ALL; }; 
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet< EDM, IDM, RST, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4, DAC1, DAC2
 		                                                  , RET, IAC5, IAC6, IAC7, IAC8, DEVT1, DEVT2, DCNT1, DCNT2, CIRPT, CRET, FT> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet< EDM, IDM, RST, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4, DAC1, DAC2, RET
@@ -1911,7 +2352,11 @@ protected:
 			IAC3 ::SetName("iac3");  IAC3 ::SetDescription("Instruction Address Compare 3 Debug Event Enable");
 			IAC4 ::SetName("iac4");  IAC4 ::SetDescription("Instruction Address Compare 4 Debug Event Enable");
 			DAC1 ::SetName("dac1");  DAC1 ::SetDescription("Data Address Compare 1 Debug Event Enable");
+			DAC1R::SetName("dac1r"); DAC1 ::SetDescription("Data Address Compare 1 Read Debug Event Enable");
+			DAC1W::SetName("dac1w"); DAC1 ::SetDescription("Data Address Compare 1 Write Debug Event Enable");
 			DAC2 ::SetName("dac2");  DAC2 ::SetDescription("Data Address Compare 2 Debug Event Enable");
+			DAC2R::SetName("dac2r"); DAC2 ::SetDescription("Data Address Compare 2 Read Debug Event Enable");
+			DAC2W::SetName("dac2w"); DAC2 ::SetDescription("Data Address Compare 2 Write Debug Event Enable");
 			RET  ::SetName("ret");   RET  ::SetDescription("Return Debug Event Enable");
 			IAC5 ::SetName("iac5");  IAC5 ::SetDescription("Instruction Address Compare 5 Debug Event Enable");
 			IAC6 ::SetName("iac6");  IAC6 ::SetDescription("Instruction Address Compare 6 Debug Event Enable");
@@ -1932,18 +2377,21 @@ protected:
 	{
 		typedef PrivilegedSPR<DBCR1, 309> Super;
 		
-		struct IAC1US : Field<IAC1US, 0, 1>   {};  // Instruction Address Compare 1 User/Supervisor Mode
-		struct IAC1ER : Field<IAC1ER, 2, 3>   {};  // Instruction Address Compare 1 Effective/Real Mode
-		struct IAC2US : Field<IAC2US, 4, 5>   {};  // Instruction Address Compare 2 User/Supervisor Mode
-		struct IAC2ER : Field<IAC2ER, 6, 7>   {};  // Instruction Address Compare 2 Effective/Real Mode
-		struct IAC12M : Field<IAC12M, 8, 9>   {};  // Instruction Address Compare 1/2 Mode
-		struct IAC3US : Field<IAC3US, 16, 17>  {}; // Instruction Address Compare 3 User/Supervisor Mode
-		struct IAC3ER : Field<IAC3ER, 18, 19> {};  // Instruction Address Compare 3 Effective/Real Mode
-		struct IAC4US : Field<IAC4US, 20, 21> {};  // Instruction Address Compare 4 User/Supervisor Mode
-		struct IAC4ER : Field<IAC4ER, 22, 23> {};  // Instruction Address Compare 4 Effective/Real Mode
-		struct IAC34M : Field<IAC34M, 24, 25> {};  // Instruction Address Compare 3/4 Mode
+		struct IAC1US  : Field<IAC1US , 0 , 1 > {}; // Instruction Address Compare 1 User/Supervisor Mode
+		struct IAC1ER  : Field<IAC1ER , 2 , 3 > {}; // Instruction Address Compare 1 Effective/Real Mode
+		struct IAC2US  : Field<IAC2US , 4 , 5 > {}; // Instruction Address Compare 2 User/Supervisor Mode
+		struct IAC2ER  : Field<IAC2ER , 6 , 7 > {}; // Instruction Address Compare 2 Effective/Real Mode
+		struct IAC12M  : Field<IAC12M , 8 , 9 > {}; // Instruction Address Compare 1/2 Mode
+		struct IAC12AT : Field<IAC12AT, 15    > {}; // Instruction Address Compare 1/2 Auto-Toggle Enable 
+		struct IAC3US  : Field<IAC3US , 16, 17> {}; // Instruction Address Compare 3 User/Supervisor Mode
+		struct IAC3ER  : Field<IAC3ER , 18, 19> {}; // Instruction Address Compare 3 Effective/Real Mode
+		struct IAC4US  : Field<IAC4US , 20, 21> {}; // Instruction Address Compare 4 User/Supervisor Mode
+		struct IAC4ER  : Field<IAC4ER , 22, 23> {}; // Instruction Address Compare 4 Effective/Real Mode
+		struct IAC34M  : Field<IAC34M , 24, 25> {}; // Instruction Address Compare 3/4 Mode
+		struct IAC34AT : Field<IAC34AT, 31    > {}; // Instruction Address Compare 3/4 Auto-Toggle Enable
 		
 		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<IAC1US, IAC1ER, IAC2US, IAC2ER, IAC12M, IAC12AT, IAC3US, IAC3ER, IAC4US, IAC4ER, IAC34M, IAC34AT> ALL; };
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<IAC1US, IAC1ER, IAC2US, IAC2ER, IAC12M, IAC3US, IAC3ER, IAC4US, IAC4ER, IAC34M> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<IAC1US, IAC1ER, IAC2US, IAC2ER, IAC12M, IAC3US, IAC3ER, IAC4US, IAC4ER, IAC34M> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
@@ -1954,17 +2402,19 @@ protected:
 	private:
 		void Init()
 		{
-			        this->SetName("dbcr1");          this->SetDescription("Debug Control Register 1");
-			IAC1US::SetName("iac1us"); IAC1US::SetDescription("Instruction Address Compare 1 User/Supervisor Mode");
-			IAC1ER::SetName("iac1er"); IAC1ER::SetDescription("Instruction Address Compare 1 Effective/Real Mode");
-			IAC2US::SetName("iac2us"); IAC2US::SetDescription("Instruction Address Compare 2 User/Supervisor Mode");
-			IAC2ER::SetName("iac2er"); IAC2ER::SetDescription("Instruction Address Compare 2 Effective/Real Mode");
-			IAC12M::SetName("iac12m"); IAC12M::SetDescription("Instruction Address Compare 1/2 Mode");
-			IAC3US::SetName("iac3us"); IAC3US::SetDescription("Instruction Address Compare 3 User/Supervisor Mode");
-			IAC3ER::SetName("iac3er"); IAC3ER::SetDescription("Instruction Address Compare 3 Effective/Real Mode");
-			IAC4US::SetName("iac4us"); IAC4US::SetDescription("Instruction Address Compare 4 User/Supervisor Mode");
-			IAC4ER::SetName("iac4er"); IAC4ER::SetDescription("Instruction Address Compare 4 Effective/Real Mode");
-			IAC34M::SetName("iac34m"); IAC34M::SetDescription("Instruction Address Compare 3/4 Mode");
+			   this->SetName("dbcr1");      this->SetDescription("Debug Control Register 1");
+			IAC1US ::SetName("iac1us");  IAC1US ::SetDescription("Instruction Address Compare 1 User/Supervisor Mode");
+			IAC1ER ::SetName("iac1er");  IAC1ER ::SetDescription("Instruction Address Compare 1 Effective/Real Mode");
+			IAC2US ::SetName("iac2us");  IAC2US ::SetDescription("Instruction Address Compare 2 User/Supervisor Mode");
+			IAC2ER ::SetName("iac2er");  IAC2ER ::SetDescription("Instruction Address Compare 2 Effective/Real Mode");
+			IAC12M ::SetName("iac12m");  IAC12M ::SetDescription("Instruction Address Compare 1/2 Mode");
+			IAC12AT::SetName("iac12at"); IAC12AT::SetDescription("Instruction Address Compare 1/2 Auto-Toggle Enable");
+			IAC3US ::SetName("iac3us");  IAC3US ::SetDescription("Instruction Address Compare 3 User/Supervisor Mode");
+			IAC3ER ::SetName("iac3er");  IAC3ER ::SetDescription("Instruction Address Compare 3 Effective/Real Mode");
+			IAC4US ::SetName("iac4us");  IAC4US ::SetDescription("Instruction Address Compare 4 User/Supervisor Mode");
+			IAC4ER ::SetName("iac4er");  IAC4ER ::SetDescription("Instruction Address Compare 4 Effective/Real Mode");
+			IAC34M ::SetName("iac34m");  IAC34M ::SetDescription("Instruction Address Compare 3/4 Mode");
+			IAC34AT::SetName("iac34at"); IAC34AT::SetDescription("Instruction Address Compare 3/4 Auto-Toggle Enable");
 		}
 	};
 	
@@ -1973,19 +2423,31 @@ protected:
 	{
 		typedef PrivilegedSPR<DBCR2, 310> Super;
 		
-		struct DAC1US  : Field<DAC1US , 0, 1>   {}; // Data Address Compare 1 User/Supervisor Mode
-		struct DAC1ER  : Field<DAC1ER , 2, 3>   {}; // Data Address Compare 1 Effective/Read Mode
-		struct DAC2US  : Field<DAC2US , 4, 5>   {}; // Data Address Compare 2 User/Supervisor Mode
-		struct DAC2ER  : Field<DAC2ER , 6, 7>   {}; // Data Address Compare 2 Effective/Read Mode
-		struct DAC12M  : Field<DAC12M , 8, 9>   {}; // Data Address Compare 1/2 Mode
+		struct DAC1US  : Field<DAC1US , 0 , 1 > {}; // Data Address Compare 1 User/Supervisor Mode
+		struct DAC1ER  : Field<DAC1ER , 2 , 3 > {}; // Data Address Compare 1 Effective/Read Mode
+		struct DAC2US  : Field<DAC2US , 4 , 5 > {}; // Data Address Compare 2 User/Supervisor Mode
+		struct DAC2ER  : Field<DAC2ER , 6 , 7 > {}; // Data Address Compare 2 Effective/Read Mode
+		struct DAC12M  : Field<DAC12M , 8 , 9 > {}; // Data Address Compare 1/2 Mode
+		struct DAC12A  : Field<DAC12A , 10    > {}; // Data Address Compare 1/2 Asynchronous
 		struct DAC1LNK : Field<DAC1LNK, 10>     {}; // Data Address Compare 1 Linked
 		struct DAC2LNK : Field<DAC2LNK, 11>     {}; // Data Address Compare 2 Linked
 		struct DVC1M   : Field<DVC1M  , 12, 13> {}; // Data Value Compare 1 Mode
 		struct DVC2M   : Field<DVC2M  , 14, 15> {}; // Data Value Compare 2 Mode
-		struct DVC1BE  : Field<DVC1BE , 16, 23> {}; // Data Value Compare 1 Byte Enables
-		struct DVC2BE  : Field<DVC2BE , 24, 31> {}; // Data Value Compare 2 Byte Enables
+		
+		SWITCH_ENUM_TRAIT(Model, _1);
+		CASE_ENUM_TRAIT(PPC440, _1)      { struct DVC1BE : Field<DVC1BE , 20, 23> {}; }; 
+		CASE_ENUM_TRAIT(E200Z710N3, _1)  { struct DVC1BE : Field<DVC1BE , 16, 23> {}; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _1) { struct DVC1BE : Field<DVC1BE , 16, 23> {}; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _1)::DVC1BE DVC1BE; // Data Value Compare 1 Byte Enables
+		
+		SWITCH_ENUM_TRAIT(Model, _2);
+		CASE_ENUM_TRAIT(PPC440, _2)      { struct DVC2BE : Field<DVC2BE , 28, 31> {}; };
+		CASE_ENUM_TRAIT(E200Z710N3, _2)  { struct DVC2BE : Field<DVC2BE , 24, 31> {}; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _2) { struct DVC2BE : Field<DVC2BE , 24, 31> {}; };  
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _2)::DVC2BE DVC2BE; // Data Value Compare 2 Byte Enables
 		
 		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<DAC1US, DAC1ER, DAC2US, DAC2ER, DAC12M, DAC12A, DVC1M, DVC2M, DVC1BE, DVC2BE> ALL; };
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<DAC1US, DAC1ER, DAC2US, DAC2ER, DAC12M, DAC1LNK, DAC2LNK, DVC1M, DVC2M, DVC1BE, DVC2BE> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<DAC1US, DAC1ER, DAC2US, DAC2ER, DAC12M, DAC1LNK, DAC2LNK, DVC1M, DVC2M, DVC1BE, DVC2BE> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
@@ -1996,12 +2458,13 @@ protected:
 	private:
 		void Init()
 		{
-			         this->SetName("dbcr2");            this->SetDescription("Debug Control Register 2");
+			   this->SetName("dbcr2");      this->SetDescription("Debug Control Register 2");
 			DAC1US ::SetName("dac1us");  DAC1US ::SetDescription("Data Address Compare 1 User/Supervisor Mode");
 			DAC1ER ::SetName("dac1er");  DAC1ER ::SetDescription("Data Address Compare 1 Effective/Read Mode");
 			DAC2US ::SetName("dac2us");  DAC2US ::SetDescription("Data Address Compare 2 User/Supervisor Mode");
 			DAC2ER ::SetName("dac2er");  DAC2ER ::SetDescription("Data Address Compare 2 Effective/Read Mode");
 			DAC12M ::SetName("dac12m");  DAC12M ::SetDescription("Data Address Compare 1/2 Mode");
+			DAC12A ::SetName("dac12a");  DAC12A ::SetDescription("Data Address Compare 1/2 Asynchronous");
 			DAC1LNK::SetName("dac1lnk"); DAC1LNK::SetDescription("Data Address Compare 1 Linked");
 			DAC2LNK::SetName("dac2lnk"); DAC2LNK::SetDescription("Data Address Compare 2 Linked");
 			DVC1M  ::SetName("dvc1m");   DVC1M  ::SetDescription("Data Value Compare 1 Mode");
@@ -2137,6 +2600,113 @@ protected:
 		void Init() { this->SetName("dvc2"); this->SetDescription("Data Value Compare 2"); }
 	};
 	
+	// Timer Status Register
+	struct TSR : PrivilegedSPR<TSR, 336>
+	{
+		typedef PrivilegedSPR<TSR, 336> Super;
+		
+		struct ENW : Field<ENW, 0   > {}; // Enable Next Watchdog Timer Exception
+		struct WIS : Field<WIS, 1   > {}; // Watchdog Timer Interrupt Status
+		struct WRS : Field<WRS, 2, 3> {}; // Watchdog Timer Reset Status
+		struct DIS : Field<DIS, 4   > {}; // Decrementer Interrupt Status
+		struct FIS : Field<FIS, 5   > {}; // Fixed Interval Timer Interrupt Status
+		
+		typedef FieldSet<ENW, WIS, WRS, DIS, FIS> ALL;
+		
+		TSR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		TSR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("TSR"); this->SetDescription("Timer Status Register");
+			
+			ENW::SetName("ENW"); ENW::SetDescription("Enable Next Watchdog Timer Exception");
+			WIS::SetName("WIS"); WIS::SetDescription("Watchdog Timer Interrupt Status");
+			WRS::SetName("WRS"); WRS::SetDescription("Watchdog Timer Reset Status");
+			DIS::SetName("DIS"); DIS::SetDescription("Decrementer Interrupt Status");
+			FIS::SetName("FIS"); FIS::SetDescription("Fixed Interval Timer Interrupt Status");
+		}
+	};
+	
+	// Timer Control Register
+	struct TCR : PrivilegedSPR<TCR, 340>
+	{
+		typedef PrivilegedSPR<TCR, 340> Super;
+		
+		struct WP  : Field<WP , 0, 1> {}; // Watchdog Timer Period
+		struct WRC : Field<WRC, 2, 3> {}; // Watchdog Timer Reset Control
+		struct WIE : Field<WIE, 4   > {}; // Watchdog Timer Interrupt Enable
+		struct DIE : Field<DIE, 5   > {}; // Decrementer Interrupt Enable
+		struct FP  : Field<FP , 6, 7> {}; // Fixed Interval Timer Period
+		struct FIE : Field<FIE, 8   > {}; // Fixed Interval Timer Interrupt Enable
+		struct ARE : Field<ARE, 9   > {}; // Auto-Reload Enable
+		
+		typedef FieldSet<WP, WRC, WIE, DIE, FP, FIE, ARE> ALL;
+		
+		TCR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		TCR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("TCR"); this->SetDescription("Timer Control Register");
+			
+			WP ::SetName("WP");  WP ::SetDescription("Watchdog Timer Period");
+			WRC::SetName("WRC"); WRC::SetDescription("Watchdog Timer Reset Control");
+			WIE::SetName("WIE"); WIE::SetDescription("Watchdog Timer Interrupt Enable");
+			DIE::SetName("DIE"); DIE::SetDescription("Decrementer Interrupt Enable");
+			FP ::SetName("FP");  FP ::SetDescription("Fixed Interval Timer Period");
+			FIE::SetName("FIE"); FIE::SetDescription("Fixed Interval Timer Interrupt Enable");
+			ARE::SetName("ARE"); ARE::SetDescription("Auto-Reload Enable");
+		}
+	};
+
+	// IVOR
+	template <unsigned int IVOR_NUM>
+	struct IVOR : PrivilegedSPR<IVOR<IVOR_NUM>, 400 + IVOR_NUM>
+	{
+		typedef PrivilegedSPR<IVOR<IVOR_NUM>, 400 + IVOR_NUM> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		IVOR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IVOR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			std::stringstream name_sstr;
+			name_sstr << "IVOR" << IVOR_NUM;
+			
+			std::stringstream desc_sstr;
+			desc_sstr << "Interrupt Vector Offset Register " << IVOR_NUM;
+			
+			this->SetName(name_sstr.str());
+			this->SetDescription(desc_sstr.str());
+		}
+	};
+	
+	typedef IVOR<0> IVOR0;
+	typedef IVOR<1> IVOR1;
+	typedef IVOR<2> IVOR2;
+	typedef IVOR<3> IVOR3;
+	typedef IVOR<4> IVOR4;
+	typedef IVOR<5> IVOR5;
+	typedef IVOR<6> IVOR6;
+	typedef IVOR<7> IVOR7;
+	typedef IVOR<8> IVOR8;
+	typedef IVOR<9> IVOR9;
+	typedef IVOR<10> IVOR10;
+	typedef IVOR<11> IVOR11;
+	typedef IVOR<12> IVOR12;
+	typedef IVOR<13> IVOR13;
+	typedef IVOR<14> IVOR14;
+	typedef IVOR<15> IVOR15;
+
 	// Thread ID
 	struct TIR : ReadOnlyPrivilegedSPR<TIR, 446>
 	{
@@ -2696,13 +3266,22 @@ protected:
 		typedef PrivilegedSPR<MCSR, 572> Super;
 		
 		struct MCP         : Field<MCP        , 0>  {}; // Machine check input pin
+		struct MCS         : Field<MCS        , 0>  {}; // Machine Check Summary
 		struct IC_DPERR    : Field<IC_DPERR   , 1>  {}; // Instruction Cache data array parity error
+		struct IB          : Field<IB         , 1>  {}; // Instruction PLB Error
+		struct DRB         : Field<DRB        , 2>  {}; // Data Read PLB Error
 		struct DC_DPERR    : Field<DC_DPERR   , 3>  {}; // Data Cache data array parity error
+		struct DWB         : Field<DWB        , 3>  {}; // Data Write PLB Error
 		struct EXCP_ERR    : Field<EXCP_ERR   , 4>  {}; // ISI or Bus Error on first instruction fetch for an exception handler
+		struct TLBP        : Field<TLBP       , 4>  {}; // Translation Lookaside Buffer Parity Error
 		struct IC_TPERR    : Field<IC_TPERR   , 5>  {}; // Instruction Cache Tag parity error
+		struct ICP         : Field<ICP        , 5>  {}; // Instruction Cache Parity Error
 		struct DC_TPERR    : Field<DC_TPERR   , 6>  {}; // Data Cache Tag parity error
+		struct DCSP        : Field<DCSP       , 6>  {}; // Data Cache Search Parity Error
 		struct IC_LKERR    : Field<IC_LKERR   , 7>  {}; // Instruction Cache Lock error
+		struct DCFP        : Field<DCFP       , 7>  {}; // Data Cache Flush Parity Error
 		struct DC_LKERR    : Field<DC_LKERR   , 8>  {}; // Data Cache Lock error
+		struct IMPE        : Field<IMPE       , 8>  {}; // Imprecise Machine Check Exception
 		struct NMI         : Field<NMI        , 11> {}; // NMI input pin
 		struct MAV         : Field<MAV        , 12> {}; // MCAR Address Valid
 		struct MEA         : Field<MEA        , 13> {}; // MCAR holds Effective Address
@@ -2721,6 +3300,7 @@ protected:
 		struct BUS_WRDSI   : Field<BUS_WRDSI  , 30> {}; // Write bus error on buffered store to bus with DSI signaled. Set concurrently with BUS_WRERR for this case
 		
 		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet< MCS, IB, DRB, DWB, TLBP, ICP, DCSP, DCFP, IMPE> ALL; };
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet< MCP, IC_DPERR, DC_DPERR, EXCP_ERR, IC_TPERR
 		                                                  , DC_TPERR, IC_LKERR, DC_LKERR, NMI, MAV, MEA
 		                                                  , U, IF, LD, ST, G, STACK_ERR, IMEM_PERR
@@ -2744,15 +3324,24 @@ protected:
 	private:
 		void Init()
 		{
-			             this->SetName("mcsr");                     this->SetDescription("Machine Check Syndrome Register");
+			       this->SetName("mcsr");               this->SetDescription("Machine Check Syndrome Register");
 			MCP        ::SetName("mcp");         MCP        ::SetDescription("Machine check input pin");
+			MCS        ::SetName("mcs");         MCS        ::SetDescription("Machine Check Summary");     
 			IC_DPERR   ::SetName("ic_dperr");    IC_DPERR   ::SetDescription("Instruction Cache data array parity error");
+			IB         ::SetName("ib");          IB         ::SetDescription("Instruction PLB Error");    
+			DRB        ::SetName("drb");         DRB        ::SetDescription("Data Read PLB Error");     
 			DC_DPERR   ::SetName("dc_dperr");    DC_DPERR   ::SetDescription("Data Cache data array parity error");
+			DWB        ::SetName("dwb");         DWB        ::SetDescription("Data Write PLB Error");     
 			EXCP_ERR   ::SetName("excp_err");    EXCP_ERR   ::SetDescription("ISI or Bus Error on first instruction fetch for an exception handler");
+			TLBP       ::SetName("tlbp");        TLBP       ::SetDescription("Translation Lookaside Buffer Parity Error");      
 			IC_TPERR   ::SetName("ic_tperr");    IC_TPERR   ::SetDescription("Instruction Cache Tag parity error");
+			ICP        ::SetName("icp");         ICP        ::SetDescription("Instruction Cache Parity Error");     
 			DC_TPERR   ::SetName("dc_tperr");    DC_TPERR   ::SetDescription("Data Cache Tag parity error");
+			DCSP       ::SetName("dcsp");        DCSP       ::SetDescription("Data Cache Search Parity Error");      
 			IC_LKERR   ::SetName("ic_lkerr");    IC_LKERR   ::SetDescription("Instruction Cache Lock error");
+			DCFP       ::SetName("dcfp");        DCFP       ::SetDescription("Data Cache Flush Parity Error");      
 			DC_LKERR   ::SetName("dc_lkerr");    DC_LKERR   ::SetDescription("Data Cache Lock error");
+			IMPE       ::SetName("impe");        IMPE       ::SetDescription("Imprecise Machine Check Exception");      
 			NMI        ::SetName("nmi");         NMI        ::SetDescription("NMI input pin");
 			MAV        ::SetName("mav");         MAV        ::SetDescription("MCAR Address Valid");
 			MEA        ::SetName("mea");         MEA        ::SetDescription("MCAR holds Effective Address");
@@ -3300,6 +3889,505 @@ protected:
 		}
 	};
 
+	struct CacheVictimRegister : UnnumberedSLR<CacheVictimRegister, SLR_SPR_SPACE, SLR_RW, SLR_PRIVILEGED>
+	{
+		typedef UnnumberedSLR<CacheVictimRegister, SLR_SPR_SPACE, SLR_RW, SLR_PRIVILEGED> Super;
+		struct VNDXA : Field<VNDXA, 0 , 7 > {}; // Victim Index A
+		struct VNDXB : Field<VNDXB, 8 , 15> {}; // Victim Index B
+		struct VNDXC : Field<VNDXC, 16, 23> {}; // Victim Index C
+		struct VNDXD : Field<VNDXD, 24, 31> {}; // Victim Index D
+		
+		typedef FieldSet<VNDXA, VNDXB, VNDXC, VNDXD> ALL;
+		
+		CacheVictimRegister(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		CacheVictimRegister(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual void Reset() { /* unaffected */ }
+		
+		unsigned int GetVictimIndex(unsigned int i) const { return (this->Get() >> (8 * (3 - i))) & 0xff; }
+		void SetVictimIndex(unsigned int i, unsigned int vndx) { unsigned int bofs = 8 * (3 - i); this->Set((this->Get() & ~(0xff << bofs)) | ((vndx & 0xff) << bofs)); }
+		void ClearVictimIndex(unsigned i) { unsigned int bofs = 8 * (3 - i); this->Set(this->Get() & ~(0xff << bofs)); }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			VNDXA::SetName("VNDXA"); VNDXA::SetDescription("Victim Index A");
+			VNDXB::SetName("VNDXB"); VNDXB::SetDescription("Victim Index B");
+			VNDXC::SetName("VNDXC"); VNDXC::SetDescription("Victim Index C");
+			VNDXD::SetName("VNDXD"); VNDXD::SetDescription("Victim Index D");
+		}
+	};
+
+	// Instruction Cache Normal Victim Register
+	template <unsigned int INV_NUM>
+	struct INV : CacheVictimRegister
+	{
+		typedef CacheVictimRegister Super;
+		
+		static const unsigned int SLR_NUM = 880 + INV_NUM;
+		static const unsigned int REG_NUM = SLR_NUM;
+
+		INV(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		INV(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual unsigned int GetRegNum() const { return SLR_NUM; }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->cpu->RegisterSLR(SLR_NUM, this);
+
+			std::stringstream name_sstr;
+			name_sstr << "inv" << INV_NUM;
+			
+			std::stringstream desc_sstr;
+			desc_sstr << "Instruction Cache Normal Victim Register " << INV_NUM;
+			
+			this->SetName(name_sstr.str());
+			this->SetDescription(desc_sstr.str());
+		}
+	};
+	
+	typedef INV<0> INV0;
+	typedef INV<1> INV1;
+	typedef INV<2> INV2;
+	typedef INV<3> INV3;
+
+	// Instruction Cache Transient Victim Register
+	template <unsigned int ITV_NUM>
+	struct ITV : CacheVictimRegister
+	{
+		typedef CacheVictimRegister Super;
+		
+		static const unsigned int SLR_NUM = 884 + ITV_NUM;
+		static const unsigned int REG_NUM = SLR_NUM;
+
+		ITV(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		ITV(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual unsigned int GetRegNum() const { return SLR_NUM; }
+		virtual void Reset() { /* unaffected */ }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			std::stringstream name_sstr;
+			name_sstr << "itv" << ITV_NUM;
+			
+			std::stringstream desc_sstr;
+			desc_sstr << "Instruction Cache Transient Victim Register " << ITV_NUM;
+			
+			this->SetName(name_sstr.str());
+			this->SetDescription(desc_sstr.str());
+		}
+	};
+	
+	typedef ITV<0> ITV0;
+	typedef ITV<1> ITV1;
+	typedef ITV<2> ITV2;
+	typedef ITV<3> ITV3;
+	
+	// Core Configuration Register 1
+	struct CCR1 : PrivilegedSPR<CCR1, 888>
+	{
+		typedef PrivilegedSPR<CCR1, 888> Super;
+		
+		struct ICDPEI : Field<ICDPEI, 0 , 7 > {}; // Instruction Cache Data Parity Error Insert
+		struct ICTPEI : Field<ICTPEI, 8 , 9 > {}; // Instruction Cache Tag Parity Error Insert
+		struct DCTPEI : Field<DCTPEI, 10, 11> {}; // Data Cache Tag Parity Error Insert
+		struct DCDPEI : Field<DCDPEI, 12    > {}; // Data Cache Data Parity Error Insert
+		struct DCUPEI : Field<DCUPEI, 13    > {}; // Data Cache U-bit Parity Error Insert
+		struct DCMPEI : Field<DCMPEI, 14    > {}; // Data Cache Modified-bit Parity Error Insert
+		struct FCOM   : Field<FCOM  , 15    > {}; // Force Cache Operation Miss
+		struct MMUPEI : Field<MMUPEI, 16, 19> {}; // Memory Management Unit Parity Error Insert
+		struct FFF    : Field<FFF   , 20    > {}; // Force Full-line Flush
+		struct TCS    : Field<TCS   , 24    > {}; // Timer Clock Select
+		
+		typedef FieldSet<ICDPEI, ICTPEI, DCTPEI, DCDPEI, DCUPEI, DCMPEI, FCOM, MMUPEI, FFF, TCS> ALL;
+		
+		CCR1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		CCR1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("ccr1"); this->SetDescription("Core Configuration Register 1");
+			
+			ICDPEI::SetName("icdpei"); ICDPEI::SetDescription("Instruction Cache Data Parity Error Insert");
+			ICTPEI::SetName("ictpei"); ICTPEI::SetDescription("Instruction Cache Tag Parity Error Insert");
+			DCTPEI::SetName("dctpei"); DCTPEI::SetDescription("Data Cache Tag Parity Error Insert");
+			DCDPEI::SetName("dcdpei"); DCDPEI::SetDescription("Data Cache Data Parity Error Insert");
+			DCUPEI::SetName("dcupei"); DCUPEI::SetDescription("Data Cache U-bit Parity Error Insert");
+			DCMPEI::SetName("dcmpei"); DCMPEI::SetDescription("Data Cache Modified-bit Parity Error Insert");
+			FCOM  ::SetName("fcom");   FCOM  ::SetDescription("Force Cache Operation Miss");
+			MMUPEI::SetName("mmupei"); MMUPEI::SetDescription("Memory Management Unit Parity Error Insert");
+			FFF   ::SetName("fff");    FFF   ::SetDescription("Force Full-line Flush");
+			TCS   ::SetName("tcs");    TCS   ::SetDescription("Timer Clock Select");
+		}
+	};
+
+	// Data Cache Normal Victim Register
+	template <unsigned int DNV_NUM>
+	struct DNV : CacheVictimRegister
+	{
+		typedef CacheVictimRegister Super;
+		
+		static const unsigned int SLR_NUM = 912 + DNV_NUM;
+		static const unsigned int REG_NUM = SLR_NUM;
+
+		DNV(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DNV(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual unsigned int GetRegNum() const { return SLR_NUM; }
+		virtual void Reset() { /* unaffected */ }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->cpu->RegisterSLR(912 + DNV_NUM, this);
+			
+			std::stringstream name_sstr;
+			name_sstr << "dnv" << DNV_NUM;
+			
+			std::stringstream desc_sstr;
+			desc_sstr << "Data Cache Normal Victim Register " << DNV_NUM;
+			
+			this->SetName(name_sstr.str());
+			this->SetDescription(desc_sstr.str());
+		}
+	};
+	
+	typedef DNV<0> DNV0;
+	typedef DNV<1> DNV1;
+	typedef DNV<2> DNV2;
+	typedef DNV<3> DNV3;
+
+	// Data Cache Transient Victim Register
+	template <unsigned int DTV_NUM>
+	struct DTV : CacheVictimRegister
+	{
+		typedef PrivilegedSPR<DTV<DTV_NUM>, 916 + DTV_NUM> Super;
+		
+		static const unsigned int SLR_NUM = 916 + DTV_NUM;
+		static const unsigned int REG_NUM = SLR_NUM;
+		
+		DTV(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DTV(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual unsigned int GetRegNum() const { return SLR_NUM; }
+		virtual void Reset() { /* unaffected */ }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			std::stringstream name_sstr;
+			name_sstr << "dtv" << DTV_NUM;
+			
+			std::stringstream desc_sstr;
+			desc_sstr << "Data Cache Transient Victim Register " << DTV_NUM;
+			
+			this->SetName(name_sstr.str());
+			this->SetDescription(desc_sstr.str());
+		}
+	};
+	
+	typedef DTV<0> DTV0;
+	typedef DTV<1> DTV1;
+	typedef DTV<2> DTV2;
+	typedef DTV<3> DTV3;
+	
+	// Data Cache Victim Limit
+	struct DVLIM : PrivilegedSPR<DVLIM, 920>
+	{
+		typedef PrivilegedSPR<DVLIM, 920> Super;
+		
+		struct TFLOOR   : Field<TFLOOR  , 2 , 9 > {}; // Transient Floor
+		struct TCEILING : Field<TCEILING, 13, 20> {}; // Transient Ceiling
+		struct NFLOOR   : Field<NFLOOR  , 24, 31> {}; // Normal Floor
+		
+		typedef FieldSet<TFLOOR, TCEILING, NFLOOR> ALL;
+
+		DVLIM(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DVLIM(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("dvlim");  this->SetDescription("Data Cache Victim Limit");
+			
+			TFLOOR  ::SetName("TFLOOR");   TFLOOR  ::SetDescription("Transient Floor");
+			TCEILING::SetName("TCEILING"); TCEILING::SetDescription("Transient Ceiling");
+			NFLOOR  ::SetName("NFLOOR");   NFLOOR  ::SetDescription("Normal Floor");
+		}
+	};
+
+	// Instruction Cache Victim Limit
+	struct IVLIM : PrivilegedSPR<IVLIM, 921>
+	{
+		typedef PrivilegedSPR<IVLIM, 921> Super;
+		
+		struct TFLOOR   : Field<TFLOOR  , 2 , 9 > {}; // Transient Floor
+		struct TCEILING : Field<TCEILING, 13, 20> {}; // Transient Ceiling
+		struct NFLOOR   : Field<NFLOOR  , 24, 31> {}; // Normal Floor
+		
+		typedef FieldSet<TFLOOR, TCEILING, NFLOOR> ALL;
+
+		IVLIM(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IVLIM(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("ivlim");  this->SetDescription("Instruction Cache Victim Limit");
+			
+			TFLOOR  ::SetName("TFLOOR");   TFLOOR  ::SetDescription("Transient Floor");
+			TCEILING::SetName("TCEILING"); TCEILING::SetDescription("Transient Ceiling");
+			NFLOOR  ::SetName("NFLOOR");   NFLOOR  ::SetDescription("Normal Floor");
+		}
+	};
+	
+	// Reset Configuration
+	struct RSTCFG : ReadOnlyPrivilegedSPR<RSTCFG, 923>
+	{
+		typedef ReadOnlyPrivilegedSPR<RSTCFG, 923> Super;
+		
+		struct U0   : Field<U0  , 16    > {}; // U0 Storage Attribute
+		struct U1   : Field<U1  , 17    > {}; // U1 Storage Attribute
+		struct U2   : Field<U2  , 18    > {}; // U2 Storage Attribute
+		struct U3   : Field<U3  , 19    > {}; // U3 Storage Attribute
+		struct E    : Field<E   , 24    > {}; // E Storage Attribute
+		struct ERPN : Field<ERPN, 28, 31> {}; // Extended Real Page Number
+		
+		typedef FieldSet<U0, U1, U2, U3, E, ERPN> ALL;
+		
+		RSTCFG(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		RSTCFG(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("rstcfg");  this->SetDescription("Reset Configuration");
+			
+			U0  ::SetName("U0");   U0  ::SetDescription("U0 Storage Attribute");
+			U1  ::SetName("U1");   U1  ::SetDescription("U1 Storage Attribute");
+			U2  ::SetName("U2");   U2  ::SetDescription("U2 Storage Attribute");
+			U3  ::SetName("U3");   U3  ::SetDescription("U3 Storage Attribute");
+			E   ::SetName("E");    E   ::SetDescription("E Storage Attribute");
+			ERPN::SetName("ERPN"); ERPN::SetDescription("Extended Real Page Number");
+		}
+	};
+	
+	// Data Cache Debug Tag Register Low
+	struct DCDBTRL : PrivilegedSPR<DCDBTRL, 924>
+	{
+		typedef PrivilegedSPR<DCDBTRL, 924> Super;
+		
+		struct UPAR : Field<UPAR, 13    > {}; // U bit parity
+		struct TPAR : Field<TPAR, 14, 15> {}; // Tag parity
+		struct DPAR : Field<DPAR, 16, 19> {}; // Data parity
+		struct MPAR : Field<MPAR, 20, 23> {}; // Modified (dirty) parity
+		struct D    : Field<D   , 24, 27> {}; // Dirty indicators
+		struct U0   : Field<U0  , 28    > {}; // U0 Storage Attribute
+		struct U1   : Field<U1  , 29    > {}; // U1 Storage Attribute
+		struct U2   : Field<U2  , 30    > {}; // U2 Storage Attribute
+		struct U3   : Field<U3  , 31    > {}; // U3 Storage Attribute
+		
+		typedef FieldSet<UPAR, TPAR, DPAR, MPAR, D, U0, U1, U2, U3> ALL;
+		
+		DCDBTRL(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DCDBTRL(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("dcdbtrl");  this->SetDescription("Data Cache Debug Tag Register Low");
+			
+			UPAR::SetName("UPAR"); UPAR::SetDescription("U bit parity");
+			TPAR::SetName("TPAR"); TPAR::SetDescription("Tag parity");
+			DPAR::SetName("DPAR"); DPAR::SetDescription("Data parity");
+			MPAR::SetName("MPAR"); MPAR::SetDescription("Modified (dirty) parity");
+			D   ::SetName("D");    D   ::SetDescription("Dirty indicators");
+			U0  ::SetName("U0");   U0  ::SetDescription("U0 Storage Attribute");
+			U1  ::SetName("U1");   U1  ::SetDescription("U1 Storage Attribute");
+			U2  ::SetName("U2");   U2  ::SetDescription("U2 Storage Attribute");
+			U3  ::SetName("U3");   U3  ::SetDescription("U3 Storage Attribute");
+		}
+	};
+
+	// Data Cache Debug Tag Register High
+	struct DCDBTRH : PrivilegedSPR<DCDBTRH, 925>
+	{
+		typedef PrivilegedSPR<DCDBTRH, 925> Super;
+		
+		struct TRA  : Field<TRA , 0 , 23> {}; // Tag Real Address
+		struct V    : Field<V   , 24    > {}; // Cache Line Valid
+		struct TERA : Field<TERA, 28, 31> {}; // Tag Extended Real Address
+		
+		typedef FieldSet<TRA, V, TERA> ALL;
+		
+		DCDBTRH(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DCDBTRH(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("dcdbtrh");  this->SetDescription("Data Cache Debug Tag Register High");
+			
+			TRA ::SetName("TRA");  TRA ::SetDescription("Tag Real Address");
+			V   ::SetName("V");    V   ::SetDescription("Cache Line Valid");
+			TERA::SetName("TERA"); TERA::SetDescription("Tag Extended Real Address");
+		}
+	};
+	
+	// Instruction Cache Debug Tag Register Low
+	struct ICDBTRL : ReadOnlyNonPrivilegedSPR<ICDBTRL, 926>
+	{
+		typedef ReadOnlyNonPrivilegedSPR<ICDBTRL, 926> Super;
+		
+		struct TS  : Field<TS , 22    > {}; // Translation Space
+		struct TD  : Field<TD , 23    > {}; // Translation ID (TID) Disable
+		struct TID : Field<TID, 24, 31> {}; // Translation ID
+		
+		typedef FieldSet<TS, TD, TID> ALL;
+		
+		ICDBTRL(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		ICDBTRL(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("icdbtrl");  this->SetDescription("Instruction Cache Debug Tag Register Low");
+			
+			TS ::SetName("TS");  TS ::SetDescription("Translation Space");
+			TD ::SetName("TD");  TD ::SetDescription("Translation ID (TID) Disable");
+			TID::SetName("TID"); TID::SetDescription("Translation ID");
+		}
+	};
+	
+	// Instruction Cache Debug Tag Register High
+	struct ICDBTRH : ReadOnlyNonPrivilegedSPR<ICDBTRH, 927>
+	{
+		typedef ReadOnlyNonPrivilegedSPR<ICDBTRH, 927> Super;
+		
+		struct TEA   : Field<TEA  , 0 , 23> {}; // Tag Effective Address
+		struct V     : Field<V    , 24    > {}; // Cache Line Valid
+		struct TPAR  : Field<TPAR , 25, 26> {}; // Tag Parity
+		struct DAPAR : Field<DAPAR, 27    > {}; // Instruction Data parity
+		
+		typedef FieldSet<TEA, V, TPAR, DAPAR> ALL;
+		
+		ICDBTRH(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		ICDBTRH(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("icdbtrh");  this->SetDescription("Instruction Cache Debug Tag Register High");
+			
+			TEA  ::SetName("TEA");   TEA  ::SetDescription("Tag Effective Address");
+			V    ::SetName("V");     V    ::SetDescription("Cache Line Valid");
+			TPAR ::SetName("TPAR");  TPAR ::SetDescription("Tag Parity");
+			DAPAR::SetName("DAPAR"); DAPAR::SetDescription("Instruction Data parity");
+		}
+	};
+	
+	// Memory Management Unit Control Register
+	struct MMUCR : PrivilegedSPR<MMUCR, 946>
+	{
+		typedef PrivilegedSPR<MMUCR, 946> Super;
+		
+		struct SWOA    : Field<SWOA   , 7     > {}; // Store Without Allocate
+		struct U1TE    : Field<U1TE   , 9     > {}; // U1 Transient Enable
+		struct U2SWOAE : Field<U2SWOAE, 10    > {}; // U2 Store without Allocate Enable
+		struct DULXE   : Field<DULXE  , 12    > {}; // Data Cache Unlock Exception Enable
+		struct IULXE   : Field<IULXE  , 13    > {}; // Instruction Cache Unlock Exception Enable
+		struct STS     : Field<STS    , 15    > {}; // Search Translation Space
+		struct STID    : Field<STID   , 24, 31> {}; // Search Translation ID
+		
+		typedef FieldSet<SWOA, U1TE, U2SWOAE, DULXE, IULXE, STS, STID> ALL;
+		
+		MMUCR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MMUCR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("MMUCR");  this->SetDescription("Memory Management Unit Control Register");
+			
+			SWOA   ::SetName("SWOA");    SWOA   ::SetDescription("Store Without Allocate");
+			U1TE   ::SetName("U1TE");    U1TE   ::SetDescription("U1 Transient Enable");
+			U2SWOAE::SetName("U2SWOAE"); U2SWOAE::SetDescription("U2 Store without Allocate Enable");
+			DULXE  ::SetName("DULXE");   DULXE  ::SetDescription("Data Cache Unlock Exception Enable");
+			IULXE  ::SetName("IULXE");   IULXE  ::SetDescription("Instruction Cache Unlock Exception Enable");
+			STS    ::SetName("STS");     STS    ::SetDescription("Search Translation Space");
+			STID   ::SetName("STID");    STID   ::SetDescription("Search Translation ID");
+		}
+	};
+	
+	// Core Configuration Register 0
+	struct CCR0 : PrivilegedSPR<CCR0, 947>
+	{
+		typedef PrivilegedSPR<CCR0, 947> Super;
+		
+		struct PRE    : Field<PRE   ,  1    > {}; // Parity Recovery Enable
+		struct CRPE   : Field<CRPE  ,  4    > {}; // Cache Read Parity Enable
+		struct DSTG   : Field<DSTG  , 10    > {}; // Disable Store Gathering
+		struct DAPUIB : Field<DAPUIB, 11    > {}; // Disable APU Instruction Broadcast
+		struct DTB    : Field<DTB   , 16    > {}; // Disable Trace Broadcast
+		struct GICBT  : Field<GICBT , 17    > {}; // Guaranteed Instruction Cache Block Touch
+		struct GDCBT  : Field<GDCBT , 18    > {}; // Guaranteed Data Cache Block Touch
+		struct FLSTA  : Field<FLSTA , 23    > {}; // Force Load/Store Alignment
+		struct ICSLC  : Field<ICSLC , 28, 29> {}; // Instruction Cache Speculative Line Count
+		struct ICSLT  : Field<ICSLT , 30, 31> {}; // Instruction Cache Speculative Live Threshold
+		
+		typedef FieldSet<PRE, CRPE, DSTG, DAPUIB, DTB, GICBT, GDCBT, FLSTA, ICSLC, ICSLT> ALL;
+		
+		CCR0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		CCR0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("ccr0");  this->SetDescription("Core Configuration Register 0");
+			
+			PRE   ::SetName("pre");    PRE   ::SetDescription("Parity Recovery Enable");
+			CRPE  ::SetName("crpe");   CRPE  ::SetDescription("Cache Read Parity Enable");
+			DSTG  ::SetName("dstg");   DSTG  ::SetDescription("Disable Store Gathering");
+			DAPUIB::SetName("dapuib"); DAPUIB::SetDescription("Disable APU Instruction Broadcast");
+			DTB   ::SetName("dtb");    DTB   ::SetDescription("Disable Trace Broadcast");
+			GICBT ::SetName("gicbt");  GICBT ::SetDescription("Guaranteed Instruction Cache Block Touch");
+			GDCBT ::SetName("gdcbt");  GDCBT ::SetDescription("Guaranteed Data Cache Block Touch");
+			FLSTA ::SetName("flsta");  FLSTA ::SetDescription("Force Load/Store Alignment");
+			ICSLC ::SetName("icslc");  ICSLC ::SetDescription("Instruction Cache Speculative Line Count");
+			ICSLT ::SetName("icslt");  ICSLT ::SetDescription("Instruction Cache Speculative Live Threshold");
+		}
+	};
+
 	// L1 Flush and Invalidate Control Register 1
 	struct L1FINV1 : PrivilegedSPR<L1FINV1, 959>
 	{
@@ -3341,6 +4429,20 @@ protected:
 		using Super::operator =;
 	private:
 		void Init() { this->SetName("devent"); this->SetDescription("Debug Event Register"); }
+	};
+	
+	// Instruction Cache Debug Data Register
+	struct ICDBDR : ReadOnlyPrivilegedSPR<ICDBDR, 979>
+	{
+		typedef ReadOnlyPrivilegedSPR<ICDBDR, 979> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		ICDBDR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		ICDBDR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init() { this->SetName("icdbdr"); this->SetDescription("Instruction Cache Debug Data Register"); }
 	};
 	
 	// System Information
@@ -3503,6 +4605,20 @@ protected:
 			ICINV  ::SetName("icinv");   ICINV  ::SetDescription("Instruction Cache Invalidate");
 			ICE    ::SetName("ice");     ICE    ::SetDescription("Instruction Cache Enable");
 		}
+	};
+	
+	// Debug Data Register
+	struct DBDR : PrivilegedSPR<DBDR, 1011>
+	{
+		typedef PrivilegedSPR<DBDR, 1011> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		DBDR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DBDR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init() { this->SetName("dbdr"); this->SetDescription("Debug Data Register"); }
 	};
 
 	// Branch Unit Control and Status Register
@@ -3905,7 +5021,75 @@ protected:
 	};
 
 	// Nexus 3 DCRs are voluntary missing
+
+	/////////////////////////// Time Base Registers ///////////////////////////
 	
+	// Time Base Lower
+	struct TBL : ReadOnlyNonPrivilegedTBR<TBL, 268>
+	{
+		typedef ReadOnlyNonPrivilegedTBR<TBL, 268> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR268 : AltSLR<TBL, SLR_SPR_SPACE, 268, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<TBL, SLR_SPR_SPACE, 268, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR268(typename CONFIG::CPU *_cpu, TBL *_tbl) : Super(_cpu, _tbl) {}
+		};
+		
+		struct SPR284 : AltSLR<TBL, SLR_SPR_SPACE, 284, SLR_WO, SLR_PRIVILEGED>
+		{
+			typedef AltSLR<TBL, SLR_SPR_SPACE, 284, SLR_WO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR284(typename CONFIG::CPU *_cpu, TBL *_tbl) : Super(_cpu, _tbl) {}
+		};
+		
+		TBL(typename CONFIG::CPU *_cpu) : Super(_cpu), spr268(_cpu, this), spr284(_cpu, this) { Init(); }
+		TBL(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr268(_cpu, this), spr284(_cpu, this) { Init(); }
+	private:
+		void Init()
+		{
+			this->SetName("TBL"); this->SetDescription("Time Base Lower");
+		}
+		
+		SPR268 spr268;
+		SPR284 spr284;
+	};
+	
+	// Time Base Upper
+	struct TBR : ReadOnlyNonPrivilegedTBR<TBR, 269>
+	{
+		typedef ReadOnlyNonPrivilegedTBR<TBR, 269> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR269 : AltSLR<TBR, SLR_SPR_SPACE, 269, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<TBR, SLR_SPR_SPACE, 269, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR269(typename CONFIG::CPU *_cpu, TBR *_tbr) : Super(_cpu, _tbr) {}
+		};
+		
+		struct SPR285 : AltSLR<TBR, SLR_SPR_SPACE, 284, SLR_WO, SLR_PRIVILEGED>
+		{
+			typedef AltSLR<TBR, SLR_SPR_SPACE, 284, SLR_WO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR285(typename CONFIG::CPU *_cpu, TBR *_tbr) : Super(_cpu, _tbr) {}
+		};
+		
+		TBR(typename CONFIG::CPU *_cpu) : Super(_cpu), spr269(_cpu, this), spr285(_cpu, this) { Init(); }
+		TBR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr269(_cpu, this), spr285(_cpu, this) { Init(); }
+	private:
+		void Init()
+		{
+			this->SetName("TBR"); this->SetDescription("Time Base Upper");
+		}
+		
+		SPR269 spr269;
+		SPR285 spr285;
+	};
+
 	/////////////////////// Performance Monitor Registers /////////////////////
 	
 	//  Performance Monitor Counter registers 0-3
