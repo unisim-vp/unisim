@@ -49,6 +49,7 @@ namespace mci {
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
+  using namespace sc_core;
 
 template <class CONFIG>
 class MCI

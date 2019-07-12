@@ -52,6 +52,7 @@ using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
+  using namespace sc_core;
 
 typedef uint64_t DEFAULT_ADDRESS;
 const unsigned int DEFAULT_BUSWIDTH = 32; // 32-bit bus

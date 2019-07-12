@@ -70,6 +70,7 @@ using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
+  using namespace sc_core;
 
 enum WrapMode
 {

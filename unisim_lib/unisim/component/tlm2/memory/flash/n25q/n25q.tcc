@@ -38,6 +38,8 @@
 #include <string.h>
 #include <math.h>
 
+using namespace sc_core;
+
 namespace unisim {
 namespace component {
 namespace tlm2 {

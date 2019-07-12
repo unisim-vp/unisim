@@ -50,7 +50,8 @@ namespace dcr_controller {
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::tlm2::PayloadFabric;
-	
+  using namespace sc_core;
+  
 template <class CONFIG>
 class DCRController
 	: public unisim::component::cxx::interconnect::xilinx::dcr_controller::DCRController<CONFIG>
