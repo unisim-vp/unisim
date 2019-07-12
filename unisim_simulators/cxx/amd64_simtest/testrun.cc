@@ -126,23 +126,15 @@ namespace ut
         Operation* operations[NUM_OPERATIONS_PER_PAGE];
         uint8_t bytes[NUM_OPERATIONS_PER_PAGE+15];
     
-        Page( Page* _next, uint64_t _key ) : next( _next ), key( _key ) { memset( operations, 0, sizeof (operations) ); }
+        Page( Page* _next, uint64_t _key ) : next( _next ), key( _key ), operations() {}
         ~Page() { for( unsigned idx = 0; idx < NUM_OPERATIONS_PER_PAGE; ++idx ) delete operations[idx]; delete next; }
       };
     
       static unsigned const NUM_HASH_TABLE_ENTRIES = 0x1000;
       Page* hash_table[NUM_HASH_TABLE_ENTRIES];
       Page* mru_page;
-      ICache()
-        : mru_page( 0 )
-      {
-        memset( hash_table, 0, sizeof (hash_table) );
-      }
-      ~ICache()
-      {
-        for(unsigned idx = 0; idx < NUM_HASH_TABLE_ENTRIES; ++idx)
-          delete hash_table[idx];
-      }
+      ICache() : hash_table(), mru_page( 0 ) {}
+      ~ICache() { for(unsigned idx = 0; idx < NUM_HASH_TABLE_ENTRIES; ++idx) delete hash_table[idx]; }
   
       Operation* Get( unisim::component::cxx::processor::intel::Mode mode, uint64_t address, uint8_t* bytes )
       {

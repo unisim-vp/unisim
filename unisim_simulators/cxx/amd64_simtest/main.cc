@@ -268,12 +268,13 @@ struct Checker
     friend std::ostream& operator << (std::ostream& sink, FileLoc const& fl) { sink << fl.name << ':' << fl.line << ": "; return sink; }
   };
   
-  void
+  bool
   read_repos( std::string const& reposname )
   {
     // Parsing incoming repository
     FileLoc fl( reposname );
     std::ifstream source( fl.name );
+    bool updated = false;
     
     while (source)
       {
@@ -289,18 +290,26 @@ struct Checker
             std::string updated_disasm;
             std::unique_ptr<Operation> codeop = std::unique_ptr<Operation>( isa.decode( 0x4000, code, updated_disasm ) );
             if (disasm != updated_disasm)
-              std::cerr << fl << ": warning, assembly code divergence (" << code << ").\n   new: " << updated_disasm << "\n   old: " << disasm << "\n";
+              {
+                std::cerr << fl << ": warning, assembly code divergence (" << code << ").\n   new: " << updated_disasm << "\n   old: " << disasm << "\n";
+                updated = true;
+              }
             if (not insert( *codeop, code, updated_disasm ))
-              std::cerr << fl << ": warning " << code << ", " << disasm << " not inserted\n";
-            
+              {
+                std::cerr << fl << ": warning " << code << ", " << disasm << " not inserted\n";
+                updated = true;
+              }
           }
         catch (ut::Untestable const& denial)
           {
             std::cerr << fl << ": behavioral rejection for " << disasm << " <" << denial.reason << ">\n";
+            updated = true;
             continue;
           }
         done.insert( code );
       }
+    
+    return updated;
   }
 
   void run_tests(char const* seed)
@@ -317,7 +326,7 @@ struct Checker
       
       for (ut::Interface const& test : testdb)
         {
-          workquads = std::max( workquads, 2*test.workquads() );
+          workquads = std::max( workquads, test.workquads() * (test.relocs.size() ? 3 : 2) );
           text.process( test );
         }
       
@@ -349,43 +358,44 @@ struct Checker
       Test(ut::Interface const* _test, testcode_t _code, unsigned _relreg, unisim::util::symbolic::Expr const& _relval)
         : disasm(_test->asmcode), code(_code), relval(_relval), relreg(_test->gregs.index(_relreg)), workquads(_test->workquads())
       {}
-      uint64_t get_reloc(std::vector<uint64_t> const& ws, uint64_t address) const
+      uint64_t get_reloc(uint64_t const* ws) const
       {
         if (not relval.good()) return 0;
         
         uint64_t value;
-        if (auto v = relval.Eval( ut::Arch::RelocEval(&ws[1], address) ))
+        if (auto v = relval.Eval( ut::Arch::RelocEval(&ws[data_index(1)], uint64_t(ws)) ))
           { Expr dispose(v); value = v->Get( uint64_t() ); }
         else
           throw "WTF";
 
         return value;
       }
-      static void fixflags( uint64_t& flags ) { flags = (flags & 0xcff) | 2; }
-      void patch(std::vector<uint64_t>& ws, uint64_t reloc) const
+      static void fixflags( uint64_t& flags ) { flags = (flags & 0xcef) | 2; }
+      void patch(uint64_t* ws, uint64_t reloc) const
       {
-        fixflags(ws[0]);
+        fixflags(ws[data_index(0)]);
         if (relval.good())
-          ws[relreg+1] = reloc;
+          ws[workquads+1+relreg] = reloc;
       }
-      void load(std::vector<uint64_t>& ws, Testbed const& testbed) const
+      void load(uint64_t* ws, Testbed const& testbed) const
       {
-        testbed.load(&ws[0], workquads);
+        testbed.load(ws, relval.good() ? 2*workquads : workquads );
       }
-      void check(Testbed const& tb, std::vector<uint64_t>& ref, std::vector<uint64_t>& sim) const
+      void check(Testbed const& tb, uint64_t* ref, uint64_t* sim) const
       {
-        fixflags(ref[workquads]);
-        fixflags(sim[workquads]);
-        for (unsigned idx = 0, end = workquads*2; idx < end; ++idx)
+        fixflags(ref[sink_index(0)]);
+        fixflags(sim[sink_index(0)]);
+        for (unsigned idx = 0, end = sink_index(workquads); idx < end; ++idx)
           {
             if (ref[idx] != sim[idx])
               error(tb,ref,sim);
           }
       }
-      void error(Testbed const& tb, std::vector<uint64_t> const& ref, std::vector<uint64_t> const& sim) const
+      void error(Testbed const& tb, uint64_t const* ref, uint64_t const* sim) const
       {
         std::cerr << tb.counter << ": error in " << disasm << '\n';
-        for (unsigned idx = 0, end = workquads*2; idx < end; ++idx)
+        std::cerr << "ref | sim\n";
+        for (unsigned idx = 0, end = sink_index(workquads); idx < end; ++idx)
           {
             uint64_t r = ref[idx], s = sim[idx];
             std::cerr << idx << ": " << std::hex << r;
@@ -397,7 +407,24 @@ struct Checker
         throw 0;
       }
 
-      std::string disasm;
+      std::string const& getasm() const { return disasm; }
+
+      void run( uint64_t* ws ) const
+      {
+        code( &ws[data_index(0)] ); /*< native code execution */
+        __asm__ volatile( "cld" ); /*< Fix DF */
+      }
+      void run( ut::concrete::Arch& sim, uint64_t* ws ) const
+      {
+        sim.run( code, &ws[data_index(0)] ); /* code simulation */
+        sim.flagwrite( ut::concrete::Arch::FLAG::DF, false ); /*< Fix DF */
+      }
+      
+    private:
+      uintptr_t data_index( uintptr_t idx ) const { return (relval.good() ? workquads : 0) + idx; }
+      uintptr_t sink_index( uintptr_t idx ) const { return workquads + data_index(idx); }
+      
+      std::string const& disasm;
       ut::Interface::testcode_t code;
       Expr relval;
       unsigned relreg, workquads;
@@ -444,26 +471,23 @@ struct Checker
       {
         Test const& test = testbed.select(tests);
         if ((testbed.counter % 0x100000) == 0)
-          std::cout << testbed.counter << ": " << test.disasm << std::endl;
-        uint64_t* data = &workspace[0];
+          std::cout << testbed.counter << ": " << test.getasm() << std::endl;
         
         /* Perform native test */
-        test.load(workspace, testbed);
+        test.load( &workspace[0], testbed );
         // TODO: handle alignment policy [+ ((testbed.counter % tests.size()) % 8)]
-        uint64_t reloc = test.get_reloc( workspace, uint64_t(data) );
-        test.patch(workspace,reloc);
-        test.code(data);
-        std::copy(workspace.begin(),workspace.end(),reference.begin());
+        uint64_t reloc = test.get_reloc( &workspace[0] );
+        test.patch( &workspace[0],reloc );
+        test.run( &workspace[0] );
+        std::copy( workspace.begin(), workspace.end(),reference.begin() );
         
         /* Perform simulation test */
-        test.load(workspace, testbed);
-        test.patch(workspace,reloc);
-        
-        /* TODO: Perform test here */
-        amd64.run( test.code, data );
+        test.load( &workspace[0], testbed );
+        test.patch( &workspace[0], reloc );
+        test.run( amd64, &workspace[0] );
         
         /* Check for differences */
-        test.check(testbed,reference,workspace);
+        test.check( testbed, &reference[0], &workspace[0]);
       }
   }
 };
@@ -487,19 +511,24 @@ main( int argc, char** argv )
     }
   
   uintptr_t ttl = 10000;
-  if (char const* ttl_cfg = getenv("TTL_CFG")) { ttl = strtoull(ttl_cfg,0,0); std::cerr << "using TTL of: " << ttl << std::endl; }
+  if (char const* ttl_cfg = getenv("TTL_CFG"))
+    {
+      ttl = strtoull(ttl_cfg,0,0); std::cerr << "using TTL of: " << ttl << std::endl;
+    }
   
   Checker checker;
   
-  checker.read_repos( reposname );
+  bool updated = checker.read_repos( reposname );
 
   if (getenv("INSN_SCAN"))
     {
       checker.discover( ttl, 100000 );
-      
-      checker.write_repos( reposname );
+      updated = true;
     }
-
+  
+  if (updated)
+      checker.write_repos( reposname );
+  
   checker.run_tests("01234567890123456789012345678901000000000000000000000000");
 
   return 0;
