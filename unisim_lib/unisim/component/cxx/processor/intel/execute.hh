@@ -487,8 +487,8 @@ namespace intel {
       (u32_t( 0 )                             << 21 /* ID */ );
   }
 
-  template <typename T> T const& Minimum( T const& l, T const& r ) { return std::min( l, r ); }
-  template <typename T> T const& Maximum( T const& l, T const& r ) { return std::max( l, r ); }
+  template <typename T> T const& Minimum( T const& l, T const& r ) { return l < r ? l : r; }
+  template <typename T> T const& Maximum( T const& l, T const& r ) { return l > r ? l : r; }
   
   template <class ARCH>
   typename ARCH::f64_t
