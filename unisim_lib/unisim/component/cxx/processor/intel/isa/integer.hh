@@ -1998,16 +1998,16 @@ template <class ARCH> struct DC<ARCH,SETCC> { Operation<ARCH>* get( InputCode<AR
 template <class ARCH, class OP>
 struct ShldIM : public Operation<ARCH>
 {
-  typedef typename ARCH::u8_t u8_t;
   ShldIM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn, uint8_t _sh )
-    : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ), shift( _sh & 0b11111 ) {} RMOp<ARCH> rmop; uint8_t gn; uint8_t shift;
-  /* TODO: shouldn't shift be truncated according to OPSIZE (especially in 64bit) */
+    : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ), shift( _sh & c_shift_counter<OP::SIZE>::mask() ) {} RMOp<ARCH> rmop; uint8_t gn; uint8_t shift;
   
   void disasm( std::ostream& sink ) const { sink << "shld " << DisasmI( shift ) << ',' << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rmop ); }
 
   void execute( ARCH& arch ) const
   {
-    typename TypeFor<ARCH,OP::SIZE>::u result = eval_shl( arch, arch.rmread( OP(), rmop ), u8_t( shift ) ) | (arch.regread( OP(), gn ) >> (OP::SIZE - shift));
+    typename TypeFor<ARCH,OP::SIZE>::u result = eval_shl( arch, arch.rmread( OP(), rmop ), typename ARCH::u8_t( shift ) );
+    if (shift)
+      result |= arch.regread( OP(), gn ) >> (OP::SIZE - shift);
     arch.rmwrite( OP(), rmop, result );
   }
 };
@@ -2015,7 +2015,6 @@ struct ShldIM : public Operation<ARCH>
 template <class ARCH, class OP>
 struct ShldCL : public Operation<ARCH>
 {
-  typedef typename ARCH::u8_t u8_t;
   ShldCL( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn )
     : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
@@ -2023,8 +2022,13 @@ struct ShldCL : public Operation<ARCH>
 
   void execute( ARCH& arch ) const
   {
-    u8_t shift = arch.regread( GOb(), 1 ) & u8_t( 0x1f );
-    typename TypeFor<ARCH,OP::SIZE>::u result = eval_shl( arch, arch.rmread( OP(), rmop ), shift ) | (arch.regread( OP(), gn ) >> (u8_t(OP::SIZE) - shift));
+    typedef typename ARCH::u8_t u8_t;
+    typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
+    u8_t shift = arch.regread( GOb(), 1 );
+    u_type result = eval_shl( arch, arch.rmread( OP(), rmop ), shift );
+    shift &= shift_counter<ARCH,u_type>::mask();
+    if (arch.Cond(shift != u8_t(0)))
+      result |= arch.regread( OP(), gn ) >> (u8_t(OP::SIZE) - shift);
     arch.rmwrite( OP(), rmop, result );
   }
 };
@@ -2032,16 +2036,16 @@ struct ShldCL : public Operation<ARCH>
 template <class ARCH, class OP>
 struct ShrdIM : public Operation<ARCH>
 {
-  typedef typename ARCH::u8_t u8_t;
   ShrdIM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn, uint8_t _sh )
-    : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ), sh( _sh ) {} RMOp<ARCH> rmop; uint8_t gn; uint8_t sh;
+    : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ), shift( _sh & c_shift_counter<OP::SIZE>::mask() ) {} RMOp<ARCH> rmop; uint8_t gn; uint8_t shift;
   
-  void disasm( std::ostream& sink ) const { sink << "shrd " << DisasmI( sh ) << ',' << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rmop ); }
+  void disasm( std::ostream& sink ) const { sink << "shrd " << DisasmI( shift ) << ',' << DisasmG( OP(), gn ) << ',' << DisasmE( OP(), rmop ); }
 
   void execute( ARCH& arch ) const
   {
-    u8_t shift = u8_t( sh & 0b11111 );
-    typename TypeFor<ARCH,OP::SIZE>::u result = eval_shr( arch, arch.rmread( OP(), rmop ), shift ) | (arch.regread( OP(), gn ) << (u8_t( OP::SIZE ) - shift));
+    typename TypeFor<ARCH,OP::SIZE>::u result = eval_shr( arch, arch.rmread( OP(), rmop ), typename ARCH::u8_t(shift) );
+    if (shift)
+      result |= arch.regread( OP(), gn ) << (OP::SIZE - shift);
     arch.rmwrite( OP(), rmop, result );
   }
 };
@@ -2049,7 +2053,6 @@ struct ShrdIM : public Operation<ARCH>
 template <class ARCH, class OP>
 struct ShrdCL : public Operation<ARCH>
 {
-  typedef typename ARCH::u8_t u8_t;
   ShrdCL( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn )
     : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   
@@ -2057,8 +2060,13 @@ struct ShrdCL : public Operation<ARCH>
 
   void execute( ARCH& arch ) const
   {
-    u8_t shift = arch.regread( GOb(), 1 ) & u8_t( 0x1f );
-    typename TypeFor<ARCH,OP::SIZE>::u result = eval_shr( arch, arch.rmread( OP(), rmop ), shift ) | (arch.regread( OP(), gn ) << (u8_t( OP::SIZE ) - shift));
+    typedef typename ARCH::u8_t u8_t;
+    typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
+    u8_t shift = arch.regread( GOb(), 1 );
+    u_type result = eval_shr( arch, arch.rmread( OP(), rmop ), shift );
+    shift &= shift_counter<ARCH,u_type>::mask();
+    if (arch.Cond(shift != u8_t(0)))
+      result |= arch.regread( OP(), gn ) << (u8_t(OP::SIZE) - shift);
     arch.rmwrite( OP(), rmop, result );
   }
 };
