@@ -1006,6 +1006,8 @@ struct VArithmeticVVW : public Operation<ARCH>
   {
     for (unsigned idx = 0, end = PACKED ? VR::size()/OPSZ : 1; idx < end; ++idx)
       arch.vmm_write( VR(), gn, idx, eval( OPERATION(), arch.vmm_read( VR(), vn, idx, valtype() ), arch.vmm_read( VR(), rm, idx, valtype() ) ) );
+    for (unsigned idx = PACKED ? VR::size()/OPSZ : 1, end = VR::size()/OPSZ; idx < end; ++idx)
+      arch.vmm_write( VR(), gn, idx, arch.vmm_read( VR(), vn, idx, valtype() ) );
   }
   RMOp<ARCH> rm; uint8_t vn, gn;
 };
@@ -1060,10 +1062,17 @@ newVArithmeticVVW( InputCode<ARCH> const& ic, OpBase<ARCH> const& opbase, unsign
 {
   if (match( ic, simd__() )) return new VArithmeticVVW<ARCH,OPERATION,VR,32, true>( opbase, rm, vn, gn );
   if (match( ic, simd66() )) return new VArithmeticVVW<ARCH,OPERATION,VR,64, true>( opbase, rm, vn, gn );
-  if (match( ic, simdF3() )) return new VArithmeticVVW<ARCH,OPERATION,VR,32,false>( opbase, rm, vn, gn );
-  if (match( ic, simdF2() )) return new VArithmeticVVW<ARCH,OPERATION,VR,64,false>( opbase, rm, vn, gn );
+  if (match( ic, simdF3() )) return newScalarVArithmeticVVW<OPERATION,VR,32>( opbase, gn, vn, rm );
+  if (match( ic, simdF2() )) return newScalarVArithmeticVVW<OPERATION,VR,64>( opbase, gn, vn, rm );
   return 0;
-}};
+}
+template <class OPERATION, class VR, unsigned OPSZ> Operation<ARCH>*
+newScalarVArithmeticVVW( OpBase<ARCH> const& opbase, unsigned gn, unsigned vn, MOp<ARCH> const* rm )
+{
+  if (VR::vex()) return new VArithmeticVVW<ARCH,OPERATION,XMM,OPSZ,false>( opbase, rm, vn, gn );
+  return                new VArithmeticVVW<ARCH,OPERATION,SSE,OPSZ,false>( opbase, rm, vn, gn );
+}
+};
 
 template <class ARCH, class VR, unsigned SOPSZ, unsigned DOPSZ>
 struct VFPCvtp : public Operation<ARCH>
