@@ -58,7 +58,7 @@ const unsigned int DEFAULT_BUSWIDTH = 32; // 32-bit bus
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, unsigned int BUSWIDTH = DEFAULT_BUSWIDTH>
 class AM29 :
-	public sc_module,
+	public sc_core::sc_module,
 	public unisim::component::cxx::memory::flash::am29::AM29<CONFIG, BYTESIZE, IO_WIDTH>,
 	public tlm::tlm_fw_transport_if<>
 {
@@ -67,7 +67,7 @@ public:
 
 	tlm::tlm_target_socket<BUSWIDTH> slave_sock;
 
-	AM29(const sc_module_name& name, Object *parent = 0);
+	AM29(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~AM29();
 
 	virtual bool BeginSetup();
@@ -77,8 +77,8 @@ public:
 	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
 private:
-	sc_time cycle_time;
-	Parameter<sc_time> param_cycle_time;
+	sc_core::sc_time cycle_time;
+	Parameter<sc_core::sc_time> param_cycle_time;
 };
 
 } // end of namespace am29

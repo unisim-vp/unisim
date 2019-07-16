@@ -32,16 +32,14 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op mtdcr(31[6]:rs[5]:dcrf[10]:451[10]:?[1])
+op mtdcr(31[6]:rs[5]:dcr1[5]:dcr0[5]:451[10]:?[1])
+mtdcr.var dcrn : {unsigned} = {dcr0<<5 | dcr1};
 
 mtdcr.execute = {
-	uint32_t dcrn = ((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f);
-	cpu->MoveToDCR(rs, dcrn);
-	
-	return true;
+	U32 value = cpu->GetGPR(rs);
+	return cpu->MoveToDCR(dcrn, value);
 }
 
 mtdcr.disasm = {
-	uint32_t dcrn = ((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f);
 	os << "mtdcr " << dcrn << ", " << GPRPrint(rs);
 }

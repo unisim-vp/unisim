@@ -38,4 +38,4 @@
 #include "unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.tcc"
 #include "config.hh"
 
-template class unisim::component::tlm2::interconnect::xilinx::dcr_controller::DCRController<SimConfig::DCR_CONTROLLER_CONFIG>;
+template class unisim::component::tlm2::interconnect::xilinx::dcr_controller::DCRController<Config::DCR_CONTROLLER_CONFIG>;

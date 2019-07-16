@@ -50,50 +50,6 @@ namespace powerpc {
 template <unsigned int SIZE> const unsigned int TypeForBitSize<SIZE>::BYTE_SIZE;
 template <unsigned int SIZE> const typename TypeForBitSize<SIZE>::TYPE TypeForBitSize<SIZE>::MASK;
 
-////////////////////////////// PoolAllocator<> ////////////////////////////////
-
-template <typename OBJECT>
-PoolAllocator<OBJECT>::PoolAllocator()
-	: free_list()
-	, objects()
-{
-}
-
-template <typename OBJECT>
-PoolAllocator<OBJECT>::~PoolAllocator()
-{
-	typename std::vector<OBJECT *>::iterator it;
-	
-	for(it = objects.begin(); it != objects.end(); it++)
-	{
-		OBJECT *object = *it;
-		delete object;
-	}
-}
-
-template <typename OBJECT>
-OBJECT *PoolAllocator<OBJECT>::Allocate()
-{
-	OBJECT *object;
-
-	if(!free_list.empty())
-	{
-		object = free_list.top();
-		free_list.pop();
-		return object;
-	}
-
-	object = new OBJECT();
-	objects.push_back(object);
-	return object;
-}
-
-template <typename OBJECT>
-void PoolAllocator<OBJECT>::Free(OBJECT *object)
-{
-	free_list.push(object);
-}
-
 /////////////////////////////////// CPU<> /////////////////////////////////////
 
 #if 0
@@ -117,9 +73,9 @@ const typename CPU<TYPES, CONFIG>::SLR_Privilege_Type CPU<TYPES, CONFIG>::SLR<SL
 template <typename TYPES, typename CONFIG>
 CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
-	, unisim::kernel::service::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::ADDRESS> >(name, parent)
+	, unisim::kernel::service::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::EFFECTIVE_ADDRESS> >(name, parent)
 	, unisim::kernel::service::Client<typename unisim::service::interfaces::DebugYielding>(name, parent)
-	, unisim::kernel::service::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::ADDRESS> >(name, parent)
+	, unisim::kernel::service::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::EFFECTIVE_ADDRESS> >(name, parent)
 	, unisim::kernel::service::Client<typename unisim::service::interfaces::TrapReporting>(name, parent)
 	, unisim::kernel::service::Service<typename unisim::service::interfaces::MemoryAccessReportingControl>(name, parent)
 	, unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>(name, parent)
@@ -141,7 +97,7 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter, "number of simulated instruction before traping")
 	, max_inst(0xffffffffffffffffULL)
 	, param_max_inst("max-inst", this, max_inst, "maximum number of instructions to simulate")
-	, halt_on_addr(~typename TYPES::ADDRESS(0))
+	, halt_on_addr(~typename TYPES::EFFECTIVE_ADDRESS(0))
 	, halt_on()
 	, param_halt_on("halt-on", this, halt_on, "Symbol or address where to stop simulation")
 	, verbose_setup(false)
@@ -225,7 +181,7 @@ bool CPU<TYPES, CONFIG>::EndSetup()
 {
 	if(!halt_on.empty())
 	{
-		const unisim::util::debug::Symbol<typename TYPES::ADDRESS> *halt_on_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByName(halt_on.c_str(), unisim::util::debug::Symbol<typename TYPES::ADDRESS>::SYM_FUNC) : 0;
+		const unisim::util::debug::Symbol<typename TYPES::EFFECTIVE_ADDRESS> *halt_on_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByName(halt_on.c_str(), unisim::util::debug::Symbol<typename TYPES::EFFECTIVE_ADDRESS>::SYM_FUNC) : 0;
 		
 		if(halt_on_symbol)
 		{
@@ -249,7 +205,7 @@ bool CPU<TYPES, CONFIG>::EndSetup()
 			else
 			{
 				logger << DebugWarning << "Invalid address (" << halt_on << ") in Parameter " << param_halt_on.GetName() << EndDebugWarning;
-				halt_on_addr = (typename TYPES::ADDRESS) -1;
+				halt_on_addr = (typename TYPES::EFFECTIVE_ADDRESS) -1;
 			}
 		}
 	}
@@ -584,7 +540,7 @@ template <typename EXCEPTION> bool CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_E
 }
 
 template <typename TYPES, typename CONFIG>
-inline bool CPU<TYPES, CONFIG>::MonitorLoad(typename TYPES::ADDRESS ea, unsigned int size)
+inline bool CPU<TYPES, CONFIG>::MonitorLoad(typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size)
 {
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
@@ -596,7 +552,7 @@ inline bool CPU<TYPES, CONFIG>::MonitorLoad(typename TYPES::ADDRESS ea, unsigned
 }
 
 template <typename TYPES, typename CONFIG>
-inline bool CPU<TYPES, CONFIG>::MonitorStore(typename TYPES::ADDRESS ea, unsigned int size)
+inline bool CPU<TYPES, CONFIG>::MonitorStore(typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size)
 {
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
@@ -608,7 +564,7 @@ inline bool CPU<TYPES, CONFIG>::MonitorStore(typename TYPES::ADDRESS ea, unsigne
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int8Load(unsigned int rd, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int8Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
 	uint8_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
@@ -619,7 +575,7 @@ bool CPU<TYPES, CONFIG>::Int8Load(unsigned int rd, typename TYPES::ADDRESS ea)
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int16Load(unsigned int rd, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
 	uint16_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
@@ -630,7 +586,7 @@ bool CPU<TYPES, CONFIG>::Int16Load(unsigned int rd, typename TYPES::ADDRESS ea)
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::SInt16Load(unsigned int rd, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::SInt16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
 	uint16_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
@@ -641,7 +597,7 @@ bool CPU<TYPES, CONFIG>::SInt16Load(unsigned int rd, typename TYPES::ADDRESS ea)
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int32Load(unsigned int rd, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int32Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
 	uint32_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
@@ -652,7 +608,7 @@ bool CPU<TYPES, CONFIG>::Int32Load(unsigned int rd, typename TYPES::ADDRESS ea)
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int16LoadByteReverse(unsigned int rd, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int16LoadByteReverse(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
 	uint16_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
@@ -663,7 +619,7 @@ bool CPU<TYPES, CONFIG>::Int16LoadByteReverse(unsigned int rd, typename TYPES::A
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int32LoadByteReverse(unsigned int rd, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int32LoadByteReverse(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
 	uint32_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
@@ -674,7 +630,7 @@ bool CPU<TYPES, CONFIG>::Int32LoadByteReverse(unsigned int rd, typename TYPES::A
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::ADDRESS ea, uint32_t size)
+bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea, uint32_t size)
 {
 	if(unlikely(!MonitorLoad(ea, size))) return false;
 
@@ -726,7 +682,7 @@ bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::ADDRES
 
 template <typename TYPES, typename CONFIG>
 template <typename REGISTER>
-bool CPU<TYPES, CONFIG>::SpecialLoad(REGISTER& reg, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::SpecialLoad(REGISTER& reg, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
 	uint32_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
@@ -737,7 +693,7 @@ bool CPU<TYPES, CONFIG>::SpecialLoad(REGISTER& reg, typename TYPES::ADDRESS ea)
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int8Store(unsigned int rs, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int8Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
 	uint8_t value = gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
@@ -747,7 +703,7 @@ bool CPU<TYPES, CONFIG>::Int8Store(unsigned int rs, typename TYPES::ADDRESS ea)
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int16Store(unsigned int rs, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int16Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
 	uint16_t value = (uint16_t) gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
@@ -757,7 +713,7 @@ bool CPU<TYPES, CONFIG>::Int16Store(unsigned int rs, typename TYPES::ADDRESS ea)
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int32Store(unsigned int rs, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int32Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
 	uint32_t value = gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
@@ -767,7 +723,7 @@ bool CPU<TYPES, CONFIG>::Int32Store(unsigned int rs, typename TYPES::ADDRESS ea)
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int16StoreByteReverse(unsigned int rs, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int16StoreByteReverse(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
 	uint16_t value = (uint16_t) gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
@@ -777,7 +733,7 @@ bool CPU<TYPES, CONFIG>::Int16StoreByteReverse(unsigned int rs, typename TYPES::
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int32StoreByteReverse(unsigned int rs, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int32StoreByteReverse(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
 	uint32_t value = gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
@@ -787,7 +743,7 @@ bool CPU<TYPES, CONFIG>::Int32StoreByteReverse(unsigned int rs, typename TYPES::
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::ADDRESS ea, uint32_t size)
+bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea, uint32_t size)
 {
 	if(unlikely(!MonitorStore(ea, size))) return false;
 	
@@ -839,7 +795,7 @@ bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::ADDRE
 
 template <typename TYPES, typename CONFIG>
 template <typename REGISTER>
-bool CPU<TYPES, CONFIG>::SpecialStore(const REGISTER& reg, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::SpecialStore(const REGISTER& reg, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
 	uint32_t value = reg;
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
@@ -883,11 +839,11 @@ void CPU<TYPES, CONFIG>::RequiresMemoryAccessReporting(unisim::service::interfac
 }
 
 template <typename TYPES, typename CONFIG>
-std::string CPU<TYPES, CONFIG>::GetObjectFriendlyName(typename TYPES::ADDRESS addr)
+std::string CPU<TYPES, CONFIG>::GetObjectFriendlyName(typename TYPES::EFFECTIVE_ADDRESS addr)
 {
 	std::stringstream sstr;
 	
-	const unisim::util::debug::Symbol<typename TYPES::ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr, unisim::util::debug::Symbol<typename TYPES::ADDRESS>::SYM_OBJECT) : 0;
+	const unisim::util::debug::Symbol<typename TYPES::EFFECTIVE_ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr, unisim::util::debug::Symbol<typename TYPES::EFFECTIVE_ADDRESS>::SYM_OBJECT) : 0;
 	if(symbol)
 		sstr << symbol->GetFriendlyName(addr);
 	else

@@ -61,13 +61,13 @@ CPU::~CPU()
 {
 }
 
-bool CPU::Dcba(ADDRESS addr)
+bool CPU::Dcba(EFFECTIVE_ADDRESS addr)
 {
 	// dcba is treated as no-op on e200z
 	return true;
 }
 
-bool CPU::Dcbi(ADDRESS addr)
+bool CPU::Dcbi(EFFECTIVE_ADDRESS addr)
 {
 	if(msr.Get<MSR::PR>())
 	{
@@ -78,17 +78,17 @@ bool CPU::Dcbi(ADDRESS addr)
 	return true; // dcbi is treated as a no-op in supervisor mode if the data cache is disabled
 }
 
-bool CPU::Dcbf(ADDRESS addr)
+bool CPU::Dcbf(EFFECTIVE_ADDRESS addr)
 {
 	return true; // dcbf is treated as a no-op if the data cache is disabled
 }
 
-bool CPU::Dcbst(ADDRESS addr)
+bool CPU::Dcbst(EFFECTIVE_ADDRESS addr)
 {
 	return true; // dcbst is treated as a no-op if the data cache is disabled
 }
 
-bool CPU::Dcbt(ADDRESS addr)
+bool CPU::Dcbt(EFFECTIVE_ADDRESS addr)
 {
 	if(hid0.Get<HID0::NOPTI>()) return true; // icbt is treated as a no-op if HID0[NOPTI]=1
 	
@@ -96,7 +96,7 @@ bool CPU::Dcbt(ADDRESS addr)
 	return true;
 }
 
-bool CPU::Dcbtst(ADDRESS addr)
+bool CPU::Dcbtst(EFFECTIVE_ADDRESS addr)
 {
 	if(hid0.Get<HID0::NOPTI>()) return true; // icbt is treated as a no-op if HID0[NOPTI]=1
 
@@ -104,14 +104,14 @@ bool CPU::Dcbtst(ADDRESS addr)
 	return true;
 }
 
-bool CPU::Dcbz(ADDRESS addr)
+bool CPU::Dcbz(EFFECTIVE_ADDRESS addr)
 {
 	// dcbz with writethrough cache results in an alignment interrupt
 	ThrowException<AlignmentInterrupt::WriteThroughDCBZ>().SetAddress(addr);
 	return false;
 }
 
-bool CPU::Icbi(ADDRESS addr)
+bool CPU::Icbi(EFFECTIVE_ADDRESS addr)
 {
 	if(msr.Get<MSR::PR>())
 	{
@@ -131,7 +131,7 @@ bool CPU::Icbi(ADDRESS addr)
 	return true;
 }
 
-bool CPU::Icbt(ADDRESS addr)
+bool CPU::Icbt(EFFECTIVE_ADDRESS addr)
 {
 	if(hid0.Get<HID0::NOPTI>()) return true; // icbt is treated as a no-op if HID0[NOPTI]=1
 	

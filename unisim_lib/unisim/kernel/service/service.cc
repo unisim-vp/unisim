@@ -1627,12 +1627,6 @@ Formula<double>::operator std::string () const
 }
 
 template <>
-const char *Formula<bool>::GetDataTypeName() const
-{
-	return "boolean";
-}
-
-template <>
 const char *Formula<signed char>::GetDataTypeName() const
 {
 	return GetSignedDataTypeName<signed char>();
@@ -1738,7 +1732,6 @@ template class VariableArray<float>;
 template class VariableArray<double>;
 template class VariableArray<std::string>;
 
-template class Formula<bool>;
 template class Formula<signed char>;
 template class Formula<short>;
 template class Formula<int>;

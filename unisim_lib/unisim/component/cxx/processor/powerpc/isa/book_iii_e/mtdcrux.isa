@@ -35,7 +35,7 @@
 op mtdcrux(31[6]:rs[5]:ra[5]:?[5]:419[10]:?[1])
 
 mtdcrux.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 	return false;
 }
 

@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_E200_MPC57XX_CPU_TCC__
 
 #include <unisim/component/cxx/processor/powerpc/cpu.tcc>
+#include <unisim/util/simfloat/floating.tcc>
 
 namespace unisim {
 namespace component {
@@ -51,8 +52,8 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, SuperCPU(name, parent)
 	, SuperMSS()
 	, unisim::kernel::service::Client<unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> >(name, parent)
-	, unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<ADDRESS> >(name, parent)
-	, unisim::kernel::service::Service<unisim::service::interfaces::Memory<ADDRESS> >(name, parent)
+	, unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS> >(name, parent)
+	, unisim::kernel::service::Service<unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS> >(name, parent)
 	, memory_import("memory-import", this)
 	, disasm_export("disasm-export", this)
 	, memory_export("memory-export", this)
@@ -124,7 +125,7 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, param_trap_debug_interrupt("trap-debug-interrupt", this, trap_debug_interrupt, "enable/disable trap (in debugger) of debug interrupt")
 	, enable_auto_vectored_interrupts(true)
 	, vector_offset(0x0)
-	, instruction_buffer_base_addr(~ADDRESS(0))
+	, instruction_buffer_base_addr(~EFFECTIVE_ADDRESS(0))
 	, instruction_buffer()
 	, vle_decoder()
 	, operation(0)
@@ -286,7 +287,7 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(SystemResetInterrupt *system_reset_int
 	msr.template Set<typename SystemResetInterrupt::MSR_CLEARED_FIELDS>(0);
 	
 	// Vector: p_rstbase[0:29] || 2'b00
-	this->cia = this->reset_addr & B0_29::template GetMask<ADDRESS>();
+	this->cia = this->reset_addr & B0_29::template GetMask<EFFECTIVE_ADDRESS>();
 	
 	this->template AckInterrupt<SystemResetInterrupt>();
 }
@@ -341,7 +342,7 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(MachineCheckInterrupt *machine_check_i
 	if(hid0.template Get<typename HID0::MCCLRDE>()) msr.template Set<typename MSR::DE>(0);
 	
 	// Vector: IVPR[0:23] || 0x10
-	this->cia = (ivpr & B0_23::template GetMask<ADDRESS>()) | (MachineCheckInterrupt::OFFSET & B24_31::template GetMask<ADDRESS>());
+	this->cia = (ivpr & B0_23::template GetMask<EFFECTIVE_ADDRESS>()) | (MachineCheckInterrupt::OFFSET & B24_31::template GetMask<EFFECTIVE_ADDRESS>());
 	
 	machine_check_interrupt->ClearEvents();
 	
@@ -369,7 +370,7 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(DataStorageInterrupt *data_storage_int
 	msr.template Set<typename DataStorageInterrupt::MSR_CLEARED_FIELDS>(0);
 	
 	// Vector: IVPR[0:23] || 0x20
-	this->cia = (ivpr & B0_23::template GetMask<ADDRESS>()) | (DataStorageInterrupt::OFFSET & B24_31::template GetMask<ADDRESS>());
+	this->cia = (ivpr & B0_23::template GetMask<EFFECTIVE_ADDRESS>()) | (DataStorageInterrupt::OFFSET & B24_31::template GetMask<EFFECTIVE_ADDRESS>());
 
 	this->template AckInterrupt<DataStorageInterrupt>();
 	
@@ -392,7 +393,7 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(InstructionStorageInterrupt *instructi
 	msr.template Set<typename InstructionStorageInterrupt::MSR_CLEARED_FIELDS>(0);
 
 	// Vector: IVPR[0:23] || 0x30
-	this->cia = (ivpr & B0_23::template GetMask<ADDRESS>()) | (InstructionStorageInterrupt::OFFSET & B24_31::template GetMask<ADDRESS>());
+	this->cia = (ivpr & B0_23::template GetMask<EFFECTIVE_ADDRESS>()) | (InstructionStorageInterrupt::OFFSET & B24_31::template GetMask<EFFECTIVE_ADDRESS>());
 
 	this->template AckInterrupt<InstructionStorageInterrupt>();
 }
@@ -417,7 +418,7 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(AlignmentInterrupt *alignment_interrup
 	msr.template Set<typename AlignmentInterrupt::MSR_CLEARED_FIELDS>(0);
 	
 	// Vector: IVPR[0:23] || 0x50
-	this->cia = (ivpr & B0_23::template GetMask<ADDRESS>()) | (AlignmentInterrupt::OFFSET & B24_31::template GetMask<ADDRESS>());
+	this->cia = (ivpr & B0_23::template GetMask<EFFECTIVE_ADDRESS>()) | (AlignmentInterrupt::OFFSET & B24_31::template GetMask<EFFECTIVE_ADDRESS>());
 
 	this->template AckInterrupt<AlignmentInterrupt>();
 	
@@ -452,7 +453,7 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(ProgramInterrupt *program_interrupt)
 	msr.template Set<typename ProgramInterrupt::MSR_CLEARED_FIELDS>(0);
 	
 	// Vector: IVPR[0:23] || 0x60
-	this->cia = (ivpr & B0_23::template GetMask<ADDRESS>()) | (ProgramInterrupt::OFFSET & B24_31::template GetMask<ADDRESS>());
+	this->cia = (ivpr & B0_23::template GetMask<EFFECTIVE_ADDRESS>()) | (ProgramInterrupt::OFFSET & B24_31::template GetMask<EFFECTIVE_ADDRESS>());
 
 	this->template AckInterrupt<ProgramInterrupt>();
 }
@@ -474,7 +475,7 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(EmbeddedFloatingPointDataInterrupt *em
 	msr.template Set<typename EmbeddedFloatingPointDataInterrupt::MSR_CLEARED_FIELDS>(0);
 	
 	// Vector: IVPR[0:23] || 0xA0
-	this->cia = (ivpr & B0_23::template GetMask<ADDRESS>()) | (EmbeddedFloatingPointDataInterrupt::OFFSET & B24_31::template GetMask<ADDRESS>());
+	this->cia = (ivpr & B0_23::template GetMask<EFFECTIVE_ADDRESS>()) | (EmbeddedFloatingPointDataInterrupt::OFFSET & B24_31::template GetMask<EFFECTIVE_ADDRESS>());
 	
 	this->template AckInterrupt<EmbeddedFloatingPointDataInterrupt>();
 }
@@ -496,7 +497,7 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(EmbeddedFloatingPointRoundInterrupt *e
 	msr.template Set<typename EmbeddedFloatingPointDataInterrupt::MSR_CLEARED_FIELDS>(0);
 	
 	// Vector: IVPR[0:23] || 0xB0
-	this->cia = (ivpr & B0_23::template GetMask<ADDRESS>()) | (EmbeddedFloatingPointRoundInterrupt::OFFSET & B24_31::template GetMask<ADDRESS>());
+	this->cia = (ivpr & B0_23::template GetMask<EFFECTIVE_ADDRESS>()) | (EmbeddedFloatingPointRoundInterrupt::OFFSET & B24_31::template GetMask<EFFECTIVE_ADDRESS>());
 	
 	this->template AckInterrupt<EmbeddedFloatingPointRoundInterrupt>();
 }
@@ -517,7 +518,7 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(SystemCallInterrupt *system_call_inter
 	msr.template Set<typename SystemCallInterrupt::MSR_CLEARED_FIELDS>(0);
 	
 	// Vector: IVPR[0:23] || 0xB0
-	this->cia = (ivpr & B0_23::template GetMask<ADDRESS>()) | (SystemCallInterrupt::OFFSET & B24_31::template GetMask<ADDRESS>());
+	this->cia = (ivpr & B0_23::template GetMask<EFFECTIVE_ADDRESS>()) | (SystemCallInterrupt::OFFSET & B24_31::template GetMask<EFFECTIVE_ADDRESS>());
 	
 	this->template AckInterrupt<SystemCallInterrupt>();
 	
@@ -541,12 +542,12 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(CriticalInputInterrupt *critical_input
 	if(enable_auto_vectored_interrupts)
 	{
 		// Vector: IVPR[0:23] || 0x00 (autovectored)
-		this->cia = (ivpr & B0_23::template GetMask<ADDRESS>()) | (CriticalInputInterrupt::OFFSET & B24_31::template GetMask<ADDRESS>());
+		this->cia = (ivpr & B0_23::template GetMask<EFFECTIVE_ADDRESS>()) | (CriticalInputInterrupt::OFFSET & B24_31::template GetMask<EFFECTIVE_ADDRESS>());
 	}
 	else
 	{
 		// Vector: IVPR[0:15] || (IVPR[16:29] | p_voffset[0:13]) || 2'b00 (non-autovectored)
-		this->cia = (ivpr & B0_15::template GetMask<ADDRESS>()) | ((ivpr | vector_offset) & B16_29::template GetMask<ADDRESS>());
+		this->cia = (ivpr & B0_15::template GetMask<EFFECTIVE_ADDRESS>()) | ((ivpr | vector_offset) & B16_29::template GetMask<EFFECTIVE_ADDRESS>());
 		
 		InterruptAcknowledge();
 	}
@@ -568,12 +569,12 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(ExternalInputInterrupt *external_input
 	if(enable_auto_vectored_interrupts)
 	{
 		// Vector: IVPR[0:23] || 0x00 (autovectored)
-		this->cia = (ivpr & B0_23::template GetMask<ADDRESS>()) | (ExternalInputInterrupt::OFFSET & B24_31::template GetMask<ADDRESS>());
+		this->cia = (ivpr & B0_23::template GetMask<EFFECTIVE_ADDRESS>()) | (ExternalInputInterrupt::OFFSET & B24_31::template GetMask<EFFECTIVE_ADDRESS>());
 	}
 	else
 	{
 		// Vector: IVPR[0:15] || (IVPR[16:29] | p_voffset[0:13]) || 2'b00 (non-autovectored)
-		this->cia = (ivpr & B0_15::template GetMask<ADDRESS>()) | ((ivpr | vector_offset) & B16_29::template GetMask<ADDRESS>());
+		this->cia = (ivpr & B0_15::template GetMask<EFFECTIVE_ADDRESS>()) | ((ivpr | vector_offset) & B16_29::template GetMask<EFFECTIVE_ADDRESS>());
 		
 		InterruptAcknowledge();
 	}
@@ -616,7 +617,7 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(PerformanceMonitorInterrupt *performan
 #endif
 	
 	// Vector: IVPR[0:23] || 0x70
-	this->cia = (ivpr & B0_23::template GetMask<ADDRESS>()) | (PerformanceMonitorInterrupt::OFFSET & B24_31::template GetMask<ADDRESS>());
+	this->cia = (ivpr & B0_23::template GetMask<EFFECTIVE_ADDRESS>()) | (PerformanceMonitorInterrupt::OFFSET & B24_31::template GetMask<EFFECTIVE_ADDRESS>());
 	
 	this->template AckInterrupt<PerformanceMonitorInterrupt>();
 }
@@ -670,7 +671,7 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(DebugInterrupt *debug_interrupt)
 	}
 	
 	// Vector: IVPR[0:23] || 0xB0
-	this->cia = (ivpr & B0_23::template GetMask<ADDRESS>()) | (DebugInterrupt::OFFSET & B24_31::template GetMask<ADDRESS>());
+	this->cia = (ivpr & B0_23::template GetMask<EFFECTIVE_ADDRESS>()) | (DebugInterrupt::OFFSET & B24_31::template GetMask<EFFECTIVE_ADDRESS>());
 	
 	debug_interrupt->ClearEvents();
 	
@@ -735,24 +736,24 @@ void CPU<TYPES, CONFIG>::SetAutoVector(bool value)
 }
 
 template <typename TYPES, typename CONFIG>
-void CPU<TYPES, CONFIG>::SetVectorOffset(ADDRESS value)
+void CPU<TYPES, CONFIG>::SetVectorOffset(EFFECTIVE_ADDRESS value)
 {
 	vector_offset = value & 0xfffffffcUL;
 }
 
 template <typename TYPES, typename CONFIG>
 template <bool DEBUG, bool EXEC, bool WRITE>
-inline bool CPU<TYPES, CONFIG>::ControlAccess(ADDRESS addr, ADDRESS& size_to_protection_boundary, STORAGE_ATTR& storage_attr)
+inline bool CPU<TYPES, CONFIG>::ControlAccess(EFFECTIVE_ADDRESS addr, EFFECTIVE_ADDRESS& size_to_protection_boundary, STORAGE_ATTR& storage_attr)
 {
 	return static_cast<typename CONFIG::CPU *>(this)->template ControlAccess<DEBUG, EXEC, WRITE>(addr, size_to_protection_boundary, storage_attr);
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::DataLoad(ADDRESS ea, void *buffer, unsigned int size)
+bool CPU<TYPES, CONFIG>::DataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size)
 {
 	do
 	{
-		ADDRESS size_to_protection_boundary;
+		EFFECTIVE_ADDRESS size_to_protection_boundary;
 		STORAGE_ATTR storage_attr;
 		if(unlikely((!ControlAccess</* debug */ false, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, storage_attr)))) return false;
 		
@@ -762,6 +763,7 @@ bool CPU<TYPES, CONFIG>::DataLoad(ADDRESS ea, void *buffer, unsigned int size)
 	
 		ea += sz;
 		size -= sz;
+		buffer = (uint8_t *) buffer + sz;
 	}
 	while(unlikely(size));
 	
@@ -769,11 +771,11 @@ bool CPU<TYPES, CONFIG>::DataLoad(ADDRESS ea, void *buffer, unsigned int size)
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::DataStore(ADDRESS ea, const void *buffer, unsigned int size)
+bool CPU<TYPES, CONFIG>::DataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size)
 {
 	do
 	{
-		ADDRESS size_to_protection_boundary;
+		EFFECTIVE_ADDRESS size_to_protection_boundary;
 		STORAGE_ATTR storage_attr;
 		if(unlikely((!ControlAccess</* debug */ false, /* exec */ false, /* write */ true>(ea, size_to_protection_boundary, storage_attr)))) return false;
 		
@@ -783,6 +785,7 @@ bool CPU<TYPES, CONFIG>::DataStore(ADDRESS ea, const void *buffer, unsigned int 
 	
 		ea += sz;
 		size -= sz;
+		buffer = (const uint8_t *) buffer + sz;
 	}
 	while(unlikely(size));
 	
@@ -790,11 +793,11 @@ bool CPU<TYPES, CONFIG>::DataStore(ADDRESS ea, const void *buffer, unsigned int 
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::DebugDataLoad(ADDRESS ea, void *buffer, unsigned int size)
+bool CPU<TYPES, CONFIG>::DebugDataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size)
 {
 	do
 	{
-		ADDRESS size_to_protection_boundary;
+		EFFECTIVE_ADDRESS size_to_protection_boundary;
 		STORAGE_ATTR storage_attr;
 		if(unlikely((!ControlAccess</* debug */ true, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, storage_attr)))) return false;
 		
@@ -804,6 +807,7 @@ bool CPU<TYPES, CONFIG>::DebugDataLoad(ADDRESS ea, void *buffer, unsigned int si
 	
 		ea += sz;
 		size -= sz;
+		buffer = (uint8_t *) buffer + sz;
 	}
 	while(unlikely(size));
 	
@@ -811,11 +815,11 @@ bool CPU<TYPES, CONFIG>::DebugDataLoad(ADDRESS ea, void *buffer, unsigned int si
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::DebugDataStore(ADDRESS ea, const void *buffer, unsigned int size)
+bool CPU<TYPES, CONFIG>::DebugDataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size)
 {
 	do
 	{
-		ADDRESS size_to_protection_boundary;
+		EFFECTIVE_ADDRESS size_to_protection_boundary;
 		STORAGE_ATTR storage_attr;
 		if(unlikely((!ControlAccess</* debug */ true, /* exec */ false, /* write */ true>(ea, size_to_protection_boundary, storage_attr)))) return false;
 		
@@ -825,6 +829,7 @@ bool CPU<TYPES, CONFIG>::DebugDataStore(ADDRESS ea, const void *buffer, unsigned
 	
 		ea += sz;
 		size -= sz;
+		buffer = (const uint8_t *) buffer + sz;
 	}
 	while(unlikely(size));
 	
@@ -833,7 +838,7 @@ bool CPU<TYPES, CONFIG>::DebugDataStore(ADDRESS ea, const void *buffer, unsigned
 
 template <typename TYPES, typename CONFIG>
 template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN>
-inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, ADDRESS ea)
+inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, EFFECTIVE_ADDRESS ea)
 {
 	uint32_t size_to_fsb_boundary = CONFIG::DATA_FSB_WIDTH - (ea & (CONFIG::DATA_FSB_WIDTH - 1));
 
@@ -849,7 +854,7 @@ inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, ADDRESS ea)
 
 		if(unlikely(!DataLoad(ea, &value, size_to_fsb_boundary))) return false;
 		
-		ADDRESS ea2 = ea + size_to_fsb_boundary;
+		EFFECTIVE_ADDRESS ea2 = ea + size_to_fsb_boundary;
 		
 		if(unlikely(!DataLoad(ea2, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary))) return false;
 	}
@@ -868,7 +873,7 @@ inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, ADDRESS ea)
 
 template <typename TYPES, typename CONFIG>
 template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN>
-inline bool CPU<TYPES, CONFIG>::DataStore(T value, ADDRESS ea)
+inline bool CPU<TYPES, CONFIG>::DataStore(T value, EFFECTIVE_ADDRESS ea)
 {
 #if BYTE_ORDER == LITTLE_ENDIAN
 	if(!REVERSE || FORCE_BIG_ENDIAN)
@@ -893,7 +898,7 @@ inline bool CPU<TYPES, CONFIG>::DataStore(T value, ADDRESS ea)
 
 		if(unlikely(!DataStore(ea, &value, size_to_fsb_boundary))) return false;
 		
-		ADDRESS ea2 = ea + size_to_fsb_boundary;
+		EFFECTIVE_ADDRESS ea2 = ea + size_to_fsb_boundary;
 		
 		if(unlikely(!DataStore(ea2, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary))) return false;
 	}
@@ -1058,7 +1063,7 @@ bool CPU<TYPES, CONFIG>::AHBDebugDataWrite(PHYSICAL_ADDRESS physical_addr, const
 }
 
 template <typename TYPES, typename CONFIG>
-std::string CPU<TYPES, CONFIG>::Disasm(ADDRESS addr, ADDRESS& next_addr)
+std::string CPU<TYPES, CONFIG>::Disasm(EFFECTIVE_ADDRESS addr, EFFECTIVE_ADDRESS& next_addr)
 {
 	std::stringstream sstr;
 	typename CONFIG::VLE_OPERATION *operation;
@@ -1124,47 +1129,47 @@ std::string CPU<TYPES, CONFIG>::Disasm(ADDRESS addr, ADDRESS& next_addr)
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::ReadMemory(ADDRESS addr, void *buffer, uint32_t size)
+bool CPU<TYPES, CONFIG>::ReadMemory(EFFECTIVE_ADDRESS addr, void *buffer, uint32_t size)
 {
 	return this->DebugDataLoad(addr, buffer, size);
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::WriteMemory(ADDRESS addr, const void *buffer, uint32_t size)
+bool CPU<TYPES, CONFIG>::WriteMemory(EFFECTIVE_ADDRESS addr, const void *buffer, uint32_t size)
 {
 	return this->DebugDataStore(addr, buffer, size);
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Lbarx(unsigned int rd, ADDRESS addr)
+bool CPU<TYPES, CONFIG>::Lbarx(unsigned int rd, EFFECTIVE_ADDRESS addr)
 {
 	// TODO: reservation logic
 	return this->Int8Load(rd, addr);
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Lharx(unsigned int rd, ADDRESS addr)
+bool CPU<TYPES, CONFIG>::Lharx(unsigned int rd, EFFECTIVE_ADDRESS addr)
 {
 	// TODO: reservation logic
 	return this->Int16Load(rd, addr);
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Lwarx(unsigned int rd, ADDRESS addr)
+bool CPU<TYPES, CONFIG>::Lwarx(unsigned int rd, EFFECTIVE_ADDRESS addr)
 {
 	// TODO: reservation logic
-	return this->Int16Load(rd, addr);
+	return this->Int32Load(rd, addr);
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Mbar(ADDRESS addr)
+bool CPU<TYPES, CONFIG>::Mbar(EFFECTIVE_ADDRESS addr)
 {
 	this->template ThrowException<typename ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Stbcx(unsigned int rs, ADDRESS addr)
+bool CPU<TYPES, CONFIG>::Stbcx(unsigned int rs, EFFECTIVE_ADDRESS addr)
 {
 	// TODO: reservation logic
 	// Note: Address match with prior lbarx, lharx, or lwarx not required for store to be performed
@@ -1179,7 +1184,7 @@ bool CPU<TYPES, CONFIG>::Stbcx(unsigned int rs, ADDRESS addr)
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Sthcx(unsigned int rs, ADDRESS addr)
+bool CPU<TYPES, CONFIG>::Sthcx(unsigned int rs, EFFECTIVE_ADDRESS addr)
 {
 	// TODO: reservation logic
 	// Note: Address match with prior lbarx, lharx, or lwarx not required for store to be performed
@@ -1194,7 +1199,7 @@ bool CPU<TYPES, CONFIG>::Sthcx(unsigned int rs, ADDRESS addr)
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Stwcx(unsigned int rs, ADDRESS addr)
+bool CPU<TYPES, CONFIG>::Stwcx(unsigned int rs, EFFECTIVE_ADDRESS addr)
 {
 	// TODO: reservation logic
 	// Note: Address match with prior lbarx, lharx, or lwarx not required for store to be performed
@@ -1238,7 +1243,7 @@ bool CPU<TYPES, CONFIG>::Rfi()
 	
 	struct B0_30 : Field<void, 0, 30> {};
 
-	this->Branch(srr0 & B0_30::template GetMask<ADDRESS>());
+	this->Branch(srr0 & B0_30::template GetMask<EFFECTIVE_ADDRESS>());
 	msr = srr1;
 	
 	if(unlikely(this->verbose_interrupt))
@@ -1263,7 +1268,7 @@ bool CPU<TYPES, CONFIG>::Rfci()
 	
 	struct B0_30 : Field<void, 0, 30> {};
 
-	this->Branch(csrr0 & B0_30::template GetMask<ADDRESS>());
+	this->Branch(csrr0 & B0_30::template GetMask<EFFECTIVE_ADDRESS>());
 	msr = csrr1;
 	
 	if(unlikely(this->verbose_interrupt))
@@ -1288,7 +1293,7 @@ bool CPU<TYPES, CONFIG>::Rfdi()
 	
 	struct B0_30 : Field<void, 0, 30> {};
 
-	this->Branch(dsrr0 & B0_30::template GetMask<ADDRESS>());
+	this->Branch(dsrr0 & B0_30::template GetMask<EFFECTIVE_ADDRESS>());
 	msr = dsrr1;
 	
 	if(unlikely(this->verbose_interrupt))
@@ -1313,7 +1318,7 @@ bool CPU<TYPES, CONFIG>::Rfmci()
 	
 	struct B0_30 : Field<void, 0, 30> {};
 	
-	this->Branch(mcsrr0 & B0_30::template GetMask<ADDRESS>());
+	this->Branch(mcsrr0 & B0_30::template GetMask<EFFECTIVE_ADDRESS>());
 	msr = mcsrr1;
 	
 	if(unlikely(this->verbose_interrupt))
@@ -1330,15 +1335,15 @@ bool CPU<TYPES, CONFIG>::Rfmci()
 template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::FlushInstructionBuffer()
 {
-	instruction_buffer_base_addr = ~ADDRESS(0);
+	instruction_buffer_base_addr = ~EFFECTIVE_ADDRESS(0);
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::InstructionFetch(ADDRESS ea, void *buffer, unsigned int size)
+bool CPU<TYPES, CONFIG>::InstructionFetch(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size)
 {
 	do
 	{
-		ADDRESS size_to_protection_boundary;
+		EFFECTIVE_ADDRESS size_to_protection_boundary;
 		STORAGE_ATTR storage_attr;
 		if(unlikely((!ControlAccess</* debug */ false, /* exec */ true, /* write */ false>(ea, size_to_protection_boundary, storage_attr)))) return false;
 		
@@ -1348,6 +1353,7 @@ bool CPU<TYPES, CONFIG>::InstructionFetch(ADDRESS ea, void *buffer, unsigned int
 	
 		ea += sz;
 		size -= sz;
+		buffer = (uint8_t *) buffer + sz;
 	}
 	while(unlikely(size));
 	
@@ -1355,11 +1361,11 @@ bool CPU<TYPES, CONFIG>::InstructionFetch(ADDRESS ea, void *buffer, unsigned int
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::DebugInstructionFetch(ADDRESS ea, void *buffer, unsigned int size)
+bool CPU<TYPES, CONFIG>::DebugInstructionFetch(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size)
 {
 	do
 	{
-		ADDRESS size_to_protection_boundary;
+		EFFECTIVE_ADDRESS size_to_protection_boundary;
 		STORAGE_ATTR storage_attr;
 		if(unlikely((!ControlAccess</* debug */ true, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, storage_attr)))) return false;
 		
@@ -1369,6 +1375,7 @@ bool CPU<TYPES, CONFIG>::DebugInstructionFetch(ADDRESS ea, void *buffer, unsigne
 	
 		ea += sz;
 		size -= sz;
+		buffer = (uint8_t *) buffer + sz;
 	}
 	while(unlikely(size));
 	
@@ -1376,9 +1383,9 @@ bool CPU<TYPES, CONFIG>::DebugInstructionFetch(ADDRESS ea, void *buffer, unsigne
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::InstructionFetch(ADDRESS addr, typename CONFIG::VLE_CODE_TYPE& insn)
+bool CPU<TYPES, CONFIG>::InstructionFetch(EFFECTIVE_ADDRESS addr, typename CONFIG::VLE_CODE_TYPE& insn)
 {
-	ADDRESS base_addr = addr & ~(CONFIG::INSTRUCTION_BUFFER_SIZE - 1);
+	EFFECTIVE_ADDRESS base_addr = addr & ~(CONFIG::INSTRUCTION_BUFFER_SIZE - 1);
 	int instruction_buffer_index = (addr / 2) % (CONFIG::INSTRUCTION_BUFFER_SIZE / 2);
 	
 	if(base_addr != instruction_buffer_base_addr)
@@ -1449,7 +1456,7 @@ void CPU<TYPES, CONFIG>::StepOneInstruction()
 		this->debug_yielding_import->DebugYield();
 	}
 
-	ADDRESS addr = this->cia;
+	EFFECTIVE_ADDRESS addr = this->cia;
 	uint32_t insn = 0;
 	if(likely(InstructionFetch(addr, insn)))
 	{
@@ -1463,39 +1470,37 @@ void CPU<TYPES, CONFIG>::StepOneInstruction()
 			operation->disasm(static_cast<typename CONFIG::CPU *>(this), sstr);
 			this->logger << DebugInfo << "executing instruction #" << this->instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << EndDebugInfo;
 		}
-		else
+		
+		/* execute the instruction */
+		if(likely(operation->execute(static_cast<typename CONFIG::CPU *>(this))))
 		{
-			/* execute the instruction */
-			if(likely(operation->execute(static_cast<typename CONFIG::CPU *>(this))))
+			/* update the instruction counter */
+			this->instruction_counter++;
+			
+			/* report a finished instruction */
+			if(unlikely(this->requires_commit_instruction_reporting))
 			{
-				/* update the instruction counter */
-				this->instruction_counter++;
-				
-				/* report a finished instruction */
-				if(unlikely(this->requires_commit_instruction_reporting))
+				if(unlikely(this->memory_access_reporting_import != 0))
 				{
-					if(unlikely(this->memory_access_reporting_import != 0))
-					{
-						this->memory_access_reporting_import->ReportCommitInstruction(this->cia, length);
-					}
+					this->memory_access_reporting_import->ReportCommitInstruction(this->cia, length);
 				}
-
-				/* go to the next instruction */
-				this->cia = this->nia;
-
-				if(unlikely(this->trap_reporting_import && (this->instruction_counter == this->trap_on_instruction_counter)))
-				{
-					this->trap_reporting_import->ReportTrap();
-				}
-				
-				if(unlikely((this->instruction_counter >= this->max_inst) || (this->cia == this->halt_on_addr))) this->Halt();
 			}
-			else if(unlikely(this->verbose_exception))
+
+			/* go to the next instruction */
+			this->cia = this->nia;
+
+			if(unlikely(this->trap_reporting_import && (this->instruction_counter == this->trap_on_instruction_counter)))
 			{
-				std::stringstream sstr;
-				operation->disasm(static_cast<typename CONFIG::CPU *>(this), sstr);
-				this->logger << DebugInfo << "Aborted instruction #" << this->instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << EndDebugInfo;
+				this->trap_reporting_import->ReportTrap();
 			}
+			
+			if(unlikely((this->instruction_counter >= this->max_inst) || (this->cia == this->halt_on_addr))) this->Halt();
+		}
+		else if(unlikely(this->verbose_exception))
+		{
+			std::stringstream sstr;
+			operation->disasm(static_cast<typename CONFIG::CPU *>(this), sstr);
+			this->logger << DebugInfo << "Aborted instruction #" << this->instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << EndDebugInfo;
 		}
 	}
 }

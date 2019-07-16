@@ -54,7 +54,7 @@ using unisim::kernel::tlm2::PayloadFabric;
 template <class CONFIG>
 class DCRController
 	: public unisim::component::cxx::interconnect::xilinx::dcr_controller::DCRController<CONFIG>
-	, public sc_module
+	, public sc_core::sc_module
 {
 public:
 	static const bool threaded_model = false;
@@ -66,7 +66,7 @@ public:
 	dcr_master_socket *dcr_master_sock[CONFIG::NUM_SLAVES];
 	dcr_slave_socket *dcr_slave_sock[CONFIG::NUM_MASTERS];
 	
-	DCRController(const sc_module_name& name, Object *parent = 0);
+	DCRController(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~DCRController();
 
 	virtual bool BeginSetup();
@@ -85,31 +85,31 @@ private:
 		{
 		public:
 			Key()
-				: time_stamp(SC_ZERO_TIME)
+				: time_stamp(sc_core::SC_ZERO_TIME)
 				, intf(-1)
 			{
 			}
 			
-			Key(const sc_time& _time_stamp, int _intf)
+			Key(const sc_core::sc_time& _time_stamp, int _intf)
 				: time_stamp(_time_stamp)
 				, intf(_intf)
 			{
 			}
 			
-			void Initialize(const sc_time& _time_stamp, int _intf)
+			void Initialize(const sc_core::sc_time& _time_stamp, int _intf)
 			{
 				time_stamp = _time_stamp;
 				intf = _intf;
 			}
 			
-			void SetTimeStamp(const sc_time& _time_stamp)
+			void SetTimeStamp(const sc_core::sc_time& _time_stamp)
 			{
 				time_stamp = _time_stamp;
 			}
 			
 			void Clear()
 			{
-				time_stamp = SC_ZERO_TIME;
+				time_stamp = sc_core::SC_ZERO_TIME;
 				intf = -1;
 			}
 			
@@ -118,7 +118,7 @@ private:
 				return (time_stamp < sk.time_stamp) || ((time_stamp == sk.time_stamp) && (intf < sk.intf));
 			}
 			
-			const sc_time& GetTimeStamp() const
+			const sc_core::sc_time& GetTimeStamp() const
 			{
 				return time_stamp;
 			}
@@ -128,7 +128,7 @@ private:
 				return intf;
 			}
 		private:
-			sc_time time_stamp;
+			sc_core::sc_time time_stamp;
 			int intf;
 		};
 
@@ -144,7 +144,7 @@ private:
 			Clear();
 		}
 		
-		void Initialize(tlm::tlm_generic_payload *_payload, int intf, const sc_time& time_stamp, sc_event *_ev_completed = 0)
+		void Initialize(tlm::tlm_generic_payload *_payload, int intf, const sc_core::sc_time& time_stamp, sc_core::sc_event *_ev_completed = 0)
 		{
 			_payload->acquire();
 			key.Initialize(time_stamp, intf);
@@ -168,12 +168,12 @@ private:
 			return key.GetInterface();
 		}
 		
-		void SetTimeStamp(const sc_time& time_stamp)
+		void SetTimeStamp(const sc_core::sc_time& time_stamp)
 		{
 			key.SetTimeStamp(time_stamp);
 		}
 		
-		const sc_time& GetTimeStamp() const
+		const sc_core::sc_time& GetTimeStamp() const
 		{
 			return key.GetTimeStamp();
 		}
@@ -188,14 +188,14 @@ private:
 			return key;
 		}
 		
-		sc_event *GetCompletionEvent() const
+		sc_core::sc_event *GetCompletionEvent() const
 		{
 			return ev_completed;
 		}
 	private:
 		Key key;
 		tlm::tlm_generic_payload *payload;
-		sc_event *ev_completed;
+		sc_core::sc_event *ev_completed;
 	};
 	
 	unisim::kernel::tlm2::Schedule<Event> schedule;
@@ -208,8 +208,8 @@ private:
 	
 	PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
 	
-	sc_time cycle_time;
-	Parameter<sc_time> param_cycle_time;
+	sc_core::sc_time cycle_time;
+	Parameter<sc_core::sc_time> param_cycle_time;
 
 	// Forward path
 	void b_transport(unsigned int num_master, tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
@@ -224,7 +224,7 @@ private:
 	void ProcessEvents();
 	void ProcessForwardEvent(Event *event);
 	void ProcessBackwardEvent(Event *event);
-	void DoTimeOutAccess(unsigned int num_master, sc_event *ev_completed, tlm::tlm_generic_payload *payload);
+	void DoTimeOutAccess(unsigned int num_master, sc_core::sc_event *ev_completed, tlm::tlm_generic_payload *payload);
 	void BindIndirectAccess(tlm::tlm_generic_payload *original_payload, tlm::tlm_generic_payload *payload, unsigned int num_master);
 	tlm::tlm_generic_payload *ResolveIndirectAccess(tlm::tlm_generic_payload *payload, unsigned int& num_master);
 };

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,32 +31,28 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/floating.hh>
-#include <unisim/util/simfloat/floating.tcc>
-#include <stdlib.h>
-#include <sstream>
 
-#ifdef powerpc
-#undef powerpc
-#endif
-
-template class unisim::util::simfloat::Numerics::Double::TBuiltDouble<unisim::component::cxx::processor::powerpc::e200::mpc57xx::BuiltFloatTraits>;
-template class unisim::util::simfloat::Numerics::Double::TBuiltDouble<unisim::component::cxx::processor::powerpc::e200::mpc57xx::BuiltDoubleTraits>;
-template class unisim::util::simfloat::Numerics::Double::TBuiltDouble<unisim::component::cxx::processor::powerpc::e200::mpc57xx::BuiltHalfFloatTraits>;
+#include <unisim/component/tlm2/processor/powerpc/book_e/ppc440/cpu.hh>
+#include <unisim/component/tlm2/processor/powerpc/book_e/cpu.tcc>
 
 namespace unisim {
 namespace component {
-namespace cxx {
+namespace tlm2 {
 namespace processor {
 namespace powerpc {
-namespace e200 {
-namespace mpc57xx {
+namespace book_e {
+namespace ppc440 {
 
-} // end of namespace mpc57xx
-} // end of namespace e200
+CPU::CPU(const sc_core::sc_module_name& name, Object *parent)
+	: unisim::kernel::service::Object(name, parent, "PPC440 PowerPC core")
+	, Super(name, parent)
+{
+}
+
+} // end of namespace ppc440
+} // end of namesapce book_e
 } // end of namespace powerpc
 } // end of namespace processor
-} // end of namespace cxx
+} // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim

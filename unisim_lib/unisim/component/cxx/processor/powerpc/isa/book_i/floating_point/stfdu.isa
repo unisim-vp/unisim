@@ -46,7 +46,7 @@ stfdu.execute = {
 		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 		return false;
 	}
-	if(unlikely(not cpu->GetMSR_FP()))
+	if(unlikely(not cpu->GetMSR().Get<CPU::MSR::FP>()))
 	{
 		cpu->ThrowException<CPU::FloatingPointUnavailableInterrupt::FloatingPointUnavailable>();
 		return false;

@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_HH__
 
 #include <unisim/util/reg/core/register.hh>
+#include <unisim/util/reg/core/register.tcc>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/nat_sort/nat_sort.hh>
@@ -54,6 +55,7 @@
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/util/debug/simple_register_registry.hh>
+#include <unisim/component/cxx/processor/powerpc/floating.hh>
 #include <map>
 #include <stack>
 #include <vector>
@@ -394,6 +396,7 @@ public:
 	struct FEX    : Field<FEX   , 1     > {}; // Floating-point enabled exception summary
 	struct VX     : Field<VX    , 2     > {}; // Floating-point invalid operation exception summary
 	struct OX     : Field<OX    , 3     > {}; // Floating-point overflow exception
+	struct _0_3   : Field<_0_3  , 0, 3  > {}; // FX, FEX, VX, OX bunch
 	struct UX     : Field<UX    , 4     > {}; // Floating-point underflow exception
 	struct ZX     : Field<ZX    , 5     > {}; // Floating-point zero divide exception
 	struct XX     : Field<XX    , 6     > {}; // Floating-point inexact exception
@@ -405,7 +408,19 @@ public:
 	struct VXVC   : Field<VXVC  , 12    > {}; // Floating-point invalid operation exception for invalid compare
 	struct FR     : Field<FR    , 13    > {}; // Floating-point fraction rounded
 	struct FI     : Field<FI    , 14    > {}; // Floating-point fraction inexact
-	struct FPRF   : Field<FPRF  , 15, 19> {}; // Floating-point result flags
+	struct FPRF   : Field<FPRF  , 15, 19>     // Floating-point result flags
+	{
+		static TYPE          QNAN    () { return 0x11; }
+		static TYPE NEGATIVE_INFINITY() { return 0x9; }
+		static TYPE NEGATIVE_NORMAL  () { return 0x8; }
+		static TYPE NEGATIVE_DENORMAL() { return 0x18; }
+		static TYPE NEGATIVE_ZERO    () { return 0x12; }
+		static TYPE POSITIVE_ZERO    () { return 0x2; }
+		static TYPE POSITIVE_DENORMAL() { return 0x14; }
+		static TYPE POSITIVE_NORMAL  () { return 0x4; }
+		static TYPE POSITIVE_INFINITY() { return 0x5; }
+	};
+	struct FPCC   : Field<FPCC  , 16, 19> {}; // Floating-Point Condition Code
 	struct VXSOFT : Field<VXSOFT, 21    > {}; // Floating-point invalid operation exception for software request
 	struct VXSQRT : Field<VXSQRT, 22    > {}; // Floating-point invalid operation exception for invalid square root
 	struct VXCVI  : Field<VXCVI , 23    > {}; // Floating-point invalid operation exception for invalid integer convert
@@ -423,6 +438,39 @@ public:
 	FPSCR() : Super() { Init(); }
 	FPSCR(uint32_t _value) : Super(_value) { Init(); }
 	using Super::operator =;
+	
+	void SetInexact(bool i)
+	{
+		this->template Set<FI>(i);
+		if(i)
+		{
+			SetException(XX());
+		}
+	}
+
+	template <typename FIELD>
+	void SetInvalid(FIELD const& vxfield)
+	{
+		SetException(vxfield);
+		this->template Set<VX>(1);
+	}
+
+	template <typename FIELD>
+	void SetException(FIELD const&)
+	{
+		if(not this->Get<FIELD>())
+		{
+			this->template Set<FX>(1); // Exception bit change from 0 to 1
+		}
+		this->template Set<FIELD>(1);
+		// Check if exception (VE, OE, UE, ZE, XE) is enable (enable bits locations are 22 bit
+		// upper than their exception bits counterparts that is VX, OX, UX, ZX, XX)
+		struct Enable : Field<Enable, FIELD::BITOFFSET + 22> {};
+		if(this->template Get<Enable>())
+		{
+			this->Set<FEX>(1);
+		}
+	}
 private:
 	void Init()
 	{
@@ -479,27 +527,11 @@ template <unsigned int SIZE> struct TypeForBitSize
 	static const TYPE MASK = (SIZE == (8 * BYTE_SIZE)) ? (~TYPE(0)) : ((TYPE(1) << SIZE) - 1);
 };
 
-////////////////////////////// PoolAllocator<> ////////////////////////////////
-
-template <typename OBJECT>
-class PoolAllocator
-{
-public:
-	PoolAllocator();
-	virtual ~PoolAllocator();
-	
-	OBJECT *Allocate();
-	void Free(OBJECT *object);
-private:
-	std::stack<OBJECT *, std::vector<OBJECT *> > free_list;
-	std::vector<OBJECT *> objects;
-};
-
 template <typename TYPES, typename CONFIG>
 class CPU
-	: public unisim::kernel::service::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::ADDRESS> >
+	: public unisim::kernel::service::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::EFFECTIVE_ADDRESS> >
 	, public unisim::kernel::service::Client<typename unisim::service::interfaces::DebugYielding>
-	, public unisim::kernel::service::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::ADDRESS> >
+	, public unisim::kernel::service::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::EFFECTIVE_ADDRESS> >
 	, public unisim::kernel::service::Client<typename unisim::service::interfaces::TrapReporting>
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::MemoryAccessReportingControl>
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
@@ -508,9 +540,9 @@ class CPU
 public:
 	/////////////////////////// service imports ///////////////////////////////
 
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::ADDRESS> > symbol_table_lookup_import;
+	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::EFFECTIVE_ADDRESS> > symbol_table_lookup_import;
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::DebugYielding> debug_yielding_import;
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::ADDRESS> > memory_access_reporting_import;
+	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::EFFECTIVE_ADDRESS> > memory_access_reporting_import;
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::TrapReporting> trap_reporting_import;
 	
 	/////////////////////////// service exports ///////////////////////////////
@@ -559,6 +591,10 @@ public:
 		
 	virtual void DCRRead(unsigned int dcrn, uint32_t& value) { value = 0; }
 	virtual void DCRWrite(unsigned int dcrn, uint32_t value) {}
+	
+	/////////////////////////// Internal timers ///////////////////////////////
+	
+	virtual void RunInternalTimers() {}
 
 	///////////// Interface with .isa behavioral description files ////////////
 	
@@ -576,11 +612,11 @@ public:
 	inline XER& GetXER() ALWAYS_INLINE { return xer; }
 	inline CR& GetCR() ALWAYS_INLINE { return cr; }
 	
-	inline typename TYPES::ADDRESS GetCIA() const ALWAYS_INLINE { return cia; }
+	inline typename TYPES::EFFECTIVE_ADDRESS GetCIA() const ALWAYS_INLINE { return cia; }
 	inline void SetCIA(uint32_t value) ALWAYS_INLINE { cia = value; }
-	inline typename TYPES::ADDRESS GetNIA() const ALWAYS_INLINE { return nia; }
-	inline void SetNIA(typename TYPES::ADDRESS value) ALWAYS_INLINE { nia = value; }
-	inline void Branch(typename TYPES::ADDRESS value) ALWAYS_INLINE { nia = value; }
+	inline typename TYPES::EFFECTIVE_ADDRESS GetNIA() const ALWAYS_INLINE { return nia; }
+	inline void SetNIA(typename TYPES::EFFECTIVE_ADDRESS value) ALWAYS_INLINE { nia = value; }
+	inline void Branch(typename TYPES::EFFECTIVE_ADDRESS value) ALWAYS_INLINE { nia = value; }
 
 	bool MoveFromSPR(unsigned int n, uint32_t& value);
 	bool MoveToSPR(unsigned int n, uint32_t value);
@@ -593,23 +629,23 @@ public:
 	bool MoveFromTMR(unsigned int n, uint32_t& value);
 	bool MoveToTMR(unsigned int n, uint32_t value);
 
-	bool Int8Load(unsigned int rd, typename TYPES::ADDRESS ea);
-	bool Int16Load(unsigned int rd, typename TYPES::ADDRESS ea);
-	bool SInt16Load(unsigned int rd, typename TYPES::ADDRESS ea);
-	bool Int32Load(unsigned int rd, typename TYPES::ADDRESS ea);
-	bool Int16LoadByteReverse(unsigned int rd, typename TYPES::ADDRESS ea);
-	bool Int32LoadByteReverse(unsigned int rd, typename TYPES::ADDRESS ea);
-	bool IntLoadMSBFirst(unsigned int rd, typename TYPES::ADDRESS ea, unsigned int size);
-	bool Int8Store(unsigned int rs, typename TYPES::ADDRESS ea);
-	bool Int16Store(unsigned int rs, typename TYPES::ADDRESS ea);
-	bool Int32Store(unsigned int rs, typename TYPES::ADDRESS ea);
-	bool Int16StoreByteReverse(unsigned int rs, typename TYPES::ADDRESS ea);
-	bool Int32StoreByteReverse(unsigned int rs, typename TYPES::ADDRESS ea);
-	bool IntStoreMSBFirst(unsigned int rs, typename TYPES::ADDRESS ea, unsigned int size);
-	template <typename REGISTER> bool SpecialLoad(REGISTER& reg, typename TYPES::ADDRESS ea);
-	template <typename REGISTER> bool SpecialStore(const REGISTER& reg, typename TYPES::ADDRESS ea);
+	bool Int8Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool SInt16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int32Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int16LoadByteReverse(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int32LoadByteReverse(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool IntLoadMSBFirst(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size);
+	bool Int8Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int16Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int32Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int16StoreByteReverse(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int32StoreByteReverse(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool IntStoreMSBFirst(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size);
+	template <typename REGISTER> bool SpecialLoad(REGISTER& reg, typename TYPES::EFFECTIVE_ADDRESS ea);
+	template <typename REGISTER> bool SpecialStore(const REGISTER& reg, typename TYPES::EFFECTIVE_ADDRESS ea);
 	
-	std::string GetObjectFriendlyName(typename TYPES::ADDRESS addr);
+	std::string GetObjectFriendlyName(typename TYPES::EFFECTIVE_ADDRESS addr);
 	
 	///////////////////////////////////////////////////////////////////////////
 protected:
@@ -687,14 +723,14 @@ protected:
 	template <typename INTERRUPT, unsigned int _OFFSET>
 	struct InterruptWithAddress : public Interrupt<INTERRUPT, _OFFSET>
 	{
-		void SetAddress(typename TYPES::ADDRESS _addr) { addr = _addr; has_addr = true; }
+		INTERRUPT& SetAddress(typename TYPES::EFFECTIVE_ADDRESS _addr) { addr = _addr; has_addr = true; return *static_cast<INTERRUPT *>(this); }
 		void ClearAddress() { has_addr = false; }
 		bool HasAddress() const { return has_addr; }
-		typename TYPES::ADDRESS GetAddress() const { return addr; }
+		typename TYPES::EFFECTIVE_ADDRESS GetAddress() const { return addr; }
 		
 	private:
 		bool has_addr;
-		typename TYPES::ADDRESS addr;
+		typename TYPES::EFFECTIVE_ADDRESS addr;
 	};
 	
 	
@@ -1177,7 +1213,7 @@ protected:
 				// Privilege Violation
 				if(cpu->verbose_move_to_slr)
 				{
-					cpu->GetDebugWarningStream() << "Move to " << this->GetName() << " is a privileged operation" << std::endl;
+					cpu->GetDebugWarningStream() << "Move to " << slr->GetName() << " is a privileged operation" << std::endl;
 				}
 				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::PrivilegeViolation>();
 				return false;
@@ -1188,7 +1224,7 @@ protected:
 				// Illegal Instruction
 				if(cpu->verbose_move_to_slr)
 				{
-					cpu->GetDebugWarningStream() << "Move to " << this->GetName() << " is an illegal operation" << std::endl;
+					cpu->GetDebugWarningStream() << "Move to " << slr->GetName() << " is an illegal operation" << std::endl;
 				}
 				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
 				return false;
@@ -1204,7 +1240,7 @@ protected:
 				// Privilege Violation
 				if(cpu->verbose_move_from_slr)
 				{
-					cpu->GetDebugWarningStream() << "Move from " << this->GetName() << " is a privileged operation" << std::endl;
+					cpu->GetDebugWarningStream() << "Move from " << slr->GetName() << " is a privileged operation" << std::endl;
 				}
 				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::PrivilegeViolation>();
 				return false;
@@ -1215,7 +1251,7 @@ protected:
 				// Illegal Instruction
 				if(cpu->verbose_move_from_slr)
 				{
-					cpu->GetDebugWarningStream() << "Move from " << this->GetName() << " is an illegal operation" << std::endl;
+					cpu->GetDebugWarningStream() << "Move from " << slr->GetName() << " is an illegal operation" << std::endl;
 				}
 				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
 				return false;
@@ -1726,22 +1762,22 @@ public:
 		
 		void Init()
 		{
-			this->SetName("msr"); this->SetDescription("Machine State Register");
-			SPV::SetName("spv");  SPV::SetDescription("SP/Embedded FP/Vector available");
-			WE ::SetName("we");   WE ::SetDescription("Wait state (Power management) enable");
-			CE ::SetName("ce");   CE ::SetDescription("Critical Interrupt Enable");
-			EE ::SetName("ee");   EE ::SetDescription("External Interrupt Enable");
-			PR ::SetName("pr");   PR ::SetDescription("Problem State");
-			FP ::SetName("fp");   FP ::SetDescription("Floating-Point Available");
-			ME ::SetName("me");   ME ::SetDescription("Machine Check Enable");
-			FE0::SetName("fe0");  FE0::SetDescription("Floating-point exception mode 0");
-			DWE::SetName("dwe");  DWE::SetDescription("Debug Wait Enable");
-			DE ::SetName("de");   DE ::SetDescription("Debug Interrupt Enable");
-			FE1::SetName("fe1");  FE1::SetDescription("Floating-point exception mode 1");
-			IS ::SetName("is");   IS ::SetDescription("Instruction Address Space");
-			DS ::SetName("ds");   DS ::SetDescription("Data Address Space");
-			PMM::SetName("pmm");  PMM::SetDescription("PMM Performance monitor mark bit");
-			RI ::SetName("ri");   RI ::SetDescription("Recoverable Interrupt");
+			this->SetName("MSR"); this->SetDescription("Machine State Register");
+			SPV::SetName("SPV");  SPV::SetDescription("SP/Embedded FP/Vector available");
+			WE ::SetName("WE");   WE ::SetDescription("Wait state (Power management) enable");
+			CE ::SetName("CE");   CE ::SetDescription("Critical Interrupt Enable");
+			EE ::SetName("EE");   EE ::SetDescription("External Interrupt Enable");
+			PR ::SetName("PR");   PR ::SetDescription("Problem State");
+			FP ::SetName("FP");   FP ::SetDescription("Floating-Point Available");
+			ME ::SetName("ME");   ME ::SetDescription("Machine Check Enable");
+			FE0::SetName("FE0");  FE0::SetDescription("Floating-point exception mode 0");
+			DWE::SetName("DWE");  DWE::SetDescription("Debug Wait Enable");
+			DE ::SetName("DE");   DE ::SetDescription("Debug Interrupt Enable");
+			FE1::SetName("FE1");  FE1::SetDescription("Floating-point exception mode 1");
+			IS ::SetName("IS");   IS ::SetDescription("Instruction Address Space");
+			DS ::SetName("DS");   DS ::SetDescription("Data Address Space");
+			PMM::SetName("PMM");  PMM::SetDescription("PMM Performance monitor mark bit");
+			RI ::SetName("RI");   RI ::SetDescription("Recoverable Interrupt");
 			
 			cpu->AddRegisterInterface(this->CreateRegisterInterface());
 		}
@@ -1761,6 +1797,20 @@ public:
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
+		
+		virtual bool MoveFrom(uint32_t& value)
+		{
+			this->cpu->RunInternalTimers();
+			return Super::MoveFrom(value);
+		}
+		
+		virtual bool MoveTo(uint32_t value)
+		{
+			this->cpu->RunInternalTimers();
+			bool status = Super::MoveTo(value);
+			this->cpu->RunInternalTimers();
+			return status;
+		}
 	private:
 		void Init() { this->SetName("DEC"); this->SetDescription("Decrementer"); }
 	};
@@ -1809,6 +1859,7 @@ public:
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<Process_ID> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<Process_ID> ALL; };
+		CASE_ENUM_TRAIT(PPC440, _) { typedef FieldSet<Process_ID> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		PID0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
@@ -1951,10 +2002,12 @@ protected:
 		typedef PrivilegedSPR<IVPR, 63> Super;
 		
 		struct Vector_Base : Field<Vector_Base, 0, 23> {}; // Vector Base
+		struct IVP         : Field<IVP        , 0, 15> {}; // Interrupt Vector Prefix
 		
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<Vector_Base> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<Vector_Base> ALL; };
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<IVP> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		IVPR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
@@ -1967,6 +2020,7 @@ protected:
 		{
 			             this->SetName("ivpr");                     this->SetDescription("Interrupt Vector Prefix Register");
 			Vector_Base::SetName("vector_base"); Vector_Base::SetDescription("Vector Base");
+			IVP        ::SetName("IVP");         IVP        ::SetDescription("Interrupt Vector Prefix");
 		}
 	};
 	
@@ -2157,10 +2211,12 @@ protected:
 		
 		struct ID_0_23  : Field<ID_0_23 , 0, 23>  {}; // bits 0:23
 		struct ID_24_31 : Field<ID_24_31, 24, 31> {}; // bits 24:31
+		struct PIN      : Field<PIN     , 28, 31> {}; // Processor Identification Number
 		
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<ID_0_23, ID_24_31> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<ID_0_23, ID_24_31> ALL; };
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<PIN> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		PIR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
@@ -2171,6 +2227,8 @@ protected:
 		{
 			this->SetName("pir");
 			this->SetDescription("Processor ID Register");
+			
+			PIN::SetName("PIN"); PIN::SetDescription("Processor Identification Number");
 		}
 	};
 	
@@ -2186,10 +2244,13 @@ protected:
 		struct Minor_Rev : Field<Minor_Rev, 20, 23> {};
 		struct Major_Rev : Field<Major_Rev, 24, 27> {};
 		struct MBG_ID    : Field<MBG_ID   , 28, 31> {};
+		struct OWN       : Field<OWN      , 0 , 11> {}; // Owner Identifier
+		struct PVN       : Field<PVN      , 12, 31> {}; // Processor Version Number
 
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<MANID, Type, Version, MBG_Use, Minor_Rev, MBG_ID> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<MANID, Type, Version, MBG_Use, Minor_Rev, MBG_ID> ALL; };
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<OWN, PVN> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		PVR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
@@ -2206,6 +2267,8 @@ protected:
 			Minor_Rev::SetName("Minor_Rev");
 			Major_Rev::SetName("Major_Rev");
 			MBG_ID   ::SetName("MBG_ID");
+			OWN      ::SetName("OWN");       OWN::SetDescription("Owner Identifier");
+			PVN      ::SetName("PWN");       PVN::SetDescription("Processor Version Number");
 		}
 	};
 
@@ -2618,6 +2681,8 @@ protected:
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
+		
+		virtual bool MoveTo(uint32_t value) { this->template Set<ALL>(this->template Get<ALL>() & ~value); return true; } // W1C
 	private:
 		void Init()
 		{
@@ -4072,7 +4137,7 @@ protected:
 	template <unsigned int DTV_NUM>
 	struct DTV : CacheVictimRegister
 	{
-		typedef PrivilegedSPR<DTV<DTV_NUM>, 916 + DTV_NUM> Super;
+		typedef CacheVictimRegister Super;
 		
 		static const unsigned int SLR_NUM = 916 + DTV_NUM;
 		static const unsigned int REG_NUM = SLR_NUM;
@@ -5040,13 +5105,39 @@ protected:
 		
 		struct SPR284 : AltSLR<TBL, SLR_SPR_SPACE, 284, SLR_WO, SLR_PRIVILEGED>
 		{
-			typedef AltSLR<TBL, SLR_SPR_SPACE, 284, SLR_WO, SLR_NON_PRIVILEGED> Super;
+			typedef AltSLR<TBL, SLR_SPR_SPACE, 284, SLR_WO, SLR_PRIVILEGED> Super;
 			
 			SPR284(typename CONFIG::CPU *_cpu, TBL *_tbl) : Super(_cpu, _tbl) {}
 		};
 		
 		TBL(typename CONFIG::CPU *_cpu) : Super(_cpu), spr268(_cpu, this), spr284(_cpu, this) { Init(); }
 		TBL(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr268(_cpu, this), spr284(_cpu, this) { Init(); }
+		
+		virtual void Reset() { /* unaffected */ }
+
+		virtual bool MoveFrom(uint32_t& value)
+		{
+			this->cpu->RunInternalTimers();
+			return Super::MoveFrom(value);
+		}
+		
+		virtual bool MoveTo(uint32_t& value)
+		{
+			uint32_t old_value = this->Get();
+			bool status = Super::MoveTo(value);
+			uint32_t new_value = this->Get();
+			if(old_value != new_value)
+			{
+				ValueChanged(old_value);
+			}
+			return status;
+		}
+		
+		virtual void ValueChanged(uint32_t old_value)
+		{
+		}
+		
+		using Super::operator =;
 	private:
 		void Init()
 		{
@@ -5058,36 +5149,137 @@ protected:
 	};
 	
 	// Time Base Upper
-	struct TBR : ReadOnlyNonPrivilegedTBR<TBR, 269>
+	struct TBU : ReadOnlyNonPrivilegedTBR<TBU, 269>
 	{
-		typedef ReadOnlyNonPrivilegedTBR<TBR, 269> Super;
+		typedef ReadOnlyNonPrivilegedTBR<TBU, 269> Super;
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		struct SPR269 : AltSLR<TBR, SLR_SPR_SPACE, 269, SLR_RO, SLR_NON_PRIVILEGED>
+		struct SPR269 : AltSLR<TBU, SLR_SPR_SPACE, 269, SLR_RO, SLR_NON_PRIVILEGED>
 		{
-			typedef AltSLR<TBR, SLR_SPR_SPACE, 269, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			typedef AltSLR<TBU, SLR_SPR_SPACE, 269, SLR_RO, SLR_NON_PRIVILEGED> Super;
 			
-			SPR269(typename CONFIG::CPU *_cpu, TBR *_tbr) : Super(_cpu, _tbr) {}
+			SPR269(typename CONFIG::CPU *_cpu, TBU *_tbu) : Super(_cpu, _tbu) {}
 		};
 		
-		struct SPR285 : AltSLR<TBR, SLR_SPR_SPACE, 284, SLR_WO, SLR_PRIVILEGED>
+		struct SPR285 : AltSLR<TBU, SLR_SPR_SPACE, 285, SLR_WO, SLR_PRIVILEGED>
 		{
-			typedef AltSLR<TBR, SLR_SPR_SPACE, 284, SLR_WO, SLR_NON_PRIVILEGED> Super;
+			typedef AltSLR<TBU, SLR_SPR_SPACE, 285, SLR_WO, SLR_PRIVILEGED> Super;
 			
-			SPR285(typename CONFIG::CPU *_cpu, TBR *_tbr) : Super(_cpu, _tbr) {}
+			SPR285(typename CONFIG::CPU *_cpu, TBU *_tbu) : Super(_cpu, _tbu) {}
 		};
 		
-		TBR(typename CONFIG::CPU *_cpu) : Super(_cpu), spr269(_cpu, this), spr285(_cpu, this) { Init(); }
-		TBR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr269(_cpu, this), spr285(_cpu, this) { Init(); }
+		TBU(typename CONFIG::CPU *_cpu) : Super(_cpu), spr269(_cpu, this), spr285(_cpu, this) { Init(); }
+		TBU(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr269(_cpu, this), spr285(_cpu, this) { Init(); }
+
+		virtual void Reset() { /* unaffected */ }
+
+		virtual bool MoveFrom(uint32_t& value)
+		{
+			this->cpu->RunInternalTimers();
+			return Super::MoveFrom(value);
+		}
+		
+		virtual bool MoveTo(uint32_t value)
+		{
+			this->cpu->RunInternalTimers();
+			uint32_t old_value = this->Get();
+			bool status = Super::MoveTo(value);
+			uint32_t new_value = this->Get();
+			this->cpu->RunInternalTimers();
+			if(old_value != new_value)
+			{
+				ValueChanged(old_value);
+			}
+			return status;
+		}
+		
+		virtual void ValueChanged(uint32_t old_value)
+		{
+		}
+		
+		using Super::operator =;
 	private:
 		void Init()
 		{
-			this->SetName("TBR"); this->SetDescription("Time Base Upper");
+			this->SetName("TBU"); this->SetDescription("Time Base Upper");
 		}
 		
 		SPR269 spr269;
 		SPR285 spr285;
+	};
+	
+	struct TB
+	{
+		struct _TBU : TBU
+		{
+			_TBU(TB *_tb, typename CONFIG::CPU *_cpu) : TBU(_cpu), tb(_tb) {}
+			_TBU(TB *_tb, typename CONFIG::CPU *_cpu, uint32_t _value) : TBU(_cpu, _value), tb(_tb) {}
+			
+			virtual void ValueChanged(uint32_t old_value)
+			{
+				tb->UpperValueChanged(old_value);
+			}
+			
+			using TBU::operator =;
+		private:
+			TB *tb;
+		};
+		
+		struct _TBL : TBL
+		{
+			_TBL(TB *_tb, typename CONFIG::CPU *_cpu) : TBL(_cpu), tb(_tb) {}
+			_TBL(TB *_tb, typename CONFIG::CPU *_cpu, uint32_t _value) : TBL(_cpu, _value), tb(_tb) {}
+			
+			virtual void ValueChanged(uint32_t old_value)
+			{
+				tb->LowerValueChanged(old_value);
+			}
+			
+			using TBL::operator =;
+		private:
+			TB *tb;
+		};
+
+		TB(typename CONFIG::CPU *cpu) : tbu(this, cpu), tbl(this, cpu) {}
+		TB(typename CONFIG::CPU *cpu, uint64_t value) : tbu(this, cpu, uint32_t(value >> 32)), tbl(this, cpu, uint32_t(value)) {}
+		
+		TB& operator = (uint64_t value)
+		{
+			uint64_t old_value = uint64_t(*this);
+			tbu = uint32_t(value >> 32);
+			tbl = uint32_t(value);
+			uint64_t new_value = uint64_t(*this);
+			
+			if(old_value != new_value)
+			{
+				ValueChanged(old_value);
+			}
+			
+			return *this;
+		}
+		
+		operator uint64_t() const
+		{
+			return (uint64_t(tbu) << 32) | uint64_t(tbl);
+		}
+		
+		void UpperValueChanged(uint32_t tbu_old_value)
+		{
+			ValueChanged((uint64_t(tbu_old_value) << 32) | uint64_t(tbl));
+		}
+		
+		void LowerValueChanged(uint32_t tbl_old_value)
+		{
+			ValueChanged((uint64_t(tbu) << 32) | uint64_t(tbl_old_value));
+		}
+
+		virtual void ValueChanged(uint64_t old_value)
+		{
+		}
+	private:
+		_TBU tbu;
+		_TBL tbl;
 	};
 
 	/////////////////////// Performance Monitor Registers /////////////////////
@@ -5360,6 +5552,33 @@ protected:
 		
 	};
 	
+	//////////////////////// Floating-Point Register //////////////////////////
+	
+	struct FPR : SoftDouble
+	{
+		typedef SoftDouble Super;
+		
+		FPR() : Super() {}
+		
+		void Init(unsigned int reg_num)
+		{
+			std::stringstream sstr;
+			sstr << "f" << reg_num;
+			name = sstr.str();
+		}
+		
+		unisim::service::interfaces::Register *CreateRegisterInterface()
+		{
+			return new FloatingPointRegisterInterface(name.c_str(), this);
+		}
+		
+		const std::string& GetName() const { return name; }
+		
+		using Super::operator =;
+	private:
+		std::string name;
+	};
+	
 protected:
 	///////////////////////////// Logger //////////////////////////////////////
 	
@@ -5371,8 +5590,8 @@ protected:
 	bool requires_fetch_instruction_reporting;  // indicates if the fetched instructions require to be reported
 	bool requires_commit_instruction_reporting; // indicates if the committed instructions require to be reported
 	
-	inline bool MonitorLoad(typename TYPES::ADDRESS ea, unsigned int size);
-	inline bool MonitorStore(typename TYPES::ADDRESS ea, unsigned int size);
+	inline bool MonitorLoad(typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size);
+	inline bool MonitorStore(typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size);
 	
 	//////////////////////////// Statistics ///////////////////////////////////
 
@@ -5387,7 +5606,7 @@ protected:
 	uint64_t max_inst;
 	unisim::kernel::service::Parameter<uint64_t> param_max_inst;
 	
-	typename TYPES::ADDRESS halt_on_addr;
+	typename TYPES::EFFECTIVE_ADDRESS halt_on_addr;
 	std::string halt_on;
 	unisim::kernel::service::Parameter<std::string> param_halt_on;
 	
@@ -5414,7 +5633,9 @@ private:
 
 	unisim::util::debug::SimpleRegisterRegistry registers_registry;       // Every CPU register interfaces
 
+protected:
 	void AddRegisterInterface(unisim::service::interfaces::Register *reg_if);
+private:
 
 	///////////////////////// Exception dispatcher ////////////////////////////
 	
@@ -5432,13 +5653,13 @@ private:
 protected:
 	//////////////////////////// Reset Address ////////////////////////////////
 	
-	typename TYPES::ADDRESS reset_addr;
-	unisim::kernel::service::Parameter<typename TYPES::ADDRESS> param_reset_addr;
+	typename TYPES::EFFECTIVE_ADDRESS reset_addr;
+	unisim::kernel::service::Parameter<typename TYPES::EFFECTIVE_ADDRESS> param_reset_addr;
 	
 	/////////////////////////// Program Counter ///////////////////////////////
 	
-	typename TYPES::ADDRESS cia;
-	typename TYPES::ADDRESS nia;
+	typename TYPES::EFFECTIVE_ADDRESS cia;
+	typename TYPES::EFFECTIVE_ADDRESS nia;
 	
 	////////////////////// General Purpose Registers //////////////////////////
 	

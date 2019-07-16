@@ -45,8 +45,8 @@ lswx.execute = {
 
 	ADDRESS ea = ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb);
 
-	uint32_t xer = cpu->GetXER();
-	uint8_t n = (xer & CONFIG::XER_BYTE_COUNT_MASK) >> CONFIG::XER_BYTE_COUNT_OFFSET;
+	XER& xer = cpu->GetXER();
+	uint8_t n = xer.Get<XER::BYTE_COUNT>();
 	unsigned int r = rd;
 
 	while(n > 0)

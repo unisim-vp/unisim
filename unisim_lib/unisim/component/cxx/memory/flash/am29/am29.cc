@@ -58,7 +58,7 @@ template <> Variable<MODE>::operator bool () const { return *storage == MODE_X8;
 template <> Variable<MODE>::operator long long () const { return (*storage == MODE_X8) ? 1: 0; }
 template <> Variable<MODE>::operator unsigned long long () const { return (*storage == MODE_X8) ? 1 : 0; }
 template <> Variable<MODE>::operator double () const { return (double)(*storage == MODE_X8) ? 1 : 0; }
-template <> Variable<MODE>::operator string () const { return (*storage == MODE_X8)?(string("x8")):(string("x16"));}
+template <> Variable<MODE>::operator std::string () const { return (*storage == MODE_X8)?(std::string("x8")):(std::string("x16"));}
 
 template <> VariableBase& Variable<MODE>::operator = (bool value)
 {
@@ -106,7 +106,7 @@ template <> VariableBase& Variable<MODE>::operator = (const char *value)
 {
 	if(IsMutable())
 	{
-		MODE tmp = (string(value) == string("x8")) ? MODE_X8 : MODE_X16;
+		MODE tmp = (std::string(value) == std::string("x8")) ? MODE_X8 : MODE_X16;
 		SetModified(*storage != tmp);
 		*storage = tmp;
 	}
