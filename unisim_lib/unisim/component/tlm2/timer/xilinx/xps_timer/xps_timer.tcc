@@ -56,9 +56,9 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 	
 template <class CONFIG>
-XPS_Timer<CONFIG>::XPS_Timer(const sc_module_name& name, Object *parent)
+XPS_Timer<CONFIG>::XPS_Timer(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent)
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, unisim::component::cxx::timer::xilinx::xps_timer::XPS_Timer<CONFIG>(name, parent)
 	, slave_sock("slave-sock")
 	, pwm_master_sock("pwm-master-sock")
@@ -78,10 +78,10 @@ XPS_Timer<CONFIG>::XPS_Timer(const sc_module_name& name, Object *parent)
 	capture_trigger_input[1] = false;
 	generate_output[0] = false;
 	generate_output[1] = false;
-	last_generate_output_time_stamp[0] = SC_ZERO_TIME;
-	last_generate_output_time_stamp[1] = SC_ZERO_TIME;
-	last_timer_counter_update_time_stamp[0] = SC_ZERO_TIME;
-	last_timer_counter_update_time_stamp[1] = SC_ZERO_TIME;
+	last_generate_output_time_stamp[0] = sc_core::SC_ZERO_TIME;
+	last_generate_output_time_stamp[1] = sc_core::SC_ZERO_TIME;
+	last_timer_counter_update_time_stamp[0] = sc_core::SC_ZERO_TIME;
+	last_timer_counter_update_time_stamp[1] = sc_core::SC_ZERO_TIME;
 
 	slave_sock(*this); // Bind socket to implementer of interface
 	
@@ -177,9 +177,9 @@ XPS_Timer<CONFIG>::~XPS_Timer()
 template <class CONFIG>
 bool XPS_Timer<CONFIG>::BeginSetup()
 {
-	if(cycle_time == SC_ZERO_TIME)
+	if(cycle_time == sc_core::SC_ZERO_TIME)
 	{
-		inherited::logger << DebugError << param_cycle_time.GetName() << " must be > " << SC_ZERO_TIME << EndDebugError;
+		inherited::logger << DebugError << param_cycle_time.GetName() << " must be > " << sc_core::SC_ZERO_TIME << EndDebugError;
 		return false;
 	}
 	return inherited::BeginSetup();
@@ -214,7 +214,7 @@ unsigned int XPS_Timer<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 			if(inherited::IsVerbose())
 			{
 				inherited::logger << DebugInfo << LOCATION
-					<< sc_time_stamp().to_string()
+					<< sc_core::sc_time_stamp().to_string()
 					<< ": received a TLM_READ_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -230,7 +230,7 @@ unsigned int XPS_Timer<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 			if(inherited::IsVerbose())
 			{
 				inherited::logger << DebugInfo << LOCATION
-					<< sc_time_stamp()
+					<< sc_core::sc_time_stamp()
 					<< ": received a TLM_WRITE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -244,7 +244,7 @@ unsigned int XPS_Timer<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 		case tlm::TLM_IGNORE_COMMAND:
 			// transport_dbg should not receive such a command
 			inherited::logger << DebugInfo << LOCATION
-					<< sc_time_stamp() 
+					<< sc_core::sc_time_stamp() 
 					<< " : received an unexpected TLM_IGNORE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -273,14 +273,14 @@ tlm::tlm_sync_enum XPS_Timer<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& 
 				if(cmd == tlm::TLM_IGNORE_COMMAND)
 				{
 					inherited::logger << DebugError << LOCATION
-							<< (sc_time_stamp() + t)
+							<< (sc_core::sc_time_stamp() + t)
 							<< " : received an unexpected TLM_IGNORE_COMMAND payload"
 							<< EndDebugError;
 					Object::Stop(-1);
 					return tlm::TLM_COMPLETED;
 				}
 				
-				sc_time notify_time_stamp(sc_time_stamp());
+				sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 				notify_time_stamp += t;
 				AlignToClock(notify_time_stamp);
 				Event *event = schedule.AllocEvent();
@@ -309,22 +309,22 @@ void XPS_Timer<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::
 	if(cmd == tlm::TLM_IGNORE_COMMAND)
 	{
 		inherited::logger << DebugError << LOCATION
-				<< (sc_time_stamp() + t)
+				<< (sc_core::sc_time_stamp() + t)
 				<< " : received an unexpected TLM_IGNORE_COMMAND payload"
 				<< EndDebugError;
 		Object::Stop(-1);
 		return;
 	}
 
-	sc_event ev_completed;
-	sc_time notify_time_stamp(sc_time_stamp());
+	sc_core::sc_event ev_completed;
+	sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 	notify_time_stamp += t;
 	AlignToClock(notify_time_stamp);
 	Event *event = schedule.AllocEvent();
 	event->InitializeCPUEvent(&payload, notify_time_stamp, &ev_completed);
 	schedule.Notify(event);
 	wait(ev_completed);
-	t = SC_ZERO_TIME;
+	t = sc_core::SC_ZERO_TIME;
 }
 
 template <class CONFIG>
@@ -337,7 +337,7 @@ void XPS_Timer<CONFIG>::capture_trigger_b_transport(unsigned int channel, Captur
 		(((channel == 0) ? !CONFIG::C_TRIG0_ASSERT : !CONFIG::C_TRIG1_ASSERT) && capture_trigger_input[channel] && !level))
 		{
 			// capture event
-			sc_time notify_time_stamp(sc_time_stamp());
+			sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 			notify_time_stamp += t;
 
 			AlignToClock(notify_time_stamp);
@@ -368,7 +368,7 @@ tlm::tlm_sync_enum XPS_Timer<CONFIG>::capture_trigger_nb_transport_fw(unsigned i
 					(((channel == 0) ? !CONFIG::C_TRIG0_ASSERT : !CONFIG::C_TRIG1_ASSERT) && capture_trigger_input[channel] && !level))
 					{
 						// capture event
-						sc_time notify_time_stamp(sc_time_stamp());
+						sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 						notify_time_stamp += t;
 
 						AlignToClock(notify_time_stamp);
@@ -485,7 +485,7 @@ void XPS_Timer<CONFIG>::interrupt_invalidate_direct_mem_ptr(unsigned int channel
 template <class CONFIG>
 void XPS_Timer<CONFIG>::ProcessEvents()
 {
-	time_stamp = sc_time_stamp();
+	time_stamp = sc_core::sc_time_stamp();
 	if(inherited::IsVerbose())
 	{
 		inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
@@ -718,14 +718,14 @@ void XPS_Timer<CONFIG>::ProcessCPUEvent(Event *event)
 	ready_time_stamp = time_stamp;
 	ready_time_stamp += cycle_time;
 
-	sc_event *ev_completed = event->GetCompletionEvent();
+	sc_core::sc_event *ev_completed = event->GetCompletionEvent();
 	if(ev_completed)
 	{
 		ev_completed->notify(cycle_time);
 	}
 	else
 	{
-		sc_time t(cycle_time);
+		sc_core::sc_time t(cycle_time);
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
 		/* tlm::tlm_sync_enum sync = */ slave_sock->nb_transport_bw(*payload, phase, t);
 	}
@@ -749,7 +749,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 
 			pwm_payload->SetValue(true);
 			
-			sc_time t(SC_ZERO_TIME);
+			sc_core::sc_time t(sc_core::SC_ZERO_TIME);
 			//pwm_master_sock->b_transport(*pwm_payload, t);
 			
 			tlm::tlm_phase phase = tlm::BEGIN_REQ;
@@ -770,7 +770,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 
 			pwm_payload->SetValue(false);
 			
-			sc_time t(SC_ZERO_TIME);
+			sc_core::sc_time t(sc_core::SC_ZERO_TIME);
 			//pwm_master_sock->b_transport(*pwm_payload, t);
 			tlm::tlm_phase phase = tlm::BEGIN_REQ;
 			pwm_master_sock->nb_transport_fw(*pwm_payload, phase, t);
@@ -797,7 +797,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 				generate_out_payload->SetValue(CONFIG::C_GEN0_ASSERT);
 				
 				tlm::tlm_phase phase = tlm::BEGIN_REQ;
-				sc_time t(SC_ZERO_TIME);
+				sc_core::sc_time t(sc_core::SC_ZERO_TIME);
 				/* tlm::tlm_sync_enum sync = */ (*generate_out_master_sock[0])->nb_transport_fw(*generate_out_payload, phase, t);
 				
 				generate_out_payload->release();
@@ -805,7 +805,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 				last_generate_output_time_stamp[0] = time_stamp;
 				generate_output[0] = CONFIG::C_GEN0_ASSERT;
 				
-				sc_time end_of_pulse_time(time_stamp);
+				sc_core::sc_time end_of_pulse_time(time_stamp);
 				end_of_pulse_time += cycle_time;
 				Event *event = schedule.AllocEvent();
 				event->InitializeWakeUpEvent(end_of_pulse_time); // pulse ends after one clock cycle
@@ -814,7 +814,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 			else if(generate_output[0] == CONFIG::C_GEN0_ASSERT)
 			{
 				// A pulse is being generated
-				sc_time end_of_pulse_time(time_stamp);
+				sc_core::sc_time end_of_pulse_time(time_stamp);
 				end_of_pulse_time -= last_generate_output_time_stamp[0];
 				if(end_of_pulse_time >= cycle_time)
 				{
@@ -830,7 +830,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 					generate_out_payload->SetValue(!CONFIG::C_GEN0_ASSERT);
 					
 					tlm::tlm_phase phase = tlm::BEGIN_REQ;
-					sc_time t(SC_ZERO_TIME);
+					sc_core::sc_time t(sc_core::SC_ZERO_TIME);
 					/* tlm::tlm_sync_enum sync = */ (*generate_out_master_sock[0])->nb_transport_fw(*generate_out_payload, phase, t);
 					
 					generate_out_payload->release();
@@ -851,7 +851,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 				generate_out_payload->SetValue(CONFIG::C_GEN1_ASSERT);
 				
 				tlm::tlm_phase phase = tlm::BEGIN_REQ;
-				sc_time t(SC_ZERO_TIME);
+				sc_core::sc_time t(sc_core::SC_ZERO_TIME);
 				/* tlm::tlm_sync_enum sync = */ (*generate_out_master_sock[1])->nb_transport_fw(*generate_out_payload, phase, t);
 				
 				generate_out_payload->release();
@@ -859,7 +859,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 				last_generate_output_time_stamp[1] = time_stamp;
 				generate_output[1] = CONFIG::C_GEN1_ASSERT;
 				
-				sc_time end_of_pulse_time(time_stamp);
+				sc_core::sc_time end_of_pulse_time(time_stamp);
 				end_of_pulse_time += cycle_time;
 				Event *event = schedule.AllocEvent();
 				event->InitializeWakeUpEvent(end_of_pulse_time); // pulse ends after one clock cycle
@@ -867,7 +867,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 			}
 			else if(generate_output[1] == CONFIG::C_GEN1_ASSERT)
 			{
-				sc_time pulse_time(time_stamp);
+				sc_core::sc_time pulse_time(time_stamp);
 				pulse_time -= last_generate_output_time_stamp[1];
 				if(pulse_time >= cycle_time)
 				{
@@ -877,7 +877,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 					generate_out_payload->SetValue(!CONFIG::C_GEN1_ASSERT);
 					
 					tlm::tlm_phase phase = tlm::BEGIN_REQ;
-					sc_time t(SC_ZERO_TIME);
+					sc_core::sc_time t(sc_core::SC_ZERO_TIME);
 					/* tlm::tlm_sync_enum sync = */ (*generate_out_master_sock[1])->nb_transport_fw(*generate_out_payload, phase, t);
 					
 					generate_out_payload->release();
@@ -900,7 +900,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 
 		interrupt_payload->SetValue(level);
 		
-		sc_time t(SC_ZERO_TIME);
+		sc_core::sc_time t(sc_core::SC_ZERO_TIME);
 		tlm::tlm_phase phase = tlm::BEGIN_REQ;
 		/* tlm::tlm_sync_enum sync = */ interrupt_master_sock->nb_transport_fw(*interrupt_payload, phase, t);
 		
@@ -911,7 +911,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 }
 
 template <class CONFIG>
-void XPS_Timer<CONFIG>::AlignToClock(sc_time& t)
+void XPS_Timer<CONFIG>::AlignToClock(sc_core::sc_time& t)
 {
 // 	sc_dt::uint64 time_tu = t.value();
 // 	sc_dt::uint64 cycle_time_tu = cycle_time.value();
@@ -921,9 +921,9 @@ void XPS_Timer<CONFIG>::AlignToClock(sc_time& t)
 // 	time_tu += cycle_time_tu - modulo;
 // 	t = sc_time(time_tu, false);
 
-	sc_time modulo(t);
+	sc_core::sc_time modulo(t);
 	modulo %= cycle_time;
-	if(modulo == SC_ZERO_TIME) return; // already aligned
+	if(modulo == sc_core::SC_ZERO_TIME) return; // already aligned
 	t += cycle_time - modulo;
 }
 
@@ -938,7 +938,7 @@ void XPS_Timer<CONFIG>::RunCounters()
 		// Timer0 enabled
 
 		// Compute delta time since last update
-		sc_time delta_time(time_stamp);
+		sc_core::sc_time delta_time(time_stamp);
 		delta_time -= last_timer_counter_update_time_stamp[0];
 		double delta = floor(delta_time / cycle_time);
 		if(delta > (double) CONFIG::MAX_COUNT)
@@ -971,7 +971,7 @@ void XPS_Timer<CONFIG>::RunCounters()
 			// Timer1 enabled
 			
 			// Compute delta time since last update
-			sc_time delta_time(time_stamp);
+			sc_core::sc_time delta_time(time_stamp);
 			delta_time -= last_timer_counter_update_time_stamp[1];
 			double delta = floor(delta_time / cycle_time);
 			if(delta > (double) CONFIG::MAX_COUNT)
@@ -1008,7 +1008,7 @@ void XPS_Timer<CONFIG>::Update()
 		last_timer_counter_update_time_stamp[0] = time_stamp;
 							
 		// Notify roll over
-		sc_time notify_time_stamp(cycle_time);
+		sc_core::sc_time notify_time_stamp(cycle_time);
 		notify_time_stamp *= inherited::GetTCSR0_UDT0() ? ((inherited::GetTCR0() != CONFIG::MAX_COUNT) ? inherited::GetTCR0() + 1 : 0) : ((inherited::GetTCR0() != 0) ? CONFIG::MAX_COUNT - inherited::GetTCR0() + 1 : 0);
 		notify_time_stamp += time_stamp;
 		
@@ -1030,7 +1030,7 @@ void XPS_Timer<CONFIG>::Update()
 		last_timer_counter_update_time_stamp[1] = time_stamp;
 							
 		// Notify roll over
-		sc_time notify_time_stamp(cycle_time);
+		sc_core::sc_time notify_time_stamp(cycle_time);
 		notify_time_stamp *= inherited::GetTCSR1_UDT1() ? ((inherited::GetTCR1() != CONFIG::MAX_COUNT) ? inherited::GetTCR1() + 1 : 0) : ((inherited::GetTCR1() != 0) ? CONFIG::MAX_COUNT - inherited::GetTCR1() + 1 : 0);
 		notify_time_stamp += time_stamp;
 		if(notify_time_stamp != time_stamp)
@@ -1047,7 +1047,7 @@ void XPS_Timer<CONFIG>::Update()
 	
 	if(inherited::NeedsLoadingTCR0())
 	{
-		sc_time notify_time_stamp(cycle_time);
+		sc_core::sc_time notify_time_stamp(cycle_time);
 		notify_time_stamp += time_stamp;
 		Event *event = schedule.AllocEvent();
 		event->InitializeLoadEvent(0, notify_time_stamp); // schedule a load on next cycle
@@ -1060,7 +1060,7 @@ void XPS_Timer<CONFIG>::Update()
 
 	if(inherited::NeedsLoadingTCR1())
 	{
-		sc_time notify_time_stamp(cycle_time);
+		sc_core::sc_time notify_time_stamp(cycle_time);
 		notify_time_stamp += time_stamp;
 		Event *event = schedule.AllocEvent();
 		event->InitializeLoadEvent(1, notify_time_stamp); // schedule a load on next cycle

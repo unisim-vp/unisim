@@ -41,7 +41,7 @@ fsqrts.execute = {
 		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 		return false;
 	}
-	if(unlikely(not cpu->GetMSR_FP()))
+	if(unlikely(not cpu->GetMSR().Get<CPU::MSR::FP>()))
 	{
 		cpu->ThrowException<CPU::FloatingPointUnavailableInterrupt::FloatingPointUnavailable>();
 		return false;
@@ -106,7 +106,7 @@ fsqrts.execute = {
 		{
 			UINT fpscr_value( fpscr );
 			GenFPSCR_FPRF<FPSCR, SoftDouble>(fpscr_value, result);
-			cpu->SetFPSCR( fpscr_value );
+			fpscr = fpscr_value;
 		}
 	}
 

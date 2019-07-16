@@ -113,6 +113,7 @@ public:
 			case ST_ERASE2: return "ERASE2";
 			case ST_CHIP_ERASE: return "CHIP_ERASE";
 			case ST_SECTOR_ERASE: return "SECTOR_ERASE";
+			case ST_WRITE_TO_BUFFER_ABORTED: return "ST_WRITE_TO_BUFFER_ABORTED";
 			case ST_ANY: return "*";
 		}
 		return "?";

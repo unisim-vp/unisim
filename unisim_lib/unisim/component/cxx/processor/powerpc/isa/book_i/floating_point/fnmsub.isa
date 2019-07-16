@@ -39,7 +39,7 @@ fnmsub.execute = {
 		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 		return false;
 	}
-	if(unlikely(not cpu->GetMSR_FP()))
+	if(unlikely(not cpu->GetMSR().Get<CPU::MSR::FP>()))
 	{
 		cpu->ThrowException<CPU::FloatingPointUnavailableInterrupt::FloatingPointUnavailable>();
 		return false;
@@ -72,7 +72,7 @@ fnmsub.execute = {
 	GenFPSCR_FEX<FPSCR>(new_fpscr);
 
 	// Update FPSCR
-	cpu->SetFPSCR(new_fpscr);
+	fpscr = new_fpscr;
 
 	if (unlikely(flags.isInftyMultZero())) fpscr.SetInvalid(FPSCR::VXIMZ());
 	

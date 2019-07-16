@@ -37,5 +37,5 @@ rfi.execute = {
 	return cpu->Rfi();
 }
 rfi.disasm = {
-	os << "rfi" << endl;
+	os << "rfi" << std::endl;
 }

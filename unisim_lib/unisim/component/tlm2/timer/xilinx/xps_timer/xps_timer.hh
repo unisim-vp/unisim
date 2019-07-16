@@ -70,7 +70,7 @@ typedef unisim::kernel::tlm2::SimpleProtocolTypes<bool> PWMProtocolTypes;
 
 template <class CONFIG>
 class XPS_Timer
-	: public sc_module
+	: public sc_core::sc_module
 	, public unisim::component::cxx::timer::xilinx::xps_timer::XPS_Timer<CONFIG>
 	, public tlm::tlm_fw_transport_if<tlm::tlm_base_protocol_types>
 {
@@ -98,7 +98,7 @@ public:
 	// Interrupt
 	interrupt_master_socket interrupt_master_sock;
 
-	XPS_Timer(const sc_module_name& name, Object *parent = 0);
+	XPS_Timer(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~XPS_Timer();
 	
 	virtual bool BeginSetup();
@@ -129,7 +129,7 @@ public:
 	
 protected:
 private:
-	void AlignToClock(sc_time& t);
+	void AlignToClock(sc_core::sc_time& t);
 	
 	class Event
 	{
@@ -147,34 +147,34 @@ private:
 		{
 		public:
 			Key()
-				: time_stamp(SC_ZERO_TIME)
+				: time_stamp(sc_core::SC_ZERO_TIME)
 				, type(EV_WAKE_UP)
 				, channel(0)
 			{
 			}
 			
-			Key(const sc_time& _time_stamp, Type _type, unsigned int _channel)
+			Key(const sc_core::sc_time& _time_stamp, Type _type, unsigned int _channel)
 				: time_stamp(_time_stamp)
 				, type(_type)
 				, channel(_channel)
 			{
 			}
 			
-			void Initialize(const sc_time& _time_stamp, Type _type, unsigned int _channel)
+			void Initialize(const sc_core::sc_time& _time_stamp, Type _type, unsigned int _channel)
 			{
 				time_stamp = _time_stamp;
 				type = _type;
 				channel = _channel;
 			}
 			
-			void SetTimeStamp(const sc_time& _time_stamp)
+			void SetTimeStamp(const sc_core::sc_time& _time_stamp)
 			{
 				time_stamp = _time_stamp;
 			}
 			
 			void Clear()
 			{
-				time_stamp = SC_ZERO_TIME;
+				time_stamp = sc_core::SC_ZERO_TIME;
 				type = EV_WAKE_UP;
 				channel = 0;
 			}
@@ -184,7 +184,7 @@ private:
 				return (time_stamp < sk.time_stamp) || ((time_stamp == sk.time_stamp) && ((type < sk.type) || ((type == sk.type) && (channel < sk.channel))));
 			}
 			
-			const sc_time& GetTimeStamp() const
+			const sc_core::sc_time& GetTimeStamp() const
 			{
 				return time_stamp;
 			}
@@ -199,7 +199,7 @@ private:
 				return channel;
 			}
 		private:
-			sc_time time_stamp;
+			sc_core::sc_time time_stamp;
 			typename Event::Type type;
 			unsigned int channel;
 		};
@@ -216,7 +216,7 @@ private:
 			Clear();
 		}
 		
-		void InitializeCPUEvent(tlm::tlm_generic_payload *_payload, const sc_time& time_stamp, sc_event *_ev_completed = 0)
+		void InitializeCPUEvent(tlm::tlm_generic_payload *_payload, const sc_core::sc_time& time_stamp, sc_core::sc_event *_ev_completed = 0)
 		{
 			_payload->acquire();
 			key.Initialize(time_stamp, EV_CPU, 0);
@@ -224,17 +224,17 @@ private:
 			ev_completed = _ev_completed;
 		}
 		
-		void InitializeCaptureTriggerEvent(unsigned int channel, const sc_time& time_stamp)
+		void InitializeCaptureTriggerEvent(unsigned int channel, const sc_core::sc_time& time_stamp)
 		{
 			key.Initialize(time_stamp, EV_CAPTURE_TRIGGER, channel);
 		}
 
-		void InitializeLoadEvent(unsigned int channel, const sc_time& time_stamp)
+		void InitializeLoadEvent(unsigned int channel, const sc_core::sc_time& time_stamp)
 		{
 			key.Initialize(time_stamp, EV_LOAD, channel);
 		}
 
-		void InitializeWakeUpEvent(const sc_time& time_stamp)
+		void InitializeWakeUpEvent(const sc_core::sc_time& time_stamp)
 		{
 			key.Initialize(time_stamp, EV_WAKE_UP, 0);
 		}
@@ -252,12 +252,12 @@ private:
 			return key.GetType();
 		}
 		
-		void SetTimeStamp(const sc_time& time_stamp)
+		void SetTimeStamp(const sc_core::sc_time& time_stamp)
 		{
 			key.SetTimeStamp(time_stamp);
 		}
 		
-		const sc_time& GetTimeStamp() const
+		const sc_core::sc_time& GetTimeStamp() const
 		{
 			return key.GetTimeStamp();
 		}
@@ -272,7 +272,7 @@ private:
 			return key.GetChannel();
 		}
 		
-		sc_event *GetCompletionEvent() const
+		sc_core::sc_event *GetCompletionEvent() const
 		{
 			return ev_completed;
 		}
@@ -284,28 +284,28 @@ private:
 	private:
 		Key key;
 		tlm::tlm_generic_payload *cpu_payload;
-		sc_event *ev_completed;
+		sc_core::sc_event *ev_completed;
 	};
 
 
-	sc_time process_local_time_offset;
+	sc_core::sc_time process_local_time_offset;
 	/** Cycle time */
-	sc_time cycle_time;
+	sc_core::sc_time cycle_time;
 	
-	sc_time time_stamp;
-	sc_time ready_time_stamp;
+	sc_core::sc_time time_stamp;
+	sc_core::sc_time ready_time_stamp;
 
 	bool capture_trigger_input[2];
 	bool interrupt_output;
 	bool generate_output[2];
 	bool pwm_output;
-	sc_time last_timer_counter_update_time_stamp[2];
-	sc_time last_generate_output_time_stamp[2];
+	sc_core::sc_time last_timer_counter_update_time_stamp[2];
+	sc_core::sc_time last_generate_output_time_stamp[2];
 	bool tcr0_roll_over;
 	bool tcr1_roll_over;
 	
 	/** The parameter for the cycle time */
-	Parameter<sc_time> param_cycle_time;
+	Parameter<sc_core::sc_time> param_cycle_time;
 
 	unisim::kernel::tlm2::FwRedirector<XPS_Timer<CONFIG>, unisim::kernel::tlm2::SimpleProtocolTypes<bool> > *capture_trigger_redirector[2];
 	unisim::kernel::tlm2::BwRedirector<XPS_Timer<CONFIG>, unisim::kernel::tlm2::SimpleProtocolTypes<bool> > *generate_out_redirector[2];

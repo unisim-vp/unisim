@@ -50,9 +50,9 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 	
 template <unsigned int NUM_LEDS>
-GPIO_LEDs<NUM_LEDS>::GPIO_LEDs(const sc_module_name& name, Object *parent)
+GPIO_LEDs<NUM_LEDS>::GPIO_LEDs(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent)
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, Client<LED_Board>(name, parent)
 	, led_board_import("led-board-import", this)
 	, logger(*this)
@@ -148,7 +148,7 @@ void GPIO_LEDs<NUM_LEDS>::gpio_b_transport(unsigned int pin, GPIOPayload& payloa
 {
 	bool gpio_pin_value = payload.GetValue();
 	// GPIO event
-	sc_time notify_time_stamp(sc_time_stamp());
+	sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 	notify_time_stamp += t;
 
 	Event *event = schedule.AllocEvent();
@@ -165,7 +165,7 @@ tlm::tlm_sync_enum GPIO_LEDs<NUM_LEDS>::gpio_nb_transport_fw(unsigned int pin, G
 			{
 				bool gpio_pin_value = payload.GetValue();
 				// GPIO event
-				sc_time notify_time_stamp(sc_time_stamp());
+				sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 				notify_time_stamp += t;
 
 				Event *event = schedule.AllocEvent();
@@ -228,7 +228,7 @@ tlm::tlm_sync_enum GPIO_LEDs<NUM_LEDS>::gpio_nb_transport_bw(unsigned int pin, G
 template <unsigned int NUM_LEDS>
 void GPIO_LEDs<NUM_LEDS>::ProcessEvents()
 {
-	time_stamp = sc_time_stamp();
+	time_stamp = sc_core::sc_time_stamp();
 	if(IsVerbose())
 	{
 		logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;

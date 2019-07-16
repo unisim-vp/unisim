@@ -1137,7 +1137,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintHistogram(std::ostream& os, Vi
 			T level_value((cumulative_value * level) / num_levels);
 			if(level_value > value_range.second) break;
 			
-			double level_height = Divider<T>::Divide(cumulative_value * level, num_levels * value_range.second) * svg_histogram_height;
+			double level_height = Divider<T>::Divide(level * cumulative_value, num_levels * value_range.second) * svg_histogram_height;
 			double level_axis_y = axis_y - level_height;
 			os << indent << "<line class=\"level-axis\" x1=\"" << level_axis_x << "\" y1=\"" << level_axis_y << "\" x2=\"" << svg_width << "\" y2=\"" << level_axis_y << "\"/>" << std::endl;
 			
@@ -2093,7 +2093,6 @@ bool Profiler<ADDRESS>::EndSetup()
 			   TryProfile<long>(var) ||
 			   TryProfile<long long>(var) ||
 			   TryProfile<unsigned char>(var) ||
-			   TryProfile<bool>(var) ||
 			   TryProfile<unsigned short>(var) ||
 			   TryProfile<unsigned int>(var) ||
 			   TryProfile<unsigned long>(var) ||

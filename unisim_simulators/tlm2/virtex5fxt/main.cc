@@ -33,24 +33,15 @@
  */
 
 #include <simulator.hh>
-#include <simulator.tcc>
-#include <config.hh>
 
-typedef SimConfig SIM_CONFIG;
-typedef Simulator<SIM_CONFIG> SIMULATOR;
+typedef Simulator SIMULATOR;
 
+extern "C" 
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+__declspec(dllexport)
+#endif
 int sc_main(int argc, char *argv[])
 {
-#if defined(WIN32) || defined(WIN64)
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		cerr << "WSAStartup failed" << endl;
-		return -1;
-	}
-#endif
 	SIMULATOR *simulator = new SIMULATOR(argc, argv);
 
 	switch(simulator->Setup())
@@ -58,21 +49,24 @@ int sc_main(int argc, char *argv[])
 		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
 			break;
 		case unisim::kernel::service::Simulator::ST_WARNING:
-			cerr << "Some warnings occurred during setup" << endl;
+			std::cerr << "Some warnings occurred during setup" << std::endl;
 		case unisim::kernel::service::Simulator::ST_OK_TO_START:
 			simulator->Run();
 			break;
 		case unisim::kernel::service::Simulator::ST_ERROR:
-			cerr << "Can't start simulation because of previous errors" << endl;
+			std::cerr << "Can't start simulation because of previous errors" << std::endl;
 			break;
 	}
 
 	int exit_status = simulator->GetExitStatus();
 	if(simulator) delete simulator;
-#if defined(WIN32) || defined(WIN64)
-	// releases the winsock2 resources
-	WSACleanup();
-#endif
 
 	return exit_status;
 }
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+int main(int argc, char *argv[])
+{
+	return sc_core::sc_elab_and_sim(argc, argv);
+}
+#endif

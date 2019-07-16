@@ -59,7 +59,7 @@ using unisim::service::interfaces::LED_Board;
 
 template <unsigned int NUM_LEDS>
 class GPIO_LEDs
-	: public sc_module
+	: public sc_core::sc_module
 	, public Client<LED_Board>
 {
 public:
@@ -73,7 +73,7 @@ public:
 	
 	ServiceImport<LED_Board> led_board_import;
 
-	GPIO_LEDs(const sc_module_name& name, Object *parent = 0);
+	GPIO_LEDs(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~GPIO_LEDs();
 	
 	virtual bool BeginSetup();
@@ -98,7 +98,7 @@ protected:
 	
 	bool IsVerbose() const;
 private:
-	void AlignToClock(sc_time& t);
+	void AlignToClock(sc_core::sc_time& t);
 	
 	class Event
 	{
@@ -113,34 +113,34 @@ private:
 		{
 		public:
 			Key()
-				: time_stamp(SC_ZERO_TIME)
+				: time_stamp(sc_core::SC_ZERO_TIME)
 				, type(EV_GPIO)
 				, pin(0)
 			{
 			}
 			
-			Key(const sc_time& _time_stamp, Type _type, unsigned int _pin)
+			Key(const sc_core::sc_time& _time_stamp, Type _type, unsigned int _pin)
 				: time_stamp(_time_stamp)
 				, type(_type)
 				, pin(_pin)
 			{
 			}
 			
-			void Initialize(const sc_time& _time_stamp, Type _type, unsigned int _pin)
+			void Initialize(const sc_core::sc_time& _time_stamp, Type _type, unsigned int _pin)
 			{
 				time_stamp = _time_stamp;
 				type = _type;
 				pin = _pin;
 			}
 			
-			void SetTimeStamp(const sc_time& _time_stamp)
+			void SetTimeStamp(const sc_core::sc_time& _time_stamp)
 			{
 				time_stamp = _time_stamp;
 			}
 			
 			void Clear()
 			{
-				time_stamp = SC_ZERO_TIME;
+				time_stamp = sc_core::SC_ZERO_TIME;
 				type = EV_GPIO;
 				pin = 0;
 			}
@@ -150,7 +150,7 @@ private:
 				return (time_stamp < sk.time_stamp) || ((time_stamp == sk.time_stamp) && ((type < sk.type) || ((type == sk.type) && (pin < sk.pin))));
 			}
 			
-			const sc_time& GetTimeStamp() const
+			const sc_core::sc_time& GetTimeStamp() const
 			{
 				return time_stamp;
 			}
@@ -165,7 +165,7 @@ private:
 				return pin;
 			}
 		private:
-			sc_time time_stamp;
+			sc_core::sc_time time_stamp;
 			typename Event::Type type;
 			unsigned int pin;
 		};
@@ -181,7 +181,7 @@ private:
 			Clear();
 		}
 		
-		void InitializeGPIOEvent(unsigned int channel, bool _gpio_pin_value, const sc_time& time_stamp)
+		void InitializeGPIOEvent(unsigned int channel, bool _gpio_pin_value, const sc_core::sc_time& time_stamp)
 		{
 			key.Initialize(time_stamp, EV_GPIO, channel);
 			gpio_pin_value = _gpio_pin_value;
@@ -197,12 +197,12 @@ private:
 			return key.GetType();
 		}
 		
-		void SetTimeStamp(const sc_time& time_stamp)
+		void SetTimeStamp(const sc_core::sc_time& time_stamp)
 		{
 			key.SetTimeStamp(time_stamp);
 		}
 		
-		const sc_time& GetTimeStamp() const
+		const sc_core::sc_time& GetTimeStamp() const
 		{
 			return key.GetTimeStamp();
 		}
@@ -226,7 +226,7 @@ private:
 		bool gpio_pin_value;
 	};
 
-	sc_time time_stamp;
+	sc_core::sc_time time_stamp;
 	
 	bool led_status[NUM_LEDS];
 

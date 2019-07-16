@@ -45,7 +45,7 @@ wrtee.execute = {
 	// Read the input operand
 	UINT s = cpu->GetGPR(rs);
 	
-	msr.Set<CPU::MSR::EE>((s >> 16) & UINT(1));
+	msr.Set<CPU::MSR::EE>((s >> 15) & UINT(1));
 	
 	return true;
 }

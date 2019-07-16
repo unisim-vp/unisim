@@ -55,14 +55,14 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 	
 template <class CONFIG>
-XPS_UARTLite<CONFIG>::XPS_UARTLite(const sc_module_name& name, Object *parent)
+XPS_UARTLite<CONFIG>::XPS_UARTLite(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent)
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, unisim::component::cxx::com::xilinx::xps_uart_lite::XPS_UARTLite<CONFIG>(name, parent)
 	, slave_sock("slave-sock")
 	, interrupt_master_sock("interrupt-master-sock")
 	, cycle_time()
-	, telnet_refresh_time(10.0, SC_MS)
+	, telnet_refresh_time(10.0, sc_core::SC_MS)
 	, interrupt_output(false)
 	, param_cycle_time("cycle-time", this, cycle_time, "Cycle time")
 	, param_telnet_refresh_time("telnet-refresh-time", this, telnet_refresh_time, "Telnet refresh time")
@@ -91,9 +91,9 @@ XPS_UARTLite<CONFIG>::~XPS_UARTLite()
 template <class CONFIG>
 bool XPS_UARTLite<CONFIG>::BeginSetup()
 {
-	if(cycle_time == SC_ZERO_TIME)
+	if(cycle_time == sc_core::SC_ZERO_TIME)
 	{
-		inherited::logger << DebugError << param_cycle_time.GetName() << " must be > " << SC_ZERO_TIME << EndDebugError;
+		inherited::logger << DebugError << param_cycle_time.GetName() << " must be > " << sc_core::SC_ZERO_TIME << EndDebugError;
 		return false;
 	}
 	return inherited::BeginSetup();
@@ -128,7 +128,7 @@ unsigned int XPS_UARTLite<CONFIG>::transport_dbg(tlm::tlm_generic_payload& paylo
 			if(inherited::IsVerbose())
 			{
 				inherited::logger << DebugInfo << LOCATION
-					<< sc_time_stamp().to_string()
+					<< sc_core::sc_time_stamp().to_string()
 					<< ": received a TLM_READ_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -144,7 +144,7 @@ unsigned int XPS_UARTLite<CONFIG>::transport_dbg(tlm::tlm_generic_payload& paylo
 			if(inherited::IsVerbose())
 			{
 				inherited::logger << DebugInfo << LOCATION
-					<< sc_time_stamp()
+					<< sc_core::sc_time_stamp()
 					<< ": received a TLM_WRITE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -158,7 +158,7 @@ unsigned int XPS_UARTLite<CONFIG>::transport_dbg(tlm::tlm_generic_payload& paylo
 		case tlm::TLM_IGNORE_COMMAND:
 			// transport_dbg should not receive such a command
 			inherited::logger << DebugInfo << LOCATION
-					<< sc_time_stamp() 
+					<< sc_core::sc_time_stamp() 
 					<< " : received an unexpected TLM_IGNORE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -187,14 +187,14 @@ tlm::tlm_sync_enum XPS_UARTLite<CONFIG>::nb_transport_fw(tlm::tlm_generic_payloa
 				if(cmd == tlm::TLM_IGNORE_COMMAND)
 				{
 					inherited::logger << DebugError << LOCATION
-							<< (sc_time_stamp() + t)
+							<< (sc_core::sc_time_stamp() + t)
 							<< " : received an unexpected TLM_IGNORE_COMMAND payload"
 							<< EndDebugError;
 					Object::Stop(-1);
 					return tlm::TLM_COMPLETED;
 				}
 				
-				sc_time notify_time_stamp(sc_time_stamp());
+				sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 				notify_time_stamp += t;
 				AlignToClock(notify_time_stamp);
 				Event *event = schedule.AllocEvent();
@@ -223,22 +223,22 @@ void XPS_UARTLite<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_cor
 	if(cmd == tlm::TLM_IGNORE_COMMAND)
 	{
 		inherited::logger << DebugError << LOCATION
-				<< (sc_time_stamp() + t)
+				<< (sc_core::sc_time_stamp() + t)
 				<< " : received an unexpected TLM_IGNORE_COMMAND payload"
 				<< EndDebugError;
 		Object::Stop(-1);
 		return;
 	}
 
-	sc_event ev_completed;
-	sc_time notify_time_stamp(sc_time_stamp());
+	sc_core::sc_event ev_completed;
+	sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 	notify_time_stamp += t;
 	AlignToClock(notify_time_stamp);
 	Event *event = schedule.AllocEvent();
 	event->InitializeCPUEvent(&payload, notify_time_stamp, &ev_completed);
 	schedule.Notify(event);
 	wait(ev_completed);
-	t = SC_ZERO_TIME;
+	t = sc_core::SC_ZERO_TIME;
 }
 
 template <class CONFIG>
@@ -270,7 +270,7 @@ void XPS_UARTLite<CONFIG>::ProcessEvents()
 {
 	bool flush_telnet_output = false;
 	
-	time_stamp = sc_time_stamp();
+	time_stamp = sc_core::sc_time_stamp();
 	if(inherited::IsVerbose())
 	{
 		inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
@@ -300,7 +300,7 @@ void XPS_UARTLite<CONFIG>::ProcessEvents()
 						flush_telnet_output = true;
 						schedule.FreeEvent(event);
 						// schedule a wake for handling I/O with telnet client
-						sc_time notify_time_stamp(sc_time_stamp());
+						sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 						notify_time_stamp += telnet_refresh_time;
 						AlignToClock(notify_time_stamp);
 						event = schedule.AllocEvent();
@@ -320,7 +320,7 @@ void XPS_UARTLite<CONFIG>::ProcessEvents()
 	else
 	{
 		// schedule a first wake for handling I/O with telnet client
-		sc_time notify_time_stamp(sc_time_stamp());
+		sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 		notify_time_stamp += telnet_refresh_time;
 		AlignToClock(notify_time_stamp);
 		event = schedule.AllocEvent();
@@ -455,14 +455,14 @@ void XPS_UARTLite<CONFIG>::ProcessCPUEvent(Event *event)
 	ready_time_stamp = time_stamp;
 	ready_time_stamp += cycle_time;
 
-	sc_event *ev_completed = event->GetCompletionEvent();
+	sc_core::sc_event *ev_completed = event->GetCompletionEvent();
 	if(ev_completed)
 	{
 		ev_completed->notify(cycle_time);
 	}
 	else
 	{
-		sc_time t(cycle_time);
+		sc_core::sc_time t(cycle_time);
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
 		/* tlm::tlm_sync_enum sync = */ slave_sock->nb_transport_bw(*payload, phase, t);
 	}
@@ -484,7 +484,7 @@ void XPS_UARTLite<CONFIG>::GenerateOutput()
 
 		interrupt_payload->SetValue(level);
 		
-		sc_time t(SC_ZERO_TIME);
+		sc_core::sc_time t(sc_core::SC_ZERO_TIME);
 		tlm::tlm_phase phase = tlm::BEGIN_REQ;
 		/* tlm::tlm_sync_enum sync = */ interrupt_master_sock->nb_transport_fw(*interrupt_payload, phase, t);
 		
@@ -495,7 +495,7 @@ void XPS_UARTLite<CONFIG>::GenerateOutput()
 }
 
 template <class CONFIG>
-void XPS_UARTLite<CONFIG>::AlignToClock(sc_time& t)
+void XPS_UARTLite<CONFIG>::AlignToClock(sc_core::sc_time& t)
 {
 // 	sc_dt::uint64 time_tu = t.value();
 // 	sc_dt::uint64 cycle_time_tu = cycle_time.value();
@@ -505,9 +505,9 @@ void XPS_UARTLite<CONFIG>::AlignToClock(sc_time& t)
 // 	time_tu += cycle_time_tu - modulo;
 // 	t = sc_time(time_tu, false);
 
-	sc_time modulo(t);
+	sc_core::sc_time modulo(t);
 	modulo %= cycle_time;
-	if(modulo == SC_ZERO_TIME) return; // already aligned
+	if(modulo == sc_core::SC_ZERO_TIME) return; // already aligned
 	t += cycle_time - modulo;
 }
 

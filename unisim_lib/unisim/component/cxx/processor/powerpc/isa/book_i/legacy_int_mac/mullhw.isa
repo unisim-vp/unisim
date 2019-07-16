@@ -47,19 +47,14 @@ mullhw.execute = {
 	
 	if(unlikely(rc))
 	{
-		// Read XER
-		uint32_t xer = cpu->GetXER();
-
-		// Read CR
-		uint32_t cr = cpu->GetCR();
+		XER& xer = cpu->GetXER();
 		
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
-		cr = (cr & ~CONFIG::CR0_MASK) |
-			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
-			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
-				
-		// Update CR
-		cpu->SetCR(cr);
+		CR& cr = cpu->GetCR();
+		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
+		cr.Set<CR::CR0::LT>(result < SINT(0));
+		cr.Set<CR::CR0::GT>(result > SINT(0));
+		cr.Set<CR::CR0::EQ>((UINT(result) == UINT(0)));
 	}
 	
 	return true;

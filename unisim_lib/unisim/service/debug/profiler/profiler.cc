@@ -54,7 +54,6 @@ template class Sample<int>;
 template class Sample<long>;
 template class Sample<long long>;
 template class Sample<unsigned char>;
-template class Sample<bool>;
 template class Sample<unsigned short>;
 template class Sample<unsigned int>;
 template class Sample<unsigned long>;

@@ -41,7 +41,7 @@ mtfsb0.execute = {
 		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 		return false;
 	}
-	if(unlikely(not cpu->GetMSR_FP()))
+	if(unlikely(not cpu->GetMSR().Get<CPU::MSR::FP>()))
 	{
 		cpu->ThrowException<CPU::FloatingPointUnavailableInterrupt::FloatingPointUnavailable>();
 		return false;
@@ -61,7 +61,7 @@ mtfsb0.execute = {
 		GenFPSCR_VX<FPSCR>(new_fpscr);
 		GenFPSCR_FEX<FPSCR>(new_fpscr);
 		
-		cpu->SetFPSCR(new_fpscr);
+		fpscr = new_fpscr;
 	}
 
 	// Copy FX, FEX, VX, OX to CR1

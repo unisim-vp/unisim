@@ -1,7 +1,8 @@
 #!/bin/bash
+SIMPKG=mpc5777m
 source "$(dirname $0)/dist_common.sh"
 
-SIMPKG=mpc5777m
+import_genisslib
 
 import unisim/component/tlm2/processor/powerpc/e200/mpc57xx/e200z710n3 || exit
 import unisim/component/tlm2/processor/powerpc/e200/mpc57xx/e200z425bn3 || exit
@@ -38,6 +39,9 @@ import unisim/service/instrumenter || exit
 import unisim/service/tee/char_io || exit
 import unisim/service/web_terminal || exit
 import unisim/kernel/logger || exit
+
+copy source isa isa_vle header template data
+copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
 
@@ -268,36 +272,6 @@ UNISIM_SIMULATOR_TESTBENCH_FILES="\
 main.cc \
 "
 
-function Usage
-{
-	echo "Usage:"
-	echo "  $0 <destination directory>"
-}
-
-if [ -z "$1" ]; then
-	Usage
-	exit -1
-fi
-
-UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
-mkdir -p "$1"
-DEST_DIR=$(cd "$1"; pwd)
-UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
-UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
-UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/${SIMPKG}
-
-SIMULATOR_VERSION=$(cat ${UNISIM_SIMULATOR_DIR}/VERSION)
-
-GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib
-
-mkdir -p ${DEST_DIR}/${SIMPKG}
-
-UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES}"
-
-for file in ${UNISIM_LIB_SIMULATOR_FILES}; do
-	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
-done
-
 UNISIM_SIMULATOR_FILES="\
 ${UNISIM_SIMULATOR_SOURCE_FILES} \
 ${UNISIM_SIMULATOR_HEADER_FILES} \
@@ -315,14 +289,6 @@ done
 
 mkdir -p ${DEST_DIR}/config
 mkdir -p ${DEST_DIR}/${SIMPKG}/config
-mkdir -p ${DEST_DIR}/${SIMPKG}/m4
-
-# Some imported files (m4 macros) impact configure generation
-has_to_build_simulator_configure=no
-
-for file in ${UNISIM_LIB_SIMULATOR_M4_FILES}; do
-	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}" && has_to_build_simulator_configure=yes
-done
 
 # Top level
 
@@ -372,9 +338,6 @@ CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 
-has_to_build_configure=no
-pkg_deps_changed "${CONFIGURE_AC}" && pkg_deps_changed "${MAKEFILE_AM}" && has_to_build_configure=yes
-
 if has_to_build "${CONFIGURE_AC}" "$0"; then
 	echo "Generating configure.ac"
 	cat <<EOF > "${CONFIGURE_AC}"
@@ -419,7 +382,7 @@ fi  # has to build configure cross
 SIMULATOR_CONFIGURE_AC="${DEST_DIR}/${SIMPKG}/configure.ac"
 SIMULATOR_MAKEFILE_AM="${DEST_DIR}/${SIMPKG}/Makefile.am"
 
-if has_to_build "${SIMULATOR_CONFIGURE_AC}" "$0"; then
+if has_to_build "${SIMULATOR_CONFIGURE_AC}" "$0" || pkg_deps_changed "${SIMULATOR_CONFIGURE_AC}"; then
 	echo "Generating ${SIMPKG} configure.ac"
 	cat <<EOF > "${SIMULATOR_CONFIGURE_AC}"
 AC_INIT([UNISIM MPC5777M Standalone simulator], [${SIMULATOR_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>], [unisim-${SIMPKG}-core])
@@ -464,7 +427,7 @@ EOF
 	has_to_build_simulator_configure=yes
 fi
 
-if has_to_build "${SIMULATOR_MAKEFILE_AM}" "$0"; then
+if has_to_build "${SIMULATOR_MAKEFILE_AM}" "$0" || pkg_deps_changed "${SIMULATOR_MAKEFILE_AM}"; then
 	AM_SIMULATOR_VERSION=$(printf ${SIMULATOR_VERSION} | sed -e 's/\./_/g')
 	echo "Generating ${SIMPKG} Makefile.am"
 	cat <<EOF > "${SIMULATOR_MAKEFILE_AM}"

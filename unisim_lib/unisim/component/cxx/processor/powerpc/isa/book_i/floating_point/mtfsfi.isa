@@ -33,7 +33,7 @@
  */
  
 /* Move To FPSCR Field Immediate */
-op mtfsfi(63[6]:crfD[3]:?[7]:imm[4]:?[1]:134[10]:rc[1]);
+op mtfsfi(63[6]:bft[3]:?[7]:imm[4]:?[1]:134[10]:rc[1]);
 
 mtfsfi.execute = {
 	if(not CONFIG::HAS_FPU)
@@ -41,7 +41,7 @@ mtfsfi.execute = {
 		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 		return false;
 	}
-	if(unlikely(not cpu->GetMSR_FP()))
+	if(unlikely(not cpu->GetMSR().Get<CPU::MSR::FP>()))
 	{
 		cpu->ThrowException<CPU::FloatingPointUnavailableInterrupt::FloatingPointUnavailable>();
 		return false;
@@ -49,7 +49,7 @@ mtfsfi.execute = {
 
 	// Read the input operands
 	FPSCR& fpscr = cpu->GetFPSCR();
-	unsigned pos = (4 * (7 - crfD));
+	unsigned pos = (4 * (7 - bft));
         uint32_t mask = 0xf << pos, bits = imm << pos;
         
 	// Compute the result
@@ -60,7 +60,7 @@ mtfsfi.execute = {
 	GenFPSCR_VX<FPSCR>(new_fpscr);
 	GenFPSCR_FEX<FPSCR>(new_fpscr);
 	
-	cpu->SetFPSCR(new_fpscr);
+	fpscr = new_fpscr;
         
 	// Copy FX, FEX, VX, OX to CR1
 	if (unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( fpscr.Get<FPSCR::_0_3>() ); }
@@ -69,7 +69,7 @@ mtfsfi.execute = {
 };
 
 mtfsfi.disasm = {
-	os << "mtfsfi" << (rc ? "." : "") << " " << CRPrint(crfD) << ", " << unsigned(imm);
+	os << "mtfsfi" << (rc ? "." : "") << " " << CRPrint(bft) << ", " << unsigned(imm);
 };
 
 specialize mtfsfi(rc=0);

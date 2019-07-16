@@ -95,7 +95,7 @@ public:
 	sc_core::sc_in<sc_dt::sc_uint<14> > p_voffset;        // Interrupt vector offset for vectored interrupts
 	sc_core::sc_out<bool>               p_iack;           // interrupt acknowledge
 	
-	CPU(const sc_core::sc_module_name& name, Object *parent = 0);
+	CPU(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0);
 	virtual ~CPU();
 	
 	virtual void end_of_elaboration();

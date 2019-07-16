@@ -65,6 +65,7 @@ struct TYPES
 		SA_IG      = SA_I | SA_G, // cache inhibited and guarded
 	};
 
+	typedef uint32_t EFFECTIVE_ADDRESS;
 	typedef uint32_t ADDRESS;
 	typedef uint32_t PHYSICAL_ADDRESS;
 };
@@ -103,7 +104,7 @@ struct CONFIG
 	{
 		typedef unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z710n3::CPU CPU;
 		static const unisim::util::cache::LocalMemoryType TYPE = unisim::util::cache::INSTRUCTION_LOC_MEM;
-		static const TYPES::ADDRESS BASE_ADDRESS = 0; // unused
+		static const TYPES::PHYSICAL_ADDRESS BASE_ADDRESS = 0; // unused
 		static const unsigned int SIZE = 65536; // max size
 	};
 
@@ -112,7 +113,7 @@ struct CONFIG
 	{
 		typedef unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z710n3::CPU CPU;
 		static const unisim::util::cache::LocalMemoryType TYPE = unisim::util::cache::DATA_LOC_MEM;
-		static const TYPES::ADDRESS BASE_ADDRESS = 0; // unused
+		static const TYPES::PHYSICAL_ADDRESS BASE_ADDRESS = 0; // unused
 		static const unsigned int SIZE = 65536; // max size
 	};
 
@@ -204,20 +205,20 @@ public:
 	inline L1I *GetCache(const L1I *) ALWAYS_INLINE { return &l1i; }
 	inline L1D *GetCache(const L1D *) ALWAYS_INLINE { return &l1d; }
 	
-	bool Dcba(ADDRESS addr);
-	bool Dcbi(ADDRESS addr);
-	bool Dcbf(ADDRESS addr);
-	bool Dcbst(ADDRESS addr);
-	bool Dcbt(ADDRESS addr);
-	bool Dcbtst(ADDRESS addr);
-	bool Dcbz(ADDRESS addr);
-	bool Icbi(ADDRESS addr);
-	bool Icbt(ADDRESS addr);
+	bool Dcba(EFFECTIVE_ADDRESS addr);
+	bool Dcbi(EFFECTIVE_ADDRESS addr);
+	bool Dcbf(EFFECTIVE_ADDRESS addr);
+	bool Dcbst(EFFECTIVE_ADDRESS addr);
+	bool Dcbt(EFFECTIVE_ADDRESS addr);
+	bool Dcbtst(EFFECTIVE_ADDRESS addr);
+	bool Dcbz(EFFECTIVE_ADDRESS addr);
+	bool Icbi(EFFECTIVE_ADDRESS addr);
+	bool Icbt(EFFECTIVE_ADDRESS addr);
 	bool Mpure();
 	bool Mpuwe();
 	bool Mpusync();
 
-	template <bool DEBUG, bool EXEC, bool WRITE> inline bool ControlAccess(ADDRESS addr, ADDRESS& size_to_protection_boundary, STORAGE_ATTR& storage_attr)
+	template <bool DEBUG, bool EXEC, bool WRITE> inline bool ControlAccess(EFFECTIVE_ADDRESS addr, EFFECTIVE_ADDRESS& size_to_protection_boundary, STORAGE_ATTR& storage_attr)
 	{
 		return mpu.template ControlAccess<DEBUG, EXEC, WRITE>(addr, size_to_protection_boundary, storage_attr);
 	}

@@ -54,7 +54,7 @@ using unisim::kernel::service::Parameter;
 template <class CONFIG>
 class MCI
 	: public unisim::component::cxx::interconnect::xilinx::mci::MCI<CONFIG>
-	, public sc_module
+	, public sc_core::sc_module
 {
 public:
 	typedef unisim::component::cxx::interconnect::xilinx::mci::MCI<CONFIG> inherited;
@@ -69,7 +69,7 @@ public:
 
 	dcr_slave_socket dcr_slave_sock; // MCI Device Control Register interface
 	
-	MCI(const sc_module_name& name, Object *parent = 0);
+	MCI(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~MCI();
 	
 	virtual bool BeginSetup();
@@ -89,31 +89,31 @@ private:
 		{
 		public:
 			Key()
-				: time_stamp(SC_ZERO_TIME)
+				: time_stamp(sc_core::SC_ZERO_TIME)
 				, intf(inherited::IF_MASTER_MCI)
 			{
 			}
 			
-			Key(const sc_time& _time_stamp, typename inherited::Interface _intf)
+			Key(const sc_core::sc_time& _time_stamp, typename inherited::Interface _intf)
 				: time_stamp(_time_stamp)
 				, intf(_intf)
 			{
 			}
 			
-			void Initialize(const sc_time& _time_stamp, typename inherited::Interface _intf)
+			void Initialize(const sc_core::sc_time& _time_stamp, typename inherited::Interface _intf)
 			{
 				time_stamp = _time_stamp;
 				intf = _intf;
 			}
 			
-			void SetTimeStamp(const sc_time& _time_stamp)
+			void SetTimeStamp(const sc_core::sc_time& _time_stamp)
 			{
 				time_stamp = _time_stamp;
 			}
 			
 			void Clear()
 			{
-				time_stamp = SC_ZERO_TIME;
+				time_stamp = sc_core::SC_ZERO_TIME;
 				intf = inherited::IF_MASTER_MCI;
 			}
 			
@@ -122,7 +122,7 @@ private:
 				return (time_stamp < sk.time_stamp) || ((time_stamp == sk.time_stamp) && (intf < sk.intf));
 			}
 			
-			const sc_time& GetTimeStamp() const
+			const sc_core::sc_time& GetTimeStamp() const
 			{
 				return time_stamp;
 			}
@@ -132,7 +132,7 @@ private:
 				return intf;
 			}
 		private:
-			sc_time time_stamp;
+			sc_core::sc_time time_stamp;
 			typename inherited::Interface intf;
 		};
 
@@ -148,7 +148,7 @@ private:
 			Clear();
 		}
 		
-		void Initialize(tlm::tlm_generic_payload *_payload, typename inherited::Interface intf, const sc_time& time_stamp, sc_event *_ev_completed = 0)
+		void Initialize(tlm::tlm_generic_payload *_payload, typename inherited::Interface intf, const sc_core::sc_time& time_stamp, sc_core::sc_event *_ev_completed = 0)
 		{
 			_payload->acquire();
 			key.Initialize(time_stamp, intf);
@@ -169,12 +169,12 @@ private:
 			return key.GetInterface();
 		}
 		
-		void SetTimeStamp(const sc_time& time_stamp)
+		void SetTimeStamp(const sc_core::sc_time& time_stamp)
 		{
 			key.SetTimeStamp(time_stamp);
 		}
 		
-		const sc_time& GetTimeStamp() const
+		const sc_core::sc_time& GetTimeStamp() const
 		{
 			return key.GetTimeStamp();
 		}
@@ -189,12 +189,12 @@ private:
 			return key;
 		}
 		
-		sc_event *GetCompletionEvent() const
+		sc_core::sc_event *GetCompletionEvent() const
 		{
 			return ev_completed;
 		}
 		
-		void SetCompletionEvent(sc_event *_ev_completed)
+		void SetCompletionEvent(sc_core::sc_event *_ev_completed)
 		{
 			ev_completed = _ev_completed;
 		}
@@ -202,14 +202,14 @@ private:
 	private:
 		Key key;
 		tlm::tlm_generic_payload *payload;
-		sc_event *ev_completed;
+		sc_core::sc_event *ev_completed;
 	};
 	
 	unisim::kernel::tlm2::Schedule<Event> schedule;
 	
-	sc_time cycle_time;
+	sc_core::sc_time cycle_time;
 	unisim::kernel::tlm2::LatencyLookupTable burst_latency_lut;
-	Parameter<sc_time> param_cycle_time;
+	Parameter<sc_core::sc_time> param_cycle_time;
 	
 	tlm::tlm_sync_enum nb_transport_fw(unsigned int intf, tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	void b_transport(unsigned int intf, tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
@@ -222,7 +222,7 @@ private:
 	void ProcessForwardEvent(Event *event);
 	void ProcessBackwardEvent(Event *event);
 	void ProcessDCREvent(Event *event);
-	sc_time& GetBurstLatency(unsigned int num_burst_beats);
+	sc_core::sc_time& GetBurstLatency(unsigned int num_burst_beats);
 };
 
 } // end of namespace mci

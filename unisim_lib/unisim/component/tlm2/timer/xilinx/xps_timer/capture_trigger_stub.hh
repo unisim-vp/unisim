@@ -55,13 +55,13 @@ using unisim::kernel::service::ServiceExportBase;
 
 class CaptureTriggerStub
 	: public Object
-	, public sc_module
+	, public sc_core::sc_module
 	, tlm::tlm_bw_transport_if<unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerProtocolTypes>
 {
 public:
 	tlm::tlm_initiator_socket<0, unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerProtocolTypes> master_sock;
 	
-	CaptureTriggerStub(const sc_module_name& name, Object *parent = 0);
+	CaptureTriggerStub(const sc_core::sc_module_name& name, Object *parent = 0);
 	
 	virtual bool BeginSetup();
 
@@ -74,17 +74,17 @@ private:
 	unisim::kernel::logger::Logger logger;
 	unisim::util::random::Random random;
 	unisim::kernel::tlm2::PayloadFabric<unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload> capture_trigger_payload_fabric;
-	sc_time cycle_time;
-	sc_time nice_time;
-	sc_time time;
+	sc_core::sc_time cycle_time;
+	sc_core::sc_time nice_time;
+	sc_core::sc_time time;
 	bool verbose;
 	bool enable;
 	bool randomized_output;
 	int32_t random_seed;
 	uint32_t random_period_min;
 	uint32_t random_period_max;
-	Parameter<sc_time> param_cycle_time;
-	Parameter<sc_time> param_nice_time;
+	Parameter<sc_core::sc_time> param_cycle_time;
+	Parameter<sc_core::sc_time> param_nice_time;
 	Parameter<bool> param_verbose;
 	Parameter<bool> param_enable;
 	Parameter<bool> param_randomized_output;

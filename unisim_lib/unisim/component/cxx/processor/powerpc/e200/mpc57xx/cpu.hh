@@ -65,13 +65,14 @@ class CPU
 	: public unisim::component::cxx::processor::powerpc::CPU<TYPES, CONFIG>
 	, public unisim::util::cache::MemorySubSystem<TYPES, typename CONFIG::CPU>
 	, public unisim::kernel::service::Client<typename unisim::service::interfaces::Memory<typename TYPES::PHYSICAL_ADDRESS> >
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Disassembly<typename TYPES::ADDRESS> >
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Memory<typename TYPES::ADDRESS> >
+	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Disassembly<typename TYPES::EFFECTIVE_ADDRESS> >
+	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Memory<typename TYPES::EFFECTIVE_ADDRESS> >
 {
 public:
 	//typedef CPU ThisCPU;
 	typedef typename unisim::component::cxx::processor::powerpc::CPU<TYPES, CONFIG> SuperCPU;
 	typedef typename unisim::util::cache::MemorySubSystem<TYPES, typename CONFIG::CPU> SuperMSS;
+	typedef typename TYPES::EFFECTIVE_ADDRESS EFFECTIVE_ADDRESS;
 	typedef typename TYPES::ADDRESS ADDRESS;
 	typedef typename TYPES::PHYSICAL_ADDRESS PHYSICAL_ADDRESS;
 	typedef typename TYPES::STORAGE_ATTR STORAGE_ATTR;
@@ -87,8 +88,8 @@ public:
 
 	/////////////////////////// service exports ///////////////////////////////
 
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<ADDRESS> > disasm_export;
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<ADDRESS> > memory_export;
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS> > disasm_export;
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS> > memory_export;
 
 	////////////////////////////// constructor ////////////////////////////////
 	
@@ -104,13 +105,13 @@ public:
 
 	//////////  unisim::service::interfaces::Disassembly<> ////////////////////
 	
-	virtual std::string Disasm(ADDRESS addr, ADDRESS& next_addr);
+	virtual std::string Disasm(EFFECTIVE_ADDRESS addr, EFFECTIVE_ADDRESS& next_addr);
 	
 	/////////////// unisim::service::interfaces::Memory<> /////////////////////
 	
 	virtual void Reset();
-	virtual bool ReadMemory(ADDRESS addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(ADDRESS addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(EFFECTIVE_ADDRESS addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(EFFECTIVE_ADDRESS addr, const void *buffer, uint32_t size);
 	
 	///////////////// Interface with SystemC TLM-2.0 wrapper module ///////////
 	
@@ -161,13 +162,13 @@ public:
 	typename SuperCPU::DSRR0& GetDSRR0() { return dsrr0; }
 	typename SuperCPU::DSRR1& GetDSRR1() { return dsrr1; }
 
-	bool Lbarx(unsigned int rd, ADDRESS addr);
-	bool Lharx(unsigned int rd, ADDRESS addr);
-	bool Lwarx(unsigned int rd, ADDRESS addr);
-	bool Mbar(ADDRESS addr);
-	bool Stbcx(unsigned int rs, ADDRESS addr);
-	bool Sthcx(unsigned int rs, ADDRESS addr);
-	bool Stwcx(unsigned int rs, ADDRESS addr);
+	bool Lbarx(unsigned int rd, EFFECTIVE_ADDRESS addr);
+	bool Lharx(unsigned int rd, EFFECTIVE_ADDRESS addr);
+	bool Lwarx(unsigned int rd, EFFECTIVE_ADDRESS addr);
+	bool Mbar(EFFECTIVE_ADDRESS addr);
+	bool Stbcx(unsigned int rs, EFFECTIVE_ADDRESS addr);
+	bool Sthcx(unsigned int rs, EFFECTIVE_ADDRESS addr);
+	bool Stwcx(unsigned int rs, EFFECTIVE_ADDRESS addr);
 	bool Wait();
 	bool Msync();
 	bool Isync();
@@ -610,7 +611,7 @@ public:
 	void UpdateExceptionEnable();
 	
 	void SetAutoVector(bool value);
-	void SetVectorOffset(ADDRESS value);
+	void SetVectorOffset(EFFECTIVE_ADDRESS value);
 	
 	inline std::ostream& GetDebugInfoStream() ALWAYS_INLINE { return this->SuperCPU::GetDebugInfoStream(); }
 	inline std::ostream& GetDebugWarningStream() ALWAYS_INLINE { return this->SuperCPU::GetDebugWarningStream(); }
@@ -640,25 +641,25 @@ public:
 	virtual bool AHBDebugDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
 	virtual bool AHBDebugDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
 
-	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataLoad(T& value, ADDRESS ea);
-	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataStore(T value, ADDRESS ea);
+	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataLoad(T& value, EFFECTIVE_ADDRESS ea);
+	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataStore(T value, EFFECTIVE_ADDRESS ea);
 	
-	bool DataLoad(ADDRESS ea, void *buffer, unsigned int size);
-	bool DataStore(ADDRESS ea, const void *buffer, unsigned int size);
-	bool InstructionFetch(ADDRESS ea, void *buffer, unsigned int size);
+	bool DataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
+	bool DataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);
+	bool InstructionFetch(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
 	
-	bool DebugDataLoad(ADDRESS ea, void *buffer, unsigned int size);
-	bool DebugDataStore(ADDRESS ea, const void *buffer, unsigned int size);
-	bool DebugInstructionFetch(ADDRESS ea, void *buffer, unsigned int size);
+	bool DebugDataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
+	bool DebugDataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);
+	bool DebugInstructionFetch(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
 
 	virtual void InvalidateDirectMemPtr(PHYSICAL_ADDRESS start_addr, PHYSICAL_ADDRESS end_addr) {}
 	
-	template <bool DEBUG, bool EXEC, bool WRITE> inline bool ControlAccess(ADDRESS addr, ADDRESS& size_to_protection_boundary, STORAGE_ATTR& storage_attr);
+	template <bool DEBUG, bool EXEC, bool WRITE> inline bool ControlAccess(EFFECTIVE_ADDRESS addr, EFFECTIVE_ADDRESS& size_to_protection_boundary, STORAGE_ATTR& storage_attr);
 
 public:
 
 	void FlushInstructionBuffer();
-	bool InstructionFetch(ADDRESS addr, typename CONFIG::VLE_CODE_TYPE& insn);
+	bool InstructionFetch(EFFECTIVE_ADDRESS addr, typename CONFIG::VLE_CODE_TYPE& insn);
 	void StepOneInstruction();
 	
 	struct __EFPProcessInput__
@@ -786,11 +787,11 @@ protected:
 	uint32_t system_information;
 	unisim::kernel::service::Parameter<uint32_t> param_system_information;
 
-	ADDRESS local_memory_base_addr;
-	unisim::kernel::service::Parameter<ADDRESS> param_local_memory_base_addr;
+	PHYSICAL_ADDRESS local_memory_base_addr;
+	unisim::kernel::service::Parameter<PHYSICAL_ADDRESS> param_local_memory_base_addr;
 
-	ADDRESS local_memory_size;
-	unisim::kernel::service::Parameter<ADDRESS> param_local_memory_size;
+	PHYSICAL_ADDRESS local_memory_size;
+	unisim::kernel::service::Parameter<PHYSICAL_ADDRESS> param_local_memory_size;
 
 	bool verbose_data_load;
 	unisim::kernel::service::Parameter<bool> param_verbose_data_load;
@@ -852,11 +853,11 @@ protected:
 	///////////////////////////// Interrupts //////////////////////////////////
 	
 	bool enable_auto_vectored_interrupts;
-	ADDRESS vector_offset;
+	EFFECTIVE_ADDRESS vector_offset;
 
 	////////////////////////// Instruction Buffer /////////////////////////////
 
-	ADDRESS instruction_buffer_base_addr;
+	EFFECTIVE_ADDRESS instruction_buffer_base_addr;
 	uint16_t instruction_buffer[CONFIG::INSTRUCTION_BUFFER_SIZE / 2];
 	
 	/////////////////////// VLE Instruction decoder ///////////////////////////
