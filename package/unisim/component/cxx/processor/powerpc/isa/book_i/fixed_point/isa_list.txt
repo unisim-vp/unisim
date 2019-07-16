@@ -1,7 +1,7 @@
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addc.isa
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/adde.isa
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addic.isa
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addic_.isa
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addic.isa
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addi.isa
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/add.isa
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addis.isa
