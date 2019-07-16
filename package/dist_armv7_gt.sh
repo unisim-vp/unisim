@@ -1,15 +1,23 @@
 #!/bin/bash
+source "$(dirname $0)/dist_common.sh"
 
 SIMPKG=armv7_gt
 
+import unisim/service/debug/gdb_server || exit
+import unisim/service/debug/inline_debugger || exit
+import unisim/service/debug/debugger || exit
+import unisim/service/debug/monitor || exit
+import unisim/service/debug/profiler || exit
+
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
+$(files source) \
 unisim/util/backtrace/backtrace.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
-unisim/kernel/tlm/tlm.cc \
 unisim/kernel/service/service.cc \
 unisim/kernel/config/xml_config_file_helper.cc \
 unisim/kernel/config/ini_config_file_helper.cc \
+unisim/kernel/config/json_config_file_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
@@ -33,9 +41,6 @@ unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/stmt_lookup/tee_64.cc \
 unisim/service/tee/symbol_table_lookup/tee_32.cc \
 unisim/service/tee/symbol_table_lookup/tee_64.cc \
-unisim/service/debug/sim_debugger/sim_debugger_64.cc \
-unisim/service/debug/sim_debugger/sim_debugger_32.cc \
-unisim/service/debug/sim_debugger/sim_debugger.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
@@ -93,7 +98,7 @@ unisim/util/os/linux_os/linux.cc \
 unisim/util/lexer/lexer.cc \
 unisim/util/ieee754/ieee754.cc \
 unisim/util/xml/xml.cc \
-unisim/kernel/service/endian.cc \
+unisim/util/json/json.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
 unisim/util/queue/queue.cc \
@@ -103,11 +108,7 @@ unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/cxx/processor/arm/disasm.cc \
 unisim/component/cxx/processor/arm/simfloat.cc \
-unisim/component/cxx/processor/arm/cache.cc \
 unisim/component/cxx/processor/arm/vmsav7/cpu.cc \
-unisim/component/cxx/processor/arm/vmsav7/isa_arm32.cc \
-unisim/component/cxx/processor/arm/vmsav7/isa_thumb.cc \
-unisim/component/cxx/processor/arm/memory_op.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 "
@@ -159,6 +160,8 @@ unisim/component/cxx/processor/arm/isa/arm32/xscale.isa \
 unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
+$(files header) \
+$(files template) \
 ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES} \
 ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES} \
 unisim/util/backtrace/backtrace.hh \
@@ -168,6 +171,7 @@ unisim/kernel/tlm/tlm.hh \
 unisim/kernel/service/service.hh \
 unisim/kernel/config/xml_config_file_helper.hh \
 unisim/kernel/config/ini_config_file_helper.hh \
+unisim/kernel/config/json_config_file_helper.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/loader/multiformat_loader/multiformat_loader.hh \
@@ -182,7 +186,6 @@ unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/symbol_table_lookup/tee.hh \
 unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/loader/tee.hh \
-unisim/service/debug/sim_debugger/sim_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
@@ -199,6 +202,8 @@ unisim/service/trap_handler/trap_handler_identifier_interface.hh \
 unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
+unisim/service/interfaces/debug_selecting.hh \
+unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/profiling.hh \
 unisim/service/interfaces/blob.hh \
 unisim/service/interfaces/trap_reporting.hh \
@@ -211,9 +216,9 @@ unisim/service/interfaces/cache_power_estimator.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/os.hh \
 unisim/service/interfaces/linux_os.hh \
+unisim/service/interfaces/register.hh \
 unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/http_server.hh \
-unisim/service/interfaces/field.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/memory.hh \
@@ -223,8 +228,10 @@ unisim/service/interfaces/subprogram_lookup.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
 unisim/util/hypapp/hypapp.hh \
+unisim/util/json/json.hh \
 unisim/util/likely/likely.hh \
 unisim/util/debug/symbol.hh \
+unisim/util/debug/commit_insn_event.hh \
 unisim/util/debug/data_object.hh \
 unisim/util/debug/dwarf/fwd.hh \
 unisim/util/debug/dwarf/addr_range.hh \
@@ -266,11 +273,11 @@ unisim/util/blob/blob.hh \
 unisim/util/blob/section.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/breakpoint_registry.hh \
-unisim/util/debug/register.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/debug/breakpoint.hh \
 unisim/util/debug/event.hh \
+unisim/util/debug/fetch_insn_event.hh \
 unisim/util/debug/simple_register.hh \
 unisim/util/debug/watchpoint.hh \
 unisim/util/debug/profile.hh \
@@ -318,10 +325,8 @@ unisim/component/cxx/processor/arm/register_field.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
 unisim/component/cxx/processor/arm/memattrs.hh \
 unisim/component/cxx/processor/arm/vmsav7/cpu.hh \
-unisim/component/cxx/processor/arm/cache.hh \
 unisim/component/cxx/processor/arm/cp15.hh \
 unisim/component/cxx/processor/arm/vmsav7/cp15.hh \
-unisim/component/cxx/processor/arm/memory_op.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
 unisim/component/cxx/processor/arm/isa/decode.hh \
@@ -344,7 +349,6 @@ unisim/service/tee/backtrace/tee.tcc \
 unisim/service/tee/symbol_table_lookup/tee.tcc \
 unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/service/tee/loader/tee.tcc \
-unisim/service/debug/sim_debugger/sim_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
 unisim/service/profiling/addr_profiler/profiler.tcc \

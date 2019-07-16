@@ -64,7 +64,6 @@ unisim/kernel/logger/logger_server.hh \
 unisim/kernel/service/service.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/http_server.hh \
-unisim/service/interfaces/field.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/memory_injection.hh \
