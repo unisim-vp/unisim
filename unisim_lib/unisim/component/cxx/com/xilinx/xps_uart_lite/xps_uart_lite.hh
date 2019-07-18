@@ -74,8 +74,11 @@ public:
 	virtual ~XPS_UARTLite();
 	
 	virtual bool BeginSetup();
+	
+	void ResetRegs();
+	void Reset();
 
-	virtual void Reset();
+	virtual void ResetMemory();
 	virtual bool ReadMemory(typename CONFIG::MEMORY_ADDR addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(typename CONFIG::MEMORY_ADDR addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(typename CONFIG::MEMORY_ADDR addr, void *buffer, uint32_t size, const uint8_t *byte_enable, uint32_t byte_enable_length, uint32_t streaming_width);

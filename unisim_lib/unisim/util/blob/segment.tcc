@@ -105,7 +105,7 @@ Segment<MEMORY_ADDR>::~Segment()
 }
 
 template <class MEMORY_ADDR>
-void Segment<MEMORY_ADDR>::Reset()
+void Segment<MEMORY_ADDR>::ResetMemory()
 {
 }
 

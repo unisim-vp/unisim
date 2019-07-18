@@ -50,8 +50,6 @@ CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	, l1i(this)
 	, l1d(this)
 {
-	this->cia = 0xfffffffcUL; // processor starts at the last word of memory space
-	this->nia = 0xfffffffcUL; // processor starts at the last word of memory space
 }
 
 CPU::~CPU()
@@ -320,12 +318,11 @@ bool CPU::Iccci(EFFECTIVE_ADDRESS addr)
 	return true;
 }
 
-bool CPU::Icread(EFFECTIVE_ADDRESS addr)
+bool CPU::Icread(EFFECTIVE_ADDRESS ea)
 {
-	throw 0;
-	uint32_t way = addr / L1I::BLOCK_SIZE;
-	uint32_t offset = (addr % L1I::BLOCK_SIZE) & 0xfffffffcUL;
-	uint32_t index = 0;
+	uint32_t way = (ea / (L1I::SIZE / L1I::ASSOCIATIVITY)) % L1I::ASSOCIATIVITY;
+	uint32_t offset = (ea % L1I::BLOCK_SIZE) & 0xfffffffcUL;
+	uint32_t index = (ea / L1I::BLOCK_SIZE) % (L1I::SIZE / L1I::BLOCK_SIZE / L1I::BLOCKS_PER_LINE / L1I::ASSOCIATIVITY);
 	uint32_t sector = 0;
 	
 	unisim::util::cache::CacheSet<TYPES, CONFIG::L1I_CONFIG>& l1_set = l1i.GetSetByIndex(index);
@@ -337,20 +334,19 @@ bool CPU::Icread(EFFECTIVE_ADDRESS addr)
 	
 	icdbdr = data;
 	
-// 	typename TYPES::ADDRESS base_virtual_addr = l1_block.GetBaseAddress();
-// 	typename TYPES::EFFECTIVE_ADDRESS ea = (base_virtual_addr & CONFIG::VADDR_EA_MASK) >> CONFIG::VADDR_EA_OFFSET;
-// 	typename TYPES::PROCESS_ID pid = (base_virtual_addr & CONFIG::VADDR_PID_MASK) >> CONFIG::VADDR_PID_OFFSET;
-// 	typename TYPES::ADDRESS_SPACE as = (typename CONFIG::ADDRESS_SPACE)((base_virtual_addr & CONFIG::VADDR_AS_MASK) >> CONFIG::VADDR_AS_OFFSET);
-// 	
-// 	uint32_t tagh = (((ea >> 8) << CONFIG::ICDBTRH_TEA_OFFSET) & CONFIG::ICDBTRH_TEA_MASK)
-// 				| (l1_block.status.valid ? CONFIG::ICDBTRH_V_MASK : 0);
-// 	
-// 	uint32_t tagl = (((uint32_t) as << CONFIG::ICDBTRL_TS_OFFSET) & CONFIG::ICDBTRL_TS_MASK)
-// 				| ((pid << CONFIG::ICDBTRL_TID_OFFSET) & CONFIG::ICDBTRL_TID_MASK)
-// 				| (pid ? 0 : CONFIG::ICDBTRL_TD_MASK);
+	ADDRESS base_virtual_addr = l1_block.GetBaseAddress();
+	EFFECTIVE_ADDRESS block_ea = EFFECTIVE_ADDRESS(TYPES::VA::EA::template Get<ADDRESS>(base_virtual_addr));
+	PROCESS_ID pid = PROCESS_ID(TYPES::VA::PID::template Get<ADDRESS>(base_virtual_addr));
+	ADDRESS_SPACE as = ADDRESS_SPACE(TYPES::VA::AS::template Get<ADDRESS>(base_virtual_addr));
 	
-	icdbtrh = 0;
-	icdbtrl = 0;
+	icdbtrh.template Set<typename ICDBTRH::TEA>(block_ea >> 8);
+	icdbtrh.template Set<typename ICDBTRH::V>(l1_block.IsValid());
+	icdbtrh.template Set<typename ICDBTRH::TPAR>(0);
+	icdbtrh.template Set<typename ICDBTRH::DAPAR>(0);
+	
+	icdbtrl.template Set<typename ICDBTRL::TS>(as);
+	icdbtrl.template Set<typename ICDBTRL::TD>(pid == 0);
+	icdbtrl.template Set<typename ICDBTRL::TID>(pid);
 	
 	return true;
 }
@@ -390,8 +386,6 @@ bool CPU::Tlbre(unsigned int rd, uint32_t way, uint8_t ws)
 
 bool CPU::Tlbsx(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int rc)
 {
-// 	std::cerr << "before tlbsx:" << std::endl << mmu << std::endl;
-	
 	TYPES::ADDRESS_SPACE as = TYPES::ADDRESS_SPACE(mmucr.Get<MMUCR::STS>());
 	TYPES::PROCESS_ID pid = TYPES::PROCESS_ID(mmucr.Get<MMUCR::STID>());
 	TLB_ENTRY<TYPES> *tlb_entry = mmu.Lookup</* debug */ false>(as, pid, ea);
@@ -421,8 +415,6 @@ bool CPU::Tlbsx(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea, unsigned 
 		}
 	}
 	
-// 	std::cerr << "after tlbsx:" << std::endl << mmu << std::endl;
-
 	return true;
 }
 
@@ -456,7 +448,7 @@ bool CPU::Tlbwe(uint32_t s, uint32_t way, uint8_t ws)
 			break;
 	}
 	
-	std::cerr << "#" << instruction_counter << ":tlbwe way #" << +way << ", word #" << +ws << ":" << std::endl << mmu << std::endl;
+// 	std::cerr << "#" << instruction_counter << ":tlbwe way #" << +way << ", word #" << +ws << ":" << std::endl << mmu << std::endl;
 	
 	return true;
 }

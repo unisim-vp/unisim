@@ -434,6 +434,11 @@ CPU::Reset()
 {
 }
   
+void 
+CPU::ResetMemory()
+{
+}
+
 /**
  * Virtual method implementation to handle backward path of transactions sent 
  * through the master_port

@@ -327,7 +327,7 @@ protected:
 	/**
 	 * Reset memory state (do nothing in our case).
 	 */
-	virtual void Reset() {}
+	virtual void ResetMemory() {}
 
 	/**
 	 * Memory interface method to handle read requests.

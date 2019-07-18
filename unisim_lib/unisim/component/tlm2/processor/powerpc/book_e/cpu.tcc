@@ -634,6 +634,14 @@ void CPU<TYPES, CONFIG>::Idle()
 }
 
 template <typename TYPES, typename CONFIG>
+void CPU<TYPES, CONFIG>::Halt()
+{
+	this->Synchronize();
+	wait(sc_core::sc_time(10.0, sc_core::SC_MS));
+	this->Stop(0);
+}
+
+template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::Run()
 {
 	sc_core::sc_time time_per_instruction = cpu_cycle_time / ipc;

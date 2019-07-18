@@ -37,7 +37,7 @@
 
 #include <unisim/component/cxx/processor/powerpc/cpu.hh>
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
-#include <unisim/util/cache/cache.hh>
+// #include <unisim/util/cache/cache.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/queue/queue.hh>
 #include <unisim/util/queue/queue.tcc>
@@ -63,10 +63,7 @@ enum BusResponseStatus
 template <typename TYPES, typename CONFIG>
 class CPU
 	: public unisim::component::cxx::processor::powerpc::CPU<TYPES, CONFIG>
-	, public unisim::util::cache::MemorySubSystem<TYPES, typename CONFIG::CPU>
-	, public unisim::kernel::service::Client<typename unisim::service::interfaces::Memory<typename TYPES::PHYSICAL_ADDRESS> >
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Disassembly<typename TYPES::EFFECTIVE_ADDRESS> >
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Memory<typename TYPES::EFFECTIVE_ADDRESS> >
 {
 public:
 	typedef typename unisim::component::cxx::processor::powerpc::CPU<TYPES, CONFIG> SuperCPU;
@@ -84,14 +81,9 @@ public:
 // 	typedef typename SuperCPU::DBSR DBSR;
 // 	typedef typename SuperCPU::FSCR FSCR;
 	
-	/////////////////////////// service imports ///////////////////////////////
-	
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> > memory_import;
-
 	/////////////////////////// service exports ///////////////////////////////
 
 	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS> > disasm_export;
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS> > memory_export;
 
 	////////////////////////////// constructor ////////////////////////////////
 	
@@ -105,15 +97,21 @@ public:
 
 	virtual bool EndSetup();
 
+	//////////////////////////////// Reset ////////////////////////////////////
+
+	void Reset();
+	
 	//////////  unisim::service::interfaces::Disassembly<> ////////////////////
 	
 	virtual std::string Disasm(EFFECTIVE_ADDRESS addr, EFFECTIVE_ADDRESS& next_addr);
 	
+#if 0
 	/////////////// unisim::service::interfaces::Memory<> /////////////////////
 	
 	virtual void Reset();
 	virtual bool ReadMemory(EFFECTIVE_ADDRESS addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(EFFECTIVE_ADDRESS addr, const void *buffer, uint32_t size);
+#endif
 	
 	///////////////// Interface with SystemC TLM-2.0 wrapper module ///////////
 	
@@ -742,35 +740,24 @@ public:
 	virtual bool PLBDebugDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
 	virtual bool PLBDebugDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
 
-	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataLoad(T& value, EFFECTIVE_ADDRESS ea);
-	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataStore(T value, EFFECTIVE_ADDRESS ea);
+	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> void ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr);
 	
-	bool DataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
-	bool DataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);
-	bool InstructionFetch(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
-	
-	bool DebugDataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
-	bool DebugDataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);
-	bool DebugInstructionFetch(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
+// 	bool DebugDataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
+// 	bool DebugDataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);
 
 	virtual void InvalidateDirectMemPtr(PHYSICAL_ADDRESS start_addr, PHYSICAL_ADDRESS end_addr) {}
 
-	template <bool DEBUG, bool EXEC, bool WRITE>
-	inline bool Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRESS& size_to_protection_boundary, ADDRESS& virt_addr, PHYSICAL_ADDRESS& phys_addr, STORAGE_ATTR& storage_attr);
+// 	template <bool DEBUG, bool EXEC, bool WRITE>
+// 	inline bool Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRESS& size_to_protection_boundary, ADDRESS& virt_addr, PHYSICAL_ADDRESS& phys_addr, STORAGE_ATTR& storage_attr);
 
 	void RunTimers(uint64_t delta);
 	uint64_t GetMaxIdleTime() const;
 	uint64_t GetTimersDeadline() const;
 	
-	bool Int16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool SInt16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool Int32Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool Int16LoadByteReverse(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool Int32LoadByteReverse(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool Int16Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool Int32Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool Int16StoreByteReverse(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool Int32StoreByteReverse(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool CheckInt16LoadAlignment(EFFECTIVE_ADDRESS ea);
+	bool CheckInt32LoadAlignment(EFFECTIVE_ADDRESS ea);
+	bool CheckInt16StoreAlignment(EFFECTIVE_ADDRESS ea);
+	bool CheckInt32StoreAlignment(EFFECTIVE_ADDRESS ea);
 
 	bool Fp32Load(unsigned int fd, EFFECTIVE_ADDRESS ea);
 	bool Fp64Load(unsigned int fd, EFFECTIVE_ADDRESS ea);

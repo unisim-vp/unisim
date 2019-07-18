@@ -57,39 +57,50 @@ struct TYPES
 	// MMU storage attribute
 	typedef enum
 	{
-		SA_U0      = 256,
-		SA_U1      = 128,
-		SA_U2      = 64,
-		SA_U3      = 32,
-		SA_W       = 16,
-		SA_I       = 8,
-		SA_M       = 4,
-		SA_G       = 2,
-		SA_E       = 1,
+		SA_U0      = 256,    // User defined #0
+		SA_U1      = 128,    // User defined #1
+		SA_U2      = 64,     // User defined #2
+		SA_U3      = 32,     // User defined #3
+		SA_W       = 16,     // Write-through
+		SA_I       = 8,      // Cache inhibited
+		SA_M       = 4,      // Memory coherency enforced
+		SA_G       = 2,      // Guarded
+		SA_E       = 1,      // Endian
 		SA_DEFAULT = 0
-	} STORAGE_ATTR;
+	} STORAGE_ATTR_E;
 	
 	// MMU access control
 	typedef enum
 	{
-		AC_UX      = 32,
-		AC_UW      = 16,
-		AC_UR      = 8,
-		AC_SX      = 4,
-		AC_SW      = 2,
-		AC_SR      = 1,
+		AC_UX      = 32,      // user execution permission
+		AC_UW      = 16,      // user write permission
+		AC_UR      = 8,       // user read permission
+		AC_SX      = 4,       // supervisor execution permission
+		AC_SW      = 2,       // supervisor write permission
+		AC_SR      = 1,       // supervisor read permission
 		AC_DEFAULT = 0
-	} ACCESS_CTRL;
+	} ACCESS_CTRL_E;
+
+	typedef enum
+	{
+		AS_SYSTEM = 0,         // system address space
+		AS_APPLICATION = 1     // application address space
+	} ADDRESS_SPACE_E;         // address space
 
 	typedef uint32_t EFFECTIVE_ADDRESS;   // 32-bit effective address
 	typedef uint64_t ADDRESS;             // only 41 bits are used, all remaining bits *must* be set to zero
 	typedef uint64_t PHYSICAL_ADDRESS;    // 36-bit physical address, only 36 bits are used, all remaining bits *must* be set to zero
 	typedef uint8_t PROCESS_ID;           // 8-bit process ID
-	typedef enum
+	typedef uint16_t STORAGE_ATTR;        // storage attribute: U0 U1 U2 U3 W I M G E
+	typedef uint8_t ACCESS_CTRL;          // access control: UX UW UR SX SW SR
+	typedef uint8_t ADDRESS_SPACE;        // address space: system or application
+	
+	struct VA
 	{
-		AS_SYSTEM = 0,         // system address space
-		AS_APPLICATION = 1     // application address space
-	} ADDRESS_SPACE;           // address space
+		struct AS  : Field<AS , 23>     {}; // Address Space
+		struct PID : Field<PID, 24, 31> {}; // Process ID
+		struct EA  : Field<EA , 32, 63> {}; // Effective Address
+	};
 };
 
 struct CONFIG
@@ -101,6 +112,7 @@ struct CONFIG
 
 	// Front-side bus width
 	static const unsigned int FSB_WIDTH = 16; // front-side bus width
+	static const unsigned int DATA_FSB_WIDTH = 16; // front-side bus width
 	
 	// Floating point
 	static const bool HAS_FPU = true;
@@ -198,8 +210,12 @@ class CPU : public unisim::component::cxx::processor::powerpc::book_e::CPU<TYPES
 {
 public:
 	typedef unisim::component::cxx::processor::powerpc::book_e::CPU<TYPES, CONFIG> SuperCPU;
+	typedef typename TYPES::EFFECTIVE_ADDRESS EFFECTIVE_ADDRESS;
+	typedef typename TYPES::ADDRESS ADDRESS;
 	typedef TYPES::PROCESS_ID PROCESS_ID;
 	typedef TYPES::ADDRESS_SPACE ADDRESS_SPACE;
+	typedef SuperCPU::ICDBTRH ICDBTRH;
+	typedef SuperCPU::ICDBTRL ICDBTRL;
 	
 	CPU(const char *name, unisim::kernel::service::Object *parent = 0);
 	virtual ~CPU();

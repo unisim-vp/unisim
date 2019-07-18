@@ -90,7 +90,7 @@ public:
 	virtual ~Memory();
 
 	/* Service methods */
-	virtual void Reset();
+	virtual void ResetMemory();
 
 	/** BeginSetup
 	 * Initializes the service interface. */

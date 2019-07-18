@@ -1,7 +1,8 @@
 #!/bin/bash
+SIMPKG=arm64emu
 source "$(dirname $0)/dist_common.sh"
 
-SIMPKG=arm64emu
+import_genisslib
 
 import unisim/component/tlm2/processor/arm/cortex_a53 || exit
 import unisim/component/tlm2/memory/ram || exit
@@ -16,6 +17,9 @@ import unisim/service/debug/debugger || exit
 import unisim/service/debug/profiler || exit
 import unisim/service/http_server || exit
 import unisim/service/instrumenter || exit
+
+copy source isa header header template data
+copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
 
@@ -93,36 +97,6 @@ NEWS \
 ChangeLog \
 "
 
-function Usage
-{
-	echo "Usage:"
-	echo "  $0 <destination directory>"
-}
-
-if [ -z "$1" ]; then
-	Usage
-	exit -1
-fi
-
-UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
-mkdir -p "$1"
-DEST_DIR=$(cd "$1"; pwd)
-
-UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
-UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/${SIMPKG}
-
-SIMULATOR_VERSION=$(cat ${UNISIM_SIMULATOR_DIR}/VERSION)
-
-GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib
-
-mkdir -p ${DEST_DIR}/${SIMPKG}
-
-UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES}"
-
-for file in ${UNISIM_LIB_SIMULATOR_FILES}; do
-	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
-done
-
 UNISIM_SIMULATOR_FILES="${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_DATA_FILES}"
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
@@ -135,15 +109,6 @@ done
 
 mkdir -p ${DEST_DIR}/config
 mkdir -p ${DEST_DIR}/${SIMPKG}/config
-mkdir -p ${DEST_DIR}/${SIMPKG}/m4
-
-# Some imported files (m4 macros) impact configure generation
-has_to_build_simulator_configure=no
-pkg_deps_changed "${CONFIGURE_AC}" && pkg_deps_changed "${MAKEFILE_AM}" && has_to_build_configure=yes
-
-for file in ${UNISIM_LIB_SIMULATOR_M4_FILES}; do
-	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}" && has_to_build_simulator_configure=yes
-done
 
 # Top level
 

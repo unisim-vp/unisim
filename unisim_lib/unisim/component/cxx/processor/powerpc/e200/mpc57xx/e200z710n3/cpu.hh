@@ -57,14 +57,15 @@ class CPU; // forward declaration
 // Memory sub-system types
 struct TYPES
 {
-	enum STORAGE_ATTR
+	typedef enum
 	{
 		SA_DEFAULT = 0,           // not cache inhibited and not guarded
 		SA_I       = 1,           // cache inhibited
 		SA_G       = 2,           // guarded
 		SA_IG      = SA_I | SA_G, // cache inhibited and guarded
-	};
+	} STORAGE_ATTR_E;
 
+	typedef uint8_t STORAGE_ATTR;
 	typedef uint32_t EFFECTIVE_ADDRESS;
 	typedef uint32_t ADDRESS;
 	typedef uint32_t PHYSICAL_ADDRESS;
@@ -199,7 +200,6 @@ public:
 	typedef unisim::util::cache::CacheHierarchy<TYPES, L1D> DATA_CACHE_HIERARCHY;
 	typedef unisim::util::cache::CacheHierarchy<TYPES, L1I> INSTRUCTION_CACHE_HIERARCHY;
 	
-	inline MPU *GetAccessController() ALWAYS_INLINE { return &mpu; }
 	inline IMEM *GetLocalMemory(const IMEM *) ALWAYS_INLINE { return &imem; }
 	inline DMEM *GetLocalMemory(const DMEM *) ALWAYS_INLINE { return &dmem; }
 	inline L1I *GetCache(const L1I *) ALWAYS_INLINE { return &l1i; }
@@ -218,9 +218,14 @@ public:
 	bool Mpuwe();
 	bool Mpusync();
 
-	template <bool DEBUG, bool EXEC, bool WRITE> inline bool ControlAccess(EFFECTIVE_ADDRESS addr, EFFECTIVE_ADDRESS& size_to_protection_boundary, STORAGE_ATTR& storage_attr)
+	template <bool DEBUG, bool EXEC, bool WRITE>
+	inline bool Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRESS& size_to_protection_boundary, ADDRESS& virt_addr, PHYSICAL_ADDRESS& phys_addr, STORAGE_ATTR& storage_attr)
 	{
-		return mpu.template ControlAccess<DEBUG, EXEC, WRITE>(addr, size_to_protection_boundary, storage_attr);
+		if(unlikely((!mpu.template ControlAccess<DEBUG, EXEC, WRITE>(ea, size_to_protection_boundary, storage_attr)))) return false;
+
+		virt_addr = ea;
+		phys_addr = ea;
+		return true;
 	}
 	
 	////////////////////// Special Purpose Registers //////////////////////////

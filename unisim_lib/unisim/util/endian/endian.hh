@@ -223,6 +223,17 @@ inline void BSwap(uint64_t& value)
 #endif
 }
 
+inline void BSwap(uint32_t *buffer, uint32_t count)
+{
+	if(count)
+	{
+		do
+		{
+			BSwap(*buffer++);
+		} while(--count);
+	}
+}
+
 inline uint8_t ByteSwap(uint8_t value)
 {
 	BSwap(value);

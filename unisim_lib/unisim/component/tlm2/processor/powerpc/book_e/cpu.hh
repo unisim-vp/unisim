@@ -100,6 +100,7 @@ public:
 
 	virtual void Synchronize();
 	virtual void Idle();
+	virtual void Halt();
 	
 	void Run();
 	

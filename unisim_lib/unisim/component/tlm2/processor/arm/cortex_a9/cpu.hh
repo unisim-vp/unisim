@@ -133,8 +133,10 @@ public:
 	
   void Run();
 
-  virtual void Reset();
-	
+  void Reset();
+  
+  virtual void ResetMemory();
+  
   virtual bool PhysicalWriteMemory(uint32_t addr, uint32_t paddr, const uint8_t *buffer, uint32_t size, uint32_t attrs);
   virtual bool PhysicalReadMemory(uint32_t addr, uint32_t paddr, uint8_t *buffer, uint32_t size, uint32_t attrs);
   virtual bool PhysicalFetchMemory(uint32_t addr, uint32_t paddr, uint8_t *buffer, uint32_t size, uint32_t attrs) { return PhysicalReadMemory(addr, paddr, buffer, size, attrs); }

@@ -67,9 +67,11 @@ public:
 	XPS_IntC(const char *name, Object *parent = 0);
 	virtual ~XPS_IntC();
 	
+	void Reset();
+	
 	virtual bool BeginSetup();
 
-	virtual void Reset();
+	virtual void ResetMemory();
 	virtual bool ReadMemory(typename CONFIG::MEMORY_ADDR addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(typename CONFIG::MEMORY_ADDR addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(typename CONFIG::MEMORY_ADDR addr, void *buffer, uint32_t size, const uint8_t *byte_enable, uint32_t byte_enable_length, uint32_t streaming_width);

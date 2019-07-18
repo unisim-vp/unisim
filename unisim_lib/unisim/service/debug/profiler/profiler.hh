@@ -834,6 +834,7 @@ private:
 	unisim::util::debug::CommitInsnEvent<ADDRESS> *commit_insn_event;
 	unsigned int num_sampled_variables;
 	FunctionNameLocationConversion<ADDRESS> *func_name_loc_conv;
+	bool need_update;
 	std::vector<AddressProfileBase<ADDRESS> *> addr_profiles; // address profile for each variable
 	std::vector<FunctionInstructionProfileBase *> func_insn_profiles; // function profile for each variable
 	ADDRESS pc;

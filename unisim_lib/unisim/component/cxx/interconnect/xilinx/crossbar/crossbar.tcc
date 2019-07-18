@@ -180,6 +180,12 @@ void Crossbar<CONFIG>::Reset()
 }
 
 template <class CONFIG>
+void Crossbar<CONFIG>::ResetMemory()
+{
+	Reset();
+}
+
+template <class CONFIG>
 bool Crossbar<CONFIG>::ReadMemory(typename CONFIG::ADDRESS addr, void *buffer, uint32_t size)
 {
 	typename CONFIG::ADDRESS start_range = 0;

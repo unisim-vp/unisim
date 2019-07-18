@@ -178,7 +178,7 @@ private:
 	std::string Disasm(unsigned int front_end_num, ADDRESS addr, ADDRESS& next_addr);
 	
 	// unisim::service::interfaces::Memory<ADDRESS> (tagged)
-	void Reset(unsigned int front_end_num);
+	void ResetMemory(unsigned int front_end_num);
 	bool ReadMemory(unsigned int front_end_num, ADDRESS addr, void *buffer, uint32_t size);
 	bool WriteMemory(unsigned int front_end_num, ADDRESS addr, const void *buffer, uint32_t size);
 	
@@ -301,7 +301,7 @@ private:
 		inline std::string Disasm(ADDRESS addr, ADDRESS& next_addr) { return disasm_import ? disasm_import->Disasm(addr, next_addr) : std::string(); }
 		
 		// unisim::service::interfaces::Memory<ADDRESS>
-		inline void Reset() { if(memory_import) memory_import->Reset(); }
+		inline void ResetMemory() { if(memory_import) memory_import->ResetMemory(); }
 		inline bool ReadMemory(ADDRESS addr, void *buffer, uint32_t size) { return memory_import ? memory_import->ReadMemory(addr, buffer, size) : false; }
 		inline bool WriteMemory(ADDRESS addr, const void *buffer, uint32_t size) { return memory_import ? memory_import->WriteMemory(addr, buffer, size) : false; }
 		
@@ -453,7 +453,7 @@ private:
 		virtual std::string Disasm(ADDRESS addr, ADDRESS& next_addr) { dbg.Lock(); std::string ret = dbg.Disasm(id, addr, next_addr); dbg.Unlock(); return ret; }
 		
 		// unisim::service::interfaces::Memory<ADDRESS>
-		virtual void Reset() { dbg.Lock(); dbg.Reset(id); dbg.Unlock(); }
+		virtual void ResetMemory() { dbg.Lock(); dbg.ResetMemory(id); dbg.Unlock(); }
 		virtual bool ReadMemory(ADDRESS addr, void *buffer, uint32_t size) { dbg.Lock(); bool ret = dbg.ReadMemory(id, addr, buffer, size); dbg.Unlock(); return ret; }
 		virtual bool WriteMemory(ADDRESS addr, const void *buffer, uint32_t size) { dbg.Lock(); bool ret = dbg.WriteMemory(id, addr, buffer, size); dbg.Unlock(); return ret; }
 		

@@ -1,0 +1,2 @@
+unisim/component/cxx/processor/powerpc/book_e
+unisim/component/cxx/processor/powerpc/book_e/ppc440/isa

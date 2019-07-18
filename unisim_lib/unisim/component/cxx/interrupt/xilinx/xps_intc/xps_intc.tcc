@@ -174,6 +174,12 @@ bool XPS_IntC<CONFIG>::IsMapped(typename CONFIG::MEMORY_ADDR addr, uint32_t size
 }
 
 template <class CONFIG>
+void XPS_IntC<CONFIG>::ResetMemory()
+{
+	Reset();
+}
+
+template <class CONFIG>
 bool XPS_IntC<CONFIG>::ReadMemory(typename CONFIG::MEMORY_ADDR addr, void *buffer, uint32_t size)
 {
 	if(size > 0)

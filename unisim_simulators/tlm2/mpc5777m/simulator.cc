@@ -363,6 +363,11 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	param_bandwidth_gtkwave_init_script.SetMutable(false);
 #endif
 	
+	if(enable_profiler0 || enable_profiler1 || enable_profiler2)
+	{
+		this->SetVariable("HARDWARE.instrumenter.enable-user-interface", true); // When profilers are enabled, enable also instrumenter user interface so that profiler interface is periodically refreshed too
+	}
+	
 	unsigned int channel_num;
 	unsigned int hw_irq_num;
 	unsigned int prc_num;
@@ -6477,7 +6482,7 @@ bool Simulator::EndSetup()
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 {
-	if(enable_inline_debugger || (enable_profiler0 || enable_profiler1 || enable_profiler2))
+	if(inline_debugger || profiler[0] || profiler[1] || profiler[2])
 	{
 		SetVariable("debugger.parse-dwarf", true);
 	}

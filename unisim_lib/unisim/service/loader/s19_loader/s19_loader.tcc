@@ -74,7 +74,7 @@ void S19_Loader<MEMORY_ADDR>::OnDisconnect()
 template <class MEMORY_ADDR>
 void S19_Loader<MEMORY_ADDR>::Reset() 
 {
-	if(memory_import) memory_import->Reset();
+	if(memory_import) memory_import->ResetMemory();
 }
 
 template <class MEMORY_ADDR>
@@ -112,7 +112,7 @@ bool S19_Loader<MEMORY_ADDR>::EndSetup() {
 
 template <class MEMORY_ADDR>
 bool S19_Loader<MEMORY_ADDR>::Load(const char *_filename) {
-	if(memory_import) memory_import->Reset();
+	if(memory_import) memory_import->ResetMemory();
 	filename = _filename;
 	return (Load());
 }

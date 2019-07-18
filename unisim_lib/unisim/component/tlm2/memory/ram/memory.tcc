@@ -89,8 +89,8 @@ Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
-Reset() {
-	inherited::Reset();
+ResetMemory() {
+	inherited::ResetMemory();
 
 	read_counter = 0;
 	write_counter = 0;

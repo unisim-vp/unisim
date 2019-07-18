@@ -79,7 +79,7 @@ public:
 	AM29(const  char *name, Object *parent = 0);
 	virtual ~AM29();
 	
-	virtual void Reset();
+	virtual void ResetMemory();
 	virtual bool BeginSetup();
 	virtual bool WriteMemory(typename CONFIG::ADDRESS addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(typename CONFIG::ADDRESS addr, void *buffer, uint32_t size);

@@ -143,7 +143,9 @@ private:
 	
     void Run();
 
-    virtual void Reset();
+    void Reset();
+	
+	virtual void ResetMemory();
 	
     // cache interface implemented by the arm processor to get the request from 
     //   the caches

@@ -91,6 +91,11 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable/Disable profiler")
 	, exit_status(0)
 {
+	if(enable_profiler)
+	{
+		this->SetVariable("HARDWARE.instrumenter.enable-user-interface", true); // When profiler is enabled, enable also instrumenter user interface so that profiler interface is periodically refreshed too
+	}
+	
 	unsigned int irq;
 	unsigned int channel;
 	unsigned int i;
@@ -445,7 +450,6 @@ Simulator::~Simulator()
 	if(external_input_interrupt_stub) delete external_input_interrupt_stub;
 	if(ram) delete ram;
 	if(bram) delete bram;
-	if(debugger) delete debugger;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
 	if(cpu) delete cpu;
@@ -496,6 +500,7 @@ Simulator::~Simulator()
 	if(flash_effective_to_physical_address_translator) delete flash_effective_to_physical_address_translator;
 	if(netstreamer) delete netstreamer;
 	if(profiler) delete profiler;
+	if(debugger) delete debugger;
 	if(http_server) delete http_server;
 	if(web_terminal) delete web_terminal;
 	if(char_io_tee) delete char_io_tee;
@@ -545,6 +550,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.cpu.enable-dmi", true); // Allow CPU to use of SystemC TLM 2.0 DMI
 	simulator->SetVariable("HARDWARE.cpu.processor-version", 0x7ff21912); // PPC440x5 in Virtex-5 FXT
 	simulator->SetVariable("HARDWARE.cpu.cpuid", 0); // Processor #0
+	simulator->SetVariable("HARDWARE.cpu.reset-addr", 0xfffffffc); // processor starts at the last word of memory space
 
 	//  - DCR controller
 	simulator->SetVariable("HARDWARE.dcr-controller.cycle-time", sc_core::sc_time(fsb_cycle_time, sc_core::SC_PS).to_string().c_str());
@@ -724,7 +730,7 @@ void Simulator::Run()
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 {
-	if(enable_inline_debugger)
+	if(inline_debugger || profiler)
 	{
 		SetVariable("debugger.parse-dwarf", true);
 	}
