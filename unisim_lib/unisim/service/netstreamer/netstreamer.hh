@@ -73,7 +73,7 @@ public:
 	virtual ~NetStreamer();
 
 	virtual bool EndSetup();
-	virtual void Reset();
+	virtual void ResetCharIO();
 	virtual bool GetChar(char& c);
 	virtual void PutChar(char c);
 	virtual void FlushChars();

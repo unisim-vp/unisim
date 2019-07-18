@@ -1,0 +1,5 @@
+unisim/component/cxx/processor/powerpc
+unisim/util/cache
+unisim/util/endian
+unisim/util/queue
+unisim/util/simfloat

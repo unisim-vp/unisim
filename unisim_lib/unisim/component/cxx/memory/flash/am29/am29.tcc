@@ -173,7 +173,7 @@ bool AM29<CONFIG, BYTESIZE, IO_WIDTH>::BeginSetup()
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29<CONFIG, BYTESIZE, IO_WIDTH>::Reset()
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::ResetMemory()
 {
 }
 

@@ -36,6 +36,7 @@
 #ifndef __UNISIM_UTIL_REG_CORE_REGISTER_TCC__
 #define __UNISIM_UTIL_REG_CORE_REGISTER_TCC__
 
+#include <unisim/util/likely/likely.hh>
 #include <limits.h>
 #include <stdexcept>
 

@@ -35,6 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_E200_MPC57XX_GENFFLAGS_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_E200_MPC57XX_GENFFLAGS_HH__
 
+#include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/floating.hh>
 #include <inttypes.h>
 
 namespace unisim {

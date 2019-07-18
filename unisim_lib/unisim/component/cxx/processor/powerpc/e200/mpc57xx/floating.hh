@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_FLOATING_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_FLOATING_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_E200_MPC57XX_FLOATING_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_E200_MPC57XX_FLOATING_HH__
 
 #include <unisim/util/simfloat/floating.hh>
 #include <unisim/util/likely/likely.hh>

@@ -1104,9 +1104,9 @@ std::string Debugger<CONFIG>::Disasm(unsigned int front_end_num, ADDRESS addr, A
 
 // unisim::service::interfaces::Memory<ADDRESS> (tagged)
 template <typename CONFIG>
-void Debugger<CONFIG>::Reset(unsigned int front_end_num)
+void Debugger<CONFIG>::ResetMemory(unsigned int front_end_num)
 {
-	sel_prc_gate[front_end_num]->Reset();
+	sel_prc_gate[front_end_num]->ResetMemory();
 }
 
 template <typename CONFIG>

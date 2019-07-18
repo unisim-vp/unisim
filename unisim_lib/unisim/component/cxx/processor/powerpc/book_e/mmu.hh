@@ -263,6 +263,19 @@ void TLB_ENTRY<TYPES>::Print(std::ostream& os) const
 		os << ((access_ctrl & TYPES::AC_UR) ? 'r' : '-');
 		os << ((access_ctrl & TYPES::AC_UW) ? 'w' : '-');
 		os << ((access_ctrl & TYPES::AC_UX) ? 'x' : '-');
+		
+		// storage attribute
+		typename TYPES::STORAGE_ATTR storage_attr = GetStorageAttr();
+		os << " A:";
+		os << "U0=" << ((storage_attr & TYPES::SA_U0) ? '1' : '0') << ' ';
+		os << "U1=" << ((storage_attr & TYPES::SA_U1) ? '1' : '0') << ' ';
+		os << "U2=" << ((storage_attr & TYPES::SA_U2) ? '1' : '0') << ' ';
+		os << "U3=" << ((storage_attr & TYPES::SA_U3) ? '1' : '0') << ' ';
+		os << "W=" << ((storage_attr & TYPES::SA_W) ? '1' : '0') << ' ';
+		os << "I=" << ((storage_attr & TYPES::SA_I) ? '1' : '0') << ' ';
+		os << "M=" << ((storage_attr & TYPES::SA_M) ? '1' : '0') << ' ';
+		os << "G=" << ((storage_attr & TYPES::SA_G) ? '1' : '0') << ' ';
+		os << "E=" << ((storage_attr & TYPES::SA_E) ? '1' : '0') << ' ';
 
 		os.fill(fill);
 		os.flags(flags);
@@ -544,7 +557,6 @@ inline bool MMU<TYPES, CONFIG>::Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRES
 			}
 			else
 			{
-//				Print(std::cerr);
 				cpu->template ThrowException<typename CPU::DataTLBErrorInterrupt::DataTLBError>().SetAddress(ea).SetWrite(WRITE);
 			}
 		}

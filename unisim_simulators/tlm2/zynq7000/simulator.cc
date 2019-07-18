@@ -837,6 +837,11 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   param_enable_inline_debugger.SetMutable(false);
   param_enable_profiler.SetMutable(false);
   
+  if(enable_profiler)
+  {
+    this->SetVariable("HARDWARE.instrumenter.enable-user-interface", true); // When profiler is enabled, enable also instrumenter user interface so that profiler interface is periodically refreshed too
+  }
+  
   instrumenter = new INSTRUMENTER("instrumenter", this);
   
   // - debugger
@@ -1117,7 +1122,7 @@ Simulator::UpdateClocks()
 unisim::kernel::service::Simulator::SetupStatus
 Simulator::Setup()
 {
-  if (enable_inline_debugger)
+  if (inline_debugger or profiler)
     {
       SetVariable("debugger.parse-dwarf", true);
     }

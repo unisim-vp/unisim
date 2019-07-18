@@ -221,6 +221,11 @@ CPU::Reset()
 {
 }
   
+void 
+CPU::ResetMemory()
+{
+}
+
 /** Wait for a specific event and update CPU times
  */
 

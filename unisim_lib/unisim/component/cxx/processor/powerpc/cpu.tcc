@@ -73,17 +73,22 @@ const typename CPU<TYPES, CONFIG>::SLR_Privilege_Type CPU<TYPES, CONFIG>::SLR<SL
 template <typename TYPES, typename CONFIG>
 CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
+	, SuperMSS()
+	, unisim::kernel::service::Client<unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> >(name, parent)
 	, unisim::kernel::service::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::EFFECTIVE_ADDRESS> >(name, parent)
 	, unisim::kernel::service::Client<typename unisim::service::interfaces::DebugYielding>(name, parent)
 	, unisim::kernel::service::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::EFFECTIVE_ADDRESS> >(name, parent)
 	, unisim::kernel::service::Client<typename unisim::service::interfaces::TrapReporting>(name, parent)
+	, unisim::kernel::service::Service<unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS> >(name, parent)
 	, unisim::kernel::service::Service<typename unisim::service::interfaces::MemoryAccessReportingControl>(name, parent)
 	, unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>(name, parent)
 	, unisim::kernel::service::Service<typename unisim::service::interfaces::Synchronizable>(name, parent)
+	, memory_import("memory-import", this)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, debug_yielding_import("debug-yielding-import", this)
 	, memory_access_reporting_import("memory-access-reporting-import", this)
 	, trap_reporting_import("trap-reporting-import", this)
+	, memory_export("memory-export", this)
 	, memory_access_reporting_control_export("memory-access-reporting-control-export", this)
 	, registers_export("registers-export", this)
 	, synchronizable_export("synchronizable-export", this)
@@ -564,6 +569,165 @@ inline bool CPU<TYPES, CONFIG>::MonitorStore(typename TYPES::EFFECTIVE_ADDRESS e
 }
 
 template <typename TYPES, typename CONFIG>
+template <bool DEBUG, bool EXEC, bool WRITE>
+inline bool CPU<TYPES, CONFIG>::Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRESS& size_to_protection_boundary, ADDRESS& virt_addr, PHYSICAL_ADDRESS& phys_addr, STORAGE_ATTR& storage_attr)
+{
+	return static_cast<typename CONFIG::CPU *>(this)->template Translate<DEBUG, EXEC, WRITE>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr);
+}
+
+template <typename TYPES, typename CONFIG>
+template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN>
+void CPU<TYPES, CONFIG>::ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr)
+{
+#if BYTE_ORDER == LITTLE_ENDIAN
+	if(!REVERSE || FORCE_BIG_ENDIAN)
+#else
+	if(REVERSE && !FORCE_BIG_ENDIAN)
+#endif
+	{
+		unisim::util::endian::BSwap(value);
+	}
+}
+
+template <typename TYPES, typename CONFIG>
+template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN>
+inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, EFFECTIVE_ADDRESS ea)
+{
+	EFFECTIVE_ADDRESS size_to_protection_boundary;
+	ADDRESS virt_addr;
+	PHYSICAL_ADDRESS phys_addr;
+	STORAGE_ATTR storage_attr;
+	if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+	
+	uint32_t size_to_fsb_boundary = CONFIG::DATA_FSB_WIDTH - (ea % CONFIG::DATA_FSB_WIDTH);
+	
+	// Ensure that memory access does not cross a FSB boundary
+	if(likely(size_to_fsb_boundary >= sizeof(T)))
+	{
+		// Memory load does not cross a FSB boundary
+		if(unlikely(!this->SuperMSS::DataLoad(virt_addr, phys_addr, &value, sizeof(T), storage_attr))) return false;
+	}
+	else
+	{
+		// Memory load crosses a FSB boundary
+		if(unlikely(!this->SuperMSS::DataLoad(virt_addr, phys_addr, &value, size_to_fsb_boundary, storage_attr))) return false;
+		
+		// Ensure that memory access does not cross a protection boundary
+		if(unlikely(!size_to_protection_boundary) || likely(size_to_protection_boundary >= sizeof(T)))
+		{
+			// Memory load does not cross a protection boundary
+			virt_addr += size_to_fsb_boundary;
+			phys_addr += size_to_fsb_boundary;
+		}
+		else
+		{
+			// Memory load does cross a protection boundary
+			EFFECTIVE_ADDRESS ea2 = ea + size_to_fsb_boundary;
+			if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ false>(ea2, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+		}
+		
+		if(unlikely(!this->SuperMSS::DataLoad(virt_addr, phys_addr, (uint8_t *) &value + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary, storage_attr))) return false;
+	}
+
+	this->template __ConvertDataLoadStoreEndian__<T, REVERSE, FORCE_BIG_ENDIAN>(value, storage_attr);
+	
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN>
+inline bool CPU<TYPES, CONFIG>::DataStore(T value, EFFECTIVE_ADDRESS ea)
+{
+	EFFECTIVE_ADDRESS size_to_protection_boundary;
+	ADDRESS virt_addr;
+	PHYSICAL_ADDRESS phys_addr;
+	STORAGE_ATTR storage_attr;
+	if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ true>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+
+	this->template __ConvertDataLoadStoreEndian__<T, REVERSE, FORCE_BIG_ENDIAN>((T&) value, storage_attr);
+
+	uint32_t size_to_fsb_boundary = CONFIG::DATA_FSB_WIDTH - (ea % CONFIG::DATA_FSB_WIDTH);
+
+	// Ensure that memory access does not cross a FSB boundary
+	if(likely(size_to_fsb_boundary >= sizeof(T)))
+	{
+		// Memory store does not cross a FSB boundary
+		if(unlikely(!this->SuperMSS::DataStore(virt_addr, phys_addr, &value, sizeof(T), storage_attr))) return false;
+	}
+	else
+	{
+		// Memory store crosses a FSB boundary
+		if(unlikely(!this->SuperMSS::DataStore(virt_addr, phys_addr, &value, size_to_fsb_boundary, storage_attr))) return false;
+		
+		// Ensure that memory access does not cross a protection boundary
+		if(unlikely(!size_to_protection_boundary) || likely(size_to_protection_boundary >= sizeof(T)))
+		{
+			// Memory store does not cross a protection boundary
+			virt_addr += size_to_fsb_boundary;
+			phys_addr += size_to_fsb_boundary;
+		}
+		else
+		{
+			// Memory store does cross a protection boundary
+			EFFECTIVE_ADDRESS ea2 = ea + size_to_fsb_boundary;
+			if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ true>(ea2, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+		}
+
+		if(unlikely(!this->SuperMSS::DataStore(virt_addr, phys_addr, (uint8_t *) &value + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary, storage_attr))) return false;
+	}
+	
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DebugDataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size)
+{
+	do
+	{
+		EFFECTIVE_ADDRESS size_to_protection_boundary;
+		ADDRESS virt_addr;
+		PHYSICAL_ADDRESS phys_addr;
+		STORAGE_ATTR storage_attr;
+		if(unlikely((!this->template Translate</* debug */ true, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+		
+		unsigned int sz = size_to_protection_boundary ? std::min(size, size_to_protection_boundary) : size;
+
+		if(unlikely(!this->SuperMSS::DebugDataLoad(virt_addr, phys_addr, buffer, sz, storage_attr))) return false;
+	
+		ea += sz;
+		size -= sz;
+		buffer = (uint8_t *) buffer + sz;
+	}
+	while(unlikely(size));
+	
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DebugDataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size)
+{
+	do
+	{
+		EFFECTIVE_ADDRESS size_to_protection_boundary;
+		ADDRESS virt_addr;
+		PHYSICAL_ADDRESS phys_addr;
+		STORAGE_ATTR storage_attr;
+		if(unlikely((!this->template Translate</* debug */ true, /* exec */ false, /* write */ true>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+		
+		unsigned int sz = size_to_protection_boundary ? std::min(size, size_to_protection_boundary) : size;
+
+		if(unlikely(!this->SuperMSS::DebugDataStore(virt_addr, phys_addr, buffer, sz, storage_attr))) return false;
+	
+		ea += sz;
+		size -= sz;
+		buffer = (const uint8_t *) buffer + sz;
+	}
+	while(unlikely(size));
+	
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int8Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
 	uint8_t value;
@@ -577,6 +741,7 @@ bool CPU<TYPES, CONFIG>::Int8Load(unsigned int rd, typename TYPES::EFFECTIVE_ADD
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!__CheckInt16LoadAlignment__(ea))) return false;
 	uint16_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, false>(value, ea);
@@ -588,6 +753,7 @@ bool CPU<TYPES, CONFIG>::Int16Load(unsigned int rd, typename TYPES::EFFECTIVE_AD
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::SInt16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!__CheckSInt16LoadAlignment__(ea))) return false;
 	uint16_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, false>(value, ea);
@@ -599,6 +765,7 @@ bool CPU<TYPES, CONFIG>::SInt16Load(unsigned int rd, typename TYPES::EFFECTIVE_A
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int32Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!__CheckInt32LoadAlignment__(ea))) return false;
 	uint32_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, false>(value, ea);
@@ -610,6 +777,7 @@ bool CPU<TYPES, CONFIG>::Int32Load(unsigned int rd, typename TYPES::EFFECTIVE_AD
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int16LoadByteReverse(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!__CheckInt16LoadByteReverseAlignment__(ea))) return false;
 	uint16_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, true, false>(value, ea); // reversed
@@ -621,6 +789,7 @@ bool CPU<TYPES, CONFIG>::Int16LoadByteReverse(unsigned int rd, typename TYPES::E
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int32LoadByteReverse(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!__CheckInt32LoadByteReverseAlignment__(ea))) return false;
 	uint32_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, true, false>(value, ea); // reversed
@@ -684,6 +853,7 @@ template <typename TYPES, typename CONFIG>
 template <typename REGISTER>
 bool CPU<TYPES, CONFIG>::SpecialLoad(REGISTER& reg, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely((!__CheckSpecialLoadAlignment__<REGISTER>(ea)))) return false;
 	uint32_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, false>(value, ea);
@@ -705,6 +875,7 @@ bool CPU<TYPES, CONFIG>::Int8Store(unsigned int rs, typename TYPES::EFFECTIVE_AD
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int16Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!__CheckInt16StoreAlignment__(ea))) return false;
 	uint16_t value = (uint16_t) gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, false, false>(value, ea);
@@ -715,6 +886,7 @@ bool CPU<TYPES, CONFIG>::Int16Store(unsigned int rs, typename TYPES::EFFECTIVE_A
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int32Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!__CheckInt32StoreAlignment__(ea))) return false;
 	uint32_t value = gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, false>(value, ea);
@@ -725,6 +897,7 @@ bool CPU<TYPES, CONFIG>::Int32Store(unsigned int rs, typename TYPES::EFFECTIVE_A
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int16StoreByteReverse(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!__CheckInt16StoreByteReverseAlignment__(ea))) return false;
 	uint16_t value = (uint16_t) gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, true, false>(value, ea); // reversed
@@ -735,6 +908,7 @@ bool CPU<TYPES, CONFIG>::Int16StoreByteReverse(unsigned int rs, typename TYPES::
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int32StoreByteReverse(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!__CheckInt32StoreByteReverseAlignment__(ea))) return false;
 	uint32_t value = gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, true, false>(value, ea); // reversed
@@ -769,7 +943,7 @@ bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::EFFEC
 			{
 				typedef uint8_t array_uint8_3_t[3];
 				uint32_t value = gpr[rs];
-				uint8_t buffer[3];
+				array_uint8_3_t buffer;
 				buffer[0] = value >> 24;
 				buffer[1] = value >> 16;
 				buffer[2] = value >> 8;
@@ -797,11 +971,29 @@ template <typename TYPES, typename CONFIG>
 template <typename REGISTER>
 bool CPU<TYPES, CONFIG>::SpecialStore(const REGISTER& reg, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely((!__CheckSpecialStoreAlignment__<REGISTER>(ea)))) return false;
 	uint32_t value = reg;
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, false>(value, ea);
 	if(unlikely(!status)) return false;
 	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+void CPU<TYPES, CONFIG>::ResetMemory()
+{
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::ReadMemory(EFFECTIVE_ADDRESS addr, void *buffer, uint32_t size)
+{
+	return this->DebugDataLoad(addr, buffer, size);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::WriteMemory(EFFECTIVE_ADDRESS addr, const void *buffer, uint32_t size)
+{
+	return this->DebugDataStore(addr, buffer, size);
 }
 
 template <typename TYPES, typename CONFIG>

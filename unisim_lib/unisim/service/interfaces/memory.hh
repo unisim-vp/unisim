@@ -46,7 +46,7 @@ template <class ADDRESS>
 class Memory : public unisim::kernel::service::ServiceInterface
 {
 public:
-	virtual void Reset() = 0;
+	virtual void ResetMemory() = 0;
 	virtual bool ReadMemory(ADDRESS addr, void *buffer, uint32_t size) = 0;
 	virtual bool WriteMemory(ADDRESS addr, const void *buffer, uint32_t size) = 0;
 };

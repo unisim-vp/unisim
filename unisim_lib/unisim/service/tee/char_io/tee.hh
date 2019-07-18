@@ -56,7 +56,7 @@ public:
 	Tee(const char *name, unisim::kernel::service::Object *parent = 0);
 	virtual ~Tee();
 	
-	virtual void Reset();
+	virtual void ResetCharIO();
 	virtual bool GetChar(char& c);
 	virtual void PutChar(char c);
 	virtual void FlushChars();
@@ -89,14 +89,14 @@ Tee<MAX_IMPORTS>::~Tee()
 }
 
 template <unsigned int MAX_IMPORTS>
-void Tee<MAX_IMPORTS>::Reset()
+void Tee<MAX_IMPORTS>::ResetCharIO()
 {
 	for(unsigned int i = 0; i < MAX_IMPORTS; i++)
 	{
 		unisim::kernel::service::ServiceImport<unisim::service::interfaces::CharIO>& import = *char_io_import[i];
 		if(import)
 		{
-			import->Reset();
+			import->ResetCharIO();
 		}
 	}
 }

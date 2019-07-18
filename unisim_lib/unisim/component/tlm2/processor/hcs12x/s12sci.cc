@@ -1138,7 +1138,7 @@ void S12SCI::Reset() {
 
 	if(char_io_import)
 	{
-		char_io_import->Reset();
+		char_io_import->ResetCharIO();
 	}
 
 }

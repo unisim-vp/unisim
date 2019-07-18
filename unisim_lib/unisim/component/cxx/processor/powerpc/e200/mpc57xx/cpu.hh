@@ -63,10 +63,7 @@ enum BusResponseStatus
 template <typename TYPES, typename CONFIG>
 class CPU
 	: public unisim::component::cxx::processor::powerpc::CPU<TYPES, CONFIG>
-	, public unisim::util::cache::MemorySubSystem<TYPES, typename CONFIG::CPU>
-	, public unisim::kernel::service::Client<typename unisim::service::interfaces::Memory<typename TYPES::PHYSICAL_ADDRESS> >
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Disassembly<typename TYPES::EFFECTIVE_ADDRESS> >
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Memory<typename TYPES::EFFECTIVE_ADDRESS> >
 {
 public:
 	//typedef CPU ThisCPU;
@@ -82,14 +79,9 @@ public:
 	typedef typename SuperCPU::DBSR DBSR;
 	typedef typename SuperCPU::SPEFSCR SPEFSCR;
 	
-	/////////////////////////// service imports ///////////////////////////////
-	
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> > memory_import;
-
 	/////////////////////////// service exports ///////////////////////////////
 
 	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS> > disasm_export;
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS> > memory_export;
 
 	////////////////////////////// constructor ////////////////////////////////
 	
@@ -102,16 +94,18 @@ public:
 	////////////////////////////// setup hooks ////////////////////////////////
 
 	virtual bool EndSetup();
+	
+	void Reset();
 
 	//////////  unisim::service::interfaces::Disassembly<> ////////////////////
 	
 	virtual std::string Disasm(EFFECTIVE_ADDRESS addr, EFFECTIVE_ADDRESS& next_addr);
 	
-	/////////////// unisim::service::interfaces::Memory<> /////////////////////
-	
-	virtual void Reset();
-	virtual bool ReadMemory(EFFECTIVE_ADDRESS addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(EFFECTIVE_ADDRESS addr, const void *buffer, uint32_t size);
+// 	/////////////// unisim::service::interfaces::Memory<> /////////////////////
+// 	
+// 	virtual void Reset();
+// 	virtual bool ReadMemory(EFFECTIVE_ADDRESS addr, void *buffer, uint32_t size);
+// 	virtual bool WriteMemory(EFFECTIVE_ADDRESS addr, const void *buffer, uint32_t size);
 	
 	///////////////// Interface with SystemC TLM-2.0 wrapper module ///////////
 	
@@ -641,20 +635,20 @@ public:
 	virtual bool AHBDebugDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
 	virtual bool AHBDebugDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
 
-	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataLoad(T& value, EFFECTIVE_ADDRESS ea);
-	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataStore(T value, EFFECTIVE_ADDRESS ea);
+// 	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataLoad(T& value, EFFECTIVE_ADDRESS ea);
+// 	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataStore(T value, EFFECTIVE_ADDRESS ea);
 	
-	bool DataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
-	bool DataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);
-	bool InstructionFetch(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
+// 	bool DataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
+// 	bool DataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);
+// 	bool InstructionFetch(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
 	
-	bool DebugDataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
-	bool DebugDataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);
-	bool DebugInstructionFetch(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
+// 	bool DebugDataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
+// 	bool DebugDataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);
+// 	bool DebugInstructionFetch(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
 
 	virtual void InvalidateDirectMemPtr(PHYSICAL_ADDRESS start_addr, PHYSICAL_ADDRESS end_addr) {}
 	
-	template <bool DEBUG, bool EXEC, bool WRITE> inline bool ControlAccess(EFFECTIVE_ADDRESS addr, EFFECTIVE_ADDRESS& size_to_protection_boundary, STORAGE_ATTR& storage_attr);
+	//template <bool DEBUG, bool EXEC, bool WRITE> inline bool ControlAccess(EFFECTIVE_ADDRESS addr, EFFECTIVE_ADDRESS& size_to_protection_boundary, STORAGE_ATTR& storage_attr);
 
 public:
 

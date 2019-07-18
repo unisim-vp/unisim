@@ -142,12 +142,12 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::BeginSetup()
 {
 	lo_addr = org;
 	hi_addr = org + (bytesize - 1);
-	Reset();
+	ResetMemory();
 	return true;
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
-void Memory<PHYSICAL_ADDR, PAGE_SIZE>::Reset()
+void Memory<PHYSICAL_ADDR, PAGE_SIZE>::ResetMemory()
 {
 	hash_table.Reset();
 	memory_usage = 0;

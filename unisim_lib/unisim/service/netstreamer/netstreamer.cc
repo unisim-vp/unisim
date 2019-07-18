@@ -938,7 +938,7 @@ bool NetStreamer::Get(uint8_t& v)
 	return true;
 }
 
-void NetStreamer::Reset()
+void NetStreamer::ResetCharIO()
 {
 	input_buffer_size = 0;
 	input_buffer_index = 0;

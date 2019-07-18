@@ -40,6 +40,7 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/nat_sort/nat_sort.hh>
+#include <unisim/util/cache/cache.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -529,17 +530,27 @@ template <unsigned int SIZE> struct TypeForBitSize
 
 template <typename TYPES, typename CONFIG>
 class CPU
-	: public unisim::kernel::service::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::EFFECTIVE_ADDRESS> >
+	: public unisim::util::cache::MemorySubSystem<TYPES, typename CONFIG::CPU>
+	, public unisim::kernel::service::Client<typename unisim::service::interfaces::Memory<typename TYPES::PHYSICAL_ADDRESS> >
+	, public unisim::kernel::service::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::EFFECTIVE_ADDRESS> >
 	, public unisim::kernel::service::Client<typename unisim::service::interfaces::DebugYielding>
 	, public unisim::kernel::service::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::EFFECTIVE_ADDRESS> >
 	, public unisim::kernel::service::Client<typename unisim::service::interfaces::TrapReporting>
+	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Memory<typename TYPES::EFFECTIVE_ADDRESS> >
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::MemoryAccessReportingControl>
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Synchronizable>
 {
 public:
+	typedef typename unisim::util::cache::MemorySubSystem<TYPES, typename CONFIG::CPU> SuperMSS;
+	typedef typename TYPES::EFFECTIVE_ADDRESS EFFECTIVE_ADDRESS;
+	typedef typename TYPES::ADDRESS ADDRESS;
+	typedef typename TYPES::PHYSICAL_ADDRESS PHYSICAL_ADDRESS;
+	typedef typename TYPES::STORAGE_ATTR STORAGE_ATTR;
+	
 	/////////////////////////// service imports ///////////////////////////////
 
+	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> > memory_import;
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::EFFECTIVE_ADDRESS> > symbol_table_lookup_import;
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::DebugYielding> debug_yielding_import;
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::EFFECTIVE_ADDRESS> > memory_access_reporting_import;
@@ -547,6 +558,7 @@ public:
 	
 	/////////////////////////// service exports ///////////////////////////////
 
+	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS> > memory_export;
 	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
 	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::Registers> registers_export;
 	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::Synchronizable> synchronizable_export;
@@ -574,6 +586,12 @@ public:
 	std::ostream& GetDebugWarningStream() { return logger.DebugWarningStream(); }
 	std::ostream& GetDebugErrorStream() { return logger.DebugErrorStream(); }
 	
+	/////////////// unisim::service::interfaces::Memory<> /////////////////////
+	
+	virtual void ResetMemory();
+	virtual bool ReadMemory(EFFECTIVE_ADDRESS addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(EFFECTIVE_ADDRESS addr, const void *buffer, uint32_t size);
+
 	//////////////// unisim::service::interface::Registers ////////////////////
 	
 	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
@@ -629,6 +647,17 @@ public:
 	bool MoveFromTMR(unsigned int n, uint32_t& value);
 	bool MoveToTMR(unsigned int n, uint32_t value);
 
+	template <bool DEBUG, bool EXEC, bool WRITE>
+	inline bool Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRESS& size_to_protection_boundary, ADDRESS& virt_addr, PHYSICAL_ADDRESS& phys_addr, STORAGE_ATTR& storage_attr);
+
+	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> void ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr);
+
+	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataLoad(T& value, EFFECTIVE_ADDRESS ea);
+	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataStore(T value, EFFECTIVE_ADDRESS ea);
+	
+	bool DebugDataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
+	bool DebugDataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);
+
 	bool Int8Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
 	bool Int16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
 	bool SInt16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
@@ -648,6 +677,49 @@ public:
 	std::string GetObjectFriendlyName(typename TYPES::EFFECTIVE_ADDRESS addr);
 	
 	///////////////////////////////////////////////////////////////////////////
+protected:
+	bool CheckInt16LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckSInt16LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return __CheckInt16LoadAlignment__(ea); }
+	bool CheckInt32LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckInt16LoadByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return __CheckInt16LoadAlignment__(ea); }
+	bool CheckInt32LoadByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return __CheckInt32LoadAlignment__(ea); }
+	bool CheckInt16StoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckInt32StoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckInt16StoreByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return __CheckInt16StoreAlignment__(ea); }
+	bool CheckInt32StoreByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return __CheckInt32StoreAlignment__(ea); }
+	template <typename REGISTER> bool CheckSpecialLoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea)
+	{
+		switch(REGISTER::SIZE)
+		{
+			case 32: return __CheckInt32LoadAlignment__(ea);
+		}
+		return true;
+		
+	}
+	template <typename REGISTER> bool CheckSpecialStoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea)
+	{
+		switch(REGISTER::SIZE)
+		{
+			case 32: return __CheckInt32StoreAlignment__(ea);
+		}
+		return true;
+		
+	}
+
+private:
+	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> void __ConvertDataLoadStoreEndian__(T& value, STORAGE_ATTR storage_attr) { static_cast<typename CONFIG::CPU *>(this)->template ConvertDataLoadStoreEndian<T, REVERSE, FORCE_BIG_ENDIAN>(value, storage_attr); }
+	bool __CheckInt16LoadAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadAlignment(ea); }
+	bool __CheckSInt16LoadAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckSInt16LoadAlignment(ea); }
+	bool __CheckInt32LoadAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32LoadAlignment(ea); }
+	bool __CheckInt16LoadByteReverseAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadByteReverseAlignment(ea); }
+	bool __CheckInt32LoadByteReverseAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32LoadByteReverseAlignment(ea); }
+	bool __CheckInt16StoreAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16StoreAlignment(ea); }
+	bool __CheckInt32StoreAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32StoreAlignment(ea); }
+	bool __CheckInt16StoreByteReverseAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16StoreByteReverseAlignment(ea); }
+	bool __CheckInt32StoreByteReverseAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32StoreByteReverseAlignment(ea); }
+	template <typename REGISTER> bool __CheckSpecialLoadAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->template CheckSpecialLoadAlignment<REGISTER>(ea); }
+	template <typename REGISTER> bool __CheckSpecialStoreAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->template CheckSpecialStoreAlignment<REGISTER>(ea); }
+
 protected:
 	
 	///////////////////////////////// InterruptBase ///////////////////////////////////

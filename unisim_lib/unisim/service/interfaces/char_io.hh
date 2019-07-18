@@ -44,7 +44,7 @@ namespace interfaces {
 class CharIO : public unisim::kernel::service::ServiceInterface
 {
 public:
-	virtual void Reset() = 0;
+	virtual void ResetCharIO() = 0;
 	virtual bool GetChar(char& c) = 0;
 	virtual void PutChar(char c) = 0;
 	virtual void FlushChars() = 0;

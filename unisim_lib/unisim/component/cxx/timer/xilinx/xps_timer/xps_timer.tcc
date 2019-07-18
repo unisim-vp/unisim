@@ -163,6 +163,12 @@ void XPS_Timer<CONFIG>::Reset()
 }
 
 template <class CONFIG>
+void XPS_Timer<CONFIG>::ResetMemory()
+{
+	Reset();
+}
+
+template <class CONFIG>
 bool XPS_Timer<CONFIG>::ReadMemory(typename CONFIG::MEMORY_ADDR addr, void *buffer, uint32_t size)
 {
 	if(size > 0)

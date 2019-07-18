@@ -91,7 +91,9 @@ struct CPU
   CPU( sc_core::sc_module_name const& name, Object* parent=0 );
   virtual ~CPU();
   
-  virtual void Reset();
+  void Reset();
+  
+  virtual void ResetMemory();
   
   // Master port to the bus port
   tlm::tlm_initiator_socket<64> master_socket;

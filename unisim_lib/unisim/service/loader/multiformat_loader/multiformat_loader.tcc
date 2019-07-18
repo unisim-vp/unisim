@@ -1563,7 +1563,7 @@ void MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::PrettyPrintSyntaxErrorLocation(con
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-void MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::Reset()
+void MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ResetMemory()
 {
 	unsigned int i;
 	
@@ -1571,7 +1571,7 @@ void MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::Reset()
 	{
 		if(*memory_import[i])
 		{
-			(*memory_import[i])->Reset();
+			(*memory_import[i])->ResetMemory();
 		}
 	}
 }

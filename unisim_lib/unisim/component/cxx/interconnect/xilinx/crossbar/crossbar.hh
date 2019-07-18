@@ -90,7 +90,9 @@ public:
 	Crossbar(const char *name, Object *parent = 0);
 	virtual ~Crossbar();
 	
-	virtual void Reset();
+	void Reset();
+	
+	virtual void ResetMemory();
 	virtual bool ReadMemory(typename CONFIG::ADDRESS addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(typename CONFIG::ADDRESS addr, const void *buffer, uint32_t size);
 

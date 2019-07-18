@@ -1987,6 +1987,7 @@ Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	, commit_insn_event(0)
 	, num_sampled_variables(0)
 	, func_name_loc_conv(0)
+	, need_update(true)
 	, addr_profiles()
 	, func_insn_profiles()
 	, pc(0)
@@ -2149,6 +2150,7 @@ void Profiler<ADDRESS>::DebugYield()
 			addr_profile->Capture(pc, length);
 		}
 		
+		need_update = true;
 		Unlock();
 	}
 }
@@ -2622,7 +2624,11 @@ void Profiler<ADDRESS>::Output(Visitor& visitor)
 	
 	Lock();
 	
-	Update();
+	if(need_update)
+	{
+		Update();
+		need_update = false;
+	}
 	
 	unsigned int i;
 	

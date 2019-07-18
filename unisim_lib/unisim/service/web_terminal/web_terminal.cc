@@ -1184,7 +1184,7 @@ WebTerminal::~WebTerminal()
 }
 
 // unisim::service::interfaces::CharIO
-void WebTerminal::Reset()
+void WebTerminal::ResetCharIO()
 {
 }
 
