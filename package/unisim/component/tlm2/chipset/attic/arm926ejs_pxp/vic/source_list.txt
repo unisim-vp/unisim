@@ -1,2 +1,0 @@
-unisim/component/tlm2/chipset/attic/arm926ejs_pxp/vic/vic.cc
-unisim/component/tlm2/chipset/attic/arm926ejs_pxp/vic/vic_stubs.cc

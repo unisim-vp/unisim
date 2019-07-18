@@ -209,6 +209,9 @@ function crawl_directory
 		for FILENAME in *; do
 			FILEPATH="${DIRPATH}/${FILENAME}"
 			if [ -d "${FILEPATH}" ]; then
+				if [ "${FILENAME}" = "attic" ]; then
+					continue
+                                fi
 				TRACKED_FILES_COUNT=$(git ls-files "${FILENAME}" | wc -l)
 				if [ "${INCLUDE_UNTRACKED_FILES}" = "yes" ] || git ls-files --error-unmatch "${FILENAME}" &> /dev/null; then
 					if [ -z "${BASE}" ]; then
