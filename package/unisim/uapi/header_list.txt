@@ -1,9 +1,0 @@
-unisim/uapi/eapi.h
-unisim/uapi/eapi_priv.h
-unisim/uapi/simulator.h
-unisim/uapi/simulator_priv.h
-unisim/uapi/types.h
-unisim/uapi/uapi.h
-unisim/uapi/uapi_priv.h
-unisim/uapi/variable.h
-unisim/uapi/variable_priv.h

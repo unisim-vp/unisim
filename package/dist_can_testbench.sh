@@ -13,7 +13,6 @@ unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/backtrace/backtrace.cc \
-unisim/kernel/api/api.cc \
 unisim/util/random/random.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
@@ -31,7 +30,6 @@ unisim/kernel/tlm2/clock.hh \
 unisim/kernel/tlm2/tlm_serial.hh \
 unisim/kernel/tlm2/tlm_can.hh \
 unisim/util/backtrace/backtrace.hh \
-unisim/kernel/api/api.hh \
 unisim/util/likely/likely.hh \
 unisim/util/inlining/inlining.hh \
 unisim/util/nat_sort/nat_sort.hh \
