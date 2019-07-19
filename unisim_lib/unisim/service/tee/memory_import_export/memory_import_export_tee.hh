@@ -52,7 +52,7 @@ using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 
-template <class service_address_t, uint8_t width = 16 >
+template <class service_address_t, unsigned int width = 16 >
 class MemoryImportExportTee :
 	public Service<Memory<service_address_t> >,
 	public Client<Memory<service_address_t> >
@@ -69,7 +69,7 @@ public:
 		memory_export("memory_export", this)
 	{
 
-		for (uint8_t i=0; i<width; i++) {
+		for (unsigned int i=0; i<width; i++) {
 			std::ostringstream out;
 			out << "memory-import-" << i;
 			memory_import[i] = new ServiceImport<Memory<service_address_t> >(out.str().c_str(), this);
@@ -78,7 +78,7 @@ public:
 	}
 
 	virtual ~MemoryImportExportTee() {
-		for (uint8_t i=0; i<width; i++) {
+		for (unsigned int i=0; i<width; i++) {
 			if (memory_import[i]) {
 				delete memory_import[i];
 				memory_import[i] = NULL;
@@ -87,13 +87,20 @@ public:
 
 	}
 
-	virtual void Reset() {};
+	virtual void ResetMemory()
+	{
+		for (unsigned int i=0; i < width; i++) {
+			if (*memory_import[i]) {
+				(*memory_import[i])->ResetMemory();
+			}
+		}
+	}
 
 	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
 		bool result = false;
 
-		for (uint8_t i=0; ((!result) && (i < width)); i++) {
+		for (unsigned int i=0; ((!result) && (i < width)); i++) {
 			if (*memory_import[i]) {
 				result = (*memory_import[i])->ReadMemory(addr, buffer, size);
 			}
@@ -106,7 +113,7 @@ public:
 
 		bool result = false;
 
-		for (uint8_t i=0; ((!result) && (i < width)); i++) {
+		for (unsigned int i=0; ((!result) && (i < width)); i++) {
 			if (*memory_import[i]) {
 				result = (*memory_import[i])->WriteMemory(addr, buffer, size);
 			}

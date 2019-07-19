@@ -114,6 +114,8 @@ public:
 	    return size;
 	}
 
+	std::queue<T> getQueue() { return buffer_queue; }
+	
 protected:
 
 	pthread_mutex_t queue_mutex;
@@ -127,7 +129,6 @@ private:
 	std::queue<T> buffer_queue;
 	bool alive;
 
-	std::queue<T> getQueue() { return buffer_queue; }
 
 };
 

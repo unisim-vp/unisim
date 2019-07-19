@@ -30,7 +30,7 @@
 #endif
 
 #include "SocketWriter.hpp"
-#include "../convert.hh"
+#include "unisim/util/converter/convert.hh"
 
 namespace unisim {
 namespace service {

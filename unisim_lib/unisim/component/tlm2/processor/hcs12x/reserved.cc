@@ -204,6 +204,11 @@ void RESERVED::Reset() {
 //	memset(reserved_register, 0, MEMORY_MAP_SIZE);
 }
 
+void RESERVED::ResetMemory() {
+
+	Reset();
+
+}
 
 //=====================================================================
 //=             memory interface methods                              =

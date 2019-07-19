@@ -10,7 +10,6 @@ unisim/component/tlm2/processor/hcs12x/s12mscan.hh
 unisim/component/tlm2/processor/hcs12x/s12pit24b.hh
 unisim/component/tlm2/processor/hcs12x/s12sci.hh
 unisim/component/tlm2/processor/hcs12x/s12spi.hh
-unisim/component/tlm2/processor/hcs12x/s12spi_v5.hh
 unisim/component/tlm2/processor/hcs12x/s12tim16b8c_v2.hh
 unisim/component/tlm2/processor/hcs12x/s12vregl3v3_v1.hh
 unisim/component/tlm2/processor/hcs12x/s12xdbg_v3.hh

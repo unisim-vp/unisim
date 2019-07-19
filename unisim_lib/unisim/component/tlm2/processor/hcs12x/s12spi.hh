@@ -130,6 +130,26 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
+template <unsigned int SPI_VERSION>
+struct S12SPI_CONFIG
+{
+};
+
+template <>
+struct S12SPI_CONFIG<4>
+{
+	static const bool IS_16BITS = false;
+	typedef uint8_t DATA_TYPE;
+};
+
+template <>
+struct S12SPI_CONFIG<5>
+{
+	static const bool IS_16BITS = true;
+	typedef uint16_t DATA_TYPE;
+};
+
+template <unsigned int SPI_VERSION>
 class S12SPI :
 	public sc_module
 	, public CallBackObject
@@ -177,6 +197,8 @@ public:
 	S12SPI(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12SPI();
 
+	virtual void Reset();
+
 	void assertInterrupt(uint8_t interrupt_offset);
 	void ComputeInternalTime();
 
@@ -193,7 +215,16 @@ public:
 
     void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
+	// target method
+//	virtual tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload&, tlm_phase& phase, sc_core::sc_time& t);
+//	virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm_dmi&  dmi_data);
 	virtual void rx_b_transport(tlm::tlm_generic_payload&, sc_core::sc_time& t);
+
+	// master method
+//	virtual tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload&, tlm_phase& phase, sc_core::sc_time& t);
+
+//	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload);
+
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -204,13 +235,13 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
 
 
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
@@ -226,8 +257,9 @@ public:
 	 */
     virtual Register *GetRegister(const char *name);
 
-    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner ) {
-    	// TODO:
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+    {
+    	// TODO
     }
 
 	//=====================================================================
@@ -241,7 +273,7 @@ protected:
 
 private:
 
-	static const uint16_t frameLength = 8;
+	uint16_t frameLength;
 
 	tlm_quantumkeeper quantumkeeper;
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
@@ -305,9 +337,9 @@ private:
 	uint8_t spibr_register; // 1 byte
 	uint8_t spisr_register; // 1 byte
 
-	uint8_t spidr_register; // 1 bytes
+	typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE spidr_register; // 2 bytes
 
-	uint8_t /*spidr_tx_buffer,*/ spidr_rx_buffer;;
+	typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE spidr_rx_buffer;
 	sc_event rx_buffer_event;
 
 	inline void ComputeBaudRate();
@@ -366,7 +398,7 @@ private:
 
 	inline bool isLSBFirst() { return ((spicr1_register & 0x01) != 0); }
 
-
+	inline bool is16bitsMode() { return S12SPI_CONFIG<SPI_VERSION>::IS_16BITS && ((spicr2_register & 0x40) != 0); }
 	inline bool isOutputBufferEnabled() { return ((spicr2_register & 0x08) != 0); }
 	inline bool isClkStopInWait() { return ((spicr2_register & 0x02) != 0); }
 
@@ -447,7 +479,7 @@ private:
 
 	inline bool isValideFrameWaiting() { return (validFrameWaiting); }
 	inline void setValideFrameWaiting(bool b) { validFrameWaiting = b; }
-	inline void setSPIDR(uint8_t spidr) {
+	inline void setSPIDR(typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE spidr) {
 		if (isSPIF()) {
 			validFrameWaiting = true;
 		} else {
@@ -586,6 +618,9 @@ private:
 
 
 }; /* end class S12SPI */
+
+typedef S12SPI<4> S12SPIV4;
+typedef S12SPI<5> S12SPIV5;
 
 } // end of namespace hcs12x
 } // end of namespace processor

@@ -1012,6 +1012,11 @@ void CRG::Reset() {
 
 }
 
+void CRG::ResetMemory() {
+
+	Reset();
+
+}
 
 //=====================================================================
 //=             memory interface methods                              =

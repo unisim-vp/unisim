@@ -143,6 +143,8 @@ public:
     PWM(const sc_module_name& name, Object *parent = 0);
     ~PWM();
 
+	virtual void Reset();
+	
 	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 //    void refresh_channel(uint8_t channel_number);
@@ -176,13 +178,13 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
 
 
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 

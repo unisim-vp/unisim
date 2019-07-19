@@ -1102,6 +1102,12 @@ void ATD10B<ATD_SIZE>::Reset() {
 
 }
 
+template <unsigned int ATD_SIZE>
+void ATD10B<ATD_SIZE>::ResetMemory() {
+
+	Reset();
+
+}
 
 //=====================================================================
 //=             memory interface methods                              =

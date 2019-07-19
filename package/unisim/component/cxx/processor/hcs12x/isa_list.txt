@@ -10,8 +10,6 @@ unisim/component/cxx/processor/hcs12x/load_store.isa
 unisim/component/cxx/processor/hcs12x/move.isa
 unisim/component/cxx/processor/hcs12x/multiplication_division.isa
 unisim/component/cxx/processor/hcs12x/others.isa
-unisim/component/cxx/processor/hcs12x/s12xgate.isa
 unisim/component/cxx/processor/hcs12x/stacking.isa
 unisim/component/cxx/processor/hcs12x/transfer_exchange.isa
-unisim/component/cxx/processor/hcs12x/xb.isa
 unisim/component/cxx/processor/hcs12x/xb_sub.isa

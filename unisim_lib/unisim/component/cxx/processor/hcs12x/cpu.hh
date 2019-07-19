@@ -274,6 +274,8 @@ public:
 	CPU(const char *name, Object *parent = 0);
 	virtual ~CPU();
 
+	virtual void Reset();
+
 	void setEntryPoint(address_t cpu_address);
 
 	//==========================================
@@ -478,7 +480,6 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
 
 	//=====================================================================
 	//=             memory access reporting control interface methods     =
@@ -495,6 +496,7 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
