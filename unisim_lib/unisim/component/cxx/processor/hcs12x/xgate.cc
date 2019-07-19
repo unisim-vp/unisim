@@ -530,6 +530,12 @@ void XGATE::Reset() {
 
 }
 
+void XGATE::ResetMemory() {
+
+	Reset();
+
+}
+
 void XGATE::Stop(int ret)
 {
 	exit(ret);

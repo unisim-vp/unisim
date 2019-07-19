@@ -145,6 +145,12 @@ void MMC::Reset() {
 }
 
 
+void MMC::ResetMemory() {
+	
+	Reset();
+	
+}
+
 bool MMC::BeginSetup() {
 
 

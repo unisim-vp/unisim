@@ -1949,6 +1949,12 @@ void ECT::Reset() {
 
 }
 
+void ECT::ResetMemory() {
+
+	Reset();
+
+}
+
 void ECT::computeInternalTime() {
 
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);

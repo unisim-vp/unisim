@@ -144,6 +144,8 @@ public:
 	CRG(const sc_module_name& name, Object *parent = 0);
 	virtual ~CRG();
 
+	virtual void Reset();
+	
 	void runRTI();
 	void runCOP();
 	void runClockMonitor();
@@ -167,13 +169,13 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
 
 
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 

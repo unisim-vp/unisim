@@ -196,6 +196,8 @@ public:
 	S12SCI(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12SCI();
 
+	virtual void Reset();
+	
 	void assertInterrupt(uint8_t interrupt_offset);
 	void ComputeInternalTime();
 
@@ -221,13 +223,12 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
-
 
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 

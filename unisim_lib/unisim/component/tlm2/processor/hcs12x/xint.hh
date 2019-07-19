@@ -167,14 +167,15 @@ public:
 	XINT(const sc_module_name& name, Object *parent = 0);
 	virtual ~XINT();
 
-	void run(); // Priority Decoder and Interrupt selection
-
 	virtual void Reset();
+	
+	void run(); // Priority Decoder and Interrupt selection
 
 	virtual bool BeginSetup();
 	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 

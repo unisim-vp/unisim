@@ -253,6 +253,12 @@ void CPU::Reset()
 	for (unsigned int i=0; i < QUEUE_SIZE; i++) queueBuffer[i] = 0;
 }
 
+void CPU::ResetMemory()
+{
+	
+	Reset();
+
+}
 
 bool CPU::read(unsigned int offset, const void *buffer, unsigned int data_length) {
 

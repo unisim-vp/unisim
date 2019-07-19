@@ -18,7 +18,7 @@ extern "C" {
 #define ARTIMON_WITH_IO
 #endif
 
-#include "artimon.h"
+#include <artimon.h>
 
 #ifdef __cplusplus
 }

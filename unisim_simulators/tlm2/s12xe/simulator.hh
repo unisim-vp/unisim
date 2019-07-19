@@ -13,6 +13,7 @@
 #include <signal.h>
 #include <getopt.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdexcept>
 
 #ifdef HAVE_CONFIG_H
@@ -23,8 +24,6 @@
 
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
-
-#include <unisim/service/profiling/addr_profiler/profiler.hh>
 
 #include <unisim/service/interfaces/loader.hh>
 
@@ -54,7 +53,7 @@
 #include <unisim/component/tlm2/processor/hcs12x/ect.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12pit24b.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12sci.hh>
-#include <unisim/component/tlm2/processor/hcs12x/s12spi_v5.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12spi.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12mpu.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12xftmx.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12mscan.hh>
@@ -104,7 +103,7 @@ using unisim::component::tlm2::processor::hcs12x::ECT;
 using unisim::component::tlm2::processor::hcs12x::S12XFTMX;
 using unisim::component::tlm2::processor::hcs12x::S12PIT24B;
 using unisim::component::tlm2::processor::hcs12x::S12SCI;
-using unisim::component::tlm2::processor::hcs12x::S12SPI;
+using unisim::component::tlm2::processor::hcs12x::S12SPIV5;
 using unisim::component::tlm2::processor::hcs12x::S12MPU;
 using unisim::component::tlm2::processor::hcs12x::S12MSCAN;
 using unisim::component::tlm2::processor::hcs12x::S12XEPIM;
@@ -117,16 +116,12 @@ using unisim::component::tlm2::processor::hcs12x::RESERVED;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 
-using unisim::service::interfaces::Loader;
-using unisim::service::loader::s19_loader::S19_Loader;
 using unisim::service::loader::multiformat_loader::MultiFormatLoader;
 
 using unisim::service::pim::PIM;
 using unisim::service::pim::PIMServer;
 
 using unisim::service::monitor::Monitor;
-
-using unisim::service::profiling::addr_profiler::Profiler;
 
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
@@ -135,7 +130,6 @@ using unisim::kernel::service::Statistic;
 using unisim::kernel::service::VariableBase;
 
 using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::util::garbage_collector::GarbageCollector;
 
 using unisim::service::telnet::Telnet;
 
@@ -255,6 +249,96 @@ private:
 		return (t.to_seconds());
     }
 
+    double symWrite8(const char* strName, uint8_t val) {
+
+		if (debugger) {
+			const Symbol<CPU_ADDRESS_TYPE> *symbol = debugger->FindSymbolByName(strName);
+			if (symbol) {
+				uint8_t value = Host2BigEndian(val);
+
+				if (!cpu->WriteMemory(symbol->GetAddress(), &value, symbol->GetSize())) {
+					std::cerr << "INSTRUMENT:: WriteSymbol has reported an error" << std::endl;
+				}
+			} else {
+				std::cerr << "INSTRUMENT:: Symbol " << strName << " not found." << std::endl;
+			}
+		} else {
+			std::cerr << "INSTRUMENT::Debugger not instantiated. Enable at less monitor." << std::endl;
+		}
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+    }
+
+    double symRead8(const char* strName, uint8_t* val) {
+
+		if (debugger) {
+			const Symbol<CPU_ADDRESS_TYPE> *symbol = debugger->FindSymbolByName(strName);
+			if (symbol) {
+				uint8_t value = 0;
+
+				if (!cpu->ReadMemory(symbol->GetAddress(), &value, symbol->GetSize())) {
+					std::cerr << "INSTRUMENT:: ReadSymbol has reported an error" << std::endl;
+				}
+				*val = BigEndian2Host(value);
+			} else {
+				std::cerr << "INSTRUMENT:: Symbol " << strName << " not found." << std::endl;
+			}
+		} else {
+			std::cerr << "INSTRUMENT::Debugger not instantiated. Enable at less monitor." << std::endl;
+		}
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+    }
+
+    double symWrite16(const char* strName, uint16_t val) {
+
+		if (debugger) {
+			const Symbol<CPU_ADDRESS_TYPE> *symbol = debugger->FindSymbolByName(strName);
+			if (symbol) {
+				uint16_t value = Host2BigEndian(val);
+
+				if (!cpu->WriteMemory(symbol->GetAddress(), &value, symbol->GetSize())) {
+					std::cerr << "INSTRUMENT:: WriteSymbol has reported an error" << std::endl;
+				}
+			} else {
+				std::cerr << "INSTRUMENT:: Symbol " << strName << " not found." << std::endl;
+			}
+		} else {
+			std::cerr << "INSTRUMENT::Debugger not instantiated. Enable at less monitor." << std::endl;
+		}
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+    }
+
+    double symRead16(const char* strName, uint16_t* val) {
+
+		if (debugger) {
+			const Symbol<CPU_ADDRESS_TYPE> *symbol = debugger->FindSymbolByName(strName);
+			if (symbol) {
+				uint16_t value = 0;
+
+				if (!cpu->ReadMemory(symbol->GetAddress(), &value, symbol->GetSize())) {
+					std::cerr << "INSTRUMENT:: ReadSymbol has reported an error" << std::endl;
+				}
+				*val = BigEndian2Host(value);
+			} else {
+				std::cerr << "INSTRUMENT:: Symbol " << strName << " not found." << std::endl;
+			}
+		} else {
+			std::cerr << "INSTRUMENT::Debugger not instantiated. Enable at less monitor." << std::endl;
+		}
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+    }
+
 private:
 
 	//=========================================================================
@@ -307,7 +391,7 @@ private:
 
 	S12SCI *sci0, *sci1, *sci2, *sci3, *sci4, *sci5, *sci6, *sci7;
 
-	S12SPI *spi0, *spi1, *spi2;
+	S12SPIV5 *spi0, *spi1, *spi2;
 
 	MSCAN *can0, *can1, *can2, *can3, *can4;
 

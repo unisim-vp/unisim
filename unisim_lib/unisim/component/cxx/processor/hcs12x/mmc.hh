@@ -252,6 +252,7 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 	void splitPagedAddress(physical_address_t paged_addr, page_t &page, address_t &cpu_address);

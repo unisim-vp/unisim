@@ -187,9 +187,9 @@ Simulator::Simulator(int argc, char **argv)
 	can3 = new MSCAN("CAN3");
 	can4 = new MSCAN("CAN4");
 
-	spi0 = new S12SPI("SPI0");
-	spi1 = new S12SPI("SPI1");
-	spi2 = new S12SPI("SPI2");
+	spi0 = new S12SPIV5("SPI0");
+	spi1 = new S12SPIV5("SPI1");
+	spi2 = new S12SPIV5("SPI2");
 
 	spi1_stub = new TLE72XXSL("SPI1-STUB");
 	spi2_stub = new TLE72XXSL("SPI2-STUB");

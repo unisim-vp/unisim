@@ -87,6 +87,15 @@ function discover_file_deps
 			if grep -e '^# *include *<SDL\.h>' "${FILEPATH}" &> /dev/null; then
 				echo "m4/sdl" >> "${PKG_DEPS_TXT}"
 			fi
+			if grep -e '^# *include *<artimon\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "m4/artimon" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<artimon\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "m4/artimon" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<lua\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "m4/lua" >> "${PKG_DEPS_TXT}"
+			fi
 		fi
 		
 		if [[ "${FILEPATH}" =~ ${isa_regex} ]]; then
@@ -324,3 +333,9 @@ mv "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/isa/thumb/isa_list.txt" "$
 mv "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/isa/thumb2/isa_list.txt" "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/isa/thumb2/isa_thumb2_list.txt"
 
 mv "${PACKAGE_DIR}/unisim/component/cxx/processor/powerpc/isa/book_vle/isa_list.txt" "${PACKAGE_DIR}/unisim/component/cxx/processor/powerpc/isa/book_vle/isa_vle_list.txt"
+
+sed -i '/unisim\/component\/cxx\/processor\/hcs12x\/xb\.isa/d' "${PACKAGE_DIR}/unisim/component/cxx/processor/hcs12x/isa_list.txt"
+sed -i '/unisim\/component\/cxx\/processor\/hcs12x\/s12xgate\.isa/d' "${PACKAGE_DIR}/unisim/component/cxx/processor/hcs12x/isa_list.txt"
+
+echo "unisim/component/cxx/processor/hcs12x/xb.isa" >  "${PACKAGE_DIR}/unisim/component/cxx/processor/hcs12x/isa_xb_list.txt"
+echo "unisim/component/cxx/processor/hcs12x/s12xgate.isa" >  "${PACKAGE_DIR}/unisim/component/cxx/processor/hcs12x/isa_s12xgate_list.txt"

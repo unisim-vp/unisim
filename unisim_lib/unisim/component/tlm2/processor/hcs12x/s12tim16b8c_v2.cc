@@ -203,6 +203,11 @@ void S12TIM16B8C::Reset() {
 	memset(tim_register, 0, MEMORY_MAP_SIZE);
 }
 
+void S12TIM16B8C::ResetMemory() {
+
+	Reset();
+	
+}
 
 //=====================================================================
 //=             memory interface methods                              =

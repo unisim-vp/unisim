@@ -1143,6 +1143,11 @@ void S12SCI::Reset() {
 
 }
 
+void S12SCI::ResetMemory() {
+
+	Reset();
+
+}
 
 //=====================================================================
 //=             memory interface methods                              =

@@ -457,6 +457,12 @@ void XINT::Reset() {
 
 }
 
+void XINT::ResetMemory() {
+
+	Reset();
+
+}
+
 bool XINT::BeginSetup() {
 
 	Reset();

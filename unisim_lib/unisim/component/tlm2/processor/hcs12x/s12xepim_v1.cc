@@ -204,6 +204,11 @@ void S12XEPIM::Reset() {
 	memset(pim_register, 0, MEMORY_MAP_SIZE);
 }
 
+void S12XEPIM::ResetMemory() {
+
+	Reset();
+
+}
 
 //=====================================================================
 //=             memory interface methods                              =

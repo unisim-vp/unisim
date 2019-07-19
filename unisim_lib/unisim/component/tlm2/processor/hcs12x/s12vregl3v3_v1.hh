@@ -170,6 +170,8 @@ public:
 	S12VREGL3V3(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12VREGL3V3();
 
+	virtual void Reset();
+
 	void ComputeInternalTime();
 
     //================================================================
@@ -190,13 +192,13 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
 
 
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 

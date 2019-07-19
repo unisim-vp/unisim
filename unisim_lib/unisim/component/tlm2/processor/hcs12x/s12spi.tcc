@@ -14,8 +14,8 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
-
-S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
+template <unsigned int SPI_VERSION>
+S12SPI<SPI_VERSION>::S12SPI(const sc_module_name& name, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 
@@ -25,18 +25,19 @@ S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
 	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
 	, unisim::kernel::service::Client<CharIO>(name, parent)
 
-	, trap_reporting_import("trap_reporting_import", this)
-	, char_io_import("char_io_import", this)
+	, trap_reporting_import("trap-reporting-import", this)
+	, char_io_import("char-io-import", this)
 
-	, memory_export("memory_export", this)
-	, memory_import("memory_import", this)
-	, registers_export("registers_export", this)
+	, memory_export("memory-export", this)
+	, memory_import("memory-import", this)
+	, registers_export("registers-export", this)
 
-	, slave_socket("slave_socket")
-	, bus_clock_socket("bus_clock_socket")
+	, slave_socket("slave-socket")
+	, bus_clock_socket("bus-clock-socket")
 	, tx_socket("tx-socket")
 	, rx_socket("rx-socket")
 
+	, frameLength(8)
 
 	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
@@ -76,7 +77,7 @@ S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
 	, spicr2_register(0x00)
 	, spibr_register(0x00)
 	, spisr_register(0x20)
-	, spidr_register(0x00)
+	, spidr_register(0x0000)
 
 	, spidr_rx_buffer(0)
 
@@ -106,7 +107,8 @@ S12SPI::S12SPI(const sc_module_name& name, Object *parent) :
 }
 
 
-S12SPI::~S12SPI() {
+template <unsigned int SPI_VERSION>
+S12SPI<SPI_VERSION>::~S12SPI() {
 
 	xint_payload->release();
 
@@ -128,7 +130,8 @@ S12SPI::~S12SPI() {
 	}
 }
 
-void S12SPI::TxRun() {
+template <unsigned int SPI_VERSION>
+void S12SPI<SPI_VERSION>::TxRun() {
 
 	while (true) {
 		while (!isSPIEnabled()) {
@@ -160,7 +163,7 @@ void S12SPI::TxRun() {
 
 			if (tx_debug_enabled)	std::cout << sc_object::name() << "::txShiftOut Start transmission -> " << std::hex << (unsigned int) spidr_register << std::dec << std::endl;
 
-			uint8_t tx_shift = spidr_register;
+			typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE tx_shift = spidr_register;
 
 			setSPTEF();
 
@@ -168,7 +171,17 @@ void S12SPI::TxRun() {
 
 			// use Telnet as an echo
 			if (telnet_enabled) {
-				add(telnet_tx_fifo, spidr_register, telnet_tx_event);
+				if (is16bitsMode()) {
+					if (isLSBFirst()) {
+						add(telnet_tx_fifo, ((uint8_t*) &tx_shift)[0], telnet_tx_event);
+						add(telnet_tx_fifo, ((uint8_t*) &tx_shift)[1], telnet_tx_event);
+					} else {
+						add(telnet_tx_fifo, ((uint8_t*) &tx_shift)[1], telnet_tx_event);
+						add(telnet_tx_fifo, ((uint8_t*) &tx_shift)[0], telnet_tx_event);
+					}
+				} else {
+					add(telnet_tx_fifo, ((uint8_t*) &tx_shift)[0], telnet_tx_event);
+				}
 				TelnetProcessOutput(true);
 
 				// TODO I have to emulate Mode Fault Error
@@ -182,8 +195,13 @@ void S12SPI::TxRun() {
 				}
 
 				tlm::tlm_generic_payload *payload = spi_payload_fabric.allocate();
-				payload->set_data_length(1);
-				payload->set_data_ptr((unsigned char*) &tx_shift);
+				if (is16bitsMode()) {
+					payload->set_data_length(2);
+					payload->set_data_ptr((unsigned char*) &tx_shift);
+				} else {
+					payload->set_data_length(1);
+					payload->set_data_ptr((unsigned char*) &((&tx_shift)[0]));
+				}
 
 				wait(spi_baud_rate * frameLength);
 
@@ -195,14 +213,21 @@ void S12SPI::TxRun() {
 //				uint8_t index = 0;
 //				while (isSPIEnabled() && (index < frameLength) && !isAbortTransmission()) {
 //
-//					if (checkModeFaultError()) { break;}
+//					if (checkModeFaultError()) {
+//						// TODO I have to emulate Mode Fault Error
+//						break;
+//					}
 //
 //					if (isLSBFirst()) {
-//						pinWrite(tx_shift & 0x01);
+//						pinWrite(tx_shift & 0x0001);
 //
 //						tx_shift = tx_shift >> 1;
 //					} else {
-//						pinWrite(tx_shift & 0x80);
+//						if (is16bitsMode()) {
+//							pinWrite(tx_shift & 0x8000);
+//						} else {
+//							pinWrite(tx_shift & 0x0080);
+//						}
 //
 //						tx_shift = tx_shift << 1;
 //					}
@@ -226,7 +251,8 @@ void S12SPI::TxRun() {
 	}
 }
 
-void S12SPI::RxRun() {
+template <unsigned int SPI_VERSION>
+void S12SPI<SPI_VERSION>::RxRun() {
 
 	while (true) {
 		while (!isSPIEnabled()) {
@@ -281,13 +307,23 @@ void S12SPI::RxRun() {
 
 		if (telnet_enabled) {
 
-			setActive();
+			typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE rx_shift = 0;
 
-			uint8_t rx_shift = 0;
+			setActive();
 
 			if (rx_debug_enabled)	std::cout << sc_object::name() << "::Rx  (12) " << std::endl;
 
-			next(telnet_rx_fifo, rx_shift, telnet_rx_event);
+			if (is16bitsMode()) {
+				if (isLSBFirst()) {
+					next(telnet_rx_fifo, ((uint8_t*) &rx_shift)[0], telnet_rx_event);
+					next(telnet_rx_fifo, ((uint8_t*) &rx_shift)[1], telnet_rx_event);
+				} else {
+					next(telnet_rx_fifo, ((uint8_t*) &rx_shift)[1], telnet_rx_event);
+					next(telnet_rx_fifo, ((uint8_t*) &rx_shift)[0], telnet_rx_event);
+				}
+			} else {
+				next(telnet_rx_fifo, ((uint8_t*) &rx_shift)[0], telnet_rx_event);
+			}
 
 			if (rx_debug_enabled) std::cout << sc_object::name() << "::Telnet::get  HAVE DATA" << std::endl;
 
@@ -309,7 +345,8 @@ void S12SPI::RxRun() {
 	}
 }
 
-void S12SPI::rx_b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
+template <unsigned int SPI_VERSION>
+void S12SPI<SPI_VERSION>::rx_b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 {
 	payload.acquire();
 	unsigned int length = payload.get_data_length();
@@ -318,7 +355,19 @@ void S12SPI::rx_b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time&
 	setSSLow(false);
 	setActive();
 
-	spidr_rx_buffer = *((uint8_t *) payload.get_data_ptr());
+	if (is16bitsMode()) {
+//		if (payload.get_data_length() != 2)
+//		{
+//			std::cerr << sc_object::name() << "::Warning interface is configured for 2-bytes" << std::endl;
+//		}
+		spidr_rx_buffer = *((uint16_t *) payload.get_data_ptr());
+	} else {
+//		if (payload.get_data_length() != 1)
+//		{
+//			std::cerr << sc_object::name() << "::Warning interface is configured for 1-byte" << std::endl;
+//		}
+		spidr_rx_buffer = *((uint8_t *) payload.get_data_ptr());
+	}
 
 	wait(spi_baud_rate * frameLength);
 
@@ -331,7 +380,8 @@ void S12SPI::rx_b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time&
 	payload.release();
 }
 
-void S12SPI::TelnetProcessInput()
+template <unsigned int SPI_VERSION>
+void S12SPI<SPI_VERSION>::TelnetProcessInput()
 {
 	while (telnet_enabled) {
 		while (!isSPIEnabled()) {
@@ -376,7 +426,8 @@ void S12SPI::TelnetProcessInput()
 //=             registers setters and getters                         =
 //=====================================================================
 
-void S12SPI::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
+template <unsigned int SPI_VERSION>
+void S12SPI<SPI_VERSION>::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
 
 	tlm::tlm_command cmd = trans.get_command();
@@ -389,12 +440,12 @@ void S12SPI::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
 
-//			std::cerr << "S12SPI::Warning: READ access to 0x" << std::hex << (address - baseAddress) << std::endl;
+//			std::cerr << "S12SPI<SPI_VERSION>::Warning: READ access to 0x" << std::hex << (address - baseAddress) << std::endl;
 
 			read(address - baseAddress, data_ptr, data_length);
 		} else if (cmd == tlm::TLM_WRITE_COMMAND) {
 
-//			std::cerr << "S12SPI::Warning: WRITE access to 0x" << std::hex << (address - baseAddress) << std::endl;
+//			std::cerr << "S12SPI<SPI_VERSION>::Warning: WRITE access to 0x" << std::hex << (address - baseAddress) << std::endl;
 
 			write(address - baseAddress, data_ptr, data_length);
 		}
@@ -408,16 +459,20 @@ void S12SPI::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 }
 
 
-bool S12SPI::read(unsigned int offset, const void *buffer, unsigned int data_length) {
+template <unsigned int SPI_VERSION>
+bool S12SPI<SPI_VERSION>::read(unsigned int offset, const void *buffer, unsigned int data_length) {
 
-//	std::cout << sc_object::name() << "::read offset= " << std::dec << offset << "  size=" << data_length << std::endl;
+//	std::cout << sc_time_stamp() << "  " << sc_object::name() << "::read offset= " << std::dec << offset << "  size=" << data_length << std::endl;
 
 	switch (offset) {
 		case SPICR1: {
 			*((uint8_t *) buffer) = spicr1_register;
 		} break;	// 1 byte
 		case SPICR2: {
-			*((uint8_t *) buffer) = spicr2_register & 0x1B;
+			if(SPI_VERSION < 5)
+				*((uint8_t *) buffer) = spicr2_register & 0x1B;
+			else
+				*((uint8_t *) buffer) = spicr2_register & 0x5B;
 		} break;	// 1 byte
 		case SPIBR: {
 			*((uint8_t *) buffer) = spibr_register & 0x77;
@@ -429,15 +484,41 @@ bool S12SPI::read(unsigned int offset, const void *buffer, unsigned int data_len
 			spisr_register = spisr_register & 0xB0;
 		} break; // 1 byte
 		case RESERVED1: {
-			if (data_length == 2) {
-				*((uint16_t *) buffer) = 0x00;
-			} else {
-				*((uint8_t *) buffer) = 0x00;
+			if(SPI_VERSION < 5) {
+				if (data_length == 2) {
+					*((uint16_t *) buffer) = 0x00;
+				} else {
+					*((uint8_t *) buffer) = 0x00;
+				}
+			}
+			else {
+				if (data_length == 2) {
+					*((uint16_t *) buffer) = Host2BigEndian(spidr_register);
+					if (rx_debug_enabled || tx_debug_enabled) {
+						std::cout << sc_time_stamp() << "  " <<  sc_object::name() << "::read offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) BigEndian2Host(*((uint16_t *)buffer)) << std::dec << std::endl;
+					}
+				} else {
+					*((uint8_t *) buffer) = (uint8_t) (spidr_register >> 8);
+					if (rx_debug_enabled || tx_debug_enabled) {
+						std::cout << sc_time_stamp() << "  " <<  sc_object::name() << "::read offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) *((uint8_t*) buffer) << std::dec << std::endl;
+					}
+				}
+
+				if (isSPISR_Read()) {
+					if (isValideFrameWaiting()) {
+						spidr_register = spidr_rx_buffer;
+						setSPIF();
+						validFrameWaiting = false;
+					} else {
+						// clear SPIF
+						spisr_register = spisr_register & 0x7F;
+					}
+				}
 			}
 
 		} break; // 1 byte
 		case SPIDR: {
-			*((uint8_t *) buffer) = spidr_register;
+			*((uint8_t *) buffer) = (uint8_t) (spidr_register & 0x00FF);
 			if (isSPISR_Read()) {
 				if (isValideFrameWaiting()) {
 					spidr_register = spidr_rx_buffer;
@@ -460,7 +541,8 @@ bool S12SPI::read(unsigned int offset, const void *buffer, unsigned int data_len
 	return (true);
 }
 
-bool S12SPI::write(unsigned int offset, const void *buffer, unsigned int data_length) {
+template <unsigned int SPI_VERSION>
+bool S12SPI<SPI_VERSION>::write(unsigned int offset, const void *buffer, unsigned int data_length) {
 
 	switch (offset) {
 		case SPICR1: {
@@ -489,10 +571,22 @@ bool S12SPI::write(unsigned int offset, const void *buffer, unsigned int data_le
 		} break;	// 1 byte
 		case SPICR2: {
 			uint8_t old = spicr2_register;
-			spicr2_register = *((uint8_t *) buffer) & 0x1B;
+			if(SPI_VERSION < 5)
+				spicr2_register = *((uint8_t *) buffer) & 0x1B;
+			else
+				spicr2_register = *((uint8_t *) buffer) & 0x5B;
 
-			if (isActive() && (((old & 0x19) ^ (spicr2_register & 0x19)) != 0)) {
-				abortTX();
+			frameLength = (is16bitsMode())? 16: 8;
+
+			if(SPI_VERSION < 5) {
+				if (isActive() && (((old & 0x19) ^ (spicr2_register & 0x19)) != 0)) {
+					abortTX();
+				}
+			}
+			else {
+				if (isActive() && (((old & 0x59) ^ (spicr2_register & 0x59)) != 0)) {
+					abortTX();
+				}
 			}
 
 		} break;	// 1 byte
@@ -512,13 +606,57 @@ bool S12SPI::write(unsigned int offset, const void *buffer, unsigned int data_le
 			// Write has no effect. Flags are cleared by reading the SPISR register and doing read/write operation
 		} break; // 1 byte
 
-		case RESERVED1: break; // 1 byte
+		case RESERVED1: if(SPI_VERSION < 5) {
+			if (rx_debug_enabled || tx_debug_enabled) {
+				if (data_length == 1) {
+					std::cout << sc_time_stamp() << "  " << sc_object::name() << "::write offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) *((uint8_t*) buffer) << std::dec << std::endl;
+				} else {
+					std::cout << sc_time_stamp() << "  " << sc_object::name() << "::write offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) BigEndian2Host(*((uint16_t *)buffer)) << std::dec << std::endl;
+				}
+			}
 
-		case SPIDR:  {
+			if (!isSPTEF() || isSPISR_Read()) {
+
+				// (SPTEF = 1) has to be read before a write to SPIDR can happen and taken into account
+				if (data_length == 2) {
+//					if (!is16bitsMode()) {
+//						std::cerr << sc_object::name() << "::Warning interface is configured for 1-bytes" << std::endl;
+//					}
+					spidr_register = BigEndian2Host(*((uint16_t *) buffer));
+				} else {
+//					if (is16bitsMode()) {
+//						std::cerr << sc_object::name() << "::Warning interface is configured for 2-bytes" << std::endl;
+//					}
+					spidr_register = (spidr_register & 0x00FF) | (((uint16_t)*((uint8_t *) buffer)) << 8);
+				}
+
+				tx_load_event.notify();
+			}
+
+			if (isSPISR_Read()) {
+				// clear SPTEF flag
+				spisr_register = spisr_register & 0xDF;
+			}
+
+		} break; // 1 byte
+
+		case SPIDR: {
+			if(SPI_VERSION < 5) {
+				if (rx_debug_enabled || tx_debug_enabled) {
+					if (data_length == 1) {
+						std::cout << sc_object::name() << "::write offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) *((uint8_t*) buffer) << std::dec << std::endl;
+					} else {
+						std::cout << sc_object::name() << "::write offset= " << std::dec << offset << "  size=" << data_length << "  data=0x" << std::hex << (unsigned int) BigEndian2Host(*((uint16_t *)buffer)) << std::dec << std::endl;
+					}
+				}
+			}
 
 			if (!isSPTEF() || isSPISR_Read()) {
 				// (SPTEF = 1) has to be read before a write to SPIDR can happen and taken into account
-				spidr_register = *((uint8_t *) buffer);
+				if(SPI_VERSION < 5)
+					spidr_register = *((uint8_t *) buffer);
+				else
+					spidr_register = (spidr_register & 0xFF00) | *((uint8_t *) buffer);
 
 				tx_load_event.notify();
 			}
@@ -538,7 +676,8 @@ bool S12SPI::write(unsigned int offset, const void *buffer, unsigned int data_le
 }
 
 
-void S12SPI::assertInterrupt(uint8_t interrupt_offset) {
+template <unsigned int SPI_VERSION>
+void S12SPI<SPI_VERSION>::assertInterrupt(uint8_t interrupt_offset) {
 
 
 	tlm_phase phase = BEGIN_REQ;
@@ -576,14 +715,16 @@ void S12SPI::assertInterrupt(uint8_t interrupt_offset) {
 
 // Master methods
 
-void S12SPI::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+template <unsigned int SPI_VERSION>
+void S12SPI<SPI_VERSION>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
 	// Leave this empty as it is designed for memory mapped buses
 }
 
 // Master methods
 
-tlm_sync_enum S12SPI::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+template <unsigned int SPI_VERSION>
+tlm_sync_enum S12SPI<SPI_VERSION>::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
 {
 	if(phase == BEGIN_RESP)
 	{
@@ -594,7 +735,8 @@ tlm_sync_enum S12SPI::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, 
 }
 
 
-void S12SPI::ComputeInternalTime() {
+template <unsigned int SPI_VERSION>
+void S12SPI<SPI_VERSION>::ComputeInternalTime() {
 
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 
@@ -603,7 +745,8 @@ void S12SPI::ComputeInternalTime() {
 }
 
 
-void S12SPI::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
+template <unsigned int SPI_VERSION>
+void S12SPI<SPI_VERSION>::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 
 	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
@@ -613,7 +756,8 @@ void S12SPI::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 	ComputeInternalTime();
 }
 
-void S12SPI::ComputeBaudRate() {
+template <unsigned int SPI_VERSION>
+void S12SPI<SPI_VERSION>::ComputeBaudRate() {
 
 	/**
 	 * The baud rate divisor equation is as follows:
@@ -638,7 +782,8 @@ void S12SPI::ComputeBaudRate() {
 //=====================================================================
 
 
-bool S12SPI::BeginSetup() {
+template <unsigned int SPI_VERSION>
+bool S12SPI<SPI_VERSION>::BeginSetup() {
 
 	char buf[80];
 
@@ -671,9 +816,9 @@ bool S12SPI::BeginSetup() {
 	spisr_var->setCallBack(this, SPISR, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.SPIDR",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &spidr_register);
+	registers_registry[buf] = new SimpleRegister<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE>(buf, &spidr_register);
 
-	unisim::kernel::service::Register<uint8_t> *spidr_var = new unisim::kernel::service::Register<uint8_t>("SPIDR", this, spidr_register, "SPI Data register (SPIDR)");
+	unisim::kernel::service::Register<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE> *spidr_var = new unisim::kernel::service::Register<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE>("SPIDR", this, spidr_register, "SPI Data register (SPIDR)");
 	extended_registers_registry.push_back(spidr_var);
 	spidr_var->setCallBack(this, SPIDR, &CallBackObject::write, NULL);
 
@@ -685,18 +830,21 @@ bool S12SPI::BeginSetup() {
 }
 
 
-bool S12SPI::Setup(ServiceExportBase *srv_export) {
+template <unsigned int SPI_VERSION>
+bool S12SPI<SPI_VERSION>::Setup(ServiceExportBase *srv_export) {
 
 	return (true);
 }
 
 
-bool S12SPI::EndSetup() {
+template <unsigned int SPI_VERSION>
+bool S12SPI<SPI_VERSION>::EndSetup() {
 	return (true);
 }
 
 
-Register* S12SPI::GetRegister(const char *name)
+template <unsigned int SPI_VERSION>
+Register* S12SPI<SPI_VERSION>::GetRegister(const char *name)
 {
 	if(registers_registry.find(string(name)) != registers_registry.end())
 		return (registers_registry[string(name)]);
@@ -706,17 +854,21 @@ Register* S12SPI::GetRegister(const char *name)
 }
 
 
-void S12SPI::OnDisconnect() {
+template <unsigned int SPI_VERSION>
+void S12SPI<SPI_VERSION>::OnDisconnect() {
 }
 
 
-void S12SPI::Reset() {
+template <unsigned int SPI_VERSION>
+void S12SPI<SPI_VERSION>::Reset() {
 
 	spicr1_register = 0x04;
 	spicr2_register = 0x00;
 	spibr_register = 0x00;
 	spisr_register = 0x20;
-	spidr_register = 0x00;
+	spidr_register = 0x0000;
+
+	frameLength = 8;
 
 	if(char_io_import)
 	{
@@ -725,13 +877,20 @@ void S12SPI::Reset() {
 
 }
 
+template <unsigned int SPI_VERSION>
+void S12SPI<SPI_VERSION>::ResetMemory() {
+
+	Reset();
+
+}
 
 //=====================================================================
 //=             memory interface methods                              =
 //=====================================================================
 
 
-bool S12SPI::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
+template <unsigned int SPI_VERSION>
+bool S12SPI<SPI_VERSION>::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 	if ((addr >= baseAddress) && (addr < (baseAddress + MEMORY_MAP_SIZE))) {
 
@@ -750,11 +909,22 @@ bool S12SPI::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 			case SPISR: {
 				*((uint8_t *) buffer) = spisr_register;
 			} break; // 1 byte
-			case RESERVED1: {
+			case RESERVED1: if(SPI_VERSION < 5) {
+				if (size == 2)
+				{
+					*((uint16_t *) buffer) = spidr_register;
+				} else {
+					*((uint8_t *) buffer) = (uint8_t) (spidr_register >> 8);
+				}
+
+			} else {
 				*((uint8_t *) buffer) = 0x00;
-			} break; // 1 byte
+			} break; // 2 byte
 			case SPIDR: {
-				*((uint8_t *) buffer) = spidr_register;
+				if(SPI_VERSION < 5)
+					*((uint8_t *) buffer) = spidr_register;
+				else
+					*((uint8_t *) buffer) = (uint8_t) (spidr_register & 0x00FF);
 			} break; // 1 bytes
 			case RESERVED2: {
 				*((uint8_t *) buffer) = 0x00;
@@ -773,7 +943,8 @@ bool S12SPI::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 }
 
 
-bool S12SPI::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
+template <unsigned int SPI_VERSION>
+bool S12SPI<SPI_VERSION>::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
 	if ((addr >= baseAddress) && (addr < (baseAddress + MEMORY_MAP_SIZE))) {
 
@@ -796,9 +967,18 @@ bool S12SPI::WriteMemory(physical_address_t addr, const void *buffer, uint32_t s
 			case SPISR:  {
 				spisr_register = *((uint8_t *) buffer);
 			} break; // 1 byte
-			case RESERVED1:  break; // 1 byte
+			case RESERVED1: {
+				if (size == 2) {
+					spidr_register = *((uint16_t *) buffer);
+				} else {
+					spidr_register = (spidr_register & 0x00FF) | (((uint16_t) *((uint8_t *) buffer)) << 8);
+				}
+			} break; // 2 byte
 			case SPIDR:  {
-				spidr_register = *((uint8_t *) buffer);
+				if(SPI_VERSION < 5)
+					spidr_register = *((uint8_t *) buffer);
+				else
+					spidr_register = (spidr_register & 0xFF00) | (((uint16_t) *((uint8_t *) buffer)) & 0x00FF);
 			} break; // 1 bytes
 			case RESERVED2:  break; // 1 bytes
 			case RESERVED3:  break; // 1 bytes

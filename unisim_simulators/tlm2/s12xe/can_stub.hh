@@ -42,6 +42,7 @@
 #include <inttypes.h>
 
 #include <iostream>
+#include <fstream>
 #include <queue>
 
 #include <stdio.h>

@@ -901,6 +901,13 @@ void PWM<PWM_SIZE>::Reset() {
 
 }
 
+template <uint8_t PWM_SIZE>
+void PWM<PWM_SIZE>::ResetMemory() {
+
+	Reset();
+
+}
+
 	//=====================================================
 	//=             PWM Channel methods                   =
 	//=====================================================

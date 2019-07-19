@@ -203,6 +203,11 @@ void S12IIC::Reset() {
 	memset(iic_register, 0, MEMORY_MAP_SIZE);
 }
 
+void S12IIC::ResetMemory() {
+
+	Reset();
+	
+}
 
 //=====================================================================
 //=             memory interface methods                              =

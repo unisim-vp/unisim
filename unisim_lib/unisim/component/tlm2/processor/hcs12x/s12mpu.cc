@@ -433,6 +433,11 @@ void S12MPU::Reset() {
 
 }
 
+void S12MPU::ResetMemory() {
+
+	Reset();
+
+}
 
 //=====================================================================
 //=             memory interface methods                              =

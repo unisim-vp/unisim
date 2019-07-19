@@ -204,6 +204,10 @@ void S12XDBG::Reset() {
 	memset(dbg_register, 0, MEMORY_MAP_SIZE);
 }
 
+void S12XDBG::ResetMemory() {
+
+	Reset();
+}
 
 //=====================================================================
 //=             memory interface methods                              =

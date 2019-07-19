@@ -1198,6 +1198,11 @@ void S12MSCAN::Reset() {
 
 }
 
+void S12MSCAN::ResetMemory() {
+
+	Reset();
+	
+}
 
 //=====================================================================
 //=             memory interface methods                              =

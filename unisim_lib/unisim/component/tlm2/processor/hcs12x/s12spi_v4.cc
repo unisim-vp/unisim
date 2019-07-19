@@ -1,5 +1,5 @@
 /*
- * s12spi_v5.cc
+ * s12spi_v4.cc
  *
  *  Created on: 8 août 2012
  *      Author: rnouacer
@@ -15,7 +15,7 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
-template class S12SPI<5>;
+template class S12SPI<4>;
 
 } // end of namespace hcs12x
 } // end of namespace processor

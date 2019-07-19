@@ -171,6 +171,8 @@ public:
 	S12MPU(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12MPU();
 
+	virtual void Reset();
+	
 	virtual bool validate(TOWNER::OWNER who, physical_address_t addr, uint32_t size, bool isWrite, bool isExecute);
 	virtual void assertInterrupt();
 
@@ -191,7 +193,7 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
+	virtual void ResetMemory();
 
 
 	//=====================================================================

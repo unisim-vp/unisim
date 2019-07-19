@@ -342,7 +342,7 @@ bool Telnet::IsVerbose() const
 	return verbose;
 }
 
-void Telnet::Reset()
+void Telnet::ResetCharIO()
 {
 	telnet_input_buffer_size = 0;
 	telnet_input_buffer_index = 0;

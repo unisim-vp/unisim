@@ -290,6 +290,8 @@ public:
 	XGATE(const char *name, Object *parent);
 	~XGATE();
 
+	virtual void Reset();
+	
 	unsigned int step();	// Return the number of cpu cycles consumed by the operation
 	virtual void Stop(int ret);
 	virtual void Sync();
@@ -368,7 +370,7 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
+	virtual void ResetMemory();
 
 
 	//=====================================================================

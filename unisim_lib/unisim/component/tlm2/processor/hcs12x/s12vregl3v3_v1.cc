@@ -203,6 +203,11 @@ void S12VREGL3V3::Reset() {
 	memset(vreg_register, 0, MEMORY_MAP_SIZE);
 }
 
+void S12VREGL3V3::ResetMemory() {
+	
+	Reset();
+
+}
 
 //=====================================================================
 //=             memory interface methods                              =

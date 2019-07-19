@@ -560,6 +560,12 @@ void S12PIT24B<PIT_SIZE>::Reset() {
 
 }
 
+template <uint8_t PIT_SIZE>
+void S12PIT24B<PIT_SIZE>::ResetMemory() {
+
+	Reset();
+	
+}
 
 //=====================================================================
 //=             memory interface methods                              =
