@@ -602,6 +602,7 @@ atd_pwm_stub.hh \
 xml_atd_pwm_stub.hh \
 rtb_unisim.hh \
 can_stub.hh \
+tle8264_2e.hh \
 tle72xxSL.hh \
 tle8264_2e.hh \
 simulator_if.h \

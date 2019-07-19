@@ -83,3 +83,23 @@ EXPORTED_FUNCTION  double getCANArray(CAN_DATATYPE_ARRAY *msg)
 {
 	return (simulator->getCANArray(msg));
 }
+
+EXPORTED_FUNCTION  double symWrite8(const char* strName, uint8_t val)
+{
+	return (simulator->symWrite8(strName, val));
+}
+
+EXPORTED_FUNCTION  double symRead8(const char* strName, uint8_t* val)
+{
+	return (simulator->symRead8(strName, val));
+}
+
+EXPORTED_FUNCTION  double symWrite16(const char* strName, uint16_t val)
+{
+	return (simulator->symWrite16(strName, val));
+}
+
+EXPORTED_FUNCTION  double symRead16(const char* strName, uint16_t* val)
+{
+	return (simulator->symRead16(strName, val));
+}

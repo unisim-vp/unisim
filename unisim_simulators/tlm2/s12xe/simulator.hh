@@ -13,6 +13,7 @@
 #include <signal.h>
 #include <getopt.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdexcept>
 
 #ifdef HAVE_CONFIG_H
@@ -252,6 +253,96 @@ private:
 
 		sc_core::sc_time t;
 		sc_core::sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+    }
+
+    double symWrite8(const char* strName, uint8_t val) {
+
+		if (debugger) {
+			const Symbol<CPU_ADDRESS_TYPE> *symbol = debugger->FindSymbolByName(strName);
+			if (symbol) {
+				uint8_t value = Host2BigEndian(val);
+
+				if (!debugger->WriteMemory(symbol->GetAddress(), &value, symbol->GetSize())) {
+					std::cerr << "INSTRUMENT:: WriteSymbol has reported an error" << std::endl;
+				}
+			} else {
+				std::cerr << "INSTRUMENT:: Symbol " << strName << " not found." << std::endl;
+			}
+		} else {
+			std::cerr << "INSTRUMENT::Debugger not instantiated. Enable at less monitor." << std::endl;
+		}
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+    }
+
+    double symRead8(const char* strName, uint8_t* val) {
+
+		if (debugger) {
+			const Symbol<CPU_ADDRESS_TYPE> *symbol = debugger->FindSymbolByName(strName);
+			if (symbol) {
+				uint8_t value = 0;
+
+				if (!debugger->ReadMemory(symbol->GetAddress(), &value, symbol->GetSize())) {
+					std::cerr << "INSTRUMENT:: ReadSymbol has reported an error" << std::endl;
+				}
+				*val = BigEndian2Host(value);
+			} else {
+				std::cerr << "INSTRUMENT:: Symbol " << strName << " not found." << std::endl;
+			}
+		} else {
+			std::cerr << "INSTRUMENT::Debugger not instantiated. Enable at less monitor." << std::endl;
+		}
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+    }
+
+    double symWrite16(const char* strName, uint16_t val) {
+
+		if (debugger) {
+			const Symbol<CPU_ADDRESS_TYPE> *symbol = debugger->FindSymbolByName(strName);
+			if (symbol) {
+				uint16_t value = Host2BigEndian(val);
+
+				if (!debugger->WriteMemory(symbol->GetAddress(), &value, symbol->GetSize())) {
+					std::cerr << "INSTRUMENT:: WriteSymbol has reported an error" << std::endl;
+				}
+			} else {
+				std::cerr << "INSTRUMENT:: Symbol " << strName << " not found." << std::endl;
+			}
+		} else {
+			std::cerr << "INSTRUMENT::Debugger not instantiated. Enable at less monitor." << std::endl;
+		}
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+    }
+
+    double symRead16(const char* strName, uint16_t* val) {
+
+		if (debugger) {
+			const Symbol<CPU_ADDRESS_TYPE> *symbol = debugger->FindSymbolByName(strName);
+			if (symbol) {
+				uint16_t value = 0;
+
+				if (!debugger->ReadMemory(symbol->GetAddress(), &value, symbol->GetSize())) {
+					std::cerr << "INSTRUMENT:: ReadSymbol has reported an error" << std::endl;
+				}
+				*val = BigEndian2Host(value);
+			} else {
+				std::cerr << "INSTRUMENT:: Symbol " << strName << " not found." << std::endl;
+			}
+		} else {
+			std::cerr << "INSTRUMENT::Debugger not instantiated. Enable at less monitor." << std::endl;
+		}
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
 		return (t.to_seconds());
     }
 

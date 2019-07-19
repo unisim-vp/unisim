@@ -54,6 +54,11 @@ EXPORTED_FUNCTION  double getCAN(CAN_DATATYPE *msg) DLL_PUBLIC;
 EXPORTED_FUNCTION  double setCANArray(CAN_DATATYPE_ARRAY msg) DLL_PUBLIC;
 EXPORTED_FUNCTION  double getCANArray(CAN_DATATYPE_ARRAY *msg) DLL_PUBLIC;
 
+EXPORTED_FUNCTION  double symWrite8(const char* strName, uint8_t val);
+EXPORTED_FUNCTION  double symRead8(const char* strName, uint8_t* val);
+EXPORTED_FUNCTION  double symWrite16(const char* strName, uint16_t val);
+EXPORTED_FUNCTION  double symRead16(const char* strName, uint16_t* val);
+
 #ifdef __cplusplus
 }
 #endif
