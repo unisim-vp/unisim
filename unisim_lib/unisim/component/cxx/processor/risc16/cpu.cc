@@ -97,6 +97,13 @@ CPU::~CPU()
 	}
 }
 
+void
+CPU::Reset()
+{
+	cia = 0;
+	for(unsigned int i= 0; i < 16; i++) gpr[i] = 0;
+}
+
 uint16_t
 CPU::fetch(uint16_t addr)
 {
@@ -193,10 +200,8 @@ void CPU::RequiresMemoryAccessReporting(MemoryAccessReportingType type, bool rep
 //=             memory interface methods                              =
 //=====================================================================
 
-void CPU::Reset()
+void CPU::ResetMemory()
 {
-	cia = 0;
-	for(unsigned int i= 0; i < 16; i++) gpr[i] = 0;
 }
 
 bool CPU::ReadMemory(uint64_t addr, void *buffer, uint32_t size)

@@ -165,13 +165,13 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 	}
 
 	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_stop();
+	sc_core::sc_stop();
 	if(!asynchronous)
 	{
-		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		switch(sc_core::sc_get_curr_simcontext()->get_curr_proc_info()->kind)
 		{
-			case SC_THREAD_PROC_:
-			case SC_CTHREAD_PROC_:
+			case sc_core::SC_THREAD_PROC_:
+			case sc_core::SC_CTHREAD_PROC_:
 				wait();
 				break;
 			default:
@@ -182,18 +182,18 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 
 void Simulator::Run() {
 
-	cerr << "Starting simulation ..." << endl;
+	std::cerr << "Starting simulation ..." << std::endl;
 
 	try
 	{
-		sc_start();
+		sc_core::sc_start();
 	}
 	catch(std::runtime_error& e)
 	{
-		cerr << "FATAL ERROR! an abnormal error occurred during simulation. Bailing out..." << endl;
-		cerr << e.what() << endl;
+		std::cerr << "FATAL ERROR! an abnormal error occurred during simulation. Bailing out..." << std::endl;
+		std::cerr << e.what() << std::endl;
 	}
 
-	cerr << "Simulation finished" << endl << endl;
+	std::cerr << "Simulation finished" << std::endl << std::endl;
 }
 

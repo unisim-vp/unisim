@@ -110,6 +110,7 @@ public:
 	CPU(const char *name, Object *parent = 0);
 	virtual ~CPU();
 
+	void Reset();
 	uint16_t fetch(uint16_t addr);
 
 	virtual uint16_t mem_read(uint16_t addr) = 0;
@@ -138,7 +139,7 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
-	virtual void Reset();
+	virtual void ResetMemory();
 
 	virtual bool ReadMemory(uint64_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(uint64_t addr, const void *buffer, uint32_t size);

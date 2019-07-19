@@ -62,7 +62,7 @@
 
 void SigIntHandler(int signum)
 {
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
+	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
 	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
 }
 
@@ -367,14 +367,14 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	// - CPU
 	simulator->SetVariable("cpu.mimic-dev-board", true);
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
-	simulator->SetVariable("cpu.cpu-cycle-time", sc_time(cpu_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("cpu.cpu-cycle-time", sc_core::sc_time(cpu_cycle_time, sc_core::SC_PS).to_string().c_str());
 	simulator->SetVariable("cpu.nice-time", "1 us");
 	simulator->SetVariable("cpu.enable-dmi", true);
 	
 	//  - RAM
-	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("memory.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("memory.write-latency", SC_ZERO_TIME.to_string().c_str());
+	simulator->SetVariable("memory.cycle-time", sc_core::sc_time(mem_cycle_time, sc_core::SC_PS).to_string().c_str());
+	simulator->SetVariable("memory.read-latency", sc_core::sc_time(mem_cycle_time, sc_core::SC_PS).to_string().c_str());
+	simulator->SetVariable("memory.write-latency", sc_core::SC_ZERO_TIME.to_string().c_str());
 	simulator->SetVariable("memory.org", 0x00000000UL);
 	simulator->SetVariable("memory.bytesize", (uint32_t) -1);
 
@@ -400,37 +400,37 @@ void Simulator::Run()
 {
 	double time_start = host_time->GetTime();
 
-	sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
+	sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
 	
 	try
 	{
-		sc_start();
+		sc_core::sc_start();
 	}
 	catch(std::runtime_error& e)
 	{
-		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-		cerr << e.what() << endl;
+		std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+		std::cerr << e.what() << std::endl;
 	}
 
-	cerr << "Simulation finished" << endl;
+	std::cerr << "Simulation finished" << std::endl;
 
 	double time_stop = host_time->GetTime();
 	double spent_time = time_stop - time_start;
 
-	cerr << "Simulation run-time parameters:" << endl;
-	DumpParameters(cerr);
-	cerr << endl;
-	cerr << "Simulation formulas:" << endl;
-	DumpFormulas(cerr);
-	cerr << endl;
-	cerr << "Simulation statistics:" << endl;
-	DumpStatistics(cerr);
-	cerr << endl;
+	std::cerr << "Simulation run-time parameters:" << std::endl;
+	DumpParameters(std::cerr);
+	std::cerr << std::endl;
+	std::cerr << "Simulation formulas:" << std::endl;
+	DumpFormulas(std::cerr);
+	std::cerr << std::endl;
+	std::cerr << "Simulation statistics:" << std::endl;
+	DumpStatistics(std::cerr);
+	std::cerr << std::endl;
 
-	cerr << "simulation time: " << spent_time << " seconds" << endl;
-	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
-	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+	std::cerr << "simulation time: " << spent_time << " seconds" << std::endl;
+	std::cerr << "simulated time : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
+	std::cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
+	std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 }
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
@@ -455,20 +455,20 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 	exit_status = _exit_status;
 	if(object)
 	{
-		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+		std::std::cerr << object->GetName() << " has requested simulation stop" << std::std::endl << std::std::endl;
 	}
 #ifdef DEBUG_TMS320C3X
-	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
+	std::std::cerr << "Call stack:" << std::std::endl;
+	std::std::cerr << unisim::util::backtrace::BackTrace() << std::std::endl;
 #endif
-	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_stop();
+	std::std::cerr << "Program exited with status " << exit_status << std::std::endl;
+	sc_core::sc_stop();
 	if(!asynchronous)
 	{
-		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		switch(sc_core::sc_get_curr_simcontext()->get_curr_proc_info()->kind)
 		{
-			case SC_THREAD_PROC_: 
-			case SC_CTHREAD_PROC_:
+			case sc_core::SC_THREAD_PROC_: 
+			case sc_core::SC_CTHREAD_PROC_:
 				wait();
 				break;
 			default:
@@ -490,7 +490,7 @@ int sc_main(int argc, char *argv[])
 	WSADATA wsaData;
 	if(WSAStartup(wVersionRequested, &wsaData) != 0)
 	{
-		cerr << "WSAStartup failed" << endl;
+		std::cerr << "WSAStartup failed" << std::endl;
 		return -1;
 	}
 #endif
@@ -501,13 +501,13 @@ int sc_main(int argc, char *argv[])
 		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
 			break;
 		case unisim::kernel::service::Simulator::ST_WARNING:
-			cerr << "Some warnings occurred during setup" << endl;
+			std::cerr << "Some warnings occurred during setup" << std::endl;
 		case unisim::kernel::service::Simulator::ST_OK_TO_START:
-			cerr << "Starting simulation" << endl;
+			std::cerr << "Starting simulation" << std::endl;
 			simulator->Run();
 			break;
 		case unisim::kernel::service::Simulator::ST_ERROR:
-			cerr << "Can't start simulation because of previous errors" << endl;
+			std::cerr << "Can't start simulation because of previous errors" << std::endl;
 			break;
 	}
 
