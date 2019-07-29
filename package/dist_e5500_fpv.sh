@@ -1,7 +1,7 @@
 #!/bin/bash
+SIMPKG=e5500fpv
 source "$(dirname $0)/dist_common.sh"
 
-SIMPKG=e5500fpv
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/component/cxx/processor/powerpc/isa/disasm.cc \

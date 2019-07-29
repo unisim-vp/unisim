@@ -72,7 +72,7 @@ static const bool DEBUG_INFORMATION = false;
 
 void SigIntHandler(int signum)
 {
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
+	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
 	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
 }
 
@@ -536,29 +536,29 @@ void Simulator::Run()
 	}
 	catch(std::runtime_error& e)
 	{
-		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-		cerr << e.what() << endl;
+		std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+		std::cerr << e.what() << std::endl;
 	}
 
-	cerr << "Simulation finished" << endl;
+	std::cerr << "Simulation finished" << std::endl;
 
 	double time_stop = host_time->GetTime();
 	double spent_time = time_stop - time_start;
 
-	cerr << "Simulation run-time parameters:" << endl;
-	DumpParameters(cerr);
-	cerr << endl;
-	cerr << "Simulation formulas:" << endl;
-	DumpFormulas(cerr);
-	cerr << endl;
-	cerr << "Simulation statistics:" << endl;
-	DumpStatistics(cerr);
-	cerr << endl;
+	std::cerr << "Simulation run-time parameters:" << std::endl;
+	DumpParameters(std::cerr);
+	std::cerr << std::endl;
+	std::cerr << "Simulation formulas:" << std::endl;
+	DumpFormulas(std::cerr);
+	std::cerr << std::endl;
+	std::cerr << "Simulation statistics:" << std::endl;
+	DumpStatistics(std::cerr);
+	std::cerr << std::endl;
 
-	cerr << "simulation time: " << spent_time << " seconds" << endl;
-	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
-	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+	std::cerr << "simulation time: " << spent_time << " seconds" << std::endl;
+	std::cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << std::endl;
+	std::cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
+	std::cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 }
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
@@ -596,13 +596,13 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 	exit_status = _exit_status;
 	if(object)
 	{
-		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+		std::std::cerr << object->GetName() << " has requested simulation stop" << std::std::endl << std::std::endl;
 	}
 #ifdef DEBUG_PPCEMU
-	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
+	std::std::cerr << "Call stack:" << std::std::endl;
+	std::std::cerr << unisim::util::backtrace::BackTrace() << std::std::endl;
 #endif
-	std::cerr << "Program exited with status " << exit_status << std::endl;
+	std::std::cerr << "Program exited with status " << exit_status << std::std::endl;
 	sc_stop();
 	if(!asynchronous)
 	{
@@ -631,7 +631,7 @@ int sc_main(int argc, char *argv[])
 	WSADATA wsaData;
 	if(WSAStartup(wVersionRequested, &wsaData) != 0)
 	{
-		cerr << "WSAStartup failed" << endl;
+		std::cerr << "WSAStartup failed" << std::endl;
 		return -1;
 	}
 #endif
@@ -642,13 +642,13 @@ int sc_main(int argc, char *argv[])
 		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
 			break;
 		case unisim::kernel::service::Simulator::ST_WARNING:
-			cerr << "Some warnings occurred during setup" << endl;
+			std::cerr << "Some warnings occurred during setup" << std::endl;
 		case unisim::kernel::service::Simulator::ST_OK_TO_START:
-			cerr << "Starting simulation at user privilege level (Linux system call translation mode)" << endl;
+			std::cerr << "Starting simulation at user privilege level (Linux system call translation mode)" << std::endl;
 			simulator->Run();
 			break;
 		case unisim::kernel::service::Simulator::ST_ERROR:
-			cerr << "Can't start simulation because of previous errors" << endl;
+			std::cerr << "Can't start simulation because of previous errors" << std::endl;
 			break;
 	}
 

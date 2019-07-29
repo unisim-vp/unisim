@@ -455,13 +455,13 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 	exit_status = _exit_status;
 	if(object)
 	{
-		std::std::cerr << object->GetName() << " has requested simulation stop" << std::std::endl << std::std::endl;
+		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
 	}
 #ifdef DEBUG_TMS320C3X
-	std::std::cerr << "Call stack:" << std::std::endl;
-	std::std::cerr << unisim::util::backtrace::BackTrace() << std::std::endl;
+	std::cerr << "Call stack:" << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 #endif
-	std::std::cerr << "Program exited with status " << exit_status << std::std::endl;
+	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_core::sc_stop();
 	if(!asynchronous)
 	{
