@@ -130,6 +130,8 @@ using unisim::kernel::service::Statistic;
 using unisim::kernel::service::VariableBase;
 
 using unisim::util::endian::E_BIG_ENDIAN;
+using unisim::util::endian::Host2BigEndian;
+using unisim::util::endian::BigEndian2Host;
 
 using unisim::service::telnet::Telnet;
 
@@ -158,8 +160,8 @@ private:
 	virtual double GetSimTime()	{ if (sim_time) { return (sim_time->GetTime()); } else { return (0); }	}
 	virtual double GetHostTime()	{ if (host_time) { return (host_time->GetTime()); } else { return (0); }	}
 
-	virtual long   GetStructuredAddress(long logicalAddress) { return (mmc->getCPU12XPagedAddress(logicalAddress)); }
-	virtual long   GetPhysicalAddress(long logicalAddress) { return (mmc->getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED, false, false, 0x00)); }
+	virtual unsigned long long GetStructuredAddress(unsigned long long logicalAddress) { return (mmc->getCPU12XPagedAddress(logicalAddress)); }
+	virtual unsigned long long GetPhysicalAddress(unsigned long long logicalAddress) { return (mmc->getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED, false, false, 0x00)); }
 
 	void GeneratePim() {
 		PIM *pim = new PIM("pim");

@@ -23,7 +23,7 @@ void DisableDebug()
 
 void SigIntHandler(int signum)
 {
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
+	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
 //	sc_stop();
 	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
 }
@@ -44,14 +44,14 @@ Simulator::Simulator(int argc, char **argv)
 	, sci3(0)
 	, sci4(0)
 	, sci5(0)
-	, spi0(0)
-	, spi1(0)
-	, spi2(0)
 	, can0(0)
 	, can1(0)
 	, can2(0)
 	, can3(0)
 	, can4(0)
+	, spi0(0)
+	, spi1(0)
+	, spi2(0)
 	, global_ram(0)
 	, global_flash(0)
 	, global_eeprom(0)
@@ -71,8 +71,6 @@ Simulator::Simulator(int argc, char **argv)
 	, tranceiver3(0)
 	, tranceiver4(0)
 
-//	, loaderS19(0)
-//	, loaderELF(0)
 	, loader(0)
 
 	, debugger(0)
@@ -80,7 +78,6 @@ Simulator::Simulator(int argc, char **argv)
 	, pim_server(0)
 	, inline_debugger(0)
 	, monitor(0)
-
 
 	, sim_time(0)
 	, host_time(0)
@@ -97,10 +94,10 @@ Simulator::Simulator(int argc, char **argv)
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_enable_monitor("enable-monitor", 0, enable_monitor, "Enable/Disable monitoring tool")
 
-    , sci_enable_telnet(false)
-	, param_sci_enable_telnet("sci-enable-telnet", 0, sci_enable_telnet, "Enable/Disable SCI telnet instantiation")
+	, sci_enable_telnet(false)
+	, param_sci_enable_telnet("sci-enable-telnet", 0, sci_enable_telnet, "SCI Enable/Disable telnet instantiation")
 	, spi_enable_telnet(false)
-	, param_spi_enable_telnet("spi-enable-telnet", 0, spi_enable_telnet, "Enable/Disable SPI telnet instantiation")
+	, param_spi_enable_telnet("spi-enable-telnet", 0, spi_enable_telnet, "SPI Enable/Disable telnet instantiation")
 
 	, endian("")
 	, program_counter_name("")
@@ -176,9 +173,9 @@ Simulator::Simulator(int argc, char **argv)
 	can3 = new MSCAN("CAN3");
 	can4 = new MSCAN("CAN4");
 
-	spi0 = new S12SPI("SPI0");
-	spi1 = new S12SPI("SPI1");
-	spi2 = new S12SPI("SPI2");
+	spi0 = new S12SPIV4("SPI0");
+	spi1 = new S12SPIV4("SPI1");
+	spi2 = new S12SPIV4("SPI2");
 
 	atd1 = new ATD1("ATD1");
 	atd0 = new ATD0("ATD0");
@@ -196,10 +193,6 @@ Simulator::Simulator(int argc, char **argv)
 	registersTee = new RegistersTee("registersTee");
 
 	memoryImportExportTee = new MemoryImportExportTee("memoryImportExportTee");
-
-	//  - debugger
-        if (enable_inline_debugger or enable_gdb_server or enable_pim_server or enable_monitor)
-          debugger = new Debugger("debugger");
 
 #ifdef HAVE_RTBCOB
 	rtbStub = new RTBStub("atd-pwm-stub"/*, fsb_cycle_time*/);
@@ -220,15 +213,21 @@ Simulator::Simulator(int argc, char **argv)
 
 	//  - Multiformat loader
 	loader = new MultiFormatLoader<CPU_ADDRESS_TYPE>("loader");
-        
-        if (enable_monitor) // Monitor: ARTiMon or EACSL
-          monitor = new MONITOR("Monitor");
-	if (enable_pim_server) // PIM server
-          pim_server = new PIMServer<CPU_ADDRESS_TYPE>("pim-server");
-	if (enable_gdb_server) //  GDB server
-          gdb_server = new GDBServer<CPU_ADDRESS_TYPE>("gdb-server");
-	if (enable_inline_debugger) // Inline debugger
-          inline_debugger = new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger");
+
+	//  - debugger
+	debugger = (enable_inline_debugger || enable_gdb_server || enable_pim_server || enable_monitor) ? new Debugger("debugger") : 0;
+
+	//  - GDB server
+	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
+
+	//  - PIM server
+	pim_server = enable_pim_server ? new PIMServer<CPU_ADDRESS_TYPE>("pim-server") : 0;
+
+	//  - Inline debugger
+	inline_debugger = enable_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
+
+	// Monitoring tool: ARTiMon or EACSEL
+	monitor = (enable_monitor)? new MONITOR("Monitor"): 0;
 
 	// - telnet
 	sci_telnet = (sci_enable_telnet) ? new unisim::service::telnet::Telnet("sci-telnet") : 0;
@@ -292,7 +291,6 @@ Simulator::Simulator(int argc, char **argv)
 	spi0->interrupt_request(s12xint->interrupt_request);
 	spi1->interrupt_request(s12xint->interrupt_request);
 	spi2->interrupt_request(s12xint->interrupt_request);
-
 
 #ifdef HAVE_RTBCOB
 	rtbStub->atd1_master_sock(atd1->anx_socket);
@@ -415,8 +413,8 @@ Simulator::Simulator(int argc, char **argv)
 	*(memoryImportExportTee->memory_import[6]) >> pit->memory_export;
 	*(memoryImportExportTee->memory_import[7]) >> xgate->memory_export;
 	*(memoryImportExportTee->memory_import[8]) >> global_ram->memory_export;
-	*(memoryImportExportTee->memory_import[9]) >> global_eeprom->memory_export;
-	*(memoryImportExportTee->memory_import[10]) >> global_flash->memory_export;
+	*(memoryImportExportTee->memory_import[9]) >> global_flash->memory_export;
+	*(memoryImportExportTee->memory_import[10]) >> global_eeprom->memory_export;
 	*(memoryImportExportTee->memory_import[11]) >> sci0->memory_export;
 	*(memoryImportExportTee->memory_import[12]) >> sci1->memory_export;
 	*(memoryImportExportTee->memory_import[13]) >> sci2->memory_export;
@@ -433,7 +431,6 @@ Simulator::Simulator(int argc, char **argv)
 	*(memoryImportExportTee->memory_import[24]) >> spi2->memory_export;
 
 	mmc->memory_import >> memoryImportExportTee->memory_export;
-
 
 	*(registersTee->registers_import[0]) >> cpu->registers_export;
 	*(registersTee->registers_import[1]) >> mmc->registers_export;
@@ -460,14 +457,13 @@ Simulator::Simulator(int argc, char **argv)
 	*(registersTee->registers_import[19]) >> can2->registers_export;
 	*(registersTee->registers_import[20]) >> can3->registers_export;
 	*(registersTee->registers_import[21]) >> can4->registers_export;
-
 	*(registersTee->registers_import[22]) >> spi0->registers_export;
 	*(registersTee->registers_import[23]) >> spi1->registers_export;
 	*(registersTee->registers_import[24]) >> spi2->registers_export;
 
 // ***********************************************************
 	cpu->loader_import >> loader->loader_export;
-        
+
         if (debugger)
           {
             // Debugger <-> CPU connections
@@ -548,7 +544,7 @@ Simulator::Simulator(int argc, char **argv)
             // monitor->subprogram_lookup_import         >> *debugger->subprogram_lookup_export[2];
           }
         
-	if(sci_enable_telnet)
+	if (sci_enable_telnet)
 	{
 		sci0->char_io_import >> sci_telnet->char_io_export;
 	}
@@ -558,136 +554,132 @@ Simulator::Simulator(int argc, char **argv)
 		spi0->char_io_import >> spi_telnet->char_io_export;
 	}
 
-
 	*loader->memory_import[0] >>  mmc->memory_export;
-	loader->registers_import >> cpu->registers_export; // je ne comprend pas cette ligne !!!
+	loader->registers_import >> cpu->registers_export;
 	cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 
 }
 
 Simulator::~Simulator()
 {
+
+// ************
 	if (dump_parameters) {
-		cerr << "Simulation run-time parameters:" << endl;
-		DumpParameters(cerr);
-		cerr << endl;
+		std::cerr << "Simulation run-time parameters:" << std::endl;
+		DumpParameters(std::cerr);
+		std::cerr << std::endl;
 	}
 
 	if (dump_formulas) {
-		cerr << "Simulation formulas:" << endl;
-		DumpFormulas(cerr);
-		cerr << endl;
+		std::cerr << "Simulation formulas:" << std::endl;
+		DumpFormulas(std::cerr);
+		std::cerr << std::endl;
 	}
 
 	if (dump_statistics) {
 
-		cerr << "Simulation statistics:" << endl;
-		DumpStatistics(cerr);
-		cerr << endl;
+		std::cerr << "Simulation statistics:" << std::endl;
+		DumpStatistics(std::cerr);
+		std::cerr << std::endl;
 
-		cerr << "CPU Clock   (MHz)      : " << (double) (1 / (double) (*cpu)["core-clock"] * 1000000)  << endl;
-		cerr << "CPU CPI                : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
+		std::cerr << "CPU Clock   (MHz)      : " << (double) (1 / (double) (*cpu)["core-clock"] * 1000000)  << std::endl;
+		std::cerr << "CPU CPI                : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << std::endl;
 
 		uint64_t total_load = (uint64_t) (*cpu)["instruction-counter"] + (uint64_t) (*cpu)["data-load-counter"];
 		uint64_t total_access = total_load + (uint64_t) (*cpu)["store-counter"];
 		total_access = ((total_access == 0)? 1: total_access);
 
-		cerr << "CPU data-load ratio    : " << (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100 << " %" << endl;
-		cerr << "CPU data-store ratio   : " << (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100 << " %" << endl;
+		std::cerr << "CPU data-load ratio    : " << (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100 << " %" << std::endl;
+		std::cerr << "CPU data-store ratio   : " << (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100 << " %" << std::endl;
 
-		cerr << endl;
+		std::cerr << endl;
 
-		cerr << "XGATE Clock (MHz)      : " << (double) (1 / (double) (*xgate)["core-clock"] * 1000000)  << endl;
-		cerr << "XGATE CPI              : " << (double) ((uint64_t) (*xgate)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
+		std::cerr << "XGATE Clock (MHz)      : " << (double) (1 / (double) (*xgate)["core-clock"] * 1000000)  << std::endl;
+		std::cerr << "XGATE CPI              : " << (double) ((uint64_t) (*xgate)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << std::endl;
 
 		total_load = (uint64_t) (*xgate)["instruction-counter"] + (uint64_t) (*xgate)["data-load-counter"];
 		total_access = total_load + (uint64_t) (*xgate)["store-counter"];
 		total_access = ((total_access == 0)? 1: total_access);
 
-		cerr << "XGATE data-load ratio    : " << (double) ((uint64_t) (*xgate)["data-load-counter"])/(total_access)*100 << " %" << endl;
-		cerr << "XGATE data-store ratio   : " << (double) ((uint64_t) (*xgate)["data-store-counter"])/(total_access)*100 << " %" << endl;
+		std::cerr << "XGATE data-load ratio    : " << (double) ((uint64_t) (*xgate)["data-load-counter"])/(total_access)*100 << " %" << std::endl;
+		std::cerr << "XGATE data-store ratio   : " << (double) ((uint64_t) (*xgate)["data-store-counter"])/(total_access)*100 << " %" << std::endl;
 
-		cerr << endl;
+		std::cerr << std::endl;
 
-		cerr << "Target Simulated time  : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << endl;
-//		cerr << "Target speed (MHz)     : " << (((double) (((uint64_t) (*cpu)["cycles-counter"]) + ((uint64_t) (*xgate)["cycles-counter"])) / sc_core::sc_time_stamp().to_seconds()) / 1000000.0) << endl;
-//		cerr << "Target speed (MIPS)    : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / sc_core::sc_time_stamp().to_seconds()) / 1000000.0) << endl;
+		std::cerr << "Target Simulated time  : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << std::endl;
 
-		cerr << "Host simulation time   : " << spent_time << " seconds" << endl;
-//		cerr << "Host simulation speed  : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / spent_time) / 1000000.0) << " MIPS" << endl;
-		cerr << "Host simulation speed  : " << (((double) (*cpu)["instruction-counter"] / spent_time) / 1000000.0) << " MIPS" << endl;
+		std::cerr << "Host simulation time   : " << spent_time << " seconds" << std::endl;
+		std::cerr << "Host simulation speed  : " << (((double) (*cpu)["instruction-counter"] / spent_time) / 1000000.0) << " MIPS" << std::endl;
 
-		cerr << "Time dilation          : " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
-		cerr << endl;
+		std::cerr << "Time dilation          : " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
+		std::cerr << std::endl;
 
 	}
 
 // ****************************************************
 
-	delete pim_server;
 
-	delete registersTee;
-	delete memoryImportExportTee;
+	if (pim_server) { delete pim_server; pim_server = NULL; }
+
+	if (registersTee) { delete registersTee; registersTee = NULL; }
+	if (memoryImportExportTee) { delete memoryImportExportTee; memoryImportExportTee = NULL; }
 
 	if(gdb_server) { delete gdb_server; gdb_server = NULL; }
 	if(inline_debugger) { delete inline_debugger; inline_debugger = NULL; }
 
-	delete sci_telnet;
-	delete spi_telnet;
+	if (sci_telnet) { delete sci_telnet; sci_telnet = NULL; }
+	if (spi_telnet) { delete spi_telnet; spi_telnet = NULL; }
 
-	delete host_time;
+	if (host_time) { delete host_time; host_time = NULL; }
 	if(sim_time) { delete sim_time; sim_time = NULL; }
 
-	delete monitor;
+	if (monitor) { delete monitor; monitor = NULL; }
 
 	if(loader) delete loader;
-//	if(loaderS19) { delete loaderS19; loaderS19 = NULL; }
-//	if(loaderELF) { delete loaderELF; loaderELF = NULL; }
 
 #ifdef HAVE_RTBCOB
-	delete rtbStub;
+	if (rtbStub) { delete rtbStub; rtbStub = NULL; }
 #else
-	delete xml_atd_pwm_stub;
+	if (xml_atd_pwm_stub) { delete xml_atd_pwm_stub; xml_atd_pwm_stub = NULL; }
 #endif
 
-	delete can_stub;
-	delete tranceiver0;
-	delete tranceiver1;
-	delete tranceiver2;
-	delete tranceiver3;
-	delete tranceiver4;
+	if (can_stub) { delete can_stub; can_stub = NULL; }
+	if (tranceiver0) { delete tranceiver0; tranceiver0 = NULL; }
+	if (tranceiver1) { delete tranceiver1; tranceiver1 = NULL; }
+	if (tranceiver2) { delete tranceiver2; tranceiver2 = NULL; }
+	if (tranceiver3) { delete tranceiver3; tranceiver3 = NULL; }
+	if (tranceiver4) { delete tranceiver4; tranceiver4 = NULL; }
 
-	delete global_ram;
-	delete global_flash;
-	delete global_eeprom;
+	if(global_ram) { delete global_ram; global_ram = NULL; }
+	if(global_flash) { delete global_flash; global_flash = NULL; }
 
-	delete xgate;
-	delete crg;
-	delete ect;
-	delete pit;
-	delete pwm;
-	delete atd1;
-	delete atd0;
-	delete s12xint;
-	delete mmc;
-	delete sci0;
-	delete sci1;
-	delete sci2;
-	delete sci3;
-	delete sci4;
-	delete sci5;
+	if (xgate) { delete xgate; xgate = NULL; }
+	if (crg) { delete crg; crg = NULL; }
+	if (ect) { delete ect; ect = NULL; }
+	if (pit) { delete pit; pit = NULL; }
+	if (pwm) { delete pwm; pwm = NULL; }
+	if (atd1) { delete atd1; atd1 = NULL; }
+	if (atd0) { delete atd0; atd0 = NULL; }
+	if (s12xint) { delete s12xint; s12xint = NULL; }
+	if (mmc) { delete mmc; mmc = NULL; }
+	if (sci0) { delete sci0; sci0 = NULL; }
+	if (sci1) { delete sci1; sci1 = NULL; }
+	if (sci2) { delete sci2; sci2 = NULL; }
+	if (sci3) { delete sci3; sci3 = NULL; }
+	if (sci4) { delete sci4; sci4 = NULL; }
+	if (sci5) { delete sci5; sci5 = NULL; }
 
-	delete can0;
-	delete can1;
-	delete can2;
-	delete can3;
-	delete can4;
+	if (can0) { delete can0; can0 = NULL; }
+	if (can1) { delete can1; can1 = NULL; }
+	if (can2) { delete can2; can2 = NULL; }
+	if (can3) { delete can3; can3 = NULL; }
+	if (can4) { delete can4; can4 = NULL; }
 
-	delete spi0;
-	delete spi1;
-	delete spi2;
+	if (spi0) { delete spi0; spi0 = NULL; }
+	if (spi1) { delete spi1; spi1 = NULL; }
+	if (spi2) { delete spi2; spi2 = NULL; }
 
-	delete cpu;
+	if(cpu) { delete cpu; cpu = NULL; }
 
 #if defined(WIN32) || defined(WIN64)
 	// releases the winsock2 resources
@@ -695,6 +687,7 @@ Simulator::~Simulator()
 #endif
 
 }
+
 
 Simulator::SetupStatus Simulator::Setup()
 {
@@ -705,7 +698,7 @@ Simulator::SetupStatus Simulator::Setup()
 	WSADATA wsaData;
 	if(WSAStartup(wVersionRequested, &wsaData) != 0)
 	{
-		cerr << "WSAStartup failed" << endl;
+		std::cerr << "WSAStartup failed" << std::endl;
 		return unisim::kernel::service::Simulator::ST_ERROR;
 	}
 #endif
@@ -714,37 +707,33 @@ Simulator::SetupStatus Simulator::Setup()
 
 	Simulator::SetupStatus result = unisim::kernel::service::Simulator::Setup();
 
-// **********
-//	physical_address_t entry_point = 0;
-	std::cout << "entry-point 0x" << std::hex << entry_point << std::dec << std::endl;
-
 	address_t cpu_address;
 	uint8_t page = 0;
 
-//	if (isS19) {
-//		entry_point = loaderS19->GetEntryPoint();
-//		if (entry_point == 0) {
-//			address_t reset_addr;
-//			const address_t reset_vect = 0xFFFE;
-//			cpu->ReadMemory(reset_vect, &reset_addr, 2);
+//      if (isS19) {
+//              entry_point = loaderS19->GetEntryPoint();
+//              if (entry_point == 0) {
+//                      address_t reset_addr;
+//                      const address_t reset_vect = 0xFFFE;
+//                      cpu->ReadMemory(reset_vect, &reset_addr, 2);
 //
-//			entry_point = unisim::util::endian::BigEndian2Host(reset_addr);
-//		}
-//		mmc->splitPagedAddress(entry_point, page, cpu_address);
-//	} else {
-//		const unisim::util::debug::blob::Blob<physical_address_t>* blob = loaderELF->GetBlob();
-//		if (blob != NULL) {
-//			entry_point = blob->GetEntryPoint();
-//		}
+//                      entry_point = unisim::util::endian::BigEndian2Host(reset_addr);
+//              }
+//              mmc->splitPagedAddress(entry_point, page, cpu_address);
+//      } else {
+//              const unisim::util::debug::blob::Blob<physical_address_t>* blob = loaderELF->GetBlob();
+//              if (blob != NULL) {
+//                      entry_point = blob->GetEntryPoint();
+//              }
 //
-//		cpu_address = (address_t) entry_point;
-//	}
+//              cpu_address = (address_t) entry_point;
+//      }
 // *****************
 
 /* TODO: Discuss with Gilles about this
 	const unisim::util::debug::blob::Blob<physical_address_t>* blob = loader->GetBlob();
 	if (blob != NULL) {
-		entry_point = blob->GetEntryPoint();
+			entry_point = blob->GetEntryPoint();
 	}
 */
 
@@ -759,8 +748,8 @@ Simulator::SetupStatus Simulator::Setup()
 	else {
 		cpu_address = (address_t) entry_point;
 	}
-// *****************
 
+	std::cout << "entry-point 0x" << std::hex << entry_point << std::dec << std::endl;
 	cpu->setEntryPoint(cpu_address);
 
 	EnableDebug();
@@ -773,7 +762,7 @@ Simulator::SetupStatus Simulator::Setup()
 bool Simulator::RunSample(double inVal) {
 
 	if (!isStop) {
-		cerr << "Starting simulation RunSample ..." << endl;
+		std::cerr << "Starting simulation RunSample ..." << std::endl;
 
 		double time_start = host_time->GetTime();
 
@@ -783,15 +772,15 @@ bool Simulator::RunSample(double inVal) {
 		}
 		catch(std::runtime_error& e)
 		{
-			cerr << "FATAL ERROR! an abnormal error occurred during simulation. Bailing out..." << endl;
-			cerr << e.what() << endl;
+			std::cerr << "FATAL ERROR! an abnormal error occurred during simulation. Bailing out..." << std::endl;
+			std::cerr << e.what() << std::endl;
 		}
 
 		double time_stop = host_time->GetTime();
 
 		spent_time += time_stop - time_start;
 
-		cerr << "Finishing simulation RunSample " << endl;
+		std::cerr << "Finishing simulation RunSample " << std::endl;
 
 		return true;
 	}
@@ -801,7 +790,7 @@ bool Simulator::RunSample(double inVal) {
 
 void Simulator::Run() {
 
-	cerr << "Starting simulation ..." << endl;
+	std::cerr << "Starting simulation ..." << std::endl;
 
 	double time_start = host_time->GetTime();
 
@@ -811,15 +800,15 @@ void Simulator::Run() {
 	}
 	catch(std::runtime_error& e)
 	{
-		cerr << "FATAL ERROR! an abnormal error occurred during simulation. Bailing out..." << endl;
-		cerr << e.what() << endl;
+		std::cerr << "FATAL ERROR! an abnormal error occurred during simulation. Bailing out..." << std::endl;
+		std::cerr << e.what() << std::endl;
 	}
 
 	double time_stop = host_time->GetTime();
 
 	spent_time += time_stop - time_start;
 
-	cerr << "Simulation finished" << endl << endl;
+	std::cerr << "Simulation finished" << endl << endl;
 
 
 }
@@ -950,11 +939,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("atd-pwm-stub.atd1-anx-start-channel", 0);
 	simulator->SetVariable("atd-pwm-stub.atd1-anx-wrap-around-channel", 15);
 	simulator->SetVariable("atd-pwm-stub.trace-enabled", false);
+	simulator->SetVariable("atd-pwm-stub.cosim-enabled", false);
 	simulator->SetVariable("atd-pwm-stub.atd0-xml-enabled", false);
 	simulator->SetVariable("atd-pwm-stub.atd1-xml-enabled", false);
 	simulator->SetVariable("atd-pwm-stub.atd0-rand-enabled", false);
 	simulator->SetVariable("atd-pwm-stub.atd1-rand-enabled", false);
-	simulator->SetVariable("atd-pwm-stub.cosim-enabled", false);
 
 	simulator->SetVariable("CAN-STUB.trace-enabled", false);
 	simulator->SetVariable("CAN-STUB.cosim-enabled", false);
@@ -1016,10 +1005,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("XGATE.trap-on-instruction-counter", -1);
 	simulator->SetVariable("XGATE.enable-fine-timing", true);
 
-
 	simulator->SetVariable("CPU.enable-trace", false);
 	simulator->SetVariable("CPU.enable-file-trace", false),
-
 	simulator->SetVariable("CPU.verbose-all", false);
 	simulator->SetVariable("CPU.verbose-setup", false);
 	simulator->SetVariable("CPU.verbose-step", false);
@@ -1038,7 +1025,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CPU.trap-on-instruction-counter", -1);
 	simulator->SetVariable("CPU.enable-fine-timing", true);
 
-	simulator->SetVariable("CRG.oscillator-clock", 125000);  // 8 MHz
+	simulator->SetVariable("CRG.oscillator-clock", 125000); // 8 MHz
 	simulator->SetVariable("CRG.base-address", 0x34);
 	simulator->SetVariable("CRG.interrupt-offset-rti", 0xf0);
 	simulator->SetVariable("CRG.interrupt-offset-pll-lock", 0xc6);
@@ -1067,6 +1054,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("PIT.interrupt-offset-channel[2]", 0x76);
 	simulator->SetVariable("PIT.interrupt-offset-channel[3]", 0x74);
 	simulator->SetVariable("PIT.debug-enabled", false);
+
+	simulator->SetVariable("sci-telnet.telnet-tcp-port", 1234);
+	simulator->SetVariable("sci-enable-telnet", false);
 
 	simulator->SetVariable("SCI2.bus-cycle-time", 250000);
 	simulator->SetVariable("SCI2.base-address", 0x00B8);
@@ -1202,6 +1192,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("Tranceiver4.int-interrupt", 0xF2);
 	simulator->SetVariable("Tranceiver4.debug-enabled", false);
 
+	simulator->SetVariable("spi-telnet.telnet-tcp-port", 1234);
+	simulator->SetVariable("spi-enable-telnet", false);
+
 	simulator->SetVariable("SPI0.bus-cycle-time", 250000);
 	simulator->SetVariable("SPI0.base-address", 0x00D8);
 	simulator->SetVariable("SPI0.interrupt-offset", 0xD8);
@@ -1223,34 +1216,18 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SPI2.txd-pin-enable", true);
 	simulator->SetVariable("SPI2.telnet-enabled", false);
 
- 	simulator->SetVariable("sci-telnet.telnet-tcp-port", 1234);
- 	simulator->SetVariable("sci-enable-telnet", false);
-
- 	simulator->SetVariable("spi-telnet.telnet-tcp-port", 1234);
- 	simulator->SetVariable("spi-enable-telnet", false);
-
 	simulator->SetVariable("RAM.org", 0x000800);
 	simulator->SetVariable("RAM.bytesize", 1024*1024); // 1MByte
 	simulator->SetVariable("RAM.initial-byte-value", 0x00);
 	simulator->SetVariable("RAM.cycle-time", 250000);
 	simulator->SetVariable("RAM.verbose", false);
 
-	simulator->SetVariable("EEPROM.org", 0x100000);
-	simulator->SetVariable("EEPROM.bytesize", 256*1024); // 256KByte
-	simulator->SetVariable("EEPROM.initial-byte-value", 0xFF);
-	simulator->SetVariable("EEPROM.cycle-time", 250000);
-	simulator->SetVariable("EEPROM.oscillator-cycle-time", 125000);
-	simulator->SetVariable("EEPROM.base-address", 0x0110);
-	simulator->SetVariable("EEPROM.erase-fail-ratio", 0.01);
-	simulator->SetVariable("EEPROM.command-interrupt", 0xBA);
-	simulator->SetVariable("EEPROM.verbose", false);
-
 	simulator->SetVariable("FLASH.org", 0x400000);
 	simulator->SetVariable("FLASH.bytesize", 4*1024*1024); // 4MByte
 	simulator->SetVariable("FLASH.initial-byte-value", 0xFF);
 	simulator->SetVariable("FLASH.cycle-time", 250000);
 	simulator->SetVariable("FLASH.verbose", false);
-
+	
 	simulator->SetVariable("kernel_logger.std_err", true);
 	simulator->SetVariable("kernel_logger.std_out", false);
 	simulator->SetVariable("kernel_logger.std_err_color", false);
@@ -1267,13 +1244,13 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("MMC.mmcctl1", 0x5);
 	simulator->SetVariable("MMC.address-encoding", 0x0);
 	simulator->SetVariable("MMC.ppage-address", 0x30);
-
+	
 	simulator->SetVariable("MMC.memory-map",
 "0,0034,003F;1,0040,007F;2,0080,00AF;3,00B8,00BF;4,00C0,00C7;5,00C8,00CF;\
-6,00D0,00D7;7,00D8,00DF;8,00F0,00F7;9,00F8,00FF;10,0110,011B;11,0120,012F;\
-12,0130,0137;13,0138,013F;14,0140,017F;15,0180,01BF;16,01C0,01FF;\
-17,0200,023F;18,0280,02BF;19,02C0,02DF;20,0300,0327;21,0340,0367;22,0380,03BF;\
-23,0007FF,0FFFFF;24,100000,13FFFF;25,400000,7FFFFF");
++6,00D0,00D7;7,00D8,00DF;8,00F0,00F7;9,00F8,00FF;10,0110,011B;11,0120,012F;\
++12,0130,0137;13,0138,013F;14,0140,017F;15,0180,01BF;16,01C0,01FF;\
++17,0200,023F;18,0280,02BF;19,02C0,02DF;20,0300,0327;21,0340,0367;22,0380,03BF;\
++23,0007FF,0FFFFF;24,100000,13FFFF;25,400000,7FFFFF");
 
 
 	simulator->SetVariable("PWM.bus-cycle-time", 250000);
@@ -1282,11 +1259,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("PWM.debug-enabled", false);
 
 	simulator->SetVariable("XINT.debug-enabled", false);
+	simulator->SetVariable("XINT.base-address", 0x0120);
 
 	// Inline debugger
 	simulator->SetVariable("inline-debugger.num-loaders", 1);
 	simulator->SetVariable("inline-debugger.search-path", "");
 
 }
-
 
