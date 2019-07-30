@@ -150,6 +150,8 @@ public:
 	CPU(const char *name, Object *parent = 0);
 	virtual ~CPU();
 	
+	virtual void Reset();
+	
 	//===============================================================
 	//= Client/Service setup methods                           STOP =
 	//===============================================================
@@ -208,7 +210,7 @@ public:
 	//= Memory interface methods                              START =
 	//===============================================================
 
-	virtual void Reset();
+	virtual void ResetMemory();
 	virtual bool ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size);
 	virtual bool InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size);

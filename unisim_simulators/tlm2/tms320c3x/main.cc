@@ -41,6 +41,7 @@
 #include <unisim/service/os/ti_c_io/ti_c_io.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/service/debug/debugger/debugger.tcc>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/time/sc_time/time.hh>
@@ -52,19 +53,6 @@
 #include <stdexcept>
 #include <stdlib.h>
 #include <signal.h>
-
-#ifdef WIN32
-
-#include <windows.h>
-#include <winsock2.h>
-
-#endif
-
-void SigIntHandler(int signum)
-{
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
-}
 
 using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
@@ -168,6 +156,7 @@ private:
 
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+	virtual void SigInt();
 };
 
 
@@ -367,14 +356,14 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	// - CPU
 	simulator->SetVariable("cpu.mimic-dev-board", true);
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
-	simulator->SetVariable("cpu.cpu-cycle-time", sc_time(cpu_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("cpu.cpu-cycle-time", sc_core::sc_time(cpu_cycle_time, sc_core::SC_PS).to_string().c_str());
 	simulator->SetVariable("cpu.nice-time", "1 us");
 	simulator->SetVariable("cpu.enable-dmi", true);
 	
 	//  - RAM
-	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("memory.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("memory.write-latency", SC_ZERO_TIME.to_string().c_str());
+	simulator->SetVariable("memory.cycle-time", sc_core::sc_time(mem_cycle_time, sc_core::SC_PS).to_string().c_str());
+	simulator->SetVariable("memory.read-latency", sc_core::sc_time(mem_cycle_time, sc_core::SC_PS).to_string().c_str());
+	simulator->SetVariable("memory.write-latency", sc_core::SC_ZERO_TIME.to_string().c_str());
 	simulator->SetVariable("memory.org", 0x00000000UL);
 	simulator->SetVariable("memory.bytesize", (uint32_t) -1);
 
@@ -392,7 +381,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("inline-debugger.memory-atom-size", 4);
 	
 	//  - GDB server
-	simulator->SetVariable("gdb-server.architecture-description-filename", "gdb_tms320c3x.xml");
+	simulator->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_tms320c3x.xml");
 	simulator->SetVariable("gdb-server.memory-atom-size", 4);
 }
 
@@ -400,37 +389,37 @@ void Simulator::Run()
 {
 	double time_start = host_time->GetTime();
 
-	sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
+	sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
 	
 	try
 	{
-		sc_start();
+		sc_core::sc_start();
 	}
 	catch(std::runtime_error& e)
 	{
-		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-		cerr << e.what() << endl;
+		std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+		std::cerr << e.what() << endl;
 	}
 
-	cerr << "Simulation finished" << endl;
+	std::cerr << "Simulation finished" << std::endl;
 
 	double time_stop = host_time->GetTime();
 	double spent_time = time_stop - time_start;
 
-	cerr << "Simulation run-time parameters:" << endl;
-	DumpParameters(cerr);
-	cerr << endl;
-	cerr << "Simulation formulas:" << endl;
-	DumpFormulas(cerr);
-	cerr << endl;
-	cerr << "Simulation statistics:" << endl;
-	DumpStatistics(cerr);
-	cerr << endl;
+	std::cerr << "Simulation run-time parameters:" << endl;
+	DumpParameters(std::cerr);
+	std::cerr << endl;
+	std::cerr << "Simulation formulas:" << endl;
+	DumpFormulas(std::cerr);
+	std::cerr << endl;
+	std::cerr << "Simulation statistics:" << endl;
+	DumpStatistics(std::cerr);
+	std::cerr << endl;
 
-	cerr << "simulation time: " << spent_time << " seconds" << endl;
-	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
-	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+	std::cerr << "simulation time: " << spent_time << " seconds" << std::endl;
+	std::cerr << "simulated time : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
+	std::cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
+	std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 }
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
@@ -453,23 +442,18 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 {
 	exit_status = _exit_status;
-	if(object)
+	if(sc_core::sc_get_status() != sc_core::SC_STOPPED)
 	{
-		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+		sc_core::sc_stop();
 	}
-#ifdef DEBUG_TMS320C3X
-	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
-#endif
-	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_stop();
 	if(!asynchronous)
 	{
-		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
+		switch(h.proc_kind())
 		{
-			case SC_THREAD_PROC_: 
-			case SC_CTHREAD_PROC_:
-				wait();
+			case sc_core::SC_THREAD_PROC_: 
+			case sc_core::SC_CTHREAD_PROC_:
+				sc_core::wait();
 				break;
 			default:
 				break;
@@ -482,18 +466,16 @@ int Simulator::GetExitStatus() const
 	return exit_status;
 }
 
+void Simulator::SigInt()
+{
+	if(!enable_inline_debugger)
+	{
+		unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+	}
+}
+
 int sc_main(int argc, char *argv[])
 {
-#ifdef WIN32
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		cerr << "WSAStartup failed" << endl;
-		return -1;
-	}
-#endif
 	Simulator *simulator = new Simulator(argc, argv);
 
 	switch(simulator->Setup())
@@ -513,10 +495,6 @@ int sc_main(int argc, char *argv[])
 
 	int exit_status = simulator->GetExitStatus();
 	delete simulator;
-#ifdef WIN32
-	// releases the winsock2 resources
-	WSACleanup();
-#endif
 
 	return exit_status;
 }
