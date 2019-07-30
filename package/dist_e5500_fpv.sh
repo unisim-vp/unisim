@@ -2,513 +2,50 @@
 SIMPKG=e5500fpv
 source "$(dirname $0)/dist_common.sh"
 
+import_genisslib
 
-UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
-unisim/component/cxx/processor/powerpc/isa/disasm.cc \
-unisim/kernel/logger/logger.cc \
-unisim/kernel/logger/logger_server.cc \
-unisim/kernel/service/service.cc \
-unisim/kernel/config/xml_config_file_helper.cc \
-unisim/kernel/config/ini_config_file_helper.cc \
-unisim/service/debug/inline_debugger/inline_debugger.cc \
-unisim/service/debug/gdb_server/gdb_server.cc \
-unisim/util/hypapp/hypapp.cc \
-unisim/util/debug/symbol_table_64.cc \
-unisim/util/debug/symbol_table_32.cc \
-unisim/util/debug/dwarf/class.cc \
-unisim/util/debug/dwarf/dwarf64.cc \
-unisim/util/debug/dwarf/encoding.cc \
-unisim/util/debug/dwarf/ml.cc \
-unisim/util/debug/dwarf/filename.cc \
-unisim/util/debug/dwarf/leb128.cc \
-unisim/util/debug/dwarf/abbrev.cc \
-unisim/util/debug/dwarf/dwarf32.cc \
-unisim/util/debug/dwarf/register_number_mapping.cc \
-unisim/util/debug/dwarf/data_object.cc \
-unisim/util/debug/dwarf/c_loc_expr_parser.cc \
-unisim/util/blob/section32.cc \
-unisim/util/blob/blob32.cc \
-unisim/util/blob/section64.cc \
-unisim/util/blob/segment32.cc \
-unisim/util/blob/segment64.cc \
-unisim/util/blob/blob64.cc \
-unisim/util/debug/stmt_32.cc \
-unisim/util/debug/elf_symtab/elf_symtab32.cc \
-unisim/util/debug/elf_symtab/elf_symtab64.cc \
-unisim/util/debug/stmt_64.cc \
-unisim/util/debug/symbol_64.cc \
-unisim/util/debug/symbol_32.cc \
-unisim/util/debug/type.cc \
-unisim/util/loader/elf_loader/elf32_loader.cc \
-unisim/util/loader/elf_loader/elf64_loader.cc \
-unisim/util/os/linux_os/environment.cc \
-unisim/util/random/random.cc \
-unisim/util/lexer/lexer.cc \
-unisim/util/xml/xml.cc \
-"
+import unisim/component/cxx/processor/powerpc
+import unisim/component/cxx/memory/sparse
+import unisim/util/reg/core
+import unisim/util/random
+import unisim/util/os/linux_os
+import unisim/service/interfaces/memory
+import unisim/service/interfaces/memory_access_reporting
+import unisim/service/interfaces/memory_injection
+import unisim/service/interfaces/registers
+import unisim/service/interfaces/linux_os
+import unisim/service/interfaces/debug_yielding
+import unisim/service/interfaces/disassembly
+import unisim/service/interfaces/trap_reporting
+import unisim/service/interfaces/registers
+import unisim/service/interfaces/blob
+import unisim/service/debug/debugger
+import unisim/service/debug/inline_debugger
+import unisim/service/debug/gdb_server
 
-UNISIM_LIB_SIMULATOR_ISA_FILES="\
-unisim/component/cxx/processor/powerpc/isa/book_i/branch/b.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/branch/bc.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/branch/bcctr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/branch/bclr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/crand.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/crandc.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/creqv.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/crnand.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/crnor.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/cror.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/crorc.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/crxor.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/mcrf.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/add.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addc.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/adde.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addic.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addic_.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addis.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addme.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addze.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/and.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/andc.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/andi_.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/andis_.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmp.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpL.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpiL.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpl.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmplL.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpli.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpliL.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cntlzw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cntlzd.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divd.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divdu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divwu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/eqv.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/extsb.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/extsh.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/extsw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/isel.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lbz.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lbzu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lbzux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lbzx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/ld.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/ldu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/ldux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/ldx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lha.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhau.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhaux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhax.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhbrx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhz.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhzu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhzux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhzx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lmw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lswi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lswx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwa.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwaux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwax.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwbrx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwz.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwzu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwzux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwzx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mcrxr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mfcr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mtcrf.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulhd.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulhdu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulhw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulhwu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulld.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulli.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mullw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/nand.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/neg.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/nor.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/or.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/orc.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/ori.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/oris.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rldcl.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rldcr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rldic.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rldicl.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rldicr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rldimi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rlwimi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rlwinm.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rlwnm.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sld.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/slw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/srad.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sradi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sraw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/srawi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/srd.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/srw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stb.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stbu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stbux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stbx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/std.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stdu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stdux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stdx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sth.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sthbrx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sthu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sthux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sthx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stmw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stswi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stswx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stwbrx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stwu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stwux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stwx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subf.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subfc.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subfe.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subfic.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subfme.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subfze.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/tw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/twi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/xor.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/xori.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/xoris.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fabs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fadd.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fadds.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fcmpo.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fcmpu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fctiw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fctiwz.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fctid.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fctidz.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fcfid.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fdiv.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fdivs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fmadd.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fmadds.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fmr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fmsub.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fmsubs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fmul.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fmuls.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnabs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fneg.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmadd.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmadds.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmsub.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmsubs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fres.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fre.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/frsp.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/frsqrte.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsel.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsqrt.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsqrts.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsub.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsubs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfd.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfdu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfdux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfdx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfsu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfsux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfsx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mcrfs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mffs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsb0.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsb1.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsf.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsfi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfd.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfdu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfdux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfdx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfiwx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfsu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfsux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfsx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/macchw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/macchws.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/macchwsu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/macchwu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/machhw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/machhws.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/machhwsu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/machhwu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/maclhw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/maclhws.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/maclhwsu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/maclhwu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/mulchw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/mulchwu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/mulhhw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/mulhhwu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/mullhw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/mullhwu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/nmacchw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/nmacchws.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/nmachhw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/nmachhws.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/nmaclhw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/nmaclhws.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/legacy_move_assist/dlmzb.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/syscall/sc.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/dcba.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/dcbf.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/dcbst.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/dcbt.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/dcbtst.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/dcbz.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/icbi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/icbt.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/isync.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/lbarx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/lharx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/lwarx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/ldarx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/stbcx_.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/sthcx_.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/stwcx_.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/stdcx_.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/mbar.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/mftb.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/mtmsr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/dcbi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfdcr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfdcrux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfdcrx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfmsr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfspr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/mtdcr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/mtdcrux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/mtdcrx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/mtspr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/rfci.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/rfi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/rfmci.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/tlbsync.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/wrtee.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/wrteei.isa \
-unisim/component/cxx/processor/powerpc/isa/book_e/dccci.isa \
-unisim/component/cxx/processor/powerpc/isa/book_e/dcread.isa \
-unisim/component/cxx/processor/powerpc/isa/book_e/iccci.isa \
-unisim/component/cxx/processor/powerpc/isa/book_e/icread.isa \
-unisim/component/cxx/processor/powerpc/isa/book_e/msync.isa \
-unisim/component/cxx/processor/powerpc/isa/book_e/nop.isa \
-unisim/component/cxx/processor/powerpc/isa/book_e/tlbre.isa \
-unisim/component/cxx/processor/powerpc/isa/book_e/tlbsx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_e/tlbwe.isa \
-"
+import unisim/component/cxx/processor/powerpc/isa/book_i/branch
+import unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg
+import unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point
+import unisim/component/cxx/processor/powerpc/isa/book_i/floating_point
+import unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac
+import unisim/component/cxx/processor/powerpc/isa/book_i/legacy_move_assist
+import unisim/component/cxx/processor/powerpc/isa/book_i/syscall
+import unisim/component/cxx/processor/powerpc/isa/book_ii
+import unisim/component/cxx/processor/powerpc/isa/book_iii_e
+import unisim/component/cxx/processor/powerpc/isa/book_e
 
-UNISIM_LIB_SIMULATOR_HEADER_FILES="\
-${UNISIM_LIB_SIMULATOR_ISA_FILES} \
-unisim/component/cxx/memory/sparse/memory.hh \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh \
-unisim/component/cxx/processor/powerpc/isa/disasm.hh \
-unisim/kernel/logger/logger.hh \
-unisim/kernel/logger/logger_server.hh \
-unisim/kernel/service/service.hh \
-unisim/kernel/config/ini_config_file_helper.hh \
-unisim/kernel/config/xml_config_file_helper.hh \
-unisim/service/debug/debugger/debugger.hh \
-unisim/service/debug/debugger/debugger.tcc \
-unisim/service/debug/inline_debugger/inline_debugger.hh \
-unisim/service/debug/inline_debugger/inline_debugger.tcc \
-unisim/service/debug/gdb_server/gdb_server.hh \
-unisim/service/debug/gdb_server/gdb_server.tcc \
-unisim/service/interfaces/backtrace.hh \
-unisim/service/interfaces/blob.hh \
-unisim/service/interfaces/data_object_lookup.hh \
-unisim/service/interfaces/debug_event.hh \
-unisim/service/interfaces/debug_info_loading.hh \
-unisim/service/interfaces/debug_selecting.hh \
-unisim/service/interfaces/debug_yielding.hh \
-unisim/service/interfaces/disassembly.hh \
-unisim/service/interfaces/linux_os.hh \
-unisim/service/interfaces/http_server.hh \
-unisim/service/interfaces/loader.hh \
-unisim/service/interfaces/memory.hh \
-unisim/service/interfaces/memory_access_reporting.hh \
-unisim/service/interfaces/memory_injection.hh \
-unisim/service/interfaces/profiling.hh \
-unisim/service/interfaces/register.hh \
-unisim/service/interfaces/registers.hh \
-unisim/service/interfaces/stmt_lookup.hh \
-unisim/service/interfaces/subprogram_lookup.hh \
-unisim/service/interfaces/symbol_table_lookup.hh \
-unisim/service/interfaces/trap_reporting.hh \
-unisim/util/hypapp/hypapp.hh \
-unisim/util/nat_sort/nat_sort.hh \
-unisim/util/arithmetic/arithmetic.hh \
-unisim/util/backtrace/backtrace.hh \
-unisim/util/blob/blob.hh \
-unisim/util/blob/blob.tcc \
-unisim/util/blob/section.hh \
-unisim/util/blob/section.tcc \
-unisim/util/blob/segment.hh \
-unisim/util/blob/segment.tcc \
-unisim/util/debug/breakpoint.hh \
-unisim/util/debug/breakpoint_registry.hh \
-unisim/util/debug/breakpoint_registry.tcc \
-unisim/util/debug/coff_symtab/coff_symtab.hh \
-unisim/util/debug/coff_symtab/coff_symtab.tcc \
-unisim/util/debug/commit_insn_event.hh \
-unisim/util/debug/data_object.hh \
-unisim/util/debug/data_object_initializer.hh \
-unisim/util/debug/data_object_initializer.tcc \
-unisim/util/debug/dwarf/abbrev.hh \
-unisim/util/debug/dwarf/addr_range.hh \
-unisim/util/debug/dwarf/addr_range.tcc \
-unisim/util/debug/dwarf/attr.hh \
-unisim/util/debug/dwarf/attr.tcc \
-unisim/util/debug/dwarf/c_loc_expr_parser.hh \
-unisim/util/debug/dwarf/call_frame_prog.hh \
-unisim/util/debug/dwarf/call_frame_prog.tcc \
-unisim/util/debug/dwarf/call_frame_vm.hh \
-unisim/util/debug/dwarf/call_frame_vm.tcc \
-unisim/util/debug/dwarf/cfa.hh \
-unisim/util/debug/dwarf/cie.hh \
-unisim/util/debug/dwarf/cie.tcc \
-unisim/util/debug/dwarf/class.hh \
-unisim/util/debug/dwarf/cu.hh \
-unisim/util/debug/dwarf/cu.tcc \
-unisim/util/debug/dwarf/data_object.hh \
-unisim/util/debug/dwarf/data_object.tcc \
-unisim/util/debug/dwarf/die.hh \
-unisim/util/debug/dwarf/die.tcc \
-unisim/util/debug/dwarf/dwarf.hh \
-unisim/util/debug/dwarf/dwarf.tcc \
-unisim/util/debug/dwarf/encoding.hh \
-unisim/util/debug/dwarf/expr_vm.hh \
-unisim/util/debug/dwarf/expr_vm.tcc \
-unisim/util/debug/dwarf/fde.hh \
-unisim/util/debug/dwarf/fde.tcc \
-unisim/util/debug/dwarf/filename.hh \
-unisim/util/debug/dwarf/fmt.hh \
-unisim/util/debug/dwarf/frame.hh \
-unisim/util/debug/dwarf/frame.tcc \
-unisim/util/debug/dwarf/fwd.hh \
-unisim/util/debug/dwarf/leb128.hh \
-unisim/util/debug/dwarf/loc.hh \
-unisim/util/debug/dwarf/loc.tcc \
-unisim/util/debug/dwarf/macinfo.hh \
-unisim/util/debug/dwarf/macinfo.tcc \
-unisim/util/debug/dwarf/ml.hh \
-unisim/util/debug/dwarf/option.hh \
-unisim/util/debug/dwarf/pub.hh \
-unisim/util/debug/dwarf/pub.tcc \
-unisim/util/debug/dwarf/range.hh \
-unisim/util/debug/dwarf/range.tcc \
-unisim/util/debug/dwarf/register_number_mapping.hh \
-unisim/util/debug/dwarf/stmt_prog.hh \
-unisim/util/debug/dwarf/stmt_prog.tcc \
-unisim/util/debug/dwarf/stmt_vm.hh \
-unisim/util/debug/dwarf/stmt_vm.tcc \
-unisim/util/debug/dwarf/subprogram.hh \
-unisim/util/debug/dwarf/subprogram.tcc \
-unisim/util/debug/dwarf/util.hh \
-unisim/util/debug/dwarf/version.hh \
-unisim/util/debug/elf_symtab/elf_symtab.hh \
-unisim/util/debug/elf_symtab/elf_symtab.tcc \
-unisim/util/debug/event.hh \
-unisim/util/debug/fetch_insn_event.hh \
-unisim/util/debug/memory_access_type.hh \
-unisim/util/debug/profile.hh \
-unisim/util/debug/profile.tcc \
-unisim/util/debug/simple_register.hh \
-unisim/util/debug/stmt.hh \
-unisim/util/debug/stmt.tcc \
-unisim/util/debug/subprogram.hh \
-unisim/util/debug/symbol.hh \
-unisim/util/debug/symbol.tcc \
-unisim/util/debug/symbol_table.hh \
-unisim/util/debug/symbol_table.tcc \
-unisim/util/debug/trap_event.hh \
-unisim/util/debug/type.hh \
-unisim/util/debug/watchpoint.hh \
-unisim/util/debug/watchpoint_registry.hh \
-unisim/util/debug/watchpoint_registry.tcc \
-unisim/util/dictionary/dictionary.hh \
-unisim/util/dictionary/dictionary.tcc \
-unisim/util/endian/endian.hh \
-unisim/util/hash_table/hash_table.hh \
-unisim/util/ieee754/ieee754.hh \
-unisim/util/inlining/inlining.hh \
-unisim/util/nat_sort/nat_sort.hh \
-unisim/util/lexer/lexer.hh \
-unisim/util/lexer/lexer.tcc \
-unisim/util/likely/likely.hh \
-unisim/util/loader/coff_loader/coff_loader.hh \
-unisim/util/loader/coff_loader/coff_loader.tcc \
-unisim/util/loader/coff_loader/ti/ti.hh \
-unisim/util/loader/coff_loader/ti/ti.tcc \
-unisim/util/loader/elf_loader/elf32.h \
-unisim/util/loader/elf_loader/elf32_loader.hh \
-unisim/util/loader/elf_loader/elf64.h \
-unisim/util/loader/elf_loader/elf64_loader.hh \
-unisim/util/loader/elf_loader/elf_common.h \
-unisim/util/loader/elf_loader/elf_loader.hh \
-unisim/util/loader/elf_loader/elf_loader.tcc \
-unisim/util/os/linux_os/aux_table.hh \
-unisim/util/os/linux_os/calls.tcc \
-unisim/util/os/linux_os/environment.hh \
-unisim/util/os/linux_os/errno.hh \
-unisim/util/os/linux_os/files_flags.hh \
-unisim/util/os/linux_os/linux.hh \
-unisim/util/os/linux_os/linux.tcc \
-unisim/util/os/linux_os/powerpc64.hh \
-unisim/util/parser/parser.hh \
-unisim/util/parser/parser.tcc \
-unisim/util/reg/core/register.hh \
-unisim/util/reg/core/register.tcc \
-unisim/util/random/random.hh \
-unisim/util/simfloat/floating.hh \
-unisim/util/simfloat/floating.tcc \
-unisim/util/simfloat/integer.hh \
-unisim/util/simfloat/integer.tcc \
-unisim/util/xml/xml.hh \
-"
+copy source isa header template data
+copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
-UNISIM_LIB_SIMULATOR_M4_FILES="\
-m4/times.m4 \
-m4/endian.m4 \
-m4/cxxabi.m4 \
-m4/libxml2.m4 \
-m4/zlib.m4 \
-m4/boost_graph.m4 \
-m4/bsd_sockets.m4 \
-m4/curses.m4 \
-m4/libedit.m4 \
-m4/with_boost.m4 \
-m4/cacti.m4 \
-m4/check_lib.m4 \
-m4/get_exec_path.m4 \
-m4/real_path.m4 \
-m4/pthread.m4 \
-"
+UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
 
-UNISIM_LIB_SIMULATOR_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_power64.xml \
-unisim/util/debug/dwarf/power64_dwarf_register_number_mapping.xml \
-"
+UNISIM_LIB_SIMULATOR_ISA_FILES="$(files isa)"
+
+UNISIM_LIB_SIMULATOR_HEADER_FILES="${UNISIM_LIB_SIMULATOR_ISA_FILES} $(files header) $(files template)"
+
+UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
+
+UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
 SIMULATOR_EXTERNAL_HEADERS="\
 assert.h \
@@ -588,55 +125,14 @@ AUTHORS \
 ChangeLog \
 "
 
-function Usage
-{
-	echo "Usage:"
-	echo "  $0 <destination directory>"
-}
+UNISIM_SIMULATOR_FILES=" \
+${UNISIM_SIMULATOR_SOURCE_FILES} \
+${UNISIM_SIMULATOR_HEADER_FILES} \
+${UNISIM_SIMULATOR_DATA_FILES} \
+"
 
-if [ -z "$1" ]; then
-	Usage
-	exit -1
-fi
-
-UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
-mkdir -p "$1"
-DEST_DIR=$(cd "$1"; pwd)
-
-UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
 UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/cxx/${SIMPKG}
-
 SIMULATOR_VERSION=$(cat ${UNISIM_SIMULATOR_DIR}/VERSION)
-
-if [ -z "${DISTCOPY}" ]; then
-	DISTCOPY=cp
-fi
-
-has_to_build() {
-	[ ! -e "$1" -o "$2" -nt "$1" ]
-}
-
-dist_copy() {
-	if has_to_build "$2" "$1"; then
-		echo "$1 ==> $2"
-		mkdir -p "$(dirname $2)"
-		${DISTCOPY} -f "$1" "$2" || exit
-		true
-	fi
-	false
-}
-
-GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib
-
-mkdir -p ${DEST_DIR}/${SIMPKG}
-
-UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES}"
-
-for file in ${UNISIM_LIB_SIMULATOR_FILES}; do
-	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
-done
-
-UNISIM_SIMULATOR_FILES="${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_DATA_FILES}"
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
@@ -648,14 +144,6 @@ done
 
 mkdir -p ${DEST_DIR}/config
 mkdir -p ${DEST_DIR}/${SIMPKG}/config
-mkdir -p ${DEST_DIR}/${SIMPKG}/m4
-
-# Some imported files (m4 macros) impact configure generation
-has_to_build_simulator_configure=no
-
-for file in ${UNISIM_LIB_SIMULATOR_M4_FILES}; do
-	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}" && has_to_build_simulator_configure=yes
-done
 
 # Top level
 
@@ -699,8 +187,6 @@ CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 
-has_to_build_configure=no
-
 if has_to_build "${CONFIGURE_AC}" "$0"; then
 	echo "Generating configure.ac"
 	cat <<EOF > "${CONFIGURE_AC}"
@@ -737,111 +223,7 @@ fi
 
 if has_to_build "${CONFIGURE_CROSS}" "$0"; then
 	echo "Building configure.cross"
-	cat << EOF_CONFIGURE_CROSS > "${CONFIGURE_CROSS}"
-#!/bin/bash
-HERE=\$(pwd)
-MY_DIR=\$(cd \$(dirname \$0); pwd)
-
-# remove --host from command line arguments
-host=""
-help=""
-i=0
-j=0
-for arg in "\$@"
-do
-	case "\${arg}" in
-		--host=*)
-			host=\$(printf "%s" "\${arg}" | cut -f 2- -d '=')
-			;;
-		--help=* | --help)
-			help="yes"
-			args[\${j}]=\${arg}
-			j=\$((\${j}+1))
-			;;
-		*)
-			args[\${j}]=\${arg}
-			j=\$((\${j}+1))
-			;;
-	esac
-	i=\$((\${i}+1))
-done
-
-if test "\${help}" != "yes"; then
-	if test -z "\${host}"; then
-		echo "ERROR: No canonical name for the host system type was specified. Use --host=<canonical name> to specify a host system type (e.g. --host=i586-pc-mingw32)"
-		exit -1
-	fi
-fi
-
-if test "\${help}" = "yes"; then
-	echo "=== configure help for genisslib"
-else
-	echo "=== configuring in genisslib (\${HERE}/genisslib)"
-	echo "\$(basename \$0): running \${MY_DIR}/genisslib/configure \${args[@]}"
-fi
-if test ! -d \${HERE}/genisslib; then
-	mkdir "\${HERE}/genisslib"
-fi
-cd "\${HERE}/genisslib"
-\${MY_DIR}/genisslib/configure --disable-option-checking "\${args[@]}"
-STATUS="\$?"
-cd "\${HERE}"
-if test \${STATUS} -ne 0; then
-	exit \${STATUS}
-fi
-
-if test "\${help}" = "yes"; then
-	echo "=== configure help for ${SIMPKG}"
-else
-	echo "=== configuring in ${SIMPKG} (\${HERE}/${SIMPKG}) for \${host} host system type"
-	echo "\$(basename \$0): running \${MY_DIR}/${SIMPKG}/configure \$@"
-fi
-
-if test ! -d \${HERE}/${SIMPKG}; then
-	mkdir \${HERE}/${SIMPKG}
-fi
-cd \${HERE}/${SIMPKG}
-\${MY_DIR}/${SIMPKG}/configure "\$@"
-STATUS="\$?"
-cd "\${HERE}"
-if test \${STATUS} -ne 0; then
-	exit \${STATUS}
-fi
-
-if test "\${help}" = "yes"; then
-	exit 0
-fi
-
-echo "\$(basename \$0): creating Makefile.cross"
-cat << EOF_MAKEFILE_CROSS > Makefile.cross
-#!/usr/bin/make -f
-all: ${SIMPKG}-all
-clean: genisslib-clean ${SIMPKG}-clean
-distclean: genisslib-distclean ${SIMPKG}-distclean
-	rm -f \${HERE}/Makefile.cross
-install: ${SIMPKG}-install
-
-genisslib-all:
-	@\\\$(MAKE) -C \${HERE}/genisslib all
-${SIMPKG}-all: genisslib-all
-	@\\\$(MAKE) -C \${HERE}/${SIMPKG} all
-genisslib-clean:
-	@\\\$(MAKE) -C \${HERE}/genisslib clean
-${SIMPKG}-clean:
-	@\\\$(MAKE) -C \${HERE}/${SIMPKG} clean
-genisslib-distclean:
-	@\\\$(MAKE) -C \${HERE}/genisslib distclean
-${SIMPKG}-distclean:
-	@\\\$(MAKE) -C \${HERE}/${SIMPKG} distclean
-${SIMPKG}-install:
-	@\\\$(MAKE) -C \${HERE}/${SIMPKG} install
-EOF_MAKEFILE_CROSS
-
-chmod +x Makefile.cross
-
-echo "\$(basename \$0): run 'make -f \${HERE}/Makefile.cross' or '\${HERE}/Makefile.cross' to build for \${host} host system type"
-EOF_CONFIGURE_CROSS
-	chmod +x "${CONFIGURE_CROSS}"
+	make_pkg_configure_cross "${SIMPKG}" "${CONFIGURE_CROSS}"
 fi  # has to build configure cross
 
 # Simulator
@@ -877,8 +259,7 @@ case "\${host}" in
 	*)
 		;;
 esac
-UNISIM_CHECK_PTHREAD(main)
-UNISIM_CHECK_LIBXML2(main)
+$(lines ac)
 GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
 AC_SUBST(GENISSLIB_PATH)
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])

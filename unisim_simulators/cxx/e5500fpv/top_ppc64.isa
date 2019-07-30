@@ -46,12 +46,12 @@ struct Arch;
 
 impl {
 #include <arch.hh>
-#include <unisim/component/cxx/processor/powerpc/isa/disasm.hh>
+#include <unisim/component/cxx/processor/powerpc/disasm.hh>
 
 #include <unisim/util/likely/likely.hh>
 #define evenly(x) (x)
 
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
+  //#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>

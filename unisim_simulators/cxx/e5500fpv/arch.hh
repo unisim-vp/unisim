@@ -37,7 +37,7 @@
 
 #include <core.hh>
 #include <top_ppc64.hh>
-#include <unisim/component/cxx/processor/powerpc/isa/disasm.hh>
+#include <unisim/component/cxx/processor/powerpc/disasm.hh>
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/util/reg/core/register.hh>
 #include <unisim/util/reg/core/register.tcc>
@@ -72,7 +72,7 @@ struct Arch
   , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
   , public unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
 {
-  
+  typedef ::MSR MSR;
   typedef unisim::component::cxx::processor::powerpc::ppc64::Decoder                             Decoder;
   typedef unisim::component::cxx::processor::powerpc::ppc64::Operation                           Operation;
   typedef unisim::service::interfaces::LinuxOS                                                   LinuxOS;
@@ -104,7 +104,7 @@ struct Arch
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> > memory_injection_export;
 
   // unisim::service::interfaces::Memory<uint64_t>
-  virtual void Reset() {}
+  virtual void ResetMemory() {}
   virtual bool ReadMemory(uint64_t addr, void* buffer, unsigned size );
   virtual bool WriteMemory(uint64_t addr, void const* buffer, unsigned size);
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;

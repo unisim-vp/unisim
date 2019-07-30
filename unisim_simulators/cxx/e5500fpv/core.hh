@@ -160,6 +160,12 @@ struct FPSCR : Register<FPSCR>
     if (Get<Enable>() == UINT(1))
       Register<FPSCR>::Set<FEX>( UINT(1) );
   }
+
+  FPSCR& operator = (UINT _value)
+  {
+    Register<FPSCR>::value = _value    ;
+    return *this;
+  }
 };
 
 // Machine State Register
