@@ -818,7 +818,7 @@ TBigInt<IntegerTraits>::div(const thisType& biSource, DivisionResult& drResult) 
       int uShift = (8*sizeof(unsigned int)-drResult.quotient().lastCellSize());
       unsigned int uDivLeft = adrResult.quotient()[0] & ~(~0U << uShift);
       TBigCellInt<typename ArrayCells::QuotientResult> quotient;
-      memcpy((typename ArrayCells::DivisionResult::InheritedQuotientResult*) &quotient, &adrResult.quotient(), sizeof(typename ArrayCells::DivisionResult::InheritedQuotientResult));
+      memcpy((void *)(typename ArrayCells::DivisionResult::InheritedQuotientResult*) &quotient, (const void *)&adrResult.quotient(), sizeof(typename ArrayCells::DivisionResult::InheritedQuotientResult));
       quotient >>= uShift;
 
       ArrayCells acNewRemainder(biSource.cells());
@@ -863,7 +863,7 @@ TBigInt<IntegerTraits>::divNormalized(const thisType& biSource, NormalizedDivisi
       int uShift = (8*sizeof(unsigned int)-drResult.quotient().lastCellSize());
       unsigned int uDivLeft = adrResult.quotient()[0] & ~(~0U << uShift);
       TBigCellInt<typename ArrayCells::QuotientResult> quotient;
-      memcpy((typename ArrayCells::DivisionResult::InheritedQuotientResult*) &quotient, &adrResult.quotient(), sizeof(typename ArrayCells::DivisionResult::InheritedQuotientResult));
+      memcpy((void *)(typename ArrayCells::DivisionResult::InheritedQuotientResult*) &quotient, (const void *)&adrResult.quotient(), sizeof(typename ArrayCells::DivisionResult::InheritedQuotientResult));
       quotient >>= uShift;
 
       typename ArrayCells::Carry cMult = acSource.multAssign(uDivLeft);

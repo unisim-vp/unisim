@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_E200_MPC57XX_CPU_TCC__
 
 #include <unisim/component/cxx/processor/powerpc/cpu.tcc>
+#include <unisim/util/simfloat/floating.tcc>
 
 namespace unisim {
 namespace component {
