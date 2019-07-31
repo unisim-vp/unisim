@@ -51,6 +51,7 @@
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/service/debug/debugger/debugger.tcc>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>

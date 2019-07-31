@@ -349,7 +349,7 @@ bool MPU<TYPES, CONFIG>::Match(MPU_ENTRY *mpu_entry, ADDRESS addr)
 		
 		if(( EXEC && ((pr && (mpu0csr0.template Get<typename MPU0CSR0::BYPUX>()            || MAS0::UX_UR::Get(mpu_entry->mas0))) || (!pr && (mpu0csr0.template Get<typename MPU0CSR0::BYPSX>()    || MAS0::SX_SR::Get(mpu_entry->mas0))))) ||
 		   (!EXEC && ((pr && ((WRITE && (mpu0csr0.template Get<typename MPU0CSR0::BYPUW>() || MAS0::UW::Get(mpu_entry->mas0)))    || (!WRITE && (mpu0csr0.template Get<typename MPU0CSR0::BYPUR>() || MAS0::UX_UR::Get(mpu_entry->mas0))))) ||
-		             (!pr && ((WRITE && (mpu0csr0.template Get<typename MPU0CSR0::BYPSW>() || MAS0::SW::Get(mpu_entry->mas0)))    || (!WRITE && (mpu0csr0.template Get<typename MPU0CSR0::BYPSR>() || MAS0::SX_SR::Get(mpu_entry->mas0))))))))
+		             (!pr && ((WRITE && (mpu0csr0.template Get<typename MPU0CSR0::BYPSW>() || MAS0::SW::Get(mpu_entry->mas0)))    || (!WRITE && (mpu0csr0.template Get<typename MPU0CSR0::BYPSR>() || MAS0::SX_SR::Get(mpu_entry->mas0) || MAS0::SW::Get(mpu_entry->mas0))))))))
 		{
 			// Access right match
 			unsigned int tid = MAS1::TID::Get(mpu_entry->mas1);
