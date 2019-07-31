@@ -3,7 +3,7 @@
 SIMPKG=ppcemu
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
-unisim/component/cxx/processor/powerpc/isa/disasm.cc \
+unisim/component/cxx/processor/powerpc/disasm.cc \
 unisim/kernel/service/service.cc \
 unisim/kernel/config/xml_config_file_helper.cc \
 unisim/kernel/config/ini_config_file_helper.cc \
@@ -284,7 +284,7 @@ unisim/component/cxx/processor/powerpc/isa/book_iii_s/mtsrin.isa \
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_FILES} \
-unisim/component/cxx/processor/powerpc/isa/disasm.hh \
+unisim/component/cxx/processor/powerpc/disasm.hh \
 unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh \

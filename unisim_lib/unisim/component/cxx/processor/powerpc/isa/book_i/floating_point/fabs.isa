@@ -41,7 +41,7 @@ fabs.execute = {
 		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 		return false;
 	}
-	if(unlikely(not cpu->GetMSR().Get<CPU::MSR::FP>()))
+	if(unlikely(not BOOL(cpu->GetMSR().Get<CPU::MSR::FP>())))
 	{
 		cpu->ThrowException<CPU::FloatingPointUnavailableInterrupt::FloatingPointUnavailable>();
 		return false;

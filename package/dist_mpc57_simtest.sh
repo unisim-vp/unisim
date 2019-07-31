@@ -3,7 +3,7 @@
 SIMPKG=mpc57_simtest
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
-unisim/component/cxx/processor/powerpc/isa/disasm.cc \
+unisim/component/cxx/processor/powerpc/disasm.cc \
 unisim/util/symbolic/symbolic.cc \
 unisim/util/random/random.cc \
 "
@@ -482,7 +482,7 @@ ${UNISIM_LIB_SIMULATOR_ISA_FILES} \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
 unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
 unisim/component/cxx/processor/powerpc/isa/lsp/lsp.hh \
-unisim/component/cxx/processor/powerpc/isa/disasm.hh \
+unisim/component/cxx/processor/powerpc/disasm.hh \
 unisim/util/truth_table/truth_table.hh \
 unisim/util/endian/endian.hh \
 unisim/util/inlining/inlining.hh \

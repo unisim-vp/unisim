@@ -37,7 +37,7 @@
 
 #include <simfloat.hh>
 #include <types.hh>
-// #include <unisim/component/cxx/processor/powerpc/isa/disasm.hh>
+// #include <unisim/component/cxx/processor/powerpc/disasm.hh>
 // #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/util/reg/core/register.hh>
 #include <unisim/util/reg/core/register.tcc>

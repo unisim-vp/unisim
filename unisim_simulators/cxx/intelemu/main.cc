@@ -119,7 +119,7 @@ struct Arch
   
   using unisim::component::cxx::processor::intel::Arch::m_mem;
   // unisim::service::interfaces::Memory<uint32_t>
-  void Reset() {}
+  void ResetMemory() {}
   bool ReadMemory(uint32_t addr, void* buffer, uint32_t size ) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
   bool WriteMemory(uint32_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
   // unisim::service::interfaces::Registers

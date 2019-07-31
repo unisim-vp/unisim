@@ -387,7 +387,6 @@ public:
 	//=               Programmer view memory access methods               =
 	//=====================================================================
 	
-	virtual void ResetMemory();
 	virtual bool ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size);
 	virtual bool InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size);

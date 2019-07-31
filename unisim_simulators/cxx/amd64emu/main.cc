@@ -232,7 +232,7 @@ struct Arch
   Memory                      m_mem;
 
   // unisim::service::interfaces::Memory<addr_t>
-  void Reset() {}
+  void ResetMemory() {}
   bool ReadMemory(addr_t addr, void* buffer, uint32_t size ) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
   bool WriteMemory(addr_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
 

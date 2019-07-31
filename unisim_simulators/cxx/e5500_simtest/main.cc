@@ -34,7 +34,7 @@
 
 #include <top_ppc64.hh>
 #include <arch.hh>
-#include <unisim/component/cxx/processor/powerpc/isa/disasm.hh>
+#include <unisim/component/cxx/processor/powerpc/disasm.hh>
 #include <unisim/util/random/random.hh>
 #include <fstream>
 #include <iostream>
