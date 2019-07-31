@@ -387,7 +387,8 @@ bool MPU<TYPES, CONFIG>::Match(MPU_REGION_DESCRIPTOR *mpu_region_descriptor, ADD
 				ADDRESS upper_bound = MAS2::UPPER_BOUND::Get(mpu_region_descriptor->mas2);
 				ADDRESS lower_bound = MAS3::LOWER_BOUND::Get(mpu_region_descriptor->mas3);
 				
-				ADDRESS addr_mask = ~((int32_t) 0x80000000 >> MAS0::UAMSK::Get(mpu_region_descriptor->mas0));
+				unsigned int uamsk = MAS0::UAMSK::Get(mpu_region_descriptor->mas0);
+				ADDRESS addr_mask = uamsk ? ~((int32_t) 0x80000000 >> (uamsk - 1)) : ~ADDRESS(0);
 				B29_31::Set(addr_mask, 0U);
 				
 				ADDRESS masked_addr = addr & addr_mask;
