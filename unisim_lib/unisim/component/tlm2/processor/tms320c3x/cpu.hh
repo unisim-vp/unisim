@@ -62,11 +62,9 @@ using unisim::kernel::logger::Logger;
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
 using unisim::component::tlm2::interrupt::InterruptPayload;
 
-using namespace sc_core;
-
 template <class CONFIG, bool DEBUG = false>
 class CPU
-	: public sc_module
+	: public sc_core::sc_module
 	, public unisim::component::cxx::processor::tms320c3x::CPU<CONFIG, DEBUG>
 {
 public:
@@ -88,7 +86,7 @@ public:
 	irq_slave_socket tint1_slave_sock; // TINT1(CPU) Interrupt Slave Sock
 	irq_slave_socket dint_slave_sock;  // DINT(CPU) Interrupt Slave Sock
 	
-	CPU(const sc_module_name& name, Object *parent = 0);
+	CPU(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~CPU();
 	
 	// Back path
@@ -110,16 +108,16 @@ protected:
 	virtual bool PrRead(typename CONFIG::address_t addr, void *buffer, uint32_t size, bool interlocked = false);
 private:
 	PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
-	sc_time cpu_cycle_time;
-	sc_time cpu_time;
-	sc_time nice_time;
-	sc_event ev_irq;
+	sc_core::sc_time cpu_cycle_time;
+	sc_core::sc_time cpu_time;
+	sc_core::sc_time nice_time;
+	sc_core::sc_event ev_irq;
 	double ipc;
 	bool enable_dmi;
 	bool debug_dmi;
 
-	Parameter<sc_time> param_cpu_cycle_time;
-	Parameter<sc_time> param_nice_time;
+	Parameter<sc_core::sc_time> param_cpu_cycle_time;
+	Parameter<sc_core::sc_time> param_nice_time;
 	Parameter<double> param_ipc;
 	Parameter<bool> param_enable_dmi;
 	Parameter<bool> param_debug_dmi;
@@ -150,7 +148,7 @@ private:
 		
 		Event()
 			: type(EV_IRQ)
-			, time_stamp(SC_ZERO_TIME)
+			, time_stamp(sc_core::SC_ZERO_TIME)
 			, irq(0)
 			, level(false)
 		{
@@ -161,7 +159,7 @@ private:
 			Clear();
 		}
 		
-		void InitializeIRQEvent(unsigned int _irq, bool _level, const sc_time& _time_stamp)
+		void InitializeIRQEvent(unsigned int _irq, bool _level, const sc_core::sc_time& _time_stamp)
 		{
 			type = EV_IRQ;
 			time_stamp = _time_stamp;
@@ -172,7 +170,7 @@ private:
 		void Clear()
 		{
 			type = EV_IRQ;
-			time_stamp = SC_ZERO_TIME;
+			time_stamp = sc_core::SC_ZERO_TIME;
 			irq = 0;
 			level = false;
 		}
@@ -182,12 +180,12 @@ private:
 			return type;
 		}
 		
-		void SetTimeStamp(const sc_time& _time_stamp)
+		void SetTimeStamp(const sc_core::sc_time& _time_stamp)
 		{
 			time_stamp = _time_stamp;
 		}
 		
-		const sc_time& GetTimeStamp() const
+		const sc_core::sc_time& GetTimeStamp() const
 		{
 			return time_stamp;
 		}
@@ -204,7 +202,7 @@ private:
 		
 	private:
 		Type type;
-		sc_time time_stamp;
+		sc_core::sc_time time_stamp;
 		unsigned int irq;
 		bool level;
 	};
@@ -251,7 +249,7 @@ private:
 	class ScheduleKey
 	{
 	public:
-		ScheduleKey(const sc_time& _time_stamp, typename Event::Type _type, unsigned int _irq)
+		ScheduleKey(const sc_core::sc_time& _time_stamp, typename Event::Type _type, unsigned int _irq)
 			: time_stamp(_time_stamp)
 			, type(_type)
 			, irq(_irq)
@@ -263,12 +261,12 @@ private:
 			return (time_stamp < sk.time_stamp) || ((time_stamp == sk.time_stamp) && ((type < sk.type) || ((type == sk.type) && (irq < sk.irq))));
 		}
 		
-		const sc_time& GetTimeStamp() const
+		const sc_core::sc_time& GetTimeStamp() const
 		{
 			return time_stamp;
 		}
 	private:
-		sc_time time_stamp;
+		sc_core::sc_time time_stamp;
 		typename Event::Type type;
 		unsigned int irq;
 	};
@@ -294,7 +292,7 @@ private:
 			}
 		}
 		
-		void NotifyIRQEvent(unsigned int irq, bool level, const sc_time& time_stamp)
+		void NotifyIRQEvent(unsigned int irq, bool level, const sc_core::sc_time& time_stamp)
 		{
 			ScheduleKey key = ScheduleKey(time_stamp, Event::EV_IRQ, irq);
 			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.find(key);
@@ -305,26 +303,26 @@ private:
 			Event *event = event_allocator.AllocEvent();
 			event->InitializeIRQEvent(irq, level, time_stamp);
 			schedule.insert(std::pair<ScheduleKey, Event *>(key, event));
-			sc_time t(time_stamp);
-			t -= sc_time_stamp();
+			sc_core::sc_time t(time_stamp);
+			t -= sc_core::sc_time_stamp();
 			kernel_event.notify(t);
 		}
 
 		void Notify(Event *event)
 		{
-			const sc_time& time_stamp = event->GetTimeStamp();
+			const sc_core::sc_time& time_stamp = event->GetTimeStamp();
 			schedule.insert(std::pair<ScheduleKey, Event *>(ScheduleKey(time_stamp, event->GetType(), event->GetIRQ()), event));
-			sc_time t(time_stamp);
-			t -= sc_time_stamp();
+			sc_core::sc_time t(time_stamp);
+			t -= sc_core::sc_time_stamp();
 			kernel_event.notify(t);
 		}
 		
-		Event *GetNextEvent(const sc_time& time_stamp)
+		Event *GetNextEvent(const sc_core::sc_time& time_stamp)
 		{
 			if(schedule.empty()) return 0;
 			
 			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.begin();
-			const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+			const sc_core::sc_time& event_time_stamp = (*it).first.GetTimeStamp();
 			if(event_time_stamp <= time_stamp)
 			{
 				Event *event = (*it).second;
@@ -332,7 +330,7 @@ private:
 				return event;
 			}
 			
-			sc_time t(event_time_stamp);
+			sc_core::sc_time t(event_time_stamp);
 			t -= time_stamp;
 			kernel_event.notify(t);
 			
@@ -344,12 +342,12 @@ private:
 			event_allocator.FreeEvent(event);
 		}
 		
-		const sc_event& GetKernelEvent() const
+		const sc_core::sc_event& GetKernelEvent() const
 		{
 			return kernel_event;
 		}
 		
-		void Flush(const sc_time& time_stamp, typename Event::Type event_type)
+		void Flush(const sc_core::sc_time& time_stamp, typename Event::Type event_type)
 		{
 			typename std::multimap<ScheduleKey, Event *>::iterator it;
 			for(it = schedule.begin(); it != schedule.end(); it++)
@@ -367,13 +365,13 @@ private:
 			if(schedule.empty()) return;
 			
 			it = schedule.begin();
-			const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+			const sc_core::sc_time& event_time_stamp = (*it).first.GetTimeStamp();
 			if(event_time_stamp <= time_stamp)
 			{
 				return;
 			}
 			
-			sc_time t(event_time_stamp);
+			sc_core::sc_time t(event_time_stamp);
 			t -= time_stamp;
 			kernel_event.notify(t);
 		}
@@ -394,7 +392,7 @@ private:
 	private:
 		std::multimap<ScheduleKey, Event *> schedule;
 		
-		sc_event kernel_event;
+		sc_core::sc_event kernel_event;
 		EventAllocator event_allocator;
 	};
 

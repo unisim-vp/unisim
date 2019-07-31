@@ -55,9 +55,9 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG, bool DEBUG>
-CPU<CONFIG, DEBUG>::CPU(const sc_module_name& name, Object *parent)
+CPU<CONFIG, DEBUG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent, "this module implements a TMS320C3X DSP core")
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, unisim::component::cxx::processor::tms320c3x::CPU<CONFIG, DEBUG>(name, parent)
 	, bus_master_sock("bus-master-sock")
 	, int0_slave_sock("int0-slave-sock")
@@ -249,13 +249,13 @@ template <class CONFIG, bool DEBUG>
 void CPU<CONFIG, DEBUG>::Synchronize()
 {
 	wait(cpu_time);
-	cpu_time = SC_ZERO_TIME;
+	cpu_time = sc_core::SC_ZERO_TIME;
 }
 
 template <class CONFIG, bool DEBUG>
 void CPU<CONFIG, DEBUG>::ProcessExternalEvents()
 {
-	sc_time time_stamp = sc_time_stamp();
+	sc_core::sc_time time_stamp = sc_core::sc_time_stamp();
 	time_stamp += cpu_time;
 	Event *event = external_event_schedule.GetNextEvent(time_stamp);
 	
@@ -280,7 +280,7 @@ void CPU<CONFIG, DEBUG>::ProcessIRQEvent(Event *event)
 {
 	if(inherited::VerboseAll())
 	{
-		inherited::logger << DebugInfo << (sc_time_stamp() + cpu_time) << ": processing an IRQ event that occured at " << event->GetTimeStamp() << " (IRQ #" << event->GetIRQ() << " goes " << (event->GetLevel() ? "high" : "low") << "). Event skew is " << (sc_time_stamp() + cpu_time - event->GetTimeStamp()) << "." << EndDebugInfo;
+		inherited::logger << DebugInfo << (sc_core::sc_time_stamp() + cpu_time) << ": processing an IRQ event that occured at " << event->GetTimeStamp() << " (IRQ #" << event->GetIRQ() << " goes " << (event->GetLevel() ? "high" : "low") << "). Event skew is " << (sc_core::sc_time_stamp() + cpu_time - event->GetTimeStamp()) << "." << EndDebugInfo;
 	}
 	inherited::SetIRQLevel(event->GetIRQ(), event->GetLevel());
 }
@@ -291,7 +291,7 @@ void CPU<CONFIG, DEBUG>::interrupt_b_transport(unsigned int irq, InterruptPayloa
 	if(irq < 2)
 	{
 		bool level = payload.GetValue();
-		sc_time notify_time_stamp(sc_time_stamp());
+		sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 		notify_time_stamp += t;
 
 		if(inherited::VerboseAll())
@@ -317,7 +317,7 @@ tlm::tlm_sync_enum CPU<CONFIG, DEBUG>::interrupt_nb_transport_fw(unsigned int ir
 				if(irq < 2)
 				{
 					bool level = payload.GetValue();
-					sc_time notify_time_stamp(sc_time_stamp());
+					sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 					notify_time_stamp += t;
 
 					if(inherited::VerboseAll())
@@ -361,7 +361,7 @@ bool CPU<CONFIG, DEBUG>::interrupt_get_direct_mem_ptr(unsigned int, InterruptPay
 template <class CONFIG, bool DEBUG>
 void CPU<CONFIG, DEBUG>::Run()
 {
-	sc_time time_per_instruction = cpu_cycle_time * ipc;
+	sc_core::sc_time time_per_instruction = cpu_cycle_time * ipc;
 	
 	while(1)
 	{

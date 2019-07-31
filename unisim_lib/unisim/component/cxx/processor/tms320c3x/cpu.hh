@@ -149,6 +149,7 @@ public:
 	
 	CPU(const char *name, Object *parent = 0);
 	virtual ~CPU();
+	
 	virtual void Reset();
 	
 	//===============================================================

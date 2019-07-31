@@ -41,6 +41,7 @@
 #include <unisim/service/os/ti_c_io/ti_c_io.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/service/debug/debugger/debugger.tcc>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/time/sc_time/time.hh>
@@ -52,19 +53,6 @@
 #include <stdexcept>
 #include <stdlib.h>
 #include <signal.h>
-
-#ifdef WIN32
-
-#include <windows.h>
-#include <winsock2.h>
-
-#endif
-
-void SigIntHandler(int signum)
-{
-	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
-	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
-}
 
 using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
@@ -168,6 +156,7 @@ private:
 
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+	virtual void SigInt();
 };
 
 
@@ -392,7 +381,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("inline-debugger.memory-atom-size", 4);
 	
 	//  - GDB server
-	simulator->SetVariable("gdb-server.architecture-description-filename", "gdb_tms320c3x.xml");
+	simulator->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_tms320c3x.xml");
 	simulator->SetVariable("gdb-server.memory-atom-size", 4);
 }
 
@@ -409,7 +398,7 @@ void Simulator::Run()
 	catch(std::runtime_error& e)
 	{
 		std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
-		std::cerr << e.what() << std::endl;
+		std::cerr << e.what() << endl;
 	}
 
 	std::cerr << "Simulation finished" << std::endl;
@@ -417,15 +406,15 @@ void Simulator::Run()
 	double time_stop = host_time->GetTime();
 	double spent_time = time_stop - time_start;
 
-	std::cerr << "Simulation run-time parameters:" << std::endl;
+	std::cerr << "Simulation run-time parameters:" << endl;
 	DumpParameters(std::cerr);
-	std::cerr << std::endl;
-	std::cerr << "Simulation formulas:" << std::endl;
+	std::cerr << endl;
+	std::cerr << "Simulation formulas:" << endl;
 	DumpFormulas(std::cerr);
-	std::cerr << std::endl;
-	std::cerr << "Simulation statistics:" << std::endl;
+	std::cerr << endl;
+	std::cerr << "Simulation statistics:" << endl;
 	DumpStatistics(std::cerr);
-	std::cerr << std::endl;
+	std::cerr << endl;
 
 	std::cerr << "simulation time: " << spent_time << " seconds" << std::endl;
 	std::cerr << "simulated time : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
@@ -453,23 +442,18 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 {
 	exit_status = _exit_status;
-	if(object)
+	if(sc_core::sc_get_status() != sc_core::SC_STOPPED)
 	{
-		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+		sc_core::sc_stop();
 	}
-#ifdef DEBUG_TMS320C3X
-	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
-#endif
-	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_core::sc_stop();
 	if(!asynchronous)
 	{
-		switch(sc_core::sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
+		switch(h.proc_kind())
 		{
 			case sc_core::SC_THREAD_PROC_: 
 			case sc_core::SC_CTHREAD_PROC_:
-				wait();
+				sc_core::wait();
 				break;
 			default:
 				break;
@@ -482,18 +466,16 @@ int Simulator::GetExitStatus() const
 	return exit_status;
 }
 
+void Simulator::SigInt()
+{
+	if(!enable_inline_debugger)
+	{
+		unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+	}
+}
+
 int sc_main(int argc, char *argv[])
 {
-#ifdef WIN32
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		std::cerr << "WSAStartup failed" << std::endl;
-		return -1;
-	}
-#endif
 	Simulator *simulator = new Simulator(argc, argv);
 
 	switch(simulator->Setup())
@@ -501,22 +483,18 @@ int sc_main(int argc, char *argv[])
 		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
 			break;
 		case unisim::kernel::service::Simulator::ST_WARNING:
-			std::cerr << "Some warnings occurred during setup" << std::endl;
+			cerr << "Some warnings occurred during setup" << endl;
 		case unisim::kernel::service::Simulator::ST_OK_TO_START:
-			std::cerr << "Starting simulation" << std::endl;
+			cerr << "Starting simulation" << endl;
 			simulator->Run();
 			break;
 		case unisim::kernel::service::Simulator::ST_ERROR:
-			std::cerr << "Can't start simulation because of previous errors" << std::endl;
+			cerr << "Can't start simulation because of previous errors" << endl;
 			break;
 	}
 
 	int exit_status = simulator->GetExitStatus();
 	delete simulator;
-#ifdef WIN32
-	// releases the winsock2 resources
-	WSACleanup();
-#endif
 
 	return exit_status;
 }

@@ -9,25 +9,6 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/service/debug/debugger/debugger.tcc>
 
-bool debug_enabled = false;
-
-void EnableDebug()
-{
-	debug_enabled = true;
-}
-
-void DisableDebug()
-{
-	debug_enabled = false;
-}
-
-void SigIntHandler(int signum)
-{
-	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
-//	sc_stop();
-	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
-}
-
 Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
@@ -752,8 +733,6 @@ Simulator::SetupStatus Simulator::Setup()
 	std::cout << "entry-point 0x" << std::hex << entry_point << std::dec << std::endl;
 	cpu->setEntryPoint(cpu_address);
 
-	EnableDebug();
-
 	isStop = false;
 
 	return result;
@@ -842,7 +821,7 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 }
 
 Simulator::LoadRatioStatistic::LoadRatioStatistic(Simulator& _sim)
-  : Variable<double>("data-load-ratio %", 0, sim.null_stat_var, VariableBase::VAR_STATISTIC, "Data Load Ratio"), sim(_sim) {}
+  : Variable<double>("data-load-ratio %", 0, _sim.null_stat_var, VariableBase::VAR_STATISTIC, "Data Load Ratio"), sim(_sim) {}
 
 void
 Simulator::LoadRatioStatistic::Get(double& value)
@@ -853,7 +832,7 @@ Simulator::LoadRatioStatistic::Get(double& value)
 }
 
 Simulator::StoreRatioStatistic::StoreRatioStatistic(Simulator& _sim)
-  : Variable<double>("data-store-ratio %", 0, sim.null_stat_var, VariableBase::VAR_STATISTIC, "Data Store Ratio"), sim(_sim) {}
+  : Variable<double>("data-store-ratio %", 0, _sim.null_stat_var, VariableBase::VAR_STATISTIC, "Data Store Ratio"), sim(_sim) {}
 
 void
 Simulator::StoreRatioStatistic::Get(double& value)
@@ -1267,3 +1246,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 }
 
+void Simulator::SigInt()
+{
+	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
+	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+}

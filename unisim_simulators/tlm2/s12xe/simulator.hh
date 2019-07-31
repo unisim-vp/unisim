@@ -512,6 +512,8 @@ private:
 
 	physical_address_t entry_point;
 	Parameter<physical_address_t> param_entry_point;
+	
+	virtual void SigInt();
 };
 
 #endif /* SIMULATOR_HH_ */
