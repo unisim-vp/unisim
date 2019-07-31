@@ -4801,6 +4801,9 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 		if(web_terminal14) *http_server->http_server_import[i++] >> web_terminal14->http_server_export;
 		if(web_terminal15) *http_server->http_server_import[i++] >> web_terminal15->http_server_export;
 		if(web_terminal16) *http_server->http_server_import[i++] >> web_terminal16->http_server_export;
+		*http_server->http_server_import[i++] >> main_core_0->mpu_http_server_export;
+		*http_server->http_server_import[i++] >> main_core_1->mpu_http_server_export;
+		*http_server->http_server_import[i++] >> peripheral_core_2->mpu_http_server_export;
 	}
 	
 	{

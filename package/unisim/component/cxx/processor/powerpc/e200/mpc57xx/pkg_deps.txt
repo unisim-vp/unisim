@@ -1,4 +1,6 @@
 unisim/component/cxx/processor/powerpc
+unisim/kernel/service
+unisim/service/interfaces/http_server
 unisim/util/cache
 unisim/util/endian
 unisim/util/likely

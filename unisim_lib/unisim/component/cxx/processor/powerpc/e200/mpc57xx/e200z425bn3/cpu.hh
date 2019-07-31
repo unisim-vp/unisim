@@ -41,6 +41,7 @@
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/imem.hh>
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/dmem.hh>
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/l1i.hh>
+#include <unisim/service/interfaces/http_server.hh>
 
 namespace unisim {
 namespace component {
@@ -151,6 +152,8 @@ class CPU : public unisim::component::cxx::processor::powerpc::e200::mpc57xx::CP
 {
 public:
 	typedef unisim::component::cxx::processor::powerpc::e200::mpc57xx::CPU<TYPES, CONFIG> SuperCPU;
+	
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> mpu_http_server_export;
 	
 	CPU(const char *name, unisim::kernel::service::Object *parent = 0);
 	virtual ~CPU();

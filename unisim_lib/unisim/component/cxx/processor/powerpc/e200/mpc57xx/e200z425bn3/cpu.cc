@@ -47,6 +47,7 @@ namespace e200z425bn3 {
 CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent, "e200z425bn3 PowerPC core")
 	, SuperCPU(name, parent)
+	, mpu_http_server_export("mpu-http-server-export", this)
 	, mpu(this, 0x2)
 	, l1i(this)
 	, imem(this)
@@ -55,6 +56,7 @@ CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	, l1cfg1(this)
 	, l1csr0(this)
 {
+	mpu_http_server_export >> mpu.http_server_export;
 }
 
 CPU::~CPU()
@@ -119,9 +121,9 @@ bool CPU::Icbi(EFFECTIVE_ADDRESS addr)
 		return false;
 	}
 	
-	MPU_ENTRY *mpu_entry = mpu.Lookup</* exec */ false, /* write */ false>(addr); // icbi is treated as a load for the purpose of access protection
+	MPU_REGION_DESCRIPTOR *mpu_region_descriptor = mpu.Lookup</* exec */ false, /* write */ false>(addr); // icbi is treated as a load for the purpose of access protection
 	
-	if(!mpu_entry)
+	if(!mpu_region_descriptor)
 	{
 		ThrowException<DataStorageInterrupt::AccessControl>().SetAddress(addr);
 		return false;
@@ -135,9 +137,9 @@ bool CPU::Icbt(EFFECTIVE_ADDRESS addr)
 {
 	if(hid0.Get<HID0::NOPTI>()) return true; // icbt is treated as a no-op if HID0[NOPTI]=1
 	
-	MPU_ENTRY *mpu_entry = mpu.Lookup</* exec */ false, /* write */ false>(addr); // icbt is treated as a load for the purpose of access protection
+	MPU_REGION_DESCRIPTOR *mpu_region_descriptor = mpu.Lookup</* exec */ false, /* write */ false>(addr); // icbt is treated as a load for the purpose of access protection
 	
-	if(!mpu_entry)
+	if(!mpu_region_descriptor)
 	{
 		ThrowException<DataStorageInterrupt::AccessControl>().SetAddress(addr);
 		return false;
