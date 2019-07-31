@@ -37,7 +37,7 @@
 
 const unsigned int MemoryRouterConfig::INPUT_SOCKETS;
 const unsigned int MemoryRouterConfig::OUTPUT_SOCKETS;
-const unsigned int MemoryRouterConfig::MAX_NUM_MAPPINGS;
+const unsigned int MemoryRouterConfig::NUM_MAPPINGS;
 const unsigned int MemoryRouterConfig::BUSWIDTH;
 
 const bool MemoryRouterDebugConfig::VERBOSE;

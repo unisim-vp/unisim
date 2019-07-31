@@ -68,7 +68,7 @@ using namespace sc_core;
 
 template <class CONFIG>
 class CPU
-	: public sc_module
+	: public sc_core::sc_module
 	, public unisim::component::cxx::processor::avr32::avr32a::avr32uc::CPU<CONFIG>
 {
 public:
@@ -83,7 +83,7 @@ public:
 	nmireq_slave_socket nmireq_slave_sock;             // NMIREQ signal
 	irq_slave_socket *irq_slave_sock[CONFIG::NUM_IRQS]; // IRQ signals
 	
-	CPU(const sc_module_name& name, Object *parent = 0);
+	CPU(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~CPU();
 	
 	// Back path
@@ -107,7 +107,7 @@ public:
 	void Run();
 	
 protected:
-	sc_time GetBurstLatency(uint32_t size, const sc_time& latency) const;
+	sc_core::sc_time GetBurstLatency(uint32_t size, const sc_core::sc_time& latency) const;
 	virtual bool IHSBRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size);
 	virtual bool DHSBRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size);
 	virtual bool DHSBWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size);
@@ -119,34 +119,34 @@ private:
 	} Interface;
 	
 	PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
-	sc_time cpu_cycle_time;         //<! CPU core cycle time
-	sc_time hsb_cycle_time;         //<! HSB cycle time
-	sc_time cpu_time;               //<! local time (relative to sc_time_stamp)
-	sc_time timer_time;             //<! absolute time from the internal timers point of view
-	sc_time nice_time;              //<! period of synchronization with other threads
-	sc_time max_idle_time;          //<! Maximum idle time (temporary variable)
-	sc_time run_time;               //<! absolute timer (local time + sc_time_stamp)
-	sc_time idle_time;              //<! total idle time
-	sc_time timers_update_deadline; //<! deadline for updating internal timers in order to keep internal timer accuracy
+	sc_core::sc_time cpu_cycle_time;         //<! CPU core cycle time
+	sc_core::sc_time hsb_cycle_time;         //<! HSB cycle time
+	sc_core::sc_time cpu_time;               //<! local time (relative to sc_time_stamp)
+	sc_core::sc_time timer_time;             //<! absolute time from the internal timers point of view
+	sc_core::sc_time nice_time;              //<! period of synchronization with other threads
+	sc_core::sc_time max_idle_time;          //<! Maximum idle time (temporary variable)
+	sc_core::sc_time run_time;               //<! absolute timer (local time + sc_time_stamp)
+	sc_core::sc_time idle_time;              //<! total idle time
+	sc_core::sc_time timers_update_deadline; //<! deadline for updating internal timers in order to keep internal timer accuracy
 	bool enable_host_idle;
-	sc_event ev_max_idle;
-	sc_event ev_nmireq;
-	sc_event ev_irq;
+	sc_core::sc_event ev_max_idle;
+	sc_core::sc_event ev_nmireq;
+	sc_core::sc_event ev_irq;
 	double ipc;
 	double one;
 	bool enable_dmi;
 	bool debug_dmi;
 
-	Parameter<sc_time> param_cpu_cycle_time;
-	Parameter<sc_time> param_hsb_cycle_time;
-	Parameter<sc_time> param_nice_time;
+	Parameter<sc_core::sc_time> param_cpu_cycle_time;
+	Parameter<sc_core::sc_time> param_hsb_cycle_time;
+	Parameter<sc_core::sc_time> param_nice_time;
 	Parameter<double> param_ipc;
 	Parameter<bool> param_enable_host_idle;
 	Parameter<bool> param_enable_dmi;
 	Parameter<bool> param_debug_dmi;
 	Statistic<double> stat_one;
-	Statistic<sc_time> stat_run_time;
-	Statistic<sc_time> stat_idle_time;
+	Statistic<sc_core::sc_time> stat_run_time;
+	Statistic<sc_core::sc_time> stat_idle_time;
 	Formula<double> formula_idle_rate;
 	Formula<double> formula_load_rate;
 	
@@ -162,7 +162,7 @@ private:
 		
 		Event()
 			: type(EV_IRQ)
-			, time_stamp(SC_ZERO_TIME)
+			, time_stamp(sc_core::SC_ZERO_TIME)
 			, irq(0)
 			, level(false)
 		{
@@ -173,7 +173,7 @@ private:
 			Clear();
 		}
 		
-		void InitializeNMIREQEvent(bool _level, const sc_time& _time_stamp)
+		void InitializeNMIREQEvent(bool _level, const sc_core::sc_time& _time_stamp)
 		{
 			type = EV_NMIREQ;
 			time_stamp = _time_stamp;
@@ -181,7 +181,7 @@ private:
 			level = _level;
 		}
 
-		void InitializeIRQEvent(unsigned int _irq, bool _level, const sc_time& _time_stamp)
+		void InitializeIRQEvent(unsigned int _irq, bool _level, const sc_core::sc_time& _time_stamp)
 		{
 			type = EV_IRQ;
 			time_stamp = _time_stamp;
@@ -192,7 +192,7 @@ private:
 		void Clear()
 		{
 			type = EV_IRQ;
-			time_stamp = SC_ZERO_TIME;
+			time_stamp = sc_core::SC_ZERO_TIME;
 			irq = 0;
 			level = false;
 		}
@@ -202,12 +202,12 @@ private:
 			return type;
 		}
 		
-		void SetTimeStamp(const sc_time& _time_stamp)
+		void SetTimeStamp(const sc_core::sc_time& _time_stamp)
 		{
 			time_stamp = _time_stamp;
 		}
 		
-		const sc_time& GetTimeStamp() const
+		const sc_core::sc_time& GetTimeStamp() const
 		{
 			return time_stamp;
 		}
@@ -224,7 +224,7 @@ private:
 		
 	private:
 		Type type;
-		sc_time time_stamp;
+		sc_core::sc_time time_stamp;
 		unsigned int irq;
 		bool level;
 	};
@@ -271,7 +271,7 @@ private:
 	class ScheduleKey
 	{
 	public:
-		ScheduleKey(const sc_time& _time_stamp, typename Event::Type _type, unsigned int _irq)
+		ScheduleKey(const sc_core::sc_time& _time_stamp, typename Event::Type _type, unsigned int _irq)
 			: time_stamp(_time_stamp)
 			, type(_type)
 			, irq(_irq)
@@ -283,12 +283,12 @@ private:
 			return (time_stamp < sk.time_stamp) || ((time_stamp == sk.time_stamp) && ((type < sk.type) || ((type == sk.type) && (irq < sk.irq))));
 		}
 		
-		const sc_time& GetTimeStamp() const
+		const sc_core::sc_time& GetTimeStamp() const
 		{
 			return time_stamp;
 		}
 	private:
-		sc_time time_stamp;
+		sc_core::sc_time time_stamp;
 		typename Event::Type type;
 		unsigned int irq;
 	};
@@ -314,7 +314,7 @@ private:
 			}
 		}
 		
-		void NotifyNMIREQEvent(bool level, const sc_time& time_stamp)
+		void NotifyNMIREQEvent(bool level, const sc_core::sc_time& time_stamp)
 		{
 			ScheduleKey key = ScheduleKey(time_stamp, Event::EV_NMIREQ, 0);
 			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.find(key);
@@ -325,12 +325,12 @@ private:
 			Event *event = event_allocator.AllocEvent();
 			event->InitializeNMIREQEvent(level, time_stamp);
 			schedule.insert(std::pair<ScheduleKey, Event *>(key, event));
-			sc_time t(time_stamp);
-			t -= sc_time_stamp();
+			sc_core::sc_time t(time_stamp);
+			t -= sc_core::sc_time_stamp();
 			kernel_event.notify(t);
 		}
 
-		void NotifyIRQEvent(unsigned int irq, bool level, const sc_time& time_stamp)
+		void NotifyIRQEvent(unsigned int irq, bool level, const sc_core::sc_time& time_stamp)
 		{
 			ScheduleKey key = ScheduleKey(time_stamp, Event::EV_IRQ, irq);
 			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.find(key);
@@ -341,17 +341,17 @@ private:
 			Event *event = event_allocator.AllocEvent();
 			event->InitializeIRQEvent(irq, level, time_stamp);
 			schedule.insert(std::pair<ScheduleKey, Event *>(key, event));
-			sc_time t(time_stamp);
-			t -= sc_time_stamp();
+			sc_core::sc_time t(time_stamp);
+			t -= sc_core::sc_time_stamp();
 			kernel_event.notify(t);
 		}
 
 		void Notify(Event *event)
 		{
-			const sc_time& time_stamp = event->GetTimeStamp();
+			const sc_core::sc_time& time_stamp = event->GetTimeStamp();
 			schedule.insert(std::pair<ScheduleKey, Event *>(ScheduleKey(time_stamp, event->GetType(), event->GetIRQ()), event));
-			sc_time t(time_stamp);
-			t -= sc_time_stamp();
+			sc_core::sc_time t(time_stamp);
+			t -= sc_core::sc_time_stamp();
 			kernel_event.notify(t);
 		}
 		
@@ -360,12 +360,12 @@ private:
 			return schedule.empty();
 		}
 
-		Event *GetNextEvent(const sc_time& time_stamp)
+		Event *GetNextEvent(const sc_core::sc_time& time_stamp)
 		{
 			if(schedule.empty()) return 0;
 			
 			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.begin();
-			const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+			const sc_core::sc_time& event_time_stamp = (*it).first.GetTimeStamp();
 			if(event_time_stamp <= time_stamp)
 			{
 				Event *event = (*it).second;
@@ -373,7 +373,7 @@ private:
 				return event;
 			}
 			
-			sc_time t(event_time_stamp);
+			sc_core::sc_time t(event_time_stamp);
 			t -= time_stamp;
 			kernel_event.notify(t);
 			
@@ -385,12 +385,12 @@ private:
 			event_allocator.FreeEvent(event);
 		}
 		
-		const sc_event& GetKernelEvent() const
+		const sc_core::sc_event& GetKernelEvent() const
 		{
 			return kernel_event;
 		}
 		
-		void Flush(const sc_time& time_stamp, typename Event::Type event_type)
+		void Flush(const sc_core::sc_time& time_stamp, typename Event::Type event_type)
 		{
 			typename std::multimap<ScheduleKey, Event *>::iterator it;
 			for(it = schedule.begin(); it != schedule.end(); it++)
@@ -408,13 +408,13 @@ private:
 			if(schedule.empty()) return;
 			
 			it = schedule.begin();
-			const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+			const sc_core::sc_time& event_time_stamp = (*it).first.GetTimeStamp();
 			if(event_time_stamp <= time_stamp)
 			{
 				return;
 			}
 			
-			sc_time t(event_time_stamp);
+			sc_core::sc_time t(event_time_stamp);
 			t -= time_stamp;
 			kernel_event.notify(t);
 		}
@@ -435,7 +435,7 @@ private:
 	private:
 		std::multimap<ScheduleKey, Event *> schedule;
 		
-		sc_event kernel_event;
+		sc_core::sc_event kernel_event;
 		EventAllocator event_allocator;
 	};
 
@@ -448,7 +448,7 @@ private:
 	unisim::kernel::tlm2::DMIRegionCache dhsb_dmi_region_cache;
 
 	inline void AlignToHSBClock() ALWAYS_INLINE;
-	void AlignToHSBClock(sc_time& t);
+	void AlignToHSBClock(sc_core::sc_time& t);
 	inline void ProcessExternalEvents() ALWAYS_INLINE;
 	void ProcessIRQEvent(Event *event);
 	void ProcessNMIREQEvent(Event *event);

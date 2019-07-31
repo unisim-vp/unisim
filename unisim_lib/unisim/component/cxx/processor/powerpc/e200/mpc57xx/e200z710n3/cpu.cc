@@ -47,6 +47,7 @@ namespace e200z710n3 {
 CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent, "e200z710n3 PowerPC core")
 	, SuperCPU(name, parent)
+	, mpu_http_server_export("mpu-http-server-export", this)
 	, mpu(this, 0x2)
 	, l1i(this)
 	, l1d(this)
@@ -56,6 +57,7 @@ CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	, l1cfg1(this)
 	, l1csr0(this, &l1d)
 {
+	mpu_http_server_export >> mpu.http_server_export;
 }
 
 CPU::~CPU()
@@ -78,9 +80,9 @@ bool CPU::Dcbi(EFFECTIVE_ADDRESS addr)
 
 	if(!l1d.IsEnabled()) return true; // dcbi is treated as a no-op in supervisor mode if the data cache is disabled
 	
-	MPU_ENTRY *mpu_entry = mpu.Lookup</* exec */ false, /* write */ true>(addr); // dcbi is treated as a store for the purpose of access protection
+	MPU_REGION_DESCRIPTOR *mpu_region_descriptor = mpu.Lookup</* exec */ false, /* write */ true>(addr); // dcbi is treated as a store for the purpose of access protection
 	
-	if(!mpu_entry)
+	if(!mpu_region_descriptor)
 	{
 		ThrowException<DataStorageInterrupt::AccessControl>().SetAddress(addr);
 		return false;
@@ -94,9 +96,9 @@ bool CPU::Dcbf(EFFECTIVE_ADDRESS addr)
 {
 	if(!l1d.IsEnabled()) return true; // dcbf is treated as a no-op if the data cache is disabled
 	
-	MPU_ENTRY *mpu_entry = mpu.Lookup</* exec */ false, /* write */ false>(addr); // dcbf is treated as a load for the purpose of access protection
+	MPU_REGION_DESCRIPTOR *mpu_region_descriptor = mpu.Lookup</* exec */ false, /* write */ false>(addr); // dcbf is treated as a load for the purpose of access protection
 	
-	if(!mpu_entry)
+	if(!mpu_region_descriptor)
 	{
 		ThrowException<DataStorageInterrupt::AccessControl>().SetAddress(addr);
 		return false;
@@ -109,9 +111,9 @@ bool CPU::Dcbst(EFFECTIVE_ADDRESS addr)
 {
 	if(!l1d.IsEnabled()) return true; // dcbst is treated as a no-op if the data cache is disabled
 	
-	MPU_ENTRY *mpu_entry = mpu.Lookup</* exec */ false, /* write */ false>(addr); // dcbst is treated as a load for the purpose of access protection
+	MPU_REGION_DESCRIPTOR *mpu_region_descriptor = mpu.Lookup</* exec */ false, /* write */ false>(addr); // dcbst is treated as a load for the purpose of access protection
 	
-	if(!mpu_entry)
+	if(!mpu_region_descriptor)
 	{
 		ThrowException<DataStorageInterrupt::AccessControl>().SetAddress(addr);
 		return false;
@@ -151,9 +153,9 @@ bool CPU::Icbi(EFFECTIVE_ADDRESS addr)
 		return false;
 	}
 	
-	MPU_ENTRY *mpu_entry = mpu.Lookup</* exec */ false, /* write */ false>(addr); // icbi is treated as a load for the purpose of access protection
+	MPU_REGION_DESCRIPTOR *mpu_region_descriptor = mpu.Lookup</* exec */ false, /* write */ false>(addr); // icbi is treated as a load for the purpose of access protection
 	
-	if(!mpu_entry)
+	if(!mpu_region_descriptor)
 	{
 		ThrowException<DataStorageInterrupt::AccessControl>().SetAddress(addr);
 		return false;
@@ -167,9 +169,9 @@ bool CPU::Icbt(EFFECTIVE_ADDRESS addr)
 {
 	if(hid0.Get<HID0::NOPTI>()) return true; // icbt is treated as a no-op if HID0[NOPTI]=1
 	
-	MPU_ENTRY *mpu_entry = mpu.Lookup</* exec */ false, /* write */ false>(addr); // icbt is treated as a load for the purpose of access protection
+	MPU_REGION_DESCRIPTOR *mpu_region_descriptor = mpu.Lookup</* exec */ false, /* write */ false>(addr); // icbt is treated as a load for the purpose of access protection
 	
-	if(!mpu_entry)
+	if(!mpu_region_descriptor)
 	{
 		ThrowException<DataStorageInterrupt::AccessControl>().SetAddress(addr);
 		return false;

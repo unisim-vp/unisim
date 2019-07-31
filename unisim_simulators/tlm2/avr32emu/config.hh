@@ -49,7 +49,7 @@ public:
 	typedef uint32_t ADDRESS;
 	static const unsigned int INPUT_SOCKETS = 2;
 	static const unsigned int OUTPUT_SOCKETS = 1;
-	static const unsigned int MAX_NUM_MAPPINGS = 1;
+	static const unsigned int NUM_MAPPINGS = 1;
 	static const unsigned int BUSWIDTH = 32;
 };
 

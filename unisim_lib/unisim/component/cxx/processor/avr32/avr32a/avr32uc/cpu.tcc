@@ -862,6 +862,12 @@ void CPU<CONFIG>::Idle()
 }
 
 template <class CONFIG>
+void CPU<CONFIG>::ResetMemory()
+{
+	Reset();
+}
+
+template <class CONFIG>
 bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size)
 {
 	
