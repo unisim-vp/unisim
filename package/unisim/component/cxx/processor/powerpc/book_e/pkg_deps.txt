@@ -1,5 +1,6 @@
 unisim/component/cxx/processor/powerpc
-unisim/util/cache
+unisim/kernel/service
+unisim/service/interfaces/http_server
 unisim/util/endian
 unisim/util/queue
 unisim/util/simfloat

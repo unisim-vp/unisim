@@ -38,7 +38,8 @@
 #include <inttypes.h>
 #include <iostream>
 
-#include <unisim/util/cache/cache.hh>
+#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/http_server.hh>
 
 namespace unisim {
 namespace component {
@@ -206,93 +207,103 @@ bool TLB_ENTRY<TYPES>::Match(typename TYPES::ADDRESS_SPACE as, typename TYPES::P
 template <typename TYPES>
 void TLB_ENTRY<TYPES>::Print(std::ostream& os) const
 {
-	if(IsValid())
+	std::ostream::char_type fill(os.fill());
+	std::ios_base::fmtflags flags(os.flags());
+	os.fill('0');
+	
+	os << "V:" << +GetV();
+	os << std::hex;
+	
+	// virtual address
+	os << " Virtual Address:0x";
+	os.width(1);
+	os << +GetTS();
+	if(tid)
 	{
-		std::ostream::char_type fill(os.fill());
-		std::ios_base::fmtflags flags(os.flags());
-		os.fill('0');
-		os << std::hex;
-		
-		// virtual address
-		os << "VA:0x";
-		os.width(1);
-		os << GetTS();
-		if(tid)
-		{
-			os.width(2);
-			os << (unsigned int) tid;
-		}
-		else
-		{
-			os << "__";
-		}
-		
-		os.width(8);
-		os << GetPageEffectiveAddress();
-		
-		os << "-0x";
-		os.width(1);
-		os << GetTS();
-		if(tid)
-		{
-			os.width(2);
-			os << (unsigned int) tid;
-		}
-		else
-		{
-			os << "__";
-		}
-		os.width(8);
-		os << (GetPageEffectiveAddress() + GetPageSize() - 1);
-		
-		// physical address
-		os << " PA:0x";
-		os.width(9);
-		os << GetPagePhysicalAddress();
-		os << "-0x";
-		os.width(9);
-		os << (GetPagePhysicalAddress() + GetPageSize() - 1);
-
-		// access control
-		typename TYPES::ACCESS_CTRL access_ctrl = GetAccessCtrl();
-		os << " S:";
-		os << ((access_ctrl & TYPES::AC_SR) ? 'r' : '-');
-		os << ((access_ctrl & TYPES::AC_SW) ? 'w' : '-');
-		os << ((access_ctrl & TYPES::AC_SX) ? 'x' : '-');
-		os << " U:";
-		os << ((access_ctrl & TYPES::AC_UR) ? 'r' : '-');
-		os << ((access_ctrl & TYPES::AC_UW) ? 'w' : '-');
-		os << ((access_ctrl & TYPES::AC_UX) ? 'x' : '-');
-		
-		// storage attribute
-		typename TYPES::STORAGE_ATTR storage_attr = GetStorageAttr();
-		os << " A:";
-		os << "U0=" << ((storage_attr & TYPES::SA_U0) ? '1' : '0') << ' ';
-		os << "U1=" << ((storage_attr & TYPES::SA_U1) ? '1' : '0') << ' ';
-		os << "U2=" << ((storage_attr & TYPES::SA_U2) ? '1' : '0') << ' ';
-		os << "U3=" << ((storage_attr & TYPES::SA_U3) ? '1' : '0') << ' ';
-		os << "W=" << ((storage_attr & TYPES::SA_W) ? '1' : '0') << ' ';
-		os << "I=" << ((storage_attr & TYPES::SA_I) ? '1' : '0') << ' ';
-		os << "M=" << ((storage_attr & TYPES::SA_M) ? '1' : '0') << ' ';
-		os << "G=" << ((storage_attr & TYPES::SA_G) ? '1' : '0') << ' ';
-		os << "E=" << ((storage_attr & TYPES::SA_E) ? '1' : '0') << ' ';
-
-		os.fill(fill);
-		os.flags(flags);
+		os.width(2);
+		os << +GetTID();
 	}
+	else
+	{
+		os << "??";
+	}
+	
+	os.width(8);
+	os << GetPageEffectiveAddress();
+	
+	os << "-0x";
+	os.width(1);
+	os << +GetTS();
+	if(tid)
+	{
+		os.width(2);
+		os << +GetTID();
+	}
+	else
+	{
+		os << "??";
+	}
+	os.width(8);
+	os << (GetPageEffectiveAddress() + GetPageSize() - 1);
+	
+	// physical address
+	os << " Physical Address:0x";
+	os.width(9);
+	os << GetPagePhysicalAddress();
+	os << "-0x";
+	os.width(9);
+	os << (GetPagePhysicalAddress() + GetPageSize() - 1);
+
+	// access control
+	typename TYPES::ACCESS_CTRL access_ctrl = GetAccessCtrl();
+	os << " Super:";
+	os << ((access_ctrl & TYPES::AC_SR) ? 'r' : '-');
+	os << ((access_ctrl & TYPES::AC_SW) ? 'w' : '-');
+	os << ((access_ctrl & TYPES::AC_SX) ? 'x' : '-');
+	os << " User:";
+	os << ((access_ctrl & TYPES::AC_UR) ? 'r' : '-');
+	os << ((access_ctrl & TYPES::AC_UW) ? 'w' : '-');
+	os << ((access_ctrl & TYPES::AC_UX) ? 'x' : '-');
+	
+	// storage attribute
+	typename TYPES::STORAGE_ATTR storage_attr = GetStorageAttr();
+	os << " U0:" << ((storage_attr & TYPES::SA_U0) ? '1' : '0') << ' ';
+	os << " U1:" << ((storage_attr & TYPES::SA_U1) ? '1' : '0') << ' ';
+	os << " U2:" << ((storage_attr & TYPES::SA_U2) ? '1' : '0') << ' ';
+	os << " U3:" << ((storage_attr & TYPES::SA_U3) ? '1' : '0') << ' ';
+	os << " W:" << ((storage_attr & TYPES::SA_W) ? '1' : '0') << ' ';
+	os << " I:" << ((storage_attr & TYPES::SA_I) ? '1' : '0') << ' ';
+	os << " M:" << ((storage_attr & TYPES::SA_M) ? '1' : '0') << ' ';
+	os << " G:" << ((storage_attr & TYPES::SA_G) ? '1' : '0') << ' ';
+	os << " E:" << ((storage_attr & TYPES::SA_E) ? '1' : '0') << ' ';
+
+	os.fill(fill);
+	os.flags(flags);
 }
 
 template <typename TYPES, typename CONFIG>
 struct TLB
-	: unisim::kernel::service::Object
+	: unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>
 {
-	TLB(const char *name, unisim::kernel::service::Object *parent = 0);
+	enum PrintFormat
+	{
+		PFMT_TXT,
+		PFMT_HTML
+	};
+	
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
+	
+	TLB(const char *name, unisim::kernel::service::Object *parent = 0, const char *description = 0);
 	void Reset();
 	TLB_ENTRY<TYPES> *Lookup(typename TYPES::ADDRESS_SPACE as, typename TYPES::PROCESS_ID pid, typename TYPES::EFFECTIVE_ADDRESS ea, typename TYPES::EFFECTIVE_ADDRESS& size_to_protection_boundary, typename TYPES::ADDRESS& virt_addr, typename TYPES::PHYSICAL_ADDRESS& phys_addr);
 	void Replace(TLB_ENTRY<TYPES> *tlb_entry) { entries[victim_way].Initialize(*tlb_entry); victim_way = (victim_way + 1) % CONFIG::ASSOCIATIVITY; }
 	unsigned int GetWay(const TLB_ENTRY<TYPES> *tlb_entry) const { return tlb_entry - &entries[0]; /*(tlb_entry - &entries[0]) / sizeof(TLB_ENTRY<TYPES>);*/ }
 	TLB_ENTRY<TYPES>& LookupByWay(unsigned int way);
-	void Print(std::ostream& os) const;
+	void Print(std::ostream& os, unsigned int way, PrintFormat pfmt) const;
+	void Print(std::ostream& os, PrintFormat pfmt) const;
+	
+	virtual bool ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
+	virtual void ScanWebInterfaceModdings(unisim::service::interfaces::WebInterfaceModdingScanner& scanner);
 private:
 	unisim::kernel::logger::Logger logger;
 	TLB_ENTRY<TYPES> entries[CONFIG::ASSOCIATIVITY];
@@ -309,13 +320,15 @@ private:
 template <typename TYPES, typename CONFIG>
 std::ostream& operator << (std::ostream& os, const TLB<TYPES, CONFIG>& tlb)
 {
-	tlb.Print(os);
+	tlb.Print(os, TLB<TYPES, CONFIG>::PFMT_TXT);
 	return os;
 }
 
 template <typename TYPES, typename CONFIG>
-TLB<TYPES, CONFIG>::TLB(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+TLB<TYPES, CONFIG>::TLB(const char *name, unisim::kernel::service::Object *parent, const char *description)
+	: unisim::kernel::service::Object(name, parent, description)
+	, unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>(name, parent, description)
+	, http_server_export("http-server-export", this)
 	, logger(*this)
 	, entries()
 	, mrs_entry(0)
@@ -388,17 +401,252 @@ TLB_ENTRY<TYPES>& TLB<TYPES, CONFIG>::LookupByWay(unsigned int way)
 }
 
 template <typename TYPES, typename CONFIG>
-void TLB<TYPES, CONFIG>::Print(std::ostream& os) const
+void TLB<TYPES, CONFIG>::Print(std::ostream& os, unsigned int way, PrintFormat pfmt) const
 {
-	for(unsigned int tlb_way = 0; tlb_way < CONFIG::ASSOCIATIVITY; tlb_way++)
+	const TLB_ENTRY<TYPES>& tlb_entry = entries[way];
+	
+	std::ostream::char_type fill(os.fill());
+	std::ios_base::fmtflags flags(os.flags());
+	os.fill('0');
+
+	switch(pfmt)
 	{
-		const TLB_ENTRY<TYPES>& tlb_entry = entries[tlb_way];
-		
-		if(tlb_entry.GetV())
+		case PFMT_TXT:
 		{
-			os << " way #" << tlb_way << ":" << tlb_entry << std::endl;
+			os << "Way:" << std::dec << way << " ";
+			tlb_entry.Print(os);
+			os << std::endl;
+			break;
+		}
+		
+		case PFMT_HTML:
+		{
+			os << "<tr class=\"" << (tlb_entry.GetV() ? "valid" : "invalid") << "\">";
+			
+			os << "<td><span>" << std::dec << way << "</span></td>";
+			os << "<td><span>" << +tlb_entry.GetV() << "</span></td>";
+			
+			os << std::hex;
+			
+			// virtual address
+			os << "<td class=\"vaddr-range\"><span>0x";
+			os.width(1);
+			os << +tlb_entry.GetTS();
+			if(tlb_entry.GetTID())
+			{
+				os.width(2);
+				os << +tlb_entry.GetTID();
+			}
+			else
+			{
+				os << "??";
+			}
+			
+			os.width(8);
+			os << tlb_entry.GetPageEffectiveAddress();
+			
+			os << "-0x";
+			os.width(1);
+			os << +tlb_entry.GetTS();
+			if(tlb_entry.GetTID())
+			{
+				os.width(2);
+				os << +tlb_entry.GetTID();
+			}
+			else
+			{
+				os << "??";
+			}
+			os.width(8);
+			os << (tlb_entry.GetPageEffectiveAddress() + tlb_entry.GetPageSize() - 1);
+			os << "</span></td>";
+			
+			// physical address
+			os << "<td class=\"paddr-range\"><span>0x";
+			os.width(9);
+			os << tlb_entry.GetPagePhysicalAddress();
+			os << "-0x";
+			os.width(9);
+			os << (tlb_entry.GetPagePhysicalAddress() + tlb_entry.GetPageSize() - 1);
+			os << "</span></td>";
+
+			// access control
+			typename TYPES::ACCESS_CTRL access_ctrl = tlb_entry.GetAccessCtrl();
+			os << "<td class=\"supervisor-access-ctrl\"><span>";
+			os << ((access_ctrl & TYPES::AC_SR) ? 'r' : '-');
+			os << ((access_ctrl & TYPES::AC_SW) ? 'w' : '-');
+			os << ((access_ctrl & TYPES::AC_SX) ? 'x' : '-');
+			os << "</span></td>";
+			os << "<td class=\"user-access-ctrl\"><span>";
+			os << ((access_ctrl & TYPES::AC_UR) ? 'r' : '-');
+			os << ((access_ctrl & TYPES::AC_UW) ? 'w' : '-');
+			os << ((access_ctrl & TYPES::AC_UX) ? 'x' : '-');
+			os << "</span></td>";
+			
+			// storage attribute
+			typename TYPES::STORAGE_ATTR storage_attr = tlb_entry.GetStorageAttr();
+			os << "<td class=\"U0\"><span>";
+			os << ((storage_attr & TYPES::SA_U0) ? '1' : '0');
+			os << "</span></td>";
+			os << "<td class=\"U1\"><span>";
+			os << ((storage_attr & TYPES::SA_U1) ? '1' : '0');
+			os << "</span></td>";
+			os << "<td class=\"U2\"><span>";
+			os << ((storage_attr & TYPES::SA_U2) ? '1' : '0');
+			os << "</span></td>";
+			os << "<td class=\"U3\"><span>";
+			os << ((storage_attr & TYPES::SA_U3) ? '1' : '0');
+			os << "</span></td>";
+			os << "<td class=\"W\"><span>";
+			os << ((storage_attr & TYPES::SA_W) ? '1' : '0');
+			os << "</span></td>";
+			os << "<td class=\"I\"><span>";
+			os << ((storage_attr & TYPES::SA_I) ? '1' : '0');
+			os << "</span></td>";
+			os << "<td class=\"M\"><span>";
+			os << ((storage_attr & TYPES::SA_M) ? '1' : '0');
+			os << "</span></td>";
+			os << "<td class=\"G\"><span>";
+			os << ((storage_attr & TYPES::SA_G) ? '1' : '0');
+			os << "</span></td>";
+			os << "<td class=\"E\"><span>";
+			os << ((storage_attr & TYPES::SA_E) ? '1' : '0');
+			os << "</span></td>";
+			
+			os << "</tr>" << std::endl;
+			break;
 		}
 	}
+	
+	os.fill(fill);
+	os.flags(flags);
+}
+
+template <typename TYPES, typename CONFIG>
+void TLB<TYPES, CONFIG>::Print(std::ostream& os, PrintFormat pfmt) const
+{
+	if(pfmt == PFMT_HTML)
+	{
+		os << "<table>" << std::endl;
+		os << "\t<thead>" << std::endl;
+		os << "\t\t<tr>";
+		os << "<th><span>Way</span></th>";
+		os << "<th><span>V</span></th>";
+		os << "<th><span>Virtual Address</span></th>";
+		os << "<th><span>Physical Address</span></th>";
+		os << "<th><span>Super</span></th>";
+		os << "<th><span>User</span></th>";
+		os << "<th><span>U0</span></th>";
+		os << "<th><span>U1</span></th>";
+		os << "<th><span>U2</span></th>";
+		os << "<th><span>U3</span></th>";
+		os << "<th><span>W</span></th>";
+		os << "<th><span>I</span></th>";
+		os << "<th><span>M</span></th>";
+		os << "<th><span>G</span></th>";
+		os << "<th><span>E</span></th>";
+		os << "</tr>" << std::endl;
+		os << "\t</thead>" << std::endl;
+		os << "\t<tbody>" << std::endl;
+	}
+	for(unsigned int tlb_way = 0; tlb_way < CONFIG::ASSOCIATIVITY; tlb_way++)
+	{
+		Print(os, tlb_way, pfmt);
+	}
+	if(pfmt == PFMT_HTML)
+	{
+		os << "\t</tbody>" << std::endl;
+		os << "</table>" << std::endl;
+	}
+}
+
+template <typename TYPES, typename CONFIG>
+bool TLB<TYPES, CONFIG>::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+{
+	unisim::util::hypapp::HttpResponse response;
+	
+	if(req.GetPath() == "")
+	{
+		switch(req.GetRequestType())
+		{
+			case unisim::util::hypapp::Request::OPTIONS:
+				response.Allow("OPTIONS, GET, HEAD");
+				break;
+				
+			case unisim::util::hypapp::Request::GET:
+			case unisim::util::hypapp::Request::HEAD:
+			{
+				response << "<!DOCTYPE html>" << std::endl;
+				response << "<html>" << std::endl;
+				response << "\t<head>" << std::endl;
+				response << "\t\t<title>" << unisim::util::hypapp::HTML_Encoder::Encode(this->GetName()) << "</title>" << std::endl;
+				response << "\t\t<meta name=\"description\" content=\"user interface for MMU\">" << std::endl;
+				response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+				response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/component/cxx/processor/powerpc/book_e/mmu_style.css\" type=\"text/css\" />" << std::endl;
+				response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+				response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
+				response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+				//response << "\t\t<script type=\"application/javascript\" src=\"/unisim/component/cxx/processor/powerpc/book_e/mmu_script.js\"></script>" << std::endl;
+				response << "\t</head>" << std::endl;
+				response << "\t<body>" << std::endl;
+				Print(response, PFMT_HTML);
+				response << "\t</body>" << std::endl;
+				response << "</html>" << std::endl;
+				
+				break;
+			}
+			
+			default:
+				response.SetStatus(unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED);
+				response.Allow("OPTIONS, GET, HEAD");
+				
+				response << "<!DOCTYPE html>" << std::endl;
+				response << "<html>" << std::endl;
+				response << "\t<head>" << std::endl;
+				response << "\t\t<title>Error 405 (Method Not Allowed)</title>" << std::endl;
+				response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+				response << "\t\t<meta name=\"description\" content=\"Error 405 (Method Not Allowed)\">" << std::endl;
+				response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+				response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+				response << "\t\t<style>" << std::endl;
+				response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+				response << "\t\t</style>" << std::endl;
+				response << "\t</head>" << std::endl;
+				response << "\t<body>" << std::endl;
+				response << "\t\t<p>HTTP Method not allowed</p>" << std::endl;
+				response << "\t</body>" << std::endl;
+				response << "</html>" << std::endl;
+				break;
+		}
+	}
+	else
+	{
+		response.SetStatus(unisim::util::hypapp::HttpResponse::NOT_FOUND);
+		
+		response << "<!DOCTYPE html>" << std::endl;
+		response << "<html>" << std::endl;
+		response << "\t<head>" << std::endl;
+		response << "\t\t<title>Error 404 (Not Found)</title>" << std::endl;
+		response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+		response << "\t\t<meta name=\"description\" content=\"Error 404 (Not Found)\">" << std::endl;
+		response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
+		response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+		response << "\t\t<style>" << std::endl;
+		response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
+		response << "\t\t</style>" << std::endl;
+		response << "\t</head>" << std::endl;
+		response << "\t<body>" << std::endl;
+		response << "\t\t<p>Unavailable</p>" << std::endl;
+		response << "\t</body>" << std::endl;
+		response << "</html>" << std::endl;
+	}
+	
+	return conn.Send(response.ToString((req.GetRequestType() == unisim::util::hypapp::Request::HEAD) || (req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)));
+}
+
+template <typename TYPES, typename CONFIG>
+void TLB<TYPES, CONFIG>::ScanWebInterfaceModdings(unisim::service::interfaces::WebInterfaceModdingScanner& scanner)
+{
 }
 
 template <typename TYPES, typename CONFIG>
@@ -419,6 +667,10 @@ struct MMU
 	typedef typename CPU::MSR MSR;
 	typedef typename CPU::PID0 PID0;
 	
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> itlb_http_server_export;
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> dtlb_http_server_export;
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> utlb_http_server_export;
+
 	MMU(CPU *cpu);
 	void Reset();
 	void InvalidateShadowTLBs();
@@ -447,13 +699,20 @@ std::ostream& operator << (std::ostream& os, const MMU<TYPES, CONFIG>& mmu)
 template <typename TYPES, typename CONFIG>
 MMU<TYPES, CONFIG>::MMU(CPU *_cpu)
 	: unisim::kernel::service::Object("MMU", _cpu, "Memory Management Unit")
+	, itlb_http_server_export("itlb-http-server-export", this)
+	, dtlb_http_server_export("dtlb-http-server-export", this)
+	, utlb_http_server_export("utlb-http-server-export", this)
 	, cpu(_cpu)
-	, itlb("ITLB", this)
-	, dtlb("DTLB", this)
-	, utlb("UTLB", this)
+	, itlb("ITLB", this, "Shadow Instruction TLB")
+	, dtlb("DTLB", this, "Shadow Data TLB")
+	, utlb("UTLB", this, "Unified TLB")
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
+	itlb_http_server_export >> itlb.http_server_export;
+	dtlb_http_server_export >> dtlb.http_server_export;
+	utlb_http_server_export >> utlb.http_server_export;
+	
 	Reset();
 }
 

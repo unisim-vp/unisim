@@ -916,12 +916,12 @@ template <class SERVICE_IF>
 class Service : public SERVICE_IF, virtual public Object
 {
 public:
-	Service(const char *name, Object *parent = 0);
+	Service(const char *name, Object *parent = 0, const char *description = 0);
 };
 
 template <class SERVICE_IF>
-Service<SERVICE_IF>::Service(const char *_name, Object *_parent) :
-	Object(_name, _parent)
+Service<SERVICE_IF>::Service(const char *_name, Object *_parent, const char *_description) :
+	Object(_name, _parent, _description)
 {
 }
 
@@ -933,13 +933,13 @@ template <class SERVICE_IF>
 class Client : virtual public Object
 {
 public:
-	Client(const char *name, Object *parent = 0);
+	Client(const char *name, Object *parent = 0, const char *description = 0);
 	virtual ~Client();
 };
 
 template <class SERVICE_IF>
-Client<SERVICE_IF>::Client(const char *_name, Object *_parent) :
-	Object(_name, _parent)
+Client<SERVICE_IF>::Client(const char *_name, Object *_parent, const char *_description) :
+	Object(_name, _parent, _description)
 {
 }
 

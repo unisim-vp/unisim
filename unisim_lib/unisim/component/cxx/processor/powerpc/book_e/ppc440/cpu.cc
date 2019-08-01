@@ -46,10 +46,16 @@ namespace ppc440 {
 CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent, "PPC440 PowerPC core")
 	, SuperCPU(name, parent)
+	, itlb_http_server_export("itlb-http-server-export", this)
+	, dtlb_http_server_export("dtlb-http-server-export", this)
+	, utlb_http_server_export("utlb-http-server-export", this)
 	, mmu(this)
 	, l1i(this)
 	, l1d(this)
 {
+	itlb_http_server_export >> mmu.itlb_http_server_export;
+	dtlb_http_server_export >> mmu.dtlb_http_server_export;
+	utlb_http_server_export >> mmu.utlb_http_server_export;
 }
 
 CPU::~CPU()
