@@ -8318,7 +8318,7 @@
 			<variable name="enable-user-interface">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
-				<value>true</value>
+				<value>false</value>
 				<description>Enable/Disable User interface over HTTP</description>
 				<enumeration>
 					<item>true</item>
