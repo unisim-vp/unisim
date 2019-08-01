@@ -431,12 +431,18 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	(*char_io_tee->char_io_import[0]) >> netstreamer->char_io_export;
 	(*char_io_tee->char_io_import[1]) >> web_terminal->char_io_export;
 	
-	*http_server->http_server_import[0] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
-	*http_server->http_server_import[1] >> instrumenter->http_server_export;
-	*http_server->http_server_import[2] >> web_terminal->http_server_export;
-	if (profiler)
 	{
-		*http_server->http_server_import[3] >> profiler->http_server_export;
+		unsigned int i = 0;
+		*http_server->http_server_import[i++] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
+		*http_server->http_server_import[i++] >> instrumenter->http_server_export;
+		*http_server->http_server_import[i++] >> web_terminal->http_server_export;
+		if (profiler)
+		{
+			*http_server->http_server_import[i++] >> profiler->http_server_export;
+		}
+		*http_server->http_server_import[i++] >> cpu->itlb_http_server_export;
+		*http_server->http_server_import[i++] >> cpu->dtlb_http_server_export;
+		*http_server->http_server_import[i++] >> cpu->utlb_http_server_export;
 	}
 
 	*http_server->registers_import[0] >> cpu->registers_export;

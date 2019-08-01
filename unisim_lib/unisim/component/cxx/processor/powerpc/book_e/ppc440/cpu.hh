@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/processor/powerpc/book_e/mmu.hh>
 #include <unisim/component/cxx/processor/powerpc/book_e/l1i.hh>
 #include <unisim/component/cxx/processor/powerpc/book_e/l1d.hh>
+#include <unisim/service/interfaces/http_server.hh>
 
 namespace unisim {
 namespace component {
@@ -217,6 +218,10 @@ public:
 	typedef SuperCPU::ICDBTRH ICDBTRH;
 	typedef SuperCPU::ICDBTRL ICDBTRL;
 	
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> itlb_http_server_export;
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> dtlb_http_server_export;
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> utlb_http_server_export;
+
 	CPU(const char *name, unisim::kernel::service::Object *parent = 0);
 	virtual ~CPU();
 
