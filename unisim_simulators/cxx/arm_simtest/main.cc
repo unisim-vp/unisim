@@ -256,8 +256,7 @@ struct Checker
   void discover( uintptr_t ttl )
   {
     uint64_t step = 0;
-    auto const& dectable = isa.GetDecodeTable();
-    for (auto&& opc : isa.GetDecodeTable())
+    for (auto const& opc : isa.GetDecodeTable())
       {
         uint32_t mask = opc.opcode_mask, bits = opc.opcode & mask;
         auto testclass = testclasses.end();

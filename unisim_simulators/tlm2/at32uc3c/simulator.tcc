@@ -242,15 +242,15 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	//  - PowerPC processor
 	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
-	simulator->SetVariable("cpu.cpu-cycle-time", sc_time(cpu_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("cpu.hsb-cycle-time", sc_time(hsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("cpu.cpu-cycle-time", sc_core::sc_time(cpu_cycle_time, sc_core::SC_PS).to_string().c_str());
+	simulator->SetVariable("cpu.hsb-cycle-time", sc_core::sc_time(hsb_cycle_time, sc_core::SC_PS).to_string().c_str());
 	simulator->SetVariable("cpu.max-inst", maxinst);
 	simulator->SetVariable("cpu.nice-time", "1 ms");
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
 	simulator->SetVariable("cpu.enable-dmi", true); // Allow CPU to use of SystemC TLM 2.0 DMI
 
 	//  - Memory router
-	simulator->SetVariable("memory-router.cycle_time", sc_time(hsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("memory-router.cycle_time", sc_core::sc_time(hsb_cycle_time, sc_core::SC_PS).to_string().c_str());
 	simulator->SetVariable("memory-router.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x0\""); // RAM
 
 	// - Loader
@@ -261,9 +261,9 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	simulator->SetVariable("loader.memory-mapper.mapping", "ram:0x0-0xffffffff"); // FIXME: this is all address space
 
 	//  - RAM
-	simulator->SetVariable("ram.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("ram.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("ram.write-latency", SC_ZERO_TIME.to_string().c_str());
+	simulator->SetVariable("ram.cycle-time", sc_core::sc_time(mem_cycle_time, sc_core::SC_PS).to_string().c_str());
+	simulator->SetVariable("ram.read-latency", sc_core::sc_time(mem_cycle_time, sc_core::SC_PS).to_string().c_str());
+	simulator->SetVariable("ram.write-latency", sc_core::SC_ZERO_TIME.to_string().c_str());
 	simulator->SetVariable("ram.org", CONFIG::RAM_BASE_ADDR);
 	simulator->SetVariable("ram.bytesize", (1ULL << 32) /*CONFIG::RAM_BYTE_SIZE*/);
 	
@@ -287,11 +287,11 @@ void Simulator<CONFIG>::Run()
 	
 	double time_start = host_time->GetTime();
 
-	sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
+	sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
 	
 	try
 	{
-		sc_start();
+		sc_core::sc_start();
 	}
 	catch(std::runtime_error& e)
 	{
@@ -315,10 +315,10 @@ void Simulator<CONFIG>::Run()
 	cerr << endl;
 
 	cerr << "simulation time: " << spent_time << " seconds" << endl;
-	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+	cerr << "simulated time : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << endl;
 	cerr << "target speed: " << ((double) (*cpu)["instruction-counter"] / ((double) (*cpu)["run-time"] - (double) (*cpu)["idle-time"]) / 1000000.0) << " MIPS" << endl;
 	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
-	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+	cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 }
 
 template <class CONFIG>
@@ -347,13 +347,13 @@ void Simulator<CONFIG>::Stop(Object *object, int _exit_status, bool asynchronous
 	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 #endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_stop();
+	sc_core::sc_stop();
 	if(!asynchronous)
 	{
 		switch(sc_core::sc_get_curr_simcontext()->get_curr_proc_info()->kind)
 		{
-			case SC_THREAD_PROC_: 
-			case SC_CTHREAD_PROC_:
+			case sc_core::SC_THREAD_PROC_: 
+			case sc_core::SC_CTHREAD_PROC_:
 				wait();
 				break;
 			default:
@@ -396,7 +396,7 @@ BOOL WINAPI Simulator<CONFIG>::ConsoleCtrlHandler(DWORD dwCtrlType)
 			stop = true;
 			break;
 	}
-	if(stop) sc_stop();
+	if(stop) sc_core::sc_stop();
 	return stop ? TRUE : FALSE;
 }
 #else
