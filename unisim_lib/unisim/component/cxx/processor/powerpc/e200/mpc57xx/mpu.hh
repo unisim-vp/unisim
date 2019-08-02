@@ -558,7 +558,7 @@ void MPU<TYPES, CONFIG>::DumpRegionDescriptor(std::ostream& os, MPU_REGION_DESCR
 			os << "<td><span>0x" << std::hex << MAS1::TIDMSK::Get(mpu_region_descriptor->mas1) << "</span></td>";
 			os << "<td class=\"address\"><span>0x" << std::hex; os.width(8); os << MAS2::UPPER_BOUND::Get(mpu_region_descriptor->mas2) << "</span></td>";
 			os << "<td class=\"address\"><span>0x" << std::hex; os.width(8); os << MAS3::LOWER_BOUND::Get(mpu_region_descriptor->mas3) << "</span></td>";
-			os << "\t\t\t</tr>";
+			os << "</tr>";
 			break;
 	}
 	os.fill(fill);
