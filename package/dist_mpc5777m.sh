@@ -357,6 +357,7 @@ EOF
 )
 
 build_configure
+build_configure_cross
 
 # Simulator
 

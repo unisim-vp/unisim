@@ -305,7 +305,10 @@ function build_configure()
 		echo "Building configure"
 		${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
 	fi
-	
+}
+
+function build_configure_cross()
+{
 	local CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 	if has_to_build "${CONFIGURE_CROSS}" "$0" || \
 	   has_to_build "${CONFIGURE_CROSS}" "${CONFIGURE_CROSS}/dist_common.sh"; then
