@@ -333,7 +333,7 @@ Installing (optional):
   $ make install
 EOF
 
-output_configure_ac <(cat << EOF
+output_top_configure_ac <(cat << EOF
 AC_INIT([UNISIM MPC5777M Simulator Package], [${SIMULATOR_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves Lhuillier <yves.lhuillier@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}])
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_BUILD
@@ -350,14 +350,14 @@ AC_OUTPUT
 EOF
 )
 
-output_makefile_am <(cat << EOF
+output_top_makefile_am <(cat << EOF
 SUBDIRS=genisslib ${SIMPKG}
 EXTRA_DIST = configure.cross
 EOF
 )
 
-build_configure
-build_configure_cross
+build_top_configure
+build_top_configure_cross
 
 # Simulator
 

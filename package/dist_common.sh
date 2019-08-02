@@ -15,6 +15,8 @@ if [ -z "${SIMPKGDIR}" ]; then
 	exit -1
 fi
 
+has_two_levels_dirs=no
+genisslib_imported=no
 PACKAGE_DIR=$(cd $(dirname $0); pwd)
 UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
 UNISIM_TOOLS_DIR="${UNISIM_DIR}/unisim_tools"
@@ -255,8 +257,14 @@ function copy()
 	local status=0
 	for LIST_NAME in "$@"; do
 		for FILE in $(files ${LIST_NAME}); do
-			if ! dist_copy "${UNISIM_LIB_DIR}/${FILE}" "${DEST_DIR}/${SIMPKG}/${FILE}"; then
-				status=1
+			if [ "${has_two_levels_dirs}" = "yes" ]; then
+				if ! dist_copy "${UNISIM_LIB_DIR}/${FILE}" "${DEST_DIR}/${SIMPKG}/${FILE}"; then
+					status=1
+				fi
+			else
+				if ! dist_copy "${UNISIM_LIB_DIR}/${FILE}" "${DEST_DIR}/${FILE}"; then
+					status=1
+				fi
 			fi
 		done
 	done
@@ -266,9 +274,11 @@ function copy()
 function import_genisslib()
 {
 	GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib
+	has_two_levels_dirs=yes
+	genisslib_imported=yes
 }
 
-function output_configure_ac()
+function output_top_configure_ac()
 {
 	local CONFIGURE_AC="${DEST_DIR}/configure.ac"
 	if has_to_build "${CONFIGURE_AC}" "$0" || \
@@ -280,7 +290,7 @@ function output_configure_ac()
 	fi
 }
 
-function output_makefile_am()
+function output_top_makefile_am()
 {
 	local MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 	if has_to_build "${MAKEFILE_AM}" "$0" || \
@@ -292,7 +302,7 @@ function output_makefile_am()
 	fi
 }
 
-function build_configure()
+function build_top_configure()
 {
 	mkdir -p "${DEST_DIR}/config"
 	
@@ -307,7 +317,7 @@ function build_configure()
 	fi
 }
 
-function build_configure_cross()
+function build_top_configure_cross()
 {
 	local CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 	if has_to_build "${CONFIGURE_CROSS}" "$0" || \
@@ -319,7 +329,12 @@ function build_configure_cross()
 
 function output_simulator_configure_ac()
 {
-	local SIMULATOR_CONFIGURE_AC="${DEST_DIR}/${SIMPKG}/configure.ac"
+	local SIMULATOR_CONFIGURE_AC
+	if [ "${has_two_levels_dirs}" = "yes" ]; then
+		SIMULATOR_CONFIGURE_AC="${DEST_DIR}/${SIMPKG}/configure.ac"
+	else
+		SIMULATOR_CONFIGURE_AC="${DEST_DIR}/configure.ac"
+	fi
 	if has_to_build "${SIMULATOR_CONFIGURE_AC}" "$0" || \
 	   pkg_deps_changed "${SIMULATOR_CONFIGURE_AC}" || \
 	   has_to_build "${SIMULATOR_CONFIGURE_AC}" "${UNISIM_SIMULATOR_DIR}/VERSION" || \
@@ -332,7 +347,13 @@ function output_simulator_configure_ac()
 
 function output_simulator_makefile_am()
 {
-	local SIMULATOR_MAKEFILE_AM="${DEST_DIR}/${SIMPKG}/Makefile.am"
+	local SIMULATOR_MAKEFILE_AM
+	if [ "${has_two_levels_dirs}" = "yes" ]; then
+		SIMULATOR_MAKEFILE_AM="${DEST_DIR}/${SIMPKG}/Makefile.am"
+	else
+		SIMULATOR_MAKEFILE_AM="${DEST_DIR}/Makefile.am"
+	fi
+	
 	if has_to_build "${SIMULATOR_MAKEFILE_AM}" "$0" || \
 	   pkg_deps_changed "${SIMULATOR_MAKEFILE_AM}" || \
 	   has_to_build "${SIMULATOR_MAKEFILE_AM}" "${UNISIM_SIMULATOR_DIR}/VERSION" || \
@@ -345,15 +366,27 @@ function output_simulator_makefile_am()
 
 function build_simulator_configure()
 {
-	mkdir -p "${DEST_DIR}/${SIMPKG}/config"
+	local SIMULATOR_CONFIG
+	local SIMULATOR_CONFIGURE
+	local SIMULATOR_DIR
+	if [ "${has_two_levels_dirs}" = "yes" ]; then
+		SIMULATOR_CONFIG="${DEST_DIR}/${SIMPKG}/config"
+		SIMULATOR_CONFIGURE="${DEST_DIR}/${SIMPKG}/configure"
+		SIMULATOR_DIR="${DEST_DIR}/${SIMPKG}"
+	else
+		SIMULATOR_CONFIG="${DEST_DIR}/config"
+		SIMULATOR_CONFIGURE="${DEST_DIR}/configure"
+		SIMULATOR_DIR="${DEST_DIR}"
+	fi
 	
-	local SIMULATOR_CONFIGURE="${DEST_DIR}/${SIMPKG}/configure"
+	mkdir -p "${SIMULATOR_CONFIG}"
+	
 	if has_to_build "${SIMULATOR_CONFIGURE}" "${PACKAGE_DIR}/dist_common.sh"; then
 		has_to_build_simulator_configure=yes
 	fi
 	
 	if [ "${has_to_build_simulator_configure}" = "yes" ]; then
 		echo "Building ${SIMPKG} configure"
-		${SHELL} -c "cd ${DEST_DIR}/${SIMPKG} && aclocal -I m4 && libtoolize --force && autoconf --force && autoheader && automake -ac"
+		${SHELL} -c "cd '${SIMULATOR_DIR}' && aclocal -I m4 && libtoolize --force && autoconf --force && autoheader && automake -ac"
 	fi
 }
