@@ -34,6 +34,7 @@
  */
 
 #include <simulator.hh>
+#include <unisim/service/debug/debugger/debugger.tcc>
 
 Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
@@ -168,11 +169,12 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 	sc_core::sc_stop();
 	if(!asynchronous)
 	{
-		switch(sc_core::sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
+		switch(h.proc_kind())
 		{
 			case sc_core::SC_THREAD_PROC_:
 			case sc_core::SC_CTHREAD_PROC_:
-				wait();
+				sc_core::wait();
 				break;
 			default:
 				break;
