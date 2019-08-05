@@ -1,5 +1,6 @@
 #!/bin/bash
 SIMPKG=tms320c3x
+SIMPKGDIR=tlm2/tms320c3x
 source "$(dirname $0)/dist_common.sh"
 
 import_genisslib
@@ -100,9 +101,6 @@ for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
 
-mkdir -p ${DEST_DIR}/config
-mkdir -p ${DEST_DIR}/${SIMPKG}/config
-
 # Top level
 
 cat << EOF > "${DEST_DIR}/README"
@@ -141,13 +139,7 @@ Installing (optional):
   $ make install
 EOF
 
-CONFIGURE_AC="${DEST_DIR}/configure.ac"
-MAKEFILE_AM="${DEST_DIR}/Makefile.am"
-CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
-
-if has_to_build "${CONFIGURE_AC}" "$0"; then
-	echo "Generating configure.ac"
-	cat <<EOF > "${CONFIGURE_AC}"
+output_top_configure_ac <(cat << EOF
 AC_INIT([UNISIM TMS320C3X Simulator Package], [${SIMULATOR_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-${SIMPKG}])
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_BUILD
@@ -162,36 +154,20 @@ AC_CONFIG_SUBDIRS([${SIMPKG}])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 EOF
-	has_to_build_configure=yes
-fi
+)
 
-if has_to_build "${MAKEFILE_AM}" "$0"; then
-	echo "Generating Makefile.am"
-	cat <<EOF > "${MAKEFILE_AM}"
+output_top_makefile_am <(cat << EOF
 SUBDIRS=genisslib ${SIMPKG}
 EXTRA_DIST = configure.cross
 EOF
-	has_to_build_configure=yes
-fi
+)
 
-if [ "${has_to_build_configure}" = "yes" ]; then
-	echo "Building configure"
-	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
-fi
-
-if has_to_build "${CONFIGURE_CROSS}" "$0"; then
-	echo "Building configure.cross"
-	make_pkg_configure_cross "${SIMPKG}" "${CONFIGURE_CROSS}"
-fi  # has to build configure cross
+build_top_configure
+build_top_configure_cross
 
 # Simulator
 
-SIMULATOR_CONFIGURE_AC="${DEST_DIR}/${SIMPKG}/configure.ac"
-SIMULATOR_MAKEFILE_AM="${DEST_DIR}/${SIMPKG}/Makefile.am"
-
-if has_to_build "${SIMULATOR_CONFIGURE_AC}" "$0" || pkg_deps_changed "${SIMULATOR_CONFIGURE_AC}"; then
-	echo "Generating ${SIMPKG} configure.ac"
-	cat <<EOF > "${SIMULATOR_CONFIGURE_AC}"
+output_simulator_configure_ac <(cat << EOF
 AC_INIT([UNISIM TMS320C3X Standalone simulator], [${SIMULATOR_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-${SIMPKG}-core])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
@@ -226,13 +202,9 @@ AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-tms320c3x-${SIMPKG}-${SIM
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 EOF
-	has_to_build_simulator_configure=yes
-fi
+)
 
-if has_to_build "${SIMULATOR_MAKEFILE_AM}" "$0" || pkg_deps_changed "${SIMULATOR_MAKEFILE_AM}"; then
-	AM_SIMULATOR_VERSION=$(printf ${SIMULATOR_VERSION} | sed -e 's/\./_/g')
-	echo "Generating ${SIMPKG} Makefile.am"
-	cat <<EOF > "${SIMULATOR_MAKEFILE_AM}"
+output_simulator_makefile_am <(cat << EOF
 ACLOCAL_AMFLAGS=-I m4
 AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
 LIBTOOL_DEPS = @LIBTOOL_DEPS@
@@ -268,12 +240,8 @@ CLEANFILES=\
 \$(top_builddir)/unisim/component/cxx/processor/tms320c3x/isa_tms320c3x.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
 	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/tms320c3x/isa_tms320c3x -w 32 -I \$(top_srcdir)/unisim/component/cxx/processor/tms320c3x/isa \$(top_srcdir)/unisim/component/cxx/processor/tms320c3x/isa/tms320c3x.isa
 EOF
-	has_to_build_simulator_configure=yes
-fi
+)
 
-if [ "${has_to_build_simulator_configure}" = "yes" ]; then
-	echo "Building ${SIMPKG} configure"
-	${SHELL} -c "cd ${DEST_DIR}/${SIMPKG} && aclocal -I m4 && libtoolize --force && autoconf --force && autoheader && automake -ac"
-fi
+build_simulator_configure
 
 echo "Distribution is up-to-date"

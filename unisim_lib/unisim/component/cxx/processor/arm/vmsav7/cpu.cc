@@ -38,6 +38,8 @@
 #include <unisim/component/cxx/processor/arm/execute.hh>
 #include <unisim/component/cxx/processor/arm/isa/decode.hh>
 #include <unisim/component/cxx/processor/arm/memattrs.hh>
+#include <unisim/component/cxx/processor/arm/isa_arm32.tcc>
+#include <unisim/component/cxx/processor/arm/isa_thumb.tcc>
 #include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
@@ -45,6 +47,7 @@
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/os/linux_os/linux.hh>
 #include <unisim/util/os/linux_os/arm.hh>
+#include <unisim/util/simfloat/floating.tcc>
 
 #include <sstream>
 #include <string>

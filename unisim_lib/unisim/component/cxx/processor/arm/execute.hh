@@ -37,6 +37,7 @@
 
 #include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/util/truth_table/truth_table.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
 #include <inttypes.h>
 #include <stdexcept>
 
@@ -46,6 +47,8 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
+  using unisim::util::arithmetic::RotateRight;
+  
   namespace CondTruthTable {
     template <uintptr_t Tbit, uintptr_t Tbits = 16>
     struct Source {
