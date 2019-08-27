@@ -1,3 +1,7 @@
+libc/stdlib
+libc/unistd
+std/fstream
+sys/types
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/http_server

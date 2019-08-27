@@ -1,3 +1,12 @@
+libc/assert
+libc/inttypes
+libc/limits
+std/iostream
+std/map
+std/sstream
+std/stdexcept
+std/string
+std/vector
 unisim/service/interfaces/register
 unisim/util/endian
 unisim/util/inlining

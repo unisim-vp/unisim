@@ -1,3 +1,9 @@
+libc/inttypes
+libc/string
 m4/cxxabi
+std/cassert
+std/cstdlib
+std/iostream
+std/stdexcept
 unisim/util/inlining
 unisim/util/likely

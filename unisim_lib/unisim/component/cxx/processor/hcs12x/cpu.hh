@@ -68,6 +68,7 @@
 
 #include "unisim/service/interfaces/register.hh"
 #include "unisim/util/debug/simple_register.hh"
+#include <unisim/util/debug/simple_register_registry.hh>
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/util/endian/endian.hh"
 
@@ -518,10 +519,7 @@ public:
 	 */
 	virtual Register *GetRegister(const char *name);
 
-    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
-    {
-    	// TODO
-    }
+    virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner );
 
 	//=====================================================================
 	//=                   DebugDisasmInterface methods                    =
@@ -631,7 +629,7 @@ private:
 	address_t lastPC;
 
 	// Registers map
-	map<string, Register *> registers_registry;
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 
 	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 

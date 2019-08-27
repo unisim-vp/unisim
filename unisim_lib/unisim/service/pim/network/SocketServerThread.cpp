@@ -53,7 +53,7 @@ SocketServerThread::SocketServerThread(string host, uint16_t port, uint8_t conne
 	serv_addr.sin_addr.s_addr = hostname;
 	if (bind(primary_sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
 		int array[] = {primary_sockfd};
-        error(array, "ERROR on binding");
+        error(array, sizeof(array) / sizeof(array[0]), "ERROR on binding");
 	}
 
 	/* listen()
@@ -63,7 +63,7 @@ SocketServerThread::SocketServerThread(string host, uint16_t port, uint8_t conne
 
 	if (listen(primary_sockfd,request_nbre) < 0) {
 		int array[] = {primary_sockfd};
-		error(array, "listen failed");
+		error(array, sizeof(array) / sizeof(array[0]), "listen failed");
 	}
 
 }
@@ -101,7 +101,7 @@ void SocketServerThread::run() {
 		int opt = 1;
 		if (setsockopt(sockfdTmp, IPPROTO_TCP, TCP_NODELAY, (char*)&opt, sizeof(opt)) < 0) {
 			int array[] = {sockfdTmp};
-			error(array, "setsockopt <IPPROTO_TCP, TCP_NODELAY> failed");
+			error(array, sizeof(array) / sizeof(array[0]), "setsockopt <IPPROTO_TCP, TCP_NODELAY> failed");
 		}
 
 #ifdef WIN32
@@ -110,7 +110,7 @@ void SocketServerThread::run() {
 		u_long NonBlock = 1;
 		if(ioctlsocket(sockfdTmp, FIONBIO, &NonBlock) != 0) {
 			int array[] = {sockfdTmp};
-			error(array, "ioctlsocket <FIONBIO, NonBlock> failed");
+			error(array, sizeof(array) / sizeof(array[0]), "ioctlsocket <FIONBIO, NonBlock> failed");
 		}
 
 #else
@@ -118,13 +118,13 @@ void SocketServerThread::run() {
 		int flags = fcntl(sockfdTmp, F_GETFL, 0);
 		if (flags < 0)	{
 			int array[] = {sockfdTmp};
-			error(array, "fcntl <F_GETFL> failed");
+			error(array, sizeof(array) / sizeof(array[0]), "fcntl <F_GETFL> failed");
 		}
 
 		/* Ask for non-blocking reads on socket */
 		if (fcntl(sockfdTmp, F_SETFL, flags | O_NONBLOCK) < 0) {
 			int array[] = {sockfdTmp};
-			error(array, "fcntl <F_SETFL, flags | O_NONBLOCK> failed");
+			error(array, sizeof(array) / sizeof(array[0]), "fcntl <F_SETFL, flags | O_NONBLOCK> failed");
 		}
 
 #endif

@@ -34,20 +34,21 @@ RESERVED::RESERVED(const sc_module_name& name, Object *parent) :
 	, slave_socket("slave_socket")
 	, bus_clock_socket("bus_clock_socket")
 
+	, logger(*this)
+
 	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
 
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
-	, logger(*this)
 
 {
 
 	slave_socket.register_b_transport(this, &RESERVED::read_write);
 	bus_clock_socket.register_b_transport(this, &RESERVED::updateBusClock);
 
-	SC_HAS_PROCESS(RESERVED);
+// 	SC_HAS_PROCESS(RESERVED);
 
 //	SC_THREAD(TxRun);
 //	SC_THREAD(RxRun);
@@ -89,7 +90,7 @@ void RESERVED::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	for (int i=0; i<ADDRESS_ARRAY_SIZE; i++) {
+	for (unsigned int i=0; i<ADDRESS_ARRAY_SIZE; i++) {
 		if ((address >= ADDRESS_SPACE[i][0]) && (address <= ADDRESS_SPACE[i][1])) {
 			if (cmd == tlm::TLM_READ_COMMAND) {
 				memset(data_ptr, 0, data_length);
@@ -217,7 +218,7 @@ void RESERVED::ResetMemory() {
 
 bool RESERVED::ReadMemory(physical_address_t address, void *buffer, uint32_t size) {
 
-	for (int i=0; i<ADDRESS_ARRAY_SIZE; i++) {
+	for (unsigned int i=0; i<ADDRESS_ARRAY_SIZE; i++) {
 		if ((address >= ADDRESS_SPACE[i][0]) && (address <= ADDRESS_SPACE[i][1])) {
 
 //			*((uint8_t *) buffer) = reserved_register[address - ADDRESS_SPACE[i][0]];
@@ -232,7 +233,7 @@ bool RESERVED::ReadMemory(physical_address_t address, void *buffer, uint32_t siz
 
 bool RESERVED::WriteMemory(physical_address_t address, const void *buffer, uint32_t size) {
 
-	for (int i=0; i<ADDRESS_ARRAY_SIZE; i++) {
+	for (unsigned int i=0; i<ADDRESS_ARRAY_SIZE; i++) {
 		if ((address >= ADDRESS_SPACE[i][0]) && (address <= ADDRESS_SPACE[i][1])) {
 
 //			reserved_register[address - ADDRESS_SPACE[i][0]] = *((uint8_t *) buffer);

@@ -1,3 +1,16 @@
+libc/fenv
+libc/inttypes
+libc/stdint
+std/algorithm
+std/cassert
+std/cmath
+std/iomanip
+std/iosfwd
+std/iostream
+std/map
+std/set
+std/stdexcept
+std/vector
 unisim/component/cxx/memory/sparse
 unisim/component/cxx/processor/intel/isa
 unisim/service/interfaces/register

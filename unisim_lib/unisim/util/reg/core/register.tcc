@@ -38,6 +38,7 @@
 
 #include <unisim/util/likely/likely.hh>
 #include <limits.h>
+#include <assert.h>
 #include <stdexcept>
 
 namespace unisim {

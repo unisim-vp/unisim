@@ -1,3 +1,7 @@
+libc/inttypes
+std/sstream
+std/string
+std/vector
 unisim/component/cxx/pci
 unisim/kernel/logger
 unisim/kernel/service

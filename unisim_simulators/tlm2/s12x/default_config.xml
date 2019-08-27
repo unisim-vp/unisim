@@ -2131,7 +2131,7 @@
 		<variable name="dwarf-register-number-mapping-filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>68hc12_dwarf_register_number_mapping.xml</value>
+			<value>unisim/util/debug/dwarf/68hc12_dwarf_register_number_mapping.xml</value>
 			<description>DWARF register number mapping filename</description>
 		</variable>
 		<variable name="parse-dwarf">
@@ -2171,7 +2171,7 @@
 		<variable name="architecture-description-filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>gdb_hcs12x.xml</value>
+			<value>unisim/service/debug/gdb_server/gdb_hcs12x.xml</value>
 			<description>filename of a XML description of the connected processor</description>
 		</variable>
 		<variable name="verbose">
@@ -2283,7 +2283,7 @@
 		<variable name="architecture-description-filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>gdb_hcs12x.xml</value>
+			<value>unisim/service/debug/gdb_server/gdb_hcs12x.xml</value>
 			<description>filename of a XML description of the connected processor</description>
 		</variable>
 		<variable name="verbose">

@@ -1,3 +1,14 @@
+libc/inttypes
+libc/stdlib
+std/cmath
+std/cstring
+std/iosfwd
+std/iostream
+std/map
+std/set
+std/sstream
+std/stdexcept
+std/string
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/memory_access_reporting

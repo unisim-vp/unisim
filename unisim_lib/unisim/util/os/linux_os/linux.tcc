@@ -64,6 +64,10 @@
 #include <sys/stat.h>
 #endif
 
+#ifdef GetCommandLine
+#undef GetCommandLine
+#endif
+
 namespace unisim {
 namespace util {
 namespace os {

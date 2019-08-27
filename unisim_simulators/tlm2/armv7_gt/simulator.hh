@@ -39,9 +39,9 @@
 #include <unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
+#include <unisim/component/tlm2/interconnect/generic_router/config.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
-//#include <unisim/service/os/linux_os/linux.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include <unisim/service/trap_handler/trap_handler.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
@@ -56,23 +56,16 @@
 #include <list>
 #include <cstdlib>
 
-#ifdef WIN32
-#include <winsock2.h>
-#include <windows.h>
-#else
-#include <signal.h>
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-struct RouterCFG
+struct RouterCFG : unisim::component::tlm2::interconnect::generic_router::Config
 {
   typedef uint32_t ADDRESS;
   static unsigned const INPUT_SOCKETS = 1;
   static unsigned const OUTPUT_SOCKETS = 2;
-  static unsigned const MAX_NUM_MAPPINGS = 2;
+  static unsigned const NUM_MAPPINGS = 2;
   static unsigned const BUSWIDTH = 32;
   typedef tlm::tlm_base_protocol_types TYPES;
   static const bool VERBOSE = false;
@@ -148,11 +141,7 @@ struct Simulator : public unisim::kernel::service::Simulator
   unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
 
   int exit_status;
-#ifdef WIN32
-  static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
-#else
-  static void SigIntHandler(int signum);
-#endif
+  virtual void SigInt();
 };
 
 #endif /* SIMULATOR_HH_ */

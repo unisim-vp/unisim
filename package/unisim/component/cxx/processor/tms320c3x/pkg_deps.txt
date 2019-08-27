@@ -1,3 +1,13 @@
+libc/assert
+libc/inttypes
+libc/string
+std/iomanip
+std/iosfwd
+std/iostream
+std/map
+std/sstream
+std/stdexcept
+std/string
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/debug_yielding

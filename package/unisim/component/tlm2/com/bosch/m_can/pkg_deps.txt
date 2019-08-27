@@ -1,3 +1,5 @@
+libc/math
+std/map
 unisim/kernel/logger
 unisim/kernel/service
 unisim/kernel/tlm2

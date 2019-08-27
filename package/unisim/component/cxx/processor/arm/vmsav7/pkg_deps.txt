@@ -1,3 +1,8 @@
+libc/inttypes
+std/cstring
+std/sstream
+std/stdexcept
+std/string
 unisim/component/cxx/processor/arm
 unisim/component/cxx/processor/arm/isa
 unisim/service/interfaces/debug_yielding
@@ -13,6 +18,7 @@ unisim/util/backtrace
 unisim/util/endian
 unisim/util/likely
 unisim/util/os/linux_os
+unisim/util/simfloat
 unisim/util/truth_table
 unisim/component/cxx/processor/arm/isa/arm32
 unisim/component/cxx/processor/arm/isa/thumb

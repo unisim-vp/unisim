@@ -1,3 +1,5 @@
+std/list
+std/vector
 unisim/component/cxx/isa
 unisim/kernel/logger
 unisim/kernel/service

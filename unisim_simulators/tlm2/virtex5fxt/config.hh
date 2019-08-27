@@ -88,6 +88,21 @@ public:
 	};
 
 	//=========================================================================
+	//===                 MPLB compile time configuration                   ===
+	//=========================================================================
+
+	class MEMORY_ROUTER_CONFIG : public unisim::component::tlm2::interconnect::generic_router::Config
+	{
+	public:
+		static const unsigned int INPUT_SOCKETS = 3;
+		static const unsigned int OUTPUT_SOCKETS = 1;
+		static const unsigned int NUM_MAPPINGS = 1;
+		static const unsigned int OUTPUT_BUSWIDTH = 128;
+		static const unsigned int INPUT_BUSWIDTH = 128;
+		static const bool VERBOSE = DEBUG_ENABLE;
+	};
+
+	//=========================================================================
 	//===                intc compile time configuration                    ===
 	//=========================================================================
 

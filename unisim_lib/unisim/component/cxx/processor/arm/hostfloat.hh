@@ -46,14 +46,14 @@ inline int issignaling(double d)
 {
 	uint64_t i;
 	memcpy(&i, &d, 8);
-	return ((i & ((1ULL << 51) - 1)) != 0) && (i & (1ULL << 51) == 0);
+	return ((i & ((1ULL << 51) - 1)) != 0) && ((i & (1ULL << 51)) == 0);
 }
 
 inline int issignaling(float f)
 {
 	uint32_t i;
 	memcpy(&i, &f, 4);
-	return ((i & ((1UL << 22) - 1)) != 0) && (i & (1ULL << 22) == 0);
+	return ((i & ((1UL << 22) - 1)) != 0) && ((i & (1ULL << 22)) == 0);
 }
 #endif
 

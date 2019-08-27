@@ -90,9 +90,8 @@
 #endif
 
 // Host machine standard headers
-#include <iostream>
-#include <stdexcept>
-#include <stdlib.h>
+#include <fstream>
+#include <string>
 
 #ifdef WIN32
 

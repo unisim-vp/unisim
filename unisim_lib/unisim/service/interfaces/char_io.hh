@@ -35,13 +35,13 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_CHAR_IO_HH__
 #define __UNISIM_SERVICE_INTERFACES_CHAR_IO_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class CharIO : public unisim::kernel::service::ServiceInterface
+class CharIO : public ServiceInterface
 {
 public:
 	virtual void ResetCharIO() = 0;

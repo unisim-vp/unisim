@@ -32,6 +32,8 @@ S12TIM16B8C::S12TIM16B8C(const sc_module_name& name, Object *parent) :
 	, slave_socket("slave_socket")
 	, bus_clock_socket("bus_clock_socket")
 
+	, logger(*this)
+
 	, base_address(0x03D0)
 	, param_base_address("base-address", this, base_address)
 
@@ -41,14 +43,12 @@ S12TIM16B8C::S12TIM16B8C(const sc_module_name& name, Object *parent) :
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
-	, logger(*this)
-
 {
 
 	slave_socket.register_b_transport(this, &S12TIM16B8C::read_write);
 	bus_clock_socket.register_b_transport(this, &S12TIM16B8C::updateBusClock);
 
-	SC_HAS_PROCESS(S12TIM16B8C);
+// 	SC_HAS_PROCESS(S12TIM16B8C);
 
 //	SC_THREAD(TxRun);
 //	SC_THREAD(RxRun);

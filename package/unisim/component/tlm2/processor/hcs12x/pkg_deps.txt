@@ -1,5 +1,13 @@
+libc/assert
+libc/inttypes
 m4/libxml2
 m4/systemc
+std/cmath
+std/iostream
+std/map
+std/queue
+std/string
+std/vector
 unisim/component/cxx/processor/hcs12x
 unisim/component/tlm2/memory/ram
 unisim/kernel/logger
@@ -13,4 +21,3 @@ unisim/service/interfaces/trap_reporting
 unisim/util/converter
 unisim/util/debug
 unisim/util/endian
-unisim/util/garbage_collector

@@ -35,21 +35,21 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_AVR32_T2H_SYSCALLS_HH__
 #define __UNISIM_SERVICE_INTERFACES_AVR32_T2H_SYSCALLS_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class AVR32_T2H_Syscalls : public unisim::kernel::service::ServiceInterface
+class AVR32_T2H_Syscalls : public ServiceInterface
 {
 public:
 	typedef enum
 	{
-		ERROR = -1,
-		OK    = 0,
-		EXIT  = 1,
-		UNHANDLED = 2
+		AVR32_T2H_SYSCALL_ERROR = -1,
+		AVR32_T2H_SYSCALL_OK    = 0,
+		AVR32_T2H_SYSCALL_EXIT  = 1,
+		AVR32_T2H_SYSCALL_UNHANDLED = 2
 	} Status;
 
 	virtual Status HandleEmulatorBreakpoint() = 0;

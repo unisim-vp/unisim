@@ -51,8 +51,7 @@
 
 #include <iostream>
 #include <stdexcept>
-#include <stdlib.h>
-#include <signal.h>
+#include <string>
 
 using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;

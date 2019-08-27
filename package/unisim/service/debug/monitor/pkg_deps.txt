@@ -1,4 +1,5 @@
 m4/systemc
+std/stdexcept
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/backtrace

@@ -1,2 +1,3 @@
+libc/inttypes
 unisim/kernel/service
 unisim/service/interfaces/memory

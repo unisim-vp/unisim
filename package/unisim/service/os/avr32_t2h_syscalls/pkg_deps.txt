@@ -1,3 +1,16 @@
+libc/errno
+libc/fcntl
+libc/inttypes
+libc/stdio
+libc/stdlib
+libc/string
+libc/time
+libc/unistd
+std/fstream
+std/map
+std/queue
+std/sstream
+sys/types
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/avr32_t2h_syscalls

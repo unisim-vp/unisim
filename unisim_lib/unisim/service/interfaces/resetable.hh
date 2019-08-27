@@ -35,13 +35,13 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_RESETABLE_HH__
 #define __UNISIM_SERVICE_INTERFACES_RESETABLE_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class Resetable : public unisim::kernel::service::ServiceInterface
+class Resetable : public ServiceInterface
 {
 public:
 	virtual void Reset() = 0;

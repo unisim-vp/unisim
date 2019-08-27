@@ -37,6 +37,7 @@
 
 #include <unisim/service/interfaces/register.hh>
 #include <unisim/service/interfaces/registers.hh>
+#include <unisim/util/nat_sort/nat_sort.hh>
 #include <string>
 #include <map>
 

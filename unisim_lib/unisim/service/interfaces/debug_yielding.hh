@@ -35,19 +35,19 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_DEBUG_YIELDING_HH__
 #define __UNISIM_SERVICE_INTERFACES_DEBUG_YIELDING_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class DebugYielding : public unisim::kernel::service::ServiceInterface
+class DebugYielding : public ServiceInterface
 {
 public:
 	virtual void DebugYield() = 0;
 };
 
-class DebugYieldingRequest : public unisim::kernel::service::ServiceInterface
+class DebugYieldingRequest : public ServiceInterface
 {
 public:
 	virtual void DebugYieldRequest() = 0;

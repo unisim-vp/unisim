@@ -1,3 +1,4 @@
+std/string
 unisim/kernel/logger
 unisim/kernel/service
 unisim/kernel/tlm

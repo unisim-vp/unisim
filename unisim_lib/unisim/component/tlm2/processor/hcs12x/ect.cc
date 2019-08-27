@@ -219,7 +219,7 @@ void ECT::runBuildinSignalGenerator() {
 inline void ECT::main_timer_enable() {
 	main_timer_enabled = true;
 	if ((tscr1_register & 0x80) != 0) {
-		main_timer_enable_event.notify();
+		main_timer_enable_event.notify(sc_core::SC_ZERO_TIME);
 	}
 }
 

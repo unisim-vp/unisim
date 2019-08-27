@@ -34,6 +34,9 @@
 
 #include <simulator.hh>
 #include <unisim/kernel/logger/logger_server.hh>
+#include <sstream>
+#include <stdexcept>
+#include <map>
 
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;

@@ -35,13 +35,6 @@
 #ifndef SIMULATOR_HH_
 #define SIMULATOR_HH_
 
-#include <iostream>
-#include <sstream>
-#include <list>
-#include <string>
-#include <getopt.h>
-#include <stdlib.h>
-
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/tlm2/simulator.hh>
 #include <unisim/component/tlm2/processor/arm/cortex_a53/cpu.hh>
@@ -60,15 +53,6 @@
 #include <unisim/service/debug/profiler/profiler.hh>
 #include <unisim/service/http_server/http_server.hh>
 #include <unisim/service/instrumenter/instrumenter.hh>
-
-#ifdef WIN32
-
-#include <winsock2.h>
-#include <windows.h>
-
-#else
-#include <signal.h>
-#endif
 
 struct Simulator
   : public unisim::kernel::tlm2::Simulator

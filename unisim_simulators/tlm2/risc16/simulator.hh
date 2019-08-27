@@ -36,13 +36,6 @@
 #ifndef __SIMULATOR_HH__
 #define __SIMULATOR_HH__
 
-#include <iostream>
-
-#include <signal.h>
-#include <getopt.h>
-#include <stdlib.h>
-#include <stdexcept>
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -50,35 +43,24 @@
 #include <unisim/kernel/service/service.hh>
 
 #include <unisim/util/debug/breakpoint_registry.hh>
-//#include <unisim/util/debug/breakpoint_registry.tcc>
 #include <unisim/util/debug/watchpoint_registry.hh>
-//#include <unisim/util/debug/watchpoint_registry.tcc>
 #include <unisim/util/blob/blob.hh>
 #include <unisim/util/loader/elf_loader/elf_loader.hh>
-//#include <unisim/util/loader/elf_loader/elf_loader.tcc>
 #include <unisim/service/debug/debugger/debugger.hh>
-//#include <unisim/service/debug/debugger/debugger.tcc>
-//#include <unisim/util/debug/profile.hh>
-//#include <unisim/util/debug/profile.tcc>
 
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-//#include <unisim/service/debug/inline_debugger/inline_debugger.tcc>
 #include <unisim/service/loader/raw_loader/raw_loader.hh>
-//#include <unisim/service/profiling/addr_profiler/profiler.hh>
-//#include <unisim/service/profiling/addr_profiler/profiler.tcc>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 
 #include <unisim/component/tlm2/processor/risc16/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
-//#include <unisim/component/tlm2/memory/ram/memory.tcc>
-//#include <unisim/component/cxx/memory/ram/memory.tcc>
 
 #include <tlm>
 
-#ifdef WIN32
-#include <windows.h>
-#endif
+#include <stdint.h>
+#include <iostream>
+#include <stdexcept>
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Service;

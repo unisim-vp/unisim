@@ -199,7 +199,7 @@ void S12XMMC::cpu_access(MMC::ACCESS accessType, MMC_DATA *buffer) {
 
 	bool find = false;
 	if (inherited::version.compare("V3") == 0) {
-		for (int i=0; (i<inherited::MMC_MEMMAP_SIZE) && !find; i++) {
+		for (unsigned int i=0; (i<inherited::MMC_MEMMAP_SIZE) && !find; i++) {
 			find = (inherited::MMC_REGS_ADDRESSES[i] == logicalAddress);
 		}
 	} else if (inherited::version.compare("V4") == 0) {

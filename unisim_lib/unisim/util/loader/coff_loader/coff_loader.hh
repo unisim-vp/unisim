@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_LOADER_COFF_LOADER_COFF_LOADER_HH__
 #define __UNISIM_UTIL_LOADER_COFF_LOADER_COFF_LOADER_HH__
 
+#include <unisim/kernel/service/service.hh>
 #include <unisim/util/debug/coff_symtab/coff_symtab.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>

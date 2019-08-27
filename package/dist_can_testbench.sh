@@ -10,6 +10,10 @@ import unisim/service/time/host_time || exit
 import unisim/service/time/sc_time || exit
 import unisim/service/instrumenter || exit
 
+import std/iostream || exit
+import std/queue || exit
+import std/vector || exit
+
 copy source header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
@@ -23,50 +27,6 @@ $(files template) \
 UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
-
-SIMULATOR_EXTERNAL_HEADERS="\
-assert.h \
-ctype.h \
-cxxabi.h \
-errno.h \
-fcntl.h \
-fenv.h \
-float.h \
-getopt.h \
-inttypes.h \
-limits.h \
-math.h \
-signal.h \
-stdarg.h \
-stdio.h \
-stdlib.h \
-string.h \
-ctype.h \
-sys/types.h \
-unistd.h \
-fstream \
-cassert \
-cmath \
-cerrno \
-cstddef \
-cstdio \
-cstdlib \
-cstring \
-iomanip \
-stdexcept \
-deque \
-list \
-sstream \
-iosfwd \
-iostream \
-stack \
-map \
-ostream \
-queue \
-vector \
-string \
-set \
-"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 "
@@ -174,7 +134,6 @@ PKG_PROG_PKG_CONFIG([0.26])
 AC_LANG([C++])
 AM_PROG_CC_C_O
 CPPFLAGS="\${CPPFLAGS} -D_LARGEFILE64_SOURCE"
-AC_CHECK_HEADERS([${SIMULATOR_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))
 case "\${host}" in
 	*mingw*)
 		CPPFLAGS="-U__STRICT_ANSI__ \${CPPFLAGS}"
@@ -211,8 +170,8 @@ libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_TEMPLATE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_TEMPLATE_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
-dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_PKG_DATA_FILES}
-nobase_dist_share_DATA = ${UNISIM_SIMULATOR_DATA_FILES}
+dist_share_DATA = ${UNISIM_SIMULATOR_PKG_DATA_FILES}
+nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
 
 EOF
 )

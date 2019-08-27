@@ -20,6 +20,11 @@ import unisim/service/time/host_time
 import unisim/kernel/logger
 import unisim/kernel/tlm2
 
+import std/iostream
+import std/sstream
+import std/string
+import std/stdexcept
+
 copy source isa header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
@@ -33,53 +38,9 @@ UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
-SIMULATOR_EXTERNAL_HEADERS="\
-assert.h \
-ctype.h \
-cxxabi.h \
-errno.h \
-fcntl.h \
-fenv.h \
-float.h \
-getopt.h \
-inttypes.h \
-limits.h \
-math.h \
-signal.h \
-stdarg.h \
-stdio.h \
-stdlib.h \
-string.h \
-ctype.h \
-sys/types.h \
-unistd.h \
-fstream \
-cassert \
-cmath \
-cerrno \
-cstddef \
-cstdio \
-cstdlib \
-cstring \
-iomanip \
-stdexcept \
-deque \
-list \
-sstream \
-iosfwd \
-iostream \
-stack \
-map \
-ostream \
-queue \
-vector \
-string \
-set"
-
 UNISIM_SIMULATOR_SOURCE_FILES="\
 config.cc \
 memory_router.cc \
-memory_router_debug.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
@@ -217,7 +178,6 @@ PKG_PROG_PKG_CONFIG([0.26])
 AC_LANG([C++])
 AM_PROG_CC_C_O
 CPPFLAGS=\"${CPPFLAGS} -D_LARGEFILE64_SOURCE\"
-AC_CHECK_HEADERS([${SIMULATOR_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))
 case "\${host}" in
 	*mingw*)
 		CPPFLAGS="-U__STRICT_ANSI__ \${CPPFLAGS}"

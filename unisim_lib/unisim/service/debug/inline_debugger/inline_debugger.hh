@@ -71,10 +71,6 @@
 #include <stack>
 #include <set>
 
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-#include <windef.h>
-#endif
-
 namespace unisim {
 namespace service {
 namespace debug {
@@ -97,8 +93,15 @@ public:
 	InlineDebuggerBase(const char *_name, unisim::kernel::service::Object *parent);
 	virtual ~InlineDebuggerBase();
 	virtual void SigInt();
+	
+	std::string SearchFile(const char *filename);
+	bool LocateFile(const char *file_path, std::string& match_file_path);
+
 protected:
 	virtual void Interrupt() = 0;
+	
+	std::string search_path;
+	unisim::kernel::service::Parameter<std::string> param_search_path;
 };
 
 template <class ADDRESS>
@@ -152,12 +155,10 @@ protected:
 private:
 	unisim::kernel::logger::Logger logger;
 	unsigned int memory_atom_size;
-	std::string search_path;
 	std::string init_macro;
 	std::string output;
 	std::string program_counter_name;
 	unisim::kernel::service::Parameter<unsigned int> param_memory_atom_size;
-	unisim::kernel::service::Parameter<std::string> param_search_path;
 	unisim::kernel::service::Parameter<std::string> param_init_macro;
 	unisim::kernel::service::Parameter<std::string> param_output;
 	unisim::kernel::service::Parameter<std::string> param_program_counter_name;
@@ -280,10 +281,8 @@ private:
 	void SetVariable(const char *name, const char *value);
 	void DumpProgramProfile();
 	void DumpDataProfile(bool write);
-	std::string SearchFile(const char *filename);
 	void LoadSymbolTable(const char *filename);
 	void LoadMacro(const char *filename);
-	bool LocateFile(const char *file_path, std::string& match_file_path);
 	void DumpSource(const char *filename, unsigned int lineno, unsigned int colno, unsigned int count);
 	void DumpBackTrace();
 	bool GetReturnAddress(ADDRESS& ret_addr) const;

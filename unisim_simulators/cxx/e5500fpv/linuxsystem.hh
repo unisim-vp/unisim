@@ -36,7 +36,6 @@
 #define __E5500FPV_LINUX_SYSTEM_HH__
 
 #include <unisim/util/os/linux_os/linux.hh>
-#include <unisim/util/os/linux_os/powerpc64.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/memory.hh>

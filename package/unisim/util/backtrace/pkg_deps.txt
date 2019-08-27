@@ -1,1 +1,4 @@
+libc/stdlib
 m4/cxxabi
+std/iosfwd
+std/iostream

@@ -1,4 +1,5 @@
 m4/pthread
+std/set
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/char_io

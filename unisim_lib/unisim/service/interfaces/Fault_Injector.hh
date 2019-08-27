@@ -9,7 +9,7 @@
 #define FAULT_INJECTOR_HH_
 
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 #include <inttypes.h>
 #include "systemc.h"
 
@@ -21,7 +21,7 @@ namespace interfaces{
 using namespace sc_dt;
 
  template <class ADRESS>
-class Fault_Injector : public unisim::kernel::service::ServiceInterface
+class Fault_Injector : public ServiceInterface
 {
 	public:
 

@@ -79,19 +79,23 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, unisim::kernel::service::Client<typename unisim::service::interfaces::DebugYielding>(name, parent)
 	, unisim::kernel::service::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::EFFECTIVE_ADDRESS> >(name, parent)
 	, unisim::kernel::service::Client<typename unisim::service::interfaces::TrapReporting>(name, parent)
+	, unisim::kernel::service::Client<typename unisim::service::interfaces::LinuxOS>(name, parent)
 	, unisim::kernel::service::Service<unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS> >(name, parent)
 	, unisim::kernel::service::Service<typename unisim::service::interfaces::MemoryAccessReportingControl>(name, parent)
 	, unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>(name, parent)
 	, unisim::kernel::service::Service<typename unisim::service::interfaces::Synchronizable>(name, parent)
+	, unisim::kernel::service::Service<typename unisim::service::interfaces::MemoryInjection<EFFECTIVE_ADDRESS> >(name, parent)
 	, memory_import("memory-import", this)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, debug_yielding_import("debug-yielding-import", this)
 	, memory_access_reporting_import("memory-access-reporting-import", this)
 	, trap_reporting_import("trap-reporting-import", this)
+	, linux_os_import("linux-os-import", this)
 	, memory_export("memory-export", this)
 	, memory_access_reporting_control_export("memory-access-reporting-control-export", this)
 	, registers_export("registers-export", this)
 	, synchronizable_export("synchronizable-export", this)
+	, memory_injection_export("memory-injection-export", this)
 	, logger(*this)
 	, requires_memory_access_reporting(false)
 	, requires_fetch_instruction_reporting(false)
@@ -153,6 +157,7 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	AddRegisterInterface(cr.CreateRegisterInterface());
 
 	AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint32_t>("pc", &cia));
+	AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint32_t>("cia", &cia));
 }
 
 template <typename TYPES, typename CONFIG>
@@ -572,17 +577,28 @@ template <typename TYPES, typename CONFIG>
 template <bool DEBUG, bool EXEC, bool WRITE>
 inline bool CPU<TYPES, CONFIG>::Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRESS& size_to_protection_boundary, ADDRESS& virt_addr, PHYSICAL_ADDRESS& phys_addr, STORAGE_ATTR& storage_attr)
 {
+	if(unlikely(this->linux_os_import))
+	{
+		size_to_protection_boundary = 0;
+		virt_addr = ea;
+		phys_addr = ea;
+		storage_attr = TYPES::SA_DEFAULT;
+		return true;
+	}
+	
 	return static_cast<typename CONFIG::CPU *>(this)->template Translate<DEBUG, EXEC, WRITE>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr);
 }
 
 template <typename TYPES, typename CONFIG>
-template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN>
+template <typename T, bool REVERSE, unisim::util::endian::endian_type ENDIAN>
 void CPU<TYPES, CONFIG>::ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr)
 {
 #if BYTE_ORDER == LITTLE_ENDIAN
-	if(!REVERSE || FORCE_BIG_ENDIAN)
+	if(!REVERSE || (ENDIAN == unisim::util::endian::E_BIG_ENDIAN))
+#elif BYTE_ORDER == BIG_ENDIAN
+	if(!REVERSE || (ENDIAN == unisim::util::endian::E_LITTLE_ENDIAN))
 #else
-	if(REVERSE && !FORCE_BIG_ENDIAN)
+	if(REVERSE)
 #endif
 	{
 		unisim::util::endian::BSwap(value);
@@ -590,7 +606,7 @@ void CPU<TYPES, CONFIG>::ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR stora
 }
 
 template <typename TYPES, typename CONFIG>
-template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN>
+template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN>
 inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, EFFECTIVE_ADDRESS ea)
 {
 	EFFECTIVE_ADDRESS size_to_protection_boundary;
@@ -629,13 +645,16 @@ inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, EFFECTIVE_ADDRESS ea)
 		if(unlikely(!this->SuperMSS::DataLoad(virt_addr, phys_addr, (uint8_t *) &value + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary, storage_attr))) return false;
 	}
 
-	this->template __ConvertDataLoadStoreEndian__<T, REVERSE, FORCE_BIG_ENDIAN>(value, storage_attr);
+	if(CONVERT_ENDIAN)
+	{
+		this->template __ConvertDataLoadStoreEndian__<T, REVERSE, ENDIAN>(value, storage_attr);
+	}
 	
 	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN>
+template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN>
 inline bool CPU<TYPES, CONFIG>::DataStore(T value, EFFECTIVE_ADDRESS ea)
 {
 	EFFECTIVE_ADDRESS size_to_protection_boundary;
@@ -644,7 +663,10 @@ inline bool CPU<TYPES, CONFIG>::DataStore(T value, EFFECTIVE_ADDRESS ea)
 	STORAGE_ATTR storage_attr;
 	if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ true>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
 
-	this->template __ConvertDataLoadStoreEndian__<T, REVERSE, FORCE_BIG_ENDIAN>((T&) value, storage_attr);
+	if(CONVERT_ENDIAN)
+	{
+		this->template __ConvertDataLoadStoreEndian__<T, REVERSE, ENDIAN>((T&) value, storage_attr);
+	}
 
 	uint32_t size_to_fsb_boundary = CONFIG::DATA_FSB_WIDTH - (ea % CONFIG::DATA_FSB_WIDTH);
 
@@ -732,7 +754,7 @@ bool CPU<TYPES, CONFIG>::Int8Load(unsigned int rd, typename TYPES::EFFECTIVE_ADD
 {
 	uint8_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint8_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint8_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) value; // 8-bit to 32-bit zero extension
 	return true;
@@ -744,7 +766,7 @@ bool CPU<TYPES, CONFIG>::Int16Load(unsigned int rd, typename TYPES::EFFECTIVE_AD
 	if(unlikely(!__CheckInt16LoadAlignment__(ea))) return false;
 	uint16_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) value; // 16-bit to 32-bit zero extension
 	return true;
@@ -756,7 +778,7 @@ bool CPU<TYPES, CONFIG>::SInt16Load(unsigned int rd, typename TYPES::EFFECTIVE_A
 	if(unlikely(!__CheckSInt16LoadAlignment__(ea))) return false;
 	uint16_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) (int16_t) value; // 16-bit to 32-bit sign extension
 	return true;
@@ -768,7 +790,7 @@ bool CPU<TYPES, CONFIG>::Int32Load(unsigned int rd, typename TYPES::EFFECTIVE_AD
 	if(unlikely(!__CheckInt32LoadAlignment__(ea))) return false;
 	uint32_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	gpr[rd] = value;
 	return true;
@@ -780,7 +802,7 @@ bool CPU<TYPES, CONFIG>::Int16LoadByteReverse(unsigned int rd, typename TYPES::E
 	if(unlikely(!__CheckInt16LoadByteReverseAlignment__(ea))) return false;
 	uint16_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, true, false>(value, ea); // reversed
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, true, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea); // reversed
 	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) value; // 16-bit to 32-bit zero extension
 	return true;
@@ -792,7 +814,7 @@ bool CPU<TYPES, CONFIG>::Int32LoadByteReverse(unsigned int rd, typename TYPES::E
 	if(unlikely(!__CheckInt32LoadByteReverseAlignment__(ea))) return false;
 	uint32_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, true, false>(value, ea); // reversed
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, true, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea); // reversed
 	if(unlikely(!status)) return false;
 	gpr[rd] = value;
 	return true;
@@ -808,7 +830,7 @@ bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::EFFECT
 		case 1:
 		{
 			uint8_t value;
-			bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint8_t, false, true>(value, ea);
+			bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint8_t, false, true, unisim::util::endian::E_BIG_ENDIAN>(value, ea);
 			if(unlikely(!status)) return false;
 			gpr[rd] = (uint32_t) value << 24;
 			break;
@@ -817,7 +839,7 @@ bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::EFFECT
 		case 2:
 		{
 			uint16_t value;
-			bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, true>(value, ea);
+			bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, true, unisim::util::endian::E_BIG_ENDIAN>(value, ea);
 			if(unlikely(!status)) return false;
 			gpr[rd] = (uint32_t) unisim::util::endian::BigEndian2Host(value) << 16;
 			break;
@@ -827,7 +849,7 @@ bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::EFFECT
 		{
 			typedef uint8_t array_uint8_3_t[3];
 			uint8_t buffer[3];
-			bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<array_uint8_3_t, false, true>(buffer, ea);
+			bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<array_uint8_3_t, false, true, unisim::util::endian::E_BIG_ENDIAN>(buffer, ea);
 			if(unlikely(!status)) return false;
 			uint32_t value = ((uint32_t) buffer[0] << 24) | ((uint32_t) buffer[1] << 16) | ((uint32_t) buffer[2] << 8);
 			gpr[rd] = value;
@@ -837,7 +859,7 @@ bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::EFFECT
 		case 4:
 		{
 			uint32_t value;
-			bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, true>(value, ea);
+			bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, true, unisim::util::endian::E_BIG_ENDIAN>(value, ea);
 			if(unlikely(!status)) return false;
 			gpr[rd] = unisim::util::endian::BigEndian2Host(value);
 			break;
@@ -856,7 +878,7 @@ bool CPU<TYPES, CONFIG>::SpecialLoad(REGISTER& reg, typename TYPES::EFFECTIVE_AD
 	if(unlikely((!__CheckSpecialLoadAlignment__<REGISTER>(ea)))) return false;
 	uint32_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	reg = value;
 	return true;
@@ -867,7 +889,7 @@ bool CPU<TYPES, CONFIG>::Int8Store(unsigned int rs, typename TYPES::EFFECTIVE_AD
 {
 	uint8_t value = gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint8_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint8_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	return true;
 }
@@ -878,7 +900,7 @@ bool CPU<TYPES, CONFIG>::Int16Store(unsigned int rs, typename TYPES::EFFECTIVE_A
 	if(unlikely(!__CheckInt16StoreAlignment__(ea))) return false;
 	uint16_t value = (uint16_t) gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	return true;
 }
@@ -889,7 +911,7 @@ bool CPU<TYPES, CONFIG>::Int32Store(unsigned int rs, typename TYPES::EFFECTIVE_A
 	if(unlikely(!__CheckInt32StoreAlignment__(ea))) return false;
 	uint32_t value = gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	return true;
 }
@@ -900,7 +922,7 @@ bool CPU<TYPES, CONFIG>::Int16StoreByteReverse(unsigned int rs, typename TYPES::
 	if(unlikely(!__CheckInt16StoreByteReverseAlignment__(ea))) return false;
 	uint16_t value = (uint16_t) gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, true, false>(value, ea); // reversed
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, true, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea); // reversed
 	if(unlikely(!status)) return false;
 	return true;
 }
@@ -911,7 +933,7 @@ bool CPU<TYPES, CONFIG>::Int32StoreByteReverse(unsigned int rs, typename TYPES::
 	if(unlikely(!__CheckInt32StoreByteReverseAlignment__(ea))) return false;
 	uint32_t value = gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, true, false>(value, ea); // reversed
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, true, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea); // reversed
 	if(unlikely(!status)) return false;
 	return true;
 }
@@ -926,7 +948,7 @@ bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::EFFEC
 		case 1:
 			{
 				uint8_t value = gpr[rs] >> 24;
-				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint8_t, false, true>(value, ea);
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint8_t, false, true, unisim::util::endian::E_BIG_ENDIAN>(value, ea);
 				if(unlikely(!status)) return false;
 				break;
 			}
@@ -934,7 +956,7 @@ bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::EFFEC
 		case 2:
 			{
 				uint16_t value = unisim::util::endian::Host2BigEndian((uint16_t)(gpr[rs] >> 16));
-				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, false, true>(value, ea);
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, false, true, unisim::util::endian::E_BIG_ENDIAN>(value, ea);
 				if(unlikely(!status)) return false;
 				break;
 			}
@@ -947,7 +969,7 @@ bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::EFFEC
 				buffer[0] = value >> 24;
 				buffer[1] = value >> 16;
 				buffer[2] = value >> 8;
-				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<array_uint8_3_t, false, true>(buffer, ea);
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<array_uint8_3_t, false, true, unisim::util::endian::E_BIG_ENDIAN>(buffer, ea);
 				if(unlikely(!status)) return false;
 				break;
 			}
@@ -955,7 +977,7 @@ bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::EFFEC
 		case 4:
 			{
 				uint32_t value = unisim::util::endian::Host2BigEndian(gpr[rs]);
-				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, true>(value, ea);
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, true, unisim::util::endian::E_BIG_ENDIAN>(value, ea);
 				if(unlikely(!status)) return false;
 				break;
 			}
@@ -974,7 +996,7 @@ bool CPU<TYPES, CONFIG>::SpecialStore(const REGISTER& reg, typename TYPES::EFFEC
 	if(unlikely((!__CheckSpecialStoreAlignment__<REGISTER>(ea)))) return false;
 	uint32_t value = reg;
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	return true;
 }
@@ -994,6 +1016,91 @@ template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::WriteMemory(EFFECTIVE_ADDRESS addr, const void *buffer, uint32_t size)
 {
 	return this->DebugDataStore(addr, buffer, size);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::InjectReadMemory(EFFECTIVE_ADDRESS ea, void *buffer, uint32_t size)
+{
+	if(likely(size))
+	{
+		do
+		{
+			if(likely(!(ea & 3) && (size >= 4)))
+			{
+				uint32_t value;
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, false, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+				if(unlikely(!status)) return false;
+				*(uint32_t *) buffer = value;
+				size -= 4;
+				ea += 4;
+				buffer = (uint32_t *) buffer + 1;
+			}
+			else if(!(ea & 1) && (size >= 2))
+			{
+				uint16_t value;
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, false, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+				if(unlikely(!status)) return false;
+				*(uint16_t *) buffer = value;
+				size -= 2;
+				ea += 2;
+				buffer = (uint16_t *) buffer + 1;
+			}
+			else
+			{
+				uint8_t value;
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint8_t, false, false, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+				if(unlikely(!status)) return false;
+				*(uint8_t *) buffer = value;
+				--size;
+				++ea;
+				buffer = (uint8_t *) buffer + 1;
+			}
+		}
+		while(likely(size));
+	}
+	
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::InjectWriteMemory(EFFECTIVE_ADDRESS ea, const void *buffer, uint32_t size)
+{
+	if(likely(size))
+	{
+		do
+		{
+			if(likely(!(ea & 3) && (size >= 4)))
+			{
+				uint32_t value = *(uint32_t *) buffer;
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, false, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+				if(unlikely(!status)) return false;
+				size -= 4;
+				ea += 4;
+				buffer = (uint32_t *) buffer + 1;
+			}
+			else if(!(ea & 1) && (size >= 2))
+			{
+				uint16_t value = *(uint16_t *) buffer;
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, false, false, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+				if(unlikely(!status)) return false;
+				size -= 2;
+				ea += 2;
+				buffer = (uint16_t *) buffer + 1;
+			}
+			else
+			{
+				uint8_t value = *(uint8_t *) buffer;
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint8_t, false, false, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+				if(unlikely(!status)) return false;
+				--size;
+				++ea;
+				buffer = (uint8_t *) buffer + 1;
+			}
+		}
+		while(likely(size));
+	}
+	
+	return true;
 }
 
 template <typename TYPES, typename CONFIG>

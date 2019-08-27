@@ -53,6 +53,7 @@
 #endif
 
 #include <string.h>
+#include <assert.h>
 #include <fstream>
 #include <stdexcept>
 

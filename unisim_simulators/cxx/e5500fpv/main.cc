@@ -79,8 +79,8 @@ struct Simulator
 
   static void DefaultConfiguration(unisim::kernel::service::Simulator* sim)
   {
-    sim->SetVariable("gdb-server.architecture-description-filename", "gdb_power64.xml");
-    sim->SetVariable("debug_hub.dwarf-register-number-mapping-filename", "power64_dwarf_register_number_mapping.xml");
+    sim->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_power64.xml");
+    sim->SetVariable("debug_hub.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/power64_dwarf_register_number_mapping.xml");
   }
   
   int exit_status;

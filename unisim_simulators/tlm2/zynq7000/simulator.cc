@@ -39,6 +39,8 @@
 #include <unisim/component/cxx/processor/arm/register_field.hh>
 #include <unisim/service/debug/debugger/debugger.tcc>
 #include <iostream>
+#include <sstream>
+#include <string>
 #include <stdexcept>
 #include <inttypes.h>
 

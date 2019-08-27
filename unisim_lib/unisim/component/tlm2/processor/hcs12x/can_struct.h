@@ -69,6 +69,8 @@ typedef struct CAN_MESSAGE {
 
     /* MSG Time Stamp */
     uint8_t Timestamp[CAN_TIMESTAMP_SIZE];
+	
+	CAN_MESSAGE() : Extended(), Remote(), Error(), ID(), Data(), Length(), Priority(), Timestamp() {}
 
 }  CAN_MESSAGE;
 

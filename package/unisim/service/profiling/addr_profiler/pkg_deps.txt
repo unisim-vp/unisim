@@ -1,3 +1,4 @@
+libc/inttypes
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/memory_access_reporting

@@ -1,3 +1,4 @@
+libc/inttypes
 unisim/component/cxx/isa
 unisim/component/cxx/pci
 unisim/component/tlm/debug

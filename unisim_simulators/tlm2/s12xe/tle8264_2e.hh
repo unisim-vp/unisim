@@ -1,7 +1,6 @@
 #ifndef _TLE8264_2E_HH_
 #define _TLE8264_2E_HH_
 
-#include "can_stub.hh"
 #include <systemc>
 #include <inttypes.h>
 
@@ -228,7 +227,7 @@ private:
 	uint16_t mask_registers[4]; // 9lsb are mask bits and the 10th bit is wd_refresh
 	uint16_t status_registers[4]; // 9lsb are status bits and the 10th bit is wk_state
 	uint16_t reserved;
-	uint16_t cfg_registers[4]; // 9-bits by register
+	uint16_t cfg_registers[8]; // 9-bits by register
 
 	uint16_t spi_rx_buffer;
 

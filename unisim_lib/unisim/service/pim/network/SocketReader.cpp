@@ -111,7 +111,7 @@ void SocketReader::Run() {
 #endif
 			{
 		    	int array[] = {sockfd};
-		    	error(array, "ERROR reading from socket");
+		    	error(array, sizeof(array) / sizeof(array[0]), "ERROR reading from socket");
 		    } else if (n > 0) {
 		    	receive_buffer << input_buffer;
 		    }
@@ -121,7 +121,7 @@ void SocketReader::Run() {
 			string bstr = receive_buffer.str();
 			receive_buffer.str("");
 			while (bstr.size() > 0) {
-				int pos = 0;
+				std::size_t pos = 0;
 				switch (bstr[pos++]) {
 					case '+': break;
 					case '-': break;
@@ -186,7 +186,7 @@ void SocketReader::getChar(char& c) {
 		if (FD_ISSET(sockfd, &read_flags)) {
 			FD_CLR(sockfd, &read_flags);
 
-			memset(input_buffer, 0, sizeof(input_buffer));
+			memset(input_buffer, 0, MAXDATASIZE+1);
 
 #ifdef WIN32
 			n = recv(sockfd, input_buffer, MAXDATASIZE, 0);
@@ -197,7 +197,7 @@ void SocketReader::getChar(char& c) {
 #endif
 		    {
 		    	int array[] = {sockfd};
-		    	error(array, "ERROR reading from socket");
+		    	error(array, sizeof(array) / sizeof(array[0]), "ERROR reading from socket");
 		    } else {
 		    	input_buffer_size = n;
 		    	input_buffer_index = 0;

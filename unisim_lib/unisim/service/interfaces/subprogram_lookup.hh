@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_SUBPROGRAM_LOOKUP_HH__
 #define __UNISIM_SERVICE_INTERFACES_SUBPROGRAM_LOOKUP_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 #include <unisim/util/debug/subprogram.hh>
 #include <set>
 #include <string>
@@ -45,7 +45,7 @@ namespace service {
 namespace interfaces {
 
 template <class ADDRESS>
-class SubProgramLookup : public unisim::kernel::service::ServiceInterface
+class SubProgramLookup : public ServiceInterface
 {
 public:
 	//virtual void EnumerateSubProgramNames(std::set<std::string>& name_set) const = 0;

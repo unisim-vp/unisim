@@ -248,6 +248,12 @@ bool CPU<TYPES, CONFIG>::EndSetup()
 {
 	if(!SuperCPU::EndSetup()) return false;
 	
+	if(this->linux_os_import)
+	{
+		msr.template Set<typename MSR::FP>(1); // enable FPU
+		msr.template Set<typename MSR::PR>(1); // set user privilege level
+	}
+	
 	return true;
 }
 
@@ -428,9 +434,6 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(FloatingPointUnavailableInterrupt *flo
 template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::ProcessInterrupt(SystemCallInterrupt *system_call_interrupt)
 {
-	srr0 = this->nia;
-	srr1 = msr;
-	
 	if(unlikely(enable_linux_syscall_snooping))
 	{
 		std::stringstream sstr;
@@ -815,9 +818,20 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(SystemCallInterrupt *system_call_inter
 		this->logger << DebugInfo << msg << EndDebugInfo;
 	}
 	
-	msr.template Set<typename SystemCallInterrupt::MSR_ALWAYS_CLEARED_FIELDS>(0);
-	
-	this->cia = ivpr | ivor8;
+	if(this->linux_os_import)
+	{
+		// Do Linux ABI translation
+		this->linux_os_import->ExecuteSystemCall(this->gpr[0]);
+	}
+	else
+	{
+		srr0 = this->nia;
+		srr1 = msr;
+		
+		msr.template Set<typename SystemCallInterrupt::MSR_ALWAYS_CLEARED_FIELDS>(0);
+		
+		this->cia = ivpr | ivor8;
+	}
 	
 	this->template AckInterrupt<SystemCallInterrupt>();
 	
@@ -994,15 +1008,17 @@ void CPU<TYPES, CONFIG>::UpdateExceptionEnable()
 }
 
 template <typename TYPES, typename CONFIG>
-template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN>
+template <typename T, bool REVERSE, unisim::util::endian::endian_type ENDIAN>
 void CPU<TYPES, CONFIG>::ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr)
 {
 #if BYTE_ORDER == LITTLE_ENDIAN
-	if((REVERSE && !FORCE_BIG_ENDIAN && unlikely(storage_attr & TYPES::SA_E)) || (!REVERSE && (FORCE_BIG_ENDIAN || likely(!(storage_attr & TYPES::SA_E)))))
+	if((!REVERSE && ((ENDIAN == unisim::util::endian::E_BIG_ENDIAN)    || ((ENDIAN == unisim::util::endian::E_UNKNOWN_ENDIAN) &&   likely(!(storage_attr & TYPES::SA_E))))) ||
+	   ( REVERSE && ((ENDIAN == unisim::util::endian::E_LITTLE_ENDIAN) || ((ENDIAN == unisim::util::endian::E_UNKNOWN_ENDIAN) && unlikely(  storage_attr & TYPES::SA_E)))))
 #elif BYTE_ORDER == BIG_ENDIAN
-	if((!REVERSE && !FORCE_BIG_ENDIAN && unlikely(storage_attr & TYPES::SA_E)) || (REVERSE && (FORCE_BIG_ENDIAN || likely(!(storage_attr & TYPES::SA_E)))))
+	if(( REVERSE && ((ENDIAN == unisim::util::endian::E_LITTLE_ENDIAN) || ((ENDIAN == unisim::util::endian::E_UNKNOWN_ENDIAN) && unlikely(  storage_attr & TYPES::SA_E)))) ||
+	   (!REVERSE && ((ENDIAN == unisim::util::endian::E_BIG_ENDIAN)    || ((ENDIAN == unisim::util::endian::E_UNKNOWN_ENDIAN) &&   likely(!(storage_attr & TYPES::SA_E))))))
 #else
-	if(0)
+	if(REVERSE)
 #endif
 	{
 		unisim::util::endian::BSwap(value);
@@ -1068,7 +1084,7 @@ bool CPU<TYPES, CONFIG>::Fp32Load(unsigned int fd, EFFECTIVE_ADDRESS ea)
 	}
 	uint32_t value;
 	if(unlikely(!this->MonitorLoad(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	Flags flags( Flags::RoundingMode(fpscr.Get<FPSCR::RN>()) );
 	fpr[fd].convertAssign(SoftFloat(SoftFloat::FromRawBits, value), flags);
@@ -1086,7 +1102,7 @@ bool CPU<TYPES, CONFIG>::Fp64Load(unsigned int fd, EFFECTIVE_ADDRESS ea)
 	}
 	uint64_t value;
 	if(unlikely(!this->MonitorLoad(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint64_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint64_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	fpr[fd].fromRawBitsAssign(value);
 	return true;
@@ -1104,7 +1120,7 @@ bool CPU<TYPES, CONFIG>::Fp32Store(unsigned int fs, EFFECTIVE_ADDRESS ea)
 	Flags flags(Flags::RoundingMode(1)); // Zero Rounding
 	uint32_t value = SoftFloat(fpr[fs], flags).queryRawBits();
 	if(unlikely(!this->MonitorStore(ea, sizeof(value)))) return false;
-	return static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, false>(value, ea);
+	return static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 }
 
 template <typename TYPES, typename CONFIG>
@@ -1118,7 +1134,7 @@ bool CPU<TYPES, CONFIG>::Fp64Store(unsigned int fs, EFFECTIVE_ADDRESS ea)
 	}
 	uint64_t value = fpr[fs].queryRawBits();
 	if(unlikely(!this->MonitorStore(ea, sizeof(value)))) return false;
-	return static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint64_t, false, false>(value, ea);
+	return static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint64_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 }
 
 template <typename TYPES, typename CONFIG>
@@ -1132,7 +1148,7 @@ bool CPU<TYPES, CONFIG>::FpStoreLSW(unsigned int fs, EFFECTIVE_ADDRESS ea)
 	}
 	uint32_t value = uint32_t(fpr[fs].queryRawBits());
 	if(unlikely(!this->MonitorStore(ea, sizeof(value)))) return false;
-	return static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, false>(value, ea);
+	return static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 }
 
 template <typename TYPES, typename CONFIG>

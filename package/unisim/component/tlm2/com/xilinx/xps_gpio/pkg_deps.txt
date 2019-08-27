@@ -1,4 +1,6 @@
 m4/systemc
+std/stack
+std/vector
 unisim/component/cxx/com/xilinx/xps_gpio
 unisim/component/tlm2/interrupt
 unisim/kernel/tlm2

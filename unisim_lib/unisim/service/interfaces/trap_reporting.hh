@@ -36,13 +36,23 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_TRAP_REPORTING_HH__
 #define __UNISIM_SERVICE_INTERFACES_TRAP_REPORTING_HH__
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/service/interfaces/interface.hh"
+
+namespace unisim {
+namespace kernel {
+namespace service {
+
+	class Object; // forward declaration
+	
+}
+}
+}
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class TrapReporting : public unisim::kernel::service::ServiceInterface
+class TrapReporting : public ServiceInterface
 {
 public:
 	virtual void ReportTrap() = 0;

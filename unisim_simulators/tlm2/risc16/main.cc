@@ -38,16 +38,6 @@
 
 int sc_main(int argc, char *argv[])
 {
-#ifdef WIN32
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		cerr << "WSAStartup failed" << endl;
-		return -1;
-	}
-#endif
 	Simulator *simulator = new Simulator(argc, argv);
 
 	switch(simulator->Setup())
@@ -67,10 +57,6 @@ int sc_main(int argc, char *argv[])
 	}
 
 	if(simulator) delete simulator;
-#ifdef WIN32
-	// releases the winsock2 resources
-	WSACleanup();
-#endif
 
 	return (0);
 }

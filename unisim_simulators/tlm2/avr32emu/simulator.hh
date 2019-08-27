@@ -61,21 +61,6 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 
-// Host machine standard headers
-#include <iostream>
-#include <stdexcept>
-#include <stdlib.h>
-
-#ifdef WIN32
-
-#include <windows.h>
-#include <winsock2.h>
-
-#else
-#include <signal.h>
-#endif
-
-using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::service::loader::multiformat_loader::MultiFormatLoader;
 using unisim::service::os::avr32_t2h_syscalls::AVR32_T2H_Syscalls;
@@ -168,11 +153,7 @@ private:
 
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
-#ifdef WIN32
-	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
-#else
-	static void SigIntHandler(int signum);
-#endif
+	virtual void SigInt();
 };
 
 #endif // __AVR32EMU_SIMULATOR_HH__

@@ -1,4 +1,5 @@
 m4/systemc
+std/string
 unisim/component/cxx/pci/video
 unisim/component/tlm/message
 unisim/kernel/service

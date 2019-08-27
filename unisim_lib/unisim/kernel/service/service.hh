@@ -49,10 +49,6 @@
 #include <assert.h>
 #include <stdint.h>
 
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-#include <windef.h>
-#endif
-
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/util/nat_sort/nat_sort.hh>
 
@@ -80,6 +76,7 @@ class ServiceImportBase;
 class ServiceExportBase;
 template <class SERVICE_IF> class ServiceImport;
 template <class SERVICE_IF> class ServiceExport;
+class SignalHandler;
 
 // Service import/export connection operators
 template <class SERVICE_IF>
@@ -308,6 +305,7 @@ private:
 	template <class TYPE> friend class VariableArray;
 	friend class ServiceImportBase;
 	friend class ServiceExportBase;
+	friend class SignalHandler;
 
 	static Simulator *simulator;
 	VariableBase *void_variable;
@@ -417,20 +415,6 @@ public:
 	void SetVariable(const char *variable_name, float variable_value);
 	void SetVariable(const char *variable_name, double variable_value);
 private:
-#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
-	static void (*sig_int_handler)(int);
-	static void (*prev_sig_int_handler)(int);
-#endif
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
-#else
-	static void SigIntHandler(int signum);
-#endif
-#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
-	static void (*sig_pipe_handler)(int);
-	static void (*prev_sig_pipe_handler)(int);
-	static void SigPipeHandler(int signum);
-#endif
 	void BroadcastSigInt();
 };
 

@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_BACKTRACE_HH__
 #define __UNISIM_SERVICE_INTERFACES_BACKTRACE_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -43,7 +43,7 @@ namespace service {
 namespace interfaces {
 
 template <class MEMORY_ADDR>
-class BackTrace : public unisim::kernel::service::ServiceInterface
+class BackTrace : public ServiceInterface
 {
 public:
 	virtual std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const = 0;

@@ -164,7 +164,11 @@ private:
 	SUB_REGISTER_TYPE* regHigh;
 	SUB_REGISTER_TYPE* regLow;
 
+#if __cplusplus < 201103L // before C++11
 	std::auto_ptr<TCallBack<REGISTER_TYPE> > m_callback;
+#else // C++11 and later
+	std::unique_ptr<TCallBack<REGISTER_TYPE> > m_callback;
+#endif
 };
 
 

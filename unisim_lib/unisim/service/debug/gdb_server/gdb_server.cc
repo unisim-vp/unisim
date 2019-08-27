@@ -33,29 +33,637 @@
  */
 
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
+#include <unisim/util/likely/likely.hh>
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+
+#include <winsock2.h>
+
+#else
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netinet/tcp.h>
+#include <netdb.h>
+#include <sys/times.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#endif
 
 namespace unisim {
 namespace service {
 namespace debug {
 namespace gdb_server {
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
 /////////////////////////////// GDBServerBase /////////////////////////////////
 
 bool GDBServerBase::killed = false;
+const uint64_t GDBServerBase::SERVER_ACCEPT_POLL_PERIOD_MS;
+const uint64_t GDBServerBase::NON_BLOCKING_READ_POLL_PERIOD_MS;
+const uint64_t GDBServerBase::NON_BLOCKING_WRITE_POLL_PERIOD_MS;
 
 GDBServerBase::GDBServerBase(const char *_name, unisim::kernel::service::Object *_parent)
 	: unisim::kernel::service::Object(_name, _parent)
+	, logger(*this)
+	, tcp_port(12345)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	, sock(INVALID_SOCKET)
+#else
+	, sock(-1)
+#endif
+	, sock_error(false)
+	, input_buffer_size(0)
+	, input_buffer_index(0)
+	, output_buffer_size(0)
+	, verbose(false)
+	, debug(false)
+	, remote_serial_protocol_input_traffic_recording_filename()
+	, remote_serial_protocol_input_traffic_recording_file()
+	, remote_serial_protocol_output_traffic_recording_filename()
+	, remote_serial_protocol_output_traffic_recording_file()
+	, param_tcp_port("tcp-port", this, tcp_port, "TCP/IP port to listen waiting for a GDB client connection")
+	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+	, param_debug("debug", this, debug, "Enable/Disable debug (intended for developper)")
+	, param_remote_serial_protocol_input_traffic_recording_filename("remote-serial-protocol-input-traffic-recording-filename", this, remote_serial_protocol_input_traffic_recording_filename, "Filename where to record GDB remote serial protocol input traffic")
+	, param_remote_serial_protocol_output_traffic_recording_filename("remote-serial-protocol-output-traffic-recording-filename", this, remote_serial_protocol_output_traffic_recording_filename, "Filename where to record GDB remote serial protocol input traffic")
 {
+	param_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
+	param_tcp_port.SetMutable(false);
+	
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+	// Loads the winsock2 dll
+	WORD wVersionRequested = MAKEWORD( 2, 2 );
+	WSADATA wsaData;
+	if(WSAStartup(wVersionRequested, &wsaData) != 0)
+	{
+		throw std::runtime_error("WSAStartup failed: Windows sockets not available");
+	}
+#endif
 }
 
 GDBServerBase::~GDBServerBase()
 {
+	if(remote_serial_protocol_input_traffic_recording_file.is_open())
+	{
+		remote_serial_protocol_input_traffic_recording_file.close();
+	}
+	if(remote_serial_protocol_output_traffic_recording_file.is_open())
+	{
+		remote_serial_protocol_output_traffic_recording_file.close();
+	}
+
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+	//releases the winsock2 resources
+	WSACleanup();
+#endif
 }
 
-// void GDBServerBase::SigInt()
-// {
-// 	killed = true;
-// }
+bool GDBServerBase::EndSetup()
+{
+	input_buffer_size = 0;
+	input_buffer_index = 0;
+	output_buffer_size = 0;
+	
+	return true;
+}
+
+void GDBServerBase::SigInt()
+{
+	killed = true;
+}
+
+bool GDBServerBase::StartServer()
+{
+	struct sockaddr_in addr;
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	SOCKET server_sock;
+#else
+	int server_sock;
+#endif
+
+	server_sock = socket(AF_INET, SOCK_STREAM, 0);
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	if(server_sock == INVALID_SOCKET)
+#else
+	if(server_sock < 0)
+#endif
+	{
+		logger << DebugError << "failed obtaining a server socket (" << GetLastErrorString() << ")" << EndDebugError;
+		return false;
+	}
+
+	/* Ask for non-blocking accept on server socket */
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	u_long ServerSocketNonBlock = 1;
+	if(ioctlsocket(server_sock, FIONBIO, &ServerSocketNonBlock) != 0)
+	{
+		logger << DebugError << "ioctlsocket(FIONBIO) on server socked failed (" << GetLastErrorString() << ")" << EndDebugError;
+		closesocket(server_sock);
+		return false;
+	}
+#else
+	int server_socket_flag = fcntl(server_sock, F_GETFL, 0);
+
+	if(server_socket_flag < 0)
+	{
+		logger << DebugError << "fcntl(F_GETFL) on server socket failed (" << GetLastErrorString() << ")" << EndDebugError;
+		close(server_sock);
+		return false;
+	}
+
+	if(fcntl(server_sock, F_SETFL, server_socket_flag | O_NONBLOCK) < 0)
+	{
+		logger << DebugError << "fcntl(F_SETFL, O_NONBLOCK) on server socket failed (" << GetLastErrorString() << ")" << EndDebugError;
+		close(server_sock);
+		return false;
+	}
+#endif
+
+#if 1
+	/* ask for reusing TCP port */
+    int opt_so_reuseaddr = 1;
+    if(setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, (char *) &opt_so_reuseaddr, sizeof(opt_so_reuseaddr)) != 0)
+	{
+		if(verbose)
+		{
+			logger << DebugWarning << "setsockopt(SOL_SOCKET, SO_REUSEADDR) on server socket failed while requesting port reuse (" << GetLastErrorString() << ")" << EndDebugWarning;
+		}
+	}
+#endif
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(tcp_port);
+	addr.sin_addr.s_addr = INADDR_ANY;
+	if(bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) != 0)
+	{
+		logger << DebugError << "Bind failed (" << GetLastErrorString() << "). TCP Port #" << tcp_port << " may be already in use. Please specify another port in " << param_tcp_port.GetName() << EndDebugError;
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+		closesocket(server_sock);
+#else
+		close(server_sock);
+#endif
+		return false;
+	}
+
+	if(listen(server_sock, 1) != 0)
+	{
+		logger << DebugError << "Listen failed (" << GetLastErrorString() << ")" << EndDebugError;
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+		closesocket(server_sock);
+#else
+		close(server_sock);
+#endif
+		return false;
+	}
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+		int addr_len;
+#else
+		socklen_t addr_len;
+#endif
+
+	logger << DebugInfo << "Listening on TCP port #" << tcp_port << EndDebugInfo;
+	addr_len = sizeof(addr);
+	
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	sock = INVALID_SOCKET;
+#else
+	sock = -1;
+#endif
+
+	while(!killed)
+	{
+		sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
+	
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+		if(sock != INVALID_SOCKET)
+#else
+		if(sock >= 0)
+#endif
+		{
+			// a client has connected
+			logger << DebugInfo << "Connection with GDB client established on TCP Port #" << tcp_port << EndDebugInfo;
+			break;
+		}
+			
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+		if(WSAGetLastError() != WSAEWOULDBLOCK)
+#else
+		if((errno != EAGAIN) && (errno != EWOULDBLOCK))
+#endif
+		{
+			logger << DebugError << "accept failed (" << GetLastErrorString() << ")" << EndDebugError;
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+			closesocket(server_sock);
+#else
+			close(server_sock);
+#endif
+			return false;
+		}
+			
+		WaitTime(SERVER_ACCEPT_POLL_PERIOD_MS); // retry later
+	}
+	
+	if(killed)
+	{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+		closesocket(server_sock);
+#else
+		close(server_sock);
+#endif
+		logger << DebugInfo << "Server shuts down" << EndDebugInfo;
+		return false;
+	}
+
+    /* set short latency */
+    int opt_tcp_nodelay = 1;
+    if(setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *) &opt_tcp_nodelay, sizeof(opt_tcp_nodelay)) != 0)
+	{
+		if(verbose)
+		{
+			logger << DebugWarning << "setsockopt(IPPROTO_TCP, TCP_NODELAY) on socket failed (" << GetLastErrorString() << ") while requesting short latency" << EndDebugWarning;
+		}
+	}
+
+#if 0
+    /* unset TCP keep alive */
+    int opt_tcp_keepalive = 0;
+    if(setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (char *) &opt_tcp_keepalive, sizeof(opt_tcp_keepalive)) != 0)
+	{
+		if(verbose)
+		{
+			logger << DebugWarning << "setsockopt(SOL_SOCKET, SO_KEEPALIVE) on socket failed (" << GetLastErrorString() << ") while requesting keep alive off" << EndDebugWarning;
+		}
+	}
+
+	/* set linger */
+	struct linger opt_tcp_linger;
+	opt_tcp_linger.l_onoff = 1;    /* linger active */
+	opt_tcp_linger.l_linger = 5;   /* how many seconds to linger for */
+    if(setsockopt(sock, SOL_SOCKET, SO_LINGER, (char *) &opt_tcp_linger, sizeof(opt_tcp_linger)) != 0)
+	{
+		if(verbose)
+		{
+			logger << DebugWarning << "setsockopt(SOL_SOCKET, SO_LINGER) on socket failed (" << GetLastErrorString() << ") while requesting linger (send output before close or after timeout)" << EndDebugWarning;
+		}
+	}
+#endif
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	u_long NonBlock = 1;
+	if(ioctlsocket(sock, FIONBIO, &NonBlock) != 0)
+	{
+		logger << DebugError << "ioctlsocket(FBIONIO) on socket failed (" << GetLastErrorString() << ")" << EndDebugError;
+		closesocket(server_sock);
+		closesocket(sock);
+		sock = -1;
+		return false;
+	}
+#else
+	int socket_flag = fcntl(sock, F_GETFL, 0);
+
+	if(socket_flag < 0)
+	{
+		logger << DebugError << "fcntl(F_GETFL) on socket failed (" << GetLastErrorString() << ")" << EndDebugError;
+		close(server_sock);
+		close(sock);
+		sock = -1;
+		return false;
+	}
+
+	/* Ask for non-blocking reads on socket */
+	if(fcntl(sock, F_SETFL, socket_flag | O_NONBLOCK) < 0)
+	{
+		logger << DebugError << "fcntl(F_SETFL, O_NONBLOCK) on socket failed (" << GetLastErrorString() << ")" << EndDebugError;
+		close(server_sock);
+		close(sock);
+		sock = -1;
+		return false;
+	}
+#endif
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	closesocket(server_sock);
+#else
+	close(server_sock);
+#endif
+
+	if(!remote_serial_protocol_input_traffic_recording_filename.empty())
+	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Opening File \"" << remote_serial_protocol_input_traffic_recording_filename << "\" for recording remote serial protocol (RSP) input traffic" << EndDebugInfo;
+		}
+		remote_serial_protocol_input_traffic_recording_file.open(remote_serial_protocol_input_traffic_recording_filename.c_str());
+		
+		if(remote_serial_protocol_input_traffic_recording_file.fail())
+		{
+			logger << DebugWarning << "Can't open File \"" << remote_serial_protocol_input_traffic_recording_filename << "\"" << EndDebugWarning;
+		}
+	}
+	
+	if(!remote_serial_protocol_output_traffic_recording_filename.empty())
+	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Opening File \"" << remote_serial_protocol_output_traffic_recording_filename << "\" for recording remote serial protocol (RSP) output traffic" << EndDebugInfo;
+		}
+		remote_serial_protocol_output_traffic_recording_file.open(remote_serial_protocol_output_traffic_recording_filename.c_str());
+		
+		if(remote_serial_protocol_output_traffic_recording_file.fail())
+		{
+			logger << DebugWarning << "Can't open File \"" << remote_serial_protocol_output_traffic_recording_filename << "\"" << EndDebugWarning;
+		}
+	}
+
+	input_buffer_size = 0;
+	input_buffer_index = 0;
+	output_buffer_size = 0;
+
+	sock_error = false;
+	return true;
+}
+
+bool GDBServerBase::StopServer()
+{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	if(sock != INVALID_SOCKET)
+#else
+	if(sock >= 0)
+#endif
+	{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+		closesocket(sock);
+		sock = INVALID_SOCKET;
+#else
+		close(sock);
+		sock = -1;
+#endif
+		
+		logger << DebugInfo << "Connection with GDB client closed" << EndDebugInfo;
+		if(killed)
+		{
+			logger << DebugInfo << "Server shuts down" << EndDebugInfo;
+		}
+	}
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "GDB command processing thread: Unlocking" << EndDebugInfo;
+	}
+	
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+	//releases the winsock2 resources
+	WSACleanup();
+#endif
+	
+	if(remote_serial_protocol_input_traffic_recording_file.is_open())
+	{
+		remote_serial_protocol_input_traffic_recording_file.close();
+	}
+	if(remote_serial_protocol_output_traffic_recording_file.is_open())
+	{
+		remote_serial_protocol_output_traffic_recording_file.close();
+	}
+
+	return true;
+}
+
+void GDBServerBase::WaitTime(unsigned int msec)
+{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	if(!killed)
+	{
+		Sleep(msec);
+	}
+#else
+	struct timespec tim_req, tim_rem;
+	tim_req.tv_sec = msec / 1000;
+	tim_req.tv_nsec = 1000000 * (msec % 1000);
+	
+	while(!killed)
+	{
+		int status = nanosleep(&tim_req, &tim_rem);
+		
+		if(status == 0) break;
+		
+		if(status != -1) break;
+		
+		if(errno != EINTR) break;
+
+		tim_req.tv_nsec = tim_rem.tv_nsec;
+	}
+#endif
+}
+
+std::string GDBServerBase::GetLastErrorString()
+{
+	std::stringstream err_sstr;
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	int err_code = WSAGetLastError();
+	err_sstr << "Error #" << err_code << ": ";
+	char *err_c_str = 0;
+	LPTSTR *lptstr_err_str = NULL;
+	if(FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 
+	              NULL,
+	              err_code,
+	              0,
+	              (LPTSTR) &lptstr_err_str,
+	              0,
+	              NULL) == 0)
+	{
+		return err_sstr.str();
+	}
+#if UNICODE
+	size_t error_c_str_length = wcstombs(NULL, lptstr_err_str, 0);
+    err_c_str = new char[error_c_str_length + 1];
+	memset(err_c_str, 0, error_c_str_length);
+    if(wcstombs(err_c_str, lptstr_err_str, error_c_str_length + 1) < 0)
+	{
+		LocalFree(lptstr_err_str);
+		delete[] err_c_str;
+		return err_sstr.str();
+	}
+#else
+	err_c_str = (char *) lptstr_err_str;
+#endif
+	
+	err_sstr << err_c_str;
+	
+	LocalFree(lptstr_err_str);
+#if UNICODE
+	delete[] err_c_str;
+#endif
+	
+#else
+	err_sstr << "Error #" << errno << ": " << strerror(errno);
+#endif
+	return err_sstr.str();
+}
+
+bool GDBServerBase::GetChar(char& c, bool blocking)
+{
+	if(sock_error) return false;
+	
+	if(input_buffer_size == 0)
+	{
+		do
+		{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+			if(sock == INVALID_SOCKET) return false;
+			int r = recv(sock, input_buffer, sizeof(input_buffer), 0);
+			if((r == 0) || (r == SOCKET_ERROR))
+#else
+			if(sock < 0) return false;
+			ssize_t r = read(sock, input_buffer, sizeof(input_buffer));
+			if(r <= 0)
+#endif
+			{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+				if(r == SOCKET_ERROR)
+#else
+				if(r < 0)
+#endif
+				{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+					if(WSAGetLastError() == WSAEWOULDBLOCK)
+#else
+					if((errno == EAGAIN) || (errno == EWOULDBLOCK))
+#endif
+					{
+						if(blocking && !killed)
+						{
+							WaitTime(NON_BLOCKING_READ_POLL_PERIOD_MS);
+							continue;
+						}
+						else
+						{
+							return false;
+						}
+					}
+				}
+				
+				logger << DebugError << "can't read from socket (" << GetLastErrorString() << ")" << EndDebugError;
+				sock_error = true;
+				return false;
+			}
+			input_buffer_index = 0;
+			input_buffer_size = r;
+			break;
+		} while(1);
+	}
+
+	if(input_buffer_size)
+	{
+		c = input_buffer[input_buffer_index++];
+		input_buffer_size--;
+		
+		if(remote_serial_protocol_input_traffic_recording_file.is_open())
+		{
+			remote_serial_protocol_input_traffic_recording_file.put(c);
+		}
+		
+		return true;
+	}
+	
+	return false;
+}
+
+bool GDBServerBase::FlushOutput()
+{
+	if(sock_error) return false;
+	
+	if(output_buffer_size > 0)
+	{
+//		std::cerr << "begin: output_buffer_size = " << output_buffer_size << std::endl;
+		unsigned int index = 0;
+		do
+		{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+			int r = send(sock, output_buffer + index, output_buffer_size, 0);
+			if(r == 0 || r == SOCKET_ERROR)
+#else
+			ssize_t r = write(sock, output_buffer + index, output_buffer_size);
+			if(r <= 0)
+#endif
+			{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+				if(r == SOCKET_ERROR)
+#else
+				if(r < 0)
+#endif
+				{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+					if(WSAGetLastError() == WSAEWOULDBLOCK)
+#else
+					if((errno == EAGAIN) || (errno == EWOULDBLOCK))
+#endif
+					{
+						if(!killed)
+						{
+							WaitTime(NON_BLOCKING_WRITE_POLL_PERIOD_MS);
+							continue;
+						}
+						else
+						{
+							return false;
+						}
+					}
+					
+					logger << DebugError << "can't write to socket (" << GetLastErrorString() << ")" << EndDebugError;
+					sock_error = true;
+					return false;
+				}
+				
+				WaitTime(NON_BLOCKING_READ_POLL_PERIOD_MS);
+				continue;
+			}
+
+			if(remote_serial_protocol_output_traffic_recording_file.is_open())
+			{
+				remote_serial_protocol_output_traffic_recording_file.write(output_buffer + index, r);
+			}
+			
+			index += r;
+			output_buffer_size -= r;
+//			std::cerr << "output_buffer_size = " << output_buffer_size << std::endl;
+		}
+		while(output_buffer_size > 0);
+	}
+//	std::cerr << "end: output_buffer_size = " << output_buffer_size << std::endl;
+	return true;
+}
+
+bool GDBServerBase::PutChar(char c)
+{
+	if(output_buffer_size >= sizeof(output_buffer))
+	{
+		if(!FlushOutput()) return false;
+	}
+
+	output_buffer[output_buffer_size++] = c;
+	return true;
+}
+
+bool GDBServerBase::IsConnected() const
+{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	return (sock != INVALID_SOCKET);
+#else
+	return (sock >= 0);
+#endif
+}
 
 //////////////////////////////// GDBRegister //////////////////////////////////
 

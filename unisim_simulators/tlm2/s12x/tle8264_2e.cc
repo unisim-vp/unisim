@@ -19,10 +19,10 @@ TLE8264_2E::TLE8264_2E(const sc_module_name& name, Object *parent) :
 	, current_mode(INIT)
 	, current_cmd(INIT)
 	, last_state(INIT)
-	, spi_rx_buffer(false)
 	, wd_refresh(false)
 	, wk_state_register(WK_STATE_DEFAULT)
 	, reserved(0x0000)
+	, spi_rx_buffer(false)
 	, SPIWake_read(false)
 
 	, terminated(false)
@@ -144,8 +144,8 @@ void TLE8264_2E::stateMachineThread()
 void TLE8264_2E::spi_rx_b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 {
 	payload.acquire();
-	unsigned int length = payload.get_data_length();
-	unsigned char* data = payload.get_data_ptr();
+// 	unsigned int length = payload.get_data_length();
+// 	unsigned char* data = payload.get_data_ptr();
 
 //	if (payload.get_data_length() != 2)
 //	{

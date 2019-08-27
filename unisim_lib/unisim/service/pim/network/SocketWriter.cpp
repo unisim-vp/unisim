@@ -106,7 +106,7 @@ void SocketWriter::Run() {
 				free(output_buffer);
 				if (n < 0) {
 					int array[] = {sockfd};
-					error(array, "ERROR writing to socket");
+					error(array, sizeof(array) / sizeof(array[0]), "ERROR writing to socket");
 				}
 			}
 
@@ -123,13 +123,13 @@ bool SocketWriter::send(const char* data, bool blocking) {
 
 	int err;
 
-	int data_size = strlen(data);
+	size_t data_size = strlen(data);
 	char* dd = (char *) malloc(data_size+5);
 	memset(dd, 0, data_size+5);
 
 	dd[0] = '$';
 	uint8_t checksum = 0;
-	unsigned int pos = 0;
+	size_t pos = 0;
 	char c;
 
 	while(pos < data_size)
@@ -182,7 +182,7 @@ bool SocketWriter::send(const char* data, bool blocking) {
 
 				if (n < 0) {
 					int array[] = {sockfd};
-					error(array, "ERROR writing to socket");
+					error(array, sizeof(array) / sizeof(array[0]), "ERROR writing to socket");
 				} else {
 					index += n;
 					dd_size -= n;

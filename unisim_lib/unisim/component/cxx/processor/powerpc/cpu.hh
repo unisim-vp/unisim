@@ -536,10 +536,12 @@ class CPU
 	, public unisim::kernel::service::Client<typename unisim::service::interfaces::DebugYielding>
 	, public unisim::kernel::service::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::EFFECTIVE_ADDRESS> >
 	, public unisim::kernel::service::Client<typename unisim::service::interfaces::TrapReporting>
+	, public unisim::kernel::service::Client<typename unisim::service::interfaces::LinuxOS>
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Memory<typename TYPES::EFFECTIVE_ADDRESS> >
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::MemoryAccessReportingControl>
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Synchronizable>
+	, public unisim::kernel::service::Service<typename unisim::service::interfaces::MemoryInjection<typename TYPES::EFFECTIVE_ADDRESS> >
 {
 public:
 	typedef typename unisim::util::cache::MemorySubSystem<TYPES, typename CONFIG::CPU> SuperMSS;
@@ -551,10 +553,11 @@ public:
 	/////////////////////////// service imports ///////////////////////////////
 
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> > memory_import;
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::EFFECTIVE_ADDRESS> > symbol_table_lookup_import;
+	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::SymbolTableLookup<EFFECTIVE_ADDRESS> > symbol_table_lookup_import;
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::DebugYielding> debug_yielding_import;
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::EFFECTIVE_ADDRESS> > memory_access_reporting_import;
+	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::MemoryAccessReporting<EFFECTIVE_ADDRESS> > memory_access_reporting_import;
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::TrapReporting> trap_reporting_import;
+	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::LinuxOS> linux_os_import;
 	
 	/////////////////////////// service exports ///////////////////////////////
 
@@ -562,6 +565,7 @@ public:
 	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
 	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::Registers> registers_export;
 	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::Synchronizable> synchronizable_export;
+	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::MemoryInjection<EFFECTIVE_ADDRESS> > memory_injection_export;
 
 	////////////////////////////// constructor ////////////////////////////////
 
@@ -592,18 +596,23 @@ public:
 	virtual bool ReadMemory(EFFECTIVE_ADDRESS addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(EFFECTIVE_ADDRESS addr, const void *buffer, uint32_t size);
 
-	//////////////// unisim::service::interface::Registers ////////////////////
+	//////////////// unisim::service::interfaces::Registers ////////////////////
 	
 	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
 	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
-	//////////////// unisim::service::interface::DebugControl /////////////////
+	//////////////// unisim::service::interfaces::DebugControl /////////////////
 	
 	virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report);
 	
-	/////////////// unisim::service::interface::Synchronizable ////////////////
+	/////////////// unisim::service::interfaces::Synchronizable ////////////////
 	
 	virtual void Synchronize();
+
+	//////////// unisim::service::interfaces::MemoryInjection<> ////////////////
+	
+	virtual bool InjectReadMemory(EFFECTIVE_ADDRESS ea, void *buffer, uint32_t size);
+	virtual bool InjectWriteMemory(EFFECTIVE_ADDRESS ea, const void *buffer, uint32_t size);
 
 	///////////// External Device Control Register access methods /////////////
 		
@@ -650,10 +659,10 @@ public:
 	template <bool DEBUG, bool EXEC, bool WRITE>
 	inline bool Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRESS& size_to_protection_boundary, ADDRESS& virt_addr, PHYSICAL_ADDRESS& phys_addr, STORAGE_ATTR& storage_attr);
 
-	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> void ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr);
+	template <typename T, bool REVERSE, unisim::util::endian::endian_type ENDIAN> void ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr);
 
-	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataLoad(T& value, EFFECTIVE_ADDRESS ea);
-	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataStore(T value, EFFECTIVE_ADDRESS ea);
+	template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN> bool DataLoad(T& value, EFFECTIVE_ADDRESS ea);
+	template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN> bool DataStore(T value, EFFECTIVE_ADDRESS ea);
 	
 	bool DebugDataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
 	bool DebugDataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);
@@ -707,7 +716,7 @@ protected:
 	}
 
 private:
-	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> void __ConvertDataLoadStoreEndian__(T& value, STORAGE_ATTR storage_attr) { static_cast<typename CONFIG::CPU *>(this)->template ConvertDataLoadStoreEndian<T, REVERSE, FORCE_BIG_ENDIAN>(value, storage_attr); }
+	template <typename T, bool REVERSE, unisim::util::endian::endian_type ENDIAN> void __ConvertDataLoadStoreEndian__(T& value, STORAGE_ATTR storage_attr) { static_cast<typename CONFIG::CPU *>(this)->template ConvertDataLoadStoreEndian<T, REVERSE, ENDIAN>(value, storage_attr); }
 	bool __CheckInt16LoadAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadAlignment(ea); }
 	bool __CheckSInt16LoadAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckSInt16LoadAlignment(ea); }
 	bool __CheckInt32LoadAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32LoadAlignment(ea); }
@@ -783,7 +792,14 @@ protected:
 			INTERRUPT::ALL::InstallInterrupt(exception_dispatcher, &interrupt, trap_control_flag);
 		}
 		
-		virtual void ProcessInterrupt(typename CONFIG::CPU *cpu) { cpu->ProcessInterrupt(static_cast<INTERRUPT *>(this)); }
+		virtual void ProcessInterrupt(typename CONFIG::CPU *cpu)
+		{
+			if(unlikely(cpu->verbose_interrupt))
+			{
+				cpu->logger << DebugInfo << GetInterruptName() << EndDebugInfo;
+			}
+			cpu->ProcessInterrupt(static_cast<INTERRUPT *>(this));
+		}
 
 		virtual unsigned int GetOffset() const { return _OFFSET; }
 		

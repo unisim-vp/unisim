@@ -1,3 +1,6 @@
+libc/inttypes
+std/iosfwd
+std/iostream
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/memory

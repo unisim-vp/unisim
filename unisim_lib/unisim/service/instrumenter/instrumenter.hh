@@ -882,7 +882,14 @@ sc_core::sc_signal<T>& Instrumenter::CreateSignal(const std::string& signal_name
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
 sc_core::sc_signal<T, WRITER_POLICY>& Instrumenter::CreateSignal(const std::string& signal_basename, const T& init_value, INSTRUMENTATION_TYPE instr_type)
 {
-	std::string signal_name(std::string(this->GetParent()->GetName()) + '.' + signal_basename);
+	unisim::kernel::service::Object *parent = this->GetParent();
+	std::string signal_name;
+	if(parent)
+	{
+		signal_name += parent->GetName();
+		signal_name += '.';
+	}
+	signal_name += signal_basename;
 	std::map<std::string, sc_core::sc_interface *>::iterator signal_pool_it = signal_pool.find(signal_name);
 	if(signal_pool_it != signal_pool.end())
 	{

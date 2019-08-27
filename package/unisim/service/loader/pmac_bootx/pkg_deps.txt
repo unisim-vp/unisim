@@ -1,3 +1,9 @@
+libc/inttypes
+libc/stdio
+libc/stdlib
+std/fstream
+std/list
+std/string
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/blob

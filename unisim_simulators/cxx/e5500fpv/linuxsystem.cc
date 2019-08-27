@@ -35,6 +35,7 @@
 #include <linuxsystem.hh>
 #include <unisim/util/os/linux_os/linux.tcc>
 #include <unisim/util/os/linux_os/calls.tcc>
+#include <unisim/util/os/linux_os/powerpc64.hh>
 
 LinuxOS::LinuxOS( std::ostream& log,
          unisim::service::interfaces::Registers *regs_if,

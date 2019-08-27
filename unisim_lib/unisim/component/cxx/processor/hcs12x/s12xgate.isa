@@ -75,7 +75,7 @@ action {void} post_execute({std::ostream&} {sink}) {
 //	sink << "asm(\"NOP\");\n";
 }
 
-action {inline uint8_t} getCycles () {
+action {uint8_t} getCycles () {
 
 	return 0; 
 }

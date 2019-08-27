@@ -35,7 +35,12 @@
 #include <unisim/service/tee/registers/registers_tee.hh>
 #include <unisim/service/tee/memory_import_export/memory_import_export_tee.hh>
 
-#include <unisim/service/telnet/telnet.hh>
+#include <unisim/service/netstreamer/netstreamer.hh>
+#include <unisim/service/debug/profiler/profiler.hh>
+#include <unisim/service/http_server/http_server.hh>
+#include <unisim/service/instrumenter/instrumenter.hh>
+#include <unisim/service/tee/char_io/tee.hh>
+#include <unisim/service/web_terminal/web_terminal.hh>
 
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
@@ -66,8 +71,6 @@
 
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 
-#include <unisim/util/garbage_collector/garbage_collector.hh>
-
 #include <unisim/service/pim/pim.hh>
 #include <unisim/service/pim/pim_server.hh>
 
@@ -82,13 +85,6 @@
 
 #ifdef HAVE_RTBCOB
 #include "rtb_unisim.hh"
-#endif
-
-#ifdef WIN32
-
-#include <windows.h>
-//#include <winsock2.h>
-
 #endif
 
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
@@ -133,7 +129,7 @@ using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::Host2BigEndian;
 using unisim::util::endian::BigEndian2Host;
 
-using unisim::service::telnet::Telnet;
+using unisim::service::netstreamer::NetStreamer;
 
 
 class Simulator
@@ -364,13 +360,31 @@ private:
 	typedef unisim::component::tlm2::processor::hcs12x::S12PIT24B<8> PIT;
 
 	// ******* REGARDE Interface ElfLoader pour le typedef ci-dessous
+	struct DEBUGGER_CONFIG
+	{
+		typedef uint32_t ADDRESS;
+		static const unsigned int NUM_PROCESSORS = 1;
+		/* gdb_server, inline_debugger, pim_server, monitor, and profiler */
+		static const unsigned int MAX_FRONT_ENDS = 5;
+	};
+	typedef typename unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> Debugger;
+	
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<CPU_ADDRESS_TYPE, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
 
 	typedef unisim::service::tee::registers::RegistersTee<48> RegistersTee;
 	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<physical_address_t, 48> MemoryImportExportTee;
 
 	typedef unisim::service::monitor::Monitor<CPU_ADDRESS_TYPE> MONITOR;
-	//=========================================================================
+	
+	typedef unisim::service::netstreamer::NetStreamer TELNET;
+	
+	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
+	typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
+	typedef unisim::service::debug::profiler::Profiler<DEBUGGER_CONFIG::ADDRESS> PROFILER;
+	typedef unisim::service::tee::char_io::Tee<2> CHAR_IO_TEE;
+	typedef unisim::service::web_terminal::WebTerminal WEB_TERMINAL;
+
+  //=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
 	//  - 68HCS12X processor
@@ -436,15 +450,6 @@ private:
 	//  - Multiformat loader
 	MultiFormatLoader<CPU_ADDRESS_TYPE>* loader;
 	
-	struct DEBUGGER_CONFIG
-	{
-		typedef uint32_t ADDRESS;
-		static const unsigned int NUM_PROCESSORS = 1;
-		/* gdb_server, inline_debugger and/or monitor */
-		static const unsigned int MAX_FRONT_ENDS = 4;
-	};
-	typedef typename unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> Debugger;
-	
 	Debugger*                         debugger;        //< Debugger
 	GDBServer<CPU_ADDRESS_TYPE>*      gdb_server;      //< GDB server
 	PIMServer<CPU_ADDRESS_TYPE>*      pim_server;      //< PIM server
@@ -452,8 +457,25 @@ private:
 	MONITOR*                          monitor;         //< Monitoring tool: ARTiMon or EACSEL
 
 	// - telnet
-	unisim::service::telnet::Telnet* sci_telnet;
-	unisim::service::telnet::Telnet* spi_telnet;
+	TELNET* sci_telnet;
+	TELNET* spi_telnet;
+	
+	// - Http Server
+	HTTP_SERVER *http_server;
+	
+	// - Instrumenter
+	INSTRUMENTER *instrumenter;
+	
+	// - Profiler
+	PROFILER *profiler;
+
+	// - Char I/O Tees
+	CHAR_IO_TEE *sci_char_io_tee;
+	CHAR_IO_TEE *spi_char_io_tee;
+	
+	// - Web Terminal
+	WEB_TERMINAL *sci_web_terminal;
+	WEB_TERMINAL *spi_web_terminal;
 
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
@@ -464,16 +486,13 @@ private:
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
 	bool enable_monitor;
+	bool enable_profiler;
 
 	Parameter<bool> param_enable_pim_server;
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
 	Parameter<bool> param_enable_monitor;
-
-	bool sci_enable_telnet;
-	Parameter<bool>  param_sci_enable_telnet;
-	bool spi_enable_telnet;
-	Parameter<bool>  param_spi_enable_telnet;
+	Parameter<bool> param_enable_profiler;
 
 	string endian;
 	Parameter<string> *param_endian;

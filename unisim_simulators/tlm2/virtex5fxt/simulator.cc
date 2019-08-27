@@ -40,6 +40,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, cpu(0)
 	, ram(0)
 	, bram(0)
+	, input_interrupt_stub()
 	, critical_input_interrupt_stub(0)
 	, external_input_interrupt_stub(0)
 	, mplb(0)
@@ -48,6 +49,8 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, intc(0)
 	, timer(0)
 	, flash(0)
+	, capture_trigger_stub()
+	, generate_out_stub()
 	, pwm_stub(0)
 	, dcr_controller(0)
 	, crossbar(0)
@@ -68,6 +71,8 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, dmac2_dcr_stub(0)
 	, dmac3_dcr_stub(0)
 	, external_slave_dcr_stub(0)
+	, dcr_slave_stub(0)
+	, memory_router(0)
 	, loader(0)
 	, debugger(0)
 	, gdb_server(0)
@@ -83,12 +88,15 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, http_server(0)
 	, web_terminal(0)
 	, char_io_tee(0)
+	, linux_os(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, enable_profiler(false)
+	, enable_linux_os(false)
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable/Disable profiler")
+	, param_enable_linux_os("enable-linux-os", 0, enable_linux_os, "Enable/Disable target Linux ABI to host ABI translation")
 	, exit_status(0)
 {
 	if(enable_profiler)
@@ -108,103 +116,124 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
+	
 	//  - PowerPC processor
 	cpu = new CPU("cpu", this);
 
 	//  - RAM
 	ram = new RAM("ram", this);
 	
-	//  - RAM
-	bram = new BRAM("bram", this);
-	//  - IRQ Stubs
-	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
+	if(enable_linux_os)
 	{
-		switch(irq)
+		memory_router = new MEMORY_ROUTER("memory-router", this);
+		critical_input_interrupt_stub = new IRQ_STUB("critical-input-interrupt-stub", this);
+		external_input_interrupt_stub = new IRQ_STUB("external-input-interrupt-stub", this);
+		dcr_slave_stub = new DCR_SLAVE_STUB("dcr-slave-stub", this);
+	}
+	else
+	{
+		//  - BRAM
+		bram = new BRAM("bram", this);
+		//  - IRQ Stubs
+		for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
 		{
-			case TIMER_IRQ:
-			case UART_LITE_IRQ:
-			case GPIO_DIP_SWITCHES_8BIT_IRQ:
-			case GPIO_PUSH_BUTTONS_5BIT_IRQ:
-				input_interrupt_stub[irq] = 0;
-				break;
-			default:
-				{
-					std::stringstream input_interrupt_stub_name_sstr;
-					input_interrupt_stub_name_sstr << "input-interrupt-stub" << irq;
-					input_interrupt_stub[irq] = new IRQ_STUB(input_interrupt_stub_name_sstr.str().c_str());
-				}
-				break;
+			switch(irq)
+			{
+				case TIMER_IRQ:
+				case UART_LITE_IRQ:
+				case GPIO_DIP_SWITCHES_8BIT_IRQ:
+				case GPIO_PUSH_BUTTONS_5BIT_IRQ:
+					input_interrupt_stub[irq] = 0;
+					break;
+				default:
+					{
+						std::stringstream input_interrupt_stub_name_sstr;
+						input_interrupt_stub_name_sstr << "input-interrupt-stub" << irq;
+						input_interrupt_stub[irq] = new IRQ_STUB(input_interrupt_stub_name_sstr.str().c_str());
+					}
+					break;
+			}
 		}
+		critical_input_interrupt_stub = new IRQ_STUB("critical-input-interrupt-stub", this);
+		// - MPLB
+		mplb = new MPLB("mplb", this);
+		// - SPLB0
+		splb0_stub = new SPLB0_STUB("splb0-stub", this);
+		// - SPLB1
+		splb1_stub = new SPLB0_STUB("splb1-stub", this);
+		// - Interrupt controller
+		intc = new INTC("intc", this);
+		// - Timer
+		timer = new TIMER("timer", this);
+		// - Flash memory
+		flash = new FLASH("flash", this);
+		// - Capture trigger stubs
+		for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
+		{
+			std::stringstream capture_trigger_stub_name_sstr;
+			capture_trigger_stub_name_sstr << "capture-trigger-stub" << channel;
+			capture_trigger_stub[channel] = new CAPTURE_TRIGGER_STUB(capture_trigger_stub_name_sstr.str().c_str(), this);
+		}
+		// - Generate out stubs
+		for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
+		{
+			std::stringstream generate_out_stub_name_sstr;
+			generate_out_stub_name_sstr << "generate-out-stub" << channel;
+			generate_out_stub[channel] = new GENERATE_OUT_STUB(generate_out_stub_name_sstr.str().c_str(), this);
+		}
+		// - PWM stub
+		pwm_stub = new PWM_STUB("pwm-stub", this);
+		// - DCR controller
+		dcr_controller = new DCR_CONTROLLER("dcr-controller", this);
+		// - Crossbar
+		crossbar = new CROSSBAR("crossbar", this);
+		// - MCI
+		mci = new MCI("mci", this);
+		// - UART Lite
+		uart_lite = new UART_LITE("uart-lite", this);
+		// - GPIO DIP switches 8 Bit
+		gpio_dip_switches_8bit = new GPIO_DIP_SWITCHES_8BIT("gpio-dip-switches-8bit", this);
+		// - GPIO LEDs 8 Bit
+		gpio_leds_8bit = new GPIO_LEDS_8BIT("gpio-leds-8bit", this);
+		// - GPIO 5 LEDs Positions
+		gpio_5_leds_positions = new GPIO_5_LEDS_POSITIONS("gpio-5-leds-positions", this);
+		// - GPIO Push Buttons 5 bit
+		gpio_push_buttons_5bit = new GPIO_PUSH_BUTTONS_5BIT("gpio-push-buttons-5bit", this);
+		// - DIP Switches 8 bit
+		dip_switches_8bit = new DIP_SWITCHES_8BIT("dip-switches-8bit", this);
+		// - LEDs 8 bit
+		leds_8bit = new LEDS_8BIT("leds-8bit", this);
+		// - 5 LEDs Positions
+		_5_leds_positions = new _5_LEDS_POSITIONS("5-leds-positions", this);
+		// - Push buttons 5 bit
+		push_buttons_5bit = new PUSH_BUTTONS_5BIT("push-buttons-5bit", this);
+		// - DCR stubs
+		master1_dcr_stub = new MASTER1_DCR_STUB("master1-dcr-stub", this);
+		apu_dcr_stub = new APU_DCR_STUB("apu-dcr-stub", this);
+		dmac0_dcr_stub = new DMAC0_DCR_STUB("dma0-dcr-stub", this);
+		dmac1_dcr_stub = new DMAC1_DCR_STUB("dma1-dcr-stub", this);
+		dmac2_dcr_stub = new DMAC2_DCR_STUB("dma2-dcr-stub", this);
+		dmac3_dcr_stub = new DMAC3_DCR_STUB("dma3-dcr-stub", this);
+		external_slave_dcr_stub = new EXTERNAL_SLAVE_DCR_STUB("external-slave-dcr-stub", this);
 	}
-	critical_input_interrupt_stub = new IRQ_STUB("critical-input-interrupt-stub", this);
-	// - MPLB
-	mplb = new MPLB("mplb", this);
-	// - SPLB0
-	splb0_stub = new SPLB0_STUB("splb0-stub", this);
-	// - SPLB1
-	splb1_stub = new SPLB0_STUB("splb1-stub", this);
-	// - Interrupt controller
-	intc = new INTC("intc", this);
-	// - Timer
-	timer = new TIMER("timer", this);
-	// - Flash memory
-	flash = new FLASH("flash", this);
-	// - Capture trigger stubs
-	for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
-	{
-		std::stringstream capture_trigger_stub_name_sstr;
-		capture_trigger_stub_name_sstr << "capture-trigger-stub" << channel;
-		capture_trigger_stub[channel] = new CAPTURE_TRIGGER_STUB(capture_trigger_stub_name_sstr.str().c_str(), this);
-	}
-	// - Generate out stubs
-	for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
-	{
-		std::stringstream generate_out_stub_name_sstr;
-		generate_out_stub_name_sstr << "generate-out-stub" << channel;
-		generate_out_stub[channel] = new GENERATE_OUT_STUB(generate_out_stub_name_sstr.str().c_str(), this);
-	}
-	// - PWM stub
-	pwm_stub = new PWM_STUB("pwm-stub", this);
-	// - DCR controller
-	dcr_controller = new DCR_CONTROLLER("dcr-controller", this);
-	// - Crossbar
-	crossbar = new CROSSBAR("crossbar", this);
-	// - MCI
-	mci = new MCI("mci", this);
-	// - UART Lite
-	uart_lite = new UART_LITE("uart-lite", this);
-	// - GPIO DIP switches 8 Bit
-	gpio_dip_switches_8bit = new GPIO_DIP_SWITCHES_8BIT("gpio-dip-switches-8bit", this);
-	// - GPIO LEDs 8 Bit
-	gpio_leds_8bit = new GPIO_LEDS_8BIT("gpio-leds-8bit", this);
-	// - GPIO 5 LEDs Positions
-	gpio_5_leds_positions = new GPIO_5_LEDS_POSITIONS("gpio-5-leds-positions", this);
-	// - GPIO Push Buttons 5 bit
-	gpio_push_buttons_5bit = new GPIO_PUSH_BUTTONS_5BIT("gpio-push-buttons-5bit", this);
-	// - DIP Switches 8 bit
-	dip_switches_8bit = new DIP_SWITCHES_8BIT("dip-switches-8bit", this);
-	// - LEDs 8 bit
-	leds_8bit = new LEDS_8BIT("leds-8bit", this);
-	// - 5 LEDs Positions
-	_5_leds_positions = new _5_LEDS_POSITIONS("5-leds-positions", this);
-	// - Push buttons 5 bit
-	push_buttons_5bit = new PUSH_BUTTONS_5BIT("push-buttons-5bit", this);
-	// - DCR stubs
-	master1_dcr_stub = new MASTER1_DCR_STUB("master1-dcr-stub", this);
-	apu_dcr_stub = new APU_DCR_STUB("apu-dcr-stub", this);
-	dmac0_dcr_stub = new DMAC0_DCR_STUB("dma0-dcr-stub", this);
-	dmac1_dcr_stub = new DMAC1_DCR_STUB("dma1-dcr-stub", this);
-	dmac2_dcr_stub = new DMAC2_DCR_STUB("dma2-dcr-stub", this);
-	dmac3_dcr_stub = new DMAC3_DCR_STUB("dma3-dcr-stub", this);
-	external_slave_dcr_stub = new EXTERNAL_SLAVE_DCR_STUB("external-slave-dcr-stub", this);
 
 	//=========================================================================
 	//===                          Port registration                        ===
 	//=========================================================================
 	
-	// - MPLB
-	instrumenter->RegisterPort(mplb->input_if_clock);
-	instrumenter->RegisterPort(mplb->output_if_clock);
+	if(mplb)
+	{
+		// - MPLB
+		instrumenter->RegisterPort(mplb->input_if_clock);
+		instrumenter->RegisterPort(mplb->output_if_clock);
+	}
+	
+	if(memory_router)
+	{
+		// - Memory Router
+		instrumenter->RegisterPort(memory_router->input_if_clock);
+		instrumenter->RegisterPort(memory_router->output_if_clock);
+	}
 	
 	//=========================================================================
 	//===                         Channels creation                         ===
@@ -216,7 +245,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - Multiformat loader
-	loader = new LOADER("loader");
+	loader = enable_linux_os ? 0 : new LOADER("loader");
 	//  - debugger
 	debugger = (enable_inline_debugger or enable_gdb_server or enable_profiler) ? new DEBUGGER("debugger") : 0;
 	//  - GDB server
@@ -229,133 +258,162 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
 	//  - memory address translator from effective address to physical address
 	ram_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("ram-effective-to-physical-address-translator");
-	flash_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("flash-effective-to-physical-address-translator");
-	bram_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("bram-effective-to-physical-address-translator");
+	flash_effective_to_physical_address_translator = enable_linux_os ? 0 : new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("flash-effective-to-physical-address-translator");
+	bram_effective_to_physical_address_translator = enable_linux_os ? 0 : new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("bram-effective-to-physical-address-translator");
 	// - netstreamer
-	netstreamer = new NETSTREAMER("netstreamer");
+	netstreamer = enable_linux_os ? 0 : new NETSTREAMER("netstreamer");
 	// - profiler
 	profiler = enable_profiler ? new PROFILER("profiler") : 0;
 	// - HTTP server
 	http_server = new HTTP_SERVER("http-server");
 	// - Web Terminal
-	web_terminal = new WEB_TERMINAL("web-terminal");
+	web_terminal = enable_linux_os ? 0 : new WEB_TERMINAL("web-terminal");
 	// - Char I/O Tee
-	char_io_tee = new CHAR_IO_TEE("char-io-tee");
+	char_io_tee = enable_linux_os ? 0 : new CHAR_IO_TEE("char-io-tee");
+	// - LinuxOS
+	linux_os = enable_linux_os ? new LINUX_OS("linux-os") : 0;
 	
 	//=========================================================================
 	//===                        Components connection                      ===
 	//=========================================================================
 
-	cpu->icurd_plb_master_sock(crossbar->icurd_plb_slave_sock); // CPU>ICURD <-> ICURD<Crossbar
-	cpu->dcuwr_plb_master_sock(crossbar->dcuwr_plb_slave_sock); // CPU>DCUWR <-> DCUWR<Crossbar
-	cpu->dcurd_plb_master_sock(crossbar->dcurd_plb_slave_sock); // CPU>DCURD <-> DCURD<Crossbar
-	cpu->dcr_master_sock(*dcr_controller->dcr_slave_sock[0]); // (master 0) CPU>DCR <-> DCR controller
-	master1_dcr_stub->master_sock(*dcr_controller->dcr_slave_sock[1]); // master 1>DCR <-> DCR controller
-	
-	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::APU_SLAVE_NUM])(apu_dcr_stub->slave_sock);
-	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::MCI_SLAVE_NUM])(mci->dcr_slave_sock);
-	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::CROSSBAR_SLAVE_NUM])(crossbar->crossbar_dcr_slave_sock);
-	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::PLBS0_SLAVE_NUM])(crossbar->plbs0_dcr_slave_sock);
-	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::PLBS1_SLAVE_NUM])(crossbar->plbs1_dcr_slave_sock);
-	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::PLBM_SLAVE_NUM])(crossbar->plbm_dcr_slave_sock);
-	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::DMAC0_SLAVE_NUM])(dmac0_dcr_stub->slave_sock);
-	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::DMAC1_SLAVE_NUM])(dmac1_dcr_stub->slave_sock);
-	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::DMAC2_SLAVE_NUM])(dmac2_dcr_stub->slave_sock);
-	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::DMAC3_SLAVE_NUM])(dmac3_dcr_stub->slave_sock);
-	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::EXTERNAL_SLAVE_NUM])(external_slave_dcr_stub->slave_sock);
-	
-	crossbar->mplb_master_sock(*mplb->targ_socket[0]);   // crossbar>MPLB <-> MPLB
-	crossbar->mci_master_sock(mci->mci_slave_sock);      // crossbar>MCI <-> MCI
-	mci->mci_master_sock(ram->slave_sock);               // MCI <-> RAM 
-	
-	splb0_stub->master_sock(crossbar->splb0_slave_sock);  // SPLB0 stub <-> SPLB0<Crossbar
-	splb1_stub->master_sock(crossbar->splb1_slave_sock);  // SPLB1 stub <-> SPLB1<Crossbar
-	
-	instrumenter->Bind("HARDWARE.mplb.input_if_clock", "HARDWARE.CLK");
-	instrumenter->Bind("HARDWARE.mplb.output_if_clock", "HARDWARE.CLK");
-	
-	(*mplb->init_socket[INTC_CONFIG::MPLB_PORT])(intc->slave_sock);      // MPLB <-> INTC
-	(*mplb->init_socket[TIMER_CONFIG::MPLB_PORT])(timer->slave_sock);     // MPLB <-> TIMER
-	(*mplb->init_socket[FLASH_MPLB_PORT])(flash->slave_sock);     // MPLB <-> FLASH
-	(*mplb->init_socket[BRAM_MPLB_PORT])(bram->slave_sock);      // MPLB <-> BRAM
-	(*mplb->init_socket[UART_LITE_CONFIG::MPLB_PORT])(uart_lite->slave_sock); // MPLB <-> UART Lite
-	(*mplb->init_socket[GPIO_DIP_SWITCHES_8BIT_CONFIG::MPLB_PORT])(gpio_dip_switches_8bit->slave_sock);      // MPLB <-> GPIO DIP switches 8 Bit
-	(*mplb->init_socket[GPIO_LEDS_8BIT_CONFIG::MPLB_PORT])(gpio_leds_8bit->slave_sock);              // MPLB <-> GPIO LEDs 8 Bit
-	(*mplb->init_socket[GPIO_5_LEDS_POSITIONS_CONFIG::MPLB_PORT])(gpio_5_leds_positions->slave_sock);       // MPLB <-> GPIO 5 LEDs Positions
-	(*mplb->init_socket[GPIO_PUSH_BUTTONS_5BIT_CONFIG::MPLB_PORT])(gpio_push_buttons_5bit->slave_sock);      // MPLB <-> GPIO Push Buttons 5 bit
-	
-	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
+	if(linux_os)
 	{
-		switch(irq)
+		cpu->icurd_plb_master_sock(*memory_router->targ_socket[0]); // CPU>ICURD <-> Memory Router
+		cpu->dcuwr_plb_master_sock(*memory_router->targ_socket[1]); // CPU>DCUWR <-> Memory Router
+		cpu->dcurd_plb_master_sock(*memory_router->targ_socket[2]); // CPU>DCURD <-> Memory Router
+		(*memory_router->init_socket[0])(ram->slave_sock); // Memory Router <-> RAM
+		external_input_interrupt_stub->master_sock(cpu->external_input_interrupt_slave_sock);
+		critical_input_interrupt_stub->master_sock(cpu->critical_input_interrupt_slave_sock);
+		cpu->dcr_master_sock(dcr_slave_stub->slave_sock);
+		
+		instrumenter->Bind("HARDWARE.memory-router.input_if_clock", "HARDWARE.CLK");
+		instrumenter->Bind("HARDWARE.memory-router.output_if_clock", "HARDWARE.CLK");
+	}
+	else
+	{
+		cpu->icurd_plb_master_sock(crossbar->icurd_plb_slave_sock); // CPU>ICURD <-> ICURD<Crossbar
+		cpu->dcuwr_plb_master_sock(crossbar->dcuwr_plb_slave_sock); // CPU>DCUWR <-> DCUWR<Crossbar
+		cpu->dcurd_plb_master_sock(crossbar->dcurd_plb_slave_sock); // CPU>DCURD <-> DCURD<Crossbar
+		cpu->dcr_master_sock(*dcr_controller->dcr_slave_sock[0]); // (master 0) CPU>DCR <-> DCR controller
+		master1_dcr_stub->master_sock(*dcr_controller->dcr_slave_sock[1]); // master 1>DCR <-> DCR controller
+		
+		(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::APU_SLAVE_NUM])(apu_dcr_stub->slave_sock);
+		(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::MCI_SLAVE_NUM])(mci->dcr_slave_sock);
+		(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::CROSSBAR_SLAVE_NUM])(crossbar->crossbar_dcr_slave_sock);
+		(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::PLBS0_SLAVE_NUM])(crossbar->plbs0_dcr_slave_sock);
+		(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::PLBS1_SLAVE_NUM])(crossbar->plbs1_dcr_slave_sock);
+		(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::PLBM_SLAVE_NUM])(crossbar->plbm_dcr_slave_sock);
+		(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::DMAC0_SLAVE_NUM])(dmac0_dcr_stub->slave_sock);
+		(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::DMAC1_SLAVE_NUM])(dmac1_dcr_stub->slave_sock);
+		(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::DMAC2_SLAVE_NUM])(dmac2_dcr_stub->slave_sock);
+		(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::DMAC3_SLAVE_NUM])(dmac3_dcr_stub->slave_sock);
+		(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::EXTERNAL_SLAVE_NUM])(external_slave_dcr_stub->slave_sock);
+		
+		crossbar->mplb_master_sock(*mplb->targ_socket[0]);   // crossbar>MPLB <-> MPLB
+		crossbar->mci_master_sock(mci->mci_slave_sock);      // crossbar>MCI <-> MCI
+		mci->mci_master_sock(ram->slave_sock);               // MCI <-> RAM 
+		
+		splb0_stub->master_sock(crossbar->splb0_slave_sock);  // SPLB0 stub <-> SPLB0<Crossbar
+		splb1_stub->master_sock(crossbar->splb1_slave_sock);  // SPLB1 stub <-> SPLB1<Crossbar
+		
+		instrumenter->Bind("HARDWARE.mplb.input_if_clock", "HARDWARE.CLK");
+		instrumenter->Bind("HARDWARE.mplb.output_if_clock", "HARDWARE.CLK");
+		
+		(*mplb->init_socket[INTC_CONFIG::MPLB_PORT])(intc->slave_sock);      // MPLB <-> INTC
+		(*mplb->init_socket[TIMER_CONFIG::MPLB_PORT])(timer->slave_sock);     // MPLB <-> TIMER
+		(*mplb->init_socket[FLASH_MPLB_PORT])(flash->slave_sock);     // MPLB <-> FLASH
+		(*mplb->init_socket[BRAM_MPLB_PORT])(bram->slave_sock);      // MPLB <-> BRAM
+		(*mplb->init_socket[UART_LITE_CONFIG::MPLB_PORT])(uart_lite->slave_sock); // MPLB <-> UART Lite
+		(*mplb->init_socket[GPIO_DIP_SWITCHES_8BIT_CONFIG::MPLB_PORT])(gpio_dip_switches_8bit->slave_sock);      // MPLB <-> GPIO DIP switches 8 Bit
+		(*mplb->init_socket[GPIO_LEDS_8BIT_CONFIG::MPLB_PORT])(gpio_leds_8bit->slave_sock);              // MPLB <-> GPIO LEDs 8 Bit
+		(*mplb->init_socket[GPIO_5_LEDS_POSITIONS_CONFIG::MPLB_PORT])(gpio_5_leds_positions->slave_sock);       // MPLB <-> GPIO 5 LEDs Positions
+		(*mplb->init_socket[GPIO_PUSH_BUTTONS_5BIT_CONFIG::MPLB_PORT])(gpio_push_buttons_5bit->slave_sock);      // MPLB <-> GPIO Push Buttons 5 bit
+		
+		for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
 		{
-			case TIMER_IRQ:
-				timer->interrupt_master_sock(*intc->irq_slave_sock[irq]); // TIMER>IRQ <-> INTR<INTC
-				break;
-			case UART_LITE_IRQ:
-				uart_lite->interrupt_master_sock(*intc->irq_slave_sock[irq]); // UART Lite>IRQ <-> INTR<INTC
-				break;
-			case GPIO_DIP_SWITCHES_8BIT_IRQ:
-				(*gpio_dip_switches_8bit->interrupt_master_sock)(*intc->irq_slave_sock[irq]); // GPIO DIP SWITCHES 8BIT>IRQ <-> INTR<INTC
-				break;
-			case GPIO_PUSH_BUTTONS_5BIT_IRQ:
-				(*gpio_push_buttons_5bit->interrupt_master_sock)(*intc->irq_slave_sock[irq]); // GPIO PUSH BUTTONS 5BIT>IRQ <-> INTR<INTC
-				break;
-			default:
-				(input_interrupt_stub[irq]->master_sock)(*intc->irq_slave_sock[irq]); // IRQ stub>IRQ <-> INTR<INTC
-				break;
+			switch(irq)
+			{
+				case TIMER_IRQ:
+					timer->interrupt_master_sock(*intc->irq_slave_sock[irq]); // TIMER>IRQ <-> INTR<INTC
+					break;
+				case UART_LITE_IRQ:
+					uart_lite->interrupt_master_sock(*intc->irq_slave_sock[irq]); // UART Lite>IRQ <-> INTR<INTC
+					break;
+				case GPIO_DIP_SWITCHES_8BIT_IRQ:
+					(*gpio_dip_switches_8bit->interrupt_master_sock)(*intc->irq_slave_sock[irq]); // GPIO DIP SWITCHES 8BIT>IRQ <-> INTR<INTC
+					break;
+				case GPIO_PUSH_BUTTONS_5BIT_IRQ:
+					(*gpio_push_buttons_5bit->interrupt_master_sock)(*intc->irq_slave_sock[irq]); // GPIO PUSH BUTTONS 5BIT>IRQ <-> INTR<INTC
+					break;
+				default:
+					(input_interrupt_stub[irq]->master_sock)(*intc->irq_slave_sock[irq]); // IRQ stub>IRQ <-> INTR<INTC
+					break;
+			}
 		}
-	}
-	for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
-	{
-		capture_trigger_stub[channel]->master_sock(*timer->capture_trigger_slave_sock[channel]); // Capture trigger stub <-> TIMER
-	}
-	for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
-	{
-		(*timer->generate_out_master_sock[channel])(generate_out_stub[channel]->slave_sock); // TIMER <-> Generate out stub
-	}
-	timer->pwm_master_sock(pwm_stub->slave_sock); // TIMER <-> PWM stub
-	intc->irq_master_sock(cpu->external_input_interrupt_slave_sock); // INTC>IRQ <-> External Input<CPU
-	critical_input_interrupt_stub->master_sock(cpu->critical_input_interrupt_slave_sock); // IRQ Stub <-> CPU
-	
-	for(i = 0; i < GPIO_DIP_SWITCHES_8BIT_CONFIG::C_GPIO_WIDTH; i++)
-	{
-		(*dip_switches_8bit->gpio_master_sock[i])(*gpio_dip_switches_8bit->gpio_slave_sock[i]);
-		(*gpio_dip_switches_8bit->gpio_master_sock[i])(*dip_switches_8bit->gpio_slave_sock[i]);
-	}
-	for(i = 0; i < GPIO_LEDS_8BIT_CONFIG::C_GPIO_WIDTH; i++)
-	{
-		(*gpio_leds_8bit->gpio_master_sock[i])(*leds_8bit->gpio_slave_sock[i]);
-		(*leds_8bit->gpio_master_sock[i])(*gpio_leds_8bit->gpio_slave_sock[i]);
-	}
-	for(i = 0; i < GPIO_5_LEDS_POSITIONS_CONFIG::C_GPIO_WIDTH; i++)
-	{
-		(*gpio_5_leds_positions->gpio_master_sock[i])(*_5_leds_positions->gpio_slave_sock[i]);
-		(*_5_leds_positions->gpio_master_sock[i])(*gpio_5_leds_positions->gpio_slave_sock[i]);
-	}
-	for(i = 0; i < GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_GPIO_WIDTH; i++)
-	{
-		(*push_buttons_5bit->gpio_master_sock[i])(*gpio_push_buttons_5bit->gpio_slave_sock[i]);
-		(*gpio_push_buttons_5bit->gpio_master_sock[i])(*push_buttons_5bit->gpio_slave_sock[i]);
+		for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
+		{
+			capture_trigger_stub[channel]->master_sock(*timer->capture_trigger_slave_sock[channel]); // Capture trigger stub <-> TIMER
+		}
+		for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
+		{
+			(*timer->generate_out_master_sock[channel])(generate_out_stub[channel]->slave_sock); // TIMER <-> Generate out stub
+		}
+		timer->pwm_master_sock(pwm_stub->slave_sock); // TIMER <-> PWM stub
+		intc->irq_master_sock(cpu->external_input_interrupt_slave_sock); // INTC>IRQ <-> External Input<CPU
+		critical_input_interrupt_stub->master_sock(cpu->critical_input_interrupt_slave_sock); // IRQ Stub <-> CPU
+		
+		for(i = 0; i < GPIO_DIP_SWITCHES_8BIT_CONFIG::C_GPIO_WIDTH; i++)
+		{
+			(*dip_switches_8bit->gpio_master_sock[i])(*gpio_dip_switches_8bit->gpio_slave_sock[i]);
+			(*gpio_dip_switches_8bit->gpio_master_sock[i])(*dip_switches_8bit->gpio_slave_sock[i]);
+		}
+		for(i = 0; i < GPIO_LEDS_8BIT_CONFIG::C_GPIO_WIDTH; i++)
+		{
+			(*gpio_leds_8bit->gpio_master_sock[i])(*leds_8bit->gpio_slave_sock[i]);
+			(*leds_8bit->gpio_master_sock[i])(*gpio_leds_8bit->gpio_slave_sock[i]);
+		}
+		for(i = 0; i < GPIO_5_LEDS_POSITIONS_CONFIG::C_GPIO_WIDTH; i++)
+		{
+			(*gpio_5_leds_positions->gpio_master_sock[i])(*_5_leds_positions->gpio_slave_sock[i]);
+			(*_5_leds_positions->gpio_master_sock[i])(*gpio_5_leds_positions->gpio_slave_sock[i]);
+		}
+		for(i = 0; i < GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_GPIO_WIDTH; i++)
+		{
+			(*push_buttons_5bit->gpio_master_sock[i])(*gpio_push_buttons_5bit->gpio_slave_sock[i]);
+			(*gpio_push_buttons_5bit->gpio_master_sock[i])(*push_buttons_5bit->gpio_slave_sock[i]);
+		}
 	}
 
 	//=========================================================================
 	//===                        Clients/Services connection                ===
 	//=========================================================================
 
-	cpu->memory_import >> crossbar->memory_export;
-	
-	crossbar->mci_memory_import >> mci->memory_export;
-	crossbar->mplb_memory_import >> mplb->memory_export;
-	mci->memory_import >> ram->memory_export;
-	(*mplb->memory_import[INTC_CONFIG::MPLB_PORT]) >> intc->memory_export;
-	(*mplb->memory_import[TIMER_CONFIG::MPLB_PORT]) >> timer->memory_export;
-	(*mplb->memory_import[FLASH_MPLB_PORT]) >> flash->memory_export;
-	(*mplb->memory_import[BRAM_MPLB_PORT]) >> bram->memory_export;
-	(*mplb->memory_import[UART_LITE_CONFIG::MPLB_PORT]) >> uart_lite->memory_export;
-	(*mplb->memory_import[GPIO_DIP_SWITCHES_8BIT_CONFIG::MPLB_PORT]) >> gpio_dip_switches_8bit->memory_export;
-	(*mplb->memory_import[GPIO_LEDS_8BIT_CONFIG::MPLB_PORT]) >> gpio_leds_8bit->memory_export;
-	(*mplb->memory_import[GPIO_5_LEDS_POSITIONS_CONFIG::MPLB_PORT]) >> gpio_5_leds_positions->memory_export;
-	(*mplb->memory_import[GPIO_PUSH_BUTTONS_5BIT_CONFIG::MPLB_PORT]) >> gpio_push_buttons_5bit->memory_export;
+	if(linux_os)
+	{
+		cpu->memory_import >> ram->memory_export;
+		cpu->linux_os_import >> linux_os->linux_os_export_;
+		linux_os->registers_import_ >> cpu->registers_export;
+		linux_os->memory_import_ >> ram_effective_to_physical_address_translator->memory_export;
+		linux_os->memory_injection_import_ >> cpu->memory_injection_export;
+	}
+	else
+	{
+		cpu->memory_import >> crossbar->memory_export;
+		
+		crossbar->mci_memory_import >> mci->memory_export;
+		crossbar->mplb_memory_import >> mplb->memory_export;
+		mci->memory_import >> ram->memory_export;
+		(*mplb->memory_import[INTC_CONFIG::MPLB_PORT]) >> intc->memory_export;
+		(*mplb->memory_import[TIMER_CONFIG::MPLB_PORT]) >> timer->memory_export;
+		(*mplb->memory_import[FLASH_MPLB_PORT]) >> flash->memory_export;
+		(*mplb->memory_import[BRAM_MPLB_PORT]) >> bram->memory_export;
+		(*mplb->memory_import[UART_LITE_CONFIG::MPLB_PORT]) >> uart_lite->memory_export;
+		(*mplb->memory_import[GPIO_DIP_SWITCHES_8BIT_CONFIG::MPLB_PORT]) >> gpio_dip_switches_8bit->memory_export;
+		(*mplb->memory_import[GPIO_LEDS_8BIT_CONFIG::MPLB_PORT]) >> gpio_leds_8bit->memory_export;
+		(*mplb->memory_import[GPIO_5_LEDS_POSITIONS_CONFIG::MPLB_PORT]) >> gpio_5_leds_positions->memory_export;
+		(*mplb->memory_import[GPIO_PUSH_BUTTONS_5BIT_CONFIG::MPLB_PORT]) >> gpio_push_buttons_5bit->memory_export;
+	}
 
 	if (debugger)
 	{
@@ -369,7 +427,14 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 		*debugger->memory_access_reporting_control_import[0] >> cpu->memory_access_reporting_control_export;
 			
 		// Debugger <-> Loader connections
-		debugger->blob_import >> loader->blob_export;
+		if(linux_os)
+		{
+			debugger->blob_import >> linux_os->blob_export_;
+		}
+		else
+		{
+			debugger->blob_import >> loader->blob_export;
+		}
 	}
 		
 	if (inline_debugger)
@@ -419,33 +484,49 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	}
 	
 	ram_effective_to_physical_address_translator->memory_import >> ram->memory_export;
-	flash_effective_to_physical_address_translator->memory_import >> flash->memory_export;
-	bram_effective_to_physical_address_translator->memory_import >> bram->memory_export;
-	*loader->memory_import[0] >> ram_effective_to_physical_address_translator->memory_export;
-	*loader->memory_import[1] >> bram_effective_to_physical_address_translator->memory_export;
-	*loader->memory_import[2] >> flash_effective_to_physical_address_translator->memory_export;
-	loader->registers_import >> cpu->registers_export;
-	cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	
-	uart_lite->char_io_import >> char_io_tee->char_io_export;
-	(*char_io_tee->char_io_import[0]) >> netstreamer->char_io_export;
-	(*char_io_tee->char_io_import[1]) >> web_terminal->char_io_export;
+	if(!linux_os)
+	{
+		*loader->memory_import[0] >> ram_effective_to_physical_address_translator->memory_export;
+		
+		bram_effective_to_physical_address_translator->memory_import >> bram->memory_export;
+		*loader->memory_import[1] >> bram_effective_to_physical_address_translator->memory_export;
+
+		flash_effective_to_physical_address_translator->memory_import >> flash->memory_export;
+		*loader->memory_import[2] >> flash_effective_to_physical_address_translator->memory_export;
+	
+		loader->registers_import >> cpu->registers_export;
+		cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
+	
+		uart_lite->char_io_import >> char_io_tee->char_io_export;
+		(*char_io_tee->char_io_import[0]) >> netstreamer->char_io_export;
+		(*char_io_tee->char_io_import[1]) >> web_terminal->char_io_export;
+	}
 	
 	{
 		unsigned int i = 0;
 		*http_server->http_server_import[i++] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
 		*http_server->http_server_import[i++] >> instrumenter->http_server_export;
-		*http_server->http_server_import[i++] >> web_terminal->http_server_export;
-		if (profiler)
+		if(web_terminal)
+		{
+			*http_server->http_server_import[i++] >> web_terminal->http_server_export;
+		}
+		if(profiler)
 		{
 			*http_server->http_server_import[i++] >> profiler->http_server_export;
 		}
-		*http_server->http_server_import[i++] >> cpu->itlb_http_server_export;
-		*http_server->http_server_import[i++] >> cpu->dtlb_http_server_export;
-		*http_server->http_server_import[i++] >> cpu->utlb_http_server_export;
+		if(!linux_os)
+		{
+			*http_server->http_server_import[i++] >> cpu->itlb_http_server_export;
+			*http_server->http_server_import[i++] >> cpu->dtlb_http_server_export;
+			*http_server->http_server_import[i++] >> cpu->utlb_http_server_export;
+		}
 	}
 
-	*http_server->registers_import[0] >> cpu->registers_export;
+	{
+		unsigned int i = 0;
+		*http_server->registers_import[i++] >> cpu->registers_export;
+	}
 }
 
 Simulator::~Simulator()
@@ -483,6 +564,8 @@ Simulator::~Simulator()
 	if(dmac2_dcr_stub) delete dmac2_dcr_stub;
 	if(dmac3_dcr_stub) delete dmac3_dcr_stub;
 	if(external_slave_dcr_stub) delete external_slave_dcr_stub;
+	if(dcr_slave_stub) delete dcr_slave_stub;
+	if(memory_router) delete memory_router;
 	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
 	{
 		if(input_interrupt_stub[irq]) delete input_interrupt_stub[irq];
@@ -510,6 +593,7 @@ Simulator::~Simulator()
 	if(http_server) delete http_server;
 	if(web_terminal) delete web_terminal;
 	if(char_io_tee) delete char_io_tee;
+	if(linux_os) delete linux_os;
 	if(instrumenter) delete instrumenter;
 }
 
@@ -517,7 +601,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM Virtex 5 FXT");
-	simulator->SetVariable("copyright", "Copyright (C) 2007-2011, Commissariat a l'Energie Atomique (CEA)");
+	simulator->SetVariable("copyright", "Copyright (C) 2007-2019, Commissariat a l'Energie Atomique (CEA)");
 	simulator->SetVariable("license", "BSD (see file COPYING)");
 	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
 	simulator->SetVariable("version", VERSION);
@@ -569,10 +653,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	//  - MPLB
 	simulator->SetVariable("HARDWARE.mplb.cycle_time", sc_core::sc_time(fsb_cycle_time, sc_core::SC_PS).to_string().c_str());
-
-	//  - Memory router
-	simulator->SetVariable("HARDWARE.memory-router.cycle_time", sc_core::sc_time(fsb_cycle_time, sc_core::SC_PS).to_string().c_str());
-	simulator->SetVariable("HARDWARE.memory-router.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffffffffffff\" output_port=\"0\" translation=\"0x0\""); // RAM
 
 	unsigned int mapping_num = 0;
 	
@@ -630,6 +710,10 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	sstr_gpio_push_buttons_5bit_mapping << "range_start=\"0x" << std::hex << GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"" << GPIO_PUSH_BUTTONS_5BIT_CONFIG::MPLB_PORT << "\" translation=\"0x" << std::hex << GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_BASEADDR << std::dec << "\"";
 	simulator->SetVariable(sstr_gpio_push_buttons_5bit_mapping_name.str().c_str(), sstr_gpio_push_buttons_5bit_mapping.str().c_str()); // XPS Timer/Counter
 
+	//  - Memory router
+	simulator->SetVariable("HARDWARE.memory-router.cycle_time", sc_core::sc_time(fsb_cycle_time, sc_core::SC_PS).to_string().c_str());
+	simulator->SetVariable("HARDWARE.memory-router.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffffffffffff\" output_port=\"0\" translation=\"0x0\""); // RAM
+	
 	// - Loader memory router
 	std::stringstream sstr_loader_mapping;
 	sstr_loader_mapping << "ram-effective-to-physical-address-translator:0x" << std::hex << RAM_BASE_ADDR << std::dec << "-0x" << std::hex << (RAM_BASE_ADDR + RAM_BYTE_SIZE - 1) << std::dec << ":+0x" << std::hex << RAM_BASE_ADDR << std::dec;
@@ -689,14 +773,37 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("debugger.parse-dwarf", false);
 	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", dwarf_register_number_mapping_filename);
 	
+	//  - Linux OS run-time configuration
+	simulator->SetVariable("linux-os.endianness", "big-endian");
+	simulator->SetVariable("linux-os.stack-base", 0xc0000000);
+	simulator->SetVariable("linux-os.envc", 0);
+	simulator->SetVariable("linux-os.system", "ppc");
+	simulator->SetVariable("linux-os.endianness", "big-endian");
+	simulator->SetVariable("linux-os.utsname-sysname", "Linux");
+ 	simulator->SetVariable("linux-os.utsname-nodename", "(none)");
+ 	simulator->SetVariable("linux-os.utsname-release", "5.1.20");
+ 	simulator->SetVariable("linux-os.utsname-version", "#1 PREEMPT Thu Jan 1 00:00:00 CEST 1970");
+	simulator->SetVariable("linux-os.utsname-machine", "ppc");
+	simulator->SetVariable("linux-os.utsname-domainname", "(none)");
+	simulator->SetVariable("linux-os.apply-host-environment", false);
+
+	// - Http Server
 	simulator->SetVariable("http-server.http-port", 12360);
 
+	// - Web Terminal
 	simulator->SetVariable("web-terminal.title", "Serial Terminal over UART Lite");
 }
 
 void Simulator::Run()
 {
-	std::cerr << "Starting simulation at supervisor privilege level" << std::endl;
+	if(linux_os)
+	{
+		std::cerr << "Starting simulation at user privilege level" << std::endl;
+	}
+	else
+	{
+		std::cerr << "Starting simulation at supervisor privilege level" << std::endl;
+	}
 	
 	double time_start = host_time->GetTime();
 
@@ -741,12 +848,40 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 		SetVariable("debugger.parse-dwarf", true);
 	}
 	
-	// Optionally get the program to load from the command line arguments
 	unisim::kernel::service::VariableBase *cmd_args = FindVariable("cmd-args");
 	unsigned int cmd_args_length = cmd_args->GetLength();
-	if(cmd_args_length > 0)
+	
+	if(enable_linux_os)
 	{
-		SetVariable("loader.filename", ((std::string)(*cmd_args)[0]).c_str());
+		SetVariable("HARDWARE.ram.org", 0);
+		SetVariable("HARDWARE.ram.bytesize", 0x100000000ULL); // a 4 GB addressable RAM
+		
+		// Build the Linux OS arguments from the command line arguments
+		
+		if(cmd_args_length > 0)
+		{
+			SetVariable("linux-os.binary", ((std::string)(*cmd_args)[0]).c_str());
+			SetVariable("linux-os.argc", cmd_args_length);
+			
+			unsigned int i;
+			for(i = 0; i < cmd_args_length; i++)
+			{
+				std::stringstream sstr;
+				sstr << "linux-os.argv[" << i << "]";
+				SetVariable(sstr.str().c_str(), ((std::string)(*cmd_args)[i]).c_str());
+			}
+		}
+		
+		// Relax time decoupling
+		SetVariable("cpu.nice-time", "1 ms");
+	}
+	else
+	{
+		// Optionally get the program to load from the command line arguments
+		if(cmd_args_length > 0)
+		{
+			SetVariable("loader.filename", ((std::string)(*cmd_args)[0]).c_str());
+		}
 	}
 
 	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
@@ -756,26 +891,29 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 
 bool Simulator::EndSetup()
 {
-  if(profiler)
-  {
-    http_server->AddJSAction(
-      unisim::service::interfaces::ToolbarOpenTabAction(
-        /* name */      profiler->GetName(), 
-        /* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\">",
-        /* tips */      std::string("Profile of ") + cpu->GetName(),
-        /* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
-        /* uri */       profiler->URI()
-    ));
-  }
-  
-  http_server->AddJSAction(
-    unisim::service::interfaces::ToolbarOpenTabAction(
-      /* name */      web_terminal->GetName(),
-      /* label */     "<img src=\"/unisim/service/web_terminal/icon_term0.svg\">",
-      /* tips */      (*web_terminal)["title"],
-      /* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
-      /* uri */       web_terminal->URI()
-  ));
+	if(profiler)
+	{
+		http_server->AddJSAction(
+			unisim::service::interfaces::ToolbarOpenTabAction(
+			/* name */      profiler->GetName(), 
+			/* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\">",
+			/* tips */      std::string("Profile of ") + cpu->GetName(),
+			/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+			/* uri */       profiler->URI()
+		));
+	}
+
+	if(web_terminal)
+	{
+		http_server->AddJSAction(
+			unisim::service::interfaces::ToolbarOpenTabAction(
+			/* name */      web_terminal->GetName(),
+			/* label */     "<img src=\"/unisim/service/web_terminal/icon_term0.svg\">",
+			/* tips */      (*web_terminal)["title"],
+			/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+			/* uri */       web_terminal->URI()
+		));
+	}
 
   return true;
 }
