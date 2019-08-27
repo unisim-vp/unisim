@@ -280,6 +280,11 @@ function import_genisslib()
 
 function output_top_configure_ac()
 {
+	if [ "${has_two_levels_dirs}" = "no" ]; then
+		echo "Please remove useless call to output_top_configure_ac"
+		exit
+	fi
+
 	local CONFIGURE_AC="${DEST_DIR}/configure.ac"
 	if has_to_build "${CONFIGURE_AC}" "$0" || \
 	   has_to_build "${CONFIGURE_AC}" "${UNISIM_SIMULATOR_DIR}/VERSION" || \
@@ -292,6 +297,11 @@ function output_top_configure_ac()
 
 function output_top_makefile_am()
 {
+	if [ "${has_two_levels_dirs}" = "no" ]; then
+		echo "Please remove useless call to output_top_makefile_am"
+		exit
+	fi
+
 	local MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 	if has_to_build "${MAKEFILE_AM}" "$0" || \
 	   has_to_build "${MAKEFILE_AM}" "${UNISIM_SIMULATOR_DIR}/VERSION" || \
@@ -304,6 +314,11 @@ function output_top_makefile_am()
 
 function build_top_configure()
 {
+	if [ "${has_two_levels_dirs}" = "no" ]; then
+		echo "Please remove useless call to build_top_configure"
+		exit
+	fi
+
 	mkdir -p "${DEST_DIR}/config"
 	
 	local CONFIGURE="${DEST_DIR}/configure"
@@ -319,6 +334,11 @@ function build_top_configure()
 
 function build_top_configure_cross()
 {
+	if [ "${has_two_levels_dirs}" = "no" ]; then
+		echo "Please remove useless call to build_top_configure_cross"
+		exit
+	fi
+
 	local CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 	if has_to_build "${CONFIGURE_CROSS}" "$0" || \
 	   has_to_build "${CONFIGURE_CROSS}" "${CONFIGURE_CROSS}/dist_common.sh"; then

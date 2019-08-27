@@ -41,10 +41,11 @@
 #include <unisim/util/random/random.hh>
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/time/sc_time/time.hh>
+#include <unisim/service/instrumenter/instrumenter.hh>
 
 #include <queue>
 
-using unisim::kernel::tlm2::OUTPUT_INSTRUMENTATION;
+using unisim::service::instrumenter::OUTPUT_INSTRUMENTATION;
 
 using unisim::kernel::tlm2::tlm_can_core;
 using unisim::kernel::tlm2::tlm_can_core_config;
@@ -77,7 +78,8 @@ using unisim::kernel::logger::EndDebugInfo;
 struct Node : tlm_can_core<Node>
 {
 	Node(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0)
-		: tlm_can_core<Node>(name, parent)
+		: unisim::kernel::service::Object(name, parent)
+		, tlm_can_core<Node>(name, parent)
 		, enabled(false)
 		, config()
 		, tx_fifo()
@@ -421,6 +423,8 @@ private:
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
+	//  - Instrumenter
+	unisim::service::instrumenter::Instrumenter *instrumenter;
 	
 	sc_core::sc_time max_time;
 	
@@ -440,6 +444,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, can_bus(0)
 	, sim_time(0)
 	, host_time(0)
+	, instrumenter(0)
 	, max_time(sc_core::SC_ZERO_TIME)
 	, param_max_time("max-time", 0, max_time, "Maximum time to simulate (zero means forever)")
 	, exit_status(0)
@@ -459,6 +464,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
+	//  - Instrumenter
+	instrumenter = new unisim::service::instrumenter::Instrumenter("instrumenter");
 	
 	//=========================================================================
 	//===                          Port registration                        ===
@@ -469,11 +476,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//=========================================================================
 	
 	std::vector<sc_core::sc_signal<bool> *> CAN_TX;
-	CAN_TX.push_back(&CreateSignal("CAN_TX_0", true, OUTPUT_INSTRUMENTATION));
-	CAN_TX.push_back(&CreateSignal("CAN_TX_1", true, OUTPUT_INSTRUMENTATION));
-	CAN_TX.push_back(&CreateSignal("CAN_TX_2", true, OUTPUT_INSTRUMENTATION));
+	CAN_TX.push_back(&instrumenter->CreateSignal("CAN_TX_0", true, OUTPUT_INSTRUMENTATION));
+	CAN_TX.push_back(&instrumenter->CreateSignal("CAN_TX_1", true, OUTPUT_INSTRUMENTATION));
+	CAN_TX.push_back(&instrumenter->CreateSignal("CAN_TX_2", true, OUTPUT_INSTRUMENTATION));
 	
-	can_bus = new tlm_can_bus("can_bus", CreateSignal("CAN_RX", true, OUTPUT_INSTRUMENTATION), CAN_TX, this);
+	can_bus = new tlm_can_bus("can_bus", instrumenter->CreateSignal("CAN_RX", true, OUTPUT_INSTRUMENTATION), CAN_TX, this);
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -496,6 +503,7 @@ Simulator::~Simulator()
 	if(node1) delete node1;
 	if(node2) delete node2;
 	if(can_bus) delete can_bus;
+	if(instrumenter) delete instrumenter;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)

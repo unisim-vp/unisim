@@ -35,6 +35,8 @@
 #include <unisim/component/cxx/processor/arm/pmsav7/cpu.hh>
 #include <unisim/component/cxx/processor/arm/pmsav7/cp15.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
+#include <unisim/component/cxx/processor/arm/isa_arm32.tcc>
+#include <unisim/component/cxx/processor/arm/isa_thumb.tcc>
 #include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
