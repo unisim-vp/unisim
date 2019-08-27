@@ -258,6 +258,9 @@ namespace symbolic {
   };
   
   template <typename VALUE_TYPE>
+  VALUE_TYPE EvalMul( VALUE_TYPE l, VALUE_TYPE r ) { return l * r; }
+  bool EvalMul( bool, bool );
+  template <typename VALUE_TYPE>
   VALUE_TYPE EvalMod( VALUE_TYPE l, VALUE_TYPE r ) { return l % r; }
   long double EvalMod( long double l, long double r );
   double     EvalMod( double l, double r );
@@ -286,6 +289,7 @@ namespace symbolic {
 
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalSHL( VALUE_TYPE l, uint8_t shift ) { return l << shift; }
+  bool       EvalSHL( bool, uint8_t );
   long double EvalSHL( long double, uint8_t );
   double     EvalSHL( double, uint8_t );
   float      EvalSHL( float, uint8_t );
@@ -450,7 +454,7 @@ namespace symbolic {
         case Op::Asr:   return new this_type( EvalSHR( value, args[1]->Get( uint8_t() ) ) );
         case Op::Add:   return new this_type( value + GetValue( args[1] ) );
         case Op::Sub:   return new this_type( value - GetValue( args[1] ) );
-        case Op::Mul:   return new this_type( value * GetValue( args[1] ) );
+        case Op::Mul:   return new this_type( EvalMul( value, GetValue( args[1] ) ) );
         case Op::Div:   return new this_type( value / GetValue( args[1] ) );
         case Op::Mod:   return new this_type( EvalMod( value, GetValue( args[1] ) ) );
           
