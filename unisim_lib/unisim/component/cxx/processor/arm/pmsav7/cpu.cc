@@ -101,8 +101,8 @@ CPU::CPU(const char *name, Object *parent)
   , debug_yielding_import("debug-yielding-import", this)
   , trap_reporting_import("trap-reporting-import", this)
   , requires_memory_access_reporting(false)
-  , requires_commit_instruction_reporting(false)
   , requires_fetch_instruction_reporting(false)
+  , requires_commit_instruction_reporting(false)
   // , icache("icache", this)
   // , dcache("dcache", this)
   , arm32_decoder()
@@ -966,8 +966,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "CLIDR, Cache Level ID Register"; }
-          uint32_t Read( CP15CPU& _cpu ) {
-            CPU& cpu = static_cast<CPU&>( _cpu );
+          uint32_t Read( CP15CPU& _cpu )
+          {
+            //CPU& cpu = static_cast<CPU&>( _cpu );
             uint32_t
               LoUU =   0b010, /* Level of Unification Uniprocessor  */
               LoC =    0b010, /* Level of Coherency */
