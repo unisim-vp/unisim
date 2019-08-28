@@ -1,3 +1,6 @@
+std/sstream
+std/string
+std/vector
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/trap_reporting

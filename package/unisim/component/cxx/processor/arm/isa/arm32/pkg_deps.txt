@@ -1,3 +1,8 @@
+libc/stdint
+std/iomanip
+std/iosfwd
+std/iostream
+std/map
 unisim/component/cxx/processor/arm
 unisim/component/cxx/processor/arm/isa
 unisim/util/arithmetic

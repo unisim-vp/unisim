@@ -1,2 +1,2 @@
-unisim/kernel/service
+unisim/service/interfaces/interface
 unisim/service/interfaces/register

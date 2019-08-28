@@ -36,13 +36,13 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_TI_C_IO_HH__
 #define __UNISIM_SERVICE_INTERFACES_TI_C_IO_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class TI_C_IO : public unisim::kernel::service::ServiceInterface
+class TI_C_IO : public ServiceInterface
 {
 public:
 	typedef enum

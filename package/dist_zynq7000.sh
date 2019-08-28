@@ -26,6 +26,12 @@ import unisim/service/web_terminal || exit
 import unisim/service/tee/char_io || exit
 import unisim/kernel/tlm2 || exit
 
+import std/iostream || exit
+import std/sstream || exit
+import std/string || exit
+import std/stdexcept || exit
+import libc/inttypes || exit
+
 copy source isa_thumb isa_thumb2 isa_arm32 header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
@@ -45,46 +51,6 @@ $(files template) \
 UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
-
-SIMULATOR_EXTERNAL_HEADERS="\
-assert.h \
-ctype.h \
-cxxabi.h \
-errno.h \
-fcntl.h \
-fenv.h \
-float.h \
-fstream \
-getopt.h \
-inttypes.h \
-limits.h \
-math.h \
-signal.h \
-stdarg.h \
-stdio.h \
-stdlib.h \
-string.h \
-sys/types.h \
-unistd.h \
-cassert \
-cerrno \
-cstddef \
-cstdio \
-cstdlib \
-cstring \
-stdexcept \
-deque \
-list \
-sstream \
-iosfwd \
-iostream \
-stack \
-map \
-ostream \
-queue \
-vector \
-string \
-"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
@@ -208,7 +174,6 @@ AC_SUBST(LIBTOOL_DEPS)
 AC_PROG_LN_S
 AC_LANG([C++])
 AM_PROG_CC_C_O
-AC_CHECK_HEADERS([${SIMULATOR_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))
 case "\${host}" in
 	*mingw*)
 		CPPFLAGS="-U__STRICT_ANSI__ \${CPPFLAGS}"
@@ -217,6 +182,7 @@ case "\${host}" in
 		;;
 esac
 $(lines ac)
+AX_CXXFLAGS_WARN_ALL
 GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
 AC_SUBST(GENISSLIB_PATH)
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])

@@ -740,7 +740,7 @@ public:
 	virtual bool PLBDebugDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
 	virtual bool PLBDebugDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
 
-	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> void ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr);
+	template <typename T, bool REVERSE, unisim::util::endian::endian_type ENDIAN> void ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr);
 	
 // 	bool DebugDataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
 // 	bool DebugDataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);

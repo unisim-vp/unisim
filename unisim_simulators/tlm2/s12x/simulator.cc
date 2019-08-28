@@ -6,6 +6,7 @@
  */
 
 #include <simulator.hh>
+#include <unisim/kernel/logger/logger_server.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/service/debug/debugger/debugger.tcc>
 
@@ -25,14 +26,14 @@ Simulator::Simulator(int argc, char **argv)
 	, sci3(0)
 	, sci4(0)
 	, sci5(0)
+	, spi0(0)
+	, spi1(0)
+	, spi2(0)
 	, can0(0)
 	, can1(0)
 	, can2(0)
 	, can3(0)
 	, can4(0)
-	, spi0(0)
-	, spi1(0)
-	, spi2(0)
 	, global_ram(0)
 	, global_flash(0)
 	, global_eeprom(0)
@@ -59,6 +60,15 @@ Simulator::Simulator(int argc, char **argv)
 	, pim_server(0)
 	, inline_debugger(0)
 	, monitor(0)
+	, sci_telnet(0)
+	, spi_telnet(0)
+	, http_server(0)
+	, instrumenter(0)
+	, profiler(0)
+	, sci_char_io_tee(0)
+	, spi_char_io_tee(0)
+	, sci_web_terminal(0)
+	, spi_web_terminal(0)
 
 	, sim_time(0)
 	, host_time(0)
@@ -70,15 +80,12 @@ Simulator::Simulator(int argc, char **argv)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, enable_monitor(false)
+	, enable_profiler(false)
 	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_enable_monitor("enable-monitor", 0, enable_monitor, "Enable/Disable monitoring tool")
-
-	, sci_enable_telnet(false)
-	, param_sci_enable_telnet("sci-enable-telnet", 0, sci_enable_telnet, "SCI Enable/Disable telnet instantiation")
-	, spi_enable_telnet(false)
-	, param_spi_enable_telnet("spi-enable-telnet", 0, spi_enable_telnet, "SPI Enable/Disable telnet instantiation")
+	, param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable/Disable profiling tool")
 
 	, endian("")
 	, program_counter_name("")
@@ -114,6 +121,9 @@ Simulator::Simulator(int argc, char **argv)
 	param_pc_reg_name->SetMutable(false);
 	param_pc_reg_name->SetVisible(true);
 
+	// - Instrumenter
+	instrumenter = new INSTRUMENTER("instrumenter");
+	
 	//=========================================================================
 	//===      Handling of file to load passed as command line argument     ===
 	//=========================================================================
@@ -196,7 +206,7 @@ Simulator::Simulator(int argc, char **argv)
 	loader = new MultiFormatLoader<CPU_ADDRESS_TYPE>("loader");
 
 	//  - debugger
-	debugger = (enable_inline_debugger || enable_gdb_server || enable_pim_server || enable_monitor) ? new Debugger("debugger") : 0;
+	debugger = (enable_inline_debugger || enable_gdb_server || enable_pim_server || enable_monitor || enable_profiler) ? new Debugger("debugger") : 0;
 
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
@@ -211,8 +221,22 @@ Simulator::Simulator(int argc, char **argv)
 	monitor = (enable_monitor)? new MONITOR("Monitor"): 0;
 
 	// - telnet
-	sci_telnet = (sci_enable_telnet) ? new unisim::service::telnet::Telnet("sci-telnet") : 0;
-	spi_telnet = (spi_enable_telnet) ? new unisim::service::telnet::Telnet("spi-telnet") : 0;
+	sci_telnet = new TELNET("sci-telnet");
+	spi_telnet = new TELNET("spi-telnet");
+	
+	// - Http Server
+	http_server = new HTTP_SERVER("http-server");
+	
+	// - Profiler
+	profiler = enable_profiler ? new PROFILER("profiler") : 0;
+	
+	// - Char I/O Tees
+	sci_char_io_tee = new CHAR_IO_TEE("sci-char-io-tee");
+	spi_char_io_tee = new CHAR_IO_TEE("spi-char-io-tee");
+	
+	// - Web Terminals
+	sci_web_terminal = new WEB_TERMINAL("sci-web-terminal");
+	spi_web_terminal = new WEB_TERMINAL("spi-web-terminal");
 
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
@@ -525,20 +549,72 @@ Simulator::Simulator(int argc, char **argv)
             // monitor->subprogram_lookup_import         >> *debugger->subprogram_lookup_export[2];
           }
         
-	if (sci_enable_telnet)
+	if(enable_profiler)
 	{
-		sci0->char_io_import >> sci_telnet->char_io_export;
+		*debugger->debug_yielding_import[4]       >> profiler->debug_yielding_export;
+		*debugger->debug_event_listener_import[4] >> profiler->debug_event_listener_export;
+		profiler->debug_yielding_request_import      >> *debugger->debug_yielding_request_export[4];
+		profiler->debug_event_trigger_import         >> *debugger->debug_event_trigger_export[4];
+		profiler->disasm_import                      >> *debugger->disasm_export[4];
+		profiler->memory_import                      >> *debugger->memory_export[4];
+		profiler->registers_import                   >> *debugger->registers_export[4];
+		profiler->stmt_lookup_import                 >> *debugger->stmt_lookup_export[4];
+		profiler->symbol_table_lookup_import         >> *debugger->symbol_table_lookup_export[4];
+		profiler->backtrace_import                   >> *debugger->backtrace_export[4];
+		profiler->debug_info_loading_import          >> *debugger->debug_info_loading_export[4];
+		profiler->data_object_lookup_import          >> *debugger->data_object_lookup_export[4];
+		profiler->subprogram_lookup_import           >> *debugger->subprogram_lookup_export[4];
 	}
+	
+	sci0->char_io_import >> sci_char_io_tee->char_io_export;
+	(*sci_char_io_tee->char_io_import[0]) >> sci_telnet->char_io_export;
+	(*sci_char_io_tee->char_io_import[1]) >> sci_web_terminal->char_io_export;
 
-	if(spi_enable_telnet)
-	{
-		spi0->char_io_import >> spi_telnet->char_io_export;
-	}
+	spi0->char_io_import >> spi_char_io_tee->char_io_export;
+	(*spi_char_io_tee->char_io_import[0]) >> spi_telnet->char_io_export;
+	(*spi_char_io_tee->char_io_import[1]) >> sci_web_terminal->char_io_export;
 
 	*loader->memory_import[0] >>  mmc->memory_export;
 	loader->registers_import >> cpu->registers_export;
 	cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 
+	{
+			unsigned int i = 0;
+			*http_server->http_server_import[i++] >> instrumenter->http_server_export;
+			*http_server->http_server_import[i++] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
+			if(profiler) *http_server->http_server_import[i++] >> profiler->http_server_export;
+			if(sci_web_terminal) *http_server->http_server_import[i++] >> sci_web_terminal->http_server_export;
+			if(spi_web_terminal) *http_server->http_server_import[i++] >> spi_web_terminal->http_server_export;
+	}
+	
+	{
+		unsigned int i = 0;
+		*http_server->registers_import[i++] >> cpu->registers_export;
+		*http_server->registers_import[i++] >> mmc->registers_export;
+		*http_server->registers_import[i++] >> s12xint->registers_export;
+		*http_server->registers_import[i++] >> crg->registers_export;
+		*http_server->registers_import[i++] >> atd1->registers_export;
+		*http_server->registers_import[i++] >> atd0->registers_export;
+		*http_server->registers_import[i++] >> pwm->registers_export;
+		*http_server->registers_import[i++] >> ect->registers_export;
+		*http_server->registers_import[i++] >> pit->registers_export;
+		*http_server->registers_import[i++] >> xgate->registers_export;
+		*http_server->registers_import[i++] >> global_eeprom->registers_export;
+		*http_server->registers_import[i++] >> sci0->registers_export;
+		*http_server->registers_import[i++] >> sci1->registers_export;
+		*http_server->registers_import[i++] >> sci2->registers_export;
+		*http_server->registers_import[i++] >> sci3->registers_export;
+		*http_server->registers_import[i++] >> sci4->registers_export;
+		*http_server->registers_import[i++] >> sci5->registers_export;
+		*http_server->registers_import[i++] >> can0->registers_export;
+		*http_server->registers_import[i++] >> can1->registers_export;
+		*http_server->registers_import[i++] >> can2->registers_export;
+		*http_server->registers_import[i++] >> can3->registers_export;
+		*http_server->registers_import[i++] >> can4->registers_export;
+		*http_server->registers_import[i++] >> spi0->registers_export;
+		*http_server->registers_import[i++] >> spi1->registers_export;
+		*http_server->registers_import[i++] >> spi2->registers_export;
+	}
 }
 
 Simulator::~Simulator()
@@ -607,9 +683,18 @@ Simulator::~Simulator()
 
 	if(gdb_server) { delete gdb_server; gdb_server = NULL; }
 	if(inline_debugger) { delete inline_debugger; inline_debugger = NULL; }
+	if(profiler) { delete profiler; profiler = NULL; }
+	if(debugger) { delete debugger; debugger = NULL; }
 
 	if (sci_telnet) { delete sci_telnet; sci_telnet = NULL; }
 	if (spi_telnet) { delete spi_telnet; spi_telnet = NULL; }
+
+	if(http_server) { delete http_server; http_server = NULL; }
+	if(profiler) { delete profiler; profiler = NULL; }
+	if(sci_web_terminal) { delete sci_web_terminal; sci_web_terminal = NULL; }
+	if(spi_web_terminal) { delete spi_web_terminal; spi_web_terminal = NULL; }
+	if(sci_char_io_tee) { delete sci_char_io_tee; sci_char_io_tee = NULL; }
+	if(spi_char_io_tee) { delete spi_char_io_tee; spi_char_io_tee = NULL; }
 
 	if (host_time) { delete host_time; host_time = NULL; }
 	if(sim_time) { delete sim_time; sim_time = NULL; }
@@ -661,32 +746,44 @@ Simulator::~Simulator()
 	if (spi2) { delete spi2; spi2 = NULL; }
 
 	if(cpu) { delete cpu; cpu = NULL; }
-
-#if defined(WIN32) || defined(WIN64)
-	// releases the winsock2 resources
-	WSACleanup();
-#endif
-
+	
+	if(instrumenter) { delete instrumenter; instrumenter = NULL; }
 }
 
 
 Simulator::SetupStatus Simulator::Setup()
 {
-// *********************************
-#if defined(WIN32) || defined(WIN64)
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		std::cerr << "WSAStartup failed" << std::endl;
-		return unisim::kernel::service::Simulator::ST_ERROR;
-	}
-#endif
-
-// **********************************
-
 	Simulator::SetupStatus result = unisim::kernel::service::Simulator::Setup();
+
+	if(profiler)
+	{
+		http_server->AddJSAction(
+			unisim::service::interfaces::ToolbarOpenTabAction(
+				/* name */      profiler->GetName(), 
+				/* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\">",
+				/* tips */      std::string("Profile of ") + cpu->GetName(),
+				/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+				/* uri */       profiler->URI()
+		));
+	}
+	
+	http_server->AddJSAction(
+		unisim::service::interfaces::ToolbarOpenTabAction(
+			/* name */      sci_web_terminal->GetName(),
+			/* label */     "<img src=\"/unisim/service/web_terminal/icon_term0.svg\">",
+			/* tips */      (*sci_web_terminal)["title"],
+			/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+			/* uri */       sci_web_terminal->URI()
+	));
+
+	http_server->AddJSAction(
+		unisim::service::interfaces::ToolbarOpenTabAction(
+			/* name */      spi_web_terminal->GetName(),
+			/* label */     "<img src=\"/unisim/service/web_terminal/icon_term1.svg\">",
+			/* tips */      (*spi_web_terminal)["title"],
+			/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+			/* uri */       spi_web_terminal->URI()
+	));  
 
 	address_t cpu_address;
 	uint8_t page = 0;
@@ -885,16 +982,16 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("pim.filename", "pim.xml");
 
 	simulator->SetVariable("pim-server.tcp-port", 0);
-	simulator->SetVariable("pim-server.architecture-description-filename", "gdb_hcs12x.xml");
+	simulator->SetVariable("pim-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_hcs12x.xml");
 	simulator->SetVariable("pim-server.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
 
 	//  - GDB Server run-time configuration
 	simulator->SetVariable("gdb-server.tcp-port", 0);
-	simulator->SetVariable("gdb-server.architecture-description-filename", "gdb_hcs12x.xml");
+	simulator->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_hcs12x.xml");
 	simulator->SetVariable("gdb-server.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
 
 	simulator->SetVariable("debugger.parse-dwarf", true);
-	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", "68hc12_dwarf_register_number_mapping.xml");
+	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/68hc12_dwarf_register_number_mapping.xml");
 
 	simulator->SetVariable("Monitor.xml-spec-file-path", "xml_spec_file_path.xml");
 	simulator->SetVariable("Monitor.property-list", "");
@@ -1034,7 +1131,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("PIT.interrupt-offset-channel[3]", 0x74);
 	simulator->SetVariable("PIT.debug-enabled", false);
 
-	simulator->SetVariable("sci-telnet.telnet-tcp-port", 1234);
+	simulator->SetVariable("sci-telnet.tcp-port", 1235);
 	simulator->SetVariable("sci-enable-telnet", false);
 
 	simulator->SetVariable("SCI2.bus-cycle-time", 250000);
@@ -1171,7 +1268,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("Tranceiver4.int-interrupt", 0xF2);
 	simulator->SetVariable("Tranceiver4.debug-enabled", false);
 
-	simulator->SetVariable("spi-telnet.telnet-tcp-port", 1234);
+	simulator->SetVariable("spi-telnet.tcp-port", 1236);
 	simulator->SetVariable("spi-enable-telnet", false);
 
 	simulator->SetVariable("SPI0.bus-cycle-time", 250000);
@@ -1244,6 +1341,14 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("inline-debugger.num-loaders", 1);
 	simulator->SetVariable("inline-debugger.search-path", "");
 
+	simulator->SetVariable("inline-debugger.program-counter-name", "PC");
+
+	// Http Server
+	simulator->SetVariable("http-server.http-port", 12360);
+	
+	// Web Terminals
+	simulator->SetVariable("sci-web-terminal.title", "Serial Terminal over SCI");
+	simulator->SetVariable("spi-web-terminal.title", "Serial Terminal over SPI");
 }
 
 void Simulator::SigInt()

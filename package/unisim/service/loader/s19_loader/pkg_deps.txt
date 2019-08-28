@@ -1,3 +1,9 @@
+libc/inttypes
+libc/stdio
+libc/stdlib
+libc/string
+std/fstream
+std/iostream
 unisim/kernel/service
 unisim/service/interfaces/loader
 unisim/service/interfaces/memory

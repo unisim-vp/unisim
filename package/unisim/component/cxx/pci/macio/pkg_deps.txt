@@ -1,3 +1,5 @@
+std/iostream
+std/sstream
 unisim/kernel/logger
 unisim/kernel/service
 unisim/util/device

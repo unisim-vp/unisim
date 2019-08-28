@@ -934,7 +934,8 @@ libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
-dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
+dist_share_DATA = ${UNISIM_SIMULATOR_DATA_FILES}
+nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES}
 
 BUILT_SOURCES=\
 	\$(top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.hh\

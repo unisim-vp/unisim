@@ -17,6 +17,10 @@ import unisim/service/time/host_time || exit
 import unisim/component/tlm2/processor/risc16 || exit
 import unisim/component/tlm2/memory/ram || exit
 
+import libc/stdint || exit
+import std/iostream || exit
+import std/stdexcept || exit
+
 copy source isa header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
@@ -32,33 +36,6 @@ $(files template)"
 UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
-
-SIMULATOR_EXTERNAL_HEADERS="\
-assert.h \
-errno.h \
-fcntl.h \
-fstream \
-getopt.h \
-inttypes.h \
-iosfwd \
-iostream \
-list \
-map \
-ostream \
-queue \
-signal.h \
-sstream \
-stdarg.h \
-stdexcept \
-stdio.h \
-stdlib.h \
-string \
-string.h \
-sys/stat.h \
-sys/types.h \
-unistd.h \
-vector \
-"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
@@ -174,7 +151,6 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_LANG([C++])
 AM_PROG_CC_C_O
-AC_CHECK_HEADERS([${SIMULATOR_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))
 case "\${host}" in
 	*mingw*)
 		CPPFLAGS="-U__STRICT_ANSI__ \${CPPFLAGS}"
@@ -183,6 +159,7 @@ case "\${host}" in
 		;;
 esac
 $(lines ac)
+AX_CXXFLAGS_WARN_ALL
 GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
 AC_SUBST(GENISSLIB_PATH)
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
@@ -203,7 +180,8 @@ unisim_risc16_${AM_SIMULATOR_VERSION}_LDADD = librisc16-${SIMULATOR_VERSION}.a
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_TEMPLATE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_TEMPLATE_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-risc16-${SIMULATOR_VERSION}
-dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_CONFIG_FILES}
+dist_share_DATA = ${UNISIM_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_CONFIG_FILES}
+nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES}
 
 BUILT_SOURCES=\
 	\$(top_builddir)/unisim/component/cxx/processor/risc16/isa.hh\

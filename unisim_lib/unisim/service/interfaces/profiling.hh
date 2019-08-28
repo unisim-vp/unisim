@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_PROFILING_HH__
 #define __UNISIM_SERVICE_INTERFACES_PROFILING_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 #include <unisim/util/debug/profile.hh>
 
 namespace unisim {
@@ -43,7 +43,7 @@ namespace service {
 namespace interfaces {
 
 template <class ADDRESS>
-class Profiling : public unisim::kernel::service::ServiceInterface
+class Profiling : public ServiceInterface
 {
 public:
 	typedef enum

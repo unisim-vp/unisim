@@ -43,7 +43,6 @@
 #include <tlm_utils/simple_target_socket.h>
 
 #include "unisim/kernel/tlm2/tlm.hh"
-#include "unisim/util/garbage_collector/garbage_collector.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>
@@ -80,7 +79,6 @@ using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExportBase;
-using unisim::util::garbage_collector::Pointer;
 
 using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;

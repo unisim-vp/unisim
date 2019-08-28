@@ -318,8 +318,8 @@ void TLE72XXSL::RxRun() {
 void TLE72XXSL::rx_b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 {
 	payload.acquire();
-	unsigned int length = payload.get_data_length();
-	unsigned char* data = payload.get_data_ptr();
+// 	unsigned int length = payload.get_data_length();
+// 	unsigned char* data = payload.get_data_ptr();
 
 	setSSLow(false);
 	setActive();

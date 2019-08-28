@@ -35,13 +35,13 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_CACHE_POWER_ESTIMATOR_HH__
 #define __UNISIM_SERVICE_INTERFACES_CACHE_POWER_ESTIMATOR_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class CachePowerEstimator : public unisim::kernel::service::ServiceInterface
+class CachePowerEstimator : public ServiceInterface
 {
 public:
 	CachePowerEstimator() {}

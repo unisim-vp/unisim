@@ -59,18 +59,6 @@
 #include <unisim/kernel/service/service.hh>
 #include <unisim/util/cache/cache.hh>
 #include <unisim/util/likely/likely.hh>
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <list>
-#include <cstdlib>
-
-#ifdef WIN32
-#include <winsock2.h>
-#include <windows.h>
-#else
-#include <signal.h>
-#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

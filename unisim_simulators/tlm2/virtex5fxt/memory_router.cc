@@ -36,4 +36,4 @@
 #include "unisim/component/tlm2/interconnect/generic_router/router.tcc"
 #include "config.hh"
 
-template class unisim::component::tlm2::interconnect::generic_router::Router<MemoryRouterConfig>;
+template class unisim::component::tlm2::interconnect::generic_router::Router<Config::MEMORY_ROUTER_CONFIG>;

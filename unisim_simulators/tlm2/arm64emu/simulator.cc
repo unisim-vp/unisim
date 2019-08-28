@@ -35,6 +35,8 @@
 #include <unisim/kernel/logger/logger_server.hh>
 #include <unisim/component/tlm2/memory/ram/memory.tcc>
 #include <unisim/service/debug/debugger/debugger.tcc>
+#include <iostream>
+#include <vector>
 #include <string>
 #include <stdexcept>
 

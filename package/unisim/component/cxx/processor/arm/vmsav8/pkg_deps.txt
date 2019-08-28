@@ -1,3 +1,8 @@
+libc/inttypes
+std/iomanip
+std/map
+std/set
+std/stdexcept
 unisim/component/cxx/processor/arm
 unisim/component/cxx/processor/arm/isa/arm64
 unisim/kernel/logger

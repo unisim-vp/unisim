@@ -1,4 +1,8 @@
+libc/inttypes
 m4/systemc
+std/list
+std/sstream
+std/string
 unisim/component/tlm/message
 unisim/kernel/logger
 unisim/kernel/service

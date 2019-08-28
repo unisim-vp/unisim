@@ -68,7 +68,7 @@ void SocketClientThread::run() {
 		u_long NonBlock = 1;
 		if(ioctlsocket(sockfd, FIONBIO, &NonBlock) != 0) {
 			int array[] = {sockfd};
-			error(array, "ioctlsocket failed");
+			error(array, sizeof(array) / sizeof(array[0]), "ioctlsocket failed");
 		}
 
 #else
@@ -76,12 +76,12 @@ void SocketClientThread::run() {
 		int flags = fcntl(sockfd, F_GETFL, 0);
 		if (flags < 0)	{
 			int array[] = {sockfd};
-			error(array, "fcntl failed");
+			error(array, sizeof(array) / sizeof(array[0]), "fcntl failed");
 		}
 
 		if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
 			int array[] = {sockfd};
-			error(array, "fcntl failed");
+			error(array, sizeof(array) / sizeof(array[0]), "fcntl failed");
 		}
 
 #endif

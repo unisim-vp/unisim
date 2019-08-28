@@ -334,10 +334,13 @@ bool CPU<TYPES, CONFIG>::PLBDebugDataWrite(typename TYPES::PHYSICAL_ADDRESS phys
 template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::Synchronize()
 {
-	wait(cpu_time);
-	cpu_time = sc_core::SC_ZERO_TIME;
-	run_time = sc_core::sc_time_stamp();
-	RunInternalTimers();
+	if(sc_core::sc_get_status() >= sc_core::SC_RUNNING)
+	{
+		wait(cpu_time);
+		cpu_time = sc_core::SC_ZERO_TIME;
+		run_time = sc_core::sc_time_stamp();
+		RunInternalTimers();
+	}
 }
 
 template <typename TYPES, typename CONFIG>

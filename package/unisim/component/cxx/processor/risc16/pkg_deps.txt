@@ -1,3 +1,10 @@
+libc/inttypes
+libc/stdio
+libc/stdlib
+std/iostream
+std/map
+std/sstream
+std/vector
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/debug_yielding

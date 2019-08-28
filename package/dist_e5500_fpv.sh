@@ -35,6 +35,14 @@ import unisim/component/cxx/processor/powerpc/isa/book_ii
 import unisim/component/cxx/processor/powerpc/isa/book_iii_e
 import unisim/component/cxx/processor/powerpc/isa/book_e
 
+import libc/inttypes
+import std/iostream
+import std/sstream
+import std/string
+import std/vector
+import std/map
+import std/stdexcept
+
 copy source isa header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
@@ -47,46 +55,6 @@ UNISIM_LIB_SIMULATOR_HEADER_FILES="${UNISIM_LIB_SIMULATOR_ISA_FILES} $(files hea
 UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
-
-SIMULATOR_EXTERNAL_HEADERS="\
-assert.h \
-ctype.h \
-cxxabi.h \
-errno.h \
-fcntl.h \
-fenv.h \
-float.h \
-fstream \
-getopt.h \
-inttypes.h \
-limits.h \
-math.h \
-signal.h \
-stdarg.h \
-stdio.h \
-stdlib.h \
-string.h \
-sys/types.h \
-unistd.h \
-cassert \
-cerrno \
-cstddef \
-cstdio \
-cstdlib \
-cstring \
-stdexcept \
-deque \
-list \
-sstream \
-iosfwd \
-iostream \
-stack \
-map \
-ostream \
-queue \
-vector \
-string \
-"
 
 UNISIM_SIMULATOR_ISA_FILES="\
 top_ppc64.isa \
@@ -227,7 +195,6 @@ AC_SUBST(LIBTOOL_DEPS)
 AC_PROG_LN_S
 AC_LANG([C++])
 AM_PROG_CC_C_O
-AC_CHECK_HEADERS([${SIMULATOR_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))
 case "\${host}" in
 	*mingw*)
 		CPPFLAGS="-U__STRICT_ANSI__ \${CPPFLAGS}"
@@ -236,6 +203,7 @@ case "\${host}" in
 		;;
 esac
 $(lines ac)
+AX_CXXFLAGS_WARN_ALL
 GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
 AC_SUBST(GENISSLIB_PATH)
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
@@ -266,7 +234,8 @@ nodist_libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = top_ppc64.cc
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
-dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
+dist_share_DATA = ${UNISIM_SIMULATOR_DATA_FILES}
+nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES}
 
 BUILT_SOURCES=\
 	\$(top_builddir)/top_ppc64.hh\

@@ -1,3 +1,11 @@
+libc/inttypes
+libc/stdio
+libc/stdlib
+std/iosfwd
+std/iostream
+std/map
+std/sstream
+std/stdexcept
 unisim/component/cxx/cache
 unisim/component/cxx/processor/powerpc
 unisim/component/cxx/tlb

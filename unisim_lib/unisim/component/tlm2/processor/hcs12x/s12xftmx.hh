@@ -137,7 +137,7 @@ public:
 	static const uint16_t DFLASH_SECTOR_SIZE = 256;
 	static const uint16_t PHRASE_SIZE = 8;
 	static const uint16_t PFLASH_SECTOR_SIZE = 1024;
-	static const uint16_t PFLASH_SECTION_SIZE = 128*PFLASH_SECTOR_SIZE;
+	static const uint32_t PFLASH_SECTION_SIZE = 128*PFLASH_SECTOR_SIZE;
 	static const uint16_t EEE_NON_VOLATILE_SPACE_SIZE = 8;
 	static const uint16_t BACKDOOR_ACCESS_KEY_SIZE = 8;
 

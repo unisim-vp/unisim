@@ -33,6 +33,7 @@
 
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
+#include <unisim/service/debug/debugger/debugger.tcc>
 #include <simulator.hh>
 #include <stdexcept>
 #include <iostream>
@@ -369,48 +370,18 @@ Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	// sim->SetVariable("loader.file3.base-addr",    0x1110000);
   
   
-  sim->SetVariable( "gdb-server.architecture-description-filename", "gdb_arm_with_neon.xml" );
+  sim->SetVariable( "gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_arm_with_neon.xml" );
   sim->SetVariable( "debugger.parse-dwarf", false );
-  sim->SetVariable( "debugger.dwarf-register-number-mapping-filename", "arm_eabi_dwarf_register_number_mapping.xml" );
+  sim->SetVariable( "debugger.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml" );
 
   sim->SetVariable( "inline-debugger.num-loaders", 1 );
   sim->SetVariable( "inline-debugger.search-path", "" );
 }
 
-#ifdef WIN32
-BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
+void Simulator::SigInt()
 {
-  bool stop = false;
-  switch(dwCtrlType)
-    {
-    case CTRL_C_EVENT:
-      cerr << "Interrupted by Ctrl-C" << endl;
-      stop = true;
-      break;
-    case CTRL_BREAK_EVENT:
-      cerr << "Interrupted by Ctrl-Break" << endl;
-      stop = true;
-      break;
-    case CTRL_CLOSE_EVENT:
-      cerr << "Interrupted by a console close" << endl;
-      stop = true;
-      break;
-    case CTRL_LOGOFF_EVENT:
-      cerr << "Interrupted because of logoff" << endl;
-      stop = true;
-      break;
-    case CTRL_SHUTDOWN_EVENT:
-      cerr << "Interrupted because of shutdown" << endl;
-      stop = true;
-      break;
-    }
-  if(stop) sc_stop();
-  return stop ? TRUE : FALSE;
+	if(!inline_debugger)
+	{
+		unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+	}
 }
-#else
-void Simulator::SigIntHandler(int signum)
-{
-  cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-  unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
-}
-#endif

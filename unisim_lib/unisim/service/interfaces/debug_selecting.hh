@@ -35,13 +35,13 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_DEBUG_SELECTING_HH__
 #define __UNISIM_SERVICE_INTERFACES_DEBUG_SELECTING_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class DebugSelecting : public unisim::kernel::service::ServiceInterface
+class DebugSelecting : public ServiceInterface
 {
 public:
 	virtual bool DebugSelect(unsigned int prc_num) = 0;

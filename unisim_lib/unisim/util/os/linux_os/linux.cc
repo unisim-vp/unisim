@@ -42,5 +42,49 @@
 #include "unisim/util/os/linux_os/linux.tcc"
 #include "unisim/util/os/linux_os/calls.tcc"
 
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#include <windows.h>
+#include <time.h>
+#endif
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+namespace unisim {
+namespace util {
+namespace os {
+namespace linux_os {
+
+  // see http://mathieuturcotte.ca/textes/windows-gettimeofday
+  int gettimeofday(struct timeval* p, struct timezone* tz) {
+    ULARGE_INTEGER ul; // As specified on MSDN.
+    FILETIME ft;
+
+    // Returns a 64-bit value representing the number of
+    // 100-nanosecond intervals since January 1, 1601 (UTC).
+    GetSystemTimeAsFileTime(&ft);
+
+    // Fill ULARGE_INTEGER low and high parts.
+    ul.LowPart = ft.dwLowDateTime;
+    ul.HighPart = ft.dwHighDateTime;
+    // Convert to microseconds.
+    ul.QuadPart /= 10ULL;
+    // Remove Windows to UNIX Epoch delta.
+    ul.QuadPart -= 11644473600000000ULL;
+    // Modulo to retrieve the microseconds.
+    p->tv_usec = (long) (ul.QuadPart % 1000000LL);
+    // Divide to retrieve the seconds.
+    p->tv_sec = (long) (ul.QuadPart / 1000000LL);
+
+    tz->tz_minuteswest = 0;
+    tz->tz_dsttime = 0;
+
+    return 0;
+  }
+
+} // end of namespace linux
+} // end of namespace os
+} // end of namespace util
+} // end of namespace unisim
+#endif
+
 template struct unisim::util::os::linux_os::Linux<uint32_t, uint32_t>;
 template struct unisim::util::os::linux_os::Linux<uint64_t, uint64_t>;

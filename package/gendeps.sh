@@ -96,6 +96,138 @@ function discover_file_deps
 			if grep -e '^# *include *<lua\.h>' "${FILEPATH}" &> /dev/null; then
 				echo "m4/lua" >> "${PKG_DEPS_TXT}"
 			fi
+			if grep -e '^# *include *<assert\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/assert" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<ctype\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/ctype" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<errno\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/errno" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<fcntl\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/fcntl" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<fenv\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/fenv" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<float\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/float" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<getopt\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/getopt" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<inttypes\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/inttypes" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<limits\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/limits" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<math\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/math" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<signal\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/signal" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<stdarg\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/stdarg" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<stdio\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/stdio" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<stdlib\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/stdlib" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<string\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/string" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<sys/types\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "sys/types" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<unistd\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/unistd" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<stdint\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/stdint" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<time\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/time" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<dirent\.h>' "${FILEPATH}" &> /dev/null; then
+				echo "libc/dirent" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<fstream>' "${FILEPATH}" &> /dev/null; then
+				echo "std/fstream" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<cassert>' "${FILEPATH}" &> /dev/null; then
+				echo "std/cassert" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<cmath>' "${FILEPATH}" &> /dev/null; then
+				echo "std/cmath" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<cerrno>' "${FILEPATH}" &> /dev/null; then
+				echo "std/cerrno" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<cstddef>' "${FILEPATH}" &> /dev/null; then
+				echo "std/cstddef" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<cstdio>' "${FILEPATH}" &> /dev/null; then
+				echo "std/cstdio" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<cstdlib>' "${FILEPATH}" &> /dev/null; then
+				echo "std/cstdlib" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<cstring>' "${FILEPATH}" &> /dev/null; then
+				echo "std/cstring" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<iomanip>' "${FILEPATH}" &> /dev/null; then
+				echo "std/iomanip" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<stdexcept>' "${FILEPATH}" &> /dev/null; then
+				echo "std/stdexcept" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<deque>' "${FILEPATH}" &> /dev/null; then
+				echo "std/deque" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<list>' "${FILEPATH}" &> /dev/null; then
+				echo "std/list" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<sstream>' "${FILEPATH}" &> /dev/null; then
+				echo "std/sstream" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<iosfwd>' "${FILEPATH}" &> /dev/null; then
+				echo "std/iosfwd" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<iostream>' "${FILEPATH}" &> /dev/null; then
+				echo "std/iostream" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<stack>' "${FILEPATH}" &> /dev/null; then
+				echo "std/stack" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<map>' "${FILEPATH}" &> /dev/null; then
+				echo "std/map" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<ostream>' "${FILEPATH}" &> /dev/null; then
+				echo "std/ostream" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<queue>' "${FILEPATH}" &> /dev/null; then
+				echo "std/queue" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<vector>' "${FILEPATH}" &> /dev/null; then
+				echo "std/vector" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<string>' "${FILEPATH}" &> /dev/null; then
+				echo "std/string" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<set>' "${FILEPATH}" &> /dev/null; then
+				echo "std/set" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<algorithm>' "${FILEPATH}" &> /dev/null; then
+				echo "std/algorithm" >> "${PKG_DEPS_TXT}"
+			fi
+			if grep -e '^# *include *<cctype>' "${FILEPATH}" &> /dev/null; then
+				echo "std/cctype" >> "${PKG_DEPS_TXT}"
+			fi
 		fi
 		
 		if [[ "${FILEPATH}" =~ ${isa_regex} ]]; then
@@ -323,7 +455,7 @@ echo "unisim/component/cxx/processor/arm/isa/thumb2" >> "${PACKAGE_DIR}/unisim/c
 
 echo "unisim/component/cxx/processor/arm/isa/arm64" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/vmsav8/pkg_deps.txt"
 
-echo "m4/endian" > "${PACKAGE_DIR}/unisim/util/endian/pkg_deps.txt"
+echo "m4/endian" >> "${PACKAGE_DIR}/unisim/util/endian/pkg_deps.txt"
 echo "m4/real_path" >> "${PACKAGE_DIR}/unisim/kernel/service/pkg_deps.txt"
 
 sed -i '/unisim\/component\/cxx\/processor\/arm\/cache/d' "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/pkg_deps.txt"

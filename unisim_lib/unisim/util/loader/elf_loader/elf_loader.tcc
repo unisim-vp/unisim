@@ -39,6 +39,7 @@
 #include <unisim/util/likely/likely.hh>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <stdlib.h>
 
 namespace unisim {

@@ -1,4 +1,12 @@
 m4/systemc
+std/fstream
+std/iostream
+std/map
+std/set
+std/sstream
+std/stdexcept
+std/string
+std/vector
 unisim/kernel/logger
 unisim/kernel/service
 unisim/kernel/tlm2

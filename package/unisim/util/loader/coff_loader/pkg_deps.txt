@@ -1,3 +1,12 @@
+libc/inttypes
+libc/stdlib
+std/fstream
+std/iosfwd
+std/iostream
+std/map
+std/sstream
+std/vector
+unisim/kernel/service
 unisim/service/interfaces/blob
 unisim/service/interfaces/loader
 unisim/service/interfaces/memory

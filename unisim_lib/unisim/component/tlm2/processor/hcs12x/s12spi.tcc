@@ -349,8 +349,8 @@ template <unsigned int SPI_VERSION>
 void S12SPI<SPI_VERSION>::rx_b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 {
 	payload.acquire();
-	unsigned int length = payload.get_data_length();
-	unsigned char* data = payload.get_data_ptr();
+// 	unsigned int length = payload.get_data_length();
+// 	unsigned char* data = payload.get_data_ptr();
 
 	setSSLow(false);
 	setActive();

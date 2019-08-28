@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_HTTP_SERVER_HH__
 #define __UNISIM_SERVICE_INTERFACES_HTTP_SERVER_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 #include <unisim/util/hypapp/hypapp.hh>
 
 namespace unisim {
@@ -356,7 +356,7 @@ struct WebInterfaceModdingScanner
 	virtual void Append(const StatusBarItem&) = 0;        // add a status bar item
 };
 
-struct HttpServer : unisim::kernel::service::ServiceInterface
+struct HttpServer : ServiceInterface
 {
 	virtual bool ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn) = 0;
 	virtual void ScanWebInterfaceModdings(WebInterfaceModdingScanner& scanner) = 0;

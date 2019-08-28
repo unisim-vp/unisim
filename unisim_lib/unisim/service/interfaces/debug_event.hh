@@ -35,16 +35,17 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_DEBUG_EVENT_HH__
 #define __UNISIM_SERVICE_INTERFACES_DEBUG_EVENT_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 #include <unisim/util/debug/event.hh>
 #include <unisim/util/debug/memory_access_type.hh>
+#include <list>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
 template <class ADDRESS>
-class DebugEventTrigger : public unisim::kernel::service::ServiceInterface
+class DebugEventTrigger : public ServiceInterface
 {
 public:
 	// "named" events
@@ -64,7 +65,7 @@ public:
 };
 
 template <class ADDRESS>
-class DebugEventListener : public unisim::kernel::service::ServiceInterface
+class DebugEventListener : public ServiceInterface
 {
 public:
 	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event) = 0;

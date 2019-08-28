@@ -282,6 +282,114 @@ bool ResolvePath(const std::string& prefix_dir,
 }
 
 //=============================================================================
+//=                             SignalHandler                                 =
+//=============================================================================
+
+class SignalHandler
+{
+private:
+	friend class Simulator;
+	
+	static void Init();
+	static void Fini();
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
+#else
+	static void SigIntHandler(int signum);
+	static void SigPipeHandler(int signum);
+	static void (*sig_int_handler)(int);
+	static void (*prev_sig_int_handler)(int);
+	static void (*sig_pipe_handler)(int);
+	static void (*prev_sig_pipe_handler)(int);
+#endif
+};
+
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
+void (*SignalHandler::sig_pipe_handler)(int) = 0;
+void (*SignalHandler::prev_sig_pipe_handler)(int) = 0;
+void (*SignalHandler::sig_int_handler)(int) = 0;
+void (*SignalHandler::prev_sig_int_handler)(int) = 0;
+#endif
+
+void SignalHandler::Init()
+{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	SetConsoleCtrlHandler(&SignalHandler::ConsoleCtrlHandler, TRUE);
+#else
+	sig_int_handler = &SignalHandler::SigIntHandler;
+	prev_sig_int_handler = signal(SIGINT, sig_int_handler);
+	sig_pipe_handler = &SignalHandler::SigPipeHandler;
+	prev_sig_pipe_handler = signal(SIGPIPE, sig_pipe_handler);
+#endif
+}
+
+void SignalHandler::Fini()
+{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	SetConsoleCtrlHandler(&SignalHandler::ConsoleCtrlHandler, FALSE);
+#else
+	if(sig_pipe_handler)
+	{
+		signal(SIGPIPE, prev_sig_pipe_handler);
+		sig_pipe_handler = 0;
+	}
+	if(sig_int_handler)
+	{
+		signal(SIGINT, prev_sig_int_handler);
+		sig_int_handler = 0;
+	}
+#endif
+}
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+BOOL WINAPI SignalHandler::ConsoleCtrlHandler(DWORD dwCtrlType)
+{
+	bool interrupted = false;
+	switch(dwCtrlType)
+	{
+		case CTRL_C_EVENT:
+			std::cerr << "Interrupted by Ctrl-C" << std::endl;
+			interrupted = true;
+			break;
+		case CTRL_BREAK_EVENT:
+			std::cerr << "Interrupted by Ctrl-Break" << std::endl;
+			interrupted = true;
+			break;
+		case CTRL_CLOSE_EVENT:
+			std::cerr << "Interrupted by a console close" << std::endl;
+			interrupted = true;
+			break;
+		case CTRL_LOGOFF_EVENT:
+			std::cerr << "Interrupted because of logoff" << std::endl;
+			interrupted = true;
+			break;
+		case CTRL_SHUTDOWN_EVENT:
+			std::cerr << "Interrupted because of shutdown" << std::endl;
+			interrupted = true;
+			break;
+	}
+	
+	if(interrupted)
+	{
+		Simulator::Instance()->BroadcastSigInt();
+	}
+	
+	return interrupted ? TRUE : FALSE;
+}
+#else
+void SignalHandler::SigIntHandler(int signum)
+{
+	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
+	Simulator::Instance()->BroadcastSigInt();
+}
+
+void SignalHandler::SigPipeHandler(int signum)
+{
+	/* do nothing */
+}
+#endif
+
+//=============================================================================
 //=                             VariableBase                                 =
 //=============================================================================
 	
@@ -2130,13 +2238,6 @@ int Simulator::CommandLineOption::operator == (const char *arg) const
 	return 0;
 }
 
-#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
-void (*Simulator::sig_pipe_handler)(int) = 0;
-void (*Simulator::prev_sig_pipe_handler)(int) = 0;
-void (*Simulator::sig_int_handler)(int) = 0;
-void (*Simulator::prev_sig_int_handler)(int) = 0;
-#endif
-
 Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator *))
 	: void_variable(0)
 	, shared_data_dir()
@@ -2185,17 +2286,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	new unisim::kernel::config::INIConfigFileHelper(this);
 	new unisim::kernel::config::JSONConfigFileHelper(this);
 	
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-	SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
-#else
-	sig_int_handler = &Simulator::SigIntHandler;
-	prev_sig_int_handler = signal(SIGINT, sig_int_handler);
-#endif
-
-#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
-	sig_pipe_handler = &Simulator::SigPipeHandler;
-	prev_sig_pipe_handler = signal(SIGPIPE, sig_pipe_handler);
-#endif
+	SignalHandler::Init();
 
 	bool has_share_data_dir_hint = false;
 	std::string shared_data_dir_hint;
@@ -2675,19 +2766,7 @@ Simulator::~Simulator()
 		delete config_file_helper;
 	}
 	
-#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
-	if(sig_pipe_handler)
-	{
-		signal(SIGPIPE, prev_sig_pipe_handler);
-		sig_pipe_handler = 0;
-	}
-#endif
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-	SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, FALSE);
-#else
-	signal(SIGINT, prev_sig_int_handler);
-	sig_int_handler = 0;
-#endif
+	SignalHandler::Fini();
 	
 	unisim::kernel::logger::Logger::ReleaseStaticServiceInstance();
 }
@@ -3919,56 +3998,6 @@ bool Simulator::IsWarningEnabled() const
 {
 	return enable_warning;
 }
-
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
-{
-	bool interrupted = false;
-	switch(dwCtrlType)
-	{
-		case CTRL_C_EVENT:
-			std::cerr << "Interrupted by Ctrl-C" << std::endl;
-			interrupted = true;
-			break;
-		case CTRL_BREAK_EVENT:
-			std::cerr << "Interrupted by Ctrl-Break" << std::endl;
-			interrupted = true;
-			break;
-		case CTRL_CLOSE_EVENT:
-			std::cerr << "Interrupted by a console close" << std::endl;
-			interrupted = true;
-			break;
-		case CTRL_LOGOFF_EVENT:
-			std::cerr << "Interrupted because of logoff" << std::endl;
-			interrupted = true;
-			break;
-		case CTRL_SHUTDOWN_EVENT:
-			std::cerr << "Interrupted because of shutdown" << std::endl;
-			interrupted = true;
-			break;
-	}
-	
-	if(interrupted)
-	{
-		simulator->BroadcastSigInt();
-	}
-	
-	return interrupted ? TRUE : FALSE;
-}
-#else
-void Simulator::SigIntHandler(int signum)
-{
-	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
-	simulator->BroadcastSigInt();
-}
-#endif
-
-#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
-void Simulator::SigPipeHandler(int signum)
-{
-	/* do nothing */
-}
-#endif
 
 void Simulator::BroadcastSigInt()
 {

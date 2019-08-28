@@ -175,10 +175,10 @@ public:
 	void runOutputCompare();
 
 	void runDownCounter();
-	inline void down_counter_enable() { down_counter_enabled = true; down_counter_enable_event.notify(); }
+	inline void down_counter_enable() { down_counter_enabled = true; down_counter_enable_event.notify(sc_core::SC_ZERO_TIME); }
 	inline void down_counter_disable() {down_counter_enabled = false; }
 
-	inline void delay_counter_enable() { delay_counter_enabled = true; delay_counter_enable_event.notify(); }
+	inline void delay_counter_enable() { delay_counter_enabled = true; delay_counter_enable_event.notify(sc_core::SC_ZERO_TIME); }
 	inline void delay_counter_disable() { delay_counter_enabled = false; }
 	inline bool isDelayCounterEnabled() { return (delay_counter_enabled); }
 	sc_time getEdgeDelayCounter() { return (edge_delay_counter_time); }
@@ -316,7 +316,7 @@ protected:
 
     bool isBuildin_edge_generator() { return (builtin_signal_generator); }
 
-    void notify_paclk_event() { paclk_event.notify(); }
+    void notify_paclk_event() { paclk_event.notify(sc_core::SC_ZERO_TIME); }
 
     /**
      * isValidEdge() method model the "Edge Detector" circuit
@@ -499,7 +499,7 @@ private:
 		void setOutputAction(uint8_t outputAction) { this->outputAction = outputAction; };
 		uint8_t getOutputAction() { return (outputAction); };
 
-		void notifyEdge() { edge_event.notify(); }
+		void notifyEdge() { edge_event.notify(sc_core::SC_ZERO_TIME); }
 
 		virtual void VariableBaseNotify(const VariableBase *var) {
 			if (ectParent->isInputCapture(ioc_index)) {
@@ -540,7 +540,7 @@ private:
 
 		virtual void runPulseAccumulator() = 0;
 		virtual void wakeup() = 0;
-		void notifyEdge() { edge_event.notify(); }
+		void notifyEdge() { edge_event.notify(sc_core::SC_ZERO_TIME); }
 
 		virtual void VariableBaseNotify(const VariableBase *var) = 0;
 
@@ -565,7 +565,7 @@ private:
 		virtual void runPulseAccumulator();
 		virtual void wakeup() {
 			 if (ectParent->isPulseAccumulatorAEnabled()) {
-				 pulse_accumulator_enable_event.notify();
+				 pulse_accumulator_enable_event.notify(sc_core::SC_ZERO_TIME);
 			 }
 		}
 
@@ -601,7 +601,7 @@ private:
 		virtual void runPulseAccumulator();
 		virtual void wakeup() {
 			 if (ectParent->isPulseAccumulatorBEnabled()) {
-				 pulse_accumulator_enable_event.notify();
+				 pulse_accumulator_enable_event.notify(sc_core::SC_ZERO_TIME);
 			 }
 		}
 

@@ -1,4 +1,11 @@
+libc/inttypes
+libc/stdio
 m4/artimon
+std/fstream
+std/iostream
+std/list
+std/string
+std/vector
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/debug_event

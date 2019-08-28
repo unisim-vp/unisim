@@ -2149,12 +2149,14 @@ void Router<CONFIG>::ApplyMap(uint64_t addr, uint32_t size, std::vector<MAPPING 
 				// found a mapping which address range contains current address
 				found = true;
 				port_mappings.push_back(mte);
-				if(cur_size > (mte->range_end - cur_addr + 1)) // partially covered
+
+				sc_dt::uint64 range_width_minus_1 = mte->range_end - cur_addr;
+				if(((cur_size - 1) > range_width_minus_1)) // partially covered
 				{
 					sc_dt::uint64 next_addr = mte->range_end + 1;
 					if(cur_addr > next_addr) return; // detect address overflow
 					cur_addr = next_addr;
-					cur_size = cur_size - (mte->range_end - cur_addr + 1);
+					cur_size = cur_size - (range_width_minus_1 + 1);
 				}
 				else // totally covered
 				{
@@ -2162,6 +2164,7 @@ void Router<CONFIG>::ApplyMap(uint64_t addr, uint32_t size, std::vector<MAPPING 
 					if(cur_addr > next_addr) return; // detect address overflow
 					cur_addr = next_addr;
 					cur_size = 0;
+					break;
 				}
 			}
 		}
@@ -2177,10 +2180,16 @@ void Router<CONFIG>::ApplyMap(uint64_t addr, uint32_t size, std::vector<MAPPING 
 				if ((cur_addr < mte->range_start) && ((cur_addr + cur_size) > mte->range_start))
 				{
 					if (!found)
+					{
 						closest_range_start = mte->range_start;
+					}
 					else
+					{
 						if (closest_range_start > mte->range_start)
+						{
 							closest_range_start = mte->range_start;
+						}
+					}
 					found = true;
 				}
 			}

@@ -1,85 +1,48 @@
 #!/bin/bash
 
 SIMPKG=amd64_simtest
+SIMPKGDIR=cxx/amd64_simtest
+source "$(dirname $0)/dist_common.sh"
 
-UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
-unisim/component/cxx/processor/intel/disasm.cc \
-unisim/component/cxx/processor/intel/math.cc \
-unisim/util/symbolic/symbolic.cc \
-unisim/util/random/random.cc \
-"
+import unisim/component/cxx/processor/intel || exit
+import unisim/component/cxx/processor/intel/isa || exit
+import unisim/util/arithmetic || exit
+import unisim/util/endian || exit
+import unisim/util/random || exit
+import unisim/util/symbolic || exit
 
-UNISIM_LIB_SIMULATOR_HEADER_FILES="\
-unisim/component/cxx/processor/intel/isa/intel.tcc \
-unisim/component/cxx/processor/intel/isa/intel.hh \
-unisim/component/cxx/processor/intel/isa/branch.hh \
-unisim/component/cxx/processor/intel/isa/floatingpoint.hh \
-unisim/component/cxx/processor/intel/isa/integer.hh \
-unisim/component/cxx/processor/intel/isa/move.hh \
-unisim/component/cxx/processor/intel/isa/simd.hh \
-unisim/component/cxx/processor/intel/isa/special.hh \
-unisim/component/cxx/processor/intel/isa/string.hh \
-unisim/component/cxx/processor/intel/disasm.hh \
-unisim/component/cxx/processor/intel/execute.hh \
-unisim/component/cxx/processor/intel/math.hh \
-unisim/component/cxx/processor/intel/modrm.hh \
-unisim/component/cxx/processor/intel/segments.hh \
-unisim/component/cxx/processor/intel/tmp.hh \
-unisim/component/cxx/processor/intel/types.hh \
-unisim/component/cxx/processor/intel/vectorbank.hh \
-unisim/util/endian/endian.hh \
-unisim/util/inlining/inlining.hh \
-unisim/util/likely/likely.hh \
-unisim/util/arithmetic/arithmetic.hh \
-unisim/util/symbolic/symbolic.hh \
-unisim/util/symbolic/identifier.hh \
-unisim/util/random/random.hh \
-"
+import libc/inttypes || exit
+import sys/mman || exit
+import std/fstream || exit
+import std/iostream || exit
+import std/vector || exit
+import std/bitset || exit
+import std/set || exit
+import std/memory || exit
+import std/ostream || exit
+import std/cmath || exit
+import std/iosfwd || exit
+import std/cstdlib || exit
+import std/cassert || exit
 
-UNISIM_LIB_SIMULATOR_M4_FILES="\
-"
+copy source header template data
+copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
+
+UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
+
+UNISIM_LIB_SIMULATOR_HEADER_FILES="$(files header) $(files template)"
+
+UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="\
 "
+UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
 
-SIMULATOR_EXTERNAL_HEADERS="\
-assert.h \
-ctype.h \
-cxxabi.h \
-errno.h \
-fcntl.h \
-fenv.h \
-float.h \
-fstream \
-getopt.h \
-inttypes.h \
-limits.h \
-math.h \
-signal.h \
-stdarg.h \
-stdio.h \
-stdlib.h \
-string.h \
-sys/types.h \
-unistd.h \
-cassert \
-cerrno \
-cstddef \
-cstdio \
-cstdlib \
-cstring \
-stdexcept \
-deque \
-list \
-sstream \
-iosfwd \
-iostream \
-stack \
-map \
-ostream \
-queue \
-vector \
-string \
+UNISIM_LIB_SIMULATOR_HEADER_FILES="$(files header) $(files template)"
+
+UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
+
+UNISIM_LIB_SIMULATOR_DATA_FILES="\
 "
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
@@ -99,64 +62,10 @@ NEWS \
 ChangeLog \
 "
 
-Usage()
-{
-	echo "Usage:"
-	echo "  $0 <destination directory>"
-}
-
-if [ -z "$1" ]; then
-	Usage
-	exit -1
-fi
-
-UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
-mkdir -p "$1"
-DEST_DIR=$(cd "$1"; pwd)
-
-UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
-UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/cxx/${SIMPKG}
-
-SIMULATOR_VERSION=$(cat ${UNISIM_SIMULATOR_DIR}/VERSION)
-
-if [ -z "${DISTCOPY}" ]; then
-	DISTCOPY=cp
-fi
-
-has_to_build() {
-	[ ! -e "$1" -o "$2" -nt "$1" ]
-}
-
-dist_copy() {
-	if has_to_build "$2" "$1"; then
-		echo "$1 ==> $2"
-		mkdir -p "$(dirname $2)"
-		${DISTCOPY} -f "$1" "$2" || exit
-		true
-	fi
-	false
-}
-
-UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES}"
-
-for file in ${UNISIM_LIB_SIMULATOR_FILES}; do
-	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${file}"
-done
-
 UNISIM_SIMULATOR_FILES="${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_DATA_FILES}"
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
-done
-
-mkdir -p ${DEST_DIR}/config
-mkdir -p ${DEST_DIR}/m4
-
-# Some imported files (m4 macros) impact configure generation
-has_to_build_configure=no
-
-for file in ${UNISIM_LIB_SIMULATOR_M4_FILES}; do
-	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${file}" && has_to_build_configure=yes
 done
 
 # Top level
@@ -197,12 +106,7 @@ EOF
 
 # Simulator
 
-SIMULATOR_CONFIGURE_AC="${DEST_DIR}/configure.ac"
-SIMULATOR_MAKEFILE_AM="${DEST_DIR}/Makefile.am"
-
-if has_to_build "${SIMULATOR_CONFIGURE_AC}" "$0"; then
-	echo "Generating ${SIMPKG} configure.ac"
-	cat <<EOF > "${SIMULATOR_CONFIGURE_AC}"
+output_simulator_configure_ac <(cat <<EOF
 AC_INIT([UNISIM amd64 simulator validation tests generator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
@@ -220,7 +124,6 @@ AC_SUBST(LIBTOOL_DEPS)
 AC_PROG_LN_S
 AC_LANG([C++])
 AM_PROG_CC_C_O
-AC_CHECK_HEADERS([${SIMULATOR_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))
 case "\${host}" in
 	*mingw*)
 		CPPFLAGS="-U__STRICT_ANSI__ \${CPPFLAGS}"
@@ -228,17 +131,15 @@ case "\${host}" in
 	*)
 		;;
 esac
+$(lines ac)
+AX_CXXFLAGS_WARN_ALL
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 EOF
-	has_to_build_configure=yes
-fi
+)
 
-if has_to_build "${SIMULATOR_MAKEFILE_AM}" "$0"; then
-	AM_SIMULATOR_VERSION=$(printf ${SIMULATOR_VERSION} | sed -e 's/\./_/g')
-	echo "Generating ${SIMPKG} Makefile.am"
-	cat <<EOF > "${SIMULATOR_MAKEFILE_AM}"
+output_simulator_makefile_am <(cat << EOF
 ACLOCAL_AMFLAGS=-I m4
 AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
 LIBTOOL_DEPS = @LIBTOOL_DEPS@
@@ -259,16 +160,12 @@ libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
-dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
-
+dist_share_DATA = ${UNISIM_SIMULATOR_DATA_FILES}
+nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES}
 
 EOF
-	has_to_build_configure=yes
-fi
+)
 
-if [ "${has_to_build_configure}" = "yes" ]; then
-	echo "Building ${SIMPKG} configure"
-	${SHELL} -c "cd ${DEST_DIR} && aclocal -I m4 && libtoolize --force && autoconf --force && autoheader && automake -ac"
-fi
+build_simulator_configure
 
 echo "Distribution is up-to-date"

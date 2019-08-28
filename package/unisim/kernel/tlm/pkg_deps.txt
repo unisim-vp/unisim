@@ -1,3 +1,9 @@
+libc/stdlib
+libc/string
 m4/systemc
+std/list
+std/stack
+std/string
+std/vector
 unisim/kernel/service
 unisim/util/garbage_collector

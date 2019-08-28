@@ -6,11 +6,18 @@ source "$(dirname $0)/dist_common.sh"
 
 import_genisslib
 
-import unisim/component/cxx/processor/arm
-import unisim/component/cxx/processor/arm/isa/arm64
-import unisim/util/symbolic/binsec
-import unisim/util/symbolic
-import unisim/util/arithmetic
+import unisim/component/cxx/processor/arm || exit
+import unisim/component/cxx/processor/arm/isa/arm64 || exit
+import unisim/util/symbolic/binsec || exit
+import unisim/util/symbolic || exit
+import unisim/util/arithmetic || exit
+
+import libc/stdint || exit
+import std/cstdlib || exit
+import std/iomanip || exit
+import std/iosfwd || exit
+import std/iostream || exit
+import std/set || exit
 
 copy source isa header header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
@@ -27,46 +34,6 @@ $(files template)"
 UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
-
-SIMULATOR_EXTERNAL_HEADERS="\
-assert.h \
-ctype.h \
-cxxabi.h \
-errno.h \
-fcntl.h \
-fenv.h \
-float.h \
-fstream \
-getopt.h \
-inttypes.h \
-limits.h \
-math.h \
-signal.h \
-stdarg.h \
-stdio.h \
-stdlib.h \
-string.h \
-sys/types.h \
-unistd.h \
-cassert \
-cerrno \
-cstddef \
-cstdio \
-cstdlib \
-cstring \
-stdexcept \
-deque \
-list \
-sstream \
-iosfwd \
-iostream \
-stack \
-map \
-ostream \
-queue \
-vector \
-string \
-"
 
 UNISIM_SIMULATOR_ISA_FILES="\
 aarch64dec.isa \
@@ -206,7 +173,6 @@ AC_SUBST(LIBTOOL_DEPS)
 AC_PROG_LN_S
 AC_LANG([C++])
 AM_PROG_CC_C_O
-AC_CHECK_HEADERS([${SIMULATOR_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))
 case "\${host}" in
 	*mingw*)
 		CPPFLAGS="-U__STRICT_ANSI__ \${CPPFLAGS}"
@@ -215,6 +181,7 @@ case "\${host}" in
 		;;
 esac
 $(lines ac)
+AX_CXXFLAGS_WARN_ALL
 GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
 AC_SUBST(GENISSLIB_PATH)
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
@@ -244,7 +211,8 @@ libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_TEMPLATE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_TEMPLATE_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
-dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
+dist_share_DATA = ${UNISIM_SIMULATOR_DATA_FILES}
+nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES}
 
 BUILT_SOURCES=\
 	\$(top_builddir)/aarch64dec.hh\

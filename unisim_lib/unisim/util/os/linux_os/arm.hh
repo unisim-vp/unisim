@@ -1112,7 +1112,7 @@ namespace linux_os {
               strncpy(value.nodename, utsname.nodename.c_str(), sizeof(value.nodename) - 1);
               strncpy(value.release,  utsname.release.c_str(), sizeof(value.release) - 1);
               strncpy(value.version,  utsname.version.c_str(), sizeof(value.version) - 1);
-              strncpy(value.machine,  utsname.machine.c_str(), sizeof(value.machine));
+              strncpy(value.machine,  utsname.machine.c_str(), sizeof(value.machine) - 1);
               lin.WriteMemory(buf_addr, (uint8_t *)&value, sizeof(value));
 	
               SetARMSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));

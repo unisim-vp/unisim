@@ -1,4 +1,11 @@
+libc/errno
+libc/fcntl
+libc/inttypes
+libc/unistd
 m4/bsd_sockets
+std/string
+std/vector
+sys/types
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/char_io

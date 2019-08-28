@@ -1,3 +1,4 @@
+std/iosfwd
 unisim/component/cxx/processor/powerpc/isa/book_e
 unisim/component/cxx/processor/powerpc/isa/book_i/branch
 unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg

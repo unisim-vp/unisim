@@ -1,3 +1,5 @@
+libc/inttypes
+std/string
 unisim/kernel/logger
 unisim/kernel/service
 unisim/util/garbage_collector

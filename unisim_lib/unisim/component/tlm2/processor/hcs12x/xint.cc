@@ -683,7 +683,7 @@ void XINT::write_INT_CFDATA(uint8_t index, uint8_t value)
 
 bool XINT::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
-	if ((addr < baseAddress) || (addr >= baseAddress + 16))
+	if ((addr < baseAddress) || (addr >= address_t(baseAddress + 16)))
 	{
 		return false;
 	}
@@ -704,7 +704,7 @@ bool XINT::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 bool XINT::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
-	if ((addr < baseAddress) || (addr >= baseAddress + 16))
+	if ((addr < baseAddress) || (addr >= address_t(baseAddress + 16)))
 	{
 		return false;
 	}

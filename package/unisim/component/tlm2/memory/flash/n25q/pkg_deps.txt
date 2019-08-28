@@ -1,3 +1,7 @@
+libc/inttypes
+libc/math
+libc/string
+std/fstream
 unisim/kernel/logger
 unisim/kernel/service
 unisim/kernel/tlm2

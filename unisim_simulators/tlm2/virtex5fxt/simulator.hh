@@ -55,6 +55,7 @@
 #include <unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.hh>
 #include <unisim/component/tlm2/com/xilinx/xps_gpio/gpio_leds.hh>
 #include <unisim/component/tlm2/com/xilinx/xps_gpio/gpio_switches.hh>
+#include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 
 // Simulator compile time configuration
 #include <config.hh>
@@ -75,6 +76,7 @@
 #include <unisim/service/instrumenter/instrumenter.hh>
 #include <unisim/service/tee/char_io/tee.hh>
 #include <unisim/service/web_terminal/web_terminal.hh>
+#include <unisim/service/os/linux_os/powerpc_linux32.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 
@@ -82,15 +84,6 @@
 #include <iostream>
 #include <stdexcept>
 #include <stdlib.h>
-
-#ifdef WIN32
-
-#include <winsock2.h>
-#include <windows.h>
-
-#else
-#include <signal.h>
-#endif
 
 //=========================================================================
 //===                        Top level class                            ===
@@ -122,6 +115,7 @@ private:
 	typedef unisim::component::tlm2::interconnect::xilinx::dcr_controller::DCRController<DCR_CONTROLLER_CONFIG> DCR_CONTROLLER;
 	typedef unisim::component::tlm2::interconnect::xilinx::crossbar::Crossbar<CROSSBAR_CONFIG> CROSSBAR;
 	typedef unisim::component::tlm2::interconnect::xilinx::mci::MCI<MCI_CONFIG> MCI;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<MEMORY_ROUTER_CONFIG> MEMORY_ROUTER;
 	typedef unisim::component::tlm2::com::xilinx::xps_uart_lite::XPS_UARTLite<UART_LITE_CONFIG> UART_LITE;
 	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<GPIO_DIP_SWITCHES_8BIT_CONFIG> GPIO_DIP_SWITCHES_8BIT;
 	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<GPIO_LEDS_8BIT_CONFIG> GPIO_LEDS_8BIT;
@@ -146,6 +140,7 @@ private:
 	typedef unisim::kernel::tlm2::TargetStub<4> EXTERNAL_SLAVE_DCR_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::com::xilinx::xps_gpio::GPIOProtocolTypes> GPIO_OUTPUT_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::com::xilinx::xps_gpio::GPIOProtocolTypes> GPIO_INPUT_STUB;
+	typedef unisim::kernel::tlm2::TargetStub<4> DCR_SLAVE_STUB;
 
 	//=========================================================================
 	//===                      Aliases for services classes                 ===
@@ -161,6 +156,7 @@ private:
 	typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
 	typedef unisim::service::tee::char_io::Tee<2> CHAR_IO_TEE;
 	typedef unisim::service::web_terminal::WebTerminal WEB_TERMINAL;
+	typedef unisim::service::os::linux_os::PowerPCLinux32<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE> LINUX_OS;
 
 	//=========================================================================
 	//===                           Components                              ===
@@ -225,6 +221,9 @@ private:
 	DMAC2_DCR_STUB *dmac2_dcr_stub;
 	DMAC3_DCR_STUB *dmac3_dcr_stub;
 	EXTERNAL_SLAVE_DCR_STUB *external_slave_dcr_stub;
+	DCR_SLAVE_STUB *dcr_slave_stub; // used in combination with Linux loader and ABI translator
+	// - Memory router (used in combination with Linux loader and ABI translator)
+	MEMORY_ROUTER *memory_router;
 	
 	//=========================================================================
 	//===                            Services                               ===
@@ -257,13 +256,17 @@ private:
 	WEB_TERMINAL *web_terminal;
 	// - Char I/O Tee
 	CHAR_IO_TEE *char_io_tee;
+	// - Linux OS
+	LINUX_OS *linux_os;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
 	bool enable_profiler;
+	bool enable_linux_os;
 	unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
 	unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
 	unisim::kernel::service::Parameter<bool> param_enable_profiler;
+	unisim::kernel::service::Parameter<bool> param_enable_linux_os;
 
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);

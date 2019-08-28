@@ -1,4 +1,8 @@
+libc/inttypes
 m4/pthread
+std/fstream
+std/stdexcept
+std/string
 unisim/kernel/logger
 unisim/kernel/service
 unisim/service/interfaces/backtrace

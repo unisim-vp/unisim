@@ -355,7 +355,7 @@ inline const char* getOsName() {
 #include <cstdlib>
 #include <string>
 
-static std::string expand_environment_variables( std::string s ) {
+inline std::string expand_environment_variables( std::string s ) {
     if( s.find( "$(" ) == std::string::npos ) return s;
 
     std::string pre  = s.substr( 0, s.find( "$(" ) );
@@ -373,7 +373,7 @@ static std::string expand_environment_variables( std::string s ) {
     return expand_environment_variables( pre + value + post );
 }
 
-static std::string expand_path_variables( std::string s , std::map<std::string, std::string> env_vars) {
+inline std::string expand_path_variables( std::string s , std::map<std::string, std::string> env_vars) {
     if( s.find( "$(" ) == std::string::npos ) return s;
 
     std::string pre  = s.substr( 0, s.find( "$(" ) );

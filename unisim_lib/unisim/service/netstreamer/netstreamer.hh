@@ -40,14 +40,8 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <string>
 #include <vector>
-#include <inttypes.h>
+#include <stdint.h>
 #include <pthread.h>
-
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-
-#include <winsock2.h>
-
-#endif
 
 namespace unisim {
 namespace service {
@@ -93,7 +87,7 @@ private:
 
 	int tcp_port;
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-	SOCKET sock;
+	uintptr_t sock;
 #else
 	int sock;
 #endif

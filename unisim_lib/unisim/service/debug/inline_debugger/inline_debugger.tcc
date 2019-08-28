@@ -60,13 +60,6 @@
 #include <fstream>
 #include <iostream>
 
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-#include <windows.h>
-#include <io.h>     // for function access()
-#else
-#include <unistd.h>
-#endif
-
 namespace unisim {
 namespace service {
 namespace debug {
@@ -106,12 +99,10 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, subprogram_lookup_import("subprogram-lookup-import", this)
 	, logger(*this)
 	, memory_atom_size(1)
-	, search_path()
 	, init_macro()
 	, output()
 	, program_counter_name("pc")
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
-	, param_search_path("search-path", this, search_path, "Search path for source (separated by ';')")
 	, param_init_macro("init-macro", this, init_macro, "path to initial macro to run when debugger starts")
 	, param_output("output", this, output, "path to output file where to redirect the debugger outputs")
 	, param_program_counter_name("program-counter-name", this, program_counter_name, "name of program counter")
@@ -2097,40 +2088,6 @@ void InlineDebugger<ADDRESS>::DumpProgramProfile()
 }
 
 template <class ADDRESS>
-std::string InlineDebugger<ADDRESS>::SearchFile(const char *filename)
-{
-	if(access(filename, F_OK) == 0)
-	{
-		return std::string(filename);
-	}
-
-	std::string s;
-	const char *p;
-
-	p = search_path.c_str();
-	do
-	{
-		if(*p == 0 || *p == ';')
-		{
-			std::stringstream sstr;
-			sstr << s << "/" << filename;
-			std::string path(sstr.str());
-			if(access(path.c_str(), F_OK) == 0)
-			{
-				return path;
-			}
-			s.clear();
-		}
-		else
-		{
-			s += *p;
-		}
-	} while(*(p++));
-	
-	return unisim::kernel::service::Object::GetSimulator()->SearchSharedDataFile(filename);
-}
-
-template <class ADDRESS>
 void InlineDebugger<ADDRESS>::LoadSymbolTable(const char *filename)
 {
 	if(!debug_info_loading_import) return;
@@ -2226,92 +2183,6 @@ void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 		(*std_output_stream).width(0);
 		(*std_output_stream) << ":" << (*iter).second << " times" << std::endl;
 	}
-}
-
-template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::LocateFile(const char *filename, std::string& match_file_path)
-{
-	if(access(filename, R_OK) == 0)
-	{
-		match_file_path = filename;
-		return true;
-	}
-	
-	std::string s;
-	const char *p;
-
-	std::vector<std::string> search_paths;
-
-	s.clear();
-	p = search_path.c_str();
-	do
-	{
-		if(*p == 0 || *p == ';')
-		{
-			search_paths.push_back(s);
-			s.clear();
-		}
-		else
-		{
-			s += *p;
-		}
-	} while(*(p++));
-	
-	std::vector<std::string> hierarchical_path;
-	
-	s.clear();
-	p = filename;
-	do
-	{
-		if(*p == 0 || *p == '/' || *p == '\\')
-		{
-			hierarchical_path.push_back(s);
-			s.clear();
-		}
-		else
-		{
-			s += *p;
-		}
-	} while(*(p++));
-	
-	bool match = false;
-	
-	int hierarchical_path_depth = hierarchical_path.size();
-	
-	if(hierarchical_path_depth > 0)
-	{
-		int num_search_paths = search_paths.size();
-		int k;
-		
-		for(k = 0; k < num_search_paths; k++)
-		{
-			const std::string& search_path = search_paths[k];
-			int i;
-			for(i = 0; (!match) && (i < hierarchical_path_depth); i++)
-			{
-				std::string try_file_path = search_path;
-				int j;
-				for(j = i; j < hierarchical_path_depth; j++)
-				{
-					if(!try_file_path.empty()) try_file_path += '/';
-					try_file_path += hierarchical_path[j];
-				}
-				//std::cerr << "try_file_path=\"" << try_file_path << "\":";
-				if(access(try_file_path.c_str(), R_OK) == 0)
-				{
-					//std::cerr << "found" << std::endl;
-					match = true;
-					match_file_path = try_file_path;
-				}
-				else
-				{
-					//std::cerr << "not found" << std::endl;
-				}
-			}
-		}
-	}
-	
-	return match;
 }
 
 template <class ADDRESS>
