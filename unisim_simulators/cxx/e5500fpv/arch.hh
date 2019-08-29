@@ -50,6 +50,7 @@
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/disassembly.hh>
+#include <unisim/kernel/kernel.hh>
 
 struct MisInsn
 {
@@ -63,14 +64,14 @@ struct MisInsn
   
 struct Arch
   : Core
-  , public unisim::kernel::service::Service<unisim::service::interfaces::Registers>
-  , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
-  , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >
-  , public unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<uint64_t> >
-  , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryAccessReportingControl>
-  , public unisim::kernel::service::Client<unisim::service::interfaces::DebugYielding>
-  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
-  , public unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
+  , public unisim::kernel::Service<unisim::service::interfaces::Registers>
+  , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
+  , public unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t> >
+  , public unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t> >
+  , public unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>
+  , public unisim::kernel::Client<unisim::service::interfaces::DebugYielding>
+  , public unisim::kernel::Client<unisim::service::interfaces::TrapReporting>
+  , public unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
 {
   typedef ::MSR MSR;
   typedef unisim::component::cxx::processor::powerpc::ppc64::Decoder                             Decoder;
@@ -96,38 +97,38 @@ struct Arch
   // unisim::service::interfaces::Registers
   virtual unisim::service::interfaces::Register* GetRegister( const char* name );
   virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner );
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
 
   // unisim::service::interfaces::MemoryInjection<uint64_t>
   virtual bool InjectReadMemory(uint64_t addr, void* buffer, unsigned size);
   virtual bool InjectWriteMemory(uint64_t addr, void const* buffer, unsigned size);
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> > memory_injection_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> > memory_injection_export;
 
   // unisim::service::interfaces::Memory<uint64_t>
   virtual void ResetMemory() {}
   virtual bool ReadMemory(uint64_t addr, void* buffer, unsigned size );
   virtual bool WriteMemory(uint64_t addr, void const* buffer, unsigned size);
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
   
   // unisim::service::interfaces::Disassembly<uint64_t>
   virtual std::string Disasm(ADDRESS addr, ADDRESS& next_addr);
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export;
   
   // unisim::service::interfaces::MemoryAccessReportingControl
   virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report);
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
   bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
   bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
   bool requires_commit_instruction_reporting; //< indicates if the committed instructions require to be reported
   
   // unisim::service::interfaces::DebugYielding
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugYielding> debug_yielding_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYielding> debug_yielding_import;
 
   // unisim::service::interfaces::TrapReporting
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
 
   // unisim::service::interfaces::MemoryAccessReporting<uint64_t>
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
   
   void SystemCall();
 

@@ -10,7 +10,8 @@
 
 
 #include "unisim/service/interfaces/Fault_Injector.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
+#include <unisim/kernel/variable/variable.hh>
 #include "systemc.h"
 
 
@@ -21,12 +22,12 @@ namespace fault{
 using namespace sc_core;
 using namespace sc_dt;
 
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Object;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::Object;
 using unisim::service::interfaces::Fault_Injector;
 using unisim::service::interfaces::BFault_Injector;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::variable::Parameter;
 
 template<class PHYSICAL_ADDR>
 class Bus_Fault_Injector: public Service<unisim::service::interfaces::BFault_Injector<PHYSICAL_ADDR> >

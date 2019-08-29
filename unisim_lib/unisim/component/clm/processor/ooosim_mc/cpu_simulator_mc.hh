@@ -63,7 +63,7 @@
 //#include <generic/memory/memory_interface.hh>
 //#include <unisim/component/cxx/memory/ram/memory_interface.hh>
 #include <unisim/service/interfaces/memory.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include <sstream>
 
@@ -131,7 +131,7 @@ using unisim::component::clm::pipeline::commit::ReorderBuffer;
 
 using unisim::component::clm::utility::hexa;
 
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 /*
 using full_system::utils::services::ServiceExport;
 using full_system::utils::services::ServiceImport;

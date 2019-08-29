@@ -96,7 +96,7 @@ struct CONFIG
 
 template <typename CONFIG>
 class SMPU
-	: public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
+	: public unisim::kernel::Service<typename unisim::service::interfaces::Registers>
 {
 public:
 	typedef unisim::component::tlm2::interconnect::freescale::mpc57xx::xbar::XBAR<CONFIG> XBAR;
@@ -109,7 +109,7 @@ public:
 	static const unsigned int NUM_BUS_MASTERS        = CONFIG::NUM_BUS_MASTERS;
 	
 	// services
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
 
 	SMPU(const char *name, XBAR *xbar);
 	virtual ~SMPU();
@@ -633,7 +633,7 @@ protected:
 	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 	
 	void DMI_Invalidate();
 };

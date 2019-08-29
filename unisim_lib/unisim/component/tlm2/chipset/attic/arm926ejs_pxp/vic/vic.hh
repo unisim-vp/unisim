@@ -39,7 +39,7 @@
 #include <tlm>
 #include <tlm_utils/passthrough_target_socket.h>
 #include <inttypes.h>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic_int_source_identifier.hh"
 #include "unisim/util/generic_peripheral_register/generic_peripheral_register.hh"
@@ -52,7 +52,7 @@ namespace arm926ejs_pxp {
 namespace vic {
 
 class VIC
-	: public unisim::kernel::service::Object
+	: public unisim::kernel::Object
 	, public sc_module
 	, public VICIntSourceIdentifierInterface
 	, public unisim::util::generic_peripheral_register::GenericPeripheralRegisterInterface<uint32_t>
@@ -261,13 +261,13 @@ private:
 	/** Base address of the VIC */
 	uint32_t base_addr;
 	/** UNISIM Parameter for the base address of the VIC */
-	unisim::kernel::service::Parameter<uint32_t> param_base_addr;
+	unisim::kernel::variable::Parameter<uint32_t> param_base_addr;
 
 	/** Register helpers to use the UNISIM Register service */
 	unisim::util::generic_peripheral_register::GenericPeripheralWordRegister *
 		regs_accessor[NUMREGS];
 	/** UNISIM Registers for the timer registers */
-	unisim::kernel::service::Register<
+	unisim::kernel::variable::Register<
 		unisim::util::generic_peripheral_register::GenericPeripheralWordRegister
 		> *
 		regs_service[NUMREGS];
@@ -275,7 +275,7 @@ private:
 	/** Verbose */
 	uint32_t verbose;
 	/** UNISIM Paramter for verbose */
-	unisim::kernel::service::Parameter<uint32_t> param_verbose;
+	unisim::kernel::variable::Parameter<uint32_t> param_verbose;
 	/** Verbose levels */
 	static const uint32_t V0 = 0x01UL;
 	static const uint32_t V1 = 0x03UL;

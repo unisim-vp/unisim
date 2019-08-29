@@ -112,7 +112,7 @@ struct BankedMode : public CORE::Mode
  */
 template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent)
-  : unisim::kernel::service::Object(name, parent)
+  : unisim::kernel::Object(name, parent)
   , Service<Registers>(name, parent)
   , logger(*this)
   , verbose(false)
@@ -163,7 +163,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   
   {
     unisim::service::interfaces::Register* dbg_reg = 0;
-    unisim::kernel::service::Register<uint32_t>* var_reg = 0;
+    unisim::kernel::variable::Register<uint32_t>* var_reg = 0;
   
     /** Specific Banked Register Debugging Accessor */
     struct BankedRegister : public unisim::service::interfaces::Register
@@ -190,7 +190,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
         registers_registry[name] = dbg_reg;
         description =  description + ", " + name;
       }
-      var_reg = new unisim::kernel::service::Register<uint32_t>( pretty_name.c_str(), this, gpr[idx], description.c_str() );
+      var_reg = new unisim::kernel::variable::Register<uint32_t>( pretty_name.c_str(), this, gpr[idx], description.c_str() );
       variable_register_pool.insert( var_reg );
       bool is_banked = false;
       for (typename ModeMap::const_iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr) {
@@ -227,13 +227,13 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 
     dbg_reg = new ProgramCounterRegister( *this );
     registers_registry["pc"] = registers_registry["r15"] = dbg_reg;
-    var_reg = new unisim::kernel::service::Register<uint32_t>( "pc", this, this->next_insn_addr, "Logical Register #15: pc, r15" );
+    var_reg = new unisim::kernel::variable::Register<uint32_t>( "pc", this, this->next_insn_addr, "Logical Register #15: pc, r15" );
     variable_register_pool.insert( var_reg );
     
     // Handling the CPSR register
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "cpsr", &cpsr.m_value );
     registers_registry["cpsr"] = dbg_reg;
-    var_reg = new unisim::kernel::service::Register<uint32_t>( "cpsr", this, this->cpsr.m_value, "Current Program Status Register" );
+    var_reg = new unisim::kernel::variable::Register<uint32_t>( "cpsr", this, this->cpsr.m_value, "Current Program Status Register" );
     variable_register_pool.insert( var_reg );
     
     /** SPSRs */
@@ -333,7 +333,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
     // Handling the FPSCR register
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "fpscr", &this->FPSCR );
     registers_registry["fpscr"] = dbg_reg;
-    var_reg = new unisim::kernel::service::Register<uint32_t>( "fpscr", this, this->FPSCR, "Current Program Status Register" );
+    var_reg = new unisim::kernel::variable::Register<uint32_t>( "fpscr", this, this->FPSCR, "Current Program Status Register" );
     variable_register_pool.insert( var_reg );
   }
     
@@ -517,7 +517,7 @@ CPU<CONFIG>::HandleAsynchronousException( uint32_t exceptions )
     {
       logger << DebugError << "Exception not handled (Asynchronous Abort)" << EndDebugError;
       
-      unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+      unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
       
       return A.Mask( exceptions );
     }

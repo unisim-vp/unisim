@@ -47,10 +47,10 @@ namespace e200 {
 namespace mpc57xx {
 
 template <typename TYPES, typename CONFIG>
-CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, SuperCPU(name, parent)
-	, unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS> >(name, parent)
+	, unisim::kernel::Service<unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS> >(name, parent)
 	, disasm_export("disasm-export", this)
 	, stat_num_data_load_accesses("num-data-load-accesses", this, this->num_data_load_accesses, "Number of data load accesses (inside core)")
 	, stat_num_data_store_accesses("num-data-store-accesses", this, this->num_data_store_accesses, "Number of data store accesses (inside core)")

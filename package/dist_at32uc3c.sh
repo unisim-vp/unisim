@@ -103,7 +103,7 @@ unistd.h \
 vector"
 
 UNISIM_LIB_AT32UC3C_SOURCE_FILES="\
-unisim/kernel/service/service.cc \
+unisim/kernel/kernel.cc \
 unisim/kernel/config/xml_config_file_helper.cc \
 unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
@@ -145,7 +145,7 @@ unisim/util/blob/segment64.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/debug/coff_symtab/coff_symtab32.cc \
-unisim/kernel/service/endian.cc \
+unisim/kernel/variable/endian/endian.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
@@ -204,7 +204,7 @@ unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa/avr32uc.isa \
 "
 
 UNISIM_LIB_AT32UC3C_HEADER_FILES="${UNISIM_LIB_AT32UC3C_ISA_FILES} \
-unisim/kernel/service/service.hh \
+unisim/kernel/kernel.hh \
 unisim/kernel/config/xml_config_file_helper.hh \
 unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \

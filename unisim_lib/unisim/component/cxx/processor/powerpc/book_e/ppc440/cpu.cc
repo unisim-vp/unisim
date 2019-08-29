@@ -43,8 +43,8 @@ namespace powerpc {
 namespace book_e {
 namespace ppc440 {
 
-CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent, "PPC440 PowerPC core")
+CPU::CPU(const char *name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "PPC440 PowerPC core")
 	, SuperCPU(name, parent)
 	, itlb_http_server_export("itlb-http-server-export", this)
 	, dtlb_http_server_export("dtlb-http-server-export", this)

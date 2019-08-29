@@ -1,6 +1,7 @@
 std/sstream
 std/string
 std/vector
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/service/interfaces/trap_reporting

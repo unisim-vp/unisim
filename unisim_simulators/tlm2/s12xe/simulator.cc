@@ -11,7 +11,7 @@
 #include <unisim/service/debug/debugger/debugger.tcc>
 
 Simulator::Simulator(int argc, char **argv)
-	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
+	: unisim::kernel::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
 	, mmc(0)
 	, mpu(0)
@@ -853,7 +853,7 @@ Simulator::~Simulator()
 
 Simulator::SetupStatus Simulator::Setup()
 {
-	Simulator::SetupStatus result = unisim::kernel::service::Simulator::Setup();
+	Simulator::SetupStatus result = unisim::kernel::Simulator::Setup();
 
 	if(profiler)
 	{
@@ -1012,7 +1012,7 @@ Simulator::StoreRatioStatistic::Get(double& value)
   value = double(cpu["data-store-counter"])/total_access*100;
 }
 
-void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM star12x");
@@ -1583,5 +1583,5 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 void Simulator::SigInt()
 {
 	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
-	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+	unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 }

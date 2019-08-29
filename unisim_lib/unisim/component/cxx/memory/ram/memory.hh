@@ -38,7 +38,8 @@
 
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/util/hash_table/hash_table.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
+#include <unisim/kernel/variable/variable.hh>
 #include "unisim/kernel/logger/logger.hh"
 #include <inttypes.h>
 #include <fstream>
@@ -68,14 +69,14 @@ private:
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE = 1024 * 1024>
 class Memory
-		: public unisim::kernel::service::Service<unisim::service::interfaces::Memory<PHYSICAL_ADDR> >
+		: public unisim::kernel::Service<unisim::service::interfaces::Memory<PHYSICAL_ADDR> >
 
 {
 public:
 	/* exported services */
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<PHYSICAL_ADDR> > memory_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<PHYSICAL_ADDR> > memory_export;
 
-	Memory(const char *name, unisim::kernel::service::Object *parent = 0);
+	Memory(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~Memory();
 	
 	/* service methods */
@@ -107,20 +108,20 @@ protected:
 private:
 	unisim::util::hash_table::HashTable<PHYSICAL_ADDR, MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> > hash_table;
 	
-	unisim::kernel::service::Parameter<PHYSICAL_ADDR> param_org;
-	unisim::kernel::service::Parameter<PHYSICAL_ADDR> param_bytesize;
-	unisim::kernel::service::Statistic<PHYSICAL_ADDR> stat_memory_usage;
+	unisim::kernel::variable::Parameter<PHYSICAL_ADDR> param_org;
+	unisim::kernel::variable::Parameter<PHYSICAL_ADDR> param_bytesize;
+	unisim::kernel::variable::Statistic<PHYSICAL_ADDR> stat_memory_usage;
 
 	/** The parameter to set the verbosity */
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 
 	uint8_t initial_byte_value;
-	unisim::kernel::service::Parameter<uint8_t> param_initial_byte_value;
+	unisim::kernel::variable::Parameter<uint8_t> param_initial_byte_value;
 	
 	std::string input_filename;
-	unisim::kernel::service::Parameter<std::string> param_input_filename;
+	unisim::kernel::variable::Parameter<std::string> param_input_filename;
 	std::string output_filename;
-	unisim::kernel::service::Parameter<std::string> param_output_filename;
+	unisim::kernel::variable::Parameter<std::string> param_output_filename;
 
 	std::ofstream *output_file;
 

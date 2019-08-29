@@ -40,11 +40,9 @@
 
 namespace unisim {
 namespace kernel {
-namespace service {
 
 	class Object; // forward declaration
 	
-}
 }
 }
 
@@ -56,10 +54,10 @@ class TrapReporting : public ServiceInterface
 {
 public:
 	virtual void ReportTrap() = 0;
-	virtual void ReportTrap(const unisim::kernel::service::Object &obj) = 0;
-	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+	virtual void ReportTrap(const unisim::kernel::Object &obj) = 0;
+	virtual void ReportTrap(const unisim::kernel::Object &obj,
 							const std::string &str) = 0;
-	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+	virtual void ReportTrap(const unisim::kernel::Object &obj,
 							const char *c_str) = 0;
 };
 

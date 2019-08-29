@@ -35,7 +35,8 @@
 #ifndef __UNISIM_KERNEL_TLM2_SIMULATOR_HH__
 #define __UNISIM_KERNEL_TLM2_SIMULATOR_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <systemc>
 #include <tlm>
@@ -45,21 +46,21 @@ namespace kernel {
 namespace tlm2 {
 
 class Simulator
-	: public unisim::kernel::service::Simulator
-	, public unisim::kernel::service::Object
+	: public unisim::kernel::Simulator
+	, public unisim::kernel::Object
 	, public sc_core::sc_module
 {
 public:
-	Simulator(sc_core::sc_module_name const& name, int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::service::Simulator *simulator) = 0);
+	Simulator(sc_core::sc_module_name const& name, int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::Simulator *simulator) = 0);
 	virtual ~Simulator();
 protected:
 	unisim::kernel::logger::Logger logger;
 private:
-	unisim::kernel::service::Statistic<sc_core::sc_time> stat_cur_sim_time;
+	unisim::kernel::variable::Statistic<sc_core::sc_time> stat_cur_sim_time;
 	sc_core::sc_time global_quantum;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_global_quantum;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_global_quantum;
 	sc_core::sc_time can_global_quantum;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_can_global_quantum;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_can_global_quantum;
 };
 
 } // end of namespace tlm2

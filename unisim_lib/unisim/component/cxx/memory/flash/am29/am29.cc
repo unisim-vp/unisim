@@ -32,12 +32,13 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
+#include <unisim/kernel/variable/variable.hh>
 #include "unisim/component/cxx/memory/flash/am29/types.hh"
 
 namespace unisim {
 namespace kernel {
-namespace service {
+namespace variable {
 
 using unisim::component::cxx::memory::flash::am29::MODE;
 using unisim::component::cxx::memory::flash::am29::MODE_X8;
@@ -115,6 +116,6 @@ template <> VariableBase& Variable<MODE>::operator = (const char *value)
 
 template class Variable<MODE>;
 
-} // end of namespace service
+} // end of namespace variable
 } // end of namespace kernel
 } // end of namespace unisim

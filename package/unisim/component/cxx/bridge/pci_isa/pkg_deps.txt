@@ -2,7 +2,8 @@ std/iostream
 std/sstream
 unisim/component/cxx/isa
 unisim/component/cxx/pci
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/util/device
 unisim/util/endian

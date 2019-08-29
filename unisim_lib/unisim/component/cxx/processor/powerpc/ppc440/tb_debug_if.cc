@@ -79,8 +79,8 @@ int TimeBaseRegisterInterface::GetSize() const
 	return 4;
 }
 
-TimeBaseRegisterView::TimeBaseRegisterView(const char *name, unisim::kernel::service::Object *owner, uint64_t& _storage, TimeBaseRegisterView::Type _type, const char *description)
-	: unisim::kernel::service::VariableBase(name, owner, unisim::kernel::service::VariableBase::VAR_REGISTER, description)
+TimeBaseRegisterView::TimeBaseRegisterView(const char *name, unisim::kernel::Object *owner, uint64_t& _storage, TimeBaseRegisterView::Type _type, const char *description)
+	: unisim::kernel::VariableBase(name, owner, unisim::kernel::VariableBase::VAR_REGISTER, description)
 	, storage(_storage)
 	, type(_type)
 {
@@ -132,7 +132,7 @@ TimeBaseRegisterView::operator std::string () const
 	return sstr.str();
 }
 
-unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (bool value)
+unisim::kernel::VariableBase& TimeBaseRegisterView::operator = (bool value)
 {
 	if(IsMutable())
 	{
@@ -143,7 +143,7 @@ unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (bool va
 	return *this;
 }
 
-unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (long long value)
+unisim::kernel::VariableBase& TimeBaseRegisterView::operator = (long long value)
 {
 	if(IsMutable())
 	{
@@ -154,7 +154,7 @@ unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (long lo
 	return *this;
 }
 
-unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (unsigned long long value)
+unisim::kernel::VariableBase& TimeBaseRegisterView::operator = (unsigned long long value)
 {
 	if(IsMutable())
 	{
@@ -165,7 +165,7 @@ unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (unsigne
 	return *this;
 }
 
-unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (double value)
+unisim::kernel::VariableBase& TimeBaseRegisterView::operator = (double value)
 {
 	if(IsMutable())
 	{
@@ -176,7 +176,7 @@ unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (double 
 	return *this;
 }
 
-unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (const char * value)
+unisim::kernel::VariableBase& TimeBaseRegisterView::operator = (const char * value)
 {
 	if(IsMutable())
 	{

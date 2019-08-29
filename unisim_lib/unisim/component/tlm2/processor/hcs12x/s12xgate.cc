@@ -85,9 +85,9 @@ S12XGATE::S12XGATE(const sc_module_name& name, S12XMMC *_mmc, Object *parent) :
 
 {
 
-	param_nice_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_bus_cycle_time_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_core_clock.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_nice_time.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_bus_cycle_time_int.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_core_clock.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	xint_interrupt_request(*this);
 

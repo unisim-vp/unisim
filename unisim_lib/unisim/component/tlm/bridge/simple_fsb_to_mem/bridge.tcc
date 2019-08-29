@@ -43,7 +43,7 @@ namespace tlm {
 namespace bridge {
 namespace simple_fsb_to_mem {
 
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::DebugError;

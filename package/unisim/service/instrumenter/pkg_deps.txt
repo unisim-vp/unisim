@@ -7,8 +7,8 @@ std/sstream
 std/stdexcept
 std/string
 std/vector
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
 unisim/kernel/tlm2
 unisim/service/interfaces/http_server
 unisim/util/arithmetic

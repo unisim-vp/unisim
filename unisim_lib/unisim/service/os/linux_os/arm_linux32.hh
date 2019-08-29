@@ -45,13 +45,13 @@ namespace linux_os {
 
 struct ArmLinux32 : public Linux<uint32_t, uint32_t>
 {
-  ArmLinux32( const char* name, unisim::kernel::service::Object* parent = 0 );
+  ArmLinux32( const char* name, unisim::kernel::Object* parent = 0 );
   ~ArmLinux32();
   
   virtual void SetupTargetSystem();
   
   std::string   system_name;
-  unisim::kernel::service::Parameter<std::string> param_system_name;
+  unisim::kernel::variable::Parameter<std::string> param_system_name;
 };
 
 } // end of linux_os namespace

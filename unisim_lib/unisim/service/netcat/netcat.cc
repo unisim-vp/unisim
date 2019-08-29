@@ -34,7 +34,8 @@
  
 #include <unisim/service/netcat/netcat.hh>
 
-#include <errno.h>
+#include <cstring>
+#include <cerrno>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 
@@ -83,7 +84,7 @@ Netcat::Netcat(const char *name, Object *parent)
 	, output_buffer_size(0)
 
 {
-	param_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_tcp_port.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 }
 
 Netcat::~Netcat()

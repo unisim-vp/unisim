@@ -35,7 +35,7 @@
 #ifndef SIMULATOR_HH_
 #define SIMULATOR_HH_
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/tlm2/simulator.hh>
 #include <unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
@@ -83,15 +83,15 @@ class Simulator
   bool IsRunning() const;
   bool SimulationStarted() const;
   bool SimulationFinished() const;
-  virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+  virtual unisim::kernel::Simulator::SetupStatus Setup();
   virtual bool EndSetup();
-  virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false);
+  virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
   int GetExitStatus() const;
   static void EnableMonitor(int (*monitor_callback)(void));
 
  protected:
  private:
-  static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
+  static void DefaultConfiguration(unisim::kernel::Simulator *sim);
   typedef unisim::component::tlm2::processor::arm::cortex_a9::CPU CPU;
   typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MEMORY;
   typedef unisim::service::os::linux_os::ArmLinux32 ArmLinux32;
@@ -132,11 +132,11 @@ class Simulator
   INSTRUMENTER*         instrumenter;
   
   bool                                     enable_gdb_server;
-  unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
+  unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
   bool                                     enable_inline_debugger;
-  unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
+  unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
   bool                                     enable_profiler;
-  unisim::kernel::service::Parameter<bool> param_enable_profiler;
+  unisim::kernel::variable::Parameter<bool> param_enable_profiler;
   
   int exit_status;
   virtual void SigInt();

@@ -1,6 +1,7 @@
 libc/math
+unisim/kernel
+unisim/kernel/kernel/variable/endian
 unisim/kernel/logger
-unisim/kernel/service
 unisim/kernel/tlm2
 unisim/util/debug
 unisim/util/likely

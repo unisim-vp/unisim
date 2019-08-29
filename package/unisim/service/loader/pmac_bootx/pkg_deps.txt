@@ -4,8 +4,9 @@ libc/stdlib
 std/fstream
 std/list
 std/string
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/service/interfaces/blob
 unisim/service/interfaces/loader
 unisim/service/interfaces/memory

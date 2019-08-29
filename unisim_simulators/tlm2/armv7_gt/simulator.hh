@@ -48,7 +48,7 @@
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/profiling/addr_profiler/profiler.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/util/likely/likely.hh>
 #include <iostream>
 #include <sstream>
@@ -73,10 +73,10 @@ struct RouterCFG : unisim::component::tlm2::interconnect::generic_router::Config
 
 struct Router : public unisim::component::tlm2::interconnect::generic_router::Router<RouterCFG>
 {
-  Router( char const* name, unisim::kernel::service::Object* parent = 0 );
+  Router( char const* name, unisim::kernel::Object* parent = 0 );
 };
 
-struct Simulator : public unisim::kernel::service::Simulator
+struct Simulator : public unisim::kernel::Simulator
 {
   Simulator( int argc, char **argv );
   virtual ~Simulator();
@@ -86,12 +86,12 @@ struct Simulator : public unisim::kernel::service::Simulator
   bool IsRunning() const;
   bool SimulationStarted() const;
   bool SimulationFinished() const;
-  virtual unisim::kernel::service::Simulator::SetupStatus Setup();
-  virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false);
+  virtual unisim::kernel::Simulator::SetupStatus Setup();
+  virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
   int GetExitStatus() const;
   
  private:
-  static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
+  static void DefaultConfiguration(unisim::kernel::Simulator *sim);
   typedef unisim::component::tlm2::processor::arm::cortex_a9::CPU CPU;
   typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MEMORY;
   //typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
@@ -136,9 +136,9 @@ struct Simulator : public unisim::kernel::service::Simulator
   INLINE_DEBUGGER*             inline_debugger;
   
   bool                                     enable_gdb_server;
-  unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
+  unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
   bool                                     enable_inline_debugger;
-  unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
+  unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
 
   int exit_status;
   virtual void SigInt();

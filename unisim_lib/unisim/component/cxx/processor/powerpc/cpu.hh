@@ -41,7 +41,8 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/nat_sort/nat_sort.hh>
 #include <unisim/util/cache/cache.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
@@ -531,17 +532,17 @@ template <unsigned int SIZE> struct TypeForBitSize
 template <typename TYPES, typename CONFIG>
 class CPU
 	: public unisim::util::cache::MemorySubSystem<TYPES, typename CONFIG::CPU>
-	, public unisim::kernel::service::Client<typename unisim::service::interfaces::Memory<typename TYPES::PHYSICAL_ADDRESS> >
-	, public unisim::kernel::service::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::EFFECTIVE_ADDRESS> >
-	, public unisim::kernel::service::Client<typename unisim::service::interfaces::DebugYielding>
-	, public unisim::kernel::service::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::EFFECTIVE_ADDRESS> >
-	, public unisim::kernel::service::Client<typename unisim::service::interfaces::TrapReporting>
-	, public unisim::kernel::service::Client<typename unisim::service::interfaces::LinuxOS>
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Memory<typename TYPES::EFFECTIVE_ADDRESS> >
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::MemoryAccessReportingControl>
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Synchronizable>
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::MemoryInjection<typename TYPES::EFFECTIVE_ADDRESS> >
+	, public unisim::kernel::Client<typename unisim::service::interfaces::Memory<typename TYPES::PHYSICAL_ADDRESS> >
+	, public unisim::kernel::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::EFFECTIVE_ADDRESS> >
+	, public unisim::kernel::Client<typename unisim::service::interfaces::DebugYielding>
+	, public unisim::kernel::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::EFFECTIVE_ADDRESS> >
+	, public unisim::kernel::Client<typename unisim::service::interfaces::TrapReporting>
+	, public unisim::kernel::Client<typename unisim::service::interfaces::LinuxOS>
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Memory<typename TYPES::EFFECTIVE_ADDRESS> >
+	, public unisim::kernel::Service<typename unisim::service::interfaces::MemoryAccessReportingControl>
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Registers>
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Synchronizable>
+	, public unisim::kernel::Service<typename unisim::service::interfaces::MemoryInjection<typename TYPES::EFFECTIVE_ADDRESS> >
 {
 public:
 	typedef typename unisim::util::cache::MemorySubSystem<TYPES, typename CONFIG::CPU> SuperMSS;
@@ -552,24 +553,24 @@ public:
 	
 	/////////////////////////// service imports ///////////////////////////////
 
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> > memory_import;
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::SymbolTableLookup<EFFECTIVE_ADDRESS> > symbol_table_lookup_import;
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::DebugYielding> debug_yielding_import;
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::MemoryAccessReporting<EFFECTIVE_ADDRESS> > memory_access_reporting_import;
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::TrapReporting> trap_reporting_import;
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::LinuxOS> linux_os_import;
+	unisim::kernel::ServiceImport<typename unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> > memory_import;
+	unisim::kernel::ServiceImport<typename unisim::service::interfaces::SymbolTableLookup<EFFECTIVE_ADDRESS> > symbol_table_lookup_import;
+	unisim::kernel::ServiceImport<typename unisim::service::interfaces::DebugYielding> debug_yielding_import;
+	unisim::kernel::ServiceImport<typename unisim::service::interfaces::MemoryAccessReporting<EFFECTIVE_ADDRESS> > memory_access_reporting_import;
+	unisim::kernel::ServiceImport<typename unisim::service::interfaces::TrapReporting> trap_reporting_import;
+	unisim::kernel::ServiceImport<typename unisim::service::interfaces::LinuxOS> linux_os_import;
 	
 	/////////////////////////// service exports ///////////////////////////////
 
-	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS> > memory_export;
-	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
-	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::Registers> registers_export;
-	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::Synchronizable> synchronizable_export;
-	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::MemoryInjection<EFFECTIVE_ADDRESS> > memory_injection_export;
+	unisim::kernel::ServiceExport<typename unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS> > memory_export;
+	unisim::kernel::ServiceExport<typename unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
+	unisim::kernel::ServiceExport<typename unisim::service::interfaces::Registers> registers_export;
+	unisim::kernel::ServiceExport<typename unisim::service::interfaces::Synchronizable> synchronizable_export;
+	unisim::kernel::ServiceExport<typename unisim::service::interfaces::MemoryInjection<EFFECTIVE_ADDRESS> > memory_injection_export;
 
 	////////////////////////////// constructor ////////////////////////////////
 
-	CPU(const char *name, unisim::kernel::service::Object *parent = 0);
+	CPU(const char *name, unisim::kernel::Object *parent = 0);
 
 	/////////////////////////////// destructor ////////////////////////////////
 
@@ -5684,37 +5685,37 @@ protected:
 	//////////////////////////// Statistics ///////////////////////////////////
 
 	uint64_t instruction_counter;
-	unisim::kernel::service::Statistic<uint64_t> stat_instruction_counter;
+	unisim::kernel::variable::Statistic<uint64_t> stat_instruction_counter;
 
 	////////////////////////// Run-time parameters ////////////////////////////
 
 	uint64_t trap_on_instruction_counter;
-	unisim::kernel::service::Parameter<uint64_t> param_trap_on_instruction_counter;
+	unisim::kernel::variable::Parameter<uint64_t> param_trap_on_instruction_counter;
 	
 	uint64_t max_inst;
-	unisim::kernel::service::Parameter<uint64_t> param_max_inst;
+	unisim::kernel::variable::Parameter<uint64_t> param_max_inst;
 	
 	typename TYPES::EFFECTIVE_ADDRESS halt_on_addr;
 	std::string halt_on;
-	unisim::kernel::service::Parameter<std::string> param_halt_on;
+	unisim::kernel::variable::Parameter<std::string> param_halt_on;
 	
 	bool verbose_setup;
-	unisim::kernel::service::Parameter<bool> param_verbose_setup;
+	unisim::kernel::variable::Parameter<bool> param_verbose_setup;
 
 	bool verbose_exception;
-	unisim::kernel::service::Parameter<bool> param_verbose_exception;
+	unisim::kernel::variable::Parameter<bool> param_verbose_exception;
 
 	bool verbose_interrupt;
-	unisim::kernel::service::Parameter<bool> param_verbose_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_verbose_interrupt;
 	
 	bool verbose_move_to_slr;
-	unisim::kernel::service::Parameter<bool> param_verbose_move_to_slr;
+	unisim::kernel::variable::Parameter<bool> param_verbose_move_to_slr;
 
 	bool verbose_move_from_slr;
-	unisim::kernel::service::Parameter<bool> param_verbose_move_from_slr;
+	unisim::kernel::variable::Parameter<bool> param_verbose_move_from_slr;
 	
 	bool enable_insn_trace;
-	unisim::kernel::service::Parameter<bool> param_enable_insn_trace;
+	unisim::kernel::variable::Parameter<bool> param_enable_insn_trace;
 
 private:
 	/////////////////////////// Registers Registry ////////////////////////////
@@ -5742,7 +5743,7 @@ protected:
 	//////////////////////////// Reset Address ////////////////////////////////
 	
 	typename TYPES::EFFECTIVE_ADDRESS reset_addr;
-	unisim::kernel::service::Parameter<typename TYPES::EFFECTIVE_ADDRESS> param_reset_addr;
+	unisim::kernel::variable::Parameter<typename TYPES::EFFECTIVE_ADDRESS> param_reset_addr;
 	
 	/////////////////////////// Program Counter ///////////////////////////////
 	

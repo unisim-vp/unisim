@@ -49,7 +49,7 @@ S12XMMC::S12XMMC(const sc_module_name& name, S12MPU_IF *_mpu, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 	, MMC(name, _mpu, parent)
-	, unisim::kernel::service::Client<TrapReporting>(name, parent)
+	, unisim::kernel::Client<TrapReporting>(name, parent)
 
 	, trap_reporting_import("trap_reporting_import", this)
 	, init_socket("init-socket")

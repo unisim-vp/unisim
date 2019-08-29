@@ -53,7 +53,7 @@ using unisim::kernel::logger::EndDebugError;
 
 PXP ::
 PXP(const sc_module_name &name, Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_module(name)
 	, cpu_target_socket("cpu-target-socket")
 	, dmac_master1_target_socket("dmac_master1_target_socket")
@@ -713,7 +713,7 @@ AccessSystemRegisters(transaction_type &trans,
 			<< (trans.get_address() & 0x00000fffUL) 
 			<< " (0x" << trans.get_address() << ")" << std::dec
 			<< EndDebugError;
-		unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+		unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	}
 }
 
@@ -777,7 +777,7 @@ cpu_target_nb_transport_fw(transaction_type &trans,
 	logger << DebugError
 		<< "TODO: cpu_target_nb_transport_fw"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -876,7 +876,7 @@ cpu_target_b_transport(transaction_type &trans,
 			<< "Unhandled address 0x" 
 			<< std::hex << trans.get_address() << std::dec
 			<< EndDebugError;
-		unisim::kernel::service::Simulator::Instance()->Stop(this, 2);
+		unisim::kernel::Simulator::Instance()->Stop(this, 2);
 		// assert("TODO" == 0);
 	}
 }
@@ -950,7 +950,7 @@ dmac_master1_target_nb_transport_fw(transaction_type &trans,
 	logger << DebugError
 		<< "TODO: dmac_master1_target_nb_transport_fw"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -992,7 +992,7 @@ dmac_master2_target_nb_transport_fw(transaction_type &trans,
 	logger << DebugError
 		<< "TODO: dmac_master2_target_nb_transport_fw"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -1043,7 +1043,7 @@ ssmc0_init_nb_transport_bw(transaction_type &trans,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -1055,7 +1055,7 @@ ssmc0_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -1077,7 +1077,7 @@ mpmc0_init_nb_transport_bw(transaction_type &trans,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -1089,7 +1089,7 @@ mpmc0_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -1111,7 +1111,7 @@ eth_init_nb_transport_bw(transaction_type &trans,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -1123,7 +1123,7 @@ eth_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -1145,7 +1145,7 @@ sc_init_nb_transport_bw(transaction_type &trans,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -1157,7 +1157,7 @@ sc_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -1179,7 +1179,7 @@ uart0_init_nb_transport_bw(transaction_type &trans,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -1191,7 +1191,7 @@ uart0_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -1213,7 +1213,7 @@ uart1_init_nb_transport_bw(transaction_type &trans,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -1225,7 +1225,7 @@ uart1_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -1247,7 +1247,7 @@ uart2_init_nb_transport_bw(transaction_type &trans,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -1259,7 +1259,7 @@ uart2_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -1281,7 +1281,7 @@ dt1_init_nb_transport_bw(transaction_type &trans,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -1293,7 +1293,7 @@ dt1_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 }
 
 tlm::tlm_sync_enum
@@ -1305,7 +1305,7 @@ dt2_init_nb_transport_bw(transaction_type &trans,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -1317,7 +1317,7 @@ dt2_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -1339,7 +1339,7 @@ wd_init_nb_transport_bw(transaction_type &trans,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -1351,7 +1351,7 @@ wd_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -1373,7 +1373,7 @@ pic_init_nb_transport_bw(transaction_type &trans,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -1385,7 +1385,7 @@ pic_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -1407,7 +1407,7 @@ sic_init_nb_transport_bw(transaction_type &trans,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -1419,7 +1419,7 @@ sic_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -1440,7 +1440,7 @@ dmac_init_nb_transport_bw(transaction_type &trans,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -1452,7 +1452,7 @@ dmac_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 	logger << DebugError
 		<< "TODO"
 		<< EndDebugError;
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 }
 
 /**************************************************************************/

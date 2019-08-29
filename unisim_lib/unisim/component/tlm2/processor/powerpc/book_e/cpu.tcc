@@ -65,8 +65,8 @@ using unisim::component::cxx::processor::powerpc::book_e::BUS_BURST_ERROR_RESPON
 using unisim::component::cxx::processor::powerpc::book_e::BUS_BYTE_ENABLE_ERROR_RESPONSE;
 
 template <typename TYPES, typename CONFIG>
-CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent, "PPC440 PowerPC core")
+CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "PPC440 PowerPC core")
 	, sc_core::sc_module(name)
 	, Super(name, parent)
 	, icurd_plb_master_sock("icurd-plb-master-sock")

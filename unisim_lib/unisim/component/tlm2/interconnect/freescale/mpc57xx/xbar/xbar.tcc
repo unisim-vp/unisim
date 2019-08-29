@@ -50,10 +50,10 @@ namespace xbar {
 using unisim::component::tlm2::interconnect::generic_router::MEM_ACCESS_READ;
 
 template <typename CONFIG>
-XBAR<CONFIG>::XBAR(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+XBAR<CONFIG>::XBAR(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, Super(name, parent)
-	, unisim::kernel::service::Service<unisim::service::interfaces::Registers>(name, parent)
+	, unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
 	, registers_export("registers-export", this)
 	, smpu_registers_export("smpu-registers-export", this)
 	, xbar_prs(this)

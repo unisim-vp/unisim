@@ -34,7 +34,8 @@
  
 #include <unisim/service/telnet/telnet.hh>
 
-#include <errno.h>
+#include <cerrno>
+#include <cstring>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 
@@ -104,7 +105,7 @@ Telnet::Telnet(const char *name, Object *parent)
 	, telnet_output_buffer_size(0)
 
 {
-	param_telnet_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_telnet_tcp_port.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 }
 
 Telnet::~Telnet()

@@ -36,7 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_INTERCONNECT_XILINX_MCI_MCI_HH__
 
 #include <unisim/component/cxx/interconnect/xilinx/mci/mci.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <systemc>
 
@@ -47,8 +47,8 @@ namespace interconnect {
 namespace xilinx {
 namespace mci {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
   using namespace sc_core;
 
 template <class CONFIG>

@@ -58,7 +58,7 @@ using unisim::component::tlm2::chipset::arm926ejs_pxp::vic::VICIntSourceIdentifi
 
 SIC ::
 SIC(const sc_module_name &name, Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_module(name)
 	, unisim::component::tlm2::chipset::arm926ejs_pxp::vic::VICIntSourceIdentifierInterface()
 	, bus_target_socket("bus_target_socket")
@@ -255,7 +255,7 @@ bus_target_nb_transport_fw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
 {
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -398,7 +398,7 @@ bus_target_b_transport(transaction_type &trans,
 			logger << std::dec;
 		}
 		logger << EndDebugError;
-		unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+		unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	}
 
 	// everything went fine, update the status of the tlm response
@@ -429,7 +429,7 @@ SIC ::
 bus_target_get_direct_mem_ptr(transaction_type &trans, 
 		tlm::tlm_dmi &dmi_data)
 {
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return false;
 }
 
@@ -437,7 +437,7 @@ unsigned int
 SIC ::
 bus_target_transport_dbg(transaction_type &trans)
 {
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return 0;
 }
 	

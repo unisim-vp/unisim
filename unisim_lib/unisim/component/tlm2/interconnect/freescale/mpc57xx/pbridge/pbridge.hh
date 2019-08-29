@@ -118,7 +118,7 @@ inline std::ostream& operator << (std::ostream& os, const AccessControlRegisterM
 template <typename CONFIG>
 class PBRIDGE
 	: public unisim::component::tlm2::interconnect::programmable_router::Router<CONFIG>
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Registers>
 {
 public:
 	typedef unisim::component::tlm2::interconnect::programmable_router::Router<CONFIG> Super;
@@ -132,9 +132,9 @@ public:
 	static const bool threaded_model                = false;
 	
 	// services
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
 
-	PBRIDGE(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
+	PBRIDGE(const sc_core::sc_module_name& name, unisim::kernel::Object *parent);
 	virtual ~PBRIDGE();
 
 	//////////////// unisim::service::interface::Registers ////////////////////
@@ -844,13 +844,13 @@ protected:
 	};
 
 	AccessControlRegisterMapping acr_mapping[CONFIG::NUM_MAPPINGS];
-	unisim::kernel::service::Parameter<AccessControlRegisterMapping> *param_acr_mapping[CONFIG::NUM_MAPPINGS];
+	unisim::kernel::variable::Parameter<AccessControlRegisterMapping> *param_acr_mapping[CONFIG::NUM_MAPPINGS];
 	
 	unsigned int GetMasterProtection(unsigned int master_id) const;
 	unsigned int GetAccessControl(unsigned int mapping_id) const;
 	
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 };
 
 } // end of namespace pbridge

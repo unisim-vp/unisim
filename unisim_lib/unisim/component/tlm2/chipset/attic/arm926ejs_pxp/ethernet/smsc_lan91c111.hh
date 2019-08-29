@@ -38,7 +38,7 @@
 #include <systemc>
 #include <tlm>
 #include <tlm_utils/passthrough_target_socket.h>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include <inttypes.h>
 
@@ -50,7 +50,7 @@ namespace arm926ejs_pxp {
 namespace ethernet {
 
 class SMSC_LAN91C111
-	: public unisim::kernel::service::Object
+	: public unisim::kernel::Object
 	, public sc_module
 {
 public:
@@ -92,7 +92,7 @@ private:
 	/** Base address of the system controller */
 	uint32_t base_addr;
 	/** UNISIM Parameter for the base address of the system controller */
-	unisim::kernel::service::Parameter<uint32_t> param_base_addr;
+	unisim::kernel::variable::Parameter<uint32_t> param_base_addr;
 
 	/** Interface to the UNISIM logger */
 	unisim::kernel::logger::Logger logger;

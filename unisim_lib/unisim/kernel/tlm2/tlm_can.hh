@@ -35,7 +35,7 @@
 #ifndef __UNISIM_KERNEL_TLM2_TLM_CAN_HH__
 #define __UNISIM_KERNEL_TLM2_TLM_CAN_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm_serial.hh>
 #include <unisim/util/random/random.hh>
@@ -124,7 +124,7 @@ private:
 // tlm_can_bus
 
 class tlm_can_bus
-	: public virtual unisim::kernel::service::Object
+	: public virtual unisim::kernel::Object
 	, public sc_core::sc_module
 {
 public:
@@ -134,7 +134,7 @@ public:
 	CAN_TX_type CAN_TX;
 	CAN_RX_type CAN_RX;
 	
-	inline tlm_can_bus(const sc_core::sc_module_name& name, sc_core::sc_signal<bool>& _observable_signal, const std::vector<sc_core::sc_signal<bool> *>& _observable_input_signals, unisim::kernel::service::Object *parent = 0);
+	inline tlm_can_bus(const sc_core::sc_module_name& name, sc_core::sc_signal<bool>& _observable_signal, const std::vector<sc_core::sc_signal<bool> *>& _observable_input_signals, unisim::kernel::Object *parent = 0);
 	virtual inline ~tlm_can_bus();
 private:
 	virtual inline void end_of_elaboration();
@@ -156,7 +156,7 @@ private:
 		static inline tlm_can_bus_observer *instance();
 	private:
 		unsigned int ref_count;
-		unisim::kernel::service::Parameter<bool> param_enable;
+		unisim::kernel::variable::Parameter<bool> param_enable;
 	};
 
 	unisim::kernel::logger::Logger logger;                                // logger
@@ -172,12 +172,12 @@ private:
 	tlm_input_bitstream observable_signal_bitstream;                      // observable signal bitstream
 	unsigned int delta_count;                                             // number of delta event self notification
 	bool verbose;                                                         // enable/disable verbosity
-	unisim::kernel::service::Parameter<bool> param_verbose;               // exposes verbose parameter to user
+	unisim::kernel::variable::Parameter<bool> param_verbose;               // exposes verbose parameter to user
 	bool output_value;                                                    // output value that is the combination (logical AND) of all input values
 	sc_core::sc_signal<bool>& observable_signal;
 	std::vector<sc_core::sc_signal<bool> *> observable_input_signals;
 	double bit_inversion_error_probability;                               // probability of bit inversion error
-	unisim::kernel::service::Parameter<double> param_bit_inversion_error_probability; // exposes probability of bit inversion error to user
+	unisim::kernel::variable::Parameter<double> param_bit_inversion_error_probability; // exposes probability of bit inversion error to user
 	unisim::util::random::Random rnd;                                     // random number generator
 	int32_t rnd_bit_inversion_error_threshold;                            // threshold to choose whether to generate a bit inversion error
 };
@@ -413,7 +413,7 @@ private:
 
 template <typename CAN_MODULE, typename TYPES = TLM_CAN_DEFAULT_TYPES>
 class tlm_can_core
-	: public virtual unisim::kernel::service::Object
+	: public virtual unisim::kernel::Object
 	, public sc_core::sc_module
 {
 public:
@@ -442,7 +442,7 @@ public:
 	CAN_TX_type CAN_TX; // CAN RX interface
 	CAN_RX_type CAN_RX; // CAN TX interface
 	
-	tlm_can_core(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0);
+	tlm_can_core(const sc_core::sc_module_name& name, unisim::kernel::Object *parent = 0);
 	virtual ~tlm_can_core();
 	
 protected:
@@ -552,8 +552,8 @@ private:
 	uint16_t comp_crc;                     // computed CRC of CAN message being received
 	bool hot_plugged;                      // whether CAN node was recently enabled
 	bool transmitted_last_message;         // whether CAN node transmitted the last message
-	unisim::kernel::service::Parameter<bool> param_verbose; // exposes verbose parameter to user
-	unisim::kernel::service::Parameter<tlm_can_model_accuracy> param_model_accuracy; // exposes model accuracy parameter to user
+	unisim::kernel::variable::Parameter<bool> param_verbose; // exposes verbose parameter to user
+	unisim::kernel::variable::Parameter<tlm_can_model_accuracy> param_model_accuracy; // exposes model accuracy parameter to user
 };
 
 /////////////////////////////////// definitions ///////////////////////////////
@@ -706,8 +706,8 @@ inline std::ostream& operator << (std::ostream& os, const tlm_can_value& value)
 
 // tlm_can_bus
 
-inline tlm_can_bus::tlm_can_bus(const sc_core::sc_module_name& name, sc_core::sc_signal<bool>& _observable_signal, const std::vector<sc_core::sc_signal<bool> *>& _observable_input_signals, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent, "CAN bus")
+inline tlm_can_bus::tlm_can_bus(const sc_core::sc_module_name& name, sc_core::sc_signal<bool>& _observable_signal, const std::vector<sc_core::sc_signal<bool> *>& _observable_input_signals, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "CAN bus")
 	, sc_core::sc_module(name)
 	, CAN_TX("CAN_TX")
 	, CAN_RX("CAN_RX")
@@ -1334,8 +1334,8 @@ inline std::ostream& operator << (std::ostream& os, const tlm_can_core_config& c
 // tlm_can_core (CAN core)
 
 template <typename CAN_MODULE, typename TYPES>
-tlm_can_core<CAN_MODULE, TYPES>::tlm_can_core(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent, "CAN core")
+tlm_can_core<CAN_MODULE, TYPES>::tlm_can_core(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "CAN core")
 	, sc_module(name)
 	, CAN_TX("CAN_TX")
 	, CAN_RX("CAN_RX")
@@ -3860,7 +3860,7 @@ void tlm_can_core<CAN_MODULE, TYPES>::process()
 
 namespace unisim {
 namespace kernel {
-namespace service {
+namespace variable {
 
 using unisim::kernel::tlm2::tlm_can_model_accuracy;
 using unisim::kernel::tlm2::TLM_CAN_CYCLE_ACCURATE;
@@ -3870,7 +3870,7 @@ using unisim::kernel::tlm2::TLM_CAN_TRANSMISSION_START_INACCURATE;
 template <> inline Variable<tlm_can_model_accuracy>::Variable(const char *_name, Object *_object, tlm_can_model_accuracy& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 	AddEnumeratedValue("cycle-accurate");
 	AddEnumeratedValue("transaction-accurate");
 	AddEnumeratedValue("transmission-start-inaccurate");
@@ -3999,7 +3999,7 @@ template <> inline VariableBase& Variable<tlm_can_model_accuracy>::operator = (c
 	return *this;
 }
 
-} // end of service namespace
+} // end of variable namespace
 } // end of kernel namespace
 } // end of unisim namespace
 

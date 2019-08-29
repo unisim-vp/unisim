@@ -38,7 +38,7 @@
 #include <systemc>
 #include <tlm>
 #include <tlm_utils/passthrough_target_socket.h>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include <inttypes.h>
 
@@ -50,7 +50,7 @@ namespace arm926ejs_pxp {
 namespace vic {
 
 class VICIntSourceStub
-	: public unisim::kernel::service::Object
+	: public unisim::kernel::Object
 	, public sc_module
 {
 public:
@@ -68,11 +68,11 @@ public:
 private:
 	bool value;
 
-	unisim::kernel::service::Parameter<bool> param_value;
+	unisim::kernel::variable::Parameter<bool> param_value;
 };
 
 class VICIntTargetStub
-	: public unisim::kernel::service::Object
+	: public unisim::kernel::Object
 	, public sc_module
 {
 public:
@@ -90,14 +90,14 @@ private:
 	bool value;
 	uint32_t verbose;
 
-	unisim::kernel::service::Parameter<bool> param_value;
-	unisim::kernel::service::Parameter<uint32_t> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_value;
+	unisim::kernel::variable::Parameter<uint32_t> param_verbose;
 
 	unisim::kernel::logger::Logger logger;
 };
 
 class VICAddrSourceStub
-	: public unisim::kernel::service::Object
+	: public unisim::kernel::Object
 	, public sc_module
 {
 public:
@@ -114,11 +114,11 @@ public:
 private:
 	uint32_t value;
 
-	unisim::kernel::service::Parameter<uint32_t> param_value;
+	unisim::kernel::variable::Parameter<uint32_t> param_value;
 };
 
 class VICAddrTargetStub
-	: public unisim::kernel::service::Object
+	: public unisim::kernel::Object
 	, public sc_module
 {
 public:
@@ -136,8 +136,8 @@ private:
 	uint32_t value;
 	uint32_t verbose;
 
-	unisim::kernel::service::Parameter<uint32_t> param_value;
-	unisim::kernel::service::Parameter<uint32_t> param_verbose;
+	unisim::kernel::variable::Parameter<uint32_t> param_value;
+	unisim::kernel::variable::Parameter<uint32_t> param_verbose;
 
 	unisim::kernel::logger::Logger logger;
 };

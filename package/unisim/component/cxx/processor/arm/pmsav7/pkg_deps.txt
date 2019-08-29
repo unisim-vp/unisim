@@ -4,6 +4,7 @@ std/sstream
 std/stdexcept
 std/string
 unisim/component/cxx/processor/arm
+unisim/kernel/variable
 unisim/service/interfaces/debug_yielding
 unisim/service/interfaces/disassembly
 unisim/service/interfaces/memory

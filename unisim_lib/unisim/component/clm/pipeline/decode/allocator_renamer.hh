@@ -64,8 +64,8 @@ using unisim::component::clm::processor::ooosim::nXERRegisters;
  
 using unisim::component::clm::interfaces::InstructionPtr;
 
-  using unisim::kernel::service::Object;
-  using unisim::kernel::service::Statistic;
+  using unisim::kernel::Object;
+  using unisim::kernel::variable::Statistic;
 
 /* A mapping table */
 template <int nArchitecturalRegisters, int nRegisters>

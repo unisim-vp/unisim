@@ -44,7 +44,7 @@ namespace book_e {
 namespace ppc440 {
 
 CPU::CPU(const sc_core::sc_module_name& name, Object *parent)
-	: unisim::kernel::service::Object(name, parent, "PPC440 PowerPC core")
+	: unisim::kernel::Object(name, parent, "PPC440 PowerPC core")
 	, Super(name, parent)
 {
 }

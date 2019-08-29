@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_OS_AVR32_T2H_SYSCALLS_AVR32_T2H_SYSCALLS_TCC__
 #define __UNISIM_SERVICE_OS_AVR32_T2H_SYSCALLS_AVR32_T2H_SYSCALLS_TCC__
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/util/endian/endian.hh"
@@ -74,12 +74,12 @@ using std::endl;
 using std::flush;
 using std::map;
 using unisim::util::endian::Host2BigEndian;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::variable::Parameter;
 using unisim::kernel::logger::Logger;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
@@ -170,7 +170,7 @@ AVR32_T2H_Syscalls<MEMORY_ADDR>::AVR32_T2H_Syscalls(const char *name, Object *pa
 	, param_stdout_pipe_filename("stdout-pipe-filename", this, stdout_pipe_filename, "stdout pipe filename")
 	, param_stderr_pipe_filename("stderr-pipe-filename", this, stderr_pipe_filename, "stderr pipe filename")
 {
-	param_argc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_argc.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
 	reg_params[0] = 0;
 	reg_params[1] = 0;

@@ -5,6 +5,6 @@ std/stack
 std/vector
 unisim/component/cxx/processor/avr32/avr32a/avr32uc
 unisim/component/tlm2/interrupt
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
 unisim/kernel/tlm2

@@ -47,10 +47,10 @@ namespace com {
 namespace xilinx {
 namespace xps_gpio {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
 using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::tlm2::Schedule;
 using unisim::component::tlm2::interrupt::InterruptPayload;

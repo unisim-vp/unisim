@@ -35,13 +35,15 @@
 #ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_AM29_HH__
 #define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_AM29_HH__
 
-#include <inttypes.h>
+#include <unisim/component/cxx/memory/flash/am29/types.hh>
+#include <unisim/kernel/variable/endian/endian.hh>
+#include <unisim/kernel/variable/variable.hh>
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/service/interfaces/memory.hh>
+#include <unisim/util/endian/endian.hh>
 #include <string>
-#include "unisim/kernel/service/service.hh"
-#include "unisim/service/interfaces/memory.hh"
-#include "unisim/kernel/logger/logger.hh"
-#include "unisim/component/cxx/memory/flash/am29/types.hh"
-#include "unisim/util/endian/endian.hh"
+#include <inttypes.h>
 
 namespace unisim {
 namespace component {
@@ -52,13 +54,13 @@ namespace am29 {
 
 using unisim::service::interfaces::Memory;
 using unisim::kernel::logger::Logger;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ParameterArray;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::ParameterArray;
 using unisim::util::endian::endian_type;
 
 static const uint32_t K = 1024;

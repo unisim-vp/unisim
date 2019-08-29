@@ -4,6 +4,6 @@ m4/systemc
 std/stack
 std/vector
 unisim/component/cxx/processor/powerpc/e200/mpc57xx
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
 unisim/kernel/tlm2

@@ -1,7 +1,7 @@
 m4/systemc
 std/stdexcept
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
 unisim/service/interfaces/backtrace
 unisim/service/interfaces/data_object_lookup
 unisim/service/interfaces/debug_event

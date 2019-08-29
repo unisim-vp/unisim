@@ -63,7 +63,7 @@ enum BusResponseStatus
 template <typename TYPES, typename CONFIG>
 class CPU
 	: public unisim::component::cxx::processor::powerpc::CPU<TYPES, CONFIG>
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Disassembly<typename TYPES::EFFECTIVE_ADDRESS> >
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Disassembly<typename TYPES::EFFECTIVE_ADDRESS> >
 {
 public:
 	//typedef CPU ThisCPU;
@@ -81,11 +81,11 @@ public:
 	
 	/////////////////////////// service exports ///////////////////////////////
 
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS> > disasm_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS> > disasm_export;
 
 	////////////////////////////// constructor ////////////////////////////////
 	
-	CPU(const char *name, unisim::kernel::service::Object *parent = 0);
+	CPU(const char *name, unisim::kernel::Object *parent = 0);
 
 	/////////////////////////////// destructor ////////////////////////////////
 
@@ -750,99 +750,99 @@ public:
 protected:
 	/////////////////////////////// Statistics ////////////////////////////////
 	
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_load_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_store_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_fetch_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_load_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_store_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_read_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_write_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_bus_read_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_load_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_store_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_fetch_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_load_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_store_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_read_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_write_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_bus_read_xfered_bytes;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_data_load_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_data_store_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_instruction_fetch_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_incoming_load_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_incoming_store_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_data_bus_read_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_data_bus_write_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_instruction_bus_read_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_data_load_xfered_bytes;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_data_store_xfered_bytes;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_instruction_fetch_xfered_bytes;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_incoming_load_xfered_bytes;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_incoming_store_xfered_bytes;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_data_bus_read_xfered_bytes;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_data_bus_write_xfered_bytes;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_instruction_bus_read_xfered_bytes;
 
 	////////////////////////// Run-time parameters ////////////////////////////
 	
 	uint8_t cpuid;
-	unisim::kernel::service::Parameter<uint8_t> param_cpuid;
+	unisim::kernel::variable::Parameter<uint8_t> param_cpuid;
 
 	uint32_t processor_version;
-	unisim::kernel::service::Parameter<uint32_t> param_processor_version;
+	unisim::kernel::variable::Parameter<uint32_t> param_processor_version;
 	
 	uint32_t system_version;
-	unisim::kernel::service::Parameter<uint32_t> param_system_version;
+	unisim::kernel::variable::Parameter<uint32_t> param_system_version;
 
 	uint32_t system_information;
-	unisim::kernel::service::Parameter<uint32_t> param_system_information;
+	unisim::kernel::variable::Parameter<uint32_t> param_system_information;
 
 	PHYSICAL_ADDRESS local_memory_base_addr;
-	unisim::kernel::service::Parameter<PHYSICAL_ADDRESS> param_local_memory_base_addr;
+	unisim::kernel::variable::Parameter<PHYSICAL_ADDRESS> param_local_memory_base_addr;
 
 	PHYSICAL_ADDRESS local_memory_size;
-	unisim::kernel::service::Parameter<PHYSICAL_ADDRESS> param_local_memory_size;
+	unisim::kernel::variable::Parameter<PHYSICAL_ADDRESS> param_local_memory_size;
 
 	bool verbose_data_load;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_load;
+	unisim::kernel::variable::Parameter<bool> param_verbose_data_load;
 	
 	bool verbose_data_store;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_store;
+	unisim::kernel::variable::Parameter<bool> param_verbose_data_store;
 	
 	bool verbose_instruction_fetch;
-	unisim::kernel::service::Parameter<bool> param_verbose_instruction_fetch;
+	unisim::kernel::variable::Parameter<bool> param_verbose_instruction_fetch;
 	
 	bool verbose_data_bus_read;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_bus_read;
+	unisim::kernel::variable::Parameter<bool> param_verbose_data_bus_read;
 	
 	bool verbose_data_bus_write;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_bus_write;
+	unisim::kernel::variable::Parameter<bool> param_verbose_data_bus_write;
 	
 	bool verbose_instruction_bus_read;
-	unisim::kernel::service::Parameter<bool> param_verbose_instruction_bus_read;
+	unisim::kernel::variable::Parameter<bool> param_verbose_instruction_bus_read;
 	
 	bool trap_system_reset_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_system_reset_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_system_reset_interrupt;
 
 	bool trap_machine_check_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_machine_check_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_machine_check_interrupt;
 	
 	bool trap_data_storage_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_data_storage_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_data_storage_interrupt;
 	
 	bool trap_instruction_storage_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_instruction_storage_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_instruction_storage_interrupt;
 	
 	bool trap_alignment_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_alignment_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_alignment_interrupt;
 	
 	bool trap_program_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_program_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_program_interrupt;
 	
 	bool trap_embedded_floating_point_data_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_embedded_floating_point_data_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_embedded_floating_point_data_interrupt;
 	
 	bool trap_embedded_floating_point_round_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_embedded_floating_point_round_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_embedded_floating_point_round_interrupt;
 	
 	bool trap_system_call_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_system_call_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_system_call_interrupt;
 	
 	bool trap_critical_input_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_critical_input_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_critical_input_interrupt;
 	
 	bool trap_external_input_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_external_input_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_external_input_interrupt;
 	
 	bool trap_performance_monitor_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_performance_monitor_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_performance_monitor_interrupt;
 	
 	bool trap_debug_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_debug_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_debug_interrupt;
 	
 	///////////////////////////// Interrupts //////////////////////////////////
 	

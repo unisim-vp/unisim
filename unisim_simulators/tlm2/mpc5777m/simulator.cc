@@ -309,22 +309,22 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 {
 	SetDescription("MPC5777M Simulator");
 	
-	param_dspi_0_master.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dspi_1_master.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dspi_2_master.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dspi_3_master.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dspi_4_master.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dspi_5_master.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dspi_6_master.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dspi_12_master.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dspi_0_slave.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dspi_1_slave.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dspi_2_slave.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dspi_3_slave.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dspi_4_slave.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dspi_5_slave.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dspi_6_slave.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dspi_12_slave.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_dspi_0_master.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_dspi_1_master.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_dspi_2_master.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_dspi_3_master.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_dspi_4_master.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_dspi_5_master.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_dspi_6_master.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_dspi_12_master.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_dspi_0_slave.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_dspi_1_slave.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_dspi_2_slave.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_dspi_3_slave.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_dspi_4_slave.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_dspi_5_slave.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_dspi_6_slave.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_dspi_12_slave.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	param_enable_gdb_server.SetMutable(false);
 	param_enable_inline_debugger.SetMutable(false);
@@ -5522,7 +5522,7 @@ void Simulator::DMASource(const std::string& source_req,
 	instrumenter->Bind(source_ack, std::string(this->sc_core::sc_object::name()) + '.' + source_ack_signal_basename_sstr.str());
 }
 
-void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM MPC5777M");
@@ -6486,7 +6486,7 @@ bool Simulator::EndSetup()
 	return true;
 }
 
-unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
+unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 {
 	if(inline_debugger || profiler[0] || profiler[1] || profiler[2])
 	{
@@ -6494,14 +6494,14 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 	}
 	
 	// Optionally get the program to load from the command line arguments
-	unisim::kernel::service::VariableBase *cmd_args = FindVariable("cmd-args");
+	unisim::kernel::VariableBase *cmd_args = FindVariable("cmd-args");
 	unsigned int cmd_args_length = cmd_args->GetLength();
 	if(cmd_args_length > 0)
 	{
 		SetVariable("loader.filename", ((std::string)(*cmd_args)[0]).c_str());
 	}
 
-	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+	unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
 	
 	return setup_status;
 }
@@ -6537,6 +6537,6 @@ void Simulator::SigInt()
 {
 	if(!enable_inline_debugger)
 	{
-		unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}
 }

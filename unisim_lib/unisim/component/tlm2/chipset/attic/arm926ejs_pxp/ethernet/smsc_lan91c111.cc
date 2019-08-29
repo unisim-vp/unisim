@@ -54,7 +54,7 @@ using unisim::util::endian::LittleEndian2Host;
 
 SMSC_LAN91C111 ::
 SMSC_LAN91C111(const sc_module_name &name, Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_module(name)
 	, bus_target_socket("bus_target_socket")
 	, base_addr(0)

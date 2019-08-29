@@ -35,7 +35,7 @@
 #ifndef SIMULATOR_HH_
 #define SIMULATOR_HH_
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/tlm2/simulator.hh>
 #include <unisim/component/tlm2/processor/arm/cortex_a53/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
@@ -64,14 +64,14 @@ struct Simulator
   bool IsRunning() const;
   bool SimulationStarted() const;
   bool SimulationFinished() const;
-  virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+  virtual unisim::kernel::Simulator::SetupStatus Setup();
   virtual bool EndSetup();
-  virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false);
+  virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
   int GetExitStatus() const;
 
  protected:
  private:
-  static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
+  static void DefaultConfiguration(unisim::kernel::Simulator *sim);
   typedef unisim::component::tlm2::processor::arm::cortex_a53::CPU CPU;
   typedef unisim::component::tlm2::memory::ram::Memory<64, uint64_t, 8, 1024 * 1024, true> MEMORY;
   
@@ -106,11 +106,11 @@ struct Simulator
   INSTRUMENTER*                              instrumenter;
   
   bool                                       enable_gdb_server;
-  unisim::kernel::service::Parameter<bool>   param_enable_gdb_server;
+  unisim::kernel::variable::Parameter<bool>   param_enable_gdb_server;
   bool                                       enable_inline_debugger;
-  unisim::kernel::service::Parameter<bool>   param_enable_inline_debugger;
+  unisim::kernel::variable::Parameter<bool>   param_enable_inline_debugger;
   bool                                       enable_profiler;
-  unisim::kernel::service::Parameter<bool>   param_enable_profiler;
+  unisim::kernel::variable::Parameter<bool>   param_enable_profiler;
   
   int exit_status;
   virtual void SigInt();

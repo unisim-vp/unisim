@@ -44,8 +44,8 @@ namespace os {
 namespace linux_os {
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-PowerPCLinux32<ADDRESS_TYPE,PARAMETER_TYPE>::PowerPCLinux32( const char* name, unisim::kernel::service::Object* parent )
-  : unisim::kernel::service::Object( name, parent )
+PowerPCLinux32<ADDRESS_TYPE,PARAMETER_TYPE>::PowerPCLinux32( const char* name, unisim::kernel::Object* parent )
+  : unisim::kernel::Object( name, parent )
   , Linux<uint32_t, uint32_t>( name, parent )
 {
 }

@@ -36,7 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_E200_MPC57XX_CPU_HH__
 
 #include <systemc>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/tlm2/clock.hh>
@@ -54,11 +54,11 @@ namespace e200 {
 namespace mpc57xx {
 
 using unisim::kernel::tlm2::PayloadFabric;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::Formula;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::variable::Formula;
 using unisim::kernel::logger::Logger;
 
 using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BusResponseStatus;
@@ -95,7 +95,7 @@ public:
 	sc_core::sc_in<sc_dt::sc_uint<14> > p_voffset;        // Interrupt vector offset for vectored interrupts
 	sc_core::sc_out<bool>               p_iack;           // interrupt acknowledge
 	
-	CPU(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0);
+	CPU(const sc_core::sc_module_name& name, unisim::kernel::Object *parent = 0);
 	virtual ~CPU();
 	
 	virtual void end_of_elaboration();

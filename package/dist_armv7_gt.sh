@@ -16,7 +16,7 @@ import unisim/service/debug/gdb_server || exit
 import unisim/service/debug/inline_debugger || exit
 import unisim/service/debug/debugger || exit
 import unisim/service/profiling/addr_profiler || exit
-import unisim/kernel/service || exit
+import unisim/kernel || exit
 import unisim/util/likely || exit
 
 import m4/scml2

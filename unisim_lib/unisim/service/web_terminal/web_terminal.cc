@@ -35,6 +35,7 @@
 #include <unisim/service/web_terminal/web_terminal.hh>
 #include <unisim/util/likely/likely.hh>
 #include <set>
+#include <cassert>
 
 namespace unisim {
 namespace service {
@@ -75,8 +76,8 @@ std::ostream& operator << (std::ostream& os, const Blink& blink)
 
 ///////////////////////////////////// Theme ///////////////////////////////////
 
-Theme::Theme(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+Theme::Theme(const char *name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, intensity(NORMAL_INTENSITY)
 	, italic(false)
 	, underline(false)
@@ -112,10 +113,10 @@ Theme::Theme(const char *name, unisim::kernel::service::Object *parent)
 	color_table[14] = /* 14: bright cyan    */ "rgb(85,255,255)";
 	color_table[15] = /* 15: bright white   */ "rgb(255,255,255)";
 
-	param_background_color.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_foreground_color.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_background_color.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_foreground_color.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
-	param_color_table = new unisim::kernel::service::ParameterArray<std::string>("color-table", this, color_table, 16, "color table");
+	param_color_table = new unisim::kernel::variable::ParameterArray<std::string>("color-table", this, color_table, 16, "color table");
 }
 
 Theme::~Theme()
@@ -323,7 +324,7 @@ void ScreenBufferIterator::Set(unsigned int _scan_index, unsigned int _line_inde
 //////////////////////////////// ScreenBuffer /////////////////////////////////
 
 ScreenBuffer::ScreenBuffer(const char *name, WebTerminal *_web_terminal)
-	: unisim::kernel::service::Object(name, _web_terminal)
+	: unisim::kernel::Object(name, _web_terminal)
 	, web_terminal(_web_terminal)
 	, logger(*this)
 	, display_width(80)
@@ -351,9 +352,9 @@ ScreenBuffer::ScreenBuffer(const char *name, WebTerminal *_web_terminal)
 {
 	buffer_height = std::max(buffer_height, display_height);
 	
-	param_display_width.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_display_height.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_buffer_height.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_display_width.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_display_height.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_buffer_height.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	param_display_width.SetMutable(false);
 	param_display_height.SetMutable(false);
@@ -1072,10 +1073,10 @@ void InputBuffer::Pop()
 
 ///////////////////////////////// WebTerminal /////////////////////////////////
 
-WebTerminal::WebTerminal(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent, "An ANSI Terminal over HTTP")
-	, unisim::kernel::service::Service<unisim::service::interfaces::CharIO>(name, parent)
-	, unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>(name, parent)
+WebTerminal::WebTerminal(const char *name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "An ANSI Terminal over HTTP")
+	, unisim::kernel::Service<unisim::service::interfaces::CharIO>(name, parent)
+	, unisim::kernel::Service<unisim::service::interfaces::HttpServer>(name, parent)
 	, char_io_export("char-io-export", this)
 	, http_server_export("http-server-export", this)
 	, logger(*this)
@@ -1108,7 +1109,7 @@ WebTerminal::WebTerminal(const char *name, unisim::kernel::service::Object *pare
 {
 	pthread_mutex_init(&mutex, NULL);
 	
-	param_input_buffer_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_input_buffer_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	kevt2ansi[KeyEvent("Enter")] = "\n";
 	kevt2ansi[KeyEvent("Backspace")] = "\x7f";
@@ -1919,7 +1920,7 @@ void WebTerminal::Unlock()
 
 namespace unisim {
 namespace kernel {
-namespace service {
+namespace variable {
 
 using unisim::service::web_terminal::Intensity;
 using unisim::service::web_terminal::DECREASED_INTENSITY;
@@ -1929,7 +1930,7 @@ using unisim::service::web_terminal::INCREASED_INTENSITY;
 template <> Variable<Intensity>::Variable(const char *_name, Object *_object, Intensity& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 	AddEnumeratedValue("decreased");
 	AddEnumeratedValue("normal");
 	AddEnumeratedValue("increased");
@@ -2068,7 +2069,7 @@ using unisim::service::web_terminal::RAPID_BLINK;
 template <> Variable<Blink>::Variable(const char *_name, Object *_object, Blink& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 	AddEnumeratedValue("none");
 	AddEnumeratedValue("slow");
 	AddEnumeratedValue("rapid");
@@ -2199,6 +2200,6 @@ template <> VariableBase& Variable<Blink>::operator = (const char *value)
 
 template class Variable<Blink>;
 
-} // end of service namespace
+} // end of variable namespace
 } // end of kernel namespace
 } // end of unisim namespace

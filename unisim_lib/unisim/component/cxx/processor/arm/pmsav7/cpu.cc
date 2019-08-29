@@ -56,9 +56,9 @@ namespace processor {
 namespace arm {
 namespace pmsav7 {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::TrapReporting;
@@ -82,7 +82,7 @@ using unisim::kernel::logger::EndDebugError;
  * @param parent the parent object of this object
  */
 CPU::CPU(const char *name, Object *parent)
-  : unisim::kernel::service::Object(name, parent)
+  : unisim::kernel::Object(name, parent)
   , unisim::component::cxx::processor::arm::CPU<ARMv7emu>(name, parent)
   , Service<MemoryAccessReportingControl>(name, parent)
   , Client<MemoryAccessReporting<uint32_t> >(name, parent)
@@ -122,8 +122,8 @@ CPU::CPU(const char *name, Object *parent)
   , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
 {
   // Set the right format for various of the variables
-  param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-  stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+  param_trap_on_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+  stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 }
 
 /** Destructor.

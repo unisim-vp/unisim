@@ -9,8 +9,9 @@ std/stdexcept
 unisim/component/cxx/cache
 unisim/component/cxx/processor/powerpc
 unisim/component/cxx/tlb
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/service/interfaces/cache_power_estimator
 unisim/service/interfaces/debug_yielding
 unisim/service/interfaces/disassembly

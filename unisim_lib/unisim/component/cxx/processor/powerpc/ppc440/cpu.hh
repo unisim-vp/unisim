@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_CPU_HH__
 
 #include <unisim/kernel/logger/logger.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
 #include <unisim/component/cxx/processor/powerpc/ppc440/isa.hh>
 #include <unisim/component/cxx/processor/powerpc/ppc440/config.hh>
@@ -49,7 +50,7 @@
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/linux_os.hh>
@@ -89,21 +90,21 @@ using unisim::service::interfaces::CachePowerEstimator;
 using unisim::service::interfaces::PowerMode;
 using unisim::service::interfaces::Registers;
 using namespace unisim::util::endian;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::Object;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::LinuxOS;
 using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Synchronizable;
 using unisim::service::interfaces::TrapReporting;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::ParameterArray;
-using unisim::kernel::service::Formula;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::variable::ParameterArray;
+using unisim::kernel::variable::Formula;
 using unisim::kernel::logger::Logger;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
@@ -220,7 +221,7 @@ private:
 	Type type;
 };
 
-class TimeBaseRegisterView : public unisim::kernel::service::VariableBase
+class TimeBaseRegisterView : public unisim::kernel::VariableBase
 {
 public:
 	typedef enum
@@ -228,7 +229,7 @@ public:
 		TB_LOW,
 		TB_HIGH
 	} Type;
-	TimeBaseRegisterView(const char *name, unisim::kernel::service::Object *owner, uint64_t& storage, Type type, const char *description);
+	TimeBaseRegisterView(const char *name, unisim::kernel::Object *owner, uint64_t& storage, Type type, const char *description);
 	virtual ~TimeBaseRegisterView();
 	virtual const char *GetDataTypeName() const;
 	virtual operator bool () const;
@@ -236,11 +237,11 @@ public:
 	virtual operator unsigned long long () const;
 	virtual operator double () const;
 	virtual operator std::string () const;
-	virtual unisim::kernel::service::VariableBase& operator = (bool value);
-	virtual unisim::kernel::service::VariableBase& operator = (long long value);
-	virtual unisim::kernel::service::VariableBase& operator = (unsigned long long value);
-	virtual unisim::kernel::service::VariableBase& operator = (double value);
-	virtual unisim::kernel::service::VariableBase& operator = (const char * value);
+	virtual unisim::kernel::VariableBase& operator = (bool value);
+	virtual unisim::kernel::VariableBase& operator = (long long value);
+	virtual unisim::kernel::VariableBase& operator = (unsigned long long value);
+	virtual unisim::kernel::VariableBase& operator = (double value);
+	virtual unisim::kernel::VariableBase& operator = (const char * value);
 private:
 	uint64_t& storage;
 	Type type;
@@ -1138,7 +1139,7 @@ private:
 	uint64_t num_auxiliary_processor_unavailable_interrupts;
 
 	map<string, unisim::service::interfaces::Register *> registers_registry;       //!< Every CPU register interfaces
-	std::vector<unisim::kernel::service::VariableBase *> registers_registry2;       //!< Every CPU register
+	std::vector<unisim::kernel::VariableBase *> registers_registry2;       //!< Every CPU register
 	uint64_t instruction_counter;                              //!< Number of executed instructions
 	bool fp32_estimate_inv_warning;
 	bool fp64_estimate_inv_sqrt_warning;

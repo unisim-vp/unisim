@@ -126,7 +126,7 @@ namespace cortex_a9 {
 using namespace unisim::kernel::logger;
 
 CPU::CPU( sc_core::sc_module_name const& name, Object* parent )
-  : unisim::kernel::service::Object(name, parent)
+  : unisim::kernel::Object(name, parent)
   , sc_core::sc_module(name)
   , unisim::component::cxx::processor::arm::vmsav7::CPU(name, parent)
   , master_socket("master_socket")
@@ -228,7 +228,7 @@ CPU::Stop(int ret)
   // Call BusSynchronize to account for the remaining time spent in the cpu 
   // core
   BusSynchronize();
-  unisim::kernel::service::Object::Stop( ret );
+  unisim::kernel::Object::Stop( ret );
 }
 
 /** Wait for a specific event and update CPU times

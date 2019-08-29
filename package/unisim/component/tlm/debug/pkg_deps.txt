@@ -1,6 +1,6 @@
 std/string
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
 unisim/kernel/tlm
 unisim/util/garbage_collector
 unisim/util/likely

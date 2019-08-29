@@ -28,7 +28,7 @@ if ( NOT ${HAVE_STDEXCEPT} )
 	message ( SEND_ERROR "Could not find c++ STL library \"stdexcept\"." )
 endif ( NOT ${HAVE_STDEXCEPT} )
 
-add_subdirectory ( ${CMAKE_SOURCE_DIR}/unisim/kernel/service )
+add_subdirectory ( ${CMAKE_SOURCE_DIR}/unisim/kernel )
 add_subdirectory ( ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/tms320 )
 add_subdirectory ( ${CMAKE_SOURCE_DIR}/unisim/component/cxx/memory/ram )
 add_subdirectory ( ${CMAKE_SOURCE_DIR}/unisim/service/time/host_time )

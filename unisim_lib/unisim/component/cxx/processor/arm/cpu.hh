@@ -67,8 +67,8 @@ namespace arm {
 
 template <typename CONFIG>
 struct CPU
-  : public virtual unisim::kernel::service::Object
-  , public unisim::kernel::service::Service<unisim::service::interfaces::Registers>
+  : public virtual unisim::kernel::Object
+  , public unisim::kernel::Service<unisim::service::interfaces::Registers>
 {
   typedef CONFIG Config;
   typedef simfloat::FP FP;
@@ -486,14 +486,14 @@ public:
   virtual unisim::service::interfaces::Register* GetRegister( const char* name );
   virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner );
 		
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
   
 protected:
   /** The registers interface for debugging purpose */
   typedef std::map<std::string, unisim::service::interfaces::Register*> RegistersRegistry;
   RegistersRegistry registers_registry;
   
-  typedef std::set<unisim::kernel::service::VariableBase*> VariableRegisterPool;
+  typedef std::set<unisim::kernel::VariableBase*> VariableRegisterPool;
   VariableRegisterPool variable_register_pool;
   
   /*************************************/

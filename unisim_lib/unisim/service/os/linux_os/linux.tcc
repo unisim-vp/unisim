@@ -39,7 +39,7 @@
 #include <string>
 #include <sstream>
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/linux_os.hh"
 #include "unisim/service/interfaces/loader.hh"
@@ -72,17 +72,17 @@ using unisim::kernel::logger::EndDebug;
 /** Constructor. */
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
-Linux(const char *name, unisim::kernel::service::Object *parent)
-  : unisim::kernel::service::Object(name, parent)
-  , unisim::kernel::service::Service<unisim::service::interfaces::LinuxOS>(
+Linux(const char *name, unisim::kernel::Object *parent)
+  : unisim::kernel::Object(name, parent)
+  , unisim::kernel::Service<unisim::service::interfaces::LinuxOS>(
                                                                            name, parent)
-  , unisim::kernel::service::Service<unisim::service::interfaces::Blob<ADDRESS_TYPE> >(
+  , unisim::kernel::Service<unisim::service::interfaces::Blob<ADDRESS_TYPE> >(
                                                                                        name, parent)
-  , unisim::kernel::service::Client<
+  , unisim::kernel::Client<
   unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent)
-  , unisim::kernel::service::Client<
+  , unisim::kernel::Client<
   unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> >(name, parent)
-  , unisim::kernel::service::Client<unisim::service::interfaces::Registers>(
+  , unisim::kernel::Client<unisim::service::interfaces::Registers>(
                                                                             name, parent)
   , linux_os_export_("linux-os-export", this)
   , blob_export_("blob-export", this)
@@ -173,7 +173,7 @@ Linux(const char *name, unisim::kernel::service::Object *parent)
   , param_hwcap_("hwcap", this, hwcap_,
                  "CPU Hardware capabilities to enable (e.g. \"swp thumb fastmult vfp\".")
 {
-  param_argc_.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+  param_argc_.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
   
   linux_os_export_.SetupDependsOn(memory_import_);
   linux_os_export_.SetupDependsOn(registers_import_);
@@ -204,16 +204,16 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
     {
       std::stringstream argv_name;
       argv_name << "argv[" << i << "]";
-      argv.push_back( static_cast<std::string>(*GetSimulator()->FindVariable(argv_name.str().c_str(), unisim::kernel::service::VariableBase::VAR_PARAMETER) ) );
+      argv.push_back( static_cast<std::string>(*GetSimulator()->FindVariable(argv_name.str().c_str(), unisim::kernel::VariableBase::VAR_PARAMETER) ) );
     }
   
-  param_envc_.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+  param_envc_.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
   
   for (unsigned int i = 0; i < ((envc_ == 0)?1:envc_); i++)
     {
       std::stringstream envp_name;
       envp_name << "envp[" << i << "]";
-      envp.push_back( static_cast<std::string>(*GetSimulator()->FindVariable(envp_name.str().c_str(), unisim::kernel::service::VariableBase::VAR_PARAMETER) ) );
+      envp.push_back( static_cast<std::string>(*GetSimulator()->FindVariable(envp_name.str().c_str(), unisim::kernel::VariableBase::VAR_PARAMETER) ) );
     }
 
   // check the endianness parameter
@@ -335,7 +335,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Setup(
-    unisim::kernel::service::ServiceExportBase *srv_export) {
+    unisim::kernel::ServiceExportBase *srv_export) {
   if ( srv_export == &linux_os_export_ ) {
     if (!linuxlib_->SetupTarget()) {
       logger_ << DebugError << "Could not setup the linux system"

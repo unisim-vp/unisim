@@ -98,10 +98,10 @@ Display<ADDRESS>::Display(const char *name, Object *parent) :
 	param_pci_device_number("pci-device-number", this, pci_device_number, "PCI device number"),
 	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency, "PCI bus frequency")
 {
-	param_bytesize.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_width.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_height.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_depth.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_bytesize.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_width.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_height.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_depth.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 }
 
 template <class ADDRESS>

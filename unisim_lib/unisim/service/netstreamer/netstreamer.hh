@@ -36,7 +36,8 @@
 #define __UNISIM_SERVICE_NETSTREAMER_NETSTREAMER_HH__
 
 #include <unisim/service/interfaces/char_io.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <string>
 #include <vector>
@@ -55,15 +56,15 @@ enum NetStreamerProtocol
 
 std::ostream& operator << (std::ostream& os, const NetStreamerProtocol& nsp);
 
-class NetStreamer : public unisim::kernel::service::Service<unisim::service::interfaces::CharIO>
+class NetStreamer : public unisim::kernel::Service<unisim::service::interfaces::CharIO>
 {
 public:
 	static const unsigned int AUTO_FLUSH_OUTPUT_SIZE = 256;
 	static const uint64_t CONNECTION_POLL_PERIOD_MS = 1000  /* ms */;  // every 1000 ms
 	
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::CharIO> char_io_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::CharIO> char_io_export;
 	
-	NetStreamer(const char *name, unisim::kernel::service::Object *parent = 0);
+	NetStreamer(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~NetStreamer();
 
 	virtual bool EndSetup();
@@ -107,18 +108,18 @@ private:
 	
 	pthread_mutex_t mutex;
 
-	unisim::kernel::service::Parameter<bool> param_verbose;
-	unisim::kernel::service::Parameter<bool> param_debug;
-	unisim::kernel::service::Parameter<int> param_tcp_port;
-	unisim::kernel::service::Parameter<bool> param_is_server;
-	unisim::kernel::service::Parameter<std::string> param_server_name;
-	unisim::kernel::service::Parameter<NetStreamerProtocol> param_protocol;
-	unisim::kernel::service::Parameter<bool> param_filter_null_character;
-	unisim::kernel::service::Parameter<bool> param_filter_line_feed;
-	unisim::kernel::service::Parameter<bool> param_enable_telnet_binary;
-	unisim::kernel::service::Parameter<bool> param_enable_telnet_echo;
-	unisim::kernel::service::Parameter<bool> param_enable_telnet_suppress_go_ahead;
-	unisim::kernel::service::Parameter<bool> param_enable_telnet_linemode;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_debug;
+	unisim::kernel::variable::Parameter<int> param_tcp_port;
+	unisim::kernel::variable::Parameter<bool> param_is_server;
+	unisim::kernel::variable::Parameter<std::string> param_server_name;
+	unisim::kernel::variable::Parameter<NetStreamerProtocol> param_protocol;
+	unisim::kernel::variable::Parameter<bool> param_filter_null_character;
+	unisim::kernel::variable::Parameter<bool> param_filter_line_feed;
+	unisim::kernel::variable::Parameter<bool> param_enable_telnet_binary;
+	unisim::kernel::variable::Parameter<bool> param_enable_telnet_echo;
+	unisim::kernel::variable::Parameter<bool> param_enable_telnet_suppress_go_ahead;
+	unisim::kernel::variable::Parameter<bool> param_enable_telnet_linemode;
 
 
 	unsigned int input_buffer_size;

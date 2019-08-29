@@ -53,9 +53,9 @@ using namespace unisim::kernel::logger;
 
 template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
 Bus<BUSWIDTH, TYPES, DEBUG>::
-Bus(const sc_module_name& name, unisim::kernel::service::Object *parent) :
+Bus(const sc_module_name& name, unisim::kernel::Object *parent) :
 sc_module(name),
-unisim::kernel::service::Object(name, parent),
+unisim::kernel::Object(name, parent),
 targ_socket("target_socket"),
 init_socket("init_socket"),
 peq("peq"),

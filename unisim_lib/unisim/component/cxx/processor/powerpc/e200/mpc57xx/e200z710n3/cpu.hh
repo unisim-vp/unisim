@@ -180,9 +180,9 @@ class CPU : public unisim::component::cxx::processor::powerpc::e200::mpc57xx::CP
 public:
 	typedef unisim::component::cxx::processor::powerpc::e200::mpc57xx::CPU<TYPES, CONFIG> SuperCPU;
 	
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> mpu_http_server_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> mpu_http_server_export;
 
-	CPU(const char *name, unisim::kernel::service::Object *parent = 0);
+	CPU(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~CPU();
 
 	friend struct unisim::component::cxx::processor::powerpc::e200::mpc57xx::MPU<TYPES, CONFIG::MPU_CONFIG>;

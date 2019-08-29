@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_DEBUG_MONITOR_MONITOR_TCC__
 #define __UNISIM_SERVICE_DEBUG_MONITOR_MONITOR_TCC__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -306,19 +306,19 @@ bool DataObject<ADDRESS>::GetValue(void *value) const
 }
 
 template <typename ADDRESS>
-Monitor<ADDRESS>::Monitor(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+Monitor<ADDRESS>::Monitor(const char *name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, MonitorBase()
-	, unisim::kernel::service::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(name, parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(name, parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::Memory<ADDRESS> >(name, parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::Registers>(name, parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(name, parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >(name, parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::BackTrace<ADDRESS> >(name, parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::DebugInfoLoading>(name, parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(name, parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(name, parent)
+	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(name, parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(name, parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >(name, parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Registers>(name, parent)
+	, unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(name, parent)
+	, unisim::kernel::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >(name, parent)
+	, unisim::kernel::Client<unisim::service::interfaces::BackTrace<ADDRESS> >(name, parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>(name, parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(name, parent)
+	, unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(name, parent)
 	, debug_event_listener_export("debug-event-listener-export", this)
 	, debug_event_trigger_import("debug-event", this)
 	, memory_import("memory-import", this)

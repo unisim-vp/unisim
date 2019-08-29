@@ -47,7 +47,7 @@
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include <iostream>
 #include <stdexcept>
@@ -55,18 +55,18 @@
 
 using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Variable;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Variable;
+using unisim::kernel::VariableBase;
+using unisim::kernel::Object;
 
-class Simulator : public unisim::kernel::service::Simulator
+class Simulator : public unisim::kernel::Simulator
 {
 public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
-	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+	virtual unisim::kernel::Simulator::SetupStatus Setup();
 	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
 protected:
@@ -154,14 +154,14 @@ private:
 	Parameter<bool> param_enable_inline_debugger;
 
 	int exit_status;
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 	virtual void SigInt();
 };
 
 
 
 Simulator::Simulator(int argc, char **argv)
-	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
+	: unisim::kernel::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
 	, memory(0)
 	, int0_stub(0)
@@ -334,7 +334,7 @@ Simulator::~Simulator()
 	delete host_time;
 }
 
-void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
 	double cpu_frequency = 75.0; // in Mhz
 	double cpu_ipc = 1.0; // in instructions per cycle
@@ -421,7 +421,7 @@ void Simulator::Run()
 	std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 }
 
-unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
+unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 {
 	if(enable_inline_debugger)
 	{
@@ -433,7 +433,7 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 		SetVariable("cpu.trap-on-trap-instruction", 0x7400003f); // TRAP 0x1f
 	}
 	
-	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+	unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
 
 	return setup_status;
 }
@@ -469,7 +469,7 @@ void Simulator::SigInt()
 {
 	if(!enable_inline_debugger)
 	{
-		unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}
 }
 
@@ -479,15 +479,15 @@ int sc_main(int argc, char *argv[])
 
 	switch(simulator->Setup())
 	{
-		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+		case unisim::kernel::Simulator::ST_OK_DONT_START:
 			break;
-		case unisim::kernel::service::Simulator::ST_WARNING:
+		case unisim::kernel::Simulator::ST_WARNING:
 			cerr << "Some warnings occurred during setup" << endl;
-		case unisim::kernel::service::Simulator::ST_OK_TO_START:
+		case unisim::kernel::Simulator::ST_OK_TO_START:
 			cerr << "Starting simulation" << endl;
 			simulator->Run();
 			break;
-		case unisim::kernel::service::Simulator::ST_ERROR:
+		case unisim::kernel::Simulator::ST_ERROR:
 			cerr << "Can't start simulation because of previous errors" << endl;
 			break;
 	}

@@ -36,7 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_MEMORY_RAM_MEMORY_HH__
 
 #include <systemc>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 #include <unisim/component/cxx/memory/ram/memory.hh>
 #include <inttypes.h>
@@ -48,10 +48,10 @@ namespace memory {
 namespace ram {
 
 using unisim::kernel::tlm2::PayloadFabric;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
 
 typedef uint64_t DEFAULT_ADDRESS;
 const unsigned int DEFAULT_BUSWIDTH = 32; // 32-bit bus

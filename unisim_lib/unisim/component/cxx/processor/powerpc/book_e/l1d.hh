@@ -48,7 +48,7 @@ namespace book_e {
 // Level 1 Data Cache
 template <typename TYPES, typename CONFIG>
 struct L1D
-	: unisim::kernel::service::Object
+	: unisim::kernel::Object
 	, unisim::util::cache::Cache<TYPES, CONFIG, L1D<TYPES, CONFIG> >
 {
 	typedef typename unisim::util::cache::Cache<TYPES, CONFIG, L1D<TYPES, CONFIG> > SuperCache;
@@ -68,7 +68,7 @@ struct L1D
 	static const char *GetCacheName() { return "L1D"; }
 	
 	L1D(CPU *_cpu)
-		: unisim::kernel::service::Object("L1D", _cpu, "L1 Data Cache")
+		: unisim::kernel::Object("L1D", _cpu, "L1 Data Cache")
 		, SuperCache()
 		, cpu(_cpu)
 		, dnv0(_cpu)
@@ -160,10 +160,10 @@ private:
 	CacheVictimRegister *dnv[4];
 	CacheVictimRegister *dtv[4];
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_misses;
-	unisim::kernel::service::Formula<double> formula_miss_rate;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_misses;
+	unisim::kernel::variable::Formula<double> formula_miss_rate;
 };
 
 } // end of namespace book_e

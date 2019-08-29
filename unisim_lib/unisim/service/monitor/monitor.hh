@@ -5,7 +5,8 @@
 #include <string>
 #include <list>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 
 #include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
@@ -29,14 +30,14 @@ using unisim::util::debug::WatchpointRegistry;
 using unisim::util::debug::Watchpoint;
 using unisim::util::debug::Symbol;
 
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::Client;
+using unisim::kernel::Object;
+using unisim::kernel::Service;
+using unisim::kernel::VariableBase;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
 
 using unisim::service::interfaces::DebugEventListener;
 using unisim::service::interfaces::DebugEventTrigger;
@@ -58,7 +59,7 @@ class Monitor
 	 : public Service<Monitor_if<ADDRESS> >
 
 	, public Service<DebugEventListener<ADDRESS> >
-	, public unisim::kernel::service::Client<DebugEventTrigger<ADDRESS> >
+	, public unisim::kernel::Client<DebugEventTrigger<ADDRESS> >
 	, public Client<SymbolTableLookup<ADDRESS> >
 	, public Client<Memory<ADDRESS> >
 	, public Client<Registers>

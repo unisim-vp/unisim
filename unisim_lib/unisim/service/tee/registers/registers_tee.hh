@@ -35,10 +35,11 @@
 #ifndef __UNISIM_SERVICE_TEE_REGISTERS_HH__
 #define __UNISIM_SERVICE_TEE_REGISTERS_HH__
 
-#include "unisim/service/interfaces/registers.hh"
-#include "unisim/service/interfaces/register.hh"
-#include <unisim/kernel/service/service.hh>
-#include <stdint.h>
+#include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/register.hh>
+#include <unisim/kernel/kernel.hh>
+#include <sstream>
+#include <cstdint>
 
 namespace unisim {
 namespace service {
@@ -48,11 +49,11 @@ namespace registers {
 
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Register;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
 
 template <uint8_t size = 16 >
 class RegistersTee :

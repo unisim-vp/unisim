@@ -38,7 +38,7 @@ namespace unisim {
 namespace kernel {
 namespace scml2 {
 
-ScmlPropertyServer::ScmlPropertyServer(unisim::kernel::service::Simulator *_sim)
+ScmlPropertyServer::ScmlPropertyServer(unisim::kernel::Simulator *_sim)
 	: sim(_sim)
 	, int_values()
 	, uint_values()
@@ -91,50 +91,50 @@ ScmlPropertyServer::~ScmlPropertyServer()
 		delete double_value;
 	}
 
-	std::map<std::string, unisim::kernel::service::Variable<long long> *>::iterator int_variable_it;
+	std::map<std::string, unisim::kernel::variable::Variable<long long> *>::iterator int_variable_it;
 	for(int_variable_it = int_variables.begin(); int_variable_it != int_variables.end(); int_variable_it++)
 	{
-		unisim::kernel::service::Variable<long long> *int_variable = (*int_variable_it).second;
+		unisim::kernel::variable::Variable<long long> *int_variable = (*int_variable_it).second;
 		delete int_variable;
 	}
 
-	std::map<std::string, unisim::kernel::service::Variable<unsigned long long> *>::iterator uint_variable_it;
+	std::map<std::string, unisim::kernel::variable::Variable<unsigned long long> *>::iterator uint_variable_it;
 	for(uint_variable_it = uint_variables.begin(); uint_variable_it != uint_variables.end(); uint_variable_it++)
 	{
-		unisim::kernel::service::Variable<unsigned long long> *uint_variable = (*uint_variable_it).second;
+		unisim::kernel::variable::Variable<unsigned long long> *uint_variable = (*uint_variable_it).second;
 		delete uint_variable;
 	}
 
-	std::map<std::string, unisim::kernel::service::Variable<bool> *>::iterator bool_variable_it;
+	std::map<std::string, unisim::kernel::variable::Variable<bool> *>::iterator bool_variable_it;
 	for(bool_variable_it = bool_variables.begin(); bool_variable_it != bool_variables.end(); bool_variable_it++)
 	{
-		unisim::kernel::service::Variable<bool> *bool_variable = (*bool_variable_it).second;
+		unisim::kernel::variable::Variable<bool> *bool_variable = (*bool_variable_it).second;
 		delete bool_variable;
 	}
 
-	std::map<std::string, unisim::kernel::service::Variable<std::string> *>::iterator string_variable_it;
+	std::map<std::string, unisim::kernel::variable::Variable<std::string> *>::iterator string_variable_it;
 	for(string_variable_it = string_variables.begin(); string_variable_it != string_variables.end(); string_variable_it++)
 	{
-		unisim::kernel::service::Variable<std::string> *string_variable = (*string_variable_it).second;
+		unisim::kernel::variable::Variable<std::string> *string_variable = (*string_variable_it).second;
 		delete string_variable;
 	}
 
-	std::map<std::string, unisim::kernel::service::Variable<double> *>::iterator double_variable_it;
+	std::map<std::string, unisim::kernel::variable::Variable<double> *>::iterator double_variable_it;
 	for(double_variable_it = double_variables.begin(); double_variable_it != double_variables.end(); double_variable_it++)
 	{
-		unisim::kernel::service::Variable<double> *double_variable = (*double_variable_it).second;
+		unisim::kernel::variable::Variable<double> *double_variable = (*double_variable_it).second;
 		delete double_variable;
 	}
 	
 	// deleting automatically created objects (leaf objects first)
 	while(auto_objects.size())
 	{
-		std::vector<unisim::kernel::service::Object *>::iterator auto_object_it = auto_objects.begin();
+		std::vector<unisim::kernel::Object *>::iterator auto_object_it = auto_objects.begin();
 		do
 		{
-			unisim::kernel::service::Object *auto_object = *auto_object_it;
+			unisim::kernel::Object *auto_object = *auto_object_it;
 				
-			const std::list<unisim::kernel::service::Object *>& leaf_objects = auto_object->GetLeafs();
+			const std::list<unisim::kernel::Object *>& leaf_objects = auto_object->GetLeafs();
 				
 			if(leaf_objects.empty())
 			{
@@ -150,21 +150,21 @@ ScmlPropertyServer::~ScmlPropertyServer()
 	}
 }
 
-unisim::kernel::service::Object *ScmlPropertyServer::GetObject(unisim::kernel::service::Object *object, const std::string& leaf_hierarchical_name)
+unisim::kernel::Object *ScmlPropertyServer::GetObject(unisim::kernel::Object *object, const std::string& leaf_hierarchical_name)
 {
 	std::size_t hierarchical_delimiter_pos = leaf_hierarchical_name.find_first_of('.');
 	
 	std::string child_name = leaf_hierarchical_name.substr(0, hierarchical_delimiter_pos);
 	
-	const std::list<unisim::kernel::service::Object *>& leaf_objects = object->GetLeafs();
+	const std::list<unisim::kernel::Object *>& leaf_objects = object->GetLeafs();
 	
-	std::list<unisim::kernel::service::Object *>::const_iterator it;
+	std::list<unisim::kernel::Object *>::const_iterator it;
 	
-	unisim::kernel::service::Object *found_child = 0;
+	unisim::kernel::Object *found_child = 0;
 	
 	for(it = leaf_objects.begin(); it != leaf_objects.end(); it++)
 	{
-		unisim::kernel::service::Object *child = *it;
+		unisim::kernel::Object *child = *it;
 		
 		if(child_name.compare(child->GetObjectName()) == 0)
 		{
@@ -177,7 +177,7 @@ unisim::kernel::service::Object *ScmlPropertyServer::GetObject(unisim::kernel::s
 	if(!found_child)
 	{
 		// not found
-		found_child = new unisim::kernel::service::Object(child_name.c_str(), object);
+		found_child = new unisim::kernel::Object(child_name.c_str(), object);
 		
 		auto_objects.push_back(found_child);
 	}
@@ -185,22 +185,22 @@ unisim::kernel::service::Object *ScmlPropertyServer::GetObject(unisim::kernel::s
 	return (hierarchical_delimiter_pos == std::string::npos) ? found_child : GetObject(found_child, leaf_hierarchical_name.substr(hierarchical_delimiter_pos + 1));
 }
 
-unisim::kernel::service::Object *ScmlPropertyServer::GetObject(const std::string& leaf_hierarchical_name)
+unisim::kernel::Object *ScmlPropertyServer::GetObject(const std::string& leaf_hierarchical_name)
 {
 	std::size_t hierarchical_delimiter_pos = leaf_hierarchical_name.find_first_of('.');
 	std::string root_object_name = leaf_hierarchical_name.substr(0, hierarchical_delimiter_pos);
 	
-	std::list<unisim::kernel::service::Object *> root_objects;
+	std::list<unisim::kernel::Object *> root_objects;
 	
 	sim->GetRootObjects(root_objects);
 	
-	std::list<unisim::kernel::service::Object *>::const_iterator it;
+	std::list<unisim::kernel::Object *>::const_iterator it;
 	
-	unisim::kernel::service::Object *found_root_object = 0;
+	unisim::kernel::Object *found_root_object = 0;
 	
 	for(it = root_objects.begin(); it != root_objects.end(); it++)
 	{
-		unisim::kernel::service::Object *root_object = *it;
+		unisim::kernel::Object *root_object = *it;
 		
 		if(root_object_name.compare(root_object->GetObjectName()) == 0)
 		{
@@ -213,7 +213,7 @@ unisim::kernel::service::Object *ScmlPropertyServer::GetObject(const std::string
 	if(!found_root_object)
 	{
 		// not found
-		found_root_object = new unisim::kernel::service::Object(root_object_name.c_str());
+		found_root_object = new unisim::kernel::Object(root_object_name.c_str());
 		
 		auto_objects.push_back(found_root_object);
 	}
@@ -221,7 +221,7 @@ unisim::kernel::service::Object *ScmlPropertyServer::GetObject(const std::string
 	return (hierarchical_delimiter_pos == std::string::npos) ? found_root_object : GetObject(found_root_object, leaf_hierarchical_name.substr(hierarchical_delimiter_pos + 1));
 }
 
-unisim::kernel::service::Object *ScmlPropertyServer::GetOwner(const std::string & name)
+unisim::kernel::Object *ScmlPropertyServer::GetOwner(const std::string & name)
 {
 	std::size_t hierarchical_delimiter_pos = name.find_last_of('.');
 	
@@ -253,9 +253,9 @@ long long ScmlPropertyServer::getIntProperty(const std::string & name)
 	
 	if(!GetLeafName(name, variable_name)) return 0;
 	
-	unisim::kernel::service::Variable<long long> *int_variable = 0;
+	unisim::kernel::variable::Variable<long long> *int_variable = 0;
 	
-	std::map<std::string, unisim::kernel::service::Variable<long long> *>::const_iterator it = int_variables.find(name);
+	std::map<std::string, unisim::kernel::variable::Variable<long long> *>::const_iterator it = int_variables.find(name);
 	
 	if(it != int_variables.end())
 	{
@@ -263,14 +263,14 @@ long long ScmlPropertyServer::getIntProperty(const std::string & name)
 	}
 	else
 	{
-		unisim::kernel::service::Object *owner = GetOwner(name);
+		unisim::kernel::Object *owner = GetOwner(name);
 		std::size_t value_index = int_values.size();
 		int_values.resize(value_index + 1);
 		
 		int_values[value_index] = new long long();
 
-		int_variable = new unisim::kernel::service::Variable<long long>(variable_name.c_str(), owner, *int_values[value_index], unisim::kernel::service::VariableBase::VAR_PARAMETER, "scml property (int)");
-		int_variable->SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+		int_variable = new unisim::kernel::variable::Variable<long long>(variable_name.c_str(), owner, *int_values[value_index], unisim::kernel::VariableBase::VAR_PARAMETER, "scml property (int)");
+		int_variable->SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 		
 		int_variables[name] = int_variable;
 	}
@@ -286,9 +286,9 @@ unsigned long long ScmlPropertyServer::getUIntProperty(const std::string & name)
 	
 	if(!GetLeafName(name, variable_name)) return 0;
 
-	unisim::kernel::service::Variable<unsigned long long> *uint_variable = 0;
+	unisim::kernel::variable::Variable<unsigned long long> *uint_variable = 0;
 	
-	std::map<std::string, unisim::kernel::service::Variable<unsigned long long> *>::const_iterator it = uint_variables.find(name);
+	std::map<std::string, unisim::kernel::variable::Variable<unsigned long long> *>::const_iterator it = uint_variables.find(name);
 	
 	if(it != uint_variables.end())
 	{
@@ -296,15 +296,15 @@ unsigned long long ScmlPropertyServer::getUIntProperty(const std::string & name)
 	}
 	else
 	{
-		unisim::kernel::service::Object *owner = GetOwner(name);
+		unisim::kernel::Object *owner = GetOwner(name);
 	
 		std::size_t value_index = uint_values.size();
 		uint_values.resize(value_index + 1);
 		
 		uint_values[value_index] = new unsigned long long();
 		
-		uint_variable = new unisim::kernel::service::Variable<unsigned long long>(variable_name.c_str(), owner, *uint_values[value_index], unisim::kernel::service::VariableBase::VAR_PARAMETER, "scml property (uint)");
-		uint_variable->SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+		uint_variable = new unisim::kernel::variable::Variable<unsigned long long>(variable_name.c_str(), owner, *uint_values[value_index], unisim::kernel::VariableBase::VAR_PARAMETER, "scml property (uint)");
+		uint_variable->SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 		
 		uint_variables[name] = uint_variable;
 	}
@@ -320,9 +320,9 @@ bool ScmlPropertyServer::getBoolProperty(const std::string & name)
 	
 	if(!GetLeafName(name, variable_name)) return false;
 
-	unisim::kernel::service::Variable<bool> *bool_variable = 0;
+	unisim::kernel::variable::Variable<bool> *bool_variable = 0;
 	
-	std::map<std::string, unisim::kernel::service::Variable<bool> *>::const_iterator it = bool_variables.find(name);
+	std::map<std::string, unisim::kernel::variable::Variable<bool> *>::const_iterator it = bool_variables.find(name);
 	
 	if(it != bool_variables.end())
 	{
@@ -330,14 +330,14 @@ bool ScmlPropertyServer::getBoolProperty(const std::string & name)
 	}
 	else
 	{
-		unisim::kernel::service::Object *owner = GetOwner(name);
+		unisim::kernel::Object *owner = GetOwner(name);
 		
 		std::size_t value_index = bool_values.size();
 		bool_values.resize(value_index + 1);
 		
 		bool_values[value_index] = new bool();
 
-		bool_variable = new unisim::kernel::service::Variable<bool>(variable_name.c_str(), owner, *bool_values[value_index], unisim::kernel::service::VariableBase::VAR_PARAMETER, "scml property (bool)");
+		bool_variable = new unisim::kernel::variable::Variable<bool>(variable_name.c_str(), owner, *bool_values[value_index], unisim::kernel::VariableBase::VAR_PARAMETER, "scml property (bool)");
 	
 		bool_variables[name] = bool_variable;
 	}
@@ -353,9 +353,9 @@ std::string ScmlPropertyServer::getStringProperty(const std::string & name)
 	
 	if(!GetLeafName(name, variable_name)) return std::string();
 
-	unisim::kernel::service::Variable<std::string> *string_variable = 0;
+	unisim::kernel::variable::Variable<std::string> *string_variable = 0;
 	
-	std::map<std::string, unisim::kernel::service::Variable<std::string> *>::const_iterator it = string_variables.find(name);
+	std::map<std::string, unisim::kernel::variable::Variable<std::string> *>::const_iterator it = string_variables.find(name);
 	
 	if(it != string_variables.end())
 	{
@@ -363,14 +363,14 @@ std::string ScmlPropertyServer::getStringProperty(const std::string & name)
 	}
 	else
 	{
-		unisim::kernel::service::Object *owner = GetOwner(name);
+		unisim::kernel::Object *owner = GetOwner(name);
 		
 		std::size_t value_index = string_values.size();
 		string_values.resize(value_index + 1);
 		
 		string_values[value_index] = new std::string();
 		
-		string_variable = new unisim::kernel::service::Variable<std::string>(variable_name.c_str(), owner, *string_values[value_index], unisim::kernel::service::VariableBase::VAR_PARAMETER, "scml property (string)");
+		string_variable = new unisim::kernel::variable::Variable<std::string>(variable_name.c_str(), owner, *string_values[value_index], unisim::kernel::VariableBase::VAR_PARAMETER, "scml property (string)");
 		string_variables[name] = string_variable;
 	}
 	
@@ -385,9 +385,9 @@ double ScmlPropertyServer::getDoubleProperty(const std::string & name)
 	
 	if(!GetLeafName(name, variable_name)) return 0.0;
 
-	unisim::kernel::service::Variable<double> *double_variable = 0;
+	unisim::kernel::variable::Variable<double> *double_variable = 0;
 	
-	std::map<std::string, unisim::kernel::service::Variable<double> *>::const_iterator it = double_variables.find(name);
+	std::map<std::string, unisim::kernel::variable::Variable<double> *>::const_iterator it = double_variables.find(name);
 	
 	if(it != double_variables.end())
 	{
@@ -395,21 +395,21 @@ double ScmlPropertyServer::getDoubleProperty(const std::string & name)
 	}
 	else
 	{
-		unisim::kernel::service::Object *owner = GetOwner(name);
+		unisim::kernel::Object *owner = GetOwner(name);
 		
 		std::size_t value_index = double_values.size();
 		double_values.resize(value_index + 1);
 		
 		double_values[value_index] = new double();
 
-		double_variable = new unisim::kernel::service::Variable<double>(variable_name.c_str(), owner, *double_values[value_index], unisim::kernel::service::VariableBase::VAR_PARAMETER, "scml property (double)");
+		double_variable = new unisim::kernel::variable::Variable<double>(variable_name.c_str(), owner, *double_values[value_index], unisim::kernel::VariableBase::VAR_PARAMETER, "scml property (double)");
 		double_variables[name] = double_variable;
 	}
 	
 	return (double)(*double_variable);
 }
 
-Simulator::Simulator(sc_core::sc_module_name const& name, int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::service::Simulator *simulator))
+Simulator::Simulator(sc_core::sc_module_name const& name, int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::Simulator *simulator))
 	: unisim::kernel::tlm2::Simulator(name, argc, argv, LoadBuiltInConfig)
 	, scml_debug(false)
 	, param_scml_debug("scml-debug", 0, scml_debug, "Enable/Disable debug of SCML modules")

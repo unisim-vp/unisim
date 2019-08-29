@@ -3,7 +3,7 @@
 
 #include <unisim/component/cxx/memory/ram/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 namespace unisim {
 namespace component {
@@ -13,10 +13,10 @@ namespace dram {
 
   //using unisim::component::cxx::memory::ram::Memory;
 // *fetchmemory = new unisim::component::cxx::memory::ram::Memory<address_t>("fetchmem");
-using unisim::kernel::service::Service;
+using unisim::kernel::Service;
 using unisim::service::interfaces::MemoryInjection;
-using unisim::kernel::service::ServiceExport;
-  using unisim::kernel::service::Object;
+using unisim::kernel::ServiceExport;
+  using unisim::kernel::Object;
 
 template < class TYPE_ADDR >
 class Fetch_Memory: 

@@ -54,8 +54,8 @@ using unisim::component::tlm2::interconnect::generic_router::MEM_ACCESS_WRITE;
 
 template <typename CONFIG>
 SMPU<CONFIG>::SMPU(const char *name, XBAR *_xbar)
-	: unisim::kernel::service::Object(name, _xbar)
-	, unisim::kernel::service::Service<unisim::service::interfaces::Registers>(name, _xbar)
+	: unisim::kernel::Object(name, _xbar)
+	, unisim::kernel::Service<unisim::service::interfaces::Registers>(name, _xbar)
 	, registers_export("registers-export", this)
 	, xbar(_xbar)
 	, logger(*this)

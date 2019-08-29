@@ -597,7 +597,7 @@ Simulator::~Simulator()
 	if(instrumenter) delete instrumenter;
 }
 
-void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM Virtex 5 FXT");
@@ -841,14 +841,14 @@ void Simulator::Run()
 	std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 }
 
-unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
+unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 {
 	if(inline_debugger || profiler)
 	{
 		SetVariable("debugger.parse-dwarf", true);
 	}
 	
-	unisim::kernel::service::VariableBase *cmd_args = FindVariable("cmd-args");
+	unisim::kernel::VariableBase *cmd_args = FindVariable("cmd-args");
 	unsigned int cmd_args_length = cmd_args->GetLength();
 	
 	if(enable_linux_os)
@@ -884,7 +884,7 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 		}
 	}
 
-	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+	unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
 	
 	return setup_status;
 }
@@ -951,6 +951,6 @@ void Simulator::SigInt()
 {
 	if(!enable_inline_debugger)
 	{
-		unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}
 }

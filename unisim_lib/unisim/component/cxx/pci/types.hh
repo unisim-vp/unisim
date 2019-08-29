@@ -37,7 +37,7 @@
 #define __UNISIM_COMPONENT_CXX_PCI_TYPES_HH__
 
 #include <inttypes.h>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 
 namespace unisim {
 namespace component {

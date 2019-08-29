@@ -6,8 +6,9 @@ std/map
 std/sstream
 std/stdexcept
 unisim/component/cxx/processor/avr32/avr32a
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/service/interfaces/avr32_t2h_syscalls
 unisim/service/interfaces/debug_yielding
 unisim/service/interfaces/disassembly

@@ -44,19 +44,19 @@ int sc_main(int argc, char *argv[])
 
   switch (simulator.Setup())
     {
-    case unisim::kernel::service::Simulator::ST_ERROR:
+    case unisim::kernel::Simulator::ST_ERROR:
       std::cerr << "ERROR: Can't start simulation because of previous erros" << std::endl;
       ret = -1;
       break;
-    case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+    case unisim::kernel::Simulator::ST_OK_DONT_START:
       std::cerr << "Successfully configured the simulator." << std::endl;
       ret = 0;
       break;
-    case unisim::kernel::service::Simulator::ST_WARNING:
+    case unisim::kernel::Simulator::ST_WARNING:
       std::cerr << "WARNING: problems detected during setup."
            << " Starting simulation anyway, but errors could appear during "
            << "the simulation." << std::endl;
-    case unisim::kernel::service::Simulator::ST_OK_TO_START:
+    case unisim::kernel::Simulator::ST_OK_TO_START:
       std::cerr << "Starting simulation." << std::endl;
       ret = simulator.Run();
       break;

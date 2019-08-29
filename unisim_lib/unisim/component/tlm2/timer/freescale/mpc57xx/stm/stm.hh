@@ -35,7 +35,8 @@
 #ifndef __UNISIM_COMPONENT_TLM2_TIMER_FREESCALE_MPC57XX_STM_STM_HH__
 #define __UNISIM_COMPONENT_TLM2_TIMER_FREESCALE_MPC57XX_STM_STM_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/endian/endian.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/tlm2/clock.hh>
@@ -97,7 +98,7 @@ template <typename CONFIG>
 class STM
 	: public sc_core::sc_module
 	, public tlm::tlm_fw_transport_if<>
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Registers>
 {
 public:
 	static const unsigned int TLM2_IP_VERSION_MAJOR = 1;
@@ -116,9 +117,9 @@ public:
 	sc_core::sc_out<bool>    *irq[NUM_CHANNELS];    // IRQ outputs
 	
 	// services
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
 
-	STM(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
+	STM(const sc_core::sc_module_name& name, unisim::kernel::Object *parent);
 	virtual ~STM();
 	
 	void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
@@ -496,9 +497,9 @@ private:
 	unisim::kernel::tlm2::Schedule<Event> schedule; // Payload (processor requests over AHB interface) schedule
 	
 	unisim::util::endian::endian_type endian;
-	unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endian;
+	unisim::kernel::variable::Parameter<unisim::util::endian::endian_type> param_endian;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 	
 	bool irq_level[NUM_CHANNELS];                   // IRQ output level for each channel
 	sc_core::sc_event *gen_irq_event[NUM_CHANNELS]; // Event to trigger IRQ output (IRQ_Process)

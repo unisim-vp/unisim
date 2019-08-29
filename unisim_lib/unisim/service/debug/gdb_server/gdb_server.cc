@@ -32,6 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/util/likely/likely.hh>
 
@@ -71,8 +72,8 @@ const uint64_t GDBServerBase::SERVER_ACCEPT_POLL_PERIOD_MS;
 const uint64_t GDBServerBase::NON_BLOCKING_READ_POLL_PERIOD_MS;
 const uint64_t GDBServerBase::NON_BLOCKING_WRITE_POLL_PERIOD_MS;
 
-GDBServerBase::GDBServerBase(const char *_name, unisim::kernel::service::Object *_parent)
-	: unisim::kernel::service::Object(_name, _parent)
+GDBServerBase::GDBServerBase(const char *_name, unisim::kernel::Object *_parent)
+	: unisim::kernel::Object(_name, _parent)
 	, logger(*this)
 	, tcp_port(12345)
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
@@ -96,7 +97,7 @@ GDBServerBase::GDBServerBase(const char *_name, unisim::kernel::service::Object 
 	, param_remote_serial_protocol_input_traffic_recording_filename("remote-serial-protocol-input-traffic-recording-filename", this, remote_serial_protocol_input_traffic_recording_filename, "Filename where to record GDB remote serial protocol input traffic")
 	, param_remote_serial_protocol_output_traffic_recording_filename("remote-serial-protocol-output-traffic-recording-filename", this, remote_serial_protocol_output_traffic_recording_filename, "Filename where to record GDB remote serial protocol input traffic")
 {
-	param_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_tcp_port.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
 	param_tcp_port.SetMutable(false);
 	
@@ -950,7 +951,7 @@ std::ostream& operator << (std::ostream& os, const GDBMode& gdb_mode)
 
 namespace unisim {
 namespace kernel {
-namespace service {
+namespace variable {
 
 //////////////////// Variable<GDBWaitConnectionMode> //////////////////////////
 
@@ -962,7 +963,7 @@ using unisim::service::debug::gdb_server::GDB_WAIT_CONNECTION_ALWAYS;
 template <> Variable<GDBWaitConnectionMode>::Variable(const char *_name, Object *_object, GDBWaitConnectionMode& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 	AddEnumeratedValue("never");
 	AddEnumeratedValue("startup-only");
 	AddEnumeratedValue("always");
@@ -1102,7 +1103,7 @@ using unisim::service::debug::gdb_server::GDB_MODE_MULTI_THREAD;
 template <> Variable<GDBMode>::Variable(const char *_name, Object *_object, GDBMode& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 	AddEnumeratedValue("single-thread");
 	AddEnumeratedValue("multi-thread");
 }
@@ -1226,6 +1227,6 @@ template <> VariableBase& Variable<GDBMode>::operator = (const char *value)
 
 template class Variable<GDBMode>;
 
-} // end of service namespace
+} // end of variable namespace
 } // end of kernel namespace
 } // end of unisim namespace

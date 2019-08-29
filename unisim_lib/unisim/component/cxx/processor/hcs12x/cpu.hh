@@ -64,7 +64,7 @@
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/kernel/logger/logger.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 
 #include "unisim/service/interfaces/register.hh"
 #include "unisim/util/debug/simple_register.hh"
@@ -85,15 +85,15 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::CallBackObject;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::variable::CallBackObject;
 
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::TrapReporting;
@@ -631,7 +631,7 @@ private:
 	// Registers map
 	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
 	/** the instruction counter */
 	uint64_t instruction_counter;

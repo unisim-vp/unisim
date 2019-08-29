@@ -85,8 +85,8 @@ HCS12X(const sc_module_name& name, S12XMMC *_mmc, Object *parent) :
 	, last_instruction_counter(0)
 {
 
-	param_nice_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_core_clock.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_nice_time.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_core_clock.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	SC_HAS_PROCESS(HCS12X);
 

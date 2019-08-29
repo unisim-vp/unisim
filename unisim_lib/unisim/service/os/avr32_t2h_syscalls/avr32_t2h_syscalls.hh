@@ -46,7 +46,8 @@
 #include <sstream>
 #include <queue>
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
+#include <unisim/kernel/variable/variable.hh>
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/avr32_t2h_syscalls.hh"
 #include "unisim/service/interfaces/memory.hh"
@@ -73,11 +74,11 @@ using std::dec;
 using std::endl;
 using std::flush;
 using std::map;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::variable::Parameter;
 using unisim::kernel::logger::Logger;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;

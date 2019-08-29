@@ -13,7 +13,7 @@
 #include <math.h>
 #include <unistd.h>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include <unisim/service/interfaces/time.hh>
 
@@ -29,10 +29,10 @@ namespace unisim {
 namespace service {
 namespace pim {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::VariableBaseListener;
-using unisim::kernel::service::Simulator;
-using unisim::kernel::service::VariableBase;
+using unisim::kernel::Object;
+using unisim::kernel::VariableBaseListener;
+using unisim::kernel::Simulator;
+using unisim::kernel::VariableBase;
 
 class PIMThread : virtual public Object, public SocketThread, VariableBaseListener {
 public:

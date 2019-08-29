@@ -41,11 +41,11 @@ namespace timer {
 namespace xilinx {
 namespace xps_timer {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
 
 CaptureTriggerStub::CaptureTriggerStub(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent, "A stub that, if enabled, can generate random inputs for a capture timer")
@@ -72,9 +72,9 @@ CaptureTriggerStub::CaptureTriggerStub(const sc_core::sc_module_name& name, Obje
 	, param_random_period_min("random-period-min", this, random_period_min, "Minimum period in cycles of randomized output")
 	, param_random_period_max("random-period-max", this, random_period_max, "Maximum period in cycles of randomized output")
 {
-	param_random_seed.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_random_period_min.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_random_period_max.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_random_seed.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_random_period_min.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_random_period_max.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	param_enable.SetMutable(false);
 	param_randomized_output.SetMutable(false);
 	param_random_seed.SetMutable(false);

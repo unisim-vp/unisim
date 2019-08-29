@@ -40,7 +40,7 @@
 #include <systemc>
 #include <tlm>
 #include <tlm_utils/passthrough_target_socket.h>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include <inttypes.h>
 
@@ -53,7 +53,7 @@ namespace uart {
 namespace pl011 {
 
 class PL011
-	: public unisim::kernel::service::Object
+	: public unisim::kernel::Object
 	, public sc_module
 {
 public:
@@ -106,32 +106,32 @@ private:
 	/** Base address of the uart */
 	uint32_t base_addr;
 	/** UNISIM Parameter for the base address of the uart */
-	unisim::kernel::service::Parameter<uint32_t> param_base_addr;
+	unisim::kernel::variable::Parameter<uint32_t> param_base_addr;
 
 	/** Reference clock (pclock) period in picoseconds */
 	uint64_t pclk;
 	/** UNISIM Parameter for the reference clock */
-	unisim::kernel::service::Parameter<uint64_t> param_pclk;
+	unisim::kernel::variable::Parameter<uint64_t> param_pclk;
 
 	/** External uart clock (timclk) period in picoseconds */
 	uint64_t uartclk;
 	/** UNISIM Parameter for the external timer module clock */
-	unisim::kernel::service::Parameter<uint64_t> param_uartclk;
+	unisim::kernel::variable::Parameter<uint64_t> param_uartclk;
 
 	/** Enable logger output for UART messages */
 	bool enable_logger;
 	/** UNISIM Parameter for the enable logger option */
-	unisim::kernel::service::Parameter<bool> param_enable_logger;
+	unisim::kernel::variable::Parameter<bool> param_enable_logger;
 
 	/** Enable telnet redirection for UART messages */
 	bool enable_telnet;
 	/** UNISIM Parameter for then enable telnet option */
-	unisim::kernel::service::Parameter<bool> param_enable_telnet;
+	unisim::kernel::variable::Parameter<bool> param_enable_telnet;
 
 	/** TCP port used for the telnet socket */
 	unsigned int tcp_port;
 	/** UNISIM Parameter for the TCP port used for the telnet socket */
-	unisim::kernel::service::Parameter<unsigned int> param_tcp_port;
+	unisim::kernel::variable::Parameter<unsigned int> param_tcp_port;
 
 	bool TransmitChar(uint8_t ch);
 	bool TelnetPutChar(uint8_t ch);

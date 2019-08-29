@@ -2,6 +2,6 @@ m4/systemc
 std/string
 unisim/component/cxx/isa/i8042
 unisim/component/tlm/message
-unisim/kernel/service
+unisim/kernel
 unisim/kernel/tlm
 unisim/util/garbage_collector

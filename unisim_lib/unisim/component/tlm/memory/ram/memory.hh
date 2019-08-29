@@ -52,10 +52,10 @@ using unisim::kernel::tlm::TlmSendIf;
 using unisim::component::tlm::message::MemoryRequest;
 using unisim::component::tlm::message::MemoryResponse;
 using unisim::util::garbage_collector::Pointer;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::ServiceImport;
 
 /**
  * Memory module for the simple bus.

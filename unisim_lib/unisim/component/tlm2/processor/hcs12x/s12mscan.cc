@@ -20,10 +20,10 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 
-	, unisim::kernel::service::Client<TrapReporting>(name, parent)
-	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Service<Registers>(name, parent)
+	, unisim::kernel::Client<TrapReporting>(name, parent)
+	, unisim::kernel::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Service<Registers>(name, parent)
 
 	, trap_reporting_import("trap_reporting_import", this)
 
@@ -90,7 +90,7 @@ S12MSCAN::S12MSCAN(const sc_module_name& name, Object *parent) :
 
 {
 
-	param_oscillator_clock_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_oscillator_clock_int.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	can_rx_sock(*this);
 	can_tx_sock(*this);
@@ -910,217 +910,217 @@ bool S12MSCAN::BeginSetup() {
 	sprintf(buf, "%s.CANCTL0",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canctl0_register);
 
-	unisim::kernel::service::Register<uint8_t> *canctl0_var = new unisim::kernel::service::Register<uint8_t>("CANCTL0", this, canctl0_register, "CAN Control Register 0");
+	unisim::kernel::variable::Register<uint8_t> *canctl0_var = new unisim::kernel::variable::Register<uint8_t>("CANCTL0", this, canctl0_register, "CAN Control Register 0");
 	extended_registers_registry.push_back(canctl0_var);
 	canctl0_var->setCallBack(this, CANCTL0, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANCTL1",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canctl1_register);
 
-	unisim::kernel::service::Register<uint8_t> *canctl1_var = new unisim::kernel::service::Register<uint8_t>("CANCTL1", this, canctl1_register, "CAN Control Register 1");
+	unisim::kernel::variable::Register<uint8_t> *canctl1_var = new unisim::kernel::variable::Register<uint8_t>("CANCTL1", this, canctl1_register, "CAN Control Register 1");
 	extended_registers_registry.push_back(canctl1_var);
 	canctl1_var->setCallBack(this, CANCTL1, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANBTR0",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canbtr0_register);
 
-	unisim::kernel::service::Register<uint8_t> *canbtr0_var = new unisim::kernel::service::Register<uint8_t>("CANBTR0", this, canbtr0_register, "CAN  0");
+	unisim::kernel::variable::Register<uint8_t> *canbtr0_var = new unisim::kernel::variable::Register<uint8_t>("CANBTR0", this, canbtr0_register, "CAN  0");
 	extended_registers_registry.push_back(canbtr0_var);
 	canbtr0_var->setCallBack(this, CANBTR0, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANBTR1",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canbtr1_register);
 
-	unisim::kernel::service::Register<uint8_t> *canbtr1_var = new unisim::kernel::service::Register<uint8_t>("CANBTR1", this, canbtr1_register, "CAN  1");
+	unisim::kernel::variable::Register<uint8_t> *canbtr1_var = new unisim::kernel::variable::Register<uint8_t>("CANBTR1", this, canbtr1_register, "CAN  1");
 	extended_registers_registry.push_back(canbtr1_var);
 	canbtr1_var->setCallBack(this, CANBTR1, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANRFLG",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canrflg_register);
 
-	unisim::kernel::service::Register<uint8_t> *canrflg_var = new unisim::kernel::service::Register<uint8_t>("CANRFLG", this, canrflg_register, "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canrflg_var = new unisim::kernel::variable::Register<uint8_t>("CANRFLG", this, canrflg_register, "CAN  ");
 	extended_registers_registry.push_back(canrflg_var);
 	canrflg_var->setCallBack(this, CANRFLG, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANRIER",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canrier_register);
 
-	unisim::kernel::service::Register<uint8_t> *canrier_var = new unisim::kernel::service::Register<uint8_t>("CANRIER", this, canrier_register, "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canrier_var = new unisim::kernel::variable::Register<uint8_t>("CANRIER", this, canrier_register, "CAN  ");
 	extended_registers_registry.push_back(canrier_var);
 	canrier_var->setCallBack(this, CANRIER, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANTFLG",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &cantflg_register);
 
-	unisim::kernel::service::Register<uint8_t> *cantflg_var = new unisim::kernel::service::Register<uint8_t>("CANTFLG", this, cantflg_register, "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *cantflg_var = new unisim::kernel::variable::Register<uint8_t>("CANTFLG", this, cantflg_register, "CAN  ");
 	extended_registers_registry.push_back(cantflg_var);
 	cantflg_var->setCallBack(this, CANTFLG, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANTIER",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &cantier_register);
 
-	unisim::kernel::service::Register<uint8_t> *cantier_var = new unisim::kernel::service::Register<uint8_t>("CANTIER", this, cantier_register, "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *cantier_var = new unisim::kernel::variable::Register<uint8_t>("CANTIER", this, cantier_register, "CAN  ");
 	extended_registers_registry.push_back(cantier_var);
 	cantier_var->setCallBack(this, CANTIER, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANTARQ",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &cantarq_register);
 
-	unisim::kernel::service::Register<uint8_t> *cantarq_var = new unisim::kernel::service::Register<uint8_t>("CANTARQ", this, cantarq_register, "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *cantarq_var = new unisim::kernel::variable::Register<uint8_t>("CANTARQ", this, cantarq_register, "CAN  ");
 	extended_registers_registry.push_back(cantarq_var);
 	cantarq_var->setCallBack(this, CANTARQ, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANTAAK",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &cantaak_register);
 
-	unisim::kernel::service::Register<uint8_t> *cantaak_var = new unisim::kernel::service::Register<uint8_t>("CANTAAK", this, cantaak_register, "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *cantaak_var = new unisim::kernel::variable::Register<uint8_t>("CANTAAK", this, cantaak_register, "CAN  ");
 	extended_registers_registry.push_back(cantaak_var);
 	cantaak_var->setCallBack(this, CANTAAK, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANTBSEL",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &cantbsel_register);
 
-	unisim::kernel::service::Register<uint8_t> *cantbsel_var = new unisim::kernel::service::Register<uint8_t>("CANTBSEL", this, cantbsel_register, "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *cantbsel_var = new unisim::kernel::variable::Register<uint8_t>("CANTBSEL", this, cantbsel_register, "CAN  ");
 	extended_registers_registry.push_back(cantbsel_var);
 	cantbsel_var->setCallBack(this, CANTBSEL, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAC",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canidac_register);
 
-	unisim::kernel::service::Register<uint8_t> *canidac_var = new unisim::kernel::service::Register<uint8_t>("CANIDAC", this, canidac_register, "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidac_var = new unisim::kernel::variable::Register<uint8_t>("CANIDAC", this, canidac_register, "CAN  ");
 	extended_registers_registry.push_back(canidac_var);
 	canidac_var->setCallBack(this, CANIDAC, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANMISC",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canmisc_register);
 
-	unisim::kernel::service::Register<uint8_t> *canmisc_var = new unisim::kernel::service::Register<uint8_t>("CANMISC", this, canmisc_register, "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canmisc_var = new unisim::kernel::variable::Register<uint8_t>("CANMISC", this, canmisc_register, "CAN  ");
 	extended_registers_registry.push_back(canmisc_var);
 	canmisc_var->setCallBack(this, CANMISC, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANRXERR",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &canrxerr_register);
 
-	unisim::kernel::service::Register<uint8_t> *canrxerr_var = new unisim::kernel::service::Register<uint8_t>("CANRXERR", this, canrxerr_register, "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canrxerr_var = new unisim::kernel::variable::Register<uint8_t>("CANRXERR", this, canrxerr_register, "CAN  ");
 	extended_registers_registry.push_back(canrxerr_var);
 	canrxerr_var->setCallBack(this, CANRXERR, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANTXERR",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &cantxerr_register);
 
-	unisim::kernel::service::Register<uint8_t> *cantxerr_var = new unisim::kernel::service::Register<uint8_t>("CANTXERR", this, cantxerr_register, "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *cantxerr_var = new unisim::kernel::variable::Register<uint8_t>("CANTXERR", this, cantxerr_register, "CAN  ");
 	extended_registers_registry.push_back(cantxerr_var);
 	cantxerr_var->setCallBack(this, CANTXERR, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAR0",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidar_register[0]));
 
-	unisim::kernel::service::Register<uint8_t> *canidar0_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR0", this, canidar_register[0], "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidar0_var = new unisim::kernel::variable::Register<uint8_t>("CANIDAR0", this, canidar_register[0], "CAN  ");
 	extended_registers_registry.push_back(canidar0_var);
 	canidar0_var->setCallBack(this, CANIDAR0, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAR1",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidar_register[1]));
 
-	unisim::kernel::service::Register<uint8_t> *canidar1_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR1", this, canidar_register[1], "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidar1_var = new unisim::kernel::variable::Register<uint8_t>("CANIDAR1", this, canidar_register[1], "CAN  ");
 	extended_registers_registry.push_back(canidar1_var);
 	canidar1_var->setCallBack(this, CANIDAR1, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAR2",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidar_register[2]));
 
-	unisim::kernel::service::Register<uint8_t> *canidar2_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR2", this, canidar_register[2], "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidar2_var = new unisim::kernel::variable::Register<uint8_t>("CANIDAR2", this, canidar_register[2], "CAN  ");
 	extended_registers_registry.push_back(canidar2_var);
 	canidar2_var->setCallBack(this, CANIDAR2, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAR3",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidar_register[3]));
 
-	unisim::kernel::service::Register<uint8_t> *canidar3_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR3", this, canidar_register[3], "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidar3_var = new unisim::kernel::variable::Register<uint8_t>("CANIDAR3", this, canidar_register[3], "CAN  ");
 	extended_registers_registry.push_back(canidar3_var);
 	canidar3_var->setCallBack(this, CANIDAR3, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDMR0",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidmr_register[0]));
 
-	unisim::kernel::service::Register<uint8_t> *canidmr0_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR0", this, canidmr_register[0], "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidmr0_var = new unisim::kernel::variable::Register<uint8_t>("CANIDMR0", this, canidmr_register[0], "CAN  ");
 	extended_registers_registry.push_back(canidmr0_var);
 	canidmr0_var->setCallBack(this, CANIDMR0, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDMR1",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidmr_register[1]));
 
-	unisim::kernel::service::Register<uint8_t> *canidmr1_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR1", this, canidmr_register[1], "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidmr1_var = new unisim::kernel::variable::Register<uint8_t>("CANIDMR1", this, canidmr_register[1], "CAN  ");
 	extended_registers_registry.push_back(canidmr1_var);
 	canidmr1_var->setCallBack(this, CANIDMR1, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDMR2",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidmr_register[2]));
 
-	unisim::kernel::service::Register<uint8_t> *canidmr2_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR2", this, canidmr_register[2], "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidmr2_var = new unisim::kernel::variable::Register<uint8_t>("CANIDMR2", this, canidmr_register[2], "CAN  ");
 	extended_registers_registry.push_back(canidmr2_var);
 	canidmr2_var->setCallBack(this, CANIDMR2, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDMR3",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidmr_register[3]));
 
-	unisim::kernel::service::Register<uint8_t> *canidmr3_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR3", this, canidmr_register[3], "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidmr3_var = new unisim::kernel::variable::Register<uint8_t>("CANIDMR3", this, canidmr_register[3], "CAN  ");
 	extended_registers_registry.push_back(canidmr3_var);
 	canidmr3_var->setCallBack(this, CANIDMR3, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAR4",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidar_register[4]));
 
-	unisim::kernel::service::Register<uint8_t> *canidar4_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR4", this, canidar_register[4], "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidar4_var = new unisim::kernel::variable::Register<uint8_t>("CANIDAR4", this, canidar_register[4], "CAN  ");
 	extended_registers_registry.push_back(canidar4_var);
 	canidar4_var->setCallBack(this, CANIDAR4, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAR5",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidar_register[5]));
 
-	unisim::kernel::service::Register<uint8_t> *canidar5_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR5", this, canidar_register[5], "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidar5_var = new unisim::kernel::variable::Register<uint8_t>("CANIDAR5", this, canidar_register[5], "CAN  ");
 	extended_registers_registry.push_back(canidar5_var);
 	canidar5_var->setCallBack(this, CANIDAR5, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAR6",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidar_register[6]));
 
-	unisim::kernel::service::Register<uint8_t> *canidar6_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR6", this, canidar_register[6], "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidar6_var = new unisim::kernel::variable::Register<uint8_t>("CANIDAR6", this, canidar_register[6], "CAN  ");
 	extended_registers_registry.push_back(canidar6_var);
 	canidar6_var->setCallBack(this, CANIDAR6, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDAR7",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidar_register[7]));
 
-	unisim::kernel::service::Register<uint8_t> *canidar7_var = new unisim::kernel::service::Register<uint8_t>("CANIDAR7", this, canidar_register[7], "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidar7_var = new unisim::kernel::variable::Register<uint8_t>("CANIDAR7", this, canidar_register[7], "CAN  ");
 	extended_registers_registry.push_back(canidar7_var);
 	canidar7_var->setCallBack(this, CANIDAR7, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDMR4",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidmr_register[4]));
 
-	unisim::kernel::service::Register<uint8_t> *canidmr4_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR4", this, canidmr_register[4], "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidmr4_var = new unisim::kernel::variable::Register<uint8_t>("CANIDMR4", this, canidmr_register[4], "CAN  ");
 	extended_registers_registry.push_back(canidmr4_var);
 	canidmr4_var->setCallBack(this, CANIDMR4, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDMR5",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidmr_register[5]));
 
-	unisim::kernel::service::Register<uint8_t> *canidmr5_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR5", this, canidmr_register[5], "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidmr5_var = new unisim::kernel::variable::Register<uint8_t>("CANIDMR5", this, canidmr_register[5], "CAN  ");
 	extended_registers_registry.push_back(canidmr5_var);
 	canidmr5_var->setCallBack(this, CANIDMR5, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDMR6",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidmr_register[6]));
 
-	unisim::kernel::service::Register<uint8_t> *canidmr6_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR6", this, canidmr_register[6], "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidmr6_var = new unisim::kernel::variable::Register<uint8_t>("CANIDMR6", this, canidmr_register[6], "CAN  ");
 	extended_registers_registry.push_back(canidmr6_var);
 	canidmr6_var->setCallBack(this, CANIDMR6, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CANIDMR7",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(canidmr_register[7]));
 
-	unisim::kernel::service::Register<uint8_t> *canidmr7_var = new unisim::kernel::service::Register<uint8_t>("CANIDMR7", this, canidmr_register[7], "CAN  ");
+	unisim::kernel::variable::Register<uint8_t> *canidmr7_var = new unisim::kernel::variable::Register<uint8_t>("CANIDMR7", this, canidmr_register[7], "CAN  ");
 	extended_registers_registry.push_back(canidmr7_var);
 	canidmr7_var->setCallBack(this, CANIDMR7, &CallBackObject::write, NULL);
 

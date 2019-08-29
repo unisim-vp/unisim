@@ -1,5 +1,6 @@
 
 #include <unisim/service/monitor/monitor_server.hh>
+#include <cassert>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

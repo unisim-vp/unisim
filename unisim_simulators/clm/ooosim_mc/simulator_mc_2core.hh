@@ -162,7 +162,7 @@
 #include <unisim/component/clm/fsb/bus_multiqueue3_mc.hh>
 #include <unisim/component/clm/memory/dram/dram2.hh>
 #include <unisim/component/clm/processor/ooosim_mc/cpu_simulator_mc.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 // Includes for services
 
@@ -269,7 +269,7 @@ using unisim::service::os::linux_os::LinuxOS;
 
 using unisim::service::power::CachePowerEstimator;
 using unisim::util::garbage_collector::GarbageCollector;
-using unisim::kernel::service::ServiceManager;
+using unisim::kernel::ServiceManager;
 
 
 const int nConfig = 2;

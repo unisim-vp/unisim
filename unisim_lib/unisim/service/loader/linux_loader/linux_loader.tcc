@@ -112,8 +112,8 @@ LinuxLoader<T>::LinuxLoader(const char *name, Object *parent)
   , param_verbose("verbose", this, verbose, "Display verbose information")
   , logger(*this)
 {
-	param_max_environ.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_argc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_max_environ.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_argc.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	if ( argc )
 	{
 		for ( unsigned int i = 0; i < argc; i++ )
@@ -130,7 +130,7 @@ LinuxLoader<T>::LinuxLoader(const char *name, Object *parent)
 	}
 	SetupArgsAndEnvs();
 	
-	param_envc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_envc.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	if ( envc )
 	{
 		for ( unsigned int i = 0; i < envc; i++ )

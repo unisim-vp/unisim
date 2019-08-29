@@ -257,7 +257,7 @@ typename TemporaryMappingKeeper<CONFIG>::MAPPING *TemporaryMappingKeeper<CONFIG>
 template <typename CONFIG>
 class EBI
 	: public unisim::component::tlm2::interconnect::programmable_router::Router<CONFIG>
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Registers>
 {
 public:
 	typedef unisim::component::tlm2::interconnect::programmable_router::Router<CONFIG> Super;
@@ -273,9 +273,9 @@ public:
 	static const unsigned int TIED_UPPED_ADDRESS_BITS = CONFIG::TIED_UPPED_ADDRESS_BITS;
 	
 	// services
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
 
-	EBI(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
+	EBI(const sc_core::sc_module_name& name, unisim::kernel::Object *parent);
 	virtual ~EBI();
 
 	//////////////// unisim::service::interface::Registers ////////////////////
@@ -565,7 +565,7 @@ protected:
 	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 	
 	MappingCache<CONFIG> mapping_cache;
 	TemporaryMappingKeeper<CONFIG> temporary_mapping_keeper;

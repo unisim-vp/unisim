@@ -37,6 +37,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_AVR32_AVR32A_AVR32UC_CPU_HH__
 
 #include <unisim/kernel/logger/logger.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa.hh>
 #include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/config.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -47,7 +48,7 @@
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
@@ -80,20 +81,20 @@ using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::AVR32_T2H_Syscalls;
 using namespace unisim::util::endian;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::Object;
 using unisim::service::interfaces::Loader;
 using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Synchronizable;
 using unisim::service::interfaces::TrapReporting;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::ParameterArray;
-using unisim::kernel::service::Formula;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::variable::ParameterArray;
+using unisim::kernel::variable::Formula;
 using unisim::kernel::logger::Logger;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;

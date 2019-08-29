@@ -48,6 +48,7 @@
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/linux_os.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <string>
 #include <inttypes.h>
 
@@ -80,16 +81,16 @@ struct ARMv7emu
 
 struct CPU
   : public unisim::component::cxx::processor::arm::CPU<ARMv7emu>
-  , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryAccessReportingControl>
-  , public unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReporting<uint32_t> >
-  , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryInjection<uint32_t> >
-  , public unisim::kernel::service::Client<unisim::service::interfaces::DebugYielding>
-  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
-  , public unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<uint32_t> >
-  , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint32_t> >
-  , public unisim::kernel::service::Client<unisim::service::interfaces::Memory<uint32_t> >
-  , public unisim::kernel::service::Client<unisim::service::interfaces::LinuxOS>
-  , public unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<uint32_t> >
+  , public unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>
+  , public unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint32_t> >
+  , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint32_t> >
+  , public unisim::kernel::Client<unisim::service::interfaces::DebugYielding>
+  , public unisim::kernel::Client<unisim::service::interfaces::TrapReporting>
+  , public unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint32_t> >
+  , public unisim::kernel::Service<unisim::service::interfaces::Memory<uint32_t> >
+  , public unisim::kernel::Client<unisim::service::interfaces::Memory<uint32_t> >
+  , public unisim::kernel::Client<unisim::service::interfaces::LinuxOS>
+  , public unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<uint32_t> >
 {
   typedef CPU this_type;
   typedef unisim::component::cxx::processor::arm::CPU<ARMv7emu> PCPU;
@@ -110,16 +111,16 @@ struct CPU
   //=                  public service imports/exports                   =
   //=====================================================================
 		
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint32_t> > memory_access_reporting_import;
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<uint32_t> > disasm_export;
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint32_t> > memory_injection_export;
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint32_t> > memory_export;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<uint32_t> > memory_import;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugYielding> debug_yielding_import;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint32_t> > symbol_table_lookup_import;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::LinuxOS> linux_os_import;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint32_t> > memory_access_reporting_import;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<uint32_t> > disasm_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryInjection<uint32_t> > memory_injection_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<uint32_t> > memory_export;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<uint32_t> > memory_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYielding> debug_yielding_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint32_t> > symbol_table_lookup_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::LinuxOS> linux_os_import;
 
   bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
   bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
@@ -384,15 +385,15 @@ protected:
   /**********************************************************/
   
   /** UNISIM Parameter to set/unset verbose mode. */
-  unisim::kernel::service::Parameter<bool> param_verbose;
+  unisim::kernel::variable::Parameter<bool> param_verbose;
   /** UNISIM Parameter to set traps on instruction counter. */
-  unisim::kernel::service::Parameter<uint64_t> param_trap_on_instruction_counter;
+  unisim::kernel::variable::Parameter<uint64_t> param_trap_on_instruction_counter;
   /** UNISIM Printk snooping activation */
-  unisim::kernel::service::Parameter<bool> param_linux_printk_snooping;
+  unisim::kernel::variable::Parameter<bool> param_linux_printk_snooping;
   /** UNISIM Parameter to enable and locate Halt-On feature. */
-  unisim::kernel::service::Parameter<std::string> param_halt_on_location;
+  unisim::kernel::variable::Parameter<std::string> param_halt_on_location;
   /** UNISIM Statistic of the number of instructions executed. */
-  unisim::kernel::service::Statistic<uint64_t> stat_instruction_counter;
+  unisim::kernel::variable::Statistic<uint64_t> stat_instruction_counter;
 
   /**********************************************************/
   /* UNISIM parameters, statistics                      END */

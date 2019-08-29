@@ -1,7 +1,8 @@
 libc/math
 std/map
+unisim/kernel
+unisim/kernel/kernel/variable/endian
 unisim/kernel/logger
-unisim/kernel/service
 unisim/kernel/tlm2
 unisim/service/interfaces/registers
 unisim/util/arithmetic

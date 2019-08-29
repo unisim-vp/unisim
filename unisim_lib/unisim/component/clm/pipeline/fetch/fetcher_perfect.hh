@@ -72,10 +72,10 @@ using unisim::component::clm::interfaces::Source;
 using unisim::component::clm::interfaces::Destination;
 
 
-  using unisim::kernel::service::Client;
-  //  using unisim::kernel::service::Service;
-  using unisim::kernel::service::ServiceImport;
-  //  using unisim::kernel::service::ServiceExport;
+  using unisim::kernel::Client;
+  //  using unisim::kernel::Service;
+  using unisim::kernel::ServiceImport;
+  //  using unisim::kernel::ServiceExport;
 
   //  using unisim::component::clm::processor::ooosim::CPUSim;
   using unisim::component::clm::processor::ooosim::CPUEmu;
@@ -94,8 +94,8 @@ using unisim::component::clm::interfaces::Destination;
   using unisim::component::cxx::processor::powerpc::INPUT_T;
   using unisim::component::cxx::processor::powerpc::OUTPUT_T;
 
-  using unisim::kernel::service::Object;
-  using unisim::kernel::service::Statistic;
+  using unisim::kernel::Object;
+  using unisim::kernel::variable::Statistic;
 
   using unisim::component::cxx::processor::powerpc::Exception;
   

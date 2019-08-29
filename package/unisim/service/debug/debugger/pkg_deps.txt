@@ -3,8 +3,9 @@ m4/pthread
 std/fstream
 std/stdexcept
 std/string
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/service/interfaces/backtrace
 unisim/service/interfaces/blob
 unisim/service/interfaces/data_object_lookup

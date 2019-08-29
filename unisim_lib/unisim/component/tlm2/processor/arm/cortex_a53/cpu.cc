@@ -51,7 +51,7 @@ namespace cortex_a53 {
 using namespace unisim::kernel::logger;
 
 CPU::CPU( sc_core::sc_module_name const& name, Object* parent )
-  : unisim::kernel::service::Object(name, parent)
+  : unisim::kernel::Object(name, parent)
   , sc_core::sc_module(name)
   , unisim::component::cxx::processor::arm::vmsav8::CPU<ConfigCA53>(name, parent)
   , master_socket("master_socket")

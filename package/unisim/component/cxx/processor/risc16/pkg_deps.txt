@@ -5,8 +5,9 @@ std/iostream
 std/map
 std/sstream
 std/vector
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/service/interfaces/debug_yielding
 unisim/service/interfaces/disassembly
 unisim/service/interfaces/memory

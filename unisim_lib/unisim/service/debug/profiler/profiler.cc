@@ -224,7 +224,7 @@ ReportFormat FileVisitor::GetReportFormat() const
 
 std::string FileVisitor::GetFilePath(const std::string& filename) const
 {
-	return unisim::kernel::service::Simulator::Instance()->SearchSharedDataFile(filename.c_str());
+	return unisim::kernel::Simulator::Instance()->SearchSharedDataFile(filename.c_str());
 }
 
 const std::string& FileVisitor::GetDirPath() const

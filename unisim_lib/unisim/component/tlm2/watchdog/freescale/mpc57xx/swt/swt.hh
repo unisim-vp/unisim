@@ -35,7 +35,8 @@
 #ifndef __UNISIM_COMPONENT_TLM2_WATCHDOG_FREESCALE_MPC57XX_SWT_SWT_HH__
 #define __UNISIM_COMPONENT_TLM2_WATCHDOG_FREESCALE_MPC57XX_SWT_SWT_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/kernel/variable/endian/endian.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/tlm2/clock.hh>
@@ -99,7 +100,7 @@ template <typename CONFIG>
 class SWT
 	: public sc_core::sc_module
 	, public tlm::tlm_fw_transport_if<>
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Registers>
 {
 public:
 	static const unsigned int TLM2_IP_VERSION_MAJOR                 = 1;
@@ -132,9 +133,9 @@ public:
 	sc_core::sc_out<bool>                           reset_b;                   // reset
 	
 	// services
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
 
-	SWT(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
+	SWT(const sc_core::sc_module_name& name, unisim::kernel::Object *parent);
 	virtual ~SWT();
 	
 	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
@@ -636,13 +637,13 @@ private:
 	uint32_t down_counter;
 	
 	unisim::util::endian::endian_type endian;
-	unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endian;
+	unisim::kernel::variable::Parameter<unisim::util::endian::endian_type> param_endian;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 	uint32_t swt_cr_reset_value;
-	unisim::kernel::service::Parameter<uint32_t> param_swt_cr_reset_value;
+	unisim::kernel::variable::Parameter<uint32_t> param_swt_cr_reset_value;
 	uint32_t swt_to_reset_value;
-	unisim::kernel::service::Parameter<uint32_t> param_swt_to_reset_value;
+	unisim::kernel::variable::Parameter<uint32_t> param_swt_to_reset_value;
 	
 	bool irq_level;
 	sc_core::sc_event gen_irq_event;
@@ -657,7 +658,7 @@ private:
 	bool master_clock_posedge_first;                     // Master clock posedge first ?
 	double master_clock_duty_cycle;                      // Master clock duty cycle
 	sc_core::sc_time watchdog_clock_period;              // Watchdog (down counter) clock period
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_watchdog_clock_period;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_watchdog_clock_period;
 
 	void Reset();
 	void ProcessEvent(Event *event);

@@ -146,7 +146,7 @@ private:
   bool enable_dmi;
   
   bool verbose_tlm;
-  //unisim::kernel::service::Parameter<bool> param_verbose_tlm;
+  //unisim::kernel::variable::Parameter<bool> param_verbose_tlm;
   
   virtual void Sync();
   void         Wait( sc_core::sc_event const& evt );

@@ -56,7 +56,7 @@ using unisim::util::endian::LittleEndian2Host;
 
 SystemController ::
 SystemController(const sc_module_name &name, Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_module(name)
 	, refclk_out_port("refclk_out_port")
 	, timclken0_out_port("timclken0_out_port")
@@ -219,7 +219,7 @@ bus_target_b_transport(transaction_type &trans,
 			logger << std::dec;
 		}
 		logger << EndDebugError;
-		unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+		unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	}
 
 	// everything went fine, set the ok status response

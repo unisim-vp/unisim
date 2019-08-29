@@ -36,12 +36,13 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 namespace unisim {
 namespace kernel {
 namespace config {
 
-INIConfigFileHelper::INIConfigFileHelper(unisim::kernel::service::Simulator *_simulator)
+INIConfigFileHelper::INIConfigFileHelper(unisim::kernel::Simulator *_simulator)
 	: simulator(_simulator)
 {
 	simulator->Register(this);
@@ -56,7 +57,7 @@ const char *INIConfigFileHelper::GetName() const
 	return "INI";
 }
 
-bool INIConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::service::VariableBase::Type type)
+bool INIConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::VariableBase::Type type)
 {
 	std::ofstream file(filename);
 	
@@ -65,16 +66,16 @@ bool INIConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 	return SaveVariables(file, type);
 }
 
-bool INIConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::service::VariableBase::Type type)
+bool INIConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::VariableBase::Type type)
 {
-	std::list<unisim::kernel::service::VariableBase *> variables;
-	std::list<unisim::kernel::service::VariableBase *>::iterator variable_iter;
+	std::list<unisim::kernel::VariableBase *> variables;
+	std::list<unisim::kernel::VariableBase *>::iterator variable_iter;
 	simulator->GetVariables(variables, type);
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
-		unisim::kernel::service::VariableBase *variable = *variable_iter;
+		unisim::kernel::VariableBase *variable = *variable_iter;
 		
-		if(!variable->GetOwner() && variable->IsSerializable() && ((type == unisim::kernel::service::VariableBase::VAR_VOID) || (type == variable->GetType())))
+		if(!variable->GetOwner() && variable->IsSerializable() && ((type == unisim::kernel::VariableBase::VAR_VOID) || (type == variable->GetType())))
 		{
 			os << variable->GetVarName() << "=" << (std::string)(*variable) << std::endl;
 		}
@@ -85,12 +86,12 @@ bool INIConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::servic
 		os << std::endl;
 	}
 	
-	std::list<unisim::kernel::service::Object *> objects;
-	std::list<unisim::kernel::service::Object *>::iterator object_iter;
+	std::list<unisim::kernel::Object *> objects;
+	std::list<unisim::kernel::Object *>::iterator object_iter;
 	simulator->GetObjects(objects);
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
-		unisim::kernel::service::Object *object = *object_iter;
+		unisim::kernel::Object *object = *object_iter;
 		
 		SaveVariables(os, object, type);
 	}
@@ -98,21 +99,21 @@ bool INIConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::servic
 	return true;
 }
 
-void INIConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::service::Object *object, unisim::kernel::service::VariableBase::Type type)
+void INIConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::Object *object, unisim::kernel::VariableBase::Type type)
 {
-	std::list<unisim::kernel::service::VariableBase *> variables;
+	std::list<unisim::kernel::VariableBase *> variables;
 	object->GetVariables(variables, type);
 	
 	if(!variables.empty())
 	{
 		os << "[" << object->GetName() << "]" << std::endl;
 
-		std::list<unisim::kernel::service::VariableBase *>::iterator variable_iter;
+		std::list<unisim::kernel::VariableBase *>::iterator variable_iter;
 		for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 		{
-			unisim::kernel::service::VariableBase *variable = *variable_iter;
+			unisim::kernel::VariableBase *variable = *variable_iter;
 			
-			if(variable->IsSerializable() && ((type == unisim::kernel::service::VariableBase::VAR_VOID) || (type == variable->GetType())))
+			if(variable->IsSerializable() && ((type == unisim::kernel::VariableBase::VAR_VOID) || (type == variable->GetType())))
 			{
 				os << variable->GetVarName() << "=" << (std::string)(*variable) << std::endl;
 			}
@@ -122,7 +123,7 @@ void INIConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::servic
 	}
 }
 
-bool INIConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::service::VariableBase::Type type)
+bool INIConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::VariableBase::Type type)
 {
 	std::string filename = simulator->SearchSharedDataFile(_filename);
 
@@ -133,7 +134,7 @@ bool INIConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::s
 	return LoadVariables(file, type);
 }
 
-bool INIConfigFileHelper::LoadVariables(std::istream& is, unisim::kernel::service::VariableBase::Type type)
+bool INIConfigFileHelper::LoadVariables(std::istream& is, unisim::kernel::VariableBase::Type type)
 {
 	std::size_t lineno = 1;
 	std::string line;

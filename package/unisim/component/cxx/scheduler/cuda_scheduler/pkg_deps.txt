@@ -1,6 +1,6 @@
 m4/boost
 unisim/component/cxx/processor/tesla
-unisim/kernel/service
+unisim/kernel
 unisim/service/interfaces/instruction_stats
 unisim/service/interfaces/memory
 unisim/service/interfaces/resetable

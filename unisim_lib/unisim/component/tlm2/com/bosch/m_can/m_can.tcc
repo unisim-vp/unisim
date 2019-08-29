@@ -106,10 +106,10 @@ template <typename CONFIG>
 const unsigned int M_CAN<CONFIG>::MAX_TX_EVENT_FIFO_SIZE;
 
 template <typename CONFIG>
-M_CAN<CONFIG>::M_CAN(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+M_CAN<CONFIG>::M_CAN(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, Super(name, parent)
-	, unisim::kernel::service::Service<unisim::service::interfaces::Registers>(name, parent)
+	, unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
 	, peripheral_slave_if("peripheral_slave_if")
 	, m_clk("m_clk")
 	, can_clk("can_clk")
@@ -1051,7 +1051,7 @@ unsigned int M_CAN<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 	if(!data_ptr)
 	{
 		logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		unisim::kernel::Object::Stop(-1);
 		return 0;
 	}
 	else if(!data_length)
@@ -1093,7 +1093,7 @@ tlm::tlm_sync_enum M_CAN<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& payl
 			return tlm::TLM_COMPLETED;
 		default:
 			logger << DebugError << "protocol error" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			break;
 	}
 	
@@ -1126,13 +1126,13 @@ void M_CAN<CONFIG>::ProcessEvent(Event *event)
 				if(!data_ptr)
 				{
 					logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-					unisim::kernel::service::Object::Stop(-1);
+					unisim::kernel::Object::Stop(-1);
 					return;
 				}
 				else if(!data_length)
 				{
 					logger << DebugError << "data length range for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-					unisim::kernel::service::Object::Stop(-1);
+					unisim::kernel::Object::Stop(-1);
 					return;
 				}
 				else if(byte_enable_ptr)
@@ -1226,7 +1226,7 @@ void M_CAN<CONFIG>::ProcessEvents()
 			if(event->GetTimeStamp() != time_stamp)
 			{
 				logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
-				unisim::kernel::service::Object::Stop(-1);
+				unisim::kernel::Object::Stop(-1);
 			}
 			
 			ProcessEvent(event);

@@ -118,7 +118,7 @@ unistd.h \
 vector"
 
 UNISIM_LIB_RISC16_SOURCE_FILES="\
-unisim/kernel/service/service.cc \
+unisim/kernel/kernel.cc \
 unisim/kernel/config/xml_config_file_helper.cc \
 unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
@@ -165,7 +165,7 @@ unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
 unisim/util/loader/coff_loader/coff_loader64.cc \
-unisim/kernel/service/endian.cc \
+unisim/kernel/variable/endian/endian.cc \
 unisim/util/lexer/lexer.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
@@ -210,7 +210,7 @@ UNISIM_LIB_S12XGATE_ISA_FILES="\
 "
 
 UNISIM_LIB_RISC16_HEADER_FILES="${UNISIM_LIB_RISC16_ISA_FILES} ${UNISIM_LIB_XB_ISA_FILES} ${UNISIM_LIB_S12XGATE_ISA_FILES} \
-unisim/kernel/service/service.hh \
+unisim/kernel/kernel.hh \
 unisim/kernel/config/xml_config_file_helper.hh \
 unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \

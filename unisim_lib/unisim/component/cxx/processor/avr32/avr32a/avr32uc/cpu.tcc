@@ -111,8 +111,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, param_halt_on("halt-on", this, halt_on, "Symbol or address where to stop simulation")
 	, stat_instruction_counter("instruction-counter",  this,  instruction_counter, "number of simulated instructions")
 {
-	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_trap_on_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_max_inst.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	enter_isr_table[CONFIG::EXC_UNDEFINED_BEHAVIOR] = &CPU<CONFIG>::EnterUndefinedBehaviorException;
 	enter_isr_table[CONFIG::EXC_RESET] = &CPU<CONFIG>::EnterResetException;

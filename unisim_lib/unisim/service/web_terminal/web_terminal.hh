@@ -35,7 +35,8 @@
 #ifndef __UNISIM_SERVICE_WEB_TERMINAL_WEB_TERMINAL_HH__
 #define __UNISIM_SERVICE_WEB_TERMINAL_WEB_TERMINAL_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/service/interfaces/http_server.hh>
 #include <unisim/service/interfaces/char_io.hh>
@@ -118,10 +119,10 @@ struct Field
 
 ///////////////////////////////////// Theme ///////////////////////////////////
 
-struct Theme : unisim::kernel::service::Object
+struct Theme : unisim::kernel::Object
 {
 public:
-	Theme(const char *name, unisim::kernel::service::Object *parent = 0);
+	Theme(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~Theme();
 	
 	Intensity GetIntensity() const { return intensity; }
@@ -146,15 +147,15 @@ private:
 	unsigned int foreground_color;
 	std::string color_table[16];
 	
-	unisim::kernel::service::Parameter<Intensity> param_intensity;
-	unisim::kernel::service::Parameter<bool> param_italic;
-	unisim::kernel::service::Parameter<bool> param_underline;
-	unisim::kernel::service::Parameter<Blink> param_blink;
-	unisim::kernel::service::Parameter<bool> param_reverse_video;
-	unisim::kernel::service::Parameter<bool> param_crossed_out;
-	unisim::kernel::service::Parameter<unsigned int> param_background_color;
-	unisim::kernel::service::Parameter<unsigned int> param_foreground_color;
-	unisim::kernel::service::ParameterArray<std::string> *param_color_table;
+	unisim::kernel::variable::Parameter<Intensity> param_intensity;
+	unisim::kernel::variable::Parameter<bool> param_italic;
+	unisim::kernel::variable::Parameter<bool> param_underline;
+	unisim::kernel::variable::Parameter<Blink> param_blink;
+	unisim::kernel::variable::Parameter<bool> param_reverse_video;
+	unisim::kernel::variable::Parameter<bool> param_crossed_out;
+	unisim::kernel::variable::Parameter<unsigned int> param_background_color;
+	unisim::kernel::variable::Parameter<unsigned int> param_foreground_color;
+	unisim::kernel::variable::ParameterArray<std::string> *param_color_table;
 };
 
 /////////////////////////////// GraphicRendition //////////////////////////////
@@ -330,7 +331,7 @@ private:
 
 //////////////////////////////// ScreenBuffer /////////////////////////////////
 
-struct ScreenBuffer : unisim::kernel::service::Object
+struct ScreenBuffer : unisim::kernel::Object
 {
 	ScreenBuffer(const char *name, WebTerminal *web_terminal);
 	~ScreenBuffer();
@@ -440,11 +441,11 @@ private:
 	UTF8_Parser utf8_parser;
 	
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
-	unisim::kernel::service::Parameter<unsigned int> param_display_width;
-	unisim::kernel::service::Parameter<unsigned int> param_display_height;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<unsigned int> param_display_width;
+	unisim::kernel::variable::Parameter<unsigned int> param_display_height;
 	unsigned int buffer_height;
-	unisim::kernel::service::Parameter<unsigned int> param_buffer_height;
+	unisim::kernel::variable::Parameter<unsigned int> param_buffer_height;
 };
 
 ///////////////////////////////// InputBuffer /////////////////////////////////
@@ -524,14 +525,14 @@ inline std::ostream& operator << (std::ostream& os, const KeyEvent& key_event)
 ///////////////////////////////// WebTerminal /////////////////////////////////
 
 class WebTerminal
-	: public unisim::kernel::service::Service<unisim::service::interfaces::CharIO>
-	, public unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>
+	: public unisim::kernel::Service<unisim::service::interfaces::CharIO>
+	, public unisim::kernel::Service<unisim::service::interfaces::HttpServer>
 {
 public:
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::CharIO> char_io_export;
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::CharIO> char_io_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
 	
-	WebTerminal(const char *name, unisim::kernel::service::Object *parent = 0);
+	WebTerminal(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~WebTerminal();
 	
 	virtual bool BeginSetup();
@@ -553,17 +554,17 @@ private:
 
 	Theme theme;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 	unsigned int input_buffer_size;
-	unisim::kernel::service::Parameter<unsigned int> param_input_buffer_size;
+	unisim::kernel::variable::Parameter<unsigned int> param_input_buffer_size;
 	double min_display_refresh_period;
-	unisim::kernel::service::Parameter<double> param_min_display_refresh_period;
+	unisim::kernel::variable::Parameter<double> param_min_display_refresh_period;
 	double max_display_refresh_period;
-	unisim::kernel::service::Parameter<double> param_max_display_refresh_period;
+	unisim::kernel::variable::Parameter<double> param_max_display_refresh_period;
 	std::string title;
-	unisim::kernel::service::Parameter<std::string> param_title;
+	unisim::kernel::variable::Parameter<std::string> param_title;
 	bool implicit_cr_in_every_lf;
-	unisim::kernel::service::Parameter<bool> param_implicit_cr_in_every_lf;
+	unisim::kernel::variable::Parameter<bool> param_implicit_cr_in_every_lf;
 	
 	bool activity;
 	double refresh_period;

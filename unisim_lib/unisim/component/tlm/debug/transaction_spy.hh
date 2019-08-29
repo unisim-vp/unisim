@@ -41,7 +41,7 @@
 #define __UNISIM_COMPONENT_TLM_DEBUG_TRANSACTION_SPY_HH__
 
 #include "unisim/kernel/tlm/tlm.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 #include "unisim/util/likely/likely.hh"
@@ -58,11 +58,11 @@ using unisim::kernel::tlm::TlmSendIf;
 using unisim::kernel::tlm::TlmMessage;
 using unisim::kernel::tlm::ResponseListener;
 using unisim::kernel::tlm::TlmNoResponse;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Client;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::Object;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::Client;
 using unisim::util::garbage_collector::Pointer;
 using std::string;
 

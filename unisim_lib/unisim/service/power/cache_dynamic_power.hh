@@ -36,7 +36,7 @@
 #ifndef __UNISIM_SERVICE_POWER_CACHE_DYNAMIC_POWER_HH__
 #define __UNISIM_SERVICE_POWER_CACHE_DYNAMIC_POWER_HH__
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/service/interfaces/time.hh"
 #include "unisim/service/power/cache_profile.hh"
 #include "unisim/service/power/cache_dynamic_energy.hh"
@@ -52,14 +52,14 @@ class CacheDynamicPower : public CacheDynamicEnergy
 {
 public:
 	CacheDynamicPower(const map<CacheProfileKey, CacheProfile *> *_profiles,
-			unisim::kernel::service::ServiceImport<unisim::service::interfaces::Time> *_time_import);
+			unisim::kernel::ServiceImport<unisim::service::interfaces::Time> *_time_import);
 	~CacheDynamicPower();
 
 	double GetDynamicPower() const;
 	bool operator != ( CacheDynamicPower const& clp ) const { return GetDynamicPower() != clp.GetDynamicPower(); }
 
 private:
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Time> *time_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Time> *time_import;
 };
 
 } // end of namespace power

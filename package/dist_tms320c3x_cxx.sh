@@ -105,7 +105,7 @@ unistd.h \
 vector"
 
 UNISIM_LIB_TMS320C3X_SOURCE_FILES="\
-unisim/kernel/service/service.cc \
+unisim/kernel/kernel.cc \
 unisim/kernel/config/xml_config_file_helper.cc \
 unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/logger/logger.cc \
@@ -147,7 +147,7 @@ unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/debug/coff_symtab/coff_symtab32.cc \
 unisim/util/debug/coff_symtab/coff_symtab64.cc \
-unisim/kernel/service/endian.cc \
+unisim/kernel/variable/endian/endian.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
@@ -202,7 +202,7 @@ unisim/component/cxx/processor/tms320c3x/isa/power.isa \
 unisim/component/cxx/processor/tms320c3x/isa/tms320c3x.isa"
 
 UNISIM_LIB_TMS320C3X_HEADER_FILES="${UNISIM_LIB_TMS320C3X_ISA_FILES} \
-unisim/kernel/service/service.hh \
+unisim/kernel/kernel.hh \
 unisim/kernel/config/xml_config_file_helper.hh \
 unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \

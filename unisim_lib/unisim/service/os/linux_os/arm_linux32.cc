@@ -42,8 +42,8 @@ namespace service {
 namespace os {
 namespace linux_os {
 
-ArmLinux32::ArmLinux32( const char* name, unisim::kernel::service::Object* parent )
-  : unisim::kernel::service::Object( name, parent )
+ArmLinux32::ArmLinux32( const char* name, unisim::kernel::Object* parent )
+  : unisim::kernel::Object( name, parent )
   , Linux<uint32_t, uint32_t>( name, parent )
   , system_name()
   , param_system_name("system", this, system_name, "Emulated system architecture. Available values are \"arm\" and \"arm-eabi\"")

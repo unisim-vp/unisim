@@ -30,7 +30,7 @@ endforeach ( C_INCLUDE )
 add_definitions ( -DSC_INCLUDE_DYNAMIC_PROCESSES )
 
 set ( ppcemu_subdirs
-	unisim/kernel/service
+	unisim/kernel
 	unisim/component/tlm/processor/powerpc/mpc7447a
 	unisim/component/tlm/memory/ram
 	unisim/component/tlm/fsb/snooping_bus

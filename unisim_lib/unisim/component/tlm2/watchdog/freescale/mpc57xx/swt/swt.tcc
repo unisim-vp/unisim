@@ -78,10 +78,10 @@ template <typename CONFIG>
 const uint32_t SWT<CONFIG>::MIN_DOWN_COUNTER_LOAD_VALUE;
 
 template <typename CONFIG>
-SWT<CONFIG>::SWT(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+SWT<CONFIG>::SWT(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_core::sc_module(name)
-	, unisim::kernel::service::Service<unisim::service::interfaces::Registers>(name, parent)
+	, unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
 	, peripheral_slave_if("peripheral_slave_if")
 	, m_clk("m_clk")
 	, swt_reset_b("swt_reset_b")
@@ -241,7 +241,7 @@ unsigned int SWT<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 	if(!data_ptr)
 	{
 		logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		unisim::kernel::Object::Stop(-1);
 		return 0;
 	}
 	else if(!data_length)
@@ -290,7 +290,7 @@ tlm::tlm_sync_enum SWT<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& payloa
 			return tlm::TLM_COMPLETED;
 		default:
 			logger << DebugError << "protocol error" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			break;
 	}
 	
@@ -330,13 +330,13 @@ void SWT<CONFIG>::ProcessEvent(Event *event)
 		if(!data_ptr)
 		{
 			logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			return;
 		}
 		else if(!data_length)
 		{
 			logger << DebugError << "data length range for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			return;
 		}
 		else if(byte_enable_ptr)
@@ -449,7 +449,7 @@ void SWT<CONFIG>::ProcessEvents()
 			if(event->GetTimeStamp() != time_stamp)
 			{
 				logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
-				unisim::kernel::service::Object::Stop(-1);
+				unisim::kernel::Object::Stop(-1);
 			}
 			
 			ProcessEvent(event);
@@ -931,7 +931,7 @@ void SWT<CONFIG>::CheckCompatibility()
 		case SMD_FIXED_ADDRESS_EXECUTION:
 		case SMD_INCREMENTAL_ADDRESS_EXECUTION:
 			logger << DebugError << "Fixed address execution mode and increment address execution mode are unsupported for now" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			break;
 		default:
 			break;
@@ -940,7 +940,7 @@ void SWT<CONFIG>::CheckCompatibility()
 	if(!m_clk_prop_proxy.IsClockCompatible())
 	{
 		logger << DebugError << "clock port is not bound to a unisim::kernel::tlm2::Clock" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		unisim::kernel::Object::Stop(-1);
 		return;
 	}
 }

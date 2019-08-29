@@ -46,7 +46,7 @@
 #include "tlm_utils/simple_target_socket.h"
 #include "tlm_utils/simple_initiator_socket.h"
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/xgate.hh>
@@ -76,10 +76,10 @@ using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 using unisim::kernel::logger::EndDebug;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
 
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::ServiceExportBase;
 using unisim::kernel::tlm2::PayloadFabric;
 
 using unisim::component::cxx::processor::hcs12x::address_t;

@@ -69,20 +69,20 @@ template <class ADDRESS>
 InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	: Object(_name, _parent, "this service implements a built-in debugger in the terminal console")
 	, InlineDebuggerBase(_name, _parent)
-	, unisim::kernel::service::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
-	, unisim::kernel::service::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::DebugYieldingRequest>(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::Disassembly<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::Memory<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::Registers>(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::BackTrace<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::Profiling<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::DebugInfoLoading>(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
+	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Disassembly<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Registers>(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::BackTrace<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Profiling<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(_name, _parent)
 	, debug_yielding_export("debug-yielding-export", this)
 	, debug_event_listener_export("debug-event-listener-export", this)
 	, debug_yielding_request_import("debug-yielding-request-import", this)
@@ -124,7 +124,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, fetch_insn_event(0)
 	, trap_event(0)
 {
-	param_memory_atom_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_memory_atom_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
 	fetch_insn_event = new unisim::util::debug::FetchInsnEvent<ADDRESS>();
 	fetch_insn_event->Catch();
@@ -555,21 +555,21 @@ void InlineDebugger<ADDRESS>::DebugYield()
 				if (IsRegisterCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpVariables("m", 0, unisim::kernel::service::VariableBase::VAR_REGISTER);
+					DumpVariables("m", 0, unisim::kernel::VariableBase::VAR_REGISTER);
 					break;
 				}
 				
 				if (IsStatisticCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpVariables("m", 0, unisim::kernel::service::VariableBase::VAR_STATISTIC);
+					DumpVariables("m", 0, unisim::kernel::VariableBase::VAR_STATISTIC);
 					break;
 				}
 				
 				if (IsParameterCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpVariables("m", 0, unisim::kernel::service::VariableBase::VAR_PARAMETER);
+					DumpVariables("m", 0, unisim::kernel::VariableBase::VAR_PARAMETER);
 					break;
 				}
 
@@ -697,7 +697,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 				if(IsLoadConfigCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					this->GetSimulator()->LoadVariables(parm[1].c_str(), unisim::kernel::service::VariableBase::VAR_PARAMETER);
+					this->GetSimulator()->LoadVariables(parm[1].c_str(), unisim::kernel::VariableBase::VAR_PARAMETER);
 					break;
 				}
 				
@@ -784,21 +784,21 @@ void InlineDebugger<ADDRESS>::DebugYield()
 				if (IsRegisterCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpVariables(parm[0].c_str(), parm[1].c_str(), unisim::kernel::service::VariableBase::VAR_REGISTER);
+					DumpVariables(parm[0].c_str(), parm[1].c_str(), unisim::kernel::VariableBase::VAR_REGISTER);
 					break;
 				}
 				
 				if (IsStatisticCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpVariables(parm[0].c_str(), parm[1].c_str(), unisim::kernel::service::VariableBase::VAR_STATISTIC);
+					DumpVariables(parm[0].c_str(), parm[1].c_str(), unisim::kernel::VariableBase::VAR_STATISTIC);
 					break;
 				}
 				
 				if (IsParameterCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpVariables(parm[0].c_str(), parm[1].c_str(), unisim::kernel::service::VariableBase::VAR_PARAMETER);
+					DumpVariables(parm[0].c_str(), parm[1].c_str(), unisim::kernel::VariableBase::VAR_PARAMETER);
 					break;
 				}
 
@@ -979,7 +979,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 					std::stringstream str;
 					str << parm[0].c_str();
 					str << parm[1].c_str();
-					DumpVariables(str.str().c_str(), parm[2].c_str(), unisim::kernel::service::VariableBase::VAR_REGISTER);
+					DumpVariables(str.str().c_str(), parm[2].c_str(), unisim::kernel::VariableBase::VAR_REGISTER);
 					break;
 				}
 				
@@ -989,7 +989,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 					std::stringstream str;
 					str << parm[0].c_str();
 					str << parm[1].c_str();
-					DumpVariables(str.str().c_str(), parm[2].c_str(), unisim::kernel::service::VariableBase::VAR_STATISTIC);
+					DumpVariables(str.str().c_str(), parm[2].c_str(), unisim::kernel::VariableBase::VAR_STATISTIC);
 					break;
 				}
 				
@@ -999,7 +999,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 					std::stringstream str;
 					str << parm[0].c_str();
 					str << parm[1].c_str();
-					DumpVariables(str.str().c_str(), parm[2].c_str(), unisim::kernel::service::VariableBase::VAR_PARAMETER);
+					DumpVariables(str.str().c_str(), parm[2].c_str(), unisim::kernel::VariableBase::VAR_PARAMETER);
 					break;
 				}
 
@@ -1717,11 +1717,11 @@ bool InlineDebugger<ADDRESS>::EditMemory(ADDRESS addr)
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpVariables(const char *cmd, const char *name, typename unisim::kernel::service::VariableBase::Type type)
+void InlineDebugger<ADDRESS>::DumpVariables(const char *cmd, const char *name, typename unisim::kernel::VariableBase::Type type)
 {
 	bool found = false;
-	std::list<unisim::kernel::service::VariableBase *> lst;
-	std::list<unisim::kernel::service::VariableBase *>::iterator iter;
+	std::list<unisim::kernel::VariableBase *> lst;
+	std::list<unisim::kernel::VariableBase *>::iterator iter;
 
 	GetSimulator()->GetVariables(lst, type);
 	
@@ -1729,7 +1729,7 @@ void InlineDebugger<ADDRESS>::DumpVariables(const char *cmd, const char *name, t
 	
 	for(iter = lst.begin(); iter != lst.end(); iter++)
 	{
-		unisim::kernel::service::VariableBase *var = *iter;
+		unisim::kernel::VariableBase *var = *iter;
 		std::string var_name(var->GetName());
 		
 		if(!name || ((*name == '~') && var_name.find(name + 1, 0, strlen(name + 1)) != std::string::npos) || (var_name.compare(name) == 0))
@@ -1744,13 +1744,13 @@ void InlineDebugger<ADDRESS>::DumpVariables(const char *cmd, const char *name, t
 		(*std_output_stream) << "unknown ";
 		switch(type)
 		{
-			case unisim::kernel::service::VariableBase::VAR_REGISTER:
+			case unisim::kernel::VariableBase::VAR_REGISTER:
 				(*std_output_stream) << "register";
 				break;
-			case unisim::kernel::service::VariableBase::VAR_STATISTIC:
+			case unisim::kernel::VariableBase::VAR_STATISTIC:
 				(*std_output_stream) << "statistic";
 				break;
-			case unisim::kernel::service::VariableBase::VAR_PARAMETER:
+			case unisim::kernel::VariableBase::VAR_PARAMETER:
 				(*std_output_stream) << "parameter";
 				break;
 			default:
@@ -1830,23 +1830,23 @@ void InlineDebugger<ADDRESS>::MonitorGetFormat(const char *cmd, char &format)
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const unisim::kernel::service::VariableBase *variable)
+void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const unisim::kernel::VariableBase *variable)
 {
 	switch (variable->GetType())
 	{
-		case unisim::kernel::service::VariableBase::VAR_ARRAY:
+		case unisim::kernel::VariableBase::VAR_ARRAY:
 			(*std_output_stream) << " A";
 			break;
-		case unisim::kernel::service::VariableBase::VAR_PARAMETER:
+		case unisim::kernel::VariableBase::VAR_PARAMETER:
 			(*std_output_stream) << " P";
 			break;
-		case unisim::kernel::service::VariableBase::VAR_STATISTIC:
+		case unisim::kernel::VariableBase::VAR_STATISTIC:
 			(*std_output_stream) << " S";
 			break;
-		case unisim::kernel::service::VariableBase::VAR_FORMULA:
+		case unisim::kernel::VariableBase::VAR_FORMULA:
 			(*std_output_stream) << " F";
 			break;
-		case unisim::kernel::service::VariableBase::VAR_REGISTER:
+		case unisim::kernel::VariableBase::VAR_REGISTER:
 			(*std_output_stream) << " R";
 			break;
 		default:
@@ -2032,7 +2032,7 @@ void InlineDebugger<ADDRESS>::DumpSymbols(const char *name)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetVariable(const char *name, const char *value)
 {
-	unisim::kernel::service::VariableBase *variable = GetSimulator()->FindVariable(name);
+	unisim::kernel::VariableBase *variable = GetSimulator()->FindVariable(name);
 	
 	if (variable->IsVoid())
 	{

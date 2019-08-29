@@ -46,8 +46,8 @@ namespace service {
 namespace debug {
 namespace inline_debugger {
 
-InlineDebuggerBase::InlineDebuggerBase(const char *_name, unisim::kernel::service::Object *_parent)
-	: unisim::kernel::service::Object(_name, _parent)
+InlineDebuggerBase::InlineDebuggerBase(const char *_name, unisim::kernel::Object *_parent)
+	: unisim::kernel::Object(_name, _parent)
 	, search_path()
 	, param_search_path("search-path", this, search_path, "Search path for source (separated by ';')")
 {
@@ -92,7 +92,7 @@ std::string InlineDebuggerBase::SearchFile(const char *filename)
 		}
 	} while(*(p++));
 	
-	return unisim::kernel::service::Object::GetSimulator()->SearchSharedDataFile(filename);
+	return unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(filename);
 }
 
 bool InlineDebuggerBase::LocateFile(const char *filename, std::string& match_file_path)

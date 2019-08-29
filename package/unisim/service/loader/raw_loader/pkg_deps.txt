@@ -2,8 +2,9 @@ libc/inttypes
 libc/stdlib
 std/fstream
 std/string
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/service/interfaces/blob
 unisim/service/interfaces/loader
 unisim/service/interfaces/memory

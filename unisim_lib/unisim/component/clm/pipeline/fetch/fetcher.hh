@@ -70,10 +70,10 @@ using unisim::component::clm::interfaces::memreq_types;
 using unisim::component::clm::interfaces::Source;
 using unisim::component::clm::interfaces::Destination;
 
-  using unisim::kernel::service::Client;
-  //  using unisim::kernel::service::Service;
-  using unisim::kernel::service::ServiceImport;
-  //  using unisim::kernel::service::ServiceExport;
+  using unisim::kernel::Client;
+  //  using unisim::kernel::Service;
+  using unisim::kernel::ServiceImport;
+  //  using unisim::kernel::ServiceExport;
 
   using unisim::component::clm::processor::ooosim::CPUSim;
 

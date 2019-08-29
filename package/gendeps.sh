@@ -3,7 +3,7 @@ INCLUDE_UNTRACKED_FILES=no # should be always no
 
 # if [ -z "$1" ]; then
 # 	echo "Usage: $0 <directory>"
-# 	echo "Example: $0 unisim/kernel/service"
+# 	echo "Example: $0 unisim/kernel"
 # 	exit
 # fi
 
@@ -456,7 +456,7 @@ echo "unisim/component/cxx/processor/arm/isa/thumb2" >> "${PACKAGE_DIR}/unisim/c
 echo "unisim/component/cxx/processor/arm/isa/arm64" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/vmsav8/pkg_deps.txt"
 
 echo "m4/endian" >> "${PACKAGE_DIR}/unisim/util/endian/pkg_deps.txt"
-echo "m4/real_path" >> "${PACKAGE_DIR}/unisim/kernel/service/pkg_deps.txt"
+echo "m4/real_path" >> "${PACKAGE_DIR}/unisim/kernel/pkg_deps.txt"
 
 sed -i '/unisim\/component\/cxx\/processor\/arm\/cache/d' "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/pkg_deps.txt"
 

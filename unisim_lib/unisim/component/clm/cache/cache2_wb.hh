@@ -63,7 +63,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <unisim/service/interfaces/memory_injection.hh>
 
 #include <unisim/component/clm/debug/svg_memreq_interface.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 // Interface to Cacti 4
 //#include "power_estimation2/CactiCachePowerEstimator.h"
@@ -83,10 +83,10 @@ using unisim::component::clm::interfaces::memreq;
 using unisim::component::clm::utility::hexa;
 using unisim::component::clm::debug::SVGmemreqInterface;
 
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
 
 
   //using unisim::service::interfaces::Memory;

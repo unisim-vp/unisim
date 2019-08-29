@@ -1,2 +1,2 @@
 libc/inttypes
-unisim/kernel/service
+unisim/kernel

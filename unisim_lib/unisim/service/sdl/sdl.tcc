@@ -136,7 +136,7 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 #endif
 {
 #if defined(HAVE_SDL)
-	param_refresh_period.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_refresh_period.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 #endif
 	video_export.SetupDependsOn(memory_import);
 	keyboard_export.SetupDependsOn(memory_import);

@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_TRAP_HANDLER_IDENTIFIER_HH__
 #define __UNISIM_SERVICE_TRAP_HANDLER_IDENTIFIER_HH__
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
 #include "unisim/service/trap_handler/trap_handler_identifier_interface.hh"
@@ -44,9 +44,9 @@ namespace unisim {
 namespace service {
 namespace trap_handler {
 
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Object;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::Object;
 using unisim::service::interfaces::TrapReporting;
 
 class TrapHandlerIdentifier
@@ -68,10 +68,10 @@ private:
 	TrapHandlerIdentifierInterface *intf;
 
 	virtual void ReportTrap();
-	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
-	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+	virtual void ReportTrap(const unisim::kernel::Object &obj);
+	virtual void ReportTrap(const unisim::kernel::Object &obj,
 			const std::string &str);
-	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+	virtual void ReportTrap(const unisim::kernel::Object &obj,
 			const char *c_str);
 	// the kernel logger
 	unisim::kernel::logger::Logger logger;

@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_PCICONTROLLER_HH__
 #define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_PCICONTROLLER_HH__
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/cxx/chipset/mpc107/config_regs.hh"
 #include "unisim/component/cxx/chipset/mpc107/address_maps.hh"
@@ -53,8 +53,8 @@ using unisim::component::cxx::pci::TransactionType;
 using unisim::component::cxx::pci::PCISpace;
 using unisim::util::endian::Host2LittleEndian;
 using unisim::util::endian::LittleEndian2Host;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
 
 template <class SYSTEM_BUS_PHYSICAL_ADDR,
 		uint32_t SYSTEM_MAX_TRANSACTION_DATA_SIZE,

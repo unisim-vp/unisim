@@ -37,7 +37,7 @@
 #include <system.hh>
 #include <string>
 #include <ostream>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <vector>
 #include "fatformat.hh"
 #include <iostream>
@@ -48,7 +48,7 @@
 #include "event.tcc"
 
 
-using unisim::kernel::service::ServiceManager;
+using unisim::kernel::ServiceManager;
 using std::string;
 using std::endl;
 using std::hex;
