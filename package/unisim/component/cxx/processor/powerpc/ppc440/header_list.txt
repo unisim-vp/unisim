@@ -1,2 +1,0 @@
-unisim/component/cxx/processor/powerpc/ppc440/config.hh
-unisim/component/cxx/processor/powerpc/ppc440/cpu.hh

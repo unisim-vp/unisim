@@ -771,9 +771,11 @@ inline void tlm_can_bus::end_of_elaboration()
 		bitstreams[i] = new tlm_input_bitstream();
 		process_spawn_options.set_sensitivity(&bitstreams[i]->event());
 		
+#ifndef NDEBUG
 		sc_core::sc_signal<bool> *observable_input_signal = observable_input_signals[i];
 		
 		assert(observable_input_signal);
+#endif
 		
 		observable_input_signal_bitstream[i] = new tlm_input_bitstream();
 		

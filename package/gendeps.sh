@@ -27,7 +27,7 @@ function discover_file_deps
 	
 	local FILEPATH="${DIRPATH}/${FILENAME}"
 	
-	if [ "${INCLUDE_UNTRACKED_FILES}" = "yes" ] || git ls-files --error-unmatch "${UNISIM_LIB_DIR}/${BASE}/${FILENAME}" &> /dev/null; then
+	if [ "${INCLUDE_UNTRACKED_FILES}" = "yes" ] || git ls-files --error-unmatch "${DIRPATH}/${FILENAME}" &> /dev/null; then
 		mkdir -p "${PACKAGE_DIR}/${BASE}"
 		local cc_regex='\.cc$|\.cpp$'
 		local hh_regex='\.hh$|\.h$\.hpp$'
@@ -39,7 +39,7 @@ function discover_file_deps
 		
 		if [[ "${FILEPATH}" =~ ${cc_regex} ]] || [[ "${FILEPATH}" =~ ${hh_regex} ]] || [[ "${FILEPATH}" =~ ${tcc_regex} ]] || [[ "${FILEPATH}" =~ ${isa_regex} ]]; then
 			local INCLUDE_DEP
-			for INCLUDE_DEP in $(grep -e '^# *include' "${FILEPATH}" | grep "unisim/" | sed -e 's/^# *include *"//g' -e 's/^# *include *<//g' -e 's/".*$//g' -e 's/>.*$//g'); do
+			for INCLUDE_DEP in $(grep -E '^#[[:blank:]]*include[[:blank:]]*[<"]unisim/' "${FILEPATH}" | sed -e 's/^#[[:blank:]]*include[[:blank:]]*"//g' -e 's/^#[[:blank:]]*include[[:blank:]]*<//g' -e 's/".*$//g' -e 's/>.*$//g'); do
 				local PKG_DEP
 				if [[ "${INCLUDE_DEP}" =~ ${interfaces_regex} ]]; then
 					PKG_DEP=$(echo "${INCLUDE_DEP}" | sed -e 's/\.hh$//')
@@ -51,188 +51,188 @@ function discover_file_deps
 					echo "${PKG_DEP}" >> "${PKG_DEPS_TXT}"
 				fi
 			done
-			if grep -e '^# *include *<systemc>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<systemc>' "${FILEPATH}"; then
 				echo "m4/systemc" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<sys/socket\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<sys/socket\.h>' "${FILEPATH}"; then
 				echo "m4/bsd_sockets" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<sys/times\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<sys/times\.h>' "${FILEPATH}"; then
 				echo "m4/times" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<cxxabi\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<cxxabi\.h>' "${FILEPATH}"; then
 				echo "m4/cxxabi" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<libxml/.*\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<libxml/.*\.h>' "${FILEPATH}"; then
 				echo "m4/libxml2" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<dlfcn\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<dlfcn\.h>' "${FILEPATH}"; then
 				echo "m4/get_exec_path" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<tvs/.*\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<tvs/.*\.h>' "${FILEPATH}"; then
 				echo "m4/tvs" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<editline/.*\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<editline/.*\.h>' "${FILEPATH}"; then
 				echo "m4/libedit" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<pthread.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<pthread\.h>' "${FILEPATH}"; then
 				echo "m4/pthread" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<boost/.*\.hpp>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<boost/.*\.hpp>' "${FILEPATH}"; then
 				echo "m4/boost" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<cacti.*\.hh>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<cacti.*\.hh>' "${FILEPATH}"; then
 				echo "m4/cacti" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<SDL\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<SDL\.h>' "${FILEPATH}"; then
 				echo "m4/sdl" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<artimon\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<artimon\.h>' "${FILEPATH}"; then
 				echo "m4/artimon" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<artimon\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<artimon\.h>' "${FILEPATH}"; then
 				echo "m4/artimon" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<lua\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<lua\.h>' "${FILEPATH}"; then
 				echo "m4/lua" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<assert\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<assert\.h>' "${FILEPATH}"; then
 				echo "libc/assert" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<ctype\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<ctype\.h>' "${FILEPATH}"; then
 				echo "libc/ctype" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<errno\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<errno\.h>' "${FILEPATH}"; then
 				echo "libc/errno" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<fcntl\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<fcntl\.h>' "${FILEPATH}"; then
 				echo "libc/fcntl" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<fenv\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<fenv\.h>' "${FILEPATH}"; then
 				echo "libc/fenv" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<float\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<float\.h>' "${FILEPATH}"; then
 				echo "libc/float" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<getopt\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<getopt\.h>' "${FILEPATH}"; then
 				echo "libc/getopt" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<inttypes\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<inttypes\.h>' "${FILEPATH}"; then
 				echo "libc/inttypes" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<limits\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<limits\.h>' "${FILEPATH}"; then
 				echo "libc/limits" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<math\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<math\.h>' "${FILEPATH}"; then
 				echo "libc/math" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<signal\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<signal\.h>' "${FILEPATH}"; then
 				echo "libc/signal" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<stdarg\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<stdarg\.h>' "${FILEPATH}"; then
 				echo "libc/stdarg" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<stdio\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<stdio\.h>' "${FILEPATH}"; then
 				echo "libc/stdio" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<stdlib\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<stdlib\.h>' "${FILEPATH}"; then
 				echo "libc/stdlib" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<string\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<string\.h>' "${FILEPATH}"; then
 				echo "libc/string" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<sys/types\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<sys/types\.h>' "${FILEPATH}"; then
 				echo "sys/types" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<unistd\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<unistd\.h>' "${FILEPATH}"; then
 				echo "libc/unistd" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<stdint\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<stdint\.h>' "${FILEPATH}"; then
 				echo "libc/stdint" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<time\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<time\.h>' "${FILEPATH}"; then
 				echo "libc/time" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<dirent\.h>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<dirent\.h>' "${FILEPATH}"; then
 				echo "libc/dirent" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<fstream>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<fstream>' "${FILEPATH}"; then
 				echo "std/fstream" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<cassert>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<cassert>' "${FILEPATH}"; then
 				echo "std/cassert" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<cmath>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<cmath>' "${FILEPATH}"; then
 				echo "std/cmath" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<cerrno>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<cerrno>' "${FILEPATH}"; then
 				echo "std/cerrno" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<cstddef>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<cstddef>' "${FILEPATH}"; then
 				echo "std/cstddef" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<cstdio>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<cstdio>' "${FILEPATH}"; then
 				echo "std/cstdio" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<cstdlib>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<cstdlib>' "${FILEPATH}"; then
 				echo "std/cstdlib" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<cstring>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<cstring>' "${FILEPATH}"; then
 				echo "std/cstring" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<iomanip>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<iomanip>' "${FILEPATH}"; then
 				echo "std/iomanip" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<stdexcept>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<stdexcept>' "${FILEPATH}"; then
 				echo "std/stdexcept" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<deque>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<deque>' "${FILEPATH}"; then
 				echo "std/deque" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<list>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<list>' "${FILEPATH}"; then
 				echo "std/list" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<sstream>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<sstream>' "${FILEPATH}"; then
 				echo "std/sstream" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<iosfwd>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<iosfwd>' "${FILEPATH}"; then
 				echo "std/iosfwd" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<iostream>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<iostream>' "${FILEPATH}"; then
 				echo "std/iostream" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<stack>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<stack>' "${FILEPATH}"; then
 				echo "std/stack" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<map>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<map>' "${FILEPATH}"; then
 				echo "std/map" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<ostream>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<ostream>' "${FILEPATH}"; then
 				echo "std/ostream" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<queue>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<queue>' "${FILEPATH}"; then
 				echo "std/queue" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<vector>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<vector>' "${FILEPATH}"; then
 				echo "std/vector" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<string>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<string>' "${FILEPATH}"; then
 				echo "std/string" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<set>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<set>' "${FILEPATH}"; then
 				echo "std/set" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<algorithm>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<algorithm>' "${FILEPATH}"; then
 				echo "std/algorithm" >> "${PKG_DEPS_TXT}"
 			fi
-			if grep -e '^# *include *<cctype>' "${FILEPATH}" &> /dev/null; then
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<cctype>' "${FILEPATH}"; then
 				echo "std/cctype" >> "${PKG_DEPS_TXT}"
 			fi
 		fi
 		
 		if [[ "${FILEPATH}" =~ ${isa_regex} ]]; then
 			local INCLUDE_DEP
-			for INCLUDE_DEP in $(grep -e '^ *include' "${FILEPATH}" | grep "unisim/" | sed -e 's/^ *include *"//g' -e 's/".*$//g'); do
+			for INCLUDE_DEP in $(grep -E '^[[:blank:]]*include[[:blank:]]*"unisim/' "${FILEPATH}" | sed -e 's/^[[:blank:]]*include[[:blank:]]*"//g' -e 's/".*$//g'); do
 				local PKG_DEP
 				if [[ "${INCLUDE_DEP}" =~ ${interfaces_regex} ]]; then
 					PKG_DEP=$(echo "${INCLUDE_DEP}" | sed -e 's/\.hh$//')
@@ -263,6 +263,7 @@ function list_files
 	
 	if [ ${#FILENAME_LIST[@]} -ne 0 ]; then
 		printf "" > "${PACKAGE_DIR}/${BASE}/${LIST_NAME}_list.txt"
+		local FILENAME
 		for FILENAME in "${FILENAME_LIST[@]}"; do
 			if [ "${INCLUDE_UNTRACKED_FILES}" = "yes" ] || git ls-files --error-unmatch "${UNISIM_LIB_DIR}/${BASE}/${FILENAME}" &> /dev/null; then
 				echo "${BASE}/${FILENAME}" >> "${PACKAGE_DIR}/${BASE}/${LIST_NAME}_list.txt"
@@ -294,7 +295,8 @@ function discover_interfaces_file_deps()
 			local PKG_NAME=$(echo "${HEADER_FILENAME}" | sed -e 's/\.hh$//')
 			local PKG_DEPS_TXT="${PACKAGE_DIR}/unisim/service/interfaces/${PKG_NAME}/pkg_deps.txt"
 			printf "" > "${PKG_DEPS_TXT}"
-			for INCLUDE_DEP in $(grep -e '^# *include' "${HEADER_FILENAME}" | grep "unisim/" | sed -e 's/^# *include *"//g' -e 's/^# *include *<//g' -e 's/".*$//g' -e 's/>.*$//g'); do
+			local INCLUDE_DEP
+			for INCLUDE_DEP in $(grep -E '^#[[:blank:]]*include' "${HEADER_FILENAME}" | grep "unisim/" | sed -e 's/^#[[:blank:]]*include[[:blank:]]*"//g' -e 's/^#[[:blank:]]*include[[:blank:]]*<//g' -e 's/".*$//g' -e 's/>.*$//g'); do
 				local PKG_DEP
 				if [[ "${INCLUDE_DEP}" =~ ${interfaces_regex} ]]; then
 					PKG_DEP=$(echo "${INCLUDE_DEP}" | sed -e 's/\.hh$//')
@@ -348,23 +350,24 @@ function crawl_directory
 
 		local FILENAME
 		for FILENAME in *; do
-			FILEPATH="${DIRPATH}/${FILENAME}"
+			local FILEPATH="${DIRPATH}/${FILENAME}"
 			if [ -d "${FILEPATH}" ]; then
 				if [ "${FILENAME}" = "attic" ]; then
 					continue
-                                fi
-				TRACKED_FILES_COUNT=$(git ls-files "${FILENAME}" | wc -l)
+				fi
 				if [ "${INCLUDE_UNTRACKED_FILES}" = "yes" ] || git ls-files --error-unmatch "${FILENAME}" &> /dev/null; then
 					if [ -z "${BASE}" ]; then
-						crawl_directory "${FILENAME}"
+						crawl_directory "${FILENAME}" &
 					else
-						crawl_directory "${BASE}/${FILENAME}"
+						crawl_directory "${BASE}/${FILENAME}" &
 					fi
 				fi
 			elif [ -f "${FILEPATH}" ]; then
 				discover_file_deps "${BASE}" "${FILENAME}"
 			fi
 		done
+		
+		wait
 	fi
 	cd "${SAVE_PWD}"
 }
