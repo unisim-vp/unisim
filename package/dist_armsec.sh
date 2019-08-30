@@ -6,11 +6,7 @@ source "$(dirname $0)/dist_common.sh"
 
 import_genisslib
 
-import unisim/component/cxx/processor/arm || exit
-import unisim/component/cxx/processor/arm/isa || exit
-import unisim/component/cxx/processor/arm/isa/arm32 || exit
-import unisim/component/cxx/processor/arm/isa/thumb || exit
-import unisim/component/cxx/processor/arm/isa/thumb2 || exit
+import dist_armsec || exit
 import unisim/util/symbolic/binsec || exit
 import unisim/util/symbolic || exit
 import unisim/util/arithmetic || exit
@@ -29,12 +25,12 @@ import std/sstream || exit
 import std/string || exit
 import std/vector || exit
 
-copy source isa_thumb isa_thumb2 isa_arm32 header template data
+copy isa_thumb isa_arm32 source header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
 
-UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES="$(files isa_thumb) $(files isa_thumb2)"
+UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES="$(files isa_thumb)"
 
 UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES="$(files isa_arm32)"
 
@@ -54,9 +50,6 @@ top_thumb.isa \
 UNISIM_SIMULATOR_ISA_ARM32_FILES="\
 top_arm32.isa \
 "
-
-UNISIM_SIMULATOR_ISA_ARM32_FILES="${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES} ${UNISIM_SIMULATOR_ISA_ARM32_FILES}"
-UNISIM_SIMULATOR_ISA_THUMB_FILES="${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES} ${UNISIM_SIMULATOR_ISA_THUMB_FILES}"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
@@ -186,7 +179,6 @@ AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([subdir-objects tar-pax])
 AC_PATH_PROGS(SH, sh)
-CXXFLAGS="\$CXXFLAGS -std=c++11"
 AC_PROG_CXX
 AC_PROG_INSTALL
 LT_INIT
@@ -249,11 +241,11 @@ CLEANFILES=\
 	\$(top_builddir)/top_thumb.tcc\
 
 \$(top_builddir)/top_arm32.tcc: \$(top_builddir)/top_arm32.hh
-\$(top_builddir)/top_arm32.hh: ${UNISIM_SIMULATOR_ISA_ARM32_FILES}
+\$(top_builddir)/top_arm32.hh: ${UNISIM_SIMULATOR_ISA_ARM32_FILES} ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES}
 	\$(GENISSLIB_PATH) -o \$(top_builddir)/top_arm32 -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_arm32.isa
 
 \$(top_builddir)/top_thumb.tcc: \$(top_builddir)/top_thumb.hh
-\$(top_builddir)/top_thumb.hh: ${UNISIM_SIMULATOR_ISA_THUMB_FILES}
+\$(top_builddir)/top_thumb.hh: ${UNISIM_SIMULATOR_ISA_THUMB_FILES} ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES}
 	\$(GENISSLIB_PATH) -o \$(top_builddir)/top_thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_thumb.isa
 	 
 EOF

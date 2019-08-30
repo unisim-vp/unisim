@@ -45,6 +45,9 @@ UNISIM_SIMULATOR_DATA_FILES="\
 COPYING \
 NEWS \
 ChangeLog \
+AUTHORS \
+README \
+INSTALL \
 "
 
 UNISIM_LIB_SIMULATOR_FILES="\
@@ -67,45 +70,6 @@ for file in ${UNISIM_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
 
-# Top level
-
-cat << EOF > "${DEST_DIR}/AUTHORS"
-Yves Lhuillier <yves.lhuillier@cea.fr>
-EOF
-
-cat << EOF > "${DEST_DIR}/README"
-This package contains:
-  - intelemu: an INTEL user level simulator
-
-See INSTALL for installation instructions.
-EOF
-
-cat << EOF > "${DEST_DIR}/INSTALL"
-INSTALLATION
-------------
-
-Requirements:
-  - GNU C++ compiler
-  - GNU C++ standard library
-  - GNU bash
-  - GNU make
-  - GNU autoconf
-  - GNU automake
-  - GNU flex
-  - GNU bison
-  - boost (http://www.boost.org) development package (libboost-devel for Redhat/Mandriva, libboost-graph-dev for Debian/Ubuntu)
-  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
-  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
-  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-
-Building instructions:
-  $ ./configure 
-  $ make
-
-Installing (optional):
-  $ make install
-EOF
-
 # Simulator
 
 output_simulator_configure_ac <(cat <<EOF
@@ -118,7 +82,6 @@ AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([subdir-objects tar-pax])
 AC_PATH_PROGS(SH, sh)
-CXXFLAGS="\$CXXFLAGS -std=c++11"
 AC_PROG_CXX
 AC_PROG_INSTALL
 LT_INIT
