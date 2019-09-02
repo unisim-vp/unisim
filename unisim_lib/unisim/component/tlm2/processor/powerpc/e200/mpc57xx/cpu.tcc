@@ -58,14 +58,6 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_OK_RESPONSE;
-using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_INCOMPLETE_RESPONSE;
-using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_GENERIC_ERROR_RESPONSE;
-using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_ADDRESS_ERROR_RESPONSE;
-using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_COMMAND_ERROR_RESPONSE;
-using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_BURST_ERROR_RESPONSE;
-using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BUS_BYTE_ENABLE_ERROR_RESPONSE;
-
 template <typename TYPES, typename CONFIG>
 CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent, "this module implements a e200 CPU core of MPC57XX SoC")
@@ -862,7 +854,7 @@ bool CPU<TYPES, CONFIG>::DataBusWrite(PHYSICAL_ADDRESS physical_addr, const void
 					const sc_core::sc_time& write_lat = dmi_region->GetWriteLatency(size);
 					qk.inc(write_lat);
 					run_time = qk.get_current_time();
-					return BUS_OK_RESPONSE;
+					return true;
 				}
 				else
 				{
@@ -952,7 +944,7 @@ bool CPU<TYPES, CONFIG>::DataBusWrite(PHYSICAL_ADDRESS physical_addr, const void
 		return false;
 	}
 	
-	return BUS_OK_RESPONSE;
+	return true;
 }
 
 } // end of namespace mpc57xx

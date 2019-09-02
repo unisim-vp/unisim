@@ -56,14 +56,6 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-using unisim::component::cxx::processor::powerpc::book_e::BUS_OK_RESPONSE;
-using unisim::component::cxx::processor::powerpc::book_e::BUS_INCOMPLETE_RESPONSE;
-using unisim::component::cxx::processor::powerpc::book_e::BUS_GENERIC_ERROR_RESPONSE;
-using unisim::component::cxx::processor::powerpc::book_e::BUS_ADDRESS_ERROR_RESPONSE;
-using unisim::component::cxx::processor::powerpc::book_e::BUS_COMMAND_ERROR_RESPONSE;
-using unisim::component::cxx::processor::powerpc::book_e::BUS_BURST_ERROR_RESPONSE;
-using unisim::component::cxx::processor::powerpc::book_e::BUS_BYTE_ENABLE_ERROR_RESPONSE;
-
 template <typename TYPES, typename CONFIG>
 CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
 	: unisim::kernel::Object(name, parent, "PPC440 PowerPC core")

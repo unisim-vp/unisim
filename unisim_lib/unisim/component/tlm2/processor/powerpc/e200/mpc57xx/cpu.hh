@@ -61,8 +61,6 @@ using unisim::kernel::variable::Statistic;
 using unisim::kernel::variable::Formula;
 using unisim::kernel::logger::Logger;
 
-using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BusResponseStatus;
-
 template <typename TYPES, typename CONFIG>
 class CPU
 	: public sc_core::sc_module

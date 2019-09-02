@@ -62,8 +62,6 @@ using unisim::kernel::logger::Logger;
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
 using unisim::component::tlm2::interrupt::InterruptPayload;
 
-using unisim::component::cxx::processor::powerpc::book_e::BusResponseStatus;
-
 template <typename TYPES, typename CONFIG>
 class CPU
 	: public sc_core::sc_module

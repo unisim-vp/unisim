@@ -48,17 +48,6 @@ namespace processor {
 namespace powerpc {
 namespace book_e {
 
-enum BusResponseStatus
-{
-	BUS_OK_RESPONSE = 1,
-	BUS_INCOMPLETE_RESPONSE = 0,
-	BUS_GENERIC_ERROR_RESPONSE = -1,
-	BUS_ADDRESS_ERROR_RESPONSE = -2,
-	BUS_COMMAND_ERROR_RESPONSE = -3,
-	BUS_BURST_ERROR_RESPONSE = -4,
-	BUS_BYTE_ENABLE_ERROR_RESPONSE = -5
-};
-
 template <typename TYPES, typename CONFIG>
 class CPU
 	: public unisim::component::cxx::processor::powerpc::CPU<TYPES, CONFIG>
