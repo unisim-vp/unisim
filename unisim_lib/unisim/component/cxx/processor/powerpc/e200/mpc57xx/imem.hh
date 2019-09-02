@@ -48,7 +48,7 @@ namespace mpc57xx {
 
 template <typename TYPES, typename CONFIG>
 struct IMEM
-	: unisim::kernel::service::Object
+	: unisim::kernel::Object
 	, unisim::util::cache::LocalMemory<TYPES, CONFIG, IMEM<TYPES, CONFIG> >
 {
 	typedef typename unisim::util::cache::LocalMemory<TYPES, CONFIG, IMEM<TYPES, CONFIG> > SuperLocalMemory;
@@ -66,7 +66,7 @@ struct IMEM
 	bool IsVerbose() const ALWAYS_INLINE { return verbose; }
 
 	IMEM(CPU *_cpu)
-		: unisim::kernel::service::Object("IMEM", _cpu, "Instruction local memory")
+		: unisim::kernel::Object("IMEM", _cpu, "Instruction local memory")
 		, cpu(_cpu)
 		, imemcfg0(_cpu, this)
 		, imemctl0(_cpu, this)
@@ -83,7 +83,7 @@ struct IMEM
 	{
 		param_base_addr.SetMutable(false);
 		param_size.SetMutable(false);
-		param_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+		param_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 		
 		std::stringstream param_size_description_sstr;
 		param_size_description_sstr << "size in bytes (at most " << CONFIG::SIZE << " bytes)";
@@ -158,14 +158,14 @@ private:
 	IMEMCTL1 imemctl1;
 
 	PHYSICAL_ADDRESS base_addr;
-	unisim::kernel::service::Parameter<PHYSICAL_ADDRESS> param_base_addr;
+	unisim::kernel::variable::Parameter<PHYSICAL_ADDRESS> param_base_addr;
 	PHYSICAL_ADDRESS cur_base_addr;
 	unsigned int size;
-	unisim::kernel::service::Parameter<unsigned int> param_size;
+	unisim::kernel::variable::Parameter<unsigned int> param_size;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_load_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_store_accesses;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_load_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_store_accesses;
 };
 
 

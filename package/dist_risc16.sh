@@ -5,7 +5,7 @@ source "$(dirname $0)/dist_common.sh"
 
 import_genisslib
 
-import unisim/kernel/service || exit
+import unisim/kernel || exit
 import unisim/util/debug || exit
 import unisim/util/blob || exit
 import unisim/util/loader/elf_loader || exit

@@ -35,7 +35,8 @@
 #ifndef __UNISIM_COMPONENT_TLM2_INTERRUPT_FREESCALE_MPC57XX_INTC_INTC_HH__
 #define __UNISIM_COMPONENT_TLM2_INTERRUPT_FREESCALE_MPC57XX_INTC_INTC_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/endian/endian.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/tlm2/clock.hh>
@@ -100,7 +101,7 @@ template <typename CONFIG>
 class INTC
 	: public sc_core::sc_module
 	, public tlm::tlm_fw_transport_if<>
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Registers>
 {
 public:
 	static const unsigned int TLM2_IP_VERSION_MAJOR                         = 1;
@@ -137,9 +138,9 @@ public:
 	sc_core::sc_out<sc_dt::sc_uint<VOFFSET_WIDTH> > *p_voffset[NUM_PROCESSORS]; // vector offset
 	
 	// services
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
 
-	INTC(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
+	INTC(const sc_core::sc_module_name& name, unisim::kernel::Object *parent);
 	virtual ~INTC();
 	
 	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
@@ -851,9 +852,9 @@ private:
 	bool irq_b[NUM_PROCESSORS];                             // IRQ output status to output for each processor
 	
 	unisim::util::endian::endian_type endian;
-	unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endian;
+	unisim::kernel::variable::Parameter<unisim::util::endian::endian_type> param_endian;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 	
 	sc_core::sc_time cycle_time;                               // cycle time
 	sc_core::sc_time hw_irq_source_to_processor_irq_latency;   // latency between hardware IRQ source to processor IRQ

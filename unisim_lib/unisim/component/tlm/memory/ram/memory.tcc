@@ -64,7 +64,7 @@ Memory(const sc_module_name& name, Object *parent)
 	, cycle_sctime()
 	, param_cycle_time("cycle-time", this, cycle_sctime, "RAM memory cycle time")
 {
-	param_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_cycle_time.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	slave_port(*this);
 }
 

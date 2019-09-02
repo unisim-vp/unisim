@@ -32,18 +32,19 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
+#include <unisim/kernel/variable/variable.hh>
 #include "unisim/component/tlm2/interconnect/generic_router/mapping.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 
 namespace unisim {
 namespace kernel {
-namespace service {
+namespace variable {
 
-using unisim::kernel::service::Variable;
+using unisim::kernel::variable::Variable;
 
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::Variable(const char *_name, Object *_object, unisim::component::tlm2::interconnect::generic_router::Mapping &_storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage) {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 }
 
 template <>
@@ -175,8 +176,8 @@ template <> VariableBase::DataType Variable<unisim::component::tlm2::interconnec
 
 template class Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>;
 
-} // end of namespace unisim
+} // end of namespace variable
 } // end of namespace kernel
-} // namespace service
+} // end of namespace unisim
 
 

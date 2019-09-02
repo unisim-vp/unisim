@@ -53,7 +53,8 @@
 #include <unisim/service/pim/network/SocketServerThread.hpp>
 #include <unisim/service/pim/pim_thread.hh>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 
 #include <unisim/util/debug/breakpoint_registry.hh>
@@ -97,17 +98,17 @@ using unisim::util::debug::WatchpointRegistry;
 using unisim::util::debug::Watchpoint;
 using unisim::util::debug::Symbol;
 
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Simulator;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::Variable;
-using unisim::kernel::service::VariableBaseListener;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::Object;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::Simulator;
+using unisim::kernel::VariableBase;
+using unisim::kernel::variable::Variable;
+using unisim::kernel::VariableBaseListener;
 
 using unisim::service::pim::network::SocketThread;
 using unisim::service::pim::network::GenericThread;
@@ -157,10 +158,10 @@ public:
 	
 	virtual void DebugYield();
 	virtual void ReportTrap();
-	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
-	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+	virtual void ReportTrap(const unisim::kernel::Object &obj);
+	virtual void ReportTrap(const unisim::kernel::Object &obj,
 							const std::string &str);
-	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
+	virtual void ReportTrap(const unisim::kernel::Object &obj,
 							const char *c_str);
 
 	// DebugEventListener

@@ -36,7 +36,8 @@
 #define __UNISIM_SERVICE_TELNET_TELNET_HH__
 
 #include <unisim/service/interfaces/char_io.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <inttypes.h>
 #include <string>
@@ -46,13 +47,13 @@ namespace unisim {
 namespace service {
 namespace telnet {
 
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ParameterArray;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::ParameterArray;
 using unisim::service::interfaces::CharIO;
 	
 class Telnet : public Service<CharIO>

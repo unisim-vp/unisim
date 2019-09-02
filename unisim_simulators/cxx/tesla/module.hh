@@ -42,13 +42,13 @@
 #include <vector>
 #include <list>
 #include <map>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/component/cxx/processor/tesla/interfaces.hh>
 
 #include "kernel.hh"
 
-using unisim::kernel::service::Service;
+using unisim::kernel::Service;
 using unisim::service::interfaces::Memory;
 using unisim::component::cxx::processor::tesla::SamplerBase;
 using unisim::component::cxx::processor::tesla::ArrayFormat;

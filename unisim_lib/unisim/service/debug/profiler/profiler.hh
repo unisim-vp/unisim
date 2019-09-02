@@ -59,7 +59,8 @@
 #include <unisim/util/loader/elf_loader/elf64_loader.hh>
 #include <unisim/util/ieee754/ieee754.hh>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/variable/variable.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 
 #include <systemc>
@@ -278,7 +279,7 @@ template <typename T>
 class Sample
 {
 public:
-	Sample(unisim::kernel::service::Variable<T> *_var)
+	Sample(unisim::kernel::variable::Variable<T> *_var)
 		: var(_var)
 		, prev_value()
 		, curr_value()
@@ -290,10 +291,10 @@ public:
 	void Capture();
 	void Print(std::ostream& os) const { os << diff_value; }
 	const char *GetSampledVariableName() const { return var->GetName(); }
-	unisim::kernel::service::Variable<T> *GetSampledVariable() const { return var; }
+	unisim::kernel::variable::Variable<T> *GetSampledVariable() const { return var; }
 	
 private:
-	unisim::kernel::service::Variable<T> *var;
+	unisim::kernel::variable::Variable<T> *var;
 	T prev_value;
 	T curr_value;
 	T diff_value;
@@ -411,7 +412,7 @@ public:
 	virtual ~AddressProfileBase() {}
 	virtual void Capture(ADDRESS addr, unsigned int length) = 0;
 	virtual const char *GetSampledVariableName() const = 0;
-	virtual unisim::kernel::service::VariableBase *GetSampledVariable() const = 0;
+	virtual unisim::kernel::VariableBase *GetSampledVariable() const = 0;
 	virtual std::string GetCumulativeValueAsString() const = 0;
 	virtual InstructionProfileBase *CreateInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const = 0;
 	virtual FunctionInstructionProfileBase *CreateFunctionInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const = 0;
@@ -427,12 +428,12 @@ class AddressProfile : public AddressProfileBase<ADDRESS>, public unisim::util::
 public:
 	typedef unisim::util::debug::Profile<ADDRESS, T> Super;
 	
-	AddressProfile(unisim::kernel::service::Variable<T> *stat, unisim::service::interfaces::Disassembly<ADDRESS> *disasm_if, unisim::service::interfaces::StatementLookup<ADDRESS> *stmt_lookup_if, unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if, std::ostream& warn_log);
+	AddressProfile(unisim::kernel::variable::Variable<T> *stat, unisim::service::interfaces::Disassembly<ADDRESS> *disasm_if, unisim::service::interfaces::StatementLookup<ADDRESS> *stmt_lookup_if, unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if, std::ostream& warn_log);
 	virtual ~AddressProfile();
 	
 	virtual void Capture(ADDRESS addr, unsigned int length);
 	virtual const char *GetSampledVariableName() const { return sample.GetSampledVariableName(); }
-	virtual unisim::kernel::service::VariableBase *GetSampledVariable() const { return sample.GetSampledVariable(); }
+	virtual unisim::kernel::VariableBase *GetSampledVariable() const { return sample.GetSampledVariable(); }
 	virtual std::string GetCumulativeValueAsString() const { return to_string(this->GetWeight()); }
 	const T& GetCumulativeValue() const { return this->GetWeight(); }
 	virtual InstructionProfileBase *CreateInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const;
@@ -741,43 +742,43 @@ private:
 
 template <typename ADDRESS>
 class Profiler
-	: public unisim::kernel::service::Service<unisim::service::interfaces::DebugYielding>
-	, public unisim::kernel::service::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
-	, public unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>
-	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugYieldingRequest>
-	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::Disassembly<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::Memory<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::Registers>
-	, public unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::BackTrace<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::Profiling<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugInfoLoading>
-	, public unisim::kernel::service::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >
+	: public unisim::kernel::Service<unisim::service::interfaces::DebugYielding>
+	, public unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
+	, public unisim::kernel::Service<unisim::service::interfaces::HttpServer>
+	, public unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>
+	, public unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::Disassembly<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::Registers>
+	, public unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::BackTrace<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::Profiling<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>
+	, public unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >
 {
 public:
 	// Exports to debugger
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugYielding>                debug_yielding_export;
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYielding>                debug_yielding_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
 	
 	// Exports to HTTP server
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer>                   http_server_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer>                   http_server_export;
 	
 	// Imports from debugger
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugYieldingRequest>         debug_yielding_request_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >  debug_event_trigger_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> >        disasm_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> >             memory_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers>                    registers_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >  symbol_table_lookup_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::StatementLookup<ADDRESS> >    stmt_lookup_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::BackTrace<ADDRESS> >          backtrace_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Profiling<ADDRESS> >          profiling_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugInfoLoading>             debug_info_loading_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >   data_object_lookup_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::SubProgramLookup<ADDRESS> >   subprogram_lookup_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYieldingRequest>         debug_yielding_request_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >  debug_event_trigger_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> >        disasm_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> >             memory_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>                    registers_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >  symbol_table_lookup_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::StatementLookup<ADDRESS> >    stmt_lookup_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::BackTrace<ADDRESS> >          backtrace_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Profiling<ADDRESS> >          profiling_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugInfoLoading>             debug_info_loading_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >   data_object_lookup_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::SubProgramLookup<ADDRESS> >   subprogram_lookup_import;
 	
 	Profiler(const char *name, Object *parent = 0);
 	virtual ~Profiler();
@@ -799,7 +800,7 @@ public:
 
 private:
 
-	template <typename T> bool TryProfile(unisim::kernel::service::VariableBase *var);
+	template <typename T> bool TryProfile(unisim::kernel::VariableBase *var);
 	
 	unisim::kernel::logger::Logger logger;
 	std::string search_path;
@@ -813,17 +814,17 @@ private:
 	bool enable_html_report;
 	bool enable_csv_report;
 	bool verbose;
-	unisim::kernel::service::Parameter<std::string> param_search_path;
-	unisim::kernel::service::Parameter<std::string> param_filename;
-	unisim::kernel::service::Parameter<std::string> param_sampled_variables;
-	unisim::kernel::service::Parameter<std::string> param_output_directory;
-	unisim::kernel::service::Parameter<std::string> param_csv_delimiter;
-	unisim::kernel::service::Parameter<std::string> param_csv_hyperlink;
-	unisim::kernel::service::Parameter<std::string> param_csv_arg_separator;
-	unisim::kernel::service::Parameter<bool> param_enable_text_report;
-	unisim::kernel::service::Parameter<bool> param_enable_html_report;
-	unisim::kernel::service::Parameter<bool> param_enable_csv_report;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<std::string> param_search_path;
+	unisim::kernel::variable::Parameter<std::string> param_filename;
+	unisim::kernel::variable::Parameter<std::string> param_sampled_variables;
+	unisim::kernel::variable::Parameter<std::string> param_output_directory;
+	unisim::kernel::variable::Parameter<std::string> param_csv_delimiter;
+	unisim::kernel::variable::Parameter<std::string> param_csv_hyperlink;
+	unisim::kernel::variable::Parameter<std::string> param_csv_arg_separator;
+	unisim::kernel::variable::Parameter<bool> param_enable_text_report;
+	unisim::kernel::variable::Parameter<bool> param_enable_html_report;
+	unisim::kernel::variable::Parameter<bool> param_enable_csv_report;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 
 	bool listening_commit;
 	bool trap;

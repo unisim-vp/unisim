@@ -62,9 +62,9 @@ namespace processor {
 namespace arm {
 namespace vmsav7 {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Disassembly;
@@ -109,7 +109,7 @@ struct PlainAccess { static bool const DEBUG = false; static bool const VERBOSE 
  * @param parent the parent object of this object
  */
 CPU::CPU(const char *name, Object *parent)
-  : unisim::kernel::service::Object(name, parent)
+  : unisim::kernel::Object(name, parent)
   , unisim::component::cxx::processor::arm::CPU<ARMv7emu>(name, parent)
   , Service<MemoryAccessReportingControl>(name, parent)
   , Client<unisim::service::interfaces::MemoryAccessReporting<uint32_t> >(name, parent)
@@ -161,16 +161,16 @@ CPU::CPU(const char *name, Object *parent)
   , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
 {
   // Set the right format for various of the variables
-  param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-  stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+  param_trap_on_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+  stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
   
   // Active Variables for specific CPU handling
-  unisim::kernel::service::VariableBase* var = 0;
+  unisim::kernel::VariableBase* var = 0;
   
-  struct ReadPhysicalMemory : public unisim::kernel::service::VariableBase
+  struct ReadPhysicalMemory : public unisim::kernel::VariableBase
   {
     ReadPhysicalMemory( CPU& _cpu )
-      : VariableBase("read-phys-mem", &_cpu, unisim::kernel::service::VariableBase::VAR_PARAMETER, ""), cpu( _cpu )
+      : VariableBase("read-phys-mem", &_cpu, unisim::kernel::VariableBase::VAR_PARAMETER, ""), cpu( _cpu )
     {
       SetVisible(false);
       SetSerializable(false);
@@ -202,10 +202,10 @@ CPU::CPU(const char *name, Object *parent)
   var = new ReadPhysicalMemory( *this );
   variable_register_pool.insert( var );
   
-  struct VirtToPhys : public unisim::kernel::service::VariableBase
+  struct VirtToPhys : public unisim::kernel::VariableBase
   {
     VirtToPhys( CPU& _cpu )
-      : VariableBase("virt2phys", &_cpu, unisim::kernel::service::VariableBase::VAR_PARAMETER, ""), cpu( _cpu )
+      : VariableBase("virt2phys", &_cpu, unisim::kernel::VariableBase::VAR_PARAMETER, ""), cpu( _cpu )
     {
       SetVisible(false);
       SetSerializable(false);

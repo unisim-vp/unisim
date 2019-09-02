@@ -88,7 +88,7 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-using unisim::kernel::service::Statistic;
+using unisim::kernel::variable::Statistic;
 
 using unisim::util::debug::Statement;
 
@@ -99,15 +99,15 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	: Object(_name, _parent, "PIM Server")
 	, Service<DebugYielding>(_name, _parent)
 	, Service<TrapReporting>(_name, _parent)
-	, unisim::kernel::service::Client<Memory<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<Disassembly<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<StatementLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<Registers>(_name, _parent)
+	, unisim::kernel::Client<Memory<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<Disassembly<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<StatementLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<Registers>(_name, _parent)
 	, Service<DebugEventListener<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
 
-	, unisim::kernel::service::Client<Monitor_if<ADDRESS> > (_name, _parent)
+	, unisim::kernel::Client<Monitor_if<ADDRESS> > (_name, _parent)
 
 	, VariableBaseListener()
 
@@ -360,7 +360,7 @@ void PIMServer<ADDRESS>::ReportTrap()
 template <class ADDRESS>
 void
 PIMServer<ADDRESS>::
-ReportTrap(const unisim::kernel::service::Object &obj)
+ReportTrap(const unisim::kernel::Object &obj)
 {
 	ReportTrap();
 }
@@ -368,7 +368,7 @@ ReportTrap(const unisim::kernel::service::Object &obj)
 template <class ADDRESS>
 void
 PIMServer<ADDRESS>::
-ReportTrap(const unisim::kernel::service::Object &obj,
+ReportTrap(const unisim::kernel::Object &obj,
 		   const std::string &str)
 {
 	ReportTrap();
@@ -377,7 +377,7 @@ ReportTrap(const unisim::kernel::service::Object &obj,
 template <class ADDRESS>
 void
 PIMServer<ADDRESS>::
-ReportTrap(const unisim::kernel::service::Object &obj,
+ReportTrap(const unisim::kernel::Object &obj,
 		   const char *c_str)
 {
 	ReportTrap();

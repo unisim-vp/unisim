@@ -69,7 +69,7 @@ using unisim::kernel::logger::EndDebugError;
  */
 template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent)
-  : unisim::kernel::service::Object(name, parent)
+  : unisim::kernel::Object(name, parent)
   , Client<unisim::service::interfaces::DebugYielding>(name, parent)
   , Client<unisim::service::interfaces::TrapReporting>(name, parent)
   , Client<unisim::service::interfaces::SymbolTableLookup<uint64_t> >(name, parent)
@@ -118,8 +118,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 {
   {
     unisim::service::interfaces::Register* dbg_reg = 0;
-    unisim::kernel::service::VariableBase* var_reg = 0;
-    //unisim::kernel::service::Register<uint64_t>* var_reg = 0;
+    unisim::kernel::VariableBase* var_reg = 0;
+    //unisim::kernel::variable::Register<uint64_t>* var_reg = 0;
     
     // initialize the registers debugging interface for the 32 general purpose registers
     for (unsigned idx = 0; idx < 32; idx++)
@@ -134,7 +134,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
           registers_registry[name] = dbg_reg;
           description =  description + ", " + name;
         }
-        var_reg = new unisim::kernel::service::Register<uint64_t>( pretty_name.c_str(), this, gpr[idx], description.c_str() );
+        var_reg = new unisim::kernel::variable::Register<uint64_t>( pretty_name.c_str(), this, gpr[idx], description.c_str() );
         variable_register_pool.insert( var_reg );
       }
 
@@ -152,12 +152,12 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 
     dbg_reg = new ProgramCounterRegister( *this );
     registers_registry["pc"] = dbg_reg;
-    var_reg = new unisim::kernel::service::Register<uint64_t>( "pc", this, this->next_insn_addr, "Program Counter (Current Instruction Address)" );
+    var_reg = new unisim::kernel::variable::Register<uint64_t>( "pc", this, this->next_insn_addr, "Program Counter (Current Instruction Address)" );
     variable_register_pool.insert( var_reg );
     
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "nzcv", &this->nzcv );
     registers_registry["nzcv"] = dbg_reg;
-    var_reg = new unisim::kernel::service::Register<uint32_t>( "nzcv", this, this->nzcv, "PSTATE.{N,Z,C,V}" );
+    var_reg = new unisim::kernel::variable::Register<uint32_t>( "nzcv", this, this->nzcv, "PSTATE.{N,Z,C,V}" );
     variable_register_pool.insert( var_reg );
   }  
 }

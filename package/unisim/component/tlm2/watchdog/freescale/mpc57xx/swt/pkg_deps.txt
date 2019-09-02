@@ -1,7 +1,8 @@
 std/stack
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
 unisim/kernel/tlm2
+unisim/kernel/variable/endian
 unisim/util/debug
 unisim/util/likely
 unisim/util/reg/core

@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_FLOATING_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_FLOATING_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/simfloat/integer.hh>
 #include <unisim/util/simfloat/integer.tcc>
@@ -696,10 +696,10 @@ private:
 	SoftDouble *value;
 };
 
-class FloatingPointRegisterView : public unisim::kernel::service::VariableBase
+class FloatingPointRegisterView : public unisim::kernel::VariableBase
 {
 public:
-	FloatingPointRegisterView(const char *name, unisim::kernel::service::Object *owner, SoftDouble& storage, const char *description);
+	FloatingPointRegisterView(const char *name, unisim::kernel::Object *owner, SoftDouble& storage, const char *description);
 	virtual ~FloatingPointRegisterView();
 	virtual const char *GetDataTypeName() const;
 	virtual operator bool () const;
@@ -707,11 +707,11 @@ public:
 	virtual operator unsigned long long () const;
 	virtual operator double () const;
 	virtual operator std::string () const;
-	virtual unisim::kernel::service::VariableBase& operator = (bool value);
-	virtual unisim::kernel::service::VariableBase& operator = (long long value);
-	virtual unisim::kernel::service::VariableBase& operator = (unsigned long long value);
-	virtual unisim::kernel::service::VariableBase& operator = (double value);
-	virtual unisim::kernel::service::VariableBase& operator = (const char * value);
+	virtual unisim::kernel::VariableBase& operator = (bool value);
+	virtual unisim::kernel::VariableBase& operator = (long long value);
+	virtual unisim::kernel::VariableBase& operator = (unsigned long long value);
+	virtual unisim::kernel::VariableBase& operator = (double value);
+	virtual unisim::kernel::VariableBase& operator = (const char * value);
 private:
 	SoftDouble& storage;
 };

@@ -32,18 +32,19 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/component/tlm2/interconnect/freescale/mpc57xx/pbridge/pbridge.hh>
 
 namespace unisim {
 namespace kernel {
-namespace service {
+namespace variable {
 
 template <>
 Variable<unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping>::Variable(const char *_name, Object *_object, unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping &_storage, Type type, const char *_description)
 	: VariableBase(_name, _object, type, _description)
 	, storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 }
 
 template <> unsigned int Variable<unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping>::GetBitSize() const { return 0; }
@@ -114,6 +115,6 @@ template <> VariableBase::DataType Variable<unisim::component::tlm2::interconnec
 template class Variable<unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping>;
 
 
-} // end of namespace service
+} // end of namespace variable
 } // end of namespace kernel
 } // end of namespace unisim

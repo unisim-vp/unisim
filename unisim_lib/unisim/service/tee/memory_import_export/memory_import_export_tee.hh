@@ -35,7 +35,7 @@
 #include <inttypes.h>
 
 #include "unisim/service/interfaces/memory.hh"
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 
 namespace unisim {
@@ -46,11 +46,11 @@ namespace memory_import_export {
 
 using unisim::service::interfaces::Memory;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
 
 template <class service_address_t, unsigned int width = 16 >
 class MemoryImportExportTee :

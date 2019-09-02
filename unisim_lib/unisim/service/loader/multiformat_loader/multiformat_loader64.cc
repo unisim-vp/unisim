@@ -50,14 +50,14 @@ template class MultiFormatLoader<uint64_t>;
 
 namespace unisim {
 namespace kernel {
-namespace service {
+namespace variable {
 
 typedef unisim::service::loader::multiformat_loader::AddressRange<uint64_t> AddressRange64;
 	
 template <> Variable<AddressRange64 >::Variable(const char *_name, Object *_object, AddressRange64 & _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 }
 
 template <>
@@ -219,6 +219,6 @@ template <> VariableBase& Variable<AddressRange64 >::operator = (const char *val
 	return *this;
 }
 
-} // end of namespace service
+} // end of namespace variable
 } // end of namespace kernel
 } // end of namespace unisim

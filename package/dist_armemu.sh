@@ -5,8 +5,9 @@ source "$(dirname $0)/dist_common.sh"
 
 import_genisslib
 
-import unisim/kernel/service || exit
+import unisim/kernel || exit
 import unisim/kernel/tlm2 || exit
+import unisim/kernel/variable/endian || exit
 import unisim/component/tlm2/processor/arm/cortex_a9 || exit
 import unisim/component/tlm2/memory/ram || exit
 import unisim/util/likely || exit

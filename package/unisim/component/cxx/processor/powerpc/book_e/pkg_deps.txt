@@ -1,7 +1,7 @@
 libc/inttypes
 std/iostream
 unisim/component/cxx/processor/powerpc
-unisim/kernel/service
+unisim/kernel
 unisim/service/interfaces/http_server
 unisim/util/endian
 unisim/util/queue

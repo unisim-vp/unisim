@@ -44,7 +44,7 @@
 
 template <class CONFIG>
 Simulator<CONFIG>::Simulator(int argc, char **argv)
-	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
+	: unisim::kernel::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
 	, ram(0)
 	, loader(0)
@@ -210,7 +210,7 @@ Simulator<CONFIG>::~Simulator()
 }
 
 template <class CONFIG>
-void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM AVR32EMU");
@@ -323,14 +323,14 @@ void Simulator<CONFIG>::Run()
 }
 
 template <class CONFIG>
-unisim::kernel::service::Simulator::SetupStatus Simulator<CONFIG>::Setup()
+unisim::kernel::Simulator::SetupStatus Simulator<CONFIG>::Setup()
 {
 	if(enable_inline_debugger)
 	{
 		SetVariable("debugger.parse-dwarf", true);
 	}
 	
-	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+	unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
 	
 	return setup_status;
 }
@@ -371,7 +371,7 @@ void Simulator<CONFIG>::SigInt()
 {
 	if(!inline_debugger)
 	{
-		unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}
 }
 

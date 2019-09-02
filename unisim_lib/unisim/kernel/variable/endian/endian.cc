@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2019
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -30,14 +30,15 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
-#include "unisim/util/endian/endian.hh"
-#include "unisim/kernel/service/service.hh"
+#include <unisim/util/endian/endian.hh>
+#include <unisim/kernel/variable/variable.hh>
 
 namespace unisim {
 namespace kernel {
-namespace service {
+namespace variable {
 
 using unisim::util::endian::endian_type;
 using unisim::util::endian::E_LITTLE_ENDIAN;
@@ -52,7 +53,7 @@ using unisim::util::endian::E_UNKNOWN_ENDIAN;
 template <> Variable<endian_type>::Variable(const char *_name, Object *_object, endian_type& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 	AddEnumeratedValue("little-endian");
 	AddEnumeratedValue("big-endian");
 }
@@ -138,6 +139,6 @@ template <> VariableBase& Variable<endian_type>::operator = (const char *value)
 
 template class Variable<endian_type>;
 
-} // end of service namespace
+} // end of variable namespace
 } // end of kernel namespace
 } // end of unisim namespace

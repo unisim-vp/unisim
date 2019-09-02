@@ -5,6 +5,7 @@ std/stdexcept
 std/string
 unisim/component/cxx/processor/arm
 unisim/component/cxx/processor/arm/isa
+unisim/kernel/variable
 unisim/service/interfaces/debug_yielding
 unisim/service/interfaces/disassembly
 unisim/service/interfaces/linux_os

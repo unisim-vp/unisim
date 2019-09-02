@@ -35,7 +35,7 @@
 #ifndef __UNISIM_KERNEL_CONFIG_JSON_CONFIG_FILE_HELPER_HH__
 #define __UNISIM_KERNEL_CONFIG_JSON_CONFIG_FILE_HELPER_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/util/json/json.hh>
 #include <stack>
 
@@ -62,23 +62,23 @@ inline std::ostream& operator << (std::ostream& os, const Indent& indent)
 	return os;
 }
 
-class JSONConfigFileHelper : public unisim::kernel::service::ConfigFileHelper
+class JSONConfigFileHelper : public unisim::kernel::ConfigFileHelper
 {
 public:
-	JSONConfigFileHelper(unisim::kernel::service::Simulator *simulator);
+	JSONConfigFileHelper(unisim::kernel::Simulator *simulator);
 	virtual ~JSONConfigFileHelper();
 	
 	virtual const char *GetName() const;
-	virtual bool SaveVariables(const char *filename, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
-	virtual bool SaveVariables(std::ostream& os, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
-	virtual bool LoadVariables(const char *filename, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
-	virtual bool LoadVariables(std::istream& is, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
+	virtual bool SaveVariables(const char *filename, unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
+	virtual bool SaveVariables(std::ostream& os, unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
+	virtual bool LoadVariables(const char *filename, unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
+	virtual bool LoadVariables(std::istream& is, unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
 	
 private:
-	unisim::kernel::service::Simulator *simulator;
+	unisim::kernel::Simulator *simulator;
 	
-	void SaveVariables(std::ostream& os, unisim::kernel::service::Object *object, unisim::kernel::service::VariableBase::Type type, Indent& indent);
-	void SaveVariable(std::ostream& os, unisim::kernel::service::VariableBase& variable);
+	void SaveVariables(std::ostream& os, unisim::kernel::Object *object, unisim::kernel::VariableBase::Type type, Indent& indent);
+	void SaveVariable(std::ostream& os, unisim::kernel::VariableBase& variable);
 	void Assign(const std::string& section, const std::string& key, const std::string& value);
 };
 

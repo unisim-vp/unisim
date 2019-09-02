@@ -314,7 +314,7 @@ Simulator::SimulationFinished() const
   return sc_core::sc_end_of_simulation_invoked();
 }
 
-unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
+unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 {
   if (enable_inline_debugger or enable_monitor)
     {
@@ -336,7 +336,7 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
         }
     }
   
-  unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+  unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
   
   return setup_status;
 }
@@ -358,7 +358,7 @@ bool Simulator::EndSetup()
   return true;
 }
 
-void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, bool asynchronous)
+void Simulator::Stop(unisim::kernel::Object *object, int _exit_status, bool asynchronous)
 {
   exit_status = _exit_status;
   if(object)
@@ -387,7 +387,7 @@ void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, 
 }
 
 void
-Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
+Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
 {
   // meta information
   sim->SetVariable("program-name", "UNISIM ARMEMU");
@@ -472,7 +472,7 @@ void Simulator::SigInt()
 {
   if(!inline_debugger)
   {
-    unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+    unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
   }
 }
 

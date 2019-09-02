@@ -33,6 +33,7 @@
  */
 
 #include "unisim/service/power/cache_dynamic_power.hh"
+#include <unisim/kernel/variable/variable.hh>
 #include <sstream>
 
 namespace unisim {
@@ -41,7 +42,7 @@ namespace power {
 
 CacheDynamicPower ::
 CacheDynamicPower (const map<CacheProfileKey, CacheProfile *> *_profiles,
-		unisim::kernel::service::ServiceImport<unisim::service::interfaces::Time> *_time_import) :
+		unisim::kernel::ServiceImport<unisim::service::interfaces::Time> *_time_import) :
 CacheDynamicEnergy (_profiles),
 time_import(_time_import)
 {
@@ -66,19 +67,16 @@ GetDynamicPower() const
 } // end of namespace service
 } // end of namespace unisim
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 
 namespace unisim {
 namespace kernel {
-namespace service {
-
-using unisim::kernel::service::Variable;
-using unisim::kernel::service::VariableBase;
+namespace variable {
 
 template <> Variable<unisim::service::power::CacheDynamicPower>::Variable(const char *_name, Object *_object, unisim::service::power::CacheDynamicPower& _storage, Type type, const char *_description) :
 VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 }
 
 template <>
@@ -152,6 +150,6 @@ template <> VariableBase& Variable<unisim::service::power::CacheDynamicPower>::o
 
 template class Variable<unisim::service::power::CacheDynamicPower>;
 
-} // end of namespace service
+} // end of namespace variable
 } // end of namespace kernel
 } // end of namespace unisim

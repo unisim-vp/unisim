@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_TRAP_HANDLER_IDENTIFIER_INTERFACE_HH__
 #define __UNISIM_SERVICE_TRAP_HANDLER_IDENTIFIER_INTERFACE_HH__
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 
 namespace unisim {
 namespace service {
@@ -48,12 +48,12 @@ public:
 
 	virtual void ReportTrap(int id) = 0;
 	virtual void ReportTrap(int id,
-			const unisim::kernel::service::Object &obj) = 0;
+			const unisim::kernel::Object &obj) = 0;
 	virtual void ReportTrap(int id,
-			const unisim::kernel::service::Object &obj,
+			const unisim::kernel::Object &obj,
 			const std::string &str) = 0;
 	virtual void ReportTrap(int id,
-			const unisim::kernel::service::Object &obj,
+			const unisim::kernel::Object &obj,
 			const char *c_str) = 0;
 };
 

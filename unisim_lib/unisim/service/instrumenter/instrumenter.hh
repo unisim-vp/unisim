@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_INSTRUMENTER_INSTRUMENTER_HH__
 #define __UNISIM_SERVICE_INSTRUMENTER_INSTRUMENTER_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/clock.hh>
 #include <unisim/util/likely/likely.hh>
@@ -315,7 +315,7 @@ private:
 	Instrumenter *instrumenter;
 };
 
-class InstrumenterFrontEnd : public virtual unisim::kernel::service::Object
+class InstrumenterFrontEnd : public virtual unisim::kernel::Object
 {
 public:
 	InstrumenterFrontEnd(const char *name, Instrumenter *instrumenter);
@@ -397,10 +397,10 @@ private:
 
 class UserInterface
 	: public InstrumenterFrontEnd
-	, public unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>
+	, public unisim::kernel::Service<unisim::service::interfaces::HttpServer>
 {
 public:
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
 	
 	UserInterface(const char *name, Instrumenter *instrumenter = 0);
 	virtual ~UserInterface();
@@ -476,17 +476,17 @@ private:
 	std::string program_name;
 
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 	std::string instrumentation;
-	unisim::kernel::service::Parameter<std::string> param_instrumentation;
+	unisim::kernel::variable::Parameter<std::string> param_instrumentation;
 	sc_core::sc_time intr_poll_period;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_intr_poll_period;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_intr_poll_period;
 	double min_cont_refresh_period;
-	unisim::kernel::service::Parameter<double> param_min_cont_refresh_period;
+	unisim::kernel::variable::Parameter<double> param_min_cont_refresh_period;
 	double max_cont_refresh_period;
-	unisim::kernel::service::Parameter<double> param_max_cont_refresh_period;
+	unisim::kernel::variable::Parameter<double> param_max_cont_refresh_period;
 	bool enable_cache;
-	unisim::kernel::service::Parameter<bool> param_enable_cache;
+	unisim::kernel::variable::Parameter<bool> param_enable_cache;
 	std::vector<std::string> instrumented_signal_names;
 	std::map<std::string, UserInstrument *> user_instruments;
 	typedef std::set<sc_core::sc_time> Schedule;
@@ -534,15 +534,15 @@ private:
 	unisim::kernel::logger::Logger logger;
 	
 	std::string filename;
-	unisim::kernel::service::Parameter<std::string> param_filename;
+	unisim::kernel::variable::Parameter<std::string> param_filename;
 	std::string instrumentation;
-	unisim::kernel::service::Parameter<std::string> param_instrumentation;
+	unisim::kernel::variable::Parameter<std::string> param_instrumentation;
 	sc_core::sc_time instrumentation_start_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_instrumentation_start_time;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_instrumentation_start_time;
 	sc_core::sc_time instrumentation_end_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_instrumentation_end_time;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_instrumentation_end_time;
 	std::string csv_delimiter;
-	unisim::kernel::service::Parameter<std::string> param_csv_delimiter;
+	unisim::kernel::variable::Parameter<std::string> param_csv_delimiter;
 	
 	unsigned int lineno;
 	std::ifstream *file;
@@ -569,15 +569,15 @@ private:
 	unisim::kernel::logger::Logger logger;
 	
 	std::string filename;
-	unisim::kernel::service::Parameter<std::string> param_filename;
+	unisim::kernel::variable::Parameter<std::string> param_filename;
 	std::string instrumentation;
-	unisim::kernel::service::Parameter<std::string> param_instrumentation;
+	unisim::kernel::variable::Parameter<std::string> param_instrumentation;
 	sc_core::sc_time instrumentation_start_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_instrumentation_start_time;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_instrumentation_start_time;
 	sc_core::sc_time instrumentation_end_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_instrumentation_end_time;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_instrumentation_end_time;
 	std::string csv_delimiter;
-	unisim::kernel::service::Parameter<std::string> param_csv_delimiter;
+	unisim::kernel::variable::Parameter<std::string> param_csv_delimiter;
 	
 	std::ofstream *file;
 	sc_core::sc_time last_instrument_sampling_time_stamp;
@@ -590,12 +590,12 @@ private:
 };
 
 class Instrumenter
-	: public unisim::kernel::service::Object
+	: public unisim::kernel::Object
 {
 public:
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
 
-	Instrumenter(const char *name, unisim::kernel::service::Object *parent = 0);
+	Instrumenter(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~Instrumenter();
 	virtual bool BeginSetup();
 	virtual bool EndSetup();
@@ -639,34 +639,34 @@ private:
 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> friend class Typer;
 	friend class InstrumenterFrontEnd;
 	
-	unisim::kernel::service::Parameter<bool> param_verbose;
-	unisim::kernel::service::Parameter<bool> param_debug;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_debug;
 	
 	std::string vcd_trace_filename;
-	unisim::kernel::service::Parameter<std::string> param_vcd_trace_filename;
+	unisim::kernel::variable::Parameter<std::string> param_vcd_trace_filename;
 	std::string trace_signals;
-	unisim::kernel::service::Parameter<std::string> param_trace_signals;
+	unisim::kernel::variable::Parameter<std::string> param_trace_signals;
 	bool enable_trace_signals;
-	unisim::kernel::service::Parameter<bool> param_enable_trace_signals;
+	unisim::kernel::variable::Parameter<bool> param_enable_trace_signals;
 	sc_core::sc_trace_file *trace_file;
 
 	std::string gtkwave_init_script;
-	unisim::kernel::service::Parameter<std::string> param_gtkwave_init_script;
+	unisim::kernel::variable::Parameter<std::string> param_gtkwave_init_script;
 	
 	bool enable_user_interface;
-	unisim::kernel::service::Parameter<bool> param_enable_user_interface;
+	unisim::kernel::variable::Parameter<bool> param_enable_user_interface;
 	UserInterface *user_interface;
 	
 	bool enable_csv_reader;
-	unisim::kernel::service::Parameter<bool> param_enable_csv_reader;
+	unisim::kernel::variable::Parameter<bool> param_enable_csv_reader;
 	CSV_Reader *csv_reader;
 	
 	bool enable_csv_writer;
-	unisim::kernel::service::Parameter<bool> param_enable_csv_writer;
+	unisim::kernel::variable::Parameter<bool> param_enable_csv_writer;
 	CSV_Writer *csv_writer;
 	
 	std::string front_ends_priority_order;
-	unisim::kernel::service::Parameter<std::string> param_front_ends_priority_order;
+	unisim::kernel::variable::Parameter<std::string> param_front_ends_priority_order;
 
 	std::map<std::string, sc_core::sc_interface *, unisim::util::nat_sort::nat_ltstr> signal_pool;
 	std::map<std::string, sc_core::sc_interface *> auto_signal_pool;
@@ -882,7 +882,7 @@ sc_core::sc_signal<T>& Instrumenter::CreateSignal(const std::string& signal_name
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
 sc_core::sc_signal<T, WRITER_POLICY>& Instrumenter::CreateSignal(const std::string& signal_basename, const T& init_value, INSTRUMENTATION_TYPE instr_type)
 {
-	unisim::kernel::service::Object *parent = this->GetParent();
+	unisim::kernel::Object *parent = this->GetParent();
 	std::string signal_name;
 	if(parent)
 	{

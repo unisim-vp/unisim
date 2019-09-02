@@ -35,7 +35,8 @@
 #ifndef __UNISIM_KERNEL_TLM2_CLOCK_HH__
 #define __UNISIM_KERNEL_TLM2_CLOCK_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <systemc>
 
 namespace unisim {
@@ -57,13 +58,13 @@ public:
 class Clock
 	: public sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>
 	, public ClockPropertiesInterface
-	, virtual public unisim::kernel::service::Object
-	, public unisim::kernel::service::VariableBaseListener
+	, virtual public unisim::kernel::Object
+	, public unisim::kernel::VariableBaseListener
 {
 public:
 	typedef sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS> Super;
 	
-	Clock(const char *name, unisim::kernel::service::Object *parent = 0);
+	Clock(const char *name, unisim::kernel::Object *parent = 0);
 
 	virtual ~Clock();
 	virtual void write( const bool& );
@@ -86,7 +87,7 @@ public:
 	virtual bool IsClockLazy() const;
 	virtual const sc_core::sc_event& GetClockPropertiesChangedEvent() const;
 	
-	virtual void VariableBaseNotify(const unisim::kernel::service::VariableBase *var);
+	virtual void VariableBaseNotify(const unisim::kernel::VariableBase *var);
 protected:
 	virtual void before_end_of_elaboration();
 private:
@@ -112,11 +113,11 @@ private:
 	double pending_clock_duty_cycle_change;
 	sc_core::sc_event clock_properties_changed_event;
 	
-	unisim::kernel::service::Parameter<bool> param_lazy_clock;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_clock_period;
-	unisim::kernel::service::Parameter<double> param_clock_duty_cycle;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_clock_start_time;
-	unisim::kernel::service::Parameter<bool> param_clock_posedge_first;
+	unisim::kernel::variable::Parameter<bool> param_lazy_clock;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_clock_period;
+	unisim::kernel::variable::Parameter<double> param_clock_duty_cycle;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_clock_start_time;
+	unisim::kernel::variable::Parameter<bool> param_clock_posedge_first;
 	
 };
 

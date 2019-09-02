@@ -7,8 +7,9 @@ std/sstream
 std/stack
 std/string
 std/vector
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/service/interfaces/debug_yielding
 unisim/service/interfaces/disassembly
 unisim/service/interfaces/linux_os

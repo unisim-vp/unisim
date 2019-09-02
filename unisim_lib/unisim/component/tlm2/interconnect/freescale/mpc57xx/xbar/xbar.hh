@@ -96,7 +96,7 @@ struct CONFIG
 template <typename CONFIG>
 class XBAR
 	: public unisim::component::tlm2::interconnect::programmable_router::Router<CONFIG>
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Registers>
 {
 public:
 	typedef unisim::component::tlm2::interconnect::programmable_router::Router<CONFIG> Super;
@@ -112,10 +112,10 @@ public:
 	static const bool threaded_model                = false;
 	
 	// services
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> smpu_registers_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> smpu_registers_export;
 
-	XBAR(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
+	XBAR(const sc_core::sc_module_name& name, unisim::kernel::Object *parent);
 	virtual ~XBAR();
 
 	//////////////// unisim::service::interface::Registers ////////////////////
@@ -311,7 +311,7 @@ protected:
 	SMPU smpu;
 	
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 };
 
 } // end of namespace xbar

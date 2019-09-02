@@ -103,7 +103,7 @@ unistd.h \
 vector"
 
 UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES="\
-unisim/kernel/service/service.cc \
+unisim/kernel/kernel.cc \
 unisim/kernel/config/xml_config_file_helper.cc \
 unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/tlm/tlm.cc \
@@ -146,7 +146,7 @@ unisim/util/blob/segment64.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/debug/coff_symtab/coff_symtab32.cc \
-unisim/kernel/service/endian.cc \
+unisim/kernel/variable/endian/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
@@ -424,7 +424,7 @@ unisim/component/cxx/processor/powerpc/isa/book_iii_s/mtsrin.isa \
 "
 
 UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_HEADER_FILES="${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_ISA_FILES} \
-unisim/kernel/service/service.hh \
+unisim/kernel/kernel.hh \
 unisim/kernel/config/xml_config_file_helper.hh \
 unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \

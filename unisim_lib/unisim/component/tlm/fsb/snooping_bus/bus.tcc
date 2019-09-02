@@ -44,7 +44,7 @@ namespace fsb {
 namespace snooping_bus {
 
 using std::stringstream;
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::DebugError;
@@ -116,7 +116,7 @@ Bus(const sc_module_name& module_name, Object *parent) :
 	cycle_time(),
 	cycle_time_parameter("cycle-time", this, cycle_time, "cycle time")
 {
-	cycle_time_parameter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	cycle_time_parameter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
 	/* create input ports and name them */
 	for(unsigned int i = 0; i < NUM_PROCS; i++) {

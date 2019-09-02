@@ -38,7 +38,7 @@
 
 template <class CONFIG>
 Simulator<CONFIG>::Simulator(int argc, char **argv)
-	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
+	: unisim::kernel::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
 	, ram(0)
 	, loader(0)
@@ -214,7 +214,7 @@ Simulator<CONFIG>::~Simulator()
 }
 
 template <class CONFIG>
-void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM AT32UC3C");
@@ -322,14 +322,14 @@ void Simulator<CONFIG>::Run()
 }
 
 template <class CONFIG>
-unisim::kernel::service::Simulator::SetupStatus Simulator<CONFIG>::Setup()
+unisim::kernel::Simulator::SetupStatus Simulator<CONFIG>::Setup()
 {
 	if(enable_inline_debugger)
 	{
 		SetVariable("debugger.parse-dwarf", true);
 	}
 	
-	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+	unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
 	
 	return setup_status;
 }
@@ -354,7 +354,7 @@ void Simulator<CONFIG>::Stop(Object *object, int _exit_status, bool asynchronous
 		{
 			case sc_core::SC_THREAD_PROC_: 
 			case sc_core::SC_CTHREAD_PROC_:
-				wait();
+				sc_core::wait();
 				break;
 			default:
 				break;
@@ -404,7 +404,7 @@ template <class CONFIG>
 void Simulator<CONFIG>::SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+	unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 }
 #endif
 

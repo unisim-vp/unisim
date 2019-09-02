@@ -218,11 +218,11 @@ public:
 	typedef SuperCPU::ICDBTRH ICDBTRH;
 	typedef SuperCPU::ICDBTRL ICDBTRL;
 	
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> itlb_http_server_export;
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> dtlb_http_server_export;
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> utlb_http_server_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> itlb_http_server_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> dtlb_http_server_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> utlb_http_server_export;
 
-	CPU(const char *name, unisim::kernel::service::Object *parent = 0);
+	CPU(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~CPU();
 
 	friend struct unisim::component::cxx::processor::powerpc::book_e::MMU<TYPES, CONFIG::MMU_CONFIG>;

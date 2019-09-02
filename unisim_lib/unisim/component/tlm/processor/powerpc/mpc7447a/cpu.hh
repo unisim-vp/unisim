@@ -36,7 +36,7 @@
 #define __UNISIM_COMPONENT_TLM_PROCESSOR_POWERPC_MPC7447A_CPU_HH__
 
 #include <systemc>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh>
 #include <unisim/component/tlm/message/snooping_fsb.hh>
 #include <unisim/kernel/tlm/tlm.hh>
@@ -56,10 +56,10 @@ namespace mpc7447a {
 using unisim::kernel::tlm::TlmMessage;
 using unisim::kernel::tlm::TlmSendIf;
 using unisim::util::garbage_collector::Pointer;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::Formula;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::variable::Formula;
 using unisim::component::tlm::message::InterruptRequest;
 using unisim::component::tlm::message::SnoopingFSBRequest;
 using unisim::component::tlm::message::SnoopingFSBResponse;

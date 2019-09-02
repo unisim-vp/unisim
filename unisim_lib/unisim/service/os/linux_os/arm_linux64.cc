@@ -42,8 +42,8 @@ namespace service {
 namespace os {
 namespace linux_os {
 
-ArmLinux64::ArmLinux64( const char* name, unisim::kernel::service::Object* parent )
-  : unisim::kernel::service::Object( name, parent )
+ArmLinux64::ArmLinux64( const char* name, unisim::kernel::Object* parent )
+  : unisim::kernel::Object( name, parent )
   , Linux<uint64_t, uint64_t>( name, parent )
 {
 }

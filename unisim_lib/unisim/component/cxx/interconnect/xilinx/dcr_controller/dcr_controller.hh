@@ -35,7 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_INTERCONNECT_XILINX_DCR_CONTROLLER_DCR_CONTROLLER_HH__
 #define __UNISIM_COMPONENT_CXX_INTERCONNECT_XILINX_DCR_CONTROLLER_DCR_CONTROLLER_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/variable/variable.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <inttypes.h>
 
@@ -46,8 +47,8 @@ namespace interconnect {
 namespace xilinx {
 namespace dcr_controller {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
 
 template <class CONFIG>
 class DCRController

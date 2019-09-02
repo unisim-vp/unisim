@@ -35,7 +35,7 @@
 #include <systemc>
 #include <tlm>
 #include <tlm_utils/passthrough_target_socket.h>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include <inttypes.h>
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic_stubs.hh"
@@ -52,7 +52,7 @@ using unisim::kernel::logger::EndDebugInfo;
 
 VICIntSourceStub ::
 VICIntSourceStub(const sc_module_name &name, Object *parent, bool initvalue)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_module(name)
 	, vicinttarget("vicinttarget")
 	, value(initvalue)
@@ -84,7 +84,7 @@ Method()
 
 VICIntTargetStub ::
 VICIntTargetStub(const sc_module_name &name, Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_module(name)
 	, vicintsource()
 	, value(false)
@@ -130,7 +130,7 @@ Method()
 
 VICAddrSourceStub ::
 VICAddrSourceStub(const sc_module_name &name, Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_module(name)
 	, vicaddrtarget()
 	, value(0)
@@ -161,7 +161,7 @@ Method()
 
 VICAddrTargetStub ::
 VICAddrTargetStub(const sc_module_name &name, Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_module(name)
 	, vicaddrsource()
 	, value(0)

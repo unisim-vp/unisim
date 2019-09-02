@@ -38,7 +38,7 @@
 #include <inttypes.h>
 #include <iostream>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/service/interfaces/http_server.hh>
 
 namespace unisim {
@@ -283,7 +283,7 @@ void TLB_ENTRY<TYPES>::Print(std::ostream& os) const
 
 template <typename TYPES, typename CONFIG>
 struct TLB
-	: unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>
+	: unisim::kernel::Service<unisim::service::interfaces::HttpServer>
 {
 	enum PrintFormat
 	{
@@ -291,9 +291,9 @@ struct TLB
 		PFMT_HTML
 	};
 	
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
 	
-	TLB(const char *name, unisim::kernel::service::Object *parent = 0, const char *description = 0);
+	TLB(const char *name, unisim::kernel::Object *parent = 0, const char *description = 0);
 	void Reset();
 	TLB_ENTRY<TYPES> *Lookup(typename TYPES::ADDRESS_SPACE as, typename TYPES::PROCESS_ID pid, typename TYPES::EFFECTIVE_ADDRESS ea, typename TYPES::EFFECTIVE_ADDRESS& size_to_protection_boundary, typename TYPES::ADDRESS& virt_addr, typename TYPES::PHYSICAL_ADDRESS& phys_addr);
 	void Replace(TLB_ENTRY<TYPES> *tlb_entry) { entries[victim_way].Initialize(*tlb_entry); victim_way = (victim_way + 1) % CONFIG::ASSOCIATIVITY; }
@@ -312,9 +312,9 @@ private:
 	bool verbose;
 	uint64_t num_accesses;
 	uint64_t num_misses;
-	unisim::kernel::service::Parameter<bool> param_verbose;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_misses;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_misses;
 };
 
 template <typename TYPES, typename CONFIG>
@@ -325,9 +325,9 @@ std::ostream& operator << (std::ostream& os, const TLB<TYPES, CONFIG>& tlb)
 }
 
 template <typename TYPES, typename CONFIG>
-TLB<TYPES, CONFIG>::TLB(const char *name, unisim::kernel::service::Object *parent, const char *description)
-	: unisim::kernel::service::Object(name, parent, description)
-	, unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>(name, parent, description)
+TLB<TYPES, CONFIG>::TLB(const char *name, unisim::kernel::Object *parent, const char *description)
+	: unisim::kernel::Object(name, parent, description)
+	, unisim::kernel::Service<unisim::service::interfaces::HttpServer>(name, parent, description)
 	, http_server_export("http-server-export", this)
 	, logger(*this)
 	, entries()
@@ -651,7 +651,7 @@ void TLB<TYPES, CONFIG>::ScanWebInterfaceModdings(unisim::service::interfaces::W
 
 template <typename TYPES, typename CONFIG>
 struct MMU
-	: unisim::kernel::service::Object
+	: unisim::kernel::Object
 {
 	typedef typename CONFIG::CPU CPU;
 	typedef TLB<TYPES, typename CONFIG::ITLB_CONFIG> ITLB;
@@ -667,9 +667,9 @@ struct MMU
 	typedef typename CPU::MSR MSR;
 	typedef typename CPU::PID0 PID0;
 	
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> itlb_http_server_export;
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> dtlb_http_server_export;
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> utlb_http_server_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> itlb_http_server_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> dtlb_http_server_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> utlb_http_server_export;
 
 	MMU(CPU *cpu);
 	void Reset();
@@ -686,7 +686,7 @@ private:
 	DTLB dtlb;
 	UTLB utlb;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 };
 
 template <typename TYPES, typename CONFIG>
@@ -698,7 +698,7 @@ std::ostream& operator << (std::ostream& os, const MMU<TYPES, CONFIG>& mmu)
 
 template <typename TYPES, typename CONFIG>
 MMU<TYPES, CONFIG>::MMU(CPU *_cpu)
-	: unisim::kernel::service::Object("MMU", _cpu, "Memory Management Unit")
+	: unisim::kernel::Object("MMU", _cpu, "Memory Management Unit")
 	, itlb_http_server_export("itlb-http-server-export", this)
 	, dtlb_http_server_export("dtlb-http-server-export", this)
 	, utlb_http_server_export("utlb-http-server-export", this)

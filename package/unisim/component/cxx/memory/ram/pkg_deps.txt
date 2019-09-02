@@ -1,7 +1,8 @@
 libc/inttypes
 std/fstream
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/service/interfaces/memory
 unisim/util/hash_table
 unisim/util/likely

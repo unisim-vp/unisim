@@ -9,8 +9,8 @@ std/set
 std/sstream
 std/stdexcept
 std/string
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
 unisim/service/interfaces/memory_access_reporting
 unisim/service/interfaces/register
 unisim/service/interfaces/registers

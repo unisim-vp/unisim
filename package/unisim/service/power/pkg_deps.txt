@@ -7,8 +7,9 @@ m4/cacti
 std/iostream
 std/map
 std/sstream
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/service/interfaces/cache_power_estimator
 unisim/service/interfaces/power_mode
 unisim/service/interfaces/time

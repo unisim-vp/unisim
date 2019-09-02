@@ -377,8 +377,8 @@ int FloatingPointRegisterInterface::GetSize() const
 	return 8;
 }
 
-FloatingPointRegisterView::FloatingPointRegisterView(const char *name, unisim::kernel::service::Object *owner, SoftDouble& _storage, const char *description)
-	: unisim::kernel::service::VariableBase(name, owner, unisim::kernel::service::VariableBase::VAR_REGISTER, description)
+FloatingPointRegisterView::FloatingPointRegisterView(const char *name, unisim::kernel::Object *owner, SoftDouble& _storage, const char *description)
+	: unisim::kernel::VariableBase(name, owner, unisim::kernel::VariableBase::VAR_REGISTER, description)
 	, storage(_storage)
 {
 }
@@ -427,7 +427,7 @@ FloatingPointRegisterView::operator std::string () const
 	return sstr.str();
 }
 
-unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (bool value)
+unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (bool value)
 {
 	if(IsMutable())
 	{
@@ -438,7 +438,7 @@ unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (bo
 	return *this;
 }
 
-unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (long long value)
+unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (long long value)
 {
 	if(IsMutable())
 	{
@@ -449,7 +449,7 @@ unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (lo
 	return *this;
 }
 
-unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (unsigned long long value)
+unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (unsigned long long value)
 {
 	if(IsMutable())
 	{
@@ -460,7 +460,7 @@ unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (un
 	return *this;
 }
 
-unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (double value)
+unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (double value)
 {
 	if(IsMutable())
 	{
@@ -471,7 +471,7 @@ unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (do
 	return *this;
 }
 
-unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (const char * value)
+unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (const char * value)
 {
 	if(IsMutable())
 	{

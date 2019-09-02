@@ -68,8 +68,8 @@ ZynqRouter::absolute_mapping( unsigned output_port, uint64_t range_start, uint64
   (*init_socket[output_port])( sock );
 }
 
-ZynqRouter::ZynqRouter(const char* name, unisim::kernel::service::Object* parent)
-  : unisim::kernel::service::Object( name, parent )
+ZynqRouter::ZynqRouter(const char* name, unisim::kernel::Object* parent)
+  : unisim::kernel::Object( name, parent )
   , unisim::component::tlm2::interconnect::generic_router::Router<ZynqRouterConfig>( name, parent )
 {
 }
@@ -83,10 +83,10 @@ namespace {
   }
 }
 
-MMDevice::MMDevice( sc_core::sc_module_name const& name, unisim::kernel::service::Object* parent )
-  : unisim::kernel::service::Object( name, parent )
+MMDevice::MMDevice( sc_core::sc_module_name const& name, unisim::kernel::Object* parent )
+  : unisim::kernel::Object( name, parent )
   , sc_core::sc_module( name )
-  , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>( name, parent )
+  , unisim::kernel::Client<unisim::service::interfaces::TrapReporting>( name, parent )
   , socket( NameSocketFromModule( name ).c_str() )
   , trap_reporting_import("trap-reporting-import", this)
   , verbose( false )
@@ -193,8 +193,8 @@ template <> struct ITP<0u> { static void Register( MPCore& mpcore ) {} };
  * @param name the name of the module
  * @param parent the parent service
  */
-MPCore::MPCore(const sc_core::sc_module_name& name, unisim::kernel::service::Object* parent)
-  : unisim::kernel::service::Object( name, parent )
+MPCore::MPCore(const sc_core::sc_module_name& name, unisim::kernel::Object* parent)
+  : unisim::kernel::Object( name, parent )
   , MMDevice( name, parent )
   , nIRQ("nIRQ")
   , nFIQ("nFIQ")
@@ -387,8 +387,8 @@ MPCore::ReadGICC_IAR()
   return int_id;
 }
 
-TTC::TTC( const sc_core::sc_module_name& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, unsigned _id, unsigned _base_it )
-  : unisim::kernel::service::Object( name, parent )
+TTC::TTC( const sc_core::sc_module_name& name, unisim::kernel::Object* parent, MPCore& _mpcore, unsigned _id, unsigned _base_it )
+  : unisim::kernel::Object( name, parent )
   , MMDevice( name, parent )
   , mpcore( _mpcore )
   , id( _id )
@@ -539,10 +539,10 @@ TTC::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& updat
   return true;
 }
 
-PS_UART::PS_UART( sc_core::sc_module_name const& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, int _it_line )
-  : unisim::kernel::service::Object( name, parent )
+PS_UART::PS_UART( sc_core::sc_module_name const& name, unisim::kernel::Object* parent, MPCore& _mpcore, int _it_line )
+  : unisim::kernel::Object( name, parent )
   , MMDevice( name, parent )
-  , unisim::kernel::service::Client<unisim::service::interfaces::CharIO>( name, parent )
+  , unisim::kernel::Client<unisim::service::interfaces::CharIO>( name, parent )
   , char_io_import("char-io-import", this)
   , exchange_event( "exchange_event" )
   , bit_period( sc_core::SC_ZERO_TIME )
@@ -734,8 +734,8 @@ PS_UART::ExchangeProcess()
     mpcore.interrupt_line_events[it_line].notify(sc_core::SC_ZERO_TIME);
 }
 
-SLCR::SLCR(const sc_core::sc_module_name& name, Simulator& _simulator, unisim::kernel::service::Object* parent )
-  : unisim::kernel::service::Object( name, parent )
+SLCR::SLCR(const sc_core::sc_module_name& name, Simulator& _simulator, unisim::kernel::Object* parent )
+  : unisim::kernel::Object( name, parent )
   , MMDevice( name, parent )
   , simulator(_simulator)
   , ARM_PLL_CTRL(0x1a008)
@@ -771,8 +771,8 @@ SLCR::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& upda
   return false;
 }
 
-L2C::L2C( const sc_core::sc_module_name& name, unisim::kernel::service::Object* parent )
-  : unisim::kernel::service::Object( name, parent )
+L2C::L2C( const sc_core::sc_module_name& name, unisim::kernel::Object* parent )
+  : unisim::kernel::Object( name, parent )
   , MMDevice( name, parent )
 {
 }
@@ -1121,7 +1121,7 @@ Simulator::UpdateClocks()
   
 }
 
-unisim::kernel::service::Simulator::SetupStatus
+unisim::kernel::Simulator::SetupStatus
 Simulator::Setup()
 {
   if (inline_debugger or profiler)
@@ -1131,14 +1131,14 @@ Simulator::Setup()
   
   // Build the Loader arguments from the command line arguments
   
-  unisim::kernel::service::VariableBase *cmd_args = FindVariable("cmd-args");
+  unisim::kernel::VariableBase *cmd_args = FindVariable("cmd-args");
   unsigned int cmd_args_length = cmd_args->GetLength();
   if(cmd_args_length > 0)
     {
       SetVariable( "loader.filename", ((std::string)(*cmd_args)[0]).c_str() );
     }
 
-  unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+  unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
   
   ps_clk_period = sc_core::sc_time( 30, sc_core::SC_NS ); // 33 MHz
   
@@ -1181,7 +1181,7 @@ bool Simulator::EndSetup()
   return true;
 }
 
-void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, bool asynchronous)
+void Simulator::Stop(unisim::kernel::Object *object, int _exit_status, bool asynchronous)
 {
   exit_status = _exit_status;
   if(object)
@@ -1209,7 +1209,7 @@ void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, 
 }
 
 void
-Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
+Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
 {
   // meta information
   sim->SetVariable("program-name", "UNISIM Zynq7000");
@@ -1270,7 +1270,7 @@ void Simulator::SigInt()
 {
   if(!enable_inline_debugger)
     {
-      unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+      unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
     }
 }
 

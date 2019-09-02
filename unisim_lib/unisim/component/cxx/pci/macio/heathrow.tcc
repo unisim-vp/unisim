@@ -97,8 +97,8 @@ Heathrow<ADDRESS>::Heathrow(const char *name, Object *parent) :
 	param_bus_frequency("bus-frequency", this, bus_frequency, "bus frequency in Mhz"),
 	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency, "PCI bus frequency in Mhz")
 {
-	param_bus_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_pci_bus_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_bus_frequency.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_pci_bus_frequency.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
 	unsigned int i;
 	

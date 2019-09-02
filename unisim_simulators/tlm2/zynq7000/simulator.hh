@@ -56,7 +56,7 @@
 #include <unisim/service/tee/char_io/tee.hh>
 #include <unisim/service/web_terminal/web_terminal.hh>
 #include <unisim/kernel/tlm2/simulator.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/util/cache/cache.hh>
 #include <unisim/util/likely/likely.hh>
 
@@ -86,7 +86,7 @@ struct CPU
   typedef PCPU::CP15Reg CP15Reg;
   
   CPU(const sc_core::sc_module_name& name, Object* parent = 0)
-    : unisim::kernel::service::Object(name, parent)
+    : unisim::kernel::Object(name, parent)
     , PCPU(name, parent)
     , l1d(*this)
     , l1i(*this)
@@ -95,11 +95,11 @@ struct CPU
   typedef CPU CACHE_CPU;
 
   template <class ACTUAL_CACHE>
-  struct CacheCommons : unisim::kernel::service::Object
+  struct CacheCommons : unisim::kernel::Object
   {
     ACTUAL_CACHE* as_actual() { return static_cast<ACTUAL_CACHE*>(this); };
     CacheCommons( char const* name, CPU& _cpu, uint64_t& _num_accesses, uint64_t& _num_misses )
-      : unisim::kernel::service::Object(name, &_cpu)
+      : unisim::kernel::Object(name, &_cpu)
       , cpu(_cpu)
       , stat_num_accesses("num-accesses", as_actual(), _num_accesses, "number of cache accesses")
       , stat_num_misses("num-misses", as_actual(), _num_misses, "number of cache misses")
@@ -107,9 +107,9 @@ struct CPU
     {}
     
     CPU& cpu;
-    unisim::kernel::service::Statistic<uint64_t> stat_num_accesses;
-    unisim::kernel::service::Statistic<uint64_t> stat_num_misses;
-    unisim::kernel::service::Formula<double> formula_miss_rate;
+    unisim::kernel::variable::Statistic<uint64_t> stat_num_accesses;
+    unisim::kernel::variable::Statistic<uint64_t> stat_num_misses;
+    unisim::kernel::variable::Formula<double> formula_miss_rate;
   };
   
   struct L1D_CONFIG
@@ -293,24 +293,24 @@ struct ZynqRouterConfig : public unisim::component::tlm2::interconnect::generic_
 
 struct ZynqRouter : public unisim::component::tlm2::interconnect::generic_router::Router<ZynqRouterConfig>
 {
-  ZynqRouter( char const* name, unisim::kernel::service::Object* parent = 0 );
+  ZynqRouter( char const* name, unisim::kernel::Object* parent = 0 );
   void relative_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, tlm::tlm_target_socket<32u>& sock );
   void absolute_mapping( unsigned output_port, uint64_t range_start, uint64_t range_end, tlm::tlm_target_socket<32u>& sock );
 };
 
 struct MMDevice
   : public sc_core::sc_module
-  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
+  , public unisim::kernel::Client<unisim::service::interfaces::TrapReporting>
   , public tlm::tlm_fw_transport_if<>
 {
   static unsigned const BUSWIDTH = 32;
     
   tlm::tlm_target_socket<BUSWIDTH> socket;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
   bool verbose, hardfail;
   
   
-  MMDevice( sc_core::sc_module_name const& name, unisim::kernel::service::Object* parent );
+  MMDevice( sc_core::sc_module_name const& name, unisim::kernel::Object* parent );
     
   struct Data
   {
@@ -356,7 +356,7 @@ struct MMDevice
 struct MPCore : public MMDevice
 {
   //typedef tlm::tlm_base_protocol_types TYPES;
-  MPCore(sc_core::sc_module_name const& name, unisim::kernel::service::Object* parent = 0);
+  MPCore(sc_core::sc_module_name const& name, unisim::kernel::Object* parent = 0);
 
   bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
   
@@ -392,7 +392,7 @@ struct Simulator;
 
 struct SLCR : public MMDevice
 {
-  SLCR( sc_core::sc_module_name const& name, Simulator& _simulator, unisim::kernel::service::Object* parent = 0 );
+  SLCR( sc_core::sc_module_name const& name, Simulator& _simulator, unisim::kernel::Object* parent = 0 );
   
   Simulator& simulator;
   uint32_t ARM_PLL_CTRL, DDR_PLL_CTRL, IO_PLL_CTRL, ARM_CLK_CTRL, DDR_CLK_CTRL, CLK_621_TRUE, UART_CLK_CTRL;
@@ -402,7 +402,7 @@ struct SLCR : public MMDevice
 
 struct TTC : public MMDevice
 {
-  TTC( sc_core::sc_module_name const& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, unsigned _id, unsigned _base_it );
+  TTC( sc_core::sc_module_name const& name, unisim::kernel::Object* parent, MPCore& _mpcore, unsigned _id, unsigned _base_it );
   
   MPCore& mpcore;
   unsigned id, base_it;
@@ -430,13 +430,13 @@ struct TTC : public MMDevice
   void UpdateCounterState( unsigned idx, sc_core::sc_time const& update_time );
 };
 
-struct PS_UART : public MMDevice, public unisim::kernel::service::Client<unisim::service::interfaces::CharIO>
+struct PS_UART : public MMDevice, public unisim::kernel::Client<unisim::service::interfaces::CharIO>
 {
-  PS_UART( sc_core::sc_module_name const& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, int _it_line );
+  PS_UART( sc_core::sc_module_name const& name, unisim::kernel::Object* parent, MPCore& _mpcore, int _it_line );
   
   bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
 
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::CharIO> char_io_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::CharIO> char_io_import;
   sc_core::sc_event exchange_event;
   sc_core::sc_time  bit_period, last_rx;
   bool              rx_timeout_active;
@@ -472,7 +472,7 @@ struct PS_UART : public MMDevice, public unisim::kernel::service::Client<unisim:
 
 struct L2C : public MMDevice
 {
-  L2C( sc_core::sc_module_name const& name, unisim::kernel::service::Object* parent );
+  L2C( sc_core::sc_module_name const& name, unisim::kernel::Object* parent );
   
   uint32_t reg1_control;
   
@@ -499,14 +499,14 @@ struct Simulator : public unisim::kernel::tlm2::Simulator
   bool IsRunning() const;
   bool SimulationStarted() const;
   bool SimulationFinished() const;
-  virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+  virtual unisim::kernel::Simulator::SetupStatus Setup();
   virtual bool EndSetup();
-  virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false);
+  virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
   int GetExitStatus() const;
   void UpdateClocks();
 
  private:
-  static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
+  static void DefaultConfiguration(unisim::kernel::Simulator *sim);
   typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MAIN_RAM;
   typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> BOOT_ROM;
   
@@ -567,11 +567,11 @@ struct Simulator : public unisim::kernel::tlm2::Simulator
   INSTRUMENTER*                instrumenter;
   
   bool                                     enable_gdb_server;
-  unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
+  unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
   bool                                     enable_inline_debugger;
-  unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
+  unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
   bool                                     enable_profiler;
-  unisim::kernel::service::Parameter<bool> param_enable_profiler;
+  unisim::kernel::variable::Parameter<bool> param_enable_profiler;
 
   int exit_status;
   virtual void SigInt();

@@ -10,7 +10,7 @@ unisim/component/clm/pipeline/issue
 unisim/component/clm/processor/ooosim
 unisim/component/clm/utility
 unisim/component/cxx/processor/powerpc
+unisim/kernel
 unisim/kernel/clm/engine
-unisim/kernel/service
 unisim/service/interfaces/memory
 unisim/service/interfaces/memory_injection

@@ -54,10 +54,10 @@ using unisim::component::tlm2::interconnect::generic_router::MEM_ACCESS_WRITE;
 using unisim::component::tlm2::interconnect::generic_router::MEM_ACCESS_READ_WRITE;
 
 template <typename CONFIG>
-PBRIDGE<CONFIG>::PBRIDGE(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+PBRIDGE<CONFIG>::PBRIDGE(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, Super(name, parent)
-	, unisim::kernel::service::Service<unisim::service::interfaces::Registers>(name, parent)
+	, unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
 	, registers_export("registers-export", this)
 	, pbridge_mpra(this)
 	, pbridge_mprb(this)
@@ -125,7 +125,7 @@ PBRIDGE<CONFIG>::PBRIDGE(const sc_core::sc_module_name& name, unisim::kernel::se
 		sstr_name << "acr_mapping_" << i;
 		std::stringstream sstr_desc;
 		sstr_desc << "access control register for output port #" << i;
-		param_acr_mapping[i] = new unisim::kernel::service::Parameter<AccessControlRegisterMapping>(sstr_name.str().c_str(), this, acr_mapping[i], sstr_desc.str().c_str());
+		param_acr_mapping[i] = new unisim::kernel::variable::Parameter<AccessControlRegisterMapping>(sstr_name.str().c_str(), this, acr_mapping[i], sstr_desc.str().c_str());
 		
 		param_acr_mapping[i]->SetMutable(false);
 	}
@@ -249,7 +249,7 @@ void PBRIDGE<CONFIG>::end_of_elaboration()
 	if(invalid_acr_mapping)
 	{
 		this->logger << DebugError << "Invalid ACR mapping configuration" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		unisim::kernel::Object::Stop(-1);
 	}
 }
 
@@ -454,7 +454,7 @@ bool PBRIDGE<CONFIG>::ApplyMap(transaction_type &trans, MAPPING const *&applied_
 			{
 				this->logger << DebugError << "Master ID (" << master_id << ") out-of-range" << EndDebugError;
 				trans.set_response_status(tlm::TLM_GENERIC_ERROR_RESPONSE);
-				unisim::kernel::service::Object::Stop(-1);
+				unisim::kernel::Object::Stop(-1);
 			}
 			
 			return false;

@@ -35,11 +35,12 @@
 #ifndef __UNISIM_COMPONENT_TLM2_COM_SERIAL_TERMINAL_SERIAL_TERMINAL_HH__
 #define __UNISIM_COMPONENT_TLM2_COM_SERIAL_TERMINAL_SERIAL_TERMINAL_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm_serial.hh>
 #include <unisim/kernel/tlm2/clock.hh>
 #include <unisim/service/interfaces/char_io.hh>
+#include <queue>
 #include <inttypes.h>
 
 namespace unisim {
@@ -63,7 +64,7 @@ enum BitOrder
 	
 class SerialTerminal
 	: public sc_core::sc_module
-	, unisim::kernel::service::Client<unisim::service::interfaces::CharIO>
+	, unisim::kernel::Client<unisim::service::interfaces::CharIO>
 {
 public:
 	enum SerialInterface
@@ -79,9 +80,9 @@ public:
 	RX_type RX;
 	sc_core::sc_in<bool> CLK;
 	
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::CharIO> char_io_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::CharIO> char_io_import;
 	
-	SerialTerminal(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
+	SerialTerminal(const sc_core::sc_module_name& name, unisim::kernel::Object *parent);
 	virtual ~SerialTerminal();
 	
 	virtual bool EndSetup();
@@ -109,21 +110,21 @@ private:
 	std::queue<uint8_t> tx_fifo;
 	std::queue<uint8_t> rx_fifo;
 	sc_core::sc_time polling_period;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_polling_period;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_polling_period;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 	ParityType parity_type;
-	unisim::kernel::service::Parameter<ParityType> param_parity_type;
+	unisim::kernel::variable::Parameter<ParityType> param_parity_type;
 	unsigned int num_stop_bits;
-	unisim::kernel::service::Parameter<unsigned int> param_num_stop_bits;
+	unisim::kernel::variable::Parameter<unsigned int> param_num_stop_bits;
 	BitOrder bit_order;
-	unisim::kernel::service::Parameter<BitOrder> param_bit_order;
+	unisim::kernel::variable::Parameter<BitOrder> param_bit_order;
 	unsigned int num_data_bits;
-	unisim::kernel::service::Parameter<unsigned int> param_num_data_bits;
+	unisim::kernel::variable::Parameter<unsigned int> param_num_data_bits;
 	double baud_tolerance;
-	unisim::kernel::service::Parameter<double> param_baud_tolerance;
+	unisim::kernel::variable::Parameter<double> param_baud_tolerance;
 	sc_core::sc_time boot_receive_delay;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_boot_receive_delay;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_boot_receive_delay;
 	
 	void ClockPropertiesChangedProcess();
 	void TX_Process();

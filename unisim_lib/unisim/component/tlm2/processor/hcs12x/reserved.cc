@@ -20,10 +20,10 @@ RESERVED::RESERVED(const sc_module_name& name, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 
-	, unisim::kernel::service::Client<TrapReporting>(name, parent)
-	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Service<Registers>(name, parent)
-	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Client<TrapReporting>(name, parent)
+	, unisim::kernel::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Service<Registers>(name, parent)
+	, unisim::kernel::Client<Memory<physical_address_t> >(name, parent)
 
 	, trap_reporting_import("trap_reporting_import", this)
 

@@ -9,8 +9,9 @@ std/fstream
 std/map
 std/sstream
 sys/types
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/service/interfaces/blob
 unisim/service/interfaces/memory
 unisim/service/interfaces/memory_injection

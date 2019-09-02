@@ -48,7 +48,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sstream>
 
 #include <unisim/component/clm/debug/svg_memreq_interface.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include <boost/array.hpp>
 
@@ -64,10 +64,10 @@ using unisim::component::clm::interfaces::memreq_types;
 
 using unisim::component::clm::debug::SVGmemreqInterface;
 
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
 
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 
   /*
 using full_system::utils::services::Client;

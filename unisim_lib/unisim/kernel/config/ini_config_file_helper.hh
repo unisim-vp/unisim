@@ -35,28 +35,28 @@
 #ifndef __UNISIM_KERNEL_CONFIG_INI_CONFIG_FILE_HELPER_HH__
 #define __UNISIM_KERNEL_CONFIG_INI_CONFIG_FILE_HELPER_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 namespace unisim {
 namespace kernel {
 namespace config {
 
-class INIConfigFileHelper : public unisim::kernel::service::ConfigFileHelper
+class INIConfigFileHelper : public unisim::kernel::ConfigFileHelper
 {
 public:
-	INIConfigFileHelper(unisim::kernel::service::Simulator *simulator);
+	INIConfigFileHelper(unisim::kernel::Simulator *simulator);
 	virtual ~INIConfigFileHelper();
 	
 	virtual const char *GetName() const;
-	virtual bool SaveVariables(const char *filename, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
-	virtual bool SaveVariables(std::ostream& os, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
-	virtual bool LoadVariables(const char *filename, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
-	virtual bool LoadVariables(std::istream& is, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
+	virtual bool SaveVariables(const char *filename, unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
+	virtual bool SaveVariables(std::ostream& os, unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
+	virtual bool LoadVariables(const char *filename, unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
+	virtual bool LoadVariables(std::istream& is, unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
 	
 private:
-	unisim::kernel::service::Simulator *simulator;
+	unisim::kernel::Simulator *simulator;
 	
-	void SaveVariables(std::ostream& os, unisim::kernel::service::Object *object, unisim::kernel::service::VariableBase::Type type);
+	void SaveVariables(std::ostream& os, unisim::kernel::Object *object, unisim::kernel::VariableBase::Type type);
 	void Assign(const std::string& section, const std::string& key, const std::string& value);
 };
 

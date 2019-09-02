@@ -46,9 +46,9 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-Simulator::Simulator(sc_core::sc_module_name const& name, int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::service::Simulator *simulator))
-	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
-	, unisim::kernel::service::Object(name)
+Simulator::Simulator(sc_core::sc_module_name const& name, int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::Simulator *simulator))
+	: unisim::kernel::Simulator(argc, argv, LoadBuiltInConfig)
+	, unisim::kernel::Object(name)
 	, logger(*this)
 	, stat_cur_sim_time("cur-sim-time", this, *const_cast<sc_core::sc_time *>(&sc_core::sc_time_stamp()), "SystemC current simulation time (as returned by sc_core::sc_time_stamp()) ")
 	, global_quantum(sc_core::SC_ZERO_TIME)

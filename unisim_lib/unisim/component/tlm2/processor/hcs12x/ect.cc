@@ -53,10 +53,10 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 
-	, unisim::kernel::service::Client<TrapReporting>(name, parent)
-	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Service<Registers>(name, parent)
-	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Client<TrapReporting>(name, parent)
+	, unisim::kernel::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Service<Registers>(name, parent)
+	, unisim::kernel::Client<Memory<physical_address_t> >(name, parent)
 
 	, trap_reporting_import("trap_reporting_import", this)
 
@@ -104,8 +104,8 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	, delay_counter_enabled(false)
 {
 
-	param_bus_cycle_time_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_signal_generator_period.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_bus_cycle_time_int.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_signal_generator_period.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	char channelName[20];
 
@@ -1581,161 +1581,161 @@ bool ECT::BeginSetup() {
 	sprintf(buf, "%s.TIOS",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tios_register);
 
-	unisim::kernel::service::Register<uint8_t> *tios_var = new unisim::kernel::service::Register<uint8_t>("TIOS", this, tios_register, "Timer Input Capture/Output Compare Select");
+	unisim::kernel::variable::Register<uint8_t> *tios_var = new unisim::kernel::variable::Register<uint8_t>("TIOS", this, tios_register, "Timer Input Capture/Output Compare Select");
 	extended_registers_registry.push_back(tios_var);
 	tios_var->setCallBack(this, TIOS, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CFORC",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &cforc_register);
 
-	unisim::kernel::service::Register<uint8_t> *cforc_var = new unisim::kernel::service::Register<uint8_t>("CFORC", this, cforc_register, "Timer Compare Force Register");
+	unisim::kernel::variable::Register<uint8_t> *cforc_var = new unisim::kernel::variable::Register<uint8_t>("CFORC", this, cforc_register, "Timer Compare Force Register");
 	extended_registers_registry.push_back(cforc_var);
 	cforc_var->setCallBack(this, CFORC, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.OC7M",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &oc7m_register);
 
-	unisim::kernel::service::Register<uint8_t> *oc7m_var = new unisim::kernel::service::Register<uint8_t>("OC7M", this, oc7m_register, "Output Compare 7 Mask Register");
+	unisim::kernel::variable::Register<uint8_t> *oc7m_var = new unisim::kernel::variable::Register<uint8_t>("OC7M", this, oc7m_register, "Output Compare 7 Mask Register");
 	extended_registers_registry.push_back(oc7m_var);
 	oc7m_var->setCallBack(this, OC7M, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.OC7D",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &oc7d_register);
 
-	unisim::kernel::service::Register<uint8_t> *oc7d_var = new unisim::kernel::service::Register<uint8_t>("OC7D", this, oc7d_register, "Output Compare 7 Data Register");
+	unisim::kernel::variable::Register<uint8_t> *oc7d_var = new unisim::kernel::variable::Register<uint8_t>("OC7D", this, oc7d_register, "Output Compare 7 Data Register");
 	extended_registers_registry.push_back(oc7d_var);
 	oc7d_var->setCallBack(this, OC7D, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TCNT",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcnt_register);
 
-	unisim::kernel::service::Register<uint16_t> *tcnt_var = new unisim::kernel::service::Register<uint16_t>("TCNT", this, tcnt_register, "Timer Count Register");
+	unisim::kernel::variable::Register<uint16_t> *tcnt_var = new unisim::kernel::variable::Register<uint16_t>("TCNT", this, tcnt_register, "Timer Count Register");
 	extended_registers_registry.push_back(tcnt_var);
 	tcnt_var->setCallBack(this, TCNT_HIGH, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TSCR1",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tscr1_register);
 
-	unisim::kernel::service::Register<uint8_t> *tscr1_var = new unisim::kernel::service::Register<uint8_t>("TSCR1", this, tscr1_register, "Timer System Control Register 1");
+	unisim::kernel::variable::Register<uint8_t> *tscr1_var = new unisim::kernel::variable::Register<uint8_t>("TSCR1", this, tscr1_register, "Timer System Control Register 1");
 	extended_registers_registry.push_back(tscr1_var);
 	tscr1_var->setCallBack(this, TSCR1, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TTOV",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &ttov_register);
 
-	unisim::kernel::service::Register<uint16_t> *ttov_var = new unisim::kernel::service::Register<uint16_t>("TTOV", this, ttov_register, "Timer Toggle Overflow Register");
+	unisim::kernel::variable::Register<uint16_t> *ttov_var = new unisim::kernel::variable::Register<uint16_t>("TTOV", this, ttov_register, "Timer Toggle Overflow Register");
 	extended_registers_registry.push_back(ttov_var);
 	ttov_var->setCallBack(this, TTOV, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TCTL12",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tctl12_register);
 
-	unisim::kernel::service::Register<uint16_t> *tctl12_var = new unisim::kernel::service::Register<uint16_t>("TCTL12", this, tctl12_register, "Timer Control Register 1-2");
+	unisim::kernel::variable::Register<uint16_t> *tctl12_var = new unisim::kernel::variable::Register<uint16_t>("TCTL12", this, tctl12_register, "Timer Control Register 1-2");
 	extended_registers_registry.push_back(tctl12_var);
 	tctl12_var->setCallBack(this, TCTL1, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TCTL34",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tctl34_register);
 
-	unisim::kernel::service::Register<uint16_t> *tctl34_var = new unisim::kernel::service::Register<uint16_t>("TCTL34", this, tctl34_register, "Timer Control Register 3-4");
+	unisim::kernel::variable::Register<uint16_t> *tctl34_var = new unisim::kernel::variable::Register<uint16_t>("TCTL34", this, tctl34_register, "Timer Control Register 3-4");
 	extended_registers_registry.push_back(tctl34_var);
 	tctl34_var->setCallBack(this, TCTL3, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TIE",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tie_register);
 
-	unisim::kernel::service::Register<uint8_t> *tie_var = new unisim::kernel::service::Register<uint8_t>("TIE", this, tie_register, "Timer Interrupt Enable Register");
+	unisim::kernel::variable::Register<uint8_t> *tie_var = new unisim::kernel::variable::Register<uint8_t>("TIE", this, tie_register, "Timer Interrupt Enable Register");
 	extended_registers_registry.push_back(tie_var);
 	tie_var->setCallBack(this, TIE, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TSCR2",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tscr2_register);
 
-	unisim::kernel::service::Register<uint8_t> *tscr2_var = new unisim::kernel::service::Register<uint8_t>("TSCR2", this, tscr2_register, "Timer System Control Register 2");
+	unisim::kernel::variable::Register<uint8_t> *tscr2_var = new unisim::kernel::variable::Register<uint8_t>("TSCR2", this, tscr2_register, "Timer System Control Register 2");
 	extended_registers_registry.push_back(tscr2_var);
 	tscr2_var->setCallBack(this, TSCR2, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TFLG1",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tflg1_register);
 
-	unisim::kernel::service::Register<uint8_t> *tflg1_var = new unisim::kernel::service::Register<uint8_t>("TFLG1", this, tflg1_register, "Main Timer Interrupt Flag 1");
+	unisim::kernel::variable::Register<uint8_t> *tflg1_var = new unisim::kernel::variable::Register<uint8_t>("TFLG1", this, tflg1_register, "Main Timer Interrupt Flag 1");
 	extended_registers_registry.push_back(tflg1_var);
 	tflg1_var->setCallBack(this, TFLG1, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TFLG2",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tflg2_register);
 
-	unisim::kernel::service::Register<uint8_t> *tflg2_var = new unisim::kernel::service::Register<uint8_t>("TFLG2", this, tflg2_register, "Main Timer Interrupt Flag 2");
+	unisim::kernel::variable::Register<uint8_t> *tflg2_var = new unisim::kernel::variable::Register<uint8_t>("TFLG2", this, tflg2_register, "Main Timer Interrupt Flag 2");
 	extended_registers_registry.push_back(tflg2_var);
 	tflg2_var->setCallBack(this, TFLG2, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TC0",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[0]);
 
-	unisim::kernel::service::Register<uint16_t> *tc0_var = new unisim::kernel::service::Register<uint16_t>("TC0", this, tc_registers[0], "Timer Input Capture/Output Compare Register 0");
+	unisim::kernel::variable::Register<uint16_t> *tc0_var = new unisim::kernel::variable::Register<uint16_t>("TC0", this, tc_registers[0], "Timer Input Capture/Output Compare Register 0");
 	extended_registers_registry.push_back(tc0_var);
 	tc0_var->setCallBack(this, TC0_HIGH, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TC1",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[1]);
 
-	unisim::kernel::service::Register<uint16_t> *tc1_var = new unisim::kernel::service::Register<uint16_t>("TC1", this, tc_registers[1], "Timer Input Capture/Output Compare Register 1");
+	unisim::kernel::variable::Register<uint16_t> *tc1_var = new unisim::kernel::variable::Register<uint16_t>("TC1", this, tc_registers[1], "Timer Input Capture/Output Compare Register 1");
 	extended_registers_registry.push_back(tc1_var);
 	tc1_var->setCallBack(this, TC1_HIGH, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TC2",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[2]);
 
-	unisim::kernel::service::Register<uint16_t> *tc2_var = new unisim::kernel::service::Register<uint16_t>("TC2", this, tc_registers[2], "Timer Input Capture/Output Compare Register 2");
+	unisim::kernel::variable::Register<uint16_t> *tc2_var = new unisim::kernel::variable::Register<uint16_t>("TC2", this, tc_registers[2], "Timer Input Capture/Output Compare Register 2");
 	extended_registers_registry.push_back(tc2_var);
 	tc2_var->setCallBack(this, TC2_HIGH, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TC3",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[3]);
 
-	unisim::kernel::service::Register<uint16_t> *tc3_var = new unisim::kernel::service::Register<uint16_t>("TC3", this, tc_registers[3], "Timer Input Capture/Output Compare Register 3");
+	unisim::kernel::variable::Register<uint16_t> *tc3_var = new unisim::kernel::variable::Register<uint16_t>("TC3", this, tc_registers[3], "Timer Input Capture/Output Compare Register 3");
 	extended_registers_registry.push_back(tc3_var);
 	tc3_var->setCallBack(this, TC3_HIGH, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TC4",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[4]);
 
-	unisim::kernel::service::Register<uint16_t> *tc4_var = new unisim::kernel::service::Register<uint16_t>("TC4", this, tc_registers[4], "Timer Input Capture/Output Compare Register 4");
+	unisim::kernel::variable::Register<uint16_t> *tc4_var = new unisim::kernel::variable::Register<uint16_t>("TC4", this, tc_registers[4], "Timer Input Capture/Output Compare Register 4");
 	extended_registers_registry.push_back(tc4_var);
 	tc4_var->setCallBack(this, TC4_HIGH, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TC5",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[5]);
 
-	unisim::kernel::service::Register<uint16_t> *tc5_var = new unisim::kernel::service::Register<uint16_t>("TC5", this, tc_registers[5], "Timer Input Capture/Output Compare Register 5");
+	unisim::kernel::variable::Register<uint16_t> *tc5_var = new unisim::kernel::variable::Register<uint16_t>("TC5", this, tc_registers[5], "Timer Input Capture/Output Compare Register 5");
 	extended_registers_registry.push_back(tc5_var);
 	tc5_var->setCallBack(this, TC5_HIGH, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TC6",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[6]);
 
-	unisim::kernel::service::Register<uint16_t> *tc6_var = new unisim::kernel::service::Register<uint16_t>("TC6", this, tc_registers[6], "Timer Input Capture/Output Compare Register 6");
+	unisim::kernel::variable::Register<uint16_t> *tc6_var = new unisim::kernel::variable::Register<uint16_t>("TC6", this, tc_registers[6], "Timer Input Capture/Output Compare Register 6");
 	extended_registers_registry.push_back(tc6_var);
 	tc6_var->setCallBack(this, TC6_HIGH, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TC7",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[7]);
 
-	unisim::kernel::service::Register<uint16_t> *tc7_var = new unisim::kernel::service::Register<uint16_t>("TC7", this, tc_registers[7], "Timer Input Capture/Output Compare Register 7");
+	unisim::kernel::variable::Register<uint16_t> *tc7_var = new unisim::kernel::variable::Register<uint16_t>("TC7", this, tc_registers[7], "Timer Input Capture/Output Compare Register 7");
 	extended_registers_registry.push_back(tc7_var);
 	tc7_var->setCallBack(this, TC7_HIGH, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.PACTL",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pactl_register);
 
-	unisim::kernel::service::Register<uint8_t> *pactl_var = new unisim::kernel::service::Register<uint8_t>("PACTL", this, pactl_register, "16-Bit Pulse Accumulator A Control Register");
+	unisim::kernel::variable::Register<uint8_t> *pactl_var = new unisim::kernel::variable::Register<uint8_t>("PACTL", this, pactl_register, "16-Bit Pulse Accumulator A Control Register");
 	extended_registers_registry.push_back(pactl_var);
 	pactl_var->setCallBack(this, PACTL, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.PAFLG",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &paflg_register);
 
-	unisim::kernel::service::Register<uint8_t> *paflg_var = new unisim::kernel::service::Register<uint8_t>("PAFLG", this, paflg_register, "Pulse Accumulator A Flag Register");
+	unisim::kernel::variable::Register<uint8_t> *paflg_var = new unisim::kernel::variable::Register<uint8_t>("PAFLG", this, paflg_register, "Pulse Accumulator A Flag Register");
 	extended_registers_registry.push_back(paflg_var);
 	paflg_var->setCallBack(this, PAFLG, &CallBackObject::write, NULL);
 
@@ -1744,7 +1744,7 @@ bool ECT::BeginSetup() {
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, ((uint8_t*) &pacn_register[i]));
 		sprintf(buf, "PACN%d", i);
 
-		unisim::kernel::service::Register<uint8_t> *pacn_var = new unisim::kernel::service::Register<uint8_t>(buf, this, pacn_register[i], "Pulse Accumulator Count Register");
+		unisim::kernel::variable::Register<uint8_t> *pacn_var = new unisim::kernel::variable::Register<uint8_t>(buf, this, pacn_register[i], "Pulse Accumulator Count Register");
 		extended_registers_registry.push_back(pacn_var);
 		pacn_var->setCallBack(this, PACN0-i, &CallBackObject::write, NULL);
 
@@ -1752,7 +1752,7 @@ bool ECT::BeginSetup() {
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, ((uint8_t*) &paxh_registers[i]));
 		sprintf(buf, "PA%dH", i);
 
-		unisim::kernel::service::Register<uint8_t> *paxh_var = new unisim::kernel::service::Register<uint8_t>(buf, this, paxh_registers[i], "8-Bit Pulse Accumulator Holding Register");
+		unisim::kernel::variable::Register<uint8_t> *paxh_var = new unisim::kernel::variable::Register<uint8_t>(buf, this, paxh_registers[i], "8-Bit Pulse Accumulator Holding Register");
 		extended_registers_registry.push_back(paxh_var);
 		paxh_var->setCallBack(this, PA0H-i, &CallBackObject::write, NULL);
 
@@ -1761,112 +1761,112 @@ bool ECT::BeginSetup() {
 	sprintf(buf, "%s.MCCTL",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mcctl_register);
 
-	unisim::kernel::service::Register<uint8_t> *mcctl_var = new unisim::kernel::service::Register<uint8_t>("MCCTL", this, mcctl_register, "16-Bit Modulus Down Counter Register");
+	unisim::kernel::variable::Register<uint8_t> *mcctl_var = new unisim::kernel::variable::Register<uint8_t>("MCCTL", this, mcctl_register, "16-Bit Modulus Down Counter Register");
 	extended_registers_registry.push_back(mcctl_var);
 	mcctl_var->setCallBack(this, MCCTL, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.MCFLG",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mcflg_register);
 
-	unisim::kernel::service::Register<uint8_t> *mcflg_var = new unisim::kernel::service::Register<uint8_t>("MCFLG", this, mcflg_register, "16-Bit Modulus Down Counter Flag Register");
+	unisim::kernel::variable::Register<uint8_t> *mcflg_var = new unisim::kernel::variable::Register<uint8_t>("MCFLG", this, mcflg_register, "16-Bit Modulus Down Counter Flag Register");
 	extended_registers_registry.push_back(mcflg_var);
 	mcflg_var->setCallBack(this, MCFLG, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.ICPAR",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &icpar_register);
 
-	unisim::kernel::service::Register<uint8_t> *icpar_var = new unisim::kernel::service::Register<uint8_t>("ICPAR", this, icpar_register, "Input Control Pulse Accumulator Register");
+	unisim::kernel::variable::Register<uint8_t> *icpar_var = new unisim::kernel::variable::Register<uint8_t>("ICPAR", this, icpar_register, "Input Control Pulse Accumulator Register");
 	extended_registers_registry.push_back(icpar_var);
 	icpar_var->setCallBack(this, ICPAR, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.DLYCT",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &dlyct_register);
 
-	unisim::kernel::service::Register<uint8_t> *dlyct_var = new unisim::kernel::service::Register<uint8_t>("DLYCT", this, dlyct_register, "Delay Counter Control Register");
+	unisim::kernel::variable::Register<uint8_t> *dlyct_var = new unisim::kernel::variable::Register<uint8_t>("DLYCT", this, dlyct_register, "Delay Counter Control Register");
 	extended_registers_registry.push_back(dlyct_var);
 	dlyct_var->setCallBack(this, DLYCT, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.ICOVW",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &icovw_register);
 
-	unisim::kernel::service::Register<uint8_t> *icovw_var = new unisim::kernel::service::Register<uint8_t>("ICOVW", this, icovw_register, "Input Control Overwrite Register");
+	unisim::kernel::variable::Register<uint8_t> *icovw_var = new unisim::kernel::variable::Register<uint8_t>("ICOVW", this, icovw_register, "Input Control Overwrite Register");
 	extended_registers_registry.push_back(icovw_var);
 	icovw_var->setCallBack(this, ICOVW, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.ICSYS",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &icsys_register);
 
-	unisim::kernel::service::Register<uint8_t> *icsys_var = new unisim::kernel::service::Register<uint8_t>("ICSYS", this, icsys_register, "Input Control System Control Register");
+	unisim::kernel::variable::Register<uint8_t> *icsys_var = new unisim::kernel::variable::Register<uint8_t>("ICSYS", this, icsys_register, "Input Control System Control Register");
 	extended_registers_registry.push_back(icsys_var);
 	icsys_var->setCallBack(this, ICSYS, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TIMTST",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &timtst_register);
 
-	unisim::kernel::service::Register<uint8_t> *timtst_var = new unisim::kernel::service::Register<uint8_t>("TIMTST", this, timtst_register, "Timer Test Register");
+	unisim::kernel::variable::Register<uint8_t> *timtst_var = new unisim::kernel::variable::Register<uint8_t>("TIMTST", this, timtst_register, "Timer Test Register");
 	extended_registers_registry.push_back(timtst_var);
 	timtst_var->setCallBack(this, TIMTST, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.PTPSR",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ptpsr_register);
 
-	unisim::kernel::service::Register<uint8_t> *ptpsr_var = new unisim::kernel::service::Register<uint8_t>("PTPSR", this, ptpsr_register, "Precision Timer Prescaler Select Register");
+	unisim::kernel::variable::Register<uint8_t> *ptpsr_var = new unisim::kernel::variable::Register<uint8_t>("PTPSR", this, ptpsr_register, "Precision Timer Prescaler Select Register");
 	extended_registers_registry.push_back(ptpsr_var);
 	ptpsr_var->setCallBack(this, PTPSR, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.PTMCPSR",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ptmcpsr_register);
 
-	unisim::kernel::service::Register<uint8_t> *ptmcpsr_var = new unisim::kernel::service::Register<uint8_t>("PTMCPSR", this, ptmcpsr_register, "Precision Timer Modulus Counter Prescaler Select Register");
+	unisim::kernel::variable::Register<uint8_t> *ptmcpsr_var = new unisim::kernel::variable::Register<uint8_t>("PTMCPSR", this, ptmcpsr_register, "Precision Timer Modulus Counter Prescaler Select Register");
 	extended_registers_registry.push_back(ptmcpsr_var);
 	ptmcpsr_var->setCallBack(this, PTMCPSR, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.PBCTL",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pbctl_register);
 
-	unisim::kernel::service::Register<uint8_t> *pbctl_var = new unisim::kernel::service::Register<uint8_t>("PBCTL", this, pbctl_register, "16-Bit Pulse Accumulator B Control Register");
+	unisim::kernel::variable::Register<uint8_t> *pbctl_var = new unisim::kernel::variable::Register<uint8_t>("PBCTL", this, pbctl_register, "16-Bit Pulse Accumulator B Control Register");
 	extended_registers_registry.push_back(pbctl_var);
 	pbctl_var->setCallBack(this, PBCTL, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.PBFLG",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pbflg_register);
 
-	unisim::kernel::service::Register<uint8_t> *pbflg_var = new unisim::kernel::service::Register<uint8_t>("PBFLG", this, pbflg_register, "16-Bit Pulse Accumulator B Flag Register");
+	unisim::kernel::variable::Register<uint8_t> *pbflg_var = new unisim::kernel::variable::Register<uint8_t>("PBFLG", this, pbflg_register, "16-Bit Pulse Accumulator B Flag Register");
 	extended_registers_registry.push_back(pbflg_var);
 	pbflg_var->setCallBack(this, PBFLG, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.MCCNT",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &mccnt_register);
 
-	unisim::kernel::service::Register<uint16_t> *mccnt_var = new unisim::kernel::service::Register<uint16_t>("MCCNT", this, mccnt_register, "Modulus Down-Counter Count Register");
+	unisim::kernel::variable::Register<uint16_t> *mccnt_var = new unisim::kernel::variable::Register<uint16_t>("MCCNT", this, mccnt_register, "Modulus Down-Counter Count Register");
 	extended_registers_registry.push_back(mccnt_var);
 	mccnt_var->setCallBack(this, MCCNT_HIGH, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TC0H",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[0]);
 
-	unisim::kernel::service::Register<uint16_t> *tc0h_var = new unisim::kernel::service::Register<uint16_t>("TC0H", this, tcxh_registers[0], "Timer Input Capture Holding Register 0");
+	unisim::kernel::variable::Register<uint16_t> *tc0h_var = new unisim::kernel::variable::Register<uint16_t>("TC0H", this, tcxh_registers[0], "Timer Input Capture Holding Register 0");
 	extended_registers_registry.push_back(tc0h_var);
 	tc0h_var->setCallBack(this, TC0H_HIGH, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TC1H",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[1]);
 
-	unisim::kernel::service::Register<uint16_t> *tc1h_var = new unisim::kernel::service::Register<uint16_t>("TC1H", this, tcxh_registers[1], "Timer Input Capture Holding Register 1");
+	unisim::kernel::variable::Register<uint16_t> *tc1h_var = new unisim::kernel::variable::Register<uint16_t>("TC1H", this, tcxh_registers[1], "Timer Input Capture Holding Register 1");
 	extended_registers_registry.push_back(tc1h_var);
 	tc1h_var->setCallBack(this, TC1H_HIGH, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TC2H",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[2]);
 
-	unisim::kernel::service::Register<uint16_t> *tc2h_var = new unisim::kernel::service::Register<uint16_t>("TC2H", this, tcxh_registers[2], "Timer Input Capture Holding Register 2");
+	unisim::kernel::variable::Register<uint16_t> *tc2h_var = new unisim::kernel::variable::Register<uint16_t>("TC2H", this, tcxh_registers[2], "Timer Input Capture Holding Register 2");
 	extended_registers_registry.push_back(tc2h_var);
 	tc2h_var->setCallBack(this, TC2H_HIGH, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.TC3H",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[3]);
 
-	unisim::kernel::service::Register<uint16_t> *tc3h_var = new unisim::kernel::service::Register<uint16_t>("TC3H", this, tcxh_registers[3], "Timer Input Capture Holding Register 3");
+	unisim::kernel::variable::Register<uint16_t> *tc3h_var = new unisim::kernel::variable::Register<uint16_t>("TC3H", this, tcxh_registers[3], "Timer Input Capture Holding Register 3");
 	extended_registers_registry.push_back(tc3h_var);
 	tc3h_var->setCallBack(this, TC3H_HIGH, &CallBackObject::write, NULL);
 

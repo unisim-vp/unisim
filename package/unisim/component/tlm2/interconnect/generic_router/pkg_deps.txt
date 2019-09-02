@@ -8,8 +8,9 @@ std/map
 std/queue
 std/sstream
 std/vector
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
 unisim/kernel/tlm2
+unisim/kernel/variable
 unisim/service/interfaces/memory
 unisim/util/likely

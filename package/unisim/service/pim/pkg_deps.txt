@@ -19,8 +19,9 @@ std/stdexcept
 std/string
 std/vector
 sys/types
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/service/interfaces/debug_event
 unisim/service/interfaces/debug_yielding
 unisim/service/interfaces/disassembly

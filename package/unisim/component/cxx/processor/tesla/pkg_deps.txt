@@ -15,8 +15,8 @@ std/stack
 std/stdexcept
 std/string
 unisim/component/cxx/processor/tesla/hostfloat
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
 unisim/service/interfaces/debug_yielding
 unisim/service/interfaces/disassembly
 unisim/service/interfaces/instruction_stats

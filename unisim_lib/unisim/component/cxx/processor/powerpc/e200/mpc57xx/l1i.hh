@@ -49,7 +49,7 @@ namespace mpc57xx {
 // Level 1 Instruction Cache
 template <typename TYPES, typename CONFIG>
 struct L1I
-	: unisim::kernel::service::Object
+	: unisim::kernel::Object
 	, unisim::util::cache::Cache<TYPES, CONFIG, L1I<TYPES, CONFIG> >
 {
 	typedef unisim::util::cache::Cache<TYPES, CONFIG, L1I<TYPES, CONFIG> > SuperCache;
@@ -60,7 +60,7 @@ struct L1I
 	static const char *GetCacheName() { return "L1I"; }
 
 	L1I(CPU *_cpu)
-		: unisim::kernel::service::Object("L1I", _cpu, "L1 Instruction Cache")
+		: unisim::kernel::Object("L1I", _cpu, "L1 Instruction Cache")
 		, SuperCache()
 		, cpu(_cpu)
 		, l1csr1(_cpu, this)
@@ -189,10 +189,10 @@ private:
 	L1CSR1 l1csr1;
 	L1FINV1 l1finv1;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_misses;
-	unisim::kernel::service::Formula<double> formula_miss_rate;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_misses;
+	unisim::kernel::variable::Formula<double> formula_miss_rate;
 };
 
 } // end of namespace mpc57xx

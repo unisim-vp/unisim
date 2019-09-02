@@ -37,7 +37,7 @@
 
 #include <systemc>
 #include "unisim/kernel/tlm/tlm.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include <unisim/component/tlm/message/pci.hh>
@@ -66,13 +66,13 @@ using unisim::component::cxx::pci::SP_IO;
 using unisim::component::cxx::pci::SP_CONFIG;
 
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Object;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::variable::Parameter;
 using unisim::util::garbage_collector::Pointer;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
 using unisim::service::interfaces::Memory;
 using unisim::component::tlm::message::InterruptRequest;
 using unisim::component::cxx::pci::TransactionType;

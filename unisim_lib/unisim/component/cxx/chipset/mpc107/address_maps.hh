@@ -37,7 +37,7 @@
 
 #include <inttypes.h>
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/cxx/chipset/mpc107/address_map_entry.hh"
 #include "unisim/component/cxx/chipset/mpc107/config_regs.hh"
@@ -49,9 +49,9 @@ namespace cxx {
 namespace chipset {
 namespace mpc107 {
 
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
 using unisim::component::cxx::chipset::mpc107::ConfigurationRegisters;
 using unisim::component::cxx::chipset::mpc107::atu::ATU;
 

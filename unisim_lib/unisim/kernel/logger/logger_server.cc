@@ -33,7 +33,7 @@
  */
 
 #include <unisim/kernel/logger/logger_server.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/util/hypapp/hypapp.hh>
 
 #include <libxml/encoding.h>
@@ -50,9 +50,9 @@ namespace logger {
 
 static const char *XML_ENCODING = "UTF-8"; 
 
-LoggerServer::LoggerServer(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent, "Logger")
-	, unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>(name, parent)
+LoggerServer::LoggerServer(const char *name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "Logger")
+	, unisim::kernel::Service<unisim::service::interfaces::HttpServer>(name, parent)
 	, http_server_export("http-server-export", this)
 	, clients()
 	, xml_writer_(0)
@@ -83,7 +83,7 @@ LoggerServer::LoggerServer(const char *name, unisim::kernel::service::Object *pa
 	, param_http("http", this, opt_http_, "Show logger output through HTTP")
 	, param_http_max_log_size("http_max_log_size", this, opt_http_max_log_size_, "Maximum log size for HTTP output")
 {
-	param_http_max_log_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_http_max_log_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
 	pthread_mutex_init(&mutex, NULL);
 }
@@ -467,7 +467,7 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 					std::string object_name;
 				};
 
-				unisim::kernel::service::Object *object = 0;
+				unisim::kernel::Object *object = 0;
 				
 				if(req.HasQuery())
 				{

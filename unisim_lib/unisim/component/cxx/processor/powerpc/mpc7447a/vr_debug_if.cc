@@ -47,8 +47,8 @@ namespace processor {
 namespace powerpc {
 namespace mpc7447a {
 
-VectorRegisterView::VectorRegisterView(const char *name, unisim::kernel::service::Object *owner, vr_t& _storage, const char *description)
-	: unisim::kernel::service::VariableBase(name, owner, unisim::kernel::service::VariableBase::VAR_REGISTER, description)
+VectorRegisterView::VectorRegisterView(const char *name, unisim::kernel::Object *owner, vr_t& _storage, const char *description)
+	: unisim::kernel::VariableBase(name, owner, unisim::kernel::VariableBase::VAR_REGISTER, description)
 	, storage(_storage)
 {
 }
@@ -113,7 +113,7 @@ VectorRegisterView::operator std::string () const
 	return sstr.str();
 }
 
-unisim::kernel::service::VariableBase& VectorRegisterView::operator = (bool value)
+unisim::kernel::VariableBase& VectorRegisterView::operator = (bool value)
 {
 	storage.w[0] = 0;
 	storage.w[1] = 0;
@@ -122,7 +122,7 @@ unisim::kernel::service::VariableBase& VectorRegisterView::operator = (bool valu
 	return *this;
 }
 
-unisim::kernel::service::VariableBase& VectorRegisterView::operator = (long long value)
+unisim::kernel::VariableBase& VectorRegisterView::operator = (long long value)
 {
 	switch(sizeof(value))
 	{
@@ -155,7 +155,7 @@ unisim::kernel::service::VariableBase& VectorRegisterView::operator = (long long
 	return *this;
 }
 
-unisim::kernel::service::VariableBase& VectorRegisterView::operator = (unsigned long long value)
+unisim::kernel::VariableBase& VectorRegisterView::operator = (unsigned long long value)
 {
 	switch(sizeof(value))
 	{
@@ -178,7 +178,7 @@ unisim::kernel::service::VariableBase& VectorRegisterView::operator = (unsigned 
 	return *this;
 }
 
-unisim::kernel::service::VariableBase& VectorRegisterView::operator = (double value)
+unisim::kernel::VariableBase& VectorRegisterView::operator = (double value)
 {
 	storage.w[0] = 0;
 	storage.w[1] = 0;
@@ -187,7 +187,7 @@ unisim::kernel::service::VariableBase& VectorRegisterView::operator = (double va
 	return *this;
 }
 
-unisim::kernel::service::VariableBase& VectorRegisterView::operator = (const char * value)
+unisim::kernel::VariableBase& VectorRegisterView::operator = (const char * value)
 {
 	// skip space, tabs
 	char c;

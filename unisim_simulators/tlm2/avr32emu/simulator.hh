@@ -49,7 +49,7 @@
 #include <config.hh>
 
 // Class definition of kernel, services and interfaces
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/debugger/debugger.tcc>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
@@ -67,23 +67,23 @@ using unisim::service::os::avr32_t2h_syscalls::AVR32_T2H_Syscalls;
 using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Variable;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Variable;
+using unisim::kernel::VariableBase;
+using unisim::kernel::Object;
 
 //=========================================================================
 //===                        Top level class                            ===
 //=========================================================================
 
 template <class CONFIG>
-class Simulator : public unisim::kernel::service::Simulator
+class Simulator : public unisim::kernel::Simulator
 {
 public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
-	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+	virtual unisim::kernel::Simulator::SetupStatus Setup();
 	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
 protected:
@@ -152,7 +152,7 @@ private:
 	Parameter<bool> param_enable_inline_debugger;
 
 	int exit_status;
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 	virtual void SigInt();
 };
 

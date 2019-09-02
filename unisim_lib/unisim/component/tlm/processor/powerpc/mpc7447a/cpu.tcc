@@ -85,7 +85,7 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	stat_one.SetMutable(false);
 	stat_one.SetSerializable(false);
 	stat_one.SetVisible(false);
-	param_ipc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_ipc.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
 	SC_HAS_PROCESS(CPU);
 	

@@ -41,11 +41,12 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/blob.hh>
+#include <unisim/kernel/kernel.hh>
 #include <inttypes.h>
 
 struct LinuxOS
   : public unisim::service::interfaces::LinuxOS
-  , public unisim::kernel::service::Service<unisim::service::interfaces::Blob<uint64_t> >
+  , public unisim::kernel::Service<unisim::service::interfaces::Blob<uint64_t> >
 {
   LinuxOS( std::ostream& log,
            unisim::service::interfaces::Registers* regs_if,
@@ -59,7 +60,7 @@ struct LinuxOS
 
   // unisim::service::interfaces::Blob<uint64_t>
   virtual unisim::util::blob::Blob<uint64_t> const* GetBlob() const { return linux_impl.GetBlob(); }
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Blob<uint64_t> > blob_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Blob<uint64_t> > blob_export;
 
   unisim::util::os::linux_os::Linux<uint64_t, uint64_t> linux_impl;
   bool exited;

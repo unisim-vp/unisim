@@ -104,7 +104,7 @@ unistd.h \
 vector"
 
 UNISIM_LIB_PPC440EMU_SYSTEM_SOURCE_FILES="\
-unisim/kernel/service/service.cc \
+unisim/kernel/kernel.cc \
 unisim/kernel/config/xml_config_file_helper.cc \
 unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
@@ -129,7 +129,7 @@ unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
 unisim/util/blob/blob32.cc \
 unisim/util/blob/section32.cc \
-unisim/kernel/service/endian.cc \
+unisim/kernel/variable/endian/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
@@ -215,7 +215,7 @@ unisim/component/cxx/processor/powerpc/ppc440/isa/misc.isa \
 unisim/component/cxx/processor/powerpc/ppc440/isa/esr.isa"
 
 UNISIM_LIB_PPC440EMU_SYSTEM_HEADER_FILES="${UNISIM_LIB_PPC440EMU_SYSTEM_ISA_FILES} \
-unisim/kernel/service/service.hh \
+unisim/kernel/kernel.hh \
 unisim/kernel/config/xml_config_file_helper.hh \
 unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \

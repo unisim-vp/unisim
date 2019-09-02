@@ -36,7 +36,7 @@
 #define __UNISIM_SERVICE_LOADER_ARM_GENRIC_KERNEL_LOADER_ARM_GENERIC_KERNEL_LOADER_HH__
 
 #include "unisim/service/interfaces/resetable.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/loader.hh"
 #include "unisim/component/processor/arm/armtypes.hh"
@@ -49,11 +49,11 @@ namespace arm_generic_kernel_loader {
   using unisim::component::processor::arm::reg_t;
   using unisim::component::processor::arm::address_t;
   using unisim::service::interfaces::Resetable;
-  using unisim::kernel::service::Service;
-  using unisim::kernel::service::ServiceImport;
-  using unisim::kernel::service::ServiceExport;
-  using unisim::kernel::service::Client;
-  using unisim::kernel::service::Object;
+  using unisim::kernel::Service;
+  using unisim::kernel::ServiceImport;
+  using unisim::kernel::ServiceExport;
+  using unisim::kernel::Client;
+  using unisim::kernel::Object;
   using unisim::service::interfaces::Registers;
   using unisim::service::interfaces::Loader;
 

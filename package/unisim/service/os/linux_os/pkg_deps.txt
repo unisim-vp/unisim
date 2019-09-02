@@ -1,8 +1,10 @@
 libc/inttypes
 std/sstream
 std/string
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
+unisim/kernel/variable/endian
 unisim/service/interfaces/blob
 unisim/service/interfaces/linux_os
 unisim/service/interfaces/loader

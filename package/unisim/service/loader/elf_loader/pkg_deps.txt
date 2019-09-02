@@ -3,8 +3,9 @@ libc/stdlib
 std/fstream
 std/iosfwd
 std/iostream
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/service/interfaces/backtrace
 unisim/service/interfaces/blob
 unisim/service/interfaces/loader

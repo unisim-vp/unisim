@@ -11,8 +11,9 @@ std/map
 std/queue
 std/sstream
 sys/types
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/service/interfaces/avr32_t2h_syscalls
 unisim/service/interfaces/blob
 unisim/service/interfaces/memory

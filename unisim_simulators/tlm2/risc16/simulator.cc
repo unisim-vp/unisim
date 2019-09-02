@@ -37,7 +37,7 @@
 #include <unisim/service/debug/debugger/debugger.tcc>
 
 Simulator::Simulator(int argc, char **argv)
-	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
+	: unisim::kernel::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
 	, memory(0)
 	, debugger(0)
@@ -118,7 +118,7 @@ Simulator::~Simulator()
 	delete raw_loader;
 }
 
-void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM risc16");

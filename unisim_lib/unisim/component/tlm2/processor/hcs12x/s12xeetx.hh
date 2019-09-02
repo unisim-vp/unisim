@@ -17,7 +17,7 @@
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 
@@ -49,14 +49,14 @@ using namespace tlm;
 using tlm_utils::tlm_quantumkeeper;
 
 using unisim::kernel::tlm2::PayloadFabric;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::CallBackObject;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::VariableBase;
+using unisim::kernel::variable::CallBackObject;
 using unisim::kernel::logger::Logger;
 
 using unisim::kernel::logger::Logger;
@@ -267,7 +267,7 @@ private:
 	// Registers map
 	map<string, Register *> registers_registry;
 
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
 	uint8_t eclkdiv_reg, reserved1_reg, reserved2_reg, ecnfg_reg, eprot_reg, estat_reg, ecmd_reg, reserved3_reg;
 	uint16_t eaddr_reg, edata_reg;

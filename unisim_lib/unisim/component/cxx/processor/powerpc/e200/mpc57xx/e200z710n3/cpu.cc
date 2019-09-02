@@ -44,8 +44,8 @@ namespace e200 {
 namespace mpc57xx {
 namespace e200z710n3 {
 
-CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent, "e200z710n3 PowerPC core")
+CPU::CPU(const char *name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "e200z710n3 PowerPC core")
 	, SuperCPU(name, parent)
 	, mpu_http_server_export("mpu-http-server-export", this)
 	, mpu(this, 0x2)

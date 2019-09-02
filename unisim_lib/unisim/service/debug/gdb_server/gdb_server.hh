@@ -46,7 +46,8 @@
 #include <unisim/service/interfaces/register.hh>
 #include <unisim/service/interfaces/memory.hh>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 
 #include <unisim/util/debug/event.hh>
@@ -148,14 +149,14 @@ private:
 	std::vector<const GDBRegister *> gdb_registers;
 };
 
-class GDBServerBase : public virtual unisim::kernel::service::Object
+class GDBServerBase : public virtual unisim::kernel::Object
 {
 public:
 	static const uint64_t SERVER_ACCEPT_POLL_PERIOD_MS      = 100  /* ms */;  // every 100 ms
 	static const uint64_t NON_BLOCKING_READ_POLL_PERIOD_MS  = 10   /* ms */;  // every 10 ms
 	static const uint64_t NON_BLOCKING_WRITE_POLL_PERIOD_MS = 10   /* ms */;  // every 10 ms
 
-	GDBServerBase(const char *_name, unisim::kernel::service::Object *_parent);
+	GDBServerBase(const char *_name, unisim::kernel::Object *_parent);
 	virtual ~GDBServerBase();
 	
 	virtual bool EndSetup();
@@ -197,11 +198,11 @@ protected:
 	std::string remote_serial_protocol_output_traffic_recording_filename;
 	std::ofstream remote_serial_protocol_output_traffic_recording_file;
 	
-	unisim::kernel::service::Parameter<int> param_tcp_port;
-	unisim::kernel::service::Parameter<bool> param_verbose;
-	unisim::kernel::service::Parameter<bool> param_debug;
-	unisim::kernel::service::Parameter<std::string> param_remote_serial_protocol_input_traffic_recording_filename;
-	unisim::kernel::service::Parameter<std::string> param_remote_serial_protocol_output_traffic_recording_filename;
+	unisim::kernel::variable::Parameter<int> param_tcp_port;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_debug;
+	unisim::kernel::variable::Parameter<std::string> param_remote_serial_protocol_input_traffic_recording_filename;
+	unisim::kernel::variable::Parameter<std::string> param_remote_serial_protocol_output_traffic_recording_filename;
 };
 
 typedef enum
@@ -253,15 +254,15 @@ std::ostream& operator << (std::ostream& os, const GDBMode& gdb_mode);
 template <class ADDRESS>
 class GDBServer
 	: public GDBServerBase
-	, public unisim::kernel::service::Service<unisim::service::interfaces::DebugYielding>
-	, public unisim::kernel::service::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugSelecting>
-	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugYieldingRequest>
-	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::Memory<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::Disassembly<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::Registers>
+	, public unisim::kernel::Service<unisim::service::interfaces::DebugYielding>
+	, public unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::DebugSelecting>
+	, public unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>
+	, public unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::Disassembly<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::Registers>
 {
 public:
 	static const uint64_t GDB_INTERRUPT_POLL_PERIOD_MS      = 100  /* ms */;  // every 100 ms
@@ -269,19 +270,19 @@ public:
 	static const long PROCESS_ID = 1;
 	
 	// Exports to debugger
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugYielding>                debug_yielding_export;
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYielding>                debug_yielding_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
 
 	// Imports from debugger
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugYieldingRequest>         debug_yielding_request_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugSelecting>               debug_selecting_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >  debug_event_trigger_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> >             memory_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers>                    registers_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> >        disasm_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >  symbol_table_lookup_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYieldingRequest>         debug_yielding_request_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugSelecting>               debug_selecting_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >  debug_event_trigger_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> >             memory_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>                    registers_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> >        disasm_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >  symbol_table_lookup_import;
 
-	GDBServer(const char *name, unisim::kernel::service::Object *parent = 0);
+	GDBServer(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~GDBServer();
 
 	// unisim::service::interfaces::DebugYielding
@@ -412,13 +413,13 @@ private:
 	bool enable_interrupt;
 	GDBMode mode;
 
-	unisim::kernel::service::Parameter<unsigned int> param_memory_atom_size;
-	unisim::kernel::service::Parameter<std::string> param_architecture_description_filename;
-	unisim::kernel::service::Parameter<std::string> param_monitor_internals;
-	unisim::kernel::service::Parameter<GDBWaitConnectionMode> param_wait_connection_mode;
-	unisim::kernel::service::Parameter<bool> param_enable_multiprocess_extension;
-	unisim::kernel::service::Parameter<bool> param_enable_interrupt;
-	unisim::kernel::service::Parameter<GDBMode> param_mode;
+	unisim::kernel::variable::Parameter<unsigned int> param_memory_atom_size;
+	unisim::kernel::variable::Parameter<std::string> param_architecture_description_filename;
+	unisim::kernel::variable::Parameter<std::string> param_monitor_internals;
+	unisim::kernel::variable::Parameter<GDBWaitConnectionMode> param_wait_connection_mode;
+	unisim::kernel::variable::Parameter<bool> param_enable_multiprocess_extension;
+	unisim::kernel::variable::Parameter<bool> param_enable_interrupt;
+	unisim::kernel::variable::Parameter<GDBMode> param_mode;
 
 	///////////////////////////////////
 	

@@ -35,7 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_COM_XILINX_XPS_GPIO_XPS_GPIO_HH__
 #define __UNISIM_COMPONENT_CXX_COM_XILINX_XPS_GPIO_XPS_GPIO_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 
 #include <unisim/service/interfaces/memory.hh>
@@ -47,13 +48,13 @@ namespace com {
 namespace xilinx {
 namespace xps_gpio {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::Formula;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::variable::Formula;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
 using unisim::service::interfaces::Memory;
 
 template <class CONFIG>

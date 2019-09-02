@@ -37,7 +37,7 @@
 #define __UNISIM_SERVICE_TEE_BACKTRACE_TEE_HH__
 
 #include <inttypes.h>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/service/interfaces/backtrace.hh"
 
 namespace unisim {
@@ -45,11 +45,11 @@ namespace service {
 namespace tee {
 namespace backtrace {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
 using unisim::service::interfaces::BackTrace;
 
 template <class ADDRESS, unsigned int MAX_IMPORTS = 16>

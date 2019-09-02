@@ -2,6 +2,5 @@ libc/inttypes
 libc/string
 std/iostream
 sys/types
-unisim/kernel/service
 unisim/util/inlining
 m4/endian

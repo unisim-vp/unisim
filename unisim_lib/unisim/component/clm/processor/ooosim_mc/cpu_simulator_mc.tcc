@@ -76,7 +76,7 @@ using unisim::component::clm::pipeline::commit::ReorderBuffer;
 
 using unisim::component::clm::utility::hexa;
 
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 
 
 /**

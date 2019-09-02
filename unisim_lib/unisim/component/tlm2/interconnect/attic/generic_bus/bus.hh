@@ -40,7 +40,7 @@
 #include <tlm>
 #include <tlm_utils/multi_passthrough_target_socket.h>
 #include <tlm_utils/simple_initiator_socket.h>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/tlm2/interconnect/generic_bus/bus_types.hh"
 
@@ -54,11 +54,11 @@ template<unsigned int BUSWIDTH = 32,
 	typename TYPES = tlm::tlm_base_protocol_types,
 	bool DEBUG = false>
 class Bus : 
-	public unisim::kernel::service::Object,
+	public unisim::kernel::Object,
 	public sc_module {
 public:
 	SC_HAS_PROCESS(Bus);
-	Bus(const sc_module_name& name, unisim::kernel::service::Object *parent = 0);
+	Bus(const sc_module_name& name, unisim::kernel::Object *parent = 0);
 	~Bus();
 
 	virtual bool Setup();
@@ -122,7 +122,7 @@ private:
 
 	sc_time bus_cycle_time;
 	double bus_cycle_time_double;
-	unisim::kernel::service::Parameter<double> param_bus_cycle_time_double;
+	unisim::kernel::variable::Parameter<double> param_bus_cycle_time_double;
 
 	/*************************************************************************
 	 * Parameters                                                        END *
@@ -134,13 +134,13 @@ private:
 
 	unisim::kernel::logger::Logger logger;
 	bool verbose_all;
-	unisim::kernel::service::Parameter<bool> param_verbose_all;
+	unisim::kernel::variable::Parameter<bool> param_verbose_all;
 	bool verbose_setup;
-	unisim::kernel::service::Parameter<bool> param_verbose_setup;
+	unisim::kernel::variable::Parameter<bool> param_verbose_setup;
 	bool verbose_non_blocking;
-	unisim::kernel::service::Parameter<bool> param_verbose_non_blocking;
+	unisim::kernel::variable::Parameter<bool> param_verbose_non_blocking;
 	bool verbose_blocking;
-	unisim::kernel::service::Parameter<bool> param_verbose_blocking;
+	unisim::kernel::variable::Parameter<bool> param_verbose_blocking;
 
 	/*************************************************************************
 	 * Logger and verbose parameters                                     END *

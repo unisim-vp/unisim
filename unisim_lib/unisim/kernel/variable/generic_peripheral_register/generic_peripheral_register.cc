@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2011,
+ *  Copyright (c) 2011-2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,20 +29,21 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
-#include <stdlib.h>
-#include <inttypes.h>
+#include <unisim/util/generic_peripheral_register/generic_peripheral_register.hh>
+#include <unisim/kernel/variable/variable.hh>
+#include <unisim/kernel/kernel.hh>
 #include <string>
-#include <cstring>
 #include <sstream>
-#include "unisim/kernel/service/service.hh"
-#include "unisim/util/generic_peripheral_register/generic_peripheral_register.hh"
+#include <cstring>
+#include <cstdlib>
+#include <inttypes.h>
 
 namespace unisim {
 namespace kernel {
-namespace service {
+namespace variable {
 
 using unisim::util::generic_peripheral_register::GenericPeripheralByteRegister;
 using unisim::util::generic_peripheral_register::GenericPeripheralHalfWordRegister;
@@ -60,7 +61,7 @@ Variable(const char *_name,
 		const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 }
 
 template <>
@@ -196,7 +197,7 @@ Variable(const char *_name,
 		const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 }
 
 template <>
@@ -332,7 +333,7 @@ Variable(const char *_name,
 		const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 }
 
 template <>
@@ -468,7 +469,7 @@ Variable(const char *_name,
 		const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 }
 
 template <>
@@ -593,6 +594,6 @@ unsigned int Variable<GenericPeripheralDoubleWordRegister>::GetBitSize() const
 
 template class Variable<GenericPeripheralDoubleWordRegister>;
 
-} // end of service namespace
+} // end of variable namespace
 } // end of kernel namespace
 } // end of unisim namespace

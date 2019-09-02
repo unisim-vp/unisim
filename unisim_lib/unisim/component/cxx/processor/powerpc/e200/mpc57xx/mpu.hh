@@ -38,7 +38,7 @@
 #include <inttypes.h>
 #include <iostream>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/service/interfaces/http_server.hh>
 
 namespace unisim {
@@ -61,7 +61,7 @@ struct MPU_REGION_DESCRIPTOR
 
 template <typename TYPES, typename CONFIG>
 struct MPU
-	: unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>
+	: unisim::kernel::Service<unisim::service::interfaces::HttpServer>
 {
 	typedef typename CONFIG::CPU CPU;
 	typedef typename TYPES::ADDRESS ADDRESS;
@@ -76,7 +76,7 @@ struct MPU
 	static const unsigned int NUM_DATA_MPU_ENTRIES = CONFIG::NUM_DATA_MPU_ENTRIES;
 	static const unsigned int NUM_SHARED_MPU_ENTRIES = CONFIG::NUM_SHARED_MPU_ENTRIES;
 	
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
 
 	MPU(CPU *cpu, unsigned int sel);
 	void WriteEntry();
@@ -202,8 +202,8 @@ private:
 
 template <typename TYPES, typename CONFIG>
 MPU<TYPES, CONFIG>::MPU(CPU *_cpu, unsigned int _sel)
-	: unisim::kernel::service::Object("MPU", _cpu, "Memory Protection Unit")
-	, unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>("MPU", _cpu)
+	: unisim::kernel::Object("MPU", _cpu, "Memory Protection Unit")
+	, unisim::kernel::Service<unisim::service::interfaces::HttpServer>("MPU", _cpu)
 	, http_server_export("http-server-export", this)
 	, cpu(_cpu)
 	, sel(_sel)

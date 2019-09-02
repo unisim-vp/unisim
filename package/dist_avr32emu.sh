@@ -9,7 +9,7 @@ import unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa
 import unisim/component/tlm2/processor/avr32/avr32uc
 import unisim/component/tlm2/memory/ram
 import unisim/component/tlm2/interconnect/generic_router
-import unisim/kernel/service
+import unisim/kernel
 import unisim/service/debug/debugger
 import unisim/service/debug/gdb_server
 import unisim/service/debug/inline_debugger

@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_DEBUG_MONITOR_MONITOR_HH__
 #define __UNISIM_SERVICE_DEBUG_MONITOR_MONITOR_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -157,31 +157,31 @@ private:
 template <typename ADDRESS>
 class Monitor
 	: public MonitorBase
-	, public unisim::kernel::service::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::Memory<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::Registers>
-	, public unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::BackTrace<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugInfoLoading>
-	, public unisim::kernel::service::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >
+	, public unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::Registers>
+	, public unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::BackTrace<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>
+	, public unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >
 {
 public:
-	Monitor(const char *name, unisim::kernel::service::Object *parent = 0);
+	Monitor(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~Monitor();
 	
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> > debug_event_trigger_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> > memory_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> registers_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::StatementLookup<ADDRESS> > stmt_lookup_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::BackTrace<ADDRESS> > backtrace_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugInfoLoading> debug_info_loading_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DataObjectLookup<ADDRESS> > data_object_lookup_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::SubProgramLookup<ADDRESS> > subprogram_lookup_import;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> > debug_event_trigger_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> > memory_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> registers_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::StatementLookup<ADDRESS> > stmt_lookup_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::BackTrace<ADDRESS> > backtrace_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugInfoLoading> debug_info_loading_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DataObjectLookup<ADDRESS> > data_object_lookup_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::SubProgramLookup<ADDRESS> > subprogram_lookup_import;
 	
 	virtual bool EndSetup();
 	

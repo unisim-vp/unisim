@@ -62,7 +62,7 @@ enum BusResponseStatus
 template <typename TYPES, typename CONFIG>
 class CPU
 	: public unisim::component::cxx::processor::powerpc::CPU<TYPES, CONFIG>
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Disassembly<typename TYPES::EFFECTIVE_ADDRESS> >
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Disassembly<typename TYPES::EFFECTIVE_ADDRESS> >
 {
 public:
 	typedef typename unisim::component::cxx::processor::powerpc::CPU<TYPES, CONFIG> SuperCPU;
@@ -79,11 +79,11 @@ public:
 	
 	/////////////////////////// service exports ///////////////////////////////
 
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS> > disasm_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS> > disasm_export;
 
 	////////////////////////////// constructor ////////////////////////////////
 	
-	CPU(const char *name, unisim::kernel::service::Object *parent = 0);
+	CPU(const char *name, unisim::kernel::Object *parent = 0);
 
 	/////////////////////////////// destructor ////////////////////////////////
 
@@ -704,61 +704,61 @@ protected:
 	////////////////////////// Run-time parameters ////////////////////////////
 	
 	uint8_t cpuid;
-	unisim::kernel::service::Parameter<uint8_t> param_cpuid;
+	unisim::kernel::variable::Parameter<uint8_t> param_cpuid;
 
 	uint32_t processor_version;
-	unisim::kernel::service::Parameter<uint32_t> param_processor_version;
+	unisim::kernel::variable::Parameter<uint32_t> param_processor_version;
 	
 	uint32_t system_version;
-	unisim::kernel::service::Parameter<uint32_t> param_system_version;
+	unisim::kernel::variable::Parameter<uint32_t> param_system_version;
 
 	uint32_t system_information;
-	unisim::kernel::service::Parameter<uint32_t> param_system_information;
+	unisim::kernel::variable::Parameter<uint32_t> param_system_information;
 
 	PHYSICAL_ADDRESS local_memory_base_addr;
-	unisim::kernel::service::Parameter<PHYSICAL_ADDRESS> param_local_memory_base_addr;
+	unisim::kernel::variable::Parameter<PHYSICAL_ADDRESS> param_local_memory_base_addr;
 
 	PHYSICAL_ADDRESS local_memory_size;
-	unisim::kernel::service::Parameter<PHYSICAL_ADDRESS> param_local_memory_size;
-	
+	unisim::kernel::variable::Parameter<PHYSICAL_ADDRESS> param_local_memory_size;
+
 	bool trap_system_reset_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_system_reset_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_system_reset_interrupt;
 
 	bool trap_machine_check_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_machine_check_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_machine_check_interrupt;
 	
 	bool trap_data_storage_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_data_storage_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_data_storage_interrupt;
 	
 	bool trap_instruction_storage_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_instruction_storage_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_instruction_storage_interrupt;
 	
 	bool trap_alignment_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_alignment_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_alignment_interrupt;
 	
 	bool trap_program_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_program_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_program_interrupt;
 	
 	bool trap_embedded_floating_point_data_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_embedded_floating_point_data_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_embedded_floating_point_data_interrupt;
 	
 	bool trap_embedded_floating_point_round_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_embedded_floating_point_round_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_embedded_floating_point_round_interrupt;
 	
 	bool trap_system_call_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_system_call_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_system_call_interrupt;
 	
 	bool trap_critical_input_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_critical_input_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_critical_input_interrupt;
 	
 	bool trap_external_input_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_external_input_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_external_input_interrupt;
 	
 	bool trap_performance_monitor_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_performance_monitor_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_performance_monitor_interrupt;
 	
 	bool trap_debug_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_debug_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_debug_interrupt;
 	
 	///////////////////////////// Interrupts //////////////////////////////////
 	

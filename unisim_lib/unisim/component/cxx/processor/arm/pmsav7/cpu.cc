@@ -56,9 +56,9 @@ namespace processor {
 namespace arm {
 namespace pmsav7 {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::TrapReporting;
@@ -82,7 +82,7 @@ using unisim::kernel::logger::EndDebugError;
  * @param parent the parent object of this object
  */
 CPU::CPU(const char *name, Object *parent)
-  : unisim::kernel::service::Object(name, parent)
+  : unisim::kernel::Object(name, parent)
   , unisim::component::cxx::processor::arm::CPU<ARMv7emu>(name, parent)
   , Service<MemoryAccessReportingControl>(name, parent)
   , Client<MemoryAccessReporting<uint32_t> >(name, parent)
@@ -101,8 +101,8 @@ CPU::CPU(const char *name, Object *parent)
   , debug_yielding_import("debug-yielding-import", this)
   , trap_reporting_import("trap-reporting-import", this)
   , requires_memory_access_reporting(false)
-  , requires_commit_instruction_reporting(false)
   , requires_fetch_instruction_reporting(false)
+  , requires_commit_instruction_reporting(false)
   // , icache("icache", this)
   // , dcache("dcache", this)
   , arm32_decoder()
@@ -122,8 +122,8 @@ CPU::CPU(const char *name, Object *parent)
   , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
 {
   // Set the right format for various of the variables
-  param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-  stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+  param_trap_on_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+  stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 }
 
 /** Destructor.
@@ -966,8 +966,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "CLIDR, Cache Level ID Register"; }
-          uint32_t Read( CP15CPU& _cpu ) {
-            CPU& cpu = static_cast<CPU&>( _cpu );
+          uint32_t Read( CP15CPU& _cpu )
+          {
+            //CPU& cpu = static_cast<CPU&>( _cpu );
             uint32_t
               LoUU =   0b010, /* Level of Unification Uniprocessor  */
               LoC =    0b010, /* Level of Coherency */

@@ -256,7 +256,7 @@ const char *FunctionNameLocationConversion<ADDRESS>::SLocToFunctionName(const SL
 ///////////////////////////// AddressProfile<> ////////////////////////////////
 
 template <typename ADDRESS, typename T>
-AddressProfile<ADDRESS, T>::AddressProfile(unisim::kernel::service::Variable<T> *stat, unisim::service::interfaces::Disassembly<ADDRESS> *_disasm_if, unisim::service::interfaces::StatementLookup<ADDRESS> *_stmt_lookup_if, unisim::service::interfaces::SymbolTableLookup<ADDRESS> *_symbol_table_lookup_if, std::ostream& _warn_log)
+AddressProfile<ADDRESS, T>::AddressProfile(unisim::kernel::variable::Variable<T> *stat, unisim::service::interfaces::Disassembly<ADDRESS> *_disasm_if, unisim::service::interfaces::StatementLookup<ADDRESS> *_stmt_lookup_if, unisim::service::interfaces::SymbolTableLookup<ADDRESS> *_symbol_table_lookup_if, std::ostream& _warn_log)
 	: Super()
 	, warn_log(_warn_log)
 	, disasm_if(_disasm_if)
@@ -1735,7 +1735,7 @@ void AnnotatedSourceCodeFile<ADDRESS, T>::Clear()
 template <typename ADDRESS, typename T>
 bool AnnotatedSourceCodeFile<ADDRESS, T>::LocateFile(const char *filename, std::string& match_file_path)
 {
-	const std::string& shared_data_dir = unisim::kernel::service::Simulator::Instance()->GetSharedDataDirectory();
+	const std::string& shared_data_dir = unisim::kernel::Simulator::Instance()->GetSharedDataDirectory();
 	
 	if(access(filename, R_OK) == 0)
 	{
@@ -1929,21 +1929,21 @@ void AnnotatedSourceCodeFileSet<ADDRESS, T>::Clear()
 template <typename ADDRESS>
 Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	: Object(_name, _parent, "this service implements an instruction profiler")
-	, unisim::kernel::service::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
-	, unisim::kernel::service::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::DebugYieldingRequest>(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::Disassembly<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::Memory<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::Registers>(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::BackTrace<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::Profiling<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::DebugInfoLoading>(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
+	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Service<unisim::service::interfaces::HttpServer>(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Disassembly<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Registers>(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::BackTrace<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Profiling<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DebugInfoLoading>(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(_name, _parent)
 	, debug_yielding_export("debug-yielding-export", this)
 	, debug_event_listener_export("debug-event-listener-export", this)
 	, http_server_export("http-server-export", this)
@@ -2080,7 +2080,7 @@ bool Profiler<ADDRESS>::EndSetup()
 
 	while(sstr >> var_name)
 	{
-		unisim::kernel::service::VariableBase *var = unisim::kernel::service::Object::GetSimulator()->FindVariable(var_name.c_str());
+		unisim::kernel::VariableBase *var = unisim::kernel::Object::GetSimulator()->FindVariable(var_name.c_str());
 		
 		if(var->IsVoid())
 		{
@@ -2402,9 +2402,9 @@ bool Profiler<ADDRESS>::UnlistenCommit()
 }
 
 template <typename ADDRESS>
-template <typename T> bool Profiler<ADDRESS>::TryProfile(unisim::kernel::service::VariableBase *var)
+template <typename T> bool Profiler<ADDRESS>::TryProfile(unisim::kernel::VariableBase *var)
 {
-	unisim::kernel::service::Variable<T> *typed_var = dynamic_cast<unisim::kernel::service::Variable<T> *>(var);
+	unisim::kernel::variable::Variable<T> *typed_var = dynamic_cast<unisim::kernel::variable::Variable<T> *>(var);
 	
 	if(typed_var)
 	{
@@ -2460,7 +2460,7 @@ void Profiler<ADDRESS>::LoadDebugInfo()
 			
 			std::string _filename = (delim_pos != std::string::npos) ? filename.substr(pos, delim_pos - pos) : filename.substr(pos);
 			
-			std::string real_filename = unisim::kernel::service::Object::GetSimulator()->SearchSharedDataFile(_filename.c_str());
+			std::string real_filename = unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(_filename.c_str());
 			
 			if(debug_info_loading_import->EnableBinary(real_filename.c_str(), true))
 			{

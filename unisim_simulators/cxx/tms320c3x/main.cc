@@ -42,7 +42,7 @@
 #include <signal.h>
 #include <stdexcept>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/component/cxx/processor/tms320c3x/config.hh>
 #include <unisim/component/cxx/processor/tms320c3x/cpu.hh>
 #include <unisim/component/cxx/memory/ram/memory.hh>
@@ -64,17 +64,17 @@
 
 
 using namespace std;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Object;
+using unisim::kernel::VariableBase;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::Object;
 
 
-class Simulator : public unisim::kernel::service::Simulator
+class Simulator : public unisim::kernel::Simulator
 {
 public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
-	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+	virtual unisim::kernel::Simulator::SetupStatus Setup();
 	void Run();
 	virtual void Stop(Object *object, int _exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
@@ -138,17 +138,17 @@ private:
 
 	int exit_status;
 	bool simulating;
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 };
 
 void SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+	unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 }
 
 Simulator::Simulator(int argc, char **argv)
-	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
+	: unisim::kernel::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
 	, memory(0)
 	, host_time(0)
@@ -264,7 +264,7 @@ Simulator::~Simulator()
 	if(ti_c_io) delete ti_c_io;
 }
 	
-void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM tms320c3x");
@@ -340,7 +340,7 @@ void Simulator::Run()
 
 }
 
-unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
+unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 {
 	if(enable_inline_debugger)
 	{
@@ -352,7 +352,7 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 		SetVariable("cpu.trap-on-trap-instruction", 0x7400003f); // TRAP 0x1f
 	}
 	
-	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+	unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
 
 	return setup_status;
 }
@@ -393,15 +393,15 @@ int main(int argc, char *argv[])
 
 	switch(simulator->Setup())
 	{
-		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+		case unisim::kernel::Simulator::ST_OK_DONT_START:
 			break;
-		case unisim::kernel::service::Simulator::ST_WARNING:
+		case unisim::kernel::Simulator::ST_WARNING:
 			cerr << "Some warnings occurred during setup" << endl;
-		case unisim::kernel::service::Simulator::ST_OK_TO_START:
+		case unisim::kernel::Simulator::ST_OK_TO_START:
 			cerr << "Starting simulation" << endl;
 			simulator->Run();
 			break;
-		case unisim::kernel::service::Simulator::ST_ERROR:
+		case unisim::kernel::Simulator::ST_ERROR:
 			cerr << "Can't start simulation because of previous errors" << endl;
 			break;
 	}

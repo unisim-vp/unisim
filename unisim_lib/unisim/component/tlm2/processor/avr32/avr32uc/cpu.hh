@@ -38,7 +38,7 @@
 
 #include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/cpu.hh>
 #include <systemc>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <tlm_utils/tlm_quantumkeeper.h>
@@ -55,11 +55,11 @@ namespace avr32 {
 namespace avr32uc {
 
 using unisim::kernel::tlm2::PayloadFabric;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::Formula;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::variable::Formula;
 using unisim::kernel::logger::Logger;
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
 using unisim::component::tlm2::interrupt::InterruptPayload;

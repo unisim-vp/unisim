@@ -39,7 +39,7 @@
 #include <tlm>
 #include <tlm_utils/simple_initiator_socket.h>
 #include <tlm_utils/passthrough_target_socket.h>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 #include <inttypes.h>
@@ -61,7 +61,7 @@ namespace chipset {
 namespace arm926ejs_pxp {
 
 class PXP
-	: public unisim::kernel::service::Object
+	: public unisim::kernel::Object
 	, public sc_module
 {
 public:

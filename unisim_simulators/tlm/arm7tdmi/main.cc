@@ -37,7 +37,7 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 
 #include "unisim/component/cxx/processor/arm/config.hh"
 #include "unisim/component/tlm/processor/arm/arm.hh"
@@ -97,8 +97,8 @@ using unisim::service::loader::elf_loader::Elf32Loader;
 using unisim::service::logger::LoggerServer;
 using unisim::service::time::sc_time::ScTime;
 using unisim::service::time::host_time::HostTime;
-using unisim::kernel::service::ServiceManager;
-using unisim::kernel::service::VariableBase;
+using unisim::kernel::ServiceManager;
+using unisim::kernel::VariableBase;
 
 void help(char *prog_name) {
 	cerr << "Usage: " << prog_name << " [<options>] <binary to simulate>" << endl << endl;

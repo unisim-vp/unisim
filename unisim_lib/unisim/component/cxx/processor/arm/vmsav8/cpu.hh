@@ -100,18 +100,18 @@ namespace vmsav8 {
 
 template <typename CONFIG>
 struct CPU
-  : public virtual unisim::kernel::service::Object
-  , public unisim::kernel::service::Client<unisim::service::interfaces::DebugYielding>
-  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
-  , public unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<uint64_t> >
-  , public unisim::kernel::service::Client<unisim::service::interfaces::Memory<uint64_t> >
-  , public unisim::kernel::service::Client<unisim::service::interfaces::LinuxOS>
-  , public unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
-  , public unisim::kernel::service::Service<unisim::service::interfaces::Registers>
-  , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >
-  , public unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<uint64_t> >
-  , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryAccessReportingControl>
-  , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
+  : public virtual unisim::kernel::Object
+  , public unisim::kernel::Client<unisim::service::interfaces::DebugYielding>
+  , public unisim::kernel::Client<unisim::service::interfaces::TrapReporting>
+  , public unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<uint64_t> >
+  , public unisim::kernel::Client<unisim::service::interfaces::Memory<uint64_t> >
+  , public unisim::kernel::Client<unisim::service::interfaces::LinuxOS>
+  , public unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
+  , public unisim::kernel::Service<unisim::service::interfaces::Registers>
+  , public unisim::kernel::Service<unisim::service::interfaces::Memory<uint64_t> >
+  , public unisim::kernel::Service<unisim::service::interfaces::Disassembly<uint64_t> >
+  , public unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReportingControl>
+  , public unisim::kernel::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
 {
   typedef CONFIG Config;
   // typedef simfloat::FP FP;
@@ -142,7 +142,7 @@ struct CPU
   //=                    Registers interface methods                    =
   //=====================================================================
 
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
   virtual unisim::service::interfaces::Register* GetRegister( const char* name );
   virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner );
 
@@ -151,7 +151,7 @@ struct CPU
   //=              Memory interface methods (non intrusive)             =
   //=====================================================================
 
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
   virtual bool ReadMemory( uint64_t addr, void* buffer, uint32_t size );
   virtual bool WriteMemory( uint64_t addr, void const* buffer, uint32_t size );
 
@@ -159,21 +159,21 @@ struct CPU
   //=                   Disassembly interface methods                   =
   //=====================================================================
 
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export;
   virtual std::string Disasm( uint64_t addr, uint64_t& next_addr );
   
   //=====================================================================
   //=             Memory access reporting interface methods             =
   //=====================================================================
 
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
   virtual void RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report );
   
   //=====================================================================
   //=                Memory injection interface methods                 =
   //=====================================================================
 
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> > memory_injection_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> > memory_injection_export;
   virtual bool InjectReadMemory( uint64_t addr, void* buffer, uint32_t size );
   virtual bool InjectWriteMemory( uint64_t addr, void const* buffer, uint32_t size );
 
@@ -181,12 +181,12 @@ struct CPU
   //=                          Service imports                          =
   //=====================================================================
 
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugYielding>                    debug_yielding_import;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>                    trap_reporting_import;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint64_t> >     symbol_table_lookup_import;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<uint64_t> >                memory_import;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::LinuxOS>                          linux_os_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYielding>                    debug_yielding_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::TrapReporting>                    trap_reporting_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint64_t> >     symbol_table_lookup_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<uint64_t> >                memory_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
+  unisim::kernel::ServiceImport<unisim::service::interfaces::LinuxOS>                          linux_os_import;
 
   /**********************************************************************
    ***                Functional methods and members                  ***
@@ -386,7 +386,7 @@ protected:
   typedef std::map<std::string, unisim::service::interfaces::Register*> RegistersRegistry;
   RegistersRegistry registers_registry;
   
-  typedef std::set<unisim::kernel::service::VariableBase*> VariableRegisterPool;
+  typedef std::set<unisim::kernel::VariableBase*> VariableRegisterPool;
   VariableRegisterPool variable_register_pool;
   
   /**********************************************************************

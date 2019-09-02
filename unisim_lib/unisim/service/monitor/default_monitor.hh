@@ -5,12 +5,12 @@
 
 #include <fstream>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include <unisim/service/interfaces/monitor_if.hh>
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::ServiceExportBase;
 
 using unisim::service::interfaces::Monitor_if;
 

@@ -153,9 +153,9 @@ const bool Router<CONFIG>::VERBOSE;
 
 template<class CONFIG>
 Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
-	: unisim::kernel::service::Object(name, parent, "A memory-mapped router")
-	, unisim::kernel::service::Service<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >(name, parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >(name, parent)
+	: unisim::kernel::Object(name, parent, "A memory-mapped router")
+	, unisim::kernel::Service<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >(name, parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >(name, parent)
 	, sc_core::sc_module(name)
 	, output_if_clock("output_if_clock")
 	, input_if_clock("input_if_clock")
@@ -229,13 +229,13 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 
 	if (VERBOSE)
 	{
-		param_verbose_all = new unisim::kernel::service::Parameter<bool>("verbose_all", this, verbose_all, "Activate all the verbose options");
-		param_verbose_setup = new unisim::kernel::service::Parameter<bool>("verbose_setup", this, verbose_setup, "Display Object setup information");
-		param_verbose_tlm = new unisim::kernel::service::Parameter<bool>("verbose_tlm", this, verbose_tlm, "Display TLM blocking/non-blocking transactions information");
-		param_verbose_tlm_debug = new unisim::kernel::service::Parameter<bool>("verbose_tlm_debug", this, verbose_tlm_debug, "Display TLM debug transactions information");
-		param_verbose_memory_interface = new unisim::kernel::service::Parameter<bool>("verbose_memory_interface", this, verbose_memory_interface, "Display memory interface operations information");
+		param_verbose_all = new unisim::kernel::variable::Parameter<bool>("verbose_all", this, verbose_all, "Activate all the verbose options");
+		param_verbose_setup = new unisim::kernel::variable::Parameter<bool>("verbose_setup", this, verbose_setup, "Display Object setup information");
+		param_verbose_tlm = new unisim::kernel::variable::Parameter<bool>("verbose_tlm", this, verbose_tlm, "Display TLM blocking/non-blocking transactions information");
+		param_verbose_tlm_debug = new unisim::kernel::variable::Parameter<bool>("verbose_tlm_debug", this, verbose_tlm_debug, "Display TLM debug transactions information");
+		param_verbose_memory_interface = new unisim::kernel::variable::Parameter<bool>("verbose_memory_interface", this, verbose_memory_interface, "Display memory interface operations information");
 #if HAVE_TVS
-		param_verbose_bandwidth_tracing = new unisim::kernel::service::Parameter<bool>("verbose-tracing", this, verbose_bandwidth_tracing, "Enable/Disable verbosity while tracing I/O activity over Initiator and Target TLM-2.0 sockets");
+		param_verbose_bandwidth_tracing = new unisim::kernel::variable::Parameter<bool>("verbose-tracing", this, verbose_bandwidth_tracing, "Enable/Disable verbosity while tracing I/O activity over Initiator and Target TLM-2.0 sockets");
 #endif
 	}
 
@@ -252,7 +252,7 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 	{
 		std::stringstream buf;
 		buf << "mapping_" << i;
-		param_mapping[i] = new unisim::kernel::service::Parameter<MAPPING>(buf.str().c_str(), this, mapping[i], mapping_desc);
+		param_mapping[i] = new unisim::kernel::variable::Parameter<MAPPING>(buf.str().c_str(), this, mapping[i], mapping_desc);
 		param_mapping[i]->SetMutable(false);
 	}
 	
@@ -263,7 +263,7 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 		name_sstr << "input_socket_name_" << i;
 		std::stringstream desc_sstr;
 		desc_sstr << "Name of input socket #" << i;
-		param_input_socket_name[i] = new unisim::kernel::service::Parameter<std::string>(name_sstr.str().c_str(), this, input_socket_name[i], desc_sstr.str().c_str());
+		param_input_socket_name[i] = new unisim::kernel::variable::Parameter<std::string>(name_sstr.str().c_str(), this, input_socket_name[i], desc_sstr.str().c_str());
 		param_input_socket_name[i]->SetMutable(false);
 	}
 	
@@ -274,7 +274,7 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 		name_sstr << "output_socket_name_" << i;
 		std::stringstream desc_sstr;
 		desc_sstr << "Name of output socket #" << i;
-		param_output_socket_name[i] = new unisim::kernel::service::Parameter<std::string>(name_sstr.str().c_str(), this, output_socket_name[i], desc_sstr.str().c_str());
+		param_output_socket_name[i] = new unisim::kernel::variable::Parameter<std::string>(name_sstr.str().c_str(), this, output_socket_name[i], desc_sstr.str().c_str());
 		param_output_socket_name[i]->SetMutable(false);
 	}
 
@@ -328,7 +328,7 @@ Router<CONFIG>::Router(const sc_core::sc_module_name &name, Object *parent)
 	{
 		std::stringstream str;
 		str << "memory-import[" << i << "]";
-		memory_import[i] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >(str.str().c_str(), this);
+		memory_import[i] = new unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >(str.str().c_str(), this);
 		memory_export.SetupDependsOn(*memory_import[i]);
 	}
 //	/* create initiator sockets and register socket callbacks */

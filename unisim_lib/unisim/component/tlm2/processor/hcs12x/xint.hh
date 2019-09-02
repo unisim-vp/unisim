@@ -53,7 +53,7 @@
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
@@ -78,14 +78,14 @@ using unisim::component::cxx::processor::hcs12x::TOWNER;
 using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::CallBackObject;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExportBase;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
@@ -282,7 +282,7 @@ private:
 	// Registers map
 	map<string, Register *> registers_registry;
 
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
 	bool selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer);
 

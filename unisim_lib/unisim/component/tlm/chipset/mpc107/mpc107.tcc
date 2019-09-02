@@ -49,7 +49,7 @@ using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 
 using std::stringstream;
 
@@ -109,8 +109,8 @@ MPC107(const sc_module_name &name, Object *parent) :
 	param_frequency("frequency", this, frequency, "frequency in Mhz"),
 	param_sdram_cycle_time("sdram_cycle_time", this, sdram_cycle_time, "SDRAM cycle time in picoseconds")
 {
-	param_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_sdram_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_frequency.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_sdram_cycle_time.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
 	slave_port(*this);
 	pci_slave_port(*this);

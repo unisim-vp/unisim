@@ -10,8 +10,9 @@ std/map
 std/sstream
 std/string
 sys/types
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/service/interfaces/keyboard
 unisim/service/interfaces/memory
 unisim/service/interfaces/mouse

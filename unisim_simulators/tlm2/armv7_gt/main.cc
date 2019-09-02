@@ -71,19 +71,19 @@ int main(int argc, char *argv[]) {
 
 	switch ( simulator->Setup() )
 	{
-	case unisim::kernel::service::Simulator::ST_ERROR:
+	case unisim::kernel::Simulator::ST_ERROR:
 		cerr << "ERROR: Can't start simulation because of previous erros" << endl;
 		ret = -1;
 		break;
-	case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+	case unisim::kernel::Simulator::ST_OK_DONT_START:
 		cerr << "Successfully configured the simulator." << endl;
 		ret = 0;
 		break;
-	case unisim::kernel::service::Simulator::ST_WARNING:
+	case unisim::kernel::Simulator::ST_WARNING:
 		cerr << "WARNING: problems detected during setup."
 			<< " Starting simulation anyway, but errors could appear during "
 			<< "the simulation." << endl;
-	case unisim::kernel::service::Simulator::ST_OK_TO_START:
+	case unisim::kernel::Simulator::ST_OK_TO_START:
 		cerr << "Starting simulation." << endl;
 		ret = simulator->Run();
 		break;

@@ -8,8 +8,9 @@ std/map
 std/stack
 std/stdexcept
 std/vector
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/util/backtrace
 unisim/util/hash_table
 unisim/util/likely

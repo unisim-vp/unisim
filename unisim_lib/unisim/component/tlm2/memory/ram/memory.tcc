@@ -77,8 +77,8 @@ Memory(const sc_core::sc_module_name& name, Object *parent)
 {
 	slave_sock(*this);
 	
-	stat_read_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_write_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_read_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	stat_write_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 }
 
 /* Destructor */

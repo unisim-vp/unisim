@@ -44,9 +44,9 @@ namespace service {
 namespace loader {
 namespace ppc_linux_kernel_loader {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Blob;
 using unisim::service::interfaces::SymbolTableLookup;

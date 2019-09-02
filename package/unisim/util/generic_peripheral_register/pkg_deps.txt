@@ -3,4 +3,3 @@ libc/stdlib
 std/cstring
 std/sstream
 std/string
-unisim/kernel/service

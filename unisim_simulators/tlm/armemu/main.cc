@@ -37,7 +37,7 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 
 #include "unisim/component/cxx/processor/arm/config.hh"
 #include "unisim/component/tlm/processor/arm/arm.hh"
@@ -115,7 +115,7 @@ using unisim::service::os::linux_os::LinuxOS;
 using unisim::service::logger::LoggerServer;
 using unisim::service::time::sc_time::ScTime;
 using unisim::service::time::host_time::HostTime;
-using unisim::kernel::service::ServiceManager;
+using unisim::kernel::ServiceManager;
 
 void help(char *prog_name) {
 	cerr << "Usage: " << prog_name << " [<options>] <program> [program arguments]" << endl << endl;

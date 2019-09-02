@@ -20,7 +20,7 @@ import unisim/component/tlm2/com/xilinx/xps_uart_lite || exit
 import unisim/component/tlm2/com/xilinx/xps_gpio || exit
 import unisim/component/tlm2/com/xilinx/xps_gpio || exit
 import unisim/component/tlm2/com/xilinx/xps_gpio || exit
-import unisim/kernel/service || exit
+import unisim/kernel || exit
 import unisim/service/debug/debugger || exit
 import unisim/service/debug/gdb_server || exit
 import unisim/service/debug/inline_debugger || exit
@@ -35,6 +35,7 @@ import unisim/service/instrumenter || exit
 import unisim/service/tee/char_io || exit
 import unisim/service/web_terminal || exit
 import unisim/service/os/linux_os || exit
+import unisim/kernel/variable/endian || exit
 import unisim/kernel/logger || exit
 import unisim/kernel/tlm2 || exit
 

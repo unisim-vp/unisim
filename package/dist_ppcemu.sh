@@ -4,7 +4,7 @@ SIMPKG=ppcemu
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/component/cxx/processor/powerpc/disasm.cc \
-unisim/kernel/service/service.cc \
+unisim/kernel/kernel.cc \
 unisim/kernel/config/xml_config_file_helper.cc \
 unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
@@ -46,7 +46,7 @@ unisim/util/blob/segment64.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/debug/coff_symtab/coff_symtab32.cc \
-unisim/kernel/service/endian.cc \
+unisim/kernel/variable/endian/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
@@ -314,7 +314,7 @@ unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.tcc \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/config/ini_config_file_helper.hh \
-unisim/kernel/service/service.hh \
+unisim/kernel/kernel.hh \
 unisim/kernel/config/xml_config_file_helper.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/service/debug/debugger/debugger.hh \

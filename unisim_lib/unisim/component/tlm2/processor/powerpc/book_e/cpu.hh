@@ -37,7 +37,7 @@
 
 #include <unisim/component/cxx/processor/powerpc/book_e/cpu.hh>
 #include <systemc>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <inttypes.h>
@@ -53,11 +53,11 @@ namespace powerpc {
 namespace book_e {
 
 using unisim::kernel::tlm2::PayloadFabric;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::Formula;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::variable::Formula;
 using unisim::kernel::logger::Logger;
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
 using unisim::component::tlm2::interrupt::InterruptPayload;
@@ -86,7 +86,7 @@ public:
 	irq_slave_socket critical_input_interrupt_slave_sock; // Critical Input
 	dcr_master_socket dcr_master_sock; // DCR master interface
 	
-	CPU(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0);
+	CPU(const sc_core::sc_module_name& name, unisim::kernel::Object *parent = 0);
 	virtual ~CPU();
 	
 	virtual bool EndSetup();
@@ -145,19 +145,19 @@ private:
 	bool enable_dmi;
 	bool debug_dmi;
 
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_cpu_cycle_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_bus_cycle_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_ext_timer_cycle_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_nice_time;
-	unisim::kernel::service::Parameter<double> param_ipc;
-	unisim::kernel::service::Parameter<bool> param_enable_host_idle;
-	unisim::kernel::service::Parameter<bool> param_enable_dmi;
-	unisim::kernel::service::Parameter<bool> param_debug_dmi;
-	unisim::kernel::service::Statistic<double> stat_one;
-	unisim::kernel::service::Statistic<sc_core::sc_time> stat_run_time;
-	unisim::kernel::service::Statistic<sc_core::sc_time> stat_idle_time;
-	unisim::kernel::service::Formula<double> formula_idle_rate;
-	unisim::kernel::service::Formula<double> formula_load_rate;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_cpu_cycle_time;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_bus_cycle_time;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_ext_timer_cycle_time;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_nice_time;
+	unisim::kernel::variable::Parameter<double> param_ipc;
+	unisim::kernel::variable::Parameter<bool> param_enable_host_idle;
+	unisim::kernel::variable::Parameter<bool> param_enable_dmi;
+	unisim::kernel::variable::Parameter<bool> param_debug_dmi;
+	unisim::kernel::variable::Statistic<double> stat_one;
+	unisim::kernel::variable::Statistic<sc_core::sc_time> stat_run_time;
+	unisim::kernel::variable::Statistic<sc_core::sc_time> stat_idle_time;
+	unisim::kernel::variable::Formula<double> formula_idle_rate;
+	unisim::kernel::variable::Formula<double> formula_load_rate;
 	
 	class Event
 	{

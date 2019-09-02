@@ -57,7 +57,7 @@
 #include <unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.hh>
 #include <unisim/component/cxx/com/xilinx/xps_uart_lite/config.hh>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
@@ -113,10 +113,10 @@ using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::power::CachePowerEstimator;
 using unisim::service::telnet::Telnet;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Variable;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Variable;
+using unisim::kernel::VariableBase;
+using unisim::kernel::Object;
 
 #ifdef DEBUG_PPC440EMU_SYSTEM
 class MPLBDebugConfig : public unisim::component::tlm2::interconnect::generic_router::VerboseConfig
@@ -148,13 +148,13 @@ typedef unisim::component::cxx::com::xilinx::xps_uart_lite::Config UART_LITE_CON
 static const unsigned int TIMER_IRQ = 3;
 static const unsigned int UART_LITE_IRQ = 2;
 
-class Simulator : public unisim::kernel::service::Simulator
+class Simulator : public unisim::kernel::Simulator
 {
 public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
-	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+	virtual unisim::kernel::Simulator::SetupStatus Setup();
 	virtual void Stop(Object *object, int exit_status);
 	int GetExitStatus() const;
 protected:
@@ -297,13 +297,13 @@ private:
 	Parameter<bool> param_enable_telnet;
 
 	int exit_status;
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 };
 
 
 
 Simulator::Simulator(int argc, char **argv)
-	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
+	: unisim::kernel::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
 	, ram(0)
 	, rom(0)
@@ -666,7 +666,7 @@ Simulator::~Simulator()
 	if(telnet) delete telnet;
 }
 
-void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM ppc440emu-system");
@@ -881,7 +881,7 @@ void Simulator::Run()
 	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 }
 
-unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
+unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 {
 	// Build the Linux OS arguments from the command line arguments
 	
@@ -901,7 +901,7 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 		}*/
 	}
 
-	return unisim::kernel::service::Simulator::Setup();
+	return unisim::kernel::Simulator::Setup();
 }
 
 void Simulator::Stop(Object *object, int _exit_status)
@@ -949,15 +949,15 @@ int sc_main(int argc, char *argv[])
 
 	switch(simulator->Setup())
 	{
-		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+		case unisim::kernel::Simulator::ST_OK_DONT_START:
 			break;
-		case unisim::kernel::service::Simulator::ST_WARNING:
+		case unisim::kernel::Simulator::ST_WARNING:
 			cerr << "Some warnings occurred during setup" << endl;
-		case unisim::kernel::service::Simulator::ST_OK_TO_START:
+		case unisim::kernel::Simulator::ST_OK_TO_START:
 			cerr << "Starting simulation at supervisor privilege level" << endl;
 			simulator->Run();
 			break;
-		case unisim::kernel::service::Simulator::ST_ERROR:
+		case unisim::kernel::Simulator::ST_ERROR:
 			cerr << "Can't start simulation because of previous errors" << endl;
 			break;
 	}

@@ -49,10 +49,10 @@ namespace ebi {
 using unisim::component::tlm2::interconnect::generic_router::MEM_ACCESS_READ_WRITE;
 
 template <typename CONFIG>
-EBI<CONFIG>::EBI(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+EBI<CONFIG>::EBI(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, Super(name, parent)
-	, unisim::kernel::service::Service<unisim::service::interfaces::Registers>(name, parent)
+	, unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
 	, registers_export("registers-export", this)
 	, ebi_mcr(this)
 	, ebi_br(this)

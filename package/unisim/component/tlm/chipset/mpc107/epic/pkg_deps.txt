@@ -4,6 +4,6 @@ std/list
 std/sstream
 unisim/component/cxx/chipset/mpc107/epic
 unisim/component/tlm/message
-unisim/kernel/service
+unisim/kernel
 unisim/kernel/tlm
 unisim/util/garbage_collector

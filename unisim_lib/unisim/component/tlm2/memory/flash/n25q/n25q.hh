@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_MEMORY_FLASH_N25Q_N25Q_HH__
 #define __UNISIM_COMPONENT_TLM2_MEMORY_FLASH_N25Q_N25Q_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/tlm2/tlm_spi.hh>
@@ -82,7 +82,7 @@ enum WrapMode
 
 template <typename CONFIG>
 class N25Q
-	: public unisim::kernel::service::Object
+	: public unisim::kernel::Object
 	, public sc_core::sc_module
 	, public unisim::kernel::tlm2::tlm_spi_fw_if<unisim::kernel::tlm2::tlm_spi_protocol_types>
 {
@@ -97,7 +97,7 @@ public:
 	sc_core::sc_in<bool> HOLD_RESET_N; // shared port: HOLD# or RESET#
 	sc_core::sc_in<bool> W_N_VPP;      // shared port: W# or WPP
 	
-	N25Q(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0);
+	N25Q(const sc_core::sc_module_name& name, unisim::kernel::Object *parent = 0);
 	virtual ~N25Q();
 
 	virtual unisim::kernel::tlm2::tlm_spi_sync_enum spi_nb_send(payload_type& payload);
@@ -620,11 +620,11 @@ private:
 		sc_core::sc_event *completion_event;     // a SystemC event for blocking interface
 	};
 	
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 	std::string input_filename;
-	unisim::kernel::service::Parameter<std::string> param_input_filename;
+	unisim::kernel::variable::Parameter<std::string> param_input_filename;
 	std::string output_filename;
-	unisim::kernel::service::Parameter<std::string> param_output_filename;
+	unisim::kernel::variable::Parameter<std::string> param_output_filename;
 	
 	unisim::kernel::tlm2::PayloadFabric<payload_type> payload_fabric;
 	unisim::kernel::tlm2::Schedule<Event> schedule;

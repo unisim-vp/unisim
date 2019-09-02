@@ -46,9 +46,11 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <set>
 #include <iomanip>
 #include <cmath>
 #include <cctype>
+#include <cassert>
 
 //template <typename T> using VectorTypeInfo = unisim::component::cxx::processor::intel::VectorTypeInfo<T>;
 template <typename A, unsigned S> using TypeFor = typename unisim::component::cxx::processor::intel::TypeFor<A,S>;

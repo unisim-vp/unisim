@@ -106,6 +106,8 @@ namespace symbolic {
   }
     
   
+  bool   EvalMul( bool, bool ) { throw std::logic_error( "No * for bool." ); }
+  
   long double   EvalMod( long double l, long double r ) { throw std::logic_error( "No ^ for long double." ); }
   double   EvalMod( double l, double r ) { throw std::logic_error( "No ^ for double." ); }
   float    EvalMod( float l, float r ) { throw std::logic_error( "No ^ for float." ); }
@@ -126,6 +128,7 @@ namespace symbolic {
   double   EvalNot( double val ) { throw std::logic_error( "No ~ for double." ); }
   float    EvalNot( float val ) { throw std::logic_error( "No ~ for float." ); }
   
+  bool   EvalSHL( bool, uint8_t ) { throw std::logic_error( "No << for bool." ); }
   long double   EvalSHL( long double, uint8_t ) { throw std::logic_error( "No << for long double." ); }
   double   EvalSHL( double, uint8_t ) { throw std::logic_error( "No << for double." ); }
   float    EvalSHL( float, uint8_t ) { throw std::logic_error( "No << for float." ); }

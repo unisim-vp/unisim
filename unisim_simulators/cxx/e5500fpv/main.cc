@@ -40,9 +40,9 @@
 #include <stdexcept>
 
 struct Simulator
-  : public unisim::kernel::service::Simulator
+  : public unisim::kernel::Simulator
 {
-  typedef unisim::kernel::service::Simulator BaseSimulator;
+  typedef unisim::kernel::Simulator BaseSimulator;
   
   Simulator(char* self)
     : BaseSimulator(1, &self, Simulator::DefaultConfiguration)
@@ -62,22 +62,22 @@ struct Simulator
     //     SetVariable("debugger.parse-dwarf", true);
     //   }
 
-    if (BaseSimulator::Setup() != unisim::kernel::service::Simulator::ST_OK_TO_START)
+    if (BaseSimulator::Setup() != unisim::kernel::Simulator::ST_OK_TO_START)
       {
         std::cerr << "Something wrong happened" << std::endl;
         throw std::runtime_error("stop");
       }
-    return unisim::kernel::service::Simulator::ST_OK_TO_START;
+    return unisim::kernel::Simulator::ST_OK_TO_START;
   }
   
-  virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false)
+  virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false)
   {
     throw std::runtime_error("stop");
   }
   
   int GetExitStatus() const { return exit_status; }
 
-  static void DefaultConfiguration(unisim::kernel::service::Simulator* sim)
+  static void DefaultConfiguration(unisim::kernel::Simulator* sim)
   {
     sim->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_power64.xml");
     sim->SetVariable("debug_hub.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/power64_dwarf_register_number_mapping.xml");

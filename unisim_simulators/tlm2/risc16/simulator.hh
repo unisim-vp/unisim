@@ -40,7 +40,7 @@
 #include "config.h"
 #endif
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
@@ -62,19 +62,19 @@
 #include <iostream>
 #include <stdexcept>
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::VariableBase;
+using unisim::kernel::Object;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::VariableBase;
 
 using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 //using unisim::service::profiling::addr_profiler::Profiler;
 
 class Simulator
-	: public unisim::kernel::service::Simulator
+	: public unisim::kernel::Simulator
 
 {
 private:
@@ -140,7 +140,7 @@ private:
 	
 	int exit_status;
 
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 };
 
 #endif /* __SIMULATOR_HH__ */

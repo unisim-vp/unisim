@@ -7,6 +7,7 @@ std/set
 std/sstream
 std/stdexcept
 std/string
-unisim/kernel/service
+unisim/kernel
+unisim/kernel/variable
 unisim/service/interfaces/http_server
 unisim/util/hypapp

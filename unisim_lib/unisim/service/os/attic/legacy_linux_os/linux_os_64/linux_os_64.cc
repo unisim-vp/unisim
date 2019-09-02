@@ -32,7 +32,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/service/os/linux_os/linux_os_64/linux_os_64.hh"
 #include "unisim/service/os/linux_os/linux_os.tcc"
 #include <inttypes.h>
@@ -44,8 +44,8 @@ namespace linux_os {
 namespace linux_os_64 {
 
 LinuxOS64::
-LinuxOS64(const char *name, unisim::kernel::service::Object *parent) :
-	unisim::kernel::service::Object(name, parent),
+LinuxOS64(const char *name, unisim::kernel::Object *parent) :
+	unisim::kernel::Object(name, parent),
 	unisim::service::os::linux_os::LinuxOS<uint64_t, uint64_t>(name, parent)
 {
 }

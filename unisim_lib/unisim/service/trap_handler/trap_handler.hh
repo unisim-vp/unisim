@@ -37,7 +37,8 @@
 
 #include <string>
 #include <vector>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
+#include <unisim/kernel/variable/variable.hh>
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
 #include "unisim/service/trap_handler/trap_handler_identifier_interface.hh"
@@ -47,10 +48,10 @@ namespace unisim {
 namespace service {
 namespace trap_handler {
 
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
 using unisim::service::interfaces::TrapReporting;
 
 class ExternalTrapHandlerInterface
@@ -61,7 +62,7 @@ public:
 };
 
 class TrapHandler
-	: public unisim::kernel::service::Object
+	: public unisim::kernel::Object
 	, public TrapHandlerIdentifierInterface
 	// , public Service<TrapReporting>
 {
@@ -93,12 +94,12 @@ private:
 
 	virtual void ReportTrap(int id);
 	virtual void ReportTrap(int id,
-			const unisim::kernel::service::Object &obj);
+			const unisim::kernel::Object &obj);
 	virtual void ReportTrap(int id,
-			const unisim::kernel::service::Object &obj,
+			const unisim::kernel::Object &obj,
 			const std::string &str);
 	virtual void ReportTrap(int id,
-			const unisim::kernel::service::Object &obj,
+			const unisim::kernel::Object &obj,
 			const char *c_str);
 };
 

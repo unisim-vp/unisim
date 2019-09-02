@@ -2,8 +2,8 @@ libc/inttypes
 libc/string
 std/algorithm
 std/string
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
 unisim/service/interfaces/backtrace
 unisim/service/interfaces/blob
 unisim/service/interfaces/loader

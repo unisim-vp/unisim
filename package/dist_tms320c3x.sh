@@ -15,7 +15,7 @@ import unisim/service/debug/inline_debugger || exit
 import unisim/service/time/sc_time || exit
 import unisim/service/time/host_time || exit
 import unisim/service/loader/multiformat_loader || exit
-import unisim/kernel/service || exit
+import unisim/kernel || exit
 
 import std/iostream || exit
 import std/stdexcept || exit

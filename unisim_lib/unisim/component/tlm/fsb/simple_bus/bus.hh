@@ -40,7 +40,7 @@
 #include <string>
 #include <systemc>
 #include "unisim/kernel/tlm/tlm.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 #include "unisim/component/tlm/message/simple_fsb.hh"
@@ -57,12 +57,12 @@ using std::list;
 using unisim::kernel::tlm::TlmMessage;
 using unisim::kernel::tlm::TlmSendIf;
 using unisim::kernel::tlm::ResponseListener;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Object;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::variable::Parameter;
 using unisim::util::garbage_collector::Pointer;
 using unisim::component::tlm::message::SimpleFSBRequest;
 using unisim::component::tlm::message::SimpleFSBResponse;

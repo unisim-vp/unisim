@@ -36,20 +36,20 @@
 #define __UNISIM_SERVICE_TIME_HOST_TIME_TIME_HH__
 
 #include <unisim/service/interfaces/time.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 namespace unisim {
 namespace service {
 namespace time {
 namespace host_time {
 
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ParameterArray;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::ParameterArray;
 using unisim::service::interfaces::Time;
 	
 class HostTime : public Service<Time>

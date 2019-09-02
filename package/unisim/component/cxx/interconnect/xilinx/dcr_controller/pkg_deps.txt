@@ -1,4 +1,5 @@
 libc/inttypes
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
+unisim/kernel/variable
 unisim/util/endian

@@ -4,7 +4,7 @@ std/iostream
 std/string
 unisim/component/cxx/chipset/mpc107/atu
 unisim/component/cxx/pci
+unisim/kernel
 unisim/kernel/logger
-unisim/kernel/service
 unisim/util/endian
 unisim/util/likely

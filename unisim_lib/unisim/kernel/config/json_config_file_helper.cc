@@ -42,7 +42,7 @@ namespace unisim {
 namespace kernel {
 namespace config {
 
-JSONConfigFileHelper::JSONConfigFileHelper(unisim::kernel::service::Simulator *_simulator)
+JSONConfigFileHelper::JSONConfigFileHelper(unisim::kernel::Simulator *_simulator)
 	: simulator(_simulator)
 {
 	simulator->Register(this);
@@ -57,7 +57,7 @@ const char *JSONConfigFileHelper::GetName() const
 	return "JSON";
 }
 
-bool JSONConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::service::VariableBase::Type type)
+bool JSONConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::VariableBase::Type type)
 {
 	std::ofstream file(filename);
 	
@@ -66,13 +66,13 @@ bool JSONConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::s
 	return SaveVariables(file, type);
 }
 
-bool JSONConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::service::VariableBase::Type type)
+bool JSONConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::VariableBase::Type type)
 {
 	Indent indent;
 	
-	std::list<unisim::kernel::service::VariableBase *> variables;
+	std::list<unisim::kernel::VariableBase *> variables;
 	simulator->GetVariables(variables, type);
-	std::list<unisim::kernel::service::Object *> root_objects;
+	std::list<unisim::kernel::Object *> root_objects;
 	simulator->GetRootObjects(root_objects);
 	
 	if(!variables.empty() || !root_objects.empty())
@@ -83,12 +83,12 @@ bool JSONConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::servi
 		bool first = true;
 		if(!variables.empty())
 		{
-			std::list<unisim::kernel::service::VariableBase *>::iterator variable_iter;
+			std::list<unisim::kernel::VariableBase *>::iterator variable_iter;
 			for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 			{
-				unisim::kernel::service::VariableBase *variable = *variable_iter;
+				unisim::kernel::VariableBase *variable = *variable_iter;
 				
-				if(!variable->GetOwner() && variable->IsSerializable() && ((type == unisim::kernel::service::VariableBase::VAR_VOID) || (type == variable->GetType())))
+				if(!variable->GetOwner() && variable->IsSerializable() && ((type == unisim::kernel::VariableBase::VAR_VOID) || (type == variable->GetType())))
 				{
 					if(first)
 					{
@@ -105,10 +105,10 @@ bool JSONConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::servi
 			}
 		}
 	
-		std::list<unisim::kernel::service::Object *>::iterator root_object_iter;
+		std::list<unisim::kernel::Object *>::iterator root_object_iter;
 		for(root_object_iter = root_objects.begin(); root_object_iter != root_objects.end(); root_object_iter++)
 		{
-			unisim::kernel::service::Object *root_object = *root_object_iter;
+			unisim::kernel::Object *root_object = *root_object_iter;
 			
 			if(first)
 			{
@@ -134,11 +134,11 @@ bool JSONConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::servi
 	return true;
 }
 
-void JSONConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::service::Object *object, unisim::kernel::service::VariableBase::Type type, Indent& indent)
+void JSONConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::Object *object, unisim::kernel::VariableBase::Type type, Indent& indent)
 {
-	std::list<unisim::kernel::service::VariableBase *> variables;
+	std::list<unisim::kernel::VariableBase *> variables;
 	object->GetVariables(variables, type);
-	const std::list<unisim::kernel::service::Object *>& leaf_objects = object->GetLeafs();	
+	const std::list<unisim::kernel::Object *>& leaf_objects = object->GetLeafs();	
 	
 	if(!variables.empty() || !leaf_objects.empty())
 	{
@@ -149,12 +149,12 @@ void JSONConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::servi
 		
 		if(!variables.empty())
 		{
-			std::list<unisim::kernel::service::VariableBase *>::iterator variable_iter;
+			std::list<unisim::kernel::VariableBase *>::iterator variable_iter;
 			for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 			{
-				unisim::kernel::service::VariableBase *variable = *variable_iter;
+				unisim::kernel::VariableBase *variable = *variable_iter;
 				
-				if(variable->IsSerializable() && ((type == unisim::kernel::service::VariableBase::VAR_VOID) || (type == variable->GetType())))
+				if(variable->IsSerializable() && ((type == unisim::kernel::VariableBase::VAR_VOID) || (type == variable->GetType())))
 				{
 					if(first)
 					{
@@ -173,7 +173,7 @@ void JSONConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::servi
 		
 		if(!leaf_objects.empty())
 		{
-			std::list<unisim::kernel::service::Object *>::const_iterator it;
+			std::list<unisim::kernel::Object *>::const_iterator it;
 			for(it = leaf_objects.begin(); it != leaf_objects.end(); ++it)
 			{
 				if(first)
@@ -185,7 +185,7 @@ void JSONConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::servi
 					os << ", ";
 				}
 				
-				unisim::kernel::service::Object *child = *it;
+				unisim::kernel::Object *child = *it;
 				
 				os << std::endl << indent;
 				os << "\"" << unisim::util::json::Escape(child->GetObjectName()) << "\" :";
@@ -201,16 +201,16 @@ void JSONConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::servi
 	}
 }
 
-void JSONConfigFileHelper::SaveVariable(std::ostream& os, unisim::kernel::service::VariableBase& variable)
+void JSONConfigFileHelper::SaveVariable(std::ostream& os, unisim::kernel::VariableBase& variable)
 {
 	os << "\"" << unisim::util::json::Escape(variable.GetVarName()) << "\" : ";
-	unisim::kernel::service::VariableBase::DataType dt = variable.GetDataType();
-	if((dt != unisim::kernel::service::VariableBase::DT_USER) &&
-	   (dt != unisim::kernel::service::VariableBase::DT_STRING) &&
-	   ((dt == unisim::kernel::service::VariableBase::DT_BOOL) ||
-	   (dt == unisim::kernel::service::VariableBase::DT_DOUBLE) ||
-	   (dt == unisim::kernel::service::VariableBase::DT_FLOAT) ||
-	   (variable.GetFormat() == unisim::kernel::service::VariableBase::FMT_DEC)))
+	unisim::kernel::VariableBase::DataType dt = variable.GetDataType();
+	if((dt != unisim::kernel::VariableBase::DT_USER) &&
+	   (dt != unisim::kernel::VariableBase::DT_STRING) &&
+	   ((dt == unisim::kernel::VariableBase::DT_BOOL) ||
+	   (dt == unisim::kernel::VariableBase::DT_DOUBLE) ||
+	   (dt == unisim::kernel::VariableBase::DT_FLOAT) ||
+	   (variable.GetFormat() == unisim::kernel::VariableBase::FMT_DEC)))
 	{
 		os << (std::string) variable;
 	}
@@ -220,7 +220,7 @@ void JSONConfigFileHelper::SaveVariable(std::ostream& os, unisim::kernel::servic
 	}
 }
 
-bool JSONConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::service::VariableBase::Type type)
+bool JSONConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::VariableBase::Type type)
 {
 	std::string filename = simulator->SearchSharedDataFile(_filename);
 
@@ -233,7 +233,7 @@ bool JSONConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::
 
 struct JSON_AST_Visitor : unisim::util::json::JSON_AST_Visitor
 {
-	JSON_AST_Visitor(unisim::kernel::service::Simulator *_simulator)
+	JSON_AST_Visitor(unisim::kernel::Simulator *_simulator)
 		: simulator(_simulator)
 	{
 	}
@@ -348,11 +348,11 @@ struct JSON_AST_Visitor : unisim::util::json::JSON_AST_Visitor
 		return false;
 	}
 	
-	unisim::kernel::service::Simulator *simulator;
+	unisim::kernel::Simulator *simulator;
 	std::vector<std::string> stack;
 };
 
-bool JSONConfigFileHelper::LoadVariables(std::istream& is, unisim::kernel::service::VariableBase::Type type)
+bool JSONConfigFileHelper::LoadVariables(std::istream& is, unisim::kernel::VariableBase::Type type)
 {
 	unisim::util::json::JSON_Parser<unisim::util::json::JSON_AST_Builder> json_parser;
 	unisim::util::json::JSON_AST_Builder json_ast_builder;

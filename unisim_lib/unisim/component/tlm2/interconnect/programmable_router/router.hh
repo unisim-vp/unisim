@@ -35,6 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_PROGRAMMABLE_ROUTER_ROUTER_HH__
 #define __UNISIM_COMPONENT_TLM2_INTERCONNECT_PROGRAMMABLE_ROUTER_ROUTER_HH__
 
+#include <unisim/kernel/variable/endian/endian.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/util/reg/core/register.hh>
 
@@ -109,7 +110,7 @@ public:
 	sc_core::sc_in<bool>                               m_clk;                            // Clock port
 	sc_core::sc_in<bool>                               reset_b;                          // reset
 	
-	Router(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
+	Router(const sc_core::sc_module_name& name, unisim::kernel::Object *parent);
 	virtual ~Router();
 	
 	void peripheral_b_transport(int iface, tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
@@ -270,7 +271,7 @@ private:
 	RegisterAddressMap<sc_dt::uint64> reg_addr_map[NUM_PERIPHERAL_SLAVE_IFS];
 	unisim::kernel::tlm2::Schedule<Event> schedule; // Payload (processor requests over AHB interface) schedule
 	unisim::util::endian::endian_type endian;
-	unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endian;
+	unisim::kernel::variable::Parameter<unisim::util::endian::endian_type> param_endian;
 	sc_core::sc_time master_clock_period;                 // Master clock period
 	sc_core::sc_time master_clock_start_time;             // Master clock start time
 	bool master_clock_posedge_first;                      // Master clock posedge first ?

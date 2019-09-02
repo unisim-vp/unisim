@@ -41,8 +41,8 @@
 
 bool debug_enabled;
 
-Router::Router(const char* name, unisim::kernel::service::Object* parent)
-  : unisim::kernel::service::Object( name, parent )
+Router::Router(const char* name, unisim::kernel::Object* parent)
+  : unisim::kernel::Object( name, parent )
   , unisim::component::tlm2::interconnect::generic_router::Router<RouterCFG>( name, parent )
 {
   /* Low global memory range */
@@ -66,7 +66,7 @@ Router::Router(const char* name, unisim::kernel::service::Object* parent)
 }
 
 Simulator::Simulator(int argc, char **argv)
-  : unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
+  : unisim::kernel::Simulator(argc, argv, Simulator::DefaultConfiguration)
   , clock("CLK", sc_core::sc_time(10.0, SC_NS))
   , cpu( "cpu" )
   , router( "router" )
@@ -265,7 +265,7 @@ Simulator::SimulationFinished() const
   return sc_end_of_simulation_invoked();
 }
 
-unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
+unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 {
   if(enable_inline_debugger)
     {
@@ -274,19 +274,19 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
   
   // Build the Loader arguments from the command line arguments
   
-  unisim::kernel::service::VariableBase *cmd_args = FindVariable("cmd-args");
+  unisim::kernel::VariableBase *cmd_args = FindVariable("cmd-args");
   unsigned int cmd_args_length = cmd_args->GetLength();
   if(cmd_args_length > 0)
     {
       SetVariable( "loader.filename", ((std::string)(*cmd_args)[0]).c_str() );
     }
 
-  unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+  unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
   
   return setup_status;
 }
 
-void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, bool asynchronous)
+void Simulator::Stop(unisim::kernel::Object *object, int _exit_status, bool asynchronous)
 {
   exit_status = _exit_status;
   if(object)
@@ -314,7 +314,7 @@ void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, 
 }
 
 void
-Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
+Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
 {
   sim->SetVariable( "program-name", SIM_PROGRAM_NAME );
   sim->SetVariable( "authors", SIM_AUTHOR );
@@ -382,6 +382,6 @@ void Simulator::SigInt()
 {
 	if(!inline_debugger)
 	{
-		unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}
 }

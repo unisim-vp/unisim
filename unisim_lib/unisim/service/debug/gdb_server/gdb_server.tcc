@@ -76,15 +76,15 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 		"Standards GDB clients (e.g. gdb, eclipse, ddd) can connect to the simulator to debug the target application "
 		"that runs within the simulator.")
 	, GDBServerBase(_name, _parent)
-	, unisim::kernel::service::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
-	, unisim::kernel::service::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::DebugSelecting>(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::DebugYieldingRequest>(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::Memory<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::Disassembly<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::Registers>(_name, _parent)
+	, unisim::kernel::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
+	, unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DebugSelecting>(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Disassembly<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Registers>(_name, _parent)
 	, debug_yielding_export("debug-yielding-export", this)
 	, debug_event_listener_export("debug-event-listener-export", this)
 	, debug_yielding_request_import("debug-yielding-request-import", this)
@@ -156,7 +156,7 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, thrd_mutex()
 	, wait_for_command_processing(true)
 {
-	param_memory_atom_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_memory_atom_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
 	param_memory_atom_size.SetMutable(false);
 	param_architecture_description_filename.SetMutable(false);
@@ -1856,7 +1856,7 @@ void GDBServer<ADDRESS>::DebugYield()
 			{
 				logger << DebugInfo << "debug yield (end)" << EndDebugInfo;
 			}
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			return;
 		}
 	}
@@ -3176,7 +3176,7 @@ bool GDBServer<ADDRESS>::HandleQRcmd(const std::string& query, std::size_t& pos)
 
 	if(pos < len)
 	{
-		unisim::kernel::service::VariableBase *variable = 0;
+		unisim::kernel::VariableBase *variable = 0;
 
 		// fill-in parameter name
 		do
@@ -3700,7 +3700,7 @@ bool GDBServer<ADDRESS>::DisplayMonitoredInternals()
 
 	while(sstr >> variable_name)
 	{
-		unisim::kernel::service::VariableBase *variable = Object::GetSimulator()->FindVariable(variable_name.c_str());
+		unisim::kernel::VariableBase *variable = Object::GetSimulator()->FindVariable(variable_name.c_str());
 		
 		if(!variable->IsVoid())
 		{

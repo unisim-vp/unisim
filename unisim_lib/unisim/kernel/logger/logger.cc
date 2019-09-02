@@ -176,7 +176,7 @@ Logger::Logger(const char * _name)
 	GetServerInstance();
 }
 
-Logger::Logger(const unisim::kernel::service::Object& object)
+Logger::Logger(const unisim::kernel::Object& object)
 	: name(object.GetName())
 	, buffer()
 	, mode(NO_MODE)

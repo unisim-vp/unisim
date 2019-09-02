@@ -53,7 +53,7 @@ namespace am29 {
 using namespace std;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::DebugError;
@@ -79,7 +79,7 @@ AM29<CONFIG, BYTESIZE, IO_WIDTH>::AM29(const char *name, Object *parent)
 	, param_sector_protect("sector-protect", this, sector_protect, CONFIG::NUM_SECTORS, "enable/disable sector write protection")
 	, param_fsm_to_graphviz_output_filename("fsm-to-graphviz-output-filename", this, fsm_to_graphviz_output_filename, "FSM (finite state machine) to Graphviz output filename")
 {
-	param_bytesize.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_bytesize.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	uint32_t chip_io_width;
 	for(config_addr_shift = 0, chip_io_width = CHIP_IO_WIDTH; chip_io_width > 1; chip_io_width >>= 1, config_addr_shift++);

@@ -20,7 +20,7 @@
 #include "config.h"
 #endif
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
@@ -104,11 +104,11 @@ using unisim::service::pim::PIMServer;
 
 using unisim::service::monitor::Monitor;
 
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::VariableBase;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::VariableBase;
 
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::Host2BigEndian;
@@ -118,7 +118,7 @@ using unisim::service::netstreamer::NetStreamer;
 
 
 class Simulator
-  : public unisim::kernel::service::Simulator
+  : public unisim::kernel::Simulator
 {
 private:
 	//=========================================================================
@@ -482,21 +482,21 @@ private:
 	Parameter<bool> param_dump_statistics;
 
 	double null_stat_var;
-	struct LoadRatioStatistic : public unisim::kernel::service::Variable<double>
+	struct LoadRatioStatistic : public unisim::kernel::variable::Variable<double>
 	{
 		LoadRatioStatistic(Simulator& _sim);
 		void Get(double& value);
 		Simulator& sim;
 	} stat_data_load_ratio;
 
-	struct StoreRatioStatistic : public unisim::kernel::service::Variable<double>
+	struct StoreRatioStatistic : public unisim::kernel::variable::Variable<double>
 	{
 		StoreRatioStatistic(Simulator& _sim);
 		void Get(double& value);
 		Simulator& sim;
 	} stat_data_store_ratio;
 
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 
 	double spent_time;
 	bool isStop;

@@ -61,7 +61,7 @@
 #include <config.hh>
 
 // Class definition of kernel, services and interfaces
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/tlm2/simulator.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
@@ -95,9 +95,9 @@ public:
 	Simulator(int argc, char **argv, const sc_core::sc_module_name& name = "HARDWARE");
 	virtual ~Simulator();
 	void Run();
-	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+	virtual unisim::kernel::Simulator::SetupStatus Setup();
 	virtual bool EndSetup();
-	virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false);
+	virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
 protected:
 private:
@@ -263,13 +263,13 @@ private:
 	bool enable_inline_debugger;
 	bool enable_profiler;
 	bool enable_linux_os;
-	unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
-	unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
-	unisim::kernel::service::Parameter<bool> param_enable_profiler;
-	unisim::kernel::service::Parameter<bool> param_enable_linux_os;
+	unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
+	unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
+	unisim::kernel::variable::Parameter<bool> param_enable_profiler;
+	unisim::kernel::variable::Parameter<bool> param_enable_linux_os;
 
 	int exit_status;
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 	virtual void SigInt();
 };
 

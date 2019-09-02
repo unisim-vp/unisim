@@ -19,11 +19,11 @@ S12SPI<SPI_VERSION>::S12SPI(const sc_module_name& name, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 
-	, unisim::kernel::service::Client<TrapReporting>(name, parent)
-	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Service<Registers>(name, parent)
-	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Client<CharIO>(name, parent)
+	, unisim::kernel::Client<TrapReporting>(name, parent)
+	, unisim::kernel::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Service<Registers>(name, parent)
+	, unisim::kernel::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Client<CharIO>(name, parent)
 
 	, trap_reporting_import("trap-reporting-import", this)
 	, char_io_import("char-io-import", this)
@@ -790,35 +790,35 @@ bool S12SPI<SPI_VERSION>::BeginSetup() {
 	sprintf(buf, "%s.SPICR1",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &spicr1_register);
 
-	unisim::kernel::service::Register<uint8_t> *spicr1_var = new unisim::kernel::service::Register<uint8_t>("SPICR1", this, spicr1_register, "SPI Control Register 1 (SPICR1)");
+	unisim::kernel::variable::Register<uint8_t> *spicr1_var = new unisim::kernel::variable::Register<uint8_t>("SPICR1", this, spicr1_register, "SPI Control Register 1 (SPICR1)");
 	extended_registers_registry.push_back(spicr1_var);
 	spicr1_var->setCallBack(this, SPICR1, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.SPICR2",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &spicr2_register);
 
-	unisim::kernel::service::Register<uint8_t> *spicr2_var = new unisim::kernel::service::Register<uint8_t>("SPICR2", this, spicr2_register, "SPI Control Register 2 (SPICR2)");
+	unisim::kernel::variable::Register<uint8_t> *spicr2_var = new unisim::kernel::variable::Register<uint8_t>("SPICR2", this, spicr2_register, "SPI Control Register 2 (SPICR2)");
 	extended_registers_registry.push_back(spicr2_var);
 	spicr2_var->setCallBack(this, SPICR2, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.SPIBR",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &spibr_register);
 
-	unisim::kernel::service::Register<uint8_t> *spibr_var = new unisim::kernel::service::Register<uint8_t>("SPIBR", this, spibr_register, "SPI Baud Rate Register (SPIBR)");
+	unisim::kernel::variable::Register<uint8_t> *spibr_var = new unisim::kernel::variable::Register<uint8_t>("SPIBR", this, spibr_register, "SPI Baud Rate Register (SPIBR)");
 	extended_registers_registry.push_back(spibr_var);
 	spibr_var->setCallBack(this, SPIBR, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.SPISR",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &spisr_register);
 
-	unisim::kernel::service::Register<uint8_t> *spisr_var = new unisim::kernel::service::Register<uint8_t>("SPISR", this, spisr_register, "SPI Status register (SPISR)");
+	unisim::kernel::variable::Register<uint8_t> *spisr_var = new unisim::kernel::variable::Register<uint8_t>("SPISR", this, spisr_register, "SPI Status register (SPISR)");
 	extended_registers_registry.push_back(spisr_var);
 	spisr_var->setCallBack(this, SPISR, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.SPIDR",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE>(buf, &spidr_register);
 
-	unisim::kernel::service::Register<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE> *spidr_var = new unisim::kernel::service::Register<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE>("SPIDR", this, spidr_register, "SPI Data register (SPIDR)");
+	unisim::kernel::variable::Register<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE> *spidr_var = new unisim::kernel::variable::Register<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE>("SPIDR", this, spidr_register, "SPI Data register (SPIDR)");
 	extended_registers_registry.push_back(spidr_var);
 	spidr_var->setCallBack(this, SPIDR, &CallBackObject::write, NULL);
 

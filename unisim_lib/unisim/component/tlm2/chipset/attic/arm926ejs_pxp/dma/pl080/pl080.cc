@@ -189,7 +189,7 @@ const char *PL080::REGS_NAME_ARRAY[PL080::NUMREGS] =
 
 PL080 ::
 PL080(const sc_module_name &name, Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_module(name)
 	, unisim::util::generic_peripheral_register::GenericPeripheralRegisterInterface<uint32_t>()
 	, dmacinterr("dmacinterr")
@@ -249,7 +249,7 @@ PL080(const sc_module_name &name, Object *parent)
 		std::stringstream desc;
 		desc << REGS_NAME_ARRAY[i] << " register.";
 		regs_service[i] = new
-			unisim::kernel::service::Register<unisim::util::generic_peripheral_register::GenericPeripheralWordRegister>(
+			unisim::kernel::variable::Register<unisim::util::generic_peripheral_register::GenericPeripheralWordRegister>(
 					REGS_NAME_ARRAY[i], this, *regs_accessor[i], 
 					desc.str().c_str());
 	}
@@ -291,7 +291,7 @@ bus_target_nb_transport_fw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
 {
-	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+	unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -407,7 +407,7 @@ bus_target_b_transport(transaction_type &trans,
 			logger << std::dec;
 		}
 		logger << EndDebugError;
-		unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+		unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	}
 
 	// everything went fine, update the status of the tlm response

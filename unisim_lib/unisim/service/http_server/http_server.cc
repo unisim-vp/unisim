@@ -170,10 +170,10 @@ bool ParseHex(T& value, const std::string& str)
 
 }
 
-HttpServer::HttpServer(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent, "HTTP server")
-	, unisim::kernel::service::Client<unisim::service::interfaces::HttpServer>(name, parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::Registers>(name, parent)
+HttpServer::HttpServer(const char *name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "HTTP server")
+	, unisim::kernel::Client<unisim::service::interfaces::HttpServer>(name, parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Registers>(name, parent)
 	, unisim::util::hypapp::HttpServer()
 	, http_server_import()
 	, registers_import()
@@ -201,9 +201,9 @@ HttpServer::HttpServer(const char *name, unisim::kernel::service::Object *parent
 	, toolbar_actions()
 	, statusbar_items()
 {
-	param_http_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_http_port.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	param_http_port.SetMutable(false);
-	param_http_max_clients.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_http_max_clients.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	param_http_max_clients.SetMutable(false);
 	
 	logger << DebugInfo << "HTTP server on port #" << http_port << EndDebugInfo;
@@ -218,11 +218,11 @@ HttpServer::HttpServer(const char *name, unisim::kernel::service::Object *parent
 	{
 		std::stringstream http_server_import_name_sstr;
 		http_server_import_name_sstr << "http-server-import[" << i << "]";
-		http_server_import[i] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer>(http_server_import_name_sstr.str().c_str(), this);
+		http_server_import[i] = new unisim::kernel::ServiceImport<unisim::service::interfaces::HttpServer>(http_server_import_name_sstr.str().c_str(), this);
 		
 		std::stringstream registers_import_name_sstr;
 		registers_import_name_sstr << "registers-import[" << i << "]";
-		registers_import[i] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers>(registers_import_name_sstr.str().c_str(), this);
+		registers_import[i] = new unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>(registers_import_name_sstr.str().c_str(), this);
 	}
 }
 
@@ -320,13 +320,13 @@ bool HttpServer::EndSetup()
 		));
 	}
 
-	std::list<unisim::kernel::service::VariableBase *> kernel_param_lst;
-	std::list<unisim::kernel::service::VariableBase *> kernel_stat_lst;
+	std::list<unisim::kernel::VariableBase *> kernel_param_lst;
+	std::list<unisim::kernel::VariableBase *> kernel_stat_lst;
 	
-	GetSimulator()->GetRootVariables(kernel_param_lst, unisim::kernel::service::VariableBase::VAR_PARAMETER);
+	GetSimulator()->GetRootVariables(kernel_param_lst, unisim::kernel::VariableBase::VAR_PARAMETER);
 	kernel_has_parameters = !kernel_param_lst.empty();
 	
-	GetSimulator()->GetRootVariables(kernel_stat_lst, unisim::kernel::service::VariableBase::VAR_STATISTIC);
+	GetSimulator()->GetRootVariables(kernel_stat_lst, unisim::kernel::VariableBase::VAR_STATISTIC);
 	kernel_has_statistics = !kernel_stat_lst.empty();
 	
 	unsigned int i;
@@ -335,7 +335,7 @@ bool HttpServer::EndSetup()
 	{
 		if(*http_server_import[i])
 		{
-			unisim::kernel::service::Object *http_server_object = http_server_import[i]->GetService();
+			unisim::kernel::Object *http_server_object = http_server_import[i]->GetService();
 		
 			if(http_server_object)
 			{
@@ -357,7 +357,7 @@ bool HttpServer::EndSetup()
 	{
 		if(*registers_import[i])
 		{
-			unisim::kernel::service::Object *object = registers_import[i]->GetService();
+			unisim::kernel::Object *object = registers_import[i]->GetService();
 			
 			if(object)
 			{
@@ -366,18 +366,18 @@ bool HttpServer::EndSetup()
 		}
 	}
 
-	std::list<unisim::kernel::service::Object *> objects;
+	std::list<unisim::kernel::Object *> objects;
 	GetSimulator()->GetObjects(objects);
 	
-	std::list<unisim::kernel::service::Object *>::const_iterator object_it;
+	std::list<unisim::kernel::Object *>::const_iterator object_it;
 	for(object_it = objects.begin(); object_it != objects.end(); object_it++)
 	{
-		unisim::kernel::service::Object *object = *object_it;
+		unisim::kernel::Object *object = *object_it;
 		
-		std::list<unisim::kernel::service::VariableBase *> param_lst;
-		std::list<unisim::kernel::service::VariableBase *> stat_lst;
-		object->GetVariables(param_lst, unisim::kernel::service::VariableBase::VAR_PARAMETER);
-		object->GetVariables(stat_lst, unisim::kernel::service::VariableBase::VAR_STATISTIC);
+		std::list<unisim::kernel::VariableBase *> param_lst;
+		std::list<unisim::kernel::VariableBase *> stat_lst;
+		object->GetVariables(param_lst, unisim::kernel::VariableBase::VAR_PARAMETER);
+		object->GetVariables(stat_lst, unisim::kernel::VariableBase::VAR_STATISTIC);
 
 		if(!param_lst.empty())
 		{
@@ -403,11 +403,11 @@ bool HttpServer::EndSetup()
 			));
 		}
 
-		std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *>::iterator it = registers_import_map.find(object);
+		std::map<unisim::kernel::Object *, unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> *>::iterator it = registers_import_map.find(object);
 				
 		if(it != registers_import_map.end())
 		{
-			unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *import = (*it).second;
+			unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> *import = (*it).second;
 			
 			if(import)
 			{
@@ -532,7 +532,7 @@ void HttpServer::AddStatusBarItem(const unisim::service::interfaces::StatusBarIt
 	statusbar_items.push_back(new unisim::service::interfaces::StatusBarItem(i));
 }
 
-unisim::kernel::service::Object *HttpServer::FindChildObject(unisim::kernel::service::Object *object, const std::string& hierarchical_name, std::size_t& pos)
+unisim::kernel::Object *HttpServer::FindChildObject(unisim::kernel::Object *object, const std::string& hierarchical_name, std::size_t& pos)
 {
 	std::size_t curr_pos = pos;
 	if(curr_pos >= hierarchical_name.length()) return 0;
@@ -556,19 +556,19 @@ unisim::kernel::service::Object *HttpServer::FindChildObject(unisim::kernel::ser
 	if((len == 2) && (hierarchical_name[pos] == '.') && (hierarchical_name[pos + 1] == '.'))
 	{
 		pos = hierarchical_delimiter_pos;
-		unisim::kernel::service::Object *parent = object->GetParent();
+		unisim::kernel::Object *parent = object->GetParent();
 		return (pos < hierarchical_name.length()) ? (parent ? FindChildObject(parent, hierarchical_name, pos) : 0) : parent; // eat "../"
 	}
 
-	const std::list<unisim::kernel::service::Object *>& leaf_objects = object->GetLeafs();
+	const std::list<unisim::kernel::Object *>& leaf_objects = object->GetLeafs();
 	
-	std::list<unisim::kernel::service::Object *>::const_iterator it;
+	std::list<unisim::kernel::Object *>::const_iterator it;
 	
-	unisim::kernel::service::Object *found_child = 0;
+	unisim::kernel::Object *found_child = 0;
 	
 	for(it = leaf_objects.begin(); it != leaf_objects.end(); it++)
 	{
-		unisim::kernel::service::Object *child = *it;
+		unisim::kernel::Object *child = *it;
 		
 		if(hierarchical_name.compare(curr_pos, len, child->GetObjectName()) == 0)
 		{
@@ -592,12 +592,12 @@ unisim::kernel::service::Object *HttpServer::FindChildObject(unisim::kernel::ser
 	
 	pos = hierarchical_delimiter_pos/* + 1*/;
 	
-	unisim::kernel::service::Object *found_object = (pos < hierarchical_name.length()) ? FindChildObject(found_child, hierarchical_name, pos) : 0;
+	unisim::kernel::Object *found_object = (pos < hierarchical_name.length()) ? FindChildObject(found_child, hierarchical_name, pos) : 0;
 	
 	return found_object ? found_object : found_child;
 }
 
-unisim::kernel::service::Object *HttpServer::FindObject(const std::string& hierarchical_name, std::size_t& pos)
+unisim::kernel::Object *HttpServer::FindObject(const std::string& hierarchical_name, std::size_t& pos)
 {
 	std::size_t curr_pos = pos;
 	if(curr_pos >= hierarchical_name.length()) return 0;
@@ -621,17 +621,17 @@ unisim::kernel::service::Object *HttpServer::FindObject(const std::string& hiera
 		return 0; // "../" is forbidden for root
 	}
 
-	std::list<unisim::kernel::service::Object *> root_objects;
+	std::list<unisim::kernel::Object *> root_objects;
 	
 	GetSimulator()->GetRootObjects(root_objects);
 	
-	std::list<unisim::kernel::service::Object *>::const_iterator it;
+	std::list<unisim::kernel::Object *>::const_iterator it;
 	
-	unisim::kernel::service::Object *found_root_object = 0;
+	unisim::kernel::Object *found_root_object = 0;
 	
 	for(it = root_objects.begin(); it != root_objects.end(); it++)
 	{
-		unisim::kernel::service::Object *root_object = *it;
+		unisim::kernel::Object *root_object = *it;
 		
 		if(hierarchical_name.compare(curr_pos, len, root_object->GetObjectName()) == 0)
 		{
@@ -655,7 +655,7 @@ unisim::kernel::service::Object *HttpServer::FindObject(const std::string& hiera
 	
 	pos = hierarchical_delimiter_pos;
 	
-	unisim::kernel::service::Object *found_object = (pos < hierarchical_name.length()) ? FindChildObject(found_root_object, hierarchical_name, pos) : 0;
+	unisim::kernel::Object *found_object = (pos < hierarchical_name.length()) ? FindChildObject(found_root_object, hierarchical_name, pos) : 0;
 	
 	return found_object ? found_object : found_root_object;
 }
@@ -771,12 +771,12 @@ bool HttpServer::ServeFile(unisim::util::hypapp::HttpRequest const& req, const s
 	return send_status;
 }
 
-void HttpServer::Crawl(std::ostream& os, unisim::kernel::service::Object *object, unsigned int indent_level, bool last)
+void HttpServer::Crawl(std::ostream& os, unisim::kernel::Object *object, unsigned int indent_level, bool last)
 {
-	const std::list<unisim::kernel::service::Object *>& leaf_objects = object->GetLeafs();
+	const std::list<unisim::kernel::Object *>& leaf_objects = object->GetLeafs();
 	
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *import = 0;
-	std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *>::iterator it = http_server_import_map.find(object);
+	unisim::kernel::ServiceImport<unisim::service::interfaces::HttpServer> *import = 0;
+	std::map<unisim::kernel::Object *, unisim::kernel::ServiceImport<unisim::service::interfaces::HttpServer> *>::iterator it = http_server_import_map.find(object);
 	if(it != http_server_import_map.end())
 	{
 		import = (*it).second;
@@ -821,7 +821,7 @@ void HttpServer::Crawl(std::ostream& os, unisim::kernel::service::Object *object
 		}
 		os << ">" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetObjectName());
 		os << "</span>" << std::endl;;
-		const std::list<unisim::kernel::service::Object *>& leaf_objects = object->GetLeafs();
+		const std::list<unisim::kernel::Object *>& leaf_objects = object->GetLeafs();
 		
 		if(!leaf_objects.empty())
 		{
@@ -829,12 +829,12 @@ void HttpServer::Crawl(std::ostream& os, unisim::kernel::service::Object *object
 			os << "<ul class=\"tree\">" << std::endl;
 			indent_level++;
 			
-			std::list<unisim::kernel::service::Object *>::const_iterator it;
-			std::list<unisim::kernel::service::Object *>::const_iterator next_it;
+			std::list<unisim::kernel::Object *>::const_iterator it;
+			std::list<unisim::kernel::Object *>::const_iterator next_it;
 			
 			for(it = leaf_objects.begin(); it != leaf_objects.end(); it = next_it)
 			{
-				unisim::kernel::service::Object *child = *it;
+				unisim::kernel::Object *child = *it;
 				next_it = it;
 				next_it++;
 				
@@ -904,7 +904,7 @@ void HttpServer::Crawl(std::ostream& os, unsigned int indent_level)
 	os << ">" << unisim::util::hypapp::HTML_Encoder::Encode(sim_program_name);
 	os << "</span>" << std::endl;
 
-	std::list<unisim::kernel::service::Object *> root_objects;
+	std::list<unisim::kernel::Object *> root_objects;
 	
 	GetSimulator()->GetRootObjects(root_objects);
 	
@@ -914,12 +914,12 @@ void HttpServer::Crawl(std::ostream& os, unsigned int indent_level)
 		os << "<ul class=\"tree\">" << std::endl;
 		indent_level++;
 		
-		std::list<unisim::kernel::service::Object *>::const_iterator it;
-		std::list<unisim::kernel::service::Object *>::const_iterator next_it;
+		std::list<unisim::kernel::Object *>::const_iterator it;
+		std::list<unisim::kernel::Object *>::const_iterator next_it;
 		
 		for(it = root_objects.begin(); it != root_objects.end(); it = next_it)
 		{
-			unisim::kernel::service::Object *root_object = *it;
+			unisim::kernel::Object *root_object = *it;
 			next_it = it;
 			next_it++;
 			
@@ -931,7 +931,7 @@ void HttpServer::Crawl(std::ostream& os, unsigned int indent_level)
 	}
 }
 
-bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn, unisim::kernel::service::VariableBase::Type var_type)
+bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn, unisim::kernel::VariableBase::Type var_type)
 {
 	unisim::util::hypapp::HttpResponse response;
 	
@@ -942,7 +942,7 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 	else
 	{
 		bool is_kernel = false;
-		unisim::kernel::service::Object *object = 0;
+		unisim::kernel::Object *object = 0;
 		
 		if(req.HasQuery())
 		{
@@ -1026,11 +1026,11 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 			response << "\t\t<title>";
 			switch(var_type)
 			{
-				case unisim::kernel::service::VariableBase::VAR_PARAMETER:
+				case unisim::kernel::VariableBase::VAR_PARAMETER:
 					response << "Configuration of ";
 					break;
 					
-				case unisim::kernel::service::VariableBase::VAR_STATISTIC:
+				case unisim::kernel::VariableBase::VAR_STATISTIC:
 					response << "Statistics of ";
 					break;
 					
@@ -1054,7 +1054,7 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 			
 			if(object || is_kernel)
 			{
-				std::list<unisim::kernel::service::VariableBase *> var_lst;
+				std::list<unisim::kernel::VariableBase *> var_lst;
 				if(object)
 				{
 					object->GetVariables(var_lst, var_type);
@@ -1076,11 +1076,11 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 					response << "\t\t\t\t</tr>" << std::endl;
 					response << "\t\t\t</thead>" << std::endl;
 					response << "\t\t\t<tbody>" << std::endl;
-					std::list<unisim::kernel::service::VariableBase *>::const_iterator var_iter;
+					std::list<unisim::kernel::VariableBase *>::const_iterator var_iter;
 					unsigned int var_id;
 					for(var_id = 0, var_iter = var_lst.begin(); var_iter != var_lst.end(); var_id++, var_iter++)
 					{
-						unisim::kernel::service::VariableBase *var = *var_iter;
+						unisim::kernel::VariableBase *var = *var_iter;
 						
 						response << "\t\t\t\t<tr>" << std::endl;
 						response << "\t\t\t\t\t<td class=\"var-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "</td>" << std::endl;
@@ -1159,8 +1159,8 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 	}
 	else
 	{
-		unisim::kernel::service::Object *object = 0;
-		unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *import = 0;
+		unisim::kernel::Object *object = 0;
+		unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> *import = 0;
 		
 		if(req.HasQuery())
 		{
@@ -1195,7 +1195,7 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 				
 				if(object)
 				{
-					std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> *>::iterator it = registers_import_map.find(object);
+					std::map<unisim::kernel::Object *, unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> *>::iterator it = registers_import_map.find(object);
 					
 					if(it != registers_import_map.end())
 					{
@@ -1283,7 +1283,7 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 			{
 				struct Printer : unisim::service::interfaces::RegisterScanner
 				{
-					Printer(unisim::kernel::service::Object *_object, std::ostream& _response) : object(_object), response(_response) {}
+					Printer(unisim::kernel::Object *_object, std::ostream& _response) : object(_object), response(_response) {}
 					
 					virtual void Append(unisim::service::interfaces::Register * reg)
 					{
@@ -1314,7 +1314,7 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 						response << "\t\t\t\t</tr>" << std::endl;
 					}
 				private:
-					unisim::kernel::service::Object *object;
+					unisim::kernel::Object *object;
 					std::ostream& response;
 				};
 						
@@ -1653,7 +1653,7 @@ bool HttpServer::ServeExportConfigFile(unisim::util::hypapp::HttpRequest const& 
 				response.SetHeaderField("Content-Disposition", "attachment;filename=\"sim_config.json\"");
 			}
 			
-			GetSimulator()->SaveVariables(response, unisim::kernel::service::VariableBase::VAR_PARAMETER, format);
+			GetSimulator()->SaveVariables(response, unisim::kernel::VariableBase::VAR_PARAMETER, format);
 			
 			return conn.Send(response.ToString(req.GetRequestType() == unisim::util::hypapp::Request::HEAD));
 		}
@@ -1721,7 +1721,7 @@ bool HttpServer::ServeImportConfigFile(unisim::util::hypapp::HttpRequest const& 
 				unisim::util::hypapp::HttpRequestPart const& part = req.GetPart(i);
 
 				std::stringstream content_part_sstr(std::string(part.GetContent(), part.GetContentLength()));
-				if(GetSimulator()->LoadVariables(content_part_sstr, unisim::kernel::service::VariableBase::VAR_PARAMETER, format))
+				if(GetSimulator()->LoadVariables(content_part_sstr, unisim::kernel::VariableBase::VAR_PARAMETER, format))
 				{
 					if(verbose)
 					{
@@ -1795,11 +1795,11 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 				}
 				else if((http_request.GetAbsolutePath() == "/config") || (http_request.GetAbsolutePath() == "/config/"))
 				{
-					return http_server.ServeVariables(http_request, conn, unisim::kernel::service::VariableBase::VAR_PARAMETER);
+					return http_server.ServeVariables(http_request, conn, unisim::kernel::VariableBase::VAR_PARAMETER);
 				}
 				else if((http_request.GetAbsolutePath() == "/stats") || (http_request.GetAbsolutePath() == "/stats/"))
 				{
-					return http_server.ServeVariables(http_request, conn, unisim::kernel::service::VariableBase::VAR_STATISTIC);
+					return http_server.ServeVariables(http_request, conn, unisim::kernel::VariableBase::VAR_STATISTIC);
 				}
 				else if((http_request.GetAbsolutePath() == "/registers") || (http_request.GetAbsolutePath() == "/registers/"))
 				{
@@ -1839,7 +1839,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 						}
 
 						std::size_t pos = 0;
-						unisim::kernel::service::Object *object = http_server.FindObject(http_request.GetAbsolutePath(), pos);
+						unisim::kernel::Object *object = http_server.FindObject(http_request.GetAbsolutePath(), pos);
 						
 						if(object)
 						{
@@ -1890,12 +1890,12 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 	msg_loop.Run(conn);
 }
 
-bool HttpServer::RouteHttpRequest(unisim::kernel::service::Object *object, unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+bool HttpServer::RouteHttpRequest(unisim::kernel::Object *object, unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
 {
-	std::map<unisim::kernel::service::Object *, unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *>::iterator it = http_server_import_map.find(object);
+	std::map<unisim::kernel::Object *, unisim::kernel::ServiceImport<unisim::service::interfaces::HttpServer> *>::iterator it = http_server_import_map.find(object);
 	if(it != http_server_import_map.end())
 	{
-		unisim::kernel::service::ServiceImport<unisim::service::interfaces::HttpServer> *import = (*it).second;
+		unisim::kernel::ServiceImport<unisim::service::interfaces::HttpServer> *import = (*it).second;
 		if(import)
 		{
 			return (*import)->ServeHttpRequest(req, conn);

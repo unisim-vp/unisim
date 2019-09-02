@@ -10,7 +10,8 @@
 
 
 #include "unisim/service/interfaces/Fault_Injector.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
+#include <unisim/kernel/variable/variable.hh>
 #include <cmath>
 #include <inttypes.h>
 #include <fstream>
@@ -20,11 +21,11 @@ namespace service{
 namespace fault{
 
 
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Object;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::Object;
 using unisim::service::interfaces::Fault_Injector;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::variable::Parameter;
 
 //template <class PHYSICAL_ADDR> class Memory_Fault_Injector;
 

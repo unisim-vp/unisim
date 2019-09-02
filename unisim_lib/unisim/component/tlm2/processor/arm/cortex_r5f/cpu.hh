@@ -196,27 +196,27 @@ private:
     sc_core::sc_time time_per_instruction;
     bool enable_dmi;
 	
-    unisim::kernel::service::Statistic<sc_core::sc_time> stat_cpu_time;
+    unisim::kernel::variable::Statistic<sc_core::sc_time> stat_cpu_time;
   
-    struct CpuCycleTimeParam : public unisim::kernel::service::Parameter<sc_core::sc_time>
+    struct CpuCycleTimeParam : public unisim::kernel::variable::Parameter<sc_core::sc_time>
     {
       CpuCycleTimeParam(char const* name, Object *owner, CPU& _cpu, const char *description)
-        : unisim::kernel::service::Parameter<sc_core::sc_time>(name, owner, _cpu.cpu_cycle_time, description), cpu(_cpu)
+        : unisim::kernel::variable::Parameter<sc_core::sc_time>(name, owner, _cpu.cpu_cycle_time, description), cpu(_cpu)
       {}
       void Set( sc_core::sc_time const& value ) { cpu.SetCycleTime( value ); }
       CPU& cpu;
     } param_cpu_cycle_time;
-    unisim::kernel::service::Parameter<sc_core::sc_time> param_bus_cycle_time;
-    unisim::kernel::service::Parameter<sc_core::sc_time> param_nice_time;
-    unisim::kernel::service::Parameter<double> param_ipc;
-    unisim::kernel::service::Parameter<bool> param_enable_dmi;
+    unisim::kernel::variable::Parameter<sc_core::sc_time> param_bus_cycle_time;
+    unisim::kernel::variable::Parameter<sc_core::sc_time> param_nice_time;
+    unisim::kernel::variable::Parameter<double> param_ipc;
+    unisim::kernel::variable::Parameter<bool> param_enable_dmi;
 	
     /*************************************************************************
      * Logger, verbose and trap parameters/methods/ports               START *
      *************************************************************************/
 
     bool verbose_tlm;
-    unisim::kernel::service::Parameter<bool> param_verbose_tlm;
+    unisim::kernel::variable::Parameter<bool> param_verbose_tlm;
     inline bool VerboseTLM();
     
     /*************************************************************************
@@ -229,9 +229,9 @@ private:
     /* Configuration pins START */
     /****************************/
   protected:
-    bool VINITHI; unisim::kernel::service::Parameter<bool> param_VINITHI;
-    bool CFGEE;   unisim::kernel::service::Parameter<bool> param_CFGEE;
-    bool TEINIT;  unisim::kernel::service::Parameter<bool> param_TEINIT;
+    bool VINITHI; unisim::kernel::variable::Parameter<bool> param_VINITHI;
+    bool CFGEE;   unisim::kernel::variable::Parameter<bool> param_CFGEE;
+    bool TEINIT;  unisim::kernel::variable::Parameter<bool> param_TEINIT;
     
     /****************************/
     /* Configuration pins  END  */

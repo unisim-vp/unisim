@@ -71,20 +71,20 @@ const typename CPU<TYPES, CONFIG>::SLR_Privilege_Type CPU<TYPES, CONFIG>::SLR<SL
 #endif
 
 template <typename TYPES, typename CONFIG>
-CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, SuperMSS()
-	, unisim::kernel::service::Client<unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> >(name, parent)
-	, unisim::kernel::service::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::EFFECTIVE_ADDRESS> >(name, parent)
-	, unisim::kernel::service::Client<typename unisim::service::interfaces::DebugYielding>(name, parent)
-	, unisim::kernel::service::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::EFFECTIVE_ADDRESS> >(name, parent)
-	, unisim::kernel::service::Client<typename unisim::service::interfaces::TrapReporting>(name, parent)
-	, unisim::kernel::service::Client<typename unisim::service::interfaces::LinuxOS>(name, parent)
-	, unisim::kernel::service::Service<unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS> >(name, parent)
-	, unisim::kernel::service::Service<typename unisim::service::interfaces::MemoryAccessReportingControl>(name, parent)
-	, unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>(name, parent)
-	, unisim::kernel::service::Service<typename unisim::service::interfaces::Synchronizable>(name, parent)
-	, unisim::kernel::service::Service<typename unisim::service::interfaces::MemoryInjection<EFFECTIVE_ADDRESS> >(name, parent)
+	, unisim::kernel::Client<unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> >(name, parent)
+	, unisim::kernel::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::EFFECTIVE_ADDRESS> >(name, parent)
+	, unisim::kernel::Client<typename unisim::service::interfaces::DebugYielding>(name, parent)
+	, unisim::kernel::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::EFFECTIVE_ADDRESS> >(name, parent)
+	, unisim::kernel::Client<typename unisim::service::interfaces::TrapReporting>(name, parent)
+	, unisim::kernel::Client<typename unisim::service::interfaces::LinuxOS>(name, parent)
+	, unisim::kernel::Service<unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS> >(name, parent)
+	, unisim::kernel::Service<typename unisim::service::interfaces::MemoryAccessReportingControl>(name, parent)
+	, unisim::kernel::Service<typename unisim::service::interfaces::Registers>(name, parent)
+	, unisim::kernel::Service<typename unisim::service::interfaces::Synchronizable>(name, parent)
+	, unisim::kernel::Service<typename unisim::service::interfaces::MemoryInjection<EFFECTIVE_ADDRESS> >(name, parent)
 	, memory_import("memory-import", this)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, debug_yielding_import("debug-yielding-import", this)
@@ -168,9 +168,9 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, cr()
 	, fpu(static_cast<typename CONFIG::CPU *>(this))
 {
-	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_trap_on_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_max_inst.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	unsigned int i;
 	

@@ -39,8 +39,8 @@ namespace unisim {
 namespace service {
 namespace instrumenter {
 
-Instrumenter::Instrumenter(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent, "Hardware instrumenter")
+Instrumenter::Instrumenter(const char *name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "Hardware instrumenter")
 	, http_server_export("http-server-export", this)
 	, logger(*this)
 	, verbose(false)
@@ -564,7 +564,7 @@ OutputInstrumentBase::OutputInstrumentBase(const std::string& name, unsigned int
 }
 
 InstrumenterFrontEnd::InstrumenterFrontEnd(const char *name, Instrumenter *_instrumenter)
-	: unisim::kernel::service::Object(name, _instrumenter)
+	: unisim::kernel::Object(name, _instrumenter)
 	, instrumenter(_instrumenter)
 	, front_end_id(instrumenter->RegisterFrontEnd(this))
 	, input_instruments()
@@ -852,12 +852,12 @@ bool UserInstrument::IsBoolean() const
 }
 
 UserInterface::UserInterface(const char *name, Instrumenter *instrumenter)
-	: unisim::kernel::service::Object(name, instrumenter, "Hardware Instrumenter user interface")
+	: unisim::kernel::Object(name, instrumenter, "Hardware Instrumenter user interface")
 	, InstrumenterFrontEnd(name, instrumenter)
-	, unisim::kernel::service::Service<unisim::service::interfaces::HttpServer>(name, instrumenter)
+	, unisim::kernel::Service<unisim::service::interfaces::HttpServer>(name, instrumenter)
 	, http_server_export("http-server-export", this)
 	, logger(*this)
-	, program_name(unisim::kernel::service::Simulator::Instance()->FindVariable("program-name")->operator std::string())
+	, program_name(unisim::kernel::Simulator::Instance()->FindVariable("program-name")->operator std::string())
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, instrumentation()
@@ -1963,7 +1963,7 @@ void UserInterface::PropertySetter::Apply()
 }
 
 CSV_Reader::CSV_Reader(const char *name, Instrumenter *instrumenter)
-	: unisim::kernel::service::Object(name, instrumenter, "Hardware instrument .CSV file reader")
+	: unisim::kernel::Object(name, instrumenter, "Hardware instrument .CSV file reader")
 	, InstrumenterFrontEnd(name, instrumenter)
 	, logger(*this)
 	, filename()
@@ -2229,7 +2229,7 @@ bool CSV_Reader::ParseCSV(sc_core::sc_time& deadline)
 }
 
 CSV_Writer::CSV_Writer(const char *name, Instrumenter *instrumenter)
-	: unisim::kernel::service::Object(name, instrumenter, "Hardware instrumenter .CSV file writer")
+	: unisim::kernel::Object(name, instrumenter, "Hardware instrumenter .CSV file writer")
 	, InstrumenterFrontEnd(name, instrumenter)
 	, logger(*this)
 	, filename()

@@ -35,7 +35,8 @@
 #include <unisim/service/netstreamer/netstreamer.hh>
 #include <unisim/util/likely/likely.hh>
 
-#include <errno.h>
+#include <cstring>
+#include <cerrno>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 
@@ -100,9 +101,9 @@ std::ostream& operator << (std::ostream& os, const NetStreamerProtocol& nsp)
 	return os;
 }
 
-NetStreamer::NetStreamer(const char *name, unisim::kernel::service::Object *parent)
+NetStreamer::NetStreamer(const char *name, unisim::kernel::Object *parent)
 	: Object(name, parent, "This service provides character I/O over TCP/IP")
-	, unisim::kernel::service::Service<CharIO>(name, parent)
+	, unisim::kernel::Service<CharIO>(name, parent)
 	, char_io_export("char-io-export", this)
 	, logger(*this)
 	, verbose(false)
@@ -152,7 +153,7 @@ NetStreamer::NetStreamer(const char *name, unisim::kernel::service::Object *pare
 	, input_buffer()
 	, output_buffer()
 {
-	param_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_tcp_port.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
 #if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
 	// Loads the winsock2 dll
@@ -1176,7 +1177,7 @@ void NetStreamer::TelnetSubNegociation(uint8_t opt, uint8_t *params, unsigned in
 
 namespace unisim {
 namespace kernel {
-namespace service {
+namespace variable {
 
 using unisim::service::netstreamer::NetStreamerProtocol;
 using unisim::service::netstreamer::NETSTREAMER_PROTOCOL_RAW;
@@ -1185,7 +1186,7 @@ using unisim::service::netstreamer::NETSTREAMER_PROTOCOL_TELNET;
 template <> Variable<NetStreamerProtocol>::Variable(const char *_name, Object *_object, NetStreamerProtocol& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 	AddEnumeratedValue("raw");
 	AddEnumeratedValue("telnet");
 }
@@ -1309,6 +1310,6 @@ template <> VariableBase& Variable<NetStreamerProtocol>::operator = (const char 
 
 template class Variable<NetStreamerProtocol>;
 
-} // end of service namespace
+} // end of variable namespace
 } // end of kernel namespace
 } // end of unisim namespace

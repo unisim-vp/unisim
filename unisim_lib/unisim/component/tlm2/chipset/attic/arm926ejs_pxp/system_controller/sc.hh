@@ -38,7 +38,7 @@
 #include <systemc>
 #include <tlm>
 #include <tlm_utils/passthrough_target_socket.h>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include <inttypes.h>
 
@@ -50,7 +50,7 @@ namespace arm926ejs_pxp {
 namespace system_controller {
 
 class SystemController
-	: public unisim::kernel::service::Object
+	: public unisim::kernel::Object
 	, public sc_module
 {
 public:
@@ -103,22 +103,22 @@ private:
 	/** Base address of the system controller */
 	uint32_t base_addr;
 	/** UNISIM Parameter for the base address of the system controller */
-	unisim::kernel::service::Parameter<uint32_t> param_base_addr;
+	unisim::kernel::variable::Parameter<uint32_t> param_base_addr;
 
 	/** Reference clock (refclock) period in picoseconds */
 	uint64_t refclk;
 	/** UNISIM Parameter for the reference clock */
-	unisim::kernel::service::Parameter<uint64_t> param_refclk;
+	unisim::kernel::variable::Parameter<uint64_t> param_refclk;
 
 	/** External timer module clock (timclk) period */
 	uint64_t timclk;
 	/**UNISIM Parameter for the external timer module clock */
-	unisim::kernel::service::Parameter<uint64_t> param_timclk;
+	unisim::kernel::variable::Parameter<uint64_t> param_timclk;
 
 	/** Verbose */
 	uint32_t verbose;
 	/** UNISIM Paramter for verbose */
-	unisim::kernel::service::Parameter<uint32_t> param_verbose;
+	unisim::kernel::variable::Parameter<uint32_t> param_verbose;
 	/** Verbose levels */
 	static const uint32_t V0 = 0x01UL;
 	static const uint32_t V1 = 0x03UL;
