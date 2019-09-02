@@ -79,6 +79,9 @@ struct CONFIG
 	// Model
 	static const Model MODEL = E200Z710N3;
 
+	// Floating point
+	static const bool HAS_FPU = false;
+
 	// Front-side bus width
 	static const unsigned int DATA_FSB_WIDTH = 8; // Data load/store front-side bus width
 	static const unsigned int INSN_FSB_WIDTH = 8; // Instruction fetch front-side bus width

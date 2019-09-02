@@ -422,7 +422,7 @@ void CPU<TYPES, CONFIG>::InvalidateDirectMemPtr(PHYSICAL_ADDRESS start_addr, PHY
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::AHBDebugInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
+bool CPU<TYPES, CONFIG>::DebugInstructionBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
 {
 	if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
 	{
@@ -446,7 +446,7 @@ bool CPU<TYPES, CONFIG>::AHBDebugInsnRead(PHYSICAL_ADDRESS physical_addr, void *
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::AHBDebugDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
+bool CPU<TYPES, CONFIG>::DebugDataBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
 {
 	if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
 	{
@@ -470,7 +470,7 @@ bool CPU<TYPES, CONFIG>::AHBDebugDataRead(PHYSICAL_ADDRESS physical_addr, void *
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::AHBDebugDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
+bool CPU<TYPES, CONFIG>::DebugDataBusWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
 {
 	if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
 	{
@@ -527,36 +527,36 @@ void CPU<TYPES, CONFIG>::SampleInputs()
 {
 	if(p_reset_b.posedge())
 	{
-		this->template ThrowException<typename Super::SystemResetInterrupt::Reset>();
+		this->template ThrowException<typename SystemResetInterrupt::Reset>();
 		//SetResetAddress(sc_dt::sc_uint<30>(p_rstbase).to_uint64() << 2);
 	}
 	
 	if(p_nmi_b.negedge())
 	{
-		this->template ThrowException<typename Super::MachineCheckInterrupt::NMI>();
+		this->template ThrowException<typename MachineCheckInterrupt::NMI>();
 	}
 	
 	if(p_mcp_b.negedge() && this->hid0.template Get<typename Super::HID0::EMCP>())
 	{
-		this->template ThrowException<typename Super::MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(Super::MachineCheckInterrupt::MCE_MCP);
+		this->template ThrowException<typename MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_MCP);
 	}
 	
 	if(p_extint_b)
 	{
-		this->template AckInterrupt<typename Super::ExternalInputInterrupt>();
+		this->template AckInterrupt<ExternalInputInterrupt>();
 	}
 	else
 	{
-		this->template ThrowException<typename Super::ExternalInputInterrupt::ExternalInput>();
+		this->template ThrowException<typename ExternalInputInterrupt::ExternalInput>();
 	}
 	
 	if(p_crint_b)
 	{
-		this->template AckInterrupt<typename Super::CriticalInputInterrupt>();
+		this->template AckInterrupt<CriticalInputInterrupt>();
 	}
 	else
 	{
-		this->template ThrowException<typename Super::CriticalInputInterrupt::CriticalInput>();
+		this->template ThrowException<typename CriticalInputInterrupt::CriticalInput>();
 	}
 	this->SetAutoVector(!p_avec_b); // if p_avec_b is negated when interrupt signal is asserted, interrupt is not autovectored
 	this->SetVectorOffset(sc_dt::sc_uint<14>(p_voffset).to_uint64() << 2);
@@ -599,7 +599,7 @@ void CPU<TYPES, CONFIG>::Run()
 }
 
 template <typename TYPES, typename CONFIG>
-BusResponseStatus CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
+bool CPU<TYPES, CONFIG>::InstructionBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
 {
 	AlignToBusClock();
 
@@ -624,7 +624,7 @@ BusResponseStatus CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr
 					const sc_core::sc_time& read_lat = dmi_region->GetReadLatency(size);
 					qk.inc(read_lat);
 					run_time = qk.get_current_time();
-					return BUS_OK_RESPONSE;
+					return true;
 				}
 				else
 				{
@@ -692,22 +692,34 @@ BusResponseStatus CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr
 	{
 		switch(status)
 		{
-			case tlm::TLM_OK_RESPONSE               : return BUS_OK_RESPONSE;
-			case tlm::TLM_INCOMPLETE_RESPONSE       : return BUS_INCOMPLETE_RESPONSE;
-			case tlm::TLM_GENERIC_ERROR_RESPONSE    : return BUS_GENERIC_ERROR_RESPONSE;
-			case tlm::TLM_ADDRESS_ERROR_RESPONSE    : return BUS_ADDRESS_ERROR_RESPONSE;
-			case tlm::TLM_COMMAND_ERROR_RESPONSE    : return BUS_COMMAND_ERROR_RESPONSE;
-			case tlm::TLM_BURST_ERROR_RESPONSE      : return BUS_BURST_ERROR_RESPONSE;
-			case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE: return BUS_BYTE_ENABLE_ERROR_RESPONSE;
+			case tlm::TLM_OK_RESPONSE: return true;
+			case tlm::TLM_COMMAND_ERROR_RESPONSE:
+				if(this->verbose_exception)
+				{
+					this->logger << DebugInfo << "Instruction Read Access Control Error at @0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				}
+				this->template ThrowException<typename InstructionStorageInterrupt::AccessControl>();
+				break;
+			case tlm::TLM_INCOMPLETE_RESPONSE:
+			case tlm::TLM_GENERIC_ERROR_RESPONSE:
+			case tlm::TLM_ADDRESS_ERROR_RESPONSE:
+			case tlm::TLM_BURST_ERROR_RESPONSE:
+			case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE:
+				if(this->verbose_exception)
+				{
+					this->logger << DebugInfo << "Instruction Read Bus Error at @0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				}
+				this->template ThrowException<typename MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_INSTRUCTION_READ_BUS_ERROR);
+				break;
 		}
-		return BUS_INCOMPLETE_RESPONSE;
+		return false;
 	}
 	
-	return BUS_OK_RESPONSE;
+	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-BusResponseStatus CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr, bool rwitm)
+bool CPU<TYPES, CONFIG>::DataBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm)
 {
 	AlignToBusClock();
 	
@@ -731,7 +743,7 @@ BusResponseStatus CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr
 					const sc_core::sc_time& read_lat = dmi_region->GetReadLatency(size);
 					qk.inc(read_lat);
 					run_time = qk.get_current_time();
-					return BUS_OK_RESPONSE;
+					return true;
 				}
 				else
 				{
@@ -799,22 +811,34 @@ BusResponseStatus CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr
 	{
 		switch(status)
 		{
-			case tlm::TLM_OK_RESPONSE               : return BUS_OK_RESPONSE;
-			case tlm::TLM_INCOMPLETE_RESPONSE       : return BUS_INCOMPLETE_RESPONSE;
-			case tlm::TLM_GENERIC_ERROR_RESPONSE    : return BUS_GENERIC_ERROR_RESPONSE;
-			case tlm::TLM_ADDRESS_ERROR_RESPONSE    : return BUS_ADDRESS_ERROR_RESPONSE;
-			case tlm::TLM_COMMAND_ERROR_RESPONSE    : return BUS_COMMAND_ERROR_RESPONSE;
-			case tlm::TLM_BURST_ERROR_RESPONSE      : return BUS_BURST_ERROR_RESPONSE;
-			case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE: return BUS_BYTE_ENABLE_ERROR_RESPONSE;
+			case tlm::TLM_OK_RESPONSE: return true;
+			case tlm::TLM_COMMAND_ERROR_RESPONSE:
+				if(this->verbose_exception)
+				{
+					this->logger << DebugInfo << "Data Read Access Control Error at @0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				}
+				this->template ThrowException<typename DataStorageInterrupt::AccessControl>().SetAddress(physical_addr); // FIXME: physical address != logical address
+				break;
+			case tlm::TLM_INCOMPLETE_RESPONSE:
+			case tlm::TLM_GENERIC_ERROR_RESPONSE:
+			case tlm::TLM_ADDRESS_ERROR_RESPONSE:
+			case tlm::TLM_BURST_ERROR_RESPONSE:
+			case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE:
+				if(this->verbose_exception)
+				{
+					this->logger << DebugInfo << "Data Read Bus Error at @0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				}
+				this->template ThrowException<typename MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_DATA_READ_BUS_ERROR);
+				break;
 		}
-		return BUS_INCOMPLETE_RESPONSE;
+		return false;
 	}
 	
-	return BUS_OK_RESPONSE;
+	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-BusResponseStatus CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
+bool CPU<TYPES, CONFIG>::DataBusWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
 {
 	AlignToBusClock();
 	
@@ -905,15 +929,27 @@ BusResponseStatus CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_add
 	{
 		switch(status)
 		{
-			case tlm::TLM_OK_RESPONSE               : return BUS_OK_RESPONSE;
-			case tlm::TLM_INCOMPLETE_RESPONSE       : return BUS_INCOMPLETE_RESPONSE;
-			case tlm::TLM_GENERIC_ERROR_RESPONSE    : return BUS_GENERIC_ERROR_RESPONSE;
-			case tlm::TLM_ADDRESS_ERROR_RESPONSE    : return BUS_ADDRESS_ERROR_RESPONSE;
-			case tlm::TLM_COMMAND_ERROR_RESPONSE    : return BUS_COMMAND_ERROR_RESPONSE;
-			case tlm::TLM_BURST_ERROR_RESPONSE      : return BUS_BURST_ERROR_RESPONSE;
-			case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE: return BUS_BYTE_ENABLE_ERROR_RESPONSE;
+			case tlm::TLM_OK_RESPONSE: return true;
+			case tlm::TLM_COMMAND_ERROR_RESPONSE:
+				if(this->verbose_exception)
+				{
+					this->logger << DebugInfo << "Data Write Access Control Error at @0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				}
+				this->template ThrowException<typename DataStorageInterrupt::AccessControl>().SetAddress(physical_addr); // FIXME: physical address != logical address
+				break;
+			case tlm::TLM_INCOMPLETE_RESPONSE:
+			case tlm::TLM_GENERIC_ERROR_RESPONSE:
+			case tlm::TLM_ADDRESS_ERROR_RESPONSE:
+			case tlm::TLM_BURST_ERROR_RESPONSE:
+			case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE:
+				if(this->verbose_exception)
+				{
+					this->logger << DebugInfo << "Data Write Bus Error at @0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				}
+				this->template ThrowException<typename MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_DATA_WRITE_BUS_ERROR);
+				break;
 		}
-		return BUS_INCOMPLETE_RESPONSE;
+		return false;
 	}
 	
 	return BUS_OK_RESPONSE;

@@ -75,6 +75,12 @@ public:
 	typedef typename TYPES::STORAGE_ATTR STORAGE_ATTR;
 	
 	typedef typename CONFIG::CPU Super;
+	typedef typename Super::MachineCheckInterrupt MachineCheckInterrupt;
+	typedef typename Super::InstructionStorageInterrupt InstructionStorageInterrupt;
+	typedef typename Super::DataStorageInterrupt DataStorageInterrupt;
+	typedef typename Super::SystemResetInterrupt SystemResetInterrupt;
+	typedef typename Super::ExternalInputInterrupt ExternalInputInterrupt;
+	typedef typename Super::CriticalInputInterrupt CriticalInputInterrupt;
 	typedef tlm::tlm_initiator_socket<CONFIG::INSN_FSB_WIDTH * 8> i_ahb_master_if_type;
 	typedef tlm::tlm_initiator_socket<CONFIG::DATA_FSB_WIDTH * 8> d_ahb_master_if_type;
 	typedef tlm::tlm_target_socket<CONFIG::INCO_FSB_WIDTH * 8> ahb_slave_if_type;
@@ -127,13 +133,14 @@ public:
 	
 protected:
 	sc_core::sc_time GetBurstLatency(uint32_t size, const sc_core::sc_time& latency) const;
-	virtual BusResponseStatus AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-	virtual BusResponseStatus AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr, bool rwitm);
-	virtual BusResponseStatus AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
+	virtual bool DataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm);
+	virtual bool DataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+	virtual bool InstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
 
-	virtual bool AHBDebugInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-	virtual bool AHBDebugDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-	virtual bool AHBDebugDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
+	virtual bool DebugDataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+	virtual bool DebugDataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+	virtual bool DebugInstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+
 private:
 	unisim::kernel::tlm2::ClockPropertiesProxy m_clk_prop_proxy;
 	PayloadFabric<tlm::tlm_generic_payload> payload_fabric;

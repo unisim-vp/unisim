@@ -72,6 +72,9 @@ class CPU
 public:
 	
 	typedef typename CONFIG::CPU Super;
+	typedef typename TYPES::PHYSICAL_ADDRESS PHYSICAL_ADDRESS;
+	typedef typename TYPES::STORAGE_ATTR STORAGE_ATTR;
+	typedef typename Super::MachineCheckInterrupt MachineCheckInterrupt;
 	typedef tlm::tlm_initiator_socket<CONFIG::FSB_WIDTH * 8> plb_master_socket;
 	typedef tlm::tlm_target_socket<0, InterruptProtocolTypes> irq_slave_socket;
 	typedef tlm::tlm_initiator_socket<4> dcr_master_socket;
@@ -106,14 +109,14 @@ public:
 	
 protected:
 	sc_core::sc_time GetBurstLatency(uint32_t size, const sc_core::sc_time& latency) const;
-	virtual BusResponseStatus PLBInsnRead(typename TYPES::PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, typename TYPES::STORAGE_ATTR storage_attr);
-	virtual BusResponseStatus PLBDataRead(typename TYPES::PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, typename TYPES::STORAGE_ATTR storage_attr, bool rwitm);
-	virtual BusResponseStatus PLBDataWrite(typename TYPES::PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, typename TYPES::STORAGE_ATTR storage_attr);
+	virtual bool DataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm);
+	virtual bool DataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+	virtual bool InstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+	virtual bool DebugDataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+	virtual bool DebugDataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+	virtual bool DebugInstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
 	virtual void DCRRead(unsigned int dcrn, uint32_t& value);
 	virtual void DCRWrite(unsigned int dcrn, uint32_t value);
-	virtual bool PLBDebugInsnRead(typename TYPES::PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, typename TYPES::STORAGE_ATTR storage_attr);
-	virtual bool PLBDebugDataRead(typename TYPES::PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, typename TYPES::STORAGE_ATTR storage_attr);
-	virtual bool PLBDebugDataWrite(typename TYPES::PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, typename TYPES::STORAGE_ATTR storage_attr);
 private:
 	typedef enum
 	{

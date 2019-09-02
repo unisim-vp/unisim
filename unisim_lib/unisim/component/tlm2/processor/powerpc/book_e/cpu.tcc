@@ -260,7 +260,7 @@ void CPU<TYPES, CONFIG>::invalidate_direct_mem_ptr(unsigned int if_id, sc_dt::ui
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::PLBDebugInsnRead(typename TYPES::PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, typename TYPES::STORAGE_ATTR storage_attr)
+bool CPU<TYPES, CONFIG>::DebugInstructionBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
 {
 	if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
 	{
@@ -284,7 +284,7 @@ bool CPU<TYPES, CONFIG>::PLBDebugInsnRead(typename TYPES::PHYSICAL_ADDRESS physi
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::PLBDebugDataRead(typename TYPES::PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, typename TYPES::STORAGE_ATTR storage_attr)
+bool CPU<TYPES, CONFIG>::DebugDataBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
 {
 	if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
 	{
@@ -308,7 +308,7 @@ bool CPU<TYPES, CONFIG>::PLBDebugDataRead(typename TYPES::PHYSICAL_ADDRESS physi
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::PLBDebugDataWrite(typename TYPES::PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, typename TYPES::STORAGE_ATTR storage_attr)
+bool CPU<TYPES, CONFIG>::DebugDataBusWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
 {
 	if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
 	{
@@ -669,7 +669,7 @@ void CPU<TYPES, CONFIG>::Run()
 }
 
 template <typename TYPES, typename CONFIG>
-BusResponseStatus CPU<TYPES, CONFIG>::PLBInsnRead(typename TYPES::PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, typename TYPES::STORAGE_ATTR storage_attr)
+bool CPU<TYPES, CONFIG>::InstructionBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
 {
 	AlignToBusClock();
 
@@ -695,7 +695,7 @@ BusResponseStatus CPU<TYPES, CONFIG>::PLBInsnRead(typename TYPES::PHYSICAL_ADDRE
 					cpu_time += read_lat;
 					run_time += read_lat;
 					LazyRunInternalTimers();
-					return BUS_OK_RESPONSE;
+					return true;
 				}
 				else
 				{
@@ -750,24 +750,19 @@ BusResponseStatus CPU<TYPES, CONFIG>::PLBInsnRead(typename TYPES::PHYSICAL_ADDRE
 	
 	if(unlikely(status != tlm::TLM_OK_RESPONSE))
 	{
-		switch(status)
+		if(this->verbose_exception)
 		{
-			case tlm::TLM_OK_RESPONSE               : return BUS_OK_RESPONSE;
-			case tlm::TLM_INCOMPLETE_RESPONSE       : return BUS_INCOMPLETE_RESPONSE;
-			case tlm::TLM_GENERIC_ERROR_RESPONSE    : return BUS_GENERIC_ERROR_RESPONSE;
-			case tlm::TLM_ADDRESS_ERROR_RESPONSE    : return BUS_ADDRESS_ERROR_RESPONSE;
-			case tlm::TLM_COMMAND_ERROR_RESPONSE    : return BUS_COMMAND_ERROR_RESPONSE;
-			case tlm::TLM_BURST_ERROR_RESPONSE      : return BUS_BURST_ERROR_RESPONSE;
-			case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE: return BUS_BYTE_ENABLE_ERROR_RESPONSE;
+			this->logger << DebugInfo << "Instruction Read Bus Error at @0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
-		return BUS_INCOMPLETE_RESPONSE;
+		this->template ThrowException<typename MachineCheckInterrupt::InstructionSynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_INSTRUCTION_PLB_ERROR);
+		return false;
 	}
 	
-	return BUS_OK_RESPONSE;
+	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-BusResponseStatus CPU<TYPES, CONFIG>::PLBDataRead(typename TYPES::PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, typename TYPES::STORAGE_ATTR storage_attr, bool rwitm)
+bool CPU<TYPES, CONFIG>::DataBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm)
 {
 	AlignToBusClock();
 	
@@ -792,7 +787,7 @@ BusResponseStatus CPU<TYPES, CONFIG>::PLBDataRead(typename TYPES::PHYSICAL_ADDRE
 					cpu_time += read_lat;
 					run_time += read_lat;
 					LazyRunInternalTimers();
-					return BUS_OK_RESPONSE;
+					return true;
 				}
 				else
 				{
@@ -848,24 +843,19 @@ BusResponseStatus CPU<TYPES, CONFIG>::PLBDataRead(typename TYPES::PHYSICAL_ADDRE
 
 	if(unlikely(status != tlm::TLM_OK_RESPONSE))
 	{
-		switch(status)
+		if(this->verbose_exception)
 		{
-			case tlm::TLM_OK_RESPONSE               : return BUS_OK_RESPONSE;
-			case tlm::TLM_INCOMPLETE_RESPONSE       : return BUS_INCOMPLETE_RESPONSE;
-			case tlm::TLM_GENERIC_ERROR_RESPONSE    : return BUS_GENERIC_ERROR_RESPONSE;
-			case tlm::TLM_ADDRESS_ERROR_RESPONSE    : return BUS_ADDRESS_ERROR_RESPONSE;
-			case tlm::TLM_COMMAND_ERROR_RESPONSE    : return BUS_COMMAND_ERROR_RESPONSE;
-			case tlm::TLM_BURST_ERROR_RESPONSE      : return BUS_BURST_ERROR_RESPONSE;
-			case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE: return BUS_BYTE_ENABLE_ERROR_RESPONSE;
+			this->logger << DebugInfo << "Data Read Bus Error at @0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
-		return BUS_INCOMPLETE_RESPONSE;
+		this->template ThrowException<typename MachineCheckInterrupt::DataAsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_DATA_READ_PLB_ERROR);
+		return false;
 	}
 	
-	return BUS_OK_RESPONSE;
+	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-BusResponseStatus CPU<TYPES, CONFIG>::PLBDataWrite(typename TYPES::PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, typename TYPES::STORAGE_ATTR storage_attr)
+bool CPU<TYPES, CONFIG>::DataBusWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
 {
 	AlignToBusClock();
 	
@@ -890,7 +880,7 @@ BusResponseStatus CPU<TYPES, CONFIG>::PLBDataWrite(typename TYPES::PHYSICAL_ADDR
 					cpu_time += write_lat;
 					run_time += write_lat;
 					LazyRunInternalTimers();
-					return BUS_OK_RESPONSE;
+					return true;
 				}
 				else
 				{
@@ -945,20 +935,15 @@ BusResponseStatus CPU<TYPES, CONFIG>::PLBDataWrite(typename TYPES::PHYSICAL_ADDR
 
 	if(unlikely(status != tlm::TLM_OK_RESPONSE))
 	{
-		switch(status)
+		if(this->verbose_exception)
 		{
-			case tlm::TLM_OK_RESPONSE               : return BUS_OK_RESPONSE;
-			case tlm::TLM_INCOMPLETE_RESPONSE       : return BUS_INCOMPLETE_RESPONSE;
-			case tlm::TLM_GENERIC_ERROR_RESPONSE    : return BUS_GENERIC_ERROR_RESPONSE;
-			case tlm::TLM_ADDRESS_ERROR_RESPONSE    : return BUS_ADDRESS_ERROR_RESPONSE;
-			case tlm::TLM_COMMAND_ERROR_RESPONSE    : return BUS_COMMAND_ERROR_RESPONSE;
-			case tlm::TLM_BURST_ERROR_RESPONSE      : return BUS_BURST_ERROR_RESPONSE;
-			case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE: return BUS_BYTE_ENABLE_ERROR_RESPONSE;
+			this->logger << DebugInfo << "Data Write Bus Error at @0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
-		return BUS_INCOMPLETE_RESPONSE;
+		this->template ThrowException<typename MachineCheckInterrupt::DataAsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_DATA_WRITE_PLB_ERROR);
+		return false;
 	}
 	
-	return BUS_OK_RESPONSE;
+	return true;
 }
 
 template <typename TYPES, typename CONFIG>

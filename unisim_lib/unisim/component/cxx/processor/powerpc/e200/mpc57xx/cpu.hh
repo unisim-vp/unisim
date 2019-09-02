@@ -36,7 +36,6 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_E200_MPC57XX_CPU_HH__
 
 #include <unisim/component/cxx/processor/powerpc/cpu.hh>
-#include <unisim/util/cache/cache.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/queue/queue.hh>
 #include <unisim/util/queue/queue.tcc>
@@ -66,9 +65,8 @@ class CPU
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Disassembly<typename TYPES::EFFECTIVE_ADDRESS> >
 {
 public:
-	//typedef CPU ThisCPU;
 	typedef typename unisim::component::cxx::processor::powerpc::CPU<TYPES, CONFIG> SuperCPU;
-	typedef typename unisim::util::cache::MemorySubSystem<TYPES, typename CONFIG::CPU> SuperMSS;
+	typedef typename SuperCPU::SuperMSS SuperMSS;
 	typedef typename TYPES::EFFECTIVE_ADDRESS EFFECTIVE_ADDRESS;
 	typedef typename TYPES::ADDRESS ADDRESS;
 	typedef typename TYPES::PHYSICAL_ADDRESS PHYSICAL_ADDRESS;
@@ -100,12 +98,6 @@ public:
 	//////////  unisim::service::interfaces::Disassembly<> ////////////////////
 	
 	virtual std::string Disasm(EFFECTIVE_ADDRESS addr, EFFECTIVE_ADDRESS& next_addr);
-	
-// 	/////////////// unisim::service::interfaces::Memory<> /////////////////////
-// 	
-// 	virtual void Reset();
-// 	virtual bool ReadMemory(EFFECTIVE_ADDRESS addr, void *buffer, uint32_t size);
-// 	virtual bool WriteMemory(EFFECTIVE_ADDRESS addr, const void *buffer, uint32_t size);
 	
 	///////////////// Interface with SystemC TLM-2.0 wrapper module ///////////
 	
@@ -607,49 +599,10 @@ public:
 	void SetAutoVector(bool value);
 	void SetVectorOffset(EFFECTIVE_ADDRESS value);
 	
-	inline std::ostream& GetDebugInfoStream() ALWAYS_INLINE { return this->SuperCPU::GetDebugInfoStream(); }
-	inline std::ostream& GetDebugWarningStream() ALWAYS_INLINE { return this->SuperCPU::GetDebugWarningStream(); }
-	inline std::ostream& GetDebugErrorStream() ALWAYS_INLINE { return this->SuperCPU::GetDebugErrorStream(); }
-
-	inline bool IsVerboseDataLoad() const ALWAYS_INLINE { return verbose_data_load; }
-	inline bool IsVerboseDataStore() const ALWAYS_INLINE { return verbose_data_store; }
-	inline bool IsVerboseInstructionFetch() const ALWAYS_INLINE { return verbose_instruction_fetch; }
-	inline bool IsVerboseDataBusRead() const ALWAYS_INLINE { return verbose_data_bus_read; }
-	inline bool IsVerboseDataBusWrite() const ALWAYS_INLINE { return verbose_data_bus_write; }
-	inline bool IsVerboseInstructionBusRead() const ALWAYS_INLINE { return verbose_instruction_bus_read; }
 	bool IsStorageCacheable(STORAGE_ATTR storage_attr) const { return !(storage_attr & TYPES::SA_I); }
-
-	bool DataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm);
-	bool DataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
-	bool InstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
-
-	bool DebugDataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
-	bool DebugDataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
-	bool DebugInstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
-
-	virtual BusResponseStatus AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-	virtual BusResponseStatus AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr, bool rwitm);
-	virtual BusResponseStatus AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-
-	virtual bool AHBDebugInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-	virtual bool AHBDebugDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-	virtual bool AHBDebugDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-
-// 	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataLoad(T& value, EFFECTIVE_ADDRESS ea);
-// 	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataStore(T value, EFFECTIVE_ADDRESS ea);
-	
-// 	bool DataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
-// 	bool DataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);
-// 	bool InstructionFetch(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
-	
-// 	bool DebugDataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
-// 	bool DebugDataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);
-// 	bool DebugInstructionFetch(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
 
 	virtual void InvalidateDirectMemPtr(PHYSICAL_ADDRESS start_addr, PHYSICAL_ADDRESS end_addr) {}
 	
-	//template <bool DEBUG, bool EXEC, bool WRITE> inline bool ControlAccess(EFFECTIVE_ADDRESS addr, EFFECTIVE_ADDRESS& size_to_protection_boundary, STORAGE_ATTR& storage_attr);
-
 public:
 
 	void FlushInstructionBuffer();
@@ -748,25 +701,6 @@ public:
 	}
 	
 protected:
-	/////////////////////////////// Statistics ////////////////////////////////
-	
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_load_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_store_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_fetch_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_load_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_store_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_read_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_write_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_bus_read_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_load_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_store_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_fetch_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_load_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_store_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_read_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_write_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_bus_read_xfered_bytes;
-
 	////////////////////////// Run-time parameters ////////////////////////////
 	
 	uint8_t cpuid;
@@ -786,24 +720,6 @@ protected:
 
 	PHYSICAL_ADDRESS local_memory_size;
 	unisim::kernel::service::Parameter<PHYSICAL_ADDRESS> param_local_memory_size;
-
-	bool verbose_data_load;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_load;
-	
-	bool verbose_data_store;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_store;
-	
-	bool verbose_instruction_fetch;
-	unisim::kernel::service::Parameter<bool> param_verbose_instruction_fetch;
-	
-	bool verbose_data_bus_read;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_bus_read;
-	
-	bool verbose_data_bus_write;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_bus_write;
-	
-	bool verbose_instruction_bus_read;
-	unisim::kernel::service::Parameter<bool> param_verbose_instruction_bus_read;
 	
 	bool trap_system_reset_interrupt;
 	unisim::kernel::service::Parameter<bool> param_trap_system_reset_interrupt;

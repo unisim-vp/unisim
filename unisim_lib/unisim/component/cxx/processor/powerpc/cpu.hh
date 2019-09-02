@@ -507,6 +507,33 @@ private:
 	}
 };
 
+//////////////////////// Floating-Point Register //////////////////////////
+
+struct FPR : SoftDouble
+{
+	typedef SoftDouble Super;
+	
+	FPR() : Super() {}
+	
+	void Init(unsigned int reg_num)
+	{
+		std::stringstream sstr;
+		sstr << "f" << reg_num;
+		name = sstr.str();
+	}
+	
+	unisim::service::interfaces::Register *CreateRegisterInterface()
+	{
+		return new FloatingPointRegisterInterface(name.c_str(), this);
+	}
+	
+	const std::string& GetName() const { return name; }
+	
+	using Super::operator =;
+private:
+	std::string name;
+};
+
 ///////////////////////////// TypeForByteSize<> ///////////////////////////////
 
 template <unsigned int BYTE_SIZE> struct TypeForByteSize {};
@@ -586,9 +613,9 @@ public:
 	
 	//////////////////////////// Logger streams ///////////////////////////////
 	
-	std::ostream& GetDebugInfoStream() { return logger.DebugInfoStream(); }
-	std::ostream& GetDebugWarningStream() { return logger.DebugWarningStream(); }
-	std::ostream& GetDebugErrorStream() { return logger.DebugErrorStream(); }
+	std::ostream& GetDebugInfoStream() ALWAYS_INLINE { return logger.DebugInfoStream(); }
+	std::ostream& GetDebugWarningStream() ALWAYS_INLINE { return logger.DebugWarningStream(); }
+	std::ostream& GetDebugErrorStream() ALWAYS_INLINE { return logger.DebugErrorStream(); }
 	
 	/////////////// unisim::service::interfaces::Memory<> /////////////////////
 	
@@ -638,6 +665,10 @@ public:
 	inline CTR& GetCTR() ALWAYS_INLINE { return ctr; }
 	inline XER& GetXER() ALWAYS_INLINE { return xer; }
 	inline CR& GetCR() ALWAYS_INLINE { return cr; }
+	inline FPSCR& GetFPSCR() { return fpu.GetFPSCR(); }
+	inline FPR& GetFPR(unsigned int n) { return fpu.GetFPR(n); }
+	inline void SetFPR(unsigned int n, const SoftDouble& v) { fpu.SetFPR(n, v); }
+	inline bool CheckFloatingPointException() { return fpu.CheckFloatingPointException(static_cast<typename CONFIG::CPU *>(this)); }
 	
 	inline typename TYPES::EFFECTIVE_ADDRESS GetCIA() const ALWAYS_INLINE { return cia; }
 	inline void SetCIA(uint32_t value) ALWAYS_INLINE { cia = value; }
@@ -658,6 +689,14 @@ public:
 
 	template <bool DEBUG, bool EXEC, bool WRITE>
 	inline bool Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRESS& size_to_protection_boundary, ADDRESS& virt_addr, PHYSICAL_ADDRESS& phys_addr, STORAGE_ATTR& storage_attr);
+
+	virtual bool DataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm);
+	virtual bool DataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+	virtual bool InstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+
+	virtual bool DebugDataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+	virtual bool DebugDataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+	virtual bool DebugInstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
 
 	template <typename T, bool REVERSE, unisim::util::endian::endian_type ENDIAN> void ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr);
 
@@ -682,25 +721,30 @@ public:
 	bool IntStoreMSBFirst(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size);
 	template <typename REGISTER> bool SpecialLoad(REGISTER& reg, typename TYPES::EFFECTIVE_ADDRESS ea);
 	template <typename REGISTER> bool SpecialStore(const REGISTER& reg, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Fp32Load(unsigned int fd, EFFECTIVE_ADDRESS ea) { return fpu.Fp32Load(static_cast<typename CONFIG::CPU *>(this), fd, ea); }
+	bool Fp64Load(unsigned int fd, EFFECTIVE_ADDRESS ea) { return fpu.Fp64Load(static_cast<typename CONFIG::CPU *>(this), fd, ea); }
+	bool Fp32Store(unsigned int fs, EFFECTIVE_ADDRESS ea) { return fpu.Fp32Store(static_cast<typename CONFIG::CPU *>(this), fs, ea); }
+	bool Fp64Store(unsigned int fs, EFFECTIVE_ADDRESS ea) { return fpu.Fp64Store(static_cast<typename CONFIG::CPU *>(this), fs, ea); }
+	bool FpStoreLSW(unsigned int fs, EFFECTIVE_ADDRESS ea) { return fpu.FpStoreLSW(static_cast<typename CONFIG::CPU *>(this), fs, ea); }
 	
 	std::string GetObjectFriendlyName(typename TYPES::EFFECTIVE_ADDRESS addr);
 	
 	///////////////////////////////////////////////////////////////////////////
 protected:
 	bool CheckInt16LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
-	bool CheckSInt16LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return __CheckInt16LoadAlignment__(ea); }
+	bool CheckSInt16LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadAlignment(ea); }
 	bool CheckInt32LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
-	bool CheckInt16LoadByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return __CheckInt16LoadAlignment__(ea); }
-	bool CheckInt32LoadByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return __CheckInt32LoadAlignment__(ea); }
+	bool CheckInt16LoadByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadAlignment(ea); }
+	bool CheckInt32LoadByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32LoadAlignment(ea); }
 	bool CheckInt16StoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
 	bool CheckInt32StoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
-	bool CheckInt16StoreByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return __CheckInt16StoreAlignment__(ea); }
-	bool CheckInt32StoreByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return __CheckInt32StoreAlignment__(ea); }
+	bool CheckInt16StoreByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16StoreAlignment(ea); }
+	bool CheckInt32StoreByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32StoreAlignment(ea); }
 	template <typename REGISTER> bool CheckSpecialLoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea)
 	{
 		switch(REGISTER::SIZE)
 		{
-			case 32: return __CheckInt32LoadAlignment__(ea);
+			case 32: return static_cast<typename CONFIG::CPU *>(this)->CheckInt32LoadAlignment(ea);
 		}
 		return true;
 		
@@ -709,25 +753,16 @@ protected:
 	{
 		switch(REGISTER::SIZE)
 		{
-			case 32: return __CheckInt32StoreAlignment__(ea);
+			case 32: return static_cast<typename CONFIG::CPU *>(this)->CheckInt32StoreAlignment(ea);
 		}
 		return true;
 		
 	}
-
-private:
-	template <typename T, bool REVERSE, unisim::util::endian::endian_type ENDIAN> void __ConvertDataLoadStoreEndian__(T& value, STORAGE_ATTR storage_attr) { static_cast<typename CONFIG::CPU *>(this)->template ConvertDataLoadStoreEndian<T, REVERSE, ENDIAN>(value, storage_attr); }
-	bool __CheckInt16LoadAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadAlignment(ea); }
-	bool __CheckSInt16LoadAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckSInt16LoadAlignment(ea); }
-	bool __CheckInt32LoadAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32LoadAlignment(ea); }
-	bool __CheckInt16LoadByteReverseAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadByteReverseAlignment(ea); }
-	bool __CheckInt32LoadByteReverseAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32LoadByteReverseAlignment(ea); }
-	bool __CheckInt16StoreAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16StoreAlignment(ea); }
-	bool __CheckInt32StoreAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32StoreAlignment(ea); }
-	bool __CheckInt16StoreByteReverseAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16StoreByteReverseAlignment(ea); }
-	bool __CheckInt32StoreByteReverseAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32StoreByteReverseAlignment(ea); }
-	template <typename REGISTER> bool __CheckSpecialLoadAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->template CheckSpecialLoadAlignment<REGISTER>(ea); }
-	template <typename REGISTER> bool __CheckSpecialStoreAlignment__(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->template CheckSpecialStoreAlignment<REGISTER>(ea); }
+	bool CheckFp32LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckFp64LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckFp32StoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckFp64StoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckFpStoreLSWAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
 
 protected:
 	
@@ -792,14 +827,7 @@ protected:
 			INTERRUPT::ALL::InstallInterrupt(exception_dispatcher, &interrupt, trap_control_flag);
 		}
 		
-		virtual void ProcessInterrupt(typename CONFIG::CPU *cpu)
-		{
-			if(unlikely(cpu->verbose_interrupt))
-			{
-				cpu->logger << DebugInfo << GetInterruptName() << EndDebugInfo;
-			}
-			cpu->ProcessInterrupt(static_cast<INTERRUPT *>(this));
-		}
+		virtual void ProcessInterrupt(typename CONFIG::CPU *cpu) { cpu->ProcessInterrupt(static_cast<INTERRUPT *>(this)); }
 
 		virtual unsigned int GetOffset() const { return _OFFSET; }
 		
@@ -5640,32 +5668,50 @@ protected:
 		
 	};
 	
-	//////////////////////// Floating-Point Register //////////////////////////
+	////////////////////////// Floating-Point unit ////////////////////////////
 	
-	struct FPR : SoftDouble
+	struct NoFPU
 	{
-		typedef SoftDouble Super;
+		NoFPU(typename CONFIG::CPU *_cpu) {}
 		
-		FPR() : Super() {}
+		bool Fp32Load(typename CONFIG::CPU *cpu, unsigned int fd, EFFECTIVE_ADDRESS ea)   { throw std::runtime_error("INTERNAL ERROR! Fp32Load is unavailable"); return false; }
+		bool Fp64Load(typename CONFIG::CPU *cpu, unsigned int fd, EFFECTIVE_ADDRESS ea)   { throw std::runtime_error("INTERNAL ERROR! Fp64Load is unavailable"); return false; }
+		bool Fp32Store(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea)  { throw std::runtime_error("INTERNAL ERROR! Fp32Store is unavailable"); return false; }
+		bool Fp64Store(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea)  { throw std::runtime_error("INTERNAL ERROR! Fp64Store is unavailable"); return false; }
+		bool FpStoreLSW(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea) { throw std::runtime_error("INTERNAL ERROR! FpStoreLSW is unavailable"); return false; }
 		
-		void Init(unsigned int reg_num)
-		{
-			std::stringstream sstr;
-			sstr << "f" << reg_num;
-			name = sstr.str();
-		}
+		FPR& GetFPR(unsigned int n) { static FPR dummy; throw std::runtime_error("INTERNAL ERROR! GetFPR is unavailable"); return dummy; }
+		void SetFPR(unsigned int n, const SoftDouble& v) { throw std::runtime_error("INTERNAL ERROR! SetFPR is unavailable"); }
+		FPSCR& GetFPSCR() { static FPSCR dummy; throw std::runtime_error("INTERNAL ERROR! GetFPSCR is unavailable"); return dummy; }
 		
-		unisim::service::interfaces::Register *CreateRegisterInterface()
-		{
-			return new FloatingPointRegisterInterface(name.c_str(), this);
-		}
-		
-		const std::string& GetName() const { return name; }
-		
-		using Super::operator =;
-	private:
-		std::string name;
+		bool CheckFloatingPointException(typename CONFIG::CPU *cpu) { throw std::runtime_error("INTERNAL ERROR! CheckFloatingPointException is unavailable"); return false; }
 	};
+	
+	struct LegacyFPU
+	{
+		LegacyFPU(typename CONFIG::CPU *cpu);
+		
+		bool Fp32Load(typename CONFIG::CPU *cpu, unsigned int fd, EFFECTIVE_ADDRESS ea);
+		bool Fp64Load(typename CONFIG::CPU *cpu, unsigned int fd, EFFECTIVE_ADDRESS ea);
+		bool Fp32Store(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea);
+		bool Fp64Store(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea);
+		bool FpStoreLSW(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea);
+		
+		FPR& GetFPR(unsigned int n) { return fpr[n]; }
+		void SetFPR(unsigned int n, const SoftDouble& v) { fpr[n] = v; }
+		FPSCR& GetFPSCR() { return fpscr; }
+		
+		bool CheckFloatingPointException(typename CONFIG::CPU *cpu);
+		
+	protected:
+		FPR fpr[32];   // floating point registers (C++ objects implementing IEEE 754 floating point numbers)
+		FPSCR fpscr;   // floating point status and control register
+	};
+	
+	SWITCH_ENUM_TRAIT(bool, _);
+	CASE_ENUM_TRAIT(false, _) { typedef NoFPU FPU; };
+	CASE_ENUM_TRAIT(true, _)  { typedef LegacyFPU FPU; };
+	typedef typename ENUM_TRAIT(CONFIG::HAS_FPU, _)::FPU FPU;
 	
 protected:
 	///////////////////////////// Logger //////////////////////////////////////
@@ -5686,6 +5732,23 @@ protected:
 	uint64_t instruction_counter;
 	unisim::kernel::service::Statistic<uint64_t> stat_instruction_counter;
 
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_load_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_store_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_fetch_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_load_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_store_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_read_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_write_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_bus_read_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_load_xfered_bytes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_store_xfered_bytes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_fetch_xfered_bytes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_load_xfered_bytes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_store_xfered_bytes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_read_xfered_bytes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_write_xfered_bytes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_bus_read_xfered_bytes;
+	
 	////////////////////////// Run-time parameters ////////////////////////////
 
 	uint64_t trap_on_instruction_counter;
@@ -5715,6 +5778,32 @@ protected:
 	
 	bool enable_insn_trace;
 	unisim::kernel::service::Parameter<bool> param_enable_insn_trace;
+
+	bool verbose_data_load;
+	unisim::kernel::service::Parameter<bool> param_verbose_data_load;
+	
+	bool verbose_data_store;
+	unisim::kernel::service::Parameter<bool> param_verbose_data_store;
+	
+	bool verbose_instruction_fetch;
+	unisim::kernel::service::Parameter<bool> param_verbose_instruction_fetch;
+	
+	bool verbose_data_bus_read;
+	unisim::kernel::service::Parameter<bool> param_verbose_data_bus_read;
+	
+	bool verbose_data_bus_write;
+	unisim::kernel::service::Parameter<bool> param_verbose_data_bus_write;
+	
+	bool verbose_instruction_bus_read;
+	unisim::kernel::service::Parameter<bool> param_verbose_instruction_bus_read;
+
+public:
+	inline bool IsVerboseDataLoad() const ALWAYS_INLINE { return verbose_data_load; }
+	inline bool IsVerboseDataStore() const ALWAYS_INLINE { return verbose_data_store; }
+	inline bool IsVerboseInstructionFetch() const ALWAYS_INLINE { return verbose_instruction_fetch; }
+	inline bool IsVerboseDataBusRead() const ALWAYS_INLINE { return verbose_data_bus_read; }
+	inline bool IsVerboseDataBusWrite() const ALWAYS_INLINE { return verbose_data_bus_write; }
+	inline bool IsVerboseInstructionBusRead() const ALWAYS_INLINE { return verbose_instruction_bus_read; }
 
 private:
 	/////////////////////////// Registers Registry ////////////////////////////
@@ -5762,6 +5851,10 @@ protected:
 	////////////////////////// Condition Register  ////////////////////////////
 	
 	CR cr;
+	
+	////////////////////////// Floating-point unit ////////////////////////////
+	
+	FPU fpu;
 };
 
 } // end of namespace powerpc

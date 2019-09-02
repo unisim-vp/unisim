@@ -37,7 +37,6 @@
 
 #include <unisim/component/cxx/processor/powerpc/cpu.hh>
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
-// #include <unisim/util/cache/cache.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/queue/queue.hh>
 #include <unisim/util/queue/queue.tcc>
@@ -75,11 +74,7 @@ public:
 	
 	typedef typename SuperCPU::MCSR MCSR;
 	typedef typename SuperCPU::ESR ESR;
-	typedef typename SuperCPU::FPR FPR;
-	//typedef typename SuperCPU::TCR TCR;
 	typedef typename SuperCPU::TSR TSR;
-// 	typedef typename SuperCPU::DBSR DBSR;
-// 	typedef typename SuperCPU::FSCR FSCR;
 	
 	/////////////////////////// service exports ///////////////////////////////
 
@@ -104,14 +99,6 @@ public:
 	//////////  unisim::service::interfaces::Disassembly<> ////////////////////
 	
 	virtual std::string Disasm(EFFECTIVE_ADDRESS addr, EFFECTIVE_ADDRESS& next_addr);
-	
-#if 0
-	/////////////// unisim::service::interfaces::Memory<> /////////////////////
-	
-	virtual void Reset();
-	virtual bool ReadMemory(EFFECTIVE_ADDRESS addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(EFFECTIVE_ADDRESS addr, const void *buffer, uint32_t size);
-#endif
 	
 	///////////////// Interface with SystemC TLM-2.0 wrapper module ///////////
 	
@@ -149,7 +136,6 @@ public:
 		
 		void Effect()
 		{
-// 			std::cerr << "#" << this->cpu->instruction_counter << ":MSR <- 0x" << std::hex << this->Get() << std::dec << std::endl;
 			this->cpu->UpdateExceptionEnable();
 			if(this->template Get<typename MSR::WE>())
 			{
@@ -218,7 +204,6 @@ public:
 	
 	MSR& GetMSR() { return msr; }
 	ESR& GetESR() { return esr; }
-	FPSCR& GetFPSCR() { return fpscr; }
 	typename SuperCPU::SRR0& GetSRR0() { return srr0; }
 	typename SuperCPU::SRR1& GetSRR1() { return srr1; }
 	typename SuperCPU::CSRR0& GetCSRR0() { return csrr0; }
@@ -227,10 +212,6 @@ public:
 	typename SuperCPU::MCSRR1& GetMCSRR1() { return mcsrr1; }
 	typename SuperCPU::RSTCFG& GetRSTCFG() { return rstcfg; }
 	typename SuperCPU::PID0& GetPID() { return pid; }
-// 	typename SuperCPU::TBL& GetTLB() { return tbl; }
-// 	typename SuperCPU::TBU& GetTLU() { return tbu; }
-	SoftDouble& GetFPR(unsigned int n) { return fpr[n]; }
-	void SetFPR(unsigned int n, const SoftDouble& v) { fpr[n] = v; }
 
 	bool Lwarx(unsigned int rd, EFFECTIVE_ADDRESS addr);
 	bool Mbar(EFFECTIVE_ADDRESS addr);
@@ -242,17 +223,17 @@ public:
 	bool Rfci();
 	bool Rfmci();
 	
-	bool CheckFloatingPointException()
-	{
-		// Check for floating point exception condition: FPSCR[FEX] and (MSR[FE0] or MSR[FE1])
-		if((fpscr.template Get<typename FPSCR::FEX>()) and (msr.template Get<typename MSR::FE0>() or msr.template Get<typename MSR::FE1>()))
-		{
-			// Raise a floating point exception if FPSCR[FEX] is set
-			this->template ThrowException<typename ProgramInterrupt::FloatingPoint>();
-			return false;
-		}
-		return true;
-	}
+// 	bool CheckFloatingPointException()
+// 	{
+// 		// Check for floating point exception condition: FPSCR[FEX] and (MSR[FE0] or MSR[FE1])
+// 		if((fpscr.template Get<typename FPSCR::FEX>()) and (msr.template Get<typename MSR::FE0>() or msr.template Get<typename MSR::FE1>()))
+// 		{
+// 			// Raise a floating point exception if FPSCR[FEX] is set
+// 			this->template ThrowException<typename ProgramInterrupt::FloatingPoint>();
+// 			return false;
+// 		}
+// 		return true;
+// 	}
 	
 	////////////////////////// Special Purpose Registers //////////////////////
 	
@@ -712,59 +693,29 @@ public:
 	
 	void UpdateExceptionEnable();
 	
-	inline std::ostream& GetDebugInfoStream() ALWAYS_INLINE { return this->SuperCPU::GetDebugInfoStream(); }
-	inline std::ostream& GetDebugWarningStream() ALWAYS_INLINE { return this->SuperCPU::GetDebugWarningStream(); }
-	inline std::ostream& GetDebugErrorStream() ALWAYS_INLINE { return this->SuperCPU::GetDebugErrorStream(); }
-
-	inline bool IsVerboseDataLoad() const ALWAYS_INLINE { return verbose_data_load; }
-	inline bool IsVerboseDataStore() const ALWAYS_INLINE { return verbose_data_store; }
-	inline bool IsVerboseInstructionFetch() const ALWAYS_INLINE { return verbose_instruction_fetch; }
-	inline bool IsVerboseDataBusRead() const ALWAYS_INLINE { return verbose_data_bus_read; }
-	inline bool IsVerboseDataBusWrite() const ALWAYS_INLINE { return verbose_data_bus_write; }
-	inline bool IsVerboseInstructionBusRead() const ALWAYS_INLINE { return verbose_instruction_bus_read; }
 	bool IsStorageCacheable(STORAGE_ATTR storage_attr) const { return !(storage_attr & TYPES::SA_I); }
-
-	bool DataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm);
-	bool DataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
-	bool InstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
-
-	bool DebugDataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
-	bool DebugDataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
-	bool DebugInstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
-
-	virtual BusResponseStatus PLBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-	virtual BusResponseStatus PLBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr, bool rwitm);
-	virtual BusResponseStatus PLBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-
-	virtual bool PLBDebugInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-	virtual bool PLBDebugDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-	virtual bool PLBDebugDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
 
 	template <typename T, bool REVERSE, unisim::util::endian::endian_type ENDIAN> void ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr);
 	
-// 	bool DebugDataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
-// 	bool DebugDataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);
-
 	virtual void InvalidateDirectMemPtr(PHYSICAL_ADDRESS start_addr, PHYSICAL_ADDRESS end_addr) {}
-
-// 	template <bool DEBUG, bool EXEC, bool WRITE>
-// 	inline bool Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRESS& size_to_protection_boundary, ADDRESS& virt_addr, PHYSICAL_ADDRESS& phys_addr, STORAGE_ATTR& storage_attr);
 
 	void RunTimers(uint64_t delta);
 	uint64_t GetMaxIdleTime() const;
 	uint64_t GetTimersDeadline() const;
 	
-	bool CheckInt16LoadAlignment(EFFECTIVE_ADDRESS ea);
-	bool CheckInt32LoadAlignment(EFFECTIVE_ADDRESS ea);
-	bool CheckInt16StoreAlignment(EFFECTIVE_ADDRESS ea);
-	bool CheckInt32StoreAlignment(EFFECTIVE_ADDRESS ea);
-
-	bool Fp32Load(unsigned int fd, EFFECTIVE_ADDRESS ea);
-	bool Fp64Load(unsigned int fd, EFFECTIVE_ADDRESS ea);
-	bool Fp32Store(unsigned int fs, EFFECTIVE_ADDRESS ea);
-	bool Fp64Store(unsigned int fs, EFFECTIVE_ADDRESS ea);
-	bool FpStoreLSW(unsigned int fs, EFFECTIVE_ADDRESS ea);
+	template <unsigned int SIZE> bool CheckIntLoadStoreAlignment(EFFECTIVE_ADDRESS ea);
+	template <unsigned int SIZE> bool CheckFloatingPointLoadStoreAlignment(EFFECTIVE_ADDRESS ea);
 	
+	bool CheckInt16LoadAlignment(EFFECTIVE_ADDRESS ea) { return CheckIntLoadStoreAlignment<2>(ea); }
+	bool CheckInt32LoadAlignment(EFFECTIVE_ADDRESS ea) { return CheckIntLoadStoreAlignment<4>(ea); }
+	bool CheckInt16StoreAlignment(EFFECTIVE_ADDRESS ea) { return CheckIntLoadStoreAlignment<2>(ea); }
+	bool CheckInt32StoreAlignment(EFFECTIVE_ADDRESS ea) { return CheckIntLoadStoreAlignment<4>(ea); }
+	bool CheckFp32LoadAlignment(EFFECTIVE_ADDRESS ea) { return CheckFloatingPointLoadStoreAlignment<4>(ea); }
+	bool CheckFp64LoadAlignment(EFFECTIVE_ADDRESS ea) { return CheckFloatingPointLoadStoreAlignment<8>(ea); }
+	bool CheckFp32StoreAlignment(EFFECTIVE_ADDRESS ea) { return CheckFloatingPointLoadStoreAlignment<4>(ea); }
+	bool CheckFp64StoreAlignment(EFFECTIVE_ADDRESS ea) { return CheckFloatingPointLoadStoreAlignment<8>(ea); }
+	bool CheckFpStoreLSWAlignment(EFFECTIVE_ADDRESS ea) { return CheckFloatingPointLoadStoreAlignment<4>(ea); }
+
 	int StringLength(EFFECTIVE_ADDRESS addr);
 	std::string ReadString(EFFECTIVE_ADDRESS addr, unsigned int count = 0);
 
@@ -775,25 +726,6 @@ public:
 	void StepOneInstruction();
 	
 protected:
-	/////////////////////////////// Statistics ////////////////////////////////
-	
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_load_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_store_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_fetch_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_load_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_store_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_read_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_write_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_bus_read_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_load_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_store_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_fetch_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_load_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_store_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_read_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_write_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_bus_read_xfered_bytes;
-
 	////////////////////////// Run-time parameters ////////////////////////////
 	
 	uint8_t cpuid;
@@ -801,24 +733,6 @@ protected:
 
 	uint32_t processor_version;
 	unisim::kernel::service::Parameter<uint32_t> param_processor_version;
-	
-	bool verbose_data_load;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_load;
-	
-	bool verbose_data_store;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_store;
-	
-	bool verbose_instruction_fetch;
-	unisim::kernel::service::Parameter<bool> param_verbose_instruction_fetch;
-	
-	bool verbose_data_bus_read;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_bus_read;
-	
-	bool verbose_data_bus_write;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_bus_write;
-	
-	bool verbose_instruction_bus_read;
-	unisim::kernel::service::Parameter<bool> param_verbose_instruction_bus_read;
 	
 	bool trap_critical_input_interrupt;
 	unisim::kernel::service::Parameter<bool> param_trap_critical_input_interrupt;
@@ -904,10 +818,6 @@ protected:
 	typename SuperCPU::IAC2 iac2;
 	typename SuperCPU::IAC3 iac3;
 	typename SuperCPU::IAC4 iac4;
-	
-	// floating point
-	FPR fpr[32];   // floating point registers (C++ objects implementing IEEE 754 floating point numbers)
-	FPSCR fpscr;   // floating point status and control register
 	
 	// interrupt processing
 	typename SuperCPU::CSRR0 csrr0;

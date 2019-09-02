@@ -52,22 +52,6 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, SuperCPU(name, parent)
 	, unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS> >(name, parent)
 	, disasm_export("disasm-export", this)
-	, stat_num_data_load_accesses("num-data-load-accesses", this, this->num_data_load_accesses, "Number of data load accesses (inside core)")
-	, stat_num_data_store_accesses("num-data-store-accesses", this, this->num_data_store_accesses, "Number of data store accesses (inside core)")
-	, stat_num_instruction_fetch_accesses("num-instruction-fetch-accesses", this, this->num_instruction_fetch_accesses, "Number of instruction fetch accesses (inside core)")
-	, stat_num_incoming_load_accesses("num-incoming-load-accesses", this, this->num_incoming_load_accesses, "Number of incoming load accesses (from other masters)")
-	, stat_num_incoming_store_accesses("num-incoming-store-accesses", this, this->num_incoming_store_accesses, "Number of incoming store accesses (from other masters)")
-	, stat_num_data_bus_read_accesses("num-data-bus-read-accesses", this, this->num_data_bus_read_accesses, "Number of data bus read accesses")
-	, stat_num_data_bus_write_accesses("num-data-bus-write-accesses", this, this->num_data_bus_write_accesses, "Number of data bus write accesses")
-	, stat_num_instruction_bus_read_accesses("num-instruction-bus-read-accesses", this, this->num_instruction_bus_read_accesses, "Number of instruction bus read accesses")
-	, stat_num_data_load_xfered_bytes("num-data-load-xfered-bytes", this, this->num_data_load_xfered_bytes, "Number of data load transfered bytes")
-	, stat_num_data_store_xfered_bytes("num-data-store-xfered-bytes", this, this->num_data_store_xfered_bytes, "Number of data store transfered bytes")
-	, stat_num_instruction_fetch_xfered_bytes("num-instruction-fetch-xfered-bytes", this, this->num_instruction_fetch_xfered_bytes, "Number of instruction fetch transfered bytes")
-	, stat_num_incoming_load_xfered_bytes("num-incoming-load-xfered-bytes", this, this->num_incoming_load_xfered_bytes, "Number of incoming load transfered bytes")
-	, stat_num_incoming_store_xfered_bytes("num-incoming-store-xfered-bytes", this, this->num_incoming_store_xfered_bytes, "Number of incoming store transfered bytes")
-	, stat_num_data_bus_read_xfered_bytes("num-data-bus-read-xfered-bytes", this, this->num_data_bus_read_xfered_bytes, "Number of data bus read transfered bytes")
-	, stat_num_data_bus_write_xfered_bytes("num-data-bus-write-xfered-bytes", this, this->num_data_bus_write_xfered_bytes, "Number of data bus write transfered bytes")
-	, stat_num_instruction_bus_read_xfered_bytes("num-instruction-bus-read-xfered-bytes", this, this->num_instruction_bus_read_xfered_bytes, "Number of instruction bus read transfered bytes")
 	, cpuid(0x0)
 	, param_cpuid("cpuid", this, cpuid, "CPU ID at reset")
 	, processor_version(0x0)
@@ -80,18 +64,6 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, param_local_memory_base_addr("local-memory-base-addr", this, local_memory_base_addr, "local memory base address")
 	, local_memory_size(0)
 	, param_local_memory_size("local-memory-size", this, local_memory_size, "local memory size")
-	, verbose_data_load(false)
-	, param_verbose_data_load("verbose-data-load", this, verbose_data_load, "enable/disable verbosity of data load")
-	, verbose_data_store(false)
-	, param_verbose_data_store("verbose-data-store", this, verbose_data_store, "enable/disable verbosity of data store")
-	, verbose_instruction_fetch(false)
-	, param_verbose_instruction_fetch("verbose-instruction-fetch", this, verbose_instruction_fetch, "enable/disable verbosity of instruction fetch")
-	, verbose_data_bus_read(false)
-	, param_verbose_data_bus_read("verbose-data-bus-read", this, verbose_data_bus_read, "enable/disable verbosity of data bus read")
-	, verbose_data_bus_write(false)
-	, param_verbose_data_bus_write("verbose-data-bus-write", this, verbose_data_bus_write, "enable/disable verbosity of data bus write")
-	, verbose_instruction_bus_read(false)
-	, param_verbose_instruction_bus_read("verbose-instruction-bus-read", this, verbose_instruction_bus_read, "enable/disable verbosity of instruction bus read")
 	, trap_system_reset_interrupt(false)
 	, param_trap_system_reset_interrupt("trap-system-reset-interrupt", this, trap_system_reset_interrupt, "enable/disable trap (in debugger) of system reset interrupt")
 	, trap_machine_check_interrupt(false)
@@ -734,162 +706,6 @@ template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::SetVectorOffset(EFFECTIVE_ADDRESS value)
 {
 	vector_offset = value & 0xfffffffcUL;
-}
-
-template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::DataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm)
-{
-	BusResponseStatus response_status = AHBDataRead(addr, buffer, size, storage_attr, rwitm);
-	if(unlikely(response_status != BUS_OK_RESPONSE))
-	{
-		switch(response_status)
-		{
-			case BUS_OK_RESPONSE: return true;
-			case BUS_COMMAND_ERROR_RESPONSE:
-				if(this->verbose_exception)
-				{
-					this->logger << DebugInfo << "Data Read Access Control Error at @0x" << std::hex << addr << std::dec << EndDebugInfo;
-				}
-				this->template ThrowException<typename CPU::DataStorageInterrupt::AccessControl>().SetAddress(addr); // FIXME: physical address != logical address
-				break;
-			case BUS_INCOMPLETE_RESPONSE:
-			case BUS_GENERIC_ERROR_RESPONSE:
-			case BUS_ADDRESS_ERROR_RESPONSE:
-			case BUS_BURST_ERROR_RESPONSE:
-			case BUS_BYTE_ENABLE_ERROR_RESPONSE:
-				if(this->verbose_exception)
-				{
-					this->logger << DebugInfo << "Data Read Bus Error at @0x" << std::hex << addr << std::dec << EndDebugInfo;
-				}
-				this->template ThrowException<typename MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_DATA_READ_BUS_ERROR);
-				break;
-		}
-		return false;
-	}
-	
-	return true;
-}
-
-template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::DataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
-{
-	BusResponseStatus response_status = AHBDataWrite(addr, buffer, size, storage_attr);
-	if(unlikely(response_status != BUS_OK_RESPONSE))
-	{
-		switch(response_status)
-		{
-			case BUS_OK_RESPONSE: return true;
-			case BUS_COMMAND_ERROR_RESPONSE:
-				if(this->verbose_exception)
-				{
-					this->logger << DebugInfo << "Data Write Access Control Error at @0x" << std::hex << addr << std::dec << EndDebugInfo;
-				}
-				this->template ThrowException<typename CPU::DataStorageInterrupt::AccessControl>().SetAddress(addr); // FIXME: physical address != logical address
-				break;
-			case BUS_INCOMPLETE_RESPONSE:
-			case BUS_GENERIC_ERROR_RESPONSE:
-			case BUS_ADDRESS_ERROR_RESPONSE:
-			case BUS_BURST_ERROR_RESPONSE:
-			case BUS_BYTE_ENABLE_ERROR_RESPONSE:
-				if(this->verbose_exception)
-				{
-					this->logger << DebugInfo << "Data Write Bus Error at @0x" << std::hex << addr << std::dec << EndDebugInfo;
-				}
-				this->template ThrowException<typename MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_DATA_WRITE_BUS_ERROR);
-				break;
-		}
-		return false;
-	}
-	
-	return true;
-}
-
-template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::InstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
-{
-	BusResponseStatus response_status = AHBInsnRead(addr, buffer, size, storage_attr);
-	if(unlikely(response_status != BUS_OK_RESPONSE))
-	{
-		switch(response_status)
-		{
-			case BUS_OK_RESPONSE: return true;
-			case BUS_COMMAND_ERROR_RESPONSE:
-				if(this->verbose_exception)
-				{
-					this->logger << DebugInfo << "Instruction Read Access Control Error at @0x" << std::hex << addr << std::dec << EndDebugInfo;
-				}
-				this->template ThrowException<typename CPU::InstructionStorageInterrupt::AccessControl>();
-				break;
-			case BUS_INCOMPLETE_RESPONSE:
-			case BUS_GENERIC_ERROR_RESPONSE:
-			case BUS_ADDRESS_ERROR_RESPONSE:
-			case BUS_BURST_ERROR_RESPONSE:
-			case BUS_BYTE_ENABLE_ERROR_RESPONSE:
-				if(this->verbose_exception)
-				{
-					this->logger << DebugInfo << "Instruction Read Bus Error at @0x" << std::hex << addr << std::dec << EndDebugInfo;
-				}
-				this->template ThrowException<typename MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_INSTRUCTION_READ_BUS_ERROR);
-				break;
-		}
-		return false;
-	}
-	
-	return true;
-}
-
-template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::DebugDataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
-{
-	return AHBDebugDataRead(addr, buffer, size, storage_attr);
-}
-
-template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::DebugDataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
-{
-	return AHBDebugDataWrite(addr, buffer, size, storage_attr);
-}
-
-template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::DebugInstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
-{
-	return AHBDebugInsnRead(addr, buffer, size, storage_attr);
-}
-
-template <typename TYPES, typename CONFIG>
-BusResponseStatus CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
-{
-	return BUS_INCOMPLETE_RESPONSE;
-}
-
-template <typename TYPES, typename CONFIG>
-BusResponseStatus CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr, bool rwitm)
-{
-	return BUS_INCOMPLETE_RESPONSE;
-}
-
-template <typename TYPES, typename CONFIG>
-BusResponseStatus CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
-{
-	return BUS_INCOMPLETE_RESPONSE;
-}
-
-template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::AHBDebugInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
-{
-	return this->memory_import->ReadMemory(physical_addr, buffer, size);
-}
-
-template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::AHBDebugDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
-{
-	return this->memory_import->ReadMemory(physical_addr, buffer, size);
-}
-
-template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::AHBDebugDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
-{
-	return this->memory_import->WriteMemory(physical_addr, buffer, size);
 }
 
 template <typename TYPES, typename CONFIG>

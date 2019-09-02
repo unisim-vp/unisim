@@ -608,9 +608,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("description", "UNISIM Virtex 5 FXT, full system PPC440x5 based simulator including some Virtex 5 IPs");
 	simulator->SetVariable("schematic", "virtex5fxt/fig_schematic.pdf");
 
-	int gdb_server_tcp_port = 0;
-	const char *gdb_server_arch_filename = "unisim/service/debug/gdb_server/gdb_powerpc_32.xml";
-	const char *dwarf_register_number_mapping_filename = "unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml";
 	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
 	double cpu_frequency = 400.0; // in Mhz
 	double cpu_clock_multiplier = 2.0;
@@ -766,12 +763,12 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//=========================================================================
 
 	//  - GDB Server run-time configuration
-	simulator->SetVariable("gdb-server.tcp-port", gdb_server_tcp_port);
-	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
+	simulator->SetVariable("gdb-server.tcp-port", 1235);
+	simulator->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_powerpc_32.xml");
 	
 	//  - Debugger run-time configuration
 	simulator->SetVariable("debugger.parse-dwarf", false);
-	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", dwarf_register_number_mapping_filename);
+	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml");
 	
 	//  - Linux OS run-time configuration
 	simulator->SetVariable("linux-os.endianness", "big-endian");
@@ -787,6 +784,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("linux-os.utsname-domainname", "(none)");
 	simulator->SetVariable("linux-os.apply-host-environment", false);
 
+	// - NetStreamer
+	simulator->SetVariable("netstreamer.tcp-port", 1234);
+	
 	// - Http Server
 	simulator->SetVariable("http-server.http-port", 12360);
 

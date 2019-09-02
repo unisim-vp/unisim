@@ -102,6 +102,22 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, requires_commit_instruction_reporting(false)
 	, instruction_counter(0)
 	, stat_instruction_counter("instruction-counter", this, instruction_counter, "number of simulated instructions")
+	, stat_num_data_load_accesses("num-data-load-accesses", this, this->num_data_load_accesses, "Number of data load accesses (inside core)")
+	, stat_num_data_store_accesses("num-data-store-accesses", this, this->num_data_store_accesses, "Number of data store accesses (inside core)")
+	, stat_num_instruction_fetch_accesses("num-instruction-fetch-accesses", this, this->num_instruction_fetch_accesses, "Number of instruction fetch accesses (inside core)")
+	, stat_num_incoming_load_accesses("num-incoming-load-accesses", this, this->num_incoming_load_accesses, "Number of incoming load accesses (from other masters)")
+	, stat_num_incoming_store_accesses("num-incoming-store-accesses", this, this->num_incoming_store_accesses, "Number of incoming store accesses (from other masters)")
+	, stat_num_data_bus_read_accesses("num-data-bus-read-accesses", this, this->num_data_bus_read_accesses, "Number of data bus read accesses")
+	, stat_num_data_bus_write_accesses("num-data-bus-write-accesses", this, this->num_data_bus_write_accesses, "Number of data bus write accesses")
+	, stat_num_instruction_bus_read_accesses("num-instruction-bus-read-accesses", this, this->num_instruction_bus_read_accesses, "Number of instruction bus read accesses")
+	, stat_num_data_load_xfered_bytes("num-data-load-xfered-bytes", this, this->num_data_load_xfered_bytes, "Number of data load transfered bytes")
+	, stat_num_data_store_xfered_bytes("num-data-store-xfered-bytes", this, this->num_data_store_xfered_bytes, "Number of data store transfered bytes")
+	, stat_num_instruction_fetch_xfered_bytes("num-instruction-fetch-xfered-bytes", this, this->num_instruction_fetch_xfered_bytes, "Number of instruction fetch transfered bytes")
+	, stat_num_incoming_load_xfered_bytes("num-incoming-load-xfered-bytes", this, this->num_incoming_load_xfered_bytes, "Number of incoming load transfered bytes")
+	, stat_num_incoming_store_xfered_bytes("num-incoming-store-xfered-bytes", this, this->num_incoming_store_xfered_bytes, "Number of incoming store transfered bytes")
+	, stat_num_data_bus_read_xfered_bytes("num-data-bus-read-xfered-bytes", this, this->num_data_bus_read_xfered_bytes, "Number of data bus read transfered bytes")
+	, stat_num_data_bus_write_xfered_bytes("num-data-bus-write-xfered-bytes", this, this->num_data_bus_write_xfered_bytes, "Number of data bus write transfered bytes")
+	, stat_num_instruction_bus_read_xfered_bytes("num-instruction-bus-read-xfered-bytes", this, this->num_instruction_bus_read_xfered_bytes, "Number of instruction bus read transfered bytes")
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
 	, param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter, "number of simulated instruction before traping")
 	, max_inst(0xffffffffffffffffULL)
@@ -121,6 +137,18 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, param_verbose_move_from_slr("verbose-move-from-slr", this, verbose_move_from_slr, "enable/disable verbosity of move from system level registers (SPRs, and so on)")
 	, enable_insn_trace(false)
 	, param_enable_insn_trace("enable-insn-trace", this, enable_insn_trace, "enable/disable instruction trace")
+	, verbose_data_load(false)
+	, param_verbose_data_load("verbose-data-load", this, verbose_data_load, "enable/disable verbosity of data load")
+	, verbose_data_store(false)
+	, param_verbose_data_store("verbose-data-store", this, verbose_data_store, "enable/disable verbosity of data store")
+	, verbose_instruction_fetch(false)
+	, param_verbose_instruction_fetch("verbose-instruction-fetch", this, verbose_instruction_fetch, "enable/disable verbosity of instruction fetch")
+	, verbose_data_bus_read(false)
+	, param_verbose_data_bus_read("verbose-data-bus-read", this, verbose_data_bus_read, "enable/disable verbosity of data bus read")
+	, verbose_data_bus_write(false)
+	, param_verbose_data_bus_write("verbose-data-bus-write", this, verbose_data_bus_write, "enable/disable verbosity of data bus write")
+	, verbose_instruction_bus_read(false)
+	, param_verbose_instruction_bus_read("verbose-instruction-bus-read", this, verbose_instruction_bus_read, "enable/disable verbosity of instruction bus read")
 	, registers_registry()
 	, exception_dispatcher(static_cast<typename CONFIG::CPU *>(this))
 	, invalid_spr(static_cast<typename CONFIG::CPU *>(this))
@@ -138,6 +166,7 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, lr()
 	, ctr()
 	, cr()
+	, fpu(static_cast<typename CONFIG::CPU *>(this))
 {
 	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -590,6 +619,42 @@ inline bool CPU<TYPES, CONFIG>::Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRES
 }
 
 template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DataBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm)
+{
+	return memory_import->ReadMemory(physical_addr, buffer, size);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DataBusWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
+{
+	return memory_import->WriteMemory(physical_addr, buffer, size);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::InstructionBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
+{
+	return memory_import->ReadMemory(physical_addr, buffer, size);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DebugDataBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
+{
+	return memory_import->ReadMemory(physical_addr, buffer, size);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DebugDataBusWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
+{
+	return memory_import->WriteMemory(physical_addr, buffer, size);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DebugInstructionBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
+{
+	return memory_import->ReadMemory(physical_addr, buffer, size);
+}
+
+template <typename TYPES, typename CONFIG>
 template <typename T, bool REVERSE, unisim::util::endian::endian_type ENDIAN>
 void CPU<TYPES, CONFIG>::ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr)
 {
@@ -647,7 +712,7 @@ inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, EFFECTIVE_ADDRESS ea)
 
 	if(CONVERT_ENDIAN)
 	{
-		this->template __ConvertDataLoadStoreEndian__<T, REVERSE, ENDIAN>(value, storage_attr);
+		static_cast<typename CONFIG::CPU *>(this)->template ConvertDataLoadStoreEndian<T, REVERSE, ENDIAN>(value, storage_attr);
 	}
 	
 	return true;
@@ -665,7 +730,7 @@ inline bool CPU<TYPES, CONFIG>::DataStore(T value, EFFECTIVE_ADDRESS ea)
 
 	if(CONVERT_ENDIAN)
 	{
-		this->template __ConvertDataLoadStoreEndian__<T, REVERSE, ENDIAN>((T&) value, storage_attr);
+		static_cast<typename CONFIG::CPU *>(this)->template ConvertDataLoadStoreEndian<T, REVERSE, ENDIAN>((T&) value, storage_attr);
 	}
 
 	uint32_t size_to_fsb_boundary = CONFIG::DATA_FSB_WIDTH - (ea % CONFIG::DATA_FSB_WIDTH);
@@ -763,7 +828,7 @@ bool CPU<TYPES, CONFIG>::Int8Load(unsigned int rd, typename TYPES::EFFECTIVE_ADD
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
-	if(unlikely(!__CheckInt16LoadAlignment__(ea))) return false;
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadAlignment(ea))) return false;
 	uint16_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
@@ -775,7 +840,7 @@ bool CPU<TYPES, CONFIG>::Int16Load(unsigned int rd, typename TYPES::EFFECTIVE_AD
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::SInt16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
-	if(unlikely(!__CheckSInt16LoadAlignment__(ea))) return false;
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckSInt16LoadAlignment(ea))) return false;
 	uint16_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
@@ -787,7 +852,7 @@ bool CPU<TYPES, CONFIG>::SInt16Load(unsigned int rd, typename TYPES::EFFECTIVE_A
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int32Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
-	if(unlikely(!__CheckInt32LoadAlignment__(ea))) return false;
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckInt32LoadAlignment(ea))) return false;
 	uint32_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
@@ -799,7 +864,7 @@ bool CPU<TYPES, CONFIG>::Int32Load(unsigned int rd, typename TYPES::EFFECTIVE_AD
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int16LoadByteReverse(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
-	if(unlikely(!__CheckInt16LoadByteReverseAlignment__(ea))) return false;
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadByteReverseAlignment(ea))) return false;
 	uint16_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, true, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea); // reversed
@@ -811,7 +876,7 @@ bool CPU<TYPES, CONFIG>::Int16LoadByteReverse(unsigned int rd, typename TYPES::E
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int32LoadByteReverse(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
-	if(unlikely(!__CheckInt32LoadByteReverseAlignment__(ea))) return false;
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckInt32LoadByteReverseAlignment(ea))) return false;
 	uint32_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, true, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea); // reversed
@@ -875,7 +940,7 @@ template <typename TYPES, typename CONFIG>
 template <typename REGISTER>
 bool CPU<TYPES, CONFIG>::SpecialLoad(REGISTER& reg, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
-	if(unlikely((!__CheckSpecialLoadAlignment__<REGISTER>(ea)))) return false;
+	if(unlikely((!static_cast<typename CONFIG::CPU *>(this)->template CheckSpecialLoadAlignment<REGISTER>(ea)))) return false;
 	uint32_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
@@ -897,7 +962,7 @@ bool CPU<TYPES, CONFIG>::Int8Store(unsigned int rs, typename TYPES::EFFECTIVE_AD
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int16Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
-	if(unlikely(!__CheckInt16StoreAlignment__(ea))) return false;
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckInt16StoreAlignment(ea))) return false;
 	uint16_t value = (uint16_t) gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
@@ -908,7 +973,7 @@ bool CPU<TYPES, CONFIG>::Int16Store(unsigned int rs, typename TYPES::EFFECTIVE_A
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int32Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
-	if(unlikely(!__CheckInt32StoreAlignment__(ea))) return false;
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckInt32StoreAlignment(ea))) return false;
 	uint32_t value = gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
@@ -919,7 +984,7 @@ bool CPU<TYPES, CONFIG>::Int32Store(unsigned int rs, typename TYPES::EFFECTIVE_A
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int16StoreByteReverse(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
-	if(unlikely(!__CheckInt16StoreByteReverseAlignment__(ea))) return false;
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckInt16StoreByteReverseAlignment(ea))) return false;
 	uint16_t value = (uint16_t) gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, true, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea); // reversed
@@ -930,7 +995,7 @@ bool CPU<TYPES, CONFIG>::Int16StoreByteReverse(unsigned int rs, typename TYPES::
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int32StoreByteReverse(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
-	if(unlikely(!__CheckInt32StoreByteReverseAlignment__(ea))) return false;
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckInt32StoreByteReverseAlignment(ea))) return false;
 	uint32_t value = gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, true, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea); // reversed
@@ -993,11 +1058,99 @@ template <typename TYPES, typename CONFIG>
 template <typename REGISTER>
 bool CPU<TYPES, CONFIG>::SpecialStore(const REGISTER& reg, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
-	if(unlikely((!__CheckSpecialStoreAlignment__<REGISTER>(ea)))) return false;
+	if(unlikely((!static_cast<typename CONFIG::CPU *>(this)->template CheckSpecialStoreAlignment<REGISTER>(ea)))) return false;
 	uint32_t value = reg;
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+CPU<TYPES, CONFIG>::LegacyFPU::LegacyFPU(typename CONFIG::CPU *cpu)
+	: fpr()
+	, fpscr()
+{
+	unsigned int i;
+	
+	for(i = 0; i < 32; i++)
+	{
+		FPR& ith_fpr = fpr[i];
+		ith_fpr.Init(i);
+		cpu->AddRegisterInterface(ith_fpr.CreateRegisterInterface());
+	}
+	
+	cpu->AddRegisterInterface(fpscr.CreateRegisterInterface());
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::LegacyFPU::Fp32Load(typename CONFIG::CPU *cpu, unsigned int fd, EFFECTIVE_ADDRESS ea)
+{
+	// check alignment
+	if(unlikely(!cpu->CheckFp32LoadAlignment(ea))) return false;
+	uint32_t value;
+	if(unlikely(!cpu->MonitorLoad(ea, sizeof(value)))) return false;
+	bool status = cpu->template DataLoad<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+	if(unlikely(!status)) return false;
+	Flags flags( Flags::RoundingMode(fpscr.Get<FPSCR::RN>()) );
+	fpr[fd].convertAssign(SoftFloat(SoftFloat::FromRawBits, value), flags);
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::LegacyFPU::Fp64Load(typename CONFIG::CPU *cpu, unsigned int fd, EFFECTIVE_ADDRESS ea)
+{
+	// check alignment
+	if(unlikely(!cpu->CheckFp64LoadAlignment(ea))) return false;
+	uint64_t value;
+	if(unlikely(!cpu->MonitorLoad(ea, sizeof(value)))) return false;
+	bool status = cpu->template DataLoad<uint64_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+	if(unlikely(!status)) return false;
+	fpr[fd].fromRawBitsAssign(value);
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::LegacyFPU::Fp32Store(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea)
+{
+	// check alignment
+	if(unlikely(!cpu->CheckFp32StoreAlignment(ea))) return false;
+	Flags flags(Flags::RoundingMode(1)); // Zero Rounding
+	uint32_t value = SoftFloat(fpr[fs], flags).queryRawBits();
+	if(unlikely(!cpu->MonitorStore(ea, sizeof(value)))) return false;
+	return cpu->template DataStore<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::LegacyFPU::Fp64Store(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea)
+{
+	// check alignment
+	if(unlikely(!cpu->CheckFp64StoreAlignment(ea))) return false;
+	uint64_t value = fpr[fs].queryRawBits();
+	if(unlikely(!cpu->MonitorStore(ea, sizeof(value)))) return false;
+	return cpu->template DataStore<uint64_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::LegacyFPU::FpStoreLSW(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea)
+{
+	// check alignment
+	if(unlikely(!cpu->CheckFpStoreLSWAlignment(ea))) return false;
+	uint32_t value = uint32_t(fpr[fs].queryRawBits());
+	if(unlikely(!cpu->MonitorStore(ea, sizeof(value)))) return false;
+	return cpu->template DataStore<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::LegacyFPU::CheckFloatingPointException(typename CONFIG::CPU *cpu)
+{
+	// Check for floating point exception condition: FPSCR[FEX] and (MSR[FE0] or MSR[FE1])
+	if((fpscr.template Get<typename FPSCR::FEX>()) and (cpu->GetMSR().template Get<typename MSR::FE0>() or cpu->GetMSR().template Get<typename MSR::FE1>()))
+	{
+		// Raise a floating point exception if FPSCR[FEX] is set
+		cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::FloatingPoint>();
+		return false;
+	}
 	return true;
 }
 
