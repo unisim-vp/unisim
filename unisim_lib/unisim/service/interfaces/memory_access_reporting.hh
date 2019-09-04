@@ -38,7 +38,7 @@
 
 #include <inttypes.h>
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/service/interfaces/interface.hh"
 #include "unisim/util/debug/memory_access_type.hh"
 
 namespace unisim {
@@ -46,7 +46,7 @@ namespace service {
 namespace interfaces {
 
 template <class ADDRESS>
-class MemoryAccessReporting : public unisim::kernel::service::ServiceInterface
+class MemoryAccessReporting : public ServiceInterface
 {
 public:
 	typedef unisim::util::debug::MemoryAccessType MemoryAccessType;
@@ -64,7 +64,7 @@ enum MemoryAccessReportingType
 	REPORT_COMMIT_INSN = 2
 };
 
-class MemoryAccessReportingControl : public unisim::kernel::service::ServiceInterface
+class MemoryAccessReportingControl : public ServiceInterface
 {
 public:
 	virtual void RequiresMemoryAccessReporting(MemoryAccessReportingType type, bool report) = 0;

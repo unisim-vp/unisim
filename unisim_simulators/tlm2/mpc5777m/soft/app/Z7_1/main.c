@@ -70,7 +70,7 @@ int main(void)
 		m_can_tx_fifo_push(2, &e[i]);
 	}
 
-	printf("CPU#1 says Hello world!\n");
+	printf("CPU#1 says Hello world!\r\n");
 	/* Loop forever */
 	for(;;)
 	{

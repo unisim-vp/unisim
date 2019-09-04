@@ -35,14 +35,8 @@
 #ifndef SIMULATOR_HH_
 #define SIMULATOR_HH_
 
-#include <iostream>
-#include <sstream>
-#include <list>
-#include <string>
-#include <getopt.h>
-#include <stdlib.h>
-
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/tlm2/simulator.hh>
 #include <unisim/component/tlm2/processor/arm/cortex_a53/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/util/likely/likely.hh>
@@ -56,36 +50,28 @@
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
-#include <unisim/service/debug/monitor/monitor.hh>
-#include <unisim/service/profiling/addr_profiler/profiler.hh>
-
-#ifdef WIN32
-
-#include <winsock2.h>
-#include <windows.h>
-
-#else
-#include <signal.h>
-#endif
+#include <unisim/service/debug/profiler/profiler.hh>
+#include <unisim/service/http_server/http_server.hh>
+#include <unisim/service/instrumenter/instrumenter.hh>
 
 struct Simulator
-  : public unisim::kernel::service::Simulator
+  : public unisim::kernel::tlm2::Simulator
 {
-  Simulator(int argc, char **argv);
+  Simulator(int argc, char **argv, const sc_core::sc_module_name& name = "HARDWARE");
   virtual ~Simulator();
   int Run();
-  int Run(double time, sc_time_unit unit);
+  int Run(double time, sc_core::sc_time_unit unit);
   bool IsRunning() const;
   bool SimulationStarted() const;
   bool SimulationFinished() const;
-  virtual unisim::kernel::service::Simulator::SetupStatus Setup();
-  virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false);
+  virtual unisim::kernel::Simulator::SetupStatus Setup();
+  virtual bool EndSetup();
+  virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
   int GetExitStatus() const;
-  static void EnableMonitor(int (*monitor_callback)(void));
 
  protected:
  private:
-  static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
+  static void DefaultConfiguration(unisim::kernel::Simulator *sim);
   typedef unisim::component::tlm2::processor::arm::cortex_a53::CPU CPU;
   typedef unisim::component::tlm2::memory::ram::Memory<64, uint64_t, 8, 1024 * 1024, true> MEMORY;
   
@@ -93,15 +79,16 @@ struct Simulator
   {
     typedef uint64_t ADDRESS;
     static const unsigned int NUM_PROCESSORS = 1;
-    /* gdb_server, inline_debugger and/or monitor */
-    static const unsigned int MAX_FRONT_ENDS = 2;
+    /* gdb_server, inline_debugger */
+    static const unsigned int MAX_FRONT_ENDS = 3;
   };
   
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
   typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> INLINE_DEBUGGER;
-  typedef unisim::service::debug::monitor::Monitor<uint64_t> MONITOR;
-  typedef unisim::service::profiling::addr_profiler::Profiler<uint64_t> PROFILER;
+  typedef unisim::service::debug::profiler::Profiler<uint64_t> PROFILER;
+  typedef unisim::service::http_server::HttpServer HTTP_SERVER;
+  typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
 
   CPU                                        cpu;
   MEMORY                                     memory;
@@ -114,19 +101,19 @@ struct Simulator
   DEBUGGER*                                  debugger;
   GDB_SERVER*                                gdb_server;
   INLINE_DEBUGGER*                           inline_debugger;
+  PROFILER*                                  profiler;
+  HTTP_SERVER*                               http_server;
+  INSTRUMENTER*                              instrumenter;
   
   bool                                       enable_gdb_server;
-  unisim::kernel::service::Parameter<bool>   param_enable_gdb_server;
+  unisim::kernel::variable::Parameter<bool>   param_enable_gdb_server;
   bool                                       enable_inline_debugger;
-  unisim::kernel::service::Parameter<bool>   param_enable_inline_debugger;
+  unisim::kernel::variable::Parameter<bool>   param_enable_inline_debugger;
+  bool                                       enable_profiler;
+  unisim::kernel::variable::Parameter<bool>   param_enable_profiler;
   
   int exit_status;
-#ifdef WIN32
-  static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
-#else
-  static void SigIntHandler(int signum);
-#endif
-  static bool enable_monitor;
+  virtual void SigInt();
 };
 
 #endif /* SIMULATOR_HH_ */

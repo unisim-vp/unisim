@@ -118,10 +118,9 @@ unistd.h \
 vector"
 
 UNISIM_LIB_RISC16_SOURCE_FILES="\
-unisim/kernel/api/api.cc \
-unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_config_file_helper.cc \
-unisim/kernel/service/ini_config_file_helper.cc \
+unisim/kernel/kernel.cc \
+unisim/kernel/config/xml_config_file_helper.cc \
+unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
@@ -166,7 +165,7 @@ unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
 unisim/util/loader/coff_loader/coff_loader64.cc \
-unisim/kernel/service/endian.cc \
+unisim/kernel/variable/endian/endian.cc \
 unisim/util/lexer/lexer.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
@@ -211,10 +210,9 @@ UNISIM_LIB_S12XGATE_ISA_FILES="\
 "
 
 UNISIM_LIB_RISC16_HEADER_FILES="${UNISIM_LIB_RISC16_ISA_FILES} ${UNISIM_LIB_XB_ISA_FILES} ${UNISIM_LIB_S12XGATE_ISA_FILES} \
-unisim/kernel/api/api.hh \
-unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_config_file_helper.hh \
-unisim/kernel/service/ini_config_file_helper.hh \
+unisim/kernel/kernel.hh \
+unisim/kernel/config/xml_config_file_helper.hh \
+unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/util/backtrace/backtrace.hh \
@@ -291,6 +289,7 @@ unisim/util/simfloat/floating.hh \
 unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/ieee754/ieee754.hh \
+unisim/util/hypapp/hypapp.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/char_io.hh \
@@ -299,6 +298,8 @@ unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/ti_c_io.hh \
 unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/blob.hh \
+unisim/service/interfaces/http_server.hh \
+unisim/service/interfaces/field.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
@@ -450,6 +451,7 @@ UNISIM_SIMULATORS_RISC16_SOURCE_FILES="\
 main_pim.cc \
 simulator.cc \
 "
+
 UNISIM_SIMULATORS_RISC16_HEADER_FILES="\
 simulator.hh \
 "

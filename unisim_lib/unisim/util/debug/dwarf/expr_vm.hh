@@ -40,6 +40,7 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/util/endian/endian.hh>
 #include <set>
+#include <vector>
 
 namespace unisim {
 namespace util {

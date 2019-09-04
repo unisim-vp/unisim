@@ -35,6 +35,7 @@
 #ifndef __UNISIM_KERNEL_TLM2_TLM_SERIAL_HH__
 #define __UNISIM_KERNEL_TLM2_TLM_SERIAL_HH__
 
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/util/likely/likely.hh>
 #include <tlm>
 #include <map>
@@ -53,7 +54,7 @@ namespace tlm2 {
 
 class tlm_serial_payload;
 class tlm_serial_mm_interface;
-class tlm_bitvector;
+struct tlm_bitvector;
 class tlm_serial_payload;
 class tlm_serial_memory_manager;
 class tlm_input_bitstream;
@@ -706,14 +707,14 @@ private:
 // tlm_simple_serial_bus
 
 class tlm_simple_serial_bus
-	: public unisim::kernel::service::Object
+	: public unisim::kernel::Object
 	, public sc_core::sc_module
 	, public tlm_serial_fw_if
 {
 public:
 	tlm_serial_bus_socket<> serial_socket;
 	
-	inline tlm_simple_serial_bus(const sc_core::sc_module_name& name, sc_core::sc_signal<bool>& _observable_signal, unisim::kernel::service::Object *parent = 0);
+	inline tlm_simple_serial_bus(const sc_core::sc_module_name& name, sc_core::sc_signal<bool>& _observable_signal, unisim::kernel::Object *parent = 0);
 	inline virtual ~tlm_simple_serial_bus();
 	inline virtual void nb_send(tlm_serial_payload& payload, const sc_core::sc_time& t);
 	
@@ -733,7 +734,7 @@ private:
 		static inline tlm_serial_bus_observer *instance();
 	private:
 		unsigned int ref_count;
-		unisim::kernel::service::Parameter<bool> param_enable;
+		unisim::kernel::variable::Parameter<bool> param_enable;
 	};
 	
 	sc_core::sc_signal<bool>& observable_signal;
@@ -1524,8 +1525,8 @@ void tlm_output_bitstream::write(const T& v, bool& parity_bit, unsigned int leng
 
 // tlm_simple_serial_bus
 
-inline tlm_simple_serial_bus::tlm_simple_serial_bus(const sc_core::sc_module_name& name, sc_core::sc_signal<bool>& _observable_signal, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+inline tlm_simple_serial_bus::tlm_simple_serial_bus(const sc_core::sc_module_name& name, sc_core::sc_signal<bool>& _observable_signal, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "Serial bus")
 	, sc_core::sc_module(name)
 	, serial_socket("serial_socket")
 	, bitstream()

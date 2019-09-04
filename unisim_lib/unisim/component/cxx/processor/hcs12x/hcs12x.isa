@@ -88,7 +88,7 @@ action {void} post_execute({ostream&} {sink}) {
 //	sink << "asm(\"NOP\");\n";
 }
 
-action {inline uint8_t} getCycles () {
+action {uint8_t} getCycles () {
 /*
  * if (indexed_addressing) then 
  *   return XbModes::GetIDXCycles(xb->getXbMode(), <idx_cyles>, <idx1_cyles>, <idx2_cyles>, <idxd_ind_cyles>, <idx2_ind_cyles>);

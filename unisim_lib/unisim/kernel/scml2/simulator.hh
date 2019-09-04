@@ -47,7 +47,7 @@ namespace scml2 {
 class ScmlPropertyServer : public scml_property_server_if
 {
 public:
-	ScmlPropertyServer(unisim::kernel::service::Simulator *sim);
+	ScmlPropertyServer(unisim::kernel::Simulator *sim);
 	virtual ~ScmlPropertyServer();
 	
 	virtual long long getIntProperty(const std::string & name);
@@ -57,23 +57,23 @@ public:
 	virtual double getDoubleProperty(const std::string & name);
 	
 private:
-	unisim::kernel::service::Simulator *sim;
+	unisim::kernel::Simulator *sim;
 	
 	std::vector<long long *> int_values;
 	std::vector<unsigned long long *> uint_values;
 	std::vector<bool *> bool_values;
 	std::vector<std::string *> string_values;
 	std::vector<double *> double_values;
-	std::map<std::string, unisim::kernel::service::Variable<long long> *> int_variables;
-	std::map<std::string, unisim::kernel::service::Variable<unsigned long long> *> uint_variables;
-	std::map<std::string, unisim::kernel::service::Variable<bool> *> bool_variables;
-	std::map<std::string, unisim::kernel::service::Variable<std::string> *> string_variables;
-	std::map<std::string, unisim::kernel::service::Variable<double> *> double_variables;
-	std::vector<unisim::kernel::service::Object *> auto_objects;
+	std::map<std::string, unisim::kernel::variable::Variable<long long> *> int_variables;
+	std::map<std::string, unisim::kernel::variable::Variable<unsigned long long> *> uint_variables;
+	std::map<std::string, unisim::kernel::variable::Variable<bool> *> bool_variables;
+	std::map<std::string, unisim::kernel::variable::Variable<std::string> *> string_variables;
+	std::map<std::string, unisim::kernel::variable::Variable<double> *> double_variables;
+	std::vector<unisim::kernel::Object *> auto_objects;
 	
-	unisim::kernel::service::Object *GetObject(unisim::kernel::service::Object *object, const std::string& leaf_hierarchical_name);
-	unisim::kernel::service::Object *GetObject(const std::string& leaf_hierarchical_name);
-	unisim::kernel::service::Object *GetOwner(const std::string & name);
+	unisim::kernel::Object *GetObject(unisim::kernel::Object *object, const std::string& leaf_hierarchical_name);
+	unisim::kernel::Object *GetObject(const std::string& leaf_hierarchical_name);
+	unisim::kernel::Object *GetOwner(const std::string & name);
 	static bool GetLeafName(const std::string& hierarchical_name, std::string& leaf_name);
 	//static std::string GetRootName(const std::string& hierarchical_name);
 };
@@ -81,13 +81,13 @@ private:
 class Simulator : public unisim::kernel::tlm2::Simulator
 {
 public:
-	Simulator(sc_core::sc_module_name const& name, int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::service::Simulator *simulator) = 0);
+	Simulator(sc_core::sc_module_name const& name, int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::Simulator *simulator) = 0);
 	virtual ~Simulator();
 protected:
 	bool scml_debug;
-	unisim::kernel::service::Parameter<bool> param_scml_debug;
+	unisim::kernel::variable::Parameter<bool> param_scml_debug;
 	bool scml_note;
-	unisim::kernel::service::Parameter<bool> param_scml_note;
+	unisim::kernel::variable::Parameter<bool> param_scml_note;
 private:
 	ScmlPropertyServer *custom_property_server;
 	::scml2::logging::logger_base *unisim_debug_info_logger;

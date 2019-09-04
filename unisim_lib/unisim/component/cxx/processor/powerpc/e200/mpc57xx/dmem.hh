@@ -48,7 +48,7 @@ namespace mpc57xx {
 
 template <typename TYPES, typename CONFIG>
 struct DMEM
-	: unisim::kernel::service::Object
+	: unisim::kernel::Object
 	, unisim::util::cache::LocalMemory<TYPES, CONFIG, DMEM<TYPES, CONFIG> >
 {
 	typedef unisim::util::cache::LocalMemory<TYPES, CONFIG, DMEM<TYPES, CONFIG> > SuperLocalMemory;
@@ -59,14 +59,14 @@ struct DMEM
 	
 	static const char *GetLocalMemoryName() { return "DMEM"; }
 	
-	inline PHYSICAL_ADDRESS GetBaseAddress() const ALWAYS_INLINE { return cur_base_addr; }
+	inline PHYSICAL_ADDRESS GetBasePhysicalAddress() const ALWAYS_INLINE { return cur_base_addr; }
 	
 	inline unsigned int GetSize() const ALWAYS_INLINE { return size; }
 
 	bool IsVerbose() const ALWAYS_INLINE { return verbose; }
 
 	DMEM(CPU *_cpu)
-		: unisim::kernel::service::Object("DMEM", _cpu)
+		: unisim::kernel::Object("DMEM", _cpu, "Data local memory")
 		, cpu(_cpu)
 		, dmemcfg0(_cpu, this)
 		, dmemctl0(_cpu, this)
@@ -83,7 +83,7 @@ struct DMEM
 	{
 		param_base_addr.SetMutable(false);
 		param_size.SetMutable(false);
-		param_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+		param_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 		
 		std::stringstream param_size_description_sstr;
 		param_size_description_sstr << "size in bytes (at most " << CONFIG::SIZE << " bytes)";
@@ -163,14 +163,14 @@ private:
 	DMEMCTL1 dmemctl1;
 
 	PHYSICAL_ADDRESS base_addr;
-	unisim::kernel::service::Parameter<PHYSICAL_ADDRESS> param_base_addr;
+	unisim::kernel::variable::Parameter<PHYSICAL_ADDRESS> param_base_addr;
 	PHYSICAL_ADDRESS cur_base_addr;
 	unsigned int size;
-	unisim::kernel::service::Parameter<unsigned int> param_size;
+	unisim::kernel::variable::Parameter<unsigned int> param_size;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_load_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_store_accesses;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_load_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_store_accesses;
 };
 
 } // end of namespace unisim

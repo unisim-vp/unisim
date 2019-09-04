@@ -35,13 +35,13 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_LOADER_HH__
 #define __UNISIM_SERVICE_INTERFACES_LOADER_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class Loader : public unisim::kernel::service::ServiceInterface
+class Loader : public ServiceInterface
 {
 public:
 	virtual bool Load() = 0;

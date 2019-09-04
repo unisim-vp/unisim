@@ -72,9 +72,10 @@ template <typename CONFIG>
 const bool EDMA<CONFIG>::threaded_model;
 
 template <typename CONFIG>
-EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_core::sc_module(name)
+	, unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
 	, peripheral_slave_if("peripheral_slave_if")
 	, master_if("master_if")
 	, m_clk("m_clk")
@@ -84,6 +85,7 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, dma_channel_ack()
 	, irq()
 	, err_irq()
+	, registers_export("registers-export", this)
 	, logger(*this)
 	, m_clk_prop_proxy(m_clk)
 	, dma_clk_prop_proxy(dma_clk)
@@ -111,6 +113,7 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, edma_dchmid(this)      
 	, edma_tcd_file(this)
 	, reg_addr_map()
+	, registers_registry()
 	, payload_fabric()
 	, schedule()
 	, endian(unisim::util::endian::E_BIG_ENDIAN)
@@ -257,6 +260,43 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 		reg_addr_map.MapRegister(EDMA_TCD::ADDRESS_OFFSET + EDMA_TCD_CSR     ::ADDRESS_OFFSET + (EDMA_TCD::SIZE * dma_channel_num), &edma_tcd_file[dma_channel_num].edma_tcd_csr     );
 	}
 	
+	registers_registry.AddRegisterInterface(edma_cr  .CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_es  .CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_erqh.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_erql.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_eeih.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_eeil.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_serq.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_cerq.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_seei.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_ceei.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_cint.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_cerr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_ssrt.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_cdne.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_inth.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_intl.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_errh.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_errl.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_hrsh.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(edma_hrsl.CreateRegisterInterface());
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		registers_registry.AddRegisterInterface(edma_dchpri[dma_channel_num].CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(edma_dchmid[dma_channel_num].CreateRegisterInterface());
+		
+		registers_registry.AddRegisterInterface(edma_tcd_file[dma_channel_num].edma_tcd_saddr   .CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(edma_tcd_file[dma_channel_num].edma_tcd_attr    .CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(edma_tcd_file[dma_channel_num].edma_tcd_soff    .CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(edma_tcd_file[dma_channel_num].edma_tcd_nbytes  .CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(edma_tcd_file[dma_channel_num].edma_tcd_slast   .CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(edma_tcd_file[dma_channel_num].edma_tcd_daddr   .CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(edma_tcd_file[dma_channel_num].edma_tcd_citer   .CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(edma_tcd_file[dma_channel_num].edma_tcd_doff    .CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(edma_tcd_file[dma_channel_num].edma_tcd_dlastsga.CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(edma_tcd_file[dma_channel_num].edma_tcd_biter   .CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(edma_tcd_file[dma_channel_num].edma_tcd_csr     .CreateRegisterInterface());
+	}
 	
 	if(threaded_model)
 	{
@@ -427,7 +467,7 @@ unsigned int EDMA<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 	if(!data_ptr)
 	{
 		logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		unisim::kernel::Object::Stop(-1);
 		return 0;
 	}
 	else if(!data_length)
@@ -473,7 +513,7 @@ tlm::tlm_sync_enum EDMA<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& paylo
 			return tlm::TLM_COMPLETED;
 		default:
 			logger << DebugError << "protocol error" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			break;
 	}
 	
@@ -495,6 +535,20 @@ void EDMA<CONFIG>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::u
 {
 }
 
+//////////////// unisim::service::interface::Registers ////////////////////
+
+template <typename CONFIG>
+unisim::service::interfaces::Register *EDMA<CONFIG>::GetRegister(const char *name)
+{
+	return registers_registry.GetRegister(name);
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
+}
+
 template <typename CONFIG>
 void EDMA<CONFIG>::ProcessEvent(Event *event)
 {
@@ -513,13 +567,13 @@ void EDMA<CONFIG>::ProcessEvent(Event *event)
 		if(!data_ptr)
 		{
 			logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			return;
 		}
 		else if(!data_length)
 		{
 			logger << DebugError << "data length range for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			return;
 		}
 		else if(byte_enable_ptr)
@@ -609,7 +663,7 @@ void EDMA<CONFIG>::ProcessEvents()
 			if(event->GetTimeStamp() != time_stamp)
 			{
 				logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
-				unisim::kernel::service::Object::Stop(-1);
+				unisim::kernel::Object::Stop(-1);
 			}
 			
 			ProcessEvent(event);
@@ -698,7 +752,7 @@ void EDMA<CONFIG>::Reset()
 	if(!m_clk_prop_proxy.IsClockCompatible())
 	{
 		logger << DebugError << "clock port is not bound to a unisim::kernel::tlm2::Clock" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		unisim::kernel::Object::Stop(-1);
 		return;
 	}
 	

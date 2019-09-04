@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_FREESCALE_MPC57XX_XBAR_SMPU_SMPU_HH__
 #define __UNISIM_COMPONENT_TLM2_INTERCONNECT_FREESCALE_MPC57XX_XBAR_SMPU_SMPU_HH__
 
+#include <unisim/util/debug/simple_register_registry.hh>
+
 #define SWITCH_ENUM_TRAIT(ENUM_TYPE, CLASS_NAME) template <ENUM_TYPE, bool __SWITCH_TRAIT_DUMMY__ = true> struct CLASS_NAME {}
 #define CASE_ENUM_TRAIT(ENUM_VALUE, CLASS_NAME) template <bool __SWITCH_TRAIT_DUMMY__> struct CLASS_NAME<ENUM_VALUE, __SWITCH_TRAIT_DUMMY__>
 #define ENUM_TRAIT(ENUM_VALUE, CLASS_NAME) CLASS_NAME<ENUM_VALUE>
@@ -94,7 +96,7 @@ struct CONFIG
 
 template <typename CONFIG>
 class SMPU
-	: public unisim::kernel::service::Object
+	: public unisim::kernel::Service<typename unisim::service::interfaces::Registers>
 {
 public:
 	typedef unisim::component::tlm2::interconnect::freescale::mpc57xx::xbar::XBAR<CONFIG> XBAR;
@@ -106,6 +108,9 @@ public:
 	static const unsigned int NUM_REGION_DESCRIPTORS = CONFIG::NUM_REGION_DESCRIPTORS;
 	static const unsigned int NUM_BUS_MASTERS        = CONFIG::NUM_BUS_MASTERS;
 	
+	// services
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+
 	SMPU(const char *name, XBAR *xbar);
 	virtual ~SMPU();
 
@@ -113,6 +118,12 @@ public:
 	void end_of_elaboration();
 	
 	bool Check(transaction_type& trans, MemoryRegion *mem_rgn);
+	
+	//////////////// unisim::service::interface::Registers ////////////////////
+	
+	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
+	
 protected:
 	XBAR *xbar;
 	
@@ -619,8 +630,10 @@ protected:
 	AddressableRegisterFile<SMPU_EDR           , NUM_BUS_MASTERS       , SMPU<CONFIG> > smpu_edr;            // SMPU_EDRn
 	RegionDescriptorFile                                                                smpu_rgd;            // SMPU_RGDn_WORD0, SMPU_RGDn_WORD1, SMPU_RGDn_WORD2_FMT0, SMPU_RGDn_WORD3 
 	
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
+
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 	
 	void DMI_Invalidate();
 };

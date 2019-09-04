@@ -1,0 +1,10 @@
+libc/inttypes
+libc/unistd
+m4/systemc
+std/stack
+std/vector
+unisim/component/cxx/processor/tms320c3x
+unisim/component/tlm2/interrupt
+unisim/kernel
+unisim/kernel/logger
+unisim/kernel/tlm2

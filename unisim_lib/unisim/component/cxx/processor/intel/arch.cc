@@ -33,12 +33,18 @@
  */
 
 #include <unisim/component/cxx/processor/intel/arch.hh>
-
-
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <stdexcept>
+
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
 using unisim::util::arithmetic::BitScanForward;
 using unisim::util::arithmetic::BitScanReverse;
+using unisim::util::endian::ByteSwap;
+
+void eval_div( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t divisor )    { throw std::runtime_error( "operation unvailable in 32 bit mode" ); }
+void eval_div( Arch& arch, int64_t& hi, int64_t& lo, int64_t divisor )       { throw std::runtime_error( "operation unvailable in 32 bit mode" ); }
+void eval_mul( Arch& arch, uint64_t& hi, uint64_t& lo, uint64_t multiplier ) { throw std::runtime_error( "operation unvailable in 32 bit mode" ); }
+void eval_mul( Arch& arch, int64_t& hi, int64_t& lo, int64_t multiplier )    { throw std::runtime_error( "operation unvailable in 32 bit mode" ); }
 }}}}}
 
 #include <unisim/component/cxx/processor/intel/isa/intel.tcc>
@@ -54,8 +60,8 @@ namespace intel {
   
   Arch::Arch()
     : m_running( true ), m_instcount( 0 ), m_disasm( false ), m_latest_insn( 0 )
-    , m_EIP( 0 ), m_ftop( 0 ), m_fcw( 0x23f )
-    , m_dirtfregs( 0 )
+    , m_EIP( 0 ), m_ftop( 0 ), m_fcw( 0x23f ), m_dirtfregs( 0 )
+    , umms(), vmm_storage(), mxcsr()
   {
     std::memset( static_cast<void*>( &m_flags[0] ), 0, sizeof (m_flags) );
     std::memset( static_cast<void*>( &m_regs[0] ), 0, sizeof (m_regs) );
@@ -180,13 +186,35 @@ namespace intel {
     ++m_instcount;
     return operation;
   }
+
+  void
+  Arch::noexec( Operation<Arch> const& op )
+  {
+    std::cerr
+      << "error: no execute method in `" << typeid(op).name() << "'\n"
+      << std::hex << op.address << ":\t";
+    op.disasm( std::cerr );
+    std::cerr << '\n';
+    throw 0;
+  }
+    
+  void
+  Arch::xgetbv()
+  {
+    // uint32_t a, d, c = this->regread( GOd(), 1 );
+    // __asm__ ("xgetbv\n\t" : "=a" (a), "=d" (d) : "c" (c));
+    // this->regwrite( GOd(), 0, a );
+    // this->regwrite( GOd(), 2, d );
+    throw 0;
+  }
+  
   
   void
   Arch::cpuid()
   {
-    switch (this->regread32( 0 )) {
+    switch (this->regread( GOd(), 0 )) {
     case 0: {
-      this->regwrite32( 0, u32_t( 1 ) );
+      this->regwrite( GOd(), 0, u32_t( 1 ) );
   
       char const* name = "GenuineIntel";
       { uint32_t word = 0;
@@ -194,7 +222,7 @@ namespace intel {
         while (--idx >= 0) {
           word = (word << 8) | name[idx];
           if (idx % 4) continue;
-          this->regwrite32( 3 - (idx/4), u32_t( word ) );
+          this->regwrite( GOd(), 3 - (idx/4), u32_t( word ) );
           word = 0;
         }
       }
@@ -207,14 +235,14 @@ namespace intel {
         (0  << 12 /* processor type */) |
         (0  << 16 /* extended model */) |
         (0  << 20 /* extended family */);
-      this->regwrite32( 0, u32_t( eax ) );
+      this->regwrite( GOd(), 0, u32_t( eax ) );
     
       uint32_t const ebx =
         (0 <<  0 /* Brand index */) |
         (4 <<  8 /* Cache line size (/ 64bits) */) |
         (1 << 16 /* Maximum number of addressable IDs for logical processors in this physical package* */) |
         (0 << 24 /* Initial APIC ID */);
-      this->regwrite32( 3, u32_t( ebx ) );
+      this->regwrite( GOd(), 3, u32_t( ebx ) );
     
       uint32_t const ecx =
         (0 << 0x00 /* Streaming SIMD Extensions 3 (SSE3) */) |
@@ -249,7 +277,7 @@ namespace intel {
         (1 << 0x1d /* F16C */) |
         (1 << 0x1e /* RDRAND Available */) |
         (1 << 0x1f /* Is virtual machine */);
-      this->regwrite32( 1, u32_t( ecx ) );
+      this->regwrite( GOd(), 1, u32_t( ecx ) );
     
       uint32_t const edx =
         (1 << 0x00 /* Floating Point Unit On-Chip */) |
@@ -284,61 +312,61 @@ namespace intel {
         (0 << 0x1d /* Thermal Monitor */) |
         (0 << 0x1e /* Resrved */) |
         (0 << 0x1f /* Pending Break Enable */);
-      this->regwrite32( 2, u32_t( edx ) );
+      this->regwrite( GOd(), 2, u32_t( edx ) );
     
     } break;
     case 2: {
-      this->regwrite32( 0, u32_t( 0 ) );
-      this->regwrite32( 3, u32_t( 0 ) );
-      this->regwrite32( 1, u32_t( 0 ) );
-      this->regwrite32( 2, u32_t( 0 ) );
+      this->regwrite( GOd(), 0, u32_t( 0 ) );
+      this->regwrite( GOd(), 3, u32_t( 0 ) );
+      this->regwrite( GOd(), 1, u32_t( 0 ) );
+      this->regwrite( GOd(), 2, u32_t( 0 ) );
     } break;
     case 4: {
       // Small cache config
-      switch (this->regread32( 1 )) { // %ecx holds requested cache id
+      switch (this->regread( GOd(), 1 )) { // %ecx holds requested cache id
       case 0: { // L1 D-CACHE
-        this->regwrite32( 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (1 << 0) ) ); // 0x4000121
-        this->regwrite32( 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
-        this->regwrite32( 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
-        this->regwrite32( 2, u32_t( 0x0000001 ) ); // 0x0000001
+        this->regwrite( GOd(), 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (1 << 0) ) ); // 0x4000121
+        this->regwrite( GOd(), 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
+        this->regwrite( GOd(), 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
+        this->regwrite( GOd(), 2, u32_t( 0x0000001 ) ); // 0x0000001
       } break;
       case 1: { // L1 I-CACHE
-        this->regwrite32( 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (2 << 0) ) ); // 0x4000122
-        this->regwrite32( 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
-        this->regwrite32( 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
-        this->regwrite32( 2, u32_t( 0x0000001 ) ); // 0x0000001
+        this->regwrite( GOd(), 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (2 << 0) ) ); // 0x4000122
+        this->regwrite( GOd(), 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
+        this->regwrite( GOd(), 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
+        this->regwrite( GOd(), 2, u32_t( 0x0000001 ) ); // 0x0000001
       } break;
       case 2: { // L2 U-CACHE
-        this->regwrite32( 0, u32_t( (1 << 26) | (1 << 14) | (1 << 8) | (2 << 5) | (3 << 0) ) ); // 0x4000143
-        this->regwrite32( 3, u32_t( (1 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x5c0003f
-        this->regwrite32( 1, u32_t( (0 << 22) | (0xfff << 0) ) ); // 0x0000fff
-        this->regwrite32( 2, u32_t( 0x0000001 ) ); // 0x0000001
+        this->regwrite( GOd(), 0, u32_t( (1 << 26) | (1 << 14) | (1 << 8) | (2 << 5) | (3 << 0) ) ); // 0x4000143
+        this->regwrite( GOd(), 3, u32_t( (1 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x5c0003f
+        this->regwrite( GOd(), 1, u32_t( (0 << 22) | (0xfff << 0) ) ); // 0x0000fff
+        this->regwrite( GOd(), 2, u32_t( 0x0000001 ) ); // 0x0000001
       } break;
       case 3: { // TERMINATING NULL ENTRY
         // 0, 0, 0, 0
-        this->regwrite32( 0, u32_t( 0 ) );
-        this->regwrite32( 3, u32_t( 0 ) );
-        this->regwrite32( 1, u32_t( 0 ) );
-        this->regwrite32( 2, u32_t( 0 ) );
+        this->regwrite( GOd(), 0, u32_t( 0 ) );
+        this->regwrite( GOd(), 3, u32_t( 0 ) );
+        this->regwrite( GOd(), 1, u32_t( 0 ) );
+        this->regwrite( GOd(), 2, u32_t( 0 ) );
       } break;
       }
     } break;
   
     case 0x80000000: {
-      this->regwrite32( 0, u32_t( 0x80000001 ) );
-      this->regwrite32( 3, u32_t( 0 ) );
-      this->regwrite32( 1, u32_t( 0 ) );
-      this->regwrite32( 2, u32_t( 0 ) );
+      this->regwrite( GOd(), 0, u32_t( 0x80000001 ) );
+      this->regwrite( GOd(), 3, u32_t( 0 ) );
+      this->regwrite( GOd(), 1, u32_t( 0 ) );
+      this->regwrite( GOd(), 2, u32_t( 0 ) );
     } break;
     case 0x80000001: {
-      this->regwrite32( 0, u32_t( 0 ) );
-      this->regwrite32( 3, u32_t( 0 ) );
-      this->regwrite32( 1, u32_t( 0 ) );
-      this->regwrite32( 2, u32_t( 0 ) );
+      this->regwrite( GOd(), 0, u32_t( 0 ) );
+      this->regwrite( GOd(), 3, u32_t( 0 ) );
+      this->regwrite( GOd(), 1, u32_t( 0 ) );
+      this->regwrite( GOd(), 2, u32_t( 0 ) );
     } break;
     default:
       std::cerr << "Unknown cmd for cpuid, " << std::hex
-                << "%eax=0x" << this->regread32( 0 ) << ", "
+                << "%eax=0x" << this->regread( GOd(), 0 ) << ", "
                 << "%eip=0x" << m_latest_insn->address << "\n";
       throw "not implemented";
       break;

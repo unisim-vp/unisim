@@ -38,5 +38,5 @@ efdnabs.execute = {
 	return false;
 }
 efdnabs.disasm = {
-	os << "efdnabs r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "efdnabs " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,29 +33,26 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Move CR Field */
-op e_mcrf(31[6]:crd[3]:?[2]:crs[3]:?[7]:16[10]:0[1]);
+op e_mcrf(31[6]:bft[3]:?[2]:bfa[3]:?[7]:16[10]:0[1]);
 
 e_mcrf.execute = {
+	// Read the input operands
+        unsigned tsh = 4*bft, ash = 4*bfa;
 	CR& cr = cpu->GetCR();
-	uint32_t c =cr;
+	UINT const mask(0xf0000000 >> tsh), source(cr);
 
-	unsigned int crbd = 4 * crd;
-	unsigned int crbs = 4 * crs;
-	uint32_t s = (c << crbs) >> crbd;
-	uint32_t m = uint32_t( 0xf0000000UL >> crbd);
+	// Compute the result
+	UINT result = (source & ~mask) | (mask & ((source << ash) >> tsh));
 	
-	cr = (c & ~m) | (s & m);
+	// Write back the result
+	cr = result;
+	
 	return true;
 }
 
 e_mcrf.disasm = {
-	if (crs!=0)
-		os << "e_mcrf " << CRPrint(crd) << ',' << CRPrint(crs);
-	else
-		os << "e_mcrf " << CRPrint(crd);
+	os << "e_mcrf " << CRPrint(bft);
+	if (bfa)
+		os << ',' << CRPrint(bfa);
 }

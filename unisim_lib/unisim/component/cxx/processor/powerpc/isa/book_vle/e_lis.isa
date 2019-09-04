@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,16 +33,12 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Load Immediate Shifted */
 op e_lis(28[6]:rd[5]:shl<11> ui_h[5]:28[5]:ui_l[11]);
 e_lis.var ui : {uint32_t} = { (ui_h | ui_l) << 16 }
 
 e_lis.execute = {
-  cpu->SetGPR(rd, uint32_t( ui));
+	cpu->SetGPR(rd, UINT(ui));
 	return true;
 }
 

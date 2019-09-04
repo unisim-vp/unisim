@@ -114,7 +114,7 @@ const char *DualTimer::REGS_NAME_ARRAY[DualTimer::NUMREGS] =
 
 DualTimer ::
 DualTimer(const sc_module_name &name, Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_module(name)
 	, unisim::util::generic_peripheral_register::GenericPeripheralRegisterInterface<uint32_t>()
 	, bus_target_socket("bus_target_socket")
@@ -171,7 +171,7 @@ DualTimer(const sc_module_name &name, Object *parent)
 		std::stringstream desc;
 		desc << REGS_NAME_ARRAY[i] << " register.";
 		regs_service[i] = new
-			unisim::kernel::service::Register<unisim::util::generic_peripheral_register::GenericPeripheralWordRegister>(
+			unisim::kernel::variable::Register<unisim::util::generic_peripheral_register::GenericPeripheralWordRegister>(
 					REGS_NAME_ARRAY[i], this, *regs_accessor[i], 
 					desc.str().c_str());
 	}
@@ -815,7 +815,7 @@ bus_target_b_transport(transaction_type &trans,
 			<< "Stopping simulation because of unhandled behavior"
 			<< EndDebugError;
 		// stop simulation
-		unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
+		unisim::kernel::Simulator::Instance()->Stop(this, __LINE__);
 	}
 
 	// everything went fine, update the status of the tlm response

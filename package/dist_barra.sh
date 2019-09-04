@@ -82,9 +82,9 @@ unistd.h \
 vector"
 
 UNISIM_LIB_BARRA_SOURCE_FILES="\
-unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_config_file_helper.cc \
-unisim/kernel/service/ini_config_file_helper.cc \
+unisim/kernel/kernel.cc \
+unisim/kernel/config/xml_config_file_helper.cc \
+unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/util/xml/xml.cc \
@@ -98,7 +98,7 @@ unisim/util/debug/breakpoint_registry_32.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
 unisim/util/debug/profile_32.cc \
 unisim/util/debug/profile_64.cc \
-unisim/kernel/service/endian.cc \
+unisim/kernel/variable/endian/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/component/cxx/scheduler/cuda_scheduler/cuda_scheduler.cc \
 unisim/component/cxx/processor/tesla/cpu.cc \
@@ -121,9 +121,9 @@ unisim/component/cxx/processor/tesla/isa/opcode/fp32.isa \
 unisim/component/cxx/processor/tesla/isa/opcode/branch.isa"
 
 UNISIM_LIB_BARRA_HEADER_FILES="${UNISIM_LIB_BARRA_ISA_FILES} \
-unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_config_file_helper.hh \
-unisim/kernel/service/ini_config_file_helper.hh \
+unisim/kernel/kernel.hh \
+unisim/kernel/config/xml_config_file_helper.hh \
+unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/util/xml/xml.hh \
@@ -143,10 +143,13 @@ unisim/util/queue/queue.hh \
 unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/floating.hh \
 unisim/util/simfloat/host_floating.hh \
+unisim/util/hypapp/hypapp.hh \
 unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/ti_c_io.hh \
 unisim/service/interfaces/disassembly.hh \
+unisim/service/interfaces/http_server.hh \
+unisim/service/interfaces/field.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \

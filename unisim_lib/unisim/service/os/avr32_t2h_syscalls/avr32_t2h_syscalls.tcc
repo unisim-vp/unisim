@@ -35,6 +35,13 @@
 #ifndef __UNISIM_SERVICE_OS_AVR32_T2H_SYSCALLS_AVR32_T2H_SYSCALLS_TCC__
 #define __UNISIM_SERVICE_OS_AVR32_T2H_SYSCALLS_AVR32_T2H_SYSCALLS_TCC__
 
+#include "unisim/kernel/kernel.hh"
+#include "unisim/kernel/logger/logger.hh"
+#include "unisim/service/interfaces/memory_injection.hh"
+#include "unisim/util/endian/endian.hh"
+#include "unisim/util/likely/likely.hh"
+#include "unisim/service/os/avr32_t2h_syscalls/avr32_t2h_syscalls.hh"
+
 #include <map>
 #include <unistd.h>
 #include <sys/types.h>
@@ -49,11 +56,10 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include "unisim/kernel/service/service.hh"
-#include "unisim/kernel/logger/logger.hh"
-#include "unisim/service/interfaces/memory_injection.hh"
-#include "unisim/util/endian/endian.hh"
-#include "unisim/util/likely/likely.hh"
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#include <windows.h>
+#include <time.h>
+#endif
 
 namespace unisim {
 namespace service {
@@ -68,12 +74,12 @@ using std::endl;
 using std::flush;
 using std::map;
 using unisim::util::endian::Host2BigEndian;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::variable::Parameter;
 using unisim::kernel::logger::Logger;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
@@ -164,7 +170,7 @@ AVR32_T2H_Syscalls<MEMORY_ADDR>::AVR32_T2H_Syscalls(const char *name, Object *pa
 	, param_stdout_pipe_filename("stdout-pipe-filename", this, stdout_pipe_filename, "stdout pipe filename")
 	, param_stderr_pipe_filename("stderr-pipe-filename", this, stderr_pipe_filename, "stderr pipe filename")
 {
-	param_argc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_argc.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
 	reg_params[0] = 0;
 	reg_params[1] = 0;
@@ -224,8 +230,6 @@ void AVR32_T2H_Syscalls<MEMORY_ADDR>::OnDisconnect()
 template <class MEMORY_ADDR>
 bool AVR32_T2H_Syscalls<MEMORY_ADDR>::EndSetup()
 {
-	unsigned int i;
-
 	if(!memory_injection_import)
 	{
 		logger << DebugError << memory_injection_import.GetName() << " is not connected" << EndDebugError;
@@ -286,7 +290,7 @@ bool AVR32_T2H_Syscalls<MEMORY_ADDR>::EndSetup()
 		return false;
 	}
 
-	for(i = 0; i < 5; i++)
+	for(unsigned int i = 0; i < 5; i++)
 	{
 		reg_params[i] = registers_import->GetRegister(param_register_names[i].c_str());
 		if(!reg_params[i])
@@ -330,7 +334,7 @@ bool AVR32_T2H_Syscalls<MEMORY_ADDR>::EndSetup()
 		return false;
 	}
 
-	for(i = 0; i < argc; i++)
+	for(int i = 0; i < argc; i++)
 	{
 		std::string *arg = new std::string();
 		argv.push_back(arg);
@@ -348,7 +352,7 @@ bool AVR32_T2H_Syscalls<MEMORY_ADDR>::EndSetup()
 	{
 		int stdin_pipe_flags = O_RDONLY;
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-		int stdin_pipe_flags |= O_BINARY;
+		stdin_pipe_flags |= O_BINARY;
 #endif
 		stdin_pipe_fd = open(stdin_pipe_filename.c_str(), stdin_pipe_flags);
 		if(stdin_pipe_fd == -1)
@@ -455,121 +459,351 @@ int32_t AVR32_T2H_Syscalls<MEMORY_ADDR>::Host2TargetErrno(int host_errno)
 {
 	switch(host_errno)
 	{
+#ifdef EPERM
 		case EPERM: return T2H_EPERM;
+#endif
+#ifdef ENOENT
 		case ENOENT: return T2H_ENOENT;
+#endif
+#ifdef ESRCH
 		case ESRCH: return T2H_ESRCH;
+#endif
+#ifdef EINTR
 		case EINTR: return T2H_EINTR;
+#endif
+#ifdef EIO
 		case EIO: return T2H_EIO;
+#endif
+#ifdef ENXIO
 		case ENXIO: return T2H_ENXIO;
+#endif
+#ifdef E2BIG
 		case E2BIG: return T2H_E2BIG;
+#endif
+#ifdef ENOEXEC
 		case ENOEXEC: return T2H_ENOEXEC;
+#endif
+#ifdef EBADF
 		case EBADF: return T2H_EBADF;
+#endif
+#ifdef ECHILD
 		case ECHILD: return T2H_ECHILD;
+#endif
+#ifdef EAGAIN
 		case EAGAIN: return T2H_EAGAIN;
+#endif
+#ifdef ENOMEM
 		case ENOMEM: return T2H_ENOMEM;
+#endif
+#ifdef EACCES
 		case EACCES: return T2H_EACCES;
+#endif
+#ifdef EFAULT
 		case EFAULT: return T2H_EFAULT;
+#endif
+#ifdef ENOTBLK
 		case ENOTBLK: return T2H_ENOTBLK;
+#endif
+#ifdef EBUSY
 		case EBUSY: return T2H_EBUSY;
+#endif
+#ifdef EEXIST
 		case EEXIST: return T2H_EEXIST;
+#endif
+#ifdef EXDEV
 		case EXDEV: return T2H_EXDEV;
+#endif
+#ifdef ENODEV
 		case ENODEV: return T2H_ENODEV;
+#endif
+#ifdef ENOTDIR
 		case ENOTDIR: return T2H_ENOTDIR;
+#endif
+#ifdef EISDIR
 		case EISDIR: return T2H_EISDIR;
+#endif
+#ifdef EINVAL
 		case EINVAL: return T2H_EINVAL;
+#endif
+#ifdef ENFILE
 		case ENFILE: return T2H_ENFILE;
+#endif
+#ifdef EMFILE
 		case EMFILE: return T2H_EMFILE;
+#endif
+#ifdef ENOTTY
 		case ENOTTY: return T2H_ENOTTY;
+#endif
+#ifdef ETXTBSY
 		case ETXTBSY: return T2H_ETXTBSY;
+#endif
+#ifdef EFBIG
 		case EFBIG: return T2H_EFBIG;
+#endif
+#ifdef ENOSPC
 		case ENOSPC: return T2H_ENOSPC;
+#endif
+#ifdef ESPIPE
 		case ESPIPE: return T2H_ESPIPE;
+#endif
+#ifdef EROFS
 		case EROFS: return T2H_EROFS;
+#endif
+#ifdef EMLINK
 		case EMLINK: return T2H_EMLINK;
+#endif
+#ifdef EPIPE
 		case EPIPE: return T2H_EPIPE;
+#endif
+#ifdef EDOM
 		case EDOM: return T2H_EDOM;
+#endif
+#ifdef ERANGE
 		case ERANGE: return T2H_ERANGE;
+#endif
+#ifdef EDEADLK
 		case EDEADLK: return T2H_EDEADLK;
+#endif
+#ifdef ENAMETOOLONG
 		case ENAMETOOLONG: return T2H_ENAMETOOLONG;
+#endif
+#ifdef ENOLCK
 		case ENOLCK: return T2H_ENOLCK;
+#endif
+#ifdef ENOSYS
 		case ENOSYS: return T2H_ENOSYS;
+#endif
+#ifdef ENOTEMPTY
 		case ENOTEMPTY: return T2H_ENOTEMPTY;
+#endif
+#ifdef ELOOP
 		case ELOOP: return T2H_ELOOP;
+#endif
+#ifdef ENOMSG
 		case ENOMSG: return T2H_ENOMSG;
+#endif
+#ifdef EIDRM
 		case EIDRM: return T2H_EIDRM;
+#endif
+#ifdef ECHRNG
 		case ECHRNG: return T2H_ECHRNG;
+#endif
+#ifdef EL2NSYNC
 		case EL2NSYNC: return T2H_EL2NSYNC;
+#endif
+#ifdef EL3HLT
 		case EL3HLT: return T2H_EL3HLT;
+#endif
+#ifdef EL3RST
 		case EL3RST: return T2H_EL3RST;
+#endif
+#ifdef ELNRNG
 		case ELNRNG: return T2H_ELNRNG;
+#endif
+#ifdef EUNATCH
 		case EUNATCH: return T2H_EUNATCH;
+#endif
+#ifdef ENOCSI
 		case ENOCSI: return T2H_ENOCSI;
+#endif
+#ifdef EL2HLT
 		case EL2HLT: return T2H_EL2HLT;
+#endif
+#ifdef EBADE
 		case EBADE: return T2H_EBADE;
+#endif
+#ifdef EBADR
 		case EBADR: return T2H_EBADR;
+#endif
+#ifdef EXFULL
 		case EXFULL: return T2H_EXFULL;
+#endif
+#ifdef ENOANO
 		case ENOANO: return T2H_ENOANO;
+#endif
+#ifdef EBADRQC
 		case EBADRQC: return T2H_EBADRQC;
+#endif
+#ifdef EBADSLT
 		case EBADSLT: return T2H_EBADSLT;
+#endif
+#ifdef EBFONT
 		case EBFONT: return T2H_EBFONT;
+#endif
+#ifdef ENOSTR
 		case ENOSTR: return T2H_ENOSTR;
+#endif
+#ifdef ENODATA
 		case ENODATA: return T2H_ENODATA;
+#endif
+#ifdef ETIME
 		case ETIME: return T2H_ETIME;
+#endif
+#ifdef ENOSR
 		case ENOSR: return T2H_ENOSR;
+#endif
+#ifdef ENONET
 		case ENONET: return T2H_ENONET;
+#endif
+#ifdef ENOPKG
 		case ENOPKG: return T2H_ENOPKG;
+#endif
+#ifdef EREMOTE
 		case EREMOTE: return T2H_EREMOTE;
+#endif
+#ifdef ENOLINK
 		case ENOLINK: return T2H_ENOLINK;
+#endif
+#ifdef EADV
 		case EADV: return T2H_EADV;
+#endif
+#ifdef ESRMNT
 		case ESRMNT: return T2H_ESRMNT;
+#endif
+#ifdef ECOMM
 		case ECOMM: return T2H_ECOMM;
+#endif
+#ifdef EPROTO
 		case EPROTO: return T2H_EPROTO;
+#endif
+#ifdef EMULTIHOP
 		case EMULTIHOP: return T2H_EMULTIHOP;
+#endif
+#ifdef EDOTDOT
 		case EDOTDOT: return T2H_EDOTDOT;
+#endif
+#ifdef EBADMSG
 		case EBADMSG: return T2H_EBADMSG;
+#endif
+#ifdef EOVERFLOW
 		case EOVERFLOW: return T2H_EOVERFLOW;
+#endif
+#ifdef ENOTUNIQ
 		case ENOTUNIQ: return T2H_ENOTUNIQ;
+#endif
+#ifdef EBADFD
 		case EBADFD: return T2H_EBADFD;
+#endif
+#ifdef EREMCHG
 		case EREMCHG: return T2H_EREMCHG;
+#endif
+#ifdef ELIBACC
 		case ELIBACC: return T2H_ELIBACC;
+#endif
+#ifdef ELIBBAD
 		case ELIBBAD: return T2H_ELIBBAD;
+#endif
+#ifdef ELIBSCN
 		case ELIBSCN: return T2H_ELIBSCN;
+#endif
+#ifdef ELIBMAX
 		case ELIBMAX: return T2H_ELIBMAX;
+#endif
+#ifdef ELIBEXEC
 		case ELIBEXEC: return T2H_ELIBEXEC;
+#endif
+#ifdef EILSEQ
 		case EILSEQ: return T2H_EILSEQ;
+#endif
+#ifdef EUSERS
 		case EUSERS: return T2H_EUSERS;
+#endif
+#ifdef ENOTSOCK
 		case ENOTSOCK: return T2H_ENOTSOCK;
+#endif
+#ifdef EDESTADDRREQ
 		case EDESTADDRREQ: return T2H_EDESTADDRREQ;
+#endif
+#ifdef EMSGSIZE
 		case EMSGSIZE: return T2H_EMSGSIZE;
+#endif
+#ifdef EPROTOTYPE
 		case EPROTOTYPE: return T2H_EPROTOTYPE;
+#endif
+#ifdef ENOPROTOOPT
 		case ENOPROTOOPT: return T2H_ENOPROTOOPT;
+#endif
+#ifdef EPROTONOSUPPORT
 		case EPROTONOSUPPORT: return T2H_EPROTONOSUPPORT;
+#endif
+#ifdef ESOCKTNOSUPPORT
 		case ESOCKTNOSUPPORT: return T2H_ESOCKTNOSUPPORT;
+#endif
+#ifdef EOPNOTSUPP
 		case EOPNOTSUPP: return T2H_EOPNOTSUPP;
+#endif
+#ifdef EPFNOSUPPORT
 		case EPFNOSUPPORT: return T2H_EPFNOSUPPORT;
+#endif
+#ifdef EAFNOSUPPORT
 		case EAFNOSUPPORT: return T2H_EAFNOSUPPORT;
+#endif
+#ifdef EADDRINUSE
 		case EADDRINUSE: return T2H_EADDRINUSE;
+#endif
+#ifdef EADDRNOTAVAIL
 		case EADDRNOTAVAIL: return T2H_EADDRNOTAVAIL;
+#endif
+#ifdef ENETDOWN
 		case ENETDOWN: return T2H_ENETDOWN;
+#endif
+#ifdef ENETUNREACH
 		case ENETUNREACH: return T2H_ENETUNREACH;
+#endif
+#ifdef ENETRESET
 		case ENETRESET: return T2H_ENETRESET;
+#endif
+#ifdef ECONNABORTED
 		case ECONNABORTED: return T2H_ECONNABORTED;
+#endif
+#ifdef ECONNRESET
 		case ECONNRESET: return T2H_ECONNRESET;
+#endif
+#ifdef ENOBUFS
 		case ENOBUFS: return T2H_ENOBUFS;
+#endif
+#ifdef EISCONN
 		case EISCONN: return T2H_EISCONN;
+#endif
+#ifdef ENOTCONN
 		case ENOTCONN: return T2H_ENOTCONN;
+#endif
+#ifdef ESHUTDOWN
 		case ESHUTDOWN: return T2H_ESHUTDOWN;
+#endif
+#ifdef ETOOMANYREFS
 		case ETOOMANYREFS: return T2H_ETOOMANYREFS;
+#endif
+#ifdef ETIMEDOUT
 		case ETIMEDOUT: return T2H_ETIMEDOUT;
+#endif
+#ifdef ECONNREFUSED
 		case ECONNREFUSED: return T2H_ECONNREFUSED;
+#endif
+#ifdef EHOSTDOWN
 		case EHOSTDOWN: return T2H_EHOSTDOWN;
+#endif
+#ifdef EHOSTUNREACH
 		case EHOSTUNREACH: return T2H_EHOSTUNREACH;
+#endif
+#ifdef EALREADY
 		case EALREADY: return T2H_EALREADY;
+#endif
+#ifdef EINPROGRESS
 		case EINPROGRESS: return T2H_EINPROGRESS;
+#endif
+#ifdef ESTALE
 		case ESTALE: return T2H_ESTALE;
+#endif
+#ifdef EDQUOT
 		case EDQUOT: return T2H_EDQUOT;
+#endif
+#ifdef ENOMEDIUM
 		case ENOMEDIUM: return T2H_ENOMEDIUM;
+#endif
+#ifdef ECANCELED
 		case ECANCELED: return T2H_ECANCELED;
+#endif
 	}
 	
 	logger << DebugWarning << "Don't how to convert host errno #" << errno << " to target...Silently setting errno to EINVAL." << EndDebugWarning;
@@ -670,9 +904,9 @@ int AVR32_T2H_Syscalls<MEMORY_ADDR>::Fstat(int fd, struct avr32_stat *target_sta
 #if defined(WIN64) || defined(_WIN64) // Windows x64
 	target_stat->st_blksize = Host2BigEndian((int32_t) 512);
 	target_stat->st_blocks = Host2BigEndian((int64_t)((host_stat.st_size + 511) / 512));
-	target_stat->st_atim = Host2BigEndian((int64_t) host_stat.st_atim);
-	target_stat->st_mtim = Host2BigEndian((int64_t) host_stat.st_mtim);
-	target_stat->st_ctim = Host2BigEndian((int64_t) host_stat.st_ctim);
+	target_stat->st_atim = Host2BigEndian((int64_t) host_stat.st_atime);
+	target_stat->st_mtim = Host2BigEndian((int64_t) host_stat.st_mtime);
+	target_stat->st_ctim = Host2BigEndian((int64_t) host_stat.st_ctime);
 #elif defined(linux) || defined(__linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize = Host2BigEndian((int64_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2BigEndian((int64_t) host_stat.st_blocks);
@@ -742,9 +976,9 @@ int AVR32_T2H_Syscalls<MEMORY_ADDR>::Stat(const char *path, struct avr32_stat *t
 #if defined(WIN64) || defined(_WIN64) // Windows x64
 	target_stat->st_blksize = Host2BigEndian((int32_t) 512);
 	target_stat->st_blocks = Host2BigEndian((int64_t)((host_stat.st_size + 511) / 512));
-	target_stat->st_atim = Host2BigEndian((int64_t) host_stat.st_atim);
-	target_stat->st_mtim = Host2BigEndian((int64_t) host_stat.st_mtim);
-	target_stat->st_ctim = Host2BigEndian((int64_t) host_stat.st_ctim);
+	target_stat->st_atim = Host2BigEndian((int64_t) host_stat.st_atime);
+	target_stat->st_mtim = Host2BigEndian((int64_t) host_stat.st_mtime);
+	target_stat->st_ctim = Host2BigEndian((int64_t) host_stat.st_ctime);
 #elif defined(linux) || defined(__linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize = Host2BigEndian((int64_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2BigEndian((int64_t) host_stat.st_blocks);
@@ -829,7 +1063,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	uint8_t pattern[6];
 	if(!memory_injection_import->InjectReadMemory(pc_value, pattern, 6))
 	{
-		return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+		return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 	}
 	
 	// try to recognize pattern breakpoint/mov r12,-1/mov r11,...
@@ -837,7 +1071,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	   (pattern[2] != 0x3f) || (pattern[3] != 0xfc) || // mov r12,-1
 	   ((pattern[4] & 0xf0) != 0x30) || ((pattern[5] & 0x0f) != 0x0b)) // mov r11,...
 	{
-		return unisim::service::interfaces::AVR32_T2H_Syscalls::UNHANDLED;
+		return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_UNHANDLED;
 	}
 
 	uint32_t syscall_num;
@@ -845,10 +1079,10 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	
 	if((syscall_num >= T2H_SYSCALL_OPEN) && (syscall_num <= T2H_SYSCALL_INIT_ARGV))
 	{
-		if((this->*t2h_syscall_table[syscall_num])() == unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR)
+		if((this->*t2h_syscall_table[syscall_num])() == unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR)
 		{
 			logger << DebugWarning << "System call #" << syscall_num << " (" << GetSyscallFriendlyName(syscall_num) << ")" << EndDebugWarning;
-			return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+			return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 		}
 	}
 	else
@@ -862,7 +1096,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	pc_value = pc_value + 6;
 	reg_pc->SetValue(&pc_value);
 	
-	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
+	return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK;
 }
 
 template <class MEMORY_ADDR>
@@ -880,14 +1114,14 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	flags = GetSystemCallParam(1);
 	mode = GetSystemCallParam(2);
 	
-	if(!StringLength(addr, pathnamelen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+	if(!StringLength(addr, pathnamelen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 	
 	pathname = (char *) malloc(pathnamelen + 1);
 	
 	if(!memory_injection_import->InjectReadMemory(addr, pathname, pathnamelen + 1))
 	{
 		free(pathname);
-		return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+		return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 	}
 	
 	if(((strncmp(pathname, "/dev", 4) == 0) && ((pathname[4] == 0) || (pathname[4] == '/'))) ||
@@ -949,7 +1183,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	SetSystemCallStatus(target_fd);
 	if(target_fd == -1) SetErrno(target_errno);
 	
-	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
+	return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK;
 }
 
 template <class MEMORY_ADDR>
@@ -999,7 +1233,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	
 	SetSystemCallStatus(ret);
 	if(ret == -1) SetErrno(target_errno);
-	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
+	return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK;
 }
 
 template <class MEMORY_ADDR>
@@ -1036,11 +1270,11 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 				if(!memory_injection_import->InjectWriteMemory(buf_addr, buf, ret))
 				{
 					free(buf);
-					return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+					return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 				}
 			}
 			
-			if(ret == -1)
+			if(ret == (size_t) -1)
 			{
 				target_errno = Host2TargetErrno(errno);
 			}
@@ -1058,8 +1292,8 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		<< ", count=" << count << ") return " << ret << EndDebugInfo;
 
 	SetSystemCallStatus(ret);
-	if(ret == -1) SetErrno(target_errno);
-	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
+	if(ret == (size_t) -1) SetErrno(target_errno);
+	return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK;
 }
 
 template <class MEMORY_ADDR>
@@ -1095,11 +1329,11 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 			if(!memory_injection_import->InjectReadMemory(buf_addr, buf, count))
 			{
 				free(buf);
-				return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+				return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 			}
 			ret = write(host_fd, buf, count);
 			
-			if(ret == -1)
+			if(ret == (size_t) -1)
 			{
 				target_errno = Host2TargetErrno(errno);
 			}
@@ -1127,8 +1361,8 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	}
 
 	SetSystemCallStatus(ret);
-	if(ret == -1) SetErrno(target_errno);
-	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
+	if(ret == (size_t) -1) SetErrno(target_errno);
+	return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK;
 }
 
 template <class MEMORY_ADDR>
@@ -1167,13 +1401,13 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	SetSystemCallStatus(ret);
 	if(ret == (off_t) -1) SetErrno(target_errno);
 	
-	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
+	return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK;
 }
 
 template <class MEMORY_ADDR>
 unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMORY_ADDR>::t2h_syscall_rename()
 {
-	unisim::service::interfaces::AVR32_T2H_Syscalls::Status status = unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
+	unisim::service::interfaces::AVR32_T2H_Syscalls::Status status = unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK;
 	MEMORY_ADDR oldpathaddr;
 	MEMORY_ADDR newpathaddr;
 	int oldpathlen;
@@ -1186,8 +1420,8 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	oldpathaddr = GetSystemCallParam(0);
 	newpathaddr = GetSystemCallParam(1);
 	
-	if(!StringLength(oldpathaddr, oldpathlen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
-	if(!StringLength(newpathaddr, newpathlen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+	if(!StringLength(oldpathaddr, oldpathlen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
+	if(!StringLength(newpathaddr, newpathlen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 	
 	oldpath = (char *) malloc(oldpathlen + 1);
 	if(memory_injection_import->InjectReadMemory(oldpathaddr, oldpath, oldpathlen + 1))
@@ -1208,13 +1442,13 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		}
 		else
 		{
-			status = unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+			status = unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 		}
 		free(newpath);
 	}
 	else
 	{
-		status = unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+		status = unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 	}
 	free(oldpath);
 	
@@ -1233,12 +1467,12 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	int32_t target_errno = 0;
 
 	pathnameaddr = GetSystemCallParam(0);
-	if(!StringLength(pathnameaddr, pathnamelen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+	if(!StringLength(pathnameaddr, pathnamelen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 	pathname = (char *) malloc(pathnamelen + 1);
 	if(!memory_injection_import->InjectReadMemory(pathnameaddr, pathname, pathnamelen + 1))
 	{
 		free(pathname);
-		return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+		return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 	}
 	ret = unlink(pathname);
 	
@@ -1252,7 +1486,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	free(pathname);
 	SetSystemCallStatus(ret);
 	if(ret == -1) SetErrno(target_errno);
-	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
+	return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK;
 }
 
 template <class MEMORY_ADDR>
@@ -1266,12 +1500,12 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	int32_t target_errno = 0;
 
 	addr = GetSystemCallParam(0);
-	if(!StringLength(addr, pathnamelen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+	if(!StringLength(addr, pathnamelen)) return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 	pathname = (char *) malloc(pathnamelen + 1);
 	if(!memory_injection_import->InjectReadMemory(addr, pathname, pathnamelen + 1))
 	{
 		free(pathname);
-		return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+		return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 	}
 	buf_address = GetSystemCallParam(1);
 	struct avr32_stat target_stat;
@@ -1288,7 +1522,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	free(pathname);
 	SetSystemCallStatus(ret);
 	if(ret == -1) SetErrno(target_errno);
-	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
+	return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK;
 }
 
 template <class MEMORY_ADDR>
@@ -1316,7 +1550,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		ret = Fstat(target_fd, &target_stat);
 		if(ret == 0)
 		{
-			if(!memory_injection_import->InjectWriteMemory(buf_address, &target_stat, sizeof(target_stat))) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+			if(!memory_injection_import->InjectWriteMemory(buf_address, &target_stat, sizeof(target_stat))) return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 		}
 		if(ret == -1) target_errno = Host2TargetErrno(errno);
 	}
@@ -1329,7 +1563,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 
 	SetSystemCallStatus(ret);
 	if(ret == -1) SetErrno(target_errno);
-	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
+	return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK;
 }
 
 template <class MEMORY_ADDR>
@@ -1352,11 +1586,11 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	{
 		if(tv_addr)
 		{
-			if(!memory_injection_import->InjectWriteMemory(tv_addr, &target_tv, sizeof(target_tv))) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+			if(!memory_injection_import->InjectWriteMemory(tv_addr, &target_tv, sizeof(target_tv))) return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 		}
 		if(tz_addr)
 		{
-			if(!memory_injection_import->InjectWriteMemory(tz_addr, &target_tz, sizeof(target_tz))) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+			if(!memory_injection_import->InjectWriteMemory(tz_addr, &target_tz, sizeof(target_tz))) return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 		}
 	}
 	
@@ -1370,7 +1604,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 
 	SetSystemCallStatus(ret);
 	if(ret == -1) SetErrno(target_errno);
-	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
+	return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK;
 }
 
 template <class MEMORY_ADDR>
@@ -1402,7 +1636,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 
 	SetSystemCallStatus(ret);
 	if(ret == -1) SetErrno(target_errno);
-	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
+	return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK;
 }
 
 template <class MEMORY_ADDR>
@@ -1416,12 +1650,12 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 
 	addr = GetSystemCallParam(0);
 	
-	if(!StringLength(addr, command_len)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+	if(!StringLength(addr, command_len)) return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 	command = (char *) malloc(command_len + 1);
 	if(!memory_injection_import->InjectReadMemory(addr, command, command_len + 1))
 	{
 		free(command);
-		return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+		return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 	}
 	
 	ret = system(command);
@@ -1441,7 +1675,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	free(command);
 	SetSystemCallStatus(ret);
 	if(ret == -1) SetErrno(target_errno);
-	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
+	return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK;
 }
 
 template <class MEMORY_ADDR>
@@ -1463,7 +1697,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 	SetSystemCallStatus(0);
 	
 	Object::Stop(exit_status);
-	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
+	return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK;
 }
 
 template <class MEMORY_ADDR>
@@ -1490,7 +1724,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		sp = sp & ~3; // align to a 32-bit boundary
 		
 		// Write argument string into memory
-		if(!memory_injection_import->InjectWriteMemory(sp, arg.c_str(), arg.length() + 1)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+		if(!memory_injection_import->InjectWriteMemory(sp, arg.c_str(), arg.length() + 1)) return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 		
 		argv_ptr.push_back(sp); // keep string pointer
 	}
@@ -1503,7 +1737,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		sp -= 4;
 		
 		// Write pointer to argument string
-		if(!memory_injection_import->InjectWriteMemory(sp, &arg_addr, 4)) return unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR;
+		if(!memory_injection_import->InjectWriteMemory(sp, &arg_addr, 4)) return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR;
 	}
 
 	MEMORY_ADDR low_addr = sp;
@@ -1517,7 +1751,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		logger << DebugInfo << "init_argv(): argc=" << argc << ", argv=0x" << std::hex << sp << std::dec << ", byte size of argv=" << high_addr - low_addr << EndDebugInfo;
 	}
 
-	return unisim::service::interfaces::AVR32_T2H_Syscalls::OK;
+	return unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK;
 }
 
 } // end of namespace avr32_t2h_syscalls

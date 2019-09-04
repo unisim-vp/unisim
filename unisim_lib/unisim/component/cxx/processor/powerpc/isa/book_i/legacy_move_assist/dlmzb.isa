@@ -37,13 +37,13 @@ op dlmzb(31[6]:rs[5]:ra[5]:rb[5]:78[10]:rc[1])
 dlmzb.execute = {
 	uint32_t s = cpu->GetGPR(rs);
 	uint32_t b = cpu->GetGPR(rb);
-	uint32_t xer = cpu->GetXER();
+	XER& xer = cpu->GetXER();
 	bool found = false;
 	uint32_t x = 0;
 	while(!found && (x < 4))
 	{
 		x++;
-		if(!(s & 0xff000000UL))
+		if(not (s & 0xff000000UL))
 		{
 			found = true;
 		}
@@ -55,7 +55,7 @@ dlmzb.execute = {
 	while(!found && (x < 8))
 	{
 		x++;
-		if(!(b & 0xff000000UL))
+		if(not (b & 0xff000000UL))
 		{
 			found = true;
 		}
@@ -64,28 +64,23 @@ dlmzb.execute = {
 			b <<= 8;
 		}
 	}
-	xer = (xer & ~CONFIG::XER_BYTE_COUNT_MASK) | ((x << CONFIG::XER_BYTE_COUNT_OFFSET) & CONFIG::XER_BYTE_COUNT_MASK);
 	
 	cpu->SetGPR(ra, x);
-	cpu->SetXER(xer);
+	xer.Set<XER::BYTE_COUNT>(x);
 	
 	if(unlikely(rc))
 	{
-		// Read CR
-		uint32_t cr = cpu->GetCR();
-		
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(found && x>=5) CR0[GT]=(found && x<5) CR0[EQ]=(!found)
-		cr = (cr & ~CONFIG::CR0_MASK) |
-			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
-			(found ? ((x < 5) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_LT_MASK) : CONFIG::CR0_EQ_MASK);
-				
-		// Update CR
-		cpu->SetCR(cr);
+		CR& cr = cpu->GetCR();
+		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
+		cr.Set<CR::CR0::LT>(found && (x >= 5));
+		cr.Set<CR::CR0::GT>(found && (x < 5));
+		cr.Set<CR::CR0::EQ>(!found);
 	}
 	
 	return true;
 }
 
 dlmzb.disasm = {
-	os << "dlmzb" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "dlmzb" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }

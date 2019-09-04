@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,16 +33,13 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Load Word and Zero */
 op e_lwz(20[6]:rd[5]:ra[5]:sext d[16]);
 
 e_lwz.execute = {
 	// compute the effective address
-	ADDRESS ea = (ra ? cpu->GetGPR(ra) : uint32_t( 0)) + uint32_t( d);
+	ADDRESS disp( d );
+	ADDRESS ea( ra ? cpu->GetGPR(ra) + disp : disp );
 	// do the memory access
 	return cpu->Int32Load(rd, ea); // 32-bit load/no byte reverse/no sign extend
 }

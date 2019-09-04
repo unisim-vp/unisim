@@ -40,7 +40,7 @@
 #include <stdlib.h>
 
 #include <unisim/service/interfaces/register.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 namespace unisim {
 namespace component {
@@ -220,7 +220,7 @@ inline void CCR_t::setCCR(uint16_t val) {
 
 // **************************
 
-class TimeBaseRegisterView : public unisim::kernel::service::VariableBase
+class TimeBaseRegisterView : public unisim::kernel::VariableBase
 {
 public:
 	typedef enum
@@ -228,7 +228,7 @@ public:
 		TB_LOW,
 		TB_HIGH
 	} Type;
-	TimeBaseRegisterView(const char *name, unisim::kernel::service::Object *owner, uint16_t& storage, Type type, const char *description);
+	TimeBaseRegisterView(const char *name, unisim::kernel::Object *owner, uint16_t& storage, Type type, const char *description);
 	virtual ~TimeBaseRegisterView();
 	virtual const char *GetDataTypeName() const;
 	virtual unsigned int GetBitSize() const;
@@ -237,11 +237,11 @@ public:
 	virtual operator unsigned long long () const;
 	virtual operator double () const;
 	virtual operator std::string () const;
-	virtual unisim::kernel::service::VariableBase& operator = (bool value);
-	virtual unisim::kernel::service::VariableBase& operator = (long long value);
-	virtual unisim::kernel::service::VariableBase& operator = (unsigned long long value);
-	virtual unisim::kernel::service::VariableBase& operator = (double value);
-	virtual unisim::kernel::service::VariableBase& operator = (const char * value);
+	virtual unisim::kernel::VariableBase& operator = (bool value);
+	virtual unisim::kernel::VariableBase& operator = (long long value);
+	virtual unisim::kernel::VariableBase& operator = (unsigned long long value);
+	virtual unisim::kernel::VariableBase& operator = (double value);
+	virtual unisim::kernel::VariableBase& operator = (const char * value);
 private:
 	uint16_t& storage;
 	Type type;

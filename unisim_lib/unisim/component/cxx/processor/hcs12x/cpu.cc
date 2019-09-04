@@ -57,15 +57,15 @@ template void EBLB::exchange<uint16_t>(unsigned int rrSrc, unsigned int rrDst);
 CPU::CPU(const char *name, Object *parent)
 	: Object(name, parent)
 	, Client<Loader>(name,  parent)
-	, unisim::kernel::service::Client<DebugYielding>(name, parent)
-	, unisim::kernel::service::Client<MemoryAccessReporting<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Service<MemoryAccessReportingControl>(name, parent)
-	, unisim::kernel::service::Service<Disassembly<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Service<Registers>(name, parent)
-	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Client<SymbolTableLookup<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Client<TrapReporting>(name, parent)
+	, unisim::kernel::Client<DebugYielding>(name, parent)
+	, unisim::kernel::Client<MemoryAccessReporting<physical_address_t> >(name, parent)
+	, unisim::kernel::Service<MemoryAccessReportingControl>(name, parent)
+	, unisim::kernel::Service<Disassembly<physical_address_t> >(name, parent)
+	, unisim::kernel::Service<Registers>(name, parent)
+	, unisim::kernel::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Client<SymbolTableLookup<physical_address_t> >(name, parent)
+	, unisim::kernel::Client<TrapReporting>(name, parent)
 	, queueCurrentAddress(0xFFFE)
 	, queueFirst(-1)
 	, queueNElement(0)
@@ -129,14 +129,14 @@ CPU::CPU(const char *name, Object *parent)
 	, stat_store_counter("data-store-counter", this, data_store_counter)
 	, param_max_inst("max-inst",this,max_inst)
 {
-	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_periodic_trap.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_max_inst.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_periodic_trap.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
-	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_cycles_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_load_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_store_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	stat_cycles_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	stat_load_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	stat_store_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
 
     ccr = new CCR_t(&ccrReg);
@@ -145,13 +145,13 @@ CPU::CPU(const char *name, Object *parent)
 
 	logger = new unisim::kernel::logger::Logger(*this);
 
-	registers_registry["A"] = new SimpleRegister<uint8_t>("A", &regA);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("A", this, regA, "Accumulator register A"));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>("A", &regA));
+	extended_registers_registry.push_back(new unisim::kernel::variable::Register<uint8_t>("A", this, regA, "Accumulator register A"));
 
-	registers_registry["B"] = new SimpleRegister<uint8_t>("B", &regB);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("B", this, regB, "Accumulator register B"));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>("B", &regB));
+	extended_registers_registry.push_back(new unisim::kernel::variable::Register<uint8_t>("B", this, regB, "Accumulator register B"));
 
-	registers_registry["D"] = new ConcatenatedRegister<uint16_t,uint8_t>("D", &regA, &regB);
+	registers_registry.AddRegisterInterface(new ConcatenatedRegister<uint16_t,uint8_t>("D", &regA, &regB));
 //	extended_registers_registry.push_back(new ConcatenatedRegisterView<uint16_t,uint8_t>("D", this,  &regA, &regB, "Accumulator register D"));
 
 	ConcatenatedRegisterView<uint16_t,uint8_t> *d_var = new ConcatenatedRegisterView<uint16_t,uint8_t>("D", this,  &regA, &regB, "16-bits Accumulator register (D=A:B)");
@@ -159,47 +159,47 @@ CPU::CPU(const char *name, Object *parent)
 	d_var->setCallBack(this, D, &CallBackObject::write, NULL);
 
 
-	registers_registry["X"] = new SimpleRegister<uint16_t>("X", &regX);
-//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("X", this, regX, "Index register X"));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>("X", &regX));
+//	extended_registers_registry.push_back(new unisim::kernel::variable::Register<uint16_t>("X", this, regX, "Index register X"));
 
-	unisim::kernel::service::Register<uint16_t> *x_var = new unisim::kernel::service::Register<uint16_t>("X", this, regX, "16-bits index register (X)");
+	unisim::kernel::variable::Register<uint16_t> *x_var = new unisim::kernel::variable::Register<uint16_t>("X", this, regX, "16-bits index register (X)");
 	extended_registers_registry.push_back(x_var);
 	x_var->setCallBack(this, X, &CallBackObject::write, NULL);
 
-	registers_registry["Y"] = new SimpleRegister<uint16_t>("Y", &regY);
-//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("Y", this, regY, "Index register Y"));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>("Y", &regY));
+//	extended_registers_registry.push_back(new unisim::kernel::variable::Register<uint16_t>("Y", this, regY, "Index register Y"));
 
-	unisim::kernel::service::Register<uint16_t> *y_var = new unisim::kernel::service::Register<uint16_t>("Y", this, regY, "16-bits index register (Y)");
+	unisim::kernel::variable::Register<uint16_t> *y_var = new unisim::kernel::variable::Register<uint16_t>("Y", this, regY, "16-bits index register (Y)");
 	extended_registers_registry.push_back(y_var);
 	y_var->setCallBack(this, Y, &CallBackObject::write, NULL);
 
-	registers_registry["SP"] = new SimpleRegister<uint16_t>("SP", &regSP);
-//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("SP", this, regSP, "Stack Pointer SP"));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>("SP", &regSP));
+//	extended_registers_registry.push_back(new unisim::kernel::variable::Register<uint16_t>("SP", this, regSP, "Stack Pointer SP"));
 
-	unisim::kernel::service::Register<uint16_t> *sp_var = new unisim::kernel::service::Register<uint16_t>("SP", this, regSP, "16-bits stack pointer register (SP)");
+	unisim::kernel::variable::Register<uint16_t> *sp_var = new unisim::kernel::variable::Register<uint16_t>("SP", this, regSP, "16-bits stack pointer register (SP)");
 	extended_registers_registry.push_back(sp_var);
 	sp_var->setCallBack(this, SP, &CallBackObject::write, NULL);
 
-	registers_registry["PC"] = new SimpleRegister<uint16_t>("PC", &regPC);
-//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("PC", this, regPC, "Program counter PC"));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>("PC", &regPC));
+//	extended_registers_registry.push_back(new unisim::kernel::variable::Register<uint16_t>("PC", this, regPC, "Program counter PC"));
 
-	unisim::kernel::service::Register<uint16_t> *pc_var = new unisim::kernel::service::Register<uint16_t>("PC", this, regPC, "16-bits program counter register (PC)");
+	unisim::kernel::variable::Register<uint16_t> *pc_var = new unisim::kernel::variable::Register<uint16_t>("PC", this, regPC, "16-bits program counter register (PC)");
 	extended_registers_registry.push_back(pc_var);
 	pc_var->setCallBack(this, PC, &CallBackObject::write, NULL);
 
-	registers_registry[ccr->GetName()] = ccr;
-//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(ccr->GetName(), this, ccrReg, "CCR"));
+	registers_registry.AddRegisterInterface(ccr);
+//	extended_registers_registry.push_back(new unisim::kernel::variable::Register<uint16_t>(ccr->GetName(), this, ccrReg, "CCR"));
 
-	unisim::kernel::service::Register<uint16_t> *ccr_var = new unisim::kernel::service::Register<uint16_t>(ccr->GetName(), this, ccrReg, "16-bits condition code register (CCR)");
+	unisim::kernel::variable::Register<uint16_t> *ccr_var = new unisim::kernel::variable::Register<uint16_t>(ccr->GetName(), this, ccrReg, "16-bits condition code register (CCR)");
 	extended_registers_registry.push_back(ccr_var);
 	ccr_var->setCallBack(this, CCR, &CallBackObject::write, NULL);
 
 	unisim::service::interfaces::Register *ccrl = ccr->GetLowRegister();
-	registers_registry[ccrl->GetName()] = ccrl;
+	registers_registry.AddRegisterInterface(ccrl);
 	extended_registers_registry.push_back(new TimeBaseRegisterView(ccrl->GetName(), this, ccrReg, TimeBaseRegisterView::TB_LOW, "CCR LOW"));
 
 	unisim::service::interfaces::Register *ccrh = ccr->GetHighRegister();
-	registers_registry[ccrh->GetName()] = ccrh;
+	registers_registry.AddRegisterInterface(ccrh);
 	extended_registers_registry.push_back(new TimeBaseRegisterView(ccrh->GetName(), this, ccrReg, TimeBaseRegisterView::TB_HIGH, "CCR HIGH"));
 
 }
@@ -209,15 +209,6 @@ CPU::~CPU()
 	if (eblb) { delete eblb; eblb = NULL;}
 	// ccr will be release while releasing registers_registry
 	//if (ccr) { delete ccr; ccr = NULL;}
-
-	// Release registers_registry
-	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		if(reg_iter->second)
-			delete reg_iter->second;
-	}
 
 	unsigned int i;
 	unsigned int n = extended_registers_registry.size();
@@ -253,6 +244,12 @@ void CPU::Reset()
 	for (unsigned int i=0; i < QUEUE_SIZE; i++) queueBuffer[i] = 0;
 }
 
+void CPU::ResetMemory()
+{
+	
+	Reset();
+
+}
 
 bool CPU::read(unsigned int offset, const void *buffer, unsigned int data_length) {
 
@@ -347,7 +344,7 @@ unsigned int CPU::step()
 				<< std::endl << EndDebugInfo;
 		}
 
-		CodeType insn;
+		CodeType insn(CodeType::capacity * 8);
 		queueFetch(curPC, &insn.str[0], CodeType::capacity);
 
 		/* Decode current PC */
@@ -481,7 +478,7 @@ uint8_t* CPU::queueFetch(address_t addr, uint8_t* ins, unsigned int nByte)
 		queueNElement = QUEUE_SIZE;
 		queueCurrentAddress = addr;
 	}
-	else if (nByte > queueNElement)
+	else if (nByte > (unsigned int) queueNElement)
 	{
 		queueFill(addr+queueNElement, (queueFirst+queueNElement) % QUEUE_SIZE, QUEUE_SIZE-queueNElement);
 		queueNElement = QUEUE_SIZE;
@@ -1213,12 +1210,14 @@ string CPU::getFunctionFriendlyName(physical_address_t addr)
  */
 Register* CPU::GetRegister(const char *name)
 {
-	if(registers_registry.find(string(name)) != registers_registry.end())
-		return (registers_registry[string(name)]);
-	else
-		return (NULL);
-
+	return registers_registry.GetRegister(name);
 }
+
+void CPU::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+{
+	registers_registry.ScanRegisters(scanner);
+}
+
 
 //=====================================================================
 //=                   DebugDisasmInterface methods                    =
@@ -1234,7 +1233,7 @@ Register* CPU::GetRegister(const char *name)
  */
 string CPU::Disasm(physical_address_t service_addr, physical_address_t &next_addr)
 {
-	CodeType 	insn;
+	CodeType insn( CodeType::capacity*8 );
 	ReadMemory(service_addr, &insn.str[0], CodeType::capacity);
 	Operation* op = this->Decode(service_addr, insn);
 

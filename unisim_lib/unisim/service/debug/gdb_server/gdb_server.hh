@@ -46,7 +46,8 @@
 #include <unisim/service/interfaces/register.hh>
 #include <unisim/service/interfaces/memory.hh>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 
 #include <unisim/util/debug/event.hh>
@@ -61,13 +62,7 @@
 #include <fstream>
 
 #include <pthread.h>
-#include <inttypes.h>
-
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-
-#include <winsock2.h>
-
-#endif
+#include <stdint.h>
 
 namespace unisim {
 namespace service {
@@ -124,7 +119,7 @@ public:
 	template <typename T> bool GetValue(unsigned int prc_num, T& v) const { unisim::service::interfaces::Register *reg = (prc_num < arch_regs.size()) ? arch_regs[prc_num] : 0; if(reg) reg->GetValue(v); return reg != 0; }
 	template <typename T> bool SetValue(unsigned int prc_num, const T& v) { unisim::service::interfaces::Register *reg = (prc_num < arch_regs.size()) ? arch_regs[prc_num] : 0; if(reg) reg->SetValue(v); return reg != 0; }
 	inline int GetHexLength() const { return bitsize / 4; }
-	inline unisim::service::interfaces::Register *GetRegisterInterface(unsigned int prc_num) { unisim::service::interfaces::Register *reg = (prc_num < arch_regs.size()) ? arch_regs[prc_num] : 0; return reg; }
+	inline unisim::service::interfaces::Register *GetRegisterInterface(unsigned int prc_num) const { return (prc_num < arch_regs.size()) ? arch_regs[prc_num] : 0; }
 	void SetRegisterInterface(unsigned int prc_num, unisim::service::interfaces::Register *reg);
 	inline GDBEndian GetEndian() const { return endian; }
 	unsigned int GetRegNum() const { return reg_num; }
@@ -154,15 +149,60 @@ private:
 	std::vector<const GDBRegister *> gdb_registers;
 };
 
-class GDBServerBase : public virtual unisim::kernel::service::Object
+class GDBServerBase : public virtual unisim::kernel::Object
 {
 public:
-	GDBServerBase(const char *_name, unisim::kernel::service::Object *_parent);
+	static const uint64_t SERVER_ACCEPT_POLL_PERIOD_MS      = 100  /* ms */;  // every 100 ms
+	static const uint64_t NON_BLOCKING_READ_POLL_PERIOD_MS  = 10   /* ms */;  // every 10 ms
+	static const uint64_t NON_BLOCKING_WRITE_POLL_PERIOD_MS = 10   /* ms */;  // every 10 ms
+
+	GDBServerBase(const char *_name, unisim::kernel::Object *_parent);
 	virtual ~GDBServerBase();
 	
-//	virtual void SigInt();
+	virtual bool EndSetup();
+	virtual void SigInt();
+	
+	bool StartServer();
+	bool StopServer();
+	void WaitTime(unsigned int msec);
+	std::string GetLastErrorString();
+	bool GetChar(char& c, bool blocking);
+	bool FlushOutput();
+	bool PutChar(char c);
+	bool IsConnected() const;
+	
 protected:
+	static const unsigned int MAX_BUFFER_SIZE = 256;
 	static bool killed;
+	unisim::kernel::logger::Logger logger;
+	int tcp_port;
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	uintptr_t sock;
+#else
+	int sock;
+#endif
+	unsigned int session_num;
+	bool sock_error;
+	
+	unsigned int input_buffer_size;
+	unsigned int input_buffer_index;
+	char input_buffer[MAX_BUFFER_SIZE];
+
+	unsigned int output_buffer_size;
+	char output_buffer[MAX_BUFFER_SIZE];
+	
+	bool verbose;
+	bool debug;
+	std::string remote_serial_protocol_input_traffic_recording_filename;
+	std::ofstream remote_serial_protocol_input_traffic_recording_file;
+	std::string remote_serial_protocol_output_traffic_recording_filename;
+	std::ofstream remote_serial_protocol_output_traffic_recording_file;
+	
+	unisim::kernel::variable::Parameter<int> param_tcp_port;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_debug;
+	unisim::kernel::variable::Parameter<std::string> param_remote_serial_protocol_input_traffic_recording_filename;
+	unisim::kernel::variable::Parameter<std::string> param_remote_serial_protocol_output_traffic_recording_filename;
 };
 
 typedef enum
@@ -214,38 +254,35 @@ std::ostream& operator << (std::ostream& os, const GDBMode& gdb_mode);
 template <class ADDRESS>
 class GDBServer
 	: public GDBServerBase
-	, public unisim::kernel::service::Service<unisim::service::interfaces::DebugYielding>
-	, public unisim::kernel::service::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugSelecting>
-	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugYieldingRequest>
-	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::Memory<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::Disassembly<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::Registers>
+	, public unisim::kernel::Service<unisim::service::interfaces::DebugYielding>
+	, public unisim::kernel::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::DebugSelecting>
+	, public unisim::kernel::Client<unisim::service::interfaces::DebugYieldingRequest>
+	, public unisim::kernel::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::Disassembly<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::Registers>
 {
 public:
-	static const uint64_t SERVER_ACCEPT_POLL_PERIOD_MS      = 100  /* ms */;  // every 100 ms
 	static const uint64_t GDB_INTERRUPT_POLL_PERIOD_MS      = 100  /* ms */;  // every 100 ms
-	static const uint64_t NON_BLOCKING_READ_POLL_PERIOD_MS  = 10   /* ms */;  // every 10 ms
-	static const uint64_t NON_BLOCKING_WRITE_POLL_PERIOD_MS = 10   /* ms */;  // every 10 ms
 	static const bool ALWAYS_ACCEPT_MULTIPROCESS_NEW_THREAD_ID_SYNTAX = true; // Note: as new thread-id syntax (for multiprocess) is backward compatible with old syntax
 	static const long PROCESS_ID = 1;
 	
 	// Exports to debugger
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugYielding>                debug_yielding_export;
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYielding>                debug_yielding_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
 
 	// Imports from debugger
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugYieldingRequest>         debug_yielding_request_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugSelecting>               debug_selecting_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >  debug_event_trigger_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> >             memory_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers>                    registers_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> >        disasm_import;
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >  symbol_table_lookup_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYieldingRequest>         debug_yielding_request_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugSelecting>               debug_selecting_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >  debug_event_trigger_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> >             memory_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>                    registers_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> >        disasm_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >  symbol_table_lookup_import;
 
-	GDBServer(const char *name, unisim::kernel::service::Object *parent = 0);
+	GDBServer(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~GDBServer();
 
 	// unisim::service::interfaces::DebugYielding
@@ -259,7 +296,6 @@ public:
 
 	virtual void SigInt();
 private:
-	static const unsigned int MAX_BUFFER_SIZE = 256;
 	bool VisitArchitecture(unisim::util::xml::Node *xml_node);
 	bool VisitBreakPointKind(unisim::util::xml::Node *xml_node);
 	bool VisitFeature(unisim::util::xml::Node *xml_node);
@@ -273,12 +309,8 @@ private:
 	template <typename T> bool ParseHex(const std::string& s, std::size_t& pos, T& value);
 	template <typename T> bool ParseSignedHex(const std::string& s, std::size_t& pos, T& value);
 	bool ParseThreadId(const std::string& s, std::size_t& pos, long& thread_id);
-	std::string GetLastErrorString();
-	bool GetChar(char& c, bool blocking);
-	bool PutChar(char c);
 	bool GetPacket(char prefix, std::string& s, bool blocking);
 	bool PutPacket(char prefix, const std::string& s);
-	bool FlushOutput();
 	bool GetQuery(std::string& s, bool blocking);
 	bool PutReply(const std::string& s);
 	bool PutNotification(const std::string& s);
@@ -335,19 +367,11 @@ private:
 
 	bool DisplayMonitoredInternals();
 
-	unisim::kernel::logger::Logger logger;
-
-	int tcp_port;
 	std::string architecture_description_filename;
 	GDBEndian endian;
 	unsigned int gdb_arch_reg_num;
 	std::string program_counter_name;
 
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-	SOCKET sock;
-#else
-	int sock;
-#endif
 	std::vector<GDBFeature *> gdb_features;
 	std::vector<GDBRegister *> gdb_registers;
 	GDBRegister *gdb_pc;
@@ -356,7 +380,6 @@ private:
 	unsigned int c_prc_num;
 	std::vector<GDBServerAction> prc_actions;
 	unsigned int session_num;
-	bool sock_error;
 	bool session_terminated;
 	bool detached;
 	std::vector<bool> listening_fetch;
@@ -383,38 +406,20 @@ private:
 	
 	std::vector<const unisim::util::debug::Event<ADDRESS> *> stop_events;
 	
-	unsigned int input_buffer_size;
-	unsigned int input_buffer_index;
-	char input_buffer[MAX_BUFFER_SIZE];
-
-	unsigned int output_buffer_size;
-	char output_buffer[MAX_BUFFER_SIZE];
-
 	unsigned int memory_atom_size;
-	bool verbose;
-	bool debug;
 	std::string monitor_internals;
 	GDBWaitConnectionMode wait_connection_mode;
 	bool enable_multiprocess_extension;
-	std::string remote_serial_protocol_input_traffic_recording_filename;
-	std::ofstream remote_serial_protocol_input_traffic_recording_file;
-	std::string remote_serial_protocol_output_traffic_recording_filename;
-	std::ofstream remote_serial_protocol_output_traffic_recording_file;
 	bool enable_interrupt;
 	GDBMode mode;
 
-	unisim::kernel::service::Parameter<unsigned int> param_memory_atom_size;
-	unisim::kernel::service::Parameter<int> param_tcp_port;
-	unisim::kernel::service::Parameter<std::string> param_architecture_description_filename;
-	unisim::kernel::service::Parameter<bool> param_verbose;
-	unisim::kernel::service::Parameter<bool> param_debug;
-	unisim::kernel::service::Parameter<std::string> param_monitor_internals;
-	unisim::kernel::service::Parameter<GDBWaitConnectionMode> param_wait_connection_mode;
-	unisim::kernel::service::Parameter<bool> param_enable_multiprocess_extension;
-	unisim::kernel::service::Parameter<std::string> param_remote_serial_protocol_input_traffic_recording_filename;
-	unisim::kernel::service::Parameter<std::string> param_remote_serial_protocol_output_traffic_recording_filename;
-	unisim::kernel::service::Parameter<bool> param_enable_interrupt;
-	unisim::kernel::service::Parameter<GDBMode> param_mode;
+	unisim::kernel::variable::Parameter<unsigned int> param_memory_atom_size;
+	unisim::kernel::variable::Parameter<std::string> param_architecture_description_filename;
+	unisim::kernel::variable::Parameter<std::string> param_monitor_internals;
+	unisim::kernel::variable::Parameter<GDBWaitConnectionMode> param_wait_connection_mode;
+	unisim::kernel::variable::Parameter<bool> param_enable_multiprocess_extension;
+	unisim::kernel::variable::Parameter<bool> param_enable_interrupt;
+	unisim::kernel::variable::Parameter<GDBMode> param_mode;
 
 	///////////////////////////////////
 	
@@ -456,7 +461,6 @@ private:
 	void WaitForCommandProcessing();
 	void Run();
 	void WaitForSimulationRun();
-	void WaitTime(unsigned int msec);
 	virtual void ProcessCmdThrd();
 	virtual void ProcessIntThrd();
 	void ProcessCommands();

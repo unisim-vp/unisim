@@ -100,6 +100,11 @@ bool Monitor<ADDRESS>::EndSetup()
 			has_architecture_endian = true;
 		}
 	}
+	
+	if(!has_architecture_endian)
+	{
+		logger << DebugWarning << "Endian is not set; Assuming " << endian << " for architecture" << EndDebugWarning;
+	}
 
 	//*** Hack code to test if monitor is working well */
 

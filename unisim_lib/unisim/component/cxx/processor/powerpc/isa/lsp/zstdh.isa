@@ -53,7 +53,7 @@ zstdh.execute = {
 	return false;
 }
 zstdh.disasm = {
-	os << "zstdh" << (u ? "u" : "") << " r" << (unsigned int) rs << ", " << displacement << "(r" << (unsigned int) ra << ")";
+	os << "zstdh" << (u ? "u" : "") << " " << GPRPrint(rs) << ", " << displacement << "(" << GPRPrint(ra) << ")";
 }
 
 specialize zstdh(u=0)

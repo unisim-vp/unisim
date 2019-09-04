@@ -79,11 +79,11 @@ XML_ATD_PWM_STUB::XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent)
 
 XML_ATD_PWM_STUB::~XML_ATD_PWM_STUB() {
 
-	for (int i=0; i < atd0_vect.size(); i++) {
+	for (unsigned int i=0; i < atd0_vect.size(); i++) {
 		delete atd0_vect.at(i);
 	}
 
-	for (int i=0; i < atd1_vect.size(); i++) {
+	for (unsigned int i=0; i < atd1_vect.size(); i++) {
 		delete atd1_vect.at(i);
 	}
 

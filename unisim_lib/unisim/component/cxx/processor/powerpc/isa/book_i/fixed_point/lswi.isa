@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,7 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lswi(31[6]:rd[5]:ra[5]:nb[5]:597[10]:?[1])
+op lswi(31[6]:rd[5]:ra[5]:nb[5]:597[10]:?[1]);
+
 lswi.execute = {
 	ADDRESS ea = ra ? cpu->GetGPR(ra) : 0;
 
@@ -42,19 +43,16 @@ lswi.execute = {
 	while(n > 0)
 	{
 		uint32_t sz = (n > 4) ? 4 : n;
-		if(unlikely(!cpu->IntLoadMSBFirst(r, ea, sz))) return false;
+		if(unlikely(not cpu->IntLoadMSBFirst(r, ea, sz))) return false;
 		r = (r + 1) & 31;
 		ea += sz;
 		n -= sz;
 	}
 	
 	return true;
-}
+};
+
 lswi.disasm = {
-	os << "lswi r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << (unsigned int) nb;
-	if(cpu && (cpu->GetCIA() == this->GetAddr()))
-	{
-		ADDRESS ea = ra ? cpu->GetGPR(ra) : 0;
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+	os << "lswi " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << unsigned(nb);
+};
+

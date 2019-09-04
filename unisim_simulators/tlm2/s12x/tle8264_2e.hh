@@ -1,7 +1,6 @@
 #ifndef _TLE8264_2E_HH_
 #define _TLE8264_2E_HH_
 
-#include "can_stub.hh"
 #include <systemc>
 #include <inttypes.h>
 
@@ -21,7 +20,7 @@
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/simple_target_socket.h"
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
@@ -33,10 +32,10 @@ using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Signal;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Signal;
+using unisim::kernel::ServiceExportBase;
 
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
@@ -227,7 +226,7 @@ private:
 	uint16_t mask_registers[3]; // 9lsb are mask bits and the 10th bit is wd_refresh
 	uint16_t status_registers[3]; // 9lsb are status bits and the 10th bit is wk_state
 	uint16_t reserved;
-	uint16_t cfg_registers[4]; // 9-bits by register
+	uint16_t cfg_registers[8]; // 9-bits by register
 
 	uint16_t spi_rx_buffer;
 

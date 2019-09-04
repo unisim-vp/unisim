@@ -45,7 +45,7 @@ using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::EndDebugInfo;
 
 TrapHandler::TrapHandler(const char *name, Object *parent)
-	: unisim::kernel::service::Object(name, parent, "Trap handler")
+	: unisim::kernel::Object(name, parent, "Trap handler")
 	// , Service<TrapReporting>(name, parent)
 	, trap_reporting_export()
 	, logger(*this)
@@ -128,7 +128,7 @@ TrapHandler::ReportTrap(int id)
 
 void
 TrapHandler::ReportTrap(int id,
-		const unisim::kernel::service::Object &obj)
+		const unisim::kernel::Object &obj)
 {
 	if ( send_to_logger )
 		logger << DebugInfo
@@ -142,7 +142,7 @@ TrapHandler::ReportTrap(int id,
 
 void
 TrapHandler::ReportTrap(int id,
-		const unisim::kernel::service::Object &obj,
+		const unisim::kernel::Object &obj,
 		const std::string &str)
 {
 	if ( send_to_logger )
@@ -157,7 +157,7 @@ TrapHandler::ReportTrap(int id,
 
 void
 TrapHandler::ReportTrap(int id,
-		const unisim::kernel::service::Object &obj,
+		const unisim::kernel::Object &obj,
 		const char *c_str)
 {
 	if ( send_to_logger )

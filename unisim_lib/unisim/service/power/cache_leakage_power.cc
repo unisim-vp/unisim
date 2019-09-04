@@ -43,7 +43,7 @@ CacheLeakagePower ::
 CacheLeakagePower (const double *_time_stamp,
 		CacheProfile **_current_profile,
 		const map<CacheProfileKey, CacheProfile *> *_profiles,
-		unisim::kernel::service::ServiceImport<unisim::service::interfaces::Time> *_time_import) :
+		unisim::kernel::ServiceImport<unisim::service::interfaces::Time> *_time_import) :
 time_stamp(_time_stamp),
 current_profile(_current_profile),
 profiles(_profiles),
@@ -89,19 +89,17 @@ GetLeakagePower() const
 } // end of namespace service
 } // end of namespace unisim
 
-#include "unisim/kernel/service/service.hh"
+#include <unisim/kernel/variable/variable.hh>
+#include "unisim/kernel/kernel.hh"
 
 namespace unisim {
 namespace kernel {
-namespace service {
-
-using unisim::kernel::service::Variable;
-using unisim::kernel::service::VariableBase;
+namespace variable {
 
 template <> Variable<unisim::service::power::CacheLeakagePower>::Variable(const char *_name, Object *_object, unisim::service::power::CacheLeakagePower& _storage, Type type, const char *_description) :
 VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 }
 
 template <>
@@ -141,7 +139,7 @@ Variable<unisim::service::power::CacheLeakagePower>::operator double () const
 }
 
 template <>
-Variable<unisim::service::power::CacheLeakagePower>::operator string () const
+Variable<unisim::service::power::CacheLeakagePower>::operator std::string () const
 {
 	std::stringstream data;
 	data << storage->GetLeakagePower();
@@ -175,6 +173,6 @@ template <> VariableBase& Variable<unisim::service::power::CacheLeakagePower>::o
 
 template class Variable<unisim::service::power::CacheLeakagePower>;
 
-} // end of namespace service
+} // end of namespace variable
 } // end of namespace kernel
 } // end of namespace unisim

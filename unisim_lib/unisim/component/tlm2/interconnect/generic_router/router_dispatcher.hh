@@ -39,7 +39,7 @@
 #include <tlm>
 #include <tlm_utils/peq_with_cb_and_phase.h>
 #include <map>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 
 namespace unisim {
@@ -54,9 +54,9 @@ class RouterDispatcher :
 private:
 	static const bool threaded_model = false;
 	
-	typedef unisim::kernel::service::Object Object;
+	typedef unisim::kernel::Object Object;
 	static const unsigned int MAX_NUM_MAPPINGS = CONFIG::MAX_NUM_MAPPINGS; 
-	static const unsigned int BUSWIDTH = CONFIG::BUSWIDTH;
+//	static const unsigned int BUSWIDTH = CONFIG::BUSWIDTH;
 	typedef typename CONFIG::TYPES TYPES;
 	static const bool VERBOSE = CONFIG::VERBOSE;
 	typedef typename TYPES::tlm_payload_type transaction_type;

@@ -74,7 +74,7 @@
  
 #include <systemc>
 #include "unisim/kernel/tlm/tlm.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 #include "unisim/component/tlm/message/snooping_fsb.hh"
 #include "unisim/component/tlm/message/memory.hh"
@@ -103,13 +103,13 @@ using unisim::kernel::tlm::TlmSendIf;
 using unisim::kernel::tlm::TlmMessage;
 using unisim::kernel::tlm::ResponseListener;
 using unisim::kernel::tlm::AdvancedResponseListener;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::ServiceImport;
 using unisim::util::garbage_collector::Pointer;
 using unisim::component::tlm::message::SnoopingFSBRequest;
 using unisim::component::tlm::message::SnoopingFSBResponse;

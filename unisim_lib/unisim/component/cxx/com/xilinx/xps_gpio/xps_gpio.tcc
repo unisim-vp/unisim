@@ -160,6 +160,12 @@ void XPS_GPIO<CONFIG>::Reset()
 }
 
 template <class CONFIG>
+void XPS_GPIO<CONFIG>::ResetMemory()
+{
+	Reset();
+}
+
+template <class CONFIG>
 bool XPS_GPIO<CONFIG>::ReadMemory(typename CONFIG::MEMORY_ADDR addr, void *buffer, uint32_t size)
 {
 	if(size > 0)

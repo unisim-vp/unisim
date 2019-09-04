@@ -42,6 +42,7 @@
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/dmem.hh>
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/l1i.hh>
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/l1d.hh>
+#include <unisim/service/interfaces/http_server.hh>
 
 namespace unisim {
 namespace component {
@@ -57,14 +58,16 @@ class CPU; // forward declaration
 // Memory sub-system types
 struct TYPES
 {
-	enum STORAGE_ATTR
+	typedef enum
 	{
 		SA_DEFAULT = 0,           // not cache inhibited and not guarded
 		SA_I       = 1,           // cache inhibited
 		SA_G       = 2,           // guarded
 		SA_IG      = SA_I | SA_G, // cache inhibited and guarded
-	};
+	} STORAGE_ATTR_E;
 
+	typedef uint8_t STORAGE_ATTR;
+	typedef uint32_t EFFECTIVE_ADDRESS;
 	typedef uint32_t ADDRESS;
 	typedef uint32_t PHYSICAL_ADDRESS;
 };
@@ -75,6 +78,9 @@ struct CONFIG
 
 	// Model
 	static const Model MODEL = E200Z710N3;
+
+	// Floating point
+	static const bool HAS_FPU = false;
 
 	// Front-side bus width
 	static const unsigned int DATA_FSB_WIDTH = 8; // Data load/store front-side bus width
@@ -103,7 +109,7 @@ struct CONFIG
 	{
 		typedef unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z710n3::CPU CPU;
 		static const unisim::util::cache::LocalMemoryType TYPE = unisim::util::cache::INSTRUCTION_LOC_MEM;
-		static const TYPES::ADDRESS BASE_ADDRESS = 0; // unused
+		static const TYPES::PHYSICAL_ADDRESS BASE_ADDRESS = 0; // unused
 		static const unsigned int SIZE = 65536; // max size
 	};
 
@@ -112,7 +118,7 @@ struct CONFIG
 	{
 		typedef unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z710n3::CPU CPU;
 		static const unisim::util::cache::LocalMemoryType TYPE = unisim::util::cache::DATA_LOC_MEM;
-		static const TYPES::ADDRESS BASE_ADDRESS = 0; // unused
+		static const TYPES::PHYSICAL_ADDRESS BASE_ADDRESS = 0; // unused
 		static const unsigned int SIZE = 65536; // max size
 	};
 
@@ -122,6 +128,8 @@ struct CONFIG
 		typedef unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z710n3::CPU CPU;
 		static const unsigned int SIZE                                      = 16384;
 		static const unisim::util::cache::CacheWritingPolicy WRITING_POLICY = unisim::util::cache::CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
+		static const unisim::util::cache::CacheIndexScheme INDEX_SCHEME     = unisim::util::cache::CACHE_PHYSICALLY_INDEXED;
+		static const unisim::util::cache::CacheTagScheme TAG_SCHEME         = unisim::util::cache::CACHE_PHYSICALLY_TAGGED;
 		static const unisim::util::cache::CacheType TYPE                    = unisim::util::cache::INSTRUCTION_CACHE;
 		static const unsigned int ASSOCIATIVITY                             = 2;
 		static const unsigned int BLOCK_SIZE                                = 32;
@@ -146,6 +154,8 @@ struct CONFIG
 		typedef unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z710n3::CPU CPU;
 		static const unsigned int SIZE                                      = 4096;
 		static const unisim::util::cache::CacheWritingPolicy WRITING_POLICY = unisim::util::cache::CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
+		static const unisim::util::cache::CacheIndexScheme INDEX_SCHEME     = unisim::util::cache::CACHE_PHYSICALLY_INDEXED;
+		static const unisim::util::cache::CacheTagScheme TAG_SCHEME         = unisim::util::cache::CACHE_PHYSICALLY_TAGGED;
 		static const unisim::util::cache::CacheType TYPE                    = unisim::util::cache::DATA_CACHE;
 		static const unsigned int ASSOCIATIVITY                             = 2;
 		static const unsigned int BLOCK_SIZE                                = 32;
@@ -173,7 +183,9 @@ class CPU : public unisim::component::cxx::processor::powerpc::e200::mpc57xx::CP
 public:
 	typedef unisim::component::cxx::processor::powerpc::e200::mpc57xx::CPU<TYPES, CONFIG> SuperCPU;
 	
-	CPU(const char *name, unisim::kernel::service::Object *parent = 0);
+	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> mpu_http_server_export;
+
+	CPU(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~CPU();
 
 	friend struct unisim::component::cxx::processor::powerpc::e200::mpc57xx::MPU<TYPES, CONFIG::MPU_CONFIG>;
@@ -194,25 +206,34 @@ public:
 	typedef unisim::util::cache::CacheHierarchy<TYPES, L1D> DATA_CACHE_HIERARCHY;
 	typedef unisim::util::cache::CacheHierarchy<TYPES, L1I> INSTRUCTION_CACHE_HIERARCHY;
 	
-	inline MPU *GetAccessController() ALWAYS_INLINE { return &mpu; }
 	inline IMEM *GetLocalMemory(const IMEM *) ALWAYS_INLINE { return &imem; }
 	inline DMEM *GetLocalMemory(const DMEM *) ALWAYS_INLINE { return &dmem; }
 	inline L1I *GetCache(const L1I *) ALWAYS_INLINE { return &l1i; }
 	inline L1D *GetCache(const L1D *) ALWAYS_INLINE { return &l1d; }
 	
-	bool Dcba(ADDRESS addr);
-	bool Dcbi(ADDRESS addr);
-	bool Dcbf(ADDRESS addr);
-	bool Dcbst(ADDRESS addr);
-	bool Dcbt(ADDRESS addr);
-	bool Dcbtst(ADDRESS addr);
-	bool Dcbz(ADDRESS addr);
-	bool Icbi(ADDRESS addr);
-	bool Icbt(ADDRESS addr);
+	bool Dcba(EFFECTIVE_ADDRESS addr);
+	bool Dcbi(EFFECTIVE_ADDRESS addr);
+	bool Dcbf(EFFECTIVE_ADDRESS addr);
+	bool Dcbst(EFFECTIVE_ADDRESS addr);
+	bool Dcbt(EFFECTIVE_ADDRESS addr);
+	bool Dcbtst(EFFECTIVE_ADDRESS addr);
+	bool Dcbz(EFFECTIVE_ADDRESS addr);
+	bool Icbi(EFFECTIVE_ADDRESS addr);
+	bool Icbt(EFFECTIVE_ADDRESS addr);
 	bool Mpure();
 	bool Mpuwe();
 	bool Mpusync();
 
+	template <bool DEBUG, bool EXEC, bool WRITE>
+	inline bool Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRESS& size_to_protection_boundary, ADDRESS& virt_addr, PHYSICAL_ADDRESS& phys_addr, STORAGE_ATTR& storage_attr)
+	{
+		if(unlikely((!mpu.template ControlAccess<DEBUG, EXEC, WRITE>(ea, size_to_protection_boundary, storage_attr)))) return false;
+
+		virt_addr = ea;
+		phys_addr = ea;
+		return true;
+	}
+	
 	////////////////////// Special Purpose Registers //////////////////////////
 	
 	// L1 Cache Configuration Register 0

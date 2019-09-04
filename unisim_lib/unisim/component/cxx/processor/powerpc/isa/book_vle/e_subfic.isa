@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,43 +33,33 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Subtract From Scaled Immediate Carrying */
 op e_subfic(6[6]:rd[5]:ra[5]:11[4]:rc[1]:s11[11]);
 e_subfic.var sci8 : {int32_t} = {scaled_immediate(s11)};
 
 e_subfic.execute = {
-	uint8_t carry; // carry out
-	uint8_t overflow = uint8_t(0); // overflow
-	uint8_t sign; // sign
-	uint32_t result;
-
 	// Read the input operands
-	uint32_t a = cpu->GetGPR(ra);
-	uint32_t b = uint32_t( sci8);
-	XER& xer = cpu->GetXER();
+	SINT a( cpu->GetGPR(ra) ), b( sci8 );
 	
 	// Compute the result
-	SignedAdd32(result, carry, overflow, sign, -a, b, 0);
+	SINT result = b - a;
+	
+	// Generate XER[CA]
+	XER& xer = cpu->GetXER();
+	xer.Set<XER::CA>(UINT(b) >= UINT(a));
 	
 	if(rc)
 	{
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(int32_t( result) < int32_t( 0));
-		cr.Set<CR::CR0::GT>(int32_t( result) > int32_t( 0));
-		cr.Set<CR::CR0::EQ>(result == uint32_t( 0));
+		cr.Set<CR::CR0::LT>(result < SINT(0));
+		cr.Set<CR::CR0::GT>(result > SINT(0));
+		cr.Set<CR::CR0::EQ>(result == SINT(0));
 	}
 
 	// Write back the result
-	cpu->SetGPR(rd, result);
-	
-	// Generate XER[CA]
-	xer.Set<XER::CA>(bool(carry) or (a == uint32_t(0)));
+	cpu->SetGPR(rd, UINT(result));
 	
 	return true;
 }

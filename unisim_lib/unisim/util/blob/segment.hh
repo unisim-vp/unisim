@@ -69,7 +69,7 @@ public:
 	Segment(const Segment<MEMORY_ADDR>& segment);
 	virtual ~Segment();
 	
-	virtual void Reset();
+	virtual void ResetMemory();
 	virtual bool ReadMemory(MEMORY_ADDR addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(MEMORY_ADDR addr, const void *buffer, uint32_t size);
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,23 +33,17 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Compare Logical Scaled Immediate Word */
 op e_cmpli(6[6]:1[3]:crd[2]:ra[5]:21[5]:s11[11]);
 e_cmpli.var sci8 : {uint32_t} = {scaled_immediate(s11)};
 
 e_cmpli.execute = {
 	// Read the input unsigned operands
-	uint32_t a = cpu->GetGPR(ra);
-	uint32_t b = uint32_t(  sci8 );
-	
-	CR& cr = cpu->GetCR();
-	XER& xer = cpu->GetXER();
+	U32 a( cpu->GetGPR(ra) ), b( sci8 );
 	
 	// Generate CR[crd] bit field
+	CR& cr = cpu->GetCR();
+	XER& xer = cpu->GetXER();
 	switch(crd)
 	{
 		case 0:

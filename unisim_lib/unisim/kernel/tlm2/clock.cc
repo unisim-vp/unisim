@@ -41,8 +41,8 @@ namespace tlm2 {
 
 //////////////////////////////////// Clock /////////////////////////////////////////////
 
-Clock::Clock(const char *name_, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name_, parent)
+Clock::Clock(const char *name_, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name_, parent, "Clock")
 	, Super(name_)
 	, clock_period(sc_core::sc_time(1.0, sc_core::SC_NS))
 	, clock_duty_cycle(0.5)
@@ -270,6 +270,10 @@ const sc_core::sc_event& Clock::GetClockPropertiesChangedEvent() const
 	return clock_properties_changed_event;
 }
 
+void Clock::VariableBaseNotify(const unisim::kernel::VariableBase *var)
+{
+	clock_properties_changed_event.notify(sc_core::SC_ZERO_TIME);
+}
 
 ClockPropertiesProxy::ClockPropertiesProxy(sc_core::sc_in<bool>& clk_port_)
 	: clk_port(clk_port_)

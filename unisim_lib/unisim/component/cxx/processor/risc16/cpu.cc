@@ -33,9 +33,10 @@
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#include <unisim/kernel/variable/variable.hh>
+#include <unisim/util/endian/endian.hh>
 #include <unisim/component/cxx/processor/risc16/cpu.hh>
 #include <sstream>
-#include <unisim/util/endian/endian.hh>
 
 namespace unisim {
 namespace component {
@@ -46,13 +47,13 @@ namespace risc16 {
 CPU::CPU(const char *name, Object *_parent)
 	: Object(name, _parent, "16-bit RISC processor for teaching")
 	, Decoder()
-	, unisim::kernel::service::Service<MemoryAccessReportingControl>(name, _parent)
-	, unisim::kernel::service::Service<Memory<uint64_t> > (name, _parent)
-	, unisim::kernel::service::Service<Disassembly<uint64_t> >(name, _parent)
-	, unisim::kernel::service::Service<Registers>(name, _parent)
-	, unisim::kernel::service::Client<DebugYielding>(name, _parent)
-	, unisim::kernel::service::Client<MemoryAccessReporting<uint64_t> >(name, _parent)
-	, unisim::kernel::service::Client<Memory<uint64_t> > (name, _parent)
+	, unisim::kernel::Service<MemoryAccessReportingControl>(name, _parent)
+	, unisim::kernel::Service<Memory<uint64_t> > (name, _parent)
+	, unisim::kernel::Service<Disassembly<uint64_t> >(name, _parent)
+	, unisim::kernel::Service<Registers>(name, _parent)
+	, unisim::kernel::Client<DebugYielding>(name, _parent)
+	, unisim::kernel::Client<MemoryAccessReporting<uint64_t> >(name, _parent)
+	, unisim::kernel::Client<Memory<uint64_t> > (name, _parent)
 	, memory_export("memory-export", this)
 	, memory_access_reporting_control_export("memory-access-reporting-control-export", this)
 	, disasm_export("disasm_export", this)
@@ -77,7 +78,7 @@ CPU::CPU(const char *name, Object *_parent)
 		strm << "r" << i;
 		string name = strm.str();
 		registers_registry[name] = new unisim::util::debug::SimpleRegister<uint16_t>(name.c_str(), &gpr[i]);
-		extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(name.c_str(), this, gpr[i], "General Purpose Register"));
+		extended_registers_registry.push_back(new unisim::kernel::variable::Register<uint16_t>(name.c_str(), this, gpr[i], "General Purpose Register"));
 	}
 }
 
@@ -95,6 +96,13 @@ CPU::~CPU()
 	{
 		delete reg_iter->second;
 	}
+}
+
+void
+CPU::Reset()
+{
+	cia = 0;
+	for(unsigned int i= 0; i < 16; i++) gpr[i] = 0;
 }
 
 uint16_t
@@ -193,10 +201,8 @@ void CPU::RequiresMemoryAccessReporting(MemoryAccessReportingType type, bool rep
 //=             memory interface methods                              =
 //=====================================================================
 
-void CPU::Reset()
+void CPU::ResetMemory()
 {
-	cia = 0;
-	for(unsigned int i= 0; i < 16; i++) gpr[i] = 0;
 }
 
 bool CPU::ReadMemory(uint64_t addr, void *buffer, uint32_t size)

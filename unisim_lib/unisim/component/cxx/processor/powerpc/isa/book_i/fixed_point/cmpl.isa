@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,26 +32,16 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
-}
+/* Compare Logical (32-bits operands) */
+op cmpl(31[6]:crfD[3]:?[1]:0[1]:ra[5]:rb[5]:32[10]:?[1]);
 
-op cmpl(31[6]:crfD[3]:?[1]:l[1]:ra[5]:rb[5]:32[10]:?[1])
 cmpl.execute = {
-	// Raise an illegal instruction exception if l=1
-	if(unlikely(l))
-	{
-		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
-		return false;
-	}
-	
 	// Read the input operands
-	uint32_t a = cpu->GetGPR(ra);
-	uint32_t b = cpu->GetGPR(rb) ;
-	CR& cr = cpu->GetCR();
-	XER& xer = cpu->GetXER();
+	U32 a = U32(cpu->GetGPR(ra)), b = U32(cpu->GetGPR(rb));
 	
 	// Generate CR[crfD] bit field
+	CR& cr = cpu->GetCR();
+	XER& xer = cpu->GetXER();
 	switch(crfD)
 	{
 		case 0:
@@ -105,16 +95,17 @@ cmpl.execute = {
 	}
 	
 	return true;
-}
-cmpl.disasm = {
-	os << "cmpl cr" << (unsigned int) crfD << ", " << (unsigned int) l << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-}
+};
 
-specialize cmpl(crfD=0)
-specialize cmpl(crfD=1)
-specialize cmpl(crfD=2)
-specialize cmpl(crfD=3)
-specialize cmpl(crfD=4)
-specialize cmpl(crfD=5)
-specialize cmpl(crfD=6)
-specialize cmpl(crfD=7)
+cmpl.disasm = {
+	os << "cmpl " << CRPrint(crfD) << ", 0, " << GPRPrint(ra) << ", " << GPRPrint(rb);
+};
+
+specialize cmpl(crfD=0);
+specialize cmpl(crfD=1);
+specialize cmpl(crfD=2);
+specialize cmpl(crfD=3);
+specialize cmpl(crfD=4);
+specialize cmpl(crfD=5);
+specialize cmpl(crfD=6);
+specialize cmpl(crfD=7);

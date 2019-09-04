@@ -39,26 +39,26 @@ efscth.execute = {
 		return false;
 
 	// Read the input operands
-	SoftFloat b( cpu->GetGPR(rb) );
+	SoftFloat b( SoftFloat::FromRawBits, cpu->GetGPR(rb) );
 
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().set(b).proceed())
 		return false;
 	
 	// Compute the result
-	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
+	Flags flags( Flags::RoundingMode(cpu->GetSPEFSCR().Get<CPU::SPEFSCR::FRMC>()) );
 	SoftHalfFloat result(b, flags);
 
 	// Handle EFP Specific Signaling/Rounding
 	bool status = cpu->EFPProcessOutput( result, flags );
 
 	// Write back the result
-	cpu->SetGPR(rd, uint32_t(result.queryValue()));
+	cpu->SetGPR(rd, U32(result.queryRawBits()));
 
 	return status;
-}
+};
 
 efscth.disasm = {
-	os << "efscth r" << (unsigned int) rd << ", r" << (unsigned int) rb;
-}
+	os << "efscth " << GPRPrint(rd) << ", " << GPRPrint(rb);
+};
+

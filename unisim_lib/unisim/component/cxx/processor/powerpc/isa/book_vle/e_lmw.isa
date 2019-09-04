@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,10 +33,6 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Load Multiple Word */
 op e_lmw(6[6]:rd[5]:ra[5]:8[8]:sext d[8]);
 
@@ -47,19 +43,20 @@ e_lmw.execute = {
 		return false;
 	}
 	
-	ADDRESS ea = (ra ? cpu->GetGPR(ra) : uint32_t( 0)) + uint32_t( d);
+	// compute the effective address
+	UINT disp( d );
+	ADDRESS ea( ra ? cpu->GetGPR(ra) + disp : disp );
 	
-	if(unlikely((ea & uint32_t( 3)) != uint32_t( 0)))
+	if(unlikely(ea & ADDRESS(3)))
 	{
 		cpu->ThrowException<CPU::AlignmentInterrupt::UnalignedLoadStoreMultiple>();
 		return false;
 	}
 
-	unsigned int r;
-	for(r = rd; r < 32; r++)
+	for(unsigned r = rd; r < 32; r++)
 	{
-		if(unlikely(!cpu->Int32Load(r, ea))) return false;
-		ea = ea + uint32_t( 4);
+		if(unlikely(not cpu->Int32Load(r, ea))) return false;
+		ea = ea + ADDRESS(4);
 	}
 	
 	return true;

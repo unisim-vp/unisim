@@ -54,9 +54,11 @@ using unisim::component::tlm2::interconnect::generic_router::MEM_ACCESS_WRITE;
 using unisim::component::tlm2::interconnect::generic_router::MEM_ACCESS_READ_WRITE;
 
 template <typename CONFIG>
-PBRIDGE<CONFIG>::PBRIDGE(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+PBRIDGE<CONFIG>::PBRIDGE(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, Super(name, parent)
+	, unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
+	, registers_export("registers-export", this)
 	, pbridge_mpra(this)
 	, pbridge_mprb(this)
 	, pbridge_pacra(this)
@@ -99,6 +101,7 @@ PBRIDGE<CONFIG>::PBRIDGE(const sc_core::sc_module_name& name, unisim::kernel::se
 	, pbridge_opacrad(this)
 	, pbridge_opacrae(this)
 	, pbridge_opacraf(this)
+	, registers_registry()
 	, acr_mapping()
 	, param_acr_mapping()
 	, verbose(false)
@@ -122,7 +125,7 @@ PBRIDGE<CONFIG>::PBRIDGE(const sc_core::sc_module_name& name, unisim::kernel::se
 		sstr_name << "acr_mapping_" << i;
 		std::stringstream sstr_desc;
 		sstr_desc << "access control register for output port #" << i;
-		param_acr_mapping[i] = new unisim::kernel::service::Parameter<AccessControlRegisterMapping>(sstr_name.str().c_str(), this, acr_mapping[i], sstr_desc.str().c_str());
+		param_acr_mapping[i] = new unisim::kernel::variable::Parameter<AccessControlRegisterMapping>(sstr_name.str().c_str(), this, acr_mapping[i], sstr_desc.str().c_str());
 		
 		param_acr_mapping[i]->SetMutable(false);
 	}
@@ -169,6 +172,49 @@ PBRIDGE<CONFIG>::PBRIDGE(const sc_core::sc_module_name& name, unisim::kernel::se
 	this->MapRegister(pbridge_opacrad.ADDRESS_OFFSET, &pbridge_opacrad);
 	this->MapRegister(pbridge_opacrae.ADDRESS_OFFSET, &pbridge_opacrae);
 	this->MapRegister(pbridge_opacraf.ADDRESS_OFFSET, &pbridge_opacraf);
+	
+	registers_registry.AddRegisterInterface(pbridge_mpra.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_mprb.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_pacra.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_pacrb.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_pacrc.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_pacrd.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_pacre.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_pacrf.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_pacrg.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_pacrh.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacra.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrb.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrc.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrd.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacre.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrf.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrg.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrh.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacri.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrj.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrk.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrl.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrm.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrn.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacro.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrp.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrq.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrs.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrt.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacru.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrv.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrw.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrx.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacry.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrz.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacraa.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrab.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrac.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrad.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacrae.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(pbridge_opacraf.CreateRegisterInterface());
 }
 
 template <typename CONFIG>
@@ -203,7 +249,7 @@ void PBRIDGE<CONFIG>::end_of_elaboration()
 	if(invalid_acr_mapping)
 	{
 		this->logger << DebugError << "Invalid ACR mapping configuration" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		unisim::kernel::Object::Stop(-1);
 	}
 }
 
@@ -254,6 +300,20 @@ void PBRIDGE<CONFIG>::Reset()
 	pbridge_opacrad.Reset();
 	pbridge_opacrae.Reset();
 	pbridge_opacraf.Reset();
+}
+
+//////////////// unisim::service::interface::Registers ////////////////////
+
+template <typename CONFIG>
+unisim::service::interfaces::Register *PBRIDGE<CONFIG>::GetRegister(const char *name)
+{
+	return registers_registry.GetRegister(name);
+}
+
+template <typename CONFIG>
+void PBRIDGE<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 template <typename CONFIG>
@@ -394,7 +454,7 @@ bool PBRIDGE<CONFIG>::ApplyMap(transaction_type &trans, MAPPING const *&applied_
 			{
 				this->logger << DebugError << "Master ID (" << master_id << ") out-of-range" << EndDebugError;
 				trans.set_response_status(tlm::TLM_GENERIC_ERROR_RESPONSE);
-				unisim::kernel::service::Object::Stop(-1);
+				unisim::kernel::Object::Stop(-1);
 			}
 			
 			return false;

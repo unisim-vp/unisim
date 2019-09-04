@@ -38,5 +38,5 @@ evfscmpeq.execute = {
 	return false;
 }
 evfscmpeq.disasm = {
-	os << "evfscmpeq " << (unsigned int) bf << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "evfscmpeq " << (unsigned int) bf << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

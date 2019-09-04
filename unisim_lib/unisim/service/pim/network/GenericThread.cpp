@@ -9,6 +9,12 @@
 
 #include <unistd.h>
 
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+
+#include <winsock2.h>
+
+#endif
+
 namespace unisim {
 namespace service {
 namespace pim {
@@ -19,9 +25,8 @@ void TObject::error(const char* msg) {
     exit(1);
 }
 
-void TObject::error(const int* fd, const char* msg) {
+void TObject::error(const int* fd, int size, const char* msg) {
 
-	int size = sizeof(fd) / sizeof(*fd);
 	for (int i=0; i<size; i++) {
 #ifdef WIN32
 		closesocket(fd[i]);

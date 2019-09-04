@@ -41,8 +41,6 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-using std::string;
-
 template <class T>
 class Symbol
 {
@@ -65,13 +63,13 @@ public:
 
 	Symbol(const char *name, T addr, T size, typename unisim::util::debug::Symbol<T>::Type type, T memory_atom_size);
 
-	const char *GetName() const;
-	T GetAddress() const;
-	T GetSize() const;
-	typename unisim::util::debug::Symbol<T>::Type GetType() const;
-	string GetFriendlyName(T addr) const;
+	const char *GetName() const { return name.c_str(); }
+	T GetAddress() const { return addr; }
+	T GetSize() const { return size; }
+	typename unisim::util::debug::Symbol<T>::Type GetType() const { return type; }
+	std::string GetFriendlyName(T addr) const;
 private:
-	string name;
+	std::string name;
 	T addr;
 	T size;
 	typename unisim::util::debug::Symbol<T>::Type type;

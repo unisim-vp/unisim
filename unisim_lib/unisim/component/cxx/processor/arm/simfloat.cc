@@ -73,6 +73,12 @@ namespace simfloat {
   {
     Sqrt( *this, flags );
   }
+  SoftDouble::ComparisonResult
+  SoftDouble::compare( SoftDouble const& sdSource ) const
+  {
+    return inherited::compare( sdSource );
+  }
+  
   void
   SoftFloat::ToBytes( uint8_t* bytes ) const
   {
@@ -88,6 +94,12 @@ namespace simfloat {
   {
     Sqrt( *this, flags );
   }
+  SoftFloat::ComparisonResult
+  SoftFloat::compare( SoftFloat const& sfSource ) const
+  {
+    return inherited::compare( sfSource );
+  }
+  
 
   FloatingPointRegisterInterface::FloatingPointRegisterInterface(const char *_name, SoftDouble *_value)
     : name(_name)
@@ -119,8 +131,8 @@ namespace simfloat {
     return 8;
   }
 
-  FloatingPointRegisterView::FloatingPointRegisterView(const char *name, unisim::kernel::service::Object *owner, SoftDouble& _storage, const char *description)
-    : unisim::kernel::service::VariableBase(name, owner, unisim::kernel::service::VariableBase::VAR_REGISTER, description)
+  FloatingPointRegisterView::FloatingPointRegisterView(const char *name, unisim::kernel::Object *owner, SoftDouble& _storage, const char *description)
+    : unisim::kernel::VariableBase(name, owner, unisim::kernel::VariableBase::VAR_REGISTER, description)
     , storage(_storage)
   {
   }
@@ -164,7 +176,7 @@ namespace simfloat {
     return sstr.str();
   }
 
-  unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (bool value)
+  unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (bool value)
   {
     if(IsMutable())
       {
@@ -174,7 +186,7 @@ namespace simfloat {
     return *this;
   }
 
-  unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (long long value)
+  unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (long long value)
   {
     if(IsMutable())
       {
@@ -184,7 +196,7 @@ namespace simfloat {
     return *this;
   }
 
-  unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (unsigned long long value)
+  unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (unsigned long long value)
   {
     if(IsMutable())
       {
@@ -194,7 +206,7 @@ namespace simfloat {
     return *this;
   }
 
-  unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (double value)
+  unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (double value)
   {
     if(IsMutable())
       {
@@ -204,7 +216,7 @@ namespace simfloat {
     return *this;
   }
 
-  unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (const char * value)
+  unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (const char * value)
   {
     if(IsMutable())
       {

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,31 +32,30 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lfd(50[6]:fd[5]:ra[5]:sext<32>d[16])
+/* Load Floating-Point Double */
+op lfd(50[6]:fd[5]:ra[5]:sext d[16]);
+
 lfd.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 		return false;
 	}
-	// check if FPU is available
-	if(unlikely(!cpu->GetMSR_FP()))
+	if(unlikely(not cpu->GetMSR().Get<CPU::MSR::FP>()))
 	{
-		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		cpu->ThrowException<CPU::FloatingPointUnavailableInterrupt::FloatingPointUnavailable>();
 		return false;
 	}
 
 	// compute the effective address
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
+	UINT disp( d );
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + disp : disp);
 
 	// do the memory access
 	return cpu->Fp64Load(fd, ea);
-}
+};
+
 lfd.disasm = {
-	os << "lfd f" << (unsigned int) fd << ", " << d << "(r" << (unsigned int) ra << ")";
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+	os << "lfd " << FPRPrint(fd) << ", " << EAPrint(d,ra);
+};
+

@@ -45,9 +45,9 @@
 
 #include <unisim/util/endian/endian.hh>
 #include <iosfwd>
-#include <limits.h>
-#include <float.h>
-#include <math.h>
+#include <climits>
+#include <cfloat>
+#include <cmath>
 #include <cstdio>
 #include <cassert>
 #if defined(__GNUC__)
@@ -258,13 +258,11 @@ class Access : public Integer::Details::Access {
 
       bool isDivisionByZero() const { return fDivisionByZero; }
       void setDivisionByZero() { fDivisionByZero = true; }
-      bool hasFlowException() const { return feExcept != FENoException; }
       void clearFlowException() { feExcept = FENoException; }
       void setOverflow() { feExcept = FEOverflow; }
       void setUnderflow() { feExcept = FEUnderflow; }
       bool isOverflow() const { return feExcept == FEOverflow; }
       bool isUnderflow() const { return feExcept == FEUnderflow; }
-      void clearUnderflow() { feExcept = FENoException; }
    };
    class WriteParameters {
      private:
@@ -375,7 +373,7 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
    static const int UBitSizeExponent = BitSizeExponent;
    typedef unsigned char CharChunk[BitSizeMantissa+BitSizeExponent+1];
    void setChunkSize(int uChunkSize) const { assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8); }
-   void copyChunk(CharChunk& ccChunk, void* pChunk, int uChunkSize) const
+   void copyChunk(CharChunk& ccChunk, void const* pChunk, int uChunkSize) const
       {  assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8);
          memcpy((unsigned char*) ccChunk, pChunk, uChunkSize);
       }
@@ -397,7 +395,7 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
       Mantissa() {}
       Mantissa(const Mantissa& mSource) : inherited(mSource) {}
       Mantissa(const ExtendedMantissa& emSource)
-         {  for (register int uIndex = 0; uIndex < inherited::uCellSize; ++uIndex)
+         {  for (int uIndex = 0; uIndex < inherited::uCellSize; ++uIndex)
                inherited::array(uIndex) = emSource[uIndex];
          }
       void normalizeLastCell() { inherited::normalizeLastCell(); }
@@ -406,7 +404,7 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
       Mantissa& operator=(const Mantissa& mSource)
          {  return (Mantissa&) inherited::operator=(mSource); }
       Mantissa& operator=(const ExtendedMantissa& emSource)
-         {  for (register int uIndex = 0; uIndex <= inherited::lastCellIndex(); ++uIndex)
+         {  for (int uIndex = 0; uIndex <= inherited::lastCellIndex(); ++uIndex)
                inherited::array(uIndex) = emSource[uIndex];
             inherited::normalize();
             return *this;
@@ -463,7 +461,6 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
    static const Exponent& getOneExponent(const Exponent&) { return eOneExponent; }
    static const Exponent& getMinusOneExponent(const Exponent&) { return eMinusOneExponent; }
    static const Exponent& getInftyExponent(const Exponent&) { return eInftyExponent; }
-   static const Exponent& getMaxExponent(const Exponent&) { return eZeroExponent; }
 
    class ExtendedMantissa : public Integer::TBigInt<Integer::Details::TIntegerTraits<BitSizeMantissa+1> > {
      private:
@@ -472,7 +469,7 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
      public:
       ExtendedMantissa(const ExtendedMantissa& emSource) : inherited(emSource) {}
       ExtendedMantissa(const Mantissa& mSource)
-         {  register int uIndex = 0;
+         {  int uIndex = 0;
             for (; uIndex <= mSource.lastCellIndex(); ++uIndex)
                inherited::array(uIndex) = mSource[uIndex];
             inherited::bitArray(UBitSizeMantissa) = true;
@@ -627,7 +624,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
       bool isNegativeMult() const { return (oOperation & OMinusPlus); }
       bool hasSameSign(bool fNegative) const
          {  assert(pbdAdd);
-            register bool fResult = pbdAdd->fNegative == fNegative;
+            bool fResult = pbdAdd->fNegative == fNegative;
             return ((oOperation == OPlusPlus) || (oOperation == OMinusMinus)) ? fResult : !fResult;
          }
    };
@@ -685,9 +682,9 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
          return *this;
       }
 
-   void setChunk(void* pChunk) { setChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
+   void setChunk(void const* pChunk) { setChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
    void fillChunk(void* pChunk) const { fillChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
-   void setChunk(void* pChunk, bool fLittleEndian); // size(pChunk) = UByteSizeImplantation
+   void setChunk(void const* pChunk, bool fLittleEndian); // size(pChunk) = UByteSizeImplantation
    void fillChunk(void* pChunk, bool fLittleEndian) const;
 
    void setFloat(const FloatConversion& fcValue, StatusAndControlFlags& scfFlags);
@@ -703,7 +700,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
                   crResult = CREqual;
             }
             else {
-               register typename Exponent::ComparisonResult crExponentResult = biExponent.compare(bdSource.biExponent);
+               typename Exponent::ComparisonResult crExponentResult = biExponent.compare(bdSource.biExponent);
                crResult = (crExponentResult != Exponent::CREqual)
                   ? ((ComparisonResult) (1+crExponentResult))
                   : ((ComparisonResult) (1+biMantissa.compare(bdSource.biMantissa)));
@@ -714,7 +711,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
          return crResult;
       }
    ComparisonResult compareValue(const thisType& bdSource) const
-      {  register ComparisonResult crResult;
+      {  ComparisonResult crResult;
          if (fNegative != bdSource.fNegative) {
             if (!isZero() || !bdSource.isZero())
                crResult = fNegative ? CRLess : CRGreater;
@@ -722,7 +719,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
                crResult = CREqual;
          }
          else {
-            register typename Exponent::ComparisonResult crExponentResult = biExponent.compare(bdSource.biExponent);
+            typename Exponent::ComparisonResult crExponentResult = biExponent.compare(bdSource.biExponent);
             crResult = (crExponentResult != Exponent::CREqual)
                ? ((ComparisonResult) (1+crExponentResult))
                : ((ComparisonResult) (1+biMantissa.compare(bdSource.biMantissa)));
@@ -733,17 +730,17 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
       }
    bool operator==(const thisType& bdSource) const { return compare(bdSource) == CREqual; }
    bool operator!=(const thisType& bdSource) const
-      {  register ComparisonResult crResult = compare(bdSource);
+      {  ComparisonResult crResult = compare(bdSource);
          return (crResult == CRLess) || (crResult == CRGreater);
       }
    bool operator<(const thisType& bdSource) const { return compare(bdSource) == CRLess; }
    bool operator>(const thisType& bdSource) const { return compare(bdSource) == CRGreater; }
    bool operator<=(const thisType& bdSource) const
-      {  register ComparisonResult crResult = compare(bdSource);
+      {  ComparisonResult crResult = compare(bdSource);
          return (crResult == CRLess) || (crResult == CREqual);
       }
    bool operator>=(const thisType& bdSource) const
-      {  register ComparisonResult crResult = compare(bdSource);
+      {  ComparisonResult crResult = compare(bdSource);
          return (crResult == CRGreater) || (crResult == CREqual);
       }
 
@@ -914,7 +911,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
    void swap(thisType& bdSource)
       {  biMantissa.swap(bdSource.biMantissa);
          biExponent.swap(bdSource.biExponent);
-         register bool fTemp = fNegative;
+         bool fTemp = fNegative;
          fNegative = bdSource.fNegative;
          bdSource.fNegative = fTemp;
       }

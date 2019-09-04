@@ -55,7 +55,7 @@ class CPU
 public:
 	tlm::tlm_initiator_socket<> master_sock;
 
-	CPU(sc_core::sc_module_name name, unisim::kernel::service::Object *parent = 0);
+	CPU(sc_core::sc_module_name name, unisim::kernel::Object *parent = 0);
 	virtual ~CPU();
 
 	void Process();

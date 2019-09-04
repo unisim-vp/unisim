@@ -32,6 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/component/tlm2/com/serial_terminal/serial_terminal.hh>
 
 namespace unisim {
@@ -49,10 +50,10 @@ using unisim::kernel::logger::EndDebugError;
 
 using unisim::kernel::tlm2::TLM_INPUT_BITSTREAM_NEED_SYNC;
 
-SerialTerminal::SerialTerminal(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+SerialTerminal::SerialTerminal(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "Serial terminal")
 	, sc_core::sc_module(name)
-	, unisim::kernel::service::Client<unisim::service::interfaces::CharIO>(name, parent)
+	, unisim::kernel::Client<unisim::service::interfaces::CharIO>(name, parent)
 	, TX("TX")
 	, RX("RX")
 	, CLK("CLK")
@@ -95,8 +96,8 @@ SerialTerminal::SerialTerminal(const sc_core::sc_module_name& name, unisim::kern
 	param_num_stop_bits.SetMutable(false);
 	param_num_data_bits.SetMutable(false);
 	param_bit_order.SetMutable(false);
-	param_num_stop_bits.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_num_data_bits.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_num_stop_bits.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_num_data_bits.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
 	TX.register_nb_receive(this, &SerialTerminal::nb_receive, TX_IF);
 	RX.register_nb_receive(this, &SerialTerminal::nb_receive, RX_IF);
@@ -506,17 +507,17 @@ void SerialTerminal::PollingProcess()
 
 namespace unisim {
 namespace kernel {
-namespace service {
+namespace variable {
 
 using unisim::component::tlm2::com::serial_terminal::ParityType;
 using unisim::component::tlm2::com::serial_terminal::PARITY_TYPE_NONE;
 using unisim::component::tlm2::com::serial_terminal::PARITY_TYPE_EVEN;
 using unisim::component::tlm2::com::serial_terminal::PARITY_TYPE_ODD;
 
-template <> Variable<ParityType>::Variable(const char *_name, Object *_object, ParityType& _storage, Type type, const char *_description) :
+  template <> Variable<ParityType>::Variable(const char *_name, Object *_object, ParityType& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 	AddEnumeratedValue("none");
 	AddEnumeratedValue("even");
 	AddEnumeratedValue("odd");
@@ -526,6 +527,12 @@ template <>
 const char *Variable<ParityType>::GetDataTypeName() const
 {
 	return "parity-type";
+}
+
+template <>
+VariableBase::DataType Variable<ParityType>::GetDataType() const
+{
+	return DT_USER;
 }
 
 template <>
@@ -648,7 +655,7 @@ using unisim::component::tlm2::com::serial_terminal::MSB;
 template <> Variable<BitOrder>::Variable(const char *_name, Object *_object, BitOrder& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 	AddEnumeratedValue("lsb");
 	AddEnumeratedValue("msb");
 }
@@ -657,6 +664,12 @@ template <>
 const char *Variable<BitOrder>::GetDataTypeName() const
 {
 	return "bit-order";
+}
+
+template <>
+VariableBase::DataType Variable<BitOrder>::GetDataType() const
+{
+	return DT_USER;
 }
 
 template <>
@@ -766,6 +779,6 @@ template <> VariableBase& Variable<BitOrder>::operator = (const char *value)
 
 template class Variable<BitOrder>;
 
-} // end of service namespace
+} // end of variable namespace
 } // end of kernel namespace
 } // end of unisim namespace

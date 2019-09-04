@@ -50,50 +50,6 @@ namespace powerpc {
 template <unsigned int SIZE> const unsigned int TypeForBitSize<SIZE>::BYTE_SIZE;
 template <unsigned int SIZE> const typename TypeForBitSize<SIZE>::TYPE TypeForBitSize<SIZE>::MASK;
 
-////////////////////////////// PoolAllocator<> ////////////////////////////////
-
-template <typename OBJECT>
-PoolAllocator<OBJECT>::PoolAllocator()
-	: free_list()
-	, objects()
-{
-}
-
-template <typename OBJECT>
-PoolAllocator<OBJECT>::~PoolAllocator()
-{
-	typename std::vector<OBJECT *>::iterator it;
-	
-	for(it = objects.begin(); it != objects.end(); it++)
-	{
-		OBJECT *object = *it;
-		delete object;
-	}
-}
-
-template <typename OBJECT>
-OBJECT *PoolAllocator<OBJECT>::Allocate()
-{
-	OBJECT *object;
-
-	if(!free_list.empty())
-	{
-		object = free_list.top();
-		free_list.pop();
-		return object;
-	}
-
-	object = new OBJECT();
-	objects.push_back(object);
-	return object;
-}
-
-template <typename OBJECT>
-void PoolAllocator<OBJECT>::Free(OBJECT *object)
-{
-	free_list.push(object);
-}
-
 /////////////////////////////////// CPU<> /////////////////////////////////////
 
 #if 0
@@ -115,33 +71,58 @@ const typename CPU<TYPES, CONFIG>::SLR_Privilege_Type CPU<TYPES, CONFIG>::SLR<SL
 #endif
 
 template <typename TYPES, typename CONFIG>
-CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
-	, unisim::kernel::service::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::ADDRESS> >(name, parent)
-	, unisim::kernel::service::Client<typename unisim::service::interfaces::DebugYielding>(name, parent)
-	, unisim::kernel::service::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::ADDRESS> >(name, parent)
-	, unisim::kernel::service::Client<typename unisim::service::interfaces::TrapReporting>(name, parent)
-	, unisim::kernel::service::Service<typename unisim::service::interfaces::MemoryAccessReportingControl>(name, parent)
-	, unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>(name, parent)
-	, unisim::kernel::service::Service<typename unisim::service::interfaces::Synchronizable>(name, parent)
+CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
+	, SuperMSS()
+	, unisim::kernel::Client<unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> >(name, parent)
+	, unisim::kernel::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::EFFECTIVE_ADDRESS> >(name, parent)
+	, unisim::kernel::Client<typename unisim::service::interfaces::DebugYielding>(name, parent)
+	, unisim::kernel::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::EFFECTIVE_ADDRESS> >(name, parent)
+	, unisim::kernel::Client<typename unisim::service::interfaces::TrapReporting>(name, parent)
+	, unisim::kernel::Client<typename unisim::service::interfaces::LinuxOS>(name, parent)
+	, unisim::kernel::Service<unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS> >(name, parent)
+	, unisim::kernel::Service<typename unisim::service::interfaces::MemoryAccessReportingControl>(name, parent)
+	, unisim::kernel::Service<typename unisim::service::interfaces::Registers>(name, parent)
+	, unisim::kernel::Service<typename unisim::service::interfaces::Synchronizable>(name, parent)
+	, unisim::kernel::Service<typename unisim::service::interfaces::MemoryInjection<EFFECTIVE_ADDRESS> >(name, parent)
+	, memory_import("memory-import", this)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, debug_yielding_import("debug-yielding-import", this)
 	, memory_access_reporting_import("memory-access-reporting-import", this)
 	, trap_reporting_import("trap-reporting-import", this)
+	, linux_os_import("linux-os-import", this)
+	, memory_export("memory-export", this)
 	, memory_access_reporting_control_export("memory-access-reporting-control-export", this)
 	, registers_export("registers-export", this)
 	, synchronizable_export("synchronizable-export", this)
+	, memory_injection_export("memory-injection-export", this)
 	, logger(*this)
 	, requires_memory_access_reporting(false)
 	, requires_fetch_instruction_reporting(false)
 	, requires_commit_instruction_reporting(false)
 	, instruction_counter(0)
 	, stat_instruction_counter("instruction-counter", this, instruction_counter, "number of simulated instructions")
+	, stat_num_data_load_accesses("num-data-load-accesses", this, this->num_data_load_accesses, "Number of data load accesses (inside core)")
+	, stat_num_data_store_accesses("num-data-store-accesses", this, this->num_data_store_accesses, "Number of data store accesses (inside core)")
+	, stat_num_instruction_fetch_accesses("num-instruction-fetch-accesses", this, this->num_instruction_fetch_accesses, "Number of instruction fetch accesses (inside core)")
+	, stat_num_incoming_load_accesses("num-incoming-load-accesses", this, this->num_incoming_load_accesses, "Number of incoming load accesses (from other masters)")
+	, stat_num_incoming_store_accesses("num-incoming-store-accesses", this, this->num_incoming_store_accesses, "Number of incoming store accesses (from other masters)")
+	, stat_num_data_bus_read_accesses("num-data-bus-read-accesses", this, this->num_data_bus_read_accesses, "Number of data bus read accesses")
+	, stat_num_data_bus_write_accesses("num-data-bus-write-accesses", this, this->num_data_bus_write_accesses, "Number of data bus write accesses")
+	, stat_num_instruction_bus_read_accesses("num-instruction-bus-read-accesses", this, this->num_instruction_bus_read_accesses, "Number of instruction bus read accesses")
+	, stat_num_data_load_xfered_bytes("num-data-load-xfered-bytes", this, this->num_data_load_xfered_bytes, "Number of data load transfered bytes")
+	, stat_num_data_store_xfered_bytes("num-data-store-xfered-bytes", this, this->num_data_store_xfered_bytes, "Number of data store transfered bytes")
+	, stat_num_instruction_fetch_xfered_bytes("num-instruction-fetch-xfered-bytes", this, this->num_instruction_fetch_xfered_bytes, "Number of instruction fetch transfered bytes")
+	, stat_num_incoming_load_xfered_bytes("num-incoming-load-xfered-bytes", this, this->num_incoming_load_xfered_bytes, "Number of incoming load transfered bytes")
+	, stat_num_incoming_store_xfered_bytes("num-incoming-store-xfered-bytes", this, this->num_incoming_store_xfered_bytes, "Number of incoming store transfered bytes")
+	, stat_num_data_bus_read_xfered_bytes("num-data-bus-read-xfered-bytes", this, this->num_data_bus_read_xfered_bytes, "Number of data bus read transfered bytes")
+	, stat_num_data_bus_write_xfered_bytes("num-data-bus-write-xfered-bytes", this, this->num_data_bus_write_xfered_bytes, "Number of data bus write transfered bytes")
+	, stat_num_instruction_bus_read_xfered_bytes("num-instruction-bus-read-xfered-bytes", this, this->num_instruction_bus_read_xfered_bytes, "Number of instruction bus read transfered bytes")
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
 	, param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter, "number of simulated instruction before traping")
 	, max_inst(0xffffffffffffffffULL)
 	, param_max_inst("max-inst", this, max_inst, "maximum number of instructions to simulate")
-	, halt_on_addr(~typename TYPES::ADDRESS(0))
+	, halt_on_addr(~typename TYPES::EFFECTIVE_ADDRESS(0))
 	, halt_on()
 	, param_halt_on("halt-on", this, halt_on, "Symbol or address where to stop simulation")
 	, verbose_setup(false)
@@ -156,6 +137,18 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, param_verbose_move_from_slr("verbose-move-from-slr", this, verbose_move_from_slr, "enable/disable verbosity of move from system level registers (SPRs, and so on)")
 	, enable_insn_trace(false)
 	, param_enable_insn_trace("enable-insn-trace", this, enable_insn_trace, "enable/disable instruction trace")
+	, verbose_data_load(false)
+	, param_verbose_data_load("verbose-data-load", this, verbose_data_load, "enable/disable verbosity of data load")
+	, verbose_data_store(false)
+	, param_verbose_data_store("verbose-data-store", this, verbose_data_store, "enable/disable verbosity of data store")
+	, verbose_instruction_fetch(false)
+	, param_verbose_instruction_fetch("verbose-instruction-fetch", this, verbose_instruction_fetch, "enable/disable verbosity of instruction fetch")
+	, verbose_data_bus_read(false)
+	, param_verbose_data_bus_read("verbose-data-bus-read", this, verbose_data_bus_read, "enable/disable verbosity of data bus read")
+	, verbose_data_bus_write(false)
+	, param_verbose_data_bus_write("verbose-data-bus-write", this, verbose_data_bus_write, "enable/disable verbosity of data bus write")
+	, verbose_instruction_bus_read(false)
+	, param_verbose_instruction_bus_read("verbose-instruction-bus-read", this, verbose_instruction_bus_read, "enable/disable verbosity of instruction bus read")
 	, registers_registry()
 	, exception_dispatcher(static_cast<typename CONFIG::CPU *>(this))
 	, invalid_spr(static_cast<typename CONFIG::CPU *>(this))
@@ -173,10 +166,11 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, lr()
 	, ctr()
 	, cr()
+	, fpu(static_cast<typename CONFIG::CPU *>(this))
 {
-	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_trap_on_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_max_inst.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	unsigned int i;
 	
@@ -192,18 +186,12 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	AddRegisterInterface(cr.CreateRegisterInterface());
 
 	AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint32_t>("pc", &cia));
+	AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint32_t>("cia", &cia));
 }
 
 template <typename TYPES, typename CONFIG>
 CPU<TYPES, CONFIG>::~CPU()
 {
-	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		delete reg_iter->second;
-	}
-	
 }
 
 template <typename TYPES, typename CONFIG>
@@ -232,7 +220,7 @@ bool CPU<TYPES, CONFIG>::EndSetup()
 {
 	if(!halt_on.empty())
 	{
-		const unisim::util::debug::Symbol<typename TYPES::ADDRESS> *halt_on_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByName(halt_on.c_str(), unisim::util::debug::Symbol<typename TYPES::ADDRESS>::SYM_FUNC) : 0;
+		const unisim::util::debug::Symbol<typename TYPES::EFFECTIVE_ADDRESS> *halt_on_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByName(halt_on.c_str(), unisim::util::debug::Symbol<typename TYPES::EFFECTIVE_ADDRESS>::SYM_FUNC) : 0;
 		
 		if(halt_on_symbol)
 		{
@@ -256,7 +244,7 @@ bool CPU<TYPES, CONFIG>::EndSetup()
 			else
 			{
 				logger << DebugWarning << "Invalid address (" << halt_on << ") in Parameter " << param_halt_on.GetName() << EndDebugWarning;
-				halt_on_addr = (typename TYPES::ADDRESS) -1;
+				halt_on_addr = (typename TYPES::EFFECTIVE_ADDRESS) -1;
 			}
 		}
 	}
@@ -455,7 +443,7 @@ bool CPU<TYPES, CONFIG>::MoveToTMR(unsigned int n, uint32_t value)
 template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::AddRegisterInterface(unisim::service::interfaces::Register *reg_if)
 {
-	registers_registry[reg_if->GetName()] = reg_if;
+	registers_registry.AddRegisterInterface(reg_if);
 }
 
 /////////////////////////// ExceptionDispatcher<> /////////////////////////////
@@ -480,7 +468,7 @@ CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::~ExceptionDispatcher()
 
 template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
-void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::InstallInterrupt(unsigned int priority, InterruptBase *interrupt, bool *trap_control_flag)
+void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::InstallInterrupt(InterruptBase *interrupt, unsigned int priority, bool *trap_control_flag)
 {
 	assert(interrupts[priority] == 0);
 	interrupts[priority] = interrupt;
@@ -492,45 +480,78 @@ template <unsigned int NUM_EXCEPTIONS>
 template <typename EXCEPTION>
 typename EXCEPTION::INTERRUPT& CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::ThrowException()
 {
-	if(cpu->verbose_exception && !(exc_flags & EXCEPTION::template GetMask<TYPE>()))
+	if(cpu->verbose_exception && !(exc_flags & CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>()))
 	{
 		cpu->GetDebugInfoStream() << "Throwing " << EXCEPTION::GetName() << std::endl;
 	}
-	exc_flags = exc_flags | EXCEPTION::template GetMask<TYPE>();
-	return *static_cast<typename EXCEPTION::INTERRUPT *>(interrupts[EXCEPTION::PRIORITY]);
+	exc_flags = exc_flags | CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>();
+	return *static_cast<typename EXCEPTION::INTERRUPT *>(interrupts[CPU::template GetExceptionPriority<EXCEPTION>()]);
+}
+
+template <typename TYPES, typename CONFIG>
+template <unsigned int NUM_EXCEPTIONS>
+template <typename EXCEPTION> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::AckException()
+{
+	if(cpu->verbose_exception && (exc_flags & CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>()))
+	{
+		cpu->GetDebugInfoStream() << "Acknowledging " <<EXCEPTION::GetName() << std::endl;
+	}
+	exc_flags = exc_flags & ~CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>();
 }
 
 template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
 template <typename INTERRUPT> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::AckInterrupt()
 {
-	if(cpu->verbose_exception && (exc_flags & INTERRUPT::template GetMask<TYPE>()))
+	if(cpu->verbose_exception && (exc_flags & INTERRUPT::template GetMask<MASK_TYPE>()))
 	{
 		cpu->GetDebugInfoStream() << "Acknowledging " <<INTERRUPT::GetName() << std::endl;
 	}
-	exc_flags = exc_flags & ~INTERRUPT::template GetMask<TYPE>();
+	exc_flags = exc_flags & ~INTERRUPT::template GetMask<MASK_TYPE>();
+}
+
+template <typename TYPES, typename CONFIG>
+template <unsigned int NUM_EXCEPTIONS>
+template <typename EXCEPTION> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::EnableException()
+{
+	if(cpu->verbose_interrupt && ((exc_mask & CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>()) == 0))
+	{
+		cpu->GetDebugInfoStream() << "Enabling " << EXCEPTION::GetName() << std::endl;
+	}
+	exc_mask = exc_mask | CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>();
 }
 
 template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
 template <typename INTERRUPT> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::EnableInterrupt()
 {
-	if(cpu->verbose_interrupt && ((exc_mask & INTERRUPT::template GetMask<TYPE>()) == 0))
+	if(cpu->verbose_interrupt && ((exc_mask & INTERRUPT::template GetMask<MASK_TYPE>()) == 0))
 	{
 		cpu->GetDebugInfoStream() << "Enabling " << INTERRUPT::GetName() << std::endl;
 	}
-	exc_mask = exc_mask | INTERRUPT::template GetMask<TYPE>();
+	exc_mask = exc_mask | INTERRUPT::template GetMask<MASK_TYPE>();
+}
+
+template <typename TYPES, typename CONFIG>
+template <unsigned int NUM_EXCEPTIONS>
+template <typename EXCEPTION> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::DisableException()
+{
+	if(cpu->verbose_interrupt && ((exc_mask & CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>()) != 0))
+	{
+		cpu->GetDebugInfoStream() << "Disabling " << EXCEPTION::GetName() << std::endl;
+	}
+	exc_mask = exc_mask & ~CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>();
 }
 
 template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
 template <typename INTERRUPT> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::DisableInterrupt()
 {
-	if(cpu->verbose_interrupt && ((exc_mask & INTERRUPT::template GetMask<TYPE>()) != 0))
+	if(cpu->verbose_interrupt && ((exc_mask & INTERRUPT::template GetMask<MASK_TYPE>()) != 0))
 	{
 		cpu->GetDebugInfoStream() << "Disabling " << INTERRUPT::GetName() << std::endl;
 	}
-	exc_mask = exc_mask & ~INTERRUPT::template GetMask<TYPE>();
+	exc_mask = exc_mask & ~INTERRUPT::template GetMask<MASK_TYPE>();
 }
 
 template <typename TYPES, typename CONFIG>
@@ -587,11 +608,11 @@ template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
 template <typename EXCEPTION> bool CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::RecognizedException() const
 {
-	return (exc_flags & exc_mask) & EXCEPTION::template GetMask<TYPE>();
+	return (exc_flags & exc_mask) & CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>();
 }
 
 template <typename TYPES, typename CONFIG>
-inline bool CPU<TYPES, CONFIG>::MonitorLoad(typename TYPES::ADDRESS ea, unsigned int size)
+inline bool CPU<TYPES, CONFIG>::MonitorLoad(typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size)
 {
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
@@ -603,7 +624,7 @@ inline bool CPU<TYPES, CONFIG>::MonitorLoad(typename TYPES::ADDRESS ea, unsigned
 }
 
 template <typename TYPES, typename CONFIG>
-inline bool CPU<TYPES, CONFIG>::MonitorStore(typename TYPES::ADDRESS ea, unsigned int size)
+inline bool CPU<TYPES, CONFIG>::MonitorStore(typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size)
 {
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
@@ -615,73 +636,290 @@ inline bool CPU<TYPES, CONFIG>::MonitorStore(typename TYPES::ADDRESS ea, unsigne
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int8Load(unsigned int rd, typename TYPES::ADDRESS ea)
+template <bool DEBUG, bool EXEC, bool WRITE>
+inline bool CPU<TYPES, CONFIG>::Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRESS& size_to_protection_boundary, ADDRESS& virt_addr, PHYSICAL_ADDRESS& phys_addr, STORAGE_ATTR& storage_attr)
+{
+	if(unlikely(this->linux_os_import))
+	{
+		size_to_protection_boundary = 0;
+		virt_addr = ea;
+		phys_addr = ea;
+		storage_attr = TYPES::SA_DEFAULT;
+		return true;
+	}
+	
+	return static_cast<typename CONFIG::CPU *>(this)->template Translate<DEBUG, EXEC, WRITE>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DataBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm)
+{
+	return memory_import->ReadMemory(physical_addr, buffer, size);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DataBusWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
+{
+	return memory_import->WriteMemory(physical_addr, buffer, size);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::InstructionBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
+{
+	return memory_import->ReadMemory(physical_addr, buffer, size);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DebugDataBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
+{
+	return memory_import->ReadMemory(physical_addr, buffer, size);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DebugDataBusWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
+{
+	return memory_import->WriteMemory(physical_addr, buffer, size);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DebugInstructionBusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr)
+{
+	return memory_import->ReadMemory(physical_addr, buffer, size);
+}
+
+template <typename TYPES, typename CONFIG>
+template <typename T, bool REVERSE, unisim::util::endian::endian_type ENDIAN>
+void CPU<TYPES, CONFIG>::ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr)
+{
+#if BYTE_ORDER == LITTLE_ENDIAN
+	if(!REVERSE || (ENDIAN == unisim::util::endian::E_BIG_ENDIAN))
+#elif BYTE_ORDER == BIG_ENDIAN
+	if(!REVERSE || (ENDIAN == unisim::util::endian::E_LITTLE_ENDIAN))
+#else
+	if(REVERSE)
+#endif
+	{
+		unisim::util::endian::BSwap(value);
+	}
+}
+
+template <typename TYPES, typename CONFIG>
+template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN>
+inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, EFFECTIVE_ADDRESS ea)
+{
+	EFFECTIVE_ADDRESS size_to_protection_boundary;
+	ADDRESS virt_addr;
+	PHYSICAL_ADDRESS phys_addr;
+	STORAGE_ATTR storage_attr;
+	if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+	
+	uint32_t size_to_fsb_boundary = CONFIG::DATA_FSB_WIDTH - (ea % CONFIG::DATA_FSB_WIDTH);
+	
+	// Ensure that memory access does not cross a FSB boundary
+	if(likely(size_to_fsb_boundary >= sizeof(T)))
+	{
+		// Memory load does not cross a FSB boundary
+		if(unlikely(!this->SuperMSS::DataLoad(virt_addr, phys_addr, &value, sizeof(T), storage_attr))) return false;
+	}
+	else
+	{
+		// Memory load crosses a FSB boundary
+		if(unlikely(!this->SuperMSS::DataLoad(virt_addr, phys_addr, &value, size_to_fsb_boundary, storage_attr))) return false;
+		
+		// Ensure that memory access does not cross a protection boundary
+		if(unlikely(!size_to_protection_boundary) || likely(size_to_protection_boundary >= sizeof(T)))
+		{
+			// Memory load does not cross a protection boundary
+			virt_addr += size_to_fsb_boundary;
+			phys_addr += size_to_fsb_boundary;
+		}
+		else
+		{
+			// Memory load does cross a protection boundary
+			EFFECTIVE_ADDRESS ea2 = ea + size_to_fsb_boundary;
+			if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ false>(ea2, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+		}
+		
+		if(unlikely(!this->SuperMSS::DataLoad(virt_addr, phys_addr, (uint8_t *) &value + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary, storage_attr))) return false;
+	}
+
+	if(CONVERT_ENDIAN)
+	{
+		static_cast<typename CONFIG::CPU *>(this)->template ConvertDataLoadStoreEndian<T, REVERSE, ENDIAN>(value, storage_attr);
+	}
+	
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN>
+inline bool CPU<TYPES, CONFIG>::DataStore(T value, EFFECTIVE_ADDRESS ea)
+{
+	EFFECTIVE_ADDRESS size_to_protection_boundary;
+	ADDRESS virt_addr;
+	PHYSICAL_ADDRESS phys_addr;
+	STORAGE_ATTR storage_attr;
+	if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ true>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+
+	if(CONVERT_ENDIAN)
+	{
+		static_cast<typename CONFIG::CPU *>(this)->template ConvertDataLoadStoreEndian<T, REVERSE, ENDIAN>((T&) value, storage_attr);
+	}
+
+	uint32_t size_to_fsb_boundary = CONFIG::DATA_FSB_WIDTH - (ea % CONFIG::DATA_FSB_WIDTH);
+
+	// Ensure that memory access does not cross a FSB boundary
+	if(likely(size_to_fsb_boundary >= sizeof(T)))
+	{
+		// Memory store does not cross a FSB boundary
+		if(unlikely(!this->SuperMSS::DataStore(virt_addr, phys_addr, &value, sizeof(T), storage_attr))) return false;
+	}
+	else
+	{
+		// Memory store crosses a FSB boundary
+		if(unlikely(!this->SuperMSS::DataStore(virt_addr, phys_addr, &value, size_to_fsb_boundary, storage_attr))) return false;
+		
+		// Ensure that memory access does not cross a protection boundary
+		if(unlikely(!size_to_protection_boundary) || likely(size_to_protection_boundary >= sizeof(T)))
+		{
+			// Memory store does not cross a protection boundary
+			virt_addr += size_to_fsb_boundary;
+			phys_addr += size_to_fsb_boundary;
+		}
+		else
+		{
+			// Memory store does cross a protection boundary
+			EFFECTIVE_ADDRESS ea2 = ea + size_to_fsb_boundary;
+			if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ true>(ea2, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+		}
+
+		if(unlikely(!this->SuperMSS::DataStore(virt_addr, phys_addr, (uint8_t *) &value + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary, storage_attr))) return false;
+	}
+	
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DebugDataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size)
+{
+	do
+	{
+		EFFECTIVE_ADDRESS size_to_protection_boundary;
+		ADDRESS virt_addr;
+		PHYSICAL_ADDRESS phys_addr;
+		STORAGE_ATTR storage_attr;
+		if(unlikely((!this->template Translate</* debug */ true, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+		
+		unsigned int sz = size_to_protection_boundary ? std::min(size, size_to_protection_boundary) : size;
+
+		if(unlikely(!this->SuperMSS::DebugDataLoad(virt_addr, phys_addr, buffer, sz, storage_attr))) return false;
+	
+		ea += sz;
+		size -= sz;
+		buffer = (uint8_t *) buffer + sz;
+	}
+	while(unlikely(size));
+	
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::DebugDataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size)
+{
+	do
+	{
+		EFFECTIVE_ADDRESS size_to_protection_boundary;
+		ADDRESS virt_addr;
+		PHYSICAL_ADDRESS phys_addr;
+		STORAGE_ATTR storage_attr;
+		if(unlikely((!this->template Translate</* debug */ true, /* exec */ false, /* write */ true>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+		
+		unsigned int sz = size_to_protection_boundary ? std::min(size, size_to_protection_boundary) : size;
+
+		if(unlikely(!this->SuperMSS::DebugDataStore(virt_addr, phys_addr, buffer, sz, storage_attr))) return false;
+	
+		ea += sz;
+		size -= sz;
+		buffer = (const uint8_t *) buffer + sz;
+	}
+	while(unlikely(size));
+	
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::Int8Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
 	uint8_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint8_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint8_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) value; // 8-bit to 32-bit zero extension
 	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int16Load(unsigned int rd, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadAlignment(ea))) return false;
 	uint16_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) value; // 16-bit to 32-bit zero extension
 	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::SInt16Load(unsigned int rd, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::SInt16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckSInt16LoadAlignment(ea))) return false;
 	uint16_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) (int16_t) value; // 16-bit to 32-bit sign extension
 	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int32Load(unsigned int rd, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int32Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckInt32LoadAlignment(ea))) return false;
 	uint32_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	gpr[rd] = value;
 	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int16LoadByteReverse(unsigned int rd, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int16LoadByteReverse(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadByteReverseAlignment(ea))) return false;
 	uint16_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, true, false>(value, ea); // reversed
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, true, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea); // reversed
 	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) value; // 16-bit to 32-bit zero extension
 	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int32LoadByteReverse(unsigned int rd, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int32LoadByteReverse(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckInt32LoadByteReverseAlignment(ea))) return false;
 	uint32_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, true, false>(value, ea); // reversed
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, true, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea); // reversed
 	if(unlikely(!status)) return false;
 	gpr[rd] = value;
 	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::ADDRESS ea, uint32_t size)
+bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea, uint32_t size)
 {
 	if(unlikely(!MonitorLoad(ea, size))) return false;
 
@@ -690,7 +928,7 @@ bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::ADDRES
 		case 1:
 		{
 			uint8_t value;
-			bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint8_t, false, true>(value, ea);
+			bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint8_t, false, true, unisim::util::endian::E_BIG_ENDIAN>(value, ea);
 			if(unlikely(!status)) return false;
 			gpr[rd] = (uint32_t) value << 24;
 			break;
@@ -699,7 +937,7 @@ bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::ADDRES
 		case 2:
 		{
 			uint16_t value;
-			bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, true>(value, ea);
+			bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, true, unisim::util::endian::E_BIG_ENDIAN>(value, ea);
 			if(unlikely(!status)) return false;
 			gpr[rd] = (uint32_t) unisim::util::endian::BigEndian2Host(value) << 16;
 			break;
@@ -709,7 +947,7 @@ bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::ADDRES
 		{
 			typedef uint8_t array_uint8_3_t[3];
 			uint8_t buffer[3];
-			bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<array_uint8_3_t, false, true>(buffer, ea);
+			bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<array_uint8_3_t, false, true, unisim::util::endian::E_BIG_ENDIAN>(buffer, ea);
 			if(unlikely(!status)) return false;
 			uint32_t value = ((uint32_t) buffer[0] << 24) | ((uint32_t) buffer[1] << 16) | ((uint32_t) buffer[2] << 8);
 			gpr[rd] = value;
@@ -719,7 +957,7 @@ bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::ADDRES
 		case 4:
 		{
 			uint32_t value;
-			bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, true>(value, ea);
+			bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, true, unisim::util::endian::E_BIG_ENDIAN>(value, ea);
 			if(unlikely(!status)) return false;
 			gpr[rd] = unisim::util::endian::BigEndian2Host(value);
 			break;
@@ -733,68 +971,73 @@ bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::ADDRES
 
 template <typename TYPES, typename CONFIG>
 template <typename REGISTER>
-bool CPU<TYPES, CONFIG>::SpecialLoad(REGISTER& reg, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::SpecialLoad(REGISTER& reg, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely((!static_cast<typename CONFIG::CPU *>(this)->template CheckSpecialLoadAlignment<REGISTER>(ea)))) return false;
 	uint32_t value;
 	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	reg = value;
 	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int8Store(unsigned int rs, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int8Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
 	uint8_t value = gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint8_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint8_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int16Store(unsigned int rs, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int16Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckInt16StoreAlignment(ea))) return false;
 	uint16_t value = (uint16_t) gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int32Store(unsigned int rs, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int32Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckInt32StoreAlignment(ea))) return false;
 	uint32_t value = gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
 	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int16StoreByteReverse(unsigned int rs, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int16StoreByteReverse(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckInt16StoreByteReverseAlignment(ea))) return false;
 	uint16_t value = (uint16_t) gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, true, false>(value, ea); // reversed
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, true, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea); // reversed
 	if(unlikely(!status)) return false;
 	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Int32StoreByteReverse(unsigned int rs, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::Int32StoreByteReverse(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely(!static_cast<typename CONFIG::CPU *>(this)->CheckInt32StoreByteReverseAlignment(ea))) return false;
 	uint32_t value = gpr[rs];
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, true, false>(value, ea); // reversed
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, true, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea); // reversed
 	if(unlikely(!status)) return false;
 	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::ADDRESS ea, uint32_t size)
+bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea, uint32_t size)
 {
 	if(unlikely(!MonitorStore(ea, size))) return false;
 	
@@ -803,7 +1046,7 @@ bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::ADDRE
 		case 1:
 			{
 				uint8_t value = gpr[rs] >> 24;
-				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint8_t, false, true>(value, ea);
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint8_t, false, true, unisim::util::endian::E_BIG_ENDIAN>(value, ea);
 				if(unlikely(!status)) return false;
 				break;
 			}
@@ -811,7 +1054,7 @@ bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::ADDRE
 		case 2:
 			{
 				uint16_t value = unisim::util::endian::Host2BigEndian((uint16_t)(gpr[rs] >> 16));
-				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, false, true>(value, ea);
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, false, true, unisim::util::endian::E_BIG_ENDIAN>(value, ea);
 				if(unlikely(!status)) return false;
 				break;
 			}
@@ -820,11 +1063,11 @@ bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::ADDRE
 			{
 				typedef uint8_t array_uint8_3_t[3];
 				uint32_t value = gpr[rs];
-				uint8_t buffer[3];
+				array_uint8_3_t buffer;
 				buffer[0] = value >> 24;
 				buffer[1] = value >> 16;
 				buffer[2] = value >> 8;
-				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<array_uint8_3_t, false, true>(buffer, ea);
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<array_uint8_3_t, false, true, unisim::util::endian::E_BIG_ENDIAN>(buffer, ea);
 				if(unlikely(!status)) return false;
 				break;
 			}
@@ -832,7 +1075,7 @@ bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::ADDRE
 		case 4:
 			{
 				uint32_t value = unisim::util::endian::Host2BigEndian(gpr[rs]);
-				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, true>(value, ea);
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, true, unisim::util::endian::E_BIG_ENDIAN>(value, ea);
 				if(unlikely(!status)) return false;
 				break;
 			}
@@ -846,37 +1089,216 @@ bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::ADDRE
 
 template <typename TYPES, typename CONFIG>
 template <typename REGISTER>
-bool CPU<TYPES, CONFIG>::SpecialStore(const REGISTER& reg, typename TYPES::ADDRESS ea)
+bool CPU<TYPES, CONFIG>::SpecialStore(const REGISTER& reg, typename TYPES::EFFECTIVE_ADDRESS ea)
 {
+	if(unlikely((!static_cast<typename CONFIG::CPU *>(this)->template CheckSpecialStoreAlignment<REGISTER>(ea)))) return false;
 	uint32_t value = reg;
 	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
-	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, false>(value, ea);
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
 	if(unlikely(!status)) return false;
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+CPU<TYPES, CONFIG>::LegacyFPU::LegacyFPU(typename CONFIG::CPU *cpu)
+	: fpr()
+	, fpscr()
+{
+	unsigned int i;
+	
+	for(i = 0; i < 32; i++)
+	{
+		FPR& ith_fpr = fpr[i];
+		ith_fpr.Init(i);
+		cpu->AddRegisterInterface(ith_fpr.CreateRegisterInterface());
+	}
+	
+	cpu->AddRegisterInterface(fpscr.CreateRegisterInterface());
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::LegacyFPU::Fp32Load(typename CONFIG::CPU *cpu, unsigned int fd, EFFECTIVE_ADDRESS ea)
+{
+	// check alignment
+	if(unlikely(!cpu->CheckFp32LoadAlignment(ea))) return false;
+	uint32_t value;
+	if(unlikely(!cpu->MonitorLoad(ea, sizeof(value)))) return false;
+	bool status = cpu->template DataLoad<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+	if(unlikely(!status)) return false;
+	Flags flags( Flags::RoundingMode(fpscr.Get<FPSCR::RN>()) );
+	fpr[fd].convertAssign(SoftFloat(SoftFloat::FromRawBits, value), flags);
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::LegacyFPU::Fp64Load(typename CONFIG::CPU *cpu, unsigned int fd, EFFECTIVE_ADDRESS ea)
+{
+	// check alignment
+	if(unlikely(!cpu->CheckFp64LoadAlignment(ea))) return false;
+	uint64_t value;
+	if(unlikely(!cpu->MonitorLoad(ea, sizeof(value)))) return false;
+	bool status = cpu->template DataLoad<uint64_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+	if(unlikely(!status)) return false;
+	fpr[fd].fromRawBitsAssign(value);
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::LegacyFPU::Fp32Store(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea)
+{
+	// check alignment
+	if(unlikely(!cpu->CheckFp32StoreAlignment(ea))) return false;
+	Flags flags(Flags::RoundingMode(1)); // Zero Rounding
+	uint32_t value = SoftFloat(fpr[fs], flags).queryRawBits();
+	if(unlikely(!cpu->MonitorStore(ea, sizeof(value)))) return false;
+	return cpu->template DataStore<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::LegacyFPU::Fp64Store(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea)
+{
+	// check alignment
+	if(unlikely(!cpu->CheckFp64StoreAlignment(ea))) return false;
+	uint64_t value = fpr[fs].queryRawBits();
+	if(unlikely(!cpu->MonitorStore(ea, sizeof(value)))) return false;
+	return cpu->template DataStore<uint64_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::LegacyFPU::FpStoreLSW(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea)
+{
+	// check alignment
+	if(unlikely(!cpu->CheckFpStoreLSWAlignment(ea))) return false;
+	uint32_t value = uint32_t(fpr[fs].queryRawBits());
+	if(unlikely(!cpu->MonitorStore(ea, sizeof(value)))) return false;
+	return cpu->template DataStore<uint32_t, false, true, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::LegacyFPU::CheckFloatingPointException(typename CONFIG::CPU *cpu)
+{
+	// Check for floating point exception condition: FPSCR[FEX] and (MSR[FE0] or MSR[FE1])
+	if((fpscr.template Get<typename FPSCR::FEX>()) and (cpu->GetMSR().template Get<typename MSR::FE0>() or cpu->GetMSR().template Get<typename MSR::FE1>()))
+	{
+		// Raise a floating point exception if FPSCR[FEX] is set
+		cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::FloatingPoint>();
+		return false;
+	}
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+void CPU<TYPES, CONFIG>::ResetMemory()
+{
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::ReadMemory(EFFECTIVE_ADDRESS addr, void *buffer, uint32_t size)
+{
+	return this->DebugDataLoad(addr, buffer, size);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::WriteMemory(EFFECTIVE_ADDRESS addr, const void *buffer, uint32_t size)
+{
+	return this->DebugDataStore(addr, buffer, size);
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::InjectReadMemory(EFFECTIVE_ADDRESS ea, void *buffer, uint32_t size)
+{
+	if(likely(size))
+	{
+		do
+		{
+			if(likely(!(ea & 3) && (size >= 4)))
+			{
+				uint32_t value;
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, false, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+				if(unlikely(!status)) return false;
+				*(uint32_t *) buffer = value;
+				size -= 4;
+				ea += 4;
+				buffer = (uint32_t *) buffer + 1;
+			}
+			else if(!(ea & 1) && (size >= 2))
+			{
+				uint16_t value;
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, false, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+				if(unlikely(!status)) return false;
+				*(uint16_t *) buffer = value;
+				size -= 2;
+				ea += 2;
+				buffer = (uint16_t *) buffer + 1;
+			}
+			else
+			{
+				uint8_t value;
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint8_t, false, false, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+				if(unlikely(!status)) return false;
+				*(uint8_t *) buffer = value;
+				--size;
+				++ea;
+				buffer = (uint8_t *) buffer + 1;
+			}
+		}
+		while(likely(size));
+	}
+	
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+bool CPU<TYPES, CONFIG>::InjectWriteMemory(EFFECTIVE_ADDRESS ea, const void *buffer, uint32_t size)
+{
+	if(likely(size))
+	{
+		do
+		{
+			if(likely(!(ea & 3) && (size >= 4)))
+			{
+				uint32_t value = *(uint32_t *) buffer;
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, false, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+				if(unlikely(!status)) return false;
+				size -= 4;
+				ea += 4;
+				buffer = (uint32_t *) buffer + 1;
+			}
+			else if(!(ea & 1) && (size >= 2))
+			{
+				uint16_t value = *(uint16_t *) buffer;
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, false, false, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+				if(unlikely(!status)) return false;
+				size -= 2;
+				ea += 2;
+				buffer = (uint16_t *) buffer + 1;
+			}
+			else
+			{
+				uint8_t value = *(uint8_t *) buffer;
+				bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint8_t, false, false, unisim::util::endian::E_UNKNOWN_ENDIAN>(value, ea);
+				if(unlikely(!status)) return false;
+				--size;
+				++ea;
+				buffer = (uint8_t *) buffer + 1;
+			}
+		}
+		while(likely(size));
+	}
+	
 	return true;
 }
 
 template <typename TYPES, typename CONFIG>
 unisim::service::interfaces::Register *CPU<TYPES, CONFIG>::GetRegister(const char *name)
 {
-	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter = registers_registry.find(name);
-	if(reg_iter != registers_registry.end())
-	{
-		return (*reg_iter).second;
-	}
-
-	return 0;
+	return registers_registry.GetRegister(name);
 }
 
 template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
 {
-	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter;
-	
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		unisim::service::interfaces::Register *reg_if = (*reg_iter).second;
-		scanner.Append(reg_if);
-	}
+	registers_registry.ScanRegisters(scanner);
 }
 
 template <typename TYPES, typename CONFIG>
@@ -902,11 +1324,11 @@ void CPU<TYPES, CONFIG>::RequiresMemoryAccessReporting(unisim::service::interfac
 }
 
 template <typename TYPES, typename CONFIG>
-std::string CPU<TYPES, CONFIG>::GetObjectFriendlyName(typename TYPES::ADDRESS addr)
+std::string CPU<TYPES, CONFIG>::GetObjectFriendlyName(typename TYPES::EFFECTIVE_ADDRESS addr)
 {
 	std::stringstream sstr;
 	
-	const unisim::util::debug::Symbol<typename TYPES::ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr, unisim::util::debug::Symbol<typename TYPES::ADDRESS>::SYM_OBJECT) : 0;
+	const unisim::util::debug::Symbol<typename TYPES::EFFECTIVE_ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr, unisim::util::debug::Symbol<typename TYPES::EFFECTIVE_ADDRESS>::SYM_OBJECT) : 0;
 	if(symbol)
 		sstr << symbol->GetFriendlyName(addr);
 	else

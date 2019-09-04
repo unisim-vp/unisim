@@ -61,7 +61,7 @@
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/multi_passthrough_initiator_socket.h"
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
 
 #include <unisim/kernel/logger/logger.hh>
@@ -91,15 +91,15 @@ using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::VariableBase;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::CallBackObject;
+using unisim::kernel::VariableBase;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
@@ -117,7 +117,7 @@ using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
@@ -171,6 +171,8 @@ public:
 	S12IIC(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12IIC();
 
+	virtual void Reset();
+
 	void ComputeInternalTime();
 
     //================================================================
@@ -191,13 +193,13 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
 
 
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
@@ -244,7 +246,7 @@ private:
 	// Registers map
 	map<string, Register *> registers_registry;
 
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
 	// =============================================
 	// =            Registers                      =

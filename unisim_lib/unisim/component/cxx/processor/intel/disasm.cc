@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2015,
+ *  Copyright (c) 2007-2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -50,24 +50,51 @@ namespace intel {
   }
   
   void DisasmBadReg::operator() ( std::ostream& sink ) const { sink << "(bad)"; }
-  
-  // void
-  // DisasmR::operator() ( std::ostream& sink ) const
-  // {
-  //   if      (osz == 8)  sink << DisasmRb( reg );
-  //   else if (osz == 16) sink << DisasmRw( reg );
-  //   else if (osz == 32) sink << DisasmRd( reg );
-  //   else throw 0;
-  // }
-  
-  void DisasmRb::operator()  ( std::ostream& sink ) const { sink << (&"%al\0%cl\0%dl\0%bl\0%ah\0%ch\0%dh\0%bh"[(reg % 8)*4]); }
-  void DisasmRw::operator()  ( std::ostream& sink ) const { sink << (&"%ax\0%cx\0%dx\0%bx\0%sp\0%bp\0%si\0%di"[(reg % 8)*4]); }
-  void DisasmRd::operator()  ( std::ostream& sink ) const { sink << (&"%eax\0%ecx\0%edx\0%ebx\0%esp\0%ebp\0%esi\0%edi"[(reg % 8)*5]); }
-  void DisasmRq::operator()  ( std::ostream& sink ) const { sink << "%mm" << reg; }
-  void DisasmRdq::operator() ( std::ostream& sink ) const { sink << "%xmm" << reg; }
 
-  void DisasmCd::operator()  ( std::ostream& sink ) const { sink << "%cr" << reg; }
-  void DisasmDd::operator()  ( std::ostream& sink ) const { sink << "%db" << reg; }
+  void __DisasmG( GObLH const&, std::ostream& sink, unsigned reg )
+  {
+    sink << (&"%al\0%cl\0%dl\0%bl\0%ah\0%ch\0%dh\0%bh"[(reg % 8)*4]);
+  }
+
+  void __DisasmG( GOb const&, std::ostream& sink, unsigned reg )
+  {
+    if (reg >= 8)
+      { sink << "%r" << std::dec << reg << 'b'; return; }
+    
+    static char const* regname[] = { "%al", "%cl", "%dl", "%bl", "%spl", "%bpl", "%sil", "%dil" };
+    sink << regname[reg];
+  }
+
+  void __DisasmG( GOw const&, std::ostream& sink, unsigned reg )
+  {
+    if (reg >= 8)
+      sink << "%r" << std::dec << reg << 'w';
+    else
+      sink << (&"%ax\0%cx\0%dx\0%bx\0%sp\0%bp\0%si\0%di"[reg*4]);
+  }
+  void __DisasmG( GOd const&, std::ostream& sink, unsigned reg )
+  {
+    if (reg >= 8)
+      sink << "%r" << std::dec << reg << 'd';
+    else
+      sink << (&"%eax\0%ecx\0%edx\0%ebx\0%esp\0%ebp\0%esi\0%edi"[reg*5]);
+  }
+  void __DisasmG( GOq const&, std::ostream& sink, unsigned reg )
+  {
+    if (reg >= 8)
+      sink << "%r" << std::dec << reg;
+    else
+      sink << (&"%rax\0%rcx\0%rdx\0%rbx\0%rsp\0%rbp\0%rsi\0%rdi"[reg*5]);
+  }
+  
+  void __DisasmV( SSE const&, std::ostream& sink, unsigned reg ) { sink << "%xmm" << std::dec << reg; }
+  void __DisasmV( XMM const&, std::ostream& sink, unsigned reg ) { sink << "%xmm" << std::dec << reg; }
+  void __DisasmV( YMM const&, std::ostream& sink, unsigned reg ) { sink << "%ymm" << std::dec << reg; }
+    
+  void DisasmPq::operator()  ( std::ostream& sink ) const { sink << "%mm" << std::dec << reg; }
+  
+  void DisasmCd::operator()  ( std::ostream& sink ) const { sink << "%cr" << std::dec << reg; }
+  void DisasmDd::operator()  ( std::ostream& sink ) const { sink << "%db" << std::dec << reg; }
   
   void
   DisasmS::operator () ( std::ostream& sink ) const

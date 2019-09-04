@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_DATA_OBJECT_LOOKUP_HH__
 #define __UNISIM_SERVICE_INTERFACES_DATA_OBJECT_LOOKUP_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 #include <unisim/util/debug/data_object.hh>
 #include <set>
 #include <string>
@@ -45,7 +45,7 @@ namespace service {
 namespace interfaces {
 
 template <class ADDRESS>
-class DataObjectLookup : public unisim::kernel::service::ServiceInterface
+class DataObjectLookup : public ServiceInterface
 {
 public:
 	typedef enum

@@ -1,0 +1,3 @@
+unisim/component/cxx/processor/powerpc/mpc7447a/config.hh
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh
+unisim/component/cxx/processor/powerpc/mpc7447a/exception.hh

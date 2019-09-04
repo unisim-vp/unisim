@@ -36,15 +36,17 @@
 #ifndef __UNISIM_SERVICE_OS_LINUX_OS_LINUX_HH__
 #define __UNISIM_SERVICE_OS_LINUX_OS_LINUX_HH__
 
-#include "unisim/kernel/service/service.hh"
-#include "unisim/kernel/logger/logger.hh"
-#include "unisim/service/interfaces/linux_os.hh"
-#include "unisim/service/interfaces/loader.hh"
-#include "unisim/service/interfaces/memory.hh"
-#include "unisim/service/interfaces/memory_injection.hh"
-#include "unisim/service/interfaces/registers.hh"
-#include "unisim/service/interfaces/blob.hh"
-#include "unisim/util/os/linux_os/linux.hh"
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/kernel/variable/endian/endian.hh>
+#include <unisim/kernel/variable/variable.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/service/interfaces/linux_os.hh>
+#include <unisim/service/interfaces/loader.hh>
+#include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/memory_injection.hh>
+#include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/blob.hh>
+#include <unisim/util/os/linux_os/linux.hh>
 
 namespace unisim {
 namespace service {
@@ -53,11 +55,11 @@ namespace linux_os {
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 class Linux
-  : public unisim::kernel::service::Service< unisim::service::interfaces::LinuxOS >
-  , public unisim::kernel::service::Service< unisim::service::interfaces::Blob<ADDRESS_TYPE> >
-  , public unisim::kernel::service::Client<  unisim::service::interfaces::Memory<ADDRESS_TYPE> >
-  , public unisim::kernel::service::Client<  unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> >
-  , public unisim::kernel::service::Client<  unisim::service::interfaces::Registers>
+  : public unisim::kernel::Service< unisim::service::interfaces::LinuxOS >
+  , public unisim::kernel::Service< unisim::service::interfaces::Blob<ADDRESS_TYPE> >
+  , public unisim::kernel::Client<  unisim::service::interfaces::Memory<ADDRESS_TYPE> >
+  , public unisim::kernel::Client<  unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> >
+  , public unisim::kernel::Client<  unisim::service::interfaces::Registers>
 {
  public:
   
@@ -65,28 +67,28 @@ class Linux
   typedef typename LinuxImpl::TargetSystem TargetSystem;
   
   /* Exported services */
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::LinuxOS>
+  unisim::kernel::ServiceExport<unisim::service::interfaces::LinuxOS>
       linux_os_export_;
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Blob<ADDRESS_TYPE> >
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Blob<ADDRESS_TYPE> >
       blob_export_;
 
   /* Imported services */
-  unisim::kernel::service::ServiceImport<
+  unisim::kernel::ServiceImport<
       unisim::service::interfaces::Memory<ADDRESS_TYPE> > memory_import_;
-  unisim::kernel::service::ServiceImport<
+  unisim::kernel::ServiceImport<
       unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> >
       memory_injection_import_;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers>
+  unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>
       registers_import_;
 
   /* Constructor/Destructor */
-  Linux(const char *name, unisim::kernel::service::Object *parent = 0);
+  Linux(const char *name, unisim::kernel::Object *parent = 0);
   virtual ~Linux();
 
   /* Service methods */
   virtual void OnDisconnect();
   virtual bool BeginSetup();
-  virtual bool Setup(unisim::kernel::service::ServiceExportBase *srv_export);
+  virtual bool Setup(unisim::kernel::ServiceExportBase *srv_export);
   virtual bool EndSetup();
 
   /* Service interface methods */
@@ -101,61 +103,61 @@ protected:
   /* the logger and its verbose option */
   unisim::kernel::logger::Logger logger_;
   bool verbose_;
-  unisim::kernel::service::Parameter<bool> param_verbose_;
+  unisim::kernel::variable::Parameter<bool> param_verbose_;
   
   /* DWARF options */
   bool parse_dwarf_;
   bool debug_dwarf_;
   std::string dwarf_to_html_output_directory_;
   std::string dwarf_to_xml_output_filename_;
-  unisim::kernel::service::Parameter<bool> param_parse_dwarf_;
-  unisim::kernel::service::Parameter<bool> param_debug_dwarf_;
-  unisim::kernel::service::Parameter<std::string> param_dwarf_to_html_output_directory_;
-  unisim::kernel::service::Parameter<std::string> param_dwarf_to_xml_output_filename_;
+  unisim::kernel::variable::Parameter<bool> param_parse_dwarf_;
+  unisim::kernel::variable::Parameter<bool> param_debug_dwarf_;
+  unisim::kernel::variable::Parameter<std::string> param_dwarf_to_html_output_directory_;
+  unisim::kernel::variable::Parameter<std::string> param_dwarf_to_xml_output_filename_;
   
   /* stdin/stdout/stderr pipes */
   std::string stdin_pipe_filename;
   std::string stdout_pipe_filename;
   std::string stderr_pipe_filename;
-  unisim::kernel::service::Parameter<std::string> param_stdin_pipe_filename;
-  unisim::kernel::service::Parameter<std::string> param_stdout_pipe_filename;
-  unisim::kernel::service::Parameter<std::string> param_stderr_pipe_filename;
+  unisim::kernel::variable::Parameter<std::string> param_stdin_pipe_filename;
+  unisim::kernel::variable::Parameter<std::string> param_stdout_pipe_filename;
+  unisim::kernel::variable::Parameter<std::string> param_stderr_pipe_filename;
   
   /* the linux library */
   LinuxImpl* linuxlib_;
 
   unisim::util::endian::endian_type endianness_;
-  unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endianness_;
+  unisim::kernel::variable::Parameter<unisim::util::endian::endian_type> param_endianness_;
   ADDRESS_TYPE memory_page_size_;
-  unisim::kernel::service::Parameter<ADDRESS_TYPE> param_memory_page_size_;
+  unisim::kernel::variable::Parameter<ADDRESS_TYPE> param_memory_page_size_;
   ADDRESS_TYPE stack_base_;
-  unisim::kernel::service::Parameter<ADDRESS_TYPE> param_stack_base_;
+  unisim::kernel::variable::Parameter<ADDRESS_TYPE> param_stack_base_;
   std::string binary_;
-  unisim::kernel::service::Parameter<std::string> param_binary_;
+  unisim::kernel::variable::Parameter<std::string> param_binary_;
   unsigned int argc_;
-  unisim::kernel::service::Parameter<unsigned int> param_argc_;
-  std::vector<std::string *> argv_;
-  std::vector<unisim::kernel::service::Parameter<std::string> *> param_argv_;
+  unisim::kernel::variable::Parameter<unsigned int> param_argc_;
+  // std::vector<std::string *> argv_;
+  // std::vector<unisim::kernel::variable::Parameter<std::string> *> param_argv_;
   bool apply_host_environment_;
-  unisim::kernel::service::Parameter<bool> param_apply_host_environment_;
+  unisim::kernel::variable::Parameter<bool> param_apply_host_environment_;
   unsigned int envc_;
-  unisim::kernel::service::Parameter<unsigned int> param_envc_;
-  std::vector<std::string *> envp_;
-  std::vector<unisim::kernel::service::Parameter<std::string> *> param_envp_;
+  unisim::kernel::variable::Parameter<unsigned int> param_envc_;
+  // std::vector<std::string *> envp_;
+  // std::vector<unisim::kernel::variable::Parameter<std::string> *> param_envp_;
   std::string utsname_sysname_;
-  unisim::kernel::service::Parameter<std::string> param_utsname_sysname_;
+  unisim::kernel::variable::Parameter<std::string> param_utsname_sysname_;
   std::string utsname_nodename_;
-  unisim::kernel::service::Parameter<std::string> param_utsname_nodename_;
+  unisim::kernel::variable::Parameter<std::string> param_utsname_nodename_;
   std::string utsname_release_;
-  unisim::kernel::service::Parameter<std::string> param_utsname_release_;
+  unisim::kernel::variable::Parameter<std::string> param_utsname_release_;
   std::string utsname_version_;
-  unisim::kernel::service::Parameter<std::string> param_utsname_version_;
+  unisim::kernel::variable::Parameter<std::string> param_utsname_version_;
   std::string utsname_machine_;
-  unisim::kernel::service::Parameter<std::string> param_utsname_machine_;
+  unisim::kernel::variable::Parameter<std::string> param_utsname_machine_;
   std::string utsname_domainname_;
-  unisim::kernel::service::Parameter<std::string> param_utsname_domainname_;
+  unisim::kernel::variable::Parameter<std::string> param_utsname_domainname_;
   std::string hwcap_;
-  unisim::kernel::service::Parameter<std::string> param_hwcap_;
+  unisim::kernel::variable::Parameter<std::string> param_hwcap_;
 };
 
 } // end of linux_os namespace

@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_OS_LINUX_OS_LINUX_OS_LINUX_OS_32_HH__
 #define __UNISIM_SERVICE_OS_LINUX_OS_LINUX_OS_LINUX_OS_32_HH__
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/service/os/linux_os/linux_os.hh"
 #include <inttypes.h>
 
@@ -48,7 +48,7 @@ namespace linux_os_32 {
 class LinuxOS32 : public unisim::service::os::linux_os::LinuxOS<uint32_t, uint32_t>
 {
 public:
-	LinuxOS32(const char *name, unisim::kernel::service::Object *parent = 0);
+	LinuxOS32(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~LinuxOS32();
 };
 

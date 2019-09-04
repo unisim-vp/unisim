@@ -35,7 +35,8 @@
 #ifndef __UNISIM_KERNEL_TLM2_TLM_HH__
 #define __UNISIM_KERNEL_TLM2_TLM_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/hash_table/hash_table.hh>
 #include <unisim/util/likely/likely.hh>
@@ -48,6 +49,41 @@
 // to remove asap
 #include <iostream>
 #include <unisim/util/backtrace/backtrace.hh>
+
+namespace sc_core
+{
+
+inline std::istream& operator >> (std::istream& is, sc_time_unit& time_unit)
+{
+	std::string time_unit_str;
+	if(is >> time_unit_str)
+	{
+		if(time_unit_str.compare("s") == 0) time_unit = sc_core::SC_SEC;
+		else if(time_unit_str.compare("ms") == 0) time_unit = SC_MS;
+		else if(time_unit_str.compare("us") == 0) time_unit = SC_US;
+		else if(time_unit_str.compare("ns") == 0) time_unit = SC_NS;
+		else if(time_unit_str.compare("ps") == 0) time_unit = SC_PS;
+		else if(time_unit_str.compare("fs") == 0) time_unit = SC_FS;
+		else time_unit = SC_FS;
+	}
+
+	return is;
+}
+
+inline std::istream& operator >> (std::istream& is, sc_time& t)
+{
+	double time_value = 0.0;
+	sc_time_unit time_unit = SC_FS;
+	
+	if((is >> time_value) && (is >> time_unit))
+	{
+		t = sc_time(time_value, time_unit);
+	}
+
+	return is;
+}
+
+} // end of namespace sc_core
 
 namespace unisim {
 namespace kernel {
@@ -548,14 +584,14 @@ private:
 
 template <unsigned int BUSWIDTH = 32, class TYPES = tlm::tlm_base_protocol_types>
 class InitiatorStub
-	: public virtual unisim::kernel::service::Object
+	: public virtual unisim::kernel::Object
 	, public sc_core::sc_module
 	, tlm::tlm_bw_transport_if<TYPES>
 {
 public:
 	tlm::tlm_initiator_socket<BUSWIDTH, TYPES> master_sock;
 	
-	InitiatorStub(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0);
+	InitiatorStub(const sc_core::sc_module_name& name, unisim::kernel::Object *parent = 0);
 
 	virtual tlm::tlm_sync_enum nb_transport_bw(typename TYPES::tlm_payload_type& trans, typename TYPES::tlm_phase_type& phase, sc_core::sc_time& t);
 	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
@@ -563,13 +599,13 @@ private:
 	unisim::kernel::logger::Logger logger;
 	bool enable;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_enable;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_enable;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 };
 
 template <unsigned int BUSWIDTH, class TYPES>
-InitiatorStub<BUSWIDTH, TYPES>::InitiatorStub(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent, "An initiator stub")
+InitiatorStub<BUSWIDTH, TYPES>::InitiatorStub(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "An initiator stub")
 	, sc_core::sc_module(name)
 	, master_sock("master-sock")
 	, logger(*this)
@@ -618,14 +654,14 @@ void InitiatorStub<BUSWIDTH, TYPES>::invalidate_direct_mem_ptr(sc_dt::uint64 sta
 
 template <unsigned int BUSWIDTH = 32, class TYPES = tlm::tlm_base_protocol_types>
 class TargetStub
-	: public virtual unisim::kernel::service::Object
+	: public virtual unisim::kernel::Object
 	, public sc_core::sc_module
 	, tlm::tlm_fw_transport_if<TYPES>
 {
 public:
 	tlm::tlm_target_socket<BUSWIDTH, TYPES> slave_sock;
 	
-	TargetStub(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0);
+	TargetStub(const sc_core::sc_module_name& name, unisim::kernel::Object *parent = 0);
 
 	virtual void b_transport(typename TYPES::tlm_payload_type& trans, sc_core::sc_time& t);
 	virtual tlm::tlm_sync_enum nb_transport_fw(typename TYPES::tlm_payload_type& trans, typename TYPES::tlm_phase_type& phase, sc_core::sc_time& t);
@@ -635,13 +671,13 @@ private:
 	unisim::kernel::logger::Logger logger;
 	bool enable;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_enable;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_enable;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 };
 
 template <unsigned int BUSWIDTH, class TYPES>
-TargetStub<BUSWIDTH, TYPES>::TargetStub(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent, "A target stub")
+TargetStub<BUSWIDTH, TYPES>::TargetStub(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "A target stub")
 	, sc_core::sc_module(name)
 	, slave_sock("slave-sock")
 	, logger(*this)
@@ -749,14 +785,14 @@ bool TargetStub<BUSWIDTH, TYPES>::get_direct_mem_ptr(typename TYPES::tlm_payload
 
 template <unsigned int BUSWIDTH>
 class TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>
-	: public virtual unisim::kernel::service::Object
+	: public virtual unisim::kernel::Object
 	, public sc_core::sc_module
 	, tlm::tlm_fw_transport_if<tlm::tlm_base_protocol_types>
 {
 public:
 	tlm::tlm_target_socket<BUSWIDTH, tlm::tlm_base_protocol_types> slave_sock;
 	
-	TargetStub(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0);
+	TargetStub(const sc_core::sc_module_name& name, unisim::kernel::Object *parent = 0);
 
 	virtual void b_transport(typename tlm::tlm_generic_payload& trans, sc_core::sc_time& t);
 	virtual tlm::tlm_sync_enum nb_transport_fw(typename tlm::tlm_generic_payload& trans, typename tlm::tlm_phase& phase, sc_core::sc_time& t);
@@ -766,13 +802,13 @@ private:
 	unisim::kernel::logger::Logger logger;
 	bool enable;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_enable;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_enable;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 };
 
 template <unsigned int BUSWIDTH>
-TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>::TargetStub(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent, "A target stub")
+TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>::TargetStub(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "A target stub")
 	, sc_core::sc_module(name)
 	, slave_sock("slave-sock")
 	, logger(*this)

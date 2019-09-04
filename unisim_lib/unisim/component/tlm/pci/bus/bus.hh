@@ -39,7 +39,7 @@
 #include <unisim/kernel/tlm/tlm.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/component/tlm/message/pci.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/service/interfaces/memory.hh>
 
@@ -55,14 +55,14 @@ using unisim::kernel::tlm::TlmSendIf;
 using unisim::component::tlm::message::PCIRequest;
 using unisim::component::tlm::message::PCIResponse;
 using unisim::util::garbage_collector::Pointer;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ParameterArray;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::ParameterArray;
 using unisim::util::endian::LittleEndian2Host;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
@@ -191,10 +191,10 @@ public:
 		frequency(0),
 		param_frequency("frequency", this, frequency, "frequency in Mhz")
 {
-		param_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-		param_target_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-		param_num_mappings.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-		param_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+		param_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+		param_target_port.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+		param_num_mappings.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+		param_frequency.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 		for(unsigned int i = 0; i < NUM_MASTERS; i++){
 			stringstream s, r;

@@ -37,7 +37,7 @@
 #define __UNISIM_COMPONENT_CXX_MEMORY_RAM_MEMORY_TCC__
 
 #include <inttypes.h>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/util/hash_table/hash_table.hh"
 #include "unisim/util/likely/likely.hh"
@@ -78,9 +78,9 @@ inline const std::string u32toa(uint32_t v)
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
-Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent, "this module implements a memory")
-	, unisim::kernel::service::Service<unisim::service::interfaces::Memory<PHYSICAL_ADDR> >(name, parent)
+Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "this module implements a memory")
+	, unisim::kernel::Service<unisim::service::interfaces::Memory<PHYSICAL_ADDR> >(name, parent)
 	, memory_export("memory-export", this)
 	, org(0)
 	, bytesize(0)
@@ -102,11 +102,11 @@ Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, unisim::kernel::serv
 	, param_output_filename("output-filename", this, output_filename, "output filename")
 	, output_file(0)
 {
-	stat_memory_usage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_memory_usage.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	stat_memory_usage.SetVisible(false);
 
-	param_bytesize.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_initial_byte_value.SetFormat(unisim::kernel::service::VariableBase::FMT_HEX);
+	param_bytesize.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_initial_byte_value.SetFormat(unisim::kernel::VariableBase::FMT_HEX);
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
@@ -142,12 +142,12 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::BeginSetup()
 {
 	lo_addr = org;
 	hi_addr = org + (bytesize - 1);
-	Reset();
+	ResetMemory();
 	return true;
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
-void Memory<PHYSICAL_ADDR, PAGE_SIZE>::Reset()
+void Memory<PHYSICAL_ADDR, PAGE_SIZE>::ResetMemory()
 {
 	hash_table.Reset();
 	memory_usage = 0;
@@ -599,7 +599,7 @@ void Memory<PHYSICAL_ADDR, PAGE_SIZE>::SaveToOutputFile()
 			logger << DebugWarning << "Can't open for output \"" << output_filename << "\"" << EndDebugWarning;
 			delete output_file;
 			output_file = 0;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 		}
 	}
 }

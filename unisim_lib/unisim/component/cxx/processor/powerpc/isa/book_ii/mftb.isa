@@ -32,24 +32,19 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-op mftb(31[6]:rd[5]:tbr[10]:371[10]:?[1])
-mftb.execute = {
-	uint32_t d = ((tbr & 0x1f) << 5) + ((tbr >> 5) & 0x1f);
-	switch(d)
-	{
-		case 268: cpu->SetGPR(rd, cpu->GetTBL()); break;
-		case 269: cpu->SetGPR(rd, cpu->GetTBU()); break;
-		default:
-			/* illegal instruction */
-			cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
-			return false;
-	}
-	return true;
-}
-mftb.disasm = {
-	uint32_t d = ((tbr & 0x1f) << 5) + ((tbr >> 5) & 0x1f);
-	os << "mftb r" << (unsigned int) rd << ", " << (unsigned int) d;
-}
+/* Move From Time Base */
+op mftb(31[6]:rd[5]:tbr1[5]:tbr0[5]:371[10]:?[1]);
+mftb.var n : {unsigned} = {tbr0<<5 | tbr1};
 
-specialize mftb(tbr=0x188)
-specialize mftb(tbr=0x1a8)
+mftb.execute = {
+	UINT result;
+	if(unlikely(not cpu->MoveFromTBR(n, result))) return false;
+
+	cpu->SetGPR(rd, result);
+	
+	return true;
+};
+
+mftb.disasm = {
+	os << "mftb " << GPRPrint(rd) << ", " << n;
+};

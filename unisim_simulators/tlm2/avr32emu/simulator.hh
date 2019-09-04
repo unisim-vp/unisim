@@ -49,8 +49,9 @@
 #include <config.hh>
 
 // Class definition of kernel, services and interfaces
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/service/debug/debugger/debugger.tcc>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
@@ -60,44 +61,29 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 
-// Host machine standard headers
-#include <iostream>
-#include <stdexcept>
-#include <stdlib.h>
-
-#ifdef WIN32
-
-#include <windows.h>
-#include <winsock2.h>
-
-#else
-#include <signal.h>
-#endif
-
-using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::service::loader::multiformat_loader::MultiFormatLoader;
 using unisim::service::os::avr32_t2h_syscalls::AVR32_T2H_Syscalls;
 using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Variable;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Variable;
+using unisim::kernel::VariableBase;
+using unisim::kernel::Object;
 
 //=========================================================================
 //===                        Top level class                            ===
 //=========================================================================
 
 template <class CONFIG>
-class Simulator : public unisim::kernel::service::Simulator
+class Simulator : public unisim::kernel::Simulator
 {
 public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
-	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+	virtual unisim::kernel::Simulator::SetupStatus Setup();
 	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
 protected:
@@ -166,12 +152,8 @@ private:
 	Parameter<bool> param_enable_inline_debugger;
 
 	int exit_status;
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
-#ifdef WIN32
-	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
-#else
-	static void SigIntHandler(int signum);
-#endif
+	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
+	virtual void SigInt();
 };
 
 #endif // __AVR32EMU_SIMULATOR_HH__

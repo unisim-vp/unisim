@@ -34,6 +34,7 @@
  */
 
 #include "unisim/service/power/cache_dynamic_energy.hh"
+#include <unisim/kernel/variable/variable.hh>
 #include <sstream>
 
 namespace unisim {
@@ -78,20 +79,17 @@ GetDynamicEnergy() const
 } // end of namespace service
 } // end of namespace unisim
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 
 namespace unisim {
 namespace kernel {
-namespace service {
-
-using unisim::kernel::service::Variable;
-using unisim::kernel::service::VariableBase;
+namespace variable {
 
 template <>
 Variable<unisim::service::power::CacheDynamicEnergy>::Variable(const char *_name, Object *_object, unisim::service::power::CacheDynamicEnergy& _storage, Type type, const char *_description) :
 VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 }
 
 template <>
@@ -131,7 +129,7 @@ Variable<unisim::service::power::CacheDynamicEnergy>::operator double () const
 }
 
 template <>
-Variable<unisim::service::power::CacheDynamicEnergy>::operator string () const
+Variable<unisim::service::power::CacheDynamicEnergy>::operator std::string () const
 {
 	std::stringstream data;
 	data << storage->GetDynamicEnergy();
@@ -165,6 +163,6 @@ template <> VariableBase& Variable<unisim::service::power::CacheDynamicEnergy>::
 
 template class Variable<unisim::service::power::CacheDynamicEnergy>;
 
-} // end of namespace service
+} // end of namespace variable
 } // end of namespace kernel
 } // end of namespace unisim

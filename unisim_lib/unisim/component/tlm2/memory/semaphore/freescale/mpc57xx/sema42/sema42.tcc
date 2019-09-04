@@ -76,12 +76,14 @@ template <typename CONFIG>
 const bool SEMA42<CONFIG>::threaded_model;
 
 template <typename CONFIG>
-SEMA42<CONFIG>::SEMA42(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+SEMA42<CONFIG>::SEMA42(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_core::sc_module(name)
+	, unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
 	, peripheral_slave_if("peripheral_slave_if")
 	, m_clk("m_clk")
 	, reset_b("reset_b")
+	, registers_export("registers-export", this)
 	, logger(*this)
 	, m_clk_prop_proxy(m_clk)
 	, sema42_gate(this)
@@ -89,6 +91,7 @@ SEMA42<CONFIG>::SEMA42(const sc_core::sc_module_name& name, unisim::kernel::serv
 	, sema42_rstgt_r(this)
 	, read_reg_addr_map()
 	, write_reg_addr_map()
+	, registers_registry()
 	, schedule()
 	, endian(unisim::util::endian::E_BIG_ENDIAN)
 	, param_endian("endian", this, endian, "endian")
@@ -127,6 +130,13 @@ SEMA42<CONFIG>::SEMA42(const sc_core::sc_module_name& name, unisim::kernel::serv
 	write_reg_addr_map.SetEndian(endian);
 	write_reg_addr_map.MapRegisterFile(SEMA42_GATE::ADDRESS_OFFSET, &sema42_gate);
 	write_reg_addr_map.MapRegister(sema42_rstgt_w.ADDRESS_OFFSET, &sema42_rstgt_w);
+
+	for(unsigned int i = 0; i < NUM_GATES; i++)
+	{
+		registers_registry.AddRegisterInterface(sema42_gate[i].CreateRegisterInterface());
+	}
+	registers_registry.AddRegisterInterface(sema42_rstgt_r.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(sema42_rstgt_w.CreateRegisterInterface());
 
 	SC_METHOD(RESET_B_Process);
 	sensitive << reset_b.pos();
@@ -386,7 +396,7 @@ unsigned int SEMA42<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 	if(!data_ptr)
 	{
 		logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		unisim::kernel::Object::Stop(-1);
 		return 0;
 	}
 	else if(!data_length)
@@ -432,18 +442,31 @@ tlm::tlm_sync_enum SEMA42<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& pay
 			return tlm::TLM_COMPLETED;
 		default:
 			logger << DebugError << "protocol error" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			break;
 	}
 	
 	return tlm::TLM_COMPLETED;
 }
 
+//////////////// unisim::service::interface::Registers ////////////////////
+
+template <typename CONFIG>
+unisim::service::interfaces::Register *SEMA42<CONFIG>::GetRegister(const char *name)
+{
+	return registers_registry.GetRegister(name);
+}
+
+template <typename CONFIG>
+void SEMA42<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
+}
+
 template <typename CONFIG>
 void SEMA42<CONFIG>::ProcessEvent(Event *event)
 {
 	tlm::tlm_generic_payload *payload = event->GetPayload();
-	sc_core::sc_time time_stamp(event->GetTimeStamp());
 	tlm::tlm_command cmd = payload->get_command();
 
 	if(cmd != tlm::TLM_IGNORE_COMMAND)
@@ -458,13 +481,13 @@ void SEMA42<CONFIG>::ProcessEvent(Event *event)
 		if(!data_ptr)
 		{
 			logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			return;
 		}
 		else if(!data_length)
 		{
 			logger << DebugError << "data length range for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			return;
 		}
 		else if(byte_enable_ptr)
@@ -550,7 +573,7 @@ void SEMA42<CONFIG>::ProcessEvents()
 			if(event->GetTimeStamp() != time_stamp)
 			{
 				logger << DebugError << "Internal error: unexpected event at time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
-				unisim::kernel::service::Object::Stop(-1);
+				unisim::kernel::Object::Stop(-1);
 			}
 			
 			ProcessEvent(event);

@@ -58,7 +58,7 @@ zvmhui.execute = {
 	return false;
 }
 zvmhui.disasm = {
-	os << "zvmhui" <<  LSP_ACC(acc) << "h r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zvmhui" <<  LSP_ACC(acc) << "h " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zvmhui(acc=0)

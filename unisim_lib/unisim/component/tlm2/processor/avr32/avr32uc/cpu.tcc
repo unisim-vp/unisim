@@ -53,9 +53,9 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG>
-CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
+CPU<CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent, "this module implements an AVR32UC CPU core")
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, unisim::component::cxx::processor::avr32::avr32a::avr32uc::CPU<CONFIG>(name, parent)
 	, ihsb_master_sock("ihsb-master-sock")
 	, dhsb_master_sock("dhsb-master-sock")
@@ -222,8 +222,8 @@ template <class CONFIG>
 void CPU<CONFIG>::Synchronize()
 {
 	wait(cpu_time);
-	cpu_time = SC_ZERO_TIME;
-	run_time = sc_time_stamp();
+	cpu_time = sc_core::SC_ZERO_TIME;
+	run_time = sc_core::sc_time_stamp();
 	RunInternalTimers();
 }
 
@@ -232,7 +232,7 @@ inline void CPU<CONFIG>::ProcessExternalEvents()
 {
 	if(!external_event_schedule.Empty())
 	{
-		sc_time time_stamp = sc_time_stamp();
+		sc_core::sc_time time_stamp = sc_core::sc_time_stamp();
 		time_stamp += cpu_time;
 		Event *event = external_event_schedule.GetNextEvent(time_stamp);
 		
@@ -262,8 +262,8 @@ void CPU<CONFIG>::ProcessNMIREQEvent(Event *event)
 {
 	if(inherited::IsVerboseInterrupt())
 	{
-		inherited::logger << DebugInfo << (sc_time_stamp() + cpu_time) << ": processing an NMIREQ event that occured at " << event->GetTimeStamp() << " (";
-		inherited::logger << "NMIREQ goes " << (event->GetLevel() ? "high" : "low") << "). Event skew is " << (sc_time_stamp() + cpu_time - event->GetTimeStamp()) << "." << EndDebugInfo;
+		inherited::logger << DebugInfo << (sc_core::sc_time_stamp() + cpu_time) << ": processing an NMIREQ event that occured at " << event->GetTimeStamp() << " (";
+		inherited::logger << "NMIREQ goes " << (event->GetLevel() ? "high" : "low") << "). Event skew is " << (sc_core::sc_time_stamp() + cpu_time - event->GetTimeStamp()) << "." << EndDebugInfo;
 	}
 	if(event->GetLevel())
 		inherited::SetNMIREQ();
@@ -278,9 +278,9 @@ void CPU<CONFIG>::ProcessIRQEvent(Event *event)
 {
 	if(inherited::IsVerboseInterrupt())
 	{
-		inherited::logger << DebugInfo << (sc_time_stamp() + cpu_time) << ": processing an IRQ event that occured at " << event->GetTimeStamp() << " (";
+		inherited::logger << DebugInfo << (sc_core::sc_time_stamp() + cpu_time) << ": processing an IRQ event that occured at " << event->GetTimeStamp() << " (";
 		inherited::logger << "IRQ #" << event->GetIRQ();
-		inherited::logger << " input goes " << (event->GetLevel() ? "high" : "low") << "). Event skew is " << (sc_time_stamp() + cpu_time - event->GetTimeStamp()) << "." << EndDebugInfo;
+		inherited::logger << " input goes " << (event->GetLevel() ? "high" : "low") << "). Event skew is " << (sc_core::sc_time_stamp() + cpu_time - event->GetTimeStamp()) << "." << EndDebugInfo;
 	}
 	if(event->GetLevel())
 		inherited::SetIRQ(event->GetIRQ());
@@ -294,7 +294,7 @@ template <class CONFIG>
 void CPU<CONFIG>::nmireq_b_transport(unsigned int, InterruptPayload& payload, sc_core::sc_time& t)
 {
 	bool level = payload.GetValue();
-	sc_time notify_time_stamp(sc_time_stamp());
+	sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 	notify_time_stamp += t;
 
 	AlignToHSBClock(notify_time_stamp);
@@ -313,7 +313,7 @@ tlm::tlm_sync_enum CPU<CONFIG>::nmireq_nb_transport_fw(unsigned int, InterruptPa
 		case tlm::BEGIN_REQ:
 			{
 				bool level = payload.GetValue();
-				sc_time notify_time_stamp(sc_time_stamp());
+				sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 				notify_time_stamp += t;
 
 				AlignToHSBClock(notify_time_stamp);
@@ -355,7 +355,7 @@ void CPU<CONFIG>::irq_b_transport(unsigned int irq, InterruptPayload& payload, s
 	if(irq < CONFIG::NUM_IRQS)
 	{
 		bool level = payload.GetValue();
-		sc_time notify_time_stamp(sc_time_stamp());
+		sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 		notify_time_stamp += t;
 
 		AlignToHSBClock(notify_time_stamp);
@@ -382,7 +382,7 @@ tlm::tlm_sync_enum CPU<CONFIG>::irq_nb_transport_fw(unsigned int irq, InterruptP
 				if(irq < CONFIG::NUM_IRQS)
 				{
 					bool level = payload.GetValue();
-					sc_time notify_time_stamp(sc_time_stamp());
+					sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 					notify_time_stamp += t;
 
 					AlignToHSBClock(notify_time_stamp);
@@ -427,7 +427,7 @@ bool CPU<CONFIG>::irq_get_direct_mem_ptr(unsigned int, InterruptPayload& payload
 template <class CONFIG>
 inline void CPU<CONFIG>::RunInternalTimers()
 {
-	const sc_time& timer_cycle_time = cpu_cycle_time;
+	const sc_core::sc_time& timer_cycle_time = cpu_cycle_time;
 		
 #if 0
 	if(run_time >= (timer_time + timer_cycle_time))
@@ -442,11 +442,11 @@ inline void CPU<CONFIG>::RunInternalTimers()
 #else
 	// Note: this code brings a slight speed improvement (6 %)
 #if 0
-	sc_time delta_time(run_time);
+	sc_core::sc_time delta_time(run_time);
 	delta_time -= timer_time;
 	uint64_t delta = (uint64_t) floor(delta_time / timer_cycle_time);
 	inherited::RunTimers(delta);
-	sc_time t(timer_cycle_time);
+	sc_core::sc_time t(timer_cycle_time);
 	t *= (double) delta;
 	timer_time += t;
 #else
@@ -455,7 +455,7 @@ inline void CPU<CONFIG>::RunInternalTimers()
 	uint64_t delta = delta_time_tu / timer_cycle_time_tu;
 	inherited::RunTimers(delta);
 	sc_dt::uint64 t_tu = timer_cycle_time_tu * delta;
-	sc_time t(sc_get_time_resolution());
+	sc_core::sc_time t(sc_core::sc_get_time_resolution());
 	t *= t_tu;
 	timer_time += t;
 #endif
@@ -488,7 +488,7 @@ inline void CPU<CONFIG>::AlignToHSBClock()
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::AlignToHSBClock(sc_time& t)
+void CPU<CONFIG>::AlignToHSBClock(sc_core::sc_time& t)
 {
 	sc_core::sc_time time_skew(t);
 	time_skew %= hsb_cycle_time;
@@ -506,7 +506,7 @@ void CPU<CONFIG>::AlignToHSBClock(sc_time& t)
 // 	if(!modulo) return; // already aligned
 // 	
 // 	sc_dt::uint64 time_alignment_tu = hsb_cycle_time_tu - modulo;
-// 	sc_time time_alignment(time_alignment_tu, false);
+// 	sc_core::sc_time time_alignment(time_alignment_tu, false);
 // 	t += time_alignment;
 }
 
@@ -519,7 +519,7 @@ void CPU<CONFIG>::Idle()
 	Synchronize();
 	
 	// Compute the time to consume before an internal timer event occurs
-	const sc_time& timer_cycle_time = cpu_cycle_time;
+	const sc_core::sc_time& timer_cycle_time = cpu_cycle_time;
 	max_idle_time = timer_cycle_time;
 	max_idle_time *= inherited::GetMaxIdleTime(); // max idle time (timer_time based)
 
@@ -539,15 +539,15 @@ void CPU<CONFIG>::Idle()
 	ev_max_idle.notify(max_idle_time);
 	
 	// wait for either an internal timer event or an external event
-	sc_time old_time_stamp(sc_time_stamp());
+	sc_core::sc_time old_time_stamp(sc_core::sc_time_stamp());
 	wait(ev_max_idle | ev_nmireq | ev_irq);
-	sc_time new_time_stamp(sc_time_stamp());
+	sc_core::sc_time new_time_stamp(sc_core::sc_time_stamp());
 	
 	// cancel event because we can't know which wake up condition occured
 	ev_max_idle.cancel();
 	
 	// compute the time spent by the SystemC wait
-	sc_time delta_time(new_time_stamp);
+	sc_core::sc_time delta_time(new_time_stamp);
 	delta_time -= old_time_stamp;
 	
 	if(enable_host_idle)
@@ -570,7 +570,7 @@ void CPU<CONFIG>::Idle()
 template <class CONFIG>
 void CPU<CONFIG>::Run()
 {
-	sc_time time_per_instruction = cpu_cycle_time / ipc;
+	sc_core::sc_time time_per_instruction = cpu_cycle_time / ipc;
 	
 	while(1)
 	{
@@ -614,7 +614,7 @@ bool CPU<CONFIG>::IHSBRead(typename CONFIG::physical_address_t physical_addr, vo
 				{
 					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "IHSB: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
-					const sc_time& read_lat = dmi_region->GetReadLatency(size);
+					const sc_core::sc_time& read_lat = dmi_region->GetReadLatency(size);
 					cpu_time += read_lat;
 					run_time += read_lat;
 					LazyRunInternalTimers();
@@ -646,7 +646,7 @@ bool CPU<CONFIG>::IHSBRead(typename CONFIG::physical_address_t physical_addr, vo
 	
 	ihsb_master_sock->b_transport(*payload, cpu_time);
 	
-	run_time = sc_time_stamp();
+	run_time = sc_core::sc_time_stamp();
 	run_time += cpu_time;
 	LazyRunInternalTimers();
 	
@@ -696,7 +696,7 @@ bool CPU<CONFIG>::DHSBRead(typename CONFIG::physical_address_t physical_addr, vo
 				{
 					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "DHSB Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
-					const sc_time& read_lat = dmi_region->GetReadLatency(size);
+					const sc_core::sc_time& read_lat = dmi_region->GetReadLatency(size);
 					cpu_time += read_lat;
 					run_time += read_lat;
 					LazyRunInternalTimers();
@@ -729,7 +729,7 @@ bool CPU<CONFIG>::DHSBRead(typename CONFIG::physical_address_t physical_addr, vo
 	
 	dhsb_master_sock->b_transport(*payload, cpu_time);
 	
-	run_time = sc_time_stamp();
+	run_time = sc_core::sc_time_stamp();
 	run_time += cpu_time;
 	LazyRunInternalTimers();
 
@@ -779,7 +779,7 @@ bool CPU<CONFIG>::DHSBWrite(typename CONFIG::physical_address_t physical_addr, c
 				{
 					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "DHSB Write: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), buffer, size);
-					const sc_time& write_lat = dmi_region->GetWriteLatency(size);
+					const sc_core::sc_time& write_lat = dmi_region->GetWriteLatency(size);
 					cpu_time += write_lat;
 					run_time += write_lat;
 					LazyRunInternalTimers();
@@ -812,7 +812,7 @@ bool CPU<CONFIG>::DHSBWrite(typename CONFIG::physical_address_t physical_addr, c
 	
 	dhsb_master_sock->b_transport(*payload, cpu_time);
 	
-	run_time = sc_time_stamp();
+	run_time = sc_core::sc_time_stamp();
 	run_time += cpu_time;
 	LazyRunInternalTimers();
 

@@ -481,7 +481,7 @@ The command line option \texttt{-s enable-inline-debugger=true} enables the inli
 
 The TMS320C3X simulator is the combination of several software components:
 \begin{itemize}
-\item A service infrastructure in \texttt{unisim/kernel/service} (see Section~\ref{tms320c3x_service_infrastructure}).
+\item A unisim core infrastructure in \texttt{unisim/kernel} (see Section~\ref{tms320c3x_service_infrastructure}).
 \item A built-in logger in \texttt{unisim/kernel/logger} (see Section~\ref{tms320c3x_logger}).
 \item Several small utility classes in \texttt{unisim/util} (see Section~\ref{tms320c3x_utils}).
 \item A TMS320C3X instruction set simulator in \texttt{unisim/component/cxx/processor/tms320} (see Section~\ref{tms320c3x_iss}).
@@ -1344,7 +1344,7 @@ To use the UNISIM logger you need to include â€œunisim/kernel/logger/logger.hhâ€
 \end{center}
 
 The logger can only be used by UNISIM objects, that is, classes that inherit from \newline
-\texttt{unisim::kernel::service::Object}. 
+\texttt{unisim::kernel::Object}. 
 So if you want to use the UNISIM log system your class must inherit from a UNISIM object.
 
 \begin{center}
@@ -1353,7 +1353,7 @@ So if you want to use the UNISIM log system your class must inherit from a UNISI
 
 You will need to create a member variable of the \texttt{unisim::kernel::logger::Logger} type. 
 And at the construction of your object use its default constructor \newline
-\texttt{Logger(const unisim::kernel::service::Object \&obj)}. For example:
+\texttt{Logger(const unisim::kernel::Object \&obj)}. For example:
 
 \begin{center}
 	\input{tms320c3x/binding_logger}

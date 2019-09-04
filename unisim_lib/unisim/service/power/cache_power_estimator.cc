@@ -58,7 +58,7 @@
 
 namespace unisim {
 namespace kernel {
-namespace service {
+namespace variable {
 
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::Variable(const char *_name, Object *_object, unisim::service::power::CachePowerEstimator::AccessMode& _storage, Type type, const char *_description) :
 VariableBase(_name, _object, type, _description), storage(&_storage)
@@ -66,7 +66,7 @@ VariableBase(_name, _object, type, _description), storage(&_storage)
 	AddEnumeratedValue("normal");
 	AddEnumeratedValue("sequential");
 	AddEnumeratedValue("fast");
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 }
 
 template <>
@@ -85,15 +85,15 @@ template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::o
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator long long () const { return (long long)(*storage); }
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator unsigned long long () const { return (unsigned long long)(*storage); }
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator double () const { return (double)(unsigned int)(*storage); }
-template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator string () const
+template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator std::string () const
 {
 	switch(*storage)
 	{
-		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL: return string("normal");
-		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL: return string("sequential");
-		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST: return string("fast");
+		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL: return std::string("normal");
+		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL: return std::string("sequential");
+		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST: return std::string("fast");
 	}
-	return string("?");
+	return std::string("?");
 }
 
 template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (unsigned long long value)
@@ -163,7 +163,7 @@ template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::
 
 template class Variable<unisim::service::power::CachePowerEstimator::AccessMode>;
 
-} // end of namespace service
+} // end of namespace variable
 } // end of namespace kernel
 } // end of namespace unisim
 
@@ -177,8 +177,6 @@ using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
-using std::endl;
-using std::string;
 
 CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
 	Object(name, parent, "this service implements an SRAM/Cache power estimator (dynamic energy and leakage power)"),
@@ -242,16 +240,16 @@ CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
 	min_cycle_time(0),
 	time_stamp(0.0)
 {
-	param_cache_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_line_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_associativity.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_rw_ports.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_excl_read_ports.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_excl_write_ports.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_single_ended_read_ports.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_banks.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_output_width.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_tag_width.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_cache_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_line_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_associativity.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_rw_ports.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_excl_read_ports.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_excl_write_ports.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_single_ended_read_ports.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_banks.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_output_width.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_tag_width.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	cacti = 0;
 }
 

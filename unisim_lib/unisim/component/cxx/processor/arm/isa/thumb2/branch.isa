@@ -46,7 +46,7 @@ bl_w.disasm = {
 };
 
 bl_w.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( 14, cpu.GetNIA() | U32(1) );
@@ -61,7 +61,7 @@ blx_w.disasm = {
 };
 
 blx_w.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( 14, cpu.GetNIA() | U32(1) );
@@ -79,7 +79,7 @@ cbnz.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::BOOL BOOL;
   
-  if (cpu.Cond( (cpu.GetGPR( rn ) == U32(0)) xor BOOL(nz) ))
+  if (evenly( (cpu.GetGPR( rn ) == U32(0)) xor BOOL(nz) ))
     cpu.Branch( cpu.GetGPR( 15 ) + U32(imm), ARCH::B_JMP );
 };
 
@@ -95,7 +95,7 @@ bcc_w.execute = {
   // Note: according to specification, if InITBlock() then UNPREDICTABLE;
   typedef typename ARCH::U32 U32;
   
-  if (cpu.Cond( CheckCondition(cpu, cond ) ))
+  if (evenly( CheckCondition(cpu, cond ) ))
     cpu.Branch( cpu.GetGPR( 15 ) + U32( imm ), ARCH::B_JMP );
 };
 
@@ -107,7 +107,7 @@ b_w.disasm = {
 };
 
 b_w.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   cpu.Branch( cpu.GetGPR( 15 ) + U32(imm), ARCH::B_JMP );
@@ -135,7 +135,7 @@ nop.disasm = {
 };
 
 nop.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
 };
 
 op tbb( 0b111010001101[12]: rn[4]:> <: 0b111100000000[12]: rm[4] );
@@ -145,7 +145,7 @@ tbb.disasm = {
 };
 
 tbb.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.Branch( cpu.GetGPR( 15 ) + (typename ARCH::U32( cpu.MemRead8( cpu.GetGPR( rn ) + cpu.GetGPR( rm ) ) ) << 1), ARCH::B_JMP );
 }
@@ -157,7 +157,7 @@ tbh.disasm = {
 };
 
 tbh.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+  if (unlikely( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.Branch( cpu.GetGPR( 15 ) + (typename ARCH::U32( cpu.MemURead16( cpu.GetGPR( rn ) + (cpu.GetGPR( rm ) << 1) ) ) << 1), ARCH::B_JMP );
 }

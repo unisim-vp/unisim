@@ -16,7 +16,8 @@
 #include <string>
 #include <stdexcept>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 
 #include <unisim/util/converter/convert.hh>
 
@@ -34,10 +35,10 @@ namespace pim {
 
 using namespace std;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Simulator;
-using unisim::kernel::service::VariableBase;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::Simulator;
+using unisim::kernel::VariableBase;
 
 using unisim::service::pim::network::SocketThread;
 using unisim::service::pim::network::GenericThread;

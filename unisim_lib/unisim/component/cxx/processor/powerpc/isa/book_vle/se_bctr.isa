@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,25 +33,23 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Branch to Count Register [and Link] */
 op se_bctr(3[15]:lk[1]);
 
 se_bctr.execute = {
-	ADDRESS target_addr = uint32_t( cpu->GetCTR()) & uint32_t( 0xfffffffeUL);
+	ADDRESS target_addr( UINT(cpu->GetCTR()) & UINT(-2) ); // TODO: CTR should behave as a UINT
 	cpu->Branch(target_addr);
+	
 	if(lk)
 	{
 		LR& lr = cpu->GetLR();
-		lr = cpu->GetCIA() + uint32_t(2);
+		lr = ADDRESS( cpu->GetCIA() + UINT(2) );
 	}
 	
 	return true;
-}
+};
 
 se_bctr.disasm = {
 	os << "se_bctr" << (lk?"l":"");
-}
+};
+

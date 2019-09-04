@@ -44,7 +44,7 @@
 #include <iostream>
 #include <map>
 #include <getopt.h>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <stdlib.h>
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/component/tlm/memory/ram/memory.hh>
@@ -97,16 +97,16 @@ using unisim::service::power::CachePowerEstimator;
 using unisim::util::garbage_collector::GarbageCollector;
 using unisim::component::cxx::pci::pci64_address_t;
 using unisim::component::cxx::pci::pci32_address_t;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Object;
+using unisim::kernel::VariableBase;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::Object;
 
-class Simulator : public unisim::kernel::service::Simulator
+class Simulator : public unisim::kernel::Simulator
 {
 public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
-	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+	virtual unisim::kernel::Simulator::SetupStatus Setup();
 	void Run();
 	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
@@ -274,7 +274,7 @@ private:
 	Parameter<bool> param_message_spy;
 
 	int exit_status;
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 #ifdef WIN32
 	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
 #else
@@ -283,7 +283,7 @@ private:
 };
 
 Simulator::Simulator(int argc, char **argv)
-	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
+	: unisim::kernel::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
 	, bus(0)
 	, mpc107(0)
@@ -738,7 +738,7 @@ Simulator::~Simulator()
 	if(heathrow) delete heathrow;
 }
 
-void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM ppcemu-system");
@@ -1110,7 +1110,7 @@ void Simulator::Run()
 	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 }
 
-unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
+unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 {
 	if(enable_inline_debugger)
 	{
@@ -1145,15 +1145,15 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 		SetVariable("pmac-linux-kernel-loader.pmac-bootx.kernel-params", kernel_params.c_str());
 	}
 
-	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+	unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
 
 	// inline-debugger and gdb-server are exclusive
 	if(enable_inline_debugger && enable_gdb_server)
 	{
 		std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
-		if(setup_status != unisim::kernel::service::Simulator::ST_OK_DONT_START)
+		if(setup_status != unisim::kernel::Simulator::ST_OK_DONT_START)
 		{
-			setup_status = unisim::kernel::service::Simulator::ST_ERROR;
+			setup_status = unisim::kernel::Simulator::ST_ERROR;
 		}
 	}
 	
@@ -1192,14 +1192,14 @@ BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
 			stop = true;
 			break;
 	}
-	if(stop) unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+	if(stop) unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	return stop ? TRUE : FALSE;
 }
 #else
 void Simulator::SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+	unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 }
 #endif
 
@@ -1219,15 +1219,15 @@ int sc_main(int argc, char *argv[])
 
 	switch(simulator->Setup())
 	{
-		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+		case unisim::kernel::Simulator::ST_OK_DONT_START:
 			break;
-		case unisim::kernel::service::Simulator::ST_WARNING:
+		case unisim::kernel::Simulator::ST_WARNING:
 			cerr << "Some warnings occurred during setup" << endl;
-		case unisim::kernel::service::Simulator::ST_OK_TO_START:
+		case unisim::kernel::Simulator::ST_OK_TO_START:
 			cerr << "Starting simulation at supervisor privilege level (kernel mode)" << endl;
 			simulator->Run();
 			break;
-		case unisim::kernel::service::Simulator::ST_ERROR:
+		case unisim::kernel::Simulator::ST_ERROR:
 			cerr << "Can't start simulation because of previous errors" << endl;
 			break;
 	}

@@ -105,13 +105,12 @@ unistd.h \
 vector"
 
 UNISIM_LIB_TMS320C3X_SOURCE_FILES="\
-unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_config_file_helper.cc \
-unisim/kernel/service/ini_config_file_helper.cc \
+unisim/kernel/kernel.cc \
+unisim/kernel/config/xml_config_file_helper.cc \
+unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/util/backtrace/backtrace.cc \
-unisim/kernel/api/api.cc \
 unisim/util/xml/xml.cc \
 unisim/util/debug/symbol_32.cc \
 unisim/util/debug/symbol_64.cc \
@@ -148,7 +147,7 @@ unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/debug/coff_symtab/coff_symtab32.cc \
 unisim/util/debug/coff_symtab/coff_symtab64.cc \
-unisim/kernel/service/endian.cc \
+unisim/kernel/variable/endian/endian.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
@@ -203,13 +202,12 @@ unisim/component/cxx/processor/tms320c3x/isa/power.isa \
 unisim/component/cxx/processor/tms320c3x/isa/tms320c3x.isa"
 
 UNISIM_LIB_TMS320C3X_HEADER_FILES="${UNISIM_LIB_TMS320C3X_ISA_FILES} \
-unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_config_file_helper.hh \
-unisim/kernel/service/ini_config_file_helper.hh \
+unisim/kernel/kernel.hh \
+unisim/kernel/config/xml_config_file_helper.hh \
+unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/util/backtrace/backtrace.hh \
-unisim/kernel/api/api.hh \
 unisim/util/likely/likely.hh \
 unisim/util/xml/xml.hh \
 unisim/util/debug/memory_access_type.hh \
@@ -277,12 +275,16 @@ unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \
 unisim/util/parser/parser.hh \
 unisim/util/inlining/inlining.hh \
+unisim/util/nat_sort/nat_sort.hh \
+unisim/util/hypapp/hypapp.hh \
 unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/ti_c_io.hh \
 unisim/service/interfaces/disassembly.hh \
+unisim/service/interfaces/http_server.hh \
+unisim/service/interfaces/field.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
@@ -428,6 +430,7 @@ vector \
 UNISIM_SIMULATORS_TMS320C3X_SOURCE_FILES="\
 main.cc \
 "
+
 UNISIM_SIMULATORS_TMS320C3X_HEADER_FILES="\
 "
 

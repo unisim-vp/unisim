@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_INTERCONNECT_XILINX_MCI_CONFIG_HH__
 #define __UNISIM_COMPONENT_CXX_INTERCONNECT_XILINX_MCI_CONFIG_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 
 namespace unisim {

@@ -239,7 +239,7 @@ int main(void)
 		
 		if(!fgets(line, sizeof(line), stdin))
 		{
-			fprintf(stderr, "can' get line\n");
+			fprintf(stderr, "can' get line\r\n");
 			break;
 		}
 		
@@ -249,8 +249,10 @@ int main(void)
 		
 		time_t t = time(NULL);
 		struct tm tm = *localtime(&t);
+		char time_str[32];
+		strftime(time_str, sizeof(time_str), "%c", &tm);
 		
-		fprintf(stdout, "at %s, got \"%s\" on prompt and %u on GPIO button\n", asctime(&tm), line, gpio_button_status);
+		fprintf(stdout, "at %s, got \"%s\" on prompt and %u on GPIO button\r\n", time_str/*asctime(&tm)*/, line, gpio_button_status);
 		
 		//struct tms tms;
 		

@@ -39,27 +39,24 @@ efsmax.execute = {
 		return false;
 
 	// Read the input operands
-	SoftFloat a(cpu->GetGPR(ra)), b(cpu->GetGPR(rb));
+	SoftFloat a( SoftFloat::FromRawBits, cpu->GetGPR(ra) ), b( SoftFloat::FromRawBits, cpu->GetGPR(rb) );
 
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().set(a).set(b).proceed())
 		return false;
 	
 	// Compute the result
-	if      (unlikely(a.isZero() and b.isZero()))
-		a.setZero(a.isNegative() and b.isNegative());
-	else if ((b > a) or unlikely(a.isNaN() and (not b.isNaN() or (a.isNegative() and not b.isNegative()))))
-		a = b;
+	a.maxAssign(b);
 
 	// Update the flags
 	cpu->EFPProcessOutput(a, Flags());
 
 	// Write back the result
-	cpu->SetGPR(rd, a.queryValue());
+	cpu->SetGPR(rd, a.queryRawBits());
 
 	return true;
 }
 
 efsmax.disasm = {
-	os << "efsmax r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efsmax " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

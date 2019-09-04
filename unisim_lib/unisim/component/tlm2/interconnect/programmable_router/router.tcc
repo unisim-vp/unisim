@@ -56,8 +56,8 @@ template <typename CONFIG>
 const bool Router<CONFIG>::threaded_model;
 
 template <typename CONFIG>
-Router<CONFIG>::Router(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+Router<CONFIG>::Router(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, Super(name, parent)
 	, peripheral_slave_if("peripheral_slave_if")
 	, m_clk("m_clk")
@@ -236,7 +236,7 @@ unsigned int Router<CONFIG>::peripheral_transport_dbg(int iface, tlm::tlm_generi
 	if(!data_ptr)
 	{
 		this->logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		unisim::kernel::Object::Stop(-1);
 		return 0;
 	}
 	else if(!data_length)
@@ -280,7 +280,7 @@ tlm::tlm_sync_enum Router<CONFIG>::peripheral_nb_transport_fw(int iface, tlm::tl
 			return tlm::TLM_COMPLETED;
 		default:
 			this->logger << DebugError << "protocol error" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			break;
 	}
 	
@@ -291,7 +291,6 @@ template <typename CONFIG>
 void Router<CONFIG>::ProcessEvent(Event *event)
 {
 	tlm::tlm_generic_payload *payload = event->GetPayload();
-	sc_core::sc_time time_stamp(event->GetTimeStamp());
 	int iface = event->GetInterface();
 	tlm::tlm_command cmd = payload->get_command();
 
@@ -307,13 +306,13 @@ void Router<CONFIG>::ProcessEvent(Event *event)
 		if(!data_ptr)
 		{
 			this->logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			return;
 		}
 		else if(!data_length)
 		{
 			this->logger << DebugError << "data length range for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			return;
 		}
 		else if(byte_enable_ptr)
@@ -399,7 +398,7 @@ void Router<CONFIG>::ProcessEvents()
 			if(event->GetTimeStamp() != time_stamp)
 			{
 				this->logger << DebugError << "Internal error: unexpected event at time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
-				unisim::kernel::service::Object::Stop(-1);
+				unisim::kernel::Object::Stop(-1);
 			}
 			
 			ProcessEvent(event);

@@ -38,5 +38,5 @@ evfsaddsubx.execute = {
 	return false;
 }
 evfsaddsubx.disasm = {
-	os << "evfsaddsubx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "evfsaddsubx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

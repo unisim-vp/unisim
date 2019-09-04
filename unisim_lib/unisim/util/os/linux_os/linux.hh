@@ -44,48 +44,25 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <queue>
 // #include <iostream>
-
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
-#include <windows.h>
-#endif
 
 namespace unisim {
 namespace util {
 namespace os {
 namespace linux_os {
 
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
   // see http://mathieuturcotte.ca/textes/windows-gettimeofday
+  struct timeval {
+    int32_t  tv_sec;    /* seconds */
+    int32_t tv_usec;    /* microseconds */
+  };
   struct timezone {
     int tz_minuteswest;     /* minutes west of Greenwich */
     int tz_dsttime;         /* type of DST correction */
   };
-  inline int gettimeofday(struct timeval* p, struct timezone* tz) {
-    ULARGE_INTEGER ul; // As specified on MSDN.
-    FILETIME ft;
-
-    // Returns a 64-bit value representing the number of
-    // 100-nanosecond intervals since January 1, 1601 (UTC).
-    GetSystemTimeAsFileTime(&ft);
-
-    // Fill ULARGE_INTEGER low and high parts.
-    ul.LowPart = ft.dwLowDateTime;
-    ul.HighPart = ft.dwHighDateTime;
-    // Convert to microseconds.
-    ul.QuadPart /= 10ULL;
-    // Remove Windows to UNIX Epoch delta.
-    ul.QuadPart -= 11644473600000000ULL;
-    // Modulo to retrieve the microseconds.
-    p->tv_usec = (long) (ul.QuadPart % 1000000LL);
-    // Divide to retrieve the seconds.
-    p->tv_sec = (long) (ul.QuadPart / 1000000LL);
-
-    tz->tz_minuteswest = 0;
-    tz->tz_dsttime = 0;
-
-    return 0;
-  }
+  int gettimeofday(struct timeval* p, struct timezone* tz);
 #endif
 
   template <typename T> struct AsSigned {};
@@ -108,12 +85,19 @@ namespace linux_os {
       virtual char const* GetName() const = 0;
       virtual void Release() {}
       std::string TraceCall( Linux& lin ) const;
+      
+      static int HostToLinuxErrno(int host_errno); //< Errno conversion
+  
+      template <class ARGS>
+      struct ArgsPrint
+      {
+        ArgsPrint( ARGS const& _args ) : args(_args) {} ARGS const& args;
+        friend std::ostream& operator << (std::ostream& sink, ArgsPrint const& ap) { ap.args.Describe(sink); return sink; }
+      };
+      template <class ARGS> static ArgsPrint<ARGS> argsPrint( ARGS const& args ) { return ArgsPrint<ARGS>(args); }
+      
     protected:
       // SysCall Friend accessing methods
-      static bool ReadMem(Linux& lin, ADDRESS_TYPE addr, uint8_t * const buffer, uint32_t size);
-      static bool WriteMem(Linux& lin, ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size);
-      static bool ReadMemString(Linux& lin, ADDRESS_TYPE addr, std::string& str);
-      static int HostToLinuxErrno(int host_errno); //< Errno conversion
       static int Target2HostFileDescriptor( Linux& lin, int32_t fd );
       static PARAMETER_TYPE GetParam(Linux& lin, int id); // <getting system call status
     };
@@ -147,9 +131,6 @@ namespace linux_os {
       unisim::service::interfaces::Memory<ADDRESS_TYPE>& MemIF() const { return *lin.mem_if_; }
       std::string GetHWCAP() const { return lin.hwcap_; }
       SysCall* GetSysCall( std::string name ) const { return lin.GetSysCall( name ); }
-      static bool GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE * const value );
-      static bool SetRegister( Linux& lin, char const* regname, PARAMETER_TYPE value );
-      static bool ClearRegister( Linux& lin, char const* regname );
       std::string name;
       Linux& lin;
     };
@@ -273,7 +254,6 @@ namespace linux_os {
 
     UTSName const& GetUTSName() const { return utsname; }
 	
-  private:
     bool is_load_; // true if a program has been successfully loaded, false
     // otherwise
 	
@@ -351,12 +331,22 @@ namespace linux_os {
     std::map<int32_t, int> target_to_host_fildes;
     std::queue<int32_t> target_fildes_free_list;
 
-    // Maps the registers depending on the system
-    // Returns true on success
-    unisim::service::interfaces::Register* GetDebugRegister( char const* regname );
-    // bool GetRegister( char const* regname, PARAMETER_TYPE * const value );
-    // bool SetRegister( char const* regname, PARAMETER_TYPE value );
-	
+    // Retrieve the Debug Register interface from the target processor.
+    unisim::service::interfaces::Register* GetDebugRegister( char const* regname ) const;
+
+    // Read/Write From/To target processor
+    bool SetTargetRegister( char const* regname, PARAMETER_TYPE value ) const;
+    bool GetTargetRegister( char const* regname, PARAMETER_TYPE& value ) const;
+    PARAMETER_TYPE GetTargetRegister( char const* regname ) const;
+    bool ClearTargetRegister( char const* regname ) const;
+    bool ReadTargetMemory( ADDRESS_TYPE addr, PARAMETER_TYPE& value ) const;
+    // Read/Write From/To target processor via injection interface
+    bool ReadMemory(ADDRESS_TYPE addr, uint8_t* const buffer, uint32_t size) const;
+    bool ReadMemory(ADDRESS_TYPE addr, PARAMETER_TYPE& value) const;
+    bool ReadString(ADDRESS_TYPE addr, std::string& str) const;
+    bool WriteMemory(ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size) const;
+    bool WriteMemory(ADDRESS_TYPE addr, PARAMETER_TYPE value) const;
+    
     // Load the files set by the user into the given blob. Returns true on sucess,
     // false otherwise.
     bool LoadFiles(unisim::util::blob::Blob<ADDRESS_TYPE> *blob);
@@ -371,7 +361,7 @@ namespace linux_os {
                                     unisim::util::blob::Blob<ADDRESS_TYPE> const &blob);
 
     // Merge the contents of the given file blob into the input/output blob
-    bool FillBlobWithFileBlob(
+    static bool FillBlobWithFileBlob(
                               unisim::util::blob::Blob<ADDRESS_TYPE> const &file_blob,
                               unisim::util::blob::Blob<ADDRESS_TYPE> *blob);
 
@@ -384,7 +374,10 @@ namespace linux_os {
     // Set the contents of an aux table entry
     ADDRESS_TYPE SetAuxTableEntry(uint8_t * stack_data, ADDRESS_TYPE sp,
                                   ADDRESS_TYPE entry, ADDRESS_TYPE value) const;
-	
+    
+    // File management
+    int OpenAt( int dfd, std::string const& filename, int flags, unsigned short mode );
+    
     // File descriptors mapping
     int32_t AllocateFileDescriptor();
     void FreeFileDescriptor(int32_t fd);
@@ -393,8 +386,6 @@ namespace linux_os {
 	
     // The generic linux system call factories
     SysCall* GetSysCall( std::string _name );
-	
-    // handling the brkpoint address (heap end)
   };
 
 } // end of linux namespace

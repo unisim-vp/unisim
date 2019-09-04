@@ -37,7 +37,7 @@
 #ifndef __UNISIM_KERNEL_LOGGER_LOGGER_HH__
 #define __UNISIM_KERNEL_LOGGER_LOGGER_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <string>
 #include <ios>
 #include <ostream>
@@ -53,7 +53,7 @@ struct Logger;
 
 enum mode_t { NO_MODE = 0, INFO_MODE, WARNING_MODE, ERROR_MODE };
 
-typedef void (LoggerServer::*LoggerServerOutputMethodPtr)(std::string, const char *);
+typedef void (LoggerServer::*LoggerServerOutputMethodPtr)(const char *, const char *);
 
 class LoggerStreamBuffer : public std::streambuf
 {
@@ -89,7 +89,7 @@ struct Logger
 {
 	Logger(const std::string& name);
 	Logger(const char *name);
-	Logger(const unisim::kernel::service::Object& object);
+	Logger(const unisim::kernel::Object& object);
 	~Logger();
 	
 	friend Logger& operator << (Logger& logger, std::ios_base& (*f)(std::ios_base &));
@@ -135,13 +135,15 @@ struct Logger
 	LoggerStream& DebugWarningStream() { return warning_stream; }
 	LoggerStream& DebugErrorStream() { return error_stream; }
 	
-	const std::string& GetName() const { return name; }
+	const char *GetName() const { return name.c_str(); }
 private:
 	friend class LoggerStreamBuffer;
-	friend class unisim::kernel::service::Simulator;
+	friend class unisim::kernel::Simulator;
 	
 	unisim::kernel::logger::LoggerServer* GetServerInstance();
+public:
 	static unisim::kernel::logger::LoggerServer* StaticServerInstance();
+private:
 	static void ReleaseStaticServiceInstance();
 	void PrintMode();
 

@@ -47,7 +47,7 @@ namespace watchdog {
 
 Watchdog ::
 Watchdog(const sc_module_name &name, Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_module(name)
 	, bus_target_socket("bus_target_socket")
 	, logger(*this)

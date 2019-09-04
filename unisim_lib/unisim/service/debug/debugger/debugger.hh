@@ -35,7 +35,8 @@
 #ifndef __UNISIM_SERVICE_DEBUG_DEBUGGER_DEBUGGER_HH__
 #define __UNISIM_SERVICE_DEBUG_DEBUGGER_DEBUGGER_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
@@ -91,7 +92,7 @@ struct CONFIG
 
 template <typename CONFIG>
 class Debugger
-	: public unisim::kernel::service::Client<unisim::service::interfaces::Blob<typename CONFIG::ADDRESS> >
+	: public unisim::kernel::Client<unisim::service::interfaces::Blob<typename CONFIG::ADDRESS> >
 {
 public:
 	typedef typename CONFIG::ADDRESS ADDRESS;
@@ -99,42 +100,57 @@ public:
 	static const unsigned int MAX_FRONT_ENDS = CONFIG::MAX_FRONT_ENDS;
 	
 	// Exports to CPUs
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugYielding>                   *debug_yielding_export[NUM_PROCESSORS];
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReporting<ADDRESS> > *memory_access_reporting_export[NUM_PROCESSORS];
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::TrapReporting>                   *trap_reporting_export[NUM_PROCESSORS];
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYielding>                   *debug_yielding_export[NUM_PROCESSORS];
+	unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReporting<ADDRESS> > *memory_access_reporting_export[NUM_PROCESSORS];
+	unisim::kernel::ServiceExport<unisim::service::interfaces::TrapReporting>                   *trap_reporting_export[NUM_PROCESSORS];
 
 	// Exports to Front-ends
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugYieldingRequest>        *debug_yielding_request_export[MAX_FRONT_ENDS];
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugSelecting>              *debug_selecting_export[MAX_FRONT_ENDS];
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> > *debug_event_trigger_export[MAX_FRONT_ENDS]; // depends on selected CPU number
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<ADDRESS> >       *disasm_export[MAX_FRONT_ENDS];              // depends on selected CPU number
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<ADDRESS> >            *memory_export[MAX_FRONT_ENDS];              // depends on selected CPU number
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers>                   *registers_export[MAX_FRONT_ENDS];           // depends on selected CPU number
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> > *symbol_table_lookup_export[MAX_FRONT_ENDS];
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::StatementLookup<ADDRESS> >   *stmt_lookup_export[MAX_FRONT_ENDS];
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::BackTrace<ADDRESS> >         *backtrace_export[MAX_FRONT_ENDS];           // depends on selected CPU number 
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugInfoLoading>            *debug_info_loading_export[MAX_FRONT_ENDS];
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >  *data_object_lookup_export[MAX_FRONT_ENDS];  // depends on selected CPU number
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::SubProgramLookup<ADDRESS> >  *subprogram_lookup_export[MAX_FRONT_ENDS];   // depends on selected CPU number
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYieldingRequest>        *debug_yielding_request_export[MAX_FRONT_ENDS];
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugSelecting>              *debug_selecting_export[MAX_FRONT_ENDS];
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> > *debug_event_trigger_export[MAX_FRONT_ENDS]; // depends on selected CPU number
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<ADDRESS> >       *disasm_export[MAX_FRONT_ENDS];              // depends on selected CPU number
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<ADDRESS> >            *memory_export[MAX_FRONT_ENDS];              // depends on selected CPU number
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Registers>                   *registers_export[MAX_FRONT_ENDS];           // depends on selected CPU number
+	unisim::kernel::ServiceExport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> > *symbol_table_lookup_export[MAX_FRONT_ENDS];
+	unisim::kernel::ServiceExport<unisim::service::interfaces::StatementLookup<ADDRESS> >   *stmt_lookup_export[MAX_FRONT_ENDS];
+	unisim::kernel::ServiceExport<unisim::service::interfaces::BackTrace<ADDRESS> >         *backtrace_export[MAX_FRONT_ENDS];           // depends on selected CPU number 
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DebugInfoLoading>            *debug_info_loading_export[MAX_FRONT_ENDS];
+	unisim::kernel::ServiceExport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >  *data_object_lookup_export[MAX_FRONT_ENDS];  // depends on selected CPU number
+	unisim::kernel::ServiceExport<unisim::service::interfaces::SubProgramLookup<ADDRESS> >  *subprogram_lookup_export[MAX_FRONT_ENDS];   // depends on selected CPU number
 
 	// Import from Loader
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Blob<ADDRESS> > blob_import;
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Blob<ADDRESS> > blob_import;
 
 	// Imports from CPUs
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReportingControl> *memory_access_reporting_control_import[NUM_PROCESSORS];
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> >        *disasm_import[NUM_PROCESSORS];
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> >             *memory_import[NUM_PROCESSORS];
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers>                    *registers_import[NUM_PROCESSORS];
+	unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryAccessReportingControl> *memory_access_reporting_control_import[NUM_PROCESSORS];
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> >        *disasm_import[NUM_PROCESSORS];
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> >             *memory_import[NUM_PROCESSORS];
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>                    *registers_import[NUM_PROCESSORS];
 
 	// Imports from Front-ends
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugEventListener<ADDRESS> > *debug_event_listener_import[MAX_FRONT_ENDS];
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugYielding>                *debug_yielding_import[MAX_FRONT_ENDS];
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventListener<ADDRESS> > *debug_event_listener_import[MAX_FRONT_ENDS];
+	unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYielding>                *debug_yielding_import[MAX_FRONT_ENDS];
 
-	Debugger(const char *name, unisim::kernel::service::Object *parent = 0);
+	Debugger(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~Debugger();
 	
 	virtual bool BeginSetup();
+	
+	// Symbols
+	void GetSymbols(typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& lst, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { GetSymbols(MAX_FRONT_ENDS, lst, type); }
+	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbol(const char *name, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { return FindSymbol(MAX_FRONT_ENDS, name, addr, type); }
+	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr) const { return FindSymbolByAddr(MAX_FRONT_ENDS, addr); }
+	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name) const { return FindSymbolByName(MAX_FRONT_ENDS, name); }
+	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { return FindSymbolByName(MAX_FRONT_ENDS, name, type); }
+	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { return FindSymbolByAddr(MAX_FRONT_ENDS, addr, type); }
 
+	// Statements
+	void GetStatements(std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const { GetStatements(MAX_FRONT_ENDS, stmts); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatement(MAX_FRONT_ENDS, addr, opt); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return FindStatements(MAX_FRONT_ENDS, stmts, addr, opt); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const { return FindStatement(MAX_FRONT_ENDS, filename, lineno, colno); }
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const { return FindStatements(MAX_FRONT_ENDS, stmts, filename, lineno, colno); }
+	
 private:
 	// Exports to CPUs
 	
@@ -148,9 +164,9 @@ private:
 	
 	// unisim::service::interfaces::TrapReporting (tagged)
 	void ReportTrap(unsigned int prc_num);
-	void ReportTrap(unsigned int prc_num, const unisim::kernel::service::Object &obj);
-	void ReportTrap(unsigned int prc_num, const unisim::kernel::service::Object &obj, const std::string &str);
-	void ReportTrap(unsigned int prc_num, const unisim::kernel::service::Object &obj, const char *c_str);
+	void ReportTrap(unsigned int prc_num, const unisim::kernel::Object &obj);
+	void ReportTrap(unsigned int prc_num, const unisim::kernel::Object &obj, const std::string &str);
+	void ReportTrap(unsigned int prc_num, const unisim::kernel::Object &obj, const char *c_str);
 
 	// Export to Front-ends
 	
@@ -178,7 +194,7 @@ private:
 	std::string Disasm(unsigned int front_end_num, ADDRESS addr, ADDRESS& next_addr);
 	
 	// unisim::service::interfaces::Memory<ADDRESS> (tagged)
-	void Reset(unsigned int front_end_num);
+	void ResetMemory(unsigned int front_end_num);
 	bool ReadMemory(unsigned int front_end_num, ADDRESS addr, void *buffer, uint32_t size);
 	bool WriteMemory(unsigned int front_end_num, ADDRESS addr, const void *buffer, uint32_t size);
 	
@@ -220,34 +236,34 @@ private:
 	const unisim::util::debug::SubProgram<ADDRESS> *FindSubProgram(unsigned int front_end_num, const char *subprogram_name, const char *filename, const char *compilation_unit_name) const;
 	
 	struct ProcessorGate
-		: unisim::kernel::service::Service<unisim::service::interfaces::DebugYielding>
-		, unisim::kernel::service::Service<unisim::service::interfaces::MemoryAccessReporting<ADDRESS> >
-		, unisim::kernel::service::Service<unisim::service::interfaces::TrapReporting>
-		, unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReportingControl>
-		, unisim::kernel::service::Client<unisim::service::interfaces::Disassembly<ADDRESS> >
-		, unisim::kernel::service::Client<unisim::service::interfaces::Memory<ADDRESS> >
-		, unisim::kernel::service::Client<unisim::service::interfaces::Registers>
+		: unisim::kernel::Service<unisim::service::interfaces::DebugYielding>
+		, unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReporting<ADDRESS> >
+		, unisim::kernel::Service<unisim::service::interfaces::TrapReporting>
+		, unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReportingControl>
+		, unisim::kernel::Client<unisim::service::interfaces::Disassembly<ADDRESS> >
+		, unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >
+		, unisim::kernel::Client<unisim::service::interfaces::Registers>
 	{
 		// From Processor
-		unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugYielding> debug_yielding_export;
-		unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
-		unisim::kernel::service::ServiceExport<unisim::service::interfaces::TrapReporting> trap_reporting_export;
+		unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYielding> debug_yielding_export;
+		unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
+		unisim::kernel::ServiceExport<unisim::service::interfaces::TrapReporting> trap_reporting_export;
 		
 		// To Processor
-		unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_import;
-		unisim::kernel::service::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> > disasm_import;
-		unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> > memory_import;
-		unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> registers_import;
+		unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_import;
+		unisim::kernel::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> > disasm_import;
+		unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> > memory_import;
+		unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> registers_import;
 
 		ProcessorGate(const char *name, unsigned int _id, Debugger<CONFIG> *parent)
-			: unisim::kernel::service::Object(name, parent)
-			, unisim::kernel::service::Service<unisim::service::interfaces::DebugYielding>(name, parent)
-			, unisim::kernel::service::Service<unisim::service::interfaces::MemoryAccessReporting<ADDRESS> >(name, parent)
-			, unisim::kernel::service::Service<unisim::service::interfaces::TrapReporting>(name, parent)
-			, unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReportingControl>(name, parent)
-			, unisim::kernel::service::Client<unisim::service::interfaces::Disassembly<ADDRESS> >(name, parent)
-			, unisim::kernel::service::Client<unisim::service::interfaces::Memory<ADDRESS> >(name, parent)
-			, unisim::kernel::service::Client<unisim::service::interfaces::Registers>(name, parent)
+			: unisim::kernel::Object(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::DebugYielding>(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::MemoryAccessReporting<ADDRESS> >(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::TrapReporting>(name, parent)
+			, unisim::kernel::Client<unisim::service::interfaces::MemoryAccessReportingControl>(name, parent)
+			, unisim::kernel::Client<unisim::service::interfaces::Disassembly<ADDRESS> >(name, parent)
+			, unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >(name, parent)
+			, unisim::kernel::Client<unisim::service::interfaces::Registers>(name, parent)
 			, debug_yielding_export("debug-yielding-export", this)
 			, memory_access_reporting_export("memory-access-reporting-export", this)
 			, trap_reporting_export("trap-reporting-export", this)
@@ -270,7 +286,7 @@ private:
 		
 		unsigned int GetProcessorNumber() const { return id; }
 
-		virtual bool Setup(unisim::kernel::service::ServiceExportBase *srv_export)
+		virtual bool Setup(unisim::kernel::ServiceExportBase *srv_export)
 		{
 			if(srv_export == &debug_yielding_export) return true;
 			if(srv_export == &memory_access_reporting_export) return true;
@@ -291,9 +307,9 @@ private:
 		
 		// unisim::service::interfaces::TrapReporting
 		virtual void ReportTrap() { dbg.ReportTrap(id); }
-		virtual void ReportTrap(const unisim::kernel::service::Object &obj) { dbg.ReportTrap(id, obj); }
-		virtual void ReportTrap(const unisim::kernel::service::Object &obj, const std::string &str) { dbg.ReportTrap(id, obj, str); }
-		virtual void ReportTrap(const unisim::kernel::service::Object &obj, const char *c_str) { dbg.ReportTrap(id, obj, c_str); }
+		virtual void ReportTrap(const unisim::kernel::Object &obj) { dbg.ReportTrap(id, obj); }
+		virtual void ReportTrap(const unisim::kernel::Object &obj, const std::string &str) { dbg.ReportTrap(id, obj, str); }
+		virtual void ReportTrap(const unisim::kernel::Object &obj, const char *c_str) { dbg.ReportTrap(id, obj, c_str); }
 		
 		// To Processor
 		
@@ -301,7 +317,7 @@ private:
 		inline std::string Disasm(ADDRESS addr, ADDRESS& next_addr) { return disasm_import ? disasm_import->Disasm(addr, next_addr) : std::string(); }
 		
 		// unisim::service::interfaces::Memory<ADDRESS>
-		inline void Reset() { if(memory_import) memory_import->Reset(); }
+		inline void ResetMemory() { if(memory_import) memory_import->ResetMemory(); }
 		inline bool ReadMemory(ADDRESS addr, void *buffer, uint32_t size) { return memory_import ? memory_import->ReadMemory(addr, buffer, size) : false; }
 		inline bool WriteMemory(ADDRESS addr, const void *buffer, uint32_t size) { return memory_import ? memory_import->WriteMemory(addr, buffer, size) : false; }
 		
@@ -317,55 +333,55 @@ private:
 	};
 	
 	struct FrontEndGate
-		: unisim::kernel::service::Service<unisim::service::interfaces::DebugYieldingRequest>
-		, unisim::kernel::service::Service<unisim::service::interfaces::DebugSelecting>
-		, unisim::kernel::service::Service<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
-		, unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<ADDRESS> >
-		, unisim::kernel::service::Service<unisim::service::interfaces::Memory<ADDRESS> >
-		, unisim::kernel::service::Service<unisim::service::interfaces::Registers>
-		, unisim::kernel::service::Service<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >
-		, unisim::kernel::service::Service<unisim::service::interfaces::StatementLookup<ADDRESS> >
-		, unisim::kernel::service::Service<unisim::service::interfaces::BackTrace<ADDRESS> >
-		, unisim::kernel::service::Service<unisim::service::interfaces::DebugInfoLoading>
-		, unisim::kernel::service::Service<unisim::service::interfaces::DataObjectLookup<ADDRESS> >
-		, unisim::kernel::service::Service<unisim::service::interfaces::SubProgramLookup<ADDRESS> >
-		, unisim::kernel::service::Client<unisim::service::interfaces::DebugYielding>
-		, unisim::kernel::service::Client<unisim::service::interfaces::DebugEventListener<ADDRESS> >
+		: unisim::kernel::Service<unisim::service::interfaces::DebugYieldingRequest>
+		, unisim::kernel::Service<unisim::service::interfaces::DebugSelecting>
+		, unisim::kernel::Service<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
+		, unisim::kernel::Service<unisim::service::interfaces::Disassembly<ADDRESS> >
+		, unisim::kernel::Service<unisim::service::interfaces::Memory<ADDRESS> >
+		, unisim::kernel::Service<unisim::service::interfaces::Registers>
+		, unisim::kernel::Service<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >
+		, unisim::kernel::Service<unisim::service::interfaces::StatementLookup<ADDRESS> >
+		, unisim::kernel::Service<unisim::service::interfaces::BackTrace<ADDRESS> >
+		, unisim::kernel::Service<unisim::service::interfaces::DebugInfoLoading>
+		, unisim::kernel::Service<unisim::service::interfaces::DataObjectLookup<ADDRESS> >
+		, unisim::kernel::Service<unisim::service::interfaces::SubProgramLookup<ADDRESS> >
+		, unisim::kernel::Client<unisim::service::interfaces::DebugYielding>
+		, unisim::kernel::Client<unisim::service::interfaces::DebugEventListener<ADDRESS> >
 	{
 		// Exports to Front-end
-		unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugYieldingRequest> debug_yielding_request_export;
-		unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugSelecting> debug_selecting_export;
-		unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> > debug_event_trigger_export; // depends on selected CPU number
-		unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<ADDRESS> > disasm_export;                  // depends on selected CPU number
-		unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<ADDRESS> > memory_export;                       // depends on selected CPU number
-		unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;                           // depends on selected CPU number
-		unisim::kernel::service::ServiceExport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> > symbol_table_lookup_export;
-		unisim::kernel::service::ServiceExport<unisim::service::interfaces::StatementLookup<ADDRESS> > stmt_lookup_export;
-		unisim::kernel::service::ServiceExport<unisim::service::interfaces::BackTrace<ADDRESS> > backtrace_export;                 // depends on selected CPU number 
-		unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugInfoLoading> debug_info_loading_export;
-		unisim::kernel::service::ServiceExport<unisim::service::interfaces::DataObjectLookup<ADDRESS> > data_object_lookup_export; // depends on selected CPU number
-		unisim::kernel::service::ServiceExport<unisim::service::interfaces::SubProgramLookup<ADDRESS> > subprogram_lookup_export; // depends on selected CPU number
+		unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYieldingRequest> debug_yielding_request_export;
+		unisim::kernel::ServiceExport<unisim::service::interfaces::DebugSelecting> debug_selecting_export;
+		unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> > debug_event_trigger_export; // depends on selected CPU number
+		unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<ADDRESS> > disasm_export;                  // depends on selected CPU number
+		unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<ADDRESS> > memory_export;                       // depends on selected CPU number
+		unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;                           // depends on selected CPU number
+		unisim::kernel::ServiceExport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> > symbol_table_lookup_export;
+		unisim::kernel::ServiceExport<unisim::service::interfaces::StatementLookup<ADDRESS> > stmt_lookup_export;
+		unisim::kernel::ServiceExport<unisim::service::interfaces::BackTrace<ADDRESS> > backtrace_export;                 // depends on selected CPU number 
+		unisim::kernel::ServiceExport<unisim::service::interfaces::DebugInfoLoading> debug_info_loading_export;
+		unisim::kernel::ServiceExport<unisim::service::interfaces::DataObjectLookup<ADDRESS> > data_object_lookup_export; // depends on selected CPU number
+		unisim::kernel::ServiceExport<unisim::service::interfaces::SubProgramLookup<ADDRESS> > subprogram_lookup_export; // depends on selected CPU number
 		
 		// Imports from Front-end
-		unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_import;
-		unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugYielding> debug_yielding_import;
+		unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_import;
+		unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYielding> debug_yielding_import;
 
 		FrontEndGate(const char *name, unsigned int _id, Debugger<CONFIG> *parent)
-			: unisim::kernel::service::Object(name, parent)
-			, unisim::kernel::service::Service<unisim::service::interfaces::DebugYieldingRequest>(name, parent)
-			, unisim::kernel::service::Service<unisim::service::interfaces::DebugSelecting>(name, parent)
-			, unisim::kernel::service::Service<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(name, parent)
-			, unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<ADDRESS> >(name, parent)
-			, unisim::kernel::service::Service<unisim::service::interfaces::Memory<ADDRESS> >(name, parent)
-			, unisim::kernel::service::Service<unisim::service::interfaces::Registers>(name, parent)
-			, unisim::kernel::service::Service<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(name, parent)
-			, unisim::kernel::service::Service<unisim::service::interfaces::StatementLookup<ADDRESS> >(name, parent)
-			, unisim::kernel::service::Service<unisim::service::interfaces::BackTrace<ADDRESS> >(name, parent)
-			, unisim::kernel::service::Service<unisim::service::interfaces::DebugInfoLoading>(name, parent)
-			, unisim::kernel::service::Service<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(name, parent)
-			, unisim::kernel::service::Service<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(name, parent)
-			, unisim::kernel::service::Client<unisim::service::interfaces::DebugYielding>(name, parent)
-			, unisim::kernel::service::Client<unisim::service::interfaces::DebugEventListener<ADDRESS> >(name, parent)
+			: unisim::kernel::Object(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::DebugYieldingRequest>(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::DebugSelecting>(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::Disassembly<ADDRESS> >(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::Memory<ADDRESS> >(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::StatementLookup<ADDRESS> >(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::BackTrace<ADDRESS> >(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::DebugInfoLoading>(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(name, parent)
+			, unisim::kernel::Service<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(name, parent)
+			, unisim::kernel::Client<unisim::service::interfaces::DebugYielding>(name, parent)
+			, unisim::kernel::Client<unisim::service::interfaces::DebugEventListener<ADDRESS> >(name, parent)
 			, debug_yielding_request_export("debug-yielding-request-export", this)
 			, debug_selecting_export("debug-selecting-export", this)
 			, debug_event_trigger_export("debug-event-trigger-export", this)
@@ -409,7 +425,7 @@ private:
 			debug_yielding_import       >> *dbg.debug_yielding_import[id];
 		}
 		
-		virtual bool Setup(unisim::kernel::service::ServiceExportBase *srv_export)
+		virtual bool Setup(unisim::kernel::ServiceExportBase *srv_export)
 		{
 			if(srv_export == &debug_yielding_request_export) return true;
 			if(srv_export == &debug_selecting_export) return true;
@@ -453,7 +469,7 @@ private:
 		virtual std::string Disasm(ADDRESS addr, ADDRESS& next_addr) { dbg.Lock(); std::string ret = dbg.Disasm(id, addr, next_addr); dbg.Unlock(); return ret; }
 		
 		// unisim::service::interfaces::Memory<ADDRESS>
-		virtual void Reset() { dbg.Lock(); dbg.Reset(id); dbg.Unlock(); }
+		virtual void ResetMemory() { dbg.Lock(); dbg.ResetMemory(id); dbg.Unlock(); }
 		virtual bool ReadMemory(ADDRESS addr, void *buffer, uint32_t size) { dbg.Lock(); bool ret = dbg.ReadMemory(id, addr, buffer, size); dbg.Unlock(); return ret; }
 		virtual bool WriteMemory(ADDRESS addr, const void *buffer, uint32_t size) { dbg.Lock(); bool ret = dbg.WriteMemory(id, addr, buffer, size); dbg.Unlock(); return ret; }
 		
@@ -542,12 +558,12 @@ private:
 	bool debug_dwarf;
 	unsigned int sel_cpu[MAX_FRONT_ENDS];
 
-	unisim::kernel::service::Parameter<bool> param_verbose;
-	unisim::kernel::service::Parameter<std::string> param_dwarf_to_html_output_directory;
-	unisim::kernel::service::Parameter<std::string> param_dwarf_register_number_mapping_filename;
-	unisim::kernel::service::Parameter<bool> param_parse_dwarf;
-	unisim::kernel::service::Parameter<bool> param_debug_dwarf;
-	unisim::kernel::service::ParameterArray<unsigned int> param_sel_cpu;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<std::string> param_dwarf_to_html_output_directory;
+	unisim::kernel::variable::Parameter<std::string> param_dwarf_register_number_mapping_filename;
+	unisim::kernel::variable::Parameter<bool> param_parse_dwarf;
+	unisim::kernel::variable::Parameter<bool> param_debug_dwarf;
+	unisim::kernel::variable::ParameterArray<unsigned int> param_sel_cpu;
 
 	unisim::kernel::logger::Logger logger;
 	bool setup_debug_info_done;

@@ -35,10 +35,10 @@
 op mfdcrx(31[6]:rd[5]:ra[5]:?[5]:259[10]:?[1])
 
 mfdcrx.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 	return false;
 }
 
 mfdcrx.disasm = {
-	os << "mfdcrx r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "mfdcrx " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }

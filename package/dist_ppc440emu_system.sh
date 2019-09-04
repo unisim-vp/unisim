@@ -104,9 +104,9 @@ unistd.h \
 vector"
 
 UNISIM_LIB_PPC440EMU_SYSTEM_SOURCE_FILES="\
-unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_config_file_helper.cc \
-unisim/kernel/service/ini_config_file_helper.cc \
+unisim/kernel/kernel.cc \
+unisim/kernel/config/xml_config_file_helper.cc \
+unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
@@ -129,7 +129,7 @@ unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
 unisim/util/blob/blob32.cc \
 unisim/util/blob/section32.cc \
-unisim/kernel/service/endian.cc \
+unisim/kernel/variable/endian/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
@@ -215,9 +215,9 @@ unisim/component/cxx/processor/powerpc/ppc440/isa/misc.isa \
 unisim/component/cxx/processor/powerpc/ppc440/isa/esr.isa"
 
 UNISIM_LIB_PPC440EMU_SYSTEM_HEADER_FILES="${UNISIM_LIB_PPC440EMU_SYSTEM_ISA_FILES} \
-unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_config_file_helper.hh \
-unisim/kernel/service/ini_config_file_helper.hh \
+unisim/kernel/kernel.hh \
+unisim/kernel/config/xml_config_file_helper.hh \
+unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm2/tlm.hh \
@@ -269,9 +269,12 @@ unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/device/register.hh \
 unisim/util/random/random.hh \
+unisim/util/hypapp/hypapp.hh \
 unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/disassembly.hh \
+unisim/service/interfaces/http_server.hh \
+unisim/service/interfaces/field.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
@@ -471,6 +474,7 @@ string"
 UNISIM_SIMULATORS_PPC440EMU_SYSTEM_SOURCE_FILES="\
 main.cc \
 "
+
 UNISIM_SIMULATORS_PPC440EMU_SYSTEM_HEADER_FILES="\
 "
 

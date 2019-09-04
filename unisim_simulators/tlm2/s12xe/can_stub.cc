@@ -43,9 +43,6 @@ CAN_STUB::CAN_STUB(const sc_module_name& name, Object *parent) :
 	, can_tx_sock("can_rx_sock")
 	, can_rx_sock("can_tx_sock")
 
-	, can_inject_stimulus_period(20000)
-	, can_inject_stimulus_period_sc(NULL)
-
 	, bw_inject_count(0)
 	, dont_care_bw_event(false)
 
@@ -63,7 +60,9 @@ CAN_STUB::CAN_STUB(const sc_module_name& name, Object *parent) :
 
 	, input_payload_queue("input_payload_queue")
 
+	, can_inject_stimulus_period(20000)
 	, param_can_inject_stimulus_period("can-rx-stimulus-period", this, can_inject_stimulus_period)
+	, can_inject_stimulus_period_sc(NULL)
 
 	, can_inject_stimulus_file("")
 	, param_can_inject_stimulus_file("can-rx-stimulus-file", this, can_inject_stimulus_file)
@@ -375,7 +374,7 @@ void CAN_STUB::processCAN_Inject()
 
 	while (!isTerminated() && (rand_enabled || xml_enabled || cosim_enabled)) {
 
-//		wait(*can_inject_stimulus_period_sc);
+		wait(*can_inject_stimulus_period_sc);
 
 		for (unsigned int i=0; i<can_inject_vect.size()  && !isTerminated(); i++) {
 			if (can_inject_vect[i] != NULL) {

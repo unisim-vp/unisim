@@ -172,13 +172,13 @@ namespace ut
   struct SourceReg : public unisim::util::symbolic::ExprNode
   {
     SourceReg( unsigned _reg ) : reg( _reg ) {} unsigned reg;
+    virtual SourceReg* Mutate() const { return new SourceReg(*this); }
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 0; }
-    virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
-    {
-      unsigned ref = dynamic_cast<SourceReg const&>( brhs ).reg;
-      return (reg < ref) ? -1 : (reg > ref) ? +1 : 0;
-    }
+    virtual int cmp( unisim::util::symbolic::ExprNode const& rhs ) const override { return compare( dynamic_cast<SourceReg const&>( rhs ) ); }
+    int compare( SourceReg const& rhs ) const { return int(reg) - int(rhs.reg); }
+    typedef unisim::util::symbolic::ScalarType ScalarType;
+    virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
   };
   
   struct Arch
@@ -198,7 +198,7 @@ namespace ut
     typedef unisim::util::symbolic::Expr Expr;
     typedef unisim::util::symbolic::ExprNode ExprNode;
     
-    bool Cond( BOOL const& _cond_expr ) const { return false; }
+    bool Concretize( BOOL const& _cond_expr ) const { return false; }
     
     struct Config
     {
@@ -242,9 +242,12 @@ namespace ut
     
     struct NPC : public ExprNode
     {
+      virtual NPC* Mutate() const { return new NPC(*this); }
       virtual void Repr( std::ostream& sink ) const { sink << "@NextInsn"; }
       virtual unsigned SubCount() const { return 0; }
-      virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return 0; }
+      virtual int cmp( unisim::util::symbolic::ExprNode const& brhs ) const override { return 0; }
+      typedef unisim::util::symbolic::ScalarType ScalarType;
+      virtual ScalarType::id_t GetType() const { return ScalarType::U32; }
     };
     
     U32 GetNIA() { gpr_append( 15, false ); return U32( new NPC ); }
@@ -255,9 +258,12 @@ namespace ut
     struct PSRFlags : public ExprNode
     {
       PSRFlags( uint32_t _mask ) : mask( _mask ) {} uint32_t mask;
+      virtual PSRFlags* Mutate() const { return new PSRFlags(*this); }
       virtual void Repr( std::ostream& sink ) const { sink << "PSR_flags"; }
       virtual unsigned SubCount() const { return 0; }
-      virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return 0; }
+      virtual int cmp( unisim::util::symbolic::ExprNode const& brhs ) const override { return 0; }
+      typedef unisim::util::symbolic::ScalarType ScalarType;
+      virtual ScalarType::id_t GetType() const { return ScalarType::U32 ; }
     };
     
     uint32_t   psr_value, psr_ok_mask;
@@ -294,23 +300,30 @@ namespace ut
     PSRTracer  cpsr;
     PSRTracer& CPSR() { return cpsr; };
     PSRTracer& SPSR() { /* Only work in system mode instruction */ donttest_system(); return cpsr; };
+
+    U32 GetCPSR() { return cpsr.bits(); }
+    void SetCPSR(U32 mask, uint32_t bits) { donttest_system(); }
     
     void SetGPRMapping( uint32_t src_mode, uint32_t tar_mode ) { /* system related */ donttest_system(); }
-    
+
+    template <unisim::util::symbolic::ScalarType::id_t ID>
     struct Load : public ExprNode
     {
       Load( Expr const& _address ) : address( _address ) {} Expr address;
+      virtual Load* Mutate() const { return new Load(*this); }
       virtual void Repr( std::ostream& sink ) const { sink << "Load( "; address->Repr( sink ); sink << " )"; }
       virtual unsigned SubCount() const { return 1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx!=0) return ExprNode::GetSub(0); return address; }
-      virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return address->cmp( *dynamic_cast<Load const&>( brhs ).address.node ); }
+      virtual int cmp( unisim::util::symbolic::ExprNode const& rhs ) const override { return compare( dynamic_cast<Load const&>( rhs ) ); }
+      int compare( Load const& brhs ) const { return 0; }
+      virtual unisim::util::symbolic::ScalarType::id_t GetType() const { return ID; }
     };
     
     U32 MemRead( Expr const& addr, bool aligned=true )
     {
       interface.load_addrs.push_back( addr );
       interface.aligned &= aligned;
-      return U32( new Load( addr ) ); 
+      return U32( new Load<unisim::util::symbolic::ScalarType::U32>( addr ) );
     }
     
     void MemWrite( Expr const& addr, bool aligned=true )
@@ -335,10 +348,11 @@ namespace ut
     bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { return true; }
     void ClearExclusiveLocal() {}
     
+    enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
     void donttest_branch();
     bool Check( BOOL condition ) { return true; }
-    void BranchExchange( U32 const& target ) { donttest_branch(); }
-    void Branch( U32 const& target ) { donttest_branch(); }
+    void BranchExchange( U32 const& target, branch_type_t ) { donttest_branch(); }
+    void Branch( U32 const& target, branch_type_t  ) { donttest_branch(); }
     
     void donttest_copro();
     // bool CoprocessorLoad( uint32_t cp_num, uint32_t address) { donttest_copro(); return false; }

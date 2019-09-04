@@ -33,7 +33,7 @@
  */
 
 #include "unisim/kernel/tlm2/tlm.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include <systemc>
 #include <stdlib.h>
 #include <string.h>
@@ -41,19 +41,25 @@
 
 namespace unisim {
 namespace kernel {
-namespace service {
+namespace variable {
 
 template <> 
 Variable<sc_core::sc_time>::Variable(const char *_name, Object *_object, sc_core::sc_time& _storage, Type type, const char *_description)
 	: VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 }
 
 template <>
 const char *Variable<sc_core::sc_time>::GetDataTypeName() const
 {
 	return "sc_time";
+}
+
+template <>
+VariableBase::DataType Variable<sc_core::sc_time>::GetDataType() const
+{
+	return DT_USER;
 }
 
 template <>
@@ -150,7 +156,7 @@ VariableBase& Variable<sc_core::sc_time>::operator = (const char *value)
 template class Variable<sc_core::sc_time>;
 
 
-} // end of namespace service
+} // end of namespace variable
 } // end of namespace kernel
 } // end of namespace unisim
 

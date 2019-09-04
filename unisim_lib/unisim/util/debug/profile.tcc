@@ -44,10 +44,12 @@ namespace debug {
 template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
 ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>::ProfilePage(ADDRESS _key) :
 	key(_key),
-	next(0)
+	next(0),
+	cumulative_weight()
 {
 	weight_coverage_map = new uint64_t[(2 * PAGE_SIZE) / 64]();
 	weights = new WEIGHT[PAGE_SIZE]();
+	
 }
 
 template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
@@ -84,6 +86,12 @@ const WEIGHT& ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>::GetWeight(unsigned int of
 }
 
 template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+const WEIGHT& ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>::GetWeight() const
+{
+	return cumulative_weight;
+}
+
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
 void ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>::Cover(ADDRESS offset, unsigned int length)
 {
 	if(length > 0)
@@ -103,6 +111,7 @@ void ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>::Accumulate(ADDRESS offset, const W
 	uint64_t mask = uint64_t(2) << ((2 * offset) % 64);
 	weight_coverage_map[(2 * offset) / 64] |= mask;
 	weights[offset] += weight;
+	cumulative_weight += weight;
 }
 
 template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
@@ -194,6 +203,7 @@ template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
 Profile<ADDRESS, WEIGHT, PAGE_SIZE>::Profile()
 	: hash_table()
 	, page_map()
+	, cumulative_weight()
 {
 }
 
@@ -207,6 +217,7 @@ void Profile<ADDRESS, WEIGHT, PAGE_SIZE>::Clear()
 {
 	hash_table.Reset();
 	page_map.clear();
+	cumulative_weight = WEIGHT();
 }
 
 template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
@@ -276,6 +287,7 @@ void Profile<ADDRESS, WEIGHT, PAGE_SIZE>::Accumulate(ADDRESS addr, const WEIGHT&
 
 	ADDRESS offset = addr & (PAGE_SIZE - 1);
 	page->Accumulate(offset, weight);
+	cumulative_weight += weight;
 }
 
 template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
@@ -291,6 +303,12 @@ bool Profile<ADDRESS, WEIGHT, PAGE_SIZE>::GetWeight(ADDRESS addr, WEIGHT& weight
 	weight = page->GetWeight(offset);
 	
 	return true;
+}
+
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+const WEIGHT& Profile<ADDRESS, WEIGHT, PAGE_SIZE>::GetWeight() const
+{
+	return cumulative_weight;
 }
 
 template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
@@ -310,7 +328,7 @@ template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
 std::ostream& operator << (std::ostream& os, const Profile<ADDRESS, WEIGHT, PAGE_SIZE>& prof)
 {
 	bool first = true;
-	typename std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *>::map map = prof.hash_table;
+	std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *> map = prof.hash_table;
 	typename std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *>::const_iterator iter;
 
 	for(iter = map.begin(); iter != map.end(); iter++)
@@ -334,7 +352,7 @@ Profile<ADDRESS, WEIGHT, PAGE_SIZE>::operator std::map<ADDRESS, WEIGHT>() const
 {
 	std::map<ADDRESS, WEIGHT> map;
 
-	typename std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *>::map page_map = hash_table;
+	std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *> page_map = hash_table;
 	typename std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *>::const_iterator iter;
 
 	for(iter = page_map.begin(); iter != page_map.end(); iter++)

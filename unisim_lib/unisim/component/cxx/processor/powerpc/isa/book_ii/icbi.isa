@@ -39,5 +39,5 @@ icbi.execute = {
 	return cpu->Icbi(ea);
 }
 icbi.disasm = {
-	os << "icbi r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "icbi " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

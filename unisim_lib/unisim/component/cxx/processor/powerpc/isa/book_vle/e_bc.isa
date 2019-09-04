@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,62 +33,53 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Branch (Decrement) Conditional [and Link] */
 op e_bc(30[6]:8[4]:bo[2]:bi[4]:shl<1> sext <32> bd[15]:lk[1]);
 
 e_bc.execute = {
-	bool ctr_ok;
-	bool cond_ok;
+	BOOL ctr_ok(true), cond_ok(true);
 	
 	if(bo & 2)
 	{
 		/* Decrement CTR */
-		CTR& ctr = cpu->GetCTR();
-		ctr = uint32_t(ctr) - uint32_t(1);
+		UINT ctr = UINT(cpu->GetCTR()) - UINT(1);
+		cpu->GetCTR() = ctr;
 		/* Test whether to branch if CTR is zero or not */
 		if(bo & 1)
 		{
-			ctr_ok = uint32_t(ctr) == uint32_t(0);
+			ctr_ok = (ctr == UINT(0));
 		}
 		else
 		{
-			ctr_ok = uint32_t(ctr) != uint32_t(0);
+			ctr_ok = (ctr != UINT(0));
 		}
-		
-		cond_ok = bool(true);
 	}
 	else
 	{
 		/* Conditional branch */
-		CR& cr = cpu->GetCR();
+		U32 cr( cpu->GetCR() );
 		if(bo & 1)
 		{
 			/* Branch if condition is true */
-			cond_ok = ((uint32_t(cr) << uint32_t(bi)) & uint32_t(0x80000000UL)) != uint32_t(0);
+			cond_ok = BOOL((cr << bi) >> 31);
 		}
 		else
 		{
 			/* Branch if condition is false */
-			cond_ok = ((uint32_t(cr) << uint32_t(bi)) & uint32_t(0x80000000UL)) == uint32_t(0);
+			cond_ok = not BOOL((cr << bi) >> 31);
 		}
-		
-		ctr_ok = bool(true);
 	}
 	
-	if(ctr_ok and cond_ok)
+	if(evenly(ctr_ok and cond_ok))
 	{
-		ADDRESS target_addr = cpu->GetCIA() + uint32_t( bd);
+		ADDRESS target_addr( cpu->GetCIA() + UINT(bd) );
 		cpu->Branch(target_addr);
 	}
 	
 	if(lk)
 	{
 		LR& lr = cpu->GetLR();
-		lr = cpu->GetCIA() + uint32_t(4);
+		lr = ADDRESS( cpu->GetCIA() + UINT(4) );
 	}
 	
 	return true;

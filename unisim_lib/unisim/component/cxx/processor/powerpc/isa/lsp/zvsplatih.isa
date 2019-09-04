@@ -33,11 +33,11 @@
  */
 
 /* Vector splat immediate halfword (zvsplatih) */
-op zvsplatih(0b000100[6]:rd[5]:sext<16> simm[5]:0b00000[5]:0b01000111111[11])
+op zvsplatih(0b000100[6]:rd[5]:sext simm[5]:0b00000[5]:0b01000111111[11])
 zvsplatih.execute = {
 	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zvsplatih.disasm = {
-	os << " r" << (unsigned int) rd << ", " << simm;
+	os << " " << GPRPrint(rd) << ", " << int(simm);
 }

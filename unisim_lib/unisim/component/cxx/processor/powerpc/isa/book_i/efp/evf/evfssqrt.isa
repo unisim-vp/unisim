@@ -38,5 +38,5 @@ evfssqrt.execute = {
 	return false;
 }
 evfssqrt.disasm = {
-	os << "evfssqrt r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "evfssqrt " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }

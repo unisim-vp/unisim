@@ -41,7 +41,7 @@
 #include <stdlib.h>
 #include "unisim/service/loader/raw_loader/raw_loader.hh"
 #include "unisim/service/interfaces/memory.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include <unisim/util/likely/likely.hh>
 
@@ -50,10 +50,10 @@ namespace service {
 namespace loader {
 namespace raw_loader {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExportBase;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::DebugError;
@@ -65,7 +65,7 @@ using unisim::service::interfaces::Memory;
 template <class MEMORY_ADDR>
 RawLoader<MEMORY_ADDR> ::
 RawLoader(const char *name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "Raw loader")
 	, Service<Loader>(name, parent)
 	, Service<Blob<MEMORY_ADDR> >(name, parent)
 	, Client<Memory<MEMORY_ADDR> >(name, parent)

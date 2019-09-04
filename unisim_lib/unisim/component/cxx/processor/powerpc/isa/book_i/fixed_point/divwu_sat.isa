@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,64 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
-}
+/* Divide Word Unsigned: Saturated output in case of Division By Zero. */
+include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divwu.isa"
 
-op divwu(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:459[9]:rc[1]);
+divwu.var DZResult : { struct { U32 operator () (U32 a, U32 b) { return U32(-1); } } };
 
-divwu.execute = {
-	// Read the input operands
-	uint32_t a( cpu->GetGPR(ra) );
-	uint32_t b( cpu->GetGPR(rb) );
-	XER& xer = cpu->GetXER();
-	uint32_t result;
-	
-	if(unlikely(b == uint32_t( 0)))
-	{
-		// Compute the saturated result
-		result = uint32_t( -1);
-			
-		if(unlikely(oe))
-		{
-			// Generate XER[OV] and XER[SO]: XER[OV]=1 XER[SO]=1
-			xer.Set<XER::OV>(1);
-			xer.Set<XER::SO>(1);
-		}
-	}
-	else
-	{
-		// Compute the result
-		result = a / b ;
-			
-		if(unlikely(oe))
-		{
-			// Generate XER[OV]: XER[OV]=0
-			xer.Set<XER::OV>(0);
-		}
-	}
-	
-	// Write back the result
-	cpu->SetGPR(rd, result);
-		
-	if(unlikely(rc))
-	{
-		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
-		CR& cr = cpu->GetCR();
-		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(int32_t( result) < int32_t( 0));
-		cr.Set<CR::CR0::GT>(int32_t( result) > int32_t( 0));
-		cr.Set<CR::CR0::EQ>(result == uint32_t( 0));
-	}
-	
-	return true;
-}
-
-divwu.disasm = {
-	os << "divwu" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-}
-
-specialize divwu(rc=0,oe=0)
-specialize divwu(rc=0,oe=1)
-specialize divwu(rc=1,oe=0)
-specialize divwu(rc=1,oe=1)

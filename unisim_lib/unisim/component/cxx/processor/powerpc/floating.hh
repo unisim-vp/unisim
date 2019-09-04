@@ -35,8 +35,13 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_FLOATING_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_FLOATING_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/simfloat/integer.hh>
+#include <unisim/util/simfloat/integer.tcc>
 #include <unisim/util/simfloat/floating.hh>
+#include <unisim/util/simfloat/floating.tcc>
+#include <unisim/util/likely/likely.hh>
 #include <unisim/service/interfaces/register.hh>
 
 #include <inttypes.h>
@@ -52,270 +57,353 @@ namespace cxx {
 namespace processor {
 namespace powerpc {
 
-static const unsigned int RN_NEAREST = 0;
-static const unsigned int RN_ZERO = 1;
-static const unsigned int RN_UP = 2;
-static const unsigned int RN_DOWN = 3;
+typedef uint8_t  U8;
+typedef uint16_t U16;
+typedef uint32_t U32;
+typedef uint64_t U64;
+typedef  int8_t  S8;
+typedef  int16_t S16;
+typedef  int32_t S32;
+typedef  int64_t S64;
+typedef  bool    BOOL;
 
-   class Flags {
-     protected:
-      enum RoundMode { RMNearest, RMLowest, RMHighest, RMZero };
-      enum Approximation { AExact, ADownApproximate, AUpApproximate };
-      enum ReadResult { RRTotal, RRPartial };
-      enum QNaNResult
-         {  QNNRUndefined, QNNRInftyMinusInfty, QNNRInftyOnInfty, QNNRZeroOnZero,
-            QNNRInftyMultZero
-         };
-      enum FlowException { FENoException, FEOverflow, FEUnderflow, FEEnd };
+struct Flags
+{
+  struct Impl
+  {
+    enum RoundMode { RMNearest, RMLowest, RMHighest, RMZero };
+    enum Approximation { AExact, ADownApproximate, AUpApproximate };
+    enum ReadResult { RRTotal, RRPartial };
+    enum QNaNResult
+      {  QNNRUndefined, QNNRInftyMinusInfty, QNNRInftyOnInfty, QNNRZeroOnZero,
+         QNNRInftyMultZero
+      };
+    enum FlowException { FENoException, FEOverflow, FEUnderflow, FEEnd };
       
-     private:
-      bool fAvoidAllInfty;
-      bool fAvoidDenormalized;
-      bool fRoundToEven;
-      bool fUpApproximateInfty;
+    Impl()
+      : fAvoidAllInfty(false), fAvoidDenormalized(false), fRoundToEven(true)
+      , rmRound(RMNearest), aApproximation(AExact), rrReadResult(RRTotal)
+      , fEffectiveRoundToEven(false), fSNaNOperand(false), qnrQNaNResult(QNNRUndefined)
+      , feExcept(FENoException), fDivisionByZero(false)
+    {}
+
+    Impl(const Impl& rpSource)
+      : fAvoidAllInfty(rpSource.fAvoidAllInfty), fAvoidDenormalized(rpSource.fAvoidDenormalized)
+      , fRoundToEven(rpSource.fRoundToEven), rmRound(rpSource.rmRound)
+      , aApproximation(rpSource.aApproximation), rrReadResult(rpSource.rrReadResult)
+      , fEffectiveRoundToEven(rpSource.fEffectiveRoundToEven), fSNaNOperand(rpSource.fSNaNOperand), qnrQNaNResult(rpSource.qnrQNaNResult)
+      , feExcept(rpSource.feExcept), fDivisionByZero(rpSource.fDivisionByZero)
+    {}
+
+    Impl& operator=(const Impl& rpSource)
+    {
+      aApproximation = rpSource.aApproximation;
+      rrReadResult = rpSource.rrReadResult;
+      fEffectiveRoundToEven = rpSource.fEffectiveRoundToEven;
+      fSNaNOperand = rpSource.fSNaNOperand;
+      qnrQNaNResult = rpSource.qnrQNaNResult;
+      feExcept = rpSource.feExcept;
+      fDivisionByZero = rpSource.fDivisionByZero;
+    
+      return *this;
+    }
+  
+    bool isRoundToEven() const { return fRoundToEven && isNearestRound(); }
+    bool isPositiveZeroMAdd() { return true; }
+    bool isInftyAvoided() const { return true; }
+    bool isAllInftyAvoided() const { return fAvoidAllInfty; }
+    bool doesAvoidInfty(bool fNegative) const
+    {  return fAvoidAllInfty || (fNegative ? (rmRound >= RMHighest) : (rmRound & RMLowest)); }
+    bool isDenormalizedAvoided() const { return fAvoidDenormalized; }
+    bool keepNaNSign() const { return true; }
+    bool produceMultNaNPositive() const { return true; }
+    bool produceDivNaNPositive() const { return true; }
+    bool produceAddNaNPositive() const { return true; }
+    bool produceSubNaNPositive() const { return true; }
+    bool upApproximateInfty() const { return true; }
+    bool upApproximateInversionForNear() const { return true; }
+    bool chooseNaNAddBeforeMult() const { return true; }
+    bool isConvertNaNNegative() const { return true; }
+    bool acceptMinusZero() const { return true; }
+
+    void setAvoidAllInfty()   { fAvoidAllInfty = true; }
+    void clearAvoidAllInfty() { fAvoidAllInfty = false; }
+    void setAvoidDenormalized() { fAvoidDenormalized = true; }
+    void clearAvoidDenormalized() { fAvoidDenormalized = false; }
+    void setRoundToEven() { fRoundToEven = true; }
+    void clearRoundToEven() { fRoundToEven = false; }
+
+    // dynamic read parameters
+    Impl& setNearestRound()   { rmRound = RMNearest; return *this; }
+    Impl& setHighestRound()   { rmRound = RMHighest; return *this; }
+    Impl& setLowestRound()    { rmRound = RMLowest; return *this; }
+    Impl& setZeroRound()      { rmRound = RMZero; return *this; }
+
+    bool isLowestRound() const { return rmRound == RMLowest; }
+    bool isNearestRound() const { return rmRound == RMNearest; }
+    bool isHighestRound() const { return rmRound == RMHighest; }
+    bool isZeroRound() const { return rmRound == RMZero; }
+
+    bool keepSignalingConversion() const { return false; }
+
+    // dynamic write parameters
+    bool isApproximate() const { return aApproximation != AExact; }
+    bool isDownApproximate() const { return aApproximation == ADownApproximate; }
+    bool isUpApproximate() const { return aApproximation == AUpApproximate; }
+    Approximation getApproximation() const { return aApproximation; }
+
+    void setDownApproximate() { aApproximation = ADownApproximate; }
+    void setUpApproximate() { aApproximation = AUpApproximate; }
+    void clearApproximate() { aApproximation = AExact; }
+    enum Direction { Down = 0, Up };
+    void setApproximate(Direction dDirection) {  aApproximation = ((dDirection == Down) ? ADownApproximate : AUpApproximate); }
+    bool isApproximate(Direction dDirection) const {  return aApproximation == ((dDirection == Down) ? ADownApproximate : AUpApproximate); }
+    bool hasSameApproximation(const Impl& rpSource) const {  return aApproximation == rpSource.aApproximation; }
+    bool hasIncrementFraction(bool fNegative) const {  return fNegative ? isDownApproximate() : isUpApproximate(); }
+
+    void setEffectiveRoundToEven() { fEffectiveRoundToEven = true; }
+    void clearEffectiveRoundToEven() { fEffectiveRoundToEven = false; }
+    bool hasEffectiveRoundToEven() { return fEffectiveRoundToEven; }
+
+    void setPartialRead() { rrReadResult = RRPartial; }
+    void setTotalRead() { rrReadResult = RRTotal; }
+    bool isPartialRead() const { return rrReadResult == RRPartial; }
+    bool isTotalRead() const { return rrReadResult == RRTotal; }
+    bool hasPartialRead() const { return rrReadResult != RRTotal; }
+
+    void setSNaNOperand() { fSNaNOperand = true; }
+    bool hasSNaNOperand() const { return fSNaNOperand; }
       
-      RoundMode rmRound;
-      bool fKeepSignalingConversion;
+    void setInftyMinusInfty() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRInftyMinusInfty; }
+    void setInftyOnInfty() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRInftyOnInfty; }
+    void setZeroOnZero() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRZeroOnZero; }
+    void setInftyMultZero() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRInftyMultZero; }
+    bool hasQNaNResult() const { return qnrQNaNResult; }
+    bool isInftyMinusInfty() const { return qnrQNaNResult == QNNRInftyMinusInfty; }
+    bool isInftyOnInfty() const { return qnrQNaNResult == QNNRInftyOnInfty; }
+    bool isZeroOnZero() const { return qnrQNaNResult == QNNRZeroOnZero; }
+    bool isInftyMultZero() const { return qnrQNaNResult == QNNRInftyMultZero; }
 
-      Approximation aApproximation;
-      ReadResult rrReadResult;
-      bool fEffectiveRoundToEven;
-      bool fSNaNOperand;
-      QNaNResult qnrQNaNResult;
-      FlowException feExcept;
-      bool fDivisionByZero;
+    void clear()
+    {
+      aApproximation = AExact;
+      rrReadResult = RRTotal;
+      fEffectiveRoundToEven = false;
+      fSNaNOperand = false;
+      qnrQNaNResult = QNNRUndefined;
+      feExcept = FENoException;
+      fDivisionByZero = false;
+    }
 
-     public:
-      Flags()
-         :  fAvoidAllInfty(false), fAvoidDenormalized(false), fRoundToEven(true),
-            fUpApproximateInfty(false), rmRound(RMNearest),
-            fKeepSignalingConversion(true), aApproximation(AExact), rrReadResult(RRTotal),
-            fEffectiveRoundToEven(false), fSNaNOperand(false), qnrQNaNResult(QNNRUndefined),
-            feExcept(FENoException), fDivisionByZero(false) {}
-      Flags(const Flags& rpSource)
-         :  fAvoidAllInfty(rpSource.fAvoidAllInfty), fAvoidDenormalized(rpSource.fAvoidDenormalized),
-            fRoundToEven(rpSource.fRoundToEven), fUpApproximateInfty(rpSource.fUpApproximateInfty),
-            rmRound(rpSource.rmRound), fKeepSignalingConversion(rpSource.fKeepSignalingConversion),
-            aApproximation(rpSource.aApproximation), rrReadResult(rpSource.rrReadResult),
-            fEffectiveRoundToEven(rpSource.fEffectiveRoundToEven), fSNaNOperand(rpSource.fSNaNOperand), qnrQNaNResult(rpSource.qnrQNaNResult),
-            feExcept(rpSource.feExcept), fDivisionByZero(rpSource.fDivisionByZero) {}
-
-      Flags& operator=(const Flags& rpSource)
-         {  aApproximation = rpSource.aApproximation;
-            rrReadResult = rpSource.rrReadResult;
-            fEffectiveRoundToEven = rpSource.fEffectiveRoundToEven;
-            fSNaNOperand = rpSource.fSNaNOperand;
-            qnrQNaNResult = rpSource.qnrQNaNResult;
-            feExcept = rpSource.feExcept;
-            fDivisionByZero = rpSource.fDivisionByZero;
-            return *this;
-         }
-      bool isRoundToEven() const { return fRoundToEven && isNearestRound(); }
-      bool isPositiveZeroMAdd() { return true; }
-      bool isInftyAvoided() const { return true; }
-      bool isAllInftyAvoided() const { return fAvoidAllInfty; }
-      bool doesAvoidInfty(bool fNegative) const
-         {  return fAvoidAllInfty || (fNegative ? (rmRound >= RMHighest) : (rmRound & RMLowest)); }
-      bool isDenormalizedAvoided() const { return fAvoidDenormalized; }
-      bool keepNaNSign() const { return true; }
-      bool produceMultNaNPositive() const { return true; }
-      bool produceDivNaNPositive() const { return true; }
-      bool produceAddNaNPositive() const { return true; }
-      bool produceSubNaNPositive() const { return true; }
-      bool upApproximateInfty() const { return fUpApproximateInfty; }
-      bool upApproximateInversionForNear() const { return true; }
-      bool chooseNaNAddBeforeMult() const { return true; }
-      bool isConvertNaNNegative() const { return true; }
-      bool acceptMinusZero() const { return true; }
-
-      void setAvoidAllInfty()   { fAvoidAllInfty = true; }
-      void clearAvoidAllInfty() { fAvoidAllInfty = false; }
-      void setAvoidDenormalized() { fAvoidDenormalized = true; }
-      void clearAvoidDenormalized() { fAvoidDenormalized = false; }
-      void setRoundToEven() { fRoundToEven = true; }
-      void clearRoundToEven() { fRoundToEven = false; }
-      void setUpApproximateInfty() { fUpApproximateInfty = true; }
-      void clearUpApproximateInfty() { fUpApproximateInfty = false; }
-
-      // dynamic read parameters
-      Flags& setNearestRound()   { rmRound = RMNearest; return *this; }
-      Flags& setHighestRound()   { rmRound = RMHighest; return *this; }
-      Flags& setLowestRound()    { rmRound = RMLowest; return *this; }
-      Flags& setZeroRound()      { rmRound = RMZero; return *this; }
-
-      bool isLowestRound() const { return rmRound == RMLowest; }
-      bool isNearestRound() const { return rmRound == RMNearest; }
-      bool isHighestRound() const { return rmRound == RMHighest; }
-      bool isZeroRound() const { return rmRound == RMZero; }
-
-      Flags& setKeepSignalingConversion() { fKeepSignalingConversion = true; return *this; }
-      Flags& clearKeepSignalingConversion() { fKeepSignalingConversion = false; return *this; }
-      bool keepSignalingConversion() const { return fKeepSignalingConversion; }
-
-      // dynamic write parameters
-      bool isApproximate() const { return aApproximation != AExact; }
-      bool isDownApproximate() const { return aApproximation == ADownApproximate; }
-      bool isUpApproximate() const { return aApproximation == AUpApproximate; }
-      void setDownApproximate() { aApproximation = ADownApproximate; }
-      void setUpApproximate() { aApproximation = AUpApproximate; }
-      void clearApproximate() { aApproximation = AExact; }
-      enum Direction { Down, Up };
-      void setApproximate(Direction dDirection)
-         {  aApproximation = ((dDirection == Down) ? ADownApproximate : AUpApproximate); }
-      bool isApproximate(Direction dDirection) const
-         {  return aApproximation == ((dDirection == Down) ? ADownApproximate : AUpApproximate); }
-      bool hasSameApproximation(const Flags& rpSource) const
-         {  return aApproximation == rpSource.aApproximation; }
-      bool hasIncrementFraction(bool fNegative) const
-         {  return fNegative ? isDownApproximate() : isUpApproximate(); }
-
-      void setEffectiveRoundToEven() { fEffectiveRoundToEven = true; }
-      void clearEffectiveRoundToEven() { fEffectiveRoundToEven = false; }
-      bool hasEffectiveRoundToEven() { return fEffectiveRoundToEven; }
-
-      void setPartialRead() { rrReadResult = RRPartial; }
-      void setTotalRead() { rrReadResult = RRTotal; }
-      bool isPartialRead() const { return rrReadResult == RRPartial; }
-      bool isTotalRead() const { return rrReadResult == RRTotal; }
-      bool hasPartialRead() const { return rrReadResult != RRTotal; }
-
-      void setSNaNOperand() { fSNaNOperand = true; }
-      bool hasSNaNOperand() const { return fSNaNOperand; }
+    bool isDivisionByZero() const { return fDivisionByZero; }
+    void setDivisionByZero() { fDivisionByZero = true; }
+    void clearFlowException() { feExcept = FENoException; }
+    void setOverflow() { feExcept = FEOverflow; }
+    void setUnderflow() { feExcept = FEUnderflow; }
+    bool isOverflow() const { return feExcept == FEOverflow; }
+    bool isUnderflow() const { return feExcept == FEUnderflow; }
       
-      void setInftyMinusInfty() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRInftyMinusInfty; }
-      void setInftyOnInfty() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRInftyOnInfty; }
-      void setZeroOnZero() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRZeroOnZero; }
-      void setInftyMultZero() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRInftyMultZero; }
-      bool hasQNaNResult() const { return qnrQNaNResult; }
-      bool isInftyMinusInfty() const { return qnrQNaNResult == QNNRInftyMinusInfty; }
-      bool isInftyOnInfty() const { return qnrQNaNResult == QNNRInftyOnInfty; }
-      bool isZeroOnZero() const { return qnrQNaNResult == QNNRZeroOnZero; }
-      bool isInftyMultZero() const { return qnrQNaNResult == QNNRInftyMultZero; }
+    void setRoundingMode(unsigned int rn_mode)
+    {
+      switch(rn_mode)
+        {
+        case PPC_NEAREST:  setNearestRound();  break;
+        case PPC_ZERO:     setZeroRound();     break;
+        case PPC_UP:       setHighestRound();  break;
+        case PPC_DOWN:     setLowestRound();   break;
+        }
+    }
+  
+    static const unsigned int PPC_NEAREST = 0;
+    static const unsigned int PPC_ZERO = 1;
+    static const unsigned int PPC_UP = 2;
+    static const unsigned int PPC_DOWN = 3;
 
-      void clear()
-         {  aApproximation = AExact;
-            rrReadResult = RRTotal;
-            fEffectiveRoundToEven = false;
-            fSNaNOperand = false;
-            qnrQNaNResult = QNNRUndefined;
-            feExcept = FENoException;
-            fDivisionByZero = false;
-         }
-
-      bool isDivisionByZero() const { return fDivisionByZero; }
-      void setDivisionByZero() { fDivisionByZero = true; }
-      bool hasFlowException() const { return feExcept != FENoException; }
-      void clearFlowException() { feExcept = FENoException; }
-      void setOverflow() { feExcept = FEOverflow; }
-      void setUnderflow() { feExcept = FEUnderflow; }
-      bool isOverflow() const { return feExcept == FEOverflow; }
-      bool isUnderflow() const { return feExcept == FEUnderflow; }
-      void clearUnderflow() { feExcept = FENoException; }
-      void mergeException(const Flags& source) { if (feExcept == FENoException) feExcept = source.feExcept; }
-      
-      void setRoundingMode(unsigned int rn_mode)
-         {  switch(rn_mode)
-            {
-               case RN_NEAREST:
-                  setNearestRound();
-                  break;
-               case RN_ZERO:
-                  setZeroRound();
-                  break;
-               case RN_UP:
-                  setHighestRound();
-                  break;
-               case RN_DOWN:
-                  setLowestRound();
-                  break;
-            }
-         }
-   };
-
-class BuiltDoubleTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11> {
-  public:
-   typedef Flags StatusAndControlFlags;
-   class MultExtension : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11>::MultExtension {
-     public:
-      typedef Flags StatusAndControlFlags;
-   };
-};
-
-class SoftFloat;
-class SoftDouble : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltDoubleTraits> {
   private:
-   typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltDoubleTraits> inherited;
+    bool fAvoidAllInfty;
+    bool fAvoidDenormalized;
+    bool fRoundToEven;
+      
+    RoundMode rmRound;
 
-  public:
-   SoftDouble() : inherited() {}
-   SoftDouble(const SoftFloat& sfFloat, Flags& rpParams);
-   SoftDouble(const uint64_t& uDouble) { setChunk((void *) &uDouble, unisim::util::endian::IsHostLittleEndian()); }
-   SoftDouble& operator=(const SoftDouble& sdSource)
-      {  return (SoftDouble&) inherited::operator=(sdSource); }
-   SoftDouble& assign(const SoftDouble& sdSource)
-      {  return (SoftDouble&) inherited::operator=(sdSource); }
-   SoftDouble& assign(const SoftFloat& sfFloat, Flags& rpParams);
+    Approximation aApproximation;
+    ReadResult rrReadResult;
+    bool fEffectiveRoundToEven;
+    bool fSNaNOperand;
+    QNaNResult qnrQNaNResult;
+    FlowException feExcept;
+    bool fDivisionByZero;
+  } impl;
 
-   uint64_t queryValue() const
-      {  uint64_t uResult; fillChunk(&uResult, unisim::util::endian::IsHostLittleEndian()); return uResult; }
+  struct RoundingMode { RoundingMode(unsigned int rm) : mode(rm) {} unsigned int mode; };
+  Flags( RoundingMode const& rm ) : impl() { impl.setRoundingMode( rm.mode ); }
+  
+  bool hasIncrementFraction(bool neg) const { return impl.hasIncrementFraction(neg); } // FPSCR.FR
+  bool isApproximate() const { return impl.isApproximate(); }                          // FPSCR.FI
+  bool isOverflow() const { return impl.isOverflow(); }                                // FPSCR.OX
+  bool isUnderflow() const { return impl.isUnderflow(); }                              // FPSCR.UX
+  bool isDivisionByZero() const { return impl.isDivisionByZero(); }                    // FPSCR.ZX
+  bool hasSNaNOperand() const { return impl.hasSNaNOperand(); }                        // FPSCR.VXSNAN
+  bool isInftyMinusInfty() const { return impl.isInftyMinusInfty(); }                  // FPSCR.VXISI
+  bool isInftyOnInfty() const { return impl.isInftyOnInfty(); }                        // FPSCR.VXIDI
+  bool isInftyMultZero() const { return impl.isInftyMultZero(); }                      // FPSCR.VXIMZ
+  bool isZeroOnZero() const { return impl.isZeroOnZero(); }                            // FPSCR.VXZDZ
 };
 
-class BuiltFloatTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8> {
-  public:
-   typedef Flags StatusAndControlFlags;
-   class MultExtension : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8>::MultExtension {
-     public:
-      typedef Flags StatusAndControlFlags;
-   };
+struct SoftFloat;
+struct SoftDouble;
+
+struct BuiltFloatTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8>
+{
+  typedef Flags::Impl StatusAndControlFlags;
+  
+  struct MultExtension : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8>::MultExtension
+  {
+    typedef Flags::Impl StatusAndControlFlags;
+  };
 };
 
-class SoftFloat : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltFloatTraits> {
-  private:
-   typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltFloatTraits> inherited;
+struct SoftFloat
+{
+  typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltFloatTraits> impl_type;
 
-  public:
-   SoftFloat() : inherited() {}
-   SoftFloat(const SoftDouble& sdDouble, Flags& rpParams);
-   SoftFloat(const uint32_t& uFloat) { setChunk((void *) &uFloat, unisim::util::endian::IsHostLittleEndian()); }
-
-   SoftFloat& operator=(const SoftFloat& sfSource)
-      {  return (SoftFloat&) inherited::operator=(sfSource); }
-   SoftFloat& assign(const SoftFloat& sfSource)
-      {  return (SoftFloat&) inherited::operator=(sfSource); }
-   SoftFloat& assign(const SoftDouble& sdDouble, Flags& rpParams);
-   uint32_t queryValue() const
-      {  uint32_t uResult; fillChunk(&uResult, unisim::util::endian::IsHostLittleEndian()); return uResult; }
+  enum ComparisonResult
+    { CRNaN=impl_type::CRNaN, CRLess=impl_type::CRLess, CREqual=impl_type::CREqual, CRGreater=impl_type::CRGreater };
+  
+  SoftFloat() : impl() {}
+  
+  enum __FromRawBits__ { FromRawBits };
+  SoftFloat(__FromRawBits__, uint32_t source) { fromRawBitsAssign( source ); }
+  SoftFloat(SoftDouble const& source, Flags& flags) { convertAssign( source, flags ); }
+  
+  SoftFloat& assign(const SoftFloat& source);
+  SoftFloat& operator=(const SoftFloat& source);
+  
+  SoftFloat& fromRawBitsAssign(uint32_t source);
+  SoftFloat& convertAssign(const SoftDouble& op1, Flags& flags);
+  
+  U32 queryRawBits() const;
+  
+  void plusAssign(const SoftFloat& op1, Flags& flags);
+  void minusAssign(const SoftFloat& op1, Flags& flags);
+  void multAssign(const SoftFloat& op1, Flags& flags);
+  void divAssign(const SoftFloat& op1, Flags& flags);
+  void multAndAddAssign(const SoftFloat& a, const SoftFloat& b, Flags& flags);
+  void multAndSubAssign(const SoftFloat& a, const SoftFloat& b, Flags& flags);
+  void opposite();
+  void setQuiet();
+  void setPositive();
+  void setNegative();
+  
+  void sqrtAssign( Flags& flags );
+  
+  ComparisonResult compare( SoftFloat const& rhs ) const;
+  
+  BOOL isNegative() const;
+  // BOOL isPositive() const;
+  BOOL isZero() const;
+  BOOL isInfty() const;
+  BOOL isSNaN() const;
+  BOOL isQNaN() const;
+  BOOL isNaN() const;
+  BOOL isDenormalized() const;
+  
+  impl_type impl;
 };
 
-inline SoftDouble&
-SoftDouble::assign(const SoftFloat& sfFloat, Flags& rpParams) {
-   FloatConversion fcConversion;
-   fcConversion.setSizeMantissa(23).setSizeExponent(8);
-   fcConversion.setNegative(sfFloat.isNegative());
-   fcConversion.exponent()[0] = sfFloat.queryBasicExponent()[0];
-   fcConversion.mantissa()[0] = sfFloat.queryMantissa()[0];
-   inherited source(fcConversion, rpParams);
-   return (SoftDouble&) inherited::operator=(source);
-}
+struct BuiltDoubleTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11>
+{
+  typedef Flags::Impl StatusAndControlFlags;
+  struct MultExtension : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11>::MultExtension
+  {
+    typedef Flags::Impl StatusAndControlFlags;
+  };
+};
 
-inline
-SoftDouble::SoftDouble(const SoftFloat& sfFloat, Flags& rpParams)
-   { assign(sfFloat, rpParams); }
+struct SoftDouble
+{
+  typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltDoubleTraits> impl_type;
 
-inline SoftFloat&
-SoftFloat::assign(const SoftDouble& sdDouble, Flags& rpParams) {
-   FloatConversion fcConversion;
-   fcConversion.setSizeMantissa(52).setSizeExponent(11);
-   fcConversion.setNegative(sdDouble.isNegative());
-   fcConversion.exponent()[0] = sdDouble.queryBasicExponent()[0];
-   fcConversion.mantissa()[0] = sdDouble.queryMantissa()[0];
-   fcConversion.mantissa()[1] = sdDouble.queryMantissa()[1];
-   return (SoftFloat&) inherited::operator=(inherited(fcConversion, rpParams));
-}
+  enum ComparisonResult
+    { CRNaN=impl_type::CRNaN, CRLess=impl_type::CRLess, CREqual=impl_type::CREqual, CRGreater=impl_type::CRGreater };
+  
+  SoftDouble() : impl() {}
+  
+  enum __FromRawBits__ { FromRawBits };
+  SoftDouble(__FromRawBits__, uint64_t source) { fromRawBitsAssign( source ); }
+  
+  SoftDouble(SoftFloat const& source, Flags& flags) { convertAssign(source, flags); }
+  SoftDouble(int64_t, Flags& flags);
+  
+  SoftDouble& assign(const SoftDouble& source);
+  SoftDouble& operator=(const SoftDouble& source);
+  
+  SoftDouble& fromRawBitsAssign(uint64_t source);
+  SoftDouble& convertAssign(const SoftFloat& op1, Flags& flags);
+  
+  U64  queryRawBits() const;
+  S32  queryS32( Flags& flags );
+  S64  queryS64( Flags& flags );
+  
+  void plusAssign(const SoftDouble& op1, Flags& flags);
+  void minusAssign(const SoftDouble& op1, Flags& flags);
+  void multAssign(const SoftDouble& op1, Flags& flags);
+  void divAssign(const SoftDouble& op1, Flags& flags);
+  void multAndAddAssign(const SoftDouble& a, const SoftDouble& b, Flags& flags);
+  void multAndSubAssign(const SoftDouble& a, const SoftDouble& b, Flags& flags);
+  void opposite();
+  void setQuiet();
+  void setPositive();
+  void setNegative();
+  
+  void sqrtAssign( Flags& flags )
+  {
+    SoftDouble rse(*this);
+    
+    rse.rSqrtEstimAssign();
 
-inline
-SoftFloat::SoftFloat(const SoftDouble& sdDouble, Flags& rpParams)
-   { assign(sdDouble, rpParams); }
+    fromRawBitsAssign( U64( 0x3ff0000000000000ULL ) ); // 1. 
+    
+    divAssign(rse,flags);
+  }
+  
+  void rSqrtEstimAssign()
+  {
+    // First estimation of 1/sqrt(b), seed of Newton-Raphson algorithm
+    // see http://www.mceniry.net/papers/Fast%20Inverse%20Square%20Root.pdf
+    // mirror: http://www.daxia.com/bibis/upload/406Fast_Inverse_Square_Root.pdf
+    // see also: http://www.azillionmonkeys.com/qed/sqroot.html
+
+    union  { double as_fp_number; uint64_t as_unsigned_integer; } transfer;
+    transfer.as_unsigned_integer = queryRawBits();
+    double x = transfer.as_fp_number;
+    transfer.as_unsigned_integer = (0xbfcdd6a18f6a6f55ULL - transfer.as_unsigned_integer) >> 1;
+    double y = transfer.as_fp_number;
+    
+    // Five Newton-Raphson iterations are sufficient with 64-bit
+    // floating point numbers
+    for (unsigned i = 0; i < 5; i++)
+      {
+        y = y*(3 - x*y*y) / 2;
+      }
+    
+    transfer.as_fp_number = y;
+    fromRawBitsAssign( transfer.as_unsigned_integer );
+  }
+
+  ComparisonResult compare( SoftDouble const& rhs ) const;
+  
+  BOOL isNegative() const;
+  // BOOL isPositive() const;
+  BOOL isZero() const;
+  BOOL isInfty() const;
+  BOOL isSNaN() const;
+  BOOL isQNaN() const;
+  BOOL isNaN() const;
+  BOOL isDenormalized() const;
+
+  impl_type impl;
+};
 
 class FloatingPointRegisterInterface : public unisim::service::interfaces::Register
 {
@@ -331,10 +419,10 @@ private:
 	SoftDouble *value;
 };
 
-class FloatingPointRegisterView : public unisim::kernel::service::VariableBase
+class FloatingPointRegisterView : public unisim::kernel::VariableBase
 {
 public:
-	FloatingPointRegisterView(const char *name, unisim::kernel::service::Object *owner, SoftDouble& storage, const char *description);
+	FloatingPointRegisterView(const char *name, unisim::kernel::Object *owner, SoftDouble& storage, const char *description);
 	virtual ~FloatingPointRegisterView();
 	virtual const char *GetDataTypeName() const;
 	virtual operator bool () const;
@@ -342,11 +430,11 @@ public:
 	virtual operator unsigned long long () const;
 	virtual operator double () const;
 	virtual operator std::string () const;
-	virtual unisim::kernel::service::VariableBase& operator = (bool value);
-	virtual unisim::kernel::service::VariableBase& operator = (long long value);
-	virtual unisim::kernel::service::VariableBase& operator = (unsigned long long value);
-	virtual unisim::kernel::service::VariableBase& operator = (double value);
-	virtual unisim::kernel::service::VariableBase& operator = (const char * value);
+	virtual unisim::kernel::VariableBase& operator = (bool value);
+	virtual unisim::kernel::VariableBase& operator = (long long value);
+	virtual unisim::kernel::VariableBase& operator = (unsigned long long value);
+	virtual unisim::kernel::VariableBase& operator = (double value);
+	virtual unisim::kernel::VariableBase& operator = (const char * value);
 private:
 	SoftDouble& storage;
 };

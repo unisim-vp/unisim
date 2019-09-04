@@ -43,10 +43,9 @@
 #include <tlm_utils/simple_target_socket.h>
 
 #include "unisim/kernel/tlm2/tlm.hh"
-#include "unisim/util/garbage_collector/garbage_collector.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
-#include "unisim/component/cxx/processor/hcs12x/hcs12x.hh"
+#include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
@@ -73,14 +72,13 @@ using unisim::component::cxx::processor::hcs12x::MMC_DATA;
 
 using unisim::component::tlm2::processor::hcs12x::S12XMMC;
 
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::util::garbage_collector::Pointer;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExportBase;
 
 using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;

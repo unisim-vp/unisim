@@ -50,15 +50,21 @@ namespace xbar {
 using unisim::component::tlm2::interconnect::generic_router::MEM_ACCESS_READ;
 
 template <typename CONFIG>
-XBAR<CONFIG>::XBAR(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+XBAR<CONFIG>::XBAR(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, Super(name, parent)
+	, unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
+	, registers_export("registers-export", this)
+	, smpu_registers_export("smpu-registers-export", this)
 	, xbar_prs(this)
 	, xbar_crs(this)
+	, registers_registry()
 	, smpu("SMPU", this)
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 {
+	smpu_registers_export >> smpu.registers_export;
+	
 	std::stringstream description_sstr;
 	description_sstr << "MPC57XX Crossbar Switch (XBAR):" << std::endl;
 	description_sstr << "  - " << CONFIG::INPUT_SOCKETS << " Master ports" << std::endl;
@@ -73,6 +79,12 @@ XBAR<CONFIG>::XBAR(const sc_core::sc_module_name& name, unisim::kernel::service:
 
 	this->MapRegisterFile(XBAR_PERIPHERAL_SLAVE_IF, XBAR_PRS::ADDRESS_OFFSET, &xbar_prs, 4, XBAR_PRS::ADDRESS_STRIDE);
 	this->MapRegisterFile(XBAR_PERIPHERAL_SLAVE_IF, XBAR_CRS::ADDRESS_OFFSET, &xbar_crs, 4, XBAR_CRS::ADDRESS_STRIDE);
+	
+	for(unsigned int i = 0; i < CONFIG::OUTPUT_SOCKETS; i++)
+	{
+		registers_registry.AddRegisterInterface(xbar_prs[i].CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(xbar_crs[i].CreateRegisterInterface());
+	}
 }
 
 template <typename CONFIG>
@@ -104,6 +116,20 @@ void XBAR<CONFIG>::Reset()
 	smpu.Reset();
 	
 	Super::Reset();
+}
+
+//////////////// unisim::service::interface::Registers ////////////////////
+
+template <typename CONFIG>
+unisim::service::interfaces::Register *XBAR<CONFIG>::GetRegister(const char *name)
+{
+	return registers_registry.GetRegister(name);
+}
+
+template <typename CONFIG>
+void XBAR<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 template <typename CONFIG>

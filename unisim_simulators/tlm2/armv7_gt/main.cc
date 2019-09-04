@@ -45,17 +45,6 @@ using namespace std;
 int main(int argc, char *argv[]) {
 	int ret = 0;
 
-#ifdef WIN32
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		cerr << "WSAStartup failed" << endl;
-		return -1;
-	}
-#endif
-  
   scml2::logging::registry& registry = scml2::logging::registry::get_instance();
   scml2::logging::logger_base *default_cerr_logger = registry.find_logger_by_name("default_cerr_logger");
   if(default_cerr_logger)
@@ -82,31 +71,25 @@ int main(int argc, char *argv[]) {
 
 	switch ( simulator->Setup() )
 	{
-	case unisim::kernel::service::Simulator::ST_ERROR:
+	case unisim::kernel::Simulator::ST_ERROR:
 		cerr << "ERROR: Can't start simulation because of previous erros" << endl;
 		ret = -1;
 		break;
-	case unisim::kernel::service::Simulator::ST_OK_DONT_START:
-#ifdef SIM_PIM_SUPPORT
-		simulator->GeneratePim();
-#endif
+	case unisim::kernel::Simulator::ST_OK_DONT_START:
 		cerr << "Successfully configured the simulator." << endl;
 		ret = 0;
 		break;
-	case unisim::kernel::service::Simulator::ST_WARNING:
+	case unisim::kernel::Simulator::ST_WARNING:
 		cerr << "WARNING: problems detected during setup."
 			<< " Starting simulation anyway, but errors could appear during "
 			<< "the simulation." << endl;
-	case unisim::kernel::service::Simulator::ST_OK_TO_START:
+	case unisim::kernel::Simulator::ST_OK_TO_START:
 		cerr << "Starting simulation." << endl;
 		ret = simulator->Run();
 		break;
 	}
 
 	if (simulator) delete simulator;
-#ifdef WIN32
-	//releases the winsock2 resources
-	WSACleanup();
-#endif
+
 	return ret;
 }

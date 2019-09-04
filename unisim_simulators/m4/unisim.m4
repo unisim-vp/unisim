@@ -156,7 +156,7 @@ AC_DEFUN([UNISIM_CHECK_UNISIM_LIB], [
     fi
 	
     # Check for ncurses.h
-    AC_CHECK_HEADER(unisim/kernel/service/service.hh,, AC_MSG_ERROR([service.hh not found. Please install the UNISIM library.]))
+    AC_CHECK_HEADER(unisim/kernel/kernel.hh,, AC_MSG_ERROR([service.hh not found. Please install the UNISIM library.]))
 ])
 
 ## UNISIM_CHECK_LIBEDIT

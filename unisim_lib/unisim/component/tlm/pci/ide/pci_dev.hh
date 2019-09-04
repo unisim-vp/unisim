@@ -37,7 +37,7 @@
 
 #include <unisim/kernel/tlm/tlm.hh>
 #include <unisim/component/tlm/message/pci.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/component/cxx/pci/ide/pcidev.hh>
 #include <unisim/component/cxx/pci/ide/pci_master.hh>
 #include <unisim/component/tlm/message/interrupt.hh>
@@ -55,13 +55,13 @@ using unisim::kernel::tlm::TlmSendIf;
 using unisim::component::tlm::message::PCIRequest;
 using unisim::component::tlm::message::PCIResponse;
 using unisim::util::garbage_collector::Pointer;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ParameterArray;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::ParameterArray;
 using unisim::util::endian::Host2LittleEndian;
 using unisim::component::tlm::message::InterruptRequest;
 

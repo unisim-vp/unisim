@@ -1,20 +1,21 @@
 /*
- *  Copyright (c) 2010, Commissariat a l'Energie Atomique (CEA) All rights
- *  reserved.
+ *  Copyright (c) 2010-2018,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice,
- *   this list of conditions and the following disclaimer.
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
- *   and/or other materials provided with the distribution.
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *   endorse or promote products derived from this software without specific
- *   prior written permission.
+ *     endorse or promote products derived from this software without specific
+ *     prior written permission.
  *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -28,15 +29,18 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #include <simulator.hh>
+#include <unisim/kernel/logger/logger_server.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 #include <unisim/component/cxx/processor/arm/register_field.hh>
 #include <unisim/service/debug/debugger/debugger.tcc>
 #include <iostream>
+#include <sstream>
+#include <string>
 #include <stdexcept>
 #include <inttypes.h>
 
@@ -64,8 +68,8 @@ ZynqRouter::absolute_mapping( unsigned output_port, uint64_t range_start, uint64
   (*init_socket[output_port])( sock );
 }
 
-ZynqRouter::ZynqRouter(const char* name, unisim::kernel::service::Object* parent)
-  : unisim::kernel::service::Object( name, parent )
+ZynqRouter::ZynqRouter(const char* name, unisim::kernel::Object* parent)
+  : unisim::kernel::Object( name, parent )
   , unisim::component::tlm2::interconnect::generic_router::Router<ZynqRouterConfig>( name, parent )
 {
 }
@@ -79,10 +83,10 @@ namespace {
   }
 }
 
-MMDevice::MMDevice( sc_core::sc_module_name const& name, unisim::kernel::service::Object* parent )
-  : unisim::kernel::service::Object( name, parent )
+MMDevice::MMDevice( sc_core::sc_module_name const& name, unisim::kernel::Object* parent )
+  : unisim::kernel::Object( name, parent )
   , sc_core::sc_module( name )
-  , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>( name, parent )
+  , unisim::kernel::Client<unisim::service::interfaces::TrapReporting>( name, parent )
   , socket( NameSocketFromModule( name ).c_str() )
   , trap_reporting_import("trap-reporting-import", this)
   , verbose( false )
@@ -189,8 +193,8 @@ template <> struct ITP<0u> { static void Register( MPCore& mpcore ) {} };
  * @param name the name of the module
  * @param parent the parent service
  */
-MPCore::MPCore(const sc_core::sc_module_name& name, unisim::kernel::service::Object* parent)
-  : unisim::kernel::service::Object( name, parent )
+MPCore::MPCore(const sc_core::sc_module_name& name, unisim::kernel::Object* parent)
+  : unisim::kernel::Object( name, parent )
   , MMDevice( name, parent )
   , nIRQ("nIRQ")
   , nFIQ("nFIQ")
@@ -383,8 +387,8 @@ MPCore::ReadGICC_IAR()
   return int_id;
 }
 
-TTC::TTC( const sc_core::sc_module_name& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, unsigned _id, unsigned _base_it )
-  : unisim::kernel::service::Object( name, parent )
+TTC::TTC( const sc_core::sc_module_name& name, unisim::kernel::Object* parent, MPCore& _mpcore, unsigned _id, unsigned _base_it )
+  : unisim::kernel::Object( name, parent )
   , MMDevice( name, parent )
   , mpcore( _mpcore )
   , id( _id )
@@ -535,10 +539,10 @@ TTC::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& updat
   return true;
 }
 
-PS_UART::PS_UART( sc_core::sc_module_name const& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, int _it_line )
-  : unisim::kernel::service::Object( name, parent )
+PS_UART::PS_UART( sc_core::sc_module_name const& name, unisim::kernel::Object* parent, MPCore& _mpcore, int _it_line )
+  : unisim::kernel::Object( name, parent )
   , MMDevice( name, parent )
-  , unisim::kernel::service::Client<unisim::service::interfaces::CharIO>( name, parent )
+  , unisim::kernel::Client<unisim::service::interfaces::CharIO>( name, parent )
   , char_io_import("char-io-import", this)
   , exchange_event( "exchange_event" )
   , bit_period( sc_core::SC_ZERO_TIME )
@@ -608,7 +612,7 @@ PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& u
       d.Access( IMR ); return true;
     case 0x14: {
       if (d.wnr) {
-        uint32_t disable_mask;
+        uint32_t disable_mask = 0;
         d.Access( disable_mask );
         ISR &= ~disable_mask;
         // if (disable_mask & 0x100)
@@ -730,8 +734,8 @@ PS_UART::ExchangeProcess()
     mpcore.interrupt_line_events[it_line].notify(sc_core::SC_ZERO_TIME);
 }
 
-SLCR::SLCR(const sc_core::sc_module_name& name, Simulator& _simulator, unisim::kernel::service::Object* parent )
-  : unisim::kernel::service::Object( name, parent )
+SLCR::SLCR(const sc_core::sc_module_name& name, Simulator& _simulator, unisim::kernel::Object* parent )
+  : unisim::kernel::Object( name, parent )
   , MMDevice( name, parent )
   , simulator(_simulator)
   , ARM_PLL_CTRL(0x1a008)
@@ -767,8 +771,8 @@ SLCR::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& upda
   return false;
 }
 
-L2C::L2C( const sc_core::sc_module_name& name, unisim::kernel::service::Object* parent )
-  : unisim::kernel::service::Object( name, parent )
+L2C::L2C( const sc_core::sc_module_name& name, unisim::kernel::Object* parent )
+  : unisim::kernel::Object( name, parent )
   , MMDevice( name, parent )
 {
 }
@@ -793,24 +797,27 @@ L2C::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& updat
   return false;
 }
 
-Simulator::Simulator(int argc, char **argv)
-  : unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
+Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
+  : unisim::kernel::tlm2::Simulator(name, argc, argv, Simulator::DefaultConfiguration)
   , ps_clk_period(sc_core::SC_ZERO_TIME)
-  , cpu( "cpu" )
-  , router( "router" )
-  , mpcore( "mpcore" )
-  , main_ram( "main_ram" )
-  , boot_rom( "boot_rom" )
+  , cpu( "cpu", this )
+  , router( "router", this )
+  , mpcore( "mpcore", this )
+  , main_ram( "main_ram", this )
+  , boot_rom( "boot_rom", this )
   , slcr( "slcr", *this )
   , ttc0( "ttc0", 0, mpcore, 0, 42 )
   , ttc1( "ttc1", 0, mpcore, 1, 69 )
   , uart0( "uart0", 0, mpcore, 59 )
   , uart1( "uart1", 0, mpcore, 82 )
   , l2c( "l2c", 0 )
-  , telnet("telnet", 0)
-  , nirq_signal("nIRQm")
-  , nfiq_signal("nFIQm")
-  , nrst_signal("nRESETm")
+  , netstreamer0("netstreamer0", 0)
+  , netstreamer1("netstreamer1", 0)
+  , char_io_tee0("char-io-tee0", 0)
+  , char_io_tee1("char-io-tee1", 0)
+  , http_server("http-server", 0)
+  , web_terminal0("web-terminal0", 0)
+  , web_terminal1("web-terminal1", 0)
   , time("time")
   , host_time("host-time")
   , loader("loader")
@@ -819,6 +826,7 @@ Simulator::Simulator(int argc, char **argv)
   , gdb_server(0)
   , inline_debugger(0)
   , profiler(0)
+  , instrumenter(0)
   , enable_gdb_server(false)
   , param_enable_gdb_server( "enable-gdb-server", 0, enable_gdb_server, "Enable GDB server." )
   , enable_inline_debugger(false)
@@ -827,6 +835,17 @@ Simulator::Simulator(int argc, char **argv)
   , param_enable_profiler( "enable-profiler", 0, enable_profiler, "Enable inline debugger." )
   , exit_status(0)
 {
+  param_enable_gdb_server.SetMutable(false);
+  param_enable_inline_debugger.SetMutable(false);
+  param_enable_profiler.SetMutable(false);
+  
+  if(enable_profiler)
+  {
+    this->SetVariable("HARDWARE.instrumenter.enable-user-interface", true); // When profiler is enabled, enable also instrumenter user interface so that profiler interface is periodically refreshed too
+  }
+  
+  instrumenter = new INSTRUMENTER("instrumenter", this);
+  
   // - debugger
   if (enable_gdb_server)
     gdb_server = new GDB_SERVER("gdb-server");
@@ -837,15 +856,25 @@ Simulator::Simulator(int argc, char **argv)
   if (gdb_server or inline_debugger or profiler)
     debugger = new DEBUGGER( "debugger" );
 
+  instrumenter->CreateSignal("nIRQm", true);
+  instrumenter->CreateSignal("nFIQm", true);
+  instrumenter->CreateSignal("nRESETm", true);
+  instrumenter->CreateClock("CLK");
   
-  nfiq_signal = true; 
-  nirq_signal = true; 
-  nrst_signal = true;
-  
+  instrumenter->RegisterPort(cpu.nIRQm);
+  instrumenter->RegisterPort(cpu.nFIQm);
+  instrumenter->RegisterPort(cpu.nRESETm);
+
   cpu.master_socket( *router.targ_socket[0] );
-  cpu.nIRQm( nirq_signal );
-  cpu.nFIQm( nfiq_signal );
-  cpu.nRESETm( nrst_signal );
+  instrumenter->Bind("HARDWARE.cpu.nIRQm", "HARDWARE.nIRQm");
+  instrumenter->Bind("HARDWARE.cpu.nFIQm", "HARDWARE.nFIQm");
+  instrumenter->Bind("HARDWARE.cpu.nRESETm", "HARDWARE.nRESETm");
+  
+  instrumenter->RegisterPort(router.input_if_clock);
+  instrumenter->RegisterPort(router.output_if_clock);
+  
+  instrumenter->Bind("HARDWARE.router.input_if_clock", "HARDWARE.CLK");
+  instrumenter->Bind("HARDWARE.router.output_if_clock", "HARDWARE.CLK");
   
   router.relative_mapping( 0, 0x00000000, 0x3fffffff, main_ram.slave_sock ); /* Main OCM RAM */
   router.absolute_mapping( 1, 0xffff0000, 0xffffffff, boot_rom.slave_sock ); /* Boot OCM ROM */
@@ -857,11 +886,20 @@ Simulator::Simulator(int argc, char **argv)
   router.relative_mapping( 7, 0xe0000000, 0xe0000fff, uart0.socket ); /* uart0 */
   router.relative_mapping( 8, 0xe0001000, 0xe0001fff, uart1.socket ); /* uart1 */
   
-  mpcore.nIRQ( nirq_signal );
-  mpcore.nFIQ( nfiq_signal );
+  instrumenter->RegisterPort(mpcore.nIRQ);
+  instrumenter->RegisterPort(mpcore.nFIQ);
   
-  uart0.char_io_import >> telnet.char_io_export;
+  instrumenter->Bind("HARDWARE.mpcore.nIRQ", "HARDWARE.nIRQm");
+  instrumenter->Bind("HARDWARE.mpcore.nFIQ", "HARDWARE.nFIQm");
   
+  uart0.char_io_import >> char_io_tee0.char_io_export;
+  (*char_io_tee0.char_io_import[0]) >> netstreamer0.char_io_export;
+  (*char_io_tee0.char_io_import[1]) >> web_terminal0.char_io_export;
+  
+  uart1.char_io_import >> char_io_tee1.char_io_export;
+  (*char_io_tee1.char_io_import[0]) >> netstreamer1.char_io_export;
+  (*char_io_tee1.char_io_import[1]) >> web_terminal1.char_io_export;
+
   cpu.symbol_table_lookup_import >> loader.symbol_table_lookup_export;
   *loader.memory_import[0] >> main_ram.memory_export;
   *loader.memory_import[1] >> boot_rom.memory_export;
@@ -931,6 +969,17 @@ Simulator::Simulator(int argc, char **argv)
       profiler->data_object_lookup_import          >> *debugger->data_object_lookup_export[2];
       profiler->subprogram_lookup_import           >> *debugger->subprogram_lookup_export[2];
     }
+    
+   *http_server.http_server_import[0] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
+   *http_server.http_server_import[1] >> instrumenter->http_server_export;
+   *http_server.http_server_import[2] >> web_terminal0.http_server_export;
+   *http_server.http_server_import[3] >> web_terminal1.http_server_export;
+   if (profiler)
+   {
+     *http_server.http_server_import[4] >> profiler->http_server_export;
+   }
+   
+   *http_server.registers_import[0] >> cpu.registers_export;
 }
 
 Simulator::~Simulator()
@@ -939,6 +988,7 @@ Simulator::~Simulator()
   delete inline_debugger;
   delete profiler;
   delete debugger;
+  delete instrumenter;
 }
 
 int
@@ -966,15 +1016,15 @@ Simulator::Run()
   double spent_time = time_stop - time_start;
   simulation_spent_time += spent_time;
 
-  // cerr << "Simulation run-time parameters:" << endl;
-  // DumpParameters(cerr);
-  // cerr << endl;
-  // cerr << "Simulation formulas:" << endl;
-  // DumpFormulas(cerr);
-  // cerr << endl;
-  // cerr << "Simulation statistics:" << endl;
-  // DumpStatistics(cerr);
-  // cerr << endl;
+  std::cerr << "Simulation run-time parameters:" << std::endl;
+  DumpParameters(std::cerr);
+  std::cerr << std::endl;
+  std::cerr << "Simulation formulas:" << std::endl;
+  DumpFormulas(std::cerr);
+  std::cerr << std::endl;
+  std::cerr << "Simulation statistics:" << std::endl;
+  DumpStatistics(std::cerr);
+  std::cerr << std::endl;
 
   std::cerr << "simulation time: " << simulation_spent_time << " seconds" << std::endl;
   std::cerr << "simulated time: " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
@@ -982,38 +1032,11 @@ Simulator::Run()
   std::cerr << "host simulation speed: " << ((double) cpu["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
   std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
   
+  std::cerr << "WB counts: " << cpu.get_cwp_stats(false) << std::endl;
+  std::cerr << "WT counts: " << cpu.get_cwp_stats(true) << std::endl;
+  
   if (profiler) profiler->Output();
   
-  return exit_status;
-}
-
-int
-Simulator::Run(double time, sc_core::sc_time_unit unit)
-{
-  if ( unlikely(SimulationFinished()) ) return 0;
-
-  double time_start = host_time.GetTime();
-
-  sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
-
-  try
-    {
-      sc_core::sc_start(time, unit);
-    }
-  catch(std::runtime_error& e)
-    {
-      std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
-      std::cerr << e.what() << std::endl;
-    }
-
-  double time_stop = host_time.GetTime();
-  double spent_time = time_stop - time_start;
-  simulation_spent_time += spent_time;
-
-  std::cerr << "Simulation statistics:" << std::endl;
-  DumpStatistics(std::cerr);
-  std::cerr << std::endl;
-
   return exit_status;
 }
 
@@ -1092,30 +1115,30 @@ Simulator::UpdateClocks()
   }
   /* UART clock */
   // Whatever control registers are we provide a 115200 bauds clock
-  uart0.bit_period = uart0.bit_period = sc_core::sc_time( 9, sc_core::SC_US ); /* Approx 115200 bauds ;-) */
+  uart1.bit_period = uart0.bit_period = sc_core::sc_time( 9, sc_core::SC_US ); /* Approx 115200 bauds ;-) */
   /* TTC Clock */
   
   
 }
 
-unisim::kernel::service::Simulator::SetupStatus
+unisim::kernel::Simulator::SetupStatus
 Simulator::Setup()
 {
-  if (enable_inline_debugger)
+  if (inline_debugger or profiler)
     {
       SetVariable("debugger.parse-dwarf", true);
     }
   
   // Build the Loader arguments from the command line arguments
   
-  unisim::kernel::service::VariableBase *cmd_args = FindVariable("cmd-args");
+  unisim::kernel::VariableBase *cmd_args = FindVariable("cmd-args");
   unsigned int cmd_args_length = cmd_args->GetLength();
   if(cmd_args_length > 0)
     {
       SetVariable( "loader.filename", ((std::string)(*cmd_args)[0]).c_str() );
     }
 
-  unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+  unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
   
   ps_clk_period = sc_core::sc_time( 30, sc_core::SC_NS ); // 33 MHz
   
@@ -1124,7 +1147,41 @@ Simulator::Setup()
   return setup_status;
 }
 
-void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, bool asynchronous)
+bool Simulator::EndSetup()
+{
+  if (profiler)
+  {
+    http_server.AddJSAction(
+      unisim::service::interfaces::ToolbarOpenTabAction(
+        /* name */      profiler->GetName(), 
+        /* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\">",
+        /* tips */      std::string("Profile of ") + cpu.GetName(),
+        /* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+        /* uri */       profiler->URI()
+    ));
+  }
+  
+  http_server.AddJSAction(
+    unisim::service::interfaces::ToolbarOpenTabAction(
+      /* name */      web_terminal0.GetName(),
+      /* label */     "<img src=\"/unisim/service/web_terminal/icon_term0.svg\">",
+      /* tips */      web_terminal0["title"],
+      /* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+      /* uri */       web_terminal0.URI()
+  ));
+
+  http_server.AddJSAction(
+    unisim::service::interfaces::ToolbarOpenTabAction(
+      /* name */      web_terminal1.GetName(),
+      /* label */     "<img src=\"/unisim/service/web_terminal/icon_term1.svg\">",
+      /* tips */      web_terminal1["title"],
+      /* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+      /* uri */       web_terminal1.URI()
+  ));
+  return true;
+}
+
+void Simulator::Stop(unisim::kernel::Object *object, int _exit_status, bool asynchronous)
 {
   exit_status = _exit_status;
   if(object)
@@ -1152,7 +1209,7 @@ void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, 
 }
 
 void
-Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
+Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
 {
   // meta information
   sim->SetVariable("program-name", "UNISIM Zynq7000");
@@ -1168,45 +1225,336 @@ Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable( "kernel_logger.std_err", true );
   sim->SetVariable( "kernel_logger.std_err_color", true );
   
-  sim->SetVariable( "router.cycle_time",        "10 ns" );
+  sim->SetVariable( "HARDWARE.router.cycle_time",        "10 ns" );
+  sim->SetVariable( "HARDWARE.CLK.clock-period", "10 ns");
+  sim->SetVariable( "HARDWARE.CLK.lazy-clock", true);
   
-  sim->SetVariable( "cpu.SCTLR",                0x00c52078 );
-  sim->SetVariable( "cpu.default-endianness",   "little-endian" );
-  sim->SetVariable( "cpu.cpu-cycle-time",       "1.5 ns" ); // 666Mhz
-  sim->SetVariable( "cpu.bus-cycle-time",       "10 ns" ); // 32Mhz
-  sim->SetVariable( "cpu.icache.size",          0x020000 ); // 128 KB
-  sim->SetVariable( "cpu.dcache.size",          0x020000 ); // 128 KB
-  sim->SetVariable( "cpu.nice-time",            "1 us" ); // 1us
-  sim->SetVariable( "cpu.ipc",                  1.0  );
-  sim->SetVariable( "cpu.voltage",              1.8 * 1e3 ); // 1800 mV
-  sim->SetVariable( "cpu.enable-dmi",           true ); // Enable SystemC TLM 2.0 DMI
-  sim->SetVariable( "cpu.verbose",              true );
-  sim->SetVariable( "cpu.verbose-tlm",          false );
-  sim->SetVariable( "main_ram.bytesize",          0x40000000UL ); 
-  sim->SetVariable( "main_ram.cycle-time",        "10 ns" );
-  sim->SetVariable( "main_ram.read-latency",      "10 ns" );
-  sim->SetVariable( "main_ram.write-latency",     "0 ps" );
-  sim->SetVariable( "boot_rom.org",               0xffff0000UL );
-  sim->SetVariable( "boot_rom.bytesize",          0x00010000UL ); 
-  sim->SetVariable( "boot_rom.cycle-time",        "10 ns" );
-  sim->SetVariable( "boot_rom.read-latency",      "10 ns" );
-  sim->SetVariable( "boot_rom.write-latency",     "0 ps" );
-  sim->SetVariable( "loader.memory-mapper.mapping", "main_ram:0x00000000-0x3fffffff,boot_rom:0xffff0000-0xffffffff:+0xffff0000" );
+  sim->SetVariable( "HARDWARE.cpu.SCTLR",                0x00c52078 );
+  sim->SetVariable( "HARDWARE.cpu.default-endianness",   "little-endian" );
+  sim->SetVariable( "HARDWARE.cpu.cpu-cycle-time",       "1.5 ns" ); // 666Mhz
+  sim->SetVariable( "HARDWARE.cpu.bus-cycle-time",       "10 ns" ); // 32Mhz
+  sim->SetVariable( "HARDWARE.cpu.icache.size",          0x020000 ); // 128 KB
+  sim->SetVariable( "HARDWARE.cpu.dcache.size",          0x020000 ); // 128 KB
+  sim->SetVariable( "HARDWARE.cpu.nice-time",            "1 us" ); // 1us
+  sim->SetVariable( "HARDWARE.cpu.ipc",                  1.0  );
+  sim->SetVariable( "HARDWARE.cpu.voltage",              1.8 * 1e3 ); // 1800 mV
+  sim->SetVariable( "HARDWARE.cpu.enable-dmi",           true ); // Enable SystemC TLM 2.0 DMI
+  sim->SetVariable( "HARDWARE.cpu.verbose",              true );
+  sim->SetVariable( "HARDWARE.cpu.verbose-tlm",          false );
+  sim->SetVariable( "HARDWARE.main_ram.bytesize",          0x40000000UL ); 
+  sim->SetVariable( "HARDWARE.main_ram.cycle-time",        "10 ns" );
+  sim->SetVariable( "HARDWARE.main_ram.read-latency",      "10 ns" );
+  sim->SetVariable( "HARDWARE.main_ram.write-latency",     "0 ps" );
+  sim->SetVariable( "HARDWARE.boot_rom.org",               0xffff0000UL );
+  sim->SetVariable( "HARDWARE.boot_rom.bytesize",          0x00010000UL ); 
+  sim->SetVariable( "HARDWARE.boot_rom.cycle-time",        "10 ns" );
+  sim->SetVariable( "HARDWARE.boot_rom.read-latency",      "10 ns" );
+  sim->SetVariable( "HARDWARE.boot_rom.write-latency",     "0 ps" );
+  sim->SetVariable( "loader.memory-mapper.mapping", "HARDWARE.main_ram:0x00000000-0x3fffffff,HARDWARE.boot_rom:0xffff0000-0xffffffff:+0xffff0000" );
   
   
-  sim->SetVariable( "gdb-server.architecture-description-filename", "gdb_arm_with_neon.xml" );
+  sim->SetVariable( "gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_arm_with_neon.xml" );
   sim->SetVariable( "debugger.parse-dwarf", false );
-  sim->SetVariable( "debugger.dwarf-register-number-mapping-filename", "arm_eabi_dwarf_register_number_mapping.xml" );
+  sim->SetVariable( "debugger.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml" );
 
   sim->SetVariable( "inline-debugger.num-loaders", 1 );
   sim->SetVariable( "inline-debugger.search-path", "" );
+  
+  sim->SetVariable("http-server.http-port", 12360);
+  
+  sim->SetVariable("web-terminal0.title", "Serial Terminal over uart0");
+  sim->SetVariable("web-terminal1.title", "Serial Terminal over uart1");
 }
 
 void Simulator::SigInt()
 {
   if(!enable_inline_debugger)
     {
-      unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+      unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
     }
 }
 
+CPU::CP15Reg&
+CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+{
+  switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
+    {
+    case CP15ENCODE( 0, 0, 0, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "CTR, Cache Type Register"; }
+          uint32_t Read( CP15CPU& _cpu )
+          {
+            /*        FORMAT          CWG         ERG      DminLine        L1Ip       IminLine */
+            /*         ARMv7        8 words     8 words     8 words        PIPT        8 words */
+            return (0b100 << 29) | (3 << 24) | (3 << 20) | (3 << 16) | (0b11 << 14) | (3 <<  0);
+          }
+        } x;
+        return x;
+      } break;
+
+    case CP15ENCODE( 0, 1, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "CCSIDR, Cache Size ID Registers"; }
+          uint32_t Read( CP15CPU& _cpu )
+          {
+            /* 2 L1 caches of 32kB: 32bytes/8words-lines, 128 sets of 4 ways ) */
+            CPU& cpu = static_cast<CPU&>( _cpu );
+            switch (cpu.csselr) {
+              /*              LNSZ      ASSOC       NUMSETS        POLICY      */
+            case 0:  return (1 << 0) | (1 << 3) | ( 127 << 13) | (0b0110 << 28); /* L1 dcache */
+            case 1:  return (1 << 0) | (3 << 3) | ( 127 << 13) | (0b0100 << 28); /* L1 icache */
+            case 2:  return (2 << 0) | (7 << 3) | (1023 << 13) | (0b0110 << 28); /* L2 ucache */
+            default: return 0;
+            }
+          }
+        } x;
+        return x;
+      } break;
+      
+    // case CP15ENCODE( 0, 1, 0, 1 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "CLIDR, Cache Level ID Register"; }
+    //       uint32_t Read( CP15CPU& _cpu )
+    //       {
+    //         //CPU& cpu = static_cast<CPU&>( _cpu );
+    //         uint32_t
+    //           LoUU =   0b010, /* Level of Unification Uniprocessor  */
+    //           LoC =    0b010, /* Level of Coherency */
+    //           LoUIS =  0b010, /* Level of Unification Inner Shareable */
+    //           Ctype2 = 0b100, /* Level2 => unified */
+    //           Ctype1 = 0b011; /* Level1 => Separate instruction and data caches */
+    //         return (LoUU << 27) | (LoC << 24) | (LoUIS << 21) | (Ctype2 << 3) | (Ctype1 << 0);
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 0, 2, 0, 0 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "CSSELR, Cache Size Selection Register"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value ) {
+    //         static_cast<CPU&>( _cpu ).csselr = value;
+    //       }
+    //       uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).csselr; }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    //   /***************************************************************
+    //    * Cache maintenance, address translation, and other functions *
+    //    ***************************************************************/
+    // case CP15ENCODE( 7, 0, 5, 0 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "ICIALLU, Invalidate all instruction caches to PoU"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value ) {
+    //         /* No cache, basically nothing to do */
+    //         //_cpu.logger << DebugWarning << "ICIALLU <- " << std::hex << value << std::dec << EndDebugWarning;
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 7, 0, 5, 1 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "ICIMVAU, Clean data* cache line by MVA to PoU"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value ) {
+    //         /* No cache, basically nothing to do */
+    //         //_cpu.logger << DebugWarning << "ICIMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 7, 0, 5, 6 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "BPIALL, Invalidate all branch predictors"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value ) {
+    //         /* No branch predictor, basically nothing to do */
+    //         //_cpu.logger << DebugWarning << "BPIALL <- " << std::hex << value << std::dec << EndDebugWarning;
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 7, 0, 10, 1 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "DCCMVAC, Clean data* cache line by MVA to PoC"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value ) {
+    //         /* No cache, basically nothing to do */
+    //         //_cpu.logger << DebugWarning << "DCCMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 7, 0, 11, 1 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "DCCMVAU, Clean data* cache line by MVA to PoU"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value ) {
+    //         /* No cache, basically nothing to do */
+    //         //_cpu.logger << DebugWarning << "DCCMVAU <- " << std::hex << value << std::dec << EndDebugWarning;
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 7, 0, 14, 1 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "DCCIMVAC, Clean and invalidate data cache line by MVA to PoC"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value ) {
+    //         /* No cache, basically nothing to do */
+    //         //_cpu.logger << DebugWarning << "DCCIMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 7, 0, 14, 2 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "DCCISW, Clean and invalidate [d|u]cache line by set/way"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value ) {
+    //         /* No cache, basically nothing to do */
+    //         //_cpu.logger << DebugWarning << "DCCISW <- " << std::hex << value << std::dec << EndDebugWarning;
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    //   /******************************
+    //    * TLB maintenance operations *
+    //    ******************************/
+    // case CP15ENCODE( 8, 0, 7, 0 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "TLBIALL, invalidate unified TLB"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value )
+    //       {
+    //         CPU& cpu( static_cast<CPU&>( _cpu ) );
+    //         if (cpu.verbose)
+    //           cpu.logger << DebugInfo << "TLBIALL" << EndDebugInfo;
+    //         cpu.tlb.InvalidateAll();
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 8, 0, 7, 1 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "TLBIMVA, invalidate unified TLB entry by MVA and ASID"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value )
+    //       {
+    //         CPU& cpu( static_cast<CPU&>( _cpu ) );
+    //         if (cpu.verbose)
+    //           cpu.logger << DebugInfo << "TLBIMVA(0x" << std::hex << value << std::dec << ")" << EndDebugInfo;
+            
+    //         for (TLB::Iterator itr(cpu.tlb); itr.Next();) {
+    //           if (itr.MatchMVA( value ) and (itr.IsGlobal() or itr.MatchASID( value )))
+    //             itr.Invalidate();
+    //         }   
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 8, 0, 7, 2 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "TLBIASID, invalidate unified TLB by ASID match"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value )
+    //       {
+    //         CPU& cpu( static_cast<CPU&>( _cpu ) );
+    //         if (cpu.verbose)
+    //           cpu.logger << DebugInfo << "TLBIASID(0x" << std::hex << value << std::dec << ")" << EndDebugInfo;
+            
+    //         for (TLB::Iterator itr(cpu.tlb); itr.Next();) {
+    //           if (not itr.IsGlobal() and itr.MatchASID( value ))
+    //             itr.Invalidate();
+    //         }
+    //       }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    //   /**********************************************
+    //    * Memory remapping and TLB control registers *
+    //    **********************************************/
+    // case CP15ENCODE( 10, 0, 2, 0 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "PRRR, Primary Region Remap Register"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value )
+    //       {
+    //         CPU& cpu( static_cast<CPU&>( _cpu ) );
+    //         cpu.mmu.prrr = value;
+    //         cpu.mmu.refresh_attr_cache(sctlr::TRE.Get(cpu.SCTLR));
+    //       }
+    //       uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).mmu.prrr; }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    // case CP15ENCODE( 10, 0, 2, 1 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "NMRR, Normal Memory Remap Register"; }
+    //       void Write( CP15CPU& _cpu, uint32_t value )
+    //       {
+    //         CPU& cpu( static_cast<CPU&>( _cpu ) );
+    //         cpu.mmu.nmrr = value;
+    //         cpu.mmu.refresh_attr_cache(sctlr::TRE.Get(cpu.SCTLR));
+    //       }
+    //       uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).mmu.nmrr; }
+    //     } x;
+    //     return x;
+    //   } break;
+      
+    //   /***********************************/
+    //   /* Context and thread ID registers */
+    //   /***********************************/
+      
+    // case CP15ENCODE( 13, 0, 0, 3 ):
+    //   {
+    //     static struct : public CP15Reg
+    //     {
+    //       char const* Describe() { return "TPIDRURO, User Read-Only Thread ID Register"; }
+    //       unsigned RequiredPL() { return 0; /* Reading doesn't requires priviledges */ }
+    //       uint32_t Read( CP15CPU& _cpu )
+    //       { return static_cast<CPU&>( _cpu ).MemRead32( 0xffff0ff0 ); }
+    //     } x;
+    //     /* When using linux os emulation, this register overrides the base one */
+    //     if (linux_os_import)
+    //       return x;
+    //   } break;
+    }
+  
+  // Fall back to parent cpu CP15 registers
+  return this->PCPU::CP15GetRegister( crn, opcode1, crm, opcode2 );
+}

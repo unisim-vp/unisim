@@ -40,5 +40,5 @@ dcbz.execute = {
 	return cpu->Dcbz(ea);
 }
 dcbz.disasm = {
-	os << "dcbz r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "dcbz " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

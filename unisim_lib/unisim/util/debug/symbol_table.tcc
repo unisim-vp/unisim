@@ -43,14 +43,21 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-using std::endl;
-using std::hex;
-using std::dec;
-using std::stringstream;
-
 template <class T>
 SymbolTable<T>::SymbolTable()
 {
+	types.push_back(unisim::util::debug::Symbol<T>::SYM_NOTYPE);
+	types.push_back(unisim::util::debug::Symbol<T>::SYM_OBJECT);
+	types.push_back(unisim::util::debug::Symbol<T>::SYM_FUNC);
+	types.push_back(unisim::util::debug::Symbol<T>::SYM_SECTION);
+	types.push_back(unisim::util::debug::Symbol<T>::SYM_FILE);
+	types.push_back(unisim::util::debug::Symbol<T>::SYM_COMMON);
+	types.push_back(unisim::util::debug::Symbol<T>::SYM_TLS);
+	types.push_back(unisim::util::debug::Symbol<T>::SYM_NUM);
+	types.push_back(unisim::util::debug::Symbol<T>::SYM_LOOS);
+	types.push_back(unisim::util::debug::Symbol<T>::SYM_HIOS);
+	types.push_back(unisim::util::debug::Symbol<T>::SYM_LOPROC);
+	types.push_back(unisim::util::debug::Symbol<T>::SYM_HIPROC);
 }
 
 template <class T>
@@ -62,7 +69,7 @@ SymbolTable<T>::~SymbolTable()
 template <class T>
 void SymbolTable<T>::Reset()
 {
-	typename list<Symbol<T> *>::iterator symbol_iter;
+	typename std::list<Symbol<T> *>::iterator symbol_iter;
 	unsigned int i;
 	
 	for(i = 0; i < sizeof(symbol_registries) / sizeof(symbol_registries[0]); i++)
@@ -72,13 +79,15 @@ void SymbolTable<T>::Reset()
 			delete *symbol_iter;
 		}
 		symbol_registries[i].clear();
+		lookup_table_by_addr[i].Reset();
+		lookup_table_by_name[i].clear();
 	}
 }
 
 template <class T>
 void SymbolTable<T>::GetSymbols(typename std::list<const unisim::util::debug::Symbol<T> *>& lst, typename unisim::util::debug::Symbol<T>::Type type) const
 {
-	typename list<Symbol<T> *>::const_iterator symbol_iter;
+	typename std::list<Symbol<T> *>::const_iterator symbol_iter;
 		
 	for(symbol_iter = symbol_registries[type].begin(); symbol_iter != symbol_registries[type].end(); symbol_iter++)
 	{
@@ -89,7 +98,7 @@ void SymbolTable<T>::GetSymbols(typename std::list<const unisim::util::debug::Sy
 template <class T>
 const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbol(const char *name, T addr, typename unisim::util::debug::Symbol<T>::Type type) const
 {
-	typename list<Symbol<T> *>::const_iterator symbol_iter;
+	typename std::list<Symbol<T> *>::const_iterator symbol_iter;
 	
 	for(symbol_iter = symbol_registries[type].begin(); symbol_iter != symbol_registries[type].end(); symbol_iter++)
 	{
@@ -107,12 +116,15 @@ const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbol(const 
 template <class T>
 const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbolByAddr(T addr) const
 {
-	unsigned int i;
-	
-	for(i = 0; i < sizeof(symbol_registries) / sizeof(symbol_registries[0]); i++)
+	for(typename std::vector<typename unisim::util::debug::Symbol<T>::Type>::const_iterator it = types.begin(); it != types.end(); ++it)
 	{
-		const unisim::util::debug::Symbol<T> *symbol = FindSymbolByAddr(addr, (typename unisim::util::debug::Symbol<T>::Type) i);
-		if(symbol) return symbol;
+		typename unisim::util::debug::Symbol<T>::Type type = *it;
+		const unisim::util::debug::Symbol<T> *symbol = FindSymbolByAddr(addr, type);
+		if(symbol)
+		{
+			Use(type);
+			return symbol;
+		}
 	}
 	return 0;
 }
@@ -120,12 +132,15 @@ const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbolByAddr(
 template <class T>
 const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbolByName(const char *name) const
 {
-	unsigned int i;
-	
-	for(i = 0; i < sizeof(symbol_registries) / sizeof(symbol_registries[0]); i++)
+	for(typename std::vector<typename unisim::util::debug::Symbol<T>::Type>::const_iterator it = types.begin(); it != types.end(); ++it)
 	{
-		const unisim::util::debug::Symbol<T> *symbol = FindSymbolByName(name, (typename unisim::util::debug::Symbol<T>::Type) i);
-		if(symbol) return symbol;
+		typename unisim::util::debug::Symbol<T>::Type type = *it;
+		const unisim::util::debug::Symbol<T> *symbol = FindSymbolByName(name, type);
+		if(symbol)
+		{
+			Use(type);
+			return symbol;
+		}
 	}
 	return 0;
 }
@@ -133,28 +148,15 @@ const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbolByName(
 template <class T>
 const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<T>::Type type) const
 {
-	typename list<Symbol<T> *>::const_iterator symbol_iter;
-	
-	for(symbol_iter = symbol_registries[type].begin(); symbol_iter != symbol_registries[type].end(); symbol_iter++)
-	{
-		if(strcmp((*symbol_iter)->GetName(), name) == 0) return *symbol_iter;
-	}
-	return 0;
+	typename std::map<std::string, Symbol<T> *>::const_iterator it = lookup_table_by_name[type].find(name);
+	return (it != lookup_table_by_name[type].end()) ? (*it).second : 0;
 }
 
 template <class T>
 const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbolByAddr(T addr, typename unisim::util::debug::Symbol<T>::Type type) const
 {
-	typename list<Symbol<T> *>::const_iterator symbol_iter;
-
-	for(symbol_iter = symbol_registries[type].begin(); symbol_iter != symbol_registries[type].end(); symbol_iter++)
-	{
-		if((*symbol_iter)->GetType() == type && addr >= (*symbol_iter)->GetAddress() && addr < (*symbol_iter)->GetAddress() + (*symbol_iter)->GetSize())
-		{
-			return *symbol_iter;
-		}
-	}
-	return 0;
+	LookupTableByAddrEntry *entry = lookup_table_by_addr[type].Find(addr);
+	return entry ? entry->symbol : 0;
 }
 
 template <class T>
@@ -162,10 +164,17 @@ void SymbolTable<T>::AddSymbol(const char *name, T addr, T size, typename unisim
 {
 	Symbol<T> *symbol = new Symbol<T>(name, addr, size, type, memory_atom_size);
 	symbol_registries[type].push_back(symbol);
+	
+	for(T i = 0; i < size; i++)
+	{
+		lookup_table_by_addr[type].Insert(new LookupTableByAddrEntry(addr + i, symbol));
+	}
+	
+	lookup_table_by_name[type].insert(std::pair<std::string, Symbol<T> *>(name, symbol));
 }
 
 template <class T>
-void SymbolTable<T>::Dump(ostream& os) const
+void SymbolTable<T>::Dump(std::ostream& os) const
 {
 	unsigned int i;
 	
@@ -176,9 +185,9 @@ void SymbolTable<T>::Dump(ostream& os) const
 }
 
 template <class T>
-void SymbolTable<T>::Dump(ostream& os, typename unisim::util::debug::Symbol<T>::Type type) const
+void SymbolTable<T>::Dump(std::ostream& os, typename unisim::util::debug::Symbol<T>::Type type) const
 {
-	typename list<Symbol<T> *>::const_iterator symbol_iter;
+	typename std::list<Symbol<T> *>::const_iterator symbol_iter;
 	const char *type_name = "";
 
 	switch(type)
@@ -223,7 +232,24 @@ void SymbolTable<T>::Dump(ostream& os, typename unisim::util::debug::Symbol<T>::
 
 	for(symbol_iter = symbol_registries[type].begin(); symbol_iter != symbol_registries[type].end(); symbol_iter++)
 	{
-		os << type_name << ":" << std::hex << (*symbol_iter)->GetAddress() << std::dec << ": " << (*symbol_iter)->GetName() << " (" << (*symbol_iter)->GetSize() << " bytes)" << endl;
+		os << type_name << ":" << std::hex << (*symbol_iter)->GetAddress() << std::dec << ": " << (*symbol_iter)->GetName() << " (" << (*symbol_iter)->GetSize() << " bytes)" << std::endl;
+	}
+}
+
+template <class T>
+void SymbolTable<T>::Use(typename unisim::util::debug::Symbol<T>::Type type) const
+{
+	if(types.front() != type)
+	{
+		for(typename std::vector<typename unisim::util::debug::Symbol<T>::Type>::const_iterator it = types.begin(); it != types.end(); ++it)
+		{
+			if((*it) == type)
+			{
+				types.erase(it);
+				types.insert(types.begin(), type);
+				return;
+			}
+		}
 	}
 }
 

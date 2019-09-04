@@ -51,7 +51,7 @@ zlhgwsfx.execute = {
 	return false;
 }
 zlhgwsfx.disasm = {
-	os << "zlhgwsf" << (m ? "m" : "") << "x r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zlhgwsf" << (m ? "m" : "") << "x " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zlhgwsfx(m=0)

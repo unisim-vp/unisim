@@ -39,5 +39,5 @@ zvmergeloh.execute = {
 	return false;
 }
 zvmergeloh.disasm = {
-	os << "zvmergeloh r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zvmergeloh " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

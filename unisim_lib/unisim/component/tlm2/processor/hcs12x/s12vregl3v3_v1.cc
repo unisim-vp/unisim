@@ -18,10 +18,10 @@ S12VREGL3V3::S12VREGL3V3(const sc_module_name& name, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 
-	, unisim::kernel::service::Client<TrapReporting>(name, parent)
-	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Service<Registers>(name, parent)
-	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Client<TrapReporting>(name, parent)
+	, unisim::kernel::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Service<Registers>(name, parent)
+	, unisim::kernel::Client<Memory<physical_address_t> >(name, parent)
 
 	, trap_reporting_import("trap_reporting_import", this)
 
@@ -32,6 +32,8 @@ S12VREGL3V3::S12VREGL3V3(const sc_module_name& name, Object *parent) :
 	, slave_socket("slave_socket")
 	, bus_clock_socket("bus_clock_socket")
 
+	, logger(*this)
+
 	, base_address(0x02F0)
 	, param_base_address("base-address", this, base_address)
 
@@ -41,14 +43,12 @@ S12VREGL3V3::S12VREGL3V3(const sc_module_name& name, Object *parent) :
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
-	, logger(*this)
-
 {
 
 	slave_socket.register_b_transport(this, &S12VREGL3V3::read_write);
 	bus_clock_socket.register_b_transport(this, &S12VREGL3V3::updateBusClock);
 
-	SC_HAS_PROCESS(S12VREGL3V3);
+// 	SC_HAS_PROCESS(S12VREGL3V3);
 
 //	SC_THREAD(TxRun);
 //	SC_THREAD(RxRun);
@@ -203,6 +203,11 @@ void S12VREGL3V3::Reset() {
 	memset(vreg_register, 0, MEMORY_MAP_SIZE);
 }
 
+void S12VREGL3V3::ResetMemory() {
+	
+	Reset();
+
+}
 
 //=====================================================================
 //=             memory interface methods                              =

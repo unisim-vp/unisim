@@ -40,6 +40,7 @@
 #include <unisim/util/xml/xml.hh>
 #include <iosfwd>
 #include <set>
+#include <map>
 
 namespace unisim {
 namespace util {

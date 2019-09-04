@@ -49,8 +49,8 @@
   << __LINE__
 #define TIME(X) \
   " - time = " \
-  << sc_time_stamp() + (X) \
-  << " (current time = " << sc_time_stamp() << ")"
+  << sc_core::sc_time_stamp() + (X)                     \
+  << " (current time = " << sc_core::sc_time_stamp() << ")"
 #define PHASE(X)   " - phase = " \
   << ( (X) == tlm::BEGIN_REQ  ?   "BEGIN_REQ" : \
      ( (X) == tlm::END_REQ    ?   "END_REQ" : \
@@ -125,9 +125,9 @@ namespace cortex_r5f {
 
 using namespace unisim::kernel::logger;
 
-CPU::CPU( sc_module_name const& name, Object* parent )
-  : unisim::kernel::service::Object(name, parent)
-  , sc_module(name)
+  CPU::CPU( sc_core::sc_module_name const& name, Object* parent )
+  : unisim::kernel::Object(name, parent)
+  , sc_core::sc_module(name)
   , unisim::component::cxx::processor::arm::pmsav7::CPU(name, parent)
   , master_socket("master_socket")
   , check_external_event(false)
@@ -141,12 +141,12 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , end_read_rsp_event()
   , payload_fabric()
   , tmp_time()
-  , cpu_time(SC_ZERO_TIME)
-  , bus_time(SC_ZERO_TIME)
-  , quantum_time(SC_ZERO_TIME)
-  , cpu_cycle_time(62500.0, SC_PS)
-  , bus_cycle_time(62500.0, SC_PS)
-  , nice_time(1.0, SC_MS)
+  , cpu_time(sc_core::SC_ZERO_TIME)
+  , bus_time(sc_core::SC_ZERO_TIME)
+  , quantum_time(sc_core::SC_ZERO_TIME)
+  , cpu_cycle_time(62500.0, sc_core::SC_PS)
+  , bus_cycle_time(62500.0, sc_core::SC_PS)
+  , nice_time(1.0, sc_core::SC_MS)
   , ipc(1.0)
   , time_per_instruction(cpu_cycle_time/ipc)
   , enable_dmi(false)
@@ -228,8 +228,8 @@ CPU::EndSetup()
     return false;
   }
 
-  cpu_time = SC_ZERO_TIME;
-  bus_time = SC_ZERO_TIME;
+  cpu_time = sc_core::SC_ZERO_TIME;
+  bus_time = sc_core::SC_ZERO_TIME;
 
   if ( verbose_tlm ) 
   {
@@ -255,19 +255,19 @@ CPU::Stop(int ret)
   // Call BusSynchronize to account for the remaining time spent in the cpu 
   // core
   BusSynchronize();
-  unisim::kernel::service::Object::Stop( ret );
+  unisim::kernel::Object::Stop( ret );
 }
 
 /** Wait for a specific event and update CPU times
  */
 
 void
-CPU::Wait( sc_event const& evt )
+CPU::Wait( sc_core::sc_event const& evt )
 {
-  if (quantum_time != SC_ZERO_TIME)
+  if (quantum_time != sc_core::SC_ZERO_TIME)
     Sync();
   wait( evt );
-  cpu_time = sc_time_stamp();
+  cpu_time = sc_core::sc_time_stamp();
 }
 
 /** Synchronization demanded from the CPU implementation.
@@ -286,8 +286,8 @@ CPU::Sync()
       << EndDebugInfo;
   }
   wait(quantum_time);
-  cpu_time = sc_time_stamp();
-  quantum_time = SC_ZERO_TIME;
+  cpu_time = sc_core::sc_time_stamp();
+  quantum_time = sc_core::SC_ZERO_TIME;
   
   if (unlikely(verbose_tlm))
     PCPU::logger << DebugInfo
@@ -320,7 +320,7 @@ CPU::BusSynchronize()
   // quantum_time += 
   //   ((((cpu_time + quantum_time) / bus_cycle_time) + 1) * bus_cycle_time) -
   //   (cpu_time + quantum_time);
-  sc_time deadline(cpu_time);
+  sc_core::sc_time deadline(cpu_time);
   deadline += quantum_time;
   while ( bus_time < deadline )
     bus_time += bus_cycle_time;
@@ -434,6 +434,11 @@ CPU::Reset()
 {
 }
   
+void 
+CPU::ResetMemory()
+{
+}
+
 /**
  * Virtual method implementation to handle backward path of transactions sent 
  * through the master_port
@@ -497,7 +502,7 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
       /* Starting the response phase.
        * If the request is a write report an error and stop, we should not have received it.
        * The target has initiated the response to a read request, compute when the request can
-       *   be completely accepted and send a TLM_COMPLETED back. Send an event to the PrRead
+       *   be completely accepted and send a TLM_COMPLETED back. Send an event to the PhysicalReadMemory
        *   method to unlock the thread that originated the read transaction (using the end_read_event).
        */
       trans.acquire();
@@ -512,7 +517,7 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
         Stop(-1);
         break;
       }
-      tmp_time = sc_time_stamp();
+      tmp_time = sc_core::sc_time_stamp();
 	  tmp_time += time;
       /* TODO: increase tmp_time depending on the size of the transaction. */
       end_read_rsp_event.notify(time);
@@ -560,7 +565,7 @@ CPU::IRQHandler()
     PCPU::logger << DebugInfo
                       << "IRQ level change:" << std::endl
                       << " - nIRQm = " << nIRQm << std::endl
-                      << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
+                      << " - sc_time_stamp() = " << sc_core::sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }
 
@@ -573,7 +578,7 @@ CPU::FIQHandler()
     PCPU::logger << DebugInfo
                       << "FIQ level change:" << std::endl
                       << " - nFIQm = " << nFIQm << std::endl
-                      << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
+                      << " - sc_time_stamp() = " << sc_core::sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }
   
@@ -586,7 +591,7 @@ CPU::ResetHandler()
     PCPU::logger << DebugInfo
                       << "RESET level change:" << std::endl
                       << " - nRESETm = " << nRESETm << std::endl
-                      << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
+                      << " - sc_time_stamp() = " << sc_core::sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }
 
@@ -618,7 +623,7 @@ CPU::BranchToFIQorIRQvector( bool isIRQ )
   
   IRQACKm = false;
   
-  Branch( irq_addr );
+  Branch( irq_addr, B_EXC );
 }
 
 /**
@@ -702,11 +707,11 @@ CPU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
  * @param size    the size of the read
  */
 bool
-CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
+CPU::PhysicalReadMemory(uint32_t addr, uint8_t *buffer, uint32_t size, uint32_t attrs)
 {
   if (unlikely(verbose_tlm))
     PCPU::logger << DebugInfo
-      << "Starting PrRead:" << std::endl
+      << "Starting PhysicalReadMemory:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
       << EndDebugInfo;
@@ -783,7 +788,7 @@ CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
 
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
-      << "Finished PrRead:" << std::endl
+      << "Finished PhysicalReadMemory:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
       << EndDebugInfo;
@@ -792,11 +797,11 @@ CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
 }
 
 bool
-CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
+CPU::PhysicalWriteMemory(uint32_t addr, const uint8_t *buffer, uint32_t size, uint32_t attrs)
 {
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
-      << "Starting PrWrite:" << std::endl
+      << "Starting PhysicalWriteMemory:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
       << EndDebugInfo;
@@ -870,7 +875,7 @@ CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
 
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
-      << "Finished PrWrite:" << std::endl
+      << "Finished PhysicalWriteMemory:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
       << EndDebugInfo;

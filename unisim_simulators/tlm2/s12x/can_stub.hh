@@ -42,6 +42,7 @@
 #include <inttypes.h>
 
 #include <iostream>
+#include <fstream>
 #include <queue>
 
 #include <stdio.h>
@@ -55,7 +56,7 @@
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
@@ -67,9 +68,9 @@ using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::ServiceExportBase;
 
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 

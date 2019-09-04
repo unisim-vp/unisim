@@ -38,7 +38,7 @@
 #include <unisim/util/simfloat/floating.hh>
 #include <unisim/component/cxx/processor/arm/extregbank.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/service/interfaces/register.hh>
 
 #include <limits>
@@ -175,14 +175,11 @@ namespace simfloat {
 
     bool isDivisionByZero() const { return fDivisionByZero; }
     void setDivisionByZero() { fDivisionByZero = true; }
-    bool hasFlowException() const { return feExcept != FENoException; }
     void clearFlowException() { feExcept = FENoException; }
     void setOverflow() { feExcept = FEOverflow; }
     void setUnderflow() { feExcept = FEUnderflow; }
     bool isOverflow() const { return feExcept == FEOverflow; }
     bool isUnderflow() const { return feExcept == FEUnderflow; }
-    void clearUnderflow() { feExcept = FENoException; }
-    void mergeException(const Flags& source) { if (feExcept == FENoException) feExcept = source.feExcept; }
       
     void setRoundingMode(unsigned int rn_mode)
     {
@@ -349,6 +346,7 @@ namespace simfloat {
     void ToBytes( uint8_t* bytes ) const;
     void FromBytes( uint8_t const* bytes );
     void SquareRoot( Flags& rpParams );
+    ComparisonResult compare( SoftDouble const& sdSource ) const;
     
   private:
     typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<SoftDoubleTraits> inherited;
@@ -373,6 +371,7 @@ namespace simfloat {
     void ToBytes( uint8_t* bytes ) const;
     void FromBytes( uint8_t const* bytes ); 
     void SquareRoot( Flags& rpParams );
+    ComparisonResult compare( SoftFloat const& sfSource ) const;
     
   private:
     typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<SoftFloatTraits> inherited;
@@ -422,10 +421,10 @@ namespace simfloat {
     SoftDouble *value;
   };
 
-  class FloatingPointRegisterView : public unisim::kernel::service::VariableBase
+  class FloatingPointRegisterView : public unisim::kernel::VariableBase
   {
   public:
-    FloatingPointRegisterView(const char *name, unisim::kernel::service::Object *owner, SoftDouble& storage, const char *description);
+    FloatingPointRegisterView(const char *name, unisim::kernel::Object *owner, SoftDouble& storage, const char *description);
     virtual ~FloatingPointRegisterView();
     virtual const char *GetDataTypeName() const;
     virtual operator bool () const;
@@ -433,11 +432,11 @@ namespace simfloat {
     virtual operator unsigned long long () const;
     virtual operator double () const;
     virtual operator std::string () const;
-    virtual unisim::kernel::service::VariableBase& operator = (bool value);
-    virtual unisim::kernel::service::VariableBase& operator = (long long value);
-    virtual unisim::kernel::service::VariableBase& operator = (unsigned long long value);
-    virtual unisim::kernel::service::VariableBase& operator = (double value);
-    virtual unisim::kernel::service::VariableBase& operator = (const char * value);
+    virtual unisim::kernel::VariableBase& operator = (bool value);
+    virtual unisim::kernel::VariableBase& operator = (long long value);
+    virtual unisim::kernel::VariableBase& operator = (unsigned long long value);
+    virtual unisim::kernel::VariableBase& operator = (double value);
+    virtual unisim::kernel::VariableBase& operator = (const char * value);
   private:
     SoftDouble& storage;
   };

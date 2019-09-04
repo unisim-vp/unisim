@@ -38,5 +38,5 @@ efdctsi.execute = {
 	return false;
 }
 efdctsi.disasm = {
-	os << "efdctsi r" << (unsigned int) rd << ", r" << (unsigned int) rb;
+	os << "efdctsi " << GPRPrint(rd) << ", " << GPRPrint(rb);
 }

@@ -51,7 +51,7 @@ zlhhosx.execute = {
 	return false;
 }
 zlhhosx.disasm = {
-	os << "zlhhos" << (m ? "m" : "") << " x r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zlhhos" << (m ? "m" : "") << " x " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zlhhosx(m=0)

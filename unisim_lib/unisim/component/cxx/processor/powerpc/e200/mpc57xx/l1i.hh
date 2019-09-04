@@ -49,7 +49,7 @@ namespace mpc57xx {
 // Level 1 Instruction Cache
 template <typename TYPES, typename CONFIG>
 struct L1I
-	: unisim::kernel::service::Object
+	: unisim::kernel::Object
 	, unisim::util::cache::Cache<TYPES, CONFIG, L1I<TYPES, CONFIG> >
 {
 	typedef unisim::util::cache::Cache<TYPES, CONFIG, L1I<TYPES, CONFIG> > SuperCache;
@@ -60,7 +60,7 @@ struct L1I
 	static const char *GetCacheName() { return "L1I"; }
 
 	L1I(CPU *_cpu)
-		: unisim::kernel::service::Object("L1I", _cpu)
+		: unisim::kernel::Object("L1I", _cpu, "L1 Instruction Cache")
 		, SuperCache()
 		, cpu(_cpu)
 		, l1csr1(_cpu, this)
@@ -133,7 +133,7 @@ struct L1I
 
 	inline bool IsVerbose() const ALWAYS_INLINE { return verbose; }
 	inline bool IsEnabled() const ALWAYS_INLINE { return l1csr1.template Get<typename L1CSR1::ICE>(); }
-	inline bool IsWriteAllocate() const ALWAYS_INLINE { return false; }
+	inline bool IsWriteAllocate(typename TYPES::STORAGE_ATTR storage_attr) const ALWAYS_INLINE { return false; }
 	inline bool ChooseLineToEvict(unisim::util::cache::CacheAccess<TYPES, L1I>& access) ALWAYS_INLINE
 	{
 		if(cpu->l1csr0.template Get<typename L1CSR0::WID>() == ((1 << L1I::ASSOCIATIVITY) - 1)) return false; // all instruction cache ways are locked
@@ -189,10 +189,10 @@ private:
 	L1CSR1 l1csr1;
 	L1FINV1 l1finv1;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_misses;
-	unisim::kernel::service::Formula<double> formula_miss_rate;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_misses;
+	unisim::kernel::variable::Formula<double> formula_miss_rate;
 };
 
 } // end of namespace mpc57xx

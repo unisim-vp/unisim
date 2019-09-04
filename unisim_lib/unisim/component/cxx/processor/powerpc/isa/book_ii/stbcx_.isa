@@ -32,13 +32,15 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-op stbcx_(31[6]:rs[5]:ra[5]:rb[5]:694[10]:1[1])
+/* Store Byte Conditional Indexed */
+op stbcx_(31[6]:rs[5]:ra[5]:rb[5]:694[10]:1[1]);
+
 stbcx_.execute = {
 	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	return cpu->Stbcx(rs, ea);
-}
+};
 
 stbcx_.disasm = {
-	os << "stbcx. r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-}
+	os << "stbcx. " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
+};

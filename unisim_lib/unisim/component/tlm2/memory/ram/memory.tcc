@@ -77,8 +77,8 @@ Memory(const sc_core::sc_module_name& name, Object *parent)
 {
 	slave_sock(*this);
 	
-	stat_read_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_write_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_read_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	stat_write_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 }
 
 /* Destructor */
@@ -89,8 +89,8 @@ Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
-Reset() {
-	inherited::Reset();
+ResetMemory() {
+	inherited::ResetMemory();
 
 	read_counter = 0;
 	write_counter = 0;

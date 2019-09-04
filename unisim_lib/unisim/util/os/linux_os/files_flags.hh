@@ -49,6 +49,8 @@ static const int LINUX_O_EXCL = 00000200;
 static const int LINUX_O_TRUNC = 00001000;
 static const int LINUX_O_APPEND = 00002000;
 
+static const int LINUX_AT_FDCWD = -100;
+
 } // end of namespace linux_os
 } // end of namespace os
 } // end of namespace util

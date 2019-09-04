@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,25 +32,22 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op stmw(47[6]:rs[5]:ra[5]:sext<32>d[16])
+/* Store Multiple Word */
+op stmw(47[6]:rs[5]:ra[5]:sext d[16]);
+
 stmw.execute = {
-	ADDRESS ea = (ra ? cpu->GetGPR(ra) + d : d);
+	UINT disp( d );
+	ADDRESS ea(ra ? cpu->GetGPR(ra) + disp : disp);
 
-	unsigned int r;
-
-	for(r = rs; r < 32; r++)
+	for(unsigned r = rs; r < 32; r++)
 	{
-		if(unlikely(!cpu->Int32Store(r, ea))) return false;
-		ea = ea + 4;
+		if(unlikely(not cpu->Int32Store(r, ea))) return false;
+		ea = ea + ADDRESS(4);
 	}
 	
 	return true;
 }
+
 stmw.disasm = {
-	os << "stmw r" << (unsigned int) rs << ", " << d << "(r" << (unsigned int) ra << ")";
-	if(cpu && (cpu->GetCIA() == this->GetAddr()))
-	{
-		ADDRESS ea = (ra ? cpu->GetGPR(ra) + d : d);
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
+	os << "stmw " << GPRPrint(rs) << ", " << EAPrint(d,ra);
 }

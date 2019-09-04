@@ -51,8 +51,8 @@ address_t XINT::XINT_REGS_ADDRESSES[XINT::XINT_MEMMAP_SIZE];
 XINT::XINT(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
-	unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent),
-	unisim::kernel::service::Service<Registers>(name, parent),
+	unisim::kernel::Service<Memory<physical_address_t> >(name, parent),
+	unisim::kernel::Service<Registers>(name, parent),
 	Client<Memory<physical_address_t> >(name, parent),
 
 	interrupt_request("interrupt_request"),
@@ -457,6 +457,12 @@ void XINT::Reset() {
 
 }
 
+void XINT::ResetMemory() {
+
+	Reset();
+
+}
+
 bool XINT::BeginSetup() {
 
 	Reset();
@@ -466,21 +472,21 @@ bool XINT::BeginSetup() {
 	sprintf(buf, "%s.IVBR",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ivbr);
 
-	unisim::kernel::service::Register<uint8_t> *ivbr_var = new unisim::kernel::service::Register<uint8_t>("IVBR", this, ivbr, "Interrupt Vector base register (IVBR)");
+	unisim::kernel::variable::Register<uint8_t> *ivbr_var = new unisim::kernel::variable::Register<uint8_t>("IVBR", this, ivbr, "Interrupt Vector base register (IVBR)");
 	extended_registers_registry.push_back(ivbr_var);
 	ivbr_var->setCallBack(this, IVBR, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.INT_XGPRIO",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_xgprio);
 
-	unisim::kernel::service::Register<uint8_t> *int_xgprio_var = new unisim::kernel::service::Register<uint8_t>("INT_XGPRIO", this, int_xgprio, "XGate Interrupt Priority Configuration Register (INT_XGPRIO)");
+	unisim::kernel::variable::Register<uint8_t> *int_xgprio_var = new unisim::kernel::variable::Register<uint8_t>("INT_XGPRIO", this, int_xgprio, "XGate Interrupt Priority Configuration Register (INT_XGPRIO)");
 	extended_registers_registry.push_back(int_xgprio_var);
 	int_xgprio_var->setCallBack(this, INT_XGPRIO, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.INT_CFADDR",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfaddr);
 
-	unisim::kernel::service::Register<uint8_t> *int_cfaddr_var = new unisim::kernel::service::Register<uint8_t>("INT_CFADDR", this, int_cfaddr, "Interrupt Request Configuration Address Register (INT_CFADDR)");
+	unisim::kernel::variable::Register<uint8_t> *int_cfaddr_var = new unisim::kernel::variable::Register<uint8_t>("INT_CFADDR", this, int_cfaddr, "Interrupt Request Configuration Address Register (INT_CFADDR)");
 	extended_registers_registry.push_back(int_cfaddr_var);
 	int_cfaddr_var->setCallBack(this, INT_CFADDR, &CallBackObject::write, NULL);
 
@@ -490,7 +496,7 @@ bool XINT::BeginSetup() {
 
 		sprintf(buf, "INT_CFDATA%d", i);
 
-		unisim::kernel::service::Register<uint8_t> *int_cfwdata_var = new unisim::kernel::service::Register<uint8_t>(buf, this, int_cfwdata[i], "Interrupt Request Configuration Data Registers (INT_CFDATA)");
+		unisim::kernel::variable::Register<uint8_t> *int_cfwdata_var = new unisim::kernel::variable::Register<uint8_t>(buf, this, int_cfwdata[i], "Interrupt Request Configuration Data Registers (INT_CFDATA)");
 		extended_registers_registry.push_back(int_cfwdata_var);
 		int_cfwdata_var->setCallBack(this, INT_CFDATA0+i, &CallBackObject::write, NULL);
 	}
@@ -677,7 +683,7 @@ void XINT::write_INT_CFDATA(uint8_t index, uint8_t value)
 
 bool XINT::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
-	if ((addr < baseAddress) || (addr >= baseAddress + 16))
+	if ((addr < baseAddress) || (addr >= address_t(baseAddress + 16)))
 	{
 		return false;
 	}
@@ -698,7 +704,7 @@ bool XINT::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 bool XINT::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
-	if ((addr < baseAddress) || (addr >= baseAddress + 16))
+	if ((addr < baseAddress) || (addr >= address_t(baseAddress + 16)))
 	{
 		return false;
 	}

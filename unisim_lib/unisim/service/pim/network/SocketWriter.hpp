@@ -9,9 +9,8 @@
 #define SOCKETWRITER_HPP_
 
 
-#include "BlockingQueue.hpp"
-#include "BlockingQueue.tcc"
-#include "GenericThread.hpp"
+#include "unisim/service/pim/network/BlockingQueue.hpp"
+#include "unisim/service/pim/network/GenericThread.hpp"
 
 namespace unisim {
 namespace service {

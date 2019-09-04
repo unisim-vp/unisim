@@ -38,7 +38,7 @@
 #include <systemc>
 #include <tlm>
 #include <tlm_utils/passthrough_target_socket.h>
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 // we can reuse the vic_int_source_identifier
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic_int_source_identifier.hh"
@@ -52,7 +52,7 @@ namespace arm926ejs_pxp {
 namespace sic {
 
 class SIC
-	: public unisim::kernel::service::Object
+	: public unisim::kernel::Object
 	, public sc_module
 	, public unisim::component::tlm2::chipset::arm926ejs_pxp::vic::VICIntSourceIdentifierInterface
 {
@@ -279,12 +279,12 @@ private:
 	/** Base address of the VIC */
 	uint32_t base_addr;
 	/** UNISIM Parameter for the base address of the VIC */
-	unisim::kernel::service::Parameter<uint32_t> param_base_addr;
+	unisim::kernel::variable::Parameter<uint32_t> param_base_addr;
 
 	/** Verbose */
 	uint32_t verbose;
 	/** UNISIM Paramter for verbose */
-	unisim::kernel::service::Parameter<uint32_t> param_verbose;
+	unisim::kernel::variable::Parameter<uint32_t> param_verbose;
 	/** Verbose levels */
 	static const uint32_t V0 = 0x01UL;
 	static const uint32_t V1 = 0x03UL;

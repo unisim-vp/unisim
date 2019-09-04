@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,48 +32,37 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
-}
-
 op fnabs(63[6]:fd[5]:?[5]:fb[5]:136[10]:rc[1])
 fnabs.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 		return false;
 	}
-	// Check if FPU is enabled
-	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not cpu->GetMSR().Get<CPU::MSR::FP>()))
 	{
-		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		cpu->ThrowException<CPU::FloatingPointUnavailableInterrupt::FloatingPointUnavailable>();
 		return false;
 	}
 
 	// Read the input operands
-	uint32_t fpscr = cpu->GetFPSCR();
-	SoftDouble result = cpu->GetFPR(fd);
-	const SoftDouble& b = cpu->GetFPR(fb);
+	SoftDouble result( cpu->GetFPR(fb) );
 
 	// Compute the result
-	result = b;
-	if(result.isPositive())
-	{
-		result.opposite();
-	}
+	result.setNegative();
 
 	// Write back the result
 	cpu->SetFPR(fd, result);
 
 	// Copy FX, FEX, VX, OX to CR1
-	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
+	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
 	
 	return true;
-}
-fnabs.disasm = {
-	os << "fnabs" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
-}
+};
 
-specialize fnabs(rc=0)
-specialize fnabs(rc=1)
+fnabs.disasm = {
+	os << "fnabs" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
+};
+
+specialize fnabs(rc=0);
+specialize fnabs(rc=1);

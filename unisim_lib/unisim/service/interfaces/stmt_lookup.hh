@@ -35,15 +35,17 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_STMT_LOOKUP_HH__
 #define __UNISIM_SERVICE_INTERFACES_STMT_LOOKUP_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 #include <unisim/util/debug/stmt.hh>
+#include <map>
+#include <vector>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
 template <class MEMORY_ADDR>
-class StatementLookup : public unisim::kernel::service::ServiceInterface
+class StatementLookup : public ServiceInterface
 {
 public:
 	typedef enum

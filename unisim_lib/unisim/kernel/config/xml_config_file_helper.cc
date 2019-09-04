@@ -46,7 +46,7 @@ using std::map;
 
 const char *XMLConfigFileHelper::XML_ENCODING = "UTF-8"; 
 
-XMLConfigFileHelper::XMLConfigFileHelper(unisim::kernel::service::Simulator *_simulator)
+XMLConfigFileHelper::XMLConfigFileHelper(unisim::kernel::Simulator *_simulator)
 	: simulator(_simulator)
 	, cur_var(0)
 	, cur_status(NONE)
@@ -101,7 +101,30 @@ const char *XMLConfigFileHelper::GetName() const
 	return "XML";
 }
 
-bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::service::VariableBase::Type type)
+bool XMLConfigFileHelper::SaveVariables(std::ostream& os, unisim::kernel::VariableBase::Type type)
+{
+	xmlTextWriterPtr writer;
+	
+	xmlBuffer *buffer = xmlBufferCreate();
+	xmlOutputBuffer *output_buffer = xmlOutputBufferCreateBuffer(buffer, NULL);
+	
+	writer = xmlNewTextWriter(output_buffer);
+	
+	bool ret = SaveVariables(writer, type);
+	
+	if(ret)
+	{
+		std::string str((char *) buffer->content, buffer->use);
+		os << str;
+	}
+	
+	xmlBufferFree(buffer);
+	
+	return ret;
+}
+
+
+bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::VariableBase::Type type)
 {
 	xmlTextWriterPtr writer;
 
@@ -112,6 +135,16 @@ bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 			<< filename << ")" << std::endl;
 		return false;
 	}
+	
+	bool ret = SaveVariables(writer, type);
+	
+	xmlFreeTextWriter(writer);
+	
+	return ret;
+}
+
+bool XMLConfigFileHelper::SaveVariables(xmlTextWriterPtr writer, unisim::kernel::VariableBase::Type type)
+{
 	int rc = xmlTextWriterSetIndent(writer, 1);
 	if(rc < 0) {
 		std::cerr << "Warning(XMLConfigFileHelper::SaveVariables): "
@@ -128,7 +161,6 @@ bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 	if(rc < 0) {
 		std::cerr << "Error(XMLConfigFileHelper::SaveVariables): "
 			<< "error starting the xml document" << std::endl;
-		xmlFreeTextWriter(writer);
 		return false;
 	}
 	// rc = xmlTextWriterStartElement(writer, BAD_CAST "VARIABLES");
@@ -136,7 +168,6 @@ bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 	if(rc < 0) {
 		std::cerr << "Error(XMLConfigFileHelper::SaveVariables): "
 			<< "error starting the xml document" << std::endl;
-		xmlFreeTextWriter(writer);
 		return false;
 	}
 
@@ -145,8 +176,8 @@ bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 	 * Afterwards the simulator level variables (those that are directly 
 	 * attached to the simulator).
 	 */
-	std::list<unisim::kernel::service::Object *> obj_list;
-	std::list<unisim::kernel::service::Object *>::iterator obj_iter;
+	std::list<unisim::kernel::Object *> obj_list;
+	std::list<unisim::kernel::Object *>::iterator obj_iter;
 	simulator->GetRootObjects(obj_list);
 	for ( obj_iter = obj_list.begin();
 			obj_iter != obj_list.end();
@@ -160,22 +191,21 @@ bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 				std::cerr << "Error(ServiceManage::SaveVariables): "
 					<< "error writing root object"
 					<< std::endl;
-				xmlFreeTextWriter(writer);
 				return false;
 			}
 		}
 	}
 
-	std::list<unisim::kernel::service::VariableBase *> variables;
+	std::list<unisim::kernel::VariableBase *> variables;
 	simulator->GetVariables(variables, type);
-	std::list<unisim::kernel::service::VariableBase *>::iterator var_iter;
+	std::list<unisim::kernel::VariableBase *>::iterator var_iter;
 	for ( var_iter = variables.begin();
 			var_iter != variables.end();
 			var_iter++ )
 	{
 		// check that the variable is a root variable by checking that it
 		//   has not object owner
-		unisim::kernel::service::VariableBase *var = *var_iter;
+		unisim::kernel::VariableBase *var = *var_iter;
 		bool root_var = (var->GetOwner() == 0);
 		if ( root_var )
 		{
@@ -185,7 +215,6 @@ bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 				std::cerr << "Error(XMLConfigFileHelper::SaveVariables): "
 						<< "error writing variable"
 						<< std::endl;
-				xmlFreeTextWriter(writer);
 				return false;
 			}
 		}
@@ -195,7 +224,6 @@ bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 	if(rc < 0) {
 		std::cerr << "Error(XMLConfigFileHelper::SaveVariables): "
 			<< "could not close the root element" << std::endl;
-		xmlFreeTextWriter(writer);
 		return false;
 	}
 	rc = xmlTextWriterEndDocument(writer);
@@ -204,26 +232,25 @@ bool XMLConfigFileHelper::SaveVariables(const char *filename, unisim::kernel::se
 			<< "could not correctly close the XMLWriter"
 			<< std::endl;
 	}
-	xmlFreeTextWriter(writer);
 
 	return true;
 }
 
-bool XMLConfigFileHelper::HasVariable(const unisim::kernel::service::Object *obj, unisim::kernel::service::VariableBase::Type type)
+bool XMLConfigFileHelper::HasVariable(const unisim::kernel::Object *obj, unisim::kernel::VariableBase::Type type)
 {
-	std::list<unisim::kernel::service::VariableBase *> var_list;
-	std::list<unisim::kernel::service::VariableBase *>::iterator var_iter;
+	std::list<unisim::kernel::VariableBase *> var_list;
+	std::list<unisim::kernel::VariableBase *>::iterator var_iter;
 	obj->GetVariables(var_list);
 	for(var_iter = var_list.begin();
 			var_iter != var_list.end();
 			var_iter++) {
-		if ((*var_iter)->IsSerializable() && (type == unisim::kernel::service::VariableBase::VAR_VOID ||
+		if ((*var_iter)->IsSerializable() && (type == unisim::kernel::VariableBase::VAR_VOID ||
 				type == (*var_iter)->GetType()))
 			return true;
 	}
 	
-	std::list<unisim::kernel::service::Object *> obj_list;
-	std::list<unisim::kernel::service::Object *>::iterator obj_iter;
+	std::list<unisim::kernel::Object *> obj_list;
+	std::list<unisim::kernel::Object *>::iterator obj_iter;
 	obj_list = obj->GetLeafs();
 	for (obj_iter = obj_list.begin();
 			obj_iter != obj_list.end();
@@ -236,7 +263,7 @@ bool XMLConfigFileHelper::HasVariable(const unisim::kernel::service::Object *obj
 	return false;
 }
 
-int XMLConfigFileHelper::XmlfyVariables(xmlTextWriterPtr writer, const unisim::kernel::service::Object *obj, unisim::kernel::service::VariableBase::Type type)
+int XMLConfigFileHelper::XmlfyVariables(xmlTextWriterPtr writer, const unisim::kernel::Object *obj, unisim::kernel::VariableBase::Type type)
 {
 	int rc;
 
@@ -254,8 +281,8 @@ int XMLConfigFileHelper::XmlfyVariables(xmlTextWriterPtr writer, const unisim::k
 	if (rc < 0) return rc;
 
 	// dump inner objects
-	std::list<unisim::kernel::service::Object *> obj_list;
-	std::list<unisim::kernel::service::Object *>::iterator obj_iter;
+	std::list<unisim::kernel::Object *> obj_list;
+	std::list<unisim::kernel::Object *>::iterator obj_iter;
 	obj_list = obj->GetLeafs();
 	for (obj_iter = obj_list.begin();
 			obj_iter != obj_list.end();
@@ -275,13 +302,13 @@ int XMLConfigFileHelper::XmlfyVariables(xmlTextWriterPtr writer, const unisim::k
 	}
 
 	// dump object variables
-	std::list<unisim::kernel::service::VariableBase *> var_list;
-	std::list<unisim::kernel::service::VariableBase *>::iterator var_iter;
+	std::list<unisim::kernel::VariableBase *> var_list;
+	std::list<unisim::kernel::VariableBase *>::iterator var_iter;
 	obj->GetVariables(var_list);
 	for(var_iter = var_list.begin();
 			var_iter != var_list.end();
 			var_iter++) {
-		if (type == unisim::kernel::service::VariableBase::VAR_VOID ||
+		if (type == unisim::kernel::VariableBase::VAR_VOID ||
 				type == (*var_iter)->GetType())
 		{
 			rc = XmlfyVariable(writer, *var_iter);
@@ -300,7 +327,7 @@ int XMLConfigFileHelper::XmlfyVariables(xmlTextWriterPtr writer, const unisim::k
 	return 0;
 }
 
-int XMLConfigFileHelper::XmlfyVariable(xmlTextWriterPtr writer, const unisim::kernel::service::VariableBase *var) 
+int XMLConfigFileHelper::XmlfyVariable(xmlTextWriterPtr writer, const unisim::kernel::VariableBase *var) 
 {
 	int rc;
 
@@ -319,21 +346,21 @@ int XMLConfigFileHelper::XmlfyVariable(xmlTextWriterPtr writer, const unisim::ke
 	rc = xmlTextWriterStartElement(writer, BAD_CAST "type");
 	if(rc < 0) return rc;
 	switch(var->GetType()) {
-		case unisim::kernel::service::VariableBase::VAR_PARAMETER:
+		case unisim::kernel::VariableBase::VAR_PARAMETER:
 			rc = xmlTextWriterWriteFormatString(writer, "parameter");
 			break;
-		case unisim::kernel::service::VariableBase::VAR_STATISTIC:
+		case unisim::kernel::VariableBase::VAR_STATISTIC:
 			rc = xmlTextWriterWriteFormatString(writer, "statistic");
 			break;
-		case unisim::kernel::service::VariableBase::VAR_REGISTER:
+		case unisim::kernel::VariableBase::VAR_REGISTER:
 			rc = xmlTextWriterWriteFormatString(writer, "register");
 			break;
-		case unisim::kernel::service::VariableBase::VAR_SIGNAL:
+		case unisim::kernel::VariableBase::VAR_SIGNAL:
 			rc = xmlTextWriterWriteFormatString(writer, "signal");
 			break;
-		case unisim::kernel::service::VariableBase::VAR_VOID:
-		case unisim::kernel::service::VariableBase::VAR_ARRAY:
-		case unisim::kernel::service::VariableBase::VAR_FORMULA:
+		case unisim::kernel::VariableBase::VAR_VOID:
+		case unisim::kernel::VariableBase::VAR_ARRAY:
+		case unisim::kernel::VariableBase::VAR_FORMULA:
 			std::cerr << "Unexpected variable type to Xmlfy. Variable name is '"
 				<< var->GetVarName() << "'" << std::endl;
 			break;
@@ -420,12 +447,11 @@ int XMLConfigFileHelper::XmlfyVariable(xmlTextWriterPtr writer, const unisim::ke
 	return 1;
 }
 
-bool XMLConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::service::VariableBase::Type type)
+bool XMLConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::VariableBase::Type type)
 {
 	std::string filename = simulator->SearchSharedDataFile(_filename);
 	
 	xmlTextReaderPtr reader;
-	int ret;
 
 	std::cerr << "Loading xml parameters from: " << filename << std::endl;
 	
@@ -435,30 +461,62 @@ bool XMLConfigFileHelper::LoadVariables(const char *_filename, unisim::kernel::s
 	 */
 	reader = xmlReaderForFile(filename.c_str(), NULL, 0);
 	if (reader != NULL) {
-		cur_status = NONE;
-		cur_var = NULL;
-		ret = xmlTextReaderRead(reader);
-		while (ret == 1) {
-			if(ProcessXmlVariableNode(reader, type))
-				ret = xmlTextReaderRead(reader);
-			else
-				ret = 0;
-		}
-		xmlFreeTextReader(reader);
-		if (ret != 0) {
-			std::cerr << filename << ": failed to parse" << std::endl;
-			return false;
-		}
-		return true;
+		return LoadVariables(reader, type);
 	} else {
 		std::cerr << "Unable to open " << filename << std::endl;
 		return false;
 	}
 }
 
+bool XMLConfigFileHelper::LoadVariables(xmlTextReaderPtr reader, unisim::kernel::VariableBase::Type type)
+{
+	int ret;
+	cur_status = NONE;
+	cur_var = NULL;
+	ret = xmlTextReaderRead(reader);
+	while (ret == 1) {
+		if(ProcessXmlVariableNode(reader, type))
+			ret = xmlTextReaderRead(reader);
+		else
+			ret = 0;
+	}
+	xmlFreeTextReader(reader);
+	if (ret != 0) {
+		std::cerr << "failed to parse" << std::endl;
+		return false;
+	}
+	return true;
+}
+
+bool XMLConfigFileHelper::LoadVariables(std::istream& is, unisim::kernel::VariableBase::Type type)
+{
+	xmlTextReaderPtr reader;
+	
+	std::string str;
+	
+	char buffer[4096];
+	do
+	{
+		std::streamsize n = is.readsome(buffer, sizeof(buffer));
+		
+		if(is.fail()) return false;
+		if(n <= 0) break;
+		
+		if(n > 0)
+		{
+			str.append(buffer, n);
+		}
+	}
+	while(1);
+	
+	reader = xmlReaderForMemory(&str[0], str.length(), "", XML_ENCODING, 0);
+	
+	return LoadVariables(reader, type);
+}
+
 bool 
 XMLConfigFileHelper::
-ProcessXmlVariableNode(xmlTextReaderPtr reader, unisim::kernel::service::VariableBase::Type type) 
+ProcessXmlVariableNode(xmlTextReaderPtr reader, unisim::kernel::VariableBase::Type type) 
 { 
 	const xmlChar* name = 0;
 	const xmlChar* value = 0;
@@ -526,11 +584,11 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, unisim::kernel::service::Variabl
 			// cerr << "    description = " << cur_var->description.str() << endl;
 			
 			bool modify = 
-				(type == unisim::kernel::service::VariableBase::VAR_VOID) ||
+				(type == unisim::kernel::VariableBase::VAR_VOID) ||
 				(cur_var->type.str().empty()) ||
-				(type == unisim::kernel::service::VariableBase::VAR_PARAMETER && cur_var->type.str().compare("parameter") == 0) ||
-				(type == unisim::kernel::service::VariableBase::VAR_REGISTER && cur_var->type.str().compare("register") == 0) ||
-				(type == unisim::kernel::service::VariableBase::VAR_STATISTIC && cur_var->type.str().compare("statistic") == 0);
+				(type == unisim::kernel::VariableBase::VAR_PARAMETER && cur_var->type.str().compare("parameter") == 0) ||
+				(type == unisim::kernel::VariableBase::VAR_REGISTER && cur_var->type.str().compare("register") == 0) ||
+				(type == unisim::kernel::VariableBase::VAR_STATISTIC && cur_var->type.str().compare("statistic") == 0);
 			if (modify)
 			{
 				simulator->SetVariable(cur_var->name.str().c_str(), cur_var->value.str().c_str());

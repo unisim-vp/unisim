@@ -60,7 +60,7 @@ zvdotphgwasmf.execute = {
 	return false;
 }
 zvdotphgwasmf.disasm = {
-	os << "zvdotphgwasmf" << (r ? "r" : "") << LSP_ACC(acc) << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zvdotphgwasmf" << (r ? "r" : "") << LSP_ACC(acc) << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zvdotphgwasmf(acc=0,r=0)

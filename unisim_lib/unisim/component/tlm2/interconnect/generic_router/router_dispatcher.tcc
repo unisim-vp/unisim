@@ -118,51 +118,6 @@ QueueCB(transaction_type &trans, const phase_type &phase)
 	(m_owner->*m_cb)(m_id, trans);
 }
 
-#if 0
-template<typename OWNER, class CONFIG>
-void
-RouterDispatcher<OWNER, CONFIG>::
-Run() 
-{
-	typename std::multimap<const sc_core::sc_time, transaction_type *>::iterator it;
-
-	while(1) {
-		wait(m_event);
-		sc_core::sc_time now = sc_core::sc_time_stamp();
-		transaction_type *trans;
-
-		it = m_queue.begin();
-		if (it == m_queue.end()) continue;
-		if (it->first > now) {
-			m_event.notify(it->first - now);
-			continue;
-		}
-		trans = it->second;
-//		m_queue.erase(it);
-		(m_owner->*m_cb)(m_id, *trans);
-		wait(m_complete_event);
-		m_queue.erase(it);
-		trans->release();
-// ** Reda & Gilles 
-//       if (trans->is_write()) trans->release();
-// *** end Reda & Gilles
-		now = sc_core::sc_time_stamp();
-		it = m_queue.begin();
-		if (it == m_queue.end()) continue;
-		if (it->first > now) {
-			m_event.notify(it->first - now);
-			continue;
-		}
-		// we need to synchronize
-		uint64_t val = now.value() / m_cycle_time.value();
-		val = val + 1;
-		sc_core::sc_time fut = m_cycle_time * val;
-		fut += m_cycle_time;
-		m_event.notify(fut - now);
-	}
-}
-#endif
-
 template<typename OWNER, class CONFIG>
 bool
 RouterDispatcher<OWNER, CONFIG>::

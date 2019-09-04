@@ -38,5 +38,5 @@ evfsmax.execute = {
 	return false;
 }
 evfsmax.disasm = {
-	os << "evfsmax r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "evfsmax " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

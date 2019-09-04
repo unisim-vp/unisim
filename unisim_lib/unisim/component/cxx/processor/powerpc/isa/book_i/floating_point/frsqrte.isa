@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,164 +32,131 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op frsqrte(63[6]:fd[5]:?[5]:fb[5]:?[5]:26[5]:rc[1])
+/* Floating Reciprocal Square Root Estimate */
+op frsqrte(63[6]:fd[5]:?[5]:fb[5]:?[5]:26[5]:rc[1]);
+
 frsqrte.execute = {
-	if(!CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS)
+	if(not CONFIG::HAS_FPU or not CONFIG::HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS)
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 		return false;
 	}
-	// Check if FPU is enabled
-	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not cpu->GetMSR().Get<CPU::MSR::FP>()))
 	{
-		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		cpu->ThrowException<CPU::FloatingPointUnavailableInterrupt::FloatingPointUnavailable>();
 		return false;
 	}
 
 	// Read the input operands
-	uint32_t fpscr = cpu->GetFPSCR();
-	uint32_t old_fpscr = fpscr;
-	Flags flags;
-	flags.setRoundingMode(RN_NEAREST);
-	const SoftDouble& b = cpu->GetFPR(fb);
+	FPSCR& fpscr = cpu->GetFPSCR();
+	SoftDouble result( cpu->GetFPR(fb) );
 
-	if(unlikely(b.isSNaN()))
+	if (unlikely(result.isNaN()))
 	{
-		// b = SNaN
-		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
+		if (unlikely(result.isSNaN()))
 		{
-			// Generate FPRF
-			fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
-			// Write back result
-			cpu->SetFPR(fd, SoftDouble(b.queryValue() | 0x0008000000000000ULL)); // QNaN (b with high order bit of mantissa set)
+			fpscr.SetInvalid(FPSCR::VXSNAN());
+
+			if (unlikely(not cpu->CheckFloatingPointException()))
+				return false;
+
+			// Compute the result (QNaN)
+			result.setQuiet();
 		}
-		// Generate VXSNAN
-		fpscr = fpscr | CONFIG::FPSCR_VXSNAN_MASK;
-	}
-	else if(unlikely(b.isQNaN()))
-	{
-		// b = QNaN
+	
 		// Generate FPRF
-		fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
-		// Write back result
-		cpu->SetFPR(fd, b); // QNaN (b)
+		fpscr.Set<FPSCR::FPRF>( FPSCR::FPRF::QNAN() );
 	}
-	else if(unlikely(b.isZero()))
-	{
-		// Generate ZX
-		fpscr = fpscr | CONFIG::FPSCR_ZX_MASK;
-
-		if(!(fpscr & CONFIG::FPSCR_ZE_MASK))
-		{
-			if(b.isNegative())
-			{
-				// b = -0
-				// Write back result
-				cpu->SetFPR(fd, SoftDouble(0xfff0000000000000ULL)); // -infinity
-				// Generate FPRF
-				fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_NEGATIVE_INFINITY << CONFIG::FPSCR_FPRF_OFFSET);
-			}
-			else
-			{
-				// b = +0
-				// Write back result
-				cpu->SetFPR(fd, SoftDouble(0x7ff0000000000000ULL)); // +infinity
-				// Generate FPRF
-				fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_POSITIVE_INFINITY << CONFIG::FPSCR_FPRF_OFFSET);
-			}
-		}
-	}
-	else if(unlikely(b.isNegative()))
+	else if (unlikely(result.isNegative()))
 	{
 		// -infinity <= b < 0
-		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
-		{
-			// Write back result
-			cpu->SetFPR(fd, SoftDouble(0x7ff8000000000000ULL)); // Positive QNaN
-			// Generate FPRF
-			fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
-		}
-		// Generate VXSQRT
-		fpscr = fpscr | CONFIG::FPSCR_VXSQRT_MASK;
+		fpscr.SetInvalid(FPSCR::VXSQRT());
+		
+		if (unlikely(not cpu->CheckFloatingPointException()))
+			return false;
+		
+		// Compute the result
+		result.fromRawBitsAssign(U64(0x7ff8000000000000ULL)); // Positive QNaN
+		
+		// Generate FPRF
+		fpscr.Set<FPSCR::FPRF>(FPSCR::FPRF::QNAN());
 	}
-	else if(unlikely(b.isInfty()))
+	else if (unlikely(result.isZero()))
+	{
+		fpscr.SetException(FPSCR::ZX());
+		
+		if (unlikely(not cpu->CheckFloatingPointException()))
+			return false;
+		
+		// Compute the result (+/- Inf)
+		bool neg = evenly(result.isNegative());
+		result.fromRawBitsAssign( U64(neg ? 0xfff0000000000000ULL : 0x7ff0000000000000ULL) );
+		fpscr.Set<FPSCR::FPRF>(neg ? FPSCR::FPRF::NEGATIVE_INFINITY() : FPSCR::FPRF::POSITIVE_INFINITY());
+	}
+	else if (unlikely(result.isInfty()))
 	{
 		// b = +infinity
-		cpu->SetFPR(fd, SoftDouble(0x0000000000000000ULL)); // +0
+		result.fromRawBitsAssign(U64(0x0000000000000000ULL)); // +0
+		
 		// Generate FPRF
-		fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_POSITIVE_ZERO << CONFIG::FPSCR_FPRF_OFFSET);
+		fpscr.Set<FPSCR::FPRF>(FPSCR::FPRF::POSITIVE_ZERO());
 	}
 	else
 	{
 		// 0 < b < infinity
+		result.rSqrtEstimAssign();
 
-		// First estimation of 1/sqrt(b), seed of Newton-Raphson algorithm
-		// see http://www.mceniry.net/papers/Fast%20Inverse%20Square%20Root.pdf
-		// mirror: http://www.daxia.com/bibis/upload/406Fast_Inverse_Square_Root.pdf
-		// see also: http://www.azillionmonkeys.com/qed/sqroot.html
-		SoftDouble u((0xbfcdd6a18f6a6f55ULL - b.queryValue()) >> 1);
-
-		// Newton-Raphson method:  u = u * (3 - b * u²) / 2
-		SoftDouble half(0x3fe0000000000000ULL); // 0.5
-		SoftDouble one_and_half(0x3ff8000000000000ULL); // 1.5
-
-		SoftDouble v(b);
-		v.multAssign(half, flags); // v = b / 2 => u = (3 * u / 2) - u² * u * v
-		
-		unsigned int i;
-		// five iterations are sufficient with 64-bit floating point numbers
-		for(i = 0; i < 5; i++)
+		// Generate FPRF
 		{
-			// Newton-Raphson iteration
-			
-			// w = u² * u * b / 2
-			SoftDouble w(u);
-			w.multAssign(u, flags);
-			w.multAssign(u, flags);
-			w.multAssign(v, flags);
-			
-			// u = (3 * u / 2) - (u² * u * b / 2)
-			u.multAssign(one_and_half, flags);
-			u.minusAssign(w, flags);
+			UINT fpscr_value( fpscr );
+			GenFPSCR_FPRF<FPSCR, SoftDouble>(fpscr_value, result);
+			fpscr = fpscr_value;
 		}
-
-		// Write back result
-		cpu->SetFPR(fd, u);
-
-		// Generate ZX, VXSNAN, FR, FI, FPRF
-		GenFPSCR_ZX<CONFIG>(fpscr, flags);
-		GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
-		GenFPSCR_FPRF<CONFIG, SoftDouble>(fpscr, u);
 	}
 
-	// Generate XX, FX, VX, FEX
-	GenFPSCR_XX<CONFIG>(fpscr);
-	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
-	GenFPSCR_VX<CONFIG>(fpscr);
-	GenFPSCR_FEX<CONFIG>(fpscr);
-
-	// Update FPSCR
-	cpu->SetFPSCR(fpscr);
-
-	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
-	            (msr & CONFIG::MSR_FE1_MASK)) &&
-	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
-	{
-		// Raise a floating point exception
-		cpu->SetException(CONFIG::EXC_PROGRAM_FLOATING_POINT);
-		return false;
-	}
+	// Write back result
+	cpu->SetFPR(fd, result);
 
 	// Copy FX, FEX, VX, OX to CR1
-	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
+	if (unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( fpscr.Get<FPSCR::_0_3>() ); }
 	
 	return true;
-}
-frsqrte.disasm = {
-	os << "frsqrte" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
-}
+};
 
-specialize frsqrte(rc=0)
-specialize frsqrte(rc=1)
+frsqrte.disasm = {
+	os << "frsqrte" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
+};
+
+specialize frsqrte(rc=0);
+specialize frsqrte(rc=1);
+
+// // First estimation of 1/sqrt(b), seed of Newton-Raphson algorithm
+// // see http://www.mceniry.net/papers/Fast%20Inverse%20Square%20Root.pdf
+// // mirror: http://www.daxia.com/bibis/upload/406Fast_Inverse_Square_Root.pdf
+// // see also: http://www.azillionmonkeys.com/qed/sqroot.html
+// SoftDouble b( result );
+// result.fromRawBitsAssign((U64(0xbfcdd6a18f6a6f55ULL) - b.queryRawBits()) >> 1);
+
+// // Newton-Raphson method:  result = result * (3 - b * result²) / 2
+// SoftDouble half(SoftDouble::FromRawBits,U64(0x3fe0000000000000ULL)); // 0.5
+// SoftDouble one_and_half(SoftDouble::FromRawBits,U64(0x3ff8000000000000ULL)); // 1.5
+
+// SoftDouble v(b);
+// v.multAssign(half, flags); // v = b / 2 => result = (3 * result / 2) - result² * result * v
+
+// unsigned int i;
+// // five iterations are sufficient with 64-bit floating point numbers
+// for(i = 0; i < 5; i++)
+// {
+// 	// Newton-Raphson iteration
+
+// 	// w = result² * result * b / 2
+// 	SoftDouble w(result);
+// 	w.multAssign(result, flags);
+// 	w.multAssign(result, flags);
+// 	w.multAssign(v, flags);
+
+// 	// result = (3 * result / 2) - (result² * result * b / 2)
+// 	result.multAssign(one_and_half, flags);
+// 	result.minusAssign(w, flags);
+// }

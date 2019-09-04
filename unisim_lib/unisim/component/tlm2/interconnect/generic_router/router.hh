@@ -56,7 +56,7 @@
 #include <map>
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/kernel/tlm2/clock.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/mapping.hh"
@@ -118,20 +118,20 @@ private:
 
 template<class CONFIG>
 class Router
-	: public unisim::kernel::service::Service<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >
-	, public unisim::kernel::service::Client<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >
+	: public unisim::kernel::Service<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >
+	, public unisim::kernel::Client<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >
 	, public sc_core::sc_module
 {
 public:
 	typedef typename CONFIG::MAPPING MAPPING;
 	static const unsigned int INPUT_SOCKETS = CONFIG::INPUT_SOCKETS;
 	static const unsigned int OUTPUT_SOCKETS = CONFIG::OUTPUT_SOCKETS;
-	static const unsigned int NUM_MAPPINGS = CONFIG::NUM_MAPPINGS; 
+	static const unsigned int NUM_MAPPINGS = CONFIG::NUM_MAPPINGS;
 	static const unsigned int INPUT_BUSWIDTH = CONFIG::INPUT_BUSWIDTH;
 	static const unsigned int OUTPUT_BUSWIDTH = CONFIG::OUTPUT_BUSWIDTH;
 	static const bool VERBOSE = CONFIG::VERBOSE;
 private:
-	typedef unisim::kernel::service::Object Object;
+	typedef unisim::kernel::Object Object;
 	typedef typename CONFIG::TYPES TYPES;
 
 	typedef tlm_utils::simple_initiator_socket_tagged<Router, OUTPUT_BUSWIDTH, TYPES> InitSocket;
@@ -152,9 +152,9 @@ public:
 
 	/** Incomming memory interface for incomming debugging/loading requests 
 	 * One single memory interface for incomming requests is enough, as there is no concurrency */
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> > memory_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> > memory_export;
 	/** Outgoing memory interfaces (one per output port) for outgoing debugging/loading requests */
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> > *memory_import[OUTPUT_SOCKETS];
+	unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> > *memory_import[OUTPUT_SOCKETS];
 
 	virtual void end_of_elaboration();
 	virtual void end_of_simulation();
@@ -327,7 +327,7 @@ protected:
 	/**
 	 * Reset memory state (do nothing in our case).
 	 */
-	virtual void Reset() {}
+	virtual void ResetMemory() {}
 
 	/**
 	 * Memory interface method to handle read requests.
@@ -358,11 +358,11 @@ protected:
 	 *************************************************************************/
 
 	sc_core::sc_time cycle_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_cycle_time;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_cycle_time;
 	std::string input_socket_name[INPUT_SOCKETS];
-	unisim::kernel::service::Parameter<std::string> *param_input_socket_name[INPUT_SOCKETS];
+	unisim::kernel::variable::Parameter<std::string> *param_input_socket_name[INPUT_SOCKETS];
 	std::string output_socket_name[OUTPUT_SOCKETS];
-	unisim::kernel::service::Parameter<std::string> *param_output_socket_name[OUTPUT_SOCKETS];
+	unisim::kernel::variable::Parameter<std::string> *param_output_socket_name[OUTPUT_SOCKETS];
 
 	class MappingTableEntry : public MAPPING
 	{
@@ -378,16 +378,16 @@ protected:
 
 	std::vector<MappingTableEntry> mapping;
 	mutable MappingTableEntry *mru_mapping;
-	std::vector<unisim::kernel::service::Parameter<MAPPING> *> param_mapping;
+	std::vector<unisim::kernel::variable::Parameter<MAPPING> *> param_mapping;
 #if HAVE_TVS
 	bool enable_bandwidth_tracing;
-	unisim::kernel::service::Parameter<bool> param_enable_bandwidth_tracing;
+	unisim::kernel::variable::Parameter<bool> param_enable_bandwidth_tracing;
 	bool verbose_bandwidth_tracing;
-	unisim::kernel::service::Parameter<bool> *param_verbose_bandwidth_tracing;
+	unisim::kernel::variable::Parameter<bool> *param_verbose_bandwidth_tracing;
 	sc_core::sc_time bandwidth_tracing_start_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_bandwidth_tracing_start_time;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_bandwidth_tracing_start_time;
 	sc_core::sc_time bandwidth_tracing_end_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_bandwidth_tracing_end_time;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_bandwidth_tracing_end_time;
 #endif
 	unisim::kernel::tlm2::ClockPropertiesProxy in_if_clk_prop_proxy;  // proxy to get clock properties from input interface clock port
 	unisim::kernel::tlm2::ClockPropertiesProxy out_if_clk_prop_proxy; // proxy to get clock properties from output interface clock port
@@ -458,15 +458,15 @@ protected:
 
 	mutable unisim::kernel::logger::Logger logger;
 	bool verbose_all;
-	unisim::kernel::service::Parameter<bool> *param_verbose_all;
+	unisim::kernel::variable::Parameter<bool> *param_verbose_all;
 	bool verbose_setup;
-	unisim::kernel::service::Parameter<bool> *param_verbose_setup;
+	unisim::kernel::variable::Parameter<bool> *param_verbose_setup;
 	bool verbose_tlm;
-	unisim::kernel::service::Parameter<bool> *param_verbose_tlm;
+	unisim::kernel::variable::Parameter<bool> *param_verbose_tlm;
 	bool verbose_tlm_debug;
-	unisim::kernel::service::Parameter<bool> *param_verbose_tlm_debug;
+	unisim::kernel::variable::Parameter<bool> *param_verbose_tlm_debug;
 	bool verbose_memory_interface;
-	unisim::kernel::service::Parameter<bool> *param_verbose_memory_interface;
+	unisim::kernel::variable::Parameter<bool> *param_verbose_memory_interface;
 
 	/*************************************************************************
 	 * Logger and verbose parameters                                     END *

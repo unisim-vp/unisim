@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,10 +33,6 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /*  */
 op e_lmvsrrw(0b000110[6]:0b00100[5]:ra[5]:0b00010000[8]:sext d8[8])
 
@@ -44,7 +40,7 @@ e_lmvsrrw.execute = {
 	// compute the effective address
 	ADDRESS ea = (ra ? cpu->GetGPR(ra) : uint32_t(0)) + uint32_t(d8);
 	// do the memory accesses
-	if(!cpu->SpecialLoad(cpu->GetSRR0(), ea)) return false;
+	if(not cpu->SpecialLoad(cpu->GetSRR0(), ea)) return false;
 	ea = ea + 4;
 	return cpu->SpecialLoad(cpu->GetSRR1(), ea);
 }

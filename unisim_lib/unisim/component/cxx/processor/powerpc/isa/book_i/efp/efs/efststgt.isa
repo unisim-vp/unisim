@@ -39,13 +39,13 @@ efststgt.execute = {
 		return false;
 
 	// Read the input operands
-	uint32_t ua( cpu->GetGPR(ra) ), ub( cpu->GetGPR(rb) );
-	SoftFloat a( ua ), b( ub );
+	U32 ua( cpu->GetGPR(ra) ), ub( cpu->GetGPR(rb) );
+	SoftFloat a( SoftFloat::FromRawBits, ua ), b( SoftFloat::FromRawBits, ub );
 	
 	// Compute the result
-	bool result = unlikely(a.hasInftyExponent() or a.isDenormalized() or b.hasInftyExponent() or b.isDenormalized()) ?
-	  ((((int32_t(ua) >> 31) & int32_t(0x7fffffff)) ^ int32_t(ua)) > (((int32_t(ub) >> 31) & int32_t(0x7fffffff)) ^ int32_t(ub))) :
-	  a > b;
+	bool result = evenly(likely(a.isNormalized() and b.isNormalized()) ? a > b :
+	  ((((S32(ua) >> 31) & S32(0x7fffffff)) ^ S32(ua)) > (((S32(ub) >> 31) & S32(0x7fffffff)) ^ S32(ub))));
+	  
 
 	// Write back the result in CR[bf] bit field
 	CR& cr = cpu->GetCR();
@@ -89,5 +89,5 @@ efststgt.execute = {
 }
 
 efststgt.disasm = {
-	os << "efststgt " << (unsigned int) bf << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efststgt " << (unsigned int) bf << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

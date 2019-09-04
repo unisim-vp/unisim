@@ -290,6 +290,28 @@ OnDisconnect()
 {
 }
 
+template<class CONFIG, bool DEBUG>
+void
+CPU<CONFIG, DEBUG> ::
+Reset()
+{
+	reg_pc = 0;
+	reg_npc = 0;
+
+	unsigned int reg_num;
+	for(reg_num = 0; reg_num < sizeof(regs) / sizeof(regs[0]); reg_num++)
+	{
+		regs[reg_num].SetLo(0);
+		regs[reg_num].SetHi(0);
+	}
+
+	if(unlikely(verbose_setup))
+	{
+		logger << DebugInfo << "Reseting" << EndDebugInfo;
+	}
+	reset = true;
+}
+
 //===============================================================
 //= Client/Service setup methods                           STOP =
 //===============================================================
@@ -330,23 +352,9 @@ CPU<CONFIG, DEBUG>::RequiresMemoryAccessReporting(MemoryAccessReportingType type
 template<class CONFIG, bool DEBUG>
 void
 CPU<CONFIG, DEBUG> ::
-Reset()
+ResetMemory()
 {
-	reg_pc = 0;
-	reg_npc = 0;
-
-	unsigned int reg_num;
-	for(reg_num = 0; reg_num < sizeof(regs) / sizeof(regs[0]); reg_num++)
-	{
-		regs[reg_num].SetLo(0);
-		regs[reg_num].SetHi(0);
-	}
-
-	if(unlikely(verbose_setup))
-	{
-		logger << DebugInfo << "Reseting" << EndDebugInfo;
-	}
-	reset = true;
+	Reset();
 }
 
 template<class CONFIG, bool DEBUG>

@@ -35,6 +35,8 @@
 #include <unisim/component/cxx/processor/arm/pmsav7/cpu.hh>
 #include <unisim/component/cxx/processor/arm/pmsav7/cp15.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
+#include <unisim/component/cxx/processor/arm/isa_arm32.tcc>
+#include <unisim/component/cxx/processor/arm/isa_thumb.tcc>
 #include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
@@ -54,9 +56,9 @@ namespace processor {
 namespace arm {
 namespace pmsav7 {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::TrapReporting;
@@ -80,7 +82,7 @@ using unisim::kernel::logger::EndDebugError;
  * @param parent the parent object of this object
  */
 CPU::CPU(const char *name, Object *parent)
-  : unisim::kernel::service::Object(name, parent)
+  : unisim::kernel::Object(name, parent)
   , unisim::component::cxx::processor::arm::CPU<ARMv7emu>(name, parent)
   , Service<MemoryAccessReportingControl>(name, parent)
   , Client<MemoryAccessReporting<uint32_t> >(name, parent)
@@ -99,8 +101,8 @@ CPU::CPU(const char *name, Object *parent)
   , debug_yielding_import("debug-yielding-import", this)
   , trap_reporting_import("trap-reporting-import", this)
   , requires_memory_access_reporting(false)
-  , requires_commit_instruction_reporting(false)
   , requires_fetch_instruction_reporting(false)
+  , requires_commit_instruction_reporting(false)
   // , icache("icache", this)
   // , dcache("dcache", this)
   , arm32_decoder()
@@ -120,8 +122,8 @@ CPU::CPU(const char *name, Object *parent)
   , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
 {
   // Set the right format for various of the variables
-  param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-  stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+  param_trap_on_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+  stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 }
 
 /** Destructor.
@@ -254,7 +256,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
                     
   // There is no data cache or data should not be cached.
   // Just send the request to the memory interface
-  if (not PrWrite( write_addr, data, size )) {
+  if (not PhysicalWriteMemory( write_addr, data, size, 0 )) {
     DataAbort( addr, mat_write, DAbort_SyncExternal );
   }
   
@@ -308,7 +310,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
   uint8_t data[4];
 
   // just read the data from the memory system
-  if (not PrRead(read_addr, &data[0], size)) {
+  if (not PhysicalReadMemory(read_addr, &data[0], size, 0)) {
     DataAbort( addr, mat_read, DAbort_SyncExternal );
   }
   
@@ -470,7 +472,7 @@ CPU::InjectReadMemory( uint32_t addr, void* buffer, uint32_t size )
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PrRead(ef_addr, &rbuffer[index], 1))
+      if (not PhysicalReadMemory(ef_addr, &rbuffer[index], 1, 0))
         return false;
     }
   
@@ -494,7 +496,7 @@ CPU::InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t size )
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PrWrite( ef_addr, &wbuffer[index], 1 ))
+      if (not PhysicalWriteMemory( ef_addr, &wbuffer[index], 1, 0 ))
         return false;
     }
 
@@ -661,7 +663,7 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
   
   CheckPermissions( base_address, cpsr.Get(M) != USER_MODE, mat_exec, IPB_LINE_SIZE );
   
-  if (not PrRead(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE)) {
+  if (not PhysicalReadMemory(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE, 0)) {
     DataAbort( base_address, mat_exec, DAbort_SyncExternal );
   }
 
@@ -964,8 +966,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "CLIDR, Cache Level ID Register"; }
-          uint32_t Read( CP15CPU& _cpu ) {
-            CPU& cpu = static_cast<CPU&>( _cpu );
+          uint32_t Read( CP15CPU& _cpu )
+          {
+            //CPU& cpu = static_cast<CPU&>( _cpu );
             uint32_t
               LoUU =   0b010, /* Level of Unification Uniprocessor  */
               LoC =    0b010, /* Level of Coherency */

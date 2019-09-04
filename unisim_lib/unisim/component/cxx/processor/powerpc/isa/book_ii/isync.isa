@@ -32,7 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-op isync(19[6]:?[15]:150[10]:?[1])
+/* Instruction Synchronize */
+op isync(19[6]:?[15]:150[10]:?[1]);
+
 isync.execute = {
 	/* order is always enforced in functional simulation */
 	/* but we still must flush subsequent instruction in the prefetch buffer, forcing refetch */
@@ -40,5 +42,7 @@ isync.execute = {
 	cpu->Isync();
 	
 	return true;
-}
-isync.disasm = { os << "isync"; }
+};
+
+isync.disasm = { os << "isync"; };
+

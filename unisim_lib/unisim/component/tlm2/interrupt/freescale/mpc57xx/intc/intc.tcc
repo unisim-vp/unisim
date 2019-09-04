@@ -90,9 +90,10 @@ template <typename CONFIG>
 const bool INTC<CONFIG>::threaded_model;
 
 template <typename CONFIG>
-INTC<CONFIG>::INTC(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+INTC<CONFIG>::INTC(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_core::sc_module(name)
+	, unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
 	, peripheral_slave_if("peripheral_slave_if")
 	, m_clk("m_clk")
 	, reset_b("reset_b")
@@ -101,6 +102,7 @@ INTC<CONFIG>::INTC(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, p_irq_b()
 	, p_avec_b()
 	, p_voffset()
+	, registers_export("registers-export", this)
 	, logger(*this)
 	, m_clk_prop_proxy(m_clk)
 	, intc_bcr(this)
@@ -115,6 +117,7 @@ INTC<CONFIG>::INTC(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, irqs()
 	, priority_tree()
 	, reg_addr_map()
+	, registers_registry()
 	, schedule()
 	, last_irq_b_time_stamp()
 	, irq_select_event()
@@ -149,6 +152,7 @@ INTC<CONFIG>::INTC(const sc_core::sc_module_name& name, unisim::kernel::service:
 	
 	SC_HAS_PROCESS(INTC);
 
+	unsigned int sw_irq_num;
 	unsigned int hw_irq_num;
 	unsigned int prc_num;
 	
@@ -217,6 +221,27 @@ INTC<CONFIG>::INTC(const sc_core::sc_module_name& name, unisim::kernel::service:
 	reg_addr_map.MapRegisterFile(INTC_SSCIR::ADDRESS_OFFSET, &intc_sscir);
 	reg_addr_map.MapRegisterFile(INTC_PSR<SW_IRQ>::ADDRESS_OFFSET, &intc_psr_sw);
 	reg_addr_map.MapRegisterFile(INTC_PSR<HW_IRQ>::ADDRESS_OFFSET, &intc_psr_hw);
+
+	registers_registry.AddRegisterInterface(intc_bcr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(intc_mprot.CreateRegisterInterface());
+
+	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+	{
+		registers_registry.AddRegisterInterface(intc_cpr[prc_num].CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(intc_iack[prc_num].CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(intc_eoir[prc_num].CreateRegisterInterface());
+	}
+	
+	for(sw_irq_num = 0; sw_irq_num < NUM_SW_IRQS; sw_irq_num++)
+	{
+		registers_registry.AddRegisterInterface(intc_sscir[sw_irq_num].CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(intc_psr_sw[sw_irq_num].CreateRegisterInterface());
+	}
+	
+	for(hw_irq_num = 0; hw_irq_num < NUM_HW_IRQS; hw_irq_num++)
+	{
+		registers_registry.AddRegisterInterface(intc_psr_hw[hw_irq_num].CreateRegisterInterface());
+	}
 
 	if(threaded_model)
 	{
@@ -413,7 +438,7 @@ unsigned int INTC<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 	if(!data_ptr)
 	{
 		logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		unisim::kernel::Object::Stop(-1);
 		return 0;
 	}
 	else if(!data_length)
@@ -460,11 +485,25 @@ tlm::tlm_sync_enum INTC<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& paylo
 			return tlm::TLM_COMPLETED;
 		default:
 			logger << DebugError << "protocol error" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			break;
 	}
 	
 	return tlm::TLM_COMPLETED;
+}
+
+//////////////// unisim::service::interface::Registers ////////////////////
+
+template <typename CONFIG>
+unisim::service::interfaces::Register *INTC<CONFIG>::GetRegister(const char *name)
+{
+	return registers_registry.GetRegister(name);
+}
+
+template <typename CONFIG>
+void INTC<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 template <typename CONFIG>
@@ -485,13 +524,13 @@ void INTC<CONFIG>::ProcessEvent(Event *event)
 		if(!data_ptr)
 		{
 			logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			return;
 		}
 		else if(!data_length)
 		{
 			logger << DebugError << "data length range for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			return;
 		}
 		else if(byte_enable_ptr)
@@ -580,7 +619,7 @@ void INTC<CONFIG>::ProcessEvents()
 			if(event->GetTimeStamp() != time_stamp)
 			{
 				logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
-				unisim::kernel::service::Object::Stop(-1);
+				unisim::kernel::Object::Stop(-1);
 			}
 			
 			ProcessEvent(event);
@@ -661,7 +700,7 @@ void INTC<CONFIG>::Reset()
 	if(!m_clk_prop_proxy.IsClockCompatible())
 	{
 		logger << DebugError << "clock port is not bound to a unisim::kernel::tlm2::Clock" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		unisim::kernel::Object::Stop(-1);
 		return;
 	}
 	
@@ -695,7 +734,7 @@ void INTC<CONFIG>::SetIRQOutput(unsigned int prc_num, bool value, IRQ_Type irq_t
 			case ANY_IRQ:
 				// should never happen
 				logger << DebugError << "Internal error in INTC<>::SetIRQOutput(...)" << EndDebugError;
-				unisim::kernel::service::Object::Stop(-1);
+				unisim::kernel::Object::Stop(-1);
 				return;
 			case SW_IRQ:
 				notify_delay += sw_irq_source_to_processor_irq_latency;

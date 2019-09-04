@@ -20,10 +20,10 @@ S12XEPIM::S12XEPIM(const sc_module_name& name, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 
-	, unisim::kernel::service::Client<TrapReporting>(name, parent)
-	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
-	, unisim::kernel::service::Service<Registers>(name, parent)
-	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Client<TrapReporting>(name, parent)
+	, unisim::kernel::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::Service<Registers>(name, parent)
+	, unisim::kernel::Client<Memory<physical_address_t> >(name, parent)
 
 	, trap_reporting_import("trap_reporting_import", this)
 
@@ -34,20 +34,20 @@ S12XEPIM::S12XEPIM(const sc_module_name& name, Object *parent) :
 	, slave_socket("slave_socket")
 	, bus_clock_socket("bus_clock_socket")
 
+	, logger(*this)
+
 	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
 
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
-	, logger(*this)
-
 {
 
 	slave_socket.register_b_transport(this, &S12XEPIM::read_write);
 	bus_clock_socket.register_b_transport(this, &S12XEPIM::updateBusClock);
 
-	SC_HAS_PROCESS(S12XEPIM);
+// 	SC_HAS_PROCESS(S12XEPIM);
 
 //	SC_THREAD(TxRun);
 //	SC_THREAD(RxRun);
@@ -89,7 +89,7 @@ void S12XEPIM::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	for (int i=0; i<ADDRESS_ARRAY_SIZE; i++) {
+	for (unsigned int i=0; i<ADDRESS_ARRAY_SIZE; i++) {
 		if ((address >= ADDRESS_SPACE[i][0]) && (address <= ADDRESS_SPACE[i][1])) {
 			if (cmd == tlm::TLM_READ_COMMAND) {
 				memset(data_ptr, 0, data_length);
@@ -204,6 +204,11 @@ void S12XEPIM::Reset() {
 	memset(pim_register, 0, MEMORY_MAP_SIZE);
 }
 
+void S12XEPIM::ResetMemory() {
+
+	Reset();
+
+}
 
 //=====================================================================
 //=             memory interface methods                              =
@@ -212,7 +217,7 @@ void S12XEPIM::Reset() {
 
 bool S12XEPIM::ReadMemory(physical_address_t address, void *buffer, uint32_t size) {
 
-	for (int i=0; i<ADDRESS_ARRAY_SIZE; i++) {
+	for (unsigned int i=0; i<ADDRESS_ARRAY_SIZE; i++) {
 		if ((address >= ADDRESS_SPACE[i][0]) && (address <= ADDRESS_SPACE[i][1])) {
 
 			*((uint8_t *) buffer) = pim_register[address - ADDRESS_SPACE[i][0]];
@@ -227,7 +232,7 @@ bool S12XEPIM::ReadMemory(physical_address_t address, void *buffer, uint32_t siz
 
 bool S12XEPIM::WriteMemory(physical_address_t address, const void *buffer, uint32_t size) {
 
-	for (int i=0; i<ADDRESS_ARRAY_SIZE; i++) {
+	for (unsigned int i=0; i<ADDRESS_ARRAY_SIZE; i++) {
 		if ((address >= ADDRESS_SPACE[i][0]) && (address <= ADDRESS_SPACE[i][1])) {
 
 			pim_register[address - ADDRESS_SPACE[i][0]] = *((uint8_t *) buffer);

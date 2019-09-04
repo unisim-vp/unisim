@@ -59,7 +59,7 @@
 #include <sys/times.h>
 #endif
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/linux_os.hh"
 #include "unisim/service/interfaces/loader.hh"
@@ -87,11 +87,11 @@ using std::endl;
 using std::flush;
 using std::cout;
 using std::cerr;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::variable::Parameter;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::DebugWarning;

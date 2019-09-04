@@ -48,10 +48,10 @@ namespace com {
 namespace xilinx {
 namespace xps_gpio {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceImport;
 using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::tlm2::Schedule;
 using unisim::service::interfaces::Keyboard;
@@ -62,7 +62,7 @@ typedef unisim::kernel::tlm2::SimpleProtocolTypes<bool> GPIOProtocolTypes;
 
 template <unsigned int NUM_SWITCHES>
 class GPIO_Switches
-	: public sc_module
+	: public sc_core::sc_module
 	, public Client<Keyboard>
 {
 public:
@@ -80,7 +80,7 @@ public:
 	// Keyboard import
 	ServiceImport<Keyboard> keyboard_import;
 
-	GPIO_Switches(const sc_module_name& name, Object *parent = 0);
+	GPIO_Switches(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~GPIO_Switches();
 	
 	virtual bool BeginSetup();
@@ -103,10 +103,10 @@ protected:
 	
 	Parameter<bool> param_verbose;
 private:
-	sc_time polling_period;
+	sc_core::sc_time polling_period;
 
 	/** The parameter for the cycle time */
-	Parameter<sc_time> param_polling_period;
+	Parameter<sc_core::sc_time> param_polling_period;
 
 	unisim::kernel::tlm2::FwRedirector<GPIO_Switches<NUM_SWITCHES>, GPIOProtocolTypes> *gpio_fw_redirector[NUM_SWITCHES];
 	unisim::kernel::tlm2::BwRedirector<GPIO_Switches<NUM_SWITCHES>, GPIOProtocolTypes> *gpio_bw_redirector[NUM_SWITCHES];

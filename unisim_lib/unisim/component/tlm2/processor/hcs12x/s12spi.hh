@@ -1,4 +1,3 @@
-
 /*
  *  Copyright (c) 2008, 2012
  *  Commissariat a l'Energie Atomique (CEA)
@@ -47,13 +46,6 @@
 #ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_S12SPI_HH_
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_S12SPI_HH_
 
-#include <inttypes.h>
-#include <iostream>
-#include <cmath>
-#include <map>
-
-#include <systemc>
-
 #include <tlm>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
@@ -61,7 +53,7 @@
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/multi_passthrough_initiator_socket.h"
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
 
 #include <unisim/kernel/logger/logger.hh>
@@ -80,6 +72,15 @@
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
 
+#include <systemc>
+
+#include <iostream>
+#include <queue>
+#include <map>
+#include <cmath>
+#include <inttypes.h>
+
+
 namespace unisim {
 namespace component {
 namespace tlm2 {
@@ -92,15 +93,15 @@ using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::VariableBase;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::CallBackObject;
+using unisim::kernel::VariableBase;
 
 using unisim::service::interfaces::CharIO;
 using unisim::service::interfaces::Memory;
@@ -119,7 +120,7 @@ using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
@@ -130,6 +131,26 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
+template <unsigned int SPI_VERSION>
+struct S12SPI_CONFIG
+{
+};
+
+template <>
+struct S12SPI_CONFIG<4>
+{
+	static const bool IS_16BITS = false;
+	typedef uint8_t DATA_TYPE;
+};
+
+template <>
+struct S12SPI_CONFIG<5>
+{
+	static const bool IS_16BITS = true;
+	typedef uint16_t DATA_TYPE;
+};
+
+template <unsigned int SPI_VERSION>
 class S12SPI :
 	public sc_module
 	, public CallBackObject
@@ -177,6 +198,8 @@ public:
 	S12SPI(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12SPI();
 
+	virtual void Reset();
+
 	void assertInterrupt(uint8_t interrupt_offset);
 	void ComputeInternalTime();
 
@@ -193,7 +216,16 @@ public:
 
     void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
+	// target method
+//	virtual tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload&, tlm_phase& phase, sc_core::sc_time& t);
+//	virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm_dmi&  dmi_data);
 	virtual void rx_b_transport(tlm::tlm_generic_payload&, sc_core::sc_time& t);
+
+	// master method
+//	virtual tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload&, tlm_phase& phase, sc_core::sc_time& t);
+
+//	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload);
+
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -204,13 +236,13 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
 
 
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
@@ -226,8 +258,9 @@ public:
 	 */
     virtual Register *GetRegister(const char *name);
 
-    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner ) {
-    	// TODO:
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+    {
+    	// TODO
     }
 
 	//=====================================================================
@@ -241,7 +274,7 @@ protected:
 
 private:
 
-	static const uint16_t frameLength = 8;
+	uint16_t frameLength;
 
 	tlm_quantumkeeper quantumkeeper;
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
@@ -277,7 +310,7 @@ private:
 	// Registers map
 	map<string, Register *> registers_registry;
 
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
 	STATUS state;
 	bool abortTransmission;
@@ -285,16 +318,16 @@ private:
 	bool validFrameWaiting;
 
 	bool mosi;
-	unisim::kernel::service::Signal<bool> mosi_pin;
+	unisim::kernel::variable::Signal<bool> mosi_pin;
 
 	bool miso;
-	unisim::kernel::service::Signal<bool> miso_pin;
+	unisim::kernel::variable::Signal<bool> miso_pin;
 
 	bool ss;
-	unisim::kernel::service::Signal<bool> ss_pin;
+	unisim::kernel::variable::Signal<bool> ss_pin;
 
 	bool sck;
-	unisim::kernel::service::Signal<bool> sck_pin;
+	unisim::kernel::variable::Signal<bool> sck_pin;
 
 	// =============================================
 	// =            Registers                      =
@@ -305,9 +338,9 @@ private:
 	uint8_t spibr_register; // 1 byte
 	uint8_t spisr_register; // 1 byte
 
-	uint8_t spidr_register; // 1 bytes
+	typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE spidr_register; // 2 bytes
 
-	uint8_t /*spidr_tx_buffer,*/ spidr_rx_buffer;;
+	typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE spidr_rx_buffer;
 	sc_event rx_buffer_event;
 
 	inline void ComputeBaudRate();
@@ -366,7 +399,7 @@ private:
 
 	inline bool isLSBFirst() { return ((spicr1_register & 0x01) != 0); }
 
-
+	inline bool is16bitsMode() { return S12SPI_CONFIG<SPI_VERSION>::IS_16BITS && ((spicr2_register & 0x40) != 0); }
 	inline bool isOutputBufferEnabled() { return ((spicr2_register & 0x08) != 0); }
 	inline bool isClkStopInWait() { return ((spicr2_register & 0x02) != 0); }
 
@@ -447,7 +480,7 @@ private:
 
 	inline bool isValideFrameWaiting() { return (validFrameWaiting); }
 	inline void setValideFrameWaiting(bool b) { validFrameWaiting = b; }
-	inline void setSPIDR(uint8_t spidr) {
+	inline void setSPIDR(typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE spidr) {
 		if (isSPIF()) {
 			validFrameWaiting = true;
 		} else {
@@ -586,6 +619,9 @@ private:
 
 
 }; /* end class S12SPI */
+
+typedef S12SPI<4> S12SPIV4;
+typedef S12SPI<5> S12SPIV5;
 
 } // end of namespace hcs12x
 } // end of namespace processor

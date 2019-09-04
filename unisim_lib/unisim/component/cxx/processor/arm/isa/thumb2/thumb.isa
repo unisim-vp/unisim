@@ -63,13 +63,17 @@ action {void} disasm({ARCH &} {cpu}, {std::ostream &} {buffer}) {
 }
 
 impl {
-#include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/isa/decode.hh>
 #include <unisim/component/cxx/processor/arm/disasm.hh>
+#include <unisim/component/cxx/processor/arm/models.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
 #include <iostream>
 #include <iomanip>
+
+#include <unisim/util/likely/likely.hh>
+#define evenly(x) (x)
 
 using unisim::util::arithmetic::BitScanReverse;
 using unisim::util::endian::ByteSwap;

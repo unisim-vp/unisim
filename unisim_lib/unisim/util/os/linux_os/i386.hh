@@ -83,9 +83,6 @@ namespace linux_os {
     typedef typename LINUX::address_type address_type;
     typedef typename LINUX::parameter_type parameter_type;
     typedef typename LINUX::UTSName UTSName;
-    using LINUX::TargetSystem::SetRegister;
-    using LINUX::TargetSystem::GetRegister;
-    using LINUX::TargetSystem::ClearRegister;
     using LINUX::TargetSystem::lin;
     using LINUX::TargetSystem::name;
     
@@ -171,11 +168,11 @@ namespace linux_os {
           "%st", "%st(1)", "%st(2)", "%st(3)", "%st(4)", "%st(5)", "%st(6)", "%st(7)"
         };
         for (int idx = sizeof(clear_registers)/sizeof(clear_registers[0]); --idx >= 0;)
-          if (not ClearRegister(lin, clear_registers[idx]))
+          if (not lin.ClearTargetRegister(clear_registers[idx]))
             return false;
       }
       // Set EIP to the program entry point
-      if (not SetRegister(lin, kI386_eip, lin.GetEntryPoint()))
+      if (not lin.SetTargetRegister(kI386_eip, lin.GetEntryPoint()))
         return false;
       // Set ESP to the base of the created stack
       unisim::util::blob::Section<address_type> const * esp_section =
@@ -185,12 +182,12 @@ namespace linux_os {
           lin.DebugErrorStream() << "Could not find the stack pointer section." << std::endl;
           return false;
         }
-      if (not SetRegister(lin, kI386_esp, esp_section->GetAddr()))
+      if (not lin.SetTargetRegister(kI386_esp, esp_section->GetAddr()))
         return false;
           
       // Pseudo GDT initialization  (flat memory + early TLS)
-      SetRegister(lin, "@gdt[1].base", 0 ); // For code segment
-      SetRegister(lin, "@gdt[2].base", 0 ); // For data segments
+      lin.SetTargetRegister("@gdt[1].base", 0 ); // For code segment
+      lin.SetTargetRegister("@gdt[2].base", 0 ); // For data segments
       unisim::util::blob::Section<address_type> const* etls_section =
         lin.GetBlob()->FindSection(".unisim.linux_os.etls.middle_pointer");
       if (not etls_section)
@@ -198,7 +195,7 @@ namespace linux_os {
           lin.DebugErrorStream() << "Could not find the early TLS section." << std::endl;
           return false;
         }
-      SetRegister(lin, "@gdt[3].base", etls_section->GetAddr() ); // for early TLS kludge
+      lin.SetTargetRegister("@gdt[3].base", etls_section->GetAddr() ); // for early TLS kludge
           
       this->WriteSegmentSelector(kI386_cs,(1<<3) | (0<<2) | 3); // code
       this->WriteSegmentSelector(kI386_ss,(2<<3) | (0<<2) | 3); // data
@@ -212,7 +209,7 @@ namespace linux_os {
         
     static void set_tls_base( LINUX& lin, address_type base )
     {
-      SetRegister( lin, "@gdt[3].base", base ); // pseudo allocation of a tls descriptor
+      lin.SetTargetRegister("@gdt[3].base", base ); // pseudo allocation of a tls descriptor
     }
 
     static int Fstat64(int fd, struct i386_stat64* target_stat, unisim::util::endian::endian_type endianness)
@@ -320,7 +317,7 @@ namespace linux_os {
       return ret;
     }
 
-    static void SetI386SystemCallStatus(LINUX& lin, int ret, bool error) { SetRegister(lin, kI386_eax, (parameter_type) ret); }
+    static void SetI386SystemCallStatus(LINUX& lin, int ret, bool error) { lin.SetTargetRegister(kI386_eax, (parameter_type) ret); }
     void SetSystemCallStatus(int64_t ret, bool error) const { SetI386SystemCallStatus( lin, ret, error ); }
     
     static parameter_type GetSystemCallParam(LINUX& lin, int id)
@@ -328,12 +325,12 @@ namespace linux_os {
       parameter_type val = 0;
           
       switch (id) {
-      case 0: GetRegister(lin, kI386_ebx, &val); break;
-      case 1: GetRegister(lin, kI386_ecx, &val); break;
-      case 2: GetRegister(lin, kI386_edx, &val); break;
-      case 3: GetRegister(lin, kI386_esi, &val); break;
-      case 4: GetRegister(lin, kI386_edi, &val); break;
-      case 5: GetRegister(lin, kI386_ebp, &val); break;
+      case 0: lin.GetTargetRegister(kI386_ebx, val); break;
+      case 1: lin.GetTargetRegister(kI386_ecx, val); break;
+      case 2: lin.GetTargetRegister(kI386_edx, val); break;
+      case 3: lin.GetTargetRegister(kI386_esi, val); break;
+      case 4: lin.GetTargetRegister(kI386_edi, val); break;
+      case 5: lin.GetTargetRegister(kI386_ebp, val); break;
       default: throw std::logic_error("internal error");
       }
           
@@ -730,7 +727,7 @@ namespace linux_os {
               strncpy(&value.version[0],    utsname.version.c_str(), sizeof(value.version) - 1);
               strncpy(&value.machine[0],    utsname.machine.c_str(), sizeof(value.machine));
               strncpy(&value.domainname[0], utsname.domainname.c_str(), sizeof(value.domainname) - 1);
-              this->WriteMem( lin, buf_addr, (uint8_t *)&value, sizeof(value));
+              lin.WriteMemory( buf_addr, (uint8_t *)&value, sizeof(value) );
   
               SetI386SystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
@@ -769,7 +766,7 @@ namespace linux_os {
                   ret = Fstat64(host_fd, &target_stat, lin.GetEndianness());
                   if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
 			
-                  this->WriteMem(lin, buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+                  lin.WriteMemory( buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
                 }
 	
               if(unlikely(lin.GetVerbose()))
@@ -798,25 +795,24 @@ namespace linux_os {
             {
               uint32_t user_desc_ptr = GetSystemCallParam(lin, 0);
                   
-              int32_t  entry_number;
-              uint32_t base_addr, limit, attributes;
-              this->ReadMem( lin, user_desc_ptr + 0x0, (uint8_t*)&entry_number, 4 );
-              this->ReadMem( lin, user_desc_ptr + 0x4, (uint8_t*)&base_addr, 4 );
-              this->ReadMem( lin, user_desc_ptr + 0x8, (uint8_t*)&limit, 4 );
-              this->ReadMem( lin, user_desc_ptr + 0xc, (uint8_t*)&attributes, 4 );
+              parameter_type entry_number, base_addr, limit, attributes;
+              lin.ReadMemory( user_desc_ptr + 0x0, entry_number );
+              lin.ReadMemory( user_desc_ptr + 0x4, base_addr );
+              lin.ReadMemory( user_desc_ptr + 0x8, limit );
+              lin.ReadMemory( user_desc_ptr + 0xc, attributes );
               entry_number = unisim::util::endian::Target2Host( lin.GetEndianness(), entry_number );
               base_addr    = unisim::util::endian::Target2Host( lin.GetEndianness(), base_addr );
               limit        = unisim::util::endian::Target2Host( lin.GetEndianness(), limit );
               attributes   = unisim::util::endian::Target2Host( lin.GetEndianness(), attributes );
                   
-              if (entry_number != -1)
+              if (entry_number != parameter_type(-1))
                 throw std::logic_error("internal error in i686 segment descriptors");
                   
               set_tls_base( lin, base_addr );
                   
               entry_number = 3;
               entry_number = unisim::util::endian::Host2Target( lin.GetEndianness(), entry_number );
-              this->WriteMem( lin, user_desc_ptr + 0x0, (uint8_t*)&entry_number, 4 );
+              lin.WriteMemory( user_desc_ptr + 0x0, (uint8_t*)&entry_number, 4 );
 
               SetI386SystemCallStatus( lin, 0, false );
             }

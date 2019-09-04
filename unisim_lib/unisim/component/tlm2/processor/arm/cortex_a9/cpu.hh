@@ -133,10 +133,13 @@ public:
 	
   void Run();
 
-  virtual void Reset();
-	
-  virtual bool PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size);
-  virtual bool PrRead(uint32_t addr, uint8_t *buffer, uint32_t size);
+  void Reset();
+  
+  virtual void ResetMemory();
+  
+  virtual bool PhysicalWriteMemory(uint32_t addr, uint32_t paddr, const uint8_t *buffer, uint32_t size, uint32_t attrs);
+  virtual bool PhysicalReadMemory(uint32_t addr, uint32_t paddr, uint8_t *buffer, uint32_t size, uint32_t attrs);
+  virtual bool PhysicalFetchMemory(uint32_t addr, uint32_t paddr, uint8_t *buffer, uint32_t size, uint32_t attrs) { return PhysicalReadMemory(addr, paddr, buffer, size, attrs); }
 	
   void SetCycleTime( sc_core::sc_time const& cycle_time );
   void SetBusCycleTime( sc_core::sc_time const& cycle_time );
@@ -146,7 +149,7 @@ private:
   virtual bool ExternalWriteMemory(uint32_t addr, void const* buffer, uint32_t size);
 	
   /** Event used to signalize the end of a read transaction.
-   * Method PrRead waits for this event once the read transaction has been 
+   * Method PhysicalReadMemory waits for this event once the read transaction has been 
    *   sent, and the nb_transport_bw notifies on it when the read transaction 
    *   is finished. 
    */
@@ -184,27 +187,27 @@ private:
   sc_core::sc_time time_per_instruction;
   
   
-  unisim::kernel::service::Statistic<sc_core::sc_time> stat_cpu_time;
+  unisim::kernel::variable::Statistic<sc_core::sc_time> stat_cpu_time;
   
-  struct CpuCycleTimeParam : public unisim::kernel::service::Parameter<sc_core::sc_time>
+  struct CpuCycleTimeParam : public unisim::kernel::variable::Parameter<sc_core::sc_time>
   {
     CpuCycleTimeParam(char const* name, CPU* _cpu)
-      : unisim::kernel::service::Parameter<sc_core::sc_time>(name, _cpu, _cpu->cpu_cycle_time, "Processor cycle time parameter"), cpu(*_cpu)
+      : unisim::kernel::variable::Parameter<sc_core::sc_time>(name, _cpu, _cpu->cpu_cycle_time, "Processor cycle time parameter"), cpu(*_cpu)
     {}
     void Set( sc_core::sc_time const& value ) { cpu.SetCycleTime( value ); }
     CPU& cpu;
   } param_cpu_cycle_time;
-  unisim::kernel::service::Parameter<sc_core::sc_time> param_bus_cycle_time;
-  unisim::kernel::service::Parameter<sc_core::sc_time> param_nice_time;
-  unisim::kernel::service::Parameter<double> param_ipc;
-  unisim::kernel::service::Parameter<bool> param_enable_dmi;
+  unisim::kernel::variable::Parameter<sc_core::sc_time> param_bus_cycle_time;
+  unisim::kernel::variable::Parameter<sc_core::sc_time> param_nice_time;
+  unisim::kernel::variable::Parameter<double> param_ipc;
+  unisim::kernel::variable::Parameter<bool> param_enable_dmi;
 	
   /*************************************************************************
    * Logger, verbose and trap parameters/methods/ports               START *
    *************************************************************************/
 
   bool verbose_tlm;
-  unisim::kernel::service::Parameter<bool> param_verbose_tlm;
+  unisim::kernel::variable::Parameter<bool> param_verbose_tlm;
   inline bool VerboseTLM();
 
   /*************************************************************************
@@ -217,7 +220,7 @@ private:
   /* Configuration pins START */
   /****************************/
 protected:
-  bool VINITHI; unisim::kernel::service::Parameter<bool> param_VINITHI;
+  bool VINITHI; unisim::kernel::variable::Parameter<bool> param_VINITHI;
     
   /****************************/
   /* Configuration pins  END  */

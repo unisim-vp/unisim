@@ -36,41 +36,47 @@
 #define __UNISIM_KERNEL_CONFIG_XML_CONFIG_FILE_HELPER_HH__
 
 #include <vector>
+#include <sstream>
 #include <libxml/xmlreader.h>
 #include <libxml/xmlwriter.h>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 namespace unisim {
 namespace kernel {
 namespace config {
 
-class XMLConfigFileHelper : public unisim::kernel::service::ConfigFileHelper
+class XMLConfigFileHelper : public unisim::kernel::ConfigFileHelper
 {
 public:
-	XMLConfigFileHelper(unisim::kernel::service::Simulator *simulator);
+	XMLConfigFileHelper(unisim::kernel::Simulator *simulator);
 	~XMLConfigFileHelper();
 	
 	virtual const char *GetName() const;
-	virtual bool SaveVariables(const char *filename, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
-	virtual bool LoadVariables(const char *filename, unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
+	virtual bool SaveVariables(const char *filename, unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
+	virtual bool SaveVariables(std::ostream& os, unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
+	virtual bool LoadVariables(const char *filename, unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
+	virtual bool LoadVariables(std::istream& is, unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
 	
 private:
 	static const char *XML_ENCODING; 
 
-	bool HasVariable(const unisim::kernel::service::Object *obj,
-	                 unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
+	bool SaveVariables(xmlTextWriterPtr writer, unisim::kernel::VariableBase::Type type);
+	bool LoadVariables(xmlTextReaderPtr reader, unisim::kernel::VariableBase::Type type);
+
+	bool HasVariable(const unisim::kernel::Object *obj,
+	                 unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
 
 	int XmlfyVariables(xmlTextWriterPtr writer,
-	                   const unisim::kernel::service::Object *obj,
-	                   unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
+	                   const unisim::kernel::Object *obj,
+	                   unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
 	
 	int XmlfyVariable(xmlTextWriterPtr writer, 
-	                  const unisim::kernel::service::VariableBase *var);
+	                  const unisim::kernel::VariableBase *var);
 	
-	unisim::kernel::service::Simulator *simulator;
+	unisim::kernel::Simulator *simulator;
 	
 	bool ProcessXmlVariableNode(xmlTextReaderPtr reader,
-	                            unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
+	                            unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
 	
 	class CurVariable {
 	public:

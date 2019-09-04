@@ -13,18 +13,17 @@
 #include <signal.h>
 #include <getopt.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdexcept>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
-
-#include <unisim/service/profiling/addr_profiler/profiler.hh>
 
 #include <unisim/service/interfaces/loader.hh>
 
@@ -36,7 +35,12 @@
 #include <unisim/service/tee/registers/registers_tee.hh>
 #include <unisim/service/tee/memory_import_export/memory_import_export_tee.hh>
 
-#include <unisim/service/telnet/telnet.hh>
+#include <unisim/service/netstreamer/netstreamer.hh>
+#include <unisim/service/debug/profiler/profiler.hh>
+#include <unisim/service/http_server/http_server.hh>
+#include <unisim/service/instrumenter/instrumenter.hh>
+#include <unisim/service/tee/char_io/tee.hh>
+#include <unisim/service/web_terminal/web_terminal.hh>
 
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
@@ -60,8 +64,6 @@
 
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 
-#include <unisim/util/garbage_collector/garbage_collector.hh>
-
 #include <unisim/service/pim/pim.hh>
 #include <unisim/service/pim/pim_server.hh>
 
@@ -77,13 +79,6 @@
 #include "rtb_unisim.hh"
 #endif
 
-#ifdef WIN32
-
-#include <windows.h>
-//#include <winsock2.h>
-
-#endif
-
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::service_address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
@@ -96,14 +91,12 @@ using unisim::component::tlm2::processor::hcs12x::ECT;
 using unisim::component::tlm2::processor::hcs12x::S12XEETX;
 using unisim::component::tlm2::processor::hcs12x::S12PIT24B;
 using unisim::component::tlm2::processor::hcs12x::S12SCI;
-using unisim::component::tlm2::processor::hcs12x::S12SPI;
+using unisim::component::tlm2::processor::hcs12x::S12SPIV4;
 using unisim::component::tlm2::processor::hcs12x::S12MSCAN;
 
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 
-using unisim::service::interfaces::Loader;
-using unisim::service::loader::s19_loader::S19_Loader;
 using unisim::service::loader::multiformat_loader::MultiFormatLoader;
 
 using unisim::service::pim::PIM;
@@ -111,21 +104,21 @@ using unisim::service::pim::PIMServer;
 
 using unisim::service::monitor::Monitor;
 
-using unisim::service::profiling::addr_profiler::Profiler;
-
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::VariableBase;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::VariableBase;
 
 using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::util::garbage_collector::GarbageCollector;
+using unisim::util::endian::Host2BigEndian;
+using unisim::util::endian::BigEndian2Host;
 
-using unisim::service::telnet::Telnet;
+using unisim::service::netstreamer::NetStreamer;
+
 
 class Simulator
-  : public unisim::kernel::service::Simulator
+  : public unisim::kernel::Simulator
 {
 private:
 	//=========================================================================
@@ -136,7 +129,7 @@ private:
 	typedef uint64_t MEMORY_ADDRESS_TYPE;
 	typedef unisim::component::cxx::processor::hcs12x::service_address_t SERVICE_ADDRESS_TYPE;
 
-public:
+		public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	virtual void Stop(Object *object, int _exit_status, bool asynchronous);
@@ -171,8 +164,8 @@ public:
 		xml_atd_pwm_stub->Inject_ATD0(anValue);
 #endif
 
-		sc_time t;
-		sc_get_curr_simcontext()->next_time(t);
+		sc_core::sc_time t;
+		sc_core::sc_get_curr_simcontext()->next_time(t);
 		return (t.to_seconds());
 	};
 
@@ -184,8 +177,8 @@ public:
 		xml_atd_pwm_stub->Inject_ATD1(anValue);
 #endif
 
-		sc_time t;
-		sc_get_curr_simcontext()->next_time(t);
+		sc_core::sc_time t;
+		sc_core::sc_get_curr_simcontext()->next_time(t);
 		return (t.to_seconds());
 	};
 
@@ -197,8 +190,8 @@ public:
 		xml_atd_pwm_stub->Get_PWM(pwmValue);
 #endif
 
-		sc_time t;
-		sc_get_curr_simcontext()->next_time(t);
+		sc_core::sc_time t;
+		sc_core::sc_get_curr_simcontext()->next_time(t);
 		return (t.to_seconds());
 	};
 
@@ -206,8 +199,8 @@ public:
 	{
 		can_stub->Inject_CAN(msg);
 
-		sc_time t;
-		sc_get_curr_simcontext()->next_time(t);
+		sc_core::sc_time t;
+		sc_core::sc_get_curr_simcontext()->next_time(t);
 		return (t.to_seconds());
 	}
 
@@ -216,8 +209,8 @@ public:
 
 		can_stub->Get_CAN(msg);
 
-		sc_time t;
-		sc_get_curr_simcontext()->next_time(t);
+		sc_core::sc_time t;
+		sc_core::sc_get_curr_simcontext()->next_time(t);
 		return (t.to_seconds());
 	}
 
@@ -225,8 +218,8 @@ public:
 	{
 		can_stub->Inject_CANArray(msg);
 
-		sc_time t;
-		sc_get_curr_simcontext()->next_time(t);
+		sc_core::sc_time t;
+		sc_core::sc_get_curr_simcontext()->next_time(t);
 		return (t.to_seconds());
 	}
 
@@ -234,12 +227,100 @@ public:
     {
     	can_stub->getCANArray(msg);
 
+		sc_core::sc_time t;
+		sc_core::sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+    }
+
+    double symWrite8(const char* strName, uint8_t val) {
+
+		if (debugger) {
+			const Symbol<CPU_ADDRESS_TYPE> *symbol = debugger->FindSymbolByName(strName);
+			if (symbol) {
+				uint8_t value = Host2BigEndian(val);
+
+				if (!cpu->WriteMemory(symbol->GetAddress(), &value, symbol->GetSize())) {
+					std::cerr << "INSTRUMENT:: WriteSymbol has reported an error" << std::endl;
+				}
+			} else {
+				std::cerr << "INSTRUMENT:: Symbol " << strName << " not found." << std::endl;
+			}
+		} else {
+			std::cerr << "INSTRUMENT::Debugger not instantiated. Enable at less monitor." << std::endl;
+		}
+
 		sc_time t;
 		sc_get_curr_simcontext()->next_time(t);
 		return (t.to_seconds());
     }
 
-private:
+    double symRead8(const char* strName, uint8_t* val) {
+
+		if (debugger) {
+			const Symbol<CPU_ADDRESS_TYPE> *symbol = debugger->FindSymbolByName(strName);
+			if (symbol) {
+				uint8_t value = 0;
+
+				if (!cpu->ReadMemory(symbol->GetAddress(), &value, symbol->GetSize())) {
+					std::cerr << "INSTRUMENT:: ReadSymbol has reported an error" << std::endl;
+				}
+				*val = BigEndian2Host(value);
+			} else {
+				std::cerr << "INSTRUMENT:: Symbol " << strName << " not found." << std::endl;
+			}
+		} else {
+			std::cerr << "INSTRUMENT::Debugger not instantiated. Enable at less monitor." << std::endl;
+		}
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+    }
+
+    double symWrite16(const char* strName, uint16_t val) {
+
+		if (debugger) {
+			const Symbol<CPU_ADDRESS_TYPE> *symbol = debugger->FindSymbolByName(strName);
+			if (symbol) {
+				uint16_t value = Host2BigEndian(val);
+
+				if (!cpu->WriteMemory(symbol->GetAddress(), &value, symbol->GetSize())) {
+					std::cerr << "INSTRUMENT:: WriteSymbol has reported an error" << std::endl;
+				}
+			} else {
+				std::cerr << "INSTRUMENT:: Symbol " << strName << " not found." << std::endl;
+			}
+		} else {
+			std::cerr << "INSTRUMENT::Debugger not instantiated. Enable at less monitor." << std::endl;
+		}
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+    }
+
+    double symRead16(const char* strName, uint16_t* val) {
+
+		if (debugger) {
+			const Symbol<CPU_ADDRESS_TYPE> *symbol = debugger->FindSymbolByName(strName);
+			if (symbol) {
+				uint16_t value = 0;
+
+				if (!cpu->ReadMemory(symbol->GetAddress(), &value, symbol->GetSize())) {
+					std::cerr << "INSTRUMENT:: ReadSymbol has reported an error" << std::endl;
+				}
+				*val = BigEndian2Host(value);
+			} else {
+				std::cerr << "INSTRUMENT:: Symbol " << strName << " not found." << std::endl;
+			}
+		} else {
+			std::cerr << "INSTRUMENT::Debugger not instantiated. Enable at less monitor." << std::endl;
+		}
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+    }
 
 private:
 
@@ -263,13 +344,30 @@ private:
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<8> ATD0;
 	typedef unisim::component::tlm2::processor::hcs12x::S12PIT24B<4> PIT;
 
-// ******* REGARDE Interface ElfLoader pour le typedef ci-dessous
+	// ******* REGARDE Interface ElfLoader pour le typedef ci-dessous
+	struct DEBUGGER_CONFIG
+	{
+		typedef uint32_t ADDRESS;
+		static const unsigned int NUM_PROCESSORS = 1;
+		/* gdb_server, inline_debugger, pim_server, monitor, and profiler */
+		static const unsigned int MAX_FRONT_ENDS = 5;
+	};
+	typedef typename unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> Debugger;
+       
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<CPU_ADDRESS_TYPE, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
 
 	typedef unisim::service::tee::registers::RegistersTee<32> RegistersTee;
 	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<physical_address_t, 32> MemoryImportExportTee;
 
 	typedef unisim::service::monitor::Monitor<CPU_ADDRESS_TYPE> MONITOR;
+	typedef unisim::service::netstreamer::NetStreamer TELNET;
+	
+	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
+	typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
+	typedef unisim::service::debug::profiler::Profiler<DEBUGGER_CONFIG::ADDRESS> PROFILER;
+	typedef unisim::service::tee::char_io::Tee<2> CHAR_IO_TEE;
+	typedef unisim::service::web_terminal::WebTerminal WEB_TERMINAL;
+	
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
@@ -292,7 +390,7 @@ private:
 
 	S12SCI *sci0, *sci1, *sci2, *sci3, *sci4, *sci5;
 
-	S12SPI *spi0, *spi1, *spi2;
+	S12SPIV4 *spi0, *spi1, *spi2;
 
 	MSCAN *can0, *can1, *can2, *can3, *can4;
 
@@ -321,20 +419,8 @@ private:
 	//===                         Service instantiations                    ===
 	//=========================================================================
 
-//	S19_Loader<CPU_ADDRESS_TYPE> *loaderS19;
-//	Elf32Loader *loaderELF;
-
 	//  - Multiformat loader
 	MultiFormatLoader<CPU_ADDRESS_TYPE>* loader;
-	
-	struct DEBUGGER_CONFIG
-	{
-		typedef uint32_t ADDRESS;
-		static const unsigned int NUM_PROCESSORS = 1;
-		/* gdb_server, inline_debugger and/or monitor */
-		static const unsigned int MAX_FRONT_ENDS = 4;
-	};
-	typedef typename unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> Debugger;
 	
 	Debugger*                         debugger;        //< Debugger
 	GDBServer<CPU_ADDRESS_TYPE>*      gdb_server;      //< GDB server
@@ -343,8 +429,25 @@ private:
 	MONITOR*                          monitor;         //< Monitoring tool: ARTiMon or EACSEL
 
 	// - telnet
-	unisim::service::telnet::Telnet* sci_telnet;
-	unisim::service::telnet::Telnet* spi_telnet;
+	TELNET* sci_telnet;
+	TELNET* spi_telnet;
+
+	// - Http Server
+	HTTP_SERVER *http_server;
+	
+	// - Instrumenter
+	INSTRUMENTER *instrumenter;
+	
+	// - Profiler
+	PROFILER *profiler;
+
+	// - Char I/O Tees
+	CHAR_IO_TEE *sci_char_io_tee;
+	CHAR_IO_TEE *spi_char_io_tee;
+	
+	// - Web Terminal
+	WEB_TERMINAL *sci_web_terminal;
+	WEB_TERMINAL *spi_web_terminal;
 
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
@@ -355,16 +458,13 @@ private:
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
 	bool enable_monitor;
+	bool enable_profiler;
 
 	Parameter<bool> param_enable_pim_server;
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
 	Parameter<bool> param_enable_monitor;
-
-	bool sci_enable_telnet;
-	Parameter<bool>  param_sci_enable_telnet;
-	bool spi_enable_telnet;
-	Parameter<bool>  param_spi_enable_telnet;
+	Parameter<bool> param_enable_profiler;
 
 	string endian;
 	Parameter<string> *param_endian;
@@ -382,27 +482,29 @@ private:
 	Parameter<bool> param_dump_statistics;
 
 	double null_stat_var;
-	struct LoadRatioStatistic : public unisim::kernel::service::Variable<double>
+	struct LoadRatioStatistic : public unisim::kernel::variable::Variable<double>
 	{
 		LoadRatioStatistic(Simulator& _sim);
 		void Get(double& value);
 		Simulator& sim;
 	} stat_data_load_ratio;
 
-	struct StoreRatioStatistic : public unisim::kernel::service::Variable<double>
+	struct StoreRatioStatistic : public unisim::kernel::variable::Variable<double>
 	{
 		StoreRatioStatistic(Simulator& _sim);
 		void Get(double& value);
 		Simulator& sim;
 	} stat_data_store_ratio;
 
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 
 	double spent_time;
 	bool isStop;
 
 	physical_address_t entry_point;
 	Parameter<physical_address_t> param_entry_point;
+	
+	virtual void SigInt();
 };
 
 #endif /* SIMULATOR_HH_ */

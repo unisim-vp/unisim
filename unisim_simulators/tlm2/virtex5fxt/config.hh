@@ -35,7 +35,6 @@
 #ifndef __VIRTEX5FXT_CONFIG_HH__
 #define __VIRTEX5FXT_CONFIG_HH__
 
-#include <unisim/component/cxx/processor/powerpc/ppc440/config.hh>
 #include <unisim/component/cxx/interrupt/xilinx/xps_intc/config.hh>
 #include <unisim/component/cxx/timer/xilinx/xps_timer/config.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
@@ -47,71 +46,61 @@
 #include <unisim/component/cxx/com/xilinx/xps_gpio/config.hh>
 
 //=========================================================================
-//===                 MPLB compile time configuration                   ===
+//===                 Simulator config                                  ===
 //=========================================================================
 
-class MPLBConfig : public unisim::component::tlm2::interconnect::generic_router::Config
+class Config
 {
 public:
-	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 9;
-	static const unsigned int MAX_NUM_MAPPINGS = 9;
-	static const unsigned int BUSWIDTH = 128;
-};
-
-class MPLBDebugConfig : public MPLBConfig
-{
-public:
-	static const bool VERBOSE = true;
-};
-
-//=========================================================================
-//===                 MPLB compile time configuration                   ===
-//=========================================================================
-
-class MemoryRouterConfig : public unisim::component::tlm2::interconnect::generic_router::Config
-{
-public:
-	static const unsigned int INPUT_SOCKETS = 3;
-	static const unsigned int OUTPUT_SOCKETS = 1;
-	static const unsigned int MAX_NUM_MAPPINGS = 1;
-	static const unsigned int BUSWIDTH = 128;
-};
-
-class MemoryRouterDebugConfig : public MemoryRouterConfig
-{
-public:
-	static const bool VERBOSE = true;
-};
-
-//=========================================================================
-//===                 Simulator config (No FPU, No Debug)               ===
-//=========================================================================
-
-class SimConfig
-{
-public:
+	//=========================================================================
+	//===                       Constants definitions                       ===
+	//=========================================================================
+	static const bool DEBUG_ENABLE = true;
 	typedef uint64_t MEMORY_ADDR;
 	static const bool DEBUG_INFORMATION = false;
 	
-	//=========================================================================
-	//===               PPC440 compile time configuration                   ===
-	//=========================================================================
+	// Front Side Bus template parameters
+	static const unsigned int FSB_BURST_SIZE = 32;
+	typedef uint32_t CPU_ADDRESS_TYPE;
+	typedef uint64_t FSB_ADDRESS_TYPE;
 
-	typedef unisim::component::cxx::processor::powerpc::ppc440::Config CPU_CONFIG;
-	typedef unisim::component::cxx::processor::powerpc::ppc440::Config_woMMU LINUX_OS_CPU_CONFIG;
+	struct DEBUGGER_CONFIG
+	{
+		typedef CPU_ADDRESS_TYPE ADDRESS;
+		static const unsigned int NUM_PROCESSORS = 1;
+		/* gdb_server, inline_debugger or profiler */
+		static const unsigned int MAX_FRONT_ENDS = 3;
+	};
 	
 	//=========================================================================
 	//===                 MPLB compile time configuration                   ===
 	//=========================================================================
 
-	typedef MPLBConfig MPLB_CONFIG;
+	class MPLB_CONFIG : public unisim::component::tlm2::interconnect::generic_router::Config
+	{
+	public:
+		static const unsigned int INPUT_SOCKETS = 1;
+		static const unsigned int OUTPUT_SOCKETS = 9;
+		static const unsigned int NUM_MAPPINGS = 9;
+		static const unsigned int OUTPUT_BUSWIDTH = 128;
+		static const unsigned int INPUT_BUSWIDTH = 128;
+		static const bool VERBOSE = DEBUG_ENABLE;
+	};
 
 	//=========================================================================
-	//===           Memory router compile time configuration                ===
+	//===                 MPLB compile time configuration                   ===
 	//=========================================================================
 
-	typedef MemoryRouterConfig MEMORY_ROUTER_CONFIG;
+	class MEMORY_ROUTER_CONFIG : public unisim::component::tlm2::interconnect::generic_router::Config
+	{
+	public:
+		static const unsigned int INPUT_SOCKETS = 3;
+		static const unsigned int OUTPUT_SOCKETS = 1;
+		static const unsigned int NUM_MAPPINGS = 1;
+		static const unsigned int OUTPUT_BUSWIDTH = 128;
+		static const unsigned int INPUT_BUSWIDTH = 128;
+		static const bool VERBOSE = DEBUG_ENABLE;
+	};
 
 	//=========================================================================
 	//===                intc compile time configuration                    ===
@@ -307,160 +296,6 @@ public:
 	static const unsigned int UART_LITE_IRQ = 2;
 	static const unsigned int GPIO_DIP_SWITCHES_8BIT_IRQ = 7;
 	static const unsigned int GPIO_PUSH_BUTTONS_5BIT_IRQ = 8;
-};
-
-//=========================================================================
-//===                Simulator config (FPU, No Debug, No Cache)         ===
-//=========================================================================
-
-class SimConfigWoCache : public SimConfig
-{
-public:
-	//=========================================================================
-	//===               PPC440 compile time configuration                   ===
-	//=========================================================================
-
-	typedef unisim::component::cxx::processor::powerpc::ppc440::Config_wFPU_woCache CPU_CONFIG;
-	typedef unisim::component::cxx::processor::powerpc::ppc440::Config_woMMU_wFPU_woCache LINUX_OS_CPU_CONFIG;
-};
-
-//=========================================================================
-//===                Simulator config (FPU, No Debug)                   ===
-//=========================================================================
-
-class SimConfigFPU : public SimConfig
-{
-public:
-	//=========================================================================
-	//===               PPC440 compile time configuration                   ===
-	//=========================================================================
-
-	typedef unisim::component::cxx::processor::powerpc::ppc440::Config_wFPU CPU_CONFIG;
-	typedef unisim::component::cxx::processor::powerpc::ppc440::Config_woMMU_wFPU LINUX_OS_CPU_CONFIG;
-};
-
-//=========================================================================
-//===                Simulator config (FPU, No Cache, No Debug)         ===
-//=========================================================================
-
-class SimConfigFPUWoCache : public SimConfig
-{
-public:
-	//=========================================================================
-	//===               PPC440 compile time configuration                   ===
-	//=========================================================================
-
-	typedef unisim::component::cxx::processor::powerpc::ppc440::Config_wFPU_woCache CPU_CONFIG;
-	typedef unisim::component::cxx::processor::powerpc::ppc440::Config_woMMU_wFPU_woCache LINUX_OS_CPU_CONFIG;
-};
-
-//=========================================================================
-//===                    Simulator config (FPU, Debug)                  ===
-//=========================================================================
-
-class SimConfigFPUDebug : public SimConfig
-{
-public:
-	static const bool DEBUG_INFORMATION = true;
-
-	//=========================================================================
-	//===               PPC440 compile time configuration                   ===
-	//=========================================================================
-
-	typedef unisim::component::cxx::processor::powerpc::ppc440::DebugConfig_wFPU CPU_CONFIG;
-	typedef unisim::component::cxx::processor::powerpc::ppc440::DebugConfig_woMMU_wFPU LINUX_OS_CPU_CONFIG;
-
-	//=========================================================================
-	//===                 MPLB compile time configuration                   ===
-	//=========================================================================
-
-	typedef MPLBDebugConfig MPLB_CONFIG;
-
-	//=========================================================================
-	//===           Memory router compile time configuration                ===
-	//=========================================================================
-
-	typedef MemoryRouterDebugConfig MEMORY_ROUTER_CONFIG;
-};
-
-//=========================================================================
-//===                    Simulator config (FPU, No Cache, Debug)                  ===
-//=========================================================================
-
-class SimConfigFPUWoCacheDebug : public SimConfig
-{
-public:
-	static const bool DEBUG_INFORMATION = true;
-
-	//=========================================================================
-	//===               PPC440 compile time configuration                   ===
-	//=========================================================================
-
-	typedef unisim::component::cxx::processor::powerpc::ppc440::DebugConfig_wFPU_woCache CPU_CONFIG;
-	typedef unisim::component::cxx::processor::powerpc::ppc440::DebugConfig_woMMU_wFPU_woCache LINUX_OS_CPU_CONFIG;
-
-	//=========================================================================
-	//===                 MPLB compile time configuration                   ===
-	//=========================================================================
-
-	typedef MPLBDebugConfig MPLB_CONFIG;
-
-	//=========================================================================
-	//===           Memory router compile time configuration                ===
-	//=========================================================================
-
-	typedef MemoryRouterDebugConfig MEMORY_ROUTER_CONFIG;
-};
-
-//=========================================================================
-//===                 Simulator config (No FPU, Debug)                  ===
-//=========================================================================
-
-class SimConfigDebug : public SimConfig
-{
-public:
-	static const bool DEBUG_INFORMATION = true;
-
-	//=========================================================================
-	//===                 MPLB compile time configuration                   ===
-	//=========================================================================
-
-	typedef MPLBDebugConfig MPLB_CONFIG;
-
-	//=========================================================================
-	//===           Memory router compile time configuration                ===
-	//=========================================================================
-
-	typedef MemoryRouterDebugConfig MEMORY_ROUTER_CONFIG;
-};
-
-//=========================================================================
-//===                 Simulator config (No FPU, No Cache Debug)         ===
-//=========================================================================
-
-class SimConfigWoCacheDebug : public SimConfig
-{
-public:
-	static const bool DEBUG_INFORMATION = true;
-
-	//=========================================================================
-	//===               PPC440 compile time configuration                   ===
-	//=========================================================================
-
-	typedef unisim::component::cxx::processor::powerpc::ppc440::DebugConfig_woCache CPU_CONFIG;
-	typedef unisim::component::cxx::processor::powerpc::ppc440::DebugConfig_woMMU_woCache LINUX_OS_CPU_CONFIG;
-
-	//=========================================================================
-	//===                 MPLB compile time configuration                   ===
-	//=========================================================================
-
-	typedef MPLBDebugConfig MPLB_CONFIG;
-
-	//=========================================================================
-	//===           Memory router compile time configuration                ===
-	//=========================================================================
-
-	typedef MemoryRouterDebugConfig MEMORY_ROUTER_CONFIG;
 };
 
 #endif

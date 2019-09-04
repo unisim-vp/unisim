@@ -190,7 +190,11 @@ inline void BSwap(uint8_t& value)
 	
 inline void BSwap(uint16_t& value)
 {
+#ifdef __GNUC__
+	value = __builtin_bswap16(value);
+#else
 	value = (value >> 8) | (value << 8);
+#endif
 }
 
 inline void BSwap(uint8_t value[3])
@@ -202,8 +206,8 @@ inline void BSwap(uint8_t value[3])
 
 inline void BSwap(uint32_t& value)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
-	__asm__ __volatile__("bswapl %0" : "=r" (value) : "0" (value));
+#ifdef __GNUC__
+	value = __builtin_bswap32(value);
 #else
 	value = (value >> 24) | ((value >> 8) & 0x0000ff00UL) | ((value << 8) & 0x00ff0000UL) | (value << 24);
 #endif
@@ -211,16 +215,25 @@ inline void BSwap(uint32_t& value)
 
 inline void BSwap(uint64_t& value)
 {
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
-	__asm__ __volatile__("bswapl %%eax; bswapl %%edx; xchg %%eax, %%edx" : "=&A" (value) : "0" (value));
-#elif defined(__GNUC__) && (__GNUC__ >= 3) && defined(__x86_64)
-	__asm__ __volatile__("bswapq %0" : "=r" (value) : "0" (value));
+#ifdef __GNUC__
+	value = __builtin_bswap64(value);
 #else
 	value = (value >> 56) | ((value & 0x00ff000000000000ULL) >> 40) |
 	        ((value & 0x0000ff0000000000ULL) >> 24) | ((value & 0x000000ff00000000ULL) >> 8) |
 	        ((value & 0x00000000ff000000ULL) << 8) | ((value & 0x0000000000ff0000ULL) << 24) |
 	        ((value & 0x000000000000ff00ULL) << 40) | ((value << 56));
 #endif
+}
+
+inline void BSwap(uint32_t *buffer, uint32_t count)
+{
+	if(count)
+	{
+		do
+		{
+			BSwap(*buffer++);
+		} while(--count);
+	}
 }
 
 inline uint8_t ByteSwap(uint8_t value)

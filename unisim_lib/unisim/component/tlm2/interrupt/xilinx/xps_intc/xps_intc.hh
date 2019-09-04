@@ -47,11 +47,11 @@ namespace interrupt {
 namespace xilinx {
 namespace xps_intc {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
 using unisim::component::tlm2::interrupt::InterruptPayload;
 using unisim::kernel::tlm2::PayloadFabric;
@@ -59,7 +59,7 @@ using unisim::kernel::tlm2::Schedule;
 
 template <class CONFIG>
 class XPS_IntC
-	: public sc_module
+	: public sc_core::sc_module
 	, public unisim::component::cxx::interrupt::xilinx::xps_intc::XPS_IntC<CONFIG>
 	, public tlm::tlm_fw_transport_if<>
 	, public tlm::tlm_bw_transport_if<InterruptProtocolTypes>
@@ -80,7 +80,7 @@ public:
 	// Output interrupt request port
 	irq_master_socket irq_master_sock;
 
-	XPS_IntC(const sc_module_name& name, Object *parent = 0);
+	XPS_IntC(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~XPS_IntC();
 	
 	virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data);
@@ -102,7 +102,7 @@ protected:
 	virtual void SetOutputEdge(bool final_level);
 private:
 	bool IsVerbose() const;
-	void AlignToClock(sc_time& t);
+	void AlignToClock(sc_core::sc_time& t);
 
 	class Event
 	{
@@ -118,34 +118,34 @@ private:
 		{
 		public:
 			Key()
-				: time_stamp(SC_ZERO_TIME)
+				: time_stamp(sc_core::SC_ZERO_TIME)
 				, type(EV_IRQ)
 				, irq(0)
 			{
 			}
 			
-			Key(const sc_time& _time_stamp, Type _type, unsigned int _irq)
+			Key(const sc_core::sc_time& _time_stamp, Type _type, unsigned int _irq)
 				: time_stamp(_time_stamp)
 				, type(_type)
 				, irq(_irq)
 			{
 			}
 			
-			void Initialize(const sc_time& _time_stamp, Type _type, unsigned int _irq)
+			void Initialize(const sc_core::sc_time& _time_stamp, Type _type, unsigned int _irq)
 			{
 				time_stamp = _time_stamp;
 				type = _type;
 				irq = _irq;
 			}
 			
-			void SetTimeStamp(const sc_time& _time_stamp)
+			void SetTimeStamp(const sc_core::sc_time& _time_stamp)
 			{
 				time_stamp = _time_stamp;
 			}
 			
 			void Clear()
 			{
-				time_stamp = SC_ZERO_TIME;
+				time_stamp = sc_core::SC_ZERO_TIME;
 				type = EV_IRQ;
 				irq = 0;
 			}
@@ -155,7 +155,7 @@ private:
 				return (time_stamp < sk.time_stamp) || ((time_stamp == sk.time_stamp) && ((type < sk.type) || ((type == sk.type) && (irq < sk.irq))));
 			}
 			
-			const sc_time& GetTimeStamp() const
+			const sc_core::sc_time& GetTimeStamp() const
 			{
 				return time_stamp;
 			}
@@ -170,7 +170,7 @@ private:
 				return irq;
 			}
 		private:
-			sc_time time_stamp;
+			sc_core::sc_time time_stamp;
 			typename Event::Type type;
 			unsigned int irq;
 		};
@@ -188,7 +188,7 @@ private:
 			Clear();
 		}
 		
-		void InitializeCPUEvent(tlm::tlm_generic_payload *_payload, const sc_time& time_stamp, sc_event *_ev_completed = 0)
+		void InitializeCPUEvent(tlm::tlm_generic_payload *_payload, const sc_core::sc_time& time_stamp, sc_core::sc_event *_ev_completed = 0)
 		{
 			_payload->acquire();
 			key.Initialize(time_stamp, EV_CPU, 0);
@@ -197,7 +197,7 @@ private:
 			ev_completed = _ev_completed;
 		}
 		
-		void InitializeIRQEvent(unsigned int irq, bool _level, const sc_time& time_stamp)
+		void InitializeIRQEvent(unsigned int irq, bool _level, const sc_core::sc_time& time_stamp)
 		{
 			key.Initialize(time_stamp, EV_IRQ, irq);
 			level = _level;
@@ -217,12 +217,12 @@ private:
 			return key.GetType();
 		}
 		
-		void SetTimeStamp(const sc_time& time_stamp)
+		void SetTimeStamp(const sc_core::sc_time& time_stamp)
 		{
 			key.SetTimeStamp(time_stamp);
 		}
 		
-		const sc_time& GetTimeStamp() const
+		const sc_core::sc_time& GetTimeStamp() const
 		{
 			return key.GetTimeStamp();
 		}
@@ -242,7 +242,7 @@ private:
 			return level;
 		}
 
-		sc_event *GetCompletionEvent() const
+		sc_core::sc_event *GetCompletionEvent() const
 		{
 			return ev_completed;
 		}
@@ -255,17 +255,17 @@ private:
 		Key key;
 		tlm::tlm_generic_payload *cpu_payload;
 		bool level;
-		sc_event *ev_completed;
+		sc_core::sc_event *ev_completed;
 	};
 	
 	/** Cycle time */
-	sc_time cycle_time;
+	sc_core::sc_time cycle_time;
 
-	sc_time time_stamp;
-	sc_time ready_time_stamp;
+	sc_core::sc_time time_stamp;
+	sc_core::sc_time ready_time_stamp;
 	
 	/** The parameter for the cycle time */
-	Parameter<sc_time> param_cycle_time;
+	Parameter<sc_core::sc_time> param_cycle_time;
 
 	unisim::kernel::tlm2::FwRedirector<XPS_IntC<CONFIG>, InterruptProtocolTypes> *irq_redirector[CONFIG::C_NUM_INTR_INPUTS];
 	bool interrupt_input[CONFIG::C_NUM_INTR_INPUTS];

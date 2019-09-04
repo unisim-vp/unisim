@@ -96,9 +96,10 @@ template <typename CONFIG>
 const bool DSPI<CONFIG>::threaded_model;
 
 template <typename CONFIG>
-DSPI<CONFIG>::DSPI(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+DSPI<CONFIG>::DSPI(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_core::sc_module(name)
+	, unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
 	, peripheral_slave_if("peripheral_slave_if")
 	, SOUT("SOUT")
 	, SIN("SIN")
@@ -133,6 +134,7 @@ DSPI<CONFIG>::DSPI(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, DMA_TX("DMA_TX")
 	, DMA_CMD("DMA_CMD")
 	, DMA_DD("DMA_DD")
+	, registers_export("registers-export", this)
 	, logger(*this)
 	, m_clk_prop_proxy(m_clk)
 	, dspi_clk_prop_proxy(dspi_clk)
@@ -192,6 +194,7 @@ DSPI<CONFIG>::DSPI(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, dsi_input_sample_event("dsi_input_sample_event", NUM_DSI_INPUTS)
 	, latch_serialized_data_event("latch_serialized_data_event")
 	, reg_addr_map()
+	, registers_registry()
 	, schedule()
 	, endian(unisim::util::endian::E_BIG_ENDIAN)
 	, param_endian("endian", this, endian, "endian")
@@ -237,6 +240,8 @@ DSPI<CONFIG>::DSPI(const sc_core::sc_module_name& name, unisim::kernel::service:
 	reg_addr_map.SetEndian(endian);
 	
 	MapRegisters();
+	
+	ExportRegisters();
 
 	if(threaded_model)
 	{
@@ -534,6 +539,53 @@ void DSPI<CONFIG>::MapRegisters()
 	}
 	reg_addr_map.MapRegisterFile(DSPI_CTARE::ADDRESS_OFFSET, &dspi_ctare );
 	reg_addr_map.MapRegister(dspi_srex      .ADDRESS_OFFSET, &dspi_srex  );
+}
+
+template <typename CONFIG>
+void DSPI<CONFIG>::ExportRegisters()
+{
+	unsigned int i;
+	
+	registers_registry.AddRegisterInterface(dspi_mcr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(dspi_tcr.CreateRegisterInterface());
+	for(i = 0; i < NUM_CTARS; i++)
+	{
+		registers_registry.AddRegisterInterface(dspi_ctar[i].CreateRegisterInterface());
+		switch(i)
+		{
+			case SPI_CTAR_SLAVE_NUM:
+			case DSI_CTAR_SLAVE_NUM:
+				registers_registry.AddRegisterInterface(dspi_ctar_slave[i].CreateRegisterInterface());
+				break;
+		}
+	}
+	registers_registry.AddRegisterInterface(dspi_sr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(dspi_rser.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(dspi_pushr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(dspi_pushr_slave.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(dspi_popr.CreateRegisterInterface());
+	for(i = 0; i < TX_FIFO_DEPTH; i++)
+	{
+		registers_registry.AddRegisterInterface(dspi_txfr[i].CreateRegisterInterface());
+	}
+	for(i = 0; i < RX_FIFO_DEPTH; i++)
+	{
+		registers_registry.AddRegisterInterface(dspi_rxfr[i].CreateRegisterInterface());
+	}
+	registers_registry.AddRegisterInterface(dspi_dsicr0.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(dspi_sdr0.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(dspi_asdr0.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(dspi_compr0.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(dspi_ddr0.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(dspi_dsicr1.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(dspi_ssr0.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(dspi_dimr0.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(dspi_dpir0.CreateRegisterInterface());
+	for(i = 0; i < NUM_CTARS; i++)
+	{
+		registers_registry.AddRegisterInterface(dspi_ctare[i].CreateRegisterInterface());
+	}
+	registers_registry.AddRegisterInterface(dspi_srex.CreateRegisterInterface());
 }
 
 template <typename CONFIG>
@@ -1515,7 +1567,7 @@ unsigned int DSPI<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 	if(!data_ptr)
 	{
 		logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		unisim::kernel::Object::Stop(-1);
 		return 0;
 	}
 	else if(!data_length)
@@ -1557,7 +1609,7 @@ tlm::tlm_sync_enum DSPI<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& paylo
 			return tlm::TLM_COMPLETED;
 		default:
 			logger << DebugError << "protocol error" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			break;
 	}
 	
@@ -1595,6 +1647,21 @@ void DSPI<CONFIG>::nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& 
 	}
 }
 
+//////////////// unisim::service::interface::Registers ////////////////////
+
+template <typename CONFIG>
+unisim::service::interfaces::Register *DSPI<CONFIG>::GetRegister(const char *name)
+{
+	return registers_registry.GetRegister(name);
+}
+
+template <typename CONFIG>
+void DSPI<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
+}
+
+
 template <typename CONFIG>
 void DSPI<CONFIG>::ProcessEvent(Event *event)
 {
@@ -1613,13 +1680,13 @@ void DSPI<CONFIG>::ProcessEvent(Event *event)
 		if(!data_ptr)
 		{
 			logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			return;
 		}
 		else if(!data_length)
 		{
 			logger << DebugError << "data length range for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			return;
 		}
 		else if(byte_enable_ptr)
@@ -1707,7 +1774,7 @@ void DSPI<CONFIG>::ProcessEvents()
 			if(event->GetTimeStamp() != time_stamp)
 			{
 				logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
-				unisim::kernel::service::Object::Stop(-1);
+				unisim::kernel::Object::Stop(-1);
 			}
 			
 			ProcessEvent(event);

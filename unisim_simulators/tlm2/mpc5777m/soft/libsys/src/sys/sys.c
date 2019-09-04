@@ -199,7 +199,7 @@ void sys_init()
 	sram_mpu_entry.mas0.b.shd = 0;
 	mpu_read_entry(&sram_mpu_entry);
 	sram_mpu_entry.mas0.b.valid = 1;
-	sram_mpu_entry.mas0.b.sx_sr = 1;
+	sram_mpu_entry.mas0.b.sx_sr = 0;
 	sram_mpu_entry.mas0.b.sw = 1;
 	sram_mpu_entry.mas3.b.lower_bound = (uint32_t) &__SRAM;
 	sram_mpu_entry.mas2.b.upper_bound = (uint32_t) &__SRAM_END;
@@ -212,7 +212,7 @@ void sys_init()
 	share_mpu_entry.mas0.b.shd = 0;
 	mpu_read_entry(&share_mpu_entry);
 	share_mpu_entry.mas0.b.valid = 1;
-	share_mpu_entry.mas0.b.sx_sr = 1;
+	share_mpu_entry.mas0.b.sx_sr = 0;
 	share_mpu_entry.mas0.b.sw = 1;
 	share_mpu_entry.mas0.b.i = 1;
 	share_mpu_entry.mas3.b.lower_bound = (uint32_t) &__SHARE;
@@ -226,7 +226,7 @@ void sys_init()
 	local_dmem_mpu_entry.mas0.b.shd = 0;
 	mpu_read_entry(&local_dmem_mpu_entry);
 	local_dmem_mpu_entry.mas0.b.valid = 1;
-	local_dmem_mpu_entry.mas0.b.sx_sr = 1;
+	local_dmem_mpu_entry.mas0.b.sx_sr = 0;
 	local_dmem_mpu_entry.mas0.b.sw = 1;
 	local_dmem_mpu_entry.mas3.b.lower_bound = (uint32_t) &__LOCAL_DMEM;
 	local_dmem_mpu_entry.mas2.b.upper_bound = (uint32_t) &__LOCAL_DMEM_END;
@@ -239,7 +239,7 @@ void sys_init()
 	m_ramdisk_mpu_entry.mas0.b.shd = 0;
 	mpu_read_entry(&m_ramdisk_mpu_entry);
 	m_ramdisk_mpu_entry.mas0.b.valid = 1;
-	m_ramdisk_mpu_entry.mas0.b.sx_sr = 1;
+	m_ramdisk_mpu_entry.mas0.b.sx_sr = 0;
 	m_ramdisk_mpu_entry.mas0.b.sw = 1;
 	m_ramdisk_mpu_entry.mas3.b.lower_bound = (uint32_t) &__RAMDISK;
 	m_ramdisk_mpu_entry.mas2.b.upper_bound = (uint32_t) &__RAMDISK_END;
@@ -252,7 +252,7 @@ void sys_init()
 	peripheral_mpu_entry.mas0.b.shd = 0;
 	mpu_read_entry(&peripheral_mpu_entry);
 	peripheral_mpu_entry.mas0.b.valid = 1;
-	peripheral_mpu_entry.mas0.b.sx_sr = 1;
+	peripheral_mpu_entry.mas0.b.sx_sr = 0;
 	peripheral_mpu_entry.mas0.b.sw = 1;
 	peripheral_mpu_entry.mas0.b.i = 1;
 	peripheral_mpu_entry.mas3.b.lower_bound = 0xf0000000;

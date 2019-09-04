@@ -1,5 +1,6 @@
 
 #include <unisim/service/monitor/monitor_server.hh>
+#include <cassert>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -94,7 +95,7 @@ void MonitorServer<ADDRESS>::releaseInstance()
 
 template <class ADDRESS>
 int MonitorServer<ADDRESS>::generate_monitor_spec(const char* file_path) {
-	monitor->generate_monitor_spec(file_path);
+	return monitor->generate_monitor_spec(file_path);
 }
 
 template <class ADDRESS>

@@ -11,7 +11,7 @@
 #include <iostream>
 #include <string>
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include <unisim/service/pim/network/SocketThread.hpp>
 #include <unisim/service/pim/network/BlockingCircularQueue.hpp>
@@ -24,7 +24,7 @@ namespace unisim {
 namespace service {
 namespace pim {
 
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 
 using unisim::service::pim::network::SocketThread;
 using unisim::service::pim::network::BlockingCircularQueue;

@@ -38,6 +38,8 @@
 #include <string.h>
 #include <math.h>
 
+using namespace sc_core;
+
 namespace unisim {
 namespace component {
 namespace tlm2 {
@@ -46,8 +48,8 @@ namespace flash {
 namespace n25q {
 
 template <typename CONFIG>
-N25Q<CONFIG>::N25Q(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+N25Q<CONFIG>::N25Q(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_core::sc_module(name)
 	, qspi_slave_socket("qspi_slave_socket")
 	, HOLD_RESET_N("HOLD_RESET_N")
@@ -369,7 +371,7 @@ void N25Q<CONFIG>::Reset()
 			logger << DebugWarning << "Can't open for output \"" << output_filename << "\"" << EndDebugWarning;
 			delete output_file;
 			output_file = 0;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 		}
 	}
 	
@@ -2607,7 +2609,7 @@ void N25Q<CONFIG>::ProgramEraseSuspend(Event *suspend_event)
 							break;
 						default:
 							logger << DebugError << "Internal error! " << n25q_cmd << " can't be suspended" << EndDebugError;
-							unisim::kernel::service::Object::Stop(-1);
+							unisim::kernel::Object::Stop(-1);
 							return;
 					}
 					
@@ -2650,7 +2652,7 @@ void N25Q<CONFIG>::ProgramEraseSuspend(Event *suspend_event)
 								break;
 							default:
 								logger << DebugError << "Internal error! " << n25q_cmd << " can't be suspended" << EndDebugError;
-								unisim::kernel::service::Object::Stop(-1);
+								unisim::kernel::Object::Stop(-1);
 								return;
 						}
 						
@@ -2718,7 +2720,7 @@ void N25Q<CONFIG>::ProgramEraseResume(Event *resume_event)
 					break;
 				default:
 					logger << DebugError << "Internal error! Unexpected " << n25q_cmd << " in suspend stack" << EndDebugError;
-					unisim::kernel::service::Object::Stop(-1);
+					unisim::kernel::Object::Stop(-1);
 					return;
 			}
 			
@@ -2785,7 +2787,7 @@ void N25Q<CONFIG>::ProcessEvents()
 			if(event->GetTimeStamp() != time_stamp)
 			{
 				logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
-				unisim::kernel::service::Object::Stop(-1);
+				unisim::kernel::Object::Stop(-1);
 			}
 			
 			if(!event->Suspended())

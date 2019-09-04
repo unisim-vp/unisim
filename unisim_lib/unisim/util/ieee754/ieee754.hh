@@ -191,14 +191,11 @@ namespace ieee754 {
 
       bool isDivisionByZero() const { return fDivisionByZero; }
       void setDivisionByZero() { fDivisionByZero = true; }
-      bool hasFlowException() const { return feExcept != FENoException; }
       void clearFlowException() { feExcept = FENoException; }
       void setOverflow() { feExcept = FEOverflow; }
       void setUnderflow() { feExcept = FEUnderflow; }
       bool isOverflow() const { return feExcept == FEOverflow; }
       bool isUnderflow() const { return feExcept == FEUnderflow; }
-      void clearUnderflow() { feExcept = FENoException; }
-      void mergeException(const Flags& source) { if (feExcept == FENoException) feExcept = source.feExcept; }
    };
 
 class BuiltDoubleTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11> {

@@ -35,13 +35,15 @@
 #ifndef __UNISIM_COMPONENT_TLM2_COM_FREESCALE_MPC57XX_DSPI_DSPI_HH__
 #define __UNISIM_COMPONENT_TLM2_COM_FREESCALE_MPC57XX_DSPI_DSPI_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/endian/endian.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/tlm2/tlm_serial.hh>
 #include <unisim/kernel/tlm2/clock.hh>
 #include <unisim/util/reg/core/register.hh>
 #include <unisim/util/likely/likely.hh>
+#include <unisim/util/debug/simple_register_registry.hh>
 #include <math.h>
 
 #define SWITCH_ENUM_TRAIT(ENUM_TYPE, CLASS_NAME) template <ENUM_TYPE, bool __SWITCH_TRAIT_DUMMY__ = true> struct CLASS_NAME {}
@@ -132,9 +134,9 @@ inline std::ostream& operator << (std::ostream& os, const DSPI_State& state)
 
 template <typename CONFIG>
 class DSPI
-	: public unisim::kernel::service::Object
-	, public sc_core::sc_module
+	: public sc_core::sc_module
 	, public tlm::tlm_fw_transport_if<>
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Registers>
 {
 public:
 	static const unsigned int TLM2_IP_VERSION_MAJOR    = 1;
@@ -204,7 +206,10 @@ public:
 	sc_core::sc_out<bool>                            DMA_CMD;                     // CMD DMA request
 	sc_core::sc_out<bool>                            DMA_DD;                      // Deserialized Data Match DMA request
 	
-	DSPI(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
+	// services
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+
+	DSPI(const sc_core::sc_module_name& name, unisim::kernel::Object *parent);
 	virtual ~DSPI();
 	
 	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
@@ -214,6 +219,10 @@ public:
 
 	void nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload, const sc_core::sc_time& t);
 	
+	//////////////// unisim::service::interface::Registers ////////////////////
+	
+	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 private:
 	virtual void end_of_elaboration();
 	
@@ -1898,12 +1907,14 @@ private:
 	// DSPI registers address map
 	RegisterAddressMap<sc_dt::uint64> reg_addr_map;
 
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
+
 	unisim::kernel::tlm2::Schedule<Event> schedule;         // Payload (processor requests over AHB interface) schedule
 	
 	unisim::util::endian::endian_type endian;
-	unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endian;
+	unisim::kernel::variable::Parameter<unisim::util::endian::endian_type> param_endian;
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 
 	sc_core::sc_time master_clock_period;                 // Master clock period
 	sc_core::sc_time master_clock_start_time;             // Master clock start time
@@ -1918,6 +1929,7 @@ private:
 	void Reset();
 	void ModeSwitch();
 	void MapRegisters();
+	void ExportRegisters();
 	bool Running() const;
 	bool Stopped() const;
 	DSPI_State GetState() const;

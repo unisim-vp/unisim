@@ -59,16 +59,16 @@ public:
 	{
 	}
 
-	inline void SetTrapObject(const unisim::kernel::service::Object *_obj) { obj = _obj; }
+	inline void SetTrapObject(const unisim::kernel::Object *_obj) { obj = _obj; }
 	inline void SetTrapMessage(const std::string& _msg) { msg = _msg; }
 	inline void SetTrapMessage(const char * _msg) { msg = _msg; }
 	
-	inline const unisim::kernel::service::Object *GetTrapObject() const { return obj; }
+	inline const unisim::kernel::Object *GetTrapObject() const { return obj; }
 	inline const std::string& GetTrapMessage() const { return msg; }
 	
 	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const TrapEvent<ADDRESS>& te);
 protected:
-	const unisim::kernel::service::Object *obj;
+	const unisim::kernel::Object *obj;
 	std::string msg;
 };
 

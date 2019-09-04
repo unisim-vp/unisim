@@ -35,10 +35,10 @@
 op dcread(31[6]:rd[5]:ra[5]:rb[5]:486[10]:?[1])
 dcread.execute = {
 	// compute the effective address
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	return cpu->Dcread(ea, rd);
 }
 dcread.disasm = {
-	os << "dcci r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "dcci " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

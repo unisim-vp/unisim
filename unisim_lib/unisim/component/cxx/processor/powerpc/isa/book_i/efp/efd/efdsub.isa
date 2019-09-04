@@ -38,5 +38,5 @@ efdsub.execute = {
 	return false;
 }
 efdsub.disasm = {
-	os << "efdsub r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efdsub " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

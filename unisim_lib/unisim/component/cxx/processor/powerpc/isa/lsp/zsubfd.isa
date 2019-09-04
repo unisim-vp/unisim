@@ -47,5 +47,5 @@ zsubfd.execute = {
 	return false;
 }
 zsubfd.disasm = {
-	os << "zsubfd r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zsubfd " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

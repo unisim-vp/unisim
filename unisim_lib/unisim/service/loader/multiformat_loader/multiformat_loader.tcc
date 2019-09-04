@@ -260,7 +260,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 			sstr_loader_param_filename_name << Object::GetName() << "." << loader_name << ".filename";
 			std::string loader_param_filename_name(sstr_loader_param_filename_name.str());
 			
-			unisim::kernel::service::Simulator::Instance()->SetVariable(loader_param_filename_name.c_str(), filename_to_load.c_str());
+			unisim::kernel::Simulator::Instance()->SetVariable(loader_param_filename_name.c_str(), filename_to_load.c_str());
 			
 			// the real stuff of instantiating a loader is there
 			switch(file_fmt)
@@ -1563,7 +1563,7 @@ void MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::PrettyPrintSyntaxErrorLocation(con
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-void MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::Reset()
+void MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ResetMemory()
 {
 	unsigned int i;
 	
@@ -1571,7 +1571,7 @@ void MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::Reset()
 	{
 		if(*memory_import[i])
 		{
-			(*memory_import[i])->Reset();
+			(*memory_import[i])->ResetMemory();
 		}
 	}
 }

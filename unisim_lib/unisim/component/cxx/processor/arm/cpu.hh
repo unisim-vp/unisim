@@ -67,8 +67,8 @@ namespace arm {
 
 template <typename CONFIG>
 struct CPU
-  : public virtual unisim::kernel::service::Object
-  , public unisim::kernel::service::Service<unisim::service::interfaces::Registers>
+  : public virtual unisim::kernel::Object
+  , public unisim::kernel::Service<unisim::service::interfaces::Registers>
 {
   typedef CONFIG Config;
   typedef simfloat::FP FP;
@@ -348,7 +348,7 @@ struct CPU
   /************************************************************************/
 
 public:
-  bool     Cond( bool cond ) { return cond; }
+  bool     Concretize( bool cond ) { return cond; }
   void     UnpredictableInsnBehaviour();
   void     CallSupervisor( uint16_t imm );
   bool     IntegerZeroDivide( bool zero_div ) { return zero_div; }
@@ -468,10 +468,10 @@ public:
     }
   } erb;
 
-  U32 const&  GetVU32( unsigned idx )                 { return erb.eu32.GetReg( erb, idx ); }
-  void        SetVU32( unsigned idx, U32 const& val ) { erb.eu32.SetReg( erb, idx, val ); }
-  U64 const&  GetVU64( unsigned idx )                 { return erb.eu64.GetReg( erb, idx ); }
-  void        SetVU64( unsigned idx, U64 const& val ) { erb.eu64.SetReg( erb, idx, val ); }
+  U32 const&  GetVSU( unsigned idx )                  { return erb.eu32.GetReg( erb, idx ); }
+  void        SetVSU( unsigned idx, U32 const& val )  { erb.eu32.SetReg( erb, idx, val ); }
+  U64 const&  GetVDU( unsigned idx )                  { return erb.eu64.GetReg( erb, idx ); }
+  void        SetVDU( unsigned idx, U64 const& val )  { erb.eu64.SetReg( erb, idx, val ); }
   F32 const&  GetVSR(  unsigned idx )                 { return erb.ef32.GetReg( erb, idx ); }
   void        SetVSR(  unsigned idx, F32 const& val ) { erb.ef32.SetReg( erb, idx, val ); }
   F64 const&  GetVDR(  unsigned idx )                 { return erb.ef64.GetReg( erb, idx ); }
@@ -486,14 +486,14 @@ public:
   virtual unisim::service::interfaces::Register* GetRegister( const char* name );
   virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner );
 		
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+  unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
   
 protected:
   /** The registers interface for debugging purpose */
   typedef std::map<std::string, unisim::service::interfaces::Register*> RegistersRegistry;
   RegistersRegistry registers_registry;
   
-  typedef std::set<unisim::kernel::service::VariableBase*> VariableRegisterPool;
+  typedef std::set<unisim::kernel::VariableBase*> VariableRegisterPool;
   VariableRegisterPool variable_register_pool;
   
   /*************************************/

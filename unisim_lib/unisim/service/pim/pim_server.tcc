@@ -88,7 +88,7 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-using unisim::kernel::service::Statistic;
+using unisim::kernel::variable::Statistic;
 
 using unisim::util::debug::Statement;
 
@@ -99,15 +99,15 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	: Object(_name, _parent, "PIM Server")
 	, Service<DebugYielding>(_name, _parent)
 	, Service<TrapReporting>(_name, _parent)
-	, unisim::kernel::service::Client<Memory<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<Disassembly<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<StatementLookup<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<Registers>(_name, _parent)
+	, unisim::kernel::Client<Memory<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<Disassembly<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<StatementLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<Registers>(_name, _parent)
 	, Service<DebugEventListener<ADDRESS> >(_name, _parent)
-	, unisim::kernel::service::Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
+	, unisim::kernel::Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
 
-	, unisim::kernel::service::Client<Monitor_if<ADDRESS> > (_name, _parent)
+	, unisim::kernel::Client<Monitor_if<ADDRESS> > (_name, _parent)
 
 	, VariableBaseListener()
 
@@ -132,8 +132,8 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, logger(*this)
 	, tcp_port(12345)
 	, architecture_description_filename()
-	, pc_reg_index(0)
 	, pc_reg(0)
+	, pc_reg_index(0)
 	, endian (GDB_BIG_ENDIAN)
 	, killed(false)
 	, trap(false)
@@ -165,6 +165,15 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 
 	counter = period;
 
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+	// Loads the winsock2 dll
+	WORD wVersionRequested = MAKEWORD( 2, 2 );
+	WSADATA wsaData;
+	if(WSAStartup(wVersionRequested, &wsaData) != 0)
+	{
+		throw std::runtime_error("WSAStartup failed: Windows sockets not available");
+	}
+#endif
 }
 
 template <class ADDRESS>
@@ -177,6 +186,10 @@ PIMServer<ADDRESS>::~PIMServer()
 
 	if (socketServer) { delete socketServer; socketServer = NULL;}
 
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+	//releases the winsock2 resources
+	WSACleanup();
+#endif
 }
 
 template <class ADDRESS>
@@ -347,7 +360,7 @@ void PIMServer<ADDRESS>::ReportTrap()
 template <class ADDRESS>
 void
 PIMServer<ADDRESS>::
-ReportTrap(const unisim::kernel::service::Object &obj)
+ReportTrap(const unisim::kernel::Object &obj)
 {
 	ReportTrap();
 }
@@ -355,7 +368,7 @@ ReportTrap(const unisim::kernel::service::Object &obj)
 template <class ADDRESS>
 void
 PIMServer<ADDRESS>::
-ReportTrap(const unisim::kernel::service::Object &obj,
+ReportTrap(const unisim::kernel::Object &obj,
 		   const std::string &str)
 {
 	ReportTrap();
@@ -364,7 +377,7 @@ ReportTrap(const unisim::kernel::service::Object &obj,
 template <class ADDRESS>
 void
 PIMServer<ADDRESS>::
-ReportTrap(const unisim::kernel::service::Object &obj,
+ReportTrap(const unisim::kernel::Object &obj,
 		   const char *c_str)
 {
 	ReportTrap();
@@ -994,8 +1007,8 @@ bool PIMServer<ADDRESS>::ReportSignal(unsigned int signum)
 {
 	DBGData* response = new DBGData(DBGData::DBG_REPORT_STOP);
 
-	char signum_str[2];
-	sprintf(signum_str, "%02x", signum);
+	char signum_str[3];
+	snprintf(signum_str, 3, "%02x", signum);
 	response->addAttribute(DBGData::VALUE_ATTR, signum_str);
 
 	gdbThread->sendData(response);
@@ -1487,10 +1500,9 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 			if (addr_str.empty() || size_str.empty()) {
 				response = new DBGData(DBGData::DBG_ERROR_MALFORMED_REQUEST);
 			} else {
-				if (disasm_import) {
-
-					response = new DBGData(DBGData::QUERY_DISASM);
-
+				response = new DBGData(DBGData::QUERY_DISASM);
+				
+				if(disasm_import) {
 					ADDRESS next_address = current_address;
 					ADDRESS disassembled_size = 0;
 					std::stringstream strstm;
@@ -1516,9 +1528,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 						current_address = next_address;
 
 						strstm.str(std::string());
-
 					}
-
 				}
 			}
 

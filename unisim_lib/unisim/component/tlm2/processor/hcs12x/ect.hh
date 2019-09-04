@@ -52,7 +52,7 @@
 #include "tlm_utils/simple_target_socket.h"
 
 #include "unisim/kernel/logger/logger.hh"
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
 
 #include "unisim/service/interfaces/memory.hh"
@@ -86,17 +86,17 @@ using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 using unisim::kernel::logger::EndDebug;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::SignalArray;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::VariableBaseListener;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::CallBackObject;
+using unisim::kernel::variable::SignalArray;
+using unisim::kernel::VariableBase;
+using unisim::kernel::VariableBaseListener;
 using unisim::service::interfaces::TrapReporting;
 
 using unisim::service::interfaces::Memory;
@@ -110,7 +110,7 @@ using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 using unisim::kernel::tlm2::PayloadFabric;
 
 class ECT :
@@ -164,6 +164,8 @@ public:
 	ECT(const sc_module_name& name, Object *parent = 0);
 	virtual ~ECT();
 
+	virtual void Reset();
+	
 	void runBuildinSignalGenerator();
 
 	void runMainTimerCounter();
@@ -173,10 +175,10 @@ public:
 	void runOutputCompare();
 
 	void runDownCounter();
-	inline void down_counter_enable() { down_counter_enabled = true; down_counter_enable_event.notify(); }
+	inline void down_counter_enable() { down_counter_enabled = true; down_counter_enable_event.notify(sc_core::SC_ZERO_TIME); }
 	inline void down_counter_disable() {down_counter_enabled = false; }
 
-	inline void delay_counter_enable() { delay_counter_enabled = true; delay_counter_enable_event.notify(); }
+	inline void delay_counter_enable() { delay_counter_enabled = true; delay_counter_enable_event.notify(sc_core::SC_ZERO_TIME); }
 	inline void delay_counter_disable() { delay_counter_enabled = false; }
 	inline bool isDelayCounterEnabled() { return (delay_counter_enabled); }
 	sc_time getEdgeDelayCounter() { return (edge_delay_counter_time); }
@@ -209,13 +211,13 @@ public:
 	virtual bool EndSetup();
 
 	virtual void OnDisconnect();
-	virtual void Reset();
 
 
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
 
+	virtual void ResetMemory();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
@@ -314,7 +316,7 @@ protected:
 
     bool isBuildin_edge_generator() { return (builtin_signal_generator); }
 
-    void notify_paclk_event() { paclk_event.notify(); }
+    void notify_paclk_event() { paclk_event.notify(sc_core::SC_ZERO_TIME); }
 
     /**
      * isValidEdge() method model the "Edge Detector" circuit
@@ -413,7 +415,7 @@ private:
 	// Registers map
 	map<string, Register *> registers_registry;
 
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
 	bool prnt_write; // TSCR1::PRNT is write once bit
 	bool icsys_write; // ICSYS register is write once in normal mode
@@ -497,7 +499,7 @@ private:
 		void setOutputAction(uint8_t outputAction) { this->outputAction = outputAction; };
 		uint8_t getOutputAction() { return (outputAction); };
 
-		void notifyEdge() { edge_event.notify(); }
+		void notifyEdge() { edge_event.notify(sc_core::SC_ZERO_TIME); }
 
 		virtual void VariableBaseNotify(const VariableBase *var) {
 			if (ectParent->isInputCapture(ioc_index)) {
@@ -538,7 +540,7 @@ private:
 
 		virtual void runPulseAccumulator() = 0;
 		virtual void wakeup() = 0;
-		void notifyEdge() { edge_event.notify(); }
+		void notifyEdge() { edge_event.notify(sc_core::SC_ZERO_TIME); }
 
 		virtual void VariableBaseNotify(const VariableBase *var) = 0;
 
@@ -563,7 +565,7 @@ private:
 		virtual void runPulseAccumulator();
 		virtual void wakeup() {
 			 if (ectParent->isPulseAccumulatorAEnabled()) {
-				 pulse_accumulator_enable_event.notify();
+				 pulse_accumulator_enable_event.notify(sc_core::SC_ZERO_TIME);
 			 }
 		}
 
@@ -599,7 +601,7 @@ private:
 		virtual void runPulseAccumulator();
 		virtual void wakeup() {
 			 if (ectParent->isPulseAccumulatorBEnabled()) {
-				 pulse_accumulator_enable_event.notify();
+				 pulse_accumulator_enable_event.notify(sc_core::SC_ZERO_TIME);
 			 }
 		}
 

@@ -36,7 +36,6 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_E200_MPC57XX_CPU_HH__
 
 #include <unisim/component/cxx/processor/powerpc/cpu.hh>
-#include <unisim/util/cache/cache.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/queue/queue.hh>
 #include <unisim/util/queue/queue.tcc>
@@ -49,29 +48,15 @@ namespace powerpc {
 namespace e200 {
 namespace mpc57xx {
 
-enum BusResponseStatus
-{
-	BUS_OK_RESPONSE = 1,
-	BUS_INCOMPLETE_RESPONSE = 0,
-	BUS_GENERIC_ERROR_RESPONSE = -1,
-	BUS_ADDRESS_ERROR_RESPONSE = -2,
-	BUS_COMMAND_ERROR_RESPONSE = -3,
-	BUS_BURST_ERROR_RESPONSE = -4,
-	BUS_BYTE_ENABLE_ERROR_RESPONSE = -5
-};
-
 template <typename TYPES, typename CONFIG>
 class CPU
 	: public unisim::component::cxx::processor::powerpc::CPU<TYPES, CONFIG>
-	, public unisim::util::cache::MemorySubSystem<TYPES, typename CONFIG::CPU>
-	, public unisim::kernel::service::Client<typename unisim::service::interfaces::Memory<typename TYPES::PHYSICAL_ADDRESS> >
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Disassembly<typename TYPES::ADDRESS> >
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Memory<typename TYPES::ADDRESS> >
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Disassembly<typename TYPES::EFFECTIVE_ADDRESS> >
 {
 public:
-	//typedef CPU ThisCPU;
 	typedef typename unisim::component::cxx::processor::powerpc::CPU<TYPES, CONFIG> SuperCPU;
-	typedef typename unisim::util::cache::MemorySubSystem<TYPES, typename CONFIG::CPU> SuperMSS;
+	typedef typename SuperCPU::SuperMSS SuperMSS;
+	typedef typename TYPES::EFFECTIVE_ADDRESS EFFECTIVE_ADDRESS;
 	typedef typename TYPES::ADDRESS ADDRESS;
 	typedef typename TYPES::PHYSICAL_ADDRESS PHYSICAL_ADDRESS;
 	typedef typename TYPES::STORAGE_ATTR STORAGE_ATTR;
@@ -81,18 +66,13 @@ public:
 	typedef typename SuperCPU::DBSR DBSR;
 	typedef typename SuperCPU::SPEFSCR SPEFSCR;
 	
-	/////////////////////////// service imports ///////////////////////////////
-	
-	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> > memory_import;
-
 	/////////////////////////// service exports ///////////////////////////////
 
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<ADDRESS> > disasm_export;
-	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<ADDRESS> > memory_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS> > disasm_export;
 
 	////////////////////////////// constructor ////////////////////////////////
 	
-	CPU(const char *name, unisim::kernel::service::Object *parent = 0);
+	CPU(const char *name, unisim::kernel::Object *parent = 0);
 
 	/////////////////////////////// destructor ////////////////////////////////
 
@@ -101,16 +81,12 @@ public:
 	////////////////////////////// setup hooks ////////////////////////////////
 
 	virtual bool EndSetup();
+	
+	void Reset();
 
 	//////////  unisim::service::interfaces::Disassembly<> ////////////////////
 	
-	virtual std::string Disasm(ADDRESS addr, ADDRESS& next_addr);
-	
-	/////////////// unisim::service::interfaces::Memory<> /////////////////////
-	
-	virtual void Reset();
-	virtual bool ReadMemory(ADDRESS addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(ADDRESS addr, const void *buffer, uint32_t size);
+	virtual std::string Disasm(EFFECTIVE_ADDRESS addr, EFFECTIVE_ADDRESS& next_addr);
 	
 	///////////////// Interface with SystemC TLM-2.0 wrapper module ///////////
 	
@@ -161,13 +137,13 @@ public:
 	typename SuperCPU::DSRR0& GetDSRR0() { return dsrr0; }
 	typename SuperCPU::DSRR1& GetDSRR1() { return dsrr1; }
 
-	bool Lbarx(unsigned int rd, ADDRESS addr);
-	bool Lharx(unsigned int rd, ADDRESS addr);
-	bool Lwarx(unsigned int rd, ADDRESS addr);
-	bool Mbar(ADDRESS addr);
-	bool Stbcx(unsigned int rs, ADDRESS addr);
-	bool Sthcx(unsigned int rs, ADDRESS addr);
-	bool Stwcx(unsigned int rs, ADDRESS addr);
+	bool Lbarx(unsigned int rd, EFFECTIVE_ADDRESS addr);
+	bool Lharx(unsigned int rd, EFFECTIVE_ADDRESS addr);
+	bool Lwarx(unsigned int rd, EFFECTIVE_ADDRESS addr);
+	bool Mbar(EFFECTIVE_ADDRESS addr);
+	bool Stbcx(unsigned int rs, EFFECTIVE_ADDRESS addr);
+	bool Sthcx(unsigned int rs, EFFECTIVE_ADDRESS addr);
+	bool Stwcx(unsigned int rs, EFFECTIVE_ADDRESS addr);
 	bool Wait();
 	bool Msync();
 	bool Isync();
@@ -240,7 +216,7 @@ public:
 	
 	struct SystemResetInterrupt : SuperCPU::template Interrupt<SystemResetInterrupt, 0x00 /* p_rstbase[0:29] */>
 	{
-		struct Reset                             : SuperCPU::template Exception<SystemResetInterrupt, 0> { static const char *GetName() { return "System Reset Interrupt/Reset Exception"; } };                  // reset
+		struct Reset                             : SuperCPU::template Exception<SystemResetInterrupt> { static const char *GetName() { return "System Reset Interrupt/Reset Exception"; } };                  // reset
 		
 		typedef typename SuperCPU::template ExceptionSet<Reset> ALL;
 		
@@ -264,7 +240,7 @@ public:
 
 	struct CriticalInputInterrupt : SuperCPU::template Interrupt<CriticalInputInterrupt, 0x00>
 	{
-		struct CriticalInput                        : SuperCPU::template Exception<CriticalInputInterrupt,5> { static const char *GetName() { return "Critical Input Interrupt/Critical Input Exception"; } };             //  p_critint_b is asserted and MSR[CE] = 1
+		struct CriticalInput                        : SuperCPU::template Exception<CriticalInputInterrupt> { static const char *GetName() { return "Critical Input Interrupt/Critical Input Exception"; } };             //  p_critint_b is asserted and MSR[CE] = 1
 		
 		typedef typename SuperCPU::template ExceptionSet<CriticalInput> ALL;
 		
@@ -312,9 +288,9 @@ public:
 			MCE_DATA_WRITE_BUS_ERROR_DSI                  = 0x00100000  // Data Write Bus Error with DSI
 		};
 
-		struct NMI                                  : SuperCPU::template Exception<MachineCheckInterrupt,1> { static const char *GetName() { return "Machine Check Interrupt/NMI Exception"; } };               // Non-Maskable Interrupt: p_nmi_b transitions from negated to asserted.
-		struct ErrorReport                          : SuperCPU::template Exception<MachineCheckInterrupt,2> { static const char *GetName() { return "Machine Check Interrupt/Error Report Exception"; } };      // Non-Maskable Interrupt: Error report
-		struct AsynchronousMachineCheck             : SuperCPU::template Exception<MachineCheckInterrupt,3> { static const char *GetName() { return "Machine Check Interrupt/Asynchronous Machine Check Exception"; } };   // Maskable with MSR[ME]
+		struct NMI                                  : SuperCPU::template Exception<MachineCheckInterrupt> { static const char *GetName() { return "Machine Check Interrupt/NMI Exception"; } };               // Non-Maskable Interrupt: p_nmi_b transitions from negated to asserted.
+		struct ErrorReport                          : SuperCPU::template Exception<MachineCheckInterrupt> { static const char *GetName() { return "Machine Check Interrupt/Error Report Exception"; } };      // Non-Maskable Interrupt: Error report
+		struct AsynchronousMachineCheck             : SuperCPU::template Exception<MachineCheckInterrupt> { static const char *GetName() { return "Machine Check Interrupt/Asynchronous Machine Check Exception"; } };   // Maskable with MSR[ME]
 		
 		typedef typename SuperCPU::template ExceptionSet<NMI, ErrorReport, AsynchronousMachineCheck> ALL;
 		
@@ -342,7 +318,7 @@ public:
 	
 	struct DataStorageInterrupt : SuperCPU::template InterruptWithAddress<DataStorageInterrupt, 0x20>
 	{
-		struct AccessControl                        : SuperCPU::template Exception<DataStorageInterrupt,15> { static const char *GetName() { return "Data Storage Interrupt/Access Control Exception"; } };               // Access control
+		struct AccessControl                        : SuperCPU::template Exception<DataStorageInterrupt> { static const char *GetName() { return "Data Storage Interrupt/Access Control Exception"; } };               // Access control
 		
 		typedef typename SuperCPU::template ExceptionSet<AccessControl> ALL;
 		
@@ -362,7 +338,7 @@ public:
 
 	struct InstructionStorageInterrupt : SuperCPU::template Interrupt<InstructionStorageInterrupt, 0x30>
 	{
-		struct AccessControl                        : SuperCPU::template Exception<InstructionStorageInterrupt,9> { static const char *GetName() { return "Instruction Storage Interrupt/Access Control Exception"; } };        // Access control
+		struct AccessControl                        : SuperCPU::template Exception<InstructionStorageInterrupt> { static const char *GetName() { return "Instruction Storage Interrupt/Access Control Exception"; } };        // Access control
 		
 		typedef typename SuperCPU::template ExceptionSet<AccessControl> ALL;
 		
@@ -383,7 +359,7 @@ public:
 
 	struct ExternalInputInterrupt : SuperCPU::template Interrupt<ExternalInputInterrupt, 0x40>
 	{
-		struct ExternalInput                        : SuperCPU::template Exception<ExternalInputInterrupt,4> { static const char *GetName() { return "External Input Interrupt/External Input Exception"; } };             // Interrupt Controller interrupt and MSR[EE] = 1
+		struct ExternalInput                        : SuperCPU::template Exception<ExternalInputInterrupt> { static const char *GetName() { return "External Input Interrupt/External Input Exception"; } };             // Interrupt Controller interrupt and MSR[EE] = 1
 		
 		typedef typename SuperCPU::template ExceptionSet<ExternalInput> ALL;
 		
@@ -403,9 +379,9 @@ public:
 
 	struct AlignmentInterrupt : SuperCPU::template InterruptWithAddress<AlignmentInterrupt, 0x50>
 	{
-		struct UnalignedLoadStoreMultiple           : SuperCPU::template Exception<AlignmentInterrupt,16> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load/Store Multiple Exception"; } };                 // lmw, stmw not word aligned
-		struct UnalignedLoadLinkStoreConditional    : SuperCPU::template Exception<AlignmentInterrupt,17> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load Link/Store Conditional Exception"; } };                 // lwarx or stwcx. not word aligned, lharx or sthcx. not halfword aligned
-		struct WriteThroughDCBZ                     : SuperCPU::template Exception<AlignmentInterrupt,18> { static const char *GetName() { return "Alignment Interrupt/Write Through DCBZ Exception"; } };                 // dcbz
+		struct UnalignedLoadStoreMultiple           : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load/Store Multiple Exception"; } };                 // lmw, stmw not word aligned
+		struct UnalignedLoadLinkStoreConditional    : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load Link/Store Conditional Exception"; } };                 // lwarx or stwcx. not word aligned, lharx or sthcx. not halfword aligned
+		struct WriteThroughDCBZ                     : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Write Through DCBZ Exception"; } };                 // dcbz
 		
 		typedef typename SuperCPU::template ExceptionSet<UnalignedLoadStoreMultiple, UnalignedLoadLinkStoreConditional, WriteThroughDCBZ> ALL;
 		
@@ -425,10 +401,10 @@ public:
 	
 	struct ProgramInterrupt : SuperCPU::template Interrupt<ProgramInterrupt, 0x60>
 	{
-		struct IllegalInstruction                   : SuperCPU::template Exception<ProgramInterrupt,10>  { static const char *GetName() { return "Program Interrupt/Illegal Instruction Exception"; } };                   // illegal instruction
-		struct PrivilegeViolation                   : SuperCPU::template Exception<ProgramInterrupt,11>  { static const char *GetName() { return "Program Interrupt/Privilege Violation Exception"; } };                   // privilege violation
-		struct Trap                                 : SuperCPU::template Exception<ProgramInterrupt,12> { static const char *GetName() { return "Program Interrupt/Trap Exception"; } };                   // trap instruction
-		struct UnimplementedInstruction             : SuperCPU::template Exception<ProgramInterrupt,13> { static const char *GetName() { return "Program Interrupt/Unimplemented Instruction Exception"; } };                   // unimplemented instruction
+		struct IllegalInstruction                   : SuperCPU::template Exception<ProgramInterrupt>  { static const char *GetName() { return "Program Interrupt/Illegal Instruction Exception"; } };                   // illegal instruction
+		struct PrivilegeViolation                   : SuperCPU::template Exception<ProgramInterrupt>  { static const char *GetName() { return "Program Interrupt/Privilege Violation Exception"; } };                   // privilege violation
+		struct Trap                                 : SuperCPU::template Exception<ProgramInterrupt> { static const char *GetName() { return "Program Interrupt/Trap Exception"; } };                   // trap instruction
+		struct UnimplementedInstruction             : SuperCPU::template Exception<ProgramInterrupt> { static const char *GetName() { return "Program Interrupt/Unimplemented Instruction Exception"; } };                   // unimplemented instruction
 		
 		typedef typename SuperCPU::template ExceptionSet<IllegalInstruction, PrivilegeViolation, Trap> ALL;
 		
@@ -448,8 +424,8 @@ public:
 
 	struct PerformanceMonitorInterrupt : SuperCPU::template Interrupt<PerformanceMonitorInterrupt, 0x70>
 	{
-		struct PerformanceCounterOverflow           : SuperCPU::template Exception<PerformanceMonitorInterrupt,7> { static const char *GetName() { return "Performance Monitor Interrupt/Performance Counter Overflow Exception"; } };        // PMC register overflow
-		struct DebugEvent                           : SuperCPU::template Exception<PerformanceMonitorInterrupt,8> { static const char *GetName() { return "Performance Monitor Interrupt/Debug Event Exception"; } };        // Event w/PMGC0[UDI]=0
+		struct PerformanceCounterOverflow           : SuperCPU::template Exception<PerformanceMonitorInterrupt> { static const char *GetName() { return "Performance Monitor Interrupt/Performance Counter Overflow Exception"; } };        // PMC register overflow
+		struct DebugEvent                           : SuperCPU::template Exception<PerformanceMonitorInterrupt> { static const char *GetName() { return "Performance Monitor Interrupt/Debug Event Exception"; } };        // Event w/PMGC0[UDI]=0
 		
 		typedef typename SuperCPU::template ExceptionSet<PerformanceCounterOverflow, DebugEvent> ALL;
 		
@@ -468,7 +444,7 @@ public:
 	
 	struct SystemCallInterrupt : SuperCPU::template Interrupt<SystemCallInterrupt, 0x80>
 	{
-		struct SystemCall                           : SuperCPU::template Exception<SystemCallInterrupt,14> { static const char *GetName() { return "System Call Interrupt/System Call Exception"; } };                // Execution of the System Call (se_sc) instruction
+		struct SystemCall                           : SuperCPU::template Exception<SystemCallInterrupt> { static const char *GetName() { return "System Call Interrupt/System Call Exception"; } };                // Execution of the System Call (se_sc) instruction
 		
 		typedef typename SuperCPU::template ExceptionSet<SystemCall> ALL;
 		
@@ -527,8 +503,8 @@ public:
 			DBG_IMPRECISE_DEBUG_EVENT                = 0x02000000  // Sync
 		};
 		
-		struct AsynchronousDebugEvent                   : SuperCPU::template Exception<DebugInterrupt,6> { static const char *GetName() { return "Debug Interrupt/Asynchronous Debug Event Exception"; } };
-		struct SynchronousDebugEvent                    : SuperCPU::template Exception<DebugInterrupt,21> { static const char *GetName() { return "Debug Interrupt/Synchronous Debug Event Exception"; } };
+		struct AsynchronousDebugEvent                   : SuperCPU::template Exception<DebugInterrupt> { static const char *GetName() { return "Debug Interrupt/Asynchronous Debug Event Exception"; } };
+		struct SynchronousDebugEvent                    : SuperCPU::template Exception<DebugInterrupt> { static const char *GetName() { return "Debug Interrupt/Synchronous Debug Event Exception"; } };
 		
 		typedef typename SuperCPU::template ExceptionSet< AsynchronousDebugEvent, SynchronousDebugEvent > ALL;
 		
@@ -555,7 +531,7 @@ public:
 
 	struct EmbeddedFloatingPointDataInterrupt : SuperCPU::template Interrupt<EmbeddedFloatingPointDataInterrupt, 0xa0>
 	{
-		struct EmbeddedFloatingPointData            : SuperCPU::template Exception<EmbeddedFloatingPointDataInterrupt,19> { static const char *GetName() { return "Embedded Floating-Point Data Interrupt/Embedded Floating-Point Data Exception"; } }; // Embedded Floating-point Data Exception
+		struct EmbeddedFloatingPointData            : SuperCPU::template Exception<EmbeddedFloatingPointDataInterrupt> { static const char *GetName() { return "Embedded Floating-Point Data Interrupt/Embedded Floating-Point Data Exception"; } }; // Embedded Floating-point Data Exception
 		
 		typedef typename SuperCPU::template ExceptionSet<EmbeddedFloatingPointData> ALL;
 		
@@ -575,7 +551,7 @@ public:
 	
 	struct EmbeddedFloatingPointRoundInterrupt : SuperCPU::template Interrupt<EmbeddedFloatingPointRoundInterrupt, 0xb0>
 	{
-		struct EmbeddedFloatingPointRound           : SuperCPU::template Exception<EmbeddedFloatingPointRoundInterrupt,20> { static const char *GetName() { return "Embedded Floating-Point Round Interrupt/Embedded Floating-Point Round Exception"; } };// Embedded Floating-point Round Exception
+		struct EmbeddedFloatingPointRound           : SuperCPU::template Exception<EmbeddedFloatingPointRoundInterrupt> { static const char *GetName() { return "Embedded Floating-Point Round Interrupt/Embedded Floating-Point Round Exception"; } };// Embedded Floating-point Round Exception
 		
 		typedef typename SuperCPU::template ExceptionSet<EmbeddedFloatingPointRound> ALL;
 		
@@ -593,6 +569,53 @@ public:
 		static const char *GetName() { return "Embedded Floating-Point Round Interrupt"; }
 	};
 
+	//  0   SystemResetInterrupt                 Reset
+	//  1   MachineCheckInterrupt                NMI
+	//  2   MachineCheckInterrupt                ErrorReport
+	//  3   MachineCheckInterrupt                AsynchronousMachineCheck
+	//  4   ExternalInputInterrupt               ExternalInput
+	//  5   CriticalInputInterrupt               CriticalInput
+	//  6   DebugInterrupt                       AsynchronousDebugEvent
+	//  7   PerformanceMonitorInterrupt          PerformanceCounterOverflow
+	//  8   PerformanceMonitorInterrupt          DebugEvent
+	//  9   InstructionStorageInterrupt          AccessControl
+	// 10   ProgramInterrupt                     IllegalInstruction
+	// 11   ProgramInterrupt                     PrivilegeViolation
+	// 12   ProgramInterrupt                     Trap
+	// 13   ProgramInterrupt                     UnimplementedInstruction
+	// 14   SystemCallInterrupt                  SystemCall
+	// 15   DataStorageInterrupt                 AccessControl
+	// 16   AlignmentInterrupt                   UnalignedLoadStoreMultiple
+	// 17   AlignmentInterrupt                   UnalignedLoadLinkStoreConditional
+	// 18   AlignmentInterrupt                   WriteThroughDCBZ
+	// 19   EmbeddedFloatingPointDataInterrupt   EmbeddedFloatingPointData
+	// 20   EmbeddedFloatingPointRoundInterrupt  EmbeddedFloatingPointRound
+	// 21   DebugInterrupt                       SynchronousDebugEvent
+
+	typedef typename SuperCPU::template ExceptionPrioritySet<
+		typename SystemResetInterrupt               ::Reset                            ,
+		typename MachineCheckInterrupt              ::NMI                              ,
+		typename MachineCheckInterrupt              ::ErrorReport                      ,
+		typename MachineCheckInterrupt              ::AsynchronousMachineCheck         ,
+		typename ExternalInputInterrupt             ::ExternalInput                    ,
+		typename CriticalInputInterrupt             ::CriticalInput                    ,
+		typename DebugInterrupt                     ::AsynchronousDebugEvent           ,
+		typename PerformanceMonitorInterrupt        ::PerformanceCounterOverflow       ,
+		typename PerformanceMonitorInterrupt        ::DebugEvent                       ,
+		typename InstructionStorageInterrupt        ::AccessControl                    ,
+		typename ProgramInterrupt                   ::IllegalInstruction               ,
+		typename ProgramInterrupt                   ::PrivilegeViolation               ,
+		typename ProgramInterrupt                   ::Trap                             ,
+		typename ProgramInterrupt                   ::UnimplementedInstruction         ,
+		typename SystemCallInterrupt                ::SystemCall                       ,
+		typename DataStorageInterrupt               ::AccessControl                    ,
+		typename AlignmentInterrupt                 ::UnalignedLoadStoreMultiple       ,
+		typename AlignmentInterrupt                 ::UnalignedLoadLinkStoreConditional,
+		typename AlignmentInterrupt                 ::WriteThroughDCBZ                 ,
+		typename EmbeddedFloatingPointDataInterrupt ::EmbeddedFloatingPointData        ,
+		typename EmbeddedFloatingPointRoundInterrupt::EmbeddedFloatingPointRound       ,
+		typename DebugInterrupt                     ::SynchronousDebugEvent> EXCEPTION_PRIORITIES;
+	
 	void ProcessInterrupt(SystemResetInterrupt *);
 	void ProcessInterrupt(MachineCheckInterrupt *);
 	void ProcessInterrupt(DataStorageInterrupt *);
@@ -610,45 +633,16 @@ public:
 	void UpdateExceptionEnable();
 	
 	void SetAutoVector(bool value);
-	void SetVectorOffset(ADDRESS value);
+	void SetVectorOffset(EFFECTIVE_ADDRESS value);
 	
-	inline std::ostream& GetDebugInfoStream() ALWAYS_INLINE { return this->SuperCPU::GetDebugInfoStream(); }
-	inline std::ostream& GetDebugWarningStream() ALWAYS_INLINE { return this->SuperCPU::GetDebugWarningStream(); }
-	inline std::ostream& GetDebugErrorStream() ALWAYS_INLINE { return this->SuperCPU::GetDebugErrorStream(); }
-
-	inline bool IsVerboseDataLoad() const ALWAYS_INLINE { return verbose_data_load; }
-	inline bool IsVerboseDataStore() const ALWAYS_INLINE { return verbose_data_store; }
-	inline bool IsVerboseInstructionFetch() const ALWAYS_INLINE { return verbose_instruction_fetch; }
-	inline bool IsVerboseDataBusRead() const ALWAYS_INLINE { return verbose_data_bus_read; }
-	inline bool IsVerboseDataBusWrite() const ALWAYS_INLINE { return verbose_data_bus_write; }
-	inline bool IsVerboseInstructionBusRead() const ALWAYS_INLINE { return verbose_instruction_bus_read; }
 	bool IsStorageCacheable(STORAGE_ATTR storage_attr) const { return !(storage_attr & TYPES::SA_I); }
 
-	bool DataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm);
-	bool DataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
-	bool InstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
-
-	bool DebugDataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
-	bool DebugDataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
-	bool DebugInstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
-
-	virtual BusResponseStatus AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-	virtual BusResponseStatus AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr, bool rwitm);
-	virtual BusResponseStatus AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-
-	virtual bool AHBDebugInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-	virtual bool AHBDebugDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-	virtual bool AHBDebugDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-
-	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataLoad(T& value, ADDRESS ea);
-	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataStore(T value, ADDRESS ea);
-	
 	virtual void InvalidateDirectMemPtr(PHYSICAL_ADDRESS start_addr, PHYSICAL_ADDRESS end_addr) {}
-
+	
 public:
 
 	void FlushInstructionBuffer();
-	bool InstructionFetch(ADDRESS addr, typename CONFIG::VLE_CODE_TYPE& insn);
+	bool InstructionFetch(EFFECTIVE_ADDRESS addr, typename CONFIG::VLE_CODE_TYPE& insn);
 	void StepOneInstruction();
 	
 	struct __EFPProcessInput__
@@ -659,13 +653,14 @@ public:
 		template <class FLOAT>
 		static bool check_input( FLOAT& input )
 		{
-			if (unlikely(input.isDenormalized()))
+			typename FLOAT::inherited& iimpl = input.GetImpl();
+			if (unlikely(iimpl.isDenormalized()))
 			{
-				input.setZero(input.isNegative());
+				iimpl.setZero(iimpl.isNegative());
 				return false;
 			}
 			
-			if (unlikely(input.hasInftyExponent()))
+			if (unlikely(iimpl.hasInftyExponent()))
 				return false;
 			
 			return true;
@@ -698,7 +693,7 @@ public:
 		spefscr.template Set<typename SPEFSCR::FXH>(false);
 		spefscr.template Set<typename SPEFSCR::FDBZ>(false);
 		spefscr.template Set<typename SPEFSCR::FDBZH>(false);
-		spefscr.template SetDivideByZero( false );
+		spefscr.SetDivideByZero( false );
 		return __EFPProcessInput__( *this );
 	}
 	
@@ -706,24 +701,25 @@ public:
 	bool
 	EFPProcessOutput( FLOAT& output, FLAGS const& flags )
 	{
-		if (output.hasInftyExponent())
+		typename FLOAT::inherited& oimpl = output.GetImpl();
+		if (oimpl.hasInftyExponent())
 		{
-			bool neg = output.isNegative();
-			output.setInfty();
-			output.setToPrevious();
-			output.setNegative(neg);
+			bool neg = oimpl.isNegative();
+			oimpl.setInfty();
+			oimpl.setToPrevious();
+			oimpl.setNegative(neg);
 		}
 		bool inexact = flags.isApproximate() and not spefscr.template Get<typename CPU::SPEFSCR::FINV>();
 		bool overflow = inexact and flags.isOverflow();
-		if (not spefscr.template SetOverflow( overflow ))
+		if (not spefscr.SetOverflow( overflow ))
 			return false;
 		bool underflow = inexact and flags.isUnderflow();
-		if (output.isDenormalized())
+		if (oimpl.isDenormalized())
 		{
-			output.setZero(output.isNegative());
+			oimpl.setZero(oimpl.isNegative());
 			inexact = true, underflow = true;
 		}
-		if (not spefscr.template SetUnderflow( underflow ))
+		if (not spefscr.SetUnderflow( underflow ))
 			return false;
 
 		if (inexact)
@@ -741,110 +737,73 @@ public:
 	}
 	
 protected:
-	/////////////////////////////// Statistics ////////////////////////////////
-	
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_load_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_store_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_fetch_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_load_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_store_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_read_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_write_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_bus_read_accesses;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_load_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_store_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_fetch_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_load_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_store_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_read_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_write_xfered_bytes;
-	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_bus_read_xfered_bytes;
-
 	////////////////////////// Run-time parameters ////////////////////////////
 	
 	uint8_t cpuid;
-	unisim::kernel::service::Parameter<uint8_t> param_cpuid;
+	unisim::kernel::variable::Parameter<uint8_t> param_cpuid;
 
 	uint32_t processor_version;
-	unisim::kernel::service::Parameter<uint32_t> param_processor_version;
+	unisim::kernel::variable::Parameter<uint32_t> param_processor_version;
 	
 	uint32_t system_version;
-	unisim::kernel::service::Parameter<uint32_t> param_system_version;
+	unisim::kernel::variable::Parameter<uint32_t> param_system_version;
 
 	uint32_t system_information;
-	unisim::kernel::service::Parameter<uint32_t> param_system_information;
+	unisim::kernel::variable::Parameter<uint32_t> param_system_information;
 
-	ADDRESS local_memory_base_addr;
-	unisim::kernel::service::Parameter<ADDRESS> param_local_memory_base_addr;
+	PHYSICAL_ADDRESS local_memory_base_addr;
+	unisim::kernel::variable::Parameter<PHYSICAL_ADDRESS> param_local_memory_base_addr;
 
-	ADDRESS local_memory_size;
-	unisim::kernel::service::Parameter<ADDRESS> param_local_memory_size;
+	PHYSICAL_ADDRESS local_memory_size;
+	unisim::kernel::variable::Parameter<PHYSICAL_ADDRESS> param_local_memory_size;
 
-	bool verbose_data_load;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_load;
-	
-	bool verbose_data_store;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_store;
-	
-	bool verbose_instruction_fetch;
-	unisim::kernel::service::Parameter<bool> param_verbose_instruction_fetch;
-	
-	bool verbose_data_bus_read;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_bus_read;
-	
-	bool verbose_data_bus_write;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_bus_write;
-	
-	bool verbose_instruction_bus_read;
-	unisim::kernel::service::Parameter<bool> param_verbose_instruction_bus_read;
-	
 	bool trap_system_reset_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_system_reset_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_system_reset_interrupt;
 
 	bool trap_machine_check_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_machine_check_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_machine_check_interrupt;
 	
 	bool trap_data_storage_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_data_storage_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_data_storage_interrupt;
 	
 	bool trap_instruction_storage_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_instruction_storage_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_instruction_storage_interrupt;
 	
 	bool trap_alignment_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_alignment_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_alignment_interrupt;
 	
 	bool trap_program_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_program_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_program_interrupt;
 	
 	bool trap_embedded_floating_point_data_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_embedded_floating_point_data_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_embedded_floating_point_data_interrupt;
 	
 	bool trap_embedded_floating_point_round_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_embedded_floating_point_round_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_embedded_floating_point_round_interrupt;
 	
 	bool trap_system_call_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_system_call_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_system_call_interrupt;
 	
 	bool trap_critical_input_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_critical_input_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_critical_input_interrupt;
 	
 	bool trap_external_input_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_external_input_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_external_input_interrupt;
 	
 	bool trap_performance_monitor_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_performance_monitor_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_performance_monitor_interrupt;
 	
 	bool trap_debug_interrupt;
-	unisim::kernel::service::Parameter<bool> param_trap_debug_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_trap_debug_interrupt;
 	
 	///////////////////////////// Interrupts //////////////////////////////////
 	
 	bool enable_auto_vectored_interrupts;
-	ADDRESS vector_offset;
+	EFFECTIVE_ADDRESS vector_offset;
 
 	////////////////////////// Instruction Buffer /////////////////////////////
 
-	ADDRESS instruction_buffer_base_addr;
+	EFFECTIVE_ADDRESS instruction_buffer_base_addr;
 	uint16_t instruction_buffer[CONFIG::INSTRUCTION_BUFFER_SIZE / 2];
 	
 	/////////////////////// VLE Instruction decoder ///////////////////////////

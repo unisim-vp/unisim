@@ -48,9 +48,9 @@ namespace debug {
 namespace debugger {
 
 template <typename CONFIG>
-Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
-	, unisim::kernel::service::Client<unisim::service::interfaces::Blob<ADDRESS> >(name, parent)
+Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent, "Debugger back-end")
+	, unisim::kernel::Client<unisim::service::interfaces::Blob<ADDRESS> >(name, parent)
 	, debug_yielding_export()
 	, memory_access_reporting_export()
 	, trap_reporting_export()
@@ -116,97 +116,97 @@ Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::service::Object *pa
 	
 	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
 	{
-		param_sel_cpu[front_end_num].SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+		param_sel_cpu[front_end_num].SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	}
 	
 	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 	{
 		std::stringstream debug_yielding_export_name_sstr;
 		debug_yielding_export_name_sstr << "debug-yielding-export[" << prc_num << "]";
-		debug_yielding_export[prc_num] = new unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugYielding>(debug_yielding_export_name_sstr.str().c_str(), this);
+		debug_yielding_export[prc_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYielding>(debug_yielding_export_name_sstr.str().c_str(), this);
 		
 		std::stringstream memory_access_reporting_export_name_sstr;
 		memory_access_reporting_export_name_sstr << "memory-access-reporting-export[" << prc_num << "]";
-		memory_access_reporting_export[prc_num] = new unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReporting<ADDRESS> >(memory_access_reporting_export_name_sstr.str().c_str(), this);
+		memory_access_reporting_export[prc_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::MemoryAccessReporting<ADDRESS> >(memory_access_reporting_export_name_sstr.str().c_str(), this);
 
 		std::stringstream trap_reporting_export_name_sstr;
 		trap_reporting_export_name_sstr << "trap-reporting-export[" << prc_num << "]";
-		trap_reporting_export[prc_num] = new unisim::kernel::service::ServiceExport<unisim::service::interfaces::TrapReporting>(trap_reporting_export_name_sstr.str().c_str(), this);
+		trap_reporting_export[prc_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::TrapReporting>(trap_reporting_export_name_sstr.str().c_str(), this);
 		
 		std::stringstream memory_access_reporting_control_import_name_sstr;
 		memory_access_reporting_control_import_name_sstr << "memory-access-reporting-control-import[" << prc_num << "]";
-		memory_access_reporting_control_import[prc_num] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReportingControl>(memory_access_reporting_control_import_name_sstr.str().c_str(), this);
+		memory_access_reporting_control_import[prc_num] = new unisim::kernel::ServiceImport<unisim::service::interfaces::MemoryAccessReportingControl>(memory_access_reporting_control_import_name_sstr.str().c_str(), this);
 
 		std::stringstream disasm_import_name_sstr;
 		disasm_import_name_sstr << "disasm-import[" << prc_num << "]";
-		disasm_import[prc_num] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> >(disasm_import_name_sstr.str().c_str(), this);
+		disasm_import[prc_num] = new unisim::kernel::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> >(disasm_import_name_sstr.str().c_str(), this);
 
 		std::stringstream memory_import_name_sstr;
 		memory_import_name_sstr << "memory-import[" << prc_num << "]";
-		memory_import[prc_num] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> >(memory_import_name_sstr.str().c_str(), this);
+		memory_import[prc_num] = new unisim::kernel::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> >(memory_import_name_sstr.str().c_str(), this);
 
 		std::stringstream registers_import_name_sstr;
 		registers_import_name_sstr << "registers-import[" << prc_num << "]";
-		registers_import[prc_num] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers>(registers_import_name_sstr.str().c_str(), this);
+		registers_import[prc_num] = new unisim::kernel::ServiceImport<unisim::service::interfaces::Registers>(registers_import_name_sstr.str().c_str(), this);
 	}
 	
 	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
 	{
 		std::stringstream debug_yielding_request_export_name_sstr;
 		debug_yielding_request_export_name_sstr << "debug-yielding-request-export[" << front_end_num << "]";
-		debug_yielding_request_export[front_end_num] = new unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugYieldingRequest>(debug_yielding_request_export_name_sstr.str().c_str(), this);
+		debug_yielding_request_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::DebugYieldingRequest>(debug_yielding_request_export_name_sstr.str().c_str(), this);
 
 		std::stringstream debug_selecting_export_name_sstr;
 		debug_selecting_export_name_sstr << "debug-selecting-export[" << front_end_num << "]";
-		debug_selecting_export[front_end_num] = new unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugSelecting>(debug_selecting_export_name_sstr.str().c_str(), this);
+		debug_selecting_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::DebugSelecting>(debug_selecting_export_name_sstr.str().c_str(), this);
 		
 		std::stringstream debug_event_trigger_export_name_sstr;
 		debug_event_trigger_export_name_sstr << "debug-event-trigger-export[" << front_end_num << "]";
-		debug_event_trigger_export[front_end_num] = new unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(debug_event_trigger_export_name_sstr.str().c_str(), this);
+		debug_event_trigger_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(debug_event_trigger_export_name_sstr.str().c_str(), this);
 		
 		std::stringstream disasm_export_name_sstr;
 		disasm_export_name_sstr << "disasm-export[" << front_end_num << "]";
-		disasm_export[front_end_num] = new unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<ADDRESS> >(disasm_export_name_sstr.str().c_str(), this);
+		disasm_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<ADDRESS> >(disasm_export_name_sstr.str().c_str(), this);
 		
 		std::stringstream memory_export_name_sstr;
 		memory_export_name_sstr << "memory-export[" << front_end_num << "]";
-		memory_export[front_end_num] = new unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<ADDRESS> >(memory_export_name_sstr.str().c_str(), this);
+		memory_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<ADDRESS> >(memory_export_name_sstr.str().c_str(), this);
 		
 		std::stringstream registers_export_name_sstr;
 		registers_export_name_sstr << "registers-export[" << front_end_num << "]";
-		registers_export[front_end_num] = new unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers>(registers_export_name_sstr.str().c_str(), this);
+		registers_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::Registers>(registers_export_name_sstr.str().c_str(), this);
 		
 		std::stringstream symbol_table_lookup_export_name_sstr;
 		symbol_table_lookup_export_name_sstr << "symbol-table-lookup-export[" << front_end_num << "]";
-		symbol_table_lookup_export[front_end_num] = new unisim::kernel::service::ServiceExport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(symbol_table_lookup_export_name_sstr.str().c_str(), this);
+		symbol_table_lookup_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(symbol_table_lookup_export_name_sstr.str().c_str(), this);
 		
 		std::stringstream stmt_lookup_export_name_sstr;
 		stmt_lookup_export_name_sstr << "stmt-lookup-export[" << front_end_num << "]";
-		stmt_lookup_export[front_end_num] = new unisim::kernel::service::ServiceExport<unisim::service::interfaces::StatementLookup<ADDRESS> >(stmt_lookup_export_name_sstr.str().c_str(), this);
+		stmt_lookup_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::StatementLookup<ADDRESS> >(stmt_lookup_export_name_sstr.str().c_str(), this);
 		
 		std::stringstream backtrace_export_name_sstr;
 		backtrace_export_name_sstr << "backtrace-export[" << front_end_num << "]";
-		backtrace_export[front_end_num] = new unisim::kernel::service::ServiceExport<unisim::service::interfaces::BackTrace<ADDRESS> >(backtrace_export_name_sstr.str().c_str(), this);
+		backtrace_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::BackTrace<ADDRESS> >(backtrace_export_name_sstr.str().c_str(), this);
 		
 		std::stringstream debug_info_loading_export_name_sstr;
 		debug_info_loading_export_name_sstr << "debug-info-loading-export[" << front_end_num << "]";
-		debug_info_loading_export[front_end_num] = new unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugInfoLoading>(debug_info_loading_export_name_sstr.str().c_str(), this);
+		debug_info_loading_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::DebugInfoLoading>(debug_info_loading_export_name_sstr.str().c_str(), this);
 		
 		std::stringstream data_object_lookup_export_name_sstr;
 		data_object_lookup_export_name_sstr << "data-object-lookup-export[" << front_end_num << "]";
-		data_object_lookup_export[front_end_num] = new unisim::kernel::service::ServiceExport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(data_object_lookup_export_name_sstr.str().c_str(), this);
+		data_object_lookup_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(data_object_lookup_export_name_sstr.str().c_str(), this);
 		
 		std::stringstream subprogram_lookup_export_name_sstr;
 		subprogram_lookup_export_name_sstr << "subprogram-lookup-export[" << front_end_num << "]";
-		subprogram_lookup_export[front_end_num] = new unisim::kernel::service::ServiceExport<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(subprogram_lookup_export_name_sstr.str().c_str(), this);
+		subprogram_lookup_export[front_end_num] = new unisim::kernel::ServiceExport<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(subprogram_lookup_export_name_sstr.str().c_str(), this);
 		
 		std::stringstream debug_event_listener_import_name_sstr;
 		debug_event_listener_import_name_sstr << "debug-event-listener-import[" << front_end_num << "]";
-		debug_event_listener_import[front_end_num] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugEventListener<ADDRESS> >(debug_event_listener_import_name_sstr.str().c_str(), this);
+		debug_event_listener_import[front_end_num] = new unisim::kernel::ServiceImport<unisim::service::interfaces::DebugEventListener<ADDRESS> >(debug_event_listener_import_name_sstr.str().c_str(), this);
 		
 		std::stringstream debug_yielding_import_name_sstr;
 		debug_yielding_import_name_sstr << "debug-yielding-import[" << front_end_num << "]";
-		debug_yielding_import[front_end_num] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugYielding>(debug_yielding_import_name_sstr.str().c_str(), this);
+		debug_yielding_import[front_end_num] = new unisim::kernel::ServiceImport<unisim::service::interfaces::DebugYielding>(debug_yielding_import_name_sstr.str().c_str(), this);
 	}
 	
 	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
@@ -400,7 +400,7 @@ bool Debugger<CONFIG>::SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *b
 				}
 				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
-				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, unisim::kernel::service::Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
+				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
 				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
 
 				elf32_loader->ParseSymbols();
@@ -427,7 +427,7 @@ bool Debugger<CONFIG>::SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *b
 				}
 				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
-				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, unisim::kernel::service::Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
+				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
 				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
 
 				elf64_loader->ParseSymbols();
@@ -653,7 +653,7 @@ void Debugger<CONFIG>::ReportTrap(unsigned int prc_num)
 }
 
 template <typename CONFIG>
-void Debugger<CONFIG>::ReportTrap(unsigned int prc_num, const unisim::kernel::service::Object &obj)
+void Debugger<CONFIG>::ReportTrap(unsigned int prc_num, const unisim::kernel::Object &obj)
 {
 	if(unlikely(!trap_event_set[prc_num].empty()))
 	{
@@ -672,7 +672,7 @@ void Debugger<CONFIG>::ReportTrap(unsigned int prc_num, const unisim::kernel::se
 }
 
 template <typename CONFIG>
-void Debugger<CONFIG>::ReportTrap(unsigned int prc_num, const unisim::kernel::service::Object &obj, const std::string &str)
+void Debugger<CONFIG>::ReportTrap(unsigned int prc_num, const unisim::kernel::Object &obj, const std::string &str)
 {
 	if(unlikely(!trap_event_set[prc_num].empty()))
 	{
@@ -691,7 +691,7 @@ void Debugger<CONFIG>::ReportTrap(unsigned int prc_num, const unisim::kernel::se
 }
 
 template <typename CONFIG>
-void Debugger<CONFIG>::ReportTrap(unsigned int prc_num, const unisim::kernel::service::Object &obj, const char *c_str)
+void Debugger<CONFIG>::ReportTrap(unsigned int prc_num, const unisim::kernel::Object &obj, const char *c_str)
 {
 	if(unlikely(!trap_event_set[prc_num].empty()))
 	{
@@ -1104,9 +1104,9 @@ std::string Debugger<CONFIG>::Disasm(unsigned int front_end_num, ADDRESS addr, A
 
 // unisim::service::interfaces::Memory<ADDRESS> (tagged)
 template <typename CONFIG>
-void Debugger<CONFIG>::Reset(unsigned int front_end_num)
+void Debugger<CONFIG>::ResetMemory(unsigned int front_end_num)
 {
-	sel_prc_gate[front_end_num]->Reset();
+	sel_prc_gate[front_end_num]->ResetMemory();
 }
 
 template <typename CONFIG>
@@ -1144,7 +1144,7 @@ void Debugger<CONFIG>::GetSymbols(unsigned int front_end_num, typename std::list
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			elf32_loader->GetSymbols(lst, type);
@@ -1154,7 +1154,7 @@ void Debugger<CONFIG>::GetSymbols(unsigned int front_end_num, typename std::list
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			elf64_loader->GetSymbols(lst, type);
@@ -1164,7 +1164,7 @@ void Debugger<CONFIG>::GetSymbols(unsigned int front_end_num, typename std::list
 	unsigned int num_coff_loaders = coff_loaders.size();
 	for(i = 0; i < num_coff_loaders; i++)
 	{
-		if(enable_coff_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_coff_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
 			coff_loader->GetSymbols(lst, type);
@@ -1180,7 +1180,7 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf32_loader->FindSymbol(name, addr, type);
@@ -1191,7 +1191,7 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf64_loader->FindSymbol(name, addr, type);
@@ -1202,7 +1202,7 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 	unsigned int num_coff_loaders = coff_loaders.size();
 	for(i = 0; i < num_coff_loaders; i++)
 	{
-		if(enable_coff_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_coff_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = coff_loader->FindSymbol(name, addr, type);
@@ -1220,7 +1220,7 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf32_loader->FindSymbolByAddr(addr);
@@ -1231,7 +1231,7 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf64_loader->FindSymbolByAddr(addr);
@@ -1242,7 +1242,7 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 	unsigned int num_coff_loaders = coff_loaders.size();
 	for(i = 0; i < num_coff_loaders; i++)
 	{
-		if(enable_coff_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_coff_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = coff_loader->FindSymbolByAddr(addr);
@@ -1260,7 +1260,7 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf32_loader->FindSymbolByName(name);
@@ -1271,7 +1271,7 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf64_loader->FindSymbolByName(name);
@@ -1282,7 +1282,7 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 	unsigned int num_coff_loaders = coff_loaders.size();
 	for(i = 0; i < num_coff_loaders; i++)
 	{
-		if(enable_coff_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_coff_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = coff_loader->FindSymbolByName(name);
@@ -1300,7 +1300,7 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf32_loader->FindSymbolByName(name, type);
@@ -1311,7 +1311,7 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf64_loader->FindSymbolByName(name, type);
@@ -1322,7 +1322,7 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 	unsigned int num_coff_loaders = coff_loaders.size();
 	for(i = 0; i < num_coff_loaders; i++)
 	{
-		if(enable_coff_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_coff_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = coff_loader->FindSymbolByName(name, type);
@@ -1340,7 +1340,7 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf32_loader->FindSymbolByAddr(addr, type);
@@ -1351,7 +1351,7 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = elf64_loader->FindSymbolByAddr(addr, type);
@@ -1362,7 +1362,7 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 	unsigned int num_coff_loaders = coff_loaders.size();
 	for(i = 0; i < num_coff_loaders; i++)
 	{
-		if(enable_coff_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_coff_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
 			const typename unisim::util::debug::Symbol<ADDRESS> *symbol = coff_loader->FindSymbolByAddr(addr, type);
@@ -1383,7 +1383,7 @@ void Debugger<CONFIG>::GetStatements(unsigned int front_end_num, std::multimap<A
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& elf32_stmts = elf32_loader->GetStatements();
@@ -1397,7 +1397,7 @@ void Debugger<CONFIG>::GetStatements(unsigned int front_end_num, std::multimap<A
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& elf64_stmts = elf64_loader->GetStatements();
@@ -1418,7 +1418,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatement(addr, opt);
@@ -1449,7 +1449,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatement(addr, opt);
@@ -1489,7 +1489,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatements(stmts, addr, opt);
@@ -1520,7 +1520,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatements(stmts, addr, opt);
@@ -1559,7 +1559,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatement(filename, lineno, colno);
@@ -1570,7 +1570,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatement(filename, lineno, colno);
@@ -1589,7 +1589,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatements(stmts, filename, lineno, colno);
@@ -1601,7 +1601,7 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[front_end_num][i])
+		if((front_end_num >= MAX_FRONT_ENDS) || enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatements(stmts, filename, lineno, colno);
@@ -1764,7 +1764,7 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
-						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, unisim::kernel::service::Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
+						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
 						
 						if(!elf32_loader->Load())
@@ -1798,7 +1798,7 @@ bool Debugger<CONFIG>::LoadDebugInfo(unsigned int front_end_num, const char *fil
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
-						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, unisim::kernel::service::Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
+						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, unisim::kernel::Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
 
 						if(!elf64_loader->Load())

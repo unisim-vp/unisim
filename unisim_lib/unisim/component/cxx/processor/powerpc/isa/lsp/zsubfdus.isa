@@ -39,5 +39,5 @@ zsubfdus.execute = {
 	return false;
 }
 zsubfdus.disasm = {
-	os << "zsubfdus r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zsubfdus " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

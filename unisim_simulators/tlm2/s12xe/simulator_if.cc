@@ -12,18 +12,18 @@ EXPORTED_FUNCTION void   createObject(int argc, char **argv) {
 
 	switch(simulator->Setup())
 	{
-		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+		case unisim::kernel::Simulator::ST_OK_DONT_START:
 			simulator->GeneratePim();
 			break;
-		case unisim::kernel::service::Simulator::ST_WARNING:
+		case unisim::kernel::Simulator::ST_WARNING:
 			cerr << "Some warnings occurred during setup" << endl;
 			break;
-		case unisim::kernel::service::Simulator::ST_OK_TO_START:
+		case unisim::kernel::Simulator::ST_OK_TO_START:
 			cerr << "Starting simulation at supervisor privilege level (kernel mode)" << endl;
 //			simulator->Run();
 
 			break;
-		case unisim::kernel::service::Simulator::ST_ERROR:
+		case unisim::kernel::Simulator::ST_ERROR:
 			cerr << "Cannot start simulation because of previous errors" << endl;
 			break;
 	}
@@ -82,4 +82,24 @@ EXPORTED_FUNCTION  double setCANArray(CAN_DATATYPE_ARRAY msg)
 EXPORTED_FUNCTION  double getCANArray(CAN_DATATYPE_ARRAY *msg)
 {
 	return (simulator->getCANArray(msg));
+}
+
+EXPORTED_FUNCTION  double symWrite8(const char* strName, uint8_t val)
+{
+	return (simulator->symWrite8(strName, val));
+}
+
+EXPORTED_FUNCTION  double symRead8(const char* strName, uint8_t* val)
+{
+	return (simulator->symRead8(strName, val));
+}
+
+EXPORTED_FUNCTION  double symWrite16(const char* strName, uint16_t val)
+{
+	return (simulator->symWrite16(strName, val));
+}
+
+EXPORTED_FUNCTION  double symRead16(const char* strName, uint16_t* val)
+{
+	return (simulator->symRead16(strName, val));
 }

@@ -38,5 +38,5 @@ efdadd.execute = {
 	return false;
 }
 efdadd.disasm = {
-	os << "efdadd r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efdadd " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

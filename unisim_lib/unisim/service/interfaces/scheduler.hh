@@ -35,14 +35,14 @@
 #ifndef UNISIM_SERVICE_INTERFACES_SCHEDULER_HH
 #define UNISIM_SERVICE_INTERFACES_SCHEDULER_HH
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
 template<class GRID>
-struct Scheduler : public unisim::kernel::service::ServiceInterface
+struct Scheduler : public ServiceInterface
 {
 	virtual void Schedule(GRID & g) = 0;
 };

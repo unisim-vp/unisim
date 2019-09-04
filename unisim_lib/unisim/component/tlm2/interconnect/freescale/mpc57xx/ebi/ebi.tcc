@@ -49,12 +49,15 @@ namespace ebi {
 using unisim::component::tlm2::interconnect::generic_router::MEM_ACCESS_READ_WRITE;
 
 template <typename CONFIG>
-EBI<CONFIG>::EBI(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+EBI<CONFIG>::EBI(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, Super(name, parent)
+	, unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
+	, registers_export("registers-export", this)
 	, ebi_mcr(this)
 	, ebi_br(this)
 	, ebi_or(this)
+	, registers_registry()
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, mapping_cache()
@@ -74,6 +77,13 @@ EBI<CONFIG>::EBI(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	this->MapRegister(EBI_MCR::ADDRESS_OFFSET, &ebi_mcr);
 	this->MapRegisterFile(EBI_BR::ADDRESS_OFFSET, &ebi_br, 4, EBI_BR::ADDRESS_STRIDE);
 	this->MapRegisterFile(EBI_OR::ADDRESS_OFFSET, &ebi_or, 4, EBI_OR::ADDRESS_STRIDE);
+	
+	registers_registry.AddRegisterInterface(ebi_mcr.CreateRegisterInterface());
+	for(unsigned int i = 0; i < CONFIG::OUTPUT_SOCKETS; i++)
+	{
+		registers_registry.AddRegisterInterface(ebi_br[i].CreateRegisterInterface());
+		registers_registry.AddRegisterInterface(ebi_or[i].CreateRegisterInterface());
+	}
 }
 
 template <typename CONFIG>
@@ -102,6 +112,20 @@ void EBI<CONFIG>::Reset()
 	}
 	
 	Super::Reset();
+}
+
+//////////////// unisim::service::interface::Registers ////////////////////
+
+template <typename CONFIG>
+unisim::service::interfaces::Register *EBI<CONFIG>::GetRegister(const char *name)
+{
+	return registers_registry.GetRegister(name);
+}
+
+template <typename CONFIG>
+void EBI<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 template <typename CONFIG>

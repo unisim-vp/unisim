@@ -35,19 +35,19 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_REGISTERS_HH__
 #define __UNISIM_SERVICE_INTERFACES_REGISTERS_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 #include <unisim/service/interfaces/register.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-struct RegisterScanner : public unisim::kernel::service::ServiceInterface
+struct RegisterScanner : public ServiceInterface
 {
   virtual void Append( unisim::service::interfaces::Register* reg ) = 0;
 };
 
-struct Registers : public unisim::kernel::service::ServiceInterface
+struct Registers : public ServiceInterface
 {
 	virtual unisim::service::interfaces::Register *GetRegister(const char *name) = 0;
 	virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner ) = 0;

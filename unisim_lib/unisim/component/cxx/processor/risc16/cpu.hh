@@ -44,7 +44,7 @@
 #include <stdio.h>
 
 #include "unisim/kernel/logger/logger.hh"
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include "unisim/service/interfaces/trap_reporting.hh"
 #include "unisim/service/interfaces/disassembly.hh"
@@ -71,13 +71,13 @@ using unisim::service::interfaces::MemoryAccessReportingType;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::Registers;
 
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::Object;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
 
 using namespace std;
 
@@ -110,6 +110,7 @@ public:
 	CPU(const char *name, Object *parent = 0);
 	virtual ~CPU();
 
+	void Reset();
 	uint16_t fetch(uint16_t addr);
 
 	virtual uint16_t mem_read(uint16_t addr) = 0;
@@ -138,7 +139,7 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
-	virtual void Reset();
+	virtual void ResetMemory();
 
 	virtual bool ReadMemory(uint64_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(uint64_t addr, const void *buffer, uint32_t size);
@@ -178,7 +179,7 @@ private:
 	unisim::kernel::logger::Logger logger;
 
 	std::map<std::string, unisim::service::interfaces::Register *> registers_registry;
-	std::vector<unisim::kernel::service::VariableBase *> extended_registers_registry;
+	std::vector<unisim::kernel::VariableBase *> extended_registers_registry;
 };
 
 } // end of namespace risc16

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,37 +32,35 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
-}
+/* Count Leading Zeros Word */
+op cntlzw(31[6]:rs[5]:ra[5]:?[5]:26[10]:rc[1]);
 
-op cntlzw(31[6]:rs[5]:ra[5]:?[5]:26[10]:rc[1])
 cntlzw.execute = {
 	// read the input operands
-	uint32_t s = cpu->GetGPR(rs);
+	U32 s = U32(cpu->GetGPR(rs));
 	
 	// Compute the result
-	uint32_t result = (s != uint32_t( 0)) ? uint32_t( 31) - BitScanReverse(s) : uint32_t( 32);
+	U32 result = likely(s != U32(0)) ? U32(31) - BitScanReverse(s) : U32(32);
 	
 	// Write back the result
-	cpu->SetGPR(ra, result);
+	cpu->SetGPR(ra, UINT(result));
 
 	if(unlikely(rc))
 	{
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
-		XER& xer = cpu->GetXER();
 		CR& cr = cpu->GetCR();
-		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(int32_t( result) < int32_t( 0));
-		cr.Set<CR::CR0::GT>(int32_t( result) > int32_t( 0));
-		cr.Set<CR::CR0::EQ>(result == uint32_t( 0));
+		cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
+		cr.Set<CR::CR0::LT>(false);
+		cr.Set<CR::CR0::GT>(result > U32(0));
+		cr.Set<CR::CR0::EQ>(result == U32(0));
 	}
 	
 	return true;
-}
-cntlzw.disasm = {
-	os << "cntlzw" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs;
-}
+};
 
-specialize cntlzw(rc=0)
-specialize cntlzw(rc=1)
+cntlzw.disasm = {
+	os << "cntlzw" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs);
+};
+
+specialize cntlzw(rc=0);
+specialize cntlzw(rc=1);

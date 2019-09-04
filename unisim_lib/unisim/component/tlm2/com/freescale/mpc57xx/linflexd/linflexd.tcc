@@ -69,9 +69,10 @@ template <typename CONFIG>
 const bool LINFlexD<CONFIG>::threaded_model;
 
 template <typename CONFIG>
-LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
 	, sc_core::sc_module(name)
+	, unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
 	, peripheral_slave_if("peripheral_slave_if")
 	, LINTX("LINTX")
 	, LINRX("LINRX")
@@ -83,6 +84,7 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 	, INT_ERR("INT_ERR")
 	, DMA_RX()
 	, DMA_TX()
+	, registers_export("registers-export", this)
 	, logger(*this)
 	, m_clk_prop_proxy(m_clk)
 	, lin_clk_prop_proxy(lin_clk)
@@ -133,6 +135,7 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 	, dma_rx()
 	, dma_tx()
 	, reg_addr_map()
+	, registers_registry()
 	, schedule()
 	, endian(unisim::util::endian::E_BIG_ENDIAN)
 	, param_endian("endian", this, endian, "endian")
@@ -259,6 +262,40 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 	reg_addr_map.MapRegister(linflexd_dmatxe.ADDRESS_OFFSET,  &linflexd_dmatxe); 
 	reg_addr_map.MapRegister(linflexd_dmarxe.ADDRESS_OFFSET,  &linflexd_dmarxe); 
 	reg_addr_map.MapRegister(linflexd_ptd.ADDRESS_OFFSET,     &linflexd_ptd);    
+
+	registers_registry.AddRegisterInterface(linflexd_lincr1.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_linier.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_linsr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_linesr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_uartcr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_uartsr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_lintcsr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_linocr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_lintocr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_linfbrr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_linibrr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_lincfr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_lincr2.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_bidr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_bdrl.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_bdrm.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_ifer.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_ifmi.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_ifmr.CreateRegisterInterface());
+	if(NUM_IDENTIFIERS > 0)
+	{
+		for(unsigned int i = 0; i < NUM_IDENTIFIERS; i++)
+		{
+			registers_registry.AddRegisterInterface(linflexd_ifcr[i].CreateRegisterInterface());
+		}
+	}
+	
+	registers_registry.AddRegisterInterface(linflexd_gcr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_uartpto.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_uartcto.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_dmatxe.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_dmarxe.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(linflexd_ptd.CreateRegisterInterface());
 
 	SC_METHOD(RESET_B_Process);
 	sensitive << reset_b.pos();
@@ -441,7 +478,7 @@ unsigned int LINFlexD<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 	if(!data_ptr)
 	{
 		logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		unisim::kernel::Object::Stop(-1);
 		return 0;
 	}
 	else if(!data_length)
@@ -484,7 +521,7 @@ tlm::tlm_sync_enum LINFlexD<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& p
 			return tlm::TLM_COMPLETED;
 		default:
 			logger << DebugError << "protocol error" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			break;
 	}
 	
@@ -524,6 +561,20 @@ void LINFlexD<CONFIG>::nb_receive(int id, unisim::kernel::tlm2::tlm_serial_paylo
 	}
 }
 
+//////////////// unisim::service::interface::Registers ////////////////////
+
+template <typename CONFIG>
+unisim::service::interfaces::Register *LINFlexD<CONFIG>::GetRegister(const char *name)
+{
+	return registers_registry.GetRegister(name);
+}
+
+template <typename CONFIG>
+void LINFlexD<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
+}
+
 template <typename CONFIG>
 void LINFlexD<CONFIG>::ProcessEvent(Event *event)
 {
@@ -549,13 +600,13 @@ void LINFlexD<CONFIG>::ProcessEvent(Event *event)
 				if(!data_ptr)
 				{
 					logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-					unisim::kernel::service::Object::Stop(-1);
+					unisim::kernel::Object::Stop(-1);
 					return;
 				}
 				else if(!data_length)
 				{
 					logger << DebugError << "data length range for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-					unisim::kernel::service::Object::Stop(-1);
+					unisim::kernel::Object::Stop(-1);
 					return;
 				}
 				else if(byte_enable_ptr)
@@ -654,7 +705,7 @@ void LINFlexD<CONFIG>::ProcessEvents()
 			if(event->GetTimeStamp() != time_stamp)
 			{
 				logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
-				unisim::kernel::service::Object::Stop(-1);
+				unisim::kernel::Object::Stop(-1);
 			}
 			
 			ProcessEvent(event);
@@ -855,14 +906,14 @@ void LINFlexD<CONFIG>::Reset()
 	if(!m_clk_prop_proxy.IsClockCompatible())
 	{
 		logger << DebugError << "master clock port is not bound to a unisim::kernel::tlm2::Clock" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		unisim::kernel::Object::Stop(-1);
 		return;
 	}
 	
 	if(!lin_clk_prop_proxy.IsClockCompatible())
 	{
 		logger << DebugError << "LIN clock port is not bound to a unisim::kernel::tlm2::Clock" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		unisim::kernel::Object::Stop(-1);
 		return;
 	}
 
@@ -2438,7 +2489,7 @@ void LINFlexD<CONFIG>::TX_Process()
 						else
 						{
 							logger << DebugError << "invalid combination of WL and TDFL/TFC values" << EndDebugError;
-							unisim::kernel::service::Object::Stop(-1);
+							unisim::kernel::Object::Stop(-1);
 						}
 					}
 				}

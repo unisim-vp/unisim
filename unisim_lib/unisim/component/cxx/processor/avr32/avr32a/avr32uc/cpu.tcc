@@ -111,8 +111,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, param_halt_on("halt-on", this, halt_on, "Symbol or address where to stop simulation")
 	, stat_instruction_counter("instruction-counter",  this,  instruction_counter, "number of simulated instructions")
 {
-	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_trap_on_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_max_inst.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 
 	enter_isr_table[CONFIG::EXC_UNDEFINED_BEHAVIOR] = &CPU<CONFIG>::EnterUndefinedBehaviorException;
 	enter_isr_table[CONFIG::EXC_RESET] = &CPU<CONFIG>::EnterResetException;
@@ -659,7 +659,7 @@ bool CPU<CONFIG>::EvaluateCond(uint8_t cond)
 template <class CONFIG>
 void CPU<CONFIG>::StepOneInstruction()
 {
-  uint32_t pc = gpr[REG_PC], insn_size;
+  uint32_t pc = gpr[REG_PC], insn_size = 0;
 
 	/* report a finished instruction */
 	if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
@@ -862,6 +862,12 @@ void CPU<CONFIG>::Idle()
 }
 
 template <class CONFIG>
+void CPU<CONFIG>::ResetMemory()
+{
+	Reset();
+}
+
+template <class CONFIG>
 bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size)
 {
 	
@@ -964,16 +970,16 @@ bool CPU<CONFIG>::Breakpoint()
 			unisim::service::interfaces::AVR32_T2H_Syscalls::Status status = avr32_t2h_syscalls_import->HandleEmulatorBreakpoint();
 			switch(status)
 			{
-				case unisim::service::interfaces::AVR32_T2H_Syscalls::ERROR:
+				case unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_ERROR:
 					logger << DebugWarning << "Was not able to handle or recognize a system call because of a simulator error" << EndDebugWarning;
 					return false;
-				case unisim::service::interfaces::AVR32_T2H_Syscalls::OK:
+				case unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_OK:
 					return true;
-				case unisim::service::interfaces::AVR32_T2H_Syscalls::EXIT:
+				case unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_EXIT:
 					logger << DebugInfo << "Program exited normally" << EndDebugInfo;
 					Stop(0);
 					return true;
-				case unisim::service::interfaces::AVR32_T2H_Syscalls::UNHANDLED:
+				case unisim::service::interfaces::AVR32_T2H_Syscalls::AVR32_T2H_SYSCALL_UNHANDLED:
 					// Attempt to execute a breakpoint instruction while system call translator not recognizing a system call results in executing the breakpoint as a nop
 					break;
 			}

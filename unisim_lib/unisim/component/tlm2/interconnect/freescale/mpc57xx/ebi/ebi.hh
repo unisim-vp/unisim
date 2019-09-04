@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_INTERCONNECT_FREESCALE_MPC57XX_EBI_EBI_HH__
 
 #include <unisim/component/tlm2/interconnect/programmable_router/router.hh>
+#include <unisim/util/debug/simple_register_registry.hh>
 
 #define SWITCH_ENUM_TRAIT(ENUM_TYPE, CLASS_NAME) template <ENUM_TYPE, bool __SWITCH_TRAIT_DUMMY__ = true> struct CLASS_NAME {}
 #define CASE_ENUM_TRAIT(ENUM_VALUE, CLASS_NAME) template <bool __SWITCH_TRAIT_DUMMY__> struct CLASS_NAME<ENUM_VALUE, __SWITCH_TRAIT_DUMMY__>
@@ -256,6 +257,7 @@ typename TemporaryMappingKeeper<CONFIG>::MAPPING *TemporaryMappingKeeper<CONFIG>
 template <typename CONFIG>
 class EBI
 	: public unisim::component::tlm2::interconnect::programmable_router::Router<CONFIG>
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Registers>
 {
 public:
 	typedef unisim::component::tlm2::interconnect::programmable_router::Router<CONFIG> Super;
@@ -270,9 +272,16 @@ public:
 	static const unsigned int OUTPUT_ADDRESS_WIDTH    = CONFIG::OUTPUT_ADDRESS_WIDTH;
 	static const unsigned int TIED_UPPED_ADDRESS_BITS = CONFIG::TIED_UPPED_ADDRESS_BITS;
 	
-	EBI(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
+	// services
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Registers> registers_export;
+
+	EBI(const sc_core::sc_module_name& name, unisim::kernel::Object *parent);
 	virtual ~EBI();
 
+	//////////////// unisim::service::interface::Registers ////////////////////
+	
+	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 protected:
 	virtual void end_of_elaboration();
 	virtual void Reset();
@@ -553,8 +562,10 @@ protected:
 	AddressableRegisterFile<EBI_BR, CONFIG::OUTPUT_SOCKETS, EBI<CONFIG> > ebi_br;  // EBI_BR
 	AddressableRegisterFile<EBI_OR, CONFIG::OUTPUT_SOCKETS, EBI<CONFIG> > ebi_or;  // EBI_OR
 	
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
+
 	bool verbose;
-	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 	
 	MappingCache<CONFIG> mapping_cache;
 	TemporaryMappingKeeper<CONFIG> temporary_mapping_keeper;

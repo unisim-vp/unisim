@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_OS_LINUX_OS_LINUX_OS_LINUX_OS_64_HH__
 #define __UNISIM_SERVICE_OS_LINUX_OS_LINUX_OS_LINUX_OS_64_HH__
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/service/os/linux_os/linux_os.hh"
 #include <inttypes.h>
 
@@ -48,7 +48,7 @@ namespace linux_os_64 {
 class LinuxOS64 : public unisim::service::os::linux_os::LinuxOS<uint64_t, uint64_t>
 {
 public:
-	LinuxOS64(const char *name, unisim::kernel::service::Object *parent = 0);
+	LinuxOS64(const char *name, unisim::kernel::Object *parent = 0);
 	virtual ~LinuxOS64();
 };
 

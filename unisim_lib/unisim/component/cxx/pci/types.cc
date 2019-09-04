@@ -37,7 +37,7 @@
 
 namespace unisim {
 namespace kernel {
-namespace service {
+namespace variable {
 
 using std::stringstream;
 using namespace unisim::component::cxx::pci;
@@ -46,7 +46,7 @@ using namespace unisim::component::cxx::pci;
 template <> Variable<PCISpace>::Variable(const char *_name, Object *_object, PCISpace& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::Instance()->Initialize(this);
+	Initialize();
 	AddEnumeratedValue("mem");
 	AddEnumeratedValue("i/o");
 	AddEnumeratedValue("cfg");

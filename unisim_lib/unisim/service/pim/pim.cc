@@ -36,7 +36,7 @@ xmlChar *convertInput(const char *in, const char *encoding);
 
 using namespace std;
 
-using unisim::kernel::service::VariableBase;
+using unisim::kernel::VariableBase;
 
 using unisim::service::pim::PIMThread;
 

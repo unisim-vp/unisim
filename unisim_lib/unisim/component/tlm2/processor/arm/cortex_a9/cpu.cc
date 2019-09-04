@@ -126,7 +126,7 @@ namespace cortex_a9 {
 using namespace unisim::kernel::logger;
 
 CPU::CPU( sc_core::sc_module_name const& name, Object* parent )
-  : unisim::kernel::service::Object(name, parent)
+  : unisim::kernel::Object(name, parent)
   , sc_core::sc_module(name)
   , unisim::component::cxx::processor::arm::vmsav7::CPU(name, parent)
   , master_socket("master_socket")
@@ -228,7 +228,7 @@ CPU::Stop(int ret)
   // Call BusSynchronize to account for the remaining time spent in the cpu 
   // core
   BusSynchronize();
-  unisim::kernel::service::Object::Stop( ret );
+  unisim::kernel::Object::Stop( ret );
 }
 
 /** Wait for a specific event and update CPU times
@@ -356,8 +356,8 @@ CPU::Run()
       }
       if (not nIRQm or not nFIQm) {
         uint32_t exceptions = 0;
-        unisim::component::cxx::processor::arm::I.Set( exceptions, not nIRQm );
-        unisim::component::cxx::processor::arm::F.Set( exceptions, not nFIQm );
+        unisim::component::cxx::processor::arm::I.Set( exceptions, nIRQm ? 0u : 1u );
+        unisim::component::cxx::processor::arm::F.Set( exceptions, nFIQm ? 0u : 1u );
         
         bool exception_taken = this->HandleAsynchronousException( exceptions ) != 0;
         if (exception_taken) {
@@ -414,7 +414,12 @@ void
 CPU::Reset()
 {
 }
-  
+
+void 
+CPU::ResetMemory()
+{
+}
+
 /**
  * Virtual method implementation to handle backward path of transactions sent 
  * through the master_port
@@ -479,7 +484,7 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
       /* Starting the response phase.
        * If the request is a write report an error and stop, we should not have received it.
        * The target has initiated the response to a read request, compute when the request can
-       *   be completely accepted and send a TLM_COMPLETED back. Send an event to the PrRead
+       *   be completely accepted and send a TLM_COMPLETED back. Send an event to the PhysicalReadMemory
        *   method to unlock the thread that originated the read transaction (using the end_read_event).
        */
       trans.acquire();
@@ -651,11 +656,11 @@ CPU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
  * @param size    the size of the read
  */
 bool
-CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
+CPU::PhysicalReadMemory(uint32_t addr, uint32_t paddr, uint8_t *buffer, uint32_t size, uint32_t attrs)
 {
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
-      << "Starting PrRead:" << std::endl
+      << "Starting PhysicalReadMemory:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
       << EndDebugInfo;
@@ -676,7 +681,7 @@ CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
   
   if(likely(enable_dmi))
   {
-    dmi_region = dmi_region_cache.Lookup(addr, size);
+    dmi_region = dmi_region_cache.Lookup(paddr, size);
     
     if(likely(dmi_region))
     {
@@ -685,7 +690,7 @@ CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
         tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
         if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_READ) == tlm::tlm_dmi::DMI_ACCESS_READ))
         {
-          memcpy(buffer, dmi_data->get_dmi_ptr() + (addr - dmi_data->get_start_address()), size);
+          memcpy(buffer, dmi_data->get_dmi_ptr() + (paddr - dmi_data->get_start_address()), size);
           quantum_time += dmi_region->GetReadLatency(size);
           if (quantum_time > nice_time)
             Sync();
@@ -699,7 +704,7 @@ CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
   Transaction trans( payload_fabric );
   
   //uint32_t byte_enable = 0xffffffffUL;
-  trans->set_address(addr);
+  trans->set_address(paddr);
   trans->set_read();
   trans->set_data_ptr(buffer);
   trans->set_data_length(size);
@@ -723,7 +728,7 @@ CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
     if(likely(not dmi_region and trans->is_dmi_allowed()))
     {
       tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
-      trans->set_address(addr);
+      trans->set_address(paddr);
       trans->set_data_length(size);
       unisim::kernel::tlm2::DMIGrant dmi_grant = master_socket->get_direct_mem_ptr(*trans, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
       
@@ -733,7 +738,7 @@ CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
 
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
-      << "Finished PrRead:" << std::endl
+      << "Finished PhysicalReadMemory:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
       << EndDebugInfo;
@@ -742,11 +747,11 @@ CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
 }
 
 bool
-CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
+CPU::PhysicalWriteMemory(uint32_t addr, uint32_t paddr, const uint8_t *buffer, uint32_t size, uint32_t attrs)
 {
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
-      << "Starting PrWrite:" << std::endl
+      << "Starting PhysicalWriteMemory:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
       << EndDebugInfo;
@@ -765,7 +770,7 @@ CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
   
   if(likely(enable_dmi))
   {
-    dmi_region = dmi_region_cache.Lookup(addr, size);
+    dmi_region = dmi_region_cache.Lookup(paddr, size);
     
     if(likely(dmi_region))
     {
@@ -774,7 +779,7 @@ CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
         tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
         if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_WRITE) == tlm::tlm_dmi::DMI_ACCESS_WRITE))
         {
-          memcpy(dmi_data->get_dmi_ptr() + (addr - dmi_data->get_start_address()), buffer, size);
+          memcpy(dmi_data->get_dmi_ptr() + (paddr - dmi_data->get_start_address()), buffer, size);
           quantum_time += dmi_region->GetWriteLatency(size);
           if (quantum_time > nice_time)
             Sync();
@@ -788,7 +793,7 @@ CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
   Transaction trans( payload_fabric );
   
   //uint32_t byte_enable = 0xffffffffUL;
-  trans->set_address(addr);
+  trans->set_address(paddr);
   trans->set_write();
   trans->set_data_ptr((unsigned char *)buffer);
   trans->set_data_length(size);
@@ -810,7 +815,7 @@ CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
     if (likely(not dmi_region and trans->is_dmi_allowed()))
     {
       tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
-      trans->set_address(addr);
+      trans->set_address(paddr);
       trans->set_data_length(size);
       unisim::kernel::tlm2::DMIGrant dmi_grant = master_socket->get_direct_mem_ptr(*trans, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
       
@@ -820,7 +825,7 @@ CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
 
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
-      << "Finished PrWrite:" << std::endl
+      << "Finished PhysicalWriteMemory:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
       << EndDebugInfo;

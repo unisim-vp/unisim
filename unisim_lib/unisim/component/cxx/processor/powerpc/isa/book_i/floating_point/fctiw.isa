@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,89 +32,61 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
-}
+/* Floating Convert To Integer Word */
+op fctiw(63[6]:fd[5]:?[5]:fb[5]:14[10]:rc[1]);
 
-op fctiw(63[6]:fd[5]:?[5]:fb[5]:14[10]:rc[1])
 fctiw.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 		return false;
 	}
-	// Check if FPU is enabled
-	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not cpu->GetMSR().Get<CPU::MSR::FP>()))
 	{
-		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		cpu->ThrowException<CPU::FloatingPointUnavailableInterrupt::FloatingPointUnavailable>();
 		return false;
 	}
 
 	// Read the input operands
-	uint32_t fpscr = cpu->GetFPSCR();
-	uint32_t old_fpscr = fpscr;
-	Flags flags;
-	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
+        FPSCR& fpscr = cpu->GetFPSCR();
 	SoftDouble b = cpu->GetFPR(fb);
 
 	// Compute the result
-	SoftDouble::IntConversion icResult;
-	uint32_t result32;
-	uint64_t result64;
-    flags.clearKeepSignalingConversion();
-	b.retrieveInteger(icResult.setSigned(), flags);
-    flags.setKeepSignalingConversion();
-	result32 = (uint32_t) icResult.queryInt();
-	result64 = 0xfff8000000000000ULL | result32;
-	if(result32 == 0 && b.isNegative())
-		result64 |= 0x0000000100000000ULL;
+	Flags flags( Flags::RoundingMode(fpscr.Get<FPSCR::RN>()) );
+	S32 res32 = b.queryS32( flags );
 	
-	SoftDouble result(result64);
+        U64 undef_high = (U64(0xfff80000) | U64(res32 == S32(0) and b.isNegative())) << 32;
+	
+	SoftDouble result(SoftDouble::FromRawBits, undef_high | U64(U32(res32)));
 	
 	// Generate VXSNAN, VXCVI, FR, FI, XX, FX, VX, FEX
-	GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
-	GenFPSCR_VXCVI<CONFIG>(fpscr, flags);
-	GenFPSCR_FR<CONFIG, SoftDouble>(fpscr, b, flags);
-	if(!flags.isOverflow()) GenFPSCR_FI<CONFIG>(fpscr, flags);
-	GenFPSCR_XX<CONFIG>(fpscr);
-	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
-	GenFPSCR_VX<CONFIG>(fpscr);
-	GenFPSCR_FEX<CONFIG>(fpscr);
+	if (likely(not flags.isOverflow())) fpscr.SetInexact( flags.isApproximate() );
+	UINT new_fpscr( fpscr ), old_fpscr = fpscr;
+	GenFPSCR_VXSNAN<FPSCR>(new_fpscr, flags);
+	GenFPSCR_VXCVI<FPSCR>(new_fpscr, flags);
+	GenFPSCR_FR<FPSCR, SoftDouble>(new_fpscr, b, flags);
+	GenFPSCR_FX<FPSCR>(new_fpscr, old_fpscr);
+	GenFPSCR_VX<FPSCR>(new_fpscr);
+	GenFPSCR_FEX<FPSCR>(new_fpscr);
 
 	// Update FPSCR
-	cpu->SetFPSCR(fpscr);
+	fpscr = new_fpscr;
 
-	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
-	            (msr & CONFIG::MSR_FE1_MASK)) &&
-	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
-	{
-		// Raise a floating point exception if FPSCR[FEX] is set
-		cpu->SetException(CONFIG::EXC_PROGRAM_FLOATING_POINT);
+	if (not cpu->CheckFloatingPointException())
 		return false;
-	}
-
-	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
-	            (msr & CONFIG::MSR_FE1_MASK)) &&
-	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
-	{
-		// Raise a floating point exception
-		cpu->SetException(CONFIG::EXC_PROGRAM_FLOATING_POINT);
-		return false;
-	}
 
 	// Write back the result
 	cpu->SetFPR(fd, result);
 
 	// Copy FX, FEX, VX, OX to CR1
-	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
+	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( fpscr.Get<FPSCR::_0_3>() ); }
 	
 	return true;
-}
-fctiw.disasm = {
-	os << "fctiw" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
-}
+};
 
-specialize fctiw(rc=0)
-specialize fctiw(rc=1)
+fctiw.disasm = {
+	os << "fctiw" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
+};
+
+specialize fctiw(rc=0);
+specialize fctiw(rc=1);

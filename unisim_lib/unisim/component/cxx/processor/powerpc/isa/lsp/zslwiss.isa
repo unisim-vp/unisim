@@ -39,5 +39,5 @@ zslwiss.execute = {
 	return false;
 }
 zslwiss.disasm = {
-	os << "zslwiss r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << (unsigned int) uimm;
+	os << "zslwiss " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << (unsigned int) uimm;
 }

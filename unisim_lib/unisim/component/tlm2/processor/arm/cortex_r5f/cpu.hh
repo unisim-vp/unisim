@@ -49,7 +49,7 @@ namespace arm {
 namespace cortex_r5f {
 
   class CPU
-    : public sc_module
+    : public sc_core::sc_module
     , public tlm::tlm_bw_transport_if<>
     , public unisim::component::cxx::processor::arm::pmsav7::CPU
   {
@@ -127,7 +127,7 @@ private:
 
   public:
     SC_HAS_PROCESS(CPU);
-    CPU(const sc_module_name& name, Object *parent = 0);
+    CPU(const sc_core::sc_module_name& name, Object *parent = 0);
     virtual ~CPU();
 
     void SetCycleTime(sc_core::sc_time const& cycle_time);
@@ -135,7 +135,7 @@ private:
   public:
     virtual void Stop(int ret);
     virtual void Sync();
-    void Wait( sc_event const& evt );
+    void Wait( sc_core::sc_event const& evt );
 	
     virtual bool EndSetup();
 
@@ -143,12 +143,14 @@ private:
 	
     void Run();
 
-    virtual void Reset();
+    void Reset();
+	
+	virtual void ResetMemory();
 	
     // cache interface implemented by the arm processor to get the request from 
     //   the caches
-    virtual bool PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size);
-    virtual bool PrRead(uint32_t addr, uint8_t *buffer, uint32_t size);
+    virtual bool PhysicalWriteMemory(uint32_t addr, const uint8_t *buffer, uint32_t size, uint32_t attrs);
+    virtual bool PhysicalReadMemory(uint32_t addr, uint8_t *buffer, uint32_t size, uint32_t attrs);
 	
     sc_core::sc_time const& GetCpuCycleTime() const { return cpu_cycle_time; };
 
@@ -157,11 +159,11 @@ private:
     virtual bool ExternalWriteMemory(uint32_t addr, void const* buffer, uint32_t size);
 	
     /** Event used to signalize the end of a read transaction.
-     * Method PrRead waits for this event once the read transaction has been 
+     * Method PhysicalReadMemory waits for this event once the read transaction has been 
      *   sent, and the nb_transport_bw notifies on it when the read transaction 
      *   is finished. 
      */
-    sc_event end_read_rsp_event;
+    sc_core::sc_event end_read_rsp_event;
 	
     typedef unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload> PayloadFabric;
     PayloadFabric payload_fabric;
@@ -182,39 +184,39 @@ private:
      *   time.
      *   Should be initialized everytime it is used.
      */
-    sc_time tmp_time;
+    sc_core::sc_time tmp_time;
 	
-    sc_time cpu_time;
-    sc_time bus_time;
-    sc_time quantum_time;
-    sc_time cpu_cycle_time;
-    sc_time bus_cycle_time;
-    sc_time nice_time;
+    sc_core::sc_time cpu_time;
+    sc_core::sc_time bus_time;
+    sc_core::sc_time quantum_time;
+    sc_core::sc_time cpu_cycle_time;
+    sc_core::sc_time bus_cycle_time;
+    sc_core::sc_time nice_time;
     double ipc;
-    sc_time time_per_instruction;
+    sc_core::sc_time time_per_instruction;
     bool enable_dmi;
 	
-    unisim::kernel::service::Statistic<sc_time> stat_cpu_time;
+    unisim::kernel::variable::Statistic<sc_core::sc_time> stat_cpu_time;
   
-    struct CpuCycleTimeParam : public unisim::kernel::service::Parameter<sc_time>
+    struct CpuCycleTimeParam : public unisim::kernel::variable::Parameter<sc_core::sc_time>
     {
       CpuCycleTimeParam(char const* name, Object *owner, CPU& _cpu, const char *description)
-        : unisim::kernel::service::Parameter<sc_time>(name, owner, _cpu.cpu_cycle_time, description), cpu(_cpu)
+        : unisim::kernel::variable::Parameter<sc_core::sc_time>(name, owner, _cpu.cpu_cycle_time, description), cpu(_cpu)
       {}
-      void Set( sc_time const& value ) { cpu.SetCycleTime( value ); }
+      void Set( sc_core::sc_time const& value ) { cpu.SetCycleTime( value ); }
       CPU& cpu;
     } param_cpu_cycle_time;
-    unisim::kernel::service::Parameter<sc_time> param_bus_cycle_time;
-    unisim::kernel::service::Parameter<sc_time> param_nice_time;
-    unisim::kernel::service::Parameter<double> param_ipc;
-    unisim::kernel::service::Parameter<bool> param_enable_dmi;
+    unisim::kernel::variable::Parameter<sc_core::sc_time> param_bus_cycle_time;
+    unisim::kernel::variable::Parameter<sc_core::sc_time> param_nice_time;
+    unisim::kernel::variable::Parameter<double> param_ipc;
+    unisim::kernel::variable::Parameter<bool> param_enable_dmi;
 	
     /*************************************************************************
      * Logger, verbose and trap parameters/methods/ports               START *
      *************************************************************************/
 
     bool verbose_tlm;
-    unisim::kernel::service::Parameter<bool> param_verbose_tlm;
+    unisim::kernel::variable::Parameter<bool> param_verbose_tlm;
     inline bool VerboseTLM();
     
     /*************************************************************************
@@ -227,9 +229,9 @@ private:
     /* Configuration pins START */
     /****************************/
   protected:
-    bool VINITHI; unisim::kernel::service::Parameter<bool> param_VINITHI;
-    bool CFGEE;   unisim::kernel::service::Parameter<bool> param_CFGEE;
-    bool TEINIT;  unisim::kernel::service::Parameter<bool> param_TEINIT;
+    bool VINITHI; unisim::kernel::variable::Parameter<bool> param_VINITHI;
+    bool CFGEE;   unisim::kernel::variable::Parameter<bool> param_CFGEE;
+    bool TEINIT;  unisim::kernel::variable::Parameter<bool> param_TEINIT;
     
     /****************************/
     /* Configuration pins  END  */

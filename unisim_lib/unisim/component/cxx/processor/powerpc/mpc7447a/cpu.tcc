@@ -266,11 +266,11 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, stat_num_altivec_unavailable_interrupts("num-altivec-unavailable-interrupts", this, num_altivec_unavailable_interrupts, "Number of altivec unavailable interrupts")
 	, stat_num_altivec_assist_interrupts("num-altivec-assist", this, num_altivec_assist_interrupts, "Number of altivec assist interrupts")
 {
-	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_cpu_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_voltage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_trap_on_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_cpu_cycle_time.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_voltage.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_max_inst.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
 	unsigned int i;
 
@@ -279,11 +279,11 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 		stringstream sstr;
 		sstr << "r" << i;
 		registers_registry[sstr.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &gpr[i]);
-		registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>(sstr.str().c_str(), this, gpr[i], "General Purpose Register"));
+		registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>(sstr.str().c_str(), this, gpr[i], "General Purpose Register"));
 	}
 
 	registers_registry["fpscr"] = new unisim::util::debug::SimpleRegister<uint32_t>("fpscr", &fpscr);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("fpscr", this, fpscr, "Floating-Point Status and Control Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("fpscr", this, fpscr, "Floating-Point Status and Control Register"));
 
 	for(i = 0; i < 32; i++)
 	{
@@ -294,26 +294,26 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	}
 
 	registers_registry["cr"] = new unisim::util::debug::SimpleRegister<uint32_t>("cr", &cr);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("cr", this, cr, "Condition Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("cr", this, cr, "Condition Register"));
 	registers_registry["xer"] = new unisim::util::debug::SimpleRegister<uint32_t>("xer", &xer);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("xer", this, xer, "Integer Exception Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("xer", this, xer, "Integer Exception Register"));
 
 	registers_registry["lr"] = new unisim::util::debug::SimpleRegister<uint32_t>("lr", &lr);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("lr", this, lr, "Link Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("lr", this, lr, "Link Register"));
 	registers_registry["ctr"] = new unisim::util::debug::SimpleRegister<uint32_t>("ctr", &ctr);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("ctr", this, ctr, "Control Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("ctr", this, ctr, "Control Register"));
 
 	registers_registry["cia"] = new unisim::util::debug::SimpleRegister<uint32_t>("cia", &cia);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("cia", this, cia, "Current Instruction Address"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("cia", this, cia, "Current Instruction Address"));
 	registers_registry["pc"] = new unisim::util::debug::SimpleRegister<uint32_t>("pc", &cia);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("pc", this, cia, "Program Counter"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("pc", this, cia, "Program Counter"));
 
 	registers_registry["msr"] = new unisim::util::debug::SimpleRegister<uint32_t>("msr", &msr);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("msr", this, msr, "Machine State Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("msr", this, msr, "Machine State Register"));
 	registers_registry["srr0"] = new unisim::util::debug::SimpleRegister<uint32_t>("srr0", &srr0);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("srr0", this, srr0, "Save/Restore Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("srr0", this, srr0, "Save/Restore Register"));
 	registers_registry["srr1"] = new unisim::util::debug::SimpleRegister<uint32_t>("srr1", &srr1);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("srr1", this, srr1, "Save/Restore Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("srr1", this, srr1, "Save/Restore Register"));
 
 	registers_registry["tbl"] = new TimeBaseRegisterInterface("tbl", &tb, TimeBaseRegisterInterface::TB_LOW);
 	registers_registry2.push_back(new TimeBaseRegisterView("tbl", this, tb, TimeBaseRegisterView::TB_LOW, "Time Base Lower"));
@@ -325,7 +325,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 		stringstream sstr;
 		sstr << "sprg" << i;
 		registers_registry[sstr.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &sprg[i]);
-		registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>(sstr.str().c_str(), this, sprg[i], "Special Purpose Register General"));
+		registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>(sstr.str().c_str(), this, sprg[i], "Special Purpose Register General"));
 	}
 
 	for(i = 0; i < CONFIG::NUM_VRS; i++)
@@ -337,60 +337,60 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	}
 
 	registers_registry["dar"] = new unisim::util::debug::SimpleRegister<uint32_t>("dar", &dar);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("dar", this, dar, "Data Address Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("dar", this, dar, "Data Address Register"));
 	registers_registry["dsisr"] = new unisim::util::debug::SimpleRegister<uint32_t>("dsisr", &dsisr);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("dsisr", this, dsisr, "Data Storage Interrupt Source Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("dsisr", this, dsisr, "Data Storage Interrupt Source Register"));
 	registers_registry["ear"] = new unisim::util::debug::SimpleRegister<uint32_t>("ear", &ear);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("ear", this, ear, "External Access Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("ear", this, ear, "External Access Register"));
 	registers_registry["dec"] = new unisim::util::debug::SimpleRegister<uint32_t>("dec", &dec);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("dec", this, dec, "Decrementer"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("dec", this, dec, "Decrementer"));
 	registers_registry["dabr"] = new unisim::util::debug::SimpleRegister<uint32_t>("dabr", &dabr);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("dabr", this, dabr, "Data Address Breakpoint Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("dabr", this, dabr, "Data Address Breakpoint Register"));
 	registers_registry["pvr"] = new unisim::util::debug::SimpleRegister<uint32_t>("pvr", &pvr);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("pvr", this, pvr, "Processor Version Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("pvr", this, pvr, "Processor Version Register"));
 
 	registers_registry["hid0"] = new unisim::util::debug::SimpleRegister<uint32_t>("hid0", &hid0);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("hid0", this, hid0, "Hardware Implementation-Dependent Register 0"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("hid0", this, hid0, "Hardware Implementation-Dependent Register 0"));
 	registers_registry["hid1"] = new unisim::util::debug::SimpleRegister<uint32_t>("hid1", &hid1);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("hid1", this, hid1, "Hardware Implementation-Dependent Register 1"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("hid1", this, hid1, "Hardware Implementation-Dependent Register 1"));
 	registers_registry["iabr"] = new unisim::util::debug::SimpleRegister<uint32_t>("iabr", &iabr);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("iabr", this, iabr, "Instruction Address Breakpoint Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("iabr", this, iabr, "Instruction Address Breakpoint Register"));
 	registers_registry["ldstdb"] = new unisim::util::debug::SimpleRegister<uint32_t>("ldstdb", &ldstdb);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("ldstdb", this, ldstdb, "Load/Store Debug"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("ldstdb", this, ldstdb, "Load/Store Debug"));
 	registers_registry["ictc"] = new unisim::util::debug::SimpleRegister<uint32_t>("ictc", &ictc);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("ictc", this, ictc, "Instruction Cache Throttling Control Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("ictc", this, ictc, "Instruction Cache Throttling Control Register"));
 	registers_registry["pmc1"] = new unisim::util::debug::SimpleRegister<uint32_t>("pmc1", &pmc1);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("pmc1", this, pmc1, "Performance Monitor Counter Register 1"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("pmc1", this, pmc1, "Performance Monitor Counter Register 1"));
 	registers_registry["pmc2"] = new unisim::util::debug::SimpleRegister<uint32_t>("pmc2", &pmc2);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("pmc2", this, pmc2, "Performance Monitor Counter Register 2"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("pmc2", this, pmc2, "Performance Monitor Counter Register 2"));
 	registers_registry["pmc3"] = new unisim::util::debug::SimpleRegister<uint32_t>("pmc3", &pmc3);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("pmc3", this, pmc3, "Performance Monitor Counter Register 3"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("pmc3", this, pmc3, "Performance Monitor Counter Register 3"));
 	registers_registry["pmc4"] = new unisim::util::debug::SimpleRegister<uint32_t>("pmc4", &pmc4);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("pmc4", this, pmc4, "Performance Monitor Counter Register 4"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("pmc4", this, pmc4, "Performance Monitor Counter Register 4"));
 	registers_registry["sia"] = new unisim::util::debug::SimpleRegister<uint32_t>("sia", &sia);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("sia", this, sia, "Sampled Instruction Address Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("sia", this, sia, "Sampled Instruction Address Register"));
 	registers_registry["sda"] = new unisim::util::debug::SimpleRegister<uint32_t>("sda", &sda);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("sda", this, sda, "Sampled Data Address Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("sda", this, sda, "Sampled Data Address Register"));
 	registers_registry["mmcr0"] = new unisim::util::debug::SimpleRegister<uint32_t>("mmcr0", &mmcr0);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("mmcr0", this, mmcr0, "Monitor Mode Control Register 0"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("mmcr0", this, mmcr0, "Monitor Mode Control Register 0"));
 	registers_registry["mmcr1"] = new unisim::util::debug::SimpleRegister<uint32_t>("mmcr1", &mmcr1);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("mmcr1", this, mmcr1, "Monitor Mode Control Register 1"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("mmcr1", this, mmcr1, "Monitor Mode Control Register 1"));
 	registers_registry["l2cr"] = new unisim::util::debug::SimpleRegister<uint32_t>("l2cr", &l2cr);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("l2cr", this, l2cr, "L2 Cache Control Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("l2cr", this, l2cr, "L2 Cache Control Register"));
 	registers_registry["tlbmiss"] = new unisim::util::debug::SimpleRegister<uint32_t>("tlbmiss", &tlbmiss);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("tlbmiss", this, tlbmiss, "TLB Miss"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("tlbmiss", this, tlbmiss, "TLB Miss"));
 
 	registers_registry["vscr"] = new unisim::util::debug::SimpleRegister<uint32_t>("vscr", &vscr);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("vscr", this, vscr, "Vector Status and Control Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("vscr", this, vscr, "Vector Status and Control Register"));
 	registers_registry["vrsave"] = new unisim::util::debug::SimpleRegister<uint32_t>("vrsave", &vrsave);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("vrsave", this, vrsave, "Vector Save/Restore Register"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("vrsave", this, vrsave, "Vector Save/Restore Register"));
 
 	for(i = 0; i < CONFIG::NUM_BATS; i++)
 	{
 		stringstream sstr;
 		sstr << "dbat" << i << "u";
 		registers_registry[sstr.str().c_str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &dbat[i].u);
-		registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>(sstr.str().c_str(), this, dbat[i].u, "Data Block Address Translation Upper"));
+		registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>(sstr.str().c_str(), this, dbat[i].u, "Data Block Address Translation Upper"));
 	}
 
 	for(i = 0; i < CONFIG::NUM_BATS; i++)
@@ -398,7 +398,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 		stringstream sstr;
 		sstr << "dbat" << i << "l";
 		registers_registry[sstr.str().c_str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &dbat[i].l);
-		registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>(sstr.str().c_str(), this, dbat[i].l, "Data Block Address Translation Lower"));
+		registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>(sstr.str().c_str(), this, dbat[i].l, "Data Block Address Translation Lower"));
 	}
 
 	for(i = 0; i < CONFIG::NUM_BATS; i++)
@@ -406,7 +406,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 		stringstream sstr;
 		sstr << "ibat" << i << "u";
 		registers_registry[sstr.str().c_str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &ibat[i].u);
-		registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>(sstr.str().c_str(), this, ibat[i].u, "Instruction Block Address Translation Upper"));
+		registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>(sstr.str().c_str(), this, ibat[i].u, "Instruction Block Address Translation Upper"));
 	}
 
 	for(i = 0; i < CONFIG::NUM_BATS; i++)
@@ -414,7 +414,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 		stringstream sstr;
 		sstr << "ibat" << i << "l";
 		registers_registry[sstr.str().c_str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &ibat[i].l);
-		registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>(sstr.str().c_str(), this, ibat[i].l, "Instruction Block Address Translation Lower"));
+		registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>(sstr.str().c_str(), this, ibat[i].l, "Instruction Block Address Translation Lower"));
 	}
 
 	for(i = 0; i < CONFIG::NUM_SRS; i++)
@@ -422,11 +422,11 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 		stringstream sstr;
 		sstr << "sr" << i;
 		registers_registry[sstr.str().c_str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &sr[i]);
-		registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>(sstr.str().c_str(), this, sr[i], "Segment Register"));
+		registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>(sstr.str().c_str(), this, sr[i], "Segment Register"));
 	}
 
 	registers_registry["sdr1"] = new unisim::util::debug::SimpleRegister<uint32_t>("sdr1", &sdr1);
-	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("sdr1", this, sdr1, "SDR1"));
+	registers_registry2.push_back(new unisim::kernel::variable::Register<uint32_t>("sdr1", this, sdr1, "SDR1"));
 
 	enter_isr_table[CONFIG::EXC_SYSTEM_RESET_HARD] = &CPU<CONFIG>::EnterSystemResetISR;
 	enter_isr_table[CONFIG::EXC_MACHINE_CHECK_MCP] = &CPU<CONFIG>::EnterMachineCheckISR;

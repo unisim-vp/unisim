@@ -47,7 +47,7 @@ TrapHandlerIdentifier::TrapHandlerIdentifier(int _id,
 		TrapHandlerIdentifierInterface *_interface,
 		const char *name,
 		Object *parent)
-	: unisim::kernel::service::Object(name, parent, "Trap handler identifier")
+	: unisim::kernel::Object(name, parent, "Trap handler identifier")
 	, Service<TrapReporting>(name, parent)
 	, trap_reporting_export("trap_reporting_import", this)
 	, id(_id)
@@ -80,20 +80,20 @@ ReportTrap()
 
 void
 TrapHandlerIdentifier::
-ReportTrap(const unisim::kernel::service::Object &obj)
+ReportTrap(const unisim::kernel::Object &obj)
 {
 	intf->ReportTrap(id, obj);
 }
 
 void
-TrapHandlerIdentifier::ReportTrap(const unisim::kernel::service::Object &obj,
+TrapHandlerIdentifier::ReportTrap(const unisim::kernel::Object &obj,
 						const std::string &str)
 {
 	intf->ReportTrap(id, obj, str);
 }
 
 void
-TrapHandlerIdentifier::ReportTrap(const unisim::kernel::service::Object &obj,
+TrapHandlerIdentifier::ReportTrap(const unisim::kernel::Object &obj,
 						const char *c_str)
 {
 	intf->ReportTrap(id, obj, c_str);

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,18 +32,15 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
-}
+/* XOR */
+op xor(31[6]:rs[5]:ra[5]:rb[5]:316[10]:rc[1]);
 
-op xor(31[6]:rs[5]:ra[5]:rb[5]:316[10]:rc[1])
 xor.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rs);
-	uint32_t b = cpu->GetGPR(rb);
+	UINT s = cpu->GetGPR(rs), b = cpu->GetGPR(rb);
 	
 	// Compute the result
-	uint32_t result = s ^ b;
+	UINT result = s ^ b;
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
@@ -54,16 +51,18 @@ xor.execute = {
 		XER& xer = cpu->GetXER();
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(int32_t( result) < int32_t( 0));
-		cr.Set<CR::CR0::GT>(int32_t( result) > int32_t( 0));
-		cr.Set<CR::CR0::EQ>(result == uint32_t( 0));
+		cr.Set<CR::CR0::LT>(SINT( result) < SINT(0));
+		cr.Set<CR::CR0::GT>(SINT( result) > SINT(0));
+		cr.Set<CR::CR0::EQ>(result == UINT(0));
 	}
 	
 	return true;
-}
+};
+
 xor.disasm = {
-	os << "xor" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
-}
+	os << "xor" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
+};
+
 
 specialize xor(rc=0)
 specialize xor(rc=1)

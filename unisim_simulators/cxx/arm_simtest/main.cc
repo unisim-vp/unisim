@@ -38,6 +38,7 @@
 #include <testutils.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/isa/decode.hh>
 #include <unisim/component/cxx/processor/arm/disasm.hh>
 #include <unisim/util/random/random.hh>
 #include <fstream>
@@ -255,8 +256,7 @@ struct Checker
   void discover( uintptr_t ttl )
   {
     uint64_t step = 0;
-    auto const& dectable = isa.GetDecodeTable();
-    for (auto&& opc : isa.GetDecodeTable())
+    for (auto const& opc : isa.GetDecodeTable())
       {
         uint32_t mask = opc.opcode_mask, bits = opc.opcode & mask;
         auto testclass = testclasses.end();
@@ -303,7 +303,7 @@ struct Checker
                 try { arch.interface.finalize( codeop->GetLength() ); }
                 catch (ut::Interface::Untestable const& ut) {
                   //std::cerr << "Can't test (#" << step << ")" << this->disasm( code ) << ", " << ut.argument << std::endl;
-                  throw Reject();
+                  throw isa::Reject();
                 }
                 // At this point, code corresponds to valid operation
                 // to be tested. Nevertheless, if the interface of
@@ -314,7 +314,7 @@ struct Checker
                 testclass->second.insert( std::make_pair( arch.interface, code ) );
                 trial = 0;
               }
-              catch (Reject const& reject) { continue; }
+              catch (isa::Reject const& reject) { continue; }
             }
           if (testclass == testclasses.end())
             std::cerr << "Tests[" << ISA::Name() << "::?]: max ttl reached (nothing found).\n";
@@ -394,7 +394,7 @@ struct Checker
           }
           if (codeop->donttest()) {
             extra += " ... explicit donttest";
-            throw Reject();
+            throw isa::Reject();
           }
           
           // Performing an abstract execution to check the validity of
@@ -406,14 +406,14 @@ struct Checker
             std::stringstream err;
             err << " ... can't test " << this->disasm( code ) << ", " << ut.argument;
             extra += err.str();
-            throw Reject();
+            throw isa::Reject();
           }
           arch.interface.length = codeop->GetLength();
           
           // Finally recording the operation test
           testclasses[name].insert( std::make_pair( arch.interface, code ) );
         } 
-        catch (Reject const& reject) {
+        catch (isa::Reject const& reject) {
           fl.dump( std::cerr ) << "(" << extra << ") rejected.\n";
         }
       }

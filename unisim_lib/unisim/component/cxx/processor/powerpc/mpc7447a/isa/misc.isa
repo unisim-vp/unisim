@@ -17,7 +17,7 @@ mfsr.execute = {
 	return true;
 }
 mfsr.disasm = {
-	os << "mfsr r" << (unsigned int) rd << ", " << (unsigned int) sr;
+	os << "mfsr " << GPRPrint(rd) << ", " << (unsigned int) sr;
 }
 
 op mfsrin(31[6]:rd[5]:?[5]:rb[5]:659[10]:?[1])
@@ -34,7 +34,7 @@ mfsrin.execute = {
 	return true;
 }
 mfsrin.disasm = {
-	os << "mfsrin r" << (unsigned int) rd << ", r" << (unsigned int) rb;
+	os << "mfsrin " << GPRPrint(rd) << ", " << GPRPrint(rb);
 }
 
 op mtsr(31[6]:rs[5]:?[1]:sr[4]:?[5]:210[10]:?[1])
@@ -51,7 +51,7 @@ mtsr.execute = {
 	return true;
 }
 mtsr.disasm = {
-	os << "mtsr " << (unsigned int) sr << ", r" << (unsigned int) rs;
+	os << "mtsr " << (unsigned int) sr << ", " << GPRPrint(rs);
 }
 
 op mtsrin(31[6]:rs[5]:?[5]:rb[5]:242[10]:?[1])
@@ -68,6 +68,6 @@ mtsrin.execute = {
 	return true;
 }
 mtsrin.disasm = {
-	os << "mtsrin r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "mtsrin " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 

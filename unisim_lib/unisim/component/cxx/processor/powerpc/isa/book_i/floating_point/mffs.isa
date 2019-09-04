@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,39 +32,33 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
-}
+op mffs(63[6]:fd[5]:?[10]:583[10]:rc[1]);
 
-op mffs(63[6]:fd[5]:?[10]:583[10]:rc[1])
 mffs.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 		return false;
 	}
-	// Check if FPU is enabled
-	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not cpu->GetMSR().Get<CPU::MSR::FP>()))
 	{
-		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		cpu->ThrowException<CPU::FloatingPointUnavailableInterrupt::FloatingPointUnavailable>();
 		return false;
 	}
 
 	// Move FPSCR into destination FPR
-	uint32_t fpscr = cpu->GetFPSCR();
-	uint64_t _f;
-	_f = (uint64_t) fpscr | 0xfff8000000000000ULL;
-	cpu->SetFPR(fd, SoftDouble(_f));
+	FPSCR& fpscr( cpu->GetFPSCR() );
+	cpu->SetFPR(fd, SoftDouble(SoftDouble::FromRawBits, U64(fpscr) | U64(0xfff8000000000000ULL)));
 
 	// Copy FX, FEX, VX, OX to CR1
-	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
+	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( fpscr.Get<FPSCR::_0_3>() ); }
 	
 	return true;
-}
-mffs.disasm = {
-	os << "mffs" << (rc ? "." : "") << " f" << (unsigned int) fd;
-}
+};
 
-specialize mffs(rc=0)
-specialize mffs(rc=1)
+mffs.disasm = {
+	os << "mffs" << (rc ? "." : "") << " " << FPRPrint(fd);
+};
+
+specialize mffs(rc=0);
+specialize mffs(rc=1);

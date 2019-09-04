@@ -51,6 +51,7 @@
 #include <iostream>
 #include <cmath>
 #include <map>
+#include <queue>
 
 #include <systemc>
 
@@ -61,7 +62,7 @@
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/multi_passthrough_initiator_socket.h"
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
 
 #include <unisim/kernel/logger/logger.hh>
@@ -86,15 +87,15 @@ using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::CallBackObject;
-using unisim::kernel::service::VariableBase;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::CallBackObject;
+using unisim::kernel::VariableBase;
 
 using unisim::service::interfaces::CharIO;
 using unisim::service::interfaces::Memory;
@@ -113,7 +114,7 @@ using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
@@ -234,7 +235,7 @@ private:
 	// Registers map
 	map<string, Register *> registers_registry;
 
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
 	STATUS state;
 	bool abortTransmission;
@@ -242,16 +243,16 @@ private:
 	bool validFrameWaiting;
 
 	bool mosi;
-	unisim::kernel::service::Signal<bool> mosi_pin;
+	unisim::kernel::variable::Signal<bool> mosi_pin;
 
 	bool miso;
-	unisim::kernel::service::Signal<bool> miso_pin;
+	unisim::kernel::variable::Signal<bool> miso_pin;
 
 	bool ss;
-	unisim::kernel::service::Signal<bool> ss_pin;
+	unisim::kernel::variable::Signal<bool> ss_pin;
 
 	bool sck;
-	unisim::kernel::service::Signal<bool> sck_pin;
+	unisim::kernel::variable::Signal<bool> sck_pin;
 
 	// =============================================
 	// =            Registers                      =

@@ -41,22 +41,22 @@ namespace timer {
 namespace xilinx {
 namespace xps_timer {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
 
-CaptureTriggerStub::CaptureTriggerStub(const sc_module_name& name, Object *parent)
+CaptureTriggerStub::CaptureTriggerStub(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent, "A stub that, if enabled, can generate random inputs for a capture timer")
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, master_sock("master-sock")
 	, logger(*this)
 	, random()
 	, capture_trigger_payload_fabric()
-	, cycle_time(SC_ZERO_TIME)
-	, nice_time(sc_time(1, SC_MS))
-	, time(SC_ZERO_TIME)
+	, cycle_time(sc_core::SC_ZERO_TIME)
+	, nice_time(sc_core::sc_time(1, sc_core::SC_MS))
+	, time(sc_core::SC_ZERO_TIME)
 	, verbose(false)
 	, enable(true)
 	, randomized_output(false)
@@ -72,9 +72,9 @@ CaptureTriggerStub::CaptureTriggerStub(const sc_module_name& name, Object *paren
 	, param_random_period_min("random-period-min", this, random_period_min, "Minimum period in cycles of randomized output")
 	, param_random_period_max("random-period-max", this, random_period_max, "Maximum period in cycles of randomized output")
 {
-	param_random_seed.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_random_period_min.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_random_period_max.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_random_seed.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_random_period_min.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_random_period_max.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	param_enable.SetMutable(false);
 	param_randomized_output.SetMutable(false);
 	param_random_seed.SetMutable(false);
@@ -135,9 +135,9 @@ void CaptureTriggerStub::Process()
 	bool output_level = false;
 	int32_t p = 0;   // period in cycles
 	int32_t d = 0;   // duty in cycles
-	sc_time period(SC_ZERO_TIME);
-	sc_time duty(SC_ZERO_TIME);
-	sc_time delay(SC_ZERO_TIME);
+	sc_core::sc_time period(sc_core::SC_ZERO_TIME);
+	sc_core::sc_time duty(sc_core::SC_ZERO_TIME);
+	sc_core::sc_time delay(sc_core::SC_ZERO_TIME);
 	
 	while(1)
 	{
@@ -187,7 +187,7 @@ void CaptureTriggerStub::Process()
 		
 		if(verbose)
 		{
-			logger << unisim::kernel::logger::DebugInfo << (sc_time_stamp() + time) << ": Output goes " << (output_level ? "high" : "low") << " after " << delay << unisim::kernel::logger::EndDebugInfo;
+			logger << unisim::kernel::logger::DebugInfo << (sc_core::sc_time_stamp() + time) << ": Output goes " << (output_level ? "high" : "low") << " after " << delay << unisim::kernel::logger::EndDebugInfo;
 		}
 		
 		unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload *capture_trigger_payload = capture_trigger_payload_fabric.allocate();

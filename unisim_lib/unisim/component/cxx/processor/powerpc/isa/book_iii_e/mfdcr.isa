@@ -36,7 +36,7 @@ op mfdcr(31[6]:rd[5]:dcrf[10]:323[10]:?[1]);
 mfdcr.var dcrn : {unsigned} = {((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f)};
 
 mfdcr.execute = {
-	uint32_t result;
+	U32 result;
 	
 	if(unlikely(not cpu->MoveFromDCR(dcrn, result))) return false;
 	
@@ -46,5 +46,5 @@ mfdcr.execute = {
 }
 
 mfdcr.disasm = {
-	os << "mfdcr r" << (unsigned int) rd << ", " << dcrn;
+	os << "mfdcr " << GPRPrint(rd) << ", " << dcrn;
 }

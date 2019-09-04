@@ -35,10 +35,10 @@
 op mtdcrux(31[6]:rs[5]:ra[5]:?[5]:419[10]:?[1])
 
 mtdcrux.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 	return false;
 }
 
 mtdcrux.disasm = {
-	os << "mtdcrux r" << (unsigned int) ra << ", r" << (unsigned int) rs;
+	os << "mtdcrux " << GPRPrint(ra) << ", " << GPRPrint(rs);
 }

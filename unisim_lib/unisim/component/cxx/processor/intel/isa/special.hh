@@ -1,3 +1,37 @@
+/*
+ *  Copyright (c) 2007-2019,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without 
+ *  modification, are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, 
+ *     this list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific 
+ *     prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  ARE DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+
 template <class ARCH>
 struct CpuID : public Operation<ARCH>
 {
@@ -28,8 +62,8 @@ struct RdTSC : public Operation<ARCH>
     typedef typename ARCH::u32_t u32_t;
     
     u64_t tsc = arch.tscread();
-    arch.template regwrite<32>( 0, u32_t( tsc >> 0 ) );
-    arch.template regwrite<32>( 2, u32_t( tsc >> 32 ) );
+    arch.regwrite( GOd(), 0, u32_t( tsc >> 0 ) );
+    arch.regwrite( GOd(), 2, u32_t( tsc >> 32 ) );
   }
 };
 
@@ -38,6 +72,43 @@ template <class ARCH> struct DC<ARCH,RDTSC> { Operation<ARCH>* get( InputCode<AR
   if (ic.lock_f0) return 0;
   
   if (auto _ = match( ic, opcode( "\x0f\x31" ) )) return new RdTSC<ARCH>( _.opbase() );
+  
+  return 0;
+}};
+
+// op xgetbv( 0x0f[8]:> <:0x01[8]:> <:0b11[2]:0b010[3]:0b000[3]:> rewind <:*modrm[ModRM] );
+// 
+// xgetbv.disasm = { _sink << "xgetbv "; };
+// 
+// op xsetbv( 0x0f[8]:> <:0x01[8]:> <:0b11[2]:0b010[3]:0b001[3]:> rewind <:*modrm[ModRM] );
+// 
+// xsetbv.disasm = { _sink << "xsetbv "; };
+// 
+
+template <class ARCH>
+struct XGetBV : public Operation<ARCH>
+{
+  XGetBV( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
+  void disasm( std::ostream& sink ) const { sink << "xgetbv"; }
+  void execute( ARCH& arch ) const { arch.xgetbv(); }
+};
+
+template <class ARCH>
+struct XSetBV : public Operation<ARCH>
+{
+  XSetBV( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
+  void disasm( std::ostream& sink ) const { sink << "xsetbv"; }
+};
+
+template <class ARCH> struct DC<ARCH,XBV> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (auto _ = match( ic, opcode( "\x0f\x01\xd0" ) ))
+
+    return new XGetBV<ARCH>( _.opbase() );
+  
+  if (auto _ = match( ic, opcode( "\x0f\x01\xd1" ) ))
+
+    return new XSetBV<ARCH>( _.opbase() );
   
   return 0;
 }};
@@ -61,59 +132,74 @@ template <class ARCH> struct DC<ARCH,RDTSC> { Operation<ARCH>* get( InputCode<AR
 // 
 // rdpmc.disasm = { _sink << "rdpmc"; };
 // 
-// op hlt( 0xf4[8] );
-// 
-// hlt.disasm = { _sink << "hlt"; };
-// 
-// hlt.execute = { arch.stop(); };
-// 
+
+template <class ARCH>
+struct Hlt : public Operation<ARCH>
+{
+  Hlt( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
+
+  void disasm( std::ostream& sink ) const { sink << "hlt"; }
+
+  void execute( ARCH& arch ) const { arch.stop(); }
+};
+
+template <class ARCH> struct DC<ARCH,HLT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (ic.lock_f0) return 0;
+
+  if (auto _ = match( ic, opcode( "\xf4" ) )) return new Hlt<ARCH>( _.opbase() );
+
+  return 0;
+}};
+
+
 // op in_al_ib( 0xe4[8]:> <:port[8] );
 // 
-// in_al_ib.disasm = { _sink << "in " << DisasmI( port ) << ',' << DisasmRb( 0 ); };
+// in_al_ib.disasm = { _sink << "in " << DisasmI( port ) << ',' << DisasmGb( 0 ); };
 // 
 // op in_ax_ib( 0x66[8]:> <:0xe5[8]:> <:port[8] );
 // 
-// in_ax_ib.disasm = { _sink << "in " << DisasmI( port ) << ',' << DisasmRw( 0 ); };
+// in_ax_ib.disasm = { _sink << "in " << DisasmI( port ) << ',' << DisasmGw( 0 ); };
 // 
 // op in_eax_ib( 0xe5[8]:> <:port[8] );
 // 
-// in_eax_ib.disasm = { _sink << "in " << DisasmI( port ) << ',' << DisasmRd( 0 ); };
+// in_eax_ib.disasm = { _sink << "in " << DisasmI( port ) << ',' << DisasmGd( 0 ); };
 // 
 // op out_ib_al( 0xe6[8]:> <:port[8] );
 // 
-// out_ib_al.disasm = { _sink << "out " << DisasmRb( 0 ) << ',' << DisasmI( port ); };
+// out_ib_al.disasm = { _sink << "out " << DisasmGb( 0 ) << ',' << DisasmI( port ); };
 // 
 // op out_ib_ax( 0x66[8]:> <:0xe7[8]:> <:port[8] );
 // 
-// out_ib_ax.disasm = { _sink << "out " << DisasmRw( 0 ) << ',' << DisasmI( port ); };
+// out_ib_ax.disasm = { _sink << "out " << DisasmGw( 0 ) << ',' << DisasmI( port ); };
 // 
 // op out_ib_eax( 0xe7[8]:> <:port[8] );
 // 
-// out_ib_eax.disasm = { _sink << "out " << DisasmRd( 0 ) << ',' << DisasmI( port ); };
+// out_ib_eax.disasm = { _sink << "out " << DisasmGd( 0 ) << ',' << DisasmI( port ); };
 // 
 // op in_al_dx( 0xec[8] );
 // 
-// in_al_dx.disasm = { _sink << "in (" << DisasmRw( 2 ) << ")," << DisasmRb( 0 ); };
+// in_al_dx.disasm = { _sink << "in (" << DisasmGw( 2 ) << ")," << DisasmGb( 0 ); };
 // 
 // op in_ax_dx( 0x66[8]:> <:0xed[8] );
 // 
-// in_ax_dx.disasm = { _sink << "in (" << DisasmRw( 2 ) << ")," << DisasmRw( 0 ); };
+// in_ax_dx.disasm = { _sink << "in (" << DisasmGw( 2 ) << ")," << DisasmGw( 0 ); };
 // 
 // op in_eax_dx( 0xed[8] );
 // 
-// in_eax_dx.disasm = { _sink << "in (" << DisasmRw( 2 ) << ")," << DisasmRd( 0 ); };
+// in_eax_dx.disasm = { _sink << "in (" << DisasmGw( 2 ) << ")," << DisasmGd( 0 ); };
 // 
 // op out_dx_al( 0xee[8] );
 // 
-// out_dx_al.disasm = { _sink << "out " << DisasmRb( 0 ) << ",(" << DisasmRw( 2 ) << ")"; };
+// out_dx_al.disasm = { _sink << "out " << DisasmGb( 0 ) << ",(" << DisasmGw( 2 ) << ")"; };
 // 
 // op out_dx_ax( 0x66[8]:> <:0xef[8] );
 // 
-// out_dx_ax.disasm = { _sink << "out " << DisasmRw( 0 ) << ",(" << DisasmRw( 2 ) << ")"; };
+// out_dx_ax.disasm = { _sink << "out " << DisasmGw( 0 ) << ",(" << DisasmGw( 2 ) << ")"; };
 // 
 // op out_dx_eax( 0xef[8] );
 // 
-// out_dx_eax.disasm = { _sink << "out " << DisasmRd( 0 ) << ",(" << DisasmRw( 2 ) << ")"; };
+// out_dx_eax.disasm = { _sink << "out " << DisasmGd( 0 ) << ",(" << DisasmGw( 2 ) << ")"; };
 // 
 // op clc( 0xf8[8] );
 // 
@@ -149,19 +235,19 @@ template <class ARCH> struct DC<ARCH,RDTSC> { Operation<ARCH>* get( InputCode<AR
 // 
 // op rdrand_rw( 0x66[8]:> <:0x0f[8]:> <:0xc7[8]:> <:0b11[2]:110[3]:reg[3] );
 // 
-// rdrand_rw.disasm = { _sink << "rdrand " << DisasmRw( reg ); };
+// rdrand_rw.disasm = { _sink << "rdrand " << DisasmGw( reg ); };
 // 
 // op rdrand_rd( 0x0f[8]:> <:0xc7[8]:> <:0b11[2]:0b110[3]:reg[3] );
 // 
-// rdrand_rd.disasm = { _sink << "rdrand " << DisasmRd( reg ); };
+// rdrand_rd.disasm = { _sink << "rdrand " << DisasmGd( reg ); };
 // 
 // op rdseed_rw( 0x66[8]:> <:0x0f[8]:> <:0xc7[8]:> <:0b11[2]:111[3]:reg[3] );
 // 
-// rdseed_rw.disasm = { _sink << "rdseed " << DisasmRw( reg ); };
+// rdseed_rw.disasm = { _sink << "rdseed " << DisasmGw( reg ); };
 // 
 // op rdseed_rd( 0x0f[8]:> <:0xc7[8]:> <:0b11[2]:0b111[3]:reg[3] );
 // 
-// rdseed_rd.disasm = { _sink << "rdseed " << DisasmRd( reg ); };
+// rdseed_rd.disasm = { _sink << "rdseed " << DisasmGd( reg ); };
 // 
 // op icebp( 0xf1[8] );
 // 
@@ -213,27 +299,27 @@ template <class ARCH> struct DC<ARCH,RDTSC> { Operation<ARCH>* get( InputCode<AR
 // 
 // op lar_gd_ew( 0x0f[8]:> <:0x02[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// lar_gd_ew.disasm = { _sink << "lar " << DisasmEw( modrm, segment ) << ',' << DisasmRd( gn ); };
+// lar_gd_ew.disasm = { _sink << "lar " << DisasmEw( modrm, segment ) << ',' << DisasmGd( gn ); };
 // 
 // op lsl_gd_ew( 0x0f[8]:> <:0x03[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
-// lsl_gd_ew.disasm = { _sink << "lsl " << DisasmEw( modrm, segment ) << ',' << DisasmRd( gn ); };
+// lsl_gd_ew.disasm = { _sink << "lsl " << DisasmEw( modrm, segment ) << ',' << DisasmGd( gn ); };
 // 
 // op mov_rd_cd( 0x0f[8]:> <:0x20[8]:> <:0b11[2]:gn[3]:rm[3] );
 // 
-// mov_rd_cd.disasm = { _sink << "mov " << DisasmCd( gn ) << ',' << DisasmRd( rm ); };
+// mov_rd_cd.disasm = { _sink << "mov " << DisasmCd( gn ) << ',' << DisasmGd( rm ); };
 // 
 // op mov_rd_dd( 0x0f[8]:> <:0x21[8]:> <:0b11[2]:gn[3]:rm[3] );
 // 
-// mov_rd_dd.disasm = { _sink << "mov " << DisasmDd( gn ) << ',' << DisasmRd( rm ); };
+// mov_rd_dd.disasm = { _sink << "mov " << DisasmDd( gn ) << ',' << DisasmGd( rm ); };
 // 
 // op mov_cd_rd( 0x0f[8]:> <:0x22[8]:> <:0b11[2]:gn[3]:rm[3] );
 // 
-// mov_cd_rd.disasm = { _sink << "mov " << DisasmRd( rm ) << ',' << DisasmCd( gn ); };
+// mov_cd_rd.disasm = { _sink << "mov " << DisasmGd( rm ) << ',' << DisasmCd( gn ); };
 // 
 // op mov_dd_rd( 0x0f[8]:> <:0x23[8]:> <:0b11[2]:gn[3]:rm[3] );
 // 
-// mov_dd_rd.disasm = { _sink << "mov " << DisasmRd( rm ) << ',' << DisasmDd( gn ); };
+// mov_dd_rd.disasm = { _sink << "mov " << DisasmGd( rm ) << ',' << DisasmDd( gn ); };
 // 
 // op sgdt_ms( 0x0f[8]:> <:0x01[8]:> <:?[2]:0b000[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
@@ -278,14 +364,6 @@ template <class ARCH> struct DC<ARCH,RDTSC> { Operation<ARCH>* get( InputCode<AR
 // op lgdt_ms( 0x0f[8]:> <:0x01[8]:> <:?[2]:0b010[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // lgdt_ms.disasm = { _sink << "lgdtl " << DisasmM( modrm, segment ); };
-// 
-// op xgetbv( 0x0f[8]:> <:0x01[8]:> <:0b11[2]:0b010[3]:0b000[3]:> rewind <:*modrm[ModRM] );
-// 
-// xgetbv.disasm = { _sink << "xgetbv "; };
-// 
-// op xsetbv( 0x0f[8]:> <:0x01[8]:> <:0b11[2]:0b010[3]:0b001[3]:> rewind <:*modrm[ModRM] );
-// 
-// xsetbv.disasm = { _sink << "xsetbv "; };
 // 
 // op vmfunc( 0x0f[8]:> <:0x01[8]:> <:0b11[2]:0b010[3]:0b100[3]:> rewind <:*modrm[ModRM] );
 // 
@@ -343,14 +421,6 @@ template <class ARCH> struct DC<ARCH,RDTSC> { Operation<ARCH>* get( InputCode<AR
 // 
 // verw.disasm = { _sink << "verw " << DisasmEw( modrm, segment ); };
 // 
-// op ldmxcsr( 0x0f[8]:> <:0xae[8]:> <:?[2]:0b010[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// ldmxcsr.disasm = { _sink << "ldmxcsr " << DisasmM( modrm, segment ); };
-// 
-// op stmxcsr( 0x0f[8]:> <:0xae[8]:> <:?[2]:0b011[3]:?[3]:> rewind <:*modrm[ModRM] );
-// 
-// stmxcsr.disasm = { _sink << "stmxcsr " << DisasmM( modrm, segment ); };
-// 
 // op xsave( 0x0f[8]:> <:0xae[8]:> <:?[2]:0b100[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // xsave.disasm = { _sink << "xsave " << DisasmM( modrm, segment ); };
@@ -387,15 +457,30 @@ template <class ARCH> struct DC<ARCH,RDTSC> { Operation<ARCH>* get( InputCode<AR
 // 
 // vmptrst2.disasm = { _sink << "vmptrst " << DisasmM( modrm, segment ); };
 // 
-// op lfence( 0x0f[8]:> <:0xae[8]:> <:0xe8[8] );
-// 
-// lfence.disasm = { _sink << "lfence"; };
-// 
-// op mfence( 0x0f[8]:> <:0xae[8]:> <:0xf0[8] );
-// 
-// mfence.disasm = { _sink << "mfence"; };
-// 
-// op sfence( 0x0f[8]:> <:0xae[8]:> <:0xf8[8] );
-// 
-// sfence.disasm = { _sink << "sfence"; };
-// 
+
+template <class ARCH>
+struct Fence : public Operation<ARCH>
+{
+  Fence( OpBase<ARCH> const& opbase, char const* _mnemo ) : Operation<ARCH>( opbase ), mnemo(_mnemo) {}
+  void disasm( std::ostream& sink ) const { sink << mnemo; }
+  void execute( ARCH& arch ) const { /*arch.fence();*/ }
+  char const* mnemo;
+};
+
+template <class ARCH> struct DC<ARCH,FENCE> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
+{
+  if (auto _ = match( ic, opcode( "\x0f\xae\xe8" ) ))
+
+    return new Fence<ARCH>( _.opbase(), "lfence" );
+  
+  if (auto _ = match( ic, opcode( "\x0f\xae\xf0" ) ))
+
+    return new Fence<ARCH>( _.opbase(), "mfence" );
+  
+  if (auto _ = match( ic, opcode( "\x0f\xae\xf8" ) ))
+
+    return new Fence<ARCH>( _.opbase(), "sfence" );
+  
+  return 0;
+}};
+

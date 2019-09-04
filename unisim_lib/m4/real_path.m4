@@ -6,7 +6,7 @@ AC_DEFUN([UNISIM_CHECK_REAL_PATH], [
 			;;
 		*) # other hosts (preferably unixes)
 			AC_CHECK_HEADERS([limits.h stdlib.h],, AC_MSG_ERROR([Some standard headers are missing.]))
-			UNISIM_CHECK_LIB(c, realpath, $1,, AC_MSG_ERROR([readlink support is missing.]))
+			UNISIM_CHECK_LIB(c, realpath,, AC_MSG_ERROR([readlink support is missing.]))
 			;;
 	esac
 ])

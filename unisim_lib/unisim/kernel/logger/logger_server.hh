@@ -35,8 +35,10 @@
 #ifndef __UNISIM_KERNEL_LOGGER_LOGGER_SERVER_HH__
 #define __UNISIM_KERNEL_LOGGER_LOGGER_SERVER_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
+#include <unisim/service/interfaces/http_server.hh>
 #include <pthread.h>
 #include <string>
 #include <fstream>
@@ -52,14 +54,17 @@ namespace logger {
 
 struct Logger;
 
-struct LoggerServer : public unisim::kernel::service::Object
+struct LoggerServer : public unisim::kernel::Service<unisim::service::interfaces::HttpServer>
 {
+	/** Http server export */
+	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
+	
 	/** Constructor */
-	LoggerServer(const char *name, unisim::kernel::service::Object *parent = 0);
+	LoggerServer(const char *name, unisim::kernel::Object *parent = 0);
 	/** Destructor */
 	~LoggerServer();
 
-	/** Setup the logger server according to options value
+	/** Initialize the logger server according to options value
 	 * 
 	 * Returns true if the initialization of the logger could be
 	 * successfully done based on the parameters options, or false
@@ -67,7 +72,7 @@ struct LoggerServer : public unisim::kernel::service::Object
 	 *
 	 * @return true if initialization succedded, false otherwise
 	 */
-	bool Setup();
+	bool Initialize();
 
 	/** Register a client logger.
 	 * 
@@ -90,53 +95,62 @@ struct LoggerServer : public unisim::kernel::service::Object
 	 * @param os output stream
 	 * @param opt_color whether to color message
 	 * @param mode type of debug message (info, warning or error)
-	 * @param obj the unisim::kernel::service::Object that is sending the debug message
+	 * @param obj the unisim::kernel::Object that is sending the debug message
 	 * @param buffer the debug message
 	 */
-	void Print(std::ostream& os, bool opt_color, mode_t mode, std::string name, const char *buffer);
+	void Print(std::ostream& os, bool opt_color, mode_t mode, const char *name, const char *buffer);
 	
 	/** Message debug log command
 	 * Loggers should call this method (using the handle obtained with GetInstance)
 	 *   to log a debug message.
 	 *
 	 * @param mode type of debug message (info, warning or error)
-	 * @param obj the unisim::kernel::service::Object that is sending the debug message
+	 * @param obj the unisim::kernel::Object that is sending the debug message
 	 * @param buffer the debug message
 	 */
-	void Print( mode_t mode, std::string name, const char *buffer );
+	void Print( mode_t mode, const char *name, const char *buffer );
 
 	/** Message debug null log command
 	 * Loggers should call this method (using the handle obtained with GetInstance)
 	 *   to log a debug null message.
 	 *
-	 * @param obj the unisim::kernel::service::Object that is sending the debug info message
+	 * @param obj the unisim::kernel::Object that is sending the debug info message
 	 * @param buffer the debug null message
 	 */
-	void DebugNull( std::string name, const char *buffer );
+	void DebugNull( const char *name, const char *buffer );
 	/** Message debug info log command
 	 * Loggers should call this method (using the handle obtained with GetInstance)
 	 *   to log a debug info message.
 	 *
-	 * @param obj the unisim::kernel::service::Object that is sending the debug info message
+	 * @param obj the unisim::kernel::Object that is sending the debug info message
 	 * @param buffer the debug info message
 	 */
-	void DebugInfo( std::string name, const char *buffer );
+	void DebugInfo( const char *name, const char *buffer );
 	/** Message debug warning log command
 	 * Loggers should call this method (using the handle obtained with GetInstance)
 	 *   to log a debug warning message.
 	 *
-	 * @param obj the unisim::kernel::service::Object that is sending the debug warning message
+	 * @param obj the unisim::kernel::Object that is sending the debug warning message
 	 * @param buffer the debug warning message
 	 */
-	void DebugWarning( std::string name, const char *buffer );
+	void DebugWarning( const char *name, const char *buffer );
 	/** Message debug error log command
 	 * Loggers should call this method (using the handle obtained with GetInstance)
 	 *   to log a debug error message.
 	 *
-	 * @param obj the unisim::kernel::service::Object that is sending the debug error message
+	 * @param obj the unisim::kernel::Object that is sending the debug error message
 	 * @param buffer the debug error message
 	 */
-	void DebugError( std::string name, const char *buffer );
+	void DebugError( const char *name, const char *buffer );
+
+	/** Serve an HTTP request
+	  * HTTP server calls that interface method to ask for logger to serve an incoming HTTP request intended for logger
+	  * 
+	  * @param req HTTP request
+	  * @param conn Connection with HTTP client (web browser)
+	  */
+	virtual bool ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
+	virtual void ScanWebInterfaceModdings(unisim::service::interfaces::WebInterfaceModdingScanner& scanner);
 
 private:
 	/** Pointer set to the client loggers */
@@ -154,17 +168,113 @@ private:
 	 * @param obj    the object source of the message
 	 * @param buffer the message buffer
 	 */
-	void XmlDebug( const char *type, std::string name, const char *buffer );
+	void XmlDebug( const char *type, const char *name, const char *buffer );
 
 	/** Server internal closing method
          * 
 	 * Invoked when no client are connected anymore
 	 */
 	void Close();
-
+	
 	/** Text file handler
 	 */
 	std::ofstream text_file_;
+
+	/* HTTP logs */
+	struct HttpLogEntry
+	{
+		HttpLogEntry()
+			: data(0)
+		{
+		}
+		
+		HttpLogEntry(mode_t mode, const char *name, const char *buffer)
+			: data(new HttpLogEntryData(mode, name, buffer))
+		{
+			if(data) data->Catch();
+		}
+		
+		HttpLogEntry(const HttpLogEntry& o)
+			: data(0)
+		{
+			Copy(o);
+		}
+		
+		HttpLogEntry& operator = (const HttpLogEntry& o)
+		{
+			Copy(o);
+			return *this;
+		}
+		
+		~HttpLogEntry()
+		{
+			if(data) data->Release();
+			data = 0;
+		}
+		
+		mode_t GetMode() const { return data ? data->GetMode() : NO_MODE; }
+		const std::string& GetName() const { static std::string null_str; return data ? data->GetName() : null_str; }
+		const std::string& GetMessage() const { static std::string null_str; return data ? data->GetMessage() : null_str; }
+		
+	private:
+		struct HttpLogEntryData
+		{
+			HttpLogEntryData(mode_t _mode, const char *_name, const char *buffer)
+				: mode(_mode)
+				, name(_name)
+				, msg(buffer)
+				, ref_count(0)
+			{
+			}
+			
+			void Catch()
+			{
+				ref_count++;
+			}
+			
+			void Release()
+			{
+				if(ref_count && (--ref_count == 0))
+				{
+					delete this;
+				}
+			}
+			
+			mode_t GetMode() const { return mode; }
+			const std::string& GetName() const { return name; }
+			const std::string& GetMessage() const { return msg; }
+			
+		private:
+			mode_t mode;
+			std::string name;
+			std::string msg;
+			unsigned int ref_count;
+		};
+		
+		HttpLogEntryData *data;
+		
+		
+		void Copy(const HttpLogEntry& o)
+		{
+			if(data != o.data)
+			{
+				if(data) data->Release();
+				data = o.data;
+				if(data) data->Catch();
+			}
+		}
+	};
+	
+	typedef HttpLogEntry HTTP_LOG_ENTRY;
+	typedef std::list<HTTP_LOG_ENTRY> HTTP_LOG;
+	typedef std::map<std::string, HTTP_LOG *> HTTP_LOGS_PER_CLIENT;
+
+	HTTP_LOG global_http_log;
+	HTTP_LOGS_PER_CLIENT http_logs_per_client;
+	bool activity;
+	double http_refresh_period;
+	
+	void PrintHttpLog(std::ostream& os, const HTTP_LOG& http_log, bool global);
 
 	/***************************************************************************
 	 * Parameters                                                        START *
@@ -179,17 +289,25 @@ public:
 	bool opt_xml_file_;
 	std::string opt_xml_filename_;
 	bool opt_xml_file_gzipped_;
+	bool opt_http_;
+	unsigned int opt_http_max_log_size_;
+	double opt_http_min_refresh_period_;
+	double opt_http_max_refresh_period_;
 	pthread_mutex_t mutex;
 
-	unisim::kernel::service::Parameter<bool>        param_std_err;
-	unisim::kernel::service::Parameter<bool>        param_std_out;
-	unisim::kernel::service::Parameter<bool>        param_std_err_color;
-	unisim::kernel::service::Parameter<bool>        param_std_out_color;
-	unisim::kernel::service::Parameter<bool>        param_file;
-	unisim::kernel::service::Parameter<std::string> param_filename;
-	unisim::kernel::service::Parameter<bool>        param_xml_file;
-	unisim::kernel::service::Parameter<std::string> param_xml_filename;
-	unisim::kernel::service::Parameter<bool>        param_xml_file_gzipped;
+	unisim::kernel::variable::Parameter<bool>         param_std_err;
+	unisim::kernel::variable::Parameter<bool>         param_std_out;
+	unisim::kernel::variable::Parameter<bool>         param_std_err_color;
+	unisim::kernel::variable::Parameter<bool>         param_std_out_color;
+	unisim::kernel::variable::Parameter<bool>         param_file;
+	unisim::kernel::variable::Parameter<std::string>  param_filename;
+	unisim::kernel::variable::Parameter<bool>         param_xml_file;
+	unisim::kernel::variable::Parameter<std::string>  param_xml_filename;
+	unisim::kernel::variable::Parameter<bool>         param_xml_file_gzipped;
+	unisim::kernel::variable::Parameter<bool>         param_http;
+	unisim::kernel::variable::Parameter<unsigned int> param_http_max_log_size;
+	unisim::kernel::variable::Parameter<double>       param_http_min_refresh_period;
+	unisim::kernel::variable::Parameter<double>       param_http_max_refresh_period;
 	
 	/***************************************************************************
 	 * Parameters                                                          END *

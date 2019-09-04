@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,23 +33,19 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Extend Sign Halfword Short Form */
 op se_extsh(0[6]:15[6]:sext srx[4]);
 se_extsh.var rx : {uint8_t} = {srx & 31};
 
 se_extsh.execute = {
 	// Read the input operands
-	int16_t s = int16_t( cpu->GetGPR(rx));
+	S16 s( cpu->GetGPR(rx) );
 	
 	// Compute the result
-	int32_t result = int32_t(  s );
+	SINT result = SINT(  s );
 	
 	// Write back the result
-	cpu->SetGPR(rx, result);
+	cpu->SetGPR(rx, UINT(result));
 	
 	return true;
 }

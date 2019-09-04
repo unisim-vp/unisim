@@ -69,7 +69,7 @@ using unisim::kernel::logger::EndDebugError;
  */
 template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent)
-  : unisim::kernel::service::Object(name, parent)
+  : unisim::kernel::Object(name, parent)
   , Client<unisim::service::interfaces::DebugYielding>(name, parent)
   , Client<unisim::service::interfaces::TrapReporting>(name, parent)
   , Client<unisim::service::interfaces::SymbolTableLookup<uint64_t> >(name, parent)
@@ -118,8 +118,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 {
   {
     unisim::service::interfaces::Register* dbg_reg = 0;
-    unisim::kernel::service::VariableBase* var_reg = 0;
-    //unisim::kernel::service::Register<uint64_t>* var_reg = 0;
+    unisim::kernel::VariableBase* var_reg = 0;
+    //unisim::kernel::variable::Register<uint64_t>* var_reg = 0;
     
     // initialize the registers debugging interface for the 32 general purpose registers
     for (unsigned idx = 0; idx < 32; idx++)
@@ -134,7 +134,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
           registers_registry[name] = dbg_reg;
           description =  description + ", " + name;
         }
-        var_reg = new unisim::kernel::service::Register<uint64_t>( pretty_name.c_str(), this, gpr[idx], description.c_str() );
+        var_reg = new unisim::kernel::variable::Register<uint64_t>( pretty_name.c_str(), this, gpr[idx], description.c_str() );
         variable_register_pool.insert( var_reg );
       }
 
@@ -152,12 +152,12 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 
     dbg_reg = new ProgramCounterRegister( *this );
     registers_registry["pc"] = dbg_reg;
-    var_reg = new unisim::kernel::service::Register<uint64_t>( "pc", this, this->next_insn_addr, "Program Counter (Current Instruction Address)" );
+    var_reg = new unisim::kernel::variable::Register<uint64_t>( "pc", this, this->next_insn_addr, "Program Counter (Current Instruction Address)" );
     variable_register_pool.insert( var_reg );
     
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "nzcv", &this->nzcv );
     registers_registry["nzcv"] = dbg_reg;
-    var_reg = new unisim::kernel::service::Register<uint32_t>( "nzcv", this, this->nzcv, "PSTATE.{N,Z,C,V}" );
+    var_reg = new unisim::kernel::variable::Register<uint32_t>( "nzcv", this, this->nzcv, "PSTATE.{N,Z,C,V}" );
     variable_register_pool.insert( var_reg );
   }  
 }
@@ -333,7 +333,7 @@ CPU<CONFIG>::InjectReadMemory( uint64_t addr, void* buffer, uint32_t size )
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PrRead(ef_addr, &rbuffer[index], 1))
+      if (not PhysicalReadMemory(ef_addr, &rbuffer[index], 1))
         return false;
     }
 
@@ -358,7 +358,7 @@ CPU<CONFIG>::InjectWriteMemory( uint64_t addr, void const* buffer, uint32_t size
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PrWrite( ef_addr, &wbuffer[index], 1 ))
+      if (not PhysicalWriteMemory( ef_addr, &wbuffer[index], 1 ))
         return false;
     }
 
@@ -523,7 +523,7 @@ CPU<CONFIG>::RefillInsnPrefetchBuffer(uint64_t base_address)
   
   // No instruction cache present, just request the insn to the
   // memory system.
-  if (not PrRead(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE))
+  if (not PhysicalReadMemory(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE))
     return false;
   
   if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
@@ -565,7 +565,7 @@ void
 CPU<CONFIG>::MemRead( uint8_t* buffer, uint64_t addr, unsigned size )
 {
   // Over-simplistic read from memory system
-  if (not PrRead(addr, buffer, size))
+  if (not PhysicalReadMemory(addr, buffer, size))
     {
       throw 0;
     }
@@ -585,7 +585,7 @@ void
 CPU<CONFIG>::MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size )
 {
   // Over-simplistic read from memory system
-  if (not PrWrite( addr, buffer, size ))
+  if (not PhysicalWriteMemory( addr, buffer, size ))
     {
       throw 0;
     }
@@ -612,7 +612,7 @@ CPU<CONFIG>::CallSupervisor( uint16_t imm )
           if (trap_reporting_import)
             trap_reporting_import->ReportTrap(*this, "CallSupervisor");
         }
-      catch (Exception const& e)
+      catch (std::exception const& e)
         {
           std::cerr << e.what() << std::endl;
           this->Stop( -1 );

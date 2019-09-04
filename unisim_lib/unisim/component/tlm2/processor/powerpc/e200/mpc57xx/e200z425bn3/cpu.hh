@@ -40,7 +40,7 @@
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.tcc>
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/cpu.hh>
 #include <systemc>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <inttypes.h>
@@ -56,7 +56,16 @@ namespace e200 {
 namespace mpc57xx {
 namespace e200z425bn3 {
 
-typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::CPU<unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z425bn3::TYPES, unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z425bn3::CONFIG> CPU;
+struct CPU : unisim::component::tlm2::processor::powerpc::e200::mpc57xx::CPU<unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z425bn3::TYPES, unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z425bn3::CONFIG>
+{
+	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::CPU<unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z425bn3::TYPES, unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z425bn3::CONFIG> Super;
+	
+	CPU(const sc_core::sc_module_name& name, Object *parent)
+		: unisim::kernel::Object(name, parent, "e200z425bn3 PowerPC core")
+		, Super(name, parent)
+	{
+	}
+};
 
 } // end of namespace e200z425bn3
 } // end of namespace mpc57xx

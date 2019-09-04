@@ -39,5 +39,5 @@ zbrminc.execute = {
 	return false;
 }
 zbrminc.disasm = {
-	os << "zbrminc r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zbrminc " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

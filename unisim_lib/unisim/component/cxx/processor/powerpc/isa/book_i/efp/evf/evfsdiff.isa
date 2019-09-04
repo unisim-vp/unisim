@@ -38,5 +38,5 @@ evfsdiff.execute = {
 	return false;
 }
 evfsdiff.disasm = {
-	os << "evfsdiff r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "evfsdiff " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

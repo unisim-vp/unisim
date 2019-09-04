@@ -286,7 +286,7 @@ bool SocketThread::FlushOutput() {
 
 			if (n <= 0) {
 				int array[] = {sockfd};
-				error(array, "ERROR writing to socket");
+				error(array, sizeof(array) / sizeof(array[0]), "ERROR writing to socket");
 				break;
 			} else {
 				index += n;
@@ -486,7 +486,7 @@ bool SocketThread::GetChar(char& c, bool blocking) {
 
 			if (n <= 0)	{
 		    	int array[] = {sockfd};
-		    	error(array, "ERROR reading from socket");
+		    	error(array, sizeof(array) / sizeof(array[0]), "ERROR reading from socket");
 		    } else {
 		    	input_buffer_size = n;
 		    	input_buffer_index = 0;

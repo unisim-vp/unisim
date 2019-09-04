@@ -63,7 +63,7 @@
 #include <unisim/component/tlm2/memory/semaphore/freescale/mpc57xx/sema42/sema42.hh>
 
 // Class definition of kernel, services and interfaces
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/tlm2/simulator.hh>
 #include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
@@ -74,7 +74,10 @@
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/netstreamer/netstreamer.hh>
-#include <unisim/service/os/linux_os/powerpc_linux32.hh>
+#include <unisim/service/http_server/http_server.hh>
+#include <unisim/service/instrumenter/instrumenter.hh>
+#include <unisim/service/tee/char_io/tee.hh>
+#include <unisim/service/web_terminal/web_terminal.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 
@@ -87,9 +90,8 @@
 #endif
 
 // Host machine standard headers
-#include <iostream>
-#include <stdexcept>
-#include <stdlib.h>
+#include <fstream>
+#include <string>
 
 #ifdef WIN32
 
@@ -100,25 +102,18 @@
 #include <signal.h>
 #endif
 
-static const bool DEBUG_ENABLE = true;
-
 //=========================================================================
 //===                        Top level class                            ===
 //=========================================================================
 
-enum SerialTerminalProtocol
-{
-	SERIAL_TERMINAL_PROTOCOL_TELNET,
-	SERIAL_TERMINAL_PROTOCOL_NETCAT
-};
-
 class Simulator : public unisim::kernel::tlm2::Simulator, Config
 {
 public:
-	Simulator(const sc_core::sc_module_name& name, int argc, char **argv);
+	Simulator(int argc, char **argv, const sc_core::sc_module_name& name = "HARDWARE");
 	virtual ~Simulator();
+	virtual bool EndSetup();
 	void Run();
-	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
+	virtual unisim::kernel::Simulator::SetupStatus Setup();
 	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
 protected:
@@ -261,6 +256,10 @@ private:
 	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
 	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<CPU_ADDRESS_TYPE> LOADER;
 	typedef unisim::service::netstreamer::NetStreamer NETSTREAMER;
+	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
+	typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
+	typedef unisim::service::tee::char_io::Tee<2> CHAR_IO_TEE;
+	typedef unisim::service::web_terminal::WebTerminal WEB_TERMINAL;
 	
 	//=========================================================================
 	//===                           Components                              ===
@@ -455,6 +454,24 @@ private:
 	NETSTREAMER *netstreamer14;
 	NETSTREAMER *netstreamer15;
 	NETSTREAMER *netstreamer16;
+	//  - Http Server
+	HTTP_SERVER *http_server;
+	//  - Instrumenter
+	INSTRUMENTER *instrumenter;
+	//  - Char I/O tees
+	CHAR_IO_TEE *char_io_tee0;
+	CHAR_IO_TEE *char_io_tee1;
+	CHAR_IO_TEE *char_io_tee2;
+	CHAR_IO_TEE *char_io_tee14;
+	CHAR_IO_TEE *char_io_tee15;
+	CHAR_IO_TEE *char_io_tee16;
+	//  - Web Terminals
+	WEB_TERMINAL *web_terminal0;
+	WEB_TERMINAL *web_terminal1;
+	WEB_TERMINAL *web_terminal2;
+	WEB_TERMINAL *web_terminal14;
+	WEB_TERMINAL *web_terminal15;
+	WEB_TERMINAL *web_terminal16;
 	
 	bool enable_core0_reset;
 	bool enable_core1_reset;
@@ -464,7 +481,9 @@ private:
 	sc_core::sc_time core2_reset_time;
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
-	bool enable_profiler;
+	bool enable_profiler0;
+	bool enable_profiler1;
+	bool enable_profiler2;
 	bool enable_serial_terminal0;
 	bool enable_serial_terminal1;
 	bool enable_serial_terminal2;
@@ -499,60 +518,62 @@ private:
 	
 	sc_core::sc_time max_time;
 	
-	unisim::kernel::service::Parameter<bool> param_enable_core0_reset;
-	unisim::kernel::service::Parameter<bool> param_enable_core1_reset;
-	unisim::kernel::service::Parameter<bool> param_enable_core2_reset;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_core0_reset_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_core1_reset_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_core2_reset_time;
-	unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
-	unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
-	unisim::kernel::service::Parameter<bool> param_enable_profiler;
-	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal0;
-	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal1;
-	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal2;
-	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal14;
-	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal15;
-	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal16;
+	unisim::kernel::variable::Parameter<bool> param_enable_core0_reset;
+	unisim::kernel::variable::Parameter<bool> param_enable_core1_reset;
+	unisim::kernel::variable::Parameter<bool> param_enable_core2_reset;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_core0_reset_time;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_core1_reset_time;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_core2_reset_time;
+	unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
+	unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
+	unisim::kernel::variable::Parameter<bool> param_enable_profiler0;
+	unisim::kernel::variable::Parameter<bool> param_enable_profiler1;
+	unisim::kernel::variable::Parameter<bool> param_enable_profiler2;
+	unisim::kernel::variable::Parameter<bool> param_enable_serial_terminal0;
+	unisim::kernel::variable::Parameter<bool> param_enable_serial_terminal1;
+	unisim::kernel::variable::Parameter<bool> param_enable_serial_terminal2;
+	unisim::kernel::variable::Parameter<bool> param_enable_serial_terminal14;
+	unisim::kernel::variable::Parameter<bool> param_enable_serial_terminal15;
+	unisim::kernel::variable::Parameter<bool> param_enable_serial_terminal16;
 
-	unisim::kernel::service::Parameter<bool> param_dspi_0_is_slave;
-	unisim::kernel::service::Parameter<bool> param_dspi_1_is_slave;
-	unisim::kernel::service::Parameter<bool> param_dspi_2_is_slave;
-	unisim::kernel::service::Parameter<bool> param_dspi_3_is_slave;
-	unisim::kernel::service::Parameter<bool> param_dspi_4_is_slave;
-	unisim::kernel::service::Parameter<bool> param_dspi_5_is_slave;
-	unisim::kernel::service::Parameter<bool> param_dspi_6_is_slave;
-	unisim::kernel::service::Parameter<bool> param_dspi_12_is_slave;
-	unisim::kernel::service::Parameter<unsigned int> param_dspi_0_master;
-	unisim::kernel::service::Parameter<unsigned int> param_dspi_1_master;
-	unisim::kernel::service::Parameter<unsigned int> param_dspi_2_master;
-	unisim::kernel::service::Parameter<unsigned int> param_dspi_3_master;
-	unisim::kernel::service::Parameter<unsigned int> param_dspi_4_master;
-	unisim::kernel::service::Parameter<unsigned int> param_dspi_5_master;
-	unisim::kernel::service::Parameter<unsigned int> param_dspi_6_master;
-	unisim::kernel::service::Parameter<unsigned int> param_dspi_12_master;
-	unisim::kernel::service::Parameter<unsigned int> param_dspi_0_slave;
-	unisim::kernel::service::Parameter<unsigned int> param_dspi_1_slave;
-	unisim::kernel::service::Parameter<unsigned int> param_dspi_2_slave;
-	unisim::kernel::service::Parameter<unsigned int> param_dspi_3_slave;
-	unisim::kernel::service::Parameter<unsigned int> param_dspi_4_slave;
-	unisim::kernel::service::Parameter<unsigned int> param_dspi_5_slave;
-	unisim::kernel::service::Parameter<unsigned int> param_dspi_6_slave;
-	unisim::kernel::service::Parameter<unsigned int> param_dspi_12_slave;
+	unisim::kernel::variable::Parameter<bool> param_dspi_0_is_slave;
+	unisim::kernel::variable::Parameter<bool> param_dspi_1_is_slave;
+	unisim::kernel::variable::Parameter<bool> param_dspi_2_is_slave;
+	unisim::kernel::variable::Parameter<bool> param_dspi_3_is_slave;
+	unisim::kernel::variable::Parameter<bool> param_dspi_4_is_slave;
+	unisim::kernel::variable::Parameter<bool> param_dspi_5_is_slave;
+	unisim::kernel::variable::Parameter<bool> param_dspi_6_is_slave;
+	unisim::kernel::variable::Parameter<bool> param_dspi_12_is_slave;
+	unisim::kernel::variable::Parameter<unsigned int> param_dspi_0_master;
+	unisim::kernel::variable::Parameter<unsigned int> param_dspi_1_master;
+	unisim::kernel::variable::Parameter<unsigned int> param_dspi_2_master;
+	unisim::kernel::variable::Parameter<unsigned int> param_dspi_3_master;
+	unisim::kernel::variable::Parameter<unsigned int> param_dspi_4_master;
+	unisim::kernel::variable::Parameter<unsigned int> param_dspi_5_master;
+	unisim::kernel::variable::Parameter<unsigned int> param_dspi_6_master;
+	unisim::kernel::variable::Parameter<unsigned int> param_dspi_12_master;
+	unisim::kernel::variable::Parameter<unsigned int> param_dspi_0_slave;
+	unisim::kernel::variable::Parameter<unsigned int> param_dspi_1_slave;
+	unisim::kernel::variable::Parameter<unsigned int> param_dspi_2_slave;
+	unisim::kernel::variable::Parameter<unsigned int> param_dspi_3_slave;
+	unisim::kernel::variable::Parameter<unsigned int> param_dspi_4_slave;
+	unisim::kernel::variable::Parameter<unsigned int> param_dspi_5_slave;
+	unisim::kernel::variable::Parameter<unsigned int> param_dspi_6_slave;
+	unisim::kernel::variable::Parameter<unsigned int> param_dspi_12_slave;
 	
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_max_time;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_max_time;
 
 #if HAVE_TVS
 	std::string bandwidth_vcd_filename;
-	unisim::kernel::service::Parameter<std::string> param_bandwidth_vcd_filename;
+	unisim::kernel::variable::Parameter<std::string> param_bandwidth_vcd_filename;
 	std::string bandwidth_gtkwave_init_script;
-	unisim::kernel::service::Parameter<std::string> param_bandwidth_gtkwave_init_script;
+	unisim::kernel::variable::Parameter<std::string> param_bandwidth_gtkwave_init_script;
 	std::ofstream *bandwidth_vcd_file;
 	tracing::timed_stream_vcd_processor *bandwidth_vcd;
 #endif
 	
 	int exit_status;
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 	
 	void Core0ResetProcess();
 	void Core1ResetProcess();

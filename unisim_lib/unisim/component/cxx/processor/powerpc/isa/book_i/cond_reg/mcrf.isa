@@ -32,11 +32,25 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-op mcrf(19[6]:crfD[3]:?[2]:crfS[3]:?[7]:0[10]:?[1])
+/* Move Condition Register Field */
+op mcrf(19[6]:bft[3]:?[2]:bfa[3]:?[7]:0[10]:?[1]);
+
 mcrf.execute = {
-	cpu->SetCR((cpu->GetCR() & (~(0xf << (4 * (7 - crfD))))) | (((cpu->GetCR() >> (4 * (7 - crfS))) & 0xf) << (4 * (7 - crfD))));
+	// Read the input operands
+        unsigned tsh = 4*bft, ash = 4*bfa;
+	CR& cr = cpu->GetCR();
+	U32 const mask(0xf0000000 >> tsh), source(cr);
+
+	// Compute the result
+	U32 result = (source & ~mask) | (mask & ((source << ash) >> tsh));
+	
+	// Write back the result
+	cr = result;
+	
 	return true;
 }
+
 mcrf.disasm = {
-	os << "mcrf cr" << (unsigned int) crfD << ", cr" << (unsigned int) crfS;
+	os << "mcrf " << CRPrint(bft) << ", " << CRPrint(bfa);
 }
+

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2016,
+ *  Copyright (c) 2007-2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_VECTORBANK_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_VECTORBANK_HH__
 
-#include <cstring>
+#include <algorithm>
 #include <inttypes.h>
 
 namespace unisim {
@@ -43,7 +43,7 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace intel {
-  
+
   template <typename T>
   struct VectorTypeInfo
   {
@@ -60,6 +60,8 @@ namespace intel {
         { tmp <<= 8; tmp |= uint32_t( src[idx] ); }
       dst = tmp;
     }
+    static void Destroy( T& obj ) { /* Base scalar types don't need any specific destructor */ }
+    static void Allocate( T& obj ) { /* Base scalar type doesn't need any specific constructor */ }
   };
 
   template <> struct VectorTypeInfo<float>
@@ -67,6 +69,8 @@ namespace intel {
     enum bytecount_t { bytecount = 4 };
     static void ToBytes( uint8_t* dst, float const& src ) { VectorTypeInfo<uint32_t>::ToBytes( dst, reinterpret_cast<uint32_t const&>( src ) ); }
     static void FromBytes( float& dst, uint8_t const* src ) { VectorTypeInfo<uint32_t>::FromBytes( reinterpret_cast<uint32_t&>( dst ), src ); }
+    static void Destroy( float& obj ) { /* float type doesn't need any specific destructor */ }
+    static void Allocate( float& obj ) { /* float type doesn't need any specific constructor */ }
   };
 
   template <> struct VectorTypeInfo<double>
@@ -74,62 +78,148 @@ namespace intel {
     enum bytecount_t { bytecount = 8 };
     static void ToBytes( uint8_t* dst, double const& src ) { VectorTypeInfo<uint64_t>::ToBytes( dst, reinterpret_cast<uint64_t const&>( src ) ); }
     static void FromBytes( double& dst, uint8_t const* src ) { VectorTypeInfo<uint64_t>::FromBytes( reinterpret_cast<uint64_t&>( dst ), src ); }
+    static void Destroy( double& obj ) { /* double type doesn't need any specific destructor */ }
+    static void Allocate( double& obj ) { /* double type doesn't need any specific constructor */ }
   };
-  
-  struct FlushInvalidate
+
+  template <class CONFIG>
+  struct VUnion
   {
-    FlushInvalidate( unsigned _idx, uint8_t* _buffer, uint8_t const* _data )
-      : idx(_idx), buffer(_buffer), data(_data)
-    {}
-    
-    unsigned       idx;
-    uint8_t*       buffer;
-    uint8_t const* data;
-  };
-  
-  template <typename valT, unsigned _RegCount, unsigned _RegSize>
-  struct VectorBankCache
-  {
-    static uintptr_t const sub_count = _RegSize / VectorTypeInfo<valT>::bytecount;
-    bool     valid[_RegCount];
-    
-    VectorBankCache() { for (unsigned idx = 0; idx < _RegCount; ++idx) valid[idx] = true; }
-    
-    template <typename dirT>
-    valT*
-    GetStorage( dirT& dir, unsigned idx )
+    template <typename T> using TypeInfo = typename CONFIG:: template TypeInfo<T>;
+    typedef typename CONFIG::Byte Byte;
+
+    typedef void (*transfer_t)( Byte* dst, void* src, unsigned size, bool destroy );
+
+    template <typename ELEM>
+    static unsigned ItemCount() { return CONFIG::BYTECOUNT / TypeInfo<ELEM>::bytecount; }
+
+    template <typename ELEM>
+    static void Transfer( Byte* bytes, void* storage, unsigned size, bool destroy )
     {
-      uint8_t* data = &dir.storage[idx][0];
-      valT* regvec = static_cast<valT*>( data );
-      
-      // Force validity
-      if (not valid[idx]) {
-        uint8_t buffer[_RegSize];
-        FlushInvalidate copy( idx, buffer, data );
-        dir.DoAll( copy );
-        valid[idx] = true;
-        for (unsigned sub = 0; sub < sub_count; ++sub)
-          VectorTypeInfo<valT>::FromBytes( regvec[sub], &buffer[sub*VectorTypeInfo<valT>::bytecount] );
-      }
-      
-      return regvec;
+      ELEM* vec = reinterpret_cast<ELEM*>( storage );
+
+      Byte* dst_end = &bytes[size];
+      for (unsigned idx = 0, end = CONFIG::BYTECOUNT / TypeInfo<ELEM>::bytecount; idx < end; ++idx)
+        {
+          Byte* dst = &bytes[idx*TypeInfo<ELEM>::bytecount];
+          if (dst < dst_end)
+            TypeInfo<ELEM>::ToBytes( dst, vec[idx] );
+          if (destroy)
+            TypeInfo<ELEM>::Destroy( vec[idx] );
+        }
     }
-    
-    void Do( FlushInvalidate& copy )
+
+    template <class ELEM>
+    ELEM*
+    rearrange( void* storage, unsigned final_size )
     {
-      unsigned idx = copy.idx;
-      valT* regvec = static_cast<valT*>( copy.data );
-      
-      if (not valid[idx]) return;
-      valid[idx] = false;
-      if (not copy.buffer) return;
-      
-      for (unsigned sub = 0; sub < sub_count; ++sub)
-        VectorTypeInfo<valT>::ToBytes( &copy.buffer[sub*VectorTypeInfo<valT>::bytecount], regvec[sub] );
-      
-      copy.buffer = 0;
+      ELEM* res = reinterpret_cast<ELEM*>( storage );
+      transfer_t current = &Transfer<ELEM>;
+      unsigned const elem_size = TypeInfo<ELEM>::bytecount;
+      if (transfer != current)
+        {
+          Byte buf[CONFIG::BYTECOUNT];
+          transfer( &buf[0], storage, size, true );
+          // if destination element is wider than source vector:
+          for (unsigned idx = size; idx < elem_size; ++idx)
+            buf[idx] = Byte(0u);
+          Byte const* src_end = &buf[std::min(size, final_size)];
+          for (unsigned idx = 0, end = CONFIG::BYTECOUNT / elem_size; idx < end; ++idx)
+            {
+              unsigned pos = idx*elem_size;
+              Byte const* src = &buf[pos];
+              TypeInfo<ELEM>::Allocate( res[idx] );
+              if (src < src_end)
+                TypeInfo<ELEM>::FromBytes( res[idx], src );
+              else if (pos < final_size)
+                res[idx] = ELEM(0);
+            }
+          transfer = current;
+        }
+      else if (size < final_size)
+        {
+          for (unsigned idx = size / elem_size, end = final_size / elem_size; idx < end; ++idx)
+            res[idx] = ELEM(0);
+        }
+      size = final_size;
+      return res;
     }
+
+    template <typename ELEM>
+    ELEM*
+    GetStorage( void* storage, ELEM const&, unsigned final_size )
+    {
+      return rearrange<ELEM>( storage, final_size );
+    }
+
+    template <class ELEM>
+    ELEM* GetConstStorage( void* storage, ELEM const&, unsigned final_size )
+    {
+      return rearrange<ELEM>( storage, std::max(size, final_size) );
+    }
+
+    static void initial( Byte*, void*, unsigned, bool ) {}
+
+    VUnion() : transfer( &initial ), size(0) {}
+
+    transfer_t transfer;
+    unsigned   size;
   };
+
+  // struct FlushInvalidate
+  // {
+  //   FlushInvalidate( unsigned _idx, uint8_t* _buffer, uint8_t const* _data )
+  //     : idx(_idx), buffer(_buffer), data(_data)
+  //   {}
+
+  //   unsigned       idx;
+  //   uint8_t*       buffer;
+  //   uint8_t const* data;
+  // };
+
+  // template <typename valT, unsigned _RegCount, unsigned _RegSize>
+  // struct VectorBankCache
+  // {
+  //   static uintptr_t const sub_count = _RegSize / VectorTypeInfo<valT>::bytecount;
+  //   bool     valid[_RegCount];
+
+  //   VectorBankCache() { for (unsigned idx = 0; idx < _RegCount; ++idx) valid[idx] = true; }
+
+  //   template <typename dirT>
+  //   valT*
+  //   GetStorage( dirT& dir, unsigned idx )
+  //   {
+  //     uint8_t* data = &dir.storage[idx][0];
+  //     valT* regvec = static_cast<valT*>( data );
+
+  //     // Force validity
+  //     if (not valid[idx]) {
+  //       uint8_t buffer[_RegSize];
+  //       FlushInvalidate copy( idx, buffer, data );
+  //       dir.DoAll( copy );
+  //       valid[idx] = true;
+  //       for (unsigned sub = 0; sub < sub_count; ++sub)
+  //         VectorTypeInfo<valT>::FromBytes( regvec[sub], &buffer[sub*VectorTypeInfo<valT>::bytecount] );
+  //     }
+
+  //     return regvec;
+  //   }
+
+  //   void Do( FlushInvalidate& copy )
+  //   {
+  //     unsigned idx = copy.idx;
+  //     valT* regvec = static_cast<valT*>( copy.data );
+
+  //     if (not valid[idx]) return;
+  //     valid[idx] = false;
+  //     if (not copy.buffer) return;
+
+  //     for (unsigned sub = 0; sub < sub_count; ++sub)
+  //       VectorTypeInfo<valT>::ToBytes( &copy.buffer[sub*VectorTypeInfo<valT>::bytecount], regvec[sub] );
+
+  //     copy.buffer = 0;
+  //   }
+  // };
 
 } // end of namespace intel
 } // end of namespace processor

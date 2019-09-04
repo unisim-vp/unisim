@@ -176,7 +176,7 @@ Logger::Logger(const char * _name)
 	GetServerInstance();
 }
 
-Logger::Logger(const unisim::kernel::service::Object& object)
+Logger::Logger(const unisim::kernel::Object& object)
 	: name(object.GetName())
 	, buffer()
 	, mode(NO_MODE)
@@ -238,7 +238,7 @@ void Logger::DebugInfo()
 void Logger::EndDebugInfo() {
 	if (mode != INFO_MODE) return;
 	mode = NO_MODE;
-	server->DebugInfo(name, buffer.str().c_str());
+	server->DebugInfo(name.c_str(), buffer.str().c_str());
 }
 
 void Logger::DebugWarning()
@@ -253,7 +253,7 @@ void Logger::EndDebugWarning()
 {
 	if (mode != WARNING_MODE) return;
 	mode = NO_MODE;
-	server->DebugWarning(name, buffer.str().c_str());
+	server->DebugWarning(name.c_str(), buffer.str().c_str());
 }
 
 void Logger::DebugError()
@@ -268,7 +268,7 @@ void Logger::EndDebugError()
 {
 	if (mode != ERROR_MODE) return;
 	mode = NO_MODE;
-	server->DebugError(name, buffer.str().c_str());
+	server->DebugError(name.c_str(), buffer.str().c_str());
 }
 
 void Logger::EndDebug()

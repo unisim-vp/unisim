@@ -39,7 +39,7 @@ public:
 	 */
 	virtual void run(){}
 	virtual void error(const char* msg);
-	virtual void error(const int* fd, const char* msg);
+	virtual void error(const int* fd, int size, const char* msg);
 
 };
 

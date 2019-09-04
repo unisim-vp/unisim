@@ -106,8 +106,10 @@ template <typename CONFIG>
 const unsigned int M_CAN<CONFIG>::MAX_TX_EVENT_FIFO_SIZE;
 
 template <typename CONFIG>
-M_CAN<CONFIG>::M_CAN(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
-	: Super(name, parent)
+M_CAN<CONFIG>::M_CAN(const sc_core::sc_module_name& name, unisim::kernel::Object *parent)
+	: unisim::kernel::Object(name, parent)
+	, Super(name, parent)
+	, unisim::kernel::Service<unisim::service::interfaces::Registers>(name, parent)
 	, peripheral_slave_if("peripheral_slave_if")
 	, m_clk("m_clk")
 	, can_clk("can_clk")
@@ -118,6 +120,7 @@ M_CAN<CONFIG>::M_CAN(const sc_core::sc_module_name& name, unisim::kernel::servic
 	, INT1("INT1")
 	, DMA_REQ("DMA_REQ")
 	, FE("FE", NUM_FILTER_EVENTS)
+	, registers_export("registers-export", this)
 	, m_clk_prop_proxy(m_clk)
 	, can_clk_prop_proxy(can_clk)
 	, crel(this)
@@ -172,6 +175,7 @@ M_CAN<CONFIG>::M_CAN(const sc_core::sc_module_name& name, unisim::kernel::servic
 	, gen_filter_event_pos()
 	, gen_filter_event_neg()
 	, reg_addr_map()
+	, registers_registry()
 	, schedule()
 	, endian(unisim::util::endian::E_LITTLE_ENDIAN) // the subsystem follows the little-endian format
 	, param_endian("endian", this, endian, "endian")
@@ -265,6 +269,52 @@ M_CAN<CONFIG>::M_CAN(const sc_core::sc_module_name& name, unisim::kernel::servic
 	reg_addr_map.MapRegister(txefs .ADDRESS_OFFSET, &txefs );
 	reg_addr_map.MapRegister(txefa .ADDRESS_OFFSET, &txefa );
 
+	registers_registry.AddRegisterInterface(crel.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(endn.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(fbtp.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(test.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(rwd.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(cccr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(btp.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(tscc.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(tscv.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(tocc.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(tocv.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(ecr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(psr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(ir.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(ie.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(ils.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(ile.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(gfc.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(sidfc.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(xidfc.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(xidam.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(hpms.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(ndat1.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(ndat2.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(rxf0c.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(rxf0s.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(rxf0a.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(rxbc.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(rxf1c.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(rxf1s.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(rxf1a.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(rxesc.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(txbc.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(txfqs.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(txesc.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(txbrp.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(txbar.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(txbcr.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(txbto.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(txbcf.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(txbtie.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(txbcie.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(txefc.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(txefs.CreateRegisterInterface());
+	registers_registry.AddRegisterInterface(txefa.CreateRegisterInterface());
+
 	if(threaded_model)
 	{
 		SC_THREAD(Process);
@@ -303,6 +353,20 @@ M_CAN<CONFIG>::M_CAN(const sc_core::sc_module_name& name, unisim::kernel::servic
 template <typename CONFIG>
 M_CAN<CONFIG>::~M_CAN()
 {
+}
+
+//////////////// unisim::service::interface::Registers ////////////////////
+
+template <typename CONFIG>
+unisim::service::interfaces::Register *M_CAN<CONFIG>::GetRegister(const char *name)
+{
+	return registers_registry.GetRegister(name);
+}
+
+template <typename CONFIG>
+void M_CAN<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 template <typename CONFIG>
@@ -987,7 +1051,7 @@ unsigned int M_CAN<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 	if(!data_ptr)
 	{
 		logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		unisim::kernel::Object::Stop(-1);
 		return 0;
 	}
 	else if(!data_length)
@@ -1029,7 +1093,7 @@ tlm::tlm_sync_enum M_CAN<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& payl
 			return tlm::TLM_COMPLETED;
 		default:
 			logger << DebugError << "protocol error" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			unisim::kernel::Object::Stop(-1);
 			break;
 	}
 	
@@ -1062,13 +1126,13 @@ void M_CAN<CONFIG>::ProcessEvent(Event *event)
 				if(!data_ptr)
 				{
 					logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-					unisim::kernel::service::Object::Stop(-1);
+					unisim::kernel::Object::Stop(-1);
 					return;
 				}
 				else if(!data_length)
 				{
 					logger << DebugError << "data length range for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-					unisim::kernel::service::Object::Stop(-1);
+					unisim::kernel::Object::Stop(-1);
 					return;
 				}
 				else if(byte_enable_ptr)
@@ -1162,7 +1226,7 @@ void M_CAN<CONFIG>::ProcessEvents()
 			if(event->GetTimeStamp() != time_stamp)
 			{
 				logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
-				unisim::kernel::service::Object::Stop(-1);
+				unisim::kernel::Object::Stop(-1);
 			}
 			
 			ProcessEvent(event);

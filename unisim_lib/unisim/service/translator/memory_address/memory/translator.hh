@@ -35,7 +35,7 @@
 #include <inttypes.h>
 
 #include <unisim/service/interfaces/memory.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 namespace unisim {
 namespace service {
@@ -45,11 +45,11 @@ namespace memory {
 
 using unisim::service::interfaces::Memory;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceImport;
 
 template <class FROM_ADDRESS, class TO_ADDRESS>
 class Translator :
@@ -63,7 +63,7 @@ public:
 	Translator(const char* name, Object *parent = 0);
 	virtual ~Translator();
 	
-	virtual void Reset();
+	virtual void ResetMemory();
 	virtual bool ReadMemory(FROM_ADDRESS addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(FROM_ADDRESS addr, const void *buffer, uint32_t size);
 };

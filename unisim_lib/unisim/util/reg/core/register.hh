@@ -494,6 +494,7 @@ public:
 	static const Access ACCESS = _ACCESS;
 	
 	inline TYPE Get() const ALWAYS_INLINE;
+	inline void Set(TYPE value) ALWAYS_INLINE;
 	inline bool HasBit(unsigned int bit_offset) const ALWAYS_INLINE;
 	inline TYPE Get(unsigned int bit_offset) const ALWAYS_INLINE;
 	inline void Set(unsigned int bit_offset, TYPE bit_value) ALWAYS_INLINE;

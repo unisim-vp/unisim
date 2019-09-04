@@ -51,7 +51,7 @@ mrs.disasm = {
 };
 
 mrs.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
+  if (unlikely( not CheckCondition(cpu, cond) )) return;
   
   switch (sr) {
   default: cpu.UnpredictableInsnBehaviour(); break;
@@ -125,7 +125,7 @@ msr_reg_psr.disasm = {
 };
 
 msr_reg_psr.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
+  if (unlikely( not CheckCondition(cpu, cond) )) return;
   
   if (write_spsr) {
     SPSRWriteByInstr( cpu, cpu.GetGPR(rn), psr_mask );
@@ -145,7 +145,7 @@ msr_imm_psr.disasm = {
 };
 
 msr_imm_psr.execute = {
-  if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
+  if (unlikely( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::U32 U32;
   if (write_spsr) {

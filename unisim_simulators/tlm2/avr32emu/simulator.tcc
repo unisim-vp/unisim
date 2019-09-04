@@ -36,9 +36,15 @@
 #ifndef __AVR32EMU_SIMULATOR_TCC__
 #define __AVR32EMU_SIMULATOR_TCC__
 
+// Host machine standard headers
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <stdexcept>
+
 template <class CONFIG>
 Simulator<CONFIG>::Simulator(int argc, char **argv)
-	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
+	: unisim::kernel::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
 	, ram(0)
 	, loader(0)
@@ -59,7 +65,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	unsigned int cmd_args_length = cmd_args->GetLength();
 	if(cmd_args_length > 0)
 	{
-		SetVariable("loader.filename", ((string)(*cmd_args)[0]).c_str());
+		SetVariable("loader.filename", ((std::string)(*cmd_args)[0]).c_str());
 		
 		SetVariable("avr32-t2h-syscalls.argc", cmd_args_length);
 		
@@ -68,7 +74,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 		{
 			std::stringstream sstr;
 			sstr << "avr32-t2h-syscalls.argv[" << i << "]";
-			SetVariable(sstr.str().c_str(), ((string)(*cmd_args)[i]).c_str());
+			SetVariable(sstr.str().c_str(), ((std::string)(*cmd_args)[i]).c_str());
 		}
 	}
 
@@ -204,7 +210,7 @@ Simulator<CONFIG>::~Simulator()
 }
 
 template <class CONFIG>
-void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM AVR32EMU");
@@ -216,8 +222,8 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	simulator->SetVariable("schematic", "avr32emu/fig_schematic.pdf");
 
 	int gdb_server_tcp_port = 0;
-	const char *gdb_server_arch_filename = "gdb_avr32.xml";
-	const char *dwarf_register_number_mapping_filename = "avr32_dwarf_register_number_mapping.xml";
+	const char *gdb_server_arch_filename = "unisim/service/debug/gdb_server/gdb_avr32.xml";
+	const char *dwarf_register_number_mapping_filename = "unisim/util/debug/dwarf/avr32_dwarf_register_number_mapping.xml";
 	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
 	double cpu_frequency = 66.67; // in Mhz
 	double cpu_clock_multiplier = 1.0;
@@ -232,8 +238,8 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	//  - PowerPC processor
 	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
-	simulator->SetVariable("cpu.cpu-cycle-time", sc_time(cpu_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("cpu.hsb-cycle-time", sc_time(hsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("cpu.cpu-cycle-time", sc_core::sc_time(cpu_cycle_time, sc_core::SC_PS).to_string().c_str());
+	simulator->SetVariable("cpu.hsb-cycle-time", sc_core::sc_time(hsb_cycle_time, sc_core::SC_PS).to_string().c_str());
 	simulator->SetVariable("cpu.max-inst", maxinst);
 	simulator->SetVariable("cpu.nice-time", "1 ms");
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
@@ -241,7 +247,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	//  - Memory router
 	std::stringstream sstr_memory_router_mapping;
-	simulator->SetVariable("memory-router.cycle_time", sc_time(hsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("memory-router.cycle_time", sc_core::sc_time(hsb_cycle_time, sc_core::SC_PS).to_string().c_str());
 	sstr_memory_router_mapping << "range_start=\"0x" << std::hex << CONFIG::RAM_BASE_ADDR << "\" range_end=\"0x" << (CONFIG::RAM_BYTE_SIZE - 1) << " output_port=\"0\" translation=\"0x0\"";
 	simulator->SetVariable("memory-router.mapping_0", sstr_memory_router_mapping.str().c_str()); // RAM
 	//simulator->SetVariable("memory-router.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x0\""); // RAM
@@ -256,9 +262,9 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	//simulator->SetVariable("loader.memory-mapper.mapping", "ram:0x0-0xffffffff"); // all address space
 
 	//  - RAM
-	simulator->SetVariable("ram.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("ram.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("ram.write-latency", SC_ZERO_TIME.to_string().c_str());
+	simulator->SetVariable("ram.cycle-time", sc_core::sc_time(mem_cycle_time, sc_core::SC_PS).to_string().c_str());
+	simulator->SetVariable("ram.read-latency", sc_core::sc_time(mem_cycle_time, sc_core::SC_PS).to_string().c_str());
+	simulator->SetVariable("ram.write-latency", sc_core::SC_ZERO_TIME.to_string().c_str());
 	simulator->SetVariable("ram.org", CONFIG::RAM_BASE_ADDR);
 	simulator->SetVariable("ram.bytesize", CONFIG::RAM_BYTE_SIZE);
 	
@@ -278,53 +284,53 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 template <class CONFIG>
 void Simulator<CONFIG>::Run()
 {
-	cerr << "Starting simulation" << endl;
+	std::cerr << "Starting simulation" << std::endl;
 	
 	double time_start = host_time->GetTime();
 
-	sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
+	sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
 	
 	try
 	{
-		sc_start();
+		sc_core::sc_start();
 	}
 	catch(std::runtime_error& e)
 	{
-		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-		cerr << e.what() << endl;
+		std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+		std::cerr << e.what() << std::endl;
 	}
 
-	cerr << "Simulation finished" << endl;
+	std::cerr << "Simulation finished" << std::endl;
 
 	double time_stop = host_time->GetTime();
 	double spent_time = time_stop - time_start;
 
-	cerr << "Simulation run-time parameters:" << endl;
-	DumpParameters(cerr);
-	cerr << endl;
-	cerr << "Simulation formulas:" << endl;
-	DumpFormulas(cerr);
-	cerr << endl;
-	cerr << "Simulation statistics:" << endl;
-	DumpStatistics(cerr);
-	cerr << endl;
+	std::cerr << "Simulation run-time parameters:" << std::endl;
+	DumpParameters(std::cerr);
+	std::cerr << std::endl;
+	std::cerr << "Simulation formulas:" << std::endl;
+	DumpFormulas(std::cerr);
+	std::cerr << std::endl;
+	std::cerr << "Simulation statistics:" << std::endl;
+	DumpStatistics(std::cerr);
+	std::cerr << std::endl;
 
-	cerr << "simulation time: " << spent_time << " seconds" << endl;
-	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-	cerr << "target speed: " << ((double) (*cpu)["instruction-counter"] / ((double) (*cpu)["run-time"] - (double) (*cpu)["idle-time"]) / 1000000.0) << " MIPS" << endl;
-	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
-	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+	std::cerr << "simulation time: " << spent_time << " seconds" << std::endl;
+	std::cerr << "simulated time : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
+	std::cerr << "target speed: " << ((double) (*cpu)["instruction-counter"] / ((double) (*cpu)["run-time"] - (double) (*cpu)["idle-time"]) / 1000000.0) << " MIPS" << std::endl;
+	std::cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
+	std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 }
 
 template <class CONFIG>
-unisim::kernel::service::Simulator::SetupStatus Simulator<CONFIG>::Setup()
+unisim::kernel::Simulator::SetupStatus Simulator<CONFIG>::Setup()
 {
 	if(enable_inline_debugger)
 	{
 		SetVariable("debugger.parse-dwarf", true);
 	}
 	
-	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+	unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
 	
 	return setup_status;
 }
@@ -337,19 +343,15 @@ void Simulator<CONFIG>::Stop(Object *object, int _exit_status, bool asynchronous
 	{
 		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
 	}
-#ifdef DEBUG_AVR32EMU
-	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
-#endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_stop();
+	sc_core::sc_stop();
 	if(!asynchronous)
 	{
-		sc_process_handle h = sc_get_current_process_handle();
+		sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
 		switch(h.proc_kind())
 		{
-			case SC_THREAD_PROC_: 
-			case SC_CTHREAD_PROC_:
+			case sc_core::SC_THREAD_PROC_: 
+			case sc_core::SC_CTHREAD_PROC_:
 				sc_core::wait();
 				break;
 			default:
@@ -364,44 +366,13 @@ int Simulator<CONFIG>::GetExitStatus() const
 	return exit_status;
 }
 
-#ifdef WIN32
 template <class CONFIG>
-BOOL WINAPI Simulator<CONFIG>::ConsoleCtrlHandler(DWORD dwCtrlType)
+void Simulator<CONFIG>::SigInt()
 {
-	bool stop = false;
-	switch(dwCtrlType)
+	if(!inline_debugger)
 	{
-		case CTRL_C_EVENT:
-			cerr << "Interrupted by Ctrl-C" << endl;
-			stop = true;
-			break;
-		case CTRL_BREAK_EVENT:
-			cerr << "Interrupted by Ctrl-Break" << endl;
-			stop = true;
-			break;
-		case CTRL_CLOSE_EVENT:
-			cerr << "Interrupted by a console close" << endl;
-			stop = true;
-			break;
-		case CTRL_LOGOFF_EVENT:
-			cerr << "Interrupted because of logoff" << endl;
-			stop = true;
-			break;
-		case CTRL_SHUTDOWN_EVENT:
-			cerr << "Interrupted because of shutdown" << endl;
-			stop = true;
-			break;
+		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}
-	if(stop) sc_stop();
-	return stop ? TRUE : FALSE;
 }
-#else
-template <class CONFIG>
-void Simulator<CONFIG>::SigIntHandler(int signum)
-{
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
-}
-#endif
 
 #endif // __AVR32EMU_SIMULATOR_TCC__

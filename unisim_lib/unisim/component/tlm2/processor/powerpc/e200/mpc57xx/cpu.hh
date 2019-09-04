@@ -36,7 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_E200_MPC57XX_CPU_HH__
 
 #include <systemc>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/tlm2/clock.hh>
@@ -54,14 +54,12 @@ namespace e200 {
 namespace mpc57xx {
 
 using unisim::kernel::tlm2::PayloadFabric;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::Formula;
+using unisim::kernel::Object;
+using unisim::kernel::Client;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::variable::Formula;
 using unisim::kernel::logger::Logger;
-
-using unisim::component::cxx::processor::powerpc::e200::mpc57xx::BusResponseStatus;
 
 template <typename TYPES, typename CONFIG>
 class CPU
@@ -75,6 +73,12 @@ public:
 	typedef typename TYPES::STORAGE_ATTR STORAGE_ATTR;
 	
 	typedef typename CONFIG::CPU Super;
+	typedef typename Super::MachineCheckInterrupt MachineCheckInterrupt;
+	typedef typename Super::InstructionStorageInterrupt InstructionStorageInterrupt;
+	typedef typename Super::DataStorageInterrupt DataStorageInterrupt;
+	typedef typename Super::SystemResetInterrupt SystemResetInterrupt;
+	typedef typename Super::ExternalInputInterrupt ExternalInputInterrupt;
+	typedef typename Super::CriticalInputInterrupt CriticalInputInterrupt;
 	typedef tlm::tlm_initiator_socket<CONFIG::INSN_FSB_WIDTH * 8> i_ahb_master_if_type;
 	typedef tlm::tlm_initiator_socket<CONFIG::DATA_FSB_WIDTH * 8> d_ahb_master_if_type;
 	typedef tlm::tlm_target_socket<CONFIG::INCO_FSB_WIDTH * 8> ahb_slave_if_type;
@@ -95,7 +99,7 @@ public:
 	sc_core::sc_in<sc_dt::sc_uint<14> > p_voffset;        // Interrupt vector offset for vectored interrupts
 	sc_core::sc_out<bool>               p_iack;           // interrupt acknowledge
 	
-	CPU(const sc_core::sc_module_name& name, Object *parent = 0);
+	CPU(const sc_core::sc_module_name& name, unisim::kernel::Object *parent = 0);
 	virtual ~CPU();
 	
 	virtual void end_of_elaboration();
@@ -127,13 +131,14 @@ public:
 	
 protected:
 	sc_core::sc_time GetBurstLatency(uint32_t size, const sc_core::sc_time& latency) const;
-	virtual BusResponseStatus AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-	virtual BusResponseStatus AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr, bool rwitm);
-	virtual BusResponseStatus AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
+	virtual bool DataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm);
+	virtual bool DataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+	virtual bool InstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
 
-	virtual bool AHBDebugInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-	virtual bool AHBDebugDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
-	virtual bool AHBDebugDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
+	virtual bool DebugDataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+	virtual bool DebugDataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+	virtual bool DebugInstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+
 private:
 	unisim::kernel::tlm2::ClockPropertiesProxy m_clk_prop_proxy;
 	PayloadFabric<tlm::tlm_generic_payload> payload_fabric;

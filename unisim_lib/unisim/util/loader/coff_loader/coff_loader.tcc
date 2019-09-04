@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009-2012,
+ *  Copyright (c) 2009-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -51,7 +51,7 @@ namespace loader {
 namespace coff_loader {
 
 using std::stringstream;
-using unisim::kernel::service::Object;
+using unisim::kernel::Object;
 
 template <class MEMORY_ADDR>
 CoffLoader<MEMORY_ADDR>::CoffLoader(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, const unisim::util::blob::Blob<MEMORY_ADDR> *_blob)

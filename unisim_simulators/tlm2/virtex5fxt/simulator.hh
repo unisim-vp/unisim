@@ -40,7 +40,7 @@
 #endif
 
 // Class definition of components
-#include <unisim/component/tlm2/processor/powerpc/ppc440/cpu.hh>
+#include <unisim/component/tlm2/processor/powerpc/book_e/ppc440/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.hh>
 #include <unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.hh>
@@ -55,22 +55,27 @@
 #include <unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.hh>
 #include <unisim/component/tlm2/com/xilinx/xps_gpio/gpio_leds.hh>
 #include <unisim/component/tlm2/com/xilinx/xps_gpio/gpio_switches.hh>
+#include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 
 // Simulator compile time configuration
 #include <config.hh>
 
 // Class definition of kernel, services and interfaces
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/tlm2/simulator.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-#include <unisim/service/profiling/addr_profiler/profiler.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
-#include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/translator/memory_address/memory/translator.hh>
-#include <unisim/service/telnet/telnet.hh>
+#include <unisim/service/netstreamer/netstreamer.hh>
+#include <unisim/service/debug/profiler/profiler.hh>
+#include <unisim/service/http_server/http_server.hh>
+#include <unisim/service/instrumenter/instrumenter.hh>
+#include <unisim/service/tee/char_io/tee.hh>
+#include <unisim/service/web_terminal/web_terminal.hh>
 #include <unisim/service/os/linux_os/powerpc_linux32.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
@@ -80,75 +85,42 @@
 #include <stdexcept>
 #include <stdlib.h>
 
-#ifdef WIN32
-
-#include <winsock2.h>
-#include <windows.h>
-
-#else
-#include <signal.h>
-#endif
-
-using namespace std;
-using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::service::loader::multiformat_loader::MultiFormatLoader;
-using unisim::service::debug::debugger::Debugger;
-using unisim::service::debug::gdb_server::GDBServer;
-using unisim::service::debug::inline_debugger::InlineDebugger;
-using unisim::service::profiling::addr_profiler::Profiler;
-using unisim::service::power::CachePowerEstimator;
-using unisim::service::telnet::Telnet;
-using unisim::service::os::linux_os::Linux;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Variable;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::Object;
-
 //=========================================================================
 //===                        Top level class                            ===
 //=========================================================================
 
-template <class CONFIG>
-class Simulator : public unisim::kernel::service::Simulator
+class Simulator : public unisim::kernel::tlm2::Simulator, Config
 {
 public:
-	Simulator(int argc, char **argv);
+	Simulator(int argc, char **argv, const sc_core::sc_module_name& name = "HARDWARE");
 	virtual ~Simulator();
 	void Run();
-	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
-	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
+	virtual unisim::kernel::Simulator::SetupStatus Setup();
+	virtual bool EndSetup();
+	virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
 protected:
 private:
 	//=========================================================================
-	//===                       Constants definitions                       ===
-	//=========================================================================
-
-	// Front Side Bus template parameters
-	typedef typename CONFIG::CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
-	typedef typename CONFIG::CPU_CONFIG::physical_address_t FSB_ADDRESS_TYPE;
-	typedef uint32_t CPU_REG_TYPE;
-
-	//=========================================================================
 	//===                     Aliases for components classes                ===
 	//=========================================================================
 
-	typedef unisim::component::tlm2::memory::ram::Memory<CONFIG::CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CONFIG::CPU_CONFIG::FSB_BURST_SIZE / CONFIG::CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, CONFIG::DEBUG_INFORMATION> RAM;
-	typedef unisim::component::tlm2::memory::ram::Memory<CONFIG::CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CONFIG::CPU_CONFIG::FSB_BURST_SIZE / CONFIG::CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, CONFIG::DEBUG_INFORMATION> BRAM;
-	typedef unisim::component::tlm2::processor::powerpc::ppc440::CPU<typename CONFIG::CPU_CONFIG> CPU;
-	typedef unisim::component::tlm2::processor::powerpc::ppc440::CPU<typename CONFIG::LINUX_OS_CPU_CONFIG> LINUX_OS_CPU;
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<typename CONFIG::MPLB_CONFIG> MPLB;
-	typedef unisim::component::tlm2::interrupt::xilinx::xps_intc::XPS_IntC<typename CONFIG::INTC_CONFIG> INTC;
-	typedef unisim::component::tlm2::timer::xilinx::xps_timer::XPS_Timer<typename CONFIG::TIMER_CONFIG> TIMER;
-	typedef unisim::component::tlm2::memory::flash::am29::AM29<typename CONFIG::AM29_CONFIG, 32 * unisim::component::cxx::memory::flash::am29::M, 2, CONFIG::CPU_CONFIG::FSB_WIDTH * 8> FLASH;
-	typedef unisim::component::tlm2::interconnect::xilinx::dcr_controller::DCRController<typename CONFIG::DCR_CONTROLLER_CONFIG> DCR_CONTROLLER;
-	typedef unisim::component::tlm2::interconnect::xilinx::crossbar::Crossbar<typename CONFIG::CROSSBAR_CONFIG> CROSSBAR;
-	typedef unisim::component::tlm2::interconnect::xilinx::mci::MCI<typename CONFIG::MCI_CONFIG> MCI;
-	typedef unisim::component::tlm2::com::xilinx::xps_uart_lite::XPS_UARTLite<typename CONFIG::UART_LITE_CONFIG> UART_LITE;
-	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<typename CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG> GPIO_DIP_SWITCHES_8BIT;
-	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<typename CONFIG::GPIO_LEDS_8BIT_CONFIG> GPIO_LEDS_8BIT;
-	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<typename CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG> GPIO_5_LEDS_POSITIONS;
-	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<typename CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG> GPIO_PUSH_BUTTONS_5BIT;
+	typedef unisim::component::tlm2::memory::ram::Memory<MCI_CONFIG::MCI_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / MCI_CONFIG::MCI_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> RAM;
+	typedef unisim::component::tlm2::memory::ram::Memory<MPLB_CONFIG::OUTPUT_BUSWIDTH, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / (MPLB_CONFIG::OUTPUT_BUSWIDTH / 8), unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> BRAM;
+	typedef unisim::component::tlm2::processor::powerpc::book_e::ppc440::CPU CPU;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<MPLB_CONFIG> MPLB;
+	typedef unisim::component::tlm2::interrupt::xilinx::xps_intc::XPS_IntC<INTC_CONFIG> INTC;
+	typedef unisim::component::tlm2::timer::xilinx::xps_timer::XPS_Timer<TIMER_CONFIG> TIMER;
+	typedef unisim::component::tlm2::memory::flash::am29::AM29<AM29_CONFIG, 32 * unisim::component::cxx::memory::flash::am29::M, 2, MPLB_CONFIG::OUTPUT_BUSWIDTH> FLASH;
+	typedef unisim::component::tlm2::interconnect::xilinx::dcr_controller::DCRController<DCR_CONTROLLER_CONFIG> DCR_CONTROLLER;
+	typedef unisim::component::tlm2::interconnect::xilinx::crossbar::Crossbar<CROSSBAR_CONFIG> CROSSBAR;
+	typedef unisim::component::tlm2::interconnect::xilinx::mci::MCI<MCI_CONFIG> MCI;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<MEMORY_ROUTER_CONFIG> MEMORY_ROUTER;
+	typedef unisim::component::tlm2::com::xilinx::xps_uart_lite::XPS_UARTLite<UART_LITE_CONFIG> UART_LITE;
+	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<GPIO_DIP_SWITCHES_8BIT_CONFIG> GPIO_DIP_SWITCHES_8BIT;
+	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<GPIO_LEDS_8BIT_CONFIG> GPIO_LEDS_8BIT;
+	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<GPIO_5_LEDS_POSITIONS_CONFIG> GPIO_5_LEDS_POSITIONS;
+	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<GPIO_PUSH_BUTTONS_5BIT_CONFIG> GPIO_PUSH_BUTTONS_5BIT;
 	typedef unisim::component::tlm2::com::xilinx::xps_gpio::GPIO_Switches<8> DIP_SWITCHES_8BIT;
 	typedef unisim::component::tlm2::com::xilinx::xps_gpio::GPIO_LEDs<8> LEDS_8BIT;
 	typedef unisim::component::tlm2::com::xilinx::xps_gpio::GPIO_LEDs<5> _5_LEDS_POSITIONS;
@@ -157,8 +129,8 @@ private:
 	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutProtocolTypes> GENERATE_OUT_STUB;
 	typedef unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerStub CAPTURE_TRIGGER_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::InterruptProtocolTypes> IRQ_STUB;
-	typedef unisim::kernel::tlm2::InitiatorStub<CONFIG::CPU_CONFIG::FSB_WIDTH * 8> SPLB0_STUB;
-	typedef unisim::kernel::tlm2::InitiatorStub<CONFIG::CPU_CONFIG::FSB_WIDTH * 8> SPLB1_STUB;
+	typedef unisim::kernel::tlm2::InitiatorStub<MPLB_CONFIG::OUTPUT_BUSWIDTH> SPLB0_STUB;
+	typedef unisim::kernel::tlm2::InitiatorStub<MPLB_CONFIG::OUTPUT_BUSWIDTH> SPLB1_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<4> MASTER1_DCR_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<4> APU_DCR_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<4> DMAC0_DCR_STUB;
@@ -168,22 +140,35 @@ private:
 	typedef unisim::kernel::tlm2::TargetStub<4> EXTERNAL_SLAVE_DCR_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::com::xilinx::xps_gpio::GPIOProtocolTypes> GPIO_OUTPUT_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::com::xilinx::xps_gpio::GPIOProtocolTypes> GPIO_INPUT_STUB;
-
 	typedef unisim::kernel::tlm2::TargetStub<4> DCR_SLAVE_STUB;
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<typename CONFIG::MEMORY_ROUTER_CONFIG> MEMORY_ROUTER;
+
+	//=========================================================================
+	//===                      Aliases for services classes                 ===
+	//=========================================================================
+
+	typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
+	typedef unisim::service::debug::inline_debugger::InlineDebugger<CPU_ADDRESS_TYPE> INLINE_DEBUGGER;
+	typedef unisim::service::debug::gdb_server::GDBServer<CPU_ADDRESS_TYPE> GDB_SERVER;
+	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<CPU_ADDRESS_TYPE> LOADER;
+	typedef unisim::service::netstreamer::NetStreamer NETSTREAMER;
+	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
+	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
+	typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
+	typedef unisim::service::tee::char_io::Tee<2> CHAR_IO_TEE;
+	typedef unisim::service::web_terminal::WebTerminal WEB_TERMINAL;
+	typedef unisim::service::os::linux_os::PowerPCLinux32<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE> LINUX_OS;
 
 	//=========================================================================
 	//===                           Components                              ===
 	//=========================================================================
 	//  - PowerPC processor
 	CPU *cpu;
-	LINUX_OS_CPU *linux_os_cpu;
 	//  - RAM
 	RAM *ram;
 	//  - BRAM
 	BRAM *bram;
 	// - IRQ stubs
-	IRQ_STUB *input_interrupt_stub[CONFIG::INTC_CONFIG::C_NUM_INTR_INPUTS];
+	IRQ_STUB *input_interrupt_stub[INTC_CONFIG::C_NUM_INTR_INPUTS];
 	IRQ_STUB *critical_input_interrupt_stub;
 	IRQ_STUB *external_input_interrupt_stub;
 	// - MPLB
@@ -199,9 +184,9 @@ private:
 	// - Flash memory
 	FLASH *flash;
 	// - Capture trigger stubs
-	CAPTURE_TRIGGER_STUB *capture_trigger_stub[CONFIG::TIMER_CONFIG::NUM_TIMERS];
+	CAPTURE_TRIGGER_STUB *capture_trigger_stub[TIMER_CONFIG::NUM_TIMERS];
 	// - GenerateOutStub
-	GENERATE_OUT_STUB *generate_out_stub[CONFIG::TIMER_CONFIG::NUM_TIMERS];
+	GENERATE_OUT_STUB *generate_out_stub[TIMER_CONFIG::NUM_TIMERS];
 	// - PWM stub
 	PWM_STUB *pwm_stub;
 	// - DCR controller
@@ -244,61 +229,48 @@ private:
 	//===                            Services                               ===
 	//=========================================================================
 	//  - Multiformat loader
-	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
-	//  - Linux loader and Linux ABI translator
-	Linux<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE> *linux_os;
-	struct DEBUGGER_CONFIG
-	{
-		typedef CPU_ADDRESS_TYPE ADDRESS;
-		static const unsigned int NUM_PROCESSORS = 1;
-		/* gdb_server, inline_debugger and/or monitor */
-		static const unsigned int MAX_FRONT_ENDS = 2;
-	};
-	
-	typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> Debugger;
+	LOADER *loader;
 	//  - debugger back-end
-	Debugger *debugger;
+	DEBUGGER *debugger;
 	//  - GDB server
-	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
+	GDB_SERVER *gdb_server;
 	//  - Inline debugger
-	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger;
-	//  - profiler
-	Profiler<CPU_ADDRESS_TYPE> *profiler;
+	INLINE_DEBUGGER *inline_debugger;
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
-	//  - the optional power estimators
-	CachePowerEstimator *il1_power_estimator;
-	CachePowerEstimator *dl1_power_estimator;
-	CachePowerEstimator *itlb_power_estimator;
-	CachePowerEstimator *dtlb_power_estimator;
-	CachePowerEstimator *utlb_power_estimator;
 	//  - memory address translator from effective address to physical address
 	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *ram_effective_to_physical_address_translator;
 	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *flash_effective_to_physical_address_translator;
 	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *bram_effective_to_physical_address_translator;
-	// - telnet
-	unisim::service::telnet::Telnet *telnet;
+	// - netstreamer
+	NETSTREAMER *netstreamer;
+	// - profiler
+	PROFILER *profiler;
+	// - Instrumenter
+	INSTRUMENTER *instrumenter;
+	// - HTTP server
+	HTTP_SERVER *http_server;
+	// - Web Terminal
+	WEB_TERMINAL *web_terminal;
+	// - Char I/O Tee
+	CHAR_IO_TEE *char_io_tee;
+	// - Linux OS
+	LINUX_OS *linux_os;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
-	bool estimate_power;
-	bool enable_telnet;
+	bool enable_profiler;
 	bool enable_linux_os;
-	Parameter<bool> param_enable_gdb_server;
-	Parameter<bool> param_enable_inline_debugger;
-	Parameter<bool> param_estimate_power;
-	Parameter<bool> param_enable_telnet;
-	Parameter<bool> param_enable_linux_os;
+	unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
+	unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
+	unisim::kernel::variable::Parameter<bool> param_enable_profiler;
+	unisim::kernel::variable::Parameter<bool> param_enable_linux_os;
 
 	int exit_status;
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
-#ifdef WIN32
-	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
-#else
-	static void SigIntHandler(int signum);
-#endif
+	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
+	virtual void SigInt();
 };
 
 #endif // __VIRTEX5FXT_SIMULATOR_HH__

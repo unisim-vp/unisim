@@ -38,7 +38,7 @@
 #include <inttypes.h>
 #include <systemc>
 #include "unisim/kernel/tlm/tlm.hh"
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 #include "unisim/component/tlm/message/interrupt.hh"
 #include "unisim/component/tlm/message/memory.hh"
@@ -56,9 +56,9 @@ using unisim::kernel::tlm::TlmSendIf;
 using unisim::kernel::tlm::TlmMessage;
 using unisim::kernel::tlm::RequestPortIdentifier;
 using unisim::kernel::tlm::RequestPortIdentifierInterface;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
+using unisim::kernel::Object;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
 using unisim::util::garbage_collector::Pointer;
 using unisim::component::tlm::message::InterruptRequest;
 using unisim::component::tlm::message::MemoryRequest;

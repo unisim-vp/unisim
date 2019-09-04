@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2017,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,22 +33,17 @@
  *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
-}
-
 /* Rotate Left Word Immediate then Mask Insert */
 op e_rlwimi(29[6]:rs[5]:ra[5]:sh[5]:mb[5]:me[5]:0[1]);
 
 e_rlwimi.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rs);
-	uint32_t a = cpu->GetGPR(ra);
+	U32 s = cpu->GetGPR(rs);
+	UINT const m = UINT(Mask64(mb+32, me+32)), a = cpu->GetGPR(ra);
 	
 	// Compute the result
-	uint32_t r =RotateLeft(s, sh);
-	uint32_t m = uint32_t( Mask(mb, me));
-	uint32_t result = (r & m) | (a & ~m);
+  	UINT r = UINT(RotateLeft(s, sh));
+	UINT result = (r & m) | (a & ~m);
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);

@@ -6,7 +6,7 @@
  */
 
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/service/interfaces/Fault_Injector.hh"
 #include "unisim/service/Fault/MFI.hh"
 
@@ -18,7 +18,7 @@ namespace service{
 namespace fault{
 
 
-using unisim::kernel::service::Service;
+using unisim::kernel::Service;
 
 
 // ********

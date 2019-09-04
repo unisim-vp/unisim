@@ -39,7 +39,7 @@
 #include <string>
 #include <sstream>
 
-#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/linux_os.hh"
 #include "unisim/service/interfaces/loader.hh"
@@ -72,17 +72,17 @@ using unisim::kernel::logger::EndDebug;
 /** Constructor. */
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
-Linux(const char *name, unisim::kernel::service::Object *parent)
-  : unisim::kernel::service::Object(name, parent)
-  , unisim::kernel::service::Service<unisim::service::interfaces::LinuxOS>(
+Linux(const char *name, unisim::kernel::Object *parent)
+  : unisim::kernel::Object(name, parent)
+  , unisim::kernel::Service<unisim::service::interfaces::LinuxOS>(
                                                                            name, parent)
-  , unisim::kernel::service::Service<unisim::service::interfaces::Blob<ADDRESS_TYPE> >(
+  , unisim::kernel::Service<unisim::service::interfaces::Blob<ADDRESS_TYPE> >(
                                                                                        name, parent)
-  , unisim::kernel::service::Client<
+  , unisim::kernel::Client<
   unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent)
-  , unisim::kernel::service::Client<
+  , unisim::kernel::Client<
   unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> >(name, parent)
-  , unisim::kernel::service::Client<unisim::service::interfaces::Registers>(
+  , unisim::kernel::Client<unisim::service::interfaces::Registers>(
                                                                             name, parent)
   , linux_os_export_("linux-os-export", this)
   , blob_export_("blob-export", this)
@@ -127,8 +127,6 @@ Linux(const char *name, unisim::kernel::service::Object *parent)
                 " least one which is the name of the program executed). The"
                 " different tokens can be set up with the parameters"
                 " argv[<n>] where <n> can go up to argc - 1.")
-  , argv_()
-  , param_argv_()
   , apply_host_environment_(false)
   , param_apply_host_environment_("apply-host-environment", this,
                                   apply_host_environment_,
@@ -140,8 +138,6 @@ Linux(const char *name, unisim::kernel::service::Object *parent)
                 "Number of environment variables defined for the program"
                 " execution. The different variables can be set up with the"
                 " parameters envp[<n>] where <n> can go up to envc - 1.")
-  , envp_()
-  , param_envp_()
   , utsname_sysname_("Linux")
   , param_utsname_sysname_("utsname-sysname", this, utsname_sysname_,
                            "The value that the uname system call should"
@@ -177,7 +173,7 @@ Linux(const char *name, unisim::kernel::service::Object *parent)
   , param_hwcap_("hwcap", this, hwcap_,
                  "CPU Hardware capabilities to enable (e.g. \"swp thumb fastmult vfp\".")
 {
-  param_argc_.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+  param_argc_.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
   
   linux_os_export_.SetupDependsOn(memory_import_);
   linux_os_export_.SetupDependsOn(registers_import_);
@@ -188,23 +184,6 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux()
 {
   delete linuxlib_;
-
-  typename std::vector<std::string *>::iterator argv_it;
-  for(argv_it = argv_.begin(); argv_it != argv_.end(); argv_it++) {
-    delete *argv_it;
-  }
-  typename std::vector<unisim::kernel::service::Parameter<std::string> *>::iterator param_argv_it;
-  for(param_argv_it = param_argv_.begin(); param_argv_it != param_argv_.end(); param_argv_it++) {
-    delete *param_argv_it;
-  }
-  typename std::vector<std::string *>::iterator envp_it;
-  for(envp_it = envp_.begin(); envp_it != envp_.end(); envp_it++) {
-    delete *envp_it;
-  }
-  typename std::vector<unisim::kernel::service::Parameter<std::string> *>::iterator param_envp_it;
-  for(param_envp_it = param_envp_.begin(); param_envp_it != param_envp_.end(); param_envp_it++) {
-    delete *param_envp_it;
-  }
 }
 
 /** Method to execute when the Linux is disconnected from its client. */
@@ -217,30 +196,25 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::OnDisconnect()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
 {
-  for (unsigned int i = 0; i < ((argc_ == 0)?1:argc_); i++) {
-    std::stringstream argv_name, argv_desc, argv_val;
-    argv_name << "argv[" << i << "]";
-    argv_desc << "The '" << i << "' token in the command line.";
-    argv_val << "Undefined argv[" << i << "] value";
-    argv_.push_back(new std::string(argv_val.str().c_str()));
-    param_argv_.push_back(
-        new unisim::kernel::service::Parameter<std::string>(
-            argv_name.str().c_str(), this, *(argv_[i]),
-            argv_desc.str().c_str()));
-  }
-
-  param_envc_.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-  for (unsigned int i = 0; i < ((envc_ == 0)?1:envc_); i++) {
-    std::stringstream envp_name, envp_desc, envp_val;
-    envp_name << "envp[" << i << "]";
-    envp_desc << "The '" << i << "' token in the environment.";
-    envp_val << "Undefined envp[" << i << "] value";
-    envp_.push_back(new std::string(envp_val.str().c_str()));
-    param_envp_.push_back(
-        new unisim::kernel::service::Parameter<std::string>(
-            envp_name.str().c_str(), this, *(envp_[i]),
-            envp_desc.str().c_str()));
-  }
+  std::vector<std::string> argv, envp;
+  argv.reserve( argc_ );
+  envp.reserve( argc_ );
+  
+  for (unsigned int i = 0; i < ((argc_ == 0)?1:argc_); i++)
+    {
+      std::stringstream argv_name;
+      argv_name << "argv[" << i << "]";
+      argv.push_back( static_cast<std::string>(*GetSimulator()->FindVariable(argv_name.str().c_str(), unisim::kernel::VariableBase::VAR_PARAMETER) ) );
+    }
+  
+  param_envc_.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+  
+  for (unsigned int i = 0; i < ((envc_ == 0)?1:envc_); i++)
+    {
+      std::stringstream envp_name;
+      envp_name << "envp[" << i << "]";
+      envp.push_back( static_cast<std::string>(*GetSimulator()->FindVariable(envp_name.str().c_str(), unisim::kernel::VariableBase::VAR_PARAMETER) ) );
+    }
 
   // check the endianness parameter
   if(endianness_ == unisim::util::endian::E_UNKNOWN_ENDIAN)
@@ -263,10 +237,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
 
   // set the linuxlib command line
   if (argc_ != 0) {
-    std::vector<std::string> cmdline;
-    for (unsigned int i = 0; i < argc_; i++)
-      cmdline.push_back(*argv_[i]);
-    bool success = linuxlib_->SetCommandLine(cmdline);
+    bool success = linuxlib_->SetCommandLine(argv);
     if (!success) {
       logger_ << DebugError
           << "Could not set the command line."
@@ -282,10 +253,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
 
   // set the linuxlib environment
   if (envc_ != 0) {
-    std::vector<std::string> envparms;
-    for (unsigned int i = 0; i < envc_; i++)
-      envparms.push_back(*envp_[i]);
-    bool success = linuxlib_->SetEnvironment(envparms);
+    bool success = linuxlib_->SetEnvironment(envp);
     if (!success) {
       logger_ << DebugError
           << "Could not set the application environment."
@@ -367,7 +335,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Setup(
-    unisim::kernel::service::ServiceExportBase *srv_export) {
+    unisim::kernel::ServiceExportBase *srv_export) {
   if ( srv_export == &linux_os_export_ ) {
     if (!linuxlib_->SetupTarget()) {
       logger_ << DebugError << "Could not setup the linux system"

@@ -41,10 +41,13 @@
 #include <unisim/util/random/random.hh>
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/time/sc_time/time.hh>
+#include <unisim/service/instrumenter/instrumenter.hh>
 
+#include <iostream>
+#include <vector>
 #include <queue>
 
-using unisim::kernel::tlm2::OUTPUT_INSTRUMENTATION;
+using unisim::service::instrumenter::OUTPUT_INSTRUMENTATION;
 
 using unisim::kernel::tlm2::tlm_can_core;
 using unisim::kernel::tlm2::tlm_can_core_config;
@@ -76,8 +79,9 @@ using unisim::kernel::logger::EndDebugInfo;
 
 struct Node : tlm_can_core<Node>
 {
-	Node(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0)
-		: tlm_can_core<Node>(name, parent)
+	Node(const sc_core::sc_module_name& name, unisim::kernel::Object *parent = 0)
+		: unisim::kernel::Object(name, parent)
+		, tlm_can_core<Node>(name, parent)
 		, enabled(false)
 		, config()
 		, tx_fifo()
@@ -384,13 +388,13 @@ protected:
 	uint8_t receive_error_count;
 	uint8_t transmit_error_count;
 	bool loopback;
-	unisim::kernel::service::Parameter<bool> param_loopback;
+	unisim::kernel::variable::Parameter<bool> param_loopback;
 	bool bus_monitoring;
-	unisim::kernel::service::Parameter<bool> param_bus_monitoring;
+	unisim::kernel::variable::Parameter<bool> param_bus_monitoring;
 	bool automatic_retransmission;
-	unisim::kernel::service::Parameter<bool> param_automatic_retransmission;
+	unisim::kernel::variable::Parameter<bool> param_automatic_retransmission;
 	bool restricted_operation;
-	unisim::kernel::service::Parameter<bool> param_restricted_operation;
+	unisim::kernel::variable::Parameter<bool> param_restricted_operation;
 	unsigned int transmit_pause;
 	
 };
@@ -401,7 +405,7 @@ public:
 	Simulator(const sc_core::sc_module_name& name, int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
-	using unisim::kernel::service::Simulator::Setup;
+	using unisim::kernel::Simulator::Setup;
 	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
 protected:
@@ -421,13 +425,15 @@ private:
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
+	//  - Instrumenter
+	unisim::service::instrumenter::Instrumenter *instrumenter;
 	
 	sc_core::sc_time max_time;
 	
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_max_time;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_max_time;
 	
 	int exit_status;
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 	
 	virtual void SigInt();
 };
@@ -440,6 +446,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, can_bus(0)
 	, sim_time(0)
 	, host_time(0)
+	, instrumenter(0)
 	, max_time(sc_core::SC_ZERO_TIME)
 	, param_max_time("max-time", 0, max_time, "Maximum time to simulate (zero means forever)")
 	, exit_status(0)
@@ -459,6 +466,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
+	//  - Instrumenter
+	instrumenter = new unisim::service::instrumenter::Instrumenter("instrumenter");
 	
 	//=========================================================================
 	//===                          Port registration                        ===
@@ -469,11 +478,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//=========================================================================
 	
 	std::vector<sc_core::sc_signal<bool> *> CAN_TX;
-	CAN_TX.push_back(&CreateSignal("CAN_TX_0", true, OUTPUT_INSTRUMENTATION));
-	CAN_TX.push_back(&CreateSignal("CAN_TX_1", true, OUTPUT_INSTRUMENTATION));
-	CAN_TX.push_back(&CreateSignal("CAN_TX_2", true, OUTPUT_INSTRUMENTATION));
+	CAN_TX.push_back(&instrumenter->CreateSignal("CAN_TX_0", true, OUTPUT_INSTRUMENTATION));
+	CAN_TX.push_back(&instrumenter->CreateSignal("CAN_TX_1", true, OUTPUT_INSTRUMENTATION));
+	CAN_TX.push_back(&instrumenter->CreateSignal("CAN_TX_2", true, OUTPUT_INSTRUMENTATION));
 	
-	can_bus = new tlm_can_bus("can_bus", CreateSignal("CAN_RX", true, OUTPUT_INSTRUMENTATION), CAN_TX, this);
+	can_bus = new tlm_can_bus("can_bus", instrumenter->CreateSignal("CAN_RX", true, OUTPUT_INSTRUMENTATION), CAN_TX, this);
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -496,9 +505,10 @@ Simulator::~Simulator()
 	if(node1) delete node1;
 	if(node2) delete node2;
 	if(can_bus) delete can_bus;
+	if(instrumenter) delete instrumenter;
 }
 
-void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
+void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM CAN testbench");
@@ -591,7 +601,7 @@ int Simulator::GetExitStatus() const
 
 void Simulator::SigInt()
 {
-	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
+	unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 }
 
 extern "C" 
@@ -600,38 +610,24 @@ __declspec(dllexport)
 #endif
 int sc_main(int argc, char *argv[])
 {
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		std::cerr << "WSAStartup failed" << std::endl;
-		return -1;
-	}
-#endif
 	Simulator *simulator = new Simulator("HARDWARE", argc, argv);
 
 	switch(simulator->Setup())
 	{
-		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+		case unisim::kernel::Simulator::ST_OK_DONT_START:
 			break;
-		case unisim::kernel::service::Simulator::ST_WARNING:
+		case unisim::kernel::Simulator::ST_WARNING:
 			std::cerr << "Some warnings occurred during setup" << std::endl;
-		case unisim::kernel::service::Simulator::ST_OK_TO_START:
+		case unisim::kernel::Simulator::ST_OK_TO_START:
 			simulator->Run();
 			break;
-		case unisim::kernel::service::Simulator::ST_ERROR:
+		case unisim::kernel::Simulator::ST_ERROR:
 			std::cerr << "Can't start simulation because of previous errors" << std::endl;
 			break;
 	}
 
 	int exit_status = simulator->GetExitStatus();
 	if(simulator) delete simulator;
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-	// releases the winsock2 resources
-	WSACleanup();
-#endif
 
 	return exit_status;
 }

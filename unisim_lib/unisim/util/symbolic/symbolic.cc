@@ -36,6 +36,8 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
 #include <iostream>
+#include <vector>
+#include <algorithm>
 
 namespace unisim {
 namespace util {
@@ -53,24 +55,85 @@ namespace symbolic {
   }
   std::ostream& ConstNodeBase::warn() { return std::cerr; }
   
+  ConstNodeBase const*
+  Expr::Eval( EvalSpace const& evs ) const
+  {
+    unsigned subcount = node->SubCount();
+    Expr dispose[subcount];
+    ConstNodeBase const* cnbs[subcount];
+    for (unsigned idx = 0; idx < subcount; ++idx)
+      {
+        if (not (cnbs[idx] = node->GetSub(idx).Eval( evs )))
+          return 0;
+        dispose[idx] = cnbs[idx];
+      }
+    return node->Eval( evs, &cnbs[0] );
+  }
+    
+  ConstNodeBase const*
+  Expr::ConstSimplify()
+  {
+    unsigned subcount = node->SubCount();
+    Expr args[subcount];
+    ConstNodeBase const* cnbs[subcount];
+    bool const_args = true, simplified = false;
+    for (unsigned idx = 0; idx < subcount; ++idx)
+      {
+        if (not (cnbs[idx] = (args[idx] = node->GetSub(idx)).ConstSimplify()))
+          const_args = false;
+        if (args[idx] != node->GetSub(idx))
+          simplified = true;
+      }
+    
+    if (const_args)
+      {
+        if (ConstNodeBase const* cn = node->Eval( EvalSpace(), &cnbs[0] ))
+          {
+            *this = Expr( cn );
+            return cn;
+          }
+      }
+
+    if (simplified)
+      {
+        ExprNode* nn = node->Mutate();
+        for (unsigned idx = 0; idx < subcount; ++idx)
+          const_cast<Expr&>( nn->GetSub(idx) ) = args[idx];
+        *this = Expr( nn );
+      }
+    
+    return 0;
+  }
+    
+  
+  bool   EvalMul( bool, bool ) { throw std::logic_error( "No * for bool." ); }
+  
+  long double   EvalMod( long double l, long double r ) { throw std::logic_error( "No ^ for long double." ); }
   double   EvalMod( double l, double r ) { throw std::logic_error( "No ^ for double." ); }
   float    EvalMod( float l, float r ) { throw std::logic_error( "No ^ for float." ); }
   
+  long double   EvalXor( long double l, long double r ) { throw std::logic_error( "No ^ for long double." ); }
   double   EvalXor( double l, double r ) { throw std::logic_error( "No ^ for double." ); }
   float    EvalXor( float l, float r ) { throw std::logic_error( "No ^ for float." ); }
   
+  long double   EvalAnd( long double l, long double r ) { throw std::logic_error( "No & for long double." ); }
   double   EvalAnd( double l, double r ) { throw std::logic_error( "No & for double." ); }
   float    EvalAnd( float l, float r ) { throw std::logic_error( "No & for float." ); }
   
+  long double   EvalOr( long double l, long double r ) { throw std::logic_error( "No | for long double." ); }
   double   EvalOr( double l, double r ) { throw std::logic_error( "No | for double." ); }
   float    EvalOr( float l, float r ) { throw std::logic_error( "No | for float." ); }
   
+  long double   EvalNot( long double val ) { throw std::logic_error( "No ~ for long double." ); }
   double   EvalNot( double val ) { throw std::logic_error( "No ~ for double." ); }
   float    EvalNot( float val ) { throw std::logic_error( "No ~ for float." ); }
   
+  bool   EvalSHL( bool, uint8_t ) { throw std::logic_error( "No << for bool." ); }
+  long double   EvalSHL( long double, uint8_t ) { throw std::logic_error( "No << for long double." ); }
   double   EvalSHL( double, uint8_t ) { throw std::logic_error( "No << for double." ); }
   float    EvalSHL( float, uint8_t ) { throw std::logic_error( "No << for float." ); }
   
+  long double   EvalSHR( long double, uint8_t ) { throw std::logic_error( "No >> for long double." ); }
   double   EvalSHR( double, uint8_t ) { throw std::logic_error( "No >> for double." ); }
   float    EvalSHR( float, uint8_t ) { throw std::logic_error( "No >> for float." ); }
   

@@ -43,13 +43,13 @@ wrtee.execute = {
 	}
 	
 	// Read the input operand
-	uint32_t s = cpu->GetGPR(rs);
+	UINT s = cpu->GetGPR(rs);
 	
-	msr.Set<CPU::MSR::EE>((s & uint32_t( 0x8000)) != uint32_t( 0));
+	msr.Set<CPU::MSR::EE>((s >> 15) & UINT(1));
 	
 	return true;
 }
 
 wrtee.disasm = {
-	os << "wrtee r" << (unsigned int) rs;
+	os << "wrtee " << GPRPrint(rs);
 }

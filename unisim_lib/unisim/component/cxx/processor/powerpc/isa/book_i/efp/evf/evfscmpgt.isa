@@ -38,5 +38,5 @@ evfscmpgt.execute = {
 	return false;
 }
 evfscmpgt.disasm = {
-	os << "evfscmpgt " << (unsigned int) bf << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "evfscmpgt " << (unsigned int) bf << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

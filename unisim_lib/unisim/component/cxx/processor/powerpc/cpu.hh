@@ -36,9 +36,13 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_HH__
 
 #include <unisim/util/reg/core/register.hh>
+#include <unisim/util/reg/core/register.tcc>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/util/nat_sort/nat_sort.hh>
+#include <unisim/util/cache/cache.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
@@ -52,6 +56,8 @@
 #include <unisim/service/interfaces/synchronizable.hh>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/inlining/inlining.hh>
+#include <unisim/util/debug/simple_register_registry.hh>
+#include <unisim/component/cxx/processor/powerpc/floating.hh>
 #include <map>
 #include <stack>
 #include <vector>
@@ -181,6 +187,14 @@ template <typename FIELD, int OFFSET1, int OFFSET2 = -1, unisim::util::reg::core
 struct Field : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, ACCESS>
 {
 	typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, ACCESS> Super;
+};
+
+//////////////////////////////////// Field64<> //////////////////////////////////
+
+template <typename FIELD, int OFFSET1, int OFFSET2 = -1, unisim::util::reg::core::Access ACCESS = unisim::util::reg::core::SW_RW>
+struct Field64 : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (63 - OFFSET2) : (63 - OFFSET1)) : (63 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, ACCESS>
+{
+	typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (63 - OFFSET2) : (63 - OFFSET1)) : (63 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, ACCESS> Super;
 };
 
 //////////////////////////////// Register /////////////////////////////////
@@ -383,6 +397,158 @@ private:
 	}
 };
 
+struct FPSCR : Register<FPSCR, 32>
+{
+public:
+	typedef Register<FPSCR, 32> Super;
+	
+	struct FX     : Field<FX    , 0     > {}; // Floating-point exception summary
+	struct FEX    : Field<FEX   , 1     > {}; // Floating-point enabled exception summary
+	struct VX     : Field<VX    , 2     > {}; // Floating-point invalid operation exception summary
+	struct OX     : Field<OX    , 3     > {}; // Floating-point overflow exception
+	struct _0_3   : Field<_0_3  , 0, 3  > {}; // FX, FEX, VX, OX bunch
+	struct UX     : Field<UX    , 4     > {}; // Floating-point underflow exception
+	struct ZX     : Field<ZX    , 5     > {}; // Floating-point zero divide exception
+	struct XX     : Field<XX    , 6     > {}; // Floating-point inexact exception
+	struct VXSNAN : Field<VXSNAN, 7     > {}; // Floating-point invalid operation exception for SNaN
+	struct VXISI  : Field<VXISI , 8     > {}; // Floating-point invalid operation exception for infinity - infinity
+	struct VXIDI  : Field<VXIDI , 9     > {}; // Floating-point invalid operation exception for infinity / infinity
+	struct VXZDZ  : Field<VXZDZ , 10    > {}; // Floating-point invalid operation exception for zero / zero
+	struct VXIMZ  : Field<VXIMZ , 11    > {}; // Floating-point invalid operation exception for infinity * zero
+	struct VXVC   : Field<VXVC  , 12    > {}; // Floating-point invalid operation exception for invalid compare
+	struct FR     : Field<FR    , 13    > {}; // Floating-point fraction rounded
+	struct FI     : Field<FI    , 14    > {}; // Floating-point fraction inexact
+	struct FPRF   : Field<FPRF  , 15, 19>     // Floating-point result flags
+	{
+		static TYPE          QNAN    () { return 0x11; }
+		static TYPE NEGATIVE_INFINITY() { return 0x9; }
+		static TYPE NEGATIVE_NORMAL  () { return 0x8; }
+		static TYPE NEGATIVE_DENORMAL() { return 0x18; }
+		static TYPE NEGATIVE_ZERO    () { return 0x12; }
+		static TYPE POSITIVE_ZERO    () { return 0x2; }
+		static TYPE POSITIVE_DENORMAL() { return 0x14; }
+		static TYPE POSITIVE_NORMAL  () { return 0x4; }
+		static TYPE POSITIVE_INFINITY() { return 0x5; }
+	};
+	struct FPCC   : Field<FPCC  , 16, 19> {}; // Floating-Point Condition Code
+	struct VXSOFT : Field<VXSOFT, 21    > {}; // Floating-point invalid operation exception for software request
+	struct VXSQRT : Field<VXSQRT, 22    > {}; // Floating-point invalid operation exception for invalid square root
+	struct VXCVI  : Field<VXCVI , 23    > {}; // Floating-point invalid operation exception for invalid integer convert
+	struct VE     : Field<VE    , 24    > {}; // Floating-point invalid operation exception enable
+	struct OE     : Field<OE    , 25    > {}; // IEEE floating-point overflow exception enable
+	struct UE     : Field<UE    , 26    > {}; // IEEE floating-point underflow exception enable
+	struct ZE     : Field<ZE    , 27    > {}; // IEEE floating-point zero divide exception enable
+	struct XE     : Field<XE    , 28    > {}; // Floating-point inexact exception enable
+	struct NI     : Field<NI    , 29    > {}; // Floating-point non-IEEE mode
+	struct RN     : Field<RN    , 30, 31> {}; // Floating-point rounding control
+
+	typedef FieldSet< FX, FEX, VX, OX, UX, ZX, XX, VXSNAN, VXISI, VXIDI, VXZDZ, VXIMZ, VXVC  
+	                , FR, FI, FPRF, VXSOFT, VXSQRT, VXCVI, VE, OE, UE, ZE, XE, NI, RN > ALL;
+	
+	FPSCR() : Super() { Init(); }
+	FPSCR(uint32_t _value) : Super(_value) { Init(); }
+	using Super::operator =;
+	
+	void SetInexact(bool i)
+	{
+		this->template Set<FI>(i);
+		if(i)
+		{
+			SetException(XX());
+		}
+	}
+
+	template <typename FIELD>
+	void SetInvalid(FIELD const& vxfield)
+	{
+		SetException(vxfield);
+		this->template Set<VX>(1);
+	}
+	
+	template <typename FIELD, bool dummy = true> struct EnableFlag { struct FLAG : unisim::util::reg::core::Field<FLAG, 0, 0> {}; };
+	template <bool dummy> struct EnableFlag<VX, dummy> { typedef VE FLAG; };
+	template <bool dummy> struct EnableFlag<OX, dummy> { typedef OE FLAG; };
+	template <bool dummy> struct EnableFlag<UX, dummy> { typedef UE FLAG; };
+	template <bool dummy> struct EnableFlag<ZX, dummy> { typedef ZE FLAG; };
+	template <bool dummy> struct EnableFlag<XX, dummy> { typedef XE FLAG; };
+
+	template <typename FIELD>
+	void SetException(FIELD const&)
+	{
+		if(not this->Get<FIELD>())
+		{
+			this->template Set<FX>(1); // Exception bit change from 0 to 1
+		}
+		this->template Set<FIELD>(1);
+		// Check if exception (VE, OE, UE, ZE, XE) is enable (enable bits locations are 22 bit
+		// upper than their exception bits counterparts that is VX, OX, UX, ZX, XX)
+		if(this->template Get<typename EnableFlag<FIELD>::FLAG>())
+		{
+			this->Set<FEX>(1);
+		}
+	}
+private:
+	void Init()
+	{
+		this->SetName("fpscr");
+		this->SetDescription("Floating-point Status and Control Register");
+		
+		FX    ::SetName("FX");     FX    ::SetDescription("Floating-point exception summary");
+		FEX   ::SetName("FEX");    FEX   ::SetDescription("Floating-point enabled exception summary");
+		VX    ::SetName("VX");     VX    ::SetDescription("Floating-point invalid operation exception summary");
+		OX    ::SetName("OX");     OX    ::SetDescription("Floating-point overflow exception");
+		UX    ::SetName("UX");     UX    ::SetDescription("Floating-point underflow exception");
+		ZX    ::SetName("ZX");     ZX    ::SetDescription("Floating-point zero divide exception");
+		XX    ::SetName("XX");     XX    ::SetDescription("Floating-point inexact exception");
+		VXSNAN::SetName("VXSNAN"); VXSNAN::SetDescription("Floating-point invalid operation exception for SNaN");
+		VXISI ::SetName("VXISI");  VXISI ::SetDescription("Floating-point invalid operation exception for infinity - infinity");
+		VXIDI ::SetName("VXIDI");  VXIDI ::SetDescription("Floating-point invalid operation exception for infinity / infinity");
+		VXZDZ ::SetName("VXZDZ");  VXZDZ ::SetDescription("Floating-point invalid operation exception for zero / zero");
+		VXIMZ ::SetName("VXIMZ");  VXIMZ ::SetDescription("Floating-point invalid operation exception for infinity * zero");
+		VXVC  ::SetName("VXVC");   VXVC  ::SetDescription("Floating-point invalid operation exception for invalid compare");
+		FR    ::SetName("FR");     FR    ::SetDescription("Floating-point fraction rounded");
+		FI    ::SetName("FI");     FI    ::SetDescription("Floating-point fraction inexact");
+		FPRF  ::SetName("FPRF");   FPRF  ::SetDescription("Floating-point result flags");
+		VXSOFT::SetName("VXSOFT"); VXSOFT::SetDescription("Floating-point invalid operation exception for software request");
+		VXSQRT::SetName("VXSQRT"); VXSQRT::SetDescription("Floating-point invalid operation exception for invalid square root");
+		VXCVI ::SetName("VXCVI");  VXCVI ::SetDescription("Floating-point invalid operation exception for invalid integer convert");
+		VE    ::SetName("VE");     VE    ::SetDescription("Floating-point invalid operation exception enable");
+		OE    ::SetName("OE");     OE    ::SetDescription("IEEE floating-point overflow exception enable");
+		UE    ::SetName("UE");     UE    ::SetDescription("IEEE floating-point underflow exception enable");
+		ZE    ::SetName("ZE");     ZE    ::SetDescription("IEEE floating-point zero divide exception enable");
+		XE    ::SetName("XE");     XE    ::SetDescription("Floating-point inexact exception enable");
+		NI    ::SetName("NI");     NI    ::SetDescription("Floating-point non-IEEE mode");
+		RN    ::SetName("RN");     RN    ::SetDescription("Floating-point rounding control");
+	}
+};
+
+//////////////////////// Floating-Point Register //////////////////////////
+
+struct FPR : SoftDouble
+{
+	typedef SoftDouble Super;
+	
+	FPR() : Super() {}
+	
+	void Init(unsigned int reg_num)
+	{
+		std::stringstream sstr;
+		sstr << "f" << reg_num;
+		name = sstr.str();
+	}
+	
+	unisim::service::interfaces::Register *CreateRegisterInterface()
+	{
+		return new FloatingPointRegisterInterface(name.c_str(), this);
+	}
+	
+	const std::string& GetName() const { return name; }
+	
+	using Super::operator =;
+private:
+	std::string name;
+};
+
 ///////////////////////////// TypeForByteSize<> ///////////////////////////////
 
 template <unsigned int BYTE_SIZE> struct TypeForByteSize {};
@@ -404,49 +570,48 @@ template <unsigned int SIZE> struct TypeForBitSize
 	static const TYPE MASK = (SIZE == (8 * BYTE_SIZE)) ? (~TYPE(0)) : ((TYPE(1) << SIZE) - 1);
 };
 
-////////////////////////////// PoolAllocator<> ////////////////////////////////
-
-template <typename OBJECT>
-class PoolAllocator
-{
-public:
-	PoolAllocator();
-	virtual ~PoolAllocator();
-	
-	OBJECT *Allocate();
-	void Free(OBJECT *object);
-private:
-	std::stack<OBJECT *, std::vector<OBJECT *> > free_list;
-	std::vector<OBJECT *> objects;
-};
-
 template <typename TYPES, typename CONFIG>
 class CPU
-	: public unisim::kernel::service::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::ADDRESS> >
-	, public unisim::kernel::service::Client<typename unisim::service::interfaces::DebugYielding>
-	, public unisim::kernel::service::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::ADDRESS> >
-	, public unisim::kernel::service::Client<typename unisim::service::interfaces::TrapReporting>
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::MemoryAccessReportingControl>
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
-	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Synchronizable>
+	: public unisim::util::cache::MemorySubSystem<TYPES, typename CONFIG::CPU>
+	, public unisim::kernel::Client<typename unisim::service::interfaces::Memory<typename TYPES::PHYSICAL_ADDRESS> >
+	, public unisim::kernel::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::EFFECTIVE_ADDRESS> >
+	, public unisim::kernel::Client<typename unisim::service::interfaces::DebugYielding>
+	, public unisim::kernel::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::EFFECTIVE_ADDRESS> >
+	, public unisim::kernel::Client<typename unisim::service::interfaces::TrapReporting>
+	, public unisim::kernel::Client<typename unisim::service::interfaces::LinuxOS>
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Memory<typename TYPES::EFFECTIVE_ADDRESS> >
+	, public unisim::kernel::Service<typename unisim::service::interfaces::MemoryAccessReportingControl>
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Registers>
+	, public unisim::kernel::Service<typename unisim::service::interfaces::Synchronizable>
+	, public unisim::kernel::Service<typename unisim::service::interfaces::MemoryInjection<typename TYPES::EFFECTIVE_ADDRESS> >
 {
 public:
+	typedef typename unisim::util::cache::MemorySubSystem<TYPES, typename CONFIG::CPU> SuperMSS;
+	typedef typename TYPES::EFFECTIVE_ADDRESS EFFECTIVE_ADDRESS;
+	typedef typename TYPES::ADDRESS ADDRESS;
+	typedef typename TYPES::PHYSICAL_ADDRESS PHYSICAL_ADDRESS;
+	typedef typename TYPES::STORAGE_ATTR STORAGE_ATTR;
+	
 	/////////////////////////// service imports ///////////////////////////////
 
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::ADDRESS> > symbol_table_lookup_import;
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::DebugYielding> debug_yielding_import;
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::ADDRESS> > memory_access_reporting_import;
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::TrapReporting> trap_reporting_import;
+	unisim::kernel::ServiceImport<typename unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> > memory_import;
+	unisim::kernel::ServiceImport<typename unisim::service::interfaces::SymbolTableLookup<EFFECTIVE_ADDRESS> > symbol_table_lookup_import;
+	unisim::kernel::ServiceImport<typename unisim::service::interfaces::DebugYielding> debug_yielding_import;
+	unisim::kernel::ServiceImport<typename unisim::service::interfaces::MemoryAccessReporting<EFFECTIVE_ADDRESS> > memory_access_reporting_import;
+	unisim::kernel::ServiceImport<typename unisim::service::interfaces::TrapReporting> trap_reporting_import;
+	unisim::kernel::ServiceImport<typename unisim::service::interfaces::LinuxOS> linux_os_import;
 	
 	/////////////////////////// service exports ///////////////////////////////
 
-	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
-	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::Registers> registers_export;
-	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::Synchronizable> synchronizable_export;
+	unisim::kernel::ServiceExport<typename unisim::service::interfaces::Memory<EFFECTIVE_ADDRESS> > memory_export;
+	unisim::kernel::ServiceExport<typename unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
+	unisim::kernel::ServiceExport<typename unisim::service::interfaces::Registers> registers_export;
+	unisim::kernel::ServiceExport<typename unisim::service::interfaces::Synchronizable> synchronizable_export;
+	unisim::kernel::ServiceExport<typename unisim::service::interfaces::MemoryInjection<EFFECTIVE_ADDRESS> > memory_injection_export;
 
 	////////////////////////////// constructor ////////////////////////////////
 
-	CPU(const char *name, unisim::kernel::service::Object *parent = 0);
+	CPU(const char *name, unisim::kernel::Object *parent = 0);
 
 	/////////////////////////////// destructor ////////////////////////////////
 
@@ -463,27 +628,42 @@ public:
 	
 	//////////////////////////// Logger streams ///////////////////////////////
 	
-	std::ostream& GetDebugInfoStream() { return logger.DebugInfoStream(); }
-	std::ostream& GetDebugWarningStream() { return logger.DebugWarningStream(); }
-	std::ostream& GetDebugErrorStream() { return logger.DebugErrorStream(); }
+	std::ostream& GetDebugInfoStream() ALWAYS_INLINE { return logger.DebugInfoStream(); }
+	std::ostream& GetDebugWarningStream() ALWAYS_INLINE { return logger.DebugWarningStream(); }
+	std::ostream& GetDebugErrorStream() ALWAYS_INLINE { return logger.DebugErrorStream(); }
 	
-	//////////////// unisim::service::interface::Registers ////////////////////
+	/////////////// unisim::service::interfaces::Memory<> /////////////////////
+	
+	virtual void ResetMemory();
+	virtual bool ReadMemory(EFFECTIVE_ADDRESS addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(EFFECTIVE_ADDRESS addr, const void *buffer, uint32_t size);
+
+	//////////////// unisim::service::interfaces::Registers ////////////////////
 	
 	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
 	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
-	//////////////// unisim::service::interface::DebugControl /////////////////
+	//////////////// unisim::service::interfaces::DebugControl /////////////////
 	
 	virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report);
 	
-	/////////////// unisim::service::interface::Synchronizable ////////////////
+	/////////////// unisim::service::interfaces::Synchronizable ////////////////
 	
 	virtual void Synchronize();
+
+	//////////// unisim::service::interfaces::MemoryInjection<> ////////////////
+	
+	virtual bool InjectReadMemory(EFFECTIVE_ADDRESS ea, void *buffer, uint32_t size);
+	virtual bool InjectWriteMemory(EFFECTIVE_ADDRESS ea, const void *buffer, uint32_t size);
 
 	///////////// External Device Control Register access methods /////////////
 		
 	virtual void DCRRead(unsigned int dcrn, uint32_t& value) { value = 0; }
 	virtual void DCRWrite(unsigned int dcrn, uint32_t value) {}
+	
+	/////////////////////////// Internal timers ///////////////////////////////
+	
+	virtual void RunInternalTimers() {}
 
 	///////////// Interface with .isa behavioral description files ////////////
 	
@@ -500,12 +680,16 @@ public:
 	inline CTR& GetCTR() ALWAYS_INLINE { return ctr; }
 	inline XER& GetXER() ALWAYS_INLINE { return xer; }
 	inline CR& GetCR() ALWAYS_INLINE { return cr; }
+	inline FPSCR& GetFPSCR() { return fpu.GetFPSCR(); }
+	inline FPR& GetFPR(unsigned int n) { return fpu.GetFPR(n); }
+	inline void SetFPR(unsigned int n, const SoftDouble& v) { fpu.SetFPR(n, v); }
+	inline bool CheckFloatingPointException() { return fpu.CheckFloatingPointException(static_cast<typename CONFIG::CPU *>(this)); }
 	
-	inline typename TYPES::ADDRESS GetCIA() const ALWAYS_INLINE { return cia; }
+	inline typename TYPES::EFFECTIVE_ADDRESS GetCIA() const ALWAYS_INLINE { return cia; }
 	inline void SetCIA(uint32_t value) ALWAYS_INLINE { cia = value; }
-	inline typename TYPES::ADDRESS GetNIA() const ALWAYS_INLINE { return nia; }
-	inline void SetNIA(typename TYPES::ADDRESS value) ALWAYS_INLINE { nia = value; }
-	inline void Branch(typename TYPES::ADDRESS value) ALWAYS_INLINE { nia = value; }
+	inline typename TYPES::EFFECTIVE_ADDRESS GetNIA() const ALWAYS_INLINE { return nia; }
+	inline void SetNIA(typename TYPES::EFFECTIVE_ADDRESS value) ALWAYS_INLINE { nia = value; }
+	inline void Branch(typename TYPES::EFFECTIVE_ADDRESS value) ALWAYS_INLINE { nia = value; }
 
 	bool MoveFromSPR(unsigned int n, uint32_t& value);
 	bool MoveToSPR(unsigned int n, uint32_t value);
@@ -518,25 +702,83 @@ public:
 	bool MoveFromTMR(unsigned int n, uint32_t& value);
 	bool MoveToTMR(unsigned int n, uint32_t value);
 
-	bool Int8Load(unsigned int rd, typename TYPES::ADDRESS ea);
-	bool Int16Load(unsigned int rd, typename TYPES::ADDRESS ea);
-	bool SInt16Load(unsigned int rd, typename TYPES::ADDRESS ea);
-	bool Int32Load(unsigned int rd, typename TYPES::ADDRESS ea);
-	bool Int16LoadByteReverse(unsigned int rd, typename TYPES::ADDRESS ea);
-	bool Int32LoadByteReverse(unsigned int rd, typename TYPES::ADDRESS ea);
-	bool IntLoadMSBFirst(unsigned int rd, typename TYPES::ADDRESS ea, unsigned int size);
-	bool Int8Store(unsigned int rs, typename TYPES::ADDRESS ea);
-	bool Int16Store(unsigned int rs, typename TYPES::ADDRESS ea);
-	bool Int32Store(unsigned int rs, typename TYPES::ADDRESS ea);
-	bool Int16StoreByteReverse(unsigned int rs, typename TYPES::ADDRESS ea);
-	bool Int32StoreByteReverse(unsigned int rs, typename TYPES::ADDRESS ea);
-	bool IntStoreMSBFirst(unsigned int rs, typename TYPES::ADDRESS ea, unsigned int size);
-	template <typename REGISTER> bool SpecialLoad(REGISTER& reg, typename TYPES::ADDRESS ea);
-	template <typename REGISTER> bool SpecialStore(const REGISTER& reg, typename TYPES::ADDRESS ea);
+	template <bool DEBUG, bool EXEC, bool WRITE>
+	inline bool Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRESS& size_to_protection_boundary, ADDRESS& virt_addr, PHYSICAL_ADDRESS& phys_addr, STORAGE_ATTR& storage_attr);
+
+	virtual bool DataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm);
+	virtual bool DataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+	virtual bool InstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+
+	virtual bool DebugDataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+	virtual bool DebugDataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+	virtual bool DebugInstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
+
+	template <typename T, bool REVERSE, unisim::util::endian::endian_type ENDIAN> void ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr);
+
+	template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN> bool DataLoad(T& value, EFFECTIVE_ADDRESS ea);
+	template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN> bool DataStore(T value, EFFECTIVE_ADDRESS ea);
 	
-	std::string GetObjectFriendlyName(typename TYPES::ADDRESS addr);
+	bool DebugDataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
+	bool DebugDataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);
+
+	bool Int8Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool SInt16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int32Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int16LoadByteReverse(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int32LoadByteReverse(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool IntLoadMSBFirst(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size);
+	bool Int8Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int16Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int32Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int16StoreByteReverse(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int32StoreByteReverse(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool IntStoreMSBFirst(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size);
+	template <typename REGISTER> bool SpecialLoad(REGISTER& reg, typename TYPES::EFFECTIVE_ADDRESS ea);
+	template <typename REGISTER> bool SpecialStore(const REGISTER& reg, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Fp32Load(unsigned int fd, EFFECTIVE_ADDRESS ea) { return fpu.Fp32Load(static_cast<typename CONFIG::CPU *>(this), fd, ea); }
+	bool Fp64Load(unsigned int fd, EFFECTIVE_ADDRESS ea) { return fpu.Fp64Load(static_cast<typename CONFIG::CPU *>(this), fd, ea); }
+	bool Fp32Store(unsigned int fs, EFFECTIVE_ADDRESS ea) { return fpu.Fp32Store(static_cast<typename CONFIG::CPU *>(this), fs, ea); }
+	bool Fp64Store(unsigned int fs, EFFECTIVE_ADDRESS ea) { return fpu.Fp64Store(static_cast<typename CONFIG::CPU *>(this), fs, ea); }
+	bool FpStoreLSW(unsigned int fs, EFFECTIVE_ADDRESS ea) { return fpu.FpStoreLSW(static_cast<typename CONFIG::CPU *>(this), fs, ea); }
+	
+	std::string GetObjectFriendlyName(typename TYPES::EFFECTIVE_ADDRESS addr);
 	
 	///////////////////////////////////////////////////////////////////////////
+protected:
+	bool CheckInt16LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckSInt16LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadAlignment(ea); }
+	bool CheckInt32LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckInt16LoadByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadAlignment(ea); }
+	bool CheckInt32LoadByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32LoadAlignment(ea); }
+	bool CheckInt16StoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckInt32StoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckInt16StoreByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16StoreAlignment(ea); }
+	bool CheckInt32StoreByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32StoreAlignment(ea); }
+	template <typename REGISTER> bool CheckSpecialLoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea)
+	{
+		switch(REGISTER::SIZE)
+		{
+			case 32: return static_cast<typename CONFIG::CPU *>(this)->CheckInt32LoadAlignment(ea);
+		}
+		return true;
+		
+	}
+	template <typename REGISTER> bool CheckSpecialStoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea)
+	{
+		switch(REGISTER::SIZE)
+		{
+			case 32: return static_cast<typename CONFIG::CPU *>(this)->CheckInt32StoreAlignment(ea);
+		}
+		return true;
+		
+	}
+	bool CheckFp32LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckFp64LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckFp32StoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckFp64StoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckFpStoreLSWAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+
 protected:
 	
 	///////////////////////////////// InterruptBase ///////////////////////////////////
@@ -555,33 +797,16 @@ protected:
 	class ExceptionDispatcherBase
 	{
 	public:
-		virtual void InstallInterrupt(unsigned int priority, InterruptBase *interrupt, bool *trap_control_flag) = 0;
+		virtual void InstallInterrupt(InterruptBase *interrupt, unsigned int priority, bool *trap_control_flag) = 0;
 	};
 
 	//////////////////////////////// Exception<> ///////////////////////////////////////
 
-	template <typename _INTERRUPT, unsigned int _PRIORITY>
+	template <typename _INTERRUPT>
 	class Exception
 	{
 	public:
 		typedef _INTERRUPT INTERRUPT;
-		static const unsigned int PRIORITY = _PRIORITY;
-		
-		template <typename T> static T GetMask() { return T(1) << _PRIORITY; }
-		
-		static void InstallInterrupt(ExceptionDispatcherBase *exception_dispatcher, InterruptBase *interrupt, bool *trap_control_flag) { exception_dispatcher->InstallInterrupt(_PRIORITY, interrupt, trap_control_flag); }
-		
-		static const char *GetName()
-		{
-			static std::string name;
-			if(!name.empty()) return name.c_str();
-			
-			std::stringstream sstr_name;
-			sstr_name << "Exception #" << _PRIORITY;
-			name = sstr_name.str();
-			
-			return name.c_str();
-		}
 	};
 	
 	//////////////////////// Interrupt<> ///////////////////////////
@@ -612,134 +837,285 @@ protected:
 	template <typename INTERRUPT, unsigned int _OFFSET>
 	struct InterruptWithAddress : public Interrupt<INTERRUPT, _OFFSET>
 	{
-		void SetAddress(typename TYPES::ADDRESS _addr) { addr = _addr; has_addr = true; }
+		INTERRUPT& SetAddress(typename TYPES::EFFECTIVE_ADDRESS _addr) { addr = _addr; has_addr = true; return *static_cast<INTERRUPT *>(this); }
 		void ClearAddress() { has_addr = false; }
 		bool HasAddress() const { return has_addr; }
-		typename TYPES::ADDRESS GetAddress() const { return addr; }
+		typename TYPES::EFFECTIVE_ADDRESS GetAddress() const { return addr; }
 		
 	private:
 		bool has_addr;
-		typename TYPES::ADDRESS addr;
+		typename TYPES::EFFECTIVE_ADDRESS addr;
 	};
 	
 	
 
-	////////////////////////// NullPrioritizedException ///////////////////////////
+	////////////////////////// NullException ///////////////////////////
 
 	struct NullException
 	{
-		template <typename T> static T GetMask() { return 0; }
-		static void InstallInterrupt(ExceptionDispatcherBase *exception_dispatcher, InterruptBase *interrupt, bool *trap_control_flag) {}
 	};
 	
 	///////////////////////// ExceptionSet<> ///////////////////////////
 
-	template < typename FE0                 , typename FE1  = NullException, typename FE2  = NullException, typename FE3  = NullException
-	         , typename FE4  = NullException, typename FE5  = NullException, typename FE6  = NullException, typename FE7  = NullException
-	         , typename FE8  = NullException, typename FE9  = NullException, typename FE10 = NullException, typename FE11 = NullException
-	         , typename FE12 = NullException, typename FE13 = NullException, typename FE14 = NullException, typename FE15 = NullException
-	         , typename FE16 = NullException, typename FE17 = NullException, typename FE18 = NullException, typename FE19 = NullException
-	         , typename FE20 = NullException, typename FE21 = NullException, typename FE22 = NullException, typename FE23 = NullException
-	         , typename FE24 = NullException, typename FE25 = NullException, typename FE26 = NullException, typename FE27 = NullException
-	         , typename FE28 = NullException, typename FE29 = NullException, typename FE30 = NullException, typename FE31 = NullException
-	         , typename FE32 = NullException, typename FE33 = NullException, typename FE34 = NullException, typename FE35 = NullException
-	         , typename FE36 = NullException, typename FE37 = NullException, typename FE38 = NullException, typename FE39 = NullException
-	         , typename FE40 = NullException, typename FE41 = NullException, typename FE42 = NullException, typename FE43 = NullException
-	         , typename FE44 = NullException, typename FE45 = NullException, typename FE46 = NullException, typename FE47 = NullException
-	         , typename FE48 = NullException, typename FE49 = NullException, typename FE50 = NullException, typename FE51 = NullException
-	         , typename FE52 = NullException, typename FE53 = NullException, typename FE54 = NullException, typename FE55 = NullException
-	         , typename FE56 = NullException, typename FE57 = NullException, typename FE58 = NullException, typename FE59 = NullException
-	         , typename FE60 = NullException, typename FE61 = NullException, typename FE62 = NullException, typename FE63 = NullException >
+	template < typename E0                 , typename E1  = NullException, typename E2  = NullException, typename E3  = NullException
+	         , typename E4  = NullException, typename E5  = NullException, typename E6  = NullException, typename E7  = NullException
+	         , typename E8  = NullException, typename E9  = NullException, typename E10 = NullException, typename E11 = NullException
+	         , typename E12 = NullException, typename E13 = NullException, typename E14 = NullException, typename E15 = NullException
+	         , typename E16 = NullException, typename E17 = NullException, typename E18 = NullException, typename E19 = NullException
+	         , typename E20 = NullException, typename E21 = NullException, typename E22 = NullException, typename E23 = NullException
+	         , typename E24 = NullException, typename E25 = NullException, typename E26 = NullException, typename E27 = NullException
+	         , typename E28 = NullException, typename E29 = NullException, typename E30 = NullException, typename E31 = NullException
+	         , typename E32 = NullException, typename E33 = NullException, typename E34 = NullException, typename E35 = NullException
+	         , typename E36 = NullException, typename E37 = NullException, typename E38 = NullException, typename E39 = NullException
+	         , typename E40 = NullException, typename E41 = NullException, typename E42 = NullException, typename E43 = NullException
+	         , typename E44 = NullException, typename E45 = NullException, typename E46 = NullException, typename E47 = NullException
+	         , typename E48 = NullException, typename E49 = NullException, typename E50 = NullException, typename E51 = NullException
+	         , typename E52 = NullException, typename E53 = NullException, typename E54 = NullException, typename E55 = NullException
+	         , typename E56 = NullException, typename E57 = NullException, typename E58 = NullException, typename E59 = NullException
+	         , typename E60 = NullException, typename E61 = NullException, typename E62 = NullException, typename E63 = NullException >
 	class ExceptionSet
 	{
 	public:
 		template <typename T> static T GetMask()
 		{
-			return  FE0::template GetMask<T>() |  FE1::template GetMask<T>() |  FE2::template GetMask<T>() |  FE3::template GetMask<T>()
-			     |  FE4::template GetMask<T>() |  FE5::template GetMask<T>() |  FE6::template GetMask<T>() |  FE7::template GetMask<T>()
-			     |  FE8::template GetMask<T>() |  FE9::template GetMask<T>() | FE10::template GetMask<T>() | FE11::template GetMask<T>()
-			     | FE12::template GetMask<T>() | FE13::template GetMask<T>() | FE14::template GetMask<T>() | FE15::template GetMask<T>()
-			     | FE16::template GetMask<T>() | FE17::template GetMask<T>() | FE18::template GetMask<T>() | FE19::template GetMask<T>()
-			     | FE20::template GetMask<T>() | FE21::template GetMask<T>() | FE22::template GetMask<T>() | FE23::template GetMask<T>()
-			     | FE24::template GetMask<T>() | FE25::template GetMask<T>() | FE26::template GetMask<T>() | FE27::template GetMask<T>()
-			     | FE28::template GetMask<T>() | FE29::template GetMask<T>() | FE30::template GetMask<T>() | FE31::template GetMask<T>()
-			     | FE32::template GetMask<T>() | FE33::template GetMask<T>() | FE34::template GetMask<T>() | FE35::template GetMask<T>()
-			     | FE36::template GetMask<T>() | FE37::template GetMask<T>() | FE38::template GetMask<T>() | FE39::template GetMask<T>()
-			     | FE40::template GetMask<T>() | FE41::template GetMask<T>() | FE42::template GetMask<T>() | FE43::template GetMask<T>()
-			     | FE44::template GetMask<T>() | FE45::template GetMask<T>() | FE46::template GetMask<T>() | FE47::template GetMask<T>()
-			     | FE48::template GetMask<T>() | FE49::template GetMask<T>() | FE50::template GetMask<T>() | FE51::template GetMask<T>()
-			     | FE52::template GetMask<T>() | FE53::template GetMask<T>() | FE54::template GetMask<T>() | FE55::template GetMask<T>()
-			     | FE56::template GetMask<T>() | FE57::template GetMask<T>() | FE58::template GetMask<T>() | FE59::template GetMask<T>()
-			     | FE60::template GetMask<T>() | FE61::template GetMask<T>() | FE62::template GetMask<T>() | FE63::template GetMask<T>();
+			return CPU::template GetExceptionMask<E0 , T>() | CPU::template GetExceptionMask<E1, T>()  | CPU::template GetExceptionMask<E2 , T>() | CPU::template GetExceptionMask<E3 , T>()
+			     | CPU::template GetExceptionMask<E4 , T>() | CPU::template GetExceptionMask<E5 , T>() | CPU::template GetExceptionMask<E6 , T>() | CPU::template GetExceptionMask<E7 , T>()
+			     | CPU::template GetExceptionMask<E8 , T>() | CPU::template GetExceptionMask<E9 , T>() | CPU::template GetExceptionMask<E10, T>() | CPU::template GetExceptionMask<E11, T>()
+			     | CPU::template GetExceptionMask<E12, T>() | CPU::template GetExceptionMask<E13, T>() | CPU::template GetExceptionMask<E14, T>() | CPU::template GetExceptionMask<E15, T>()
+			     | CPU::template GetExceptionMask<E16, T>() | CPU::template GetExceptionMask<E17, T>() | CPU::template GetExceptionMask<E18, T>() | CPU::template GetExceptionMask<E19, T>()
+			     | CPU::template GetExceptionMask<E20, T>() | CPU::template GetExceptionMask<E21, T>() | CPU::template GetExceptionMask<E22, T>() | CPU::template GetExceptionMask<E23, T>()
+			     | CPU::template GetExceptionMask<E24, T>() | CPU::template GetExceptionMask<E25, T>() | CPU::template GetExceptionMask<E26, T>() | CPU::template GetExceptionMask<E27, T>()
+			     | CPU::template GetExceptionMask<E28, T>() | CPU::template GetExceptionMask<E29, T>() | CPU::template GetExceptionMask<E30, T>() | CPU::template GetExceptionMask<E31, T>()
+			     | CPU::template GetExceptionMask<E32, T>() | CPU::template GetExceptionMask<E33, T>() | CPU::template GetExceptionMask<E34, T>() | CPU::template GetExceptionMask<E35, T>()
+			     | CPU::template GetExceptionMask<E36, T>() | CPU::template GetExceptionMask<E37, T>() | CPU::template GetExceptionMask<E38, T>() | CPU::template GetExceptionMask<E39, T>()
+			     | CPU::template GetExceptionMask<E40, T>() | CPU::template GetExceptionMask<E41, T>() | CPU::template GetExceptionMask<E42, T>() | CPU::template GetExceptionMask<E43, T>()
+			     | CPU::template GetExceptionMask<E44, T>() | CPU::template GetExceptionMask<E45, T>() | CPU::template GetExceptionMask<E46, T>() | CPU::template GetExceptionMask<E47, T>()
+			     | CPU::template GetExceptionMask<E48, T>() | CPU::template GetExceptionMask<E49, T>() | CPU::template GetExceptionMask<E50, T>() | CPU::template GetExceptionMask<E51, T>()
+			     | CPU::template GetExceptionMask<E52, T>() | CPU::template GetExceptionMask<E53, T>() | CPU::template GetExceptionMask<E54, T>() | CPU::template GetExceptionMask<E55, T>()
+			     | CPU::template GetExceptionMask<E56, T>() | CPU::template GetExceptionMask<E57, T>() | CPU::template GetExceptionMask<E58, T>() | CPU::template GetExceptionMask<E59, T>()
+			     | CPU::template GetExceptionMask<E60, T>() | CPU::template GetExceptionMask<E61, T>() | CPU::template GetExceptionMask<E62, T>() | CPU::template GetExceptionMask<E63, T>();
 		}
 		
 		static void InstallInterrupt(ExceptionDispatcherBase *exception_dispatcher, InterruptBase *interrupt, bool *trap_control_flag)
 		{
-			if(typeid(FE0) == typeid(NullException)) return; FE0::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE1) == typeid(NullException)) return; FE1::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE2) == typeid(NullException)) return; FE2::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE3) == typeid(NullException)) return; FE3::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE4) == typeid(NullException)) return; FE4::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE5) == typeid(NullException)) return; FE5::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE6) == typeid(NullException)) return; FE6::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE7) == typeid(NullException)) return; FE7::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE8) == typeid(NullException)) return; FE8::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE9) == typeid(NullException)) return; FE9::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE10) == typeid(NullException)) return; FE10::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE11) == typeid(NullException)) return; FE11::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE12) == typeid(NullException)) return; FE12::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE13) == typeid(NullException)) return; FE13::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE14) == typeid(NullException)) return; FE14::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE15) == typeid(NullException)) return; FE15::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE16) == typeid(NullException)) return; FE16::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE17) == typeid(NullException)) return; FE17::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE18) == typeid(NullException)) return; FE18::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE19) == typeid(NullException)) return; FE19::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE20) == typeid(NullException)) return; FE20::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE21) == typeid(NullException)) return; FE21::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE22) == typeid(NullException)) return; FE22::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE23) == typeid(NullException)) return; FE23::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE24) == typeid(NullException)) return; FE24::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE25) == typeid(NullException)) return; FE25::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE26) == typeid(NullException)) return; FE26::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE27) == typeid(NullException)) return; FE27::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE28) == typeid(NullException)) return; FE28::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE29) == typeid(NullException)) return; FE29::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE30) == typeid(NullException)) return; FE30::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE31) == typeid(NullException)) return; FE31::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE32) == typeid(NullException)) return; FE32::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE33) == typeid(NullException)) return; FE33::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE34) == typeid(NullException)) return; FE34::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE35) == typeid(NullException)) return; FE35::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE36) == typeid(NullException)) return; FE36::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE37) == typeid(NullException)) return; FE37::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE38) == typeid(NullException)) return; FE38::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE39) == typeid(NullException)) return; FE39::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE40) == typeid(NullException)) return; FE40::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE41) == typeid(NullException)) return; FE41::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE42) == typeid(NullException)) return; FE42::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE43) == typeid(NullException)) return; FE43::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE44) == typeid(NullException)) return; FE44::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE45) == typeid(NullException)) return; FE45::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE46) == typeid(NullException)) return; FE46::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE47) == typeid(NullException)) return; FE47::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE48) == typeid(NullException)) return; FE48::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE49) == typeid(NullException)) return; FE49::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE50) == typeid(NullException)) return; FE50::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE51) == typeid(NullException)) return; FE51::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE52) == typeid(NullException)) return; FE52::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE53) == typeid(NullException)) return; FE53::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE54) == typeid(NullException)) return; FE54::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE55) == typeid(NullException)) return; FE55::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE56) == typeid(NullException)) return; FE56::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE57) == typeid(NullException)) return; FE57::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE58) == typeid(NullException)) return; FE58::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE59) == typeid(NullException)) return; FE59::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE60) == typeid(NullException)) return; FE60::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE61) == typeid(NullException)) return; FE61::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE62) == typeid(NullException)) return; FE62::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE63) == typeid(NullException)) return; FE63::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(E0 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E0 >(), trap_control_flag);
+			if(typeid(E1 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E1 >(), trap_control_flag);
+			if(typeid(E2 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E2 >(), trap_control_flag);
+			if(typeid(E3 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E3 >(), trap_control_flag);
+			if(typeid(E4 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E4 >(), trap_control_flag);
+			if(typeid(E5 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E5 >(), trap_control_flag);
+			if(typeid(E6 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E6 >(), trap_control_flag);
+			if(typeid(E7 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E7 >(), trap_control_flag);
+			if(typeid(E8 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E8 >(), trap_control_flag);
+			if(typeid(E9 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E9 >(), trap_control_flag);
+			if(typeid(E10) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E10>(), trap_control_flag);
+			if(typeid(E11) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E11>(), trap_control_flag);
+			if(typeid(E12) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E12>(), trap_control_flag);
+			if(typeid(E13) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E13>(), trap_control_flag);
+			if(typeid(E14) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E14>(), trap_control_flag);
+			if(typeid(E15) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E15>(), trap_control_flag);
+			if(typeid(E16) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E16>(), trap_control_flag);
+			if(typeid(E17) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E17>(), trap_control_flag);
+			if(typeid(E18) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E18>(), trap_control_flag);
+			if(typeid(E19) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E19>(), trap_control_flag);
+			if(typeid(E20) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E20>(), trap_control_flag);
+			if(typeid(E21) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E21>(), trap_control_flag);
+			if(typeid(E22) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E22>(), trap_control_flag);
+			if(typeid(E23) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E23>(), trap_control_flag);
+			if(typeid(E24) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E24>(), trap_control_flag);
+			if(typeid(E25) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E25>(), trap_control_flag);                                                                                            
+			if(typeid(E26) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E26>(), trap_control_flag);                                                                                            
+			if(typeid(E27) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E27>(), trap_control_flag);                                                                                            
+			if(typeid(E28) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E28>(), trap_control_flag);                                                                                            
+			if(typeid(E29) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E29>(), trap_control_flag);                                                                                            
+			if(typeid(E30) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E30>(), trap_control_flag);                                                                                            
+			if(typeid(E31) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E31>(), trap_control_flag);                                                                                            
+			if(typeid(E32) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E32>(), trap_control_flag);                                                                                            
+			if(typeid(E33) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E33>(), trap_control_flag);                                                                                            
+			if(typeid(E34) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E34>(), trap_control_flag);                                                                                            
+			if(typeid(E35) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E35>(), trap_control_flag);                                                                                            
+			if(typeid(E36) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E36>(), trap_control_flag);
+			if(typeid(E37) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E37>(), trap_control_flag);
+			if(typeid(E38) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E38>(), trap_control_flag);
+			if(typeid(E39) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E39>(), trap_control_flag);
+			if(typeid(E40) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E40>(), trap_control_flag);
+			if(typeid(E41) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E41>(), trap_control_flag);
+			if(typeid(E42) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E42>(), trap_control_flag);
+			if(typeid(E43) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E43>(), trap_control_flag);
+			if(typeid(E44) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E44>(), trap_control_flag);
+			if(typeid(E45) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E45>(), trap_control_flag);
+			if(typeid(E46) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E46>(), trap_control_flag);
+			if(typeid(E47) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E47>(), trap_control_flag);
+			if(typeid(E48) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E48>(), trap_control_flag);
+			if(typeid(E49) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E49>(), trap_control_flag);
+			if(typeid(E50) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E50>(), trap_control_flag);
+			if(typeid(E51) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E51>(), trap_control_flag);
+			if(typeid(E52) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E52>(), trap_control_flag);
+			if(typeid(E53) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E53>(), trap_control_flag);
+			if(typeid(E54) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E54>(), trap_control_flag);
+			if(typeid(E55) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E55>(), trap_control_flag);
+			if(typeid(E56) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E56>(), trap_control_flag);
+			if(typeid(E57) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E57>(), trap_control_flag);
+			if(typeid(E58) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E58>(), trap_control_flag);
+			if(typeid(E59) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E59>(), trap_control_flag);
+			if(typeid(E60) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E60>(), trap_control_flag);
+			if(typeid(E61) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E61>(), trap_control_flag);
+			if(typeid(E62) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E62>(), trap_control_flag);
+			if(typeid(E63) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E63>(), trap_control_flag);
 		}
+	};
+
+	////////////////////////// ExceptionPrioritySet<> //////////////////////////////
+
+	struct NullException0  {};
+	struct NullException1  {};
+	struct NullException2  {};
+	struct NullException3  {};
+	struct NullException4  {};
+	struct NullException5  {};
+	struct NullException6  {};
+	struct NullException7  {};
+	struct NullException8  {};
+	struct NullException9  {};
+	struct NullException10 {};
+	struct NullException11 {};
+	struct NullException12 {};
+	struct NullException13 {};
+	struct NullException14 {};
+	struct NullException15 {};
+	struct NullException16 {};
+	struct NullException17 {};
+	struct NullException18 {};
+	struct NullException19 {};
+	struct NullException20 {};
+	struct NullException21 {};
+	struct NullException22 {};
+	struct NullException23 {};
+	struct NullException24 {};
+	struct NullException25 {};
+	struct NullException26 {};
+	struct NullException27 {};
+	struct NullException28 {};
+	struct NullException29 {};
+	struct NullException30 {};
+	struct NullException31 {};
+	struct NullException32 {};
+	struct NullException33 {};
+	struct NullException34 {};
+	struct NullException35 {};
+	struct NullException36 {};
+	struct NullException37 {};
+	struct NullException38 {};
+	struct NullException39 {};
+	struct NullException40 {};
+	struct NullException41 {};
+	struct NullException42 {};
+	struct NullException43 {};
+	struct NullException44 {};
+	struct NullException45 {};
+	struct NullException46 {};
+	struct NullException47 {};
+	struct NullException48 {};
+	struct NullException49 {};
+	struct NullException50 {};
+	struct NullException51 {};
+	struct NullException52 {};
+	struct NullException53 {};
+	struct NullException54 {};
+	struct NullException55 {};
+	struct NullException56 {};
+	struct NullException57 {};
+	struct NullException58 {};
+	struct NullException59 {};
+	struct NullException60 {};
+	struct NullException61 {};
+	struct NullException62 {};
+	struct NullException63 {};
+	
+	template < typename E0  = NullException0 , typename E1  = NullException1 , typename E2  = NullException2 , typename E3  = NullException3 
+	         , typename E4  = NullException4 , typename E5  = NullException5 , typename E6  = NullException6 , typename E7  = NullException7 
+	         , typename E8  = NullException8 , typename E9  = NullException9 , typename E10 = NullException10, typename E11 = NullException11
+	         , typename E12 = NullException12, typename E13 = NullException13, typename E14 = NullException14, typename E15 = NullException15
+	         , typename E16 = NullException16, typename E17 = NullException17, typename E18 = NullException18, typename E19 = NullException19
+	         , typename E20 = NullException20, typename E21 = NullException21, typename E22 = NullException22, typename E23 = NullException23
+	         , typename E24 = NullException24, typename E25 = NullException25, typename E26 = NullException26, typename E27 = NullException27
+	         , typename E28 = NullException28, typename E29 = NullException29, typename E30 = NullException30, typename E31 = NullException31
+	         , typename E32 = NullException32, typename E33 = NullException33, typename E34 = NullException34, typename E35 = NullException35
+	         , typename E36 = NullException36, typename E37 = NullException37, typename E38 = NullException38, typename E39 = NullException39
+	         , typename E40 = NullException40, typename E41 = NullException41, typename E42 = NullException42, typename E43 = NullException43
+	         , typename E44 = NullException44, typename E45 = NullException45, typename E46 = NullException46, typename E47 = NullException47
+	         , typename E48 = NullException48, typename E49 = NullException49, typename E50 = NullException50, typename E51 = NullException51
+	         , typename E52 = NullException52, typename E53 = NullException53, typename E54 = NullException54, typename E55 = NullException55
+	         , typename E56 = NullException56, typename E57 = NullException57, typename E58 = NullException58, typename E59 = NullException59
+	         , typename E60 = NullException60, typename E61 = NullException61, typename E62 = NullException62, typename E63 = NullException63 >
+	struct ExceptionPrioritySet
+	{
+		template <typename E, bool dummy = true> struct ExceptionPriority { static const unsigned int PRIORITY = 0 ; static const uint64_t MASK = 0; };
+		
+		template <bool dummy> struct ExceptionPriority<E0 , dummy> { static const unsigned int PRIORITY = 0 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E1 , dummy> { static const unsigned int PRIORITY = 1 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E2 , dummy> { static const unsigned int PRIORITY = 2 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E3 , dummy> { static const unsigned int PRIORITY = 3 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E4 , dummy> { static const unsigned int PRIORITY = 4 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E5 , dummy> { static const unsigned int PRIORITY = 5 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E6 , dummy> { static const unsigned int PRIORITY = 6 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E7 , dummy> { static const unsigned int PRIORITY = 7 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E8 , dummy> { static const unsigned int PRIORITY = 8 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E9 , dummy> { static const unsigned int PRIORITY = 9 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E10, dummy> { static const unsigned int PRIORITY = 10; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E11, dummy> { static const unsigned int PRIORITY = 11; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E12, dummy> { static const unsigned int PRIORITY = 12; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E13, dummy> { static const unsigned int PRIORITY = 13; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E14, dummy> { static const unsigned int PRIORITY = 14; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E15, dummy> { static const unsigned int PRIORITY = 15; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E16, dummy> { static const unsigned int PRIORITY = 16; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E17, dummy> { static const unsigned int PRIORITY = 17; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E18, dummy> { static const unsigned int PRIORITY = 18; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E19, dummy> { static const unsigned int PRIORITY = 19; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E20, dummy> { static const unsigned int PRIORITY = 20; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E21, dummy> { static const unsigned int PRIORITY = 21; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E22, dummy> { static const unsigned int PRIORITY = 22; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E23, dummy> { static const unsigned int PRIORITY = 23; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E24, dummy> { static const unsigned int PRIORITY = 24; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E25, dummy> { static const unsigned int PRIORITY = 25; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E26, dummy> { static const unsigned int PRIORITY = 26; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E27, dummy> { static const unsigned int PRIORITY = 27; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E28, dummy> { static const unsigned int PRIORITY = 28; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E29, dummy> { static const unsigned int PRIORITY = 29; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E30, dummy> { static const unsigned int PRIORITY = 30; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E31, dummy> { static const unsigned int PRIORITY = 31; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E32, dummy> { static const unsigned int PRIORITY = 32; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E33, dummy> { static const unsigned int PRIORITY = 33; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E34, dummy> { static const unsigned int PRIORITY = 34; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E35, dummy> { static const unsigned int PRIORITY = 35; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E36, dummy> { static const unsigned int PRIORITY = 36; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E37, dummy> { static const unsigned int PRIORITY = 37; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E38, dummy> { static const unsigned int PRIORITY = 38; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E39, dummy> { static const unsigned int PRIORITY = 39; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E40, dummy> { static const unsigned int PRIORITY = 40; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E41, dummy> { static const unsigned int PRIORITY = 41; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E42, dummy> { static const unsigned int PRIORITY = 42; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E43, dummy> { static const unsigned int PRIORITY = 43; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E44, dummy> { static const unsigned int PRIORITY = 44; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E45, dummy> { static const unsigned int PRIORITY = 45; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E46, dummy> { static const unsigned int PRIORITY = 46; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E47, dummy> { static const unsigned int PRIORITY = 47; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E48, dummy> { static const unsigned int PRIORITY = 48; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E49, dummy> { static const unsigned int PRIORITY = 49; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E50, dummy> { static const unsigned int PRIORITY = 50; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E51, dummy> { static const unsigned int PRIORITY = 51; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E52, dummy> { static const unsigned int PRIORITY = 52; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E53, dummy> { static const unsigned int PRIORITY = 53; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E54, dummy> { static const unsigned int PRIORITY = 54; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E55, dummy> { static const unsigned int PRIORITY = 55; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E56, dummy> { static const unsigned int PRIORITY = 56; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E57, dummy> { static const unsigned int PRIORITY = 57; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E58, dummy> { static const unsigned int PRIORITY = 58; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E59, dummy> { static const unsigned int PRIORITY = 59; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E60, dummy> { static const unsigned int PRIORITY = 60; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E61, dummy> { static const unsigned int PRIORITY = 61; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E62, dummy> { static const unsigned int PRIORITY = 62; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E63, dummy> { static const unsigned int PRIORITY = 63; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
 	};
 
 	///////////////////////////// ExceptionDispatcher<> ///////////////////////////
@@ -750,20 +1126,23 @@ protected:
 	public:
 		ExceptionDispatcher(typename CONFIG::CPU *cpu);
 		~ExceptionDispatcher();
-		virtual void InstallInterrupt(unsigned int priority, InterruptBase *interrupt, bool *trap_control_flag);
+		virtual void InstallInterrupt(InterruptBase *interrupt, unsigned int priority, bool *trap_control_flag);
 		template <typename EXCEPTION> typename EXCEPTION::INTERRUPT& ThrowException();
+		template <typename EXCEPTION> void AckException();
 		template <typename INTERRUPT> void AckInterrupt();
+		template <typename EXCEPTION> void EnableException();
 		template <typename INTERRUPT> void EnableInterrupt();
+		template <typename EXCEPTION> void DisableException();
 		template <typename INTERRUPT> void DisableInterrupt();
 		template <typename EXCEPTION> bool RecognizedException() const;
 		inline void ProcessExceptions() ALWAYS_INLINE;
 		inline bool HasPendingInterrupts() const ALWAYS_INLINE;
 	private:
-		typedef typename TypeForBitSize<NUM_EXCEPTIONS>::TYPE TYPE;
+		typedef typename TypeForBitSize<NUM_EXCEPTIONS>::TYPE MASK_TYPE;
 		
 		typename CONFIG::CPU *cpu;
-		TYPE exc_flags;                            // Exception flags (bits are ordered according to exception priority): 1=thrown 0=not thrown
-		TYPE exc_mask;                             // Exception mask (bits are ordered according to exception priority): 1=enabled, 0=disabled
+		MASK_TYPE exc_flags;                       // Exception flags (bits are ordered according to exception priority): 1=thrown 0=not thrown
+		MASK_TYPE exc_mask;                        // Exception mask (bits are ordered according to exception priority): 1=enabled, 0=disabled
 		InterruptBase *interrupts[NUM_EXCEPTIONS]; // Installed interrupts (sorted by interrupt priority)
 		bool *trap_control_flags[NUM_EXCEPTIONS];  // flags to control trap of interrupts (sorted by interrupt priority)
 		bool trapped[NUM_EXCEPTIONS];              // whether interrupts was trapped (sorted by interrupt priority)
@@ -773,12 +1152,17 @@ public:
 	template <typename INTERRUPT> void InstallInterrupt() { INTERRUPT::InstallInterrupt(&exception_dispatcher, 0); }
 	template <typename INTERRUPT> void InstallInterrupt(bool& trap_control_flag) { INTERRUPT::InstallInterrupt(&exception_dispatcher, &trap_control_flag); }
 	template <typename EXCEPTION> typename EXCEPTION::INTERRUPT& ThrowException() { return exception_dispatcher.template ThrowException<EXCEPTION>(); }
+	template <typename EXCEPTION> void AckException() { exception_dispatcher.template AckException<EXCEPTION>(); }
 	template <typename INTERRUPT> void AckInterrupt() { exception_dispatcher.template AckInterrupt<INTERRUPT>(); }
+	template <typename EXCEPTION> void EnableException() { exception_dispatcher.template EnableException<EXCEPTION>(); }
 	template <typename INTERRUPT> void EnableInterrupt() { exception_dispatcher.template EnableInterrupt<INTERRUPT>(); }
+	template <typename EXCEPTION> void DisableException() { exception_dispatcher.template DisableException<EXCEPTION>(); }
 	template <typename INTERRUPT> void DisableInterrupt() { exception_dispatcher.template DisableInterrupt<INTERRUPT>(); }
 	template <typename EXCEPTION> bool RecognizedException() const { return exception_dispatcher.template RecognizedException<EXCEPTION>(); }
 	inline void ProcessExceptions() ALWAYS_INLINE { exception_dispatcher.ProcessExceptions(); }
 	inline bool HasPendingInterrupts() const ALWAYS_INLINE { return exception_dispatcher.HasPendingInterrupts(); }
+	template <typename EXCEPTION> static unsigned int GetExceptionPriority() { return CONFIG::CPU::EXCEPTION_PRIORITIES::template ExceptionPriority<EXCEPTION>::PRIORITY; }
+	template <typename EXCEPTION, typename MASK_TYPE> static MASK_TYPE GetExceptionMask() { return CONFIG::CPU::EXCEPTION_PRIORITIES::template ExceptionPriority<EXCEPTION>::MASK; }
 protected:
 	
 	////////////////////// System Level Register Modeling /////////////////////
@@ -872,21 +1256,18 @@ protected:
 		virtual bool MoveTo(uint32_t value) { cpu->DCRWrite(n, value); return true; }
 		virtual bool MoveFrom(uint32_t& value) { cpu->DCRRead(n, value); return true; }
 	};
-
-	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM, SLR_Access_Type _SLR_ACCESS = SLR_RW, SLR_Privilege_Type _SLR_PRIVILEGE = SLR_NON_PRIVILEGED>
-	struct SLR : unisim::util::reg::core::Register<SLR_REGISTER, 32, unisim::util::reg::core::Access(_SLR_ACCESS), SLRBase>
+	
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, SLR_Access_Type _SLR_ACCESS = SLR_RW, SLR_Privilege_Type _SLR_PRIVILEGE = SLR_NON_PRIVILEGED>
+	struct UnnumberedSLR : unisim::util::reg::core::Register<SLR_REGISTER, 32, unisim::util::reg::core::Access(_SLR_ACCESS), SLRBase>
 	{
 		typedef unisim::util::reg::core::Register<SLR_REGISTER, 32, unisim::util::reg::core::Access(_SLR_ACCESS), SLRBase> Super;
 		static const SLR_Space_Type SLR_SPACE = _SLR_SPACE;
-		static const unsigned int SLR_NUM = _SLR_NUM;
-		static const unsigned int REG_NUM = _SLR_NUM;
 		static const SLR_Access_Type SLR_ACCESS = _SLR_ACCESS;
 		static const SLR_Privilege_Type SLR_PRIVILEGE = _SLR_PRIVILEGE;
 		
-		SLR(typename CONFIG::CPU *_cpu) : Super(), cpu(_cpu) { Init(); }
-		SLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_value), cpu(_cpu) { Init(); }
+		UnnumberedSLR(typename CONFIG::CPU *_cpu) : Super(), cpu(_cpu) {}
+		UnnumberedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_value), cpu(_cpu) {}
 		virtual bool IsValid() const { return true; }
-		virtual unsigned int GetRegNum() const { return _SLR_NUM; }
 		virtual SLR_Space_Type GetSpace() const { return _SLR_SPACE; }
 		virtual bool IsPrivileged() const { return SLR_PRIVILEGE == SLR_PRIVILEGED; }
 		virtual bool IsReadOnly() const { return SLR_ACCESS == SLR_RO; }
@@ -993,11 +1374,25 @@ protected:
 		
 	protected:
 		typename CONFIG::CPU *cpu;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM, SLR_Access_Type _SLR_ACCESS = SLR_RW, SLR_Privilege_Type _SLR_PRIVILEGE = SLR_NON_PRIVILEGED>
+	struct SLR : UnnumberedSLR<SLR_REGISTER, _SLR_SPACE, _SLR_ACCESS, _SLR_PRIVILEGE>
+	{
+		typedef UnnumberedSLR<SLR_REGISTER, _SLR_SPACE, _SLR_ACCESS, _SLR_PRIVILEGE> Super;
+		static const unsigned int SLR_NUM = _SLR_NUM;
+		static const unsigned int REG_NUM = _SLR_NUM;
+		
+		SLR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		SLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		virtual unsigned int GetRegNum() const { return _SLR_NUM; }
+		
+		using Super::operator =;
 	private:
 		
 		void Init()
 		{
-			cpu->RegisterSLR(_SLR_NUM, this);
+			this->cpu->RegisterSLR(_SLR_NUM, this);
 		}
 	};
 	
@@ -1024,6 +1419,17 @@ protected:
 	};
 
 	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct WriteOnlyPrivilegedSLR : SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_PRIVILEGED>
+	{
+		typedef SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_PRIVILEGED> Super;
+
+		WriteOnlyPrivilegedSLR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		WriteOnlyPrivilegedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
 	struct NonPrivilegedSLR : SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_NON_PRIVILEGED>
 	{
 		typedef SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_NON_PRIVILEGED> Super;
@@ -1041,6 +1447,164 @@ protected:
 
 		ReadOnlyNonPrivilegedSLR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
 		ReadOnlyNonPrivilegedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct WriteOnlyNonPrivilegedSLR : SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_NON_PRIVILEGED>
+	{
+		typedef SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_NON_PRIVILEGED> Super;
+
+		WriteOnlyNonPrivilegedSLR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		WriteOnlyNonPrivilegedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM, SLR_Access_Type _SLR_ACCESS = SLR_RW, SLR_Privilege_Type _SLR_PRIVILEGE = SLR_NON_PRIVILEGED>
+	struct AltSLR : SLRBase
+	{
+		static const SLR_Space_Type SLR_SPACE = _SLR_SPACE;
+		static const unsigned int SLR_NUM = _SLR_NUM;
+		static const unsigned int REG_NUM = _SLR_NUM;
+		static const SLR_Access_Type SLR_ACCESS = _SLR_ACCESS;
+		static const SLR_Privilege_Type SLR_PRIVILEGE = _SLR_PRIVILEGE;
+
+		AltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : cpu(_cpu), slr(_slr) { Init(); }
+		virtual bool IsValid() const { return true; }
+		virtual unsigned int GetRegNum() const { return _SLR_NUM; }
+		virtual SLR_Space_Type GetSpace() const { return _SLR_SPACE; }
+		virtual bool IsPrivileged() const { return SLR_PRIVILEGE == SLR_PRIVILEGED; }
+		virtual bool IsReadOnly() const { return SLR_ACCESS == SLR_RO; }
+		virtual bool IsWriteOnly() const { return SLR_ACCESS == SLR_WO; }
+
+		virtual bool CheckMoveToLegality()
+		{
+			if(cpu->GetMSR().template Get<typename CONFIG::CPU::MSR::PR>() && (SLR_PRIVILEGE == SLR_PRIVILEGED))
+			{
+				// Privilege Violation
+				if(cpu->verbose_move_to_slr)
+				{
+					cpu->GetDebugWarningStream() << "Move to " << slr->GetName() << " is a privileged operation" << std::endl;
+				}
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::PrivilegeViolation>();
+				return false;
+			}
+
+			if(SLR_ACCESS == SLR_RO)
+			{
+				// Illegal Instruction
+				if(cpu->verbose_move_to_slr)
+				{
+					cpu->GetDebugWarningStream() << "Move to " << slr->GetName() << " is an illegal operation" << std::endl;
+				}
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
+				return false;
+			}
+			
+			return true;
+		}
+		
+		virtual bool CheckMoveFromLegality()
+		{
+			if(cpu->GetMSR().template Get<typename CONFIG::CPU::MSR::PR>() && (SLR_PRIVILEGE == SLR_PRIVILEGED))
+			{
+				// Privilege Violation
+				if(cpu->verbose_move_from_slr)
+				{
+					cpu->GetDebugWarningStream() << "Move from " << slr->GetName() << " is a privileged operation" << std::endl;
+				}
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::PrivilegeViolation>();
+				return false;
+			}
+			
+			if(SLR_ACCESS == SLR_WO)
+			{
+				// Illegal Instruction
+				if(cpu->verbose_move_from_slr)
+				{
+					cpu->GetDebugWarningStream() << "Move from " << slr->GetName() << " is an illegal operation" << std::endl;
+				}
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
+				return false;
+			}
+
+			return true;
+		}
+		
+		virtual bool MoveTo(uint32_t value) { return slr->MoveTo(value); }
+		virtual bool MoveFrom(uint32_t& value) { return slr->MoveFrom(value); }
+		
+		typename CONFIG::CPU *GetCPU() const { return cpu; }
+		
+	protected:
+		typename CONFIG::CPU *cpu;
+	private:
+		SLR_REGISTER *slr;
+		
+		void Init()
+		{
+			cpu->RegisterSLR(_SLR_NUM, this);
+		}
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct PrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_PRIVILEGED> Super;
+		
+		PrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct ReadOnlyPrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RO, SLR_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RO, SLR_PRIVILEGED> Super;
+
+		ReadOnlyPrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct WriteOnlyPrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_PRIVILEGED> Super;
+
+		WriteOnlyPrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct NonPrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_NON_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_NON_PRIVILEGED> Super;
+
+		NonPrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
+		
+		using Super::operator =;
+	};
+	
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct ReadOnlyNonPrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RO, SLR_NON_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RO, SLR_NON_PRIVILEGED> Super;
+
+		ReadOnlyNonPrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
+		
+		using Super::operator =;
+	};
+	
+	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _SLR_NUM>
+	struct WriteOnlyNonPrivilegedAltSLR : AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_NON_PRIVILEGED>
+	{
+		typedef AltSLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_WO, SLR_NON_PRIVILEGED> Super;
+
+		WriteOnlyNonPrivilegedAltSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
 		
 		using Super::operator =;
 	};
@@ -1117,6 +1681,17 @@ protected:
 	};
 
 	template <typename SPR_REGISTER, unsigned int _SPR_NUM>
+	struct WriteOnlyPrivilegedSPR : WriteOnlyPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM>
+	{
+		typedef WriteOnlyPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM> Super;
+
+		WriteOnlyPrivilegedSPR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		WriteOnlyPrivilegedSPR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SPR_REGISTER, unsigned int _SPR_NUM>
 	struct NonPrivilegedSPR : NonPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM>
 	{
 		typedef NonPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM> Super;
@@ -1134,6 +1709,17 @@ protected:
 
 		ReadOnlyNonPrivilegedSPR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
 		ReadOnlyNonPrivilegedSPR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		using Super::operator =;
+	};
+
+	template <typename SPR_REGISTER, unsigned int _SPR_NUM>
+	struct WriteOnlyNonPrivilegedSPR : WriteOnlyNonPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM>
+	{
+		typedef WriteOnlyNonPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM> Super;
+
+		WriteOnlyNonPrivilegedSPR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		WriteOnlyNonPrivilegedSPR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1425,15 +2011,17 @@ public:
 		struct PR  : Field<PR ,17> {}; // Problem State
 		struct FP  : Field<FP ,18> {}; // Floating-Point Available
 		struct ME  : Field<ME ,19> {}; // Machine Check Enable
-		struct FE0 : Field<FE0,20> {}; // Floating-point exception mode 0 (not used)
+		struct FE0 : Field<FE0,20> {}; // Floating-point exception mode 0
+		struct DWE : Field<DWE,21> {}; // Debug Wait Enable
 		struct DE  : Field<DE ,22> {}; // Debug Interrupt Enable
-		struct FE1 : Field<FE1,23> {}; // Floating-point exception mode 1 (not used)
+		struct FE1 : Field<FE1,23> {}; // Floating-point exception mode 1
 		struct IS  : Field<IS ,26> {}; // Instruction Address Space
 		struct DS  : Field<DS ,27> {}; // Data Address Space
 		struct PMM : Field<PMM,29> {}; // PMM Performance monitor mark bit
 		struct RI  : Field<RI ,30> {}; // Recoverable Interrupt
 		
 		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<WE, CE, EE, PR, FP, ME, FE0, DWE, DE, FE1, IS, DS> ALL; };
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<SPV, WE, CE, EE, PR, FP, ME, FE0, DE, FE1, IS, DS, PMM, RI> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<CE, EE, PR, ME, DE, PMM, RI> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
@@ -1447,27 +2035,59 @@ public:
 		
 		void Init()
 		{
-			     this->SetName("msr");      this->SetDescription("Machine State Register");
-			SPV::SetName("spv"); SPV::SetDescription("SP/Embedded FP/Vector available");
-			WE ::SetName("we");  WE ::SetDescription("Wait state (Power management) enable");
-			CE ::SetName("ce");  CE ::SetDescription("Critical Interrupt Enable");
-			EE ::SetName("ee");  EE ::SetDescription("External Interrupt Enable");
-			PR ::SetName("pr");  PR ::SetDescription("Problem State");
-			FP ::SetName("fp");  FP ::SetDescription("Floating-Point Available");
-			ME ::SetName("me");  ME ::SetDescription("Machine Check Enable");
-			FE0::SetName("fe0"); FE0::SetDescription("Floating-point exception mode 0 (not used)");
-			DE ::SetName("de");  DE ::SetDescription("Debug Interrupt Enable");
-			FE1::SetName("fe1"); FE1::SetDescription("Floating-point exception mode 1 (not used)");
-			IS ::SetName("is");  IS ::SetDescription("Instruction Address Space");
-			DS ::SetName("ds");  DS ::SetDescription("Data Address Space");
-			PMM::SetName("pmm"); PMM::SetDescription("PMM Performance monitor mark bit");
-			RI ::SetName("ri");  RI ::SetDescription("Recoverable Interrupt");
+			this->SetName("MSR"); this->SetDescription("Machine State Register");
+			SPV::SetName("SPV");  SPV::SetDescription("SP/Embedded FP/Vector available");
+			WE ::SetName("WE");   WE ::SetDescription("Wait state (Power management) enable");
+			CE ::SetName("CE");   CE ::SetDescription("Critical Interrupt Enable");
+			EE ::SetName("EE");   EE ::SetDescription("External Interrupt Enable");
+			PR ::SetName("PR");   PR ::SetDescription("Problem State");
+			FP ::SetName("FP");   FP ::SetDescription("Floating-Point Available");
+			ME ::SetName("ME");   ME ::SetDescription("Machine Check Enable");
+			FE0::SetName("FE0");  FE0::SetDescription("Floating-point exception mode 0");
+			DWE::SetName("DWE");  DWE::SetDescription("Debug Wait Enable");
+			DE ::SetName("DE");   DE ::SetDescription("Debug Interrupt Enable");
+			FE1::SetName("FE1");  FE1::SetDescription("Floating-point exception mode 1");
+			IS ::SetName("IS");   IS ::SetDescription("Instruction Address Space");
+			DS ::SetName("DS");   DS ::SetDescription("Data Address Space");
+			PMM::SetName("PMM");  PMM::SetDescription("PMM Performance monitor mark bit");
+			RI ::SetName("RI");   RI ::SetDescription("Recoverable Interrupt");
 			
 			cpu->AddRegisterInterface(this->CreateRegisterInterface());
 		}
 	};
 
 	////////////////////////// Special Purpose Registers //////////////////////
+	
+	// Decrementer
+	struct DEC : PrivilegedSPR<DEC, 22>
+	{
+		typedef PrivilegedSPR<DEC, 22> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		DEC(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DEC(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+		
+		virtual bool MoveFrom(uint32_t& value)
+		{
+			this->cpu->RunInternalTimers();
+			return Super::MoveFrom(value);
+		}
+		
+		virtual bool MoveTo(uint32_t value)
+		{
+			this->cpu->RunInternalTimers();
+			bool status = Super::MoveTo(value);
+			this->cpu->RunInternalTimers();
+			return status;
+		}
+	private:
+		void Init() { this->SetName("DEC"); this->SetDescription("Decrementer"); }
+	};
+	
 	
 	// Save/Restore Register 0
 	struct SRR0 : PrivilegedSPR<SRR0, 26>
@@ -1512,6 +2132,7 @@ public:
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<Process_ID> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<Process_ID> ALL; };
+		CASE_ENUM_TRAIT(PPC440, _) { typedef FieldSet<Process_ID> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		PID0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
@@ -1521,6 +2142,22 @@ public:
 		virtual void Reset() { this->Initialize(0x00000000); }
 	private:
 		void Init() { this->SetName("pid0"); this->SetDescription("Process ID Register"); Process_ID::SetName("process_id"); }
+	};
+	
+	// Decrementer Auto-Reload
+	struct DECAR : PrivilegedSPR<DECAR, 54>
+	{
+		typedef PrivilegedSPR<DECAR, 54> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		DECAR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DECAR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init() { this->SetName("DECAR"); this->SetDescription("Decrementer Auto-Reload"); }
 	};
 	
 	// Critical Save/Restore Register 0
@@ -1580,16 +2217,25 @@ public:
 	{
 		typedef PrivilegedSPR<ESR, 62> Super;
 		
-		struct PIL   : Field<PIL  ,4>  {}; // Illegal Instruction exception
-		struct PPR   : Field<PPR  ,5>  {}; // Privileged Instruction exception
-		struct PTR   : Field<PTR  ,6>  {}; // Trap exception
-		struct FP    : Field<FP   ,7>  {}; // Floating-point operation
-		struct ST    : Field<ST   ,8>  {}; // Store operation
-		struct BO    : Field<BO   ,14> {}; // Byte Ordering exception/Mismatched Instruction Storage exception
-		struct SPV   : Field<SPV  ,24> {}; // EFPU APU Operation
-		struct VLEMI : Field<VLEMI,26> {}; // VLE Mode Instruction
+		struct MCI   : Field<MCI  , 0     > {}; // Machine Check Instruction Fetch Exception
+		struct PIL   : Field<PIL  , 4     > {}; // Illegal Instruction exception
+		struct PPR   : Field<PPR  , 5     > {}; // Privileged Instruction exception
+		struct PTR   : Field<PTR  , 6     > {}; // Trap exception
+		struct FP    : Field<FP   , 7     > {}; // Floating-point operation
+		struct ST    : Field<ST   , 8     > {}; // Store operation
+		struct DLK   : Field<DLK  , 10, 11> {}; // Data Storage Interrupt Locking Exception
+		struct AP    : Field<AP   , 12    > {}; // Auxiliary Processor Operation
+		struct PUO   : Field<PUO  , 13    > {}; // Program Interrupt Unimplemented Operation Exception
+		struct BO    : Field<BO   , 14    > {}; // Byte Ordering exception/Mismatched Instruction Storage exception
+		struct PIE   : Field<PIE  , 15    > {}; // Program Interrupt Imprecise Exception
+		struct SPV   : Field<SPV  , 24    > {}; // EFPU APU Operation
+		struct VLEMI : Field<VLEMI, 26    > {}; // VLE Mode Instruction
+		struct PCRE  : Field<PCRE , 27    > {}; // Program Interrupt Condition Register Enable
+		struct PCMP  : Field<PCMP , 28    > {}; // Program Interrupt Compare
+		struct PCRF  : Field<PCRF , 29, 31> {}; // Program Interrupt Condition Register Field
 		
 		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<MCI, PIL, PPR, PTR, FP, ST, DLK, AP, PUO, BO, PIE, PCRE, PCMP, PCRF> ALL; };
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<PIL, PPR, PTR, FP, ST, BO, SPV, VLEMI> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<PIL, PPR, PTR, FP, ST, BO, SPV, VLEMI> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
@@ -1602,15 +2248,23 @@ public:
 	private:
 		void Init()
 		{
-			       this->SetName("esr");          this->SetDescription("Exception Syndrome Register");
+			 this->SetName("esr");    this->SetDescription("Exception Syndrome Register");
+			MCI  ::SetName("mci");   MCI  ::SetDescription("Machine Check Instruction Fetch Exception");
 			PIL  ::SetName("pil");   PIL  ::SetDescription("Illegal Instruction exception");
 			PPR  ::SetName("ppr");   PPR  ::SetDescription("Privileged Instruction exception");
 			PTR  ::SetName("ptr");   PTR  ::SetDescription("Trap exception");
 			FP   ::SetName("fp");    FP   ::SetDescription("Floating-point operation");
 			ST   ::SetName("st");    ST   ::SetDescription("Store operation");
+			DLK  ::SetName("dlk");   DLK  ::SetDescription("Data Storage Interrupt Locking Exception");
+			AP   ::SetName("ap");    AP   ::SetDescription("Auxiliary Processor Operation");
+			PUO  ::SetName("puo");   PUO  ::SetDescription("Program Interrupt Unimplemented Operation Exception");
 			BO   ::SetName("bo");    BO   ::SetDescription("Byte Ordering exception/Mismatched Instruction Storage exception");
+			PIE  ::SetName("pie");   PIE  ::SetDescription("Program Interrupt Imprecise Exception");
 			SPV  ::SetName("spv");   SPV  ::SetDescription("EFPU APU Operation");
 			VLEMI::SetName("vlemi"); VLEMI::SetDescription("VLE Mode Instruction");
+			PCRE ::SetName("pcre");  PCRE ::SetDescription("Program Interrupt Condition Register Enable");
+			PCMP ::SetName("pcmp");  PCMP ::SetDescription("Program Interrupt Compare");
+			PCRF ::SetName("pcrf");  PCRF ::SetDescription("Program Interrupt Condition Register Field");
 		}
 	};
 protected:
@@ -1621,10 +2275,12 @@ protected:
 		typedef PrivilegedSPR<IVPR, 63> Super;
 		
 		struct Vector_Base : Field<Vector_Base, 0, 23> {}; // Vector Base
+		struct IVP         : Field<IVP        , 0, 15> {}; // Interrupt Vector Prefix
 		
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<Vector_Base> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<Vector_Base> ALL; };
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<IVP> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		IVPR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
@@ -1637,6 +2293,7 @@ protected:
 		{
 			             this->SetName("ivpr");                     this->SetDescription("Interrupt Vector Prefix Register");
 			Vector_Base::SetName("vector_base"); Vector_Base::SetDescription("Vector Base");
+			IVP        ::SetName("IVP");         IVP        ::SetDescription("Interrupt Vector Prefix");
 		}
 	};
 	
@@ -1719,6 +2376,106 @@ protected:
 	private:
 		void Init() { this->SetName("sprg3"); this->SetDescription("SPR General 3"); }
 	};
+	
+	// SPR General 4
+	struct SPRG4 : PrivilegedSPR<SPRG4, 276>
+	{
+		typedef PrivilegedSPR<SPRG4, 276> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR260 : AltSLR<SPRG4, SLR_SPR_SPACE, 260, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<SPRG4, SLR_SPR_SPACE, 260, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR260(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) : Super(_cpu, _sprg4) {}
+		};
+
+		SPRG4(typename CONFIG::CPU *_cpu) : Super(_cpu), spr260(_cpu, this) { Init(); }
+		SPRG4(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr260(_cpu, this) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init() { this->SetName("SPRG4"); this->SetDescription("SPR General 4"); }
+		
+		SPR260 spr260;
+	};
+
+	// SPR General 5
+	struct SPRG5 : PrivilegedSPR<SPRG5, 277>
+	{
+		typedef PrivilegedSPR<SPRG5, 277> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR261 : AltSLR<SPRG5, SLR_SPR_SPACE, 261, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<SPRG5, SLR_SPR_SPACE, 261, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR261(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) : Super(_cpu, _sprg5) {}
+		};
+
+		SPRG5(typename CONFIG::CPU *_cpu) : Super(_cpu), spr261(_cpu, this) { Init(); }
+		SPRG5(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr261(_cpu, this) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init() { this->SetName("SPRG5"); this->SetDescription("SPR General 5"); }
+		
+		SPR261 spr261;
+	};
+
+	// SPR General 6
+	struct SPRG6 : PrivilegedSPR<SPRG6, 278>
+	{
+		typedef PrivilegedSPR<SPRG6, 278> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR262 : AltSLR<SPRG6, SLR_SPR_SPACE, 262, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<SPRG6, SLR_SPR_SPACE, 262, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR262(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) : Super(_cpu, _sprg6) {}
+		};
+
+		SPRG6(typename CONFIG::CPU *_cpu) : Super(_cpu), spr262(_cpu, this) { Init(); }
+		SPRG6(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr262(_cpu, this) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init() { this->SetName("SPRG6"); this->SetDescription("SPR General 6"); }
+		
+		SPR262 spr262;
+	};
+
+	// SPR General 7
+	struct SPRG7 : PrivilegedSPR<SPRG7, 279>
+	{
+		typedef PrivilegedSPR<SPRG7, 279> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR263 : AltSLR<SPRG7, SLR_SPR_SPACE, 263, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<SPRG7, SLR_SPR_SPACE, 263, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR263(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) : Super(_cpu, _sprg7) {}
+		};
+
+		SPRG7(typename CONFIG::CPU *_cpu) : Super(_cpu), spr263(_cpu, this) { Init(); }
+		SPRG7(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr263(_cpu, this) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init() { this->SetName("SPRG7"); this->SetDescription("SPR General 7"); }
+		
+		SPR263 spr263;
+	};
 
 	// Processor ID Register
 	struct PIR : PrivilegedSPR<PIR, 286>
@@ -1727,10 +2484,12 @@ protected:
 		
 		struct ID_0_23  : Field<ID_0_23 , 0, 23>  {}; // bits 0:23
 		struct ID_24_31 : Field<ID_24_31, 24, 31> {}; // bits 24:31
+		struct PIN      : Field<PIN     , 28, 31> {}; // Processor Identification Number
 		
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<ID_0_23, ID_24_31> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<ID_0_23, ID_24_31> ALL; };
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<PIN> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		PIR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
@@ -1741,6 +2500,8 @@ protected:
 		{
 			this->SetName("pir");
 			this->SetDescription("Processor ID Register");
+			
+			PIN::SetName("PIN"); PIN::SetDescription("Processor Identification Number");
 		}
 	};
 	
@@ -1756,10 +2517,13 @@ protected:
 		struct Minor_Rev : Field<Minor_Rev, 20, 23> {};
 		struct Major_Rev : Field<Major_Rev, 24, 27> {};
 		struct MBG_ID    : Field<MBG_ID   , 28, 31> {};
+		struct OWN       : Field<OWN      , 0 , 11> {}; // Owner Identifier
+		struct PVN       : Field<PVN      , 12, 31> {}; // Processor Version Number
 
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<MANID, Type, Version, MBG_Use, Minor_Rev, MBG_ID> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<MANID, Type, Version, MBG_Use, Minor_Rev, MBG_ID> ALL; };
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<OWN, PVN> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		PVR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
@@ -1776,6 +2540,8 @@ protected:
 			Minor_Rev::SetName("Minor_Rev");
 			Major_Rev::SetName("Major_Rev");
 			MBG_ID   ::SetName("MBG_ID");
+			OWN      ::SetName("OWN");       OWN::SetDescription("Owner Identifier");
+			PVN      ::SetName("PWN");       PVN::SetDescription("Processor Version Number");
 		}
 	};
 
@@ -1794,6 +2560,7 @@ protected:
 		struct IAC1     : Field<IAC1    , 8>      {}; // Instruction Address Compare 1 Debug Event
 		struct IAC2     : Field<IAC2    , 9>      {}; // Instruction Address Compare 2 Debug Event
 		struct IAC3     : Field<IAC3    , 10>     {}; // Instruction Address Compare 3 Debug Event
+		struct IAC4     : Field<IAC4    , 11>     {}; // Instruction Address Compare 4 Debug Event
 		struct IAC4_8   : Field<IAC4_8  , 11>     {}; // Instruction Address Compare 4-8 Debug Event
 		struct DAC1R    : Field<DAC1R   , 12>     {}; // Data Address Compare 1 Read Debug Event
 		struct DAC1W    : Field<DAC1W   , 13>     {}; // Data Address Compare 1 Write Debug Event
@@ -1808,8 +2575,12 @@ protected:
 		struct CRET     : Field<CRET    , 26>     {}; // Critical Return Debug Event
 		struct DNI      : Field<DNI     , 27>     {}; // Debug Notify Interrupt (se_dni)
 		struct DAC_OFST : Field<DAC_OFST, 28, 30> {}; // Data Address Compare Offset
+		struct IAC12ATS : Field<IAC12ATS, 30>     {}; // Instruction Address Compare 1/2 Auto-Toggle Status
+		struct IAC34ATS : Field<IAC34ATS, 31>     {}; // Instruction Address Compare 3/4 Auto-Toggle Status
 		
 		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet< IDE, UDE, MRR, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4, DAC1R, DAC1W
+		                                                  , DAC2R, DAC2W, RET, IAC12ATS, IAC34ATS> ALL; };
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet< IDE, UDE, MRR, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4_8, DAC1R, DAC1W
 		                                                  , DAC2R, DAC2W, RET, DEVT1, DEVT2, PMI, MPU, CIRPT, CRET, DNI, DAC_OFST> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet< IDE, UDE, MRR, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4_8, DAC1R, DAC1W
@@ -1835,6 +2606,7 @@ protected:
 			IAC1    ::SetName("iac1");     IAC1    ::SetDescription("Instruction Address Compare 1 Debug Event");
 			IAC2    ::SetName("iac2");     IAC2    ::SetDescription("Instruction Address Compare 2 Debug Event");
 			IAC3    ::SetName("iac3");     IAC3    ::SetDescription("Instruction Address Compare 3 Debug Event");
+			IAC4    ::SetName("iac4");     IAC4    ::SetDescription("Instruction Address Compare 4 Debug Event");
 			IAC4_8  ::SetName("iac4_8");   IAC4_8  ::SetDescription("Instruction Address Compare 4-8 Debug Event");
 			DAC1R   ::SetName("dac1r");    DAC1R   ::SetDescription("Data Address Compare 1 Read Debug Event");
 			DAC1W   ::SetName("dac1w");    DAC1W   ::SetDescription("Data Address Compare 1 Write Debug Event");
@@ -1849,6 +2621,8 @@ protected:
 			CRET    ::SetName("cret");     CRET    ::SetDescription("Critical Return Debug Event");
 			DNI     ::SetName("dni");      DNI     ::SetDescription("Debug Notify Interrupt (se_dni)");
 			DAC_OFST::SetName("dac_ofst"); DAC_OFST::SetDescription("Data Address Compare Offset");
+			IAC12ATS::SetName("iac12ats"); IAC12ATS::SetDescription("Instruction Address Compare 1/2 Auto-Toggle Status");
+			IAC34ATS::SetName("iac34ats"); IAC34ATS::SetDescription("Instruction Address Compare 3/4 Auto-Toggle Status");
 		}
 	};
 	
@@ -1869,7 +2643,11 @@ protected:
 		struct IAC3  : Field<IAC3 , 10>     {}; // Instruction Address Compare 3 Debug Event Enable
 		struct IAC4  : Field<IAC4 , 11>     {}; // Instruction Address Compare 4 Debug Event Enable
 		struct DAC1  : Field<DAC1 , 12, 13> {}; // Data Address Compare 1 Debug Event Enable
+		struct DAC1R : Field<DAC1 , 12    > {}; // Data Address Compare 1 Read Debug Event Enable
+		struct DAC1W : Field<DAC1 , 13    > {}; // Data Address Compare 1 Write Debug Event Enable
 		struct DAC2  : Field<DAC2 , 14, 15> {}; // Data Address Compare 2 Debug Event Enable
+		struct DAC2R : Field<DAC2 , 14    > {}; // Data Address Compare 2 Read Debug Event Enable
+		struct DAC2W : Field<DAC2 , 15    > {}; // Data Address Compare 2 Write Debug Event Enable
 		struct RET   : Field<RET  , 16>     {}; // Return Debug Event Enable
 		struct IAC5  : Field<IAC5 , 17>     {}; // Instruction Address Compare 5 Debug Event Enable
 		struct IAC6  : Field<IAC6 , 18>     {}; // Instruction Address Compare 6 Debug Event Enable
@@ -1884,6 +2662,7 @@ protected:
 		struct FT    : Field<FT   , 31>     {}; // Freeze Timers on Debug Event
 		
 		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet< EDM, IDM, RST, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4, DAC1R, DAC1W, DAC2R, DAC2W> ALL; }; 
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet< EDM, IDM, RST, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4, DAC1, DAC2
 		                                                  , RET, IAC5, IAC6, IAC7, IAC8, DEVT1, DEVT2, DCNT1, DCNT2, CIRPT, CRET, FT> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet< EDM, IDM, RST, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4, DAC1, DAC2, RET
@@ -1909,7 +2688,11 @@ protected:
 			IAC3 ::SetName("iac3");  IAC3 ::SetDescription("Instruction Address Compare 3 Debug Event Enable");
 			IAC4 ::SetName("iac4");  IAC4 ::SetDescription("Instruction Address Compare 4 Debug Event Enable");
 			DAC1 ::SetName("dac1");  DAC1 ::SetDescription("Data Address Compare 1 Debug Event Enable");
+			DAC1R::SetName("dac1r"); DAC1 ::SetDescription("Data Address Compare 1 Read Debug Event Enable");
+			DAC1W::SetName("dac1w"); DAC1 ::SetDescription("Data Address Compare 1 Write Debug Event Enable");
 			DAC2 ::SetName("dac2");  DAC2 ::SetDescription("Data Address Compare 2 Debug Event Enable");
+			DAC2R::SetName("dac2r"); DAC2 ::SetDescription("Data Address Compare 2 Read Debug Event Enable");
+			DAC2W::SetName("dac2w"); DAC2 ::SetDescription("Data Address Compare 2 Write Debug Event Enable");
 			RET  ::SetName("ret");   RET  ::SetDescription("Return Debug Event Enable");
 			IAC5 ::SetName("iac5");  IAC5 ::SetDescription("Instruction Address Compare 5 Debug Event Enable");
 			IAC6 ::SetName("iac6");  IAC6 ::SetDescription("Instruction Address Compare 6 Debug Event Enable");
@@ -1930,18 +2713,21 @@ protected:
 	{
 		typedef PrivilegedSPR<DBCR1, 309> Super;
 		
-		struct IAC1US : Field<IAC1US, 0, 1>   {};  // Instruction Address Compare 1 User/Supervisor Mode
-		struct IAC1ER : Field<IAC1ER, 2, 3>   {};  // Instruction Address Compare 1 Effective/Real Mode
-		struct IAC2US : Field<IAC2US, 4, 5>   {};  // Instruction Address Compare 2 User/Supervisor Mode
-		struct IAC2ER : Field<IAC2ER, 6, 7>   {};  // Instruction Address Compare 2 Effective/Real Mode
-		struct IAC12M : Field<IAC12M, 8, 9>   {};  // Instruction Address Compare 1/2 Mode
-		struct IAC3US : Field<IAC3US, 16, 17>  {}; // Instruction Address Compare 3 User/Supervisor Mode
-		struct IAC3ER : Field<IAC3ER, 18, 19> {};  // Instruction Address Compare 3 Effective/Real Mode
-		struct IAC4US : Field<IAC4US, 20, 21> {};  // Instruction Address Compare 4 User/Supervisor Mode
-		struct IAC4ER : Field<IAC4ER, 22, 23> {};  // Instruction Address Compare 4 Effective/Real Mode
-		struct IAC34M : Field<IAC34M, 24, 25> {};  // Instruction Address Compare 3/4 Mode
+		struct IAC1US  : Field<IAC1US , 0 , 1 > {}; // Instruction Address Compare 1 User/Supervisor Mode
+		struct IAC1ER  : Field<IAC1ER , 2 , 3 > {}; // Instruction Address Compare 1 Effective/Real Mode
+		struct IAC2US  : Field<IAC2US , 4 , 5 > {}; // Instruction Address Compare 2 User/Supervisor Mode
+		struct IAC2ER  : Field<IAC2ER , 6 , 7 > {}; // Instruction Address Compare 2 Effective/Real Mode
+		struct IAC12M  : Field<IAC12M , 8 , 9 > {}; // Instruction Address Compare 1/2 Mode
+		struct IAC12AT : Field<IAC12AT, 15    > {}; // Instruction Address Compare 1/2 Auto-Toggle Enable 
+		struct IAC3US  : Field<IAC3US , 16, 17> {}; // Instruction Address Compare 3 User/Supervisor Mode
+		struct IAC3ER  : Field<IAC3ER , 18, 19> {}; // Instruction Address Compare 3 Effective/Real Mode
+		struct IAC4US  : Field<IAC4US , 20, 21> {}; // Instruction Address Compare 4 User/Supervisor Mode
+		struct IAC4ER  : Field<IAC4ER , 22, 23> {}; // Instruction Address Compare 4 Effective/Real Mode
+		struct IAC34M  : Field<IAC34M , 24, 25> {}; // Instruction Address Compare 3/4 Mode
+		struct IAC34AT : Field<IAC34AT, 31    > {}; // Instruction Address Compare 3/4 Auto-Toggle Enable
 		
 		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<IAC1US, IAC1ER, IAC2US, IAC2ER, IAC12M, IAC12AT, IAC3US, IAC3ER, IAC4US, IAC4ER, IAC34M, IAC34AT> ALL; };
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<IAC1US, IAC1ER, IAC2US, IAC2ER, IAC12M, IAC3US, IAC3ER, IAC4US, IAC4ER, IAC34M> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<IAC1US, IAC1ER, IAC2US, IAC2ER, IAC12M, IAC3US, IAC3ER, IAC4US, IAC4ER, IAC34M> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
@@ -1952,17 +2738,19 @@ protected:
 	private:
 		void Init()
 		{
-			        this->SetName("dbcr1");          this->SetDescription("Debug Control Register 1");
-			IAC1US::SetName("iac1us"); IAC1US::SetDescription("Instruction Address Compare 1 User/Supervisor Mode");
-			IAC1ER::SetName("iac1er"); IAC1ER::SetDescription("Instruction Address Compare 1 Effective/Real Mode");
-			IAC2US::SetName("iac2us"); IAC2US::SetDescription("Instruction Address Compare 2 User/Supervisor Mode");
-			IAC2ER::SetName("iac2er"); IAC2ER::SetDescription("Instruction Address Compare 2 Effective/Real Mode");
-			IAC12M::SetName("iac12m"); IAC12M::SetDescription("Instruction Address Compare 1/2 Mode");
-			IAC3US::SetName("iac3us"); IAC3US::SetDescription("Instruction Address Compare 3 User/Supervisor Mode");
-			IAC3ER::SetName("iac3er"); IAC3ER::SetDescription("Instruction Address Compare 3 Effective/Real Mode");
-			IAC4US::SetName("iac4us"); IAC4US::SetDescription("Instruction Address Compare 4 User/Supervisor Mode");
-			IAC4ER::SetName("iac4er"); IAC4ER::SetDescription("Instruction Address Compare 4 Effective/Real Mode");
-			IAC34M::SetName("iac34m"); IAC34M::SetDescription("Instruction Address Compare 3/4 Mode");
+			   this->SetName("dbcr1");      this->SetDescription("Debug Control Register 1");
+			IAC1US ::SetName("iac1us");  IAC1US ::SetDescription("Instruction Address Compare 1 User/Supervisor Mode");
+			IAC1ER ::SetName("iac1er");  IAC1ER ::SetDescription("Instruction Address Compare 1 Effective/Real Mode");
+			IAC2US ::SetName("iac2us");  IAC2US ::SetDescription("Instruction Address Compare 2 User/Supervisor Mode");
+			IAC2ER ::SetName("iac2er");  IAC2ER ::SetDescription("Instruction Address Compare 2 Effective/Real Mode");
+			IAC12M ::SetName("iac12m");  IAC12M ::SetDescription("Instruction Address Compare 1/2 Mode");
+			IAC12AT::SetName("iac12at"); IAC12AT::SetDescription("Instruction Address Compare 1/2 Auto-Toggle Enable");
+			IAC3US ::SetName("iac3us");  IAC3US ::SetDescription("Instruction Address Compare 3 User/Supervisor Mode");
+			IAC3ER ::SetName("iac3er");  IAC3ER ::SetDescription("Instruction Address Compare 3 Effective/Real Mode");
+			IAC4US ::SetName("iac4us");  IAC4US ::SetDescription("Instruction Address Compare 4 User/Supervisor Mode");
+			IAC4ER ::SetName("iac4er");  IAC4ER ::SetDescription("Instruction Address Compare 4 Effective/Real Mode");
+			IAC34M ::SetName("iac34m");  IAC34M ::SetDescription("Instruction Address Compare 3/4 Mode");
+			IAC34AT::SetName("iac34at"); IAC34AT::SetDescription("Instruction Address Compare 3/4 Auto-Toggle Enable");
 		}
 	};
 	
@@ -1971,19 +2759,31 @@ protected:
 	{
 		typedef PrivilegedSPR<DBCR2, 310> Super;
 		
-		struct DAC1US  : Field<DAC1US , 0, 1>   {}; // Data Address Compare 1 User/Supervisor Mode
-		struct DAC1ER  : Field<DAC1ER , 2, 3>   {}; // Data Address Compare 1 Effective/Read Mode
-		struct DAC2US  : Field<DAC2US , 4, 5>   {}; // Data Address Compare 2 User/Supervisor Mode
-		struct DAC2ER  : Field<DAC2ER , 6, 7>   {}; // Data Address Compare 2 Effective/Read Mode
-		struct DAC12M  : Field<DAC12M , 8, 9>   {}; // Data Address Compare 1/2 Mode
+		struct DAC1US  : Field<DAC1US , 0 , 1 > {}; // Data Address Compare 1 User/Supervisor Mode
+		struct DAC1ER  : Field<DAC1ER , 2 , 3 > {}; // Data Address Compare 1 Effective/Read Mode
+		struct DAC2US  : Field<DAC2US , 4 , 5 > {}; // Data Address Compare 2 User/Supervisor Mode
+		struct DAC2ER  : Field<DAC2ER , 6 , 7 > {}; // Data Address Compare 2 Effective/Read Mode
+		struct DAC12M  : Field<DAC12M , 8 , 9 > {}; // Data Address Compare 1/2 Mode
+		struct DAC12A  : Field<DAC12A , 10    > {}; // Data Address Compare 1/2 Asynchronous
 		struct DAC1LNK : Field<DAC1LNK, 10>     {}; // Data Address Compare 1 Linked
 		struct DAC2LNK : Field<DAC2LNK, 11>     {}; // Data Address Compare 2 Linked
 		struct DVC1M   : Field<DVC1M  , 12, 13> {}; // Data Value Compare 1 Mode
 		struct DVC2M   : Field<DVC2M  , 14, 15> {}; // Data Value Compare 2 Mode
-		struct DVC1BE  : Field<DVC1BE , 16, 23> {}; // Data Value Compare 1 Byte Enables
-		struct DVC2BE  : Field<DVC2BE , 24, 31> {}; // Data Value Compare 2 Byte Enables
+		
+		SWITCH_ENUM_TRAIT(Model, _1);
+		CASE_ENUM_TRAIT(PPC440, _1)      { struct DVC1BE : Field<DVC1BE , 20, 23> {}; }; 
+		CASE_ENUM_TRAIT(E200Z710N3, _1)  { struct DVC1BE : Field<DVC1BE , 16, 23> {}; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _1) { struct DVC1BE : Field<DVC1BE , 16, 23> {}; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _1)::DVC1BE DVC1BE; // Data Value Compare 1 Byte Enables
+		
+		SWITCH_ENUM_TRAIT(Model, _2);
+		CASE_ENUM_TRAIT(PPC440, _2)      { struct DVC2BE : Field<DVC2BE , 28, 31> {}; };
+		CASE_ENUM_TRAIT(E200Z710N3, _2)  { struct DVC2BE : Field<DVC2BE , 24, 31> {}; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _2) { struct DVC2BE : Field<DVC2BE , 24, 31> {}; };  
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _2)::DVC2BE DVC2BE; // Data Value Compare 2 Byte Enables
 		
 		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<DAC1US, DAC1ER, DAC2US, DAC2ER, DAC12M, DAC12A, DVC1M, DVC2M, DVC1BE, DVC2BE> ALL; };
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<DAC1US, DAC1ER, DAC2US, DAC2ER, DAC12M, DAC1LNK, DAC2LNK, DVC1M, DVC2M, DVC1BE, DVC2BE> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<DAC1US, DAC1ER, DAC2US, DAC2ER, DAC12M, DAC1LNK, DAC2LNK, DVC1M, DVC2M, DVC1BE, DVC2BE> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
@@ -1994,12 +2794,13 @@ protected:
 	private:
 		void Init()
 		{
-			         this->SetName("dbcr2");            this->SetDescription("Debug Control Register 2");
+			   this->SetName("dbcr2");      this->SetDescription("Debug Control Register 2");
 			DAC1US ::SetName("dac1us");  DAC1US ::SetDescription("Data Address Compare 1 User/Supervisor Mode");
 			DAC1ER ::SetName("dac1er");  DAC1ER ::SetDescription("Data Address Compare 1 Effective/Read Mode");
 			DAC2US ::SetName("dac2us");  DAC2US ::SetDescription("Data Address Compare 2 User/Supervisor Mode");
 			DAC2ER ::SetName("dac2er");  DAC2ER ::SetDescription("Data Address Compare 2 Effective/Read Mode");
 			DAC12M ::SetName("dac12m");  DAC12M ::SetDescription("Data Address Compare 1/2 Mode");
+			DAC12A ::SetName("dac12a");  DAC12A ::SetDescription("Data Address Compare 1/2 Asynchronous");
 			DAC1LNK::SetName("dac1lnk"); DAC1LNK::SetDescription("Data Address Compare 1 Linked");
 			DAC2LNK::SetName("dac2lnk"); DAC2LNK::SetDescription("Data Address Compare 2 Linked");
 			DVC1M  ::SetName("dvc1m");   DVC1M  ::SetDescription("Data Value Compare 1 Mode");
@@ -2135,6 +2936,115 @@ protected:
 		void Init() { this->SetName("dvc2"); this->SetDescription("Data Value Compare 2"); }
 	};
 	
+	// Timer Status Register
+	struct TSR : PrivilegedSPR<TSR, 336>
+	{
+		typedef PrivilegedSPR<TSR, 336> Super;
+		
+		struct ENW : Field<ENW, 0   > {}; // Enable Next Watchdog Timer Exception
+		struct WIS : Field<WIS, 1   > {}; // Watchdog Timer Interrupt Status
+		struct WRS : Field<WRS, 2, 3> {}; // Watchdog Timer Reset Status
+		struct DIS : Field<DIS, 4   > {}; // Decrementer Interrupt Status
+		struct FIS : Field<FIS, 5   > {}; // Fixed Interval Timer Interrupt Status
+		
+		typedef FieldSet<ENW, WIS, WRS, DIS, FIS> ALL;
+		
+		TSR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		TSR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+		
+		virtual bool MoveTo(uint32_t value) { this->template Set<ALL>(this->template Get<ALL>() & ~value); return true; } // W1C
+	private:
+		void Init()
+		{
+			this->SetName("TSR"); this->SetDescription("Timer Status Register");
+			
+			ENW::SetName("ENW"); ENW::SetDescription("Enable Next Watchdog Timer Exception");
+			WIS::SetName("WIS"); WIS::SetDescription("Watchdog Timer Interrupt Status");
+			WRS::SetName("WRS"); WRS::SetDescription("Watchdog Timer Reset Status");
+			DIS::SetName("DIS"); DIS::SetDescription("Decrementer Interrupt Status");
+			FIS::SetName("FIS"); FIS::SetDescription("Fixed Interval Timer Interrupt Status");
+		}
+	};
+	
+	// Timer Control Register
+	struct TCR : PrivilegedSPR<TCR, 340>
+	{
+		typedef PrivilegedSPR<TCR, 340> Super;
+		
+		struct WP  : Field<WP , 0, 1> {}; // Watchdog Timer Period
+		struct WRC : Field<WRC, 2, 3> {}; // Watchdog Timer Reset Control
+		struct WIE : Field<WIE, 4   > {}; // Watchdog Timer Interrupt Enable
+		struct DIE : Field<DIE, 5   > {}; // Decrementer Interrupt Enable
+		struct FP  : Field<FP , 6, 7> {}; // Fixed Interval Timer Period
+		struct FIE : Field<FIE, 8   > {}; // Fixed Interval Timer Interrupt Enable
+		struct ARE : Field<ARE, 9   > {}; // Auto-Reload Enable
+		
+		typedef FieldSet<WP, WRC, WIE, DIE, FP, FIE, ARE> ALL;
+		
+		TCR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		TCR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("TCR"); this->SetDescription("Timer Control Register");
+			
+			WP ::SetName("WP");  WP ::SetDescription("Watchdog Timer Period");
+			WRC::SetName("WRC"); WRC::SetDescription("Watchdog Timer Reset Control");
+			WIE::SetName("WIE"); WIE::SetDescription("Watchdog Timer Interrupt Enable");
+			DIE::SetName("DIE"); DIE::SetDescription("Decrementer Interrupt Enable");
+			FP ::SetName("FP");  FP ::SetDescription("Fixed Interval Timer Period");
+			FIE::SetName("FIE"); FIE::SetDescription("Fixed Interval Timer Interrupt Enable");
+			ARE::SetName("ARE"); ARE::SetDescription("Auto-Reload Enable");
+		}
+	};
+
+	// IVOR
+	template <unsigned int IVOR_NUM>
+	struct IVOR : PrivilegedSPR<IVOR<IVOR_NUM>, 400 + IVOR_NUM>
+	{
+		typedef PrivilegedSPR<IVOR<IVOR_NUM>, 400 + IVOR_NUM> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		IVOR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IVOR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			std::stringstream name_sstr;
+			name_sstr << "IVOR" << IVOR_NUM;
+			
+			std::stringstream desc_sstr;
+			desc_sstr << "Interrupt Vector Offset Register " << IVOR_NUM;
+			
+			this->SetName(name_sstr.str());
+			this->SetDescription(desc_sstr.str());
+		}
+	};
+	
+	typedef IVOR<0> IVOR0;
+	typedef IVOR<1> IVOR1;
+	typedef IVOR<2> IVOR2;
+	typedef IVOR<3> IVOR3;
+	typedef IVOR<4> IVOR4;
+	typedef IVOR<5> IVOR5;
+	typedef IVOR<6> IVOR6;
+	typedef IVOR<7> IVOR7;
+	typedef IVOR<8> IVOR8;
+	typedef IVOR<9> IVOR9;
+	typedef IVOR<10> IVOR10;
+	typedef IVOR<11> IVOR11;
+	typedef IVOR<12> IVOR12;
+	typedef IVOR<13> IVOR13;
+	typedef IVOR<14> IVOR14;
+	typedef IVOR<15> IVOR15;
+
 	// Thread ID
 	struct TIR : ReadOnlyPrivilegedSPR<TIR, 446>
 	{
@@ -2181,7 +3091,13 @@ protected:
 		struct FDBZE : Field<FDBZE,    27> {}; // Embedded Floating-point Divide by Zero Exception Enable
 		struct FUNFE : Field<FUNFE,    28> {}; // Embedded Floating-point Underflow Exception Enable
 		struct FOVFE : Field<FOVFE,    29> {}; // Embedded Floating-point Overflow Exception Enable
-		struct FRMC  : Field<FRMC,  30,31> {}; // Embedded Floating-point Rounding Mode Control
+		struct FRMC  : Field<FRMC,  30,31>     // Embedded Floating-point Rounding Mode Control
+		{
+			static uint32_t NEAREST() { return 0; }
+			static uint32_t ZERO()    { return 1; }
+			static uint32_t UP()      { return 2; }
+			static uint32_t DOWN()    { return 3; }
+                };
 		
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<FINXS, FINVS, FDBZS, FUNFS, FOVFS, /*MODE,*/ SOV, OV, FG, FX, FINV, FDBZ, FUNF, FOVF, FINXE, FINVE, FDBZE, FUNFE, FOVFE, FRMC> ALL; };
@@ -2688,13 +3604,22 @@ protected:
 		typedef PrivilegedSPR<MCSR, 572> Super;
 		
 		struct MCP         : Field<MCP        , 0>  {}; // Machine check input pin
+		struct MCS         : Field<MCS        , 0>  {}; // Machine Check Summary
 		struct IC_DPERR    : Field<IC_DPERR   , 1>  {}; // Instruction Cache data array parity error
+		struct IB          : Field<IB         , 1>  {}; // Instruction PLB Error
+		struct DRB         : Field<DRB        , 2>  {}; // Data Read PLB Error
 		struct DC_DPERR    : Field<DC_DPERR   , 3>  {}; // Data Cache data array parity error
+		struct DWB         : Field<DWB        , 3>  {}; // Data Write PLB Error
 		struct EXCP_ERR    : Field<EXCP_ERR   , 4>  {}; // ISI or Bus Error on first instruction fetch for an exception handler
+		struct TLBP        : Field<TLBP       , 4>  {}; // Translation Lookaside Buffer Parity Error
 		struct IC_TPERR    : Field<IC_TPERR   , 5>  {}; // Instruction Cache Tag parity error
+		struct ICP         : Field<ICP        , 5>  {}; // Instruction Cache Parity Error
 		struct DC_TPERR    : Field<DC_TPERR   , 6>  {}; // Data Cache Tag parity error
+		struct DCSP        : Field<DCSP       , 6>  {}; // Data Cache Search Parity Error
 		struct IC_LKERR    : Field<IC_LKERR   , 7>  {}; // Instruction Cache Lock error
+		struct DCFP        : Field<DCFP       , 7>  {}; // Data Cache Flush Parity Error
 		struct DC_LKERR    : Field<DC_LKERR   , 8>  {}; // Data Cache Lock error
+		struct IMPE        : Field<IMPE       , 8>  {}; // Imprecise Machine Check Exception
 		struct NMI         : Field<NMI        , 11> {}; // NMI input pin
 		struct MAV         : Field<MAV        , 12> {}; // MCAR Address Valid
 		struct MEA         : Field<MEA        , 13> {}; // MCAR holds Effective Address
@@ -2713,6 +3638,7 @@ protected:
 		struct BUS_WRDSI   : Field<BUS_WRDSI  , 30> {}; // Write bus error on buffered store to bus with DSI signaled. Set concurrently with BUS_WRERR for this case
 		
 		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet< MCS, IB, DRB, DWB, TLBP, ICP, DCSP, DCFP, IMPE> ALL; };
 		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet< MCP, IC_DPERR, DC_DPERR, EXCP_ERR, IC_TPERR
 		                                                  , DC_TPERR, IC_LKERR, DC_LKERR, NMI, MAV, MEA
 		                                                  , U, IF, LD, ST, G, STACK_ERR, IMEM_PERR
@@ -2736,15 +3662,24 @@ protected:
 	private:
 		void Init()
 		{
-			             this->SetName("mcsr");                     this->SetDescription("Machine Check Syndrome Register");
+			       this->SetName("mcsr");               this->SetDescription("Machine Check Syndrome Register");
 			MCP        ::SetName("mcp");         MCP        ::SetDescription("Machine check input pin");
+			MCS        ::SetName("mcs");         MCS        ::SetDescription("Machine Check Summary");     
 			IC_DPERR   ::SetName("ic_dperr");    IC_DPERR   ::SetDescription("Instruction Cache data array parity error");
+			IB         ::SetName("ib");          IB         ::SetDescription("Instruction PLB Error");    
+			DRB        ::SetName("drb");         DRB        ::SetDescription("Data Read PLB Error");     
 			DC_DPERR   ::SetName("dc_dperr");    DC_DPERR   ::SetDescription("Data Cache data array parity error");
+			DWB        ::SetName("dwb");         DWB        ::SetDescription("Data Write PLB Error");     
 			EXCP_ERR   ::SetName("excp_err");    EXCP_ERR   ::SetDescription("ISI or Bus Error on first instruction fetch for an exception handler");
+			TLBP       ::SetName("tlbp");        TLBP       ::SetDescription("Translation Lookaside Buffer Parity Error");      
 			IC_TPERR   ::SetName("ic_tperr");    IC_TPERR   ::SetDescription("Instruction Cache Tag parity error");
+			ICP        ::SetName("icp");         ICP        ::SetDescription("Instruction Cache Parity Error");     
 			DC_TPERR   ::SetName("dc_tperr");    DC_TPERR   ::SetDescription("Data Cache Tag parity error");
+			DCSP       ::SetName("dcsp");        DCSP       ::SetDescription("Data Cache Search Parity Error");      
 			IC_LKERR   ::SetName("ic_lkerr");    IC_LKERR   ::SetDescription("Instruction Cache Lock error");
+			DCFP       ::SetName("dcfp");        DCFP       ::SetDescription("Data Cache Flush Parity Error");      
 			DC_LKERR   ::SetName("dc_lkerr");    DC_LKERR   ::SetDescription("Data Cache Lock error");
+			IMPE       ::SetName("impe");        IMPE       ::SetDescription("Imprecise Machine Check Exception");      
 			NMI        ::SetName("nmi");         NMI        ::SetDescription("NMI input pin");
 			MAV        ::SetName("mav");         MAV        ::SetDescription("MCAR Address Valid");
 			MEA        ::SetName("mea");         MEA        ::SetDescription("MCAR holds Effective Address");
@@ -3292,6 +4227,505 @@ protected:
 		}
 	};
 
+	struct CacheVictimRegister : UnnumberedSLR<CacheVictimRegister, SLR_SPR_SPACE, SLR_RW, SLR_PRIVILEGED>
+	{
+		typedef UnnumberedSLR<CacheVictimRegister, SLR_SPR_SPACE, SLR_RW, SLR_PRIVILEGED> Super;
+		struct VNDXA : Field<VNDXA, 0 , 7 > {}; // Victim Index A
+		struct VNDXB : Field<VNDXB, 8 , 15> {}; // Victim Index B
+		struct VNDXC : Field<VNDXC, 16, 23> {}; // Victim Index C
+		struct VNDXD : Field<VNDXD, 24, 31> {}; // Victim Index D
+		
+		typedef FieldSet<VNDXA, VNDXB, VNDXC, VNDXD> ALL;
+		
+		CacheVictimRegister(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		CacheVictimRegister(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual void Reset() { /* unaffected */ }
+		
+		unsigned int GetVictimIndex(unsigned int i) const { return (this->Get() >> (8 * (3 - i))) & 0xff; }
+		void SetVictimIndex(unsigned int i, unsigned int vndx) { unsigned int bofs = 8 * (3 - i); this->Set((this->Get() & ~(0xff << bofs)) | ((vndx & 0xff) << bofs)); }
+		void ClearVictimIndex(unsigned i) { unsigned int bofs = 8 * (3 - i); this->Set(this->Get() & ~(0xff << bofs)); }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			VNDXA::SetName("VNDXA"); VNDXA::SetDescription("Victim Index A");
+			VNDXB::SetName("VNDXB"); VNDXB::SetDescription("Victim Index B");
+			VNDXC::SetName("VNDXC"); VNDXC::SetDescription("Victim Index C");
+			VNDXD::SetName("VNDXD"); VNDXD::SetDescription("Victim Index D");
+		}
+	};
+
+	// Instruction Cache Normal Victim Register
+	template <unsigned int INV_NUM>
+	struct INV : CacheVictimRegister
+	{
+		typedef CacheVictimRegister Super;
+		
+		static const unsigned int SLR_NUM = 880 + INV_NUM;
+		static const unsigned int REG_NUM = SLR_NUM;
+
+		INV(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		INV(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual unsigned int GetRegNum() const { return SLR_NUM; }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->cpu->RegisterSLR(SLR_NUM, this);
+
+			std::stringstream name_sstr;
+			name_sstr << "inv" << INV_NUM;
+			
+			std::stringstream desc_sstr;
+			desc_sstr << "Instruction Cache Normal Victim Register " << INV_NUM;
+			
+			this->SetName(name_sstr.str());
+			this->SetDescription(desc_sstr.str());
+		}
+	};
+	
+	typedef INV<0> INV0;
+	typedef INV<1> INV1;
+	typedef INV<2> INV2;
+	typedef INV<3> INV3;
+
+	// Instruction Cache Transient Victim Register
+	template <unsigned int ITV_NUM>
+	struct ITV : CacheVictimRegister
+	{
+		typedef CacheVictimRegister Super;
+		
+		static const unsigned int SLR_NUM = 884 + ITV_NUM;
+		static const unsigned int REG_NUM = SLR_NUM;
+
+		ITV(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		ITV(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual unsigned int GetRegNum() const { return SLR_NUM; }
+		virtual void Reset() { /* unaffected */ }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			std::stringstream name_sstr;
+			name_sstr << "itv" << ITV_NUM;
+			
+			std::stringstream desc_sstr;
+			desc_sstr << "Instruction Cache Transient Victim Register " << ITV_NUM;
+			
+			this->SetName(name_sstr.str());
+			this->SetDescription(desc_sstr.str());
+		}
+	};
+	
+	typedef ITV<0> ITV0;
+	typedef ITV<1> ITV1;
+	typedef ITV<2> ITV2;
+	typedef ITV<3> ITV3;
+	
+	// Core Configuration Register 1
+	struct CCR1 : PrivilegedSPR<CCR1, 888>
+	{
+		typedef PrivilegedSPR<CCR1, 888> Super;
+		
+		struct ICDPEI : Field<ICDPEI, 0 , 7 > {}; // Instruction Cache Data Parity Error Insert
+		struct ICTPEI : Field<ICTPEI, 8 , 9 > {}; // Instruction Cache Tag Parity Error Insert
+		struct DCTPEI : Field<DCTPEI, 10, 11> {}; // Data Cache Tag Parity Error Insert
+		struct DCDPEI : Field<DCDPEI, 12    > {}; // Data Cache Data Parity Error Insert
+		struct DCUPEI : Field<DCUPEI, 13    > {}; // Data Cache U-bit Parity Error Insert
+		struct DCMPEI : Field<DCMPEI, 14    > {}; // Data Cache Modified-bit Parity Error Insert
+		struct FCOM   : Field<FCOM  , 15    > {}; // Force Cache Operation Miss
+		struct MMUPEI : Field<MMUPEI, 16, 19> {}; // Memory Management Unit Parity Error Insert
+		struct FFF    : Field<FFF   , 20    > {}; // Force Full-line Flush
+		struct TCS    : Field<TCS   , 24    > {}; // Timer Clock Select
+		
+		typedef FieldSet<ICDPEI, ICTPEI, DCTPEI, DCDPEI, DCUPEI, DCMPEI, FCOM, MMUPEI, FFF, TCS> ALL;
+		
+		CCR1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		CCR1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("ccr1"); this->SetDescription("Core Configuration Register 1");
+			
+			ICDPEI::SetName("icdpei"); ICDPEI::SetDescription("Instruction Cache Data Parity Error Insert");
+			ICTPEI::SetName("ictpei"); ICTPEI::SetDescription("Instruction Cache Tag Parity Error Insert");
+			DCTPEI::SetName("dctpei"); DCTPEI::SetDescription("Data Cache Tag Parity Error Insert");
+			DCDPEI::SetName("dcdpei"); DCDPEI::SetDescription("Data Cache Data Parity Error Insert");
+			DCUPEI::SetName("dcupei"); DCUPEI::SetDescription("Data Cache U-bit Parity Error Insert");
+			DCMPEI::SetName("dcmpei"); DCMPEI::SetDescription("Data Cache Modified-bit Parity Error Insert");
+			FCOM  ::SetName("fcom");   FCOM  ::SetDescription("Force Cache Operation Miss");
+			MMUPEI::SetName("mmupei"); MMUPEI::SetDescription("Memory Management Unit Parity Error Insert");
+			FFF   ::SetName("fff");    FFF   ::SetDescription("Force Full-line Flush");
+			TCS   ::SetName("tcs");    TCS   ::SetDescription("Timer Clock Select");
+		}
+	};
+
+	// Data Cache Normal Victim Register
+	template <unsigned int DNV_NUM>
+	struct DNV : CacheVictimRegister
+	{
+		typedef CacheVictimRegister Super;
+		
+		static const unsigned int SLR_NUM = 912 + DNV_NUM;
+		static const unsigned int REG_NUM = SLR_NUM;
+
+		DNV(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DNV(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual unsigned int GetRegNum() const { return SLR_NUM; }
+		virtual void Reset() { /* unaffected */ }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->cpu->RegisterSLR(912 + DNV_NUM, this);
+			
+			std::stringstream name_sstr;
+			name_sstr << "dnv" << DNV_NUM;
+			
+			std::stringstream desc_sstr;
+			desc_sstr << "Data Cache Normal Victim Register " << DNV_NUM;
+			
+			this->SetName(name_sstr.str());
+			this->SetDescription(desc_sstr.str());
+		}
+	};
+	
+	typedef DNV<0> DNV0;
+	typedef DNV<1> DNV1;
+	typedef DNV<2> DNV2;
+	typedef DNV<3> DNV3;
+
+	// Data Cache Transient Victim Register
+	template <unsigned int DTV_NUM>
+	struct DTV : CacheVictimRegister
+	{
+		typedef CacheVictimRegister Super;
+		
+		static const unsigned int SLR_NUM = 916 + DTV_NUM;
+		static const unsigned int REG_NUM = SLR_NUM;
+		
+		DTV(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DTV(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual unsigned int GetRegNum() const { return SLR_NUM; }
+		virtual void Reset() { /* unaffected */ }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			std::stringstream name_sstr;
+			name_sstr << "dtv" << DTV_NUM;
+			
+			std::stringstream desc_sstr;
+			desc_sstr << "Data Cache Transient Victim Register " << DTV_NUM;
+			
+			this->SetName(name_sstr.str());
+			this->SetDescription(desc_sstr.str());
+		}
+	};
+	
+	typedef DTV<0> DTV0;
+	typedef DTV<1> DTV1;
+	typedef DTV<2> DTV2;
+	typedef DTV<3> DTV3;
+	
+	// Data Cache Victim Limit
+	struct DVLIM : PrivilegedSPR<DVLIM, 920>
+	{
+		typedef PrivilegedSPR<DVLIM, 920> Super;
+		
+		struct TFLOOR   : Field<TFLOOR  , 2 , 9 > {}; // Transient Floor
+		struct TCEILING : Field<TCEILING, 13, 20> {}; // Transient Ceiling
+		struct NFLOOR   : Field<NFLOOR  , 24, 31> {}; // Normal Floor
+		
+		typedef FieldSet<TFLOOR, TCEILING, NFLOOR> ALL;
+
+		DVLIM(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DVLIM(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("dvlim");  this->SetDescription("Data Cache Victim Limit");
+			
+			TFLOOR  ::SetName("TFLOOR");   TFLOOR  ::SetDescription("Transient Floor");
+			TCEILING::SetName("TCEILING"); TCEILING::SetDescription("Transient Ceiling");
+			NFLOOR  ::SetName("NFLOOR");   NFLOOR  ::SetDescription("Normal Floor");
+		}
+	};
+
+	// Instruction Cache Victim Limit
+	struct IVLIM : PrivilegedSPR<IVLIM, 921>
+	{
+		typedef PrivilegedSPR<IVLIM, 921> Super;
+		
+		struct TFLOOR   : Field<TFLOOR  , 2 , 9 > {}; // Transient Floor
+		struct TCEILING : Field<TCEILING, 13, 20> {}; // Transient Ceiling
+		struct NFLOOR   : Field<NFLOOR  , 24, 31> {}; // Normal Floor
+		
+		typedef FieldSet<TFLOOR, TCEILING, NFLOOR> ALL;
+
+		IVLIM(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IVLIM(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("ivlim");  this->SetDescription("Instruction Cache Victim Limit");
+			
+			TFLOOR  ::SetName("TFLOOR");   TFLOOR  ::SetDescription("Transient Floor");
+			TCEILING::SetName("TCEILING"); TCEILING::SetDescription("Transient Ceiling");
+			NFLOOR  ::SetName("NFLOOR");   NFLOOR  ::SetDescription("Normal Floor");
+		}
+	};
+	
+	// Reset Configuration
+	struct RSTCFG : ReadOnlyPrivilegedSPR<RSTCFG, 923>
+	{
+		typedef ReadOnlyPrivilegedSPR<RSTCFG, 923> Super;
+		
+		struct U0   : Field<U0  , 16    > {}; // U0 Storage Attribute
+		struct U1   : Field<U1  , 17    > {}; // U1 Storage Attribute
+		struct U2   : Field<U2  , 18    > {}; // U2 Storage Attribute
+		struct U3   : Field<U3  , 19    > {}; // U3 Storage Attribute
+		struct E    : Field<E   , 24    > {}; // E Storage Attribute
+		struct ERPN : Field<ERPN, 28, 31> {}; // Extended Real Page Number
+		
+		typedef FieldSet<U0, U1, U2, U3, E, ERPN> ALL;
+		
+		RSTCFG(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		RSTCFG(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("rstcfg");  this->SetDescription("Reset Configuration");
+			
+			U0  ::SetName("U0");   U0  ::SetDescription("U0 Storage Attribute");
+			U1  ::SetName("U1");   U1  ::SetDescription("U1 Storage Attribute");
+			U2  ::SetName("U2");   U2  ::SetDescription("U2 Storage Attribute");
+			U3  ::SetName("U3");   U3  ::SetDescription("U3 Storage Attribute");
+			E   ::SetName("E");    E   ::SetDescription("E Storage Attribute");
+			ERPN::SetName("ERPN"); ERPN::SetDescription("Extended Real Page Number");
+		}
+	};
+	
+	// Data Cache Debug Tag Register Low
+	struct DCDBTRL : PrivilegedSPR<DCDBTRL, 924>
+	{
+		typedef PrivilegedSPR<DCDBTRL, 924> Super;
+		
+		struct UPAR : Field<UPAR, 13    > {}; // U bit parity
+		struct TPAR : Field<TPAR, 14, 15> {}; // Tag parity
+		struct DPAR : Field<DPAR, 16, 19> {}; // Data parity
+		struct MPAR : Field<MPAR, 20, 23> {}; // Modified (dirty) parity
+		struct D    : Field<D   , 24, 27> {}; // Dirty indicators
+		struct U0   : Field<U0  , 28    > {}; // U0 Storage Attribute
+		struct U1   : Field<U1  , 29    > {}; // U1 Storage Attribute
+		struct U2   : Field<U2  , 30    > {}; // U2 Storage Attribute
+		struct U3   : Field<U3  , 31    > {}; // U3 Storage Attribute
+		
+		typedef FieldSet<UPAR, TPAR, DPAR, MPAR, D, U0, U1, U2, U3> ALL;
+		
+		DCDBTRL(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DCDBTRL(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("dcdbtrl");  this->SetDescription("Data Cache Debug Tag Register Low");
+			
+			UPAR::SetName("UPAR"); UPAR::SetDescription("U bit parity");
+			TPAR::SetName("TPAR"); TPAR::SetDescription("Tag parity");
+			DPAR::SetName("DPAR"); DPAR::SetDescription("Data parity");
+			MPAR::SetName("MPAR"); MPAR::SetDescription("Modified (dirty) parity");
+			D   ::SetName("D");    D   ::SetDescription("Dirty indicators");
+			U0  ::SetName("U0");   U0  ::SetDescription("U0 Storage Attribute");
+			U1  ::SetName("U1");   U1  ::SetDescription("U1 Storage Attribute");
+			U2  ::SetName("U2");   U2  ::SetDescription("U2 Storage Attribute");
+			U3  ::SetName("U3");   U3  ::SetDescription("U3 Storage Attribute");
+		}
+	};
+
+	// Data Cache Debug Tag Register High
+	struct DCDBTRH : PrivilegedSPR<DCDBTRH, 925>
+	{
+		typedef PrivilegedSPR<DCDBTRH, 925> Super;
+		
+		struct TRA  : Field<TRA , 0 , 23> {}; // Tag Real Address
+		struct V    : Field<V   , 24    > {}; // Cache Line Valid
+		struct TERA : Field<TERA, 28, 31> {}; // Tag Extended Real Address
+		
+		typedef FieldSet<TRA, V, TERA> ALL;
+		
+		DCDBTRH(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DCDBTRH(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("dcdbtrh");  this->SetDescription("Data Cache Debug Tag Register High");
+			
+			TRA ::SetName("TRA");  TRA ::SetDescription("Tag Real Address");
+			V   ::SetName("V");    V   ::SetDescription("Cache Line Valid");
+			TERA::SetName("TERA"); TERA::SetDescription("Tag Extended Real Address");
+		}
+	};
+	
+	// Instruction Cache Debug Tag Register Low
+	struct ICDBTRL : ReadOnlyNonPrivilegedSPR<ICDBTRL, 926>
+	{
+		typedef ReadOnlyNonPrivilegedSPR<ICDBTRL, 926> Super;
+		
+		struct TS  : Field<TS , 22    > {}; // Translation Space
+		struct TD  : Field<TD , 23    > {}; // Translation ID (TID) Disable
+		struct TID : Field<TID, 24, 31> {}; // Translation ID
+		
+		typedef FieldSet<TS, TD, TID> ALL;
+		
+		ICDBTRL(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		ICDBTRL(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("icdbtrl");  this->SetDescription("Instruction Cache Debug Tag Register Low");
+			
+			TS ::SetName("TS");  TS ::SetDescription("Translation Space");
+			TD ::SetName("TD");  TD ::SetDescription("Translation ID (TID) Disable");
+			TID::SetName("TID"); TID::SetDescription("Translation ID");
+		}
+	};
+	
+	// Instruction Cache Debug Tag Register High
+	struct ICDBTRH : ReadOnlyNonPrivilegedSPR<ICDBTRH, 927>
+	{
+		typedef ReadOnlyNonPrivilegedSPR<ICDBTRH, 927> Super;
+		
+		struct TEA   : Field<TEA  , 0 , 23> {}; // Tag Effective Address
+		struct V     : Field<V    , 24    > {}; // Cache Line Valid
+		struct TPAR  : Field<TPAR , 25, 26> {}; // Tag Parity
+		struct DAPAR : Field<DAPAR, 27    > {}; // Instruction Data parity
+		
+		typedef FieldSet<TEA, V, TPAR, DAPAR> ALL;
+		
+		ICDBTRH(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		ICDBTRH(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("icdbtrh");  this->SetDescription("Instruction Cache Debug Tag Register High");
+			
+			TEA  ::SetName("TEA");   TEA  ::SetDescription("Tag Effective Address");
+			V    ::SetName("V");     V    ::SetDescription("Cache Line Valid");
+			TPAR ::SetName("TPAR");  TPAR ::SetDescription("Tag Parity");
+			DAPAR::SetName("DAPAR"); DAPAR::SetDescription("Instruction Data parity");
+		}
+	};
+	
+	// Memory Management Unit Control Register
+	struct MMUCR : PrivilegedSPR<MMUCR, 946>
+	{
+		typedef PrivilegedSPR<MMUCR, 946> Super;
+		
+		struct SWOA    : Field<SWOA   , 7     > {}; // Store Without Allocate
+		struct U1TE    : Field<U1TE   , 9     > {}; // U1 Transient Enable
+		struct U2SWOAE : Field<U2SWOAE, 10    > {}; // U2 Store without Allocate Enable
+		struct DULXE   : Field<DULXE  , 12    > {}; // Data Cache Unlock Exception Enable
+		struct IULXE   : Field<IULXE  , 13    > {}; // Instruction Cache Unlock Exception Enable
+		struct STS     : Field<STS    , 15    > {}; // Search Translation Space
+		struct STID    : Field<STID   , 24, 31> {}; // Search Translation ID
+		
+		typedef FieldSet<SWOA, U1TE, U2SWOAE, DULXE, IULXE, STS, STID> ALL;
+		
+		MMUCR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MMUCR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("MMUCR");  this->SetDescription("Memory Management Unit Control Register");
+			
+			SWOA   ::SetName("SWOA");    SWOA   ::SetDescription("Store Without Allocate");
+			U1TE   ::SetName("U1TE");    U1TE   ::SetDescription("U1 Transient Enable");
+			U2SWOAE::SetName("U2SWOAE"); U2SWOAE::SetDescription("U2 Store without Allocate Enable");
+			DULXE  ::SetName("DULXE");   DULXE  ::SetDescription("Data Cache Unlock Exception Enable");
+			IULXE  ::SetName("IULXE");   IULXE  ::SetDescription("Instruction Cache Unlock Exception Enable");
+			STS    ::SetName("STS");     STS    ::SetDescription("Search Translation Space");
+			STID   ::SetName("STID");    STID   ::SetDescription("Search Translation ID");
+		}
+	};
+	
+	// Core Configuration Register 0
+	struct CCR0 : PrivilegedSPR<CCR0, 947>
+	{
+		typedef PrivilegedSPR<CCR0, 947> Super;
+		
+		struct PRE    : Field<PRE   ,  1    > {}; // Parity Recovery Enable
+		struct CRPE   : Field<CRPE  ,  4    > {}; // Cache Read Parity Enable
+		struct DSTG   : Field<DSTG  , 10    > {}; // Disable Store Gathering
+		struct DAPUIB : Field<DAPUIB, 11    > {}; // Disable APU Instruction Broadcast
+		struct DTB    : Field<DTB   , 16    > {}; // Disable Trace Broadcast
+		struct GICBT  : Field<GICBT , 17    > {}; // Guaranteed Instruction Cache Block Touch
+		struct GDCBT  : Field<GDCBT , 18    > {}; // Guaranteed Data Cache Block Touch
+		struct FLSTA  : Field<FLSTA , 23    > {}; // Force Load/Store Alignment
+		struct ICSLC  : Field<ICSLC , 28, 29> {}; // Instruction Cache Speculative Line Count
+		struct ICSLT  : Field<ICSLT , 30, 31> {}; // Instruction Cache Speculative Live Threshold
+		
+		typedef FieldSet<PRE, CRPE, DSTG, DAPUIB, DTB, GICBT, GDCBT, FLSTA, ICSLC, ICSLT> ALL;
+		
+		CCR0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		CCR0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("ccr0");  this->SetDescription("Core Configuration Register 0");
+			
+			PRE   ::SetName("pre");    PRE   ::SetDescription("Parity Recovery Enable");
+			CRPE  ::SetName("crpe");   CRPE  ::SetDescription("Cache Read Parity Enable");
+			DSTG  ::SetName("dstg");   DSTG  ::SetDescription("Disable Store Gathering");
+			DAPUIB::SetName("dapuib"); DAPUIB::SetDescription("Disable APU Instruction Broadcast");
+			DTB   ::SetName("dtb");    DTB   ::SetDescription("Disable Trace Broadcast");
+			GICBT ::SetName("gicbt");  GICBT ::SetDescription("Guaranteed Instruction Cache Block Touch");
+			GDCBT ::SetName("gdcbt");  GDCBT ::SetDescription("Guaranteed Data Cache Block Touch");
+			FLSTA ::SetName("flsta");  FLSTA ::SetDescription("Force Load/Store Alignment");
+			ICSLC ::SetName("icslc");  ICSLC ::SetDescription("Instruction Cache Speculative Line Count");
+			ICSLT ::SetName("icslt");  ICSLT ::SetDescription("Instruction Cache Speculative Live Threshold");
+		}
+	};
+
 	// L1 Flush and Invalidate Control Register 1
 	struct L1FINV1 : PrivilegedSPR<L1FINV1, 959>
 	{
@@ -3333,6 +4767,20 @@ protected:
 		using Super::operator =;
 	private:
 		void Init() { this->SetName("devent"); this->SetDescription("Debug Event Register"); }
+	};
+	
+	// Instruction Cache Debug Data Register
+	struct ICDBDR : ReadOnlyPrivilegedSPR<ICDBDR, 979>
+	{
+		typedef ReadOnlyPrivilegedSPR<ICDBDR, 979> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		ICDBDR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		ICDBDR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init() { this->SetName("icdbdr"); this->SetDescription("Instruction Cache Debug Data Register"); }
 	};
 	
 	// System Information
@@ -3495,6 +4943,20 @@ protected:
 			ICINV  ::SetName("icinv");   ICINV  ::SetDescription("Instruction Cache Invalidate");
 			ICE    ::SetName("ice");     ICE    ::SetDescription("Instruction Cache Enable");
 		}
+	};
+	
+	// Debug Data Register
+	struct DBDR : PrivilegedSPR<DBDR, 1011>
+	{
+		typedef PrivilegedSPR<DBDR, 1011> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		DBDR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DBDR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init() { this->SetName("dbdr"); this->SetDescription("Debug Data Register"); }
 	};
 
 	// Branch Unit Control and Status Register
@@ -3897,7 +5359,202 @@ protected:
 	};
 
 	// Nexus 3 DCRs are voluntary missing
+
+	/////////////////////////// Time Base Registers ///////////////////////////
 	
+	// Time Base Lower
+	struct TBL : ReadOnlyNonPrivilegedTBR<TBL, 268>
+	{
+		typedef ReadOnlyNonPrivilegedTBR<TBL, 268> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR268 : AltSLR<TBL, SLR_SPR_SPACE, 268, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<TBL, SLR_SPR_SPACE, 268, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR268(typename CONFIG::CPU *_cpu, TBL *_tbl) : Super(_cpu, _tbl) {}
+		};
+		
+		struct SPR284 : AltSLR<TBL, SLR_SPR_SPACE, 284, SLR_WO, SLR_PRIVILEGED>
+		{
+			typedef AltSLR<TBL, SLR_SPR_SPACE, 284, SLR_WO, SLR_PRIVILEGED> Super;
+			
+			SPR284(typename CONFIG::CPU *_cpu, TBL *_tbl) : Super(_cpu, _tbl) {}
+		};
+		
+		TBL(typename CONFIG::CPU *_cpu) : Super(_cpu), spr268(_cpu, this), spr284(_cpu, this) { Init(); }
+		TBL(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr268(_cpu, this), spr284(_cpu, this) { Init(); }
+		
+		virtual void Reset() { /* unaffected */ }
+
+		virtual bool MoveFrom(uint32_t& value)
+		{
+			this->cpu->RunInternalTimers();
+			return Super::MoveFrom(value);
+		}
+		
+		virtual bool MoveTo(uint32_t value)
+		{
+			uint32_t old_value = this->Get();
+			bool status = Super::MoveTo(value);
+			uint32_t new_value = this->Get();
+			if(old_value != new_value)
+			{
+				ValueChanged(old_value);
+			}
+			return status;
+		}
+		
+		virtual void ValueChanged(uint32_t old_value)
+		{
+		}
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("TBL"); this->SetDescription("Time Base Lower");
+		}
+		
+		SPR268 spr268;
+		SPR284 spr284;
+	};
+	
+	// Time Base Upper
+	struct TBU : ReadOnlyNonPrivilegedTBR<TBU, 269>
+	{
+		typedef ReadOnlyNonPrivilegedTBR<TBU, 269> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		struct SPR269 : AltSLR<TBU, SLR_SPR_SPACE, 269, SLR_RO, SLR_NON_PRIVILEGED>
+		{
+			typedef AltSLR<TBU, SLR_SPR_SPACE, 269, SLR_RO, SLR_NON_PRIVILEGED> Super;
+			
+			SPR269(typename CONFIG::CPU *_cpu, TBU *_tbu) : Super(_cpu, _tbu) {}
+		};
+		
+		struct SPR285 : AltSLR<TBU, SLR_SPR_SPACE, 285, SLR_WO, SLR_PRIVILEGED>
+		{
+			typedef AltSLR<TBU, SLR_SPR_SPACE, 285, SLR_WO, SLR_PRIVILEGED> Super;
+			
+			SPR285(typename CONFIG::CPU *_cpu, TBU *_tbu) : Super(_cpu, _tbu) {}
+		};
+		
+		TBU(typename CONFIG::CPU *_cpu) : Super(_cpu), spr269(_cpu, this), spr285(_cpu, this) { Init(); }
+		TBU(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr269(_cpu, this), spr285(_cpu, this) { Init(); }
+
+		virtual void Reset() { /* unaffected */ }
+
+		virtual bool MoveFrom(uint32_t& value)
+		{
+			this->cpu->RunInternalTimers();
+			return Super::MoveFrom(value);
+		}
+		
+		virtual bool MoveTo(uint32_t value)
+		{
+			this->cpu->RunInternalTimers();
+			uint32_t old_value = this->Get();
+			bool status = Super::MoveTo(value);
+			uint32_t new_value = this->Get();
+			this->cpu->RunInternalTimers();
+			if(old_value != new_value)
+			{
+				ValueChanged(old_value);
+			}
+			return status;
+		}
+		
+		virtual void ValueChanged(uint32_t old_value)
+		{
+		}
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("TBU"); this->SetDescription("Time Base Upper");
+		}
+		
+		SPR269 spr269;
+		SPR285 spr285;
+	};
+	
+	struct TB
+	{
+		struct _TBU : TBU
+		{
+			_TBU(TB *_tb, typename CONFIG::CPU *_cpu) : TBU(_cpu), tb(_tb) {}
+			_TBU(TB *_tb, typename CONFIG::CPU *_cpu, uint32_t _value) : TBU(_cpu, _value), tb(_tb) {}
+			
+			virtual void ValueChanged(uint32_t old_value)
+			{
+				tb->UpperValueChanged(old_value);
+			}
+			
+			using TBU::operator =;
+		private:
+			TB *tb;
+		};
+		
+		struct _TBL : TBL
+		{
+			_TBL(TB *_tb, typename CONFIG::CPU *_cpu) : TBL(_cpu), tb(_tb) {}
+			_TBL(TB *_tb, typename CONFIG::CPU *_cpu, uint32_t _value) : TBL(_cpu, _value), tb(_tb) {}
+			
+			virtual void ValueChanged(uint32_t old_value)
+			{
+				tb->LowerValueChanged(old_value);
+			}
+			
+			using TBL::operator =;
+		private:
+			TB *tb;
+		};
+
+		TB(typename CONFIG::CPU *cpu) : tbu(this, cpu), tbl(this, cpu) {}
+		TB(typename CONFIG::CPU *cpu, uint64_t value) : tbu(this, cpu, uint32_t(value >> 32)), tbl(this, cpu, uint32_t(value)) {}
+		
+		TB& operator = (uint64_t value)
+		{
+			uint64_t old_value = uint64_t(*this);
+			tbu = uint32_t(value >> 32);
+			tbl = uint32_t(value);
+			uint64_t new_value = uint64_t(*this);
+			
+			if(old_value != new_value)
+			{
+				ValueChanged(old_value);
+			}
+			
+			return *this;
+		}
+		
+		operator uint64_t() const
+		{
+			return (uint64_t(tbu) << 32) | uint64_t(tbl);
+		}
+		
+		void UpperValueChanged(uint32_t tbu_old_value)
+		{
+			ValueChanged((uint64_t(tbu_old_value) << 32) | uint64_t(tbl));
+		}
+		
+		void LowerValueChanged(uint32_t tbl_old_value)
+		{
+			ValueChanged((uint64_t(tbu) << 32) | uint64_t(tbl_old_value));
+		}
+
+		virtual void ValueChanged(uint64_t old_value)
+		{
+		}
+	private:
+		_TBU tbu;
+		_TBL tbl;
+	};
+
 	/////////////////////// Performance Monitor Registers /////////////////////
 	
 	//  Performance Monitor Counter registers 0-3
@@ -4168,6 +5825,51 @@ protected:
 		
 	};
 	
+	////////////////////////// Floating-Point unit ////////////////////////////
+	
+	struct NoFPU
+	{
+		NoFPU(typename CONFIG::CPU *_cpu) {}
+		
+		bool Fp32Load(typename CONFIG::CPU *cpu, unsigned int fd, EFFECTIVE_ADDRESS ea)   { throw std::runtime_error("INTERNAL ERROR! Fp32Load is unavailable"); return false; }
+		bool Fp64Load(typename CONFIG::CPU *cpu, unsigned int fd, EFFECTIVE_ADDRESS ea)   { throw std::runtime_error("INTERNAL ERROR! Fp64Load is unavailable"); return false; }
+		bool Fp32Store(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea)  { throw std::runtime_error("INTERNAL ERROR! Fp32Store is unavailable"); return false; }
+		bool Fp64Store(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea)  { throw std::runtime_error("INTERNAL ERROR! Fp64Store is unavailable"); return false; }
+		bool FpStoreLSW(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea) { throw std::runtime_error("INTERNAL ERROR! FpStoreLSW is unavailable"); return false; }
+		
+		FPR& GetFPR(unsigned int n) { static FPR dummy; throw std::runtime_error("INTERNAL ERROR! GetFPR is unavailable"); return dummy; }
+		void SetFPR(unsigned int n, const SoftDouble& v) { throw std::runtime_error("INTERNAL ERROR! SetFPR is unavailable"); }
+		FPSCR& GetFPSCR() { static FPSCR dummy; throw std::runtime_error("INTERNAL ERROR! GetFPSCR is unavailable"); return dummy; }
+		
+		bool CheckFloatingPointException(typename CONFIG::CPU *cpu) { throw std::runtime_error("INTERNAL ERROR! CheckFloatingPointException is unavailable"); return false; }
+	};
+	
+	struct LegacyFPU
+	{
+		LegacyFPU(typename CONFIG::CPU *cpu);
+		
+		bool Fp32Load(typename CONFIG::CPU *cpu, unsigned int fd, EFFECTIVE_ADDRESS ea);
+		bool Fp64Load(typename CONFIG::CPU *cpu, unsigned int fd, EFFECTIVE_ADDRESS ea);
+		bool Fp32Store(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea);
+		bool Fp64Store(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea);
+		bool FpStoreLSW(typename CONFIG::CPU *cpu, unsigned int fs, EFFECTIVE_ADDRESS ea);
+		
+		FPR& GetFPR(unsigned int n) { return fpr[n]; }
+		void SetFPR(unsigned int n, const SoftDouble& v) { fpr[n] = v; }
+		FPSCR& GetFPSCR() { return fpscr; }
+		
+		bool CheckFloatingPointException(typename CONFIG::CPU *cpu);
+		
+	protected:
+		FPR fpr[32];   // floating point registers (C++ objects implementing IEEE 754 floating point numbers)
+		FPSCR fpscr;   // floating point status and control register
+	};
+	
+	SWITCH_ENUM_TRAIT(bool, _);
+	CASE_ENUM_TRAIT(false, _) { typedef NoFPU FPU; };
+	CASE_ENUM_TRAIT(true, _)  { typedef LegacyFPU FPU; };
+	typedef typename ENUM_TRAIT(CONFIG::HAS_FPU, _)::FPU FPU;
+	
 protected:
 	///////////////////////////// Logger //////////////////////////////////////
 	
@@ -4179,50 +5881,95 @@ protected:
 	bool requires_fetch_instruction_reporting;  // indicates if the fetched instructions require to be reported
 	bool requires_commit_instruction_reporting; // indicates if the committed instructions require to be reported
 	
-	inline bool MonitorLoad(typename TYPES::ADDRESS ea, unsigned int size);
-	inline bool MonitorStore(typename TYPES::ADDRESS ea, unsigned int size);
+	inline bool MonitorLoad(typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size);
+	inline bool MonitorStore(typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size);
 	
 	//////////////////////////// Statistics ///////////////////////////////////
 
 	uint64_t instruction_counter;
-	unisim::kernel::service::Statistic<uint64_t> stat_instruction_counter;
+	unisim::kernel::variable::Statistic<uint64_t> stat_instruction_counter;
 
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_data_load_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_data_store_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_instruction_fetch_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_incoming_load_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_incoming_store_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_data_bus_read_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_data_bus_write_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_instruction_bus_read_accesses;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_data_load_xfered_bytes;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_data_store_xfered_bytes;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_instruction_fetch_xfered_bytes;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_incoming_load_xfered_bytes;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_incoming_store_xfered_bytes;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_data_bus_read_xfered_bytes;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_data_bus_write_xfered_bytes;
+	unisim::kernel::variable::Statistic<uint64_t> stat_num_instruction_bus_read_xfered_bytes;
+	
 	////////////////////////// Run-time parameters ////////////////////////////
 
 	uint64_t trap_on_instruction_counter;
-	unisim::kernel::service::Parameter<uint64_t> param_trap_on_instruction_counter;
+	unisim::kernel::variable::Parameter<uint64_t> param_trap_on_instruction_counter;
 	
 	uint64_t max_inst;
-	unisim::kernel::service::Parameter<uint64_t> param_max_inst;
+	unisim::kernel::variable::Parameter<uint64_t> param_max_inst;
 	
-	typename TYPES::ADDRESS halt_on_addr;
+	typename TYPES::EFFECTIVE_ADDRESS halt_on_addr;
 	std::string halt_on;
-	unisim::kernel::service::Parameter<std::string> param_halt_on;
+	unisim::kernel::variable::Parameter<std::string> param_halt_on;
 	
 	bool verbose_setup;
-	unisim::kernel::service::Parameter<bool> param_verbose_setup;
+	unisim::kernel::variable::Parameter<bool> param_verbose_setup;
 
 	bool verbose_exception;
-	unisim::kernel::service::Parameter<bool> param_verbose_exception;
+	unisim::kernel::variable::Parameter<bool> param_verbose_exception;
 
 	bool verbose_interrupt;
-	unisim::kernel::service::Parameter<bool> param_verbose_interrupt;
+	unisim::kernel::variable::Parameter<bool> param_verbose_interrupt;
 	
 	bool verbose_move_to_slr;
-	unisim::kernel::service::Parameter<bool> param_verbose_move_to_slr;
+	unisim::kernel::variable::Parameter<bool> param_verbose_move_to_slr;
 
 	bool verbose_move_from_slr;
-	unisim::kernel::service::Parameter<bool> param_verbose_move_from_slr;
+	unisim::kernel::variable::Parameter<bool> param_verbose_move_from_slr;
 	
 	bool enable_insn_trace;
-	unisim::kernel::service::Parameter<bool> param_enable_insn_trace;
+	unisim::kernel::variable::Parameter<bool> param_enable_insn_trace;
+
+	bool verbose_data_load;
+	unisim::kernel::variable::Parameter<bool> param_verbose_data_load;
+	
+	bool verbose_data_store;
+	unisim::kernel::variable::Parameter<bool> param_verbose_data_store;
+	
+	bool verbose_instruction_fetch;
+	unisim::kernel::variable::Parameter<bool> param_verbose_instruction_fetch;
+	
+	bool verbose_data_bus_read;
+	unisim::kernel::variable::Parameter<bool> param_verbose_data_bus_read;
+	
+	bool verbose_data_bus_write;
+	unisim::kernel::variable::Parameter<bool> param_verbose_data_bus_write;
+	
+	bool verbose_instruction_bus_read;
+	unisim::kernel::variable::Parameter<bool> param_verbose_instruction_bus_read;
+
+public:
+	inline bool IsVerboseDataLoad() const ALWAYS_INLINE { return verbose_data_load; }
+	inline bool IsVerboseDataStore() const ALWAYS_INLINE { return verbose_data_store; }
+	inline bool IsVerboseInstructionFetch() const ALWAYS_INLINE { return verbose_instruction_fetch; }
+	inline bool IsVerboseDataBusRead() const ALWAYS_INLINE { return verbose_data_bus_read; }
+	inline bool IsVerboseDataBusWrite() const ALWAYS_INLINE { return verbose_data_bus_write; }
+	inline bool IsVerboseInstructionBusRead() const ALWAYS_INLINE { return verbose_instruction_bus_read; }
 
 private:
 	/////////////////////////// Registers Registry ////////////////////////////
 
-	std::map<std::string, unisim::service::interfaces::Register *> registers_registry;       // Every CPU register interfaces
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;       // Every CPU register interfaces
 
+protected:
 	void AddRegisterInterface(unisim::service::interfaces::Register *reg_if);
+private:
 
 	///////////////////////// Exception dispatcher ////////////////////////////
 	
@@ -4240,13 +5987,13 @@ private:
 protected:
 	//////////////////////////// Reset Address ////////////////////////////////
 	
-	typename TYPES::ADDRESS reset_addr;
-	unisim::kernel::service::Parameter<typename TYPES::ADDRESS> param_reset_addr;
+	typename TYPES::EFFECTIVE_ADDRESS reset_addr;
+	unisim::kernel::variable::Parameter<typename TYPES::EFFECTIVE_ADDRESS> param_reset_addr;
 	
 	/////////////////////////// Program Counter ///////////////////////////////
 	
-	typename TYPES::ADDRESS cia;
-	typename TYPES::ADDRESS nia;
+	typename TYPES::EFFECTIVE_ADDRESS cia;
+	typename TYPES::EFFECTIVE_ADDRESS nia;
 	
 	////////////////////// General Purpose Registers //////////////////////////
 	
@@ -4261,6 +6008,10 @@ protected:
 	////////////////////////// Condition Register  ////////////////////////////
 	
 	CR cr;
+	
+	////////////////////////// Floating-point unit ////////////////////////////
+	
+	FPU fpu;
 };
 
 } // end of namespace powerpc

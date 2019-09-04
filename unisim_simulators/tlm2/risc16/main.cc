@@ -38,39 +38,25 @@
 
 int sc_main(int argc, char *argv[])
 {
-#ifdef WIN32
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		cerr << "WSAStartup failed" << endl;
-		return -1;
-	}
-#endif
 	Simulator *simulator = new Simulator(argc, argv);
 
 	switch(simulator->Setup())
 	{
-		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+		case unisim::kernel::Simulator::ST_OK_DONT_START:
 			break;
-		case unisim::kernel::service::Simulator::ST_WARNING:
-			cerr << "Some warnings occurred during setup" << endl;
+		case unisim::kernel::Simulator::ST_WARNING:
+			std::cerr << "Some warnings occurred during setup" << std::endl;
 			break;
-		case unisim::kernel::service::Simulator::ST_OK_TO_START:
-			cerr << "Starting simulation at supervisor privilege level (kernel mode)" << endl;
+		case unisim::kernel::Simulator::ST_OK_TO_START:
+			std::cerr << "Starting simulation at supervisor privilege level (kernel mode)" << std::endl;
 			simulator->Run();
 			break;
-		case unisim::kernel::service::Simulator::ST_ERROR:
-			cerr << "Can't start simulation because of previous errors" << endl;
+		case unisim::kernel::Simulator::ST_ERROR:
+			std::cerr << "Can't start simulation because of previous errors" << std::endl;
 			break;
 	}
 
 	if(simulator) delete simulator;
-#ifdef WIN32
-	// releases the winsock2 resources
-	WSACleanup();
-#endif
 
 	return (0);
 }

@@ -57,8 +57,9 @@ action {void} disasm({ARCH &} {cpu}, {std::ostream&} {buffer}) {
 }
 
 impl {
-#include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/isa/decode.hh>
 #include <unisim/component/cxx/processor/arm/disasm.hh>
+#include <unisim/component/cxx/processor/arm/models.hh>
 #include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
@@ -78,6 +79,9 @@ using unisim::util::arithmetic::RotateRight;
 
 #include <unisim/component/cxx/processor/arm/execute.hh>
 
+#define evenly(x)    ARCH::Concretize(x)
+#define likely(x)    ARCH::Concretize(x)
+#define unlikely(x)  ARCH::Concretize(x)
 } // end of impl
 
 include "unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa"
@@ -90,6 +94,7 @@ include "unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa"
 include "unisim/component/cxx/processor/arm/isa/arm32/exception.isa"
 include "unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa"
 include "unisim/component/cxx/processor/arm/isa/arm32/vfp.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/neon.isa"
 
 include "unisim/component/cxx/processor/arm/isa/arm32/ordering.isa"
 

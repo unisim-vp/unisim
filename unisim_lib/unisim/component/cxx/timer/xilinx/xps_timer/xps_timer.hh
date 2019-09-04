@@ -35,7 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_TIMER_XILINX_XPS_TIMER_XPS_TIMER_HH__
 #define __UNISIM_COMPONENT_CXX_TIMER_XILINX_XPS_TIMER_XPS_TIMER_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
 
 #include <unisim/service/interfaces/memory.hh>
@@ -47,13 +48,13 @@ namespace timer {
 namespace xilinx {
 namespace xps_timer {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::Formula;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::variable::Formula;
+using unisim::kernel::Service;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
 using unisim::service::interfaces::Memory;
 
 template <class CONFIG>
@@ -66,9 +67,11 @@ public:
 	XPS_Timer(const char *name, Object *parent = 0);
 	virtual ~XPS_Timer();
 	
+	void Reset();
+	
 	virtual bool BeginSetup();
 
-	virtual void Reset();
+	virtual void ResetMemory();
 	virtual bool ReadMemory(typename CONFIG::MEMORY_ADDR addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(typename CONFIG::MEMORY_ADDR addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(typename CONFIG::MEMORY_ADDR addr, void *buffer, uint32_t size, const uint8_t *byte_enable, uint32_t byte_enable_length, uint32_t streaming_width);

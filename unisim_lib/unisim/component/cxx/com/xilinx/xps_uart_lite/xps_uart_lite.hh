@@ -35,8 +35,9 @@
 #ifndef __UNISIM_COMPONENT_CXX_COM_XILINX_XPS_UART_LITE_XPS_UART_LITE_HH__
 #define __UNISIM_COMPONENT_CXX_COM_XILINX_XPS_UART_LITE_XPS_UART_LITE_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
+#include <unisim/kernel/variable/variable.hh>
 
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/char_io.hh>
@@ -49,15 +50,15 @@ namespace com {
 namespace xilinx {
 namespace xps_uart_lite {
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Statistic;
-using unisim::kernel::service::Formula;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
+using unisim::kernel::variable::Statistic;
+using unisim::kernel::variable::Formula;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::ServiceImport;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::CharIO;
 
@@ -74,8 +75,11 @@ public:
 	virtual ~XPS_UARTLite();
 	
 	virtual bool BeginSetup();
+	
+	void ResetRegs();
+	void Reset();
 
-	virtual void Reset();
+	virtual void ResetMemory();
 	virtual bool ReadMemory(typename CONFIG::MEMORY_ADDR addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(typename CONFIG::MEMORY_ADDR addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(typename CONFIG::MEMORY_ADDR addr, void *buffer, uint32_t size, const uint8_t *byte_enable, uint32_t byte_enable_length, uint32_t streaming_width);

@@ -34,6 +34,7 @@
 
 #include <unisim/component/cxx/processor/arm/execute.hh>
 #include <unisim/component/cxx/processor/arm/disasm.hh>
+#include <unisim/component/cxx/processor/arm/isa/decode.hh>
 #include <testutils.hh>
 #include <arch.hh>
 #include <sstream>
@@ -50,10 +51,10 @@ namespace ut
     // We want register operands to be in {0-3,15} and register 15
     // (PC) is only allowed as a source
     if      (index == 15) {
-      if (w) throw unisim::component::cxx::processor::arm::Reject();
+      if (w) throw unisim::component::cxx::processor::arm::isa::Reject();
     }
     else if (index >= 4) {
-      throw unisim::component::cxx::processor::arm::Reject();
+      throw unisim::component::cxx::processor::arm::isa::Reject();
     }
     
     VirtualRegister& reg = irmap[index];
@@ -323,15 +324,15 @@ namespace ut
   int
   Interface::cmp( Interface const& b ) const
   {
-    if (int _cmp = _Cmp( iruse.size(), b.iruse.size() )) { return _cmp; }
-    if (int _cmp = _Cmp( irmap.size(), b.irmap.size() )) { return _cmp; }
+    if (int delta = _Cmp( iruse.size(), b.iruse.size() )) { return delta; }
+    if (int delta = _Cmp( irmap.size(), b.irmap.size() )) { return delta; }
     
     for (unsigned idx = 0; idx < iruse.size(); ++idx) {
       unsigned areg = iruse[idx], breg = b.iruse[idx];
-      if (int _cmp = _Cmp( int( areg == 15 ), int( breg == 15 ) )) { return _cmp; }
-      if (int _cmp = irmap.at(areg).cmp( b.irmap.at(breg) )) { return _cmp; }
+      if (int delta = _Cmp( int( areg == 15 ), int( breg == 15 ) )) { return delta; }
+      if (int delta = irmap.at(areg).cmp( b.irmap.at(breg) )) { return delta; }
     }
-    if (int _cmp = psr.cmp( b.psr )) return _cmp;
+    if (int delta = psr.cmp( b.psr )) return delta;
     
     return 0; // All equal
   }
@@ -340,9 +341,9 @@ namespace ut
   VirtualRegister::cmp( VirtualRegister const& b ) const
   {
     if (bad or b.bad) throw 0;
-    if (int _cmp = _Cmp( vindex, b.vindex )) return _cmp;
-    if (int _cmp = _Cmp( source, b.source )) return _cmp;
-    if (int _cmp = _Cmp( destination, b.destination )) return _cmp;
+    if (int delta = _Cmp( vindex, b.vindex )) return delta;
+    if (int delta = _Cmp( source, b.source )) return delta;
+    if (int delta = _Cmp( destination, b.destination )) return delta;
     
     return 0; // All equal
   }
@@ -371,6 +372,6 @@ namespace ut
     throw ut::DontTest( "not under test (system)" );
   }
 
-  void Arch::reject() { throw unisim::component::cxx::processor::arm::Reject(); }
+  void Arch::reject() { throw unisim::component::cxx::processor::arm::isa::Reject(); }
   
 } // end of namespace ut

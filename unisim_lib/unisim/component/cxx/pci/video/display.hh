@@ -35,14 +35,15 @@
 #ifndef __UNISIM_COMPONENT_CXX_PCI_VIDEO_DISPLAY_HH__
 #define __UNISIM_COMPONENT_CXX_PCI_VIDEO_DISPLAY_HH__
 
-#include <inttypes.h>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/video.hh>
 #include <unisim/service/interfaces/time.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/device/register.hh>
 #include <unisim/kernel/logger/logger.hh>
+#include <inttypes.h>
 
 namespace unisim {
 namespace component {
@@ -56,13 +57,13 @@ using unisim::service::interfaces::Time;
 using unisim::util::device::Register;
 using unisim::service::interfaces::Video;
 
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
 
 template <class ADDRESS>
 class Display :

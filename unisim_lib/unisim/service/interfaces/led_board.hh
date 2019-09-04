@@ -35,13 +35,13 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_LED_BOARD_HH__
 #define __UNISIM_SERVICE_INTERFACES_LED_BOARD_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/interface.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class LED_Board : public unisim::kernel::service::ServiceInterface
+class LED_Board : public ServiceInterface
 {
 public:
 	virtual void SetLEDStatus(unsigned int led_num, bool status) = 0;

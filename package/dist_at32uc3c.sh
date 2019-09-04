@@ -103,14 +103,13 @@ unistd.h \
 vector"
 
 UNISIM_LIB_AT32UC3C_SOURCE_FILES="\
-unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_config_file_helper.cc \
-unisim/kernel/service/ini_config_file_helper.cc \
+unisim/kernel/kernel.cc \
+unisim/kernel/config/xml_config_file_helper.cc \
+unisim/kernel/config/ini_config_file_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/util/backtrace/backtrace.cc \
-unisim/kernel/api/api.cc \
 unisim/util/xml/xml.cc \
 unisim/util/debug/profile_32.cc \
 unisim/util/debug/profile_64.cc \
@@ -146,7 +145,7 @@ unisim/util/blob/segment64.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/debug/coff_symtab/coff_symtab32.cc \
-unisim/kernel/service/endian.cc \
+unisim/kernel/variable/endian/endian.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
@@ -205,16 +204,16 @@ unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa/avr32uc.isa \
 "
 
 UNISIM_LIB_AT32UC3C_HEADER_FILES="${UNISIM_LIB_AT32UC3C_ISA_FILES} \
-unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_config_file_helper.hh \
-unisim/kernel/service/ini_config_file_helper.hh \
+unisim/kernel/kernel.hh \
+unisim/kernel/config/xml_config_file_helper.hh \
+unisim/kernel/config/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/util/backtrace/backtrace.hh \
-unisim/kernel/api/api.hh \
 unisim/util/likely/likely.hh \
 unisim/util/inlining/inlining.hh \
+unisim/util/nat_sort/nat_sort.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/breakpoint.hh \
@@ -284,11 +283,14 @@ unisim/util/simfloat/floating.hh \
 unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/ieee754/ieee754.hh \
+unisim/util/hypapp/hypapp.hh \
 unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/disassembly.hh \
+unisim/service/interfaces/http_server.hh \
+unisim/service/interfaces/field.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
@@ -471,6 +473,7 @@ config.cc \
 memory_router.cc \
 memory_router_debug.cc \
 "
+
 UNISIM_SIMULATORS_AT32UC3C_HEADER_FILES="\
 simulator.hh \
 config.hh \

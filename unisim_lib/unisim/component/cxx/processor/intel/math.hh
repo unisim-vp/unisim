@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2015,
+ *  Copyright (c) 2007-2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -35,13 +35,13 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_MATH_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_MATH_HH__
 
+#include <unisim/component/cxx/processor/intel/types.hh>
+
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace intel {
-
-  enum x87frnd_mode_t { x87frnd_error = -1, x87frnd_nearest = 0, x87frnd_down = 1, x87frnd_up = 2, x87frnd_toward0 = 3 };
 
   double x87frnd( double value, x87frnd_mode_t mode );
 

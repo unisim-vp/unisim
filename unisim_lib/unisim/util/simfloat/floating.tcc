@@ -183,7 +183,8 @@ TBuiltDouble<TypeTraits>::TBuiltDouble(unsigned int uValue)
 
 template <class TypeTraits>
 void
-TBuiltDouble<TypeTraits>::setChunk(void* pChunk, bool fChunkLittleEndian) {
+TBuiltDouble<TypeTraits>::setChunk(void const* pChunk, bool fChunkLittleEndian)
+{
    biMantissa = 0U;
    biExponent = 0U;
    int uSizeMantissa = bitSizeMantissa(), uSizeExponent = bitSizeExponent();
@@ -3384,8 +3385,8 @@ TBuiltDouble<TypeTraits>::divAssignDN(const thisType& bdSource, StatusAndControl
       if (scfFlags.isDenormalizedAvoided()) {
          biMantissa = 0U;
          scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
+         doesReturn = true;
       };
-      doesReturn = true;
    };
    if (doesReturn)
       return *this;

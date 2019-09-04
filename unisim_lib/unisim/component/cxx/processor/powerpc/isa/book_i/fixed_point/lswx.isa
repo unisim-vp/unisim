@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,7 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lswx(31[6]:rd[5]:ra[5]:rb[5]:533[10]:?[1])
+op lswx(31[6]:rd[5]:ra[5]:rb[5]:533[10]:?[1]);
+
 lswx.execute = {
 	if(unlikely(rd == ra ||
 	            rd == rb ||
@@ -44,26 +45,23 @@ lswx.execute = {
 
 	ADDRESS ea = ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb);
 
-	uint32_t xer = cpu->GetXER();
-	uint8_t n = (xer & CONFIG::XER_BYTE_COUNT_MASK) >> CONFIG::XER_BYTE_COUNT_OFFSET;
+	XER& xer = cpu->GetXER();
+	uint8_t n = xer.Get<XER::BYTE_COUNT>();
 	unsigned int r = rd;
 
 	while(n > 0)
 	{
 		uint32_t sz = (n > 4) ? 4 : n;
-		if(unlikely(!cpu->IntLoadMSBFirst(r, ea, sz))) return false;
+		if(unlikely(not cpu->IntLoadMSBFirst(r, ea, sz))) return false;
 		r = (r + 1) & 31;
 		ea += sz;
 		n -= sz;
 	}
 	
 	return true;
-}
+};
+
 lswx.disasm = {
-	os << "lswx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-	if(cpu && (cpu->GetCIA() == this->GetAddr()))
-	{
-		ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+	os << "lswx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
+};
+

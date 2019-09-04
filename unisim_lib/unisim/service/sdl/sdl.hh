@@ -39,7 +39,8 @@
 #include "config.h"
 #endif
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/service/interfaces/video.hh>
 #include <unisim/service/interfaces/keyboard.hh>
 #include <unisim/service/interfaces/mouse.hh>
@@ -66,13 +67,13 @@ using std::list;
 using std::string;
 using std::map;
 using namespace unisim::util::endian;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Video;
 using unisim::service::interfaces::Keyboard;

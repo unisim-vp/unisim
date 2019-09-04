@@ -38,5 +38,5 @@ evfssub.execute = {
 	return false;
 }
 evfssub.disasm = {
-	os << "evfssub r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "evfssub " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

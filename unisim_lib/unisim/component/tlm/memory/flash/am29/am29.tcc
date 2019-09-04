@@ -49,8 +49,8 @@ namespace am29 {
 
 using unisim::kernel::tlm::TlmMessage;
 using unisim::kernel::tlm::TlmSendIf;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Object;
+using unisim::kernel::variable::Parameter;
 using unisim::util::garbage_collector::Pointer;
 using unisim::component::cxx::memory::flash::am29::CMD_READ;
 using unisim::component::cxx::memory::flash::am29::CMD_WRITE;

@@ -38,8 +38,9 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/kernel.hh>
 
 #include <iostream>
 #include <fstream>
@@ -59,13 +60,13 @@ typedef uint32_t s19_address_t;
 // using namespace std;
 using unisim::service::interfaces::Memory;
 using namespace unisim::util::endian;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::ServiceExportBase;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::Parameter;
+using unisim::kernel::Service;
+using unisim::kernel::Client;
+using unisim::kernel::Object;
+using unisim::kernel::ServiceExportBase;
+using unisim::kernel::ServiceImport;
+using unisim::kernel::ServiceExport;
+using unisim::kernel::variable::Parameter;
 using unisim::service::interfaces::Loader;
 
 #define S_RECORD_SIZE			515		// s2_record_size = 2+2+255*2 +1 ("+1" is for \0 char)
