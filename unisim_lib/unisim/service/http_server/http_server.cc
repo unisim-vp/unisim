@@ -1227,7 +1227,7 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 				{
 					struct Setter : unisim::service::interfaces::RegisterScanner
 					{
-						Setter(const std::string _reg_name, const std::string& _reg_value_str, std::ostream& _warn_log) : reg_name(_reg_name), reg_value_str(_reg_value_str), warn_log(_warn_log) {}
+						Setter(const std::string& _reg_name, const std::string& _reg_value_str, std::ostream& _warn_log) : reg_name(_reg_name), reg_value_str(_reg_value_str), warn_log(_warn_log) {}
 						
 						virtual void Append(unisim::service::interfaces::Register * reg)
 						{
@@ -1472,7 +1472,7 @@ bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req,
 			{
 				const unisim::service::interfaces::StatusBarItem *item = *it;
 				response << "\t\t\t<div class=\"statusbar-item";
-				const std::string class_name = item->GetClassName();
+				const std::string& class_name = item->GetClassName();
 				if(!class_name.empty())
 				{
 					response << ' ' << class_name;

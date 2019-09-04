@@ -56,7 +56,7 @@ private:
 	
 	typedef unisim::kernel::Object Object;
 	static const unsigned int MAX_NUM_MAPPINGS = CONFIG::MAX_NUM_MAPPINGS; 
-	static const unsigned int BUSWIDTH = CONFIG::BUSWIDTH;
+//	static const unsigned int BUSWIDTH = CONFIG::BUSWIDTH;
 	typedef typename CONFIG::TYPES TYPES;
 	static const bool VERBOSE = CONFIG::VERBOSE;
 	typedef typename TYPES::tlm_payload_type transaction_type;

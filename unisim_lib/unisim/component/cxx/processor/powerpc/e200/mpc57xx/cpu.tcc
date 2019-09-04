@@ -210,7 +210,7 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	this->SuperCPU::template InstallInterrupt<DebugInterrupt>(trap_debug_interrupt);
 
 	this->SuperCPU::template EnableInterrupt<SystemResetInterrupt>();
-	this->SuperCPU::template EnableInterrupt<typename MachineCheckInterrupt::NMI>();
+	this->SuperCPU::template EnableException<typename MachineCheckInterrupt::NMI>();
 	this->SuperCPU::template EnableInterrupt<DataStorageInterrupt>();
 	this->SuperCPU::template EnableInterrupt<InstructionStorageInterrupt>();
 	this->SuperCPU::template EnableInterrupt<AlignmentInterrupt>();
@@ -670,11 +670,11 @@ void CPU<TYPES, CONFIG>::UpdateExceptionEnable()
 	
 	if(msr.template Get<typename MSR::ME>())
 	{
-		this->template EnableInterrupt<typename MachineCheckInterrupt::AsynchronousMachineCheck>();
+		this->template EnableException<typename MachineCheckInterrupt::AsynchronousMachineCheck>();
 	}
 	else
 	{
-		this->template DisableInterrupt<typename MachineCheckInterrupt::AsynchronousMachineCheck>();
+		this->template DisableException<typename MachineCheckInterrupt::AsynchronousMachineCheck>();
 	}
 	
 	if(msr.template Get<typename MSR::DE>())

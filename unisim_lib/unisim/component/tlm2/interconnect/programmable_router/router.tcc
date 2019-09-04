@@ -291,7 +291,6 @@ template <typename CONFIG>
 void Router<CONFIG>::ProcessEvent(Event *event)
 {
 	tlm::tlm_generic_payload *payload = event->GetPayload();
-	sc_core::sc_time time_stamp(event->GetTimeStamp());
 	int iface = event->GetInterface();
 	tlm::tlm_command cmd = payload->get_command();
 

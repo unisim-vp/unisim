@@ -395,7 +395,7 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
       Mantissa() {}
       Mantissa(const Mantissa& mSource) : inherited(mSource) {}
       Mantissa(const ExtendedMantissa& emSource)
-         {  for (register int uIndex = 0; uIndex < inherited::uCellSize; ++uIndex)
+         {  for (int uIndex = 0; uIndex < inherited::uCellSize; ++uIndex)
                inherited::array(uIndex) = emSource[uIndex];
          }
       void normalizeLastCell() { inherited::normalizeLastCell(); }
@@ -404,7 +404,7 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
       Mantissa& operator=(const Mantissa& mSource)
          {  return (Mantissa&) inherited::operator=(mSource); }
       Mantissa& operator=(const ExtendedMantissa& emSource)
-         {  for (register int uIndex = 0; uIndex <= inherited::lastCellIndex(); ++uIndex)
+         {  for (int uIndex = 0; uIndex <= inherited::lastCellIndex(); ++uIndex)
                inherited::array(uIndex) = emSource[uIndex];
             inherited::normalize();
             return *this;
@@ -469,7 +469,7 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
      public:
       ExtendedMantissa(const ExtendedMantissa& emSource) : inherited(emSource) {}
       ExtendedMantissa(const Mantissa& mSource)
-         {  register int uIndex = 0;
+         {  int uIndex = 0;
             for (; uIndex <= mSource.lastCellIndex(); ++uIndex)
                inherited::array(uIndex) = mSource[uIndex];
             inherited::bitArray(UBitSizeMantissa) = true;
@@ -624,7 +624,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
       bool isNegativeMult() const { return (oOperation & OMinusPlus); }
       bool hasSameSign(bool fNegative) const
          {  assert(pbdAdd);
-            register bool fResult = pbdAdd->fNegative == fNegative;
+            bool fResult = pbdAdd->fNegative == fNegative;
             return ((oOperation == OPlusPlus) || (oOperation == OMinusMinus)) ? fResult : !fResult;
          }
    };
@@ -700,7 +700,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
                   crResult = CREqual;
             }
             else {
-               register typename Exponent::ComparisonResult crExponentResult = biExponent.compare(bdSource.biExponent);
+               typename Exponent::ComparisonResult crExponentResult = biExponent.compare(bdSource.biExponent);
                crResult = (crExponentResult != Exponent::CREqual)
                   ? ((ComparisonResult) (1+crExponentResult))
                   : ((ComparisonResult) (1+biMantissa.compare(bdSource.biMantissa)));
@@ -711,7 +711,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
          return crResult;
       }
    ComparisonResult compareValue(const thisType& bdSource) const
-      {  register ComparisonResult crResult;
+      {  ComparisonResult crResult;
          if (fNegative != bdSource.fNegative) {
             if (!isZero() || !bdSource.isZero())
                crResult = fNegative ? CRLess : CRGreater;
@@ -719,7 +719,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
                crResult = CREqual;
          }
          else {
-            register typename Exponent::ComparisonResult crExponentResult = biExponent.compare(bdSource.biExponent);
+            typename Exponent::ComparisonResult crExponentResult = biExponent.compare(bdSource.biExponent);
             crResult = (crExponentResult != Exponent::CREqual)
                ? ((ComparisonResult) (1+crExponentResult))
                : ((ComparisonResult) (1+biMantissa.compare(bdSource.biMantissa)));
@@ -730,17 +730,17 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
       }
    bool operator==(const thisType& bdSource) const { return compare(bdSource) == CREqual; }
    bool operator!=(const thisType& bdSource) const
-      {  register ComparisonResult crResult = compare(bdSource);
+      {  ComparisonResult crResult = compare(bdSource);
          return (crResult == CRLess) || (crResult == CRGreater);
       }
    bool operator<(const thisType& bdSource) const { return compare(bdSource) == CRLess; }
    bool operator>(const thisType& bdSource) const { return compare(bdSource) == CRGreater; }
    bool operator<=(const thisType& bdSource) const
-      {  register ComparisonResult crResult = compare(bdSource);
+      {  ComparisonResult crResult = compare(bdSource);
          return (crResult == CRLess) || (crResult == CREqual);
       }
    bool operator>=(const thisType& bdSource) const
-      {  register ComparisonResult crResult = compare(bdSource);
+      {  ComparisonResult crResult = compare(bdSource);
          return (crResult == CRGreater) || (crResult == CREqual);
       }
 
@@ -911,7 +911,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
    void swap(thisType& bdSource)
       {  biMantissa.swap(bdSource.biMantissa);
          biExponent.swap(bdSource.biExponent);
-         register bool fTemp = fNegative;
+         bool fTemp = fNegative;
          fNegative = bdSource.fNegative;
          bdSource.fNegative = fTemp;
       }

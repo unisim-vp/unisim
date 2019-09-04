@@ -64,7 +64,7 @@ struct LoggerServer : public unisim::kernel::Service<unisim::service::interfaces
 	/** Destructor */
 	~LoggerServer();
 
-	/** Setup the logger server according to options value
+	/** Initialize the logger server according to options value
 	 * 
 	 * Returns true if the initialization of the logger could be
 	 * successfully done based on the parameters options, or false
@@ -72,7 +72,7 @@ struct LoggerServer : public unisim::kernel::Service<unisim::service::interfaces
 	 *
 	 * @return true if initialization succedded, false otherwise
 	 */
-	bool Setup();
+	bool Initialize();
 
 	/** Register a client logger.
 	 * 
@@ -271,6 +271,8 @@ private:
 
 	HTTP_LOG global_http_log;
 	HTTP_LOGS_PER_CLIENT http_logs_per_client;
+	bool activity;
+	double http_refresh_period;
 	
 	void PrintHttpLog(std::ostream& os, const HTTP_LOG& http_log, bool global);
 
@@ -289,6 +291,8 @@ public:
 	bool opt_xml_file_gzipped_;
 	bool opt_http_;
 	unsigned int opt_http_max_log_size_;
+	double opt_http_min_refresh_period_;
+	double opt_http_max_refresh_period_;
 	pthread_mutex_t mutex;
 
 	unisim::kernel::variable::Parameter<bool>         param_std_err;
@@ -302,6 +306,8 @@ public:
 	unisim::kernel::variable::Parameter<bool>         param_xml_file_gzipped;
 	unisim::kernel::variable::Parameter<bool>         param_http;
 	unisim::kernel::variable::Parameter<unsigned int> param_http_max_log_size;
+	unisim::kernel::variable::Parameter<double>       param_http_min_refresh_period;
+	unisim::kernel::variable::Parameter<double>       param_http_max_refresh_period;
 	
 	/***************************************************************************
 	 * Parameters                                                          END *

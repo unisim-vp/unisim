@@ -328,7 +328,7 @@ template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
 std::ostream& operator << (std::ostream& os, const Profile<ADDRESS, WEIGHT, PAGE_SIZE>& prof)
 {
 	bool first = true;
-	typename std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *>::map map = prof.hash_table;
+	std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *> map = prof.hash_table;
 	typename std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *>::const_iterator iter;
 
 	for(iter = map.begin(); iter != map.end(); iter++)
@@ -352,7 +352,7 @@ Profile<ADDRESS, WEIGHT, PAGE_SIZE>::operator std::map<ADDRESS, WEIGHT>() const
 {
 	std::map<ADDRESS, WEIGHT> map;
 
-	typename std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *>::map page_map = hash_table;
+	std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *> page_map = hash_table;
 	typename std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *>::const_iterator iter;
 
 	for(iter = page_map.begin(); iter != page_map.end(); iter++)
