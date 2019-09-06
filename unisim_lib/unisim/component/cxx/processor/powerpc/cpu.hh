@@ -235,12 +235,12 @@ struct XER : Register<XER, 32>
 private:
 	void Init()
 	{
-		this->SetName("xer");
+		this->SetName("XER");
 		this->SetDescription("Fixed-Point Exception Register");
-		SO::SetName("so");
-		OV::SetName("ov");
-		CA::SetName("ca");
-		BYTE_COUNT::SetName("byte_count");
+		SO::SetName("SO");
+		OV::SetName("OV");
+		CA::SetName("CA");
+		BYTE_COUNT::SetName("BYTE_COUNT");
 		SO::SetDescription("Summary Overflow");
 		OV::SetDescription("Overflow");
 		CA::SetDescription("Carry");
@@ -263,7 +263,7 @@ struct LR : Register<LR, 32>
 private:
 	void Init()
 	{
-		this->SetName("lr");
+		this->SetName("LR");
 		this->SetDescription("Link Register");
 	}
 };
@@ -283,7 +283,7 @@ struct CTR : Register<CTR, 32>
 private:
 	void Init()
 	{
-		this->SetName("ctr");
+		this->SetName("CTR");
 		this->SetDescription("Count Register");
 	}
 };
@@ -374,17 +374,17 @@ public:
 private:
 	void Init()
 	{
-		this->SetName("cr");
+		this->SetName("CR");
 		this->SetDescription("Condition Register");
 		
-		CR0::LT::SetName("cr0[lt]"); CR0::GT::SetName("cr0[gt]"); CR0::EQ::SetName("cr0[eq]"); CR0::SO::SetName("cr0[so]");
-		CR1::LT::SetName("cr1[lt]"); CR1::GT::SetName("cr1[gt]"); CR1::EQ::SetName("cr1[eq]"); CR1::SO::SetName("cr1[so]");
-		CR2::LT::SetName("cr2[lt]"); CR2::GT::SetName("cr2[gt]"); CR2::EQ::SetName("cr2[eq]"); CR2::SO::SetName("cr2[so]");
-		CR3::LT::SetName("cr3[lt]"); CR3::GT::SetName("cr3[gt]"); CR3::EQ::SetName("cr3[eq]"); CR3::SO::SetName("cr3[so]");
-		CR4::LT::SetName("cr4[lt]"); CR4::GT::SetName("cr4[gt]"); CR4::EQ::SetName("cr4[eq]"); CR4::SO::SetName("cr4[so]");
-		CR5::LT::SetName("cr5[lt]"); CR5::GT::SetName("cr5[gt]"); CR5::EQ::SetName("cr5[eq]"); CR5::SO::SetName("cr5[so]");
-		CR6::LT::SetName("cr6[lt]"); CR6::GT::SetName("cr6[gt]"); CR6::EQ::SetName("cr6[eq]"); CR6::SO::SetName("cr6[so]");
-		CR7::LT::SetName("cr7[lt]"); CR7::GT::SetName("cr7[gt]"); CR7::EQ::SetName("cr7[eq]"); CR7::SO::SetName("cr7[so]");
+		CR0::LT::SetName("CR0[LT]"); CR0::GT::SetName("CR0[GT]"); CR0::EQ::SetName("CR0[EQ]"); CR0::SO::SetName("CR0[SO]");
+		CR1::LT::SetName("CR1[LT]"); CR1::GT::SetName("CR1[GT]"); CR1::EQ::SetName("CR1[EQ]"); CR1::SO::SetName("CR1[SO]");
+		CR2::LT::SetName("CR2[LT]"); CR2::GT::SetName("CR2[GT]"); CR2::EQ::SetName("CR2[EQ]"); CR2::SO::SetName("CR2[SO]");
+		CR3::LT::SetName("CR3[LT]"); CR3::GT::SetName("CR3[GT]"); CR3::EQ::SetName("CR3[EQ]"); CR3::SO::SetName("CR3[SO]");
+		CR4::LT::SetName("CR4[LT]"); CR4::GT::SetName("CR4[GT]"); CR4::EQ::SetName("CR4[EQ]"); CR4::SO::SetName("CR4[SO]");
+		CR5::LT::SetName("CR5[LT]"); CR5::GT::SetName("CR5[GT]"); CR5::EQ::SetName("CR5[EQ]"); CR5::SO::SetName("CR5[SO]");
+		CR6::LT::SetName("CR6[LT]"); CR6::GT::SetName("CR6[GT]"); CR6::EQ::SetName("CR6[EQ]"); CR6::SO::SetName("CR6[SO]");
+		CR7::LT::SetName("CR7[LT]"); CR7::GT::SetName("CR7[GT]"); CR7::EQ::SetName("CR7[EQ]"); CR7::SO::SetName("CR7[SO]");
 		
 		CR0::LT::SetDescription("Less Than"); CR0::GT::SetDescription("Greater Than"); CR0::EQ::SetDescription("Equal"); CR0::SO::SetDescription("Summary Overflow");
 		CR1::LT::SetDescription("Less Than"); CR1::GT::SetDescription("Greater Than"); CR1::EQ::SetDescription("Equal"); CR1::SO::SetDescription("Summary Overflow");
@@ -490,7 +490,7 @@ public:
 private:
 	void Init()
 	{
-		this->SetName("fpscr");
+		this->SetName("FPSCR");
 		this->SetDescription("Floating-point Status and Control Register");
 		
 		FX    ::SetName("FX");     FX    ::SetDescription("Floating-point exception summary");
@@ -2102,7 +2102,7 @@ public:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("srr0"); this->SetDescription("Save/Restore Register 0"); }
+		void Init() { this->SetName("SRR0"); this->SetDescription("Save/Restore Register 0"); }
 	};
 	
 	// Save/Restore Register 1
@@ -2118,7 +2118,7 @@ public:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("srr1"); this->SetDescription("Save/Restore Register 1"); }
+		void Init() { this->SetName("SRR1"); this->SetDescription("Save/Restore Register 1"); }
 	};
 
 	// Process ID Register
@@ -2141,7 +2141,7 @@ public:
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
 	private:
-		void Init() { this->SetName("pid0"); this->SetDescription("Process ID Register"); Process_ID::SetName("process_id"); }
+		void Init() { this->SetName("PID0"); this->SetDescription("Process ID Register"); Process_ID::SetName("process_id"); }
 	};
 	
 	// Decrementer Auto-Reload
@@ -2173,7 +2173,7 @@ public:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("csrr0"); this->SetDescription("Critical Save/Restore Register 0"); }
+		void Init() { this->SetName("CSRR0"); this->SetDescription("Critical Save/Restore Register 0"); }
 	};
 
 	// Critical Save/Restore Register 1
@@ -2189,7 +2189,7 @@ public:
 
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("csrr1"); this->SetDescription("Critical Save/Restore Register 1"); }
+		void Init() { this->SetName("CSRR1"); this->SetDescription("Critical Save/Restore Register 1"); }
 	};
 
 	// Data Exception Address Register
@@ -2207,7 +2207,7 @@ public:
 	private:
 		void Init()
 		{
-			this->SetName("dear"); this->SetDescription("Data Exception Address Register");
+			this->SetName("DEAR"); this->SetDescription("Data Exception Address Register");
 		}
 	};
 
@@ -2248,23 +2248,23 @@ public:
 	private:
 		void Init()
 		{
-			 this->SetName("esr");    this->SetDescription("Exception Syndrome Register");
-			MCI  ::SetName("mci");   MCI  ::SetDescription("Machine Check Instruction Fetch Exception");
-			PIL  ::SetName("pil");   PIL  ::SetDescription("Illegal Instruction exception");
-			PPR  ::SetName("ppr");   PPR  ::SetDescription("Privileged Instruction exception");
-			PTR  ::SetName("ptr");   PTR  ::SetDescription("Trap exception");
-			FP   ::SetName("fp");    FP   ::SetDescription("Floating-point operation");
-			ST   ::SetName("st");    ST   ::SetDescription("Store operation");
-			DLK  ::SetName("dlk");   DLK  ::SetDescription("Data Storage Interrupt Locking Exception");
-			AP   ::SetName("ap");    AP   ::SetDescription("Auxiliary Processor Operation");
-			PUO  ::SetName("puo");   PUO  ::SetDescription("Program Interrupt Unimplemented Operation Exception");
-			BO   ::SetName("bo");    BO   ::SetDescription("Byte Ordering exception/Mismatched Instruction Storage exception");
-			PIE  ::SetName("pie");   PIE  ::SetDescription("Program Interrupt Imprecise Exception");
-			SPV  ::SetName("spv");   SPV  ::SetDescription("EFPU APU Operation");
-			VLEMI::SetName("vlemi"); VLEMI::SetDescription("VLE Mode Instruction");
-			PCRE ::SetName("pcre");  PCRE ::SetDescription("Program Interrupt Condition Register Enable");
-			PCMP ::SetName("pcmp");  PCMP ::SetDescription("Program Interrupt Compare");
-			PCRF ::SetName("pcrf");  PCRF ::SetDescription("Program Interrupt Condition Register Field");
+			 this->SetName("ESR");    this->SetDescription("Exception Syndrome Register");
+			MCI  ::SetName("MCI");   MCI  ::SetDescription("Machine Check Instruction Fetch Exception");
+			PIL  ::SetName("PIL");   PIL  ::SetDescription("Illegal Instruction exception");
+			PPR  ::SetName("PPR");   PPR  ::SetDescription("Privileged Instruction exception");
+			PTR  ::SetName("PTR");   PTR  ::SetDescription("Trap exception");
+			FP   ::SetName("FP");    FP   ::SetDescription("Floating-point operation");
+			ST   ::SetName("ST");    ST   ::SetDescription("Store operation");
+			DLK  ::SetName("DLK");   DLK  ::SetDescription("Data Storage Interrupt Locking Exception");
+			AP   ::SetName("AP");    AP   ::SetDescription("Auxiliary Processor Operation");
+			PUO  ::SetName("PUO");   PUO  ::SetDescription("Program Interrupt Unimplemented Operation Exception");
+			BO   ::SetName("BO");    BO   ::SetDescription("Byte Ordering exception/Mismatched Instruction Storage exception");
+			PIE  ::SetName("PIE");   PIE  ::SetDescription("Program Interrupt Imprecise Exception");
+			SPV  ::SetName("SPV");   SPV  ::SetDescription("EFPU APU Operation");
+			VLEMI::SetName("VLEMI"); VLEMI::SetDescription("VLE Mode Instruction");
+			PCRE ::SetName("PCRE");  PCRE ::SetDescription("Program Interrupt Condition Register Enable");
+			PCMP ::SetName("PCMP");  PCMP ::SetDescription("Program Interrupt Compare");
+			PCRF ::SetName("PCRF");  PCRF ::SetDescription("Program Interrupt Condition Register Field");
 		}
 	};
 protected:
@@ -2291,8 +2291,8 @@ protected:
 	private:
 		void Init()
 		{
-			             this->SetName("ivpr");                     this->SetDescription("Interrupt Vector Prefix Register");
-			Vector_Base::SetName("vector_base"); Vector_Base::SetDescription("Vector Base");
+			             this->SetName("IVPR");                     this->SetDescription("Interrupt Vector Prefix Register");
+			Vector_Base::SetName("Vector_Base"); Vector_Base::SetDescription("Vector Base");
 			IVP        ::SetName("IVP");         IVP        ::SetDescription("Interrupt Vector Prefix");
 		}
 	};
@@ -2310,7 +2310,7 @@ protected:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("usprg0"); this->SetDescription("User SPR General 0"); }
+		void Init() { this->SetName("USPRG0"); this->SetDescription("User SPR General 0"); }
 	};
 	
 	// SPR General 0
@@ -2326,7 +2326,7 @@ protected:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("sprg0"); this->SetDescription("SPR General 0"); }
+		void Init() { this->SetName("SPRG0"); this->SetDescription("SPR General 0"); }
 	};
 
 	// SPR General 1
@@ -2342,7 +2342,7 @@ protected:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("sprg1"); this->SetDescription("SPR General 1"); }
+		void Init() { this->SetName("SPRG1"); this->SetDescription("SPR General 1"); }
 	};
 
 	// SPR General 2
@@ -2358,7 +2358,7 @@ protected:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("sprg2"); this->SetDescription("SPR General 2"); }
+		void Init() { this->SetName("SPRG2"); this->SetDescription("SPR General 2"); }
 	};
 
 	// SPR General 3
@@ -2374,7 +2374,7 @@ protected:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("sprg3"); this->SetDescription("SPR General 3"); }
+		void Init() { this->SetName("SPRG3"); this->SetDescription("SPR General 3"); }
 	};
 	
 	// SPR General 4
@@ -2498,7 +2498,7 @@ protected:
 	private:
 		void Init()
 		{
-			this->SetName("pir");
+			this->SetName("PIR");
 			this->SetDescription("Processor ID Register");
 			
 			PIN::SetName("PIN"); PIN::SetDescription("Processor Identification Number");
@@ -2532,7 +2532,7 @@ protected:
 	private:
 		void Init()
 		{
-			this->SetName("pvr");
+			this->SetName("PVR");
 			MANID    ::SetName("MANID");
 			Type     ::SetName("Type");
 			Version  ::SetName("Version");
@@ -2595,34 +2595,34 @@ protected:
 	private:
 		void Init()
 		{
-			          this->SetName("dbsr");               this->SetDescription("Debug Status Register");
-			IDE     ::SetName("ide");      IDE     ::SetDescription("Imprecise Debug Event");
-			UDE     ::SetName("ude");      UDE     ::SetDescription("Unconditional Debug Event");
-			MRR     ::SetName("mrr");      MRR     ::SetDescription("Most Recent Reset");
-			ICMP    ::SetName("icmp");     ICMP    ::SetDescription("Instruction Complete Debug Event");
-			BRT     ::SetName("brt");      BRT     ::SetDescription("Branch Taken Debug Event");
-			IRPT    ::SetName("irpt");     IRPT    ::SetDescription("Interrupt Taken Debug Event");
-			TRAP    ::SetName("trap");     TRAP    ::SetDescription("Trap Taken Debug Event");
-			IAC1    ::SetName("iac1");     IAC1    ::SetDescription("Instruction Address Compare 1 Debug Event");
-			IAC2    ::SetName("iac2");     IAC2    ::SetDescription("Instruction Address Compare 2 Debug Event");
-			IAC3    ::SetName("iac3");     IAC3    ::SetDescription("Instruction Address Compare 3 Debug Event");
-			IAC4    ::SetName("iac4");     IAC4    ::SetDescription("Instruction Address Compare 4 Debug Event");
-			IAC4_8  ::SetName("iac4_8");   IAC4_8  ::SetDescription("Instruction Address Compare 4-8 Debug Event");
-			DAC1R   ::SetName("dac1r");    DAC1R   ::SetDescription("Data Address Compare 1 Read Debug Event");
-			DAC1W   ::SetName("dac1w");    DAC1W   ::SetDescription("Data Address Compare 1 Write Debug Event");
-			DAC2R   ::SetName("dac2r");    DAC2R   ::SetDescription("Data Address Compare 2 Read Debug Event");
-			DAC2W   ::SetName("dac2w");    DAC2W   ::SetDescription("Data Address Compare 2 Write Debug Event");
-			RET     ::SetName("ret");      RET     ::SetDescription("Return Debug Event");
-			DEVT1   ::SetName("devt1");    DEVT1   ::SetDescription("External Debug Event 1 Debug Event");
-			DEVT2   ::SetName("devt2");    DEVT2   ::SetDescription("External Debug Event 2 Debug Event");
-			PMI     ::SetName("pmi");      PMI     ::SetDescription("Performance Monitor Interrupt Debug Event");
-			MPU     ::SetName("mpu");      MPU     ::SetDescription("Memory Protection Unit Debug Event");
-			CIRPT   ::SetName("cirpt");    CIRPT   ::SetDescription("Critical Interrupt Taken Debug Event");
-			CRET    ::SetName("cret");     CRET    ::SetDescription("Critical Return Debug Event");
-			DNI     ::SetName("dni");      DNI     ::SetDescription("Debug Notify Interrupt (se_dni)");
-			DAC_OFST::SetName("dac_ofst"); DAC_OFST::SetDescription("Data Address Compare Offset");
-			IAC12ATS::SetName("iac12ats"); IAC12ATS::SetDescription("Instruction Address Compare 1/2 Auto-Toggle Status");
-			IAC34ATS::SetName("iac34ats"); IAC34ATS::SetDescription("Instruction Address Compare 3/4 Auto-Toggle Status");
+			          this->SetName("DBSR");               this->SetDescription("Debug Status Register");
+			IDE     ::SetName("IDE");      IDE     ::SetDescription("Imprecise Debug Event");
+			UDE     ::SetName("UDE");      UDE     ::SetDescription("Unconditional Debug Event");
+			MRR     ::SetName("MRR");      MRR     ::SetDescription("Most Recent Reset");
+			ICMP    ::SetName("ICMP");     ICMP    ::SetDescription("Instruction Complete Debug Event");
+			BRT     ::SetName("BRT");      BRT     ::SetDescription("Branch Taken Debug Event");
+			IRPT    ::SetName("IRPT");     IRPT    ::SetDescription("Interrupt Taken Debug Event");
+			TRAP    ::SetName("TRAP");     TRAP    ::SetDescription("Trap Taken Debug Event");
+			IAC1    ::SetName("IAC1");     IAC1    ::SetDescription("Instruction Address Compare 1 Debug Event");
+			IAC2    ::SetName("IAC2");     IAC2    ::SetDescription("Instruction Address Compare 2 Debug Event");
+			IAC3    ::SetName("IAC3");     IAC3    ::SetDescription("Instruction Address Compare 3 Debug Event");
+			IAC4    ::SetName("IAC4");     IAC4    ::SetDescription("Instruction Address Compare 4 Debug Event");
+			IAC4_8  ::SetName("IAC4_8");   IAC4_8  ::SetDescription("Instruction Address Compare 4-8 Debug Event");
+			DAC1R   ::SetName("DAC1R");    DAC1R   ::SetDescription("Data Address Compare 1 Read Debug Event");
+			DAC1W   ::SetName("DAC1W");    DAC1W   ::SetDescription("Data Address Compare 1 Write Debug Event");
+			DAC2R   ::SetName("DAC2R");    DAC2R   ::SetDescription("Data Address Compare 2 Read Debug Event");
+			DAC2W   ::SetName("DAC2W");    DAC2W   ::SetDescription("Data Address Compare 2 Write Debug Event");
+			RET     ::SetName("RET");      RET     ::SetDescription("Return Debug Event");
+			DEVT1   ::SetName("DEVT1");    DEVT1   ::SetDescription("External Debug Event 1 Debug Event");
+			DEVT2   ::SetName("DEVT2");    DEVT2   ::SetDescription("External Debug Event 2 Debug Event");
+			PMI     ::SetName("PMI");      PMI     ::SetDescription("Performance Monitor Interrupt Debug Event");
+			MPU     ::SetName("MPU");      MPU     ::SetDescription("Memory Protection Unit Debug Event");
+			CIRPT   ::SetName("CIRPT");    CIRPT   ::SetDescription("Critical Interrupt Taken Debug Event");
+			CRET    ::SetName("CRET");     CRET    ::SetDescription("Critical Return Debug Event");
+			DNI     ::SetName("DNI");      DNI     ::SetDescription("Debug Notify Interrupt (se_dni)");
+			DAC_OFST::SetName("DAC_OFST"); DAC_OFST::SetDescription("Data Address Compare Offset");
+			IAC12ATS::SetName("IAC12ATS"); IAC12ATS::SetDescription("Instruction Address Compare 1/2 Auto-Toggle Status");
+			IAC34ATS::SetName("IAC34ATS"); IAC34ATS::SetDescription("Instruction Address Compare 3/4 Auto-Toggle Status");
 		}
 	};
 	
@@ -2675,36 +2675,36 @@ protected:
 	private:
 		void Init()
 		{
-			       this->SetName("dbcr0");        this->SetDescription("Debug Control Register 0");
-			EDM  ::SetName("edm");   EDM  ::SetDescription("External Debug Mode");
-			IDM  ::SetName("idm");   IDM  ::SetDescription("Internal Debug Mode");
-			RST  ::SetName("rst");   RST  ::SetDescription("Reset Control");
-			ICMP ::SetName("icmp");  ICMP ::SetDescription("Instruction Complete Debug Event Enable");
-			BRT  ::SetName("brt");   BRT  ::SetDescription("Branch Taken Debug Event Enable");
-			IRPT ::SetName("irpt");  IRPT ::SetDescription("Interrupt Taken Debug Event Enable");
-			TRAP ::SetName("trap");  TRAP ::SetDescription("Trap Taken Debug Event Enable");
-			IAC1 ::SetName("iac1");  IAC1 ::SetDescription("Instruction Address Compare 1 Debug Event Enable");
-			IAC2 ::SetName("iac2");  IAC2 ::SetDescription("Instruction Address Compare 2 Debug Event Enable");
-			IAC3 ::SetName("iac3");  IAC3 ::SetDescription("Instruction Address Compare 3 Debug Event Enable");
-			IAC4 ::SetName("iac4");  IAC4 ::SetDescription("Instruction Address Compare 4 Debug Event Enable");
-			DAC1 ::SetName("dac1");  DAC1 ::SetDescription("Data Address Compare 1 Debug Event Enable");
-			DAC1R::SetName("dac1r"); DAC1 ::SetDescription("Data Address Compare 1 Read Debug Event Enable");
-			DAC1W::SetName("dac1w"); DAC1 ::SetDescription("Data Address Compare 1 Write Debug Event Enable");
-			DAC2 ::SetName("dac2");  DAC2 ::SetDescription("Data Address Compare 2 Debug Event Enable");
-			DAC2R::SetName("dac2r"); DAC2 ::SetDescription("Data Address Compare 2 Read Debug Event Enable");
-			DAC2W::SetName("dac2w"); DAC2 ::SetDescription("Data Address Compare 2 Write Debug Event Enable");
-			RET  ::SetName("ret");   RET  ::SetDescription("Return Debug Event Enable");
-			IAC5 ::SetName("iac5");  IAC5 ::SetDescription("Instruction Address Compare 5 Debug Event Enable");
-			IAC6 ::SetName("iac6");  IAC6 ::SetDescription("Instruction Address Compare 6 Debug Event Enable");
-			IAC7 ::SetName("iac7");  IAC7 ::SetDescription("Instruction Address Compare 7 Debug Event Enable");
-			IAC8 ::SetName("iac8");  IAC8 ::SetDescription("Instruction Address Compare 8 Debug Event Enable");
-			DEVT1::SetName("devt1"); DEVT1::SetDescription("External Debug Event 1 Enable");
-			DEVT2::SetName("devt2"); DEVT2::SetDescription("External Debug Event 2 Enable");
-			DCNT1::SetName("dcnt1"); DCNT1::SetDescription("Debug Counter 1 Debug Event Enable");
-			DCNT2::SetName("dcnt2"); DCNT2::SetDescription("Debug Counter 2 Debug Event Enable");
-			CIRPT::SetName("cirpt"); CIRPT::SetDescription("Critical Interrupt Taken Debug Event Enable");
-			CRET ::SetName("cret");  CRET ::SetDescription("Critical Return Debug Event Enable");
-			FT   ::SetName("ft");    FT   ::SetDescription("Freeze Timers on Debug Event");
+			       this->SetName("DBCR0");        this->SetDescription("Debug Control Register 0");
+			EDM  ::SetName("EDM");   EDM  ::SetDescription("External Debug Mode");
+			IDM  ::SetName("IDM");   IDM  ::SetDescription("Internal Debug Mode");
+			RST  ::SetName("RST");   RST  ::SetDescription("Reset Control");
+			ICMP ::SetName("ICMP");  ICMP ::SetDescription("Instruction Complete Debug Event Enable");
+			BRT  ::SetName("BRT");   BRT  ::SetDescription("Branch Taken Debug Event Enable");
+			IRPT ::SetName("IRPT");  IRPT ::SetDescription("Interrupt Taken Debug Event Enable");
+			TRAP ::SetName("TRAP");  TRAP ::SetDescription("Trap Taken Debug Event Enable");
+			IAC1 ::SetName("IAC1");  IAC1 ::SetDescription("Instruction Address Compare 1 Debug Event Enable");
+			IAC2 ::SetName("IAC2");  IAC2 ::SetDescription("Instruction Address Compare 2 Debug Event Enable");
+			IAC3 ::SetName("IAC3");  IAC3 ::SetDescription("Instruction Address Compare 3 Debug Event Enable");
+			IAC4 ::SetName("IAC4");  IAC4 ::SetDescription("Instruction Address Compare 4 Debug Event Enable");
+			DAC1 ::SetName("DAC1");  DAC1 ::SetDescription("Data Address Compare 1 Debug Event Enable");
+			DAC1R::SetName("DAC1R"); DAC1 ::SetDescription("Data Address Compare 1 Read Debug Event Enable");
+			DAC1W::SetName("DAC1W"); DAC1 ::SetDescription("Data Address Compare 1 Write Debug Event Enable");
+			DAC2 ::SetName("DAC2");  DAC2 ::SetDescription("Data Address Compare 2 Debug Event Enable");
+			DAC2R::SetName("DAC2R"); DAC2 ::SetDescription("Data Address Compare 2 Read Debug Event Enable");
+			DAC2W::SetName("DAC2W"); DAC2 ::SetDescription("Data Address Compare 2 Write Debug Event Enable");
+			RET  ::SetName("RET");   RET  ::SetDescription("Return Debug Event Enable");
+			IAC5 ::SetName("IAC5");  IAC5 ::SetDescription("Instruction Address Compare 5 Debug Event Enable");
+			IAC6 ::SetName("IAC6");  IAC6 ::SetDescription("Instruction Address Compare 6 Debug Event Enable");
+			IAC7 ::SetName("IAC7");  IAC7 ::SetDescription("Instruction Address Compare 7 Debug Event Enable");
+			IAC8 ::SetName("IAC8");  IAC8 ::SetDescription("Instruction Address Compare 8 Debug Event Enable");
+			DEVT1::SetName("DEVT1"); DEVT1::SetDescription("External Debug Event 1 Enable");
+			DEVT2::SetName("DEVT2"); DEVT2::SetDescription("External Debug Event 2 Enable");
+			DCNT1::SetName("DCNT1"); DCNT1::SetDescription("Debug Counter 1 Debug Event Enable");
+			DCNT2::SetName("DCNT2"); DCNT2::SetDescription("Debug Counter 2 Debug Event Enable");
+			CIRPT::SetName("CIRPT"); CIRPT::SetDescription("Critical Interrupt Taken Debug Event Enable");
+			CRET ::SetName("CRET");  CRET ::SetDescription("Critical Return Debug Event Enable");
+			FT   ::SetName("FT");    FT   ::SetDescription("Freeze Timers on Debug Event");
 		}
 	};
 	
@@ -2738,19 +2738,19 @@ protected:
 	private:
 		void Init()
 		{
-			   this->SetName("dbcr1");      this->SetDescription("Debug Control Register 1");
-			IAC1US ::SetName("iac1us");  IAC1US ::SetDescription("Instruction Address Compare 1 User/Supervisor Mode");
-			IAC1ER ::SetName("iac1er");  IAC1ER ::SetDescription("Instruction Address Compare 1 Effective/Real Mode");
-			IAC2US ::SetName("iac2us");  IAC2US ::SetDescription("Instruction Address Compare 2 User/Supervisor Mode");
-			IAC2ER ::SetName("iac2er");  IAC2ER ::SetDescription("Instruction Address Compare 2 Effective/Real Mode");
-			IAC12M ::SetName("iac12m");  IAC12M ::SetDescription("Instruction Address Compare 1/2 Mode");
-			IAC12AT::SetName("iac12at"); IAC12AT::SetDescription("Instruction Address Compare 1/2 Auto-Toggle Enable");
-			IAC3US ::SetName("iac3us");  IAC3US ::SetDescription("Instruction Address Compare 3 User/Supervisor Mode");
-			IAC3ER ::SetName("iac3er");  IAC3ER ::SetDescription("Instruction Address Compare 3 Effective/Real Mode");
-			IAC4US ::SetName("iac4us");  IAC4US ::SetDescription("Instruction Address Compare 4 User/Supervisor Mode");
-			IAC4ER ::SetName("iac4er");  IAC4ER ::SetDescription("Instruction Address Compare 4 Effective/Real Mode");
-			IAC34M ::SetName("iac34m");  IAC34M ::SetDescription("Instruction Address Compare 3/4 Mode");
-			IAC34AT::SetName("iac34at"); IAC34AT::SetDescription("Instruction Address Compare 3/4 Auto-Toggle Enable");
+			   this->SetName("DBCR1");      this->SetDescription("Debug Control Register 1");
+			IAC1US ::SetName("IAC1US");  IAC1US ::SetDescription("Instruction Address Compare 1 User/Supervisor Mode");
+			IAC1ER ::SetName("IAC1ER");  IAC1ER ::SetDescription("Instruction Address Compare 1 Effective/Real Mode");
+			IAC2US ::SetName("IAC2US");  IAC2US ::SetDescription("Instruction Address Compare 2 User/Supervisor Mode");
+			IAC2ER ::SetName("IAC2ER");  IAC2ER ::SetDescription("Instruction Address Compare 2 Effective/Real Mode");
+			IAC12M ::SetName("IAC12M");  IAC12M ::SetDescription("Instruction Address Compare 1/2 Mode");
+			IAC12AT::SetName("IAC12AT"); IAC12AT::SetDescription("Instruction Address Compare 1/2 Auto-Toggle Enable");
+			IAC3US ::SetName("IAC3US");  IAC3US ::SetDescription("Instruction Address Compare 3 User/Supervisor Mode");
+			IAC3ER ::SetName("IAC3ER");  IAC3ER ::SetDescription("Instruction Address Compare 3 Effective/Real Mode");
+			IAC4US ::SetName("IAC4US");  IAC4US ::SetDescription("Instruction Address Compare 4 User/Supervisor Mode");
+			IAC4ER ::SetName("IAC4ER");  IAC4ER ::SetDescription("Instruction Address Compare 4 Effective/Real Mode");
+			IAC34M ::SetName("IAC34M");  IAC34M ::SetDescription("Instruction Address Compare 3/4 Mode");
+			IAC34AT::SetName("IAC34AT"); IAC34AT::SetDescription("Instruction Address Compare 3/4 Auto-Toggle Enable");
 		}
 	};
 	
@@ -2794,19 +2794,19 @@ protected:
 	private:
 		void Init()
 		{
-			   this->SetName("dbcr2");      this->SetDescription("Debug Control Register 2");
-			DAC1US ::SetName("dac1us");  DAC1US ::SetDescription("Data Address Compare 1 User/Supervisor Mode");
-			DAC1ER ::SetName("dac1er");  DAC1ER ::SetDescription("Data Address Compare 1 Effective/Read Mode");
-			DAC2US ::SetName("dac2us");  DAC2US ::SetDescription("Data Address Compare 2 User/Supervisor Mode");
-			DAC2ER ::SetName("dac2er");  DAC2ER ::SetDescription("Data Address Compare 2 Effective/Read Mode");
-			DAC12M ::SetName("dac12m");  DAC12M ::SetDescription("Data Address Compare 1/2 Mode");
-			DAC12A ::SetName("dac12a");  DAC12A ::SetDescription("Data Address Compare 1/2 Asynchronous");
-			DAC1LNK::SetName("dac1lnk"); DAC1LNK::SetDescription("Data Address Compare 1 Linked");
-			DAC2LNK::SetName("dac2lnk"); DAC2LNK::SetDescription("Data Address Compare 2 Linked");
-			DVC1M  ::SetName("dvc1m");   DVC1M  ::SetDescription("Data Value Compare 1 Mode");
-			DVC2M  ::SetName("dvc2m");   DVC2M  ::SetDescription("Data Value Compare 2 Mode");
-			DVC1BE ::SetName("dvc1be");  DVC1BE ::SetDescription("Data Value Compare 1 Byte Enables");
-			DVC2BE ::SetName("dvc2be");  DVC2BE ::SetDescription("Data Value Compare 2 Byte Enables");
+			   this->SetName("DBCR2");      this->SetDescription("Debug Control Register 2");
+			DAC1US ::SetName("DAC1US");  DAC1US ::SetDescription("Data Address Compare 1 User/Supervisor Mode");
+			DAC1ER ::SetName("DAC1ER");  DAC1ER ::SetDescription("Data Address Compare 1 Effective/Read Mode");
+			DAC2US ::SetName("DAC2US");  DAC2US ::SetDescription("Data Address Compare 2 User/Supervisor Mode");
+			DAC2ER ::SetName("DAC2ER");  DAC2ER ::SetDescription("Data Address Compare 2 Effective/Read Mode");
+			DAC12M ::SetName("DAC12M");  DAC12M ::SetDescription("Data Address Compare 1/2 Mode");
+			DAC12A ::SetName("DAC12A");  DAC12A ::SetDescription("Data Address Compare 1/2 Asynchronous");
+			DAC1LNK::SetName("DAC1LNK"); DAC1LNK::SetDescription("Data Address Compare 1 Linked");
+			DAC2LNK::SetName("DAC2LNK"); DAC2LNK::SetDescription("Data Address Compare 2 Linked");
+			DVC1M  ::SetName("DVC1M");   DVC1M  ::SetDescription("Data Value Compare 1 Mode");
+			DVC2M  ::SetName("DVC2M");   DVC2M  ::SetDescription("Data Value Compare 2 Mode");
+			DVC1BE ::SetName("DVC1BE");  DVC1BE ::SetDescription("Data Value Compare 1 Byte Enables");
+			DVC2BE ::SetName("DVC2BE");  DVC2BE ::SetDescription("Data Value Compare 2 Byte Enables");
 		}
 	};
 	
@@ -2823,7 +2823,7 @@ protected:
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
 	private:
-		void Init() { this->SetName("iac1"); this->SetDescription("Instruction Address Compare 1"); }
+		void Init() { this->SetName("IAC1"); this->SetDescription("Instruction Address Compare 1"); }
 	};
 
 	// Instruction Address Compare 2
@@ -2839,7 +2839,7 @@ protected:
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
 	private:
-		void Init() { this->SetName("iac2"); this->SetDescription("Instruction Address Compare 2"); }
+		void Init() { this->SetName("IAC2"); this->SetDescription("Instruction Address Compare 2"); }
 	};
 
 	// Instruction Address Compare 3
@@ -2855,7 +2855,7 @@ protected:
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
 	private:
-		void Init() { this->SetName("iac3"); this->SetDescription("Instruction Address Compare 3"); }
+		void Init() { this->SetName("IAC3"); this->SetDescription("Instruction Address Compare 3"); }
 	};
 
 	// Instruction Address Compare 4
@@ -2871,7 +2871,7 @@ protected:
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
 	private:
-		void Init() { this->SetName("iac4"); this->SetDescription("Instruction Address Compare 4"); }
+		void Init() { this->SetName("IAC4"); this->SetDescription("Instruction Address Compare 4"); }
 	};
 
 	// Data Address Compare 1
@@ -2887,7 +2887,7 @@ protected:
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
 	private:
-		void Init() { this->SetName("dac1"); this->SetDescription("Data Address Compare 1"); }
+		void Init() { this->SetName("DAC1"); this->SetDescription("Data Address Compare 1"); }
 	};
 
 	// Data Address Compare 2
@@ -2901,7 +2901,7 @@ protected:
 		DAC2(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
-		void Init() { this->SetName("dac2"); this->SetDescription("Data Address Compare 2"); }
+		void Init() { this->SetName("DAC2"); this->SetDescription("Data Address Compare 2"); }
 	};
 
 	// Data Value Compare 1
@@ -2917,7 +2917,7 @@ protected:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("dvc1"); this->SetDescription("Data Value Compare 1"); }
+		void Init() { this->SetName("DVC1"); this->SetDescription("Data Value Compare 1"); }
 	};
 
 	// Data Value Compare 2
@@ -2933,7 +2933,7 @@ protected:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("dvc2"); this->SetDescription("Data Value Compare 2"); }
+		void Init() { this->SetName("DVC2"); this->SetDescription("Data Value Compare 2"); }
 	};
 	
 	// Timer Status Register
@@ -3056,7 +3056,7 @@ protected:
 		TIR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
-		void Init() { this->SetName("tir"); this->SetDescription("Thread ID"); }
+		void Init() { this->SetName("TIR"); this->SetDescription("Thread ID"); }
 	};
 
 	// Signal Processing Extension/Embedded Floating-point Status and Control Register
@@ -3176,25 +3176,25 @@ protected:
 	private:
 		void Init()
 		{
-			       this->SetName("spefscr");      this->SetDescription("Signal Processing Extension/Embedded Floating-point Status and Control Register");
-			FINXS::SetName("finxs"); FINXS::SetDescription("Embedded Floating-point Inexact Sticky Flag");
-			FINVS::SetName("finvs"); FINVS::SetDescription("Enmedded Floating-point Invalid Operation Sticky Flag");
-			FDBZS::SetName("fdbzs"); FDBZS::SetDescription("Embedded Floating-point Divide by Zero Sticky Flag");
-			FUNFS::SetName("funfs"); FUNFS::SetDescription("Embedded Floating-point Underflow Sticky Flag");
-			FOVFS::SetName("fovfs"); FOVFS::SetDescription("Embedded Floating-point Overflow Sticky Flag");
-			MODE ::SetName("mode");  MODE ::SetDescription("Embedded Floating-point Operating Mode");
-			FG   ::SetName("fg");    FG   ::SetDescription("Embedded Floating-point Guard bit");
-			FX   ::SetName("fx");    FX   ::SetDescription("Embedded Floating-point Sticky bit");
-			FINV ::SetName("finv");  FINV ::SetDescription("Embedded Floating-point Invalid Operation / Input error");
-			FDBZ ::SetName("fdbz");  FDBZ ::SetDescription("Embedded Floating-point Divide by Zero");
-			FUNF ::SetName("funf");  FUNF ::SetDescription("Embedded Floating-point Underflow");
-			FOVF ::SetName("fovf");  FOVF ::SetDescription("Embedded Floating-point Overflow");
-			FINXE::SetName("finxe"); FINXE::SetDescription("Embedded Floating-point Inexact Exception Enable");
-			FINVE::SetName("finve"); FINVE::SetDescription("Embedded Floating-point Invalid Operation / Input Error Exception Enable");
-			FDBZE::SetName("fdbze"); FDBZE::SetDescription("Embedded Floating-point Divide by Zero Exception Enable");
-			FUNFE::SetName("funfe"); FUNFE::SetDescription("Embedded Floating-point Underflow Exception Enable");
-			FOVFE::SetName("fovfe"); FOVFE::SetDescription("Embedded Floating-point Overflow Exception Enable");
-			FRMC ::SetName("frmc");  FRMC ::SetDescription("Embedded Floating-point Rounding Mode Control");
+			       this->SetName("SPEFSCR");      this->SetDescription("Signal Processing Extension/Embedded Floating-point Status and Control Register");
+			FINXS::SetName("FINXS"); FINXS::SetDescription("Embedded Floating-point Inexact Sticky Flag");
+			FINVS::SetName("FINVS"); FINVS::SetDescription("Enmedded Floating-point Invalid Operation Sticky Flag");
+			FDBZS::SetName("FDBZS"); FDBZS::SetDescription("Embedded Floating-point Divide by Zero Sticky Flag");
+			FUNFS::SetName("FUNFS"); FUNFS::SetDescription("Embedded Floating-point Underflow Sticky Flag");
+			FOVFS::SetName("FOVFS"); FOVFS::SetDescription("Embedded Floating-point Overflow Sticky Flag");
+			MODE ::SetName("MODE");  MODE ::SetDescription("Embedded Floating-point Operating Mode");
+			FG   ::SetName("FG");    FG   ::SetDescription("Embedded Floating-point Guard bit");
+			FX   ::SetName("FX");    FX   ::SetDescription("Embedded Floating-point Sticky bit");
+			FINV ::SetName("FINV");  FINV ::SetDescription("Embedded Floating-point Invalid Operation / Input error");
+			FDBZ ::SetName("FDBZ");  FDBZ ::SetDescription("Embedded Floating-point Divide by Zero");
+			FUNF ::SetName("FUNF");  FUNF ::SetDescription("Embedded Floating-point Underflow");
+			FOVF ::SetName("FOVF");  FOVF ::SetDescription("Embedded Floating-point Overflow");
+			FINXE::SetName("FINXE"); FINXE::SetDescription("Embedded Floating-point Inexact Exception Enable");
+			FINVE::SetName("FINVE"); FINVE::SetDescription("Embedded Floating-point Invalid Operation / Input Error Exception Enable");
+			FDBZE::SetName("FDBZE"); FDBZE::SetDescription("Embedded Floating-point Divide by Zero Exception Enable");
+			FUNFE::SetName("FUNFE"); FUNFE::SetDescription("Embedded Floating-point Underflow Exception Enable");
+			FOVFE::SetName("FOVFE"); FOVFE::SetDescription("Embedded Floating-point Overflow Exception Enable");
+			FRMC ::SetName("FRMC");  FRMC ::SetDescription("Embedded Floating-point Rounding Mode Control");
 		}
 	};
 	
@@ -3240,17 +3240,17 @@ protected:
 	private:
 		void Init()
 		{
-			         this->SetName("l1cfg0");           this->SetDescription("L1 Cache Configuration Register 0");
-			CARCH  ::SetName("carch");   CARCH  ::SetDescription("Cache Architecture");
-			CWPA   ::SetName("cwpa");    CWPA   ::SetDescription("Cache Way Partitioning Available");
-			DCFAHA ::SetName("dcfaha");  DCFAHA ::SetDescription("Data Cache Flush All by Hardware Available");
-			DCFISWA::SetName("dcfiswa"); DCFISWA::SetDescription("Data Cache Flush/Invalidate by Set and Way Available");
-			DCBSIZE::SetName("dcbsize"); DCBSIZE::SetDescription("Data Cache Block Size");
-			DCREPL ::SetName("dcrepl");  DCREPL ::SetDescription("Data Cache Replacement Policy");
-			DCLA   ::SetName("dcla");    DCLA   ::SetDescription("Data Cache Lockup APU Available");
-			DCECA  ::SetName("dceca");   DCECA  ::SetDescription("Data Cache Error Checking Available");
-			DCNWAY ::SetName("dcnway");  DCNWAY ::SetDescription("Data Cache Number of Ways");
-			DCSIZE ::SetName("dcsize");  DCSIZE ::SetDescription("Data Cache Size");
+			         this->SetName("L1CFG0");           this->SetDescription("L1 Cache Configuration Register 0");
+			CARCH  ::SetName("CARCH");   CARCH  ::SetDescription("Cache Architecture");
+			CWPA   ::SetName("CWPA");    CWPA   ::SetDescription("Cache Way Partitioning Available");
+			DCFAHA ::SetName("DCFAHA");  DCFAHA ::SetDescription("Data Cache Flush All by Hardware Available");
+			DCFISWA::SetName("DCFISWA"); DCFISWA::SetDescription("Data Cache Flush/Invalidate by Set and Way Available");
+			DCBSIZE::SetName("DCBSIZE"); DCBSIZE::SetDescription("Data Cache Block Size");
+			DCREPL ::SetName("DCREPL");  DCREPL ::SetDescription("Data Cache Replacement Policy");
+			DCLA   ::SetName("DCLA");    DCLA   ::SetDescription("Data Cache Lockup APU Available");
+			DCECA  ::SetName("DCECA");   DCECA  ::SetDescription("Data Cache Error Checking Available");
+			DCNWAY ::SetName("DCNWAY");  DCNWAY ::SetDescription("Data Cache Number of Ways");
+			DCSIZE ::SetName("DCSIZE");  DCSIZE ::SetDescription("Data Cache Size");
 		}
 	};
 
@@ -3278,14 +3278,14 @@ protected:
 	private:
 		void Init()
 		{
-			         this->SetName("l1cfg1");           this->SetDescription("L1 Cache Configuration Register 1");
-			ICFISWA::SetName("icfiswa"); ICFISWA::SetDescription("Instruction Cache Flush/Invalidate by Set and Way Available");
-			ICBSIZE::SetName("icbsize"); ICBSIZE::SetDescription("Instruction Cache Block Size");
-			ICREPL ::SetName("icrepl");  ICREPL ::SetDescription("Instruction Cache Replacement Policy");
-			ICLA   ::SetName("icla");    ICLA   ::SetDescription("Instruction Cache Locking APU Available");
-			ICECA  ::SetName("iceca");   ICECA  ::SetDescription("Instruction Cache Error Checking Available");
-			ICNWAY ::SetName("icnway");  ICNWAY ::SetDescription("Instruction Cache Number of Ways");
-			ICSIZE ::SetName("icsize");  ICSIZE ::SetDescription("Instruction Cache Size");
+			         this->SetName("L1CFG1");           this->SetDescription("L1 Cache Configuration Register 1");
+			ICFISWA::SetName("ICFISWA"); ICFISWA::SetDescription("Instruction Cache Flush/Invalidate by Set and Way Available");
+			ICBSIZE::SetName("ICBSIZE"); ICBSIZE::SetDescription("Instruction Cache Block Size");
+			ICREPL ::SetName("ICREPL");  ICREPL ::SetDescription("Instruction Cache Replacement Policy");
+			ICLA   ::SetName("ICLA");    ICLA   ::SetDescription("Instruction Cache Locking APU Available");
+			ICECA  ::SetName("ICECA");   ICECA  ::SetDescription("Instruction Cache Error Checking Available");
+			ICNWAY ::SetName("ICNWAY");  ICNWAY ::SetDescription("Instruction Cache Number of Ways");
+			ICSIZE ::SetName("ICSIZE");  ICSIZE ::SetDescription("Instruction Cache Size");
 		}
 	};
 	
@@ -3302,7 +3302,7 @@ protected:
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
 	private:
-		void Init() { this->SetName("npidr"); this->SetDescription("Nexus 3 Process ID register"); }
+		void Init() { this->SetName("NPIDR"); this->SetDescription("Nexus 3 Process ID register"); }
 	};
 
 	// Debug Control Register 3
@@ -3364,39 +3364,39 @@ protected:
 	private:
 		void Init()
 		{
-			         this->SetName("dbcr3");            this->SetDescription("Debug Control Register 3");
-			DEVT1C1::SetName("devt1c1"); DEVT1C1::SetDescription("External Debug Event 1 Count 1 Enable");
-			DEVT2C1::SetName("devt2c1"); DEVT2C1::SetDescription("External Debug Event 2 Count 1 Enable");
-			ICMPC1 ::SetName("icmpc1");  ICMPC1 ::SetDescription("Instruction Complete Debug Event Count 1 Enable");
-			IAC1C1 ::SetName("iac1c1");  IAC1C1 ::SetDescription("Instruction Address Compare 1 Count 1 Enable");
-			IAC2C1 ::SetName("iac2c1");  IAC2C1 ::SetDescription("Instruction Address Compare 2 Count 1 Enable");
-			IAC3C1 ::SetName("iac3c1");  IAC3C1 ::SetDescription("Instruction Address Compare 3 Count 1 Enable");
-			IAC4C1 ::SetName("iac4c1");  IAC4C1 ::SetDescription("Instruction Address Compare 4 Count 1 Enable");
-			DAC1RC1::SetName("dac1rc1"); DAC1RC1::SetDescription("Data Address Compare 1 Read Debug Event Count 1 Enable");
-			DAC1WC1::SetName("dac1wc1"); DAC1WC1::SetDescription("Data Address Compare 1 Write Debug Event Count 1 Enable");
-			DAC2RC1::SetName("dac2rc1"); DAC2RC1::SetDescription("Data Address Compare 2 Read Debug Event Count 1 Enable");
-			DAC2WC1::SetName("dac2wc1"); DAC2WC1::SetDescription("Data Address Compare 2 Write Debug Event Count 1 Enable");
-			IRPTC1 ::SetName("irptc1");  IRPTC1 ::SetDescription("Interrupt Taken Debug Event Count 1 Enable");
-			RETC1  ::SetName("retc1");   RETC1  ::SetDescription("Return Debug Event Count 1 Enable");
-			DEVT1C2::SetName("devt1c2"); DEVT1C2::SetDescription("External Debug Event 1 Count 2 Enable");
-			DEVT2C2::SetName("devt2c2"); DEVT2C2::SetDescription("External Debug Event 2 Count 2 Enable");
-			ICMPC2 ::SetName("icmpc2");  ICMPC2 ::SetDescription("Instruction Complete Debug Event Count 2 Enable");
-			IAC1C2 ::SetName("iac1c2");  IAC1C2 ::SetDescription("Instruction Address Compare 1 Debug Event Count 2 Enable");
-			IAC2C2 ::SetName("iac2c2");  IAC2C2 ::SetDescription("Instruction Address Compare 2 Debug Event Count 2 Enable");
-			IAC3C2 ::SetName("iac3c2");  IAC3C2 ::SetDescription("Instruction Address Compare 3 Debug Event Count 2 Enable");
-			IAC4C2 ::SetName("iac4c2");  IAC4C2 ::SetDescription("Instruction Address Compare 4 Debug Event Count 2 Enable");
-			DAC1RC2::SetName("dac1rc2"); DAC1RC2::SetDescription("Data Address Compare 1 Read Debug Event Count 2 Enable");
-			DAC1WC2::SetName("dac1wc2"); DAC1WC2::SetDescription("Data Address Compare 1 Write Debug Event Count 2 Enable");
-			DAC2RC2::SetName("dac2rc2"); DAC2RC2::SetDescription("Data Address Compare 2 Read Debug Event Count 2 Enable");
-			DAC2WC2::SetName("dac2wc2"); DAC2WC2::SetDescription("Data Address Compare 2 Write Debug Event Count 2 Enable");
-			DEVT1T1::SetName("devt1t1"); DEVT1T1::SetDescription("External Debug Event 1 Trigger Counter 1 Enable");
-			DEVT2T1::SetName("devt2t1"); DEVT2T1::SetDescription("External Debug Event 2 Trigger Counter 1 Enable");
-			IAC1T1 ::SetName("iac1t1");  IAC1T1 ::SetDescription("Instruction Address Compare 1 Trigger Counter 1 Enable");
-			IAC3T1 ::SetName("iac3t1");  IAC3T1 ::SetDescription("Instruction Address Compare 3 Trigger Counter 1 Enable");
-			DAC1RT1::SetName("dac1rt1"); DAC1RT1::SetDescription("Data Address Compare 1 Read Trigger Counter 1 Enable");
-			DAC1WT1::SetName("dac1wt1"); DAC1WT1::SetDescription("Data Address Compare 1 Write Trigger Counter 1 Enable");
-			CNT2T1 ::SetName("cnt2t1");  CNT2T1 ::SetDescription("Debug Counter 2 Trigger Counter 1 Enable");
-			_CONFIG ::SetName("config"); _CONFIG ::SetDescription("Debug Counter Configuration");
+			         this->SetName("DBCR3");            this->SetDescription("Debug Control Register 3");
+			DEVT1C1::SetName("DEVT1C1"); DEVT1C1::SetDescription("External Debug Event 1 Count 1 Enable");
+			DEVT2C1::SetName("DEVT2C1"); DEVT2C1::SetDescription("External Debug Event 2 Count 1 Enable");
+			ICMPC1 ::SetName("ICMPC1");  ICMPC1 ::SetDescription("Instruction Complete Debug Event Count 1 Enable");
+			IAC1C1 ::SetName("IAC1C1");  IAC1C1 ::SetDescription("Instruction Address Compare 1 Count 1 Enable");
+			IAC2C1 ::SetName("IAC2C1");  IAC2C1 ::SetDescription("Instruction Address Compare 2 Count 1 Enable");
+			IAC3C1 ::SetName("IAC3C1");  IAC3C1 ::SetDescription("Instruction Address Compare 3 Count 1 Enable");
+			IAC4C1 ::SetName("IAC4C1");  IAC4C1 ::SetDescription("Instruction Address Compare 4 Count 1 Enable");
+			DAC1RC1::SetName("DAC1RC1"); DAC1RC1::SetDescription("Data Address Compare 1 Read Debug Event Count 1 Enable");
+			DAC1WC1::SetName("DAC1WC1"); DAC1WC1::SetDescription("Data Address Compare 1 Write Debug Event Count 1 Enable");
+			DAC2RC1::SetName("DAC2RC1"); DAC2RC1::SetDescription("Data Address Compare 2 Read Debug Event Count 1 Enable");
+			DAC2WC1::SetName("DAC2WC1"); DAC2WC1::SetDescription("Data Address Compare 2 Write Debug Event Count 1 Enable");
+			IRPTC1 ::SetName("IRPTC1");  IRPTC1 ::SetDescription("Interrupt Taken Debug Event Count 1 Enable");
+			RETC1  ::SetName("RETC1");   RETC1  ::SetDescription("Return Debug Event Count 1 Enable");
+			DEVT1C2::SetName("DEVT1C2"); DEVT1C2::SetDescription("External Debug Event 1 Count 2 Enable");
+			DEVT2C2::SetName("DEVT2C2"); DEVT2C2::SetDescription("External Debug Event 2 Count 2 Enable");
+			ICMPC2 ::SetName("ICMPC2");  ICMPC2 ::SetDescription("Instruction Complete Debug Event Count 2 Enable");
+			IAC1C2 ::SetName("IAC1C2");  IAC1C2 ::SetDescription("Instruction Address Compare 1 Debug Event Count 2 Enable");
+			IAC2C2 ::SetName("IAC2C2");  IAC2C2 ::SetDescription("Instruction Address Compare 2 Debug Event Count 2 Enable");
+			IAC3C2 ::SetName("IAC3C2");  IAC3C2 ::SetDescription("Instruction Address Compare 3 Debug Event Count 2 Enable");
+			IAC4C2 ::SetName("IAC4C2");  IAC4C2 ::SetDescription("Instruction Address Compare 4 Debug Event Count 2 Enable");
+			DAC1RC2::SetName("DAC1RC2"); DAC1RC2::SetDescription("Data Address Compare 1 Read Debug Event Count 2 Enable");
+			DAC1WC2::SetName("DAC1WC2"); DAC1WC2::SetDescription("Data Address Compare 1 Write Debug Event Count 2 Enable");
+			DAC2RC2::SetName("DAC2RC2"); DAC2RC2::SetDescription("Data Address Compare 2 Read Debug Event Count 2 Enable");
+			DAC2WC2::SetName("DAC2WC2"); DAC2WC2::SetDescription("Data Address Compare 2 Write Debug Event Count 2 Enable");
+			DEVT1T1::SetName("DEVT1T1"); DEVT1T1::SetDescription("External Debug Event 1 Trigger Counter 1 Enable");
+			DEVT2T1::SetName("DEVT2T1"); DEVT2T1::SetDescription("External Debug Event 2 Trigger Counter 1 Enable");
+			IAC1T1 ::SetName("IAC1T1");  IAC1T1 ::SetDescription("Instruction Address Compare 1 Trigger Counter 1 Enable");
+			IAC3T1 ::SetName("IAC3T1");  IAC3T1 ::SetDescription("Instruction Address Compare 3 Trigger Counter 1 Enable");
+			DAC1RT1::SetName("DAC1RT1"); DAC1RT1::SetDescription("Data Address Compare 1 Read Trigger Counter 1 Enable");
+			DAC1WT1::SetName("DAC1WT1"); DAC1WT1::SetDescription("Data Address Compare 1 Write Trigger Counter 1 Enable");
+			CNT2T1 ::SetName("CNT2T1");  CNT2T1 ::SetDescription("Debug Counter 2 Trigger Counter 1 Enable");
+			_CONFIG ::SetName("CONFIG"); _CONFIG ::SetDescription("Debug Counter Configuration");
 		}
 	};
 	
@@ -3419,8 +3419,8 @@ protected:
 	private:
 		void Init()
 		{
-			this->SetName("dbcnt"); this->SetDescription("Debug Counter Register");
-			CNT1::SetName("cnt1"); CNT2::SetName("cnt2");
+			this->SetName("DBCNT"); this->SetDescription("Debug Counter Register");
+			CNT1::SetName("CNT1"); CNT2::SetName("cnt2");
 		}
 	};
 
@@ -3449,15 +3449,15 @@ protected:
 	private:
 		void Init()
 		{
-			         this->SetName("dbcr4");            this->SetDescription("Debug Control Register 4");
-			DVC1C  ::SetName("dvc1c");   DVC1C  ::SetDescription("Data Value Compare 1 Control");
-			DVC2C  ::SetName("dvc2c");   DVC2C  ::SetDescription("Data Value Compare 2 Control");
-			DAC1XMH::SetName("dac1xmh"); DAC1XMH::SetDescription("Data Address Compare 1 Extended Mask Control High");
-			DAC2XMH::SetName("dac2xmh"); DAC2XMH::SetDescription("Data Address Compare 2 Extended Mask Control High");
-			DAC1XM ::SetName("dac1xm");  DAC1XM ::SetDescription("Data Address Compare 1 Extended Mask Control");
-			DAC2XM ::SetName("dac2xm");  DAC2XM ::SetDescription("Data Address Compare 2 Extended Mask Control");
-			DAC1CFG::SetName("dac1cfg"); DAC1CFG::SetDescription("Data Address Compare 1 Configuration ");
-			DAC2CFG::SetName("dac2cfg"); DAC2CFG::SetDescription("Data Address Compare 2 Configuration ");
+			         this->SetName("DBCR4");            this->SetDescription("Debug Control Register 4");
+			DVC1C  ::SetName("DVC1C");   DVC1C  ::SetDescription("Data Value Compare 1 Control");
+			DVC2C  ::SetName("DVC2C");   DVC2C  ::SetDescription("Data Value Compare 2 Control");
+			DAC1XMH::SetName("DAC1XMH"); DAC1XMH::SetDescription("Data Address Compare 1 Extended Mask Control High");
+			DAC2XMH::SetName("DAC2XMH"); DAC2XMH::SetDescription("Data Address Compare 2 Extended Mask Control High");
+			DAC1XM ::SetName("DAC1XM");  DAC1XM ::SetDescription("Data Address Compare 1 Extended Mask Control");
+			DAC2XM ::SetName("DAC2XM");  DAC2XM ::SetDescription("Data Address Compare 2 Extended Mask Control");
+			DAC1CFG::SetName("DAC1CFG"); DAC1CFG::SetDescription("Data Address Compare 1 Configuration ");
+			DAC2CFG::SetName("DAC2CFG"); DAC2CFG::SetDescription("Data Address Compare 2 Configuration ");
 		}
 	};
 
@@ -3488,17 +3488,17 @@ protected:
 	private:
 		void Init()
 		{
-			        this->SetName("dbcr5");          this->SetDescription("Debug Control Register 5");
-			IAC5US::SetName("iac5us"); IAC5US::SetDescription("Instruction Address Compare 5 User/Supervisor Mode");
-			IAC5ER::SetName("iac5er"); IAC5ER::SetDescription("Instruction Address Compare 5 Effective/Real Mode");
-			IAC6US::SetName("iac6us"); IAC6US::SetDescription("Instruction Address Compare 6 User/Supervisor Mode");
-			IAC6ER::SetName("iac6er"); IAC6ER::SetDescription("Instruction Address Compare 6 Effective/Real Mode");
-			IAC56M::SetName("iac56m"); IAC56M::SetDescription("Instruction Address Compare 5/6 Mode");
-			IAC7US::SetName("iac7us"); IAC7US::SetDescription("Instruction Address Compare 7 User/Supervisor Mode");
-			IAC7ER::SetName("iac7er"); IAC7ER::SetDescription("Instruction Address Compare 7 Effective/Real Mode");
-			IAC8US::SetName("iac8us"); IAC8US::SetDescription("Instruction Address Compare 8 User/Supervisor Mode");
-			IAC8ER::SetName("iac8er"); IAC7ER::SetDescription("Instruction Address Compare 8 Effective/Real Mode");
-			IAC78M::SetName("iac78m"); IAC78M::SetDescription("Instruction Address Compare 7/8 Mode");
+			        this->SetName("DBCR5");          this->SetDescription("Debug Control Register 5");
+			IAC5US::SetName("IAC5US"); IAC5US::SetDescription("Instruction Address Compare 5 User/Supervisor Mode");
+			IAC5ER::SetName("IAC5ER"); IAC5ER::SetDescription("Instruction Address Compare 5 Effective/Real Mode");
+			IAC6US::SetName("IAC6US"); IAC6US::SetDescription("Instruction Address Compare 6 User/Supervisor Mode");
+			IAC6ER::SetName("IAC6ER"); IAC6ER::SetDescription("Instruction Address Compare 6 Effective/Real Mode");
+			IAC56M::SetName("IAC56M"); IAC56M::SetDescription("Instruction Address Compare 5/6 Mode");
+			IAC7US::SetName("IAC7US"); IAC7US::SetDescription("Instruction Address Compare 7 User/Supervisor Mode");
+			IAC7ER::SetName("IAC7ER"); IAC7ER::SetDescription("Instruction Address Compare 7 Effective/Real Mode");
+			IAC8US::SetName("IAC8US"); IAC8US::SetDescription("Instruction Address Compare 8 User/Supervisor Mode");
+			IAC8ER::SetName("IAC8ER"); IAC7ER::SetDescription("Instruction Address Compare 8 Effective/Real Mode");
+			IAC78M::SetName("IAC78M"); IAC78M::SetDescription("Instruction Address Compare 7/8 Mode");
 		}
 	};
 
@@ -3515,7 +3515,7 @@ protected:
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
 	private:
-		void Init() { this->SetName("iac5"); this->SetDescription("Instruction Address Compare 5"); }
+		void Init() { this->SetName("IAC5"); this->SetDescription("Instruction Address Compare 5"); }
 	};
 
 	// Instruction Address Compare 6
@@ -3531,7 +3531,7 @@ protected:
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
 	private:
-		void Init() { this->SetName("iac6"); this->SetDescription("Instruction Address Compare 6"); }
+		void Init() { this->SetName("IAC6"); this->SetDescription("Instruction Address Compare 6"); }
 	};
 
 	// Instruction Address Compare 7
@@ -3547,7 +3547,7 @@ protected:
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
 	private:
-		void Init() { this->SetName("iac7"); this->SetDescription("Instruction Address Compare 7"); }
+		void Init() { this->SetName("IAC7"); this->SetDescription("Instruction Address Compare 7"); }
 	};
 
 	// Instruction Address Compare 8
@@ -3563,7 +3563,7 @@ protected:
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
 	private:
-		void Init() { this->SetName("iac8"); this->SetDescription("Instruction Address Compare 8"); }
+		void Init() { this->SetName("IAC8"); this->SetDescription("Instruction Address Compare 8"); }
 	};
 
 	// Machine Check Save/Restore Register 0
@@ -3579,7 +3579,7 @@ protected:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("mcsrr0"); this->SetDescription("Machine Check Save/Restore Register 0"); }
+		void Init() { this->SetName("MCSRR0"); this->SetDescription("Machine Check Save/Restore Register 0"); }
 	};
 	
 	// Machine Check Save/Restore Register 1
@@ -3595,7 +3595,7 @@ protected:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("mcsrr1"); this->SetDescription("Machine Check Save/Restore Register 1"); }
+		void Init() { this->SetName("MCSRR1"); this->SetDescription("Machine Check Save/Restore Register 1"); }
 	};
 	
 	// Machine Check Syndrome Register
@@ -3662,40 +3662,40 @@ protected:
 	private:
 		void Init()
 		{
-			       this->SetName("mcsr");               this->SetDescription("Machine Check Syndrome Register");
-			MCP        ::SetName("mcp");         MCP        ::SetDescription("Machine check input pin");
-			MCS        ::SetName("mcs");         MCS        ::SetDescription("Machine Check Summary");     
-			IC_DPERR   ::SetName("ic_dperr");    IC_DPERR   ::SetDescription("Instruction Cache data array parity error");
-			IB         ::SetName("ib");          IB         ::SetDescription("Instruction PLB Error");    
-			DRB        ::SetName("drb");         DRB        ::SetDescription("Data Read PLB Error");     
-			DC_DPERR   ::SetName("dc_dperr");    DC_DPERR   ::SetDescription("Data Cache data array parity error");
-			DWB        ::SetName("dwb");         DWB        ::SetDescription("Data Write PLB Error");     
-			EXCP_ERR   ::SetName("excp_err");    EXCP_ERR   ::SetDescription("ISI or Bus Error on first instruction fetch for an exception handler");
-			TLBP       ::SetName("tlbp");        TLBP       ::SetDescription("Translation Lookaside Buffer Parity Error");      
-			IC_TPERR   ::SetName("ic_tperr");    IC_TPERR   ::SetDescription("Instruction Cache Tag parity error");
-			ICP        ::SetName("icp");         ICP        ::SetDescription("Instruction Cache Parity Error");     
-			DC_TPERR   ::SetName("dc_tperr");    DC_TPERR   ::SetDescription("Data Cache Tag parity error");
-			DCSP       ::SetName("dcsp");        DCSP       ::SetDescription("Data Cache Search Parity Error");      
-			IC_LKERR   ::SetName("ic_lkerr");    IC_LKERR   ::SetDescription("Instruction Cache Lock error");
-			DCFP       ::SetName("dcfp");        DCFP       ::SetDescription("Data Cache Flush Parity Error");      
-			DC_LKERR   ::SetName("dc_lkerr");    DC_LKERR   ::SetDescription("Data Cache Lock error");
-			IMPE       ::SetName("impe");        IMPE       ::SetDescription("Imprecise Machine Check Exception");      
-			NMI        ::SetName("nmi");         NMI        ::SetDescription("NMI input pin");
-			MAV        ::SetName("mav");         MAV        ::SetDescription("MCAR Address Valid");
-			MEA        ::SetName("mea");         MEA        ::SetDescription("MCAR holds Effective Address");
-			U          ::SetName("u");           U          ::SetDescription("User");
-			IF         ::SetName("if");          IF         ::SetDescription("Instruction fecth Error Report");
-			LD         ::SetName("ld");          LD         ::SetDescription("Load type instruction Error Report");
-			ST         ::SetName("st");          ST         ::SetDescription("Store type instruction Error Report");
-			G          ::SetName("g");           G          ::SetDescription("Guarded instruction Error Report");
-			STACK_ERR  ::SetName("stack_err");   STACK_ERR  ::SetDescription("Stack Access Limit Check Error");
-			IMEM_PERR  ::SetName("imem_perr");   IMEM_PERR  ::SetDescription("Instruction Mem (IMEM) Parity Error");
-			DMEM_RDPERR::SetName("dmem_rdperr"); DMEM_RDPERR::SetDescription("Data Mem (DMEM) Parity Error");
-			DMEM_WRPERR::SetName("dmem_wrperr"); DMEM_WRPERR::SetDescription("Data Mem (DMEM) Write Parity Error");
-			BUS_IRERR  ::SetName("bus_irerr");   BUS_IRERR  ::SetDescription("Read bus error on Instruction recovery linefill");
-			BUS_DRERR  ::SetName("bus_drerr");   BUS_DRERR  ::SetDescription("Read bus error on data load or linefill");
-			BUS_WRERR  ::SetName("bus_wrerr");   BUS_WRERR  ::SetDescription("Write bus error on store to bus or DMEM/imprecise write error");
-			BUS_WRDSI  ::SetName("bus_wrdsi");   BUS_WRDSI  ::SetDescription("Write bus error on buffered store to bus with DSI signaled. Set concurrently with BUS_WRERR for this case");
+			       this->SetName("MCSR");               this->SetDescription("Machine Check Syndrome Register");
+			MCP        ::SetName("MCP");         MCP        ::SetDescription("Machine check input pin");
+			MCS        ::SetName("MCS");         MCS        ::SetDescription("Machine Check Summary");     
+			IC_DPERR   ::SetName("IC_DPERR");    IC_DPERR   ::SetDescription("Instruction Cache data array parity error");
+			IB         ::SetName("IB");          IB         ::SetDescription("Instruction PLB Error");    
+			DRB        ::SetName("DRB");         DRB        ::SetDescription("Data Read PLB Error");     
+			DC_DPERR   ::SetName("DC_DPERR");    DC_DPERR   ::SetDescription("Data Cache data array parity error");
+			DWB        ::SetName("DWB");         DWB        ::SetDescription("Data Write PLB Error");     
+			EXCP_ERR   ::SetName("EXCP_ERR");    EXCP_ERR   ::SetDescription("ISI or Bus Error on first instruction fetch for an exception handler");
+			TLBP       ::SetName("TLBP");        TLBP       ::SetDescription("Translation Lookaside Buffer Parity Error");      
+			IC_TPERR   ::SetName("IC_TPERR");    IC_TPERR   ::SetDescription("Instruction Cache Tag parity error");
+			ICP        ::SetName("ICP");         ICP        ::SetDescription("Instruction Cache Parity Error");     
+			DC_TPERR   ::SetName("DC_TPERR");    DC_TPERR   ::SetDescription("Data Cache Tag parity error");
+			DCSP       ::SetName("DCSP");        DCSP       ::SetDescription("Data Cache Search Parity Error");      
+			IC_LKERR   ::SetName("IC_LKERR");    IC_LKERR   ::SetDescription("Instruction Cache Lock error");
+			DCFP       ::SetName("DCFP");        DCFP       ::SetDescription("Data Cache Flush Parity Error");      
+			DC_LKERR   ::SetName("DC_LKERR");    DC_LKERR   ::SetDescription("Data Cache Lock error");
+			IMPE       ::SetName("IMPE");        IMPE       ::SetDescription("Imprecise Machine Check Exception");      
+			NMI        ::SetName("NMI");         NMI        ::SetDescription("NMI input pin");
+			MAV        ::SetName("MAV");         MAV        ::SetDescription("MCAR Address Valid");
+			MEA        ::SetName("MEA");         MEA        ::SetDescription("MCAR holds Effective Address");
+			U          ::SetName("U");           U          ::SetDescription("User");
+			IF         ::SetName("IF");          IF         ::SetDescription("Instruction fecth Error Report");
+			LD         ::SetName("LD");          LD         ::SetDescription("Load type instruction Error Report");
+			ST         ::SetName("ST");          ST         ::SetDescription("Store type instruction Error Report");
+			G          ::SetName("G");           G          ::SetDescription("Guarded instruction Error Report");
+			STACK_ERR  ::SetName("STACK_ERR");   STACK_ERR  ::SetDescription("Stack Access Limit Check Error");
+			IMEM_PERR  ::SetName("IMEM_PERR");   IMEM_PERR  ::SetDescription("Instruction Mem (IMEM) Parity Error");
+			DMEM_RDPERR::SetName("DMEM_RDPERR"); DMEM_RDPERR::SetDescription("Data Mem (DMEM) Parity Error");
+			DMEM_WRPERR::SetName("DMEM_WRPERR"); DMEM_WRPERR::SetDescription("Data Mem (DMEM) Write Parity Error");
+			BUS_IRERR  ::SetName("BUS_IRERR");   BUS_IRERR  ::SetDescription("Read bus error on Instruction recovery linefill");
+			BUS_DRERR  ::SetName("BUS_DRERR");   BUS_DRERR  ::SetDescription("Read bus error on data load or linefill");
+			BUS_WRERR  ::SetName("BUS_WRERR");   BUS_WRERR  ::SetDescription("Write bus error on store to bus or DMEM/imprecise write error");
+			BUS_WRDSI  ::SetName("BUS_WRDSI");   BUS_WRDSI  ::SetDescription("Write bus error on buffered store to bus with DSI signaled. Set concurrently with BUS_WRERR for this case");
 		}
 	};
 
@@ -3712,7 +3712,7 @@ protected:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("mcar"); this->SetDescription("Machine Check Address Register"); }
+		void Init() { this->SetName("MCAR"); this->SetDescription("Machine Check Address Register"); }
 	};
 	
 	// Debug Save/Restore Register 0
@@ -3728,7 +3728,7 @@ protected:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("dsrr0"); this->SetDescription("Debug Save/Restore Register 0"); }
+		void Init() { this->SetName("DSRR0"); this->SetDescription("Debug Save/Restore Register 0"); }
 	};
 	
 	// Debug Save/Restore Register 1
@@ -3744,7 +3744,7 @@ protected:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("dsrr1"); this->SetDescription("Debug Save/Restore Register 1"); }
+		void Init() { this->SetName("DSRR1"); this->SetDescription("Debug Save/Restore Register 1"); }
 	};
 	
 	// Debug Data Acquisition Messaging Register
@@ -3758,7 +3758,7 @@ protected:
 		DDAM(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
-		void Init() { this->SetName("ddam"); this->SetDescription("Debug Data Acquisition Messaging Register"); }
+		void Init() { this->SetName("DDAM"); this->SetDescription("Debug Data Acquisition Messaging Register"); }
 	};
 
 	// Data Address Compare 3
@@ -3772,7 +3772,7 @@ protected:
 		DAC3(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
-		void Init() { this->SetName("dac3"); this->SetDescription("Data Address Compare 3"); }
+		void Init() { this->SetName("DAC3"); this->SetDescription("Data Address Compare 3"); }
 	};
 
 	// Data Address Compare 4
@@ -3786,7 +3786,7 @@ protected:
 		DAC4(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
-		void Init() { this->SetName("dac4"); this->SetDescription("Data Address Compare 4"); }
+		void Init() { this->SetName("DAC4"); this->SetDescription("Data Address Compare 4"); }
 	};
 
 	// Debug Control Register 7
@@ -3812,13 +3812,13 @@ protected:
 	private:
 		void Init()
 		{
-			         this->SetName("dbcr7");            this->SetDescription("Debug Control Register 7");
-			DAC3XMH::SetName("dac3xmh"); DAC3XMH::SetDescription("Data Address Compare 3 Extended Mask Control High");
-			DAC4XMH::SetName("dac4xmh"); DAC4XMH::SetDescription("Data Address Compare 4 Extended Mask Control High");
-			DAC3XM ::SetName("dac3xm");  DAC3XM ::SetDescription("Data Address Compare 3 Extended Mask Control");
-			DAC4XM ::SetName("dac4xm");  DAC4XM ::SetDescription("Data Address Compare 4 Extended Mask Control");
-			DAC3CFG::SetName("dac3cfg"); DAC3CFG::SetDescription("Data Address Compare 3 Configuration");
-			DAC4CFG::SetName("dac4cfg"); DAC4CFG::SetDescription("Data Address Compare 4 Configuration");
+			         this->SetName("DBCR7");            this->SetDescription("Debug Control Register 7");
+			DAC3XMH::SetName("DAC3XMH"); DAC3XMH::SetDescription("Data Address Compare 3 Extended Mask Control High");
+			DAC4XMH::SetName("DAC4XMH"); DAC4XMH::SetDescription("Data Address Compare 4 Extended Mask Control High");
+			DAC3XM ::SetName("DAC3XM");  DAC3XM ::SetDescription("Data Address Compare 3 Extended Mask Control");
+			DAC4XM ::SetName("DAC4XM");  DAC4XM ::SetDescription("Data Address Compare 4 Extended Mask Control");
+			DAC3CFG::SetName("DAC3CFG"); DAC3CFG::SetDescription("Data Address Compare 3 Configuration");
+			DAC4CFG::SetName("DAC4CFG"); DAC4CFG::SetDescription("Data Address Compare 4 Configuration");
 		}
 	};
 
@@ -3846,14 +3846,14 @@ protected:
 	private:
 		void Init()
 		{
-			         this->SetName("dbcr8");            this->SetDescription("Debug Control Register 8");
-			DAC3US ::SetName("dac3us");  DAC3US ::SetDescription("Data Address Compare 3 User/Supervisor Mode");
-			DAC3ER ::SetName("dac3er");  DAC3ER ::SetDescription("Data Address Compare 3 Effective/Real Mode");
-			DAC4US ::SetName("dac4us");  DAC4US ::SetDescription("Data Address Compare 4 User/Supervisor Mode");
-			DAC4ER ::SetName("dac4er");  DAC4ER ::SetDescription("Data Address Compare 4 Effective/Real Mode");
-			DAC34M ::SetName("dac34m");  DAC34M ::SetDescription("Data Address Compare 3/4 Mode");
-			DAC3LNK::SetName("dac3lnk"); DAC3LNK::SetDescription("Data Address Compare 3 Linked");
-			DAC4LNK::SetName("dac4lnk"); DAC4LNK::SetDescription("Data Address Compare 4 Linked");
+			         this->SetName("DBCR8");            this->SetDescription("Debug Control Register 8");
+			DAC3US ::SetName("DAC3US");  DAC3US ::SetDescription("Data Address Compare 3 User/Supervisor Mode");
+			DAC3ER ::SetName("DAC3ER");  DAC3ER ::SetDescription("Data Address Compare 3 Effective/Real Mode");
+			DAC4US ::SetName("DAC4US");  DAC4US ::SetDescription("Data Address Compare 4 User/Supervisor Mode");
+			DAC4ER ::SetName("DAC4ER");  DAC4ER ::SetDescription("Data Address Compare 4 Effective/Real Mode");
+			DAC34M ::SetName("DAC34M");  DAC34M ::SetDescription("Data Address Compare 3/4 Mode");
+			DAC3LNK::SetName("DAC3LNK"); DAC3LNK::SetDescription("Data Address Compare 3 Linked");
+			DAC4LNK::SetName("DAC4LNK"); DAC4LNK::SetDescription("Data Address Compare 4 Linked");
 		}
 	};
 
@@ -3870,7 +3870,7 @@ protected:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("ddear"); this->SetDescription("Debug Data Effective Address Register"); }
+		void Init() { this->SetName("DDEAR"); this->SetDescription("Debug Data Effective Address Register"); }
 	};
 	
 	// Data Value Compare 1 Upper
@@ -3884,7 +3884,7 @@ protected:
 		DVC1U(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
-		void Init() { this->SetName("dvc1u"); this->SetDescription("Data Value Compare 1 Upper"); }
+		void Init() { this->SetName("DVC1U"); this->SetDescription("Data Value Compare 1 Upper"); }
 	};
 
 	// Data Value Compare 2 Upper
@@ -3898,7 +3898,7 @@ protected:
 		DVC2U(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
-		void Init() { this->SetName("dvc2u"); this->SetDescription("Data Value Compare 2 Upper"); }
+		void Init() { this->SetName("DVC2U"); this->SetDescription("Data Value Compare 2 Upper"); }
 	};
 
 	// Debug Control Register 6
@@ -3926,15 +3926,15 @@ protected:
 	private:
 		void Init()
 		{
-			        this->SetName("dbcr6");          this->SetDescription("Debug Control Register 6");
-			IAC1XM::SetName("iac1xm"); IAC1XM::SetDescription("Instruction Address Compare 1 Extended Mask Control");
-			IAC2XM::SetName("iac2xm"); IAC2XM::SetDescription("Instruction Address Compare 2 Extended Mask Control");
-			IAC3XM::SetName("iac3xm"); IAC3XM::SetDescription("Instruction Address Compare 3 Extended Mask Control");
-			IAC4XM::SetName("iac4xm"); IAC4XM::SetDescription("Instruction Address Compare 4 Extended Mask Control");
-			IAC5XM::SetName("iac5xm"); IAC5XM::SetDescription("Instruction Address Compare 5 Extended Mask Control");
-			IAC6XM::SetName("iac6xm"); IAC6XM::SetDescription("Instruction Address Compare 6 Extended Mask Control");
-			IAC7XM::SetName("iac7xm"); IAC7XM::SetDescription("Instruction Address Compare 7 Extended Mask Control");
-			IAC8XM::SetName("iac8xm"); IAC8XM::SetDescription("Instruction Address Compare 8 Extended Mask Control");
+			        this->SetName("DBCR6");          this->SetDescription("Debug Control Register 6");
+			IAC1XM::SetName("IAC1XM"); IAC1XM::SetDescription("Instruction Address Compare 1 Extended Mask Control");
+			IAC2XM::SetName("IAC2XM"); IAC2XM::SetDescription("Instruction Address Compare 2 Extended Mask Control");
+			IAC3XM::SetName("IAC3XM"); IAC3XM::SetDescription("Instruction Address Compare 3 Extended Mask Control");
+			IAC4XM::SetName("IAC4XM"); IAC4XM::SetDescription("Instruction Address Compare 4 Extended Mask Control");
+			IAC5XM::SetName("IAC5XM"); IAC5XM::SetDescription("Instruction Address Compare 5 Extended Mask Control");
+			IAC6XM::SetName("IAC6XM"); IAC6XM::SetDescription("Instruction Address Compare 6 Extended Mask Control");
+			IAC7XM::SetName("IAC7XM"); IAC7XM::SetDescription("Instruction Address Compare 7 Extended Mask Control");
+			IAC8XM::SetName("IAC8XM"); IAC8XM::SetDescription("Instruction Address Compare 8 Extended Mask Control");
 		}
 	};
 
@@ -3956,8 +3956,8 @@ protected:
 	private:
 		void Init()
 		{
-			      this->SetName("l1csr2");       this->SetDescription("L1 Cache Control and Status Register 2");
-			STGC::SetName("stgc");   STGC::SetDescription("Store Gather Control");
+			      this->SetName("L1CSR2");       this->SetDescription("L1 Cache Control and Status Register 2");
+			STGC::SetName("STGC");   STGC::SetDescription("Store Gather Control");
 		}
 	};
 	
@@ -4003,32 +4003,32 @@ protected:
 	private:
 		void Init()
 		{
-			       this->SetName("mas0");         this->SetDescription("MPU Assist Register 0");
-			VALID ::SetName("valid"); VALID ::SetDescription("MPU Entry Valid");
-			IPROT ::SetName("iprot"); IPROT ::SetDescription("Invalidation Protect");
-			SEL   ::SetName("sel");   SEL   ::SetDescription("Selects MPU for access");
-			RO    ::SetName("ro");    RO    ::SetDescription("Read-Only");
-			DEBUG ::SetName("debug"); DEBUG ::SetDescription("Debug Control for Entry");
-			INST  ::SetName("inst");  INST  ::SetDescription("Instruction Entry");
-			SHD   ::SetName("shd");   SHD   ::SetDescription("Shared Entry Select");
-			ESEL  ::SetName("esel");  ESEL  ::SetDescription("Entry select for MPU");
-			UAMSK ::SetName("uamsk"); UAMSK ::SetDescription("Upper Address Mask Control");
-			UW    ::SetName("uw");    UW    ::SetDescription("User Mode Write Permission");
-			SW    ::SetName("sw");    SW    ::SetDescription("Supervisor Mode Write / Read Permission");
-			UX_UR ::SetName("ux_ur"); UX_UR ::SetDescription("User Mode Execute / Read Permission");
-			SX_SR ::SetName("sx_sr"); SX_SR ::SetDescription("Supervisor Mode Execute / Read Permission");
-			IOVR  ::SetName("iovr");  IOVR  ::SetDescription("Cache-Inihibit attribute Override");
-			GOVR  ::SetName("govr");  GOVR  ::SetDescription("G attribute Override");
-			VLE   ::SetName("vle");   VLE   ::SetDescription("PowerISA VLE");
-			VLE_RO::SetName("vle");   VLE_RO::SetDescription("PowerISA VLE");
-			W     ::SetName("w");     W     ::SetDescription("Write-through Required");
-			W_RO  ::SetName("w");     W_RO  ::SetDescription("Write-through Required");
-			I     ::SetName("i");     I     ::SetDescription("Cache Inhibited");
-			M     ::SetName("m");     M     ::SetDescription("Memory Coherence Required");
-			M_RO  ::SetName("m");     M_RO  ::SetDescription("Memory Coherence Required");
-			G     ::SetName("g");     G     ::SetDescription("Guarded");
-			E     ::SetName("e");     E     ::SetDescription("Endianness");
-			E_RO  ::SetName("e");     E_RO  ::SetDescription("Endianness");
+			       this->SetName("MAS0");         this->SetDescription("MPU Assist Register 0");
+			VALID ::SetName("VALID"); VALID ::SetDescription("MPU Entry Valid");
+			IPROT ::SetName("IPROT"); IPROT ::SetDescription("Invalidation Protect");
+			SEL   ::SetName("SEL");   SEL   ::SetDescription("Selects MPU for access");
+			RO    ::SetName("RO");    RO    ::SetDescription("Read-Only");
+			DEBUG ::SetName("DEBUG"); DEBUG ::SetDescription("Debug Control for Entry");
+			INST  ::SetName("INST");  INST  ::SetDescription("Instruction Entry");
+			SHD   ::SetName("SHD");   SHD   ::SetDescription("Shared Entry Select");
+			ESEL  ::SetName("ESEL");  ESEL  ::SetDescription("Entry select for MPU");
+			UAMSK ::SetName("UAMSK"); UAMSK ::SetDescription("Upper Address Mask Control");
+			UW    ::SetName("UW");    UW    ::SetDescription("User Mode Write Permission");
+			SW    ::SetName("SW");    SW    ::SetDescription("Supervisor Mode Write / Read Permission");
+			UX_UR ::SetName("UX_UR"); UX_UR ::SetDescription("User Mode Execute / Read Permission");
+			SX_SR ::SetName("SX_SR"); SX_SR ::SetDescription("Supervisor Mode Execute / Read Permission");
+			IOVR  ::SetName("IOVR");  IOVR  ::SetDescription("Cache-Inihibit attribute Override");
+			GOVR  ::SetName("GOVR");  GOVR  ::SetDescription("G attribute Override");
+			VLE   ::SetName("VLE");   VLE   ::SetDescription("PowerISA VLE");
+			VLE_RO::SetName("VLE");   VLE_RO::SetDescription("PowerISA VLE");
+			W     ::SetName("W");     W     ::SetDescription("Write-through Required");
+			W_RO  ::SetName("W");     W_RO  ::SetDescription("Write-through Required");
+			I     ::SetName("I");     I     ::SetDescription("Cache Inhibited");
+			M     ::SetName("M");     M     ::SetDescription("Memory Coherence Required");
+			M_RO  ::SetName("M");     M_RO  ::SetDescription("Memory Coherence Required");
+			G     ::SetName("G");     G     ::SetDescription("Guarded");
+			E     ::SetName("E");     E     ::SetDescription("Endianness");
+			E_RO  ::SetName("E");     E_RO  ::SetDescription("Endianness");
 		}
 	};
 	
@@ -4053,9 +4053,9 @@ protected:
 	private:
 		void Init()
 		{
-			        this->SetName("mas1");           this->SetDescription("MPU Assist Register 1");
-			TID   ::SetName("tid");    TID   ::SetDescription("Region ID bits");
-			TIDMSK::SetName("tidmsk"); TIDMSK::SetDescription("Region ID mask");
+			        this->SetName("MAS1");           this->SetDescription("MPU Assist Register 1");
+			TID   ::SetName("TID");    TID   ::SetDescription("Region ID bits");
+			TIDMSK::SetName("TIDMSK"); TIDMSK::SetDescription("Region ID mask");
 		}
 	};
 	
@@ -4079,8 +4079,8 @@ protected:
 	private:
 		void Init()
 		{
-			             this->SetName("mas2");                     this->SetDescription("MPU Assist Register 2");
-			UPPER_BOUND::SetName("upper_bound"); UPPER_BOUND::SetDescription("Upper bound of address range covered by entry");
+			             this->SetName("MAS2");                     this->SetDescription("MPU Assist Register 2");
+			UPPER_BOUND::SetName("UPPER_BOUND"); UPPER_BOUND::SetDescription("Upper bound of address range covered by entry");
 		}
 	};
 	
@@ -4104,8 +4104,8 @@ protected:
 	private:
 		void Init()
 		{
-			             this->SetName("mas3");                     this->SetDescription("MPU Assist Register 3");
-			LOWER_BOUND::SetName("lower_bound"); LOWER_BOUND::SetDescription("Lower bound of address range covered by entry");
+			             this->SetName("MAS3");                     this->SetDescription("MPU Assist Register 3");
+			LOWER_BOUND::SetName("LOWER_BOUND"); LOWER_BOUND::SetDescription("Lower bound of address range covered by entry");
 		}
 	};
 	
@@ -4122,7 +4122,7 @@ protected:
 		EDBRAC0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
-		void Init() { this->SetName("edbrac0"); this->SetDescription("External Debug Resource Allocation Control Register 0"); }
+		void Init() { this->SetName("EDBRAC0"); this->SetDescription("External Debug Resource Allocation Control Register 0"); }
 	};
 	
 	// MPU0 Configuration Register
@@ -4157,15 +4157,15 @@ protected:
 	private:
 		void Init()
 		{
-			         this->SetName("mpu0cfg");          this->SetDescription("MPU0 Configuration Register");
-			FASSOC ::SetName("fassoc");  FASSOC ::SetDescription("Fully Associative");
-			MINSIZE::SetName("minsize"); MINSIZE::SetDescription("Minimum Region Size");
-			MAXSIZE::SetName("maxsize"); MAXSIZE::SetDescription("Maximum Region Size");
-			IPROT  ::SetName("iprot");   IPROT  ::SetDescription("Invalidate Protect Capability");
-			UAMSKA ::SetName("uamska");  UAMSKA ::SetDescription("Upper Address Masking Availability");
-			SHENTRY::SetName("shentry"); SHENTRY::SetDescription("Number of Shared (configurable for I or D) Entries");
-			DENTRY ::SetName("dentry");  DENTRY ::SetDescription("Number of Data Entries");
-			IENTRY ::SetName("ientry");  IENTRY ::SetDescription("Number of Instruction Entries");
+			         this->SetName("MPU0CFG");          this->SetDescription("MPU0 Configuration Register");
+			FASSOC ::SetName("FASSOC");  FASSOC ::SetDescription("Fully Associative");
+			MINSIZE::SetName("MINSIZE"); MINSIZE::SetDescription("Minimum Region Size");
+			MAXSIZE::SetName("MAXSIZE"); MAXSIZE::SetDescription("Maximum Region Size");
+			IPROT  ::SetName("IPROT");   IPROT  ::SetDescription("Invalidate Protect Capability");
+			UAMSKA ::SetName("UAMSKA");  UAMSKA ::SetDescription("Upper Address Masking Availability");
+			SHENTRY::SetName("SHENTRY"); SHENTRY::SetDescription("Number of Shared (configurable for I or D) Entries");
+			DENTRY ::SetName("DENTRY");  DENTRY ::SetDescription("Number of Data Entries");
+			IENTRY ::SetName("IENTRY");  IENTRY ::SetDescription("Number of Instruction Entries");
 		}
 	};
 
@@ -4190,11 +4190,11 @@ protected:
 	private:
 		void Init()
 		{
-			                this->SetName("dmemcfg0");                       this->SetDescription("DMEM Configuration Register 0");
-			DMEM_BASE_ADDR::SetName("dmem_base_addr"); DMEM_BASE_ADDR::SetDescription("DMEM BASE ADDRESS (CPU Port)");
-			DECUA         ::SetName("decua");          DECUA         ::SetDescription("DMEM Error Correction Update Available");
-			DECA          ::SetName("deca");           DECA          ::SetDescription("DMEM Error Correction Available");
-			DMSIZE        ::SetName("dmsize");         DMSIZE        ::SetDescription("DMEM Size");
+			                this->SetName("DMEMCFG0");                       this->SetDescription("DMEM Configuration Register 0");
+			DMEM_BASE_ADDR::SetName("DMEM_BASE_ADDR"); DMEM_BASE_ADDR::SetDescription("DMEM BASE ADDRESS (CPU Port)");
+			DECUA         ::SetName("DECUA");          DECUA         ::SetDescription("DMEM Error Correction Update Available");
+			DECA          ::SetName("DECA");           DECA          ::SetDescription("DMEM Error Correction Available");
+			DMSIZE        ::SetName("DMSIZE");         DMSIZE        ::SetDescription("DMEM Size");
 		}
 	};
 
@@ -4219,11 +4219,11 @@ protected:
 	private:
 		void Init()
 		{
-			                this->SetName("imemcfg0");                       this->SetDescription("IMEM Configuration Register 0");
-			IMEM_BASE_ADDR::SetName("imem_base_addr"); IMEM_BASE_ADDR::SetDescription("IMEM BASE ADDRESS (CPU Port)");
-			IECUA         ::SetName("iecua");          IECUA         ::SetDescription("IMEM Error Correction Update Available");
-			IECA          ::SetName("ieca");           IECA          ::SetDescription("IMEM Error Correction Available");
-			IMSIZE        ::SetName("imsize");         IMSIZE        ::SetDescription("IMEM Size");
+			                this->SetName("IMEMCFG0");                       this->SetDescription("IMEM Configuration Register 0");
+			IMEM_BASE_ADDR::SetName("IMEM_BASE_ADDR"); IMEM_BASE_ADDR::SetDescription("IMEM BASE ADDRESS (CPU Port)");
+			IECUA         ::SetName("IECUA");          IECUA         ::SetDescription("IMEM Error Correction Update Available");
+			IECA          ::SetName("IECA");           IECA          ::SetDescription("IMEM Error Correction Available");
+			IMSIZE        ::SetName("IMSIZE");         IMSIZE        ::SetDescription("IMEM Size");
 		}
 	};
 
@@ -4278,7 +4278,7 @@ protected:
 			this->cpu->RegisterSLR(SLR_NUM, this);
 
 			std::stringstream name_sstr;
-			name_sstr << "inv" << INV_NUM;
+			name_sstr << "INV" << INV_NUM;
 			
 			std::stringstream desc_sstr;
 			desc_sstr << "Instruction Cache Normal Victim Register " << INV_NUM;
@@ -4313,7 +4313,7 @@ protected:
 		void Init()
 		{
 			std::stringstream name_sstr;
-			name_sstr << "itv" << ITV_NUM;
+			name_sstr << "ITV" << ITV_NUM;
 			
 			std::stringstream desc_sstr;
 			desc_sstr << "Instruction Cache Transient Victim Register " << ITV_NUM;
@@ -4354,18 +4354,18 @@ protected:
 	private:
 		void Init()
 		{
-			this->SetName("ccr1"); this->SetDescription("Core Configuration Register 1");
+			this->SetName("CCR1"); this->SetDescription("Core Configuration Register 1");
 			
-			ICDPEI::SetName("icdpei"); ICDPEI::SetDescription("Instruction Cache Data Parity Error Insert");
-			ICTPEI::SetName("ictpei"); ICTPEI::SetDescription("Instruction Cache Tag Parity Error Insert");
-			DCTPEI::SetName("dctpei"); DCTPEI::SetDescription("Data Cache Tag Parity Error Insert");
-			DCDPEI::SetName("dcdpei"); DCDPEI::SetDescription("Data Cache Data Parity Error Insert");
-			DCUPEI::SetName("dcupei"); DCUPEI::SetDescription("Data Cache U-bit Parity Error Insert");
-			DCMPEI::SetName("dcmpei"); DCMPEI::SetDescription("Data Cache Modified-bit Parity Error Insert");
-			FCOM  ::SetName("fcom");   FCOM  ::SetDescription("Force Cache Operation Miss");
-			MMUPEI::SetName("mmupei"); MMUPEI::SetDescription("Memory Management Unit Parity Error Insert");
-			FFF   ::SetName("fff");    FFF   ::SetDescription("Force Full-line Flush");
-			TCS   ::SetName("tcs");    TCS   ::SetDescription("Timer Clock Select");
+			ICDPEI::SetName("ICDPEI"); ICDPEI::SetDescription("Instruction Cache Data Parity Error Insert");
+			ICTPEI::SetName("ICTPEI"); ICTPEI::SetDescription("Instruction Cache Tag Parity Error Insert");
+			DCTPEI::SetName("DCTPEI"); DCTPEI::SetDescription("Data Cache Tag Parity Error Insert");
+			DCDPEI::SetName("DCDPEI"); DCDPEI::SetDescription("Data Cache Data Parity Error Insert");
+			DCUPEI::SetName("DCUPEI"); DCUPEI::SetDescription("Data Cache U-bit Parity Error Insert");
+			DCMPEI::SetName("DCMPEI"); DCMPEI::SetDescription("Data Cache Modified-bit Parity Error Insert");
+			FCOM  ::SetName("FCOM");   FCOM  ::SetDescription("Force Cache Operation Miss");
+			MMUPEI::SetName("MMUPEI"); MMUPEI::SetDescription("Memory Management Unit Parity Error Insert");
+			FFF   ::SetName("FFF");    FFF   ::SetDescription("Force Full-line Flush");
+			TCS   ::SetName("TCS");    TCS   ::SetDescription("Timer Clock Select");
 		}
 	};
 
@@ -4391,7 +4391,7 @@ protected:
 			this->cpu->RegisterSLR(912 + DNV_NUM, this);
 			
 			std::stringstream name_sstr;
-			name_sstr << "dnv" << DNV_NUM;
+			name_sstr << "DNV" << DNV_NUM;
 			
 			std::stringstream desc_sstr;
 			desc_sstr << "Data Cache Normal Victim Register " << DNV_NUM;
@@ -4426,7 +4426,7 @@ protected:
 		void Init()
 		{
 			std::stringstream name_sstr;
-			name_sstr << "dtv" << DTV_NUM;
+			name_sstr << "DTV" << DTV_NUM;
 			
 			std::stringstream desc_sstr;
 			desc_sstr << "Data Cache Transient Victim Register " << DTV_NUM;
@@ -4460,7 +4460,7 @@ protected:
 	private:
 		void Init()
 		{
-			this->SetName("dvlim");  this->SetDescription("Data Cache Victim Limit");
+			this->SetName("DVLIM");  this->SetDescription("Data Cache Victim Limit");
 			
 			TFLOOR  ::SetName("TFLOOR");   TFLOOR  ::SetDescription("Transient Floor");
 			TCEILING::SetName("TCEILING"); TCEILING::SetDescription("Transient Ceiling");
@@ -4487,7 +4487,7 @@ protected:
 	private:
 		void Init()
 		{
-			this->SetName("ivlim");  this->SetDescription("Instruction Cache Victim Limit");
+			this->SetName("IVLIM");  this->SetDescription("Instruction Cache Victim Limit");
 			
 			TFLOOR  ::SetName("TFLOOR");   TFLOOR  ::SetDescription("Transient Floor");
 			TCEILING::SetName("TCEILING"); TCEILING::SetDescription("Transient Ceiling");
@@ -4517,7 +4517,7 @@ protected:
 	private:
 		void Init()
 		{
-			this->SetName("rstcfg");  this->SetDescription("Reset Configuration");
+			this->SetName("RSTCFG");  this->SetDescription("Reset Configuration");
 			
 			U0  ::SetName("U0");   U0  ::SetDescription("U0 Storage Attribute");
 			U1  ::SetName("U1");   U1  ::SetDescription("U1 Storage Attribute");
@@ -4553,7 +4553,7 @@ protected:
 	private:
 		void Init()
 		{
-			this->SetName("dcdbtrl");  this->SetDescription("Data Cache Debug Tag Register Low");
+			this->SetName("DCDBTRL");  this->SetDescription("Data Cache Debug Tag Register Low");
 			
 			UPAR::SetName("UPAR"); UPAR::SetDescription("U bit parity");
 			TPAR::SetName("TPAR"); TPAR::SetDescription("Tag parity");
@@ -4586,7 +4586,7 @@ protected:
 	private:
 		void Init()
 		{
-			this->SetName("dcdbtrh");  this->SetDescription("Data Cache Debug Tag Register High");
+			this->SetName("DCDBTRH");  this->SetDescription("Data Cache Debug Tag Register High");
 			
 			TRA ::SetName("TRA");  TRA ::SetDescription("Tag Real Address");
 			V   ::SetName("V");    V   ::SetDescription("Cache Line Valid");
@@ -4613,7 +4613,7 @@ protected:
 	private:
 		void Init()
 		{
-			this->SetName("icdbtrl");  this->SetDescription("Instruction Cache Debug Tag Register Low");
+			this->SetName("ICDBTRL");  this->SetDescription("Instruction Cache Debug Tag Register Low");
 			
 			TS ::SetName("TS");  TS ::SetDescription("Translation Space");
 			TD ::SetName("TD");  TD ::SetDescription("Translation ID (TID) Disable");
@@ -4641,7 +4641,7 @@ protected:
 	private:
 		void Init()
 		{
-			this->SetName("icdbtrh");  this->SetDescription("Instruction Cache Debug Tag Register High");
+			this->SetName("ICDBTRH");  this->SetDescription("Instruction Cache Debug Tag Register High");
 			
 			TEA  ::SetName("TEA");   TEA  ::SetDescription("Tag Effective Address");
 			V    ::SetName("V");     V    ::SetDescription("Cache Line Valid");
@@ -4711,18 +4711,18 @@ protected:
 	private:
 		void Init()
 		{
-			this->SetName("ccr0");  this->SetDescription("Core Configuration Register 0");
+			this->SetName("CCR0");  this->SetDescription("Core Configuration Register 0");
 			
-			PRE   ::SetName("pre");    PRE   ::SetDescription("Parity Recovery Enable");
-			CRPE  ::SetName("crpe");   CRPE  ::SetDescription("Cache Read Parity Enable");
-			DSTG  ::SetName("dstg");   DSTG  ::SetDescription("Disable Store Gathering");
-			DAPUIB::SetName("dapuib"); DAPUIB::SetDescription("Disable APU Instruction Broadcast");
-			DTB   ::SetName("dtb");    DTB   ::SetDescription("Disable Trace Broadcast");
-			GICBT ::SetName("gicbt");  GICBT ::SetDescription("Guaranteed Instruction Cache Block Touch");
-			GDCBT ::SetName("gdcbt");  GDCBT ::SetDescription("Guaranteed Data Cache Block Touch");
-			FLSTA ::SetName("flsta");  FLSTA ::SetDescription("Force Load/Store Alignment");
-			ICSLC ::SetName("icslc");  ICSLC ::SetDescription("Instruction Cache Speculative Line Count");
-			ICSLT ::SetName("icslt");  ICSLT ::SetDescription("Instruction Cache Speculative Live Threshold");
+			PRE   ::SetName("PRE");    PRE   ::SetDescription("Parity Recovery Enable");
+			CRPE  ::SetName("CRPE");   CRPE  ::SetDescription("Cache Read Parity Enable");
+			DSTG  ::SetName("DSTG");   DSTG  ::SetDescription("Disable Store Gathering");
+			DAPUIB::SetName("DAPUIB"); DAPUIB::SetDescription("Disable APU Instruction Broadcast");
+			DTB   ::SetName("DTB");    DTB   ::SetDescription("Disable Trace Broadcast");
+			GICBT ::SetName("GICBT");  GICBT ::SetDescription("Guaranteed Instruction Cache Block Touch");
+			GDCBT ::SetName("GDCBT");  GDCBT ::SetDescription("Guaranteed Data Cache Block Touch");
+			FLSTA ::SetName("FLSTA");  FLSTA ::SetDescription("Force Load/Store Alignment");
+			ICSLC ::SetName("ICSLC");  ICSLC ::SetDescription("Instruction Cache Speculative Line Count");
+			ICSLT ::SetName("ICSLT");  ICSLT ::SetDescription("Instruction Cache Speculative Live Threshold");
 		}
 	};
 
@@ -4748,10 +4748,10 @@ protected:
 	private:
 		void Init()
 		{
-			      this->SetName("l1finv1");    this->SetDescription("L1 Flush and Invalidate Control Register 1");
-			CWAY::SetName("cway"); CWAY::SetDescription("Cache Way");
-			CSET::SetName("cset"); CSET::SetDescription("Cache Set");
-			CCMD::SetName("ccmd"); CCMD::SetDescription("Cache Command");
+			      this->SetName("L1FINV1");    this->SetDescription("L1 Flush and Invalidate Control Register 1");
+			CWAY::SetName("CWAY"); CWAY::SetDescription("Cache Way");
+			CSET::SetName("CSET"); CSET::SetDescription("Cache Set");
+			CCMD::SetName("CCMD"); CCMD::SetDescription("Cache Command");
 		}
 	};
 	
@@ -4766,7 +4766,7 @@ protected:
 		DEVENT(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
-		void Init() { this->SetName("devent"); this->SetDescription("Debug Event Register"); }
+		void Init() { this->SetName("DEVENT"); this->SetDescription("Debug Event Register"); }
 	};
 	
 	// Instruction Cache Debug Data Register
@@ -4780,7 +4780,7 @@ protected:
 		ICDBDR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
-		void Init() { this->SetName("icdbdr"); this->SetDescription("Instruction Cache Debug Data Register"); }
+		void Init() { this->SetName("ICDBDR"); this->SetDescription("Instruction Cache Debug Data Register"); }
 	};
 	
 	// System Information
@@ -4794,7 +4794,7 @@ protected:
 		SIR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
-		void Init() { this->SetName("sir"); this->SetDescription("System Information"); }
+		void Init() { this->SetName("SIR"); this->SetDescription("System Information"); }
 	};
 
 	// Hardware Implementation Dependent Register 0
@@ -4822,15 +4822,15 @@ protected:
 	private:
 		void Init()
 		{      
-			   this->SetName("hid0");       this->SetDescription("Hardware Implementation Dependent Register 0");
-			EMCP   ::SetName("emcp");    EMCP   ::SetDescription("Enable machine check pin (p_mcp_b)");
-			ICR    ::SetName("icr");     ICR    ::SetDescription("Input Inputs Clear Reservation");
-			NHR    ::SetName("nhr");     NHR    ::SetDescription("Not hardware reset");
-			DCLREE ::SetName("dclree");  DCLREE ::SetDescription("Debug Interrupt Clears MSR[EE]");
-			DCLRCE ::SetName("dclrce");  DCLRCE ::SetDescription("Debug Interrupt Clears MSR[CE]");
-			CICLRDE::SetName("ciclrde"); CICLRDE::SetDescription("Critical Interrupt Clears MSR[DE]");
-			MCCLRDE::SetName("mcclrde"); MCCLRDE::SetDescription("Machine Check Interrupt Clears MSR[DE]");
-			NOPTI  ::SetName("nopti");   NOPTI  ::SetDescription("No-op Touch Instructions");
+			   this->SetName("HID0");       this->SetDescription("Hardware Implementation Dependent Register 0");
+			EMCP   ::SetName("EMCP");    EMCP   ::SetDescription("Enable machine check pin (p_mcp_b)");
+			ICR    ::SetName("ICR");     ICR    ::SetDescription("Input Inputs Clear Reservation");
+			NHR    ::SetName("NHR");     NHR    ::SetDescription("Not hardware reset");
+			DCLREE ::SetName("DCLREE");  DCLREE ::SetDescription("Debug Interrupt Clears MSR[EE]");
+			DCLRCE ::SetName("DCLRCE");  DCLRCE ::SetDescription("Debug Interrupt Clears MSR[CE]");
+			CICLRDE::SetName("CICLRDE"); CICLRDE::SetDescription("Critical Interrupt Clears MSR[DE]");
+			MCCLRDE::SetName("MCCLRDE"); MCCLRDE::SetDescription("Machine Check Interrupt Clears MSR[DE]");
+			NOPTI  ::SetName("NOPTI");   NOPTI  ::SetDescription("No-op Touch Instructions");
 		}
 	};
 
@@ -4854,10 +4854,10 @@ protected:
 	private:
 		void Init()
 		{
-			        this->SetName("hid1");           this->SetDescription("Hardware Implementation Dependent Register 1");
-			HP_NOR::SetName("hp_nor"); HP_NOR::SetDescription("High priority elevation for normal and external interrupts");
-			HP_NMI::SetName("hp_nmi"); HP_NMI::SetDescription("High priority elevation for NMI and critical interrupts");
-			ATS   ::SetName("ats");    ATS   ::SetDescription("Atomic status");
+			        this->SetName("HID1");           this->SetDescription("Hardware Implementation Dependent Register 1");
+			HP_NOR::SetName("HP_NOR"); HP_NOR::SetDescription("High priority elevation for normal and external interrupts");
+			HP_NMI::SetName("HP_NMI"); HP_NMI::SetDescription("High priority elevation for NMI and critical interrupts");
+			ATS   ::SetName("ATS");    ATS   ::SetDescription("Atomic status");
 		}
 	};
 
@@ -4891,18 +4891,18 @@ protected:
 	private:
 		void Init()
 		{
-			         this->SetName("l1csr0");           this->SetDescription("L1 Cache Control and Status Register 0");
-			WID    ::SetName("wid");     WID    ::SetDescription("Way Instruction Disable");
-			WDD    ::SetName("wdd");     WDD    ::SetDescription("Way Data Disable");
-			DCWA   ::SetName("dcwa");    DCWA   ::SetDescription("Data Cache Write Allocation Policy");
-			DCECE  ::SetName("dcece");   DCECE  ::SetDescription("Data Cache Error Checking Enable");
-			DCEI   ::SetName("dcei");    DCEI   ::SetDescription("Data Cache Error Injection");
-			DCLOC  ::SetName("dcloc");   DCLOC  ::SetDescription("Data Cache Lockout Control");
-			DCEA   ::SetName("dcea");    DCEA   ::SetDescription("Data Cache Error Action");
-			DCLOINV::SetName("dcloinv"); DCLOINV::SetDescription("Data Cache Lockout Indicator Invalidate");
-			DCABT  ::SetName("dcabt");   DCABT  ::SetDescription("Data Cache Operation Aborted");
-			DCINV  ::SetName("dcinv");   DCINV  ::SetDescription("Data Cache Invalidate");
-			DCE    ::SetName("dce");     DCE    ::SetDescription("Data Cache Enable");
+			         this->SetName("L1CSR0");           this->SetDescription("L1 Cache Control and Status Register 0");
+			WID    ::SetName("WID");     WID    ::SetDescription("Way Instruction Disable");
+			WDD    ::SetName("WDD");     WDD    ::SetDescription("Way Data Disable");
+			DCWA   ::SetName("DCWA");    DCWA   ::SetDescription("Data Cache Write Allocation Policy");
+			DCECE  ::SetName("DCECE");   DCECE  ::SetDescription("Data Cache Error Checking Enable");
+			DCEI   ::SetName("DCEI");    DCEI   ::SetDescription("Data Cache Error Injection");
+			DCLOC  ::SetName("DCLOC");   DCLOC  ::SetDescription("Data Cache Lockout Control");
+			DCEA   ::SetName("DCEA");    DCEA   ::SetDescription("Data Cache Error Action");
+			DCLOINV::SetName("DCLOINV"); DCLOINV::SetDescription("Data Cache Lockout Indicator Invalidate");
+			DCABT  ::SetName("DCABT");   DCABT  ::SetDescription("Data Cache Operation Aborted");
+			DCINV  ::SetName("DCINV");   DCINV  ::SetDescription("Data Cache Invalidate");
+			DCE    ::SetName("DCE");     DCE    ::SetDescription("Data Cache Enable");
 		}
 	};
 
@@ -4933,15 +4933,15 @@ protected:
 	private:
 		void Init()
 		{
-			         this->SetName("l1csr1");           this->SetDescription("L1 Cache Control and Status Register 1");
-			ICECE  ::SetName("icece");   ICECE  ::SetDescription("Instruction Cache Error Checking Enable");
-			ICEI   ::SetName("icei");    ICEI   ::SetDescription("Instruction Cache Error Injection Enable");
-			ICLOC  ::SetName("icloc");   ICLOC  ::SetDescription("Instruction Cache Lockout Control");
-			ICEA   ::SetName("icea");    ICEA   ::SetDescription("Instruction Cache Error Action");
-			ICLOINV::SetName("icloinv"); ICLOINV::SetDescription("Instruction Cache Lockout Indicator Invalidate");
-			ICABT  ::SetName("icabt");   ICABT  ::SetDescription("Instruction Cache Operation Aborted");
-			ICINV  ::SetName("icinv");   ICINV  ::SetDescription("Instruction Cache Invalidate");
-			ICE    ::SetName("ice");     ICE    ::SetDescription("Instruction Cache Enable");
+			         this->SetName("L1CSR1");           this->SetDescription("L1 Cache Control and Status Register 1");
+			ICECE  ::SetName("ICECE");   ICECE  ::SetDescription("Instruction Cache Error Checking Enable");
+			ICEI   ::SetName("ICEI");    ICEI   ::SetDescription("Instruction Cache Error Injection Enable");
+			ICLOC  ::SetName("ICLOC");   ICLOC  ::SetDescription("Instruction Cache Lockout Control");
+			ICEA   ::SetName("ICEA");    ICEA   ::SetDescription("Instruction Cache Error Action");
+			ICLOINV::SetName("ICLOINV"); ICLOINV::SetDescription("Instruction Cache Lockout Indicator Invalidate");
+			ICABT  ::SetName("ICABT");   ICABT  ::SetDescription("Instruction Cache Operation Aborted");
+			ICINV  ::SetName("ICINV");   ICINV  ::SetDescription("Instruction Cache Invalidate");
+			ICE    ::SetName("ICE");     ICE    ::SetDescription("Instruction Cache Enable");
 		}
 	};
 	
@@ -4956,7 +4956,7 @@ protected:
 		DBDR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
-		void Init() { this->SetName("dbdr"); this->SetDescription("Debug Data Register"); }
+		void Init() { this->SetName("DBDR"); this->SetDescription("Debug Data Register"); }
 	};
 
 	// Branch Unit Control and Status Register
@@ -4982,11 +4982,11 @@ protected:
 	private:
 		void Init()
 		{
-			        this->SetName("bucsr");          this->SetDescription("Branch Unit Control and Status Register");
-			BBFI  ::SetName("bbfi");   BBFI  ::SetDescription("Branch target buffer flash Invalidate");
-			BALLOC::SetName("balloc"); BALLOC::SetDescription("Branch Target Buffer Allocation Control");
-			BPRED ::SetName("bpred");  BPRED ::SetDescription("Branch Prediction Control (Static)");
-			BPEN  ::SetName("bpen");   BPEN  ::SetDescription("Branch target buffer prediction enable");
+			        this->SetName("BUCSR");          this->SetDescription("Branch Unit Control and Status Register");
+			BBFI  ::SetName("BBFI");   BBFI  ::SetDescription("Branch target buffer flash Invalidate");
+			BALLOC::SetName("BALLOC"); BALLOC::SetDescription("Branch Target Buffer Allocation Control");
+			BPRED ::SetName("BPRED");  BPRED ::SetDescription("Branch Prediction Control (Static)");
+			BPEN  ::SetName("BPEN");   BPEN  ::SetDescription("Branch target buffer prediction enable");
 		}
 	};
 
@@ -5021,19 +5021,19 @@ protected:
 	private:
 		void Init()
 		{
-			        this->SetName("mpu0csr0");       this->SetDescription("MPU0 Control and Status Register 0");
-			BYPSR ::SetName("bypsr");  BYPSR ::SetDescription("Bypass MPU protection for Supervisor Read accesses");
-			BYPSW ::SetName("bypsw");  BYPSW ::SetDescription("Bypass MPU protection for Supervisor Write accesses");
-			BYPSX ::SetName("bypsx");  BYPSX ::SetDescription("Bypass MPU protection for Supervisor Instruction accesses");
-			BYPUR ::SetName("bypur");  BYPUR ::SetDescription("Bypass MPU protection for User Read accesses");
-			BYPUW ::SetName("bypuw");  BYPUW ::SetDescription("Bypass MPU protection for User Write accesses");
-			BYPUX ::SetName("bypux");  BYPUX ::SetDescription("Bypass MPU protection for User Instruction accesses");
-			DRDEND::SetName("drdend"); DRDEND::SetDescription("Data Read Debug Enable");
-			DWDEN ::SetName("dwden");  DWDEN ::SetDescription("Data Write Debug Enable");
-			IDEN  ::SetName("iden");   IDEN  ::SetDescription("Instruction Debug Enable");
-			TIDCTL::SetName("tidctl"); TIDCTL::SetDescription("TID usage control");
-			MPUFI ::SetName("mpufi");  MPUFI ::SetDescription("MPU flash invalidate");
-			MPUEN ::SetName("mpuen");  MPUEN ::SetDescription("MPU Enable");
+			        this->SetName("MPU0CSR0");       this->SetDescription("MPU0 Control and Status Register 0");
+			BYPSR ::SetName("BYPSR");  BYPSR ::SetDescription("Bypass MPU protection for Supervisor Read accesses");
+			BYPSW ::SetName("BYPSW");  BYPSW ::SetDescription("Bypass MPU protection for Supervisor Write accesses");
+			BYPSX ::SetName("BYPSX");  BYPSX ::SetDescription("Bypass MPU protection for Supervisor Instruction accesses");
+			BYPUR ::SetName("BYPUR");  BYPUR ::SetDescription("Bypass MPU protection for User Read accesses");
+			BYPUW ::SetName("BYPUW");  BYPUW ::SetDescription("Bypass MPU protection for User Write accesses");
+			BYPUX ::SetName("BYPUX");  BYPUX ::SetDescription("Bypass MPU protection for User Instruction accesses");
+			DRDEND::SetName("DRDEND"); DRDEND::SetDescription("Data Read Debug Enable");
+			DWDEN ::SetName("DWDEN");  DWDEN ::SetDescription("Data Write Debug Enable");
+			IDEN  ::SetName("IDEN");   IDEN  ::SetDescription("Instruction Debug Enable");
+			TIDCTL::SetName("TIDCTL"); TIDCTL::SetDescription("TID usage control");
+			MPUFI ::SetName("MPUFI");  MPUFI ::SetDescription("MPU flash invalidate");
+			MPUEN ::SetName("MPUEN");  MPUEN ::SetDescription("MPU Enable");
 		}
 	};
 
@@ -5059,12 +5059,12 @@ protected:
 	private:
 		void Init()
 		{
-			         this->SetName("mmucfg");           this->SetDescription("MMU/MPU Configuration Register");
-			RASIZE ::SetName("rasize");  RASIZE ::SetDescription("Number of Bits of Real Address supported");
-			PIDSIZE::SetName("pidsize"); PIDSIZE::SetDescription("PID Register Size");
-			NMPUS  ::SetName("nmpus");   NMPUS  ::SetDescription("Number of MPUs");
-			NTLBS  ::SetName("ntlbs");   NTLBS  ::SetDescription("Number of TLBs");
-			MAVN   ::SetName("mavn");    MAVN   ::SetDescription("MMU Architecture Version Number");
+			         this->SetName("MMUCFG");           this->SetDescription("MMU/MPU Configuration Register");
+			RASIZE ::SetName("RASIZE");  RASIZE ::SetDescription("Number of Bits of Real Address supported");
+			PIDSIZE::SetName("PIDSIZE"); PIDSIZE::SetDescription("PID Register Size");
+			NMPUS  ::SetName("NMPUS");   NMPUS  ::SetDescription("Number of MPUs");
+			NTLBS  ::SetName("NTLBS");   NTLBS  ::SetDescription("Number of TLBs");
+			MAVN   ::SetName("MAVN");    MAVN   ::SetDescription("MMU Architecture Version Number");
 		}
 	};
 
@@ -5090,10 +5090,10 @@ protected:
 	private:
 		void Init()
 		{
-			      this->SetName("l1finv0");    this->SetDescription("L1 Flush and Invalidate Control Register 0");
-			CWAY::SetName("cway"); CWAY::SetDescription("CWAY");
-			CSET::SetName("cset"); CSET::SetDescription("CSET");
-			CCMD::SetName("ccmd"); CCMD::SetDescription("CCMD");
+			      this->SetName("L1FINV0");    this->SetDescription("L1 Flush and Invalidate Control Register 0");
+			CWAY::SetName("CWAY"); CWAY::SetDescription("CWAY");
+			CSET::SetName("CSET"); CSET::SetDescription("CSET");
+			CCMD::SetName("CCMD"); CCMD::SetDescription("CCMD");
 		}
 	};
 
@@ -5115,7 +5115,7 @@ protected:
 	private:
 		void Init()
 		{
-			this->SetName("svr");
+			this->SetName("SVR");
 			this->SetDescription("System Version Register");
 			System_Version::SetName("system_version");
 		}
@@ -5152,19 +5152,19 @@ protected:
 	private:
 		void Init()
 		{
-			                this->SetName("dmemctl0");                       this->SetDescription("DMEM Control Register 0");
-			DMEM_BASE_ADDR::SetName("dmem_base_addr"); DMEM_BASE_ADDR::SetDescription("DMEM BASE ADDRESS Field (CPU Port)");
-			DBYPCB        ::SetName("dbypcb");         DBYPCB        ::SetDescription("DMEM Bypass Cache Bypass CPU accesses");
-			DBYPAT        ::SetName("dbypat");         DBYPAT        ::SetDescription("DMEM Bypass Atomic CPU accesses");
-			DBYPDEC       ::SetName("dbypdec");        DBYPDEC       ::SetDescription("DMEM Bypass Decorated CPU accesses");
-			DECUE         ::SetName("decue");          DECUE         ::SetDescription("DMEM Error Correction Update Enable");
-			DBAPD         ::SetName("dbapd");          DBAPD         ::SetDescription("DMEM Base Address Port Disable");
-			DPEIE         ::SetName("dpeie");          DPEIE         ::SetDescription("DMEM Processor Error Injection Enable");
-			DICWE         ::SetName("dicwe");          DICWE         ::SetDescription("DMEM Imprecise CPU Write Enable");
-			DSWCE         ::SetName("dswce");          DSWCE         ::SetDescription("DMEM Slave port Write Check/Correct Enable");
-			DDAUEC        ::SetName("ddauec");         DDAUEC        ::SetDescription("DMEM Disable Address Use in Error Check");
-			DCPECE        ::SetName("dcpece");         DCPECE        ::SetDescription("DMEM CPU Port ECC Enabled (CPU Port)");
-			DSECE         ::SetName("dsece");          DSECE         ::SetDescription("DMEM Slave port Error Checking Enable (Slave port)");
+			                this->SetName("DMEMCTL0");                       this->SetDescription("DMEM Control Register 0");
+			DMEM_BASE_ADDR::SetName("DMEM_BASE_ADDR"); DMEM_BASE_ADDR::SetDescription("DMEM BASE ADDRESS Field (CPU Port)");
+			DBYPCB        ::SetName("DBYPCB");         DBYPCB        ::SetDescription("DMEM Bypass Cache Bypass CPU accesses");
+			DBYPAT        ::SetName("DBYPAT");         DBYPAT        ::SetDescription("DMEM Bypass Atomic CPU accesses");
+			DBYPDEC       ::SetName("DBYPDEC");        DBYPDEC       ::SetDescription("DMEM Bypass Decorated CPU accesses");
+			DECUE         ::SetName("DECUE");          DECUE         ::SetDescription("DMEM Error Correction Update Enable");
+			DBAPD         ::SetName("DBAPD");          DBAPD         ::SetDescription("DMEM Base Address Port Disable");
+			DPEIE         ::SetName("DPEIE");          DPEIE         ::SetDescription("DMEM Processor Error Injection Enable");
+			DICWE         ::SetName("DICWE");          DICWE         ::SetDescription("DMEM Imprecise CPU Write Enable");
+			DSWCE         ::SetName("DSWCE");          DSWCE         ::SetDescription("DMEM Slave port Write Check/Correct Enable");
+			DDAUEC        ::SetName("DDAUEC");         DDAUEC        ::SetDescription("DMEM Disable Address Use in Error Check");
+			DCPECE        ::SetName("DCPECE");         DCPECE        ::SetDescription("DMEM CPU Port ECC Enabled (CPU Port)");
+			DSECE         ::SetName("DSECE");          DSECE         ::SetDescription("DMEM Slave port Error Checking Enable (Slave port)");
 		}
 	};
 	
@@ -5204,23 +5204,23 @@ protected:
 	private:
 		void Init()
 		{
-			        this->SetName("dmemctl1");       this->SetDescription("DMEM Control Register 1");
-			DSWAC3::SetName("dswac3"); DSWAC3::SetDescription("DMEM Supervisor Write Access Control for Quadrant 3");
-			DSWAC2::SetName("dswac2"); DSWAC2::SetDescription("DMEM Supervisor Write Access Control for Quadrant 2");
-			DSWAC1::SetName("dswac1"); DSWAC1::SetDescription("DMEM Supervisor Write Access Control for Quadrant 1");
-			DSWAC0::SetName("dswac0"); DSWAC0::SetDescription("DMEM Supervisor Write Access Control for Quadrant 0");
-			DSRAC3::SetName("dsrac3"); DSRAC3::SetDescription("DMEM Supervisor Read Access Control for Quadrant 3");
-			DSRAC2::SetName("dsrac2"); DSRAC2::SetDescription("DMEM Supervisor Read Access Control for Quadrant 2");
-			DSRAC1::SetName("dsrac1"); DSRAC1::SetDescription("DMEM Supervisor Read Access Control for Quadrant 1");
-			DSRAC0::SetName("dsrac0"); DSRAC0::SetDescription("DMEM Supervisor Read Access Control for Quadrant 0");
-			DUWAC3::SetName("duwac3"); DUWAC3::SetDescription("DMEM User Write Access Control for Quadrant 3");
-			DUWAC2::SetName("duwac2"); DUWAC2::SetDescription("DMEM User Write Access Control for Quadrant 2");
-			DUWAC1::SetName("duwac1"); DUWAC1::SetDescription("DMEM User Write Access Control for Quadrant 1");
-			DUWAC0::SetName("duwac0"); DUWAC0::SetDescription("DMEM User Write Access Control for Quadrant 0");
-			DURAC3::SetName("durac3"); DURAC3::SetDescription("DMEM User Read Access Control for Quadrant 3");
-			DURAC2::SetName("durac2"); DURAC2::SetDescription("DMEM User Read Access Control for Quadrant 2");
-			DURAC1::SetName("durac1"); DURAC1::SetDescription("DMEM User Read Access Control for Quadrant 1");
-			DURAC0::SetName("durac0"); DURAC0::SetDescription("DMEM User Read Access Control for Quadrant 0");
+			        this->SetName("DMEMCTL1");       this->SetDescription("DMEM Control Register 1");
+			DSWAC3::SetName("DSWAC3"); DSWAC3::SetDescription("DMEM Supervisor Write Access Control for Quadrant 3");
+			DSWAC2::SetName("DSWAC2"); DSWAC2::SetDescription("DMEM Supervisor Write Access Control for Quadrant 2");
+			DSWAC1::SetName("DSWAC1"); DSWAC1::SetDescription("DMEM Supervisor Write Access Control for Quadrant 1");
+			DSWAC0::SetName("DSWAC0"); DSWAC0::SetDescription("DMEM Supervisor Write Access Control for Quadrant 0");
+			DSRAC3::SetName("DSRAC3"); DSRAC3::SetDescription("DMEM Supervisor Read Access Control for Quadrant 3");
+			DSRAC2::SetName("DSRAC2"); DSRAC2::SetDescription("DMEM Supervisor Read Access Control for Quadrant 2");
+			DSRAC1::SetName("DSRAC1"); DSRAC1::SetDescription("DMEM Supervisor Read Access Control for Quadrant 1");
+			DSRAC0::SetName("DSRAC0"); DSRAC0::SetDescription("DMEM Supervisor Read Access Control for Quadrant 0");
+			DUWAC3::SetName("DUWAC3"); DUWAC3::SetDescription("DMEM User Write Access Control for Quadrant 3");
+			DUWAC2::SetName("DUWAC2"); DUWAC2::SetDescription("DMEM User Write Access Control for Quadrant 2");
+			DUWAC1::SetName("DUWAC1"); DUWAC1::SetDescription("DMEM User Write Access Control for Quadrant 1");
+			DUWAC0::SetName("DUWAC0"); DUWAC0::SetDescription("DMEM User Write Access Control for Quadrant 0");
+			DURAC3::SetName("DURAC3"); DURAC3::SetDescription("DMEM User Read Access Control for Quadrant 3");
+			DURAC2::SetName("DURAC2"); DURAC2::SetDescription("DMEM User Read Access Control for Quadrant 2");
+			DURAC1::SetName("DURAC1"); DURAC1::SetDescription("DMEM User Read Access Control for Quadrant 1");
+			DURAC0::SetName("DURAC0"); DURAC0::SetDescription("DMEM User Read Access Control for Quadrant 0");
 		}
 	};
 	
@@ -5248,14 +5248,14 @@ protected:
 	private:
 		void Init()
 		{
-			                this->SetName("imemctl0");                       this->SetDescription("IMEM Control Register 0");
-			IMEM_BASE_ADDR::SetName("imem_base_addr"); IMEM_BASE_ADDR::SetDescription("IMEM BASE ADDRESS Field (CPU Port)");
-			IECUE         ::SetName("iecue");          IECUE         ::SetDescription("IMEM Error Correction Update Enable");
-			IBAPD         ::SetName("ibapd");          IBAPD         ::SetDescription("IMEM Base Address Port Disable");
-			ISWCE         ::SetName("iswce");          ISWCE         ::SetDescription("IMEM Slave port Write Check/Correct Enable");
-			IDAUEC        ::SetName("idauec");         IDAUEC        ::SetDescription("IMEM Disable Address Use in Error Check");
-			ICPECE        ::SetName("icpece");         ICPECE        ::SetDescription("IMEM CPU Port ECC Enable (CPU Port)");
-			ISECE         ::SetName("isece");          ISECE         ::SetDescription("IMEM Slave port Error Checking Enable (Slave port)");
+			                this->SetName("IMEMCTL0");                       this->SetDescription("IMEM Control Register 0");
+			IMEM_BASE_ADDR::SetName("IMEM_BASE_ADDR"); IMEM_BASE_ADDR::SetDescription("IMEM BASE ADDRESS Field (CPU Port)");
+			IECUE         ::SetName("IECUE");          IECUE         ::SetDescription("IMEM Error Correction Update Enable");
+			IBAPD         ::SetName("IBAPD");          IBAPD         ::SetDescription("IMEM Base Address Port Disable");
+			ISWCE         ::SetName("ISWCE");          ISWCE         ::SetDescription("IMEM Slave port Write Check/Correct Enable");
+			IDAUEC        ::SetName("IDAUEC");         IDAUEC        ::SetDescription("IMEM Disable Address Use in Error Check");
+			ICPECE        ::SetName("ICPECE");         ICPECE        ::SetDescription("IMEM CPU Port ECC Enable (CPU Port)");
+			ISECE         ::SetName("ISECE");          ISECE         ::SetDescription("IMEM Slave port Error Checking Enable (Slave port)");
 		}
 	};
 	
@@ -5287,15 +5287,15 @@ protected:
 	private:
 		void Init()
 		{
-			        this->SetName("imemctl1");       this->SetDescription("IMEM Control Register 1");
-			ISXAC3::SetName("isxac3"); ISXAC3::SetDescription("IMEM Supervisor Instruction Fetch Access Control for Quadrant 3");
-			ISXAC2::SetName("isxac2"); ISXAC2::SetDescription("IMEM Supervisor Instruction Fetch Access Control for Quadrant 2");
-			ISXAC1::SetName("isxac1"); ISXAC1::SetDescription("IMEM Supervisor Instruction Fetch Access Control for Quadrant 1");
-			ISXAC0::SetName("isxac0"); ISXAC0::SetDescription("IMEM Supervisor Instruction Fetch Access Control for Quadrant 0");
-			IUXAC3::SetName("iuxac3"); IUXAC3::SetDescription("IMEM User Instruction Fetch Access Control for Quadrant 3");
-			IUXAC2::SetName("iuxac2"); IUXAC2::SetDescription("IMEM User Instruction Fetch Access Control for Quadrant 2");
-			IUXAC1::SetName("iuxac1"); IUXAC1::SetDescription("IMEM User Instruction Fetch Access Control for Quadrant 1");
-			IUXAC0::SetName("iuxac0"); IUXAC0::SetDescription("IMEM User Instruction Fetch Access Control for Quadrant 0");
+			        this->SetName("IMEMCTL1");       this->SetDescription("IMEM Control Register 1");
+			ISXAC3::SetName("ISXAC3"); ISXAC3::SetDescription("IMEM Supervisor Instruction Fetch Access Control for Quadrant 3");
+			ISXAC2::SetName("ISXAC2"); ISXAC2::SetDescription("IMEM Supervisor Instruction Fetch Access Control for Quadrant 2");
+			ISXAC1::SetName("ISXAC1"); ISXAC1::SetDescription("IMEM Supervisor Instruction Fetch Access Control for Quadrant 1");
+			ISXAC0::SetName("ISXAC0"); ISXAC0::SetDescription("IMEM Supervisor Instruction Fetch Access Control for Quadrant 0");
+			IUXAC3::SetName("IUXAC3"); IUXAC3::SetDescription("IMEM User Instruction Fetch Access Control for Quadrant 3");
+			IUXAC2::SetName("IUXAC2"); IUXAC2::SetDescription("IMEM User Instruction Fetch Access Control for Quadrant 2");
+			IUXAC1::SetName("IUXAC1"); IUXAC1::SetDescription("IMEM User Instruction Fetch Access Control for Quadrant 1");
+			IUXAC0::SetName("IUXAC0"); IUXAC0::SetDescription("IMEM User Instruction Fetch Access Control for Quadrant 0");
 		}
 	};
 	
@@ -5320,11 +5320,11 @@ protected:
 	private:
 		void Init()
 		{
-			        this->SetName("e2ectl0");        this->SetDescription("End-to-End ECC Control Register 0");
-			IDAC  ::SetName("idac");   IDAC  ::SetDescription("Instruction Disable Address Checking");
-			IECCEN::SetName("ieccen"); IECCEN::SetDescription("Instruction ECC Enable Field");
-			DDAC  ::SetName("ddac");   DDAC  ::SetDescription("Data Disable Address Checking");
-			DECCEN::SetName("deccen"); DECCEN::SetDescription("Data ECC Enable Field");
+			        this->SetName("E2ECTL0");        this->SetDescription("End-to-End ECC Control Register 0");
+			IDAC  ::SetName("IDAC");   IDAC  ::SetDescription("Instruction Disable Address Checking");
+			IECCEN::SetName("IECCEN"); IECCEN::SetDescription("Instruction ECC Enable Field");
+			DDAC  ::SetName("DDAC");   DDAC  ::SetDescription("Data Disable Address Checking");
+			DECCEN::SetName("DECCEN"); DECCEN::SetDescription("Data ECC Enable Field");
 		}
 	};
 	
@@ -5349,11 +5349,11 @@ protected:
 	private:
 		void Init()
 		{
-			           this->SetName("e2eecsr0");                          this->SetDescription("End-to-End ECC Error Control/Status Register 0");
-			RCHKBIT        ::SetName("rchkbit");                RCHKBIT        ::SetDescription("Read Checkbits");
-			WRC            ::SetName("wrc");                    WRC            ::SetDescription("Write Control");
-			INVC           ::SetName("invc");                   INVC           ::SetDescription("Invert Control");
-			WCHKBIT_CHKINVT::SetName("wchkbit_chkinvt");        WCHKBIT_CHKINVT::SetDescription("Write Checkbits / Checkbit Invert Mask");
+			           this->SetName("E2EECSR0");                          this->SetDescription("End-to-End ECC Error Control/Status Register 0");
+			RCHKBIT        ::SetName("RCHKBIT");                RCHKBIT        ::SetDescription("Read Checkbits");
+			WRC            ::SetName("WRC");                    WRC            ::SetDescription("Write Control");
+			INVC           ::SetName("INVC");                   INVC           ::SetDescription("Invert Control");
+			WCHKBIT_CHKINVT::SetName("WCHKBIT_CHKINVT");        WCHKBIT_CHKINVT::SetDescription("Write Checkbits / Checkbit Invert Mask");
 			WCHKBIT_CHKINVT::SetDisplayName("WCHKBIT/CHKINVT"); 
 		}
 	};
@@ -5578,14 +5578,14 @@ protected:
 		void Init()
 		{
 			std::stringstream name_sstr;
-			name_sstr << "pmc" << PMC_NUM;
+			name_sstr << "PMC" << PMC_NUM;
 			
 			std::stringstream desc_sstr;
 			desc_sstr << "Performance Monitor Counter register" << PMC_NUM;
 			
 			               this->SetName(name_sstr.str());                         this->SetDescription(desc_sstr.str());
-			OV           ::SetName("ov");            OV           ::SetDescription("Overflow");
-			Counter_Value::SetName("counter_value"); Counter_Value::SetDescription("Indicates the number of occurrences of the specified event");
+			OV           ::SetName("OV");            OV           ::SetDescription("Overflow");
+			Counter_Value::SetName("COUNTER_VALUE"); Counter_Value::SetDescription("Indicates the number of occurrences of the specified event");
 		}
 	};
 	
@@ -5616,12 +5616,12 @@ protected:
 	private:
 		void Init()
 		{
-			       this->SetName("pmgc0");        this->SetDescription("Performance Monitor Global Control Register 0");
-			FAC  ::SetName("fac");   FAC  ::SetDescription("Freeze All Counters");
-			PMIE ::SetName("pmie");  PMIE ::SetDescription("Performance monitor interrupt enable");
-			FCECE::SetName("fcece"); FCECE::SetDescription("Freeze Counters on Enabled Condition or Event");
-			TBSEL::SetName("tbsel"); TBSEL::SetDescription("Time Base Selector");
-			TBEE ::SetName("tbee");  TBEE ::SetDescription("Time base transition Event Enable");
+			       this->SetName("PMGC0");        this->SetDescription("Performance Monitor Global Control Register 0");
+			FAC  ::SetName("FAC");   FAC  ::SetDescription("Freeze All Counters");
+			PMIE ::SetName("PMIE");  PMIE ::SetDescription("Performance monitor interrupt enable");
+			FCECE::SetName("FCECE"); FCECE::SetDescription("Freeze Counters on Enabled Condition or Event");
+			TBSEL::SetName("TBSEL"); TBSEL::SetDescription("Time Base Selector");
+			TBEE ::SetName("TBEE");  TBEE ::SetDescription("Time base transition Event Enable");
 		}
 	};
 	
@@ -5652,21 +5652,21 @@ protected:
 		void Init()
 		{
 			std::stringstream name_sstr;
-			name_sstr << "pmlca" << PMLCA_NUM;
+			name_sstr << "PMLCA" << PMLCA_NUM;
 			
 			std::stringstream desc_sstr;
 			desc_sstr << "Performance monitor local control A" << PMLCA_NUM;
 			
 			this->SetName(name_sstr.str()); this->SetDescription(desc_sstr.str());
 			
-			FC   ::SetName("fc");     FC   ::SetDescription("Freeze Counter");
-			FCS  ::SetName("fcs");    FCS  ::SetDescription("Freeze Counter in Supervisor state");
-			FCU  ::SetName("fcu");    FCU  ::SetDescription("Freeze Counter in User state");
-			FCM1 ::SetName("fcm1");   FCM1 ::SetDescription("Freeze Counter while Mark is set"); 
-			FCM0 ::SetName("fcm0");   FCM0 ::SetDescription("Freeze Counter while Mark is cleared"); 
-			CE   ::SetName("ce");     CE   ::SetDescription("Condition Enable");
-			EVENT::SetName("event");  EVENT::SetDescription("Event selector");  
-			PMP  ::SetName("pmp");    PMP  ::SetDescription("Performance Monitor Watchpoint Periodicity Select");
+			FC   ::SetName("FC");     FC   ::SetDescription("Freeze Counter");
+			FCS  ::SetName("FCS");    FCS  ::SetDescription("Freeze Counter in Supervisor state");
+			FCU  ::SetName("FCU");    FCU  ::SetDescription("Freeze Counter in User state");
+			FCM1 ::SetName("FCM1");   FCM1 ::SetDescription("Freeze Counter while Mark is set"); 
+			FCM0 ::SetName("FCM0");   FCM0 ::SetDescription("Freeze Counter while Mark is cleared"); 
+			CE   ::SetName("CE");     CE   ::SetDescription("Condition Enable");
+			EVENT::SetName("EVENT");  EVENT::SetDescription("Event selector");  
+			PMP  ::SetName("PMP");    PMP  ::SetDescription("Performance Monitor Watchpoint Periodicity Select");
 		}
 	};
 	
@@ -5701,7 +5701,7 @@ protected:
 		void Init()
 		{
 			std::stringstream name_sstr;
-			name_sstr << "pmlcb" << PMLCB_NUM;
+			name_sstr << "PMLCB" << PMLCB_NUM;
 			
 			std::stringstream desc_sstr;
 			desc_sstr << "Performance monitor local control B" << PMLCB_NUM;
@@ -5795,10 +5795,10 @@ protected:
 	private:
 		void Init()
 		{
-			          this->SetName("tmcfg0");             this->SetDescription("Thread Management Configuration Register 0");
-			NPRIBITS::SetName("npribits"); NPRIBITS::SetDescription("Number of bits of thread priority implemented");
-			NATHRD  ::SetName("nathrd");   NATHRD  ::SetDescription("Number of active threads implemented");
-			NTHRD   ::SetName("nthrd");    NTHRD   ::SetDescription("Number of threads implemented");
+			          this->SetName("TMCFG0");             this->SetDescription("Thread Management Configuration Register 0");
+			NPRIBITS::SetName("NPRIBITS"); NPRIBITS::SetDescription("Number of bits of thread priority implemented");
+			NATHRD  ::SetName("NATHRD");   NATHRD  ::SetDescription("Number of active threads implemented");
+			NTHRD   ::SetName("NTHRD");    NTHRD   ::SetDescription("Number of threads implemented");
 		}
 	};
 

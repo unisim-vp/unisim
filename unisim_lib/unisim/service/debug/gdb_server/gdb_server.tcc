@@ -64,9 +64,6 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS>
-const uint64_t GDBServer<ADDRESS>::GDB_INTERRUPT_POLL_PERIOD_MS;
-
-template <class ADDRESS>
 const bool GDBServer<ADDRESS>::ALWAYS_ACCEPT_MULTIPROCESS_NEW_THREAD_ID_SYNTAX;
 
 template <class ADDRESS>
@@ -129,6 +126,7 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, wait_connection_mode(GDB_WAIT_CONNECTION_STARTUP_ONLY)
 	, enable_multiprocess_extension(false)
 	, enable_interrupt(true)
+	, interrupt_poll_period_ms(100)
 	, mode(GDB_MODE_SINGLE_THREAD)
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
 	, param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename, "filename of a XML description of the connected processor")
@@ -136,6 +134,7 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, param_wait_connection_mode("wait-connection-mode", this, wait_connection_mode, "Whether to wait for connection of GDB client (never, [startup-only], always)")
 	, param_enable_multiprocess_extension("enable-multiprocess-extension", this, enable_multiprocess_extension, "Whether to enable GDB multiprocess extension")
 	, param_enable_interrupt("enable-interrupt", this, enable_interrupt, "enable/disable GDB interrupt (Ctrl-C)")
+	, param_interrupt_poll_period_ms("interrupt-poll-period-ms", this, interrupt_poll_period_ms, "GDB interrupt (Ctrl-C) polling period (in milliseconds)")
 	, param_mode("mode", this, mode, "debugging mode (single-thread or multi-thread)")
 	, thrd_process_cmd()
 	, thrd_process_int()
@@ -157,6 +156,7 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, wait_for_command_processing(true)
 {
 	param_memory_atom_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+	param_interrupt_poll_period_ms.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
 	param_memory_atom_size.SetMutable(false);
 	param_architecture_description_filename.SetMutable(false);
@@ -1181,7 +1181,7 @@ void GDBServer<ADDRESS>::ClearEvents()
 template <class ADDRESS>
 void GDBServer<ADDRESS>::ProcessIntThrd()
 {
-	// poll network socket every 100 ms, keep alive between sessions
+	// poll network socket every XX ms, keep alive between sessions
 	while(!stop_process_int_thrd && !killed)
 	{
 		if(!session_terminated)
@@ -1219,7 +1219,7 @@ void GDBServer<ADDRESS>::ProcessIntThrd()
 			Unlock();
 		}
 		
-		WaitTime(GDB_INTERRUPT_POLL_PERIOD_MS); // retry later
+		WaitTime(interrupt_poll_period_ms); // retry later
 	}
 }
 
@@ -2444,6 +2444,10 @@ void GDBServer<ADDRESS>::Barrier()
 template <class ADDRESS>
 void GDBServer<ADDRESS>::Interrupt()
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << "/\\/\\/\\ GDB interrupt (Ctrl-C)" << EndDebugInfo;
+	}
 	unsigned int prc_num;
 	for(prc_num = 0; prc_num < num_processors; prc_num++)
 	{

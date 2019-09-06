@@ -190,30 +190,6 @@ public:
 	
 	//////////////////////////////// Interrupts ///////////////////////////////
 	
-	// Priorities:
-	//  0   SystemResetInterrupt                 Reset
-	//  1   MachineCheckInterrupt                NMI
-	//  2   MachineCheckInterrupt                ErrorReport
-	//  3   MachineCheckInterrupt                AsynchronousMachineCheck
-	//  4   ExternalInputInterrupt               ExternalInput
-	//  5   CriticalInputInterrupt               CriticalInput
-	//  6   DebugInterrupt                       AsynchronousDebugEvent
-	//  7   PerformanceMonitorInterrupt          PerformanceCounterOverflow
-	//  8   PerformanceMonitorInterrupt          DebugEvent
-	//  9   InstructionStorageInterrupt          AccessControl
-	// 10   ProgramInterrupt                     IllegalInstruction
-	// 11   ProgramInterrupt                     PrivilegeViolation
-	// 12   ProgramInterrupt                     Trap
-	// 13   ProgramInterrupt                     UnimplementedInstruction
-	// 14   SystemCallInterrupt                  SystemCall
-	// 15   DataStorageInterrupt                 AccessControl
-	// 16   AlignmentInterrupt                   UnalignedLoadStoreMultiple
-	// 17   AlignmentInterrupt                   UnalignedLoadLinkStoreConditional
-	// 18   AlignmentInterrupt                   WriteThroughDCBZ
-	// 19   EmbeddedFloatingPointDataInterrupt   EmbeddedFloatingPointData
-	// 20   EmbeddedFloatingPointRoundInterrupt  EmbeddedFloatingPointRound
-	// 21   DebugInterrupt                       SynchronousDebugEvent
-	
 	struct SystemResetInterrupt : SuperCPU::template Interrupt<SystemResetInterrupt, 0x00 /* p_rstbase[0:29] */>
 	{
 		struct Reset                             : SuperCPU::template Exception<SystemResetInterrupt> { static const char *GetName() { return "System Reset Interrupt/Reset Exception"; } };                  // reset
@@ -569,6 +545,7 @@ public:
 		static const char *GetName() { return "Embedded Floating-Point Round Interrupt"; }
 	};
 
+	// Priorities:
 	//  0   SystemResetInterrupt                 Reset
 	//  1   MachineCheckInterrupt                NMI
 	//  2   MachineCheckInterrupt                ErrorReport

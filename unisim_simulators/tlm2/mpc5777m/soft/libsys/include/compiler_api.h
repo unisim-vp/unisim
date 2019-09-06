@@ -46,7 +46,11 @@
 
 #endif
 
+#ifdef NO_PPC_WAIT
+#define PPC_WAIT               do {} while(0)
+#else
 #define PPC_WAIT               PPCASM volatile (".long 0x7c00007c") // WARNING! Binutils 2.28 emits 0x7c00003c instead of 0x7c00007c for WAIT instruction
+#endif
 
 #define PPC_ISYNC              PPCASM volatile ("se_isync")
 
