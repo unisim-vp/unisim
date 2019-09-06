@@ -7,5 +7,6 @@ unisim/component/tlm/message
 unisim/kernel
 unisim/kernel/logger
 unisim/kernel/tlm
+unisim/kernel/variable/sc_time
 unisim/service/interfaces/memory
 unisim/util/garbage_collector

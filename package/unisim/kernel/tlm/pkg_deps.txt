@@ -6,4 +6,5 @@ std/stack
 std/string
 std/vector
 unisim/kernel
+unisim/kernel/variable/sc_time
 unisim/util/garbage_collector

@@ -58,6 +58,7 @@
 #include "unisim/kernel/tlm2/clock.hh"
 #include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include "unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/mapping.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/protection.hh"

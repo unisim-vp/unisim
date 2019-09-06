@@ -38,6 +38,7 @@
 #include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/clock.hh>
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/nat_sort/nat_sort.hh>
 #include <unisim/service/interfaces/http_server.hh>

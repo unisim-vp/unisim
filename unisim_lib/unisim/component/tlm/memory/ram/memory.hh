@@ -37,6 +37,7 @@
 
 #include <systemc>
 #include "unisim/kernel/tlm/tlm.hh"
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include "unisim/component/tlm/message/memory.hh"
 #include "unisim/component/cxx/memory/ram/memory.hh"
 #include "unisim/kernel/logger/logger.hh"

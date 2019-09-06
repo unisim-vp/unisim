@@ -1,6 +1,5 @@
 libc/assert
 libc/limits
-libc/stdlib
 libc/string
 m4/systemc
 std/iostream
@@ -11,6 +10,7 @@ std/vector
 unisim/kernel
 unisim/kernel/logger
 unisim/kernel/variable
+unisim/kernel/variable/sc_time
 unisim/util/backtrace
 unisim/util/hash_table
 unisim/util/likely

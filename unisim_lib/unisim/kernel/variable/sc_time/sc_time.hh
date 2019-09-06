@@ -1,6 +1,6 @@
- /*
- *  Copyright (c) 2015-2016,
- *  Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
+/*
+ *  Copyright (c) 2019,
+ *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -29,43 +29,23 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __UNISIM_KERNEL_TLM2_SIMULATOR_HH__
-#define __UNISIM_KERNEL_TLM2_SIMULATOR_HH__
-
-#include <unisim/kernel/kernel.hh>
-#include <unisim/kernel/variable/variable.hh>
-#include <unisim/kernel/logger/logger.hh>
-#include <unisim/kernel/variable/sc_time/sc_time.hh>
-#include <systemc>
-#include <tlm>
+#ifndef __UNISIM_KERNEL_VARIABLE_SC_TIME_SC_TIME_HH__
+#define __UNISIM_KERNEL_VARIABLE_SC_TIME_SC_TIME_HH__
 
 namespace unisim {
 namespace kernel {
-namespace tlm2 {
+namespace variable {
 
-class Simulator
-	: public unisim::kernel::Simulator
-	, public unisim::kernel::Object
-	, public sc_core::sc_module
-{
-public:
-	Simulator(sc_core::sc_module_name const& name, int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::Simulator *simulator) = 0);
-	virtual ~Simulator();
-protected:
-	unisim::kernel::logger::Logger logger;
-private:
-	unisim::kernel::variable::Statistic<sc_core::sc_time> stat_cur_sim_time;
-	sc_core::sc_time global_quantum;
-	unisim::kernel::variable::Parameter<sc_core::sc_time> param_global_quantum;
-	sc_core::sc_time can_global_quantum;
-	unisim::kernel::variable::Parameter<sc_core::sc_time> param_can_global_quantum;
-};
-
-} // end of namespace tlm2
+  /* Do not delete!!! This empty header allow to trigger compilation
+   * and link of the sc_core::sc_time Variable/Parameter (see
+   * package/gendeps.sh).
+   */
+  
+} // end of namespace variable
 } // end of namespace kernel
 } // end of namespace unisim
 
-#endif // __UNISIM_KERNEL_TLM2_SIMULATOR_HH__
+#endif //  __UNISIM_KERNEL_VARIABLE_SC_TIME_SC_TIME_HH__

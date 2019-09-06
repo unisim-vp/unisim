@@ -38,6 +38,7 @@
 #include <systemc>
 #include "unisim/kernel/kernel.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include <unisim/component/cxx/memory/ram/memory.hh>
 #include <inttypes.h>
 

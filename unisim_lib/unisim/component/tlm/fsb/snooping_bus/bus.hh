@@ -39,12 +39,13 @@
 #include <list>
 #include <string>
 #include <systemc>
-#include "unisim/kernel/tlm/tlm.hh"
-#include "unisim/kernel/kernel.hh"
-#include "unisim/kernel/logger/logger.hh"
-#include "unisim/util/garbage_collector/garbage_collector.hh"
-#include "unisim/component/tlm/message/snooping_fsb.hh"
-#include "unisim/service/interfaces/memory.hh"
+#include <unisim/kernel/tlm/tlm.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/util/garbage_collector/garbage_collector.hh>
+#include <unisim/component/tlm/message/snooping_fsb.hh>
+#include <unisim/service/interfaces/memory.hh>
 
 namespace unisim {
 namespace component {

@@ -7,3 +7,4 @@ unisim/component/cxx/processor/powerpc/e200/mpc57xx
 unisim/kernel
 unisim/kernel/logger
 unisim/kernel/tlm2
+unisim/kernel/variable/sc_time

@@ -40,6 +40,7 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/tlm2/clock.hh>
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.hh>
 #include <inttypes.h>
 #include <stack>

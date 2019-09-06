@@ -40,6 +40,7 @@
 #include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include <inttypes.h>
 #include <unisim/component/tlm2/interrupt/types.hh>
 #include <stack>

@@ -32,9 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include "unisim/kernel/tlm2/tlm.hh"
-#include "unisim/kernel/kernel.hh"
 #include <systemc>
+#include <unisim/kernel/variable/variable.hh>
 #include <stdlib.h>
 #include <string.h>
 

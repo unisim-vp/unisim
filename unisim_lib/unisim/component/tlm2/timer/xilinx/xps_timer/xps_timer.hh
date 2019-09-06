@@ -37,6 +37,7 @@
 
 #include <systemc>
 #include <unisim/kernel/tlm2/tlm.hh>
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include <unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.hh>
 #include <unisim/component/tlm2/interrupt/types.hh>
 #include <stack>

@@ -34,6 +34,7 @@
 
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/kernel/kernel.hh"
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include <stdlib.h>
 #include <string.h>
 

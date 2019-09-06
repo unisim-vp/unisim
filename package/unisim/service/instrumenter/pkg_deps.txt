@@ -10,6 +10,7 @@ std/vector
 unisim/kernel
 unisim/kernel/logger
 unisim/kernel/tlm2
+unisim/kernel/variable/sc_time
 unisim/service/interfaces/http_server
 unisim/util/arithmetic
 unisim/util/hypapp
