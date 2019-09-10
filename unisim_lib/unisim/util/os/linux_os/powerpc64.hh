@@ -1065,9 +1065,9 @@ namespace linux_os {
             // long sys_stat64(const char *filename, struct stat *statbuf);
             struct Args
             {
-              Args(LINUX& lin)
+              Args(LINUX& lin, bool inject)
                 : filename(SysCall::GetParam(lin, 0)), statbuf(SysCall::GetParam(lin, 1))
-                , filename_string(), filename_valid(lin.ReadString(filename, filename_string))
+                , filename_string(), filename_valid(lin.ReadString(filename, filename_string, inject))
               {}
               address_type filename; address_type statbuf; std::string filename_string; bool filename_valid;
               void Describe( std::ostream& sink ) const
@@ -1077,10 +1077,10 @@ namespace linux_os {
                      << " )" << std::dec;
               }
             };
-            void Describe( LINUX& lin, std::ostream& sink ) const { Args(lin).Describe(sink); }
+            void Describe( LINUX& lin, std::ostream& sink ) const { Args(lin, false).Describe(sink); }
             void Execute( LINUX& lin, int syscall_id ) const
             {
-              Args args(lin);
+              Args args(lin, true);
         
               if (not args.filename_valid)
                 {

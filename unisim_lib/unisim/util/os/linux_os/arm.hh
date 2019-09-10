@@ -1140,7 +1140,7 @@ namespace linux_os {
               address_type pathnameaddr = GetSystemCallParam(lin, 0);
               address_type buf_address = GetSystemCallParam(lin, 1);
               std::string pathname;
-              if (lin.ReadString(pathnameaddr, pathname))
+              if (lin.ReadString(pathnameaddr, pathname, true))
                 {
                   struct arm_stat64 target_stat;
                   ret = Stat64(pathname.c_str(), &target_stat, lin.GetEndianness());

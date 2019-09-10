@@ -402,9 +402,9 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMemory( ADDRESS_TYPE addr, uint8_
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMemory( ADDRESS_TYPE addr, PARAMETER_TYPE& value ) const
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMemory( ADDRESS_TYPE addr, PARAMETER_TYPE& value, bool inject ) const
 {
-  if (not ReadMemory(addr, (uint8_t *)&value, sizeof(PARAMETER_TYPE)))
+  if (not ReadMemory(addr, (uint8_t *)&value, sizeof(PARAMETER_TYPE), inject))
     return false;
   
   value = Target2Host(this->GetEndianness(), value);
@@ -412,32 +412,35 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMemory( ADDRESS_TYPE addr, PARAMET
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMemory( ADDRESS_TYPE addr, uint8_t* buffer, uint32_t size ) const
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMemory( ADDRESS_TYPE addr, uint8_t* buffer, uint32_t size, bool inject ) const
 {
-  if (this->mem_inject_if_ == NULL)
+  if ((    inject and not this->mem_inject_if_) or
+      (not inject and not        this->mem_if_))
     {
       this->debug_warning_stream << "LinuxOS has no memory connection." << std::endl;
       return false;
     }
-       
-  if (not this->mem_inject_if_->InjectReadMemory(addr, buffer, size))
+  
+  if ((    inject and not this->mem_inject_if_->InjectReadMemory(addr, buffer, size)) or
+      (not inject and not              this->mem_if_->ReadMemory(addr, buffer, size)))
     {
       this->debug_warning_stream
-        << "failed OS read memory:" << std::endl
+        << "failed OS read memory" << (inject ? " (debug):" : ":") << std::endl
         << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
         << "\tsize = " << size
         << std::endl;
+      
       return false;
     }
   
   if (unlikely(this->verbose_))
     {
       this->debug_info_stream
-        << "OS read memory:" << std::endl
+        << "OS read memory" << (inject ? " (debug):" : ":") << std::endl
         << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
         << "\tsize = " << size << std::endl
         << "\tdata =0x" << std::hex;
-                               
+        
       for (unsigned int i = 0; i < size; i++)
         {
           this->debug_info_stream << " " << (unsigned int)buffer[i];
@@ -450,7 +453,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMemory( ADDRESS_TYPE addr, uint8_t
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadString( ADDRESS_TYPE addr, std::string& str ) const
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadString( ADDRESS_TYPE addr, std::string& str, bool inject ) const
 {
   // Two pass string retrieval
   int len = 0;
@@ -461,7 +464,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadString( ADDRESS_TYPE addr, std::st
         return false;
       }
       uint8_t buffer;
-      if (not ReadMemory(tail, &buffer, 1))
+      if (not ReadMemory(tail, &buffer, 1, false))
         {
           this->debug_error_stream << "Can't read memory at 0x" << std::hex << tail << std::endl;
           return false;
@@ -471,7 +474,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadString( ADDRESS_TYPE addr, std::st
   
   str.resize( len, '*' );
   
-  return ReadMemory(addr, (uint8_t*)&str[0], len);
+  return ReadMemory(addr, (uint8_t*)&str[0], len, inject);
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -722,19 +725,20 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LogSystemCall(int id)
   
   SysCall* sc = target_system->GetSystemCall( translated_id );
 
-  if (not sc) {
-    debug_error_stream << "Unknown syscall(id = " << translated_id
-            << ", untranslated id = " << id << ")" << std::endl;
-    return;
-  }
-  
-  debug_info_stream
-    << "Syscall(id=" << translated_id;
+  debug_info_stream << "Syscall(id=" << translated_id;
   if (translated_id != id)
     debug_info_stream << ", " << "unstranslated id=" << id;
+  debug_info_stream << "): ";
 
-  debug_info_stream << "): " << sc->TraceCall( *this ) << std::endl;
-  sc->Release();
+  if (sc)
+    {
+      debug_error_stream << sc->TraceCall( *this );
+      sc->Release();
+    }
+  else
+    debug_error_stream << "unknown";
+  
+  debug_error_stream << std::endl;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>

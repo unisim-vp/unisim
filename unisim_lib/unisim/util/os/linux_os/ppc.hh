@@ -1143,7 +1143,7 @@ namespace linux_os {
               int32_t target_errno = 0;
 
               std::string pathname;
-              if (lin.ReadString(pathnameaddr, pathname))
+              if (lin.ReadString(pathnameaddr, pathname, true))
                 {
                   struct powerpc_stat64 target_stat;
                   ret = Stat64(pathname.c_str(), &target_stat, lin.GetEndianness());

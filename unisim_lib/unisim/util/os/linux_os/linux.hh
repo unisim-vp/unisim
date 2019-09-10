@@ -341,9 +341,9 @@ namespace linux_os {
     bool ClearTargetRegister( char const* regname ) const;
     bool ReadTargetMemory( ADDRESS_TYPE addr, PARAMETER_TYPE& value ) const;
     // Read/Write From/To target processor via injection interface
-    bool ReadMemory(ADDRESS_TYPE addr, uint8_t* const buffer, uint32_t size) const;
-    bool ReadMemory(ADDRESS_TYPE addr, PARAMETER_TYPE& value) const;
-    bool ReadString(ADDRESS_TYPE addr, std::string& str) const;
+    bool ReadMemory(ADDRESS_TYPE addr, uint8_t* const buffer, uint32_t size, bool) const;
+    bool ReadMemory(ADDRESS_TYPE addr, PARAMETER_TYPE& value, bool) const;
+    bool ReadString(ADDRESS_TYPE addr, std::string& str, bool) const;
     bool WriteMemory(ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size) const;
     bool WriteMemory(ADDRESS_TYPE addr, PARAMETER_TYPE value) const;
     
