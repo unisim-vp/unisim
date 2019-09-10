@@ -796,10 +796,10 @@ namespace linux_os {
               uint32_t user_desc_ptr = GetSystemCallParam(lin, 0);
                   
               parameter_type entry_number, base_addr, limit, attributes;
-              lin.ReadMemory( user_desc_ptr + 0x0, entry_number );
-              lin.ReadMemory( user_desc_ptr + 0x4, base_addr );
-              lin.ReadMemory( user_desc_ptr + 0x8, limit );
-              lin.ReadMemory( user_desc_ptr + 0xc, attributes );
+              lin.ReadMemory( user_desc_ptr + 0x0, entry_number, true );
+              lin.ReadMemory( user_desc_ptr + 0x4, base_addr, true );
+              lin.ReadMemory( user_desc_ptr + 0x8, limit, true );
+              lin.ReadMemory( user_desc_ptr + 0xc, attributes, true );
               entry_number = unisim::util::endian::Target2Host( lin.GetEndianness(), entry_number );
               base_addr    = unisim::util::endian::Target2Host( lin.GetEndianness(), base_addr );
               limit        = unisim::util::endian::Target2Host( lin.GetEndianness(), limit );

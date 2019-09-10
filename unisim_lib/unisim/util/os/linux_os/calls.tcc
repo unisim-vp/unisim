@@ -572,10 +572,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "exit"; }
-      void Describe( Linux& lin, std::ostream& sink ) const {
-        sink << "(int status=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ")";
-      }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(int status=" << std::dec << int(SysCall::GetParam(lin, 0)) << ")"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
         int status = SysCall::GetParam(lin, 0);
@@ -671,7 +668,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
             return;
           }
             
-        lin.ReadMemory(buf_addr, (uint8_t *)buf, count);
+        lin.ReadMemory(buf_addr, (uint8_t *)buf, count, true);
                 
         if (unlikely(lin.verbose_))
           {
@@ -706,7 +703,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       {
         Args(Linux& lin)
           : dfd(SysCall::GetParam(lin, 0)), filename(SysCall::GetParam(lin, 1)), flags(SysCall::GetParam(lin, 2)), mode(SysCall::GetParam(lin, 3))
-          , filename_string(), filename_valid(lin.ReadString(filename, filename_string))
+          , filename_string(), filename_valid(lin.ReadString(filename, filename_string, false))
         {};
         int dfd; parameter_type filename; int flags; unsigned short mode; std::string filename_string; bool filename_valid;
         void Describe( std::ostream& sink ) const
@@ -745,9 +742,9 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       // long sys_open(const char __user *filename, int flags, umode_t mode);
       struct Args
       {
-        Args(Linux& lin)
+        Args(Linux& lin, bool inject)
           : filename(SysCall::GetParam(lin, 0)), flags(SysCall::GetParam(lin, 1)), mode(SysCall::GetParam(lin, 2))
-          , filename_string(), filename_valid(lin.ReadString(filename, filename_string))
+          , filename_string(), filename_valid(lin.ReadString(filename, filename_string, inject))
         {};
         parameter_type filename; int flags; unsigned short mode; std::string filename_string; bool filename_valid;
         void Describe(std::ostream& sink ) const
@@ -758,10 +755,10 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
                << " )" << std::dec;
         }
       };
-      void Describe( Linux& lin, std::ostream& sink ) const { Args(lin).Describe(sink); }
+      void Describe( Linux& lin, std::ostream& sink ) const { Args(lin, false).Describe(sink); }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        Args args(lin);
+        Args args(lin, true);
         
         if (not args.filename_valid)
           {
@@ -927,7 +924,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "access"; }
       void Describe( Linux& lin, std::ostream& sink ) const
       {
-        int access(const char *pathname, int mode);
+        // int access(const char *pathname, int mode);
         parameter_type pathname = SysCall::GetParam(lin, 0);
         int mode = SysCall::GetParam(lin, 1);
         sink << "(const char *pathname=0x" << std::hex << pathname
@@ -939,7 +936,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         mode_t mode = SysCall::GetParam(lin, 1);
         
         std::string pathname;
-        if (not lin.ReadString(addr, pathname))
+        if (not lin.ReadString(addr, pathname, true))
           {
             lin.debug_warning_stream << "Out of memory" << std::endl;
             lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
@@ -1165,13 +1162,13 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         for (int step = count; (--step) >= 0; iovecaddr += 2*parameter_size)
           {
             parameter_type iov_base, iov_len;
-            lin.ReadMemory(iovecaddr + 0*parameter_size, iov_base );
-            lin.ReadMemory(iovecaddr + 1*parameter_size, iov_len );
+            lin.ReadMemory(iovecaddr + 0*parameter_size, iov_base, true );
+            lin.ReadMemory(iovecaddr + 1*parameter_size, iov_len, true );
             iov_base = unisim::util::endian::Target2Host( lin.endianness_, iov_base );
             iov_len  = unisim::util::endian::Target2Host( lin.endianness_, iov_len );
             assert( iov_len < 0x100000 );
             uint8_t buffer[iov_len];
-            lin.ReadMemory(iov_base, &buffer[0], iov_len );
+            lin.ReadMemory(iov_base, &buffer[0], iov_len, true );
           
             int ret = ::write( target_fd, &buffer[0], iov_len );
           
@@ -1615,7 +1612,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         parameter_type pathnameaddr = SysCall::GetParam(lin, 0);
         
         std::string pathname;
-        if (not lin.ReadString(pathnameaddr, pathname))
+        if (not lin.ReadString(pathnameaddr, pathname, true))
           {
             lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
             return;
@@ -1654,7 +1651,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         Args sc(lin);
         
         std::string oldpath, newpath;
-        if (not lin.ReadString(sc.oldpath, oldpath) or not lin.ReadString(sc.newpath, newpath))
+        if (not lin.ReadString(sc.oldpath, oldpath, true) or not lin.ReadString(sc.newpath, newpath, true))
           {
             lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
             return;
