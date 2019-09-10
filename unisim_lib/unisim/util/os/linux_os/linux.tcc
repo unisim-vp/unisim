@@ -722,19 +722,20 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LogSystemCall(int id)
   
   SysCall* sc = target_system->GetSystemCall( translated_id );
 
-  if (not sc) {
-    debug_error_stream << "Unknown syscall(id = " << translated_id
-            << ", untranslated id = " << id << ")" << std::endl;
-    return;
-  }
-  
-  debug_info_stream
-    << "Syscall(id=" << translated_id;
+  debug_info_stream << "Syscall(id=" << translated_id;
   if (translated_id != id)
     debug_info_stream << ", " << "unstranslated id=" << id;
+  debug_info_stream << "): ";
 
-  debug_info_stream << "): " << sc->TraceCall( *this ) << std::endl;
-  sc->Release();
+  if (sc)
+    {
+      debug_error_stream << sc->TraceCall( *this );
+      sc->Release();
+    }
+  else
+    debug_error_stream << "unknown";
+  
+  debug_error_stream << std::endl;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
