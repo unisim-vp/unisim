@@ -711,10 +711,6 @@ template <typename TYPES, typename CONFIG>
 template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN>
 inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, EFFECTIVE_ADDRESS ea)
 {
-	if(sizeof(T) == 3)
-	{
-		std::cerr << "Meuh" << std::endl;
-	}
 	EFFECTIVE_ADDRESS size_to_protection_boundary;
 	ADDRESS virt_addr;
 	PHYSICAL_ADDRESS phys_addr;
