@@ -1,5 +1,6 @@
 libc/inttypes
 libc/stdlib
+std/cctype
 std/iosfwd
 std/iostream
 std/map
@@ -29,5 +30,6 @@ unisim/util/endian
 unisim/util/inlining
 unisim/util/likely
 unisim/util/nat_sort
+unisim/util/os/linux_os
 unisim/util/reg/core
 unisim/util/simfloat

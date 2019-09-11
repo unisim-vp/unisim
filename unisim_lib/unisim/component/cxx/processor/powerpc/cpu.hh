@@ -57,6 +57,8 @@
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/util/debug/simple_register_registry.hh>
+#include <unisim/util/os/linux_os/linux.hh>
+#include <unisim/util/os/linux_os/ppc.hh>
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
 #include <map>
 #include <stack>
@@ -570,6 +572,8 @@ template <unsigned int SIZE> struct TypeForBitSize
 	static const TYPE MASK = (SIZE == (8 * BYTE_SIZE)) ? (~TYPE(0)) : ((TYPE(1) << SIZE) - 1);
 };
 
+/////////////////////////////////// CPU ///////////////////////////////////////
+
 template <typename TYPES, typename CONFIG>
 class CPU
 	: public unisim::util::cache::MemorySubSystem<TYPES, typename CONFIG::CPU>
@@ -685,11 +689,11 @@ public:
 	inline void SetFPR(unsigned int n, const SoftDouble& v) { fpu.SetFPR(n, v); }
 	inline bool CheckFloatingPointException() { return fpu.CheckFloatingPointException(static_cast<typename CONFIG::CPU *>(this)); }
 	
-	inline typename TYPES::EFFECTIVE_ADDRESS GetCIA() const ALWAYS_INLINE { return cia; }
+	inline EFFECTIVE_ADDRESS GetCIA() const ALWAYS_INLINE { return cia; }
 	inline void SetCIA(uint32_t value) ALWAYS_INLINE { cia = value; }
-	inline typename TYPES::EFFECTIVE_ADDRESS GetNIA() const ALWAYS_INLINE { return nia; }
-	inline void SetNIA(typename TYPES::EFFECTIVE_ADDRESS value) ALWAYS_INLINE { nia = value; }
-	inline void Branch(typename TYPES::EFFECTIVE_ADDRESS value) ALWAYS_INLINE { nia = value; }
+	inline EFFECTIVE_ADDRESS GetNIA() const ALWAYS_INLINE { return nia; }
+	inline void SetNIA(EFFECTIVE_ADDRESS value) ALWAYS_INLINE { nia = value; }
+	inline void Branch(EFFECTIVE_ADDRESS value) ALWAYS_INLINE { nia = value; }
 
 	bool MoveFromSPR(unsigned int n, uint32_t& value);
 	bool MoveToSPR(unsigned int n, uint32_t value);
@@ -716,46 +720,47 @@ public:
 	template <typename T, bool REVERSE, unisim::util::endian::endian_type ENDIAN> void ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr);
 
 	template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN> bool DataLoad(T& value, EFFECTIVE_ADDRESS ea);
-	template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN> bool DataStore(T value, EFFECTIVE_ADDRESS ea);
+	template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN> bool DataStore(T& value, EFFECTIVE_ADDRESS ea);
 	
 	bool DebugDataLoad(EFFECTIVE_ADDRESS ea, void *buffer, unsigned int size);
 	bool DebugDataStore(EFFECTIVE_ADDRESS ea, const void *buffer, unsigned int size);
 
-	bool Int8Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool Int16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool SInt16Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool Int32Load(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool Int16LoadByteReverse(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool Int32LoadByteReverse(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool IntLoadMSBFirst(unsigned int rd, typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size);
-	bool Int8Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool Int16Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool Int32Store(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool Int16StoreByteReverse(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool Int32StoreByteReverse(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea);
-	bool IntStoreMSBFirst(unsigned int rs, typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size);
-	template <typename REGISTER> bool SpecialLoad(REGISTER& reg, typename TYPES::EFFECTIVE_ADDRESS ea);
-	template <typename REGISTER> bool SpecialStore(const REGISTER& reg, typename TYPES::EFFECTIVE_ADDRESS ea);
+	bool Int8Load(unsigned int rd, EFFECTIVE_ADDRESS ea);
+	bool Int16Load(unsigned int rd, EFFECTIVE_ADDRESS ea);
+	bool SInt16Load(unsigned int rd, EFFECTIVE_ADDRESS ea);
+	bool Int32Load(unsigned int rd, EFFECTIVE_ADDRESS ea);
+	bool Int16LoadByteReverse(unsigned int rd, EFFECTIVE_ADDRESS ea);
+	bool Int32LoadByteReverse(unsigned int rd, EFFECTIVE_ADDRESS ea);
+	bool IntLoadMSBFirst(unsigned int rd, EFFECTIVE_ADDRESS ea, unsigned int size);
+	bool Int8Store(unsigned int rs, EFFECTIVE_ADDRESS ea);
+	bool Int16Store(unsigned int rs, EFFECTIVE_ADDRESS ea);
+	bool Int32Store(unsigned int rs, EFFECTIVE_ADDRESS ea);
+	bool Int16StoreByteReverse(unsigned int rs, EFFECTIVE_ADDRESS ea);
+	bool Int32StoreByteReverse(unsigned int rs, EFFECTIVE_ADDRESS ea);
+	bool IntStoreMSBFirst(unsigned int rs, EFFECTIVE_ADDRESS ea, unsigned int size);
+	template <typename REGISTER> bool SpecialLoad(REGISTER& reg, EFFECTIVE_ADDRESS ea);
+	template <typename REGISTER> bool SpecialStore(const REGISTER& reg, EFFECTIVE_ADDRESS ea);
 	bool Fp32Load(unsigned int fd, EFFECTIVE_ADDRESS ea) { return fpu.Fp32Load(static_cast<typename CONFIG::CPU *>(this), fd, ea); }
 	bool Fp64Load(unsigned int fd, EFFECTIVE_ADDRESS ea) { return fpu.Fp64Load(static_cast<typename CONFIG::CPU *>(this), fd, ea); }
 	bool Fp32Store(unsigned int fs, EFFECTIVE_ADDRESS ea) { return fpu.Fp32Store(static_cast<typename CONFIG::CPU *>(this), fs, ea); }
 	bool Fp64Store(unsigned int fs, EFFECTIVE_ADDRESS ea) { return fpu.Fp64Store(static_cast<typename CONFIG::CPU *>(this), fs, ea); }
 	bool FpStoreLSW(unsigned int fs, EFFECTIVE_ADDRESS ea) { return fpu.FpStoreLSW(static_cast<typename CONFIG::CPU *>(this), fs, ea); }
 	
-	std::string GetObjectFriendlyName(typename TYPES::EFFECTIVE_ADDRESS addr);
-	
+	std::string GetObjectFriendlyName(EFFECTIVE_ADDRESS addr);
+	void LogLinuxSystemCall();
+
 	///////////////////////////////////////////////////////////////////////////
 protected:
-	bool CheckInt16LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
-	bool CheckSInt16LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadAlignment(ea); }
-	bool CheckInt32LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
-	bool CheckInt16LoadByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadAlignment(ea); }
-	bool CheckInt32LoadByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32LoadAlignment(ea); }
-	bool CheckInt16StoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
-	bool CheckInt32StoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
-	bool CheckInt16StoreByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16StoreAlignment(ea); }
-	bool CheckInt32StoreByteReverseAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32StoreAlignment(ea); }
-	template <typename REGISTER> bool CheckSpecialLoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea)
+	bool CheckInt16LoadAlignment(EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckSInt16LoadAlignment(EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadAlignment(ea); }
+	bool CheckInt32LoadAlignment(EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckInt16LoadByteReverseAlignment(EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16LoadAlignment(ea); }
+	bool CheckInt32LoadByteReverseAlignment(EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32LoadAlignment(ea); }
+	bool CheckInt16StoreAlignment(EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckInt32StoreAlignment(EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckInt16StoreByteReverseAlignment(EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt16StoreAlignment(ea); }
+	bool CheckInt32StoreByteReverseAlignment(EFFECTIVE_ADDRESS ea) { return static_cast<typename CONFIG::CPU *>(this)->CheckInt32StoreAlignment(ea); }
+	template <typename REGISTER> bool CheckSpecialLoadAlignment(EFFECTIVE_ADDRESS ea)
 	{
 		switch(REGISTER::SIZE)
 		{
@@ -764,7 +769,7 @@ protected:
 		return true;
 		
 	}
-	template <typename REGISTER> bool CheckSpecialStoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea)
+	template <typename REGISTER> bool CheckSpecialStoreAlignment(EFFECTIVE_ADDRESS ea)
 	{
 		switch(REGISTER::SIZE)
 		{
@@ -773,11 +778,11 @@ protected:
 		return true;
 		
 	}
-	bool CheckFp32LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
-	bool CheckFp64LoadAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
-	bool CheckFp32StoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
-	bool CheckFp64StoreAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
-	bool CheckFpStoreLSWAlignment(typename TYPES::EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckFp32LoadAlignment(EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckFp64LoadAlignment(EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckFp32StoreAlignment(EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckFp64StoreAlignment(EFFECTIVE_ADDRESS ea) { return true; }
+	bool CheckFpStoreLSWAlignment(EFFECTIVE_ADDRESS ea) { return true; }
 
 protected:
 	
@@ -837,14 +842,14 @@ protected:
 	template <typename INTERRUPT, unsigned int _OFFSET>
 	struct InterruptWithAddress : public Interrupt<INTERRUPT, _OFFSET>
 	{
-		INTERRUPT& SetAddress(typename TYPES::EFFECTIVE_ADDRESS _addr) { addr = _addr; has_addr = true; return *static_cast<INTERRUPT *>(this); }
+		INTERRUPT& SetAddress(EFFECTIVE_ADDRESS _addr) { addr = _addr; has_addr = true; return *static_cast<INTERRUPT *>(this); }
 		void ClearAddress() { has_addr = false; }
 		bool HasAddress() const { return has_addr; }
-		typename TYPES::EFFECTIVE_ADDRESS GetAddress() const { return addr; }
+		EFFECTIVE_ADDRESS GetAddress() const { return addr; }
 		
 	private:
 		bool has_addr;
-		typename TYPES::EFFECTIVE_ADDRESS addr;
+		EFFECTIVE_ADDRESS addr;
 	};
 	
 	
@@ -5881,8 +5886,8 @@ protected:
 	bool requires_fetch_instruction_reporting;  // indicates if the fetched instructions require to be reported
 	bool requires_commit_instruction_reporting; // indicates if the committed instructions require to be reported
 	
-	inline bool MonitorLoad(typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size);
-	inline bool MonitorStore(typename TYPES::EFFECTIVE_ADDRESS ea, unsigned int size);
+	inline bool MonitorLoad(EFFECTIVE_ADDRESS ea, unsigned int size);
+	inline bool MonitorStore(EFFECTIVE_ADDRESS ea, unsigned int size);
 	
 	//////////////////////////// Statistics ///////////////////////////////////
 
@@ -5914,7 +5919,7 @@ protected:
 	uint64_t max_inst;
 	unisim::kernel::variable::Parameter<uint64_t> param_max_inst;
 	
-	typename TYPES::EFFECTIVE_ADDRESS halt_on_addr;
+	EFFECTIVE_ADDRESS halt_on_addr;
 	std::string halt_on;
 	unisim::kernel::variable::Parameter<std::string> param_halt_on;
 	
@@ -5953,6 +5958,9 @@ protected:
 	
 	bool verbose_instruction_bus_read;
 	unisim::kernel::variable::Parameter<bool> param_verbose_instruction_bus_read;
+	
+	bool enable_linux_syscall_snooping;
+	unisim::kernel::variable::Parameter<bool> param_enable_linux_syscall_snooping;
 
 public:
 	inline bool IsVerboseDataLoad() const ALWAYS_INLINE { return verbose_data_load; }
@@ -5987,13 +5995,13 @@ private:
 protected:
 	//////////////////////////// Reset Address ////////////////////////////////
 	
-	typename TYPES::EFFECTIVE_ADDRESS reset_addr;
-	unisim::kernel::variable::Parameter<typename TYPES::EFFECTIVE_ADDRESS> param_reset_addr;
+	EFFECTIVE_ADDRESS reset_addr;
+	unisim::kernel::variable::Parameter<EFFECTIVE_ADDRESS> param_reset_addr;
 	
 	/////////////////////////// Program Counter ///////////////////////////////
 	
-	typename TYPES::EFFECTIVE_ADDRESS cia;
-	typename TYPES::EFFECTIVE_ADDRESS nia;
+	EFFECTIVE_ADDRESS cia;
+	EFFECTIVE_ADDRESS nia;
 	
 	////////////////////// General Purpose Registers //////////////////////////
 	
@@ -6012,6 +6020,31 @@ protected:
 	////////////////////////// Floating-point unit ////////////////////////////
 	
 	FPU fpu;
+	
+private:
+	////////////////////////// PowerPCLinux32 /////////////////////////////////
+	struct PowerPCLinux32 : public unisim::util::os::linux_os::Linux<uint32_t, uint32_t>
+	{
+		typedef unisim::util::os::linux_os::PPCTS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> > PPCTarget;
+
+		PowerPCLinux32(CPU *_cpu)
+			: unisim::util::os::linux_os::Linux<uint32_t, uint32_t>(_cpu->GetDebugInfoStream(), _cpu->GetDebugWarningStream(), _cpu->GetDebugErrorStream(), _cpu, _cpu, _cpu)
+			, ppc_target(0)
+		{
+			ppc_target = new PPCTarget(*this);
+			SetTargetSystem(ppc_target);
+		}
+		
+		~PowerPCLinux32()
+		{
+			delete ppc_target;
+		}
+		
+	private:
+		PPCTarget *ppc_target;
+	};
+	
+	PowerPCLinux32 powerpc_linux32;
 };
 
 } // end of namespace powerpc

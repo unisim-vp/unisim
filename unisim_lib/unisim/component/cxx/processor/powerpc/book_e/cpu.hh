@@ -791,9 +791,6 @@ protected:
 	bool trap_debug_interrupt;
 	unisim::kernel::variable::Parameter<bool> param_trap_debug_interrupt;
 	
-	bool enable_linux_syscall_snooping;
-	unisim::kernel::variable::Parameter<bool> param_enable_linux_syscall_snooping;
-	
 	////////////////////////// Instruction Buffer /////////////////////////////
 
 	EFFECTIVE_ADDRESS instruction_buffer_base_addr;

@@ -35,5 +35,5 @@
 #include <unisim/service/os/linux_os/powerpc_linux32.tcc>
 #include <unisim/service/os/linux_os/linux.tcc>
 
-template class unisim::service::os::linux_os::PowerPCLinux32<uint32_t, uint32_t>;
+template struct unisim::service::os::linux_os::PowerPCLinux32<uint32_t, uint32_t>;
 

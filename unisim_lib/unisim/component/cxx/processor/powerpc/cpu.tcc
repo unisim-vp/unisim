@@ -38,6 +38,7 @@
 #include <unisim/component/cxx/processor/powerpc/cpu.hh>
 #include <unisim/util/reg/core/register.tcc>
 #include <unisim/util/debug/simple_register.hh>
+#include <cctype>
 
 namespace unisim {
 namespace component {
@@ -149,6 +150,8 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	, param_verbose_data_bus_write("verbose-data-bus-write", this, verbose_data_bus_write, "enable/disable verbosity of data bus write")
 	, verbose_instruction_bus_read(false)
 	, param_verbose_instruction_bus_read("verbose-instruction-bus-read", this, verbose_instruction_bus_read, "enable/disable verbosity of instruction bus read")
+	, enable_linux_syscall_snooping(false)
+	, param_enable_linux_syscall_snooping("enable-linux-syscall-snooping", this, enable_linux_syscall_snooping, "enable/disable Linux system call snooping")
 	, registers_registry()
 	, exception_dispatcher(static_cast<typename CONFIG::CPU *>(this))
 	, invalid_spr(static_cast<typename CONFIG::CPU *>(this))
@@ -167,6 +170,7 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	, ctr()
 	, cr()
 	, fpu(static_cast<typename CONFIG::CPU *>(this))
+	, powerpc_linux32(this)
 {
 	stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	param_trap_on_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
@@ -707,6 +711,10 @@ template <typename TYPES, typename CONFIG>
 template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN>
 inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, EFFECTIVE_ADDRESS ea)
 {
+	if(sizeof(T) == 3)
+	{
+		std::cerr << "Meuh" << std::endl;
+	}
 	EFFECTIVE_ADDRESS size_to_protection_boundary;
 	ADDRESS virt_addr;
 	PHYSICAL_ADDRESS phys_addr;
@@ -753,7 +761,7 @@ inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, EFFECTIVE_ADDRESS ea)
 
 template <typename TYPES, typename CONFIG>
 template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN>
-inline bool CPU<TYPES, CONFIG>::DataStore(T value, EFFECTIVE_ADDRESS ea)
+inline bool CPU<TYPES, CONFIG>::DataStore(T& value, EFFECTIVE_ADDRESS ea)
 {
 	EFFECTIVE_ADDRESS size_to_protection_boundary;
 	ADDRESS virt_addr;
@@ -763,9 +771,9 @@ inline bool CPU<TYPES, CONFIG>::DataStore(T value, EFFECTIVE_ADDRESS ea)
 
 	if(CONVERT_ENDIAN)
 	{
-		static_cast<typename CONFIG::CPU *>(this)->template ConvertDataLoadStoreEndian<T, REVERSE, ENDIAN>((T&) value, storage_attr);
+		static_cast<typename CONFIG::CPU *>(this)->template ConvertDataLoadStoreEndian<T, REVERSE, ENDIAN>(value, storage_attr);
 	}
-
+	
 	uint32_t size_to_fsb_boundary = CONFIG::DATA_FSB_WIDTH - (ea % CONFIG::DATA_FSB_WIDTH);
 
 	// Ensure that memory access does not cross a FSB boundary
@@ -1336,6 +1344,16 @@ std::string CPU<TYPES, CONFIG>::GetObjectFriendlyName(typename TYPES::EFFECTIVE_
 
 	return sstr.str();
 }
+
+template <typename TYPES, typename CONFIG>
+void CPU<TYPES, CONFIG>::LogLinuxSystemCall()
+{
+	if(unlikely(enable_linux_syscall_snooping))
+	{
+		powerpc_linux32.LogSystemCall(gpr[0]);
+	}
+}
+
 
 } // end of namespace powerpc
 } // end of namespace processor
