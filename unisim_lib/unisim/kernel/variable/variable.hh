@@ -248,7 +248,7 @@ class Formula : public VariableBase
 {
 public:
 	typedef VariableBase::Type Type;
-	typedef FormulaOperator Operator;
+	typedef FormulaOperator::Operator Operator;
 	
 	Formula(const char *name, Object *owner, FormulaOperator op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *description = 0);
 	Formula(const char *name, Object *owner, FormulaOperator op, VariableBase *child1, VariableBase *child2, const char *description = 0);

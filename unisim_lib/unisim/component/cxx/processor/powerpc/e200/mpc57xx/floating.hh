@@ -355,13 +355,13 @@ struct BuiltDoubleTraits : public unisim::util::simfloat::Numerics::Double::Buil
   typedef mpc57xx::IntConversion IntConversion;
 };
 
-class SoftHalfFloat;
-class SoftFloat;
+struct SoftHalfFloat;
+struct SoftFloat;
 
-class SoftDouble : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltDoubleTraits>
+struct SoftDouble : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltDoubleTraits>
 {
-  friend class SoftFloat;
-  friend class SoftHalfFloat;
+  friend struct SoftFloat;
+  friend struct SoftHalfFloat;
   typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltDoubleTraits> inherited;
 
 public:
@@ -441,8 +441,8 @@ struct SoftFloat : private unisim::util::simfloat::Numerics::Double::TBuiltDoubl
   bool operator  < ( SoftFloat const& rhs ) const { return inherited::compare( rhs ) == CRLess; }
   bool operator  > ( SoftFloat const& rhs ) const { return inherited::compare( rhs ) == CRGreater; }
 
-  friend class SoftDouble;
-  friend class SoftHalfFloat;
+  friend struct SoftDouble;
+  friend struct SoftHalfFloat;
 };
 
 class BuiltHalfFloatTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<10, 5>
@@ -474,8 +474,8 @@ struct SoftHalfFloat : private unisim::util::simfloat::Numerics::Double::TBuiltD
 
   SoftHalfFloat& assign(const SoftFloat& source, Flags& flags);
 
-  friend class SoftDouble;
-  friend class SoftFloat;
+  friend struct SoftDouble;
+  friend struct SoftFloat;
 };
 
 inline SoftDouble&

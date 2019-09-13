@@ -212,18 +212,6 @@ public:
 	bool Rfci();
 	bool Rfmci();
 	
-// 	bool CheckFloatingPointException()
-// 	{
-// 		// Check for floating point exception condition: FPSCR[FEX] and (MSR[FE0] or MSR[FE1])
-// 		if((fpscr.template Get<typename FPSCR::FEX>()) and (msr.template Get<typename MSR::FE0>() or msr.template Get<typename MSR::FE1>()))
-// 		{
-// 			// Raise a floating point exception if FPSCR[FEX] is set
-// 			this->template ThrowException<typename ProgramInterrupt::FloatingPoint>();
-// 			return false;
-// 		}
-// 		return true;
-// 	}
-	
 	////////////////////////// Special Purpose Registers //////////////////////
 	
 	// Processor ID Register
@@ -241,6 +229,393 @@ public:
 	};
 	
 	//////////////////////////////// Interrupts ///////////////////////////////
+	
+	struct CriticalInputInterrupt : SuperCPU::template Interrupt<CriticalInputInterrupt, 0>
+	{
+		struct CriticalInput                        : SuperCPU::template Exception<CriticalInputInterrupt> { static const char *GetName() { return "Critical Input Interrupt/Critical Input Exception"; } };             //  p_critint_b is asserted and MSR[CE] = 1
+		
+		typedef typename SuperCPU::template ExceptionSet<CriticalInput> ALL;
+		
+		typedef FieldSet< typename MSR::WE
+		                , typename MSR::CE
+		                , typename MSR::EE
+		                , typename MSR::PR
+		                , typename MSR::FP
+		                , typename MSR::FE0
+		                , typename MSR::DWE
+		                , typename MSR::DE
+		                , typename MSR::FE1
+		                , typename MSR::IS
+		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
+		
+		static const char *GetName() { return "Critical Input Interrupt"; }
+	};
+
+	struct MachineCheckInterrupt : SuperCPU::template InterruptWithAddress<MachineCheckInterrupt, 1>
+	{
+		typedef typename SuperCPU::template InterruptWithAddress<MachineCheckInterrupt, 1> Super;
+		
+		enum MachineCheckAsynchronousEventType
+		{
+			MCE_INSTRUCTION_PLB_ERROR          = 0x01, // Instruction PLB Error
+			MCE_DATA_READ_PLB_ERROR            = 0x02, // Data Read PLB Error
+			MCE_DATA_WRITE_PLB_ERROR           = 0x03, // Data Write PLB Error
+			MCE_TLB_PARITY_ERROR               = 0x04, // Translation Lookaside Buffer Parity Error
+			MCE_INSTRUCTION_CACHE_PARITY_ERROR = 0x08, // Instruction Cache Parity Error
+			MCE_DATA_CACHE_SEARCH_PARITY_ERROR = 0x10, // Data Cache Search Parity Error
+			MCE_DATA_CACHE_FLUSH_PARITY_ERROR  = 0x20, // Data Cache Flush Parity Error
+		};
+
+		struct InstructionSynchronousMachineCheck : SuperCPU::template Exception<MachineCheckInterrupt> { static const char *GetName() { return "Machine Check Interrupt/Instruction Synchronous Machine Check Exception"; } };
+		struct InstructionAsynchronousMachineCheck : SuperCPU::template Exception<MachineCheckInterrupt> { static const char *GetName() { return "Machine Check Interrupt/Instruction Asynchronous Machine Check Exception"; } };
+		struct DataAsynchronousMachineCheck : SuperCPU::template Exception<MachineCheckInterrupt> { static const char *GetName() { return "Machine Check Interrupt/Data Asynchronous Machine Check Exception"; } };
+		struct TLBAsynchronousMachineCheck : SuperCPU::template Exception<MachineCheckInterrupt> { static const char *GetName() { return "Machine Check Interrupt/TLB Aynchronous Machine Check Exception"; } };
+
+		typedef typename SuperCPU::template ExceptionSet< InstructionSynchronousMachineCheck
+		                                                , InstructionAsynchronousMachineCheck
+		                                                , DataAsynchronousMachineCheck
+		                                                , TLBAsynchronousMachineCheck> ALL;
+		
+		typedef FieldSet< typename MSR::WE
+		                , typename MSR::CE
+		                , typename MSR::EE
+		                , typename MSR::PR
+		                , typename MSR::FP
+		                , typename MSR::ME
+		                , typename MSR::FE0
+		                , typename MSR::DWE
+		                , typename MSR::DE
+		                , typename MSR::FE1
+		                , typename MSR::IS
+		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
+		
+		MachineCheckInterrupt() : Super(), machine_check_async_events(0) {}
+		bool GotAsynchronousEvents() const { return machine_check_async_events; }
+		bool GotAsynchronousEvent(MachineCheckAsynchronousEventType machine_check_event) const { return machine_check_async_events & machine_check_event; }
+		MachineCheckInterrupt& SetEvent(MachineCheckAsynchronousEventType machine_check_event) { machine_check_async_events |= machine_check_event; return *this; }
+		void ClearAsynchronousEvents() { machine_check_async_events = 0; }
+		static const char *GetName() { return "Machine Check Interrupt"; }
+	private:
+		unsigned int machine_check_async_events;
+	};
+	
+	struct DataStorageInterrupt : SuperCPU::template InterruptWithAddress<DataStorageInterrupt, 2>
+	{
+		struct AccessControl                        : SuperCPU::template Exception<DataStorageInterrupt> { static const char *GetName() { return "Data Storage Interrupt/Access Control Exception"; } }; // Access control
+		struct ByteOrdering                         : SuperCPU::template Exception<DataStorageInterrupt> { static const char *GetName() { return "Data Storage Interrupt/Byte Ordering Exception"; } };  // Byte ordering
+		struct CacheLocking                         : SuperCPU::template Exception<DataStorageInterrupt> { static const char *GetName() { return "Data Storage Interrupt/Cache Locking Exception"; } };  // Cache locking
+		
+		typedef typename SuperCPU::template ExceptionSet<AccessControl> ALL;
+		
+		typedef FieldSet< typename MSR::WE
+		                , typename MSR::EE
+		                , typename MSR::PR
+		                , typename MSR::FP
+		                , typename MSR::FE0
+		                , typename MSR::DWE
+		                , typename MSR::FE1
+		                , typename MSR::IS
+		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
+
+		static const char *GetName() { return "Data Storage Interrupt"; }
+		
+		DataStorageInterrupt& SetWrite(bool v) { write = v; return *this; }
+		bool IsWrite() const { return write; }
+	private:
+		bool write;
+	};
+
+	struct InstructionStorageInterrupt : SuperCPU::template Interrupt<InstructionStorageInterrupt, 3>
+	{
+		struct AccessControl : SuperCPU::template Exception<InstructionStorageInterrupt> { static const char *GetName() { return "Instruction Storage Interrupt/Access Control Exception"; } }; // Access control
+		struct ByteOrdering  : SuperCPU::template Exception<InstructionStorageInterrupt> { static const char *GetName() { return "Instruction Storage Interrupt/Byte Ordering Exception"; } };  // Byte Ordering
+		
+		typedef typename SuperCPU::template ExceptionSet<AccessControl, ByteOrdering> ALL;
+		
+		typedef FieldSet< typename MSR::WE
+		                , typename MSR::EE
+		                , typename MSR::PR
+		                , typename MSR::FP
+		                , typename MSR::FE0
+		                , typename MSR::DWE
+		                , typename MSR::FE1
+		                , typename MSR::IS
+		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
+
+		static const char *GetName() { return "Instruction Storage Interrupt"; }
+	};
+
+	struct ExternalInputInterrupt : SuperCPU::template Interrupt<ExternalInputInterrupt, 4>
+	{
+		struct ExternalInput                        : SuperCPU::template Exception<ExternalInputInterrupt> { static const char *GetName() { return "External Input Interrupt/External Input Exception"; } };             // Interrupt Controller interrupt and MSR[EE] = 1
+		
+		typedef typename SuperCPU::template ExceptionSet<ExternalInput> ALL;
+		
+		typedef FieldSet< typename MSR::WE
+		                , typename MSR::EE
+		                , typename MSR::PR
+		                , typename MSR::FP
+		                , typename MSR::FE0
+		                , typename MSR::DWE
+		                , typename MSR::FE1
+		                , typename MSR::IS
+		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
+		
+		static const char *GetName() { return "External Input Interrupt"; }
+	};
+
+	struct AlignmentInterrupt : SuperCPU::template InterruptWithAddress<AlignmentInterrupt, 5>
+	{
+		struct UnalignedIntegerLoadStore            : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Unaligned Integer Load/Store Exception"; } };                 // integer load/store
+		struct UnalignedLoadStoreMultiple           : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load/Store Multiple Exception"; } };                // lmw, stmw not word aligned
+		struct UnalignedFloatingPointLoadStore      : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Unaligned Floating-Point Load/Store Exception"; } };          // floating-point load/store
+		struct UnalignedLoadLinkStoreConditional    : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load Link/Store Conditional Exception"; } };        // lwarx or stwcx. not word aligned, lharx or sthcx. not halfword aligned
+		struct WriteThroughDCBZ                     : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Write Through DCBZ Exception"; } };                           // dcbz
+		
+		typedef typename SuperCPU::template ExceptionSet<UnalignedIntegerLoadStore, UnalignedLoadStoreMultiple, UnalignedFloatingPointLoadStore, UnalignedLoadLinkStoreConditional, WriteThroughDCBZ> ALL;
+		
+		typedef FieldSet< typename MSR::WE
+		                , typename MSR::EE
+		                , typename MSR::PR
+		                , typename MSR::FP
+		                , typename MSR::FE0
+		                , typename MSR::DWE
+		                , typename MSR::FE1
+		                , typename MSR::IS
+		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
+
+		static const char *GetName() { return "Alignment Interrupt"; }
+	};
+	
+	struct ProgramInterrupt : SuperCPU::template Interrupt<ProgramInterrupt, 6>
+	{
+		struct IllegalInstruction                   : SuperCPU::template Exception<ProgramInterrupt>  { static const char *GetName() { return "Program Interrupt/Illegal Instruction Exception"; } };                   // illegal instruction
+		struct PrivilegeViolation                   : SuperCPU::template Exception<ProgramInterrupt>  { static const char *GetName() { return "Program Interrupt/Privilege Violation Exception"; } };                   // privilege violation
+		struct Trap                                 : SuperCPU::template Exception<ProgramInterrupt> { static const char *GetName() { return "Program Interrupt/Trap Exception"; } };                   // trap instruction
+		struct FloatingPoint                        : SuperCPU::template Exception<ProgramInterrupt> { static const char *GetName() { return "Program Interrupt/Floating-point"; } };
+		struct AuxiliaryProcessor                   : SuperCPU::template Exception<ProgramInterrupt> { static const char *GetName() { return "Program Interrupt/Auxiliary Processor"; } };
+		struct UnimplementedInstruction             : SuperCPU::template Exception<ProgramInterrupt> { static const char *GetName() { return "Program Interrupt/Unimplemented Instruction Exception"; } };                   // unimplemented instruction
+		
+		typedef typename SuperCPU::template ExceptionSet<IllegalInstruction, PrivilegeViolation, Trap, FloatingPoint, UnimplementedInstruction> ALL;
+		
+		typedef FieldSet< typename MSR::WE
+		                , typename MSR::EE
+		                , typename MSR::PR
+		                , typename MSR::FP
+		                , typename MSR::FE0
+		                , typename MSR::DWE
+		                , typename MSR::FE1
+		                , typename MSR::IS
+		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
+
+		static const char *GetName() { return "Program Interrupt"; }
+	};
+
+	struct FloatingPointUnavailableInterrupt : SuperCPU::template Interrupt<FloatingPointUnavailableInterrupt, 7>
+	{
+		struct FloatingPointUnavailable : SuperCPU::template Exception<FloatingPointUnavailableInterrupt> { static const char *GetName() { return "Floating-point Unavailable Interrupt/Floating-point Unavailable Interrupt"; } };
+		
+		typedef typename SuperCPU::template ExceptionSet<FloatingPointUnavailable> ALL;
+		
+		typedef FieldSet< typename MSR::WE
+		                , typename MSR::EE
+		                , typename MSR::PR
+		                , typename MSR::FP
+		                , typename MSR::FE0
+		                , typename MSR::DWE
+		                , typename MSR::FE1
+		                , typename MSR::IS
+		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
+		
+		static const char *GetName() { return "Floating-point Unavailable Interrupt"; }
+	};
+	
+	struct SystemCallInterrupt : SuperCPU::template Interrupt<SystemCallInterrupt, 8>
+	{
+		struct SystemCall                           : SuperCPU::template Exception<SystemCallInterrupt> { static const char *GetName() { return "System Call Interrupt/System Call Exception"; } };                // Execution of the System Call (se_sc) instruction
+		
+		typedef typename SuperCPU::template ExceptionSet<SystemCall> ALL;
+		
+		typedef FieldSet< typename MSR::WE
+		                , typename MSR::EE
+		                , typename MSR::PR
+		                , typename MSR::FP
+		                , typename MSR::FE0
+		                , typename MSR::DWE
+		                , typename MSR::FE1
+		                , typename MSR::IS
+		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
+		
+		static const char *GetName() { return "System Call Interrupt"; }
+		
+		SystemCallInterrupt() : elev(0) {}
+		void SetELEV(unsigned int _elev) { elev = _elev; }
+		unsigned int GetELEV() const { return elev; }
+		void ClearELEV() { elev = 0; }
+	private:
+		unsigned int elev;
+	};
+
+	struct AuxiliaryProcessorUnavailableInterrupt : SuperCPU::template Interrupt<AuxiliaryProcessorUnavailableInterrupt, 9>
+	{
+		struct AuxiliaryProcessorUnavailable : SuperCPU::template Exception<AuxiliaryProcessorUnavailableInterrupt> { static const char *GetName() { return "Auxiliary Processor Unavailable Interrupt/Auxiliary Processor Unavailable Exception"; } };
+		
+		typedef typename SuperCPU::template ExceptionSet<AuxiliaryProcessorUnavailable> ALL;
+		
+		typedef FieldSet< typename MSR::WE
+		                , typename MSR::EE
+		                , typename MSR::PR
+		                , typename MSR::FP
+		                , typename MSR::FE0
+		                , typename MSR::DWE
+		                , typename MSR::FE1
+		                , typename MSR::IS
+		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
+		
+		static const char *GetName() { return "Auxiliary Processor Unavailable Interrupt"; }
+	};
+
+	struct DecrementerInterrupt : SuperCPU::template Interrupt<DecrementerInterrupt, 10>
+	{
+		struct Decrementer : SuperCPU::template Exception<DecrementerInterrupt> { static const char *GetName() { return "Decrementer Interrupt/Decrementer Exception"; } };
+		
+		typedef typename SuperCPU::template ExceptionSet<Decrementer> ALL;
+		
+		typedef FieldSet< typename MSR::WE
+		                , typename MSR::EE
+		                , typename MSR::PR
+		                , typename MSR::FP
+		                , typename MSR::FE0
+		                , typename MSR::DWE
+		                , typename MSR::FE1
+		                , typename MSR::IS
+		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
+		
+		static const char *GetName() { return "Decrementer Interrupt"; }
+	};
+	
+	struct FixedIntervalTimerInterrupt : SuperCPU::template Interrupt<FixedIntervalTimerInterrupt, 11>
+	{
+		struct FixedIntervalTimer : SuperCPU::template Exception<FixedIntervalTimerInterrupt> { static const char *GetName() { return "Fixed Interval Timer Interrupt/Fixed Interval Timer Exception"; } };
+		
+		typedef typename SuperCPU::template ExceptionSet<FixedIntervalTimer> ALL;
+		
+		typedef FieldSet< typename MSR::WE
+		                , typename MSR::EE
+		                , typename MSR::PR
+		                , typename MSR::FP
+		                , typename MSR::FE0
+		                , typename MSR::DWE
+		                , typename MSR::FE1
+		                , typename MSR::IS
+		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
+		
+		static const char *GetName() { return "Fixed Interval Timer Interrupt"; }
+	};
+	
+	struct WatchdogTimerInterrupt : SuperCPU::template Interrupt<WatchdogTimerInterrupt, 12>
+	{
+		struct WatchdogTimer : SuperCPU::template Exception<WatchdogTimerInterrupt> { static const char *GetName() { return "Watchdog Timer Interrupt/Watchdog Timer Exception"; } };
+		
+		typedef typename SuperCPU::template ExceptionSet<WatchdogTimer> ALL;
+		
+		typedef FieldSet< typename MSR::WE
+		                , typename MSR::EE
+		                , typename MSR::PR
+		                , typename MSR::FP
+		                , typename MSR::FE0
+		                , typename MSR::DWE
+		                , typename MSR::FE1
+		                , typename MSR::IS
+		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
+		
+		static const char *GetName() { return "Watchdog Timer Interrupt"; }
+	};
+	
+	struct DataTLBErrorInterrupt : SuperCPU::template InterruptWithAddress<DataTLBErrorInterrupt, 13>
+	{
+		struct DataTLBError : SuperCPU::template Exception<DataTLBErrorInterrupt> { static const char *GetName() { return "Data TLB Error Interrupt/Data TLB Error Exception"; } };
+		
+		typedef typename SuperCPU::template ExceptionSet<DataTLBError> ALL;
+		
+		typedef FieldSet< typename MSR::WE
+		                , typename MSR::EE
+		                , typename MSR::PR
+		                , typename MSR::FP
+		                , typename MSR::FE0
+		                , typename MSR::DWE
+		                , typename MSR::FE1
+		                , typename MSR::IS
+		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
+		
+		static const char *GetName() { return "Data TLB Error Interrupt"; }
+		
+		DataTLBErrorInterrupt& SetWrite(bool v) { write = v; return *this; }
+		bool IsWrite() const { return write; }
+	private:
+		bool write;
+	};
+
+	struct InstructionTLBErrorInterrupt : SuperCPU::template InterruptWithAddress<InstructionTLBErrorInterrupt, 14>
+	{
+		struct InstructionTLBError : SuperCPU::template Exception<InstructionTLBErrorInterrupt> { static const char *GetName() { return "Instruction TLB Error Interrupt/Instruction TLB Error Exception"; } };
+		
+		typedef typename SuperCPU::template ExceptionSet<InstructionTLBError> ALL;
+		
+		typedef FieldSet< typename MSR::WE
+		                , typename MSR::EE
+		                , typename MSR::PR
+		                , typename MSR::FP
+		                , typename MSR::FE0
+		                , typename MSR::DWE
+		                , typename MSR::FE1
+		                , typename MSR::IS
+		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
+		
+		static const char *GetName() { return "Instruction TLB Error Interrupt"; }
+	};
+	
+	struct DebugInterrupt : SuperCPU::template Interrupt<DebugInterrupt, 15>
+	{
+		typedef typename SuperCPU::template Interrupt<DebugInterrupt, 15> Super;
+		
+		enum DebugEventType
+		{
+			DBG_UNCONDITIONAL_DEBUG_EVENT        = 0x00000001,
+			DBG_INSTRUCTION_COMPLETE_DEBUG_EVENT = 0x00000002,
+			DBG_BRANCH_TAKEN_DEBUG_EVENT         = 0x00000004,
+			DBG_INTERRUPT_TAKEN_DEBUG_EVENT      = 0x00000008,
+			DBG_TRAP_INSTRUCTION_DEBUG_EVENT     = 0x00000010,
+			DBG_INSTRUCTION_ADDRESS_COMPARE      = 0x00000020,
+			DBG_DATA_ADDRESS_COMPARE             = 0x00000040,
+			DBG_DATA_VALUE_COMPARE               = 0x00000080
+		};
+		
+		struct DebugEvent : SuperCPU::template Exception<DebugInterrupt> { static const char *GetName() { return "Debug Interrupt/Debug Event Exception"; } };
+		
+		typedef typename SuperCPU::template ExceptionSet<DebugEvent> ALL;
+		
+		typedef FieldSet< typename MSR::WE
+		                , typename MSR::CE
+		                , typename MSR::EE
+		                , typename MSR::PR
+		                , typename MSR::FP
+		                , typename MSR::FE0
+		                , typename MSR::DWE
+		                , typename MSR::DE
+		                , typename MSR::FE1
+		                , typename MSR::IS
+		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
+		
+		DebugInterrupt() : Super(), dbg_events(0) {}
+		bool GotEvent(DebugEventType dbg_event) const { return dbg_events & dbg_event; }
+		DebugInterrupt& SetEvent(DebugEventType dbg_event) { dbg_events |= dbg_event; return *this; }
+		void ClearEvents() { dbg_events = 0; }
+		
+		static const char *GetName() { return "Debug Interrupt"; }
+	private:
+		uint32_t dbg_events;
+	};
 	
 	// Priorities:
 	//  0  MachineCheckInterrupt                  InstructionAsynchronousMachineCheck
@@ -275,394 +650,39 @@ public:
 	// 29  DataTLBErrorInterrupt                  DataTLBError
 	// 30  InstructionTLBErrorInterrupt           InstructionTLBError
 	
-	
-	struct CriticalInputInterrupt : SuperCPU::template Interrupt<CriticalInputInterrupt, 0>
-	{
-		struct CriticalInput                        : SuperCPU::template Exception<CriticalInputInterrupt,5> { static const char *GetName() { return "Critical Input Interrupt/Critical Input Exception"; } };             //  p_critint_b is asserted and MSR[CE] = 1
-		
-		typedef typename SuperCPU::template ExceptionSet<CriticalInput> ALL;
-		
-		typedef FieldSet< typename MSR::WE
-		                , typename MSR::CE
-		                , typename MSR::EE
-		                , typename MSR::PR
-		                , typename MSR::FP
-		                , typename MSR::FE0
-		                , typename MSR::DWE
-		                , typename MSR::DE
-		                , typename MSR::FE1
-		                , typename MSR::IS
-		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-		
-		static const char *GetName() { return "Critical Input Interrupt"; }
-	};
+	typedef typename SuperCPU::template ExceptionPrioritySet<
+		typename MachineCheckInterrupt                 ::InstructionAsynchronousMachineCheck,
+		typename MachineCheckInterrupt                 ::TLBAsynchronousMachineCheck        ,
+		typename MachineCheckInterrupt                 ::DataAsynchronousMachineCheck       ,
+		typename MachineCheckInterrupt                 ::InstructionSynchronousMachineCheck ,
+		typename DebugInterrupt                        ::DebugEvent                         ,
+		typename CriticalInputInterrupt                ::CriticalInput                      ,
+		typename WatchdogTimerInterrupt                ::WatchdogTimer                      ,
+		typename ExternalInputInterrupt                ::ExternalInput                      ,
+		typename FixedIntervalTimerInterrupt           ::FixedIntervalTimer                 ,
+		typename DecrementerInterrupt                  ::Decrementer                        ,
+		typename DataStorageInterrupt                  ::AccessControl                      ,
+		typename DataStorageInterrupt                  ::ByteOrdering                       ,
+		typename DataStorageInterrupt                  ::CacheLocking                       ,
+		typename InstructionStorageInterrupt           ::AccessControl                      ,
+		typename InstructionStorageInterrupt           ::ByteOrdering                       ,
+		typename AlignmentInterrupt                    ::UnalignedIntegerLoadStore          ,
+		typename AlignmentInterrupt                    ::UnalignedLoadStoreMultiple         ,
+		typename AlignmentInterrupt                    ::UnalignedFloatingPointLoadStore    ,
+		typename AlignmentInterrupt                    ::UnalignedLoadLinkStoreConditional  ,
+		typename AlignmentInterrupt                    ::WriteThroughDCBZ                   ,
+		typename ProgramInterrupt                      ::IllegalInstruction                 ,
+		typename ProgramInterrupt                      ::PrivilegeViolation                 ,
+		typename ProgramInterrupt                      ::Trap                               ,
+		typename ProgramInterrupt                      ::FloatingPoint                      ,
+		typename ProgramInterrupt                      ::AuxiliaryProcessor                 ,
+		typename ProgramInterrupt                      ::UnimplementedInstruction           ,
+		typename FloatingPointUnavailableInterrupt     ::FloatingPointUnavailable           ,
+		typename SystemCallInterrupt                   ::SystemCall                         ,
+		typename AuxiliaryProcessorUnavailableInterrupt::AuxiliaryProcessorUnavailable      ,
+		typename DataTLBErrorInterrupt                 ::DataTLBError                       ,
+		typename InstructionTLBErrorInterrupt          ::InstructionTLBError> EXCEPTION_PRIORITIES;
 
-	struct MachineCheckInterrupt : SuperCPU::template InterruptWithAddress<MachineCheckInterrupt, 1>
-	{
-		typedef typename SuperCPU::template InterruptWithAddress<MachineCheckInterrupt, 1> Super;
-		
-		enum MachineCheckAsynchronousEventType
-		{
-			MCE_INSTRUCTION_PLB_ERROR          = 0x01, // Instruction PLB Error
-			MCE_DATA_READ_PLB_ERROR            = 0x02, // Data Read PLB Error
-			MCE_DATA_WRITE_PLB_ERROR           = 0x03, // Data Write PLB Error
-			MCE_TLB_PARITY_ERROR               = 0x04, // Translation Lookaside Buffer Parity Error
-			MCE_INSTRUCTION_CACHE_PARITY_ERROR = 0x08, // Instruction Cache Parity Error
-			MCE_DATA_CACHE_SEARCH_PARITY_ERROR = 0x10, // Data Cache Search Parity Error
-			MCE_DATA_CACHE_FLUSH_PARITY_ERROR  = 0x20, // Data Cache Flush Parity Error
-		};
-
-		struct InstructionSynchronousMachineCheck : SuperCPU::template Exception<MachineCheckInterrupt, 3> { static const char *GetName() { return "Machine Check Interrupt/Instruction Synchronous Machine Check Exception"; } };
-		struct InstructionAsynchronousMachineCheck : SuperCPU::template Exception<MachineCheckInterrupt, 0> { static const char *GetName() { return "Machine Check Interrupt/Instruction Asynchronous Machine Check Exception"; } };
-		struct DataAsynchronousMachineCheck : SuperCPU::template Exception<MachineCheckInterrupt, 2> { static const char *GetName() { return "Machine Check Interrupt/Data Asynchronous Machine Check Exception"; } };
-		struct TLBAsynchronousMachineCheck : SuperCPU::template Exception<MachineCheckInterrupt, 1> { static const char *GetName() { return "Machine Check Interrupt/TLB Aynchronous Machine Check Exception"; } };
-
-		typedef typename SuperCPU::template ExceptionSet< InstructionSynchronousMachineCheck
-		                                                , InstructionAsynchronousMachineCheck
-		                                                , DataAsynchronousMachineCheck
-		                                                , TLBAsynchronousMachineCheck> ALL;
-		
-		typedef FieldSet< typename MSR::WE
-		                , typename MSR::CE
-		                , typename MSR::EE
-		                , typename MSR::PR
-		                , typename MSR::FP
-		                , typename MSR::ME
-		                , typename MSR::FE0
-		                , typename MSR::DWE
-		                , typename MSR::DE
-		                , typename MSR::FE1
-		                , typename MSR::IS
-		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-		
-		MachineCheckInterrupt() : Super(), machine_check_async_events(0) {}
-		bool GotAsynchronousEvents() const { return machine_check_async_events; }
-		bool GotAsynchronousEvent(MachineCheckAsynchronousEventType machine_check_event) const { return machine_check_async_events & machine_check_event; }
-		MachineCheckInterrupt& SetEvent(MachineCheckAsynchronousEventType machine_check_event) { machine_check_async_events |= machine_check_event; return *this; }
-		void ClearAsynchronousEvents() { machine_check_async_events = 0; }
-		static const char *GetName() { return "Machine Check Interrupt"; }
-	private:
-		unsigned int machine_check_async_events;
-	};
-	
-	struct DataStorageInterrupt : SuperCPU::template InterruptWithAddress<DataStorageInterrupt, 2>
-	{
-		struct AccessControl                        : SuperCPU::template Exception<DataStorageInterrupt,10> { static const char *GetName() { return "Data Storage Interrupt/Access Control Exception"; } }; // Access control
-		struct ByteOrdering                         : SuperCPU::template Exception<DataStorageInterrupt,11> { static const char *GetName() { return "Data Storage Interrupt/Byte Ordering Exception"; } };  // Byte ordering
-		struct CacheLocking                         : SuperCPU::template Exception<DataStorageInterrupt,12> { static const char *GetName() { return "Data Storage Interrupt/Cache Locking Exception"; } };  // Cache locking
-		
-		typedef typename SuperCPU::template ExceptionSet<AccessControl> ALL;
-		
-		typedef FieldSet< typename MSR::WE
-		                , typename MSR::EE
-		                , typename MSR::PR
-		                , typename MSR::FP
-		                , typename MSR::FE0
-		                , typename MSR::DWE
-		                , typename MSR::FE1
-		                , typename MSR::IS
-		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-
-		static const char *GetName() { return "Data Storage Interrupt"; }
-		
-		DataStorageInterrupt& SetWrite(bool v) { write = v; return *this; }
-		bool IsWrite() const { return write; }
-	private:
-		bool write;
-	};
-
-	struct InstructionStorageInterrupt : SuperCPU::template Interrupt<InstructionStorageInterrupt, 3>
-	{
-		struct AccessControl : SuperCPU::template Exception<InstructionStorageInterrupt,13> { static const char *GetName() { return "Instruction Storage Interrupt/Access Control Exception"; } }; // Access control
-		struct ByteOrdering  : SuperCPU::template Exception<InstructionStorageInterrupt,14> { static const char *GetName() { return "Instruction Storage Interrupt/Byte Ordering Exception"; } };  // Byte Ordering
-		
-		typedef typename SuperCPU::template ExceptionSet<AccessControl, ByteOrdering> ALL;
-		
-		typedef FieldSet< typename MSR::WE
-		                , typename MSR::EE
-		                , typename MSR::PR
-		                , typename MSR::FP
-		                , typename MSR::FE0
-		                , typename MSR::DWE
-		                , typename MSR::FE1
-		                , typename MSR::IS
-		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-
-		static const char *GetName() { return "Instruction Storage Interrupt"; }
-	};
-
-	struct ExternalInputInterrupt : SuperCPU::template Interrupt<ExternalInputInterrupt, 4>
-	{
-		struct ExternalInput                        : SuperCPU::template Exception<ExternalInputInterrupt,7> { static const char *GetName() { return "External Input Interrupt/External Input Exception"; } };             // Interrupt Controller interrupt and MSR[EE] = 1
-		
-		typedef typename SuperCPU::template ExceptionSet<ExternalInput> ALL;
-		
-		typedef FieldSet< typename MSR::WE
-		                , typename MSR::EE
-		                , typename MSR::PR
-		                , typename MSR::FP
-		                , typename MSR::FE0
-		                , typename MSR::DWE
-		                , typename MSR::FE1
-		                , typename MSR::IS
-		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-		
-		static const char *GetName() { return "External Input Interrupt"; }
-	};
-
-	struct AlignmentInterrupt : SuperCPU::template InterruptWithAddress<AlignmentInterrupt, 5>
-	{
-		struct UnalignedIntegerLoadStore            : SuperCPU::template Exception<AlignmentInterrupt,15> { static const char *GetName() { return "Alignment Interrupt/Unaligned Integer Load/Store Exception"; } };                 // integer load/store
-		struct UnalignedLoadStoreMultiple           : SuperCPU::template Exception<AlignmentInterrupt,16> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load/Store Multiple Exception"; } };                // lmw, stmw not word aligned
-		struct UnalignedFloatingPointLoadStore      : SuperCPU::template Exception<AlignmentInterrupt,17> { static const char *GetName() { return "Alignment Interrupt/Unaligned Floating-Point Load/Store Exception"; } };          // floating-point load/store
-		struct UnalignedLoadLinkStoreConditional    : SuperCPU::template Exception<AlignmentInterrupt,18> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load Link/Store Conditional Exception"; } };        // lwarx or stwcx. not word aligned, lharx or sthcx. not halfword aligned
-		struct WriteThroughDCBZ                     : SuperCPU::template Exception<AlignmentInterrupt,19> { static const char *GetName() { return "Alignment Interrupt/Write Through DCBZ Exception"; } };                           // dcbz
-		
-		typedef typename SuperCPU::template ExceptionSet<UnalignedIntegerLoadStore, UnalignedLoadStoreMultiple, UnalignedFloatingPointLoadStore, UnalignedLoadLinkStoreConditional, WriteThroughDCBZ> ALL;
-		
-		typedef FieldSet< typename MSR::WE
-		                , typename MSR::EE
-		                , typename MSR::PR
-		                , typename MSR::FP
-		                , typename MSR::FE0
-		                , typename MSR::DWE
-		                , typename MSR::FE1
-		                , typename MSR::IS
-		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-
-		static const char *GetName() { return "Alignment Interrupt"; }
-	};
-	
-	struct ProgramInterrupt : SuperCPU::template Interrupt<ProgramInterrupt, 6>
-	{
-		struct IllegalInstruction                   : SuperCPU::template Exception<ProgramInterrupt,20>  { static const char *GetName() { return "Program Interrupt/Illegal Instruction Exception"; } };                   // illegal instruction
-		struct PrivilegeViolation                   : SuperCPU::template Exception<ProgramInterrupt,21>  { static const char *GetName() { return "Program Interrupt/Privilege Violation Exception"; } };                   // privilege violation
-		struct Trap                                 : SuperCPU::template Exception<ProgramInterrupt,22> { static const char *GetName() { return "Program Interrupt/Trap Exception"; } };                   // trap instruction
-		struct FloatingPoint                        : SuperCPU::template Exception<ProgramInterrupt,23> { static const char *GetName() { return "Program Interrupt/Floating-point"; } };
-		struct AuxiliaryProcessor                   : SuperCPU::template Exception<ProgramInterrupt,24> { static const char *GetName() { return "Program Interrupt/Auxiliary Processor"; } };
-		struct UnimplementedInstruction             : SuperCPU::template Exception<ProgramInterrupt,25> { static const char *GetName() { return "Program Interrupt/Unimplemented Instruction Exception"; } };                   // unimplemented instruction
-		
-		typedef typename SuperCPU::template ExceptionSet<IllegalInstruction, PrivilegeViolation, Trap, FloatingPoint, UnimplementedInstruction> ALL;
-		
-		typedef FieldSet< typename MSR::WE
-		                , typename MSR::EE
-		                , typename MSR::PR
-		                , typename MSR::FP
-		                , typename MSR::FE0
-		                , typename MSR::DWE
-		                , typename MSR::FE1
-		                , typename MSR::IS
-		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-
-		static const char *GetName() { return "Program Interrupt"; }
-	};
-
-	struct FloatingPointUnavailableInterrupt : SuperCPU::template Interrupt<FloatingPointUnavailableInterrupt, 7>
-	{
-		struct FloatingPointUnavailable : SuperCPU::template Exception<FloatingPointUnavailableInterrupt,26> { static const char *GetName() { return "Floating-point Unavailable Interrupt/Floating-point Unavailable Interrupt"; } };
-		
-		typedef typename SuperCPU::template ExceptionSet<FloatingPointUnavailable> ALL;
-		
-		typedef FieldSet< typename MSR::WE
-		                , typename MSR::EE
-		                , typename MSR::PR
-		                , typename MSR::FP
-		                , typename MSR::FE0
-		                , typename MSR::DWE
-		                , typename MSR::FE1
-		                , typename MSR::IS
-		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-		
-		static const char *GetName() { return "Floating-point Unavailable Interrupt"; }
-	};
-	
-	struct SystemCallInterrupt : SuperCPU::template Interrupt<SystemCallInterrupt, 8>
-	{
-		struct SystemCall                           : SuperCPU::template Exception<SystemCallInterrupt,27> { static const char *GetName() { return "System Call Interrupt/System Call Exception"; } };                // Execution of the System Call (se_sc) instruction
-		
-		typedef typename SuperCPU::template ExceptionSet<SystemCall> ALL;
-		
-		typedef FieldSet< typename MSR::WE
-		                , typename MSR::EE
-		                , typename MSR::PR
-		                , typename MSR::FP
-		                , typename MSR::FE0
-		                , typename MSR::DWE
-		                , typename MSR::FE1
-		                , typename MSR::IS
-		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-		
-		static const char *GetName() { return "System Call Interrupt"; }
-		
-		SystemCallInterrupt() : elev(0) {}
-		void SetELEV(unsigned int _elev) { elev = _elev; }
-		unsigned int GetELEV() const { return elev; }
-		void ClearELEV() { elev = 0; }
-	private:
-		unsigned int elev;
-	};
-
-	struct AuxiliaryProcessorUnavailableInterrupt : SuperCPU::template Interrupt<AuxiliaryProcessorUnavailableInterrupt, 9>
-	{
-		struct AuxiliaryProcessorUnavailable : SuperCPU::template Exception<AuxiliaryProcessorUnavailableInterrupt,28> { static const char *GetName() { return "Auxiliary Processor Unavailable Interrupt/Auxiliary Processor Unavailable Exception"; } };
-		
-		typedef typename SuperCPU::template ExceptionSet<AuxiliaryProcessorUnavailable> ALL;
-		
-		typedef FieldSet< typename MSR::WE
-		                , typename MSR::EE
-		                , typename MSR::PR
-		                , typename MSR::FP
-		                , typename MSR::FE0
-		                , typename MSR::DWE
-		                , typename MSR::FE1
-		                , typename MSR::IS
-		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-		
-		static const char *GetName() { return "Auxiliary Processor Unavailable Interrupt"; }
-	};
-
-	struct DecrementerInterrupt : SuperCPU::template Interrupt<DecrementerInterrupt, 10>
-	{
-		struct Decrementer : SuperCPU::template Exception<DecrementerInterrupt,9> { static const char *GetName() { return "Decrementer Interrupt/Decrementer Exception"; } };
-		
-		typedef typename SuperCPU::template ExceptionSet<Decrementer> ALL;
-		
-		typedef FieldSet< typename MSR::WE
-		                , typename MSR::EE
-		                , typename MSR::PR
-		                , typename MSR::FP
-		                , typename MSR::FE0
-		                , typename MSR::DWE
-		                , typename MSR::FE1
-		                , typename MSR::IS
-		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-		
-		static const char *GetName() { return "Decrementer Interrupt"; }
-	};
-	
-	struct FixedIntervalTimerInterrupt : SuperCPU::template Interrupt<FixedIntervalTimerInterrupt, 11>
-	{
-		struct FixedIntervalTimer : SuperCPU::template Exception<FixedIntervalTimerInterrupt,8> { static const char *GetName() { return "Fixed Interval Timer Interrupt/Fixed Interval Timer Exception"; } };
-		
-		typedef typename SuperCPU::template ExceptionSet<FixedIntervalTimer> ALL;
-		
-		typedef FieldSet< typename MSR::WE
-		                , typename MSR::EE
-		                , typename MSR::PR
-		                , typename MSR::FP
-		                , typename MSR::FE0
-		                , typename MSR::DWE
-		                , typename MSR::FE1
-		                , typename MSR::IS
-		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-		
-		static const char *GetName() { return "Fixed Interval Timer Interrupt"; }
-	};
-	
-	struct WatchdogTimerInterrupt : SuperCPU::template Interrupt<WatchdogTimerInterrupt, 12>
-	{
-		struct WatchdogTimer : SuperCPU::template Exception<WatchdogTimerInterrupt,6> { static const char *GetName() { return "Watchdog Timer Interrupt/Watchdog Timer Exception"; } };
-		
-		typedef typename SuperCPU::template ExceptionSet<WatchdogTimer> ALL;
-		
-		typedef FieldSet< typename MSR::WE
-		                , typename MSR::EE
-		                , typename MSR::PR
-		                , typename MSR::FP
-		                , typename MSR::FE0
-		                , typename MSR::DWE
-		                , typename MSR::FE1
-		                , typename MSR::IS
-		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-		
-		static const char *GetName() { return "Watchdog Timer Interrupt"; }
-	};
-	
-	struct DataTLBErrorInterrupt : SuperCPU::template InterruptWithAddress<DataTLBErrorInterrupt, 13>
-	{
-		struct DataTLBError : SuperCPU::template Exception<DataTLBErrorInterrupt,29> { static const char *GetName() { return "Data TLB Error Interrupt/Data TLB Error Exception"; } };
-		
-		typedef typename SuperCPU::template ExceptionSet<DataTLBError> ALL;
-		
-		typedef FieldSet< typename MSR::WE
-		                , typename MSR::EE
-		                , typename MSR::PR
-		                , typename MSR::FP
-		                , typename MSR::FE0
-		                , typename MSR::DWE
-		                , typename MSR::FE1
-		                , typename MSR::IS
-		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-		
-		static const char *GetName() { return "Data TLB Error Interrupt"; }
-		
-		DataTLBErrorInterrupt& SetWrite(bool v) { write = v; return *this; }
-		bool IsWrite() const { return write; }
-	private:
-		bool write;
-	};
-
-	struct InstructionTLBErrorInterrupt : SuperCPU::template InterruptWithAddress<InstructionTLBErrorInterrupt, 14>
-	{
-		struct InstructionTLBError : SuperCPU::template Exception<InstructionTLBErrorInterrupt,30> { static const char *GetName() { return "Instruction TLB Error Interrupt/Instruction TLB Error Exception"; } };
-		
-		typedef typename SuperCPU::template ExceptionSet<InstructionTLBError> ALL;
-		
-		typedef FieldSet< typename MSR::WE
-		                , typename MSR::EE
-		                , typename MSR::PR
-		                , typename MSR::FP
-		                , typename MSR::FE0
-		                , typename MSR::DWE
-		                , typename MSR::FE1
-		                , typename MSR::IS
-		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-		
-		static const char *GetName() { return "Instruction TLB Error Interrupt"; }
-	};
-	
-	struct DebugInterrupt : SuperCPU::template Interrupt<DebugInterrupt, 15>
-	{
-		typedef typename SuperCPU::template Interrupt<DebugInterrupt, 15> Super;
-		
-		enum DebugEventType
-		{
-			DBG_UNCONDITIONAL_DEBUG_EVENT        = 0x00000001,
-			DBG_INSTRUCTION_COMPLETE_DEBUG_EVENT = 0x00000002,
-			DBG_BRANCH_TAKEN_DEBUG_EVENT         = 0x00000004,
-			DBG_INTERRUPT_TAKEN_DEBUG_EVENT      = 0x00000008,
-			DBG_TRAP_INSTRUCTION_DEBUG_EVENT     = 0x00000010,
-			DBG_INSTRUCTION_ADDRESS_COMPARE      = 0x00000020,
-			DBG_DATA_ADDRESS_COMPARE             = 0x00000040,
-			DBG_DATA_VALUE_COMPARE               = 0x00000080
-		};
-		
-		struct DebugEvent : SuperCPU::template Exception<DebugInterrupt,4> { static const char *GetName() { return "Debug Interrupt/Debug Event Exception"; } };
-		
-		typedef typename SuperCPU::template ExceptionSet<DebugEvent> ALL;
-		
-		typedef FieldSet< typename MSR::WE
-		                , typename MSR::CE
-		                , typename MSR::EE
-		                , typename MSR::PR
-		                , typename MSR::FP
-		                , typename MSR::FE0
-		                , typename MSR::DWE
-		                , typename MSR::DE
-		                , typename MSR::FE1
-		                , typename MSR::IS
-		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-		
-		DebugInterrupt() : Super(), dbg_events(0) {}
-		bool GotEvent(DebugEventType dbg_event) const { return dbg_events & dbg_event; }
-		DebugInterrupt& SetEvent(DebugEventType dbg_event) { dbg_events |= dbg_event; return *this; }
-		void ClearEvents() { dbg_events = 0; }
-		
-		static const char *GetName() { return "Debug Interrupt"; }
-	private:
-		uint32_t dbg_events;
-	};
-	
 	void ProcessInterrupt(CriticalInputInterrupt *);
 	void ProcessInterrupt(MachineCheckInterrupt *);
 	void ProcessInterrupt(DataStorageInterrupt *);

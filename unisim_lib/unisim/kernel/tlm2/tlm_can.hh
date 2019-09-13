@@ -53,7 +53,7 @@ class tlm_can_global_quantum;
 class tlm_can_quantumkeeper;
 class tlm_can_value;
 class tlm_can_bus;
-class tlm_can_message;
+struct tlm_can_message;
 template <typename CAN_MESSAGE> class tlm_can_message_event;
 class tlm_can_core_config;
 template <typename CAN_MODULE, typename TYPES> class tlm_can_core;

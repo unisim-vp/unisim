@@ -1974,12 +1974,12 @@ template <> VariableBase& Variable<Intensity>::operator = (bool value)
 	if(IsMutable())
 	{
 		Intensity tmp = *storage;
-		switch((unsigned int) value)
+		switch((int) value)
 		{
 			case DECREASED_INTENSITY:
 			case NORMAL_INTENSITY:
 			case INCREASED_INTENSITY:
-				tmp = (Intensity)(unsigned int) value;
+				tmp = (Intensity)(int) value;
 				break;
 		}
 		SetModified(*storage != tmp);
@@ -2012,12 +2012,12 @@ template <> VariableBase& Variable<Intensity>::operator = (unsigned long long va
 	if(IsMutable())
 	{
 		Intensity tmp = *storage;
-		switch(value)
+		switch((long long) value)
 		{
 			case DECREASED_INTENSITY:
 			case NORMAL_INTENSITY:
 			case INCREASED_INTENSITY:
-				tmp = (Intensity) value;
+				tmp = (Intensity)(long long) value;
 				break;
 		}
 		SetModified(*storage != tmp);
@@ -2031,12 +2031,12 @@ template <> VariableBase& Variable<Intensity>::operator = (double value)
 	if(IsMutable())
 	{
 		Intensity tmp = *storage;
-		switch((unsigned int) value)
+		switch((int) value)
 		{
 			case DECREASED_INTENSITY:
 			case NORMAL_INTENSITY:
 			case INCREASED_INTENSITY:
-				tmp = (Intensity)(unsigned int) value;
+				tmp = (Intensity)(int) value;
 				break;
 		}
 		SetModified(*storage != tmp);

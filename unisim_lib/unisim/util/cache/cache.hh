@@ -3728,19 +3728,19 @@ template <typename LOC_MEM> inline LOC_MEM *MemorySubSystem<TYPES, MSS>::__MSS_G
 template <typename TYPES, typename MSS>
 inline std::ostream& MemorySubSystem<TYPES, MSS>::__MSS_GetDebugInfoStream__()
 {
-	return static_cast<MSS *>(this)->template GetDebugInfoStream();
+	return static_cast<MSS *>(this)->GetDebugInfoStream();
 }
 
 template <typename TYPES, typename MSS>
 inline std::ostream& MemorySubSystem<TYPES, MSS>::__MSS_GetDebugWarningStream__()
 {
-	return static_cast<MSS *>(this)->template GetDebugWarningStream();
+	return static_cast<MSS *>(this)->GetDebugWarningStream();
 }
 
 template <typename TYPES, typename MSS>
 inline std::ostream& MemorySubSystem<TYPES, MSS>::__MSS_GetDebugErrorStream__()
 {
-	return static_cast<MSS *>(this)->template GetDebugErrorStream();
+	return static_cast<MSS *>(this)->GetDebugErrorStream();
 }
 
 template <typename TYPES, typename MSS>

@@ -98,9 +98,9 @@ struct TYPES
 	
 	struct VA
 	{
-		struct AS  : Field<AS , 23>     {}; // Address Space
-		struct PID : Field<PID, 24, 31> {}; // Process ID
-		struct EA  : Field<EA , 32, 63> {}; // Effective Address
+		struct AS  : Field64<AS , 23>     {}; // Address Space
+		struct PID : Field64<PID, 24, 31> {}; // Process ID
+		struct EA  : Field64<EA , 32, 63> {}; // Effective Address
 	};
 };
 

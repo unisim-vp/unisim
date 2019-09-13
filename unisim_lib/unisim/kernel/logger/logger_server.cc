@@ -59,6 +59,8 @@ LoggerServer::LoggerServer(const char *name, unisim::kernel::Object *parent)
 	, text_file_()
 	, global_http_log()
 	, http_logs_per_client()
+	, activity(false)
+	, http_refresh_period(0.040)
 	, opt_std_err_(true)
 	, opt_std_out_(false)
 	, opt_std_err_color_(false)
@@ -70,6 +72,8 @@ LoggerServer::LoggerServer(const char *name, unisim::kernel::Object *parent)
 	, opt_xml_file_gzipped_(false)
 	, opt_http_(false)
 	, opt_http_max_log_size_(256)
+	, opt_http_min_refresh_period_(0.040)
+	, opt_http_max_refresh_period_(1.0)
 	, mutex()
 	, param_std_err("std_err", this, opt_std_err_, "Show logger output through the standard error output")
 	, param_std_out("std_out", this, opt_std_out_, "Show logger output through the standard output")
@@ -82,6 +86,8 @@ LoggerServer::LoggerServer(const char *name, unisim::kernel::Object *parent)
 	, param_xml_file_gzipped("xml_file_gzipped", this, opt_xml_file_gzipped_, "Compress the xml output (a .gz extension is automatically appended to the xml_filename option)")
 	, param_http("http", this, opt_http_, "Show logger output through HTTP")
 	, param_http_max_log_size("http_max_log_size", this, opt_http_max_log_size_, "Maximum log size for HTTP output")
+	, param_http_min_refresh_period("min-display-refresh-period", this, opt_http_min_refresh_period_, "Minimum refresh period of display for HTTP output (in seconds)")
+	, param_http_max_refresh_period("max-display-refresh-period", this, opt_http_max_refresh_period_, "Maximum refresh period of display for HTTP output (in seconds)")
 {
 	param_http_max_log_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
@@ -143,7 +149,7 @@ void LoggerServer::Close()
 	}
 }
 
-bool LoggerServer::Setup() 
+bool LoggerServer::Initialize() 
 {
 	/* check if a xml output needs to be created */
 	if (opt_xml_file_) 
@@ -286,6 +292,7 @@ void LoggerServer::Print(std::ostream& os, bool opt_color, mode_t mode, const ch
 void LoggerServer::Print(mode_t mode, const char *name, const char *buffer)
 {
 	pthread_mutex_lock(&mutex);
+	activity = true;
 	
 	if(opt_http_)
 	{
@@ -493,12 +500,14 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 				response << "\t\t<meta name=\"description\" content=\"user interface for logs over HTTP\">" << std::endl;
 				response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 				response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/kernel/logger/style.css\" type=\"text/css\" />" << std::endl;
-				response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+				response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';var activity = " << (activity ? "true" : "false") << ";</script>" << std::endl;
 				response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
 				response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
-				//response << "\t\t<script type=\"application/javascript\" src=\"/unisim/kernel/logger/script.js\"></script>" << std::endl;
+				response << "\t\t<script type=\"application/javascript\" src=\"/unisim/kernel/logger/script.js\"></script>" << std::endl;
 				response << "\t</head>" << std::endl;
-				response << "\t<body>" << std::endl;
+				response << "\t<body onload=\"gui.auto_reload(" << (unsigned int)(http_refresh_period * 1000) << ", 'self-refresh-when-active')\">" << std::endl;
+				http_refresh_period = activity ? opt_http_min_refresh_period_ : std::min(http_refresh_period * 2.0, opt_http_max_refresh_period_);
+				activity = false;
 				response << "\t\t<div class=\"log\">" << std::endl;
 				
 				if(req.HasQuery())
