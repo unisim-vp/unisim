@@ -14,6 +14,8 @@ import std/string
 import std/map
 import std/vector
 
+import m4/pthread
+
 copy source header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
@@ -65,7 +67,7 @@ done
 # Simulator
 
 output_simulator_configure_ac <(cat <<EOF
-AC_INIT([UNISIM INTELemu C++ simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}])
+AC_INIT([UNISIM DBGate C++ Server], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
@@ -103,17 +105,15 @@ LIBTOOL_DEPS = @LIBTOOL_DEPS@
 libtool: \$(LIBTOOL_DEPS)
 	\$(SHELL) ./config.status libtool
 
-# # Program
-# bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION}
-# unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
-# unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
-
+# Program
+bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION}
+unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
+unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 
 # Dynamic Plugin
-lib_LTLIBRARIES = libunisim-${SIMPKG}-plugin-${SIMULATOR_VERSION}.la
-libunisim_${SIMPKG}_plugin_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_SOURCE_FILES}
-libunisim_${SIMPKG}_plugin_${AM_SIMULATOR_VERSION}_la_CPPFLAGS = -DSIM_PLUGIN
-libunisim_${SIMPKG}_plugin_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -shared -no-undefined
+lib_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
+libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
+libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -shared -no-undefined
 
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
