@@ -216,7 +216,7 @@ public:
 	
 	struct SystemResetInterrupt : SuperCPU::template Interrupt<SystemResetInterrupt, 0x00 /* p_rstbase[0:29] */>
 	{
-		struct Reset                             : SuperCPU::template Exception<SystemResetInterrupt, 0> { static const char *GetName() { return "System Reset Interrupt/Reset Exception"; } };                  // reset
+		struct Reset                             : SuperCPU::template Exception<SystemResetInterrupt> { static const char *GetName() { return "System Reset Interrupt/Reset Exception"; } };                  // reset
 		
 		typedef typename SuperCPU::template ExceptionSet<Reset> ALL;
 		
@@ -240,7 +240,7 @@ public:
 
 	struct CriticalInputInterrupt : SuperCPU::template Interrupt<CriticalInputInterrupt, 0x00>
 	{
-		struct CriticalInput                        : SuperCPU::template Exception<CriticalInputInterrupt,5> { static const char *GetName() { return "Critical Input Interrupt/Critical Input Exception"; } };             //  p_critint_b is asserted and MSR[CE] = 1
+		struct CriticalInput                        : SuperCPU::template Exception<CriticalInputInterrupt> { static const char *GetName() { return "Critical Input Interrupt/Critical Input Exception"; } };             //  p_critint_b is asserted and MSR[CE] = 1
 		
 		typedef typename SuperCPU::template ExceptionSet<CriticalInput> ALL;
 		
@@ -288,9 +288,9 @@ public:
 			MCE_DATA_WRITE_BUS_ERROR_DSI                  = 0x00100000  // Data Write Bus Error with DSI
 		};
 
-		struct NMI                                  : SuperCPU::template Exception<MachineCheckInterrupt,1> { static const char *GetName() { return "Machine Check Interrupt/NMI Exception"; } };               // Non-Maskable Interrupt: p_nmi_b transitions from negated to asserted.
-		struct ErrorReport                          : SuperCPU::template Exception<MachineCheckInterrupt,2> { static const char *GetName() { return "Machine Check Interrupt/Error Report Exception"; } };      // Non-Maskable Interrupt: Error report
-		struct AsynchronousMachineCheck             : SuperCPU::template Exception<MachineCheckInterrupt,3> { static const char *GetName() { return "Machine Check Interrupt/Asynchronous Machine Check Exception"; } };   // Maskable with MSR[ME]
+		struct NMI                                  : SuperCPU::template Exception<MachineCheckInterrupt> { static const char *GetName() { return "Machine Check Interrupt/NMI Exception"; } };               // Non-Maskable Interrupt: p_nmi_b transitions from negated to asserted.
+		struct ErrorReport                          : SuperCPU::template Exception<MachineCheckInterrupt> { static const char *GetName() { return "Machine Check Interrupt/Error Report Exception"; } };      // Non-Maskable Interrupt: Error report
+		struct AsynchronousMachineCheck             : SuperCPU::template Exception<MachineCheckInterrupt> { static const char *GetName() { return "Machine Check Interrupt/Asynchronous Machine Check Exception"; } };   // Maskable with MSR[ME]
 		
 		typedef typename SuperCPU::template ExceptionSet<NMI, ErrorReport, AsynchronousMachineCheck> ALL;
 		
@@ -318,7 +318,7 @@ public:
 	
 	struct DataStorageInterrupt : SuperCPU::template InterruptWithAddress<DataStorageInterrupt, 0x20>
 	{
-		struct AccessControl                        : SuperCPU::template Exception<DataStorageInterrupt,15> { static const char *GetName() { return "Data Storage Interrupt/Access Control Exception"; } };               // Access control
+		struct AccessControl                        : SuperCPU::template Exception<DataStorageInterrupt> { static const char *GetName() { return "Data Storage Interrupt/Access Control Exception"; } };               // Access control
 		
 		typedef typename SuperCPU::template ExceptionSet<AccessControl> ALL;
 		
@@ -338,7 +338,7 @@ public:
 
 	struct InstructionStorageInterrupt : SuperCPU::template Interrupt<InstructionStorageInterrupt, 0x30>
 	{
-		struct AccessControl                        : SuperCPU::template Exception<InstructionStorageInterrupt,9> { static const char *GetName() { return "Instruction Storage Interrupt/Access Control Exception"; } };        // Access control
+		struct AccessControl                        : SuperCPU::template Exception<InstructionStorageInterrupt> { static const char *GetName() { return "Instruction Storage Interrupt/Access Control Exception"; } };        // Access control
 		
 		typedef typename SuperCPU::template ExceptionSet<AccessControl> ALL;
 		
@@ -359,7 +359,7 @@ public:
 
 	struct ExternalInputInterrupt : SuperCPU::template Interrupt<ExternalInputInterrupt, 0x40>
 	{
-		struct ExternalInput                        : SuperCPU::template Exception<ExternalInputInterrupt,4> { static const char *GetName() { return "External Input Interrupt/External Input Exception"; } };             // Interrupt Controller interrupt and MSR[EE] = 1
+		struct ExternalInput                        : SuperCPU::template Exception<ExternalInputInterrupt> { static const char *GetName() { return "External Input Interrupt/External Input Exception"; } };             // Interrupt Controller interrupt and MSR[EE] = 1
 		
 		typedef typename SuperCPU::template ExceptionSet<ExternalInput> ALL;
 		
@@ -379,9 +379,9 @@ public:
 
 	struct AlignmentInterrupt : SuperCPU::template InterruptWithAddress<AlignmentInterrupt, 0x50>
 	{
-		struct UnalignedLoadStoreMultiple           : SuperCPU::template Exception<AlignmentInterrupt,16> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load/Store Multiple Exception"; } };                 // lmw, stmw not word aligned
-		struct UnalignedLoadLinkStoreConditional    : SuperCPU::template Exception<AlignmentInterrupt,17> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load Link/Store Conditional Exception"; } };                 // lwarx or stwcx. not word aligned, lharx or sthcx. not halfword aligned
-		struct WriteThroughDCBZ                     : SuperCPU::template Exception<AlignmentInterrupt,18> { static const char *GetName() { return "Alignment Interrupt/Write Through DCBZ Exception"; } };                 // dcbz
+		struct UnalignedLoadStoreMultiple           : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load/Store Multiple Exception"; } };                 // lmw, stmw not word aligned
+		struct UnalignedLoadLinkStoreConditional    : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load Link/Store Conditional Exception"; } };                 // lwarx or stwcx. not word aligned, lharx or sthcx. not halfword aligned
+		struct WriteThroughDCBZ                     : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Write Through DCBZ Exception"; } };                 // dcbz
 		
 		typedef typename SuperCPU::template ExceptionSet<UnalignedLoadStoreMultiple, UnalignedLoadLinkStoreConditional, WriteThroughDCBZ> ALL;
 		
@@ -401,10 +401,10 @@ public:
 	
 	struct ProgramInterrupt : SuperCPU::template Interrupt<ProgramInterrupt, 0x60>
 	{
-		struct IllegalInstruction                   : SuperCPU::template Exception<ProgramInterrupt,10>  { static const char *GetName() { return "Program Interrupt/Illegal Instruction Exception"; } };                   // illegal instruction
-		struct PrivilegeViolation                   : SuperCPU::template Exception<ProgramInterrupt,11>  { static const char *GetName() { return "Program Interrupt/Privilege Violation Exception"; } };                   // privilege violation
-		struct Trap                                 : SuperCPU::template Exception<ProgramInterrupt,12> { static const char *GetName() { return "Program Interrupt/Trap Exception"; } };                   // trap instruction
-		struct UnimplementedInstruction             : SuperCPU::template Exception<ProgramInterrupt,13> { static const char *GetName() { return "Program Interrupt/Unimplemented Instruction Exception"; } };                   // unimplemented instruction
+		struct IllegalInstruction                   : SuperCPU::template Exception<ProgramInterrupt>  { static const char *GetName() { return "Program Interrupt/Illegal Instruction Exception"; } };                   // illegal instruction
+		struct PrivilegeViolation                   : SuperCPU::template Exception<ProgramInterrupt>  { static const char *GetName() { return "Program Interrupt/Privilege Violation Exception"; } };                   // privilege violation
+		struct Trap                                 : SuperCPU::template Exception<ProgramInterrupt> { static const char *GetName() { return "Program Interrupt/Trap Exception"; } };                   // trap instruction
+		struct UnimplementedInstruction             : SuperCPU::template Exception<ProgramInterrupt> { static const char *GetName() { return "Program Interrupt/Unimplemented Instruction Exception"; } };                   // unimplemented instruction
 		
 		typedef typename SuperCPU::template ExceptionSet<IllegalInstruction, PrivilegeViolation, Trap> ALL;
 		
@@ -424,8 +424,8 @@ public:
 
 	struct PerformanceMonitorInterrupt : SuperCPU::template Interrupt<PerformanceMonitorInterrupt, 0x70>
 	{
-		struct PerformanceCounterOverflow           : SuperCPU::template Exception<PerformanceMonitorInterrupt,7> { static const char *GetName() { return "Performance Monitor Interrupt/Performance Counter Overflow Exception"; } };        // PMC register overflow
-		struct DebugEvent                           : SuperCPU::template Exception<PerformanceMonitorInterrupt,8> { static const char *GetName() { return "Performance Monitor Interrupt/Debug Event Exception"; } };        // Event w/PMGC0[UDI]=0
+		struct PerformanceCounterOverflow           : SuperCPU::template Exception<PerformanceMonitorInterrupt> { static const char *GetName() { return "Performance Monitor Interrupt/Performance Counter Overflow Exception"; } };        // PMC register overflow
+		struct DebugEvent                           : SuperCPU::template Exception<PerformanceMonitorInterrupt> { static const char *GetName() { return "Performance Monitor Interrupt/Debug Event Exception"; } };        // Event w/PMGC0[UDI]=0
 		
 		typedef typename SuperCPU::template ExceptionSet<PerformanceCounterOverflow, DebugEvent> ALL;
 		
@@ -444,7 +444,7 @@ public:
 	
 	struct SystemCallInterrupt : SuperCPU::template Interrupt<SystemCallInterrupt, 0x80>
 	{
-		struct SystemCall                           : SuperCPU::template Exception<SystemCallInterrupt,14> { static const char *GetName() { return "System Call Interrupt/System Call Exception"; } };                // Execution of the System Call (se_sc) instruction
+		struct SystemCall                           : SuperCPU::template Exception<SystemCallInterrupt> { static const char *GetName() { return "System Call Interrupt/System Call Exception"; } };                // Execution of the System Call (se_sc) instruction
 		
 		typedef typename SuperCPU::template ExceptionSet<SystemCall> ALL;
 		
@@ -503,8 +503,8 @@ public:
 			DBG_IMPRECISE_DEBUG_EVENT                = 0x02000000  // Sync
 		};
 		
-		struct AsynchronousDebugEvent                   : SuperCPU::template Exception<DebugInterrupt,6> { static const char *GetName() { return "Debug Interrupt/Asynchronous Debug Event Exception"; } };
-		struct SynchronousDebugEvent                    : SuperCPU::template Exception<DebugInterrupt,21> { static const char *GetName() { return "Debug Interrupt/Synchronous Debug Event Exception"; } };
+		struct AsynchronousDebugEvent                   : SuperCPU::template Exception<DebugInterrupt> { static const char *GetName() { return "Debug Interrupt/Asynchronous Debug Event Exception"; } };
+		struct SynchronousDebugEvent                    : SuperCPU::template Exception<DebugInterrupt> { static const char *GetName() { return "Debug Interrupt/Synchronous Debug Event Exception"; } };
 		
 		typedef typename SuperCPU::template ExceptionSet< AsynchronousDebugEvent, SynchronousDebugEvent > ALL;
 		
@@ -531,7 +531,7 @@ public:
 
 	struct EmbeddedFloatingPointDataInterrupt : SuperCPU::template Interrupt<EmbeddedFloatingPointDataInterrupt, 0xa0>
 	{
-		struct EmbeddedFloatingPointData            : SuperCPU::template Exception<EmbeddedFloatingPointDataInterrupt,19> { static const char *GetName() { return "Embedded Floating-Point Data Interrupt/Embedded Floating-Point Data Exception"; } }; // Embedded Floating-point Data Exception
+		struct EmbeddedFloatingPointData            : SuperCPU::template Exception<EmbeddedFloatingPointDataInterrupt> { static const char *GetName() { return "Embedded Floating-Point Data Interrupt/Embedded Floating-Point Data Exception"; } }; // Embedded Floating-point Data Exception
 		
 		typedef typename SuperCPU::template ExceptionSet<EmbeddedFloatingPointData> ALL;
 		
@@ -551,7 +551,7 @@ public:
 	
 	struct EmbeddedFloatingPointRoundInterrupt : SuperCPU::template Interrupt<EmbeddedFloatingPointRoundInterrupt, 0xb0>
 	{
-		struct EmbeddedFloatingPointRound           : SuperCPU::template Exception<EmbeddedFloatingPointRoundInterrupt,20> { static const char *GetName() { return "Embedded Floating-Point Round Interrupt/Embedded Floating-Point Round Exception"; } };// Embedded Floating-point Round Exception
+		struct EmbeddedFloatingPointRound           : SuperCPU::template Exception<EmbeddedFloatingPointRoundInterrupt> { static const char *GetName() { return "Embedded Floating-Point Round Interrupt/Embedded Floating-Point Round Exception"; } };// Embedded Floating-point Round Exception
 		
 		typedef typename SuperCPU::template ExceptionSet<EmbeddedFloatingPointRound> ALL;
 		
@@ -569,6 +569,53 @@ public:
 		static const char *GetName() { return "Embedded Floating-Point Round Interrupt"; }
 	};
 
+	//  0   SystemResetInterrupt                 Reset
+	//  1   MachineCheckInterrupt                NMI
+	//  2   MachineCheckInterrupt                ErrorReport
+	//  3   MachineCheckInterrupt                AsynchronousMachineCheck
+	//  4   ExternalInputInterrupt               ExternalInput
+	//  5   CriticalInputInterrupt               CriticalInput
+	//  6   DebugInterrupt                       AsynchronousDebugEvent
+	//  7   PerformanceMonitorInterrupt          PerformanceCounterOverflow
+	//  8   PerformanceMonitorInterrupt          DebugEvent
+	//  9   InstructionStorageInterrupt          AccessControl
+	// 10   ProgramInterrupt                     IllegalInstruction
+	// 11   ProgramInterrupt                     PrivilegeViolation
+	// 12   ProgramInterrupt                     Trap
+	// 13   ProgramInterrupt                     UnimplementedInstruction
+	// 14   SystemCallInterrupt                  SystemCall
+	// 15   DataStorageInterrupt                 AccessControl
+	// 16   AlignmentInterrupt                   UnalignedLoadStoreMultiple
+	// 17   AlignmentInterrupt                   UnalignedLoadLinkStoreConditional
+	// 18   AlignmentInterrupt                   WriteThroughDCBZ
+	// 19   EmbeddedFloatingPointDataInterrupt   EmbeddedFloatingPointData
+	// 20   EmbeddedFloatingPointRoundInterrupt  EmbeddedFloatingPointRound
+	// 21   DebugInterrupt                       SynchronousDebugEvent
+
+	typedef typename SuperCPU::template ExceptionPrioritySet<
+		typename SystemResetInterrupt               ::Reset                            ,
+		typename MachineCheckInterrupt              ::NMI                              ,
+		typename MachineCheckInterrupt              ::ErrorReport                      ,
+		typename MachineCheckInterrupt              ::AsynchronousMachineCheck         ,
+		typename ExternalInputInterrupt             ::ExternalInput                    ,
+		typename CriticalInputInterrupt             ::CriticalInput                    ,
+		typename DebugInterrupt                     ::AsynchronousDebugEvent           ,
+		typename PerformanceMonitorInterrupt        ::PerformanceCounterOverflow       ,
+		typename PerformanceMonitorInterrupt        ::DebugEvent                       ,
+		typename InstructionStorageInterrupt        ::AccessControl                    ,
+		typename ProgramInterrupt                   ::IllegalInstruction               ,
+		typename ProgramInterrupt                   ::PrivilegeViolation               ,
+		typename ProgramInterrupt                   ::Trap                             ,
+		typename ProgramInterrupt                   ::UnimplementedInstruction         ,
+		typename SystemCallInterrupt                ::SystemCall                       ,
+		typename DataStorageInterrupt               ::AccessControl                    ,
+		typename AlignmentInterrupt                 ::UnalignedLoadStoreMultiple       ,
+		typename AlignmentInterrupt                 ::UnalignedLoadLinkStoreConditional,
+		typename AlignmentInterrupt                 ::WriteThroughDCBZ                 ,
+		typename EmbeddedFloatingPointDataInterrupt ::EmbeddedFloatingPointData        ,
+		typename EmbeddedFloatingPointRoundInterrupt::EmbeddedFloatingPointRound       ,
+		typename DebugInterrupt                     ::SynchronousDebugEvent> EXCEPTION_PRIORITIES;
+	
 	void ProcessInterrupt(SystemResetInterrupt *);
 	void ProcessInterrupt(MachineCheckInterrupt *);
 	void ProcessInterrupt(DataStorageInterrupt *);

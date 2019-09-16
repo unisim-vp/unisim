@@ -185,11 +185,11 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	this->SuperCPU::template EnableInterrupt<DataStorageInterrupt>();
 	this->SuperCPU::template EnableInterrupt<InstructionStorageInterrupt>();
 	this->SuperCPU::template EnableInterrupt<AlignmentInterrupt>();
-	this->SuperCPU::template EnableInterrupt<typename ProgramInterrupt::IllegalInstruction>();
-	this->SuperCPU::template EnableInterrupt<typename ProgramInterrupt::PrivilegeViolation>();
-	this->SuperCPU::template EnableInterrupt<typename ProgramInterrupt::Trap>();
-	this->SuperCPU::template EnableInterrupt<typename ProgramInterrupt::AuxiliaryProcessor>();
-	this->SuperCPU::template EnableInterrupt<typename ProgramInterrupt::UnimplementedInstruction>();
+	this->SuperCPU::template EnableException<typename ProgramInterrupt::IllegalInstruction>();
+	this->SuperCPU::template EnableException<typename ProgramInterrupt::PrivilegeViolation>();
+	this->SuperCPU::template EnableException<typename ProgramInterrupt::Trap>();
+	this->SuperCPU::template EnableException<typename ProgramInterrupt::AuxiliaryProcessor>();
+	this->SuperCPU::template EnableException<typename ProgramInterrupt::UnimplementedInstruction>();
 	this->SuperCPU::template EnableInterrupt<FloatingPointUnavailableInterrupt>();
 	this->SuperCPU::template EnableInterrupt<AuxiliaryProcessorUnavailableInterrupt>();
 	this->SuperCPU::template EnableInterrupt<SystemCallInterrupt>();

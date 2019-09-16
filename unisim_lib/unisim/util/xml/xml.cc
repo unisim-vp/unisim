@@ -155,8 +155,6 @@ Node& Node::operator << (Node& child)
 	return *this;
 }
 
-const int MAX_TOK_VALUE_SIZE = 65536;
-
 const int TOK_LESS_SLASH = 256;
 const int TOK_SLASH_GREATER = 257;
 const int TOK_IDENTIFIER = 258;

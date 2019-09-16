@@ -261,7 +261,7 @@ struct UnicodeCharacter
 private:
 	uint32_t code_point;
 	
-	friend class UTF8_Parser;
+	friend struct UTF8_Parser;
 };
 
 std::ostream& operator << (std::ostream& os, const UnicodeCharacter& uc);
@@ -416,7 +416,7 @@ private:
 //                        |                                |        |  |
 //                        |                                |        |  |
 //                        |                                |        V  |
-//    max_height - 1  --> +--------------------------------+        +-->
+// buffer_height - 1  --> +--------------------------------+        +-->
 
 	WebTerminal *web_terminal;
 	unisim::kernel::logger::Logger logger;
@@ -424,7 +424,6 @@ private:
 	unsigned int display_width;
 	unsigned int display_height;
 	unsigned int height;
-	unsigned int max_height;
 	unsigned int cursor_colno;
 	unsigned int cursor_lineno;
 	unsigned int save_cursor_colno;
@@ -524,11 +523,10 @@ inline std::ostream& operator << (std::ostream& os, const KeyEvent& key_event)
 
 ///////////////////////////////// WebTerminal /////////////////////////////////
 
-class WebTerminal
+struct WebTerminal
 	: public unisim::kernel::Service<unisim::service::interfaces::CharIO>
 	, public unisim::kernel::Service<unisim::service::interfaces::HttpServer>
 {
-public:
 	unisim::kernel::ServiceExport<unisim::service::interfaces::CharIO> char_io_export;
 	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
 	

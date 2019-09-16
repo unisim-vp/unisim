@@ -390,7 +390,7 @@ void CPU<TYPES, CONFIG>::ProcessIRQEvent(Event *event)
 			}
 			else
 			{
-				this->template AckInterrupt<typename Super::ExternalInputInterrupt::ExternalInput>();
+				this->template AckException<typename Super::ExternalInputInterrupt::ExternalInput>();
 			}
 			break;
 		case Event::IRQ_CRITICAL_INPUT:
@@ -400,7 +400,7 @@ void CPU<TYPES, CONFIG>::ProcessIRQEvent(Event *event)
 			}
 			else
 			{
-				this->template AckInterrupt<typename Super::CriticalInputInterrupt::CriticalInput>();
+				this->template AckException<typename Super::CriticalInputInterrupt::CriticalInput>();
 			}
 			break;
 	}

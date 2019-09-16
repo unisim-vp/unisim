@@ -6488,7 +6488,7 @@ bool Simulator::EndSetup()
 
 unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 {
-	if(inline_debugger || profiler[0] || profiler[1] || profiler[2])
+	if(inline_debugger[0] || inline_debugger[1] || inline_debugger[2] || profiler[0] || profiler[1] || profiler[2])
 	{
 		SetVariable("debugger.parse-dwarf", true);
 	}

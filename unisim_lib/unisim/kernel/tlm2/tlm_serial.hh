@@ -54,7 +54,7 @@ namespace tlm2 {
 
 class tlm_serial_payload;
 class tlm_serial_mm_interface;
-class tlm_bitvector;
+struct tlm_bitvector;
 class tlm_serial_payload;
 class tlm_serial_memory_manager;
 class tlm_input_bitstream;

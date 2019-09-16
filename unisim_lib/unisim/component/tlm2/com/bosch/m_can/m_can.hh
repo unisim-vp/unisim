@@ -2651,7 +2651,7 @@ private:
 		
 		void ClearRequest(unsigned int i)
 		{
-			this->template Set(i, 0);
+			this->Set(i, 0);
 		}
 		
 		using Super::operator =;

@@ -189,6 +189,14 @@ struct Field : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 
 	typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, ACCESS> Super;
 };
 
+//////////////////////////////////// Field64<> //////////////////////////////////
+
+template <typename FIELD, int OFFSET1, int OFFSET2 = -1, unisim::util::reg::core::Access ACCESS = unisim::util::reg::core::SW_RW>
+struct Field64 : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (63 - OFFSET2) : (63 - OFFSET1)) : (63 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, ACCESS>
+{
+	typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (63 - OFFSET2) : (63 - OFFSET1)) : (63 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, ACCESS> Super;
+};
+
 //////////////////////////////// Register /////////////////////////////////
 
 template <typename REGISTER, unsigned int _SIZE, typename REGISTER_BASE = unisim::util::reg::core::NullRegisterBase>
@@ -456,6 +464,13 @@ public:
 		SetException(vxfield);
 		this->template Set<VX>(1);
 	}
+	
+	template <typename FIELD, bool dummy = true> struct EnableFlag { struct FLAG : unisim::util::reg::core::Field<FLAG, 0, 0> {}; };
+	template <bool dummy> struct EnableFlag<VX, dummy> { typedef VE FLAG; };
+	template <bool dummy> struct EnableFlag<OX, dummy> { typedef OE FLAG; };
+	template <bool dummy> struct EnableFlag<UX, dummy> { typedef UE FLAG; };
+	template <bool dummy> struct EnableFlag<ZX, dummy> { typedef ZE FLAG; };
+	template <bool dummy> struct EnableFlag<XX, dummy> { typedef XE FLAG; };
 
 	template <typename FIELD>
 	void SetException(FIELD const&)
@@ -467,8 +482,7 @@ public:
 		this->template Set<FIELD>(1);
 		// Check if exception (VE, OE, UE, ZE, XE) is enable (enable bits locations are 22 bit
 		// upper than their exception bits counterparts that is VX, OX, UX, ZX, XX)
-		struct Enable : Field<Enable, FIELD::BITOFFSET + 22> {};
-		if(this->template Get<Enable>())
+		if(this->template Get<typename EnableFlag<FIELD>::FLAG>())
 		{
 			this->Set<FEX>(1);
 		}
@@ -783,33 +797,16 @@ protected:
 	class ExceptionDispatcherBase
 	{
 	public:
-		virtual void InstallInterrupt(unsigned int priority, InterruptBase *interrupt, bool *trap_control_flag) = 0;
+		virtual void InstallInterrupt(InterruptBase *interrupt, unsigned int priority, bool *trap_control_flag) = 0;
 	};
 
 	//////////////////////////////// Exception<> ///////////////////////////////////////
 
-	template <typename _INTERRUPT, unsigned int _PRIORITY>
+	template <typename _INTERRUPT>
 	class Exception
 	{
 	public:
 		typedef _INTERRUPT INTERRUPT;
-		static const unsigned int PRIORITY = _PRIORITY;
-		
-		template <typename T> static T GetMask() { return T(1) << _PRIORITY; }
-		
-		static void InstallInterrupt(ExceptionDispatcherBase *exception_dispatcher, InterruptBase *interrupt, bool *trap_control_flag) { exception_dispatcher->InstallInterrupt(_PRIORITY, interrupt, trap_control_flag); }
-		
-		static const char *GetName()
-		{
-			static std::string name;
-			if(!name.empty()) return name.c_str();
-			
-			std::stringstream sstr_name;
-			sstr_name << "Exception #" << _PRIORITY;
-			name = sstr_name.str();
-			
-			return name.c_str();
-		}
 	};
 	
 	//////////////////////// Interrupt<> ///////////////////////////
@@ -852,122 +849,273 @@ protected:
 	
 	
 
-	////////////////////////// NullPrioritizedException ///////////////////////////
+	////////////////////////// NullException ///////////////////////////
 
 	struct NullException
 	{
-		template <typename T> static T GetMask() { return 0; }
-		static void InstallInterrupt(ExceptionDispatcherBase *exception_dispatcher, InterruptBase *interrupt, bool *trap_control_flag) {}
 	};
 	
 	///////////////////////// ExceptionSet<> ///////////////////////////
 
-	template < typename FE0                 , typename FE1  = NullException, typename FE2  = NullException, typename FE3  = NullException
-	         , typename FE4  = NullException, typename FE5  = NullException, typename FE6  = NullException, typename FE7  = NullException
-	         , typename FE8  = NullException, typename FE9  = NullException, typename FE10 = NullException, typename FE11 = NullException
-	         , typename FE12 = NullException, typename FE13 = NullException, typename FE14 = NullException, typename FE15 = NullException
-	         , typename FE16 = NullException, typename FE17 = NullException, typename FE18 = NullException, typename FE19 = NullException
-	         , typename FE20 = NullException, typename FE21 = NullException, typename FE22 = NullException, typename FE23 = NullException
-	         , typename FE24 = NullException, typename FE25 = NullException, typename FE26 = NullException, typename FE27 = NullException
-	         , typename FE28 = NullException, typename FE29 = NullException, typename FE30 = NullException, typename FE31 = NullException
-	         , typename FE32 = NullException, typename FE33 = NullException, typename FE34 = NullException, typename FE35 = NullException
-	         , typename FE36 = NullException, typename FE37 = NullException, typename FE38 = NullException, typename FE39 = NullException
-	         , typename FE40 = NullException, typename FE41 = NullException, typename FE42 = NullException, typename FE43 = NullException
-	         , typename FE44 = NullException, typename FE45 = NullException, typename FE46 = NullException, typename FE47 = NullException
-	         , typename FE48 = NullException, typename FE49 = NullException, typename FE50 = NullException, typename FE51 = NullException
-	         , typename FE52 = NullException, typename FE53 = NullException, typename FE54 = NullException, typename FE55 = NullException
-	         , typename FE56 = NullException, typename FE57 = NullException, typename FE58 = NullException, typename FE59 = NullException
-	         , typename FE60 = NullException, typename FE61 = NullException, typename FE62 = NullException, typename FE63 = NullException >
+	template < typename E0                 , typename E1  = NullException, typename E2  = NullException, typename E3  = NullException
+	         , typename E4  = NullException, typename E5  = NullException, typename E6  = NullException, typename E7  = NullException
+	         , typename E8  = NullException, typename E9  = NullException, typename E10 = NullException, typename E11 = NullException
+	         , typename E12 = NullException, typename E13 = NullException, typename E14 = NullException, typename E15 = NullException
+	         , typename E16 = NullException, typename E17 = NullException, typename E18 = NullException, typename E19 = NullException
+	         , typename E20 = NullException, typename E21 = NullException, typename E22 = NullException, typename E23 = NullException
+	         , typename E24 = NullException, typename E25 = NullException, typename E26 = NullException, typename E27 = NullException
+	         , typename E28 = NullException, typename E29 = NullException, typename E30 = NullException, typename E31 = NullException
+	         , typename E32 = NullException, typename E33 = NullException, typename E34 = NullException, typename E35 = NullException
+	         , typename E36 = NullException, typename E37 = NullException, typename E38 = NullException, typename E39 = NullException
+	         , typename E40 = NullException, typename E41 = NullException, typename E42 = NullException, typename E43 = NullException
+	         , typename E44 = NullException, typename E45 = NullException, typename E46 = NullException, typename E47 = NullException
+	         , typename E48 = NullException, typename E49 = NullException, typename E50 = NullException, typename E51 = NullException
+	         , typename E52 = NullException, typename E53 = NullException, typename E54 = NullException, typename E55 = NullException
+	         , typename E56 = NullException, typename E57 = NullException, typename E58 = NullException, typename E59 = NullException
+	         , typename E60 = NullException, typename E61 = NullException, typename E62 = NullException, typename E63 = NullException >
 	class ExceptionSet
 	{
 	public:
 		template <typename T> static T GetMask()
 		{
-			return  FE0::template GetMask<T>() |  FE1::template GetMask<T>() |  FE2::template GetMask<T>() |  FE3::template GetMask<T>()
-			     |  FE4::template GetMask<T>() |  FE5::template GetMask<T>() |  FE6::template GetMask<T>() |  FE7::template GetMask<T>()
-			     |  FE8::template GetMask<T>() |  FE9::template GetMask<T>() | FE10::template GetMask<T>() | FE11::template GetMask<T>()
-			     | FE12::template GetMask<T>() | FE13::template GetMask<T>() | FE14::template GetMask<T>() | FE15::template GetMask<T>()
-			     | FE16::template GetMask<T>() | FE17::template GetMask<T>() | FE18::template GetMask<T>() | FE19::template GetMask<T>()
-			     | FE20::template GetMask<T>() | FE21::template GetMask<T>() | FE22::template GetMask<T>() | FE23::template GetMask<T>()
-			     | FE24::template GetMask<T>() | FE25::template GetMask<T>() | FE26::template GetMask<T>() | FE27::template GetMask<T>()
-			     | FE28::template GetMask<T>() | FE29::template GetMask<T>() | FE30::template GetMask<T>() | FE31::template GetMask<T>()
-			     | FE32::template GetMask<T>() | FE33::template GetMask<T>() | FE34::template GetMask<T>() | FE35::template GetMask<T>()
-			     | FE36::template GetMask<T>() | FE37::template GetMask<T>() | FE38::template GetMask<T>() | FE39::template GetMask<T>()
-			     | FE40::template GetMask<T>() | FE41::template GetMask<T>() | FE42::template GetMask<T>() | FE43::template GetMask<T>()
-			     | FE44::template GetMask<T>() | FE45::template GetMask<T>() | FE46::template GetMask<T>() | FE47::template GetMask<T>()
-			     | FE48::template GetMask<T>() | FE49::template GetMask<T>() | FE50::template GetMask<T>() | FE51::template GetMask<T>()
-			     | FE52::template GetMask<T>() | FE53::template GetMask<T>() | FE54::template GetMask<T>() | FE55::template GetMask<T>()
-			     | FE56::template GetMask<T>() | FE57::template GetMask<T>() | FE58::template GetMask<T>() | FE59::template GetMask<T>()
-			     | FE60::template GetMask<T>() | FE61::template GetMask<T>() | FE62::template GetMask<T>() | FE63::template GetMask<T>();
+			return CPU::template GetExceptionMask<E0 , T>() | CPU::template GetExceptionMask<E1, T>()  | CPU::template GetExceptionMask<E2 , T>() | CPU::template GetExceptionMask<E3 , T>()
+			     | CPU::template GetExceptionMask<E4 , T>() | CPU::template GetExceptionMask<E5 , T>() | CPU::template GetExceptionMask<E6 , T>() | CPU::template GetExceptionMask<E7 , T>()
+			     | CPU::template GetExceptionMask<E8 , T>() | CPU::template GetExceptionMask<E9 , T>() | CPU::template GetExceptionMask<E10, T>() | CPU::template GetExceptionMask<E11, T>()
+			     | CPU::template GetExceptionMask<E12, T>() | CPU::template GetExceptionMask<E13, T>() | CPU::template GetExceptionMask<E14, T>() | CPU::template GetExceptionMask<E15, T>()
+			     | CPU::template GetExceptionMask<E16, T>() | CPU::template GetExceptionMask<E17, T>() | CPU::template GetExceptionMask<E18, T>() | CPU::template GetExceptionMask<E19, T>()
+			     | CPU::template GetExceptionMask<E20, T>() | CPU::template GetExceptionMask<E21, T>() | CPU::template GetExceptionMask<E22, T>() | CPU::template GetExceptionMask<E23, T>()
+			     | CPU::template GetExceptionMask<E24, T>() | CPU::template GetExceptionMask<E25, T>() | CPU::template GetExceptionMask<E26, T>() | CPU::template GetExceptionMask<E27, T>()
+			     | CPU::template GetExceptionMask<E28, T>() | CPU::template GetExceptionMask<E29, T>() | CPU::template GetExceptionMask<E30, T>() | CPU::template GetExceptionMask<E31, T>()
+			     | CPU::template GetExceptionMask<E32, T>() | CPU::template GetExceptionMask<E33, T>() | CPU::template GetExceptionMask<E34, T>() | CPU::template GetExceptionMask<E35, T>()
+			     | CPU::template GetExceptionMask<E36, T>() | CPU::template GetExceptionMask<E37, T>() | CPU::template GetExceptionMask<E38, T>() | CPU::template GetExceptionMask<E39, T>()
+			     | CPU::template GetExceptionMask<E40, T>() | CPU::template GetExceptionMask<E41, T>() | CPU::template GetExceptionMask<E42, T>() | CPU::template GetExceptionMask<E43, T>()
+			     | CPU::template GetExceptionMask<E44, T>() | CPU::template GetExceptionMask<E45, T>() | CPU::template GetExceptionMask<E46, T>() | CPU::template GetExceptionMask<E47, T>()
+			     | CPU::template GetExceptionMask<E48, T>() | CPU::template GetExceptionMask<E49, T>() | CPU::template GetExceptionMask<E50, T>() | CPU::template GetExceptionMask<E51, T>()
+			     | CPU::template GetExceptionMask<E52, T>() | CPU::template GetExceptionMask<E53, T>() | CPU::template GetExceptionMask<E54, T>() | CPU::template GetExceptionMask<E55, T>()
+			     | CPU::template GetExceptionMask<E56, T>() | CPU::template GetExceptionMask<E57, T>() | CPU::template GetExceptionMask<E58, T>() | CPU::template GetExceptionMask<E59, T>()
+			     | CPU::template GetExceptionMask<E60, T>() | CPU::template GetExceptionMask<E61, T>() | CPU::template GetExceptionMask<E62, T>() | CPU::template GetExceptionMask<E63, T>();
 		}
 		
 		static void InstallInterrupt(ExceptionDispatcherBase *exception_dispatcher, InterruptBase *interrupt, bool *trap_control_flag)
 		{
-			if(typeid(FE0) == typeid(NullException)) return; FE0::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE1) == typeid(NullException)) return; FE1::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE2) == typeid(NullException)) return; FE2::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE3) == typeid(NullException)) return; FE3::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE4) == typeid(NullException)) return; FE4::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE5) == typeid(NullException)) return; FE5::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE6) == typeid(NullException)) return; FE6::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE7) == typeid(NullException)) return; FE7::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE8) == typeid(NullException)) return; FE8::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE9) == typeid(NullException)) return; FE9::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE10) == typeid(NullException)) return; FE10::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE11) == typeid(NullException)) return; FE11::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE12) == typeid(NullException)) return; FE12::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE13) == typeid(NullException)) return; FE13::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE14) == typeid(NullException)) return; FE14::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE15) == typeid(NullException)) return; FE15::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE16) == typeid(NullException)) return; FE16::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE17) == typeid(NullException)) return; FE17::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE18) == typeid(NullException)) return; FE18::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE19) == typeid(NullException)) return; FE19::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE20) == typeid(NullException)) return; FE20::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE21) == typeid(NullException)) return; FE21::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE22) == typeid(NullException)) return; FE22::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE23) == typeid(NullException)) return; FE23::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE24) == typeid(NullException)) return; FE24::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE25) == typeid(NullException)) return; FE25::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE26) == typeid(NullException)) return; FE26::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE27) == typeid(NullException)) return; FE27::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE28) == typeid(NullException)) return; FE28::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE29) == typeid(NullException)) return; FE29::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE30) == typeid(NullException)) return; FE30::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE31) == typeid(NullException)) return; FE31::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE32) == typeid(NullException)) return; FE32::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE33) == typeid(NullException)) return; FE33::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE34) == typeid(NullException)) return; FE34::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE35) == typeid(NullException)) return; FE35::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
-			if(typeid(FE36) == typeid(NullException)) return; FE36::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE37) == typeid(NullException)) return; FE37::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE38) == typeid(NullException)) return; FE38::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE39) == typeid(NullException)) return; FE39::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE40) == typeid(NullException)) return; FE40::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE41) == typeid(NullException)) return; FE41::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE42) == typeid(NullException)) return; FE42::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE43) == typeid(NullException)) return; FE43::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE44) == typeid(NullException)) return; FE44::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE45) == typeid(NullException)) return; FE45::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE46) == typeid(NullException)) return; FE46::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE47) == typeid(NullException)) return; FE47::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE48) == typeid(NullException)) return; FE48::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE49) == typeid(NullException)) return; FE49::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE50) == typeid(NullException)) return; FE50::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE51) == typeid(NullException)) return; FE51::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE52) == typeid(NullException)) return; FE52::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE53) == typeid(NullException)) return; FE53::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE54) == typeid(NullException)) return; FE54::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE55) == typeid(NullException)) return; FE55::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE56) == typeid(NullException)) return; FE56::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE57) == typeid(NullException)) return; FE57::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE58) == typeid(NullException)) return; FE58::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE59) == typeid(NullException)) return; FE59::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE60) == typeid(NullException)) return; FE60::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE61) == typeid(NullException)) return; FE61::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE62) == typeid(NullException)) return; FE62::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
-			if(typeid(FE63) == typeid(NullException)) return; FE63::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(E0 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E0 >(), trap_control_flag);
+			if(typeid(E1 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E1 >(), trap_control_flag);
+			if(typeid(E2 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E2 >(), trap_control_flag);
+			if(typeid(E3 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E3 >(), trap_control_flag);
+			if(typeid(E4 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E4 >(), trap_control_flag);
+			if(typeid(E5 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E5 >(), trap_control_flag);
+			if(typeid(E6 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E6 >(), trap_control_flag);
+			if(typeid(E7 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E7 >(), trap_control_flag);
+			if(typeid(E8 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E8 >(), trap_control_flag);
+			if(typeid(E9 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E9 >(), trap_control_flag);
+			if(typeid(E10) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E10>(), trap_control_flag);
+			if(typeid(E11) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E11>(), trap_control_flag);
+			if(typeid(E12) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E12>(), trap_control_flag);
+			if(typeid(E13) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E13>(), trap_control_flag);
+			if(typeid(E14) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E14>(), trap_control_flag);
+			if(typeid(E15) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E15>(), trap_control_flag);
+			if(typeid(E16) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E16>(), trap_control_flag);
+			if(typeid(E17) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E17>(), trap_control_flag);
+			if(typeid(E18) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E18>(), trap_control_flag);
+			if(typeid(E19) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E19>(), trap_control_flag);
+			if(typeid(E20) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E20>(), trap_control_flag);
+			if(typeid(E21) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E21>(), trap_control_flag);
+			if(typeid(E22) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E22>(), trap_control_flag);
+			if(typeid(E23) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E23>(), trap_control_flag);
+			if(typeid(E24) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E24>(), trap_control_flag);
+			if(typeid(E25) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E25>(), trap_control_flag);                                                                                            
+			if(typeid(E26) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E26>(), trap_control_flag);                                                                                            
+			if(typeid(E27) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E27>(), trap_control_flag);                                                                                            
+			if(typeid(E28) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E28>(), trap_control_flag);                                                                                            
+			if(typeid(E29) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E29>(), trap_control_flag);                                                                                            
+			if(typeid(E30) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E30>(), trap_control_flag);                                                                                            
+			if(typeid(E31) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E31>(), trap_control_flag);                                                                                            
+			if(typeid(E32) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E32>(), trap_control_flag);                                                                                            
+			if(typeid(E33) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E33>(), trap_control_flag);                                                                                            
+			if(typeid(E34) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E34>(), trap_control_flag);                                                                                            
+			if(typeid(E35) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E35>(), trap_control_flag);                                                                                            
+			if(typeid(E36) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E36>(), trap_control_flag);
+			if(typeid(E37) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E37>(), trap_control_flag);
+			if(typeid(E38) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E38>(), trap_control_flag);
+			if(typeid(E39) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E39>(), trap_control_flag);
+			if(typeid(E40) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E40>(), trap_control_flag);
+			if(typeid(E41) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E41>(), trap_control_flag);
+			if(typeid(E42) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E42>(), trap_control_flag);
+			if(typeid(E43) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E43>(), trap_control_flag);
+			if(typeid(E44) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E44>(), trap_control_flag);
+			if(typeid(E45) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E45>(), trap_control_flag);
+			if(typeid(E46) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E46>(), trap_control_flag);
+			if(typeid(E47) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E47>(), trap_control_flag);
+			if(typeid(E48) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E48>(), trap_control_flag);
+			if(typeid(E49) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E49>(), trap_control_flag);
+			if(typeid(E50) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E50>(), trap_control_flag);
+			if(typeid(E51) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E51>(), trap_control_flag);
+			if(typeid(E52) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E52>(), trap_control_flag);
+			if(typeid(E53) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E53>(), trap_control_flag);
+			if(typeid(E54) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E54>(), trap_control_flag);
+			if(typeid(E55) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E55>(), trap_control_flag);
+			if(typeid(E56) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E56>(), trap_control_flag);
+			if(typeid(E57) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E57>(), trap_control_flag);
+			if(typeid(E58) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E58>(), trap_control_flag);
+			if(typeid(E59) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E59>(), trap_control_flag);
+			if(typeid(E60) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E60>(), trap_control_flag);
+			if(typeid(E61) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E61>(), trap_control_flag);
+			if(typeid(E62) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E62>(), trap_control_flag);
+			if(typeid(E63) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E63>(), trap_control_flag);
 		}
+	};
+
+	////////////////////////// ExceptionPrioritySet<> //////////////////////////////
+
+	struct NullException0  {};
+	struct NullException1  {};
+	struct NullException2  {};
+	struct NullException3  {};
+	struct NullException4  {};
+	struct NullException5  {};
+	struct NullException6  {};
+	struct NullException7  {};
+	struct NullException8  {};
+	struct NullException9  {};
+	struct NullException10 {};
+	struct NullException11 {};
+	struct NullException12 {};
+	struct NullException13 {};
+	struct NullException14 {};
+	struct NullException15 {};
+	struct NullException16 {};
+	struct NullException17 {};
+	struct NullException18 {};
+	struct NullException19 {};
+	struct NullException20 {};
+	struct NullException21 {};
+	struct NullException22 {};
+	struct NullException23 {};
+	struct NullException24 {};
+	struct NullException25 {};
+	struct NullException26 {};
+	struct NullException27 {};
+	struct NullException28 {};
+	struct NullException29 {};
+	struct NullException30 {};
+	struct NullException31 {};
+	struct NullException32 {};
+	struct NullException33 {};
+	struct NullException34 {};
+	struct NullException35 {};
+	struct NullException36 {};
+	struct NullException37 {};
+	struct NullException38 {};
+	struct NullException39 {};
+	struct NullException40 {};
+	struct NullException41 {};
+	struct NullException42 {};
+	struct NullException43 {};
+	struct NullException44 {};
+	struct NullException45 {};
+	struct NullException46 {};
+	struct NullException47 {};
+	struct NullException48 {};
+	struct NullException49 {};
+	struct NullException50 {};
+	struct NullException51 {};
+	struct NullException52 {};
+	struct NullException53 {};
+	struct NullException54 {};
+	struct NullException55 {};
+	struct NullException56 {};
+	struct NullException57 {};
+	struct NullException58 {};
+	struct NullException59 {};
+	struct NullException60 {};
+	struct NullException61 {};
+	struct NullException62 {};
+	struct NullException63 {};
+	
+	template < typename E0  = NullException0 , typename E1  = NullException1 , typename E2  = NullException2 , typename E3  = NullException3 
+	         , typename E4  = NullException4 , typename E5  = NullException5 , typename E6  = NullException6 , typename E7  = NullException7 
+	         , typename E8  = NullException8 , typename E9  = NullException9 , typename E10 = NullException10, typename E11 = NullException11
+	         , typename E12 = NullException12, typename E13 = NullException13, typename E14 = NullException14, typename E15 = NullException15
+	         , typename E16 = NullException16, typename E17 = NullException17, typename E18 = NullException18, typename E19 = NullException19
+	         , typename E20 = NullException20, typename E21 = NullException21, typename E22 = NullException22, typename E23 = NullException23
+	         , typename E24 = NullException24, typename E25 = NullException25, typename E26 = NullException26, typename E27 = NullException27
+	         , typename E28 = NullException28, typename E29 = NullException29, typename E30 = NullException30, typename E31 = NullException31
+	         , typename E32 = NullException32, typename E33 = NullException33, typename E34 = NullException34, typename E35 = NullException35
+	         , typename E36 = NullException36, typename E37 = NullException37, typename E38 = NullException38, typename E39 = NullException39
+	         , typename E40 = NullException40, typename E41 = NullException41, typename E42 = NullException42, typename E43 = NullException43
+	         , typename E44 = NullException44, typename E45 = NullException45, typename E46 = NullException46, typename E47 = NullException47
+	         , typename E48 = NullException48, typename E49 = NullException49, typename E50 = NullException50, typename E51 = NullException51
+	         , typename E52 = NullException52, typename E53 = NullException53, typename E54 = NullException54, typename E55 = NullException55
+	         , typename E56 = NullException56, typename E57 = NullException57, typename E58 = NullException58, typename E59 = NullException59
+	         , typename E60 = NullException60, typename E61 = NullException61, typename E62 = NullException62, typename E63 = NullException63 >
+	struct ExceptionPrioritySet
+	{
+		template <typename E, bool dummy = true> struct ExceptionPriority { static const unsigned int PRIORITY = 0 ; static const uint64_t MASK = 0; };
+		
+		template <bool dummy> struct ExceptionPriority<E0 , dummy> { static const unsigned int PRIORITY = 0 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E1 , dummy> { static const unsigned int PRIORITY = 1 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E2 , dummy> { static const unsigned int PRIORITY = 2 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E3 , dummy> { static const unsigned int PRIORITY = 3 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E4 , dummy> { static const unsigned int PRIORITY = 4 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E5 , dummy> { static const unsigned int PRIORITY = 5 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E6 , dummy> { static const unsigned int PRIORITY = 6 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E7 , dummy> { static const unsigned int PRIORITY = 7 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E8 , dummy> { static const unsigned int PRIORITY = 8 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E9 , dummy> { static const unsigned int PRIORITY = 9 ; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E10, dummy> { static const unsigned int PRIORITY = 10; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E11, dummy> { static const unsigned int PRIORITY = 11; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E12, dummy> { static const unsigned int PRIORITY = 12; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E13, dummy> { static const unsigned int PRIORITY = 13; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E14, dummy> { static const unsigned int PRIORITY = 14; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E15, dummy> { static const unsigned int PRIORITY = 15; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E16, dummy> { static const unsigned int PRIORITY = 16; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E17, dummy> { static const unsigned int PRIORITY = 17; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E18, dummy> { static const unsigned int PRIORITY = 18; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E19, dummy> { static const unsigned int PRIORITY = 19; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E20, dummy> { static const unsigned int PRIORITY = 20; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E21, dummy> { static const unsigned int PRIORITY = 21; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E22, dummy> { static const unsigned int PRIORITY = 22; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E23, dummy> { static const unsigned int PRIORITY = 23; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E24, dummy> { static const unsigned int PRIORITY = 24; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E25, dummy> { static const unsigned int PRIORITY = 25; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E26, dummy> { static const unsigned int PRIORITY = 26; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E27, dummy> { static const unsigned int PRIORITY = 27; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E28, dummy> { static const unsigned int PRIORITY = 28; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E29, dummy> { static const unsigned int PRIORITY = 29; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E30, dummy> { static const unsigned int PRIORITY = 30; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E31, dummy> { static const unsigned int PRIORITY = 31; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E32, dummy> { static const unsigned int PRIORITY = 32; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E33, dummy> { static const unsigned int PRIORITY = 33; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E34, dummy> { static const unsigned int PRIORITY = 34; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E35, dummy> { static const unsigned int PRIORITY = 35; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E36, dummy> { static const unsigned int PRIORITY = 36; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E37, dummy> { static const unsigned int PRIORITY = 37; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E38, dummy> { static const unsigned int PRIORITY = 38; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E39, dummy> { static const unsigned int PRIORITY = 39; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E40, dummy> { static const unsigned int PRIORITY = 40; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E41, dummy> { static const unsigned int PRIORITY = 41; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E42, dummy> { static const unsigned int PRIORITY = 42; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E43, dummy> { static const unsigned int PRIORITY = 43; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E44, dummy> { static const unsigned int PRIORITY = 44; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E45, dummy> { static const unsigned int PRIORITY = 45; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E46, dummy> { static const unsigned int PRIORITY = 46; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E47, dummy> { static const unsigned int PRIORITY = 47; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E48, dummy> { static const unsigned int PRIORITY = 48; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E49, dummy> { static const unsigned int PRIORITY = 49; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E50, dummy> { static const unsigned int PRIORITY = 50; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E51, dummy> { static const unsigned int PRIORITY = 51; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E52, dummy> { static const unsigned int PRIORITY = 52; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E53, dummy> { static const unsigned int PRIORITY = 53; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E54, dummy> { static const unsigned int PRIORITY = 54; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E55, dummy> { static const unsigned int PRIORITY = 55; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E56, dummy> { static const unsigned int PRIORITY = 56; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E57, dummy> { static const unsigned int PRIORITY = 57; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E58, dummy> { static const unsigned int PRIORITY = 58; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E59, dummy> { static const unsigned int PRIORITY = 59; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E60, dummy> { static const unsigned int PRIORITY = 60; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E61, dummy> { static const unsigned int PRIORITY = 61; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E62, dummy> { static const unsigned int PRIORITY = 62; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
+		template <bool dummy> struct ExceptionPriority<E63, dummy> { static const unsigned int PRIORITY = 63; static const uint64_t MASK = uint64_t(1) << PRIORITY; };
 	};
 
 	///////////////////////////// ExceptionDispatcher<> ///////////////////////////
@@ -978,20 +1126,23 @@ protected:
 	public:
 		ExceptionDispatcher(typename CONFIG::CPU *cpu);
 		~ExceptionDispatcher();
-		virtual void InstallInterrupt(unsigned int priority, InterruptBase *interrupt, bool *trap_control_flag);
+		virtual void InstallInterrupt(InterruptBase *interrupt, unsigned int priority, bool *trap_control_flag);
 		template <typename EXCEPTION> typename EXCEPTION::INTERRUPT& ThrowException();
+		template <typename EXCEPTION> void AckException();
 		template <typename INTERRUPT> void AckInterrupt();
+		template <typename EXCEPTION> void EnableException();
 		template <typename INTERRUPT> void EnableInterrupt();
+		template <typename EXCEPTION> void DisableException();
 		template <typename INTERRUPT> void DisableInterrupt();
 		template <typename EXCEPTION> bool RecognizedException() const;
 		inline void ProcessExceptions() ALWAYS_INLINE;
 		inline bool HasPendingInterrupts() const ALWAYS_INLINE;
 	private:
-		typedef typename TypeForBitSize<NUM_EXCEPTIONS>::TYPE TYPE;
+		typedef typename TypeForBitSize<NUM_EXCEPTIONS>::TYPE MASK_TYPE;
 		
 		typename CONFIG::CPU *cpu;
-		TYPE exc_flags;                            // Exception flags (bits are ordered according to exception priority): 1=thrown 0=not thrown
-		TYPE exc_mask;                             // Exception mask (bits are ordered according to exception priority): 1=enabled, 0=disabled
+		MASK_TYPE exc_flags;                       // Exception flags (bits are ordered according to exception priority): 1=thrown 0=not thrown
+		MASK_TYPE exc_mask;                        // Exception mask (bits are ordered according to exception priority): 1=enabled, 0=disabled
 		InterruptBase *interrupts[NUM_EXCEPTIONS]; // Installed interrupts (sorted by interrupt priority)
 		bool *trap_control_flags[NUM_EXCEPTIONS];  // flags to control trap of interrupts (sorted by interrupt priority)
 		bool trapped[NUM_EXCEPTIONS];              // whether interrupts was trapped (sorted by interrupt priority)
@@ -1001,12 +1152,17 @@ public:
 	template <typename INTERRUPT> void InstallInterrupt() { INTERRUPT::InstallInterrupt(&exception_dispatcher, 0); }
 	template <typename INTERRUPT> void InstallInterrupt(bool& trap_control_flag) { INTERRUPT::InstallInterrupt(&exception_dispatcher, &trap_control_flag); }
 	template <typename EXCEPTION> typename EXCEPTION::INTERRUPT& ThrowException() { return exception_dispatcher.template ThrowException<EXCEPTION>(); }
+	template <typename EXCEPTION> void AckException() { exception_dispatcher.template AckException<EXCEPTION>(); }
 	template <typename INTERRUPT> void AckInterrupt() { exception_dispatcher.template AckInterrupt<INTERRUPT>(); }
+	template <typename EXCEPTION> void EnableException() { exception_dispatcher.template EnableException<EXCEPTION>(); }
 	template <typename INTERRUPT> void EnableInterrupt() { exception_dispatcher.template EnableInterrupt<INTERRUPT>(); }
+	template <typename EXCEPTION> void DisableException() { exception_dispatcher.template DisableException<EXCEPTION>(); }
 	template <typename INTERRUPT> void DisableInterrupt() { exception_dispatcher.template DisableInterrupt<INTERRUPT>(); }
 	template <typename EXCEPTION> bool RecognizedException() const { return exception_dispatcher.template RecognizedException<EXCEPTION>(); }
 	inline void ProcessExceptions() ALWAYS_INLINE { exception_dispatcher.ProcessExceptions(); }
 	inline bool HasPendingInterrupts() const ALWAYS_INLINE { return exception_dispatcher.HasPendingInterrupts(); }
+	template <typename EXCEPTION> static unsigned int GetExceptionPriority() { return CONFIG::CPU::EXCEPTION_PRIORITIES::template ExceptionPriority<EXCEPTION>::PRIORITY; }
+	template <typename EXCEPTION, typename MASK_TYPE> static MASK_TYPE GetExceptionMask() { return CONFIG::CPU::EXCEPTION_PRIORITIES::template ExceptionPriority<EXCEPTION>::MASK; }
 protected:
 	
 	////////////////////// System Level Register Modeling /////////////////////
@@ -5238,7 +5394,7 @@ protected:
 			return Super::MoveFrom(value);
 		}
 		
-		virtual bool MoveTo(uint32_t& value)
+		virtual bool MoveTo(uint32_t value)
 		{
 			uint32_t old_value = this->Get();
 			bool status = Super::MoveTo(value);

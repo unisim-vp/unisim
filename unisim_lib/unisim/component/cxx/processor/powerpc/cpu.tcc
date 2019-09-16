@@ -468,7 +468,7 @@ CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::~ExceptionDispatcher()
 
 template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
-void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::InstallInterrupt(unsigned int priority, InterruptBase *interrupt, bool *trap_control_flag)
+void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::InstallInterrupt(InterruptBase *interrupt, unsigned int priority, bool *trap_control_flag)
 {
 	assert(interrupts[priority] == 0);
 	interrupts[priority] = interrupt;
@@ -480,45 +480,78 @@ template <unsigned int NUM_EXCEPTIONS>
 template <typename EXCEPTION>
 typename EXCEPTION::INTERRUPT& CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::ThrowException()
 {
-	if(cpu->verbose_exception && !(exc_flags & EXCEPTION::template GetMask<TYPE>()))
+	if(cpu->verbose_exception && !(exc_flags & CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>()))
 	{
 		cpu->GetDebugInfoStream() << "Throwing " << EXCEPTION::GetName() << std::endl;
 	}
-	exc_flags = exc_flags | EXCEPTION::template GetMask<TYPE>();
-	return *static_cast<typename EXCEPTION::INTERRUPT *>(interrupts[EXCEPTION::PRIORITY]);
+	exc_flags = exc_flags | CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>();
+	return *static_cast<typename EXCEPTION::INTERRUPT *>(interrupts[CPU::template GetExceptionPriority<EXCEPTION>()]);
+}
+
+template <typename TYPES, typename CONFIG>
+template <unsigned int NUM_EXCEPTIONS>
+template <typename EXCEPTION> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::AckException()
+{
+	if(cpu->verbose_exception && (exc_flags & CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>()))
+	{
+		cpu->GetDebugInfoStream() << "Acknowledging " <<EXCEPTION::GetName() << std::endl;
+	}
+	exc_flags = exc_flags & ~CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>();
 }
 
 template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
 template <typename INTERRUPT> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::AckInterrupt()
 {
-	if(cpu->verbose_exception && (exc_flags & INTERRUPT::template GetMask<TYPE>()))
+	if(cpu->verbose_exception && (exc_flags & INTERRUPT::template GetMask<MASK_TYPE>()))
 	{
 		cpu->GetDebugInfoStream() << "Acknowledging " <<INTERRUPT::GetName() << std::endl;
 	}
-	exc_flags = exc_flags & ~INTERRUPT::template GetMask<TYPE>();
+	exc_flags = exc_flags & ~INTERRUPT::template GetMask<MASK_TYPE>();
+}
+
+template <typename TYPES, typename CONFIG>
+template <unsigned int NUM_EXCEPTIONS>
+template <typename EXCEPTION> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::EnableException()
+{
+	if(cpu->verbose_interrupt && ((exc_mask & CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>()) == 0))
+	{
+		cpu->GetDebugInfoStream() << "Enabling " << EXCEPTION::GetName() << std::endl;
+	}
+	exc_mask = exc_mask | CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>();
 }
 
 template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
 template <typename INTERRUPT> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::EnableInterrupt()
 {
-	if(cpu->verbose_interrupt && ((exc_mask & INTERRUPT::template GetMask<TYPE>()) == 0))
+	if(cpu->verbose_interrupt && ((exc_mask & INTERRUPT::template GetMask<MASK_TYPE>()) == 0))
 	{
 		cpu->GetDebugInfoStream() << "Enabling " << INTERRUPT::GetName() << std::endl;
 	}
-	exc_mask = exc_mask | INTERRUPT::template GetMask<TYPE>();
+	exc_mask = exc_mask | INTERRUPT::template GetMask<MASK_TYPE>();
+}
+
+template <typename TYPES, typename CONFIG>
+template <unsigned int NUM_EXCEPTIONS>
+template <typename EXCEPTION> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::DisableException()
+{
+	if(cpu->verbose_interrupt && ((exc_mask & CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>()) != 0))
+	{
+		cpu->GetDebugInfoStream() << "Disabling " << EXCEPTION::GetName() << std::endl;
+	}
+	exc_mask = exc_mask & ~CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>();
 }
 
 template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
 template <typename INTERRUPT> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::DisableInterrupt()
 {
-	if(cpu->verbose_interrupt && ((exc_mask & INTERRUPT::template GetMask<TYPE>()) != 0))
+	if(cpu->verbose_interrupt && ((exc_mask & INTERRUPT::template GetMask<MASK_TYPE>()) != 0))
 	{
 		cpu->GetDebugInfoStream() << "Disabling " << INTERRUPT::GetName() << std::endl;
 	}
-	exc_mask = exc_mask & ~INTERRUPT::template GetMask<TYPE>();
+	exc_mask = exc_mask & ~INTERRUPT::template GetMask<MASK_TYPE>();
 }
 
 template <typename TYPES, typename CONFIG>
@@ -575,7 +608,7 @@ template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
 template <typename EXCEPTION> bool CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::RecognizedException() const
 {
-	return (exc_flags & exc_mask) & EXCEPTION::template GetMask<TYPE>();
+	return (exc_flags & exc_mask) & CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>();
 }
 
 template <typename TYPES, typename CONFIG>

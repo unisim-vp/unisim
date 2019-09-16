@@ -1596,7 +1596,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	
 	// Setup logger server
 	unisim::kernel::logger::LoggerServer *logserv = unisim::kernel::logger::Logger::StaticServerInstance();
-	logserv->Setup();
+	logserv->Initialize();
 }
 
 Simulator::~Simulator()

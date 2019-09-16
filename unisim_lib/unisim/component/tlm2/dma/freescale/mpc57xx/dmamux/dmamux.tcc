@@ -480,7 +480,6 @@ template <typename CONFIG>
 void DMAMUX<CONFIG>::ProcessEvent(Event *event)
 {
 	tlm::tlm_generic_payload *payload = event->GetPayload();
-	sc_core::sc_time time_stamp(event->GetTimeStamp());
 	tlm::tlm_command cmd = payload->get_command();
 
 	if(cmd != tlm::TLM_IGNORE_COMMAND)
