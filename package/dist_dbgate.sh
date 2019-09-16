@@ -4,7 +4,7 @@ SIMPKG=dbgate
 SIMPKGDIR=cxx/dbgate
 source "$(dirname $0)/dist_common.sh"
 
-import unisim/util/dbgate
+import unisim/util/dbgate/py
 import unisim/util/hypapp
 
 import libc/inttypes

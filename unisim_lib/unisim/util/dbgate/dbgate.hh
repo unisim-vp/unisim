@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_DBGATE_DBGATE_HH__
 #define __UNISIM_UTIL_DBGATE_DBGATE_HH__
 
+#include <string>
 #include <inttypes.h>
 
 namespace unisim {
@@ -43,7 +44,12 @@ namespace dbgate {
 
   struct DBGated
   {
-    DBGated();
+    DBGated(int port, char const* string);
+
+    void write(int fd, char const* buffer, uintptr_t size);
+    int open(char const* path);
+    int port;
+    std::string root;
   };
 
 } /* end of namespace dbgate */

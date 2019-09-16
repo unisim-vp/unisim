@@ -38,10 +38,22 @@ namespace unisim {
 namespace util {
 namespace dbgate {
 
-  DBGated::DBGated()
+  DBGated::DBGated(int _port, char const* _root)
+    : port(_port)
+    , root(_root)
+  {}
+  
+  void
+  DBGated::write(int fd, char const* buffer, uintptr_t size)
   {
+    
   }
   
+  int
+  DBGated::open(char const* path)
+  {
+    return -1;
+  }
   
 } /* end of namespace dbgate */
 } /* end of namespace util */
