@@ -23,9 +23,9 @@ static int
 PyUnisimUtilDbgateDBGated__tp_init(PyUnisimUtilDbgateDBGated* self, PyObject* args)
 {
   int port;
-  char const* workdir;
+  char const* workdir = 0;
 
-  if (!PyArg_ParseTuple(args, "is", &port, &workdir))
+  if (!PyArg_ParseTuple(args, "i|s", &port, &workdir))
     return -1;
   
   self->obj = new unisim::util::dbgate::DBGated(port, workdir);
@@ -52,6 +52,19 @@ PyUnisimUtilDbgateDBGated_open(PyUnisimUtilDbgateDBGated* self, PyObject* args)
   return Py_BuildValue("i", self->obj->open(name));
 }
 
+PyObject*
+PyUnisimUtilDbgateDBGated_close(PyUnisimUtilDbgateDBGated* self, PyObject* args)
+{
+  int fd;
+
+  if (!PyArg_ParseTuple(args, "i", &fd))
+    return 0;
+
+  self->obj->close(fd);
+
+  Py_INCREF(Py_None);
+  return Py_None;
+}
 
 PyObject* 
 PyUnisimUtilDbgateDBGated_write(PyUnisimUtilDbgateDBGated* self, PyObject* args)
@@ -71,8 +84,9 @@ PyUnisimUtilDbgateDBGated_write(PyUnisimUtilDbgateDBGated* self, PyObject* args)
 
 static PyMethodDef PyUnisimUtilDbgateDBGated_methods[] =
   {
-   {"open", (PyCFunction)PyUnisimUtilDbgateDBGated_open, METH_VARARGS, "open(name)\n\ntype: name: char const *" },
-   {"write", (PyCFunction)PyUnisimUtilDbgateDBGated_write, METH_VARARGS, "write(fd, buf, size)\n\ntype: fd: int\ntype: buf: char const *\ntype: size: int" },
+   {"open", (PyCFunction)PyUnisimUtilDbgateDBGated_open, METH_VARARGS, "open(name)\nopen a debug file and return its descriptor" },
+   {"close", (PyCFunction)PyUnisimUtilDbgateDBGated_close, METH_VARARGS, "close(fd)\nclose a debug file identified by its descriptor" },
+   {"write", (PyCFunction)PyUnisimUtilDbgateDBGated_write, METH_VARARGS, "write(fd, buf, size)\nwrite to a file identified by its descriptor" },
    {NULL, NULL, 0, NULL}
   };
 
@@ -99,7 +113,7 @@ PyTypeObject PyUnisimUtilDbgateDBGated_Type =
    (setattrofunc)NULL,     /* tp_setattro */
    (PyBufferProcs*)NULL,  /* tp_as_buffer */
    Py_TPFLAGS_DEFAULT,    /* tp_flags */
-   "DBGated(port, workdir) => Create a DBGate server@port with cwd=workdir.\n", /* Documentation string */
+   "DBGated(port[, workdir]) => Create a DBGate server@port with cwd=workdir (defaults to a tmpdir).\n", /* Documentation string */
    (traverseproc)NULL,     /* tp_traverse */
    (inquiry)NULL,             /* tp_clear */
    (richcmpfunc)NULL,   /* tp_richcompare */
@@ -145,7 +159,7 @@ __attribute__ ((visibility("default")))
 #endif
 
 
-MOD_INIT(dbgate)
+MOD_INIT(_dbgate)
 {
   PyObject* m;
   
@@ -163,6 +177,6 @@ MOD_INIT(dbgate)
   if (PyType_Ready(&PyUnisimUtilDbgateDBGated_Type))
     return MOD_ERROR;
     
-  PyModule_AddObject( m, "unisim::util::dbgate::DBGated", (PyObject*)&PyUnisimUtilDbgateDBGated_Type );
+  PyModule_AddObject( m, "DBGated", (PyObject*)&PyUnisimUtilDbgateDBGated_Type );
   return MOD_RETURN(m);
 }

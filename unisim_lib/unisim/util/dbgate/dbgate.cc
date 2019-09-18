@@ -33,6 +33,8 @@
  */
  
 #include <unisim/util/dbgate/dbgate.hh>
+#include <limits>
+#include <iostream>
 
 namespace unisim {
 namespace util {
@@ -46,13 +48,43 @@ namespace dbgate {
   void
   DBGated::write(int fd, char const* buffer, uintptr_t size)
   {
-    
+    auto itr = ostreams.find(fd);
+    if (itr != ostreams.end())
+      itr->second.write(buffer,size);
   }
   
   int
   DBGated::open(char const* path)
   {
-    return -1;
+    std::string fullpath = root + "/" + path;
+    
+    int rfd = 0;
+    auto itr = ostreams.end();
+    
+    if (ostreams.size())
+      {
+        rfd = std::numeric_limits<int>::max();
+        for (auto end = itr; --itr != end;)
+          {
+            if (itr->first < rfd) { rfd = itr->first+1; break; }
+            else                  { rfd = itr->first-1; continue; }
+          }
+      }
+    
+    if (rfd < 0)
+      return rfd;
+    
+    ostreams.emplace_hint( itr, std::piecewise_construct, std::forward_as_tuple( rfd ), std::forward_as_tuple( fullpath ) );
+
+    return rfd;
+  }
+
+  void
+  DBGated::close(int fd)
+  {
+    auto itr = ostreams.find(fd);
+    if (itr != ostreams.end())
+      ostreams.erase(itr);
   }
   
 } /* end of namespace dbgate */

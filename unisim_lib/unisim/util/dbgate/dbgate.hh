@@ -35,6 +35,8 @@
 #ifndef __UNISIM_UTIL_DBGATE_DBGATE_HH__
 #define __UNISIM_UTIL_DBGATE_DBGATE_HH__
 
+#include <fstream>
+#include <map>
 #include <string>
 #include <inttypes.h>
 
@@ -48,8 +50,11 @@ namespace dbgate {
 
     void write(int fd, char const* buffer, uintptr_t size);
     int open(char const* path);
+    void close(int fd);
+    
     int port;
     std::string root;
+    std::map<int,std::ofstream> ostreams;
   };
 
 } /* end of namespace dbgate */
