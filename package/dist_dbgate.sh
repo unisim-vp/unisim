@@ -111,8 +111,12 @@ libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -shared -no-undefined
 
 noinst_HEADERS = ${UNISIM_LIB_PLUGIN_HEADER_FILES} ${UNISIM_TESTBENCH_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_PLUGIN_M4_FILES}
-sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
-dist_share_DATA = ${UNISIM_TESTBENCH_DATA_FILES}
+
+install-exec-hook:
+	cd \$(DESTDIR)\$(libdir) && mkdir -p \$(PYTHON_LIB)/site-packages/${SIMPKG}
+	cd \$(DESTDIR)\$(libdir)/\$(PYTHON_LIB)/site-packages/${SIMPKG} && \$(LN_S) \$(DESTDIR)\$(libdir)/libunisim-${SIMPKG}-${SIMULATOR_VERSION}.so _${SIMPKG}.so
+	cd \$(DESTDIR)\$(libdir)/\$(PYTHON_LIB)/site-packages/${SIMPKG} && \$(LN_S) \$(abs_srcdir)/dbgate.py __init__.py
+	cd \$(DESTDIR)\$(libdir)/\$(PYTHON_LIB)/site-packages/${SIMPKG} && \$(LN_S) \$(abs_srcdir)/dbgate.gdb dbgate.gdb
 
 EOF
 )
