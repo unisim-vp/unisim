@@ -28,10 +28,12 @@ UNISIM_LIB_PLUGIN_HEADER_FILES="$(files header) $(files template)"
 UNISIM_LIB_PLUGIN_M4_FILES="$(files m4)"
 
 UNISIM_PROGRAM_SOURCE_FILES="\
-tracer.cc
+tracee.cc \
+tracer.cc \
 "
 
 UNISIM_PROGRAM_HEADER_FILES="\
+tracee.hh \
 "
 
 UNISIM_PROGRAM_DATA_FILES="\

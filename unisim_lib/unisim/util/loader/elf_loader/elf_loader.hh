@@ -93,6 +93,7 @@ public:
 	void SetDebugErrorStream(std::ostream& debug_error_stream);
 	void SetRegistersInterface(unsigned int prc_num, unisim::service::interfaces::Registers *regs_if);
 	void SetMemoryInterface(unsigned int prc_num, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
+	void SetFileName(char const* filename);
 
 	void SetOption(Option opt, MEMORY_ADDR addr);
 	void SetOption(Option opt, const char *s);
@@ -158,9 +159,9 @@ private:
 	void DumpSymbolTable(const Elf_Shdr *shdr, const char *content, const char *string_table, std::ostream& os);
 	static void SwapProgramHeader(Elf_Phdr *phdr);
 	static void SwapSectionHeader(Elf_Shdr *shdr);
-	static void SwapElfHeader(Elf_Ehdr *hdr);
 public:	
 	static bool NeedEndianSwap(const Elf_Ehdr *hdr);
+	static void SwapElfHeader(Elf_Ehdr *hdr);
 	static Elf_Ehdr *ReadElfHeader(std::istream& is);
 	static Elf_Phdr *ReadProgramHeaders(const Elf_Ehdr *hdr, std::istream& is);
 	static Elf_Shdr *ReadSectionHeaders(const Elf_Ehdr *hdr, std::istream& is);
