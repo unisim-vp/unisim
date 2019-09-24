@@ -501,7 +501,7 @@ namespace ut
     
     u64_t                       tscread() { throw ut::Untestable("hardware"); return u64_t( 0 ); }
     
-    struct FLAG : public unisim::util::symbolic::Identifier<FLAG>
+    struct FLAG : public unisim::util::identifier::Identifier<FLAG>
     {
       typedef bool register_type;
       enum Code { CF = 0, PF, AF, ZF, SF, DF, OF, C0, C1, C2, C3, end } code;

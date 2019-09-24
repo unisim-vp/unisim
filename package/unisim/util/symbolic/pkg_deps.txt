@@ -8,3 +8,4 @@ std/stdexcept
 std/vector
 unisim/util/arithmetic
 unisim/util/endian
+unisim/util/identifier

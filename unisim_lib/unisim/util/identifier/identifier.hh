@@ -32,14 +32,14 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
-#ifndef __UNISIM_UTIL_SYMBOLIC_IDENTIFIER_HH__
-#define __UNISIM_UTIL_SYMBOLIC_IDENTIFIER_HH__
+#ifndef __UNISIM_UTIL_IDENTIFIER_IDENTIFIER_HH__
+#define __UNISIM_UTIL_IDENTIFIER_IDENTIFIER_HH__
 
 #include <cstring>
 
 namespace unisim {
 namespace util {
-namespace symbolic {
+namespace identifier {
 
   template <typename T>
   struct Identifier
@@ -63,8 +63,8 @@ namespace symbolic {
     int idx() const { return int(static_cast<T const*>(this)->code); }
   };
 
-} /* end of namespace symbolic */
+} /* end of namespace identifier */
 } /* end of namespace util */
 } /* end of namespace unisim */
 
-#endif /* __UNISIM_UTIL_SYMBOLIC_IDENTIFIER_HH__ */
+#endif /* __UNISIM_UTIL_IDENTIFIER_IDENTIFIER_HH__ */

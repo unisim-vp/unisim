@@ -1536,7 +1536,6 @@ main( int argc, char *argv[] )
 
   std::cerr << "Program exited with status:" << linux64.app_ret_status << std::endl;
   
-  
   return 0;
 }
 
