@@ -77,7 +77,7 @@ struct Tracee
     virtual std::string GetString( Tracee const& tracee, int adpos ) const = 0;
     virtual std::string GetBuffer( Tracee const& tracee, int adpos, int szpos ) const = 0;
     virtual int GetInt( Tracee const& tracee, int pos ) const = 0;
-    virtual DBGateMethodID GetMethod( Tracee const& tracee ) const = 0;
+    virtual bool AtBreakPoint( Tracee const& tracee, DBGateMethodID method ) const = 0;
     virtual void ReturnInt( Tracee const& tracee, int res ) const = 0;
     virtual void Return( Tracee const& tracee ) const = 0;
   };
@@ -90,11 +90,11 @@ struct Tracee
 
   DBGateMethodID nextcall() const;
 
-  std::string GetString( int adpos ) const { return driver->GetString(*this, adpos); }
-  std::string GetBuffer( int adpos, int szpos ) const { return driver->GetBuffer(*this, adpos, szpos); };
-  int GetInt( int pos ) const { return driver->GetInt(*this, pos); };
-  void ReturnInt( int res ) const { driver->ReturnInt(*this, res); }
-  void Return() const { driver->Return(*this); }
+  std::string getstring( int adpos ) const { return driver->GetString(*this, adpos); }
+  std::string getbuffer( int adpos, int szpos ) const { return driver->GetBuffer(*this, adpos, szpos); };
+  int getint( int pos ) const { return driver->GetInt(*this, pos); };
+  void returnint( int res ) const { driver->ReturnInt(*this, res); }
+  void doreturn() const { driver->Return(*this); }
 
   uintptr_t ptrace(enum __ptrace_request request, uintptr_t addr, uintptr_t data) const;
 
@@ -102,11 +102,11 @@ struct Tracee
   {
     PPC(Tracee const& _t) : t(_t) {} Tracee const& t;
     friend std::ostream& operator << (std::ostream& sink, PPC const& ppc )
-    { return ppc.t.PrintInsnAddr( sink ); return sink; }
+    { return ppc.t.printinsnaddr( sink ); return sink; }
   };
-  PPC PrintInsnAddr() { return PPC(*this); }
+  PPC printinsnaddr() { return PPC(*this); }
   
-  std::ostream& PrintInsnAddr( std::ostream& sink ) const;
+  std::ostream& printinsnaddr( std::ostream& sink ) const;
   
 private:
   pid_t pid;

@@ -101,15 +101,6 @@ namespace
       sink << "0x" << std::hex << GetInsnAddr(tracee) << std::dec;
     }
 
-    virtual DBGateMethodID GetMethod(Tracee const& tracee) const override
-    {
-      addr_t insn_addr = GetInsnAddr(tracee);
-      for (DBGateMethodID method; method.next();)
-        if (methods[method.idx()] == insn_addr) return method;
-      throw 0;
-      return DBGateMethodID::end;
-    }
-    
     int GetInt(Tracee const& tracee, int pos) const { return int(GetParam(tracee, pos)); }
 
     std::string GetString( Tracee const& tracee, int adpos ) const
@@ -117,7 +108,7 @@ namespace
       std::string result;
       addr_t addr = GetParam(tracee, adpos);
       
-      for (addr_t word, pos = 0; ; pos = (pos + 1) % sizeof (addr_t))
+      for (addr_t word, pos = 0; ; word >>= 8, pos = (pos + 1) % sizeof (addr_t))
         {
           if (pos == 0)
             {
@@ -139,7 +130,7 @@ namespace
       addr_t addr = GetParam(tracee, adpos);
       addr_t size = GetParam(tracee, szpos);
       
-      for (addr_t word, pos = 0; ; pos = (pos + 1) % sizeof (addr_t))
+      for (addr_t word, pos = 0; ; word >>= 8, pos = (pos + 1) % sizeof (addr_t))
         {
           if (0 == size--) break;
           if (pos == 0)
@@ -165,6 +156,10 @@ namespace
       addr_t word = tracee.ptrace(PTRACE_PEEKTEXT, method_addr, 0);
       saved_bytes[method.idx()] = word;
       tracee.ptrace(PTRACE_POKETEXT, method_addr, (word & -0x100) | 0xcc);
+    }
+    virtual bool AtBreakPoint( Tracee const& tracee, DBGateMethodID method ) const override
+    {
+      return this->GetInsnAddr(tracee) == (this->methods[method.idx()] + 1);
     }
     uint8_t saved_bytes[DBGateMethodID::end];
   };
@@ -349,7 +344,7 @@ Tracee::Tracee( char** argv )
   wait(&status);
 
   // We should now be stopped at entrypoint. XXX: sanity check ?
-  std::cerr << "entrypoint: " << PrintInsnAddr() << std::endl;
+  std::cerr << "entrypoint: " << printinsnaddr() << std::endl;
 
   for (DBGateMethodID method; method.next();)
     driver->InsertBreakPoint(*this, method);
@@ -358,6 +353,9 @@ Tracee::Tracee( char** argv )
 DBGateMethodID
 Tracee::nextcall() const
 {
+  if (this->ptrace(PTRACE_CONT, 0, 0) < 0)
+    throw 0;
+  
   int status;
   wait(&status);
   
@@ -367,11 +365,15 @@ Tracee::nextcall() const
   if (not WIFSTOPPED(status))
     throw 0;
 
-  return driver->GetMethod(*this);
+  for (DBGateMethodID method; method.next();)
+    if (driver->AtBreakPoint(*this,method))
+      return method;
+  throw 0;
+  return DBGateMethodID::end;
 }
 
 std::ostream&
-Tracee::PrintInsnAddr( std::ostream& sink ) const
+Tracee::printinsnaddr( std::ostream& sink ) const
 {
   driver->PrintInsnAddr(*this, sink);
   return sink;

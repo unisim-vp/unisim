@@ -52,7 +52,7 @@ main(int argc, char** argv)
 
   Tracee tracee(argv+optidx);
 
-  if (tracee.good())
+  if (not tracee.good())
     {
       std::cerr << "No tracee, giving up.\n";
       return 1;
@@ -63,33 +63,33 @@ main(int argc, char** argv)
 
   for (DBGateMethodID method; (method = tracee.nextcall()).good();)
     {
-      std::cerr << "In '" << method.c_str() << "'@" << tracee.PrintInsnAddr() << std::endl;
+      //      std::cerr << "In '" << method.c_str() << "'@" << tracee.printinsnaddr() << std::endl;
   
       switch (method.code)
         {
         case DBGateMethodID::open:
           {
             // int dbgate_open(char const* chan);
-            std::string chan = tracee.GetString(0);
+            std::string chan = tracee.getstring(0);
             int res = server.open(chan.c_str());
-            tracee.ReturnInt(res);
+            tracee.returnint(res);
           } break;
           
         case DBGateMethodID::close:
           {
             // void dbgate_close(int cd);
-            int cd = tracee.GetInt(0);
+            int cd = tracee.getint(0);
             server.close(cd);
-            tracee.Return();
+            tracee.doreturn();
           } break;
           
         case DBGateMethodID::write:
           {
             // void dbgate_write(int cd, char const* buffer, uintptr_t size);
-            int cd = tracee.GetInt(0);
-            std::string buffer = tracee.GetBuffer(1,2);
+            int cd = tracee.getint(0);
+            std::string buffer = tracee.getbuffer(1,2);
             server.write(cd,buffer.c_str(), buffer.size());
-            tracee.Return();
+            tracee.doreturn();
           } break;
           
         default:

@@ -39,12 +39,15 @@
 namespace unisim {
 namespace util {
 namespace dbgate {
+  
 
   DBGated::DBGated(int _port, char const* _root)
     : port(_port)
-    , root(_root)
+    , root()
   {
-    if (not _root)
+    if (_root)
+      root.assign(_root);
+    else
       { char tmpdirbuf[] = "/tmp/dbgateXXXXXX"; root = mkdtemp( tmpdirbuf ); }
     if (not _port)
       port = 12345;
