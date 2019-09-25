@@ -90,10 +90,33 @@ namespace
             }
         }
     }
-
-    void GetString( Tracee const& tracee, std::string& str, addr_t addr ) const
+    
+    virtual addr_t GetInsnAddr(Tracee const& tracee) const = 0;
+    virtual addr_t GetParam(Tracee const& tracee, int pos) const = 0;
+    virtual void SetResult(Tracee const& tracee, addr_t res) const = 0;
+    virtual void ReturnInt(Tracee const& tracee, int res) const { SetResult(tracee, addr_t(res)); Return(tracee); }
+    
+    virtual void PrintInsnAddr( Tracee const& tracee, std::ostream& sink ) const override
     {
-      str.clear();
+      sink << "0x" << std::hex << GetInsnAddr(tracee) << std::dec;
+    }
+
+    virtual DBGateMethodID GetMethod(Tracee const& tracee) const override
+    {
+      addr_t insn_addr = GetInsnAddr(tracee);
+      for (DBGateMethodID method; method.next();)
+        if (methods[method.idx()] == insn_addr) return method;
+      throw 0;
+      return DBGateMethodID::end;
+    }
+    
+    int GetInt(Tracee const& tracee, int pos) const { return int(GetParam(tracee, pos)); }
+
+    std::string GetString( Tracee const& tracee, int adpos ) const
+    {
+      std::string result;
+      addr_t addr = GetParam(tracee, adpos);
+      
       for (addr_t word, pos = 0; ; pos = (pos + 1) % sizeof (addr_t))
         {
           if (pos == 0)
@@ -104,24 +127,29 @@ namespace
 #endif
               addr += 8;
             }
-          if (char chr = word) str += chr;
-          else                 return;
+          if (char chr = word) result += chr;
+          else                 break;
         }
+      return result;
     }
     
-    void GetString( Tracee const& tracee, std::string& str, addr_t addr, addr_t size ) const
+    std::string GetBuffer( Tracee const& tracee, int adpos, int szpos ) const
     {
-      str.clear();
+      std::string result;
+      addr_t addr = GetParam(tracee, adpos);
+      addr_t size = GetParam(tracee, szpos);
+      
       for (addr_t word, pos = 0; ; pos = (pos + 1) % sizeof (addr_t))
         {
-          if (0 == size--) return;
+          if (0 == size--) break;
           if (pos == 0)
             {
               word = tracee.ptrace(PTRACE_PEEKTEXT, addr, 0);
               addr += 8;
             }
-          str += (char)word;
+          result += (char)word;
         }
+      return result;
     }
     
     addr_t methods[DBGateMethodID::end];
@@ -130,7 +158,7 @@ namespace
   template <typename ADDR>
   struct AnyX86Driver : ClassDriver<ADDR>
   {
-    typedef typename ClassDriver<uintptr_t>::addr_t addr_t;
+    typedef typename ClassDriver<ADDR>::addr_t addr_t;
     virtual void InsertBreakPoint( Tracee const& tracee, DBGateMethodID method ) override
     {
       uintptr_t method_addr = this->methods[method.idx()];
@@ -246,17 +274,17 @@ Tracee::Tracee( char** argv )
           { std::cerr << "error: " << exec.path.c_str() << " expected e_ident[EI_CLASS] == ELFCLASS32.\n"; return; }
         struct EM_386_Driver : public AnyX86Driver<uint32_t>
         {
-          enum { EIP = 12, UESP = 15 };
-          virtual void PrintProgramCounter( Tracee const& tracee, std::ostream& sink ) const override
+          enum { EAX = 6, EIP = 12, ESP = 15 };
+          virtual addr_t GetInsnAddr(Tracee const& tracee) const override { return tracee.ptrace(PTRACE_PEEKUSER, 4*EIP, 0); }
+          virtual addr_t GetParam( Tracee const& tracee, int pos ) const override { throw 0; }
+          virtual void SetResult(Tracee const& tracee, addr_t res) const override { tracee.ptrace(PTRACE_POKEUSER, 4*EAX, res); }
+          virtual void Return(Tracee const& tracee) const override
           {
-            /* Obtain and show child's instruction pointer */
-            uint64_t eip = tracee.ptrace(PTRACE_PEEKUSER, 4*EIP, 0);
-            sink << "eip: 0x" << std::hex << eip;
+            addr_t sp = tracee.ptrace(PTRACE_PEEKUSER, ESP, 0);
+            addr_t ra = tracee.ptrace(PTRACE_PEEKDATA, sp, 0);
+            tracee.ptrace(PTRACE_POKEUSER, EIP, ra);
+            tracee.ptrace(PTRACE_POKEUSER, ESP, sp+4);
           }
-          virtual void Get( Tracee const& tracee, OpenArgs& args ) const override { throw 0; }
-          virtual void Get( Tracee const& tracee, CloseArgs& args ) const override { throw 0; }
-          virtual void Get( Tracee const& tracee, WriteArgs& args ) const override { throw 0; }
-          virtual DBGateMethodID GetMethod(Tracee const&) const override { throw 0; }
         };
         driver = new EM_386_Driver();
         break;
@@ -269,38 +297,19 @@ Tracee::Tracee( char** argv )
         
         struct EM_X86_64_Driver : public AnyX86Driver<uint64_t>
         {
-          enum { RDX = 96, RSI = 104, RDI = 112, RIP = 128, ARG0 = RDI, ARG1 = RSI, ARG2 = RDX };
-          virtual void PrintProgramCounter( Tracee const& tracee, std::ostream& sink ) const override
+          enum { RAX = 80, RDX = 96, RSI = 104, RDI = 112, RIP = 128, RSP = 152 }; 
+          static uintptr_t arg(int pos) { switch (pos) { case 0: return RDI; case 1: return RSI; case 2: return RDX; } throw 0; }
+          virtual addr_t GetInsnAddr(Tracee const& tracee) const override { return tracee.ptrace(PTRACE_PEEKUSER, RIP, 0); }
+          virtual addr_t GetParam(Tracee const& tracee, int pos) const override { return tracee.ptrace(PTRACE_PEEKUSER, arg(pos), 0); }
+          virtual void SetResult(Tracee const& tracee, addr_t res) const override { tracee.ptrace(PTRACE_POKEUSER, RAX, res); }
+          virtual void Return(Tracee const& tracee) const override
           {
-            /* Obtain and show child's instruction pointer */
-            uint64_t rip = tracee.ptrace(PTRACE_PEEKUSER, RIP, 0);
-            sink << "rip: 0x" << std::hex << rip;
+            addr_t sp = tracee.ptrace(PTRACE_PEEKUSER, RSP, 0);
+            addr_t ra = tracee.ptrace(PTRACE_PEEKDATA, sp, 0);
+            tracee.ptrace(PTRACE_POKEUSER, RIP, ra);
+            tracee.ptrace(PTRACE_POKEUSER, RSP, sp+8);
           }
-          virtual void Get( Tracee const& tracee, OpenArgs& args ) const override
-          {
-            addr_t chan_addr = tracee.ptrace(PTRACE_PEEKUSER, ARG0, 0);
-            GetString( tracee, args.chan, chan_addr );
-          }
-          virtual void Get( Tracee const& tracee, CloseArgs& args ) const override
-          {
-            args.cd = tracee.ptrace(PTRACE_PEEKUSER, ARG0, 0);
-          }
-          virtual void Get( Tracee const& tracee, WriteArgs& args ) const override
-          {
-            args.cd = tracee.ptrace(PTRACE_PEEKUSER, ARG0, 0);
-            addr_t addr = tracee.ptrace(PTRACE_PEEKUSER, ARG1, 0);
-            addr_t size = tracee.ptrace(PTRACE_PEEKUSER, ARG2, 0);
-            GetString( tracee, args.buffer, addr, size );
-            throw 0;
-          }
-          virtual DBGateMethodID GetMethod(Tracee const& tracee) const override
-          {
-            uint64_t rip = tracee.ptrace(PTRACE_PEEKUSER, RIP, 0);
-            for (DBGateMethodID method; method.next();)
-              if (methods[method.idx()] == rip) return method;
-            throw 0;
-            return DBGateMethodID::end;
-          }
+
         };
         driver = new EM_X86_64_Driver();
         break;
@@ -340,7 +349,7 @@ Tracee::Tracee( char** argv )
   wait(&status);
 
   // We should now be stopped at entrypoint. XXX: sanity check ?
-  PrintProgramCounter(std::cerr) << std::endl;
+  std::cerr << "entrypoint: " << PrintInsnAddr() << std::endl;
 
   for (DBGateMethodID method; method.next();)
     driver->InsertBreakPoint(*this, method);
@@ -362,8 +371,8 @@ Tracee::nextcall() const
 }
 
 std::ostream&
-Tracee::PrintProgramCounter( std::ostream& sink )
+Tracee::PrintInsnAddr( std::ostream& sink ) const
 {
-  driver->PrintProgramCounter(*this, sink);
+  driver->PrintInsnAddr(*this, sink);
   return sink;
 }

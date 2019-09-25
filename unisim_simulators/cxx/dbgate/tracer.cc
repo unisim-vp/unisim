@@ -32,6 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
+#include <unisim/util/dbgate/dbgate.hh>
 #include <tracee.hh>
 #include <iostream>
 #include <cassert>
@@ -39,8 +40,6 @@
 int
 main(int argc, char** argv)
 {
-  std::cerr << "DBGate tracer.\n";
-
   int optidx = 1;
 
   assert(not argv[argc]);
@@ -59,27 +58,38 @@ main(int argc, char** argv)
       return 1;
     }
 
+  unisim::util::dbgate::DBGated server(12345, 0);
+  std::cerr << "DBGate server started in " << server.root << " at localhost:" << server.port << "\n";
+
   for (DBGateMethodID method; (method = tracee.nextcall()).good();)
     {
-      tracee.PrintProgramCounter( std::cerr << "In '" << method.c_str() << "'@" ) << std::endl;
+      std::cerr << "In '" << method.c_str() << "'@" << tracee.PrintInsnAddr() << std::endl;
   
       switch (method.code)
         {
         case DBGateMethodID::open:
           {
-            Tracee::OpenArgs args;
-            tracee.getargs(args);
+            // int dbgate_open(char const* chan);
+            std::string chan = tracee.GetString(0);
+            int res = server.open(chan.c_str());
+            tracee.ReturnInt(res);
           } break;
           
         case DBGateMethodID::close:
           {
-            Tracee::CloseArgs args;
-            tracee.getargs(args);
+            // void dbgate_close(int cd);
+            int cd = tracee.GetInt(0);
+            server.close(cd);
+            tracee.Return();
           } break;
+          
         case DBGateMethodID::write:
           {
-            Tracee::WriteArgs args;
-            tracee.getargs(args);   
+            // void dbgate_write(int cd, char const* buffer, uintptr_t size);
+            int cd = tracee.GetInt(0);
+            std::string buffer = tracee.GetBuffer(1,2);
+            server.write(cd,buffer.c_str(), buffer.size());
+            tracee.Return();
           } break;
           
         default:
@@ -87,12 +97,6 @@ main(int argc, char** argv)
         }
     }
   
-  /* We are the tracer and tracee is launched,  */
-  // for (;;)
-  //   #
-  // int status;
-  // waitpid(tracee.pid, &status, 0);
-
   // while (WIFSTOPPED(wait_status)) {
   //   icounter++;
   //   /* Make the child execute another instruction */

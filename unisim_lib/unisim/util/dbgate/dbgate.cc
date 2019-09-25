@@ -43,7 +43,12 @@ namespace dbgate {
   DBGated::DBGated(int _port, char const* _root)
     : port(_port)
     , root(_root)
-  {}
+  {
+    if (not _root)
+      { char tmpdirbuf[] = "/tmp/dbgateXXXXXX"; root = mkdtemp( tmpdirbuf ); }
+    if (not _port)
+      port = 12345;
+  }
   
   void
   DBGated::write(int fd, char const* buffer, uintptr_t size)

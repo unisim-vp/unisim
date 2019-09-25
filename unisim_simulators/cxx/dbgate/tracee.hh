@@ -68,23 +68,18 @@ struct DBGateMethodID  : public unisim::util::identifier::Identifier<DBGateMetho
 
 struct Tracee
 {
-  // int dbgate_open( char const* chan );
-  struct OpenArgs { std::string chan; };
-  // void dbgate_close(int cd);
-  struct CloseArgs { int cd; };
-  // void dbgate_write(int cd, char const* buffer, uintptr_t size);
-  struct WriteArgs { int cd; std::string buffer; };
-  
   struct Driver
   {
     virtual ~Driver() {};
     virtual void Decode(Tracee& tracee, char const* execpath) = 0;
-    virtual void PrintProgramCounter( Tracee const& tracee, std::ostream& sink ) const = 0;
+    virtual void PrintInsnAddr( Tracee const& tracee, std::ostream& sink ) const = 0;
     virtual void InsertBreakPoint( Tracee const& tracee, DBGateMethodID method ) = 0;
-    virtual void Get( Tracee const& tracee, OpenArgs& args ) const = 0;
-    virtual void Get( Tracee const& tracee, CloseArgs& args ) const = 0;
-    virtual void Get( Tracee const& tracee, WriteArgs& args ) const = 0;
+    virtual std::string GetString( Tracee const& tracee, int adpos ) const = 0;
+    virtual std::string GetBuffer( Tracee const& tracee, int adpos, int szpos ) const = 0;
+    virtual int GetInt( Tracee const& tracee, int pos ) const = 0;
     virtual DBGateMethodID GetMethod( Tracee const& tracee ) const = 0;
+    virtual void ReturnInt( Tracee const& tracee, int res ) const = 0;
+    virtual void Return( Tracee const& tracee ) const = 0;
   };
 
   Tracee( char** argv );
@@ -95,11 +90,23 @@ struct Tracee
 
   DBGateMethodID nextcall() const;
 
-  template <class T> void getargs( T& args ) { return driver->Get( *this, args ); }
+  std::string GetString( int adpos ) const { return driver->GetString(*this, adpos); }
+  std::string GetBuffer( int adpos, int szpos ) const { return driver->GetBuffer(*this, adpos, szpos); };
+  int GetInt( int pos ) const { return driver->GetInt(*this, pos); };
+  void ReturnInt( int res ) const { driver->ReturnInt(*this, res); }
+  void Return() const { driver->Return(*this); }
 
   uintptr_t ptrace(enum __ptrace_request request, uintptr_t addr, uintptr_t data) const;
 
-  std::ostream& PrintProgramCounter( std::ostream& sink );
+  struct PPC
+  {
+    PPC(Tracee const& _t) : t(_t) {} Tracee const& t;
+    friend std::ostream& operator << (std::ostream& sink, PPC const& ppc )
+    { return ppc.t.PrintInsnAddr( sink ); return sink; }
+  };
+  PPC PrintInsnAddr() { return PPC(*this); }
+  
+  std::ostream& PrintInsnAddr( std::ostream& sink ) const;
   
 private:
   pid_t pid;
