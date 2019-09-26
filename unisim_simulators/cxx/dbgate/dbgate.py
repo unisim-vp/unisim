@@ -1,10 +1,41 @@
 """
-Python master module for dbgate usage
+Python master module for dbgate usage in GDB sessions.
+When used as a main program, install or fix link with shared library.
 """
 
-from ._dbgate import DBGated
+import os
 
-import os, gdb, re
+if __name__ == "__main__":
+    # Install or fix link with shared library
+    import sys
+    callname, sharedlib = sys.argv
+    moduledir, __init__ = os.path.split(__file__)
+
+    # Checking that the installation is sound
+    assert __init__ == '__init__.py'
+    assert os.path.exists( os.path.join( moduledir, 'dbgate.gdb' ) )
+    
+    # Checking the link and fixing if needed
+    sharedlib = os.path.realpath( sharedlib )
+    link = os.path.join( moduledir, '_dbgate.so' )
+    if os.path.realpath( link ) == sharedlib:
+        sys.stderr.write( 'Installation is OK.\n' )
+        sys.exit(0)
+    
+    if os.path.islink( link ):
+        os.remove( link )
+    if os.path.exists( link ):
+        sys.stderr.write( "Can't remove %r" % link )
+        sys.exit(1)
+
+    sys.stderr.write( 'Linking %r <= %r\n' % (sharedlib, link) )
+    os.symlink( sharedlib, link )
+    sys.exit(0)
+    
+    
+
+from ._dbgate import DBGated
+import re, gdb
 
 gdbdefs = os.path.abspath(os.path.join(os.path.dirname(__file__),'dbgate.gdb'))
 

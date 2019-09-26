@@ -117,10 +117,10 @@ noinst_HEADERS = ${UNISIM_LIB_PLUGIN_HEADER_FILES} ${UNISIM_PROGRAM_HEADER_FILES
 EXTRA_DIST = ${UNISIM_LIB_PLUGIN_M4_FILES}
 
 install-exec-hook:
-	cd \$(DESTDIR)\$(libdir) && mkdir -p \$(PYTHON_LIB)/site-packages/${SIMPKG}
-	cd \$(DESTDIR)\$(libdir)/\$(PYTHON_LIB)/site-packages/${SIMPKG} && \$(LN_S) \$(DESTDIR)\$(libdir)/libunisim-${SIMPKG}-${SIMULATOR_VERSION}.so _${SIMPKG}.so
-	cd \$(DESTDIR)\$(libdir)/\$(PYTHON_LIB)/site-packages/${SIMPKG} && \$(LN_S) \$(abs_srcdir)/dbgate.py __init__.py
-	cd \$(DESTDIR)\$(libdir)/\$(PYTHON_LIB)/site-packages/${SIMPKG} && \$(LN_S) \$(abs_srcdir)/dbgate.gdb dbgate.gdb
+	cd \$(DESTDIR)\$(libdir) && \$(MKDIR_P) \$(PYTHON_LIB)/site-packages/${SIMPKG}
+	\$(INSTALL) \$(abs_srcdir)/dbgate.py \$(DESTDIR)\$(libdir)/\$(PYTHON_LIB)/site-packages/${SIMPKG}/__init__.py
+	\$(INSTALL) \$(abs_srcdir)/dbgate.gdb \$(DESTDIR)\$(libdir)/\$(PYTHON_LIB)/site-packages/${SIMPKG}/dbgate.gdb
+	\$(PYTHON_BIN) \$(DESTDIR)\$(libdir)/\$(PYTHON_LIB)/site-packages/${SIMPKG}/__init__.py \$(DESTDIR)\$(libdir)/libunisim-${SIMPKG}-${SIMULATOR_VERSION}.so
 
 EOF
 )
