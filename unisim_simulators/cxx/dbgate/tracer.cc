@@ -96,19 +96,12 @@ main(int argc, char** argv)
           throw 0;
         }
     }
-  
-  // while (WIFSTOPPED(wait_status)) {
-  //   icounter++;
-  //   /* Make the child execute another instruction */
-  //   if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {
-  //     perror("ptrace");
-  //     return;
+
+  // std::cerr << "Received:\n";
+  // for (auto const& p : server.files)
+  //   {
+  //     std::cerr << "  \"" << p.first << "\": \"" << p.second << "\"\n";
   //   }
-
-  //   /* Wait for child to stop on its next instruction */
-  //   wait(&wait_status);
-  // }
-
   
   return 0;
 }

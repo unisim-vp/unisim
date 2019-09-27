@@ -57,7 +57,7 @@ namespace dbgate {
   {
     auto itr = ostreams.find(cd);
     if (itr != ostreams.end())
-      itr->second.sink.write(buffer,size);
+      itr->second.stream.write(buffer,size);
   }
   
   int
@@ -96,7 +96,7 @@ namespace dbgate {
     
     itr = ostreams.emplace_hint( itr, std::piecewise_construct, std::forward_as_tuple( rcd ), std::forward_as_tuple( path, std::move(filepath) ) );
     
-    if (not itr->second.sink.good())
+    if (not itr->second.stream.good())
       {
         std::cerr << "Can't create Sink(" << itr->second.chanpath << ", " << itr->second.filepath << ")\n";
         ostreams.erase(itr);
@@ -110,12 +110,16 @@ namespace dbgate {
   DBGated::close(int fd)
   {
     auto itr = ostreams.find(fd);
-    if (itr != ostreams.end())
-      ostreams.erase(itr);
+    if (itr == ostreams.end())
+      return;
+    Sink& sink(itr->second);
+    sink.stream.close();
+    files.emplace( std::piecewise_construct, std::forward_as_tuple( std::move(sink.chanpath) ), std::forward_as_tuple( std::move(sink.filepath)) );
+    ostreams.erase(itr);
   }
 
   DBGated::Sink::Sink(std::string&& _chanpath, std::string&& _filepath)
-    : chanpath(std::move(_chanpath)), filepath(std::move(_filepath)), sink(filepath.c_str())
+    : chanpath(std::move(_chanpath)), filepath(std::move(_filepath)), stream(filepath.c_str())
   {}
   
 } /* end of namespace dbgate */

@@ -45,27 +45,32 @@ namespace unisim {
 namespace util {
 namespace dbgate {
 
-
-  struct DBGated
+  struct DBGated /* : public hypapp::HttpServer */
   {
     DBGated(int port, char const* string);
 
+    /* Communication with guest program. */
     void write(int fd, char const* buffer, uintptr_t size);
     int open(char const* path);
     void close(int fd);
-    
-    int port;
-    std::string root;
 
+    /* Communication with debugging webclients */
+
+    // /*** hypapp::HttpServer deployment ***/
+    // virtual void Serve(hypapp::ClientConnection const& conn) override;
+
+    /* Compound holding current debugging stream */
     struct Sink
     {
       std::string chanpath, filepath;
-      std::ofstream sink;
+      std::ofstream stream;
       Sink(std::string&& _chanpath, std::string&& _filepath);
     };
     
-    std::map<int,Sink> ostreams;
-    std::multimap<std::string,std::string> files;
+    int port;                                      /*< port of the webserver */
+    std::string root;                              /*< location of debugging files */ 
+    std::map<int,Sink> ostreams;                   /*< active debugging streams */
+    std::multimap<std::string,std::string> files;  /*< debugging file store */
   };
 
 } /* end of namespace dbgate */
