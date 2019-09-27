@@ -40,7 +40,6 @@ namespace unisim {
 namespace util {
 namespace dbgate {
   
-
   DBGated::DBGated(int _port, char const* _root)
     : port(_port)
     , root()
@@ -54,37 +53,57 @@ namespace dbgate {
   }
   
   void
-  DBGated::write(int fd, char const* buffer, uintptr_t size)
+  DBGated::write(int cd, char const* buffer, uintptr_t size)
   {
-    auto itr = ostreams.find(fd);
+    auto itr = ostreams.find(cd);
     if (itr != ostreams.end())
-      itr->second.write(buffer,size);
+      itr->second.sink.write(buffer,size);
   }
   
   int
   DBGated::open(char const* path)
   {
-    std::string fullpath = root + "/" + path;
+    std::string filepath = root + "/dbg";
+    {
+      /* generating unique name with file count */
+      struct { void nibble(std::string& s, uintptr_t i) { if (i>=16) nibble(s,i>>4); s += "0123456789abcdef"[i%16]; } } _;
+      _.nibble( filepath, files.size() + ostreams.size() );
+      /* extracting any existing extension */
+      std::string buffer = path;
+      uintptr_t spos = buffer.rfind('/'), dpos = buffer.rfind('.');
+      if (dpos != std::string::npos and (spos == std::string::npos or spos < dpos))
+        filepath.insert(filepath.end(),buffer.begin()+dpos,buffer.end());
+    }
     
-    int rfd = 0;
+    int rcd = 0;
     auto itr = ostreams.end();
     
     if (ostreams.size())
       {
-        rfd = std::numeric_limits<int>::max();
+        rcd = std::numeric_limits<int>::max();
         for (auto end = itr; --itr != end;)
           {
-            if (itr->first < rfd) { rfd = itr->first+1; break; }
-            else                  { rfd = itr->first-1; continue; }
+            if (itr->first < rcd) { rcd = itr->first+1; break; }
+            else                  { rcd = itr->first-1; continue; }
           }
       }
     
-    if (rfd < 0)
-      return rfd;
+    if (rcd < 0)
+      {
+        std::cerr << "Descriptor allocation error\n";
+        return rcd;
+      }
     
-    ostreams.emplace_hint( itr, std::piecewise_construct, std::forward_as_tuple( rfd ), std::forward_as_tuple( fullpath ) );
+    itr = ostreams.emplace_hint( itr, std::piecewise_construct, std::forward_as_tuple( rcd ), std::forward_as_tuple( path, std::move(filepath) ) );
+    
+    if (not itr->second.sink.good())
+      {
+        std::cerr << "Can't create Sink(" << itr->second.chanpath << ", " << itr->second.filepath << ")\n";
+        ostreams.erase(itr);
+        return -1;
+      }
 
-    return rfd;
+    return rcd;
   }
 
   void
@@ -94,6 +113,10 @@ namespace dbgate {
     if (itr != ostreams.end())
       ostreams.erase(itr);
   }
+
+  DBGated::Sink::Sink(std::string&& _chanpath, std::string&& _filepath)
+    : chanpath(std::move(_chanpath)), filepath(std::move(_filepath)), sink(filepath.c_str())
+  {}
   
 } /* end of namespace dbgate */
 } /* end of namespace util */

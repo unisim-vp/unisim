@@ -32,44 +32,51 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
-#ifndef __UNISIM_UTIL_DBGATE_DBGATE_HH__
-#define __UNISIM_UTIL_DBGATE_DBGATE_HH__
+#ifndef __UNISIM_UTIL_DBGATE_CLIENT_CLIENT_HH__
+#define __UNISIM_UTIL_DBGATE_CLIENT_CLIENT_HH__
 
-#include <fstream>
-#include <map>
-#include <set>
-#include <string>
-#include <inttypes.h>
+#include <ostream>
+#include <streambuf>
+#include <cstdio>
+#include <cstring>
+#include <cstdint>
+
+/***********************/
+/*** DBGate bindings ***/
+/***********************/
+
+extern "C"
+{
+  void dbgate_write(int fd, char const* buffer, uintptr_t size);
+  int dbgate_open(char const* path);
+  void dbgate_close(int fd);
+}
 
 namespace unisim {
 namespace util {
 namespace dbgate {
+namespace client {
 
-
-  struct DBGated
+  struct odbgbuf : public std::streambuf
   {
-    DBGated(int port, char const* string);
-
-    void write(int fd, char const* buffer, uintptr_t size);
-    int open(char const* path);
-    void close(int fd);
-    
-    int port;
-    std::string root;
-
-    struct Sink
-    {
-      std::string chanpath, filepath;
-      std::ofstream sink;
-      Sink(std::string&& _chanpath, std::string&& _filepath);
-    };
-    
-    std::map<int,Sink> ostreams;
-    std::multimap<std::string,std::string> files;
+    odbgbuf (char const* name) : fd(dbgate_open(name)) {}
+    ~odbgbuf () { dbgate_close(fd); }
+    virtual int_type overflow (int_type c) override { if (c != EOF) { char z = c; dbgate_write(fd, &z, 1); } return c; }
+    virtual std::streamsize xsputn (const char* s, std::streamsize num) override { return dbgate_write(fd, s, num), num; }
+    int fd;
   };
 
-} /* end of namespace dbgate */
-} /* end of namespace util */
-} /* end of namespace unisim */
+  struct odbgstream : public std::ostream
+  {
+    odbgstream (char const* name) : std::ostream(0), buf(name) { rdbuf(&buf); if (buf.fd < 0) this->setstate(ios_base::failbit);  }
+    ~odbgstream () {}
+    odbgbuf  buf;
+  };
 
-#endif /* __UNISIM_UTIL_DBGATE_DBGATE_HH__ */
+} // end of namespace client
+} // end of namespace dbgate
+} // end of namespace util
+} // end of namespace unisim
+  
+#endif //__UNISIM_UTIL_DBGATE_CLIENT_CLIENT_HH__
+

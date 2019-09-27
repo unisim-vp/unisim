@@ -79,8 +79,9 @@ namespace
         {
           if (Symbol const* symbol = loader.FindSymbolByName(method.c_str(), Symbol::SYM_FUNC))
             {
-              addr_t addr = symbol->GetAddress(), size = symbol->GetSize();
-              std::cerr << method.c_str() << ": <0x" << std::hex << addr << ", " << std::dec << size << '>' << std::endl;
+              addr_t addr = symbol->GetAddress();
+              // addr_t size = symbol->GetSize();
+              // std::cerr << method.c_str() << ": <0x" << std::hex << addr << ", " << std::dec << size << '>' << std::endl;
               methods[method.idx()] = addr;
             }
           else
@@ -344,7 +345,7 @@ Tracee::Tracee( char** argv )
   wait(&status);
 
   // We should now be stopped at entrypoint. XXX: sanity check ?
-  std::cerr << "entrypoint: " << printinsnaddr() << std::endl;
+  // std::cerr << "entrypoint: " << printinsnaddr() << std::endl;
 
   for (DBGateMethodID method; method.next();)
     driver->InsertBreakPoint(*this, method);
