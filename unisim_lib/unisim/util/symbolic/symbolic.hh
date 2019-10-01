@@ -123,7 +123,7 @@ namespace symbolic {
     virtual ScalarType::id_t GetType() const = 0;
   };
   
-  struct Op : public Identifier<Op>
+  struct Op : public identifier::Identifier<Op>
   {
     enum Code
       {

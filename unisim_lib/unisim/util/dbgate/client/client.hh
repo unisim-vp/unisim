@@ -59,18 +59,17 @@ namespace client {
 
   struct odbgbuf : public std::streambuf
   {
-    odbgbuf (char const* name) : fd(dbgate_open(name)) {}
-    ~odbgbuf () { dbgate_close(fd); }
-    virtual int_type overflow (int_type c) override { if (c != EOF) { char z = c; dbgate_write(fd, &z, 1); } return c; }
-    virtual std::streamsize xsputn (const char* s, std::streamsize num) override { return dbgate_write(fd, s, num), num; }
-    int fd;
+    odbgbuf (int _cd) : cd(_cd) {}
+    virtual int_type overflow (int_type c) override { if (c != EOF) { char z = c; dbgate_write(cd, &z, 1); } return c; }
+    virtual std::streamsize xsputn (const char* s, std::streamsize num) override { return dbgate_write(cd, s, num), num; }
+    int cd;
   };
 
   struct odbgstream : public std::ostream
   {
-    odbgstream (char const* name) : std::ostream(0), buf(name) { rdbuf(&buf); if (buf.fd < 0) this->setstate(ios_base::failbit);  }
-    ~odbgstream () {}
+    odbgstream (int cd) : std::ostream(0), buf(cd) { rdbuf(&buf); if (cd < 0) this->setstate(ios_base::failbit);  }
     odbgbuf  buf;
+    int cd() const { return buf.cd; }
   };
 
 } // end of namespace client
