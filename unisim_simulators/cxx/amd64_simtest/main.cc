@@ -148,12 +148,6 @@ struct Checker
 
   bool test( MemCode&& trial )
   {
-    static uintptr_t counter = 0;
-    
-    counter += 1;
-    std::cerr << "\r\e[K#" << testdb.size() <<  " / " << counter;
-    std::cerr.flush();
-
     bool found = false;
     try
       {
@@ -174,7 +168,7 @@ struct Checker
   
   Checker() : random( 1, 2, 3, 4 ) {}
   
-  void discover( uintptr_t maxttl, uintptr_t maxtrials )
+  void discover( uintptr_t trials_limit, uintptr_t ttl_reset )
   {
     test( 0 );
     test( -1 );
@@ -201,7 +195,7 @@ struct Checker
     done.emplace("\xd5",1);
     done.emplace("\xea",1);
 
-    for (uintptr_t ttl = maxttl; ttl-- > 0 and done.size() < maxtrials;)
+    for (uintptr_t ttl = ttl_reset, trials = 0; ttl-- > 0 and trials < trials_limit; ++trials)
       {
         MemCode candidate( 0 );
         typedef decltype (done.begin()) Iterator;
@@ -233,8 +227,20 @@ struct Checker
         MemCode mc( &bytes[0], sizeof (MemCode::bytes) );
         if (not (a < mc and mc < b))
           continue;
+
+        if ((trials % 1024) == 0)
+          {
+            std::cerr << "\r\e[K#" << testdb.size() <<  " / " << done.size();
+            std::cerr.flush();
+            if ((trials % 8192) == 0)
+              {
+                static std::ofstream coverage("coverage.csv");
+                coverage << testdb.size() << ',' << done.size() << std::endl;
+              }
+          }
+
         if (test( std::move(mc) ))
-          ttl = maxttl;
+          ttl = ttl_reset;
       }
 
     std::cerr << '\n';
@@ -302,7 +308,7 @@ struct Checker
           }
         catch (ut::Untestable const& denial)
           {
-            std::cerr << fl << ": behavioral rejection for " << disasm << " <" << denial.reason << ">\n";
+            std::cerr << fl << ": behavioral rejection for " << code << disasm << " <" << denial.reason << ">\n";
             updated = true;
             continue;
           }
@@ -509,20 +515,35 @@ main( int argc, char** argv )
       std::cerr << "Bad test repository name (should ends with " << suffix << ").\n";
       return 1;
     }
-  
-  uintptr_t ttl = 10000;
-  if (char const* ttl_cfg = getenv("TTL_CFG"))
+
+  uintptr_t ttl_reset, insn_scan;
+  struct {
+    char const* name;
+    uintptr_t& value;
+    uintptr_t init;
+  } params [] =
+      {
+       {"INSN_SCAN", insn_scan, 0},
+       {"TTL_RESET", ttl_reset, 10000},
+      };
+
+  for (unsigned idx = 0, end = sizeof params / sizeof params[0]; idx < end; ++idx)
     {
-      ttl = strtoull(ttl_cfg,0,0); std::cerr << "using TTL of: " << ttl << std::endl;
+      if (char const* env = getenv(params[idx].name))
+        params[idx].value = strtoull(env,0,0);
+      else
+        params[idx].value = params[idx].init; 
+      std::cerr << "Using " << params[idx].name << " of: " << params[idx].value << std::endl;
     }
+  
   
   Checker checker;
   
   bool updated = checker.read_repos( reposname );
 
-  if (getenv("INSN_SCAN"))
+  if (insn_scan != 0)
     {
-      checker.discover( ttl, 100000 );
+      checker.discover( insn_scan, ttl_reset );
       updated = true;
     }
   

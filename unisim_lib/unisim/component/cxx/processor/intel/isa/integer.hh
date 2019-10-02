@@ -1747,7 +1747,7 @@ struct IMulE : public Operation<ARCH>
   {
     typedef typename TypeFor<ARCH,OP::SIZE>::s s_type;
     typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
-    s_type hi, lo = s_type( arch.regread( OP(), 0 ) );
+    s_type hi(0), lo = s_type( arch.regread( OP(), 0 ) );
     eval_mul( arch, hi, lo, s_type( arch.rmread( OP(), rmop ) ) );
     arch.regwrite( OP(), 2, u_type( hi ) );
     arch.regwrite( OP(), 0, u_type( lo ) );
@@ -1797,7 +1797,7 @@ struct IMulGEI : public Operation<ARCH>
     typedef typename TypeFor<ARCH,OP::SIZE>::s s_type;
     typedef typename TypeFor<ARCH,OP::SIZE>::u u_type;
 
-    s_type acc( arch.rmread( OP(), rmop ) ), src( imm ), hi;
+    s_type acc( arch.rmread( OP(), rmop ) ), src( imm ), hi(0);
     eval_mul( arch, hi, acc, src );
     arch.regwrite( OP(), gn, u_type( acc ) );
     // twice res  = twice( imm ) * twice( s_type( arch.rmread( OP(), rmop ) ) );

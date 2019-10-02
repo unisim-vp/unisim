@@ -251,21 +251,30 @@ namespace ut
   Operation*
   AMD64::decode( uint64_t addr, MemCode& ct, std::string& disasm )
   {
-    unisim::component::cxx::processor::intel::Mode mode( 1, 0, 1 ); // x86_64
-    unisim::component::cxx::processor::intel::InputCode<ut::Arch> ic( mode, &ct.bytes[0], addr );
-    Operation* op = getoperation( ic );
-    if (not op)
+    try
       {
-        uint8_t const* oc = ic.opcode();
-        unsigned opcode_length = ic.vex() ? 5 - (oc[0] & 1) : oc[0] == 0x0f ? (oc[1] & ~2) == 0x38 ? 4 : 3 : 2;
-        ct.length = ic.opcode_offset + opcode_length;
+        unisim::component::cxx::processor::intel::Mode mode( 1, 0, 1 ); // x86_64
+        unisim::component::cxx::processor::intel::InputCode<ut::Arch> ic( mode, &ct.bytes[0], addr );
+        Operation* op = getoperation( ic );
+        if (not op)
+          {
+            uint8_t const* oc = ic.opcode();
+            unsigned opcode_length = ic.vex() ? 5 - (oc[0] & 1) : oc[0] == 0x0f ? (oc[1] & ~2) == 0x38 ? 4 : 3 : 2;
+            ct.length = ic.opcode_offset + opcode_length;
+            throw ut::Untestable("#UD");
+          }
+        ct.length = op->length;
+        std::ostringstream buf;
+        op->disasm(buf);
+        disasm = buf.str();
+        return op;
+      }
+    catch (unisim::component::cxx::processor::intel::CodeBase::PrefixError const& perr)
+      {
+        ct.length = perr.len;
         throw ut::Untestable("#UD");
       }
-    ct.length = op->length;
-    std::ostringstream buf;
-    op->disasm(buf);
-    disasm = buf.str();
-    return op;
+    return 0;
   }
 
   Arch::Arch( Interface& iif )

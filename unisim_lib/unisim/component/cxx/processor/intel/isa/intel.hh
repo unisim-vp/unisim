@@ -100,21 +100,24 @@ namespace intel {
     uint32_t rex_w          : 1;
     uint32_t rex_p          : 1; /* rex present */
 
-    struct PrefixError {};
-    
+    struct PrefixError { PrefixError(unsigned _len) : len(_len) {} unsigned len; };
+
     uint8_t const* opcode() const { return &bytes[opcode_offset]; }
-    void set_opcode( uint8_t const* end )
+    
+    bool set_vex_bits( uint8_t nrex, uint8_t pp )
     {
-      uintptr_t head = (end - bytes);
-      if (head > 15)
-        throw PrefixError();
-      opcode_offset = head;
-    }
-    void set_vexpp( uint8_t pp )
-    {
-      if (opsz_66 or rep) throw PrefixError();
-      else if (pp == 1) opsz_66 = 1;
+      if (opsz_66 or rep or rex_p)
+        return false;
+      
+      pp &= 3;
+      if (pp == 1) opsz_66 = 1;
       else if (pp != 0) rep = pp ^ 1;
+
+      rex_r = ~nrex >> 7;
+      rex_x = ~nrex >> 6;
+      rex_b = ~nrex >> 5;
+      
+      return true;
     }
     
     CodeBase( Mode _mode, uint8_t const* bptr )
@@ -122,7 +125,7 @@ namespace intel {
       , adsz_67( 0 ), opsz_66( 0 ), lock_f0( 0 ), segment( DS ), rep( 0 ), opcode_offset( 0 )
       , rex_b(0), rex_x(0), rex_r(0), rex_w(0), rex_p(0)
     {
-      for (;; ++bptr)
+      for (unsigned bcnt = 0; bcnt < 15; ++bptr, ++bcnt)
         {
           switch (*bptr)
             {
@@ -131,22 +134,29 @@ namespace intel {
               if (mode64() and (*bptr & 0xf0) == 0x40)
                 {
                   /* REX prefix */
-                  rex_p = 1; rex_b = bptr[0] >> 0; rex_x = bptr[0] >> 1; rex_r = bptr[0] >> 2; rex_w = bptr[0] >> 3;
-                  ++bptr; /* REX not implicated in opcode */
+                  if (rex_p) throw PrefixError(opcode_offset+1);
+                  rex_p = 1; rex_w = bptr[0] >> 3; rex_r = bptr[0] >> 2; rex_x = bptr[0] >> 1; rex_b = bptr[0] >> 0;
+                  opcode_offset = bptr - bytes + 1;
+                  /* REX should be the last prefix, go check */
+                  continue;
                 }
-              else if (bptr[0] == 0xc5 and (mode64() or (bptr[1] >> 6) == 3))
+              /* VEX prefixes */
+              if (bptr[0] == 0xc5 and (mode64() or (bptr[1] >> 6) == 3))
                 {
                   /* Two-bytes VEX prefix */
-                  rex_r = ~bptr[1] >> 7;
-                  set_vexpp( bptr[1] & 3 );
+                  if (bcnt > 13 or not set_vex_bits( bptr[1] | 0x60, bptr[1] ))
+                    throw PrefixError(bptr - bytes + 1);
                 }
               else if (bptr[0] == 0xc4 and (mode64() or (bptr[1] >> 6) == 3))
                 {
                   /* Three-bytes VEX prefix */
-                  rex_b = ~bptr[1] >> 5; rex_x = ~bptr[1] >> 6; rex_r = ~bptr[1] >> 7; rex_w = bptr[2] >> 7;
-                  set_vexpp( bptr[2] & 3 );
+                  if (bcnt > 12 or not set_vex_bits( bptr[1], bptr[2] ))
+                    throw PrefixError(bptr - bytes + 1);
+                  rex_w = bptr[2] >> 7;
                 }
-              set_opcode( bptr );
+              if (rex_p and (bptr[-1] & 0xf0) != 0x40)
+                throw PrefixError(opcode_offset + 1);
+              opcode_offset = bptr - bytes;
               return;
               // Group1::lock
             case 0xf0: lock_f0 = true; break;
@@ -167,6 +177,7 @@ namespace intel {
             case 0x67: adsz_67 = true; break;
             }
         }
+      throw PrefixError(15);
     }
     unsigned w() const { return rex_w; }
     unsigned opclass() const { return rex_w ? 3 : (mode.cs_l ^ mode.cs_d ^ opsz_66) ? 2 : 1; }
