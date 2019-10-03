@@ -170,6 +170,7 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	, ctr()
 	, cr()
 	, fpu(static_cast<typename CONFIG::CPU *>(this))
+	, vector_unit(static_cast<typename CONFIG::CPU *>(this))
 	, powerpc_linux32(this)
 {
 	stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
@@ -459,24 +460,15 @@ CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::ExceptionDispatcher(typ
 	, exc_flags(0)
 	, exc_mask(0)
 	, interrupts()
-	, trap_control_flags()
-	, trapped()
 {
 }
 
 template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
-CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::~ExceptionDispatcher()
-{
-}
-
-template <typename TYPES, typename CONFIG>
-template <unsigned int NUM_EXCEPTIONS>
-void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::InstallInterrupt(InterruptBase *interrupt, unsigned int priority, bool *trap_control_flag)
+void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::InstallInterrupt(InterruptBase *interrupt, unsigned int priority)
 {
 	assert(interrupts[priority] == 0);
 	interrupts[priority] = interrupt;
-	trap_control_flags[priority] = trap_control_flag;
 }
 
 template <typename TYPES, typename CONFIG>
@@ -489,7 +481,13 @@ typename EXCEPTION::INTERRUPT& CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEP
 		cpu->GetDebugInfoStream() << "Throwing " << EXCEPTION::GetName() << std::endl;
 	}
 	exc_flags = exc_flags | CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>();
-	return *static_cast<typename EXCEPTION::INTERRUPT *>(interrupts[CPU::template GetExceptionPriority<EXCEPTION>()]);
+	
+	unsigned int priority = CPU::template GetExceptionPriority<EXCEPTION>();
+	InterruptBase *interrupt = interrupts[priority];
+	
+	assert(interrupt);
+
+	return *static_cast<typename EXCEPTION::INTERRUPT *>(interrupt);
 }
 
 template <typename TYPES, typename CONFIG>
@@ -516,46 +514,38 @@ template <typename INTERRUPT> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_E
 
 template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
-template <typename EXCEPTION> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::EnableException()
+template <typename EXCEPTION> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::EnableException(bool v)
 {
 	if(cpu->verbose_interrupt && ((exc_mask & CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>()) == 0))
 	{
-		cpu->GetDebugInfoStream() << "Enabling " << EXCEPTION::GetName() << std::endl;
+		cpu->GetDebugInfoStream() << (v ? "Enabling" : "Disabling") << ' ' << EXCEPTION::GetName() << std::endl;
 	}
-	exc_mask = exc_mask | CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>();
+	if(v)
+	{
+		exc_mask = exc_mask | CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>();
+	}
+	else
+	{
+		exc_mask = exc_mask & ~CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>();
+	}
 }
 
 template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
-template <typename INTERRUPT> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::EnableInterrupt()
+template <typename INTERRUPT> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::EnableInterrupt(bool v)
 {
 	if(cpu->verbose_interrupt && ((exc_mask & INTERRUPT::template GetMask<MASK_TYPE>()) == 0))
 	{
-		cpu->GetDebugInfoStream() << "Enabling " << INTERRUPT::GetName() << std::endl;
+		cpu->GetDebugInfoStream() << (v ? "Enabling" : "Disabling") << ' ' << INTERRUPT::GetName() << std::endl;
 	}
-	exc_mask = exc_mask | INTERRUPT::template GetMask<MASK_TYPE>();
-}
-
-template <typename TYPES, typename CONFIG>
-template <unsigned int NUM_EXCEPTIONS>
-template <typename EXCEPTION> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::DisableException()
-{
-	if(cpu->verbose_interrupt && ((exc_mask & CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>()) != 0))
+	if(v)
 	{
-		cpu->GetDebugInfoStream() << "Disabling " << EXCEPTION::GetName() << std::endl;
+		exc_mask = exc_mask | INTERRUPT::template GetMask<MASK_TYPE>();
 	}
-	exc_mask = exc_mask & ~CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>();
-}
-
-template <typename TYPES, typename CONFIG>
-template <unsigned int NUM_EXCEPTIONS>
-template <typename INTERRUPT> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::DisableInterrupt()
-{
-	if(cpu->verbose_interrupt && ((exc_mask & INTERRUPT::template GetMask<MASK_TYPE>()) != 0))
+	else
 	{
-		cpu->GetDebugInfoStream() << "Disabling " << INTERRUPT::GetName() << std::endl;
+		exc_mask = exc_mask & ~INTERRUPT::template GetMask<MASK_TYPE>();
 	}
-	exc_mask = exc_mask & ~INTERRUPT::template GetMask<MASK_TYPE>();
 }
 
 template <typename TYPES, typename CONFIG>
@@ -581,26 +571,17 @@ inline void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::ProcessExce
 			cpu->GetDebugInfoStream() << interrupt->GetInterruptName() << " (offset 0x" << std::hex << interrupt->GetOffset() << std::dec << ") is interrupting execution at @0x" << std::hex << cpu->GetCIA() << std::dec << std::endl;
 		}
 		
-		bool *p_trap_control_flag = trap_control_flags[exception_priority];
-		
-		if(p_trap_control_flag)
+		if(unlikely(interrupt->Trap()))
 		{
-			bool trap_control_flag = *p_trap_control_flag;
-			
-			if(trap_control_flag)
+			if(interrupt->Trapped())
 			{
-				bool& _trapped = trapped[exception_priority];
-				
-				if(_trapped)
-				{
-					_trapped = false;
-				}
-				else
-				{
-					cpu->trap_reporting_import->ReportTrap(*cpu, interrupt->GetInterruptName());
-					_trapped = true;
-					return;
-				}
+				interrupt->Trapped(false);
+			}
+			else
+			{
+				cpu->trap_reporting_import->ReportTrap(*cpu, interrupt->GetInterruptName());
+				interrupt->Trapped(true);
+				return;
 			}
 		}
 			
@@ -711,13 +692,15 @@ template <typename TYPES, typename CONFIG>
 template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN>
 inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, EFFECTIVE_ADDRESS ea)
 {
+	EFFECTIVE_ADDRESS munged_ea = static_cast<typename CONFIG::CPU *>(this)->template MungEffectiveAddress<T>(ea);
+	
 	EFFECTIVE_ADDRESS size_to_protection_boundary;
 	ADDRESS virt_addr;
 	PHYSICAL_ADDRESS phys_addr;
 	STORAGE_ATTR storage_attr;
-	if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+	if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ false>(munged_ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
 	
-	uint32_t size_to_fsb_boundary = CONFIG::DATA_FSB_WIDTH - (ea % CONFIG::DATA_FSB_WIDTH);
+	uint32_t size_to_fsb_boundary = CONFIG::DATA_FSB_WIDTH - (munged_ea % CONFIG::DATA_FSB_WIDTH);
 	
 	// Ensure that memory access does not cross a FSB boundary
 	if(likely(size_to_fsb_boundary >= sizeof(T)))
@@ -740,8 +723,8 @@ inline bool CPU<TYPES, CONFIG>::DataLoad(T& value, EFFECTIVE_ADDRESS ea)
 		else
 		{
 			// Memory load does cross a protection boundary
-			EFFECTIVE_ADDRESS ea2 = ea + size_to_fsb_boundary;
-			if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ false>(ea2, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+			EFFECTIVE_ADDRESS munged_ea2 = munged_ea + size_to_fsb_boundary;
+			if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ false>(munged_ea2, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
 		}
 		
 		if(unlikely(!this->SuperMSS::DataLoad(virt_addr, phys_addr, (uint8_t *) &value + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary, storage_attr))) return false;
@@ -759,18 +742,20 @@ template <typename TYPES, typename CONFIG>
 template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN>
 inline bool CPU<TYPES, CONFIG>::DataStore(T& value, EFFECTIVE_ADDRESS ea)
 {
+	EFFECTIVE_ADDRESS munged_ea = static_cast<typename CONFIG::CPU *>(this)->template MungEffectiveAddress<T>(ea);
+
 	EFFECTIVE_ADDRESS size_to_protection_boundary;
 	ADDRESS virt_addr;
 	PHYSICAL_ADDRESS phys_addr;
 	STORAGE_ATTR storage_attr;
-	if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ true>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+	if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ true>(munged_ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
 
 	if(CONVERT_ENDIAN)
 	{
 		static_cast<typename CONFIG::CPU *>(this)->template ConvertDataLoadStoreEndian<T, REVERSE, ENDIAN>(value, storage_attr);
 	}
 	
-	uint32_t size_to_fsb_boundary = CONFIG::DATA_FSB_WIDTH - (ea % CONFIG::DATA_FSB_WIDTH);
+	uint32_t size_to_fsb_boundary = CONFIG::DATA_FSB_WIDTH - (munged_ea % CONFIG::DATA_FSB_WIDTH);
 
 	// Ensure that memory access does not cross a FSB boundary
 	if(likely(size_to_fsb_boundary >= sizeof(T)))
@@ -793,8 +778,8 @@ inline bool CPU<TYPES, CONFIG>::DataStore(T& value, EFFECTIVE_ADDRESS ea)
 		else
 		{
 			// Memory store does cross a protection boundary
-			EFFECTIVE_ADDRESS ea2 = ea + size_to_fsb_boundary;
-			if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ true>(ea2, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+			EFFECTIVE_ADDRESS munged_ea2 = munged_ea + size_to_fsb_boundary;
+			if(unlikely((!this->template Translate</* debug */ false, /* exec */ false, /* write */ true>(munged_ea2, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
 		}
 
 		if(unlikely(!this->SuperMSS::DataStore(virt_addr, phys_addr, (uint8_t *) &value + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary, storage_attr))) return false;
@@ -1189,6 +1174,24 @@ bool CPU<TYPES, CONFIG>::LegacyFPU::CheckFloatingPointException(typename CONFIG:
 		return false;
 	}
 	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+CPU<TYPES, CONFIG>::AltivecVectorUnit::AltivecVectorUnit(typename CONFIG::CPU *cpu)
+	: vrsave(cpu)
+	, vscr()
+	, vr()
+{
+	unsigned int i;
+	
+	for(i = 0; i < 32; i++)
+	{
+		VR& ith_vr = vr[i];
+		ith_vr.Init(i);
+		cpu->AddRegisterInterface(ith_vr.CreateRegisterInterface());
+	}
+	
+	cpu->AddRegisterInterface(vscr.CreateRegisterInterface());
 }
 
 template <typename TYPES, typename CONFIG>

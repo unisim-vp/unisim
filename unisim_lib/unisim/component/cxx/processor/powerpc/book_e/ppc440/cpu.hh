@@ -118,6 +118,9 @@ struct CONFIG
 	// Floating point
 	static const bool HAS_FPU = true;
 	
+	// Altivec
+	static const bool HAS_ALTIVEC = false;
+	
 	// Optional floating-point sqrt
 	static const bool HAS_FLOATING_POINT_SQRT = true;
 	

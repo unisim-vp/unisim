@@ -34,7 +34,7 @@
 
 op efddiv(4[6]:rd[5]:ra[5]:rb[5]:745[11])
 efddiv.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 efddiv.disasm = {

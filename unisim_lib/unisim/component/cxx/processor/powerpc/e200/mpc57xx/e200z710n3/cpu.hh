@@ -82,6 +82,9 @@ struct CONFIG
 	// Floating point
 	static const bool HAS_FPU = false;
 
+	// Altivec
+	static const bool HAS_ALTIVEC = false;
+	
 	// Front-side bus width
 	static const unsigned int DATA_FSB_WIDTH = 8; // Data load/store front-side bus width
 	static const unsigned int INSN_FSB_WIDTH = 8; // Instruction fetch front-side bus width

@@ -2907,8 +2907,13 @@ bool Simulator::IsWarningEnabled() const
 	return enable_warning;
 }
 
+void Simulator::SigInt()
+{
+}
+
 void Simulator::BroadcastSigInt()
 {
+	this->SigInt();
 	std::map<std::string, Object *>::iterator object_iter;
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{

@@ -34,7 +34,7 @@
 
 op evmhegsmfan()
 evmhegsmfan.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 evmhegsmfan.disasm = {

@@ -34,7 +34,7 @@
 
 op evfsmulx(0b000100[6]:RD[5]:RA[5]:RB[5]:01010101100[11])
 evfsmulx.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 evfsmulx.disasm = {

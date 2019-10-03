@@ -56,6 +56,7 @@
 #include <unisim/service/interfaces/synchronizable.hh>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/inlining/inlining.hh>
+#include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/debug/simple_register_registry.hh>
 #include <unisim/util/os/linux_os/linux.hh>
 #include <unisim/util/os/linux_os/ppc.hh>
@@ -206,6 +207,39 @@ class Register : public unisim::util::reg::core::Register<REGISTER, _SIZE, unisi
 {
 public:
 	typedef unisim::util::reg::core::Register<REGISTER, _SIZE, unisim::util::reg::core::HW_RW, REGISTER_BASE> Super;
+	
+	struct  _0 : Field< _0,  0> {};
+	struct  _1 : Field< _1,  1> {};
+	struct  _2 : Field< _2,  2> {};
+	struct  _3 : Field< _3,  3> {};
+	struct  _4 : Field< _4,  4> {};
+	struct  _5 : Field< _5,  5> {};
+	struct  _6 : Field< _6,  6> {};
+	struct  _7 : Field< _7,  7> {};
+	struct  _8 : Field< _8,  8> {};
+	struct  _9 : Field< _9,  9> {};
+	struct _10 : Field<_10, 10> {};
+	struct _11 : Field<_11, 11> {};
+	struct _12 : Field<_12, 12> {};
+	struct _13 : Field<_13, 13> {};
+	struct _14 : Field<_14, 14> {};
+	struct _15 : Field<_15, 15> {};
+	struct _16 : Field<_16, 16> {};
+	struct _17 : Field<_17, 17> {};
+	struct _18 : Field<_18, 18> {};
+	struct _19 : Field<_19, 19> {};
+	struct _20 : Field<_20, 20> {};
+	struct _21 : Field<_21, 21> {};
+	struct _22 : Field<_22, 22> {};
+	struct _23 : Field<_23, 23> {};
+	struct _24 : Field<_24, 24> {};
+	struct _25 : Field<_25, 25> {};
+	struct _26 : Field<_26, 26> {};
+	struct _27 : Field<_27, 27> {};
+	struct _28 : Field<_28, 28> {};
+	struct _29 : Field<_29, 29> {};
+	struct _30 : Field<_30, 30> {};
+	struct _31 : Field<_31, 31> {};
 	
 	Register() : Super() {}
 	Register(typename Super::TYPE value) : Super(value) {}
@@ -399,6 +433,7 @@ private:
 	}
 };
 
+// Floating-Point Status and Control Register
 struct FPSCR : Register<FPSCR, 32>
 {
 public:
@@ -524,6 +559,29 @@ private:
 	}
 };
 
+// Vector Status and Control Register
+struct VSCR : Register<VSCR, 32>
+{
+	typedef Register<VSCR, 32> Super;
+	
+	struct NJ  : Field<NJ , 15> {}; // Non-Java
+	struct SAT : Field<SAT, 31> {}; // Saturation
+	
+	typedef FieldSet<NJ, SAT> ALL;
+	
+	VSCR() : Super() { Init(); }
+	VSCR(uint32_t _value) : Super(_value) { Init(); }
+	using Super::operator =;
+private:
+	void Init()
+	{
+		this->SetName("VSCR"); this->SetDescription("Vector Status and Control Register");
+		
+		NJ ::SetName("NJ");  NJ ::SetDescription("Non-Java");
+		SAT::SetName("SAT"); SAT::SetDescription("Saturation");
+	}
+};
+
 //////////////////////// Floating-Point Register //////////////////////////
 
 struct FPR : SoftDouble
@@ -536,19 +594,88 @@ struct FPR : SoftDouble
 	{
 		std::stringstream sstr;
 		sstr << "f" << reg_num;
-		name = sstr.str();
+		unisim::util::reg::core::PropertyRegistry::SetStringProperty(unisim::util::reg::core::PropertyRegistry::EL_REGISTER, unisim::util::reg::core::PropertyRegistry::STR_PROP_NAME, (intptr_t) this, sstr.str());
 	}
 	
 	unisim::service::interfaces::Register *CreateRegisterInterface()
 	{
-		return new FloatingPointRegisterInterface(name.c_str(), this);
+		return new FloatingPointRegisterInterface(GetName().c_str(), this);
 	}
 	
-	const std::string& GetName() const { return name; }
+	const std::string& GetName() const { return unisim::util::reg::core::PropertyRegistry::GetStringProperty(unisim::util::reg::core::PropertyRegistry::EL_REGISTER, unisim::util::reg::core::PropertyRegistry::STR_PROP_NAME, (intptr_t) this); }
 	
 	using Super::operator =;
+};
+
+////////////////////////// Vector Register ////////////////////////////////////
+
+struct VR
+{
+	VR() : value() {}
+	
+	void Init(unsigned int reg_num)
+	{
+		std::stringstream sstr;
+		sstr << "v" << reg_num;
+		unisim::util::reg::core::PropertyRegistry::SetStringProperty(unisim::util::reg::core::PropertyRegistry::EL_REGISTER, unisim::util::reg::core::PropertyRegistry::STR_PROP_NAME, (intptr_t) this, sstr.str());
+	}
+
+	unisim::service::interfaces::Register *CreateRegisterInterface()
+	{
+		return new unisim::util::debug::SimpleRegister<value_t>(GetName().c_str(), &value);
+	}
+	
+	const std::string& GetName() const { return unisim::util::reg::core::PropertyRegistry::GetStringProperty(unisim::util::reg::core::PropertyRegistry::EL_REGISTER, unisim::util::reg::core::PropertyRegistry::STR_PROP_NAME, (intptr_t) this); }
+	
 private:
-	std::string name;
+	struct value_t
+	{
+		uint32_t w[4];
+	};
+	value_t value;
+};
+
+///////////////////////////// Segment Register ////////////////////////////////
+
+struct SR : Register<SR, 32>
+{
+	typedef Register<SR, 32> Super;
+	
+	struct T          : Field<T         , 0     > {}; // Format (T=0:memory segment, T=1:direct-store segment)
+	struct Ks         : Field<Ks        , 1     > {}; // Supervisor-state protection key
+	struct Kp         : Field<Kp        , 2     > {}; // User-state protection key
+	struct N          : Field<N         , 3     > {}; // No-execute protection bit (when T=0)
+	struct VSID       : Field<VSID      , 8 , 31> {}; // Virtual segment ID (when T=0)
+	struct BUID       : Field<BUID      , 3 , 11> {}; // Bus unit ID (when T=1)
+	struct CNTLR_SPEC : Field<CNTLR_SPEC, 12, 31> {}; // Device-specific data for I/O controller (when T=1)
+	
+	typedef FieldSet< T, Ks, Kp, N, VSID, BUID, CNTLR_SPEC > ALL;
+	
+	SR() : Super() {}
+	SR(unsigned int reg_num) : Super() { Init(reg_num); }
+	SR(unsigned int reg_num, uint32_t _value) : Super(_value) { Init(reg_num); }
+	
+	void Init(unsigned int reg_num)
+	{
+		std::stringstream name_sstr;
+		name_sstr << "SR" << reg_num;
+		
+		std::stringstream desc_sstr;
+		desc_sstr << "Segment Register " << reg_num;
+		
+		this->SetName(name_sstr.str());
+		this->SetDescription(desc_sstr.str());
+		
+		T         ::SetName("T");          T         ::SetDescription("Format (T=0:memory segment, T=1:direct-store segment)");
+		Ks        ::SetName("Ks");         Ks        ::SetDescription("Supervisor-state protection key");
+		Kp        ::SetName("Kp");         Kp        ::SetDescription("User-state protection key");
+		N         ::SetName("N");          N         ::SetDescription("No-execute protection bit (when T=0)");
+		VSID      ::SetName("VSID");       VSID      ::SetDescription("Virtual segment ID (when T=0)");
+		BUID      ::SetName("BUID");       BUID      ::SetDescription("Bus unit ID (when T=1)");
+		CNTLR_SPEC::SetName("CNTLR_SPEC"); CNTLR_SPEC::SetDescription("Device-specific data for I/O controller (when T=1)");
+	}
+	
+	bool NeedCheckForOverlappingBitFields() const { return false; }
 };
 
 ///////////////////////////// TypeForByteSize<> ///////////////////////////////
@@ -595,6 +722,8 @@ public:
 	typedef typename TYPES::ADDRESS ADDRESS;
 	typedef typename TYPES::PHYSICAL_ADDRESS PHYSICAL_ADDRESS;
 	typedef typename TYPES::STORAGE_ATTR STORAGE_ATTR;
+	static const Model MODEL = CONFIG::MODEL;
+	static const unsigned int DATA_FSB_WIDTH = CONFIG::DATA_FSB_WIDTH;
 	
 	/////////////////////////// service imports ///////////////////////////////
 
@@ -673,12 +802,8 @@ public:
 	
 	// see also ThrowException<> for interrupt
 	
-	inline uint32_t GetGPR(unsigned int n) const ALWAYS_INLINE { return gpr[n].template Get<typename GPR::ALL>(); }
-	inline void SetGPR(unsigned int n, uint32_t value) ALWAYS_INLINE { gpr[n].template Set<typename GPR::ALL>(value); }
-// 	inline uint32_t GetLR() const ALWAYS_INLINE { return lr.template Get<typename LR::ALL>(); }
-// 	inline void SetLR(uint32_t value) ALWAYS_INLINE { lr.template Set<typename LR::ALL>(value); }
-// 	inline uint32_t GetCTR() const ALWAYS_INLINE { return ctr.template Get<typename CTR::ALL>(); }
-// 	inline void SetCTR(uint32_t value) ALWAYS_INLINE { ctr = value; }
+	inline uint32_t GetGPR(unsigned int n) const ALWAYS_INLINE { return gpr[n]; }
+	inline void SetGPR(unsigned int n, uint32_t value) ALWAYS_INLINE { gpr[n] = value; }
 
 	inline LR& GetLR() ALWAYS_INLINE { return lr; }
 	inline CTR& GetCTR() ALWAYS_INLINE { return ctr; }
@@ -688,6 +813,8 @@ public:
 	inline FPR& GetFPR(unsigned int n) { return fpu.GetFPR(n); }
 	inline void SetFPR(unsigned int n, const SoftDouble& v) { fpu.SetFPR(n, v); }
 	inline bool CheckFloatingPointException() { return fpu.CheckFloatingPointException(static_cast<typename CONFIG::CPU *>(this)); }
+	inline VSCR& GetVSCR() { return vector_unit.GetVSCR(); }
+	inline VR& GetVR(unsigned int n) { return vector_unit.GetVR(n); }
 	
 	inline EFFECTIVE_ADDRESS GetCIA() const ALWAYS_INLINE { return cia; }
 	inline void SetCIA(uint32_t value) ALWAYS_INLINE { cia = value; }
@@ -718,6 +845,7 @@ public:
 	virtual bool DebugInstructionBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
 
 	template <typename T, bool REVERSE, unisim::util::endian::endian_type ENDIAN> void ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr);
+	template <typename T> EFFECTIVE_ADDRESS MungEffectiveAddress(EFFECTIVE_ADDRESS ea) { return ea; }
 
 	template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN> bool DataLoad(T& value, EFFECTIVE_ADDRESS ea);
 	template <typename T, bool REVERSE, bool CONVERT_ENDIAN, unisim::util::endian::endian_type ENDIAN> bool DataStore(T& value, EFFECTIVE_ADDRESS ea);
@@ -791,18 +919,23 @@ protected:
 	class InterruptBase
 	{
 	public:
+		InterruptBase()
+			: trap(false)
+			, trapped(false)
+		{
+		}
+		
 		virtual ~InterruptBase() {}
 		virtual void ProcessInterrupt(typename CONFIG::CPU *cpu) = 0;
 		virtual const char *GetInterruptName() const { return "Unknown Interrupt"; }
 		virtual unsigned int GetOffset() const { return 0; }
-	};
-
-	/////////////////////////// ExceptionDispatcherBase  //////////////////////////////
-	
-	class ExceptionDispatcherBase
-	{
-	public:
-		virtual void InstallInterrupt(InterruptBase *interrupt, unsigned int priority, bool *trap_control_flag) = 0;
+		
+		bool Trap() const { return trap; }
+		void Trapped(bool v) { trapped = v; }
+		bool Trapped() const { return trapped; }
+	protected:
+		bool trap;
+		bool trapped;
 	};
 
 	//////////////////////////////// Exception<> ///////////////////////////////////////
@@ -822,19 +955,19 @@ protected:
 	public:
 		static const unsigned int OFFSET = _OFFSET;
 		
-		template <typename T> static T GetMask() { return INTERRUPT::ALL::template GetMask<T>(); }
-		
-		static void InstallInterrupt(ExceptionDispatcherBase *exception_dispatcher, bool *trap_control_flag)
+		Interrupt(typename CONFIG::CPU *cpu)
+			: param_trap((std::string("trap-") + INTERRUPT::GetId()).c_str(), cpu, this->trap, (std::string("enable/disable trap (in debugger) of ") + INTERRUPT::GetName()).c_str())
 		{
-			static INTERRUPT interrupt;
-			INTERRUPT::ALL::InstallInterrupt(exception_dispatcher, &interrupt, trap_control_flag);
+			INTERRUPT::ALL::InstallInterrupt(cpu, this);
 		}
+		
+		template <typename T> static T GetMask() { return INTERRUPT::ALL::template GetMask<T>(); }
 		
 		virtual void ProcessInterrupt(typename CONFIG::CPU *cpu) { cpu->ProcessInterrupt(static_cast<INTERRUPT *>(this)); }
 
 		virtual unsigned int GetOffset() const { return _OFFSET; }
-		
-		virtual const char *GetInterruptName() const { return INTERRUPT::GetName(); }
+	private:
+		unisim::kernel::variable::Parameter<bool> param_trap;
 	};
 
 	/////////////////////// InterruptWithAddress<> ////////////////////////////
@@ -842,6 +975,8 @@ protected:
 	template <typename INTERRUPT, unsigned int _OFFSET>
 	struct InterruptWithAddress : public Interrupt<INTERRUPT, _OFFSET>
 	{
+		typedef Interrupt<INTERRUPT, _OFFSET> Super;
+		InterruptWithAddress(typename CONFIG::CPU *cpu) : Super(cpu) {}
 		INTERRUPT& SetAddress(EFFECTIVE_ADDRESS _addr) { addr = _addr; has_addr = true; return *static_cast<INTERRUPT *>(this); }
 		void ClearAddress() { has_addr = false; }
 		bool HasAddress() const { return has_addr; }
@@ -901,72 +1036,72 @@ protected:
 			     | CPU::template GetExceptionMask<E60, T>() | CPU::template GetExceptionMask<E61, T>() | CPU::template GetExceptionMask<E62, T>() | CPU::template GetExceptionMask<E63, T>();
 		}
 		
-		static void InstallInterrupt(ExceptionDispatcherBase *exception_dispatcher, InterruptBase *interrupt, bool *trap_control_flag)
+		static void InstallInterrupt(typename CONFIG::CPU *cpu, InterruptBase *interrupt)
 		{
-			if(typeid(E0 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E0 >(), trap_control_flag);
-			if(typeid(E1 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E1 >(), trap_control_flag);
-			if(typeid(E2 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E2 >(), trap_control_flag);
-			if(typeid(E3 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E3 >(), trap_control_flag);
-			if(typeid(E4 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E4 >(), trap_control_flag);
-			if(typeid(E5 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E5 >(), trap_control_flag);
-			if(typeid(E6 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E6 >(), trap_control_flag);
-			if(typeid(E7 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E7 >(), trap_control_flag);
-			if(typeid(E8 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E8 >(), trap_control_flag);
-			if(typeid(E9 ) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E9 >(), trap_control_flag);
-			if(typeid(E10) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E10>(), trap_control_flag);
-			if(typeid(E11) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E11>(), trap_control_flag);
-			if(typeid(E12) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E12>(), trap_control_flag);
-			if(typeid(E13) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E13>(), trap_control_flag);
-			if(typeid(E14) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E14>(), trap_control_flag);
-			if(typeid(E15) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E15>(), trap_control_flag);
-			if(typeid(E16) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E16>(), trap_control_flag);
-			if(typeid(E17) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E17>(), trap_control_flag);
-			if(typeid(E18) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E18>(), trap_control_flag);
-			if(typeid(E19) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E19>(), trap_control_flag);
-			if(typeid(E20) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E20>(), trap_control_flag);
-			if(typeid(E21) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E21>(), trap_control_flag);
-			if(typeid(E22) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E22>(), trap_control_flag);
-			if(typeid(E23) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E23>(), trap_control_flag);
-			if(typeid(E24) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E24>(), trap_control_flag);
-			if(typeid(E25) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E25>(), trap_control_flag);                                                                                            
-			if(typeid(E26) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E26>(), trap_control_flag);                                                                                            
-			if(typeid(E27) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E27>(), trap_control_flag);                                                                                            
-			if(typeid(E28) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E28>(), trap_control_flag);                                                                                            
-			if(typeid(E29) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E29>(), trap_control_flag);                                                                                            
-			if(typeid(E30) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E30>(), trap_control_flag);                                                                                            
-			if(typeid(E31) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E31>(), trap_control_flag);                                                                                            
-			if(typeid(E32) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E32>(), trap_control_flag);                                                                                            
-			if(typeid(E33) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E33>(), trap_control_flag);                                                                                            
-			if(typeid(E34) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E34>(), trap_control_flag);                                                                                            
-			if(typeid(E35) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E35>(), trap_control_flag);                                                                                            
-			if(typeid(E36) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E36>(), trap_control_flag);
-			if(typeid(E37) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E37>(), trap_control_flag);
-			if(typeid(E38) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E38>(), trap_control_flag);
-			if(typeid(E39) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E39>(), trap_control_flag);
-			if(typeid(E40) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E40>(), trap_control_flag);
-			if(typeid(E41) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E41>(), trap_control_flag);
-			if(typeid(E42) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E42>(), trap_control_flag);
-			if(typeid(E43) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E43>(), trap_control_flag);
-			if(typeid(E44) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E44>(), trap_control_flag);
-			if(typeid(E45) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E45>(), trap_control_flag);
-			if(typeid(E46) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E46>(), trap_control_flag);
-			if(typeid(E47) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E47>(), trap_control_flag);
-			if(typeid(E48) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E48>(), trap_control_flag);
-			if(typeid(E49) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E49>(), trap_control_flag);
-			if(typeid(E50) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E50>(), trap_control_flag);
-			if(typeid(E51) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E51>(), trap_control_flag);
-			if(typeid(E52) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E52>(), trap_control_flag);
-			if(typeid(E53) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E53>(), trap_control_flag);
-			if(typeid(E54) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E54>(), trap_control_flag);
-			if(typeid(E55) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E55>(), trap_control_flag);
-			if(typeid(E56) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E56>(), trap_control_flag);
-			if(typeid(E57) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E57>(), trap_control_flag);
-			if(typeid(E58) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E58>(), trap_control_flag);
-			if(typeid(E59) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E59>(), trap_control_flag);
-			if(typeid(E60) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E60>(), trap_control_flag);
-			if(typeid(E61) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E61>(), trap_control_flag);
-			if(typeid(E62) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E62>(), trap_control_flag);
-			if(typeid(E63) == typeid(NullException)) return; exception_dispatcher->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E63>(), trap_control_flag);
+			if(typeid(E0 ) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E0 >());
+			if(typeid(E1 ) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E1 >());
+			if(typeid(E2 ) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E2 >());
+			if(typeid(E3 ) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E3 >());
+			if(typeid(E4 ) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E4 >());
+			if(typeid(E5 ) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E5 >());
+			if(typeid(E6 ) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E6 >());
+			if(typeid(E7 ) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E7 >());
+			if(typeid(E8 ) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E8 >());
+			if(typeid(E9 ) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E9 >());
+			if(typeid(E10) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E10>());
+			if(typeid(E11) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E11>());
+			if(typeid(E12) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E12>());
+			if(typeid(E13) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E13>());
+			if(typeid(E14) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E14>());
+			if(typeid(E15) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E15>());
+			if(typeid(E16) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E16>());
+			if(typeid(E17) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E17>());
+			if(typeid(E18) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E18>());
+			if(typeid(E19) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E19>());
+			if(typeid(E20) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E20>());
+			if(typeid(E21) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E21>());
+			if(typeid(E22) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E22>());
+			if(typeid(E23) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E23>());
+			if(typeid(E24) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E24>());
+			if(typeid(E25) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E25>());
+			if(typeid(E26) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E26>());
+			if(typeid(E27) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E27>());
+			if(typeid(E28) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E28>());
+			if(typeid(E29) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E29>());
+			if(typeid(E30) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E30>());
+			if(typeid(E31) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E31>());
+			if(typeid(E32) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E32>());
+			if(typeid(E33) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E33>());
+			if(typeid(E34) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E34>());
+			if(typeid(E35) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E35>());
+			if(typeid(E36) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E36>());
+			if(typeid(E37) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E37>());
+			if(typeid(E38) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E38>());
+			if(typeid(E39) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E39>());
+			if(typeid(E40) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E40>());
+			if(typeid(E41) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E41>());
+			if(typeid(E42) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E42>());
+			if(typeid(E43) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E43>());
+			if(typeid(E44) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E44>());
+			if(typeid(E45) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E45>());
+			if(typeid(E46) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E46>());
+			if(typeid(E47) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E47>());
+			if(typeid(E48) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E48>());
+			if(typeid(E49) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E49>());
+			if(typeid(E50) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E50>());
+			if(typeid(E51) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E51>());
+			if(typeid(E52) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E52>());
+			if(typeid(E53) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E53>());
+			if(typeid(E54) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E54>());
+			if(typeid(E55) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E55>());
+			if(typeid(E56) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E56>());
+			if(typeid(E57) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E57>());
+			if(typeid(E58) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E58>());
+			if(typeid(E59) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E59>());
+			if(typeid(E60) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E60>());
+			if(typeid(E61) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E61>());
+			if(typeid(E62) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E62>());
+			if(typeid(E63) == typeid(NullException)) return; cpu->InstallInterrupt(interrupt, CPU::template GetExceptionPriority<E63>());
 		}
 	};
 
@@ -1126,19 +1261,18 @@ protected:
 	///////////////////////////// ExceptionDispatcher<> ///////////////////////////
 
 	template <unsigned int NUM_EXCEPTIONS>
-	class ExceptionDispatcher : public ExceptionDispatcherBase
+	class ExceptionDispatcher
 	{
 	public:
 		ExceptionDispatcher(typename CONFIG::CPU *cpu);
-		~ExceptionDispatcher();
-		virtual void InstallInterrupt(InterruptBase *interrupt, unsigned int priority, bool *trap_control_flag);
+		void InstallInterrupt(InterruptBase *interrupt, unsigned int priority);
 		template <typename EXCEPTION> typename EXCEPTION::INTERRUPT& ThrowException();
 		template <typename EXCEPTION> void AckException();
 		template <typename INTERRUPT> void AckInterrupt();
-		template <typename EXCEPTION> void EnableException();
-		template <typename INTERRUPT> void EnableInterrupt();
-		template <typename EXCEPTION> void DisableException();
-		template <typename INTERRUPT> void DisableInterrupt();
+		template <typename EXCEPTION> void EnableException(bool v = true);
+		template <typename INTERRUPT> void EnableInterrupt(bool v = true);
+		template <typename EXCEPTION> void DisableException() { EnableException<EXCEPTION>(false); }
+		template <typename INTERRUPT> void DisableInterrupt() { EnableInterrupt<INTERRUPT>(false); }
 		template <typename EXCEPTION> bool RecognizedException() const;
 		inline void ProcessExceptions() ALWAYS_INLINE;
 		inline bool HasPendingInterrupts() const ALWAYS_INLINE;
@@ -1149,18 +1283,15 @@ protected:
 		MASK_TYPE exc_flags;                       // Exception flags (bits are ordered according to exception priority): 1=thrown 0=not thrown
 		MASK_TYPE exc_mask;                        // Exception mask (bits are ordered according to exception priority): 1=enabled, 0=disabled
 		InterruptBase *interrupts[NUM_EXCEPTIONS]; // Installed interrupts (sorted by interrupt priority)
-		bool *trap_control_flags[NUM_EXCEPTIONS];  // flags to control trap of interrupts (sorted by interrupt priority)
-		bool trapped[NUM_EXCEPTIONS];              // whether interrupts was trapped (sorted by interrupt priority)
 	};
 	
 public:
-	template <typename INTERRUPT> void InstallInterrupt() { INTERRUPT::InstallInterrupt(&exception_dispatcher, 0); }
-	template <typename INTERRUPT> void InstallInterrupt(bool& trap_control_flag) { INTERRUPT::InstallInterrupt(&exception_dispatcher, &trap_control_flag); }
+	void InstallInterrupt(InterruptBase *interrupt, unsigned int priority) { exception_dispatcher.InstallInterrupt(interrupt, priority); }
 	template <typename EXCEPTION> typename EXCEPTION::INTERRUPT& ThrowException() { return exception_dispatcher.template ThrowException<EXCEPTION>(); }
 	template <typename EXCEPTION> void AckException() { exception_dispatcher.template AckException<EXCEPTION>(); }
 	template <typename INTERRUPT> void AckInterrupt() { exception_dispatcher.template AckInterrupt<INTERRUPT>(); }
-	template <typename EXCEPTION> void EnableException() { exception_dispatcher.template EnableException<EXCEPTION>(); }
-	template <typename INTERRUPT> void EnableInterrupt() { exception_dispatcher.template EnableInterrupt<INTERRUPT>(); }
+	template <typename EXCEPTION> void EnableException(bool v = true) { exception_dispatcher.template EnableException<EXCEPTION>(v); }
+	template <typename INTERRUPT> void EnableInterrupt(bool v = true) { exception_dispatcher.template EnableInterrupt<INTERRUPT>(v); }
 	template <typename EXCEPTION> void DisableException() { exception_dispatcher.template DisableException<EXCEPTION>(); }
 	template <typename INTERRUPT> void DisableInterrupt() { exception_dispatcher.template DisableInterrupt<INTERRUPT>(); }
 	template <typename EXCEPTION> bool RecognizedException() const { return exception_dispatcher.template RecognizedException<EXCEPTION>(); }
@@ -2009,25 +2140,45 @@ public:
 	{
 		typedef unisim::util::reg::core::Register<MSR, 32> Super;
 		
+		struct VEC : Field<VEC,6>  {}; // Altivec vector unit available
 		struct SPV : Field<SPV,6>  {}; // SP/Embedded FP/Vector available
+		struct POW : Field<POW,7>  {}; // Power management enable
 		struct WE  : Field<WE ,13> {}; // Wait state (Power management) enable
 		struct CE  : Field<CE ,14> {}; // Critical Interrupt Enable
+		struct ILE : Field<ILE,15> {}; // Exception little-endian mode
 		struct EE  : Field<EE ,16> {}; // External Interrupt Enable
 		struct PR  : Field<PR ,17> {}; // Problem State
 		struct FP  : Field<FP ,18> {}; // Floating-Point Available
 		struct ME  : Field<ME ,19> {}; // Machine Check Enable
 		struct FE0 : Field<FE0,20> {}; // Floating-point exception mode 0
+		struct SE  : Field<SE ,21> {}; // Single-step trace enable
 		struct DWE : Field<DWE,21> {}; // Debug Wait Enable
+		struct BE  : Field<BE ,22> {}; // Branch trace enable
 		struct DE  : Field<DE ,22> {}; // Debug Interrupt Enable
 		struct FE1 : Field<FE1,23> {}; // Floating-point exception mode 1
+		struct IP  : Field<IP ,25> {}; // Exception prefix
+		struct IR  : Field<IR, 26> {}; // Instruction address translation
 		struct IS  : Field<IS ,26> {}; // Instruction Address Space
+		struct DR  : Field<DR, 27> {}; // Data address translation
 		struct DS  : Field<DS ,27> {}; // Data Address Space
 		struct PMM : Field<PMM,29> {}; // PMM Performance monitor mark bit
 		struct RI  : Field<RI ,30> {}; // Recoverable Interrupt
+		struct LE  : Field<LE ,31> {}; // Little-endian mode enable
 		
 		SWITCH_ENUM_TRAIT(Model, _);
-		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<WE, CE, EE, PR, FP, ME, FE0, DWE, DE, FE1, IS, DS> ALL; };
-		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<SPV, WE, CE, EE, PR, FP, ME, FE0, DE, FE1, IS, DS, PMM, RI> ALL; };
+		CASE_ENUM_TRAIT(MPC7400    , _) { typedef FieldSet<VEC, POW, ILE, EE, PR, FP, ME, FE0, SE, BE, FE1, IP, IR, DR, PMM, RI, LE> ALL; };
+		CASE_ENUM_TRAIT(MPC7410    , _) { typedef FieldSet<VEC, POW, ILE, EE, PR, FP, ME, FE0, SE, BE, FE1, IP, IR, DR, PMM, RI, LE> ALL; };
+		CASE_ENUM_TRAIT(MPC7441    , _) { typedef FieldSet<VEC, POW, ILE, EE, PR, FP, ME, FE0, SE, BE, FE1, IP, IR, DR, PMM, RI, LE> ALL; };
+		CASE_ENUM_TRAIT(MPC7445    , _) { typedef FieldSet<VEC, POW, ILE, EE, PR, FP, ME, FE0, SE, BE, FE1, IP, IR, DR, PMM, RI, LE> ALL; };
+		CASE_ENUM_TRAIT(MPC7447    , _) { typedef FieldSet<VEC, POW, ILE, EE, PR, FP, ME, FE0, SE, BE, FE1, IP, IR, DR, PMM, RI, LE> ALL; };
+		CASE_ENUM_TRAIT(MPC7447A   , _) { typedef FieldSet<VEC, POW, ILE, EE, PR, FP, ME, FE0, SE, BE, FE1, IP, IR, DR, PMM, RI, LE> ALL; };
+		CASE_ENUM_TRAIT(MPC7448    , _) { typedef FieldSet<VEC, POW, ILE, EE, PR, FP, ME, FE0, SE, BE, FE1, IP, IR, DR, PMM, RI, LE> ALL; };
+		CASE_ENUM_TRAIT(MPC7450    , _) { typedef FieldSet<VEC, POW, ILE, EE, PR, FP, ME, FE0, SE, BE, FE1, IP, IR, DR, PMM, RI, LE> ALL; };
+		CASE_ENUM_TRAIT(MPC7451    , _) { typedef FieldSet<VEC, POW, ILE, EE, PR, FP, ME, FE0, SE, BE, FE1, IP, IR, DR, PMM, RI, LE> ALL; };
+		CASE_ENUM_TRAIT(MPC7455    , _) { typedef FieldSet<VEC, POW, ILE, EE, PR, FP, ME, FE0, SE, BE, FE1, IP, IR, DR, PMM, RI, LE> ALL; };
+		CASE_ENUM_TRAIT(MPC7457    , _) { typedef FieldSet<VEC, POW, ILE, EE, PR, FP, ME, FE0, SE, BE, FE1, IP, IR, DR, PMM, RI, LE> ALL; };
+		CASE_ENUM_TRAIT(PPC440     , _) { typedef FieldSet<WE, CE, EE, PR, FP, ME, FE0, DWE, DE, FE1, IS, DS> ALL; };
+		CASE_ENUM_TRAIT(E200Z710N3 , _) { typedef FieldSet<SPV, WE, CE, EE, PR, FP, ME, FE0, DE, FE1, IS, DS, PMM, RI> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<CE, EE, PR, ME, DE, PMM, RI> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
@@ -2063,6 +2214,46 @@ public:
 
 	////////////////////////// Special Purpose Registers //////////////////////
 	
+	// Data Storage Interrupt Status Register
+	struct DSISR : PrivilegedSPR<DSISR, 18>
+	{
+		typedef PrivilegedSPR<DSISR, 18> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		DSISR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DSISR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { this->Initialize(0x0); }
+		
+	private:
+		void Init()
+		{
+			this->SetName("DSISR"); this->SetDescription("Data Storage Interrupt Status Register");
+		}
+	};
+	
+	// Data Address Register
+	struct DAR : PrivilegedSPR<DAR, 19>
+	{
+		typedef PrivilegedSPR<DAR, 19> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		DAR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DAR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { this->Initialize(0x0); }
+	
+	private:
+		void Init()
+		{
+			this->SetName("DAR"); this->SetDescription("Data Address Register");
+		}
+	};
+
 	// Decrementer
 	struct DEC : PrivilegedSPR<DEC, 22>
 	{
@@ -2093,6 +2284,62 @@ public:
 		void Init() { this->SetName("DEC"); this->SetDescription("Decrementer"); }
 	};
 	
+	// Sample Data Register
+	struct SDR1 : PrivilegedSPR<SDR1, 25>
+	{
+		typedef PrivilegedSPR<SDR1, 25> Super;
+		
+		struct HTABORG  : Field<HTABORG , 0 , 15> {}; // Physical base address of page table
+		struct HTABEXT  : Field<HTABEXT , 16, 18> {}; // Extension bits for physical base address of page table
+		struct HTMEXT   : Field<HTMEXT  , 19, 22> {}; // Hash table mask extension bits
+		struct HTABMASK : Field<HTABMASK, 23, 31> {}; // Mask for page table address
+		
+		struct HTABORG_MSB : Field<HTABORG_MSB, 0, 6>  {}; // 7 most significative bits of HTABORG
+		struct HTABORG_LSB : Field<HTABORG_LSB, 7, 15> {}; // 9 least significative bits of HTABORG
+		
+		struct XA_HTABORG_MSB : Field<HTABORG_MSB, 0, 2>  {}; // 3 most significative bits of HTABORG (for extended addressing)
+		struct XA_HTABORG_LSB : Field<HTABORG_LSB, 3, 15> {}; // 13 least significative bits of HTABORG (for extended addressing)
+		
+		struct XA_HTABMASK : Field<XA_HTABMASK, 19, 31> {}; // Mask for page table address (for extended addressing)
+
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(MPC601  , _) { typedef FieldSet<HTABORG, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC603E , _) { typedef FieldSet<HTABORG, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC604E , _) { typedef FieldSet<HTABORG, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC740  , _) { typedef FieldSet<HTABORG, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC745  , _) { typedef FieldSet<HTABORG, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC750  , _) { typedef FieldSet<HTABORG, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC755  , _) { typedef FieldSet<HTABORG, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC7400 , _) { typedef FieldSet<HTABORG, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC7410 , _) { typedef FieldSet<HTABORG, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC7441 , _) { typedef FieldSet<HTABORG, HTABEXT, HTMEXT, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC7445 , _) { typedef FieldSet<HTABORG, HTABEXT, HTMEXT, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC7447 , _) { typedef FieldSet<HTABORG, HTABEXT, HTMEXT, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC7447A, _) { typedef FieldSet<HTABORG, HTABEXT, HTMEXT, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC7448 , _) { typedef FieldSet<HTABORG, HTABEXT, HTMEXT, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC7450 , _) { typedef FieldSet<HTABORG, HTABEXT, HTMEXT, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC7451 , _) { typedef FieldSet<HTABORG, HTABEXT, HTMEXT, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC7455 , _) { typedef FieldSet<HTABORG, HTABEXT, HTMEXT, HTABMASK> ALL; };
+		CASE_ENUM_TRAIT(MPC7457 , _) { typedef FieldSet<HTABORG, HTABEXT, HTMEXT, HTABMASK> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
+		
+		SDR1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		SDR1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { this->Initialize(0x0); }
+		
+	private:
+		void Init()
+		{
+			this->SetName("SDR1"); this->SetDescription("Register that specifies the page table base address for virtual-to-physical address translation");
+			
+			HTABORG ::SetName("HTABORG");  HTABORG ::SetDescription("Physical base address of page table");
+			HTABEXT ::SetName("HTABEXT");  HTABEXT ::SetDescription("Extension bits for physical base address of page table");
+			HTMEXT  ::SetName("HTMEXT");   HTMEXT  ::SetDescription("Hash table mask extension bits");
+			HTABMASK::SetName("HTABMASK"); HTABMASK::SetDescription("Mask for page table address");
+		}
+	};
 	
 	// Save/Restore Register 0
 	struct SRR0 : PrivilegedSPR<SRR0, 26>
@@ -2302,6 +2549,22 @@ protected:
 		}
 	};
 	
+	// Vector Save/Restore Register
+	struct VRSAVE : NonPrivilegedSPR<VRSAVE, 256>
+	{
+		typedef NonPrivilegedSPR<VRSAVE, 256> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		VRSAVE(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		VRSAVE(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init() { this->SetName("VRSAVE"); this->SetDescription(" Vector Save/Restore Register"); }
+	};
+	
 	// User SPR General 0
 	struct USPRG0 : NonPrivilegedSPR<USPRG0, 256>
 	{
@@ -2396,15 +2659,35 @@ protected:
 			SPR260(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) : Super(_cpu, _sprg4) {}
 		};
 
-		SPRG4(typename CONFIG::CPU *_cpu) : Super(_cpu), spr260(_cpu, this) { Init(); }
-		SPRG4(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr260(_cpu, this) { Init(); }
+		SPRG4(typename CONFIG::CPU *_cpu) : Super(_cpu), user_read_only_spr(_cpu, this) { Init(); }
+		SPRG4(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), user_read_only_spr(_cpu, this) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
 		void Init() { this->SetName("SPRG4"); this->SetDescription("SPR General 4"); }
 		
-		SPR260 spr260;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(MPC740     , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) {}; };
+		CASE_ENUM_TRAIT(MPC745     , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) {}; };
+		CASE_ENUM_TRAIT(MPC750     , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) {}; };
+		CASE_ENUM_TRAIT(MPC755     , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) {}; };
+		CASE_ENUM_TRAIT(MPC7400    , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) {}; };
+		CASE_ENUM_TRAIT(MPC7410    , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) {}; };
+		CASE_ENUM_TRAIT(MPC7441    , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) {}; };
+		CASE_ENUM_TRAIT(MPC7445    , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) {}; };
+		CASE_ENUM_TRAIT(MPC7447    , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) {}; };
+		CASE_ENUM_TRAIT(MPC7447A   , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) {}; };
+		CASE_ENUM_TRAIT(MPC7448    , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) {}; };
+		CASE_ENUM_TRAIT(MPC7450    , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) {}; };
+		CASE_ENUM_TRAIT(MPC7451    , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) {}; };
+		CASE_ENUM_TRAIT(MPC7455    , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) {}; };
+		CASE_ENUM_TRAIT(MPC7457    , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) {}; };
+		CASE_ENUM_TRAIT(PPC405     , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) : spr260(_cpu, _sprg4) {}; SPR260 spr260; };
+		CASE_ENUM_TRAIT(PPC440     , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) : spr260(_cpu, _sprg4) {}; SPR260 spr260; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) : spr260(_cpu, _sprg4) {}; SPR260 spr260; };
+		CASE_ENUM_TRAIT(E200Z710N3 , _) { _(typename CONFIG::CPU *_cpu, SPRG4 *_sprg4) : spr260(_cpu, _sprg4) {}; SPR260 spr260; };
+		ENUM_TRAIT(CONFIG::MODEL, _) user_read_only_spr;
 	};
 
 	// SPR General 5
@@ -2421,15 +2704,35 @@ protected:
 			SPR261(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) : Super(_cpu, _sprg5) {}
 		};
 
-		SPRG5(typename CONFIG::CPU *_cpu) : Super(_cpu), spr261(_cpu, this) { Init(); }
-		SPRG5(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr261(_cpu, this) { Init(); }
+		SPRG5(typename CONFIG::CPU *_cpu) : Super(_cpu), user_read_only_spr(_cpu, this) { Init(); }
+		SPRG5(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), user_read_only_spr(_cpu, this) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
 		void Init() { this->SetName("SPRG5"); this->SetDescription("SPR General 5"); }
 		
-		SPR261 spr261;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(MPC740     , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) {}; };
+		CASE_ENUM_TRAIT(MPC745     , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) {}; };
+		CASE_ENUM_TRAIT(MPC750     , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) {}; };
+		CASE_ENUM_TRAIT(MPC755     , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) {}; };
+		CASE_ENUM_TRAIT(MPC7400    , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) {}; };
+		CASE_ENUM_TRAIT(MPC7410    , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) {}; };
+		CASE_ENUM_TRAIT(MPC7441    , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) {}; };
+		CASE_ENUM_TRAIT(MPC7445    , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) {}; };
+		CASE_ENUM_TRAIT(MPC7447    , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) {}; };
+		CASE_ENUM_TRAIT(MPC7447A   , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) {}; };
+		CASE_ENUM_TRAIT(MPC7448    , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) {}; };
+		CASE_ENUM_TRAIT(MPC7450    , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) {}; };
+		CASE_ENUM_TRAIT(MPC7451    , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) {}; };
+		CASE_ENUM_TRAIT(MPC7455    , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) {}; };
+		CASE_ENUM_TRAIT(MPC7457    , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) {}; };
+		CASE_ENUM_TRAIT(PPC405     , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) : spr261(_cpu, _sprg5) {}; SPR261 spr261; };
+		CASE_ENUM_TRAIT(PPC440     , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) : spr261(_cpu, _sprg5) {}; SPR261 spr261; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) : spr261(_cpu, _sprg5) {}; SPR261 spr261; };
+		CASE_ENUM_TRAIT(E200Z710N3 , _) { _(typename CONFIG::CPU *_cpu, SPRG5 *_sprg5) : spr261(_cpu, _sprg5) {}; SPR261 spr261; };
+		ENUM_TRAIT(CONFIG::MODEL, _) user_read_only_spr;
 	};
 
 	// SPR General 6
@@ -2446,15 +2749,35 @@ protected:
 			SPR262(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) : Super(_cpu, _sprg6) {}
 		};
 
-		SPRG6(typename CONFIG::CPU *_cpu) : Super(_cpu), spr262(_cpu, this) { Init(); }
-		SPRG6(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr262(_cpu, this) { Init(); }
+		SPRG6(typename CONFIG::CPU *_cpu) : Super(_cpu), user_read_only_spr(_cpu, this) { Init(); }
+		SPRG6(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), user_read_only_spr(_cpu, this) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
 		void Init() { this->SetName("SPRG6"); this->SetDescription("SPR General 6"); }
 		
-		SPR262 spr262;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(MPC740     , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) {}; };
+		CASE_ENUM_TRAIT(MPC745     , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) {}; };
+		CASE_ENUM_TRAIT(MPC750     , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) {}; };
+		CASE_ENUM_TRAIT(MPC755     , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) {}; };
+		CASE_ENUM_TRAIT(MPC7400    , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) {}; };
+		CASE_ENUM_TRAIT(MPC7410    , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) {}; };
+		CASE_ENUM_TRAIT(MPC7441    , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) {}; };
+		CASE_ENUM_TRAIT(MPC7445    , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) {}; };
+		CASE_ENUM_TRAIT(MPC7447    , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) {}; };
+		CASE_ENUM_TRAIT(MPC7447A   , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) {}; };
+		CASE_ENUM_TRAIT(MPC7448    , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) {}; };
+		CASE_ENUM_TRAIT(MPC7450    , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) {}; };
+		CASE_ENUM_TRAIT(MPC7451    , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) {}; };
+		CASE_ENUM_TRAIT(MPC7455    , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) {}; };
+		CASE_ENUM_TRAIT(MPC7457    , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) {}; };
+		CASE_ENUM_TRAIT(PPC405     , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) : spr262(_cpu, _sprg6) {}; SPR262 spr262; };
+		CASE_ENUM_TRAIT(PPC440     , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) : spr262(_cpu, _sprg6) {}; SPR262 spr262; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) : spr262(_cpu, _sprg6) {}; SPR262 spr262; };
+		CASE_ENUM_TRAIT(E200Z710N3 , _) { _(typename CONFIG::CPU *_cpu, SPRG6 *_sprg6) : spr262(_cpu, _sprg6) {}; SPR262 spr262; };
+		ENUM_TRAIT(CONFIG::MODEL, _) user_read_only_spr;
 	};
 
 	// SPR General 7
@@ -2471,30 +2794,105 @@ protected:
 			SPR263(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) : Super(_cpu, _sprg7) {}
 		};
 
-		SPRG7(typename CONFIG::CPU *_cpu) : Super(_cpu), spr263(_cpu, this) { Init(); }
-		SPRG7(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), spr263(_cpu, this) { Init(); }
+		SPRG7(typename CONFIG::CPU *_cpu) : Super(_cpu), user_read_only_spr(_cpu, this) { Init(); }
+		SPRG7(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value), user_read_only_spr(_cpu, this) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
 		void Init() { this->SetName("SPRG7"); this->SetDescription("SPR General 7"); }
 		
-		SPR263 spr263;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(MPC740     , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) {}; };
+		CASE_ENUM_TRAIT(MPC745     , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) {}; };
+		CASE_ENUM_TRAIT(MPC750     , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) {}; };
+		CASE_ENUM_TRAIT(MPC755     , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) {}; };
+		CASE_ENUM_TRAIT(MPC7400    , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) {}; };
+		CASE_ENUM_TRAIT(MPC7410    , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) {}; };
+		CASE_ENUM_TRAIT(MPC7441    , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) {}; };
+		CASE_ENUM_TRAIT(MPC7445    , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) {}; };
+		CASE_ENUM_TRAIT(MPC7447    , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) {}; };
+		CASE_ENUM_TRAIT(MPC7447A   , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) {}; };
+		CASE_ENUM_TRAIT(MPC7448    , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) {}; };
+		CASE_ENUM_TRAIT(MPC7450    , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) {}; };
+		CASE_ENUM_TRAIT(MPC7451    , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) {}; };
+		CASE_ENUM_TRAIT(MPC7455    , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) {}; };
+		CASE_ENUM_TRAIT(MPC7457    , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) {}; };
+		CASE_ENUM_TRAIT(PPC405     , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) : spr263(_cpu, _sprg7) {}; SPR263 spr263; };
+		CASE_ENUM_TRAIT(PPC440     , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) : spr263(_cpu, _sprg7) {}; SPR263 spr263; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) : spr263(_cpu, _sprg7) {}; SPR263 spr263; };
+		CASE_ENUM_TRAIT(E200Z710N3 , _) { _(typename CONFIG::CPU *_cpu, SPRG7 *_sprg7) : spr263(_cpu, _sprg7) {}; SPR263 spr263; };
+		ENUM_TRAIT(CONFIG::MODEL, _) user_read_only_spr;
+	};
+	
+	// External Access Register
+	struct EAR : PrivilegedSPR<EAR, 282>
+	{
+		typedef PrivilegedSPR<EAR, 282> Super;
+		
+		struct E   : Field<E  , 0     > {}; // Enable bit
+		struct RID : Field<RID, 26, 31> {}; // Resource ID
+
+		typedef FieldSet<E, RID> ALL;
+		
+		EAR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		EAR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { /* unaffected */ }
+	private:
+		void Init()
+		{
+			this->SetName("EAR"); this->SetDescription("External Access Register");
+			
+			E  ::SetName("E");   E  ::SetDescription("Enable bit");
+			RID::SetName("RID"); RID::SetDescription("Resource ID");
+		}
 	};
 
+	SWITCH_ENUM_TRAIT(Model, PIR_Mapping);
+	CASE_ENUM_TRAIT(MPC7400    , PIR_Mapping) { static const unsigned int SPR_NUM = 1023; };
+	CASE_ENUM_TRAIT(MPC7410    , PIR_Mapping) { static const unsigned int SPR_NUM = 1023; };
+	CASE_ENUM_TRAIT(MPC7441    , PIR_Mapping) { static const unsigned int SPR_NUM = 1023; };
+	CASE_ENUM_TRAIT(MPC7445    , PIR_Mapping) { static const unsigned int SPR_NUM = 1023; };
+	CASE_ENUM_TRAIT(MPC7447    , PIR_Mapping) { static const unsigned int SPR_NUM = 1023; };
+	CASE_ENUM_TRAIT(MPC7447A   , PIR_Mapping) { static const unsigned int SPR_NUM = 1023; };
+	CASE_ENUM_TRAIT(MPC7448    , PIR_Mapping) { static const unsigned int SPR_NUM = 1023; };
+	CASE_ENUM_TRAIT(MPC7450    , PIR_Mapping) { static const unsigned int SPR_NUM = 1023; };
+	CASE_ENUM_TRAIT(MPC7451    , PIR_Mapping) { static const unsigned int SPR_NUM = 1023; };
+	CASE_ENUM_TRAIT(MPC7455    , PIR_Mapping) { static const unsigned int SPR_NUM = 1023; };
+	CASE_ENUM_TRAIT(MPC7457    , PIR_Mapping) { static const unsigned int SPR_NUM = 1023; };
+	CASE_ENUM_TRAIT(PPC440     , PIR_Mapping) { static const unsigned int SPR_NUM = 286; };
+	CASE_ENUM_TRAIT(E200Z425BN3, PIR_Mapping) { static const unsigned int SPR_NUM = 286; };
+	CASE_ENUM_TRAIT(E200Z710N3 , PIR_Mapping) { static const unsigned int SPR_NUM = 286; };
+	
 	// Processor ID Register
-	struct PIR : PrivilegedSPR<PIR, 286>
+	struct PIR : PrivilegedSPR<PIR, PIR_Mapping<CONFIG::MODEL>::SPR_NUM>
 	{
-		typedef PrivilegedSPR<PIR, 286> Super;
+		typedef PrivilegedSPR<PIR, PIR_Mapping<CONFIG::MODEL>::SPR_NUM> Super;
+		
+		struct PROCID   : Field<PROCID  , 0 , 31> {}; // Unique, core-specific value
+		
+		struct PIN      : Field<PIN     , 28, 31> {}; // Processor Identification Number
 		
 		struct ID_0_23  : Field<ID_0_23 , 0, 23>  {}; // bits 0:23
 		struct ID_24_31 : Field<ID_24_31, 24, 31> {}; // bits 24:31
-		struct PIN      : Field<PIN     , 28, 31> {}; // Processor Identification Number
 		
 		SWITCH_ENUM_TRAIT(Model, _);
-		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<ID_0_23, ID_24_31> ALL; };
+		CASE_ENUM_TRAIT(MPC7400    , _) { typedef FieldSet<PROCID> ALL; };
+		CASE_ENUM_TRAIT(MPC7410    , _) { typedef FieldSet<PROCID> ALL; };
+		CASE_ENUM_TRAIT(MPC7441    , _) { typedef FieldSet<PROCID> ALL; };
+		CASE_ENUM_TRAIT(MPC7445    , _) { typedef FieldSet<PROCID> ALL; };
+		CASE_ENUM_TRAIT(MPC7447    , _) { typedef FieldSet<PROCID> ALL; };
+		CASE_ENUM_TRAIT(MPC7447A   , _) { typedef FieldSet<PROCID> ALL; };
+		CASE_ENUM_TRAIT(MPC7448    , _) { typedef FieldSet<PROCID> ALL; };
+		CASE_ENUM_TRAIT(MPC7450    , _) { typedef FieldSet<PROCID> ALL; };
+		CASE_ENUM_TRAIT(MPC7451    , _) { typedef FieldSet<PROCID> ALL; };
+		CASE_ENUM_TRAIT(MPC7455    , _) { typedef FieldSet<PROCID> ALL; };
+		CASE_ENUM_TRAIT(MPC7457    , _) { typedef FieldSet<PROCID> ALL; };
+		CASE_ENUM_TRAIT(PPC440     , _) { typedef FieldSet<PIN> ALL; };
+		CASE_ENUM_TRAIT(E200Z710N3 , _) { typedef FieldSet<ID_0_23, ID_24_31> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<ID_0_23, ID_24_31> ALL; };
-		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<PIN> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		PIR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
@@ -2515,20 +2913,47 @@ protected:
 	{
 		typedef NonPrivilegedSPR<PVR, 287> Super;
 		
-		struct MANID     : Field<MANID    , 0, 3>   {};
-		struct Type      : Field<Type     , 6, 11>  {};
-		struct Version   : Field<Version  , 12, 15> {};
-		struct MBG_Use   : Field<MBG_Use  , 16, 19> {};
-		struct Minor_Rev : Field<Minor_Rev, 20, 23> {};
-		struct Major_Rev : Field<Major_Rev, 24, 27> {};
-		struct MBG_ID    : Field<MBG_ID   , 28, 31> {};
-		struct OWN       : Field<OWN      , 0 , 11> {}; // Owner Identifier
-		struct PVN       : Field<PVN      , 12, 31> {}; // Processor Version Number
+		struct Version   : Field<Version  , 0 , 15> {}; // Version
+		struct Revision  : Field<Revision , 16, 31> {}; // Revision
+		
+		struct OWN       : Field<OWN, 0 , 11> {}; // Owner Identifier
+		struct PCF       : Field<PCF, 12, 15> {}; // Processor Core Family
+		struct CAS       : Field<CAS, 16, 21> {}; // Cache Array Size
+		struct PCL       : Field<PCL, 22, 25> {}; // Processor Core Version
+		struct AID       : Field<AID, 26, 31> {}; // ASIC Identifier
+		struct PVN       : Field<PVN, 12, 31> {}; // Processor Version Number
+		
+		struct MANID         : Field<MANID    , 0, 3>   {};
+		struct Type          : Field<Type     , 6, 11>  {};
+		struct Version_12_15 : Field<Version  , 12, 15> {};
+		struct MBG_Use       : Field<MBG_Use  , 16, 19> {};
+		struct Minor_Rev     : Field<Minor_Rev, 20, 23> {};
+		struct Major_Rev     : Field<Major_Rev, 24, 27> {};
+		struct MBG_ID        : Field<MBG_ID   , 28, 31> {};
 
 		SWITCH_ENUM_TRAIT(Model, _);
-		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<MANID, Type, Version, MBG_Use, Minor_Rev, MBG_ID> ALL; };
-		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<MANID, Type, Version, MBG_Use, Minor_Rev, MBG_ID> ALL; };
+		CASE_ENUM_TRAIT(MPC601  , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC603E , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC604E , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC740  , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC745  , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC750  , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC755  , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC7400 , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC7410 , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC7441 , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC7445 , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC7447 , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC7447A, _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC7448 , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC7450 , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC7451 , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC7455 , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(MPC7457 , _)    { typedef FieldSet<Version, Revision> ALL; };
+		CASE_ENUM_TRAIT(PPC405, _)      { typedef FieldSet<OWN, PCF, CAS, PCL, AID> ALL; };
 		CASE_ENUM_TRAIT(PPC440, _)      { typedef FieldSet<OWN, PVN> ALL; };
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<MANID, Type, Version_12_15, MBG_Use, Minor_Rev, MBG_ID> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<MANID, Type, Version_12_15, MBG_Use, Minor_Rev, MBG_ID> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		PVR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
@@ -2537,16 +2962,25 @@ protected:
 	private:
 		void Init()
 		{
-			this->SetName("PVR");
-			MANID    ::SetName("MANID");
-			Type     ::SetName("Type");
-			Version  ::SetName("Version");
-			MBG_Use  ::SetName("MBG_Use");
-			Minor_Rev::SetName("Minor_Rev");
-			Major_Rev::SetName("Major_Rev");
-			MBG_ID   ::SetName("MBG_ID");
-			OWN      ::SetName("OWN");       OWN::SetDescription("Owner Identifier");
-			PVN      ::SetName("PWN");       PVN::SetDescription("Processor Version Number");
+			this->SetName("PVR"); this->SetDescription("Processor Version Register");
+			
+			Version ::SetName("Version");  Version ::SetDescription("Version");
+			Revision::SetName("Revision"); Revision::SetDescription("Revision");
+			
+			OWN::SetName("OWN"); OWN::SetDescription("Owner Identifier");
+			PCF::SetName("PCF"); PCF::SetDescription("Processor Core Family");
+			CAS::SetName("CAS"); CAS::SetDescription("Cache Array Size");
+			PCL::SetName("PCL"); PCL::SetDescription("Processor Core Version");
+			AID::SetName("AID"); AID::SetDescription("ASIC Identifier");
+			PVN::SetName("PWN"); PVN::SetDescription("Processor Version Number");
+			
+			MANID          ::SetName("MANID");
+			Type           ::SetName("Type");
+			Version_12_15  ::SetName("Version");
+			MBG_Use        ::SetName("MBG_Use");
+			Minor_Rev      ::SetName("Minor_Rev");
+			Major_Rev      ::SetName("Major_Rev");
+			MBG_ID         ::SetName("MBG_ID");
 		}
 	};
 
@@ -3309,6 +3743,301 @@ protected:
 	private:
 		void Init() { this->SetName("NPIDR"); this->SetDescription("Nexus 3 Process ID register"); }
 	};
+	
+	// UpperBlockAddressTranslationRegister
+	struct UpperBlockAddressTranslationRegister : UnnumberedSLR<UpperBlockAddressTranslationRegister, SLR_SPR_SPACE, SLR_RW, SLR_PRIVILEGED>
+	{
+		typedef UnnumberedSLR<UpperBlockAddressTranslationRegister, SLR_SPR_SPACE, SLR_RW, SLR_PRIVILEGED> Super;
+		
+		struct BEPI : Field<BEPI, 0 , 14> {}; // Block Effective Page Index
+		struct XBL  : Field<XBL , 15, 18> {}; // Extended Block Length
+		struct BL   : Field<BL  , 19, 29> {}; // Block Length
+		struct Vs   : Field<Vs  , 30    > {}; // Supervisor mode valid bit
+		struct Vp   : Field<Vp  , 31    > {}; // User mode valid bit
+		
+		struct BEPI_0_3  : Field<BEPI_0_3 , 0 , 3 > {};
+		struct BEPI_4_14 : Field<BEPI_4_14, 4 , 14> {};
+		
+		SWITCH_ENUM_TRAIT(Model, _BLOCK_LENGTH);
+		CASE_ENUM_TRAIT(MPC601  , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC603E , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC604E , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC740  , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC745  , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC750  , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC755  , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC7400 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC7410 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC7441 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC7445 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC7447 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC7447A, _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC7448 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC7450 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC7451 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC7455 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		CASE_ENUM_TRAIT(MPC7457 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _BLOCK_LENGTH)::FIELD_SET BLOCK_LENGTH;
+
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(MPC601  , _) { typedef FieldSet<BEPI, BL, Vs, Vp> ALL;      };
+		CASE_ENUM_TRAIT(MPC603E , _) { typedef FieldSet<BEPI, BL, Vs, Vp> ALL;      };
+		CASE_ENUM_TRAIT(MPC604E , _) { typedef FieldSet<BEPI, BL, Vs, Vp> ALL;      };
+		CASE_ENUM_TRAIT(MPC740  , _) { typedef FieldSet<BEPI, BL, Vs, Vp> ALL;      };
+		CASE_ENUM_TRAIT(MPC745  , _) { typedef FieldSet<BEPI, BL, Vs, Vp> ALL;      };
+		CASE_ENUM_TRAIT(MPC750  , _) { typedef FieldSet<BEPI, BL, Vs, Vp> ALL;      };
+		CASE_ENUM_TRAIT(MPC755  , _) { typedef FieldSet<BEPI, BL, Vs, Vp> ALL;      };
+		CASE_ENUM_TRAIT(MPC7400 , _) { typedef FieldSet<BEPI, BL, Vs, Vp> ALL;      };
+		CASE_ENUM_TRAIT(MPC7410 , _) { typedef FieldSet<BEPI, BL, Vs, Vp> ALL;      };
+		CASE_ENUM_TRAIT(MPC7441 , _) { typedef FieldSet<BEPI, BL, Vs, Vp> ALL;      };
+		CASE_ENUM_TRAIT(MPC7445 , _) { typedef FieldSet<BEPI, XBL, BL, Vs, Vp> ALL; };
+		CASE_ENUM_TRAIT(MPC7447 , _) { typedef FieldSet<BEPI, XBL, BL, Vs, Vp> ALL; };
+		CASE_ENUM_TRAIT(MPC7447A, _) { typedef FieldSet<BEPI, XBL, BL, Vs, Vp> ALL; };
+		CASE_ENUM_TRAIT(MPC7448 , _) { typedef FieldSet<BEPI, XBL, BL, Vs, Vp> ALL; };
+		CASE_ENUM_TRAIT(MPC7450 , _) { typedef FieldSet<BEPI, BL, Vs, Vp> ALL;      };
+		CASE_ENUM_TRAIT(MPC7451 , _) { typedef FieldSet<BEPI, BL, Vs, Vp> ALL;      };
+		CASE_ENUM_TRAIT(MPC7455 , _) { typedef FieldSet<BEPI, XBL, BL, Vs, Vp> ALL; };
+		CASE_ENUM_TRAIT(MPC7457 , _) { typedef FieldSet<BEPI, XBL, BL, Vs, Vp> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
+		
+		UpperBlockAddressTranslationRegister(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		UpperBlockAddressTranslationRegister(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual void Reset() { /* unaffected */ }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			BEPI::SetName("BEPI"); BEPI::SetDescription("Block Effective Page Index");
+			XBL ::SetName("XBL");  XBL ::SetDescription("Extended Block Length");
+			BL  ::SetName("BL");   BL  ::SetDescription("Block Length");
+			Vs  ::SetName("Vs");   Vs  ::SetDescription("Supervisor mode valid bit");
+			Vp  ::SetName("Vp");   Vp  ::SetDescription("User mode valid bit");
+		}
+	};
+	
+	// LowerBlockAddressTranslationRegister
+	struct LowerBlockAddressTranslationRegister : UnnumberedSLR<LowerBlockAddressTranslationRegister, SLR_SPR_SPACE, SLR_RW, SLR_PRIVILEGED>
+	{
+		typedef UnnumberedSLR<LowerBlockAddressTranslationRegister, SLR_SPR_SPACE, SLR_RW, SLR_PRIVILEGED> Super;
+		
+		struct BRPN : Field<BRPN, 0 , 14> {}; // Block physical page number
+		struct BXPN : Field<BXPN, 20, 22> {}; // Block extended physical page number
+		struct WIMG : Field<WIMG, 25, 29> {}; // Memory/cache access mode bits
+		struct W    : Field<W   , 25    > {}; // Write-Through
+		struct I    : Field<I   , 26    > {}; // Caching-Inhibited
+		struct M    : Field<M   , 27    > {}; // Memory coherence
+		struct G    : Field<G   , 28    > {}; // Guarded
+		struct BX   : Field<BX  , 29    > {}; // Block extended physical page number
+		struct PP   : Field<PP  , 30, 31> {}; // Protection bits for block
+		
+		struct BRPN_0_3  : Field<BRPN_0_3 , 0 , 3 > {};
+		struct BRPN_4_14 : Field<BRPN_4_14, 4 , 14> {};
+		
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(MPC601  , _) { typedef FieldSet<BRPN, WIMG, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC603E , _) { typedef FieldSet<BRPN, WIMG, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC604E , _) { typedef FieldSet<BRPN, WIMG, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC740  , _) { typedef FieldSet<BRPN, WIMG, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC745  , _) { typedef FieldSet<BRPN, WIMG, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC750  , _) { typedef FieldSet<BRPN, WIMG, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC755  , _) { typedef FieldSet<BRPN, WIMG, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC7400 , _) { typedef FieldSet<BRPN, WIMG, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC7410 , _) { typedef FieldSet<BRPN, WIMG, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC7441 , _) { typedef FieldSet<BRPN, BXPN, WIMG, BX, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC7445 , _) { typedef FieldSet<BRPN, BXPN, WIMG, BX, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC7447 , _) { typedef FieldSet<BRPN, WIMG, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC7447A, _) { typedef FieldSet<BRPN, WIMG, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC7448 , _) { typedef FieldSet<BRPN, WIMG, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC7450 , _) { typedef FieldSet<BRPN, BXPN, WIMG, BX, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC7451 , _) { typedef FieldSet<BRPN, BXPN, WIMG, BX, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC7455 , _) { typedef FieldSet<BRPN, BXPN, WIMG, BX, PP> ALL; };
+		CASE_ENUM_TRAIT(MPC7457 , _) { typedef FieldSet<BRPN, WIMG, PP> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
+		
+		LowerBlockAddressTranslationRegister(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		LowerBlockAddressTranslationRegister(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual void Reset() { /* unaffected */ }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			BRPN::SetName("BRPN"); BRPN::SetDescription("Block physical page number");
+			BXPN::SetName("BXPN"); BXPN::SetDescription("Block extended physical page number");
+			WIMG::SetName("WIMG"); WIMG::SetDescription("Memory/cache access mode bits");
+			W   ::SetName("W");    W   ::SetDescription("Write-Through");
+			I   ::SetName("I");    I   ::SetDescription("Caching-Inhibited");
+			M   ::SetName("M");    M   ::SetDescription("Memory coherence");
+			G   ::SetName("G");    G   ::SetDescription("Guarded");
+			BX  ::SetName("BX");   BX  ::SetDescription("Block extended physical page number");
+			PP  ::SetName("PP");   PP  ::SetDescription("Protection bits for block");
+		}
+	};
+	
+	// IBATU
+	template <unsigned int IBAT_NUM>
+	struct IBATU : UpperBlockAddressTranslationRegister
+	{
+		typedef UpperBlockAddressTranslationRegister Super;
+		
+		static const unsigned int SLR_NUM = (IBAT_NUM < 4) ? (528 + (2 * IBAT_NUM)) : (560 + (2 * (IBAT_NUM - 4)));
+		static const unsigned int REG_NUM = SLR_NUM;
+
+		IBATU(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IBATU(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual unsigned int GetRegNum() const { return SLR_NUM; }
+		virtual void Reset() { /* unaffected */ }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->cpu->RegisterSLR(SLR_NUM, this);
+			
+			std::stringstream name_sstr;
+			name_sstr << "IBAT" << IBAT_NUM << "U";
+			
+			std::stringstream desc_sstr;
+			desc_sstr << "Instruction Block Address Translation " << IBAT_NUM << " (Upper)";
+			
+			this->SetName(name_sstr.str());
+			this->SetDescription(desc_sstr.str());
+		}
+	};
+
+	// IBATL
+	template <unsigned int IBAT_NUM>
+	struct IBATL : LowerBlockAddressTranslationRegister
+	{
+		typedef LowerBlockAddressTranslationRegister Super;
+		
+		static const unsigned int SLR_NUM = (IBAT_NUM < 4) ? (529 + (2 * IBAT_NUM)) : (561 + (2 * (IBAT_NUM - 4)));
+		static const unsigned int REG_NUM = SLR_NUM;
+
+		IBATL(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IBATL(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual unsigned int GetRegNum() const { return SLR_NUM; }
+		virtual void Reset() { /* unaffected */ }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->cpu->RegisterSLR(SLR_NUM, this);
+			
+			std::stringstream name_sstr;
+			name_sstr << "IBAT" << IBAT_NUM << "L";
+			
+			std::stringstream desc_sstr;
+			desc_sstr << "Instruction Block Address Translation " << IBAT_NUM << " (Lower)";
+			
+			this->SetName(name_sstr.str());
+			this->SetDescription(desc_sstr.str());
+		}
+	};
+
+	// DBATU
+	template <unsigned int DBAT_NUM>
+	struct DBATU : UpperBlockAddressTranslationRegister
+	{
+		typedef UpperBlockAddressTranslationRegister Super;
+		
+		static const unsigned int SLR_NUM = (DBAT_NUM < 4) ? (536 + (2 * DBAT_NUM)) : (568 + (2 * (DBAT_NUM - 4)));
+		static const unsigned int REG_NUM = SLR_NUM;
+
+		DBATU(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DBATU(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual unsigned int GetRegNum() const { return SLR_NUM; }
+		virtual void Reset() { /* unaffected */ }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->cpu->RegisterSLR(SLR_NUM, this);
+			
+			std::stringstream name_sstr;
+			name_sstr << "DBAT" << DBAT_NUM << "U";
+			
+			std::stringstream desc_sstr;
+			desc_sstr << "Data Block Address Translation " << DBAT_NUM << " (Upper)";
+			
+			this->SetName(name_sstr.str());
+			this->SetDescription(desc_sstr.str());
+		}
+	};
+
+	// DBATL
+	template <unsigned int DBAT_NUM>
+	struct DBATL : LowerBlockAddressTranslationRegister
+	{
+		typedef LowerBlockAddressTranslationRegister Super;
+		
+		static const unsigned int SLR_NUM = (DBAT_NUM < 4) ? (537 + (2 * DBAT_NUM)) : (569 + (2 * (DBAT_NUM - 4)));
+		static const unsigned int REG_NUM = SLR_NUM;
+
+		DBATL(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DBATL(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		
+		virtual unsigned int GetRegNum() const { return SLR_NUM; }
+		virtual void Reset() { /* unaffected */ }
+		
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->cpu->RegisterSLR(SLR_NUM, this);
+			
+			std::stringstream name_sstr;
+			name_sstr << "DBAT" << DBAT_NUM << "L";
+			
+			std::stringstream desc_sstr;
+			desc_sstr << "Data Block Address Translation " << DBAT_NUM << " (Lower)";
+			
+			this->SetName(name_sstr.str());
+			this->SetDescription(desc_sstr.str());
+		}
+	};
+	
+	typedef IBATU<0> IBAT0U;
+	typedef IBATL<0> IBAT0L;
+	typedef IBATU<1> IBAT1U;
+	typedef IBATL<1> IBAT1L;
+	typedef IBATU<2> IBAT2U;
+	typedef IBATL<2> IBAT2L;
+	typedef IBATU<3> IBAT3U;
+	typedef IBATL<3> IBAT3L;
+	typedef IBATU<4> IBAT4U;
+	typedef IBATL<4> IBAT4L;
+	typedef IBATU<5> IBAT5U;
+	typedef IBATL<5> IBAT5L;
+	typedef IBATU<6> IBAT6U;
+	typedef IBATL<6> IBAT6L;
+	typedef IBATU<7> IBAT7U;
+	typedef IBATL<7> IBAT7L;
+
+	typedef DBATU<0> DBAT0U;
+	typedef DBATL<0> DBAT0L;
+	typedef DBATU<1> DBAT1U;
+	typedef DBATL<1> DBAT1L;
+	typedef DBATU<2> DBAT2U;
+	typedef DBATL<2> DBAT2L;
+	typedef DBATU<3> DBAT3U;
+	typedef DBATL<3> DBAT3L;
+	typedef DBATU<4> DBAT4U;
+	typedef DBATL<4> DBAT4L;
+	typedef DBATU<5> DBAT5U;
+	typedef DBATL<5> DBAT5L;
+	typedef DBATU<6> DBAT6U;
+	typedef DBATL<6> DBAT6L;
+	typedef DBATU<7> DBAT7U;
+	typedef DBATL<7> DBAT7L;
 
 	// Debug Control Register 3
 	struct DBCR3 : PrivilegedSPR<DBCR3, 561>
@@ -4317,6 +5046,8 @@ protected:
 	private:
 		void Init()
 		{
+			this->cpu->RegisterSLR(SLR_NUM, this);
+			
 			std::stringstream name_sstr;
 			name_sstr << "ITV" << ITV_NUM;
 			
@@ -4393,7 +5124,7 @@ protected:
 	private:
 		void Init()
 		{
-			this->cpu->RegisterSLR(912 + DNV_NUM, this);
+			this->cpu->RegisterSLR(SLR_NUM, this);
 			
 			std::stringstream name_sstr;
 			name_sstr << "DNV" << DNV_NUM;
@@ -4430,6 +5161,8 @@ protected:
 	private:
 		void Init()
 		{
+			this->cpu->RegisterSLR(SLR_NUM, this);
+			
 			std::stringstream name_sstr;
 			name_sstr << "DTV" << DTV_NUM;
 			
@@ -4807,17 +5540,51 @@ protected:
 	{
 		typedef PrivilegedSPR<HID0, 1008> Super;
 		
+		struct TBEN        : Field<TBEN       , 5 > {}; // Time base enable
+		struct STEN        : Field<STEN       , 7 > {}; // Software table search enable
+		struct HIGH_BAT_EN : Field<HIGH_BAT_EN, 8 > {}; // Additional BATs enabled
+		struct NAP         : Field<NAP        , 9 > {}; // Nap mode enable
+		struct SLEEP       : Field<SLEEP      , 10> {}; // Sleep mode enable
+		struct DPM         : Field<DPM        , 11> {}; // Dynamic power management enable
+		struct BHTCLR      : Field<BHTCLR     , 13> {}; // Clear branch history table
+		struct XAEN        : Field<XAEN       , 14> {}; // Extended addressing enabled
+		struct NHR         : Field<NHR        , 15> {}; // Not hard reset
+		struct ICE         : Field<ICE        , 16> {}; // Instruction cache enable
+		struct DCE         : Field<DCE        , 17> {}; // Data cache enable
+		struct ILOCK       : Field<ILOCK      , 18> {}; // Instruction cache lock
+		struct DLOCK       : Field<DLOCK      , 19> {}; // Data cache lock
+		struct ICFI        : Field<ICFI       , 20> {}; // Instruction cache flash invalidate
+		struct DCFI        : Field<DCFI       , 21> {}; // Data cache flash invalidate
+		struct SPD         : Field<SPD        , 22> {}; // Speculative data cache and instruction cache access disable
+		struct XBSEN       : Field<XBSEN      , 23> {}; // Extended BAT block size enable
+		struct SGE         : Field<SGE        , 24> {}; // Store gathering enable
+		struct BTIC        : Field<BTIC       , 26> {}; // Branch target instruction cache enable
+		struct LRSTK       : Field<LRSTK      , 27> {}; // Link register stack enable
+		struct FOLD        : Field<FOLD       , 28> {}; // Branch folding enable
+		struct BHT         : Field<BHT        , 29> {}; // Branch history table enable
+		struct NOPDST      : Field<NOPDST     , 30> {}; // No-op dst, dstt, dstst, and dststt instructions
+		struct NOPTI       : Field<NOPTI      , 31> {}; // No-op the data cache touch instructions
+		
 		struct EMCP    : Field<EMCP   , 0>  {}; // Enable machine check pin (p_mcp_b)
 		struct ICR     : Field<ICR    , 14> {}; // Input Inputs Clear Reservation
-		struct NHR     : Field<NHR    , 15> {}; // Not hardware reset
+		//struct NHR     : Field<NHR    , 15> {}; // Not hardware reset
 		struct DCLREE  : Field<DCLREE , 19> {}; // Debug Interrupt Clears MSR[EE]
 		struct DCLRCE  : Field<DCLRCE , 20> {}; // Debug Interrupt Clears MSR[CE]
 		struct CICLRDE : Field<CICLRDE, 21> {}; // Critical Interrupt Clears MSR[DE]
 		struct MCCLRDE : Field<MCCLRDE, 22> {}; // Machine Check Interrupt Clears MSR[DE]
-		struct NOPTI   : Field<NOPTI  , 31> {}; // No-op Touch Instructions
+		//struct NOPTI   : Field<NOPTI  , 31> {}; // No-op Touch Instructions
 		
 		SWITCH_ENUM_TRAIT(Model, _);
-		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<EMCP, ICR, NHR, DCLREE, DCLRCE, CICLRDE, MCCLRDE, NOPTI> ALL; };
+		CASE_ENUM_TRAIT(MPC7441    , _) { typedef FieldSet<TBEN, STEN, NAP, SLEEP, DPM, BHTCLR, XAEN, NHR, ICE, DCE, ILOCK, DLOCK, ICFI, DCFI, SPD, XBSEN, SGE, BTIC, LRSTK, FOLD, BHT, NOPDST, NOPTI> ALL; };
+		CASE_ENUM_TRAIT(MPC7445    , _) { typedef FieldSet<TBEN, STEN, HIGH_BAT_EN, NAP, SLEEP, DPM, BHTCLR, XAEN, NHR, ICE, DCE, ILOCK, DLOCK, ICFI, DCFI, SPD, XBSEN, SGE, BTIC, LRSTK, FOLD, BHT, NOPDST, NOPTI> ALL; };
+		CASE_ENUM_TRAIT(MPC7447    , _) { typedef FieldSet<TBEN, STEN, HIGH_BAT_EN, NAP, SLEEP, DPM, BHTCLR, XAEN, NHR, ICE, DCE, ILOCK, DLOCK, ICFI, DCFI, SPD, XBSEN, SGE, BTIC, LRSTK, FOLD, BHT, NOPDST, NOPTI> ALL; };
+		CASE_ENUM_TRAIT(MPC7447A   , _) { typedef FieldSet<TBEN, STEN, HIGH_BAT_EN, NAP, SLEEP, DPM, BHTCLR, XAEN, NHR, ICE, DCE, ILOCK, DLOCK, ICFI, DCFI, SPD, XBSEN, SGE, BTIC, LRSTK, FOLD, BHT, NOPDST, NOPTI> ALL; };
+		CASE_ENUM_TRAIT(MPC7448    , _) { typedef FieldSet<TBEN, STEN, HIGH_BAT_EN, NAP, SLEEP, DPM, BHTCLR, XAEN, NHR, ICE, DCE, ILOCK, DLOCK, ICFI, DCFI, SPD, XBSEN, SGE, BTIC, LRSTK, FOLD, BHT, NOPDST, NOPTI> ALL; };
+		CASE_ENUM_TRAIT(MPC7450    , _) { typedef FieldSet<TBEN, STEN, NAP, SLEEP, DPM, BHTCLR, XAEN, NHR, ICE, DCE, ILOCK, DLOCK, ICFI, DCFI, SPD, XBSEN, SGE, BTIC, LRSTK, FOLD, BHT, NOPDST, NOPTI> ALL; };
+		CASE_ENUM_TRAIT(MPC7451    , _) { typedef FieldSet<TBEN, STEN, NAP, SLEEP, DPM, BHTCLR, XAEN, NHR, ICE, DCE, ILOCK, DLOCK, ICFI, DCFI, SPD, XBSEN, SGE, BTIC, LRSTK, FOLD, BHT, NOPDST, NOPTI> ALL; };
+		CASE_ENUM_TRAIT(MPC7455    , _) { typedef FieldSet<TBEN, STEN, HIGH_BAT_EN, NAP, SLEEP, DPM, BHTCLR, XAEN, NHR, ICE, DCE, ILOCK, DLOCK, ICFI, DCFI, SPD, XBSEN, SGE, BTIC, LRSTK, FOLD, BHT, NOPDST, NOPTI> ALL; };
+		CASE_ENUM_TRAIT(MPC7457    , _) { typedef FieldSet<TBEN, STEN, HIGH_BAT_EN, NAP, SLEEP, DPM, BHTCLR, XAEN, NHR, ICE, DCE, ILOCK, DLOCK, ICFI, DCFI, SPD, XBSEN, SGE, BTIC, LRSTK, FOLD, BHT, NOPDST, NOPTI> ALL; };
+		CASE_ENUM_TRAIT(E200Z710N3 , _) { typedef FieldSet<EMCP, ICR, NHR, DCLREE, DCLRCE, CICLRDE, MCCLRDE, NOPTI> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<EMCP, ICR, NHR, DCLREE, DCLRCE, CICLRDE, MCCLRDE, NOPTI> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
@@ -4844,12 +5611,38 @@ protected:
 	{
 		typedef PrivilegedSPR<HID1, 1009> Super;
 		
+		struct EMCP   : Field<EMCP  , 0 > {}; // Machine check signal enable
+		struct EBA    : Field<EBA   , 2 > {}; // Enable/disable 60x/MPX bus address bus parity checking
+		struct EBD    : Field<EBD   , 3 > {}; // Enable/disbale MPX/60x bus data parity checking
+		struct BCLK   : Field<BCLK  , 4 > {}; // CLK_OUT output enable and clock type selection
+		struct ECLK   : Field<ECLK  , 6 > {}; // CLK_OUT output enable and clock type selection
+		struct PAR    : Field<PAR   , 7 > {}; // Disable precharge of ARTRY#, SHD0#, SHD1# pins
+		struct DFS4   : Field<DFS4  , 8 > {}; // Dynamic frequency switching (DFS) divide-by-four mode
+		struct DFS2   : Field<DFS2  , 9 > {}; // Dynamic frequency switching (DFS) divide-by-two mode
+		struct PC5    : Field<PC5   , 14> {}; // PLL configuration bit 5
+		struct PC0    : Field<PC0   , 15> {}; // PLL configuration bit 0
+		struct PC1    : Field<PC1   , 16> {}; // PLL configuration bit 1
+		struct PC2    : Field<PC2   , 17> {}; // PLL configuration bit 2
+		struct PC3    : Field<PC3   , 18> {}; // PLL configuration bit 3
+		struct PC4    : Field<PC4   , 19> {}; // PLL configuration bit 4
+		struct SYNCBE : Field<SYNCBE, 20> {}; // Address broadcast enable for sync, eieio
+		struct ABE    : Field<ABE   , 21> {}; // Address broadcast enable for dcbf, dcbst, dcbi, icbi, tlbie, and tlbsync
+		
 		struct HP_NOR : Field<HP_NOR, 22> {}; // High priority elevation for normal and external interrupts
 		struct HP_NMI : Field<HP_NMI, 23> {}; // High priority elevation for NMI and critical interrupts
 		struct ATS    : Field<ATS   , 24> {}; // Atomic status
 		
 		SWITCH_ENUM_TRAIT(Model, _);
-		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<HP_NOR, HP_NMI, ATS> ALL; };
+		CASE_ENUM_TRAIT(MPC7441    , _) { typedef FieldSet<EMCP, EBA, EBD, BCLK, ECLK, PAR, PC5, PC0, PC1, PC2, PC3, PC4, SYNCBE, ABE> ALL; };
+		CASE_ENUM_TRAIT(MPC7445    , _) { typedef FieldSet<EMCP, EBA, EBD, BCLK, ECLK, PAR, PC5, PC0, PC1, PC2, PC3, PC4, SYNCBE, ABE> ALL; };
+		CASE_ENUM_TRAIT(MPC7447    , _) { typedef FieldSet<EMCP, EBA, EBD, BCLK, ECLK, PAR, PC5, PC0, PC1, PC2, PC3, PC4, SYNCBE, ABE> ALL; };
+		CASE_ENUM_TRAIT(MPC7447A   , _) { typedef FieldSet<EMCP, EBA, EBD, BCLK, ECLK, PAR, DFS2, PC5, PC0, PC1, PC2, PC3, PC4, SYNCBE, ABE> ALL; };
+		CASE_ENUM_TRAIT(MPC7448    , _) { typedef FieldSet<EMCP, EBA, EBD, BCLK, ECLK, PAR, DFS4, DFS2, PC5, PC0, PC1, PC2, PC3, PC4, SYNCBE, ABE> ALL; };
+		CASE_ENUM_TRAIT(MPC7450    , _) { typedef FieldSet<EMCP, EBA, EBD, BCLK, ECLK, PAR, PC5, PC0, PC1, PC2, PC3, PC4, SYNCBE, ABE> ALL; };
+		CASE_ENUM_TRAIT(MPC7451    , _) { typedef FieldSet<EMCP, EBA, EBD, BCLK, ECLK, PAR, PC5, PC0, PC1, PC2, PC3, PC4, SYNCBE, ABE> ALL; };
+		CASE_ENUM_TRAIT(MPC7455    , _) { typedef FieldSet<EMCP, EBA, EBD, BCLK, ECLK, PAR, PC5, PC0, PC1, PC2, PC3, PC4, SYNCBE, ABE> ALL; };
+		CASE_ENUM_TRAIT(MPC7457    , _) { typedef FieldSet<EMCP, EBA, EBD, BCLK, ECLK, PAR, PC5, PC0, PC1, PC2, PC3, PC4, SYNCBE, ABE> ALL; };
+		CASE_ENUM_TRAIT(E200Z710N3 , _) { typedef FieldSet<HP_NOR, HP_NMI, ATS> ALL; };
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<HP_NOR, HP_NMI, ATS> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
@@ -4859,10 +5652,53 @@ protected:
 	private:
 		void Init()
 		{
-			        this->SetName("HID1");           this->SetDescription("Hardware Implementation Dependent Register 1");
+			this->SetName("HID1"); this->SetDescription("Hardware Implementation Dependent Register 1");
+			
+			EMCP  ::SetName("EMCP");   EMCP  ::SetDescription("Machine check signal enable");
+			EBA   ::SetName("EBA");    EBA   ::SetDescription("Enable/disable 60x/MPX bus address bus parity checking");
+			EBD   ::SetName("EBD");    EBD   ::SetDescription("Enable/disbale MPX/60x bus data parity checking");
+			BCLK  ::SetName("BCLK");   BCLK  ::SetDescription("CLK_OUT output enable and clock type selection");
+			ECLK  ::SetName("ECLK");   ECLK  ::SetDescription("CLK_OUT output enable and clock type selection");
+			PAR   ::SetName("PAR");    PAR   ::SetDescription("Disable precharge of ARTRY#, SHD0#, SHD1# pins");
+			DFS4  ::SetName("DFS4");   DFS4  ::SetDescription("Dynamic frequency switching (DFS) divide-by-four mode");
+			DFS2  ::SetName("DFS2");   DFS2  ::SetDescription("Dynamic frequency switching (DFS) divide-by-two mode");
+			PC5   ::SetName("PC5");    PC5   ::SetDescription("PLL configuration bit 5");
+			PC0   ::SetName("PC0");    PC0   ::SetDescription("PLL configuration bit 0");
+			PC1   ::SetName("PC1");    PC1   ::SetDescription("PLL configuration bit 1");
+			PC2   ::SetName("PC2");    PC2   ::SetDescription("PLL configuration bit 2");
+			PC3   ::SetName("PC3");    PC3   ::SetDescription("PLL configuration bit 3");
+			PC4   ::SetName("PC4");    PC4   ::SetDescription("PLL configuration bit 4");
+			SYNCBE::SetName("SYNCBE"); SYNCBE::SetDescription("Address broadcast enable for sync, eieio");
+			ABE   ::SetName("ABE");    ABE   ::SetDescription("Address broadcast enable for dcbf, dcbst, dcbi, icbi, tlbie, and tlbsync");
+			
 			HP_NOR::SetName("HP_NOR"); HP_NOR::SetDescription("High priority elevation for normal and external interrupts");
 			HP_NMI::SetName("HP_NMI"); HP_NMI::SetDescription("High priority elevation for NMI and critical interrupts");
 			ATS   ::SetName("ATS");    ATS   ::SetDescription("Atomic status");
+		}
+	};
+	
+	// Instruction Address Breakpoint Register 
+	struct IABR : PrivilegedSPR<IABR, 1010>
+	{
+		typedef PrivilegedSPR<IABR, 1010> Super;
+		
+		struct Address : Field<Address, 0 , 29> {}; // Word instruction breakpoint address to be compared with EA[0-29] of the next instruction
+		struct BE      : Field<BE     , 30    > {}; // Breakpoint enabled
+		struct TE      : Field<TE     , 31    > {}; // Translation enable
+		
+		typedef FieldSet<Address, BE, TE> ALL;
+		
+		IABR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IABR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("IABR"); this->SetDescription("Instruction Address Breakpoint Register");
+			
+			Address::SetName("Address"); Address::SetDescription("Word instruction breakpoint address to be compared with EA[0-29] of the next instruction");
+			BE     ::SetName("BE");      BE     ::SetDescription("Breakpoint enabled");
+			TE     ::SetName("TE");      TE     ::SetDescription("Translation enable");
 		}
 	};
 
@@ -4964,6 +5800,54 @@ protected:
 		void Init() { this->SetName("DBDR"); this->SetDescription("Debug Data Register"); }
 	};
 
+	// Instruction Cache and Interrupt Control Register 
+	struct ICTRL : PrivilegedSPR<ICTRL, 1011>
+	{
+		typedef PrivilegedSPR<ICTRL, 1011> Super;
+		
+		struct CIRQ : Field<CIRQ, 0     > {}; // CPU interrupt request
+		struct EIEC : Field<EIEC, 4     > {}; // Instruction cache parity error enable
+		struct EDCE : Field<EDCE, 5     > {}; // Data cache parity error enable
+		struct EICP : Field<EICP, 23    > {}; // Enable instruction cache parity checking
+		struct ICWL : Field<ICWL, 24, 31> {}; // Instruction cache way lock
+		
+		typedef FieldSet<CIRQ, EIEC, EDCE, EICP, ICWL> ALL;
+		
+		ICTRL(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		ICTRL(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+		virtual void Reset() { this->Initialize(0x00000000); }
+	private:
+		void Init()
+		{
+			this->SetName("ICTRL"); this->SetDescription("Instruction Cache and Interrupt Control Register");
+			
+			CIRQ::SetName("CIRQ"); CIRQ::SetDescription("CPU interrupt request");
+			EIEC::SetName("EIEC"); EIEC::SetDescription("Instruction cache parity error enable");
+			EDCE::SetName("EDCE"); EDCE::SetDescription("Data cache parity error enable");
+			EICP::SetName("EICP"); EICP::SetDescription("Enable instruction cache parity checking");
+			ICWL::SetName("ICWL"); ICWL::SetDescription("Instruction cache way lock");
+		}
+	};
+	
+	// Load/Store Debug Register (undocumented)
+	struct LDSTDB : PrivilegedSPR<LDSTDB, 1012>
+	{
+		typedef PrivilegedSPR<LDSTDB, 1012> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		LDSTDB(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		LDSTDB(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("LDSTDB"); this->SetDescription("Load/Store Debug Register (undocumented)");
+		}
+	};
+
 	// Branch Unit Control and Status Register
 	struct BUCSR : PrivilegedSPR<BUCSR, 1013>
 	{
@@ -4995,6 +5879,33 @@ protected:
 		}
 	};
 
+	// Data Address Breakpoint Register 
+	struct DABR : PrivilegedSPR<DABR, 1013>
+	{
+		typedef PrivilegedSPR<DABR, 1013> Super;
+		
+		struct DAB : Field<DAB, 0 , 28> {}; // Data address breakpoint
+		struct BT  : Field<BT , 29    > {}; // Breakpoint translation enable
+		struct DW  : Field<DW , 30    > {}; // Data write enable
+		struct DR  : Field<DR , 31    > {}; // Data read enable
+		        
+		typedef FieldSet<DAB, BT, DW, DR> ALL;
+		
+		DABR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DABR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("DABR"); this->SetDescription("Data Address Breakpoint Register");
+			
+			DAB::SetName("DAB"); DAB::SetDescription("Data address breakpoint");
+			BT ::SetName("BT");  BT ::SetDescription("Breakpoint translation enable");
+			DW ::SetName("DW");  DW ::SetDescription("Data write enable");
+			DR ::SetName("DR");  DR ::SetDescription("Data read enable");
+		}
+	};
+	
 	// MPU0 Control and Status Register 0
 	struct MPU0CSR0 : PrivilegedSPR<MPU0CSR0, 1014>
 	{
@@ -5072,6 +5983,86 @@ protected:
 			MAVN   ::SetName("MAVN");    MAVN   ::SetDescription("MMU Architecture Version Number");
 		}
 	};
+	
+	// Memory Subsystem Control Register
+	struct MSSCR0 : PrivilegedSPR<MSSCR0, 1014>
+	{
+		typedef PrivilegedSPR<MSSCR0, 1014> Super;
+		
+		struct DTQ     : Field<DTQ    , 3 , 5                                > {}; // DTQ size
+		struct EIDIS   : Field<EIDIS  , 7                                    > {}; // Disable external intervention in MPX bus mode
+		struct L3TCEXT : Field<L3TCEXT, 10                                   > {}; // L3 turn around clockcount extension
+		struct ABD     : Field<ABD    , 11                                   > {}; // Address bus driven mode
+		struct L3TCEN  : Field<L3TCEN , 12                                   > {}; // L3 turnaround clock enable
+		struct L3TC    : Field<L3TC   , 13, 14                               > {}; // L3 turnaround clock count
+		struct BMODE   : Field<BMODE  , 16, 17, unisim::util::reg::core::SW_R> {}; // Bus mode
+		struct ID      : Field<ID     , 26                                   > {}; // Processor identification
+		struct L2PFE   : Field<L2PFE  , 30, 31                               > {}; // L2 prefetching enabled
+		
+		typedef FieldSet<DTQ, EIDIS, L3TCEXT, ABD, L3TCEN, L3TC, BMODE, ID, L2PFE> ALL;
+		
+		MSSCR0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MSSCR0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("MSSCR0"); this->SetDescription("Memory Subsystem Control Register");
+			
+			DTQ    ::SetName("DTQ");     DTQ    ::SetDescription("DTQ size");
+			EIDIS  ::SetName("EIDIS");   EIDIS  ::SetDescription("Disable external intervention in MPX bus mode");
+			L3TCEXT::SetName("L3TCEXT"); L3TCEXT::SetDescription("L3 turn around clockcount extension");
+			ABD    ::SetName("ABD");     ABD    ::SetDescription("Address bus driven mode");
+			L3TCEN ::SetName("L3TCEN");  L3TCEN ::SetDescription("L3 turnaround clock enable");
+			L3TC   ::SetName("L3TC");    L3TC   ::SetDescription("L3 turnaround clock count");
+			BMODE  ::SetName("BMODE");   BMODE  ::SetDescription("Bus mode");
+			ID     ::SetName("ID");      ID     ::SetDescription("Processor identification");
+			L2PFE  ::SetName("L2PFE");   L2PFE  ::SetDescription("L2 prefetching enabled");
+		}
+	};
+	
+	// Memory Subsystem Status Register
+	struct MSSSR0 : PrivilegedSPR<MSSCR0, 1015>
+	{
+		typedef PrivilegedSPR<MSSCR0, 1015> Super;
+		
+		struct L2TAG : Field<L2TAG, 13> {}; // L2 tag parity error
+		struct L2DAT : Field<L2DAT, 14> {}; // L2 data parity error
+		struct L3TAG : Field<L3TAG, 15> {}; // L3 tag parity error
+		struct L3DAT : Field<L3DAT, 16> {}; // L3 data parity error
+		struct APE   : Field<APE  , 17> {}; // Address bus parity error
+		struct DPE   : Field<DPE  , 18> {}; // Data bus parity error
+		struct TEA   : Field<TEA  , 19> {}; // Bus Transfer error aknownledge
+		
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(MPC7441 , _) { typedef FieldSet<L2TAG, L2DAT, L3TAG, L3DAT, APE, DPE, TEA> ALL; };
+		CASE_ENUM_TRAIT(MPC7445 , _) { typedef FieldSet<L2TAG, L2DAT, L3TAG, L3DAT, APE, DPE, TEA> ALL; };
+		CASE_ENUM_TRAIT(MPC7447 , _) { typedef FieldSet<L2TAG, L2DAT, L3TAG, L3DAT, APE, DPE, TEA> ALL; };
+		CASE_ENUM_TRAIT(MPC7447A, _) { typedef FieldSet<L2TAG, L2DAT, L3TAG, L3DAT, APE, DPE, TEA> ALL; };
+		CASE_ENUM_TRAIT(MPC7448 , _) { typedef FieldSet<L2TAG, L2DAT, APE, DPE, TEA> ALL; };
+		CASE_ENUM_TRAIT(MPC7450 , _) { typedef FieldSet<L2TAG, L2DAT, L3TAG, L3DAT, APE, DPE, TEA> ALL; };
+		CASE_ENUM_TRAIT(MPC7451 , _) { typedef FieldSet<L2TAG, L2DAT, L3TAG, L3DAT, APE, DPE, TEA> ALL; };
+		CASE_ENUM_TRAIT(MPC7455 , _) { typedef FieldSet<L2TAG, L2DAT, L3TAG, L3DAT, APE, DPE, TEA> ALL; };
+		CASE_ENUM_TRAIT(MPC7457 , _) { typedef FieldSet<L2TAG, L2DAT, L3TAG, L3DAT, APE, DPE, TEA> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
+		
+		MSSSR0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MSSSR0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("MSSSR0"); this->SetDescription("Memory Subsystem Status Register");
+			
+			L2TAG::SetName("L2TAG"); L2TAG::SetDescription("L2 tag parity error");
+			L2DAT::SetName("L2DAT"); L2DAT::SetDescription("L2 data parity error");
+			L3TAG::SetName("L3TAG"); L3TAG::SetDescription("L3 tag parity error");
+			L3DAT::SetName("L3DAT"); L3DAT::SetDescription("L3 data parity error");
+			APE  ::SetName("APE");   APE  ::SetDescription("Address bus parity error");
+			DPE  ::SetName("DPE");   DPE  ::SetDescription("Data bus parity error");
+			TEA  ::SetName("TEA");   TEA  ::SetDescription("Bus Transfer error aknownledge");
+		}
+	};
 
 	// L1 Flush and Invalidate Control Register 0
 	struct L1FINV0 : PrivilegedSPR<L1FINV0, 1016>
@@ -5101,11 +6092,195 @@ protected:
 			CCMD::SetName("CCMD"); CCMD::SetDescription("CCMD");
 		}
 	};
+	
+	// Load/Store Control Register
+	struct LDSTCR : PrivilegedSPR<LDSTCR, 1016>
+	{
+		typedef PrivilegedSPR<LDSTCR, 1016> Super;
+		
+		struct DCWL : Field<DCWL, 24, 31> {}; // Data cache way lock
+		
+		typedef FieldSet<DCWL> ALL;
+		
+		LDSTCR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		LDSTCR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("LDSTCR"); this->SetDescription("Load/Store Control Register");
+			
+			DCWL::SetName("DCWL"); DCWL::SetDescription("Data cache way lock");
+		}
+	};
+	
+	// L2 Cache Control Register
+	struct L2CR : PrivilegedSPR<L2CR, 1017>
+	{
+		typedef PrivilegedSPR<L2CR, 1017> Super;
+		
+		struct L2E    : Field<L2E   , 0                                    > {}; // L2 enable
+		struct L2PE   : Field<L2PE  , 1                                    > {}; // L2 (tag and ) data parity checking enable
+		struct L2I    : Field<L2I   , 10                                   > {}; // L2 global invalidate
+		struct L2IO   : Field<L2IO  , 11                                   > {}; // L2 instruction-only
+		struct L3OH0  : Field<L3OH0 , 12                                   > {}; // L3 output hold 0
+		struct L2DO   : Field<L2DO  , 15                                   > {}; // L2 data only
+		struct L2REP  : Field<L2REP , 19                                   > {}; // L2 replacement algorithm
+		struct L2HWF  : Field<L2HWF , 20                                   > {}; // L2 hardware flush
+		struct LVRAME : Field<LVRAME, 24                                   > {}; // LVRAM enable
+		struct LVRAMM : Field<LVRAMM, 25, 27, unisim::util::reg::core::SW_R> {}; // LVRAM mode
+		
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(MPC7441 , _) { typedef FieldSet<L2E, L2PE, L2I, L2IO, L2DO, L2REP, L2HWF> ALL; };
+		CASE_ENUM_TRAIT(MPC7445 , _) { typedef FieldSet<L2E, L2PE, L2I, L2IO, L2DO, L2REP, L2HWF> ALL; };
+		CASE_ENUM_TRAIT(MPC7447 , _) { typedef FieldSet<L2E, L2PE, L2I, L2IO, L2DO, L2REP, L2HWF> ALL; };
+		CASE_ENUM_TRAIT(MPC7447A, _) { typedef FieldSet<L2E, L2PE, L2I, L2IO, L2DO, L2REP, L2HWF> ALL; };
+		CASE_ENUM_TRAIT(MPC7448 , _) { typedef FieldSet<L2E, L2PE, L2I, L2IO, L2DO, L2REP, L2HWF, LVRAME, LVRAMM> ALL; };
+		CASE_ENUM_TRAIT(MPC7450 , _) { typedef FieldSet<L2E, L2PE, L2I, L2IO, L2DO, L2REP, L2HWF> ALL; };
+		CASE_ENUM_TRAIT(MPC7451 , _) { typedef FieldSet<L2E, L2PE, L2I, L2IO, L2DO, L2REP, L2HWF> ALL; };
+		CASE_ENUM_TRAIT(MPC7455 , _) { typedef FieldSet<L2E, L2PE, L2I, L2IO, L3OH0, L2DO, L2REP, L2HWF> ALL; };
+		CASE_ENUM_TRAIT(MPC7457 , _) { typedef FieldSet<L2E, L2PE, L2I, L2IO, L2DO, L2REP, L2HWF> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
+		
+		L2CR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L2CR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+	private:
+		void Init()
+		{
+			this->SetName("L2CR"); this->SetDescription("L2 Cache Control Register");
+			
+			L2E   ::SetName("L2E");    L2E   ::SetDescription("L2 enable");
+			
+			L2PE  ::SetName("L2PE");
+			if(CONFIG::MODEL == MPC7448)
+			{
+				L2PE  ::SetDescription("L2 data parity checking enable");
+			}
+			else
+			{
+				L2PE  ::SetDescription("L2 tag and data parity checking enable");
+			}
+			
+			L2I   ::SetName("L2I");    L2I   ::SetDescription("L2 global invalidate");
+			L2IO  ::SetName("L2IO");   L2IO  ::SetDescription("L2 instruction-only");
+			L3OH0 ::SetName("L3OH0");  L3OH0 ::SetDescription("L3 output hold 0");
+			L2DO  ::SetName("L2DO");   L2DO  ::SetDescription("L2 data only");
+			L2REP ::SetName("L2REP");  L2REP ::SetDescription("L2 replacement algorithm");
+			L2HWF ::SetName("L2HWF");  L2HWF ::SetDescription("L2 hardware flush");
+			LVRAME::SetName("LVRAME"); LVRAME::SetDescription("LVRAM enable");
+			LVRAMM::SetName("LVRAMM"); LVRAMM::SetDescription("LVRAM mode");
+			
+			
+		}
+	};
+	
+	// L3 Cache Control Register
+	struct L3CR : PrivilegedSPR<L3CR, 1018>
+	{
+		typedef PrivilegedSPR<L3CR, 1018> Super;
+		
+		struct L3E       : Field<L3E      , 0     > {}; // L3 enable
+		struct L3PE      : Field<L3PE     , 1     > {}; // L3 data parity checking enable
+		struct L3APE     : Field<L3APE    , 2     > {}; // L3 address parity checking enable
+		struct L3SIZ     : Field<L3SIZ    , 3     > {}; // L3 size
+		struct L3CLKEN   : Field<L3CLKEN  , 4     > {}; // Enables the L3_CLK[0:1] signals
+		struct L3CLK     : Field<L3CLK    , 6, 8  > {}; // L3 clock ratio
+		struct L3IO      : Field<L3IO     , 9     > {}; // L3 instruction-only mode
+		struct L3CLKEXT  : Field<L3CLKEXT , 10    > {}; // L3 clock ratio extension
+		struct L3CKSPEXT : Field<L3CKSPEXT, 11    > {}; // L3 clock sample point extension
+		struct L3OH1     : Field<L3OH1    , 12    > {}; // L3 output hold 1
+		struct L3SPO     : Field<L3SPO    , 13    > {}; // L3 sample point override
+		struct L3CKSP    : Field<L3CKSP   , 14, 15> {}; // L3 clock sample point
+		struct L3PSP     : Field<L3PSP    , 16, 18> {}; // L3 P-clock sample point
+		struct L3REP     : Field<L3REP    , 19    > {}; // L3 replacement algorithm
+		struct L3HWF     : Field<L3HWF    , 20    > {}; // L3 hardware flush
+		struct L3I       : Field<L3I      , 21    > {}; // L3 global invalidate
+		struct L3RT      : Field<L3RT     , 22, 23> {}; // L3 SRAM type
+		struct L3NIRCA   : Field<L3NIRCA  , 24    > {}; // L3 non-integer ratio clock adjustment for the SRAM
+		struct L3DO      : Field<L3DO     , 25    > {}; // L3 data-only mode
+		struct PMEN      : Field<PMEN     , 29    > {}; // Private memory enable
+		struct PMSIZ     : Field<PMSIZ    , 30, 31> {}; // Preivate memory size
+		
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(MPC7441 , _) { typedef FieldSet<L3E, L3PE, L3APE, L3SIZ, L3CLKEN, L3CLK, L3IO, L3SPO, L3CKSP, L3PSP, L3REP, L3HWF, L3I, L3RT, L3NIRCA, L3DO, PMEN, PMSIZ> ALL; };
+		CASE_ENUM_TRAIT(MPC7445 , _) { typedef FieldSet<L3E, L3PE, L3APE, L3SIZ, L3CLKEN, L3CLK, L3IO, L3SPO, L3CKSP, L3PSP, L3REP, L3HWF, L3I, L3RT, L3NIRCA, L3DO, PMEN, PMSIZ> ALL; };
+		CASE_ENUM_TRAIT(MPC7447 , _) { typedef FieldSet<L3E, L3PE, L3APE, L3SIZ, L3CLKEN, L3CLK, L3IO, L3SPO, L3CKSP, L3PSP, L3REP, L3HWF, L3I, L3RT, L3NIRCA, L3DO, PMEN, PMSIZ> ALL; };
+		CASE_ENUM_TRAIT(MPC7447A, _) { typedef FieldSet<L3E, L3PE, L3APE, L3SIZ, L3CLKEN, L3CLK, L3IO, L3SPO, L3CKSP, L3PSP, L3REP, L3HWF, L3I, L3RT, L3NIRCA, L3DO, PMEN, PMSIZ> ALL; };
+		CASE_ENUM_TRAIT(MPC7448 , _) { typedef FieldSet<L3E, L3PE, L3APE, L3SIZ, L3CLKEN, L3CLK, L3IO, L3SPO, L3CKSP, L3PSP, L3REP, L3HWF, L3I, L3RT, L3NIRCA, L3DO, PMEN, PMSIZ> ALL; };
+		CASE_ENUM_TRAIT(MPC7450 , _) { typedef FieldSet<L3E, L3PE, L3APE, L3SIZ, L3CLKEN, L3CLK, L3IO, L3SPO, L3CKSP, L3PSP, L3REP, L3HWF, L3I, L3RT, L3NIRCA, L3DO, PMEN, PMSIZ> ALL; };
+		CASE_ENUM_TRAIT(MPC7451 , _) { typedef FieldSet<L3E, L3PE, L3APE, L3SIZ, L3CLKEN, L3CLK, L3IO, L3SPO, L3CKSP, L3PSP, L3REP, L3HWF, L3I, L3RT, L3NIRCA, L3DO, PMEN, PMSIZ> ALL; };
+		CASE_ENUM_TRAIT(MPC7455 , _) { typedef FieldSet<L3E, L3PE, L3APE, L3SIZ, L3CLKEN, L3CLK, L3IO, L3OH1, L3SPO, L3CKSP, L3PSP, L3REP, L3HWF, L3I, L3RT, L3NIRCA, L3DO, PMEN, PMSIZ> ALL; };
+		CASE_ENUM_TRAIT(MPC7457 , _) { typedef FieldSet<L3E, L3PE, L3APE, L3SIZ, L3CLKEN, L3CLK, L3IO, L3CLKEXT, L3CKSPEXT, L3SPO, L3CKSP, L3PSP, L3REP, L3HWF, L3I, L3RT, L3NIRCA, L3DO, PMEN, PMSIZ> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
+		
+		L3CR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L3CR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+	private:
+		void Init()
+		{
+			L3CR::SetName("L3CR"); L3CR::SetDescription("L3 Cache Control Register");
+			
+			L3E      ::SetName("L3E");       L3E      ::SetDescription("L3 enable");
+			L3PE     ::SetName("L3PE");      L3PE     ::SetDescription("L3 data parity checking enable");
+			L3APE    ::SetName("L3APE");     L3APE    ::SetDescription("L3 address parity checking enable");
+			L3SIZ    ::SetName("L3SIZ");     L3SIZ    ::SetDescription("L3 size");
+			L3CLKEN  ::SetName("L3CLKEN");   L3CLKEN  ::SetDescription("Enables the L3_CLK[0:1] signals");
+			L3CLK    ::SetName("L3CLK");     L3CLK    ::SetDescription("L3 clock ratio");
+			L3IO     ::SetName("L3IO");      L3IO     ::SetDescription("L3 instruction-only mode");
+			L3CLKEXT ::SetName("L3CLKEXT");  L3CLKEXT ::SetDescription("L3 clock ratio extension");
+			L3CKSPEXT::SetName("L3CKSPEXT"); L3CKSPEXT::SetDescription("L3 clock sample point extension");
+			L3OH1    ::SetName("L3OH1");     L3OH1    ::SetDescription("L3 output hold 1");
+			L3SPO    ::SetName("L3SPO");     L3SPO    ::SetDescription("L3 sample point override");
+			L3CKSP   ::SetName("L3CKSP");    L3CKSP   ::SetDescription("L3 clock sample point");
+			L3PSP    ::SetName("L3PSP");     L3PSP    ::SetDescription("L3 P-clock sample point");
+			L3REP    ::SetName("L3REP");     L3REP    ::SetDescription("L3 replacement algorithm");
+			L3HWF    ::SetName("L3HWF");     L3HWF    ::SetDescription("L3 hardware flush");
+			L3I      ::SetName("L3I");       L3I      ::SetDescription("L3 global invalidate");
+			L3RT     ::SetName("L3RT");      L3RT     ::SetDescription("L3 SRAM type");
+			L3NIRCA  ::SetName("L3NIRCA");   L3NIRCA  ::SetDescription("L3 non-integer ratio clock adjustment for the SRAM");
+			L3DO     ::SetName("L3DO");      L3DO     ::SetDescription("L3 data-only mode");
+			PMEN     ::SetName("PMEN");      PMEN     ::SetDescription("Private memory enable");
+			PMSIZ    ::SetName("PMSIZ");     PMSIZ    ::SetDescription("Preivate memory size");
+		}
+	};
+	
+	// Instruction Cache Throttling Control Register
+	struct ICTC : PrivilegedSPR<ICTC, 1019>
+	{
+		typedef PrivilegedSPR<ICTC, 1019> Super;
+		
+		struct INTERVAL : Field<INTERVAL, 23, 30> {}; // Instruction forwarding interval expressed in processor clocks
+		struct E        : Field<E       , 31    > {}; // Enable instruction throttling
+		
+		typedef FieldSet<INTERVAL, E> ALL;
+		
+		ICTC(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		ICTC(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+		
+	private:
+		void Init()
+		{
+			ICTC::SetName("ICTC"); ICTC::SetDescription("Instruction Cache Throttling Control Register");
+			
+			INTERVAL::SetName("INTERVAL"); INTERVAL::SetDescription("Instruction forwarding interval expressed in processor clocks");
+			E       ::SetName("E");        E       ::SetDescription("Enable instruction throttling");
+		}
+	};
+
+	SWITCH_ENUM_TRAIT(Model, SVR_Mapping);
+	CASE_ENUM_TRAIT(MPC7448, SVR_Mapping) { static const unsigned int SPR_NUM = 286; };
+	CASE_ENUM_TRAIT(E200Z425BN3, SVR_Mapping) { static const unsigned int SPR_NUM = 1023; };
+	CASE_ENUM_TRAIT(E200Z710N3, SVR_Mapping) { static const unsigned int SPR_NUM = 1023; };
 
 	// System Version Register
-	struct SVR : ReadOnlyPrivilegedSPR<SVR, 1023>
+	struct SVR : ReadOnlyPrivilegedSPR<SVR, SVR_Mapping<CONFIG::MODEL>::SPR_NUM>
 	{
-		typedef ReadOnlyPrivilegedSPR<SVR, 1023> Super;
+		typedef ReadOnlyPrivilegedSPR<SVR, SVR_Mapping<CONFIG::MODEL>::SPR_NUM> Super;
 		
 		struct System_Version : Field<System_Version, 0, 31> {};
 		
@@ -5364,6 +6539,814 @@ protected:
 	};
 
 	// Nexus 3 DCRs are voluntary missing
+	
+	//  Performance Monitor Counter registers 1-6
+	SWITCH_ENUM_TRAIT(unsigned int, PMC_Mapping);
+	CASE_ENUM_TRAIT(1, PMC_Mapping) { static const unsigned int SPR_NUM = 953; };
+	CASE_ENUM_TRAIT(2, PMC_Mapping) { static const unsigned int SPR_NUM = 954; };
+	CASE_ENUM_TRAIT(3, PMC_Mapping) { static const unsigned int SPR_NUM = 957; };
+	CASE_ENUM_TRAIT(4, PMC_Mapping) { static const unsigned int SPR_NUM = 958; };
+	CASE_ENUM_TRAIT(5, PMC_Mapping) { static const unsigned int SPR_NUM = 945; };
+	CASE_ENUM_TRAIT(6, PMC_Mapping) { static const unsigned int SPR_NUM = 946; };
+	
+	template <unsigned int PMC_NUM>
+	struct PMC : PrivilegedSPR<PMC<PMC_NUM>, PMC_Mapping<PMC_NUM>::SPR_NUM>
+	{
+		typedef PrivilegedSPR<PMC<PMC_NUM>, PMC_Mapping<PMC_NUM>::SPR_NUM> Super;
+		
+		struct OV            : Field<OV           , 0> {};      // Overflow
+		struct Counter_Value : Field<Counter_Value, 1, 31> {};  // Indicates the number of occurrences of the specified event
+		
+		typedef FieldSet<OV, Counter_Value> ALL;
+		
+		PMC(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		PMC(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			std::stringstream name_sstr;
+			name_sstr << "PMC" << PMC_NUM;
+			
+			std::stringstream desc_sstr;
+			desc_sstr << "Performance Monitor Counter register" << PMC_NUM;
+			
+						this->SetName(name_sstr.str());                         this->SetDescription(desc_sstr.str());
+			OV           ::SetName("OV");            OV           ::SetDescription("Overflow");
+			Counter_Value::SetName("Counter_Value"); Counter_Value::SetDescription("Indicates the number of occurrences of the specified event");
+		}
+	};
+	
+	typedef PMC<1> PMC1;
+	typedef PMC<2> PMC2;
+	typedef PMC<3> PMC3;
+	typedef PMC<4> PMC4;
+	typedef PMC<5> PMC5;
+	typedef PMC<6> PMC6;
+
+	// User Performance Monitor Counter registers 1-6
+	SWITCH_ENUM_TRAIT(unsigned int, UPMC_Mapping);
+	CASE_ENUM_TRAIT(1, UPMC_Mapping) { static const unsigned int SPR_NUM = 937; };
+	CASE_ENUM_TRAIT(2, UPMC_Mapping) { static const unsigned int SPR_NUM = 938; };
+	CASE_ENUM_TRAIT(3, UPMC_Mapping) { static const unsigned int SPR_NUM = 941; };
+	CASE_ENUM_TRAIT(4, UPMC_Mapping) { static const unsigned int SPR_NUM = 942; };
+	CASE_ENUM_TRAIT(5, UPMC_Mapping) { static const unsigned int SPR_NUM = 929; };
+	CASE_ENUM_TRAIT(6, UPMC_Mapping) { static const unsigned int SPR_NUM = 930; };
+	
+	template <unsigned int PMC_NUM>
+	struct UPMC : ReadOnlyUSPR<PMC<PMC_NUM>, UPMC_Mapping<PMC_NUM>::SPR_NUM>
+	{
+		typedef ReadOnlyUSPR<PMC<PMC_NUM>, UPMC_Mapping<PMC_NUM>::SPR_NUM> Super;
+		
+		UPMC(typename CONFIG::CPU *_cpu, PMC<PMC_NUM> *pmc) : Super(_cpu, pmc) {}
+	};
+	
+	typedef UPMC<1> UPMC1;
+	typedef UPMC<2> UPMC2;
+	typedef UPMC<3> UPMC3;
+	typedef UPMC<4> UPMC4;
+	typedef UPMC<5> UPMC5;
+	typedef UPMC<6> UPMC6;
+	
+	// Monitor Mode Control Register 0
+	struct MMCR0 : PrivilegedSPR<MMCR0, 952>
+	{
+		typedef PrivilegedSPR<MMCR0, 952> Super;
+		
+		struct FC        : Field<FC       , 0     > {}; // Freeze counters
+		struct FCS       : Field<FCS      , 1     > {}; // Freeze counters in supervisor mode
+		struct FCP       : Field<FCP      , 2     > {}; // Freeze counters in user mode
+		struct FCM1      : Field<FCM1     , 3     > {}; // Freeze counters while mark=1
+		struct FCM0      : Field<FCM0     , 4     > {}; // Freeze counters while mark=0
+		struct PMXE      : Field<PMXE     , 5     > {}; // Performance monitor exception enable
+		struct FCECE     : Field<FCECE    , 6     > {}; // Freeze counters on enabled condition or event
+		struct TBSEL     : Field<TBSEL    , 7 , 8 > {}; // Time base selector
+		struct TBEE      : Field<TBEE     , 9     > {}; // Time base event enable
+		struct THRESHOLD : Field<THRESHOLD, 10, 15> {}; // Threshold
+		struct PMC1CE    : Field<PMC1CE   , 16    > {}; // PMC1 condition enable
+		struct PMCnCE    : Field<PMCnCE   , 17    > {}; // PMCn condition enable
+		struct TRIGGER   : Field<TRIGGER  , 18    > {}; // Trigger
+		struct PMC1SEL   : Field<PMC1SEL  , 19, 25> {}; // PMC1 selector
+		struct PMC2SEL   : Field<PMC2SEL  , 26, 31> {}; // PMC2 selector
+		
+		typedef FieldSet<FC, FCS, FCP, FCM1, FCM0, PMXE, FCECE, TBSEL, TBEE, THRESHOLD, PMC1CE, PMCnCE, TRIGGER, PMC1SEL, PMC2SEL> ALL;
+	
+		MMCR0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MMCR0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("MMCR0"); this->SetDescription("Monitor Mode Control Register 0");
+			
+			FC       ::SetName("FC");        FC       ::SetDescription("Freeze counters");
+			FCS      ::SetName("FCS");       FCS      ::SetDescription("Freeze counters in supervisor mode");
+			FCP      ::SetName("FCP");       FCP      ::SetDescription("Freeze counters in user mode");
+			FCM1     ::SetName("FCM1");      FCM1     ::SetDescription("Freeze counters while mark=1");
+			FCM0     ::SetName("FCM0");      FCM0     ::SetDescription("Freeze counters while mark=0");
+			PMXE     ::SetName("PMXE");      PMXE     ::SetDescription("Performance monitor exception enable");
+			FCECE    ::SetName("FCECE");     FCECE    ::SetDescription("Freeze counters on enabled condition or event");
+			TBSEL    ::SetName("TBSEL");     TBSEL    ::SetDescription("Time base selector");
+			TBEE     ::SetName("TBEE");      TBEE     ::SetDescription("Time base event enable");
+			THRESHOLD::SetName("THRESHOLD"); THRESHOLD::SetDescription("Threshold");
+			PMC1CE   ::SetName("PMC1CE");    PMC1CE   ::SetDescription("PMC1 condition enable");
+			PMCnCE   ::SetName("PMCnCE");    PMCnCE   ::SetDescription("PMCn condition enable");
+			TRIGGER  ::SetName("TRIGGER");   TRIGGER  ::SetDescription("Trigger");
+			PMC1SEL  ::SetName("PMC1SEL");   PMC1SEL  ::SetDescription("PMC1 selector");
+			PMC2SEL  ::SetName("PMC2SEL");   PMC2SEL  ::SetDescription("PMC2 selector");
+		}
+	};
+	
+	// Monitor Mode Control Register 1
+	struct MMCR1 : PrivilegedSPR<MMCR1, 956>
+	{
+		typedef PrivilegedSPR<MMCR1, 956> Super;
+		
+		struct PMC3SELECT : Field<PMC3SELECT, 0 , 4 > {}; // PMC3 selector
+		struct PMC4SELECT : Field<PMC4SELECT, 5 , 9 > {}; // PMC4 selector
+		struct PMC5SELECT : Field<PMC5SELECT, 10, 14> {}; // PMC5 selector
+		struct PMC6SELECT : Field<PMC6SELECT, 15, 20> {}; // PMC6 selector
+		
+		typedef FieldSet<PMC3SELECT, PMC4SELECT, PMC5SELECT, PMC6SELECT> ALL;
+		
+		MMCR1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MMCR1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("MMCR1"); this->SetDescription("Monitor Mode Control Register 1");
+			
+			PMC3SELECT::SetName("PMC3SELECT"); PMC3SELECT::SetDescription("PMC3 selector");
+			PMC4SELECT::SetName("PMC4SELECT"); PMC4SELECT::SetDescription("PMC4 selector");
+			PMC5SELECT::SetName("PMC5SELECT"); PMC5SELECT::SetDescription("PMC5 selector");
+			PMC6SELECT::SetName("PMC6SELECT"); PMC6SELECT::SetDescription("PMC6 selector");
+		}
+	};
+	
+	// Monitor Mode Control Register 2
+	struct MMCR2 : PrivilegedSPR<MMCR2, 944>
+	{
+		typedef PrivilegedSPR<MMCR2, 944> Super;
+		
+		struct THRESHMULT : Field<THRESHMULT, 0> {}; // Threshold multiplier
+		
+		typedef FieldSet<THRESHMULT> ALL;
+		
+		MMCR2(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MMCR2(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("MMCR2"); this->SetDescription("Monitor Mode Control Register 2");
+			
+			THRESHMULT::SetName("THRESHMULT"); THRESHMULT::SetDescription("Threshold multiplier");
+		}
+	};
+	
+	// User Monitor Control Register 0
+	struct UMMCR0 : ReadOnlyUSPR<MMCR0, 936>
+	{
+		typedef ReadOnlyUSPR<MMCR0, 936> Super;
+		
+		UMMCR0(typename CONFIG::CPU *_cpu, MMCR0 *mmcr0) : Super(_cpu, mmcr0) {}
+	};
+	
+	// User Monitor Control Register 1
+	struct UMMCR1 : ReadOnlyUSPR<MMCR1, 940>
+	{
+		typedef ReadOnlyUSPR<MMCR1, 940> Super;
+		
+		UMMCR1(typename CONFIG::CPU *_cpu, MMCR1 *mmcr1) : Super(_cpu, mmcr1) {}
+	};
+	
+	// User Monitor Control Register 2
+	struct UMMCR2 : ReadOnlyUSPR<MMCR2, 928>
+	{
+		typedef ReadOnlyUSPR<MMCR2, 928> Super;
+		
+		UMMCR2(typename CONFIG::CPU *_cpu, MMCR2 *mmcr2) : Super(_cpu, mmcr2) {}
+	};
+	
+	// Sampled Instruction Address Register
+	struct SIAR : PrivilegedSPR<SIAR, 955>
+	{
+		typedef PrivilegedSPR<SIAR, 955> Super;
+		
+		struct Instruction_Address : Field<Instruction_Address, 0, 31> {}; // Instruction Address
+		
+		typedef FieldSet<Instruction_Address> ALL;
+		
+		SIAR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		SIAR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("SIAR"); this->SetDescription("Sampled Instruction Address Register");
+			
+			Instruction_Address::SetName("Instruction_Address"); Instruction_Address::SetDescription("Instruction Address");
+		}
+	};
+	
+	// User Sampled Instruction Address Register
+	struct USIAR : ReadOnlyUSPR<SIAR, 939>
+	{
+		typedef ReadOnlyUSPR<SIAR, 939> Super;
+		
+		USIAR(typename CONFIG::CPU *_cpu, SIAR *siar) : Super(_cpu, siar) {}
+	};
+	
+	// Breakpoint Address Mask Register
+	struct BAMR : PrivilegedSPR<BAMR, 951>
+	{
+		typedef PrivilegedSPR<BAMR, 951> Super;
+		
+		struct MASK : Field<MASK, 0, 29> {}; // Breakpoint Address Mask
+		
+		typedef FieldSet<MASK> ALL;
+		
+		BAMR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		BAMR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("BAMR"); this->SetDescription("Breakpoint Address Mask Register");
+		}
+	};
+	
+	// TLB Miss Register
+	struct TLBMISS : PrivilegedSPR<TLBMISS, 980>
+	{
+		typedef PrivilegedSPR<TLBMISS, 980> Super;
+		
+		struct PAGE : Field<PAGE, 0 , 30, unisim::util::reg::core::SW_R> {}; // Effective page address
+		struct LRU  : Field<LRU , 31, 31, unisim::util::reg::core::SW_R> {}; // Least recently used way of the addressed TLB set
+		
+		typedef FieldSet<PAGE, LRU> ALL;
+		
+		TLBMISS(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		TLBMISS(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("TLBMISS"); this->SetDescription("TLB Miss Register");
+			
+			PAGE::SetName("PAGE"); PAGE::SetDescription("Effective page address");
+			LRU ::SetName("LRU "); LRU ::SetDescription("Least recently used way of the addressed TLB set");
+		}
+	};
+	
+	// Page Table Entry High Register 
+	struct PTEHI : PrivilegedSPR<PTEHI, 981>
+	{
+		typedef PrivilegedSPR<PTEHI, 981> Super;
+		
+		struct V    : Field<V   , 0     > {}; // Entry valid
+		struct VSID : Field<VSID, 1 , 24> {}; // Virtual segment ID
+		struct API  : Field<API , 26, 31> {}; // Abbreviated page index
+		
+		typedef FieldSet<V, VSID, API> ALL;
+		
+		PTEHI(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		PTEHI(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("PTEHI"); this->SetDescription("Page Table Entry High Register");
+			
+			V   ::SetName("V");    V   ::SetDescription("Entry valid");
+			VSID::SetName("VSID"); VSID::SetDescription("Virtual segment ID");
+			API ::SetName("API");  API ::SetDescription("Abbreviated page index");
+		}
+	};
+	
+	// Page Table Entry Low Register 
+	struct PTELO : PrivilegedSPR<PTELO, 982>
+	{
+		typedef PrivilegedSPR<PTELO, 982> Super;
+		
+		struct RPN  : Field<RPN , 0 , 19> {}; // Physical page number
+		struct XPN  : Field<XPN , 20, 22> {}; // Extended page number
+		struct C    : Field<C   , 24    > {}; // Changed bit
+		struct WIMG : Field<WIMG, 25, 28> {}; // Memory/cache control bits
+		struct W    : Field<W   , 25    > {}; // Write-Through
+		struct I    : Field<I   , 26    > {}; // Caching-Inhibited
+		struct M    : Field<M   , 27    > {}; // Memory coherence
+		struct G    : Field<G   , 28    > {}; // Guarded
+		struct X    : Field<X   , 29    > {}; // Extended page number
+		struct PP   : Field<PP  , 30, 31> {}; // Page protection bits
+		
+		typedef FieldSet<RPN, XPN, C, WIMG, X, PP> ALL;
+		
+		PTELO(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		PTELO(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("PTELO"); this->SetDescription("Page Table Entry Low Register");
+			
+			RPN ::SetName("RPN");  RPN ::SetDescription("Physical page number");
+			XPN ::SetName("XPN");  XPN ::SetDescription("Extended page number");
+			C   ::SetName("C");    C   ::SetDescription("Changed bit");
+			WIMG::SetName("WIMG"); WIMG::SetDescription("Memory/cache control bits");
+			X   ::SetName("X");    X   ::SetDescription("Extended page number");
+			PP  ::SetName("PP");   PP  ::SetDescription("Page protection bits");
+		}
+	};
+	
+	// L3 Private Memory Address Register
+	struct L3PM : PrivilegedSPR<L3PM, 983>
+	{
+		typedef PrivilegedSPR<L3PM, 983> Super;
+		
+		struct L3PMADDR : Field<L3PMADDR, 0, 15> {}; // L3 base address of L3 private memory
+		
+		typedef FieldSet<L3PMADDR> ALL;
+
+		L3PM(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L3PM(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L3PM"); this->SetDescription("L3 Private Memory Address Register");
+			
+			L3PMADDR::SetName("L3PMADDR"); L3PMADDR::SetDescription("L3 base address of L3 private memory");
+		}
+	};
+	
+	// L3 Cache Input Timing Control 0
+	struct L3ITCR0 : PrivilegedSPR<L3ITCR0, 984>
+	{
+		typedef PrivilegedSPR<L3ITCR0, 984> Super;
+		
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(MPC7451, _)
+		{
+			struct L3DC0    : Field<L3DC0   , 0, 22> {};
+			struct L3DCDIS0 : Field<L3DCDIS0, 23   > {};
+			struct L3DCO0   : Field<L3DCO0  , 24   > {};
+		};
+		CASE_ENUM_TRAIT(MPC7455, _)
+		{
+			struct L3DC0    : Field<L3DC0   , 0, 22> {};
+			struct L3DCDIS0 : Field<L3DCDIS0, 23   > {};
+			struct L3DCO0   : Field<L3DCO0  , 24   > {};
+		};
+		CASE_ENUM_TRAIT(MPC7457, _)
+		{
+			struct L3DC0    : Field<L3DC0   , 0, 29> {};
+			struct L3DCDIS0 : Field<L3DCDIS0, 30   > {};
+			struct L3DCO0   : Field<L3DCO0  , 31   > {};
+		};
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::L3DC0    L3DC0;    // L3 delay count
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::L3DCDIS0 L3DCDIS0; // L3 delay counter disable
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::L3DCO0   L3DCO0;   // L3 delay counter override
+		
+		typedef FieldSet<L3DC0, L3DCDIS0, L3DCO0> ALL;
+		
+		L3ITCR0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L3ITCR0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L3ITCR0"); this->SetDescription("L3 Cache Input Timing Control 0");
+			
+			L3DC0   ::SetName("L3DC0");    L3DC0   ::SetDescription("L3 delay count");
+			L3DCDIS0::SetName("L3DCDIS0"); L3DCDIS0::SetDescription("L3 delay counter disable");
+			L3DCO0  ::SetName("L3DCO0");   L3DCO0  ::SetDescription("L3 delay counter override");
+		}
+	};
+	
+	// L2 Error Injection Mask High Register
+	struct L2ERRINJHI : PrivilegedSPR<L2ERRINJHI, 985>
+	{
+		typedef PrivilegedSPR<L2ERRINJHI, 985> Super;
+		
+		struct EIMASKHI : Field<EIMASKHI, 0, 31> {}; // Error injection mask for the high word of the data path
+		
+		typedef FieldSet<EIMASKHI> ALL;
+		
+		L2ERRINJHI(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L2ERRINJHI(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L2ERRINJHI"); this->SetDescription("L2 Error Injection Mask High Register");
+			
+			EIMASKHI::SetName("EIMASKHI"); EIMASKHI::SetDescription("Error injection mask for the high word of the data path");
+		}
+	};
+	
+	// L2 Error Injection Mask High Register
+	struct L2ERRINJLO : PrivilegedSPR<L2ERRINJLO, 986>
+	{
+		typedef PrivilegedSPR<L2ERRINJLO, 986> Super;
+		
+		struct EIMASKLO : Field<EIMASKLO, 0, 31> {}; // Error injection mask for the low word of the data path
+		
+		typedef FieldSet<EIMASKLO> ALL;
+		
+		L2ERRINJLO(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L2ERRINJLO(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L2ERRINJLO"); this->SetDescription("L2 Error Injection Mask High Register");
+			
+			EIMASKLO::SetName("EIMASKLO"); EIMASKLO::SetDescription("Error injection mask for the low word of the data path");
+		}
+	};
+	
+	// L2 Error Injection Mask Control Register
+	struct L2ERRINJCTL : PrivilegedSPR<L2ERRINJCTL, 987>
+	{
+		typedef PrivilegedSPR<L2ERRINJCTL, 987> Super;
+		
+		struct TERRIEN  : Field<TERRIEN , 15    > {}; // L2 tag error injection enable
+		struct ECCMB    : Field<ECCMB   , 22    > {}; // ECC mirror byte enable
+		struct DERRIEN  : Field<DERRIEN , 23    > {}; // L2 data array error injection enable
+		struct ECCERRIM : Field<ECCERRIM, 24, 31> {}; // Error injection mask for the ECC bits
+		
+		typedef FieldSet<TERRIEN, ECCMB, DERRIEN, ECCERRIM> ALL;
+	
+		L2ERRINJCTL(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L2ERRINJCTL(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L2ERRINJCTL"); this->SetDescription("L2 Error Injection Mask Control Register");
+			
+			TERRIEN ::SetName("TERRIEN");  TERRIEN ::SetDescription("L2 tag error injection enable");
+			ECCMB   ::SetName("ECCMB");    ECCMB   ::SetDescription("ECC mirror byte enable");
+			DERRIEN ::SetName("DERRIEN");  DERRIEN ::SetDescription("L2 data array error injection enable");
+			ECCERRIM::SetName("ECCERRIM"); ECCERRIM::SetDescription("Error injection mask for the ECC bits");
+		}
+	};
+	
+	// L2 Error Capture Data High Register
+	struct L2CAPTDATAHI : ReadOnlyPrivilegedSPR<L2CAPTDATAHI, 988>
+	{
+		typedef ReadOnlyPrivilegedSPR<L2CAPTDATAHI, 988> Super;
+		
+		struct L2DATA : Field<L2DATA, 0, 31> {}; // L2 data high word
+		
+		typedef FieldSet<L2DATA> ALL;
+		
+		L2CAPTDATAHI(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L2CAPTDATAHI(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L2CAPTDATAHI"); this->SetDescription("L2 Error Capture Data High Register");
+			
+			L2DATA::SetName("L2DATA"); L2DATA::SetDescription("L2 data high word");
+		}
+	};
+	
+	// L2 Error Capture Data Low Register
+	struct L2CAPTDATALO : ReadOnlyPrivilegedSPR<L2CAPTDATALO, 989>
+	{
+		typedef ReadOnlyPrivilegedSPR<L2CAPTDATALO, 989> Super;
+		
+		struct L2DATA : Field<L2DATA, 0, 31> {}; // L2 data low word
+		
+		typedef FieldSet<L2DATA> ALL;
+
+		L2CAPTDATALO(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L2CAPTDATALO(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L2CAPTDATALO"); this->SetDescription("L2 Error Capture Data Low Register");
+			
+			L2DATA::SetName("L2DATA"); L2DATA::SetDescription("L2 data low word");
+		}
+	};
+	
+	// L2 Error Syndrome Register
+	struct L2CAPTECC : ReadOnlyPrivilegedSPR<L2CAPTECC, 990>
+	{
+		typedef ReadOnlyPrivilegedSPR<L2CAPTECC, 990> Super;
+		
+		struct ECCSYND   : Field<ECCSYND  , 0 , 7 > {}; // The calculted ECC syndrome of the failing double word
+		struct ECCCHKSUM : Field<ECCCHKSUM, 24, 31> {}; // The datapath ECC of the failing double word
+		
+		typedef FieldSet<ECCSYND, ECCCHKSUM> ALL;
+		
+		L2CAPTECC(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L2CAPTECC(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L2CAPTECC"); this->SetDescription("L2 Error Syndrome Register");
+			
+			ECCSYND  ::SetName("ECCSYND  "); ECCSYND  ::SetDescription("The calculted ECC syndrome of the failing double word");
+			ECCCHKSUM::SetName("ECCCHKSUM"); ECCCHKSUM::SetDescription("The datapath ECC of the failing double word");
+		}
+	};
+	
+	// L2 Error Detect Register
+	struct L2ERRDET : PrivilegedSPR<L2ERRDET, 991>
+	{
+		typedef PrivilegedSPR<L2ERRDET, 991> Super;
+		
+		struct MULL2ERR : Field<MULL2ERR, 0 , 0 , unisim::util::reg::core::SW_R_W1C> {}; // Multiple L2 errors
+		struct TPARERR  : Field<TPARERR , 27, 27, unisim::util::reg::core::SW_R_W1C> {}; // Tag parity error
+		struct MBECCERR : Field<MBECCERR, 28, 28, unisim::util::reg::core::SW_R_W1C> {}; // Multiple-bit ECC error
+		struct SBECCERR : Field<SBECCERR, 29, 29, unisim::util::reg::core::SW_R_W1C> {}; // Single-bit ECC error
+		
+		typedef FieldSet<MULL2ERR, TPARERR, MBECCERR, SBECCERR> ALL;
+		
+		L2ERRDET(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L2ERRDET(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L2ERRDET"); this->SetDescription("L2 Error Detect Register");
+			
+			MULL2ERR::SetName("MULL2ERR"); MULL2ERR::SetDescription("Multiple L2 errors");
+			TPARERR ::SetName("TPARERR");  TPARERR ::SetDescription("Tag parity error");
+			MBECCERR::SetName("MBECCERR"); MBECCERR::SetDescription("Multiple-bit ECC error");
+			SBECCERR::SetName("SBECCERR"); SBECCERR::SetDescription("Single-bit ECC error");
+		}
+	};
+	
+	// L2 Error Disable Register
+	struct L2ERRDIS : PrivilegedSPR<L2ERRDIS, 992>
+	{
+		typedef PrivilegedSPR<L2ERRDIS, 992> Super;
+		
+		struct TPARDIS  : Field<TPARDIS , 27> {}; // Tag parity error disable
+		struct MBECCDIS : Field<MBECCDIS, 28> {}; // Multiple-bit ECC error disable
+		struct SBECCDIS : Field<SBECCDIS, 29> {}; // Single-bit ECC error disable
+		
+		typedef FieldSet<TPARDIS, MBECCDIS, SBECCDIS> ALL;
+		
+		L2ERRDIS(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L2ERRDIS(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L2ERRDIS"); this->SetDescription("L2 Error Disable Register");
+			
+			TPARDIS ::SetName("TPARDIS");  TPARDIS ::SetDescription("Tag parity error disable");
+			MBECCDIS::SetName("MBECCDIS"); MBECCDIS::SetDescription("Multiple-bit ECC error disable");
+			SBECCDIS::SetName("SBECCDIS"); SBECCDIS::SetDescription("Single-bit ECC error disable");
+		}
+	};
+	
+	// L2 Error Interrupt Enable Register
+	struct L2ERRINTEN : PrivilegedSPR<L2ERRINTEN, 993>
+	{
+		typedef PrivilegedSPR<L2ERRINTEN, 993> Super;
+		
+		struct TPARINTEN  : Field<TPARINTEN , 27> {}; // Tag parity error reporting enable
+		struct MBECCINTEN : Field<MBECCINTEN, 28> {}; // Multiple-bit ECC error reporting enable
+		struct SBECCINTEN : Field<SBECCINTEN, 29> {}; // Single-bit ECC error enable
+		
+		typedef FieldSet<TPARINTEN, MBECCINTEN, SBECCINTEN> ALL;
+		
+		L2ERRINTEN(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L2ERRINTEN(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L2ERRINTEN"); this->SetDescription("L2 Error Interrupt Enable Register");
+			
+			TPARINTEN ::SetName("TPARINTEN");  TPARINTEN ::SetDescription("Tag parity error reporting enable");
+			MBECCINTEN::SetName("MBECCINTEN"); MBECCINTEN::SetDescription("Multiple-bit ECC error reporting enable");
+			SBECCINTEN::SetName("SBECCINTEN"); SBECCINTEN::SetDescription("Single-bit ECC error enable");
+		}
+	};
+	
+	// L2 Error Attributes Capture Register
+	struct L2ERRATTR : PrivilegedSPR<L2ERRATTR, 994>
+	{
+		typedef PrivilegedSPR<L2ERRATTR, 994> Super;
+		
+		struct DWNUM     : Field<DWNUM    , 2 , 3 , unisim::util::reg::core::SW_R> {}; // Double-word number of the detected error
+		struct TRANSSIZ  : Field<TRANSSIZ , 5 , 7 , unisim::util::reg::core::SW_R> {}; // Transaction size for detected error
+		struct BURST     : Field<BURST    , 8 , 8 , unisim::util::reg::core::SW_R> {}; // Burst transaction for detected error
+		struct TRANSSRC  : Field<TRANSSRC , 11, 15, unisim::util::reg::core::SW_R> {}; // Transaction source for detected error
+		struct TRANSTYPE : Field<TRANSTYPE, 18, 19, unisim::util::reg::core::SW_R> {}; // Transaction type for detected error
+		struct VALINFO   : Field<VALINFO  , 31, 31, unisim::util::reg::core::SW_R> {}; // L2 capture registers valid
+		
+		typedef FieldSet<DWNUM, TRANSSIZ, BURST, TRANSSRC, TRANSTYPE, VALINFO> ALL;
+		
+		L2ERRATTR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L2ERRATTR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L2ERRATTR"); this->SetDescription("L2 Error Attributes Capture Register");
+			
+			DWNUM    ::SetName("DWNUM");     DWNUM    ::SetDescription("Double-word number of the detected error");
+			TRANSSIZ ::SetName("TRANSSIZ");  TRANSSIZ ::SetDescription("Transaction size for detected error");
+			BURST    ::SetName("BURST");     BURST    ::SetDescription("Burst transaction for detected error");
+			TRANSSRC ::SetName("TRANSSRC");  TRANSSRC ::SetDescription("Transaction source for detected error");
+			TRANSTYPE::SetName("TRANSTYPE"); TRANSTYPE::SetDescription("Transaction type for detected error");
+			VALINFO  ::SetName("VALINFO");   VALINFO  ::SetDescription("L2 capture registers valid");
+		}
+	};
+	
+	// L2 Error Address Error Capture Register
+	struct L2ERRADDR : ReadOnlyPrivilegedSPR<L2ERRADDR, 995>
+	{
+		typedef ReadOnlyPrivilegedSPR<L2ERRADDR, 995> Super;
+		
+		struct L2ADDR : Field<L2ADDR, 0, 31, unisim::util::reg::core::SW_R> {}; // L2 address[4:35] corresponding to detected error
+		
+		typedef FieldSet<L2ADDR> ALL;
+		
+		L2ERRADDR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L2ERRADDR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L2ERRADDR"); this->SetDescription("L2 Error Address Error Capture Register");
+			
+			L2ADDR::SetName("L2ADDR"); L2ADDR::SetDescription("L2 address[4:35] corresponding to detected error");
+		}
+	};
+	
+	// L2 Error Address Error Capture Register
+	struct L2ERREADDR : ReadOnlyPrivilegedSPR<L2ERREADDR, 996>
+	{
+		typedef ReadOnlyPrivilegedSPR<L2ERREADDR, 996> Super;
+		
+		struct L2ADDR : Field<L2ADDR, 28, 31, unisim::util::reg::core::SW_R> {}; // L2 address[0:3] corresponding to detected error
+		
+		typedef FieldSet<L2ADDR> ALL;
+		
+		L2ERREADDR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L2ERREADDR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L2ERREADDR"); this->SetDescription("L2 Error Address Error Capture Register");
+			
+			L2ADDR::SetName("L2ADDR"); L2ADDR::SetDescription("L2 address[0:3] corresponding to detected error");
+		}
+	};
+	
+	// L2 Error Control Register
+	struct L2ERRCTL : PrivilegedSPR<L2ERRCTL, 997>
+	{
+		typedef PrivilegedSPR<L2ERRCTL, 997> Super;
+		
+		struct L2CTHRESH : Field<L2CTHRESH, 8 , 15, unisim::util::reg::core::SW_R> {}; // L2 cache Threshold
+		struct L2CCOUNT  : Field<L2CCOUNT , 24, 31                               > {}; // L2 count
+		
+		typedef FieldSet<L2CTHRESH, L2CCOUNT> ALL;
+		
+		L2ERRCTL(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L2ERRCTL(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L2ERRCTL"); this->SetDescription("L2 Error Control Register");
+			
+			L2CTHRESH::SetName("L2CTHRESH"); L2CTHRESH::SetDescription("L2 cache Threshold");
+			L2CCOUNT ::SetName("L2CCOUNT");  L2CCOUNT ::SetDescription("L2 count");
+		}
+	};
+	
+	// L3 Cache Input Timing Control 1
+	struct L3ITCR1 : PrivilegedSPR<L3ITCR1, 1001>
+	{
+		typedef PrivilegedSPR<L3ITCR1, 1001> Super;
+		
+		struct L3DC1    : Field<L3DC1   , 0 , 29> {}; // L3 delay count
+		struct L3DCDIS1 : Field<L3DCDIS1, 30    > {}; // L3 delay counter disable
+		struct L3DCO1   : Field<L3DCO1  , 31    > {}; // L3 delay counter override
+		
+		typedef FieldSet<L3DC1, L3DCDIS1, L3DCO1> ALL;
+		
+		L3ITCR1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L3ITCR1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L3ITCR1"); this->SetDescription("L3 Cache Input Timing Control 1");
+			
+			L3DC1   ::SetName("L3DC1");    L3DC1   ::SetDescription("L3 delay count");
+			L3DCDIS1::SetName("L3DCDIS1"); L3DCDIS1::SetDescription("L3 delay counter disable");
+			L3DCO1  ::SetName("L3DCO1");   L3DCO1  ::SetDescription("L3 delay counter override");
+		}
+	};
+
+	// L3 Cache Input Timing Control 2
+	struct L3ITCR2 : PrivilegedSPR<L3ITCR2, 1002>
+	{
+		typedef PrivilegedSPR<L3ITCR2, 1001> Super;
+		
+		struct L3DC2    : Field<L3DC2   , 0 , 29> {}; // L3 delay count
+		struct L3DCDIS2 : Field<L3DCDIS2, 30    > {}; // L3 delay counter disable
+		struct L3DCO2   : Field<L3DCO2  , 31    > {}; // L3 delay counter override
+		
+		typedef FieldSet<L3DC2, L3DCDIS2, L3DCO2> ALL;
+		
+		L3ITCR2(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L3ITCR2(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L3ITCR2"); this->SetDescription("L3 Cache Input Timing Control 2");
+			
+			L3DC2   ::SetName("L3DC2");    L3DC2   ::SetDescription("L3 delay count");
+			L3DCDIS2::SetName("L3DCDIS2"); L3DCDIS2::SetDescription("L3 delay counter disable");
+			L3DCO2  ::SetName("L3DCO2");   L3DCO2  ::SetDescription("L3 delay counter override");
+		}
+	};
+
+	// L3 Cache Input Timing Control 3
+	struct L3ITCR3 : PrivilegedSPR<L3ITCR3, 1003>
+	{
+		typedef PrivilegedSPR<L3ITCR3, 1001> Super;
+		
+		struct L3DC3    : Field<L3DC3   , 0 , 29> {}; // L3 delay count
+		struct L3DCDIS3 : Field<L3DCDIS3, 30    > {}; // L3 delay counter disable
+		struct L3DCO3   : Field<L3DCO3  , 31    > {}; // L3 delay counter override
+		
+		typedef FieldSet<L3DC3, L3DCDIS3, L3DCO3> ALL;
+		
+		L3ITCR3(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L3ITCR3(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L3ITCR3"); this->SetDescription("L3 Cache Input Timing Control 3");
+			
+			L3DC3   ::SetName("L3DC3");    L3DC3   ::SetDescription("L3 delay count");
+			L3DCDIS3::SetName("L3DCDIS3"); L3DCDIS3::SetDescription("L3 delay counter disable");
+			L3DCO3  ::SetName("L3DCO3");   L3DCO3  ::SetDescription("L3 delay counter override");
+		}
+	};
+	
+	// L3 Cache Output Hold Control Register
+	struct L3OHCR : PrivilegedSPR<L3OHCR, 1000>
+	{
+		typedef PrivilegedSPR<L3OHCR, 1000> Super;
+		
+		struct L3AOH     : Field<L3AOH    , 0 , 1 > {}; // L3 address output hold
+		struct L3CLK0_OH : Field<L3CLK0_OH, 2 , 4 > {}; // L3_CLK0 output hold
+		struct L3CLK1_OH : Field<L3CLK1_OH, 5 , 7 > {}; // L3_CLK1 output hold
+		struct L3DOH0    : Field<L3DOH0   , 8 , 10> {}; // L3_DATA[00:07]/L3_DP[0] output hold
+		struct L3DOH8    : Field<L3DOH8   , 11, 13> {}; // L3_DATA[08:15]/L3_DP[1] output hold
+		struct L3DOH16   : Field<L3DOH16  , 14, 16> {}; // L3_DATA[16:23]/L3_DP[2] output hold
+		struct L3DOH24   : Field<L3DOH24  , 17, 19> {}; // L3_DATA[24:31]/L3_DP[3] output hold
+		struct L3DOH32   : Field<L3DOH32  , 20, 22> {}; // L3_DATA[32:39]/L3_DP[4] output hold
+		struct L3DOH40   : Field<L3DOH40  , 23, 25> {}; // L3_DATA[40:47]/L3_DP[5] output hold
+		struct L3DOH48   : Field<L3DOH48  , 26, 28> {}; // L3_DATA[48:55]/L3_DP[6] output hold
+		struct L3DOH56   : Field<L3DOH56  , 29, 31> {}; // L3_DATA[56:63]/L3_DP[7] output hold
+		
+		typedef FieldSet<L3AOH, L3CLK0_OH, L3CLK1_OH, L3DOH0, L3DOH8, L3DOH16, L3DOH24, L3DOH32, L3DOH40, L3DOH48, L3DOH56> ALL;
+		
+		L3OHCR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L3OHCR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init()
+		{
+			this->SetName("L3OHCR"); this->SetDescription("L3 Cache Output Hold Control Register");
+			
+			L3AOH    ::SetName("L3AOH");     L3AOH    ::SetDescription("L3 address output hold");
+			L3CLK0_OH::SetName("L3CLK0_OH"); L3CLK0_OH::SetDescription("L3_CLK0 output hold");
+			L3CLK1_OH::SetName("L3CLK1_OH"); L3CLK1_OH::SetDescription("L3_CLK1 output hold");
+			L3DOH0   ::SetName("L3DOH0");    L3DOH0   ::SetDescription("L3_DATA[00:07]/L3_DP[0] output hold");
+			L3DOH8   ::SetName("L3DOH8");    L3DOH8   ::SetDescription("L3_DATA[08:15]/L3_DP[1] output hold");
+			L3DOH16  ::SetName("L3DOH16");   L3DOH16  ::SetDescription("L3_DATA[16:23]/L3_DP[2] output hold");
+			L3DOH24  ::SetName("L3DOH24");   L3DOH24  ::SetDescription("L3_DATA[24:31]/L3_DP[3] output hold");
+			L3DOH32  ::SetName("L3DOH32");   L3DOH32  ::SetDescription("L3_DATA[32:39]/L3_DP[4] output hold");
+			L3DOH40  ::SetName("L3DOH40");   L3DOH40  ::SetDescription("L3_DATA[40:47]/L3_DP[5] output hold");
+			L3DOH48  ::SetName("L3DOH48");   L3DOH48  ::SetDescription("L3_DATA[48:55]/L3_DP[6] output hold");
+			L3DOH56  ::SetName("L3DOH56");   L3DOH56  ::SetDescription("L3_DATA[56:63]/L3_DP[7] output hold");
+		}
+	};
 
 	/////////////////////////// Time Base Registers ///////////////////////////
 	
@@ -5562,251 +7545,254 @@ protected:
 
 	/////////////////////// Performance Monitor Registers /////////////////////
 	
-	//  Performance Monitor Counter registers 0-3
-	template <unsigned int PMC_NUM>
-	struct PMC : PrivilegedPMR<PMC<PMC_NUM>, 16 + PMC_NUM>
+	struct performance_monitoring
 	{
-		typedef PrivilegedPMR<PMC<PMC_NUM>, 16 + PMC_NUM> Super;
-		
-		struct OV            : Field<OV           , 0> {};      // Overflow
-		struct Counter_Value : Field<Counter_Value, 1, 31> {};  // Indicates the number of occurrences of the specified event
-		
-		SWITCH_ENUM_TRAIT(Model, _);
-		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<OV, Counter_Value> ALL; };
-		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<OV, Counter_Value> ALL; };
-		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
-		
-		PMC(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
-		PMC(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
-		using Super::operator =;
-	private:
-		void Init()
+		//  Performance Monitor Counter registers 0-3
+		template <unsigned int PMC_NUM>
+		struct PMC : PrivilegedPMR<PMC<PMC_NUM>, 16 + PMC_NUM>
 		{
-			std::stringstream name_sstr;
-			name_sstr << "PMC" << PMC_NUM;
+			typedef PrivilegedPMR<PMC<PMC_NUM>, 16 + PMC_NUM> Super;
 			
-			std::stringstream desc_sstr;
-			desc_sstr << "Performance Monitor Counter register" << PMC_NUM;
+			struct OV            : Field<OV           , 0> {};      // Overflow
+			struct Counter_Value : Field<Counter_Value, 1, 31> {};  // Indicates the number of occurrences of the specified event
 			
-			               this->SetName(name_sstr.str());                         this->SetDescription(desc_sstr.str());
-			OV           ::SetName("OV");            OV           ::SetDescription("Overflow");
-			Counter_Value::SetName("COUNTER_VALUE"); Counter_Value::SetDescription("Indicates the number of occurrences of the specified event");
-		}
-	};
-	
-	typedef PMC<0> PMC0;
-	typedef PMC<1> PMC1;
-	typedef PMC<2> PMC2;
-	typedef PMC<3> PMC3;
+			typedef FieldSet<OV, Counter_Value> ALL;
+			
+			PMC(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+			PMC(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+			using Super::operator =;
+		private:
+			void Init()
+			{
+				std::stringstream name_sstr;
+				name_sstr << "PMC" << PMC_NUM;
+				
+				std::stringstream desc_sstr;
+				desc_sstr << "Performance Monitor Counter register" << PMC_NUM;
+				
+							this->SetName(name_sstr.str());                         this->SetDescription(desc_sstr.str());
+				OV           ::SetName("OV");            OV           ::SetDescription("Overflow");
+				Counter_Value::SetName("Counter_Value"); Counter_Value::SetDescription("Indicates the number of occurrences of the specified event");
+			}
+		};
+		
+		typedef PMC<0> PMC0;
+		typedef PMC<1> PMC1;
+		typedef PMC<2> PMC2;
+		typedef PMC<3> PMC3;
 
-	// Performance Monitor Global Control Register 0
-	struct PMGC0 : PrivilegedPMR<PMGC0, 400>
-	{
-		typedef PrivilegedPMR<PMGC0, 400> Super;
-		
-		struct FAC   : Field<FAC  , 0>  {}; // Freeze All Counters
-		struct PMIE  : Field<PMIE , 1>  {}; // Performance monitor interrupt enable
-		struct FCECE : Field<FCECE, 2>  {}; // Freeze Counters on Enabled Condition or Event
-		struct TBSEL : Field<TBSEL, 19> {}; // Time Base Selector
-		struct TBEE  : Field<TBEE , 23> {}; // Time base transition Event Enable
-		
-		SWITCH_ENUM_TRAIT(Model, _);
-		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<FAC, PMIE, FCECE, TBSEL, TBEE> ALL; };
-		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<FAC, PMIE, FCECE, TBSEL, TBEE> ALL; };
-		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
-		
-		PMGC0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
-		PMGC0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
-		using Super::operator =;
-	private:
-		void Init()
+		// Performance Monitor Global Control Register 0
+		struct PMGC0 : PrivilegedPMR<PMGC0, 400>
 		{
-			       this->SetName("PMGC0");        this->SetDescription("Performance Monitor Global Control Register 0");
-			FAC  ::SetName("FAC");   FAC  ::SetDescription("Freeze All Counters");
-			PMIE ::SetName("PMIE");  PMIE ::SetDescription("Performance monitor interrupt enable");
-			FCECE::SetName("FCECE"); FCECE::SetDescription("Freeze Counters on Enabled Condition or Event");
-			TBSEL::SetName("TBSEL"); TBSEL::SetDescription("Time Base Selector");
-			TBEE ::SetName("TBEE");  TBEE ::SetDescription("Time base transition Event Enable");
-		}
-	};
-	
-	// Performance monitor local control A(0-3)
-	template <unsigned int PMLCA_NUM>
-	struct PMLCa : PrivilegedPMR<PMLCa<PMLCA_NUM>, 144 + PMLCA_NUM>
-	{
-		typedef PrivilegedPMR<PMLCa<PMLCA_NUM>, 144 + PMLCA_NUM> Super;
+			typedef PrivilegedPMR<PMGC0, 400> Super;
+			
+			struct FAC   : Field<FAC  , 0>  {}; // Freeze All Counters
+			struct PMIE  : Field<PMIE , 1>  {}; // Performance monitor interrupt enable
+			struct FCECE : Field<FCECE, 2>  {}; // Freeze Counters on Enabled Condition or Event
+			struct TBSEL : Field<TBSEL, 19> {}; // Time Base Selector
+			struct TBEE  : Field<TBEE , 23> {}; // Time base transition Event Enable
+			
+			SWITCH_ENUM_TRAIT(Model, _);
+			CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<FAC, PMIE, FCECE, TBSEL, TBEE> ALL; };
+			CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<FAC, PMIE, FCECE, TBSEL, TBEE> ALL; };
+			typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
+			
+			PMGC0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+			PMGC0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+			using Super::operator =;
+		private:
+			void Init()
+			{
+					this->SetName("PMGC0");        this->SetDescription("Performance Monitor Global Control Register 0");
+				FAC  ::SetName("FAC");   FAC  ::SetDescription("Freeze All Counters");
+				PMIE ::SetName("PMIE");  PMIE ::SetDescription("Performance monitor interrupt enable");
+				FCECE::SetName("FCECE"); FCECE::SetDescription("Freeze Counters on Enabled Condition or Event");
+				TBSEL::SetName("TBSEL"); TBSEL::SetDescription("Time Base Selector");
+				TBEE ::SetName("TBEE");  TBEE ::SetDescription("Time base transition Event Enable");
+			}
+		};
 		
-		struct FC    : Field<FC   , 0>     {}; // Freeze Counter
-		struct FCS   : Field<FCS  , 1>     {}; // Freeze Counter in Supervisor state
-		struct FCU   : Field<FCU  , 2>     {}; // Freeze Counter in User state
-		struct FCM1  : Field<FCM1 , 3>     {}; // Freeze Counter while Mark is set
-		struct FCM0  : Field<FCM0 , 4>     {}; // Freeze Counter while Mark is cleared
-		struct CE    : Field<CE   , 5>     {}; // Condition Enable
-		struct EVENT : Field<EVENT, 8,15>  {}; // Event selector
-		struct PMP   : Field<PMP  , 17,19> {}; // Performance Monitor Watchpoint Periodicity Select
-		
-		SWITCH_ENUM_TRAIT(Model, _);
-		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<FC, FCS, FCU, FCM1, FCM0, CE, EVENT, PMP> ALL; };
-		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<FC, FCS, FCU, FCM1, FCM0, CE, EVENT, PMP> ALL; };
-		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
-		
-		PMLCa(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
-		PMLCa(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
-		using Super::operator =;
-	private:
-		void Init()
+		// Performance monitor local control A(0-3)
+		template <unsigned int PMLCA_NUM>
+		struct PMLCa : PrivilegedPMR<PMLCa<PMLCA_NUM>, 144 + PMLCA_NUM>
 		{
-			std::stringstream name_sstr;
-			name_sstr << "PMLCA" << PMLCA_NUM;
+			typedef PrivilegedPMR<PMLCa<PMLCA_NUM>, 144 + PMLCA_NUM> Super;
 			
-			std::stringstream desc_sstr;
-			desc_sstr << "Performance monitor local control A" << PMLCA_NUM;
+			struct FC    : Field<FC   , 0>     {}; // Freeze Counter
+			struct FCS   : Field<FCS  , 1>     {}; // Freeze Counter in Supervisor state
+			struct FCU   : Field<FCU  , 2>     {}; // Freeze Counter in User state
+			struct FCM1  : Field<FCM1 , 3>     {}; // Freeze Counter while Mark is set
+			struct FCM0  : Field<FCM0 , 4>     {}; // Freeze Counter while Mark is cleared
+			struct CE    : Field<CE   , 5>     {}; // Condition Enable
+			struct EVENT : Field<EVENT, 8,15>  {}; // Event selector
+			struct PMP   : Field<PMP  , 17,19> {}; // Performance Monitor Watchpoint Periodicity Select
 			
-			this->SetName(name_sstr.str()); this->SetDescription(desc_sstr.str());
+			SWITCH_ENUM_TRAIT(Model, _);
+			CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<FC, FCS, FCU, FCM1, FCM0, CE, EVENT, PMP> ALL; };
+			CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<FC, FCS, FCU, FCM1, FCM0, CE, EVENT, PMP> ALL; };
+			typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 			
-			FC   ::SetName("FC");     FC   ::SetDescription("Freeze Counter");
-			FCS  ::SetName("FCS");    FCS  ::SetDescription("Freeze Counter in Supervisor state");
-			FCU  ::SetName("FCU");    FCU  ::SetDescription("Freeze Counter in User state");
-			FCM1 ::SetName("FCM1");   FCM1 ::SetDescription("Freeze Counter while Mark is set"); 
-			FCM0 ::SetName("FCM0");   FCM0 ::SetDescription("Freeze Counter while Mark is cleared"); 
-			CE   ::SetName("CE");     CE   ::SetDescription("Condition Enable");
-			EVENT::SetName("EVENT");  EVENT::SetDescription("Event selector");  
-			PMP  ::SetName("PMP");    PMP  ::SetDescription("Performance Monitor Watchpoint Periodicity Select");
-		}
-	};
-	
-	typedef PMLCa<0> PMLCa0;
-	typedef PMLCa<1> PMLCa1;
-	typedef PMLCa<2> PMLCa2;
-	typedef PMLCa<3> PMLCa3;
-	
-	// Performance monitor local control B(0-3)
-	template <unsigned int PMLCB_NUM>
-	struct PMLCb : PrivilegedPMR<PMLCb<PMLCB_NUM>, 272 + PMLCB_NUM>
-	{
-		typedef PrivilegedPMR<PMLCb<PMLCB_NUM>, 272 + PMLCB_NUM> Super;
+			PMLCa(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+			PMLCa(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+			using Super::operator =;
+		private:
+			void Init()
+			{
+				std::stringstream name_sstr;
+				name_sstr << "PMLCA" << PMLCA_NUM;
+				
+				std::stringstream desc_sstr;
+				desc_sstr << "Performance monitor local control A" << PMLCA_NUM;
+				
+				this->SetName(name_sstr.str()); this->SetDescription(desc_sstr.str());
+				
+				FC   ::SetName("FC");     FC   ::SetDescription("Freeze Counter");
+				FCS  ::SetName("FCS");    FCS  ::SetDescription("Freeze Counter in Supervisor state");
+				FCU  ::SetName("FCU");    FCU  ::SetDescription("Freeze Counter in User state");
+				FCM1 ::SetName("FCM1");   FCM1 ::SetDescription("Freeze Counter while Mark is set"); 
+				FCM0 ::SetName("FCM0");   FCM0 ::SetDescription("Freeze Counter while Mark is cleared"); 
+				CE   ::SetName("CE");     CE   ::SetDescription("Condition Enable");
+				EVENT::SetName("EVENT");  EVENT::SetDescription("Event selector");  
+				PMP  ::SetName("PMP");    PMP  ::SetDescription("Performance Monitor Watchpoint Periodicity Select");
+			}
+		};
 		
-		struct TRIGONCTL  : Field<TRIGONCTL , 1,3>   {}; // Trigger-on Control Class - Class of Trigger-on source
-		struct TRIGOFFCTL : Field<TRIGOFFCTL, 5,7>   {}; // Trigger-off Control Class - Class of Trigger-off source
-		struct TRIGONSEL  : Field<TRIGONSEL , 9,12>  {}; // Trigger-on Source Select - Source Select based on setting of TRIGONCTL
-		struct TRIGOFFSEL : Field<TRIGOFFSEL, 14,17> {}; // Trigger-off Source Select - Source Select based on setting of TRIGOFFCTL
-		struct TRIGGERED  : Field<TRIGGERED , 18>    {}; // Triggered
-		struct THRESHMUL  : Field<THRESHMUL , 21,23> {}; // Threshold multiple
-		struct THRESHOLD  : Field<THRESHOLD , 26,31> {}; // Threshold
+		typedef PMLCa<0> PMLCa0;
+		typedef PMLCa<1> PMLCa1;
+		typedef PMLCa<2> PMLCa2;
+		typedef PMLCa<3> PMLCa3;
 		
-		SWITCH_ENUM_TRAIT(Model, _);
-		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<TRIGONCTL, TRIGOFFCTL, TRIGONSEL, TRIGOFFSEL, TRIGGERED, THRESHMUL, THRESHOLD> ALL; };
-		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<TRIGONCTL, TRIGOFFCTL, TRIGONSEL, TRIGOFFSEL, TRIGGERED, THRESHMUL, THRESHOLD> ALL; };
-		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
-		
-		PMLCb(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
-		PMLCb(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
-		using Super::operator =;
-	private:
-		void Init()
+		// Performance monitor local control B(0-3)
+		template <unsigned int PMLCB_NUM>
+		struct PMLCb : PrivilegedPMR<PMLCb<PMLCB_NUM>, 272 + PMLCB_NUM>
 		{
-			std::stringstream name_sstr;
-			name_sstr << "PMLCB" << PMLCB_NUM;
+			typedef PrivilegedPMR<PMLCb<PMLCB_NUM>, 272 + PMLCB_NUM> Super;
 			
-			std::stringstream desc_sstr;
-			desc_sstr << "Performance monitor local control B" << PMLCB_NUM;
+			struct TRIGONCTL  : Field<TRIGONCTL , 1,3>   {}; // Trigger-on Control Class - Class of Trigger-on source
+			struct TRIGOFFCTL : Field<TRIGOFFCTL, 5,7>   {}; // Trigger-off Control Class - Class of Trigger-off source
+			struct TRIGONSEL  : Field<TRIGONSEL , 9,12>  {}; // Trigger-on Source Select - Source Select based on setting of TRIGONCTL
+			struct TRIGOFFSEL : Field<TRIGOFFSEL, 14,17> {}; // Trigger-off Source Select - Source Select based on setting of TRIGOFFCTL
+			struct TRIGGERED  : Field<TRIGGERED , 18>    {}; // Triggered
+			struct THRESHMUL  : Field<THRESHMUL , 21,23> {}; // Threshold multiple
+			struct THRESHOLD  : Field<THRESHOLD , 26,31> {}; // Threshold
 			
-			this->SetName(name_sstr.str()); this->SetDescription(desc_sstr.str());
+			SWITCH_ENUM_TRAIT(Model, _);
+			CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<TRIGONCTL, TRIGOFFCTL, TRIGONSEL, TRIGOFFSEL, TRIGGERED, THRESHMUL, THRESHOLD> ALL; };
+			CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<TRIGONCTL, TRIGOFFCTL, TRIGONSEL, TRIGOFFSEL, TRIGGERED, THRESHMUL, THRESHOLD> ALL; };
+			typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 			
-			TRIGONCTL ::SetName("TRIGONCTL");  TRIGONCTL ::SetDescription("Trigger-on Control Class - Class of Trigger-on source");
-			TRIGOFFCTL::SetName("TRIGOFFCTL"); TRIGOFFCTL::SetDescription("Trigger-off Control Class - Class of Trigger-off source");  
-			TRIGONSEL ::SetName("TRIGONSEL");  TRIGONSEL ::SetDescription("Trigger-on Source Select - Source Select based on setting of TRIGONCTL"); 
-			TRIGOFFSEL::SetName("TRIGOFFSEL"); TRIGOFFSEL::SetDescription("Trigger-off Source Select - Source Select based on setting of TRIGOFFCTL");  
-			TRIGGERED ::SetName("TRIGGERED");  TRIGGERED ::SetDescription("Triggered"); 
-			THRESHMUL ::SetName("THRESHMUL");  THRESHMUL ::SetDescription("Threshold multiple"); 
-			THRESHOLD ::SetName("THRESHOLD");  THRESHOLD ::SetDescription("Threshold"); 
-		}
-	};
-	
-	typedef PMLCb<0> PMLCb0;
-	typedef PMLCb<1> PMLCb1;
-	typedef PMLCb<2> PMLCb2;
-	typedef PMLCb<3> PMLCb3;
+			PMLCb(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+			PMLCb(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+			using Super::operator =;
+		private:
+			void Init()
+			{
+				std::stringstream name_sstr;
+				name_sstr << "PMLCB" << PMLCB_NUM;
+				
+				std::stringstream desc_sstr;
+				desc_sstr << "Performance monitor local control B" << PMLCB_NUM;
+				
+				this->SetName(name_sstr.str()); this->SetDescription(desc_sstr.str());
+				
+				TRIGONCTL ::SetName("TRIGONCTL");  TRIGONCTL ::SetDescription("Trigger-on Control Class - Class of Trigger-on source");
+				TRIGOFFCTL::SetName("TRIGOFFCTL"); TRIGOFFCTL::SetDescription("Trigger-off Control Class - Class of Trigger-off source");  
+				TRIGONSEL ::SetName("TRIGONSEL");  TRIGONSEL ::SetDescription("Trigger-on Source Select - Source Select based on setting of TRIGONCTL"); 
+				TRIGOFFSEL::SetName("TRIGOFFSEL"); TRIGOFFSEL::SetDescription("Trigger-off Source Select - Source Select based on setting of TRIGOFFCTL");  
+				TRIGGERED ::SetName("TRIGGERED");  TRIGGERED ::SetDescription("Triggered"); 
+				THRESHMUL ::SetName("THRESHMUL");  THRESHMUL ::SetDescription("Threshold multiple"); 
+				THRESHOLD ::SetName("THRESHOLD");  THRESHOLD ::SetDescription("Threshold"); 
+			}
+		};
+		
+		typedef PMLCb<0> PMLCb0;
+		typedef PMLCb<1> PMLCb1;
+		typedef PMLCb<2> PMLCb2;
+		typedef PMLCb<3> PMLCb3;
 
-	// User Performance Monitor Counter registers 0-3
-	template <unsigned int PMC_NUM>
-	struct UPMC : ReadOnlyUPMR<PMC<PMC_NUM>, 0 + PMC_NUM>
-	{
-		typedef ReadOnlyUPMR<PMC<PMC_NUM>, 0 + PMC_NUM> Super;
+		// User Performance Monitor Counter registers 0-3
+		template <unsigned int PMC_NUM>
+		struct UPMC : ReadOnlyUPMR<PMC<PMC_NUM>, 0 + PMC_NUM>
+		{
+			typedef ReadOnlyUPMR<PMC<PMC_NUM>, 0 + PMC_NUM> Super;
+			
+			UPMC(typename CONFIG::CPU *_cpu, PMC<PMC_NUM> *pmc) : Super(_cpu, pmc) {}
+		};
 		
-		UPMC(typename CONFIG::CPU *_cpu, PMC<PMC_NUM> *pmc) : Super(_cpu, pmc) {}
-	};
-	
-	typedef UPMC<0> UPMC0;
-	typedef UPMC<1> UPMC1;
-	typedef UPMC<2> UPMC2;
-	typedef UPMC<3> UPMC3;
-	
-	// User Performance Monitor Global Control Register 0
-	struct UPMGC0 : ReadOnlyUPMR<PMGC0, 384>
-	{
-		typedef ReadOnlyUPMR<PMGC0, 384> Super;
+		typedef UPMC<0> UPMC0;
+		typedef UPMC<1> UPMC1;
+		typedef UPMC<2> UPMC2;
+		typedef UPMC<3> UPMC3;
 		
-		UPMGC0(typename CONFIG::CPU *_cpu, PMGC0 *pmgc0) : Super(_cpu, pmgc0) {}
-	};
+		// User Performance Monitor Global Control Register 0
+		struct UPMGC0 : ReadOnlyUPMR<PMGC0, 384>
+		{
+			typedef ReadOnlyUPMR<PMGC0, 384> Super;
+			
+			UPMGC0(typename CONFIG::CPU *_cpu, PMGC0 *pmgc0) : Super(_cpu, pmgc0) {}
+		};
 
-	//  User performance monitor local control A(0-3)
-	template <unsigned int PMLCA_NUM>
-	struct UPMLCa : ReadOnlyUPMR<PMLCa<PMLCA_NUM>, 128 + PMLCA_NUM>
-	{
-		typedef ReadOnlyUPMR<PMLCa<PMLCA_NUM>, 128 + PMLCA_NUM> Super;
+		//  User performance monitor local control A(0-3)
+		template <unsigned int PMLCA_NUM>
+		struct UPMLCa : ReadOnlyUPMR<PMLCa<PMLCA_NUM>, 128 + PMLCA_NUM>
+		{
+			typedef ReadOnlyUPMR<PMLCa<PMLCA_NUM>, 128 + PMLCA_NUM> Super;
+			
+			UPMLCa(typename CONFIG::CPU *_cpu, PMLCa<PMLCA_NUM> *pmlca) : Super(_cpu, pmlca) {}
+		};
 		
-		UPMLCa(typename CONFIG::CPU *_cpu, PMLCa<PMLCA_NUM> *pmlca) : Super(_cpu, pmlca) {}
-	};
-	
-	typedef UPMLCa<0> UPMLCa0;
-	typedef UPMLCa<1> UPMLCa1;
-	typedef UPMLCa<2> UPMLCa2;
-	typedef UPMLCa<3> UPMLCa3;
+		typedef UPMLCa<0> UPMLCa0;
+		typedef UPMLCa<1> UPMLCa1;
+		typedef UPMLCa<2> UPMLCa2;
+		typedef UPMLCa<3> UPMLCa3;
 
-	//  User performance monitor local control B(0-3)
-	template <unsigned int PMLCB_NUM>
-	struct UPMLCb : ReadOnlyUPMR<PMLCb<PMLCB_NUM>, 256 + PMLCB_NUM>
-	{
-		typedef ReadOnlyUPMR<PMLCb<PMLCB_NUM>, 256 + PMLCB_NUM> Super;
+		//  User performance monitor local control B(0-3)
+		template <unsigned int PMLCB_NUM>
+		struct UPMLCb : ReadOnlyUPMR<PMLCb<PMLCB_NUM>, 256 + PMLCB_NUM>
+		{
+			typedef ReadOnlyUPMR<PMLCb<PMLCB_NUM>, 256 + PMLCB_NUM> Super;
+			
+			UPMLCb(typename CONFIG::CPU *_cpu, PMLCb<PMLCB_NUM> *pmlca) : Super(_cpu, pmlca) {}
+		};
 		
-		UPMLCb(typename CONFIG::CPU *_cpu, PMLCb<PMLCB_NUM> *pmlca) : Super(_cpu, pmlca) {}
+		typedef UPMLCb<0> UPMLCb0;
+		typedef UPMLCb<1> UPMLCb1;
+		typedef UPMLCb<2> UPMLCb2;
+		typedef UPMLCb<3> UPMLCb3;
 	};
-	
-	typedef UPMLCb<0> UPMLCb0;
-	typedef UPMLCb<1> UPMLCb1;
-	typedef UPMLCb<2> UPMLCb2;
-	typedef UPMLCb<3> UPMLCb3;
 
 	//////////////////////// Thread Management Registers //////////////////////
 	
-	// Thread Management Configuration Register 0
-	struct TMCFG0 : ReadOnlyPrivilegedTMR<TMCFG0, 16>
+	struct thread_management
 	{
-		typedef ReadOnlyPrivilegedTMR<TMCFG0, 16> Super;
-		
-		struct NPRIBITS : Field<NPRIBITS, 10,15> {}; // Number of bits of thread priority implemented
-		struct NATHRD   : Field<NATHRD  , 18,23> {}; // Number of active threads implemented
-		struct NTHRD    : Field<NTHRD   , 26,31> {}; // Number of threads implemented
-		
-		SWITCH_ENUM_TRAIT(Model, _);
-		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<NPRIBITS, NATHRD, NTHRD> ALL; };
-		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<NPRIBITS, NATHRD, NTHRD> ALL; };
-		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
-		
-		TMCFG0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
-		TMCFG0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
-		using Super::operator =;
-	private:
-		void Init()
+		// Thread Management Configuration Register 0
+		struct TMCFG0 : ReadOnlyPrivilegedTMR<TMCFG0, 16>
 		{
-			          this->SetName("TMCFG0");             this->SetDescription("Thread Management Configuration Register 0");
-			NPRIBITS::SetName("NPRIBITS"); NPRIBITS::SetDescription("Number of bits of thread priority implemented");
-			NATHRD  ::SetName("NATHRD");   NATHRD  ::SetDescription("Number of active threads implemented");
-			NTHRD   ::SetName("NTHRD");    NTHRD   ::SetDescription("Number of threads implemented");
-		}
+			typedef ReadOnlyPrivilegedTMR<TMCFG0, 16> Super;
+			
+			struct NPRIBITS : Field<NPRIBITS, 10,15> {}; // Number of bits of thread priority implemented
+			struct NATHRD   : Field<NATHRD  , 18,23> {}; // Number of active threads implemented
+			struct NTHRD    : Field<NTHRD   , 26,31> {}; // Number of threads implemented
+			
+			SWITCH_ENUM_TRAIT(Model, _);
+			CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<NPRIBITS, NATHRD, NTHRD> ALL; };
+			CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<NPRIBITS, NATHRD, NTHRD> ALL; };
+			typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
+			
+			TMCFG0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+			TMCFG0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+			using Super::operator =;
+		private:
+			void Init()
+			{
+						this->SetName("TMCFG0");             this->SetDescription("Thread Management Configuration Register 0");
+				NPRIBITS::SetName("NPRIBITS"); NPRIBITS::SetDescription("Number of bits of thread priority implemented");
+				NATHRD  ::SetName("NATHRD");   NATHRD  ::SetDescription("Number of active threads implemented");
+				NTHRD   ::SetName("NTHRD");    NTHRD   ::SetDescription("Number of threads implemented");
+			}
+		};
+		
 	};
-
 	
 	/////////////////////// General Purpose Register //////////////////////////
 	
@@ -5870,10 +7856,38 @@ protected:
 		FPSCR fpscr;   // floating point status and control register
 	};
 	
-	SWITCH_ENUM_TRAIT(bool, _);
-	CASE_ENUM_TRAIT(false, _) { typedef NoFPU FPU; };
-	CASE_ENUM_TRAIT(true, _)  { typedef LegacyFPU FPU; };
-	typedef typename ENUM_TRAIT(CONFIG::HAS_FPU, _)::FPU FPU;
+	SWITCH_ENUM_TRAIT(bool, _FPU_impl);
+	CASE_ENUM_TRAIT(false, _FPU_impl) { typedef NoFPU FPU; };
+	CASE_ENUM_TRAIT(true, _FPU_impl)  { typedef LegacyFPU FPU; };
+	typedef typename ENUM_TRAIT(CONFIG::HAS_FPU, _FPU_impl)::FPU FPU;
+	
+	//////////////////////////// Vector unit //////////////////////////////////
+	
+	struct NoVectorUnit
+	{
+		NoVectorUnit(typename CONFIG::CPU *cpu) {}
+		
+		VSCR& GetVSCR() { static VSCR dummy; throw std::runtime_error("INTERNAL ERROR! GetVSCR is unavailable"); return dummy; }
+		VR& GetVR(unsigned int n) { static VR dummy; throw std::runtime_error("INTERNAL ERROR! GetVR is unavailable"); return dummy; }
+	};
+	
+	struct AltivecVectorUnit
+	{
+		AltivecVectorUnit(typename CONFIG::CPU *cpu);
+		
+		VSCR& GetVSCR() { return vscr; }
+		VR& GetVR(unsigned int n) { return vr[n]; }
+		
+	protected:
+		VRSAVE vrsave;
+		VSCR vscr;
+		VR vr[32];
+	};
+	
+	SWITCH_ENUM_TRAIT(bool, _VU_impl);
+	CASE_ENUM_TRAIT(false, _VU_impl) { typedef NoVectorUnit VectorUnit; };
+	CASE_ENUM_TRAIT(true, _VU_impl)  { typedef AltivecVectorUnit VectorUnit; };
+	typedef typename ENUM_TRAIT(CONFIG::HAS_ALTIVEC, _VU_impl)::VectorUnit VectorUnit;
 	
 protected:
 	///////////////////////////// Logger //////////////////////////////////////
@@ -6020,6 +8034,10 @@ protected:
 	////////////////////////// Floating-point unit ////////////////////////////
 	
 	FPU fpu;
+	
+	///////////////////////////// Vector unit /////////////////////////////////
+	
+	VectorUnit vector_unit;
 	
 private:
 	////////////////////////// PowerPCLinux32 /////////////////////////////////

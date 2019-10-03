@@ -414,6 +414,8 @@ public:
 	void SetVariable(const char *variable_name, long long variable_value);
 	void SetVariable(const char *variable_name, float variable_value);
 	void SetVariable(const char *variable_name, double variable_value);
+	
+	virtual void SigInt();
 private:
 	void BroadcastSigInt();
 };

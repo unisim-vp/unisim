@@ -34,7 +34,7 @@
 
 op efdctsidz(4[6]:rd[5]:?[5]:rb[5]:747[11])
 efdctsidz.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 efdctsidz.disasm = {

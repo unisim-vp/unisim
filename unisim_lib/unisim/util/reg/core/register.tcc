@@ -299,6 +299,13 @@ inline void Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::LongPrettyPrint(std::o
 	LongPrettyPrinter::PrintDescription(os, GetDescription());
 }
 
+/////////////////////////////// MakeMask ///////////////////////////////////
+
+template <typename T, unsigned int BITWIDTH> T MakeMask()
+{
+	return BITWIDTH ? (T(2) << (BITWIDTH - 1)) - 1 : 0;
+}
+
 /////////////////////////////// NullField //////////////////////////////////
 
 template <typename T>
@@ -3223,14 +3230,20 @@ template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGIST
 Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Register()
 	: value(0)
 {
-	assert(REGISTER::ALL::template HasOverlappingBitFields<TYPE>() == false);
+	if(static_cast<REGISTER *>(this)->NeedCheckForOverlappingBitFields())
+	{
+		assert(REGISTER::ALL::template HasOverlappingBitFields<TYPE>() == false);
+	}
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Register(TYPE _value)
 	: value(_value & TYPE_MASK)
 {
-	assert(REGISTER::ALL::template HasOverlappingBitFields<TYPE>() == false);
+	if(static_cast<REGISTER *>(this)->NeedCheckForOverlappingBitFields())
+	{
+		assert(REGISTER::ALL::template HasOverlappingBitFields<TYPE>() == false);
+	}
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>

@@ -56,42 +56,26 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	, param_cpuid("cpuid", this, cpuid, "CPU ID at reset")
 	, processor_version(0x0)
 	, param_processor_version("processor-version", this, processor_version, "Processor Version")
-	, trap_critical_input_interrupt(false)
-	, param_trap_critical_input_interrupt("trap-critical-input-interrupt", this, trap_critical_input_interrupt, "enable/disable trap (in debugger) of critical input interrupt")
-	, trap_machine_check_interrupt(false)
-	, param_trap_machine_check_interrupt("trap-machine-check-interrupt", this, trap_machine_check_interrupt, "enable/disable trap (in debugger) of machine check interrupt")
-	, trap_data_storage_interrupt(false)
-	, param_trap_data_storage_interrupt("trap-data-storage-interrupt", this, trap_data_storage_interrupt, "enable/disable trap (in debugger) of data storage interrupt")
-	, trap_instruction_storage_interrupt(false)
-	, param_trap_instruction_storage_interrupt("trap-instruction-storage-interrupt", this, trap_instruction_storage_interrupt, "enable/disable trap (in debugger) of instruction storage interrupt")
-	, trap_external_input_interrupt(false)
-	, param_trap_external_input_interrupt("trap-external-input-interrupt", this, trap_external_input_interrupt, "enable/disable trap (in debugger) of extern input interrupt")
-	, trap_alignment_interrupt(false)
-	, param_trap_alignment_interrupt("trap-alignment-interrupt", this, trap_alignment_interrupt, "enable/disable trap (in debugger) of alignment interrupt")
-	, trap_program_interrupt(false)
-	, param_trap_program_interrupt("trap-program-interrupt", this, trap_program_interrupt, "enable/disable trap (in debugger) of program interrupt")
-	, trap_floating_point_unavailable_interrupt(false)
-	, param_trap_floating_point_unavailable_interrupt("trap-floating-point-unavailable-interrupt", this, trap_floating_point_unavailable_interrupt, "enable/disable trap (in debugger) of floating-point unavailable interrupt")
-	, trap_system_call_interrupt(false)
-	, param_trap_system_call_interrupt("trap-system-call-interrupt", this, trap_system_call_interrupt, "enable/disable trap (in debugger) of system call interrupt")
-	, trap_auxiliary_processor_unavailable_interrupt(false)
-	, param_trap_auxiliary_processor_unavailable_interrupt("trap-auxiliary-processor-unavailable-interrupt", this, trap_auxiliary_processor_unavailable_interrupt, "enable/disable trap (in debugger) of auxiliary processor unavailable interrupt")
-	, trap_decrementer_interrupt(false)
-	, param_trap_decrementer_interrupt("trap-decrementer-interrupt", this, trap_decrementer_interrupt, "enable/disable trap (in debugger) of decrementer interrupt")
-	, trap_fixed_interval_timer_interrupt(false)
-	, param_trap_fixed_interval_timer_interrupt("trap-fixed-interval-timer-interrupt", this, trap_fixed_interval_timer_interrupt, "enable/disable trap (in debugger) of fixed interval timer interrupt")
-	, trap_watchdog_interrupt(false)
-	, param_trap_watchdog_interrupt("trap_watchdog_interrupt", this, trap_watchdog_interrupt, "enable/disable trap (in debugger) of watchdog interrupt")
-	, trap_data_tlb_error_interrupt(false)
-	, param_trap_data_tlb_error_interrupt("trap-data-tlb-error-interrupt", this, trap_data_tlb_error_interrupt, "enable/disable trap (in debugger) of data TLB error interrupt")
-	, trap_instruction_tlb_error_interrupt(false)
-	, param_trap_instruction_tlb_error_interrupt("trap-instruction-tlb-error-interrupt", this, trap_instruction_tlb_error_interrupt, "enable/disable trap (in debugger) of instruction TLB error interrupt")
-	, trap_debug_interrupt(false)
-	, param_trap_debug_interrupt("trap-debug-interrupt", this, trap_debug_interrupt, "enable/disable trap (in debugger) of debug interrupt")
 	, instruction_buffer_base_addr(~EFFECTIVE_ADDRESS(0))
 	, instruction_buffer()
 	, decoder()
 	, operation(0)
+	, critical_input_interrupt(static_cast<typename CONFIG::CPU *>(this))
+	, machine_check_interrupt(static_cast<typename CONFIG::CPU *>(this))
+	, data_storage_interrupt(static_cast<typename CONFIG::CPU *>(this))
+	, instruction_storage_interrupt(static_cast<typename CONFIG::CPU *>(this))
+	, external_input_interrupt(static_cast<typename CONFIG::CPU *>(this))
+	, alignment_interrupt(static_cast<typename CONFIG::CPU *>(this))
+	, program_interrupt(static_cast<typename CONFIG::CPU *>(this))
+	, floating_point_unavailable_interrupt(static_cast<typename CONFIG::CPU *>(this))
+	, system_call_interrupt(static_cast<typename CONFIG::CPU *>(this))
+	, auxiliary_processor_unavailable_interrupt(static_cast<typename CONFIG::CPU *>(this))
+	, decrementer_interrupt(static_cast<typename CONFIG::CPU *>(this))
+	, fixed_interval_timer_interrupt(static_cast<typename CONFIG::CPU *>(this))
+	, watchdog_timer_interrupt(static_cast<typename CONFIG::CPU *>(this))
+	, data_tlb_error_interrupt(static_cast<typename CONFIG::CPU *>(this))
+	, instruction_tlb_error_interrupt(static_cast<typename CONFIG::CPU *>(this))
+	, debug_interrupt(static_cast<typename CONFIG::CPU *>(this))
 	, dcdbtrh(static_cast<typename CONFIG::CPU *>(this))
 	, dcdbtrl(static_cast<typename CONFIG::CPU *>(this))
 	, icdbdr(static_cast<typename CONFIG::CPU *>(this))
@@ -162,23 +146,6 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	param_processor_version.SetMutable(false);
 	
 	pvr.Initialize(processor_version);
-	
-	this->SuperCPU::template InstallInterrupt<CriticalInputInterrupt>(trap_critical_input_interrupt);
-	this->SuperCPU::template InstallInterrupt<MachineCheckInterrupt>(trap_machine_check_interrupt);
-	this->SuperCPU::template InstallInterrupt<DataStorageInterrupt>(trap_data_storage_interrupt);
-	this->SuperCPU::template InstallInterrupt<InstructionStorageInterrupt>(trap_instruction_storage_interrupt);
-	this->SuperCPU::template InstallInterrupt<ExternalInputInterrupt>(trap_external_input_interrupt);
-	this->SuperCPU::template InstallInterrupt<AlignmentInterrupt>(trap_alignment_interrupt);
-	this->SuperCPU::template InstallInterrupt<ProgramInterrupt>(trap_program_interrupt);
-	this->SuperCPU::template InstallInterrupt<FloatingPointUnavailableInterrupt>(trap_floating_point_unavailable_interrupt);
-	this->SuperCPU::template InstallInterrupt<SystemCallInterrupt>(trap_system_call_interrupt);
-	this->SuperCPU::template InstallInterrupt<AuxiliaryProcessorUnavailableInterrupt>(trap_auxiliary_processor_unavailable_interrupt);
-	this->SuperCPU::template InstallInterrupt<DecrementerInterrupt>(trap_decrementer_interrupt);
-	this->SuperCPU::template InstallInterrupt<FixedIntervalTimerInterrupt>(trap_fixed_interval_timer_interrupt);
-	this->SuperCPU::template InstallInterrupt<WatchdogTimerInterrupt>(trap_watchdog_interrupt);
-	this->SuperCPU::template InstallInterrupt<DataTLBErrorInterrupt>(trap_data_tlb_error_interrupt);
-	this->SuperCPU::template InstallInterrupt<InstructionTLBErrorInterrupt>(trap_instruction_tlb_error_interrupt);
-	this->SuperCPU::template InstallInterrupt<DebugInterrupt>(trap_debug_interrupt);
 
 	this->SuperCPU::template EnableInterrupt<DataStorageInterrupt>();
 	this->SuperCPU::template EnableInterrupt<InstructionStorageInterrupt>();

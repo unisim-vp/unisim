@@ -34,7 +34,7 @@
 
 op evfssubaddx(0b000100[6]:rd[5]:ra[5]:rb[5]:0b01010101011[11])
 evfssubaddx.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 evfssubaddx.disasm = {

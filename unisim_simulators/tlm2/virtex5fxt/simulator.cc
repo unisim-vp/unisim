@@ -97,6 +97,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable/Disable profiler")
 	, param_enable_linux_os("enable-linux-os", 0, enable_linux_os, "Enable/Disable target Linux ABI to host ABI translation")
+	, stop_called(false)
 	, exit_status(0)
 {
 	if(enable_profiler)
@@ -149,7 +150,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 					{
 						std::stringstream input_interrupt_stub_name_sstr;
 						input_interrupt_stub_name_sstr << "input-interrupt-stub" << irq;
-						input_interrupt_stub[irq] = new IRQ_STUB(input_interrupt_stub_name_sstr.str().c_str());
+						input_interrupt_stub[irq] = new IRQ_STUB(input_interrupt_stub_name_sstr.str().c_str(), this);
 					}
 					break;
 			}
@@ -920,24 +921,28 @@ bool Simulator::EndSetup()
 
 void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 {
-	exit_status = _exit_status;
-	if(object)
+	if(!stop_called)
 	{
-		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
-	}
-	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_core::sc_stop();
-	if(!asynchronous)
-	{
-		sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
-		switch(h.proc_kind())
+		stop_called = true;
+		exit_status = _exit_status;
+		if(object)
 		{
-			case sc_core::SC_THREAD_PROC_: 
-			case sc_core::SC_CTHREAD_PROC_:
-				sc_core::wait();
-				break;
-			default:
-				break;
+			std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+		}
+		std::cerr << "Program exited with status " << exit_status << std::endl;
+		sc_core::sc_stop();
+		if(!asynchronous)
+		{
+			sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
+			switch(h.proc_kind())
+			{
+				case sc_core::SC_THREAD_PROC_: 
+				case sc_core::SC_CTHREAD_PROC_:
+					sc_core::wait();
+					break;
+				default:
+					break;
+			}
 		}
 	}
 }
@@ -949,7 +954,7 @@ int Simulator::GetExitStatus() const
 
 void Simulator::SigInt()
 {
-	if(!enable_inline_debugger)
+	if(!inline_debugger)
 	{
 		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}

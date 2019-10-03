@@ -33,6 +33,8 @@
  */
  
 #include <unisim/util/debug/simple_register_registry.hh>
+#include <cassert>
+#include <cctype>
 
 namespace unisim {
 namespace util {
@@ -48,14 +50,26 @@ SimpleRegisterRegistry::~SimpleRegisterRegistry()
 	}
 }
 
+std::string SimpleRegisterRegistry::Key(const char *reg_name)
+{
+	std::string key;
+	for(const char *p = reg_name; *p; ++p)
+	{
+		key += std::tolower(*p);
+	}
+	return key;
+}
+
 void SimpleRegisterRegistry::AddRegisterInterface(unisim::service::interfaces::Register *reg_if)
 {
-	registers_registry[reg_if->GetName()] = reg_if;
+	std::string key(Key(reg_if->GetName()));
+	assert(registers_registry.find(key) == registers_registry.end());
+	registers_registry[key] = reg_if;
 }
 
 unisim::service::interfaces::Register *SimpleRegisterRegistry::GetRegister(const char *name)
 {
-	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter = registers_registry.find(name);
+	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter = registers_registry.find(Key(name));
 	if(reg_iter != registers_registry.end())
 	{
 		return (*reg_iter).second;

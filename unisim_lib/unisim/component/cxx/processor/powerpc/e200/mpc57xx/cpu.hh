@@ -192,6 +192,8 @@ public:
 	
 	struct SystemResetInterrupt : SuperCPU::template Interrupt<SystemResetInterrupt, 0x00 /* p_rstbase[0:29] */>
 	{
+		typedef typename SuperCPU::template Interrupt<SystemResetInterrupt, 0x00> Super;
+		
 		struct Reset                             : SuperCPU::template Exception<SystemResetInterrupt> { static const char *GetName() { return "System Reset Interrupt/Reset Exception"; } };                  // reset
 		
 		typedef typename SuperCPU::template ExceptionSet<Reset> ALL;
@@ -211,11 +213,15 @@ public:
 		                , typename MSR::PMM
 		                , typename MSR::RI > MSR_CLEARED_FIELDS;
 		
+		SystemResetInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "system-reset-interrupt"; }
 		static const char *GetName() { return "System Reset Interrupt"; }
 	};
 
 	struct CriticalInputInterrupt : SuperCPU::template Interrupt<CriticalInputInterrupt, 0x00>
 	{
+		typedef typename SuperCPU::template Interrupt<CriticalInputInterrupt, 0x00> Super;
+		
 		struct CriticalInput                        : SuperCPU::template Exception<CriticalInputInterrupt> { static const char *GetName() { return "Critical Input Interrupt/Critical Input Exception"; } };             //  p_critint_b is asserted and MSR[CE] = 1
 		
 		typedef typename SuperCPU::template ExceptionSet<CriticalInput> ALL;
@@ -232,6 +238,8 @@ public:
 		                , typename MSR::DS
 		                , typename MSR::PMM > MSR_ALWAYS_CLEARED_FIELDS;
 		
+		CriticalInputInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "critical-input-interrupt"; }
 		static const char *GetName() { return "Critical Input Interrupt"; }
 	};
 
@@ -283,10 +291,11 @@ public:
 		                , typename MSR::PMM
 		                , typename MSR::RI > MSR_ALWAYS_CLEARED_FIELDS;
 		
-		MachineCheckInterrupt() : Super(), machine_check_events(0) {}
+		MachineCheckInterrupt(typename CONFIG::CPU *cpu) : Super(cpu), machine_check_events(0) {}
 		bool GotEvent(MachineCheckEventType machine_check_event) const { return machine_check_events & machine_check_event; }
 		MachineCheckInterrupt& SetEvent(MachineCheckEventType machine_check_event) { machine_check_events |= machine_check_event; return *this; }
 		void ClearEvents() { machine_check_events = 0; }
+		static const char *GetId() { return "machine-check-interrupt"; }
 		static const char *GetName() { return "Machine Check Interrupt"; }
 	private:
 		unsigned int machine_check_events;
@@ -294,6 +303,8 @@ public:
 	
 	struct DataStorageInterrupt : SuperCPU::template InterruptWithAddress<DataStorageInterrupt, 0x20>
 	{
+		typedef typename SuperCPU::template InterruptWithAddress<DataStorageInterrupt, 0x20> Super;
+		
 		struct AccessControl                        : SuperCPU::template Exception<DataStorageInterrupt> { static const char *GetName() { return "Data Storage Interrupt/Access Control Exception"; } };               // Access control
 		
 		typedef typename SuperCPU::template ExceptionSet<AccessControl> ALL;
@@ -309,11 +320,15 @@ public:
 		                , typename MSR::DS
 		                , typename MSR::PMM > MSR_CLEARED_FIELDS;
 
+		DataStorageInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "data-storage-interrupt"; }
 		static const char *GetName() { return "Data Storage Interrupt"; }
 	};
 
 	struct InstructionStorageInterrupt : SuperCPU::template Interrupt<InstructionStorageInterrupt, 0x30>
 	{
+		typedef typename SuperCPU::template Interrupt<InstructionStorageInterrupt, 0x30> Super;
+		
 		struct AccessControl                        : SuperCPU::template Exception<InstructionStorageInterrupt> { static const char *GetName() { return "Instruction Storage Interrupt/Access Control Exception"; } };        // Access control
 		
 		typedef typename SuperCPU::template ExceptionSet<AccessControl> ALL;
@@ -329,12 +344,16 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS
 		                , typename MSR::PMM > MSR_CLEARED_FIELDS;
-
+		
+		InstructionStorageInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "instruction-storage-interrupt"; }
 		static const char *GetName() { return "Instruction Storage Interrupt"; }
 	};
 
 	struct ExternalInputInterrupt : SuperCPU::template Interrupt<ExternalInputInterrupt, 0x40>
 	{
+		typedef typename SuperCPU::template Interrupt<ExternalInputInterrupt, 0x40> Super;
+		
 		struct ExternalInput                        : SuperCPU::template Exception<ExternalInputInterrupt> { static const char *GetName() { return "External Input Interrupt/External Input Exception"; } };             // Interrupt Controller interrupt and MSR[EE] = 1
 		
 		typedef typename SuperCPU::template ExceptionSet<ExternalInput> ALL;
@@ -350,11 +369,15 @@ public:
 		                , typename MSR::DS
 		                , typename MSR::PMM > MSR_CLEARED_FIELDS;
 		
+		ExternalInputInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "external-input-interrupt"; }
 		static const char *GetName() { return "External Input Interrupt"; }
 	};
 
 	struct AlignmentInterrupt : SuperCPU::template InterruptWithAddress<AlignmentInterrupt, 0x50>
 	{
+		typedef typename SuperCPU::template InterruptWithAddress<AlignmentInterrupt, 0x50> Super;
+		
 		struct UnalignedLoadStoreMultiple           : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load/Store Multiple Exception"; } };                 // lmw, stmw not word aligned
 		struct UnalignedLoadLinkStoreConditional    : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load Link/Store Conditional Exception"; } };                 // lwarx or stwcx. not word aligned, lharx or sthcx. not halfword aligned
 		struct WriteThroughDCBZ                     : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Write Through DCBZ Exception"; } };                 // dcbz
@@ -371,12 +394,16 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS
 		                , typename MSR::PMM > MSR_CLEARED_FIELDS;
-
+		
+		AlignmentInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "alignment-interrupt"; }
 		static const char *GetName() { return "Alignment Interrupt"; }
 	};
 	
 	struct ProgramInterrupt : SuperCPU::template Interrupt<ProgramInterrupt, 0x60>
 	{
+		typedef typename SuperCPU::template Interrupt<ProgramInterrupt, 0x60> Super;
+		
 		struct IllegalInstruction                   : SuperCPU::template Exception<ProgramInterrupt>  { static const char *GetName() { return "Program Interrupt/Illegal Instruction Exception"; } };                   // illegal instruction
 		struct PrivilegeViolation                   : SuperCPU::template Exception<ProgramInterrupt>  { static const char *GetName() { return "Program Interrupt/Privilege Violation Exception"; } };                   // privilege violation
 		struct Trap                                 : SuperCPU::template Exception<ProgramInterrupt> { static const char *GetName() { return "Program Interrupt/Trap Exception"; } };                   // trap instruction
@@ -394,12 +421,17 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS
 		                , typename MSR::PMM > MSR_CLEARED_FIELDS;
-
+		
+		
+		ProgramInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "program-interrupt"; }
 		static const char *GetName() { return "Program Interrupt"; }
 	};
 
 	struct PerformanceMonitorInterrupt : SuperCPU::template Interrupt<PerformanceMonitorInterrupt, 0x70>
 	{
+		typedef typename SuperCPU::template Interrupt<PerformanceMonitorInterrupt, 0x70> Super;
+		
 		struct PerformanceCounterOverflow           : SuperCPU::template Exception<PerformanceMonitorInterrupt> { static const char *GetName() { return "Performance Monitor Interrupt/Performance Counter Overflow Exception"; } };        // PMC register overflow
 		struct DebugEvent                           : SuperCPU::template Exception<PerformanceMonitorInterrupt> { static const char *GetName() { return "Performance Monitor Interrupt/Debug Event Exception"; } };        // Event w/PMGC0[UDI]=0
 		
@@ -415,11 +447,15 @@ public:
 		                , typename MSR::DS
 		                , typename MSR::PMM > MSR_ALWAYS_CLEARED_FIELDS;
 		
+		PerformanceMonitorInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "performance-monitor-interrupt"; }
 		static const char *GetName() { return "Performance Monitor Interrupt"; }
 	};
 	
 	struct SystemCallInterrupt : SuperCPU::template Interrupt<SystemCallInterrupt, 0x80>
 	{
+		typedef typename SuperCPU::template Interrupt<SystemCallInterrupt, 0x80> Super;
+		
 		struct SystemCall                           : SuperCPU::template Exception<SystemCallInterrupt> { static const char *GetName() { return "System Call Interrupt/System Call Exception"; } };                // Execution of the System Call (se_sc) instruction
 		
 		typedef typename SuperCPU::template ExceptionSet<SystemCall> ALL;
@@ -435,9 +471,10 @@ public:
 		                , typename MSR::DS
 		                , typename MSR::PMM > MSR_CLEARED_FIELDS;
 		
+		static const char *GetId() { return "system-call-interrupt"; }
 		static const char *GetName() { return "System Call Interrupt"; }
 		
-		SystemCallInterrupt() : elev(0) {}
+		SystemCallInterrupt(typename CONFIG::CPU *cpu) : Super(cpu), elev(0) {}
 		void SetELEV(unsigned int _elev) { elev = _elev; }
 		unsigned int GetELEV() const { return elev; }
 		void ClearELEV() { elev = 0; }
@@ -495,11 +532,12 @@ public:
 		                , typename MSR::DS
 		                , typename MSR::PMM > MSR_ALWAYS_CLEARED_FIELDS;
 		
-		DebugInterrupt() : Super(), dbg_events(0) {}
+		DebugInterrupt(typename CONFIG::CPU *cpu) : Super(cpu), dbg_events(0) {}
 		bool GotEvent(DebugEventType dbg_event) const { return dbg_events & dbg_event; }
 		DebugInterrupt& SetEvent(DebugEventType dbg_event) { dbg_events |= dbg_event; return *this; }
 		void ClearEvents() { dbg_events = 0; }
 		
+		static const char *GetId() { return "debug-interrupt"; }
 		static const char *GetName() { return "Debug Interrupt"; }
 	private:
 		uint32_t dbg_events;
@@ -507,6 +545,8 @@ public:
 
 	struct EmbeddedFloatingPointDataInterrupt : SuperCPU::template Interrupt<EmbeddedFloatingPointDataInterrupt, 0xa0>
 	{
+		typedef typename SuperCPU::template Interrupt<EmbeddedFloatingPointDataInterrupt, 0xa0> Super;
+		
 		struct EmbeddedFloatingPointData            : SuperCPU::template Exception<EmbeddedFloatingPointDataInterrupt> { static const char *GetName() { return "Embedded Floating-Point Data Interrupt/Embedded Floating-Point Data Exception"; } }; // Embedded Floating-point Data Exception
 		
 		typedef typename SuperCPU::template ExceptionSet<EmbeddedFloatingPointData> ALL;
@@ -522,11 +562,16 @@ public:
 		                , typename MSR::DS
 		                , typename MSR::PMM > MSR_CLEARED_FIELDS;
 		
+		
+		EmbeddedFloatingPointDataInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "embedded-floating-point-data-interrupt"; }
 		static const char *GetName() { return "Embedded Floating-Point Data Interrupt"; }
 	};
 	
 	struct EmbeddedFloatingPointRoundInterrupt : SuperCPU::template Interrupt<EmbeddedFloatingPointRoundInterrupt, 0xb0>
 	{
+		typedef typename SuperCPU::template Interrupt<EmbeddedFloatingPointRoundInterrupt, 0xb0> Super;
+		
 		struct EmbeddedFloatingPointRound           : SuperCPU::template Exception<EmbeddedFloatingPointRoundInterrupt> { static const char *GetName() { return "Embedded Floating-Point Round Interrupt/Embedded Floating-Point Round Exception"; } };// Embedded Floating-point Round Exception
 		
 		typedef typename SuperCPU::template ExceptionSet<EmbeddedFloatingPointRound> ALL;
@@ -541,7 +586,9 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS
 		                , typename MSR::PMM > MSR_CLEARED_FIELDS;
-
+		
+		EmbeddedFloatingPointRoundInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "embedded-floating-point-round-interrupt"; }
 		static const char *GetName() { return "Embedded Floating-Point Round Interrupt"; }
 	};
 
@@ -733,50 +780,25 @@ protected:
 
 	PHYSICAL_ADDRESS local_memory_size;
 	unisim::kernel::variable::Parameter<PHYSICAL_ADDRESS> param_local_memory_size;
-
-	bool trap_system_reset_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_system_reset_interrupt;
-
-	bool trap_machine_check_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_machine_check_interrupt;
-	
-	bool trap_data_storage_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_data_storage_interrupt;
-	
-	bool trap_instruction_storage_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_instruction_storage_interrupt;
-	
-	bool trap_alignment_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_alignment_interrupt;
-	
-	bool trap_program_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_program_interrupt;
-	
-	bool trap_embedded_floating_point_data_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_embedded_floating_point_data_interrupt;
-	
-	bool trap_embedded_floating_point_round_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_embedded_floating_point_round_interrupt;
-	
-	bool trap_system_call_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_system_call_interrupt;
-	
-	bool trap_critical_input_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_critical_input_interrupt;
-	
-	bool trap_external_input_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_external_input_interrupt;
-	
-	bool trap_performance_monitor_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_performance_monitor_interrupt;
-	
-	bool trap_debug_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_debug_interrupt;
 	
 	///////////////////////////// Interrupts //////////////////////////////////
 	
 	bool enable_auto_vectored_interrupts;
 	EFFECTIVE_ADDRESS vector_offset;
+
+	SystemResetInterrupt                system_reset_interrupt;
+	CriticalInputInterrupt              critical_input_interrupt;
+	MachineCheckInterrupt               machine_check_interrupt;
+	DataStorageInterrupt                data_storage_interrupt;
+	InstructionStorageInterrupt         instruction_storage_interrupt;
+	ExternalInputInterrupt              external_input_interrupt;
+	AlignmentInterrupt                  alignment_interrupt;
+	ProgramInterrupt                    program_interrupt;
+	PerformanceMonitorInterrupt         performance_monitor_interrupt;
+	SystemCallInterrupt                 system_call_interrupt;
+	DebugInterrupt                      debug_interrupt;
+	EmbeddedFloatingPointDataInterrupt  embedded_floating_point_data_interrupt;
+	EmbeddedFloatingPointRoundInterrupt embedded_floating_point_round_interrupt;
 
 	////////////////////////// Instruction Buffer /////////////////////////////
 
@@ -862,37 +884,37 @@ protected:
 	
 	//////////////////////// Performance Monitor Registers /////////////////////
 	
-	typename SuperCPU::PMC0 pmc0;
-	typename SuperCPU::PMC1 pmc1;
-	typename SuperCPU::PMC2 pmc2;
-	typename SuperCPU::PMC3 pmc3;
-	typename SuperCPU::PMGC0 pmgc0;
-	typename SuperCPU::PMLCa0 pmlca0;
-	typename SuperCPU::PMLCa1 pmlca1;
-	typename SuperCPU::PMLCa2 pmlca2;
-	typename SuperCPU::PMLCa3 pmlca3;
-	typename SuperCPU::PMLCb0 pmlcb0;
-	typename SuperCPU::PMLCb1 pmlcb1;
-	typename SuperCPU::PMLCb2 pmlcb2;
-	typename SuperCPU::PMLCb3 pmlcb3;
+	typename SuperCPU::performance_monitoring::PMC0 pmc0;
+	typename SuperCPU::performance_monitoring::PMC1 pmc1;
+	typename SuperCPU::performance_monitoring::PMC2 pmc2;
+	typename SuperCPU::performance_monitoring::PMC3 pmc3;
+	typename SuperCPU::performance_monitoring::PMGC0 pmgc0;
+	typename SuperCPU::performance_monitoring::PMLCa0 pmlca0;
+	typename SuperCPU::performance_monitoring::PMLCa1 pmlca1;
+	typename SuperCPU::performance_monitoring::PMLCa2 pmlca2;
+	typename SuperCPU::performance_monitoring::PMLCa3 pmlca3;
+	typename SuperCPU::performance_monitoring::PMLCb0 pmlcb0;
+	typename SuperCPU::performance_monitoring::PMLCb1 pmlcb1;
+	typename SuperCPU::performance_monitoring::PMLCb2 pmlcb2;
+	typename SuperCPU::performance_monitoring::PMLCb3 pmlcb3;
 	
-	typename SuperCPU::UPMC0 upmc0;
-	typename SuperCPU::UPMC1 upmc1;
-	typename SuperCPU::UPMC2 upmc2;
-	typename SuperCPU::UPMC3 upmc3;
-	typename SuperCPU::UPMGC0 upmgc0;
-	typename SuperCPU::UPMLCa0 upmlca0;
-	typename SuperCPU::UPMLCa1 upmlca1;
-	typename SuperCPU::UPMLCa2 upmlca2;
-	typename SuperCPU::UPMLCa3 upmlca3;
-	typename SuperCPU::UPMLCb0 upmlcb0;
-	typename SuperCPU::UPMLCb1 upmlcb1;
-	typename SuperCPU::UPMLCb2 upmlcb2;
-	typename SuperCPU::UPMLCb3 upmlcb3;
+	typename SuperCPU::performance_monitoring::UPMC0 upmc0;
+	typename SuperCPU::performance_monitoring::UPMC1 upmc1;
+	typename SuperCPU::performance_monitoring::UPMC2 upmc2;
+	typename SuperCPU::performance_monitoring::UPMC3 upmc3;
+	typename SuperCPU::performance_monitoring::UPMGC0 upmgc0;
+	typename SuperCPU::performance_monitoring::UPMLCa0 upmlca0;
+	typename SuperCPU::performance_monitoring::UPMLCa1 upmlca1;
+	typename SuperCPU::performance_monitoring::UPMLCa2 upmlca2;
+	typename SuperCPU::performance_monitoring::UPMLCa3 upmlca3;
+	typename SuperCPU::performance_monitoring::UPMLCb0 upmlcb0;
+	typename SuperCPU::performance_monitoring::UPMLCb1 upmlcb1;
+	typename SuperCPU::performance_monitoring::UPMLCb2 upmlcb2;
+	typename SuperCPU::performance_monitoring::UPMLCb3 upmlcb3;
 	
 	///////////////////////// Thread Management Registers /////////////////////
 	
-	typename SuperCPU::TMCFG0 tmcfg0;
+	typename SuperCPU::thread_management::TMCFG0 tmcfg0;
 };
 
 } // end of namespace mpc57xx

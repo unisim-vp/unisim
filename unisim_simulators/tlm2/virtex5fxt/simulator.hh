@@ -268,6 +268,7 @@ private:
 	unisim::kernel::variable::Parameter<bool> param_enable_profiler;
 	unisim::kernel::variable::Parameter<bool> param_enable_linux_os;
 
+	bool stop_called;
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 	virtual void SigInt();

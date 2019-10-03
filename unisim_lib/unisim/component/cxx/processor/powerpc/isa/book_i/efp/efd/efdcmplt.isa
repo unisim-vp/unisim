@@ -34,7 +34,7 @@
 
 op efdcmplt(4[6]:bf[3]:?[2]:ra[5]:rb[5]:749[11])
 efdcmplt.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 efdcmplt.disasm = {

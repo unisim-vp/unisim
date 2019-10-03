@@ -34,7 +34,7 @@
 
 op tlbli(31[6]:0[5]:0[5]:rb[5]:1010[10]:0[1])
 tlbli.execute = {
-	typename CONFIG::address_t ea = cpu->GetGPR(rb);
+	ADDRESS ea = cpu->GetGPR(rb);
 	return cpu->Tlbli(ea);
 }
 tlbli.disasm = {

@@ -1,5 +1,7 @@
 libc/inttypes
 libc/string
+std/cassert
+std/cctype
 std/iosfwd
 std/iostream
 std/list

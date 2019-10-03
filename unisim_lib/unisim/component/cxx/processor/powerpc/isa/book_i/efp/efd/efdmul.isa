@@ -34,7 +34,7 @@
 
 op efdmul(4[6]:rd[5]:ra[5]:rb[5]:744[11])
 efdmul.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 efdmul.disasm = {

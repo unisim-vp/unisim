@@ -365,6 +365,10 @@ private:
 	static inline const std::string& GetDescriptionKey();
 };
 
+/////////////////////////////// MakeMask ///////////////////////////////////
+
+template <typename T, unsigned int BITWIDTH> T MakeMask();
+
 /////////////////////////////// NullField //////////////////////////////////
 
 struct NullField
@@ -507,6 +511,73 @@ public:
 	inline TYPE GetWriteMask() const ALWAYS_INLINE;
 	inline TYPE GetWriteOneClearMask() const ALWAYS_INLINE;
 	inline TYPE GetReadMask() const ALWAYS_INLINE;
+	
+	inline bool NeedCheckForOverlappingBitFields() const { return true; }
+	
+	struct  _0 : Field< _0,  0> {};
+	struct  _1 : Field< _1,  1> {};
+	struct  _2 : Field< _2,  2> {};
+	struct  _3 : Field< _3,  3> {};
+	struct  _4 : Field< _4,  4> {};
+	struct  _5 : Field< _5,  5> {};
+	struct  _6 : Field< _6,  6> {};
+	struct  _7 : Field< _7,  7> {};
+	struct  _8 : Field< _8,  8> {};
+	struct  _9 : Field< _9,  9> {};
+	struct _10 : Field<_10, 10> {};
+	struct _11 : Field<_11, 11> {};
+	struct _12 : Field<_12, 12> {};
+	struct _13 : Field<_13, 13> {};
+	struct _14 : Field<_14, 14> {};
+	struct _15 : Field<_15, 15> {};
+	struct _16 : Field<_16, 16> {};
+	struct _17 : Field<_17, 17> {};
+	struct _18 : Field<_18, 18> {};
+	struct _19 : Field<_19, 19> {};
+	struct _20 : Field<_20, 20> {};
+	struct _21 : Field<_21, 21> {};
+	struct _22 : Field<_22, 22> {};
+	struct _23 : Field<_23, 23> {};
+	struct _24 : Field<_24, 24> {};
+	struct _25 : Field<_25, 25> {};
+	struct _26 : Field<_26, 26> {};
+	struct _27 : Field<_27, 27> {};
+	struct _28 : Field<_28, 28> {};
+	struct _29 : Field<_29, 29> {};
+	struct _30 : Field<_30, 30> {};
+	struct _31 : Field<_31, 31> {};
+	struct _32 : Field<_32, 32> {};
+	struct _33 : Field<_33, 33> {};
+	struct _34 : Field<_34, 34> {};
+	struct _35 : Field<_35, 35> {};
+	struct _36 : Field<_36, 36> {};
+	struct _37 : Field<_37, 37> {};
+	struct _38 : Field<_38, 38> {};
+	struct _39 : Field<_39, 39> {};
+	struct _40 : Field<_40, 40> {};
+	struct _41 : Field<_41, 41> {};
+	struct _42 : Field<_42, 42> {};
+	struct _43 : Field<_43, 43> {};
+	struct _44 : Field<_44, 44> {};
+	struct _45 : Field<_45, 45> {};
+	struct _46 : Field<_46, 46> {};
+	struct _47 : Field<_47, 47> {};
+	struct _48 : Field<_48, 48> {};
+	struct _49 : Field<_49, 49> {};
+	struct _50 : Field<_50, 50> {};
+	struct _51 : Field<_51, 51> {};
+	struct _52 : Field<_52, 52> {};
+	struct _53 : Field<_53, 53> {};
+	struct _54 : Field<_54, 54> {};
+	struct _55 : Field<_55, 55> {};
+	struct _56 : Field<_56, 56> {};
+	struct _57 : Field<_57, 57> {};
+	struct _58 : Field<_58, 58> {};
+	struct _59 : Field<_59, 59> {};
+	struct _60 : Field<_60, 60> {};
+	struct _61 : Field<_61, 61> {};
+	struct _62 : Field<_62, 62> {};
+	struct _63 : Field<_63, 63> {};
 	
 	Register();
 	Register(TYPE value);
