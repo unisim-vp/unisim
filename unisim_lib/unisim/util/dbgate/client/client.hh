@@ -47,10 +47,16 @@
 
 extern "C"
 {
-  void dbgate_write(int fd, char const* buffer, uintptr_t size);
+  void dbgate_write(int cd, char const* buffer, uintptr_t size);
   int dbgate_open(char const* path);
-  void dbgate_close(int fd);
+  void dbgate_close(int cd);
 }
+
+#define DBGATE_DEFS                                                     \
+  void dbgate_write(int cd, char const* buffer, uintptr_t size) { /* dont't write */ } \
+  int  dbgate_open(char const* path)                            { return -1; /* can't open */ } \
+  void dbgate_close(int cd)                                     { /* dont't close */ } \
+  void semicolon_expected()
 
 namespace unisim {
 namespace util {

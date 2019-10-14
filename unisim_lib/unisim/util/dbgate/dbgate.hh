@@ -50,9 +50,9 @@ namespace dbgate {
     DBGated(int port, char const* string);
 
     /* Communication with guest program. */
-    void write(int fd, char const* buffer, uintptr_t size);
+    void write(int cd, char const* buffer, uintptr_t size);
     int open(char const* path);
-    void close(int fd);
+    void close(int cd);
 
     /* Communication with debugging webclients */
 

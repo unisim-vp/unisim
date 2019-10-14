@@ -90,6 +90,7 @@ struct Checker
           typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
           if (auto an = dynamic_cast<ConstNodeBase const*>(a.node))
             {
+              // return 0; /* XXX: temporarily considering all constants equivalent */
               uint64_t av = an->Get(uint64_t()), bv = dynamic_cast<ConstNodeBase const&>(*b.node).Get( uint64_t() );
               if (int delta = __builtin_popcountll(av) - __builtin_popcountll(bv))
                 return delta;
@@ -123,7 +124,7 @@ struct Checker
   
   typedef std::multiset<ut::Interface, TestLess> TestDB;
   
-  unisim::util::random::Random random;
+  unisim::util::random::Random rnd;
   ut::AMD64 isa;
   std::set<MemCode> done;
   TestDB testdb;
@@ -166,7 +167,7 @@ struct Checker
     return found;
   }
   
-  Checker() : random( 1, 2, 3, 4 ) {}
+  Checker() : rnd( 1, 2, 3, 4 ) {}
   
   void discover( uintptr_t trials_limit, uintptr_t ttl_reset )
   {
@@ -210,7 +211,7 @@ struct Checker
          * in between the two bounds.  The weighted mean is computed
          * using fix point arithmetic with 16 fractional bits.
          */
-        uint32_t x = (random.Generate() >> 11) & 0xffff, y= 0x10000-x, carry = 0;
+        uint32_t x = (rnd.Generate() >> 11) & 0xffff, y= 0x10000-x, carry = 0;
         if (x == 0) { x = y = 0x8000; }
 
         uint8_t bytes[sizeof (MemCode::bytes) + 2];

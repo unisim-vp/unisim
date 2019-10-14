@@ -107,9 +107,9 @@ namespace dbgate {
   }
 
   void
-  DBGated::close(int fd)
+  DBGated::close(int cd)
   {
-    auto itr = ostreams.find(fd);
+    auto itr = ostreams.find(cd);
     if (itr == ostreams.end())
       return;
     Sink& sink(itr->second);
