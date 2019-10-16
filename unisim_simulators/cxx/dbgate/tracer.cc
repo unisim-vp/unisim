@@ -97,11 +97,20 @@ main(int argc, char** argv)
         }
     }
 
+  if (server.ostreams.size())
+    {
+      std::cerr << "Warning: pending debug streams:\n";
+      for (auto const& os : server.ostreams)
+        {
+          std::cerr << os.second.chanpath << "; " << os.second.filepath << "\n";
+        }
+    }
   // std::cerr << "Received:\n";
   // for (auto const& p : server.files)
   //   {
   //     std::cerr << "  \"" << p.first << "\": \"" << p.second << "\"\n";
   //   }
+  std::cerr << "DBGate server stopped" << std::endl;
   
   return 0;
 }

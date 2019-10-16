@@ -354,22 +354,49 @@ Tracee::Tracee( char** argv )
 DBGateMethodID
 Tracee::nextcall() const
 {
-  if (this->ptrace(PTRACE_CONT, 0, 0) < 0)
-    throw 0;
+  for (;;)
+    {
+      if (this->ptrace(PTRACE_CONT, 0, 0) < 0)
+        {
+          perror( "Tracee::nextcall {ptrace}" );
+          throw 0;
+        }
   
-  int status;
-  wait(&status);
+      int status;
+      wait(&status);
   
-  if (WIFEXITED(status))
-    return DBGateMethodID::end;
+      if (WIFEXITED(status))
+        return DBGateMethodID::end;
   
-  if (not WIFSTOPPED(status))
-    throw 0;
+      if (not WIFSTOPPED(status))
+        {
+          std::cerr << "Unhandled exit status: " << std::hex << std::endl;
+          throw 0;
+        }
 
-  for (DBGateMethodID method; method.next();)
-    if (driver->AtBreakPoint(*this,method))
-      return method;
-  throw 0;
+      int stopsig = WSTOPSIG(status);
+
+      if (stopsig == SIGCHLD)
+        {
+          std::cerr << "warning: process has forked...\n";
+          continue;
+        }
+
+      if (stopsig == SIGTRAP)
+        {
+          for (DBGateMethodID method; method.next();)
+            if (driver->AtBreakPoint(*this,method))
+              return method;
+      
+          printinsnaddr( std::cerr << "Unknown breakpoint: " ) << std::endl;
+          throw 0;
+          return DBGateMethodID::end;
+        }
+
+      std::cerr << "error: unhandled signal " << stopsig << std::endl;
+      throw 0;
+    }
+  
   return DBGateMethodID::end;
 }
 
