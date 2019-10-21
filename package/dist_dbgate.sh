@@ -111,7 +111,8 @@ unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR
 # Dynamic Plugin
 lib_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_PLUGIN_SOURCE_FILES}
-libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -shared -no-undefined
+#libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -shared -no-undefined
+libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -no-undefined
 
 noinst_HEADERS = ${UNISIM_LIB_PLUGIN_HEADER_FILES} ${UNISIM_PROGRAM_HEADER_FILES} dbgate.gdb dbgate.py
 EXTRA_DIST = ${UNISIM_LIB_PLUGIN_M4_FILES}
