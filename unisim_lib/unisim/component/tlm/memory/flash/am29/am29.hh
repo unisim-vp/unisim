@@ -36,9 +36,10 @@
 #define __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29_AM29_HH__
 
 #include <systemc>
-#include "unisim/component/tlm/message/memory.hh"
-#include "unisim/kernel/tlm/tlm.hh"
-#include "unisim/component/cxx/memory/flash/am29/am29.hh"
+#include <unisim/component/tlm/message/memory.hh>
+#include <unisim/kernel/tlm/tlm.hh>
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
+#include <unisim/component/cxx/memory/flash/am29/am29.hh>
 
 namespace unisim {
 namespace component {
@@ -67,25 +68,25 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, uint32_t MAX_TRANSACTION_DATA_SIZE>
 class AM29 :
-	public sc_module,
+	public sc_core::sc_module,
 	public unisim::component::cxx::memory::flash::am29::AM29<CONFIG, BYTESIZE, IO_WIDTH>,
 	public TlmSendIf<MemoryRequest<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE>, MemoryResponse<MAX_TRANSACTION_DATA_SIZE> >
 {
 public:
 	typedef unisim::component::cxx::memory::flash::am29::AM29<CONFIG, BYTESIZE, IO_WIDTH> inherited;
 
-	sc_export<TlmSendIf<MemoryRequest<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE>, 
+	sc_core::sc_export<TlmSendIf<MemoryRequest<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE>, 
 						MemoryResponse<MAX_TRANSACTION_DATA_SIZE> > > slave_port;
 
-	AM29(const sc_module_name& name, Object *parent = 0);
+	AM29(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~AM29();
 	virtual bool BeginSetup();
 	virtual bool Send(const Pointer<TlmMessage<MemoryRequest<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE>, MemoryResponse<MAX_TRANSACTION_DATA_SIZE> > >& message);
 	void Process();
 private:
-	sc_fifo<Pointer<TlmMessage<MemoryRequest<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE>, MemoryResponse<MAX_TRANSACTION_DATA_SIZE> > > > input_queue;
-	sc_time cycle_time;
-	Parameter<sc_time> param_cycle_time;
+	sc_core::sc_fifo<Pointer<TlmMessage<MemoryRequest<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE>, MemoryResponse<MAX_TRANSACTION_DATA_SIZE> > > > input_queue;
+	sc_core::sc_time cycle_time;
+	Parameter<sc_core::sc_time> param_cycle_time;
 };
 
 } // end of namespace am29

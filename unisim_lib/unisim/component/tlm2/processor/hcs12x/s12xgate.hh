@@ -48,6 +48,7 @@
 
 #include <unisim/kernel/kernel.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 
 #include <unisim/component/cxx/processor/hcs12x/xgate.hh>
 #include <unisim/component/cxx/processor/hcs12x/config.hh>

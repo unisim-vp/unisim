@@ -37,6 +37,7 @@
 
 #include <systemc>
 #include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh>
 #include <unisim/component/tlm/message/snooping_fsb.hh>
 #include <unisim/kernel/tlm/tlm.hh>

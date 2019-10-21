@@ -36,9 +36,10 @@
 #define __UNISIM_COMPONENT_TLM2_MEMORY_FLASH_AM29_AM29_HH__
 
 #include <systemc>
-#include "unisim/kernel/kernel.hh"
-#include "unisim/kernel/tlm2/tlm.hh"
-#include "unisim/component/cxx/memory/flash/am29/am29.hh"
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/tlm2/tlm.hh>
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
+#include <unisim/component/cxx/memory/flash/am29/am29.hh>
 #include <inttypes.h>
 
 namespace unisim {

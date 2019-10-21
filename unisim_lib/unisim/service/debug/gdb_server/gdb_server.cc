@@ -35,6 +35,9 @@
 #include <unisim/kernel/variable/variable.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/util/likely/likely.hh>
+#include <cctype>
+
+#include <errno.h>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 
@@ -841,6 +844,7 @@ GDBFeature::GDBFeature(const std::string& _name, unsigned int _id)
 	, gdb_registers()
 {
 }
+
 void GDBFeature::AddRegister(const GDBRegister *gdb_register)
 {
 	gdb_registers.push_back(gdb_register);

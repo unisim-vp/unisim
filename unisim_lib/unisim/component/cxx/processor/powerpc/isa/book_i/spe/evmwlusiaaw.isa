@@ -34,7 +34,7 @@
 
 op evmwlusiaaw()
 evmwlusiaaw.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 evmwlusiaaw.disasm = {

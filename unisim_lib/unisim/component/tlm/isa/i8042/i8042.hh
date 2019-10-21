@@ -67,7 +67,7 @@ using unisim::component::tlm::message::InterruptRequest;
 
 template <uint32_t MAX_DATA_SIZE>
 class I8042 :
-	public sc_module,
+	public sc_core::sc_module,
 	public TlmSendIf<ISARequest<MAX_DATA_SIZE>, ISAResponse<MAX_DATA_SIZE> >,
 	public unisim::component::cxx::isa::i8042::I8042
 {
@@ -78,13 +78,13 @@ public:
 	typedef ISAResponse<MAX_DATA_SIZE> ISARsp;
 	
 	// from ISA bus
-	sc_export<TlmSendIf<ISAReq, ISARsp> > bus_port;
+	sc_core::sc_export<TlmSendIf<ISAReq, ISARsp> > bus_port;
 	
 	// to CPU
-	sc_port<TlmSendIf<InterruptRequest> > kbd_irq_port;
-	sc_port<TlmSendIf<InterruptRequest> > aux_irq_port;
+	sc_core::sc_port<TlmSendIf<InterruptRequest> > kbd_irq_port;
+	sc_core::sc_port<TlmSendIf<InterruptRequest> > aux_irq_port;
 
-	I8042(const sc_module_name& name, Object *parent = 0);
+	I8042(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~I8042();
 	void KbdIrqMaster();
 	void AuxIrqMaster();
@@ -102,12 +102,12 @@ private:
 	bool kbd_irq_level;
 	bool aux_irq_level;
 	
-	sc_time isa_bus_cycle_time;
-	sc_time bus_cycle_time;
-	sc_event set_kbd_irq_ev;
-	sc_event set_aux_irq_ev;
-	sc_mutex mutex;
-	sc_event ev_repeat;
+	sc_core::sc_time isa_bus_cycle_time;
+	sc_core::sc_time bus_cycle_time;
+	sc_core::sc_event set_kbd_irq_ev;
+	sc_core::sc_event set_aux_irq_ev;
+	sc_core::sc_mutex mutex;
+	sc_core::sc_event ev_repeat;
 };
 
 } // end of namespace i8042

@@ -38,71 +38,41 @@
 
 #include <unisim/kernel/kernel.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/service/debug/debugger/debugger.tcc>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/os/linux_os/powerpc_linux32.hh>
-#include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 
-
-#include <unisim/component/cxx/processor/powerpc/mpc7447a/config.hh>
-#include <unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.hh>
+#include <unisim/component/tlm2/processor/powerpc/e600/mpc7447a/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 
 #include <iostream>
 #include <stdexcept>
-#include <stdlib.h>
-#include <signal.h>
-
-#ifdef WIN32
-
-#include <windows.h>
-#include <winsock2.h>
-
-#endif
 
 #ifdef DEBUG_PPCEMU
-typedef unisim::component::cxx::processor::powerpc::mpc7447a::DebugConfig CPU_CONFIG;
 static const bool DEBUG_INFORMATION = true;
 #else
-typedef unisim::component::cxx::processor::powerpc::mpc7447a::Config CPU_CONFIG;
 static const bool DEBUG_INFORMATION = false;
 #endif
 
-void SigIntHandler(int signum)
-{
-	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
-	unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
-}
-
-using namespace std;
-using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::service::os::linux_os::Linux;
-using unisim::service::debug::gdb_server::GDBServer;
-using unisim::service::debug::inline_debugger::InlineDebugger;
-using unisim::service::power::CachePowerEstimator;
-using unisim::kernel::variable::Parameter;
-using unisim::kernel::variable::Variable;
-using unisim::kernel::VariableBase;
-using unisim::kernel::Object;
-
 class IRQStub
-	: public sc_module
+	: public sc_core::sc_module
 	, tlm::tlm_bw_transport_if<unisim::component::tlm2::interrupt::InterruptProtocolTypes>
 {
 public:
 	tlm::tlm_initiator_socket<0, unisim::component::tlm2::interrupt::InterruptProtocolTypes> irq_master_sock;
 	
-	IRQStub(const sc_module_name& name);
+	IRQStub(const sc_core::sc_module_name& name);
 
 	virtual tlm::tlm_sync_enum nb_transport_bw(unisim::component::tlm2::interrupt::InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 
 	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 };
 
-IRQStub::IRQStub(const sc_module_name& name)
-	: sc_module(name)
+IRQStub::IRQStub(const sc_core::sc_module_name& name)
+	: sc_core::sc_module(name)
 	, irq_master_sock("irq-master-sock")
 {
 	irq_master_sock(*this);
@@ -125,8 +95,9 @@ public:
 	virtual ~Simulator();
 	void Run();
 	virtual unisim::kernel::Simulator::SetupStatus Setup();
-	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
+	virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
+	virtual void SigInt();
 protected:
 private:
 
@@ -135,39 +106,10 @@ private:
 	//=========================================================================
 
 	// Front Side Bus template parameters
-	typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
-	typedef CPU_ADDRESS_TYPE FSB_ADDRESS_TYPE;
-	typedef CPU_ADDRESS_TYPE MEMORY_ADDRESS_TYPE;
-	typedef uint32_t CPU_REG_TYPE;
+	typedef uint32_t CPU_ADDRESS_TYPE;
+	typedef uint64_t FSB_ADDRESS_TYPE;
+	static const unsigned int FSB_BURST_SIZE = 32;
 
-	//=========================================================================
-	//===                     Aliases for components classes                ===
-	//=========================================================================
-
-	typedef unisim::component::tlm2::memory::ram::Memory<CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CPU_CONFIG::FSB_BURST_SIZE / CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> MEMORY;
-	typedef unisim::component::tlm2::processor::powerpc::mpc7447a::CPU<CPU_CONFIG> CPU;
-
-	//=========================================================================
-	//===                     Component instantiations                      ===
-	//=========================================================================
-	//  - PowerPC processor
-	CPU *cpu;
-	//  - RAM
-	MEMORY *memory;
-	// - IRQ stubs
-	IRQStub *external_interrupt_stub;
-	IRQStub *hard_reset_stub;
-	IRQStub *soft_reset_stub;
-	IRQStub *mcp_slave_stub;
-//	IRQStub *tea_slave_stub;
-	IRQStub *smi_slave_stub;
-
-	//=========================================================================
-	//===                         Service instantiations                    ===
-	//=========================================================================
-	//  - Linux loader and Linux ABI translator
-	Linux<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE> *linux_os;
-	
 	struct DEBUGGER_CONFIG
 	{
 		typedef CPU_ADDRESS_TYPE ADDRESS;
@@ -176,30 +118,59 @@ private:
 		static const unsigned int MAX_FRONT_ENDS = 2;
 	};
 	
-	typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> Debugger;
+	//=========================================================================
+	//===                     Aliases for components classes                ===
+	//=========================================================================
+
+	typedef unisim::component::tlm2::processor::powerpc::e600::mpc7447a::CPU CPU;
+	typedef unisim::component::tlm2::memory::ram::Memory<CPU::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / CPU::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> MEMORY;
+	typedef IRQStub IRQ_STUB;
+
+	//=========================================================================
+	//===                      Aliases for services classes                 ===
+	//=========================================================================
+
+	typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
+	typedef unisim::service::debug::gdb_server::GDBServer<CPU_ADDRESS_TYPE> GDB_SERVER;
+	typedef unisim::service::debug::inline_debugger::InlineDebugger<CPU_ADDRESS_TYPE> INLINE_DEBUGGER;
+	typedef unisim::service::os::linux_os::PowerPCLinux32<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE> LINUS_OS;
+	
+	//=========================================================================
+	//===                     Component instantiations                      ===
+	//=========================================================================
+	//  - PowerPC processor
+	CPU *cpu;
+	//  - RAM
+	MEMORY *memory;
+	// - IRQ stubs
+	IRQ_STUB *external_interrupt_stub;
+	IRQ_STUB *hard_reset_stub;
+	IRQ_STUB *soft_reset_stub;
+	IRQ_STUB *mcp_slave_stub;
+//	IRQ_STUB *tea_slave_stub;
+	IRQ_STUB *smi_slave_stub;
+
+	//=========================================================================
+	//===                         Service instantiations                    ===
+	//=========================================================================
+	//  - Linux loader and Linux ABI translator
+	LINUS_OS *linux_os;
+	
 	//  - debugger back-end
-	Debugger *debugger;
+	DEBUGGER *debugger;
 	//  - GDB server
-	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
+	GDB_SERVER *gdb_server;
 	//  - Inline debugger
-	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger;
+	INLINE_DEBUGGER *inline_debugger;
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
-	//  - the optional power estimators
-	CachePowerEstimator *il1_power_estimator;
-	CachePowerEstimator *dl1_power_estimator;
-	CachePowerEstimator *l2_power_estimator;
-	CachePowerEstimator *itlb_power_estimator;
-	CachePowerEstimator *dtlb_power_estimator;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
-	bool estimate_power;
-	Parameter<bool> param_enable_gdb_server;
-	Parameter<bool> param_enable_inline_debugger;
-	Parameter<bool> param_estimate_power;
+	unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
+	unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
 
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
@@ -222,17 +193,10 @@ Simulator::Simulator(int argc, char **argv)
 	, inline_debugger(0)
 	, sim_time(0)
 	, host_time(0)
-	, il1_power_estimator(0)
-	, dl1_power_estimator(0)
-	, l2_power_estimator(0)
-	, itlb_power_estimator(0)
-	, dtlb_power_estimator(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
-	, estimate_power(false)
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
-	, param_estimate_power("estimate-power", 0, estimate_power, "Enable/Disable power estimators instantiation")
 	, exit_status(0)
 {
 	//=========================================================================
@@ -243,34 +207,28 @@ Simulator::Simulator(int argc, char **argv)
 	//  - RAM
 	memory = new MEMORY("memory");
 	//  - IRQ Stubs
-	external_interrupt_stub = new IRQStub("external-interrupt-stub");
-	hard_reset_stub = new IRQStub("hard-reset-stub");
-	soft_reset_stub = new IRQStub("soft-reset-stub");
-	mcp_slave_stub = new IRQStub("mcp-stub");
-	//	tea_slave_stub = new IRQStub("tea-stub");
-	smi_slave_stub = new IRQStub("smi-stub");
+	external_interrupt_stub = new IRQ_STUB("external-interrupt-stub");
+	hard_reset_stub = new IRQ_STUB("hard-reset-stub");
+	soft_reset_stub = new IRQ_STUB("soft-reset-stub");
+	mcp_slave_stub = new IRQ_STUB("mcp-stub");
+	//	tea_slave_stub = new IRQ_STUB("tea-stub");
+	smi_slave_stub = new IRQ_STUB("smi-stub");
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - Linux loader and Linux ABI translator
-	linux_os = new unisim::service::os::linux_os::PowerPCLinux32<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE>("linux-os");
+	linux_os = new LINUS_OS("linux-os");
 	//  - Debugger
-	debugger = (enable_inline_debugger or enable_gdb_server) ? new Debugger("debugger") : 0;
+	debugger = (enable_inline_debugger or enable_gdb_server) ? new DEBUGGER("debugger") : 0;
 	//  - GDB server
-	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
+	gdb_server = enable_gdb_server ? new GDB_SERVER("gdb-server") : 0;
 	//  - Inline debugger
-	inline_debugger = enable_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
+	inline_debugger = enable_inline_debugger ? new INLINE_DEBUGGER("inline-debugger") : 0;
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
-	//  - the optional power estimators
-	il1_power_estimator = estimate_power ? new CachePowerEstimator("il1-power-estimator") : 0;
-	dl1_power_estimator = estimate_power ? new CachePowerEstimator("dl1-power-estimator") : 0;
-	l2_power_estimator = estimate_power ? new CachePowerEstimator("l2-power-estimator") : 0;
-	itlb_power_estimator = estimate_power ? new CachePowerEstimator("itlb-power-estimator") : 0;
-	dtlb_power_estimator = estimate_power ? new CachePowerEstimator("dtlb-power-estimator") : 0;
 
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -335,27 +293,6 @@ Simulator::Simulator(int argc, char **argv)
 		}
 	}
 
-	if(estimate_power)
-	{
-		// Connect everything related to power estimation
-		cpu->il1_power_estimator_import >> il1_power_estimator->power_estimator_export;
-		cpu->il1_power_mode_import >> il1_power_estimator->power_mode_export;
-		cpu->dl1_power_estimator_import >> dl1_power_estimator->power_estimator_export;
-		cpu->dl1_power_mode_import >> dl1_power_estimator->power_mode_export;
-		cpu->l2_power_estimator_import >> l2_power_estimator->power_estimator_export;
-		cpu->l2_power_mode_import >> l2_power_estimator->power_mode_export;
-		cpu->itlb_power_estimator_import >> itlb_power_estimator->power_estimator_export;
-		cpu->itlb_power_mode_import >> itlb_power_estimator->power_mode_export;
-		cpu->dtlb_power_estimator_import >> dtlb_power_estimator->power_estimator_export;
-		cpu->dtlb_power_mode_import >> dtlb_power_estimator->power_mode_export;
-
-		il1_power_estimator->time_import >> sim_time->time_export;
-		dl1_power_estimator->time_import >> sim_time->time_export;
-		l2_power_estimator->time_import >> sim_time->time_export;
-		itlb_power_estimator->time_import >> sim_time->time_export;
-		dtlb_power_estimator->time_import >> sim_time->time_export;
-	}
-
 	cpu->linux_os_import >> linux_os->linux_os_export_;
 	linux_os->memory_import_ >> cpu->memory_export;
 	linux_os->memory_injection_import_ >> cpu->memory_injection_export;
@@ -375,11 +312,6 @@ Simulator::~Simulator()
 	delete gdb_server;
 	delete inline_debugger;
 	delete cpu;
-	delete il1_power_estimator;
-	delete dl1_power_estimator;
-	delete l2_power_estimator;
-	delete itlb_power_estimator;
-	delete dtlb_power_estimator;
 	delete sim_time;
 	delete linux_os;
 }
@@ -395,36 +327,22 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	simulator->SetVariable("description", "UNISIM ppcemu, user level PowerPC simulator with support of ELF32 binaries and Linux system call translation");
 	simulator->SetVariable("schematic", "ppcemu/fig_schematic.pdf");
 
-	int gdb_server_tcp_port = 0;
-	const char *gdb_server_arch_filename = "gdb_powerpc_32.xml";
-	const char *dwarf_register_number_mapping_filename = "powerpc_eabi_gcc_dwarf_register_number_mapping.xml";
-	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
-	double cpu_frequency = 300.0; // in Mhz
-	uint32_t cpu_clock_multiplier = 4;
-	uint32_t tech_node = 130; // in nm
-	double cpu_ipc = 1.0; // in instructions per cycle
-	double cpu_cycle_time = (double)(1.0e6 / cpu_frequency); // in picoseconds
-	double fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
-	double mem_cycle_time = fsb_cycle_time;
-
 	//=========================================================================
 	//===                     Component run-time configuration              ===
 	//=========================================================================
 
 	//  - PowerPC processor
 	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
-	simulator->SetVariable("cpu.cpu-cycle-time", cpu_cycle_time);
-	simulator->SetVariable("cpu.bus-cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("cpu.voltage", 1.3 * 1e3); // mV
-	simulator->SetVariable("cpu.max-inst", maxinst);
+	simulator->SetVariable("cpu.cpu-cycle-time", "3333 ps"); // 300 Mhz
+	simulator->SetVariable("cpu.bus-cycle-time", "13333 ps"); // 75 Mhz
 	simulator->SetVariable("cpu.nice-time", "1 ms"); // 1 ms
-	simulator->SetVariable("cpu.ipc", cpu_ipc);
+	simulator->SetVariable("cpu.ipc", 1.0);
 	simulator->SetVariable("cpu.enable-dmi", true); // Allow CPU to use SystemC TLM 2.0 DMI
 
 	//  - RAM
-	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("memory.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("memory.write-latency", SC_ZERO_TIME.to_string().c_str());
+	simulator->SetVariable("memory.cycle-time", "13333 ps");
+	simulator->SetVariable("memory.read-latency", "13333 ps");
+	simulator->SetVariable("memory.write-latency", "13333 ps");
 	simulator->SetVariable("memory.org", 0x00000000UL);
 	simulator->SetVariable("memory.bytesize", (uint32_t) -1);
 
@@ -433,12 +351,12 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	//=========================================================================
 
 	//  - GDB Server run-time configuration
-	simulator->SetVariable("gdb-server.tcp-port", gdb_server_tcp_port);
-	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
+	simulator->SetVariable("gdb-server.tcp-port", "1234");
+	simulator->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_powerpc_32.xml");
 	
 	//  - Debugger run-time configuration
 	simulator->SetVariable("debugger.parse-dwarf", false);
-	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", dwarf_register_number_mapping_filename);
+	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", "unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml");
 
 	//  - Linux OS run-time configuration
 	simulator->SetVariable("linux-os.endianness", "big-endian");
@@ -453,72 +371,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	simulator->SetVariable("linux-os.utsname-machine", "ppc");
 	simulator->SetVariable("linux-os.utsname-domainname", "(none)");
 	simulator->SetVariable("linux-os.apply-host-environment", false);
-
-	//  - Cache/TLB power estimators run-time configuration
-	simulator->SetVariable("il1-power-estimator.cache-size", 32 * 1024);
-	simulator->SetVariable("il1-power-estimator.line-size", 32);
-	simulator->SetVariable("il1-power-estimator.associativity", 8);
-	simulator->SetVariable("il1-power-estimator.rw-ports", 0);
-	simulator->SetVariable("il1-power-estimator.excl-read-ports", 1);
-	simulator->SetVariable("il1-power-estimator.excl-write-ports", 0);
-	simulator->SetVariable("il1-power-estimator.single-ended-read-ports", 0);
-	simulator->SetVariable("il1-power-estimator.banks", 4);
-	simulator->SetVariable("il1-power-estimator.tech-node", tech_node);
-	simulator->SetVariable("il1-power-estimator.output-width", 128);
-	simulator->SetVariable("il1-power-estimator.tag-width", 64);
-	simulator->SetVariable("il1-power-estimator.access-mode", "fast");
-
-	simulator->SetVariable("dl1-power-estimator.cache-size", 32 * 1024);
-	simulator->SetVariable("dl1-power-estimator.line-size", 32);
-	simulator->SetVariable("dl1-power-estimator.associativity", 8);
-	simulator->SetVariable("dl1-power-estimator.rw-ports", 1);
-	simulator->SetVariable("dl1-power-estimator.excl-read-ports", 0);
-	simulator->SetVariable("dl1-power-estimator.excl-write-ports", 0);
-	simulator->SetVariable("dl1-power-estimator.single-ended-read-ports", 0);
-	simulator->SetVariable("dl1-power-estimator.banks", 4);
-	simulator->SetVariable("dl1-power-estimator.tech-node", tech_node);
-	simulator->SetVariable("dl1-power-estimator.output-width", 64);
-	simulator->SetVariable("dl1-power-estimator.tag-width", 64);
-	simulator->SetVariable("dl1-power-estimator.access-mode", "fast");
-
-	simulator->SetVariable("l2-power-estimator.cache-size", 512 * 1024);
-	simulator->SetVariable("l2-power-estimator.line-size", 32);
-	simulator->SetVariable("l2-power-estimator.associativity", 8);
-	simulator->SetVariable("l2-power-estimator.rw-ports", 1);
-	simulator->SetVariable("l2-power-estimator.excl-read-ports", 0);
-	simulator->SetVariable("l2-power-estimator.excl-write-ports", 0);
-	simulator->SetVariable("l2-power-estimator.single-ended-read-ports", 0);
-	simulator->SetVariable("l2-power-estimator.banks", 4);
-	simulator->SetVariable("l2-power-estimator.tech-node", tech_node);
-	simulator->SetVariable("l2-power-estimator.output-width", 256);
-	simulator->SetVariable("l2-power-estimator.tag-width", 64);
-	simulator->SetVariable("l2-power-estimator.access-mode", "fast");
-
-	simulator->SetVariable("itlb-power-estimator.cache-size", 128 * 2 * 4);
-	simulator->SetVariable("itlb-power-estimator.line-size", 4);
-	simulator->SetVariable("itlb-power-estimator.associativity", 2);
-	simulator->SetVariable("itlb-power-estimator.rw-ports", 1);
-	simulator->SetVariable("itlb-power-estimator.excl-read-ports", 0);
-	simulator->SetVariable("itlb-power-estimator.excl-write-ports", 0);
-	simulator->SetVariable("itlb-power-estimator.single-ended-read-ports", 0);
-	simulator->SetVariable("itlb-power-estimator.banks", 4);
-	simulator->SetVariable("itlb-power-estimator.tech-node", tech_node);
-	simulator->SetVariable("itlb-power-estimator.output-width", 32);
-	simulator->SetVariable("itlb-power-estimator.tag-width", 64);
-	simulator->SetVariable("itlb-power-estimator.access-mode", "fast");
-
-	simulator->SetVariable("dtlb-power-estimator.cache-size", 128 * 2 * 4);
-	simulator->SetVariable("dtlb-power-estimator.line-size", 4);
-	simulator->SetVariable("dtlb-power-estimator.associativity", 2);
-	simulator->SetVariable("dtlb-power-estimator.rw-ports", 1);
-	simulator->SetVariable("dtlb-power-estimator.excl-read-ports", 0);
-	simulator->SetVariable("dtlb-power-estimator.excl-write-ports", 0);
-	simulator->SetVariable("dtlb-power-estimator.single-ended-read-ports", 0);
-	simulator->SetVariable("dtlb-power-estimator.banks", 4);
-	simulator->SetVariable("dtlb-power-estimator.tech-node", tech_node);
-	simulator->SetVariable("dtlb-power-estimator.output-width", 32);
-	simulator->SetVariable("dtlb-power-estimator.tag-width", 64);
-	simulator->SetVariable("dtlb-power-estimator.access-mode", "fast");
 	
 	// Inline debugger
 	simulator->SetVariable("inline-debugger.num-loaders", 1);
@@ -528,11 +380,11 @@ void Simulator::Run()
 {
 	double time_start = host_time->GetTime();
 
-	sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
+	sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
 	
 	try
 	{
-		sc_start();
+		sc_core::sc_start();
 	}
 	catch(std::runtime_error& e)
 	{
@@ -556,9 +408,10 @@ void Simulator::Run()
 	std::cerr << std::endl;
 
 	std::cerr << "simulation time: " << spent_time << " seconds" << std::endl;
-	std::cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << std::endl;
+	std::cerr << "simulated time : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
+	std::cerr << "target speed: " << ((double) (*cpu)["instruction-counter"] / ((double) (*cpu)["run-time"] - (double) (*cpu)["idle-time"]) / 1000000.0) << " MIPS" << std::endl;
 	std::cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
-	std::cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
+	std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 }
 
 unisim::kernel::Simulator::SetupStatus Simulator::Setup()
@@ -570,11 +423,11 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 	
 	// Build the Linux OS arguments from the command line arguments
 	
-	VariableBase *cmd_args = FindVariable("cmd-args");
+	unisim::kernel::VariableBase *cmd_args = FindVariable("cmd-args");
 	unsigned int cmd_args_length = cmd_args->GetLength();
 	if(cmd_args_length > 0)
 	{
-		SetVariable("linux-os.binary", ((string)(*cmd_args)[0]).c_str());
+		SetVariable("linux-os.binary", ((std::string)(*cmd_args)[0]).c_str());
 		SetVariable("linux-os.argc", cmd_args_length);
 		
 		unsigned int i;
@@ -582,7 +435,7 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 		{
 			std::stringstream sstr;
 			sstr << "linux-os.argv[" << i << "]";
-			SetVariable(sstr.str().c_str(), ((string)(*cmd_args)[i]).c_str());
+			SetVariable(sstr.str().c_str(), ((std::string)(*cmd_args)[i]).c_str());
 		}
 	}
 
@@ -591,26 +444,23 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 	return setup_status;
 }
 
-void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
+void Simulator::Stop(unisim::kernel::Object *object, int _exit_status, bool asynchronous)
 {
 	exit_status = _exit_status;
 	if(object)
 	{
-		std::std::cerr << object->GetName() << " has requested simulation stop" << std::std::endl << std::std::endl;
+		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
 	}
-#ifdef DEBUG_PPCEMU
-	std::std::cerr << "Call stack:" << std::std::endl;
-	std::std::cerr << unisim::util::backtrace::BackTrace() << std::std::endl;
-#endif
-	std::std::cerr << "Program exited with status " << exit_status << std::std::endl;
-	sc_stop();
+	std::cerr << "Program exited with status " << exit_status << std::endl;
+	sc_core::sc_stop();
 	if(!asynchronous)
 	{
-		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
+		switch(h.proc_kind())
 		{
-			case SC_THREAD_PROC_: 
-			case SC_CTHREAD_PROC_:
-				wait();
+			case sc_core::SC_THREAD_PROC_: 
+			case sc_core::SC_CTHREAD_PROC_:
+				sc_core::wait();
 				break;
 			default:
 				break;
@@ -623,18 +473,16 @@ int Simulator::GetExitStatus() const
 	return exit_status;
 }
 
+void Simulator::SigInt()
+{
+	if(!inline_debugger)
+	{
+		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
+	}
+}
+
 int sc_main(int argc, char *argv[])
 {
-#ifdef WIN32
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		std::cerr << "WSAStartup failed" << std::endl;
-		return -1;
-	}
-#endif
 	Simulator *simulator = new Simulator(argc, argv);
 
 	switch(simulator->Setup())
@@ -654,10 +502,6 @@ int sc_main(int argc, char *argv[])
 
 	int exit_status = simulator->GetExitStatus();
 	if(simulator) delete simulator;
-#ifdef WIN32
-	// releases the winsock2 resources
-	WSACleanup();
-#endif
 
 	return exit_status;
 }

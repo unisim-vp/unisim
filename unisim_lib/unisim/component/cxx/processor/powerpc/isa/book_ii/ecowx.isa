@@ -34,7 +34,7 @@
  
 op ecowx(31[6]:rs[5]:ra[5]:rb[5]:438[10]:?[1])
 ecowx.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 	return false;
 }
 ecowx.disasm = {

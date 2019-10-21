@@ -41,6 +41,7 @@
 #include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <inttypes.h>
 #include <unisim/component/tlm2/interrupt/types.hh>

@@ -34,6 +34,7 @@
  */
 
 #include "unisim/component/cxx/pci/types.hh"
+#include <unisim/kernel/variable/variable.hh>
 
 namespace unisim {
 namespace kernel {
@@ -56,6 +57,12 @@ template <>
 const char *Variable<PCISpace>::GetDataTypeName() const
 {
 	return "pci space";
+}
+
+template <>
+VariableBase::DataType Variable<PCISpace>::GetDataType() const
+{
+	return DT_USER;
 }
 
 template <>
@@ -106,7 +113,7 @@ template <> Variable<PCISpace>::operator double () const {
 	return 0.0;
 }
 
-template <> Variable<PCISpace>::operator string () const {
+template <> Variable<PCISpace>::operator std::string () const {
 	switch(*storage) {
 	case SP_MEM:
 		return "mem";
@@ -201,19 +208,19 @@ template <> VariableBase& Variable<PCISpace>::operator = (const char *value) {
 	if(IsMutable())
 	{
 		PCISpace tmp;
-		if (string(value) == string("mem"))
+		if (std::string(value) == std::string("mem"))
 		{
 			tmp = SP_MEM;
 			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
-		else if (string(value) == string("i/o"))
+		else if (std::string(value) == std::string("i/o"))
 		{
 			tmp = SP_IO;
 			SetModified(*storage != tmp);
 			*storage = tmp;
 		}
-		else if (string(value) == string("cfg"))
+		else if (std::string(value) == std::string("cfg"))
 		{
 			tmp = SP_CONFIG;
 			SetModified(*storage != tmp);

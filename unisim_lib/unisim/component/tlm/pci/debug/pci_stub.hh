@@ -80,7 +80,7 @@ using unisim::component::cxx::pci::PCISpace;
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 class PCIStub :
-	public sc_module,
+	public sc_core::sc_module,
 	public TlmSendIf<PCIRequest<ADDRESS_TYPE, MAX_DATA_SIZE>, PCIResponse<MAX_DATA_SIZE> >,
 	public unisim::component::cxx::pci::debug::PCIStub<ADDRESS_TYPE>
 {
@@ -91,12 +91,12 @@ public:
 	typedef PCIResponse<MAX_DATA_SIZE> PCIRsp;
 	
 	// from PCI bus
-	sc_export<TlmSendIf<PCIReq, PCIRsp> > bus_port;
+	sc_core::sc_export<TlmSendIf<PCIReq, PCIRsp> > bus_port;
 
 	// to CPU
-	sc_port<TlmSendIf<InterruptRequest> > cpu_irq_port;
+	sc_core::sc_port<TlmSendIf<InterruptRequest> > cpu_irq_port;
 
-	PCIStub(const sc_module_name& name, Object *parent = 0);
+	PCIStub(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~PCIStub();
 	virtual bool Send(const Pointer<TlmMessage<PCIReq, PCIRsp> > &message);
 	virtual bool EndSetup();
@@ -109,10 +109,10 @@ public:
 	virtual void Trap();
 private:
 	
-	sc_time pci_bus_cycle_time;
-	sc_time bus_cycle_time;
-	sc_fifo<bool> intr_fifo;
-	sc_event trap;
+	sc_core::sc_time pci_bus_cycle_time;
+	sc_core::sc_time bus_cycle_time;
+	sc_core::sc_fifo<bool> intr_fifo;
+	sc_core::sc_event trap;
 	bool stopped;
 };
 

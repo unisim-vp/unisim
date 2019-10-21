@@ -5,4 +5,5 @@ std/vector
 unisim/component/cxx/timer/xilinx/xps_timer
 unisim/component/tlm2/interrupt
 unisim/kernel/tlm2
+unisim/kernel/variable/sc_time
 unisim/util/random

@@ -71,7 +71,7 @@ using unisim::component::cxx::pci::PCISpace;
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 class Heathrow :
-	public sc_module,
+	public sc_core::sc_module,
 	public TlmSendIf<PCIRequest<ADDRESS_TYPE, MAX_DATA_SIZE>, PCIResponse<MAX_DATA_SIZE> >,
 	public unisim::component::cxx::pci::macio::Heathrow<ADDRESS_TYPE>
 {
@@ -82,15 +82,15 @@ public:
 	typedef PCIResponse<MAX_DATA_SIZE> PCIRsp;
 	
 	// from PCI bus
-	sc_export<TlmSendIf<PCIReq, PCIRsp> > bus_port;
+	sc_core::sc_export<TlmSendIf<PCIReq, PCIRsp> > bus_port;
 	
 	// to CPU
-	sc_port<TlmSendIf<InterruptRequest> > cpu_irq_port;
+	sc_core::sc_port<TlmSendIf<InterruptRequest> > cpu_irq_port;
 
 	// from devices
-	sc_export<TlmSendIf<InterruptRequest> > *irq_port[unisim::component::cxx::pci::macio::Heathrow<ADDRESS_TYPE>::NUM_IRQS];
+	sc_core::sc_export<TlmSendIf<InterruptRequest> > *irq_port[unisim::component::cxx::pci::macio::Heathrow<ADDRESS_TYPE>::NUM_IRQS];
 
-	Heathrow(const sc_module_name& name, Object *parent = 0);
+	Heathrow(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~Heathrow();
 	virtual bool Send(const Pointer<TlmMessage<PCIReq, PCIRsp> > &message);
 	void Run();
@@ -102,20 +102,20 @@ private:
 	bool level;
 	
 	class InterruptRequestListener :	
-		public sc_module,
+		public sc_core::sc_module,
 		public TlmSendIf<InterruptRequest>
 	{
 	public:
-		InterruptRequestListener(const sc_module_name& name, unsigned int _int_num, unisim::component::tlm::pci::macio::Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE> *_heathrow);
+		InterruptRequestListener(const sc_core::sc_module_name& name, unsigned int _int_num, unisim::component::tlm::pci::macio::Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE> *_heathrow);
 		virtual bool Send(const Pointer<TlmMessage<InterruptRequest> >& message);
 	private:
 		unsigned int int_num;
 		unisim::component::tlm::pci::macio::Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE> *heathrow;
 	};
 
-	sc_time pci_bus_cycle_time;
-	sc_time bus_cycle_time;
-	sc_event set_irq_ev;
+	sc_core::sc_time pci_bus_cycle_time;
+	sc_core::sc_time bus_cycle_time;
+	sc_core::sc_event set_irq_ev;
 
 	InterruptRequestListener *irq_listener[unisim::component::cxx::pci::macio::Heathrow<ADDRESS_TYPE>::NUM_IRQS];
 };

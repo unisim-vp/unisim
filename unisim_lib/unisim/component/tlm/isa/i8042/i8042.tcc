@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_TLM_ISA_I8042_I8042_TCC__
 #define __UNISIM_COMPONENT_TLM_ISA_I8042_I8042_TCC__
 
+#include <cstring>
+
 namespace unisim {
 namespace component {
 namespace tlm {
@@ -58,9 +60,9 @@ using unisim::kernel::logger::EndDebugError;
 
 
 template <uint32_t MAX_DATA_SIZE>
-I8042<MAX_DATA_SIZE>::I8042(const sc_module_name& name, Object *parent) :
+I8042<MAX_DATA_SIZE>::I8042(const sc_core::sc_module_name& name, Object *parent) :
 	Object(name, parent, "i8042 PS/2 keyboard/mouse controller"),
-	sc_module(name),
+	sc_core::sc_module(name),
 	unisim::component::cxx::isa::i8042::I8042(name, parent),
 	isa_bus_cycle_time(),
 	bus_cycle_time()
@@ -89,8 +91,8 @@ template <uint32_t MAX_DATA_SIZE>
 bool I8042<MAX_DATA_SIZE>::EndSetup()
 {
 	if(!inherited::EndSetup()) return false;
-	isa_bus_cycle_time = sc_time(1.0 / (double) (*this)["isa-bus-frequency"], SC_US);
-	bus_cycle_time = sc_time(1.0 / (double) (*this)["fsb-frequency"], SC_US);
+	isa_bus_cycle_time = sc_core::sc_time(1.0 / (double) (*this)["isa-bus-frequency"], sc_core::SC_US);
+	bus_cycle_time = sc_core::sc_time(1.0 / (double) (*this)["fsb-frequency"], sc_core::SC_US);
 	kbd_irq_level = false;
 	aux_irq_level = false;
 	return true;
@@ -117,7 +119,7 @@ bool I8042<MAX_DATA_SIZE>::Send(const Pointer<TlmMessage<ISAReq, ISARsp> > &mess
 					if(inherited::ReadIO(isa_addr, isa_rsp->read_data, isa_req_size))
 					{
 						message->rsp = isa_rsp;
-						sc_event *rsp_ev = message->GetResponseEvent();
+						sc_core::sc_event *rsp_ev = message->GetResponseEvent();
 						rsp_ev->notify(isa_bus_cycle_time);
 					}
 					else
@@ -125,7 +127,7 @@ bool I8042<MAX_DATA_SIZE>::Send(const Pointer<TlmMessage<ISAReq, ISARsp> > &mess
 						// Respond anyway for now
 						memset(isa_rsp->read_data, 0, isa_req_size);
 						message->rsp = isa_rsp;
-						sc_event *rsp_ev = message->GetResponseEvent();
+						sc_core::sc_event *rsp_ev = message->GetResponseEvent();
 						rsp_ev->notify(isa_bus_cycle_time);
 					}
 				}
@@ -200,9 +202,9 @@ void I8042<MAX_DATA_SIZE>::CaptureKey()
 		if(inherited::CaptureKey())
 		{
 			ev_repeat.cancel();
-			ev_repeat.notify(sc_time(inherited::typematic_delay / inherited::speed_boost, SC_SEC));
+			ev_repeat.notify(sc_core::sc_time(inherited::typematic_delay / inherited::speed_boost, sc_core::SC_SEC));
 		}
-		wait(sc_time(1.0 / (inherited::typematic_rate * inherited::speed_boost), SC_SEC));
+		wait(sc_core::sc_time(1.0 / (inherited::typematic_rate * inherited::speed_boost), sc_core::SC_SEC));
 	}
 }
 
@@ -212,7 +214,7 @@ void I8042<MAX_DATA_SIZE>::CaptureMouse()
 	while(1)
 	{
 		inherited::CaptureMouse();
-		wait(sc_time(1.0 / (inherited::aux_sample_rate * inherited::speed_boost), SC_SEC));
+		wait(sc_core::sc_time(1.0 / (inherited::aux_sample_rate * inherited::speed_boost), sc_core::SC_SEC));
 	}
 }
 
@@ -223,7 +225,7 @@ void I8042<MAX_DATA_SIZE>::TriggerKbdInterrupt(bool level)
 	{
 		wait(bus_cycle_time);
 		kbd_irq_level = level;
-		set_kbd_irq_ev.notify(SC_ZERO_TIME);
+		set_kbd_irq_ev.notify(sc_core::SC_ZERO_TIME);
 		if(inherited::verbose)
 		{
 			inherited::logger << DebugInfo << "Trigger KBD interrupt level " << level << EndDebugInfo;
@@ -238,7 +240,7 @@ void I8042<MAX_DATA_SIZE>::TriggerAuxInterrupt(bool level)
 	{
 		wait(bus_cycle_time);
 		aux_irq_level = level;
-		set_aux_irq_ev.notify(SC_ZERO_TIME);
+		set_aux_irq_ev.notify(sc_core::SC_ZERO_TIME);
 		if(inherited::verbose)
  		{
 			inherited::logger << DebugInfo << "Trigger AUX interrupt level " << level << EndDebugInfo;

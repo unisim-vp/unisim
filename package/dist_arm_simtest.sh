@@ -1,6 +1,7 @@
 #!/bin/bash
 SIMPKG=arm_simtest
-SIMPKGDIR=cxx/arm_simtest
+SIMPKG_SRCDIR=cxx/arm_simtest
+SIMPKG_DSTDIR=arm_simtest
 source "$(dirname $0)/dist_common.sh"
 
 import_genisslib
@@ -27,6 +28,8 @@ import std/set || exit
 import std/sstream || exit
 import std/string || exit
 import std/vector || exit
+
+import m4/ax_cflags_warn_all || exit
 
 copy source isa_thumb isa_thumb2 isa_arm32 header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
@@ -79,7 +82,7 @@ UNISIM_SIMULATOR_TESTBENCH_FILES=""
 UNISIM_SIMULATOR_FILES="${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_EXTRA_FILES} ${UNISIM_SIMULATOR_TEMPLATE_FILES} ${UNISIM_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_TESTBENCH_FILES}"
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
-	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
+	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG_DSTDIR}/${file}"
 done
 
 for file in ${UNISIM_SIMULATOR_DATA_FILES}; do
@@ -133,14 +136,14 @@ AC_PATH_PROGS(SH, sh)
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_CONFIG_SUBDIRS([genisslib])
-AC_CONFIG_SUBDIRS([${SIMPKG}])
+AC_CONFIG_SUBDIRS([${SIMPKG_DSTDIR}])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 EOF
 )
 
 output_top_makefile_am <(cat << EOF
-SUBDIRS=genisslib ${SIMPKG}
+SUBDIRS=genisslib ${SIMPKG_DSTDIR}
 EXTRA_DIST = configure.cross
 EOF
 )
@@ -185,7 +188,6 @@ case "\${host}" in
 		;;
 esac
 $(lines ac)
-AX_CXXFLAGS_WARN_ALL
 GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
 AC_SUBST(GENISSLIB_PATH)
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
@@ -208,15 +210,15 @@ EOF
 output_simulator_makefile_am <(cat << EOF
 ACLOCAL_AMFLAGS=-I m4
 AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
-noinst_LIBRARIES = libarm_simtest-${SIMULATOR_VERSION}.a
-libarm_simtest_${AM_SIMULATOR_VERSION}_a_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
-bin_PROGRAMS = unisim-arm_simtest-${SIMULATOR_VERSION}
-unisim_arm_simtest_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
-unisim_arm_simtest_${AM_SIMULATOR_VERSION}_LDADD = libarm_simtest-${SIMULATOR_VERSION}.a
+noinst_LIBRARIES = lib${SIMPKG}-${SIMULATOR_VERSION}.a
+lib${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_a_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
+bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION}
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = lib${AM_SIMPKG}-${SIMULATOR_VERSION}.a
 
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
-sharedir = \$(prefix)/share/unisim-arm_simtest-${SIMULATOR_VERSION}
+sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
 dist_share_DATA = ${UNISIM_SIMULATOR_DATA_FILES}
 nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES}
 
@@ -243,7 +245,7 @@ EOF
 )
 
 for file in INSTALL README AUTHORS; do
-	dist_copy ${DEST_DIR}/${file} ${DEST_DIR}/${SIMPKG}/${file}
+	dist_copy ${DEST_DIR}/${file} ${DEST_DIR}/${SIMPKG_DSTDIR}/${file}
 done
 
 build_simulator_configure

@@ -4,3 +4,4 @@ unisim/component/cxx/processor/powerpc/mpc7447a
 unisim/component/tlm/message
 unisim/kernel
 unisim/kernel/tlm
+unisim/kernel/variable/sc_time

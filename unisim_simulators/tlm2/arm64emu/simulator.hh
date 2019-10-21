@@ -112,6 +112,7 @@ struct Simulator
   bool                                       enable_profiler;
   unisim::kernel::variable::Parameter<bool>   param_enable_profiler;
   
+  bool stop_called;
   int exit_status;
   virtual void SigInt();
 };

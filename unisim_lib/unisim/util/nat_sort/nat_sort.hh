@@ -37,6 +37,7 @@
 #define __UNISIM_UTIL_NAT_SORT_NAT_SORT_HH__
 
 #include <string>
+#include <stdint.h>
 
 namespace unisim {
 namespace util {

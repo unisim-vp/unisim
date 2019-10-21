@@ -77,8 +77,8 @@ public:
 
 	void Reset();
 	void Clear(unsigned int front_end_num);
-	bool SetBreakpoint(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num);
-	bool RemoveBreakpoint(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num);
+	bool SetBreakpoint(ADDRESS addr, unsigned int prc_num = 0, unsigned int front_end_num = 0);
+	bool RemoveBreakpoint(ADDRESS addr, unsigned int prc_num = 0, unsigned int front_end_num = 0);
 	bool SetBreakpoint(Breakpoint<ADDRESS> *brkp);
 	bool RemoveBreakpoint(Breakpoint<ADDRESS> *brkp);
 	bool HasBreakpoint(Breakpoint<ADDRESS> *brkp) const;

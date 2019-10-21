@@ -63,20 +63,24 @@ namespace pci {
 namespace ide {
 
 #define panic(str) \
-	cerr << " ERROR(" << __FUNCTION__ \
-		<< ":" << __FILE__ \
-		<< ":" << __LINE__ << "): " \
-		<< str \
-		<< endl;\
-	exit(-1);
+	do { \
+		std::cerr << " ERROR(" << __FUNCTION__ \
+			<< ":" << __FILE__ \
+			<< ":" << __LINE__ << "): " \
+			<< str \
+			<< std::endl;\
+		exit(-1); \
+	} while(0)
 
 #define panic2(str, str2) \
-	cerr << " ERROR(" << __FUNCTION__ \
-		<< ":" << __FILE__ \
-		<< ":" << __LINE__ << "): " \
-		<< str << " " << str2 \
-		<< endl;  \
-		exit(-1)
+	do { \
+		std::cerr << " ERROR(" << __FUNCTION__ \
+			<< ":" << __FILE__ \
+			<< ":" << __LINE__ << "): " \
+			<< str << " " << str2 \
+			<< std::endl;  \
+		exit(-1); \
+	} while(0)
 
 using namespace std;
 using unisim::util::endian::LittleEndian2Host;
@@ -141,7 +145,7 @@ RawDiskImage::read(uint8_t *data, off_t offset) const
 		panic("file not open!\n");
     }
 
-    if (stream.seekg(offset * SectorSize, ios::beg) < 0) {
+    if (!stream.seekg(offset * SectorSize, ios::beg)) {
 		panic("Could not seek to location in file");
     }
 
@@ -170,7 +174,7 @@ RawDiskImage::write(const uint8_t *data, off_t offset)
 		panic("file not open!\n");
     }
 
-    if (stream.seekp(offset * SectorSize, ios::beg) < 0) {
+    if (!stream.seekp(offset * SectorSize, ios::beg)) {
 		panic("Could not seek to location in file");
     }
 

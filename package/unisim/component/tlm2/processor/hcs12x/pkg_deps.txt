@@ -13,6 +13,7 @@ unisim/component/tlm2/memory/ram
 unisim/kernel
 unisim/kernel/logger
 unisim/kernel/tlm2
+unisim/kernel/variable/sc_time
 unisim/service/interfaces/char_io
 unisim/service/interfaces/memory
 unisim/service/interfaces/register

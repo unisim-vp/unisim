@@ -79,12 +79,12 @@ public:
 
 	void Reset();
 	void Clear(unsigned int front_end_num);
-	bool SetWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, bool overlook, unsigned int prc_num, unsigned int front_end_num);
-	bool RemoveWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num);
+	bool SetWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, bool overlook = true, unsigned int prc_num = 0, unsigned int front_end_num = 0);
+	bool RemoveWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num = 0, unsigned int front_end_num = 0);
 	bool SetWatchpoint(Watchpoint<ADDRESS> *wp);
 	bool RemoveWatchpoint(Watchpoint<ADDRESS> *wp);
 	bool HasWatchpoint(Watchpoint<ADDRESS> *wp) const;
-	bool HasWatchpoints(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num) const;
+	bool HasWatchpoints(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num = 0) const;
 	bool HasWatchpoints(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num) const;
 	bool HasWatchpoints(unsigned int prc_num) const;
 	bool HasWatchpoints() const;

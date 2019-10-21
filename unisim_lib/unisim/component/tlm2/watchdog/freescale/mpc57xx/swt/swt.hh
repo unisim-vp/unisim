@@ -40,6 +40,7 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/tlm2/clock.hh>
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include <unisim/util/reg/core/register.hh>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/debug/simple_register_registry.hh>

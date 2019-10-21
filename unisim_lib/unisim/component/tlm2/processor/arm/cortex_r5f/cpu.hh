@@ -39,6 +39,7 @@
 #include <tlm>
 #include "unisim/component/cxx/processor/arm/pmsav7/cpu.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include <inttypes.h>
 
 namespace unisim {

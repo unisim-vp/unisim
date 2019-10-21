@@ -49,15 +49,13 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-Display<ADDRESS_TYPE, MAX_DATA_SIZE>::Display(const sc_module_name& name, Object *parent) :
+Display<ADDRESS_TYPE, MAX_DATA_SIZE>::Display(const sc_core::sc_module_name& name, Object *parent) :
 	Object(name, parent, "PCI Video frame buffer display"),
-	sc_module(name),
+	sc_core::sc_module(name),
 	unisim::component::cxx::pci::video::Display<ADDRESS_TYPE>(name, parent),
 	bus_port("bus_port"),
 	pci_bus_cycle_time()
 {
-	SC_HAS_PROCESS(Display);
-	
 	bus_port(*this);
 }
 
@@ -87,7 +85,7 @@ bool Display<ADDRESS_TYPE, MAX_DATA_SIZE>::Send(const Pointer<TlmMessage<PCIReq,
 					inherited::Read(pci_addr, pci_rsp->read_data, pci_req_size);
 				
 					message->rsp = pci_rsp;
-					sc_event *rsp_ev = message->GetResponseEvent();
+					sc_core::sc_event *rsp_ev = message->GetResponseEvent();
 					rsp_ev->notify(pci_bus_cycle_time);
 				}
 				break;
@@ -128,7 +126,7 @@ bool Display<ADDRESS_TYPE, MAX_DATA_SIZE>::Send(const Pointer<TlmMessage<PCIReq,
 						}
 					
 						message->rsp = pci_rsp;
-						sc_event *rsp_ev = message->GetResponseEvent();
+						sc_core::sc_event *rsp_ev = message->GetResponseEvent();
 						rsp_ev->notify(pci_bus_cycle_time);
 					}
 					break;
@@ -155,7 +153,7 @@ template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 bool Display<ADDRESS_TYPE, MAX_DATA_SIZE>::EndSetup()
 {
 	if(!inherited::EndSetup()) return false;
-	pci_bus_cycle_time = sc_time(1.0 / (double) (*this)["pci-bus-frequency"], SC_US);
+	pci_bus_cycle_time = sc_core::sc_time(1.0 / (double) (*this)["pci-bus-frequency"], sc_core::SC_US);
 	return true;
 }
 

@@ -87,6 +87,7 @@ public:
 	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 	virtual void Reset();
+	virtual void ResetMemory();
 	virtual bool WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(ADDRESS physical_addr, void *buffer, uint32_t size);
 	uint8_t ReadConfigByte(unsigned int offset);

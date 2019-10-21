@@ -1,7 +1,8 @@
 #!/bin/bash
 
 SIMPKG=amd64emu
-SIMPKGDIR=cxx/amd64emu
+SIMPKG_SRCDIR=cxx/amd64emu
+SIMPKG_DSTDIR=amd64emu
 source "$(dirname $0)/dist_common.sh"
 
 import unisim/component/cxx/processor/intel || exit
@@ -22,6 +23,8 @@ import std/fstream || exit
 import std/iomanip || exit
 import std/iostream || exit
 import std/string || exit
+
+import m4/ax_cflags_warn_all || exit
 
 copy source header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
@@ -126,7 +129,6 @@ case "\${host}" in
 		;;
 esac
 $(lines ac)
-AX_CXXFLAGS_WARN_ALL
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
@@ -142,14 +144,14 @@ libtool: \$(LIBTOOL_DEPS)
 
 # Program
 bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION}
-unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
-unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
-unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 
 # Static Library
 noinst_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
-libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
-libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
+libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
+libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
 
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}

@@ -34,7 +34,7 @@
 
 op evfssub(4[6]:rd[5]:ra[5]:rb[5]:641[11])
 evfssub.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 evfssub.disasm = {

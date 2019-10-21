@@ -66,6 +66,8 @@ namespace linux_os {
   static char const* const kPPC_r5  = "r5";
   static char const* const kPPC_r6  = "r6";
   static char const* const kPPC_r7  = "r7";
+  static char const* const kPPC_r8  = "r8";
+  static char const* const kPPC_r9  = "r9";
   static char const* const kPPC_sp  = "r1";
   static char const* const kPPC_cr  = "cr";
   static char const* const kPPC_cia = "cia";
@@ -582,6 +584,8 @@ namespace linux_os {
       case 2: lin.GetTargetRegister(kPPC_r5, val); break;
       case 3: lin.GetTargetRegister(kPPC_r6, val); break;
       case 4: lin.GetTargetRegister(kPPC_r7, val); break;
+      case 5: lin.GetTargetRegister(kPPC_r8, val); break;
+      case 6: lin.GetTargetRegister(kPPC_r9, val); break;
       default: throw std::logic_error("internal error");
       }
           

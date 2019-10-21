@@ -265,7 +265,6 @@ class GDBServer
 	, public unisim::kernel::Client<unisim::service::interfaces::Registers>
 {
 public:
-	static const uint64_t GDB_INTERRUPT_POLL_PERIOD_MS      = 100  /* ms */;  // every 100 ms
 	static const bool ALWAYS_ACCEPT_MULTIPROCESS_NEW_THREAD_ID_SYNTAX = true; // Note: as new thread-id syntax (for multiprocess) is backward compatible with old syntax
 	static const long PROCESS_ID = 1;
 	
@@ -411,6 +410,7 @@ private:
 	GDBWaitConnectionMode wait_connection_mode;
 	bool enable_multiprocess_extension;
 	bool enable_interrupt;
+	unsigned int interrupt_poll_period_ms;
 	GDBMode mode;
 
 	unisim::kernel::variable::Parameter<unsigned int> param_memory_atom_size;
@@ -419,6 +419,7 @@ private:
 	unisim::kernel::variable::Parameter<GDBWaitConnectionMode> param_wait_connection_mode;
 	unisim::kernel::variable::Parameter<bool> param_enable_multiprocess_extension;
 	unisim::kernel::variable::Parameter<bool> param_enable_interrupt;
+	unisim::kernel::variable::Parameter<unsigned int> param_interrupt_poll_period_ms;
 	unisim::kernel::variable::Parameter<GDBMode> param_mode;
 
 	///////////////////////////////////

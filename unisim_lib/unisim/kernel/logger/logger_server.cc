@@ -308,11 +308,11 @@ void LoggerServer::Print(mode_t mode, const char *name, const char *buffer)
 			http_logs_per_client[name] = http_log = new HTTP_LOG();
 		}
 		
-		while(global_http_log.size() > opt_http_max_log_size_)
+		while(global_http_log.size() >= opt_http_max_log_size_)
 		{
 			global_http_log.pop_front();
 		}
-		while(http_log->size() > opt_http_max_log_size_)
+		while(http_log->size() >= opt_http_max_log_size_)
 		{
 			http_log->pop_front();
 		}

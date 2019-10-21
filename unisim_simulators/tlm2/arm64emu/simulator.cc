@@ -64,6 +64,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   , param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable inline debugger.")
   , enable_profiler(false)
   , param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable profiler.")
+  , stop_called(false)
   , exit_status(0)
 {
   param_enable_gdb_server.SetMutable(false);
@@ -331,28 +332,28 @@ bool Simulator::EndSetup()
 
 void Simulator::Stop(unisim::kernel::Object *object, int _exit_status, bool asynchronous)
 {
-  exit_status = _exit_status;
-  if(object)
+  if(!stop_called)
     {
-      std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
-    }
-#ifdef DEBUG_ARMEMU
-  std::cerr << "Call stack:" << std::endl;
-  std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
-#endif
-  std::cerr << "Program exited with status " << exit_status << std::endl;
-  sc_core::sc_stop();
-  if(!asynchronous)
-    {
-      sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
-      switch(h.proc_kind())
+      stop_called = true;
+      exit_status = _exit_status;
+      if(object)
         {
-        case sc_core::SC_THREAD_PROC_: 
-        case sc_core::SC_CTHREAD_PROC_:
-          sc_core::wait();
-          break;
-        default:
-          break;
+          std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+        }
+      std::cerr << "Program exited with status " << exit_status << std::endl;
+      sc_core::sc_stop();
+      if(!asynchronous)
+        {
+          sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
+          switch(h.proc_kind())
+            {
+            case sc_core::SC_THREAD_PROC_: 
+            case sc_core::SC_CTHREAD_PROC_:
+              sc_core::wait();
+              break;
+            default:
+              break;
+            }
         }
     }
 }

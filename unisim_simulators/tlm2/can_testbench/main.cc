@@ -432,6 +432,7 @@ private:
 	
 	unisim::kernel::variable::Parameter<sc_core::sc_time> param_max_time;
 	
+	bool stop_called;
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 	
@@ -449,6 +450,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, instrumenter(0)
 	, max_time(sc_core::SC_ZERO_TIME)
 	, param_max_time("max-time", 0, max_time, "Maximum time to simulate (zero means forever)")
+	, stop_called(false)
 	, exit_status(0)
 {
 
@@ -574,22 +576,26 @@ void Simulator::Run()
 
 void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 {
-	exit_status = _exit_status;
-	if(sc_core::sc_get_status() != sc_core::SC_STOPPED)
+	if(!stop_called)
 	{
-		sc_core::sc_stop();
-	}
-	if(!asynchronous)
-	{
-		sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
-		switch(h.proc_kind())
+		stop_called = true;
+		exit_status = _exit_status;
+		if(sc_core::sc_get_status() != sc_core::SC_STOPPED)
 		{
-			case sc_core::SC_THREAD_PROC_: 
-			case sc_core::SC_CTHREAD_PROC_:
-				sc_core::wait();
-				break;
-			default:
-				break;
+			sc_core::sc_stop();
+		}
+		if(!asynchronous)
+		{
+			sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
+			switch(h.proc_kind())
+			{
+				case sc_core::SC_THREAD_PROC_: 
+				case sc_core::SC_CTHREAD_PROC_:
+					sc_core::wait();
+					break;
+				default:
+					break;
+			}
 		}
 	}
 }

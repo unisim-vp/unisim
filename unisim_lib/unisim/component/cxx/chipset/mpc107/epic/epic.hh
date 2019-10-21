@@ -74,10 +74,11 @@ public:
 	virtual ~EPIC();
 
 	/* Initialization methods of the service */
+	virtual void Reset();
 	virtual bool BeginSetup();
 		
 	/* Methods to implement for Service<MemoryInterface<PHYSICAL_ADDR> > */
-	virtual void Reset();
+	virtual void ResetMemory();
 	virtual bool ReadMemory(PHYSICAL_ADDR addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(PHYSICAL_ADDR addr, const void *buffer, uint32_t size);
 

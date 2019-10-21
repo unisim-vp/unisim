@@ -1,767 +1,73 @@
 #!/bin/bash
-function Usage
-{
-	echo "Usage:"
-	echo "  $0 <destination directory>"
-}
+SIMPKG=embedded-ppc-g4-board
+SIMPKG_SRCDIR=tlm/embedded_ppc_g4_board
+SIMPKG_DSTDIR=embedded_ppc_g4_board
 
-if [ -z "$1" ]; then
-	Usage
-	exit -1
-fi
+source "$(dirname $0)/dist_common.sh"
 
-HERE=$(pwd)
-MY_DIR=$(cd $(dirname $0); pwd)
-DEST_DIR=$1
-UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
-UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
-UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/tlm/embedded_ppc_g4_board
+import_genisslib
 
-EMBEDDED_PPC_G4_BOARD_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
-GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}
+import unisim/kernel || exit
+import unisim/component/tlm/processor/powerpc/e600/mpc7447a || exit
+import unisim/component/tlm/memory/ram || exit
+import unisim/component/tlm/memory/flash/am29 || exit
+import unisim/component/tlm/fsb/snooping_bus || exit
+import unisim/component/tlm/chipset/mpc107 || exit
+import unisim/component/tlm/pci/bus || exit
+import unisim/component/tlm/pci/debug || exit
+import unisim/component/cxx/pci || exit
+import unisim/component/tlm/debug || exit
+import unisim/service/debug/gdb_server || exit
+import unisim/service/debug/inline_debugger || exit
+import unisim/service/debug/debugger || exit
+import unisim/service/loader/multiformat_loader || exit
+import unisim/service/time/sc_time || exit
+import unisim/service/time/host_time || exit
+import unisim/service/tee/memory_access_reporting || exit
+import unisim/service/tee/symbol_table_lookup || exit
+import unisim/service/debug/profiler || exit
+import unisim/service/http_server || exit
+import unisim/service/instrumenter || exit
+import unisim/service/translator/memory_address/memory || exit
+import unisim/kernel/logger || exit
 
-if test -z "${DISTCOPY}"; then
-    DISTCOPY=cp
-fi
+import std/iostream || exit
+import std/stdexcept || exit
+import std/sstream || exit
+import std/string || exit
 
-UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
-action.hh \
-cli.hh \
-errtools.hh \
-isa.hh \
-parser_defs.hh \
-riscgenerator.hh \
-specialization.hh \
-variable.hh \
-bitfield.hh \
-comment.hh \
-fwd.hh \
-main.hh \
-product.hh \
-scanner.hh \
-strtools.hh \
-vect.hh \
-ciscgenerator.hh \
-conststr.hh \
-generator.hh \
-operation.hh \
-referencecounting.hh \
-sourcecode.hh \
-subdecoder.hh"
+import m4/ax_cflags_warn_all || exit
 
-UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES="\
-scanner.cc \
-parser.cc \
-parser_tokens.hh"
+copy source isa header template data
+copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
-UNISIM_TOOLS_GENISSLIB_SOURCE_FILES="\
-parser.yy \
-scanner.ll \
-action.cc \
-bitfield.cc \
-cli.cc \
-comment.cc \
-conststr.cc \
-isa.cc \
-main.cc \
-operation.cc \
-product.cc \
-referencecounting.cc \
-sourcecode.cc \
-strtools.cc \
-variable.cc \
-generator.cc \
-riscgenerator.cc \
-ciscgenerator.cc \
-subdecoder.cc \
-specialization.cc \
-errtools.cc"
+UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
 
-UNISIM_TOOLS_GENISSLIB_DATA_FILES="COPYING INSTALL NEWS README AUTHORS ChangeLog"
+UNISIM_LIB_SIMULATOR_ISA_FILES="$(files isa)"
 
-UNISIM_TOOLS_GENISSLIB_M4_FILES="\
-m4/lexer.m4 \
-m4/parser_gen.m4"
+UNISIM_LIB_SIMULATOR_HEADER_FILES="\
+${UNISIM_LIB_SIMULATOR_ISA_FILES} \
+$(files header) \
+$(files template)"
 
-GENISSLIB_EXTERNAL_HEADERS="\
-cassert \
-cctype \
-cerrno \
-cstdarg \
-cstdio \
-cstdlib \
-cstring \
-fstream \
-inttypes.h \
-iosfwd \
-iostream \
-limits \
-map \
-memory \
-ostream \
-unistd.h \
-vector"
+UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
-UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES="\
-unisim/kernel/kernel.cc \
-unisim/kernel/config/xml_config_file_helper.cc \
-unisim/kernel/config/ini_config_file_helper.cc \
-unisim/kernel/tlm/tlm.cc \
-unisim/kernel/logger/logger.cc \
-unisim/kernel/logger/logger_server.cc \
-unisim/util/backtrace/backtrace.cc \
-unisim/util/xml/xml.cc \
-unisim/util/debug/profile_32.cc \
-unisim/util/debug/profile_64.cc \
-unisim/util/debug/symbol_32.cc \
-unisim/util/debug/symbol_64.cc \
-unisim/util/debug/symbol_table_32.cc \
-unisim/util/debug/symbol_table_64.cc \
-unisim/util/debug/watchpoint_registry_32.cc \
-unisim/util/debug/watchpoint_registry_64.cc \
-unisim/util/debug/breakpoint_registry_32.cc \
-unisim/util/debug/breakpoint_registry_64.cc \
-unisim/util/debug/type.cc \
-unisim/util/debug/stmt_32.cc \
-unisim/util/debug/stmt_64.cc \
-unisim/util/netstub/netstub.cc \
-unisim/util/debug/dwarf/abbrev.cc \
-unisim/util/debug/dwarf/attr.cc \
-unisim/util/debug/dwarf/class.cc \
-unisim/util/debug/dwarf/dwarf32.cc \
-unisim/util/debug/dwarf/dwarf64.cc \
-unisim/util/debug/dwarf/encoding.cc \
-unisim/util/debug/dwarf/filename.cc \
-unisim/util/debug/dwarf/leb128.cc \
-unisim/util/debug/dwarf/ml.cc \
-unisim/util/debug/dwarf/register_number_mapping.cc \
-unisim/util/debug/dwarf/data_object.cc \
-unisim/util/debug/dwarf/c_loc_expr_parser.cc \
-unisim/util/blob/blob32.cc \
-unisim/util/blob/blob64.cc \
-unisim/util/blob/section32.cc \
-unisim/util/blob/section64.cc \
-unisim/util/blob/segment32.cc \
-unisim/util/blob/segment64.cc \
-unisim/util/debug/elf_symtab/elf_symtab32.cc \
-unisim/util/debug/elf_symtab/elf_symtab64.cc \
-unisim/util/debug/coff_symtab/coff_symtab32.cc \
-unisim/kernel/variable/endian/endian.cc \
-unisim/util/queue/queue.cc \
-unisim/util/garbage_collector/garbage_collector.cc \
-unisim/util/loader/elf_loader/elf32_loader.cc \
-unisim/util/loader/elf_loader/elf64_loader.cc \
-unisim/util/loader/coff_loader/coff_loader32.cc \
-unisim/util/lexer/lexer.cc \
-unisim/util/ieee754/ieee754.cc \
-unisim/service/debug/inline_debugger/inline_debugger.cc \
-unisim/service/debug/inline_debugger/inline_debugger_32.cc \
-unisim/service/debug/gdb_server/gdb_server_32.cc \
-unisim/service/debug/gdb_server/gdb_server.cc \
-unisim/service/debug/debugger/debugger32.cc \
-unisim/service/profiling/addr_profiler/profiler32.cc \
-unisim/service/time/host_time/time.cc \
-unisim/service/time/sc_time/time.cc \
-unisim/service/power/cache_dynamic_energy.cc \
-unisim/service/power/cache_dynamic_power.cc \
-unisim/service/power/cache_leakage_power.cc \
-unisim/service/power/cache_power_estimator.cc \
-unisim/service/power/cache_profile.cc \
-unisim/service/loader/elf_loader/elf32_loader.cc \
-unisim/service/loader/elf_loader/elf64_loader.cc \
-unisim/service/loader/raw_loader/raw_loader32.cc \
-unisim/service/loader/s19_loader/s19_loader.cc \
-unisim/service/loader/coff_loader/coff_loader32.cc \
-unisim/service/loader/multiformat_loader/multiformat_loader.cc \
-unisim/service/loader/multiformat_loader/multiformat_loader32.cc \
-unisim/service/tee/memory_access_reporting/tee_32.cc \
-unisim/service/tee/loader/tee.cc \
-unisim/service/tee/symbol_table_lookup/tee_32.cc \
-unisim/service/tee/blob/tee_32.cc \
-unisim/service/tee/stmt_lookup/tee_32.cc \
-unisim/service/tee/backtrace/tee_32.cc \
-unisim/component/cxx/processor/powerpc/mpc7447a/cpu.cc \
-unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debug.cc \
-unisim/component/cxx/processor/powerpc/floating.cc \
-unisim/component/cxx/processor/powerpc/config.cc \
-unisim/component/cxx/processor/powerpc/mpc7447a/config.cc \
-unisim/component/cxx/processor/powerpc/mpc7447a/vr_debug_if.cc \
-unisim/component/cxx/processor/powerpc/mpc7447a/tb_debug_if.cc \
-unisim/component/cxx/memory/ram/memory_32.cc \
-unisim/component/cxx/memory/flash/am29/am29.cc \
-unisim/component/cxx/memory/flash/am29/am29lv800b.cc \
-unisim/component/cxx/memory/flash/am29/am29lv800b_config.cc \
-unisim/component/cxx/chipset/mpc107/address_map_entry.cc \
-unisim/component/cxx/chipset/mpc107/config_regs.cc \
-unisim/component/cxx/chipset/mpc107/address_maps.cc \
-unisim/component/cxx/chipset/mpc107/address_maps_debug.cc \
-unisim/component/cxx/chipset/mpc107/pci_controller.cc \
-unisim/component/cxx/chipset/mpc107/pci_controller_debug.cc \
-unisim/component/cxx/chipset/mpc107/atu/atu.cc \
-unisim/component/cxx/chipset/mpc107/atu/atu_debug.cc \
-unisim/component/cxx/chipset/mpc107/atu/register.cc \
-unisim/component/cxx/chipset/mpc107/dma/buffer_32.cc \
-unisim/component/cxx/chipset/mpc107/dma/dma_32_debug.cc \
-unisim/component/cxx/chipset/mpc107/dma/register.cc \
-unisim/component/cxx/chipset/mpc107/dma/dma_32.cc \
-unisim/component/cxx/chipset/mpc107/dma/dma_32_debug.cc \
-unisim/component/cxx/chipset/mpc107/epic/epic_32.cc \
-unisim/component/cxx/chipset/mpc107/epic/epic_32_debug.cc \
-unisim/component/cxx/chipset/mpc107/epic/inservice_reg.cc \
-unisim/component/cxx/chipset/mpc107/epic/register.cc \
-unisim/component/cxx/pci/types.cc \
-unisim/component/cxx/pci/debug/pci_stub.cc \
-unisim/component/tlm/pci/debug/pci_stub_32.cc \
-unisim/component/tlm/processor/powerpc/mpc7447a/cpu.cc \
-unisim/component/tlm/processor/powerpc/mpc7447a/cpu_debug.cc \
-unisim/component/tlm/message/interrupt.cc \
-unisim/component/tlm/chipset/mpc107/epic/epic_32.cc \
-unisim/component/tlm/chipset/mpc107/epic/epic_32_debug.cc \
-unisim/component/tlm/chipset/mpc107/epic/timer.cc \
-unisim/component/tlm/chipset/mpc107/mpc107_fsb32_pci32.cc \
-unisim/component/tlm/chipset/mpc107/mpc107_fsb32_pci32_debug.cc \
-unisim/component/tlm/fsb/snooping_bus/bus_addr32_size32_procs1.cc \
-unisim/component/tlm/memory/ram/memory_32.cc \
-unisim/component/tlm/memory/ram/memory_32_debug.cc \
-unisim/component/tlm/memory/flash/am29/am29lv800b.cc"
+UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
-UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_ISA_FILES="\
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh \
-unisim/component/cxx/processor/powerpc/isa/book_i/vector/altivec.isa \
-unisim/component/cxx/processor/powerpc/mpc7447a/isa/mpc7447a.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/add.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addc.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/adde.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addic.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addic_.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addis.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addme.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addze.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divwu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulhw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulhwu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulli.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mullw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/neg.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subf.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subfc.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subfe.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subfic.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subfme.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subfze.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmp.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpl.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpli.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/and.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/andc.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/andi_.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/andis_.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cntlzw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/eqv.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/extsb.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/extsh.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/nand.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/nor.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/or.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/orc.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/ori.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/oris.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/xor.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/xori.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/xoris.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rlwimi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rlwinm.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rlwnm.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/slw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sraw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/srawi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/srw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fadd.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fadds.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fdiv.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fdivs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fmul.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fmuls.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsub.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsubs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fmadd.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fmadds.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fmsub.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fmsubs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmadd.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmadds.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmsub.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnmsubs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fcmpo.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fcmpu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fctiw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fctiwz.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/frsp.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fabs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fmr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fnabs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fneg.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mcrfs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mffs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsb0.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsb1.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsf.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/mtfsfi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fre.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fres.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/frsqrte.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsel.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsqrt.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fsqrts.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/branch/b.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/branch/bc.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/branch/bcctr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/branch/bclr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/crand.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/crandc.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/creqv.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/crnand.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/crnor.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/cror.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/crorc.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/crxor.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/cond_reg/mcrf.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lbz.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lbzu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lbzux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lbzx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lha.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhau.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhaux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhax.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhz.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhzu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhzux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhzx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwz.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwzu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwzux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwzx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stb.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stbu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stbux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stbx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sth.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sthu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sthux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sthx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stwu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stwux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stwx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhbrx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwbrx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sthbrx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stwbrx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lswi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lswx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stswi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stswx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lmw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stmw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfd.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfdu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfdux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfdx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfsu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfsux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/lfsx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfd.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfdu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfdux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfdx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfiwx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfs.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfsu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfsux.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/stfsx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/eciwx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/ecowx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/isync.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/lwarx.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/stwcx_.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/dcba.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/dcbf.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/dcbi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/dcbst.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/dcbt.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/dcbtst.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/dcbz.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/icbi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/tlbsync.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/syscall/sc.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/rfi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/tw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/twi.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mcrxr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mfcr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfmsr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfspr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_e/mtspr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/mftb.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mtcrf.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/mtmsr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/eieio.isa \
-unisim/component/cxx/processor/powerpc/isa/book_ii/sync.isa \
-unisim/component/cxx/processor/powerpc/isa/pem32/tlbia.isa \
-unisim/component/cxx/processor/powerpc/isa/pem32/tlbie.isa \
-unisim/component/cxx/processor/powerpc/isa/pem32/tlbld.isa \
-unisim/component/cxx/processor/powerpc/isa/pem32/tlbli.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_s/mfsr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_s/mfsrin.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_s/mtsr.isa \
-unisim/component/cxx/processor/powerpc/isa/book_iii_s/mtsrin.isa \
-"
-
-UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_HEADER_FILES="${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_ISA_FILES} \
-unisim/kernel/kernel.hh \
-unisim/kernel/config/xml_config_file_helper.hh \
-unisim/kernel/config/ini_config_file_helper.hh \
-unisim/kernel/logger/logger.hh \
-unisim/kernel/logger/logger_server.hh \
-unisim/kernel/tlm/tlm.hh \
-unisim/util/backtrace/backtrace.hh \
-unisim/util/likely/likely.hh \
-unisim/util/inlining/inlining.hh \
-unisim/util/nat_sort/nat_sort.hh \
-unisim/util/arithmetic/arithmetic.hh \
-unisim/util/debug/memory_access_type.hh \
-unisim/util/debug/breakpoint.hh \
-unisim/util/debug/event.hh \
-unisim/util/debug/profile.hh \
-unisim/util/debug/symbol.hh \
-unisim/util/debug/stmt.hh \
-unisim/util/debug/simple_register.hh \
-unisim/util/debug/watchpoint_registry.hh \
-unisim/util/debug/watchpoint.hh \
-unisim/util/debug/breakpoint_registry.hh \
-unisim/util/debug/symbol_table.hh \
-unisim/util/debug/data_object.hh \
-unisim/util/debug/type.hh \
-unisim/util/debug/data_object_initializer.hh \
-unisim/util/debug/subprogram.hh \
-unisim/util/netstub/netstub.hh \
-unisim/util/debug/dwarf/abbrev.hh \
-unisim/util/debug/dwarf/attr.hh \
-unisim/util/debug/dwarf/call_frame_vm.hh \
-unisim/util/debug/dwarf/class.hh \
-unisim/util/debug/dwarf/die.hh \
-unisim/util/debug/dwarf/encoding.hh \
-unisim/util/debug/dwarf/fde.hh \
-unisim/util/debug/dwarf/fmt.hh \
-unisim/util/debug/dwarf/version.hh \
-unisim/util/debug/dwarf/option.hh \
-unisim/util/debug/dwarf/cfa.hh \
-unisim/util/debug/dwarf/leb128.hh \
-unisim/util/debug/dwarf/macinfo.hh \
-unisim/util/debug/dwarf/pub.hh \
-unisim/util/debug/dwarf/stmt_prog.hh \
-unisim/util/debug/dwarf/addr_range.hh \
-unisim/util/debug/dwarf/call_frame_prog.hh \
-unisim/util/debug/dwarf/cie.hh \
-unisim/util/debug/dwarf/cu.hh \
-unisim/util/debug/dwarf/dwarf.hh \
-unisim/util/debug/dwarf/expr_vm.hh \
-unisim/util/debug/dwarf/filename.hh \
-unisim/util/debug/dwarf/fwd.hh \
-unisim/util/debug/dwarf/loc.hh \
-unisim/util/debug/dwarf/ml.hh \
-unisim/util/debug/dwarf/range.hh \
-unisim/util/debug/dwarf/stmt_vm.hh \
-unisim/util/debug/dwarf/register_number_mapping.hh \
-unisim/util/debug/dwarf/frame.hh \
-unisim/util/debug/dwarf/util.hh \
-unisim/util/debug/dwarf/data_object.hh \
-unisim/util/debug/dwarf/subprogram.hh \
-unisim/util/debug/dwarf/c_loc_expr_parser.hh \
-unisim/util/blob/blob.hh \
-unisim/util/blob/section.hh \
-unisim/util/blob/segment.hh \
-unisim/util/debug/elf_symtab/elf_symtab.hh \
-unisim/util/debug/coff_symtab/coff_symtab.hh \
-unisim/util/endian/endian.hh \
-unisim/util/garbage_collector/garbage_collector.hh \
-unisim/util/hash_table/hash_table.hh \
-unisim/util/xml/xml.hh \
-unisim/util/queue/queue.hh \
-unisim/util/simfloat/floating.hh \
-unisim/util/simfloat/integer.hh \
-unisim/util/simfloat/host_floating.hh \
-unisim/util/ieee754/ieee754.hh \
-unisim/util/device/register.hh \
-unisim/util/loader/elf_loader/elf_common.h \
-unisim/util/loader/elf_loader/elf_loader.hh \
-unisim/util/loader/elf_loader/elf32.h \
-unisim/util/loader/elf_loader/elf64.h \
-unisim/util/loader/elf_loader/elf32_loader.hh \
-unisim/util/loader/elf_loader/elf64_loader.hh \
-unisim/util/loader/coff_loader/coff_loader.hh \
-unisim/util/loader/coff_loader/ti/ti.hh \
-unisim/util/dictionary/dictionary.hh \
-unisim/util/lexer/lexer.hh \
-unisim/util/parser/parser.hh \
-unisim/util/hypapp/hypapp.hh \
-unisim/service/interfaces/debug_yielding.hh \
-unisim/service/interfaces/debug_event.hh \
-unisim/service/interfaces/debug_info_loading.hh \
-unisim/service/interfaces/memory_access_reporting.hh \
-unisim/service/interfaces/disassembly.hh \
-unisim/service/interfaces/http_server.hh \
-unisim/service/interfaces/field.hh \
-unisim/service/interfaces/loader.hh \
-unisim/service/interfaces/memory.hh \
-unisim/service/interfaces/symbol_table_lookup.hh \
-unisim/service/interfaces/stmt_lookup.hh \
-unisim/service/interfaces/time.hh \
-unisim/service/interfaces/memory_injection.hh \
-unisim/service/interfaces/profiling.hh \
-unisim/service/interfaces/registers.hh \
-unisim/service/interfaces/linux_os.hh \
-unisim/service/interfaces/os.hh \
-unisim/service/interfaces/cache_power_estimator.hh \
-unisim/service/interfaces/power_mode.hh \
-unisim/service/interfaces/synchronizable.hh \
-unisim/service/interfaces/trap_reporting.hh \
-unisim/service/interfaces/blob.hh \
-unisim/service/interfaces/backtrace.hh \
-unisim/service/interfaces/data_object_lookup.hh \
-unisim/service/interfaces/subprogram_lookup.hh \
-unisim/service/interfaces/register.hh \
-unisim/service/tee/memory_access_reporting/tee.hh \
-unisim/service/tee/symbol_table_lookup/tee.hh \
-unisim/service/tee/loader/tee.hh \
-unisim/service/tee/blob/tee.hh \
-unisim/service/tee/stmt_lookup/tee.hh \
-unisim/service/tee/backtrace/tee.hh \
-unisim/service/debug/inline_debugger/inline_debugger.hh \
-unisim/service/debug/gdb_server/gdb_server.hh \
-unisim/service/debug/debugger/debugger.hh \
-unisim/service/profiling/addr_profiler/profiler.hh \
-unisim/service/loader/elf_loader/elf_loader.hh \
-unisim/service/loader/elf_loader/elf32_loader.hh \
-unisim/service/loader/elf_loader/elf64_loader.hh \
-unisim/service/loader/raw_loader/raw_loader.hh \
-unisim/service/loader/s19_loader/s19_loader.hh \
-unisim/service/loader/coff_loader/coff_loader.hh \
-unisim/service/loader/coff_loader/ti/ti.hh \
-unisim/service/loader/multiformat_loader/multiformat_loader.hh \
-unisim/service/time/host_time/time.hh \
-unisim/service/time/sc_time/time.hh \
-unisim/service/power/cache_power_estimator.hh \
-unisim/service/power/cache_profile.hh \
-unisim/service/power/cache_dynamic_energy.hh \
-unisim/service/power/cache_dynamic_power.hh \
-unisim/service/power/cache_leakage_power.hh \
-unisim/service/sdl/sdl.hh \
-unisim/component/cxx/memory/ram/memory.hh \
-unisim/component/cxx/processor/powerpc/floating.hh \
-unisim/component/cxx/processor/powerpc/config.hh \
-unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh \
-unisim/component/cxx/processor/powerpc/mpc7447a/config.hh \
-unisim/component/cxx/cache/cache.hh \
-unisim/component/cxx/tlb/tlb.hh \
-unisim/component/cxx/memory/flash/am29/am29.hh \
-unisim/component/cxx/memory/flash/am29/am29lv800b_config.hh \
-unisim/component/cxx/memory/flash/am29/types.hh \
-unisim/component/cxx/chipset/mpc107/address_maps.hh \
-unisim/component/cxx/chipset/mpc107/address_map_entry.hh \
-unisim/component/cxx/chipset/mpc107/config_regs.hh \
-unisim/component/cxx/chipset/mpc107/pci_controller.hh \
-unisim/component/cxx/chipset/mpc107/dma/dma.hh \
-unisim/component/cxx/chipset/mpc107/dma/dma_client_interface.hh \
-unisim/component/cxx/chipset/mpc107/atu/atu.hh \
-unisim/component/cxx/chipset/mpc107/epic/register.hh \
-unisim/component/cxx/chipset/mpc107/epic/inservice_reg.hh \
-unisim/component/cxx/chipset/mpc107/atu/register.hh \
-unisim/component/cxx/chipset/mpc107/dma/buffer.hh \
-unisim/component/cxx/chipset/mpc107/dma/register.hh \
-unisim/component/cxx/chipset/mpc107/epic/epic.hh \
-unisim/component/cxx/pci/types.hh \
-unisim/component/tlm/processor/powerpc/mpc7447a/cpu.hh \
-unisim/component/tlm/message/snooping_fsb.hh \
-unisim/component/tlm/message/interrupt.hh \
-unisim/component/tlm/debug/transaction_spy.hh \
-unisim/component/tlm/message/memory.hh \
-unisim/component/tlm/memory/ram/memory.hh \
-unisim/component/tlm/memory/flash/am29/am29.hh \
-unisim/component/tlm/fsb/snooping_bus/bus.hh \
-unisim/component/tlm/chipset/mpc107/mpc107.hh \
-unisim/component/tlm/chipset/mpc107/epic/epic.hh \
-unisim/component/tlm/chipset/mpc107/epic/timer.hh \
-unisim/component/tlm/pci/bus/bus.hh \
-unisim/component/tlm/message/pci.hh \
-unisim/component/cxx/pci/debug/pci_stub.hh \
-unisim/component/tlm/pci/debug/pci_stub.hh"
-
-UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_TEMPLATE_FILES="\
-unisim/util/debug/breakpoint_registry.tcc \
-unisim/util/debug/profile.tcc \
-unisim/util/debug/watchpoint_registry.tcc \
-unisim/util/debug/symbol_table.tcc \
-unisim/util/debug/symbol.tcc \
-unisim/util/debug/stmt.tcc \
-unisim/util/debug/data_object_initializer.tcc \
-unisim/util/netstub/netstub.tcc \
-unisim/util/debug/dwarf/addr_range.tcc \
-unisim/util/debug/dwarf/call_frame_prog.tcc \
-unisim/util/debug/dwarf/cie.tcc \
-unisim/util/debug/dwarf/die.tcc \
-unisim/util/debug/dwarf/expr_vm.tcc \
-unisim/util/debug/dwarf/loc.tcc \
-unisim/util/debug/dwarf/pub.tcc \
-unisim/util/debug/dwarf/stmt_prog.tcc \
-unisim/util/debug/dwarf/attr.tcc \
-unisim/util/debug/dwarf/call_frame_vm.tcc \
-unisim/util/debug/dwarf/cu.tcc \
-unisim/util/debug/dwarf/dwarf.tcc \
-unisim/util/debug/dwarf/fde.tcc \
-unisim/util/debug/dwarf/macinfo.tcc \
-unisim/util/debug/dwarf/range.tcc \
-unisim/util/debug/dwarf/stmt_vm.tcc \
-unisim/util/debug/dwarf/frame.tcc \
-unisim/util/debug/dwarf/data_object.tcc \
-unisim/util/debug/dwarf/subprogram.tcc \
-unisim/util/blob/blob.tcc \
-unisim/util/blob/section.tcc \
-unisim/util/blob/segment.tcc \
-unisim/util/debug/elf_symtab/elf_symtab.tcc \
-unisim/util/debug/coff_symtab/coff_symtab.tcc \
-unisim/util/queue/queue.tcc \
-unisim/util/simfloat/floating.tcc \
-unisim/util/simfloat/integer.tcc \
-unisim/util/simfloat/host_floating.tcc \
-unisim/util/loader/elf_loader/elf_loader.tcc \
-unisim/util/loader/coff_loader/coff_loader.tcc \
-unisim/util/loader/coff_loader/ti/ti.tcc \
-unisim/util/dictionary/dictionary.tcc \
-unisim/util/lexer/lexer.tcc \
-unisim/util/parser/parser.tcc \
-unisim/service/debug/inline_debugger/inline_debugger.tcc \
-unisim/service/debug/gdb_server/gdb_server.tcc \
-unisim/service/debug/debugger/debugger.tcc \
-unisim/service/profiling/addr_profiler/profiler.tcc \
-unisim/service/loader/elf_loader/elf_loader.tcc \
-unisim/service/loader/elf_loader/elf32_loader.tcc \
-unisim/service/loader/elf_loader/elf64_loader.tcc \
-unisim/service/loader/raw_loader/raw_loader.tcc \
-unisim/service/loader/s19_loader/s19_loader.tcc \
-unisim/service/loader/coff_loader/coff_loader.tcc \
-unisim/service/loader/coff_loader/ti/ti.tcc \
-unisim/service/loader/multiformat_loader/multiformat_loader.tcc \
-unisim/service/tee/memory_access_reporting/tee.tcc \
-unisim/service/tee/symbol_table_lookup/tee.tcc \
-unisim/service/tee/loader/tee.tcc \
-unisim/service/tee/blob/tee.tcc \
-unisim/service/tee/stmt_lookup/tee.tcc \
-unisim/service/tee/backtrace/tee.tcc \
-unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc \
-unisim/component/cxx/processor/powerpc/mpc7447a/cpu_cache.tcc \
-unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debugging.tcc \
-unisim/component/cxx/processor/powerpc/mpc7447a/cpu_exception_handling.tcc \
-unisim/component/cxx/processor/powerpc/mpc7447a/cpu_fetch.tcc \
-unisim/component/cxx/processor/powerpc/mpc7447a/cpu_load_store.tcc \
-unisim/component/cxx/processor/powerpc/mpc7447a/cpu_mmu.tcc \
-unisim/component/cxx/processor/powerpc/mpc7447a/cpu_perf_model.tcc \
-unisim/component/cxx/memory/ram/memory.tcc \
-unisim/component/cxx/cache/cache.tcc \
-unisim/component/cxx/tlb/tlb.tcc \
-unisim/component/cxx/memory/flash/am29/am29.tcc \
-unisim/component/cxx/chipset/mpc107/address_maps.tcc \
-unisim/component/cxx/chipset/mpc107/pci_controller.tcc \
-unisim/component/cxx/chipset/mpc107/atu/atu.tcc \
-unisim/component/cxx/chipset/mpc107/dma/buffer.tcc \
-unisim/component/cxx/chipset/mpc107/dma/dma.tcc \
-unisim/component/cxx/chipset/mpc107/epic/epic.tcc \
-unisim/component/tlm/processor/powerpc/mpc7447a/cpu.tcc \
-unisim/component/tlm/memory/ram/memory.tcc \
-unisim/component/tlm/chipset/mpc107/epic/epic.tcc \
-unisim/component/tlm/chipset/mpc107/mpc107.tcc \
-unisim/component/tlm/fsb/snooping_bus/bus.tcc \
-unisim/component/tlm/memory/flash/am29/am29.tcc \
-unisim/component/cxx/pci/debug/pci_stub.tcc \
-unisim/component/tlm/pci/debug/pci_stub.tcc"
-
-UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_M4_FILES="\
-m4/times.m4 \
-m4/endian.m4 \
-m4/cxxabi.m4 \
-m4/libxml2.m4 \
-m4/zlib.m4 \
-m4/boost_graph.m4 \
-m4/bsd_sockets.m4 \
-m4/curses.m4 \
-m4/libedit.m4 \
-m4/systemc.m4 \
-m4/with_boost.m4 \
-m4/cacti.m4 \
-m4/check_lib.m4 \
-m4/get_exec_path.m4 \
-m4/real_path.m4 \
-m4/pthread.m4"
-
-UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_powerpc_32.xml \
-unisim/util/debug/dwarf/powerpc_eabi_dwarf_register_number_mapping.xml \
-unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml"
-
-EMBEDDED_PPC_G4_BOARD_EXTERNAL_HEADERS="\
-assert.h \
-ctype.h \
-cxxabi.h \
-errno.h \
-fcntl.h \
-fenv.h \
-float.h \
-fstream \
-getopt.h \
-inttypes.h \
-limits.h \
-math.h \
-signal.h \
-stdarg.h \
-stdio.h \
-stdlib.h \
-string.h \
-sys/types.h \
-unistd.h \
-cassert \
-cerrno \
-cstddef \
-cstdio \
-cstdlib \
-cstring \
-stdexcept \
-deque \
-list \
-sstream \
-iosfwd \
-iostream \
-stack \
-map \
-ostream \
-queue \
-vector \
-string"
-
-UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES="\
+UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
 "
 
-UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_HEADER_FILES="\
+UNISIM_SIMULATOR_HEADER_FILES="\
 "
 
-UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_TEMPLATE_FILES=
-UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_DATA_FILES="\
+UNISIM_SIMULATOR_PKG_DATA_FILES="\
+COPYING \
+NEWS \
+ChangeLog \
+"
+
+UNISIM_SIMULATOR_DATA_FILES="\
 COPYING \
 INSTALL \
 NEWS \
@@ -769,122 +75,21 @@ README \
 AUTHORS \
 ChangeLog \
 template_default_config.xml \
-unisim.ico"
+unisim.ico \
+"
 
-UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_TESTBENCH_FILES=""
+UNISIM_SIMULATOR_FILES="\
+${UNISIM_SIMULATOR_SOURCE_FILES} \
+${UNISIM_SIMULATOR_HEADER_FILES} \
+${UNISIM_SIMULATOR_DATA_FILES} \
+"
 
-has_to_build_configure=no
-has_to_build_genisslib_configure=no
-has_to_build_embedded_ppc_g4_board_configure=no
-
-mkdir -p ${DEST_DIR}/genisslib
-mkdir -p ${DEST_DIR}/embedded_ppc_g4_board
-
-UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
-
-for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
-	mkdir -p "${DEST_DIR}/$(dirname ${file})"
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/genisslib/${file}" ]; then
-		if [ "${UNISIM_TOOLS_DIR}/genisslib/${file}" -nt "${DEST_DIR}/genisslib/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_TOOLS_DIR}/genisslib/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		cp -f "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}" || exit
-	fi
+for file in ${UNISIM_SIMULATOR_FILES}; do
+	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG_DSTDIR}/${file}"
 done
 
-UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_FILES="${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES} ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_HEADER_FILES} ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_TEMPLATE_FILES} ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_DATA_FILES}"
-
-for file in ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_FILES}; do
-	mkdir -p "${DEST_DIR}/embedded_ppc_g4_board/$(dirname ${file})"
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/embedded_ppc_g4_board/${file}" ]; then
-		if [ "${UNISIM_LIB_DIR}/${file}" -nt "${DEST_DIR}/embedded_ppc_g4_board/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/embedded_ppc_g4_board/${file}"
-		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/embedded_ppc_g4_board/${file}" || exit
-	fi
-done
-
-UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_FILES="${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_HEADER_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_TEMPLATE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_DATA_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_TESTBENCH_FILES}"
-
-for file in ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_FILES}; do
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/embedded_ppc_g4_board/${file}" ]; then
-		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/embedded_ppc_g4_board/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/embedded_ppc_g4_board/${file}"
-		cp -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/embedded_ppc_g4_board/${file}" || exit
-	fi
-done
-
-for file in ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_DATA_FILES}; do
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/${file}" ]; then
-		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/${file}"
-		cp -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}" || exit
-	fi
-done
-
-
-mkdir -p ${DEST_DIR}/config
-mkdir -p ${DEST_DIR}/embedded_ppc_g4_board/config
-mkdir -p ${DEST_DIR}/embedded_ppc_g4_board/m4
-mkdir -p ${DEST_DIR}/genisslib/config
-mkdir -p ${DEST_DIR}/genisslib/m4
-
-for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/genisslib/${file}" ]; then
-		if [ "${UNISIM_TOOLS_DIR}/${file}" -nt  "${DEST_DIR}/genisslib/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_TOOLS_DIR}/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		cp -f "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" || exit
-		has_to_build_genisslib_configure=yes
-	fi
-done
-
-for file in ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_M4_FILES}; do
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/embedded_ppc_g4_board/${file}" ]; then
-		if [ "${UNISIM_LIB_DIR}/${file}" -nt  "${DEST_DIR}/embedded_ppc_g4_board/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/embedded_ppc_g4_board/${file}"
-		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/embedded_ppc_g4_board/${file}" || exit
-		has_to_build_embedded_ppc_g4_board_configure=yes
-	fi
+for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
+	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
 
 # Top level
@@ -928,365 +133,112 @@ Installing (optional):
   $ make install
 EOF
 
-CONFIGURE_AC="${DEST_DIR}/configure.ac"
-MAKEFILE_AM="${DEST_DIR}/Makefile.am"
-CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
+output_top_configure_ac <(cat << EOF
+AC_INIT([UNISIM PowerMAC G4 PCI Standalone simulator], [${SIMULATOR_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-${SIMPKG}])
+AC_CONFIG_AUX_DIR(config)
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE([subdir-objects tar-pax])
+AC_PATH_PROGS(SH, sh)
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_CONFIG_SUBDIRS([genisslib])
+AC_CONFIG_SUBDIRS([${SIMPKG_DSTDIR}])
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
+EOF
+)
 
-if [ ! -e "${CONFIGURE_AC}" ]; then
-	has_to_build_configure=yes
-else
-	if [ "$0" -nt "${CONFIGURE_AC}" ]; then
-		has_to_build_configure=yes
-	fi
-fi
+output_top_makefile_am <(cat << EOF
+SUBDIRS=genisslib ${SIMPKG_DSTDIR}
+EXTRA_DIST = configure.cross
+EOF
+)
 
-if [ ! -e "${MAKEFILE_AM}" ]; then
-	has_to_build_configure=yes
-else
-	if [ "$0" -nt "${MAKEFILE_AM}" ]; then
-		has_to_build_configure=yes
-	fi
-fi
+build_top_configure
+build_top_configure_cross
 
-if [ ! -e "${CONFIGURE_CROSS}" ]; then
-	has_to_build_configure_cross=yes
-else
-	if [ "$0" -nt "${CONFIGURE_CROSS}" ]; then
-		has_to_build_configure_cross=yes
-	fi
-fi
+# Simulator
 
-if [ "${has_to_build_configure}" = "yes" ]; then
-	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM PowerMAC G4 PCI Standalone simulator], [${EMBEDDED_PPC_G4_BOARD_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-embedded-ppc-g4-board])" > "${DEST_DIR}/configure.ac"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${CONFIGURE_AC}"
-	echo "AC_CONFIG_SUBDIRS([genisslib])"  >> "${CONFIGURE_AC}" 
-	echo "AC_CONFIG_SUBDIRS([embedded_ppc_g4_board])"  >> "${CONFIGURE_AC}" 
-	echo "AC_CONFIG_FILES([Makefile])" >> "${CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${CONFIGURE_AC}"
+output_simulator_configure_ac <(cat << EOF
+Generating embedded_ppc_g4_board configure.ac"
+AC_INIT([UNISIM PowerMac G4 PCI C++ simulator], [${SIMULATOR_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-${SIMPKG}])
+AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE([subdir-objects tar-pax])
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
+AC_PROG_INSTALL
+LT_INIT
+AC_SUBST(LIBTOOL_DEPS)
+AC_PROG_LN_S
+AC_LANG([C++])
+AM_PROG_CC_C_O
+case "\${host}" in
+	*mingw*)
+		CPPFLAGS="-U__STRICT_ANSI__ \${CPPFLAGS}"
+		;;
+	*)
+		;;
+esac
+$(lines ac)
+GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
+AC_SUBST(GENISSLIB_PATH)
+AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
+EOF
+)
 
-	echo "Generating Makefile.am"
-	echo "SUBDIRS=genisslib embedded_ppc_g4_board" > "${MAKEFILE_AM}"
-	echo "EXTRA_DIST = configure.cross" >> "${MAKEFILE_AM}"
+output_simulator_makefile_am <(cat << EOF
+ACLOCAL_AMFLAGS=-I m4
+AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
+LIBTOOL_DEPS = @LIBTOOL_DEPS@
+libtool: \$(LIBTOOL_DEPS)
+	\$(SHELL) ./config.status libtool
 
-	echo "Building configure"
-	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
-fi
+# Programs
+bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION} unisim-${SIMPKG}-no-pci-stub-${SIMULATOR_VERSION}
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_CPPFLAGS = -DWITH_PCI_STUB
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
+unisim_${AM_SIMPKG}_no_pci_stub_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
+unisim_${AM_SIMPKG}_no_pci_stub_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
+unisim_${AM_SIMPKG}_no_pci_stub_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 
-if [ "${has_to_build_configure_cross}" = "yes" ]; then
-	echo "Building configure.cross"
-	cat << EOF_CONFIGURE_CROSS > "${CONFIGURE_CROSS}"
-#!/bin/bash
-HERE=\$(pwd)
-MY_DIR=\$(cd \$(dirname \$0); pwd)
+# Static Library
+noinst_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
+libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
+libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
+nodist_libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = unisim/component/cxx/processor/powerpc/e600/mpc7447a/isa/mpc7447a.cc
 
-# remove --host, --with-systemc, --with-tlm20, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
-host=""
-help=""
-i=0
-j=0
-for arg in "\$@"
-do
-	case "\${arg}" in
-		--host=*)
-			host=\$(printf "%s" "\${arg}" | cut -f 2- -d '=')
-			;;
-		--with-systemc=* | --with-tlm20=* | --with-zlib=* | --with-libxml2=* | --with-boost=* | --with-ncurses=* | --with-libedit=*)
-			;;
-		--help=* | --help)
-			help="yes"
-			args[\${j}]=\${arg}
-			j=\$((\${j}+1))
-			;;
-		*)
-			args[\${j}]=\${arg}
-			j=\$((\${j}+1))
-			;;
-	esac
-	i=\$((\${i}+1))
-done
+noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
+EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
+sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
+dist_share_DATA = ${UNISIM_SIMULATOR_DATA_FILES}
+nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES}
 
-if test "\${help}" != "yes"; then
-	if test -z "\${host}"; then
-		echo "ERROR: No canonical name for the host system type was specified. Use --host=<canonical name> to specify a host system type (e.g. --host=i586-pc-mingw32)"
-		exit -1
-	fi
-fi
+BUILT_SOURCES=\
+	\$(top_builddir)/unisim/component/cxx/processor/powerpc/e600/mpc7447a/isa/mpc7447a.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/powerpc/e600/mpc7447a/isa/mpc7447a.cc
 
-if test "\${help}" = "yes"; then
-	echo "=== configure help for genisslib"
-else
-	echo "=== configuring in genisslib (\${HERE}/genisslib)"
-	echo "\$(basename \$0): running \${MY_DIR}/genisslib/configure \${args[@]}"
-fi
-if test ! -d \${HERE}/genisslib; then
-	mkdir "\${HERE}/genisslib"
-fi
-cd "\${HERE}/genisslib"
-\${MY_DIR}/genisslib/configure "\${args[@]}"
-STATUS="\$?"
-cd "\${HERE}"
-if test \${STATUS} -ne 0; then
-	exit \${STATUS}
-fi
+CLEANFILES=\
+	\$(top_builddir)/unisim/component/cxx/processor/powerpc/e600/mpc7447a/isa/mpc7447a.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/powerpc/e600/mpc7447a/isa/mpc7447a.cc
 
-if test "\${help}" = "yes"; then
-	echo "=== configure help for embedded_ppc_g4_board"
-else
-	echo "=== configuring in embedded_ppc_g4_board (\${HERE}/embedded_ppc_g4_board) for \${host} host system type"
-	echo "\$(basename \$0): running \${MY_DIR}/embedded_ppc_g4_board/configure \$@"
-fi
+\$(top_builddir)/unisim/component/cxx/processor/powerpc/e600/mpc7447a/isa/mpc7447a.cc: \$(top_builddir)/unisim/component/cxx/processor/powerpc/e600/mpc7447a/isa/mpc7447a.hh
+\$(top_builddir)/unisim/component/cxx/processor/powerpc/e600/mpc7447a/isa/mpc7447a.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/powerpc/e600/mpc7447a/isa/mpc7447a -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/powerpc/e600/mpc7447a/isa/mpc7447a.isa
 
-if test ! -d \${HERE}/embedded_ppc_g4_board; then
-	mkdir \${HERE}/embedded_ppc_g4_board
-fi
-cd \${HERE}/embedded_ppc_g4_board
-\${MY_DIR}/embedded_ppc_g4_board/configure "\$@"
-STATUS="\$?"
-cd "\${HERE}"
-if test \${STATUS} -ne 0; then
-	exit \${STATUS}
-fi
+EOF
+)
 
-if test "\${help}" = "yes"; then
-	exit 0
-fi
-
-echo "\$(basename \$0): creating Makefile.cross"
-cat << EOF_MAKEFILE_CROSS > Makefile.cross
-#!/usr/bin/make -f
-all: embedded_ppc_g4_board-all
-clean: genisslib-clean embedded_ppc_g4_board-clean
-distclean: genisslib-distclean embedded_ppc_g4_board-distclean
-	rm -f \${HERE}/Makefile.cross
-install: embedded_ppc_g4_board-install
-
-genisslib-all:
-	@\\\$(MAKE) -C \${HERE}/genisslib all
-embedded_ppc_g4_board-all: genisslib-all
-	@\\\$(MAKE) -C \${HERE}/embedded_ppc_g4_board all
-genisslib-clean:
-	@\\\$(MAKE) -C \${HERE}/genisslib clean
-embedded_ppc_g4_board-clean:
-	@\\\$(MAKE) -C \${HERE}/embedded_ppc_g4_board clean
-genisslib-distclean:
-	@\\\$(MAKE) -C \${HERE}/genisslib distclean
-embedded_ppc_g4_board-distclean:
-	@\\\$(MAKE) -C \${HERE}/embedded_ppc_g4_board distclean
-embedded_ppc_g4_board-install:
-	@\\\$(MAKE) -C \${HERE}/embedded_ppc_g4_board install
-EOF_MAKEFILE_CROSS
-
-chmod +x Makefile.cross
-
-echo "\$(basename \$0): run 'make -f \${HERE}/Makefile.cross' or '\${HERE}/Makefile.cross' to build for \${host} host system type"
-EOF_CONFIGURE_CROSS
-	chmod +x "${CONFIGURE_CROSS}"
-fi  # has_to_build_configure_cross = "yes"
-
-# GENISSLIB
-
-GENISSLIB_CONFIGURE_AC="${DEST_DIR}/genisslib/configure.ac"
-GENISSLIB_MAKEFILE_AM="${DEST_DIR}/genisslib/Makefile.am"
-
-
-if [ ! -e "${GENISSLIB_CONFIGURE_AC}" ]; then
-	has_to_build_genisslib_configure=yes
-else
-	if [ "$0" -nt "${GENISSLIB_CONFIGURE_AC}" ]; then
-		has_to_build_genisslib_configure=yes
-	fi
-fi
-
-if [ ! -e "${GENISSLIB_MAKEFILE_AM}" ]; then
-	has_to_build_genisslib_configure=yes
-else
-	if [ "$0" -nt "${GENISSLIB_MAKEFILE_AM}" ]; then
-		has_to_build_genisslib_configure=yes
-	fi
-fi
-
-if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
-	echo "Generating GENISSLIB configure.ac"
-	echo "AC_INIT([UNISIM GENISSLIB], [${GENISSLIB_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves  Lhuillier <yves.lhuillier@cea.fr>], [genisslib])" > "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CONFIG_HEADERS([config.h])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_PROG_CXX" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_LANG([C++])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CHECK_HEADERS([${GENISSLIB_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LEXER_GENERATOR" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_PARSER_GENERATOR" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CONFIG_FILES([Makefile])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${GENISSLIB_CONFIGURE_AC}"
-
-	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
-	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
-	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "AM_LFLAGS = -l" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "AM_CPPFLAGS=-I\$(abs_top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "noinst_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\\\"${GENISSLIB_VERSION}\\\"" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-# The following lines are a workaround caused by a bugFix in AUTOMAKE 1.12
-# Note that parser_tokens.hh has been added to BUILT_SOURCES above
-# assumption: parser.cc and either parser.h or parser.hh are generated at the same time
-    echo "\$(top_builddir)/parser_tokens.hh: \$(top_builddir)/parser.cc" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\tif test -f \"\$(top_builddir)/parser.h\"; then \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\t\tcp -f \"\$(top_builddir)/parser.h\" \"\$(top_builddir)/parser_tokens.hh\"; \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\telif test -f \"\$(top_builddir)/parser.hh\"; then \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\t\tcp -f \"\$(top_builddir)/parser.hh\" \"\$(top_builddir)/parser_tokens.hh\"; \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\tfi\n" >> "${GENISSLIB_MAKEFILE_AM}"
-
-	echo "Building GENISSLIB configure"
-	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
-fi
-
-
-# embedded_ppc_g4_board
-
-EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC="${DEST_DIR}/embedded_ppc_g4_board/configure.ac"
-EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM="${DEST_DIR}/embedded_ppc_g4_board/Makefile.am"
-
-
-if [ ! -e "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}" ]; then
-	has_to_build_embedded_ppc_g4_board_configure=yes
-else
-	if [ "$0" -nt "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}" ]; then
-		has_to_build_embedded_ppc_g4_board_configure=yes
-	fi
-fi
-
-if [ ! -e "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}" ]; then
-	has_to_build_embedded_ppc_g4_board_configure=yes
-else
-	if [ "$0" -nt "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}" ]; then
-		has_to_build_embedded_ppc_g4_board_configure=yes
-	fi
-fi
-
-if [ "${has_to_build_embedded_ppc_g4_board_configure}" = "yes" ]; then
-	echo "Generating embedded_ppc_g4_board configure.ac"
-	echo "AC_INIT([UNISIM PowerMac G4 PCI C++ simulator], [${EMBEDDED_PPC_G4_BOARD_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-embedded-ppc-g4-board-core])" > "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_CONFIG_HEADERS([config.h])" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_PROG_CXX" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_PROG_RANLIB" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_LANG([C++])" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AM_PROG_CC_C_O" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_CHECK_HEADERS([${EMBEDDED_PPC_G4_BOARD_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "case \"\${host}\" in" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	printf "\t*mingw*)\n" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	printf "\t;;\n" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	printf "\t*)\n" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	printf "\tUNISIM_CHECK_PTHREAD(main)\n" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	printf "\t;;\n" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "esac" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TIMES(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ENDIAN(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CURSES(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBEDIT(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ZLIB(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBXML2(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CXXABI(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CACTI(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_WITH_BOOST(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_SYSTEMC" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_SUBST(GENISSLIB_PATH)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}\"], [path of shared data relative to bin directory])" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_CONFIG_FILES([Makefile])" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-
-	AM_EMBEDDED_PPC_G4_BOARD_VERSION=$(printf ${EMBEDDED_PPC_G4_BOARD_VERSION} | sed -e 's/\./_/g')
-	echo "Generating embedded_ppc_g4_board Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I m4" > "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "noinst_LIBRARIES = libembedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}.a" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "libembedded_ppc_g4_board_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_a_SOURCES = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "bin_PROGRAMS = unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION} unisim-embedded-ppc-g4-board-debug-${EMBEDDED_PPC_G4_BOARD_VERSION} unisim-embedded-ppc-g4-board-no-pci-stub-${EMBEDDED_PPC_G4_BOARD_VERSION} unisim-embedded-ppc-g4-board-no-pci-stub-debug-${EMBEDDED_PPC_G4_BOARD_VERSION}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "unisim_embedded_ppc_g4_board_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_SOURCES = ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "unisim_embedded_ppc_g4_board_debug_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_SOURCES = ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "unisim_embedded_ppc_g4_board_no_pci_stub_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_SOURCES = ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "unisim_embedded_ppc_g4_board_no_pci_stub_debug_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_SOURCES = ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_SOURCE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "unisim_embedded_ppc_g4_board_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_CPPFLAGS = -DWITH_PCI_STUB" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "unisim_embedded_ppc_g4_board_debug_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_CPPFLAGS = -DWITH_PCI_STUB -DDEBUG_EMBEDDED_PPC_G4_BOARD" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "unisim_embedded_ppc_g4_board_no_pci_stub_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_CPPFLAGS = " >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "unisim_embedded_ppc_g4_board_no_pci_stub_debug_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_CPPFLAGS = -DDEBUG_EMBEDDED_PPC_G4_BOARD" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "unisim_embedded_ppc_g4_board_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_LDADD = libembedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}.a" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "unisim_embedded_ppc_g4_board_debug_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_LDADD = libembedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}.a" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "unisim_embedded_ppc_g4_board_no_pci_stub_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_LDADD = libembedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}.a" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "unisim_embedded_ppc_g4_board_no_pci_stub_debug_${AM_EMBEDDED_PPC_G4_BOARD_VERSION}_LDADD = libembedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}.a" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "noinst_HEADERS = ${UNISIM_TOOLS_EMBEDDED_PPC_G4_BOARD_HEADER_FILES} ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_HEADER_FILES} ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_TEMPLATE_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_HEADER_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_TEMPLATE_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_M4_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "sharedir = \$(prefix)/share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "dist_share_DATA = ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_DATA_FILES} ${UNISIM_SIMULATORS_EMBEDDED_PPC_G4_BOARD_DATA_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-
-	echo "BUILT_SOURCES=\$(top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.hh \$(top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.tcc" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "CLEANFILES=\$(top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.hh \$(top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.tcc" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "\$(top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.tcc: \$(top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.hh" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "\$(top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.hh: ${UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_ISA_FILES}" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\t" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa/mpc7447a.isa" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-
-	echo "all-local: all-local-bin all-local-share" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "clean-local: clean-local-bin clean-local-share" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/bin/\$\$(basename \$\${PROGRAM})\"; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\tcp -f \"\$(top_builddir)/\$\${PROGRAM}\" \$(top_builddir)/bin/\$\$(basename \"\$\${PROGRAM}\"); \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\tdone\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "clean-local-bin:" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\tfi\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "all-local-share: \$(dist_share_DATA)" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/\$\$(basename \$\${SHARED_DATA})\"; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\tcp -f \"\$(top_srcdir)/\$\${SHARED_DATA}\" \$(top_builddir)/share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}/\$\$(basename \"\$\${SHARED_DATA}\"); \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\tdone\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	echo "clean-local-share:" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-	printf "\tfi\n" >> "${EMBEDDED_PPC_G4_BOARD_MAKEFILE_AM}"
-
-	echo "Building powerpc configure"
-	${SHELL} -c "cd ${DEST_DIR}/embedded_ppc_g4_board && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
-fi
+build_simulator_configure
 
 echo "Distribution is up-to-date"

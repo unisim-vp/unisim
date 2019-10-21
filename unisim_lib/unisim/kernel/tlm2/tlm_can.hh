@@ -1365,6 +1365,8 @@ tlm_can_core<CAN_MODULE, TYPES>::tlm_can_core(const sc_core::sc_module_name& nam
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, param_model_accuracy("model-accuracy", this, model_accuracy, "model accuracy (cycle-accurate, transaction-accurate, transmission-start-inaccurate)")
 {
+	param_model_accuracy.SetMutable(false);
+	
 	CAN_TX.register_nb_receive(this, &tlm_can_core::nb_receive, CAN_TX_IF);
 	CAN_RX.register_nb_receive(this, &tlm_can_core::nb_receive, CAN_RX_IF);
 	

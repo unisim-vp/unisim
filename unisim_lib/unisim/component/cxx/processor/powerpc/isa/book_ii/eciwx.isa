@@ -34,7 +34,7 @@
  
 op eciwx(31[6]:rd[5]:ra[5]:rb[5]:310[10]:?[1])
 eciwx.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 	return false;
 }
 eciwx.disasm = {

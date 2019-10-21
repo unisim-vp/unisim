@@ -26,7 +26,7 @@
 		<variable name="parse-dwarf">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description>Enable/Disable parsing of DWARF debugging informations</description>
 			<enumeration>
 				<item>true</item>

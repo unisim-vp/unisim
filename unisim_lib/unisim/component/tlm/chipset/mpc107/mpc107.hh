@@ -135,7 +135,7 @@ template <class PHYSICAL_ADDR,
 		uint32_t MAX_PCI_TRANSACTION_DATA_SIZE,
 		bool DEBUG = false>
 class MPC107 :
-	public sc_module,
+	public sc_core::sc_module,
 	public TlmSendIf<SnoopingFSBRequest<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE>, 
 					 SnoopingFSBResponse<MAX_TRANSACTION_DATA_SIZE> >,
 	public TlmSendIf<PCIRequest<PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE>,
@@ -173,35 +173,43 @@ private:
 
 	typedef InterruptRequest IRQType;
 	typedef Pointer<IRQType> PIRQType;
+
+	template <typename ADDRESS>
+	struct MemoryClient : unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >
+	{
+		MemoryClient(const char *name, unisim::kernel::Object *parent) : unisim::kernel::Object(name, parent), unisim::kernel::Client<unisim::service::interfaces::Memory<ADDRESS> >(name, parent) {}
+	};
+	
+	MemoryClient<PCI_ADDR> pci_memory_client;
 public:
 	SC_HAS_PROCESS(MPC107);
 
 	/* Module ports declaration */
 	/** Input port for incomming requests from the system bus */
-	sc_export<TlmSendIf<ReqType, RspType> > slave_port;
+	sc_core::sc_export<TlmSendIf<ReqType, RspType> > slave_port;
 	/** 
 	 * Output port to send transactions to the system bus 
 	 * (needed to inform of pci requests to the memory) */
-	sc_port<TlmSendIf<ReqType, RspType> > master_port;
+	sc_core::sc_port<TlmSendIf<ReqType, RspType> > master_port;
 	/** Input port to listen for pci requests */ 
-	sc_export<TlmSendIf<PCIReqType, PCIRspType> > pci_slave_port;
+	sc_core::sc_export<TlmSendIf<PCIReqType, PCIRspType> > pci_slave_port;
 	/** Output port to send memory requests to the ram */
-	sc_port<TlmSendIf<MemReqType, MemRspType> > ram_master_port;
+	sc_core::sc_port<TlmSendIf<MemReqType, MemRspType> > ram_master_port;
 	/** Output port to send memory requests to the rom */
-	sc_port<TlmSendIf<MemReqType, MemRspType> > rom_master_port;
+	sc_core::sc_port<TlmSendIf<MemReqType, MemRspType> > rom_master_port;
 	/** Output port to send memory requests to the extended ram */
-	sc_port<TlmSendIf<MemReqType, MemRspType> > erom_master_port;
+	sc_core::sc_port<TlmSendIf<MemReqType, MemRspType> > erom_master_port;
 	/** Output port to send pci requests to devices (probably through a bus) */
-	sc_port<TlmSendIf<PCIReqType, PCIRspType> > pci_master_port;
+	sc_core::sc_port<TlmSendIf<PCIReqType, PCIRspType> > pci_master_port;
 	/** Input port for the incomming interruptions
 	 * (to be directly attached to the EPIC) */
-	sc_export<TlmSendIf<IRQType> > *irq_slave_port[unisim::component::tlm::chipset::mpc107::epic::EPIC<PHYSICAL_ADDR, DEBUG>::NUM_IRQS];
+	sc_core::sc_export<TlmSendIf<IRQType> > *irq_slave_port[unisim::component::tlm::chipset::mpc107::epic::EPIC<PHYSICAL_ADDR, DEBUG>::NUM_IRQS];
 	/** output port for the outgoing interruptions 
 	 * (to be directly attached to the EPIC) */
-	sc_port<TlmSendIf<IRQType> > irq_master_port;
+	sc_core::sc_port<TlmSendIf<IRQType> > irq_master_port;
 	/** output port for the outgoing soft reset interruption
 	 * (to be directly attached to the EPIC) */
-	sc_port<TlmSendIf<IRQType> > soft_reset_master_port;
+	sc_core::sc_port<TlmSendIf<IRQType> > soft_reset_master_port;
 		
 	/* Service/client exports/imports declaration */
 	ServiceExport<Memory<PHYSICAL_ADDR> > memory_export;
@@ -210,15 +218,16 @@ public:
 	ServiceImport<Memory<PHYSICAL_ADDR> > erom_import;
 	ServiceImport<Memory<PCI_ADDR> > pci_import;
 		
-	MPC107(const sc_module_name &name, Object *parent = 0);
+	MPC107(const sc_core::sc_module_name &name, Object *parent = 0);
 	virtual ~MPC107();
 	
 	/* Initialization methods of the service */
+	virtual void Reset();
 	virtual bool BeginSetup();
 	virtual bool Setup(ServiceExportBase *srv_export);
 		
 	/* Methods to implement for Service<MemoryInterface<PHYSICAL_ADDR> > */
-	virtual void Reset();
+	virtual void ResetMemory();
 	virtual bool ReadMemory(PHYSICAL_ADDR addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(PHYSICAL_ADDR addr, const void *buffer, uint32_t size);
 
@@ -238,9 +247,9 @@ public:
 	 * @param who_pci_master_port the port which received the original message
 	 */
 	void ResponseReceived(const PMemMsgType &msg, 
-						sc_port<TlmSendIf<MemReqType, MemRspType> > &port,
+						sc_core::sc_port<TlmSendIf<MemReqType, MemRspType> > &port,
 						const PPCIMsgType &orig_pci_msg,
-						sc_export<TlmSendIf<PCIReqType, PCIRspType> > &who_pci_master_port);
+						sc_core::sc_export<TlmSendIf<PCIReqType, PCIRspType> > &who_pci_master_port);
 
 	/**
 	 * Method required by ResponseListener of memory requests comming from the FSB bus.
@@ -253,9 +262,9 @@ public:
 	 * @param who_fsb_master_port the port which received the original message
 	 */
 	void ResponseReceived(const PMemMsgType &msg, 
-						sc_port<TlmSendIf<MemReqType, MemRspType> > &port,
+						sc_core::sc_port<TlmSendIf<MemReqType, MemRspType> > &port,
 						const PMsgType &orig_fsb_msg,
-						sc_export<TlmSendIf<ReqType, RspType> > &who_fsb_master_port);
+						sc_core::sc_export<TlmSendIf<ReqType, RspType> > &who_fsb_master_port);
 
 	/* Methods required by the DMA controller to handle PCI and local memory space accesses */
 	virtual void DMARead(PHYSICAL_ADDR addr,
@@ -300,8 +309,8 @@ private:
 	void DispatchDMALocalMemoryAccess();
 	void DispatchDMAPCIAccess();
 	/* Events to handle DMA threads */
-	sc_event dispatchDMALocalMemoryAccessEvent;
-	sc_event dispatchDMAPCIAccessEvent;
+	sc_core::sc_event dispatchDMALocalMemoryAccessEvent;
+	sc_core::sc_event dispatchDMAPCIAccessEvent;
 	
 	/**
 	 * ATU controller */
@@ -313,7 +322,7 @@ private:
 	/** 
 	 * Output port to send transactions to the EPIC 
 	 * (this is a private, not visible port ) */
-	sc_port<TlmSendIf<MemReqType, MemRspType> > epic_master_port;
+	sc_core::sc_port<TlmSendIf<MemReqType, MemRspType> > epic_master_port;
 	/**
 	 * Memory Import to connect to the epic to get access to 
 	 * the memory service */
@@ -321,11 +330,11 @@ private:
 	/**
 	 * Output port to notify the sdram clock (the sdram cycle time) 
 	 *   to internal components, i.e., EPIC */
-	sc_out<uint64_t> sdram_master_port;
+	sc_core::sc_out<uint64_t> sdram_master_port;
 	/**
 	 * Signal to connect the sdram_outport to the EPIC sdram_inport
 	 */
-	sc_signal<uint64_t> sdram_to_epic_sig;
+	sc_core::sc_signal<uint64_t> sdram_to_epic_sig;
 	
 	/* the configuration registers */
 	ConfigurationRegisters config_regs;
@@ -338,7 +347,7 @@ private:
 	/* list of the requests queued for the pci that need a response */
 	list<PMsgType> req_list;
 	/* event to control the dispatch of pci requests */
-	sc_event pci_dispatch_event;
+	sc_core::sc_event pci_dispatch_event;
 	/* process to dispatch pending pci requests */
 	void PCIDispatch();
 	/* process to dispatch pending local memory requests */
@@ -365,7 +374,7 @@ private:
 	
 	unsigned int frequency;
 	uint64_t sdram_cycle_time;
-	sc_time cycle_time;
+	sc_core::sc_time cycle_time;
 	
 	/* Parameters for reset values */
 	Parameter<bool> param_host_mode;
@@ -410,7 +419,7 @@ private:
 	 * 
 	 * @return true on succes, false otherwise
 	 */
-	bool SendPCItoMemory(const PPCIMsgType &pci_msg, sc_port<TlmSendIf<MemReqType, MemRspType> > &out_port);
+	bool SendPCItoMemory(const PPCIMsgType &pci_msg, sc_core::sc_port<TlmSendIf<MemReqType, MemRspType> > &out_port);
 
 	/** 
  	 * This method simply queues messages coming from FSB to be send to the memory system. 
@@ -421,7 +430,7 @@ private:
 	 * 
 	 * @return true on success, false otherwise
 	 */
-	bool SendFSBtoMemory(const PMsgType &fsb_msg, sc_port<TlmSendIf<MemReqType, MemRspType> > &out_port);
+	bool SendFSBtoMemory(const PMsgType &fsb_msg, sc_core::sc_port<TlmSendIf<MemReqType, MemRspType> > &out_port);
 
 	/**
 	 * This method transform a request received in the FSB to a ATU request and updates
@@ -458,7 +467,7 @@ private:
 	class PCItoMemoryReqType {
 	public:
 		PPCIMsgType pci_msg;
-		sc_port<TlmSendIf<MemReqType, MemRspType> > *out_port;
+		sc_core::sc_port<TlmSendIf<MemReqType, MemRspType> > *out_port;
 	};
 	/** list of pci requests to send to the memory system */
 	list<PCItoMemoryReqType *> pci_req_list;
@@ -472,7 +481,7 @@ private:
 	 */
 	void DispatchPCIReq();
 	/** even to handle the DispatchPCIReq thread */
-	sc_event dispatch_pci_req_ev;
+	sc_core::sc_event dispatch_pci_req_ev;
 
 	/**
 	 * Function to show debug information from a bus request.

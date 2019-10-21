@@ -61,11 +61,12 @@ template <class PHYSICAL_ADDR,
 		uint32_t MAX_PCI_TRANSACTION_DATA_SIZE, bool DEBUG>
 MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
-MPC107(const sc_module_name &name, Object *parent) :
+MPC107(const sc_core::sc_module_name &name, Object *parent) :
 	Object(name, parent, "MPC107 chipset"),
-	sc_module(name),
+	sc_core::sc_module(name),
 	Service<Memory<PHYSICAL_ADDR> >(name, parent),
 	Client<Memory<PHYSICAL_ADDR> >(name, parent),
+	pci_memory_client("pci-memory-client", this),
 	slave_port("slave_port"),
 	master_port("master_port"),
 	pci_slave_port("pci_slave_port"),
@@ -79,7 +80,7 @@ MPC107(const sc_module_name &name, Object *parent) :
 	ram_import("ram_import", this),
 	rom_import("rom_import", this),
 	erom_import("erom_import", this),
-	pci_import("pci_import", this),
+	pci_import("pci_import", &pci_memory_client),
 	logger(*this),
 	verbose(false),
 	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
@@ -122,7 +123,7 @@ MPC107(const sc_module_name &name, Object *parent) :
 		stringstream irq_slave_port_name;
 		
 		irq_slave_port_name << "irq_slave_port[" << i << "]";
-		irq_slave_port[i] = new sc_export<TlmSendIf<IRQType> >(irq_slave_port_name.str().c_str());
+		irq_slave_port[i] = new sc_core::sc_export<TlmSendIf<IRQType> >(irq_slave_port_name.str().c_str());
 		(*irq_slave_port[i])(*epic.irq_slave_port[i]);
 	}
 	
@@ -170,81 +171,42 @@ BeginSetup() {
 		memory_32bit_data_bus_size,
 		rom0_8bit_data_bus_size, 
 		rom1_8bit_data_bus_size)) {
-		if(unlikely(verbose)) 
-			logger << DebugError
-				<< LOCATION
-				<< "Error while initializing the configuration registers"
-				<< std::endl << EndDebugError;
-		else
-			cerr << "ERROR("
-				<< __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): "
-				<< "Error while initializing the configuration registers"
-				<< endl;
+		logger << DebugError
+			<< LOCATION
+			<< "Error while initializing the configuration registers"
+			<< std::endl << EndDebugError;
 		return false;
 	}
 
 	/* initialize the address map */
 	if(!addr_map.Reset()) {
-		if(unlikely(verbose))
-			logger << DebugError
-				<< LOCATION
-				<< "Error while initializing the address map"
-				<< std::endl << EndDebugError;
-		else
-			cerr << "ERROR("
-				<< __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): "
-				<< "Error while initializing the address map"
-				<< endl;
+		logger << DebugError
+			<< LOCATION
+			<< "Error while initializing the address map"
+			<< std::endl << EndDebugError;
+		return false;
 	}
 	
 	if(!host_mode) {
-		if(unlikely(verbose))
-			logger << DebugError 
-				<< LOCATION << "SERVICE_SETUP_ERROR: Only host mode is supported (sorry)" 
-				<< std::endl << EndDebugError;
-		else
-			cerr << "ERROR("
-				<< __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): "
-				<< "Only host mode is supported (sorry)"
-				<< endl;
+		logger << DebugError 
+			<< LOCATION << "SERVICE_SETUP_ERROR: Only host mode is supported (sorry)" 
+			<< std::endl << EndDebugError;
 		return false; // only host mode supported
 	}
 
 	if(!frequency) {
-		if(unlikely(verbose))
-			logger << DebugError 
-				<< LOCATION 
-				<< "SERVICE_SETUP_ERROR: frequency parameter has not been set" 
-				<< std::endl << EndDebugError;
-		else
-			cerr << "ERROR("
-				<< __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): "
-				<< "Frequency parameter has not been set"
-				<< endl;
+		logger << DebugError 
+			<< LOCATION 
+			<< "SERVICE_SETUP_ERROR: frequency parameter has not been set" 
+			<< std::endl << EndDebugError;
 		return false;
 	}
-	cycle_time = sc_time(1.0 / (double) frequency, SC_US);
+	cycle_time = sc_core::sc_time(1.0 / (double) frequency, sc_core::SC_US);
 	if(!sdram_cycle_time) {
-		if(unlikely(verbose))
-			logger << DebugError 
-				<< LOCATION
-				<< "SERVICE_SETUP_ERROR: sdram_cycle_time parameter has not been set" 
-				<< std::endl << EndDebugError;
-		else
-			cerr << "ERROR("
-				<< __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): "
-				<< "sdram_cycle_time parameter has not been set"
-				<< endl;
+		logger << DebugError 
+			<< LOCATION
+			<< "SERVICE_SETUP_ERROR: sdram_cycle_time parameter has not been set" 
+			<< std::endl << EndDebugError;
 		return false;
 	}
 	/* set the initial sdram_frequency */
@@ -263,59 +225,27 @@ MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 SetupMemory()
 {
 	if(!rom_import) {
-		if(unlikely(verbose))
-			logger << DebugError  << LOCATION
-				<< "SERVICE_SETUP_ERROR: rom_import not connected" 
-				<< std::endl << EndDebugError;
-		else
-			cerr << "ERROR("
-				<< __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): "
-				<< "rom_import not connected"
-				<< endl;
+		logger << DebugError  << LOCATION
+			<< "SERVICE_SETUP_ERROR: rom_import not connected" 
+			<< std::endl << EndDebugError;
 		return false;
 	}
 	if(!ram_import) {
-		if(unlikely(verbose))
-			logger << DebugError << LOCATION 
-				<< "SERVICE_SETUP_ERROR: ram_import not connected" 
-				<< std::endl << EndDebugError;
-		else
-			cerr << "ERROR("
-				<< __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): "
-				<< "ram_import not connected"
-				<< endl;
+		logger << DebugError << LOCATION 
+			<< "SERVICE_SETUP_ERROR: ram_import not connected" 
+			<< std::endl << EndDebugError;
 		return false;
 	}
 	if(!erom_import) {
-		if(unlikely(verbose))
-			logger << DebugError << LOCATION 
-				<< "SERVICE_SETUP_ERROR: erom_import not connected" 
-				<< std::endl << EndDebugError;
-		else
-			cerr << "ERROR("
-				<< __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): "
-				<< "erom_import not connected"
-				<< endl;
+		logger << DebugError << LOCATION 
+			<< "SERVICE_SETUP_ERROR: erom_import not connected" 
+			<< std::endl << EndDebugError;
 		return false;
 	}
 	if(!pci_import) {
-		if(unlikely(verbose))
-			logger << DebugError << LOCATION 
-				<< "SERVICE_SETUP_ERROR: pci_import not connected" 
-				<< std::endl << EndDebugError;
-		else
-			cerr << "ERROR("
-				<< __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): "
-				<< "pci_import not connected"
-				<< endl;
+		logger << DebugError << LOCATION 
+			<< "SERVICE_SETUP_ERROR: pci_import not connected" 
+			<< std::endl << EndDebugError;
 		return false;
 	}
 
@@ -382,14 +312,12 @@ Send(const PPCIMsgType &pci_message) {
 	
 	AddressMapEntry *entry = addr_map.GetEntryProc(pci_req->addr);
 	if(entry == NULL) {
-		if(unlikely(verbose)) {
-			logger << DebugError
-				<< LOCATION
-				<< "Could not get an address map entry for address 0x"
-				<< std::hex << pci_req->addr << std::dec << " for a request comming from the pci bus"
-				<< std::endl
-				<< EndDebugError;
-		}
+		logger << DebugError
+			<< LOCATION
+			<< "Could not get an address map entry for address 0x"
+			<< std::hex << pci_req->addr << std::dec << " for a request comming from the pci bus"
+			<< std::endl
+			<< EndDebugError;
 		Object::Stop(-1);
 	}
 	switch(entry->type) {
@@ -397,13 +325,11 @@ Send(const PPCIMsgType &pci_message) {
 		return SendPCItoMemory(pci_message, ram_master_port);
 		break;
 	case AddressMapEntry::RESERVED:
-		if(unlikely(verbose)) {
-			logger << DebugError 
-				<< LOCATION
-				<< " Send() from PCI bus accessing a reserved entry address ";
-			DEBUG_PCI_REQ(pci_req);
-			logger << std::endl << EndDebugError;
-		}
+		logger << DebugError 
+			<< LOCATION
+			<< " Send() from PCI bus accessing a reserved entry address ";
+		DEBUG_PCI_REQ(pci_req);
+		logger << std::endl << EndDebugError;
 		Object::Stop(-1);
 		return false; // never executed
 		break;
@@ -416,15 +342,13 @@ Send(const PPCIMsgType &pci_message) {
 	case AddressMapEntry::PCI_MEMORY_SPACE:
 		/* The request should be simply ignored,
 		 * 	 even better it should be never received */
-		if(unlikely(verbose)) {
-			logger << DebugError
-				<< LOCATION
-				<< " Send() from PCI bus to PCI memory space ";
-			DEBUG_PCI_REQ(pci_req);
-			logger << std::endl
-				<< "This should never happen!!!!" << std::endl 
-				<< EndDebugError;
-		}
+		logger << DebugError
+			<< LOCATION
+			<< " Send() from PCI bus to PCI memory space ";
+		DEBUG_PCI_REQ(pci_req);
+		logger << std::endl
+			<< "This should never happen!!!!" << std::endl 
+			<< EndDebugError;
 		Object::Stop(-1);
 		return false; // never executed
 		break;
@@ -435,14 +359,12 @@ Send(const PPCIMsgType &pci_message) {
 		return SendPCItoMemory(pci_message, rom_master_port);
 		break;
 	default:
-		if(unlikely(verbose)) {
-			logger << DebugError
-				<< LOCATION
-				<< " Send() received a request to the pci memory space that is not a "
-				<< "read neither a write ";
-			DEBUG_PCI_REQ(pci_req);
-			logger << std::endl << EndDebugError;
-		}
+		logger << DebugError
+			<< LOCATION
+			<< " Send() received a request to the pci memory space that is not a "
+			<< "read neither a write ";
+		DEBUG_PCI_REQ(pci_req);
+		logger << std::endl << EndDebugError;
 		Object::Stop(-1);
 		return false; // never executed
 		break;
@@ -507,14 +429,12 @@ Send(const PMsgType &message) {
 
 	AddressMapEntry *entry = addr_map.GetEntryProc(req->addr);
 	if(entry == NULL) {
-		if(unlikely(verbose)) {
-			logger << DebugError
-				<< LOCATION
-				<< "Could not get an address map entry for address 0x"
-				<< std::hex << req->addr << std::dec << " for a request comming from the system bus"
-				<< std::endl
-				<< EndDebugError;
-		}
+		logger << DebugError
+			<< LOCATION
+			<< "Could not get an address map entry for address 0x"
+			<< std::hex << req->addr << std::dec << " for a request comming from the system bus"
+			<< std::endl
+			<< EndDebugError;
 		Object::Stop(-1);
 		return false;
 	}
@@ -523,13 +443,11 @@ Send(const PMsgType &message) {
 		return SendFSBtoMemory(message, ram_master_port);
 		break;
 	case AddressMapEntry::RESERVED:
-		if(unlikely(verbose)) {
-			logger << DebugError
-				<< LOCATION
-				<< "Send() from system bus accessing a reserved entry address ";
-			DEBUG_BUS_REQ(req);
-			logger << std::endl << EndDebugInfo;
-		}
+		logger << DebugError
+			<< LOCATION
+			<< "Send() from system bus accessing a reserved entry address ";
+		DEBUG_BUS_REQ(req);
+		logger << std::endl << EndDebugInfo;
 		Object::Stop(-1);
 		return false;
 		break;
@@ -549,24 +467,20 @@ Send(const PMsgType &message) {
 							pci_req->addr,
 							pci_req->space,
 							pci_req->size) ) {
-				if(unlikely(verbose)) {
-					logger << DebugError
-						<< sc_time_stamp().to_string()
-						<< "Send() from system bus received a bad read request from the system bus ";
-					DEBUG_BUS_REQ(req);
-					logger << std::endl << EndDebugError;
-				}
+				logger << DebugError
+					<< sc_core::sc_time_stamp().to_string()
+					<< "Send() from system bus received a bad read request from the system bus ";
+				DEBUG_BUS_REQ(req);
+				logger << std::endl << EndDebugError;
 				Object::Stop(-1);
 			}
 			if(!message->HasResponseEvent()) {
-				if(unlikely(verbose)) {
-					logger << DebugError
-						<< sc_time_stamp().to_string()
-						<< LOCATION
-						<< "Send() from system bus received a read request without response event "; 
-					DEBUG_BUS_REQ(req);
-					logger << std::endl << EndDebugError;
-				}
+				logger << DebugError
+					<< sc_core::sc_time_stamp().to_string()
+					<< LOCATION
+					<< "Send() from system bus received a read request without response event "; 
+				DEBUG_BUS_REQ(req);
+				logger << std::endl << EndDebugError;
 				Object::Stop(-1);
 			}
 			break;
@@ -577,25 +491,21 @@ Send(const PMsgType &message) {
 								pci_req->space,
 								pci_req->write_data,
 								pci_req->size) ) {
-				if(unlikely(verbose)) {
-					logger << DebugError
-						<< LOCATION
-						<< "Send() from system bus received a bad write request from the system bus ";
-					DEBUG_BUS_REQ(req);
-					logger << std::endl << EndDebugError;
-				}
+				logger << DebugError
+					<< LOCATION
+					<< "Send() from system bus received a bad write request from the system bus ";
+				DEBUG_BUS_REQ(req);
+				logger << std::endl << EndDebugError;
 				Object::Stop(-1);
 			}
 			break;
 		default:
-			if(unlikely(verbose)) {
-				logger << DebugError
-					<< LOCATION
-					<< "Send() from system bus received a request to the pci memory space that is not a "
-					<< "read neither a write "; 
-				DEBUG_BUS_REQ(req);
-				logger << std::endl << EndDebugError;
-			}
+			logger << DebugError
+				<< LOCATION
+				<< "Send() from system bus received a request to the pci memory space that is not a "
+				<< "read neither a write "; 
+			DEBUG_BUS_REQ(req);
+			logger << std::endl << EndDebugError;
 			Object::Stop(-1);
 			return false;
 			break;
@@ -604,7 +514,7 @@ Send(const PMsgType &message) {
 		req_list.push_back(message);
 		bus_pci_req_list.push_back(pci_msg);
 		if(bus_pci_req_list.size() == 1) {
-			pci_dispatch_event.notify(SC_ZERO_TIME);
+			pci_dispatch_event.notify(sc_core::SC_ZERO_TIME);
 		}
 		return true;
 		break;
@@ -617,24 +527,20 @@ Send(const PMsgType &message) {
 							pci_req->addr,
 							pci_req->space,
 							pci_req->size) ) {
-				if(unlikely(verbose)) {
-					logger << DebugError
-						<< sc_time_stamp().to_string()
-						<< LOCATION
-						<< "Send() from system bus received a bad PCI I/O read request from the system bus ";
-					DEBUG_BUS_REQ(req);
-					logger << std::endl << EndDebugError;
-				}
+				logger << DebugError
+					<< sc_core::sc_time_stamp().to_string()
+					<< LOCATION
+					<< "Send() from system bus received a bad PCI I/O read request from the system bus ";
+				DEBUG_BUS_REQ(req);
+				logger << std::endl << EndDebugError;
 				Object::Stop(-1);
 			}
 			if(!message->HasResponseEvent()) {
-				if(unlikely(verbose)) {
-					logger << DebugError
-						<< LOCATION
-						<< "Send() from system bus received a PCI I/O read request without response event "; 
-					DEBUG_BUS_REQ(req);
-					logger << std::endl << EndDebugError;
-				}
+				logger << DebugError
+					<< LOCATION
+					<< "Send() from system bus received a PCI I/O read request without response event "; 
+				DEBUG_BUS_REQ(req);
+				logger << std::endl << EndDebugError;
 				Object::Stop(-1);
 			}			
 			break;
@@ -645,25 +551,21 @@ Send(const PMsgType &message) {
 								pci_req->space,
 								pci_req->write_data,
 								pci_req->size) ) {
-				if(unlikely(verbose)) {
-					logger << DebugError
-						<< LOCATION
-						<< "Send() from system bus received a bad PCI I/O write request from the system bus ";
-					DEBUG_BUS_REQ(req);
-					logger << std::endl << EndDebugError;
-				}
+				logger << DebugError
+					<< LOCATION
+					<< "Send() from system bus received a bad PCI I/O write request from the system bus ";
+				DEBUG_BUS_REQ(req);
+				logger << std::endl << EndDebugError;
 				Object::Stop(-1);
 			}
 			break;
 		default:
-			if(unlikely(verbose)) {
-				logger << DebugError
-					<< LOCATION
-					<< "Send() from system bus received a request to the PCI I/O space that is not a "
-					<< "read neither a write request ";
-				DEBUG_BUS_REQ(req);
-				logger << std::endl << EndDebugError;
-			}
+			logger << DebugError
+				<< LOCATION
+				<< "Send() from system bus received a request to the PCI I/O space that is not a "
+				<< "read neither a write request ";
+			DEBUG_BUS_REQ(req);
+			logger << std::endl << EndDebugError;
 			Object::Stop(-1);
 			return false;
 			break;
@@ -672,7 +574,7 @@ Send(const PMsgType &message) {
 		req_list.push_back(message);
 		bus_pci_req_list.push_back(pci_msg);
 		if(bus_pci_req_list.size() == 1)
-			pci_dispatch_event.notify(SC_ZERO_TIME);
+			pci_dispatch_event.notify(sc_core::SC_ZERO_TIME);
 		return true;
 		break;
 	case AddressMapEntry::PCI_IO_SPACE_2:
@@ -700,13 +602,11 @@ Send(const PMsgType &message) {
 					logger << std::endl << EndDebugWarning;
 				}
 				if(!message->HasResponseEvent()) {
-					if(unlikely(verbose)) {
-						logger << DebugError
-							<< LOCATION
-							<< " received a read request without response event "; 
-						DEBUG_BUS_REQ(req);
-						logger << std::endl << EndDebugError;
-					}
+					logger << DebugError
+						<< LOCATION
+						<< " received a read request without response event "; 
+					DEBUG_BUS_REQ(req);
+					logger << std::endl << EndDebugError;
 					Object::Stop(-1);
 				}
 				memset(rsp->read_data, 0, MAX_TRANSACTION_DATA_SIZE);
@@ -719,26 +619,22 @@ Send(const PMsgType &message) {
 			if(!pci_controller.SetConfigAddr(req->addr,
 								req->write_data,
 								req->size)) {
-				if(unlikely(verbose)) {
-					logger << DebugError
-						<< LOCATION
-						<< "bad write access to the configuration address register memory space ";
-					DEBUG_BUS_REQ(req);
-					logger << std::endl << EndDebugError;
-				}
+				logger << DebugError
+					<< LOCATION
+					<< "bad write access to the configuration address register memory space ";
+				DEBUG_BUS_REQ(req);
+				logger << std::endl << EndDebugError;
 				Object::Stop(-1);
 			}
 			/* nothing else to do */
 			break;
 		default:
-			if(unlikely(verbose)) {
-				logger << DebugError
-					<< LOCATION
-					<< "Send() from system bus received a request to the pci config address register space that is not a "
-					<< "read neither a write request ";
-				DEBUG_BUS_REQ(req);
-				logger << std::endl << EndDebugError;
-			}
+			logger << DebugError
+				<< LOCATION
+				<< "Send() from system bus received a request to the pci config address register space that is not a "
+				<< "read neither a write request ";
+			DEBUG_BUS_REQ(req);
+			logger << std::endl << EndDebugError;
 			Object::Stop(-1);
 			return false;
 			break;
@@ -753,13 +649,11 @@ Send(const PMsgType &message) {
 				PRspType rsp = new(rsp) RspType();
 				if(!pci_controller.LocalReadConfigRequest(req->addr, req->size,
 									rsp->read_data)) {
-					if(unlikely(verbose)) {
-						logger << DebugError
-							<< LOCATION
-							<< "Send() from system bus received a bad read for the pci configuration data register ";
-						DEBUG_BUS_REQ(req);
-						logger << std::endl << EndDebugError;
-					}
+					logger << DebugError
+						<< LOCATION
+						<< "Send() from system bus received a bad read for the pci configuration data register ";
+					DEBUG_BUS_REQ(req);
+					logger << std::endl << EndDebugError;
 					Object::Stop(-1);
 				}
 				message->rsp = rsp;
@@ -771,13 +665,11 @@ Send(const PMsgType &message) {
 									pci_req->addr,
 									pci_req->space,
 									pci_req->size) ) {
-					if(unlikely(verbose)) {
-						logger << DebugError
-							<< LOCATION
-							<< "Send() from system bus received a bad read for the PCI configuration data register ";
-						DEBUG_BUS_REQ(req);
-						logger << std::endl << EndDebugError;
-					}
+					logger << DebugError
+						<< LOCATION
+						<< "Send() from system bus received a bad read for the PCI configuration data register ";
+					DEBUG_BUS_REQ(req);
+					logger << std::endl << EndDebugError;
 					Object::Stop(-1);
 				}
 			}
@@ -785,13 +677,11 @@ Send(const PMsgType &message) {
 		case ReqType::WRITE:
 			if(pci_controller.IsLocalAccess()) {
 				if(!pci_controller.LocalWriteConfigRequest(req->addr, req->write_data, req->size)) {
-					if(unlikely(verbose)) {
-						logger << DebugError
-							<< LOCATION
-							<< "Send() from system bus received a bad write for the pci configuration data register ";
-						DEBUG_BUS_REQ(req);
-						logger << std::endl << EndDebugError;
-					}
+					logger << DebugError
+						<< LOCATION
+						<< "Send() from system bus received a bad write for the pci configuration data register ";
+					DEBUG_BUS_REQ(req);
+					logger << std::endl << EndDebugError;
 					Object::Stop(-1);
 				}
 				return true;			
@@ -802,25 +692,21 @@ Send(const PMsgType &message) {
 									pci_req->space,
 									pci_req->write_data,
 									pci_req->size) ) {
-					if(unlikely(verbose)) {
-						logger << DebugError
-							<< LOCATION
-							<< "Send() from system bus received a bad write request "; 
-						DEBUG_BUS_REQ(req);
-						logger << std::endl << EndDebugError;
-					}
+					logger << DebugError
+						<< LOCATION
+						<< "Send() from system bus received a bad write request "; 
+					DEBUG_BUS_REQ(req);
+					logger << std::endl << EndDebugError;
 					Object::Stop(-1);
 				}
 			}
 			break;
 		default:
-			if(unlikely(verbose)) {
-				logger << DebugError
-					<< "Send() from system bus received a request to the pci config data register space that is not a "
-					<< "read neither a write "; 
-				DEBUG_BUS_REQ(req);
-				logger << std::endl << EndDebugError;
-			}
+			logger << DebugError
+				<< "Send() from system bus received a request to the pci config data register space that is not a "
+				<< "read neither a write "; 
+			DEBUG_BUS_REQ(req);
+			logger << std::endl << EndDebugError;
 			Object::Stop(-1);
 			return false;
 			break;
@@ -829,18 +715,16 @@ Send(const PMsgType &message) {
 		req_list.push_back(message);
 		bus_pci_req_list.push_back(pci_msg);
 		if(bus_pci_req_list.size() == 1) {
-			pci_dispatch_event.notify(SC_ZERO_TIME);
+			pci_dispatch_event.notify(sc_core::SC_ZERO_TIME);
 		}
 		return true;
 		break;
 	case AddressMapEntry::PCI_INT_ACK:
-		if(unlikely(verbose)) {
-			logger << DebugError
-				<< LOCATION
-				<< "Accessing the pci interruption acknowledgement ";
-			DEBUG_BUS_REQ(req);
-			logger << std::endl << EndDebugError;
-		}
+		logger << DebugError
+			<< LOCATION
+			<< "Accessing the pci interruption acknowledgement ";
+		DEBUG_BUS_REQ(req);
+		logger << std::endl << EndDebugError;
 		Object::Stop(-1);
 		return false;
 		break;
@@ -860,23 +744,19 @@ Send(const PMsgType &message) {
 	case AddressMapEntry::EUMB_DMA_SPACE:
 	case AddressMapEntry::EUMB_I2C_SPACE:
 	case AddressMapEntry::EUMB_DATA_PATH_DIAGNOSTICS_SPACE:
-		if(unlikely(verbose)) {
-			logger << DebugError
-				<< LOCATION
-				<< "TODO Embedded utilities block mapping not implemented ";
-			DEBUG_BUS_REQ(req);
-			logger << std::endl << EndDebugError;
-		}
+		logger << DebugError
+			<< LOCATION
+			<< "TODO Embedded utilities block mapping not implemented ";
+		DEBUG_BUS_REQ(req);
+		logger << std::endl << EndDebugError;
 		Object::Stop(-1);
 		break;
 	default:
-		if(unlikely(verbose)) {
-			logger << DebugError
-				<< LOCATION
-				<< "Accessing an unmapped (or unhalded) memory space ";
-			DEBUG_BUS_REQ(req);
-			logger << std::endl << EndDebugError;
-		}
+		logger << DebugError
+			<< LOCATION
+			<< "Accessing an unmapped (or unhalded) memory space ";
+		DEBUG_BUS_REQ(req);
+		logger << std::endl << EndDebugError;
 		Object::Stop(-1);
 		break;
 	}
@@ -891,11 +771,21 @@ void
 MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
 Reset() {
+}
+
+template <class PHYSICAL_ADDR, 
+		uint32_t MAX_TRANSACTION_DATA_SIZE,
+		class PCI_ADDR,
+		uint32_t MAX_PCI_TRANSACTION_DATA_SIZE, bool DEBUG>
+void 
+MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
+	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
+ResetMemory() {
 	/* forward the reset call */
-	if(ram_import) ram_import->Reset();
-	if(rom_import) rom_import->Reset();
-	if(erom_import) erom_import->Reset();
-	if(pci_import) pci_import->Reset();
+	if(ram_import) ram_import->ResetMemory();
+	if(rom_import) rom_import->ResetMemory();
+	if(erom_import) erom_import->ResetMemory();
+	if(pci_import) pci_import->ResetMemory();
 }
 
 template <class PHYSICAL_ADDR, 
@@ -911,12 +801,12 @@ ReadMemory(PHYSICAL_ADDR addr, void *buffer, uint32_t size) {
 	AddressMapEntry *entry = addr_map.GetEntryProc(addr);
 	if(entry == NULL) {
 		if(unlikely(verbose)) {
-			logger << DebugError
+			logger << DebugInfo
 				<< LOCATION
 				<< "Could not get an address map entry for address 0x"
 				<< std::hex << addr << std::dec << " for a request comming from the system bus"
 				<< std::endl
-				<< EndDebugError;
+				<< EndDebugInfo;
 		}
 		return false;
 	}
@@ -1237,7 +1127,7 @@ PCIDispatch() {
 	PPCIRspType pci_rsp;
 	
 	/* request reply event */
-	sc_event rsp_event;
+	sc_core::sc_event rsp_event;
 	
 	/* we wait for new events to take pci request from the
 	 *  pci request queue if the request does not expect a response
@@ -1291,26 +1181,24 @@ PCIDispatch() {
 			PRspType rsp = new(rsp) RspType();
 			pci_req = pci_msg->req;
 			if(!pci_msg->req) {
-				if(unlikely(DEBUG && verbose))
-					logger << DebugError
-						<< LOCATION
-						<< " received a response for a pci message without request field" 
-						<< std::endl << EndDebugError;
+				logger << DebugError
+					<< LOCATION
+					<< " received a response for a pci message without request field" 
+					<< std::endl << EndDebugError;
 				Object::Stop(-1);
 			}
 			if(!pci_msg->rsp) {
-				if(unlikely(DEBUG && verbose))
-					logger << DebugError
-						<< LOCATION
-						<< " received a response for a pci message without response field" 
-						<< std::endl << EndDebugError;
+				logger << DebugError
+					<< LOCATION
+					<< " received a response for a pci message without response field" 
+					<< std::endl << EndDebugError;
 				Object::Stop(-1);
 			}
 			pci_rsp = pci_msg->rsp;
 			rsp->read_status = RspType::RS_MISS;
 			memcpy(rsp->read_data, pci_rsp->read_data, pci_req->size);
 			msg->rsp = rsp;
-			msg->GetResponseEvent()->notify(SC_ZERO_TIME); 
+			msg->GetResponseEvent()->notify(sc_core::SC_ZERO_TIME); 
 		} else {
 			/* just send the message */
 			if(unlikely(DEBUG && verbose)) {
@@ -1374,12 +1262,11 @@ ConverttoFSBMsg(const PPCIMsgType &pci_msg, int size_done, int size) {
 		fsb_req->type = ReqType::WRITE;
 		break;
 	default:
-		if(unlikely(verbose))
-			logger << DebugError
-				<< "Unknown pci request type" << std::endl
-				<< EndDebugError;
+		logger << DebugError
+			<< "Unknown pci request type" << std::endl
+			<< EndDebugError;
 		Object::Stop(-1);
-		break;		
+		break;
 	}
 	
 	return fsb_msg;
@@ -1408,12 +1295,11 @@ ConverttoMemMsg(const PPCIMsgType &pci_msg, int size_done, int size) {
 		mem_req->type = MemReqType::WRITE;
 		break;
 	default:
-		if(unlikely(verbose))
-			logger << DebugError
-				<< "Unknown pci request type" << std::endl
-				<< EndDebugError;
+		logger << DebugError
+			<< "Unknown pci request type" << std::endl
+			<< EndDebugError;
 		Object::Stop(-1);
-		break;		
+		break;
 	}
 	
 	return mem_msg;
@@ -1447,31 +1333,27 @@ ConverttoMemMsg(const PMsgType &fsb_msg) {
 		memcpy(mem_req->write_data, fsb_req->write_data, fsb_req->size);
 		break;
 	case ReqType::INV_BLOCK:    // Invalidate block
-		if(unlikely(verbose)) 
-			logger << DebugError << LOCATION
-				<< "Can not send INV_BLOCK request to the memory system"
-				<< std::endl << EndDebugError;
+		logger << DebugError << LOCATION
+			<< "Can not send INV_BLOCK request to the memory system"
+			<< std::endl << EndDebugError;
 		Object::Stop(-1);
 		break;
 	case ReqType::FLUSH_BLOCK:  // Flush block
-		if(unlikely(verbose)) 
-			logger << DebugError << LOCATION
-				<< "Can not send FLUSH_BLOCK request to the memory system"
-				<< std::endl << EndDebugError;
+		logger << DebugError << LOCATION
+			<< "Can not send FLUSH_BLOCK request to the memory system"
+			<< std::endl << EndDebugError;
 		Object::Stop(-1);
 		break;
 	case ReqType::ZERO_BLOCK:   // Fill in block with zero
-		if(unlikely(verbose)) 
-			logger << DebugError << LOCATION
-				<< "Can not send ZERO_BLOCK request to the memory system"
-				<< std::endl << EndDebugError;
+		logger << DebugError << LOCATION
+			<< "Can not send ZERO_BLOCK request to the memory system"
+			<< std::endl << EndDebugError;
 		Object::Stop(-1);
 		break;
 	case ReqType::INV_TLB:      // Invalidate TLB set
-		if(unlikely(verbose)) 
-			logger << DebugError << LOCATION
-				<< "Can not send INV_TLB request to the memory system"
-				<< std::endl << EndDebugError;
+		logger << DebugError << LOCATION
+			<< "Can not send INV_TLB request to the memory system"
+			<< std::endl << EndDebugError;
 		Object::Stop(-1);
 		break;
 	}
@@ -1487,7 +1369,7 @@ template <class PHYSICAL_ADDR,
 bool
 MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
-SendPCItoMemory(const PPCIMsgType &pci_msg, sc_port<TlmSendIf<MemReqType, MemRspType> > &out_port) {
+SendPCItoMemory(const PPCIMsgType &pci_msg, sc_core::sc_port<TlmSendIf<MemReqType, MemRspType> > &out_port) {
 	bool notify = pci_req_list.empty();
 	PCItoMemoryReqType *buf;
 	
@@ -1514,7 +1396,7 @@ template <class PHYSICAL_ADDR,
 bool
 MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
-SendFSBtoMemory(const PMsgType &fsb_msg, sc_port<TlmSendIf<MemReqType, MemRspType> > &out_port) {
+SendFSBtoMemory(const PMsgType &fsb_msg, sc_core::sc_port<TlmSendIf<MemReqType, MemRspType> > &out_port) {
 	/* Convert the fsb message to a memory message */
 	PMemMsgType mem_msg = PMemMsgType();
 	
@@ -1558,7 +1440,7 @@ DispatchPCIReq() {
 			PMsgType fsb_msg = PMsgType();
 			
 			fsb_msg = ConverttoFSBMsg(item->pci_msg, size_done, item->pci_msg->req->size - size_done);
-			sc_event fsb_msg_ev;
+			sc_core::sc_event fsb_msg_ev;
 			
 			if(item->pci_msg->HasResponseEvent())
 				fsb_msg->PushResponseEvent(fsb_msg_ev);
@@ -1596,7 +1478,7 @@ DispatchPCIReq() {
 				
 					if(unlikely(DEBUG && verbose))
 						logger << DebugInfo
-						<< sc_time_stamp().to_string()
+						<< sc_core::sc_time_stamp().to_string()
 						<< " received response to a pci request from the memory system, "
 						<< " forwarding response to the PCI bus" << std::endl
 						<< EndDebugInfo;
@@ -1618,7 +1500,7 @@ DispatchPCIReq() {
 		
 		if (item->pci_msg->req->type == unisim::component::cxx::pci::TT_READ) {
             item->pci_msg->SetResponse(pci_rsp);
-            item->pci_msg->GetResponseEvent()->notify(SC_ZERO_TIME);
+            item->pci_msg->GetResponseEvent()->notify(sc_core::SC_ZERO_TIME);
         }
 		
 		item->pci_msg = 0;
@@ -1636,23 +1518,23 @@ void
 MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
 ResponseReceived(const PMemMsgType &msg, 
-	sc_port<TlmSendIf<MemReqType, MemRspType> > &port,
+	sc_core::sc_port<TlmSendIf<MemReqType, MemRspType> > &port,
 	const PPCIMsgType &orig_pci_msg,
-	sc_export<TlmSendIf<PCIReqType, PCIRspType> > &who_pci_master_port) {
+	sc_core::sc_export<TlmSendIf<PCIReqType, PCIRspType> > &who_pci_master_port) {
 	PPCIRspType pci_rsp = new(pci_rsp) PCIRspType();
 	const PPCIReqType &pci_req = orig_pci_msg->GetRequest();
 	const PMemRspType &rsp = msg->GetResponse();
 	
 	if(unlikely(DEBUG && verbose))
 		logger << DebugInfo
-			<< sc_time_stamp().to_string()
+			<< sc_core::sc_time_stamp().to_string()
 			<< " received response to a pci request from the memory system, "
 			<< " forwarding response to the PCI bus" << std::endl
 			<< EndDebugInfo;
 	
 	memcpy(pci_rsp->read_data, rsp->read_data,  pci_req->size);
 	orig_pci_msg->SetResponse(pci_rsp);
-	orig_pci_msg->GetResponseEvent()->notify(SC_ZERO_TIME);
+	orig_pci_msg->GetResponseEvent()->notify(sc_core::SC_ZERO_TIME);
 }
 
 template <class PHYSICAL_ADDR, 
@@ -1663,16 +1545,16 @@ void
 MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
 ResponseReceived(const PMemMsgType &msg, 
-	sc_port<TlmSendIf<MemReqType, MemRspType> > &port,
+	sc_core::sc_port<TlmSendIf<MemReqType, MemRspType> > &port,
 	const PMsgType &orig_fsb_msg,
-	sc_export<TlmSendIf<ReqType, RspType> > &who_fsb_master_port) {
+	sc_core::sc_export<TlmSendIf<ReqType, RspType> > &who_fsb_master_port) {
 	PRspType fsb_rsp = new(fsb_rsp) RspType();
 	const PReqType &fsb_req = orig_fsb_msg->GetRequest();
 	const PMemRspType &rsp = msg->GetResponse();
 	
 	if(unlikely(DEBUG && verbose))
 		logger << DebugInfo
-			<< sc_time_stamp().to_string()
+			<< sc_core::sc_time_stamp().to_string()
 			<< " received response to a fsb request from the memory system, "
 			<< " forwarding response to the FSB bus" << std::endl
 			<< EndDebugInfo;
@@ -1680,7 +1562,7 @@ ResponseReceived(const PMemMsgType &msg,
 	memcpy(fsb_rsp->read_data, rsp->read_data,  fsb_req->size);
 	fsb_rsp->read_status = RspType::RS_SHARED; 
 	orig_fsb_msg->SetResponse(fsb_rsp);
-	orig_fsb_msg->GetResponseEvent()->notify(SC_ZERO_TIME);
+	orig_fsb_msg->GetResponseEvent()->notify(sc_core::SC_ZERO_TIME);
 }
 
 template <class PHYSICAL_ADDR, 
@@ -1763,7 +1645,7 @@ void
 MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
 DispatchDMALocalMemoryAccess() {
-	sc_event rsp_event;
+	sc_core::sc_event rsp_event;
 	bool read = false;
 	
 	while(1) {
@@ -1885,7 +1767,7 @@ void
 MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
 DispatchDMAPCIAccess() {
-	sc_event rsp_event;
+	sc_core::sc_event rsp_event;
 	bool read = false;
 	
 	while(1) {

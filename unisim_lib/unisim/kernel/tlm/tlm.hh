@@ -68,7 +68,7 @@ private:
 template <typename REQ, typename RSP = TlmNoResponse>
 class TlmMessage {
 private:
-	stack<sc_event *, vector<sc_event *> > event_stack; // Gilles: this implementation is faster and consumes less memory than using stack<sc_event *>
+	stack<sc_core::sc_event *, vector<sc_core::sc_event *> > event_stack; // Gilles: this implementation is faster and consumes less memory than using stack<sc_core::sc_event *>
 public:
 	Pointer<REQ> req;
 	Pointer<RSP> rsp;
@@ -82,7 +82,7 @@ public:
 	TlmMessage(const Pointer<REQ>& _req) : event_stack(), req(_req), rsp(0) {
 	}
 
-	TlmMessage(const Pointer<REQ>& _req, sc_event& ev) : event_stack(), req(_req), rsp(0) {
+	TlmMessage(const Pointer<REQ>& _req, sc_core::sc_event& ev) : event_stack(), req(_req), rsp(0) {
 			event_stack.push(&ev);
 	}
 	
@@ -109,7 +109,7 @@ public:
       return rsp;
     }
 
-    void PushResponseEvent(sc_event& event) {
+    void PushResponseEvent(sc_core::sc_event& event) {
       event_stack.push(&event);
     }
     
@@ -117,7 +117,7 @@ public:
 		return !event_stack.empty();
 	}
 
-    sc_event *GetResponseEvent() const {
+    sc_core::sc_event *GetResponseEvent() const {
       return event_stack.empty() ? 0 : event_stack.top();
     }
 
@@ -126,7 +126,7 @@ public:
       event_stack.pop();
     }
     
-    stack<sc_event *>& GetEventList() const {
+    const stack<sc_core::sc_event *, vector<sc_core::sc_event *> >& GetEventList() const {
       return event_stack;
     }
     
@@ -141,7 +141,7 @@ public:
 //=============================================================================
 
 template <typename REQ, typename RSP = TlmNoResponse>
-class TlmSendIf : public virtual sc_interface {
+class TlmSendIf : public virtual sc_core::sc_interface {
 public:
 	virtual bool Send(const Pointer<TlmMessage<REQ, RSP> >& message) = 0;
 };
@@ -177,9 +177,9 @@ public:
 	ResponseListener() : free_handlers() {};
 
 	virtual void ResponseReceived(const Pointer<TlmMessage<REQ, RSP> > &msg, 
-								sc_port<TlmSendIf<REQ, RSP> > &port) = 0;
+								sc_core::sc_port<TlmSendIf<REQ, RSP> > &port) = 0;
 	
-	bool Send(const Pointer<TlmMessage<REQ, RSP> > &msg, sc_port<TlmSendIf<REQ, RSP> > &port) {
+	bool Send(const Pointer<TlmMessage<REQ, RSP> > &msg, sc_core::sc_port<TlmSendIf<REQ, RSP> > &port) {
 		MessageHandler *handler;
 		
 		if(!msg->HasResponseEvent()) {
@@ -188,7 +188,7 @@ public:
 		
 		if(free_handlers.empty()) {
 			handler = new MessageHandler();
-			sc_spawn(sc_bind(&ResponseListener<REQ, RSP>::MessageHandlerProcess,
+			sc_core::sc_spawn(sc_bind(&ResponseListener<REQ, RSP>::MessageHandlerProcess,
 											 this,
 											 handler));
 		} else {
@@ -224,8 +224,8 @@ private:
 	class MessageHandler {
 	public:
 		Pointer<TlmMessage<REQ, RSP> > msg;
-		sc_event event;
-		sc_port<TlmSendIf<REQ, RSP> > *port;
+		sc_core::sc_event event;
+		sc_core::sc_port<TlmSendIf<REQ, RSP> > *port;
 	};
 	
 	list<MessageHandler *> free_handlers;
@@ -240,19 +240,19 @@ private:
 	
 public:
 	virtual void ResponseReceived(const Pointer<TlmMessage<REQ, RSP> > &msg, 
-								sc_port<TlmSendIf<REQ, RSP> > &port,
+								sc_core::sc_port<TlmSendIf<REQ, RSP> > &port,
 								const Pointer<TlmMessage<WHO_REQ, WHO_RSP> > &orig_msg,
-								sc_export<TlmSendIf<WHO_REQ, WHO_RSP> > &who_port) = 0;
+								sc_core::sc_export<TlmSendIf<WHO_REQ, WHO_RSP> > &who_port) = 0;
 	
 	bool Send(const Pointer<TlmMessage<REQ, RSP> > &msg, 
-			sc_port<TlmSendIf<REQ, RSP> > &port,
+			sc_core::sc_port<TlmSendIf<REQ, RSP> > &port,
 			const Pointer<TlmMessage<WHO_REQ, WHO_RSP> > &orig_msg,
-			sc_export<TlmSendIf<WHO_REQ, WHO_RSP> > &who_port) {
+			sc_core::sc_export<TlmSendIf<WHO_REQ, WHO_RSP> > &who_port) {
 		MessageHandler *handler;
 		
 		if(free_handlers.empty()) {
 			handler = new MessageHandler();
-			sc_spawn(sc_bind(&AdvancedResponseListener<REQ, RSP, WHO_REQ, WHO_RSP>::MessageHandlerProcess,
+			sc_core::sc_spawn(sc_bind(&AdvancedResponseListener<REQ, RSP, WHO_REQ, WHO_RSP>::MessageHandlerProcess,
 											 this,
 											 handler));
 		} else {
@@ -288,11 +288,11 @@ private:
 	
 	class MessageHandler {
 	public:
-		sc_event event;
+		sc_core::sc_event event;
 		Pointer<TlmMessage<REQ, RSP> > msg;
 		Pointer<TlmMessage<WHO_REQ, WHO_RSP> > orig_msg;
-		sc_port<TlmSendIf<REQ, RSP> > *port;
-		sc_export<TlmSendIf<WHO_REQ, WHO_RSP> > *who_port;
+		sc_core::sc_port<TlmSendIf<REQ, RSP> > *port;
+		sc_core::sc_export<TlmSendIf<WHO_REQ, WHO_RSP> > *who_port;
 	};
 	
 	list<MessageHandler *> free_handlers;

@@ -549,7 +549,7 @@ bool WatchpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::FindWatchpoint
 					found = true;
 					Watchpoint<ADDRESS> *watchpoint = (*watchpoint_it).second;
 					
-					if(!watchpoint_set.count(watchpoint))
+					if((watchpoint->GetMemoryAccessType() == mat) && (watchpoint->GetMemoryType() == mt) && !watchpoint_set.count(watchpoint))
 					{
 						watchpoint_set.insert(watchpoint);
 						visitor.Visit(watchpoint);

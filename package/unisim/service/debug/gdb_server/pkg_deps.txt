@@ -9,6 +9,7 @@ libc/unistd
 m4/bsd_sockets
 m4/pthread
 m4/times
+std/cctype
 std/fstream
 std/iostream
 std/list

@@ -232,6 +232,8 @@ public:
 	
 	struct CriticalInputInterrupt : SuperCPU::template Interrupt<CriticalInputInterrupt, 0>
 	{
+		typedef typename SuperCPU::template Interrupt<CriticalInputInterrupt, 0> Super;
+		
 		struct CriticalInput                        : SuperCPU::template Exception<CriticalInputInterrupt> { static const char *GetName() { return "Critical Input Interrupt/Critical Input Exception"; } };             //  p_critint_b is asserted and MSR[CE] = 1
 		
 		typedef typename SuperCPU::template ExceptionSet<CriticalInput> ALL;
@@ -248,6 +250,8 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
 		
+		CriticalInputInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "critical-input-interrupt"; }
 		static const char *GetName() { return "Critical Input Interrupt"; }
 	};
 
@@ -289,18 +293,21 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
 		
-		MachineCheckInterrupt() : Super(), machine_check_async_events(0) {}
+		MachineCheckInterrupt(typename CONFIG::CPU *cpu) : Super(cpu), machine_check_async_events(0) {}
 		bool GotAsynchronousEvents() const { return machine_check_async_events; }
 		bool GotAsynchronousEvent(MachineCheckAsynchronousEventType machine_check_event) const { return machine_check_async_events & machine_check_event; }
 		MachineCheckInterrupt& SetEvent(MachineCheckAsynchronousEventType machine_check_event) { machine_check_async_events |= machine_check_event; return *this; }
 		void ClearAsynchronousEvents() { machine_check_async_events = 0; }
-		static const char *GetName() { return "Machine Check Interrupt"; }
+		static const char *GetId() { return "Machine Check Interrupt"; }
+		static const char *GetName() { return "machine-check-interrupt"; }
 	private:
 		unsigned int machine_check_async_events;
 	};
 	
 	struct DataStorageInterrupt : SuperCPU::template InterruptWithAddress<DataStorageInterrupt, 2>
 	{
+		typedef typename SuperCPU::template InterruptWithAddress<DataStorageInterrupt, 2> Super;
+		
 		struct AccessControl                        : SuperCPU::template Exception<DataStorageInterrupt> { static const char *GetName() { return "Data Storage Interrupt/Access Control Exception"; } }; // Access control
 		struct ByteOrdering                         : SuperCPU::template Exception<DataStorageInterrupt> { static const char *GetName() { return "Data Storage Interrupt/Byte Ordering Exception"; } };  // Byte ordering
 		struct CacheLocking                         : SuperCPU::template Exception<DataStorageInterrupt> { static const char *GetName() { return "Data Storage Interrupt/Cache Locking Exception"; } };  // Cache locking
@@ -317,6 +324,8 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
 
+		DataStorageInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "data-storage-interrupt"; }
 		static const char *GetName() { return "Data Storage Interrupt"; }
 		
 		DataStorageInterrupt& SetWrite(bool v) { write = v; return *this; }
@@ -327,6 +336,8 @@ public:
 
 	struct InstructionStorageInterrupt : SuperCPU::template Interrupt<InstructionStorageInterrupt, 3>
 	{
+		typedef typename SuperCPU::template Interrupt<InstructionStorageInterrupt, 3> Super;
+		
 		struct AccessControl : SuperCPU::template Exception<InstructionStorageInterrupt> { static const char *GetName() { return "Instruction Storage Interrupt/Access Control Exception"; } }; // Access control
 		struct ByteOrdering  : SuperCPU::template Exception<InstructionStorageInterrupt> { static const char *GetName() { return "Instruction Storage Interrupt/Byte Ordering Exception"; } };  // Byte Ordering
 		
@@ -342,11 +353,15 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
 
+		InstructionStorageInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "instruction-storage-interrupt"; }
 		static const char *GetName() { return "Instruction Storage Interrupt"; }
 	};
 
 	struct ExternalInputInterrupt : SuperCPU::template Interrupt<ExternalInputInterrupt, 4>
 	{
+		typedef typename SuperCPU::template Interrupt<ExternalInputInterrupt, 4> Super;
+		
 		struct ExternalInput                        : SuperCPU::template Exception<ExternalInputInterrupt> { static const char *GetName() { return "External Input Interrupt/External Input Exception"; } };             // Interrupt Controller interrupt and MSR[EE] = 1
 		
 		typedef typename SuperCPU::template ExceptionSet<ExternalInput> ALL;
@@ -361,11 +376,15 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
 		
+		ExternalInputInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "external-input-interrupt"; }
 		static const char *GetName() { return "External Input Interrupt"; }
 	};
 
 	struct AlignmentInterrupt : SuperCPU::template InterruptWithAddress<AlignmentInterrupt, 5>
 	{
+		typedef typename SuperCPU::template InterruptWithAddress<AlignmentInterrupt, 5> Super;
+		
 		struct UnalignedIntegerLoadStore            : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Unaligned Integer Load/Store Exception"; } };                 // integer load/store
 		struct UnalignedLoadStoreMultiple           : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load/Store Multiple Exception"; } };                // lmw, stmw not word aligned
 		struct UnalignedFloatingPointLoadStore      : SuperCPU::template Exception<AlignmentInterrupt> { static const char *GetName() { return "Alignment Interrupt/Unaligned Floating-Point Load/Store Exception"; } };          // floating-point load/store
@@ -384,11 +403,15 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
 
+		AlignmentInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "alignment-interrupt"; }
 		static const char *GetName() { return "Alignment Interrupt"; }
 	};
 	
 	struct ProgramInterrupt : SuperCPU::template Interrupt<ProgramInterrupt, 6>
 	{
+		typedef typename SuperCPU::template Interrupt<ProgramInterrupt, 6> Super;
+		
 		struct IllegalInstruction                   : SuperCPU::template Exception<ProgramInterrupt>  { static const char *GetName() { return "Program Interrupt/Illegal Instruction Exception"; } };                   // illegal instruction
 		struct PrivilegeViolation                   : SuperCPU::template Exception<ProgramInterrupt>  { static const char *GetName() { return "Program Interrupt/Privilege Violation Exception"; } };                   // privilege violation
 		struct Trap                                 : SuperCPU::template Exception<ProgramInterrupt> { static const char *GetName() { return "Program Interrupt/Trap Exception"; } };                   // trap instruction
@@ -407,12 +430,16 @@ public:
 		                , typename MSR::FE1
 		                , typename MSR::IS
 		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
-
+		
+		ProgramInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "program-interrupt"; }
 		static const char *GetName() { return "Program Interrupt"; }
 	};
 
 	struct FloatingPointUnavailableInterrupt : SuperCPU::template Interrupt<FloatingPointUnavailableInterrupt, 7>
 	{
+		typedef typename SuperCPU::template Interrupt<FloatingPointUnavailableInterrupt, 7> Super;
+		
 		struct FloatingPointUnavailable : SuperCPU::template Exception<FloatingPointUnavailableInterrupt> { static const char *GetName() { return "Floating-point Unavailable Interrupt/Floating-point Unavailable Interrupt"; } };
 		
 		typedef typename SuperCPU::template ExceptionSet<FloatingPointUnavailable> ALL;
@@ -427,11 +454,15 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
 		
+		FloatingPointUnavailableInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "floating-point-unavailable-interrupt"; }
 		static const char *GetName() { return "Floating-point Unavailable Interrupt"; }
 	};
 	
 	struct SystemCallInterrupt : SuperCPU::template Interrupt<SystemCallInterrupt, 8>
 	{
+		typedef typename SuperCPU::template Interrupt<SystemCallInterrupt, 8> Super;
+		
 		struct SystemCall                           : SuperCPU::template Exception<SystemCallInterrupt> { static const char *GetName() { return "System Call Interrupt/System Call Exception"; } };                // Execution of the System Call (se_sc) instruction
 		
 		typedef typename SuperCPU::template ExceptionSet<SystemCall> ALL;
@@ -446,6 +477,8 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
 		
+		SystemCallInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "system-call-interrupt"; }
 		static const char *GetName() { return "System Call Interrupt"; }
 		
 		SystemCallInterrupt() : elev(0) {}
@@ -458,6 +491,7 @@ public:
 
 	struct AuxiliaryProcessorUnavailableInterrupt : SuperCPU::template Interrupt<AuxiliaryProcessorUnavailableInterrupt, 9>
 	{
+		typedef typename SuperCPU::template Interrupt<AuxiliaryProcessorUnavailableInterrupt, 9> Super;
 		struct AuxiliaryProcessorUnavailable : SuperCPU::template Exception<AuxiliaryProcessorUnavailableInterrupt> { static const char *GetName() { return "Auxiliary Processor Unavailable Interrupt/Auxiliary Processor Unavailable Exception"; } };
 		
 		typedef typename SuperCPU::template ExceptionSet<AuxiliaryProcessorUnavailable> ALL;
@@ -472,11 +506,15 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
 		
+		AuxiliaryProcessorUnavailableInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "auxiliary-processor-unavailable-interrupt"; }
 		static const char *GetName() { return "Auxiliary Processor Unavailable Interrupt"; }
 	};
 
 	struct DecrementerInterrupt : SuperCPU::template Interrupt<DecrementerInterrupt, 10>
 	{
+		typedef typename SuperCPU::template Interrupt<DecrementerInterrupt, 10> Super;
+		
 		struct Decrementer : SuperCPU::template Exception<DecrementerInterrupt> { static const char *GetName() { return "Decrementer Interrupt/Decrementer Exception"; } };
 		
 		typedef typename SuperCPU::template ExceptionSet<Decrementer> ALL;
@@ -491,11 +529,15 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
 		
+		DecrementerInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "decrementer-interrupt"; }
 		static const char *GetName() { return "Decrementer Interrupt"; }
 	};
 	
 	struct FixedIntervalTimerInterrupt : SuperCPU::template Interrupt<FixedIntervalTimerInterrupt, 11>
 	{
+		typedef typename SuperCPU::template Interrupt<FixedIntervalTimerInterrupt, 11> Super;
+		
 		struct FixedIntervalTimer : SuperCPU::template Exception<FixedIntervalTimerInterrupt> { static const char *GetName() { return "Fixed Interval Timer Interrupt/Fixed Interval Timer Exception"; } };
 		
 		typedef typename SuperCPU::template ExceptionSet<FixedIntervalTimer> ALL;
@@ -510,11 +552,15 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
 		
+		FixedIntervalTimerInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "fixed-interval-timer-interrupt"; }
 		static const char *GetName() { return "Fixed Interval Timer Interrupt"; }
 	};
 	
 	struct WatchdogTimerInterrupt : SuperCPU::template Interrupt<WatchdogTimerInterrupt, 12>
 	{
+		typedef typename SuperCPU::template Interrupt<WatchdogTimerInterrupt, 12> Super;
+		
 		struct WatchdogTimer : SuperCPU::template Exception<WatchdogTimerInterrupt> { static const char *GetName() { return "Watchdog Timer Interrupt/Watchdog Timer Exception"; } };
 		
 		typedef typename SuperCPU::template ExceptionSet<WatchdogTimer> ALL;
@@ -529,11 +575,15 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
 		
+		WatchdogTimerInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "watchdog-timer-interrupt"; }
 		static const char *GetName() { return "Watchdog Timer Interrupt"; }
 	};
 	
 	struct DataTLBErrorInterrupt : SuperCPU::template InterruptWithAddress<DataTLBErrorInterrupt, 13>
 	{
+		typedef typename SuperCPU::template InterruptWithAddress<DataTLBErrorInterrupt, 13> Super;
+		
 		struct DataTLBError : SuperCPU::template Exception<DataTLBErrorInterrupt> { static const char *GetName() { return "Data TLB Error Interrupt/Data TLB Error Exception"; } };
 		
 		typedef typename SuperCPU::template ExceptionSet<DataTLBError> ALL;
@@ -548,6 +598,8 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
 		
+		DataTLBErrorInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "data-tlb-error-interrupt"; }
 		static const char *GetName() { return "Data TLB Error Interrupt"; }
 		
 		DataTLBErrorInterrupt& SetWrite(bool v) { write = v; return *this; }
@@ -558,6 +610,8 @@ public:
 
 	struct InstructionTLBErrorInterrupt : SuperCPU::template InterruptWithAddress<InstructionTLBErrorInterrupt, 14>
 	{
+		typedef typename SuperCPU::template InterruptWithAddress<InstructionTLBErrorInterrupt, 14> Super;
+		
 		struct InstructionTLBError : SuperCPU::template Exception<InstructionTLBErrorInterrupt> { static const char *GetName() { return "Instruction TLB Error Interrupt/Instruction TLB Error Exception"; } };
 		
 		typedef typename SuperCPU::template ExceptionSet<InstructionTLBError> ALL;
@@ -572,6 +626,8 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
 		
+		InstructionTLBErrorInterrupt(typename CONFIG::CPU *cpu) : Super(cpu) {}
+		static const char *GetId() { return "instruction-tlb-error-interrupt"; }
 		static const char *GetName() { return "Instruction TLB Error Interrupt"; }
 	};
 	
@@ -607,11 +663,12 @@ public:
 		                , typename MSR::IS
 		                , typename MSR::DS > MSR_ALWAYS_CLEARED_FIELDS;
 		
-		DebugInterrupt() : Super(), dbg_events(0) {}
+		DebugInterrupt(typename CONFIG::CPU *cpu) : Super(cpu), dbg_events(0) {}
 		bool GotEvent(DebugEventType dbg_event) const { return dbg_events & dbg_event; }
 		DebugInterrupt& SetEvent(DebugEventType dbg_event) { dbg_events |= dbg_event; return *this; }
 		void ClearEvents() { dbg_events = 0; }
 		
+		static const char *GetId() { return "debug-interrupt"; }
 		static const char *GetName() { return "Debug Interrupt"; }
 	private:
 		uint32_t dbg_events;
@@ -703,6 +760,7 @@ public:
 	void UpdateExceptionEnable();
 	
 	bool IsStorageCacheable(STORAGE_ATTR storage_attr) const { return !(storage_attr & TYPES::SA_I); }
+	bool IsDataStoreAccessWriteThrough(STORAGE_ATTR storage_attr) const { return (storage_attr & TYPES::SA_W) != 0; }
 
 	template <typename T, bool REVERSE, unisim::util::endian::endian_type ENDIAN> void ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr);
 	
@@ -743,57 +801,6 @@ protected:
 	uint32_t processor_version;
 	unisim::kernel::variable::Parameter<uint32_t> param_processor_version;
 	
-	bool trap_critical_input_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_critical_input_interrupt;
-
-	bool trap_machine_check_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_machine_check_interrupt;
-	
-	bool trap_data_storage_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_data_storage_interrupt;
-	
-	bool trap_instruction_storage_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_instruction_storage_interrupt;
-	
-	bool trap_external_input_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_external_input_interrupt;
-
-	bool trap_alignment_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_alignment_interrupt;
-	
-	bool trap_program_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_program_interrupt;
-	
-	bool trap_floating_point_unavailable_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_floating_point_unavailable_interrupt;
-	
-	bool trap_system_call_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_system_call_interrupt;
-	
-	bool trap_auxiliary_processor_unavailable_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_auxiliary_processor_unavailable_interrupt;
-	
-	bool trap_decrementer_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_decrementer_interrupt;
-	
-	bool trap_fixed_interval_timer_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_fixed_interval_timer_interrupt;
-	
-	bool trap_watchdog_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_watchdog_interrupt;
-	
-	bool trap_data_tlb_error_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_data_tlb_error_interrupt;
-	
-	bool trap_instruction_tlb_error_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_instruction_tlb_error_interrupt;
-	
-	bool trap_debug_interrupt;
-	unisim::kernel::variable::Parameter<bool> param_trap_debug_interrupt;
-	
-	bool enable_linux_syscall_snooping;
-	unisim::kernel::variable::Parameter<bool> param_enable_linux_syscall_snooping;
-	
 	////////////////////////// Instruction Buffer /////////////////////////////
 
 	EFFECTIVE_ADDRESS instruction_buffer_base_addr;
@@ -803,6 +810,25 @@ protected:
 	
 	typename CONFIG::DECODER decoder;
 	typename CONFIG::OPERATION *operation;
+	
+	////////////////////////////// Interrupts /////////////////////////////////
+	
+	CriticalInputInterrupt                 critical_input_interrupt;
+	MachineCheckInterrupt                  machine_check_interrupt;
+	DataStorageInterrupt                   data_storage_interrupt;
+	InstructionStorageInterrupt            instruction_storage_interrupt;
+	ExternalInputInterrupt                 external_input_interrupt;
+	AlignmentInterrupt                     alignment_interrupt;
+	ProgramInterrupt                       program_interrupt;
+	FloatingPointUnavailableInterrupt      floating_point_unavailable_interrupt;
+	SystemCallInterrupt                    system_call_interrupt;
+	AuxiliaryProcessorUnavailableInterrupt auxiliary_processor_unavailable_interrupt;
+	DecrementerInterrupt                   decrementer_interrupt;
+	FixedIntervalTimerInterrupt            fixed_interval_timer_interrupt;
+	WatchdogTimerInterrupt                 watchdog_timer_interrupt;
+	DataTLBErrorInterrupt                  data_tlb_error_interrupt;
+	InstructionTLBErrorInterrupt           instruction_tlb_error_interrupt;
+	DebugInterrupt                         debug_interrupt;
 	
 	/////////////////////////////// Registers /////////////////////////////////
 	

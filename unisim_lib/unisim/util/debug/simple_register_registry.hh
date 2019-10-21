@@ -54,6 +54,8 @@ public:
 	void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 private:
 	std::map<std::string, unisim::service::interfaces::Register *, unisim::util::nat_sort::nat_ltstr> registers_registry;
+	
+	static std::string Key(const char *reg_name);
 };
 
 } // end of namespace debug

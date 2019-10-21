@@ -34,7 +34,7 @@
 
 op tlbie(31[6]:?[5]:?[5]:rb[5]:306[10]:?[1])
 tlbie.execute = {
-	typename CONFIG::address_t ea = cpu->GetGPR(rb);
+	ADDRESS ea = cpu->GetGPR(rb);
 	return cpu->Tlbie(ea);
 }
 tlbie.disasm = {

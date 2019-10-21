@@ -8,3 +8,4 @@ unisim/component/tlm2/interrupt
 unisim/kernel
 unisim/kernel/logger
 unisim/kernel/tlm2
+unisim/kernel/variable/sc_time

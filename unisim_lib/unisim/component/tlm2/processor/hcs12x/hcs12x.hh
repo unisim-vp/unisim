@@ -43,6 +43,7 @@
 #include <tlm_utils/simple_target_socket.h>
 
 #include "unisim/kernel/tlm2/tlm.hh"
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>

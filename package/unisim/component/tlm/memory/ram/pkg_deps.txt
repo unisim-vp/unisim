@@ -4,3 +4,4 @@ unisim/component/cxx/memory/ram
 unisim/component/tlm/message
 unisim/kernel/logger
 unisim/kernel/tlm
+unisim/kernel/variable/sc_time

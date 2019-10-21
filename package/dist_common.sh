@@ -10,8 +10,13 @@ if [ -z "${SIMPKG}" ]; then
 	exit -1
 fi
 
-if [ -z "${SIMPKGDIR}" ]; then
-	echo "SIMPKGDIR is not set"
+if [ -z "${SIMPKG_SRCDIR}" ]; then
+	echo "SIMPKG_SRCDIR is not set"
+	exit -1
+fi
+
+if [ -z "${SIMPKG_DSTDIR}" ]; then
+	echo "SIMPKG_DSTDIR is not set"
 	exit -1
 fi
 
@@ -21,9 +26,10 @@ PACKAGE_DIR=$(cd $(dirname $0); pwd)
 UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
 UNISIM_TOOLS_DIR="${UNISIM_DIR}/unisim_tools"
 UNISIM_LIB_DIR="${UNISIM_DIR}/unisim_lib"
-UNISIM_SIMULATOR_DIR="${UNISIM_DIR}/unisim_simulators/${SIMPKGDIR}"
+UNISIM_SIMULATOR_DIR="${UNISIM_DIR}/unisim_simulators/${SIMPKG_SRCDIR}"
 SIMULATOR_VERSION=$(cat "${UNISIM_SIMULATOR_DIR}/VERSION")
 AM_SIMULATOR_VERSION=$(printf '%s' "${SIMULATOR_VERSION}" | sed -e 's/\./_/g')
+AM_SIMPKG=$(printf '%s' "${SIMPKG}" | sed -e 's/-/_/g')
 has_to_build_simulator_configure=no
 has_to_build_configure=no
 has_to_build_simulator_configure=no
@@ -145,7 +151,7 @@ function dist_copy() {
 
 function make_pkg_configure_cross()
 {
-	local CONFIGURE_CROSS="$2"
+	local CONFIGURE_CROSS="$1"
 	cat << EOF_CONFIGURE_CROSS > "${CONFIGURE_CROSS}"
 #!/bin/bash
 HERE=\$(pwd)
@@ -202,15 +208,15 @@ fi
 if test "\${help}" = "yes"; then
 	echo "=== configure help for ${SIMPKG}"
 else
-	echo "=== configuring in ${SIMPKG} (\${HERE}/${SIMPKG}) for \${host} host system type"
-	echo "\$(basename \$0): running \${MY_DIR}/${SIMPKG}/configure \$@"
+	echo "=== configuring in ${SIMPKG} (\${HERE}/${SIMPKG_DSTDIR}) for \${host} host system type"
+	echo "\$(basename \$0): running \${MY_DIR}/${SIMPKG_DSTDIR}/configure \$@"
 fi
 
-if test ! -d \${HERE}/${SIMPKG}; then
-	mkdir \${HERE}/${SIMPKG}
+if test ! -d \${HERE}/${SIMPKG_DSTDIR}; then
+	mkdir \${HERE}/${SIMPKG_DSTDIR}
 fi
-cd \${HERE}/${SIMPKG}
-\${MY_DIR}/${SIMPKG}/configure "\$@"
+cd \${HERE}/${SIMPKG_DSTDIR}
+\${MY_DIR}/${SIMPKG_DSTDIR}/configure "\$@"
 STATUS="\$?"
 cd "\${HERE}"
 if test \${STATUS} -ne 0; then
@@ -233,17 +239,17 @@ install: ${SIMPKG}-install
 genisslib-all:
 	@\\\$(MAKE) -C \${HERE}/genisslib all
 ${SIMPKG}-all: genisslib-all
-	@\\\$(MAKE) -C \${HERE}/${SIMPKG} all
+	@\\\$(MAKE) -C \${HERE}/${SIMPKG_DSTDIR} all
 genisslib-clean:
 	@\\\$(MAKE) -C \${HERE}/genisslib clean
 ${SIMPKG}-clean:
-	@\\\$(MAKE) -C \${HERE}/${SIMPKG} clean
+	@\\\$(MAKE) -C \${HERE}/${SIMPKG_DSTDIR} clean
 genisslib-distclean:
 	@\\\$(MAKE) -C \${HERE}/genisslib distclean
 ${SIMPKG}-distclean:
-	@\\\$(MAKE) -C \${HERE}/${SIMPKG} distclean
+	@\\\$(MAKE) -C \${HERE}/${SIMPKG_DSTDIR} distclean
 ${SIMPKG}-install:
-	@\\\$(MAKE) -C \${HERE}/${SIMPKG} install
+	@\\\$(MAKE) -C \${HERE}/${SIMPKG_DSTDIR} install
 EOF_MAKEFILE_CROSS
 
 chmod +x Makefile.cross
@@ -259,7 +265,7 @@ function copy()
 	for LIST_NAME in "$@"; do
 		for FILE in $(files ${LIST_NAME}); do
 			if [ "${has_two_levels_dirs}" = "yes" ]; then
-				if ! dist_copy "${UNISIM_LIB_DIR}/${FILE}" "${DEST_DIR}/${SIMPKG}/${FILE}"; then
+				if ! dist_copy "${UNISIM_LIB_DIR}/${FILE}" "${DEST_DIR}/${SIMPKG_DSTDIR}/${FILE}"; then
 					status=1
 				fi
 			else
@@ -344,7 +350,7 @@ function build_top_configure_cross()
 	if has_to_build "${CONFIGURE_CROSS}" "$0" || \
 	   has_to_build "${CONFIGURE_CROSS}" "${CONFIGURE_CROSS}/dist_common.sh"; then
 		echo "Building configure.cross"
-		make_pkg_configure_cross "${SIMPKG}" "${CONFIGURE_CROSS}"
+		make_pkg_configure_cross "${CONFIGURE_CROSS}"
 	fi  # has to build configure cross
 }
 
@@ -352,7 +358,7 @@ function output_simulator_configure_ac()
 {
 	local SIMULATOR_CONFIGURE_AC
 	if [ "${has_two_levels_dirs}" = "yes" ]; then
-		SIMULATOR_CONFIGURE_AC="${DEST_DIR}/${SIMPKG}/configure.ac"
+		SIMULATOR_CONFIGURE_AC="${DEST_DIR}/${SIMPKG_DSTDIR}/configure.ac"
 	else
 		SIMULATOR_CONFIGURE_AC="${DEST_DIR}/configure.ac"
 	fi
@@ -370,7 +376,7 @@ function output_simulator_makefile_am()
 {
 	local SIMULATOR_MAKEFILE_AM
 	if [ "${has_two_levels_dirs}" = "yes" ]; then
-		SIMULATOR_MAKEFILE_AM="${DEST_DIR}/${SIMPKG}/Makefile.am"
+		SIMULATOR_MAKEFILE_AM="${DEST_DIR}/${SIMPKG_DSTDIR}/Makefile.am"
 	else
 		SIMULATOR_MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 	fi
@@ -391,9 +397,9 @@ function build_simulator_configure()
 	local SIMULATOR_CONFIGURE
 	local SIMULATOR_DIR
 	if [ "${has_two_levels_dirs}" = "yes" ]; then
-		SIMULATOR_CONFIG="${DEST_DIR}/${SIMPKG}/config"
-		SIMULATOR_CONFIGURE="${DEST_DIR}/${SIMPKG}/configure"
-		SIMULATOR_DIR="${DEST_DIR}/${SIMPKG}"
+		SIMULATOR_CONFIG="${DEST_DIR}/${SIMPKG_DSTDIR}/config"
+		SIMULATOR_CONFIGURE="${DEST_DIR}/${SIMPKG_DSTDIR}/configure"
+		SIMULATOR_DIR="${DEST_DIR}/${SIMPKG_DSTDIR}"
 	else
 		SIMULATOR_CONFIG="${DEST_DIR}/config"
 		SIMULATOR_CONFIGURE="${DEST_DIR}/configure"

@@ -34,10 +34,10 @@
 
 op mfsr(31[6]:rd[5]:?[1]:sr[4]:?[5]:595[10]:?[1])
 mfsr.execute = {
-	uint32_t msr = cpu->GetMSR();
-	if(unlikely(msr & CONFIG::MSR_PR_MASK))
+	CPU::MSR& msr = cpu->GetMSR();
+	if(unlikely(msr.Get<CPU::MSR::PR>()))
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_PRIVILEGE_VIOLATION);
+		cpu->ThrowException<CPU::ProgramInterrupt::PrivilegeViolation>();
 		return false;
 	}
 

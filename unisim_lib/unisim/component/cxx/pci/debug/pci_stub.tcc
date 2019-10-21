@@ -227,8 +227,13 @@ bool PCIStub<ADDRESS>::EndSetup()
 {
 	if(memory_access_reporting_control_import) {
 		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				unisim::service::interfaces::REPORT_MEM_ACCESS,
 				false);
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				unisim::service::interfaces::REPORT_FETCH_INSN,
+				false);
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				unisim::service::interfaces::REPORT_COMMIT_INSN,
 				false);
 	}
 
@@ -388,7 +393,7 @@ bool PCIStub<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size, PC
 						Object::Stop(-1);
 						return false;
 				}
-				if(watchpoint_registry[sp].HasWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
+				if(watchpoint_registry[sp].HasWatchpoints(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
 				{
 					synchronizable_import->Synchronize();
 			
@@ -497,7 +502,7 @@ bool PCIStub<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size, PCISpace 
 						Object::Stop(-1);
 						return false;
 				}
-				if(watchpoint_registry[sp].HasWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
+				if(watchpoint_registry[sp].HasWatchpoints(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
 				{
 					synchronizable_import->Synchronize();
 			
@@ -517,6 +522,12 @@ bool PCIStub<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size, PCISpace 
 		}
 	}
 	return false;
+}
+
+template <class ADDRESS>
+void PCIStub<ADDRESS>::ResetMemory()
+{
+	Reset();
 }
 
 template <class ADDRESS>
@@ -576,10 +587,10 @@ bool PCIStub<ADDRESS>::ServeWriteRegister(const char *name, uint32_t value)
 }
 
 template <class ADDRESS>
-void PCIStub<ADDRESS>::ReportMemoryAccess(typename unisim::util::debug::MemoryAccessType mat, typename unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
+bool PCIStub<ADDRESS>::ReportMemoryAccess(typename unisim::util::debug::MemoryAccessType mat, typename unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
 {
-	if(!watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints()) return;
-	if(watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoint(mat, mt, addr, size))
+	if(!watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints()) return true;
+	if(watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints(mat, mt, addr, size))
 	{
 		synchronizable_import->Synchronize();
 
@@ -595,7 +606,7 @@ void PCIStub<ADDRESS>::ReportMemoryAccess(typename unisim::util::debug::MemoryAc
 				break;
 			default:
 				// Ignore report
-				return;
+				return true;
 		}
 		trap.watchpoint.addr = addr;
 		trap.watchpoint.size = size;
@@ -604,10 +615,12 @@ void PCIStub<ADDRESS>::ReportMemoryAccess(typename unisim::util::debug::MemoryAc
 
 		Trap();
 	}
+	
+	return true;
 }
 
 template <class ADDRESS>
-void PCIStub<ADDRESS>::ReportCommitInstruction(ADDRESS addr)
+void PCIStub<ADDRESS>::ReportCommitInstruction(ADDRESS addr, unsigned int length)
 {
 }
 
@@ -615,7 +628,7 @@ template <class ADDRESS>
 void PCIStub<ADDRESS>::ReportFetchInstruction(ADDRESS next_addr)
 {
 	if(!breakpoint_registry.HasBreakpoints()) return;
-	if(breakpoint_registry.HasBreakpoint(next_addr))
+	if(breakpoint_registry.HasBreakpoints(next_addr, 0 /* CPU #0 */))
 	{
 		synchronizable_import->Synchronize();
 
@@ -633,7 +646,8 @@ bool PCIStub<ADDRESS>::ServeSetBreakpoint(ADDRESS addr)
 {
 	bool ret = breakpoint_registry.SetBreakpoint(addr);
 	if(memory_access_reporting_control_import)
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				unisim::service::interfaces::REPORT_FETCH_INSN,
 				breakpoint_registry.HasBreakpoints());
 	return ret;
 }
@@ -666,7 +680,8 @@ bool PCIStub<ADDRESS>::ServeSetBreakpoint(const char *symbol_name)
 	}
 	bool ret = breakpoint_registry.SetBreakpoint(symbol->GetAddress());
 	if(memory_access_reporting_control_import)
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				unisim::service::interfaces::REPORT_FETCH_INSN,
 				breakpoint_registry.HasBreakpoints());
 	return ret;
 }
@@ -677,6 +692,7 @@ bool PCIStub<ADDRESS>::ServeSetReadWatchpoint(ADDRESS addr, uint32_t size, typen
 	bool ret = watchpoint_registry[space].SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
 	if(memory_access_reporting_control_import)
 		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				unisim::service::interfaces::REPORT_MEM_ACCESS,
 				watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints() || 
 				watchpoint_registry[inherited::SP_DEV_MEM].HasWatchpoints() ||
 				watchpoint_registry[inherited::SP_DEV_IO].HasWatchpoints());
@@ -689,6 +705,7 @@ bool PCIStub<ADDRESS>::ServeSetWriteWatchpoint(ADDRESS addr, uint32_t size, type
 	bool ret = watchpoint_registry[space].SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
 	if(memory_access_reporting_control_import)
 		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				unisim::service::interfaces::REPORT_MEM_ACCESS,
 				watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints() || 
 				watchpoint_registry[inherited::SP_DEV_MEM].HasWatchpoints() ||
 				watchpoint_registry[inherited::SP_DEV_IO].HasWatchpoints());
@@ -700,7 +717,8 @@ bool PCIStub<ADDRESS>::ServeRemoveBreakpoint(ADDRESS addr)
 {
 	bool ret = breakpoint_registry.RemoveBreakpoint(addr);
 	if(memory_access_reporting_control_import)
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				unisim::service::interfaces::REPORT_FETCH_INSN,
 				breakpoint_registry.HasBreakpoints());
 	return ret;
 }
@@ -734,7 +752,8 @@ bool PCIStub<ADDRESS>::ServeRemoveBreakpoint(const char *symbol_name)
 
 	bool ret = breakpoint_registry.RemoveBreakpoint(symbol->GetAddress());
 	if(memory_access_reporting_control_import)
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				unisim::service::interfaces::REPORT_FETCH_INSN,
 				breakpoint_registry.HasBreakpoints());
 	return ret;
 }
@@ -745,6 +764,7 @@ bool PCIStub<ADDRESS>::ServeRemoveReadWatchpoint(ADDRESS addr, uint32_t size, ty
 	bool ret = watchpoint_registry[space].RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
 	if(memory_access_reporting_control_import)
 		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				unisim::service::interfaces::REPORT_MEM_ACCESS,
 				watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints() || 
 				watchpoint_registry[inherited::SP_DEV_MEM].HasWatchpoints() ||
 				watchpoint_registry[inherited::SP_DEV_IO].HasWatchpoints());
@@ -757,6 +777,7 @@ bool PCIStub<ADDRESS>::ServeRemoveWriteWatchpoint(ADDRESS addr, uint32_t size, t
 	bool ret = watchpoint_registry[space].RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
 	if(memory_access_reporting_control_import)
 		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				unisim::service::interfaces::REPORT_MEM_ACCESS,
 				watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints() || 
 				watchpoint_registry[inherited::SP_DEV_MEM].HasWatchpoints() ||
 				watchpoint_registry[inherited::SP_DEV_IO].HasWatchpoints());

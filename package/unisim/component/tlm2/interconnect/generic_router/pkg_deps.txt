@@ -12,5 +12,6 @@ unisim/kernel
 unisim/kernel/logger
 unisim/kernel/tlm2
 unisim/kernel/variable
+unisim/kernel/variable/sc_time
 unisim/service/interfaces/memory
 unisim/util/likely

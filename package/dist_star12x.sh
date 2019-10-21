@@ -1,6 +1,7 @@
 #!/bin/bash
 SIMPKG=s12x
-SIMPKGDIR=tlm2/s12x
+SIMPKG_SRCDIR=tlm2/s12x
+SIMPKG_DSTDIR=s12x
 source "$(dirname $0)/dist_common.sh"
 
 import_genisslib
@@ -33,6 +34,8 @@ import libc/stdlib || exit
 import libc/string || exit
 import std/iostream || exit
 import std/stdexcept || exit
+
+import m4/ax_cflags_warn_all || exit
 
 copy source isa isa_s12xgate isa_xb header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
@@ -106,7 +109,7 @@ ${UNISIM_SIMULATOR_DATA_FILES} \
 "
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
-	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
+	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG_DSTDIR}/${file}"
 done
 
 for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
@@ -161,14 +164,14 @@ AC_PATH_PROGS(SH, sh)
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_CONFIG_SUBDIRS([genisslib])
-AC_CONFIG_SUBDIRS([${SIMPKG}])
+AC_CONFIG_SUBDIRS([${SIMPKG_DSTDIR}])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 EOF
 )
 
 output_top_makefile_am <(cat << EOF
-SUBDIRS=genisslib ${SIMPKG}
+SUBDIRS=genisslib ${SIMPKG_DSTDIR}
 EOF
 )
 
@@ -203,9 +206,6 @@ AC_PROG_LN_S
 AC_LANG([C++])
 AM_PROG_CC_C_O
 $(lines ac)
-UNISIM_CHECK_RTBCOB
-
-AX_CXXFLAGS_WARN_ALL
 GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib
 AC_SUBST(GENISSLIB_PATH)
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
@@ -224,25 +224,25 @@ libtool: \$(LIBTOOL_DEPS)
 
 # -------------------------
 bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION}
-unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_MAIN_SOURCE_FILES}
-unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la libunisim-${SIMPKG}-simulator-${SIMULATOR_VERSION}.la
-unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_MAIN_SOURCE_FILES}
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la libunisim-${SIMPKG}-simulator-${SIMULATOR_VERSION}.la
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static
 
 # -------------------------
 lib_LTLIBRARIES = libunisim-${SIMPKG}-simulator-${SIMULATOR_VERSION}.la
-libunisim_${SIMPKG}_simulator_${AM_SIMULATOR_VERSION}_la_CXXFLAGS =
-libunisim_${SIMPKG}_simulator_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -no-undefined
-libunisim_${SIMPKG}_simulator_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
-libunisim_${SIMPKG}_simulator_${AM_SIMULATOR_VERSION}_la_LIBADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
+libunisim_${AM_SIMPKG}_simulator_${AM_SIMULATOR_VERSION}_la_CXXFLAGS =
+libunisim_${AM_SIMPKG}_simulator_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -no-undefined
+libunisim_${AM_SIMPKG}_simulator_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
+libunisim_${AM_SIMPKG}_simulator_${AM_SIMULATOR_VERSION}_la_LIBADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 
 # -------------------------
 noinst_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
-libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_CXXFLAGS =
-libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -no-undefined
-nodist_libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc unisim/component/cxx/processor/hcs12x/s12xgate.cc
+libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_CXXFLAGS =
+libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -no-undefined
+nodist_libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc unisim/component/cxx/processor/hcs12x/s12xgate.cc
 
 # -------------------------
-libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
+libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
 
 # -------------------------
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}

@@ -34,11 +34,11 @@
 		<register dw_reg_num="29" arch_reg="r29"/>
 		<register dw_reg_num="30" arch_reg="r30"/>
 		<register dw_reg_num="31" arch_reg="r31"/>
-		<register dw_reg_num="64" arch_reg="cr"/>
-		<register dw_reg_num="65" arch_reg="lr"/>   <!-- for gcc r65 is LR: see https://gcc.gnu.org/ml/gcc-patches/2012-11/msg02136.html -->
-		<register dw_reg_num="101" arch_reg="xer"/>
-		<register dw_reg_num="108" arch_reg="lr"/>
-		<register dw_reg_num="109" arch_reg="ctr"/>
-		<register dw_reg_num="612" arch_reg="spefscr"/>
+		<register dw_reg_num="64" arch_reg="CR"/>
+		<register dw_reg_num="65" arch_reg="LR"/>   <!-- for gcc r65 is LR: see https://gcc.gnu.org/ml/gcc-patches/2012-11/msg02136.html -->
+		<register dw_reg_num="101" arch_reg="XER"/>
+		<register dw_reg_num="108" arch_reg="LR"/>
+		<register dw_reg_num="109" arch_reg="CTR"/>
+		<register dw_reg_num="612" arch_reg="SPEFSCR"/>
 	</architecture>
 </dw_reg_num_mapping>

@@ -21,15 +21,15 @@ private:
 public:
 	virtual void TimeEvent() = 0;
 
-	void SetTimer(sc_time &time);
+	void SetTimer(sc_core::sc_time &time);
 	
 private:
 	void TimeHandlerProcess(TimeHandler *handler);
 	
 	class TimeHandler {
 	public:
-		sc_time time;
-		sc_event event;
+		sc_core::sc_time time;
+		sc_core::sc_event event;
 	};
 	
 	list<TimeHandler *> free_handlers;

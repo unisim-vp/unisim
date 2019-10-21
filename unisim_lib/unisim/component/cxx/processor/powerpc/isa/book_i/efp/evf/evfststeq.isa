@@ -34,7 +34,7 @@
 
 op evfststeq(4[6]:bf[3]:?[2]:ra[5]:rb[5]:670[11])
 evfststeq.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 evfststeq.disasm = {

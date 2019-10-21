@@ -38,6 +38,7 @@
 #include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include <systemc>
 #include <tlm>
 

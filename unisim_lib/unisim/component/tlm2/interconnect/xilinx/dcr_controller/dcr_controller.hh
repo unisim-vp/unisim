@@ -38,6 +38,7 @@
 #include <unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.hh>
 #include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
+#include <unisim/kernel/variable/sc_time/sc_time.hh>
 #include <systemc>
 
 namespace unisim {

@@ -34,7 +34,7 @@
 
 op evfststgt(4[6]:bf[3]:?[2]:ra[5]:rb[5]:668[11])
 evfststgt.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 evfststgt.disasm = {
