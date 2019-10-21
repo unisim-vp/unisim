@@ -29,23 +29,26 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-/***************************************
 
-MEMORY SYNCHRONIZATION INSTRUCTIONS
+#include <inttypes.h>
+#include "unisim/component/tlm/fsb/snooping_bus/bus.hh"
+#include "unisim/component/tlm/fsb/snooping_bus/bus.tcc"
 
-***************************************/
+namespace unisim {
+namespace component {
+namespace tlm {
+namespace fsb {
+namespace snooping_bus {
 
-op eieio(31[6]:?[5]:?[5]:?[5]:854[10]:?[1])
-eieio.execute = { return true; /* order is always enforced in functional simulation */ }
-eieio.disasm = {
-	os << "eieio";
-}
+template
+class Bus<uint64_t, 32, 1>;
 
-op sync(31[6]:?[15]:598[10]:?[1])
-sync.execute = { cpu->Synchronize(); return true; }
-sync.disasm = {
-	os << "sync";
-}
+} // end of namespace snooping_bus
+} // end of namespace fsb
+} // end of namespace tlm
+} // end of namespace component
+} // end of namespace unisim
+

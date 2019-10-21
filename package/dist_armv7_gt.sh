@@ -1,6 +1,7 @@
 #!/bin/bash
 SIMPKG=armv7_gt
-SIMPKGDIR=tlm2/armv7_gt
+SIMPKG_SRCDIR=tlm2/armv7_gt
+SIMPKG_DSTDIR=armv7_gt
 source "$(dirname $0)/dist_common.sh"
 
 import_genisslib
@@ -20,6 +21,7 @@ import unisim/kernel || exit
 import unisim/util/likely || exit
 
 import m4/scml2
+import m4/ax_cflags_warn_all || exit
 
 import libc/stdio || exit
 import libc/stdlib || exit
@@ -79,7 +81,7 @@ ChangeLog \
 UNISIM_SIMULATOR_FILES="${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_DATA_FILES}"
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
-	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
+	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG_DSTDIR}/${file}"
 done
 
 for file in ${UNISIM_SIMULATOR_PKG_DATA_FILES}; do
@@ -141,14 +143,14 @@ AC_PATH_PROGS(SH, sh)
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_CONFIG_SUBDIRS([genisslib]) 
-AC_CONFIG_SUBDIRS([${SIMPKG}]) 
+AC_CONFIG_SUBDIRS([${SIMPKG_DSTDIR}]) 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 EOF
 )
 
 output_top_makefile_am <(cat << EOF
-SUBDIRS=genisslib ${SIMPKG}
+SUBDIRS=genisslib ${SIMPKG_DSTDIR}
 EXTRA_DIST = configure.cross
 EOF
 )
@@ -194,10 +196,8 @@ case "\${host}" in
 		;;
 esac
 $(lines ac)
-AX_CXXFLAGS_WARN_ALL
 GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
 AC_SUBST(GENISSLIB_PATH)
-AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
 AC_DEFINE([SIM_VERSION_MAJOR], [${SIM_VERSION_MAJOR}], [Version major number])
 AC_DEFINE([SIM_VERSION_MINOR], [${SIM_VERSION_MINOR}], [Version minor number])
@@ -224,14 +224,14 @@ libtool: \$(LIBTOOL_DEPS)
 
 # Program
 bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION}
-unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
-unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
-unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
+unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 
 # Static Library
 noinst_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
-libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
-libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
+libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
+libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
 
 noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}

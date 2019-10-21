@@ -68,7 +68,7 @@ template <class PHYSICAL_ADDR,
 		uint32_t MAX_TRANSACTION_DATA_SIZE,
 		bool DEBUG = false>
 class EPIC :
-	public sc_module,
+	public sc_core::sc_module,
 	public TlmSendIf<MemoryRequest<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE>, 
 					 MemoryResponse<MAX_TRANSACTION_DATA_SIZE> >,
 	public RequestPortIdentifierInterface<InterruptRequest>,
@@ -93,17 +93,17 @@ public:
 	
 	/* Module ports declaration */
 	/** Input port for incomming requests from the mpc107 bus */
-	sc_export<TlmSendIf<ReqType, RspType> > slave_port;
+	sc_core::sc_export<TlmSendIf<ReqType, RspType> > slave_port;
 	/** Input port for the incomming interruptions */
-	sc_export<TlmSendIf<IntType> > *irq_slave_port[inherited::NUM_IRQS];
+	sc_core::sc_export<TlmSendIf<IntType> > *irq_slave_port[inherited::NUM_IRQS];
 	/* output port for the outgoing interruptions */
-	sc_port<TlmSendIf<IntType> > irq_master_port;
+	sc_core::sc_port<TlmSendIf<IntType> > irq_master_port;
 	/* output port for the soft reset interruption */
-	sc_port<TlmSendIf<IntType> > soft_reset_master_port;
+	sc_core::sc_port<TlmSendIf<IntType> > soft_reset_master_port;
 	/* input port for the sdram time signal */
-	sc_in<uint64_t> sdram_slave_port;
+	sc_core::sc_in<uint64_t> sdram_slave_port;
 
-	EPIC(const sc_module_name &name, Object *parent = 0);
+	EPIC(const sc_core::sc_module_name &name, Object *parent = 0);
 	virtual ~EPIC();
 
 	/* Interface of the EPIC to the MPC107 */
@@ -127,11 +127,11 @@ public:
 private:
 	RequestPortIdentifier<IntType> *irq_handler[inherited::NUM_IRQS];
 	
-	sc_mutex sdram_clock_activated_mutex;
+	sc_core::sc_mutex sdram_clock_activated_mutex;
 	bool sdram_clock_activated;
 	
 	void SDRAMClock();
-	sc_event sdram_clock_event;
+	sc_core::sc_event sdram_clock_event;
 };
 	
 } // end of epic namespace

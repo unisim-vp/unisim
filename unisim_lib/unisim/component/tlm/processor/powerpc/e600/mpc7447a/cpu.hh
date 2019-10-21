@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,33 +31,34 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh>
-#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc>
-#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu_cache.tcc>
-#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debugging.tcc>
-#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu_exception_handling.tcc>
-#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu_fetch.tcc>
-#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu_load_store.tcc>
-#include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu_mmu.tcc>
 
-#ifdef powerpc
-#undef powerpc
-#endif
+#ifndef __UNISIM_COMPONENT_TLM_PROCESSOR_POWERPC_E600_MPC7447A_CPU_HH__
+#define __UNISIM_COMPONENT_TLM_PROCESSOR_POWERPC_E600_MPC7447A_CPU_HH__
+
+#include <unisim/component/tlm/processor/powerpc/e600/cpu.hh>
+#include <unisim/component/cxx/processor/powerpc/e600/mpc7447a/cpu.hh>
 
 namespace unisim {
 namespace component {
-namespace cxx {
+namespace tlm {
 namespace processor {
 namespace powerpc {
+namespace e600 {
 namespace mpc7447a {
 
-template class CPU<DebugConfig>;
+struct CPU : unisim::component::tlm::processor::powerpc::e600::CPU<unisim::component::cxx::processor::powerpc::e600::mpc7447a::TYPES, unisim::component::cxx::processor::powerpc::e600::mpc7447a::CONFIG>
+{
+	typedef unisim::component::tlm::processor::powerpc::e600::CPU<unisim::component::cxx::processor::powerpc::e600::mpc7447a::TYPES, unisim::component::cxx::processor::powerpc::e600::mpc7447a::CONFIG> Super;
+	
+	CPU(const sc_core::sc_module_name& name, Object *parent = 0);
+};
 
 } // end of namespace mpc7447a
+} // end of namesapce e600
 } // end of namespace powerpc
 } // end of namespace processor
-} // end of namespace cxx
+} // end of namespace tlm
 } // end of namespace component
 } // end of namespace unisim
 
+#endif

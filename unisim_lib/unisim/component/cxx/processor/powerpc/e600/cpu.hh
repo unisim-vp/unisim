@@ -67,6 +67,7 @@ public:
 	typedef typename SuperCPU::SRR1 SRR1;
 	typedef typename SuperCPU::MSSSR0 MSSSR0;
 	typedef typename SuperCPU::DSISR DSISR;
+	typedef typename SuperCPU::L2CR L2CR;
 	
 	/////////////////////////// service exports ///////////////////////////////
 
@@ -129,7 +130,7 @@ public:
 		void Effect()
 		{
 			this->cpu->UpdateExceptionEnable();
-			this->cpu->PowerManagement();
+			this->cpu->UpdatePowerSave();
 		}
 	};
 	
@@ -163,11 +164,11 @@ public:
 		
 		void Effect()
 		{
-			this->cpu->PowerManagement();
+			this->cpu->UpdatePowerSave();
 		}
 	};
 	
-	/////////////////// Hardware Implementation-Dependent Register 0 //////////
+	/////////////////// Hardware Implementation-Dependent Register 1 //////////
 	
 	struct HID1 : SuperCPU::HID1
 	{
@@ -201,6 +202,45 @@ public:
 		}
 	};
 	
+	// Decrementer
+	struct DEC : SuperCPU::DEC
+	{
+		typedef typename SuperCPU::DEC Super;
+		
+		DEC(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		DEC(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		inline void Set(unsigned int bit_offset, typename DEC::TYPE bit_value) ALWAYS_INLINE
+		{
+			bool old_bit_0 = this->template Get<typename DEC::_0>();
+			Super::Set(bit_offset, bit_value);
+			Effect(old_bit_0, this->template Get<typename DEC::_0>());
+		}
+		
+		template <typename FIELD> inline void Set(typename DEC::TYPE field_value)
+		{
+			bool old_bit_0 = this->template Get<typename DEC::_0>();
+			Super::template Set<FIELD>(field_value);
+			Effect(old_bit_0, this->template Get<typename DEC::_0>());
+		}
+
+		DEC& operator = (const typename DEC::TYPE& value)
+		{
+			bool old_bit_0 = this->template Get<typename DEC::_0>();
+			this->Super::operator = (value);
+			Effect(old_bit_0, this->template Get<typename DEC::_0>());
+			return *this;
+		}
+		
+		void Effect(bool old_bit_0, bool new_bit_0)
+		{
+			if(!old_bit_0 && new_bit_0) // bit 0 toggling from 0 to 1 ?
+			{
+				this->cpu->template ThrowException<typename DecrementerInterrupt::Decrementer>();
+			}
+		}
+	};
+
 	//////////////  Instruction Cache and Interrupt Control Register //////////
 	
 	struct ICTRL : SuperCPU::ICTRL
@@ -219,7 +259,6 @@ public:
 			if(!old_cirq && new_cirq)
 			{
 				this->cpu->template ThrowException<typename ExternalInterrupt::ExternalInterruptException>().SoftwareInterruptRequest(true);
-				return false;
 			}
 			return true;
 		}
@@ -277,7 +316,6 @@ public:
 
 	bool Lwarx(unsigned int rd, EFFECTIVE_ADDRESS addr);
 	bool Stwcx(unsigned int rs, EFFECTIVE_ADDRESS addr);
-	bool Wait();
 	bool Sync();
 	bool Isync();
 	bool TLB_Sync();
@@ -343,9 +381,9 @@ public:
 		static const char *GetName() { return "Machine Check Interrupt"; }
 	};
 
-	struct DataStorageInterrupt : SuperCPU::template InterruptWithAddress<DataStorageInterrupt, 2>
+	struct DataStorageInterrupt : SuperCPU::template InterruptWithAddress<DataStorageInterrupt, 0x00300>
 	{
-		typedef typename SuperCPU::template InterruptWithAddress<DataStorageInterrupt, 2> Super;
+		typedef typename SuperCPU::template InterruptWithAddress<DataStorageInterrupt, 0x00300> Super;
 		
 		struct ProtectionViolation         : SuperCPU::template Exception<DataStorageInterrupt> { static const char *GetName() { return "Data Storage Interrupt/Protection Violation Exception"; } };
 		struct DirectStore                 : SuperCPU::template Exception<DataStorageInterrupt> { static const char *GetName() { return "Data Storage Interrupt/Direct Store Exception Exception"; } };
@@ -901,9 +939,11 @@ public:
 	void ProcessInterrupt(AltivecAssistInterrupt *); 
 	
 	void UpdateExceptionEnable();
+	void UpdatePowerSave();
 	void PowerManagement();
 	
 	bool IsStorageCacheable(STORAGE_ATTR storage_attr) const { return !(storage_attr & TYPES::SA_I); }
+	bool IsDataStoreAccessWriteThrough(STORAGE_ATTR storage_attr) const { return (storage_attr & TYPES::SA_W) != 0; }
 
 	virtual void InvalidateDirectMemPtr(PHYSICAL_ADDRESS start_addr, PHYSICAL_ADDRESS end_addr) {}
 
@@ -969,6 +1009,10 @@ protected:
 	SystemManagementInterrupt             system_management_interrupt;
 	AltivecAssistInterrupt                altivec_assist_interrupt;
         
+	//////////////////////////// Power Management /////////////////////////////
+	
+	bool powersave;
+	
 	/////////////////////////////// Registers /////////////////////////////////
 
 	// VEA
@@ -978,7 +1022,7 @@ protected:
 	typename SuperCPU::BAMR        bamr;
 	typename SuperCPU::DABR        dabr;
 	typename SuperCPU::DAR         dar;
-	typename SuperCPU::DEC         dec;
+	DEC                            dec;
 	DSISR                          dsisr;
 	typename SuperCPU::EAR         ear;
 	HID0                           hid0;
@@ -986,7 +1030,7 @@ protected:
 	typename SuperCPU::IABR        iabr;
 	typename SuperCPU::ICTC        ictc;
 	ICTRL                          ictrl;
-	typename SuperCPU::L2CR        l2cr;
+	L2CR                           l2cr;
 	typename SuperCPU::LDSTCR      ldstcr;
 	typename SuperCPU::LDSTDB      ldstdb;
 	typename SuperCPU::MMCR0       mmcr0;

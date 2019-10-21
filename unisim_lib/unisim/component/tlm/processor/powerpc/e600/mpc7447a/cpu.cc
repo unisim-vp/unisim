@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,56 +32,27 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-/*********************************************
+#include <unisim/component/tlm/processor/powerpc/e600/mpc7447a/cpu.hh>
+#include <unisim/component/tlm/processor/powerpc/e600/cpu.tcc>
 
-LOOKASIDE BUFFER MANAGEMENT INSTRUCTIONS
+namespace unisim {
+namespace component {
+namespace tlm {
+namespace processor {
+namespace powerpc {
+namespace e600 {
+namespace mpc7447a {
 
-*********************************************/
-
-op tlbia(31[6]:?[5]:?[5]:?[5]:370[10]:?[1])
-tlbia.execute = {
-	return cpu->Tlbia();
-}
-tlbia.disasm = { os << "tlbia"; }
-
-op tlbie(31[6]:?[5]:?[5]:rb[5]:306[10]:?[1])
-tlbie.execute = {
-	typename CONFIG::address_t ea = cpu->GetGPR(rb);
-	return cpu->Tlbie(ea);
-}
-tlbie.disasm = {
-	os << "tlbie " << GPRPrint(rb);
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t ea = cpu->GetGPR(rb);
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
+CPU::CPU(const sc_core::sc_module_name& name, Object *parent)
+	: unisim::kernel::Object(name, parent, "MPC7447A PowerPC core")
+	, Super(name, parent)
+{
 }
 
-op tlbld(31[6]:0[5]:0[5]:rb[5]:978[10]:0[1])
-tlbld.execute = {
-	typename CONFIG::address_t ea = cpu->GetGPR(rb);
-	return cpu->Tlbld(ea);
-}
-tlbld.disasm = {
-	os << "tlbld " << GPRPrint(rb);
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t ea = cpu->GetGPR(rb);
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
-
-op tlbli(31[6]:0[5]:0[5]:rb[5]:1010[10]:0[1])
-tlbli.execute = {
-	typename CONFIG::address_t ea = cpu->GetGPR(rb);
-	return cpu->Tlbli(ea);
-}
-tlbli.disasm = {
-	os << "tlbli " << GPRPrint(rb);
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t ea = cpu->GetGPR(rb);
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+} // end of namespace mpc7447a
+} // end of namesapce e600
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace tlm
+} // end of namespace component
+} // end of namespace unisim

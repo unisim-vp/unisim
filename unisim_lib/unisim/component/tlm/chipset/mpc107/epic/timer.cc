@@ -8,19 +8,19 @@ namespace chipset {
 namespace mpc107 {
 namespace epic {
 	
-void Timer::SetTimer(sc_time &time) {
+void Timer::SetTimer(sc_core::sc_time &time) {
 	TimeHandler *handler;
 	
 	if(free_handlers.empty()) {
 		handler = new TimeHandler();
-		sc_spawn(sc_bind(&Timer::TimeHandlerProcess, this, handler));
+		sc_core::sc_spawn(sc_bind(&Timer::TimeHandlerProcess, this, handler));
 	} else {
 		handler = free_handlers.front();
 		free_handlers.pop_front();
 	}
 	
 	handler->time = time;
-	handler->event.notify(SC_ZERO_TIME);
+	handler->event.notify(sc_core::SC_ZERO_TIME);
 }
 
 void Timer::TimeHandlerProcess(TimeHandler *handler) {

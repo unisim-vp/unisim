@@ -241,7 +241,7 @@ void SymbolTable<T>::Use(typename unisim::util::debug::Symbol<T>::Type type) con
 {
 	if(types.front() != type)
 	{
-		for(typename std::vector<typename unisim::util::debug::Symbol<T>::Type>::const_iterator it = types.begin(); it != types.end(); ++it)
+		for(typename std::vector<typename unisim::util::debug::Symbol<T>::Type>::iterator it = types.begin(); it != types.end(); ++it)
 		{
 			if((*it) == type)
 			{

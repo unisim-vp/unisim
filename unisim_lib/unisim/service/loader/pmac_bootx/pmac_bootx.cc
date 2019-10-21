@@ -500,7 +500,7 @@ bool DeviceTree::Load(const string& filename)
 {
 	base = boot_infos->Malloc(4); // first 4 bytes must be set to zero
 
-	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser(logger);
+	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream());
 	unisim::util::xml::Node *xml_node;
 
 	xml_node = parser->Parse(filename);

@@ -73,7 +73,7 @@ using unisim::component::cxx::pci::PCISpace;
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 class Bridge :
-	public sc_module,
+	public sc_core::sc_module,
 	public TlmSendIf<PCIRequest<ADDRESS_TYPE, MAX_DATA_SIZE>, PCIResponse<MAX_DATA_SIZE> >,
 	public unisim::component::cxx::bridge::pci_isa::Bridge<ADDRESS_TYPE>
 {
@@ -85,25 +85,25 @@ public:
 	typedef ISAResponse<MAX_DATA_SIZE> ISARsp;
 	
 	// from PCI bus
-	sc_export<TlmSendIf<PCIReq, PCIRsp> > pci_slave_port;
-	//sc_port<TlmSendIf<PCIReq, PCIRsp> > pci_master_port;
+	sc_core::sc_export<TlmSendIf<PCIReq, PCIRsp> > pci_slave_port;
+	//sc_core::sc_port<TlmSendIf<PCIReq, PCIRsp> > pci_master_port;
 
 	// from ISA bus
-	sc_port<TlmSendIf<ISAReq, ISARsp> > isa_master_port;
-	//sc_export<TlmSendIf<ISAReq, ISARsp> > isa_slave_port;
+	sc_core::sc_port<TlmSendIf<ISAReq, ISARsp> > isa_master_port;
+	//sc_core::sc_export<TlmSendIf<ISAReq, ISARsp> > isa_slave_port;
 	
-	Bridge(const sc_module_name& name, Object *parent = 0);
+	Bridge(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~Bridge();
 	virtual bool Send(const Pointer<TlmMessage<PCIReq, PCIRsp> > &message);
 	//void Run();
 	virtual bool BeginSetup();
 	void ISAMaster();
 private:
-	sc_time pci_bus_cycle_time;
-	sc_time isa_bus_cycle_time;
+	sc_core::sc_time pci_bus_cycle_time;
+	sc_core::sc_time isa_bus_cycle_time;
 
-	sc_fifo<Pointer<TlmMessage<PCIReq, PCIRsp> > > from_pci;
-	sc_time GetSynchro(const sc_time& cycle_time, const sc_time& process_delay);
+	sc_core::sc_fifo<Pointer<TlmMessage<PCIReq, PCIRsp> > > from_pci;
+	sc_core::sc_time GetSynchro(const sc_core::sc_time& cycle_time, const sc_core::sc_time& process_delay);
 };
 
 } // end of namespace pci_isa

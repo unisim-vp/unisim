@@ -1306,7 +1306,8 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDIEByName(unsigned int
 		bool external_flag;
 		if(!external || (GetExternalFlag(external_flag) && external_flag))
 		{
-			if(strcmp(GetName(), name) == 0) return this;
+			const char *die_name = GetName();
+			if(die_name && (strcmp(die_name, name) == 0)) return this;
 		}
 	}
 	

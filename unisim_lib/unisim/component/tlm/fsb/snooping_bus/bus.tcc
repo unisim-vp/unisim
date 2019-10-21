@@ -94,9 +94,9 @@ Send(const Pointer<TlmMessage<ReqType, RspType> > &message) {
 template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 		unsigned int NUM_PROCS>
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
-Bus(const sc_module_name& module_name, Object *parent) :
+Bus(const sc_core::sc_module_name& module_name, Object *parent) :
 	Object(module_name, parent, "Front side bus"),
-	sc_module(module_name),
+	sc_core::sc_module(module_name),
 	ResponseListener<ReqType, RspType>(),		
 	Service<Memory<ADDRESS_TYPE> >(module_name, parent),
 	Client<Memory<ADDRESS_TYPE> >(module_name, parent),
@@ -122,7 +122,7 @@ Bus(const sc_module_name& module_name, Object *parent) :
 	for(unsigned int i = 0; i < NUM_PROCS; i++) {
 		stringstream s;
 		s << "inport[" << i << "]";
-		inport[i] = new sc_export<TransactionSendIf>(s.str().c_str());
+		inport[i] = new sc_core::sc_export<TransactionSendIf>(s.str().c_str());
 	}
 
 	for(unsigned int i = 0; i < NUM_PROCS; i++) {
@@ -138,25 +138,25 @@ Bus(const sc_module_name& module_name, Object *parent) :
 	for(unsigned int i = 0; i < NUM_PROCS; i++) {
 		stringstream s;
 		s << "req_fifo[" << i << "]";
-		req_fifo[i] = new sc_fifo<PTransactionMsgType>(s.str().c_str());
+		req_fifo[i] = new sc_core::sc_fifo<PTransactionMsgType>(s.str().c_str());
 	}
 
 	/* create snooping output ports and name them */
 	for(unsigned int i = 0; i < NUM_PROCS; i++) {
 		stringstream s;
 		s << "outport[" << i << "]";
-		outport[i] = new sc_port<TransactionSendIf>;
+		outport[i] = new sc_core::sc_port<TransactionSendIf>;
 	}
 		
 	/* create the chipset ports and name them */
 	{	stringstream s;
 		s << "chipset_outport";
-		chipset_outport = new sc_port<TransactionSendIf>(s.str().c_str());
+		chipset_outport = new sc_core::sc_port<TransactionSendIf>(s.str().c_str());
 	}
 
 	{	stringstream s;
 		s << "chipset_inport";
-		chipset_inport = new sc_export<TransactionSendIf>(s.str().c_str());
+		chipset_inport = new sc_core::sc_export<TransactionSendIf>(s.str().c_str());
 	}
 	(*chipset_inport)(*this);
 
@@ -206,7 +206,7 @@ SetupMemory() {
 			<< "cycle time of " << cycle_time << endl
 			<< EndDebugInfo;
 	}
-	if(cycle_time == SC_ZERO_TIME) {
+	if(cycle_time == sc_core::SC_ZERO_TIME) {
 		logger << DebugError << LOCATION << ", "
 			<< "cycle_time should be bigger than 0" << EndDebugError;
 		return false;
@@ -231,7 +231,17 @@ template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 void Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
 Reset() {
 }
-	
+
+template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
+		unsigned int NUM_PROCS>
+void 
+Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
+ResetMemory() {
+	if(memory_import) {
+		memory_import->ResetMemory();
+	}
+}
+
 template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 		unsigned int NUM_PROCS>
 bool 
@@ -297,7 +307,7 @@ template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 void
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
 ResponseReceived(const PTransactionMsgType &msg,
-	sc_port<TransactionSendIf> &port) {
+	sc_core::sc_port<TransactionSendIf> &port) {
 	/* check if the response comes from the chipset, if so
 	 *   put the response in the chipset fifo queue */
 	if(&port == chipset_outport) {
@@ -325,7 +335,7 @@ void
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
 BusSynchronize() {
 	/* compute the current bus cycles */
-	sc_time cur_time = sc_time_stamp();
+	sc_core::sc_time cur_time = sc_core::sc_time_stamp();
 	sc_dt::uint64 cur_time_int = cur_time.value();
 	sc_dt::uint64 cycle_time_int = cycle_time.value();
 	sc_dt::uint64 cur_cycle = cur_time_int / cycle_time_int;
@@ -345,7 +355,7 @@ BusSynchronize() {
 				<< "bus synchronize in 0 time" << endl
 				<< EndDebugInfo;
 		// yes a message can be sent right now
-		bus_synchro_event.notify(SC_ZERO_TIME);
+		bus_synchro_event.notify(sc_core::SC_ZERO_TIME);
 	} else {
 		if(unlikely(verbose))
 			logger << DebugInfo << LOCATION << ", "
@@ -365,21 +375,21 @@ template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 void 
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
 BusClock() {
-	sc_time last_serviced_time;
-	sc_time current_time;
+	sc_core::sc_time last_serviced_time;
+	sc_core::sc_time current_time;
 	while(1) {
 		wait(bus_synchro_event);
-		current_time = sc_time_stamp();
+		current_time = sc_core::sc_time_stamp();
 		if(current_time <= last_serviced_time) {
 			if(unlikely(verbose))
 				logger << DebugInfo << LOCATION << ", "
 					<< "Delaying bus cycle execution"
 					<< endl << EndDebugInfo;
 			wait((last_serviced_time - current_time) + cycle_time);
-			last_serviced_time = sc_time_stamp();
+			last_serviced_time = sc_core::sc_time_stamp();
 		} else
 			last_serviced_time = current_time;
-		last_serviced_time = sc_time_stamp();
+		last_serviced_time = sc_core::sc_time_stamp();
 		if(unlikely(verbose)) {
 			logger << DebugInfo << LOCATION << ", "
 				<< "Executing bus cycle" << endl
@@ -499,7 +509,7 @@ DispatchChipsetMessage() {
 				<< "Request:" << endl << (*(msg->req)) << endl 
 				<< "Response:" << endl << (*(msg->rsp)) << endl
 				<< EndDebugInfo;
-		msg->GetResponseEvent()->notify(SC_ZERO_TIME);
+		msg->GetResponseEvent()->notify(sc_core::SC_ZERO_TIME);
 		return;
 	} 
 	/* If there is no response available, then a request can be handled */
@@ -543,7 +553,7 @@ DispatchChipsetMessage() {
 	 * First send the message to all the cpus, then wait for all their answers,
 	 *   and once they have been received send the reply to the chipset */
 		PTransactionMsgType msg_copies[NUM_PROCS];
-		sc_event ev;
+		sc_core::sc_event ev;
 		for(unsigned int i = 0; i < NUM_PROCS; i++)
 			msg_copies[i] = new (msg_copies[i]) TransactionMsgType(msg->GetRequest(), ev);
 	/* TODO: snoop should be tested for debugging */
@@ -635,7 +645,7 @@ DispatchCPUMessage() {
 	 *   and once they have been received send the reply to the chipset */
 	if(NUM_PROCS > 1) {
 		PTransactionMsgType msg_copies[NUM_PROCS];
-		sc_event ev;
+		sc_core::sc_event ev;
 		for(unsigned int i = 0; i < NUM_PROCS; i++)
 			msg_copies[i] = new (msg_copies[i]) TransactionMsgType(msg->GetRequest(), ev);
 		/* TODO: snoop should be tested for debugging */
@@ -690,9 +700,9 @@ ProcessSnoopingResponse(const PTransactionMsgType &msg) {
 	}
 	snoop_counter++;
 	if(chipset_snoop && snoop_counter == NUM_PROCS)
-		snoop_event.notify(SC_ZERO_TIME);
+		snoop_event.notify(sc_core::SC_ZERO_TIME);
 	if(cpu_snoop && snoop_counter == (NUM_PROCS - 1))
-		snoop_event.notify(SC_ZERO_TIME);
+		snoop_event.notify(sc_core::SC_ZERO_TIME);
 }
 
 /****************************************************/

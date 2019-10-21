@@ -880,6 +880,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
 
   {
     static struct : public SysCall {
+      char const* GetName() const { return "getpgrp"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "()"; }
+    } sc;
+    if (_name.compare( sc.GetName() ) == 0) return &sc;
+  }
+
+  {
+    static struct : public SysCall {
       char const* GetName() const { return "gettid"; }
       void Describe( Linux& lin, std::ostream& sink ) const { sink << "()"; }
       void Execute( Linux& lin, int syscall_id ) const
@@ -1563,6 +1571,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
 
   {
     static struct : public SysCall {
+      char const* GetName() const { return "setpgid"; }
+      void Describe( Linux& lin, std::ostream& sink ) const { sink << "(pid_t pid=" << std::dec << +SysCall::GetParam(lin, 0) << ", pid_t pgid=" << std::dec << +SysCall::GetParam(lin, 1) << ")"; }
+    } sc;
+    if (_name.compare( sc.GetName() ) == 0) return &sc;
+  }
+
+  {
+    static struct : public SysCall {
       char const* GetName() const { return "setrlimit"; }
       void Describe( Linux& lin, std::ostream& sink ) const {
         sink << "(unsigned resource=" << std::dec << unsigned(SysCall::GetParam(lin, 0))
@@ -1875,13 +1891,22 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "execve"; }
-      void Describe( Linux& lin, std::ostream& sink ) const
-      {
-        sink << "(const char *filename=0x" << std::hex << (SysCall::GetParam(lin, 0))
-             << ", char *const argv[]=0x" << std::hex << (SysCall::GetParam(lin, 1))
-             << ", char *const envp[]=0x" << std::hex << (SysCall::GetParam(lin, 2))
-             << ")";
-      }
+      struct Args {
+        Args(Linux& lin, bool inject)
+          : filename(SysCall::GetParam(lin, 0)), argv(SysCall::GetParam(lin, 1)), envp(SysCall::GetParam(lin, 2))
+          , filename_string(), filename_valid(lin.ReadString(filename, filename_string, inject))
+        {}
+        parameter_type filename; parameter_type argv; parameter_type envp;
+        std::string filename_string; bool filename_valid;
+        void Describe( std::ostream& sink ) const
+        {
+          sink << "(const char *filename=0x" << std::hex << filename << " \"" << filename_string << "\""
+              << ", char *const argv[]=0x" << std::hex << argv
+              << ", char *const envp[]=0x" << std::hex << envp
+              << ")";
+        }
+      };
+      void Describe( Linux& lin, std::ostream& sink ) const { Args(lin, false).Describe(sink); }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
   }
@@ -2109,6 +2134,22 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
               << ", struct linux_dirent64 *dirp=0x" << std::hex << (SysCall::GetParam(lin, 1))
               << ", unsigned int count=0x" << std::hex << (SysCall::GetParam(lin, 2))
               << ")" << std::dec;
+      }
+    } sc;
+    if (_name.compare( sc.GetName() ) == 0) return &sc;
+  }
+  
+  {
+    static struct : public SysCall
+    {
+      char const* GetName() const { return "poll"; }
+      // long poll(struct pollfd __user *ufds, unsigned int nfds, long timeout);
+      void Describe( Linux& lin, std::ostream& sink ) const
+      {
+        sink << "( struct pollfd __user *ufds=0x" << std::hex << (SysCall::GetParam(lin, 0))
+             << ", unsigned int nfds=" << std::dec << (SysCall::GetParam(lin, 1))
+             << ", long timeout=" << std::dec << (SysCall::GetParam(lin, 2))
+             << ")" << std::dec;
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;

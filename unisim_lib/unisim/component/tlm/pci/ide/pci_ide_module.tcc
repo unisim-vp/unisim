@@ -45,7 +45,7 @@ namespace pci {
 namespace ide {
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-PCIDevIde<ADDRESS_TYPE, MAX_DATA_SIZE>::PCIDevIde(const sc_module_name &name, Object *parent): Object(name, parent, "PIIX4 IDE controller"),
+PCIDevIde<ADDRESS_TYPE, MAX_DATA_SIZE>::PCIDevIde(const sc_core::sc_module_name &name, Object *parent): Object(name, parent, "PIIX4 IDE controller"),
 	PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>(name, parent),
 	param_base_address("base-address", this, base_address, NUM_MAPPINGS, "initial base address of memory space"),
 	param_size("size", this, size, NUM_MAPPINGS, "size in bytes of memory space"),

@@ -46,6 +46,7 @@
 
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/inlining/inlining.hh>
+#include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <iostream>
 #include <typeinfo>
 #include <inttypes.h>
@@ -348,9 +349,9 @@ struct CacheBlockStatus
 	CacheBlockStatus() : valid(false), dirty(false) {}
 	inline bool IsValid() const ALWAYS_INLINE { return valid; }
 	inline bool IsDirty() const ALWAYS_INLINE { return dirty; }
-	inline void SetValid() ALWAYS_INLINE { valid = true; }
-	inline void SetDirty() ALWAYS_INLINE { dirty = true; }
-	inline void Invalidate() ALWAYS_INLINE { valid = dirty = false; }
+	inline void SetValid(bool v = true) ALWAYS_INLINE { valid = v; }
+	inline void SetDirty(bool v = true) ALWAYS_INLINE { dirty = v; }
+	inline void Invalidate() ALWAYS_INLINE { SetValid(false); SetDirty(false); }
 };
 
 /////////////////////////// CacheLineStatus<> ///////////////////////////////////
@@ -385,8 +386,8 @@ public:
 	
 	inline bool IsValid() const ALWAYS_INLINE;
 	inline bool IsDirty() const ALWAYS_INLINE;
-	inline void SetValid() ALWAYS_INLINE;
-	inline void SetDirty() ALWAYS_INLINE;
+	inline void SetValid(bool v = true) ALWAYS_INLINE;
+	inline void SetDirty(bool v = true) ALWAYS_INLINE;
 	inline void Invalidate() ALWAYS_INLINE;
 	inline typename CONFIG::BLOCK_STATUS& Status() ALWAYS_INLINE;
 
@@ -651,6 +652,20 @@ struct CacheHierarchy
 	{
 		typedef _L4CACHE CACHE;
 	};
+};
+
+////////////////////////////////// Same<> /////////////////////////////////////
+
+template <typename T1, typename T2>
+struct Same
+{
+	enum { VALUE = false };
+};
+
+template <typename T>
+struct Same<T, T>
+{
+	enum { VALUE = true };
 };
 
 ///////////////////////////// TypeForByteSize<> ///////////////////////////////
@@ -954,6 +969,8 @@ protected:
 	uint64_t num_data_bus_read_xfered_bytes;
 	uint64_t num_data_bus_write_xfered_bytes;
 	uint64_t num_instruction_bus_read_xfered_bytes;
+	bool enable_shadow_memory;
+	unisim::component::cxx::memory::sparse::Memory<typename TYPES::PHYSICAL_ADDRESS, 12, 12> shadow_memory;
 	
 	///////////////// To be overriden by derived class ////////////////////////
 
@@ -1016,6 +1033,9 @@ protected:
 
 	/* Debug Instruction Bus Read */
 	bool DebugInstructionBusRead(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	
+	/* Trap */
+	void Trap();
 
 	////////////////////////////// Helper functions ///////////////////////////
 	
@@ -1266,11 +1286,15 @@ private:
 	inline bool __MSS_DebugDataBusWrite__(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr) ALWAYS_INLINE;
 	
 	inline bool __MSS_DebugInstructionBusRead__(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr) ALWAYS_INLINE;
+	
+	inline void __MSS_Trap__() ALWAYS_INLINE;
 
 	///////////////////////////////////////////////////////////////////////////
+	
 protected:
 	void Trace(const char *type, typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size);
 	void Trace(const char *type, typename TYPES::ADDRESS addr, typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size);
+	void Check(const char *type, const void *buffer, typename TYPES::PHYSICAL_ADDRESS phys_addr, unsigned int size);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1545,15 +1569,15 @@ inline bool CacheBlock<TYPES, CONFIG>::IsDirty() const
 }
 
 template <typename TYPES, typename CONFIG>
-inline void CacheBlock<TYPES, CONFIG>::SetValid()
+inline void CacheBlock<TYPES, CONFIG>::SetValid(bool v)
 {
-	status.SetValid();
+	status.SetValid(v);
 }
 
 template <typename TYPES, typename CONFIG>
-inline void CacheBlock<TYPES, CONFIG>::SetDirty()
+inline void CacheBlock<TYPES, CONFIG>::SetDirty(bool v)
 {
-	status.SetDirty();
+	status.SetDirty(v);
 }
 
 template <typename TYPES, typename CONFIG>
@@ -2279,6 +2303,8 @@ MemorySubSystem<TYPES, MSS>::MemorySubSystem()
 	, num_data_bus_read_xfered_bytes(0)
 	, num_data_bus_write_xfered_bytes(0)
 	, num_instruction_bus_read_xfered_bytes(0)
+	, enable_shadow_memory(false)
+	, shadow_memory()
 {
 }
 
@@ -2296,6 +2322,11 @@ bool MemorySubSystem<TYPES, MSS>::DataLoad(typename TYPES::ADDRESS addr, typenam
 		
 	num_data_load_accesses++;
 	num_data_load_xfered_bytes += size;
+	
+	if(unlikely(enable_shadow_memory))
+	{
+		Check("Data Load", (const void *) buffer, phys_addr, size);
+	}
 		
 	return true;
 }
@@ -2310,6 +2341,11 @@ bool MemorySubSystem<TYPES, MSS>::DataStore(typename TYPES::ADDRESS addr, typena
 	num_data_store_accesses++;
 	num_data_store_xfered_bytes += size;
 	
+	if(unlikely(enable_shadow_memory))
+	{
+		shadow_memory.write(phys_addr, (const uint8_t *) buffer, size);
+	}
+	
 	return true;
 }
 
@@ -2323,25 +2359,51 @@ bool MemorySubSystem<TYPES, MSS>::InstructionFetch(typename TYPES::ADDRESS addr,
 	num_instruction_fetch_accesses++;
 	num_instruction_fetch_xfered_bytes += size;
 	
+	if(unlikely(enable_shadow_memory))
+	{
+		Check("Instruction Fetch", (const void *) buffer, phys_addr, size);
+	}
+
 	return true;
 }
 
 template <typename TYPES, typename MSS>
 bool MemorySubSystem<TYPES, MSS>::DebugDataLoad(typename TYPES::ADDRESS addr, typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
-	return DebugLoadFromMSS<typename MSS::DATA_LOCAL_MEMORIES, typename MSS::DATA_CACHE_HIERARCHY, typename MSS::DATA_LOCAL_MEMORIES::LOC_MEM1, typename MSS::DATA_CACHE_HIERARCHY::L1CACHE>(addr, phys_addr, buffer, size, storage_attr);
+	if(!DebugLoadFromMSS<typename MSS::DATA_LOCAL_MEMORIES, typename MSS::DATA_CACHE_HIERARCHY, typename MSS::DATA_LOCAL_MEMORIES::LOC_MEM1, typename MSS::DATA_CACHE_HIERARCHY::L1CACHE>(addr, phys_addr, buffer, size, storage_attr)) return false;
+	
+	if(unlikely(enable_shadow_memory))
+	{
+		Check("Debug Data load", (const void *) buffer, phys_addr, size);
+	}
+	
+	return true;
 }
 
 template <typename TYPES, typename MSS>
 bool MemorySubSystem<TYPES, MSS>::DebugDataStore(typename TYPES::ADDRESS addr, typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
-	return DebugStoreInMSS<typename MSS::DATA_LOCAL_MEMORIES, typename MSS::DATA_CACHE_HIERARCHY, typename MSS::DATA_LOCAL_MEMORIES::LOC_MEM1, typename MSS::DATA_CACHE_HIERARCHY::L1CACHE>(addr, phys_addr, buffer, size, storage_attr);
+	if(!DebugStoreInMSS<typename MSS::DATA_LOCAL_MEMORIES, typename MSS::DATA_CACHE_HIERARCHY, typename MSS::DATA_LOCAL_MEMORIES::LOC_MEM1, typename MSS::DATA_CACHE_HIERARCHY::L1CACHE>(addr, phys_addr, buffer, size, storage_attr)) return false;
+
+	if(unlikely(enable_shadow_memory))
+	{
+		shadow_memory.write(phys_addr, (const uint8_t *) buffer, size);
+	}
+	
+	return true;
 }
 
 template <typename TYPES, typename MSS>
 bool MemorySubSystem<TYPES, MSS>::DebugInstructionFetch(typename TYPES::ADDRESS addr, typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
-	return DebugLoadFromMSS<typename MSS::INSTRUCTION_LOCAL_MEMORIES, typename MSS::INSTRUCTION_CACHE_HIERARCHY, typename MSS::INSTRUCTION_LOCAL_MEMORIES::LOC_MEM1, typename MSS::INSTRUCTION_CACHE_HIERARCHY::L1CACHE>(addr, phys_addr, buffer, size, storage_attr);
+	if(!DebugLoadFromMSS<typename MSS::INSTRUCTION_LOCAL_MEMORIES, typename MSS::INSTRUCTION_CACHE_HIERARCHY, typename MSS::INSTRUCTION_LOCAL_MEMORIES::LOC_MEM1, typename MSS::INSTRUCTION_CACHE_HIERARCHY::L1CACHE>(addr, phys_addr, buffer, size, storage_attr)) return false;
+	
+	if(unlikely(enable_shadow_memory))
+	{
+		Check("Debug Instruction Fetch", (const void *) buffer, phys_addr, size);
+	}
+
+	return true;
 }
 
 template <typename TYPES, typename MSS>
@@ -2818,13 +2880,13 @@ inline bool MemorySubSystem<TYPES, MSS>::LoadFromCacheHierarchy(typename TYPES::
 	if(unlikely(CACHE::IsNullCache() || !__MSS_IsStorageCacheable__(storage_attr)))
 	{
 		// (1) Load from memory
-		if(typeid(CACHE_HIERARCHY) == typeid(typename MSS::DATA_CACHE_HIERARCHY))
+		if(Same<CACHE_HIERARCHY, typename MSS::INSTRUCTION_CACHE_HIERARCHY>::VALUE)
 		{
-			return __MSS_DataBusRead__(phys_addr, buffer, size, storage_attr, false);
+			return __MSS_InstructionBusRead__(phys_addr, buffer, size, storage_attr);
 		}
 		else
 		{
-			return __MSS_InstructionBusRead__(phys_addr, buffer, size, storage_attr);
+			return __MSS_DataBusRead__(phys_addr, buffer, size, storage_attr, false);
 		}
 	}
 	
@@ -2851,8 +2913,8 @@ inline bool MemorySubSystem<TYPES, MSS>::LoadFromCacheHierarchy(typename TYPES::
 		if(unlikely(cache->__MSS_IsVerbose__()))
 		{
 			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Lookup at @0x"
-			                             << std::hex << access.addr << std::dec << " (physically at @"
-			                             << std::hex << access.phys_addr << std::dec << " ): "
+			                             << std::hex << access.addr << std::dec << " (physically at @0x"
+			                             << std::hex << access.phys_addr << std::dec << "): "
 			                             << "line_base_addr=0x" << std::hex << access.line_base_addr << std::dec << ","
 			                             << "line_base_phys_addr=0x" << std::hex << access.line_base_phys_addr << std::dec << ","
 			                             << "index=0x" << std::hex << access.index << std::dec << ","
@@ -2867,7 +2929,7 @@ inline bool MemorySubSystem<TYPES, MSS>::LoadFromCacheHierarchy(typename TYPES::
 			// Line miss
 			if(unlikely(cache->__MSS_IsVerbose__()))
 			{
-				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Line miss at @0x" << std::hex << access.addr << std::dec << " (physically at @" << std::hex << access.phys_addr << std::dec << ")" << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Line miss at @0x" << std::hex << access.addr << std::dec << " (physically at @0x" << std::hex << access.phys_addr << std::dec << ")" << std::endl;
 			}
 
 			if(likely(cache->__MSS_ChooseLineToEvict__(access)))
@@ -2895,7 +2957,7 @@ inline bool MemorySubSystem<TYPES, MSS>::LoadFromCacheHierarchy(typename TYPES::
 				// Block miss
 				if(unlikely(cache->__MSS_IsVerbose__()))
 				{
-					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Block miss at @0x" << std::hex << access.addr << std::dec << " (physically @" << std::hex << access.phys_addr << std::dec << ")" << std::endl;
+					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Block miss at @0x" << std::hex << access.addr << std::dec << " (physically at @0x" << std::hex << access.phys_addr << std::dec << ")" << std::endl;
 				}
 				
 				typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
@@ -2907,7 +2969,7 @@ inline bool MemorySubSystem<TYPES, MSS>::LoadFromCacheHierarchy(typename TYPES::
 			{
 				if(unlikely(cache->__MSS_IsVerbose__()))
 				{
-					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Block hit at @0x" << std::hex << access.addr << std::dec << " (physically at @" << std::hex << access.phys_addr << std::dec << ")" << std::endl;
+					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Block hit at @0x" << std::hex << access.addr << std::dec << " (physically at @0x" << std::hex << access.phys_addr << std::dec << ")" << std::endl;
 				}
 			}
 
@@ -2964,7 +3026,7 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::A
 		if(unlikely(cache->__MSS_IsVerbose__()))
 		{
 			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Lookup at @0x"
-			                             << std::hex << access.addr << std::dec << " (physically at @"
+			                             << std::hex << access.addr << std::dec << " (physically at @0x"
 			                             << std::hex << access.phys_addr << std::dec << ") : "
 			                             << "line_base_addr=0x" << std::hex << access.line_base_addr << std::dec << ","
 			                             << "line_base_phys_addr=0x" << std::hex << access.line_base_phys_addr << std::dec << ","
@@ -2980,7 +3042,7 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::A
 			// Line miss
 			if(unlikely(cache->__MSS_IsVerbose__()))
 			{
-				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Line miss at @0x" << std::hex << access.addr << std::dec << " (physically at @" << std::hex << access.phys_addr << std::dec << ")" << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Line miss at @0x" << std::hex << access.addr << std::dec << " (physically at @0x" << std::hex << access.phys_addr << std::dec << ")" << std::endl;
 			}
 
 			if(cache->__MSS_IsWriteAllocate__(storage_attr))
@@ -3012,7 +3074,7 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::A
 				// Block miss
 				if(unlikely(cache->__MSS_IsVerbose__()))
 				{
-					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Block miss at @0x" << std::hex << access.addr << std::dec << " (physically @" << std::hex << access.phys_addr << std::dec << ")" << std::endl;
+					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Block miss at @0x" << std::hex << access.addr << std::dec << " (physically at @0x" << std::hex << access.phys_addr << std::dec << ")" << std::endl;
 				}
 				
 				if(cache->__MSS_IsWriteAllocate__(storage_attr))
@@ -3028,7 +3090,7 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::A
 			{
 				if(unlikely(cache->__MSS_IsVerbose__()))
 				{
-					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Block hit at @0x" << std::hex << access.addr << std::dec << " (physically at @" << std::hex << access.phys_addr << std::dec << ")" << std::endl;
+					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Block hit at @0x" << std::hex << access.addr << std::dec << " (physically at @0x" << std::hex << access.phys_addr << std::dec << ")" << std::endl;
 				}
 			}
 			
@@ -3077,13 +3139,13 @@ bool MemorySubSystem<TYPES, MSS>::DebugLoadFromCacheHierarchy(typename TYPES::AD
 	if(unlikely(CACHE::IsNullCache() || !__MSS_IsStorageCacheable__(storage_attr)))
 	{
 		// (1) Load from memory
-		if(typeid(CACHE_HIERARCHY) == typeid(typename MSS::DATA_CACHE_HIERARCHY))
+		if(Same<CACHE_HIERARCHY, typename MSS::INSTRUCTION_CACHE_HIERARCHY>::VALUE)
 		{
-			return __MSS_DebugDataBusRead__(phys_addr, buffer, size, storage_attr);
+			return __MSS_DebugInstructionBusRead__(phys_addr, buffer, size, storage_attr);
 		}
 		else
 		{
-			return __MSS_DebugInstructionBusRead__(phys_addr, buffer, size, storage_attr);
+			return __MSS_DebugDataBusRead__(phys_addr, buffer, size, storage_attr);
 		}
 	}
 	
@@ -3181,7 +3243,7 @@ inline bool MemorySubSystem<TYPES, MSS>::AllocateBlockInCacheHierarchy(typename 
 	{
 		// (1) If memory location is not cacheable or allocation reaches the latest level (memory), optionnaly zero bytes in memory and return
 		uint8_t zero[CACHE::BLOCK_SIZE] = {};
-		return !ZEROING || __MSS_DataBusWrite__(phys_addr, zero, CACHE::BLOCK_SIZE, storage_attr);
+		return !ZEROING || __MSS_DataBusWrite__(phys_addr & -MSS::DATA_CACHE_HIERARCHY::L1CACHE::BLOCK_SIZE, zero, CACHE::BLOCK_SIZE, storage_attr);
 	}
 	
 	CACHE *cache = __MSS_GetCache__<CACHE>();
@@ -3206,8 +3268,8 @@ inline bool MemorySubSystem<TYPES, MSS>::AllocateBlockInCacheHierarchy(typename 
 	if(unlikely(cache->__MSS_IsVerbose__()))
 	{
 		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Lookup at @0x"
-										<< std::hex << access.addr << std::dec << " (physically at @"
-										<< std::hex << access.phys_addr << std::dec << " ): "
+										<< std::hex << access.addr << std::dec << " (physically at @0x"
+										<< std::hex << access.phys_addr << std::dec << "): "
 										<< "line_base_addr=0x" << std::hex << access.line_base_addr << std::dec << ","
 										<< "line_base_phys_addr=0x" << std::hex << access.line_base_phys_addr << std::dec << ","
 										<< "index=0x" << std::hex << access.index << std::dec << ","
@@ -3222,7 +3284,7 @@ inline bool MemorySubSystem<TYPES, MSS>::AllocateBlockInCacheHierarchy(typename 
 		// Line miss
 		if(unlikely(cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Line miss at @0x" << std::hex << access.addr << std::dec << " (physically at @" << std::hex << access.phys_addr << std::dec << ")" << std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Line miss at @0x" << std::hex << access.addr << std::dec << " (physically at @0x" << std::hex << access.phys_addr << std::dec << ")" << std::endl;
 		}
 
 		if(likely(cache->__MSS_ChooseLineToEvict__(access)))
@@ -3256,6 +3318,14 @@ inline bool MemorySubSystem<TYPES, MSS>::AllocateBlockInCacheHierarchy(typename 
 	{
 		access.block->Zero();
 		access.block->SetDirty();
+		if(unlikely(enable_shadow_memory))
+		{
+			shadow_memory.clear(access.block->GetBasePhysicalAddress(), CACHE::BLOCK_SIZE);
+		}
+	}
+	else
+	{
+		access.block->SetDirty(false);
 	}
 	
 	access.block->SetValid();
@@ -3279,7 +3349,7 @@ inline bool MemorySubSystem<TYPES, MSS>::FillBlock(CacheAccess<TYPES, TO>& to_ac
 		// (1) Block Fill from Memory
 		if(unlikely(to_access.cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << TO::__MSS_GetCacheName__() << ": Filling block from memory at @0x" << std::hex << to_access.block_base_addr << std::dec << " (physically at @" << to_access.block_base_phys_addr << ")" << std::endl;
+			__MSS_GetDebugInfoStream__() << TO::__MSS_GetCacheName__() << ": Filling block from memory at @0x" << std::hex << to_access.block_base_addr << std::dec << " (physically at @0x" << std::hex << to_access.block_base_phys_addr << std::dec << ")" << std::endl;
 		}
 		
 		if(TO::IsDataCache())
@@ -3319,7 +3389,7 @@ inline bool MemorySubSystem<TYPES, MSS>::FillBlock(CacheAccess<TYPES, TO>& to_ac
 
 			if(unlikely(to_access.cache->__MSS_IsVerbose__()))
 			{
-				__MSS_GetDebugInfoStream__() << TO::__MSS_GetCacheName__() << ": Filling block from " << FROM::__MSS_GetCacheName__() << " at @0x" << std::hex << to_access.block_base_addr << std::dec << " (physically at @" << to_access.block_base_phys_addr << ")" << std::endl;
+				__MSS_GetDebugInfoStream__() << TO::__MSS_GetCacheName__() << ": Filling block from " << FROM::__MSS_GetCacheName__() << " at @0x" << std::hex << to_access.block_base_addr << std::dec << " (physically at @0x" << std::hex << to_access.block_base_phys_addr << std::dec << ")" << std::endl;
 			}
 			
 			CacheAccess<TYPES, FROM> from_access;
@@ -3348,7 +3418,7 @@ inline bool MemorySubSystem<TYPES, MSS>::FillBlock(CacheAccess<TYPES, TO>& to_ac
 				// Line miss
 				if(unlikely(from->__MSS_IsVerbose__()))
 				{
-					__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Line miss at @0x" << std::hex << from_access.addr << std::dec << " (physically at @" << std::hex << from_access.phys_addr << std::dec << ")" << std::endl;
+					__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Line miss at @0x" << std::hex << from_access.addr << std::dec << " (physically at @0x" << std::hex << from_access.phys_addr << std::dec << ")" << std::endl;
 				}
 				
 				if(likely(from->__MSS_ChooseLineToEvict__(from_access)))
@@ -3377,7 +3447,7 @@ inline bool MemorySubSystem<TYPES, MSS>::FillBlock(CacheAccess<TYPES, TO>& to_ac
 					// Block miss
 					if(unlikely(from->__MSS_IsVerbose__()))
 					{
-						__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Block miss at @0x" << std::hex << from_access.addr << std::dec << " (physically @" << std::hex << from_access.phys_addr << std::dec << ")" << std::endl;
+						__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Block miss at @0x" << std::hex << from_access.addr << std::dec << " (physically at @0x" << std::hex << from_access.phys_addr << std::dec << ")" << std::endl;
 					}
 					
 					typedef typename CACHE_HIERARCHY::template NextLevel<FROM>::CACHE NLC;
@@ -3390,7 +3460,7 @@ inline bool MemorySubSystem<TYPES, MSS>::FillBlock(CacheAccess<TYPES, TO>& to_ac
 					// (3.1) fill block from cache
 					if(unlikely(from->__MSS_IsVerbose__()))
 					{
-						__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Block hit at @0x" << std::hex << from_access.addr << std::dec << " (physically at @" << std::hex << from_access.phys_addr << std::dec << ")" << std::endl;
+						__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Block hit at @0x" << std::hex << from_access.addr << std::dec << " (physically at @0x" << std::hex << from_access.phys_addr << std::dec << ")" << std::endl;
 					}
 				}
 
@@ -3413,6 +3483,7 @@ inline bool MemorySubSystem<TYPES, MSS>::FillBlock(CacheAccess<TYPES, TO>& to_ac
 	to_access.line->SetBaseAddress(to_access.line_base_addr);
 	to_access.line->SetBasePhysicalAddress(to_access.line_base_phys_addr);
 	to_access.block->SetValid();
+	to_access.block->SetDirty(false);
 	
 	return true;
 }
@@ -3432,7 +3503,7 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackDirtyBlock(CacheAccess<TYPES, FROM>& 
 		// (1) Write back block to memory
 		if(unlikely(from_access.cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Writing back dirty block to memory 0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddress() << std::dec << " (physically at @" << std::hex << from_dirty_block_to_write_back.GetBasePhysicalAddress() << std::dec << ")" << std::endl;
+			__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Writing back dirty block to memory 0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddress() << std::dec << " (physically at @0x" << std::hex << from_dirty_block_to_write_back.GetBasePhysicalAddress() << std::dec << ")" << std::endl;
 		}
 		if(unlikely(!__MSS_DataBusWrite__(from_dirty_block_to_write_back.GetBasePhysicalAddress(), &from_dirty_block_to_write_back.GetByteByOffset(0), FROM::BLOCK_SIZE, typename TYPES::STORAGE_ATTR())))
 		{
@@ -3446,7 +3517,7 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackDirtyBlock(CacheAccess<TYPES, FROM>& 
 		if(unlikely(!to->__MSS_IsEnabled__()))
 		{
 			// (2) try to write back to next level cache
-			typedef typename CACHE_HIERARCHY::template NextLevel<FROM>::CACHE NLC;
+			typedef typename CACHE_HIERARCHY::template NextLevel<TO>::CACHE NLC;
 			
 			if(!WriteBackDirtyBlock<CACHE_HIERARCHY, FROM, NLC, INVALIDATE>(from_access, from_sector)) return false;
 		}
@@ -3466,7 +3537,7 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackDirtyBlock(CacheAccess<TYPES, FROM>& 
 			if(unlikely(to->__MSS_IsVerbose__()))
 			{
 				__MSS_GetDebugInfoStream__() << TO::__MSS_GetCacheName__() << ": Lookup at @0x"
-											<< std::hex << to_access.addr << std::dec << " (physically at @"
+											<< std::hex << to_access.addr << std::dec << " (physically at @0x"
 											<< std::hex << to_access.phys_addr << std::dec << "): "
 											<< "line_base_phys_addr=0x" << std::hex << to_access.line_base_phys_addr << std::dec << ","
 											<< "index=0x" << std::hex << to_access.index << std::dec << ","
@@ -3482,7 +3553,7 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackDirtyBlock(CacheAccess<TYPES, FROM>& 
 				// block hit
 				if(unlikely(to->__MSS_IsVerbose__()))
 				{
-					__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Writing back dirty block to " << TO::__MSS_GetCacheName__() << " at @0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddress() << std::dec << " (physically at @" << std::hex << from_dirty_block_to_write_back.GetBasePhysicalAddress() << std::dec << ")" << std::endl;
+					__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Writing back dirty block to " << TO::__MSS_GetCacheName__() << " at @0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddress() << std::dec << " (physically at @0x" << std::hex << from_dirty_block_to_write_back.GetBasePhysicalAddress() << std::dec << ")" << std::endl;
 				}
 				assert(FROM::BLOCK_SIZE <= to_access.size_to_block_boundary);
 				memcpy(&to_access.block->GetByteByOffset(to_access.offset), &from_dirty_block_to_write_back.GetByteByOffset(0), FROM::BLOCK_SIZE); // <-- write back
@@ -3491,7 +3562,7 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackDirtyBlock(CacheAccess<TYPES, FROM>& 
 			else
 			{
 				// (3.2) try to write back in next level cache
-				typedef typename CACHE_HIERARCHY::template NextLevel<FROM>::CACHE NLC;
+				typedef typename CACHE_HIERARCHY::template NextLevel<TO>::CACHE NLC;
 				
 				if(!WriteBackDirtyBlock<CACHE_HIERARCHY, FROM, NLC, INVALIDATE>(from_access, from_sector)) return false;
 			}
@@ -3503,9 +3574,13 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackDirtyBlock(CacheAccess<TYPES, FROM>& 
 	{
 		if(unlikely(from_access.cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Invalidating block at 0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddress() << std::dec << " (physically at @" << std::hex << from_dirty_block_to_write_back.GetBasePhysicalAddress() << std::dec << ")" << std::endl;
+			__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Invalidating block at 0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddress() << std::dec << " (physically at @0x" << std::hex << from_dirty_block_to_write_back.GetBasePhysicalAddress() << std::dec << ")" << std::endl;
 		}
 		from_dirty_block_to_write_back.Invalidate();
+	}
+	else
+	{
+		from_dirty_block_to_write_back.SetDirty(false);
 	}
 	
 	return true;
@@ -3519,7 +3594,7 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackLine(CacheAccess<TYPES, CACHE>& acces
 	{
 		if(unlikely(access.cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Writing back Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddress() << std::dec << " (physically at @" << std::hex << access.line_to_write_back_evict->GetBasePhysicalAddress() << std::dec << ")" << std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Writing back Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddress() << std::dec << " (physically at @0x" << std::hex << access.line_to_write_back_evict->GetBasePhysicalAddress() << std::dec << ")" << std::endl;
 		}
 		unsigned int sector;
 		
@@ -3536,11 +3611,11 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackLine(CacheAccess<TYPES, CACHE>& acces
 			}
 		}
 		
-		if(INVALIDATE)
+		if(INVALIDATE && access.line_to_write_back_evict->IsValid())
 		{
 			if(unlikely(access.cache->__MSS_IsVerbose__()))
 			{
-				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddress() << std::dec << " (physically at @" << std::hex << access.line_to_write_back_evict->GetBasePhysicalAddress() << std::dec << ")" << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddress() << std::dec << " (physically at @0x" << std::hex << access.line_to_write_back_evict->GetBasePhysicalAddress() << std::dec << ")" << std::endl;
 			}
 			access.line_to_write_back_evict->Invalidate();
 		}
@@ -3564,11 +3639,11 @@ bool MemorySubSystem<TYPES, MSS>::EvictLine(CacheAccess<TYPES, CACHE>& access)
 	{
 		WriteBackLine<CACHE_HIERARCHY, CACHE, /* invalidate */ true >(access);
 	}
-	else
+	else if(access.line_to_write_back_evict->IsValid())
 	{
 		if(unlikely(access.cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddress() << std::dec << " (physically at @" << std::hex << access.line_to_write_back_evict->GetBasePhysicalAddress() << std::dec << ")" << std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddress() << std::dec << " (physically at @0x" << std::hex << access.line_to_write_back_evict->GetBasePhysicalAddress() << std::dec << ")" << std::endl;
 		}
 		access.line_to_write_back_evict->Invalidate();
 	}
@@ -3682,6 +3757,11 @@ bool MemorySubSystem<TYPES, MSS>::DebugInstructionBusRead(typename TYPES::PHYSIC
 }
 
 template <typename TYPES, typename MSS>
+void MemorySubSystem<TYPES, MSS>::Trap()
+{
+}
+
+template <typename TYPES, typename MSS>
 void MemorySubSystem<TYPES, MSS>::Trace(const char *type, typename TYPES::ADDRESS addr, typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size)
 {
 	unsigned int i;
@@ -3693,7 +3773,7 @@ void MemorySubSystem<TYPES, MSS>::Trace(const char *type, typename TYPES::ADDRES
 		uint8_t h = value >> 4;
 		__MSS_GetDebugInfoStream__() << (i ? " ": "") << "0x" << (char)((h < 10) ? '0' + h : 'a' + h - 10) << (char)((l < 10) ? '0' + l : 'a' + l - 10);
 	}
-	__MSS_GetDebugInfoStream__() << "] (" << size << " bytes) at @0x" << std::hex << addr << std::dec << " (physically at @" << std::hex << phys_addr << std::dec << ")" << std::endl;
+	__MSS_GetDebugInfoStream__() << "] (" << size << " bytes) at @0x" << std::hex << addr << std::dec << " (physically at @0x" << std::hex << phys_addr << std::dec << ")" << std::endl;
 }
 
 template <typename TYPES, typename MSS>
@@ -3709,6 +3789,31 @@ void MemorySubSystem<TYPES, MSS>::Trace(const char *type, typename TYPES::PHYSIC
 		__MSS_GetDebugInfoStream__() << (i ? " ": "") << "0x" << (char)((h < 10) ? '0' + h : 'a' + h - 10) << (char)((l < 10) ? '0' + l : 'a' + l - 10);
 	}
 	__MSS_GetDebugInfoStream__() << "] (" << size << " bytes) at @0x" << std::hex << phys_addr << std::dec << std::endl;
+}
+
+template <typename TYPES, typename MSS>
+void MemorySubSystem<TYPES, MSS>::Check(const char *type, const void *buffer, typename TYPES::PHYSICAL_ADDRESS phys_addr, unsigned int size)
+{
+	uint8_t shadow_buffer[size];
+	shadow_memory.read(&shadow_buffer[0], phys_addr, size);
+	if(memcmp((const void *) buffer, (const void *) &shadow_buffer[0], size) != 0)
+	{
+		__MSS_GetDebugWarningStream__() << type << " coherency check failed at 0x" << std::hex << phys_addr << std::endl;
+		__MSS_GetDebugWarningStream__() << "Got [";
+		const uint8_t *p = (const uint8_t *) buffer;
+		for(unsigned int i = 0; i < size; ++i, ++p)
+		{
+			__MSS_GetDebugWarningStream__() << (i ? " ": "") << std::hex << "0x" << +(*p);
+		}
+		__MSS_GetDebugWarningStream__() << "]" << std::endl << "Expecting [";
+		p = &shadow_buffer[0];
+		for(unsigned int i = 0; i < size; ++i, ++p)
+		{
+			__MSS_GetDebugWarningStream__() << (i ? " ": "") << std::hex << "0x" << +(*p);
+		}
+		__MSS_GetDebugWarningStream__() << "]" << std::endl;
+		__MSS_Trap__();
+	}
 }
 
 template <typename TYPES, typename MSS>
@@ -3801,6 +3906,11 @@ inline bool MemorySubSystem<TYPES, MSS>::__MSS_DataBusRead__(typename TYPES::PHY
 	num_data_bus_read_accesses++;
 	num_data_bus_read_xfered_bytes += size;
 
+	if(unlikely(enable_shadow_memory))
+	{
+		shadow_memory.write(phys_addr, (const uint8_t *) buffer, size);
+	}
+
 	return true;
 }
 
@@ -3827,13 +3937,25 @@ inline bool MemorySubSystem<TYPES, MSS>::__MSS_InstructionBusRead__(typename TYP
 	num_instruction_bus_read_accesses++;
 	num_instruction_bus_read_xfered_bytes += size;
 	
+	if(unlikely(enable_shadow_memory))
+	{
+		shadow_memory.write(phys_addr, (const uint8_t *) buffer, size);
+	}
+	
 	return true;
 }
 
 template <typename TYPES, typename MSS>
 inline bool MemorySubSystem<TYPES, MSS>::__MSS_DebugDataBusRead__(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
-	return static_cast<MSS *>(this)->DebugDataBusRead(phys_addr, buffer, size, storage_attr);
+	if(!static_cast<MSS *>(this)->DebugDataBusRead(phys_addr, buffer, size, storage_attr)) return false;
+	
+	if(unlikely(enable_shadow_memory))
+	{
+		shadow_memory.write(phys_addr, (const uint8_t *) buffer, size);
+	}
+
+	return true;
 }
 
 template <typename TYPES, typename MSS>
@@ -3845,7 +3967,20 @@ inline bool MemorySubSystem<TYPES, MSS>::__MSS_DebugDataBusWrite__(typename TYPE
 template <typename TYPES, typename MSS>
 inline bool MemorySubSystem<TYPES, MSS>::__MSS_DebugInstructionBusRead__(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
-	return static_cast<MSS *>(this)->DebugInstructionBusRead(phys_addr, buffer, size, storage_attr);
+	if(!static_cast<MSS *>(this)->DebugInstructionBusRead(phys_addr, buffer, size, storage_attr)) return false;
+	
+	if(unlikely(enable_shadow_memory))
+	{
+		shadow_memory.write(phys_addr, (const uint8_t *) buffer, size);
+	}
+
+	return true;
+}
+
+template <typename TYPES, typename MSS>
+inline void MemorySubSystem<TYPES, MSS>::__MSS_Trap__()
+{
+	static_cast<MSS *>(this)->Trap();
 }
 
 template <typename TYPES, typename MSS>
@@ -3908,7 +4043,7 @@ inline void MemorySubSystem<TYPES, MSS>::Lookup(CacheAccess<TYPES, CACHE>& acces
 	if(unlikely(cache->__MSS_IsVerbose__()))
 	{
 		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Lookup at @0x"
-		                             << std::hex << access.addr << std::dec << " (physically at @"
+		                             << std::hex << access.addr << std::dec << " (physically at @0x"
 		                             << std::hex << access.phys_addr << std::dec << ") : "
 		                             << "line_base_phys_addr=0x" << std::hex << access.line_base_phys_addr << std::dec << ","
 		                             << "index=0x" << std::hex << access.index << std::dec << ","
@@ -3933,7 +4068,7 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateBlockByAddress(typename TYPES
 	{
 		if(unlikely(cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Block at @0x" << std::hex << block->GetBaseAddress() << std::dec << " (physically at @" << std::hex << block->GetBasePhysicalAddress() << std::dec << ")" << std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Block at @0x" << std::hex << block->GetBaseAddress() << std::dec << " (physically at @0x" << std::hex << block->GetBasePhysicalAddress() << std::dec << ")" << std::endl;
 		}
 		block->Invalidate();
 	}
@@ -3953,7 +4088,7 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateLineByAddress(typename TYPES:
 	{
 		if(unlikely(cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Line at @0x" << std::hex << line->GetBaseAddress() << std::dec << " (physically at @" << std::hex << line->GetBasePhysicalAddress() << std::dec << ")" << std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Line at @0x" << std::hex << line->GetBaseAddress() << std::dec << " (physically at @0x" << std::hex << line->GetBasePhysicalAddress() << std::dec << ")" << std::endl;
 		}
 		line->Invalidate();
 	}
@@ -4073,7 +4208,7 @@ inline void MemorySubSystem<TYPES, MSS>::GlobalInvalidateBlockByAddress(typename
 
 	InvalidateBlockByAddress<CACHE>(addr, phys_addr);
 
-	if(typeid(CACHE) != typeid(UNTIL))
+	if(!Same<CACHE, UNTIL>::VALUE)
 	{
 		typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 		
@@ -4089,7 +4224,7 @@ inline void MemorySubSystem<TYPES, MSS>::GlobalInvalidateLineByAddress(typename 
 
 	InvalidateLineByAddress<CACHE>(addr, phys_addr);
 
-	if(typeid(CACHE) != typeid(UNTIL))
+	if(!Same<CACHE, UNTIL>::VALUE)
 	{
 		typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 		
@@ -4188,32 +4323,30 @@ inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackBlockByAddress(typename 
 		{
 			CacheBlock<TYPES, typename CACHE::CACHE_CONFIG>& block = (*line)[sector];
 			
-			if(likely(cache->__MSS_IsEnabled__()))
+			CacheAccess<TYPES, CACHE> access;
+			
+			access.line_to_write_back_evict = line;
+			
+			if(block.IsValid() && block.IsDirty())
 			{
-				CacheAccess<TYPES, CACHE> access;
+				// write back dirty block
+				typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 				
-				access.line_to_write_back_evict = line;
-				
-				if(block.IsValid() && block.IsDirty())
-				{
-					// write back dirty block
-					typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
-					
-					if(!WriteBackDirtyBlock<CACHE_HIERARCHY, CACHE, NLC, INVALIDATE>(access, block.GetSector())) return false;
-				}
+				if(!WriteBackDirtyBlock<CACHE_HIERARCHY, CACHE, NLC, INVALIDATE>(access, block.GetSector())) return false;
 			}
-			else if(INVALIDATE)
+			
+			if(INVALIDATE)
 			{
 				if(unlikely(cache->__MSS_IsVerbose__()))
 				{
-					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Block at @0x" << std::hex << block.GetBaseAddress() << std::dec << " (physically at @" << std::hex << block.GetBasePhysicalAddress() << std::dec << ")" << std::endl;
+					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Block at @0x" << std::hex << block.GetBaseAddress() << std::dec << " (physically at @0x" << std::hex << block.GetBasePhysicalAddress() << std::dec << ")" << std::endl;
 				}
 				block.Invalidate();
 			}
 		}
 	}
 
-	if(typeid(CACHE) != typeid(UNTIL))
+	if(!Same<CACHE, UNTIL>::VALUE)
 	{
 		typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 		
@@ -4239,45 +4372,43 @@ inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackLineByAddress(typename T
 		
 		if(line)
 		{
-			if(likely(cache->__MSS_IsEnabled__()))
-			{
-				CacheAccess<TYPES, CACHE> access;
-				
-				// dummy initializations to avoid compilation warning
-				access.addr = 0;
-				access.phys_addr = 0;
-				access.storage_attr = typename TYPES::STORAGE_ATTR();
-				access.rwitm = false;
-				access.line_base_addr = 0;
-				access.line_base_phys_addr = 0;
-				access.block_base_addr = 0;
-				access.block_base_phys_addr = 0;
-				access.index = 0;
-				access.way = 0;
-				access.sector = 0;
-				access.offset = 0;
-				access.size_to_block_boundary = 0;
-				access.cache = cache;
-				access.set = 0;
-				access.line = line;
-				access.block = 0; 
-				
-				access.line_to_write_back_evict = line;
-				
-				if(!WriteBackLine<CACHE_HIERARCHY, CACHE, INVALIDATE>(access)) return false;
-			}
-			else if(INVALIDATE)
+			CacheAccess<TYPES, CACHE> access;
+			
+			// dummy initializations to avoid compilation warning
+			access.addr = 0;
+			access.phys_addr = 0;
+			access.storage_attr = typename TYPES::STORAGE_ATTR();
+			access.rwitm = false;
+			access.line_base_addr = 0;
+			access.line_base_phys_addr = 0;
+			access.block_base_addr = 0;
+			access.block_base_phys_addr = 0;
+			access.index = 0;
+			access.way = 0;
+			access.sector = 0;
+			access.offset = 0;
+			access.size_to_block_boundary = 0;
+			access.cache = cache;
+			access.set = 0;
+			access.line = line;
+			access.block = 0; 
+			
+			access.line_to_write_back_evict = line;
+			
+			if(!WriteBackLine<CACHE_HIERARCHY, CACHE, INVALIDATE>(access)) return false;
+
+			if(INVALIDATE)
 			{
 				if(unlikely(cache->__MSS_IsVerbose__()))
 				{
-					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Line at @0x" << std::hex << line->GetBaseAddress() << std::dec << " (physically at @" << std::hex << line->GetBasePhysicalAddress() << std::dec << ")" << std::endl;
+					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Line at @0x" << std::hex << line->GetBaseAddress() << std::dec << " (physically at @0x" << std::hex << line->GetBasePhysicalAddress() << std::dec << ")" << std::endl;
 				}
 				line->Invalidate();
 			}
 		}
 	}
 
-	if(typeid(CACHE) != typeid(UNTIL))
+	if(!Same<CACHE, UNTIL>::VALUE)
 	{
 		typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 		

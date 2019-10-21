@@ -65,7 +65,7 @@ using unisim::kernel::ServiceImport;
  */
 template <class PHYSICAL_ADDR, uint32_t DATA_SIZE, uint32_t PAGE_SIZE = 1024 * 1024, bool DEBUG = false>
 class Memory :
-	public sc_module,
+	public sc_core::sc_module,
 	public unisim::component::cxx::memory::ram::Memory<PHYSICAL_ADDR, PAGE_SIZE>,
 	public TlmSendIf<MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>, 
 					MemoryResponse<DATA_SIZE> > {
@@ -74,7 +74,7 @@ public:
 	 * Memory port access. It is connected to the bus or the chipset.
 	 * Uses a tlm interface.
 	 */
-	sc_export<TlmSendIf<MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>, 
+	sc_core::sc_export<TlmSendIf<MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>, 
 						MemoryResponse<DATA_SIZE> > > slave_port;
 
 	/**
@@ -83,7 +83,7 @@ public:
 	 * @param name the name of the module
 	 * @param parent the parent service
 	 */
-	Memory(const sc_module_name& name, Object *parent = 0);
+	Memory(const sc_core::sc_module_name& name, Object *parent = 0);
 	/**
 	 * Destructor
 	 */
@@ -109,13 +109,10 @@ private:
 	/** The logger */
 	unisim::kernel::logger::Logger logger;
 	
-	bool verbose;
-	Parameter<bool> param_verbose;
-	
 	/** The frequency in sc_time format */
-	sc_time cycle_sctime;
+	sc_core::sc_time cycle_sctime;
 	/** The parameter to set frequency */
-	Parameter<sc_time> param_cycle_time;
+	Parameter<sc_core::sc_time> param_cycle_time;
 };
 
 } // end of namespace unisim

@@ -676,6 +676,8 @@ struct SR : Register<SR, 32>
 	}
 	
 	bool NeedCheckForOverlappingBitFields() const { return false; }
+	
+	using Super::operator =;
 };
 
 ///////////////////////////// TypeForByteSize<> ///////////////////////////////
@@ -876,6 +878,8 @@ public:
 	
 	std::string GetObjectFriendlyName(EFFECTIVE_ADDRESS addr);
 	void LogLinuxSystemCall();
+	
+	void Trap();
 
 	///////////////////////////////////////////////////////////////////////////
 protected:
@@ -966,6 +970,8 @@ protected:
 		virtual void ProcessInterrupt(typename CONFIG::CPU *cpu) { cpu->ProcessInterrupt(static_cast<INTERRUPT *>(this)); }
 
 		virtual unsigned int GetOffset() const { return _OFFSET; }
+		
+		virtual const char *GetInterruptName() const { return INTERRUPT::GetName(); }
 	private:
 		unisim::kernel::variable::Parameter<bool> param_trap;
 	};
@@ -1328,6 +1334,7 @@ protected:
 
 	struct SLRBase
 	{
+		virtual ~SLRBase() {}
 		virtual bool IsValid() const { return false; }
 		virtual unsigned int GetRegNum() const { return 0; }
 		virtual SLR_Space_Type GetSpace() const { return SLR_SPR_SPACE; }
@@ -1400,6 +1407,39 @@ protected:
 		static const SLR_Space_Type SLR_SPACE = _SLR_SPACE;
 		static const SLR_Access_Type SLR_ACCESS = _SLR_ACCESS;
 		static const SLR_Privilege_Type SLR_PRIVILEGE = _SLR_PRIVILEGE;
+		
+		struct  _0 : Field< _0,  0> {};
+		struct  _1 : Field< _1,  1> {};
+		struct  _2 : Field< _2,  2> {};
+		struct  _3 : Field< _3,  3> {};
+		struct  _4 : Field< _4,  4> {};
+		struct  _5 : Field< _5,  5> {};
+		struct  _6 : Field< _6,  6> {};
+		struct  _7 : Field< _7,  7> {};
+		struct  _8 : Field< _8,  8> {};
+		struct  _9 : Field< _9,  9> {};
+		struct _10 : Field<_10, 10> {};
+		struct _11 : Field<_11, 11> {};
+		struct _12 : Field<_12, 12> {};
+		struct _13 : Field<_13, 13> {};
+		struct _14 : Field<_14, 14> {};
+		struct _15 : Field<_15, 15> {};
+		struct _16 : Field<_16, 16> {};
+		struct _17 : Field<_17, 17> {};
+		struct _18 : Field<_18, 18> {};
+		struct _19 : Field<_19, 19> {};
+		struct _20 : Field<_20, 20> {};
+		struct _21 : Field<_21, 21> {};
+		struct _22 : Field<_22, 22> {};
+		struct _23 : Field<_23, 23> {};
+		struct _24 : Field<_24, 24> {};
+		struct _25 : Field<_25, 25> {};
+		struct _26 : Field<_26, 26> {};
+		struct _27 : Field<_27, 27> {};
+		struct _28 : Field<_28, 28> {};
+		struct _29 : Field<_29, 29> {};
+		struct _30 : Field<_30, 30> {};
+		struct _31 : Field<_31, 31> {};
 		
 		UnnumberedSLR(typename CONFIG::CPU *_cpu) : Super(), cpu(_cpu) {}
 		UnnumberedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_value), cpu(_cpu) {}
@@ -2142,7 +2182,7 @@ public:
 		
 		struct VEC : Field<VEC,6>  {}; // Altivec vector unit available
 		struct SPV : Field<SPV,6>  {}; // SP/Embedded FP/Vector available
-		struct POW : Field<POW,7>  {}; // Power management enable
+		struct POW : Field<POW,13> {}; // Power management enable
 		struct WE  : Field<WE ,13> {}; // Wait state (Power management) enable
 		struct CE  : Field<CE ,14> {}; // Critical Interrupt Enable
 		struct ILE : Field<ILE,15> {}; // Exception little-endian mode
@@ -2192,21 +2232,30 @@ public:
 		void Init()
 		{
 			this->SetName("MSR"); this->SetDescription("Machine State Register");
-			SPV::SetName("SPV");  SPV::SetDescription("SP/Embedded FP/Vector available");
-			WE ::SetName("WE");   WE ::SetDescription("Wait state (Power management) enable");
-			CE ::SetName("CE");   CE ::SetDescription("Critical Interrupt Enable");
-			EE ::SetName("EE");   EE ::SetDescription("External Interrupt Enable");
-			PR ::SetName("PR");   PR ::SetDescription("Problem State");
-			FP ::SetName("FP");   FP ::SetDescription("Floating-Point Available");
-			ME ::SetName("ME");   ME ::SetDescription("Machine Check Enable");
-			FE0::SetName("FE0");  FE0::SetDescription("Floating-point exception mode 0");
-			DWE::SetName("DWE");  DWE::SetDescription("Debug Wait Enable");
-			DE ::SetName("DE");   DE ::SetDescription("Debug Interrupt Enable");
-			FE1::SetName("FE1");  FE1::SetDescription("Floating-point exception mode 1");
-			IS ::SetName("IS");   IS ::SetDescription("Instruction Address Space");
-			DS ::SetName("DS");   DS ::SetDescription("Data Address Space");
-			PMM::SetName("PMM");  PMM::SetDescription("PMM Performance monitor mark bit");
-			RI ::SetName("RI");   RI ::SetDescription("Recoverable Interrupt");
+			VEC::SetName("VEC"); VEC::SetDescription("Altivec vector unit available");
+			SPV::SetName("SPV"); SPV::SetDescription("SP/Embedded FP/Vector available");
+			POW::SetName("POW"); POW::SetDescription("Power management enable");
+			WE ::SetName("WE");  WE ::SetDescription("Wait state (Power management) enable");
+			CE ::SetName("CE");  CE ::SetDescription("Critical Interrupt Enable");
+			ILE::SetName("ILE"); ILE::SetDescription("Exception little-endian mode");
+			EE ::SetName("EE");  EE ::SetDescription("External Interrupt Enable");
+			PR ::SetName("PR");  PR ::SetDescription("Problem State");
+			FP ::SetName("FP");  FP ::SetDescription("Floating-Point Available");
+			ME ::SetName("ME");  ME ::SetDescription("Machine Check Enable");
+			FE0::SetName("FE0"); FE0::SetDescription("Floating-point exception mode 0");
+			SE ::SetName("SE");  SE ::SetDescription("Single-step trace enable");
+			DWE::SetName("DWE"); DWE::SetDescription("Debug Wait Enable");
+			BE ::SetName("BE");  BE ::SetDescription("Branch trace enable");
+			DE ::SetName("DE");  DE ::SetDescription("Debug Interrupt Enable");
+			FE1::SetName("FE1"); FE1::SetDescription("Floating-point exception mode 1");
+			IP ::SetName("IP");  IP ::SetDescription("Exception prefix");
+			IR ::SetName("IR");  IR ::SetDescription("Instruction address translation");
+			IS ::SetName("IS");  IS ::SetDescription("Instruction Address Space");
+			DR ::SetName("DR");  DR ::SetDescription("Data address translation");
+			DS ::SetName("DS");  DS ::SetDescription("Data Address Space");
+			PMM::SetName("PMM"); PMM::SetDescription("PMM Performance monitor mark bit");
+			RI ::SetName("RI");  RI ::SetDescription("Recoverable Interrupt");
+			LE ::SetName("LE");  LE ::SetDescription("Little-endian mode enable");
 			
 			cpu->AddRegisterInterface(this->CreateRegisterInterface());
 		}
@@ -3758,27 +3807,8 @@ protected:
 		struct BEPI_0_3  : Field<BEPI_0_3 , 0 , 3 > {};
 		struct BEPI_4_14 : Field<BEPI_4_14, 4 , 14> {};
 		
-		SWITCH_ENUM_TRAIT(Model, _BLOCK_LENGTH);
-		CASE_ENUM_TRAIT(MPC601  , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC603E , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC604E , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC740  , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC745  , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC750  , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC755  , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC7400 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC7410 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC7441 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC7445 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC7447 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC7447A, _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC7448 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC7450 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC7451 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC7455 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		CASE_ENUM_TRAIT(MPC7457 , _BLOCK_LENGTH) { typedef FieldSet<XBL, BL> FIELD_SET; };
-		typedef typename ENUM_TRAIT(CONFIG::MODEL, _BLOCK_LENGTH)::FIELD_SET BLOCK_LENGTH;
-
+		typedef FieldSet<XBL, BL> XA_BL;
+		
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(MPC601  , _) { typedef FieldSet<BEPI, BL, Vs, Vp> ALL;      };
 		CASE_ENUM_TRAIT(MPC603E , _) { typedef FieldSet<BEPI, BL, Vs, Vp> ALL;      };
@@ -3803,6 +3833,7 @@ protected:
 		UpperBlockAddressTranslationRegister(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
 		UpperBlockAddressTranslationRegister(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		
+		
 		virtual void Reset() { /* unaffected */ }
 		
 		using Super::operator =;
@@ -3824,7 +3855,7 @@ protected:
 		
 		struct BRPN : Field<BRPN, 0 , 14> {}; // Block physical page number
 		struct BXPN : Field<BXPN, 20, 22> {}; // Block extended physical page number
-		struct WIMG : Field<WIMG, 25, 29> {}; // Memory/cache access mode bits
+		struct WIMG : Field<WIMG, 25, 28> {}; // Memory/cache access mode bits
 		struct W    : Field<W   , 25    > {}; // Write-Through
 		struct I    : Field<I   , 26    > {}; // Caching-Inhibited
 		struct M    : Field<M   , 27    > {}; // Memory coherence
@@ -7975,6 +8006,8 @@ protected:
 	
 	bool enable_linux_syscall_snooping;
 	unisim::kernel::variable::Parameter<bool> param_enable_linux_syscall_snooping;
+	
+	unisim::kernel::variable::Parameter<bool> param_enable_shadow_memory;
 
 public:
 	inline bool IsVerboseDataLoad() const ALWAYS_INLINE { return verbose_data_load; }

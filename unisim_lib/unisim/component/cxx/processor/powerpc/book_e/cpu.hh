@@ -760,6 +760,7 @@ public:
 	void UpdateExceptionEnable();
 	
 	bool IsStorageCacheable(STORAGE_ATTR storage_attr) const { return !(storage_attr & TYPES::SA_I); }
+	bool IsDataStoreAccessWriteThrough(STORAGE_ATTR storage_attr) const { return (storage_attr & TYPES::SA_W) != 0; }
 
 	template <typename T, bool REVERSE, unisim::util::endian::endian_type ENDIAN> void ConvertDataLoadStoreEndian(T& value, STORAGE_ATTR storage_attr);
 	

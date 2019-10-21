@@ -66,12 +66,12 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, uint32_t MAX_TRANSACTION_DATA_SIZE>
-AM29<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::AM29(const sc_module_name& name, Object *parent) :
+AM29<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::AM29(const sc_core::sc_module_name& name, Object *parent) :
 	Object(name, parent, "AM29xxx flash memory"),
-	sc_module(name),
+	sc_core::sc_module(name),
 	unisim::component::cxx::memory::flash::am29::AM29<CONFIG, BYTESIZE, IO_WIDTH>(name, parent),
 	slave_port("slave-port"),
-	cycle_time(SC_ZERO_TIME),
+	cycle_time(sc_core::SC_ZERO_TIME),
 	param_cycle_time("cycle-time", this, cycle_time, "flash memory cycle time")
 {
 	SC_HAS_PROCESS(AM29);
@@ -95,7 +95,7 @@ bool AM29<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::BeginSetup()
 		inherited::logger << "cycle time of " << cycle_time << std::endl;
 		inherited::logger << EndDebugInfo;
 	}
-	if(cycle_time == SC_ZERO_TIME) return false;
+	if(cycle_time == sc_core::SC_ZERO_TIME) return false;
 
 	return inherited::BeginSetup();
 }
@@ -130,7 +130,7 @@ void AM29<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Process()
 						}
 						memset(rsp->read_data, 0, req->size);
 					}
-					sc_event *rsp_ev = message->GetResponseEvent();
+					sc_core::sc_event *rsp_ev = message->GetResponseEvent();
 					if(rsp_ev) rsp_ev->notify(cycle_time);
 				}
 				break;

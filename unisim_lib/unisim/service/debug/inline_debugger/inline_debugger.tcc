@@ -1552,7 +1552,7 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 		}
 		(*std_output_stream) << " ";
 		
-		(*std_output_stream) << "*0x" << std::hex << (addr / memory_atom_size) << std::dec << ":" << (size / memory_atom_size) << " (";
+		(*std_output_stream) << "*0x" << std::hex << (addr / memory_atom_size) << std::dec << "#" << (size / memory_atom_size) << " (";
 		
 		const unisim::util::debug::Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
 		
@@ -3267,7 +3267,7 @@ bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, std::string& line, boo
 		}
 	/* If the line has any text in it,
 		save it on the history. */
-		if(*line_read) add_history(line_read);
+		//if(*line_read) add_history(line_read);
 
 		line = line_read;
 

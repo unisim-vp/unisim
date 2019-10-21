@@ -36,70 +36,45 @@
 #include "config.h"
 #endif
 
-#include <unisim/component/tlm/processor/powerpc/mpc7447a/cpu.hh>
+#include <unisim/component/tlm/processor/powerpc/e600/mpc7447a/cpu.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/service/debug/debugger/debugger.tcc>
 #include <unisim/service/loader/pmac_linux_kernel_loader/pmac_linux_kernel_loader.hh>
-#include <iostream>
-#include <map>
-#include <getopt.h>
+#include <unisim/service/translator/memory_address/memory/translator.hh>
 #include <unisim/kernel/kernel.hh>
-#include <stdlib.h>
-#include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/component/tlm/memory/ram/memory.hh>
 #include <unisim/component/tlm/memory/flash/am29/am29.hh>
 #include <unisim/component/cxx/memory/flash/am29/am29lv800b_config.hh>
 #include <unisim/component/tlm/pci/video/display.hh>
 #include <unisim/component/tlm/fsb/snooping_bus/bus.hh>
 #include <unisim/component/tlm/chipset/mpc107/mpc107.hh>
-#include <unisim/util/garbage_collector/garbage_collector.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
-#include <unisim/service/profiling/addr_profiler/profiler.hh>
-#include <unisim/service/tee/memory_access_reporting/tee.hh>
 #include <unisim/component/tlm/pci/bus/bus.hh>
 #include <unisim/component/tlm/pci/ide/pci_ide_module.hh>
 #include <unisim/component/tlm/pci/macio/heathrow.hh>
 #include <unisim/component/cxx/pci/types.hh>
-#include <unisim/component/cxx/processor/powerpc/mpc7447a/config.hh>
-#include <stdexcept>
 #include <unisim/service/sdl/sdl.hh>
 #include <unisim/component/tlm/bridge/pci_isa/bridge.hh>
 #include <unisim/component/tlm/isa/i8042/i8042.hh>
 #include <unisim/component/tlm/debug/transaction_spy.hh>
-#include <signal.h>
+#include <unisim/service/debug/profiler/profiler.hh>
+#include <unisim/service/http_server/http_server.hh>
+#include <unisim/service/instrumenter/instrumenter.hh>
+#include <unisim/kernel/logger/logger_server.hh>
 
-#include <unisim/service/tee/memory_access_reporting/tee.tcc>
-
-#ifdef WIN32
-
-#include <windows.h>
-#include <winsock2.h>
-
-#endif
+#include <stdexcept>
+#include <iostream>
+#include <sstream>
+#include <string>
 
 #ifdef DEBUG_PPCEMU_SYSTEM
-typedef unisim::component::cxx::processor::powerpc::mpc7447a::DebugConfig CPU_CONFIG;
 static const bool DEBUG_INFORMATION = true;
 #else
-typedef unisim::component::cxx::processor::powerpc::mpc7447a::Config CPU_CONFIG;
 static const bool DEBUG_INFORMATION = false;
 #endif
-
-using namespace std;
-using unisim::service::loader::pmac_linux_kernel_loader::PMACLinuxKernelLoader;
-using unisim::service::debug::gdb_server::GDBServer;
-using unisim::service::debug::inline_debugger::InlineDebugger;
-using unisim::service::debug::debugger::Debugger;
-using unisim::service::profiling::addr_profiler::Profiler;
-using unisim::service::power::CachePowerEstimator;
-using unisim::util::garbage_collector::GarbageCollector;
-using unisim::component::cxx::pci::pci64_address_t;
-using unisim::component::cxx::pci::pci32_address_t;
-using unisim::kernel::VariableBase;
-using unisim::kernel::variable::Parameter;
-using unisim::kernel::Object;
 
 class Simulator : public unisim::kernel::Simulator
 {
@@ -108,8 +83,9 @@ public:
 	virtual ~Simulator();
 	virtual unisim::kernel::Simulator::SetupStatus Setup();
 	void Run();
-	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
+	virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
+	virtual void SigInt();
 protected:
 private:
 	//=========================================================================
@@ -117,14 +93,22 @@ private:
 	//=========================================================================
 
 	// Front Side Bus template parameters
-	typedef CPU_CONFIG::physical_address_t FSB_ADDRESS_TYPE;
-	typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
-	//typedef CPU_CONFIG::reg_t CPU_REG_TYPE;
+	typedef uint64_t FSB_ADDRESS_TYPE;
+	typedef uint32_t CPU_ADDRESS_TYPE;
 	static const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
 	static const uint32_t FSB_NUM_PROCS = 1;
 
+	// Debugger configuration
+	struct DEBUGGER_CONFIG
+	{
+		typedef CPU_ADDRESS_TYPE ADDRESS;
+		static const unsigned int NUM_PROCESSORS = 1;
+		/* gdb_server, inline_debugger, and profiler */
+		static const unsigned int MAX_FRONT_ENDS = 3;
+	};
+
 	// PCI Bus template parameters
-	typedef pci32_address_t PCI_ADDRESS_TYPE;
+	typedef unisim::component::cxx::pci::pci32_address_t PCI_ADDRESS_TYPE;
 	static const uint32_t PCI_MAX_DATA_SIZE = 32;        // in bytes
 	static const unsigned int PCI_NUM_MASTERS = 2;
 	static const unsigned int PCI_NUM_TARGETS = 5;
@@ -175,7 +159,7 @@ private:
 	typedef unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MEMORY;
 	typedef unisim::component::tlm::memory::flash::am29::AM29<FLASH_CONFIG, FLASH_BYTESIZE, FLASH_IO_WIDTH, FSB_MAX_DATA_SIZE> FLASH;
 	typedef unisim::component::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION> PCI_BUS;
-	typedef unisim::component::tlm::processor::powerpc::mpc7447a::CPU<CPU_CONFIG> CPU;
+	typedef unisim::component::tlm::processor::powerpc::e600::mpc7447a::CPU CPU;
 	typedef unisim::component::tlm::chipset::mpc107::MPC107<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, DEBUG_INFORMATION> MPC107;
 	typedef unisim::component::tlm::pci::ide::PCIDevIde<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> PCI_IDE;
 	typedef unisim::component::tlm::pci::macio::Heathrow<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> HEATHROW;
@@ -183,6 +167,18 @@ private:
 	typedef unisim::component::tlm::bridge::pci_isa::Bridge<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> PCI_ISA_BRIDGE;
 	typedef unisim::component::tlm::isa::i8042::I8042<ISA_MAX_DATA_SIZE> I8042;
 
+	//=========================================================================
+	//===                      Aliases for services classes                 ===
+	//=========================================================================
+	
+	typedef unisim::service::loader::pmac_linux_kernel_loader::PMACLinuxKernelLoader PMAC_LINUX_KERNEL_LOADER;
+	typedef unisim::service::debug::gdb_server::GDBServer<CPU_ADDRESS_TYPE> GDB_SERVER;
+	typedef unisim::service::debug::inline_debugger::InlineDebugger<CPU_ADDRESS_TYPE> INLINE_DEBUGGER;
+	typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
+	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
+	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
+	typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
+	
 	//=========================================================================
 	//===               Aliases for transaction Spies classes               ===
 	//=========================================================================
@@ -242,44 +238,38 @@ private:
 	unisim::service::sdl::SDL<PCI_ADDRESS_TYPE> *sdl;
 	//  - PowerMac Linux kernel loader
 	//    A Linux kernel loader acting as a firmware and a bootloader of a real PowerMac machine
-	PMACLinuxKernelLoader *kloader;
+	PMAC_LINUX_KERNEL_LOADER *kloader;
 	//  - GDB server
-	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
+	GDB_SERVER *gdb_server;
 	//  - Inline debugger
-	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger;
+	INLINE_DEBUGGER *inline_debugger;
 	//  - debugger
-	Debugger<CPU_ADDRESS_TYPE> *debugger;
+	DEBUGGER *debugger;
 	//  - profiler
-	Profiler<CPU_ADDRESS_TYPE> *profiler;
+	PROFILER *profiler;
+	// - Instrumenter
+	INSTRUMENTER *instrumenter;
+	//  - HTTP server
+	HTTP_SERVER *http_server;
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
-	//  - the optional power estimators
-	CachePowerEstimator *il1_power_estimator;
-	CachePowerEstimator *dl1_power_estimator;
-	CachePowerEstimator *l2_power_estimator;
-	CachePowerEstimator *itlb_power_estimator;
-	CachePowerEstimator *dtlb_power_estimator;
-	//  - Tees
-	unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE> *tee_memory_access_reporting;
+	//  - memory address translator from effective address to physical address
+	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *memory_effective_to_physical_address_translator;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
-	bool estimate_power;
+	bool enable_profiler;
 	bool message_spy;
-	Parameter<bool> param_enable_gdb_server;
-	Parameter<bool> param_enable_inline_debugger;
-	Parameter<bool> param_estimate_power;
-	Parameter<bool> param_message_spy;
+	unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
+	unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
+	unisim::kernel::variable::Parameter<bool> param_enable_profiler;
+	unisim::kernel::variable::Parameter<bool> param_message_spy;
 
+	bool stop_called;
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
-#ifdef WIN32
-	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
-#else
-	static void SigIntHandler(int signum);
-#endif
 };
 
 Simulator::Simulator(int argc, char **argv)
@@ -301,29 +291,38 @@ Simulator::Simulator(int argc, char **argv)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, debugger(0)
+	, profiler(0)
+	, instrumenter(0)
+	, http_server(0)
 	, sim_time(0)
 	, host_time(0)
-	, il1_power_estimator(0)
-	, dl1_power_estimator(0)
-	, l2_power_estimator(0)
-	, itlb_power_estimator(0)
-	, dtlb_power_estimator(0)
-	, tee_memory_access_reporting(0)
+	, memory_effective_to_physical_address_translator(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
-	, estimate_power(false)
+	, enable_profiler(false)
 	, message_spy(false)
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
-	, param_estimate_power("estimate-power", 0, estimate_power, "Enable/Disable power estimators instantiation")
+	, param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable/Disable profiler")
 	, param_message_spy("message-spy", 0, message_spy, "Enable/Disable message spies instantiation")
+	, stop_called(false)
 	, exit_status(0)
 {
+	if(enable_profiler)
+	{
+		this->SetVariable("HARDWARE.instrumenter.enable-user-interface", true); // When profiler is enabled, enable also instrumenter user interface so that profiler interface is periodically refreshed too
+	}
+
+	//=========================================================================
+	//===                     Instrumenter instantiation                    ===
+	//=========================================================================
+	instrumenter = new INSTRUMENTER("instrumenter");
+
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
 	//  - PowerPC processor
-	cpu =new CPU("cpu");
+	cpu = new CPU("cpu");
 	//  - Front side bus
 	bus = new FRONT_SIDE_BUS("bus");
 	//  - MPC107 chipset
@@ -355,30 +354,30 @@ Simulator::Simulator(int argc, char **argv)
 	{
 		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
 		{
-			stringstream sstr;
+			std::stringstream sstr;
 			sstr << "bus_msg_spy[" << i << "]";
-			string name = sstr.str();
+			std::string name = sstr.str();
 			bus_msg_spy[i] = new BusMsgSpyType(name.c_str());
 		}
 		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++)
 		{
-			stringstream sstr;
+			std::stringstream sstr;
 			sstr << "mem_msg_spy[" << i << "]";
-			string name = sstr.str();
+			std::string name = sstr.str();
 			mem_msg_spy[i] = new MemMsgSpyType(name.c_str());
 		}
 		for(unsigned int i = 0; i < MAX_PCI_TRANSACTION_SPY; i++)
 		{
-			stringstream sstr;
+			std::stringstream sstr;
 			sstr << "pci_msg_spy[" << i << "]";
-			string name = sstr.str();
+			std::string name = sstr.str();
 			pci_msg_spy[i] = new PCIMsgSpyType(name.c_str());
 		}
 		for(unsigned int i = 0; i < MAX_IRQ_TRANSACTION_SPY; i++)
 		{
-			stringstream sstr;
+			std::stringstream sstr;
 			sstr << "irq_msg_spy[" << i << "]";
-			string name = sstr.str();
+			std::string name = sstr.str();
 			irq_msg_spy[i] = new IRQMsgSpyType(name.c_str());
 		}
 	}
@@ -397,27 +396,23 @@ Simulator::Simulator(int argc, char **argv)
 	sdl = new unisim::service::sdl::SDL<PCI_ADDRESS_TYPE>("sdl");
 	//  - PowerMac Linux kernel loader
 	//    A Linux kernel loader acting as a firmware and a bootloader of a real PowerMac machine
-	kloader = new PMACLinuxKernelLoader("pmac-linux-kernel-loader");
+	kloader = new PMAC_LINUX_KERNEL_LOADER("pmac-linux-kernel-loader");
 	//  - GDB server
-	gdb_server = (enable_gdb_server) ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
+	gdb_server = (enable_gdb_server) ? new GDB_SERVER("gdb-server") : 0;
 	//  - Inline debugger
-	inline_debugger = (enable_inline_debugger) ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
+	inline_debugger = (enable_inline_debugger) ? new INLINE_DEBUGGER("inline-debugger") : 0;
 	//  - debugger
-	debugger = (enable_inline_debugger || enable_gdb_server) ? new Debugger<CPU_ADDRESS_TYPE>("debugger") : 0;
-	//  - profiler
-	profiler = enable_inline_debugger ? new Profiler<CPU_ADDRESS_TYPE>("profiler") : 0;
+	debugger = (enable_inline_debugger || enable_gdb_server || enable_profiler) ? new DEBUGGER("debugger") : 0;
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
-	//  - the optional power estimators
-	il1_power_estimator = (estimate_power) ? new CachePowerEstimator("il1-power-estimator") : 0;
-	dl1_power_estimator = (estimate_power) ? new CachePowerEstimator("dl1-power-estimator") : 0;
-	l2_power_estimator = (estimate_power) ? new CachePowerEstimator("l2-power-estimator") : 0;
-	itlb_power_estimator = (estimate_power) ? new CachePowerEstimator("itlb-power-estimator") : 0;
-	dtlb_power_estimator = (estimate_power) ? new CachePowerEstimator("dtlb-power-estimator") : 0;
-	//  - Tees
-	tee_memory_access_reporting = enable_inline_debugger ? new unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE>("tee-memory-access-reporting") : 0;
+	//  - memory address translator from effective address to physical address
+	memory_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("memory-effective-to-physical-address-translator");
+	//  - profiler
+	profiler = enable_profiler ? new PROFILER("profiler") : 0;
+	//  - HTTP server
+	http_server = new HTTP_SERVER("http-server");
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -431,146 +426,146 @@ Simulator::Simulator(int argc, char **argv)
 		unsigned irq_msg_spy_index = 0;
 
 		cpu->bus_port(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = cpu->sc_object::name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = cpu->sc_core::sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = cpu->bus_port.name();
 		bus_msg_spy[bus_msg_spy_index]->master_port(*bus->inport[0]);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = bus->sc_object::name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = bus->sc_core::sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = bus->inport[0]->name();
 		bus_msg_spy_index++;
 
 		(*bus->outport[0])(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->sc_object::name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->sc_core::sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = bus->outport[0]->name();
 		bus_msg_spy[bus_msg_spy_index]->master_port(cpu->snoop_port);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = cpu->sc_object::name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = cpu->sc_core::sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = cpu->snoop_port.name();
 		bus_msg_spy_index++;
 
 		(*bus->chipset_outport)(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->sc_object::name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->sc_core::sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = bus->chipset_outport->name();
 		bus_msg_spy[bus_msg_spy_index]->master_port(mpc107->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = mpc107->sc_object::name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = mpc107->sc_core::sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = mpc107->slave_port.name();
 		bus_msg_spy_index++;
 
 		mpc107->master_port(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = mpc107->sc_core::sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = mpc107->master_port.name();
 		bus_msg_spy[bus_msg_spy_index]->master_port(*bus->chipset_inport);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = bus->sc_object::name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = bus->sc_core::sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = bus->chipset_inport->name();
 		bus_msg_spy_index++;
 
 		mpc107->ram_master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
+		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->sc_core::sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["source_port_name"] = mpc107->ram_master_port.name();
 		mem_msg_spy[mem_msg_spy_index]->master_port(memory->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = memory->sc_object::name();
+		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = memory->sc_core::sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["target_port_name"] = memory->slave_port.name();
 		mem_msg_spy_index++;
 
 		mpc107->rom_master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
+		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->sc_core::sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["source_port_name"] = mpc107->rom_master_port.name();
 		mem_msg_spy[mem_msg_spy_index]->master_port(flash->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = flash->sc_object::name();
+		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = flash->sc_core::sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["target_port_name"] = flash->slave_port.name();
 		mem_msg_spy_index++;
 
 		mpc107->erom_master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
+		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->sc_core::sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["source_port_name"] = mpc107->erom_master_port.name();
 		mem_msg_spy[mem_msg_spy_index]->master_port(erom->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = erom->sc_object::name();
+		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = erom->sc_core::sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["target_port_name"] = erom->slave_port.name();
 		mem_msg_spy_index++;
 		
 		mpc107->pci_master_port(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = mpc107->sc_core::sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = mpc107->pci_master_port.name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(*pci_bus->input_port[PCI_MPC107_MASTER_PORT]);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_bus->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_bus->sc_core::sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_bus->input_port[PCI_MPC107_MASTER_PORT]->name();
 		pci_msg_spy_index++;
 
 		(*pci_bus->output_port[PCI_MPC107_SLAVE_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_core::sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_MPC107_SLAVE_PORT]->name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(mpc107->pci_slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = mpc107->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = mpc107->sc_core::sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = mpc107->pci_slave_port.name();
 		pci_msg_spy_index++;
 
 		(*pci_bus->output_port[PCI_HEATHROW_SLAVE_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_core::sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_HEATHROW_SLAVE_PORT]->name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(heathrow->bus_port);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = heathrow->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = heathrow->sc_core::sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = heathrow->bus_port.name();
 		pci_msg_spy_index++;
 
 		(*pci_bus->output_port[PCI_IDE_SLAVE_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_core::sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_IDE_SLAVE_PORT]->name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(pci_ide->input_port);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_ide->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_ide->sc_core::sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_ide->input_port.name();
 		pci_msg_spy_index++;
 
 		(*pci_bus->output_port[PCI_DISPLAY_SLAVE_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_core::sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_DISPLAY_SLAVE_PORT]->name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(pci_display->bus_port);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_display->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_display->sc_core::sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_display->bus_port.name();
 		pci_msg_spy_index++;
 
 		(*pci_bus->output_port[PCI_ISA_BRIDGE_SLAVE_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_core::sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_ISA_BRIDGE_SLAVE_PORT]->name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(pci_isa_bridge->pci_slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_isa_bridge->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_isa_bridge->sc_core::sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_isa_bridge->pci_slave_port.name();
 		pci_msg_spy_index++;
 
 		pci_ide->output_port(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_ide->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_ide->sc_core::sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_ide->output_port.name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(*pci_bus->input_port[PCI_IDE_MASTER_PORT]);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_bus->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_bus->sc_core::sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_bus->input_port[PCI_IDE_MASTER_PORT]->name();
 		pci_msg_spy_index++;
 		
 		pci_ide->irq_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
-		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = pci_ide->sc_object::name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = pci_ide->sc_core::sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = pci_ide->irq_port.name();
 		irq_msg_spy[irq_msg_spy_index]->master_port(*heathrow->irq_port[PCI_IDE_IRQ]);
-		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = heathrow->sc_object::name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = heathrow->sc_core::sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = heathrow->irq_port[PCI_IDE_IRQ]->name();
 		irq_msg_spy_index++;
 
 		heathrow->cpu_irq_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
-		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = heathrow->sc_object::name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = heathrow->sc_core::sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = heathrow->cpu_irq_port.name();
 		irq_msg_spy[irq_msg_spy_index]->master_port(*mpc107->irq_slave_port[0]);
-		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = mpc107->sc_object::name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = mpc107->sc_core::sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = mpc107->irq_slave_port[0]->name();
 		irq_msg_spy_index++;
 
 		mpc107->irq_master_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
-		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = mpc107->sc_core::sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = mpc107->irq_master_port.name();
 		irq_msg_spy[irq_msg_spy_index]->master_port(cpu->external_interrupt_port);
-		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = cpu->sc_object::name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = cpu->sc_core::sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = cpu->external_interrupt_port.name();
 		irq_msg_spy_index++;
 
 		mpc107->soft_reset_master_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
-		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = mpc107->sc_core::sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = mpc107->soft_reset_master_port.name();
 		irq_msg_spy[irq_msg_spy_index]->master_port(cpu->soft_reset_port);
-		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = cpu->sc_object::name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = cpu->sc_core::sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = cpu->soft_reset_port.name();
 		irq_msg_spy_index++;
 	}
@@ -609,88 +604,72 @@ Simulator::Simulator(int argc, char **argv)
 
 	cpu->memory_import >> bus->memory_export;
 	
-	if(enable_inline_debugger || enable_gdb_server)
+	if(debugger)
 	{
-		if(enable_inline_debugger)
+		// Debugger <-> CPU Connections
+		// Debugger <-> CPU connections
+		cpu->debug_yielding_import                            >> *debugger->debug_yielding_export[0];
+		cpu->trap_reporting_import                            >> *debugger->trap_reporting_export[0];
+		cpu->memory_access_reporting_import                   >> *debugger->memory_access_reporting_export[0];
+		*debugger->disasm_import[0]                          >> cpu->disasm_export;
+		*debugger->memory_import[0]                          >> cpu->memory_export;
+		*debugger->registers_import[0]                       >> cpu->registers_export;
+		*debugger->memory_access_reporting_control_import[0] >> cpu->memory_access_reporting_control_export;
+			
+		// Debugger <-> Loader connections
+		debugger->blob_import >> kloader->blob_export;
+		
+		if(inline_debugger)
 		{
-			// Connect tee-memory-access-reporting to CPU, debugger and profiler
-			cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
-			*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
-			*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
-			profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
-			debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
-			tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
-		}
-		else
-		{
-			// Connect CPU to debugger
-			cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
-			debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+			// inline-debugger <-> debugger connections
+			*debugger->debug_event_listener_import[0]      >> inline_debugger->debug_event_listener_export;
+			*debugger->debug_yielding_import[0]            >> inline_debugger->debug_yielding_export;
+			inline_debugger->debug_yielding_request_import >> *debugger->debug_yielding_request_export[0];
+			inline_debugger->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[0];
+			inline_debugger->disasm_import                 >> *debugger->disasm_export[0];
+			inline_debugger->memory_import                 >> *debugger->memory_export[0];
+			inline_debugger->registers_import              >> *debugger->registers_export[0];
+			inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
+			inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
+			inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+			inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
+			inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
+			inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
 		}
 		
-		// Connect debugger to CPU
-		cpu->debug_yielding_import >> debugger->debug_yielding_export;
-		cpu->trap_reporting_import >> debugger->trap_reporting_export;
-		debugger->disasm_import >> cpu->disasm_export;
-		debugger->memory_import >> cpu->memory_export;
-		debugger->registers_import >> cpu->registers_export;
-		debugger->loader_import >> kloader->loader_export;
-		debugger->blob_import >> kloader->blob_export;
-	}
-	
-	if(enable_inline_debugger)
-	{
-		// Connect inline-debugger to debugger
-		debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export;
-		debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
-		debugger->debug_yielding_import >> inline_debugger->debug_yielding_export;
-		inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-		inline_debugger->disasm_import >> debugger->disasm_export;
-		inline_debugger->memory_import >> debugger->memory_export;
-		inline_debugger->registers_import >> debugger->registers_export;
-		inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;
-		inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-		inline_debugger->backtrace_import >> debugger->backtrace_export;
-		inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
-		inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
-		inline_debugger->subprogram_lookup_import >> debugger->subprogram_lookup_export;
-		inline_debugger->profiling_import >> profiler->profiling_export;
-	}
-	else if(enable_gdb_server)
-	{
-		// Connect gdb-server to debugger
-		debugger->debug_yielding_import >> gdb_server->debug_yielding_export;
-		debugger->debug_event_listener_import >> gdb_server->debug_event_listener_export;
-		debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
-		gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-		gdb_server->memory_import >> debugger->memory_export;
-		gdb_server->registers_import >> debugger->registers_export;
+		if(gdb_server)
+		{
+			// gdb-server <-> debugger connections
+			*debugger->debug_event_listener_import[1] >> gdb_server->debug_event_listener_export;
+			*debugger->debug_yielding_import[1]       >> gdb_server->debug_yielding_export;
+			gdb_server->debug_yielding_request_import >> *debugger->debug_yielding_request_export[1];
+			gdb_server->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[1];
+			gdb_server->memory_import                 >> *debugger->memory_export[1];
+			gdb_server->registers_import              >> *debugger->registers_export[1];
+		}
+		
+		if(profiler)
+		{
+			// profiler <-> debugger connections
+			*debugger->debug_event_listener_import[2] >> profiler->debug_event_listener_export;
+			*debugger->debug_yielding_import[2]       >> profiler->debug_yielding_export;
+			profiler->debug_yielding_request_import   >> *debugger->debug_yielding_request_export[2];
+			profiler->debug_event_trigger_import      >> *debugger->debug_event_trigger_export[2];
+			profiler->disasm_import                   >> *debugger->disasm_export[2];
+			profiler->memory_import                   >> *debugger->memory_export[2];
+			profiler->registers_import                >> *debugger->registers_export[2];
+			profiler->stmt_lookup_import              >> *debugger->stmt_lookup_export[2];
+			profiler->symbol_table_lookup_import      >> *debugger->symbol_table_lookup_export[2];
+			profiler->backtrace_import                >> *debugger->backtrace_export[2];
+			profiler->debug_info_loading_import       >> *debugger->debug_info_loading_export[2];
+			profiler->data_object_lookup_import       >> *debugger->data_object_lookup_export[2];
+			profiler->subprogram_lookup_import        >> *debugger->subprogram_lookup_export[2];
+		}
 	}
 
-	if(estimate_power)
-	{
-		// Connect everything related to power estimation
-		cpu->il1_power_estimator_import >> il1_power_estimator->power_estimator_export;
-		cpu->il1_power_mode_import >> il1_power_estimator->power_mode_export;
-		cpu->dl1_power_estimator_import >> dl1_power_estimator->power_estimator_export;
-		cpu->dl1_power_mode_import >> dl1_power_estimator->power_mode_export;
-		cpu->l2_power_estimator_import >> l2_power_estimator->power_estimator_export;
-		cpu->l2_power_mode_import >> l2_power_estimator->power_mode_export;
-		cpu->itlb_power_estimator_import >> itlb_power_estimator->power_estimator_export;
-		cpu->itlb_power_mode_import >> itlb_power_estimator->power_mode_export;
-		cpu->dtlb_power_estimator_import >> dtlb_power_estimator->power_estimator_export;
-		cpu->dtlb_power_mode_import >> dtlb_power_estimator->power_mode_export;
-
-		il1_power_estimator->time_import >> sim_time->time_export;
-		dl1_power_estimator->time_import >> sim_time->time_export;
-		l2_power_estimator->time_import >> sim_time->time_export;
-		itlb_power_estimator->time_import >> sim_time->time_export;
-		dtlb_power_estimator->time_import >> sim_time->time_export;
-	}
-
-	kloader->memory_import >> memory->memory_export;
+	memory_effective_to_physical_address_translator->memory_import >> memory->memory_export;
+	kloader->memory_import >> memory_effective_to_physical_address_translator->memory_export;
 	kloader->registers_import >> cpu->registers_export;
-	cpu->kernel_loader_import >> kloader->loader_export;
 	cpu->symbol_table_lookup_import >> kloader->symbol_table_lookup_export;
 	bus->memory_import >> mpc107->memory_export;
 	pci_display->video_import >> sdl->video_export;
@@ -701,6 +680,23 @@ Simulator::Simulator(int argc, char **argv)
 	mpc107->pci_import >> *pci_bus->memory_export[PCI_MPC107_MASTER_PORT];
 	i8042->keyboard_import >> sdl->keyboard_export;
 	i8042->mouse_import >> sdl->mouse_export;
+	
+	{
+		unsigned int i = 0;
+		*http_server->http_server_import[i++] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
+		*http_server->http_server_import[i++] >> instrumenter->http_server_export;
+		if(profiler)
+		{
+			*http_server->http_server_import[i++] >> profiler->http_server_export;
+		}
+		*http_server->http_server_import[i++] >> cpu->itlb_http_server_export;
+		*http_server->http_server_import[i++] >> cpu->dtlb_http_server_export;
+	}
+
+	{
+		unsigned int i = 0;
+		*http_server->registers_import[i++] >> cpu->registers_export;
+	}
 }
 
 Simulator::~Simulator()
@@ -714,17 +710,14 @@ Simulator::~Simulator()
 	if(memory) delete memory;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
+	if(profiler) delete profiler;
 	if(debugger) delete debugger;
+	if(http_server) delete http_server;
 	if(bus) delete bus;
 	if(cpu) delete cpu;
-	if(il1_power_estimator) delete il1_power_estimator;
-	if(dl1_power_estimator) delete dl1_power_estimator;
-	if(l2_power_estimator) delete l2_power_estimator;
-	if(itlb_power_estimator) delete itlb_power_estimator;
-	if(dtlb_power_estimator) delete dtlb_power_estimator;
-	if(tee_memory_access_reporting) delete tee_memory_access_reporting;
 	if(sim_time) delete sim_time;
 	if(host_time) delete host_time;
+	if(memory_effective_to_physical_address_translator) delete memory_effective_to_physical_address_translator;
 	if(flash) delete flash;
 	if(erom) delete erom;
 	if(pci_display) delete pci_display;
@@ -736,13 +729,14 @@ Simulator::~Simulator()
 	if(mpc107) delete mpc107;
 	if(pci_bus) delete pci_bus;
 	if(heathrow) delete heathrow;
+	if(instrumenter) delete instrumenter;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM ppcemu-system");
-	simulator->SetVariable("copyright", "Copyright (C) 2007-2010, Commissariat a l'Energie Atomique (CEA)");
+	simulator->SetVariable("copyright", "Copyright (C) 2007-2019, Commissariat a l'Energie Atomique (CEA)");
 	simulator->SetVariable("license", "BSD (see file COPYING)");
 	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
 	simulator->SetVariable("version", VERSION);
@@ -753,19 +747,18 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	int gdb_server_tcp_port = 1234;
 	const char *filename = "vmlinux";
 	const char *kernel_params = "/dev/ram0 rw";
-	const char *device_tree_filename = "device_tree_pmac_g4.xml";
-	const char *gdb_server_arch_filename = "gdb_powerpc_32.xml";
-	const char *dwarf_register_number_mapping_filename = "powerpc_eabi_gcc_dwarf_register_number_mapping.xml";
+	const char *device_tree_filename = "unisim/service/loader/pmac_bootx/device_tree_pmac_g4.xml";
+	const char *gdb_server_arch_filename = "unisim/service/debug/gdb_server/gdb_powerpc_32.xml";
+	const char *dwarf_register_number_mapping_filename = "unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml";
 	const char *ramdisk_filename = "initrd.img";
 	const char *bmp_out_filename = "";
-	const char *keymap_filename = "pc_linux_fr_keymap.xml";
+	const char *keymap_filename = "unisim/service/sdl/pc_linux_fr_keymap.xml";
 	uint64_t max_inst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
 	uint32_t pci_bus_frequency = 33; // in Mhz
 	uint32_t isa_bus_frequency = 8; // in Mhz
 	double cpu_frequency = 300.0; // in Mhz
 	uint32_t cpu_clock_multiplier = 4;
 	double fsb_frequency = cpu_frequency / cpu_clock_multiplier; // FIXME: to be removed
-	uint32_t tech_node = 130; // in nm
 	uint32_t display_width = 640; // in pixels
 	uint32_t display_height = 480; // in pixels
 	uint32_t display_depth = 15; // in bits per pixel
@@ -778,19 +771,20 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	double mem_cycle_time = fsb_cycle_time;
 
 	//  - Front Side Bus
-	simulator->SetVariable("bus.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("bus.cycle-time", sc_core::sc_time(fsb_cycle_time, sc_core::SC_PS).to_string().c_str());
 
 	//	- PowerPC processor
 	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
-	simulator->SetVariable("cpu.cpu-cycle-time", cpu_cycle_time);
-	simulator->SetVariable("cpu.bus-cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("cpu.cpu-cycle-time", sc_core::sc_time(cpu_cycle_time, sc_core::SC_PS).to_string().c_str());
+	simulator->SetVariable("cpu.bus-cycle-time", sc_core::sc_time(fsb_cycle_time, sc_core::SC_PS).to_string().c_str());
 	simulator->SetVariable("cpu.voltage", 1.3 * 1e3); // mV
 	simulator->SetVariable("cpu.nice-time", "1 ms"); // 1 ms
 	simulator->SetVariable("cpu.max-inst", max_inst);
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
+	simulator->SetVariable("cpu.processor-version", 0x80030100); // MPC7447A
 
 	//  - RAM
-	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("memory.cycle-time", sc_core::sc_time(mem_cycle_time, sc_core::SC_PS).to_string().c_str());
 	simulator->SetVariable("memory.org", 0x00000000UL);
 	simulator->SetVariable("memory.bytesize", memory_size);
 
@@ -806,12 +800,12 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	//  - EROM run-time configuration
 	simulator->SetVariable("erom.org",  0x78000000UL);
 	simulator->SetVariable("erom.bytesize", 2 * 8 * 1024 * 1024);
-	simulator->SetVariable("erom.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("erom.cycle-time", sc_core::sc_time(mem_cycle_time, sc_core::SC_PS).to_string().c_str());
 
 	//  - Flash memory run-time configuration
 	simulator->SetVariable("flash.org", 0xff800000UL); //0xff000000UL);
 	simulator->SetVariable("flash.bytesize", 8 * 1024 * 1024);
-	simulator->SetVariable("flash.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("flash.cycle-time", sc_core::sc_time(mem_cycle_time, sc_core::SC_PS).to_string().c_str());
 	simulator->SetVariable("flash.endian", "big-endian");
 
 	// PCI Bus run-time configuration
@@ -931,72 +925,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	//  - i8042 run-time configuration
 	simulator->SetVariable("i8042.fsb-frequency", fsb_frequency);
 	simulator->SetVariable("i8042.isa-bus-frequency", isa_bus_frequency);
-	
-	// - Cache/TLB power estimators run-time configuration
-	simulator->SetVariable("il1-power-estimator.cache-size", 32 * 1024);
-	simulator->SetVariable("il1-power-estimator.line-size", 32);
-	simulator->SetVariable("il1-power-estimator.associativity", 8);
-	simulator->SetVariable("il1-power-estimator.rw-ports", 0);
-	simulator->SetVariable("il1-power-estimator.excl-read-ports", 1);
-	simulator->SetVariable("il1-power-estimator.excl-write-ports", 0);
-	simulator->SetVariable("il1-power-estimator.single-ended-read-ports", 0);
-	simulator->SetVariable("il1-power-estimator.banks", 4);
-	simulator->SetVariable("il1-power-estimator.tech-node", tech_node);
-	simulator->SetVariable("il1-power-estimator.output-width", 128);
-	simulator->SetVariable("il1-power-estimator.tag-width", 64);
-	simulator->SetVariable("il1-power-estimator.access-mode", "fast");
-	
-	simulator->SetVariable("dl1-power-estimator.cache-size", 32 * 1024);
-	simulator->SetVariable("dl1-power-estimator.line-size", 32);
-	simulator->SetVariable("dl1-power-estimator.associativity", 8);
-	simulator->SetVariable("dl1-power-estimator.rw-ports", 1);
-	simulator->SetVariable("dl1-power-estimator.excl-read-ports", 0);
-	simulator->SetVariable("dl1-power-estimator.excl-write-ports", 0);
-	simulator->SetVariable("dl1-power-estimator.single-ended-read-ports", 0);
-	simulator->SetVariable("dl1-power-estimator.banks", 4);
-	simulator->SetVariable("dl1-power-estimator.tech-node", tech_node);
-	simulator->SetVariable("dl1-power-estimator.output-width", 64);
-	simulator->SetVariable("dl1-power-estimator.tag-width", 64);
-	simulator->SetVariable("dl1-power-estimator.access-mode", "fast");
-	
-	simulator->SetVariable("l2-power-estimator.cache-size", 512 * 1024);
-	simulator->SetVariable("l2-power-estimator.line-size", 32);
-	simulator->SetVariable("l2-power-estimator.associativity", 8);
-	simulator->SetVariable("l2-power-estimator.rw-ports", 1);
-	simulator->SetVariable("l2-power-estimator.excl-read-ports", 0);
-	simulator->SetVariable("l2-power-estimator.excl-write-ports", 0);
-	simulator->SetVariable("l2-power-estimator.single-ended-read-ports", 0);
-	simulator->SetVariable("l2-power-estimator.banks", 4);
-	simulator->SetVariable("l2-power-estimator.tech-node", tech_node);
-	simulator->SetVariable("l2-power-estimator.output-width", 256);
-	simulator->SetVariable("l2-power-estimator.tag-width", 64);
-	simulator->SetVariable("l2-power-estimator.access-mode", "fast");
-	
-	simulator->SetVariable("itlb-power-estimator.cache-size", 128 * 2 * 4);
-	simulator->SetVariable("itlb-power-estimator.line-size", 4);
-	simulator->SetVariable("itlb-power-estimator.associativity", 2);
-	simulator->SetVariable("itlb-power-estimator.rw-ports", 1);
-	simulator->SetVariable("itlb-power-estimator.excl-read-ports", 0);
-	simulator->SetVariable("itlb-power-estimator.excl-write-ports", 0);
-	simulator->SetVariable("itlb-power-estimator.single-ended-read-ports", 0);
-	simulator->SetVariable("itlb-power-estimator.banks", 4);
-	simulator->SetVariable("itlb-power-estimator.tech-node", tech_node);
-	simulator->SetVariable("itlb-power-estimator.output-width", 32);
-	simulator->SetVariable("itlb-power-estimator.tag-width", 64);
-	simulator->SetVariable("itlb-power-estimator.access-mode", "fast");
-	
-	simulator->SetVariable("dtlb-power-estimator.cache-size", 128 * 2 * 4);
-	simulator->SetVariable("dtlb-power-estimator.line-size", 4);
-	simulator->SetVariable("dtlb-power-estimator.associativity", 2);
-	simulator->SetVariable("dtlb-power-estimator.rw-ports", 1);
-	simulator->SetVariable("dtlb-power-estimator.excl-read-ports", 0);
-	simulator->SetVariable("dtlb-power-estimator.excl-write-ports", 0);
-	simulator->SetVariable("dtlb-power-estimator.single-ended-read-ports", 0);
-	simulator->SetVariable("dtlb-power-estimator.banks", 4);
-	simulator->SetVariable("dtlb-power-estimator.tech-node", tech_node);
-	simulator->SetVariable("dtlb-power-estimator.output-width", 32);
-	simulator->SetVariable("dtlb-power-estimator.tag-width", 64);
-	simulator->SetVariable("dtlb-power-estimator.access-mode", "fast");
 
 	//  - GDB server run-time configuration
 	simulator->SetVariable("gdb-server.tcp-port", gdb_server_tcp_port);
@@ -1027,31 +955,35 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	
 	// Inline debugger
 	simulator->SetVariable("inline-debugger.num-loaders", 1);
+	
+	// - Http Server
+	simulator->SetVariable("http-server.http-port", 12360);
 }
 
-void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
+void Simulator::Stop(unisim::kernel::Object *object, int _exit_status, bool asynchronous)
 {
-	exit_status = _exit_status;
-	if(object)
+	if(!stop_called)
 	{
-		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
-	}
-#ifdef DEBUG_PPCEMU_SYSTEM
-	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
-#endif
-	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_stop();
-	if(!asynchronous)
-	{
-		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		stop_called = true;
+		exit_status = _exit_status;
+		if(object)
 		{
-			case SC_THREAD_PROC_: 
-			case SC_CTHREAD_PROC_:
-				wait();
-				break;
-			default:
-				break;
+			std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+		}
+		std::cerr << "Program exited with status " << exit_status << std::endl;
+		sc_core::sc_stop();
+		if(!asynchronous)
+		{
+			sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
+			switch(h.proc_kind())
+			{
+				case sc_core::SC_THREAD_PROC_: 
+				case sc_core::SC_CTHREAD_PROC_:
+					sc_core::wait();
+					break;
+				default:
+					break;
+			}
 		}
 	}
 }
@@ -1060,54 +992,38 @@ void Simulator::Run()
 {
 	double time_start = host_time->GetTime();
 
-	void (*prev_sig_int_handler)(int) = 0;
-
-	if(!inline_debugger)
-	{
-#ifdef WIN32
-		SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
-#else
-		prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
-#endif
-	}
-
-	sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
+	sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
 
 	try
 	{
-		sc_start();
+		sc_core::sc_start();
 	}
 	catch(std::runtime_error& e)
 	{
-		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-		cerr << e.what() << endl;
+		std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+		std::cerr << e.what() << std::endl;
 	}
 
-	if(!inline_debugger)
-	{
-		signal(SIGINT, prev_sig_int_handler);
-	}
-
-	cerr << "Simulation finished" << endl;
+	std::cerr << "Simulation finished" << std::endl;
 
 	double time_stop = host_time->GetTime();
 	double spent_time = time_stop - time_start;
 
-	cerr << "Simulation run-time parameters:" << endl;
-	DumpParameters(cerr);
-	cerr << endl;
-	cerr << "Simulation formulas:" << endl;
-	DumpFormulas(cerr);
-	cerr << endl;
-	cerr << "Simulation statistics:" << endl;
-	DumpStatistics(cerr);
-	cerr << endl;
+	std::cerr << "Simulation run-time parameters:" << std::endl;
+	DumpParameters(std::cerr);
+	std::cerr << std::endl;
+	std::cerr << "Simulation formulas:" << std::endl;
+	DumpFormulas(std::cerr);
+	std::cerr << std::endl;
+	std::cerr << "Simulation statistics:" << std::endl;
+	DumpStatistics(std::cerr);
+	std::cerr << std::endl;
 
-	cerr << "simulation time: " << spent_time << " seconds" << endl;
-	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-	cerr << "target speed: " << ((double) (*cpu)["instruction-counter"] / ((double) (*cpu)["run-time"] - (double) (*cpu)["idle-time"]) / 1000000.0) << " MIPS" << endl;
-	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
-	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+	std::cerr << "simulation time: " << spent_time << " seconds" << std::endl;
+	std::cerr << "simulated time : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
+	std::cerr << "target speed: " << ((double) (*cpu)["instruction-counter"] / ((double) (*cpu)["run-time"] - (double) (*cpu)["idle-time"]) / 1000000.0) << " MIPS" << std::endl;
+	std::cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
+	std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 }
 
 unisim::kernel::Simulator::SetupStatus Simulator::Setup()
@@ -1118,18 +1034,18 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 	}
 
   // Build the kernel parameters string from the command line arguments
-	string filename;
-	string kernel_params;
+	std::string filename;
+	std::string kernel_params;
 	
-	VariableBase *cmd_args = FindVariable("cmd-args");
+	unisim::kernel::VariableBase *cmd_args = FindVariable("cmd-args");
 	unsigned int cmd_args_length = cmd_args->GetLength();
 	if(cmd_args_length > 0)
 	{
-		filename = (string) (*cmd_args)[0];
+		filename = (std::string) (*cmd_args)[0];
 		unsigned int i;
 		for(i = 1; i < cmd_args_length; i++)
 		{
-			kernel_params += (string) (*cmd_args)[i];
+			kernel_params += (std::string) (*cmd_args)[i];
 			if(i < cmd_args_length - 1) kernel_params += " ";
 		}
 	}
@@ -1145,19 +1061,19 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 		SetVariable("pmac-linux-kernel-loader.pmac-bootx.kernel-params", kernel_params.c_str());
 	}
 
-	unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
-
-	// inline-debugger and gdb-server are exclusive
-	if(enable_inline_debugger && enable_gdb_server)
+	if(profiler)
 	{
-		std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
-		if(setup_status != unisim::kernel::Simulator::ST_OK_DONT_START)
-		{
-			setup_status = unisim::kernel::Simulator::ST_ERROR;
-		}
+		http_server->AddJSAction(
+		unisim::service::interfaces::ToolbarOpenTabAction(
+			/* name */      profiler->GetName(), 
+			/* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\">",
+			/* tips */      std::string("Profile of ") + cpu->GetName(),
+			/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+			/* uri */       profiler->URI()
+		));
 	}
 	
-	return setup_status;
+	return unisim::kernel::Simulator::Setup();
 }
 
 int Simulator::GetExitStatus() const
@@ -1165,56 +1081,16 @@ int Simulator::GetExitStatus() const
 	return exit_status;
 }
 
-#ifdef WIN32
-BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
+void Simulator::SigInt()
 {
-	bool stop = false;
-	switch(dwCtrlType)
+	if(!inline_debugger)
 	{
-		case CTRL_C_EVENT:
-			cerr << "Interrupted by Ctrl-C" << endl;
-			stop = true;
-			break;
-		case CTRL_BREAK_EVENT:
-			cerr << "Interrupted by Ctrl-Break" << endl;
-			stop = true;
-			break;
-		case CTRL_CLOSE_EVENT:
-			cerr << "Interrupted by a console close" << endl;
-			stop = true;
-			break;
-		case CTRL_LOGOFF_EVENT:
-			cerr << "Interrupted because of logoff" << endl;
-			stop = true;
-			break;
-		case CTRL_SHUTDOWN_EVENT:
-			cerr << "Interrupted because of shutdown" << endl;
-			stop = true;
-			break;
+		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}
-	if(stop) unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
-	return stop ? TRUE : FALSE;
 }
-#else
-void Simulator::SigIntHandler(int signum)
-{
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
-}
-#endif
 
 int sc_main(int argc, char *argv[])
 {
-#ifdef WIN32
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		cerr << "WSAStartup failed" << endl;
-		return -1;
-	}
-#endif
 	Simulator *simulator = new Simulator(argc, argv);
 
 	switch(simulator->Setup())
@@ -1222,22 +1098,18 @@ int sc_main(int argc, char *argv[])
 		case unisim::kernel::Simulator::ST_OK_DONT_START:
 			break;
 		case unisim::kernel::Simulator::ST_WARNING:
-			cerr << "Some warnings occurred during setup" << endl;
+			std::cerr << "Some warnings occurred during setup" << std::endl;
 		case unisim::kernel::Simulator::ST_OK_TO_START:
-			cerr << "Starting simulation at supervisor privilege level (kernel mode)" << endl;
+			std::cerr << "Starting simulation at supervisor privilege level (kernel mode)" << std::endl;
 			simulator->Run();
 			break;
 		case unisim::kernel::Simulator::ST_ERROR:
-			cerr << "Can't start simulation because of previous errors" << endl;
+			std::cerr << "Can't start simulation because of previous errors" << std::endl;
 			break;
 	}
 
 	int exit_status = simulator->GetExitStatus();
 	if(simulator) delete simulator;
-#ifdef WIN32
-	// releases the winsock2 resources
-	WSACleanup();
-#endif
 
 	return exit_status;
 }

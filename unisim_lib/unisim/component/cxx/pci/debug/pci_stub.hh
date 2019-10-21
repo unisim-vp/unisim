@@ -38,6 +38,7 @@
 #include <inttypes.h>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/device/register.hh>
 #include <unisim/kernel/logger/logger.hh>
@@ -138,10 +139,11 @@ public:
 	virtual bool ServeRemoveReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space);
 	virtual bool ServeRemoveWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space);
 
+	virtual void ResetMemory();
 	virtual bool WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(ADDRESS physical_addr, void *buffer, uint32_t size);
-	virtual void ReportMemoryAccess(typename unisim::util::debug::MemoryAccessType mat, typename unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
-	virtual void ReportCommitInstruction(ADDRESS addr);
+	virtual bool ReportMemoryAccess(typename unisim::util::debug::MemoryAccessType mat, typename unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
+	virtual void ReportCommitInstruction(ADDRESS addr, unsigned int length);
 	virtual void ReportFetchInstruction(ADDRESS next_addr);
 	virtual void Trap();
 private:

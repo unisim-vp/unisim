@@ -152,6 +152,7 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	, param_verbose_instruction_bus_read("verbose-instruction-bus-read", this, verbose_instruction_bus_read, "enable/disable verbosity of instruction bus read")
 	, enable_linux_syscall_snooping(false)
 	, param_enable_linux_syscall_snooping("enable-linux-syscall-snooping", this, enable_linux_syscall_snooping, "enable/disable Linux system call snooping")
+	, param_enable_shadow_memory("enable-shadow-memory", this, this->enable_shadow_memory, "enable/disable shadow memory")
 	, registers_registry()
 	, exception_dispatcher(static_cast<typename CONFIG::CPU *>(this))
 	, invalid_spr(static_cast<typename CONFIG::CPU *>(this))
@@ -478,7 +479,7 @@ typename EXCEPTION::INTERRUPT& CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEP
 {
 	if(cpu->verbose_exception && !(exc_flags & CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>()))
 	{
-		cpu->GetDebugInfoStream() << "Throwing " << EXCEPTION::GetName() << std::endl;
+		cpu->GetDebugInfoStream() << "instruction #" << cpu->instruction_counter << ":Throwing " << EXCEPTION::GetName() << std::endl;
 	}
 	exc_flags = exc_flags | CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>();
 	
@@ -507,7 +508,7 @@ template <typename INTERRUPT> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_E
 {
 	if(cpu->verbose_exception && (exc_flags & INTERRUPT::template GetMask<MASK_TYPE>()))
 	{
-		cpu->GetDebugInfoStream() << "Acknowledging " <<INTERRUPT::GetName() << std::endl;
+		cpu->GetDebugInfoStream() << "instruction #" << cpu->instruction_counter << ":Acknowledging " <<INTERRUPT::GetName() << std::endl;
 	}
 	exc_flags = exc_flags & ~INTERRUPT::template GetMask<MASK_TYPE>();
 }
@@ -516,9 +517,16 @@ template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
 template <typename EXCEPTION> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::EnableException(bool v)
 {
-	if(cpu->verbose_interrupt && ((exc_mask & CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>()) == 0))
+	if(cpu->verbose_interrupt)
 	{
-		cpu->GetDebugInfoStream() << (v ? "Enabling" : "Disabling") << ' ' << EXCEPTION::GetName() << std::endl;
+		if(v && ((exc_mask & CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>()) == 0))
+		{
+			cpu->GetDebugInfoStream() << "instruction #" << cpu->instruction_counter << ":Enabling " << EXCEPTION::GetName() << std::endl;
+		}
+		else if(!v && ((exc_mask & CPU::template GetExceptionMask<EXCEPTION, MASK_TYPE>()) != 0))
+		{
+			cpu->GetDebugInfoStream() << "instruction #" << cpu->instruction_counter << ":Disabling " << EXCEPTION::GetName() << std::endl;
+		}
 	}
 	if(v)
 	{
@@ -534,9 +542,16 @@ template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
 template <typename INTERRUPT> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::EnableInterrupt(bool v)
 {
-	if(cpu->verbose_interrupt && ((exc_mask & INTERRUPT::template GetMask<MASK_TYPE>()) == 0))
+	if(cpu->verbose_interrupt)
 	{
-		cpu->GetDebugInfoStream() << (v ? "Enabling" : "Disabling") << ' ' << INTERRUPT::GetName() << std::endl;
+		if(v && ((exc_mask & INTERRUPT::template GetMask<MASK_TYPE>()) == 0))
+		{
+			cpu->GetDebugInfoStream() << "instruction #" << cpu->instruction_counter << ":Enabling " << INTERRUPT::GetName() << std::endl;
+		}
+		else if(!v && ((exc_mask & INTERRUPT::template GetMask<MASK_TYPE>()) != 0))
+		{
+			cpu->GetDebugInfoStream() << "instruction #" << cpu->instruction_counter << ":Disabling " << INTERRUPT::GetName() << std::endl;
+		}
 	}
 	if(v)
 	{
@@ -568,7 +583,7 @@ inline void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::ProcessExce
 		assert(interrupt != 0);
 		if(unlikely(cpu->verbose_interrupt))
 		{
-			cpu->GetDebugInfoStream() << interrupt->GetInterruptName() << " (offset 0x" << std::hex << interrupt->GetOffset() << std::dec << ") is interrupting execution at @0x" << std::hex << cpu->GetCIA() << std::dec << std::endl;
+			cpu->GetDebugInfoStream() << "instruction #" << cpu->instruction_counter << ":" << interrupt->GetInterruptName() << " (offset 0x" << std::hex << interrupt->GetOffset() << std::dec << ") is interrupting execution at @0x" << std::hex << cpu->GetCIA() << std::dec << std::endl;
 		}
 		
 		if(unlikely(interrupt->Trap()))
@@ -1353,6 +1368,14 @@ void CPU<TYPES, CONFIG>::LogLinuxSystemCall()
 	}
 }
 
+template <typename TYPES, typename CONFIG>
+void CPU<TYPES, CONFIG>::Trap()
+{
+	if(trap_reporting_import)
+	{
+		trap_reporting_import->ReportTrap();
+	}
+}
 
 } // end of namespace powerpc
 } // end of namespace processor

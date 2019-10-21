@@ -60,7 +60,9 @@ struct L2U
 		: unisim::kernel::Object("L2U", _cpu, "L2 Unified Cache")
 		, SuperCache()
 		, cpu(_cpu)
+		, enable(true)
 		, verbose(false)
+		, param_enable("enable", this, enable, "enable/disable cache")
 		, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 		, stat_num_accesses("num-accesses", this, this->num_accesses, "number of cache accesses")
 		, stat_num_misses("num-misses", this, this->num_misses, "number of cache misses")
@@ -69,7 +71,7 @@ struct L2U
 	}
 
 	inline bool IsVerbose() const ALWAYS_INLINE { return verbose; }
-	inline bool IsEnabled() const ALWAYS_INLINE { return cpu->GetL2CR().template Get<typename CPU::L2CR::L2E>(); }
+	inline bool IsEnabled() const ALWAYS_INLINE { return enable && cpu->GetL2CR().template Get<typename CPU::L2CR::L2E>(); }
 	inline bool IsWriteAllocate(typename TYPES::STORAGE_ATTR storage_attr) const ALWAYS_INLINE { return true; }
 	inline bool ChooseLineToEvict(unisim::util::cache::CacheAccess<TYPES, L2U>& access) ALWAYS_INLINE
 	{
@@ -84,7 +86,9 @@ struct L2U
 	inline void UpdateReplacementPolicyOnFill(unisim::util::cache::CacheAccess<TYPES, L2U>& access) ALWAYS_INLINE {}
 private:
 	CPU *cpu;
+	bool enable;
 	bool verbose;
+	unisim::kernel::variable::Parameter<bool> param_enable;
 	unisim::kernel::variable::Parameter<bool> param_verbose;
 	unisim::kernel::variable::Statistic<uint64_t> stat_num_accesses;
 	unisim::kernel::variable::Statistic<uint64_t> stat_num_misses;

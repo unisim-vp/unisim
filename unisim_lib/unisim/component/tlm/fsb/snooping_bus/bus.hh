@@ -117,7 +117,7 @@ private:
 template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 		unsigned int NUM_PROCS>
 class Bus : 
-	public sc_module,
+	public sc_core::sc_module,
 	public TlmSendIf<SnoopingFSBRequest<ADDRESS_TYPE, DATA_SIZE>, SnoopingFSBResponse<DATA_SIZE> >,
 	public ResponseListener<SnoopingFSBRequest<ADDRESS_TYPE, DATA_SIZE>,
 		SnoopingFSBResponse<DATA_SIZE> >,
@@ -146,13 +146,13 @@ public:
 	 *     ports declaration START     *
 	 ***********************************/
 	/** Bus input ports. */
-	sc_export<TransactionSendIf> *inport[NUM_PROCS];
+	sc_core::sc_export<TransactionSendIf> *inport[NUM_PROCS];
 	/** Bus output ports for snooping. */
-	sc_port<TransactionSendIf> *outport[NUM_PROCS];
+	sc_core::sc_port<TransactionSendIf> *outport[NUM_PROCS];
 	/** Bus input port for the chipset */
-	sc_export<TransactionSendIf> *chipset_inport;
+	sc_core::sc_export<TransactionSendIf> *chipset_inport;
 	/** Bus output port for the chipset. */
-	sc_port<TransactionSendIf> *chipset_outport;
+	sc_core::sc_port<TransactionSendIf> *chipset_outport;
 	/***********************************
 	 *     ports declaration END       *
 	 ***********************************/
@@ -165,7 +165,7 @@ public:
 	 * @param module_name the name that will be given to this module and used to set
 	 *                    the names of the different elements of the bus.
 	 */
-	Bus(const sc_module_name& module_name, Object *parent = 0);
+	Bus(const sc_core::sc_module_name& module_name, Object *parent = 0);
 	
 	/** Destructor */
 	~Bus();
@@ -173,6 +173,7 @@ public:
 	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual void Reset();
 	
+	virtual void ResetMemory();
 	virtual bool ReadMemory(ADDRESS_TYPE addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(ADDRESS_TYPE addr, const void *buffer, uint32_t size);
 	
@@ -201,7 +202,7 @@ public:
 	 * @param port  the port through which it was received
 	 */
 	virtual void ResponseReceived(const PTransactionMsgType &msg,
-		sc_port<TransactionSendIf> &port);
+		sc_core::sc_port<TransactionSendIf> &port);
 
 private:
 	/** The logger */
@@ -231,18 +232,18 @@ private:
 
 	BusMasterPortController<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> *inport_controller[NUM_PROCS];
 	
-	sc_fifo<PTransactionMsgType> *req_fifo[NUM_PROCS];
-	sc_fifo<PTransactionMsgType> chipset_req_fifo;
-	sc_fifo<PTransactionMsgType> chipset_rsp_fifo;
-	sc_event bus_synchro_event;
+	sc_core::sc_fifo<PTransactionMsgType> *req_fifo[NUM_PROCS];
+	sc_core::sc_fifo<PTransactionMsgType> chipset_req_fifo;
+	sc_core::sc_fifo<PTransactionMsgType> chipset_rsp_fifo;
+	sc_core::sc_event bus_synchro_event;
 	unsigned int next_serviced;
 	static const unsigned int CHIPSET_ID = NUM_PROCS;
 	bool chipset_snoop;
 	bool cpu_snoop;
-	sc_event snoop_event;
+	sc_core::sc_event snoop_event;
 	unsigned int snoop_counter;
-	sc_time cycle_time;
-	Parameter<sc_time> cycle_time_parameter;
+	sc_core::sc_time cycle_time;
+	Parameter<sc_core::sc_time> cycle_time_parameter;
 	
 	bool SetupMemory();
 };

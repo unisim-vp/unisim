@@ -78,7 +78,7 @@ bool CPU::Dcbf(EFFECTIVE_ADDRESS ea)
 	ADDRESS virt_addr;
 	PHYSICAL_ADDRESS phys_addr;
 	STORAGE_ATTR storage_attr;
-	if(unlikely((!mmu.Translate</* debug */ false, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+	if(unlikely((!Translate</* debug */ false, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
 	
 	return GlobalWriteBackLineByAddress<DATA_CACHE_HIERARCHY, L1D, L2U, /* invalidate */ true>(virt_addr, phys_addr); // line is invalidated
 }
@@ -95,7 +95,7 @@ bool CPU::Dcbi(EFFECTIVE_ADDRESS ea)
 	ADDRESS virt_addr;
 	PHYSICAL_ADDRESS phys_addr;
 	STORAGE_ATTR storage_attr;
-	if(unlikely((!mmu.Translate</* debug */ false, /* exec */ false, /* write */ true>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+	if(unlikely((!Translate</* debug */ false, /* exec */ false, /* write */ true>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
 	
 	GlobalInvalidateLineByAddress<DATA_CACHE_HIERARCHY, L1D, L2U>(virt_addr, phys_addr);
 	
@@ -108,19 +108,38 @@ bool CPU::Dcbst(EFFECTIVE_ADDRESS ea)
 	ADDRESS virt_addr;
 	PHYSICAL_ADDRESS phys_addr;
 	STORAGE_ATTR storage_attr;
-	if(unlikely((!mmu.Translate</* debug */ false, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+	if(unlikely((!Translate</* debug */ false, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+	
+	if(storage_attr & TYPES::SA_W) return true; // no-op if target address is mapped as write-through
 	
 	return GlobalWriteBackLineByAddress<DATA_CACHE_HIERARCHY, L1D, L2U, /* invalidate */ false>(virt_addr, phys_addr); // line is not invalidated
 }
 
 bool CPU::Dcbz(EFFECTIVE_ADDRESS ea)
 {
+	if(l1d.IsPresent() && !l1d.IsEnabled())
+	{
+		ThrowException<AlignmentInterrupt::Alignment>().SetAddress(ea);
+		return false;
+	}
+	
 	EFFECTIVE_ADDRESS size_to_protection_boundary;
 	ADDRESS virt_addr;
 	PHYSICAL_ADDRESS phys_addr;
 	STORAGE_ATTR storage_attr;
-	if(unlikely((!mmu.Translate</* debug */ false, /* exec */ false, /* write */ true>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+	if(unlikely((!Translate</* debug */ false, /* exec */ false, /* write */ true>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
 	
+	if((storage_attr & (TYPES::SA_W | TYPES::SA_I))) // Write-through or Cache inhibited
+	{
+		ThrowException<AlignmentInterrupt::Alignment>().SetAddress(ea);
+		return false;
+	}
+	
+	if(!l1d.IsEnabled())
+	{
+		uint8_t zero[32] = {};
+		return this->SuperMSS::DataStore(virt_addr & -32, phys_addr & -32, &zero[0], 32, storage_attr);
+	}
 	return AllocateBlockInCacheHierarchy<DATA_CACHE_HIERARCHY, L1D, /* zeroing */ true>(virt_addr, phys_addr, storage_attr);
 }
 
@@ -130,7 +149,7 @@ bool CPU::Icbi(EFFECTIVE_ADDRESS ea)
 	ADDRESS virt_addr;
 	PHYSICAL_ADDRESS phys_addr;
 	STORAGE_ATTR storage_attr;
-	if(unlikely((!mmu.Translate</* debug */ false, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
+	if(unlikely((!Translate</* debug */ false, /* exec */ false, /* write */ false>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr)))) return false;
 	
 	decoder.InvalidateDecodingCacheEntry(ea);
 	

@@ -190,6 +190,12 @@ void Display<ADDRESS>::Reset()
 }
 
 template <class ADDRESS>
+void Display<ADDRESS>::ResetMemory()
+{
+	this->Reset();
+}
+
+template <class ADDRESS>
 bool Display<ADDRESS>::WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size)
 {
 	if(physical_addr < pci_conf_base_addr || (physical_addr + (size - 1)) >= (pci_conf_base_addr + bytesize) || (physical_addr + size) < physical_addr) return false;

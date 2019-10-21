@@ -95,6 +95,7 @@ struct CONFIG
 	// Front-side bus width
 	static const unsigned int FSB_WIDTH = 8;              // front-side bus width
 	static const unsigned int DATA_FSB_WIDTH = FSB_WIDTH; // front-side bus width
+	static const unsigned int FSB_BURST_SIZE = 32;
 	
 	// Floating point
 	static const bool HAS_FPU = true;
@@ -279,7 +280,7 @@ public:
 	template <bool DEBUG, bool EXEC, bool WRITE>
 	inline bool Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRESS& size_to_protection_boundary, ADDRESS& virt_addr, PHYSICAL_ADDRESS& phys_addr, STORAGE_ATTR& storage_attr)
 	{
-		return !(EXEC ? (msr.template Get<typename MSR::IR>()) : (msr.template Get<typename MSR::DR>())) || mmu.template Translate<DEBUG, EXEC, WRITE>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr);
+		return mmu.template Translate<DEBUG, EXEC, WRITE>(ea, size_to_protection_boundary, virt_addr, phys_addr, storage_attr);
 	}
 	
 protected:

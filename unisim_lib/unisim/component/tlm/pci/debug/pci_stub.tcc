@@ -49,9 +49,9 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::PCIStub(const sc_module_name& name, Object *parent) :
+PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::PCIStub(const sc_core::sc_module_name& name, Object *parent) :
 	Object(name, parent, "A module that implements a PCI target and acts as a co-simulation stub controlled over a TCP/IP or pipe connection."),
-	sc_module(name),
+	sc_core::sc_module(name),
 	unisim::component::cxx::pci::debug::PCIStub<ADDRESS_TYPE>(name, parent),
 	bus_port("bus-port"),
 	cpu_irq_port("cpu-irq-port"),
@@ -89,7 +89,7 @@ bool PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Send(const Pointer<TlmMessage<PCIReq,
 				inherited::Read(pci_addr, pci_rsp->read_data, pci_req_size, pci_space);
 			
 				message->rsp = pci_rsp;
-				sc_event *rsp_ev = message->GetResponseEvent();
+				sc_core::sc_event *rsp_ev = message->GetResponseEvent();
 				rsp_ev->notify(pci_bus_cycle_time);
 			}
 			break;
@@ -105,8 +105,8 @@ template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 bool PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::EndSetup()
 {
 	if(!inherited::EndSetup()) return false;
-	pci_bus_cycle_time = sc_time(1.0 / (double) (*this)["pci-bus-frequency"], SC_US);
-	bus_cycle_time = sc_time(1.0 / (double) (*this)["bus-frequency"], SC_US);
+	pci_bus_cycle_time = sc_core::sc_time(1.0 / (double) (*this)["pci-bus-frequency"], sc_core::SC_US);
+	bus_cycle_time = sc_core::sc_time(1.0 / (double) (*this)["bus-frequency"], sc_core::SC_US);
 	return true;
 }
 
@@ -132,26 +132,26 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::ServeRun(uint64_t duration, typename 
 {
 	if(duration)
 	{
-		sc_time_unit sc_tu = SC_MS;
+		sc_core::sc_time_unit sc_tu = sc_core::SC_MS;
 		
 		switch(duration_tu)
 		{
-			case inherited::inherited::TU_FS: sc_tu = SC_FS; break;
-			case inherited::inherited::TU_PS: sc_tu = SC_PS; break;
-			case inherited::inherited::TU_NS: sc_tu = SC_NS; break;
-			case inherited::inherited::TU_US: sc_tu = SC_US; break;
-			case inherited::inherited::TU_MS: sc_tu = SC_MS; break;
-			case inherited::inherited::TU_S: sc_tu = SC_SEC; break;
+			case inherited::inherited::TU_FS: sc_tu = sc_core::SC_FS; break;
+			case inherited::inherited::TU_PS: sc_tu = sc_core::SC_PS; break;
+			case inherited::inherited::TU_NS: sc_tu = sc_core::SC_NS; break;
+			case inherited::inherited::TU_US: sc_tu = sc_core::SC_US; break;
+			case inherited::inherited::TU_MS: sc_tu = sc_core::SC_MS; break;
+			case inherited::inherited::TU_S: sc_tu = sc_core::SC_SEC; break;
 		}
 		inherited::synchronizable_import->Synchronize();
-		wait(sc_time((double) duration, sc_tu), trap);
+		wait(sc_core::sc_time((double) duration, sc_tu), trap);
 	}
 	else
 	{
 		wait(trap);
 	}
 
-	sc_time time_res = sc_get_time_resolution();
+	sc_core::sc_time time_res = sc_core::sc_get_time_resolution();
 	double time_res_sec = time_res.to_seconds();
 
 	if(::fabs(time_res_sec - 1.0) <= 0.5) tu = inherited::inherited::TU_S; else
@@ -161,7 +161,7 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::ServeRun(uint64_t duration, typename 
 	if(::fabs(time_res_sec - 1.0e-12) <= 0.5e-12) tu = inherited::inherited::TU_PS; else
 	if(::fabs(time_res_sec - 1.0e-15) <= 0.5e-15) tu = inherited::inherited::TU_FS; else ServeStop();
 	
-	t = (uint64_t) sc_time_stamp().value();
+	t = (uint64_t) sc_core::sc_time_stamp().value();
 
 	traps = inherited::traps;
 	inherited::traps.clear();
@@ -183,7 +183,7 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::TriggerInterrupt()
 		if(inherited::verbose)
 		{
 			inherited::logger << DebugInfo;
-			inherited::logger << "sending interrupt request (level = " << level << ") at " << sc_time_stamp().to_string() << std::endl;
+			inherited::logger << "sending interrupt request (level = " << level << ") at " << sc_core::sc_time_stamp().to_string() << std::endl;
 			inherited::logger << EndDebugInfo;
 		}
 
@@ -195,7 +195,7 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::TriggerInterrupt()
 		if(inherited::verbose)
 		{
 			inherited::logger << DebugInfo;
-			inherited::logger << "accepted interrupt request (level = " << level << ") at " << sc_time_stamp().to_string() << std::endl;
+			inherited::logger << "accepted interrupt request (level = " << level << ") at " << sc_core::sc_time_stamp().to_string() << std::endl;
 			inherited::logger << EndDebugInfo;
 		}
 	}
@@ -213,8 +213,8 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Process()
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Trap()
 {
-	trap.notify(SC_ZERO_TIME);
-	wait(SC_ZERO_TIME);
+	trap.notify(sc_core::SC_ZERO_TIME);
+	wait(sc_core::SC_ZERO_TIME);
 }
 
 } // end of namespace debug

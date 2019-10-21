@@ -103,6 +103,7 @@ struct PTE
 	void Change() { C::template Set<TYPE>(value, 1); }
 	void Reset() { value = 0; }
 	void BigEndian2Host() { value = unisim::util::endian::BigEndian2Host(value); }
+	void Host2BigEndian() { value = unisim::util::endian::Host2BigEndian(value); }
 	
 	static unsigned int SizeOf() { return 8; }
 	const void *Get() const { return &value; }
@@ -125,9 +126,70 @@ struct PTE
 
 	bool Match(VIRTUAL_SEGMENT_ID _vsid, ABBREVIATED_PAGE_INDEX _api, unsigned int _h) const { return IsValid() && (GetH() == _h) && (GetVSID() == _vsid) && (GetAPI() == _api); }
 	
+	void ShortPrettyPrint(std::ostream& os) const
+	{
+		if(!named_fields)
+		{
+			V   ::SetName("V");    V   ::SetDescription("Entry valid (V = 1) or invalid (V = 0)");
+			VSID::SetName("VSID"); VSID::SetDescription("Virtual segment ID");
+			H   ::SetName("H");    H   ::SetDescription("Hash function identifier");
+			API ::SetName("API");  API ::SetDescription("Abbreviated page index");
+			RPN ::SetName("RPN");  RPN ::SetDescription("Physical page number");
+			XPN ::SetName("XPN");  XPN ::SetDescription("Extended page number provides physical address bits 0-2");
+			R   ::SetName("R");    R   ::SetDescription("Referenced bit");
+			C   ::SetName("C");    C   ::SetDescription("Changed bit");
+			W   ::SetName("W");    W   ::SetDescription("Write-Through");
+			I   ::SetName("I");    I   ::SetDescription("Caching-Inhibited");
+			M   ::SetName("M");    M   ::SetDescription("Memory coherence");
+			G   ::SetName("G");    G   ::SetDescription("Guarded");
+			X   ::SetName("X");    X   ::SetDescription("Extended page number provides physical address bit 3");
+			PP  ::SetName("PP");   PP  ::SetDescription("Page protection bits");
+			named_fields = true;
+		}
+		
+		std::ios_base::fmtflags ff = os.flags();
+		os << "PTE=";
+		if(ff & os.hex) os << "0x";
+		else if(ff & os.oct) os << "0";
+		os << value;
+		os << "<";
+		V   ::ShortPrettyPrint(os, value);
+		os << ":";
+		VSID::ShortPrettyPrint(os, value);
+		os << ":";
+		H   ::ShortPrettyPrint(os, value);
+		os << ":";
+		API ::ShortPrettyPrint(os, value);
+		os << ":";
+		RPN ::ShortPrettyPrint(os, value);
+		os << ":";
+		XPN ::ShortPrettyPrint(os, value);
+		os << ":";
+		R   ::ShortPrettyPrint(os, value);
+		os << ":";
+		C   ::ShortPrettyPrint(os, value);
+		os << ":";
+		W   ::ShortPrettyPrint(os, value);
+		os << ":";
+		I   ::ShortPrettyPrint(os, value);
+		os << ":";
+		M   ::ShortPrettyPrint(os, value);
+		os << ":";
+		G   ::ShortPrettyPrint(os, value);
+		os << ":";
+		X   ::ShortPrettyPrint(os, value);
+		os << ":";
+		PP  ::ShortPrettyPrint(os, value);
+		os << ">";
+	}
+	
 private:
 	TYPE value;
+	static bool named_fields;
 };
+
+template <typename TYPES>
+bool PTE<TYPES>::named_fields = false;
 
 template <typename TYPES, typename CONFIG>
 struct TLB;
@@ -185,7 +247,7 @@ private:
 	template <typename _TYPES, typename CONFIG>
 	friend struct TLB;
 	TLB_ENTRY<TYPES> *next, *prev;
-	// Hardware TLB entry contains on-chip copy of PTE and EAPI (page index bits are inferred from API in PTE for upper bits), EAPI in TLB entry for middle bits, and TLB index for lower bits)
+	// Hardware TLB entry contains on-chip copy of PTE and EAPI. Page index bits are inferred from API in PTE for upper bits, EAPI in TLB entry for middle bits, and TLB index for lower bits
 	PTE<TYPES> pte;
 	PAGE_INDEX page_index;
 	
@@ -234,10 +296,10 @@ void TLB_ENTRY<TYPES>::Print(std::ostream& os) const
 
 	// extended physical address
 	os << " Extended Physical Address:0x";
-	os.width(8);
+	os.width(9);
 	os << +GetPagePhysicalAddress(true);
 	os << "-0x";
-	os.width(8);
+	os.width(9);
 	os << (GetPagePhysicalAddress(true) + GetPageSize() - 1);
 
 	// Reference bit:
@@ -293,13 +355,15 @@ struct TLB
 	TLB_ENTRY<TYPES> *Lookup(VIRTUAL_SEGMENT_ID vsid, PAGE_INDEX page_index);
 	TLB_ENTRY<TYPES>& Replace(const PTE<TYPES>& pte, PAGE_INDEX page_index);
 	const TLB_ENTRY<TYPES>& GetLRU(ADDRESS va, unsigned int& lru_way) const;
+	unsigned int GetWay(unsigned int tlb_index, const TLB_ENTRY<TYPES>& tlb_entry) const;
 	void Print(std::ostream& os, unsigned int tlb_index, unsigned int tlb_way, PrintFormat pfmt) const;
 	void Print(std::ostream& os, PrintFormat pfmt) const;
 	
 	virtual bool ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
 	virtual void ScanWebInterfaceModdings(unisim::service::interfaces::WebInterfaceModdingScanner& scanner);
-private:
+protected:
 	unisim::kernel::logger::Logger logger;
+private:
 	TLB_ENTRY<TYPES> entries[CONFIG::SIZE / CONFIG::ASSOCIATIVITY][CONFIG::ASSOCIATIVITY];
 	TLB_ENTRY<TYPES> *mru_entries[CONFIG::SIZE / CONFIG::ASSOCIATIVITY];
 	TLB_ENTRY<TYPES> *lru_entries[CONFIG::SIZE / CONFIG::ASSOCIATIVITY];
@@ -361,6 +425,10 @@ void TLB<TYPES, CONFIG>::InvalidateSet(PAGE_INDEX page_index)
 	
 	for(unsigned int tlb_way = 0; tlb_way < CONFIG::ASSOCIATIVITY; ++tlb_way)
 	{
+		if(unlikely(verbose))
+		{
+			logger << DebugInfo << "Invalidating TLB entry at index #" << tlb_index << " and way #" << tlb_way << EndDebugInfo;
+		}
 		entries[tlb_index][tlb_way].Reset();
 	}
 }
@@ -384,12 +452,14 @@ void TLB<TYPES, CONFIG>::Use(TLB_ENTRY<TYPES>& tlb_entry)
 {
 	if(unlikely(tlb_entry.prev))
 	{
-		unsigned int tlb_index = &tlb_entry - entries[0];
+		unsigned int tlb_index = (&tlb_entry - &entries[0][0]) / CONFIG::ASSOCIATIVITY;
 		if(!(tlb_entry.prev->next = tlb_entry.next))
 		{
 			lru_entries[tlb_index] = tlb_entry.prev;
 		}
+		mru_entries[tlb_index]->prev = &tlb_entry;
 		tlb_entry.next = mru_entries[tlb_index];
+		tlb_entry.prev = 0;
 		mru_entries[tlb_index] = &tlb_entry;
 	}
 }
@@ -415,7 +485,7 @@ TLB_ENTRY<TYPES> *TLB<TYPES, CONFIG>::Lookup(VIRTUAL_SEGMENT_ID vsid, PAGE_INDEX
 			// TLB hit
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << "TLB Hit" << EndDebugInfo;
+				logger << DebugInfo << "TLB Hit at index #" << tlb_index << " and way #" << GetWay(tlb_index, *tlb_entry) << EndDebugInfo;
 			}
 			return tlb_entry;
 		}
@@ -433,7 +503,15 @@ TLB_ENTRY<TYPES> *TLB<TYPES, CONFIG>::Lookup(VIRTUAL_SEGMENT_ID vsid, PAGE_INDEX
 template <typename TYPES, typename CONFIG>
 TLB_ENTRY<TYPES>& TLB<TYPES, CONFIG>::Replace(const PTE<TYPES>& pte, PAGE_INDEX page_index)
 {
-	TLB_ENTRY<TYPES> *tlb_entry = lru_entries[Index(page_index)];
+	unsigned int tlb_index = Index(page_index);
+	TLB_ENTRY<TYPES> *tlb_entry = lru_entries[tlb_index];
+	
+	if(unlikely(verbose))
+	{
+		unsigned int tlb_way = GetWay(tlb_index, *tlb_entry);
+		logger << DebugInfo << "Replacing TLB entry at index #" << tlb_index << " and way #" << tlb_way << EndDebugInfo;
+	}
+	
 	tlb_entry->Initialize(pte, page_index);
 	return *tlb_entry;
 }
@@ -443,8 +521,14 @@ const TLB_ENTRY<TYPES>& TLB<TYPES, CONFIG>::GetLRU(ADDRESS va, unsigned int& lru
 {
 	unsigned int tlb_index = Index(va);
 	const TLB_ENTRY<TYPES>& lru_entry = *lru_entries[tlb_index];
-	lru_way = &lru_entry - &entries[tlb_index][0];
+	lru_way = GetWay(tlb_index, lru_entry);
 	return lru_entry;
+}
+
+template <typename TYPES, typename CONFIG>
+unsigned int TLB<TYPES, CONFIG>::GetWay(unsigned int tlb_index, const TLB_ENTRY<TYPES>& tlb_entry) const
+{
+	return &tlb_entry - &entries[tlb_index][0];
 }
 
 template <typename TYPES, typename CONFIG>
@@ -467,13 +551,12 @@ void TLB<TYPES, CONFIG>::Print(std::ostream& os, unsigned int tlb_index, unsigne
 		
 		case PFMT_HTML:
 		{
-			os << "<td><span>" << std::dec << tlb_way << "</span></td>";
-			os << "<td><span>" << +tlb_entry.GetV() << "</span></td>";
+			os << "<td class=\"" << (tlb_entry.GetV() ? "valid" : "invalid") << "\"><span>" << +tlb_entry.GetV() << "</span></td>";
 			
 			os << std::hex;
 			
 			// virtual address
-			os << "<td class=\"vaddr-range\"><span>0x";
+			os << "<td class=\"" << (tlb_entry.GetV() ? "valid" : "invalid") << " vaddr-range\"><span>0x";
 			os.width(13);
 			os << +tlb_entry.GetPageVirtualAddress();
 			os << "-0x";
@@ -482,7 +565,7 @@ void TLB<TYPES, CONFIG>::Print(std::ostream& os, unsigned int tlb_index, unsigne
 			os << "</span></td>";
 			
 			// physical address
-			os << "<td class=\"paddr-range\"><span>0x";
+			os << "<td class=\"" << (tlb_entry.GetV() ? "valid" : "invalid") << " paddr-range\"><span>0x";
 			os.width(8);
 			os << +tlb_entry.GetPagePhysicalAddress(false);
 			os << "-0x";
@@ -491,23 +574,23 @@ void TLB<TYPES, CONFIG>::Print(std::ostream& os, unsigned int tlb_index, unsigne
 			os << "</span></td>";
 
 			// extended physical address
-			os << "<td class=\"ext-paddr-range\"><span>0x";
-			os.width(8);
+			os << "<td class=\"" << (tlb_entry.GetV() ? "valid" : "invalid") << " ext-paddr-range\"><span>0x";
+			os.width(9);
 			os << +tlb_entry.GetPagePhysicalAddress(true);
 			os << "-0x";
-			os.width(8);
+			os.width(9);
 			os << (tlb_entry.GetPagePhysicalAddress(true) + tlb_entry.GetPageSize() - 1);
 			os << "</span></td>";
 
 			// access control
-			os << "<td class=\"reference-bit\"><span>" << tlb_entry.GetR() << "</span></td>";
-			os << "<td class=\"changed-bit\"><span>" << tlb_entry.GetC() << "</span></td>";
-			os << "<td class=\"hash-func-id\"><span>" << tlb_entry.GetH() << "</span></td>";
-			os << "<td class=\"page-protect-bits\"><span>" << ((tlb_entry.GetPP() >> 1) & 1) << (tlb_entry.GetPP() & 1) << "</span></td>";
-			os << "<td class=\"W\"><span>" << tlb_entry.GetW() << "</span></td>";
-			os << "<td class=\"I\"><span>" << tlb_entry.GetI() << "</span></td>";
-			os << "<td class=\"M\"><span>" << tlb_entry.GetM() << "</span></td>";
-			os << "<td class=\"G\"><span>" << tlb_entry.GetG() << "</span></td>";
+			os << "<td class=\"" << (tlb_entry.GetV() ? "valid" : "invalid") << " reference-bit\"><span>" << tlb_entry.GetR() << "</span></td>";
+			os << "<td class=\"" << (tlb_entry.GetV() ? "valid" : "invalid") << " changed-bit\"><span>" << tlb_entry.GetC() << "</span></td>";
+			os << "<td class=\"" << (tlb_entry.GetV() ? "valid" : "invalid") << " hash-func-id\"><span>" << tlb_entry.GetH() << "</span></td>";
+			os << "<td class=\"" << (tlb_entry.GetV() ? "valid" : "invalid") << " page-protect-bits\"><span>" << ((tlb_entry.GetPP() >> 1) & 1) << (tlb_entry.GetPP() & 1) << "</span></td>";
+			os << "<td class=\"" << (tlb_entry.GetV() ? "valid" : "invalid") << " W\"><span>" << tlb_entry.GetW() << "</span></td>";
+			os << "<td class=\"" << (tlb_entry.GetV() ? "valid" : "invalid") << " I\"><span>" << tlb_entry.GetI() << "</span></td>";
+			os << "<td class=\"" << (tlb_entry.GetV() ? "valid" : "invalid") << " M\"><span>" << tlb_entry.GetM() << "</span></td>";
+			os << "<td class=\"" << (tlb_entry.GetV() ? "valid" : "invalid") << " G\"><span>" << tlb_entry.GetG() << "</span></td>";
 			break;
 		}
 	}
@@ -529,9 +612,9 @@ void TLB<TYPES, CONFIG>::Print(std::ostream& os, PrintFormat pfmt) const
 		}
 		os << "\t<tr>" << std::endl;
 		os << "\t\t<th rowspan=\"2\">Index&bsol;Way</th>" << std::endl;
-		for(unsigned int tlb_index = 0; tlb_index < (CONFIG::SIZE / CONFIG::ASSOCIATIVITY); ++tlb_index)
+		for(unsigned int tlb_way = 0; tlb_way < CONFIG::ASSOCIATIVITY; ++tlb_way)
 		{
-			os << "\t\t<th colspan=\"12\" scope=\"colgroup\">" << tlb_index << "</th>" << std::endl;
+			os << "\t\t<th colspan=\"12\" scope=\"colgroup\">" << tlb_way << "</th>" << std::endl;
 		}
 		os << "\t</tr>" << std::endl;
 		os << "\t<tr>" << std::endl;
@@ -694,17 +777,19 @@ struct MMU
 	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> dtlb_http_server_export;
 
 	MMU(CPU *cpu);
+	virtual ~MMU();
 	void Reset();
 	template <bool EXEC> void InvalidateTLBSetByEffectiveAddress(EFFECTIVE_ADDRESS ea);
 	template <bool EXEC> void LoadTLBEntryByEffectiveAddress(EFFECTIVE_ADDRESS ea);
 	template <bool EXEC, bool WRITE> bool ControlPageAccess(EFFECTIVE_ADDRESS ea, unsigned int key, const PTE<TYPES>& pte);
 	template <bool DEBUG, bool EXEC, bool WRITE> inline bool Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRESS& size_to_protection_boundary, ADDRESS& virt_addr, PHYSICAL_ADDRESS& phys_addr, STORAGE_ATTR& storage_attr) ALWAYS_INLINE;
-	void Print(std::ostream& os) const;
 	
 	SR& GetSR(unsigned int n) { return sr[n]; }
 	const SR& GetSR(unsigned int n) const { return sr[n]; }
 	void SetSR(unsigned int n, uint32_t value) { sr[n] = value; }
+	
 protected:
+	unisim::kernel::logger::Logger logger;
 private:
 
 	SWITCH_ENUM_TRAIT(Model, _NUM_BATS);
@@ -729,9 +814,6 @@ private:
 	SR sr[16];
 	ITLB itlb;
 	DTLB dtlb;
-// 	PTEHI ptehi;
-// 	PTELO ptelo;
-// 	TLBMISS tlbmiss;
 	SDR1 sdr1;
 	
 	bool verbose;
@@ -750,6 +832,7 @@ MMU<TYPES, CONFIG>::MMU(CPU *_cpu)
 	: unisim::kernel::Object("MMU", _cpu, "Memory Management Unit")
 	, itlb_http_server_export("itlb-http-server-export", this)
 	, dtlb_http_server_export("dtlb-http-server-export", this)
+	, logger(*this)
 	, cpu(_cpu)
 	, ibatu()
 	, ibatl()
@@ -758,9 +841,6 @@ MMU<TYPES, CONFIG>::MMU(CPU *_cpu)
 	, sr()
 	, itlb("ITLB", this, "Instruction TLB")
 	, dtlb("DTLB", this, "Data TLB")
-// 	, ptehi(cpu)
-// 	, ptelo(cpu)
-// 	, tlbmiss(cpu)
 	, sdr1(cpu)
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
@@ -786,9 +866,22 @@ MMU<TYPES, CONFIG>::MMU(CPU *_cpu)
 	for(unsigned int i = 0; i < 16; i++)
 	{
 		sr[i].Init(i);
+		cpu->AddRegisterInterface(sr[i].CreateRegisterInterface());
 	}
 	
 	Reset();
+}
+
+template <typename TYPES, typename CONFIG>
+MMU<TYPES, CONFIG>::~MMU()
+{
+	for(unsigned int i = 0; i < NUM_BATS; i++)
+	{
+		delete ibatu[i];
+		delete ibatl[i];
+		delete dbatu[i];
+		delete dbatl[i];
+	}
 }
 
 template <typename TYPES, typename CONFIG>
@@ -847,6 +940,11 @@ bool MMU<TYPES, CONFIG>::ControlPageAccess(EFFECTIVE_ADDRESS ea, unsigned int ke
 {
 	if(EXEC && pte.GetG()) // Guarded memory?
 	{
+		if(unlikely(verbose))
+		{
+			logger << DebugInfo << "Attempt to execute from guarded memory at effective address 0x" << std::hex << ea << std::dec << EndDebugInfo;
+		}
+		
 		cpu->template ThrowException<typename CPU::InstructionStorageInterrupt::GuardedMemory>();
 		return false;
 	}
@@ -868,11 +966,21 @@ bool MMU<TYPES, CONFIG>::ControlPageAccess(EFFECTIVE_ADDRESS ea, unsigned int ke
 	{
 		if(EXEC)
 		{
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << "Attempt to fetch from effective address 0x" << std::hex << ea << std::dec << " with pp=" << pp << " and key=" << key << EndDebugInfo;
+			}
+			
 			cpu->template ThrowException<typename CPU::InstructionStorageInterrupt::ProtectionViolation>();
 			return false;
 		}
 		else
 		{
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << "Attempt to " << (WRITE ? "store to" : "load from ") << " effective address 0x" << std::hex << ea << std::dec << " with pp=" << pp << " and key=" << key << EndDebugInfo;
+			}
+			
 			cpu->template ThrowException<typename CPU::DataStorageInterrupt::ProtectionViolation>().SetAddress(ea).SetWrite(WRITE);
 			return false;
 		}
@@ -885,153 +993,277 @@ template <bool DEBUG, bool EXEC, bool WRITE>
 inline bool MMU<TYPES, CONFIG>::Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRESS& size_to_protection_boundary, ADDRESS& virt_addr, PHYSICAL_ADDRESS& phys_addr, STORAGE_ATTR& storage_attr)
 {
 	const MSR& msr = cpu->GetMSR();
-	const HID0& hid0 = cpu->GetHID0();
 	
-	bool xaen = hid0.template Get<typename HID0::XAEN>(); // extended addressing enable
-	
-	// Block Address Translation
-	for(unsigned int i = 0; i < NUM_BATS; i++)
+	if(unlikely(verbose))
 	{
-		UpperBlockAddressTranslationRegister& batu = EXEC ? (*this->ibatu[i]) : (*this->dbatu[i]);
-		LowerBlockAddressTranslationRegister& batl = EXEC ? (*this->ibatl[i]) : (*this->dbatl[i]);
+		std::ostream& info_stream = logger.DebugInfoStream();
+		info_stream << "Using " << std::hex;
+		msr.ShortPrettyPrint(info_stream);
+		info_stream << std::dec << std::endl;
+	}
+	
+	if(likely((EXEC ? (msr.template Get<typename MSR::IR>()) : (msr.template Get<typename MSR::DR>()))))
+	{
+		// Address Translation is enabled
+		const HID0& hid0 = cpu->GetHID0();
 		
-		// Check if BAT register match
-		EFFECTIVE_ADDRESS ea_bepi_0_3 = TYPES::EA::BEPI_0_3::template Get<EFFECTIVE_ADDRESS>(ea);
-		EFFECTIVE_ADDRESS batu_bepi_0_3 = batu.template Get<typename UpperBlockAddressTranslationRegister::BEPI_0_3>();
-		if(ea_bepi_0_3 == batu_bepi_0_3)
+		bool xaen = hid0.template Get<typename HID0::XAEN>(); // extended addressing enable
+		
+		// Block Address Translation
+		for(unsigned int i = 0; i < NUM_BATS; i++)
 		{
-			EFFECTIVE_ADDRESS ea_bepi_4_14 = TYPES::EA::BEPI_4_14::template Get<EFFECTIVE_ADDRESS>(ea);
-			EFFECTIVE_ADDRESS batu_bepi_4_14 = batu.template Get<typename UpperBlockAddressTranslationRegister::BEPI_4_14>();
-			EFFECTIVE_ADDRESS block_size_mask = batu.template Get<typename UpperBlockAddressTranslationRegister::BLOCK_LENGTH>();
-			if((ea_bepi_4_14 & ~block_size_mask) == (batu_bepi_4_14 & ~block_size_mask))
+			UpperBlockAddressTranslationRegister& batu = EXEC ? (*this->ibatu[i]) : (*this->dbatu[i]);
+			LowerBlockAddressTranslationRegister& batl = EXEC ? (*this->ibatl[i]) : (*this->dbatl[i]);
+			
+			// Check if BAT register match
+			EFFECTIVE_ADDRESS ea_bepi_0_3 = TYPES::EA::BEPI_0_3::template Get<EFFECTIVE_ADDRESS>(ea);
+			EFFECTIVE_ADDRESS batu_bepi_0_3 = batu.template Get<typename UpperBlockAddressTranslationRegister::BEPI_0_3>();
+			if(likely(ea_bepi_0_3 == batu_bepi_0_3))
 			{
-				unsigned int msr_pr = msr.template Get<typename MSR::PR>();
-				unsigned int Vs = batu.template Get<typename UpperBlockAddressTranslationRegister::Vs>();
-				unsigned int Vp = batu.template Get<typename UpperBlockAddressTranslationRegister::Vp>();
-				unsigned int BAT_entry_valid = ((Vs & ~msr_pr) | (Vp & msr_pr)) & 1;
-				if(BAT_entry_valid)
+				EFFECTIVE_ADDRESS ea_bepi_4_14 = TYPES::EA::BEPI_4_14::template Get<EFFECTIVE_ADDRESS>(ea);
+				EFFECTIVE_ADDRESS batu_bepi_4_14 = batu.template Get<typename UpperBlockAddressTranslationRegister::BEPI_4_14>();
+				EFFECTIVE_ADDRESS block_size_mask = xaen ? batu.template Get<typename UpperBlockAddressTranslationRegister::XA_BL>() : batu.template Get<typename UpperBlockAddressTranslationRegister::BL>();
+				if(likely((ea_bepi_4_14 & ~block_size_mask) == (batu_bepi_4_14 & ~block_size_mask)))
 				{
-					// BAT match
-					
-					// Check access rights
-					if(!DEBUG)
+					unsigned int Vs = batu.template Get<typename UpperBlockAddressTranslationRegister::Vs>();
+					unsigned int Vp = batu.template Get<typename UpperBlockAddressTranslationRegister::Vp>();
+					unsigned int BAT_entry_valid = msr.template Get<typename MSR::PR>() ? Vp : Vs;
+					if(likely(BAT_entry_valid))
 					{
-						unsigned int pp = batl.template Get<typename LowerBlockAddressTranslationRegister::PP>();
+						// BAT match
+						if(unlikely(verbose))
+						{
+							logger << DebugInfo << batu.GetName() << "/" << batl.GetName() << " match for effective address 0x" << std::hex << ea << std::dec << EndDebugInfo;
+						}
 						
-						if(EXEC)
+						// Swap matching register pair with first one to speed-up next lookup next time
+						if(unlikely(i))
 						{
-							if(batl.template Get<typename LowerBlockAddressTranslationRegister::G>())
+							if(EXEC)
 							{
-								cpu->template ThrowException<typename CPU::InstructionStorageInterrupt::GuardedMemory>();
-								return false;
+								UpperBlockAddressTranslationRegister *u = this->ibatu[0];
+								LowerBlockAddressTranslationRegister *l = this->ibatl[0];
+								this->ibatu[0] = &batu;
+								this->ibatl[0] = &batl;
+								this->ibatu[i] = u;
+								this->ibatl[i] = l;
 							}
-							if(!pp) // PP=00: No access
+							else
 							{
-								cpu->template ThrowException<typename CPU::InstructionStorageInterrupt::ProtectionViolation>();
-								return false;
+								UpperBlockAddressTranslationRegister *u = this->dbatu[0];
+								LowerBlockAddressTranslationRegister *l = this->dbatl[0];
+								this->dbatu[0] = &batu;
+								this->dbatl[0] = &batl;
+								this->dbatu[i] = u;
+								this->dbatl[i] = l;
 							}
 						}
-						else
+						
+						// Check access rights
+						if(!DEBUG)
 						{
-							if(!pp ||               // PP=00: No access
-							   ((pp & 1) && WRITE)) // PP=x1: Read-only
+							unsigned int pp = batl.template Get<typename LowerBlockAddressTranslationRegister::PP>();
+							
+							if(EXEC)
 							{
-								cpu->template ThrowException<typename CPU::DataStorageInterrupt::ProtectionViolation>().SetAddress(ea).SetWrite(WRITE);
-								return false;
+								if(unlikely((batl.template Get<typename LowerBlockAddressTranslationRegister::G>())))
+								{
+									if(unlikely(verbose))
+									{
+										logger << DebugInfo << "Attempt to execute from guarded memory at effective address 0x" << std::hex << ea << std::dec << EndDebugInfo;
+									}
+									cpu->template ThrowException<typename CPU::InstructionStorageInterrupt::GuardedMemory>();
+									return false;
+								}
+								if(unlikely(!pp)) // PP=00: No access
+								{
+									if(unlikely(verbose))
+									{
+										logger << DebugInfo << "Attempt to fetch from effective address 0x" << std::hex << ea << std::dec << " with pp=" << pp << EndDebugInfo;
+									}
+									cpu->template ThrowException<typename CPU::InstructionStorageInterrupt::ProtectionViolation>();
+									return false;
+								}
+							}
+							else
+							{
+								if(unlikely(!pp ||                // PP=00: No access
+								            ((pp & 1) && WRITE))) // PP=x1: Read-only
+								{
+									if(unlikely(verbose))
+									{
+										logger << DebugInfo << "Attempt to " << (WRITE ? "store to" : "load from ") << " effective address 0x" << std::hex << ea << std::dec << " with pp=" << pp << EndDebugInfo;
+									}
+									cpu->template ThrowException<typename CPU::DataStorageInterrupt::ProtectionViolation>().SetAddress(ea).SetWrite(WRITE);
+									return false;
+								}
 							}
 						}
-					}
 
-					// Compute the physical address
-					EFFECTIVE_ADDRESS masked_ea = ea & (block_size_mask << 17);
-					EFFECTIVE_ADDRESS offset = ea & unisim::util::reg::core::template MakeMask<EFFECTIVE_ADDRESS, 17>();
-					EFFECTIVE_ADDRESS brpn = EFFECTIVE_ADDRESS(batl) & LowerBlockAddressTranslationRegister::BRPN::template GetMask<EFFECTIVE_ADDRESS>();
-					uint32_t bx = batl.template Get<typename LowerBlockAddressTranslationRegister::BX>();
-					uint32_t bxpn = batl.template Get<typename LowerBlockAddressTranslationRegister::BXPN>();
-					uint32_t wimg = batl.template Get<typename LowerBlockAddressTranslationRegister::WIMG>();
-					size_to_protection_boundary = (offset ^ unisim::util::reg::core::MakeMask<EFFECTIVE_ADDRESS, 17>()) + 1;
-					phys_addr = offset
-					          | masked_ea
-					          | brpn
-					          | (PHYSICAL_ADDRESS(bx) << 32)
-					          | (PHYSICAL_ADDRESS(bxpn) << 33);
-					storage_attr = STORAGE_ATTR(wimg);
-					
-					return true;
+						// Compute the physical address
+						EFFECTIVE_ADDRESS masked_ea = ea & (block_size_mask << 17);
+						EFFECTIVE_ADDRESS offset = ea & unisim::util::reg::core::template MakeMask<EFFECTIVE_ADDRESS, 17>();
+						EFFECTIVE_ADDRESS brpn = EFFECTIVE_ADDRESS(batl) & LowerBlockAddressTranslationRegister::BRPN::template GetMask<EFFECTIVE_ADDRESS>();
+						uint32_t bx = batl.template Get<typename LowerBlockAddressTranslationRegister::BX>();
+						uint32_t bxpn = batl.template Get<typename LowerBlockAddressTranslationRegister::BXPN>();
+						uint32_t wimg = batl.template Get<typename LowerBlockAddressTranslationRegister::WIMG>();
+						size_to_protection_boundary = (offset ^ unisim::util::reg::core::MakeMask<EFFECTIVE_ADDRESS, 17>()) + 1;
+						virt_addr = ea;
+						phys_addr = offset
+								| masked_ea
+								| brpn
+								| (PHYSICAL_ADDRESS(bx) << 32)
+								| (PHYSICAL_ADDRESS(bxpn) << 33);
+						storage_attr = STORAGE_ATTR(wimg);
+						
+						if(unlikely(verbose))
+						{
+							logger << DebugInfo << "Effective address 0x" << std::hex << ea << std::dec << " translates to physical address 0x" << std::hex << phys_addr << std::dec << " with storage attributes 0x" << std::hex << +storage_attr << std::dec << EndDebugInfo;
+						}
+						
+						return true;
+					}
 				}
 			}
 		}
-	}
-	
-	// No BAT match
-	EFFECTIVE_ADDRESS offset = ea & unisim::util::reg::core::template MakeMask<EFFECTIVE_ADDRESS, 12>();
-
-	// Memory Segment
-	unsigned int sr_num = TYPES::EA::SR::template Get<EFFECTIVE_ADDRESS>(ea);
-	SR& sreg = sr[sr_num];
-	
-	// Check segment access rights
-	if(!DEBUG)
-	{
-		if(EXEC && sreg.template Get<typename SR::N>())
+		
+		// No BAT match
+		if(unlikely(verbose))
 		{
-			cpu->template ThrowException<typename CPU::InstructionStorageInterrupt::NoExecute>();
-			return false;
+			logger << DebugInfo << "No " << (EXEC ? "I" : "D") << "BAT match for effective address 0x" << std::hex << ea << std::dec << EndDebugInfo;
+		}
+		EFFECTIVE_ADDRESS offset = ea & unisim::util::reg::core::template MakeMask<EFFECTIVE_ADDRESS, 12>();
+
+		// Memory Segment
+		unsigned int sr_num = TYPES::EA::SR::template Get<EFFECTIVE_ADDRESS>(ea);
+		SR& sreg = sr[sr_num];
+		if(unlikely(verbose))
+		{
+			std::ostream& info_stream = logger.DebugInfoStream();
+			info_stream << "Using " << std::hex;
+			sreg.ShortPrettyPrint(info_stream);
+			info_stream << std::dec << std::endl;
 		}
 		
-		if(sreg.template Get<typename SR::T>())
+		// Check segment access rights
+		if(!DEBUG)
 		{
-			if(EXEC)
+			if(unlikely((EXEC && sreg.template Get<typename SR::N>())))
 			{
-				cpu->template ThrowException<typename CPU::InstructionStorageInterrupt::DirectStore>();
+				cpu->template ThrowException<typename CPU::InstructionStorageInterrupt::NoExecute>();
 				return false;
 			}
-			else
+			
+			if(unlikely((sreg.template Get<typename SR::T>())))
 			{
-				cpu->template ThrowException<typename CPU::DataStorageInterrupt::DirectStore>().SetAddress(ea).SetWrite(WRITE);
-				return false;
+				if(EXEC)
+				{
+					cpu->template ThrowException<typename CPU::InstructionStorageInterrupt::DirectStore>();
+					return false;
+				}
+				else
+				{
+					cpu->template ThrowException<typename CPU::DataStorageInterrupt::DirectStore>().SetAddress(ea).SetWrite(WRITE);
+					return false;
+				}
 			}
 		}
-	}
-	
-	VIRTUAL_SEGMENT_ID vsid = sreg.template Get<typename SR::VSID>();
-	unsigned int Kp = sreg.template Get<typename SR::Kp>();
-	unsigned int Ks = sreg.template Get<typename SR::Ks>();
-	unsigned int key = msr.template Get<typename MSR::PR>() ? Kp : Ks;
-	
-	// Virtual address
-	ADDRESS va = (ADDRESS(vsid) << 28) | ADDRESS(ea & unisim::util::reg::core::template MakeMask<EFFECTIVE_ADDRESS, 28>());
-	
-	// TLB
-	PAGE_INDEX page_index = TYPES::EA::PAGE_INDEX::template Get<EFFECTIVE_ADDRESS>(ea);
-	ABBREVIATED_PAGE_INDEX api = TYPES::EA::API::template Get<EFFECTIVE_ADDRESS>(ea);
-	
-	TLB_ENTRY<TYPES> *tlb_entry = EXEC ? itlb.Lookup(vsid, page_index) : dtlb.Lookup(vsid, page_index);
-	
-	if(likely(tlb_entry))
-	{
-		// TLB hit
-		const PTE<TYPES>& pte = tlb_entry->GetPTE();
+		
+		VIRTUAL_SEGMENT_ID vsid = sreg.template Get<typename SR::VSID>();
+		unsigned int Kp = sreg.template Get<typename SR::Kp>();
+		unsigned int Ks = sreg.template Get<typename SR::Ks>();
+		unsigned int key = msr.template Get<typename MSR::PR>() ? Kp : Ks;
+		if(unlikely(verbose))
+		{
+			logger << DebugInfo << "Kp=" << Kp << ", Ks=" << Ks << ", PR=" << msr.template Get<typename MSR::PR>() << ", key=" << key << EndDebugInfo;
+		}
+		
+		// Virtual address
+		ADDRESS va = (ADDRESS(vsid) << 28) | ADDRESS(ea & unisim::util::reg::core::template MakeMask<EFFECTIVE_ADDRESS, 28>());
+		
+		// TLB
+		PAGE_INDEX page_index = TYPES::EA::PAGE_INDEX::template Get<EFFECTIVE_ADDRESS>(ea);
+		ABBREVIATED_PAGE_INDEX api = TYPES::EA::API::template Get<EFFECTIVE_ADDRESS>(ea);
+		
+		TLB_ENTRY<TYPES> *tlb_entry = EXEC ? itlb.Lookup(vsid, page_index) : dtlb.Lookup(vsid, page_index);
+		
+		if(likely(tlb_entry))
+		{
+			// TLB hit
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << (EXEC ? "I" : "D") << "TLB hit for effective address 0x" << std::hex << ea << std::dec << EndDebugInfo;
+			}
+			const PTE<TYPES>& pte = tlb_entry->GetPTE();
+			
+			if(unlikely(verbose))
+			{
+				std::ostream& info_stream = logger.DebugInfoStream();
+				info_stream << std::hex;
+				pte.ShortPrettyPrint(info_stream);
+				info_stream << " in TLB match for effective address 0x" << std::hex << ea << std::dec << std::endl;
+			}
+			
+			if(!DEBUG)
+			{
+				if(unlikely((!this->template ControlPageAccess<EXEC, WRITE>(ea, key, pte)))) return false;
+				
+				if(EXEC)
+				{
+					itlb.Use(*tlb_entry);
+				}
+				else
+				{
+					dtlb.Use(*tlb_entry);
+				}
+			
+				tlb_entry->Access();
+				bool need_pte_update = WRITE && !tlb_entry->GetC();
+				if(WRITE) tlb_entry->Change();
+				
+				if(unlikely(need_pte_update))
+				{
+					if(unlikely(verbose))
+					{
+						logger << DebugInfo << "PTE in page table needs update because PTE[C] is toggling from 0 to 1" << std::hex << ea << std::dec << EndDebugInfo;
+					}
+					unsigned int lru_way;
+					uint32_t tlbmiss_value = 0;
+					uint32_t ptehi_value = 0;
+					
+					TLBMISS::PAGE::template Set<uint32_t>(tlbmiss_value, TYPES::EA::_0_30::template Get<EFFECTIVE_ADDRESS>(ea));
+					PTEHI::VSID::template Set<uint32_t>(ptehi_value, vsid);
+					PTEHI::API::template Set<uint32_t>(ptehi_value, api);
+					const TLB_ENTRY<TYPES>& lru_tlb_entry = dtlb.GetLRU(va, lru_way);
+					TLBMISS::LRU::template Set<uint32_t>(tlbmiss_value, lru_way);
+					PTEHI::V::template Set<uint32_t>(ptehi_value, lru_tlb_entry.IsValid());
+					cpu->template ThrowException<typename CPU::DataTLBMissOnStoreInterrupt::DataTLBMissOnStore>().SetTLBMISS(tlbmiss_value).SetPTEHI(ptehi_value).SetKey(key).SetC(true);
+					return false;
+				}
+			}
+			storage_attr = tlb_entry->GetStorageAttr();
+			virt_addr = va;
+			PHYSICAL_ADDRESS page_phys_addr = tlb_entry->GetPagePhysicalAddress(xaen);
+			phys_addr = page_phys_addr | offset;
+			size_to_protection_boundary = tlb_entry->GetPageSize() - offset;
+			
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << "Effective address 0x" << std::hex << ea << std::dec << " (virtual address 0x" << std::hex << virt_addr << std::dec << ") translates to physical address 0x" << std::hex << phys_addr << std::dec << " with storage attributes 0x" << std::hex << +storage_attr << std::dec << EndDebugInfo;
+			}
+			return true;
+		}
+		
+		if(unlikely(verbose))
+		{
+			logger << DebugInfo << (EXEC ? "I" : "D") << "TLB miss for effective address 0x" << std::hex << ea << std::dec << EndDebugInfo;
+		}
 		
 		if(!DEBUG)
 		{
-			if(!this->template ControlPageAccess<EXEC, WRITE>(ea, key, pte)) return false;
-			
-			if(EXEC)
+			if(unlikely(hid0.template Get<typename HID0::STEN>()))
 			{
-				itlb.Use(*tlb_entry);
-			}
-			else
-			{
-				dtlb.Use(*tlb_entry);
-			}
-		
-			tlb_entry->Access();
-			bool need_pte_update = WRITE && !tlb_entry->GetC();
-			if(WRITE) tlb_entry->Change();
-			
-			if(need_pte_update)
-			{
+				// Software page table search
 				unsigned int lru_way;
 				uint32_t tlbmiss_value = 0;
 				uint32_t ptehi_value = 0;
@@ -1039,145 +1271,156 @@ inline bool MMU<TYPES, CONFIG>::Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRES
 				TLBMISS::PAGE::template Set<uint32_t>(tlbmiss_value, TYPES::EA::_0_30::template Get<EFFECTIVE_ADDRESS>(ea));
 				PTEHI::VSID::template Set<uint32_t>(ptehi_value, vsid);
 				PTEHI::API::template Set<uint32_t>(ptehi_value, api);
-				const TLB_ENTRY<TYPES>& lru_tlb_entry = dtlb.GetLRU(va, lru_way);
-				TLBMISS::LRU::template Set<uint32_t>(tlbmiss_value, lru_way);
-				PTEHI::V::template Set<uint32_t>(ptehi_value, lru_tlb_entry.IsValid());
-				cpu->template ThrowException<typename CPU::DataTLBMissOnStoreInterrupt::DataTLBMissOnStore>().SetTLBMISS(tlbmiss_value).SetPTEHI(ptehi_value).SetKey(key).SetC(true);
-				return false;
-			}
-		}
-		storage_attr = tlb_entry->GetStorageAttr();
-		virt_addr = va;
-		PHYSICAL_ADDRESS page_phys_addr = tlb_entry->GetPagePhysicalAddress(xaen);
-		phys_addr = page_phys_addr | offset;
-		size_to_protection_boundary = tlb_entry->GetPageSize() - offset;
-		return true;
-	}
-	
-	// TLB Miss
-	
-	if(!DEBUG)
-	{
-		if(hid0.template Get<typename HID0::STEN>())
-		{
-			// Software page table search
-			unsigned int lru_way;
-			uint32_t tlbmiss_value = 0;
-			uint32_t ptehi_value = 0;
-			
-			TLBMISS::PAGE::template Set<uint32_t>(tlbmiss_value, TYPES::EA::_0_30::template Get<EFFECTIVE_ADDRESS>(ea));
-			PTEHI::VSID::template Set<uint32_t>(ptehi_value, vsid);
-			PTEHI::API::template Set<uint32_t>(ptehi_value, api);
-			if(EXEC)
-			{
-				const TLB_ENTRY<TYPES>& lru_tlb_entry = itlb.GetLRU(va, lru_way);
-				TLBMISS::LRU::template Set<uint32_t>(tlbmiss_value, lru_way);
-				PTEHI::V::template Set<uint32_t>(ptehi_value, lru_tlb_entry.IsValid());
-				cpu->template ThrowException<typename CPU::InstructionTLBMissInterrupt::InstructionTLBMiss>().SetTLBMISS(tlbmiss_value).SetPTEHI(ptehi_value).SetKey(key);
-			}
-			else
-			{
-				const TLB_ENTRY<TYPES>& lru_tlb_entry = dtlb.GetLRU(va, lru_way);
-				TLBMISS::LRU::template Set<uint32_t>(tlbmiss_value, lru_way);
-				PTEHI::V::template Set<uint32_t>(ptehi_value, lru_tlb_entry.IsValid());
-				
-				if(WRITE)
+				if(EXEC)
 				{
-					cpu->template ThrowException<typename CPU::DataTLBMissOnStoreInterrupt::DataTLBMissOnStore>().SetTLBMISS(tlbmiss_value).SetPTEHI(ptehi_value).SetKey(key);
+					const TLB_ENTRY<TYPES>& lru_tlb_entry = itlb.GetLRU(va, lru_way);
+					TLBMISS::LRU::template Set<uint32_t>(tlbmiss_value, lru_way);
+					PTEHI::V::template Set<uint32_t>(ptehi_value, lru_tlb_entry.IsValid());
+					cpu->template ThrowException<typename CPU::InstructionTLBMissInterrupt::InstructionTLBMiss>().SetTLBMISS(tlbmiss_value).SetPTEHI(ptehi_value).SetKey(key);
 				}
 				else
 				{
-					cpu->template ThrowException<typename CPU::DataTLBMissOnLoadInterrupt::DataTLBMissOnLoad>().SetTLBMISS(tlbmiss_value).SetPTEHI(ptehi_value).SetKey(key);
-				}
-			}
-			
-			return false;
-		}
-	}
-	
-	// Hardware Page Table Search
-	
-	unsigned int h;
-	uint32_t hash;
-	const uint32_t hash_mask = xaen ? unisim::util::reg::core::MakeMask<uint32_t, 23>()
-	                                : unisim::util::reg::core::MakeMask<uint32_t, 19>();
-	PTE<TYPES> pte;
-	for(h = 0, hash = (vsid & hash_mask) ^ page_index; h < 2; ++h, hash = (~hash & hash_mask))
-	{
-		// Compute the base address of a group of 8 page table entries
-		uint32_t pteg_select = xaen ? ((sdr1.template Get<typename SDR1::XA_HTABORG_LSB>() | (sdr1.template Get<typename SDR1::XA_HTABMASK>() & ((hash >> 10) & unisim::util::reg::core::MakeMask<uint32_t, 13>()))) << 10) | (hash & unisim::util::reg::core::MakeMask<uint32_t, 10>())
-		                            : ((sdr1.template Get<typename SDR1::HTABORG_LSB>() | (sdr1.template Get<typename SDR1::HTABMASK>() & ((hash >> 10) & unisim::util::reg::core::MakeMask<uint32_t, 9>()))) << 10) | (hash & unisim::util::reg::core::MakeMask<uint32_t, 10>());
-		PHYSICAL_ADDRESS pte_addr = xaen ? (PHYSICAL_ADDRESS(sdr1.template Get<typename SDR1::HTMEXT>()) << 32) | (PHYSICAL_ADDRESS(sdr1.template Get<typename SDR1::XA_HTABORG_MSB>()) << 29) | (PHYSICAL_ADDRESS(pteg_select) << 6)
-		                                 : (PHYSICAL_ADDRESS(sdr1.template Get<typename SDR1::HTABORG_MSB>()) << 25) | (PHYSICAL_ADDRESS(pteg_select) << 6);
-
-		// Scan each page table entry in the group
-		for(unsigned int i = 0; i < 8; ++i, pte_addr += 8)
-		{
-			// Load PTE
-			if(DEBUG)
-			{
-				if(unlikely(!cpu->CPU::SuperMSS::DebugDataLoad(pte_addr, pte_addr, pte.Get(), pte.SizeOf(), TYPES::SA_M))) return false;
-			}
-			else
-			{
-				if(unlikely(!cpu->CPU::SuperMSS::DataLoad(pte_addr, pte_addr, pte.Get(), pte.SizeOf(), TYPES::SA_M))) return false;
-			}
-			
-			pte.BigEndian2Host();
-			
-			if(likely(pte.Match(vsid, api, h)))
-			{
-				// Hit in page table
-				if(!this->template ControlPageAccess<EXEC, WRITE>(ea, key, pte)) return false;
-				
-				pte.Access(); // set accessed bit (R)
-				if(WRITE) pte.Change(); // set change bit (C)
-				
-				if(!DEBUG)
-				{
-					// Write back PTE
-					if(unlikely(!cpu->CPU::SuperMSS::DataStore(pte_addr, pte_addr, pte.Get(), pte.SizeOf(), TYPES::SA_M))) return false;
+					const TLB_ENTRY<TYPES>& lru_tlb_entry = dtlb.GetLRU(va, lru_way);
+					TLBMISS::LRU::template Set<uint32_t>(tlbmiss_value, lru_way);
+					PTEHI::V::template Set<uint32_t>(ptehi_value, lru_tlb_entry.IsValid());
 					
-					// Fill TLB
-					if(EXEC)
+					if(WRITE)
 					{
-						itlb.Use(itlb.Replace(pte, page_index));
+						cpu->template ThrowException<typename CPU::DataTLBMissOnStoreInterrupt::DataTLBMissOnStore>().SetTLBMISS(tlbmiss_value).SetPTEHI(ptehi_value).SetKey(key);
 					}
 					else
 					{
-						dtlb.Use(dtlb.Replace(pte, page_index));
+						cpu->template ThrowException<typename CPU::DataTLBMissOnLoadInterrupt::DataTLBMissOnLoad>().SetTLBMISS(tlbmiss_value).SetPTEHI(ptehi_value).SetKey(key);
 					}
 				}
 				
-				storage_attr = pte.GetStorageAttr();
-				virt_addr = va;
-				PHYSICAL_ADDRESS page_phys_addr = pte.GetPagePhysicalAddress(xaen);
-				phys_addr = page_phys_addr | offset;
-				size_to_protection_boundary = pte.GetPageSize() - offset;
-				return true;
+				return false;
+			}
+		}
+		
+		// Hardware Page Table Search
+		
+		unsigned int h;
+		uint32_t hash;
+		const uint32_t hash_mask = xaen ? unisim::util::reg::core::MakeMask<uint32_t, 23>()
+										: unisim::util::reg::core::MakeMask<uint32_t, 19>();
+		PTE<TYPES> pte;
+		for(h = 0, hash = (vsid & hash_mask) ^ page_index; h < 2; ++h, hash = (~hash) & hash_mask)
+		{
+			// Compute the base address of a group of 8 page table entries
+			uint32_t pteg_select = xaen ? ((sdr1.template Get<typename SDR1::XA_HTABORG_LSB>() | (sdr1.template Get<typename SDR1::XA_HTABMASK>() & ((hash >> 10) & unisim::util::reg::core::MakeMask<uint32_t, 13>()))) << 10) | (hash & unisim::util::reg::core::MakeMask<uint32_t, 10>())
+										: ((sdr1.template Get<typename SDR1::HTABORG_LSB>() | (sdr1.template Get<typename SDR1::HTABMASK>() & ((hash >> 10) & unisim::util::reg::core::MakeMask<uint32_t, 9>()))) << 10) | (hash & unisim::util::reg::core::MakeMask<uint32_t, 10>());
+			PHYSICAL_ADDRESS pte_addr = xaen ? (PHYSICAL_ADDRESS(sdr1.template Get<typename SDR1::HTMEXT>()) << 32) | (PHYSICAL_ADDRESS(sdr1.template Get<typename SDR1::XA_HTABORG_MSB>()) << 29) | (PHYSICAL_ADDRESS(pteg_select) << 6)
+											: (PHYSICAL_ADDRESS(sdr1.template Get<typename SDR1::HTABORG_MSB>()) << 25) | (PHYSICAL_ADDRESS(pteg_select) << 6);
+
+			// Scan each page table entry in the group
+			for(unsigned int i = 0; i < 8; ++i, pte_addr += 8)
+			{
+				// Load PTE
+				if(DEBUG)
+				{
+					if(unlikely(!cpu->CPU::SuperMSS::DebugDataLoad(pte_addr, pte_addr, pte.Get(), pte.SizeOf(), TYPES::SA_M))) return false;
+				}
+				else
+				{
+					if(unlikely(!cpu->CPU::SuperMSS::DataLoad(pte_addr, pte_addr, pte.Get(), pte.SizeOf(), TYPES::SA_M))) return false;
+				}
+				
+				pte.BigEndian2Host();
+				
+				if(likely(pte.Match(vsid, api, h)))
+				{
+					// Hit in page table
+					if(unlikely(verbose))
+					{
+						std::ostream& info_stream = logger.DebugInfoStream();
+						info_stream << std::hex;
+						pte.ShortPrettyPrint(info_stream);
+						info_stream << " at physical address 0x" << std::hex << pte_addr << std::dec << " match for effective address 0x" << std::hex << ea << std::dec << std::endl;
+					}
+					
+					if(!DEBUG)
+					{
+						// Fill TLB
+						if(EXEC)
+						{
+							itlb.Use(itlb.Replace(pte, page_index));
+						}
+						else
+						{
+							dtlb.Use(dtlb.Replace(pte, page_index));
+						}
+					}
+					
+					if(unlikely((!this->template ControlPageAccess<EXEC, WRITE>(ea, key, pte)))) return false;
+					
+					bool need_pte_update = !pte.GetR() || (WRITE && !pte.GetC());
+					
+					pte.Access(); // set accessed bit (R)
+					if(WRITE) pte.Change(); // set change bit (C)
+					
+					storage_attr = pte.GetStorageAttr();
+					virt_addr = va;
+					PHYSICAL_ADDRESS page_phys_addr = pte.GetPagePhysicalAddress(xaen);
+					phys_addr = page_phys_addr | offset;
+					size_to_protection_boundary = pte.GetPageSize() - offset;
+					
+					if(!DEBUG)
+					{
+						if(unlikely(need_pte_update))
+						{
+							// Write back PTE
+							pte.Host2BigEndian();
+							if(unlikely(!cpu->CPU::SuperMSS::DataStore(pte_addr, pte_addr, pte.Get(), pte.SizeOf(), TYPES::SA_M))) return false;
+						}
+					}
+					
+					if(unlikely(verbose))
+					{
+						logger << DebugInfo << "Effective address 0x" << std::hex << ea << std::dec << " (virtual address 0x" << std::hex << virt_addr << std::dec << ") translates to physical address 0x" << std::hex << phys_addr << std::dec << " with storage attributes 0x" << std::hex << +storage_attr << std::dec << EndDebugInfo;
+					}
+					return true;
+				}
+			}
+		}
+		
+		// Page Fault
+		if(unlikely(verbose))
+		{
+			logger << DebugInfo << "Page fault for effective address 0x" << std::hex << ea << std::dec << EndDebugInfo;
+		}
+		
+		if(!DEBUG)
+		{
+			if(EXEC)
+			{
+				cpu->template ThrowException<typename CPU::InstructionStorageInterrupt::PageFault>();
+			}
+			else
+			{
+				cpu->template ThrowException<typename CPU::DataStorageInterrupt::PageFault>().SetAddress(ea).SetWrite(WRITE);
 			}
 		}
 	}
-	
-	// Page Fault
-	if(!DEBUG)
+	else
 	{
-		if(EXEC)
+		// Address Translation is disabled
+		if(unlikely(verbose))
 		{
-			cpu->template ThrowException<typename CPU::InstructionStorageInterrupt::PageFault>();
+			logger << DebugInfo << "Real addressing mode for effective address 0x" << std::hex << ea << std::dec << EndDebugInfo;
 		}
-		else
+		size_to_protection_boundary = 0;
+		virt_addr = ea;
+		phys_addr = ea;
+		storage_attr = STORAGE_ATTR(TYPES::SA_M | TYPES::SA_G);
+		if(unlikely(verbose))
 		{
-			cpu->template ThrowException<typename CPU::DataStorageInterrupt::PageFault>().SetAddress(ea).SetWrite(WRITE);
+			logger << DebugInfo << "Effective address 0x" << std::hex << ea << std::dec << " translates to physical address 0x" << std::hex << phys_addr << std::dec << " with storage attributes 0x" << std::hex << +storage_attr << std::dec << EndDebugInfo;
 		}
+		return true;
 	}
 	
 	return false;
-}
-
-template <typename TYPES, typename CONFIG>
-void MMU<TYPES, CONFIG>::Print(std::ostream& os) const
-{
 }
 
 } // end of namespace e600

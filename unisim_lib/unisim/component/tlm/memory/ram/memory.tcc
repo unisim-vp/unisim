@@ -53,14 +53,12 @@ using unisim::kernel::logger::EndDebugError;
 /* Constructor */
 template <class PHYSICAL_ADDR, uint32_t DATA_SIZE, uint32_t PAGE_SIZE, bool DEBUG>
 Memory<PHYSICAL_ADDR, DATA_SIZE, PAGE_SIZE, DEBUG>::
-Memory(const sc_module_name& name, Object *parent)
+Memory(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent, "Memory")
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, unisim::component::cxx::memory::ram::Memory<PHYSICAL_ADDR, PAGE_SIZE>(name, parent)
 	, slave_port("slave-port")
 	, logger(*this)
-	, verbose(false)
-	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, cycle_sctime()
 	, param_cycle_time("cycle-time", this, cycle_sctime, "RAM memory cycle time")
 {
@@ -78,11 +76,11 @@ Memory<PHYSICAL_ADDR, DATA_SIZE, PAGE_SIZE, DEBUG>::
 template <class PHYSICAL_ADDR, uint32_t DATA_SIZE, uint32_t PAGE_SIZE, bool DEBUG>
 bool Memory<PHYSICAL_ADDR, DATA_SIZE, PAGE_SIZE, DEBUG>::
 EndSetup() {
-	if(unlikely(DEBUG && verbose)) 
+	if(unlikely(DEBUG && this->verbose)) 
 		logger << DebugInfo << LOCATION
 			<< " cycle time of " << cycle_sctime 
 			<< std::endl << EndDebugInfo;
-	if(cycle_sctime == SC_ZERO_TIME) {
+	if(cycle_sctime == sc_core::SC_ZERO_TIME) {
 		logger << DebugError << LOCATION
 			<< "cycle time must be different than 0" << std::endl
 			<< EndDebugError;
@@ -104,21 +102,21 @@ Send(const Pointer<TlmMessage<MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>,
 	switch(req->type)
 	{
 		case MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>::READ: {
-				if(unlikely(DEBUG && verbose))
+				if(unlikely(DEBUG && this->verbose))
 					logger << DebugInfo << LOCATION
-						<< sc_time_stamp().to_string() 
+						<< sc_core::sc_time_stamp().to_string() 
 						<< " Send() received a READ request" << std::endl
 						<< EndDebugInfo; 	
 				this->ReadMemory(req->addr, rsp->read_data, req->size);
-				sc_event *rsp_ev = message->GetResponseEvent();
+				sc_core::sc_event *rsp_ev = message->GetResponseEvent();
 				if(rsp_ev) rsp_ev->notify(cycle_sctime);
 			}
 			break;
 			
 		case MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>::WRITE:
-			if(unlikely(DEBUG && verbose))
+			if(unlikely(DEBUG && this->verbose))
 				logger << DebugInfo << LOCATION
-					<< sc_time_stamp().to_string() 
+					<< sc_core::sc_time_stamp().to_string() 
 					<< " Send() received a WRITE request" << std::endl
 					<< EndDebugInfo; 	
 			this->WriteMemory(req->addr, req->write_data, req->size);

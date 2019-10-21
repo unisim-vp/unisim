@@ -500,7 +500,8 @@ bool CPU<TYPES, CONFIG>::interrupt_get_direct_mem_ptr(unsigned int, InterruptPay
 template <typename TYPES, typename CONFIG>
 inline void CPU<TYPES, CONFIG>::RunInternalTimers()
 {
-	const sc_core::sc_time& timer_cycle_time = cpu_cycle_time;
+	const sc_core::sc_time timer_cycle_time(bus_cycle_time);
+	timer_cycle_time *= 4;
 		
 #if 0
 	if(run_time >= (timer_time + timer_cycle_time))
@@ -594,7 +595,8 @@ void CPU<TYPES, CONFIG>::Idle()
 	if(!this->HasPendingInterrupts()) // Is there some pending interrupts?
 	{
 		// Compute the time to consume before an internal timer event occurs
-		const sc_core::sc_time& timer_cycle_time = cpu_cycle_time;
+		const sc_core::sc_time timer_cycle_time(bus_cycle_time);
+		timer_cycle_time *= 4;
 		max_idle_time = timer_cycle_time;
 		max_idle_time *= Super::GetMaxIdleTime(); // max idle time (timer_time based)
 

@@ -79,6 +79,7 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	, instruction_address_breakpoint_interrupt(static_cast<typename CONFIG::CPU *>(this))
 	, system_management_interrupt(static_cast<typename CONFIG::CPU *>(this))
 	, altivec_assist_interrupt(static_cast<typename CONFIG::CPU *>(this))
+	, powersave(false)
 	, tb(static_cast<typename CONFIG::CPU *>(this))
 	, bamr(static_cast<typename CONFIG::CPU *>(this))
 	, dabr(static_cast<typename CONFIG::CPU *>(this))
@@ -117,6 +118,8 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	, tlbmiss(static_cast<typename CONFIG::CPU *>(this))
 {
 	param_processor_version.SetMutable(false);
+	
+	UpdatePowerSave();
 	
 	pvr.Initialize(processor_version);
 
@@ -162,6 +165,12 @@ void CPU<TYPES, CONFIG>::Reset()
 	SuperCPU::Reset();
 	this->cia = this->reset_addr & -4;
 	msr.Initialize(0x0);
+	
+	msr.template Set<typename MSR::FP>(1);
+	hid0.template Set<typename HID0::DCE>(1);
+	hid0.template Set<typename HID0::ICE>(1);
+	hid1.template Set<typename HID1::ABE>(1);
+	l2cr.template Set<typename L2CR::L2E>(1);
 }
 
 template <typename TYPES, typename CONFIG>
@@ -204,8 +213,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(MachineCheckInterrupt *machine_check_i
 	// SRR1[6]=MSR[6], SRR1[16-29]=MSR[16-29]
 	struct _6 : Field<_6, 6> {};
 	struct _16_29 : Field<_16_29, 16, 29> {};
-	struct MSR_COPIED_FIELDS : FieldSet<_6, _16_29> {};
-	srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+	struct MSR_SAVED_FIELDS : FieldSet<_6, _16_29> {};
+	srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 	
 	msssr0 = 0;
 	// MSSSR0[19]=TEA
@@ -267,8 +276,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(DataStorageInterrupt *data_storage_int
 	struct _25_27 : Field<_25_27, 25, 27> {};
 	struct _30_31 : Field<_30_31, 30, 31> {};
 	struct SRR1_CLEARED_FIELDS : FieldSet<_1_4, _10_15> {};
-	struct MSR_COPIED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
-	srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+	struct MSR_SAVED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
+	srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 	srr1.template Set<SRR1_CLEARED_FIELDS>(0);
 	
 	// MSR[LE]=MSR[ILE]
@@ -337,8 +346,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(ExternalInterrupt *external_interrupt)
 	struct _11_15 : Field<_11_15, 11, 15> {};
 	struct _16_31 : Field<_16_31, 16, 31> {};
 	struct SRR1_CLEARED_FIELDS : FieldSet<_0, _2_5, _7_9, _11_15> {};
-	struct MSR_COPIED_FIELDS : FieldSet<_6, _16_31> {};
-	srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+	struct MSR_SAVED_FIELDS : FieldSet<_6, _16_31> {};
+	srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 	srr1.template Set<SRR1_CLEARED_FIELDS>(0);
 
 	// if exception caused by SW setting ICTRL[CIRQ] then SRR1[1]=1
@@ -362,6 +371,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(ExternalInterrupt *external_interrupt)
 	this->cia = ExternalInterrupt::OFFSET | (msr.template Get<typename MSR::IP>() ? 0xfff00000UL : 0x00000000UL);
 	
 	external_interrupt->Clear();
+  
+	this->template AckInterrupt<ExternalInterrupt>();
 }
 
 template <typename TYPES, typename CONFIG>
@@ -402,7 +413,9 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(AlignmentInterrupt *alignment_interrup
 	
 	// Look at primary opcode (bits 0-5)
 	uint32_t instruction_encoding = operation->GetEncoding();
-	bool xform = ((instruction_encoding >> 26) & 0x3fUL) == 31;
+	struct OPC : Field<OPC, 0, 5> {};
+	bool xform = OPC::template Get<uint32_t>(instruction_encoding) == 31;
+//	bool xform = ((instruction_encoding >> 26) & 0x3fUL) == 31;
 		
 	if(xform)
 	{
@@ -459,8 +472,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(AlignmentInterrupt *alignment_interrup
 	struct _25_27 : Field<_25_27, 25, 27> {};
 	struct _30_31 : Field<_30_31, 30, 31> {};
 	struct SRR1_CLEARED_FIELDS : FieldSet<_1_4, _10_15> {};
-	struct MSR_COPIED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
-	srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+	struct MSR_SAVED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
+	srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 	srr1.template Set<SRR1_CLEARED_FIELDS>(0);
 	
 	// MSR[LE]=MSR[ILE]
@@ -505,8 +518,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(ProgramInterrupt *program_interrupt)
 	struct _16_23 : Field<_16_23, 16, 23> {};
 	struct _25_27 : Field<_25_27, 25, 27> {};
 	struct _30_31 : Field<_30_31, 30, 31> {};
-	struct MSR_COPIED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
-	srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+	struct MSR_SAVED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
+	srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 	
 	// MSR[LE]=MSR[ILE]
 	msr.template Set<typename MSR::LE>(msr.template Get<typename MSR::ILE>());
@@ -533,8 +546,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(FloatingPointUnavailableInterrupt *flo
 	struct _25_27 : Field<_25_27, 25, 27> {};
 	struct _30_31 : Field<_30_31, 30, 31> {};
 	struct SRR1_CLEARED_FIELDS : FieldSet<_1_4, _10_15> {};
-	struct MSR_COPIED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
-	srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+	struct MSR_SAVED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
+	srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 	srr1.template Set<SRR1_CLEARED_FIELDS>(0);
 	
 	// MSR[LE]=MSR[ILE]
@@ -562,8 +575,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(DecrementerInterrupt *decrementer_inte
 	struct _25_27 : Field<_25_27, 25, 27> {};
 	struct _30_31 : Field<_30_31, 30, 31> {};
 	struct SRR1_CLEARED_FIELDS : FieldSet<_1_4, _10_15> {};
-	struct MSR_COPIED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
-	srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+	struct MSR_SAVED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
+	srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 	srr1.template Set<SRR1_CLEARED_FIELDS>(0);
 	
 	// MSR[LE]=MSR[ILE]
@@ -603,8 +616,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(SystemCallInterrupt *system_call_inter
 		struct _25_27 : Field<_25_27, 25, 27> {};
 		struct _30_31 : Field<_30_31, 30, 31> {};
 		struct SRR1_CLEARED_FIELDS : FieldSet<_1_4, _10_15> {};
-		struct MSR_COPIED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
-		srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+		struct MSR_SAVED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
+		srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 		srr1.template Set<SRR1_CLEARED_FIELDS>(0);
 		
 		// MSR[LE]=MSR[ILE]
@@ -635,8 +648,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(TraceInterrupt *trace_interrupt)
 	struct _25_27 : Field<_25_27, 25, 27> {};
 	struct _30_31 : Field<_30_31, 30, 31> {};
 	struct SRR1_CLEARED_FIELDS : FieldSet<_1_4, _10_15> {};
-	struct MSR_COPIED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
-	srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+	struct MSR_SAVED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
+	srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 	srr1.template Set<SRR1_CLEARED_FIELDS>(0);
 	
 	// MSR[LE]=MSR[ILE]
@@ -664,8 +677,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(PerformanceMonitorInterrupt *performan
 	struct _25_27 : Field<_25_27, 25, 27> {};
 	struct _30_31 : Field<_30_31, 30, 31> {};
 	struct SRR1_CLEARED_FIELDS : FieldSet<_1_4, _10_15> {};
-	struct MSR_COPIED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
-	srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+	struct MSR_SAVED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
+	srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 	srr1.template Set<SRR1_CLEARED_FIELDS>(0);
 	
 	// MSR[LE]=MSR[ILE]
@@ -693,8 +706,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(AltivecUnavailableInterrupt *altivec_u
 	struct _25_27 : Field<_25_27, 25, 27> {};
 	struct _30_31 : Field<_30_31, 30, 31> {};
 	struct SRR1_CLEARED_FIELDS : FieldSet<_1_4, _10_15> {};
-	struct MSR_COPIED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
-	srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+	struct MSR_SAVED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
+	srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 	srr1.template Set<SRR1_CLEARED_FIELDS>(0);
 	
 	// MSR[LE]=MSR[ILE]
@@ -728,8 +741,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(InstructionTLBMissInterrupt *instructi
 	struct _13_15 : Field<_13_15, 13, 15> {};
 	struct _16_31 : Field<_16_31, 16, 31> {};
 	struct SRR1_CLEARED_FIELDS : FieldSet<_0_5, _7_11, _13_15> {};
-	struct MSR_COPIED_FIELDS : FieldSet<_6, _16_31> {};
-	srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+	struct MSR_SAVED_FIELDS : FieldSet<_6, _16_31> {};
+	srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 	srr1.template Set<typename SRR1::_12>(instruction_tlb_miss_interrupt->GetKey());
 	srr1.template Set<SRR1_CLEARED_FIELDS>(0);
 	
@@ -766,8 +779,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(DataTLBMissOnLoadInterrupt *data_tlb_m
 	struct _13_15 : Field<_13_15, 13, 15> {};
 	struct _16_31 : Field<_16_31, 16, 31> {};
 	struct SRR1_CLEARED_FIELDS : FieldSet<_0_5, _7_11, _13_15> {};
-	struct MSR_COPIED_FIELDS : FieldSet<_6, _16_31> {};
-	srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+	struct MSR_SAVED_FIELDS : FieldSet<_6, _16_31> {};
+	srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 	srr1.template Set<typename SRR1::_12>(data_tlb_miss_on_load_interrupt->GetKey());
 	srr1.template Set<SRR1_CLEARED_FIELDS>(0);
 	
@@ -804,8 +817,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(DataTLBMissOnStoreInterrupt *data_tlb_
 	struct _13_15 : Field<_13_15, 13, 15> {};
 	struct _16_31 : Field<_16_31, 16, 31> {};
 	struct SRR1_CLEARED_FIELDS : FieldSet<_0_5, _7_10, _13_15> {};
-	struct MSR_COPIED_FIELDS : FieldSet<_6, _16_31> {};
-	srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+	struct MSR_SAVED_FIELDS : FieldSet<_6, _16_31> {};
+	srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 	srr1.template Set<typename SRR1::_11>(data_tlb_miss_on_store_interrupt->GetC());
 	srr1.template Set<typename SRR1::_12>(data_tlb_miss_on_store_interrupt->GetKey());
 	srr1.template Set<SRR1_CLEARED_FIELDS>(0);
@@ -837,8 +850,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(InstructionAddressBreakpointInterrupt 
 	struct _25_27 : Field<_25_27, 25, 27> {};
 	struct _30_31 : Field<_30_31, 30, 31> {};
 	struct SRR1_CLEARED_FIELDS : FieldSet<_1_4, _10_15> {};
-	struct MSR_COPIED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
-	srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+	struct MSR_SAVED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
+	srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 	srr1.template Set<SRR1_CLEARED_FIELDS>(0);
 	
 	// MSR[LE]=MSR[ILE]
@@ -866,8 +879,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(SystemManagementInterrupt *system_mana
 	struct _25_27 : Field<_25_27, 25, 27> {};
 	struct _30_31 : Field<_30_31, 30, 31> {};
 	struct SRR1_CLEARED_FIELDS : FieldSet<_1_4, _10_15> {};
-	struct MSR_COPIED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
-	srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+	struct MSR_SAVED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
+	srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 	srr1.template Set<SRR1_CLEARED_FIELDS>(0);
 	
 	// MSR[LE]=MSR[ILE]
@@ -895,8 +908,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(AltivecAssistInterrupt *altivec_assist
 	struct _25_27 : Field<_25_27, 25, 27> {};
 	struct _30_31 : Field<_30_31, 30, 31> {};
 	struct SRR1_CLEARED_FIELDS : FieldSet<_1_4, _10_15> {};
-	struct MSR_COPIED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
-	srr1.template Set<MSR_COPIED_FIELDS>(msr.template Get<MSR_COPIED_FIELDS>());
+	struct MSR_SAVED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
+	srr1.template Set<MSR_SAVED_FIELDS>(msr.template Get<MSR_SAVED_FIELDS>());
 	srr1.template Set<SRR1_CLEARED_FIELDS>(0);
 	
 	// MSR[LE]=MSR[ILE]
@@ -923,9 +936,15 @@ void CPU<TYPES, CONFIG>::UpdateExceptionEnable()
 }
 
 template <typename TYPES, typename CONFIG>
+void CPU<TYPES, CONFIG>::UpdatePowerSave()
+{
+	powersave = msr.template Get<typename MSR::POW>() && hid0.template Get<typename HID0::NAP>();
+}
+
+template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::PowerManagement()
 {
-	if(msr.template Get<typename MSR::POW>() && hid0.template Get<typename HID0::NAP>())
+	if(unlikely(powersave))
 	{
 		this->Idle();
 	}
@@ -987,13 +1006,6 @@ bool CPU<TYPES, CONFIG>::Stwcx(unsigned int rs, EFFECTIVE_ADDRESS addr)
 }
 
 template <typename TYPES, typename CONFIG>
-bool CPU<TYPES, CONFIG>::Wait()
-{
-	Idle();
-	return true;
-}
-
-template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Sync()
 {
 	return true;
@@ -1020,14 +1032,18 @@ bool CPU<TYPES, CONFIG>::Rfi()
 		return false;
 	}
 	
-	struct B0_30 : Field<void, 0, 30> {};
+	struct B0_29 : Field<B0_29, 0, 29> {};
 
-	this->Branch(srr0 & B0_30::template GetMask<EFFECTIVE_ADDRESS>());
-	msr = srr1;
+	this->Branch(srr0 & B0_29::template GetMask<EFFECTIVE_ADDRESS>());
+	struct _16_23 : Field<_16_23, 16, 23> {};
+	struct _25_27 : Field<_25_27, 25, 27> {};
+	struct _30_31 : Field<_30_31, 30, 31> {};
+	struct MSR_RESTORED_FIELDS : FieldSet<_16_23, _25_27, _30_31> {};
+	msr.template Set<MSR_RESTORED_FIELDS>(srr1.template Get<MSR_RESTORED_FIELDS>());
 	
 	if(unlikely(this->verbose_interrupt))
 	{
-		this->logger << DebugInfo << "Returning from interrupt to 0x" << std::hex << this->nia << std::dec << EndDebugInfo;
+		this->logger << DebugInfo << "instruction #" << this->instruction_counter << ":Returning from interrupt to 0x" << std::hex << this->nia << std::dec << EndDebugInfo;
 	}
 
 	this->FlushInstructionBuffer();
@@ -1048,7 +1064,7 @@ bool CPU<TYPES, CONFIG>::InstructionFetch(EFFECTIVE_ADDRESS addr, typename CONFI
 	EFFECTIVE_ADDRESS base_addr = addr & ~(CONFIG::INSTRUCTION_BUFFER_SIZE - 1);
 	int instruction_buffer_index = (addr / 4) % (CONFIG::INSTRUCTION_BUFFER_SIZE / 4);
 	
-	if(base_addr != instruction_buffer_base_addr)
+	if(unlikely(base_addr != instruction_buffer_base_addr))
 	{
 		EFFECTIVE_ADDRESS size_to_protection_boundary;
 		ADDRESS base_virt_addr;
@@ -1069,7 +1085,7 @@ bool CPU<TYPES, CONFIG>::InstructionFetch(EFFECTIVE_ADDRESS addr, typename CONFI
 	{
 		// Account for level 1 cache access
 		typename CONFIG::CPU::INSTRUCTION_CACHE_HIERARCHY::L1CACHE *l1i = static_cast<typename CONFIG::CPU *>(this)->GetCache((typename CONFIG::CPU::INSTRUCTION_CACHE_HIERARCHY::L1CACHE *) 0);
-		if(l1i && l1i->IsEnabled())
+		if(likely(l1i && l1i->IsEnabled()))
 		{
 			l1i->Access();
 		}
@@ -1083,6 +1099,7 @@ bool CPU<TYPES, CONFIG>::InstructionFetch(EFFECTIVE_ADDRESS addr, typename CONFI
 template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::StepOneInstruction()
 {
+	this->PowerManagement();
 	this->ProcessExceptions();
 
 	if(unlikely(this->requires_fetch_instruction_reporting))
@@ -1133,7 +1150,9 @@ void CPU<TYPES, CONFIG>::StepOneInstruction()
 
 			if(unlikely(this->trap_reporting_import && (this->instruction_counter == this->trap_on_instruction_counter)))
 			{
-				this->trap_reporting_import->ReportTrap();
+				std::stringstream msg_sstr;
+				msg_sstr << "Instruction counter reached " << this->instruction_counter;
+				this->trap_reporting_import->ReportTrap(*this, msg_sstr.str());
 			}
 			
 			if(unlikely((this->instruction_counter >= this->max_inst) || (this->cia == this->halt_on_addr))) this->Halt();
@@ -1151,47 +1170,19 @@ template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::RunTimers(uint64_t delta)
 {
 	tb = uint64_t(tb) + delta;
-	
-	uint32_t old_dec_value = uint32_t(dec);
-	if(old_dec_value > 0)
-	{
-		uint32_t new_dec_value = (delta <= old_dec_value) ? old_dec_value - delta : 0;
-		
-		dec = new_dec_value;
-		
-		if(unlikely(new_dec_value == 0))
-		{
-			this->template ThrowException<typename DecrementerInterrupt::Decrementer>();
-		}
-	}
+	dec = uint32_t(dec) - delta;
 }
 
 template <typename TYPES, typename CONFIG>
 uint64_t CPU<TYPES, CONFIG>::GetMaxIdleTime() const
 {
-	uint64_t delay_dec = 0xffffffffffffffffULL;
-	
-	if(msr.template Get<typename MSR::EE>())
-	{
-		uint32_t dec_value = uint32_t(dec);
-		if(dec_value) delay_dec = dec_value;
-		//std::cerr << "Time for DEC to reach zero: " << delay_dec << std::endl;
-	}
-	
-	uint64_t max_idle_time = delay_dec;
-	return max_idle_time;
+	return msr.template Get<typename MSR::EE>() ? (uint64_t(dec) + 1) : 0xffffffffffffffffULL;
 }
 
 template <typename TYPES, typename CONFIG>
 uint64_t CPU<TYPES, CONFIG>::GetTimersDeadline() const
 {
-	uint64_t delay_dec = 0xffffffffffffffffULL;
-	
-	uint32_t dec_value = uint32_t(dec);
-	if(dec_value) delay_dec = dec_value;
-	
-	uint64_t timers_deadline = delay_dec;
-	return timers_deadline;
+	return uint64_t(dec) + 1;
 }
 
 } // end of namespace e600

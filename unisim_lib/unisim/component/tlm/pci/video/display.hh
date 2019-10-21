@@ -78,7 +78,7 @@ using unisim::component::cxx::pci::PCISpace;
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 class Display :
-	public sc_module,
+	public sc_core::sc_module,
 	public TlmSendIf<PCIRequest<ADDRESS_TYPE, MAX_DATA_SIZE>, PCIResponse<MAX_DATA_SIZE> >,
 	public unisim::component::cxx::pci::video::Display<ADDRESS_TYPE>
 {
@@ -89,15 +89,15 @@ public:
 	typedef PCIResponse<MAX_DATA_SIZE> PCIRsp;
 	
 	// from PCI bus
-	sc_export<TlmSendIf<PCIReq, PCIRsp> > bus_port;
+	sc_core::sc_export<TlmSendIf<PCIReq, PCIRsp> > bus_port;
 
-	Display(const sc_module_name& name, Object *parent = 0);
+	Display(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~Display();
 	virtual bool Send(const Pointer<TlmMessage<PCIReq, PCIRsp> > &message);
 	virtual bool EndSetup();
 private:
 	
-	sc_time pci_bus_cycle_time;
+	sc_core::sc_time pci_bus_cycle_time;
 };
 
 } // end of namespace video
