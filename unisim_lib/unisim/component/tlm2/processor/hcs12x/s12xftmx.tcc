@@ -176,17 +176,6 @@ S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 ~S12XFTMX() {
 
 	// Release registers_registry
-	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		if(reg_iter->second)
-			delete reg_iter->second;
-	}
-
-	registers_registry.clear();
-
-
 	for (unsigned int i=0; i<extended_registers_registry.size(); i++) {
 		delete extended_registers_registry[i];
 	}
@@ -1240,185 +1229,157 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::partitionDFlas
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::BeginSetup()
 {
-	char buf[80];
-
-	sprintf(buf, "%s.FCLKDIV",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &fclkdiv_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".FCLKDIV", &fclkdiv_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *fclkdiv_var = new unisim::kernel::variable::Register<uint8_t>("FCLKDIV", this, fclkdiv_reg, "FLASH Clock Divider Register (FCLKDIV)");
 	extended_registers_registry.push_back(fclkdiv_var);
 	fclkdiv_var->setCallBack(this, FCLKDIV, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FSEC",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &fsec_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".FSEC", &fsec_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *fsec_var = new unisim::kernel::variable::Register<uint8_t>("FSEC", this, fsec_reg, "FLASH Security Register (FSEC)");
 	extended_registers_registry.push_back(fsec_var);
 	fsec_var->setCallBack(this, FSEC, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FCCOBIX",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &fccobix_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".FCCOBIX", &fccobix_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *fccobix_var = new unisim::kernel::variable::Register<uint8_t>("FCCOBIX", this, fccobix_reg, "FLASH CCOB index Register (FCCOBIX)");
 	extended_registers_registry.push_back(fccobix_var);
 	fccobix_var->setCallBack(this, FCCOBIX, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FECCRIX",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &feccrix_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".FECCRIX", &feccrix_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *feccrix_var = new unisim::kernel::variable::Register<uint8_t>("FECCRIX", this, feccrix_reg, "FLASH ECCR index Register (FECCRIX)");
 	extended_registers_registry.push_back(feccrix_var);
 	feccrix_var->setCallBack(this, FECCRIX, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FCNFG",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &fcnfg_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".FCNFG", &fcnfg_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *fcnfg_var = new unisim::kernel::variable::Register<uint8_t>("FCNFG", this, fcnfg_reg, "FLASH Configuration Register (FCNFG)");
 	extended_registers_registry.push_back(fcnfg_var);
 	fcnfg_var->setCallBack(this, FCNFG, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FERCNFG",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &fercnfg_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".FERCNFG", &fercnfg_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *fercnfg_var = new unisim::kernel::variable::Register<uint8_t>("FERCNFG", this, fercnfg_reg, "FLASH Error Configuration Register (FERCNFG)");
 	extended_registers_registry.push_back(fercnfg_var);
 	fercnfg_var->setCallBack(this, FERCNFG, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FSTAT",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &fstat_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".FSTAT", &fstat_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *fstat_var = new unisim::kernel::variable::Register<uint8_t>("FSTAT", this, fstat_reg, "FLASH Status Register (FSTAT)");
 	extended_registers_registry.push_back(fstat_var);
 	fstat_var->setCallBack(this, FSTAT, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FERSTAT",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ferstat_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".FERSTAT", &ferstat_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *ferstat_var = new unisim::kernel::variable::Register<uint8_t>("FERSTAT", this, ferstat_reg, "FLASH error Status Register (FERSTAT)");
 	extended_registers_registry.push_back(ferstat_var);
 	ferstat_var->setCallBack(this, FERSTAT, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FPROT",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &fprot_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".FPROT", &fprot_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *fprot_var = new unisim::kernel::variable::Register<uint8_t>("FPROT", this, fprot_reg, "P-FLASH Protection Register (FPROT)");
 	extended_registers_registry.push_back(fprot_var);
 	fprot_var->setCallBack(this, FPROT, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.EPROT",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &eprot_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".EPROT", &eprot_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *eprot_var = new unisim::kernel::variable::Register<uint8_t>("EPROT", this, eprot_reg, "EEE Protection Register (EPROT)");
 	extended_registers_registry.push_back(eprot_var);
 	eprot_var->setCallBack(this, EPROT, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FCCOB000",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &(fccob_reg[0]));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".FCCOB000", &(fccob_reg[0])));
 
 	unisim::kernel::variable::Register<uint16_t> *fccob000_var = new unisim::kernel::variable::Register<uint16_t>("FCCOB000", this, fccob_reg[0], "Flash Common Command Object Register (FCCOB000)");
 	extended_registers_registry.push_back(fccob000_var);
 	fccob000_var->setCallBack(this, FCCOB000, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FCCOB001",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &(fccob_reg[1]));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".FCCOB001", &(fccob_reg[1])));
 
 	unisim::kernel::variable::Register<uint16_t> *fccob001_var = new unisim::kernel::variable::Register<uint16_t>("FCCOB001", this, fccob_reg[1], "Flash Common Command Object Register (FCCOB001)");
 	extended_registers_registry.push_back(fccob001_var);
 	fccob001_var->setCallBack(this, FCCOB001, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FCCOB010",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &fccob_reg[2]);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".FCCOB010", &fccob_reg[2]));
 
 	unisim::kernel::variable::Register<uint16_t> *fccob010_var = new unisim::kernel::variable::Register<uint16_t>("FCCOB010", this, fccob_reg[2], "Flash Common Command Object Register (FCCOB010)");
 	extended_registers_registry.push_back(fccob010_var);
 	fccob010_var->setCallBack(this, FCCOB010, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FCCOB011",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &(fccob_reg[3]));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".FCCOB011", &(fccob_reg[3])));
 
 	unisim::kernel::variable::Register<uint16_t> *fccob011_var = new unisim::kernel::variable::Register<uint16_t>("FCCOB011", this, fccob_reg[3], "Flash Common Command Object Register (FCCOB011)");
 	extended_registers_registry.push_back(fccob011_var);
 	fccob011_var->setCallBack(this, FCCOB011, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FCCOB100",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &(fccob_reg[4]));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".FCCOB100", &(fccob_reg[4])));
 
 	unisim::kernel::variable::Register<uint16_t> *fccob100_var = new unisim::kernel::variable::Register<uint16_t>("FCCOB100", this, fccob_reg[4], "Flash Common Command Object Register (FCCOB100)");
 	extended_registers_registry.push_back(fccob100_var);
 	fccob100_var->setCallBack(this, FCCOB100, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FCCOB101",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &(fccob_reg[5]));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".FCCOB101", &(fccob_reg[5])));
 
 	unisim::kernel::variable::Register<uint16_t> *fccob101_var = new unisim::kernel::variable::Register<uint16_t>("FCCOB101", this, fccob_reg[5], "Flash Common Command Object Register (FCCOB101)");
 	extended_registers_registry.push_back(fccob101_var);
 	fccob101_var->setCallBack(this, FCCOB101, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.ETAG",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &etag_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".ETAG", &etag_reg));
 
 	unisim::kernel::variable::Register<uint16_t> *etag_var = new unisim::kernel::variable::Register<uint16_t>("ETAG", this, etag_reg, "EEE Tag Counter Register (ETAG)");
 	extended_registers_registry.push_back(etag_var);
 	etag_var->setCallBack(this, ETAGHI, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FECCR000",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &(feccr_reg[0]));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".FECCR000", &(feccr_reg[0])));
 
 	unisim::kernel::variable::Register<uint16_t> *feccr000_var = new unisim::kernel::variable::Register<uint16_t>("FECCR000", this, feccr_reg[0], "Flash ECC Error Results Register (FECCR000)");
 	extended_registers_registry.push_back(feccr000_var);
 	feccr000_var->setCallBack(this, FECCR000, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FECCR001",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &(feccr_reg[1]));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".FECCR001", &(feccr_reg[1])));
 
 	unisim::kernel::variable::Register<uint16_t> *feccr001_var = new unisim::kernel::variable::Register<uint16_t>("FECCR001", this, feccr_reg[1], "Flash ECC Error Results Register (FECCR001)");
 	extended_registers_registry.push_back(feccr001_var);
 	feccr001_var->setCallBack(this, FECCR001, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FECCR010",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &(feccr_reg[2]));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".FECCR010", &(feccr_reg[2])));
 
 	unisim::kernel::variable::Register<uint16_t> *feccr010_var = new unisim::kernel::variable::Register<uint16_t>("FECCR010", this, feccr_reg[2], "Flash ECC Error Results Register (FECCR010)");
 	extended_registers_registry.push_back(feccr010_var);
 	feccr010_var->setCallBack(this, FECCR010, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FECCR011",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &(feccr_reg[3]));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".FECCR011", &(feccr_reg[3])));
 
 	unisim::kernel::variable::Register<uint16_t> *feccr011_var = new unisim::kernel::variable::Register<uint16_t>("FECCR011", this, feccr_reg[3], "Flash ECC Error Results Register (FECCR011)");
 	extended_registers_registry.push_back(feccr011_var);
 	feccr011_var->setCallBack(this, FECCR011, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FECCR100",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &(feccr_reg[4]));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".FECCR100", &(feccr_reg[4])));
 
 	unisim::kernel::variable::Register<uint16_t> *feccr100_var = new unisim::kernel::variable::Register<uint16_t>("FECCR100", this, feccr_reg[4], "Flash ECC Error Results Register (FECCR100)");
 	extended_registers_registry.push_back(feccr100_var);
 	feccr100_var->setCallBack(this, FECCR100, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FECCR101",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &(feccr_reg[5]));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".FECCR101", &(feccr_reg[5])));
 
 	unisim::kernel::variable::Register<uint16_t> *feccr101_var = new unisim::kernel::variable::Register<uint16_t>("FECCR101", this, feccr_reg[5], "Flash ECC Error Results Register (FECCR101)");
 	extended_registers_registry.push_back(feccr101_var);
 	feccr101_var->setCallBack(this, FECCR101, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FECCR110",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &(feccr_reg[6]));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".FECCR110", &(feccr_reg[6])));
 
 	unisim::kernel::variable::Register<uint16_t> *feccr110_var = new unisim::kernel::variable::Register<uint16_t>("FECCR110", this, feccr_reg[6], "Flash ECC Error Results Register (FECCR110)");
 	extended_registers_registry.push_back(feccr110_var);
 	feccr110_var->setCallBack(this, FECCR110, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FECCR111",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &(feccr_reg[7]));
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".FECCR111", &(feccr_reg[7])));
 
 	unisim::kernel::variable::Register<uint16_t> *feccr111_var = new unisim::kernel::variable::Register<uint16_t>("FECCR111", this, feccr_reg[7], "Flash ECC Error Results Register (FECCR111)");
 	extended_registers_registry.push_back(feccr111_var);
 	feccr111_var->setCallBack(this, FECCR111, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.FOPT",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &fopt_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".FOPT", &fopt_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *fopt_var = new unisim::kernel::variable::Register<uint8_t>("FOPT", this, fopt_reg, "Flash Option Register (FOPT)");
 	extended_registers_registry.push_back(fopt_var);
@@ -1865,11 +1826,13 @@ bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(AD
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 Register * S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::GetRegister(const char *name) {
 
-	if(registers_registry.find(string(name)) != registers_registry.end())
-		return (registers_registry[string(name)]);
-	else
-		return (NULL);
+	return registers_registry.GetRegister(name);
+}
 
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner) {
+	
+	registers_registry.ScanRegisters(scanner);
 }
 
 //=====================================================================

@@ -49,6 +49,7 @@
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/service/interfaces/register.hh"
 #include "unisim/util/singleton/singleton.hh"
+#include <unisim/util/debug/simple_register_registry.hh>
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
@@ -269,12 +270,7 @@ public:
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
     virtual Register *GetRegister(const char *name);
-
-
-    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
-    {
-    	// TODO
-    }
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
 	//=====================================================================
 	//=             Internal Registers Access methods                     =
@@ -353,7 +349,7 @@ private:
 	Parameter<address_t> param_ppage_address;
 
 	// Registers map
-	std::map<string, Register *> registers_registry;
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 
 	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 

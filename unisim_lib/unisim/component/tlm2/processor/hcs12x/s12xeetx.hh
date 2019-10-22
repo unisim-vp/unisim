@@ -33,6 +33,8 @@
 #include "unisim/component/tlm2/memory/ram/memory.hh"
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
 
+#include <unisim/util/debug/simple_register_registry.hh>
+
 #include <inttypes.h>
 
 namespace unisim {
@@ -182,11 +184,8 @@ public:
 	 * @param name The name of the requested register.
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
-    virtual Register *GetRegister(const char *name);
-
-    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner ) {
-    	// TODO:
-    }
+	virtual Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
 	//=====================================================================
 	//=             registers setters and getters                         =
@@ -265,7 +264,7 @@ private:
 	Parameter<double> param_erase_fail_ratio;
 
 	// Registers map
-	map<string, Register *> registers_registry;
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 
 	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 

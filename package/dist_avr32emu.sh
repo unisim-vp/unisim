@@ -1,7 +1,7 @@
 #!/bin/bash
 SIMPKG=avr32emu
 SIMPKG_SRCDIR=tlm2/avr32emu
-SIMPKG_SRCDIR=avr32emu
+SIMPKG_DSTDIR=avr32emu
 source "$(dirname $0)/dist_common.sh"
 
 import_genisslib

@@ -46,6 +46,7 @@
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/util/debug/simple_register.hh>
+#include <unisim/util/debug/simple_register_registry.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/kernel/kernel.hh>
@@ -536,7 +537,7 @@ private:
 	std::string halt_on;
 	uint64_t max_inst;                                         //!< maximum number of instructions to execute
 
-	map<string, unisim::service::interfaces::Register *> registers_registry;       //!< Every CPU register interfaces
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;       //!< Every CPU register interfaces
 	uint64_t instruction_counter;                              //!< Number of executed instructions
 
 	inline uint64_t GetInstructionCounter() const ALWAYS_INLINE { return instruction_counter; }

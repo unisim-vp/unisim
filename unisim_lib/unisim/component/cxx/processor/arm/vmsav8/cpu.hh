@@ -41,6 +41,7 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
+#include <unisim/util/debug/simple_register_registry.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/register.hh>
 #include <unisim/service/interfaces/debug_yielding.hh>
@@ -383,7 +384,7 @@ protected:
   //=====================================================================
   
   /** The registers interface for debugging purpose */
-  typedef std::map<std::string, unisim::service::interfaces::Register*> RegistersRegistry;
+  typedef unisim::util::debug::SimpleRegisterRegistry RegistersRegistry;
   RegistersRegistry registers_registry;
   
   typedef std::set<unisim::kernel::VariableBase*> VariableRegisterPool;

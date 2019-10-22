@@ -113,16 +113,6 @@ S12SPI<SPI_VERSION>::~S12SPI() {
 	xint_payload->release();
 
 	// Release registers_registry
-	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		if(reg_iter->second)
-			delete reg_iter->second;
-	}
-
-	registers_registry.clear();
-
 	unsigned int i;
 	unsigned int n = extended_registers_registry.size();
 	for (i=0; i<n; i++) {
@@ -785,38 +775,31 @@ void S12SPI<SPI_VERSION>::ComputeBaudRate() {
 template <unsigned int SPI_VERSION>
 bool S12SPI<SPI_VERSION>::BeginSetup() {
 
-	char buf[80];
-
-	sprintf(buf, "%s.SPICR1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &spicr1_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SPICR1", &spicr1_register));
 
 	unisim::kernel::variable::Register<uint8_t> *spicr1_var = new unisim::kernel::variable::Register<uint8_t>("SPICR1", this, spicr1_register, "SPI Control Register 1 (SPICR1)");
 	extended_registers_registry.push_back(spicr1_var);
 	spicr1_var->setCallBack(this, SPICR1, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.SPICR2",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &spicr2_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SPICR2", &spicr2_register));
 
 	unisim::kernel::variable::Register<uint8_t> *spicr2_var = new unisim::kernel::variable::Register<uint8_t>("SPICR2", this, spicr2_register, "SPI Control Register 2 (SPICR2)");
 	extended_registers_registry.push_back(spicr2_var);
 	spicr2_var->setCallBack(this, SPICR2, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.SPIBR",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &spibr_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SPIBR", &spibr_register));
 
 	unisim::kernel::variable::Register<uint8_t> *spibr_var = new unisim::kernel::variable::Register<uint8_t>("SPIBR", this, spibr_register, "SPI Baud Rate Register (SPIBR)");
 	extended_registers_registry.push_back(spibr_var);
 	spibr_var->setCallBack(this, SPIBR, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.SPISR",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &spisr_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".SPISR", &spisr_register));
 
 	unisim::kernel::variable::Register<uint8_t> *spisr_var = new unisim::kernel::variable::Register<uint8_t>("SPISR", this, spisr_register, "SPI Status register (SPISR)");
 	extended_registers_registry.push_back(spisr_var);
 	spisr_var->setCallBack(this, SPISR, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.SPIDR",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE>(buf, &spidr_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE>(std::string(sc_object::name()) + ".SPIDR", &spidr_register));
 
 	unisim::kernel::variable::Register<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE> *spidr_var = new unisim::kernel::variable::Register<typename S12SPI_CONFIG<SPI_VERSION>::DATA_TYPE>("SPIDR", this, spidr_register, "SPI Data register (SPIDR)");
 	extended_registers_registry.push_back(spidr_var);
@@ -846,13 +829,14 @@ bool S12SPI<SPI_VERSION>::EndSetup() {
 template <unsigned int SPI_VERSION>
 Register* S12SPI<SPI_VERSION>::GetRegister(const char *name)
 {
-	if(registers_registry.find(string(name)) != registers_registry.end())
-		return (registers_registry[string(name)]);
-	else
-		return (NULL);
-
+	return registers_registry.GetRegister(name);
 }
 
+template <unsigned int SPI_VERSION>
+void S12SPI<SPI_VERSION>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
+}
 
 template <unsigned int SPI_VERSION>
 void S12SPI<SPI_VERSION>::OnDisconnect() {

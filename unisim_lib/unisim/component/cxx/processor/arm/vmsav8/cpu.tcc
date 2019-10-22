@@ -129,9 +129,10 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
         { std::stringstream ss; ss << isa::arm64::DisasmGSXR( idx ); pretty_name = ss.str(); }
         { std::stringstream ss; ss << "Logical register #" << idx << ": " << pretty_name; description = ss.str(); }
         dbg_reg = new unisim::util::debug::SimpleRegister<uint64_t>( pretty_name, &gpr[idx] );
-        registers_registry[pretty_name] = dbg_reg;
+        registers_registry.AddRegisterInterface( dbg_reg );
         if (name != pretty_name) {
-          registers_registry[name] = dbg_reg;
+          dbg_reg = new unisim::util::debug::SimpleRegister<uint64_t>( name, &gpr[idx] );
+          registers_registry.AddRegisterInterface( dbg_reg );
           description =  description + ", " + name;
         }
         var_reg = new unisim::kernel::variable::Register<uint64_t>( pretty_name.c_str(), this, gpr[idx], description.c_str() );
@@ -151,12 +152,12 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
     };
 
     dbg_reg = new ProgramCounterRegister( *this );
-    registers_registry["pc"] = dbg_reg;
+    registers_registry.AddRegisterInterface( dbg_reg );
     var_reg = new unisim::kernel::variable::Register<uint64_t>( "pc", this, this->next_insn_addr, "Program Counter (Current Instruction Address)" );
     variable_register_pool.insert( var_reg );
     
     dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "nzcv", &this->nzcv );
-    registers_registry["nzcv"] = dbg_reg;
+    registers_registry.AddRegisterInterface( dbg_reg );
     var_reg = new unisim::kernel::variable::Register<uint32_t>( "nzcv", this, this->nzcv, "PSTATE.{N,Z,C,V}" );
     variable_register_pool.insert( var_reg );
   }  
@@ -183,11 +184,7 @@ template <class CONFIG>
 unisim::service::interfaces::Register*
 CPU<CONFIG>::GetRegister( const char* name )
 {
-  RegistersRegistry::iterator itr = registers_registry.find( name );
-  if (itr != registers_registry.end())
-    return itr->second;
-  else
-    return 0;
+  return registers_registry.GetRegister(name);
 }
 
 /** Scan available registers for the Registers interface
@@ -217,6 +214,7 @@ CPU<CONFIG>::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanne
   // scanner.Append( this->GetRegister( "pc" ) );
   // TODO: should expose CPSR (and most probably the APSR view)
   // scanner.Append( this->GetRegister( "cpsr" ) );
+  registers_registry.ScanRegisters(scanner);
 }
 
 

@@ -139,16 +139,6 @@ ATD10B<ATD_SIZE>::~ATD10B() {
 	xint_payload->release();
 
 	// Release registers_registry
-	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		if(reg_iter->second)
-			delete reg_iter->second;
-	}
-
-	registers_registry.clear();
-
 	unsigned int i;
 	unsigned int n = extended_registers_registry.size();
 	for (i=0; i<n; i++) {
@@ -912,123 +902,105 @@ void ATD10B<ATD_SIZE>::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& 
 template <unsigned int ATD_SIZE>
 bool ATD10B<ATD_SIZE>::BeginSetup() {
 
-	char buf[40];
-
-	snprintf(buf, sizeof(buf), "%s.ATDCTL0",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl0_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ATDCTL0", &atdctl0_register));
 
 	unisim::kernel::variable::Register<uint8_t> *atdctl0_var = new unisim::kernel::variable::Register<uint8_t>("ATDCTL0", this, atdctl0_register, "ATD Control Register 0 (ATDCTL0)");
 	extended_registers_registry.push_back(atdctl0_var);
 	atdctl0_var->setCallBack(this, ATDCTL0, &CallBackObject::write, NULL);
 
-	snprintf(buf, sizeof(buf), "%s.ATDCTL1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl1_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ATDCTL1", &atdctl1_register));
 
 	unisim::kernel::variable::Register<uint8_t> *atdctl1_var = new unisim::kernel::variable::Register<uint8_t>("ATDCTL1", this, atdctl1_register, "ATD Control Register 1 (ATDCTL1)");
 	extended_registers_registry.push_back(atdctl1_var);
 	atdctl1_var->setCallBack(this, ATDCTL1, &CallBackObject::write, NULL);
 
-	snprintf(buf, sizeof(buf), "%s.ATDCTL2",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl2_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ATDCTL2", &atdctl2_register));
 
 	unisim::kernel::variable::Register<uint8_t> *atdctl2_var = new unisim::kernel::variable::Register<uint8_t>("ATDCTL2", this, atdctl2_register, "ATD Control Register 2 (ATDCTL2)");
 	extended_registers_registry.push_back(atdctl2_var);
 	atdctl2_var->setCallBack(this, ATDCTL2, &CallBackObject::write, NULL);
 
-	snprintf(buf, sizeof(buf), "%s.ATDCTL3",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl3_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ATDCTL3", &atdctl3_register));
 
 	unisim::kernel::variable::Register<uint8_t> *atdctl3_var = new unisim::kernel::variable::Register<uint8_t>("ATDCTL3", this, atdctl3_register, "ATD Control Register 3 (ATDCTL3)");
 	extended_registers_registry.push_back(atdctl3_var);
 	atdctl3_var->setCallBack(this, ATDCTL3, &CallBackObject::write, NULL);
 
-	snprintf(buf, sizeof(buf), "%s.ATDCTL4",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl4_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ATDCTL4", &atdctl4_register));
 
 	unisim::kernel::variable::Register<uint8_t> *atdctl4_var = new unisim::kernel::variable::Register<uint8_t>("ATDCTL4", this, atdctl4_register, "ATD Control Register 4 (ATDCTL4)");
 	extended_registers_registry.push_back(atdctl4_var);
 	atdctl4_var->setCallBack(this, ATDCTL4, &CallBackObject::write, NULL);
 
-	snprintf(buf, sizeof(buf), "%s.ATDCTL5",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl5_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ATDCTL5", &atdctl5_register));
 
 	unisim::kernel::variable::Register<uint8_t> *atdctl5_var = new unisim::kernel::variable::Register<uint8_t>("ATDCTL5", this, atdctl5_register, "ATD Control Register 5 (ATDCTL5)");
 	extended_registers_registry.push_back(atdctl5_var);
 	atdctl5_var->setCallBack(this, ATDCTL5, &CallBackObject::write, NULL);
 
-	snprintf(buf, sizeof(buf), "%s.ATDSTAT0",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdstat0_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ATDSTAT0", &atdstat0_register));
 
 	unisim::kernel::variable::Register<uint8_t> *atdstat0_var = new unisim::kernel::variable::Register<uint8_t>("ATDSTAT0", this, atdstat0_register, "ATD Status Register 0 (ATDSTAT0)");
 	extended_registers_registry.push_back(atdstat0_var);
 	atdstat0_var->setCallBack(this, ATDSTAT0, &CallBackObject::write, NULL);
 
-	snprintf(buf, sizeof(buf), "%s.ATDTEST0",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdtest0_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ATDTEST0", &atdtest0_register));
 
 	unisim::kernel::variable::Register<uint8_t> *atdtest0_var = new unisim::kernel::variable::Register<uint8_t>("ATDTEST0", this, atdtest0_register, "ATD Test Register 0 (ATDTEST0)");
 	extended_registers_registry.push_back(atdtest0_var);
 	atdtest0_var->setCallBack(this, ATDTEST0, &CallBackObject::write, NULL);
 
-	snprintf(buf, sizeof(buf), "%s.ATDTEST1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdtest1_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ATDTEST1", &atdtest1_register));
 
 	unisim::kernel::variable::Register<uint8_t> *atdtest1_var = new unisim::kernel::variable::Register<uint8_t>("ATDTEST1", this, atdtest1_register, "ATD Test Register 1 (ATDTEST1)");
 	extended_registers_registry.push_back(atdtest1_var);
 	atdtest1_var->setCallBack(this, ATDTEST1, &CallBackObject::write, NULL);
 
-	snprintf(buf, sizeof(buf), "%s.ATDSTAT2",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdstat2_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ATDSTAT2", &atdstat2_register));
 
 	unisim::kernel::variable::Register<uint8_t> *atdstat2_var = new unisim::kernel::variable::Register<uint8_t>("ATDSTAT2", this, atdstat2_register, "ATD Status Register 2 (ATDSTAT2)");
 	extended_registers_registry.push_back(atdstat2_var);
 	atdstat2_var->setCallBack(this, ATDSTAT2, &CallBackObject::write, NULL);
 
-	snprintf(buf, sizeof(buf), "%s.ATDSTAT1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdstat1_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ATDSTAT1", &atdstat1_register));
 
 	unisim::kernel::variable::Register<uint8_t> *atdstat1_var = new unisim::kernel::variable::Register<uint8_t>("ATDSTAT1", this, atdstat1_register, "ATD Status Register 1 (ATDSTAT1)");
 	extended_registers_registry.push_back(atdstat1_var);
 	atdstat1_var->setCallBack(this, ATDSTAT1, &CallBackObject::write, NULL);
 
-	snprintf(buf, sizeof(buf), "%s.ATDDIEN0",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atddien0_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ATDDIEN0", &atddien0_register));
 
 	unisim::kernel::variable::Register<uint8_t> *atddien0_var = new unisim::kernel::variable::Register<uint8_t>("ATDDIEN0", this, atddien0_register, "ATD Input Enable Register 0 (ATDDIEN0)");
 	extended_registers_registry.push_back(atddien0_var);
 	atddien0_var->setCallBack(this, ATDDIEN0, &CallBackObject::write, NULL);
 
-	snprintf(buf, sizeof(buf), "%s.ATDDIEN1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atddien1_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ATDDIEN1", &atddien1_register));
 
 	unisim::kernel::variable::Register<uint8_t> *atddien1_var = new unisim::kernel::variable::Register<uint8_t>("ATDDIEN1", this, atddien1_register, "ATD Input Enable Register 1 (ATDDIEN1)");
 	extended_registers_registry.push_back(atddien1_var);
 	atddien1_var->setCallBack(this, ATDDIEN1, &CallBackObject::write, NULL);
 
-	snprintf(buf, sizeof(buf), "%s.PORTAD0",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &portad0_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PORTAD0", &portad0_register));
 
 	unisim::kernel::variable::Register<uint8_t> *portad0_var = new unisim::kernel::variable::Register<uint8_t>("PORTAD0", this, portad0_register, "Port Data Register 0 (PORTAD0)");
 	extended_registers_registry.push_back(portad0_var);
 	portad0_var->setCallBack(this, PORTAD0, &CallBackObject::write, NULL);
 
-	snprintf(buf, sizeof(buf), "%s.PORTAD1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &portad1_register);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".PORTAD1", &portad1_register));
 
 	unisim::kernel::variable::Register<uint8_t> *portad1_var = new unisim::kernel::variable::Register<uint8_t>("PORTAD1", this, portad1_register, "Port Data Register 1 (PORTAD1)");
 	extended_registers_registry.push_back(portad1_var);
 	portad1_var->setCallBack(this, PORTAD1, &CallBackObject::write, NULL);
 
-	char shortName[20];
 	for (unsigned int i=0; i < ATD_SIZE; i++) {
 
-		sprintf(shortName, "ATDDR%d", i);
+		std::stringstream sstr;
+		sstr << "ATDDR" << i;
+		std::string shortName(sstr.str());
 
-		snprintf(buf, sizeof(buf), "%s.%s", sc_object::name(), shortName);
+		registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + '.' + shortName, &atddrhl_register[i]));
 
-		registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &atddrhl_register[i]);
-
-		unisim::kernel::variable::Register<uint16_t> *atddrhl_var = new unisim::kernel::variable::Register<uint16_t>(shortName, this, atddrhl_register[i], "ATD Result Register ");
+		unisim::kernel::variable::Register<uint16_t> *atddrhl_var = new unisim::kernel::variable::Register<uint16_t>(shortName.c_str(), this, atddrhl_register[i], "ATD Result Register ");
 		extended_registers_registry.push_back(atddrhl_var);
 		atddrhl_var->setCallBack(this, ATDDR0H + i*2, &CallBackObject::write, NULL);
 
@@ -1066,11 +1038,13 @@ bool ATD10B<ATD_SIZE>::EndSetup() {
 template <unsigned int ATD_SIZE>
 Register* ATD10B<ATD_SIZE>::GetRegister(const char *name)
 {
-	if(registers_registry.find(string(name)) != registers_registry.end())
-		return (registers_registry[string(name)]);
-	else
-		return (NULL);
+	return registers_registry.GetRegister(name);
+}
 
+template <unsigned int ATD_SIZE>
+void ATD10B<ATD_SIZE>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
 }
 
 template <unsigned int ATD_SIZE>

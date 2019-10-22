@@ -260,6 +260,20 @@ template <typename ADDRESS, typename CUSTOM_RW_ARG> class AddressableRegisterHan
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG> class RegisterAddressMap;
 
+////////////////////////////////// Same<> /////////////////////////////////////
+
+template <typename T1, typename T2>
+struct Same
+{
+	enum { VALUE = false };
+};
+
+template <typename T>
+struct Same<T, T>
+{
+	enum { VALUE = true };
+};
+
 /////////////////////////////// NullCustomArg /////////////////////////////////
 
 struct NullCustomArg {};
