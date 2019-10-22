@@ -38,6 +38,7 @@
 #include <unisim/util/simfloat/floating.hh>
 #include <unisim/component/cxx/processor/arm/extregbank.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/service/interfaces/register.hh>
 
 #include <limits>
@@ -420,25 +421,25 @@ namespace simfloat {
     SoftDouble *value;
   };
 
-  // class FloatingPointRegisterView : public unisim::kernel::VariableBase
-  // {
-  // public:
-  //   FloatingPointRegisterView(const char *name, unisim::kernel::Object *owner, SoftDouble& storage, const char *description);
-  //   virtual ~FloatingPointRegisterView();
-  //   virtual const char *GetDataTypeName() const;
-  //   virtual operator bool () const;
-  //   virtual operator long long () const;
-  //   virtual operator unsigned long long () const;
-  //   virtual operator double () const;
-  //   virtual operator std::string () const;
-  //   virtual unisim::kernel::VariableBase& operator = (bool value);
-  //   virtual unisim::kernel::VariableBase& operator = (long long value);
-  //   virtual unisim::kernel::VariableBase& operator = (unsigned long long value);
-  //   virtual unisim::kernel::VariableBase& operator = (double value);
-  //   virtual unisim::kernel::VariableBase& operator = (const char * value);
-  // private:
-  //   SoftDouble& storage;
-  // };
+  class FloatingPointRegisterView : public unisim::kernel::VariableBase
+  {
+  public:
+    FloatingPointRegisterView(const char *name, unisim::kernel::Object *owner, SoftDouble& storage, const char *description);
+    virtual ~FloatingPointRegisterView();
+    virtual const char *GetDataTypeName() const;
+    virtual operator bool () const;
+    virtual operator long long () const;
+    virtual operator unsigned long long () const;
+    virtual operator double () const;
+    virtual operator std::string () const;
+    virtual unisim::kernel::VariableBase& operator = (bool value);
+    virtual unisim::kernel::VariableBase& operator = (long long value);
+    virtual unisim::kernel::VariableBase& operator = (unsigned long long value);
+    virtual unisim::kernel::VariableBase& operator = (double value);
+    virtual unisim::kernel::VariableBase& operator = (const char * value);
+  private:
+    SoftDouble& storage;
+  };
   
   struct FP
   {

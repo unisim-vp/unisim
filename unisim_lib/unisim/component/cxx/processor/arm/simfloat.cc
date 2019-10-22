@@ -131,100 +131,100 @@ namespace simfloat {
     return 8;
   }
 
-  // FloatingPointRegisterView::FloatingPointRegisterView(const char *name, unisim::kernel::Object *owner, SoftDouble& _storage, const char *description)
-  //   : unisim::kernel::VariableBase(name, owner, unisim::kernel::VariableBase::VAR_REGISTER, description)
-  //   , storage(_storage)
-  // {
-  // }
+  FloatingPointRegisterView::FloatingPointRegisterView(const char *name, unisim::kernel::Object *owner, SoftDouble& _storage, const char *description)
+    : unisim::kernel::VariableBase(name, owner, unisim::kernel::VariableBase::VAR_REGISTER, description)
+    , storage(_storage)
+  {
+  }
 
-  // FloatingPointRegisterView::~FloatingPointRegisterView()
-  // {
-  // }
+  FloatingPointRegisterView::~FloatingPointRegisterView()
+  {
+  }
 
-  // const char *FloatingPointRegisterView::GetDataTypeName() const
-  // {
-  //   return "64-bit floating-point register";
-  // }
+  const char *FloatingPointRegisterView::GetDataTypeName() const
+  {
+    return "64-bit floating-point register";
+  }
 
-  // FloatingPointRegisterView::operator bool () const
-  // {
-  //   return (bool) storage.queryValue();
-  // }
+  FloatingPointRegisterView::operator bool () const
+  {
+    return (bool) storage.queryValue();
+  }
 
-  // FloatingPointRegisterView::operator long long () const
-  // {
-  //   return (long long) storage.queryValue();
-  // }
+  FloatingPointRegisterView::operator long long () const
+  {
+    return (long long) storage.queryValue();
+  }
 
-  // FloatingPointRegisterView::operator unsigned long long () const
-  // {
-  //   return (unsigned long long) storage.queryValue();
-  // }
+  FloatingPointRegisterView::operator unsigned long long () const
+  {
+    return (unsigned long long) storage.queryValue();
+  }
 
-  // FloatingPointRegisterView::operator double () const
-  // {
-  //   return (double) storage.queryValue();
-  // }
+  FloatingPointRegisterView::operator double () const
+  {
+    return (double) storage.queryValue();
+  }
 
-  // FloatingPointRegisterView::operator std::string () const
-  // {
-  //   std::stringstream sstr;
-  //   sstr << "0x" << std::hex;
-  //   sstr.fill('0');
-  //   sstr.width(8);
-  //   sstr << (uint64_t) storage.queryValue();
-  //   return sstr.str();
-  // }
+  FloatingPointRegisterView::operator std::string () const
+  {
+    std::stringstream sstr;
+    sstr << "0x" << std::hex;
+    sstr.fill('0');
+    sstr.width(8);
+    sstr << (uint64_t) storage.queryValue();
+    return sstr.str();
+  }
 
-  // unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (bool value)
-  // {
-  //   if(IsMutable())
-  //     {
-  //       storage = SoftDouble((uint64_t) value);
-  //       NotifyListeners();
-  //     }
-  //   return *this;
-  // }
+  unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (bool value)
+  {
+    if(IsMutable())
+      {
+        storage = SoftDouble((uint64_t) value);
+        NotifyListeners();
+      }
+    return *this;
+  }
 
-  // unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (long long value)
-  // {
-  //   if(IsMutable())
-  //     {
-  //       storage = SoftDouble((int64_t) value);
-  //       NotifyListeners();
-  //     }
-  //   return *this;
-  // }
+  unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (long long value)
+  {
+    if(IsMutable())
+      {
+        storage = SoftDouble((int64_t) value);
+        NotifyListeners();
+      }
+    return *this;
+  }
 
-  // unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (unsigned long long value)
-  // {
-  //   if(IsMutable())
-  //     {
-  //       storage = SoftDouble((uint64_t) value);
-  //       NotifyListeners();
-  //     }
-  //   return *this;
-  // }
+  unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (unsigned long long value)
+  {
+    if(IsMutable())
+      {
+        storage = SoftDouble((uint64_t) value);
+        NotifyListeners();
+      }
+    return *this;
+  }
 
-  // unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (double value)
-  // {
-  //   if(IsMutable())
-  //     {
-  //       storage = SoftDouble((int64_t) value);
-  //       NotifyListeners();
-  //     }
-  //   return *this;
-  // }
+  unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (double value)
+  {
+    if(IsMutable())
+      {
+        storage = SoftDouble((int64_t) value);
+        NotifyListeners();
+      }
+    return *this;
+  }
 
-  // unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (const char * value)
-  // {
-  //   if(IsMutable())
-  //     {
-  //       storage = SoftDouble((uint64_t) (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0)));
-  //       NotifyListeners();
-  //     }
-  //   return *this;
-  // }
+  unisim::kernel::VariableBase& FloatingPointRegisterView::operator = (const char * value)
+  {
+    if(IsMutable())
+      {
+        storage = SoftDouble((uint64_t) (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0)));
+        NotifyListeners();
+      }
+    return *this;
+  }
   
 } // end of namespace simfloat
 } // end of namespace arm
