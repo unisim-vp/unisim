@@ -54,6 +54,7 @@
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/util/inlining/inlining.hh"
+#include <unisim/util/debug/simple_register_registry.hh>
 #include <stdexcept>
 #include <iosfwd>
 #include <assert.h>
@@ -468,7 +469,7 @@ public:
 
 private:
 	/** The registers interface for debugging purpose */
-	std::map<std::string, unisim::service::interfaces::Register *> registers_registry;
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 	
 	bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
 	bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported

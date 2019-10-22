@@ -49,7 +49,7 @@ class SimpleRegister : public unisim::service::interfaces::Register
 {
 public:
 	SimpleRegister(const char *name, REGISTER_TYPE *value);
-	SimpleRegister(std::string name, REGISTER_TYPE *value);
+	SimpleRegister(const std::string& name, REGISTER_TYPE *value);
 	virtual ~SimpleRegister();
 	virtual const char *GetName() const;
 	virtual void GetValue(void *buffer) const;
@@ -68,7 +68,7 @@ SimpleRegister<REGISTER_TYPE>::SimpleRegister(const char *_name, REGISTER_TYPE *
 }
 
 template <typename REGISTER_TYPE>
-SimpleRegister<REGISTER_TYPE>::SimpleRegister(std::string _name, REGISTER_TYPE *_value) :
+SimpleRegister<REGISTER_TYPE>::SimpleRegister(const std::string& _name, REGISTER_TYPE *_value) :
 	name(_name),
 	value(_value)
 {

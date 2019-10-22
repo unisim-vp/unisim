@@ -63,6 +63,8 @@
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/exception.hh>
 
+#include <unisim/util/debug/simple_register_registry.hh>
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -391,11 +393,7 @@ public:
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
 	virtual Register *GetRegister(const char *name);
-
-    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
-    {
-    	// TODO
-    }
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
 	//=====================================================================
 	//=             Internal Registers access methods                     =
@@ -565,7 +563,7 @@ protected:
 private:
 
 	// Registers map
-	std::map<std::string, Register *> registers_registry;
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 
 	unsigned int				interrupt_software_error;

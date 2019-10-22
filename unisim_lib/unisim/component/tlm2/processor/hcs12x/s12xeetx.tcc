@@ -99,16 +99,6 @@ S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 	xint_payload->release();
 
 	// Release registers_registry
-	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		if(reg_iter->second)
-			delete reg_iter->second;
-	}
-
-	registers_registry.clear();
-
 	unsigned int i;
 	unsigned int n = extended_registers_registry.size();
 	for (i=0; i<n; i++) {
@@ -618,73 +608,61 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::BeginSetup()
 {
-	char buf[80];
-
-	sprintf(buf, "%s.ECLKDIV",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &eclkdiv_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ECLKDIV", &eclkdiv_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *eclkdiv_var = new unisim::kernel::variable::Register<uint8_t>("ECLKDIV", this, eclkdiv_reg, "EEPROM Clock Divider Register (ECLKDIV)");
 	extended_registers_registry.push_back(eclkdiv_var);
 	eclkdiv_var->setCallBack(this, ECLKDIV, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RESERVED1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &reserved1_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".RESERVED1", &reserved1_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *reserved1_var = new unisim::kernel::variable::Register<uint8_t>("RESERVED1", this, reserved1_reg, "RESERVED1");
 	extended_registers_registry.push_back(reserved1_var);
 	reserved1_var->setCallBack(this, RESERVED1, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RESERVED2",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &reserved2_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".RESERVED2", &reserved2_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *reserved2_var = new unisim::kernel::variable::Register<uint8_t>("RESERVED2", this, reserved2_reg, "RESERVED2");
 	extended_registers_registry.push_back(reserved2_var);
 	reserved2_var->setCallBack(this, RESERVED2, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.ECNFG",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ecnfg_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ECNFG", &ecnfg_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *ecnfg_var = new unisim::kernel::variable::Register<uint8_t>("ECNFG", this, ecnfg_reg, "EEPROM Configuration Register (ECNFG)");
 	extended_registers_registry.push_back(ecnfg_var);
 	ecnfg_var->setCallBack(this, ECNFG, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.EPROT",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &eprot_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".EPROT", &eprot_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *eprot_var = new unisim::kernel::variable::Register<uint8_t>("EPROT", this, eprot_reg, "EEPROM Protection Register (EPROT)");
 	extended_registers_registry.push_back(eprot_var);
 	eprot_var->setCallBack(this, EPROT, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.ESTAT",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &estat_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ESTAT", &estat_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *estat_var = new unisim::kernel::variable::Register<uint8_t>("ESTAT", this, estat_reg, "EEPROM Status Register (ESTAT)");
 	extended_registers_registry.push_back(estat_var);
 	estat_var->setCallBack(this, ESTAT, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.ECMD",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ecmd_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".ECMD", &ecmd_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *ecmd_var = new unisim::kernel::variable::Register<uint8_t>("ECMD", this, ecmd_reg, "EEPROM Command Register (ECMD)");
 	extended_registers_registry.push_back(ecmd_var);
 	ecmd_var->setCallBack(this, ECMD, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RESERVED3",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &reserved3_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint8_t>(std::string(sc_object::name()) + ".RESERVED3", &reserved3_reg));
 
 	unisim::kernel::variable::Register<uint8_t> *reserved3_var = new unisim::kernel::variable::Register<uint8_t>("RESERVED3", this, reserved3_reg, "RESERVED3");
 	extended_registers_registry.push_back(reserved3_var);
 	reserved3_var->setCallBack(this, RESERVED3, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.EADDR",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &eaddr_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".EADDR", &eaddr_reg));
 
 	unisim::kernel::variable::Register<uint16_t> *eaddr_var = new unisim::kernel::variable::Register<uint16_t>("EADDR", this, eaddr_reg, "EEPROM Address Register");
 	extended_registers_registry.push_back(eaddr_var);
 	eaddr_var->setCallBack(this, EADDRHI, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.EDATA",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &edata_reg);
+	registers_registry.AddRegisterInterface(new SimpleRegister<uint16_t>(std::string(sc_object::name()) + ".EDATA", &edata_reg));
 
 	unisim::kernel::variable::Register<uint16_t> *edata_var = new unisim::kernel::variable::Register<uint16_t>("EDATA", this, edata_reg, "EEPROM Data Register");
 	extended_registers_registry.push_back(edata_var);
@@ -1013,11 +991,13 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 Register * S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::GetRegister(const char *name) {
 
-	if(registers_registry.find(string(name)) != registers_registry.end())
-		return (registers_registry[string(name)]);
-	else
-		return (NULL);
+	return registers_registry.GetRegister(name);
+}
 
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner) {
+	
+	registers_registry.ScanRegisters(scanner);
 }
 
 //=====================================================================

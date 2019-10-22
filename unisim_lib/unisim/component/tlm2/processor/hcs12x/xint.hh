@@ -62,6 +62,8 @@
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
 
+#include <unisim/util/debug/simple_register_registry.hh>
+
 namespace unisim {
 namespace component {
 namespace tlm2 {
@@ -210,12 +212,8 @@ public:
 	 * @param name The name of the requested register.
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
-    virtual Register *GetRegister(const char *name);
-
-    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
-    {
-    	// TODO
-    }
+	virtual Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
 	//==============================================================
 	//=              XINT Registers Access Routines                =
@@ -280,7 +278,7 @@ private:
 	Parameter<address_t>   param_baseAddress;
 
 	// Registers map
-	map<string, Register *> registers_registry;
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 
 	std::vector<unisim::kernel::VariableBase*> extended_registers_registry;
 

@@ -54,6 +54,7 @@
 #include "unisim/service/interfaces/registers.hh"
 
 #include <unisim/util/debug/simple_register.hh>
+#include <unisim/util/debug/simple_register_registry.hh>
 #include <unisim/component/cxx/processor/risc16/isa.hh>
 
 namespace unisim {
@@ -178,7 +179,7 @@ private:
 	// the kernel logger
 	unisim::kernel::logger::Logger logger;
 
-	std::map<std::string, unisim::service::interfaces::Register *> registers_registry;
+	unisim::util::debug::SimpleRegisterRegistry registers_registry;
 	std::vector<unisim::kernel::VariableBase *> extended_registers_registry;
 };
 

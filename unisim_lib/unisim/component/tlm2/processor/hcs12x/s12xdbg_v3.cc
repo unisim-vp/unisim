@@ -58,16 +58,6 @@ S12XDBG::S12XDBG(const sc_module_name& name, Object *parent) :
 S12XDBG::~S12XDBG() {
 
 	// Release registers_registry
-	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		if(reg_iter->second)
-			delete reg_iter->second;
-	}
-
-	registers_registry.clear();
-
 	unsigned int i;
 	unsigned int n = extended_registers_registry.size();
 	for (i=0; i<n; i++) {
@@ -187,13 +177,13 @@ bool S12XDBG::EndSetup() {
 
 Register* S12XDBG::GetRegister(const char *name)
 {
-	if(registers_registry.find(string(name)) != registers_registry.end())
-		return (registers_registry[string(name)]);
-	else
-		return (NULL);
-
+	return registers_registry.GetRegister(name);
 }
 
+void S12XDBG::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	registers_registry.ScanRegisters(scanner);
+}
 
 void S12XDBG::OnDisconnect() {
 }

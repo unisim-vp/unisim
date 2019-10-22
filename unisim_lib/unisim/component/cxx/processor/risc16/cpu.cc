@@ -77,7 +77,7 @@ CPU::CPU(const char *name, Object *_parent)
 		std::stringstream strm;
 		strm << "r" << i;
 		string name = strm.str();
-		registers_registry[name] = new unisim::util::debug::SimpleRegister<uint16_t>(name.c_str(), &gpr[i]);
+		registers_registry.AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint16_t>(name.c_str(), &gpr[i]));
 		extended_registers_registry.push_back(new unisim::kernel::variable::Register<uint16_t>(name.c_str(), this, gpr[i], "General Purpose Register"));
 	}
 }
@@ -88,13 +88,6 @@ CPU::~CPU()
 	for(unsigned int i = 0; i < n; i++)
 	{
 		delete extended_registers_registry[i];
-	}
-	
-	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		delete reg_iter->second;
 	}
 }
 
@@ -237,13 +230,7 @@ string CPU::Disasm(uint64_t addr, uint64_t &next_addr)
 
 unisim::service::interfaces::Register *CPU::GetRegister(const char *name)
 {
-	map<string, unisim::service::interfaces::Register *>::iterator reg_iter = registers_registry.find(name);
-	if(reg_iter != registers_registry.end())
-	{
-		return (*reg_iter).second;
-	}
-
-	return 0;
+	return registers_registry.GetRegister(name);
 }
 
 /** Scan available registers for the Registers interface
@@ -254,12 +241,7 @@ unisim::service::interfaces::Register *CPU::GetRegister(const char *name)
 void
 CPU::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
 {
-	typedef std::map<std::string, unisim::service::interfaces::Register *>::iterator iterator;
-
-	for(iterator reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		scanner.Append( reg_iter->second );
-	}
+	registers_registry.ScanRegisters(scanner);
 }
 
 

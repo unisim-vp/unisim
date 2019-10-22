@@ -157,7 +157,7 @@ CPU(const char *name,
 	regs[REG_IF].SetLoWriteMask(IF_WRITE_MASK);
 	regs[REG_IOF].SetLoWriteMask(IOF_WRITE_MASK);
 
-	registers_registry["PC"] = new unisim::util::debug::SimpleRegister<uint32_t>("PC", &reg_pc);
+	registers_registry.AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint32_t>("PC", &reg_pc));
 
 	unsigned int i;
 	for (i = 8; i < 32; i++)
@@ -167,57 +167,57 @@ CPU(const char *name,
 	{
 		stringstream sstr;
 		sstr << "R" << i;
-		registers_registry[sstr.str().c_str()] = new RegisterDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i], true /* extended precision */);
+		registers_registry.AddRegisterInterface(new RegisterDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i], true /* extended precision */));
 	}
 
 	for(i = 0; i < 8; i++)
 	{
 		stringstream sstr;
 		sstr << "R" << i << "L";
-		registers_registry[sstr.str().c_str()] = new RegisterDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i]);
+		registers_registry.AddRegisterInterface(new RegisterDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i]));
 	}
 
 	for(i = 0; i < 8; i++)
 	{
 		stringstream sstr;
 		sstr << "R" << i << "H";
-		registers_registry[sstr.str().c_str()] = new RegisterBitFieldDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i], 32, 8);
+		registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i], 32, 8));
 	}
 
 	for(i = 0; i < 8; i++)
 	{
 		stringstream sstr;
 		sstr << "AR" << i;
-		registers_registry[sstr.str().c_str()] = new RegisterDebugInterface(sstr.str().c_str(), &regs[REG_AR0 + i]);
+		registers_registry.AddRegisterInterface(new RegisterDebugInterface(sstr.str().c_str(), &regs[REG_AR0 + i]));
 	}
 
-	registers_registry["DP"] = new RegisterDebugInterface("DP", &regs[REG_DP]);
-	registers_registry["IR0"] = new RegisterDebugInterface("IR0", &regs[REG_IR0]);
-	registers_registry["IR1"] = new RegisterDebugInterface("IR1", &regs[REG_IR1]);
-	registers_registry["BK"] = new RegisterDebugInterface("BK", &regs[REG_BK]);
-	registers_registry["SP"] = new RegisterDebugInterface("SP", &regs[REG_SP]);
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("DP", &regs[REG_DP]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("IR0", &regs[REG_IR0]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("IR1", &regs[REG_IR1]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("BK", &regs[REG_BK]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("SP", &regs[REG_SP]));
 
-	registers_registry["ST"] = new RegisterDebugInterface("ST", &regs[REG_ST]);
-	registers_registry["ST:C"] = new RegisterBitFieldDebugInterface("ST:C", &regs[REG_ST], ST_C);
-	registers_registry["ST:V"] = new RegisterBitFieldDebugInterface("ST:V", &regs[REG_ST], ST_V);
-	registers_registry["ST:Z"] = new RegisterBitFieldDebugInterface("ST:Z", &regs[REG_ST], ST_Z);
-	registers_registry["ST:N"] = new RegisterBitFieldDebugInterface("ST:N", &regs[REG_ST], ST_N);
-	registers_registry["ST:UF"] = new RegisterBitFieldDebugInterface("ST:UF", &regs[REG_ST], ST_UF);
-	registers_registry["ST:LV"] = new RegisterBitFieldDebugInterface("ST:LV", &regs[REG_ST], ST_LV);
-	registers_registry["ST:LUF"] = new RegisterBitFieldDebugInterface("ST:LUF", &regs[REG_ST], ST_LUF);
-	registers_registry["ST:OVM"] = new RegisterBitFieldDebugInterface("ST:OVM", &regs[REG_ST], ST_OVM);
-	registers_registry["ST:RM"] = new RegisterBitFieldDebugInterface("ST:RM", &regs[REG_ST], ST_RM);
-	registers_registry["ST:CF"] = new RegisterBitFieldDebugInterface("ST:CF", &regs[REG_ST], ST_CF);
-	registers_registry["ST:CE"] = new RegisterBitFieldDebugInterface("ST:CE", &regs[REG_ST], ST_CE);
-	registers_registry["ST:CC"] = new RegisterBitFieldDebugInterface("ST:CC", &regs[REG_ST], ST_CC);
-	registers_registry["ST:GIE"] = new RegisterBitFieldDebugInterface("ST:GIE", &regs[REG_ST], ST_GIE);
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("ST", &regs[REG_ST]));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:C", &regs[REG_ST], ST_C));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:V", &regs[REG_ST], ST_V));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:Z", &regs[REG_ST], ST_Z));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:N", &regs[REG_ST], ST_N));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:UF", &regs[REG_ST], ST_UF));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:LV", &regs[REG_ST], ST_LV));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:LUF", &regs[REG_ST], ST_LUF));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:OVM", &regs[REG_ST], ST_OVM));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:RM", &regs[REG_ST], ST_RM));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:CF", &regs[REG_ST], ST_CF));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:CE", &regs[REG_ST], ST_CE));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:CC", &regs[REG_ST], ST_CC));
+	registers_registry.AddRegisterInterface(new RegisterBitFieldDebugInterface("ST:GIE", &regs[REG_ST], ST_GIE));
 
-	registers_registry["IE"] = new RegisterDebugInterface("IE", &regs[REG_IE]);
-	registers_registry["IF"] = new RegisterDebugInterface("IF", &regs[REG_IF]);
-	registers_registry["IOF"] = new RegisterDebugInterface("IOF", &regs[REG_IOF]);
-	registers_registry["RS"] = new RegisterDebugInterface("RS", &regs[REG_RS]);
-	registers_registry["RE"] = new RegisterDebugInterface("RE", &regs[REG_RE]);
-	registers_registry["RC"] = new RegisterDebugInterface("RC", &regs[REG_RC]);
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("IE", &regs[REG_IE]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("IF", &regs[REG_IF]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("IOF", &regs[REG_IOF]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("RS", &regs[REG_RS]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("RE", &regs[REG_RE]));
+	registers_registry.AddRegisterInterface(new RegisterDebugInterface("RC", &regs[REG_RC]));
 
 }
 
@@ -225,12 +225,6 @@ template<class CONFIG, bool DEBUG>
 CPU<CONFIG, DEBUG> ::
 ~CPU() 
 {
-	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
-
-	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		delete reg_iter->second;
-	}
 }
 
 //===============================================================
@@ -486,8 +480,7 @@ unisim::service::interfaces::Register *
 CPU<CONFIG, DEBUG> ::
 GetRegister(const char *name)
 {
-	map<string, unisim::service::interfaces::Register *>::iterator reg_iter = registers_registry.find(name);
-	return (reg_iter != registers_registry.end()) ? (*reg_iter).second : 0;
+	return registers_registry.GetRegister(name);
 }
 
 /**
@@ -500,12 +493,7 @@ template<class CONFIG, bool DEBUG>
 void
 CPU<CONFIG, DEBUG>::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
 {
-	typedef typename map<string, unisim::service::interfaces::Register *>::iterator iterator;
-	
-	for (iterator reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
-	{
-		scanner.Append( reg_iter->second );
-	}
+	registers_registry.ScanRegisters(scanner);
 }
 
 //===============================================================
