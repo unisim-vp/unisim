@@ -2,4 +2,5 @@ libc/inttypes
 std/fstream
 std/iostream
 std/map
+std/set
 std/string
