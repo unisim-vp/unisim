@@ -85,9 +85,6 @@ using unisim::util::arithmetic::RotateRight;
 
 #include <unisim/component/cxx/processor/arm/execute.hh>
 
-#define evenly(x)    ARCH::Concretize(x)
-#define likely(x)    ARCH::Concretize(x)
-#define unlikely(x)  ARCH::Concretize(x)
 } // end of impl
 
 include "unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa"

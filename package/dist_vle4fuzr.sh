@@ -7,7 +7,7 @@ source "$(dirname $0)/dist_common.sh"
 
 import_genisslib
 
-import dist_vle4fuzr || exit
+#import dist_vle4fuzr || exit
 
 import libc/inttypes || exit
 import std/cstdlib || exit
