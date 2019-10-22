@@ -47,10 +47,10 @@ UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
-UNISIM_SIMULATOR_ISA_THUMB_FILES="\
+UNISIM_SIMULATOR_TOP_THUMB_ISA="\
 top_thumb.isa \
 "
-UNISIM_SIMULATOR_ISA_ARM32_FILES="\
+UNISIM_SIMULATOR_TOP_ARM32_ISA="\
 top_arm32.isa \
 "
 
@@ -59,8 +59,8 @@ main.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
-${UNISIM_SIMULATOR_ISA_THUMB_FILES} \
-${UNISIM_SIMULATOR_ISA_ARM32_FILES} \
+${UNISIM_SIMULATOR_TOP_THUMB_ISA} \
+${UNISIM_SIMULATOR_TOP_ARM32_ISA} \
 "
 
 UNISIM_SIMULATOR_EXTRA_FILES="\
@@ -243,12 +243,12 @@ CLEANFILES=\
 	\$(top_builddir)/top_thumb.tcc\
 
 \$(top_builddir)/top_arm32.tcc: \$(top_builddir)/top_arm32.hh
-\$(top_builddir)/top_arm32.hh: ${UNISIM_SIMULATOR_ISA_ARM32_FILES} ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/top_arm32 -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_arm32.isa
+\$(top_builddir)/top_arm32.hh: ${UNISIM_SIMULATOR_TOP_ARM32_ISA} ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/top_arm32 -w 8 -I \$(top_srcdir) \$(top_srcdir)/${UNISIM_SIMULATOR_TOP_ARM32_ISA}
 
 \$(top_builddir)/top_thumb.tcc: \$(top_builddir)/top_thumb.hh
-\$(top_builddir)/top_thumb.hh: ${UNISIM_SIMULATOR_ISA_THUMB_FILES} ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/top_thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_thumb.isa
+\$(top_builddir)/top_thumb.hh: ${UNISIM_SIMULATOR_TOP_THUMB_ISA} ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/top_thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/${UNISIM_SIMULATOR_TOP_THUMB_ISA}
 	 
 EOF
 )

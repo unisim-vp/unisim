@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2007-2017,
- *  Commissariat a l'Energie Atomique (CEA),
+ *  Copyright (c) 2019,
+ *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -29,42 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Gilles Mouchard <gilles.mouchard@cea.fr>
  */
- 
-#ifndef __UNISIM_UTIL_SYMBOLIC_IDENTIFIER_HH__
-#define __UNISIM_UTIL_SYMBOLIC_IDENTIFIER_HH__
 
-#include <cstring>
-
-namespace unisim {
-namespace util {
-namespace symbolic {
-
-  template <typename T>
-  struct Identifier
-  {
-    void init( char const* src )
-    {
-      T& self( *static_cast<T*>(this) );
-      for (self.code = T::end; next();)
-        if (strcmp(self.c_str(), src) == 0)
-          return;
-    }
-    int cmp( T rhs ) const { return int(static_cast<T const*>(this)->code) - int(rhs.code); }
-    T operator + ( int offset ) const { return T( typename T::Code(int(static_cast<T const*>(this)->code) + offset) ); }
-    bool next()
-    {
-      typedef typename T::Code Code;
-      Code& code = static_cast<T*>(this)->code;
-      code = Code( code == T::end ? 0 : int(code) + 1 );
-      return code != T::end;
-    }
-    int idx() const { return int(static_cast<T const*>(this)->code); }
-  };
-
-} /* end of namespace symbolic */
-} /* end of namespace util */
-} /* end of namespace unisim */
-
-#endif /* __UNISIM_UTIL_SYMBOLIC_IDENTIFIER_HH__ */
+#include "bindings.hh"

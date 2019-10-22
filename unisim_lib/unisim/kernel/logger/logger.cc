@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Author: Yves Lhuillier (yves.lhuillier@cea.fr)
  *         Gilles Mouchard (gilles.mouchard@cea.fr)
  *         Yves Lhuillier (yves.lhuillier@cea.fr) 
  */

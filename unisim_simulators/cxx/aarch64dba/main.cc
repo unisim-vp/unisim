@@ -328,7 +328,7 @@ struct Processor
   //   =                         Processor Storage                         =
   //   =====================================================================
   
-  struct GPR : public unisim::util::symbolic::Identifier<GPR>
+  struct GPR : public unisim::util::identifier::Identifier<GPR>
   {
     enum Code
       {
@@ -351,7 +351,7 @@ struct Processor
     GPR( char const* _code ) : code(end) { init( _code ); }
   };
 
-  struct Flag : public unisim::util::symbolic::Identifier<Flag>
+  struct Flag : public unisim::util::identifier::Identifier<Flag>
   {
     enum Code { N, Z, C, V, end } code;
 

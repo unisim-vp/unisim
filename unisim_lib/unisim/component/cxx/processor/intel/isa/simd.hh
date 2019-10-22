@@ -1096,7 +1096,7 @@ struct VFPCvtp : public Operation<ARCH>
     for (unsigned end = std::min(scount,dcount); idx < end; ++idx)
       res[idx] = dsttype( arch.vmm_read( VR(), rm, idx, srctype() ) );
     for (; idx < dcount; ++ idx)
-      res[idx] = dsttype();
+      res[idx] = dsttype(0);
     for (idx = 0; idx < dcount; ++ idx)
       arch.vmm_write( VR(), gn, idx, res[idx] );
   }

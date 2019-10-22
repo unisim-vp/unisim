@@ -30,7 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
- *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 #ifndef __UNISIM_UTIL_DEBUG_WATCHPOINT_REGISTRY_TCC__

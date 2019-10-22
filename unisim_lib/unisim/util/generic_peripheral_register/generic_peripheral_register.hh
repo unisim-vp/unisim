@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 #ifndef __UNISIM_UTIL_GENERIC_PERIPHERAL_REGISTER_GENERIC_PERIPHERAL_REGISTER_HH__

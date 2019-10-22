@@ -347,7 +347,7 @@
 	<variable name="authors">
 		<type>parameter</type>
 		<data_type>string</data_type>
-		<value>Daniel Gracia Perez (daniel.gracia-perez@cea.fr)</value>
+		<value>Yves Lhuillier (yves.lhuillier@cea.fr)</value>
 		<description>Authors</description>
 	</variable>
 	<variable name="copyright">

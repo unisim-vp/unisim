@@ -55,7 +55,6 @@ namespace elf_loader {
 // using namespace std;
 using namespace unisim::util::endian;
 using unisim::util::debug::Statement;
-using unisim::util::debug::Symbol;
 using unisim::util::debug::elf_symtab::ELF_SymtabHandler;
 using unisim::util::blob::Blob;
 
@@ -94,6 +93,7 @@ public:
 	void SetDebugErrorStream(std::ostream& debug_error_stream);
 	void SetRegistersInterface(unsigned int prc_num, unisim::service::interfaces::Registers *regs_if);
 	void SetMemoryInterface(unsigned int prc_num, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
+	void SetFileName(char const* filename);
 
 	void SetOption(Option opt, MEMORY_ADDR addr);
 	void SetOption(Option opt, const char *s);
@@ -104,13 +104,15 @@ public:
 	void GetOption(Option opt, bool& flag) const;
 	
 	const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
+	
+	typedef typename unisim::util::debug::Symbol<MEMORY_ADDR> Symbol;
 
-	void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+	void GetSymbols(typename std::list<const Symbol*>& lst, typename Symbol::Type type) const;
+	const Symbol *FindSymbol(const char *name, MEMORY_ADDR addr, typename Symbol::Type type) const;
+	const Symbol *FindSymbolByAddr(MEMORY_ADDR addr) const;
+	const Symbol *FindSymbolByName(const char *name) const;
+	const Symbol *FindSymbolByName(const char *name, typename Symbol::Type type) const;
+	const Symbol *FindSymbolByAddr(MEMORY_ADDR addr, typename Symbol::Type type) const;
 	
 	const std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& GetStatements() const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
@@ -157,9 +159,9 @@ private:
 	void DumpSymbolTable(const Elf_Shdr *shdr, const char *content, const char *string_table, std::ostream& os);
 	static void SwapProgramHeader(Elf_Phdr *phdr);
 	static void SwapSectionHeader(Elf_Shdr *shdr);
-	static void SwapElfHeader(Elf_Ehdr *hdr);
 public:	
 	static bool NeedEndianSwap(const Elf_Ehdr *hdr);
+	static void SwapElfHeader(Elf_Ehdr *hdr);
 	static Elf_Ehdr *ReadElfHeader(std::istream& is);
 	static Elf_Phdr *ReadProgramHeaders(const Elf_Ehdr *hdr, std::istream& is);
 	static Elf_Shdr *ReadSectionHeaders(const Elf_Ehdr *hdr, std::istream& is);

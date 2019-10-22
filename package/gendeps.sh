@@ -78,6 +78,9 @@ function discover_file_deps
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<pthread\.h>' "${FILEPATH}"; then
 				echo "m4/pthread" >> "${PKG_DEPS_TXT}"
 			fi
+			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<Python\.h>' "${FILEPATH}"; then
+				echo "m4/python_dev" >> "${PKG_DEPS_TXT}"
+			fi
 			if grep -qs -E '^#[[:blank:]]*include[[:blank:]]*<boost/.*\.hpp>' "${FILEPATH}"; then
 				echo "m4/boost" >> "${PKG_DEPS_TXT}"
 			fi

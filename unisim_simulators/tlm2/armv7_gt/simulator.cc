@@ -28,7 +28,7 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>

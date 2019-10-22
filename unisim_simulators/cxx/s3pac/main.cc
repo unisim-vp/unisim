@@ -807,7 +807,7 @@ struct Processor
   /* mask for valid bits in processor control and status registers */
   static uint32_t const PSR_UNALLOC_MASK = 0x00f00000;
 
-  struct SRegID : public unisim::util::symbolic::Identifier<SRegID>
+  struct SRegID : public unisim::util::identifier::Identifier<SRegID>
   {
     enum Code {
       SCTLR, ACTLR,
@@ -883,7 +883,7 @@ struct Processor
     return sregs[reg.idx()];
   }
     
-  struct RegID : public unisim::util::symbolic::Identifier<RegID>
+  struct RegID : public unisim::util::identifier::Identifier<RegID>
   {
     enum Code
       {

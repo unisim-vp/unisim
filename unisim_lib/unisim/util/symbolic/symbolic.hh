@@ -36,7 +36,7 @@
 #define __UNISIM_UTIL_SYMBOLIC_SYMBOLIC_HH__
 
 #include <unisim/util/arithmetic/arithmetic.hh>
-#include <unisim/util/symbolic/identifier.hh>
+#include <unisim/util/identifier/identifier.hh>
 #include <ostream>
 #include <map>
 #include <stdexcept>
@@ -123,7 +123,7 @@ namespace symbolic {
     virtual ScalarType::id_t GetType() const = 0;
   };
   
-  struct Op : public Identifier<Op>
+  struct Op : public identifier::Identifier<Op>
   {
     enum Code
       {

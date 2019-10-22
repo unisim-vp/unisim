@@ -92,49 +92,8 @@ done
 
 # Top level
 
-cat << EOF > "${DEST_DIR}/AUTHORS"
-Yves Lhuillier <yves.lhuillier@cea.fr>
-Gilles Mouchard <gilles.mouchard@cea.fr>
-Reda Nouacer <reda.nouacer@cea.fr>
-EOF
-
-cat << EOF > "${DEST_DIR}/README"
-This package contains:
-  - ARMemu: an ARMv7 application level simulator (LinuxOS emulation)
-  - UniSIM GenISSLib (will not be installed): an instruction set simulator generator
-
-See INSTALL for installation instructions.
-EOF
-
-cat << EOF > "${DEST_DIR}/INSTALL"
-INSTALLATION
-------------
-
-Requirements:
-  - GNU C++ compiler
-  - GNU C++ standard library
-  - GNU bash
-  - GNU make
-  - GNU autoconf
-  - GNU automake
-  - GNU flex
-  - GNU bison
-  - boost (http://www.boost.org) development package (libboost-devel for Redhat/Mandriva, libboost-graph-dev for Debian/Ubuntu)
-  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
-  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
-  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.3 (http://www.systemc.org)
-
-Building instructions:
-  $ ./configure --with-systemc=<path-to-systemc-install-dir>
-  $ make
-
-Installing (optional):
-  $ make install
-EOF
-
 output_top_configure_ac <(cat << EOF
-AC_INIT([UniSIM ARMemu Standalone simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}])
+AC_INIT([UniSIM ARMemu package], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}])
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
