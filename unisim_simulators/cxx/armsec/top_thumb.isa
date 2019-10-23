@@ -38,7 +38,7 @@
 
 **********************************************/
 
-namespace unisim::component::cxx::processor::arm::isa::thumb2
+namespace unisim::component::cxx::processor::arm::isa::thumb
 
 set codetype scalar;
 set addressclass {uint32_t}

@@ -9,6 +9,8 @@ import_genisslib
 
 #import dist_vle4fuzr || exit
 
+import unisim/component/cxx/processor/arm || exit
+
 import libc/inttypes || exit
 import std/cstdlib || exit
 import std/iostream || exit
@@ -58,10 +60,12 @@ ${UNISIM_SIMULATOR_TOP_ARM32_ISA} \
 
 UNISIM_BINDINGS_SOURCE_FILES="\
 bindings.cc \
+core.cc \
 "
 
 UNISIM_BINDINGS_HEADER_FILES="\
 bindings.hh \
+core.hh \
 "
 
 UNISIM_TOP_DATA_FILES="\

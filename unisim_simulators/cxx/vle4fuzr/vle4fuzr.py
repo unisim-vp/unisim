@@ -53,7 +53,152 @@ UC_MODE_THUMB = 1
 
 UC_ERR_OK = 0
 
+UC_ARM_REG_INVALID = 0
+UC_ARM_REG_APSR = 1
+UC_ARM_REG_APSR_NZCV = 2
+UC_ARM_REG_CPSR = 3
+UC_ARM_REG_FPEXC = 4
+UC_ARM_REG_FPINST = 5
+UC_ARM_REG_FPSCR = 6
+UC_ARM_REG_FPSCR_NZCV = 7
+UC_ARM_REG_FPSID = 8
+UC_ARM_REG_ITSTATE = 9
+UC_ARM_REG_LR = 10
+UC_ARM_REG_PC = 11
+UC_ARM_REG_SP = 12
+UC_ARM_REG_SPSR = 13
+UC_ARM_REG_D0 = 14
+UC_ARM_REG_D1 = 15
+UC_ARM_REG_D2 = 16
+UC_ARM_REG_D3 = 17
+UC_ARM_REG_D4 = 18
+UC_ARM_REG_D5 = 19
+UC_ARM_REG_D6 = 20
+UC_ARM_REG_D7 = 21
+UC_ARM_REG_D8 = 22
+UC_ARM_REG_D9 = 23
+UC_ARM_REG_D10 = 24
+UC_ARM_REG_D11 = 25
+UC_ARM_REG_D12 = 26
+UC_ARM_REG_D13 = 27
+UC_ARM_REG_D14 = 28
+UC_ARM_REG_D15 = 29
+UC_ARM_REG_D16 = 30
+UC_ARM_REG_D17 = 31
+UC_ARM_REG_D18 = 32
+UC_ARM_REG_D19 = 33
+UC_ARM_REG_D20 = 34
+UC_ARM_REG_D21 = 35
+UC_ARM_REG_D22 = 36
+UC_ARM_REG_D23 = 37
+UC_ARM_REG_D24 = 38
+UC_ARM_REG_D25 = 39
+UC_ARM_REG_D26 = 40
+UC_ARM_REG_D27 = 41
+UC_ARM_REG_D28 = 42
+UC_ARM_REG_D29 = 43
+UC_ARM_REG_D30 = 44
+UC_ARM_REG_D31 = 45
+UC_ARM_REG_FPINST2 = 46
+UC_ARM_REG_MVFR0 = 47
+UC_ARM_REG_MVFR1 = 48
+UC_ARM_REG_MVFR2 = 49
+UC_ARM_REG_Q0 = 50
+UC_ARM_REG_Q1 = 51
+UC_ARM_REG_Q2 = 52
+UC_ARM_REG_Q3 = 53
+UC_ARM_REG_Q4 = 54
+UC_ARM_REG_Q5 = 55
+UC_ARM_REG_Q6 = 56
+UC_ARM_REG_Q7 = 57
+UC_ARM_REG_Q8 = 58
+UC_ARM_REG_Q9 = 59
+UC_ARM_REG_Q10 = 60
+UC_ARM_REG_Q11 = 61
+UC_ARM_REG_Q12 = 62
+UC_ARM_REG_Q13 = 63
+UC_ARM_REG_Q14 = 64
+UC_ARM_REG_Q15 = 65
+UC_ARM_REG_R0 = 66
+UC_ARM_REG_R1 = 67
+UC_ARM_REG_R2 = 68
+UC_ARM_REG_R3 = 69
+UC_ARM_REG_R4 = 70
+UC_ARM_REG_R5 = 71
+UC_ARM_REG_R6 = 72
+UC_ARM_REG_R7 = 73
+UC_ARM_REG_R8 = 74
+UC_ARM_REG_R9 = 75
+UC_ARM_REG_R10 = 76
+UC_ARM_REG_R11 = 77
+UC_ARM_REG_R12 = 78
+UC_ARM_REG_S0 = 79
+UC_ARM_REG_S1 = 80
+UC_ARM_REG_S2 = 81
+UC_ARM_REG_S3 = 82
+UC_ARM_REG_S4 = 83
+UC_ARM_REG_S5 = 84
+UC_ARM_REG_S6 = 85
+UC_ARM_REG_S7 = 86
+UC_ARM_REG_S8 = 87
+UC_ARM_REG_S9 = 88
+UC_ARM_REG_S10 = 89
+UC_ARM_REG_S11 = 90
+UC_ARM_REG_S12 = 91
+UC_ARM_REG_S13 = 92
+UC_ARM_REG_S14 = 93
+UC_ARM_REG_S15 = 94
+UC_ARM_REG_S16 = 95
+UC_ARM_REG_S17 = 96
+UC_ARM_REG_S18 = 97
+UC_ARM_REG_S19 = 98
+UC_ARM_REG_S20 = 99
+UC_ARM_REG_S21 = 100
+UC_ARM_REG_S22 = 101
+UC_ARM_REG_S23 = 102
+UC_ARM_REG_S24 = 103
+UC_ARM_REG_S25 = 104
+UC_ARM_REG_S26 = 105
+UC_ARM_REG_S27 = 106
+UC_ARM_REG_S28 = 107
+UC_ARM_REG_S29 = 108
+UC_ARM_REG_S30 = 109
+UC_ARM_REG_S31 = 110
+UC_ARM_REG_C1_C0_2 = 111
+UC_ARM_REG_C13_C0_2 = 112
+UC_ARM_REG_C13_C0_3 = 113
+UC_ARM_REG_ENDING = 114
 
+# alias registers
+UC_ARM_REG_R13 = 12
+UC_ARM_REG_R14 = 10
+UC_ARM_REG_R15 = 11
+UC_ARM_REG_SB = 75
+UC_ARM_REG_SL = 76
+UC_ARM_REG_FP = 77
+UC_ARM_REG_IP = 78
+
+UC_HOOK_INTR = 1
+UC_HOOK_INSN = 2
+UC_HOOK_CODE = 4
+UC_HOOK_BLOCK = 8
+UC_HOOK_MEM_READ_UNMAPPED = 16
+UC_HOOK_MEM_WRITE_UNMAPPED = 32
+UC_HOOK_MEM_FETCH_UNMAPPED = 64
+UC_HOOK_MEM_READ_PROT = 128
+UC_HOOK_MEM_WRITE_PROT = 256
+UC_HOOK_MEM_FETCH_PROT = 512
+UC_HOOK_MEM_READ = 1024
+UC_HOOK_MEM_WRITE = 2048
+UC_HOOK_MEM_FETCH = 4096
+UC_HOOK_MEM_READ_AFTER = 8192
+UC_HOOK_MEM_UNMAPPED = 112
+UC_HOOK_MEM_PROT = 896
+UC_HOOK_MEM_READ_INVALID = 144
+UC_HOOK_MEM_WRITE_INVALID = 288
+UC_HOOK_MEM_FETCH_INVALID = 576
+UC_HOOK_MEM_INVALID = 1008
+UC_HOOK_MEM_VALID = 7168
 
 # from . import x86_const, arm64_const, unicorn_const as uc
 
@@ -118,7 +263,7 @@ def _setup_prototype(lib, fname, restype, *argtypes):
 ucerr = ctypes.c_int
 uc_engine = ctypes.c_void_p
 # uc_context = ctypes.c_void_p
-# uc_hook_h = ctypes.c_size_t
+uc_hook_h = ctypes.c_size_t
 
 # class _uc_mem_region(ctypes.Structure):
 #     _fields_ = [
@@ -134,8 +279,8 @@ _setup_prototype(_uc, "uc_open", ucerr, ctypes.c_uint, ctypes.c_uint, ctypes.POI
 # _setup_prototype(_uc, "uc_close", ucerr, uc_engine)
 # _setup_prototype(_uc, "uc_strerror", ctypes.c_char_p, ucerr)
 # _setup_prototype(_uc, "uc_errno", ucerr, uc_engine)
-# _setup_prototype(_uc, "uc_reg_read", ucerr, uc_engine, ctypes.c_int, ctypes.c_void_p)
-# _setup_prototype(_uc, "uc_reg_write", ucerr, uc_engine, ctypes.c_int, ctypes.c_void_p)
+_setup_prototype(_uc, "uc_reg_read", ucerr, uc_engine, ctypes.c_int, ctypes.c_void_p)
+_setup_prototype(_uc, "uc_reg_write", ucerr, uc_engine, ctypes.c_int, ctypes.c_void_p)
 # _setup_prototype(_uc, "uc_mem_read", ucerr, uc_engine, ctypes.c_uint64, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t)
 _setup_prototype(_uc, "uc_mem_write", ucerr, uc_engine, ctypes.c_uint64, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t)
 # _setup_prototype(_uc, "uc_emu_start", ucerr, uc_engine, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_size_t)
@@ -156,7 +301,7 @@ _setup_prototype(_uc, "uc_mem_map", ucerr, uc_engine, ctypes.c_uint64, ctypes.c_
 # _uc.uc_hook_add = _uc.uc_hook_add
 # _uc.uc_hook_add.restype = ucerr
 
-# UC_HOOK_CODE_CB = ctypes.CFUNCTYPE(None, uc_engine, ctypes.c_uint64, ctypes.c_size_t, ctypes.c_void_p)
+UC_HOOK_CODE_CB = ctypes.CFUNCTYPE(None, uc_engine, ctypes.c_uint64, ctypes.c_size_t, ctypes.c_void_p)
 # UC_HOOK_MEM_INVALID_CB = ctypes.CFUNCTYPE(
 #     ctypes.c_bool, uc_engine, ctypes.c_int,
 #     ctypes.c_uint64, ctypes.c_int, ctypes.c_int64, ctypes.c_void_p
@@ -297,11 +442,11 @@ class Uc(object):
     #         except:  # _uc might be pulled from under our feet
     #             pass
 
-    # # emulate from @begin, and stop when reaching address @until
-    # def emu_start(self, begin, until, timeout=0, count=0):
-    #     status = _uc.uc_emu_start(self._uch, begin, until, timeout, count)
-    #     if status != UC_ERR_OK:
-    #         raise UcError(status)
+    # emulate from @begin, and stop when reaching address @until
+    def emu_start(self, begin, until, timeout=0, count=0):
+        status = _uc.uc_emu_start(self._uch, begin, until, timeout, count)
+        if status != UC_ERR_OK:
+            raise UcError(status)
 
     # # stop emulation
     # def emu_stop(self):
@@ -309,90 +454,23 @@ class Uc(object):
     #     if status != UC_ERR_OK:
     #         raise UcError(status)
 
-    # # return the value of a register
-    # def reg_read(self, reg_id, opt=None):
-    #     if self._arch == uc.UC_ARCH_X86:
-    #         if reg_id in [x86_const.UC_X86_REG_IDTR, x86_const.UC_X86_REG_GDTR, x86_const.UC_X86_REG_LDTR, x86_const.UC_X86_REG_TR]:
-    #             reg = uc_x86_mmr()
-    #             status = _uc.uc_reg_read(self._uch, reg_id, ctypes.byref(reg))
-    #             if status != UC_ERR_OK:
-    #                 raise UcError(status)
-    #             return reg.selector, reg.base, reg.limit, reg.flags
-    #         if reg_id in range(x86_const.UC_X86_REG_FP0, x86_const.UC_X86_REG_FP0+8):
-    #             reg = uc_x86_float80()
-    #             status = _uc.uc_reg_read(self._uch, reg_id, ctypes.byref(reg))
-    #             if status != UC_ERR_OK:
-    #                 raise UcError(status)
-    #             return reg.mantissa, reg.exponent
-    #         if reg_id in range(x86_const.UC_X86_REG_XMM0, x86_const.UC_X86_REG_XMM0+8):
-    #             reg = uc_x86_xmm()
-    #             status = _uc.uc_reg_read(self._uch, reg_id, ctypes.byref(reg))
-    #             if status != UC_ERR_OK:
-    #                 raise UcError(status)
-    #             return reg.low_qword | (reg.high_qword << 64)
-    #         if reg_id is x86_const.UC_X86_REG_MSR:
-    #             if opt is None:
-    #                 raise UcError(uc.UC_ERR_ARG)
-    #             reg = uc_x86_msr()
-    #             reg.rid = opt
-    #             status = _uc.uc_reg_read(self._uch, reg_id, ctypes.byref(reg))
-    #             if status != UC_ERR_OK:
-    #                 raise UcError(status)
-    #             return reg.value
+    # return the value of a register
+    def reg_read(self, reg_id):
+        # read to 64bit number to be safe
+        reg = ctypes.c_uint64(0)
+        status = _uc.uc_reg_read(self._uch, reg_id, ctypes.byref(reg))
+        if status != UC_ERR_OK:
+            raise UcError(status)
+        return reg.value
 
-    #     if self._arch == uc.UC_ARCH_ARM64:
-    #         if reg_id in range(arm64_const.UC_ARM64_REG_Q0, arm64_const.UC_ARM64_REG_Q31+1) or range(arm64_const.UC_ARM64_REG_V0, arm64_const.UC_ARM64_REG_V31+1):
-    #             reg = uc_arm64_neon128()
-    #             status = _uc.uc_reg_read(self._uch, reg_id, ctypes.byref(reg))
-    #             if status != UC_ERR_OK:
-    #                 raise UcError(status)
-    #             return reg.low_qword | (reg.high_qword << 64)
+    # write to a register
+    def reg_write(self, reg_id, value):
+        # convert to 64bit number to be safe
+        reg = ctypes.c_uint64(value)
 
-    #     # read to 64bit number to be safe
-    #     reg = ctypes.c_uint64(0)
-    #     status = _uc.uc_reg_read(self._uch, reg_id, ctypes.byref(reg))
-    #     if status != UC_ERR_OK:
-    #         raise UcError(status)
-    #     return reg.value
-
-    # # write to a register
-    # def reg_write(self, reg_id, value):
-    #     reg = None
-
-    #     if self._arch == uc.UC_ARCH_X86:
-    #         if reg_id in [x86_const.UC_X86_REG_IDTR, x86_const.UC_X86_REG_GDTR, x86_const.UC_X86_REG_LDTR, x86_const.UC_X86_REG_TR]:
-    #             assert isinstance(value, tuple) and len(value) == 4
-    #             reg = uc_x86_mmr()
-    #             reg.selector = value[0]
-    #             reg.base = value[1]
-    #             reg.limit = value[2]
-    #             reg.flags = value[3]
-    #         if reg_id in range(x86_const.UC_X86_REG_FP0, x86_const.UC_X86_REG_FP0+8):
-    #             reg = uc_x86_float80()
-    #             reg.mantissa = value[0]
-    #             reg.exponent = value[1]
-    #         if reg_id in range(x86_const.UC_X86_REG_XMM0, x86_const.UC_X86_REG_XMM0+8):
-    #             reg = uc_x86_xmm()
-    #             reg.low_qword = value & 0xffffffffffffffff
-    #             reg.high_qword = value >> 64
-    #         if reg_id is x86_const.UC_X86_REG_MSR:
-    #             reg = uc_x86_msr()
-    #             reg.rid = value[0]
-    #             reg.value = value[1]
-
-    #     if self._arch == uc.UC_ARCH_ARM64:
-    #         if reg_id in range(arm64_const.UC_ARM64_REG_Q0, arm64_const.UC_ARM64_REG_Q31+1) or range(arm64_const.UC_ARM64_REG_V0, arm64_const.UC_ARM64_REG_V31+1):
-    #             reg = uc_arm64_neon128()
-    #             reg.low_qword = value & 0xffffffffffffffff
-    #             reg.high_qword = value >> 64
-
-    #     if reg is None:
-    #         # convert to 64bit number to be safe
-    #         reg = ctypes.c_uint64(value)
-
-    #     status = _uc.uc_reg_write(self._uch, reg_id, ctypes.byref(reg))
-    #     if status != UC_ERR_OK:
-    #         raise UcError(status)
+        status = _uc.uc_reg_write(self._uch, reg_id, ctypes.byref(reg))
+        if status != UC_ERR_OK:
+            raise UcError(status)
 
     # # read from MSR - X86 only
     # def msr_read(self, msr_id):
@@ -448,10 +526,10 @@ class Uc(object):
     #         raise UcError(status)
     #     return result.value
 
-    # def _hookcode_cb(self, handle, address, size, user_data):
-    #     # call user's callback with self object
-    #     (cb, data) = self._callbacks[user_data]
-    #     cb(self, address, size, data)
+    def _hookcode_cb(self, handle, address, size, user_data):
+        # call user's callback with self object
+        (cb, data) = self._callbacks[user_data]
+        cb(self, address, size, data)
 
     # def _hook_mem_invalid_cb(self, handle, access, address, size, value, user_data):
     #     # call user's callback with self object
@@ -483,72 +561,72 @@ class Uc(object):
     #     (cb, data) = self._callbacks[user_data]
     #     cb(self, data)
 
-    # # add a hook
-    # def hook_add(self, htype, callback, user_data=None, begin=1, end=0, arg1=0):
-    #     _h2 = uc_hook_h()
+    # add a hook
+    def hook_add(self, htype, callback, user_data=None, begin=1, end=0, arg1=0):
+        _h2 = uc_hook_h()
 
-    #     # save callback & user_data
-    #     self._callback_count += 1
-    #     self._callbacks[self._callback_count] = (callback, user_data)
-    #     cb = None
+        # save callback & user_data
+        self._callback_count += 1
+        self._callbacks[self._callback_count] = (callback, user_data)
+        cb = None
 
-    #     if htype == uc.UC_HOOK_INSN:
-    #         insn = ctypes.c_int(arg1)
-    #         if arg1 == x86_const.UC_X86_INS_IN:  # IN instruction
-    #             cb = ctypes.cast(UC_HOOK_INSN_IN_CB(self._hook_insn_in_cb), UC_HOOK_INSN_IN_CB)
-    #         if arg1 == x86_const.UC_X86_INS_OUT:  # OUT instruction
-    #             cb = ctypes.cast(UC_HOOK_INSN_OUT_CB(self._hook_insn_out_cb), UC_HOOK_INSN_OUT_CB)
-    #         if arg1 in (x86_const.UC_X86_INS_SYSCALL, x86_const.UC_X86_INS_SYSENTER):  # SYSCALL/SYSENTER instruction
-    #             cb = ctypes.cast(UC_HOOK_INSN_SYSCALL_CB(self._hook_insn_syscall_cb), UC_HOOK_INSN_SYSCALL_CB)
-    #         status = _uc.uc_hook_add(
-    #             self._uch, ctypes.byref(_h2), htype, cb,
-    #             ctypes.cast(self._callback_count, ctypes.c_void_p),
-    #             ctypes.c_uint64(begin), ctypes.c_uint64(end), insn
-    #         )
-    #     elif htype == uc.UC_HOOK_INTR:
-    #         cb = ctypes.cast(UC_HOOK_INTR_CB(self._hook_intr_cb), UC_HOOK_INTR_CB)
-    #         status = _uc.uc_hook_add(
-    #             self._uch, ctypes.byref(_h2), htype, cb,
-    #             ctypes.cast(self._callback_count, ctypes.c_void_p),
-    #             ctypes.c_uint64(begin), ctypes.c_uint64(end)
-    #         )
-    #     else:
-    #         if htype in (uc.UC_HOOK_BLOCK, uc.UC_HOOK_CODE):
-    #             # set callback with wrapper, so it can be called
-    #             # with this object as param
-    #             cb = ctypes.cast(UC_HOOK_CODE_CB(self._hookcode_cb), UC_HOOK_CODE_CB)
-    #             status = _uc.uc_hook_add(
-    #                 self._uch, ctypes.byref(_h2), htype, cb,
-    #                 ctypes.cast(self._callback_count, ctypes.c_void_p),
-    #                 ctypes.c_uint64(begin), ctypes.c_uint64(end)
-    #             )
-    #         elif htype & (uc.UC_HOOK_MEM_READ_UNMAPPED |
-    #                       uc.UC_HOOK_MEM_WRITE_UNMAPPED |
-    #                       uc.UC_HOOK_MEM_FETCH_UNMAPPED |
-    #                       uc.UC_HOOK_MEM_READ_PROT |
-    #                       uc.UC_HOOK_MEM_WRITE_PROT |
-    #                       uc.UC_HOOK_MEM_FETCH_PROT):
-    #             cb = ctypes.cast(UC_HOOK_MEM_INVALID_CB(self._hook_mem_invalid_cb), UC_HOOK_MEM_INVALID_CB)
-    #             status = _uc.uc_hook_add(
-    #                 self._uch, ctypes.byref(_h2), htype, cb,
-    #                 ctypes.cast(self._callback_count, ctypes.c_void_p),
-    #                 ctypes.c_uint64(begin), ctypes.c_uint64(end)
-    #             )
-    #         else:
-    #             cb = ctypes.cast(UC_HOOK_MEM_ACCESS_CB(self._hook_mem_access_cb), UC_HOOK_MEM_ACCESS_CB)
-    #             status = _uc.uc_hook_add(
-    #                 self._uch, ctypes.byref(_h2), htype, cb,
-    #                 ctypes.cast(self._callback_count, ctypes.c_void_p),
-    #                 ctypes.c_uint64(begin), ctypes.c_uint64(end)
-    #             )
+        if htype == UC_HOOK_INSN:
+            insn = ctypes.c_int(arg1)
+            if arg1 == x86_const.UC_X86_INS_IN:  # IN instruction
+                cb = ctypes.cast(UC_HOOK_INSN_IN_CB(self._hook_insn_in_cb), UC_HOOK_INSN_IN_CB)
+            if arg1 == x86_const.UC_X86_INS_OUT:  # OUT instruction
+                cb = ctypes.cast(UC_HOOK_INSN_OUT_CB(self._hook_insn_out_cb), UC_HOOK_INSN_OUT_CB)
+            if arg1 in (x86_const.UC_X86_INS_SYSCALL, x86_const.UC_X86_INS_SYSENTER):  # SYSCALL/SYSENTER instruction
+                cb = ctypes.cast(UC_HOOK_INSN_SYSCALL_CB(self._hook_insn_syscall_cb), UC_HOOK_INSN_SYSCALL_CB)
+            status = _uc.uc_hook_add(
+                self._uch, ctypes.byref(_h2), htype, cb,
+                ctypes.cast(self._callback_count, ctypes.c_void_p),
+                ctypes.c_uint64(begin), ctypes.c_uint64(end), insn
+            )
+        elif htype == UC_HOOK_INTR:
+            cb = ctypes.cast(UC_HOOK_INTR_CB(self._hook_intr_cb), UC_HOOK_INTR_CB)
+            status = _uc.uc_hook_add(
+                self._uch, ctypes.byref(_h2), htype, cb,
+                ctypes.cast(self._callback_count, ctypes.c_void_p),
+                ctypes.c_uint64(begin), ctypes.c_uint64(end)
+            )
+        else:
+            if htype in (UC_HOOK_BLOCK, UC_HOOK_CODE):
+                # set callback with wrapper, so it can be called
+                # with this object as param
+                cb = ctypes.cast(UC_HOOK_CODE_CB(self._hookcode_cb), UC_HOOK_CODE_CB)
+                status = _uc.uc_hook_add(
+                    self._uch, ctypes.byref(_h2), htype, cb,
+                    ctypes.cast(self._callback_count, ctypes.c_void_p),
+                    ctypes.c_uint64(begin), ctypes.c_uint64(end)
+                )
+            elif htype & (UC_HOOK_MEM_READ_UNMAPPED |
+                          UC_HOOK_MEM_WRITE_UNMAPPED |
+                          UC_HOOK_MEM_FETCH_UNMAPPED |
+                          UC_HOOK_MEM_READ_PROT |
+                          UC_HOOK_MEM_WRITE_PROT |
+                          UC_HOOK_MEM_FETCH_PROT):
+                cb = ctypes.cast(UC_HOOK_MEM_INVALID_CB(self._hook_mem_invalid_cb), UC_HOOK_MEM_INVALID_CB)
+                status = _uc.uc_hook_add(
+                    self._uch, ctypes.byref(_h2), htype, cb,
+                    ctypes.cast(self._callback_count, ctypes.c_void_p),
+                    ctypes.c_uint64(begin), ctypes.c_uint64(end)
+                )
+            else:
+                cb = ctypes.cast(UC_HOOK_MEM_ACCESS_CB(self._hook_mem_access_cb), UC_HOOK_MEM_ACCESS_CB)
+                status = _uc.uc_hook_add(
+                    self._uch, ctypes.byref(_h2), htype, cb,
+                    ctypes.cast(self._callback_count, ctypes.c_void_p),
+                    ctypes.c_uint64(begin), ctypes.c_uint64(end)
+                )
 
-    #     # save the ctype function so gc will leave it alone.
-    #     self._ctype_cbs[self._callback_count] = cb
+        # save the ctype function so gc will leave it alone.
+        self._ctype_cbs[self._callback_count] = cb
 
-    #     if status != UC_ERR_OK:
-    #         raise UcError(status)
+        if status != UC_ERR_OK:
+            raise UcError(status)
 
-    #     return _h2.value
+        return _h2.value
 
     # # delete a hook
     # def hook_del(self, h):

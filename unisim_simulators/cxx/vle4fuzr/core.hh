@@ -34,13 +34,44 @@
 
 #include <inttypes.h>
 
-extern "C"
+#include <unisim/component/cxx/processor/arm/cpu.hh>
+#include <unisim/component/cxx/processor/arm/models.hh>
+#include <top_arm32.hh>
+#include <top_thumb.hh>
+
+struct ARMv7cfg
 {
-  int uc_open(unsigned, unsigned, void** ucengine);
-  int uc_mem_map(void* uc, uint64_t addr, uintptr_t size, uint32_t perms);
-  int uc_mem_write(void* uc, uint64_t addr, void const* bytes, uintptr_t size);
-  int uc_reg_write(void* uc, int regid, void const* value);
-  int uc_reg_read(void* uc, int regid, void* value);
-  int uc_hook_add(void* uc, uintptr_t* hh, int type, void* callback, void* user_data, uint64_t begin, uint64_t end, ...);
-  int uc_emu_start(void* uc, uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count);
-}
+  // Following a standard armv7-a configuration
+  static uint32_t const model = unisim::component::cxx::processor::arm::ARMEMU;
+  static bool const     insns4T = true;
+  static bool const     insns5E = true;
+  static bool const     insns5J = true;
+  static bool const     insns5T = true;
+  static bool const     insns6  = true;
+  static bool const     insnsRM = false;
+  static bool const     insnsT2 = true;
+  static bool const     insns7  = true;
+};
+
+struct Core
+  : public unisim::component::cxx::processor::arm::CPU<ARMv7cfg>
+{
+  typedef unisim::component::cxx::processor::arm::CPU<ARMv7cfg> CPU;
+  typedef double   F64;
+  typedef float    F32;
+  typedef bool     BOOL;
+  typedef uint8_t  U8;
+  typedef uint16_t U16;
+  typedef uint32_t U32;
+  typedef uint64_t U64;
+  typedef int8_t   S8;
+  typedef int16_t  S16;
+  typedef int32_t  S32;
+  typedef int64_t  S64;
+
+  unisim::component::cxx::processor::arm::isa::arm32::Decoder<Core> arm32_decoder;
+  unisim::component::cxx::processor::arm::isa::thumb::Decoder<Core> thumb_decoder;
+    
+  Core( char const* name, unisim::kernel::Object* parent, bool is_thumb );
+  void StepInstruction();
+};

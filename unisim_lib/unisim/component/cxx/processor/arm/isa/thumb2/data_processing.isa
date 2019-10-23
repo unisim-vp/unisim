@@ -45,7 +45,7 @@ namespace cxx {
 namespace processor {
 namespace arm {
 namespace isa {
-namespace thumb2 {
+namespace thumb {
   /* decoding method for imm[1:3:8] */
 static
 uint32_t

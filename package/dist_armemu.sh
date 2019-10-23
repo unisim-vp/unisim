@@ -33,12 +33,12 @@ import std/cstdlib || exit
 
 import m4/ax_cflags_warn_all || exit
 
-copy source isa_thumb isa_thumb2 isa_arm32 header template data
+copy source isa_thumb isa_arm32 header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
 
-UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES="$(files isa_thumb) $(files isa_thumb2)"
+UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES="$(files isa_thumb)"
 
 UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES="$(files isa_arm32)"
 
