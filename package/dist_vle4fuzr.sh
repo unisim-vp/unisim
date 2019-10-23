@@ -7,9 +7,9 @@ source "$(dirname $0)/dist_common.sh"
 
 import_genisslib
 
-#import dist_vle4fuzr || exit
+import dist_vle4fuzr || exit
 
-import unisim/component/cxx/processor/arm || exit
+import unisim/component/cxx/processor/arm/vmsav7 || exit
 
 import libc/inttypes || exit
 import std/cstdlib || exit
@@ -46,26 +46,15 @@ UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
 "
 
-UNISIM_SIMULATOR_TOP_THUMB_ISA="\
-top_thumb.isa \
-"
-UNISIM_SIMULATOR_TOP_ARM32_ISA="\
-top_arm32.isa \
-"
-
 UNISIM_SIMULATOR_HEADER_FILES="\
-${UNISIM_SIMULATOR_TOP_THUMB_ISA} \
-${UNISIM_SIMULATOR_TOP_ARM32_ISA} \
 "
 
 UNISIM_BINDINGS_SOURCE_FILES="\
 bindings.cc \
-core.cc \
 "
 
 UNISIM_BINDINGS_HEADER_FILES="\
 bindings.hh \
-core.hh \
 "
 
 UNISIM_TOP_DATA_FILES="\
@@ -184,24 +173,24 @@ dist_share_DATA = ${UNISIM_TOP_DATA_FILES}
 nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
 
 BUILT_SOURCES=\
-	\$(top_builddir)/top_arm32.hh\
-	\$(top_builddir)/top_arm32.tcc\
-	\$(top_builddir)/top_thumb.hh\
-	\$(top_builddir)/top_thumb.tcc\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc\
 
 CLEANFILES=\
-	\$(top_builddir)/top_arm32.hh\
-	\$(top_builddir)/top_arm32.tcc\
-	\$(top_builddir)/top_thumb.hh\
-	\$(top_builddir)/top_thumb.tcc
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc
 
-\$(top_builddir)/top_arm32.tcc: \$(top_builddir)/top_arm32.hh
-\$(top_builddir)/top_arm32.hh: ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/top_arm32 -w 8 -I \$(top_srcdir) \$(top_srcdir)/${UNISIM_SIMULATOR_TOP_ARM32_ISA}
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.isa
 
-\$(top_builddir)/top_thumb.tcc: \$(top_builddir)/top_thumb.hh
-\$(top_builddir)/top_thumb.hh: ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/top_thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/${UNISIM_SIMULATOR_TOP_THUMB_ISA}
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.isa
 EOF
 )
 

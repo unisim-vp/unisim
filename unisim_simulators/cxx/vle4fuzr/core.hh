@@ -34,44 +34,18 @@
 
 #include <inttypes.h>
 
-#include <unisim/component/cxx/processor/arm/cpu.hh>
+#include <unisim/component/cxx/processor/arm/vmsav7/cpu.hh>
 #include <unisim/component/cxx/processor/arm/models.hh>
 #include <top_arm32.hh>
 #include <top_thumb.hh>
 
-struct ARMv7cfg
-{
-  // Following a standard armv7-a configuration
-  static uint32_t const model = unisim::component::cxx::processor::arm::ARMEMU;
-  static bool const     insns4T = true;
-  static bool const     insns5E = true;
-  static bool const     insns5J = true;
-  static bool const     insns5T = true;
-  static bool const     insns6  = true;
-  static bool const     insnsRM = false;
-  static bool const     insnsT2 = true;
-  static bool const     insns7  = true;
-};
-
 struct Core
-  : public unisim::component::cxx::processor::arm::CPU<ARMv7cfg>
+  : public unisim::component::cxx::processor::arm::vmsav7::CPU
 {
-  typedef unisim::component::cxx::processor::arm::CPU<ARMv7cfg> CPU;
-  typedef double   F64;
-  typedef float    F32;
-  typedef bool     BOOL;
-  typedef uint8_t  U8;
-  typedef uint16_t U16;
-  typedef uint32_t U32;
-  typedef uint64_t U64;
-  typedef int8_t   S8;
-  typedef int16_t  S16;
-  typedef int32_t  S32;
-  typedef int64_t  S64;
-
-  unisim::component::cxx::processor::arm::isa::arm32::Decoder<Core> arm32_decoder;
-  unisim::component::cxx::processor::arm::isa::thumb::Decoder<Core> thumb_decoder;
-    
+  typedef unisim::component::cxx::processor::arm::vmsav7::CPU CPU;
   Core( char const* name, unisim::kernel::Object* parent, bool is_thumb );
   void StepInstruction();
+  virtual void ReadInsnA(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn) {}
+  virtual void ReadInsnT(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn) {}
+  void CallSupervisor( uint16_t imm );
 };

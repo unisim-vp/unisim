@@ -33,7 +33,7 @@
  */
 
 #include "bindings.hh"
-#include "core.hh"
+#include <unisim/component/cxx/processor/arm/vmsav7/cpu.hh>
 
 #include <iostream>
 #include <string>
@@ -48,15 +48,18 @@
 #include <cassert>
 
 struct Processor
-  : public Core
+  : public unisim::component::cxx::processor::arm::vmsav7::CPU
 {
-
+  typedef unisim::component::cxx::processor::arm::vmsav7::CPU CPU;
+  
   Processor( char const* name, unisim::kernel::Object* parent, bool is_thumb )
     : unisim::kernel::Object(name, parent)
-    , Core( name, parent, is_thumb )
+    , CPU( name, parent )
     , pages()
     , hooks()
   {
+    // vmsav7::CPU::
+    cpsr.Set( unisim::component::cxx::processor::arm::T, uint32_t(is_thumb) );
   }
     
   struct Page
@@ -93,26 +96,36 @@ struct Processor
     uint8_t* at(uint32_t x) const { return const_cast<uint8_t*>(&storage[x]); }
   };
 
-  std::set<Page, Page::Above> pages;
+  typedef std::set<Page, Page::Above> Pages;
+  Pages pages;
 
-  int mem_map(uint32_t addr, uint32_t size, unsigned perms)
+  Pages::iterator mem_allocate(uint32_t lo, uint32_t addr, uint32_t hi)
+  {
+    uint32_t const page_size = 4096;
+    uint32_t page_lo = std::max(addr & (0u-page_size), lo);
+    uint32_t page_hi = std::min(addr | (page_size-1u), hi);
+    auto pi = mem_map(page_lo,page_hi-page_lo+1,7);
+    assert( pi != pages.end() );
+    return pi;
+  }
+  
+  Pages::iterator mem_map(uint32_t addr, uint32_t size, unsigned perms)
   {
     Page page(addr, size, perms);
     auto below = pages.lower_bound(page);
     if (below != pages.end() and not (*below < page))
       {
-        return -1;
+        return pages.end();
       }
     if (pages.size())
       {
         auto above = std::prev(below);
         if (above != pages.end() and not (page < *above))
           {
-            return -1;
+            return pages.end();
           }
       }
-    pages.insert(below,std::move(page));
-    return 0;
+    return pages.insert(below,std::move(page));
   }
 
   int
@@ -389,7 +402,59 @@ struct Processor
     return 0;
   }
   
-  void Sync() override {};
+  virtual void Sync() override { throw 0; }
+  virtual void ResetMemory() override { throw 0; }
+  virtual bool ExternalReadMemory( uint32_t addr, void* buffer, uint32_t size ) override
+  {
+    throw 0;
+  }
+  virtual bool ExternalWriteMemory( uint32_t addr, void const* buffer, uint32_t size ) override
+  {
+    throw 0;
+  }
+  virtual bool PhysicalWriteMemory( uint32_t addr, uint32_t paddr, uint8_t const* buffer, uint32_t size, uint32_t attrs ) override
+  {
+    auto pi = pages.lower_bound(addr);
+    if (pi == pages.end())
+      pi = mem_allocate(0, addr, (pages.size() ? (--pi)->base : 0)-1);
+    else if (pi->hi() <= addr)
+      pi = mem_allocate(pi->hi(), addr, (--pi != pages.end() ? pi->base : 0)-1);
+    
+    if (pi == pages.end())
+      return false;
+    uint32_t pos = addr - pi->base;
+    std::copy(&buffer[0], &buffer[size], pi->at(pos));
+    return true;
+  }
+  
+  virtual bool PhysicalReadMemory( uint32_t addr, uint32_t paddr, uint8_t* buffer, uint32_t size, uint32_t attrs ) override
+  {
+    auto pi = pages.lower_bound(addr);
+    if (pi == pages.end())
+      pi = mem_allocate(0, addr, (pages.size() ? (--pi)->base : 0)-1);
+    else if (pi->hi() <= addr)
+      pi = mem_allocate(pi->hi(), addr, (--pi != pages.end() ? pi->base : 0)-1);
+    
+    if (pi == pages.end())
+      return false;
+    uint32_t pos = addr - pi->base;
+    std::copy(pi->at(pos), pi->at(pos+size), buffer);
+    return true;
+  }
+  virtual bool PhysicalFetchMemory( uint32_t addr, uint32_t paddr, uint8_t* buffer, uint32_t size, uint32_t attrs ) override
+  {
+    auto pi = pages.lower_bound(addr);
+    if (pi == pages.end())
+      pi = mem_allocate(0, addr, (pages.size() ? (--pi)->base : 0)-1);
+    else if (pi->hi() <= addr)
+      pi = mem_allocate(pi->hi(), addr, (--pi != pages.end() ? pi->base : 0)-1);
+    
+    if (pi == pages.end())
+      return false;
+    uint32_t pos = addr - pi->base;
+    std::copy(pi->at(pos), pi->at(pos+size), buffer);
+    return true;
+  }
   
   struct Hook
   {
@@ -473,7 +538,7 @@ extern "C"
   int uc_mem_map(void* uc, uint64_t addr, uintptr_t size, uint32_t perms)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.mem_map(addr, size, perms);
+    return proc.mem_map(addr, size, perms) == proc.pages.end();
   }
 
   int uc_mem_write(void* uc, uint64_t addr, void const* bytes, uintptr_t size)
