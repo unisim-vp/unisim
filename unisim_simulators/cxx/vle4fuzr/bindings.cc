@@ -51,16 +51,29 @@ struct Processor
   : public unisim::component::cxx::processor::arm::vmsav7::CPU
 {
   typedef unisim::component::cxx::processor::arm::vmsav7::CPU CPU;
-  
-  Processor( char const* name, unisim::kernel::Object* parent, bool is_thumb )
-    : unisim::kernel::Object(name, parent)
-    , CPU( name, parent )
+
+  Processor( char const* name, bool is_thumb )
+    : unisim::kernel::Object( name, 0 )
+    , CPU( name, 0 )
     , pages()
     , hooks()
   {
     // vmsav7::CPU::
     cpsr.Set( unisim::component::cxx::processor::arm::T, uint32_t(is_thumb) );
   }
+
+  ~Processor()
+  {
+    for (int idx = 0; idx < int(Hook::TYPE_COUNT); ++idx)
+      {
+        for (auto h : hooks[idx])
+          {
+            h->release(idx);
+          }
+        hooks[idx].clear();
+      }
+  }
+
     
   struct Page
   {
@@ -185,11 +198,24 @@ struct Processor
       case 9: /* UC_ARM_REG_ITSTATE */
         break;
       case 10: /* UC_ARM_REG_LR, UC_ARM_REG_R14 */
-        break;
       case 11: /* UC_ARM_REG_PC, UC_ARM_REG_R15 */
-        break;
+        {
+          static struct : public RegView
+          {
+            void write( Processor& proc, int id, uint8_t const* bytes ) const { proc.SetGPR(id-10+14, *(uint32_t*)bytes); }
+            void read( Processor& proc, int id, uint8_t* bytes ) const { *(uint32_t*)bytes = proc.GetGPR(id-10+14); }
+          } _;
+          return &_;
+        } break;
       case 12: /* UC_ARM_REG_SP, UC_ARM_REG_R13 */
-        break;
+        {
+          static struct : public RegView
+          {
+            void write( Processor& proc, int id, uint8_t const* bytes ) const { proc.SetGPR(13, *(uint32_t*)bytes); }
+            void read( Processor& proc, int id, uint8_t* bytes ) const { *(uint32_t*)bytes = proc.GetGPR(13); }
+          } _;
+          return &_;
+        } break;
       case 13: /* UC_ARM_REG_SPSR */
         break;
       case 14: /* UC_ARM_REG_D0 */
@@ -458,8 +484,11 @@ struct Processor
   
   struct Hook
   {
-    Hook(int tp, void* cb, void* ud, uint64_t _begin, uint64_t _end)
-      : refs(0), begin(_begin), end(_end), types(tp), callback(cb), user_data(ud), insn()
+    typedef void (*cb_code)(void* uc, uint64_t address, uint32_t size, void* user_data);
+    typedef void (*cb_intr)(void* uc, uint32_t intno, void* user_data);
+
+    Hook(unsigned _types, void* cb, void* ud, uint64_t _begin, uint64_t _end)
+      : types(_types), begin(_begin), end(_end), callback(cb), user_data(ud), insn()
     {}
 
     enum type_t
@@ -478,42 +507,206 @@ struct Processor
        MEM_WRITE = 11, // Hook memory write events.
        MEM_FETCH = 12, // Hook memory fetch for execution events
        MEM_READ_AFTER = 13, // Hook memory after successful read events.
+       INSN_INVALID = 14, // Hook invalid instructions exceptions.
        TYPE_COUNT
       };
+    
 
-    bool has_type( type_t type ) { return (types >> int(type)) & 1; }
-    void Retain() { refs++; }
-    void Release() { if (refs-- <= 1) delete this; }
-    bool has_refs() const { return refs; }
+    template <unsigned BITS> struct Mask
+    {
+      enum { bits = BITS };
+      template <class T> Mask<T::bits | bits> operator | (T const&) { return Mask<T::bits | bits>(); }
+      bool check( unsigned types ) { return bool(types&unsigned(bits)) ^ bool(types&~unsigned(bits));}
+    };
+    template <type_t TYPE> Mask<1<<TYPE> Is() { return Mask<1<<TYPE>(); }
+      
+    bool check_types()
+    {
+      if (not ( Is<INTR>()           ).check(types)) return false; // uc_cb_hookintr_t
+      if (not ( Is<INSN>()           ).check(types)) return false; // unimplemented
+      if (not ( Is<CODE>() |
+                Is<BLOCK>()          ).check(types)) return false; // uc_cb_hookcode_t
+      if (not ( Is<MEM_READ_UNMAPPED>() |
+                Is<MEM_WRITE_UNMAPPED>() |
+                Is<MEM_FETCH_UNMAPPED>() |
+                Is<MEM_READ_PROT>() |
+                Is<MEM_WRITE_PROT>() |
+                Is<MEM_FETCH_PROT>() ).check(types)) return false; // uc_cb_eventmem_t
+      if (not ( Is<MEM_READ>() |
+                Is<MEM_WRITE>() |
+                Is<MEM_FETCH>() |
+                Is<MEM_READ_AFTER>() ).check(types)) return false; // uc_cb_hookmem_t
+      if (not ( Is<INSN_INVALID>()   ).check(types)) return false; // uc_cb_hookinsn_invalid_t
+      return true;
+    }
+    template <typename T> T cb() const { return (T)callback; }
+    bool has_type( type_t tp ) { return (types >> int(tp)) & 1; }
+    void release( type_t tp )
+    {
+      types &= ~(1u << tp);
+      if (not types)
+        delete this;
+    }
+    void release( int tp ) { release(type_t(tp)); }
 
+    bool bound_check(uint32_t addr) { return (addr >= begin and addr <= end) or begin > end; }
+    
   private:
     uintptr_t refs;
+    
   public:
+    unsigned types;
     uint64_t begin, end;
-    int types;
     void* callback;
     void* user_data;
     int insn;
   };
 
-
-  void add( Hook* hook )
+  bool add( Hook* hook )
   {
+    if (not hook->check_types())
+      return false;
     for (int idx = 0; idx < int(Hook::TYPE_COUNT); ++idx)
       {
         if (hook->has_type(Hook::type_t(idx)))
           {
-            hook->Retain();
             hooks[idx].push_back(hook);
           }
       }
+    return true;
   }
   
   std::vector<Hook*> hooks[Hook::TYPE_COUNT];
 
   int emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count )
   {
-    throw 0;
+    if (timeout)
+      {
+        std::cerr << "Error: timeout unimplemented." << timeout << std::endl;
+        throw 0;
+      }
+    
+    // std::cerr << "until: " << until << std::endl;
+    // std::cerr << "count: " << count << std::endl;
+
+    Branch(begin, B_DBG);
+
+    while (next_insn_addr != until)
+      {
+        /* Instruction boundary next_insn_addr becomes current_insn_addr */
+        uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr, insn_length = 0;
+          
+        try {
+          if (cpsr.Get( unisim::component::cxx::processor::arm::T ))
+            {
+              /* Thumb state */
+              unisim::component::cxx::processor::arm::isa::thumb::CodeType insn;
+              ReadInsn(insn_addr, insn);
+    
+              /* Decode current PC */
+              unisim::component::cxx::processor::arm::isa::thumb::Operation<CPU>* op = thumb_decoder.Decode(insn_addr, insn);
+
+              /* update PC register value before execution */
+              insn_length = op->GetLength() / 8;
+                
+              for (auto h : hooks[Hook::CODE])
+                {
+                  if (h->bound_check(next_insn_addr))
+                    h->cb<Hook::cb_code>()(this, insn_addr, insn_length, h->user_data);
+                }
+                
+              this->gpr[15] = insn_addr + 4;
+              this->next_insn_addr = insn_addr + insn_length;
+                
+              /* Execute instruction */
+              asm volatile( "thumb_operation_execute:" );
+              op->execute( *this );
+                
+              this->ITAdvance();
+            }
+          else
+            {
+              /* Arm32 state */
+              unisim::component::cxx::processor::arm::isa::arm32::CodeType insn;
+              ReadInsn(insn_addr, insn);
+      
+              /* Decode current PC */
+              unisim::component::cxx::processor::arm::isa::arm32::Operation<CPU>* op = arm32_decoder.Decode(insn_addr, insn);
+    
+              /* update PC register value before execution */
+              insn_length = op->GetLength() / 8;
+
+              for (auto h : hooks[Hook::CODE])
+                {
+                  if (h->bound_check(next_insn_addr))
+                    h->cb<Hook::cb_code>()(this, insn_addr, insn_length, h->user_data);
+                }
+              
+              this->gpr[15] = insn_addr + 8;
+              this->next_insn_addr = insn_addr + insn_length;
+                
+              /* Execute instruction */
+              asm volatile( "arm32_operation_execute:" );
+              op->execute( *this );
+              //op->profile(profile);
+            }
+            
+          // if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
+          //   memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, insn_length);
+            
+          instruction_counter++; /* Instruction regularly finished */
+        }
+          
+        //         catch (SVCException const& svexc) {
+        //           /* Resuming execution, since SVC exceptions are explicitly
+        //    * requested from regular instructions. ITState will be updated as
+        //    * needed by TakeSVCException (as done in the ARM spec). */
+        //   if (unlikely( requires_commit_instruction_reporting and memory_access_reporting_import ))
+        //     memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, insn_length);
+
+        //   instruction_counter++; /* Instruction regularly finished */
+    
+        //   this->TakeSVCException();
+        // }
+  
+        // catch (DataAbortException const& daexc) {
+        //   /* Abort execution, and take processor to data abort handler */
+    
+        //   if (unlikely(trap_reporting_import))
+        //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
+    
+        //   this->TakeDataOrPrefetchAbortException(true); // TakeDataAbortException
+        // }
+  
+        // catch (PrefetchAbortException const& paexc) {
+        //   /* Abort execution, and take processor to prefetch abort handler */
+    
+        //   if (unlikely(trap_reporting_import))
+        //     trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
+    
+        //   this->TakeDataOrPrefetchAbortException(false); // TakePrefetchAbortException
+        // }
+  
+        // catch (UndefInstrException const& undexc) {
+        //   /* Abort execution, and take processor to undefined handler */
+    
+        //   if (unlikely(trap_reporting_import))
+        //     trap_reporting_import->ReportTrap( *this, "Undefined Exception" );
+    
+        //   this->TakeUndefInstrException();
+        // }
+  
+        catch (unisim::component::cxx::processor::arm::Exception const& exc)
+          {
+            throw 0;
+          // logger << DebugError << "Unimplemented exception (" << exc.what() << ")"
+          //        << " pc: " << std::hex << current_insn_addr << std::dec
+          //        << EndDebugError;
+          // this->Stop(-1);
+          }
+      }
+    
+    //  std::cerr << "Stopped: current=0x" << std::hex << current_insn_addr << ", next: " << std::hex << next_insn_addr << std::dec << std::endl;
     return 0;
   }
   
@@ -528,9 +721,20 @@ extern "C"
   int uc_open(unsigned arm_arch, unsigned is_thumb, void** ucengine)
   {
     assert( arm_arch == 0 );
+    
+    static int instance = 0;
+    std::ostringstream name;
+    name << "cpu_" << instance++;
+    
+    *ucengine = new Processor( name.str().c_str(), is_thumb );
+    return 0;
+  }
 
-    *ucengine = new Processor( "cpu", 0, is_thumb );
-
+  int
+  uc_close(void* uc)
+  {
+    Processor* proc = (Processor*)uc;
+    delete proc;
     return 0;
   }
 
@@ -559,23 +763,20 @@ extern "C"
     return proc.reg_read(regid, (uint8_t*)bytes);
   }
 
-  int uc_hook_add(void* uc, uintptr_t* hh, int type, void* callback, void* user_data, uint64_t begin, uint64_t end, ...)
+  int uc_hook_add(void* uc, uintptr_t* hh, int types, void* callback, void* user_data, uint64_t begin, uint64_t end, ...)
   {
-    Processor::Hook* hook = new Processor::Hook(type, callback, user_data, begin, end);
+    Processor::Hook* hook = new Processor::Hook(types, callback, user_data, begin, end);
     
     // UC_HOOK_INSN has an extra argument for instruction ID
     if (hook->has_type(Processor::Hook::INSN))
       {
-        va_list valist;
-        va_start(valist, end);
-        hook->insn = va_arg(valist, int);
-        va_end(valist);
+        std::cerr << "UC_HOOK_INSN unimplemented.\n";
+        throw 0;
       }
 
-    ((Processor*)uc)->add(hook);
-    if (not hook->has_refs())
+    if (not ((Processor*)uc)->add(hook))
       {
-        /* failure */
+        std::cerr << "Hook typing error: " << std::hex << types << std::endl;
         delete hook;
         return 8 /*UC_ERR_HOOK*/;
       }

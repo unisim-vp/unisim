@@ -276,7 +276,7 @@ uc_hook_h = ctypes.c_size_t
 # _setup_prototype(_uc, "uc_version", ctypes.c_uint, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
 # _setup_prototype(_uc, "uc_arch_supported", ctypes.c_bool, ctypes.c_int)
 _setup_prototype(_uc, "uc_open", ucerr, ctypes.c_uint, ctypes.c_uint, ctypes.POINTER(uc_engine))
-# _setup_prototype(_uc, "uc_close", ucerr, uc_engine)
+_setup_prototype(_uc, "uc_close", ucerr, uc_engine)
 # _setup_prototype(_uc, "uc_strerror", ctypes.c_char_p, ucerr)
 # _setup_prototype(_uc, "uc_errno", ucerr, uc_engine)
 _setup_prototype(_uc, "uc_reg_read", ucerr, uc_engine, ctypes.c_int, ctypes.c_void_p)
@@ -391,26 +391,26 @@ class UcError(Exception):
 #         ("high_qword", ctypes.c_uint64),
 #     ]
 
-# # Subclassing ref to allow property assignment.
-# class UcRef(weakref.ref):
-#     pass
+# Subclassing ref to allow property assignment.
+class UcRef(weakref.ref):
+    pass
 
 # This class tracks Uc instance destruction and releases handles.
-# class UcCleanupManager(object):
-#     def __init__(self):
-#         self._refs = {}
+class UcCleanupManager(object):
+    def __init__(self):
+        self._refs = {}
 
-#     def register(self, uc):
-#         ref = UcRef(uc, self._finalizer)
-#         ref._uch = uc._uch
-#         self._refs[id(ref)] = ref
+    def register(self, uc):
+        ref = UcRef(uc, self._finalizer)
+        ref._uch = uc._uch
+        self._refs[id(ref)] = ref
 
-#     def _finalizer(self, ref):
-#         del self._refs[id(ref)]
-#         Uc.release_handle(ref._uch)
+    def _finalizer(self, ref):
+        del self._refs[id(ref)]
+        Uc.release_handle(ref._uch)
 
 class Uc(object):
-    # _cleanup = UcCleanupManager()
+    _cleanup = UcCleanupManager()
 
     def __init__(self, arch, mode):
         # # verify version compatibility with the core before doing anything
@@ -430,17 +430,17 @@ class Uc(object):
         self._callbacks = {}
         self._ctype_cbs = {}
         self._callback_count = 0
-#        self._cleanup.register(self)
+        self._cleanup.register(self)
 
-    # @staticmethod
-    # def release_handle(uch):
-    #     if uch:
-    #         try:
-    #             status = _uc.uc_close(uch)
-    #             if status != UC_ERR_OK:
-    #                 raise UcError(status)
-    #         except:  # _uc might be pulled from under our feet
-    #             pass
+    @staticmethod
+    def release_handle(uch):
+        if uch:
+            try:
+                status = _uc.uc_close(uch)
+                if status != UC_ERR_OK:
+                    raise UcError(status)
+            except:  # _uc might be pulled from under our feet
+                pass
 
     # emulate from @begin, and stop when reaching address @until
     def emu_start(self, begin, until, timeout=0, count=0):
