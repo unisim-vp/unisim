@@ -33,7 +33,6 @@
  */
 
 #include "channels/event_queue.h"
-#include <string>
 
 namespace sc_core {
 
@@ -54,7 +53,7 @@ sc_event_queue::~sc_event_queue()
 {
 }
 
-const char* sc_event_queue::kind() const
+const char *sc_event_queue::kind() const
 {
 	return "sc_event_queue";
 }

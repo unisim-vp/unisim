@@ -136,9 +136,9 @@ unsigned int tlm_base_initiator_socket<BUSWIDTH, FW_IF, BW_IF, N, POL>::get_bus_
 template <unsigned int BUSWIDTH, typename FW_IF, typename BW_IF, int N, sc_core::sc_port_policy POL>
 void tlm_base_initiator_socket<BUSWIDTH, FW_IF, BW_IF, N, POL>::bind(base_target_socket_type& s)
 {
-	// binding initiator socket -> target socket (forward path)
- 	(get_base_port())(s.get_base_interface());
-	(s.get_base_port())(get_base_interface());
+	// binding initiator socket -> target socket
+ 	(get_base_port())(s.get_base_interface()); // forward path
+	(s.get_base_port())(get_base_interface()); // backward path
 }
 
 template <unsigned int BUSWIDTH, typename FW_IF, typename BW_IF, int N, sc_core::sc_port_policy POL>
@@ -150,9 +150,9 @@ void tlm_base_initiator_socket<BUSWIDTH, FW_IF, BW_IF, N, POL>::operator() (base
 template <unsigned int BUSWIDTH, typename FW_IF, typename BW_IF, int N, sc_core::sc_port_policy POL>
 void tlm_base_initiator_socket<BUSWIDTH, FW_IF, BW_IF, N, POL>::bind(base_type& s)
 {
-	// binding initiator socket -> initiator socket (forward path)
-	(get_base_port())(s.get_base_port());
-	(s.get_base_export())(get_base_export());
+	// binding initiator socket -> initiator socket
+	(get_base_port())(s.get_base_port());     // forward path
+	(s.get_base_export())(get_base_export()); // backward path
 }
 
 template <unsigned int BUSWIDTH, typename FW_IF, typename BW_IF, int N, sc_core::sc_port_policy POL>

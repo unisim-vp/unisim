@@ -35,6 +35,13 @@
 #ifndef __LIBIEEE1666_TLM__
 #define __LIBIEEE1666_TLM__
 
+#include "tlm1/fwd.h"
+#include "tlm1/interface/analysis_ifs.h"
+#include "tlm1/interface/fifo_ifs.h"
+#include "tlm1/interface/message_passing_ifs.h"
+#include "tlm1/channels/fifo.h"
+#include "tlm1/analysis/analysis_fifo.h"
+#include "tlm1/analysis/analysis_port.h"
 #include "tlm2/fwd.h"
 #include "tlm2/interface/blocking_transport.h"
 #include "tlm2/interface/non_blocking_transport.h"
