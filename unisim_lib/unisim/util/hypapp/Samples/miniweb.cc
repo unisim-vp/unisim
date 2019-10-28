@@ -77,10 +77,6 @@ struct MiniWebServer : public unisim::util::hypapp::HttpServer
         : unisim::util::hypapp::MessageLoop(_http_server, std::cerr, std::cerr, std::cerr)
       {}
       MiniWebServer& GetServer() { return static_cast<MiniWebServer&>(http_server); }
-      //   MiniWebMsgLoop( std::string const& wd ) : webdocs(wd), uri(0) {}
-    //   virtual void NewRequest() { uri = 0; }
-    //   virtual void SetRequestType( request_type_t reqtype ) { if (reqtype != GET) throw 0; }
-    //   virtual void SetRequestURI( char const* _uri ) { uri = _uri; }
       
       bool SendNotFound(const unisim::util::hypapp::ClientConnection& conn, char const* path)
       {
