@@ -56,7 +56,7 @@ namespace {
 
 }
 
-struct MiniWebServer : public HttpServer
+struct MiniWebServer : public unisim::util::hypapp::HttpServer
 {
   std::string webdocs;
   
@@ -69,16 +69,16 @@ struct MiniWebServer : public HttpServer
   void Kill() { killed = true; }
   bool IsRunning() const { return running; }
   
-  virtual void Serve(ClientConnection const& conn) const
+  virtual void Serve(unisim::util::hypapp::ClientConnection const& conn) override
   {
-    struct MiniWebMsgLoop : public MessageLoop
+    struct MiniWebMsgLoop : public unisim::util::hypapp::MessageLoop
     {
-      MiniWebMsgLoop( std::string const& wd ) : webdocs(wd), uri(0) {}
-      virtual void NewRequest() { uri = 0; }
-      virtual void SetRequestType( request_type_t reqtype ) { if (reqtype != GET) throw 0; }
-      virtual void SetRequestURI( char const* _uri ) { uri = _uri; }
+      MiniWebMsgLoop(MiniWebServer& _http_server)
+        : unisim::util::hypapp::MessageLoop(_http_server, std::cerr, std::cerr, std::cerr)
+      {}
+      MiniWebServer& GetServer() { return static_cast<MiniWebServer&>(http_server); }
       
-      virtual bool SendNotFound(const ClientConnection& conn, char const* path)
+      bool SendNotFound(const unisim::util::hypapp::ClientConnection& conn, char const* path)
       {
         std::ostringstream pagebuf;
         pagebuf << "<html><head><title>404 Not Found</title></head><body><h1>Not Found</h1><p>"
@@ -94,7 +94,7 @@ struct MiniWebServer : public HttpServer
         return true;
       }
       
-      virtual bool SendDirectory(const ClientConnection& conn, std::string const& path, std::string const& rl)
+      virtual bool SendDirectory(const unisim::util::hypapp::ClientConnection& conn, std::string const& path, std::string const& rl)
       {
         std::ostringstream pagebuf;
         pagebuf << "<html><head><title>" << rl << "</title></head>"
@@ -179,16 +179,16 @@ struct MiniWebServer : public HttpServer
         return true;
       }
       
-      virtual bool SendResponse(const ClientConnection& conn)
+      virtual bool SendResponse(const unisim::util::hypapp::Request& req, const unisim::util::hypapp::ClientConnection& conn) override
       {
         std::string path;
-        SanitizeURIPath( path, uri );
+        SanitizeURIPath( path, req.GetRequestURI() );
         
-        path.insert( 0, webdocs );
+        path.insert( 0, GetServer().webdocs );
         
         struct stat st;
         if (stat(path.c_str(),&st) < 0)
-          return SendNotFound( conn, uri );
+          return SendNotFound( conn, req.GetRequestURI() );
         
         int fd = -1;
         if (st.st_mode & S_IFDIR)
@@ -203,7 +203,7 @@ struct MiniWebServer : public HttpServer
                 break;
             }
             if (fd < 0)
-              return SendDirectory(conn, path.substr(0, path.size()-1), path.substr(webdocs.size(), path.size()-1));
+              return SendDirectory(conn, path.substr(0, path.size()-1), path.substr(GetServer().webdocs.size(), path.size()-1));
           }
         else
           {
@@ -257,11 +257,11 @@ struct MiniWebServer : public HttpServer
         return true;
       }
       
-      std::string const& webdocs;
-      char const* uri;
+    //   std::string const& webdocs;
+    //   char const* uri;
     };
 
-    MiniWebMsgLoop mwml(webdocs);
+    MiniWebMsgLoop mwml(*this);
     mwml.Run(conn);
   }
 };

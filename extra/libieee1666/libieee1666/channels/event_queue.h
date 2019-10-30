@@ -51,9 +51,9 @@ class sc_event_queue : public sc_event_queue_if, public sc_module
 public:
 	sc_event_queue(sc_module_name name_= sc_module_name(sc_gen_unique_name("event_queue")));
 	~sc_event_queue();
-	virtual const char* kind() const;
-	virtual void notify( double , sc_time_unit );
-	virtual void notify( const sc_time& );
+	virtual const char *kind() const;
+	virtual void notify(double, sc_time_unit);
+	virtual void notify(const sc_time&);
 	virtual void cancel_all();
 	virtual const sc_event& default_event() const;
 	///////////////////////////////////

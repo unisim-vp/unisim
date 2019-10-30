@@ -1191,10 +1191,10 @@ struct ARMISA : public unisim::component::cxx::processor::arm::isa::arm32::Decod
   static bool const is_thumb = false;
 };
 
-struct THUMBISA : public unisim::component::cxx::processor::arm::isa::thumb2::Decoder<Processor>
+struct THUMBISA : public unisim::component::cxx::processor::arm::isa::thumb::Decoder<Processor>
 {
-  typedef unisim::component::cxx::processor::arm::isa::thumb2::CodeType CodeType;
-  typedef unisim::component::cxx::processor::arm::isa::thumb2::Operation<Processor> Operation;
+  typedef unisim::component::cxx::processor::arm::isa::thumb::CodeType CodeType;
+  typedef unisim::component::cxx::processor::arm::isa::thumb::Operation<Processor> Operation;
   static CodeType mkcode( uint32_t code ) { return CodeType( code ); }
   static bool const is_thumb = true;
 };

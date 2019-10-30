@@ -83,20 +83,20 @@ using unisim::util::arithmetic::RotateRight;
 #include <unisim/component/cxx/processor/arm/execute.hh>
 } // end of impl
 
-include "data_processing.isa"
-include "load_store.isa"
-include "multiply.isa"
-include "misc_arithmetic.isa"
-include "hints.isa"
-include "branch.isa"
-include "coprocessor.isa"
-include "exception.isa"
-include "status_register_access.isa"
-include "vfp.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/load_store.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/multiply.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/hints.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/branch.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/exception.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/vfp.isa"
 
-include "ordering.isa"
+include "unisim/component/cxx/processor/arm/isa/arm32/ordering.isa"
 
-//include "dependency.isa"
-//include "specialization.isa"
+//include "unisim/component/cxx/processor/arm/isa/arm32/dependency.isa"
+//include "unisim/component/cxx/processor/arm/isa/arm32/specialization.isa"
 
-//include "profiling.isa"
+//include "unisim/component/cxx/processor/arm/isa/arm32/profiling.isa"

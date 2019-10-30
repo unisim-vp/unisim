@@ -361,11 +361,11 @@ CPU::StepInstruction()
     
     if (cpsr.Get( T )) {
       /* Thumb state */
-      isa::thumb2::CodeType insn;
+      isa::thumb::CodeType insn;
       ReadInsn(insn_addr, insn);
     
       /* Decode current PC */
-      isa::thumb2::Operation<CPU>* op = thumb_decoder.Decode(insn_addr, insn);
+      isa::thumb::Operation<CPU>* op = thumb_decoder.Decode(insn_addr, insn);
     
       /* update PC register value before execution */
       insn_length = op->GetLength() / 8;
@@ -373,7 +373,7 @@ CPU::StepInstruction()
       this->next_insn_addr = insn_addr + insn_length;
     
       /* Execute instruction */
-      asm volatile( "thumb2_operation_execute:" );
+      asm volatile( "thumb_operation_execute:" );
       op->execute( *this );
     
       this->ITAdvance();
@@ -592,8 +592,8 @@ CPU::Disasm(uint32_t addr, uint32_t& next_addr)
       buffer << "[THUMB2]";
     
       uint8_t insn_bytes[4];
-      isa::thumb2::CodeType insn;
-      isa::thumb2::Operation<CPU> *op = 0;
+      isa::thumb::CodeType insn;
+      isa::thumb::Operation<CPU> *op = 0;
       if (not ReadMemory(addr, insn_bytes, 4))
         {
           buffer << "Could not read from memory";
@@ -707,7 +707,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
  * @param insn the resulting instruction word (output reference)
  */
 void
-CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn)
+CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn)
 {
   uint32_t base_address = address & -(IPB_LINE_SIZE);
   uint32_t buffer_index = address % (IPB_LINE_SIZE);
@@ -753,7 +753,7 @@ CPU::UndefinedInstruction( isa::arm32::Operation<CPU>* insn )
 }
 
 void
-CPU::UndefinedInstruction( isa::thumb2::Operation<CPU>* insn )
+CPU::UndefinedInstruction( isa::thumb::Operation<CPU>* insn )
 {
   std::ostringstream oss;
   insn->disasm( *this, oss );

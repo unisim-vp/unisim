@@ -220,7 +220,7 @@ struct CPU
   void RefillInsnPrefetchBuffer( uint32_t mva, AddressDescriptor const& line_loc );
   
   void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn );
-  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn );
+  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn );
   
   /**************************************************************/
   /* Memory access methods       END                            */
@@ -233,7 +233,7 @@ struct CPU
   void CallSupervisor( uint16_t imm );
   void BKPT( uint32_t imm );
   void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<CPU>* insn );
-  void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb2::Operation<CPU>* insn );
+  void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb::Operation<CPU>* insn );
   void DataAbort(uint32_t va, uint64_t ipa,
                  unsigned domain, int level, mem_acc_type_t mat,
                  DAbort type, bool taketohypmode, bool s2abort,
@@ -247,7 +247,7 @@ protected:
   /** Decoder for the ARM32 instruction set. */
   unisim::component::cxx::processor::arm::isa::arm32::Decoder<CPU> arm32_decoder;
   /** Decoder for the THUMB instruction set. */
-  unisim::component::cxx::processor::arm::isa::thumb2::Decoder<CPU> thumb_decoder;
+  unisim::component::cxx::processor::arm::isa::thumb::Decoder<CPU> thumb_decoder;
   
   /***************************
    * Cache Interface   START *

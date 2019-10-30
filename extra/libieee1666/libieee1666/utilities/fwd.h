@@ -69,6 +69,10 @@ enum {
 class sc_trace_file;
 class sc_report;
 class sc_report_handler;
+class sc_vector_base;
+template <typename T> class sc_vector_iter;
+template <typename T> class sc_vector;
+template <typename T, typename MT> class sc_vector_assembly;
 
 } // end of namespace sc_core
 

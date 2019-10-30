@@ -174,11 +174,11 @@ struct ARM32 : isa::arm32::Decoder<ut::Arch>
   }
 };
 
-struct THUMB : isa::thumb2::Decoder<ut::Arch>
+struct THUMB : isa::thumb::Decoder<ut::Arch>
 {
-  typedef isa::thumb2::DecodeTableEntry<ut::Arch> DecodeTableEntry;
-  typedef isa::thumb2::CodeType CodeType;
-  typedef isa::thumb2::Operation<ut::Arch> Operation;
+  typedef isa::thumb::DecodeTableEntry<ut::Arch> DecodeTableEntry;
+  typedef isa::thumb::CodeType CodeType;
+  typedef isa::thumb::Operation<ut::Arch> Operation;
   static CodeType mkcode( uint32_t code ) {
     if (((code >> 11) & 0b11111) < 0b11101) 
       return CodeType( code & 0xffff );

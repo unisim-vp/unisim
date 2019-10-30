@@ -32,3 +32,15 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Gilles Mouchard <gilles.mouchard@cea.fr>
  */
 
+#include <inttypes.h>
+
+extern "C"
+{
+  int uc_open(unsigned, unsigned, void** ucengine);
+  int uc_mem_map(void* uc, uint64_t addr, uintptr_t size, uint32_t perms);
+  int uc_mem_write(void* uc, uint64_t addr, void const* bytes, uintptr_t size);
+  int uc_reg_write(void* uc, int regid, void const* value);
+  int uc_reg_read(void* uc, int regid, void* value);
+  int uc_hook_add(void* uc, uintptr_t* hh, int type, void* callback, void* user_data, uint64_t begin, uint64_t end, ...);
+  int uc_emu_start(void* uc, uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count);
+}

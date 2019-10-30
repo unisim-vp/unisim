@@ -38,7 +38,7 @@
 #include <unisim/util/simfloat/floating.hh>
 #include <unisim/component/cxx/processor/arm/extregbank.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
-#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/variable/variable.hh>
 #include <unisim/service/interfaces/register.hh>
 
 #include <limits>

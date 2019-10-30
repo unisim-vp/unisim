@@ -36,6 +36,51 @@
 
 namespace sc_core {
 
-} // end of namespace sc_core
+const char *sc_vector_base::kind() const
+{
+	return "sc_vector";
+}
 
-#endif
+sc_vector_base::size_type sc_vector_base::size() const
+{
+	return elements.size();
+}
+
+const std::vector<sc_object *>& sc_vector_base::get_elements() const
+{
+	return elements;
+}
+
+sc_vector_base::sc_vector_base()
+	: sc_object(sc_gen_unique_name("vector"))
+	, elements()
+{
+}
+
+sc_vector_base::sc_vector_base(const char *name)
+	: sc_object(name)
+	, elements()
+{
+}
+
+void sc_vector_base::push_back(sc_object *obj)
+{
+	elements.push_back(obj);
+}
+
+sc_object *sc_vector_base::at(size_type idx)
+{
+	return elements[idx];
+}
+
+sc_object *sc_vector_base::at(size_type idx) const
+{
+	return elements[idx];
+}
+
+void sc_vector_base::clear()
+{
+	elements.clear();
+}
+
+} // end of namespace sc_core

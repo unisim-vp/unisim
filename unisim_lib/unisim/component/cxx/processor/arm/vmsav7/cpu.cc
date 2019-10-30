@@ -582,11 +582,11 @@ CPU::StepInstruction()
     // consequence of the instruction execution).
     if (cpsr.Get( T )) {
       /* Thumb state */
-      isa::thumb2::CodeType insn;
+      isa::thumb::CodeType insn;
       ReadInsn(insn_addr, insn);
     
       /* Decode current PC */
-      isa::thumb2::Operation<CPU>* op = thumb_decoder.Decode(insn_addr, insn);
+      isa::thumb::Operation<CPU>* op = thumb_decoder.Decode(insn_addr, insn);
     
       /* update PC register value before execution */
       insn_length = op->GetLength() / 8;
@@ -594,7 +594,7 @@ CPU::StepInstruction()
       this->next_insn_addr = insn_addr + insn_length;
     
       /* Execute instruction */
-      asm volatile( "thumb2_operation_execute:" );
+      asm volatile( "thumb_operation_execute:" );
       op->execute( *this );
     
       this->ITAdvance();
@@ -826,7 +826,7 @@ CPU::Disasm(uint32_t addr, uint32_t& next_addr)
         buffer << "[THUMB2]";
     
         uint8_t insn_bytes[4];
-        isa::thumb2::CodeType insn;
+        isa::thumb::CodeType insn;
         
         if (not ReadMemory(addr, &insn_bytes[0], 4))
           {
@@ -842,7 +842,7 @@ CPU::Disasm(uint32_t addr, uint32_t& next_addr)
         insn.size = 32;
     
         struct OP {
-          OP() : ptr(0) {} isa::thumb2::Operation<CPU>* ptr;
+          OP() : ptr(0) {} isa::thumb::Operation<CPU>* ptr;
           ~OP() { delete ptr; }
         } op;
         op.ptr = thumb_decoder.NCDecode(addr, insn);
@@ -966,7 +966,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
  * @param insn the resulting instruction word (output reference)
  */
 void
-CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn)
+CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn)
 {
   AddressDescriptor loc(address & -(IPB_LINE_SIZE));
   bool ispriv = cpsr.Get(M) != USER_MODE;
@@ -1062,7 +1062,7 @@ CPU::UndefinedInstruction( isa::arm32::Operation<CPU>* insn )
 }
 
 void
-CPU::UndefinedInstruction( isa::thumb2::Operation<CPU>* insn )
+CPU::UndefinedInstruction( isa::thumb::Operation<CPU>* insn )
 {
   std::ostringstream oss;
   insn->disasm( *this, oss );
