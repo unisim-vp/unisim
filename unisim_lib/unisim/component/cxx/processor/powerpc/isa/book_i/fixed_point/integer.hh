@@ -37,6 +37,10 @@
 
 #include <unisim/util/arithmetic/arithmetic.hh>
 
+#ifdef BitScanReverse
+#undef BitScanReverse
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {

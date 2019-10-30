@@ -281,6 +281,12 @@ const std::string& NullField::GetName()
 	return null_string;
 }
 
+const std::string& NullField::GetDescription()
+{
+	static std::string null_string;
+	return null_string;
+}
+
 } // end of namespace core
 } // end of namespace reg
 } // end of namespace util

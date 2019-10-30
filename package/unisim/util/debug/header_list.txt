@@ -7,6 +7,7 @@ unisim/util/debug/event.hh
 unisim/util/debug/fetch_insn_event.hh
 unisim/util/debug/memory_access_type.hh
 unisim/util/debug/profile.hh
+unisim/util/debug/simple_field_registry.hh
 unisim/util/debug/simple_register.hh
 unisim/util/debug/simple_register_registry.hh
 unisim/util/debug/stmt.hh

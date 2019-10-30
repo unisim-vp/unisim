@@ -595,14 +595,18 @@ struct FPR : SoftDouble
 		std::stringstream sstr;
 		sstr << "f" << reg_num;
 		unisim::util::reg::core::PropertyRegistry::SetStringProperty(unisim::util::reg::core::PropertyRegistry::EL_REGISTER, unisim::util::reg::core::PropertyRegistry::STR_PROP_NAME, (intptr_t) this, sstr.str());
+		
+		unisim::util::reg::core::PropertyRegistry::SetStringProperty(unisim::util::reg::core::PropertyRegistry::EL_REGISTER, unisim::util::reg::core::PropertyRegistry::STR_PROP_DESC, (intptr_t) this, "Floating-Point Register");
 	}
 	
 	unisim::service::interfaces::Register *CreateRegisterInterface()
 	{
-		return new FloatingPointRegisterInterface(GetName().c_str(), this);
+		return new FloatingPointRegisterInterface(GetName().c_str(), GetDescription().c_str(), this);
 	}
 	
 	const std::string& GetName() const { return unisim::util::reg::core::PropertyRegistry::GetStringProperty(unisim::util::reg::core::PropertyRegistry::EL_REGISTER, unisim::util::reg::core::PropertyRegistry::STR_PROP_NAME, (intptr_t) this); }
+	
+	const std::string& GetDescription() const { return unisim::util::reg::core::PropertyRegistry::GetStringProperty(unisim::util::reg::core::PropertyRegistry::EL_REGISTER, unisim::util::reg::core::PropertyRegistry::STR_PROP_DESC, (intptr_t) this); }
 	
 	using Super::operator =;
 };
@@ -618,15 +622,18 @@ struct VR
 		std::stringstream sstr;
 		sstr << "v" << reg_num;
 		unisim::util::reg::core::PropertyRegistry::SetStringProperty(unisim::util::reg::core::PropertyRegistry::EL_REGISTER, unisim::util::reg::core::PropertyRegistry::STR_PROP_NAME, (intptr_t) this, sstr.str());
+		
+		unisim::util::reg::core::PropertyRegistry::SetStringProperty(unisim::util::reg::core::PropertyRegistry::EL_REGISTER, unisim::util::reg::core::PropertyRegistry::STR_PROP_DESC, (intptr_t) this, "Vector Register");
 	}
 
 	unisim::service::interfaces::Register *CreateRegisterInterface()
 	{
-		return new unisim::util::debug::SimpleRegister<value_t>(GetName().c_str(), &value);
+		return new unisim::util::debug::SimpleRegister<value_t>(GetName().c_str(), GetDescription().c_str(), &value);
 	}
 	
 	const std::string& GetName() const { return unisim::util::reg::core::PropertyRegistry::GetStringProperty(unisim::util::reg::core::PropertyRegistry::EL_REGISTER, unisim::util::reg::core::PropertyRegistry::STR_PROP_NAME, (intptr_t) this); }
 	
+	const std::string& GetDescription() const { return unisim::util::reg::core::PropertyRegistry::GetStringProperty(unisim::util::reg::core::PropertyRegistry::EL_REGISTER, unisim::util::reg::core::PropertyRegistry::STR_PROP_DESC, (intptr_t) this); }
 private:
 	struct value_t
 	{
@@ -1514,7 +1521,7 @@ protected:
 			}
 			else if(cpu->verbose_move_to_slr)
 			{
-				cpu->GetDebugInfoStream() << "Moving 0x" << std::hex << value << std::dec << " to " << this->GetName() << std::endl;
+				cpu->GetDebugInfoStream() << "Moving 0x" << std::hex << value << " to " << this->GetName() << ": "; this->ShortPrettyPrint(cpu->GetDebugInfoStream()); cpu->GetDebugInfoStream() << std::dec << std::endl;
 			}
 			
 			return !unisim::util::reg::core::IsReadWriteError(rws);
@@ -1531,9 +1538,9 @@ protected:
 				this->LongPrettyPrint(cpu->GetDebugWarningStream());
 				cpu->GetDebugWarningStream() << std::endl;
 			}
-			else if(cpu->verbose_move_to_slr)
+			else if(cpu->verbose_move_from_slr)
 			{
-				cpu->GetDebugInfoStream() << "Moving 0x" << std::hex << value << std::dec << " from " << this->GetName() << std::endl;
+				cpu->GetDebugInfoStream() << "Moving 0x" << std::hex << value << " from " << this->GetName() << ": "; this->ShortPrettyPrint(cpu->GetDebugInfoStream()); cpu->GetDebugInfoStream() << std::dec << std::endl;
 			}
 			
 			return !unisim::util::reg::core::IsReadWriteError(rws);
@@ -2611,7 +2618,7 @@ protected:
 		
 		virtual void Reset() { /* unaffected */ }
 	private:
-		void Init() { this->SetName("VRSAVE"); this->SetDescription(" Vector Save/Restore Register"); }
+		void Init() { this->SetName("VRSAVE"); this->SetDescription("Vector Save/Restore Register"); }
 	};
 	
 	// User SPR General 0
@@ -2921,11 +2928,9 @@ protected:
 		typedef PrivilegedSPR<PIR, PIR_Mapping<CONFIG::MODEL>::SPR_NUM> Super;
 		
 		struct PROCID   : Field<PROCID  , 0 , 31> {}; // Unique, core-specific value
-		
-		struct PIN      : Field<PIN     , 28, 31> {}; // Processor Identification Number
-		
-		struct ID_0_23  : Field<ID_0_23 , 0, 23>  {}; // bits 0:23
+		struct ID_0_23  : Field<ID_0_23 , 0 , 23> {}; // bits 0:23
 		struct ID_24_31 : Field<ID_24_31, 24, 31> {}; // bits 24:31
+		struct PIN      : Field<PIN     , 28, 31> {}; // Processor Identification Number
 		
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(MPC7400    , _) { typedef FieldSet<PROCID> ALL; };
@@ -2953,7 +2958,10 @@ protected:
 			this->SetName("PIR");
 			this->SetDescription("Processor ID Register");
 			
-			PIN::SetName("PIN"); PIN::SetDescription("Processor Identification Number");
+			PROCID  ::SetName("PROCID");   PROCID  ::SetDescription("Unique, core-specific value");
+			ID_0_23 ::SetName("ID_0_23");  ID_0_23 ::SetDescription("bits 0:23");
+			ID_24_31::SetName("ID_24_31"); ID_24_31::SetDescription("bits 24:31");
+			PIN     ::SetName("PIN");      PIN     ::SetDescription("Processor Identification Number");
 		}
 	};
 	
@@ -3079,7 +3087,7 @@ protected:
 		DBSR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
-		virtual bool MoveTo(uint32_t value) { this->template Set<ALL>(this->template Get<ALL>() & ~value); return true; } // W1C
+		virtual bool MoveTo(uint32_t value) { this->Set(this->Get() & ~value); return true; } // W1C
 	private:
 		void Init()
 		{
@@ -3443,7 +3451,7 @@ protected:
 		
 		virtual void Reset() { /* unaffected */ }
 		
-		virtual bool MoveTo(uint32_t value) { this->template Set<ALL>(this->template Get<ALL>() & ~value); return true; } // W1C
+		virtual bool MoveTo(uint32_t value) { this->Set(this->Get() & ~value); return true; } // W1C
 	private:
 		void Init()
 		{
@@ -3552,44 +3560,45 @@ protected:
 	{
 		typedef NonPrivilegedSPR<SPEFSCR, 512> Super;
 		
-		struct SOVH  : Field<SOVH,      0> {}; // Summary Integer overflow high
-		struct OVH   : Field<OVH,       1> {}; // Integer overflow high
-		struct FGH   : Field<FGH,       2> {}; // Embedded floating-point guard bit high
-		struct FXH   : Field<FXH,       3> {}; // Embedded floating-point inexact bit high
-		struct FINVH : Field<FINVH,     4> {}; // Embedded Floating-point Invalid Operation / Input error
-		struct FDBZH : Field<FDBZH,     5> {}; // Embedded Floating-point Divide by Zero
-		struct FUNFH : Field<FUNFH,     6> {}; // Embedded Floating-point Underflow
-		struct FOVFH : Field<FOVFH,     7> {}; // Embedded Floating-point Overflow
-		struct FINXS : Field<FINXS,    10> {}; // Embedded Floating-point Inexact Sticky Flag
-		struct FINVS : Field<FINVS,    11> {}; // Enmedded Floating-point Invalid Operation Sticky Flag
-		struct FDBZS : Field<FDBZS,    12> {}; // Embedded Floating-point Divide by Zero Sticky Flag
-		struct FUNFS : Field<FUNFS,    13> {}; // Embedded Floating-point Underflow Sticky Flag
-		struct FOVFS : Field<FOVFS,    14> {}; // Embedded Floating-point Overflow Sticky Flag
-		struct MODE  : Field<MODE ,    15> {}; // Embedded Floating-point Operating Mode
-		struct SOV   : Field<MODE ,    16> {}; // Summary Integer overflow
-		struct OV    : Field<MODE ,    17> {}; // Integer overflow
-		struct FG    : Field<FG,       18> {}; // Embedded Floating-point Guard bit
-		struct FX    : Field<FX,       19> {}; // Embedded Floating-point Sticky bit
-		struct FINV  : Field<FINV ,    20> {}; // Embedded Floating-point Invalid Operation / Input error
-		struct FDBZ  : Field<FDBZ ,    21> {}; // Embedded Floating-point Divide by Zero
-		struct FUNF  : Field<FUNF ,    22> {}; // Embedded Floating-point Underflow
-		struct FOVF  : Field<FOVF ,    23> {}; // Embedded Floating-point Overflow
-		struct FINXE : Field<FINXE,    25> {}; // Embedded Floating-point Inexact Exception Enable
-		struct FINVE : Field<FINVE,    26> {}; // Embedded Floating-point Invalid Operation / Input Error Exception Enable
-		struct FDBZE : Field<FDBZE,    27> {}; // Embedded Floating-point Divide by Zero Exception Enable
-		struct FUNFE : Field<FUNFE,    28> {}; // Embedded Floating-point Underflow Exception Enable
-		struct FOVFE : Field<FOVFE,    29> {}; // Embedded Floating-point Overflow Exception Enable
-		struct FRMC  : Field<FRMC,  30,31>     // Embedded Floating-point Rounding Mode Control
+		struct SOVH    : Field<SOVH,      0> {}; // Summary Integer overflow high
+		struct OVH     : Field<OVH,       1> {}; // Integer overflow high
+		struct FGH     : Field<FGH,       2> {}; // Embedded floating-point guard bit high
+		struct FXH     : Field<FXH,       3> {}; // Embedded floating-point inexact bit high
+		struct FINVH   : Field<FINVH,     4> {}; // Embedded Floating-point Invalid Operation / Input error
+		struct FDBZH   : Field<FDBZH,     5> {}; // Embedded Floating-point Divide by Zero
+		struct FUNFH   : Field<FUNFH,     6> {}; // Embedded Floating-point Underflow
+		struct FOVFH   : Field<FOVFH,     7> {}; // Embedded Floating-point Overflow
+		struct FINXS   : Field<FINXS,    10> {}; // Embedded Floating-point Inexact Sticky Flag
+		struct FINVS   : Field<FINVS,    11> {}; // Enmedded Floating-point Invalid Operation Sticky Flag
+		struct FDBZS   : Field<FDBZS,    12> {}; // Embedded Floating-point Divide by Zero Sticky Flag
+		struct FUNFS   : Field<FUNFS,    13> {}; // Embedded Floating-point Underflow Sticky Flag
+		struct FOVFS   : Field<FOVFS,    14> {}; // Embedded Floating-point Overflow Sticky Flag
+		struct MODE    : Field<MODE ,    15> {}; // Embedded Floating-point Operating Mode
+		struct MODE_RO : Field<MODE_RO,  15, 15, unisim::util::reg::core::SW_R_HW_RO> {}; // Embedded Floating-point Operating Mode
+		struct SOV     : Field<SOV  ,    16> {}; // Summary Integer overflow
+		struct OV      : Field<OV   ,    17> {}; // Integer overflow
+		struct FG      : Field<FG,       18> {}; // Embedded Floating-point Guard bit
+		struct FX      : Field<FX,       19> {}; // Embedded Floating-point Sticky bit
+		struct FINV    : Field<FINV ,    20> {}; // Embedded Floating-point Invalid Operation / Input error
+		struct FDBZ    : Field<FDBZ ,    21> {}; // Embedded Floating-point Divide by Zero
+		struct FUNF    : Field<FUNF ,    22> {}; // Embedded Floating-point Underflow
+		struct FOVF    : Field<FOVF ,    23> {}; // Embedded Floating-point Overflow
+		struct FINXE   : Field<FINXE,    25> {}; // Embedded Floating-point Inexact Exception Enable
+		struct FINVE   : Field<FINVE,    26> {}; // Embedded Floating-point Invalid Operation / Input Error Exception Enable
+		struct FDBZE   : Field<FDBZE,    27> {}; // Embedded Floating-point Divide by Zero Exception Enable
+		struct FUNFE   : Field<FUNFE,    28> {}; // Embedded Floating-point Underflow Exception Enable
+		struct FOVFE   : Field<FOVFE,    29> {}; // Embedded Floating-point Overflow Exception Enable
+		struct FRMC    : Field<FRMC , 30,31>     // Embedded Floating-point Rounding Mode Control
 		{
 			static uint32_t NEAREST() { return 0; }
 			static uint32_t ZERO()    { return 1; }
 			static uint32_t UP()      { return 2; }
 			static uint32_t DOWN()    { return 3; }
-                };
+		};
 		
 		SWITCH_ENUM_TRAIT(Model, _);
-		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<FINXS, FINVS, FDBZS, FUNFS, FOVFS, /*MODE,*/ SOV, OV, FG, FX, FINV, FDBZ, FUNF, FOVF, FINXE, FINVE, FDBZE, FUNFE, FOVFE, FRMC> ALL; };
-		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<FINXS, FINVS, FDBZS, FUNFS, FOVFS, /*MODE,*/ SOV, OV, FG, FX, FINV, FDBZ, FUNF, FOVF, FINXE, FINVE, FDBZE, FUNFE, FOVFE, FRMC> ALL; };
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<FINXS, FINVS, FDBZS, FUNFS, FOVFS, MODE_RO, SOV, OV, FG, FX, FINV, FDBZ, FUNF, FOVF, FINXE, FINVE, FDBZE, FUNFE, FOVFE, FRMC> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<FINXS, FINVS, FDBZS, FUNFS, FOVFS, MODE_RO, SOV, OV, FG, FX, FINV, FDBZ, FUNF, FOVF, FINXE, FINVE, FDBZE, FUNFE, FOVFE, FRMC> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		SPEFSCR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
@@ -3664,25 +3673,37 @@ protected:
 	private:
 		void Init()
 		{
-			       this->SetName("SPEFSCR");      this->SetDescription("Signal Processing Extension/Embedded Floating-point Status and Control Register");
-			FINXS::SetName("FINXS"); FINXS::SetDescription("Embedded Floating-point Inexact Sticky Flag");
-			FINVS::SetName("FINVS"); FINVS::SetDescription("Enmedded Floating-point Invalid Operation Sticky Flag");
-			FDBZS::SetName("FDBZS"); FDBZS::SetDescription("Embedded Floating-point Divide by Zero Sticky Flag");
-			FUNFS::SetName("FUNFS"); FUNFS::SetDescription("Embedded Floating-point Underflow Sticky Flag");
-			FOVFS::SetName("FOVFS"); FOVFS::SetDescription("Embedded Floating-point Overflow Sticky Flag");
-			MODE ::SetName("MODE");  MODE ::SetDescription("Embedded Floating-point Operating Mode");
-			FG   ::SetName("FG");    FG   ::SetDescription("Embedded Floating-point Guard bit");
-			FX   ::SetName("FX");    FX   ::SetDescription("Embedded Floating-point Sticky bit");
-			FINV ::SetName("FINV");  FINV ::SetDescription("Embedded Floating-point Invalid Operation / Input error");
-			FDBZ ::SetName("FDBZ");  FDBZ ::SetDescription("Embedded Floating-point Divide by Zero");
-			FUNF ::SetName("FUNF");  FUNF ::SetDescription("Embedded Floating-point Underflow");
-			FOVF ::SetName("FOVF");  FOVF ::SetDescription("Embedded Floating-point Overflow");
-			FINXE::SetName("FINXE"); FINXE::SetDescription("Embedded Floating-point Inexact Exception Enable");
-			FINVE::SetName("FINVE"); FINVE::SetDescription("Embedded Floating-point Invalid Operation / Input Error Exception Enable");
-			FDBZE::SetName("FDBZE"); FDBZE::SetDescription("Embedded Floating-point Divide by Zero Exception Enable");
-			FUNFE::SetName("FUNFE"); FUNFE::SetDescription("Embedded Floating-point Underflow Exception Enable");
-			FOVFE::SetName("FOVFE"); FOVFE::SetDescription("Embedded Floating-point Overflow Exception Enable");
-			FRMC ::SetName("FRMC");  FRMC ::SetDescription("Embedded Floating-point Rounding Mode Control");
+			this->SetName("SPEFSCR"); this->SetDescription("Signal Processing Extension/Embedded Floating-point Status and Control Register");
+			
+			SOVH   ::SetName("SOVH");  SOVH   ::SetDescription("Summary Integer overflow high");
+			OVH    ::SetName("OVH");   OVH    ::SetDescription("Integer overflow high");
+			FGH    ::SetName("FGH");   FGH    ::SetDescription("Embedded floating-point guard bit high");
+			FXH    ::SetName("FXH");   FXH    ::SetDescription("Embedded floating-point inexact bit high");
+			FINVH  ::SetName("FINVH"); FINVH  ::SetDescription("Embedded Floating-point Invalid Operation / Input error");
+			FDBZH  ::SetName("FDBZH"); FDBZH  ::SetDescription("Embedded Floating-point Divide by Zero");
+			FUNFH  ::SetName("FUNFH"); FUNFH  ::SetDescription("Embedded Floating-point Underflow");
+			FOVFH  ::SetName("FOVFH"); FOVFH  ::SetDescription("Embedded Floating-point Overflow");
+			FINXS  ::SetName("FINXS"); FINXS  ::SetDescription("Embedded Floating-point Inexact Sticky Flag");
+			FINVS  ::SetName("FINVS"); FINVS  ::SetDescription("Enmedded Floating-point Invalid Operation Sticky Flag");
+			FDBZS  ::SetName("FDBZS"); FDBZS  ::SetDescription("Embedded Floating-point Divide by Zero Sticky Flag");
+			FUNFS  ::SetName("FUNFS"); FUNFS  ::SetDescription("Embedded Floating-point Underflow Sticky Flag");
+			FOVFS  ::SetName("FOVFS"); FOVFS  ::SetDescription("Embedded Floating-point Overflow Sticky Flag");
+			MODE   ::SetName("MODE");  MODE   ::SetDescription("Embedded Floating-point Operating Mode");
+			MODE_RO::SetName("MODE");  MODE_RO::SetDescription("Embedded Floating-point Operating Mode");
+			SOV    ::SetName("SOV");   SOV    ::SetDescription("Summary Integer overflow");
+			OV     ::SetName("OV");    OV     ::SetDescription("Integer overflow");
+			FG     ::SetName("FG");    FG     ::SetDescription("Embedded Floating-point Guard bit");
+			FX     ::SetName("FX");    FX     ::SetDescription("Embedded Floating-point Sticky bit");
+			FINV   ::SetName("FINV");  FINV   ::SetDescription("Embedded Floating-point Invalid Operation / Input error");
+			FDBZ   ::SetName("FDBZ");  FDBZ   ::SetDescription("Embedded Floating-point Divide by Zero");
+			FUNF   ::SetName("FUNF");  FUNF   ::SetDescription("Embedded Floating-point Underflow");
+			FOVF   ::SetName("FOVF");  FOVF   ::SetDescription("Embedded Floating-point Overflow");
+			FINXE  ::SetName("FINXE"); FINXE  ::SetDescription("Embedded Floating-point Inexact Exception Enable");
+			FINVE  ::SetName("FINVE"); FINVE  ::SetDescription("Embedded Floating-point Invalid Operation / Input Error Exception Enable");
+			FDBZE  ::SetName("FDBZE"); FDBZE  ::SetDescription("Embedded Floating-point Divide by Zero Exception Enable");
+			FUNFE  ::SetName("FUNFE"); FUNFE  ::SetDescription("Embedded Floating-point Underflow Exception Enable");
+			FOVFE  ::SetName("FOVFE"); FOVFE  ::SetDescription("Embedded Floating-point Overflow Exception Enable");
+			FRMC   ::SetName("FRMC");  FRMC   ::SetDescription("Embedded Floating-point Rounding Mode Control");
 		}
 	};
 	
@@ -3807,7 +3828,7 @@ protected:
 		struct BEPI_0_3  : Field<BEPI_0_3 , 0 , 3 > {};
 		struct BEPI_4_14 : Field<BEPI_4_14, 4 , 14> {};
 		
-		typedef FieldSet<XBL, BL> XA_BL;
+		struct XBS_BL : Field<XBS_BL, 15, 29> {}; // Block Length when Extended Block Size is enabled
 		
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(MPC601  , _) { typedef FieldSet<BEPI, BL, Vs, Vp> ALL;      };
@@ -4185,7 +4206,7 @@ protected:
 		void Init()
 		{
 			this->SetName("DBCNT"); this->SetDescription("Debug Counter Register");
-			CNT1::SetName("CNT1"); CNT2::SetName("cnt2");
+			CNT1::SetName("CNT1"); CNT2::SetName("CNT2");
 		}
 	};
 
@@ -4262,7 +4283,7 @@ protected:
 			IAC7US::SetName("IAC7US"); IAC7US::SetDescription("Instruction Address Compare 7 User/Supervisor Mode");
 			IAC7ER::SetName("IAC7ER"); IAC7ER::SetDescription("Instruction Address Compare 7 Effective/Real Mode");
 			IAC8US::SetName("IAC8US"); IAC8US::SetDescription("Instruction Address Compare 8 User/Supervisor Mode");
-			IAC8ER::SetName("IAC8ER"); IAC7ER::SetDescription("Instruction Address Compare 8 Effective/Real Mode");
+			IAC8ER::SetName("IAC8ER"); IAC8ER::SetDescription("Instruction Address Compare 8 Effective/Real Mode");
 			IAC78M::SetName("IAC78M"); IAC78M::SetDescription("Instruction Address Compare 7/8 Mode");
 		}
 	};
@@ -4422,7 +4443,7 @@ protected:
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
 		
-		virtual bool MoveTo(uint32_t value) { this->template Set<ALL>(this->template Get<ALL>() & ~value); return true; } // W1C
+		virtual bool MoveTo(uint32_t value) { this->Set(this->Get() & ~value); return true; } // W1C
 	
 	private:
 		void Init()
@@ -5571,6 +5592,7 @@ protected:
 	{
 		typedef PrivilegedSPR<HID0, 1008> Super;
 		
+		struct EMCP        : Field<EMCP       , 0>  {}; // Enable machine check pin (p_mcp_b)
 		struct TBEN        : Field<TBEN       , 5 > {}; // Time base enable
 		struct STEN        : Field<STEN       , 7 > {}; // Software table search enable
 		struct HIGH_BAT_EN : Field<HIGH_BAT_EN, 8 > {}; // Additional BATs enabled
@@ -5579,14 +5601,19 @@ protected:
 		struct DPM         : Field<DPM        , 11> {}; // Dynamic power management enable
 		struct BHTCLR      : Field<BHTCLR     , 13> {}; // Clear branch history table
 		struct XAEN        : Field<XAEN       , 14> {}; // Extended addressing enabled
+		struct ICR         : Field<ICR        , 14> {}; // Input Inputs Clear Reservation
 		struct NHR         : Field<NHR        , 15> {}; // Not hard reset
 		struct ICE         : Field<ICE        , 16> {}; // Instruction cache enable
 		struct DCE         : Field<DCE        , 17> {}; // Data cache enable
 		struct ILOCK       : Field<ILOCK      , 18> {}; // Instruction cache lock
 		struct DLOCK       : Field<DLOCK      , 19> {}; // Data cache lock
+		struct DCLREE      : Field<DCLREE     , 19> {}; // Debug Interrupt Clears MSR[EE]
 		struct ICFI        : Field<ICFI       , 20> {}; // Instruction cache flash invalidate
+		struct DCLRCE      : Field<DCLRCE     , 20> {}; // Debug Interrupt Clears MSR[CE]
 		struct DCFI        : Field<DCFI       , 21> {}; // Data cache flash invalidate
+		struct CICLRDE     : Field<CICLRDE    , 21> {}; // Critical Interrupt Clears MSR[DE]
 		struct SPD         : Field<SPD        , 22> {}; // Speculative data cache and instruction cache access disable
+		struct MCCLRDE     : Field<MCCLRDE    , 22> {}; // Machine Check Interrupt Clears MSR[DE]
 		struct XBSEN       : Field<XBSEN      , 23> {}; // Extended BAT block size enable
 		struct SGE         : Field<SGE        , 24> {}; // Store gathering enable
 		struct BTIC        : Field<BTIC       , 26> {}; // Branch target instruction cache enable
@@ -5595,15 +5622,6 @@ protected:
 		struct BHT         : Field<BHT        , 29> {}; // Branch history table enable
 		struct NOPDST      : Field<NOPDST     , 30> {}; // No-op dst, dstt, dstst, and dststt instructions
 		struct NOPTI       : Field<NOPTI      , 31> {}; // No-op the data cache touch instructions
-		
-		struct EMCP    : Field<EMCP   , 0>  {}; // Enable machine check pin (p_mcp_b)
-		struct ICR     : Field<ICR    , 14> {}; // Input Inputs Clear Reservation
-		//struct NHR     : Field<NHR    , 15> {}; // Not hardware reset
-		struct DCLREE  : Field<DCLREE , 19> {}; // Debug Interrupt Clears MSR[EE]
-		struct DCLRCE  : Field<DCLRCE , 20> {}; // Debug Interrupt Clears MSR[CE]
-		struct CICLRDE : Field<CICLRDE, 21> {}; // Critical Interrupt Clears MSR[DE]
-		struct MCCLRDE : Field<MCCLRDE, 22> {}; // Machine Check Interrupt Clears MSR[DE]
-		//struct NOPTI   : Field<NOPTI  , 31> {}; // No-op Touch Instructions
 		
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(MPC7441    , _) { typedef FieldSet<TBEN, STEN, NAP, SLEEP, DPM, BHTCLR, XAEN, NHR, ICE, DCE, ILOCK, DLOCK, ICFI, DCFI, SPD, XBSEN, SGE, BTIC, LRSTK, FOLD, BHT, NOPDST, NOPTI> ALL; };
@@ -5626,14 +5644,37 @@ protected:
 		void Init()
 		{      
 			   this->SetName("HID0");       this->SetDescription("Hardware Implementation Dependent Register 0");
-			EMCP   ::SetName("EMCP");    EMCP   ::SetDescription("Enable machine check pin (p_mcp_b)");
-			ICR    ::SetName("ICR");     ICR    ::SetDescription("Input Inputs Clear Reservation");
-			NHR    ::SetName("NHR");     NHR    ::SetDescription("Not hardware reset");
-			DCLREE ::SetName("DCLREE");  DCLREE ::SetDescription("Debug Interrupt Clears MSR[EE]");
-			DCLRCE ::SetName("DCLRCE");  DCLRCE ::SetDescription("Debug Interrupt Clears MSR[CE]");
-			CICLRDE::SetName("CICLRDE"); CICLRDE::SetDescription("Critical Interrupt Clears MSR[DE]");
-			MCCLRDE::SetName("MCCLRDE"); MCCLRDE::SetDescription("Machine Check Interrupt Clears MSR[DE]");
-			NOPTI  ::SetName("NOPTI");   NOPTI  ::SetDescription("No-op Touch Instructions");
+			   
+			   EMCP       ::SetName("EMCP");        EMCP       ::SetDescription("Enable machine check pin (p_mcp_b)");
+			   TBEN       ::SetName("TBEN");        TBEN       ::SetDescription("Time base enable");
+			   STEN       ::SetName("STEN");        STEN       ::SetDescription("Software table search enable");
+			   HIGH_BAT_EN::SetName("HIGH_BAT_EN"); HIGH_BAT_EN::SetDescription("Additional BATs enabled");
+			   NAP        ::SetName("NAP");         NAP        ::SetDescription("Nap mode enable");
+			   SLEEP      ::SetName("SLEEP");       SLEEP      ::SetDescription("Sleep mode enable");
+			   DPM        ::SetName("DPM");         DPM        ::SetDescription("Dynamic power management enable");
+			   BHTCLR     ::SetName("BHTCLR");      BHTCLR     ::SetDescription("Clear branch history table");
+			   XAEN       ::SetName("XAEN");        XAEN       ::SetDescription("Extended addressing enabled");
+			   ICR        ::SetName("ICR");         ICR        ::SetDescription("Input Inputs Clear Reservation");
+			   NHR        ::SetName("NHR");         NHR        ::SetDescription("Not hard reset");
+			   ICE        ::SetName("ICE");         ICE        ::SetDescription("Instruction cache enable");
+			   DCE        ::SetName("DCE");         DCE        ::SetDescription("Data cache enable");
+			   ILOCK      ::SetName("ILOCK");       ILOCK      ::SetDescription("Instruction cache lock");
+			   DLOCK      ::SetName("DLOCK");       DLOCK      ::SetDescription("Data cache lock");
+			   DCLREE     ::SetName("DCLREE");      DCLREE     ::SetDescription("Debug Interrupt Clears MSR[EE]");
+			   ICFI       ::SetName("ICFI");        ICFI       ::SetDescription("Instruction cache flash invalidate");
+			   DCLRCE     ::SetName("DCLRCE");      DCLRCE     ::SetDescription("Debug Interrupt Clears MSR[CE]");
+			   DCFI       ::SetName("DCFI");        DCFI       ::SetDescription("Data cache flash invalidate");
+			   CICLRDE    ::SetName("CICLRDE");     CICLRDE    ::SetDescription("Critical Interrupt Clears MSR[DE]");
+			   SPD        ::SetName("SPD");         SPD        ::SetDescription("Speculative data cache and instruction cache access disable");
+			   MCCLRDE    ::SetName("MCCLRDE");     MCCLRDE    ::SetDescription("Machine Check Interrupt Clears MSR[DE]");
+			   XBSEN      ::SetName("XBSEN");       XBSEN      ::SetDescription("Extended BAT block size enable");
+			   SGE        ::SetName("SGE");         SGE        ::SetDescription("Store gathering enable");
+			   BTIC       ::SetName("BTIC");        BTIC       ::SetDescription("Branch target instruction cache enable");
+			   LRSTK      ::SetName("LRSTK");       LRSTK      ::SetDescription("Link register stack enable");
+			   FOLD       ::SetName("FOLD");        FOLD       ::SetDescription("Branch folding enable");
+			   BHT        ::SetName("BHT");         BHT        ::SetDescription("Branch history table enable");
+			   NOPDST     ::SetName("NOPDST");      NOPDST     ::SetDescription("No-op dst, dstt, dstst, and dststt instructions");
+			   NOPTI      ::SetName("NOPTI");       NOPTI      ::SetDescription("No-op the data cache touch instructions");
 		}
 	};
 
@@ -6805,6 +6846,8 @@ protected:
 		void Init()
 		{
 			this->SetName("BAMR"); this->SetDescription("Breakpoint Address Mask Register");
+			
+			MASK::SetName("MASK"); MASK::SetDescription("Breakpoint Address Mask");
 		}
 	};
 	

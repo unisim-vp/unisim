@@ -490,6 +490,12 @@ private:
 	bool enable_serial_terminal14;
 	bool enable_serial_terminal15;
 	bool enable_serial_terminal16;
+	bool enable_web_terminal0;
+	bool enable_web_terminal1;
+	bool enable_web_terminal2;
+	bool enable_web_terminal14;
+	bool enable_web_terminal15;
+	bool enable_web_terminal16;
 	
 	bool dspi_0_is_slave;
 	bool dspi_1_is_slave;
@@ -535,6 +541,12 @@ private:
 	unisim::kernel::variable::Parameter<bool> param_enable_serial_terminal14;
 	unisim::kernel::variable::Parameter<bool> param_enable_serial_terminal15;
 	unisim::kernel::variable::Parameter<bool> param_enable_serial_terminal16;
+	unisim::kernel::variable::Parameter<bool> param_enable_web_terminal0;
+	unisim::kernel::variable::Parameter<bool> param_enable_web_terminal1;
+	unisim::kernel::variable::Parameter<bool> param_enable_web_terminal2;
+	unisim::kernel::variable::Parameter<bool> param_enable_web_terminal14;
+	unisim::kernel::variable::Parameter<bool> param_enable_web_terminal15;
+	unisim::kernel::variable::Parameter<bool> param_enable_web_terminal16;
 
 	unisim::kernel::variable::Parameter<bool> param_dspi_0_is_slave;
 	unisim::kernel::variable::Parameter<bool> param_dspi_1_is_slave;

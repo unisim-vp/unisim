@@ -1353,7 +1353,7 @@ tlm_can_core<CAN_MODULE, TYPES>::tlm_can_core(const sc_core::sc_module_name& nam
 	, stuff_old_value(TLM_CAN_RECESSIVE)
 	, destuff_count(0)
 	, destuff_old_value(TLM_CAN_RECESSIVE)
-	, model_accuracy(TLM_CAN_CYCLE_ACCURATE)
+	, model_accuracy(TLM_CAN_TRANSMISSION_START_INACCURATE)
 	, bus_off_round_count(0)
 	, send_msg(0)
 	, recv_msg(0)

@@ -27,6 +27,6 @@ LOCAL_DMEM_BASE_ADDR = 0x50800000;
 /* Define RAM disk size */
 RAMDISK_BASE_ADDR = 0x20000000;
 /* Define RAM disk Base Address */
-RAMDISK_SIZE = 16M;
+RAMDISK_SIZE = 64M;
 
 INCLUDE ldscripts/common/mpc57xx.ld

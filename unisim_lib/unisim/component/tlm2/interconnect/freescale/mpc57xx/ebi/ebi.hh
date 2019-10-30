@@ -65,6 +65,7 @@ using unisim::util::reg::core::AddressableRegisterFile;
 using unisim::util::reg::core::Access;
 using unisim::util::reg::core::SW_RW;
 using unisim::util::reg::core::SW_R;
+using unisim::util::reg::core::SW_R_HW_RO;
 using unisim::util::reg::core::ReadWriteStatus;
 using unisim::util::reg::core::IsReadWriteError;
 
@@ -90,7 +91,7 @@ public:
 	typedef typename CONFIG::MAPPING MAPPING;
 	
 	MappingCache();
-	void Insert(uint64_t range_start, uint64_t range_end, unsigned int output_port);
+	void Insert(uint64_t range_start, uint64_t range_end, uint64_t translation, unsigned int output_port);
 	bool ApplyMap(uint64_t addr, uint32_t size, MAPPING const *& applied_mapping);
 	void Invalidate();
 	
@@ -132,12 +133,13 @@ MappingCache<CONFIG>::MappingCache()
 }
 
 template <typename CONFIG>
-void MappingCache<CONFIG>::Insert(uint64_t range_start, uint64_t range_end, unsigned int output_port)
+void MappingCache<CONFIG>::Insert(uint64_t range_start, uint64_t range_end, uint64_t translation, unsigned int output_port)
 {
 	MappingCacheEntry& entry = entries[output_port];
 	entry.used = true;
 	entry.range_start = range_start;
 	entry.range_end = range_end;
+	entry.translation = translation;
 }
 
 template <typename CONFIG>
@@ -186,7 +188,7 @@ public:
 
 	TemporaryMappingKeeper();
 	~TemporaryMappingKeeper();
-	MAPPING const *CreateMapping(uint64_t range_start, uint64_t range_end, unsigned int output_port);
+	MAPPING const *CreateMapping(uint64_t range_start, uint64_t range_end, uint64_t translation, unsigned int output_port);
 	void Clear();
 private:
 	MAPPING *Allocate();
@@ -218,12 +220,13 @@ TemporaryMappingKeeper<CONFIG>::~TemporaryMappingKeeper()
 }
 
 template <typename CONFIG>
-typename TemporaryMappingKeeper<CONFIG>::MAPPING const *TemporaryMappingKeeper<CONFIG>::CreateMapping(uint64_t range_start, uint64_t range_end, unsigned int output_port)
+typename TemporaryMappingKeeper<CONFIG>::MAPPING const *TemporaryMappingKeeper<CONFIG>::CreateMapping(uint64_t range_start, uint64_t range_end, uint64_t translation, unsigned int output_port)
 {
 	MAPPING *mapping = Allocate();
 	mapping->used = true;
 	mapping->range_start = range_start;
 	mapping->range_end = range_end;
+	mapping->translation = translation;
 	mapping->output_port = output_port;
 	tmp.push_back(mapping);
 	return mapping;
@@ -288,7 +291,6 @@ protected:
 	
 	virtual bool ApplyMap(uint64_t addr, uint32_t size, MAPPING const *&applied_mapping, MemoryRegion *mem_rgn);
 	virtual void ApplyMap(uint64_t addr, uint32_t size, std::vector<MAPPING const *> &port_mappings);
-	//virtual void ReverseMap(unsigned int output_port, sc_dt::uint64 start_range, sc_dt::uint64 end_range, std::vector<MAPPING const *>& mappings);
 
 	// Common EBI register representation
 	template <typename REGISTER, Access _ACCESS>
@@ -370,17 +372,23 @@ protected:
 		template <unsigned int N, bool dummy = true>
 		struct BA_COMPOUND
 		{
-			struct BA_UP  : Field<EBI_BR, BA_UP , 0    , N - 1, SW_R> {}; // Base Address (upper bits)
-			struct BA_LOW : Field<EBI_BR, BA_LOW, N, 16             > {}; // Base Address (lower bits)
-			
-			struct BA : FieldSet<BA_UP, BA_LOW> // Base Address
+			struct BA_UP  : Field<EBI_BR, BA_UP , 0    , N - 1, SW_R_HW_RO> {}; // Base Address (upper bits)
+			struct BA_LOW : Field<EBI_BR, BA_LOW, N, 16                   > {}; // Base Address (lower bits)
+			struct BA     : FieldSet<BA_UP, BA_LOW>                             // Base Address
 			{
+				struct _BA : Field<EBI_BR, _BA, 0, 16> {};
+				
 				static void Init()
 				{
-					BA_UP ::SetName("BA");  BA_UP::SetDescription("Base Address (upper bits)");
-					BA_LOW::SetName("BA"); BA_LOW::SetDescription("Base Address (lower bits)");
+					BA_UP ::SetName("BA_UP");  BA_UP::SetDescription("Base Address (upper bits)");
+					BA_LOW::SetName("BA_LOW"); BA_LOW::SetDescription("Base Address (lower bits)");
 				}
-			}; 
+				
+				template <typename T> static inline T Get(const T& storage)
+				{
+					return _BA::template Get<T>(storage);
+				}
+			};
 		};
 		
 		template <bool dummy>
@@ -477,15 +485,21 @@ protected:
 		template <unsigned int N, bool dummy = true>
 		struct AM_COMPOUND
 		{
-			struct AM_UP  : Field<EBI_OR, AM_UP , 0    , N - 1, SW_R> {}; // Address Mask (upper bits)
-			struct AM_LOW : Field<EBI_OR, AM_LOW, N, 16             > {}; // Address Mask (lower bits)
-			
-			struct AM : FieldSet<AM_UP, AM_LOW> // Address Mask
+			struct AM_UP  : Field<EBI_OR, AM_UP , 0    , N - 1, SW_R_HW_RO> {}; // Address Mask (upper bits)
+			struct AM_LOW : Field<EBI_OR, AM_LOW, N, 16                   > {}; // Address Mask (lower bits)
+			struct AM     : FieldSet<AM_UP, AM_LOW>                             // Address Mask
 			{
+				struct _AM : Field<EBI_OR, _AM, 0, 16> {};
+				
 				static void Init()
 				{
-					AM_UP ::SetName("AM");  AM_UP::SetDescription("Address Mask (upper bits)");
-					AM_LOW::SetName("AM"); AM_LOW::SetDescription("Address Mask (lower bits)");
+					AM_UP ::SetName("AM_UP");  AM_UP::SetDescription("Address Mask (upper bits)");
+					AM_LOW::SetName("AM_LOW"); AM_LOW::SetDescription("Address Mask (lower bits)");
+				}
+				
+				template <typename T> static inline T Get(const T& storage)
+				{
+					return _AM::template Get<T>(storage);
 				}
 			}; 
 		};
@@ -570,8 +584,9 @@ protected:
 	MappingCache<CONFIG> mapping_cache;
 	TemporaryMappingKeeper<CONFIG> temporary_mapping_keeper;
 	
-	bool Match(unsigned int output_port, uint64_t addr) const;
+	bool Match(unsigned int output_port, uint64_t addr, uint64_t& range_start, uint64_t& range_end, uint64_t& translation) const;
 	unsigned int OutputAddressWidth(unsigned int output_port) const;
+	uint64_t OutputAddressMask(unsigned int output_port) const;
 };
 
 } // end of namespace ebi

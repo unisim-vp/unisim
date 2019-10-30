@@ -565,10 +565,10 @@ void sys_init()
 	
 	unsigned int ramdisk_ebi_bank = core_id;
 	
-	ebi_set_bank_port_size(ramdisk_ebi_bank, EBI_PORT_SIZE_8);   // EBI: byte addressing
-	ebi_set_bank_base_address(ramdisk_ebi_bank, (uint32_t) &__RAMDISK);      // EBI: base address
-	ebi_set_bank_address_mask(ramdisk_ebi_bank, 0xffff8000);     // EBI: no address aliasing
-	ebi_set_bank_valid_flag(ramdisk_ebi_bank, 1);                // EBI: enable bank
+	ebi_set_bank_port_size(ramdisk_ebi_bank, EBI_PORT_SIZE_32);         // EBI: word addressing
+	ebi_set_bank_base_address(ramdisk_ebi_bank, (uint32_t) &__RAMDISK); // EBI: base address
+	ebi_set_bank_address_mask(ramdisk_ebi_bank, 0xfc000000);            // EBI: 64MB segments
+	ebi_set_bank_valid_flag(ramdisk_ebi_bank, 1);                       // EBI: enable bank
 
 	ramdisk_init(&ramdisk_lfs_cfg);
 	

@@ -3267,7 +3267,7 @@ bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, std::string& line, boo
 		}
 	/* If the line has any text in it,
 		save it on the history. */
-		//if(*line_read) add_history(line_read);
+		if(*line_read) add_history(line_read);
 
 		line = line_read;
 

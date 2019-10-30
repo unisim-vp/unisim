@@ -311,9 +311,9 @@ private:
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x0;
 		
 		struct HVEN3 : Field<INTC_BCR, HVEN3, 19>    {}; // Hardware vector enable for processor 3
-		struct HVEN2 : Field<INTC_BCR, HVEN3, 23>    {}; // Hardware vector enable for processor 2
-		struct HVEN1 : Field<INTC_BCR, HVEN3, 27>    {}; // Hardware vector enable for processor 1
-		struct HVEN0 : Field<INTC_BCR, HVEN3, 31>    {}; // Hardware vector enable for processor 0
+		struct HVEN2 : Field<INTC_BCR, HVEN2, 23>    {}; // Hardware vector enable for processor 2
+		struct HVEN1 : Field<INTC_BCR, HVEN1, 27>    {}; // Hardware vector enable for processor 1
+		struct HVEN0 : Field<INTC_BCR, HVEN0, 31>    {}; // Hardware vector enable for processor 0
 		
 		SWITCH_ENUM_TRAIT(unsigned int, _);
 		CASE_ENUM_TRAIT(1, _) { typedef FieldSet<HVEN0> ALL; };
@@ -579,7 +579,7 @@ private:
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x40;
 
 		struct SET : Field<INTC_SSCIR, SET, 6> {}; // Set flag bits
-		struct CLR : Field<INTC_SSCIR, SET, 7> {}; // Clear flag bits; CLR is the flag bit
+		struct CLR : Field<INTC_SSCIR, CLR, 7> {}; // Clear flag bits; CLR is the flag bit
 		
 		typedef FieldSet<SET, CLR> ALL;
 		

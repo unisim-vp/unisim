@@ -347,6 +347,14 @@ SoftFloat::sqrtAssign( Flags& flags )
 
 FloatingPointRegisterInterface::FloatingPointRegisterInterface(const char *_name, SoftDouble *_value) :
 	name(_name),
+	description(),
+	value(_value)
+{
+}
+
+FloatingPointRegisterInterface::FloatingPointRegisterInterface(const char *_name, const char *_description, SoftDouble *_value) :
+	name(_name),
+	description(_description),
 	value(_value)
 {
 }
@@ -358,6 +366,11 @@ FloatingPointRegisterInterface::~FloatingPointRegisterInterface()
 const char *FloatingPointRegisterInterface::GetName() const
 {
 	return name.c_str();
+}
+
+const char *FloatingPointRegisterInterface::GetDescription() const
+{
+	return description.c_str();
 }
 
 void FloatingPointRegisterInterface::GetValue(void *buffer) const

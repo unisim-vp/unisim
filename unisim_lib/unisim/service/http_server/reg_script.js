@@ -2,7 +2,7 @@
 
 GUI.prototype.on_resize = function(width, height)
 {
-	var reg_table = document.querySelector('table.reg-table');
+	var reg_table = document.querySelector('table.field-table');
 	if(reg_table)
 	{
 		var reg_table_width = width - 8;

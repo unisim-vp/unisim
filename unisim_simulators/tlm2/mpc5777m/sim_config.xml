@@ -135,6 +135,12 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="interrupt-poll-period-ms">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>100</value>
+			<description>GDB interrupt (Ctrl-C) polling period (in milliseconds)</description>
+		</variable>
 		<variable name="memory-atom-size">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
@@ -234,6 +240,12 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="interrupt-poll-period-ms">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>100</value>
+			<description>GDB interrupt (Ctrl-C) polling period (in milliseconds)</description>
+		</variable>
 		<variable name="memory-atom-size">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
@@ -332,6 +344,12 @@
 				<item>true</item>
 				<item>false</item>
 			</enumeration>
+		</variable>
+		<variable name="interrupt-poll-period-ms">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>100</value>
+			<description>GDB interrupt (Ctrl-C) polling period (in milliseconds)</description>
 		</variable>
 		<variable name="memory-atom-size">
 			<type>parameter</type>
@@ -7516,7 +7534,7 @@
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
-				<value>16777216</value>
+				<value>67108864</value>
 				<description>memory size in bytes</description>
 			</variable>
 			<variable name="cycle-time">
@@ -7596,7 +7614,7 @@
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
-				<value>16777216</value>
+				<value>67108864</value>
 				<description>memory size in bytes</description>
 			</variable>
 			<variable name="cycle-time">
@@ -7676,7 +7694,7 @@
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
-				<value>16777216</value>
+				<value>67108864</value>
 				<description>memory size in bytes</description>
 			</variable>
 			<variable name="cycle-time">
@@ -8582,7 +8600,7 @@
 			<variable name="model-accuracy">
 				<type>parameter</type>
 				<data_type>can-model-accuracy</data_type>
-				<value>cycle-accurate</value>
+				<value>transmission-start-inaccurate</value>
 				<description>model accuracy (cycle-accurate, transaction-accurate, transmission-start-inaccurate)</description>
 				<enumeration>
 					<item>cycle-accurate</item>
@@ -8615,7 +8633,7 @@
 			<variable name="model-accuracy">
 				<type>parameter</type>
 				<data_type>can-model-accuracy</data_type>
-				<value>cycle-accurate</value>
+				<value>transmission-start-inaccurate</value>
 				<description>model accuracy (cycle-accurate, transaction-accurate, transmission-start-inaccurate)</description>
 				<enumeration>
 					<item>cycle-accurate</item>
@@ -8648,7 +8666,7 @@
 			<variable name="model-accuracy">
 				<type>parameter</type>
 				<data_type>can-model-accuracy</data_type>
-				<value>cycle-accurate</value>
+				<value>transmission-start-inaccurate</value>
 				<description>model accuracy (cycle-accurate, transaction-accurate, transmission-start-inaccurate)</description>
 				<enumeration>
 					<item>cycle-accurate</item>
@@ -8681,7 +8699,7 @@
 			<variable name="model-accuracy">
 				<type>parameter</type>
 				<data_type>can-model-accuracy</data_type>
-				<value>cycle-accurate</value>
+				<value>transmission-start-inaccurate</value>
 				<description>model accuracy (cycle-accurate, transaction-accurate, transmission-start-inaccurate)</description>
 				<enumeration>
 					<item>cycle-accurate</item>
@@ -8831,6 +8849,26 @@
 					<item>false</item>
 				</enumeration>
 			</variable>
+			<variable name="enable-linux-syscall-snooping">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable Linux system call snooping</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-shadow-memory">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable shadow memory</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
 			<variable name="halt-on">
 				<type>parameter</type>
 				<data_type>string</data_type>
@@ -8889,7 +8927,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of alignment interrupt</description>
+				<description>enable/disable trap (in debugger) of Alignment Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -8899,7 +8937,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of critical input interrupt</description>
+				<description>enable/disable trap (in debugger) of Critical Input Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -8909,7 +8947,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of data storage interrupt</description>
+				<description>enable/disable trap (in debugger) of Data Storage Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -8919,7 +8957,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of debug interrupt</description>
+				<description>enable/disable trap (in debugger) of Debug Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -8929,7 +8967,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of embedded floating-point data interrupt</description>
+				<description>enable/disable trap (in debugger) of Embedded Floating-Point Data Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -8939,7 +8977,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of embedded floating-point round interrupt</description>
+				<description>enable/disable trap (in debugger) of Embedded Floating-Point Round Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -8949,7 +8987,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of extern input interrupt</description>
+				<description>enable/disable trap (in debugger) of External Input Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -8959,7 +8997,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of instruction storage interrupt</description>
+				<description>enable/disable trap (in debugger) of Instruction Storage Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -8969,7 +9007,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of machine check interrupt</description>
+				<description>enable/disable trap (in debugger) of Machine Check Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -8985,7 +9023,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of permformance monitor interrupt</description>
+				<description>enable/disable trap (in debugger) of Performance Monitor Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -8995,7 +9033,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of program interrupt</description>
+				<description>enable/disable trap (in debugger) of Program Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -9005,7 +9043,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of system call interrupt</description>
+				<description>enable/disable trap (in debugger) of System Call Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -9015,7 +9053,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of system reset interrupt</description>
+				<description>enable/disable trap (in debugger) of System Reset Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -9263,6 +9301,26 @@
 					<item>false</item>
 				</enumeration>
 			</variable>
+			<variable name="enable-linux-syscall-snooping">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable Linux system call snooping</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-shadow-memory">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable shadow memory</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
 			<variable name="halt-on">
 				<type>parameter</type>
 				<data_type>string</data_type>
@@ -9321,7 +9379,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of alignment interrupt</description>
+				<description>enable/disable trap (in debugger) of Alignment Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -9331,7 +9389,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of critical input interrupt</description>
+				<description>enable/disable trap (in debugger) of Critical Input Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -9341,7 +9399,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of data storage interrupt</description>
+				<description>enable/disable trap (in debugger) of Data Storage Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -9351,7 +9409,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of debug interrupt</description>
+				<description>enable/disable trap (in debugger) of Debug Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -9361,7 +9419,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of embedded floating-point data interrupt</description>
+				<description>enable/disable trap (in debugger) of Embedded Floating-Point Data Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -9371,7 +9429,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of embedded floating-point round interrupt</description>
+				<description>enable/disable trap (in debugger) of Embedded Floating-Point Round Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -9381,7 +9439,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of extern input interrupt</description>
+				<description>enable/disable trap (in debugger) of External Input Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -9391,7 +9449,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of instruction storage interrupt</description>
+				<description>enable/disable trap (in debugger) of Instruction Storage Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -9401,7 +9459,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of machine check interrupt</description>
+				<description>enable/disable trap (in debugger) of Machine Check Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -9417,7 +9475,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of permformance monitor interrupt</description>
+				<description>enable/disable trap (in debugger) of Performance Monitor Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -9427,7 +9485,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of program interrupt</description>
+				<description>enable/disable trap (in debugger) of Program Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -9437,7 +9495,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of system call interrupt</description>
+				<description>enable/disable trap (in debugger) of System Call Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -9447,7 +9505,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of system reset interrupt</description>
+				<description>enable/disable trap (in debugger) of System Reset Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -11311,6 +11369,26 @@
 					<item>false</item>
 				</enumeration>
 			</variable>
+			<variable name="enable-linux-syscall-snooping">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable Linux system call snooping</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-shadow-memory">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable shadow memory</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
 			<variable name="halt-on">
 				<type>parameter</type>
 				<data_type>string</data_type>
@@ -11369,7 +11447,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of alignment interrupt</description>
+				<description>enable/disable trap (in debugger) of Alignment Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -11379,7 +11457,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of critical input interrupt</description>
+				<description>enable/disable trap (in debugger) of Critical Input Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -11389,7 +11467,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of data storage interrupt</description>
+				<description>enable/disable trap (in debugger) of Data Storage Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -11399,7 +11477,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of debug interrupt</description>
+				<description>enable/disable trap (in debugger) of Debug Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -11409,7 +11487,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of embedded floating-point data interrupt</description>
+				<description>enable/disable trap (in debugger) of Embedded Floating-Point Data Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -11419,7 +11497,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of embedded floating-point round interrupt</description>
+				<description>enable/disable trap (in debugger) of Embedded Floating-Point Round Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -11429,7 +11507,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of extern input interrupt</description>
+				<description>enable/disable trap (in debugger) of External Input Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -11439,7 +11517,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of instruction storage interrupt</description>
+				<description>enable/disable trap (in debugger) of Instruction Storage Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -11449,7 +11527,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of machine check interrupt</description>
+				<description>enable/disable trap (in debugger) of Machine Check Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -11465,7 +11543,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of permformance monitor interrupt</description>
+				<description>enable/disable trap (in debugger) of Performance Monitor Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -11475,7 +11553,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of program interrupt</description>
+				<description>enable/disable trap (in debugger) of Program Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -11485,7 +11563,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of system call interrupt</description>
+				<description>enable/disable trap (in debugger) of System Call Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -11495,7 +11573,7 @@
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>enable/disable trap (in debugger) of system reset interrupt</description>
+				<description>enable/disable trap (in debugger) of System Reset Interrupt</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -13515,12 +13593,6 @@
 			<value>200 ns</value>
 			<description>SystemC TLM-2.0 global quantum</description>
 		</variable>
-		<variable name="num-dsi">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0</value>
-			<description>Number of DSI modules</description>
-		</variable>
 	</object>
 	<object name="http-server">
 		<variable name="enable-cache">
@@ -13989,7 +14061,7 @@
 			<variable name="mapping">
 				<type>parameter</type>
 				<data_type>string</data_type>
-				<value>HARDWARE.SYSTEM-SRAM:0x40000000-0x401fffff:+0x0,HARDWARE.FLASH:0x00400000-0x00407fff:+0x0,HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x8000,HARDWARE.FLASH:0x00680000-0x00687fff:+0x2c000,HARDWARE.FLASH:0x00800000-0x0087ffff:+0x34000,HARDWARE.FLASH:0x00fc0000-0x00ffffff:+0xb4000,HARDWARE.FLASH:0x01000000-0x0177ffff:+0xf4000,HARDWARE.Main_Core_0:0x50000000-0x50ffffff:+0x50000000,HARDWARE.Main_Core_1:0x51000000-0x51ffffff:+0x51000000,HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x52000000,HARDWARE.EBI_MEM_0:0x20000000-0x20ffffff:+0x0,HARDWARE.EBI_MEM_1:0x21000000-0x21ffffff:+0x0,HARDWARE.EBI_MEM_2:0x22000000-0x22ffffff:+0x0</value>
+				<value>HARDWARE.SYSTEM-SRAM:0x40000000-0x401fffff:+0x0,HARDWARE.FLASH:0x00400000-0x00407fff:+0x0,HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x8000,HARDWARE.FLASH:0x00680000-0x00687fff:+0x2c000,HARDWARE.FLASH:0x00800000-0x0087ffff:+0x34000,HARDWARE.FLASH:0x00fc0000-0x00ffffff:+0xb4000,HARDWARE.FLASH:0x01000000-0x0177ffff:+0xf4000,HARDWARE.Main_Core_0:0x50000000-0x50ffffff:+0x50000000,HARDWARE.Main_Core_1:0x51000000-0x51ffffff:+0x51000000,HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x52000000,HARDWARE.EBI_MEM_0:0x20000000-0x23ffffff:+0x0,HARDWARE.EBI_MEM_1:0x24000000-0x27ffffff:+0x0,HARDWARE.EBI_MEM_2:0x28000000-0x2bffffff:+0x0</value>
 				<description>Memory mapping. Syntax: [memory=]&lt;memory1&gt;[:[range=]&lt;low1-high1&gt;][:[translation=]+&lt;translation1&gt;][,... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff:+0xff0000)</description>
 			</variable>
 			<variable name="verbose">
@@ -14072,6 +14144,18 @@
 			<data_type>unsigned 32-bit integer</data_type>
 			<value>256</value>
 			<description>Maximum log size for HTTP output</description>
+		</variable>
+		<variable name="max-display-refresh-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>1</value>
+			<description>Maximum refresh period of display for HTTP output (in seconds)</description>
+		</variable>
+		<variable name="min-display-refresh-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>0.04</value>
+			<description>Minimum refresh period of display for HTTP output (in seconds)</description>
 		</variable>
 		<variable name="std_err">
 			<type>parameter</type>
@@ -14501,16 +14585,6 @@
 			<value>HYPERLINK</value>
 			<description>CSV hyperlink macro (e.g. HYPERLINK or LIEN_HYPERTEXTE)</description>
 		</variable>
-		<variable name="csv-reader">
-			<type>parameter</type>
-			<data_type>unisim::service::debug::profiler::CSV_Reader</data_type>
-			<value>ms-excel</value>
-			<description>CSV reader (ms-excel or libre-office)</description>
-			<enumeration>
-				<item>libre-office</item>
-				<item>ms-excel</item>
-			</enumeration>
-		</variable>
 		<variable name="enable-csv-report">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -14565,6 +14639,16 @@
 			<value>soft/app/Z7_0;soft/libsys</value>
 			<description>Search path for source (separated by ';')</description>
 		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 	</object>
 	<object name="profiler1">
 		<variable name="csv-arg-separator">
@@ -14584,16 +14668,6 @@
 			<data_type>string</data_type>
 			<value>HYPERLINK</value>
 			<description>CSV hyperlink macro (e.g. HYPERLINK or LIEN_HYPERTEXTE)</description>
-		</variable>
-		<variable name="csv-reader">
-			<type>parameter</type>
-			<data_type>unisim::service::debug::profiler::CSV_Reader</data_type>
-			<value>ms-excel</value>
-			<description>CSV reader (ms-excel or libre-office)</description>
-			<enumeration>
-				<item>libre-office</item>
-				<item>ms-excel</item>
-			</enumeration>
 		</variable>
 		<variable name="enable-csv-report">
 			<type>parameter</type>
@@ -14649,6 +14723,16 @@
 			<value>soft/app/Z7_1;soft/libsys</value>
 			<description>Search path for source (separated by ';')</description>
 		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 	</object>
 	<object name="profiler2">
 		<variable name="csv-arg-separator">
@@ -14668,16 +14752,6 @@
 			<data_type>string</data_type>
 			<value>HYPERLINK</value>
 			<description>CSV hyperlink macro (e.g. HYPERLINK or LIEN_HYPERTEXTE)</description>
-		</variable>
-		<variable name="csv-reader">
-			<type>parameter</type>
-			<data_type>unisim::service::debug::profiler::CSV_Reader</data_type>
-			<value>ms-excel</value>
-			<description>CSV reader (ms-excel or libre-office)</description>
-			<enumeration>
-				<item>libre-office</item>
-				<item>ms-excel</item>
-			</enumeration>
 		</variable>
 		<variable name="enable-csv-report">
 			<type>parameter</type>
@@ -14732,6 +14806,16 @@
 			<data_type>string</data_type>
 			<value>soft/app/Z4_2;soft/libsys</value>
 			<description>Search path for source (separated by ';')</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
 		</variable>
 	</object>
 	<object name="web-terminal0">
@@ -15879,6 +15963,66 @@
 		<data_type>boolean</data_type>
 		<value>false</value>
 		<description>Enable/Disable TLM serial bus observer</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-web-terminal0">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description>Enable/Disable Web terminal over LINFlexD_0 UART serial interface</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-web-terminal1">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description>Enable/Disable Web terminal over LINFlexD_1 UART serial interface</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-web-terminal2">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description>Enable/Disable Web terminal over LINFlexD_2 UART serial interface</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-web-terminal14">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable Web terminal over LINFlexD_14 UART serial interface</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-web-terminal15">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable Web terminal over LINFlexD_15 UART serial interface</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-web-terminal16">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable Web terminal over LINFlexD_16 UART serial interface</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>

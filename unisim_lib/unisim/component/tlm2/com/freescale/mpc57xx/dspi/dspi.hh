@@ -919,7 +919,7 @@ private:
 		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
-			uint32_t old_value = this->template Get<ALL>();
+			uint32_t old_value = this->Get();
 			ReadWriteStatus rws = Super::Write(value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
@@ -928,7 +928,7 @@ private:
 				
 				this->dspi->UpdateState();
 				
-				uint32_t new_value = this->template Get<ALL>();
+				uint32_t new_value = this->Get();
 				
 				uint32_t value_changed = new_value ^ old_value;
 				
@@ -1051,7 +1051,7 @@ private:
 		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
-			uint32_t old_value = this->template Get<ALL>();
+			uint32_t old_value = this->Get();
 			ReadWriteStatus rws = Super::Write(value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
@@ -1061,7 +1061,7 @@ private:
 					this->dspi->logger << DebugWarning << "do not write to " << this->GetName() << " while " << this->dspi->GetName() << " is in " << this->dspi->GetState() << EndDebugWarning;
 				}
 				
-				uint32_t new_value = this->template Get<ALL>();
+				uint32_t new_value = this->Get();
 				
 				uint32_t value_changed = new_value ^ old_value;
 				
@@ -1424,24 +1424,24 @@ private:
 		{
 			this->SetName("DSPI_DSICR0"); this->SetDescription("DSPI DSI Configuration Register 0");
 			
-			Reserved1::SetName("Reserved"); Reserved1::SetDescription("This field is reserved");
-			FMSZ4    ::SetName("FMSZ4");    FMSZ4    ::SetDescription("MSB of the frame size in master mode when DSI is used in 32-bit mode");
-			Reserved2::SetName("Reserved"); Reserved2::SetDescription("This field is reserved");
-			Reserved3::SetName("Reserved"); Reserved3::SetDescription("This field is reserved");
-			Reserved4::SetName("Reserved"); Reserved4::SetDescription("This field is reserved");
-			ITSB     ::SetName("ITSB");     ITSB     ::SetDescription("Interleaved TSB mode");
-			TSBC     ::SetName("TSBC");     TSBC     ::SetDescription("Timed Serial Bus Configuration");
-			TXSS     ::SetName("TXSS");     TXSS     ::SetDescription("Transmit Data Source Select");
-			TPOL     ::SetName("TPOL");     TPOL     ::SetDescription("Trigger Polarity");
-			TRRE     ::SetName("TRRE");     TRRE     ::SetDescription("Trigger Reception Enable");
-			CID      ::SetName("CID");      CID      ::SetDescription("Change In Data Transfer Enable");
-			DCONT    ::SetName("DCONT");    DCONT    ::SetDescription("DSI Continuous Peripheral Chip Select Enable");
-			DSICTAS  ::SetName("DSICTAS");  DSICTAS  ::SetDescription("DSI Clock and Transfer Attributes Select (DSI Master mode only)");
-			DMS      ::SetName("DMS");      DMS      ::SetDescription("Data Match Stop");
-			PES      ::SetName("PES");      PES      ::SetDescription("Parity Error Stop");
-			PE       ::SetName("PE");       PE       ::SetDescription("Parity Enable");
-			PP       ::SetName("PP");       PP       ::SetDescription("Parity Polarity");
-			DPCSx    ::SetName("DPCSx");    DPCSx    ::SetDescription("DSI Peripheral Chip Select 0-7");
+			Reserved1::SetName("Reserved1"); Reserved1::SetDescription("This field is reserved");
+			FMSZ4    ::SetName("FMSZ4");     FMSZ4    ::SetDescription("MSB of the frame size in master mode when DSI is used in 32-bit mode");
+			Reserved2::SetName("Reserved2"); Reserved2::SetDescription("This field is reserved");
+			Reserved3::SetName("Reserved3"); Reserved3::SetDescription("This field is reserved");
+			Reserved4::SetName("Reserved4"); Reserved4::SetDescription("This field is reserved");
+			ITSB     ::SetName("ITSB");      ITSB     ::SetDescription("Interleaved TSB mode");
+			TSBC     ::SetName("TSBC");      TSBC     ::SetDescription("Timed Serial Bus Configuration");
+			TXSS     ::SetName("TXSS");      TXSS     ::SetDescription("Transmit Data Source Select");
+			TPOL     ::SetName("TPOL");      TPOL     ::SetDescription("Trigger Polarity");
+			TRRE     ::SetName("TRRE");      TRRE     ::SetDescription("Trigger Reception Enable");
+			CID      ::SetName("CID");       CID      ::SetDescription("Change In Data Transfer Enable");
+			DCONT    ::SetName("DCONT");     DCONT    ::SetDescription("DSI Continuous Peripheral Chip Select Enable");
+			DSICTAS  ::SetName("DSICTAS");   DSICTAS  ::SetDescription("DSI Clock and Transfer Attributes Select (DSI Master mode only)");
+			DMS      ::SetName("DMS");       DMS      ::SetDescription("Data Match Stop");
+			PES      ::SetName("PES");       PES      ::SetDescription("Parity Error Stop");
+			PE       ::SetName("PE");        PE       ::SetDescription("Parity Enable");
+			PP       ::SetName("PP");        PP       ::SetDescription("Parity Polarity");
+			DPCSx    ::SetName("DPCSx");     DPCSx    ::SetDescription("DSI Peripheral Chip Select 0-7");
 		}
 		
 		void Reset()

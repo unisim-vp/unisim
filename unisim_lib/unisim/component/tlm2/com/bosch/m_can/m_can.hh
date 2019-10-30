@@ -1485,7 +1485,7 @@ private:
 		struct REC : Field<REC, 14, 8 , SW_R> {}; // Receive Error Counter
 		struct TEC : Field<TEC, 7 , 0 , SW_R> {}; // Transmit Error Counter
 		
-		typedef FieldSet<RP, REC> RECEIVE_ERROR_COUNT;
+		struct RECEIVE_ERROR_COUNT : Field<RECEIVE_ERROR_COUNT, 15, 8> {};
 		
 		typedef FieldSet<CEL, RP, REC, TEC> ALL;
 		

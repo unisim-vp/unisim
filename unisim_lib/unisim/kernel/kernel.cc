@@ -1277,121 +1277,124 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	// parse command line arguments (first pass)
 	char **arg_end = argv + argc;
 	
-	int state = 0;
-	for(char **arg = argv + 1; arg < arg_end; arg++)
+	if(argv)
 	{
-		switch(state)
+		int state = 0;
+		for(char **arg = argv + 1; arg < arg_end; arg++)
 		{
-			case 0:
-				// Unless there's an acceptable option entry assume options parsing ends here
-				state = -1;
-				
-				// "--" unconditionally ends option parsing afterwards
-				if (strcmp(*arg, "--") == 0)
-				{
-					arg++;
-					break;
-				}
-				
-				for (std::vector<CommandLineOption>::const_iterator cmd_opt_itr = command_line_options.begin(),
-				                                                    cmd_opt_end = command_line_options.end();
-				     cmd_opt_itr != cmd_opt_end; ++cmd_opt_itr)
-				{
-					if(*cmd_opt_itr == *arg)
+			switch(state)
+			{
+				case 0:
+					// Unless there's an acceptable option entry assume options parsing ends here
+					state = -1;
+					
+					// "--" unconditionally ends option parsing afterwards
+					if (strcmp(*arg, "--") == 0)
 					{
-						switch(cmd_opt_itr->GetShortName())
-						{
-							case 's':
-								state = 1;
-								break;
-							case 'c':
-								state = 2;
-								break;
-							case 'f':
-								state = 6;
-								break;
-							case 'F':
-								state = 7;
-								break;
-							case 'g':
-								state = 3;
-								break;
-							case 'l':
-								list_parms = true;
-								state = 0;
-								break;
-							case 'v':
-								enable_version = true;
-								state = 0;
-								break;
-							case 'h':
-								enable_help = true;
-								state = 0;
-								break;
-							case 'w':
-								enable_warning = true;
-								state = 0;
-								break;
-							case 'd':
-								state = 4;
-								break;
-							case 'p':
-								has_share_data_dir_hint = true;
-								state = 5;
-								break;
-							default:
-								break;
-						}
+						arg++;
 						break;
 					}
-				}
-				break;
-			
-			case 1:
-				// skipping set variable
-				state = 0;
-				break;
-			case 2:
-				// skipping loading variables
-				state = 0;
-				break;
-			case 3:
-				// skipping get config
-				state = 0;
-				break;
-			case 4:
-				// skipping generate doc
-				state = 0;
-				break;
-			case 5:
-				// getting the share data path
-				shared_data_dir_hint = *arg;
-				state = 0;
-				break;
-			case 6:
-				// getting the input config file format
-				input_config_file_format = *arg;
-				state = 0;
-				break;
-			case 7:
-				// getting the output config file format
-				output_config_file_format = *arg;
-				state = 0;
-				break;
-			default:
-				std::cerr << "Internal error while parsing command line arguments" << std::endl;
-				state = -1;
-				break;
+					
+					for (std::vector<CommandLineOption>::const_iterator cmd_opt_itr = command_line_options.begin(),
+																		cmd_opt_end = command_line_options.end();
+						cmd_opt_itr != cmd_opt_end; ++cmd_opt_itr)
+					{
+						if(*cmd_opt_itr == *arg)
+						{
+							switch(cmd_opt_itr->GetShortName())
+							{
+								case 's':
+									state = 1;
+									break;
+								case 'c':
+									state = 2;
+									break;
+								case 'f':
+									state = 6;
+									break;
+								case 'F':
+									state = 7;
+									break;
+								case 'g':
+									state = 3;
+									break;
+								case 'l':
+									list_parms = true;
+									state = 0;
+									break;
+								case 'v':
+									enable_version = true;
+									state = 0;
+									break;
+								case 'h':
+									enable_help = true;
+									state = 0;
+									break;
+								case 'w':
+									enable_warning = true;
+									state = 0;
+									break;
+								case 'd':
+									state = 4;
+									break;
+								case 'p':
+									has_share_data_dir_hint = true;
+									state = 5;
+									break;
+								default:
+									break;
+							}
+							break;
+						}
+					}
+					break;
+				
+				case 1:
+					// skipping set variable
+					state = 0;
+					break;
+				case 2:
+					// skipping loading variables
+					state = 0;
+					break;
+				case 3:
+					// skipping get config
+					state = 0;
+					break;
+				case 4:
+					// skipping generate doc
+					state = 0;
+					break;
+				case 5:
+					// getting the share data path
+					shared_data_dir_hint = *arg;
+					state = 0;
+					break;
+				case 6:
+					// getting the input config file format
+					input_config_file_format = *arg;
+					state = 0;
+					break;
+				case 7:
+					// getting the output config file format
+					output_config_file_format = *arg;
+					state = 0;
+					break;
+				default:
+					std::cerr << "Internal error while parsing command line arguments" << std::endl;
+					state = -1;
+					break;
+			}
+			if (state == -1)
+			{
+				arg_end = arg;
+			}
 		}
-		if (state == -1)
-                {
-			arg_end = arg;
-                }
 	}
 
 	if ( !has_share_data_dir_hint )
 	{
-		if(GetBinPath(argv[0], bin_dir, program_binary))
+		if(GetBinPath(argv ? argv[0] : 0, bin_dir, program_binary))
 		{
 // 			 std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
 // 			 std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
@@ -1427,172 +1430,175 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 		}
 	}
 
-	// parse command line arguments (second pass)
-	state = 0;
-	for(char **arg = argv + 1; arg < arg_end; arg++)
+	if(argv)
 	{
-		switch(state)
+		// parse command line arguments (second pass)
+		int state = 0;
+		for(char **arg = argv + 1; arg < arg_end; arg++)
 		{
-			case 0:
-				// Unless there's an acceptable option entry assume options parsing ends here
-				state = -1;
-				
-				// "--" unconditionally ends option parsing afterwards
-				if (strcmp(*arg, "--") == 0)
-				{
-					arg++;
-					break;
-				}
-				
-				for (std::vector<CommandLineOption>::const_iterator cmd_opt_itr = command_line_options.begin(),
-				                                                    cmd_opt_end = command_line_options.end();
-				     cmd_opt_itr != cmd_opt_end; ++cmd_opt_itr)
-				{
-					if(*cmd_opt_itr == *arg)
+			switch(state)
+			{
+				case 0:
+					// Unless there's an acceptable option entry assume options parsing ends here
+					state = -1;
+					
+					// "--" unconditionally ends option parsing afterwards
+					if (strcmp(*arg, "--") == 0)
 					{
-						switch(cmd_opt_itr->GetShortName())
+						arg++;
+						break;
+					}
+					
+					for (std::vector<CommandLineOption>::const_iterator cmd_opt_itr = command_line_options.begin(),
+																		cmd_opt_end = command_line_options.end();
+						cmd_opt_itr != cmd_opt_end; ++cmd_opt_itr)
+					{
+						if(*cmd_opt_itr == *arg)
 						{
-							case 's':
-								state = 1;
-								break;
-							case 'c':
-								state = 2;
-								break;
-							case 'f':
-								state = 6;
-								break;
-							case 'F':
-								state = 7;
-								break;
-							case 'g':
-								state = 3;
-								break;
-							case 'l':
-								list_parms = true;
-								state = 0;
-								break;
-							case 'v':
-								enable_version = true;
-								state = 0;
-								break;
-							case 'h':
-								enable_help = true;
-								state = 0;
-								break;
-							case 'w':
-								enable_warning = true;
-								if(!LoadBuiltInConfig)
-								{
-									std::cerr << "WARNING! No built-in parameters set loaded" << std::endl;
-								}
-								if(warn_get_bin_path)
-								{
-									std::cerr << "WARNING! Can't determine binary directory" << std::endl;
-								}
-								if(warn_get_share_path)
-								{
-									std::cerr << "WARNING! Can't determine share directory" << std::endl;
-									std::cerr << "         Program binary is '" << program_binary << "'" << std::endl;
-									std::cerr << "         Binary dir is     '" << bin_dir << "'" << std::endl;
-								}
-								state = 0;
-								break;
-							case 'd':
-								state = 4;
-								break;
-							case 'p':
-								state = 5;
-								break;
-							default:
-								state = -1;
-								break;
+							switch(cmd_opt_itr->GetShortName())
+							{
+								case 's':
+									state = 1;
+									break;
+								case 'c':
+									state = 2;
+									break;
+								case 'f':
+									state = 6;
+									break;
+								case 'F':
+									state = 7;
+									break;
+								case 'g':
+									state = 3;
+									break;
+								case 'l':
+									list_parms = true;
+									state = 0;
+									break;
+								case 'v':
+									enable_version = true;
+									state = 0;
+									break;
+								case 'h':
+									enable_help = true;
+									state = 0;
+									break;
+								case 'w':
+									enable_warning = true;
+									if(!LoadBuiltInConfig)
+									{
+										std::cerr << "WARNING! No built-in parameters set loaded" << std::endl;
+									}
+									if(warn_get_bin_path)
+									{
+										std::cerr << "WARNING! Can't determine binary directory" << std::endl;
+									}
+									if(warn_get_share_path)
+									{
+										std::cerr << "WARNING! Can't determine share directory" << std::endl;
+										std::cerr << "         Program binary is '" << program_binary << "'" << std::endl;
+										std::cerr << "         Binary dir is     '" << bin_dir << "'" << std::endl;
+									}
+									state = 0;
+									break;
+								case 'd':
+									state = 4;
+									break;
+								case 'p':
+									state = 5;
+									break;
+								default:
+									state = -1;
+									break;
+							}
 						}
 					}
-				}
-				break;
-			
-			case 1:
-				{
-					std::string variable_name;
-					
-					char *p;
-					for(p = *arg; *p != 0 && *p != '='; p++)
+					break;
+				
+				case 1:
 					{
-						variable_name += *p;
-					}
-					if(*p == '=')
-					{
-						const char *variable_value = ++p;
+						std::string variable_name;
 						
-						SetVariable(variable_name.c_str(), variable_value);
+						char *p;
+						for(p = *arg; *p != 0 && *p != '='; p++)
+						{
+							variable_name += *p;
+						}
+						if(*p == '=')
+						{
+							const char *variable_value = ++p;
+							
+							SetVariable(variable_name.c_str(), variable_value);
+						}
+						else if(enable_warning)
+						{
+							std::cerr << "WARNING! Ignoring " << *arg << std::endl;
+						}
+					}
+					state = 0;
+					break;
+				case 2:
+					if(LoadVariables(*arg, VariableBase::VAR_PARAMETER))
+					{
+						std::cerr << "variable::Parameters set using file \"" << (*arg) << "\"" << std::endl;
 					}
 					else if(enable_warning)
 					{
-						std::cerr << "WARNING! Ignoring " << *arg << std::endl;
+						std::cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << std::endl;
 					}
-				}
-				state = 0;
-				break;
-			case 2:
-				if(LoadVariables(*arg, VariableBase::VAR_PARAMETER))
-				{
-					std::cerr << "variable::Parameters set using file \"" << (*arg) << "\"" << std::endl;
-				}
-				else if(enable_warning)
-				{
-					std::cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << std::endl;
-				}
-// 				if(LoadXmlvariable::Parameters(*arg))
-// 				{
-// 					std::cerr << "variable::Parameters set using file \"" << (*arg) << "\"" << std::endl;
-// 				}
-// 				else if(enable_warning)
-// 				{
-// 					std::cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << std::endl;
-// 				}
-				state = 0;
-				break;
-			case 3:
-				get_config = true;
-				get_config_filename = *arg;
-				state = 0;
-				break;
-			case 4:
-				generate_doc = true;
-				generate_doc_filename = *arg;
-				state = 0;
-				break;
-			case 5:
-				state = 0;
-				break;
-			case 6:
-				state = 0;
-				break;
-			case 7:
-				state = 0;
-				break;
-			default:
-				std::cerr << "Internal error while parsing command line arguments" << std::endl;
-				state = -1;
-				break;
+	// 				if(LoadXmlvariable::Parameters(*arg))
+	// 				{
+	// 					std::cerr << "variable::Parameters set using file \"" << (*arg) << "\"" << std::endl;
+	// 				}
+	// 				else if(enable_warning)
+	// 				{
+	// 					std::cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << std::endl;
+	// 				}
+					state = 0;
+					break;
+				case 3:
+					get_config = true;
+					get_config_filename = *arg;
+					state = 0;
+					break;
+				case 4:
+					generate_doc = true;
+					generate_doc_filename = *arg;
+					state = 0;
+					break;
+				case 5:
+					state = 0;
+					break;
+				case 6:
+					state = 0;
+					break;
+				case 7:
+					state = 0;
+					break;
+				default:
+					std::cerr << "Internal error while parsing command line arguments" << std::endl;
+					state = -1;
+					break;
+			}
+			if (state == -1)
+			{
+				arg_end = arg;
+			}
 		}
-		if (state == -1)
-                {
-			arg_end = arg;
-                }
-	}
 	
-	// create on the fly parameters cmd-args[*] that are the remaining parameters
-	int cmd_args_dim = argv + argc - arg_end;
-        cmd_args.resize(cmd_args_dim);
-	param_cmd_args = new variable::ParameterArray<std::string>("cmd-args", 0, &cmd_args[0], cmd_args_dim, "command line arguments");
-	for(int i = 0; i < cmd_args_dim; i++)
-	{
-		(*param_cmd_args)[i] = arg_end[i];
+		// create on the fly parameters cmd-args[*] that are the remaining parameters
+		int cmd_args_dim = argv + argc - arg_end;
+			cmd_args.resize(cmd_args_dim);
+		param_cmd_args = new variable::ParameterArray<std::string>("cmd-args", 0, &cmd_args[0], cmd_args_dim, "command line arguments");
+		for(int i = 0; i < cmd_args_dim; i++)
+		{
+			(*param_cmd_args)[i] = arg_end[i];
+		}
+		param_cmd_args->SetVisible(false);
+		param_cmd_args->SetMutable(false);
+		param_cmd_args->SetSerializable(false);
 	}
-	param_cmd_args->SetVisible(false);
-	param_cmd_args->SetMutable(false);
-	param_cmd_args->SetSerializable(false);
 	
 	// Setup logger server
 	unisim::kernel::logger::LoggerServer *logserv = unisim::kernel::logger::Logger::StaticServerInstance();
@@ -2453,6 +2459,8 @@ bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable
 		return true;
 	}
 #endif
+	if(!argv0) return false;
+	
 	char *path_buf = getenv("PATH");
 	if(path_buf)
 	{

@@ -477,8 +477,8 @@ protected:
 			this->Initialize(0x0);
 		}
 
-		bool IsReadAllowed(int bus_master) const { return ((this->template Get<ALL>() >> (2 * (15 - bus_master))) & BusMasterPermission::R::template GetMask<uint32_t>()) != 0; }
-		bool IsWriteAllowed(int bus_master) const { return ((this->template Get<ALL>() >> (2 * (15 - bus_master))) & BusMasterPermission::W::template GetMask<uint32_t>()) != 0; }
+		bool IsReadAllowed(int bus_master) const { return ((this->Get() >> (2 * (15 - bus_master))) & BusMasterPermission::R::template GetMask<uint32_t>()) != 0; }
+		bool IsWriteAllowed(int bus_master) const { return ((this->Get() >> (2 * (15 - bus_master))) & BusMasterPermission::W::template GetMask<uint32_t>()) != 0; }
 		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{

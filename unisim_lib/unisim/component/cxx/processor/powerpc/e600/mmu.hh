@@ -1008,6 +1008,7 @@ inline bool MMU<TYPES, CONFIG>::Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRES
 		const HID0& hid0 = cpu->GetHID0();
 		
 		bool xaen = hid0.template Get<typename HID0::XAEN>(); // extended addressing enable
+		bool xbsen = hid0.template Get<typename HID0::XBSEN>(); // extended block size enable
 		
 		// Block Address Translation
 		for(unsigned int i = 0; i < NUM_BATS; i++)
@@ -1022,7 +1023,7 @@ inline bool MMU<TYPES, CONFIG>::Translate(EFFECTIVE_ADDRESS ea, EFFECTIVE_ADDRES
 			{
 				EFFECTIVE_ADDRESS ea_bepi_4_14 = TYPES::EA::BEPI_4_14::template Get<EFFECTIVE_ADDRESS>(ea);
 				EFFECTIVE_ADDRESS batu_bepi_4_14 = batu.template Get<typename UpperBlockAddressTranslationRegister::BEPI_4_14>();
-				EFFECTIVE_ADDRESS block_size_mask = xaen ? batu.template Get<typename UpperBlockAddressTranslationRegister::XA_BL>() : batu.template Get<typename UpperBlockAddressTranslationRegister::BL>();
+				EFFECTIVE_ADDRESS block_size_mask = xbsen ? batu.template Get<typename UpperBlockAddressTranslationRegister::XBS_BL>() : batu.template Get<typename UpperBlockAddressTranslationRegister::BL>();
 				if(likely((ea_bepi_4_14 & ~block_size_mask) == (batu_bepi_4_14 & ~block_size_mask)))
 				{
 					unsigned int Vs = batu.template Get<typename UpperBlockAddressTranslationRegister::Vs>();

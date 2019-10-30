@@ -40,6 +40,10 @@
 #include <unisim/util/debug/simple_register.hh>
 #include <cctype>
 
+#ifdef BitScanForward
+#undef BitScanForward
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -191,8 +195,8 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	AddRegisterInterface(ctr.CreateRegisterInterface());
 	AddRegisterInterface(cr.CreateRegisterInterface());
 
-	AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint32_t>("pc", &cia));
-	AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint32_t>("cia", &cia));
+	AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint32_t>("pc", "Program Counter", &cia));
+	AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint32_t>("cia", "Current Instruction Address", &cia));
 }
 
 template <typename TYPES, typename CONFIG>

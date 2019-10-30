@@ -386,6 +386,8 @@ private:
 		{
 			this->SetName("SEMA42_RSTGT_R"); this->SetDescription("Reset Gate Read");
 			
+			RSTGSM::SetName("RSTGSM"); RSTGSM::SetDescription("Reset Gate Finite State Machine");
+			RSTGMS::SetName("RSTGMS"); RSTGMS::SetDescription("Reset Gate Bus Master");
 			RSTGTN::SetName("RSTGTN"); RSTGTN::SetDescription("Reset Gate Number");
 		}
 		

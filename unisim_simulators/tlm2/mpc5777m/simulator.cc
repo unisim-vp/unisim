@@ -230,6 +230,12 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, enable_serial_terminal14(false)
 	, enable_serial_terminal15(false)
 	, enable_serial_terminal16(false)
+	, enable_web_terminal0(false)
+	, enable_web_terminal1(false)
+	, enable_web_terminal2(false)
+	, enable_web_terminal14(false)
+	, enable_web_terminal15(false)
+	, enable_web_terminal16(false)
 	, dspi_0_is_slave(false)
 	, dspi_1_is_slave(false)
 	, dspi_2_is_slave(false)
@@ -272,6 +278,12 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, param_enable_serial_terminal14("enable-serial-terminal14", 0, enable_serial_terminal14, "Enable/Disable serial terminal over LINFlexD_14 UART serial interface")
 	, param_enable_serial_terminal15("enable-serial-terminal15", 0, enable_serial_terminal15, "Enable/Disable serial terminal over LINFlexD_15 UART serial interface")
 	, param_enable_serial_terminal16("enable-serial-terminal16", 0, enable_serial_terminal16, "Enable/Disable serial terminal over LINFlexD_16 UART serial interface")
+	, param_enable_web_terminal0("enable-web-terminal0", 0, enable_web_terminal0, "Enable/Disable Web terminal over LINFlexD_0 UART serial interface")
+	, param_enable_web_terminal1("enable-web-terminal1", 0, enable_web_terminal1, "Enable/Disable Web terminal over LINFlexD_1 UART serial interface")
+	, param_enable_web_terminal2("enable-web-terminal2", 0, enable_web_terminal2, "Enable/Disable Web terminal over LINFlexD_2 UART serial interface")
+	, param_enable_web_terminal14("enable-web-terminal14", 0, enable_web_terminal14, "Enable/Disable Web terminal over LINFlexD_14 UART serial interface")
+	, param_enable_web_terminal15("enable-web-terminal15", 0, enable_web_terminal15, "Enable/Disable Web terminal over LINFlexD_15 UART serial interface")
+	, param_enable_web_terminal16("enable-web-terminal16", 0, enable_web_terminal16, "Enable/Disable Web terminal over LINFlexD_16 UART serial interface")
 	, param_dspi_0_is_slave("dspi_0-is-slave", 0, dspi_0_is_slave, "Whether to wire DSPI_0 as a slave")
 	, param_dspi_1_is_slave("dspi_1-is-slave", 0, dspi_1_is_slave, "Whether to wire DSPI_1 as a slave")
 	, param_dspi_2_is_slave("dspi_2-is-slave", 0, dspi_2_is_slave, "Whether to wire DSPI_2 as a slave")
@@ -371,6 +383,13 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	{
 		this->SetVariable("HARDWARE.instrumenter.enable-user-interface", true); // When profilers are enabled, enable also instrumenter user interface so that profiler interface is periodically refreshed too
 	}
+	
+	if(enable_web_terminal0) enable_serial_terminal0 = true;
+	if(enable_web_terminal1) enable_serial_terminal1 = true;
+	if(enable_web_terminal2) enable_serial_terminal2 = true;
+	if(enable_web_terminal14) enable_serial_terminal14 = true;
+	if(enable_web_terminal15) enable_serial_terminal15 = true;
+	if(enable_web_terminal16) enable_serial_terminal16 = true;
 	
 	unsigned int channel_num;
 	unsigned int hw_irq_num;
@@ -576,12 +595,12 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	char_io_tee15 = new CHAR_IO_TEE("char-io-tee15");
 	char_io_tee16 = new CHAR_IO_TEE("char-io-tee16");
 	//  - Web Terminals
-	web_terminal0 = enable_serial_terminal0 ? new WEB_TERMINAL("web-terminal0") : 0;
-	web_terminal1 = enable_serial_terminal1 ? new WEB_TERMINAL("web-terminal1") : 0;
-	web_terminal2 = enable_serial_terminal2 ? new WEB_TERMINAL("web-terminal2") : 0;
-	web_terminal14 = enable_serial_terminal14 ? new WEB_TERMINAL("web-terminal14") : 0;
-	web_terminal15 = enable_serial_terminal15 ? new WEB_TERMINAL("web-terminal15") : 0;
-	web_terminal16 = enable_serial_terminal16 ? new WEB_TERMINAL("web-terminal16") : 0;
+	web_terminal0 = enable_web_terminal0 ? new WEB_TERMINAL("web-terminal0") : 0;
+	web_terminal1 = enable_web_terminal1 ? new WEB_TERMINAL("web-terminal1") : 0;
+	web_terminal2 = enable_web_terminal2 ? new WEB_TERMINAL("web-terminal2") : 0;
+	web_terminal14 = enable_web_terminal14 ? new WEB_TERMINAL("web-terminal14") : 0;
+	web_terminal15 = enable_web_terminal15 ? new WEB_TERMINAL("web-terminal15") : 0;
+	web_terminal16 = enable_web_terminal16 ? new WEB_TERMINAL("web-terminal16") : 0;
 	
 	//=========================================================================
 	//===                          Port registration                        ===
@@ -4751,41 +4770,77 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	main_core_1->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	peripheral_core_2->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	
-	if(serial_terminal0 && char_io_tee0 && web_terminal0)
+	if(serial_terminal0 && char_io_tee0)
 	{
 		serial_terminal0->char_io_import >> char_io_tee0->char_io_export;
-		(*char_io_tee0->char_io_import[0]) >> netstreamer0->char_io_export;
-		(*char_io_tee0->char_io_import[1]) >> web_terminal0->char_io_export;
+		if(netstreamer0)
+		{
+			(*char_io_tee0->char_io_import[0]) >> netstreamer0->char_io_export;
+		}
+		if(web_terminal0)
+		{
+			(*char_io_tee0->char_io_import[1]) >> web_terminal0->char_io_export;
+		}
 	}
-	if(serial_terminal1 && char_io_tee1 && web_terminal1)
+	if(serial_terminal1 && char_io_tee1)
 	{
 		serial_terminal1->char_io_import >> char_io_tee1->char_io_export;
-		(*char_io_tee1->char_io_import[0]) >> netstreamer1->char_io_export;
-		(*char_io_tee1->char_io_import[1]) >> web_terminal1->char_io_export;
+		if(netstreamer1)
+		{
+			(*char_io_tee1->char_io_import[0]) >> netstreamer1->char_io_export;
+		}
+		if(web_terminal1)
+		{
+			(*char_io_tee1->char_io_import[1]) >> web_terminal1->char_io_export;
+		}
 	}
-	if(serial_terminal2 && char_io_tee2 && web_terminal2)
+	if(serial_terminal2 && char_io_tee2)
 	{
 		serial_terminal2->char_io_import >> char_io_tee2->char_io_export;
-		(*char_io_tee2->char_io_import[0]) >> netstreamer2->char_io_export;
-		(*char_io_tee2->char_io_import[1]) >> web_terminal2->char_io_export;
+		if(netstreamer2)
+		{
+			(*char_io_tee2->char_io_import[0]) >> netstreamer2->char_io_export;
+		}
+		if(web_terminal2)
+		{
+			(*char_io_tee2->char_io_import[1]) >> web_terminal2->char_io_export;
+		}
 	}
-	if(serial_terminal14 && char_io_tee14 && web_terminal14)
+	if(serial_terminal14 && char_io_tee14)
 	{
 		serial_terminal14->char_io_import >> char_io_tee14->char_io_export;
-		(*char_io_tee14->char_io_import[0]) >> netstreamer14->char_io_export;
-		(*char_io_tee14->char_io_import[1]) >> web_terminal14->char_io_export;
+		if(netstreamer14)
+		{
+			(*char_io_tee14->char_io_import[0]) >> netstreamer14->char_io_export;
+		}
+		if(web_terminal14)
+		{
+			(*char_io_tee14->char_io_import[1]) >> web_terminal14->char_io_export;
+		}
 	}
-	if(serial_terminal15 && char_io_tee15 && web_terminal15)
+	if(serial_terminal15 && char_io_tee15)
 	{
 		serial_terminal15->char_io_import >> char_io_tee15->char_io_export;
-		(*char_io_tee15->char_io_import[0]) >> netstreamer15->char_io_export;
-		(*char_io_tee15->char_io_import[1]) >> web_terminal15->char_io_export;
+		if(netstreamer15)
+		{
+			(*char_io_tee15->char_io_import[0]) >> netstreamer15->char_io_export;
+		}
+		if(web_terminal15)
+		{
+			(*char_io_tee15->char_io_import[1]) >> web_terminal15->char_io_export;
+		}
 	}
-	if(serial_terminal16 && char_io_tee16 && web_terminal16)
+	if(serial_terminal16 && char_io_tee16)
 	{
 		serial_terminal16->char_io_import >> char_io_tee16->char_io_export;
-		(*char_io_tee16->char_io_import[0]) >> netstreamer16->char_io_export;
-		(*char_io_tee16->char_io_import[1]) >> web_terminal16->char_io_export;
+		if(netstreamer16)
+		{
+			(*char_io_tee16->char_io_import[0]) >> netstreamer16->char_io_export;
+		}
+		if(web_terminal16)
+		{
+			(*char_io_tee16->char_io_import[1]) >> web_terminal16->char_io_export;
+		}
 	}
 	
 	{
@@ -5935,9 +5990,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	                       ",HARDWARE.Main_Core_0:0x50000000-0x50ffffff:+0x50000000"       // Main_Core_0 Local Memory                -> Main_Core_0       (rel address)
 	                       ",HARDWARE.Main_Core_1:0x51000000-0x51ffffff:+0x51000000"       // Main_Core_1 Local Memory                -> Main_Core_1       (rel address)
 	                       ",HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x52000000" // Peripheral_Core_2 Local Memory          -> Peripheral_Core_2 (rel address)
-	                       ",HARDWARE.EBI_MEM_0:0x20000000-0x20ffffff:+0x0"                // EBI_MEM_0                               -> EBI_MEM_0         (rel address)
-	                       ",HARDWARE.EBI_MEM_1:0x21000000-0x21ffffff:+0x0"                // EBI_MEM_1                               -> EBI_MEM_1         (rel address)
-	                       ",HARDWARE.EBI_MEM_2:0x22000000-0x22ffffff:+0x0"                // EBI_MEM_2                               -> EBI_MEM_2         (rel address)
+	                       ",HARDWARE.EBI_MEM_0:0x20000000-0x23ffffff:+0x0"                // EBI_MEM_0                               -> EBI_MEM_0         (rel address)
+	                       ",HARDWARE.EBI_MEM_1:0x24000000-0x27ffffff:+0x0"                // EBI_MEM_1                               -> EBI_MEM_1         (rel address)
+	                       ",HARDWARE.EBI_MEM_2:0x28000000-0x2bffffff:+0x0"                // EBI_MEM_2                               -> EBI_MEM_2         (rel address)
 	                      );
 
 	//  - System SRAM
@@ -6195,21 +6250,21 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.EBI_MEM_0.read-latency", "10 ns");
 	simulator->SetVariable("HARDWARE.EBI_MEM_0.write-latency", "10 ns");
 	simulator->SetVariable("HARDWARE.EBI_MEM_0.org", 0x0);
-	simulator->SetVariable("HARDWARE.EBI_MEM_0.bytesize", 16 * 1024 * 1024);
+	simulator->SetVariable("HARDWARE.EBI_MEM_0.bytesize", 64 * 1024 * 1024);
 
 	//  - EBI_MEM_1
 	simulator->SetVariable("HARDWARE.EBI_MEM_1.cycle-time", "10 ns");
 	simulator->SetVariable("HARDWARE.EBI_MEM_1.read-latency", "10 ns");
 	simulator->SetVariable("HARDWARE.EBI_MEM_1.write-latency", "10 ns");
 	simulator->SetVariable("HARDWARE.EBI_MEM_1.org", 0x0);
-	simulator->SetVariable("HARDWARE.EBI_MEM_1.bytesize", 16 * 1024 * 1024);
+	simulator->SetVariable("HARDWARE.EBI_MEM_1.bytesize", 64 * 1024 * 1024);
 
 	//  - EBI_MEM_2
 	simulator->SetVariable("HARDWARE.EBI_MEM_2.cycle-time", "10 ns");
 	simulator->SetVariable("HARDWARE.EBI_MEM_2.read-latency", "10 ns");
 	simulator->SetVariable("HARDWARE.EBI_MEM_2.write-latency", "10 ns");
 	simulator->SetVariable("HARDWARE.EBI_MEM_2.org", 0x0);
-	simulator->SetVariable("HARDWARE.EBI_MEM_2.bytesize", 16 * 1024 * 1024);
+	simulator->SetVariable("HARDWARE.EBI_MEM_2.bytesize", 64 * 1024 * 1024);
 
 	//  - PCM_STUB
 	simulator->SetVariable("HARDWARE.PCM.cycle-time", "20 ns");
@@ -6416,7 +6471,7 @@ bool Simulator::EndSetup()
 			}
 		}
 		
-		if(enable_serial_terminal0)
+		if(web_terminal0)
 		{
 			http_server->AddJSAction(
 				unisim::service::interfaces::ToolbarOpenTabAction(
@@ -6427,7 +6482,7 @@ bool Simulator::EndSetup()
 					/* uri */       web_terminal0->URI()
 			));
 		}
-		if(enable_serial_terminal1)
+		if(web_terminal1)
 		{
 			http_server->AddJSAction(
 				unisim::service::interfaces::ToolbarOpenTabAction(
@@ -6438,7 +6493,7 @@ bool Simulator::EndSetup()
 					/* uri */       web_terminal1->URI()
 			));
 		}
-		if(enable_serial_terminal2)
+		if(web_terminal2)
 		{
 			http_server->AddJSAction(
 				unisim::service::interfaces::ToolbarOpenTabAction(
@@ -6449,7 +6504,7 @@ bool Simulator::EndSetup()
 					/* uri */       web_terminal2->URI()
 			));
 		}
-		if(enable_serial_terminal14)
+		if(web_terminal14)
 		{
 			http_server->AddJSAction(
 				unisim::service::interfaces::ToolbarOpenTabAction(
@@ -6460,7 +6515,7 @@ bool Simulator::EndSetup()
 					/* uri */       web_terminal14->URI()
 			));
 		}
-		if(enable_serial_terminal15)
+		if(web_terminal15)
 		{
 			http_server->AddJSAction(
 				unisim::service::interfaces::ToolbarOpenTabAction(
@@ -6471,7 +6526,7 @@ bool Simulator::EndSetup()
 					/* uri */       web_terminal15->URI()
 			));
 		}
-		if(enable_serial_terminal16)
+		if(web_terminal16)
 		{
 			http_server->AddJSAction(
 				unisim::service::interfaces::ToolbarOpenTabAction(

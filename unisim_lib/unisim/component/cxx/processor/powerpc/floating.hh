@@ -409,13 +409,16 @@ class FloatingPointRegisterInterface : public unisim::service::interfaces::Regis
 {
 public:
 	FloatingPointRegisterInterface(const char *name, SoftDouble *value);
+	FloatingPointRegisterInterface(const char *name, const char *description, SoftDouble *value);
 	virtual ~FloatingPointRegisterInterface();
 	virtual const char *GetName() const;
+	virtual const char *GetDescription() const;
 	virtual void GetValue(void *buffer) const;
 	virtual void SetValue(const void *buffer);
 	virtual int GetSize() const;
 private:
 	std::string name;
+	std::string description;
 	SoftDouble *value;
 };
 

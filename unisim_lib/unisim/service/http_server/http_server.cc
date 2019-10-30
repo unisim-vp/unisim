@@ -797,7 +797,7 @@ void HttpServer::Crawl(std::ostream& os, unisim::kernel::Object *object, unsigne
 		indent_level++;
 		
 		for(unsigned int i = 0; i < indent_level; i++) os << '\t';
-		os << "<span title=\"" << object->GetDescription() << "\" class=\"browser-item noselect\"";
+		os << "<span title=\"" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetDescription()) << "\" class=\"browser-item noselect\"";
 		
 		if(import)
 		{
@@ -1209,50 +1209,153 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 		{
 			if(import)
 			{
+				struct Command
+				{
+					enum COMMAND_TYPE
+					{
+						CMD_NONE,
+						CMD_SET_REGISTER,
+						CMD_SET_FIELD
+					};
+					
+					COMMAND_TYPE type;
+					std::string reg_name;
+					std::string field_name;
+					std::string value_str;
+					
+					Command(COMMAND_TYPE _type, const std::string& _reg_name, const std::string& _value_str)
+						: type(_type)
+						, reg_name(_reg_name)
+						, field_name()
+						, value_str(_value_str)
+					{
+					}
+
+					Command(COMMAND_TYPE _type, const std::string& _reg_name, const std::string& _field_name, const std::string& _value_str)
+						: type(_type)
+						, reg_name(_reg_name)
+						, field_name(_field_name)
+						, value_str(_value_str)
+					{
+					}
+				};
+				
 				struct Form_URL_Encoded_Decoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
 				{
-					virtual bool FormAssign(const std::string& _name, const std::string& _value)
-					{
-						reg_name = _name;
-						reg_value_str = _value;
-						return true;
-					}
+					Form_URL_Encoded_Decoder(HttpServer& _http_server) : http_server(_http_server) {}
 					
-					std::string reg_name;
-					std::string reg_value_str;
-				};
-
-				Form_URL_Encoded_Decoder decoder;
-				if(decoder.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
-				{
-					struct Setter : unisim::service::interfaces::RegisterScanner
+					virtual bool FormAssign(const std::string& name, const std::string& value)
 					{
-						Setter(const std::string& _reg_name, const std::string& _reg_value_str, std::ostream& _warn_log) : reg_name(_reg_name), reg_value_str(_reg_value_str), warn_log(_warn_log) {}
-						
-						virtual void Append(unisim::service::interfaces::Register * reg)
+						std::size_t delim_pos1 = name.find_first_of('*');
+						if(delim_pos1 != std::string::npos)
 						{
-							if(reg_name == reg->GetName())
+							std::string command_type_str = name.substr(0, delim_pos1);
+							Command::COMMAND_TYPE command_type = (command_type_str == "set-reg") ? Command::CMD_SET_REGISTER
+							                                                                     : ((command_type_str == "set-field") ? Command::CMD_SET_FIELD
+							                                                                                                          : Command::CMD_NONE);
+							
+							if(command_type == Command::CMD_SET_FIELD)
 							{
-								unsigned int reg_size = reg->GetSize();
-								uint8_t reg_value[reg_size];
-								if(ParseHex(reg_value, reg_size, reg_value_str))
+								std::size_t delim_pos2 = name.find_first_of('*', delim_pos1 + 1);
+								if(delim_pos2 != std::string::npos)
 								{
-									reg->SetValue(reg_value);
+									std::string reg_name = name.substr(delim_pos1 + 1, delim_pos2 - delim_pos1 - 1);
+									std::string field_name = name.substr(delim_pos2 + 1);
+									commands.push_back(Command(command_type, reg_name, field_name, value));
 								}
 								else
 								{
-									warn_log << "parse error in \"" << reg_value_str << "\"" << std::endl;
+									http_server.logger << DebugWarning << "Missing second separator ('*') in \"" << name << "\"" << EndDebugWarning;
 								}
 							}
+							else if(command_type == Command::CMD_SET_REGISTER)
+							{
+								std::string reg_name = name.substr(delim_pos1 + 1);
+								commands.push_back(Command(command_type, reg_name, value));
+							}
+							else
+							{
+								http_server.logger << DebugWarning << "Unknown command \"" << command_type_str << "\"" << EndDebugWarning;
+							}
 						}
-					private:
-						const std::string& reg_name;
-						const std::string& reg_value_str;
-						std::ostream& warn_log;
-					};
+						else
+						{
+							http_server.logger << DebugWarning << "Missing first separator ('*') in \"" << name << "\"" << EndDebugWarning;
+						}
+						return true;
+					}
 					
-					Setter setter(decoder.reg_name, decoder.reg_value_str, logger.DebugWarningStream());
-					(*import)->ScanRegisters(setter);
+					HttpServer& http_server;
+					typedef std::vector<Command> Commands;
+					Commands commands;
+				};
+
+				Form_URL_Encoded_Decoder decoder(*this);
+				if(decoder.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
+				{
+					for(Form_URL_Encoded_Decoder::Commands::const_iterator it = decoder.commands.begin(); it != decoder.commands.end(); it++)
+					{
+						const Command& command = *it;
+						
+						switch(command.type)
+						{
+							case Command::CMD_NONE:
+								break;
+							case Command::CMD_SET_REGISTER:
+							{
+								unisim::service::interfaces::Register *reg = (*import)->GetRegister(command.reg_name.c_str());
+								if(reg)
+								{
+									unsigned int reg_size = reg->GetSize();
+									uint8_t reg_value[reg_size];
+									if(ParseHex(reg_value, reg_size, command.value_str))
+									{
+										reg->SetValue(reg_value);
+									}
+									else
+									{
+										logger << DebugWarning << "parse error in \"" << command.value_str << "\"" << EndDebugWarning;
+									}
+									
+								}
+								else
+								{
+									logger << DebugWarning << "Unknown Register \"" << command.reg_name << EndDebugWarning;
+								}
+								break;
+							}
+							case Command::CMD_SET_FIELD:
+							{
+								unisim::service::interfaces::Register *reg = (*import)->GetRegister(command.reg_name.c_str());
+								if(reg)
+								{
+									uint64_t value;
+									if(ParseHex(value, command.value_str))
+									{
+										unisim::service::interfaces::Field *field = reg->GetField(command.field_name.c_str());
+										
+										if(field)
+										{
+											field->SetValue(value);
+										}
+										else
+										{
+											logger << DebugWarning << "Unknown Field \"" << command.field_name << "\" in Register \"" << command.reg_name << EndDebugWarning;
+										}
+									}
+									else
+									{
+										logger << DebugWarning << "parse error in \"" << command.value_str << "\"" << EndDebugWarning;
+									}
+								}
+								else
+								{
+									logger << DebugWarning << "Unknown Register \"" << command.reg_name << EndDebugWarning;
+								}
+								break;
+							}
+						}
+					}
 				}
 			}
 			
@@ -1271,32 +1374,51 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 			response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 			response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
 			response << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
-			response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/reg_style.css\" type=\"text/css\" />" << std::endl;
+			response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/regs_style.css\" type=\"text/css\" />" << std::endl;
 			response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
 			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
-			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/reg_script.js\"></script>" << std::endl;
+			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/regs_script.js\"></script>" << std::endl;
 			response << "\t</head>" << std::endl;
 			response << "\t<body>" << std::endl;
 			
 			if(object && import)
 			{
-				struct Printer : unisim::service::interfaces::RegisterScanner
+				struct RegisterPrinter : unisim::service::interfaces::RegisterScanner
 				{
-					Printer(unisim::kernel::Object *_object, std::ostream& _response) : object(_object), response(_response) {}
+					RegisterPrinter(unisim::kernel::Object *_object, std::ostream& _response) : object(_object), response(_response) {}
 					
-					virtual void Append(unisim::service::interfaces::Register * reg)
+					virtual void Append(unisim::service::interfaces::Register *reg)
 					{
 						unsigned int reg_size = reg->GetSize();
 						uint8_t reg_value[reg_size];
 						reg->GetValue(&reg_value);
 						
+						struct FieldCounter : unisim::service::interfaces::FieldScanner
+						{
+							FieldCounter() : count(0) {}
+							
+							virtual void Append(unisim::service::interfaces::Field *field)
+							{
+								++count;
+							}
+							
+							unsigned int count;
+						};
+						FieldCounter field_counter;
+						reg->ScanFields(field_counter);
+						
 						response << "\t\t\t\t<tr>" << std::endl;
-						response << "\t\t\t\t\t<td class=\"reg-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "</td>" << std::endl;
-						response << "\t\t\t\t\t<td class=\"reg-size\">" << (reg->GetSize() * 8) << "</td>" << std::endl;
-						response << "\t\t\t\t\t<td class=\"reg-value\">" << std::endl;
+						response << "\t\t\t\t\t<td class=\"name\">";
+						if(field_counter.count)
+						{
+							response << "<span class=\"collapse-toggle unfold\" id=\"collapse-toggle-" << unisim::util::hypapp::URI_Encoder::EncodeComponent(reg->GetName()) << "\"></span>";
+						}
+						response << "<a href=\"/register?object=" << unisim::util::hypapp::URI_Encoder::Encode(object->GetName()) << "&register=" << unisim::util::hypapp::URI_Encoder::Encode(reg->GetName()) << "\">" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "</a></td>" << std::endl;
+						response << "\t\t\t\t\t<td class=\"range\">" << (reg->GetSize() * 8) << "-bit</td>" << std::endl;
+						response << "\t\t\t\t\t<td class=\"value\">" << std::endl;
 						response << "\t\t\t\t\t\t<form action=\"/registers?object=" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "\" method=\"post\">" << std::endl;
-						response << "\t\t\t\t\t\t\t<input title=\"Type a value then press enter\" class=\"reg-value-text\" type=\"text\" spellcheck=\"false\" name=\"" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "\" value=\"0x" << std::hex;
+						response << "\t\t\t\t\t\t\t<input title=\"Type a value then press enter\" class=\"value-text\" type=\"text\" spellcheck=\"false\" name=\"set-reg*" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "\" value=\"0x" << std::hex;
 #if BYTE_ORDER == BIG_ENDIAN
 						for(int i = 0; i < (int) reg_size; i++)
 #else
@@ -1311,7 +1433,56 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 						
 						response << "\t\t\t\t\t\t</form>" << std::endl;
 						response << "\t\t\t\t\t</td>" << std::endl;
+						response << "\t\t\t\t\t<td class=\"description\">" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetDescription()) << "</td>" << std::endl;
 						response << "\t\t\t\t</tr>" << std::endl;
+						if(field_counter.count)
+						{
+							response << "\t\t\t</tbody>" << std::endl;
+							response << "\t\t\t<tbody>" << std::endl;
+						}
+						
+						struct FieldPrinter : unisim::service::interfaces::FieldScanner
+						{
+							FieldPrinter(unisim::kernel::Object *_object, unisim::service::interfaces::Register *_reg, std::ostream& _response) : object(_object), reg(_reg), response(_response) {}
+							
+							virtual void Append(unisim::service::interfaces::Field *field)
+							{
+								response << "\t\t\t\t<tr>" << std::endl;
+								response << "\t\t\t\t\t<td class=\"name\"><span class=\"field-indent\"></span>" << unisim::util::hypapp::HTML_Encoder::Encode(field->GetName()) << "</td>" << std::endl;
+								response << "\t\t\t\t\t<td class=\"range\">[";
+								unsigned int bit_width = field->GetBitWidth();
+								unsigned int bit_offset = field->GetBitOffset();
+								if(bit_width)
+								{
+									if(bit_width != 1)
+									{
+										response << (bit_offset + bit_width - 1) << "..";
+									}
+									response << bit_offset;
+								}
+								response << "]</td>" << std::endl;
+								response << "\t\t\t\t\t<td class=\"value\">" << std::endl;
+								response << "\t\t\t\t\t\t<form action=\"/registers?object=" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) << "\" method=\"post\">" << std::endl;
+								response << "\t\t\t\t\t\t\t<input title=\"Type a value then press enter\" class=\"value-text\" type=\"text\" spellcheck=\"false\" name=\"set-field*" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "*" << unisim::util::hypapp::HTML_Encoder::Encode(field->GetName()) << "\" value=\"0x" << std::hex << field->GetValue() << std::dec << "\">" << std::endl;
+								response << "\t\t\t\t\t\t</form>" << std::endl;
+								response << "\t\t\t\t\t</td>" << std::endl;
+								response << "\t\t\t\t\t<td class=\"description\">" << unisim::util::hypapp::HTML_Encoder::Encode(field->GetDescription()) << "</td>" << std::endl;
+								response << "\t\t\t\t</tr>" << std::endl;
+							}
+								
+							unisim::kernel::Object *object;
+							unisim::service::interfaces::Register *reg;
+							std::ostream& response;
+							bool open;
+						};
+						
+						FieldPrinter field_printer(object, reg, response);
+						reg->ScanFields(field_printer);
+						if(field_counter.count)
+						{
+							response << "\t\t\t</tbody>" << std::endl;
+							response << "\t\t\t<tbody>" << std::endl;
+						}
 					}
 				private:
 					unisim::kernel::Object *object;
@@ -1321,14 +1492,15 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 				response << "\t\t<table class=\"reg-table\">" << std::endl;
 				response << "\t\t\t<thead>" << std::endl;
 				response << "\t\t\t\t<tr>" << std::endl;
-				response << "\t\t\t\t\t<th class=\"reg-name\">Name</th>" << std::endl;
-				response << "\t\t\t\t\t<th class=\"reg-size\">Size</th>" << std::endl;
-				response << "\t\t\t\t\t<th class=\"reg-value\">Value</th>" << std::endl;
+				response << "\t\t\t\t\t<th class=\"name\">Name</th>" << std::endl;
+				response << "\t\t\t\t\t<th class=\"range\">Range</th>" << std::endl;
+				response << "\t\t\t\t\t<th class=\"value\">Value</th>" << std::endl;
+				response << "\t\t\t\t\t<th class=\"description\">Description</th>" << std::endl;
 				response << "\t\t\t\t</tr>" << std::endl;
 				response << "\t\t\t</thead>" << std::endl;
 				response << "\t\t\t<tbody>" << std::endl;
-				Printer printer(object, response);
-				(*import)->ScanRegisters(printer);
+				RegisterPrinter reg_printer(object, response);
+				(*import)->ScanRegisters(reg_printer);
 				response << "\t\t\t</tbody>" << std::endl;
 				response << "\t\t</table>" << std::endl;
 			}
@@ -1495,6 +1667,342 @@ bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req,
 		
 	bool send_status = conn.Send(response.ToString(req.GetRequestType() == unisim::util::hypapp::Request::HEAD));
 	
+	if(send_status)
+	{
+		if(verbose)
+		{
+			logger << DebugInfo << "sending HTTP response: done" << EndDebugInfo;
+		}
+	}
+	else
+	{
+		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response" << EndDebugWarning;
+	}
+	
+	return send_status;
+}
+
+bool HttpServer::ServeRegister(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn)
+{
+	unisim::util::hypapp::HttpResponse response;
+	
+	if(req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)
+	{
+		response.Allow("OPTIONS, GET, HEAD, POST");
+	}
+	else
+	{
+		unisim::kernel::Object *object = 0;
+		unisim::service::interfaces::Register *reg = 0;
+		unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> *import = 0;
+		
+		if(req.HasQuery())
+		{
+			struct QueryDecoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
+			{
+				QueryDecoder(HttpServer& _http_server)
+					: http_server(_http_server)
+					, object_name()
+					, register_name()
+				{
+				}
+				
+				virtual bool FormAssign(const std::string& name, const std::string& value)
+				{
+					if(name == "object")
+					{
+						object_name = value;
+						return true;
+					}
+					else if(name == "register")
+					{
+						register_name = value;
+						return true;
+					}
+					
+					return false;
+				}
+				
+				HttpServer& http_server;
+				std::string object_name;
+				std::string register_name;
+			};
+			
+			QueryDecoder query_decoder(*this);
+		
+			if(query_decoder.Decode(req.GetQuery(), logger.DebugWarningStream()))
+			{
+				object = GetSimulator()->FindObject(query_decoder.object_name.c_str());
+				
+				if(object)
+				{
+					std::map<unisim::kernel::Object *, unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> *>::iterator it = registers_import_map.find(object);
+					
+					if(it != registers_import_map.end())
+					{
+						import = (*it).second;
+					}
+					
+					if(import)
+					{
+						reg = (*import)->GetRegister(query_decoder.register_name.c_str());
+					}
+				}
+				
+			}
+		}
+		
+		if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
+		{
+			if(reg)
+			{
+				struct Command
+				{
+					enum COMMAND_TYPE
+					{
+						CMD_NONE,
+						CMD_SET_REGISTER,
+						CMD_SET_FIELD
+					};
+					
+					COMMAND_TYPE type;
+					std::string field_name;
+					std::string value_str;
+					
+					Command(COMMAND_TYPE _type, const std::string& _value_str)
+						: type(_type)
+						, field_name()
+						, value_str(_value_str)
+					{
+					}
+
+					Command(COMMAND_TYPE _type, const std::string& _field_name, const std::string& _value_str)
+						: type(_type)
+						, field_name(_field_name)
+						, value_str(_value_str)
+					{
+					}
+				};
+				
+				struct Form_URL_Encoded_Decoder : public unisim::util::hypapp::Form_URL_Encoded_Decoder
+				{
+					Form_URL_Encoded_Decoder(HttpServer& _http_server) : http_server(_http_server) {}
+					
+					virtual bool FormAssign(const std::string& name, const std::string& value)
+					{
+						std::size_t delim_pos = name.find_first_of('*');
+						std::string command_type_str = name.substr(0, delim_pos);
+						Command::COMMAND_TYPE command_type = (command_type_str == "set-reg") ? Command::CMD_SET_REGISTER
+							                                                                     : ((command_type_str == "set-field") ? Command::CMD_SET_FIELD
+							                                                                                                          : Command::CMD_NONE);
+						if(command_type == Command::CMD_SET_FIELD)
+						{
+							if(delim_pos != std::string::npos)
+							{
+								std::string field_name = name.substr(delim_pos + 1);
+								commands.push_back(Command(command_type, field_name, value));
+							}
+							else
+							{
+								http_server.logger << DebugWarning << "Missing separator ('*') in \"" << name << "\"" << EndDebugWarning;
+							}
+						}
+						else if(command_type == Command::CMD_SET_REGISTER)
+						{
+							commands.push_back(Command(command_type, value));
+						}
+						else
+						{
+							http_server.logger << DebugWarning << "Unknown command \"" << command_type_str << "\"" << EndDebugWarning;
+						}
+						return true;
+					}
+					
+					HttpServer& http_server;
+					typedef std::vector<Command> Commands;
+					Commands commands;
+				};
+
+				Form_URL_Encoded_Decoder decoder(*this);
+				if(decoder.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
+				{
+					for(Form_URL_Encoded_Decoder::Commands::const_iterator it = decoder.commands.begin(); it != decoder.commands.end(); it++)
+					{
+						const Command& command = *it;
+						
+						switch(command.type)
+						{
+							case Command::CMD_NONE:
+								break;
+								
+							case Command::CMD_SET_REGISTER:
+							{
+								unsigned int reg_size = reg->GetSize();
+								uint8_t reg_value[reg_size];
+								if(ParseHex(reg_value, reg_size, command.value_str))
+								{
+									reg->SetValue(reg_value);
+								}
+								else
+								{
+									logger << DebugWarning << "parse error in \"" << command.value_str << "\"" << EndDebugWarning;
+								}
+								break;
+							}
+							case Command::CMD_SET_FIELD:
+							{
+								uint64_t value;
+								if(ParseHex(value, command.value_str))
+								{
+									unisim::service::interfaces::Field *field = reg->GetField(command.field_name.c_str());
+												
+									if(field)
+									{
+										field->SetValue(value);
+									}
+									else
+									{
+										logger << DebugWarning << "Unknown Field \"" << command.field_name << "\" in Register \"" << reg->GetName() << EndDebugWarning;
+									}
+								}
+								else
+								{
+									logger << DebugWarning << "parse error in \"" << command.value_str << "\"" << EndDebugWarning;
+								}
+								break;
+							}
+						}
+					}
+				}
+			}
+			
+			// Post/Redirect/Get pattern: got Post, so do Redirect
+			response.SetStatus(unisim::util::hypapp::HttpResponse::SEE_OTHER);
+			response.SetHeaderField("Location", req.GetRequestURI());
+		}
+		else if((req.GetRequestType() == unisim::util::hypapp::Request::GET) ||
+				(req.GetRequestType() == unisim::util::hypapp::Request::HEAD))
+		{
+			response << "<!DOCTYPE html>" << std::endl;
+			response << "<html>" << std::endl;
+			response << "\t<head>" << std::endl;
+			response << "\t\t<title>";
+			if(reg)
+			{
+				response << "Register " << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName());
+			}
+			else
+			{
+				response << "Unknown register";
+			}
+			response << " of " << (object ? unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) : "an unknown object") << "</title>" << std::endl;
+			response << "\t\t<meta name=\"description\" content=\"user interface for ";
+			if(reg)
+			{
+				response << "Register " << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName());
+			}
+			else
+			{
+				response << "Unknown register";
+			}
+			response << " of " << (object ? unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) : "an unknown object") << " over HTTP\">" << std::endl;
+			response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+			response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
+			response << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
+			response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/reg_style.css\" type=\"text/css\" />" << std::endl;
+			response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
+			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/reg_script.js\"></script>" << std::endl;
+			response << "\t</head>" << std::endl;
+			response << "\t<body>" << std::endl;
+			
+			if(reg)
+			{
+				response << "\t\t<table class=\"field-table\">" << std::endl;
+				response << "\t\t\t<tr>" << std::endl;
+				response << "\t\t\t\t<th class=\"name\">Name</th>" << std::endl;
+				response << "\t\t\t\t<th class=\"range\">Range</th>" << std::endl;
+				response << "\t\t\t\t<th class=\"value\">Value</th>" << std::endl;
+				response << "\t\t\t\t<th class=\"description\">Description</th>" << std::endl;
+				response << "\t\t\t</tr>" << std::endl;
+				response << "\t\t\t<tr>" << std::endl;
+				response << "\t\t\t\t\t<td class=\"name\">" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetName()) << "</td>" << std::endl;
+				response << "\t\t\t\t\t<td class=\"range\">" << (reg->GetSize() * 8) << "-bit</td>" << std::endl;
+				response << "\t\t\t\t\t<td class=\"value\">" << std::endl;
+				response << "\t\t\t\t\t\t<form action=\"/register?object=" << unisim::util::hypapp::URI_Encoder::Encode(object->GetName()) << "&register=" << unisim::util::hypapp::URI_Encoder::Encode(reg->GetName()) << "\" method=\"post\">" << std::endl;
+				response << "\t\t\t\t\t\t\t<input title=\"Type a value then press enter\" class=\"value-text\" type=\"text\" spellcheck=\"false\" name=\"set-reg\" value=\"0x" << std::hex;
+				
+				unsigned int reg_size = reg->GetSize();
+				uint8_t reg_value[reg_size];
+				reg->GetValue(&reg_value);
+#if BYTE_ORDER == BIG_ENDIAN
+				for(int i = 0; i < (int) reg_size; i++)
+#else
+				for(int i = (reg_size - 1); i >= 0; i--)
+#endif
+				{
+					response << (reg_value[i] >> 4);
+					response << (reg_value[i] & 15);
+				}
+				
+				response << std::dec << "\">" << std::endl;
+				response << "\t\t\t\t\t\t</form>" << std::endl;
+				response << "\t\t\t\t\t</td>" << std::endl;
+				response << "\t\t\t\t\t<td class=\"description\">" << unisim::util::hypapp::HTML_Encoder::Encode(reg->GetDescription()) << "</td>" << std::endl;
+				response << "\t\t\t\t</tr>" << std::endl;
+						
+				struct FieldPrinter : unisim::service::interfaces::FieldScanner
+				{
+					FieldPrinter(unisim::kernel::Object *_object, unisim::service::interfaces::Register *_reg, std::ostream& _response) : object(_object), reg(_reg), response(_response) {}
+					
+					virtual void Append(unisim::service::interfaces::Field *field)
+					{
+						response << "\t\t\t<tr>" << std::endl;
+						response << "\t\t\t\t<td class=\"name\"><span class=\"field-indent\"></span>" << unisim::util::hypapp::HTML_Encoder::Encode(field->GetName()) << "</td>" << std::endl;
+						response << "\t\t\t\t<td class=\"range\">[";
+						unsigned int bit_width = field->GetBitWidth();
+						unsigned int bit_offset = field->GetBitOffset();
+						if(bit_width)
+						{
+							if(bit_width != 1)
+							{
+								response << (bit_offset + bit_width - 1) << "..";
+							}
+							response << bit_offset;
+						}
+						response << "]</td>" << std::endl;
+						response << "\t\t\t\t<td class=\"value\">" << std::endl;
+						response << "\t\t\t\t\t<form action=\"/register?object=" << unisim::util::hypapp::URI_Encoder::Encode(object->GetName()) << "&register=" << unisim::util::hypapp::URI_Encoder::Encode(reg->GetName()) << "\" method=\"post\">" << std::endl;
+						response << "\t\t\t\t\t\t<input title=\"Type a value then press enter\" class=\"value-text\" type=\"text\" spellcheck=\"false\" name=\"set-field*" << unisim::util::hypapp::HTML_Encoder::Encode(field->GetName()) << "\" value=\"0x" << std::hex << field->GetValue() << std::dec << "\">" << std::endl;
+						response << "\t\t\t\t\t</form>" << std::endl;
+						response << "\t\t\t\t</td>" << std::endl;
+						response << "\t\t\t\t<td class=\"description\">" << unisim::util::hypapp::HTML_Encoder::Encode(field->GetDescription()) << "</td>" << std::endl;
+						response << "\t\t\t</tr>" << std::endl;
+					}
+						
+					unisim::kernel::Object *object;
+					unisim::service::interfaces::Register *reg;
+					std::ostream& response;
+				};
+				
+				FieldPrinter field_printer(object, reg, response);
+				reg->ScanFields(field_printer);
+				response << "\t\t</table>" << std::endl;
+			}
+			
+			response << "\t</body>" << std::endl;
+			response << "</html>" << std::endl;
+		}
+		else
+		{
+			logger << DebugWarning << "Method not allowed" << EndDebugWarning;
+			return Serve405(req, conn, "OPTIONS, GET, HEAD, POST");
+		}
+	}
+		
+	bool send_status = conn.Send(response.ToString((req.GetRequestType() == unisim::util::hypapp::Request::HEAD) || (req.GetRequestType() == unisim::util::hypapp::Request::OPTIONS)));
+
 	if(send_status)
 	{
 		if(verbose)
@@ -1804,6 +2312,10 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 				else if((http_request.GetAbsolutePath() == "/registers") || (http_request.GetAbsolutePath() == "/registers/"))
 				{
 					return http_server.ServeRegisters(http_request, conn);
+				}
+				else if((http_request.GetAbsolutePath() == "/register") || (http_request.GetAbsolutePath() == "/register/"))
+				{
+					return http_server.ServeRegister(http_request, conn);
 				}
 				else if((http_request.GetAbsolutePath() == "/kernel") || (http_request.GetAbsolutePath() == "/kernel/"))
 				{

@@ -37,6 +37,7 @@
 
 #include <unisim/service/interfaces/interface.hh>
 #include <inttypes.h>
+#include <string.h>
 
 namespace unisim {
 namespace service {
@@ -45,6 +46,7 @@ namespace interfaces {
 struct Field : public ServiceInterface
 {
 	virtual const char *GetName() const = 0;
+	virtual const char *GetDescription() const { return ""; }
 	virtual unsigned int GetBitOffset() const = 0;
 	virtual unsigned int GetBitWidth() const = 0;
 	virtual uint64_t GetValue() const = 0;
@@ -53,17 +55,33 @@ struct Field : public ServiceInterface
 
 struct FieldScanner : public ServiceInterface
 {
-	virtual void Append(unisim::service::interfaces::Field *field);
+	virtual void Append(Field *field) = 0;
 };
 
 struct Register : public ServiceInterface
 {
 	virtual const char *GetName() const = 0;
+	virtual const char *GetDescription() const { return ""; }
 	virtual void GetValue(void *buffer) const = 0;
 	virtual void SetValue(const void *buffer) = 0;
 	inline void Clear();
 	virtual int GetSize() const = 0;
-	//virtual void ScanFields(unisim::service::interfaces::FieldScanner& scanner) = 0;
+	virtual void ScanFields(FieldScanner& scanner) {}
+	virtual Field *GetField(const char *name)
+	{
+		struct FieldFinder : FieldScanner
+		{
+			FieldFinder(const char *_name) : name(_name), found(0) {}
+			virtual void Append(Field *field) { if(strcmp(field->GetName(), name) == 0) found = field; } 
+			
+			const char *name;
+			Field *found;
+		};
+		
+		FieldFinder field_finder(name);
+		ScanFields(field_finder);
+		return field_finder.found;
+	}
 	
 	inline void GetValue(uint8_t& val) const { GetTypedValue(val); }
 	inline void SetValue(const uint8_t& val) { SetTypedValue(val); }

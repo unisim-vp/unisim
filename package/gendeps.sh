@@ -449,6 +449,7 @@ mkdir -p "${PACKAGE_DIR}/m4/cacti"
 echo "m4/cacti.m4" > "${PACKAGE_DIR}/m4/cacti/m4_list.txt"
 echo "UNISIM_CHECK_CACTI" > "${PACKAGE_DIR}/m4/cacti/ac_list.txt"
 
+rm -rf "${PACKAGE_DIR}/unisim"
 crawl_directory "unisim"
 
 echo "unisim/component/cxx/processor/arm/isa/arm32" >> "${PACKAGE_DIR}/unisim/component/cxx/processor/arm/vmsav7/pkg_deps.txt"

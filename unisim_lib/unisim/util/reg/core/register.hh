@@ -100,6 +100,7 @@
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/service/interfaces/register.hh>
+#include <unisim/util/debug/simple_field_registry.hh>
 #include <iostream>
 #include <map>
 #include <vector>
@@ -223,23 +224,6 @@ template < typename  BF0, typename  BF1, typename  BF2, typename  BF3
          , typename BF56, typename BF57, typename BF58, typename BF59
          , typename BF60, typename BF61, typename BF62, typename BF63> struct FieldSet;
 
-template < typename  BF0, typename  BF1, typename  BF2, typename  BF3
-         , typename  BF4, typename  BF5, typename  BF6, typename  BF7
-         , typename  BF8, typename  BF9, typename BF10, typename BF11
-         , typename BF12, typename BF13, typename BF14, typename BF15
-         , typename BF16, typename BF17, typename BF18, typename BF19
-         , typename BF20, typename BF21, typename BF22, typename BF23
-         , typename BF24, typename BF25, typename BF26, typename BF27
-         , typename BF28, typename BF29, typename BF30, typename BF31
-         , typename BF32, typename BF33, typename BF34, typename BF35
-         , typename BF36, typename BF37, typename BF38, typename BF39
-         , typename BF40, typename BF41, typename BF42, typename BF43
-         , typename BF44, typename BF45, typename BF46, typename BF47
-         , typename BF48, typename BF49, typename BF50, typename BF51
-         , typename BF52, typename BF53, typename BF54, typename BF55
-         , typename BF56, typename BF57, typename BF58, typename BF59
-         , typename BF60, typename BF61, typename BF62, typename BF63> struct IntersectionFieldSet;
-
 template <typename ADDRESS, typename CUSTOM_RW_ARG> class RegisterAddressMap;
 
 template <unsigned int BYTE_SIZE> struct TypeForByteSize;
@@ -354,7 +338,7 @@ public:
 	template <typename T> static inline bool HasOverlappingBitFields();
 	template <typename T> static inline T Mask(const T& storage) ALWAYS_INLINE;
 	template <typename T> static inline T Get(const T& storage) ALWAYS_INLINE;
-	template <typename T> static void inline Set(T& storage, T field_value) ALWAYS_INLINE;
+	template <typename T> static inline void Set(T& storage, T field_value) ALWAYS_INLINE;
 	template <typename T> static inline T MakeValue(T field_value) ALWAYS_INLINE;
 	static inline void SetName(const std::string& name);
 	static inline void SetDisplayName(const std::string& disp_name);
@@ -373,6 +357,7 @@ public:
 	static inline const std::string& GetDescription();
 	template <typename T> static inline void ShortPrettyPrint(std::ostream& os, const T& storage);
 	template <typename T> static inline void LongPrettyPrint(std::ostream& os, const T& storage);
+	template <typename VISITOR> static inline void ForEach(VISITOR& visitor);
 private:
 	static inline const std::string& GetNameKey();
 	static inline const std::string& GetDisplayNameKey();
@@ -388,18 +373,23 @@ template <typename T, unsigned int BITWIDTH> T MakeMask();
 struct NullField
 {
 	static const unsigned int BITWIDTH = 0;
+	static const unsigned int BITOFFSET = 0;
 	
 	template <typename T> static inline T GetMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetAssignMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetWriteMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetWriteOneClearMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetReadMask() ALWAYS_INLINE;
+	template <typename T> static inline T Get(const T& storage) ALWAYS_INLINE;
+	template <typename T> static inline void Set(T& storage, T field_value) ALWAYS_INLINE;
 	static void SetName(const std::string& name);
 	static void SetDisplayName(const std::string& disp_name);
 	static void SetDescription(const std::string& desc);
 	static const std::string& GetName();
+	static const std::string& GetDescription();
 	template <typename T> static void ShortPrettyPrint(std::ostream& os, const T& storage);
 	template <typename T> static void LongPrettyPrint(std::ostream& os, const T& storage);
+	template <typename VISITOR> static void ForEach(VISITOR& visitor);
 };
 
 /////////////////////////////// FieldSet<> /////////////////////////////////
@@ -437,39 +427,8 @@ struct FieldSet
 	template <typename T> static inline T GetReadMask() ALWAYS_INLINE;
 	template <typename T> static inline bool HasOverlappingBitFields();
 	template <typename T> static inline T Get(const T& storage) ALWAYS_INLINE;
-	template <typename T> static inline void Set(T& storage, T bitfied_value) ALWAYS_INLINE;
-	static inline const std::string& GetName();
-	template <typename T> static inline void ShortPrettyPrint(std::ostream& os, const T& storage);
-	template <typename T> static inline void LongPrettyPrint(std::ostream& os, const T& storage);
-};
-
-/////////////////////////// IntersectionFieldSet<> ////////////////////////////
-
-template < typename  BF0 = NullField, typename  BF1 = NullField, typename  BF2 = NullField, typename  BF3 = NullField
-         , typename  BF4 = NullField, typename  BF5 = NullField, typename  BF6 = NullField, typename  BF7 = NullField
-         , typename  BF8 = NullField, typename  BF9 = NullField, typename BF10 = NullField, typename BF11 = NullField
-         , typename BF12 = NullField, typename BF13 = NullField, typename BF14 = NullField, typename BF15 = NullField
-         , typename BF16 = NullField, typename BF17 = NullField, typename BF18 = NullField, typename BF19 = NullField
-         , typename BF20 = NullField, typename BF21 = NullField, typename BF22 = NullField, typename BF23 = NullField
-         , typename BF24 = NullField, typename BF25 = NullField, typename BF26 = NullField, typename BF27 = NullField
-         , typename BF28 = NullField, typename BF29 = NullField, typename BF30 = NullField, typename BF31 = NullField
-         , typename BF32 = NullField, typename BF33 = NullField, typename BF34 = NullField, typename BF35 = NullField
-         , typename BF36 = NullField, typename BF37 = NullField, typename BF38 = NullField, typename BF39 = NullField
-         , typename BF40 = NullField, typename BF41 = NullField, typename BF42 = NullField, typename BF43 = NullField
-         , typename BF44 = NullField, typename BF45 = NullField, typename BF46 = NullField, typename BF47 = NullField
-         , typename BF48 = NullField, typename BF49 = NullField, typename BF50 = NullField, typename BF51 = NullField
-         , typename BF52 = NullField, typename BF53 = NullField, typename BF54 = NullField, typename BF55 = NullField
-         , typename BF56 = NullField, typename BF57 = NullField, typename BF58 = NullField, typename BF59 = NullField
-         , typename BF60 = NullField, typename BF61 = NullField, typename BF62 = NullField, typename BF63 = NullField>
-struct IntersectionFieldSet
-{
-	template <typename T> static inline T GetMask() ALWAYS_INLINE;
-	template <typename T> static inline T GetAssignMask() ALWAYS_INLINE;
-	template <typename T> static inline T GetWriteMask() ALWAYS_INLINE;
-	template <typename T> static inline T GetWriteOneClearMask() ALWAYS_INLINE;
-	template <typename T> static inline T GetReadMask() ALWAYS_INLINE;
-	template <typename T> static inline T Get(const T& storage) ALWAYS_INLINE;
-	template <typename T> static inline void Set(T& storage, T bitfied_value) ALWAYS_INLINE;
+	template <typename T> static inline void Set(T& storage, T value) ALWAYS_INLINE;
+	template <typename VISITOR> static inline void ForEach(VISITOR& visitor);
 };
 
 ///////////////////////////// TypeForByteSize<> ///////////////////////////////
@@ -499,17 +458,19 @@ struct NullRegisterBase {};
 
 ////////////////////////////////// Register<> /////////////////////////////////
 
-template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
-std::ostream& operator << (std::ostream& os, const Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>& reg);
+template <typename _REGISTER, unsigned int _SIZE, Access _ACCESS, typename _REGISTER_BASE>
+std::ostream& operator << (std::ostream& os, const Register<_REGISTER, _SIZE, _ACCESS, _REGISTER_BASE>& reg);
 
-template <typename REGISTER, unsigned int _SIZE, Access _ACCESS = SW_RW, typename REGISTER_BASE = NullRegisterBase>
-class Register : public REGISTER_BASE
+template <typename _REGISTER, unsigned int _SIZE, Access _ACCESS = SW_RW, typename _REGISTER_BASE = NullRegisterBase>
+class Register : public _REGISTER_BASE
 {
 public:
 	typedef typename TypeForBitSize<_SIZE>::TYPE TYPE;
 	static const TYPE TYPE_MASK = TypeForBitSize<_SIZE>::MASK;
+	typedef _REGISTER REGISTER;
 	static const unsigned int SIZE = _SIZE;
 	static const Access ACCESS = _ACCESS;
+	typedef _REGISTER_BASE REGISTER_BASE;
 	
 	inline TYPE Get() const ALWAYS_INLINE;
 	inline void Set(TYPE value) ALWAYS_INLINE;
@@ -595,10 +556,10 @@ public:
 	
 	Register();
 	Register(TYPE value);
-	Register(const Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>& r);
+	Register(const Register<_REGISTER, _SIZE, _ACCESS, _REGISTER_BASE>& r);
 	void WithinRegisterFileCtor(unsigned int index, void *custom_ctor_arg);
 	void Initialize(TYPE value);
-	inline Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>& operator = (const TYPE& value) ALWAYS_INLINE;
+	inline Register<_REGISTER, _SIZE, _ACCESS, _REGISTER_BASE>& operator = (const TYPE& value) ALWAYS_INLINE;
 	inline operator const TYPE () const ALWAYS_INLINE;
 	inline TYPE operator [] (unsigned int bit_offset) const ALWAYS_INLINE;
 	ReadWriteStatus Write(const TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
@@ -613,7 +574,7 @@ public:
 	void ShortPrettyPrint(std::ostream& os) const;
 	void LongPrettyPrint(std::ostream& os) const;
 	
-	friend std::ostream& operator << <REGISTER, _SIZE>(std::ostream& os, const Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>& reg);
+	friend std::ostream& operator << <_REGISTER, _SIZE>(std::ostream& os, const Register<_REGISTER, _SIZE, _ACCESS, _REGISTER_BASE>& reg);
 	
 	void SetName(const std::string& name);
 	void SetDisplayName(const std::string& disp_name);
@@ -644,6 +605,92 @@ private:
 	inline bool __IsVerboseRead__() const ALWAYS_INLINE;
 	inline bool __IsVerboseWrite__() const ALWAYS_INLINE;
 	inline std::ostream& __GetInfoStream__() ALWAYS_INLINE;
+	
+	struct FieldsShortPrettyPrinter
+	{
+		FieldsShortPrettyPrinter(std::ostream& _os, const TYPE& _value) : os(_os), value(_value), first(true) {}
+		
+		template <typename FIELD> void operator () ()
+		{
+			if(!FIELD::GetName().empty())
+			{
+				if(!first) os << ':';
+				first = false;
+				FIELD::ShortPrettyPrint(os, value & TYPE_MASK);
+			}
+		}
+		
+		std::ostream& os;
+		const TYPE& value;
+		bool first;
+	};
+
+	struct FieldsLongPrettyPrinter
+	{
+		FieldsLongPrettyPrinter(std::ostream& _os, const TYPE& _value) : os(_os), value(_value), first(true) {}
+		
+		template <typename FIELD> void operator () ()
+		{
+			if(!FIELD::GetName().empty())
+			{
+				if(!first) os << std::endl;
+				first = false;
+				FIELD::LongPrettyPrint(os, value & TYPE_MASK);
+			}
+		}
+		
+		std::ostream& os;
+		const TYPE& value;
+		bool first;
+	};
+};
+
+//////////////////////////// FieldInterface<> /////////////////////////////////
+
+template <typename REGISTER, typename FIELD>
+struct FieldInterface : unisim::service::interfaces::Field
+{
+	FieldInterface(REGISTER& _reg) : reg(_reg) {}
+
+	virtual const char *GetName() const { return FIELD::GetName().c_str(); }
+	virtual const char *GetDescription() const { return FIELD::GetDescription().c_str(); }
+	virtual unsigned int GetBitOffset() const { return FIELD::BITOFFSET; }
+	virtual unsigned int GetBitWidth() const { return FIELD::BITWIDTH; }
+	virtual uint64_t GetValue() const { return reg.template Get<FIELD>(); }
+	virtual void SetValue(uint64_t val) { reg.template Set<FIELD>(val); }
+	
+private:
+	REGISTER& reg;
+};
+
+/////////////////////////// RegisterInterface<> ///////////////////////////////
+
+template <typename REGISTER>
+struct RegisterInterface : public unisim::service::interfaces::Register
+{
+	typedef unisim::util::reg::core::Register<REGISTER, REGISTER::SIZE, REGISTER::ACCESS, typename REGISTER::REGISTER_BASE> RegType;
+	RegisterInterface(REGISTER& _reg) : reg(_reg) { Visitor visitor(reg, *this); REGISTER::ALL::ForEach(visitor); }
+	virtual const char *GetName() const { return reg.GetName().c_str(); }
+	virtual const char *GetDescription() const { return reg.GetDescription().c_str(); }
+	virtual void GetValue(void *buffer) const { reg.RegType::DebugRead((unsigned char *) buffer, (const unsigned char *) 0); }
+	virtual void SetValue(const void *buffer) { reg.RegType::DebugWrite((const unsigned char *) buffer, (const unsigned char *) 0); }
+	virtual int GetSize() const { return (reg.GetSize() + 7) / 8; }
+	virtual void ScanFields(unisim::service::interfaces::FieldScanner& scanner) { fields.ScanFields(scanner); }
+	void AddFieldInterface(unisim::service::interfaces::Field *field_if) { fields.AddFieldInterface(field_if); }
+	unisim::service::interfaces::Field *GetField(const char *name) { return fields.GetField(name); }
+private:
+	struct Visitor
+	{
+		Visitor(REGISTER& _reg, RegisterInterface& _reg_if) : reg(_reg), reg_if(_reg_if) {}
+		
+		template <typename FIELD> void operator () () { if(!FIELD::GetName().empty()) reg_if.AddFieldInterface(new FieldInterface<REGISTER, FIELD>(reg)); }
+		
+		REGISTER& reg;
+		RegisterInterface& reg_if;
+	};
+	
+	REGISTER& reg;
+	unisim::util::debug::SimpleFieldRegistry fields;
 };
 
 /////////////////////////// NullRegisterFileBase //////////////////////////////

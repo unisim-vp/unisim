@@ -8,6 +8,7 @@ std/stdexcept
 std/string
 std/vector
 unisim/service/interfaces/register
+unisim/util/debug
 unisim/util/endian
 unisim/util/inlining
 unisim/util/likely

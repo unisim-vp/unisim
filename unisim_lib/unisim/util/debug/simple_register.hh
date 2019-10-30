@@ -49,20 +49,33 @@ class SimpleRegister : public unisim::service::interfaces::Register
 {
 public:
 	SimpleRegister(const char *name, REGISTER_TYPE *value);
+	SimpleRegister(const char *name, const char *description, REGISTER_TYPE *value);
 	SimpleRegister(const std::string& name, REGISTER_TYPE *value);
+	SimpleRegister(const std::string& name, const std::string& description, REGISTER_TYPE *value);
 	virtual ~SimpleRegister();
 	virtual const char *GetName() const;
+	virtual const char *GetDescription() const;
 	virtual void GetValue(void *buffer) const;
 	virtual void SetValue(const void *buffer);
 	virtual int GetSize() const;
 private:
 	std::string name;
+	std::string description;
 	REGISTER_TYPE *value;
 };
 
 template <typename REGISTER_TYPE>
 SimpleRegister<REGISTER_TYPE>::SimpleRegister(const char *_name, REGISTER_TYPE *_value) :
 	name(_name),
+	description(),
+	value(_value)
+{
+}
+
+template <typename REGISTER_TYPE>
+SimpleRegister<REGISTER_TYPE>::SimpleRegister(const char *_name, const char *_description, REGISTER_TYPE *_value) :
+	name(_name),
+	description(_description),
 	value(_value)
 {
 }
@@ -70,6 +83,15 @@ SimpleRegister<REGISTER_TYPE>::SimpleRegister(const char *_name, REGISTER_TYPE *
 template <typename REGISTER_TYPE>
 SimpleRegister<REGISTER_TYPE>::SimpleRegister(const std::string& _name, REGISTER_TYPE *_value) :
 	name(_name),
+	description(),
+	value(_value)
+{
+}
+
+template <typename REGISTER_TYPE>
+SimpleRegister<REGISTER_TYPE>::SimpleRegister(const std::string& _name, const std::string& _description, REGISTER_TYPE *_value) :
+	name(_name),
+	description(_description),
 	value(_value)
 {
 }
@@ -83,6 +105,12 @@ template <typename REGISTER_TYPE>
 const char *SimpleRegister<REGISTER_TYPE>::GetName() const
 {
 	return name.c_str();
+}
+
+template <typename REGISTER_TYPE>
+const char *SimpleRegister<REGISTER_TYPE>::GetDescription() const
+{
+	return description.c_str();
 }
 
 template <typename REGISTER_TYPE>

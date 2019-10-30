@@ -348,6 +348,7 @@ CPPFLAGS="\${CPPFLAGS} -D_LARGEFILE64_SOURCE"
 case "\${host}" in
 	*mingw*)
 		CPPFLAGS="-U__STRICT_ANSI__ \${CPPFLAGS}"
+		CXXFLAGS="-Wa,-mbig-obj \${CXXFLAGS}"
 		;;
 	*)
 		;;

@@ -129,7 +129,7 @@ void EBI<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& sc
 }
 
 template <typename CONFIG>
-bool EBI<CONFIG>::Match(unsigned int output_port, uint64_t addr) const
+bool EBI<CONFIG>::Match(unsigned int output_port, uint64_t addr, uint64_t& range_start, uint64_t& range_end, uint64_t& translation) const
 {
 	EBI_BR const& br = ebi_br[output_port];
 	
@@ -137,9 +137,19 @@ bool EBI<CONFIG>::Match(unsigned int output_port, uint64_t addr) const
 	{
 		EBI_OR const& _or = ebi_or[output_port];
 		
-		sc_dt::uint64 base_address = br.template Get<typename EBI_BR::BA>() << (INPUT_ADDRESS_WIDTH - EBI_BR::BA::BITWIDTH);
-		sc_dt::uint64 address_mask = _or.template Get<typename EBI_OR::AM>() << (INPUT_ADDRESS_WIDTH - EBI_OR::AM::BITWIDTH);
-		return (addr & address_mask) == (base_address & address_mask);
+		uint64_t ba = br.template Get<typename EBI_BR::BA>();
+		uint64_t am = _or.template Get<typename EBI_OR::AM>();
+		uint64_t base_address = ba << (INPUT_ADDRESS_WIDTH - EBI_BR::BA::BITWIDTH);
+		uint64_t address_mask = am << (INPUT_ADDRESS_WIDTH - EBI_OR::AM::BITWIDTH);
+		uint64_t masked_address = addr & address_mask;
+		uint64_t masked_base_address = base_address & address_mask;
+		if(masked_address == masked_base_address)
+		{
+			range_start = addr & (~uint64_t(0) << (INPUT_ADDRESS_WIDTH - EBI_OR::AM::BITWIDTH));
+			range_end = range_start | (~uint64_t(0) >> (64 - (INPUT_ADDRESS_WIDTH - EBI_OR::AM::BITWIDTH)));
+			translation = (range_start - masked_base_address) % OutputAddressMask(output_port);
+			return true;
+		}
 	}
 	
 	return false;
@@ -148,10 +158,11 @@ bool EBI<CONFIG>::Match(unsigned int output_port, uint64_t addr) const
 template <typename CONFIG>
 unsigned int EBI<CONFIG>::OutputAddressWidth(unsigned int output_port) const
 {
-	unsigned int output_address_width = OUTPUT_ADDRESS_WIDTH;
 
 	EBI_BR const& br = ebi_br[output_port];
 	EBI_OR const& _or = ebi_or[output_port];
+	// Address / Write Enable Select: 1=drive WE[0:3] to upper address bits, i.e. 20-bit address, 0=24-bit address
+	unsigned int output_address_width = _or.template Get<typename EBI_OR::AWE>() ? (OUTPUT_ADDRESS_WIDTH - 4) : OUTPUT_ADDRESS_WIDTH;
 	if(_or.template Get<typename EBI_OR::APS>()) // Address by Port Size?
 	{
 		if(br.template Get<typename EBI_BR::PS>()) // Port Size
@@ -167,6 +178,12 @@ unsigned int EBI<CONFIG>::OutputAddressWidth(unsigned int output_port) const
 	}
 	
 	return output_address_width;
+}
+
+template <typename CONFIG>
+uint64_t EBI<CONFIG>::OutputAddressMask(unsigned int output_port) const
+{
+	return ~(~uint64_t(0) << OutputAddressWidth(output_port));
 }
 
 template <typename CONFIG>
@@ -188,31 +205,23 @@ bool EBI<CONFIG>::ApplyMap(uint64_t addr, uint32_t size, MAPPING const *&applied
 	unsigned int output_port;
 	for(output_port = 0; output_port < CONFIG::OUTPUT_SOCKETS; output_port++)
 	{
-		EBI_BR& br = ebi_br[output_port];
-		
-		if(br.template Get<typename EBI_BR::V>()) // valid?
+		uint64_t range_start;
+		uint64_t range_end;
+		uint64_t translation;
+		if(Match(output_port, addr, range_start, range_end, translation))
 		{
-			if(Match(output_port, addr))
+			mapping_cache.Insert(range_start, range_end, translation, output_port);
+			
+			applied_mapping = &mapping_cache[output_port];
+			
+			if(unlikely(mem_rgn))
 			{
-				sc_dt::uint64 range_start = addr & (~sc_dt::uint64(0) << (INPUT_ADDRESS_WIDTH - EBI_OR::AM::BITWIDTH));
-				sc_dt::uint64 range_end = range_start + (~sc_dt::uint64(0) >> (64 - OutputAddressWidth(output_port)));
-				
-				if((addr >= range_start) && ((addr + size - 1) <= range_end))
-				{
-					mapping_cache.Insert(range_start, range_end, output_port);
-					
-					applied_mapping = &mapping_cache[output_port];
-					
-					if(unlikely(mem_rgn))
-					{
-						mem_rgn->start_addr = applied_mapping->range_start;
-						mem_rgn->end_addr = applied_mapping->range_end;
-						mem_rgn->mem_access = MEM_ACCESS_READ_WRITE;
-					}
-				
-					return true;
-				}
+				mem_rgn->start_addr = applied_mapping->range_start;
+				mem_rgn->end_addr = applied_mapping->range_end;
+				mem_rgn->mem_access = MEM_ACCESS_READ_WRITE;
 			}
+		
+			return true;
 		}
 	}
 	
@@ -232,12 +241,12 @@ void EBI<CONFIG>::ApplyMap(uint64_t addr, uint32_t size, std::vector<MAPPING con
 		unsigned int output_port;
 		for(output_port = 0; output_port < CONFIG::OUTPUT_SOCKETS; output_port++)
 		{
-			if(Match(output_port, addr))
+			uint64_t range_start;
+			uint64_t range_end;
+			uint64_t translation;
+			if(Match(output_port, addr, range_start, range_end, translation))
 			{
-				sc_dt::uint64 range_start = addr & (~sc_dt::uint64(0) << (INPUT_ADDRESS_WIDTH - EBI_OR::AM::BITWIDTH));
-				sc_dt::uint64 range_end = range_start + (~sc_dt::uint64(0) >> (64 - OutputAddressWidth(output_port)));
-				
-				port_mappings.push_back(temporary_mapping_keeper.CreateMapping(range_start, range_end, output_port));
+				port_mappings.push_back(temporary_mapping_keeper.CreateMapping(range_start, range_end, translation, output_port));
 				
 				uint32_t sz = std::min(uint32_t((range_end - addr) + 1), size);
 				size -= sz;
@@ -253,36 +262,6 @@ void EBI<CONFIG>::ApplyMap(uint64_t addr, uint32_t size, std::vector<MAPPING con
 		}
 	}
 }
-
-#if 0
-template <typename CONFIG>
-void EBI<CONFIG>::ReverseMap(unsigned int output_port, sc_dt::uint64 start_range, sc_dt::uint64 end_range, std::vector<MAPPING const *>& mappings)
-{
-	temporary_mapping_keeper.Clear();
-	
-	EBI_BR const& br = ebi_br[output_port];
-	
-	if(br.template Get<typename EBI_BR::V>()) // valid?
-	{
-		EBI_OR const& _or = ebi_or[output_port];
-		
-		sc_dt::uint64 base_address = br.template Get<typename EBI_BR::BA>() << (INPUT_ADDRESS_WIDTH - EBI_BR::BA::BITWIDTH);
-		sc_dt::uint64 address_mask = _or.template Get<typename EBI_OR::AM>() << (INPUT_ADDRESS_WIDTH - EBI_OR::AM::BITWIDTH);
-		unsigned int output_address_width = OutputAddressWidth(output_port);
-		
-		uint32_t i;
-		for(i = 0; i < (1 << EBI_OR::AM::BITWIDTH); i++)
-		{
-			sc_dt::uint64 range_start = i << (INPUT_ADDRESS_WIDTH - EBI_OR::AM::BITWIDTH);
-			if((range_start & address_mask) == (base_address & address_mask))
-			{
-				sc_dt::uint64 range_end = range_start + (~sc_dt::uint64(0) >> (64 - output_address_width));
-				mappings.push_back(temporary_mapping_keeper.CreateMapping(range_start, range_end, output_port));
-			}
-		}
-	}
-}
-#endif
 
 } // end of namespace ebi
 } // end of namespace mpc57xx
