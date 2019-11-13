@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SIMPKG=dbgate
-SIMPKGDIR=cxx/dbgate
+SIMPKG_SRCDIR=cxx/dbgate
 source "$(dirname $0)/dist_common.sh"
 
 import unisim/util/loader/elf_loader

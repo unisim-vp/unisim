@@ -15,11 +15,6 @@ if [ -z "${SIMPKG_SRCDIR}" ]; then
 	exit -1
 fi
 
-if [ -z "${SIMPKG_DSTDIR}" ]; then
-	echo "SIMPKG_DSTDIR is not set"
-	exit -1
-fi
-
 has_two_levels_dirs=no
 genisslib_imported=no
 PACKAGE_DIR=$(cd $(dirname $0); pwd)
@@ -32,12 +27,6 @@ AM_SIMULATOR_VERSION=$(printf '%s' "${SIMULATOR_VERSION}" | sed -e 's/\./_/g')
 AM_SIMPKG=$(printf '%s' "${SIMPKG}" | sed -e 's/-/_/g')
 has_to_build_simulator_configure=no
 has_to_build_configure=no
-has_to_build_simulator_configure=no
-unset UNISIM_LIB_SIMULATOR_SOURCE_FILES
-unset UNISIM_LIB_SIMULATOR_HEADER_FILES
-unset UNISIM_LIB_SIMULATOR_DATA_FILES
-unset UNISIM_LIB_SIMULATOR_FILES
-unset UNISIM_LIB_SIMULATOR_M4_FILES
 
 declare -a UNISIM_LIB_PACKAGES
 declare -A UNISIM_LIB_PACKAGE_IMPORTED
@@ -147,6 +136,16 @@ function dist_copy() {
 		return 0
 	fi
 	return 1
+}
+
+function enable_two_levels_dirs()
+{
+	if [ -z "${SIMPKG_DSTDIR}" ]; then
+		echo "SIMPKG_DSTDIR is not set"
+		exit -1
+	fi
+	
+	has_two_levels_dirs=yes;
 }
 
 function make_pkg_configure_cross()
@@ -280,9 +279,14 @@ function copy()
 
 function import_genisslib()
 {
-	GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib
-	has_two_levels_dirs=yes
+	enable_two_levels_dirs
+
+	if ! GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib; then
+		return 1
+	fi
 	genisslib_imported=yes
+
+	return 0
 }
 
 function output_top_configure_ac()
@@ -335,7 +339,9 @@ function build_top_configure()
 	
 	if [ "${has_to_build_configure}" = "yes" ]; then
 		echo "Building configure"
-		${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
+		local CMD="cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
+		echo "Running: ${CMD}"
+		${SHELL} -c "${CMD}"
 	fi
 }
 
@@ -394,14 +400,17 @@ function output_simulator_makefile_am()
 function build_simulator_configure()
 {
 	local SIMULATOR_CONFIG
+	local SIMULATOR_CONFIGURE_AC
 	local SIMULATOR_CONFIGURE
 	local SIMULATOR_DIR
 	if [ "${has_two_levels_dirs}" = "yes" ]; then
 		SIMULATOR_CONFIG="${DEST_DIR}/${SIMPKG_DSTDIR}/config"
+		SIMULATOR_CONFIGURE_AC="${DEST_DIR}/${SIMPKG_DSTDIR}/configure.ac"
 		SIMULATOR_CONFIGURE="${DEST_DIR}/${SIMPKG_DSTDIR}/configure"
 		SIMULATOR_DIR="${DEST_DIR}/${SIMPKG_DSTDIR}"
 	else
 		SIMULATOR_CONFIG="${DEST_DIR}/config"
+		SIMULATOR_CONFIGURE_AC="${DEST_DIR}/configure.ac"
 		SIMULATOR_CONFIGURE="${DEST_DIR}/configure"
 		SIMULATOR_DIR="${DEST_DIR}"
 	fi
@@ -414,6 +423,13 @@ function build_simulator_configure()
 	
 	if [ "${has_to_build_simulator_configure}" = "yes" ]; then
 		echo "Building ${SIMPKG} configure"
-		${SHELL} -c "cd '${SIMULATOR_DIR}' && aclocal -I m4 && libtoolize --force && autoconf --force && autoheader && automake -ac"
+		local CMD="cd '${SIMULATOR_DIR}' && aclocal -I m4"
+		# optionally run libtoolize only if LT_INIT is present in configure.ac
+		if grep -qs "LT_INIT" "${SIMULATOR_CONFIGURE_AC}"; then
+			CMD+=" && libtoolize --force"
+		fi
+		CMD+=" && autoconf --force && autoheader && automake -ac"
+		echo "Running: ${CMD}"
+		${SHELL} -c "${CMD}"
 	fi
 }

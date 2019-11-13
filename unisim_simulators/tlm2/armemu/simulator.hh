@@ -79,14 +79,8 @@ class Simulator
   Simulator(int argc, char **argv, const sc_core::sc_module_name& name = "HARDWARE");
   virtual ~Simulator();
   int Run();
-  int Run(double time, sc_core::sc_time_unit unit);
-  bool IsRunning() const;
-  bool SimulationStarted() const;
-  bool SimulationFinished() const;
   virtual unisim::kernel::Simulator::SetupStatus Setup();
   virtual bool EndSetup();
-  virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
-  int GetExitStatus() const;
   static void EnableMonitor(int (*monitor_callback)(void));
 
  protected:
@@ -138,8 +132,6 @@ class Simulator
   bool                                     enable_profiler;
   unisim::kernel::variable::Parameter<bool> param_enable_profiler;
   
-  bool stop_called;
-  int exit_status;
   virtual void SigInt();
   static bool enable_monitor;
 };

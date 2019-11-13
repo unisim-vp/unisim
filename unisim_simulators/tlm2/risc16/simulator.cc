@@ -180,6 +180,7 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 				break;
 		}
 	}
+	unisim::kernel::Simulator::Kill();
 }
 
 void Simulator::Run() {

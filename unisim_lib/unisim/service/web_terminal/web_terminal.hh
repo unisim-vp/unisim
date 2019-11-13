@@ -41,6 +41,8 @@
 #include <unisim/service/interfaces/http_server.hh>
 #include <unisim/service/interfaces/char_io.hh>
 #include <pthread.h>
+#include <string>
+#include <vector>
 
 namespace unisim {
 namespace service {
@@ -306,39 +308,21 @@ private:
 	ScreenBufferCharacter *storage;
 };
 
-///////////////////////////// ScreenBufferIterator ////////////////////////////
-
-struct ScreenBufferIterator
-{
-	ScreenBufferIterator(const ScreenBufferIterator& o);
-	ScreenBufferIterator& operator = (const ScreenBufferIterator& o);
-	ScreenBufferIterator& operator ++ ();
-	int operator == (const ScreenBufferIterator& o) const;
-	int operator != (const ScreenBufferIterator& o) const;
-	ScreenBufferLine& operator * ();
-	
-private:
-	friend struct ScreenBuffer;
-	
-	ScreenBuffer *screen_buffer;
-	unsigned int scan_index;
-	unsigned int line_index;
-	
-	ScreenBufferIterator(ScreenBuffer *_screen_buffer, unsigned int _scan_index, unsigned int _line_index);
-	void Copy(const ScreenBufferIterator& o);
-	void Set(unsigned int _scan_index, unsigned int _line_index);
-};
-
 //////////////////////////////// ScreenBuffer /////////////////////////////////
 
 struct ScreenBuffer : unisim::kernel::Object
 {
+	typedef std::vector<ScreenBufferLine *> ScreenBufferLines;
+	typedef ScreenBufferLines::iterator iterator;
+	typedef ScreenBufferLines::const_iterator const_iterator;
+	
 	ScreenBuffer(const char *name, WebTerminal *web_terminal);
 	~ScreenBuffer();
 	
-	const ScreenBufferIterator& Begin() const;
-	const ScreenBufferIterator& End() const;
-	unsigned int Next(unsigned int line_index) const;
+	const_iterator Begin() const;
+	iterator Begin();
+	const_iterator End() const;
+	iterator End();
 	
 	unsigned int GetCursorColNo() const;
 	unsigned int GetCursorLineNo() const;
@@ -362,8 +346,7 @@ struct ScreenBuffer : unisim::kernel::Object
 	void Delete();
 	
 	ScreenBufferLine& GetLine(unsigned int line_index);
-	bool IsAtCursorLinePos(const ScreenBufferIterator& it) const;
-	unsigned int TranslateLineNoToLineIndex(unsigned int lineno) const;
+	bool IsAtCursorLinePos(const_iterator it) const;
 	ScreenBufferLine& operator [] (unsigned int lineno);
 	
 	void PutChar(char c);
@@ -378,7 +361,6 @@ struct ScreenBuffer : unisim::kernel::Object
 	void MoveCursorTo(unsigned int lineno = 1, unsigned int colno = 1);
 	void EraseInDisplay(unsigned int n = 0);
 	void EraseInLine(unsigned int n = 0);
-	void Reserve(unsigned int line_index);
 	void NewLine();
 	void ScrollUp(unsigned int n = 1);
 	void ScrollDown(unsigned int n = 1);
@@ -390,34 +372,6 @@ struct ScreenBuffer : unisim::kernel::Object
 	void MoveCursorUpScrollDown();
 	
 private:
-//         index
-//   
-//           0        --> +--------------------------------+        +<-+
-//                        |                                |        |  |
-//                        |                                |        |  |
-//                        |                                |        |  |
-//                        |                                |        |  |
-// window_start_index --> +--------------------------------+  <--+  |  |      ^
-//                        |                                |  |  |  |  |      |
-//                        |                                |  |  |  |  |      |
-//                        |                                |  |  |  |  |      |
-//                        |                                |  V  |  |  |      |
-//     top_line_index --> +--------------------------------+  +  |  |  |      |
-//                        |                                |  |  |  |  |      | display_height
-//                        |                                |  |  |  |  |      |
-//                        |                                |  |  |  |  |      |
-//                        |                                |  |  |  |  |      |
-//                        |                                |  |  |  |  |      |
-//                        |                                |  |  |  |  |      |
-//   window_end_index --> +--------------------------------+  +-->  |  |      V
-//                        |                                |        |  |
-//                        |                                |        |  |
-//                        |                                |        |  |
-//                        |                                |        |  |
-//                        |                                |        |  |
-//                        |                                |        V  |
-// buffer_height - 1  --> +--------------------------------+        +-->
-
 	WebTerminal *web_terminal;
 	unisim::kernel::logger::Logger logger;
 
@@ -429,12 +383,6 @@ private:
 	unsigned int save_cursor_colno;
 	unsigned int save_cursor_lineno;
 	GraphicRendition save_gr;
-	typedef std::vector<ScreenBufferLine *> ScreenBufferLines;
-	unsigned int window_start_index;
-	unsigned int top_line_index;
-	unsigned int window_end_index;
-	ScreenBufferIterator begin_it;
-	ScreenBufferIterator end_it;
 	ScreenBufferLines lines;
 	GraphicRendition gr;
 	UTF8_Parser utf8_parser;

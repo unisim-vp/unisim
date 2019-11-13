@@ -252,6 +252,7 @@ void EBI<CONFIG>::ApplyMap(uint64_t addr, uint32_t size, std::vector<MAPPING con
 				size -= sz;
 				addr += sz;
 				found = true;
+				break;
 			}
 		}
 		

@@ -860,7 +860,7 @@ Simulator::SetupStatus Simulator::Setup()
 		http_server->AddJSAction(
 		unisim::service::interfaces::ToolbarOpenTabAction(
 			/* name */      profiler->GetName(), 
-			/* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\">",
+			/* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\" alt=\"Profile\">",
 			/* tips */      std::string("Profile of ") + cpu->GetName(),
 			/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
 			/* uri */       profiler->URI()
@@ -870,7 +870,7 @@ Simulator::SetupStatus Simulator::Setup()
 	http_server->AddJSAction(
 		unisim::service::interfaces::ToolbarOpenTabAction(
 		/* name */      sci_web_terminal->GetName(),
-		/* label */     "<img src=\"/unisim/service/web_terminal/icon_term0.svg\">",
+		/* label */     "<img src=\"/unisim/service/web_terminal/icon_term0.svg\" alt=\"TERM0\">",
 		/* tips */      (*sci_web_terminal)["title"],
 		/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
 		/* uri */       sci_web_terminal->URI()
@@ -879,7 +879,7 @@ Simulator::SetupStatus Simulator::Setup()
 	http_server->AddJSAction(
 		unisim::service::interfaces::ToolbarOpenTabAction(
 		/* name */      spi_web_terminal->GetName(),
-		/* label */     "<img src=\"/unisim/service/web_terminal/icon_term1.svg\">",
+		/* label */     "<img src=\"/unisim/service/web_terminal/icon_term1.svg\" alt=\"TERM1\">",
 		/* tips */      (*spi_web_terminal)["title"],
 		/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
 		/* uri */       spi_web_terminal->URI()
@@ -971,9 +971,11 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 	{
 		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
 	}
-
 	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_core::sc_stop();
+	if(sc_core::sc_get_status() != sc_core::SC_STOPPED)
+	{
+		sc_core::sc_stop();
+	}
 	if(!asynchronous)
 	{
 		sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
@@ -987,7 +989,7 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 				break;
 		}
 	}
-
+	unisim::kernel::Simulator::Kill();
 }
 
 Simulator::LoadRatioStatistic::LoadRatioStatistic(Simulator& _sim)

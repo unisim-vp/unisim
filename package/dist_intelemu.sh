@@ -2,7 +2,6 @@
 
 SIMPKG=intelemu
 SIMPKG_SRCDIR=cxx/intelemu
-SIMPKG_DSTDIR=intelemu
 source "$(dirname $0)/dist_common.sh"
 
 import unisim/component/cxx/processor/intel

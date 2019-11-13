@@ -5,7 +5,7 @@ SIMPKG_DSTDIR=armsec
 
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import dist_armsec || exit
 import unisim/util/symbolic/binsec || exit

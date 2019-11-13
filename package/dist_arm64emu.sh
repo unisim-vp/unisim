@@ -4,7 +4,7 @@ SIMPKG_SRCDIR=tlm2/arm64emu
 SIMPKG_DSTDIR=arm64emu
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import unisim/component/tlm2/processor/arm/cortex_a53 || exit
 import unisim/component/tlm2/memory/ram || exit

@@ -5,7 +5,7 @@ SIMPKG_DSTDIR=s3pac
 
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import unisim/component/cxx/processor/arm || exit
 import unisim/component/cxx/processor/arm/isa || exit

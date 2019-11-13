@@ -407,7 +407,7 @@ public:
 	virtual ~UserInterface();
 	
 	virtual bool EndSetup();
-	virtual void SigInt();
+	virtual void Kill();
 	
 	virtual bool SetupInstrumentation();
 	virtual void ProcessInputInstruments();

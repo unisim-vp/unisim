@@ -1,6 +1,9 @@
 m4/pthread
 std/cassert
+std/cstring
 std/set
+std/string
+std/vector
 unisim/kernel
 unisim/kernel/logger
 unisim/kernel/variable

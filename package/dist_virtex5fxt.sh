@@ -4,7 +4,7 @@ SIMPKG_SRCDIR=tlm2/virtex5fxt
 SIMPKG_DSTDIR=virtex5fxt
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import unisim/component/tlm2/processor/powerpc/book_e/ppc440 || exit
 import unisim/component/tlm2/memory/ram || exit

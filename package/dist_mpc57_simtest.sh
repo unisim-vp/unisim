@@ -5,7 +5,7 @@ SIMPKG_SRCDIR=cxx/mpc57_simtest
 SIMPKG_DSTDIR=mpc57_simtest
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point || exit
 import unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs || exit

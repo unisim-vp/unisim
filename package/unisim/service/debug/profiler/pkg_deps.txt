@@ -38,6 +38,7 @@ unisim/service/interfaces/trap_reporting
 unisim/util/arithmetic
 unisim/util/debug
 unisim/util/endian
+unisim/util/host_time
 unisim/util/ieee754
 unisim/util/likely
 unisim/util/loader/elf_loader

@@ -33,17 +33,7 @@
  */
  
 #include <unisim/service/time/host_time/time.hh>
-
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-
-#include <windows.h>
-
-#else
-
-#include <sys/times.h>
-#include <unistd.h>
-
-#endif
+#include <unisim/util/host_time/time.hh>
 
 namespace unisim {
 namespace service {
@@ -68,28 +58,7 @@ bool HostTime::BeginSetup()
 
 double HostTime::GetTime()
 {
-	double t = 0.0;
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-	FILETIME ftCreationTime;
-	FILETIME ftExitTime;
-	FILETIME ftKernelTime;
-	FILETIME ftUserTime;
-
-	if(GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime))
-	{
-		t = (double)(((unsigned __int64) ftKernelTime.dwLowDateTime | ((unsigned __int64) ftKernelTime.dwHighDateTime << 32))
-				+ ((unsigned __int64) ftUserTime.dwLowDateTime | ((unsigned __int64) ftUserTime.dwHighDateTime << 32))) / 1e7;
-	}
-#else
-	struct tms cur_time;
-
-	times(&cur_time);
-	double ratio = 1.0 / sysconf(_SC_CLK_TCK);
-	clock_t utime = cur_time.tms_utime;
-	clock_t stime = cur_time.tms_stime;
-	t = ratio * (utime + stime);
-#endif
-	return t;
+	return unisim::util::host_time::GetHostTime();
 }
 
 } // end of namespace host_time

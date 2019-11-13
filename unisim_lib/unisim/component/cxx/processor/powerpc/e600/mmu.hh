@@ -684,10 +684,10 @@ bool TLB<TYPES, CONFIG>::ServeHttpRequest(unisim::util::hypapp::HttpRequest cons
 				response << "\t\t<meta name=\"description\" content=\"user interface for MMU\">" << std::endl;
 				response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 				response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/component/cxx/processor/powerpc/e600/mmu_style.css\" type=\"text/css\" />" << std::endl;
-				response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-				response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
-				response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
-				//response << "\t\t<script type=\"application/javascript\" src=\"/unisim/component/cxx/processor/powerpc/e600/mmu_script.js\"></script>" << std::endl;
+				response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+				response << "\t\t<script src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
+				response << "\t\t<script src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+				//response << "\t\t<script src=\"/unisim/component/cxx/processor/powerpc/e600/mmu_script.js\"></script>" << std::endl;
 				response << "\t</head>" << std::endl;
 				response << "\t<body>" << std::endl;
 				Print(response, PFMT_HTML);
@@ -708,7 +708,7 @@ bool TLB<TYPES, CONFIG>::ServeHttpRequest(unisim::util::hypapp::HttpRequest cons
 				response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 				response << "\t\t<meta name=\"description\" content=\"Error 405 (Method Not Allowed)\">" << std::endl;
 				response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
-				response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+				response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 				response << "\t\t<style>" << std::endl;
 				response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
 				response << "\t\t</style>" << std::endl;
@@ -731,7 +731,7 @@ bool TLB<TYPES, CONFIG>::ServeHttpRequest(unisim::util::hypapp::HttpRequest cons
 		response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 		response << "\t\t<meta name=\"description\" content=\"Error 404 (Not Found)\">" << std::endl;
 		response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
-		response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+		response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 		response << "\t\t<style>" << std::endl;
 		response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
 		response << "\t\t</style>" << std::endl;

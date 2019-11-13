@@ -487,7 +487,7 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 				}
 				
 				response << "<!DOCTYPE html>" << std::endl;
-				response << "<html>" << std::endl;
+				response << "<html lang=\"en\">" << std::endl;
 				response << "\t<head>" << std::endl;
 				if(object)
 				{
@@ -500,10 +500,10 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 				response << "\t\t<meta name=\"description\" content=\"user interface for logs over HTTP\">" << std::endl;
 				response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 				response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/kernel/logger/style.css\" type=\"text/css\" />" << std::endl;
-				response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';var activity = " << (activity ? "true" : "false") << ";</script>" << std::endl;
-				response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
-				response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
-				response << "\t\t<script type=\"application/javascript\" src=\"/unisim/kernel/logger/script.js\"></script>" << std::endl;
+				response << "\t\t<script>document.domain='" << req.GetDomain() << "';var activity = " << (activity ? "true" : "false") << ";</script>" << std::endl;
+				response << "\t\t<script src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
+				response << "\t\t<script src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+				response << "\t\t<script src=\"/unisim/kernel/logger/script.js\"></script>" << std::endl;
 				response << "\t</head>" << std::endl;
 				response << "\t<body onload=\"gui.auto_reload(" << (unsigned int)(http_refresh_period * 1000) << ", 'self-refresh-when-active')\">" << std::endl;
 				http_refresh_period = activity ? opt_http_min_refresh_period_ : std::min(http_refresh_period * 2.0, opt_http_max_refresh_period_);
@@ -543,13 +543,13 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 				response.Allow("OPTIONS, GET, HEAD");
 				
 				response << "<!DOCTYPE html>" << std::endl;
-				response << "<html>" << std::endl;
+				response << "<html lang=\"en\">" << std::endl;
 				response << "\t<head>" << std::endl;
 				response << "\t\t<title>Error 405 (Method Not Allowed)</title>" << std::endl;
 				response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 				response << "\t\t<meta name=\"description\" content=\"Error 405 (Method Not Allowed)\">" << std::endl;
 				response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
-				response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+				response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 				response << "\t\t<style>" << std::endl;
 				response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
 				response << "\t\t</style>" << std::endl;
@@ -566,13 +566,13 @@ bool LoggerServer::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req
 		response.SetStatus(unisim::util::hypapp::HttpResponse::NOT_FOUND);
 		
 		response << "<!DOCTYPE html>" << std::endl;
-		response << "<html>" << std::endl;
+		response << "<html lang=\"en\">" << std::endl;
 		response << "\t<head>" << std::endl;
 		response << "\t\t<title>Error 404 (Not Found)</title>" << std::endl;
 		response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 		response << "\t\t<meta name=\"description\" content=\"Error 404 (Not Found)\">" << std::endl;
 		response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
-		response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+		response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 		response << "\t\t<style>" << std::endl;
 		response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
 		response << "\t\t</style>" << std::endl;
@@ -590,7 +590,7 @@ void LoggerServer::ScanWebInterfaceModdings(unisim::service::interfaces::WebInte
 {
 	scanner.Append(unisim::service::interfaces::ToolbarOpenTabAction(
 		/* name */      GetName(), 
-		/* label */     "<img src=\"/unisim/kernel/logger/icon.svg\">",
+		/* label */     "<img src=\"/unisim/kernel/logger/icon.svg\" alt=\"LOG\">",
 		/* tips */      "Log",
 		/* tile */      unisim::service::interfaces::OpenTabAction::BOTTOM_TILE,
 		/* uri */       URI()

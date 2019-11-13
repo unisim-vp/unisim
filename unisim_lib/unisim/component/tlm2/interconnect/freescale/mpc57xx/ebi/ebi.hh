@@ -359,6 +359,14 @@ protected:
 			
 			return rws;
 		}
+		
+		virtual void DebugWrite(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			// modifying MCR may affect memory mapping, so it's safer to invalidate SystemC TLM-2.0 direct memory pointers before modification
+			this->ebi->DMI_Invalidate();
+			this->ebi->mapping_cache.Invalidate();
+			Super::DebugWrite(value, bit_enable);
+		}
 	};
 	
 	// Base Register Bank (EBI_BRn)
@@ -470,6 +478,14 @@ protected:
 			return rws;
 		}
 		
+		virtual void DebugWrite(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			// modifying BR may affect memory mapping, so it's safer to invalidate SystemC TLM-2.0 direct memory pointers before modification
+			this->ebi->DMI_Invalidate();
+			this->ebi->mapping_cache.Invalidate();
+			Super::DebugWrite(value, bit_enable);
+		}
+		
 	private:
 		unsigned int reg_num;
 	};
@@ -567,6 +583,14 @@ protected:
 			}
 			
 			return rws;
+		}
+		
+		virtual void DebugWrite(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			// modifying OR may affect memory mapping, so it's safer to invalidate SystemC TLM-2.0 direct memory pointers before modification
+			this->ebi->DMI_Invalidate();
+			this->ebi->mapping_cache.Invalidate();
+			Super::DebugWrite(value, bit_enable);
 		}
 	private:
 		unsigned int reg_num;

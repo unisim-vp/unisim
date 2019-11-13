@@ -232,6 +232,11 @@ const std::string& FileVisitor::GetDirPath() const
 	return dir_path;
 }
 
+double FileVisitor::GetRefreshPeriod() const
+{
+	return 0.0;
+}
+
 bool FileVisitor::Visit(const std::string& dirname, const std::string& filename, const Printer& printer)
 {
 	dir_path = output_directory;

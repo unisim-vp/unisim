@@ -61,6 +61,7 @@ public:
 	virtual ~HttpServer();
 	
 	virtual bool EndSetup();
+	virtual void Kill();
 	
 	virtual void Serve(unisim::util::hypapp::ClientConnection const& conn);
 	
@@ -90,6 +91,8 @@ private:
 	unisim::kernel::variable::Parameter<int> param_http_max_clients;
 	bool enable_cache;
 	unisim::kernel::variable::Parameter<bool> param_enable_cache;
+	double refresh_period;
+	unisim::kernel::variable::Parameter<double> param_refresh_period;
 	
 	std::map<unisim::kernel::Object *, unisim::kernel::ServiceImport<unisim::service::interfaces::HttpServer> *> http_server_import_map;
 	std::map<unisim::kernel::Object *, unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> *> registers_import_map;

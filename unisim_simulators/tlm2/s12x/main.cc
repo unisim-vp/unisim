@@ -42,6 +42,7 @@ int sc_main(int argc, char *argv[])
 	switch(simulator->Setup())
 	{
 		case unisim::kernel::Simulator::ST_OK_DONT_START:
+			simulator->GeneratePim();
 			break;
 		case unisim::kernel::Simulator::ST_WARNING:
 			cerr << "Some warnings occurred during setup" << endl;

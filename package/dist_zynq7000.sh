@@ -4,7 +4,7 @@ SIMPKG_SRCDIR=tlm2/zynq7000
 SIMPKG_DSTDIR=zynq7000
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import unisim/component/tlm2/processor/arm/cortex_a9 || exit
 import unisim/component/tlm2/memory/ram || exit

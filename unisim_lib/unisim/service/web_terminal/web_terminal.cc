@@ -36,6 +36,7 @@
 #include <unisim/util/likely/likely.hh>
 #include <set>
 #include <cassert>
+#include <cstring>
 
 namespace unisim {
 namespace service {
@@ -264,63 +265,6 @@ ScreenBufferCharacter& ScreenBufferLine::operator [] (unsigned int colno)
 	return storage[colno - 1];
 }
 
-///////////////////////////// ScreenBufferIterator ////////////////////////////
-
-ScreenBufferIterator::ScreenBufferIterator(const ScreenBufferIterator& o)
-{
-	Copy(o);
-}
-
-ScreenBufferIterator& ScreenBufferIterator::operator = (const ScreenBufferIterator& o)
-{
-	Copy(o);
-	return *this;
-}
-
-ScreenBufferIterator& ScreenBufferIterator::operator ++ ()
-{
-//	std::cerr << scan_index << "," << line_index << " => ";
-	++scan_index;
-	line_index = screen_buffer->Next(line_index);
-//	std::cerr << scan_index << "," << line_index << std::endl;
-	return *this;
-}
-
-int ScreenBufferIterator::operator == (const ScreenBufferIterator& o) const
-{
-	return (screen_buffer == o.screen_buffer) && (scan_index == o.scan_index);
-}
-
-int ScreenBufferIterator::operator != (const ScreenBufferIterator& o) const
-{
-	return (screen_buffer != o.screen_buffer) || (scan_index != o.scan_index);
-}
-
-ScreenBufferLine& ScreenBufferIterator::operator * ()
-{
-	return screen_buffer->GetLine(line_index);
-}
-
-ScreenBufferIterator::ScreenBufferIterator(ScreenBuffer *_screen_buffer, unsigned int _scan_index, unsigned int _line_index)
-	: screen_buffer(_screen_buffer)
-	, scan_index(_scan_index)
-	, line_index(_line_index)
-{
-}
-
-void ScreenBufferIterator::Copy(const ScreenBufferIterator& o)
-{
-	screen_buffer = o.screen_buffer;
-	scan_index = o.scan_index;
-	line_index = o.line_index;
-}
-
-void ScreenBufferIterator::Set(unsigned int _scan_index, unsigned int _line_index)
-{
-	scan_index = _scan_index;
-	line_index = _line_index;
-}
-
 //////////////////////////////// ScreenBuffer /////////////////////////////////
 
 ScreenBuffer::ScreenBuffer(const char *name, WebTerminal *_web_terminal)
@@ -335,11 +279,6 @@ ScreenBuffer::ScreenBuffer(const char *name, WebTerminal *_web_terminal)
 	, save_cursor_colno(1)
 	, save_cursor_lineno(1)
 	, save_gr()
-	, window_start_index(0)
-	, top_line_index(0)
-	, window_end_index(height)
-	, begin_it(this, 0, 0)
-	, end_it(this, height, window_end_index)
 	, lines()
 	, gr()
 	, utf8_parser()
@@ -379,25 +318,24 @@ ScreenBuffer::~ScreenBuffer()
 	}
 }
 
-const ScreenBufferIterator& ScreenBuffer::Begin() const
+ScreenBuffer::const_iterator ScreenBuffer::Begin() const
 {
-	return begin_it;
+	return lines.begin();
 }
 
-const ScreenBufferIterator& ScreenBuffer::End() const
+ScreenBuffer::iterator ScreenBuffer::Begin()
 {
-	return end_it;
+	return lines.begin();
 }
 
-unsigned int ScreenBuffer::Next(unsigned int line_index) const
+ScreenBuffer::const_iterator ScreenBuffer::End() const
 {
-	assert(line_index < height); 
-	++line_index;
-	if(line_index == height) line_index = 0;
-	if(line_index == window_start_index) return top_line_index;
-	if(line_index == window_end_index) return window_start_index;
-	if(line_index == top_line_index) return height;
-	return line_index;
+	return lines.end();
+}
+
+ScreenBuffer::iterator ScreenBuffer::End()
+{
+	return lines.end();
 }
 
 unsigned int ScreenBuffer::GetCursorColNo() const
@@ -558,28 +496,16 @@ ScreenBufferLine& ScreenBuffer::GetLine(unsigned int line_index)
 	return *lines[line_index];
 }
 
-bool ScreenBuffer::IsAtCursorLinePos(const ScreenBufferIterator& it) const
+bool ScreenBuffer::IsAtCursorLinePos(const_iterator it) const
 {
-	return it.line_index == TranslateLineNoToLineIndex(cursor_lineno);
-}
-
-unsigned int ScreenBuffer::TranslateLineNoToLineIndex(unsigned int lineno) const
-{
-	assert((lineno > 0) && (lineno <= display_height));
-	unsigned int line_index = top_line_index;
-	for(unsigned int i = 1; i < lineno; i++, line_index = Next(line_index));
-
-	unsigned int d = (top_line_index < window_end_index) ? (window_end_index - top_line_index) : (height - top_line_index + window_end_index);
-	unsigned int line_index2 = ((lineno - 1) < d) ? (top_line_index + lineno - 1) : (lineno - d + window_start_index);
-	if(line_index2 >= height) line_index2 -= height;
-	assert(line_index2 == line_index);
-	assert(line_index < height);
-	return line_index;
+	unsigned int cursor_line_index = height - display_height + cursor_lineno - 1;
+	return (it - Begin()) == cursor_line_index;
 }
 
 ScreenBufferLine& ScreenBuffer::operator [] (unsigned int lineno)
 {
-	return *lines[TranslateLineNoToLineIndex(lineno)];
+	unsigned int line_index = height - display_height + lineno - 1;
+	return *lines[line_index];
 }
 
 void ScreenBuffer::PutChar(char c)
@@ -594,10 +520,6 @@ void ScreenBuffer::PutChar(char c)
 // 			std::cerr.width(4);
 // 			std::cerr << std::hex << uc->GetCodePoint() << std::endl;
 // 		}
-		if(cursor_lineno == 25)
-		{
-			std::cerr << "";
-		}
 		ScreenBufferLine& sbl = (*this)[cursor_lineno];
 		ScreenBufferCharacter& sbc = sbl[cursor_colno];
 		sbc.c = *uc;
@@ -778,34 +700,25 @@ void ScreenBuffer::EraseInLine(unsigned int n)
 	}
 }
 
-void ScreenBuffer::Reserve(unsigned int line_index)
-{
-	if(line_index >= height)
-	{
-		const Theme& theme = web_terminal->GetTheme();
-		do
-		{
-			lines.push_back(new ScreenBufferLine(display_width, theme));
-			height++;
-		}
-		while(line_index >= height);
-	}
-}
-
 void ScreenBuffer::NewLine()
 {
-	Reserve(window_end_index);
-	ScreenBufferLine *new_line = lines[window_end_index];
-	new_line->Erase(web_terminal->GetTheme());
-
-	++window_start_index;
-	if(window_start_index >= buffer_height) window_start_index = 0;
-	++top_line_index;
-	if(top_line_index >= buffer_height) top_line_index = 0;
-	++window_end_index;
-	if(window_end_index >= buffer_height) window_end_index = 0;
-	begin_it.Set(0, (height < buffer_height) ? 0 : window_end_index);
-	end_it.Set(height, window_end_index);
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << cursor_lineno << ":" << cursor_colno << ":New Line" << EndDebugInfo;
+	}
+	const Theme& theme = web_terminal->GetTheme();
+	if(height < buffer_height)
+	{
+		lines.push_back(new ScreenBufferLine(display_width, theme));
+		height++;
+	}
+	else
+	{
+		ScreenBufferLine *new_line = lines[0];
+		memmove(&lines[0], &lines[1], (height - 1) * sizeof(ScreenBufferLine *));
+		lines[height - 1] = new_line;
+		new_line->Erase(theme);
+	}
 }
 
 void ScreenBuffer::ScrollUp(unsigned int n)
@@ -817,12 +730,10 @@ void ScreenBuffer::ScrollUp(unsigned int n)
 	const Theme& theme = web_terminal->GetTheme();
 	for(unsigned int i = 0; i < n; i++)
 	{
-		ScreenBufferLine *new_line = lines[top_line_index];
+		ScreenBufferLine *new_line = lines[0];
+		memmove(&lines[0], &lines[1], (height - 1) * sizeof(ScreenBufferLine *));
+		lines[height - 1] = new_line;
 		new_line->Erase(theme);
-
-		++top_line_index;
-		if(top_line_index == height) top_line_index = 0;
-		if(top_line_index == window_end_index) top_line_index = window_start_index;
 	}
 }
 
@@ -835,11 +746,9 @@ void ScreenBuffer::ScrollDown(unsigned int n)
 	const Theme& theme = web_terminal->GetTheme();
 	for(unsigned int i = 0; i < n; i++)
 	{
-		if(top_line_index == window_start_index) top_line_index = (window_end_index > 0) ? (window_end_index - 1) : (height - 1);
-		else if(top_line_index == 0) top_line_index = height - 1;
-		else --top_line_index;
-
-		ScreenBufferLine *new_line = lines[top_line_index];
+		ScreenBufferLine *new_line = lines[height - 1];
+		memmove(&lines[1], &lines[0], (height - 1) * sizeof(ScreenBufferLine *));
+		lines[0] = new_line;
 		new_line->Erase(theme);
 	}
 }
@@ -1297,14 +1206,14 @@ void WebTerminal::PutChar(char c)
 				break;
 			}
 			
-			if(c == 'D')
+			if(c == 'M')
 			{
 				str.clear();
 				curr_screen_buffer->MoveCursorDownScrollUp();
 				break;
 			}
 			
-			if(c == 'M')
+			if(c == 'D')
 			{
 				str.clear();
 				curr_screen_buffer->MoveCursorUpScrollDown();
@@ -1698,9 +1607,9 @@ bool WebTerminal::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req,
 			{
 				// Compute the set of graphic rendition
 				std::set<std::pair<GraphicRendition, bool> > gr_set;
-				for(ScreenBufferIterator it = curr_screen_buffer->Begin(); it != curr_screen_buffer->End(); ++it)
+				for(ScreenBuffer::iterator it = curr_screen_buffer->Begin(); it != curr_screen_buffer->End(); ++it)
 				{
-					ScreenBufferLine& sbl = (*it);
+					ScreenBufferLine& sbl = **it;
 					for(unsigned int colno = 1; colno <= curr_screen_buffer->GetDisplayWidth(); colno++)
 					{
 						ScreenBufferCharacter& sbc = sbl[colno];
@@ -1710,7 +1619,7 @@ bool WebTerminal::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req,
 				}
 				
 				response << "<!DOCTYPE html>" << std::endl;
-				response << "<html>" << std::endl;
+				response << "<html lang=\"en\">" << std::endl;
 				response << "\t<head>" << std::endl;
 				response << "\t\t<title>" << unisim::util::hypapp::HTML_Encoder::Encode(title) << "</title>" << std::endl;
 				response << "\t\t<meta name=\"description\" content=\"terminal emulator over HTTP\">" << std::endl;
@@ -1749,9 +1658,9 @@ bool WebTerminal::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req,
 				}
 				
 				response << "\t\t</style>" << std::endl;
-				response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';var activity = " << (activity ? "true" : "false") << ";</script>" << std::endl;
-				response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
-				response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/web_terminal/script.js\"></script>" << std::endl;
+				response << "\t\t<script>document.domain='" << req.GetDomain() << "';var activity = " << (activity ? "true" : "false") << ";</script>" << std::endl;
+				response << "\t\t<script src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+				response << "\t\t<script src=\"/unisim/service/web_terminal/script.js\"></script>" << std::endl;
 				response << "\t</head>" << std::endl;
 				response << "\t<body class=\"c" << theme_style_class_num << "\" onload=\"gui.auto_reload(" << (unsigned int)(refresh_period * 1000) << ", 'self-refresh-when-active')\">" << std::endl;
 				refresh_period = activity ? min_display_refresh_period : std::min(refresh_period * 2.0, max_display_refresh_period);
@@ -1762,11 +1671,11 @@ bool WebTerminal::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req,
 				GraphicRendition gr;
 				bool open = false;
 				// Iterate over each line of screen buffer
-				for(ScreenBufferIterator it = curr_screen_buffer->Begin(); it != curr_screen_buffer->End(); ++it)
+				for(ScreenBuffer::iterator it = curr_screen_buffer->Begin(); it != curr_screen_buffer->End(); ++it)
 				{
 					response << "\t\t\t";
 					
-					ScreenBufferLine& sbl = (*it);
+					ScreenBufferLine& sbl = **it;
 					
 					// Iterate over each column of screen buffer line
 					for(unsigned int colno = 1; colno <= curr_screen_buffer->GetDisplayWidth(); colno++)
@@ -1830,13 +1739,13 @@ bool WebTerminal::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req,
 				response.Allow("OPTIONS, GET, HEAD, POST");
 				
 				response << "<!DOCTYPE html>" << std::endl;
-				response << "<html>" << std::endl;
+				response << "<html lang=\"en\">" << std::endl;
 				response << "\t<head>" << std::endl;
 				response << "\t\t<title>Error " << (unsigned int) unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << " (" << unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << ")</title>" << std::endl;
 				response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 				response << "\t\t<meta name=\"description\" content=\"Error " << (unsigned int) unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << " (" << unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << ")\">" << std::endl;
 				response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
-				response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+				response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 				response << "\t\t<style>" << std::endl;
 				response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
 				response << "\t\t</style>" << std::endl;
@@ -1865,13 +1774,13 @@ bool WebTerminal::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req,
 		response.SetStatus(unisim::util::hypapp::HttpResponse::NOT_FOUND);
 		
 		response << "<!DOCTYPE html>" << std::endl;
-		response << "<html>" << std::endl;
+		response << "<html lang=\"en\">" << std::endl;
 		response << "\t<head>" << std::endl;
 		response << "\t\t<title>Error " << (unsigned int) unisim::util::hypapp::HttpResponse::NOT_FOUND << " (" << unisim::util::hypapp::HttpResponse::NOT_FOUND << ")</title>" << std::endl;
 		response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 		response << "\t\t<meta name=\"description\" content=\"Error " << (unsigned int) unisim::util::hypapp::HttpResponse::NOT_FOUND << " (" << unisim::util::hypapp::HttpResponse::NOT_FOUND << ")\">" << std::endl;
 		response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
-		response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+		response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 		response << "\t\t<style>" << std::endl;
 		response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
 		response << "\t\t</style>" << std::endl;

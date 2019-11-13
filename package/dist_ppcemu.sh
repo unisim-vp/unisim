@@ -4,7 +4,7 @@ SIMPKG_SRCDIR=tlm2/ppcemu
 SIMPKG_DSTDIR=ppcemu
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import unisim/kernel || exit
 import unisim/service/debug/debugger || exit

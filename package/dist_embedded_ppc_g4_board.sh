@@ -5,7 +5,7 @@ SIMPKG_DSTDIR=embedded_ppc_g4_board
 
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import unisim/kernel || exit
 import unisim/component/tlm/processor/powerpc/e600/mpc7447a || exit

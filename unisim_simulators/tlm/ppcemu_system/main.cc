@@ -985,6 +985,7 @@ void Simulator::Stop(unisim::kernel::Object *object, int _exit_status, bool asyn
 					break;
 			}
 		}
+		unisim::kernel::Simulator::Kill();
 	}
 }
 
@@ -1066,7 +1067,7 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 		http_server->AddJSAction(
 		unisim::service::interfaces::ToolbarOpenTabAction(
 			/* name */      profiler->GetName(), 
-			/* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\">",
+			/* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\" alt=\"Profile\">",
 			/* tips */      std::string("Profile of ") + cpu->GetName(),
 			/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
 			/* uri */       profiler->URI()

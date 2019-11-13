@@ -114,8 +114,6 @@ public:
 	virtual bool EndSetup();
 	void Run();
 	virtual unisim::kernel::Simulator::SetupStatus Setup();
-	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
-	int GetExitStatus() const;
 protected:
 private:
 	
@@ -522,8 +520,6 @@ private:
 	unsigned int dspi_6_slave;
 	unsigned int dspi_12_slave;
 	
-	sc_core::sc_time max_time;
-	
 	unisim::kernel::variable::Parameter<bool> param_enable_core0_reset;
 	unisim::kernel::variable::Parameter<bool> param_enable_core1_reset;
 	unisim::kernel::variable::Parameter<bool> param_enable_core2_reset;
@@ -572,8 +568,6 @@ private:
 	unisim::kernel::variable::Parameter<unsigned int> param_dspi_5_slave;
 	unisim::kernel::variable::Parameter<unsigned int> param_dspi_6_slave;
 	unisim::kernel::variable::Parameter<unsigned int> param_dspi_12_slave;
-	
-	unisim::kernel::variable::Parameter<sc_core::sc_time> param_max_time;
 
 #if HAVE_TVS
 	std::string bandwidth_vcd_filename;
@@ -584,8 +578,6 @@ private:
 	tracing::timed_stream_vcd_processor *bandwidth_vcd;
 #endif
 	
-	bool stop_called;
-	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 	
 	void Core0ResetProcess();

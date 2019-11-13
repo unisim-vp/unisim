@@ -260,7 +260,6 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, dspi_5_slave(0)
 	, dspi_6_slave(0)
 	, dspi_12_slave(0)
-	, max_time(sc_core::SC_ZERO_TIME)
 	, param_enable_core0_reset("enable-core0-reset", this, enable_core0_reset, "Enable/Disable Core #0 reset")
 	, param_enable_core1_reset("enable-core1-reset", this, enable_core1_reset, "Enable/Disable Core #1 reset")
 	, param_enable_core2_reset("enable-core2-reset", this, enable_core2_reset, "Enable/Disable Core #2 reset")
@@ -308,7 +307,6 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, param_dspi_5_slave("dspi_5-slave", 0, dspi_5_slave, "Assigned slave number (in master) of DSPI_5 when DSPI_5 is wired as a slave")
 	, param_dspi_6_slave("dspi_6-slave", 0, dspi_6_slave, "Assigned slave number (in master) of DSPI_6 when DSPI_6 is wired as a slave")
 	, param_dspi_12_slave("dspi_12-slave", 0, dspi_12_slave, "Assigned slave number (in master) of DSPI_12 when DSPI_12 is wired as a slave")
-	, param_max_time("max-time", 0, max_time, "Maximum time to simulate (zero means forever)")
 #if HAVE_TVS
 	, bandwidth_vcd_filename("bandwidth.vcd")
 	, param_bandwidth_vcd_filename("bandwidth-vcd-filename", this, bandwidth_vcd_filename, "Filename of VCD file where to trace interconnects bandwidth")
@@ -317,8 +315,6 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, bandwidth_vcd_file(0)
 	, bandwidth_vcd(0)
 #endif
-	, stop_called(false)
-	, exit_status(0)
 {
 	SetDescription("MPC5777M Simulator");
 	
@@ -379,10 +375,10 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	param_bandwidth_gtkwave_init_script.SetMutable(false);
 #endif
 	
-	if(enable_profiler0 || enable_profiler1 || enable_profiler2)
-	{
-		this->SetVariable("HARDWARE.instrumenter.enable-user-interface", true); // When profilers are enabled, enable also instrumenter user interface so that profiler interface is periodically refreshed too
-	}
+// 	if(enable_profiler0 || enable_profiler1 || enable_profiler2)
+// 	{
+// 		this->SetVariable("HARDWARE.instrumenter.enable-user-interface", true); // When profilers are enabled, enable also instrumenter user interface so that profiler interface is periodically refreshed too
+// 	}
 	
 	if(enable_web_terminal0) enable_serial_terminal0 = true;
 	if(enable_web_terminal1) enable_serial_terminal1 = true;
@@ -6388,27 +6384,7 @@ void Simulator::Run()
 	
 	double time_start = host_time->GetTime();
 
-	sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
-	
-	try
-	{
-		if(max_time != sc_core::SC_ZERO_TIME)
-		{
-			sc_core::sc_start(max_time);
-		}
-		else
-		{
-			sc_core::sc_start();
-		}
-	}
-	catch(std::runtime_error& e)
-	{
-		std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
-		std::cerr << e.what() << std::endl;
-	}
-
-	std::cerr << "Program exited with status " << exit_status << std::endl;
-	std::cerr << "Simulation finished" << std::endl;
+	unisim::kernel::tlm2::Simulator::Run();
 
 	double time_stop = host_time->GetTime();
 	double spent_time = time_stop - time_start;
@@ -6459,7 +6435,7 @@ bool Simulator::EndSetup()
 					case 2: tab_title += peripheral_core_2->GetName(); break;
 				}
 				std::stringstream label_sstr;
-				label_sstr << "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu" << prc_num << ".svg\">";
+				label_sstr << "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu" << prc_num << ".svg\" alt=\"Profile CPU#" << prc_num << "\">";
 				http_server->AddJSAction(
 					unisim::service::interfaces::ToolbarOpenTabAction(
 						/* name */      profiler[prc_num]->GetName(), 
@@ -6476,7 +6452,7 @@ bool Simulator::EndSetup()
 			http_server->AddJSAction(
 				unisim::service::interfaces::ToolbarOpenTabAction(
 					/* name */      web_terminal0->GetName(),
-					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term0.svg\">",
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term0.svg\" alt=\"TERM0\">",
 					/* tips */      "Serial Terminal over LINFlexD_0",
 					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
 					/* uri */       web_terminal0->URI()
@@ -6487,7 +6463,7 @@ bool Simulator::EndSetup()
 			http_server->AddJSAction(
 				unisim::service::interfaces::ToolbarOpenTabAction(
 					/* name */      web_terminal1->GetName(),
-					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term1.svg\">",
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term1.svg\" alt=\"TERM1\">",
 					/* tips */      "Serial Terminal over LINFlexD_1",
 					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
 					/* uri */       web_terminal1->URI()
@@ -6498,7 +6474,7 @@ bool Simulator::EndSetup()
 			http_server->AddJSAction(
 				unisim::service::interfaces::ToolbarOpenTabAction(
 					/* name */      web_terminal2->GetName(),
-					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term2.svg\">",
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term2.svg\" alt=\"TERM2\">",
 					/* tips */      "Serial Terminal over LINFlexD_2",
 					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
 					/* uri */       web_terminal2->URI()
@@ -6509,7 +6485,7 @@ bool Simulator::EndSetup()
 			http_server->AddJSAction(
 				unisim::service::interfaces::ToolbarOpenTabAction(
 					/* name */      web_terminal14->GetName(),
-					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term14.svg\">",
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term14.svg\" alt=\"TERM14\">",
 					/* tips */      "Serial Terminal over LINFlexD_14",
 					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
 					/* uri */       web_terminal14->URI()
@@ -6520,7 +6496,7 @@ bool Simulator::EndSetup()
 			http_server->AddJSAction(
 				unisim::service::interfaces::ToolbarOpenTabAction(
 					/* name */      web_terminal15->GetName(),
-					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term15.svg\">",
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term15.svg\" alt=\"TERM15\">",
 					/* tips */      "Serial Terminal over LINFlexD_15",
 					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
 					/* uri */       web_terminal15->URI()
@@ -6531,7 +6507,7 @@ bool Simulator::EndSetup()
 			http_server->AddJSAction(
 				unisim::service::interfaces::ToolbarOpenTabAction(
 					/* name */      web_terminal16->GetName(),
-					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term16.svg\">",
+					/* label */     "<img src=\"/unisim/service/web_terminal/icon_term16.svg\" alt=\"TERM16\">",
 					/* tips */      "Serial Terminal over LINFlexD_16",
 					/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
 					/* uri */       web_terminal16->URI()
@@ -6562,40 +6538,9 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 	return setup_status;
 }
 
-void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
-{
-	if(!stop_called)
-	{
-		stop_called = true;
-		exit_status = _exit_status;
-		if(sc_core::sc_get_status() != sc_core::SC_STOPPED)
-		{
-			sc_core::sc_stop();
-		}
-		if(!asynchronous)
-		{
-			sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
-			switch(h.proc_kind())
-			{
-				case sc_core::SC_THREAD_PROC_: 
-				case sc_core::SC_CTHREAD_PROC_:
-					sc_core::wait();
-					break;
-				default:
-					break;
-			}
-		}
-	}
-}
-
-int Simulator::GetExitStatus() const
-{
-	return exit_status;
-}
-
 void Simulator::SigInt()
 {
-	if(!enable_inline_debugger)
+	if(!inline_debugger[0] && !inline_debugger[1] && !inline_debugger[2])
 	{
 		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}

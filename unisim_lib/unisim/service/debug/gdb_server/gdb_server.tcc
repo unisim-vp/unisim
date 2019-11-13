@@ -232,7 +232,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	   memory_atom_size != 8 &&
 	   memory_atom_size != 16)
 	{
-		std::cerr << Object::GetName() << "ERROR! memory-atom-size must be either 1, 2, 4, 8 or 16" << std::endl;
+		logger << DebugError << "ERROR! memory-atom-size must be either 1, 2, 4, 8 or 16" << EndDebugError;
 		return false;
 	}
 
@@ -309,7 +309,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::SigInt()
+void GDBServer<ADDRESS>::Kill()
 {
 	killed = true;
 	if(!run_cond) Run();

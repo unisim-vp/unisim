@@ -64,8 +64,6 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   , param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable inline debugger.")
   , enable_profiler(false)
   , param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable profiler.")
-  , stop_called(false)
-  , exit_status(0)
 {
   param_enable_gdb_server.SetMutable(false);
   param_enable_inline_debugger.SetMutable(false);
@@ -192,19 +190,7 @@ Simulator::Run()
 
   //  double time_start = host_time->GetTime();
 
-  sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
-  
-  try
-    {
-      sc_core::sc_start();
-    }
-  catch(std::runtime_error& e)
-    {
-      std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
-      std::cerr << e.what() << std::endl;
-    }
-
-  std::cerr << "Simulation finished" << std::endl;
+  unisim::kernel::tlm2::Simulator::Run();
 
   // double time_stop = host_time->GetTime();
   // double spent_time = time_stop - time_start;
@@ -230,60 +216,7 @@ Simulator::Run()
     profiler->Output();
   }
 
-  return exit_status;
-}
-
-int
-Simulator::Run(double time, sc_core::sc_time_unit unit)
-{
-  if ( unlikely(SimulationFinished()) ) return 0;
-
-  // double time_start = host_time->GetTime();
-
-  sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
-
-  try
-    {
-      sc_core::sc_start(time, unit);
-    }
-  catch(std::runtime_error& e)
-    {
-      std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
-      std::cerr << e.what() << std::endl;
-    }
-
-  // double time_stop = host_time->GetTime();
-  // double spent_time = time_stop - time_start;
-  // simulation_spent_time += spent_time;
-
-  // std::cerr << "Simulation statistics:" << std::endl;
-  // DumpStatistics(std::cerr);
-  // std::cerr << std::endl;
-
-  if (profiler)
-  {
-    profiler->Output();
-  }
-
-  return exit_status;
-}
-
-bool
-Simulator::IsRunning() const
-{
-  return sc_core::sc_is_running();
-}
-
-bool
-Simulator::SimulationStarted() const
-{
-  return sc_core::sc_start_of_simulation_invoked();
-}
-
-bool
-Simulator::SimulationFinished() const
-{
-  return sc_core::sc_end_of_simulation_invoked();
+  return GetExitStatus();
 }
 
 unisim::kernel::Simulator::SetupStatus Simulator::Setup()
@@ -320,7 +253,7 @@ bool Simulator::EndSetup()
     http_server->AddJSAction(
       unisim::service::interfaces::ToolbarOpenTabAction(
         /* name */      profiler->GetName(), 
-        /* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\">",
+        /* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\" alt=\"Profile\">",
         /* tips */      std::string("Profile of ") + cpu.GetName(),
         /* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
         /* uri */       profiler->URI()
@@ -328,34 +261,6 @@ bool Simulator::EndSetup()
   }
   
   return true;
-}
-
-void Simulator::Stop(unisim::kernel::Object *object, int _exit_status, bool asynchronous)
-{
-  if(!stop_called)
-    {
-      stop_called = true;
-      exit_status = _exit_status;
-      if(object)
-        {
-          std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
-        }
-      std::cerr << "Program exited with status " << exit_status << std::endl;
-      sc_core::sc_stop();
-      if(!asynchronous)
-        {
-          sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
-          switch(h.proc_kind())
-            {
-            case sc_core::SC_THREAD_PROC_: 
-            case sc_core::SC_CTHREAD_PROC_:
-              sc_core::wait();
-              break;
-            default:
-              break;
-            }
-        }
-    }
 }
 
 void

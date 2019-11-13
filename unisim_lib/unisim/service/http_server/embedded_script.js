@@ -79,6 +79,20 @@ GUI.prototype.auto_reload = function(period, mode)
 	}
 }
 
+GUI.prototype.find_tab_by_uri = function(uri_str)
+{
+	return this.within_tiled_gui() ? window.parent.gui.find_tab_by_uri(uri_str) : null;
+}
+
+GUI.prototype.auto_reload_tab_by_uri = function(uri_str, period, mode)
+{
+	var tab = this.find_tab_by_uri(uri_str);
+	if(tab)
+	{
+		tab.auto_reload(period, mode);
+	}
+}
+
 GUI.prototype.get_next_target = function()
 {
 	var own_tab = this.find_own_tab();

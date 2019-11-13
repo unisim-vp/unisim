@@ -2,7 +2,6 @@
 
 SIMPKG=amd64emu
 SIMPKG_SRCDIR=cxx/amd64emu
-SIMPKG_DSTDIR=amd64emu
 source "$(dirname $0)/dist_common.sh"
 
 import unisim/component/cxx/processor/intel || exit

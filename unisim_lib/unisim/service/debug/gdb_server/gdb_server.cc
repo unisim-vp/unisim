@@ -141,7 +141,7 @@ bool GDBServerBase::EndSetup()
 	return true;
 }
 
-void GDBServerBase::SigInt()
+void GDBServerBase::Kill()
 {
 	killed = true;
 }

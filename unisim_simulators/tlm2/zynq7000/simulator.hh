@@ -496,13 +496,8 @@ struct Simulator : public unisim::kernel::tlm2::Simulator
   virtual ~Simulator();
   
   int Run();
-  bool IsRunning() const;
-  bool SimulationStarted() const;
-  bool SimulationFinished() const;
   virtual unisim::kernel::Simulator::SetupStatus Setup();
   virtual bool EndSetup();
-  virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
-  int GetExitStatus() const;
   void UpdateClocks();
 
  private:
@@ -573,8 +568,6 @@ struct Simulator : public unisim::kernel::tlm2::Simulator
   bool                                     enable_profiler;
   unisim::kernel::variable::Parameter<bool> param_enable_profiler;
 
-  bool stop_called;
-  int exit_status;
   virtual void SigInt();
 };
 

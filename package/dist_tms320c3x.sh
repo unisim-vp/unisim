@@ -4,7 +4,7 @@ SIMPKG_SRCDIR=tlm2/tms320c3x
 SIMPKG_DSTDIR=tms320c3x
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import unisim/component/cxx/processor/tms320c3x/isa || exit
 import unisim/component/tlm2/processor/tms320c3x || exit

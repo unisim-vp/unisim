@@ -5,7 +5,7 @@ SIMPKG_DSTDIR=ppcemu_system
 
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import unisim/component/tlm/processor/powerpc/e600/mpc7447a || exit
 import unisim/service/debug/gdb_server || exit

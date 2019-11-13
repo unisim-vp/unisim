@@ -5,7 +5,7 @@ SIMPKG_SRCDIR=cxx/vle4fuzr
 SIMPKG_DSTDIR=vle4fuzr
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import dist_vle4fuzr || exit
 

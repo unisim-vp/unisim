@@ -4,7 +4,7 @@ SIMPKG_SRCDIR=tlm2/armemu
 SIMPKG_DSTDIR=armemu
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import unisim/kernel || exit
 import unisim/kernel/tlm2 || exit
@@ -63,6 +63,9 @@ simulator.hh \
 
 UNISIM_SIMULATOR_PKG_DATA_FILES="\
 COPYING \
+README \
+INSTALL \
+AUTHORS \
 NEWS \
 ChangeLog \
 "

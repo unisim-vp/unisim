@@ -1604,7 +1604,12 @@ bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ReadMemory(MEMORY_ADDR addr, void 
 				if((low >= mapping->addr_range.low) && (low <= mapping->addr_range.high))
 				{
 					uint32_t sz = (high > mapping->addr_range.high) ? mapping->addr_range.high - low + 1 : high - low + 1;
-					if(!(*memory_import[mapping->memory_num])->ReadMemory((low - mapping->addr_range.low) + mapping->translation, (uint8_t *) buffer + (low - addr), sz)) return false;
+					MEMORY_ADDR local_addr = (low - mapping->addr_range.low) + mapping->translation;
+					if(IsVerbose())
+					{
+						logger << DebugInfo << "Read " << sz << " bytes at local address 0x" << std::hex << local_addr << std::dec << " from " << (memory_import[mapping->memory_num]->GetService()->GetName()) <<  EndDebugInfo;
+					}
+					if(!(*memory_import[mapping->memory_num])->ReadMemory(local_addr, (uint8_t *) buffer + (low - addr), sz)) return false;
 					MEMORY_ADDR next_addr = low + sz;
 					if(next_addr < low) return true; // return if end of address space has been reached
 					low = next_addr;
@@ -1652,7 +1657,12 @@ bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::WriteMemory(MEMORY_ADDR addr, cons
 				if((low >= mapping->addr_range.low) && (low <= mapping->addr_range.high))
 				{
 					uint32_t sz = (high > mapping->addr_range.high) ? mapping->addr_range.high - low + 1 : high - low + 1;
-					if(!(*memory_import[mapping->memory_num])->WriteMemory((low - mapping->addr_range.low) + mapping->translation, (const uint8_t *) buffer + (low - addr), sz)) return false;
+					MEMORY_ADDR local_addr = (low - mapping->addr_range.low) + mapping->translation;
+					if(IsVerbose())
+					{
+						logger << DebugInfo << "Writing " << sz << " bytes at local address 0x" << std::hex << local_addr << std::dec << " in " << (memory_import[mapping->memory_num]->GetService()->GetName()) <<  EndDebugInfo;
+					}
+					if(!(*memory_import[mapping->memory_num])->WriteMemory(local_addr, (const uint8_t *) buffer + (low - addr), sz)) return false;
 					MEMORY_ADDR next_addr = low + sz;
 					if(next_addr < low) return true; // return if end of address space has been reached
 					low = next_addr;

@@ -209,6 +209,7 @@ public:
 	virtual ReportFormat GetReportFormat() const = 0;
 	virtual std::string GetFilePath(const std::string& filename) const = 0;
 	virtual const std::string& GetDirPath() const = 0;
+	virtual double GetRefreshPeriod() const = 0;
 	virtual bool Visit(const std::string& dirname, const std::string& filename, const Printer& printer) = 0;
 };
 
@@ -226,6 +227,7 @@ public:
 	virtual ReportFormat GetReportFormat() const;
 	virtual std::string GetFilePath(const std::string& filename) const;
 	virtual const std::string& GetDirPath() const;
+	virtual double GetRefreshPeriod() const;
 	virtual bool Visit(const std::string& dirname, const std::string& filename, const Printer& printer);
 private:
 	std::ofstream file;
@@ -814,6 +816,7 @@ private:
 	bool enable_html_report;
 	bool enable_csv_report;
 	bool verbose;
+	double http_refresh_period;
 	unisim::kernel::variable::Parameter<std::string> param_search_path;
 	unisim::kernel::variable::Parameter<std::string> param_filename;
 	unisim::kernel::variable::Parameter<std::string> param_sampled_variables;
@@ -825,6 +828,7 @@ private:
 	unisim::kernel::variable::Parameter<bool> param_enable_html_report;
 	unisim::kernel::variable::Parameter<bool> param_enable_csv_report;
 	unisim::kernel::variable::Parameter<bool> param_verbose;
+	unisim::kernel::variable::Parameter<double> param_http_refresh_period;
 
 	bool listening_commit;
 	bool trap;
@@ -840,6 +844,7 @@ private:
 	std::vector<SourceCodeProfileBase<ADDRESS> *> source_code_profiles; // source code profile for each variable
 	std::vector<AnnotatedSourceCodeFileSetBase *> annotated_source_code_file_sets; // annotated source code file set for each variable
 	std::vector<FilenameIndex *> filename_indexes; // filename index for each variable
+	std::map<std::string, double> http_print_times_per_path; // last print time (for reporting over HTTP) in seconds for each HTTP request path
 	
 	pthread_mutex_t mutex;
 	

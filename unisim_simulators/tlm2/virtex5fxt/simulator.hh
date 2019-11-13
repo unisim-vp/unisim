@@ -97,8 +97,6 @@ public:
 	void Run();
 	virtual unisim::kernel::Simulator::SetupStatus Setup();
 	virtual bool EndSetup();
-	virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
-	int GetExitStatus() const;
 protected:
 private:
 	//=========================================================================
@@ -268,8 +266,6 @@ private:
 	unisim::kernel::variable::Parameter<bool> param_enable_profiler;
 	unisim::kernel::variable::Parameter<bool> param_enable_linux_os;
 
-	bool stop_called;
-	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 	virtual void SigInt();
 };

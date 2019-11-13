@@ -4,7 +4,7 @@ SIMPKG_SRCDIR=tlm2/mpc5777m
 SIMPKG_DSTDIR=mpc5777m
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import unisim/component/tlm2/processor/powerpc/e200/mpc57xx/e200z710n3 || exit
 import unisim/component/tlm2/processor/powerpc/e200/mpc57xx/e200z425bn3 || exit
@@ -135,6 +135,9 @@ sim_gtkwave.sh.in \
 
 UNISIM_SIMULATOR_PKG_DATA_FILES="\
 COPYING \
+README \
+INSTALL \
+AUTHORS \
 NEWS \
 ChangeLog \
 "
@@ -256,50 +259,8 @@ done
 
 # Top level
 
-cat << EOF > "${DEST_DIR}/AUTHORS"
-Gilles Mouchard <gilles.mouchard@cea.fr>
-Yves Lhuillier <yves.lhuillier@cea.fr>
-Franck Vedrine <franck.vedrine@cea.fr>
-Réda Nouacer <reda.nouacer@cea.fr>
-Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>
-EOF
-
-cat << EOF > "${DEST_DIR}/README"
-This package contains:
-  - UNISIM GenISSLib: an instruction set simulator generator
-  - UNISIM MPC5777M Simulator: a MPC5777M SoC simulator.
-See INSTALL for installation instructions.
-EOF
-
-cat << EOF > "${DEST_DIR}/INSTALL"
-INSTALLATION
-------------
-
-Requirements:
-  - GNU C++ compiler
-  - GNU C++ standard library
-  - GNU bash
-  - GNU make
-  - GNU autoconf
-  - GNU automake
-  - GNU flex
-  - GNU bison
-  - boost (http://www.boost.org) development package (libboost-devel for Redhat/Mandriva, libboost-graph-dev for Debian/Ubuntu)
-  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
-  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
-  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.3 (http://www.systemc.org)
-
-Building instructions:
-  $ ./configure --with-systemc=<path-to-systemc-install-dir>
-  $ make
-
-Installing (optional):
-  $ make install
-EOF
-
 output_top_configure_ac <(cat << EOF
-AC_INIT([UNISIM MPC5777M Simulator Package], [${SIMULATOR_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves Lhuillier <yves.lhuillier@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}])
+AC_INIT([UNISIM MPC5777M Simulator Package], [${SIMULATOR_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves Lhuillier <yves.lhuillier@cea.fr>, Franck Vedrine <franck.vedrine@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>], [unisim-${SIMPKG}])
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
@@ -327,7 +288,7 @@ build_top_configure_cross
 # Simulator
 
 output_simulator_configure_ac <(cat << EOF
-AC_INIT([UNISIM MPC5777M Standalone simulator], [${SIMULATOR_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>], [unisim-${SIMPKG}-core])
+AC_INIT([UNISIM MPC5777M Standalone simulator], [${SIMULATOR_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves Lhuillier <yves.lhuillier@cea.fr>, Franck Vedrine <franck.vedrine@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>], [unisim-${SIMPKG}-core])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])

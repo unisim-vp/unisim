@@ -4,7 +4,7 @@ SIMPKG_SRCDIR=tlm2/s12xe
 SIMPKG_DSTDIR=s12xe
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import unisim/service/debug/debugger || exit
 import unisim/service/debug/gdb_server || exit
@@ -79,7 +79,7 @@ simulator_if.h \
 "
 
 UNISIM_SIMULATOR_MAIN_SOURCE_FILES="\
-main_pim.cc \
+main.cc \
 "
 
 UNISIM_SIMULATOR_PKG_DATA_FILES="\

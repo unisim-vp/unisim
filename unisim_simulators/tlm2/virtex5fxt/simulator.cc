@@ -97,8 +97,6 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable/Disable profiler")
 	, param_enable_linux_os("enable-linux-os", 0, enable_linux_os, "Enable/Disable target Linux ABI to host ABI translation")
-	, stop_called(false)
-	, exit_status(0)
 {
 	if(enable_profiler)
 	{
@@ -808,19 +806,7 @@ void Simulator::Run()
 	
 	double time_start = host_time->GetTime();
 
-	sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
-	
-	try
-	{
-		sc_core::sc_start();
-	}
-	catch(std::runtime_error& e)
-	{
-		std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
-		std::cerr << e.what() << std::endl;
-	}
-
-	std::cerr << "Simulation finished" << std::endl;
+	unisim::kernel::tlm2::Simulator::Run();
 
 	double time_stop = host_time->GetTime();
 	double spent_time = time_stop - time_start;
@@ -897,7 +883,7 @@ bool Simulator::EndSetup()
 		http_server->AddJSAction(
 			unisim::service::interfaces::ToolbarOpenTabAction(
 			/* name */      profiler->GetName(), 
-			/* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\">",
+			/* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\" alt=\"Profile\">",
 			/* tips */      std::string("Profile of ") + cpu->GetName(),
 			/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
 			/* uri */       profiler->URI()
@@ -909,7 +895,7 @@ bool Simulator::EndSetup()
 		http_server->AddJSAction(
 			unisim::service::interfaces::ToolbarOpenTabAction(
 			/* name */      web_terminal->GetName(),
-			/* label */     "<img src=\"/unisim/service/web_terminal/icon_term0.svg\">",
+			/* label */     "<img src=\"/unisim/service/web_terminal/icon_term0.svg\" alt=\"TERM\">",
 			/* tips */      (*web_terminal)["title"],
 			/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
 			/* uri */       web_terminal->URI()
@@ -917,39 +903,6 @@ bool Simulator::EndSetup()
 	}
 
   return true;
-}
-
-void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
-{
-	if(!stop_called)
-	{
-		stop_called = true;
-		exit_status = _exit_status;
-		if(object)
-		{
-			std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
-		}
-		std::cerr << "Program exited with status " << exit_status << std::endl;
-		sc_core::sc_stop();
-		if(!asynchronous)
-		{
-			sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
-			switch(h.proc_kind())
-			{
-				case sc_core::SC_THREAD_PROC_: 
-				case sc_core::SC_CTHREAD_PROC_:
-					sc_core::wait();
-					break;
-				default:
-					break;
-			}
-		}
-	}
-}
-
-int Simulator::GetExitStatus() const
-{
-	return exit_status;
 }
 
 void Simulator::SigInt()

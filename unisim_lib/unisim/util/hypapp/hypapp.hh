@@ -478,6 +478,7 @@ struct HttpServer
   void Kill();
   void JoinLoopThread();
   bool Killed() const;
+  bool Running() const;
   bool Verbose() const;
 
   // Content exchange callbacks

@@ -371,7 +371,7 @@ BOOL WINAPI SignalHandler::ConsoleCtrlHandler(DWORD dwCtrlType)
 	
 	if(interrupted)
 	{
-		Simulator::Instance()->BroadcastSigInt();
+		Simulator::Instance()->MTSigInt();
 	}
 	
 	return interrupted ? TRUE : FALSE;
@@ -380,7 +380,7 @@ BOOL WINAPI SignalHandler::ConsoleCtrlHandler(DWORD dwCtrlType)
 void SignalHandler::SigIntHandler(int signum)
 {
 	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
-	Simulator::Instance()->BroadcastSigInt();
+	Simulator::Instance()->MTSigInt();
 }
 
 void SignalHandler::SigPipeHandler(int signum)
@@ -971,6 +971,10 @@ void Object::SigInt()
 {
 }
 
+void Object::Kill()
+{
+}
+
 void Object::OnDisconnect()
 {
 //	cerr << "WARNING! Using default OnDisconnect for " << GetName() << std::endl;
@@ -1190,6 +1194,8 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, cmd_args()
 	, param_cmd_args(0)
 {
+	pthread_mutex_init(&mutex, NULL);
+	
 	new unisim::kernel::config::XMLConfigFileHelper(this);
 	new unisim::kernel::config::INIConfigFileHelper(this);
 	new unisim::kernel::config::JSONConfigFileHelper(this);
@@ -1683,6 +1689,8 @@ Simulator::~Simulator()
 	SignalHandler::Fini();
 	
 	unisim::kernel::logger::Logger::ReleaseStaticServiceInstance();
+	
+	pthread_mutex_destroy(&mutex);
 }
 
 void Simulator::Version(std::ostream& os) const
@@ -1729,7 +1737,9 @@ void Simulator::Register(Object *object)
 		exit(1);
 	}
 	
+	Lock();
 	objects[object->GetName()] = object;
+	Unlock();
 }
 
 void Simulator::Register(VariableBase *variable)
@@ -1799,7 +1809,9 @@ void Simulator::Unregister(Object *object)
 	object_iter = objects.find(object->GetName());
 	if(object_iter != objects.end())
 	{
+		Lock();
 		objects.erase(object_iter);
+		Unlock();
 	}
 }
 
@@ -2253,6 +2265,7 @@ Simulator::SetupStatus Simulator::Setup()
 void Simulator::Stop(Object *object, int exit_status, bool asynchronous)
 {
 	std::cerr << "WARNING! Stop is not cleanly implemented" << std::endl;
+	Kill();
 	exit(exit_status);
 }
 
@@ -2919,15 +2932,54 @@ void Simulator::SigInt()
 {
 }
 
+void Simulator::Kill()
+{
+	std::map<std::string, Object *>::iterator object_iter;
+	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
+	{
+		Object *object = (*object_iter).second;
+		object->Kill();
+	}
+}
+
+void Simulator::MTSigInt()
+{
+	pthread_t thrd_process_int;
+	pthread_attr_t thrd_attr;
+	pthread_attr_init(&thrd_attr);
+	pthread_attr_setdetachstate(&thrd_attr, PTHREAD_CREATE_DETACHED);
+	
+	pthread_create(&thrd_process_int, &thrd_attr, &Simulator::ProcessSigIntThrdEntryPoint, this);
+}
+
+void *Simulator::ProcessSigIntThrdEntryPoint(void *self)
+{
+	static_cast<Simulator *>(self)->BroadcastSigInt();
+	
+	return 0;
+}
+
 void Simulator::BroadcastSigInt()
 {
 	this->SigInt();
+	Lock();
 	std::map<std::string, Object *>::iterator object_iter;
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
 		Object *object = (*object_iter).second;
 		object->SigInt();
 	}
+	Unlock();
+}
+
+void Simulator::Lock()
+{
+	pthread_mutex_lock(&mutex);
+}
+
+void Simulator::Unlock()
+{
+	pthread_mutex_unlock(&mutex);
 }
 
 } // end of namespace kernel

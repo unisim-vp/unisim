@@ -54,14 +54,24 @@ class Simulator
 public:
 	Simulator(sc_core::sc_module_name const& name, int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::Simulator *simulator) = 0);
 	virtual ~Simulator();
+	void Run();
+	virtual void Stop(unisim::kernel::Object *object, int exit_status, bool asynchronous = false);
+	int GetExitStatus() const;
+	bool IsRunning() const;
+	bool SimulationStarted() const;
+	bool SimulationFinished() const;
 protected:
 	unisim::kernel::logger::Logger logger;
 private:
+	sc_core::sc_time max_time;
+	unisim::kernel::variable::Parameter<sc_core::sc_time> param_max_time;
 	unisim::kernel::variable::Statistic<sc_core::sc_time> stat_cur_sim_time;
 	sc_core::sc_time global_quantum;
 	unisim::kernel::variable::Parameter<sc_core::sc_time> param_global_quantum;
 	sc_core::sc_time can_global_quantum;
 	unisim::kernel::variable::Parameter<sc_core::sc_time> param_can_global_quantum;
+	bool stop_called;
+	int exit_status;
 };
 
 } // end of namespace tlm2

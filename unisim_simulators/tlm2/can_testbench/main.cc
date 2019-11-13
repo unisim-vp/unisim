@@ -406,8 +406,6 @@ public:
 	virtual ~Simulator();
 	void Run();
 	using unisim::kernel::Simulator::Setup;
-	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
-	int GetExitStatus() const;
 protected:
 private:
 	//=========================================================================
@@ -432,8 +430,6 @@ private:
 	
 	unisim::kernel::variable::Parameter<sc_core::sc_time> param_max_time;
 	
-	bool stop_called;
-	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 	
 	virtual void SigInt();
@@ -450,8 +446,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, instrumenter(0)
 	, max_time(sc_core::SC_ZERO_TIME)
 	, param_max_time("max-time", 0, max_time, "Maximum time to simulate (zero means forever)")
-	, stop_called(false)
-	, exit_status(0)
 {
 
 	//=========================================================================
@@ -534,27 +528,7 @@ void Simulator::Run()
 	
 	double time_start = host_time->GetTime();
 
-	sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
-	
-	try
-	{
-		if(max_time != sc_core::SC_ZERO_TIME)
-		{
-			sc_core::sc_start(max_time);
-		}
-		else
-		{
-			sc_core::sc_start();
-		}
-	}
-	catch(std::runtime_error& e)
-	{
-		std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
-		std::cerr << e.what() << std::endl;
-	}
-
-	std::cerr << "Program exited with status " << exit_status << std::endl;
-	std::cerr << "Simulation finished" << std::endl;
+	unisim::kernel::tlm2::Simulator::Run();
 
 	double time_stop = host_time->GetTime();
 	double spent_time = time_stop - time_start;
@@ -572,37 +546,6 @@ void Simulator::Run()
 	std::cerr << "simulation time: " << spent_time << " seconds" << std::endl;
 	std::cerr << "simulated time: " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
 	std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
-}
-
-void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
-{
-	if(!stop_called)
-	{
-		stop_called = true;
-		exit_status = _exit_status;
-		if(sc_core::sc_get_status() != sc_core::SC_STOPPED)
-		{
-			sc_core::sc_stop();
-		}
-		if(!asynchronous)
-		{
-			sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
-			switch(h.proc_kind())
-			{
-				case sc_core::SC_THREAD_PROC_: 
-				case sc_core::SC_CTHREAD_PROC_:
-					sc_core::wait();
-					break;
-				default:
-					break;
-			}
-		}
-	}
-}
-
-int Simulator::GetExitStatus() const
-{
-	return exit_status;
 }
 
 void Simulator::SigInt()

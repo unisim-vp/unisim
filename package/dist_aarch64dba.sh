@@ -5,7 +5,7 @@ SIMPKG_SRCDIR=cxx/aarch64dba
 SIMPKG_DSTDIR=aarch64dba
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import unisim/component/cxx/processor/arm || exit
 import unisim/component/cxx/processor/arm/isa/arm64 || exit

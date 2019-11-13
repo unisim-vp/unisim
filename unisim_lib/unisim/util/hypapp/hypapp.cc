@@ -1550,6 +1550,11 @@ bool HttpServer::Killed() const
 	return killed;
 }
 
+bool HttpServer::Running() const
+{
+	return running;
+}
+
 bool HttpServer::Verbose() const
 {
   return verbose;

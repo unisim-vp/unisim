@@ -2,7 +2,6 @@
 
 SIMPKG=amd64_simtest
 SIMPKG_SRCDIR=cxx/amd64_simtest
-SIMPKG_DSTDIR=amd64_simtest
 source "$(dirname $0)/dist_common.sh"
 
 import unisim/component/cxx/processor/intel || exit

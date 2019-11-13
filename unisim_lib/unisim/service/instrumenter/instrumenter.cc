@@ -927,8 +927,9 @@ bool UserInterface::EndSetup()
 	return true;
 }
 
-void UserInterface::SigInt()
+void UserInterface::Kill()
 {
+	halt = true;
 	Continue();
 }
 
@@ -980,7 +981,7 @@ bool UserInterface::SetupInstrumentation()
 
 void UserInterface::WaitForUser()
 {
-	//std::cerr << sc_core::sc_time_stamp() << ":WaitForUser: start" << std::endl;
+// 	std::cerr << sc_core::sc_time_stamp() << ":WaitForUser: start" << std::endl;
 	pthread_mutex_lock(&mutex_cont);
 	cont = false;
 	intr = false;
@@ -992,12 +993,12 @@ void UserInterface::WaitForUser()
 	}
 	while(!cont);
 	pthread_mutex_unlock(&mutex_cont);
-	//std::cerr << sc_core::sc_time_stamp() << ":WaitForUser: end" << std::endl;
+// 	std::cerr << sc_core::sc_time_stamp() << ":WaitForUser: end" << std::endl;
 }
 
 void UserInterface::Continue()
 {
-	//std::cerr << "Run" << std::endl;
+// 	std::cerr << "Run" << std::endl;
 	pthread_mutex_lock(&mutex_cont);
 	cont = true;
 	pthread_cond_signal(&cond_cont);
@@ -1252,13 +1253,13 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 				response.Allow("OPTIONS, GET, HEAD");
 				
 				response << "<!DOCTYPE html>" << std::endl;
-				response << "<html>" << std::endl;
+				response << "<html lang=\"en\">" << std::endl;
 				response << "\t<head>" << std::endl;
 				response << "\t\t<title>Error " << (unsigned int) unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << " (" << unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << ")</title>" << std::endl;
 				response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 				response << "\t\t<meta name=\"description\" content=\"Error " << (unsigned int) unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << " (" << unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << ")\">" << std::endl;
 				response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
-				response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+				response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 				response << "\t\t<style>" << std::endl;
 				response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
 				response << "\t\t</style>" << std::endl;
@@ -1273,22 +1274,22 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 	else if((req.GetPath() == "") || (req.GetPath() == "control") || (req.GetPath() == "instrument"))
 	{
 		std::string form_action;
-		bool enable_control_interface = false;
-		bool enable_instrument_interface = false;
+		bool is_control_interface = false;
+		bool is_instrument_interface = false;
 		if(req.GetPath() == "")
 		{
-			enable_control_interface = true;
-			enable_instrument_interface = true;
+			is_control_interface = true;
+			is_instrument_interface = true;
 			form_action = URI();
 		}
 		else if(req.GetPath() == "control")
 		{
-			enable_control_interface = true;
+			is_control_interface = true;
 			form_action = URI() + "/control";
 		}
 		else if(req.GetPath() == "instrument")
 		{
-			enable_instrument_interface = true;
+			is_instrument_interface = true;
 			form_action = URI() + "/instrument";
 		}
 		
@@ -1333,21 +1334,21 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 			case unisim::util::hypapp::Request::HEAD:
 			{
 				std::string title;
-				if(enable_control_interface && enable_instrument_interface)
+				if(is_control_interface && is_instrument_interface)
 				{
 					title = "Hardware instrumenter";
 				}
-				else if(enable_control_interface)
+				else if(is_control_interface)
 				{
 					title = "Simulation controls";
 				}
-				else if(enable_instrument_interface)
+				else if(is_instrument_interface)
 				{
 					title = "Signals instrumenter";
 				}
 				
 				response << "<!DOCTYPE html>" << std::endl;
-				response << "<html>" << std::endl;
+				response << "<html lang=\"en\">" << std::endl;
 				
 				if(halt)
 				{
@@ -1360,12 +1361,12 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 					response << "\t\t<script type=\"text/javascript\">document.domain=\"" << req.GetDomain() << "\";</script>" << std::endl;
 					if(req.GetRequestType() == unisim::util::hypapp::Request::POST)
 					{
-						response << "\t\t<script type=\"application/javascript\">window.history.back();</script>" << std::endl;
+						response << "\t\t<script>window.history.back();</script>" << std::endl;
 					}
 					response << "\t</head>" << std::endl;
 					response << "\t<body>" << std::endl;
 					response << "\t<p>Disconnected</p>" << std::endl;
-					response << "\t<script type=\"application/javascript\">Reload = function() { window.location.href=window.location.href; }</script>" << std::endl;
+					response << "\t<script>Reload = function() { window.location.href=window.location.href; }</script>" << std::endl;
 					response << "\t<button onclick=\"Reload()\">Reconnect</button>" << std::endl;
 					response << "\t</body>" << std::endl;
 				}
@@ -1380,62 +1381,95 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 					response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
 					response << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
 					response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/instrumenter/style.css\" type=\"text/css\" />" << std::endl;
-					response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-					response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
-					response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
-					response << "\t\t<script type=\"application/javascript\">" << std::endl;
+					response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+					response << "\t\t<script src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
+					response << "\t\t<script src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+					response << "\t\t<script>" << std::endl;
 					response << "\t\t\tGUI.prototype.set_status = function()" << std::endl;
 					response << "\t\t\t{" << std::endl;
-					response << "\t\t\t\tvar status_item = gui.find_statusbar_item_by_name('status-" << GetName() << "');" << std::endl;
-					response << "\t\t\t\tif(status_item)" << std::endl;
-					response << "\t\t\t\t{" << std::endl;
-					response << "\t\t\t\t\tvar child_nodes = status_item.div_element.childNodes;" << std::endl;
-					response << "\t\t\t\t\tfor(var i = 0; i < child_nodes.length; i++)" << std::endl;
-					response << "\t\t\t\t\t{" << std::endl;
-					response << "\t\t\t\t\t\tvar child_node = child_nodes[i];" << std::endl;
-					response << "\t\t\t\t\t\tif(child_node.className == 'state')" << std::endl;
-					response << "\t\t\t\t\t\t{" << std::endl;
-					response << "\t\t\t\t\t\t\tchild_node.innerHTML = '<span>" << (cont ? "running" : "paused") << "</span>';" << std::endl;
-					response << "\t\t\t\t\t\t}" << std::endl;
-					response << "\t\t\t\t\t\telse if(child_node.className == 'time')" << std::endl;
-					response << "\t\t\t\t\t\t{" << std::endl;
+					if(is_control_interface)
 					{
-						std::ios_base::fmtflags ff = response.flags();
-						response.setf(std::ios::fixed);
-						response.precision(3);
-						response << "\t\t\t\t\t\t\t\tchild_node.innerHTML = '<span>" << curr_time_stamp.to_seconds() << " seconds</span>';" << std::endl;
-						response.flags(ff);
+						response << "\t\t\t\tvar status_item = gui.find_statusbar_item_by_name('status-" << GetName() << "');" << std::endl;
+						response << "\t\t\t\tif(status_item)" << std::endl;
+						response << "\t\t\t\t{" << std::endl;
+						response << "\t\t\t\t\tvar child_nodes = status_item.div_element.childNodes;" << std::endl;
+						response << "\t\t\t\t\tfor(var i = 0; i < child_nodes.length; i++)" << std::endl;
+						response << "\t\t\t\t\t{" << std::endl;
+						response << "\t\t\t\t\t\tvar child_node = child_nodes[i];" << std::endl;
+						response << "\t\t\t\t\t\tif(child_node.className == 'state')" << std::endl;
+						response << "\t\t\t\t\t\t{" << std::endl;
+						response << "\t\t\t\t\t\t\tchild_node.innerHTML = '<span>" << (cont ? "running" : "paused") << "</span>';" << std::endl;
+						response << "\t\t\t\t\t\t}" << std::endl;
+						response << "\t\t\t\t\t\telse if(child_node.className == 'time')" << std::endl;
+						response << "\t\t\t\t\t\t{" << std::endl;
+						{
+							std::ios_base::fmtflags ff = response.flags();
+							response.setf(std::ios::fixed);
+							response.precision(3);
+							response << "\t\t\t\t\t\t\t\tchild_node.innerHTML = '<span>" << curr_time_stamp.to_seconds() << " seconds</span>';" << std::endl;
+							response.flags(ff);
+						}
+						response << "\t\t\t\t\t\t}" << std::endl;
+						response << "\t\t\t\t\t\telse if(child_node.className == 'time-exact')" << std::endl;
+						response << "\t\t\t\t\t\t{" << std::endl;
+						response << "\t\t\t\t\t\t\tchild_node.innerHTML = '<span>(" << curr_time_stamp << ")</span>';" << std::endl;
+						response << "\t\t\t\t\t\t}" << std::endl;
+						response << "\t\t\t\t\t}" << std::endl;
+						response << "\t\t\t\t}" << std::endl;
 					}
-					response << "\t\t\t\t\t\t}" << std::endl;
-					response << "\t\t\t\t\t\telse if(child_node.className == 'time-exact')" << std::endl;
-					response << "\t\t\t\t\t\t{" << std::endl;
-					response << "\t\t\t\t\t\t\tchild_node.innerHTML = '<span>(" << curr_time_stamp << ")</span>';" << std::endl;
-					response << "\t\t\t\t\t\t}" << std::endl;
-					response << "\t\t\t\t\t}" << std::endl;
-					response << "\t\t\t\t}" << std::endl;
 					response << "\t\t\t}" << std::endl;
 					response << "\t\t</script>" << std::endl;
-					response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/instrumenter/script.js\"></script>" << std::endl;
+					response << "\t\t<script src=\"/unisim/service/instrumenter/script.js\"></script>" << std::endl;
 					response << "\t</head>" << std::endl;
 					
-					if(auto_reload)
+					response << "\t<body onload=\"";
+					if(is_control_interface)
 					{
-						response << "\t<body onload=\"gui.auto_reload(" << (unsigned int)(refresh_period * 1000) << ", 'global-refresh')\">" << std::endl; // while in continue mode, reload page every seconds
-						if(refresh_period < max_cont_refresh_period)
+						if(auto_reload)
 						{
-							refresh_period = std::min(2.0 * refresh_period, max_cont_refresh_period);
+							response << "gui.auto_reload(" << (unsigned int)(refresh_period * 1000) << ", 'self-refresh');";
+							if(is_instrument_interface)
+							{
+								// unified (control + instrument) view
+								response << " gui.auto_reload_tab_by_uri('" << (URI() + "/control") << "', 0.1, 'self-refresh');";
+							}
+							else
+							{
+								// control view
+								response << " gui.auto_reload_tab_by_uri('" << URI() << "', 0.1, 'self-refresh');";
+							}
+							
+							response << " gui.auto_reload_tab_by_uri('" << (URI() + "/instrument") << "', 0.1, 'self-refresh-when-active');";
+							
+							if(refresh_period < max_cont_refresh_period)
+							{
+								refresh_period = std::min(2.0 * refresh_period, max_cont_refresh_period);
+							}
+							if(!cont)
+							{
+								auto_reload = false;
+							}
 						}
-						if(!cont)
+						else
 						{
-							auto_reload = false;
+							response << "gui.auto_reload(0)";
+						}
+					}
+					else if(is_instrument_interface)
+					{
+						response << "gui.auto_reload(0);";
+						if(auto_reload)
+						{
+							response << " gui.auto_reload_tab_by_uri('" << URI() << "', 0.1, 'self-refresh-when-active');";
 						}
 					}
 					else
 					{
-						response << "\t<body onload=\"gui.auto_reload(0)\">" << std::endl;
+						response << "\t<body onload=\"gui.auto_reload(0)";
 					}
+					response << "\">" << std::endl;
 					
-					if(enable_control_interface)
+					if(is_control_interface)
 					{
 						response << "\t\t<table class=\"status-table\">" << std::endl;
 						response << "\t\t\t<thead>" << std::endl;
@@ -1475,7 +1509,7 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 						response << "\t\t</table>" << std::endl;
 					}
 					
-					if(enable_instrument_interface)
+					if(is_instrument_interface)
 					{
 						response << "\t\t<h2>Instruments</h2>" << std::endl;
 						response << "\t\t<div class=\"instruments-table\">" << std::endl;
@@ -1545,13 +1579,13 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 				response.Allow("OPTIONS, POST, GET, HEAD");
 				
 				response << "<!DOCTYPE html>" << std::endl;
-				response << "<html>" << std::endl;
+				response << "<html lang=\"en\">" << std::endl;
 				response << "\t<head>" << std::endl;
 				response << "\t\t<title>Error " << (unsigned int) unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << " (" << unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << ")</title>" << std::endl;
 				response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 				response << "\t\t<meta name=\"description\" content=\"Error " << (unsigned int) unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << " (" << unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED << ")\">" << std::endl;
 				response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
-				response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+				response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 				response << "\t\t<style>" << std::endl;
 				response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
 				response << "\t\t</style>" << std::endl;
@@ -1569,13 +1603,13 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 		response.SetStatus(unisim::util::hypapp::HttpResponse::NOT_FOUND);
 		
 		response << "<!DOCTYPE html>" << std::endl;
-		response << "<html>" << std::endl;
+		response << "<html lang=\"en\">" << std::endl;
 		response << "\t<head>" << std::endl;
 		response << "\t\t<title>Error " << (unsigned int) unisim::util::hypapp::HttpResponse::NOT_FOUND << " (" << unisim::util::hypapp::HttpResponse::NOT_FOUND << ")</title>" << std::endl;
 		response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 		response << "\t\t<meta name=\"description\" content=\"Error " << (unsigned int) unisim::util::hypapp::HttpResponse::NOT_FOUND << " (" << unisim::util::hypapp::HttpResponse::NOT_FOUND << ")\">" << std::endl;
 		response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
-		response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+		response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 		response << "\t\t<style>" << std::endl;
 		response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
 		response << "\t\t</style>" << std::endl;

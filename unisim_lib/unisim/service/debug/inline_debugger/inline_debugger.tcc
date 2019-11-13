@@ -3616,7 +3616,6 @@ bool InlineDebugger<ADDRESS>::IsVisited(ADDRESS _cia)
 	return vip.Get(_cia);
 }
 
-
 } // end of namespace inline_debugger
 } // end of namespace debug
 } // end of namespace service

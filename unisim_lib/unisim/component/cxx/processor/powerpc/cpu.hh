@@ -2980,13 +2980,13 @@ protected:
 		struct AID       : Field<AID, 26, 31> {}; // ASIC Identifier
 		struct PVN       : Field<PVN, 12, 31> {}; // Processor Version Number
 		
-		struct MANID         : Field<MANID    , 0, 3>   {};
-		struct Type          : Field<Type     , 6, 11>  {};
-		struct Version_12_15 : Field<Version  , 12, 15> {};
-		struct MBG_Use       : Field<MBG_Use  , 16, 19> {};
-		struct Minor_Rev     : Field<Minor_Rev, 20, 23> {};
-		struct Major_Rev     : Field<Major_Rev, 24, 27> {};
-		struct MBG_ID        : Field<MBG_ID   , 28, 31> {};
+		struct MANID         : Field<MANID    , 0, 3>   {}; // Manufacturer ID
+		struct Type          : Field<Type     , 6, 11>  {}; // Processor Type
+		struct Version_12_15 : Field<Version  , 12, 15> {}; // Version
+		struct MBG_Use       : Field<MBG_Use  , 16, 19> {}; // System Variant
+		struct Minor_Rev     : Field<Minor_Rev, 20, 23> {}; // Minor Revision
+		struct Major_Rev     : Field<Major_Rev, 24, 27> {}; // Major Revision
+		struct MBG_ID        : Field<MBG_ID   , 28, 31> {}; // Freescale Business Group responsible for a particular mask set
 
 		SWITCH_ENUM_TRAIT(Model, _);
 		CASE_ENUM_TRAIT(MPC601  , _)    { typedef FieldSet<Version, Revision> ALL; };
@@ -3031,13 +3031,13 @@ protected:
 			AID::SetName("AID"); AID::SetDescription("ASIC Identifier");
 			PVN::SetName("PWN"); PVN::SetDescription("Processor Version Number");
 			
-			MANID          ::SetName("MANID");
-			Type           ::SetName("Type");
-			Version_12_15  ::SetName("Version");
-			MBG_Use        ::SetName("MBG_Use");
-			Minor_Rev      ::SetName("Minor_Rev");
-			Major_Rev      ::SetName("Major_Rev");
-			MBG_ID         ::SetName("MBG_ID");
+			MANID          ::SetName("MANID");     MANID        ::SetDescription("Manufacturer ID");
+			Type           ::SetName("Type");      Type         ::SetDescription("Processor Type");
+			Version_12_15  ::SetName("Version");   Version_12_15::SetDescription("Version");
+			MBG_Use        ::SetName("MBG_Use");   MBG_Use      ::SetDescription("System Variant");
+			Minor_Rev      ::SetName("Minor_Rev"); Minor_Rev    ::SetDescription("Minor Revision");
+			Major_Rev      ::SetName("Major_Rev"); Major_Rev    ::SetDescription("Major Revision");
+			MBG_ID         ::SetName("MBG_ID");    MBG_ID       ::SetDescription("Freescale Business Group responsible for a particular mask set");
 		}
 	};
 
@@ -3139,11 +3139,11 @@ protected:
 		struct IAC3  : Field<IAC3 , 10>     {}; // Instruction Address Compare 3 Debug Event Enable
 		struct IAC4  : Field<IAC4 , 11>     {}; // Instruction Address Compare 4 Debug Event Enable
 		struct DAC1  : Field<DAC1 , 12, 13> {}; // Data Address Compare 1 Debug Event Enable
-		struct DAC1R : Field<DAC1 , 12    > {}; // Data Address Compare 1 Read Debug Event Enable
-		struct DAC1W : Field<DAC1 , 13    > {}; // Data Address Compare 1 Write Debug Event Enable
+		struct DAC1R : Field<DAC1R, 12    > {}; // Data Address Compare 1 Read Debug Event Enable
+		struct DAC1W : Field<DAC1W, 13    > {}; // Data Address Compare 1 Write Debug Event Enable
 		struct DAC2  : Field<DAC2 , 14, 15> {}; // Data Address Compare 2 Debug Event Enable
-		struct DAC2R : Field<DAC2 , 14    > {}; // Data Address Compare 2 Read Debug Event Enable
-		struct DAC2W : Field<DAC2 , 15    > {}; // Data Address Compare 2 Write Debug Event Enable
+		struct DAC2R : Field<DAC2R, 14    > {}; // Data Address Compare 2 Read Debug Event Enable
+		struct DAC2W : Field<DAC2W, 15    > {}; // Data Address Compare 2 Write Debug Event Enable
 		struct RET   : Field<RET  , 16>     {}; // Return Debug Event Enable
 		struct IAC5  : Field<IAC5 , 17>     {}; // Instruction Address Compare 5 Debug Event Enable
 		struct IAC6  : Field<IAC6 , 18>     {}; // Instruction Address Compare 6 Debug Event Enable
@@ -3175,31 +3175,31 @@ protected:
 			EDM  ::SetName("EDM");   EDM  ::SetDescription("External Debug Mode");
 			IDM  ::SetName("IDM");   IDM  ::SetDescription("Internal Debug Mode");
 			RST  ::SetName("RST");   RST  ::SetDescription("Reset Control");
-			ICMP ::SetName("ICMP");  ICMP ::SetDescription("Instruction Complete Debug Event Enable");
+			ICMP ::SetName("ICMP");  ICMP ::SetDescription("Instruction Complete Debug Event Enable"); 
 			BRT  ::SetName("BRT");   BRT  ::SetDescription("Branch Taken Debug Event Enable");
-			IRPT ::SetName("IRPT");  IRPT ::SetDescription("Interrupt Taken Debug Event Enable");
-			TRAP ::SetName("TRAP");  TRAP ::SetDescription("Trap Taken Debug Event Enable");
-			IAC1 ::SetName("IAC1");  IAC1 ::SetDescription("Instruction Address Compare 1 Debug Event Enable");
-			IAC2 ::SetName("IAC2");  IAC2 ::SetDescription("Instruction Address Compare 2 Debug Event Enable");
-			IAC3 ::SetName("IAC3");  IAC3 ::SetDescription("Instruction Address Compare 3 Debug Event Enable");
-			IAC4 ::SetName("IAC4");  IAC4 ::SetDescription("Instruction Address Compare 4 Debug Event Enable");
-			DAC1 ::SetName("DAC1");  DAC1 ::SetDescription("Data Address Compare 1 Debug Event Enable");
-			DAC1R::SetName("DAC1R"); DAC1 ::SetDescription("Data Address Compare 1 Read Debug Event Enable");
-			DAC1W::SetName("DAC1W"); DAC1 ::SetDescription("Data Address Compare 1 Write Debug Event Enable");
-			DAC2 ::SetName("DAC2");  DAC2 ::SetDescription("Data Address Compare 2 Debug Event Enable");
-			DAC2R::SetName("DAC2R"); DAC2 ::SetDescription("Data Address Compare 2 Read Debug Event Enable");
-			DAC2W::SetName("DAC2W"); DAC2 ::SetDescription("Data Address Compare 2 Write Debug Event Enable");
+			IRPT ::SetName("IRPT");  IRPT ::SetDescription("Interrupt Taken Debug Event Enable"); 
+			TRAP ::SetName("TRAP");  TRAP ::SetDescription("Trap Taken Debug Event Enable"); 
+			IAC1 ::SetName("IAC1");  IAC1 ::SetDescription("Instruction Address Compare 1 Debug Event Enable"); 
+			IAC2 ::SetName("IAC2");  IAC2 ::SetDescription("Instruction Address Compare 2 Debug Event Enable"); 
+			IAC3 ::SetName("IAC3");  IAC3 ::SetDescription("Instruction Address Compare 3 Debug Event Enable"); 
+			IAC4 ::SetName("IAC4");  IAC4 ::SetDescription("Instruction Address Compare 4 Debug Event Enable"); 
+			DAC1 ::SetName("DAC1");  DAC1 ::SetDescription("Data Address Compare 1 Debug Event Enable"); 
+			DAC1R::SetName("DAC1R"); DAC1R::SetDescription("Data Address Compare 1 Read Debug Event Enable");  
+			DAC1W::SetName("DAC1W"); DAC1W::SetDescription("Data Address Compare 1 Write Debug Event Enable");  
+			DAC2 ::SetName("DAC2");  DAC2 ::SetDescription("Data Address Compare 2 Debug Event Enable"); 
+			DAC2R::SetName("DAC2R"); DAC2R::SetDescription("Data Address Compare 2 Read Debug Event Enable");  
+			DAC2W::SetName("DAC2W"); DAC2W::SetDescription("Data Address Compare 2 Write Debug Event Enable");  
 			RET  ::SetName("RET");   RET  ::SetDescription("Return Debug Event Enable");
-			IAC5 ::SetName("IAC5");  IAC5 ::SetDescription("Instruction Address Compare 5 Debug Event Enable");
-			IAC6 ::SetName("IAC6");  IAC6 ::SetDescription("Instruction Address Compare 6 Debug Event Enable");
-			IAC7 ::SetName("IAC7");  IAC7 ::SetDescription("Instruction Address Compare 7 Debug Event Enable");
-			IAC8 ::SetName("IAC8");  IAC8 ::SetDescription("Instruction Address Compare 8 Debug Event Enable");
-			DEVT1::SetName("DEVT1"); DEVT1::SetDescription("External Debug Event 1 Enable");
-			DEVT2::SetName("DEVT2"); DEVT2::SetDescription("External Debug Event 2 Enable");
-			DCNT1::SetName("DCNT1"); DCNT1::SetDescription("Debug Counter 1 Debug Event Enable");
-			DCNT2::SetName("DCNT2"); DCNT2::SetDescription("Debug Counter 2 Debug Event Enable");
-			CIRPT::SetName("CIRPT"); CIRPT::SetDescription("Critical Interrupt Taken Debug Event Enable");
-			CRET ::SetName("CRET");  CRET ::SetDescription("Critical Return Debug Event Enable");
+			IAC5 ::SetName("IAC5");  IAC5 ::SetDescription("Instruction Address Compare 5 Debug Event Enable"); 
+			IAC6 ::SetName("IAC6");  IAC6 ::SetDescription("Instruction Address Compare 6 Debug Event Enable"); 
+			IAC7 ::SetName("IAC7");  IAC7 ::SetDescription("Instruction Address Compare 7 Debug Event Enable"); 
+			IAC8 ::SetName("IAC8");  IAC8 ::SetDescription("Instruction Address Compare 8 Debug Event Enable"); 
+			DEVT1::SetName("DEVT1"); DEVT1::SetDescription("External Debug Event 1 Enable");  
+			DEVT2::SetName("DEVT2"); DEVT2::SetDescription("External Debug Event 2 Enable");  
+			DCNT1::SetName("DCNT1"); DCNT1::SetDescription("Debug Counter 1 Debug Event Enable");  
+			DCNT2::SetName("DCNT2"); DCNT2::SetDescription("Debug Counter 2 Debug Event Enable");  
+			CIRPT::SetName("CIRPT"); CIRPT::SetDescription("Critical Interrupt Taken Debug Event Enable");  
+			CRET ::SetName("CRET");  CRET ::SetDescription("Critical Return Debug Event Enable"); 
 			FT   ::SetName("FT");    FT   ::SetDescription("Freeze Timers on Debug Event");
 		}
 	};

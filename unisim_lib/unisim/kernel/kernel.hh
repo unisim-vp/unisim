@@ -45,6 +45,7 @@
 #include <set>
 #include <vector>
 #include <stdint.h>
+#include <pthread.h>
 
 #ifdef DEBUG_MEMORY_ALLOCATION
 void *operator new(std::size_t size);
@@ -298,6 +299,7 @@ public:
 	bool IsWarningEnabled() const;
 
 	void Register(ConfigFileHelper *config_file_helper);
+	
 private:
 	friend class Object;
 	friend class VariableBase;
@@ -416,8 +418,15 @@ public:
 	void SetVariable(const char *variable_name, double variable_value);
 	
 	virtual void SigInt();
+	virtual void Kill();
 private:
+	pthread_mutex_t mutex;
+	
+	void MTSigInt();
+	static void *ProcessSigIntThrdEntryPoint(void *self);
 	void BroadcastSigInt();
+	void Lock();
+	void Unlock();
 };
 
 //=============================================================================
@@ -438,6 +447,7 @@ public:
 	                         // By contract, it is called after Setup(ServiceExportBase&)
 	
 	virtual void SigInt();
+	virtual void Kill();
 
 	const char *GetName() const;
 	const char *GetObjectName() const;

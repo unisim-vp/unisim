@@ -466,6 +466,7 @@ void Simulator::Stop(unisim::kernel::Object *object, int _exit_status, bool asyn
 				break;
 		}
 	}
+	unisim::kernel::Simulator::Kill();
 }
 
 int Simulator::GetExitStatus() const

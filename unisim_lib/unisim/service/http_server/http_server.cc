@@ -191,6 +191,8 @@ HttpServer::HttpServer(const char *name, unisim::kernel::Object *parent)
 	, param_http_max_clients("http-max-clients", this, http_max_clients, "HTTP max clients")
 	, enable_cache(true)
 	, param_enable_cache("enable-cache", this, enable_cache, "Enable/Disable web browser caching for files")
+	, refresh_period(1.0)
+	, param_refresh_period("refresh-period", this, refresh_period, "Refresh period of views (in seconds)")
 	, http_server_import_map()
 	, registers_import_map()
 	, kernel_has_parameters(false)
@@ -228,8 +230,11 @@ HttpServer::HttpServer(const char *name, unisim::kernel::Object *parent)
 
 HttpServer::~HttpServer()
 {
-	Kill();
-	JoinLoopThread();
+	unisim::util::hypapp::HttpServer::Kill();
+	if(Running())
+	{
+		JoinLoopThread();
+	}
 	
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
@@ -267,7 +272,7 @@ bool HttpServer::EndSetup()
 	{
 		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
 			/* name */      std::string("export-config-file-") + GetName(), 
-			/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=XML\" download=\"sim_config.xml\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_xml.svg\"></a>",
+			/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=XML\" download=\"sim_config.xml\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_xml.svg\" alt=\".XML↓\"></a>",
 			/* tips */      "Export configuration as .XML file"
 		));
 	}
@@ -276,7 +281,7 @@ bool HttpServer::EndSetup()
 	{
 		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
 			/* name */      std::string("import-config-file-") + GetName(), 
-			/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_xml.svg\">",
+			/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_xml.svg\" alt=\".XML↑\">",
 			/* tips */      "Import configuration from .XML file",
 			/* js action */ "new FileUploader('/import-config-file?format=XML', '.xml', true)"
 		));
@@ -286,7 +291,7 @@ bool HttpServer::EndSetup()
 	{
 		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
 			/* name */      std::string("export-config-file-") + GetName(), 
-			/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=INI\" download=\"sim_config.ini\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_ini.svg\"></a>",
+			/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=INI\" download=\"sim_config.ini\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_ini.svg\" alt=\".INI↓\"></a>",
 			/* tips */      "Export configuration as .INI file"
 		));
 	}
@@ -295,7 +300,7 @@ bool HttpServer::EndSetup()
 	{
 		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
 			/* name */      std::string("import-config-file-") + GetName(), 
-			/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_ini.svg\">",
+			/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_ini.svg\" alt=\".INI↑\">",
 			/* tips */      "Import configuration from .INI file",
 			/* js action */ "new FileUploader('/import-config-file?format=INI', '.ini', true)"
 		));
@@ -305,7 +310,7 @@ bool HttpServer::EndSetup()
 	{
 		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
 			/* name */      std::string("export-config-file-") + GetName(), 
-			/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=JSON\" download=\"sim_config.json\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_json.svg\"></a>",
+			/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=JSON\" download=\"sim_config.json\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_json.svg\" alt=\".JSON↓\"></a>",
 			/* tips */      "Export configuration as .JSON file"
 		));
 	}
@@ -314,7 +319,7 @@ bool HttpServer::EndSetup()
 	{
 		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
 			/* name */      std::string("import-config-file-") + GetName(), 
-			/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_json.svg\">",
+			/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_json.svg\" alt=\".JSON↑\">",
 			/* tips */      "Import configuration from .JSON file",
 			/* js action */ "new FileUploader('/import-config-file?format=JSON', '.json', true)"
 		));
@@ -494,6 +499,11 @@ bool HttpServer::EndSetup()
 	return true;
 }
 
+void HttpServer::Kill()
+{
+	unisim::util::hypapp::HttpServer::Kill();
+}
+
 void HttpServer::AddCSSFile(const unisim::service::interfaces::CSSFile& f)
 {
 	css_files.push_back(f);
@@ -590,7 +600,7 @@ unisim::kernel::Object *HttpServer::FindChildObject(unisim::kernel::Object *obje
 		return found_child;
 	}
 	
-	pos = hierarchical_delimiter_pos/* + 1*/;
+	pos = hierarchical_delimiter_pos;
 	
 	unisim::kernel::Object *found_object = (pos < hierarchical_name.length()) ? FindChildObject(found_child, hierarchical_name, pos) : 0;
 	
@@ -821,7 +831,6 @@ void HttpServer::Crawl(std::ostream& os, unisim::kernel::Object *object, unsigne
 		}
 		os << ">" << unisim::util::hypapp::HTML_Encoder::Encode(object->GetObjectName());
 		os << "</span>" << std::endl;;
-		const std::list<unisim::kernel::Object *>& leaf_objects = object->GetLeafs();
 		
 		if(!leaf_objects.empty())
 		{
@@ -838,17 +847,17 @@ void HttpServer::Crawl(std::ostream& os, unisim::kernel::Object *object, unsigne
 				next_it = it;
 				next_it++;
 				
-				Crawl(os, child, indent_level + 1, next_it == leaf_objects.end());
+				Crawl(os, child, indent_level, next_it == leaf_objects.end());
 			}
 			
 			indent_level--;
 			for(unsigned int i = 0; i < indent_level; i++) os << '\t';
 			os << "</ul>" << std::endl;
-			
-			indent_level--;
-			for(unsigned int i = 0; i < indent_level; i++) os << '\t';
-			os << "</li>" << std::endl;
 		}
+		
+		indent_level--;
+		for(unsigned int i = 0; i < indent_level; i++) os << '\t';
+		os << "</li>" << std::endl;
 	}
 }
 
@@ -923,7 +932,7 @@ void HttpServer::Crawl(std::ostream& os, unsigned int indent_level)
 			next_it = it;
 			next_it++;
 			
-			Crawl(os, root_object, indent_level + 1, next_it == root_objects.end());
+			Crawl(os, root_object, indent_level, next_it == root_objects.end());
 		}
 		indent_level--;
 		for(unsigned int i = 0; i < indent_level; i++) os << '\t';
@@ -1021,7 +1030,7 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 				(req.GetRequestType() == unisim::util::hypapp::Request::HEAD))
 		{
 			response << "<!DOCTYPE html>" << std::endl;
-			response << "<html>" << std::endl;
+			response << "<html lang=\"en\">" << std::endl;
 			response << "\t<head>" << std::endl;
 			response << "\t\t<title>";
 			switch(var_type)
@@ -1045,12 +1054,12 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 			response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
 			response << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
 			response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/var_style.css\" type=\"text/css\" />" << std::endl;
-			response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
-			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
-			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/var_script.js\"></script>" << std::endl;
+			response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+			response << "\t\t<script src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
+			response << "\t\t<script src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+			response << "\t\t<script src=\"/unisim/service/http_server/var_script.js\"></script>" << std::endl;
 			response << "\t</head>" << std::endl;
-			response << "\t<body>" << std::endl;
+			response << "\t<body onload=\"gui.auto_reload(" << (unsigned int)(refresh_period * 1000) << ", 'self-refresh-when-active')\">" << std::endl;
 			
 			if(object || is_kernel)
 			{
@@ -1367,7 +1376,7 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 				(req.GetRequestType() == unisim::util::hypapp::Request::HEAD))
 		{
 			response << "<!DOCTYPE html>" << std::endl;
-			response << "<html>" << std::endl;
+			response << "<html lang=\"en\">" << std::endl;
 			response << "\t<head>" << std::endl;
 			response << "\t\t<title>Registers of " << (object ? unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) : "an unknown object") << "</title>" << std::endl;
 			response << "\t\t<meta name=\"description\" content=\"user interface for " << (object ? unisim::util::hypapp::HTML_Encoder::Encode(object->GetName()) : "object") << " registers over HTTP\">" << std::endl;
@@ -1375,12 +1384,12 @@ bool HttpServer::ServeRegisters(unisim::util::hypapp::HttpRequest const& req, un
 			response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
 			response << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
 			response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/regs_style.css\" type=\"text/css\" />" << std::endl;
-			response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
-			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
-			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/regs_script.js\"></script>" << std::endl;
+			response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+			response << "\t\t<script src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
+			response << "\t\t<script src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+			response << "\t\t<script src=\"/unisim/service/http_server/regs_script.js\"></script>" << std::endl;
 			response << "\t</head>" << std::endl;
-			response << "\t<body>" << std::endl;
+			response << "\t<body onload=\"gui.auto_reload(" << (unsigned int)(refresh_period * 1000) << ", 'self-refresh-when-active')\">" << std::endl;
 			
 			if(object && import)
 			{
@@ -1545,7 +1554,7 @@ bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req,
 		case unisim::util::hypapp::Request::GET:
 		case unisim::util::hypapp::Request::HEAD:
 			response << "<!DOCTYPE html>" << std::endl;
-			response << "<html>" << std::endl;
+			response << "<html lang=\"en\">" << std::endl;
 			response << "\t<head>" << std::endl;
 			response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 			response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
@@ -1560,14 +1569,14 @@ bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req,
 				response << "<link rel=\"stylesheet\" type=\"text/css\" href=\"" << css_file.GetFilename() << "\" />" << std::endl;
 			}
 			
-			response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
-			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/script.js\"></script>" << std::endl;
+			response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+			response << "\t\t<script src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
+			response << "\t\t<script src=\"/unisim/service/http_server/script.js\"></script>" << std::endl;
 			
 			for(JSFiles::const_iterator it = js_files.begin(); it != js_files.end(); it++)
 			{
 				const unisim::service::interfaces::JSFile& js_file = *it;
-				response << "\t\t<script type=\"application/javascript\" src=\"" << js_file.GetFilename() << "\"></script>" << std::endl;
+				response << "\t\t<script src=\"" << js_file.GetFilename() << "\"></script>" << std::endl;
 			}
 			
 			response << "\t</head>" << std::endl;
@@ -1602,7 +1611,7 @@ bool HttpServer::ServeRootDocument(unisim::util::hypapp::HttpRequest const& req,
 			response << "\t\t\t\t</div>" << std::endl;
 			response << "\t\t\t</div>" << std::endl;
 			response << "\t\t\t<div class=\"tab-contents\" id=\"left-tab-contents-div\">" << std::endl;
-			response << "\t\t\t\t<div name=\"browser-tab-content\" class=\"tab-content left-tab-content-div\" id=\"browser-tab-content\">" << std::endl;
+			response << "\t\t\t\t<div class=\"tab-content left-tab-content-div\" id=\"browser-tab-content\">" << std::endl;
 			response << "\t\t\t\t\t<div class=\"noselect\" id=\"browser\">" << std::endl;
 			Crawl(response, 6);
 			response << "\t\t\t\t\t</div>" << std::endl;
@@ -1884,7 +1893,7 @@ bool HttpServer::ServeRegister(unisim::util::hypapp::HttpRequest const& req, uni
 				(req.GetRequestType() == unisim::util::hypapp::Request::HEAD))
 		{
 			response << "<!DOCTYPE html>" << std::endl;
-			response << "<html>" << std::endl;
+			response << "<html lang=\"en\">" << std::endl;
 			response << "\t<head>" << std::endl;
 			response << "\t\t<title>";
 			if(reg)
@@ -1910,12 +1919,12 @@ bool HttpServer::ServeRegister(unisim::util::hypapp::HttpRequest const& req, uni
 			response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
 			response << "\t\t<link rel=\"shortcut icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
 			response << "\t\t<link rel=\"stylesheet\" href=\"/unisim/service/http_server/reg_style.css\" type=\"text/css\" />" << std::endl;
-			response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
-			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
-			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
-			response << "\t\t<script type=\"application/javascript\" src=\"/unisim/service/http_server/reg_script.js\"></script>" << std::endl;
+			response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+			response << "\t\t<script src=\"/unisim/service/http_server/uri.js\"></script>" << std::endl;
+			response << "\t\t<script src=\"/unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+			response << "\t\t<script src=\"/unisim/service/http_server/reg_script.js\"></script>" << std::endl;
 			response << "\t</head>" << std::endl;
-			response << "\t<body>" << std::endl;
+			response << "\t<body onload=\"gui.auto_reload(" << (unsigned int)(refresh_period * 1000) << ", 'self-refresh-when-active')\">" << std::endl;
 			
 			if(reg)
 			{
@@ -2026,13 +2035,13 @@ bool HttpServer::Serve404(unisim::util::hypapp::HttpRequest const& req, unisim::
 	response.SetStatus(unisim::util::hypapp::HttpResponse::NOT_FOUND);
 	
 	response << "<!DOCTYPE html>" << std::endl;
-	response << "<html>" << std::endl;
+	response << "<html lang=\"en\">" << std::endl;
 	response << "\t<head>" << std::endl;
 	response << "\t\t<title>Error 404 (Not Found)</title>" << std::endl;
 	response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 	response << "\t\t<meta name=\"description\" content=\"Error 404 (Not Found)\">" << std::endl;
 	response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
-	response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 	response << "\t\t<style>" << std::endl;
 	response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
 	response << "\t\t</style>" << std::endl;
@@ -2053,13 +2062,13 @@ bool HttpServer::Serve405(unisim::util::hypapp::HttpRequest const& req, unisim::
 	response.Allow(allow);
 	
 	response << "<!DOCTYPE html>" << std::endl;
-	response << "<html>" << std::endl;
+	response << "<html lang=\"en\">" << std::endl;
 	response << "\t<head>" << std::endl;
 	response << "\t\t<title>Error 405 (Method Not Allowed)</title>" << std::endl;
 	response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 	response << "\t\t<meta name=\"description\" content=\"Error 405 (Method Not Allowed)\">" << std::endl;
 	response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
-	response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 	response << "\t\t<style>" << std::endl;
 	response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
 	response << "\t\t</style>" << std::endl;
@@ -2079,13 +2088,13 @@ bool HttpServer::Serve500(unisim::util::hypapp::HttpRequest const& req, unisim::
 	response.SetStatus(unisim::util::hypapp::HttpResponse::INTERNAL_SERVER_ERROR);
 	
 	response << "<!DOCTYPE html>" << std::endl;
-	response << "<html>" << std::endl;
+	response << "<html lang=\"en\">" << std::endl;
 	response << "\t<head>" << std::endl;
 	response << "\t\t<title>Error 500 (Internal Server Error)</title>" << std::endl;
 	response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
 	response << "\t\t<meta name=\"description\" content=\"Error 500 (Internal Server Error)\">" << std::endl;
 	response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
-	response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 	response << "\t\t<style>" << std::endl;
 	response << "\t\t\tbody { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
 	response << "\t\t</style>" << std::endl;
@@ -2422,10 +2431,10 @@ bool HttpServer::ServeDefault(unisim::util::hypapp::HttpRequest const& req, unis
 	unisim::util::hypapp::HttpResponse response;
 	
 	response << "<!DOCTYPE html>" << std::endl;
-	response << "<html>" << std::endl;
+	response << "<html lang=\"en\">" << std::endl;
 	response << "\t<head>" << std::endl;
 	response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-	response << "\t\t<script type=\"application/javascript\">document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+	response << "\t\t<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
 	response << "\t</head>" << std::endl;
 	response << "\t<body>" << std::endl;
 	response << "\t</body>" << std::endl;

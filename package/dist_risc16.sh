@@ -4,7 +4,7 @@ SIMPKG_SRCDIR=tlm2/risc16
 SIMPKG_DSTDIR=risc16
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import unisim/kernel || exit
 import unisim/util/debug || exit

@@ -481,8 +481,10 @@ DoubleIFrame.prototype.on_load = function(i)
 	
 	// patch anchors within iframe to provide user with a context menu for each anchor
 	this.patch_anchors();
+	this.patch_inputs();
 	// simulate unloading before flipping
 	this.trigger_on_unload();
+	this.owner.unfreeze();
 	var title = bg_iframe.iframe_element.contentDocument ? bg_iframe.iframe_element.contentDocument.title : null;
 	this.owner.set_label(title ? title : 'Untitled');
 	// flipping: show freshly loaded iframe
@@ -572,6 +574,33 @@ DoubleIFrame.prototype.patch_anchors = function()
 	}
 }
 
+DoubleIFrame.prototype.patch_inputs = function()
+{
+	var bg_iframe = this.iframes[this.bg];
+	var iframe_element = bg_iframe.iframe_element;
+	
+	if(iframe_element.contentDocument)
+	{
+		var input_elements = iframe_element.contentDocument.documentElement.getElementsByTagName('input');
+		for(var i = 0; i < input_elements.length; i++)
+		{
+			var input_element = input_elements[i];
+			input_element.addEventListener('focusin',
+				function(event)
+				{
+					this.owner.freeze();
+				}.bind(this)
+			);
+			input_element.addEventListener('focusout',
+				function(event)
+				{
+					this.owner.unfreeze();
+				}.bind(this)
+			);
+		}
+	}
+}
+
 DoubleIFrame.prototype.update_uri = function()
 {
 	if(this.uri.fragment)
@@ -604,7 +633,7 @@ DoubleIFrame.prototype.update_uri = function()
 
 DoubleIFrame.prototype.refresh = function()
 {
-	//console.log(this.name + ':refresh');
+// 	console.log(this.name + ':refresh');
 	var bg_iframe = this.iframes[this.bg];
 	bg_iframe.loaded = false;
 	bg_iframe.load_requested = true;
@@ -1252,11 +1281,13 @@ Tab.prototype.get_pos = function()
 
 Tab.prototype.freeze = function()
 {
+// 	console.log(this.tab_config.name + ':freeze()');
 	this.frozen = true;
 }
 
 Tab.prototype.unfreeze = function()
 {
+// 	console.log(this.tab_config.name + ':unfreeze()');
 	this.frozen = false;
 }
 
@@ -1805,7 +1836,7 @@ RefreshScheduler.prototype.schedule = function()
 				}
 				else
 				{
-					//console.log(this.time_stamp + ' ms:' + tab.refresh_mode + ' refresh from ' + tab.tab_config.name);
+// 					console.log(this.time_stamp + ' ms:' + tab.refresh_mode + ' refresh from ' + tab.tab_config.name);
 					switch(tab.refresh_mode)
 					{
 						case 'self-refresh':

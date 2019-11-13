@@ -160,7 +160,7 @@ public:
 	virtual ~GDBServerBase();
 	
 	virtual bool EndSetup();
-	virtual void SigInt();
+	virtual void Kill();
 	
 	bool StartServer();
 	bool StopServer();
@@ -293,7 +293,7 @@ public:
 	virtual bool EndSetup();
 	virtual void OnDisconnect();
 
-	virtual void SigInt();
+	virtual void Kill();
 private:
 	bool VisitArchitecture(unisim::util::xml::Node *xml_node);
 	bool VisitBreakPointKind(unisim::util::xml::Node *xml_node);

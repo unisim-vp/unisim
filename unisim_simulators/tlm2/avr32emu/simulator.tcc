@@ -358,6 +358,7 @@ void Simulator<CONFIG>::Stop(Object *object, int _exit_status, bool asynchronous
 				break;
 		}
 	}
+	unisim::kernel::Simulator::Kill();
 }
 
 template <class CONFIG>

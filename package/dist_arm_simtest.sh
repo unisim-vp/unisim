@@ -4,7 +4,7 @@ SIMPKG_SRCDIR=cxx/arm_simtest
 SIMPKG_DSTDIR=arm_simtest
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import unisim/component/cxx/processor/arm || exit
 import unisim/component/cxx/processor/arm/isa || exit

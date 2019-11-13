@@ -4,7 +4,7 @@ SIMPKG_SRCDIR=tlm2/avr32emu
 SIMPKG_DSTDIR=avr32emu
 source "$(dirname $0)/dist_common.sh"
 
-import_genisslib
+import_genisslib || exit
 
 import unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa
 import unisim/component/tlm2/processor/avr32/avr32uc
