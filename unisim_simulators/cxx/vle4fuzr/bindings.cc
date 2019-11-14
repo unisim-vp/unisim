@@ -32,7 +32,6 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Gilles Mouchard <gilles.mouchard@cea.fr>
  */
 
-#include "bindings.hh"
 #include <unisim/component/cxx/processor/arm/vmsav7/cpu.hh>
 
 #include <iostream>
@@ -46,6 +45,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include <cassert>
+#include <cstdint>
 
 struct Processor
   : public unisim::component::cxx::processor::arm::vmsav7::CPU
@@ -102,11 +102,21 @@ struct Processor
       if (addr < base) throw 0;
       addr -= base;
       if (addr > len()) throw 0;
-      uint32_t written = std::min(len()-addr,size);
-      std::copy( &bytes[0], &bytes[written], at(addr) );
-      return written;
+      uint32_t count = std::min(len()-addr,size);
+      std::copy( &bytes[0], &bytes[count], at(addr) );
+      return count;
+    }
+    uint32_t read(uint32_t addr, uint8_t* bytes, uint32_t size) const
+    {
+      if (addr < base) throw 0;
+      addr -= base;
+      if (addr > len()) throw 0;
+      uint32_t count = std::min(len()-addr,size);
+      std::copy( at(addr), at(addr+count), &bytes[0] );
+      return count;
     }
     uint8_t* at(uint32_t x) const { return const_cast<uint8_t*>(&storage[x]); }
+    void chperms(unsigned new_perms) const { const_cast<unsigned&>(perms) = new_perms; }
   };
 
   typedef std::set<Page, Page::Above> Pages;
@@ -142,18 +152,45 @@ struct Processor
   }
 
   int
-  mem_write(uint32_t addr, uint8_t const* bytes, uintptr_t size)
+  mem_prot(uint32_t addr, unsigned perms)
+  {
+    auto page = pages.lower_bound(addr);
+    if (page == pages.end() or page->hi() <= addr)
+      return -1;
+    page->chperms( perms );
+    return 0;
+  }
+
+  int
+  mem_write(uint32_t addr, uint8_t const* bytes, uint32_t size)
   {
     for (auto pi = pages.lower_bound(addr); pi != pages.end(); --pi)
       {
-        uintptr_t written = pi->write(addr, bytes, size);
-        if (written >= size)
+        uintptr_t count = pi->write(addr, bytes, size);
+        if (count >= size)
           return 0;
-        addr += written;
-        bytes += written;
-        size -= written;
+        addr += count;
+        bytes += count;
+        size -= count;
       }
     
+    throw 0;
+    return 0;
+  }
+
+  int
+  mem_read(uint32_t addr, uint8_t* bytes, uint32_t size)
+  {
+    for (auto pi = pages.lower_bound(addr); pi != pages.end(); --pi)
+      {
+        uintptr_t count = pi->read(addr, bytes, size);
+        if (count >= size)
+          return 0;
+        addr += count;
+        bytes += count;
+        size -= count;
+      }
+       
     throw 0;
     return 0;
   }
@@ -494,7 +531,7 @@ struct Processor
     enum type_t
       {
        INTR = 0, // Hook all interrupt/syscall events
-       INSN = 1, // Hook a particular instruction - only a very small subset of instructions supported here
+       // INSN = 1 ILLEGAL, // Hook a particular instruction - only a very small subset of instructions supported here
        CODE = 2, // Hook a range of code
        BLOCK = 3, // Hook basic blocks
        MEM_READ_UNMAPPED = 4, // Hook for memory read on unmapped memory
@@ -523,7 +560,7 @@ struct Processor
     bool check_types()
     {
       if (not ( Is<INTR>()           ).check(types)) return false; // uc_cb_hookintr_t
-      if (not ( Is<INSN>()           ).check(types)) return false; // unimplemented
+      //      if (not ( Is<INSN>()           ).check(types)) return false; // unimplemented
       if (not ( Is<CODE>() |
                 Is<BLOCK>()          ).check(types)) return false; // uc_cb_hookcode_t
       if (not ( Is<MEM_READ_UNMAPPED>() |
@@ -718,10 +755,8 @@ static unisim::kernel::Simulator simulator(1, (char**)emptyargv);
 
 extern "C"
 {
-  int uc_open(unsigned arm_arch, unsigned is_thumb, void** ucengine)
+  int emu_open(unsigned is_thumb, void** ucengine)
   {
-    assert( arm_arch == 0 );
-    
     static int instance = 0;
     std::ostringstream name;
     name << "cpu_" << instance++;
@@ -730,8 +765,7 @@ extern "C"
     return 0;
   }
 
-  int
-  uc_close(void* uc)
+  int emu_close(void* uc)
   {
     Processor* proc = (Processor*)uc;
     delete proc;
@@ -739,53 +773,58 @@ extern "C"
   }
 
 
-  int uc_mem_map(void* uc, uint64_t addr, uintptr_t size, uint32_t perms)
+  int emu_mem_map(void* uc, uint64_t addr, uintptr_t size, uint32_t perms)
   {
     Processor& proc = *(Processor*)uc;
     return proc.mem_map(addr, size, perms) == proc.pages.end();
   }
 
-  int uc_mem_write(void* uc, uint64_t addr, void const* bytes, uintptr_t size)
+  int emu_mem_write(void* uc, uint64_t addr, void const* bytes, uintptr_t size)
   {
     Processor& proc = *(Processor*)uc;
     return proc.mem_write(addr,(uint8_t const*)bytes,size);
   }
   
-  int uc_reg_write(void* uc, int regid, void const* bytes)
+  int emu_mem_read(void* uc, uint64_t addr, void* bytes, uintptr_t size)
+  {
+    Processor& proc = *(Processor*)uc;
+    return proc.mem_read(addr,(uint8_t*)bytes,size);
+  }
+  
+  int emu_mem_prot(void* uc, uint64_t addr, uint32_t new_perms)
+  {
+    Processor& proc = *(Processor*)uc;
+    return proc.mem_prot(addr, new_perms);
+  }
+  
+  int emu_reg_write(void* uc, int regid, void const* bytes)
   {
     Processor& proc = *(Processor*)uc;
     return proc.reg_write(regid, (uint8_t const*)bytes);
   }
 
-  int uc_reg_read(void* uc, int regid, void* bytes)
+  int emu_reg_read(void* uc, int regid, void* bytes)
   {
     Processor& proc = *(Processor*)uc;
     return proc.reg_read(regid, (uint8_t*)bytes);
   }
 
-  int uc_hook_add(void* uc, uintptr_t* hh, int types, void* callback, void* user_data, uint64_t begin, uint64_t end, ...)
+  int emu_hook_add(void* uc, uintptr_t* hh, int types, void* callback, void* user_data, uint64_t begin, uint64_t end)
   {
     Processor::Hook* hook = new Processor::Hook(types, callback, user_data, begin, end);
     
-    // UC_HOOK_INSN has an extra argument for instruction ID
-    if (hook->has_type(Processor::Hook::INSN))
-      {
-        std::cerr << "UC_HOOK_INSN unimplemented.\n";
-        throw 0;
-      }
-
     if (not ((Processor*)uc)->add(hook))
       {
         std::cerr << "Hook typing error: " << std::hex << types << std::endl;
         delete hook;
-        return 8 /*UC_ERR_HOOK*/;
+        return 8 /*EMU_ERR_HOOK*/;
       }
 
     *hh = (uintptr_t)hook;
     return 0;
   }
 
-  int uc_emu_start(void* uc, uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count)
+  int emu_start(void* uc, uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count)
   {
     Processor& proc = *(Processor*)uc;
     return proc.emu_start(begin, until, timeout, count);

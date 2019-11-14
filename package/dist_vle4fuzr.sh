@@ -54,7 +54,6 @@ bindings.cc \
 "
 
 UNISIM_BINDINGS_HEADER_FILES="\
-bindings.hh \
 "
 
 UNISIM_TOP_DATA_FILES="\
