@@ -32,7 +32,6 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Gilles Mouchard <gilles.mouchard@cea.fr>
  */
 
-#include "bindings.hh"
 #include <iostream>
 #include <cassert>
 
