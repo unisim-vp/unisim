@@ -4,7 +4,6 @@ libc/stdint
 libc/stdio
 libc/stdlib
 libc/unistd
-m4/boost
 m4/get_exec_path
 m4/pthread
 std/fstream

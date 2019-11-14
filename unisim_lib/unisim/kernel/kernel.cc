@@ -74,11 +74,6 @@
 // #include <mach-o/dyld.h>
 // #endif
 
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/topological_sort.hpp>
-#include <boost/graph/visitors.hpp>
-#include <boost/graph/graphviz.hpp>
-
 #include "unisim/kernel/config/xml_config_file_helper.hh"
 #include "unisim/util/backtrace/backtrace.hh"
 #include "unisim/util/likely/likely.hh"
@@ -122,6 +117,246 @@ void operator delete[](void *storage, std::size_t size)
 	free(storage);
 }
 #endif
+
+namespace {
+
+template <typename T> struct DiGraph;
+
+template <typename T>
+struct Vertex
+{
+	typedef std::vector<Vertex<T> *> Successors;
+	
+	Vertex(const T& value, const std::string& label);
+	virtual ~Vertex();
+	
+	void operator () (Vertex<T> *succ); // make a edge
+	Successors& GetSuccessors();
+	Vertex<T> *GetSuccessor(const T& value);
+	const T& GetValue() const;
+	const std::string& GetLabel() const;
+private:
+	friend struct DiGraph<T>;
+	
+	int id;
+	T value;
+	std::string label;
+	Successors successors;
+	
+	void SetId(int id);
+	int GetId() const;
+};
+
+template <typename T>
+Vertex<T>::Vertex(const T& _value, const std::string& _label)
+	: id(-1)
+	, value(_value)
+	, label(_label)
+	, successors()
+{
+}
+
+template <typename T>
+Vertex<T>::~Vertex()
+{
+}
+
+template <typename T>
+void Vertex<T>::operator() (Vertex<T> *succ)
+{
+	for(typename Successors::iterator it = successors.begin(); it != successors.end(); ++it)
+	{
+		assert((*it) != succ);
+	}
+	successors.push_back(succ);
+}
+
+template <typename T>
+Vertex<T> *Vertex<T>::GetSuccessor(const T& value)
+{
+	for(typename Successors::iterator it = successors.begin(); it != successors.end(); ++it)
+	{
+		Vertex<T> *succ = *it;
+		if(succ->GetValue() == value) return succ;
+	}
+	
+	return 0;
+}
+
+template <typename T>
+typename Vertex<T>::Successors& Vertex<T>::GetSuccessors()
+{
+	return successors;
+}
+
+template <typename T>
+const T& Vertex<T>::GetValue() const
+{
+	return value;
+}
+
+template <typename T>
+const std::string& Vertex<T>::GetLabel() const
+{
+	return label;
+}
+
+template <typename T>
+void Vertex<T>::SetId(int _id)
+{
+	id = _id;
+}
+
+template <typename T>
+int Vertex<T>::GetId() const
+{
+	return id;
+}
+
+template <typename T>
+struct DiGraph
+{
+	typedef std::vector<Vertex<T> *> Vertices;
+	
+	DiGraph();
+	virtual ~DiGraph();
+	
+	void operator () (Vertex<T> *vertex); // add vertex
+	Vertex<T> *operator [] (const T& value); // retrieve vertex
+	typename Vertices::size_type Size() const;
+	
+	template <typename ITERATOR> bool TopologicalSort(ITERATOR it) const;
+	
+	void WriteGraphviz(std::ostream& os);
+private:
+	Vertices vertices;
+	
+	typedef std::map<T, Vertex<T> *> VerticesByValue;
+	VerticesByValue vertices_by_value;
+};
+
+template <typename T>
+DiGraph<T>::DiGraph()
+	: vertices()
+{
+}
+
+template <typename T>
+DiGraph<T>::~DiGraph()
+{
+	for(typename Vertices::iterator it = vertices.begin(); it != vertices.end(); ++it)
+	{
+		delete *it;
+	}
+}
+
+template <typename T>
+void DiGraph<T>::operator () (Vertex<T> *vertex)
+{
+	typename VerticesByValue::iterator it = vertices_by_value.find(vertex->GetValue());
+	assert(it == vertices_by_value.end());
+	vertices_by_value[vertex->GetValue()] = vertex;
+	vertex->SetId(vertices.size());
+	vertices.push_back(vertex);
+}
+
+template <typename T>
+Vertex<T> *DiGraph<T>::operator [] (const T& value)
+{
+	typename VerticesByValue::iterator it = vertices_by_value.find(value);
+	return (it != vertices_by_value.end()) ? (*it).second : 0;
+}
+
+template <typename T>
+typename DiGraph<T>::Vertices::size_type DiGraph<T>::Size() const
+{
+	return vertices.size();
+}
+
+template <typename T>
+template <typename ITERATOR>
+bool DiGraph<T>::TopologicalSort(ITERATOR it) const
+{
+	// Kahn's algorithm
+	
+	typename Vertices::size_type num_vertices = vertices.size(); // number of vertices
+	typename Vertices::size_type num_vertices_zero_indegree = num_vertices; // number of vertices with zero indegree
+	std::vector<int> indegree(num_vertices, 0);
+	
+	for(typename Vertices::const_iterator vertex_it = vertices.begin(); vertex_it != vertices.end(); ++vertex_it) 
+	{ 
+		Vertex<T> *vertex = *vertex_it;
+		const typename Vertex<T>::Successors& successors = vertex->GetSuccessors();
+		for(typename Vertex<T>::Successors::const_iterator succ_it = successors.begin(); succ_it != successors.end(); ++succ_it)
+		{
+			Vertex<T> *succ = *succ_it;
+			if(indegree[succ->GetId()] == 0)
+			{
+				--num_vertices_zero_indegree;
+			}
+			indegree[succ->GetId()]++; 
+		}
+	}
+	
+	std::vector<int> s; // Set of all vertices with no incoming edge
+	s.reserve(num_vertices_zero_indegree);
+	for(typename Vertices::const_iterator vertex_it = vertices.begin(); vertex_it != vertices.end(); ++vertex_it) 
+	{ 
+		Vertex<T> *vertex = *vertex_it;
+		if(indegree[vertex->GetId()] == 0)
+		{
+			s.push_back(vertex->GetId());
+		}
+	}
+	
+	typename Vertices::size_type visited_count = 0; 
+	
+	while(!s.empty()) 
+	{ 
+		int u = s.back();
+		s.pop_back();
+		Vertex<T> *vertex = vertices[u];
+		it = vertex; // assign iterator in topological order
+
+		const typename Vertex<T>::Successors& successors = vertex->GetSuccessors();
+		for(typename Vertex<T>::Successors::const_iterator succ_it = successors.begin(); succ_it != successors.end(); ++succ_it)
+		{
+			Vertex<T> *succ = *succ_it;
+			if(--indegree[succ->GetId()] == 0)
+			{
+				s.push_back(succ->GetId());
+			}
+		}
+		
+		visited_count++;
+	}
+	
+	return visited_count == vertices.size();
+}
+
+template <typename T>
+void DiGraph<T>::WriteGraphviz(std::ostream& os)
+{
+	os << "digraph G {" << std::endl;
+	for(typename Vertices::const_iterator vertex_it = vertices.begin(); vertex_it != vertices.end(); ++vertex_it) 
+	{ 
+		Vertex<T> *u = *vertex_it;
+		os << "\tnode_" << u->GetId() << " [label = \"" << u->GetLabel() << "\"]" << std::endl;
+	}
+	for(typename Vertices::const_iterator vertex_it = vertices.begin(); vertex_it != vertices.end(); ++vertex_it) 
+	{ 
+		Vertex<T> *u = *vertex_it;
+		const typename Vertex<T>::Successors& successors = u->GetSuccessors();
+		for(typename Vertex<T>::Successors::const_iterator succ_it = successors.begin(); succ_it != successors.end(); ++succ_it)
+		{
+			Vertex<T> *v = *succ_it;
+			os << "\tnode_" << u->GetId() << " -> node_" << v->GetId() << std::endl;
+		}
+	}
+	os << "}" << std::endl;
+}
+
+}
 
 namespace unisim {
 namespace kernel {
@@ -2066,24 +2301,6 @@ struct MyVertexProperty
 	ServiceExportBase *srv_export;
 };
 
-typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, MyVertexProperty> DependencyGraph;
-typedef boost::graph_traits<DependencyGraph>::vertex_descriptor Vertex;
-
-struct CycleDetector : public boost::dfs_visitor<>
-{
-	CycleDetector(bool& _has_cycle) : has_cycle(_has_cycle)
-	{
-	}
-	
-	template <class Edge, class Graph>
-	void back_edge(Edge, Graph&)
-	{
-		has_cycle = true;
-	}
-protected:
-	bool& has_cycle;
-};
-
 Simulator::SetupStatus Simulator::Setup()
 {
 	if(generate_doc)
@@ -2147,21 +2364,19 @@ Simulator::SetupStatus Simulator::Setup()
 	}
 
 	// Build a dependency graph of exports
-	std::map<ServiceExportBase *, unsigned int> id_lookup;
-	DependencyGraph dependency_graph(exports.size());
-	
-	unsigned int id = 0;
+	DiGraph<ServiceExportBase *> dependency_graph;
 
-	for(export_iter = exports.begin(); export_iter != exports.end(); export_iter++, id++)
-	{
-//		std::cerr << "Export: " << (*export_iter).second->GetName() << std::endl;
-		dependency_graph[id].srv_export = (*export_iter).second;
-		id_lookup[(*export_iter).second] = id;
-	}
-
-	for(export_iter = exports.begin(); export_iter != exports.end(); export_iter++, id++)
+	for(export_iter = exports.begin(); export_iter != exports.end(); ++export_iter)
 	{
 		ServiceExportBase *srv_export = (*export_iter).second;
+		dependency_graph(new Vertex<ServiceExportBase *>(srv_export, srv_export->GetName()));
+	}
+
+	for(export_iter = exports.begin(); export_iter != exports.end(); ++export_iter)
+	{
+		ServiceExportBase *srv_export = (*export_iter).second;
+		Vertex<ServiceExportBase *> *v = dependency_graph[srv_export];
+		
 		std::list<ServiceImportBase *>& setup_dependencies = srv_export->GetSetupDependencies();
 		std::list<ServiceImportBase *>::iterator import_iter;
 
@@ -2170,32 +2385,25 @@ Simulator::SetupStatus Simulator::Setup()
 			ServiceExportBase *peer_export = (*import_iter)->GetServiceExport();
 			if(peer_export)
 			{
-				add_edge(id_lookup[peer_export], id_lookup[(*export_iter).second], dependency_graph);
-//				std::cerr << peer_export->GetID() << ":" << peer_export->GetName() << "->" 
-//					<< (*export_iter).second->GetID() << ":" << (*export_iter).second->GetName() << std::endl;
+				Vertex<ServiceExportBase *> *u = dependency_graph[peer_export];
+				assert(u);
+				(*u)(v); // make edge u -> v
 			}
 		}
 	}
-	
-// 	ofstream of("deps.dot");
-// 	boost::write_graphviz(of, dependency_graph);
 
-	// Detect cycles in dependency graph
-	bool has_cycle = false;
-	CycleDetector vis(has_cycle);
-	boost::depth_first_search(dependency_graph, visitor(vis));
-
-	if(has_cycle)
+	typedef std::vector<Vertex<ServiceExportBase *> *> ReversedSetupOrder;
+	ReversedSetupOrder reversed_setup_order;
+	reversed_setup_order.reserve(dependency_graph.Size());
+	if(!dependency_graph.TopologicalSort(std::back_inserter(reversed_setup_order)))
 	{
-		std::cerr << "Simulator: ERROR! cyclic setup dependency graph" << std::endl;
+		std::ofstream file("deps.dot");
+		dependency_graph.WriteGraphviz(file);
+		
+		std::cerr << "Simulator: ERROR! cyclic setup dependency graph. Dependency graph dumped to deps.dot. Run 'dot -Tpdf deps.dot -o deps.pdf' and see deps.pdf for details." << std::endl;
 		return ST_ERROR;
 	}
-
-	// Compute a topological order of methods "Setup"
-	typedef std::list<Vertex> SetupOrder;
-	SetupOrder setup_order;
-	topological_sort(dependency_graph, std::front_inserter(setup_order));
-
+	
 	SetupStatus status = ST_OK_TO_START;
 	
 	// Call all methods "BeginSetup()"
@@ -2214,10 +2422,10 @@ Simulator::SetupStatus Simulator::Setup()
 	if(status != ST_ERROR)
 	{
 		// Call methods "Setup(export)" in a topological order
-		std::list<Vertex>::iterator vertex_iter;
-		for(vertex_iter = setup_order.begin(); vertex_iter != setup_order.end(); vertex_iter++)
+		ReversedSetupOrder::reverse_iterator vertex_iter;
+		for(vertex_iter = reversed_setup_order.rbegin(); vertex_iter != reversed_setup_order.rend(); ++vertex_iter)
 		{
-			ServiceExportBase *srv_export = dependency_graph[*vertex_iter].srv_export;
+			ServiceExportBase *srv_export = (*vertex_iter)->GetValue();
 			Object *object = srv_export->GetService();
 
 			if(object)
