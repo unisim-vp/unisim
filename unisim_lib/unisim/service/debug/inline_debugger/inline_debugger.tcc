@@ -1843,9 +1843,6 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const unisim::kernel
 		case unisim::kernel::VariableBase::VAR_STATISTIC:
 			(*std_output_stream) << " S";
 			break;
-		case unisim::kernel::VariableBase::VAR_FORMULA:
-			(*std_output_stream) << " F";
-			break;
 		case unisim::kernel::VariableBase::VAR_REGISTER:
 			(*std_output_stream) << " R";
 			break;

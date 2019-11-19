@@ -188,8 +188,8 @@ FormulaOperator::operator FormulaOperator::Operator() const
 //=============================================================================
 
 template <class TYPE>
-Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formula_op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *_description)
-	: VariableBase(_name, _owner, VAR_FORMULA, _description)
+Formula<TYPE>::Formula(const char *_name, Object *_owner, VariableBase::Type _type, FormulaOperator _formula_op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *_description)
+	: VariableBase(_name, _owner, _type, _description)
 	, op(_formula_op)
 {
 	VariableBase::SetFormat(unisim::kernel::VariableBase::FMT_DEC);
@@ -203,8 +203,8 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formu
 }
 
 template <class TYPE>
-Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formula_op, VariableBase *child1, VariableBase *child2, const char *_description)
-	: VariableBase(_name, _owner, VAR_FORMULA, _description)
+Formula<TYPE>::Formula(const char *_name, Object *_owner, VariableBase::Type _type, FormulaOperator _formula_op, VariableBase *child1, VariableBase *child2, const char *_description)
+	: VariableBase(_name, _owner, _type, _description)
 	, op(_formula_op)
 {
 	VariableBase::SetFormat(unisim::kernel::VariableBase::FMT_DEC);
@@ -218,8 +218,8 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formu
 }
 
 template <class TYPE>
-Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formula_op, VariableBase *child, const char *_description)
-	: VariableBase(_name, _owner, VAR_FORMULA, _description)
+Formula<TYPE>::Formula(const char *_name, Object *_owner, VariableBase::Type _type, FormulaOperator _formula_op, VariableBase *child, const char *_description)
+	: VariableBase(_name, _owner, _type, _description)
 	, op(_formula_op)
 {
 	VariableBase::SetFormat(unisim::kernel::VariableBase::FMT_DEC);
@@ -526,6 +526,28 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			break;
 	}
 	return sstr.str();
+}
+
+//=============================================================================
+//=                         StatisticFormula<TYPE>                            =
+//=============================================================================
+
+template <class TYPE>
+StatisticFormula<TYPE>::StatisticFormula(const char *name, Object *owner, FormulaOperator op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *description)
+	: Formula<TYPE>(name, owner, VariableBase::VAR_STATISTIC, op, child1, child2, child3, description)
+{
+}
+
+template <class TYPE>
+StatisticFormula<TYPE>::StatisticFormula(const char *name, Object *owner, FormulaOperator op, VariableBase *child1, VariableBase *child2, const char *description)
+	: Formula<TYPE>(name, owner, VariableBase::VAR_STATISTIC, op, child1, child2, description)
+{
+}
+
+template <class TYPE>
+StatisticFormula<TYPE>::StatisticFormula(const char *name, Object *owner, FormulaOperator op, VariableBase *child, const char *description)
+	: Formula<TYPE>(name, owner, VariableBase::VAR_STATISTIC, op, child, description)
+{
 }
 
 //=============================================================================
@@ -1155,6 +1177,19 @@ template class Formula<unsigned long>;
 template class Formula<unsigned long long>;
 template class Formula<float>;
 template class Formula<double>;
+
+template class StatisticFormula<signed char>;
+template class StatisticFormula<short>;
+template class StatisticFormula<int>;
+template class StatisticFormula<long>;
+template class StatisticFormula<long long>;
+template class StatisticFormula<unsigned char>;
+template class StatisticFormula<unsigned short>;
+template class StatisticFormula<unsigned int>;
+template class StatisticFormula<unsigned long>;
+template class StatisticFormula<unsigned long long>;
+template class StatisticFormula<float>;
+template class StatisticFormula<double>;
 
 } // end of namespace variable
 } // end of namespace kernel

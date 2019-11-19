@@ -736,7 +736,6 @@ const char *VariableBase::GetTypeName() const
 		case VAR_PARAMETER: return "parameter";
 		case VAR_STATISTIC: return "statistic";
 		case VAR_REGISTER: return "register";
-		case VAR_FORMULA: return "formula";
 		case VAR_SIGNAL: return "signal";
 	}
 	return "invalid";
@@ -945,15 +944,11 @@ void VariableBase::GenerateLatexDocumentation(std::ostream& os) const
 {
 	os << "\\multicolumn{1}{|p{7.5cm}}{\\textbf{Name:} " << string_to_latex(name.c_str(), 26, "texttt") << "} & \\multicolumn{1}{p{7.5cm}|}{\\textbf{Type:} " << string_to_latex(GetTypeName(), 36, "texttt") << "}\\\\" << std::endl;
 	
-	if(type == VAR_FORMULA)
+	if(type == VAR_STATISTIC)
 	{
 		// symbolically print formula 
-		os << "\\multicolumn{1}{|p{7.5cm}}{\\textbf{Formula:} ";
+		os << "\\multicolumn{1}{|p{7.5cm}}{\\textbf{Statistic:} ";
 		os << string_to_latex(GetSymbolicValue().c_str(), 24, "texttt");
-	}
-	else if(type == VAR_STATISTIC)
-	{
-		os << "\\multicolumn{1}{|p{7.5cm}}{";
 	}
 	else
 	{
@@ -2231,11 +2226,6 @@ void Simulator::DumpRegisters(std::ostream &os)
 	DumpVariables(os, VariableBase::VAR_REGISTER);
 }
 
-void Simulator::DumpFormulas(std::ostream &os)
-{
-	DumpVariables(os, VariableBase::VAR_FORMULA);
-}
-
 bool Simulator::LoadVariables(const char *filename, VariableBase::Type type, const std::string& _config_file_format)
 {
 	std::string config_file_format = _config_file_format.empty() ? input_config_file_format : _config_file_format;
@@ -2539,16 +2529,6 @@ VariableBase *Simulator::FindStatistic(const char *name)
 	return FindVariable(name, VariableBase::VAR_STATISTIC);
 }
 
-const VariableBase *Simulator::FindFormula(const char *name) const
-{
-	return FindVariable(name, VariableBase::VAR_FORMULA);
-}
-
-VariableBase *Simulator::FindFormula(const char *name)
-{
-	return FindVariable(name, VariableBase::VAR_FORMULA);
-}
-
 void Simulator::GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type)
 {
 	std::map<std::string, VariableBase *>::iterator variable_iter;
@@ -2603,11 +2583,6 @@ void Simulator::GetSignals(std::list<VariableBase *>& lst)
 void Simulator::GetStatistics(std::list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_STATISTIC);
-}
-
-void Simulator::GetFormulas(std::list<VariableBase *>& lst)
-{
-	GetVariables(lst, VariableBase::VAR_FORMULA);
 }
 
 void Simulator::GetObjects(std::list<Object *>& lst) const
@@ -3087,44 +3062,6 @@ void Simulator::GenerateLatexDocumentation(std::ostream& os) const
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
 		(*object_iter).second->GenerateLatexDocumentation(os, VariableBase::VAR_STATISTIC);
-	}
-
-	//os << "\\hline" << std::endl;
-	os << "\\end{supertabular}" << std::endl;
-
-	//----------------------- Formulas -----------------------
-	os << "\\subsection{Formulas}" << std::endl;
-	os << "\\label{" << program_name << "_formulas}" << std::endl;
-	os << "Simulation statistic formulas are listed below:\\\\" << std::endl;
-	os << "~\\\\" << std::endl;
-	os << "\\tablehead{\\hline}" << std::endl;
-	os << "\\tabletail{\\hline}" << std::endl;
-	os << "\\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}" << std::endl;
-	//os << "\\hline" << std::endl;
-
-	// Global formulas
-	header_printed = false;
-	
-	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
-	{
-		VariableBase *variable = (*variable_iter).second;
-		if((variable->GetType() == VariableBase::VAR_FORMULA) && !variable->GetOwner() && variable->IsVisible())
-		{
-			if(!header_printed)
-			{
-				os << "\\multicolumn{2}{|l|}{\\textbf{\\Large Global}}\\\\" << std::endl;
-				os << "\\hline" << std::endl;
-				header_printed = true;
-			}
-			variable->GenerateLatexDocumentation(os);
-		}
-	}
-
-	if(header_printed) os << "\\hline" << std::endl;
-
-	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
-	{
-		(*object_iter).second->GenerateLatexDocumentation(os, VariableBase::VAR_FORMULA);
 	}
 
 	//os << "\\hline" << std::endl;

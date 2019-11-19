@@ -360,7 +360,6 @@ int XMLConfigFileHelper::XmlfyVariable(xmlTextWriterPtr writer, const unisim::ke
 			break;
 		case unisim::kernel::VariableBase::VAR_VOID:
 		case unisim::kernel::VariableBase::VAR_ARRAY:
-		case unisim::kernel::VariableBase::VAR_FORMULA:
 			std::cerr << "Unexpected variable type to Xmlfy. Variable name is '"
 				<< var->GetVarName() << "'" << std::endl;
 			break;

@@ -1094,7 +1094,14 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 						response << "\t\t\t\t<tr>" << std::endl;
 						response << "\t\t\t\t\t<td class=\"var-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "</td>" << std::endl;
 						response << "\t\t\t\t\t<td class=\"var-value\">" << std::endl;
-						response << "\t\t\t\t\t\t<form action=\"/config?object=";
+						response << "\t\t\t\t\t\t<form action=\"/";
+						switch(var_type)
+						{
+							case unisim::kernel::VariableBase::VAR_PARAMETER: response << "config"; break;
+							case unisim::kernel::VariableBase::VAR_STATISTIC: response << "stats"; break;
+							default                                         : response << "unknown"; break;
+						}
+						response << "?object=";
 						if(is_kernel) response << "kernel";
 						else if(object) response << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName());
 						response << "\" method=\"post\">" << std::endl;

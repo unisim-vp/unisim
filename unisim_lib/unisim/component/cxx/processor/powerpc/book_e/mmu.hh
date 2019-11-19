@@ -315,6 +315,7 @@ private:
 	unisim::kernel::variable::Parameter<bool> param_verbose;
 	unisim::kernel::variable::Statistic<uint64_t> stat_num_accesses;
 	unisim::kernel::variable::Statistic<uint64_t> stat_num_misses;
+	unisim::kernel::variable::StatisticFormula<double> stat_miss_rate;
 };
 
 template <typename TYPES, typename CONFIG>
@@ -339,6 +340,7 @@ TLB<TYPES, CONFIG>::TLB(const char *name, unisim::kernel::Object *parent, const 
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, stat_num_accesses("num-accesses", this, num_accesses, "Number of accesses")
 	, stat_num_misses("num-misses", this, num_misses, "Number of misses")
+	, stat_miss_rate("miss-rate", this, "/", &stat_num_misses, &stat_num_accesses, "TLB miss rate")
 {
 	Reset();
 }

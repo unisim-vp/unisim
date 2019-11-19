@@ -51,7 +51,7 @@ namespace xps_timer {
 using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::variable::Statistic;
-using unisim::kernel::variable::Formula;
+using unisim::kernel::variable::StatisticFormula;
 using unisim::kernel::Service;
 using unisim::kernel::ServiceExport;
 using unisim::kernel::ServiceExportBase;
@@ -138,8 +138,8 @@ private:
 	Statistic<uint64_t> stat_num_timer1_old_capture_losses;
 	Statistic<uint64_t> stat_num_timer0_new_capture_losses;
 	Statistic<uint64_t> stat_num_timer1_new_capture_losses;
-	Formula<uint64_t> formula_num_timer0_capture_losses;
-	Formula<uint64_t> formula_num_timer1_capture_losses;
+	StatisticFormula<uint64_t> stat_num_timer0_capture_losses;
+	StatisticFormula<uint64_t> stat_num_timer1_capture_losses;
 	
 	void LogTCSR();
 

@@ -713,8 +713,8 @@ Simulator::~Simulator()
 	}
 
 	if (dump_formulas) {
-		std::cerr << "Simulation formulas:" << std::endl;
-		DumpFormulas(std::cerr);
+		
+		
 		std::cerr << std::endl;
 	}
 

@@ -250,9 +250,9 @@ public:
 	typedef VariableBase::Type Type;
 	typedef FormulaOperator::Operator Operator;
 	
-	Formula(const char *name, Object *owner, FormulaOperator op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *description = 0);
-	Formula(const char *name, Object *owner, FormulaOperator op, VariableBase *child1, VariableBase *child2, const char *description = 0);
-	Formula(const char *name, Object *owner, FormulaOperator op, VariableBase *child, const char *description = 0);
+	Formula(const char *name, Object *owner, VariableBase::Type type, FormulaOperator op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *description = 0);
+	Formula(const char *name, Object *owner, VariableBase::Type type, FormulaOperator op, VariableBase *child1, VariableBase *child2, const char *description = 0);
+	Formula(const char *name, Object *owner, VariableBase::Type type, FormulaOperator op, VariableBase *child, const char *description = 0);
 	
 	virtual const char *GetDataTypeName() const;
 	virtual operator bool () const;
@@ -273,6 +273,15 @@ private:
 
 	Operator op;
 	VariableBase *childs[3];
+};
+
+template <class TYPE>
+class StatisticFormula : public Formula<TYPE>
+{
+public:
+	StatisticFormula(const char *name, Object *owner, FormulaOperator op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *description = 0);
+	StatisticFormula(const char *name, Object *owner, FormulaOperator op, VariableBase *child1, VariableBase *child2, const char *description = 0);
+	StatisticFormula(const char *name, Object *owner, FormulaOperator op, VariableBase *child, const char *description = 0);
 };
 
 //=============================================================================

@@ -94,11 +94,9 @@ Simulator::Simulator(int argc, char **argv)
 //	, isS19(false)
 
 	, dump_parameters(false)
-	, dump_formulas(false)
 	, dump_statistics(true)
 
 	, param_dump_parameters("dump-parameters", 0, dump_parameters, "")
-	, param_dump_formulas("dump-formulas", 0, dump_formulas, "")
 	, param_dump_statistics("dump-statistics", 0, dump_statistics, "")
 
 	, null_stat_var(0)
@@ -624,12 +622,6 @@ Simulator::~Simulator()
 	if (dump_parameters) {
 		std::cerr << "Simulation run-time parameters:" << std::endl;
 		DumpParameters(std::cerr);
-		std::cerr << std::endl;
-	}
-
-	if (dump_formulas) {
-		std::cerr << "Simulation formulas:" << std::endl;
-		DumpFormulas(std::cerr);
 		std::cerr << std::endl;
 	}
 

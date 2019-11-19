@@ -64,7 +64,7 @@ using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::variable::ParameterArray;
 using unisim::kernel::variable::Statistic;
-using unisim::kernel::variable::Formula;
+using unisim::kernel::variable::StatisticFormula;
 using std::map;
 
 class CachePowerEstimator :
@@ -137,7 +137,7 @@ private:
 	Statistic<CacheDynamicEnergy> stat_dynamic_energy;
 	Statistic<CacheDynamicPower> stat_dynamic_power;
 	Statistic<CacheLeakagePower> stat_leakage_power;
-	Formula<double> formula_total_power;
+	StatisticFormula<double> stat_total_power;
 
 	int Ndwl;
 	int Ndbl;

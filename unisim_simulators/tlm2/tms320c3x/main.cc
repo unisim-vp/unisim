@@ -408,9 +408,7 @@ void Simulator::Run()
 	std::cerr << "Simulation run-time parameters:" << endl;
 	DumpParameters(std::cerr);
 	std::cerr << endl;
-	std::cerr << "Simulation formulas:" << endl;
-	DumpFormulas(std::cerr);
-	std::cerr << endl;
+	
 	std::cerr << "Simulation statistics:" << endl;
 	DumpStatistics(std::cerr);
 	std::cerr << endl;

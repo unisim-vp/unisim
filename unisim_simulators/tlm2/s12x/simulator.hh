@@ -474,11 +474,9 @@ private:
 	int exit_status;
 
 	bool dump_parameters;
-	bool dump_formulas;
 	bool dump_statistics;
 	
 	Parameter<bool> param_dump_parameters;
-	Parameter<bool> param_dump_formulas;
 	Parameter<bool> param_dump_statistics;
 
 	double null_stat_var;
