@@ -310,8 +310,7 @@ private:
 	std::string shared_data_dir;
 	std::map<std::string, std::string> set_vars;
 	std::string get_config_filename;
-	std::string input_config_file_format;
-	std::string output_config_file_format;
+	std::string default_config_file_format;
 	bool list_parms;
 	bool get_config;
 	bool generate_doc;
@@ -339,8 +338,7 @@ private:
 	variable::Parameter<std::string> *var_license;
 	variable::Parameter<std::string> *var_schematic;
 	variable::Parameter<bool> *param_enable_press_enter_at_exit;
-	variable::Parameter<std::string> *param_input_config_file_format;
-	variable::Parameter<std::string> *param_output_config_file_format;
+	variable::Parameter<std::string> *param_default_config_file_format;
 	
 	void Version(std::ostream& os) const;
 	void Help(std::ostream& os) const;
@@ -357,6 +355,8 @@ private:
 
 	void Initialize(VariableBase *variable);
 
+	const char *GuessConfigFileFormat(const char *filename) const;
+	ConfigFileHelper *FindConfigFileHelper(const std::string& config_file_format);
 public:
 	bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
 	bool LoadVariables(std::istream& is, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());

@@ -86,8 +86,8 @@ LoggerServer::LoggerServer(const char *name, unisim::kernel::Object *parent)
 	, param_xml_file_gzipped("xml_file_gzipped", this, opt_xml_file_gzipped_, "Compress the xml output (a .gz extension is automatically appended to the xml_filename option)")
 	, param_http("http", this, opt_http_, "Show logger output through HTTP")
 	, param_http_max_log_size("http_max_log_size", this, opt_http_max_log_size_, "Maximum log size for HTTP output")
-	, param_http_min_refresh_period("min-display-refresh-period", this, opt_http_min_refresh_period_, "Minimum refresh period of display for HTTP output (in seconds)")
-	, param_http_max_refresh_period("max-display-refresh-period", this, opt_http_max_refresh_period_, "Maximum refresh period of display for HTTP output (in seconds)")
+	, param_http_min_refresh_period("http-min-display-refresh-period", this, opt_http_min_refresh_period_, "Minimum refresh period of display for HTTP output (in seconds)")
+	, param_http_max_refresh_period("http-max-display-refresh-period", this, opt_http_max_refresh_period_, "Maximum refresh period of display for HTTP output (in seconds)")
 {
 	param_http_max_log_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	

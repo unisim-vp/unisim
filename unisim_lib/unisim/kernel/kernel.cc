@@ -1385,8 +1385,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, shared_data_dir()
 	, set_vars()
 	, get_config_filename()
-	, input_config_file_format("XML")
-	, output_config_file_format("XML")
+	, default_config_file_format("XML")
 	, list_parms(false)
 	, get_config(false)
 	, generate_doc(false)
@@ -1414,8 +1413,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, var_license(0)
 	, var_schematic(0)
 	, param_enable_press_enter_at_exit(0)
-	, param_input_config_file_format(0)
-	, param_output_config_file_format(0)
+	, param_default_config_file_format(0)
 	, command_line_options()
 	, objects()
 	, imports()
@@ -1438,8 +1436,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	command_line_options.push_back(CommandLineOption('s', "set", "set value of parameter 'param' to 'value'", "param=value"));
 	command_line_options.push_back(CommandLineOption('c', "config", "configures the simulator with the given configuration file", "file"));
 	command_line_options.push_back(CommandLineOption('g', "get-config", "get the simulator configuration file (you can use it to create your own configuration. This option can be combined with -c to get a new configuration file with existing variables from another file", "file"));
-	command_line_options.push_back(CommandLineOption('f', "input-config-file-format", "set the simulator input configuration file format", "XML | INI | JSON"));
-	command_line_options.push_back(CommandLineOption('F', "output-config-file-format", "set the simulator output configuration file format", "XML | INI | JSON"));
+	command_line_options.push_back(CommandLineOption('f', "default-config-file-format", "set the simulator default configuration file format", "XML | INI | JSON"));
 	command_line_options.push_back(CommandLineOption('l', "list", "lists all available parameters, their type, and their current value"));
 	command_line_options.push_back(CommandLineOption('w', "warn", "enable printing of kernel warnings"));
 	command_line_options.push_back(CommandLineOption('d', "doc", "enable printing a latex documentation", "Latex file"));
@@ -1500,15 +1497,10 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 
 	param_enable_press_enter_at_exit = new variable::Parameter<bool>("enable-press-enter-at-exit", 0, enable_press_enter_at_exit, "Enable/Disable pressing key enter at exit");
 	
-	param_input_config_file_format = new variable::Parameter<std::string>("input-config-file-format", 0, input_config_file_format, "Input configuration file format");
-	param_input_config_file_format->SetMutable(false);
-	param_input_config_file_format->SetVisible(false);
-	param_input_config_file_format->SetSerializable(false);
-	
-	param_output_config_file_format = new variable::Parameter<std::string>("output-config-file-format", 0, output_config_file_format, "Output configuration file format");
-	param_output_config_file_format->SetMutable(false);
-	param_output_config_file_format->SetVisible(false);
-	param_output_config_file_format->SetSerializable(false);
+	param_default_config_file_format = new variable::Parameter<std::string>("default-config-file-format", 0, default_config_file_format, "Default configuration file format (when failed guessing from filename)");
+	param_default_config_file_format->SetMutable(false);
+	param_default_config_file_format->SetVisible(false);
+	param_default_config_file_format->SetSerializable(false);
 
 	// parse command line arguments (first pass)
 	char **arg_end = argv + argc;
@@ -1547,9 +1539,6 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 									break;
 								case 'f':
 									state = 6;
-									break;
-								case 'F':
-									state = 7;
 									break;
 								case 'g':
 									state = 3;
@@ -1607,13 +1596,8 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					state = 0;
 					break;
 				case 6:
-					// getting the input config file format
-					input_config_file_format = *arg;
-					state = 0;
-					break;
-				case 7:
-					// getting the output config file format
-					output_config_file_format = *arg;
+					// getting the default config file format
+					default_config_file_format = *arg;
 					state = 0;
 					break;
 				default:
@@ -1899,14 +1883,9 @@ Simulator::~Simulator()
 		delete param_enable_press_enter_at_exit;
 	}
 	
-	if(param_input_config_file_format)
+	if(param_default_config_file_format)
 	{
-		delete param_input_config_file_format;
-	}
-	
-	if(param_output_config_file_format)
-	{
-		delete param_output_config_file_format;
+		delete param_default_config_file_format;
 	}
 	
 	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_iter;
@@ -2226,61 +2205,77 @@ void Simulator::DumpRegisters(std::ostream &os)
 	DumpVariables(os, VariableBase::VAR_REGISTER);
 }
 
-bool Simulator::LoadVariables(const char *filename, VariableBase::Type type, const std::string& _config_file_format)
+const char *Simulator::GuessConfigFileFormat(const char *filename) const
 {
-	std::string config_file_format = _config_file_format.empty() ? input_config_file_format : _config_file_format;
+	const char *p = filename;
+	const char *dot = 0;
+	do
+	{
+		p = strchr(p, '.');
+		if(p)
+		{
+			dot = p++;
+		}
+	}
+	while(p);
+	
+	if(dot)
+	{
+		const char *ext = dot + 1;
+		if(strcasecmp(ext, "XML") == 0) return "XML";
+		if(strcasecmp(ext, "INI") == 0) return "INI";
+		if(strcasecmp(ext, "JSON") == 0) return "JSON";
+	}
+	
+	return default_config_file_format.c_str();
+}
+
+ConfigFileHelper *Simulator::FindConfigFileHelper(const std::string& config_file_format)
+{
 	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(config_file_format);
 	
-	if(config_file_helper_it != config_file_helpers.end())
+	return (config_file_helper_it != config_file_helpers.end()) ? (*config_file_helper_it).second : 0;
+}
+
+bool Simulator::LoadVariables(const char *filename, VariableBase::Type type, const std::string& config_file_format)
+{
+	ConfigFileHelper *config_file_helper = FindConfigFileHelper(config_file_format.empty() ? GuessConfigFileFormat(filename) : config_file_format);
+	if(config_file_helper)
 	{
-		 ConfigFileHelper *config_file_helper = (*config_file_helper_it).second;
-		 
-		 return config_file_helper->LoadVariables(filename, type);
+		return config_file_helper->LoadVariables(filename, type);
 	}
 	
 	return false;
 }
 
-bool Simulator::LoadVariables(std::istream& is, VariableBase::Type type, const std::string& _config_file_format)
+bool Simulator::LoadVariables(std::istream& is, VariableBase::Type type, const std::string& config_file_format)
 {
-	std::string config_file_format = _config_file_format.empty() ? input_config_file_format : _config_file_format;
-	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(config_file_format);
-	
-	if(config_file_helper_it != config_file_helpers.end())
+	ConfigFileHelper *config_file_helper = FindConfigFileHelper(config_file_format);
+	if(config_file_helper)
 	{
-		 ConfigFileHelper *config_file_helper = (*config_file_helper_it).second;
-		 
-		 return config_file_helper->LoadVariables(is, type);
+		return config_file_helper->LoadVariables(is, type);
 	}
 	
 	return false;
 }
 
-bool Simulator::SaveVariables(const char *filename, VariableBase::Type type, const std::string& _config_file_format)
+bool Simulator::SaveVariables(const char *filename, VariableBase::Type type, const std::string& config_file_format)
 {
-	std::string config_file_format = _config_file_format.empty() ? output_config_file_format : _config_file_format;
-	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(config_file_format);
-	
-	if(config_file_helper_it != config_file_helpers.end())
+	ConfigFileHelper *config_file_helper = FindConfigFileHelper(config_file_format.empty() ? GuessConfigFileFormat(filename) : config_file_format);
+	if(config_file_helper)
 	{
-		 ConfigFileHelper *config_file_helper = (*config_file_helper_it).second;
-		 
-		 return config_file_helper->SaveVariables(filename, type);
+		return config_file_helper->SaveVariables(filename, type);
 	}
 	
 	return false;
 }
 
-bool Simulator::SaveVariables(std::ostream& os, VariableBase::Type type, const std::string& _config_file_format)
+bool Simulator::SaveVariables(std::ostream& os, VariableBase::Type type, const std::string& config_file_format)
 {
-	std::string config_file_format = _config_file_format.empty() ? output_config_file_format : _config_file_format;
-	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(config_file_format);
-	
-	if(config_file_helper_it != config_file_helpers.end())
+	ConfigFileHelper *config_file_helper = FindConfigFileHelper(config_file_format);
+	if(config_file_helper)
 	{
-		 ConfigFileHelper *config_file_helper = (*config_file_helper_it).second;
-		 
-		 return config_file_helper->SaveVariables(os, type);
+		return config_file_helper->SaveVariables(os, type);
 	}
 	
 	return false;

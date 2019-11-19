@@ -90,7 +90,8 @@ private:
 	enum CurStatus {NONE, TYPE, NAME, VALUE, DESCRIPTION, DATA_TYPE};
 	CurVariable *cur_var;
 	CurStatus cur_status;
-	std::vector<std::string> cur_object;
+	typedef std::vector<std::string> CurObject;
+	CurObject cur_object;
 
 	// tokens required
 	xmlChar* name_token;

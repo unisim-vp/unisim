@@ -93,6 +93,9 @@ private:
 	unisim::kernel::variable::Parameter<bool> param_enable_cache;
 	double refresh_period;
 	unisim::kernel::variable::Parameter<double> param_refresh_period;
+	std::string config_file_format;
+	unisim::kernel::variable::Parameter<std::string> param_config_file_format;
+	
 	
 	std::map<unisim::kernel::Object *, unisim::kernel::ServiceImport<unisim::service::interfaces::HttpServer> *> http_server_import_map;
 	std::map<unisim::kernel::Object *, unisim::kernel::ServiceImport<unisim::service::interfaces::Registers> *> registers_import_map;
