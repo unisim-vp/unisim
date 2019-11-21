@@ -39,9 +39,9 @@ struct Scanner
   
   struct Inclusion
   {
-    Inclusion( void const* _state, intptr_t _size, FileLoc const& _fileloc, Inclusion* _next );
+    Inclusion( uint8_t const* _state, intptr_t _size, FileLoc const& _fileloc, Inclusion* _next );
     ~Inclusion();
-    void                          restore( void* _state, intptr_t _size );
+    void                          restore( uint8_t* _state, intptr_t _size );
 
     uint8_t*                      state_backup;
     FileLoc                       fileloc;
