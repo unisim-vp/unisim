@@ -378,17 +378,15 @@ Isa::setparam( ConstStr key, ConstStr value )
 }
 
 void
-Isa::setparam( ConstStr key, SourceCode* value )
+Isa::setparam( ConstStr key, SourceCode const& value )
 {
   static ConstStr  addressclass( "addressclass",  Scanner::symbols );
   static ConstStr codetypeclass( "codetypeclass", Scanner::symbols );
   
   if        (key == addressclass) {
-    m_addrtype = value->content;
-    delete value;
+    m_addrtype = value.content;
   } else if (key == codetypeclass) {
     //m_codetype = value->content;
-    delete value;
   }
   
   else throw UnknownIdent( key );

@@ -43,7 +43,7 @@ namespace CLex
       
     if (lch == '\n')  { lidx += 1; cidx = 0; }
     else              { cidx += 1; }
-      
+
     return source.get(lch).good();
   }
 
@@ -63,7 +63,8 @@ namespace CLex
 
   char Scanner::getchar()
   {
-    if (not nextchar()) { std::cerr << errloc() << "error: unexpected EoF"; throw 0; }
+    if (not nextchar())
+      { lnext = EoF; throw unexpected(); }
     return lch;
   }
 
@@ -109,7 +110,7 @@ namespace CLex
             /* skipping comments */
             switch (lch == '#' ? '/' : getchar())
               {
-              case '*': for (char const* expect = "*/"; *expect;) { if (getchar() != *expect++) expect = "*/"; } break;
+              case '*': for (;;) { if (getchar() != '*') continue; do {} while (getchar() == '*'); if (lch == '/') break; } break;
               case '/': do {} while (getchar() != '\n'); break;
               default: throw syntax_error();
               }

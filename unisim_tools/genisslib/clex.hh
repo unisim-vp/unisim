@@ -110,6 +110,9 @@ namespace CLex
       return idx < sizeof(buffer);
     };
 
+    char const* begin() const { return &buffer[0]; }
+    char const* end() const { return &buffer[idx]; }
+
     char buffer[SZ];
     unsigned idx;
   };

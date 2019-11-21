@@ -10,8 +10,10 @@
 #include <scanner.hh>
 #include <isa.hh>
 #include <comment.hh>
+#include <sourcecode.hh>
 #include <parser_tokens.hh>
 #include <strtools.hh>
+#include <clex.hh>
 #include <iostream>
 #include <stdexcept>
 #include <limits>
@@ -88,35 +90,176 @@ Scanner::Inclusion::restore( uint8_t* _state, intptr_t _size )
   //  memcpy( _state, state_backup, _size );
 }
 
+namespace
+{
+  SourceCode GetSourceCode(CLex::Scanner& src)
+  {
+    FileLoc fl(src.filename, src.lidx, src.cidx );
+    std::string buf;
+    int depth = 0;
+    enum { InCode = 0, InString, InEsc } state = InCode;
+
+    for (;;)
+      {
+        char ch = src.getchar();
+        switch (state)
+          {
+          case InCode:
+            if      (ch == '"')  state = InString;
+            if      (ch == '{')  depth += 1;
+            else if (ch == '}')  depth -= 1;
+            break;
+          case InString:
+            if      (ch == '"')  state = InCode;
+            else if (ch == '\\') state = InEsc;
+          case InEsc:
+            state = InString;
+            break;
+          }
+        if (depth < 0) break;
+        buf += ch;
+      }
+
+    return SourceCode( buf.c_str(), fl );
+  }
+}
+
 bool
 Scanner::parse( char const* _filename, Isa& _isa )
 {
-//   s_isa = &_isa;
-//   if (not Scanner::open( ConstStr( _filename) ) )
-//     return false;
-//   bracecount = 0;
-//   scs.clear();
+  s_isa = &_isa;
   
-// #if 0
-//   // This code is only for testing the lexical analyzer
-//   int c;
-    
-//   while( (c = yylex()) != 0 ) {
-//     printf( "%s\n", get_token_name(c) );
-//   }
-// #endif
-  
-//   aborted_scanning = false;
-//   int error = yyparse();
+  CLex::Scanner source(_filename);
 
-//   throw 0;
-//   // if (yyin) {
-//   //   fclose( yyin );
-//   //   yyin = 0;
-//   // }
+  source.next();
+
+  while (source.lnext != CLex::Scanner::EoF)
+    {
+      switch (source.lnext)
+        {
+        case CLex::Scanner::Name:
+          {
+            CLex::BlocSink<16> cmd;
+            if (not source.get_name(cmd))
+              { std::cerr << "error: too long cmdifier\n";  throw source.unexpected(); }
+        
+            if (std::equal(cmd.begin(), cmd.end(), "decl") or
+                std::equal(cmd.begin(), cmd.end(), "impl"))
+              {
+                auto& member = (cmd.buffer[0] == 'd') ? _isa.m_decl_srccodes : _isa.m_impl_srccodes;
+                member.push_back( new SourceCode(GetSourceCode(source)) );
+                source.next();
+              }
+            else if (std::equal(cmd.begin(), cmd.end(), "namespace"))
+              {
+                for (;;)
+                  {
+                    if (source.next() != CLex::Scanner::Name)
+                      throw source.unexpected();
+                    std::string cmd;
+                    source.get(cmd, &CLex::Scanner::get_name);
+                    _isa.m_namespace.push_back( ConstStr( cmd.c_str(), Scanner::symbols ) );
+                    if (source.next() != CLex::Scanner::Colon)
+                      break;
+                    if (source.getchar() != ':')
+                      throw source.unexpected();
+                  }
+                
+              }
+            else if (std::equal(cmd.begin(), cmd.end(), "set"))
+              {
+                if (source.next() != CLex::Scanner::Name)
+                  throw source.unexpected();
+
+                ConstStr key;
+                {
+                  CLex::BlocSink<16> ident;
+                  if (not source.get_name(ident))
+                    { std::cerr << "error: too long identifier\n";  throw source.unexpected(); }
+                  ident.append('\0');
+                  key = ConstStr(ident.buffer, Scanner::symbols);
+                }
+
+                switch (source.next())
+                  {
+                  default:
+                    std::cerr << "error: not a set-value\n";
+                    throw source.unexpected();
+
+                  case CLex::Scanner::Name:
+                    {
+                      std::string value;
+                      source.get(value, &CLex::Scanner::get_name);
+                      _isa.setparam( key, ConstStr(value.c_str(), Scanner::symbols) );
+                    }
+                    break;
+
+                  case CLex::Scanner::ObjectOpening:
+                    _isa.setparam( key, GetSourceCode(source) );
+                    break;
+                  }
+                source.next();
+              }
+            else if (std::equal(cmd.begin(), cmd.end(), "template"))
+              {
+                if (source.next() != CLex::Scanner::Less)
+                  throw source.unexpected();
+                for (;;)
+                  {
+                    if (source.next() != CLex::Scanner::ObjectOpening)
+                      throw source.unexpected();
+                    SourceCode&& tp = GetSourceCode(source);
+                    if (source.next() != CLex::Scanner::ObjectOpening)
+                      throw source.unexpected();
+                    SourceCode&& nm = GetSourceCode(source);
+                    _isa.m_tparams.append( new CodePair( new SourceCode(std::move(tp)), new SourceCode(std::move(nm)) ) );
+                    if (source.next() == CLex::Scanner::More)
+                      break;
+                    if (source.lnext != CLex::Scanner::Comma)
+                      throw source.unexpected();
+                  }
+                source.next();
+              }
+            else
+              {
+                cmd.append('\0');
+                std::cerr << "error: unknown directive '" << cmd.buffer << "'\n";
+                throw source.unexpected();
+              }
+          
+          } break;
+      
+      
+          break;
+        default:
+          throw source.unexpected();
+        }
+    }
+  //   if (not Scanner::open( ConstStr( _filename) ) )
+  //     return false;
+  //   bracecount = 0;
+  //   scs.clear();
   
-//   //  yylex_destroy();
-//   return (error == 0) && !aborted_scanning;
+  // #if 0
+  //   // This code is only for testing the lexical analyzer
+  //   int c;
+    
+  //   while( (c = yylex()) != 0 ) {
+  //     printf( "%s\n", get_token_name(c) );
+  //   }
+  // #endif
+  
+  //   aborted_scanning = false;
+  //   int error = yyparse();
+
+  //   throw 0;
+  //   // if (yyin) {
+  //   //   fclose( yyin );
+  //   //   yyin = 0;
+  //   // }
+  
+  //   //  yylex_destroy();
+  //   return (error == 0) && !aborted_scanning;
   return true;
 }
 

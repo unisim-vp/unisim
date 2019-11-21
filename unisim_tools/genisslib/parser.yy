@@ -257,7 +257,8 @@ global_sourcecode_parameter: TOK_SET TOK_IDENT TOK_SOURCE_CODE
   ConstStr key( $2, Scanner::symbols );
   SourceCode* val = $3;
   try {
-    Scanner::isa().setparam( key, val );
+    Scanner::isa().setparam( key, *val );
+    delete val;
   } catch (Isa::UnknownIdent ui) {
     Scanner::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
     YYABORT;
