@@ -16,6 +16,7 @@ fwd.hh \
 main.hh \
 product.hh \
 scanner.hh \
+clex.hh \
 strtools.hh \
 vect.hh \
 ciscgenerator.hh \
@@ -29,6 +30,7 @@ subdecoder.hh \
 
 UNISIM_TOOLS_GENISSLIB_SOURCE_FILES="\
 scanner.cc \
+clex.cc \
 action.cc \
 bitfield.cc \
 cli.cc \
