@@ -4,14 +4,6 @@
 
 namespace CLex
 {
-  Scanner::Scanner( char const* _filename )
-    : source( _filename )
-    , filename( _filename )
-    , lidx(0), cidx(0)
-    , lch('\n')
-    , putback(false)
-  {}
-
   char const*
   Scanner::nextName( Scanner::Next n )
   {
@@ -21,6 +13,8 @@ namespace CLex
       case ObjectClosing: return "ObjectClosing";
       case ArrayOpening: return "ArrayOpening";
       case ArrayClosing: return "ArrayClosing";
+      case GroupOpening: return "GroupOpening";
+      case GroupClosing: return "GroupClosing";
       case StringQuotes: return "StringQuotes";
       case Number: return "Number";
       case Name: return "Name";
@@ -28,7 +22,9 @@ namespace CLex
       case Colon: return "Colon";
       case Assign: return "Assign";
       case Star: return "Star";
+      case Dot: return "Dot";
       case SemiColon: return "SemiColon";
+      case QuestionMark: return "QuestionMark";
       case Less: return "Less";
       case More: return "More";
       case EoF: return "EoF";
@@ -39,25 +35,25 @@ namespace CLex
   bool
   Scanner::nextchar()
   {
-    if (putback) { putback = false; return source.good(); }
+    if (putback) { putback = false; return sourcegood(); }
       
     if (lch == '\n')  { lidx += 1; cidx = 0; }
     else              { cidx += 1; }
 
-    return source.get(lch).good();
+    return sourceget(lch);
   }
 
   Scanner::Unexpected
   Scanner::unexpected() const
   {
-    std::cerr << errloc() << "error: unexpected "  << nextName( lnext ) << std::endl;
+    std::cerr << loc() << "error: unexpected "  << nextName( lnext ) << std::endl;
     return Unexpected();
   }
 
   Scanner::Unexpected
   Scanner::syntax_error() const
   {
-    std::cerr << errloc() << "syntax error" << std::endl;
+    std::cerr << loc() << "syntax error" << std::endl;
     return Unexpected();
   }
 
@@ -81,15 +77,19 @@ namespace CLex
       case '}':    return ObjectClosing;
       case '[':    return ArrayOpening;
       case ']':    return ArrayClosing;
+      case '(':    return GroupOpening;
+      case ')':    return GroupClosing;
       case ',':    return Comma;
       case ':':    return Colon;
       case '-':    return Number;
       case '_':    return Name;
       case '=':    return Assign;
       case '*':    return Star;
+      case '.':    return Dot;
       case '<':    return Less;
       case '>':    return More;
       case ';':    return SemiColon;
+      case '?':    return QuestionMark;
       }
     return EoF;
   }
@@ -121,9 +121,9 @@ namespace CLex
   }
 
   std::ostream&
-  Scanner::errloc( std::ostream& sink ) const
+  Scanner::loc( std::ostream& sink ) const
   {
-    sink << filename << ":" << lidx << ":" << cidx << ": ";
+    sink << sourcename() << ":" << lidx << ":" << cidx << ": ";
     return sink;
   }
 
@@ -153,14 +153,14 @@ namespace CLex
     else
       throw syntax_error();
 
-    if (not source.good()) { putback = true; return true; }
+    if (not sourcegood()) { putback = true; return true; }
       
     if (lch == '.')
       {
         if (not number.append('.')) return false;
         if (not isdigit(getchar())) throw syntax_error();
         do { if (not number.append(lch)) return false; } while (nextchar() and isdigit(lch));
-        if (not source.good()) { putback = true; return true; }
+        if (not sourcegood()) { putback = true; return true; }
       }
       
     if (lch == 'e' or lch == 'E')
@@ -183,7 +183,7 @@ namespace CLex
       
     if (not get_number(num) or not num.append('\0'))
       {
-        std::cerr << errloc() << " double parse buffer overflow\n";
+        std::cerr << loc() << " double parse buffer overflow\n";
         throw Unexpected();
       }
     double res;
@@ -199,7 +199,7 @@ namespace CLex
       
     if (not get_number(num) or not num.append('\0'))
       {
-        std::cerr << errloc() << " double parse buffer overflow\n";
+        std::cerr << loc() << " double parse buffer overflow\n";
         throw Unexpected();
       }
     return &num.buffer[0];
@@ -212,7 +212,7 @@ namespace CLex
 
     if (not get_number(num) or not num.append('\0'))
       {
-        std::cerr << errloc() << " u64 parse buffer overflow\n";
+        std::cerr << loc() << " u64 parse buffer overflow\n";
         throw Unexpected();
       }
 
@@ -220,7 +220,7 @@ namespace CLex
     uint64_t res = strtoull(&num.buffer[0], &end, 10);
     if (*end)
       {
-        std::cerr << errloc() << " u64 parse error: " << end << std::endl;
+        std::cerr << loc() << " u64 parse error: " << end << std::endl;
         throw Unexpected();
       }
       
@@ -234,7 +234,7 @@ namespace CLex
 
     if (not get_number(num) or not num.append('\0'))
       {
-        std::cerr << errloc() << " s64 parse buffer overflow\n";
+        std::cerr << loc() << " s64 parse buffer overflow\n";
         throw Unexpected();
       }
 
@@ -242,7 +242,7 @@ namespace CLex
     int64_t res = strtoll(&num.buffer[0], &end, 10);
     if (*end)
       {
-        std::cerr << errloc() << " u64 parse error: " << end << std::endl;
+        std::cerr << loc() << " u64 parse error: " << end << std::endl;
         throw Unexpected();
       }
       
@@ -258,7 +258,7 @@ namespace CLex
           {
           default: if (not s.append(lch)) return false; break;
           case '"': cont = false; break;
-          case '\n': std::cerr << errloc() << "error: unexpected end of line\n"; throw 0;
+          case '\n': std::cerr << loc() << "error: unexpected end of line\n"; throw 0;
           case '\\':
             switch (getchar())
               {

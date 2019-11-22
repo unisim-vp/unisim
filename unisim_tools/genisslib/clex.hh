@@ -35,7 +35,6 @@
 #ifndef __CLEX_HH__
 #define __CLEX_HH__
 
-#include <fstream>
 #include <string>
 #include <inttypes.h>
 
@@ -43,16 +42,23 @@ namespace CLex
 {
   struct Scanner
   {
-    Scanner( char const* _filename );
+    Scanner() : lidx(0), cidx(0), lch('\n'), putback(false) {}
 
+    virtual char const* sourcename() const = 0;
+    virtual bool sourcegood() const = 0;
+    virtual bool sourceget( char& lch ) = 0;
+    virtual ~Scanner() {}
+    
     enum Next
       {
         ObjectOpening, ObjectClosing,
         ArrayOpening, ArrayClosing,
+        GroupOpening, GroupClosing,
         StringQuotes, Number, Name,
-        Comma, Colon, Assign, Star,
+        Comma, Colon, Assign, Star, Dot,
         Less, More,
-        SemiColon, EoF
+        SemiColon, QuestionMark,
+        EoF
       };
 
     static char const* nextName( Scanner::Next n );
@@ -68,13 +74,13 @@ namespace CLex
     Next whatsnext() const;
     Next next();
 
-    struct ErrLoc
+    struct Loc
     {
-      ErrLoc( Scanner const& scanner ) : s(scanner) {} Scanner const& s;
-      friend std::ostream& operator << (std::ostream& sink, ErrLoc const& el ) { return el.s.errloc(sink); return sink; }
+      Loc( Scanner const& scanner ) : s(scanner) {} Scanner const& s;
+      friend std::ostream& operator << (std::ostream& sink, Loc const& el ) { return el.s.loc(sink); return sink; }
     };
-    ErrLoc errloc() const { return ErrLoc(*this); }
-    std::ostream& errloc( std::ostream& ) const;
+    Loc loc() const { return Loc(*this); }
+    std::ostream& loc( std::ostream& ) const;
 
     struct Sink { virtual bool append( char ch ) = 0; virtual ~Sink() {} };
     
@@ -92,8 +98,6 @@ namespace CLex
     bool expect( char const* s, bool (Scanner::*member)(Sink&) );
     void get( std::string& s, bool (Scanner::*member)(Sink&) );
     
-    std::ifstream source; 
-    std::string filename;
     uintptr_t lidx, cidx;
     Next lnext;
     char lch;

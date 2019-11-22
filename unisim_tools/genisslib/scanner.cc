@@ -11,9 +11,14 @@
 #include <isa.hh>
 #include <comment.hh>
 #include <sourcecode.hh>
+#include <action.hh>
+#include <operation.hh>
+#include <bitfield.hh>
+#include <variable.hh>
 #include <parser_tokens.hh>
 #include <strtools.hh>
 #include <clex.hh>
+#include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <limits>
@@ -31,7 +36,23 @@ Isa*                     Scanner::s_isa = 0;
 ConstStr::Pool           Scanner::symbols;
 std::vector<ConstStr>    Scanner::s_lookupdirs;
 
-void parse_binary_number( char const* s, int length, unsigned int *value );
+static
+void
+create_action( Operation* _operation, ActionProto const* _actionproto, SourceCode* _actioncode )
+{
+  Action const* prev_action = _operation->action( _actionproto );
+
+  if (prev_action) {
+    Scanner::fileloc.err( "error: action `%s.%s' redefined",
+                          _operation->symbol.str(), _actionproto->m_symbol.str() );
+    
+    prev_action->m_fileloc.err( "action `%s.%s' previously defined here",
+                                _operation->symbol.str(), _actionproto->m_symbol.str() );
+    exit( -1 );
+  }
+  
+  _operation->add( new Action( _actionproto, _actioncode, Scanner::comments, Scanner::fileloc ) );
+}
 
 Scanner::Inclusion* Scanner::include_stack = 0;
 
@@ -92,9 +113,13 @@ Scanner::Inclusion::restore( uint8_t* _state, intptr_t _size )
 
 namespace
 {
+  FileLoc GetFileLoc(CLex::Scanner& s)
+  {
+    return FileLoc(s.sourcename(), s.lidx, s.cidx );
+  }
   SourceCode GetSourceCode(CLex::Scanner& src)
   {
-    FileLoc fl(src.filename, src.lidx, src.cidx );
+    FileLoc && fl = GetFileLoc(src);
     std::string buf;
     int depth = 0;
     enum { InCode = 0, InString, InEsc } state = InCode;
@@ -109,9 +134,12 @@ namespace
             if      (ch == '{')  depth += 1;
             else if (ch == '}')  depth -= 1;
             break;
+            
           case InString:
             if      (ch == '"')  state = InCode;
             else if (ch == '\\') state = InEsc;
+            break;
+            
           case InEsc:
             state = InString;
             break;
@@ -120,7 +148,216 @@ namespace
         buf += ch;
       }
 
-    return SourceCode( buf.c_str(), fl );
+    return SourceCode( buf.c_str(), std::move(fl) );
+  }
+  
+  unsigned GetInteger(CLex::Scanner& src)
+  {
+    unsigned base = 10;
+    if (src.lch == '0')
+      {
+        char d = src.nextchar() ? src.lch : '\0';
+        if (isdigit(d))                { base = 10; /*not octal for now*/ }
+        else if (d == 'b' or d == 'x') { base = (d == 'b') ? 2 : 16; src.getchar(); }
+        else { src.putback = true; return 0; }
+      }
+
+    unsigned res = 0;
+    for (bool hasdigit = false;; hasdigit = true)
+      {
+        unsigned digit = 16;
+        if      ('0' <= src.lch and src.lch <= '9')
+          { digit = src.lch - '0'; }
+        else if ('a' <= src.lch and src.lch <= 'f')
+          { digit = src.lch - 'a' + 10; }
+        else if ('A' <= src.lch and src.lch <= 'F')
+          { digit = src.lch - 'A' + 10; }
+        else if (hasdigit)
+          break;
+        
+        if (digit >= base)
+          throw src.unexpected();
+
+        res = res*base + digit;
+        if (not src.nextchar()) break;
+      }
+
+    src.putback = true;
+    return res;
+  }
+
+  unsigned GetArraySize(CLex::Scanner& src)
+  {
+    if (src.next() != CLex::Scanner::ArrayOpening)
+      throw src.unexpected();
+    if (src.next() != CLex::Scanner::Number)
+      throw src.unexpected();
+    unsigned size = GetInteger(src);
+    if (src.next() != CLex::Scanner::ArrayClosing)
+      throw src.unexpected();
+    return size;
+  }
+  
+  Ptr<Operation>
+  GetOp(CLex::Scanner& src, Isa& _isa)
+  {
+    if (src.next() != CLex::Scanner::Name)
+      throw src.unexpected();
+    
+    ConstStr symbol;
+    FileLoc && symfl = GetFileLoc(src);
+    {
+      std::string buf;
+      src.get(buf,&CLex::Scanner::get_name);
+      symbol = ConstStr(buf.c_str(),Scanner::symbols);
+    }
+
+    if (src.next() != CLex::Scanner::GroupOpening)
+      throw src.unexpected();
+    
+    Vector<BitField> bitfields;
+    for (;;)
+      {
+        if (src.next() == CLex::Scanner::More)
+          {
+            // Separator
+            bool rewind = src.next() != CLex::Scanner::Less;
+            if (rewind)
+              {
+                if (src.lnext != CLex::Scanner::Name or not src.expect("rewind", &CLex::Scanner::get_name) or src.next() != CLex::Scanner::Less)
+                  throw src.unexpected();
+              }
+            bitfields.push_back( new SeparatorBitField( rewind ) );
+            continue;
+          }
+        
+        switch (src.lnext)
+          {
+          case CLex::Scanner::Number:
+            {
+              // OpCode
+              unsigned bits = GetInteger(src), size = GetArraySize(src);
+              bitfields.push_back( new OpcodeBitField( size, bits ) );
+            }
+            break;
+
+          case CLex::Scanner::QuestionMark:
+            {
+              // Unused
+              unsigned size = GetArraySize(src);
+              bitfields.push_back( new UnusedBitField( size ) );
+            }
+            break;
+
+          case CLex::Scanner::Star:
+            {
+              // SubOp
+              if (src.next() != CLex::Scanner::Name)
+                throw src.unexpected();
+              ConstStr symbol;
+              {
+                std::string buf;
+                src.get(buf, &CLex::Scanner::get_name);
+                symbol = ConstStr( buf.c_str(), Scanner::symbols );
+              }
+              if (src.next() != CLex::Scanner::ArrayOpening)
+                throw src.unexpected();
+              if (src.next() != CLex::Scanner::Name)
+                throw src.unexpected();
+              ConstStr sdinstance_symbol;
+              {
+                std::string buf;
+                src.get(buf, &CLex::Scanner::get_name); 
+                sdinstance_symbol = ConstStr( buf.c_str(), Scanner::symbols );
+              }
+              if (src.next() != CLex::Scanner::ArrayClosing)
+                throw src.unexpected();
+              if (SDInstance const* sdinstance = _isa.sdinstance( sdinstance_symbol ))
+                {
+                  bitfields.push_back( new SubOpBitField( symbol, sdinstance ) );
+                }
+              else
+                {
+                  std::cerr << "error: subdecoder instance `" << sdinstance_symbol.str() << "' not declared.\n";
+                  throw src.unexpected();
+                }
+            }
+            break;
+
+          default:
+            {
+              // Operand
+              int shift = 0;
+              bool sext = false;
+              std::string buf;
+              
+              if (src.lnext == CLex::Scanner::Name)
+                {
+                  for (;;)
+                    {
+                      src.get(buf, &CLex::Scanner::get_name);
+                      if (buf == "shl")
+                        {
+                          if (src.next() != CLex::Scanner::Less)
+                            throw src.unexpected();
+                          if (src.next() != CLex::Scanner::Number)
+                            throw src.unexpected();
+                          shift = -GetInteger(src);
+                          if (src.next() != CLex::Scanner::More)
+                            throw src.unexpected();
+                        }
+                      else if (buf == "sext")
+                        {
+                          sext = true;
+                        }
+                      else
+                        break;
+                      
+                      if (src.next() != CLex::Scanner::Name)
+                        {
+                          if (src.lnext != CLex::Scanner::Less)
+                            throw src.unexpected();
+                          break;
+                        }
+                    }
+                }
+
+              int final_size = 0;
+
+              if (src.lnext == CLex::Scanner::Less)
+                {
+                  if (src.next() != CLex::Scanner::Number)
+                    throw src.unexpected();
+                  final_size = GetInteger(src);
+                  if (src.next() != CLex::Scanner::More)
+                    throw src.unexpected();
+                  if (src.next() != CLex::Scanner::Name)
+                    throw src.unexpected();
+                  src.get(buf, &CLex::Scanner::get_name);
+                }
+
+              if (src.lnext != CLex::Scanner::Name)
+                throw src.unexpected();
+                
+              ConstStr Symbol( buf.c_str(), Scanner::symbols );
+              
+              unsigned size = GetArraySize(src);
+
+              bitfields.push_back( new OperandBitField( size, symbol, shift, final_size, sext ) );
+            }
+            break;
+          }
+
+        if (src.next() == CLex::Scanner::GroupClosing)
+          break;
+
+        if (src.lnext != CLex::Scanner::Colon)
+          throw src.unexpected();
+      }
+    
+    auto res = new Operation(symbol, bitfields, Scanner::comments, 0, symfl);
+    Scanner::comments.clear();
+    return res;
   }
 }
 
@@ -128,26 +365,143 @@ bool
 Scanner::parse( char const* _filename, Isa& _isa )
 {
   s_isa = &_isa;
-  
-  CLex::Scanner source(_filename);
 
+  std::cerr << "Opening " << _filename << '\n';
+  struct FileScanner : public CLex::Scanner
+  {
+    FileScanner(char const* f) : CLex::Scanner(), ifs(f), filename(f), esc('\n') {}
+    virtual char const* sourcename() const override { return filename.c_str(); }
+    virtual bool sourcegood() const override { return ifs.good(); }
+    virtual bool sourceget(char& lch) override
+    {
+      if (esc != '\n') { lch = esc; esc = '\n'; return true; }
+      for (;;)
+        {
+          bool good = ifs.get(lch).good();
+          if (not good or lch != '\\') return good;
+          if (not ifs.get(esc).good()) throw Unexpected();
+          if (esc != '\n') break;
+          lidx += 1;
+          cidx = 0;
+        }
+      return true;
+    }
+    
+    std::ifstream ifs;
+    std::string filename;
+    char esc;
+  } source(_filename);
+  if (not source.ifs.good())
+    {
+      std::cerr << "error: cannot open `" << _filename << "'\n";
+      return false;
+    }
+  
+  
   source.next();
 
   while (source.lnext != CLex::Scanner::EoF)
     {
-      switch (source.lnext)
+      switch (source.lnext) /* global statement */
         {
         case CLex::Scanner::Name:
           {
-            CLex::BlocSink<16> cmd;
-            if (not source.get_name(cmd))
-              { std::cerr << "error: too long cmdifier\n";  throw source.unexpected(); }
+            FileLoc && cmdfl = GetFileLoc(source);
+            std::string cmd;
+            source.get(cmd, &CLex::Scanner::get_name);
         
             if (std::equal(cmd.begin(), cmd.end(), "decl") or
                 std::equal(cmd.begin(), cmd.end(), "impl"))
               {
-                auto& member = (cmd.buffer[0] == 'd') ? _isa.m_decl_srccodes : _isa.m_impl_srccodes;
+                auto& member = (cmd[0] == 'd') ? _isa.m_decl_srccodes : _isa.m_impl_srccodes;
+                if (source.next() != CLex::Scanner::ObjectOpening)
+                  throw source.unexpected();
                 member.push_back( new SourceCode(GetSourceCode(source)) );
+                source.next();
+              }
+            else if (std::equal(cmd.begin(), cmd.end(), "action"))
+              {
+                SourceCode* returns = 0;
+                if (source.next() == CLex::Scanner::ObjectOpening)
+                  {
+                    returns = new SourceCode(GetSourceCode(source));
+                    source.next();
+                  }
+                
+                ConstStr symbol;
+                FileLoc && symfl = GetFileLoc(source);
+                if (source.lnext != CLex::Scanner::Name)
+                  throw source.unexpected();
+                {
+                  std::string buf;
+                  source.get(buf, &CLex::Scanner::get_name);
+                  symbol = ConstStr(buf.c_str(),Scanner::symbols);
+                  ActionProto const*  prev_proto = _isa.actionproto( symbol );
+                  if (prev_proto)
+                    {
+                      symfl.err( "error: action prototype `%s' redefined", prev_proto->m_symbol.str() );
+                      prev_proto->m_fileloc.err( "action prototype `%s' previously defined here", prev_proto->m_symbol.str() );
+                      throw CLex::Scanner::Unexpected();
+                    }
+                }
+
+                Vector<CodePair> param_list;
+                if (source.next() != CLex::Scanner::GroupOpening)
+                  throw source.unexpected();
+
+                if (source.next() != CLex::Scanner::GroupClosing)
+                  {
+                    source.putback = true;
+                    for (;;)
+                      {
+                        if (source.next() != CLex::Scanner::ObjectOpening)
+                          throw source.unexpected();
+                        SourceCode&& tp = GetSourceCode(source);
+                        if (source.next() != CLex::Scanner::ObjectOpening)
+                          throw source.unexpected();
+                        SourceCode&& nm = GetSourceCode(source);
+                        param_list.append( new CodePair( new SourceCode(std::move(tp)), new SourceCode(std::move(nm)) ) );
+                        if (source.next() == CLex::Scanner::GroupClosing)
+                          break;
+                        if (source.lnext != CLex::Scanner::Comma)
+                          throw source.unexpected();
+                      }
+                  }
+
+                bool isconst = false;
+                if (source.next() == CLex::Scanner::Name)
+                  {
+                    if (not source.expect( "const", &CLex::Scanner::get_name ))
+                      throw source.unexpected();
+                    isconst = true;
+                    source.next();
+                  }
+                
+                if (source.lnext != CLex::Scanner::ObjectOpening)
+                  throw source.unexpected();
+
+                SourceCode* default_sourcecode = new SourceCode(GetSourceCode(source));
+                ActionProto* ap = new ActionProto( ActionProto::Common, symbol, returns, param_list, isconst, default_sourcecode, comments, symfl );
+                comments.clear();
+                _isa.m_actionprotos.push_back( ap );
+                source.next();
+              }
+            else if (std::equal(cmd.begin(), cmd.end(), "include"))
+              {
+                if (source.next() != CLex::Scanner::StringQuotes)
+                  throw source.unexpected();
+                
+                std::string buf;
+                source.get(buf, &CLex::Scanner::get_string);
+                
+                ConstStr filename = Scanner::locate( buf.c_str() );
+
+                if (not parse( filename.str(), _isa ))
+                  {
+                    std::cerr << source.loc() << ": parse error.\n";
+                    return false;
+                  }
+                
                 source.next();
               }
             else if (std::equal(cmd.begin(), cmd.end(), "namespace"))
@@ -220,17 +574,215 @@ Scanner::parse( char const* _filename, Isa& _isa )
                   }
                 source.next();
               }
+            else if (std::equal(cmd.begin(), cmd.end(), "op"))
+              {
+                _isa.add(GetOp(source, _isa));
+                source.next();
+              }
+            else if (std::equal(cmd.begin(), cmd.end(), "group"))
+              {
+                if (source.next() != CLex::Scanner::Name)
+                  throw source.unexpected();
+                ConstStr symbol;
+                FileLoc && symfl = GetFileLoc(source);
+                {
+                  std::string buf;
+                  source.get(buf, &CLex::Scanner::get_name);
+                  symbol = ConstStr(buf.c_str(), Scanner::symbols);
+                }
+
+                source.next();
+                if (source.lnext == CLex::Scanner::Name)
+                  {
+                    CLex::BlocSink<16> grpcmd;
+                    if (not source.get_name(grpcmd))
+                      throw source.unexpected();
+                    grpcmd.append('\0');
+                    _isa.group_command( symbol, ConstStr(grpcmd.buffer,Scanner::symbols), symfl );
+                  }
+                else if (source.lnext == CLex::Scanner::GroupOpening)
+                  {
+                    if (Operation* prev_op = Scanner::isa().operation( symbol ))
+                      {
+                        symfl.err( "error: group name conflicts with operation `%s'", symbol.str() );
+                        prev_op->fileloc.err( "operation `%s' previously defined here", symbol.str() );
+                        throw CLex::Scanner::Unexpected();
+                      }
+                    Group* grp = Scanner::isa().group( symbol );
+                    if (not grp)
+                      grp = new Group( symbol, symfl );
+
+                    for (;;)
+                      {
+                        if (source.next() != CLex::Scanner::Name)
+                          throw source.unexpected();
+                        std::string buf;
+                        FileLoc && errfl = GetFileLoc(source);
+                        source.get(buf, &CLex::Scanner::get_name);
+                        if (not _isa.operations( ConstStr(buf,Scanner::symbols), grp->operations ))
+                          {
+                            errfl.err( "error: undefined operation or group `%s'", buf.c_str() );
+                            throw CLex::Scanner::Unexpected();
+                          }
+                        if (source.next() != CLex::Scanner::Comma)
+                          break;
+                      }
+                    if (source.lnext != CLex::Scanner::GroupClosing)
+                      throw source.unexpected();
+                  }
+                else
+                  throw source.unexpected();
+
+                source.next();
+              }
             else
               {
-                cmd.append('\0');
-                std::cerr << "error: unknown directive '" << cmd.buffer << "'\n";
-                throw source.unexpected();
+                ConstStr symbol(cmd.c_str(), Scanner::symbols);
+                if (source.next() != CLex::Scanner::Dot)
+                  throw source.unexpected();
+                ConstStr attribute;
+                if (source.next() != CLex::Scanner::Name)
+                  throw source.unexpected();
+                {
+                  std::string buf;
+                  source.get(buf, &CLex::Scanner::get_name);
+                  attribute = ConstStr(buf.c_str(), Scanner::symbols);
+                }
+
+                static ConstStr   var( "var",        Scanner::symbols );
+                static ConstStr   spe( "specialize", Scanner::symbols );
+                
+                if (attribute == var)
+                  {
+                    Vector<Variable> var_list;
+
+                    for (;;)
+                      {
+                        if (source.next() != CLex::Scanner::Name)
+                          throw source.unexpected();
+
+                        ConstStr varname;
+                        {
+                          std::string buf;
+                          source.get(buf, &CLex::Scanner::get_name);
+                          varname = ConstStr(buf.c_str(), Scanner::symbols);
+                        }
+                        if (source.next() != CLex::Scanner::Colon)
+                          throw source.unexpected();
+                        if (source.next() != CLex::Scanner::ObjectOpening)
+                          throw source.unexpected();
+                        SourceCode* c_type = new SourceCode(GetSourceCode(source));
+                        if (source.next() != CLex::Scanner::Assign)
+                          { var_list.push_back( new Variable( varname, c_type, 0 ) ); break; }
+                        if (source.next() != CLex::Scanner::ObjectOpening)
+                          throw source.unexpected();
+                        SourceCode* c_init = new SourceCode(GetSourceCode(source));
+                        var_list.push_back( new Variable( varname, c_type, c_init ) );
+                        if (source.next() != CLex::Scanner::Comma)
+                          break;
+                      }
+                    
+                    if (Operation* operation = Scanner::isa().operation( symbol ))
+                      {
+                        operation->variables.append( var_list );
+                      }
+                    else if (Group* group = Scanner::isa().group( symbol ))
+                      {
+                        for (Vector<Operation>::iterator gop = group->operations.begin(); gop < group->operations.end(); ++ gop)
+                          (**gop).variables.append( var_list );
+                      }
+                    else
+                      {
+                        cmdfl.err( "error: undefined operation or group `%s'", symbol.str() );
+                        throw CLex::Scanner::Unexpected();
+                      }
+                  }
+                else if (attribute == spe)
+                  {
+                    if (source.next() != CLex::Scanner::GroupOpening)
+                      throw source.unexpected();
+                    
+                    ConstStr symbol(cmd.c_str(), Scanner::symbols);
+                    Scanner::isa().m_user_orderings.push_back( Isa::Ordering() );
+                    Isa::Ordering& order = Scanner::isa().m_user_orderings.back();
+                    order.fileloc = cmdfl;
+                    order.top_op = symbol;
+
+                    for (;;)
+                      {
+                        if (source.next() != CLex::Scanner::Name)
+                          throw source.unexpected();
+                        std::string buf;
+                        source.get(buf, &CLex::Scanner::get_name);
+                        order.under_ops.push_back( ConstStr(buf.c_str(), Scanner::symbols) );
+                        
+                        if (source.next() != CLex::Scanner::Comma)
+                          break;
+                      }
+                    
+                    if (source.lnext != CLex::Scanner::GroupClosing)
+                      throw source.unexpected();
+                    
+                    source.next();
+                  }
+                else
+                  {
+                    if (source.next() != CLex::Scanner::Assign)
+                      throw source.unexpected();
+                    if (source.next() != CLex::Scanner::ObjectOpening)
+                      throw source.unexpected();
+                    SourceCode* actioncode = new SourceCode(GetSourceCode(source));
+                    /* Actions belongs to an action prototype */
+                    ActionProto const* actionproto = Scanner::isa().actionproto( attribute );
+
+                    if (not actionproto)
+                      {
+                        cmdfl.err( "error: undefined action prototype `%s'", attribute.str() );
+                        throw CLex::Scanner::Unexpected();
+                      }
+
+                    if (Operation* operation = Scanner::isa().operation( symbol ))
+                      {
+                        create_action( operation, actionproto, actioncode );
+                      }
+                    else if (Group* group = Scanner::isa().group( symbol ))
+                      {
+                        for (Vector<Operation>::iterator gop = group->operations.begin(); gop < group->operations.end(); ++ gop)
+                          create_action( *gop, actionproto, actioncode );
+                      }
+                    else
+                      {
+                        cmdfl.err( "error: undefined operation or group `%s'", symbol.str() );
+                        throw CLex::Scanner::Unexpected();
+                      }
+                    source.next();
+                  }
               }
           
-          } break;
-      
-      
+          }
           break;
+
+        case CLex::Scanner::ObjectOpening:
+          {
+            Ptr<SourceCode> sc = new SourceCode(GetSourceCode(source));
+            if (source.next() == CLex::Scanner::Colon)
+              {
+                if (source.next() != CLex::Scanner::Name or not source.expect("op", &CLex::Scanner::get_name))
+                  throw source.unexpected();
+                auto op = GetOp(source, _isa);
+                op->condition = sc;
+                _isa.add(op);
+              }
+            else
+              _isa.m_decl_srccodes.push_back(sc);
+            source.next();
+          }
+          break;
+
+        case CLex::Scanner::SemiColon:
+          source.next();
+          break;
+      
         default:
           throw source.unexpected();
         }
@@ -294,18 +846,6 @@ Scanner::include( char const* _filename )
   // yy_switch_to_buffer( yy_create_buffer( yyin, YY_BUF_SIZE ) );
   // yylineno = 1;
   return true;
-}
-
-void
-parse_binary_number( char const* binstr, int length, unsigned int *value )
-{
-  unsigned int res = 0;
-  unsigned int mask = 1;
-  for (char const* ptr = binstr + length; (--ptr) >= binstr and *ptr != 'b';) {
-    if (*ptr != '0') res |= mask;
-    mask <<= 1;
-  }
-  *value = res;
 }
 
 Scanner::Token Scanner::s_tokens[] = {
