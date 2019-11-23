@@ -15,6 +15,7 @@
 #include <operation.hh>
 #include <bitfield.hh>
 #include <variable.hh>
+#include <specialization.hh>
 #include <parser_tokens.hh>
 #include <strtools.hh>
 #include <clex.hh>
@@ -339,7 +340,7 @@ namespace
               if (src.lnext != CLex::Scanner::Name)
                 throw src.unexpected();
                 
-              ConstStr Symbol( buf.c_str(), Scanner::symbols );
+              ConstStr symbol( buf.c_str(), Scanner::symbols );
               
               unsigned size = GetArraySize(src);
 
@@ -579,6 +580,56 @@ Scanner::parse( char const* _filename, Isa& _isa )
                 _isa.add(GetOp(source, _isa));
                 source.next();
               }
+            else if (std::equal(cmd.begin(), cmd.end(), "specialize"))
+              {
+                if (source.next() != CLex::Scanner::Name)
+                  throw source.unexpected();
+
+                Specialization* spec = 0;
+                FileLoc && symfl = GetFileLoc(source);
+                {
+                  std::string buf;
+                  source.get(buf, &CLex::Scanner::get_name);
+                  if (Operation* operation = _isa.operation( ConstStr(buf.c_str(), Scanner::symbols) ))
+                    {
+                      Vector<Constraint> none;
+                      spec = new Specialization(operation, none);
+                    }
+                  else
+                    {
+                      symfl.err( "error: operation `%s' not defined", buf.c_str() );
+                      throw CLex::Scanner::Unexpected();
+                    }
+                }
+                
+                if (source.next() != CLex::Scanner::GroupOpening)
+                  throw source.unexpected();
+                
+                for (;;)
+                  {
+                    if (source.next() != CLex::Scanner::Name)
+                      throw source.unexpected();
+                    std::string buf;
+                    source.get(buf, &CLex::Scanner::get_name);
+                    
+                    if (source.next() != CLex::Scanner::Assign)
+                      throw source.unexpected();
+
+                    if (source.next() != CLex::Scanner::Number)
+                      throw source.unexpected();
+                    unsigned value = GetInteger(source);
+                    
+                    spec->m_constraints.push_back( new Constraint( ConstStr(buf.c_str(), Scanner::symbols), value ) );
+                    
+                    if (source.next() != CLex::Scanner::Comma)
+                      break;
+                  }
+                    
+                if (source.lnext != CLex::Scanner::GroupClosing)
+                  throw source.unexpected();
+                    
+                source.next();
+              }
             else if (std::equal(cmd.begin(), cmd.end(), "group"))
               {
                 if (source.next() != CLex::Scanner::Name)
@@ -608,9 +659,14 @@ Scanner::parse( char const* _filename, Isa& _isa )
                         prev_op->fileloc.err( "operation `%s' previously defined here", symbol.str() );
                         throw CLex::Scanner::Unexpected();
                       }
-                    Group* grp = Scanner::isa().group( symbol );
-                    if (not grp)
-                      grp = new Group( symbol, symfl );
+                    if (Group* prev_grp = Scanner::isa().group( symbol ))
+                      {
+                        symfl.err( "error: group name conflicts with group `%s'", symbol.str() );
+                        prev_grp->fileloc.err( "group `%s' previously defined here", symbol.str() );
+                        throw CLex::Scanner::Unexpected();
+                      }
+                    
+                    Group* res = new Group( symbol, symfl );
 
                     for (;;)
                       {
@@ -619,7 +675,7 @@ Scanner::parse( char const* _filename, Isa& _isa )
                         std::string buf;
                         FileLoc && errfl = GetFileLoc(source);
                         source.get(buf, &CLex::Scanner::get_name);
-                        if (not _isa.operations( ConstStr(buf,Scanner::symbols), grp->operations ))
+                        if (not _isa.operations( ConstStr(buf,Scanner::symbols), res->operations ))
                           {
                             errfl.err( "error: undefined operation or group `%s'", buf.c_str() );
                             throw CLex::Scanner::Unexpected();
@@ -627,8 +683,11 @@ Scanner::parse( char const* _filename, Isa& _isa )
                         if (source.next() != CLex::Scanner::Comma)
                           break;
                       }
+                    
                     if (source.lnext != CLex::Scanner::GroupClosing)
                       throw source.unexpected();
+                    
+                    _isa.m_groups.push_back( res );
                   }
                 else
                   throw source.unexpected();
