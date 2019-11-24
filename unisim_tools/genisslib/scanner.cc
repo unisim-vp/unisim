@@ -627,7 +627,9 @@ Scanner::parse( char const* _filename, Isa& _isa )
                     
                 if (source.lnext != CLex::Scanner::GroupClosing)
                   throw source.unexpected();
-                    
+
+                _isa.m_specializations.push_back( spec );
+                
                 source.next();
               }
             else if (std::equal(cmd.begin(), cmd.end(), "group"))
