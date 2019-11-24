@@ -219,21 +219,23 @@ namespace
     Vector<BitField> bitfields;
     for (;;)
       {
-        if (src.next() == CLex::Scanner::More)
+        switch (src.next())
           {
-            // Separator
-            bool rewind = src.next() != CLex::Scanner::Less;
-            if (rewind)
-              {
-                if (src.lnext != CLex::Scanner::Name or not src.expect("rewind", &CLex::Scanner::get_name) or src.next() != CLex::Scanner::Less)
-                  throw src.unexpected();
-              }
-            bitfields.push_back( new SeparatorBitField( rewind ) );
-            continue;
-          }
-        
-        switch (src.lnext)
-          {
+          case CLex::Scanner::More:
+            {
+              // Separator
+              bool rewind = src.next() != CLex::Scanner::Less;
+              if (rewind)
+                {
+                  if (src.lnext != CLex::Scanner::Name or
+                      not src.expect("rewind", &CLex::Scanner::get_name) or
+                      src.next() != CLex::Scanner::Less)
+                    throw src.unexpected();
+                }
+              bitfields.push_back( new SeparatorBitField( rewind ) );
+            }
+            break;
+            
           case CLex::Scanner::Number:
             {
               // OpCode
