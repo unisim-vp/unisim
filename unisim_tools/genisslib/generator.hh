@@ -78,7 +78,7 @@ struct Generator
   
   void                                toposort();
   void                                isastats();
-  void                                iss( char const* prefix, bool sourcelines ) const;
+  void                                iss() const;
   /* header file */
   void                                decoder_decl( Product& _product ) const;
   void                                operation_decl( Product& _product ) const;

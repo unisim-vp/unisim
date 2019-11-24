@@ -64,7 +64,8 @@ struct FProduct : public Product
   void                xwrite( char const* chrs );
 };
 
-struct SProduct : public Product {
+struct SProduct : public Product
+{
   std::string         m_content;
   
   SProduct( ConstStr _prefix, bool _sourcelines );

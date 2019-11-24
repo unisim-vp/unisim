@@ -41,7 +41,6 @@ Isa::Isa()
   : m_decoder( RiscDecoder )
   , m_is_subdecoder( false )
   , m_withsource( false )
-  , m_withcomment( true )
   , m_withencode( false )
   , m_little_endian( false )
   , m_asc_forder( false )
@@ -353,12 +352,6 @@ Isa::setparam( ConstStr key, ConstStr value )
   else if (key == withsource) {
     if      (value == istrue)  m_withsource = true;
     else if (value == isfalse) m_withsource = false;
-    else throw UnknownIdent( value );
-  }
-  
-  else if (key == withcomment) {
-    if      (value == istrue)  m_withcomment = true;
-    else if (value == isfalse) m_withcomment = false;
     else throw UnknownIdent( value );
   }
   
