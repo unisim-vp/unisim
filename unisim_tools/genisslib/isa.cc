@@ -38,10 +38,15 @@
 /** Constructor of Isa instance 
  */
 Isa::Isa()
-  : m_decoder( RiscDecoder ), m_is_subdecoder( false ), m_withsource( false ),
-    m_withencode( false ),
-    m_little_endian( false ), m_asc_forder( false ), m_asc_worder( false ),
-    m_minwordsize( 0 )
+  : m_decoder( RiscDecoder )
+  , m_is_subdecoder( false )
+  , m_withsource( false )
+  , m_withcomment( true )
+  , m_withencode( false )
+  , m_little_endian( false )
+  , m_asc_forder( false )
+  , m_asc_worder( false )
+  , m_minwordsize( 0 )
 {}
 
 /** Destructor for isa instance
@@ -317,21 +322,22 @@ Isa::specialize()
 void
 Isa::setparam( ConstStr key, ConstStr value )
 {
-  static ConstStr   codetype( "codetype",        Scanner::symbols );
-  static ConstStr     scalar( "scalar",          Scanner::symbols );
-  static ConstStr     buffer( "buffer",          Scanner::symbols );
-  static ConstStr subdecoder( "subdecoder_p",    Scanner::symbols );
-  static ConstStr withsource( "withsource_p",    Scanner::symbols );
-  static ConstStr withencode( "withencode_p",    Scanner::symbols );
-  static ConstStr     istrue( "true",            Scanner::symbols );
-  static ConstStr    isfalse( "false",           Scanner::symbols );
-  static ConstStr endianness( "endianness",      Scanner::symbols );
-  static ConstStr      isbig( "big",             Scanner::symbols );
-  static ConstStr   islittle( "little",          Scanner::symbols );
-  static ConstStr     forder( "fields_order",    Scanner::symbols );
-  static ConstStr     worder( "words_order",     Scanner::symbols );
-  static ConstStr     isdesc( "descending",      Scanner::symbols );
-  static ConstStr      isasc( "ascending",       Scanner::symbols );
+  static ConstStr    codetype( "codetype",        Scanner::symbols );
+  static ConstStr      scalar( "scalar",          Scanner::symbols );
+  static ConstStr      buffer( "buffer",          Scanner::symbols );
+  static ConstStr  subdecoder( "subdecoder_p",    Scanner::symbols );
+  static ConstStr  withsource( "withsource_p",    Scanner::symbols );
+  static ConstStr withcomment( "withcomment_p",    Scanner::symbols );
+  static ConstStr  withencode( "withencode_p",    Scanner::symbols );
+  static ConstStr      istrue( "true",            Scanner::symbols );
+  static ConstStr     isfalse( "false",           Scanner::symbols );
+  static ConstStr  endianness( "endianness",      Scanner::symbols );
+  static ConstStr       isbig( "big",             Scanner::symbols );
+  static ConstStr    islittle( "little",          Scanner::symbols );
+  static ConstStr      forder( "fields_order",    Scanner::symbols );
+  static ConstStr      worder( "words_order",     Scanner::symbols );
+  static ConstStr      isdesc( "descending",      Scanner::symbols );
+  static ConstStr       isasc( "ascending",       Scanner::symbols );
   
   if      (key == codetype) {
     if      (value == scalar) m_decoder = RiscDecoder;
@@ -347,6 +353,12 @@ Isa::setparam( ConstStr key, ConstStr value )
   else if (key == withsource) {
     if      (value == istrue)  m_withsource = true;
     else if (value == isfalse) m_withsource = false;
+    else throw UnknownIdent( value );
+  }
+  
+  else if (key == withcomment) {
+    if      (value == istrue)  m_withcomment = true;
+    else if (value == isfalse) m_withcomment = false;
     else throw UnknownIdent( value );
   }
   

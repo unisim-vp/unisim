@@ -836,9 +836,10 @@ Generator::isa_operations_decl( Product& _product ) const
 
     for( Vector<Action>::const_iterator action = (**op).actions.begin(); action < (**op).actions.end(); ++ action ) {
       ActionProto const* actionproto = (**action).m_actionproto;
-      
-      if( not actionproto->m_comments.empty() ) {
-        for( Vector<Comment>::const_iterator comm = actionproto->m_comments.begin(); comm < actionproto->m_comments.end(); ++ comm )
+
+      if (source.m_withcomment)
+      {
+        for (Vector<Comment>::const_iterator comm = actionproto->m_comments.begin(); comm < actionproto->m_comments.end(); ++ comm)
           _product.code( " %s\n", (**comm).content.str() );
       }
       
@@ -963,10 +964,13 @@ Generator::operation_impl( Product& _product ) const {
 }
 
 void
-Generator::isa_operations_methods( Product& _product ) const {
-  for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
-    if( not (**op).comments.empty() ) {
-      for( Vector<Comment>::const_iterator comm = (**op).comments.begin(); comm < (**op).comments.end(); ++ comm )
+Generator::isa_operations_methods( Product& _product ) const
+{
+  for (Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op)
+  {
+    if (source.m_withcomment)
+    {
+      for (Vector<Comment>::const_iterator comm = (**op).comments.begin(); comm < (**op).comments.end(); ++ comm)
         _product.code( "%s\n", (**comm).content.str() );
     }
     
@@ -992,8 +996,9 @@ Generator::isa_operations_methods( Product& _product ) const {
     for (Vector<Action>::const_iterator action = (**op).actions.begin(); action < (**op).actions.end(); ++ action) {
       ActionProto const* actionproto = (**action).m_actionproto;
 
-      if( not (**action).m_comments.empty() ) {
-        for( Vector<Comment>::const_iterator comm = (**action).m_comments.begin(); comm < (**action).m_comments.end(); ++ comm )
+      if (source.m_withcomment)
+      {
+        for (Vector<Comment>::const_iterator comm = (**action).m_comments.begin(); comm < (**action).m_comments.end(); ++ comm)
           _product.code( "%s\n", (**comm).content.str() );
       }
 
