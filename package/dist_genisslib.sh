@@ -6,6 +6,7 @@ cli.hh \
 errtools.hh \
 isa.hh \
 parser_defs.hh \
+parser_tokens.hh \
 riscgenerator.hh \
 specialization.hh \
 variable.hh \
@@ -15,6 +16,7 @@ fwd.hh \
 main.hh \
 product.hh \
 scanner.hh \
+clex.hh \
 strtools.hh \
 vect.hh \
 ciscgenerator.hh \
@@ -26,15 +28,9 @@ sourcecode.hh \
 subdecoder.hh \
 "
 
-UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES="\
-scanner.cc \
-parser.cc \
-parser_tokens.hh \
-"
-
 UNISIM_TOOLS_GENISSLIB_SOURCE_FILES="\
-parser.yy \
-scanner.ll \
+scanner.cc \
+clex.cc \
 action.cc \
 bitfield.cc \
 cli.cc \
@@ -59,8 +55,6 @@ errtools.cc \
 UNISIM_TOOLS_GENISSLIB_DATA_FILES="COPYING INSTALL NEWS README AUTHORS ChangeLog"
 
 UNISIM_TOOLS_GENISSLIB_M4_FILES="\
-m4/lexer.m4 \
-m4/parser_gen.m4 \
 "
 
 GENISSLIB_EXTERNAL_HEADERS="\
@@ -159,8 +153,6 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_LANG([C++])
 AC_CHECK_HEADERS([${GENISSLIB_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))
-UNISIM_CHECK_LEXER_GENERATOR
-UNISIM_CHECK_PARSER_GENERATOR
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 EOF
@@ -176,10 +168,6 @@ if has_to_build "${GENISSLIB_MAKEFILE_AM}" "$0"; then
 	echo "Generating GENISSLIB Makefile.am"
 	cat <<EOF > "${GENISSLIB_MAKEFILE_AM}"
 ACLOCAL_AMFLAGS=-I m4
-BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}
-CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}
-AM_YFLAGS = -d -p yy
-AM_LFLAGS = -l
 AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
 ${GILINSTALL}_PROGRAMS = genisslib
 genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}
@@ -187,17 +175,6 @@ genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\"${GENISSLIB_VERSION}\"
 genisslib_CXXFLAGS = -O1 -Wno-error
 noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}
-# The following lines are a workaround caused by a bugFix in AUTOMAKE 1.12
-# Note that parser_tokens.hh has been added to BUILT_SOURCES above
-# assumption: parser.cc and either parser.h or parser.hh are generated at the same time
-\$(top_builddir)/parser_tokens.hh: \$(top_builddir)/parser.cc
-	if test -f "\$(top_builddir)/parser.h"; then\
-		cp -f "\$(top_builddir)/parser.h" "\$(top_builddir)/parser_tokens.hh";\
-	elif test -f "\$(top_builddir)/parser.hh"; then\
-		cp -f "\$(top_builddir)/parser.hh" "\$(top_builddir)/parser_tokens.hh";\
-	fi
-# The following line disable some C++ flags that prevent the flex generated file to compile properly
-\$(top_builddir)/genisslib-scanner.o: CXXFLAGS += -O1 -Wno-error
 EOF
 	has_to_build_genisslib_configure=yes
 fi
