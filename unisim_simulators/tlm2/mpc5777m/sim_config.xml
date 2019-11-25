@@ -26,7 +26,7 @@
 		<variable name="parse-dwarf">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>false</value>
+			<value>true</value>
 			<description>Enable/Disable parsing of DWARF debugging informations</description>
 			<enumeration>
 				<item>true</item>
@@ -414,7 +414,7 @@
 		</variable>
 	</object>
 	<object name="HARDWARE">
-		<object name="HARDWARE.CAN_BUS">
+		<object name="CAN_BUS">
 			<variable name="bit-inversion-error-probability">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -432,7 +432,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.CAN_CLK">
+		<object name="CAN_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -472,7 +472,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.COMP_CLK">
+		<object name="COMP_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -512,7 +512,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DMAMUX_0">
+		<object name="DMAMUX_0">
 			<variable name="disable-dma-source[0]">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -1174,7 +1174,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DMAMUX_1">
+		<object name="DMAMUX_1">
 			<variable name="disable-dma-source[0]">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -1836,7 +1836,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DMAMUX_2">
+		<object name="DMAMUX_2">
 			<variable name="disable-dma-source[0]">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -2498,7 +2498,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DMAMUX_3">
+		<object name="DMAMUX_3">
 			<variable name="disable-dma-source[0]">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -3160,7 +3160,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DMAMUX_4">
+		<object name="DMAMUX_4">
 			<variable name="disable-dma-source[0]">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -3822,7 +3822,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DMAMUX_5">
+		<object name="DMAMUX_5">
 			<variable name="disable-dma-source[0]">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -4484,7 +4484,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DMAMUX_6">
+		<object name="DMAMUX_6">
 			<variable name="disable-dma-source[0]">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -5146,7 +5146,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DMAMUX_7">
+		<object name="DMAMUX_7">
 			<variable name="disable-dma-source[0]">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -5808,7 +5808,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DMAMUX_8">
+		<object name="DMAMUX_8">
 			<variable name="disable-dma-source[0]">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -6470,7 +6470,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DMAMUX_9">
+		<object name="DMAMUX_9">
 			<variable name="disable-dma-source[0]">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -7132,7 +7132,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DSPI_0">
+		<object name="DSPI_0">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -7154,7 +7154,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DSPI_1">
+		<object name="DSPI_1">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -7176,7 +7176,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DSPI_2">
+		<object name="DSPI_2">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -7198,7 +7198,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DSPI_3">
+		<object name="DSPI_3">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -7220,7 +7220,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DSPI_4">
+		<object name="DSPI_4">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -7242,7 +7242,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DSPI_5">
+		<object name="DSPI_5">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -7264,7 +7264,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DSPI_6">
+		<object name="DSPI_6">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -7286,7 +7286,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DSPI_12">
+		<object name="DSPI_12">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -7308,7 +7308,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DSPI_CLK0">
+		<object name="DSPI_CLK0">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -7348,7 +7348,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.DSPI_CLK1">
+		<object name="DSPI_CLK1">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -7388,7 +7388,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.EBI">
+		<object name="EBI">
 			<variable name="cycle_time">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
@@ -7490,7 +7490,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.EBI_CLK">
+		<object name="EBI_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -7530,7 +7530,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.EBI_MEM_0">
+		<object name="EBI_MEM_0">
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -7610,7 +7610,7 @@
 				<description>memory write latency</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.EBI_MEM_1">
+		<object name="EBI_MEM_1">
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -7690,7 +7690,7 @@
 				<description>memory write latency</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.EBI_MEM_2">
+		<object name="EBI_MEM_2">
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -7770,7 +7770,7 @@
 				<description>memory write latency</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.eDMA_0">
+		<object name="eDMA_0">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -7798,7 +7798,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.eDMA_1">
+		<object name="eDMA_1">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -7826,7 +7826,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.FLASH">
+		<object name="FLASH">
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -7906,7 +7906,7 @@
 				<description>memory write latency</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.FLASH_PORT1">
+		<object name="FLASH_PORT1">
 			<variable name="enable">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -7928,7 +7928,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.FXBAR_CLK">
+		<object name="FXBAR_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -7968,7 +7968,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.IAHBG_0">
+		<object name="IAHBG_0">
 			<variable name="cycle_time">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
@@ -8044,7 +8044,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.IAHBG_1">
+		<object name="IAHBG_1">
 			<variable name="cycle_time">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
@@ -8120,7 +8120,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.INTC_0">
+		<object name="INTC_0">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -8142,7 +8142,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.IOP_CLK">
+		<object name="IOP_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -8182,8 +8182,8 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.instrumenter">
-			<object name="HARDWARE.instrumenter.csv-reader">
+		<object name="instrumenter">
+			<object name="csv-reader">
 				<variable name="csv-delimiter">
 					<type>parameter</type>
 					<data_type>string</data_type>
@@ -8215,7 +8215,7 @@
 					<description>Start time of instrumentation</description>
 				</variable>
 			</object>
-			<object name="HARDWARE.instrumenter.csv-writer">
+			<object name="csv-writer">
 				<variable name="csv-delimiter">
 					<type>parameter</type>
 					<data_type>string</data_type>
@@ -8247,7 +8247,7 @@
 					<description>Start time of instrumentation</description>
 				</variable>
 			</object>
-			<object name="HARDWARE.instrumenter.user-interface">
+			<object name="user-interface">
 				<variable name="cont-refresh-period">
 					<type>parameter</type>
 					<data_type>double precision floating-point</data_type>
@@ -8378,7 +8378,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.LIN_CLK">
+		<object name="LIN_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -8418,7 +8418,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.LINFlexD_0">
+		<object name="LINFlexD_0">
 			<variable name="baud-tolerance">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -8446,7 +8446,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.LINFlexD_1">
+		<object name="LINFlexD_1">
 			<variable name="baud-tolerance">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -8474,7 +8474,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.LINFlexD_2">
+		<object name="LINFlexD_2">
 			<variable name="baud-tolerance">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -8502,7 +8502,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.LINFlexD_14">
+		<object name="LINFlexD_14">
 			<variable name="baud-tolerance">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -8530,7 +8530,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.LINFlexD_15">
+		<object name="LINFlexD_15">
 			<variable name="baud-tolerance">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -8558,7 +8558,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.LINFlexD_16">
+		<object name="LINFlexD_16">
 			<variable name="baud-tolerance">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -8586,7 +8586,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.M_CAN_1">
+		<object name="M_CAN_1">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -8619,7 +8619,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.M_CAN_2">
+		<object name="M_CAN_2">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -8652,7 +8652,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.M_CAN_3">
+		<object name="M_CAN_3">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -8685,7 +8685,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.M_CAN_4">
+		<object name="M_CAN_4">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -8718,8 +8718,8 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.Main_Core_0">
-			<object name="HARDWARE.Main_Core_0.DMEM">
+		<object name="Main_Core_0">
+			<object name="DMEM">
 				<variable name="base-addr">
 					<type>parameter</type>
 					<data_type>unsigned 32-bit integer</data_type>
@@ -8743,7 +8743,7 @@
 					</enumeration>
 				</variable>
 			</object>
-			<object name="HARDWARE.Main_Core_0.IMEM">
+			<object name="IMEM">
 				<variable name="base-addr">
 					<type>parameter</type>
 					<data_type>unsigned 32-bit integer</data_type>
@@ -8767,7 +8767,7 @@
 					</enumeration>
 				</variable>
 			</object>
-			<object name="HARDWARE.Main_Core_0.L1D">
+			<object name="L1D">
 				<variable name="verbose">
 					<type>parameter</type>
 					<data_type>boolean</data_type>
@@ -8779,7 +8779,7 @@
 					</enumeration>
 				</variable>
 			</object>
-			<object name="HARDWARE.Main_Core_0.L1I">
+			<object name="L1I">
 				<variable name="verbose">
 					<type>parameter</type>
 					<data_type>boolean</data_type>
@@ -9170,8 +9170,8 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.Main_Core_1">
-			<object name="HARDWARE.Main_Core_1.DMEM">
+		<object name="Main_Core_1">
+			<object name="DMEM">
 				<variable name="base-addr">
 					<type>parameter</type>
 					<data_type>unsigned 32-bit integer</data_type>
@@ -9195,7 +9195,7 @@
 					</enumeration>
 				</variable>
 			</object>
-			<object name="HARDWARE.Main_Core_1.IMEM">
+			<object name="IMEM">
 				<variable name="base-addr">
 					<type>parameter</type>
 					<data_type>unsigned 32-bit integer</data_type>
@@ -9219,7 +9219,7 @@
 					</enumeration>
 				</variable>
 			</object>
-			<object name="HARDWARE.Main_Core_1.L1D">
+			<object name="L1D">
 				<variable name="verbose">
 					<type>parameter</type>
 					<data_type>boolean</data_type>
@@ -9231,7 +9231,7 @@
 					</enumeration>
 				</variable>
 			</object>
-			<object name="HARDWARE.Main_Core_1.L1I">
+			<object name="L1I">
 				<variable name="verbose">
 					<type>parameter</type>
 					<data_type>boolean</data_type>
@@ -9622,7 +9622,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.MC_CGM">
+		<object name="MC_CGM">
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -9702,7 +9702,7 @@
 				<description>memory write latency</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.MC_ME">
+		<object name="MC_ME">
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -9782,7 +9782,7 @@
 				<description>memory write latency</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.MC_RGM">
+		<object name="MC_RGM">
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -9862,7 +9862,7 @@
 				<description>memory write latency</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.PBRIDGE_A">
+		<object name="PBRIDGE_A">
 			<variable name="acr_mapping_0">
 				<type>parameter</type>
 				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
@@ -10858,7 +10858,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.PBRIDGE_B">
+		<object name="PBRIDGE_B">
 			<variable name="acr_mapping_0">
 				<type>parameter</type>
 				<data_type>unisim::component::tlm2::interconnect::freescale::mpc57xx::pbridge::AccessControlRegisterMapping</data_type>
@@ -11050,7 +11050,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.PBRIDGEA_CLK">
+		<object name="PBRIDGEA_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -11090,7 +11090,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.PBRIDGEB_CLK">
+		<object name="PBRIDGEB_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -11130,7 +11130,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.PCM">
+		<object name="PCM">
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -11210,7 +11210,7 @@
 				<description>memory write latency</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.PER_CLK">
+		<object name="PER_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -11250,8 +11250,8 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.Peripheral_Core_2">
-			<object name="HARDWARE.Peripheral_Core_2.DMEM">
+		<object name="Peripheral_Core_2">
+			<object name="DMEM">
 				<variable name="base-addr">
 					<type>parameter</type>
 					<data_type>unsigned 32-bit integer</data_type>
@@ -11275,7 +11275,7 @@
 					</enumeration>
 				</variable>
 			</object>
-			<object name="HARDWARE.Peripheral_Core_2.IMEM">
+			<object name="IMEM">
 				<variable name="base-addr">
 					<type>parameter</type>
 					<data_type>unsigned 32-bit integer</data_type>
@@ -11299,7 +11299,7 @@
 					</enumeration>
 				</variable>
 			</object>
-			<object name="HARDWARE.Peripheral_Core_2.L1I">
+			<object name="L1I">
 				<variable name="verbose">
 					<type>parameter</type>
 					<data_type>boolean</data_type>
@@ -11690,7 +11690,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.PFLASH">
+		<object name="PFLASH">
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -11770,7 +11770,7 @@
 				<description>memory write latency</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.PIT_0">
+		<object name="PIT_0">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -11798,7 +11798,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.PIT_1">
+		<object name="PIT_1">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -11826,7 +11826,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.PRAM_0">
+		<object name="PRAM_0">
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -11906,7 +11906,7 @@
 				<description>memory write latency</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.RTI_CLK">
+		<object name="RTI_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -11946,7 +11946,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.SEMA4">
+		<object name="SEMA4">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -11968,7 +11968,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.SERIAL_TERMINAL0">
+		<object name="SERIAL_TERMINAL0">
 			<variable name="baud-tolerance">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -12031,7 +12031,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.SERIAL_TERMINAL0_CLK">
+		<object name="SERIAL_TERMINAL0_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -12071,7 +12071,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.SERIAL_TERMINAL1">
+		<object name="SERIAL_TERMINAL1">
 			<variable name="baud-tolerance">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -12134,7 +12134,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.SERIAL_TERMINAL1_CLK">
+		<object name="SERIAL_TERMINAL1_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -12174,7 +12174,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.SERIAL_TERMINAL2">
+		<object name="SERIAL_TERMINAL2">
 			<variable name="baud-tolerance">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -12237,7 +12237,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.SERIAL_TERMINAL2_CLK">
+		<object name="SERIAL_TERMINAL2_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -12277,7 +12277,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.SERIAL_TERMINAL14_CLK">
+		<object name="SERIAL_TERMINAL14_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -12317,7 +12317,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.SERIAL_TERMINAL15_CLK">
+		<object name="SERIAL_TERMINAL15_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -12357,7 +12357,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.SERIAL_TERMINAL16_CLK">
+		<object name="SERIAL_TERMINAL16_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -12397,7 +12397,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.SHARED_CAN_MESSAGE_RAM">
+		<object name="SHARED_CAN_MESSAGE_RAM">
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -12477,7 +12477,7 @@
 				<description>memory write latency</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.SHARED_CAN_MESSAGE_RAM_ROUTER">
+		<object name="SHARED_CAN_MESSAGE_RAM_ROUTER">
 			<variable name="cycle_time">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
@@ -12577,7 +12577,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.SIUL2">
+		<object name="SIUL2">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -12599,7 +12599,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.STM_0">
+		<object name="STM_0">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -12621,7 +12621,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.STM_1">
+		<object name="STM_1">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -12643,7 +12643,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.STM_2">
+		<object name="STM_2">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -12665,47 +12665,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.SWT_0">
-			<variable name="endian">
-				<type>parameter</type>
-				<data_type>endianess</data_type>
-				<value>big-endian</value>
-				<description>endian</description>
-				<enumeration>
-					<item>little-endian</item>
-					<item>big-endian</item>
-				</enumeration>
-			</variable>
-			<variable name="swt-cr-reset-value">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>0xff00010a</value>
-				<description>SWT_CR register value at reset</description>
-			</variable>
-			<variable name="swt-to-reset-value">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>0x0005fcd0</value>
-				<description>SWT_TO register value at reset</description>
-			</variable>
-			<variable name="verbose">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>enable/disable verbosity</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="watchdog-down-counter-cycle-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>62500 ps</value>
-				<description>Watchdog down counter cycle time</description>
-			</variable>
-		</object>
-		<object name="HARDWARE.SWT_1">
+		<object name="SWT_0">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -12745,7 +12705,47 @@
 				<description>Watchdog down counter cycle time</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.SWT_2">
+		<object name="SWT_1">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="swt-cr-reset-value">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0xff00010a</value>
+				<description>SWT_CR register value at reset</description>
+			</variable>
+			<variable name="swt-to-reset-value">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x0005fcd0</value>
+				<description>SWT_TO register value at reset</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="watchdog-down-counter-cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>62500 ps</value>
+				<description>Watchdog down counter cycle time</description>
+			</variable>
+		</object>
+		<object name="SWT_2">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -12785,7 +12785,7 @@
 				<description>Watchdog down counter cycle time</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.SWT_3">
+		<object name="SWT_3">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -12825,7 +12825,7 @@
 				<description>Watchdog down counter cycle time</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.SXBAR_CLK">
+		<object name="SXBAR_CLK">
 			<variable name="clock-duty-cycle">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -12865,7 +12865,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.SYSTEM-SRAM">
+		<object name="SYSTEM-SRAM">
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -12945,8 +12945,8 @@
 				<description>memory write latency</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.XBAR_0">
-			<object name="HARDWARE.XBAR_0.SMPU">
+		<object name="XBAR_0">
+			<object name="SMPU">
 				<variable name="verbose">
 					<type>parameter</type>
 					<data_type>boolean</data_type>
@@ -13191,7 +13191,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.XBAR_0_S6">
+		<object name="XBAR_0_S6">
 			<variable name="enable">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -13213,8 +13213,8 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.XBAR_1">
-			<object name="HARDWARE.XBAR_1.SMPU">
+		<object name="XBAR_1">
+			<object name="SMPU">
 				<variable name="verbose">
 					<type>parameter</type>
 					<data_type>boolean</data_type>
@@ -13429,7 +13429,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.XBAR_1_M1_CONCENTRATOR">
+		<object name="XBAR_1_M1_CONCENTRATOR">
 			<variable name="cycle_time">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
@@ -13511,7 +13511,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.XBAR_1_M2">
+		<object name="XBAR_1_M2">
 			<variable name="enable">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -13595,6 +13595,12 @@
 		</variable>
 	</object>
 	<object name="http-server">
+		<variable name="config-file-format">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Configuration file format</description>
+		</variable>
 		<variable name="enable-cache">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -13616,6 +13622,12 @@
 			<data_type>signed 32-bit integer</data_type>
 			<value>12360</value>
 			<description>HTTP port</description>
+		</variable>
+		<variable name="refresh-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>1</value>
+			<description>Refresh period of views (in seconds)</description>
 		</variable>
 		<variable name="verbose">
 			<type>parameter</type>
@@ -13725,7 +13737,7 @@
 		</variable>
 	</object>
 	<object name="loader">
-		<object name="loader.file0">
+		<object name="file0">
 			<variable name="base-addr">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -13746,12 +13758,16 @@
 			</variable>
 			<variable name="verbose">
 				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>0x00000001</value>
+				<data_type>boolean</data_type>
+				<value>true</value>
 				<description>Set verbose mode (0 not active, otherwise active).</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
 			</variable>
 		</object>
-		<object name="loader.file1">
+		<object name="file1">
 			<variable name="base-addr">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -13853,7 +13869,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="loader.file2">
+		<object name="file2">
 			<variable name="base-addr">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -13955,7 +13971,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="loader.file3">
+		<object name="file3">
 			<variable name="base-addr">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -14057,7 +14073,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="loader.memory-mapper">
+		<object name="memory-mapper">
 			<variable name="mapping">
 				<type>parameter</type>
 				<data_type>string</data_type>
@@ -14139,23 +14155,23 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="http_max_log_size">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>256</value>
-			<description>Maximum log size for HTTP output</description>
-		</variable>
-		<variable name="max-display-refresh-period">
+		<variable name="http-max-display-refresh-period">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
 			<value>1</value>
 			<description>Maximum refresh period of display for HTTP output (in seconds)</description>
 		</variable>
-		<variable name="min-display-refresh-period">
+		<variable name="http-min-display-refresh-period">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
 			<value>0.04</value>
 			<description>Minimum refresh period of display for HTTP output (in seconds)</description>
+		</variable>
+		<variable name="http_max_log_size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>256</value>
+			<description>Maximum log size for HTTP output</description>
 		</variable>
 		<variable name="std_err">
 			<type>parameter</type>
@@ -14621,6 +14637,12 @@
 			<value>soft/app/Z7_0/boot.elf</value>
 			<description>List of (binary) files (preferably ELF) to profile (separated by ',')</description>
 		</variable>
+		<variable name="http-refresh-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>1</value>
+			<description>Refresh period for reporting over HTTP</description>
+		</variable>
 		<variable name="output-directory">
 			<type>parameter</type>
 			<data_type>string</data_type>
@@ -14704,6 +14726,12 @@
 			<data_type>string</data_type>
 			<value>soft/app/Z7_1/boot.elf</value>
 			<description>List of (binary) files (preferably ELF) to profile (separated by ',')</description>
+		</variable>
+		<variable name="http-refresh-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>1</value>
+			<description>Refresh period for reporting over HTTP</description>
 		</variable>
 		<variable name="output-directory">
 			<type>parameter</type>
@@ -14789,6 +14817,12 @@
 			<value>soft/app/Z4_2/boot.elf</value>
 			<description>List of (binary) files (preferably ELF) to profile (separated by ',')</description>
 		</variable>
+		<variable name="http-refresh-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>1</value>
+			<description>Refresh period for reporting over HTTP</description>
+		</variable>
 		<variable name="output-directory">
 			<type>parameter</type>
 			<data_type>string</data_type>
@@ -14819,7 +14853,7 @@
 		</variable>
 	</object>
 	<object name="web-terminal0">
-		<object name="web-terminal0.alt-screen-buffer">
+		<object name="alt-screen-buffer">
 			<variable name="buffer-height">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -14849,7 +14883,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="web-terminal0.screen-buffer">
+		<object name="screen-buffer">
 			<variable name="buffer-height">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -14879,7 +14913,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="web-terminal0.theme">
+		<object name="theme">
 			<variable name="background-color">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -15097,7 +15131,7 @@
 		</variable>
 	</object>
 	<object name="web-terminal1">
-		<object name="web-terminal1.alt-screen-buffer">
+		<object name="alt-screen-buffer">
 			<variable name="buffer-height">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -15127,7 +15161,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="web-terminal1.screen-buffer">
+		<object name="screen-buffer">
 			<variable name="buffer-height">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -15157,7 +15191,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="web-terminal1.theme">
+		<object name="theme">
 			<variable name="background-color">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -15375,7 +15409,7 @@
 		</variable>
 	</object>
 	<object name="web-terminal2">
-		<object name="web-terminal2.alt-screen-buffer">
+		<object name="alt-screen-buffer">
 			<variable name="buffer-height">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -15405,7 +15439,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="web-terminal2.screen-buffer">
+		<object name="screen-buffer">
 			<variable name="buffer-height">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -15435,7 +15469,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="web-terminal2.theme">
+		<object name="theme">
 			<variable name="background-color">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>

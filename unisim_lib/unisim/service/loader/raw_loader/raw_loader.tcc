@@ -76,7 +76,7 @@ RawLoader(const char *name, Object *parent)
 	, filename()
 	, base_addr(0)
 	, size(0)
-	, verbose(0)
+	, verbose(false)
 	, param_filename("filename", this, filename,
 			"Location of the raw file to load.")
 	, param_base_addr("base-addr", this, base_addr,

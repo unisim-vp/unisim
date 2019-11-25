@@ -60,7 +60,7 @@ using unisim::util::garbage_collector::Pointer;
 using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::variable::Statistic;
-using unisim::kernel::variable::Formula;
+using unisim::kernel::variable::StatisticFormula;
 using unisim::component::tlm::message::InterruptRequest;
 using unisim::component::tlm::message::SnoopingFSBRequest;
 using unisim::component::tlm::message::SnoopingFSBResponse;
@@ -152,8 +152,8 @@ private:
 	Statistic<sc_core::sc_time> stat_run_time;
 	Statistic<sc_core::sc_time> stat_idle_time;
 	Statistic<double> stat_one;
-	Formula<double> formula_idle_rate;
-	Formula<double> formula_load_rate;
+	StatisticFormula<double> stat_idle_rate;
+	StatisticFormula<double> stat_load_rate;
 	Parameter<bool> param_enable_monotonic_internal_timer;
 	
 	enum IRQ

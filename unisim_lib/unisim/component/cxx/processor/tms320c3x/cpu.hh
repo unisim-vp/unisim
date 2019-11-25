@@ -76,7 +76,7 @@ using unisim::kernel::ServiceExport;
 using unisim::kernel::ServiceImport;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::variable::Statistic;
-using unisim::kernel::variable::Formula;
+using unisim::kernel::variable::StatisticFormula;
 using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
@@ -611,7 +611,7 @@ private:
 	uint64_t insn_cache_misses;
 	Statistic<uint64_t> stat_insn_cache_accesses;
 	Statistic<uint64_t> stat_insn_cache_misses;
-	Formula<double> formula_insn_cache_miss_rate;
+	StatisticFormula<double> stat_insn_cache_miss_rate;
 
 	static const uint32_t INSN_CACHE_SIZE = CONFIG::INSN_CACHE_SIZE;
 	static const uint32_t INSN_CACHE_ASSOCIATIVITY = (CONFIG::INSN_CACHE_ASSOCIATIVITY > 2) ? 2 : CONFIG::INSN_CACHE_ASSOCIATIVITY;

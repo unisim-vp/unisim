@@ -53,7 +53,7 @@ namespace xps_uart_lite {
 using unisim::kernel::Object;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::variable::Statistic;
-using unisim::kernel::variable::Formula;
+using unisim::kernel::variable::StatisticFormula;
 using unisim::kernel::Service;
 using unisim::kernel::Client;
 using unisim::kernel::ServiceExport;

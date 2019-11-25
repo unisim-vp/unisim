@@ -85,12 +85,12 @@ private:
 	std::string filename;
 	MEMORY_ADDR base_addr;
 	MEMORY_ADDR size;
-	uint32_t verbose;
+	bool verbose;
 	
 	unisim::kernel::variable::Parameter<std::string> param_filename;
 	unisim::kernel::variable::Parameter<MEMORY_ADDR> param_base_addr;
 	unisim::kernel::variable::Parameter<MEMORY_ADDR> param_size;
-	unisim::kernel::variable::Parameter<uint32_t> param_verbose;
+	unisim::kernel::variable::Parameter<bool> param_verbose;
 
 	unisim::kernel::logger::Logger logger;
 };

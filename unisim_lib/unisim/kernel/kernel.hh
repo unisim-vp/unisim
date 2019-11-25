@@ -114,7 +114,7 @@ public:
 class VariableBase
 {
 public:
-	typedef enum { VAR_VOID, VAR_ARRAY, VAR_PARAMETER, VAR_STATISTIC, VAR_REGISTER, VAR_FORMULA, VAR_SIGNAL } Type;
+	typedef enum { VAR_VOID, VAR_ARRAY, VAR_PARAMETER, VAR_STATISTIC, VAR_REGISTER, VAR_SIGNAL } Type;
 	typedef enum { FMT_DEFAULT, FMT_HEX, FMT_DEC } Format;
 	typedef enum { DT_USER, DT_BOOL, DT_SCHAR, DT_SHORT, DT_INT, DT_LONG, DT_LONG_LONG, DT_UCHAR, DT_USHORT, DT_UINT, DT_ULONG, DT_ULONG_LONG, DT_FLOAT, DT_DOUBLE, DT_STRING } DataType;
 
@@ -259,8 +259,6 @@ public:
 	VariableBase *FindRegister(const char *name);
 	const VariableBase *FindStatistic(const char *name) const;
 	VariableBase *FindStatistic(const char *name);
-	const VariableBase *FindFormula(const char *name) const;
-	VariableBase *FindFormula(const char *name);
 	Object *FindObject(const char *name) const;
 
 	void GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
@@ -270,14 +268,12 @@ public:
 	void GetRegisters(std::list<VariableBase *>& lst);
 	void GetSignals(std::list<VariableBase *>& lst);
 	void GetStatistics(std::list<VariableBase *>& lst);
-	void GetFormulas(std::list<VariableBase *>& lst);
 
 	void Dump(std::ostream& os);
 	void DumpVariables(std::ostream& os, VariableBase::Type filter_type = VariableBase::VAR_VOID);
 	void DumpStatistics(std::ostream& os);
 	void DumpParameters(std::ostream& os);
 	void DumpRegisters(std::ostream& os);
-	void DumpFormulas(std::ostream& os);
 
 	bool GetExecutablePath(const char *argv0, std::string& out_execute_path) const;
 	bool GetBinPath(const char *argv0, std::string& out_bin_dir, std::string& out_bin_program) const;
@@ -314,8 +310,7 @@ private:
 	std::string shared_data_dir;
 	std::map<std::string, std::string> set_vars;
 	std::string get_config_filename;
-	std::string input_config_file_format;
-	std::string output_config_file_format;
+	std::string default_config_file_format;
 	bool list_parms;
 	bool get_config;
 	bool generate_doc;
@@ -343,8 +338,7 @@ private:
 	variable::Parameter<std::string> *var_license;
 	variable::Parameter<std::string> *var_schematic;
 	variable::Parameter<bool> *param_enable_press_enter_at_exit;
-	variable::Parameter<std::string> *param_input_config_file_format;
-	variable::Parameter<std::string> *param_output_config_file_format;
+	variable::Parameter<std::string> *param_default_config_file_format;
 	
 	void Version(std::ostream& os) const;
 	void Help(std::ostream& os) const;
@@ -361,6 +355,8 @@ private:
 
 	void Initialize(VariableBase *variable);
 
+	const char *GuessConfigFileFormat(const char *filename) const;
+	ConfigFileHelper *FindConfigFileHelper(const std::string& config_file_format);
 public:
 	bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
 	bool LoadVariables(std::istream& is, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());

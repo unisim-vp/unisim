@@ -273,7 +273,7 @@ int XMLConfigFileHelper::XmlfyVariables(xmlTextWriterPtr writer, const unisim::k
 
 	// write object name
 	{
-		xmlChar* obj_name = xmlCharStrdup(obj->GetName());
+		xmlChar* obj_name = xmlCharStrdup(obj->GetObjectName());
 
 		rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "name", obj_name);
 		xmlFree(obj_name); obj_name = 0;
@@ -360,7 +360,6 @@ int XMLConfigFileHelper::XmlfyVariable(xmlTextWriterPtr writer, const unisim::ke
 			break;
 		case unisim::kernel::VariableBase::VAR_VOID:
 		case unisim::kernel::VariableBase::VAR_ARRAY:
-		case unisim::kernel::VariableBase::VAR_FORMULA:
 			std::cerr << "Unexpected variable type to Xmlfy. Variable name is '"
 				<< var->GetVarName() << "'" << std::endl;
 			break;
@@ -569,10 +568,11 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, unisim::kernel::VariableBase::Ty
 				return false;
 			}
 			cur_var = new CurVariable();
-			if ( cur_object.size() != 0 )
-				cur_var->name << cur_object.back() << "." << name_attr;
-			else 
-				cur_var->name << name_attr;
+			for(CurObject::const_iterator it = cur_object.begin(); it !=  cur_object.end(); ++it)
+			{
+				cur_var->name << (*it) << ".";
+			}
+			cur_var->name << name_attr;
 			xmlFree(name_attr);
 		}
 		if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT)

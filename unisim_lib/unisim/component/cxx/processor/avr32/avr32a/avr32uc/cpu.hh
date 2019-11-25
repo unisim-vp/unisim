@@ -95,7 +95,7 @@ using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::variable::Statistic;
 using unisim::kernel::variable::ParameterArray;
-using unisim::kernel::variable::Formula;
+using unisim::kernel::variable::StatisticFormula;
 using unisim::kernel::logger::Logger;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;

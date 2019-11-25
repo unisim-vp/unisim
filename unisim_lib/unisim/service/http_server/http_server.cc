@@ -193,6 +193,8 @@ HttpServer::HttpServer(const char *name, unisim::kernel::Object *parent)
 	, param_enable_cache("enable-cache", this, enable_cache, "Enable/Disable web browser caching for files")
 	, refresh_period(1.0)
 	, param_refresh_period("refresh-period", this, refresh_period, "Refresh period of views (in seconds)")
+	, config_file_format()
+	, param_config_file_format("config-file-format", this, config_file_format, "Configuration file format")
 	, http_server_import_map()
 	, registers_import_map()
 	, kernel_has_parameters(false)
@@ -265,64 +267,61 @@ HttpServer::~HttpServer()
 
 bool HttpServer::EndSetup()
 {
-	std::string input_config_file_format = *GetSimulator()->FindVariable("input-config-file-format");
-	std::string output_config_file_format = *GetSimulator()->FindVariable("output-config-file-format");
-	
-	if(output_config_file_format == "XML")
+	if(config_file_format.empty())
 	{
-		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
-			/* name */      std::string("export-config-file-") + GetName(), 
-			/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=XML\" download=\"sim_config.xml\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_xml.svg\" alt=\".XML↓\"></a>",
-			/* tips */      "Export configuration as .XML file"
-		));
+		config_file_format = std::string(*GetSimulator()->FindVariable("default-config-file-format"));
 	}
 	
-	if(input_config_file_format == "XML")
+	std::stringstream config_file_format_sstr(config_file_format);
+	std::string cfg_file_format;
+	
+	while(config_file_format_sstr >> cfg_file_format)
 	{
-		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
-			/* name */      std::string("import-config-file-") + GetName(), 
-			/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_xml.svg\" alt=\".XML↑\">",
-			/* tips */      "Import configuration from .XML file",
-			/* js action */ "new FileUploader('/import-config-file?format=XML', '.xml', true)"
-		));
-	}
+		if(cfg_file_format == "XML")
+		{
+			AddJSAction(unisim::service::interfaces::ToolbarDoAction(
+				/* name */      std::string("export-config-file-") + GetName(), 
+				/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=XML\" download=\"sim_config.xml\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_xml.svg\" alt=\".XML↓\"></a>",
+				/* tips */      "Export configuration as .XML file"
+			));
+			
+			AddJSAction(unisim::service::interfaces::ToolbarDoAction(
+				/* name */      std::string("import-config-file-") + GetName(), 
+				/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_xml.svg\" alt=\".XML↑\">",
+				/* tips */      "Import configuration from .XML file",
+				/* js action */ "new FileUploader('/import-config-file?format=XML', '.xml', true)"
+			));
+		}
+		else if(cfg_file_format == "INI")
+		{
+			AddJSAction(unisim::service::interfaces::ToolbarDoAction(
+				/* name */      std::string("export-config-file-") + GetName(), 
+				/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=INI\" download=\"sim_config.ini\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_ini.svg\" alt=\".INI↓\"></a>",
+				/* tips */      "Export configuration as .INI file"
+			));
 
-	if(output_config_file_format == "INI")
-	{
-		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
-			/* name */      std::string("export-config-file-") + GetName(), 
-			/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=INI\" download=\"sim_config.ini\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_ini.svg\" alt=\".INI↓\"></a>",
-			/* tips */      "Export configuration as .INI file"
-		));
-	}
-	
-	if(input_config_file_format == "INI")
-	{
-		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
-			/* name */      std::string("import-config-file-") + GetName(), 
-			/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_ini.svg\" alt=\".INI↑\">",
-			/* tips */      "Import configuration from .INI file",
-			/* js action */ "new FileUploader('/import-config-file?format=INI', '.ini', true)"
-		));
-	}
+			AddJSAction(unisim::service::interfaces::ToolbarDoAction(
+				/* name */      std::string("import-config-file-") + GetName(), 
+				/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_ini.svg\" alt=\".INI↑\">",
+				/* tips */      "Import configuration from .INI file",
+				/* js action */ "new FileUploader('/import-config-file?format=INI', '.ini', true)"
+			));
+		}
+		else if(cfg_file_format == "JSON")
+		{
+			AddJSAction(unisim::service::interfaces::ToolbarDoAction(
+				/* name */      std::string("export-config-file-") + GetName(), 
+				/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=JSON\" download=\"sim_config.json\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_json.svg\" alt=\".JSON↓\"></a>",
+				/* tips */      "Export configuration as .JSON file"
+			));
 
-	if(output_config_file_format == "JSON")
-	{
-		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
-			/* name */      std::string("export-config-file-") + GetName(), 
-			/* label */     "<a draggable=\"false\" ondragstart=\"return false\" href=\"/export-config-file?format=JSON\" download=\"sim_config.json\" target=\"_blank\"><img src=\"/unisim/service/http_server/icon_export_config_json.svg\" alt=\".JSON↓\"></a>",
-			/* tips */      "Export configuration as .JSON file"
-		));
-	}
-	
-	if(input_config_file_format == "JSON")
-	{
-		AddJSAction(unisim::service::interfaces::ToolbarDoAction(
-			/* name */      std::string("import-config-file-") + GetName(), 
-			/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_json.svg\" alt=\".JSON↑\">",
-			/* tips */      "Import configuration from .JSON file",
-			/* js action */ "new FileUploader('/import-config-file?format=JSON', '.json', true)"
-		));
+			AddJSAction(unisim::service::interfaces::ToolbarDoAction(
+				/* name */      std::string("import-config-file-") + GetName(), 
+				/* label */     "<img src=\"/unisim/service/http_server/icon_import_config_json.svg\" alt=\".JSON↑\">",
+				/* tips */      "Import configuration from .JSON file",
+				/* js action */ "new FileUploader('/import-config-file?format=JSON', '.json', true)"
+			));
+		}
 	}
 
 	std::list<unisim::kernel::VariableBase *> kernel_param_lst;
@@ -1094,7 +1093,14 @@ bool HttpServer::ServeVariables(unisim::util::hypapp::HttpRequest const& req, un
 						response << "\t\t\t\t<tr>" << std::endl;
 						response << "\t\t\t\t\t<td class=\"var-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(var->GetVarName()) << "</td>" << std::endl;
 						response << "\t\t\t\t\t<td class=\"var-value\">" << std::endl;
-						response << "\t\t\t\t\t\t<form action=\"/config?object=";
+						response << "\t\t\t\t\t\t<form action=\"/";
+						switch(var_type)
+						{
+							case unisim::kernel::VariableBase::VAR_PARAMETER: response << "config"; break;
+							case unisim::kernel::VariableBase::VAR_STATISTIC: response << "stats"; break;
+							default                                         : response << "unknown"; break;
+						}
+						response << "?object=";
 						if(is_kernel) response << "kernel";
 						else if(object) response << unisim::util::hypapp::HTML_Encoder::Encode(object->GetName());
 						response << "\" method=\"post\">" << std::endl;

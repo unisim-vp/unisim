@@ -58,7 +58,7 @@ using unisim::kernel::Object;
 using unisim::kernel::Client;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::variable::Statistic;
-using unisim::kernel::variable::Formula;
+using unisim::kernel::variable::StatisticFormula;
 using unisim::kernel::logger::Logger;
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
 using unisim::component::tlm2::interrupt::InterruptPayload;
@@ -152,8 +152,8 @@ private:
 	unisim::kernel::variable::Statistic<double> stat_one;
 	unisim::kernel::variable::Statistic<sc_core::sc_time> stat_run_time;
 	unisim::kernel::variable::Statistic<sc_core::sc_time> stat_idle_time;
-	unisim::kernel::variable::Formula<double> formula_idle_rate;
-	unisim::kernel::variable::Formula<double> formula_load_rate;
+	unisim::kernel::variable::StatisticFormula<double> stat_idle_rate;
+	unisim::kernel::variable::StatisticFormula<double> stat_load_rate;
 	
 	class Event
 	{

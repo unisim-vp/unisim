@@ -59,7 +59,7 @@ using unisim::kernel::Object;
 using unisim::kernel::Client;
 using unisim::kernel::variable::Parameter;
 using unisim::kernel::variable::Statistic;
-using unisim::kernel::variable::Formula;
+using unisim::kernel::variable::StatisticFormula;
 using unisim::kernel::logger::Logger;
 
 template <typename TYPES, typename CONFIG>
@@ -166,8 +166,8 @@ private:
 	Statistic<double> stat_one;
 	Statistic<sc_core::sc_time> stat_run_time;
 	Statistic<sc_core::sc_time> stat_idle_time;
-	Formula<double> formula_idle_rate;
-	Formula<double> formula_load_rate;
+	StatisticFormula<double> stat_idle_rate;
+	StatisticFormula<double> stat_load_rate;
 	Parameter<unsigned int> param_ahb_master_id;
 	
 	unisim::kernel::tlm2::DMIRegionCache i_dmi_region_cache;
