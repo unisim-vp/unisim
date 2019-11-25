@@ -51,11 +51,15 @@ UNISIM_SIMULATOR_HEADER_FILES="\
 
 UNISIM_BINDINGS_SOURCE_FILES="\
 bindings.cc \
-bblocks.cc \
+emu.cc \
+vle.cc \
+arm.cc \
 "
 
 UNISIM_BINDINGS_HEADER_FILES="\
-bblocks.hh \
+emu.hh \
+vle.hh \
+arm.hh \
 "
 
 UNISIM_TOP_DATA_FILES="\
