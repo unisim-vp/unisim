@@ -907,50 +907,55 @@ namespace symbolic {
   template <class T>
   struct Choice
   {
-    Choice() : nexts(), previous(), cond() {}
+    Choice() : nexts(), previous() {}
     ~Choice() { delete nexts[0]; delete nexts[1]; }
 
-    bool  proceed( Expr const& _cond );
-    bool  close();
-    T*    next(bool choice) { return nexts[choice]; }
-    void  setnext( bool choice, T* nxt ) { nexts[choice] = nxt; nxt->previous = static_cast<T*>(this); }
+    T*      next(bool choice) { return nexts[choice]; }
+    T*   getnext(bool choice) { if (T* c = nexts[choice]) return c; return (nexts[choice] = new T); }
+    void setnext(bool choice, T* nxt) { nexts[choice] = nxt; nxt->previous = static_cast<T*>(this); }
+    
+    bool proceed()
+    {
+      if (getnext(false)->previous) return false;
+      if (getnext(true)->previous)  return true;
+      throw *this;                  return 0;
+    }
+    
+    bool close()
+    {
+      if (T* p = previous)
+        {
+          previous = 0;
+          if (this == p->nexts[1])
+            return p->close();
+          return false;
+        }
+      return true;
+    }
   
     T*    nexts[2];
     T*    previous;
+  };
+
+  template <class T>
+  struct Conditional : public Choice<T>
+  {
+    Conditional() : Choice<T>(), cond() {}
+
+    bool  proceed( Expr const& _cond );
+    bool  close();
+  
     Expr  cond;
   };
   
   template <class T>
   bool
-  Choice<T>::proceed( Expr const& _cond )
+  Conditional<T>::proceed( Expr const& _cond )
   {
-    if (not cond.good())
-      {
-        cond = _cond;
-        setnext(false, new T);
-        setnext(true,  new T);
-        return false;
-      }
+    if (not cond.good()) cond = _cond;
+    else if (cond != _cond) throw cond;
 
-    if (cond == _cond)
-      for (unsigned choice = 0; choice < 2; choice++)
-        if (nexts[choice]->previous) return bool(choice);
-    
-    throw cond; return true;
-  }
-  
-  template <class T>
-  bool
-  Choice<T>::close()
-  {
-    if (Choice<T>* p = previous)
-      {
-        previous = 0;
-        if (this == p->nexts[1])
-          return p->close();
-        return false;
-      }
-    return true;
+    return proceed();
   }
   
   template <class PoolT, typename Merger>
