@@ -568,7 +568,7 @@ public:
 	virtual Object *GetClient() const = 0;
 	virtual Object *GetService() const = 0;
 	void SetupDependsOn(ServiceImportBase& srv_import);
-	std::list<ServiceImportBase *>& GetSetupDependencies();
+	virtual std::list<ServiceImportBase *>& GetSetupDependencies();
 
 	friend void operator >> (ServiceExportBase& lhs, ServiceImportBase& rhs);
 	friend void operator << (ServiceImportBase& lhs, ServiceExportBase& rhs);
@@ -644,7 +644,7 @@ ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Client<SERVICE_IF> *
 	actual_imports(),
 	client(_client)
 {
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 	std::cerr << GetName() << ".ServiceImport(" << _name << ", client " << _client->GetName() << ")" << std::endl;
 #endif
 }
@@ -658,7 +658,7 @@ ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Object *_owner) :
 	actual_imports(),
 	client(0)
 {
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 	std::cerr << GetName() << ".ServiceImport(" << _name << ", object " << (_owner ? _owner->GetName() : "?") << ")" << std::endl;
 #endif
 }
@@ -666,7 +666,7 @@ ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Object *_owner) :
 template <class SERVICE_IF>
 ServiceImport<SERVICE_IF>::~ServiceImport()
 {
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 	std::cerr << GetName() << ".~ServiceImport()" << std::endl;
 #endif
 	//ServiceImport<SERVICE_IF>::DisconnectService();
@@ -682,7 +682,7 @@ inline ServiceImport<SERVICE_IF>::operator SERVICE_IF * () const
 template <class SERVICE_IF>
 inline SERVICE_IF *ServiceImport<SERVICE_IF>::operator -> () const
 {
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 	if(!service)
 	{
 		std::cerr << "ERROR! " << GetName() << " interface can't be used because it is not bound to a service." << std::endl;
@@ -707,7 +707,7 @@ void ServiceImport<SERVICE_IF>::Bind(ServiceExport<SERVICE_IF>& srv_export)
 		return;
 	}
 
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 	std::cerr << GetName() << " -> " << srv_export.GetName() << std::endl;
 #endif
 	this->srv_export = &srv_export;
@@ -728,7 +728,7 @@ void ServiceImport<SERVICE_IF>::Bind(ServiceImport<SERVICE_IF>& alias_import)
 		return;
 	}
 
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 	std::cerr << GetName() << " -> " << alias_import.GetName() << std::endl;
 #endif
 	this->alias_import = &alias_import;
@@ -738,7 +738,7 @@ void ServiceImport<SERVICE_IF>::Bind(ServiceImport<SERVICE_IF>& alias_import)
 template <class SERVICE_IF>
 void ServiceImport<SERVICE_IF>::Unbind(ServiceExport<SERVICE_IF>& srv_export)
 {
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 	std::cerr << GetName() << ".Unbind(" << srv_export.GetName() << ")" << std::endl;
 #endif
 
@@ -761,7 +761,7 @@ Service<SERVICE_IF> *ServiceImport<SERVICE_IF>::ResolveService(Client<SERVICE_IF
 	else
 		if(srv_export) return (srv_export->ResolveService(_client));
 
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 	std::cerr << GetName() << ".ResolveService(" << _client->GetName() << ") failed" << std::endl;
 #endif
 	return (0);
@@ -808,7 +808,7 @@ void ServiceImport<SERVICE_IF>::ResolveClient()
 template <class SERVICE_IF>
 void ServiceImport<SERVICE_IF>::UnresolveService()
 {
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 	std::cerr << GetName() << ".UnresolveService()" << std::endl;
 #endif
 
@@ -817,7 +817,7 @@ void ServiceImport<SERVICE_IF>::UnresolveService()
 		if(service)
 		{
 			//service->OnDisconnect(); // Gilles: That's dangerous
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 			std::cerr << GetName() << ": Unresolving service " << service->GetName() << std::endl;
 #endif
 		}
@@ -837,7 +837,7 @@ void ServiceImport<SERVICE_IF>::UnresolveService()
 template <class SERVICE_IF>
 void ServiceImport<SERVICE_IF>::Disconnect()
 {
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 	std::cerr << GetName() << ".Disconnect()" << std::endl;
 #endif
 
@@ -882,7 +882,7 @@ void ServiceImport<SERVICE_IF>::Disconnect()
 template <class SERVICE_IF>
 void ServiceImport<SERVICE_IF>::DisconnectService()
 {
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 	std::cerr << GetName() << ".DisconnectService()" << std::endl;
 #endif
 
@@ -964,6 +964,8 @@ public:
 
 	virtual Object *GetClient() const;
 	virtual Object *GetService() const;
+	
+	virtual std::list<ServiceImportBase *>& GetSetupDependencies();
 
 private:
 	std::list<ServiceExport<SERVICE_IF> *> alias_exports;
@@ -1003,7 +1005,7 @@ ServiceExport<SERVICE_IF>::ServiceExport(const char *_name, Object *_owner) :
 template <class SERVICE_IF>
 ServiceExport<SERVICE_IF>::~ServiceExport()
 {
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 	std::cerr << GetName() << ".~ServiceExport()" << std::endl;
 #endif
 	//ServiceExport<SERVICE_IF>::DisconnectClient();
@@ -1060,7 +1062,7 @@ void ServiceExport<SERVICE_IF>::Bind(ServiceExport<SERVICE_IF>& alias_export)
 template <class SERVICE_IF>
 void ServiceExport<SERVICE_IF>::Unbind(ServiceImport<SERVICE_IF>& srv_import)
 {
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 	std::cerr << GetName() << ".Unbind(" << srv_import.GetName() << ")" << std::endl;
 #endif
 
@@ -1082,7 +1084,7 @@ void ServiceExport<SERVICE_IF>::Unbind(ServiceImport<SERVICE_IF>& srv_import)
 template <class SERVICE_IF>
 void ServiceExport<SERVICE_IF>::DisconnectClient()
 {
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 	std::cerr << GetName() << ".DisconnectClient()" << std::endl;
 #endif
 
@@ -1111,7 +1113,7 @@ void ServiceExport<SERVICE_IF>::DisconnectClient()
 template <class SERVICE_IF>
 void ServiceExport<SERVICE_IF>::Disconnect()
 {
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 	std::cerr << GetName() << ".Disconnect()" << std::endl;
 #endif
 
@@ -1190,7 +1192,7 @@ ServiceExport<SERVICE_IF> *ServiceExport<SERVICE_IF>::ResolveServiceExport()
 template <class SERVICE_IF>
 void ServiceExport<SERVICE_IF>::UnresolveClient()
 {
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 	std::cerr << GetName() << ".UnresolveClient()" << std::endl;
 #endif
 
@@ -1203,7 +1205,7 @@ void ServiceExport<SERVICE_IF>::UnresolveClient()
 	if(client)
 	{
 		//client->OnDisconnect(); // Gilles: that's dangerous
-#ifdef DEBUG_SERVICE
+#ifdef DEBUG_KERNEL
 		std::cerr << GetName() << ": Unresolving client " << client->GetName() << std::endl;
 #endif
 		client = 0;
@@ -1236,6 +1238,12 @@ template <class SERVICE_IF>
 Object *ServiceExport<SERVICE_IF>::GetService() const
 {
 	return (service);
+}
+
+template <class SERVICE_IF>
+std::list<ServiceImportBase *>& ServiceExport<SERVICE_IF>::GetSetupDependencies()
+{
+	return actual_export ? actual_export->GetSetupDependencies() : ServiceExportBase::GetSetupDependencies();
 }
 
 //=============================================================================

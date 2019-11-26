@@ -105,6 +105,9 @@ Crossbar<CONFIG>::Crossbar(const char *name, Object *parent)
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
+	memory_export.SetupDependsOn(mci_memory_import);
+	memory_export.SetupDependsOn(mplb_memory_import);
+	
 	Reset();
 	
 	std::stringstream sstr_description;

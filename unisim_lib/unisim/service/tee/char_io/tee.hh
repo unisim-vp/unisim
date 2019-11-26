@@ -76,6 +76,8 @@ Tee<MAX_IMPORTS>::Tee(const char *name, unisim::kernel::Object *parent)
 		std::ostringstream char_io_import_sstr;
 		char_io_import_sstr << "char_io_import[" << i << "]";
 		char_io_import[i] = new unisim::kernel::ServiceImport<unisim::service::interfaces::CharIO>(char_io_import_sstr.str().c_str(), this);
+		
+		char_io_export.SetupDependsOn(*char_io_import[i]);
 	}
 }
 

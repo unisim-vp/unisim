@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009,
+ *  Copyright (c) 2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,53 +32,18 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#include <unisim/service/debug/user_interface/user_interface.hh>
+#include <unisim/service/debug/user_interface/user_interface.tcc>
+#include <cstdint>
+
 namespace unisim {
 namespace service {
-namespace translator {
-namespace memory_address {
-namespace memory {
+namespace debug {
+namespace user_interface {
 
-template <class FROM_ADDRESS, class TO_ADDRESS>
-Translator<FROM_ADDRESS, TO_ADDRESS>::Translator(const char* name, Object *parent)
-	: Object(name, parent, "this service translates memory addresses when playing with different address sizes")
-	, Service<Memory<FROM_ADDRESS> >(name, parent)
-	, Client<Memory<TO_ADDRESS> >(name, parent)
-	, memory_export("memory-export", this)
-	, memory_import("memory-import", this)
-{
-	memory_export.SetupDependsOn(memory_import);
-}
+template struct UserInterface<uint32_t>;
 
-template <class FROM_ADDRESS, class TO_ADDRESS>
-Translator<FROM_ADDRESS, TO_ADDRESS>::~Translator()
-{
-}
-
-template <class FROM_ADDRESS, class TO_ADDRESS>
-void Translator<FROM_ADDRESS, TO_ADDRESS>::ResetMemory()
-{
-	return memory_import->ResetMemory();
-}
-
-template <class FROM_ADDRESS, class TO_ADDRESS>
-bool Translator<FROM_ADDRESS, TO_ADDRESS>::ReadMemory(FROM_ADDRESS addr, void *buffer, uint32_t size)
-{
-	return memory_import->ReadMemory((TO_ADDRESS) addr, buffer, size);
-}
-
-template <class FROM_ADDRESS, class TO_ADDRESS>
-bool Translator<FROM_ADDRESS, TO_ADDRESS>::WriteMemory(FROM_ADDRESS addr, const void *buffer, uint32_t size)
-{
-	return memory_import->WriteMemory((TO_ADDRESS) addr, buffer, size);
-}
-
-} // end of namespace memory
-} // end memory_address
-} // end translator 
-} // end service
-} // end unisim 
-
-
-
-
-
+} // end of namespace user_interface
+} // end of namespace debug
+} // end of namespace service
+} // end of namespace unisim

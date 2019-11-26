@@ -1,5 +1,5 @@
 #!/bin/bash
-INCLUDE_UNTRACKED_FILES=no # should be always no
+# setting INCLUDE_UNTRACKED_FILES=yes make that script generate dependencies for untracked files too
 
 # if [ -z "$1" ]; then
 # 	echo "Usage: $0 <directory>"

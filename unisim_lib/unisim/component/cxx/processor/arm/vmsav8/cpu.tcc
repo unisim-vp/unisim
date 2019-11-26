@@ -116,6 +116,9 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   //                           "Tell the CPU to halt simulation on a specific instruction (address or symbol)." )
   // , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
 {
+  disasm_export.SetupDependsOn(memory_import);
+  memory_export.SetupDependsOn(memory_import);
+  
   {
     unisim::service::interfaces::Register* dbg_reg = 0;
     unisim::kernel::VariableBase* var_reg = 0;

@@ -174,6 +174,8 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	, upmlcb3(static_cast<typename CONFIG::CPU *>(this), &pmlcb3)
 	, tmcfg0(static_cast<typename CONFIG::CPU *>(this))
 {
+	disasm_export.SetupDependsOn(this->memory_import);
+	
 	param_processor_version.SetMutable(false);
 	param_system_version.SetMutable(false);
 	param_system_information.SetMutable(false);

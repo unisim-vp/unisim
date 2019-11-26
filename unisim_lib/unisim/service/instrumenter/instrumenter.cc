@@ -1352,8 +1352,6 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 				
 				if(halt)
 				{
-					Stop(-1, /* asynchronous */ true);
-					
 					response << "\t<head>" << std::endl;
 					response << "\t\t<title>" << title << "</title>" << std::endl;
 					response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
@@ -1465,7 +1463,7 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 					}
 					else
 					{
-						response << "\t<body onload=\"gui.auto_reload(0)";
+						response << "gui.auto_reload(0)";
 					}
 					response << "\">" << std::endl;
 					
@@ -1634,6 +1632,11 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response" << EndDebugWarning;
 	}
 	
+	if(halt && (req.GetRequestType() == unisim::util::hypapp::Request::GET))
+	{
+		Stop(-1, /* asynchronous */ true);
+	}
+	
 	return send_status;
 }
 
@@ -1673,7 +1676,8 @@ void UserInterface::ScanWebInterfaceModdings(unisim::service::interfaces::WebInt
 	));
 
 	std::ostringstream status_sstr;
-	status_sstr << "<div class=\"state\"></div>";
+	status_sstr << "<div class=\"name\"><span>Simulation:</span></div>";
+	status_sstr << "<div class=\"state\" title=\"click play HW/interrupt HW buttons in toolbar to change simulation state\"></div>";
 	status_sstr << "<div class=\"time\"></div>";
 	status_sstr << "<div class=\"time-exact\"></div>";
 	std::string status(status_sstr.str());

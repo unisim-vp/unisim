@@ -911,6 +911,8 @@ MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MemoryMapper(const char *name, Object *
 		std::stringstream sstr_import_name;
 		sstr_import_name << "memory-import[" << i << "]";
 		memory_import[i] = new ServiceImport<Memory<MEMORY_ADDR> >(sstr_import_name.str().c_str(), this);
+		
+		memory_export.SetupDependsOn(*memory_import[i]);
 	}
 }
 
