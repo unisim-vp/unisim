@@ -69,6 +69,8 @@ Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent)
 		sstr << "blob-import[" << i << "]";
 		string import_name = sstr.str();
 		blob_import[i] = new ServiceImport<Blob<ADDRESS> >(import_name.c_str(), this);
+		
+		blob_export.SetupDependsOn(*blob_import[i]);
 	}
 }
 

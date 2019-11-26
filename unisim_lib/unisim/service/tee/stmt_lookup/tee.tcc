@@ -61,6 +61,8 @@ Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent) :
 		sstr << "stmt-lookup-import[" << i << "]";
 		string import_name = sstr.str();
 		stmt_lookup_import[i] = new ServiceImport<StatementLookup<ADDRESS> >(import_name.c_str(), this);
+		
+		stmt_lookup_export.SetupDependsOn(*stmt_lookup_import[i]);
 	}
 }
 

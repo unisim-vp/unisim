@@ -143,6 +143,8 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	, tcr(static_cast<typename CONFIG::CPU *>(this))
 	, tsr(static_cast<typename CONFIG::CPU *>(this))
 {
+	disasm_export.SetupDependsOn(this->memory_import);
+	
 	param_processor_version.SetMutable(false);
 	
 	pvr.Initialize(processor_version);

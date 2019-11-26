@@ -66,6 +66,7 @@
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
+#include <unisim/service/debug/user_interface/user_interface.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
@@ -155,6 +156,7 @@ private:
 	typedef unisim::service::tee::char_io::Tee<2> CHAR_IO_TEE;
 	typedef unisim::service::web_terminal::WebTerminal WEB_TERMINAL;
 	typedef unisim::service::os::linux_os::PowerPCLinux32<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE> LINUX_OS;
+	typedef unisim::service::debug::user_interface::UserInterface<CPU_ADDRESS_TYPE> DEBUG_UI;
 
 	//=========================================================================
 	//===                           Components                              ===
@@ -256,15 +258,19 @@ private:
 	CHAR_IO_TEE *char_io_tee;
 	// - Linux OS
 	LINUX_OS *linux_os;
+	// - Debug UI
+	DEBUG_UI *debug_ui;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
 	bool enable_profiler;
 	bool enable_linux_os;
+	bool enable_debug_ui;
 	unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
 	unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
 	unisim::kernel::variable::Parameter<bool> param_enable_profiler;
 	unisim::kernel::variable::Parameter<bool> param_enable_linux_os;
+	unisim::kernel::variable::Parameter<bool> param_enable_debug_ui;
 
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 	virtual void SigInt();

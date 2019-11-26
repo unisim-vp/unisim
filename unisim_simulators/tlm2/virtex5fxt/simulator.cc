@@ -89,20 +89,18 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, web_terminal(0)
 	, char_io_tee(0)
 	, linux_os(0)
+	, debug_ui(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, enable_profiler(false)
 	, enable_linux_os(false)
+	, enable_debug_ui(false)
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable/Disable profiler")
 	, param_enable_linux_os("enable-linux-os", 0, enable_linux_os, "Enable/Disable target Linux ABI to host ABI translation")
+	, param_enable_debug_ui("enable-debug-ui", 0, enable_debug_ui, "Enable/Disable debugging user interface")
 {
-	if(enable_profiler)
-	{
-		this->SetVariable("HARDWARE.instrumenter.enable-user-interface", true); // When profiler is enabled, enable also instrumenter user interface so that profiler interface is periodically refreshed too
-	}
-	
 	unsigned int irq;
 	unsigned int channel;
 	unsigned int i;
@@ -246,7 +244,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	//  - Multiformat loader
 	loader = enable_linux_os ? 0 : new LOADER("loader");
 	//  - debugger
-	debugger = (enable_inline_debugger or enable_gdb_server or enable_profiler) ? new DEBUGGER("debugger") : 0;
+	debugger = (enable_inline_debugger or enable_gdb_server or enable_profiler or enable_debug_ui) ? new DEBUGGER("debugger") : 0;
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDB_SERVER("gdb-server") : 0;
 	//  - Inline debugger
@@ -271,6 +269,8 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	char_io_tee = enable_linux_os ? 0 : new CHAR_IO_TEE("char-io-tee");
 	// - LinuxOS
 	linux_os = enable_linux_os ? new LINUX_OS("linux-os") : 0;
+	// - Debug UI
+	debug_ui = enable_debug_ui ? new DEBUG_UI("debug-ui") : 0;
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -457,12 +457,13 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	if (gdb_server)
 	{
 		// gdb-server <-> debugger connections
-		*debugger->debug_event_listener_import[1] >> gdb_server->debug_event_listener_export;
-		*debugger->debug_yielding_import[1]       >> gdb_server->debug_yielding_export;
-		gdb_server->debug_yielding_request_import >> *debugger->debug_yielding_request_export[1];
-		gdb_server->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[1];
-		gdb_server->memory_import                 >> *debugger->memory_export[1];
-		gdb_server->registers_import              >> *debugger->registers_export[1];
+		*debugger->debug_event_listener_import[1]   >> gdb_server->debug_event_listener_export;
+		*debugger->debug_yielding_import[1]         >> gdb_server->debug_yielding_export;
+		gdb_server->debug_yielding_request_import   >> *debugger->debug_yielding_request_export[1];
+		gdb_server->debug_selecting_import          >> *debugger->debug_selecting_export[1];
+		gdb_server->debug_event_trigger_import      >> *debugger->debug_event_trigger_export[1];
+		gdb_server->memory_import                   >> *debugger->memory_export[1];
+		gdb_server->registers_import                >> *debugger->registers_export[1];
 	}
 
 	if (profiler)
@@ -482,6 +483,25 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 		profiler->subprogram_lookup_import        >> *debugger->subprogram_lookup_export[2];
 	}
 	
+	if(debug_ui)
+	{
+		// inline-debugger <-> debugger connections
+		*debugger->debug_event_listener_import[3] >> debug_ui->debug_event_listener_export;
+		*debugger->debug_yielding_import[3]       >> debug_ui->debug_yielding_export;
+		debug_ui->debug_yielding_request_import   >> *debugger->debug_yielding_request_export[3];
+		debug_ui->debug_selecting_import          >> *debugger->debug_selecting_export[3];
+		debug_ui->debug_event_trigger_import      >> *debugger->debug_event_trigger_export[3];
+		debug_ui->disasm_import                   >> *debugger->disasm_export[3];
+		debug_ui->memory_import                   >> *debugger->memory_export[3];
+		debug_ui->registers_import                >> *debugger->registers_export[3];
+		debug_ui->stmt_lookup_import              >> *debugger->stmt_lookup_export[3];
+		debug_ui->symbol_table_lookup_import      >> *debugger->symbol_table_lookup_export[3];
+		debug_ui->backtrace_import                >> *debugger->backtrace_export[3];
+		debug_ui->debug_info_loading_import       >> *debugger->debug_info_loading_export[3];
+		debug_ui->data_object_lookup_import       >> *debugger->data_object_lookup_export[3];
+		debug_ui->subprogram_lookup_import        >> *debugger->subprogram_lookup_export[3];
+	}
+
 	ram_effective_to_physical_address_translator->memory_import >> ram->memory_export;
 	
 	if(!linux_os)
@@ -514,6 +534,10 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 		{
 			*http_server->http_server_import[i++] >> profiler->http_server_export;
 		}
+		if(debug_ui)
+		{
+			*http_server->http_server_import[i++] >> debug_ui->http_server_export;
+		}
 		if(!linux_os)
 		{
 			*http_server->http_server_import[i++] >> cpu->itlb_http_server_export;
@@ -538,6 +562,7 @@ Simulator::~Simulator()
 	if(bram) delete bram;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
+	if(debug_ui) delete debug_ui;
 	if(cpu) delete cpu;
 	if(mplb) delete mplb;
 	if(splb0_stub) delete splb0_stub;

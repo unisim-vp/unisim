@@ -69,8 +69,7 @@ CPU::CPU(const char *name, Object *parent)
 	, queueCurrentAddress(0xFFFE)
 	, queueFirst(-1)
 	, queueNElement(0)
-, 
-	loader_import("loader-import",  this)
+	, loader_import("loader-import",  this)
 	, disasm_export("disasm_export", this)
 	, registers_export("registers_export", this)
 	, memory_export("memory_export", this)
@@ -129,6 +128,9 @@ CPU::CPU(const char *name, Object *parent)
 	, stat_store_counter("data-store-counter", this, data_store_counter)
 	, param_max_inst("max-inst",this,max_inst)
 {
+	disasm_export.SetupDependsOn(memory_import);
+	memory_export.SetupDependsOn(memory_import);
+	
 	param_max_inst.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	param_periodic_trap.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 

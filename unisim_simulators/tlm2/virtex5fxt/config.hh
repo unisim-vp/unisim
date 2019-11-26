@@ -68,8 +68,8 @@ public:
 	{
 		typedef CPU_ADDRESS_TYPE ADDRESS;
 		static const unsigned int NUM_PROCESSORS = 1;
-		/* gdb_server, inline_debugger or profiler */
-		static const unsigned int MAX_FRONT_ENDS = 3;
+		/* gdb_server, inline_debugger, profiler, user_interface */
+		static const unsigned int MAX_FRONT_ENDS = 4;
 	};
 	
 	//=========================================================================

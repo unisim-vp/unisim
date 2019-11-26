@@ -1,7 +1,18 @@
 .instrumenter-status
 {
-	width:370px;
+/* 	width:370px; */
 	height:24px;
+}
+
+.instrumenter-status .name
+{
+	text-align:left;
+	padding-right:6px;
+}
+
+.instrumenter-status .name span
+{
+    line-height:24px;
 }
 
 .instrumenter-status .state
@@ -19,14 +30,14 @@
 
 .instrumenter-status .time
 {
-	width:130px;
+	width:130px; /* should be enough for priting "18446.744 seconds" */
 	text-align:right;
 }
 
 .instrumenter-status .time span
 {
 	display:inline-block;
-    line-height:24px; /* should be enough for priting "18446.744 seconds" */
+    line-height:24px;
 	white-space:nowrap;
 }
 

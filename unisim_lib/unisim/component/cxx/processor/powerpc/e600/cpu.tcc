@@ -117,6 +117,8 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	, srr1(static_cast<typename CONFIG::CPU *>(this))
 	, tlbmiss(static_cast<typename CONFIG::CPU *>(this))
 {
+	disasm_export.SetupDependsOn(this->memory_import);
+	
 	param_processor_version.SetMutable(false);
 	
 	UpdatePowerSave();

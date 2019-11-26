@@ -73,6 +73,8 @@ public:
 			std::ostringstream out;
 			out << "memory-import-" << i;
 			memory_import[i] = new ServiceImport<Memory<service_address_t> >(out.str().c_str(), this);
+			
+			memory_export.SetupDependsOn(*memory_import[i]);
 		}
 
 	}
