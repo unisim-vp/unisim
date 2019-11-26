@@ -52,6 +52,7 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	, SuperCPU(name, parent)
 	, unisim::kernel::Service<unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS> >(name, parent)
 	, disasm_export("disasm-export", this)
+	, local_memory_export("local-memory-export", this)
 	, cpuid(0x0)
 	, param_cpuid("cpuid", this, cpuid, "CPU ID at reset")
 	, processor_version(0x0)
@@ -173,8 +174,11 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::Object *parent)
 	, upmlcb2(static_cast<typename CONFIG::CPU *>(this), &pmlcb2)
 	, upmlcb3(static_cast<typename CONFIG::CPU *>(this), &pmlcb3)
 	, tmcfg0(static_cast<typename CONFIG::CPU *>(this))
+	, local_memory_gate("local-memory-gate", this)
 {
 	disasm_export.SetupDependsOn(this->memory_import);
+	
+	local_memory_export >> local_memory_gate.local_memory_export;
 	
 	param_processor_version.SetMutable(false);
 	param_system_version.SetMutable(false);

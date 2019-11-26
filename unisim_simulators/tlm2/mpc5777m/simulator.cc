@@ -4652,12 +4652,12 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	peripheral_core_2->memory_import >> xbar_1->memory_export;
 
 	(*xbar_0->memory_import[0]) >> flash->memory_export;
-	(*xbar_0->memory_import[2]) >> main_core_0->memory_export;
-	(*xbar_0->memory_import[3]) >> main_core_1->memory_export;
+	(*xbar_0->memory_import[2]) >> main_core_0->local_memory_export;
+	(*xbar_0->memory_import[3]) >> main_core_1->local_memory_export;
 	(*xbar_0->memory_import[4]) >> system_sram->memory_export;
 	(*xbar_0->memory_import[7]) >> xbar_1->memory_export;
 	
-	(*xbar_1->memory_import[1]) >> peripheral_core_2->memory_export;
+	(*xbar_1->memory_import[1]) >> peripheral_core_2->local_memory_export;
 		
 	if(debugger)
 	{

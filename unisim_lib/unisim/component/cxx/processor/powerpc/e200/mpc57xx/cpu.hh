@@ -69,6 +69,7 @@ public:
 	/////////////////////////// service exports ///////////////////////////////
 
 	unisim::kernel::ServiceExport<unisim::service::interfaces::Disassembly<EFFECTIVE_ADDRESS> > disasm_export;
+	unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> > local_memory_export;
 
 	////////////////////////////// constructor ////////////////////////////////
 	
@@ -915,6 +916,28 @@ protected:
 	///////////////////////// Thread Management Registers /////////////////////
 	
 	typename SuperCPU::thread_management::TMCFG0 tmcfg0;
+	
+private:
+	struct LocalMemoryGate : unisim::kernel::Service<typename unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> >
+	{
+		unisim::kernel::ServiceExport<unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> > local_memory_export;
+		
+		LocalMemoryGate(const char *name, CPU<TYPES, CONFIG> *_cpu)
+			: unisim::kernel::Object(name, _cpu)
+			, unisim::kernel::Service<typename unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> >(name, _cpu)
+			, local_memory_export("local-memory-export", this)
+			, cpu(_cpu)
+		{
+		}
+		
+		virtual void ResetMemory() {}
+		virtual bool ReadMemory(PHYSICAL_ADDRESS addr, void *buffer, uint32_t size) { return cpu->DebugIncomingLoad(addr + cpu->local_memory_base_addr, buffer, size); }
+		virtual bool WriteMemory(PHYSICAL_ADDRESS addr, const void *buffer, uint32_t size) { return cpu->DebugIncomingStore(addr + cpu->local_memory_base_addr, buffer, size); }
+	private:
+		CPU<TYPES, CONFIG> *cpu;
+	};
+	
+	LocalMemoryGate local_memory_gate;
 };
 
 } // end of namespace mpc57xx
