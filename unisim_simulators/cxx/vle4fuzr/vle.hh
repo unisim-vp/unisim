@@ -9,8 +9,8 @@
  */
 
 
-#ifndef __VLE4FUZR_ARM_HH__
-#define __VLE4FUZR_ARM_HH__
+#ifndef __VLE4FUZR_VLE_HH__
+#define __VLE4FUZR_VLE_HH__
 
 
-#endif /* __VLE4FUZR_ARM_HH__ */
+#endif /* __VLE4FUZR_VLE_HH__ */

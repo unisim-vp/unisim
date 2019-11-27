@@ -911,7 +911,7 @@ namespace symbolic {
     ~Choice() { delete nexts[0]; delete nexts[1]; }
 
     T*      next(bool choice) { return nexts[choice]; }
-    T*   getnext(bool choice) { if (T* c = nexts[choice]) return c; return (nexts[choice] = new T); }
+    T*   getnext(bool choice) { if (not nexts[choice]) setnext(choice, new T); return nexts[choice]; }
     void setnext(bool choice, T* nxt) { nexts[choice] = nxt; nxt->previous = static_cast<T*>(this); }
     
     bool proceed()

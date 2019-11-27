@@ -962,7 +962,7 @@ vldmdb_f64.execute = {
   U32 base_addr = cpu.GetGPR( rn ) - U32( regs << 3 );
                      
   // compute word swapping according to endianness
-  unsigned w0 = evenly( cpu.CPSR().Get(E) ) ? 1 : 0, w1 = w0 ^ 1;
+  unsigned w0 = cpu.Concretize( cpu.CPSR().Get(E) ) ? 1 : 0, w1 = w0 ^ 1;
   
   for (unsigned reg = 0; reg < regs; ++reg) {
     cpu.SetVSU( 2*(vd+reg) + w0, cpu.MemRead32( base_addr + U32(8*reg + 0) ) );
@@ -1017,7 +1017,7 @@ vldmia_f64.execute = {
   U32 base_addr = cpu.GetGPR( rn );
                      
   // compute word swapping according to endianness
-  unsigned w0 = evenly( cpu.CPSR().Get(E) ) ? 1 : 0, w1 = w0 ^ 1;
+  unsigned w0 = cpu.Concretize( cpu.CPSR().Get(E) ) ? 1 : 0, w1 = w0 ^ 1;
   
   for (unsigned reg = 0; reg < regs; ++reg) {
     cpu.SetVSU( 2*(vd+reg) + w0, cpu.MemRead32( base_addr + U32(8*reg + 0) ) );
@@ -1079,7 +1079,7 @@ vldr_64.execute = {
   U32 addr = cpu.GetGPR( rn ) + U32(imm);
   
   // compute word swapping according to endianness
-  unsigned w0 = evenly( cpu.CPSR().Get(E) ) ? 1 : 0, w1 = w0 ^ 1;
+  unsigned w0 = cpu.Concretize( cpu.CPSR().Get(E) ) ? 1 : 0, w1 = w0 ^ 1;
   
   cpu.SetVSU( 2*vd + w0, cpu.MemRead32( addr + U32(0) ) );
   cpu.SetVSU( 2*vd + w1, cpu.MemRead32( addr + U32(4) ) );
@@ -1099,7 +1099,7 @@ vldr_literal_64.execute = {
   U32 addr = (cpu.GetGPR( 15 ) & U32(-4)) + U32(imm);
   
   // compute word swapping according to endianness
-  unsigned w0 = evenly( cpu.CPSR().Get(E) ) ? 1 : 0, w1 = w0 ^ 1;
+  unsigned w0 = cpu.Concretize( cpu.CPSR().Get(E) ) ? 1 : 0, w1 = w0 ^ 1;
   
   cpu.SetVSU( 2*vd + w0, cpu.MemRead32( addr + U32(0) ) );
   cpu.SetVSU( 2*vd + w1, cpu.MemRead32( addr + U32(4) ) );
@@ -1710,7 +1710,7 @@ vstmdb_f64.execute = {
   U32 base_addr = cpu.GetGPR( rn ) - U32( regs << 3 );
                      
   // compute word swapping according to endianness
-  unsigned w0 = evenly( cpu.CPSR().Get(E) ) ? 1 : 0, w1 = w0 ^ 1;
+  unsigned w0 = cpu.Concretize( cpu.CPSR().Get(E) ) ? 1 : 0, w1 = w0 ^ 1;
   
   for (unsigned reg = 0; reg < regs; ++reg) {
     cpu.MemWrite32( base_addr + U32(8*reg + 0), cpu.GetVSU( 2*(vd+reg) + w0 ) );
@@ -1764,7 +1764,7 @@ vstmia_f64.execute = {
   U32 base_addr = cpu.GetGPR( rn );
   
   // compute word swapping according to endianness
-  unsigned w0 = evenly( cpu.CPSR().Get(E) ) ? 1 : 0, w1 = w0 ^ 1;
+  unsigned w0 = cpu.Concretize( cpu.CPSR().Get(E) ) ? 1 : 0, w1 = w0 ^ 1;
   
   for (unsigned reg = 0; reg < regs; ++reg) {
     cpu.MemWrite32( base_addr + U32(8*reg + 0), cpu.GetVSU( 2*(vd+reg) + w0 ) );
@@ -1809,7 +1809,7 @@ vstr_64.execute = {
   U32 addr = cpu.GetGPR( rn ) + U32(imm);
   
   // compute word swapping according to endianness
-  unsigned w0 = evenly( cpu.CPSR().Get(E) ) ? 1 : 0, w1 = w0 ^ 1;
+  unsigned w0 = cpu.Concretize( cpu.CPSR().Get(E) ) ? 1 : 0, w1 = w0 ^ 1;
   
   cpu.MemWrite32( addr + U32(0), cpu.GetVSU( 2*vn + w0 ) );
   cpu.MemWrite32( addr + U32(4), cpu.GetVSU( 2*vn + w1 ) );

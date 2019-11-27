@@ -9,7 +9,8 @@ import_genisslib || exit
 
 import dist_vle4fuzr || exit
 
-import unisim/component/cxx/processor/arm/vmsav7 || exit
+import unisim/component/cxx/processor/arm || exit
+import unisim/util/symbolic || exit
 
 import libc/inttypes || exit
 import std/cstdlib || exit
@@ -57,6 +58,8 @@ arm.cc \
 "
 
 UNISIM_BINDINGS_HEADER_FILES="\
+top_arm32.isa \
+top_thumb.isa \
 emu.hh \
 vle.hh \
 arm.hh \
@@ -190,12 +193,12 @@ CLEANFILES=\
 	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc
 
 \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh
-\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.isa
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: top_arm32.isa ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_arm32.isa
 
 \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh
-\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.isa
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: top_thumb.isa ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_thumb.isa
 EOF
 )
 

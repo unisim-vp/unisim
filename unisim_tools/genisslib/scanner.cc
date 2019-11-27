@@ -362,6 +362,36 @@ namespace
     Scanner::comments.clear();
     return res;
   }
+
+  void
+  GetVarList( CLex::Scanner& source, Vector<Variable>& var_list )
+  {
+    for (;;)
+      {
+        if (source.next() != CLex::Scanner::Name)
+          throw source.unexpected();
+
+        ConstStr varname;
+        {
+          std::string buf;
+          source.get(buf, &CLex::Scanner::get_name);
+          varname = ConstStr(buf.c_str(), Scanner::symbols);
+        }
+        if (source.next() != CLex::Scanner::Colon)
+          throw source.unexpected();
+        if (source.next() != CLex::Scanner::ObjectOpening)
+          throw source.unexpected();
+        SourceCode* c_type = new SourceCode(GetSourceCode(source));
+        if (source.next() != CLex::Scanner::Assign)
+          { var_list.push_back( new Variable( varname, c_type, 0 ) ); break; }
+        if (source.next() != CLex::Scanner::ObjectOpening)
+          throw source.unexpected();
+        SourceCode* c_init = new SourceCode(GetSourceCode(source));
+        var_list.push_back( new Variable( varname, c_type, c_init ) );
+        if (source.next() != CLex::Scanner::Comma)
+          break;
+      }
+  }
 }
 
 bool
@@ -634,6 +664,12 @@ Scanner::parse( char const* _filename, Isa& _isa )
                 
                 source.next();
               }
+            else if (std::equal(cmd.begin(), cmd.end(), "var"))
+              {
+                Vector<Variable> var_list;
+                GetVarList(source, var_list);
+                _isa.m_vars.append( var_list );
+              }
             else if (std::equal(cmd.begin(), cmd.end(), "group"))
               {
                 if (source.next() != CLex::Scanner::Name)
@@ -719,31 +755,7 @@ Scanner::parse( char const* _filename, Isa& _isa )
                   {
                     Vector<Variable> var_list;
 
-                    for (;;)
-                      {
-                        if (source.next() != CLex::Scanner::Name)
-                          throw source.unexpected();
-
-                        ConstStr varname;
-                        {
-                          std::string buf;
-                          source.get(buf, &CLex::Scanner::get_name);
-                          varname = ConstStr(buf.c_str(), Scanner::symbols);
-                        }
-                        if (source.next() != CLex::Scanner::Colon)
-                          throw source.unexpected();
-                        if (source.next() != CLex::Scanner::ObjectOpening)
-                          throw source.unexpected();
-                        SourceCode* c_type = new SourceCode(GetSourceCode(source));
-                        if (source.next() != CLex::Scanner::Assign)
-                          { var_list.push_back( new Variable( varname, c_type, 0 ) ); break; }
-                        if (source.next() != CLex::Scanner::ObjectOpening)
-                          throw source.unexpected();
-                        SourceCode* c_init = new SourceCode(GetSourceCode(source));
-                        var_list.push_back( new Variable( varname, c_type, c_init ) );
-                        if (source.next() != CLex::Scanner::Comma)
-                          break;
-                      }
+                    GetVarList(source, var_list);
                     
                     if (Operation* operation = Scanner::isa().operation( symbol ))
                       {

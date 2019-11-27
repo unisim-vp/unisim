@@ -9,13 +9,14 @@
  */
 
 #include "emu.hh"
+#include <iostream>
 #include <set>
 #include <vector>
 #include <cassert>
 #include <cstdint>
 
 Processor::Processor()
-  : pages(), hooks()
+  : pages(), hooks(), disasm(true)
 {}
 
 Processor::~Processor()
@@ -64,4 +65,9 @@ Processor::add( Processor::Hook* hook )
         }
     }
   return true;
+}
+
+void Processor::Abort::dump(std::ostream& sink)
+{
+  sink << "Abort";
 }

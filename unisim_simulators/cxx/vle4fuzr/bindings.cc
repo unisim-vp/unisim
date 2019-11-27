@@ -46,6 +46,11 @@ extern "C"
     return 0;
   }
 
+  int emu_set_disasm(void* uc, int disasm)
+  {
+    Processor& proc = *(Processor*)uc;
+    return proc.set_disasm(disasm), 0;
+  }
 
   int emu_mem_map(void* uc, uint64_t addr, uintptr_t size, uint32_t perms)
   {

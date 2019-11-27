@@ -11,6 +11,7 @@
 #ifndef __VLE4FUZR_EMU_HH__
 #define __VLE4FUZR_EMU_HH__
 
+#include <iosfwd>
 #include <set>
 #include <vector>
 #include <cassert>
@@ -21,7 +22,9 @@ struct Processor
   Processor();
   
   virtual ~Processor();
-  
+
+  struct Abort { virtual ~Abort() {}; virtual void dump(std::ostream&); };
+
   struct Page
   {
     std::vector<uint8_t> storage;
@@ -64,12 +67,24 @@ struct Processor
     }
     uint8_t* at(uint32_t x) const { return const_cast<uint8_t*>(&storage[x]); }
     void chperms(unsigned new_perms) const { const_cast<unsigned&>(perms) = new_perms; }
+    enum Permision { Read = 1, Write = 2, Execute = 4 };
+    void access(unsigned _perms) const { if ((_perms & perms) != _perms) throw Abort(); }
   };
-
+  
   typedef std::set<Page, Page::Above> Pages;
   Pages pages;
 
-  Pages::iterator mem_allocate(uint32_t lo, uint32_t addr, uint32_t hi)
+  Pages::iterator mem_page(uint32_t addr, uint32_t size)
+  {
+    auto pi = pages.lower_bound(addr);
+    if (pi == pages.end())
+      pi = mem_pagemiss(0, addr, (pages.size() ? (--pi)->base : 0)-1);
+    else if (pi->hi() <= addr)
+      pi = mem_pagemiss(pi->hi(), addr, (--pi != pages.end() ? pi->base : 0)-1);
+    return pi;
+  }
+
+  Pages::iterator mem_pagemiss(uint32_t lo, uint32_t addr, uint32_t hi)
   {
     uint32_t const page_size = 4096;
     uint32_t page_lo = std::max(addr & (0u-page_size), lo);
@@ -236,7 +251,29 @@ struct Processor
   
   std::vector<Hook*> hooks[Hook::TYPE_COUNT];
 
+  bool disasm;
+  void set_disasm(bool _disasm) { disasm = _disasm; }
+  
   virtual int emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count ) = 0;
+};
+
+struct Branch
+{
+  Branch() : address(), target(BNone), pass(false) {}
+  enum { BNone = 0, Direct, Indirect };
+  uint32_t address;
+  unsigned target : 2;
+  unsigned pass : 1;
+};
+
+template <class ARCH> struct InsnBranch : public Branch {};
+
+template <class OP, uint32_t SZ>
+struct OpPage
+{
+  enum { size = SZ };
+  OP* ops[SZ];
+  OpPage() : ops() {}
 };
 
 #endif /* __VLE4FUZR_EMU_HH__ */
