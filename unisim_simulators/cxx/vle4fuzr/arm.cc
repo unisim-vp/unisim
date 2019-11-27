@@ -578,6 +578,7 @@ template <> struct AMO< Arm32Decoder<ArmProcessor> >
   static Arm32Decoder<ArmBranch> bdecoder;
 };
 
+Arm32Decoder<ArmProcessor> ArmProcessor::arm32_decoder;
 Arm32Decoder<ArmBranch> AMO< Arm32Decoder<ArmProcessor> >::bdecoder;
 
 template <> struct AMO< ThumbDecoder<ArmProcessor> >
@@ -591,6 +592,7 @@ template <> struct AMO< ThumbDecoder<ArmProcessor> >
   static ThumbDecoder<ArmBranch> bdecoder;
 };
 
+ThumbDecoder<ArmProcessor> ArmProcessor::thumb_decoder;
 ThumbDecoder<ArmBranch> AMO< ThumbDecoder<ArmProcessor> >::bdecoder;
 
 template <typename Decoder>

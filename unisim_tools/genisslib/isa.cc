@@ -40,6 +40,7 @@
 Isa::Isa()
   : m_decoder( RiscDecoder )
   , m_is_subdecoder( false )
+  , m_withcache( true )
   , m_withsource( false )
   , m_withencode( false )
   , m_little_endian( false )
@@ -325,8 +326,9 @@ Isa::setparam( ConstStr key, ConstStr value )
   static ConstStr      scalar( "scalar",          Scanner::symbols );
   static ConstStr      buffer( "buffer",          Scanner::symbols );
   static ConstStr  subdecoder( "subdecoder_p",    Scanner::symbols );
+  static ConstStr   withcache( "withcache_p",     Scanner::symbols );
   static ConstStr  withsource( "withsource_p",    Scanner::symbols );
-  static ConstStr withcomment( "withcomment_p",    Scanner::symbols );
+  static ConstStr withcomment( "withcomment_p",   Scanner::symbols );
   static ConstStr  withencode( "withencode_p",    Scanner::symbols );
   static ConstStr      istrue( "true",            Scanner::symbols );
   static ConstStr     isfalse( "false",           Scanner::symbols );
@@ -345,8 +347,13 @@ Isa::setparam( ConstStr key, ConstStr value )
   }
   
   else if (key == subdecoder) {
-    if      (value == istrue)  m_is_subdecoder = true;
-    else if (value == isfalse) m_is_subdecoder = false;
+    if      (value == istrue)  { m_is_subdecoder = true; m_withcache = false; }
+    else if (value == isfalse) { m_is_subdecoder = false; }
+  }
+  
+  else if (key == withcache) {
+    if      (value == istrue)  { m_withcache = true; m_is_subdecoder = false; }
+    else if (value == isfalse) { m_withcache = false; }
   }
   
   else if (key == withsource) {

@@ -33,6 +33,7 @@ struct Isa
   enum DecoderType_t { RiscDecoder = 0, CiscDecoder, VliwDecoder };
   DecoderType_t                 m_decoder;         /**< Decoder Type */
   bool                          m_is_subdecoder;   /**< Subdecoder or full decoder */
+  bool                          m_withcache;       /**< Generate cache structure */
   bool                          m_withsource;      /**< Action source code accessible or not */
   bool                          m_withencode;      /**< Action source code accessible or not */
   bool                          m_little_endian;   /**< Endianness of isa (false: big endian, true: little endian) */

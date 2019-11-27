@@ -16,3 +16,4 @@ decl {
 
 var branch : {InsnBranch<ARCH>};
 
+set withcache_p false;
