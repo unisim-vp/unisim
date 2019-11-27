@@ -71,3 +71,19 @@ void Processor::Abort::dump(std::ostream& sink)
 {
   sink << "Abort";
 }
+
+void
+Processor::mem_overlap_error( Page const& a, Page const& b )
+{
+  std::cerr << "error: " << a << " and " << b << " overlap.\n";
+}
+
+void
+Processor::Page::dump(std::ostream& sink) const
+{
+  std::cerr << "Page[0x" << std::hex << base << " .. 0x" << hi() << "]("
+            << ("r "[not (perms & Read)])
+            << ("w "[not (perms & Write)])
+            << ("x "[not (perms & Execute)])
+            << ")";
+}

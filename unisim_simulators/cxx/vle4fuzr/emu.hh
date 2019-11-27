@@ -69,6 +69,9 @@ struct Processor
     void chperms(unsigned new_perms) const { const_cast<unsigned&>(perms) = new_perms; }
     enum Permision { Read = 1, Write = 2, Execute = 4 };
     void access(unsigned _perms) const { if ((_perms & perms) != _perms) throw Abort(); }
+
+    void dump(std::ostream&) const;
+    friend std::ostream& operator << ( std::ostream& sink, Page const& p ) { p.dump(sink); return sink; }
   };
   
   typedef std::set<Page, Page::Above> Pages;
@@ -93,6 +96,8 @@ struct Processor
     assert( pi != pages.end() );
     return pi;
   }
+
+  void mem_overlap_error( Page const& a, Page const& b );
   
   Pages::iterator mem_map(uint32_t addr, uint32_t size, unsigned perms)
   {
@@ -100,6 +105,7 @@ struct Processor
     auto below = pages.lower_bound(page);
     if (below != pages.end() and not (*below < page))
       {
+        mem_overlap_error(*below, page);
         return pages.end();
       }
     if (pages.size())
