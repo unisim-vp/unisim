@@ -42,10 +42,16 @@
 #define DEFAULT_OUTPUT "iss"
 
 Opts::Opts()
-  : outputprefix( DEFAULT_OUTPUT ), verbosity( 1 ),
-    expandname( 0 ), inputname( 0 ), depfilename( 0 ),
-    minwordsize( 32 ), sourcelines( true ), privatemembers( true ), specialization( true )
-    
+  : outputprefix( DEFAULT_OUTPUT )
+  , verbosity( 1 )
+  , expandname( 0 )
+  , inputname( 0 )
+  , depfilename( 0 )
+  , minwordsize( 32 )
+  , sourcelines( true )
+  , privatemembers( true )
+  , specialization( true )
+  , comments( true )
 {}
 
 struct GIL : public CLI, public Opts
@@ -135,6 +141,14 @@ struct GIL : public CLI, public Opts
       {
         if (this->on_off( &GIL::sourcelines, _args.pop_front() )) return;
         std::cerr << GENISSLIB ": '--source-lines' must be followed by 'on' or 'off'.\n";
+        help();
+        throw CLI::Exit_t( 1 );
+      }
+
+    if (_args.match( "--comments", "on/off", "Toggles the output of comments in generated files (default: on)." ))
+      {
+        if (this->on_off( &GIL::comments, _args.pop_front() )) return;
+        std::cerr << GENISSLIB ": '--comments' must be followed by 'on' or 'off'.\n";
         help();
         throw CLI::Exit_t( 1 );
       }
@@ -246,7 +260,7 @@ GIL_MAIN (int argc, char** argv, char** envp)
       // ISA statistics
       generator->isastats();
       // ISS Generation
-      generator->iss( gil.outputprefix, gil.sourcelines );
+      generator->iss();
     } catch (Generator::Error) {
       std::cerr << GENISSLIB ": compilation aborted.\n";
       throw CLI::Exit_t( 1 );

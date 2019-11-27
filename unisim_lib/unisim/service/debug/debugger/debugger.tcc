@@ -469,7 +469,11 @@ template <typename CONFIG>
 bool Debugger<CONFIG>::SetupDebugInfo()
 {
 	if(setup_debug_info_done) return true;
-	if(!blob_import) return false;
+	if(!blob_import)
+	{
+		logger << DebugError << "Blob import is not connected" << EndDebugError;
+		return false;
+	}
 	const unisim::util::blob::Blob<ADDRESS> *blob = blob_import->GetBlob();
 	if(!blob) return true; // no blob
 	bool status = SetupDebugInfo(blob);

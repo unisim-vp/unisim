@@ -177,7 +177,7 @@ Scanner::push()
 {
   YY_BUFFER_STATE state = YY_CURRENT_BUFFER;
   
-  include_stack = new Inclusion( &state, sizeof( YY_BUFFER_STATE ), fileloc, include_stack );
+  include_stack = new Inclusion( (uint8_t const*)&state, sizeof( YY_BUFFER_STATE ), fileloc, include_stack );
 }
 
 bool
@@ -187,7 +187,7 @@ Scanner::pop()
   
   if (not tail) return false;
   YY_BUFFER_STATE state;
-  tail->restore( &state, sizeof( YY_BUFFER_STATE ) );
+  tail->restore( (uint8_t*)&state, sizeof( YY_BUFFER_STATE ) );
   yy_delete_buffer( YY_CURRENT_BUFFER );
   if (yyin) fclose( yyin );
   yy_switch_to_buffer( state );
@@ -201,7 +201,7 @@ Scanner::pop()
   return true;
 }
 
-Scanner::Inclusion::Inclusion( void const* _state, intptr_t _size, FileLoc const& _fileloc, Inclusion* _next )
+Scanner::Inclusion::Inclusion( uint8_t const* _state, intptr_t _size, FileLoc const& _fileloc, Inclusion* _next )
   : state_backup( 0 ), fileloc( _fileloc ), next( _next )
 {
   state_backup = new uint8_t[_size];
@@ -214,7 +214,7 @@ Scanner::Inclusion::~Inclusion()
 }
 
 void
-Scanner::Inclusion::restore( void* _state, intptr_t _size )
+Scanner::Inclusion::restore( uint8_t* _state, intptr_t _size )
 {
   memcpy( _state, state_backup, _size );
 }

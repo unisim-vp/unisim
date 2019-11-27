@@ -93,7 +93,7 @@ struct Isa
   };
   
   void                          setparam( ConstStr key, ConstStr value );
-  void                          setparam( ConstStr key, SourceCode* value );
+  void                          setparam( ConstStr key, SourceCode const& value );
   void                          setparam( ConstStr key, unsigned int value );
   
   struct ParseError {};

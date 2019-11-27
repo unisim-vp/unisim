@@ -69,7 +69,7 @@ namespace arm {
    * @return true if the condition matches CPSR, false otherwise
    */
   template <typename coreT>
-  typename coreT::BOOL
+  bool
   CheckCondition( coreT& core, uint32_t cond )
   {
     util::truth_table::InBit<uint16_t,3> const N;
@@ -100,7 +100,7 @@ namespace arm {
     };
     if (cond >= 15) throw std::logic_error("invalid condition code");
     U8 nzcv( core.GetNZCV() );
-    return ((condition_truth_tables[cond] >> nzcv) & U16(1)) != U16(0);
+    return core.Concretize( ((condition_truth_tables[cond] >> nzcv) & U16(1)) != U16(0) );
   }
   
   template <typename coreT>

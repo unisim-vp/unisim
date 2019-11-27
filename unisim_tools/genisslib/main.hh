@@ -28,7 +28,8 @@
 #define EMAILS "gilles.mouchard@cea.fr, yves.lhuillier@cea.fr"
 #define COPYRIGHT "Copyright (c) 2003-2010 Commissariat a l'Energie Atomique (CEA) and Universite Paris Sud"
 
-struct Opts {
+struct Opts
+{
   Opts();
   
   char const*      outputprefix;
@@ -40,6 +41,7 @@ struct Opts {
   bool             sourcelines;
   bool             privatemembers;
   bool             specialization;
+  bool             comments;
 };
 
 #endif // __MAIN_HH__
