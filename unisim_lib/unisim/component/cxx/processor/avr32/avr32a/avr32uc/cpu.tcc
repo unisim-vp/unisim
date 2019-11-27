@@ -672,7 +672,7 @@ void CPU<CONFIG>::StepOneInstruction()
 	unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation = 0;
 
 	//std::cerr << "pc before Fetch = 0x" << std::hex << pc << std::dec << std::endl;
-	CodeType insn;
+	CodeType insn(CodeType::capacity * 8);
 	if (likely(Fetch(pc, &insn.str[0], CodeType::capacity)))
 	{
 		operation = unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>::Decode(pc, insn);
@@ -703,7 +703,7 @@ void CPU<CONFIG>::StepOneInstruction()
 	ProcessExceptions(operation);
 
 	/* report a finished instruction */
-	if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
+	if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
 	{
 		memory_access_reporting_import->ReportCommitInstruction(pc, insn_size);
 	}
@@ -869,20 +869,17 @@ bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffe
 template <class CONFIG>
 string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t& next_addr)
 {
-	uint8_t buffer[4];
-        if(ReadMemory(addr, buffer ,sizeof(buffer)))
+	CodeType insn(CodeType::capacity * 8);
+	if(ReadMemory(addr, &insn.str[0], CodeType::capacity))
 	{
-		CodeType insn= CodeType(buffer, sizeof(buffer) * 8);
-	        unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation=0;
+		unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation=0;
 		operation = unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>::Decode(addr, insn);
 
 		next_addr = addr + (operation->GetLength() / 8);
 		std::stringstream sstrdisasm;
-		sstrdisasm << operation->GetEncoding() << " ";
 
 		/* disasm the instruction */
 		operation->disasm(this,sstrdisasm);	
-	
 	
 		return sstrdisasm.str();
 	}
