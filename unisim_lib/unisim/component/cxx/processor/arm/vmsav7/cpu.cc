@@ -160,6 +160,9 @@ CPU::CPU(const char *name, Object *parent)
                             "Tell the CPU to halt simulation on a specific instruction (address or symbol)." )
   , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
 {
+  disasm_export.SetupDependsOn(memory_import);
+  memory_export.SetupDependsOn(memory_import);
+  
   // Set the right format for various of the variables
   param_trap_on_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
   stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);

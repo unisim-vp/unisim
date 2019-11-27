@@ -58,34 +58,28 @@
 #include <unisim/service/os/avr32_t2h_syscalls/avr32_t2h_syscalls.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
+#include <unisim/service/instrumenter/instrumenter.hh>
+#include <unisim/service/debug/profiler/profiler.hh>
+#include <unisim/service/http_server/http_server.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
+#include <unisim/kernel/tlm2/simulator.hh>
 
 using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::service::loader::multiformat_loader::MultiFormatLoader;
-using unisim::service::os::avr32_t2h_syscalls::AVR32_T2H_Syscalls;
-using unisim::service::debug::debugger::Debugger;
-using unisim::service::debug::gdb_server::GDBServer;
-using unisim::service::debug::inline_debugger::InlineDebugger;
-using unisim::kernel::variable::Parameter;
-using unisim::kernel::variable::Variable;
-using unisim::kernel::VariableBase;
-using unisim::kernel::Object;
 
 //=========================================================================
 //===                        Top level class                            ===
 //=========================================================================
 
 template <class CONFIG>
-class Simulator : public unisim::kernel::Simulator
+class Simulator : public unisim::kernel::tlm2::Simulator
 {
 public:
-	Simulator(int argc, char **argv);
+	Simulator(int argc, char **argv, const sc_core::sc_module_name& name = "HARDWARE");
 	virtual ~Simulator();
+	virtual bool EndSetup();
 	void Run();
 	virtual unisim::kernel::Simulator::SetupStatus Setup();
-	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
-	int GetExitStatus() const;
 protected:
 private:
 	//=========================================================================
@@ -106,6 +100,19 @@ private:
 	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::interrupt::InterruptProtocolTypes> IRQ_STUB;
 	
 	//=========================================================================
+	//===                      Aliases for services classes                 ===
+	//=========================================================================
+
+	typedef unisim::service::debug::debugger::Debugger<typename CONFIG::DEBUGGER_CONFIG> DEBUGGER;
+	typedef unisim::service::debug::inline_debugger::InlineDebugger<CPU_ADDRESS_TYPE> INLINE_DEBUGGER;
+	typedef unisim::service::debug::gdb_server::GDBServer<CPU_ADDRESS_TYPE> GDB_SERVER;
+	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<CPU_ADDRESS_TYPE> LOADER;
+	typedef unisim::service::os::avr32_t2h_syscalls::AVR32_T2H_Syscalls<CPU_ADDRESS_TYPE> AVR32_T2H_SYSCALLS;
+	typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
+	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
+	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
+	
+	//=========================================================================
 	//===                           Components                              ===
 	//=========================================================================
 	//  - AVR32UC processor
@@ -123,35 +130,33 @@ private:
 	//===                            Services                               ===
 	//=========================================================================
 	//  - Multiformat loader
-	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
+	LOADER *loader;
 	//  - AVR32 Target to Host syscalls
-	AVR32_T2H_Syscalls<CPU_ADDRESS_TYPE> *avr32_t2h_syscalls;
-	
-	struct DEBUGGER_CONFIG
-	{
-		typedef CPU_ADDRESS_TYPE ADDRESS;
-		static const unsigned int NUM_PROCESSORS = 1;
-		/* gdb_server, inline_debugger and/or monitor */
-		static const unsigned int MAX_FRONT_ENDS = 3;
-	};
-	
+	AVR32_T2H_SYSCALLS *avr32_t2h_syscalls;
 	//  - Debugger
-	Debugger<DEBUGGER_CONFIG> *debugger;
+	DEBUGGER *debugger;
 	//  - GDB server
-	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
+	GDB_SERVER *gdb_server;
 	//  - Inline debugger
-	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger;
+	INLINE_DEBUGGER *inline_debugger;
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
+	//  - Instrumenter
+	INSTRUMENTER *instrumenter;
+	//  - Profiler
+	PROFILER *profiler;
+	//  - HTTP server
+	HTTP_SERVER *http_server;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
-	Parameter<bool> param_enable_gdb_server;
-	Parameter<bool> param_enable_inline_debugger;
+	bool enable_profiler;
+	unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;
+	unisim::kernel::variable::Parameter<bool> param_enable_inline_debugger;
+	unisim::kernel::variable::Parameter<bool> param_enable_profiler;
 
-	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 	virtual void SigInt();
 };

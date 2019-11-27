@@ -24,7 +24,6 @@ unisim/service/interfaces/debug_yielding
 unisim/service/interfaces/disassembly
 unisim/service/interfaces/loader
 unisim/service/interfaces/memory
-unisim/service/interfaces/memory_access_reporting
 unisim/service/interfaces/profiling
 unisim/service/interfaces/registers
 unisim/service/interfaces/stmt_lookup

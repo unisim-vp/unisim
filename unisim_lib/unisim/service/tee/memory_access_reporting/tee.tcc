@@ -62,10 +62,12 @@ Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent) :
 		sstr << "out[" << i << "]";
 		string import_name = sstr.str();
 		out[i] = new ServiceImport<MemoryAccessReporting<ADDRESS> >(import_name.c_str(), this);
+		in.SetupDependsOn(*out[i]);
 		stringstream sstr_control;
 		sstr_control << "in_control[" << i << "]";
 		string export_name = sstr_control.str();
 		in_control[i] = new ServiceExport<MemoryAccessReportingControl>(export_name.c_str(), this);
+		in_control[i]->SetupDependsOn(out_control);
 		requires_memory_access_reporting[i] = true;
 		requires_fetch_instruction_reporting[i] = true;
 		requires_commit_instruction_reporting[i] = true;

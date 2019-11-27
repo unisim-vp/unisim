@@ -36,6 +36,7 @@ import unisim/service/instrumenter || exit
 import unisim/service/tee/char_io || exit
 import unisim/service/web_terminal || exit
 import unisim/service/os/linux_os || exit
+import unisim/service/debug/user_interface || exit
 import unisim/kernel/variable/endian || exit
 import unisim/kernel/logger || exit
 import unisim/kernel/tlm2 || exit

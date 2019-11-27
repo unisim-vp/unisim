@@ -46,6 +46,7 @@ Translator<FROM_ADDRESS, TO_ADDRESS>::Translator(const char* name, Object *paren
 	, memory_export("memory-export", this)
 	, memory_import("memory-import", this)
 {
+	memory_export.SetupDependsOn(memory_import);
 }
 
 template <class FROM_ADDRESS, class TO_ADDRESS>

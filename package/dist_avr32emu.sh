@@ -6,25 +6,28 @@ source "$(dirname $0)/dist_common.sh"
 
 import_genisslib || exit
 
-import unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa
-import unisim/component/tlm2/processor/avr32/avr32uc
-import unisim/component/tlm2/memory/ram
-import unisim/component/tlm2/interconnect/generic_router
-import unisim/kernel
-import unisim/service/debug/debugger
-import unisim/service/debug/gdb_server
-import unisim/service/debug/inline_debugger
-import unisim/service/loader/multiformat_loader
-import unisim/service/os/avr32_t2h_syscalls
-import unisim/service/time/sc_time
-import unisim/service/time/host_time
-import unisim/kernel/logger
-import unisim/kernel/tlm2
+import unisim/component/cxx/processor/avr32/avr32a/avr32uc/isa || exit
+import unisim/component/tlm2/processor/avr32/avr32uc || exit
+import unisim/component/tlm2/memory/ram || exit
+import unisim/component/tlm2/interconnect/generic_router || exit
+import unisim/kernel || exit
+import unisim/service/debug/debugger || exit
+import unisim/service/debug/gdb_server || exit
+import unisim/service/debug/inline_debugger || exit
+import unisim/service/loader/multiformat_loader || exit
+import unisim/service/os/avr32_t2h_syscalls || exit
+import unisim/service/time/sc_time || exit
+import unisim/service/time/host_time || exit
+import unisim/service/instrumenter || exit
+import unisim/service/debug/profiler || exit
+import unisim/service/http_server || exit
+import unisim/kernel/logger || exit
+import unisim/kernel/tlm2 || exit
 
-import std/iostream
-import std/sstream
-import std/string
-import std/stdexcept
+import std/iostream || exit
+import std/sstream || exit
+import std/string || exit
+import std/stdexcept || exit
 
 import m4/ax_cflags_warn_all || exit
 

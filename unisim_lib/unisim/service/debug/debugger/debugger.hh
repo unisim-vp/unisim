@@ -406,7 +406,18 @@ private:
 				backtrace_export.SetupDependsOn(*dbg.memory_import[prc_num]);
 				data_object_lookup_export.SetupDependsOn(*dbg.registers_import[prc_num]);
 				data_object_lookup_export.SetupDependsOn(*dbg.memory_import[prc_num]);
+				debug_event_trigger_export.SetupDependsOn(*dbg.memory_access_reporting_control_import[prc_num]);
+				memory_export.SetupDependsOn(*dbg.memory_import[prc_num]);
+				registers_export.SetupDependsOn(*dbg.registers_import[prc_num]);
+				disasm_export.SetupDependsOn(*dbg.disasm_import[prc_num]);
 			}
+			
+			symbol_table_lookup_export.SetupDependsOn(dbg.blob_import);
+			stmt_lookup_export.SetupDependsOn(dbg.blob_import);
+			backtrace_export.SetupDependsOn(dbg.blob_import);
+			debug_info_loading_export.SetupDependsOn(dbg.blob_import);
+			data_object_lookup_export.SetupDependsOn(dbg.blob_import);
+			subprogram_lookup_export.SetupDependsOn(dbg.blob_import);
 			
 			*dbg.debug_yielding_request_export[id] >> debug_yielding_request_export;
 			*dbg.debug_selecting_export       [id] >> debug_selecting_export;
@@ -436,7 +447,7 @@ private:
 			if(srv_export == &symbol_table_lookup_export) return dbg.SetupDebugInfo();
 			if(srv_export == &stmt_lookup_export) return dbg.SetupDebugInfo();
 			if(srv_export == &backtrace_export) return dbg.SetupDebugInfo();
-			if(srv_export == &debug_info_loading_export) return true;
+			if(srv_export == &debug_info_loading_export) return dbg.SetupDebugInfo();
 			if(srv_export == &data_object_lookup_export) return dbg.SetupDebugInfo();
 			if(srv_export == &subprogram_lookup_export) return dbg.SetupDebugInfo();
 			dbg.logger << DebugError << "Internal Error" << EndDebugError;

@@ -606,7 +606,6 @@ Simulator::Simulator(int argc, char **argv)
 	
 	if(debugger)
 	{
-		// Debugger <-> CPU Connections
 		// Debugger <-> CPU connections
 		cpu->debug_yielding_import                            >> *debugger->debug_yielding_export[0];
 		cpu->trap_reporting_import                            >> *debugger->trap_reporting_export[0];

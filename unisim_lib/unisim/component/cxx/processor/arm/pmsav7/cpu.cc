@@ -121,6 +121,9 @@ CPU::CPU(const char *name, Object *parent)
                                       "Produce a trap when the given instruction count is reached.")
   , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
 {
+  disasm_export.SetupDependsOn(memory_import);
+  memory_export.SetupDependsOn(memory_import);
+  
   // Set the right format for various of the variables
   param_trap_on_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
   stat_instruction_counter.SetFormat(unisim::kernel::VariableBase::FMT_DEC);

@@ -109,7 +109,7 @@ struct CPU
     CPU& cpu;
     unisim::kernel::variable::Statistic<uint64_t> stat_num_accesses;
     unisim::kernel::variable::Statistic<uint64_t> stat_num_misses;
-    unisim::kernel::variable::Formula<double> formula_miss_rate;
+    unisim::kernel::variable::StatisticFormula<double> formula_miss_rate;
   };
   
   struct L1D_CONFIG

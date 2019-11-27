@@ -88,6 +88,13 @@ public:
 	static const MEMORY_ADDR RAM_BASE_ADDR = 0x00000000ULL;
 	static const MEMORY_ADDR RAM_BYTE_SIZE = (1ULL << 32); // user level simulation => all addressable memory CPU supports
 
+	struct DEBUGGER_CONFIG
+	{
+		typedef CPU_CONFIG::address_t ADDRESS;
+		static const unsigned int NUM_PROCESSORS = 1;
+		/* gdb_server, inline_debugger, profiler */
+		static const unsigned int MAX_FRONT_ENDS = 3;
+	};
 };
 
 //=========================================================================

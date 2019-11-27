@@ -343,6 +343,7 @@ void DiGraph<T>::WriteGraphviz(std::ostream& os)
 		Vertex<T> *u = *vertex_it;
 		os << "\tnode_" << u->GetId() << " [label = \"" << u->GetLabel() << "\"]" << std::endl;
 	}
+	os << "ranksep = 8;" << std::endl;
 	for(typename Vertices::const_iterator vertex_it = vertices.begin(); vertex_it != vertices.end(); ++vertex_it) 
 	{ 
 		Vertex<T> *u = *vertex_it;
@@ -1165,8 +1166,8 @@ void Object::Disconnect()
 
 	for(import_iter = srv_imports.begin(); import_iter != srv_imports.end(); import_iter++)
 	{
-#ifdef DEBUG_SERVICE
-		cerr << (*import_iter)->GetName() << "->DisconnectService()" << std::endl;
+#ifdef DEBUG_KERNEL
+		std::cerr << (*import_iter)->GetName() << "->DisconnectService()" << std::endl;
 #endif
 		(*import_iter)->DisconnectService();
 	}
@@ -1175,8 +1176,8 @@ void Object::Disconnect()
 
 	for(export_iter = srv_exports.begin(); export_iter != srv_exports.end(); export_iter++)
 	{
-#ifdef DEBUG_SERVICE
-		cerr << (*export_iter)->GetName() << "->DisconnectClient()" << std::endl;
+#ifdef DEBUG_KERNEL
+		std::cerr << (*export_iter)->GetName() << "->DisconnectClient()" << std::endl;
 #endif
 		(*export_iter)->DisconnectClient();
 	}
@@ -2360,7 +2361,7 @@ Simulator::SetupStatus Simulator::Setup()
 	for(export_iter = exports.begin(); export_iter != exports.end(); ++export_iter)
 	{
 		ServiceExportBase *srv_export = (*export_iter).second;
-		Vertex<ServiceExportBase *> *v = dependency_graph[srv_export];
+		Vertex<ServiceExportBase *> *u = dependency_graph[srv_export];
 		
 		std::list<ServiceImportBase *>& setup_dependencies = srv_export->GetSetupDependencies();
 		std::list<ServiceImportBase *>::iterator import_iter;
@@ -2370,12 +2371,20 @@ Simulator::SetupStatus Simulator::Setup()
 			ServiceExportBase *peer_export = (*import_iter)->GetServiceExport();
 			if(peer_export)
 			{
-				Vertex<ServiceExportBase *> *u = dependency_graph[peer_export];
-				assert(u);
+#ifdef DEBUG_KERNEL
+				std::cerr << "Export dependency: " << srv_export->GetName() << " -> " << peer_export->GetName() << std::endl;
+#endif
+				Vertex<ServiceExportBase *> *v = dependency_graph[peer_export];
+				assert(v);
 				(*u)(v); // make edge u -> v
 			}
 		}
 	}
+
+#ifdef DEBUG_KERNEL
+	std::ofstream file("deps.dot");
+	dependency_graph.WriteGraphviz(file);
+#endif
 
 	typedef std::vector<Vertex<ServiceExportBase *> *> ReversedSetupOrder;
 	ReversedSetupOrder reversed_setup_order;
@@ -2385,7 +2394,7 @@ Simulator::SetupStatus Simulator::Setup()
 		std::ofstream file("deps.dot");
 		dependency_graph.WriteGraphviz(file);
 		
-		std::cerr << "Simulator: ERROR! cyclic setup dependency graph. Dependency graph dumped to deps.dot. Run 'dot -Tpdf deps.dot -o deps.pdf' and see deps.pdf for details." << std::endl;
+		std::cerr << "Simulator: ERROR! cyclic setup dependency graph. Dependency graph dumped as Graphivz format to deps.dot. Run 'twopi -Tpdf deps.dot -o deps.pdf' and see deps.pdf for details." << std::endl;
 		return ST_ERROR;
 	}
 	
@@ -2396,6 +2405,9 @@ Simulator::SetupStatus Simulator::Setup()
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
 		Object *object = (*object_iter).second;
+#ifdef DEBUG_KERNEL
+		std::cerr << "Simulator:" << object->GetName() << "::BeginSetup()" << std::endl;
+#endif
 		if(!object->BeginSetup())
 		{
 			std::cerr << "Simulator: " << object->GetName() << " beginning of setup failed" << std::endl;
@@ -2415,7 +2427,9 @@ Simulator::SetupStatus Simulator::Setup()
 
 			if(object)
 			{
-//				std::cerr << "Simulator:" << object->GetName() << "::Setup(" << srv_export->GetName() << ")" << std::endl;
+#ifdef DEBUG_KERNEL
+				std::cerr << "Simulator:" << object->GetName() << "::Setup(" << srv_export->GetName() << ")" << std::endl;
+#endif
 				if(!object->Setup(srv_export))
 				{
 					std::cerr << "Simulator: " << srv_export->GetName() << " setup failed" << std::endl;
@@ -2432,6 +2446,9 @@ Simulator::SetupStatus Simulator::Setup()
 		for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 		{
 			Object *object = (*object_iter).second;
+#ifdef DEBUG_KERNEL
+			std::cerr << "Simulator:" << object->GetName() << "::EndSetup()" << std::endl;
+#endif
 			if(!object->EndSetup())
 			{
 				std::cerr << "Simulator: " << object->GetName() << " end of setup failed" << std::endl;

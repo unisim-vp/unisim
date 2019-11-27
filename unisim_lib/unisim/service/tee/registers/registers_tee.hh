@@ -76,6 +76,7 @@ public:
 			std::ostringstream out;
 			out << "registers-import-" << i;
 			registers_import[i] = new ServiceImport<Registers>(out.str().c_str(), this);
+			registers_export.SetupDependsOn(*registers_import[i]);
 		}
 
 	}
