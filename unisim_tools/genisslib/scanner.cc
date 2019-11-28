@@ -16,7 +16,6 @@
 #include <bitfield.hh>
 #include <variable.hh>
 #include <specialization.hh>
-#include <parser_tokens.hh>
 #include <strtools.hh>
 #include <clex.hh>
 #include <fstream>
@@ -923,102 +922,12 @@ Scanner::include( char const* _filename )
   return true;
 }
 
-Scanner::Token Scanner::s_tokens[] = {
-  {"action", TOK_ACTION},
-  {"const", TOK_CONST},
-  {"constructor", TOK_CONSTRUCTOR},
-  {"decl", TOK_DECL},
-  {"decoder", TOK_DECODER},
-  {"destructor", TOK_DESTRUCTOR},
-  {"group", TOK_GROUP},
-  {"impl", TOK_IMPL},
-  {"include", TOK_INCLUDE},
-  {"inheritance", TOK_INHERITANCE},
-  {"namespace", TOK_NAMESPACE},
-  {"op", TOK_OP},
-  {"rewind", TOK_REWIND},
-  {"set", TOK_SET},
-  {"sext", TOK_SEXT},
-  {"shl", TOK_SHL},
-  {"shr", TOK_SHR},
-  {"specialize", TOK_SPECIALIZE},
-  {"static", TOK_STATIC},
-  {"subdecoder", TOK_SUBDECODER},
-  {"template", TOK_TEMPLATE},
-  {"var", TOK_VAR},
-  {0,0}
-};
+/* obsolescent stuff */
+Scanner::Token Scanner::s_tokens[] = { {0,0} };
+int Scanner::token( char const* _text ) { throw "impossible"; return 0; }
+ConstStr Scanner::charname( char _char ) { return Str::fmt( "'%c'", _char ); }
+ConstStr Scanner::tokenname( int _token ) { throw "impossible"; return 0; }
 
-/** Convert a name to a token
-    @param name name of the token
-    @return the token
-*/
-int
-Scanner::token( char const* _text )
-{
-  for (int idx = 0; s_tokens[idx].name; ++ idx)
-    if (strcmp( s_tokens[idx].name, _text) == 0 )
-      return s_tokens[idx].token;
-
-  return TOK_IDENT;
-}
-
-
-ConstStr
-Scanner::charname( char _char )
-{
-  switch( _char ) {
-  case '\t': return "tab char";
-  case '\n': return "return char";
-  case '\r': return "carriage return";
-  case '\b': return "back space";
-  default: break;
-  }
-  
-  if (_char < 32 or _char >= 126)
-    return Str::fmt( "char #%d", _char );
-
-  return Str::fmt( "'%c'", _char );
-}
-
-/** Return the name of a token
-    @param token the token
-    @return the name of the token
-*/
-ConstStr
-Scanner::tokenname( int _token )
-{
-  /* search into the token table */
-  for (int idx = 0; s_tokens[idx].name; ++ idx)
-    if (s_tokens[idx].token == _token)
-      return s_tokens[idx].name;
-  
-  /* return a string for the token not in the token table */
-  switch( _token ) {
-  case TOK_IDENT: return "identifier";
-  case TOK_ENDL: return "end of line";
-  case TOK_SOURCE_CODE: return "source code";
-  case TOK_INTEGER: return "integer";
-  case TOK_STRING: return "string";
-  case '(': return "`('";
-  case ')': return "`)'";
-  case '<': return "`<'";
-  case '>': return "`>'";
-  case ':' : return "`:'";
-  case '=' : return "`='";
-  case '.': return "`.'";
-  case '[': return "`['";
-  case ']': return "`]'";
-  case '?': return "`?'";
-  }
-
-  /* return a string for a character token */
-  if (_token < 256)
-    return charname( _token );
-  
-  /* don't know which token it is ! */
-  return "unknown token";
-}
 
 void
 Scanner::add_lookupdir( char const* _dir )

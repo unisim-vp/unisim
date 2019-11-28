@@ -105,17 +105,15 @@ struct Processor
     auto below = pages.lower_bound(page);
     if (below != pages.end() and not (*below < page))
       {
-        mem_overlap_error(*below, page);
+        mem_overlap_error(page, *below);
         return pages.end();
       }
-    if (pages.size())
+    if (pages.size() and below != pages.begin() and not (page < *std::prev(below)))
       {
-        auto above = std::prev(below);
-        if (above != pages.end() and not (page < *above))
-          {
-            return pages.end();
-          }
+        mem_overlap_error(page, *std::prev(below));
+        return pages.end();
       }
+    
     return pages.insert(below,std::move(page));
   }
 

@@ -5,8 +5,6 @@ action.hh \
 cli.hh \
 errtools.hh \
 isa.hh \
-parser_defs.hh \
-parser_tokens.hh \
 riscgenerator.hh \
 specialization.hh \
 variable.hh \
