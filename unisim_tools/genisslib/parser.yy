@@ -28,6 +28,7 @@
 #include <bitfield.hh>
 #include <specialization.hh>
 #include <scanner.hh>
+#include <parsing.hh>
 #include <conststr.hh>
 #include <cstdarg>
 #include <cstdio>
@@ -37,24 +38,6 @@
   
 int yylex();
 int yyerror( char const* _err );
-
-static
-void
-create_action( Operation* _operation, ActionProto const* _actionproto, SourceCode* _actioncode )
-{
-  Action const* prev_action = _operation->action( _actionproto );
-
-  if (prev_action) {
-    Scanner::fileloc.err( "error: action `%s.%s' redefined",
-                          _operation->symbol.str(), _actionproto->m_symbol.str() );
-    
-    prev_action->m_fileloc.err( "action `%s.%s' previously defined here",
-                                _operation->symbol.str(), _actionproto->m_symbol.str() );
-    exit( -1 );
-  }
-  
-  _operation->add( new Action( _actionproto, _actioncode, Scanner::comments, Scanner::fileloc ) );
-}
 
 %}
 
@@ -176,20 +159,20 @@ subdecoder_instance:
     nmspc[idx] = ConstStr( (*nmspc_in)[idx], Scanner::symbols );
   delete nmspc_in;
   
-  SDClass const* sdclass = Scanner::isa().sdclass( nmspc );
+  SDClass const* sdclass = Parsing::isa().sdclass( nmspc );
   if (not sdclass) {
-    Scanner::fileloc.err( "error: subdecoder has not been declared" );
+    Parsing::fileloc.err( "error: subdecoder has not been declared" );
     YYABORT;
   }
   
-  SDInstance const* sdinstance = Scanner::isa().sdinstance( symbol );
+  SDInstance const* sdinstance = Parsing::isa().sdinstance( symbol );
   if (sdinstance) {
-    Scanner::fileloc.err( "error: subdecoder instance `%s' redefined", symbol.str() );
+    Parsing::fileloc.err( "error: subdecoder instance `%s' redefined", symbol.str() );
     sdinstance->m_fileloc.err( "subdecoder instance `%s' previously defined here", symbol.str() );
     YYABORT;
   }
   
-  Scanner::isa().m_sdinstances.append( new SDInstance( symbol, template_scheme, sdclass, Scanner::fileloc ) );
+  Parsing::isa().m_sdinstances.append( new SDInstance( symbol, template_scheme, sdclass, Parsing::fileloc ) );
 }
 ;
 
@@ -226,15 +209,15 @@ subdecoder_class:
     nmspc[idx] = ConstStr( (*nmspc_in)[idx], Scanner::symbols );
   delete nmspc_in;
   
-  SDClass const* sdclass = Scanner::isa().sdclass( nmspc );
+  SDClass const* sdclass = Parsing::isa().sdclass( nmspc );
   
   if (sdclass) {
-    Scanner::fileloc.err( "error: subdecoder class redeclared." );
+    Parsing::fileloc.err( "error: subdecoder class redeclared." );
     sdclass->m_fileloc.err( "subdecoder class previously declared here." );
     YYABORT;
   }
   
-  Scanner::isa().m_sdclasses.append( new SDClass( nmspc, insnsizes->begin(), insnsizes->end(), Scanner::fileloc ) );
+  Parsing::isa().m_sdclasses.append( new SDClass( nmspc, insnsizes->begin(), insnsizes->end(), Parsing::fileloc ) );
   delete insnsizes;
 }
 ;
@@ -245,9 +228,9 @@ global_ident_parameter: TOK_SET TOK_IDENT TOK_IDENT
   ConstStr val( $3, Scanner::symbols );
   
   try {
-    Scanner::isa().setparam( key, val );
+    Parsing::isa().setparam( key, val );
   } catch (Isa::UnknownIdent ui) {
-    Scanner::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
+    Parsing::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
     YYABORT;
   }
 }
@@ -257,10 +240,10 @@ global_sourcecode_parameter: TOK_SET TOK_IDENT TOK_SOURCE_CODE
   ConstStr key( $2, Scanner::symbols );
   SourceCode* val = $3;
   try {
-    Scanner::isa().setparam( key, *val );
+    Parsing::isa().setparam( key, *val );
     delete val;
   } catch (Isa::UnknownIdent ui) {
-    Scanner::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
+    Parsing::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
     YYABORT;
   }
 }
@@ -270,9 +253,9 @@ global_uinteger_parameter: TOK_SET TOK_IDENT TOK_INTEGER
   ConstStr key( $2, Scanner::symbols );
   unsigned int val = $3;
   try {
-    Scanner::isa().setparam( key, val );
+    Parsing::isa().setparam( key, val );
   } catch (Isa::UnknownIdent ui) {
-    Scanner::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
+    Parsing::fileloc.err( "error: unknown or illegal ident `%s'.", ui.m_ident.str() );
     YYABORT;
   }
 }
@@ -292,58 +275,58 @@ declaration:
            | subdecoder_instance TOK_ENDL
            | operation_declaration TOK_ENDL
 {
-  Scanner::isa().add( $1 );
+  Parsing::isa().add( $1 );
 }
            | action_proto_declaration TOK_ENDL
 {
-  Scanner::isa().m_actionprotos.push_back( $1 );
+  Parsing::isa().m_actionprotos.push_back( $1 );
 }
      | action_declaration TOK_ENDL
 {
 }
            | sourcecode_declaration TOK_ENDL
 {
-  Scanner::isa().m_decl_srccodes.push_back( $1 );
+  Parsing::isa().m_decl_srccodes.push_back( $1 );
 }
   | sourcecode_decl_declaration TOK_ENDL
 {
-  Scanner::isa().m_decl_srccodes.push_back( $1 );
+  Parsing::isa().m_decl_srccodes.push_back( $1 );
 }
   | sourcecode_impl_declaration TOK_ENDL
 {
-  Scanner::isa().m_impl_srccodes.push_back( $1 );
+  Parsing::isa().m_impl_srccodes.push_back( $1 );
 }
      | include {}
      | global_var_list_declaration
 {
-  Scanner::isa().m_vars.append( *$1 );
+  Parsing::isa().m_vars.append( *$1 );
   delete $1;
 }
      | op_var_list_declaration {}
      | global_inheritance_declaration TOK_ENDL
 {
-  Scanner::isa().m_inheritances.push_back( $1 );
+  Parsing::isa().m_inheritances.push_back( $1 );
 }
   | group_environment
   | group_declaration
 {
-  Scanner::isa().m_groups.push_back( $1 );
+  Parsing::isa().m_groups.push_back( $1 );
 }
   | namespace_declaration
 {
 }
   | template_declaration
 {
-  if( not Scanner::isa().m_tparams.empty() ) {
-    Scanner::fileloc.err( "error: template parameters defined more than once" );
+  if( not Parsing::isa().m_tparams.empty() ) {
+    Parsing::fileloc.err( "error: template parameters defined more than once" );
     YYABORT;
   }
-  Scanner::isa().m_tparams = *$1;
+  Parsing::isa().m_tparams = *$1;
   delete $1;
 }
   | specialization TOK_ENDL
 {
-  Scanner::isa().m_specializations.push_back( $1 );
+  Parsing::isa().m_specializations.push_back( $1 );
 }
   | user_specialization TOK_ENDL {}
 ;
@@ -353,7 +336,7 @@ namespace_declaration: TOK_NAMESPACE namespace_list
   StringVector* nmspc = $2;
   
   for (StringVector::const_iterator ident = nmspc->begin(); ident != nmspc->end(); ++ident) {
-    Scanner::isa().m_namespace.push_back( ConstStr( *ident, Scanner::symbols ) );
+    Parsing::isa().m_namespace.push_back( ConstStr( *ident, Scanner::symbols ) );
   }
   
   delete nmspc;
@@ -401,23 +384,23 @@ operation_declaration : op_condition TOK_OP TOK_IDENT bitfield_list_decl
   Vector<BitField>* bitfields = $4;
   
   {
-    Operation const* prev_op = Scanner::isa().operation( symbol );
+    Operation const* prev_op = Parsing::isa().operation( symbol );
     if (prev_op) {
-      Scanner::fileloc.err( "error: operation `%s' redefined", symbol.str() );
+      Parsing::fileloc.err( "error: operation `%s' redefined", symbol.str() );
       prev_op->fileloc.err( "operation `%s' previously defined here", symbol.str() );
       YYABORT;
     }
     
-    Group const* prev_grp = Scanner::isa().group( symbol );
+    Group const* prev_grp = Parsing::isa().group( symbol );
     if (prev_grp) {
-      Scanner::fileloc.err( "error: operation `%s' redefined", symbol.str() );
+      Parsing::fileloc.err( "error: operation `%s' redefined", symbol.str() );
       prev_grp->fileloc.err( "group `%s' previously defined here", symbol.str() );
     }
   }
 
-  Operation* operation = new Operation( symbol, *bitfields, Scanner::comments, op_cond, Scanner::fileloc );
+  Operation* operation = new Operation( symbol, *bitfields, Parsing::comments, op_cond, Parsing::fileloc );
   delete bitfields;
-  Scanner::comments.clear();
+  Parsing::comments.clear();
 
   $$ = operation;
 }
@@ -449,10 +432,10 @@ bitfield: TOK_INTEGER '[' TOK_INTEGER ']'
 {
   ConstStr symbol = ConstStr( $2, Scanner::symbols );
   ConstStr sdinstance_symbol = ConstStr( $4, Scanner::symbols );
-  SDInstance const* sdinstance = Scanner::isa().sdinstance( sdinstance_symbol );
+  SDInstance const* sdinstance = Parsing::isa().sdinstance( sdinstance_symbol );
   
   if (not sdinstance) {
-    Scanner::fileloc.err( "error: subdecoder instance `%s' not declared", sdinstance_symbol.str() );
+    Parsing::fileloc.err( "error: subdecoder instance `%s' not declared", sdinstance_symbol.str() );
     YYABORT;
   }
   
@@ -523,19 +506,19 @@ op_var_list_declaration: TOK_IDENT '.' TOK_VAR var_list
   Vector<Variable>* var_list = $4;
   
   /* Target symbol points to either an operation or a group */
-  Operation* operation = Scanner::isa().operation( target_symbol );
+  Operation* operation = Parsing::isa().operation( target_symbol );
   if (operation) {
     /* Target symbol points to an operation */
     operation->variables.append( *var_list );
   } else {
-    Group* group = Scanner::isa().group( target_symbol );
+    Group* group = Parsing::isa().group( target_symbol );
     if (group) {
       /* Target symbol points to a group */
       for (Vector<Operation>::iterator gop = group->operations.begin(); gop < group->operations.end(); ++ gop)
         (**gop).variables.append( *var_list );
     } else {
       /* Target symbol doesn't point to anything */
-      Scanner::fileloc.err( "error: undefined operation or group `%s'", target_symbol.str() );
+      Parsing::fileloc.err( "error: undefined operation or group `%s'", target_symbol.str() );
       YYABORT;
     }
   }
@@ -588,9 +571,9 @@ action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' par
   SourceCode*         default_sourcecode = $9;
 
   { /* action protype name should be unique */
-    ActionProto const*  prev_proto = Scanner::isa().actionproto( symbol );
+    ActionProto const*  prev_proto = Parsing::isa().actionproto( symbol );
     if (prev_proto) {
-      Scanner::fileloc.err( "error: action prototype `%s' redefined", prev_proto->m_symbol.str() );
+      Parsing::fileloc.err( "error: action prototype `%s' redefined", prev_proto->m_symbol.str() );
       prev_proto->m_fileloc.err( "action prototype `%s' previously defined here", prev_proto->m_symbol.str() );
       YYABORT;
     }
@@ -599,12 +582,12 @@ action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' par
   if (returns) {
     switch( action_proto_type ) {
     case ActionProto::Constructor:
-      Scanner::fileloc.err( "error: constructor action prototype `%s' must not have a return type (%s)",
+      Parsing::fileloc.err( "error: constructor action prototype `%s' must not have a return type (%s)",
                 symbol.str(), returns->content.str() );
       YYABORT;
       break;
     case ActionProto::Destructor:
-      Scanner::fileloc.err( "error: destructor action prototype `%s' must not have a return type (%s)",
+      Parsing::fileloc.err( "error: destructor action prototype `%s' must not have a return type (%s)",
                 symbol.str(), returns->content.str() );
       YYABORT;
       break;
@@ -616,15 +599,15 @@ action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' par
   {
     switch( action_proto_type ) {
     case ActionProto::Constructor:
-      Scanner::fileloc.err( "error: constructor action prototype `%s' must not take any arguments", symbol.str() );
+      Parsing::fileloc.err( "error: constructor action prototype `%s' must not take any arguments", symbol.str() );
       YYABORT;
       break;
     case ActionProto::Static:
-      Scanner::fileloc.err( "error: static action prototype `%s' must not take any arguments", symbol.str() );
+      Parsing::fileloc.err( "error: static action prototype `%s' must not take any arguments", symbol.str() );
       YYABORT;
       break;
     case ActionProto::Destructor:
-      Scanner::fileloc.err( "error: destructor action prototype `%s' must not take any arguments", symbol.str() );
+      Parsing::fileloc.err( "error: destructor action prototype `%s' must not take any arguments", symbol.str() );
       YYABORT;
       break;
     default: break;
@@ -632,8 +615,8 @@ action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' par
   }
   
   ActionProto* actionproto =
-    new ActionProto( action_proto_type, symbol, returns, *param_list, $8, default_sourcecode, Scanner::comments, Scanner::fileloc );
-  Scanner::comments.clear();
+    new ActionProto( action_proto_type, symbol, returns, *param_list, $8, default_sourcecode, Parsing::comments, Parsing::fileloc );
+  Parsing::comments.clear();
   delete param_list;
   $$ = actionproto;
 }
@@ -701,37 +684,41 @@ action_proto_type:
 
 action_declaration: TOK_IDENT '.' TOK_IDENT '=' TOK_SOURCE_CODE
 {
+  struct : Isa::OOG
+  {
+    SourceCode* actioncode;
+    ActionProto const* actionproto;
+    void with( Operation& operation ) override
+    {
+      if (Action const* prev_action = operation.action( actionproto ))
+        {
+          Parsing::fileloc.err( "error: action `%s.%s' redefined", operation.symbol.str(), actionproto->m_symbol.str() );
+          prev_action->m_fileloc.err( "action `%s.%s' previously defined here", operation.symbol.str(), actionproto->m_symbol.str() );
+          exit( -1 );
+        }
+                        
+      operation.add( new Action( actionproto, actioncode, Parsing::comments, Parsing::fileloc ) );
+    }
+  } oog;
+  
   ConstStr    target_symbol = ConstStr( $1, Scanner::symbols );
   ConstStr    action_proto_symbol = ConstStr( $3, Scanner::symbols );
-  SourceCode* actioncode = $5;
-  
-  /* Actions belongs to an action prototype */
-  ActionProto const* actionproto = Scanner::isa().actionproto( action_proto_symbol );
-
-  if (not actionproto) {
-    Scanner::fileloc.err( "error: undefined action prototype `%s'", action_proto_symbol.str() );
-    YYABORT;
-  }
-  
-  /* Target symbol points to either an operation or a group */
-  Operation* operation = Scanner::isa().operation( target_symbol );
-  if (operation) {
-    /* Target symbol points to an operation */
-    create_action( operation, actionproto, actioncode );
-  } else {
-    Group* group = Scanner::isa().group( target_symbol );
-    if (group) {
-      /* Target symbol points to a group */
-      for (Vector<Operation>::iterator gop = group->operations.begin(); gop < group->operations.end(); ++ gop)
-        create_action( *gop, actionproto, actioncode );
-    } else {
-      /* Target symbol doesn't point to anything */
-      Scanner::fileloc.err( "error: undefined operation or group `%s'", target_symbol.str() );
+  oog.actioncode = $5;
+  /* Action must belong to an action prototype */
+  if (not (oog.actionproto = Parsing::isa().actionproto( action_proto_symbol )))
+    {
+      Parsing::fileloc.err( "error: undefined action prototype `%s'", action_proto_symbol.str() );
       YYABORT;
     }
-  }
+
+  if (not Parsing::isa().for_ops(target_symbol, oog))
+    {
+      /* Target symbol doesn't point to anything */
+      Parsing::fileloc.err( "error: undefined operation or group `%s'", target_symbol.str() );
+      YYABORT;
+    }
   
-  Scanner::comments.clear();
+  Parsing::comments.clear();
 }
 ;
 
@@ -739,9 +726,9 @@ specialization: TOK_SPECIALIZE TOK_IDENT '(' constraint_list ')'
 {
   ConstStr            symbol = ConstStr( $2, Scanner::symbols );
   Vector<Constraint>* constraint_list = $4;
-  Operation*          operation = Scanner::isa().operation( symbol );
+  Operation*          operation = Parsing::isa().operation( symbol );
   if (not operation) {
-    Scanner::fileloc.err( "error: operation `%s' not defined", symbol.str() );
+    Parsing::fileloc.err( "error: operation `%s' not defined", symbol.str() );
     YYABORT;
   }
   
@@ -753,9 +740,9 @@ specialization: TOK_SPECIALIZE TOK_IDENT '(' constraint_list ')'
 user_specialization: TOK_IDENT '.' TOK_SPECIALIZE '(' operation_list ')'
 {
   StringVector const* oplist = $5;
-  Scanner::isa().m_user_orderings.push_back( Isa::Ordering() );
-  Isa::Ordering& order = Scanner::isa().m_user_orderings.back();
-  order.fileloc = Scanner::fileloc;
+  Parsing::isa().m_user_orderings.push_back( Isa::Ordering() );
+  Isa::Ordering& order = Parsing::isa().m_user_orderings.back();
+  order.fileloc = Parsing::fileloc;
   order.top_op = ConstStr( $1, Scanner::symbols );
   order.under_ops.reserve( oplist->size() );
   for (StringVector::const_iterator itr = oplist->begin(), end = oplist->end(); itr != end; ++itr)
@@ -783,7 +770,7 @@ constraint: TOK_IDENT '=' TOK_INTEGER
 
 include : TOK_INCLUDE TOK_STRING
 {
-  if (not Scanner::include( $2) )
+  if (not Parsing::include( $2) )
     YYABORT;
 }
 ;
@@ -794,7 +781,7 @@ group_environment: TOK_GROUP TOK_IDENT TOK_IDENT
   ConstStr command( $3, Scanner::symbols );
   
   try {
-    Scanner::isa().group_command( group_symbol, command, Scanner::fileloc );
+    Parsing::isa().group_command( group_symbol, command, Parsing::fileloc );
   } catch (Isa::ParseError pe) {
     YYABORT;
   }
@@ -806,33 +793,47 @@ group_declaration: TOK_GROUP TOK_IDENT '(' operation_list ')'
   StringVector*        oplist = $4;
   
   { /* Operations and groups name should not conflict */
-    Operation* prev_op = Scanner::isa().operation( group_symbol );
+    Operation* prev_op = Parsing::isa().operation( group_symbol );
     if (prev_op) {
-      Scanner::fileloc.err( "error: group name conflicts with operation `%s'", group_symbol.str() );
+      Parsing::fileloc.err( "error: group name conflicts with operation `%s'", group_symbol.str() );
       prev_op->fileloc.err( "operation `%s' previously defined here", group_symbol.str() );
       YYABORT;
     }
     
-    Group* prev_grp = Scanner::isa().group( group_symbol );
+    Group* prev_grp = Parsing::isa().group( group_symbol );
     if (prev_grp) {
-      Scanner::fileloc.err( "error: group `%s' redefined", group_symbol.str() );
+      Parsing::fileloc.err( "error: group `%s' redefined", group_symbol.str() );
       prev_grp->fileloc.err( "group `%s' previously defined here", group_symbol.str() );
       YYABORT;
     }
   }
   
-  Group* res = new Group( group_symbol, Scanner::fileloc );
-  for (StringVector::const_iterator itr = oplist->begin(), end = oplist->end(); itr != end; ++itr) {
-    ConstStr symbol( *itr, Scanner::symbols );
-    if (not Scanner::isa().operations( symbol, res->operations ))
-      {
-        Scanner::fileloc.err( "error: undefined operation or group `%s'", symbol.str() );
-        YYABORT;
-      }
-  }
+  struct : Isa::OOG
+  {
+    void with( Operation& operation )
+    {
+      if (opsyms.insert(operation.symbol).second)
+        group->operations.append( &operation );
+    }
+    std::set<ConstStr> opsyms;
+    Group* group;
+  } oog;
+  oog.group = new Group( group_symbol, Parsing::fileloc );
+  
+  for (StringVector::const_iterator itr = oplist->begin(), end = oplist->end(); itr != end; ++itr)
+    {
+      ConstStr symbol( *itr, Scanner::symbols );
+      
+      if (not Parsing::isa().for_ops( symbol, oog ))
+        {
+          Parsing::fileloc.err( "error: undefined operation or group `%s'", symbol.str() );
+          YYABORT;
+        }
+    }
+  
   delete oplist;
   
-  $$ = res;
+  $$ = oog.group;
 }
 ;
 
@@ -849,4 +850,4 @@ operation_list:
 
 %%
 
-int yyerror( char const* _err ) { Scanner::fileloc.err( "%s! unexpected %s\n", _err, Scanner::tokenname( yychar ).str() ); return 1; }
+int yyerror( char const* _err ) { Parsing::fileloc.err( "%s! unexpected %s\n", _err, Parsing::tokenname( yychar ).str() ); return 1; }

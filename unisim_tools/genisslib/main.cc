@@ -32,6 +32,9 @@
 #include <fstream>
 #include <cstring>
 #include <cstdlib>
+#include <cassert>
+#include <unistd.h>
+
 #if defined(GIL_XPROC) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>
 #define GIL_MAIN base_main
@@ -40,19 +43,6 @@
 #endif // defined(GIL_XPROC) && defined(HAVE_DLFCN_H)
 
 #define DEFAULT_OUTPUT "iss"
-
-Opts::Opts()
-  : outputprefix( DEFAULT_OUTPUT )
-  , verbosity( 1 )
-  , expandname( 0 )
-  , inputname( 0 )
-  , depfilename( 0 )
-  , minwordsize( 32 )
-  , sourcelines( true )
-  , privatemembers( true )
-  , specialization( true )
-  , comments( true )
-{}
 
 struct GIL : public CLI, public Opts
 {
@@ -67,14 +57,9 @@ struct GIL : public CLI, public Opts
          << "emails     : " EMAILS << std::endl;
   }
   
-  GIL() {}
-  
-  bool add_lookupdir( char const* _arg )
-  {
-    if (not _arg) return false;
-    Scanner::add_lookupdir( _arg );
-    return true;
-  }
+  GIL()
+    : inputname( 0 )
+  {}
   
   bool setminwordsize( char const* _arg )
   {
@@ -200,6 +185,8 @@ struct GIL : public CLI, public Opts
         return;
       }
   }
+
+  char const*      inputname;
 };
 
 int
@@ -217,7 +204,7 @@ GIL_MAIN (int argc, char** argv, char** envp)
     }
     
     Isa isa;
-    if (not Scanner::parse( gil.inputname, isa) )
+    if (not Scanner::parse( gil.inputname, gil, isa ) )
       throw CLI::Exit_t( 1 );
   
     if (gil.expandname) {
@@ -270,6 +257,98 @@ GIL_MAIN (int argc, char** argv, char** envp)
   }
   
   return 0;
+}
+
+Opts::Opts()
+  : outputprefix( DEFAULT_OUTPUT )
+  , verbosity( 1 )
+  , expandname( 0 )
+  , depfilename( 0 )
+  , minwordsize( 32 )
+  , sourcelines( true )
+  , privatemembers( true )
+  , specialization( true )
+  , comments( true )
+{}
+
+bool
+Opts::add_lookupdir( char const* _dir )
+{
+  if (not _dir)
+    return false;
+#ifdef WIN32
+  if ((((_dir[0] >= 'a' && _dir[0] <= 'z') || (_dir[0] >= 'A' && _dir[0] <= 'Z')) && (_dir[1] == ':') && ((_dir[2] == '\\') || (_dir[2] == '/'))) || (*_dir == '/'))
+  {
+     // convert '\' into '/' to have a UNIX friendly path as gcc doesn't like '\' in filenames in #line directives
+     int len = strlen(_dir);
+     char cv_dir[len + 1];
+     const char *pch;
+     char *cv_pch;
+     for(pch = _dir, cv_pch = cv_dir; *pch; pch++, cv_pch++)
+     {
+        if(*pch == '\\') *cv_pch = '/'; else *cv_pch = *pch;
+     }
+     cv_dir[len] = 0;
+     lookupdirs.push_back( cv_dir );
+  }
+#else
+  if (*_dir == '/')
+  {
+    lookupdirs.push_back( _dir );
+    return true;
+  }
+#endif
+  
+  std::string buffer;
+  for (intptr_t capacity = 128; true; capacity *= 2) {
+    char storage[capacity];
+    if (not getcwd( storage, capacity )) {
+      if (errno != ERANGE)
+        return false;
+      continue; 
+    }
+#ifdef WIN32
+    assert((((storage[0] >= 'a' && storage[0] <= 'z') || (storage[0] >= 'A' && storage[0] <= 'Z')) && (storage[1] == ':') && ((storage[2] == '\\') || (storage[2] == '/'))) || (*storage == '/'));
+    // convert '\' into '/' to have a UNIX friendly path as gcc doesn't like '\' in filenames in #line directives
+    {
+      char *pch;
+      for(pch = storage; *pch; pch++)
+      {
+         if(*pch == '\\') *pch = '/';
+      }
+    }
+    int len = strlen(_dir);
+    char cv_dir[len + 1];
+    {
+      const char *pch;
+      char *cv_pch;
+      for(pch = _dir, cv_pch = cv_dir; *pch; pch++, cv_pch++)
+      {
+         if(*pch == '\\') *cv_pch = '/'; else *cv_pch = *pch;
+      }
+      cv_dir[len] = 0;
+    }
+    buffer = buffer + storage + "/" + cv_dir;
+#else
+    assert( storage[0] == '/' ); // a directory path does not start with '/' on a windows host !
+    buffer = buffer + storage + "/" + _dir;
+#endif
+    lookupdirs.push_back( buffer.c_str() );
+    break;
+  }
+  return true;
+}
+
+ConstStr
+Opts::locate( char const* _name )
+{
+  for (std::vector<ConstStr>::iterator iter = lookupdirs.begin(); iter != lookupdirs.end(); iter++)
+    {
+      std::string buffer = std::string() + iter->str() + "/" + _name;
+      if (access( buffer.c_str(), R_OK ) != 0) continue;
+      return buffer.c_str();
+    }
+  return _name;
 }
 
 #if defined(GIL_XPROC) && defined(HAVE_DLFCN_H)

@@ -15,6 +15,7 @@ fwd.hh \
 main.hh \
 product.hh \
 scanner.hh \
+parsing.hh \
 strtools.hh \
 vect.hh \
 ciscgenerator.hh \

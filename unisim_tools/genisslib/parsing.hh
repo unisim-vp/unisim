@@ -1,5 +1,5 @@
 /***************************************************************************
-                                 scanner.hh
+                                 lex.hh
                              -------------------
     begin                : Thu May 25 2003
     copyright            : (C) 2003-2007 CEA and Universite Paris Sud
@@ -15,20 +15,29 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef __SCANNER_HH__
-#define __SCANNER_HH__
+#ifndef __LEX_HH__
+#define __LEX_HH__
 
-#include <fwd.hh>
-#include <conststr.hh>
-#include <referencecounting.hh>
-#include <vect.hh>
-#include <string>
+#include <main.hh>
+#include <comment.hh>
+#include <isa.hh>
+#include <errtools.hh>
+#include <vector>
 
-struct Scanner
+struct Parsing
 {
-  static ConstStr::Pool           symbols;          ///< The symbol database
+  static Vector<Comment>          comments;         ///< Comments accumulator;
+  static FileLoc                  fileloc;          ///< file location in scanned file
+  static Isa*                     s_isa;
   
-  static bool                     parse( char const* _filename, Opts& opts, Isa& _isa );
+  static bool                     include( char const* _filename );
+  static Isa&                     isa() { return *s_isa; }
+  static ConstStr                 tokenname( int _token );
 };
 
-#endif // __SCANNER_HH__
+
+// int yyerror( char const* _s );
+// int yypanicf( char const *_filename, int _lineno, char const* _format, ... );
+// int yyparse();
+
+#endif // __LEX_HH__
