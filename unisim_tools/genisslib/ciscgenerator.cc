@@ -355,8 +355,11 @@ CiscGenerator::codetype_decl( Product& _product ) const {
 }
 
 void
-CiscGenerator::codetype_impl( Product& _product ) const {
-  _product.code( "inline\nstd::ostream& operator << ( std::ostream& _sink, CodeType const& _ct ) {\n" );
+CiscGenerator::codetype_impl( Product& _product ) const
+{
+  if (not source.m_tparams.empty())
+    _product.code( "inline\n" );
+  _product.code( "std::ostream& operator << ( std::ostream& _sink, CodeType const& _ct ) {\n" );
   _product.code( " if (_ct.size % 8) {\n" );
   if (source.m_little_endian) {
     _product.code( "  for (int idx = _ct.size; (--idx) >= 0; ) {\n" );

@@ -210,7 +210,6 @@ subdecoder_class:
   delete nmspc_in;
   
   SDClass const* sdclass = Parsing::isa().sdclass( nmspc );
-  
   if (sdclass) {
     Parsing::fileloc.err( "error: subdecoder class redeclared." );
     sdclass->m_fileloc.err( "subdecoder class previously declared here." );

@@ -7,8 +7,21 @@ source "$(dirname $0)/dist_common.sh"
 
 import_genisslib || exit
 
-import dist_vle4fuzr || exit
+#import dist_vle4fuzr || exit
 
+# PPC VLE
+import unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point || exit
+import unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs || exit
+import unisim/component/cxx/processor/powerpc/isa/book_ii || exit
+import unisim/component/cxx/processor/powerpc/isa/book_iii_e || exit
+import unisim/component/cxx/processor/powerpc/isa/book_e || exit
+import unisim/component/cxx/processor/powerpc/isa/book_vle || exit
+import unisim/component/cxx/processor/powerpc/isa/lsp || exit
+import unisim/component/cxx/processor/powerpc/isa/mpu || exit
+# ARMv7
+import unisim/component/cxx/processor/arm/isa/thumb || exit
+import unisim/component/cxx/processor/arm/isa/thumb2 || exit
+import unisim/component/cxx/processor/arm/isa/arm32 || exit
 import unisim/component/cxx/processor/arm || exit
 import unisim/util/symbolic || exit
 
@@ -24,7 +37,7 @@ import std/vector || exit
 
 import m4/ax_cflags_warn_all || exit
 
-copy source isa_thumb isa_arm32 header template data
+copy source isa isa_vle isa_thumb isa_arm32 header template data
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
@@ -33,9 +46,12 @@ UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES="$(files isa_thumb)"
 
 UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES="$(files isa_arm32)"
 
+UNISIM_LIB_SIMULATOR_ISA_PPC_FILES="$(files isa isa_vle)"
+
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES} \
 ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES} \
+${UNISIM_LIB_SIMULATOR_ISA_PPC_FILES}
 $(files header) \
 $(files template)"
 
@@ -60,6 +76,7 @@ arm.cc \
 UNISIM_BINDINGS_HEADER_FILES="\
 top_arm32.isa \
 top_thumb.isa \
+top_vle.isa \
 emu.hh \
 vle.hh \
 arm.hh \
@@ -199,6 +216,14 @@ CLEANFILES=\
 \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh
 \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: top_thumb.isa ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES}
 	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_thumb.isa
+
+\$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.isa
+
+\$(top_builddir)/top_mpc57.cc: \$(top_builddir)/top_mpc57.hh
+\$(top_builddir)/top_mpc57.hh: top_vle.isa ${UNISIM_SIMULATOR_ISA_PPC_FILES}
+	\$(GENISSLIB_PATH) \$(GILFLAGS) -o \$(top_builddir)/top_vle -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_vle.isa
+
 EOF
 )
 

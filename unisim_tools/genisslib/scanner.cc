@@ -16,6 +16,7 @@
 #include <bitfield.hh>
 #include <variable.hh>
 #include <specialization.hh>
+#include <subdecoder.hh>
 #include <strtools.hh>
 #include <clex.hh>
 #include <fstream>
@@ -502,6 +503,90 @@ Scanner::parse( char const* _filename, Opts& opts, Isa& isa )
                     break;
                   }
                 source.next();
+              }
+            else if (std::equal(cmd.begin(), cmd.end(), "subdecoder"))
+              {
+                std::vector<ConstStr> nmspc;
+                for (;;)
+                  {
+                    if (source.next() != CLex::Scanner::Name)
+                      throw source.unexpected();
+                    std::string buf;
+                    source.get(buf, &CLex::Scanner::get_name);
+                    nmspc.push_back( ConstStr( buf.c_str(), Scanner::symbols ) );
+                    if (source.next() != CLex::Scanner::Colon)
+                      break;
+                    if (source.getchar() != ':')
+                      throw source.unexpected();
+                  }
+                SDClass const* sdclass = isa.sdclass( nmspc );
+
+                if (source.lnext == CLex::Scanner::Name)
+                  {
+                    if (not sdclass)
+                      {
+                        cmdfl.err( "error: subdecoder has not been declared" );
+                        throw CLex::Scanner::Unexpected();
+                      }
+                    
+                    ConstStr symbol;
+                    FileLoc && symfl = GetFileLoc(source);
+                    {
+                      std::string buf;
+                      source.get(buf, &CLex::Scanner::get_name);
+                      symbol = ConstStr(buf.c_str(), Scanner::symbols);
+                    }
+
+                    if (SDInstance const* sdinstance = isa.sdinstance( symbol ))
+                      {
+                        symfl.err( "error: subdecoder instance `%s' redefined", symbol.str() );
+                        sdinstance->m_fileloc.err( "subdecoder instance `%s' previously defined here", symbol.str() );
+                        throw CLex::Scanner::Unexpected();
+                      }
+
+                    SourceCode* tpscheme = 0;
+                    
+                    if (source.next() == CLex::Scanner::Less)
+                      {
+                        if (source.next() != CLex::Scanner::ObjectOpening)
+                          throw source.unexpected();
+                        tpscheme = new SourceCode(GetSourceCode(source));
+                        if (source.next() != CLex::Scanner::More)
+                          throw source.unexpected();
+                        source.next();
+                      }
+                    
+                    isa.m_sdinstances.append( new SDInstance( symbol, tpscheme, sdclass, symfl ) );
+                  }
+                else if (source.lnext == CLex::Scanner::ArrayOpening)
+                  {
+                    FileLoc&& sdloc = GetFileLoc(source);
+                    if (sdclass)
+                      {
+                        sdloc.err( "error: subdecoder class redeclared." );
+                        sdclass->m_fileloc.err( "subdecoder class previously declared here." );
+                        throw CLex::Scanner::Unexpected();
+                      }
+  
+                    std::vector<unsigned> insnsizes;
+                    for (;;)
+                      {
+                        if (source.next() != CLex::Scanner::Number)
+                          throw source.unexpected();
+                        insnsizes.push_back(GetInteger(source));
+                        if (source.next() != CLex::Scanner::Comma)
+                          break;
+                      }
+                    if (source.lnext != CLex::Scanner::ArrayClosing)
+                      throw source.unexpected();
+                    
+                    isa.m_sdclasses.append( new SDClass( nmspc, insnsizes.begin(), insnsizes.end(), sdloc ) );
+                    source.next();
+                  }
+                else
+                  {
+                    throw source.unexpected();
+                  }
               }
             else if (std::equal(cmd.begin(), cmd.end(), "template"))
               {
