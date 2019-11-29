@@ -27,6 +27,14 @@ import unisim/component/tlm2/com/freescale/mpc57xx/siul2 || exit
 import unisim/component/tlm2/com/bosch/m_can || exit
 import unisim/component/tlm2/memory/semaphore/freescale/mpc57xx/sema42 || exit
 import unisim/kernel/tlm2 || exit
+import unisim/kernel/config/xml || exit
+import unisim/kernel/config/ini || exit
+import unisim/kernel/config/json || exit
+import unisim/kernel/logger/console || exit
+import unisim/kernel/logger/text_file || exit
+import unisim/kernel/logger/http || exit
+import unisim/kernel/logger/xml_file || exit
+import unisim/kernel/logger/netstream || exit
 import unisim/util/backtrace || exit
 import unisim/service/debug/debugger || exit
 import unisim/service/debug/gdb_server || exit

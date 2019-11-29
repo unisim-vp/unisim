@@ -972,7 +972,7 @@ void GDBServer<ADDRESS>::ProcessCommands()
 				break;
 
 			case '?':
-				session_terminated = !ReportTracePointTrap();
+				session_terminated = !ReportSignal(2 /* SIGINT */);
 				break;
 
 			case '!':
@@ -1133,7 +1133,8 @@ bool GDBServer<ADDRESS>::Step()
 	{
 		UnlistenFetch(c_prc_num);
 		if(status) status = DisplayMonitoredInternals();
-		if(status) status = ReportTracePointTrap();
+		if(status) status = ReportSignal(5 /* SIGTRAP */);
+		if(trap) ClearStopEvents();
 	}
 	return status;
 }
@@ -1163,7 +1164,8 @@ bool GDBServer<ADDRESS>::Continue()
 	if(!killed)
 	{
 		if(status) status = DisplayMonitoredInternals();
-		if(status) status = ReportTracePointTrap();
+		if(status) status = ReportSignal(5 /* SIGTRAP */);
+		if(trap) ClearStopEvents();
 	}
 	return status;
 }
@@ -2534,29 +2536,26 @@ bool GDBServer<ADDRESS>::ReportProgramExit()
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::ReportSignal(unsigned int signum)
 {
-	char packet[4];
-	sprintf(packet, "S%02x", signum);
-	return PutReply(packet);
-}
-
-template <class ADDRESS>
-bool GDBServer<ADDRESS>::ReportTracePointTrap()
-{
 	unsigned int prc_num;
+	std::string packet("T");
 	
-	std::string packet("T05");
+	packet += Nibble2HexChar((signum >> 4) & 0xf);
+	packet += Nibble2HexChar(signum & 0xf);
 	
-	if(trap && mode == GDB_MODE_MULTI_THREAD)
+	if(trap && (mode == GDB_MODE_MULTI_THREAD))
 	{
 		// we have a stop event
 		for(prc_num = 0; prc_num < num_processors; prc_num++)
 		{
-			if(prc_trap[prc_num]) break; // pick first processor with a stop event
+			if(prc_trap[prc_num])
+			{
+				break; // pick first processor with a stop event
+			}
 		}
 	}
 	else
 	{
-		prc_num = c_prc_num; // stop reply is about currently selected thread
+		prc_num = c_prc_num;
 	}
 	
 	if(mode == GDB_MODE_MULTI_THREAD)
@@ -2649,11 +2648,6 @@ bool GDBServer<ADDRESS>::ReportTracePointTrap()
 				}
 			}
 		}
-	}
-	
-	if(trap)
-	{
-		ClearStopEvents();
 	}
 	
 	return PutReply(packet);
@@ -3153,7 +3147,8 @@ bool GDBServer<ADDRESS>::HandleVCont(const std::string& query, std::size_t& pos)
 			}
 		}
 		if(status) status = DisplayMonitoredInternals();
-		if(status) status = ReportTracePointTrap();
+		if(status) status = ReportSignal(5 /* SIGTRAP */);
+		if(trap) ClearStopEvents();
 	}
 
 	return status;

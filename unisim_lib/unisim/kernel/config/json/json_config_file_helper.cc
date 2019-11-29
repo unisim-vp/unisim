@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/kernel/config/json_config_file_helper.hh>
+#include <unisim/kernel/config/json/json_config_file_helper.hh>
 #include <unisim/util/json/json.tcc>
 #include <string>
 #include <iostream>
@@ -41,6 +41,7 @@
 namespace unisim {
 namespace kernel {
 namespace config {
+namespace json {
 
 JSONConfigFileHelper::JSONConfigFileHelper(unisim::kernel::Simulator *_simulator)
 	: simulator(_simulator)
@@ -371,7 +372,7 @@ bool JSONConfigFileHelper::LoadVariables(std::istream& is, unisim::kernel::Varia
 	return false;
 }
 
-
+} // end of namespace json
 } // end of namespace config
 } // end of namespace kernel
 } // end of namespace unisim

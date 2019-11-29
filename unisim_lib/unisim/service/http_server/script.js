@@ -482,7 +482,8 @@ DoubleIFrame.prototype.on_load = function(i)
 	// patch anchors within iframe to provide user with a context menu for each anchor
 	this.patch_anchors();
 	// patch inputs within iframe to freeze/unfreeze when focus in/focus out input
-	this.patch_inputs();
+	this.patch_inputs('input');
+	this.patch_inputs('select');
 	// patch inputs within iframe to freeze/unfreeze when mouse down/up button
 	this.patch_buttons();
 	// simulate unloading before flipping
@@ -577,14 +578,14 @@ DoubleIFrame.prototype.patch_anchors = function()
 	}
 }
 
-DoubleIFrame.prototype.patch_inputs = function()
+DoubleIFrame.prototype.patch_inputs = function(tag_name)
 {
 	var bg_iframe = this.iframes[this.bg];
 	var iframe_element = bg_iframe.iframe_element;
 	
 	if(iframe_element.contentDocument)
 	{
-		var input_elements = iframe_element.contentDocument.documentElement.getElementsByTagName('input');
+		var input_elements = iframe_element.contentDocument.documentElement.getElementsByTagName(tag_name);
 		for(var i = 0; i < input_elements.length; i++)
 		{
 			var input_element = input_elements[i];

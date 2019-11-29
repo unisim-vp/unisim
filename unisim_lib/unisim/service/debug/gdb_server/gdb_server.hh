@@ -328,7 +328,6 @@ private:
 	bool WriteMemoryBin(ADDRESS addr, const std::string& bin, uint32_t size);
 	bool ReportProgramExit();
 	bool ReportSignal(unsigned int signum);
-	bool ReportTracePointTrap();
 	void ClearStopEvents();
 	bool SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind);
 	bool RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind);

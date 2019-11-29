@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/kernel/config/ini_config_file_helper.hh>
+#include <unisim/kernel/config/ini/ini_config_file_helper.hh>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -41,6 +41,7 @@
 namespace unisim {
 namespace kernel {
 namespace config {
+namespace ini {
 
 INIConfigFileHelper::INIConfigFileHelper(unisim::kernel::Simulator *_simulator)
 	: simulator(_simulator)
@@ -254,6 +255,7 @@ void INIConfigFileHelper::Assign(const std::string& section, const std::string& 
 	}
 }
 
+} // end of namespace ini
 } // end of namespace config
 } // end of namespace kernel
 } // end of namespace unisim

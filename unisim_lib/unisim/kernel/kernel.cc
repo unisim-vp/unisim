@@ -53,6 +53,7 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <cassert>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -74,13 +75,8 @@
 // #include <mach-o/dyld.h>
 // #endif
 
-#include "unisim/kernel/config/xml_config_file_helper.hh"
 #include "unisim/util/backtrace/backtrace.hh"
 #include "unisim/util/likely/likely.hh"
-
-#include <unisim/kernel/config/ini_config_file_helper.hh>
-
-#include <unisim/kernel/config/json_config_file_helper.hh>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <fcntl.h>
@@ -1327,6 +1323,35 @@ std::list<ServiceImportBase *>& ServiceExportBase::GetSetupDependencies()
 }
 
 //=============================================================================
+//=                           ConfigFileHelper                                =
+//=============================================================================
+
+ConfigFileHelper::~ConfigFileHelper()
+{
+}
+
+bool ConfigFileHelper::Match(const char *filename) const
+{
+	return MatchFilenameByExtension(filename, GetName());
+}
+
+bool ConfigFileHelper::MatchFilenameByExtension(const char *filename, const char *extension)
+{
+	const char *p = filename;
+	const char *dot = 0;
+	do
+	{
+		if((p = strchr(p, '.')) != 0)
+		{
+			dot = p++;
+		}
+	}
+	while(p);
+	
+	return dot && (strcasecmp(dot + 1, extension) == 0);
+}
+
+//=============================================================================
 //=                                Simulator                                  =
 //=============================================================================
 
@@ -1385,10 +1410,9 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	: void_variable(0)
 	, shared_data_dir()
 	, set_vars()
-	, get_config_filename()
+	, get_config_filenames()
 	, default_config_file_format("XML")
 	, list_parms(false)
-	, get_config(false)
 	, generate_doc(false)
 	, generate_doc_filename()
 	, enable_warning(false)
@@ -1415,6 +1439,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, var_schematic(0)
 	, param_enable_press_enter_at_exit(0)
 	, param_default_config_file_format(0)
+	, config_file_formats()
 	, command_line_options()
 	, objects()
 	, imports()
@@ -1425,30 +1450,40 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 {
 	pthread_mutex_init(&mutex, NULL);
 	
-	new unisim::kernel::config::XMLConfigFileHelper(this);
-	new unisim::kernel::config::INIConfigFileHelper(this);
-	new unisim::kernel::config::JSONConfigFileHelper(this);
-	
 	SignalHandler::Init();
 
+	if(LoadBuiltInConfig)
+	{
+		LoadBuiltInConfig(this);
+	}
+	
 	bool has_share_data_dir_hint = false;
 	std::string shared_data_dir_hint;
+	
+	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_iter;
+	for(config_file_helper_iter = config_file_helpers.begin(); config_file_helper_iter != config_file_helpers.end(); config_file_helper_iter++)
+	{
+		if(config_file_helper_iter != config_file_helpers.begin())
+		{
+			config_file_formats += " | ";
+		}
+		ConfigFileHelper *config_file_helper = (*config_file_helper_iter).second;
+		config_file_formats += config_file_helper->GetName();
+	}
 
 	command_line_options.push_back(CommandLineOption('s', "set", "set value of parameter 'param' to 'value'", "param=value"));
-	command_line_options.push_back(CommandLineOption('c', "config", "configures the simulator with the given configuration file", "file"));
-	command_line_options.push_back(CommandLineOption('g', "get-config", "get the simulator configuration file (you can use it to create your own configuration. This option can be combined with -c to get a new configuration file with existing variables from another file", "file"));
-	command_line_options.push_back(CommandLineOption('f', "default-config-file-format", "set the simulator default configuration file format", "XML | INI | JSON"));
+	if(config_file_helpers.size())
+	{
+		command_line_options.push_back(CommandLineOption('c', "config", "configures the simulator with the given configuration file", "file"));
+		command_line_options.push_back(CommandLineOption('g', "get-config", "get the simulator configuration file (you can use it to create your own configuration. This option can be combined with -c to get a new configuration file with existing variables from another file", "file"));
+		command_line_options.push_back(CommandLineOption('f', "default-config-file-format", "set the simulator default configuration file format", config_file_formats.c_str()));
+	}
 	command_line_options.push_back(CommandLineOption('l', "list", "lists all available parameters, their type, and their current value"));
 	command_line_options.push_back(CommandLineOption('w', "warn", "enable printing of kernel warnings"));
 	command_line_options.push_back(CommandLineOption('d', "doc", "enable printing a latex documentation", "Latex file"));
 	command_line_options.push_back(CommandLineOption('v', "version", "displays the program version information"));
 	command_line_options.push_back(CommandLineOption('p', "share-path", "the path that should be used for the share directory (absolute path)", "path"));
 	command_line_options.push_back(CommandLineOption('h', "help", "displays this help"));
-	
-	if(LoadBuiltInConfig)
-	{
-		LoadBuiltInConfig(this);
-	}
 	
 	if(simulator)
 	{
@@ -1768,19 +1803,10 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					{
 						std::cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << std::endl;
 					}
-	// 				if(LoadXmlvariable::Parameters(*arg))
-	// 				{
-	// 					std::cerr << "variable::Parameters set using file \"" << (*arg) << "\"" << std::endl;
-	// 				}
-	// 				else if(enable_warning)
-	// 				{
-	// 					std::cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << std::endl;
-	// 				}
 					state = 0;
 					break;
 				case 3:
-					get_config = true;
-					get_config_filename = *arg;
+					get_config_filenames.push_back(*arg);
 					state = 0;
 					break;
 				case 4:
@@ -1821,9 +1847,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 		param_cmd_args->SetSerializable(false);
 	}
 	
-	// Setup logger server
-	unisim::kernel::logger::LoggerServer *logserv = unisim::kernel::logger::Logger::StaticServerInstance();
-	logserv->Initialize();
+	unisim::kernel::logger::Logger::StaticServerInstance();
 }
 
 Simulator::~Simulator()
@@ -2206,29 +2230,15 @@ void Simulator::DumpRegisters(std::ostream &os)
 	DumpVariables(os, VariableBase::VAR_REGISTER);
 }
 
-const char *Simulator::GuessConfigFileFormat(const char *filename) const
+ConfigFileHelper *Simulator::GuessConfigFileHelper(const char *filename)
 {
-	const char *p = filename;
-	const char *dot = 0;
-	do
+	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_iter;
+	for(config_file_helper_iter = config_file_helpers.begin(); config_file_helper_iter != config_file_helpers.end(); config_file_helper_iter++)
 	{
-		p = strchr(p, '.');
-		if(p)
-		{
-			dot = p++;
-		}
+		ConfigFileHelper *config_file_helper = (*config_file_helper_iter).second;
+		if(config_file_helper->Match(filename)) return config_file_helper;
 	}
-	while(p);
-	
-	if(dot)
-	{
-		const char *ext = dot + 1;
-		if(strcasecmp(ext, "XML") == 0) return "XML";
-		if(strcasecmp(ext, "INI") == 0) return "INI";
-		if(strcasecmp(ext, "JSON") == 0) return "JSON";
-	}
-	
-	return default_config_file_format.c_str();
+	return FindConfigFileHelper(default_config_file_format);
 }
 
 ConfigFileHelper *Simulator::FindConfigFileHelper(const std::string& config_file_format)
@@ -2240,7 +2250,7 @@ ConfigFileHelper *Simulator::FindConfigFileHelper(const std::string& config_file
 
 bool Simulator::LoadVariables(const char *filename, VariableBase::Type type, const std::string& config_file_format)
 {
-	ConfigFileHelper *config_file_helper = FindConfigFileHelper(config_file_format.empty() ? GuessConfigFileFormat(filename) : config_file_format);
+	ConfigFileHelper *config_file_helper = config_file_format.empty() ? GuessConfigFileHelper(filename) : FindConfigFileHelper(config_file_format);
 	if(config_file_helper)
 	{
 		return config_file_helper->LoadVariables(filename, type);
@@ -2262,7 +2272,7 @@ bool Simulator::LoadVariables(std::istream& is, VariableBase::Type type, const s
 
 bool Simulator::SaveVariables(const char *filename, VariableBase::Type type, const std::string& config_file_format)
 {
-	ConfigFileHelper *config_file_helper = FindConfigFileHelper(config_file_format.empty() ? GuessConfigFileFormat(filename) : config_file_format);
+	ConfigFileHelper *config_file_helper = config_file_format.empty() ? GuessConfigFileHelper(filename) : FindConfigFileHelper(config_file_format);
 	if(config_file_helper)
 	{
 		return config_file_helper->SaveVariables(filename, type);
@@ -2281,11 +2291,6 @@ bool Simulator::SaveVariables(std::ostream& os, VariableBase::Type type, const s
 	
 	return false;
 }
-
-struct MyVertexProperty
-{
-	ServiceExportBase *srv_export;
-};
 
 Simulator::SetupStatus Simulator::Setup()
 {
@@ -2322,8 +2327,9 @@ Simulator::SetupStatus Simulator::Setup()
 		return ST_OK_DONT_START;
 	}
 
-	if(!get_config_filename.empty())
+	for(std::vector<std::string>::const_iterator get_config_filename_it = get_config_filenames.begin(); get_config_filename_it != get_config_filenames.end(); ++get_config_filename_it)
 	{
+		const std::string& get_config_filename = *get_config_filename_it;
 		if(SaveVariables(get_config_filename.c_str(), VariableBase::VAR_PARAMETER))
 		{
 			std::cerr << "variable::Parameters saved on file \"" << get_config_filename << "\"" << std::endl;
@@ -2332,6 +2338,9 @@ Simulator::SetupStatus Simulator::Setup()
 		{
 			std::cerr << "WARNING! Saving parameters set to file \"" << get_config_filename << "\" failed" << std::endl;
 		}
+	}
+	if(!get_config_filenames.empty())
+	{
 		std::cerr << "Aborting simulation" << std::endl;
 		return ST_OK_DONT_START;
 	}

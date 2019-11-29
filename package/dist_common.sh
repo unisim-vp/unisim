@@ -50,7 +50,7 @@ function import()
 			if [ -e "${PKG_DEPS_TXT}" ]; then
 				local DEP_PKG
 				while IFS= read -r DEP_PKG; do
-					#echo "Package \"${PKG}\" requires Packages \"${DEP_PKG}\""
+					echo "Package \"${PKG}\" requires Packages \"${DEP_PKG}\""
 					if ! import "${DEP_PKG}"; then
 						echo -e "\033[31mERROR! Missing dependency: Package \"${PKG}\" requires Packages \"${DEP_PKG}\"\033[0m" >&2
 						unset UNISIM_LIB_PACKAGE_IMPORTED["${PKG}"]

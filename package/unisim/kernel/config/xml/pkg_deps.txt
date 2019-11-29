@@ -1,10 +1,6 @@
 m4/libxml2
-std/fstream
 std/iostream
 std/map
 std/sstream
-std/stack
-std/string
 std/vector
 unisim/kernel
-unisim/util/json

@@ -218,12 +218,15 @@ private:
 class ConfigFileHelper
 {
 public:
-	virtual ~ConfigFileHelper() {}
+	virtual ~ConfigFileHelper();
 	virtual const char *GetName() const = 0;
 	virtual bool SaveVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
 	virtual bool SaveVariables(std::ostream& os, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
 	virtual bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
 	virtual bool LoadVariables(std::istream& is, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
+	virtual bool Match(const char *filename) const;
+protected:
+	static bool MatchFilenameByExtension(const char *filename, const char *extension);
 };
 
 //=============================================================================
@@ -309,10 +312,9 @@ private:
 	VariableBase *void_variable;
 	std::string shared_data_dir;
 	std::map<std::string, std::string> set_vars;
-	std::string get_config_filename;
+	std::vector<std::string> get_config_filenames;
 	std::string default_config_file_format;
 	bool list_parms;
-	bool get_config;
 	bool generate_doc;
 	std::string generate_doc_filename;
 	bool enable_warning;
@@ -355,7 +357,7 @@ private:
 
 	void Initialize(VariableBase *variable);
 
-	const char *GuessConfigFileFormat(const char *filename) const;
+	ConfigFileHelper *GuessConfigFileHelper(const char *filename);
 	ConfigFileHelper *FindConfigFileHelper(const std::string& config_file_format);
 public:
 	bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
@@ -384,6 +386,7 @@ private:
 		const char *opt_description;
 	};
 
+	std::string config_file_formats;
 	std::vector<CommandLineOption> command_line_options;
 
 	std::map<std::string, Object *, unisim::util::nat_sort::nat_ltstr> objects;
