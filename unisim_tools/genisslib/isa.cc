@@ -67,45 +67,6 @@ Isa::operation( ConstStr _symbol )
   return 0;
 }
 
-static void
-oplist_insert_unique( Vector<Operation>& _oplist, Operation* _op )
-{
-  // Check for duplicates
-  for (Vector<Operation>::const_iterator node = _oplist.begin(); node < _oplist.end(); ++ node)
-    { if ((**node).symbol == _op->symbol) return; }
-  _oplist.append( _op );
-}
-
-/** Search for operation objects corresponding to a symbol (one if
-    symbol is actual operation name, more if symbol is a group name).
-    
-    @param _symbol a symbol representing the operation or group name
-    @param _opvec an operation vector that will receive the corresponding operations
-*/
-bool
-Isa::operations( ConstStr _symbol, Vector<Operation>& _oplist )
-{
-  /* Symbol points to either an operation or a group.
-   */
-  if (Operation* operation = this->operation( _symbol ))
-    {
-      /* Symbol points to an operation */
-      oplist_insert_unique( _oplist, operation );
-      return true;
-    }
-  
-  if (Group* group = Scanner::isa().group( _symbol ))
-    {
-      /* Symbol points to a group */
-      for (Vector<Operation>::iterator gop = group->operations.begin(); gop < group->operations.end(); ++ gop)
-        oplist_insert_unique( _oplist, *gop );
-      return true;
-    }
-  
-  return false;
-}
-
-
 /** Remove an operation object from the global operation object list (m_operations)
     @param operation the operation object to remove
 */
@@ -128,7 +89,16 @@ Isa::add( Operation* _op )
 {
   m_operations.append( _op );
   for (GroupAccumulators::iterator itr = m_group_accs.begin(), end = m_group_accs.end(); itr != end; ++itr)
-    oplist_insert_unique( itr->second->operations, _op );
+    {
+      // Check for duplicates ?
+      for (Vector<Operation>::const_iterator found = itr->second->operations.begin(), fend = itr->second->operations.end();; ++found)
+        {
+          if (found == fend)
+            { itr->second->operations.append( _op ); break; }
+          if ((**found).symbol == _op->symbol)
+            break;
+        }
+    }
 }
 
 /** Search the global group lists for the given symbol
@@ -457,22 +427,40 @@ Isa::group_command( ConstStr group_symbol, ConstStr _command, FileLoc const& fl 
         }
       
         /* Operations and groups name should not conflict */
-        Operation* prev_op = Scanner::isa().operation( group_symbol );
-        if (prev_op) {
-          fl.err( "error: group name conflicts with operation `%s'", group_symbol.str() );
-          prev_op->fileloc.err( "operation `%s' previously defined here", group_symbol.str() );
-          throw ParseError();
-        }
+        if (Operation* prev_op = operation( group_symbol ))
+          {
+            fl.err( "error: group name conflicts with operation `%s'", group_symbol.str() );
+            prev_op->fileloc.err( "operation `%s' previously defined here", group_symbol.str() );
+            throw ParseError();
+          }
 
-        Group* prev_grp = Scanner::isa().group( group_symbol );
-        if (prev_grp) {
-          fl.err( "conflicting group `%s' redefined", group_symbol.str() );
-          prev_grp->fileloc.err( "group `%s' previously defined here", group_symbol.str() );
-          throw ParseError();
-        }
+        if (Group* prev_gr = group( group_symbol ))
+          {
+            fl.err( "conflicting group `%s' redefined", group_symbol.str() );
+            prev_gr->fileloc.err( "group `%s' previously defined here", group_symbol.str() );
+            throw ParseError();
+          }
       }
       
       m_groups.push_back( ga->second );
       m_group_accs.erase( ga );
     }
 }
+
+bool
+Isa::for_ops( ConstStr group_symbol, OOG& oog )
+{
+  if (Operation* op = operation( group_symbol ))
+    {
+      oog.with(*op);
+    }
+  else if (Group* gr = group( group_symbol ))
+    {
+      for (Vector<Operation>::iterator gop = gr->operations.begin(); gop < gr->operations.end(); ++ gop)
+        oog.with(**gop);
+    }
+  else
+    return false;
+  return true;
+}
+

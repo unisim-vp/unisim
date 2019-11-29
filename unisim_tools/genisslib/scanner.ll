@@ -501,13 +501,5 @@ Scanner::sc_leave()
   return false;
 }
 
-ConstStr
-Scanner::all_operations()
-{
-  static ConstStr all_ops( "all_operations", symbols );
-  
-  return all_ops;
-}
-
 int yywrap() { return 1; }
 

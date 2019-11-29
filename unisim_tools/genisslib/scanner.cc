@@ -26,90 +26,39 @@
 #include <cassert>
 #include <unistd.h>
 
-bool                     Scanner::aborted_scanning = false;
-FileLoc                  Scanner::fileloc;
-FileLoc                  Scanner::fileloc_mlt;
-int                      Scanner::bracecount = 0;
-std::vector<int>         Scanner::scs;
+//bool                     Scanner::aborted_scanning = false;
+// FileLoc                  Scanner::fileloc;
+// FileLoc                  Scanner::fileloc_mlt;
+// int                      Scanner::bracecount = 0;
+// std::vector<int>         Scanner::scs;
 Vector<Comment>          Scanner::comments;
-Isa*                     Scanner::s_isa = 0;
+// Isa*                     Scanner::s_isa = 0;
 ConstStr::Pool           Scanner::symbols;
 std::vector<ConstStr>    Scanner::s_lookupdirs;
 
-static
-void
-create_action( Operation* _operation, ActionProto const* _actionproto, SourceCode* _actioncode )
-{
-  Action const* prev_action = _operation->action( _actionproto );
+// Scanner::Inclusion* Scanner::include_stack = 0;
 
-  if (prev_action) {
-    Scanner::fileloc.err( "error: action `%s.%s' redefined",
-                          _operation->symbol.str(), _actionproto->m_symbol.str() );
-    
-    prev_action->m_fileloc.err( "action `%s.%s' previously defined here",
-                                _operation->symbol.str(), _actionproto->m_symbol.str() );
-    exit( -1 );
-  }
-  
-  _operation->add( new Action( _actionproto, _actioncode, Scanner::comments, Scanner::fileloc ) );
-}
+// std::string& Scanner::strbuf() { static std::string s_buffer; return s_buffer; }
 
-Scanner::Inclusion* Scanner::include_stack = 0;
+// Scanner::Inclusion::Inclusion( uint8_t const* _state, intptr_t _size, FileLoc const& _fileloc, Inclusion* _next )
+//   : state_backup( 0 ), fileloc( _fileloc ), next( _next )
+// {
+//   state_backup = new uint8_t[_size];
+//   std::copy(&_state[0], &_state[_size], &state_backup[0]);
+//   //  memcpy( state_backup, _state, _size );
+// }
 
-std::string& Scanner::strbuf() { static std::string s_buffer; return s_buffer; }
+// Scanner::Inclusion::~Inclusion()
+// {
+//   delete [] state_backup;
+// }
 
-void
-Scanner::push()
-{
-  throw 0;
-  // YY_BUFFER_STATE state = YY_CURRENT_BUFFER;
-  
-  include_stack = new Inclusion( 0, 0, fileloc, include_stack );
-}
-
-bool
-Scanner::pop()
-{
-  Inclusion* tail = include_stack;
-  
-  if (not tail) return false;
-
-  throw 0;
-  // YY_BUFFER_STATE state;
-  
-  // tail->restore( &state, sizeof( YY_BUFFER_STATE ) );
-  // yy_delete_buffer( YY_CURRENT_BUFFER );
-  // if (yyin) fclose( yyin );
-  //   yy_switch_to_buffer( state );
-  
-  fileloc = tail->fileloc;
-  
-  include_stack = tail->next;
-  tail->next = 0;
-  delete tail;
-  
-  return true;
-}
-
-Scanner::Inclusion::Inclusion( uint8_t const* _state, intptr_t _size, FileLoc const& _fileloc, Inclusion* _next )
-  : state_backup( 0 ), fileloc( _fileloc ), next( _next )
-{
-  state_backup = new uint8_t[_size];
-  std::copy(&_state[0], &_state[_size], &state_backup[0]);
-  //  memcpy( state_backup, _state, _size );
-}
-
-Scanner::Inclusion::~Inclusion()
-{
-  delete [] state_backup;
-}
-
-void
-Scanner::Inclusion::restore( uint8_t* _state, intptr_t _size )
-{
-  std::copy(&state_backup[0], &state_backup[_size], _state);
-  //  memcpy( _state, state_backup, _size );
-}
+// void
+// Scanner::Inclusion::restore( uint8_t* _state, intptr_t _size )
+// {
+//   std::copy(&state_backup[0], &state_backup[_size], _state);
+//   //  memcpy( _state, state_backup, _size );
+// }
 
 namespace
 {
@@ -396,9 +345,9 @@ namespace
 bool
 Scanner::parse( char const* _filename, Isa& _isa )
 {
-  s_isa = &_isa;
-
   std::cerr << "Opening " << _filename << '\n';
+  _isa.m_includes.push_back( _filename );
+  
   struct FileScanner : public CLex::Scanner
   {
     FileScanner(char const* f) : CLex::Scanner(), ifs(f), filename(f), esc('\n') {}
@@ -423,6 +372,7 @@ Scanner::parse( char const* _filename, Isa& _isa )
     std::string filename;
     char esc;
   } source(_filename);
+  
   if (not source.ifs.good())
     {
       std::cerr << "error: cannot open `" << _filename << "'\n";
@@ -692,29 +642,41 @@ Scanner::parse( char const* _filename, Isa& _isa )
                   }
                 else if (source.lnext == CLex::Scanner::GroupOpening)
                   {
-                    if (Operation* prev_op = Scanner::isa().operation( symbol ))
-                      {
-                        symfl.err( "error: group name conflicts with operation `%s'", symbol.str() );
-                        prev_op->fileloc.err( "operation `%s' previously defined here", symbol.str() );
-                        throw CLex::Scanner::Unexpected();
-                      }
-                    if (Group* prev_grp = Scanner::isa().group( symbol ))
-                      {
-                        symfl.err( "error: group name conflicts with group `%s'", symbol.str() );
-                        prev_grp->fileloc.err( "group `%s' previously defined here", symbol.str() );
-                        throw CLex::Scanner::Unexpected();
-                      }
+                    do {
+                      FileLoc def; char const* err = 0;
+                      if  (Operation* prev_op = _isa.operation( symbol ))
+                        { err = "operation"; def = prev_op->fileloc; }
+                      else if (Group* prev_gr = _isa.group( symbol ))
+                        { err =     "group"; def = prev_gr->fileloc; }
+                      else
+                        break;
+                      
+                      symfl.err( "error: %s name conflicts with %s `%s'", err, err, symbol.str() );
+                      def.err( "%s `%s' previously defined here", err, symbol.str() );
+                      throw CLex::Scanner::Unexpected();
+                      
+                    } while (0);
                     
-                    Group* res = new Group( symbol, symfl );
-
+                    struct : Isa::OOG
+                    {
+                      void with( Operation& operation )
+                      {
+                        if (opsyms.insert(operation.symbol).second)
+                          group->operations.append( &operation );
+                      }
+                      std::set<ConstStr> opsyms;
+                      Group* group;
+                    } oog;
+                    oog.group = new Group( symbol, symfl );
+                    
                     for (;;)
                       {
                         if (source.next() != CLex::Scanner::Name)
                           throw source.unexpected();
+                        FileLoc&& errfl = GetFileLoc(source);
                         std::string buf;
-                        FileLoc && errfl = GetFileLoc(source);
                         source.get(buf, &CLex::Scanner::get_name);
-                        if (not _isa.operations( ConstStr(buf,Scanner::symbols), res->operations ))
+                        if (not _isa.for_ops(ConstStr(buf,Scanner::symbols), oog))
                           {
                             errfl.err( "error: undefined operation or group `%s'", buf.c_str() );
                             throw CLex::Scanner::Unexpected();
@@ -726,7 +688,7 @@ Scanner::parse( char const* _filename, Isa& _isa )
                     if (source.lnext != CLex::Scanner::GroupClosing)
                       throw source.unexpected();
                     
-                    _isa.m_groups.push_back( res );
+                    _isa.m_groups.push_back( oog.group );
                   }
                 else
                   throw source.unexpected();
@@ -741,6 +703,7 @@ Scanner::parse( char const* _filename, Isa& _isa )
                 ConstStr attribute;
                 if (source.next() != CLex::Scanner::Name)
                   throw source.unexpected();
+                FileLoc && attrfl = GetFileLoc(source);
                 {
                   std::string buf;
                   source.get(buf, &CLex::Scanner::get_name);
@@ -752,20 +715,15 @@ Scanner::parse( char const* _filename, Isa& _isa )
                 
                 if (attribute == var)
                   {
-                    Vector<Variable> var_list;
-
-                    GetVarList(source, var_list);
+                    struct : public Isa::OOG
+                    {
+                      void with( Operation& operation ) override { operation.variables.append(var_list); }
+                      Vector<Variable> var_list;
+                    } oog;
                     
-                    if (Operation* operation = Scanner::isa().operation( symbol ))
-                      {
-                        operation->variables.append( var_list );
-                      }
-                    else if (Group* group = Scanner::isa().group( symbol ))
-                      {
-                        for (Vector<Operation>::iterator gop = group->operations.begin(); gop < group->operations.end(); ++ gop)
-                          (**gop).variables.append( var_list );
-                      }
-                    else
+                    GetVarList(source, oog.var_list);
+
+                    if (not _isa.for_ops( symbol, oog ))
                       {
                         cmdfl.err( "error: undefined operation or group `%s'", symbol.str() );
                         throw CLex::Scanner::Unexpected();
@@ -777,8 +735,8 @@ Scanner::parse( char const* _filename, Isa& _isa )
                       throw source.unexpected();
                     
                     ConstStr symbol(cmd.c_str(), Scanner::symbols);
-                    Scanner::isa().m_user_orderings.push_back( Isa::Ordering() );
-                    Isa::Ordering& order = Scanner::isa().m_user_orderings.back();
+                    _isa.m_user_orderings.push_back( Isa::Ordering() );
+                    Isa::Ordering& order = _isa.m_user_orderings.back();
                     order.fileloc = cmdfl;
                     order.top_op = symbol;
 
@@ -803,28 +761,37 @@ Scanner::parse( char const* _filename, Isa& _isa )
                   {
                     if (source.next() != CLex::Scanner::Assign)
                       throw source.unexpected();
+                    
+                    struct : Isa::OOG
+                    {
+                      SourceCode* actioncode;
+                      ActionProto const* actionproto;
+                      FileLoc actloc;
+                      void with( Operation& operation ) override
+                      {
+                        if (Action const* prev_action = operation.action( actionproto ))
+                          {
+                            actloc.err( "error: action `%s.%s' redefined", operation.symbol.str(), actionproto->m_symbol.str() );
+                            prev_action->m_fileloc.err( "action `%s.%s' previously defined here", operation.symbol.str(), actionproto->m_symbol.str() );
+                            exit( -1 );
+                          }
+                        
+                        operation.add( new Action( actionproto, actioncode, Scanner::comments, actloc ) );
+                      }
+                    } oog;
+                    
                     if (source.next() != CLex::Scanner::ObjectOpening)
                       throw source.unexpected();
-                    SourceCode* actioncode = new SourceCode(GetSourceCode(source));
-                    /* Actions belongs to an action prototype */
-                    ActionProto const* actionproto = Scanner::isa().actionproto( attribute );
-
-                    if (not actionproto)
+                    oog.actioncode = new SourceCode(GetSourceCode(source));
+                    oog.actloc = attrfl;
+                    /* Action must belong to an action prototype */
+                    if (not (oog.actionproto = _isa.actionproto( attribute )))
                       {
                         cmdfl.err( "error: undefined action prototype `%s'", attribute.str() );
                         throw CLex::Scanner::Unexpected();
                       }
 
-                    if (Operation* operation = Scanner::isa().operation( symbol ))
-                      {
-                        create_action( operation, actionproto, actioncode );
-                      }
-                    else if (Group* group = Scanner::isa().group( symbol ))
-                      {
-                        for (Vector<Operation>::iterator gop = group->operations.begin(); gop < group->operations.end(); ++ gop)
-                          create_action( *gop, actionproto, actioncode );
-                      }
-                    else
+                    if (not _isa.for_ops( symbol, oog ))
                       {
                         cmdfl.err( "error: undefined operation or group `%s'", symbol.str() );
                         throw CLex::Scanner::Unexpected();
@@ -861,72 +828,14 @@ Scanner::parse( char const* _filename, Isa& _isa )
           throw source.unexpected();
         }
     }
-  //   if (not Scanner::open( ConstStr( _filename) ) )
-  //     return false;
-  //   bracecount = 0;
-  //   scs.clear();
   
-  // #if 0
-  //   // This code is only for testing the lexical analyzer
-  //   int c;
-    
-  //   while( (c = yylex()) != 0 ) {
-  //     printf( "%s\n", get_token_name(c) );
-  //   }
-  // #endif
-  
-  //   aborted_scanning = false;
-  //   int error = yyparse();
-
-  //   throw 0;
-  //   // if (yyin) {
-  //   //   fclose( yyin );
-  //   //   yyin = 0;
-  //   // }
-  
-  //   //  yylex_destroy();
-  //   return (error == 0) && !aborted_scanning;
   return true;
 }
 
-bool
-Scanner::open( ConstStr _filename )
-{
-  fprintf( stderr, "Opening %s\n", _filename.str() );
-  throw 0;
-  // yyin = fopen( _filename.str(), "r" );
-  
-  // if (not yyin) {
-  //   fileloc.err( "error: can't open file `%s'", _filename.str() );
-  //   return false;
-  // }
-  
-  isa().m_includes.push_back( _filename );
-  fileloc.assign( _filename, 1, 1 );
-  return true;
-}
-
-bool
-Scanner::include( char const* _filename )
-{
-  ConstStr filename = Scanner::locate( _filename );
-  
-  Scanner::push();
-
-  if (not Scanner::open( filename))
-    return false;
-
-  throw 0;
-  // yy_switch_to_buffer( yy_create_buffer( yyin, YY_BUF_SIZE ) );
-  // yylineno = 1;
-  return true;
-}
-
-/* obsolescent stuff */
-Scanner::Token Scanner::s_tokens[] = { {0,0} };
-int Scanner::token( char const* _text ) { throw "impossible"; return 0; }
-ConstStr Scanner::charname( char _char ) { return Str::fmt( "'%c'", _char ); }
-ConstStr Scanner::tokenname( int _token ) { throw "impossible"; return 0; }
+// Scanner::Token Scanner::s_tokens[] = { {0,0} };
+// int Scanner::token( char const* _text ) { throw "impossible"; return 0; }
+// ConstStr Scanner::charname( char _char ) { return Str::fmt( "'%c'", _char ); }
+// ConstStr Scanner::tokenname( int _token ) { throw "impossible"; return 0; }
 
 
 void
@@ -1004,49 +913,6 @@ Scanner::locate( char const* _name )
       return buffer.c_str();
     }
   return _name;
-}
-
-// void
-// Scanner::sc_enter( int _condition )
-// {
-//   int sc = YY_START;
-//   if (sc == INITIAL) {
-//     fileloc_mlt = fileloc;
-//     strbuf().clear();
-//   }
-//   if (_condition == source_code_context) {
-//     if (sc == source_code_context) { bracecount += 1; return; }
-//     else if (sc == INITIAL) bracecount = 1;
-//     else assert( false );
-//   }
-//   scs.push_back( sc );
-//   BEGIN( _condition );
-// }
-
-// bool
-// Scanner::sc_leave()
-// {
-//   int oldsc = YY_START;
-//   int newsc = Scanner::scs.back();
-  
-//   if (oldsc == source_code_context and ((--bracecount) > 0)) {
-//     newsc = source_code_context;
-//   } else {
-//     Scanner::scs.pop_back();
-//     BEGIN( newsc );
-//   }
-
-//   if (newsc == INITIAL) return true;
-//   strbuf().append( yytext, yyleng );
-//   return false;
-// }
-
-ConstStr
-Scanner::all_operations()
-{
-  static ConstStr all_ops( "all_operations", symbols );
-  
-  return all_ops;
 }
 
 int yywrap() { return 1; }

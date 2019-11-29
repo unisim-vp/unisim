@@ -295,26 +295,28 @@ Generator::toposort()
   for (Isa::Orderings::iterator itr = source.m_user_orderings.begin(), end = source.m_user_orderings.end(); itr != end; ++itr) {
     // Unrolling specialization relations
     typedef Vector<Operation> OpV;
-    OpV ops_above;
-    if (not source.operations( itr->top_op, ops_above ))
+    
+    struct : Isa::OOG { void with( Operation& operation ) { ops.append( &operation ); } OpV ops; } above, below;
+    
+    if (not source.for_ops( itr->top_op, above ))
       {
         itr->fileloc.loc( std::cerr ) << "error: no such operation or group `" << itr->top_op.str() << "'" << std::endl;
         throw GenerationError;
       }
-    OpV ops_below;
+    
     for (std::vector<ConstStr>::const_iterator symitr = itr->under_ops.begin(), symend = itr->under_ops.end(); symitr != symend; ++symitr)
       {
-      if (not source.operations( *symitr, ops_below ))
-        {
-          itr->fileloc.loc( std::cerr ) << "error: no such operation or group `" << symitr->str() << "'" << std::endl;
-          throw GenerationError;
-        }
-    }
+        if (not source.for_ops( *symitr, below ))
+          {
+            itr->fileloc.loc( std::cerr ) << "error: no such operation or group `" << symitr->str() << "'" << std::endl;
+            throw GenerationError;
+          }
+      }
     
     // Check each user specialization and insert when valid
-    for (OpV::iterator aoitr = ops_above.begin(), aoend = ops_above.end(); aoitr != aoend; ++aoitr) {
+    for (OpV::iterator aoitr = above.ops.begin(), aoend = above.ops.end(); aoitr != aoend; ++aoitr) {
       OpCode& opcode1( opcode( *aoitr ) );
-      for (OpV::iterator boitr = ops_below.begin(), boend = ops_below.end(); boitr != boend; ++boitr) {
+      for (OpV::iterator boitr = below.ops.begin(), boend = below.ops.end(); boitr != boend; ++boitr) {
         OpCode& opcode2( opcode( *boitr ) );
         switch (opcode1.locate( opcode2 )) {
         default: break;
