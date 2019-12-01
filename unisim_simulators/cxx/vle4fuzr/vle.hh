@@ -13,102 +13,368 @@
 #define __VLE4FUZR_VLE_HH__
 
 #include <emu.hh>
-#include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.hh>
-#include <unisim/util/symbolic/symbolic.hh>
+#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
+#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
+#include <unisim/component/cxx/processor/powerpc/disasm.hh>
+//#include <unisim/util/symbolic/symbolic.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
+#include <map>
 
-struct mpc57Processor
-  : public Processor
-  , public unisim::component::cxx::processor::powerpc::e200::mpc57xx::cpu
-{
-  typedef unisim::component::cxx::processor::arm::CPU<ARMv7cfg> CP15CPU;
-  typedef typename CP15CPU::CP15Reg CP15Reg;
+typedef Processor EmuProcessor;
 
-  ArmProcessor( char const* name, bool is_thumb );
-  ~ArmProcessor();
+namespace vle {
+namespace concrete {
 
-  virtual void Sync() override { throw 0; }
+  struct Operation;
 
-  static unisim::component::cxx::processor::arm::isa::arm32::Decoder<ArmProcessor> arm32_decoder;
-  static unisim::component::cxx::processor::arm::isa::thumb::Decoder<ArmProcessor> thumb_decoder;
+  typedef bool  BOOL;
+  typedef uint8_t   U8;
+  typedef uint16_t  U16;
+  typedef uint32_t  U32;
+  typedef uint64_t  U64;
+  typedef int8_t    S8;
+  typedef int16_t   S16;
+  typedef int32_t   S32;
+  typedef int64_t   S64;
 
-  static ArmProcessor& Self( Processor& proc ) { return dynamic_cast<ArmProcessor&>( proc ); }
-
-  Processor::RegView const* get_reg(int regid) override;
-
-  enum { OPPAGESIZE = 4096 };
-  typedef unisim::component::cxx::processor::arm::isa::arm32::Operation<ArmProcessor> AOperation;
-  typedef OpPage<AOperation,OPPAGESIZE> AOpPage;
-  typedef unisim::component::cxx::processor::arm::isa::thumb::Operation<ArmProcessor> TOperation;
-  typedef OpPage<TOperation,OPPAGESIZE> TOpPage;
-
-  std::map< uint32_t, AOpPage > arm32_op_cache;
-  std::map< uint32_t, TOpPage > thumb_op_cache;
-
-  enum mem_acc_type_t { mat_write = 0, mat_read, mat_exec };
-
-  uint32_t MemURead32( uint32_t address ) { return PerformUReadAccess( address, 4 ); }
-  uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4 ); }
-  uint32_t MemURead16( uint32_t address ) { return PerformUReadAccess( address, 2 ); }
-  uint32_t MemRead16( uint32_t address ) { return PerformReadAccess( address, 2 ); }
-  uint32_t MemRead8( uint32_t address ) { return PerformReadAccess( address, 1 ); }
-  void     MemUWrite32( uint32_t address, uint32_t value ) { PerformUWriteAccess( address, 4, value ); }
-  void     MemWrite32( uint32_t address, uint32_t value ) { PerformWriteAccess( address, 4, value ); }
-  void     MemUWrite16( uint32_t address, uint16_t value ) { PerformUWriteAccess( address, 2, value ); }
-  void     MemWrite16( uint32_t address, uint16_t value ) { PerformWriteAccess( address, 2, value ); }
-  void     MemWrite8( uint32_t address, uint8_t value ) { PerformWriteAccess( address, 1, value ); }
-
-  void     PerformPrefetchAccess( uint32_t addr ) {}
-  void     PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
-  uint32_t PerformReadAccess( uint32_t addr, uint32_t size );
-  void     PerformUWriteAccess( uint32_t addr, uint32_t size, uint32_t value );
-  uint32_t PerformUReadAccess( uint32_t addr, uint32_t size );
-
-  void     SetExclusiveMonitors( uint32_t addr, unsigned size ) { throw 0; }
-  bool     ExclusiveMonitorsPass( uint32_t addr, unsigned size ) { throw 0; return true; }
-  void     ClearExclusiveLocal() { throw 0; }
-
-  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn );
-  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn );
-
-  bool PhysicalWriteMemory( uint32_t addr, uint8_t const* buffer, uint32_t size )
+  typedef uint32_t  UINT;
+  typedef int32_t   SINT;
+  typedef uint32_t  ADDRESS;
+  
+  struct XER
   {
-    auto pi = mem_page(addr, size);
-    if (pi == pages.end()) return false;
-    pi->access(pi->Write);
-    uint32_t pos = addr - pi->base;
-    std::copy(&buffer[0], &buffer[size], pi->at(pos));
-    return true;
-  }
+    struct OV {};
+    struct SO {};
+    struct CA {};
+    struct _0_3 {};
+    
+    template <typename PART> void Set( U32 value ) {}
+    template <typename PART> U32 Get() { return xer_value; }
+    operator U32 () { return xer_value; }
+    XER& operator= ( U32 value ) { xer_value = value; return *this; }
+    XER& GetXER() { return *this; }
+    
+    XER() : xer_value() {}
+    
+    U32 xer_value;
+  };
 
-  bool PhysicalReadMemory( uint32_t addr, uint8_t* buffer, uint32_t size )
+  struct CR
   {
-    auto pi = mem_page(addr, size);
-    if (pi == pages.end()) return false;
-    pi->access(pi->Read);
-    uint32_t pos = addr - pi->base;
-    std::copy(pi->at(pos), pi->at(pos+size), buffer);
-    return true;
-  }
-  bool PhysicalFetchMemory( uint32_t addr, uint8_t* buffer, uint32_t size )
+    struct CR0 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
+    struct CR1 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
+    struct CR2 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
+    struct CR3 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
+    struct CR4 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
+    struct CR5 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
+    struct CR6 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
+    struct CR7 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
+    
+    template <typename PART> void Set( uint32_t value ) {}
+    template <typename PART> U32 Get() { return cr_value; }
+    operator U32 () { return cr_value; }
+    CR& operator= ( U32 const& value ) { cr_value = value; return *this; }
+    CR& GetCR() { return *this; }
+    
+    CR() : cr_value() {}
+
+    U32 cr_value;
+  };
+  
+  struct LR
   {
-    auto pi = mem_page(addr, size);
-    if (pi == pages.end()) return false;
-    pi->access(pi->Execute);
-    uint32_t pos = addr - pi->base;
-    std::copy(pi->at(pos), pi->at(pos+size), buffer);
-    return true;
-  }
+    template <typename PART> void Set( unsigned ) {}
+    template <typename PART> U32 Get() { return U32(); }
+    operator U32 () { return U32(); }
+    LR& operator= (U32 const& v) { return *this; }
+    LR& GetLR() { return *this; }
+    void SetLR(U32 const& v) {}
+  };
+  
+  struct CTR
+  {
+    template <typename PART> void Set( unsigned ) {}
+    template <typename PART> U32 Get() { return U32(); }
+    operator U32 () { return U32(); }
+    CTR& operator= (U32 const& v) { return *this; }
+    CTR& GetCTR() { return *this; }
+    void SetCTR(U32 const& v) {}
+  };
+  
+  struct MSR
+  {
+    struct PR {};
+    struct EE {};
+    template <typename PART> void Set( unsigned ) {}
+    template <typename PART> U32 Get() { return U32(0); }
+    operator U32 () { return U32(0); }
+    MSR& operator= (U32 const& v) { return *this; }
+    MSR& GetMSR() { return *this; }
+  };
 
-  int emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count ) override;
+  struct Processor
+    : public EmuProcessor
+    , public XER, public CR, public MSR, public LR, public CTR
+  //  , public unisim::component::cxx::processor::powerpc::e200::mpc57xx::cpu
+  {
+    //  typedef unisim::component::cxx::processor::arm::CPU<ARMv7cfg> CP15CPU;
+    struct TODO {};
+  
+    Processor();
 
-  template <class Decoder> void Step(Decoder&);
+    enum { OPPAGESIZE = 4096 };
+    typedef vle::concrete::Operation Operation;
+    typedef OpPage<Operation,OPPAGESIZE> InsnPage;
 
-  bool bblock;
+    std::map< uint32_t, InsnPage > insn_cache;
 
-  void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<ArmProcessor>* insn );
-  void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb::Operation<ArmProcessor>* insn );
-  void DataAbort(uint32_t addr, mem_acc_type_t mat, unisim::component::cxx::processor::arm::DAbort type);
-  void BKPT( int ) { throw 0; }
-};
+    //   typedef MSR MSR;
+    //   typedef SPEFSCR SPEFSCR;
+    
+    //   CPU( Interface& _interface, ActionNode& root )
+    //     : interface(_interface), path(&root), cia( new CIA )
+    
+    //   virtual void XERAccess( bool is_write ) { interface.xer.addaccess(is_write); }
+    //   virtual void CRAccess( bool is_write ) { interface.cr.addaccess(is_write); }
+    //   virtual void SPEFSCRAccess( bool is_write ) { interface.spefscr.addaccess(is_write); }
+    
+    struct Interrupt { void SetELEV(unsigned x) { throw TODO(); } };
+    
+    template <class T> Interrupt ThrowException() { DispatchException( T() ); return Interrupt(); }
+
+    void ProcessException( char const* msg );
+    
+    template <class T> void DispatchException( T const& exc ) { ProcessException( "ANY" ); }
+    
+    struct ProgramInterrupt
+    {
+      struct UnimplementedInstruction {};
+      struct IllegalInstruction {};
+      struct Trap {};
+      struct PrivilegeViolation {};
+    };
+
+    void DispatchException( ProgramInterrupt::UnimplementedInstruction const& exc ) { ProcessException( "UD" ); }
+    
+    struct SystemCallInterrupt
+    {
+      struct SystemCall {};
+    };
+    
+    void DispatchException( SystemCallInterrupt::SystemCall const& exc ) { ProcessException( "SYS" ); }
+    
+    struct AlignmentInterrupt { struct UnalignedLoadStoreMultiple {}; };
+    // void DispatchException( AlignmentInterrupt::UnalignedLoadStoreMultiple const& exc ) { interface.aligned = true; }
+    
+    bool Cond(bool c) { return c; }
+    
+    U32          reg_values[32];
+    U32          cia;
+    U32 GetCIA() { return cia; };
+    //   bool EqualCIA(uint32_t pc) { return false; };
+    U32 GetGPR(unsigned n) { return reg_values[n]; };
+    void SetGPR(unsigned n, U32 value) { reg_values[n] = value; }
+    
+    //   static void LoadRepr( std::ostream& sink, Expr const& _addr, unsigned bits );
+    
+    //   template <unsigned BITS>
+    //   struct Load : public ExprNode
+    //   {
+    //     Load( Expr const& _addr ) : addr(_addr) {}
+    //     virtual Load* Mutate() const { return new Load(*this); }
+    //     virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false,BITS); }
+    //     virtual void Repr( std::ostream& sink ) const { LoadRepr( sink, addr, BITS ); }
+    //     virtual unsigned SubCount() const { return 2; };
+    //     virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; } return ExprNode::GetSub(idx); };
+    //     virtual int cmp( unisim::util::symbolic::ExprNode const& brhs ) const override { return 0; }
+    //     Expr addr;
+    //   };
+
+    U32 MemRead(U32 address, unsigned size, bool sext, bool bigendian)
+    {
+      unsigned mask = size - 1, endian_mask = mask*(not bigendian);
+      if (size >= 4 or mask & size) { throw "illegal size"; }
+      uint8_t buf[4];
+      PhysicalReadMemory( address, &buf[0], size );
+      U32 result = 0;
+      for (unsigned byte = 0; byte < size; ++byte)
+        result = (result << 8) | buf[byte^endian_mask];
+      if (sext) { int sh = (32 - size*8); result = int32_t(result << sh) >> sh; }
+      return result;
+    }
+    void MemWrite( U32 address, unsigned size, U32 value, bool bigendian )
+    {
+      unsigned mask = size - 1, endian_mask = mask*bigendian;
+      if (size >= 4 or mask & size) { throw "illegal size"; }
+      uint8_t buf[4];
+      for (unsigned byte = 0; byte < size; ++byte)
+        { buf[byte^endian_mask] = value; value >>= 8; }
+      PhysicalWriteMemory( address, &buf[0], size );
+    }
+    
+    bool Int8Load(unsigned n, U32 address) { SetGPR(n, MemRead(address, 1, false, true)); return true; }
+    bool Int16Load(unsigned n, U32 address) { SetGPR(n, MemRead(address, 2, false, true)); return true; }
+    bool Int32Load(unsigned n, U32 address) { SetGPR(n, MemRead(address, 4, false, true)); return true; }
+    
+    bool SInt8Load(unsigned n, U32 address) { SetGPR(n, MemRead(address, 1, true, true)); return true; }
+    bool SInt16Load(unsigned n, U32 address) { SetGPR(n, MemRead(address, 2, true, true)); return true; }
+
+    bool Int16LoadByteReverse(unsigned n, U32 address) { SetGPR(n, MemRead(address, 2, false, false)); return true; }
+    bool Int32LoadByteReverse(unsigned n, U32 address) { SetGPR(n, MemRead(address, 4, false, false)); return true; }
+    
+    bool Int8Store(unsigned n, U32 address ) { MemWrite(address, 1, GetGPR(n),true); return true; }
+    bool Int16Store(unsigned n, U32 address ) { MemWrite(address, 2, GetGPR(n), true); return true; }
+    bool Int32Store(unsigned n, U32 address ) { MemWrite(address, 4, GetGPR(n), true); return true; }
+
+    bool Int16StoreByteReverse(unsigned n, U32 address ) { MemWrite( address, 2, GetGPR(n), false); return true; }
+    bool Int32StoreByteReverse(unsigned n, U32 address ) { MemWrite( address, 4, GetGPR(n), false); return true; }
+
+    //   void gpr_append( unsigned idx, bool w ) { interface.irappend( idx, w ); }
+
+    //   void donttest_branch();
+    //   void donttest_illegal();
+    
+    //   char const* GetObjectFriendlyName(U32) { return "???"; }
+    
+    bool Branch(U32 const& addr) { throw TODO(); return false; }
+    
+    bool Rfmci() { throw TODO(); return false; }
+    bool Rfci() { throw TODO(); return false; }
+    bool Rfdi() { throw TODO(); return false; }
+    bool Rfi() { throw TODO(); return false; }
+
+    bool Dcba(U32 const& addr) { throw TODO(); return false; }
+    bool Dcbf(U32 const& addr) { throw TODO(); return false; }
+    bool Dcbst(U32 const& addr) { throw TODO(); return false; }
+    bool Dcbz(U32 const& addr) { throw TODO(); return false; }
+    bool Dcbi(U32 const& addr) { throw TODO(); return false; }
+    bool Icbi(U32 const& addr) { throw TODO(); return false; }
+    bool Icbt(U32 const& addr) { throw TODO(); return false; }
+    
+    bool Msync() { throw TODO(); return false; }
+    bool Isync() { throw TODO(); return false; }
+    bool Mpure() { throw TODO(); return false; }
+    bool Mpuwe() { throw TODO(); return false; }
+    bool Mpusync() { throw TODO(); return false; }
+    
+    bool Lbarx(unsigned n, U32 const& addr) { throw TODO(); return false; }
+    bool Lharx(unsigned n, U32 const& addr) { throw TODO(); return false; }
+    bool Lwarx(unsigned n, U32 const& addr) { throw TODO(); return false; }
+    bool Stbcx(unsigned n, U32 const& addr) { throw TODO(); return false; }
+    bool Sthcx(unsigned n, U32 const& addr) { throw TODO(); return false; }
+    bool Stwcx(unsigned n, U32 const& addr) { throw TODO(); return false; }
+    bool MoveFromDCR(unsigned dcrn, U32& result) { throw TODO(); return false; }
+    bool MoveFromSPR(unsigned dcrn, U32& result) { throw TODO(); return false; }
+    bool MoveToSPR(unsigned dcrn, U32 const& result) { throw TODO(); return false; }
+    
+    bool CheckSPV() { return true; }
+    bool Wait() { throw TODO(); return false; }
+
+    //   struct __EFPProcessInput__
+    //   {
+    //     __EFPProcessInput__( CPU& _cpu ) : cpu(_cpu), finv(false) {};
+    //     template <class FLOAT>
+    //     __EFPProcessInput__& set( FLOAT& input ) { finv |= not check_input( input ) ; return *this; }
+    //     template <class FLOAT>
+    //     static bool check_input( FLOAT& input )
+    //     {
+    //       // if (unlikely(input.isDenormalized()))
+    //       //   {
+    //       //     input.setZero(input.isNegative());
+    //       //     return false;
+    //       //   }
+			
+    //       // if (unlikely(input.hasInftyExponent()))
+    //       //   return false;
+			
+    //       return true;
+    //     }
+    //     bool proceed()
+    //     {
+    //       // cpu.GetSPEFSCR().Set<typename SPEFSCR::FINV>(finv);
+    //       // if (finv)
+    //       //   {
+    //       //     cpu.GetSPEFSCR().Set<typename SPEFSCR::FINVS>(true);
+    //       //     if (cpu.GetSPEFSCR().Get<typename SPEFSCR::FINVE>())
+    //       //       {
+    //       //         cpu.ThrowException<typename ProgramInterrupt::UnimplementedInstruction>();
+    //       //         return false;
+    //       //       }
+    //       //   }
+    //       return true;
+    //     }
+		
+    //     CPU& cpu;
+    //     bool finv;
+    //   };
+	
+    //   __EFPProcessInput__
+    //   EFPProcessInput()
+    //   {
+    //     // GetSPEFSCR().Set<typename SPEFSCR::FG>(false);
+    //     // GetSPEFSCR().Set<typename SPEFSCR::FX>(false);
+    //     // GetSPEFSCR().Set<typename SPEFSCR::FGH>(false);
+    //     // GetSPEFSCR().Set<typename SPEFSCR::FXH>(false);
+    //     // GetSPEFSCR().Set<typename SPEFSCR::FDBZ>(false);
+    //     // GetSPEFSCR().Set<typename SPEFSCR::FDBZH>(false);
+    //     // GetSPEFSCR().SetDivideByZero( false );
+    //     return __EFPProcessInput__( *this );
+    //   }
+	
+    //   template <class FLOAT, class FLAGS>
+    //   bool
+    //   EFPProcessOutput( FLOAT& output, FLAGS const& flags )
+    //   {
+    //     // if (output.hasInftyExponent())
+    //     //   {
+    //     //     bool neg = output.isNegative();
+    //     //     output.setInfty();
+    //     //     output.setToPrevious();
+    //     //     output.setNegative(neg);
+    //     //   }
+    //     // bool inexact = flags.isApproximate() and not spefscr.template Get<typename CPU::SPEFSCR::FINV>();
+    //     // bool overflow = inexact and flags.isOverflow();
+    //     // if (not GetSPEFSCR().SetOverflow( overflow ))
+    //     //   return false;
+    //     // bool underflow = inexact and flags.isUnderflow();
+    //     // if (output.isDenormalized())
+    //     //   {
+    //     //     output.setZero(output.isNegative());
+    //     //     inexact = true, underflow = true;
+    //     //   }
+    //     // if (not GetSPEFSCR().SetUnderflow( underflow ))
+    //     //   return false;
+
+    //     // if (inexact)
+    //     //   {
+    //     //     // Compute inexact flags (FG, FX)
+    //     //     GetSPEFSCR().Set<typename SPEFSCR::FINXS>(true);
+    //     //     if (spefscr.template Get<typename SPEFSCR::FINXE>())
+    //     //       {
+    //     //         this->template ThrowException<typename ProgramInterrupt::UnimplementedInstruction>();
+    //     //         return false;
+    //     //       }
+    //     //   }
+
+    //     return true;
+    //   }
+	
+  };
+  
+  using unisim::util::arithmetic::BitScanReverse;
+  using unisim::util::arithmetic::RotateLeft;
+
+} // end of namespace concrete
+
+  using unisim::component::cxx::processor::powerpc::GPRPrint;
+  using unisim::component::cxx::processor::powerpc::HexPrint;
+  using unisim::component::cxx::processor::powerpc::CRPrint;
+  using unisim::component::cxx::processor::powerpc::CondPrint;
+  using unisim::component::cxx::processor::powerpc::EAPrint;
+  using unisim::component::cxx::processor::powerpc::Mask64;
+  using unisim::component::cxx::processor::powerpc::scaled_immediate;
+
+} // end of namespace vle
 
 #endif /* __VLE4FUZR_VLE_HH__ */
+

@@ -161,6 +161,34 @@ struct Processor
     return 0;
   }
 
+  bool PhysicalWriteMemory( uint32_t addr, uint8_t const* buffer, uint32_t size )
+  {
+    auto pi = mem_page(addr, size);
+    if (pi == pages.end()) return false;
+    pi->access(pi->Write);
+    uint32_t pos = addr - pi->base;
+    std::copy(&buffer[0], &buffer[size], pi->at(pos));
+    return true;
+  }
+
+  bool PhysicalReadMemory( uint32_t addr, uint8_t* buffer, uint32_t size )
+  {
+    auto pi = mem_page(addr, size);
+    if (pi == pages.end()) return false;
+    pi->access(pi->Read);
+    uint32_t pos = addr - pi->base;
+    std::copy(pi->at(pos), pi->at(pos+size), buffer);
+    return true;
+  }
+  bool PhysicalFetchMemory( uint32_t addr, uint8_t* buffer, uint32_t size )
+  {
+    auto pi = mem_page(addr, size);
+    if (pi == pages.end()) return false;
+    pi->access(pi->Execute);
+    uint32_t pos = addr - pi->base;
+    std::copy(pi->at(pos), pi->at(pos+size), buffer);
+    return true;
+  }
   struct RegView
   {
     virtual ~RegView() {}

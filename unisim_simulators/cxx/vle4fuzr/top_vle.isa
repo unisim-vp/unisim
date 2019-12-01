@@ -32,7 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
-namespace mpc57
+namespace vle::concrete
 
 set addressclass {uint32_t}
 set codetype scalar;
@@ -41,63 +41,48 @@ decl {
 #include <iosfwd>
 #include <inttypes.h>
 
-// namespace ut { struct CPU; }
+namespace vle {
+namespace concrete {
+  struct Processor;
+  typedef Processor CPU;
+} // end of namespace concrete
 
-// namespace mpc57
-// {
-//   using ut::CPU;
+} // end of namespace vle
 
-//   struct DASMPrint
-//   {
-//     virtual void Print( std::ostream& sink ) const = 0;
-//     friend std::ostream& operator << (std::ostream& sink, DASMPrint const& dap)
-//     {
-//       dap.Print(sink);
-//       return sink;
-//     }
-//   };
-
-//   struct GPRPrint : public DASMPrint
-//   {
-//     GPRPrint(unsigned _reg) : reg(_reg) {} unsigned reg;
-//     void Print( std::ostream& sink ) const;
-//   };
-  
-//   struct HexPrint : public DASMPrint
-//   {
-//     HexPrint(uint32_t _num) : num(_num) {} unsigned num;
-//     void Print( std::ostream& sink ) const;
-//   };
-  
-// }
 }
 
 impl {
-  // {
-//   /* PPC specifics ? */
-// #include <unisim/util/likely/likely.hh>
-// #include <arch.hh>
-// #include <testutils.hh>
-// #include <iostream>
-// #include <unisim/component/cxx/processor/powerpc/isa/lsp/lsp.hh>
-// #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
+#include <vle.hh>
+#include <unisim/util/likely/likely.hh>
+#include <iostream>
+#include <unisim/component/cxx/processor/powerpc/isa/lsp/lsp.hh>
 
-// namespace mpc57
-// {
-//   typedef ut::BOOL  BOOL;
-//   typedef ut::U8    U8;
-//   typedef ut::U16   U16;
-//   typedef ut::U32   U32;
-//   typedef ut::U64   U64;
-//   typedef ut::S8    S8;
-//   typedef ut::S16   S16;
-//   typedef ut::S32   S32;
-//   typedef ut::S64   S64;
+namespace vle {
+namespace concrete {
 
-//   typedef ut::UINT UINT;
-//   typedef ut::SINT SINT;
-//   typedef ut::ADDRESS ADDRESS;
+  using unisim::component::cxx::processor::powerpc::LSP_HS_UPPER_LOWER_EXCHANGED;
   
+} // end of namespace concrete
+} // end of namespace vle
+
+#if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
+#if defined(likely)
+#undef likely
+#endif
+
+#if defined(unlikely)
+#undef unlikely
+#endif
+
+#define likely(x)       __builtin_expect(cpu->Cond(x),1)
+#define evenly(x)       (cpu->Cond(x))
+#define unlikely(x)     __builtin_expect(cpu->Cond(x),0)
+#else
+#define likely(x)       (cpu->Cond(x))
+#define evenly(x)       (cpu->Cond(x))
+#define unlikely(x)     (cpu->Cond(x))
+#endif
+ 
 //   using ut::CPU;
 //   //  using ut::SignedAdd32;
 //   using ut::XER;
@@ -124,86 +109,16 @@ impl {
 //   using ut::DoesSPEFSCR_TriggerException;
 //   using ut::GenSPEFSCR_FG;
 
-//   inline char const* LSP_HS_EVEN_ODD( unsigned n ) { return "<?>"; }
-//   inline char const* LSP_TY( unsigned n ) { return "<?>"; }
-//   inline char const* LSP_ACC( unsigned n ) { return "<?>"; }
-
-//   void GPRPrint::Print( std::ostream& sink ) const { sink << "r" << std::dec << reg; }
-
-//   void HexPrint::Print( std::ostream& sink ) const { sink << "0x" << std::hex << num << std::dec; }
-  
-//   struct CRPrint : public DASMPrint
-//   {
-//     CRPrint(unsigned _reg) : reg(_reg) {} unsigned reg;
-//     void Print( std::ostream& sink ) const { sink << "cr" << std::dec << reg; }
-//   };
-  
-//   struct CondPrint : public DASMPrint
-//   {
-//     CondPrint(unsigned _crb, bool _expect = true) : crb(_crb), expect(_expect) {} unsigned crb; bool expect;
-//     void Print( std::ostream& sink ) const
-//     {
-//       char const* condnames[] = {"ge","le","ne","ns","lt","gt","eq","so"};
-//       char const* condname = condnames[(crb&3)|(expect?4:0)];
-//       if (crb >= 4)
-//         sink << "4*" << CRPrint(crb>>2) << '+';
-//       sink << condname;
-//     }
-//   };
-  
-//   struct EAPrint : public DASMPrint
-//   {
-//     EAPrint(int32_t _idx, unsigned _reg) : idx(_idx), reg(_reg) {} int32_t idx; unsigned reg;
-//     void Print( std::ostream& sink ) const
-//     {
-//       sink << std::dec << idx << '(';
-//       if (reg)
-//         sink << GPRPrint(reg);
-//       else
-//         sink << '0';
-//       sink << ')';
-//     }
-//   };
-  
-//   template <typename T>
-//   int32_t scaled_immediate( T s11 )
-//   {
-//     int scale = (s11 >> 5) & 24;
-//     int32_t msk = (s11 << 21) >> 31;
-//     return (((s11 ^ msk) & 255) << scale) ^ msk;
-//   }
-
-//   inline uint32_t Mask(uint32_t mb, uint32_t me)
-//   {
-//     return (mb > me) ? ~(((uint32_t) -1 >> mb) ^ ((me >= 31) ? 0 : (uint32_t) -1 >> (me + 1))) : (((uint32_t)-1 >> mb) ^ ((me >= 31) ? 0 : (uint32_t) -1 >> (me + 1)));
-//   }
+ inline char const* LSP_HS_EVEN_ODD( unsigned n ) { return "<?>"; }
+ inline char const* LSP_TY( unsigned n ) { return "<?>"; }
+ inline char const* LSP_ACC( unsigned n ) { return "<?>"; }
   
 //   using unisim::component::cxx::processor::powerpc::LSP_HS_UPPER_LOWER_EXCHANGED;
 //   using unisim::component::cxx::processor::powerpc::Mask64;
-// }
-
-// #if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
-// #if defined(likely)
-// #undef likely
-// #endif
-
-// #if defined(unlikely)
-// #undef unlikely
-// #endif
-
-// #define likely(x)       __builtin_expect(cpu->Cond(x),1)
-// #define evenly(x)       (cpu->Cond(x))
-// #define unlikely(x)     __builtin_expect(cpu->Cond(x),0)
-// #else
-// #define likely(x)       (cpu->Cond(x))
-// #define evenly(x)       (cpu->Cond(x))
-// #define unlikely(x)     (cpu->Cond(x))
-// #endif
-// }
 }
 
 action {bool} execute({CPU *} {cpu}) {
-  throw ut::Untestable("not implemented");
+  throw 0;
   return false;
 }
 
@@ -215,10 +130,6 @@ action {void} update_esr_st({CPU *} {cpu}) {
 }
 
 action {void} update_esr_spv({CPU *} {cpu}) {
-}
-
-action {bool} donttest() const {
-  return false;
 }
 
 /* Book I: Power ISA User Instruction Set Architecture */
@@ -280,38 +191,38 @@ include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subfze.is
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/tw.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/xor.isa"
 /* Embedded floating-point */
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsabs.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsadd.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscfh.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscfsf.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscfsi.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscfuf.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscfui.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscmpeq.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscmpgt.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscmplt.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscth.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsctsf.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsctsi.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsctsiz.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsctuf.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsctui.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsctuiz.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsdiv.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsmadd.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsmsub.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsmax.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsmin.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsmul.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsnabs.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsneg.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsnmadd.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsnmsub.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efssqrt.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efssub.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efststeq.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efststgt.isa"
-include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efststlt.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsabs.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsadd.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscfh.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscfsf.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscfsi.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscfuf.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscfui.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscmpeq.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscmpgt.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscmplt.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efscth.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsctsf.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsctsi.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsctsiz.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsctuf.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsctui.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsctuiz.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsdiv.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsmadd.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsmsub.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsmax.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsmin.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsmul.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsnabs.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsneg.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsnmadd.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efsnmsub.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efssqrt.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efssub.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efststeq.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efststgt.isa"
+// include "unisim/component/cxx/processor/powerpc/isa/book_i/efp/efs/efststlt.isa"
 
 /* Book II: Power ISA Virtual Environment Architecture */
 include "unisim/component/cxx/processor/powerpc/isa/book_ii/dcba.isa"
@@ -713,19 +624,13 @@ esr_st.update_esr_st = {
 	// esr.Set<CPU::ESR::ST>(1);
 };
 
-group esr_spv(efsabs,efsadd, efscfh, efscfsf, efscfsi, efscfuf, efscfui, \
-             efscmpeq, efscmpgt, efscmplt, efscth, efsctsf, efsctsi, \
-             efsctsiz, efsctuf, efsctui, efsctuiz, efsdiv, efsmadd, \
-             efsmsub, efsmax, efsmin, efsmul, efsnabs, efsneg, efsnmadd, \
-             efsnmsub, efssqrt, efssub, efststeq, efststgt, efststlt);
+// group esr_spv(efsabs,efsadd, efscfh, efscfsf, efscfsi, efscfuf, efscfui, \
+//              efscmpeq, efscmpgt, efscmplt, efscth, efsctsf, efsctsi, \
+//              efsctsiz, efsctuf, efsctui, efsctuiz, efsdiv, efsmadd, \
+//              efsmsub, efsmax, efsmin, efsmul, efsnabs, efsneg, efsnmadd, \
+//              efsnmsub, efssqrt, efssub, efststeq, efststgt, efststlt);
 
-esr_spv.update_esr_spv = {
-	// CPU::ESR& esr = cpu->GetESR();
-	// esr.Set<CPU::ESR::SPV>(1);
-};
-
-efsmadd.donttest = { return true; };
-efsmsub.donttest = { return true; };
-efsnmadd.donttest = { return true; };
-efsnmsub.donttest = { return true; };
-efssqrt.donttest = { return true; };
+// esr_spv.update_esr_spv = {
+// 	// CPU::ESR& esr = cpu->GetESR();
+// 	// esr.Set<CPU::ESR::SPV>(1);
+// };

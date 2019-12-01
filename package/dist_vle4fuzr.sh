@@ -18,6 +18,7 @@ import unisim/component/cxx/processor/powerpc/isa/book_e || exit
 import unisim/component/cxx/processor/powerpc/isa/book_vle || exit
 import unisim/component/cxx/processor/powerpc/isa/lsp || exit
 import unisim/component/cxx/processor/powerpc/isa/mpu || exit
+import unisim/component/cxx/processor/powerpc || exit
 # ARMv7
 import unisim/component/cxx/processor/arm/isa/thumb || exit
 import unisim/component/cxx/processor/arm/isa/thumb2 || exit
@@ -51,9 +52,10 @@ UNISIM_LIB_SIMULATOR_ISA_PPC_FILES="$(files isa isa_vle)"
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES} \
 ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES} \
-${UNISIM_LIB_SIMULATOR_ISA_PPC_FILES}
+${UNISIM_LIB_SIMULATOR_ISA_PPC_FILES} \
 $(files header) \
-$(files template)"
+$(files template)\
+"
 
 UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 
@@ -188,6 +190,7 @@ unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULA
 # Dynamic Plugin
 lib_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_BINDINGS_SOURCE_FILES}
+nodist_libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = top_vle.cc
 #libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -shared -no-undefined
 libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -no-undefined
 
@@ -202,12 +205,16 @@ BUILT_SOURCES=\
 	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc\
 	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh\
 	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc\
+	\$(top_builddir)/top_vle.hh\
+	\$(top_builddir)/top_vle.cc\
 
 CLEANFILES=\
 	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh\
 	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc\
 	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc
+	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc\
+	\$(top_builddir)/top_vle.hh\
+	\$(top_builddir)/top_vle.cc\
 
 \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh
 \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: top_arm32.isa ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES}
@@ -217,11 +224,8 @@ CLEANFILES=\
 \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: top_thumb.isa ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES}
 	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_thumb.isa
 
-\$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.isa
-
-\$(top_builddir)/top_mpc57.cc: \$(top_builddir)/top_mpc57.hh
-\$(top_builddir)/top_mpc57.hh: top_vle.isa ${UNISIM_SIMULATOR_ISA_PPC_FILES}
+\$(top_builddir)/top_vle.cc: \$(top_builddir)/top_vle.hh
+\$(top_builddir)/top_vle.hh: top_vle.isa ${UNISIM_SIMULATOR_ISA_PPC_FILES}
 	\$(GENISSLIB_PATH) \$(GILFLAGS) -o \$(top_builddir)/top_vle -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_vle.isa
 
 EOF

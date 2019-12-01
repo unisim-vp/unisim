@@ -397,7 +397,21 @@ typename TBigCellInt<IntegerTraits>::ComparisonResult
 #else
 Integer::Details::Access::ComparisonResult
 #endif
-   compare(const thisType& biSource) const;
+   compare(const thisType& biSource) const
+   {
+      ComparisonResult crResult = CREqual;
+      int uIndex = inherited::querySize();
+      if (uIndex < biSource.inherited::querySize())
+         uIndex = biSource.inherited::querySize();
+       
+      while ((--uIndex >= 0) && (crResult == CREqual)) {
+         if (array(uIndex) < biSource.array(uIndex))
+            crResult = CRLess;
+         else if (array(uIndex) > biSource.array(uIndex))
+            crResult = CRGreater;
+      };
+      return crResult;
+   }
    bool operator<(const thisType& biSource) const
       {  return compare(biSource) == CRLess; }
    bool operator>(const thisType& biSource) const
@@ -417,8 +431,25 @@ Integer::Details::Access::ComparisonResult
    thisType& operator&=(const thisType& biSource);
    thisType& neg();
    thisType& neg(int uShift);
-   bool isZero() const;
-   bool hasZero(int uShift) const;
+   bool isZero() const
+   {
+     bool fResult = true;
+     for (int uIndex = inherited::querySize(); fResult && (--uIndex >= 0); )
+       fResult = array(uIndex) == 0;
+     return fResult;
+   } 
+   bool hasZero(int uShift) const
+   {
+      bool fResult = true;
+      if (uShift > 0) {
+         for (int uIndex = uShift/(8*sizeof(unsigned int)); fResult && (--uIndex >= 0); )
+            fResult = array(uIndex) == 0;
+         if (fResult && (uShift % (8*sizeof(unsigned int)) != 0))
+            fResult = ((array(uShift/(8*sizeof(unsigned int)))
+                        << ((8*sizeof(unsigned int))-(uShift% (8*sizeof(unsigned int))))) == 0);
+      };
+      return fResult;
+   }
    
    class Carry {
      private:
@@ -566,8 +597,8 @@ Integer::Details::Access::ComparisonResult
    thisType& operator/=(unsigned int uSource)
       {  divAssign(uSource);
          return *this;
-      }
-   typename inherited::QuotientResult operator/(const thisType& biSource) const;
+      } 
+  typename inherited::QuotientResult operator/(const thisType& biSource) const;
    unsigned int operator%(unsigned int uSource) const
       {  thisType bciCopy(*this);
          return bciCopy.divAssign(uSource).remainder();
@@ -588,6 +619,25 @@ Integer::Details::Access::ComparisonResult
    void clear() { inherited::clear(); }
 };
 
+template <class IntegerTraits>
+typename TBigCellInt<IntegerTraits>::Carry
+TBigCellInt<IntegerTraits>::sub(const thisType& biSource) {
+   Carry cCarry;
+   if (inherited::querySize() < biSource.inherited::querySize())
+      inherited::adjustSize(biSource.inherited::querySize());
+   for (int uIndex = 0; uIndex < inherited::querySize(); ++uIndex) {
+      unsigned int uOldCell = array(uIndex);
+      array(uIndex) -= biSource.array(uIndex);
+      if (cCarry.hasCarry()) {
+         --array(uIndex);
+         cCarry.setCarry(array(uIndex) >= uOldCell);
+      }
+      else
+         cCarry.setCarry(array(uIndex) > uOldCell);
+   };
+   return cCarry;
+}
+  
 template <class IntegerTraits>
 inline TBigCellInt<IntegerTraits>&
 TBigCellInt<IntegerTraits>::operator/=(const thisType& biSource) {

@@ -1,3 +1,0 @@
-unisim/component/cxx/processor/arm/isa/thumb
-unisim/component/cxx/processor/arm/isa/thumb2
-unisim/component/cxx/processor/arm/isa/arm32
