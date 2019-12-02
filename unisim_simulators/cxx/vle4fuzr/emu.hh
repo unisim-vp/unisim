@@ -11,6 +11,7 @@
 #ifndef __VLE4FUZR_EMU_HH__
 #define __VLE4FUZR_EMU_HH__
 
+#include <iosfwd>
 #include <set>
 #include <vector>
 #include <cassert>
@@ -21,7 +22,9 @@ struct Processor
   Processor();
   
   virtual ~Processor();
-  
+
+  struct Abort { virtual ~Abort() {}; virtual void dump(std::ostream&); };
+
   struct Page
   {
     std::vector<uint8_t> storage;
@@ -64,12 +67,27 @@ struct Processor
     }
     uint8_t* at(uint32_t x) const { return const_cast<uint8_t*>(&storage[x]); }
     void chperms(unsigned new_perms) const { const_cast<unsigned&>(perms) = new_perms; }
-  };
+    enum Permision { Read = 1, Write = 2, Execute = 4 };
+    void access(unsigned _perms) const { if ((_perms & perms) != _perms) throw Abort(); }
 
+    void dump(std::ostream&) const;
+    friend std::ostream& operator << ( std::ostream& sink, Page const& p ) { p.dump(sink); return sink; }
+  };
+  
   typedef std::set<Page, Page::Above> Pages;
   Pages pages;
 
-  Pages::iterator mem_allocate(uint32_t lo, uint32_t addr, uint32_t hi)
+  Pages::iterator mem_page(uint32_t addr, uint32_t size)
+  {
+    auto pi = pages.lower_bound(addr);
+    if (pi == pages.end())
+      pi = mem_pagemiss(0, addr, (pages.size() ? (--pi)->base : 0)-1);
+    else if (pi->hi() <= addr)
+      pi = mem_pagemiss(pi->hi(), addr, (--pi != pages.end() ? pi->base : 0)-1);
+    return pi;
+  }
+
+  Pages::iterator mem_pagemiss(uint32_t lo, uint32_t addr, uint32_t hi)
   {
     uint32_t const page_size = 4096;
     uint32_t page_lo = std::max(addr & (0u-page_size), lo);
@@ -78,6 +96,8 @@ struct Processor
     assert( pi != pages.end() );
     return pi;
   }
+
+  void mem_overlap_error( Page const& a, Page const& b );
   
   Pages::iterator mem_map(uint32_t addr, uint32_t size, unsigned perms)
   {
@@ -85,16 +105,15 @@ struct Processor
     auto below = pages.lower_bound(page);
     if (below != pages.end() and not (*below < page))
       {
+        mem_overlap_error(page, *below);
         return pages.end();
       }
-    if (pages.size())
+    if (pages.size() and below != pages.begin() and not (page < *std::prev(below)))
       {
-        auto above = std::prev(below);
-        if (above != pages.end() and not (page < *above))
-          {
-            return pages.end();
-          }
+        mem_overlap_error(page, *std::prev(below));
+        return pages.end();
       }
+    
     return pages.insert(below,std::move(page));
   }
 
@@ -142,6 +161,34 @@ struct Processor
     return 0;
   }
 
+  bool PhysicalWriteMemory( uint32_t addr, uint8_t const* buffer, uint32_t size )
+  {
+    auto pi = mem_page(addr, size);
+    if (pi == pages.end()) return false;
+    pi->access(pi->Write);
+    uint32_t pos = addr - pi->base;
+    std::copy(&buffer[0], &buffer[size], pi->at(pos));
+    return true;
+  }
+
+  bool PhysicalReadMemory( uint32_t addr, uint8_t* buffer, uint32_t size )
+  {
+    auto pi = mem_page(addr, size);
+    if (pi == pages.end()) return false;
+    pi->access(pi->Read);
+    uint32_t pos = addr - pi->base;
+    std::copy(pi->at(pos), pi->at(pos+size), buffer);
+    return true;
+  }
+  bool PhysicalFetchMemory( uint32_t addr, uint8_t* buffer, uint32_t size )
+  {
+    auto pi = mem_page(addr, size);
+    if (pi == pages.end()) return false;
+    pi->access(pi->Execute);
+    uint32_t pos = addr - pi->base;
+    std::copy(pi->at(pos), pi->at(pos+size), buffer);
+    return true;
+  }
   struct RegView
   {
     virtual ~RegView() {}
@@ -149,21 +196,21 @@ struct Processor
     virtual void read( Processor& proc, int id, uint8_t* bytes ) const = 0;
   };
 
-  virtual RegView const* get_reg(int regid) = 0;
+  virtual RegView const* get_reg(char const* id, uintptr_t size) = 0;
   
   int
-  reg_write(int regid, uint8_t const* bytes)
+  reg_write(char const* id, uintptr_t size, int regid, uint8_t const* bytes)
   {
-    RegView const* rv = get_reg(regid);
+    RegView const* rv = get_reg(id, size);
     if (not rv) return -1;
     rv->write(*this, regid, bytes);
     return 0;
   }
   
   int
-  reg_read(int regid, uint8_t* bytes)
+  reg_read(char const* id, uintptr_t size, int regid, uint8_t* bytes)
   {
-    RegView const* rv = get_reg(regid);
+    RegView const* rv = get_reg(id, size);
     if (not rv) return -1;
     rv->read(*this, regid, bytes);
     return 0;
@@ -233,11 +280,41 @@ struct Processor
   };
 
   bool add( Hook* hook );
+  void insn_hooks(uint64_t addr, uint64_t len);
   
   std::vector<Hook*> hooks[Hook::TYPE_COUNT];
 
+  bool disasm;
+  bool bblock;
+  
+  void set_disasm(bool _disasm) { disasm = _disasm; }
   virtual int emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count ) = 0;
 };
+
+struct Branch
+{
+  Branch() : address(), target(BNone), pass(false) {}
+  enum { BNone = 0, Direct, Indirect };
+  uint32_t address;
+  unsigned target : 2;
+  unsigned pass : 1;
+};
+
+template <class ARCH> struct InsnBranch : public Branch {};
+
+template <class OP, uint32_t SZ>
+struct OpPage
+{
+  enum { size = SZ };
+  OP* ops[SZ];
+  OpPage() : ops() {}
+};
+
+template <unsigned N>
+bool regname( char const (&ref)[N], char const* id, uintptr_t size )
+{
+  return size == (N-1) and std::equal( &ref[0], &ref[N-1], id );
+}
 
 #endif /* __VLE4FUZR_EMU_HH__ */
 

@@ -295,26 +295,28 @@ Generator::toposort()
   for (Isa::Orderings::iterator itr = source.m_user_orderings.begin(), end = source.m_user_orderings.end(); itr != end; ++itr) {
     // Unrolling specialization relations
     typedef Vector<Operation> OpV;
-    OpV ops_above;
-    if (not source.operations( itr->top_op, ops_above ))
+    
+    struct : Isa::OOG { void with( Operation& operation ) { ops.append( &operation ); } OpV ops; } above, below;
+    
+    if (not source.for_ops( itr->top_op, above ))
       {
         itr->fileloc.loc( std::cerr ) << "error: no such operation or group `" << itr->top_op.str() << "'" << std::endl;
         throw GenerationError;
       }
-    OpV ops_below;
+    
     for (std::vector<ConstStr>::const_iterator symitr = itr->under_ops.begin(), symend = itr->under_ops.end(); symitr != symend; ++symitr)
       {
-      if (not source.operations( *symitr, ops_below ))
-        {
-          itr->fileloc.loc( std::cerr ) << "error: no such operation or group `" << symitr->str() << "'" << std::endl;
-          throw GenerationError;
-        }
-    }
+        if (not source.for_ops( *symitr, below ))
+          {
+            itr->fileloc.loc( std::cerr ) << "error: no such operation or group `" << symitr->str() << "'" << std::endl;
+            throw GenerationError;
+          }
+      }
     
     // Check each user specialization and insert when valid
-    for (OpV::iterator aoitr = ops_above.begin(), aoend = ops_above.end(); aoitr != aoend; ++aoitr) {
+    for (OpV::iterator aoitr = above.ops.begin(), aoend = above.ops.end(); aoitr != aoend; ++aoitr) {
       OpCode& opcode1( opcode( *aoitr ) );
-      for (OpV::iterator boitr = ops_below.begin(), boend = ops_below.end(); boitr != boend; ++boitr) {
+      for (OpV::iterator boitr = below.ops.begin(), boend = below.ops.end(); boitr != boend; ++boitr) {
         OpCode& opcode2( opcode( *boitr ) );
         switch (opcode1.locate( opcode2 )) {
         default: break;
@@ -594,7 +596,7 @@ Generator::decoder_decl( Product& _product ) const {
   _product.template_signature( source.m_tparams );
   _product.code( "class Operation;\n" );
   
-  if (not source.m_is_subdecoder) {
+  if (source.m_withcache) {
     _product.code( "const unsigned int NUM_OPERATIONS_PER_PAGE = 4096;\n" );
     _product.template_signature( source.m_tparams );
     _product.code( "class DecodeMapPage\n" );
@@ -641,7 +643,7 @@ Generator::decoder_decl( Product& _product ) const {
   _product.code( " Operation" );
   _product.template_abbrev( source.m_tparams );
   _product.code( " *NCDecode(%s addr, %s code);\n", source.m_addrtype.str(), codetype_constref().str() );
-  if (not source.m_is_subdecoder) {
+  if (source.m_withcache) {
     _product.code( " Operation" );
     _product.template_abbrev( source.m_tparams );
     _product.code( " *Decode(%s addr, %s insn);\n", source.m_addrtype.str(), codetype_constref().str() );
@@ -657,7 +659,7 @@ Generator::decoder_decl( Product& _product ) const {
   _product.code( " std::vector<DecodeTableEntry" );
   _product.template_abbrev( source.m_tparams );
   _product.code( " > decode_table;\n" );
-  if (not source.m_is_subdecoder) {
+  if (source.m_withcache) {
     _product.code( " DecodeMapPage" );
     _product.template_abbrev( source.m_tparams );
     _product.code( " *mru_page;\n" );
@@ -1101,7 +1103,7 @@ Generator::isa_operations_encoders( Product& _product ) const {
 
 void
 Generator::decoder_impl( Product& _product ) const {
-  if (not source.m_is_subdecoder) {
+  if (source.m_withcache) {
     _product.template_signature( source.m_tparams );
     _product.code( "DecodeMapPage" );
     _product.template_abbrev( source.m_tparams );
@@ -1140,13 +1142,13 @@ Generator::decoder_impl( Product& _product ) const {
   _product.template_abbrev( source.m_tparams );
   _product.code( "::Decoder()\n" );
   char const* member_init_separator = ": ";
-  if (not source.m_is_subdecoder)
+  if (source.m_withcache)
     {
       _product.code( "%smru_page( 0 )", member_init_separator );
       member_init_separator = ", ";
     }
   _product.code( "\n{\n" );
-  if (not source.m_is_subdecoder)
+  if (source.m_withcache)
     _product.code( " memset(decode_hash_table, 0, sizeof(decode_hash_table));\n" );
   
   for( Vector<Operation>::const_reverse_iterator op = source.m_operations.rbegin(); op < source.m_operations.rend(); ++ op ) {
@@ -1170,7 +1172,7 @@ Generator::decoder_impl( Product& _product ) const {
   _product.template_abbrev( source.m_tparams );
   _product.code( "::~Decoder()\n" );
   _product.code( "{\n" );
-  if (not source.m_is_subdecoder) {
+  if (source.m_withcache) {
     _product.code( " InvalidateDecodingCache();\n" );
   }
   _product.code( "}\n\n" );
@@ -1238,7 +1240,7 @@ Generator::decoder_impl( Product& _product ) const {
   _product.code( " return operation;\n" );
   _product.code( "}\n\n" );
   
-  if (not source.m_is_subdecoder) {
+  if (source.m_withcache) {
     /*** InvalidateDecodingCache() ***/
     _product.template_signature( source.m_tparams );
     _product.code( "void Decoder" );

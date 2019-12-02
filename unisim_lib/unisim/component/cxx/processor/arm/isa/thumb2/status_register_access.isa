@@ -171,8 +171,7 @@ msr_reg_psr.execute = {
   } else {
     CPSRWriteByInstr( cpu, cpu.GetGPR(rn), psr_mask );
     // Cannot return to Hyp mode and ThumbEE state
-    if (unlikely( (cpu.CPSR().Get(M) == U32(cpu.HYPERVISOR_MODE)) and
-                  (cpu.CPSR().Get(J) == U32(1)) and (cpu.CPSR().Get(T) == U32(1)) ))
+    if (unlikely(cpu.Concretize((cpu.CPSR().Get(M) == U32(cpu.HYPERVISOR_MODE)) and (cpu.CPSR().Get(J) == U32(1)) and (cpu.CPSR().Get(T) == U32(1)))))
       cpu.UnpredictableInsnBehaviour();
   }
 };

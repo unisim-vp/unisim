@@ -20,7 +20,6 @@
 #include <strtools.hh>
 #include <subdecoder.hh>
 #include <scanner.hh>
-#include <parser_defs.hh>
 #include <cassert>
 
 /** Create an opcode bitfield object
@@ -129,8 +128,7 @@ SeparatorBitField::SeparatorBitField( SeparatorBitField const& _src )
 void
 SeparatorBitField::fills( std::ostream& sink ) const
 {
-  if (rewind)  sink << "> " << Scanner::tokenname( TOK_REWIND ) << " <";
-  else         sink << "> <";
+  sink << (rewind ? "> rewind <" : "> <" );
 }
 
 /** Dump an bitfield object into a stream

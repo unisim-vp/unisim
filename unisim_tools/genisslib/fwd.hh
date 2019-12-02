@@ -29,6 +29,7 @@ struct Variable;
 struct Inheritance;
 struct BitField;
 struct Isa;
+struct Opts;
 struct Product;
 struct FProduct;
 struct ConstStr;

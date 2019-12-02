@@ -273,17 +273,17 @@ CiscGenerator::codetype_decl( Product& _product ) const {
   char const* dsh = little_endian ? ">>" : "<<";
   char const* ash = little_endian ? "<<" : ">>";
   _product.code( "struct CodeType {\n" );
-  _product.code( " static const unsigned int capacity = %d;\n", m_code_capacity );
+  _product.code( " enum { capacity = %d };\n", m_code_capacity );
   _product.code( " unsigned int              size;\n" );
   _product.code( " uint8_t                   str[capacity];\n" );
   _product.code( " enum Exception_t { NotEnoughBytes };\n" );
   _product.code( " CodeType() : size( 0 ) { for (int idx = capacity; (--idx) >= 0;) str[idx] = 0; };\n" );
   _product.code( " CodeType( unsigned int sz )\n" );
-  _product.code( " : size( std::min( sz, capacity*8 ) )\n{\n" );
+  _product.code( " : size( std::min( sz, capacity*8u ) )\n{\n" );
   _product.code( "   for (int idx = capacity; (--idx) >= 0;) str[idx] = 0;\n" );
   _product.code( " }\n" );
   _product.code( " CodeType( uint8_t const* src, unsigned int sz )\n" );
-  _product.code( " : size( std::min( sz, capacity*8 ) )\n{\n" );
+  _product.code( " : size( std::min( sz, capacity*8u ) )\n{\n" );
   _product.code( "   for (int idx = capacity; (--idx) >= 0;) str[idx] = 0;\n" );
   _product.code( "   for (int idx = (size+7)/8; (--idx) >= 0;) str[idx] = src[idx];\n" );
   _product.code( " }\n" );
@@ -337,17 +337,17 @@ CiscGenerator::codetype_decl( Product& _product ) const {
   _product.code( "  CodeType tail( src, sz );\n" );
   _product.code( "  unsigned int mod = this->size %% 8; \n" );
   _product.code( "  if (mod) {\n" );
-  _product.code( "   tail.size = std::min( tail.size + mod, capacity*8 );\n" );
+  _product.code( "   tail.size = std::min( tail.size + mod, capacity*8u );\n" );
   _product.code( "   tail.stretch_front( mod );\n" );
   _product.code( "   tail.str[0] = (tail.str[0] & (0xff %s mod)) | "
                  "(this->str[this->size/8] & (0xff %s (8-mod)));\n", ash, dsh );
   _product.code( "   this->size -= mod;\n" );
   _product.code( "  }\n" );
   _product.code( "  for (unsigned int src = 0, dst = this->size/8; "
-                 "(src < this->capacity) and (dst < this->capacity); src+=1, dst+=1) {\n" );
+                 "(src < capacity*1u) and (dst < capacity*1u); src+=1, dst+=1) {\n" );
   _product.code( "   this->str[dst] = tail.str[src];\n" );
   _product.code( "  }\n" );
-  _product.code( "  this->size = std::min( this->size + tail.size, capacity*8 );\n" );
+  _product.code( "  this->size = std::min( this->size + tail.size, capacity*8u );\n" );
   _product.code( "  return *this;\n" );
   _product.code( " }\n" );
   _product.code( " friend std::ostream& operator << ( std::ostream& _sink, CodeType const& _ct );\n" );
@@ -355,8 +355,10 @@ CiscGenerator::codetype_decl( Product& _product ) const {
 }
 
 void
-CiscGenerator::codetype_impl( Product& _product ) const {
-  _product.code( "unsigned int const CodeType::capacity;\n" );
+CiscGenerator::codetype_impl( Product& _product ) const
+{
+  if (not source.m_tparams.empty())
+    _product.code( "inline\n" );
   _product.code( "std::ostream& operator << ( std::ostream& _sink, CodeType const& _ct ) {\n" );
   _product.code( " if (_ct.size % 8) {\n" );
   if (source.m_little_endian) {

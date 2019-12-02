@@ -9,13 +9,14 @@
  */
 
 #include "emu.hh"
+#include <iostream>
 #include <set>
 #include <vector>
 #include <cassert>
 #include <cstdint>
 
 Processor::Processor()
-  : pages(), hooks()
+  : pages(), hooks(), disasm(true), bblock(true)
 {}
 
 Processor::~Processor()
@@ -64,4 +65,43 @@ Processor::add( Processor::Hook* hook )
         }
     }
   return true;
+}
+
+void
+Processor::insn_hooks(uint64_t addr, uint64_t insn_length)
+{
+  if (this->bblock)
+    {
+      for (auto h : hooks[Hook::BLOCK])
+        {
+          if (h->bound_check(addr))
+            h->cb<Hook::cb_code>()(this, addr, 0);
+        }
+    }
+  for (auto h : this->hooks[Hook::CODE])
+    {
+      if (h->bound_check(addr))
+        h->cb<Hook::cb_code>()(this, addr, insn_length);
+    }
+}
+
+void Processor::Abort::dump(std::ostream& sink)
+{
+  sink << "Abort";
+}
+
+void
+Processor::mem_overlap_error( Page const& a, Page const& b )
+{
+  std::cerr << "error: inserted " << a << " overlaps " << b << "\n";
+}
+
+void
+Processor::Page::dump(std::ostream& sink) const
+{
+  std::cerr << "Page[0x" << std::hex << base << " .. 0x" << (hi()-1) << "]("
+            << ("r "[not (perms & Read)])
+            << ("w "[not (perms & Write)])
+            << ("x "[not (perms & Execute)])
+            << ")";
 }

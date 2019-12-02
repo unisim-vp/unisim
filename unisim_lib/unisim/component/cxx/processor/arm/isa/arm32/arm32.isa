@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2016,
+ *  Copyright (c) 2007-2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 /**********************************************
@@ -39,7 +39,7 @@
 **********************************************/
 
 namespace unisim::component::cxx::processor::arm::isa::arm32
-set endianness big
+set endianness little;
 set addressclass {uint32_t}
 template <{typename} {ARCH}>
 
@@ -67,7 +67,6 @@ impl {
 #include <iomanip>
 
 #include <unisim/util/likely/likely.hh>
-#define evenly(x) (x)
   
 using unisim::util::arithmetic::BitScanReverse;
 using unisim::util::endian::ByteSwap;
