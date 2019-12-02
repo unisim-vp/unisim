@@ -16,6 +16,7 @@
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 #include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
 #include <unisim/component/cxx/processor/powerpc/disasm.hh>
+#include <unisim/component/cxx/processor/powerpc/cpu.hh>
 //#include <unisim/util/symbolic/symbolic.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <map>
@@ -40,45 +41,43 @@ namespace concrete {
   typedef uint32_t  UINT;
   typedef int32_t   SINT;
   typedef uint32_t  ADDRESS;
-  
+
   struct XER
   {
-    struct OV {};
-    struct SO {};
-    struct CA {};
-    struct _0_3 {};
-    
-    template <typename PART> void Set( U32 value ) {}
-    template <typename PART> U32 Get() { return xer_value; }
-    operator U32 () { return xer_value; }
-    XER& operator= ( U32 value ) { xer_value = value; return *this; }
+    typedef unisim::component::cxx::processor::powerpc::XER::OV   OV;
+    typedef unisim::component::cxx::processor::powerpc::XER::SO   SO;
+    typedef unisim::component::cxx::processor::powerpc::XER::CA   CA;
+    typedef unisim::component::cxx::processor::powerpc::XER::_0_3 _0_3;
+
+    struct TODO {};
+    template <typename PART> void Set( U32 value ) { throw TODO(); }
+    template <typename PART> U32 Get() { throw TODO(); return U32(); }
+    operator U32 () { throw TODO(); return U32(); }
+    XER& operator= ( U32 value ) { throw TODO(); return *this; }
     XER& GetXER() { return *this; }
     
-    XER() : xer_value() {}
-    
-    U32 xer_value;
+    XER() {}
   };
 
   struct CR
   {
-    struct CR0 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
-    struct CR1 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
-    struct CR2 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
-    struct CR3 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
-    struct CR4 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
-    struct CR5 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
-    struct CR6 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
-    struct CR7 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
-    
-    template <typename PART> void Set( uint32_t value ) {}
-    template <typename PART> U32 Get() { return cr_value; }
-    operator U32 () { return cr_value; }
-    CR& operator= ( U32 const& value ) { cr_value = value; return *this; }
+    typedef unisim::component::cxx::processor::powerpc::CR::CR0 CR0;
+    typedef unisim::component::cxx::processor::powerpc::CR::CR1 CR1;
+    typedef unisim::component::cxx::processor::powerpc::CR::CR2 CR2;
+    typedef unisim::component::cxx::processor::powerpc::CR::CR3 CR3;
+    typedef unisim::component::cxx::processor::powerpc::CR::CR4 CR4;
+    typedef unisim::component::cxx::processor::powerpc::CR::CR5 CR5;
+    typedef unisim::component::cxx::processor::powerpc::CR::CR6 CR6;
+    typedef unisim::component::cxx::processor::powerpc::CR::CR7 CR7;
+
+    struct TODO {};
+    template <typename PART> void Set( uint32_t value ) { throw TODO(); }
+    template <typename PART> U32 Get() { throw TODO(); return U32(); }
+    operator U32 () { throw TODO(); return U32(); }
+    CR& operator= ( U32 const& value ) { throw TODO(); return *this; }
     CR& GetCR() { return *this; }
     
-    CR() : cr_value() {}
-
-    U32 cr_value;
+    CR() {}
   };
   
   struct LR
@@ -105,11 +104,17 @@ namespace concrete {
   {
     struct PR {};
     struct EE {};
-    template <typename PART> void Set( unsigned ) {}
+    
+    template <typename PART> void Set( U32 value ) { SetDispatch( PART(), value ); }
     template <typename PART> U32 Get() { return U32(0); }
     operator U32 () { return U32(0); }
     MSR& operator= (U32 const& v) { return *this; }
     MSR& GetMSR() { return *this; }
+
+    struct TODO {};
+    
+    void SetDispatch( EE const&, U32 value ) { throw TODO(); }
+    void SetDispatch( PR const&, U32 value ) { throw TODO(); }
   };
 
   struct Processor
@@ -122,6 +127,10 @@ namespace concrete {
   
     Processor();
 
+    static Processor& Self( EmuProcessor& proc ) { return dynamic_cast<Processor&>( proc ); }
+  
+    EmuProcessor::RegView const* get_reg(char const* id, uintptr_t size) override;
+    
     enum { OPPAGESIZE = 4096 };
     typedef vle::concrete::Operation Operation;
     typedef OpPage<Operation,OPPAGESIZE> InsnPage;
@@ -169,27 +178,20 @@ namespace concrete {
     bool Cond(bool c) { return c; }
     
     U32          reg_values[32];
-    U32          cia;
-    U32 GetCIA() { return cia; };
-    //   bool EqualCIA(uint32_t pc) { return false; };
+    U32          cia, nia;
     U32 GetGPR(unsigned n) { return reg_values[n]; };
     void SetGPR(unsigned n, U32 value) { reg_values[n] = value; }
-    
-    //   static void LoadRepr( std::ostream& sink, Expr const& _addr, unsigned bits );
-    
-    //   template <unsigned BITS>
-    //   struct Load : public ExprNode
-    //   {
-    //     Load( Expr const& _addr ) : addr(_addr) {}
-    //     virtual Load* Mutate() const { return new Load(*this); }
-    //     virtual ScalarType::id_t GetType() const { return ScalarType::IntegerType(false,BITS); }
-    //     virtual void Repr( std::ostream& sink ) const { LoadRepr( sink, addr, BITS ); }
-    //     virtual unsigned SubCount() const { return 2; };
-    //     virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; } return ExprNode::GetSub(idx); };
-    //     virtual int cmp( unisim::util::symbolic::ExprNode const& brhs ) const override { return 0; }
-    //     Expr addr;
-    //   };
+    //   bool EqualCIA(uint32_t pc) { return false; };
+    U32 GetCIA() { return cia; };
+    bool Branch(U32 addr) { nia = addr; return false; }
 
+    U32 Fetch(U32 address)
+    {
+      uint32_t insn;
+      PhysicalFetchMemory( address, (uint8_t*)&insn, 4 );
+      return Target2Host(unisim::util::endian::E_BIG_ENDIAN, insn);
+    }
+    
     U32 MemRead(U32 address, unsigned size, bool sext, bool bigendian)
     {
       unsigned mask = size - 1, endian_mask = mask*(not bigendian);
@@ -235,8 +237,6 @@ namespace concrete {
     //   void donttest_illegal();
     
     //   char const* GetObjectFriendlyName(U32) { return "???"; }
-    
-    bool Branch(U32 const& addr) { throw TODO(); return false; }
     
     bool Rfmci() { throw TODO(); return false; }
     bool Rfci() { throw TODO(); return false; }
@@ -358,7 +358,8 @@ namespace concrete {
 
     //     return true;
     //   }
-	
+
+    virtual int emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count ) override;
   };
   
   using unisim::util::arithmetic::BitScanReverse;

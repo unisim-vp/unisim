@@ -56,7 +56,7 @@ struct ArmProcessor
 
   static ArmProcessor& Self( Processor& proc ) { return dynamic_cast<ArmProcessor&>( proc ); }
 
-  Processor::RegView const* get_reg(int regid) override;
+  Processor::RegView const* get_reg(char const* id, uintptr_t size) override;
 
   enum { OPPAGESIZE = 4096 };
   typedef unisim::component::cxx::processor::arm::isa::arm32::Operation<ArmProcessor> AOperation;
@@ -96,8 +96,6 @@ struct ArmProcessor
   int emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count ) override;
 
   template <class Decoder> void Step(Decoder&);
-
-  bool bblock;
 
   void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<ArmProcessor>* insn );
   void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb::Operation<ArmProcessor>* insn );

@@ -16,7 +16,7 @@
 #include <cstdint>
 
 Processor::Processor()
-  : pages(), hooks(), disasm(true)
+  : pages(), hooks(), disasm(true), bblock(true)
 {}
 
 Processor::~Processor()
@@ -65,6 +65,24 @@ Processor::add( Processor::Hook* hook )
         }
     }
   return true;
+}
+
+void
+Processor::insn_hooks(uint64_t addr, uint64_t insn_length)
+{
+  if (this->bblock)
+    {
+      for (auto h : hooks[Hook::BLOCK])
+        {
+          if (h->bound_check(addr))
+            h->cb<Hook::cb_code>()(this, addr, 0);
+        }
+    }
+  for (auto h : this->hooks[Hook::CODE])
+    {
+      if (h->bound_check(addr))
+        h->cb<Hook::cb_code>()(this, addr, insn_length);
+    }
 }
 
 void Processor::Abort::dump(std::ostream& sink)

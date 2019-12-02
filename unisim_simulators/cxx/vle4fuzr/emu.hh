@@ -196,21 +196,21 @@ struct Processor
     virtual void read( Processor& proc, int id, uint8_t* bytes ) const = 0;
   };
 
-  virtual RegView const* get_reg(int regid) = 0;
+  virtual RegView const* get_reg(char const* id, uintptr_t size) = 0;
   
   int
-  reg_write(int regid, uint8_t const* bytes)
+  reg_write(char const* id, uintptr_t size, int regid, uint8_t const* bytes)
   {
-    RegView const* rv = get_reg(regid);
+    RegView const* rv = get_reg(id, size);
     if (not rv) return -1;
     rv->write(*this, regid, bytes);
     return 0;
   }
   
   int
-  reg_read(int regid, uint8_t* bytes)
+  reg_read(char const* id, uintptr_t size, int regid, uint8_t* bytes)
   {
-    RegView const* rv = get_reg(regid);
+    RegView const* rv = get_reg(id, size);
     if (not rv) return -1;
     rv->read(*this, regid, bytes);
     return 0;
@@ -280,12 +280,14 @@ struct Processor
   };
 
   bool add( Hook* hook );
+  void insn_hooks(uint64_t addr, uint64_t len);
   
   std::vector<Hook*> hooks[Hook::TYPE_COUNT];
 
   bool disasm;
-  void set_disasm(bool _disasm) { disasm = _disasm; }
+  bool bblock;
   
+  void set_disasm(bool _disasm) { disasm = _disasm; }
   virtual int emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count ) = 0;
 };
 
@@ -307,6 +309,12 @@ struct OpPage
   OP* ops[SZ];
   OpPage() : ops() {}
 };
+
+template <unsigned N>
+bool regname( char const (&ref)[N], char const* id, uintptr_t size )
+{
+  return size == (N-1) and std::equal( &ref[0], &ref[N-1], id );
+}
 
 #endif /* __VLE4FUZR_EMU_HH__ */
 

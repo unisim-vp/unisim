@@ -10,6 +10,7 @@
 
 #include "emu.hh"
 #include "arm.hh"
+#include "vle.hh"
 #include <unisim/kernel/kernel.hh>
 #include <iostream>
 #include <string>
@@ -29,13 +30,19 @@ static unisim::kernel::Simulator simulator(1, (char**)emptyargv);
 
 extern "C"
 {
-  int emu_open(unsigned is_thumb, void** ucengine)
+  int emu_open_arm(unsigned is_thumb, void** ucengine)
   {
     static int instance = 0;
     std::ostringstream name;
-    name << "cpu_" << instance++;
+    name << "cpu_arm" << instance++;
     
     *ucengine = new ArmProcessor( name.str().c_str(), is_thumb );
+    return 0;
+  }
+
+  int emu_open_vle(unsigned is_thumb, void** ucengine)
+  {
+    *ucengine = new vle::concrete::Processor();
     return 0;
   }
 
@@ -76,16 +83,16 @@ extern "C"
     return proc.mem_prot(addr, new_perms);
   }
   
-  int emu_reg_write(void* uc, int regid, void const* bytes)
+  int emu_reg_write(void* uc, char const* id, uintptr_t size, int regid, void const* bytes)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.reg_write(regid, (uint8_t const*)bytes);
+    return proc.reg_write(id, size, regid, (uint8_t const*)bytes);
   }
 
-  int emu_reg_read(void* uc, int regid, void* bytes)
+  int emu_reg_read(void* uc, char const* id, uintptr_t size, int regid, void* bytes)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.reg_read(regid, (uint8_t*)bytes);
+    return proc.reg_read(id, size, regid, (uint8_t*)bytes);
   }
 
   int emu_hook_add(void* uc, uintptr_t* hh, int types, void* callback, uint64_t begin, uint64_t end)
