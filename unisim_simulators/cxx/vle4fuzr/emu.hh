@@ -27,14 +27,16 @@ struct Processor
 
   struct Page
   {
+  private:
     std::vector<uint8_t> storage;
+  public:
     uint32_t base;
     unsigned perms;
 
-    uint32_t hi() const { return base + storage.size(); }
+    uint32_t hi() const { return base + storage.size()-1; }
 
-    bool operator < (Page const& p) const { return hi() <= p.base; }
-    bool operator > (Page const& p) const { return p.hi() <= base; }
+    bool operator < (Page const& p) const { return hi() < p.base; }
+    bool operator > (Page const& p) const { return p.hi() < base; }
 
     struct Above
     {
@@ -82,8 +84,8 @@ struct Processor
     auto pi = pages.lower_bound(addr);
     if (pi == pages.end())
       pi = mem_pagemiss(0, addr, (pages.size() ? (--pi)->base : 0)-1);
-    else if (pi->hi() <= addr)
-      pi = mem_pagemiss(pi->hi(), addr, (--pi != pages.end() ? pi->base : 0)-1);
+    else if (pi->hi() < addr)
+      pi = mem_pagemiss(pi->hi()+1, addr, (pi != pages.begin() ? (--pi)->base : 0)-1);
     return pi;
   }
 
@@ -121,7 +123,7 @@ struct Processor
   mem_prot(uint32_t addr, unsigned perms)
   {
     auto page = pages.lower_bound(addr);
-    if (page == pages.end() or page->hi() <= addr)
+    if (page == pages.end() or page->hi() < addr)
       return -1;
     page->chperms( perms );
     return 0;
@@ -192,27 +194,27 @@ struct Processor
   struct RegView
   {
     virtual ~RegView() {}
-    virtual void write( Processor& proc, int id, uint8_t const* bytes ) const = 0;
-    virtual void read( Processor& proc, int id, uint8_t* bytes ) const = 0;
+    virtual void write( Processor& proc, int id, uint64_t bytes ) const = 0;
+    virtual void read( Processor& proc, int id, uint64_t* bytes ) const = 0;
   };
 
   virtual RegView const* get_reg(char const* id, uintptr_t size) = 0;
   
   int
-  reg_write(char const* id, uintptr_t size, int regid, uint8_t const* bytes)
+  reg_write(char const* id, uintptr_t size, int regid, uint64_t value)
   {
     RegView const* rv = get_reg(id, size);
     if (not rv) return -1;
-    rv->write(*this, regid, bytes);
+    rv->write(*this, regid, value);
     return 0;
   }
   
   int
-  reg_read(char const* id, uintptr_t size, int regid, uint8_t* bytes)
+  reg_read(char const* id, uintptr_t size, int regid, uint64_t* value)
   {
     RegView const* rv = get_reg(id, size);
     if (not rv) return -1;
-    rv->read(*this, regid, bytes);
+    rv->read(*this, regid, value);
     return 0;
   }
   

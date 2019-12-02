@@ -36,11 +36,23 @@ namespace concrete {
       {
         static struct : public RegView
         {
-          void write( EmuProcessor& proc, int id, uint8_t const* bytes ) const { Self(proc).SetGPR(id, unisim::util::endian::ByteSwap(*(uint32_t*)bytes)); }
-          void read( EmuProcessor& proc, int id, uint8_t* bytes ) const { *(uint32_t*)bytes = Self(proc).GetGPR(id); }
+          void write( EmuProcessor& proc, int id, uint64_t value ) const { Self(proc).SetGPR(id, value); }
+          void read( EmuProcessor& proc, int id, uint64_t* value ) const { *value = Self(proc).GetGPR(id); }
         } _;
         return &_;
       }
+
+    if (regname("lr",id,size))
+      {
+        static struct : public RegView
+        {
+          void write( EmuProcessor& proc, int id, uint64_t value ) const { Self(proc).GetLR() = value; }
+          void read( EmuProcessor& proc, int id, uint64_t* value ) const { *value = Self(proc).GetLR(); }
+        } _;
+        return &_;
+      } 
+
+
 
     std::cerr << "Register '" << std::string(id,size) << "' not found.\n";
     return 0;
@@ -81,7 +93,7 @@ namespace concrete {
           {
             delete op;
             static Decoder decoder;
-            decoder.NCDecode(insn_addr, insn);
+            op = page.ops[insn_offset] = decoder.NCDecode(insn_addr, insn);
           }
         
         // Monitor

@@ -33,8 +33,10 @@ ArmProcessor::get_reg(char const* id, uintptr_t size)
       static struct : public RegView
       {
         static uint32_t apsr_mask() { return 0xf80f0000; }
-        virtual void write( Processor& proc, int id, uint8_t const* bytes ) const { Self(proc).SetCPSR(*(uint32_t*)bytes, apsr_mask()); }
-        virtual void read( Processor& proc, int id, uint8_t* bytes ) const { *(uint32_t*)bytes = Self(proc).GetCPSR() & apsr_mask(); }
+        virtual void write( Processor& proc, int id, uint64_t value ) const
+        { Self(proc).SetCPSR(uint32_t(value), apsr_mask()); }
+        virtual void read( Processor& proc, int id, uint64_t* value ) const
+        { *value = Self(proc).GetCPSR() & apsr_mask(); }
       } _;
       return &_;
     }
@@ -43,8 +45,8 @@ ArmProcessor::get_reg(char const* id, uintptr_t size)
     {
       static struct : public RegView
       {
-        void write( Processor& proc, int id, uint8_t const* bytes ) const { Self(proc).SetGPR(id, *(uint32_t*)bytes); }
-        void read( Processor& proc, int id, uint8_t* bytes ) const { *(uint32_t*)bytes = Self(proc).GetGPR(id); }
+        void write( Processor& proc, int id, uint64_t value ) const { Self(proc).SetGPR(id, value); }
+        void read( Processor& proc, int id, uint64_t* value ) const { *value = Self(proc).GetGPR(id); }
       } _;
       return &_;
     }

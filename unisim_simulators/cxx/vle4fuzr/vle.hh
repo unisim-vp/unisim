@@ -50,13 +50,14 @@ namespace concrete {
     typedef unisim::component::cxx::processor::powerpc::XER::_0_3 _0_3;
 
     struct TODO {};
-    template <typename PART> void Set( U32 value ) { throw TODO(); }
-    template <typename PART> U32 Get() { throw TODO(); return U32(); }
+    template <typename PART> void Set( U32 value ) { PART::Set(xer_value, value); }
+    template <typename PART> U32 Get() { return PART::Get(xer_value); }
     operator U32 () { throw TODO(); return U32(); }
     XER& operator= ( U32 value ) { throw TODO(); return *this; }
     XER& GetXER() { return *this; }
     
-    XER() {}
+    XER() : xer_value() {}
+    U32 xer_value;
   };
 
   struct CR
@@ -71,23 +72,27 @@ namespace concrete {
     typedef unisim::component::cxx::processor::powerpc::CR::CR7 CR7;
 
     struct TODO {};
-    template <typename PART> void Set( uint32_t value ) { throw TODO(); }
-    template <typename PART> U32 Get() { throw TODO(); return U32(); }
-    operator U32 () { throw TODO(); return U32(); }
+    template <typename PART> void Set( U32 value ) { PART::Set(cr_value,value); }
+    template <typename PART> U32 Get() { return PART::Get(cr_value); }
+    operator U32 () { return cr_value; }
     CR& operator= ( U32 const& value ) { throw TODO(); return *this; }
     CR& GetCR() { return *this; }
     
-    CR() {}
+    CR() : cr_value() {}
+    U32 cr_value;
   };
   
   struct LR
   {
-    template <typename PART> void Set( unsigned ) {}
-    template <typename PART> U32 Get() { return U32(); }
-    operator U32 () { return U32(); }
-    LR& operator= (U32 const& v) { return *this; }
+    struct TODO {};
+    template <typename PART> void Set( unsigned ) { throw TODO(); }
+    template <typename PART> U32 Get() { throw TODO(); return U32(); }
+    operator U32 () { return lr_value; }
+    LR& operator= (U32 const& v) { lr_value = v; return *this; }
     LR& GetLR() { return *this; }
     void SetLR(U32 const& v) {}
+    LR() : lr_value() {}
+    U32 lr_value;
   };
   
   struct CTR

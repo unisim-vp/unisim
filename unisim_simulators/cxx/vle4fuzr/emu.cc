@@ -99,7 +99,7 @@ Processor::mem_overlap_error( Page const& a, Page const& b )
 void
 Processor::Page::dump(std::ostream& sink) const
 {
-  std::cerr << "Page[0x" << std::hex << base << " .. 0x" << (hi()-1) << "]("
+  std::cerr << "Page[0x" << std::hex << base << " .. 0x" << hi() << "]("
             << ("r "[not (perms & Read)])
             << ("w "[not (perms & Write)])
             << ("x "[not (perms & Execute)])

@@ -40,7 +40,7 @@ extern "C"
     return 0;
   }
 
-  int emu_open_vle(unsigned is_thumb, void** ucengine)
+  int emu_open_vle(void** ucengine)
   {
     *ucengine = new vle::concrete::Processor();
     return 0;
@@ -65,16 +65,16 @@ extern "C"
     return proc.mem_map(addr, size, perms) == proc.pages.end();
   }
 
-  int emu_mem_write(void* uc, uint64_t addr, void const* bytes, uintptr_t size)
+  int emu_mem_write(void* uc, uint64_t addr, uint8_t const* bytes, uintptr_t size)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.mem_write(addr,(uint8_t const*)bytes,size);
+    return proc.mem_write(addr,bytes,size);
   }
   
-  int emu_mem_read(void* uc, uint64_t addr, void* bytes, uintptr_t size)
+  int emu_mem_read(void* uc, uint64_t addr, uint8_t* bytes, uintptr_t size)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.mem_read(addr,(uint8_t*)bytes,size);
+    return proc.mem_read(addr,bytes,size);
   }
   
   int emu_mem_prot(void* uc, uint64_t addr, uint32_t new_perms)
@@ -83,16 +83,16 @@ extern "C"
     return proc.mem_prot(addr, new_perms);
   }
   
-  int emu_reg_write(void* uc, char const* id, uintptr_t size, int regid, void const* bytes)
+  int emu_reg_write(void* uc, char const* id, uintptr_t size, int regid, uint64_t value)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.reg_write(id, size, regid, (uint8_t const*)bytes);
+    return proc.reg_write(id, size, regid, value);
   }
 
-  int emu_reg_read(void* uc, char const* id, uintptr_t size, int regid, void* bytes)
+  int emu_reg_read(void* uc, char const* id, uintptr_t size, int regid, uint64_t* value)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.reg_read(id, size, regid, (uint8_t*)bytes);
+    return proc.reg_read(id, size, regid, value);
   }
 
   int emu_hook_add(void* uc, uintptr_t* hh, int types, void* callback, uint64_t begin, uint64_t end)
