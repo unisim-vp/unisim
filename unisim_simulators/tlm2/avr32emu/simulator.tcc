@@ -36,7 +36,9 @@
 #ifndef __AVR32EMU_SIMULATOR_TCC__
 #define __AVR32EMU_SIMULATOR_TCC__
 
-#include <unisim/kernel/logger/logger_server.hh>
+#include <unisim/kernel/config/xml/xml_config_file_helper.hh>
+#include <unisim/kernel/config/ini/ini_config_file_helper.hh>
+#include <unisim/kernel/config/json/json_config_file_helper.hh>
 
 // Host machine standard headers
 #include <iostream>
@@ -59,6 +61,11 @@ Simulator<CONFIG>::Simulator(int argc, char **argv, const sc_core::sc_module_nam
 	, instrumenter(0)
 	, profiler(0)
 	, http_server(0)
+	, logger_console_printer(0)
+	, logger_text_file_writer(0)
+	, logger_http_writer(0)
+	, logger_xml_file_writer(0)
+	, logger_netstream_writer(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, enable_profiler(false)
@@ -84,6 +91,16 @@ Simulator<CONFIG>::Simulator(int argc, char **argv, const sc_core::sc_module_nam
 		}
 	}
 
+	//=========================================================================
+	//===                 Logger Printers instantiations                    ===
+	//=========================================================================
+
+	logger_console_printer = new LOGGER_CONSOLE_PRINTER();
+	logger_text_file_writer = new LOGGER_TEXT_FILE_WRITER();
+	logger_http_writer = new LOGGER_HTTP_WRITER();
+	logger_xml_file_writer = new LOGGER_XML_FILE_WRITER();
+	logger_netstream_writer = new LOGGER_NETSTREAM_WRITER();
+	
 	//=========================================================================
 	//===                     Instrumenter instantiation                    ===
 	//=========================================================================
@@ -241,7 +258,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv, const sc_core::sc_module_nam
 	
 	{
 		unsigned int i = 0;
-		*http_server->http_server_import[i++] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
+		*http_server->http_server_import[i++] >> logger_http_writer->http_server_export;
 		*http_server->http_server_import[i++] >> instrumenter->http_server_export;
 		if(profiler)
 		{
@@ -277,11 +294,20 @@ Simulator<CONFIG>::~Simulator()
 		delete irq_stub[irq];
 	}
 	delete instrumenter;
+	delete logger_console_printer;
+	delete logger_text_file_writer;
+	delete logger_http_writer;
+	delete logger_xml_file_writer;
+	delete logger_netstream_writer;
 }
 
 template <class CONFIG>
 void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
+	new unisim::kernel::config::xml::XMLConfigFileHelper(simulator);
+	new unisim::kernel::config::ini::INIConfigFileHelper(simulator);
+	new unisim::kernel::config::json::JSONConfigFileHelper(simulator);
+	
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM AVR32EMU");
 	simulator->SetVariable("copyright", "Copyright (C) 2014, Commissariat a l'Energie Atomique (CEA)");

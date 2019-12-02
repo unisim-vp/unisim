@@ -7,6 +7,7 @@ std/vector
 unisim/kernel
 unisim/kernel/logger
 unisim/kernel/variable
+unisim/kernel/variable/netstreamer_protocol
 unisim/service/interfaces/char_io
 unisim/util/likely
 unisim/util/netstreamer

@@ -57,6 +57,11 @@
 #include <unisim/service/web_terminal/web_terminal.hh>
 #include <unisim/kernel/tlm2/simulator.hh>
 #include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/logger/console/console_printer.hh>
+#include <unisim/kernel/logger/text_file/text_file_writer.hh>
+#include <unisim/kernel/logger/http/http_writer.hh>
+#include <unisim/kernel/logger/xml_file/xml_file_writer.hh>
+#include <unisim/kernel/logger/netstream/netstream_writer.hh>
 #include <unisim/util/cache/cache.hh>
 #include <unisim/util/likely/likely.hh>
 
@@ -527,6 +532,12 @@ struct Simulator : public unisim::kernel::tlm2::Simulator
   typedef unisim::service::netstreamer::NetStreamer NETSTREAMER;
   typedef unisim::service::tee::char_io::Tee<2> CHAR_IO_TEE;
   typedef unisim::service::web_terminal::WebTerminal WEB_TERMINAL;
+  typedef unisim::kernel::logger::console::Printer LOGGER_CONSOLE_PRINTER;
+  typedef unisim::kernel::logger::text_file::Writer LOGGER_TEXT_FILE_WRITER;
+  typedef unisim::kernel::logger::http::Writer LOGGER_HTTP_WRITER;
+  typedef unisim::kernel::logger::xml_file::Writer LOGGER_XML_FILE_WRITER;
+  typedef unisim::kernel::logger::netstream::Writer LOGGER_NETSTREAM_WRITER;
+  
   
   sc_core::sc_time             ps_clk_period;
   CPU                          cpu;
@@ -560,6 +571,11 @@ struct Simulator : public unisim::kernel::tlm2::Simulator
   INLINE_DEBUGGER*             inline_debugger;
   PROFILER*                    profiler;
   INSTRUMENTER*                instrumenter;
+  LOGGER_CONSOLE_PRINTER*      logger_console_printer;
+  LOGGER_TEXT_FILE_WRITER*     logger_text_file_writer;
+  LOGGER_HTTP_WRITER*          logger_http_writer;
+  LOGGER_XML_FILE_WRITER*      logger_xml_file_writer;
+  LOGGER_NETSTREAM_WRITER*     logger_netstream_writer;
   
   bool                                     enable_gdb_server;
   unisim::kernel::variable::Parameter<bool> param_enable_gdb_server;

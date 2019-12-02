@@ -34,6 +34,7 @@
  *          Daniel Gracia Pérez (daniel.gracia-perez@cea.fr)
  */
 
+#include <unisim/kernel/variable/netstreamer_protocol/netstreamer_protocol.hh>
 #include <unisim/kernel/logger/netstream/netstream_writer.hh>
 #include <iostream>
 #include <sstream>

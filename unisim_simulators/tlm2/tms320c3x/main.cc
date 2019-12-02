@@ -44,10 +44,20 @@
 #include <unisim/service/debug/debugger/debugger.tcc>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
+#include <unisim/service/debug/profiler/profiler.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
+#include <unisim/service/http_server/http_server.hh>
 #include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/logger/console/console_printer.hh>
+#include <unisim/kernel/logger/text_file/text_file_writer.hh>
+#include <unisim/kernel/logger/http/http_writer.hh>
+#include <unisim/kernel/logger/xml_file/xml_file_writer.hh>
+#include <unisim/kernel/logger/netstream/netstream_writer.hh>
+#include <unisim/kernel/config/xml/xml_config_file_helper.hh>
+#include <unisim/kernel/config/ini/ini_config_file_helper.hh>
+#include <unisim/kernel/config/json/json_config_file_helper.hh>
 
 #include <iostream>
 #include <stdexcept>
@@ -99,16 +109,23 @@ private:
 	{
 		typedef CPU_CONFIG::address_t ADDRESS;
 		static const unsigned int NUM_PROCESSORS = 1;
-		/* gdb_server, inline_debugger and/or monitor */
-		static const unsigned int MAX_FRONT_ENDS = 2;
+		/* gdb_server, inline_debugger, profiler */
+		static const unsigned int MAX_FRONT_ENDS = 3;
 	};
 	
 	typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
 	typedef unisim::service::debug::gdb_server::GDBServer<CPU_CONFIG::address_t> GDB_SERVER;
 	typedef unisim::service::debug::inline_debugger::InlineDebugger<CPU_CONFIG::address_t> INLINE_DEBUGGER;
+	typedef unisim::service::debug::profiler::Profiler<CPU_CONFIG::address_t> PROFILER;
 	typedef unisim::service::time::sc_time::ScTime SC_TIME;
 	typedef unisim::service::time::host_time::HostTime HOST_TIME;
 	typedef unisim::service::os::ti_c_io::TI_C_IO<CPU_CONFIG::address_t> TI_C_IO;
+	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
+	typedef unisim::kernel::logger::console::Printer LOGGER_CONSOLE_PRINTER;
+	typedef unisim::kernel::logger::text_file::Writer LOGGER_TEXT_FILE_WRITER;
+	typedef unisim::kernel::logger::http::Writer LOGGER_HTTP_WRITER;
+	typedef unisim::kernel::logger::xml_file::Writer LOGGER_XML_FILE_WRITER;
+	typedef unisim::kernel::logger::netstream::Writer LOGGER_NETSTREAM_WRITER;
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -143,15 +160,31 @@ private:
 	INLINE_DEBUGGER *inline_debugger;
 	//  - debugger
 	DEBUGGER *debugger;
+	//  - Profiler
+	PROFILER *profiler;
 	//  - SystemC Time
 	SC_TIME *sim_time;
 	//  - Host Time
 	HOST_TIME *host_time;
+	//  - Http Server
+	HTTP_SERVER *http_server;
+	//  - Logger Console Printer
+	LOGGER_CONSOLE_PRINTER *logger_console_printer;
+	//  - Logger Text File Writer
+	LOGGER_TEXT_FILE_WRITER *logger_text_file_writer;
+	//  - Logger HTTP Writer
+	LOGGER_HTTP_WRITER *logger_http_writer;
+	//  - Logger XML File Writer
+	LOGGER_XML_FILE_WRITER *logger_xml_file_writer;
+	//  - Logger TCP Network Stream Writer
+	LOGGER_NETSTREAM_WRITER *logger_netstream_writer;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
+	bool enable_profiler;
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
+	Parameter<bool> param_enable_profiler;
 
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
@@ -180,14 +213,33 @@ Simulator::Simulator(int argc, char **argv)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, debugger(0)
+	, profiler(0)
 	, sim_time(0)
 	, host_time(0)
+	, http_server(0)
+	, logger_console_printer(0)
+	, logger_text_file_writer(0)
+	, logger_http_writer(0)
+	, logger_xml_file_writer(0)
+	, logger_netstream_writer(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
+	, enable_profiler(false)
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
+	, param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable/Disable profiler")
 	, exit_status(0)
 {
+	//=========================================================================
+	//===                 Logger Printers instantiations                    ===
+	//=========================================================================
+
+	logger_console_printer = new LOGGER_CONSOLE_PRINTER();
+	logger_text_file_writer = new LOGGER_TEXT_FILE_WRITER();
+	logger_http_writer = new LOGGER_HTTP_WRITER();
+	logger_xml_file_writer = new LOGGER_XML_FILE_WRITER();
+	logger_netstream_writer = new LOGGER_NETSTREAM_WRITER();
+	
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
@@ -220,11 +272,13 @@ Simulator::Simulator(int argc, char **argv)
 	}
 
 	//  - Debugger
-	debugger = (enable_gdb_server or enable_inline_debugger) ? new DEBUGGER("debugger") : 0;
+	debugger = (enable_gdb_server or enable_inline_debugger or enable_profiler) ? new DEBUGGER("debugger") : 0;
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDB_SERVER("gdb-server") : 0;
 	//  - Inline debugger
 	inline_debugger = enable_inline_debugger ? new INLINE_DEBUGGER("inline-debugger") : 0;
+	//  - Profiler
+	profiler = enable_profiler ? new PROFILER("profiler") : 0;
 	//  - Multiformat Loader
 	loader = new LOADER("loader");
 	//  - TI C I/O
@@ -233,6 +287,8 @@ Simulator::Simulator(int argc, char **argv)
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
+	//  - Http Server
+	http_server = new HTTP_SERVER("http-server");
 
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -264,7 +320,7 @@ Simulator::Simulator(int argc, char **argv)
 	ti_c_io->blob_import >> loader->blob_export;
 	*loader->memory_import[0] >> memory->memory_export;
 	
-	if (enable_inline_debugger or enable_gdb_server)
+	if (debugger)
 	{
 		// Debugger <-> CPU connections
 		cpu->debug_yielding_import                            >> *debugger->debug_yielding_export[0];
@@ -278,7 +334,7 @@ Simulator::Simulator(int argc, char **argv)
 		// Debugger <-> Loader connections
 		debugger->blob_import >> loader->blob_export;
 
-		if (enable_inline_debugger)
+		if (inline_debugger)
 		{
 			// inline-debugger <-> debugger connections
 			*debugger->debug_event_listener_import[0]      >> inline_debugger->debug_event_listener_export;
@@ -296,7 +352,7 @@ Simulator::Simulator(int argc, char **argv)
 			inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
 		}
 	
-		if (enable_gdb_server)
+		if (gdb_server)
 		{
 			// gdb-server <-> debugger connections
 			*debugger->debug_event_listener_import[1] >> gdb_server->debug_event_listener_export;
@@ -306,8 +362,38 @@ Simulator::Simulator(int argc, char **argv)
 			gdb_server->memory_import                 >> *debugger->memory_export[1];
 			gdb_server->registers_import              >> *debugger->registers_export[1];
 		}
+		
+		if (profiler)
+		{
+			*debugger->debug_event_listener_import[2] >> profiler->debug_event_listener_export;
+			*debugger->debug_yielding_import[2]       >> profiler->debug_yielding_export;
+			profiler->debug_yielding_request_import   >> *debugger->debug_yielding_request_export[2];
+			profiler->debug_event_trigger_import      >> *debugger->debug_event_trigger_export[2];
+			profiler->disasm_import                   >> *debugger->disasm_export[2];
+			profiler->memory_import                   >> *debugger->memory_export[2];
+			profiler->registers_import                >> *debugger->registers_export[2];
+			profiler->stmt_lookup_import              >> *debugger->stmt_lookup_export[2];
+			profiler->symbol_table_lookup_import      >> *debugger->symbol_table_lookup_export[2];
+			profiler->backtrace_import                >> *debugger->backtrace_export[2];
+			profiler->debug_info_loading_import       >> *debugger->debug_info_loading_export[2];
+			profiler->data_object_lookup_import       >> *debugger->data_object_lookup_export[2];
+			profiler->subprogram_lookup_import        >> *debugger->subprogram_lookup_export[2];
+		}
 	}
 	
+	{
+		unsigned int i = 0;
+		*http_server->http_server_import[i++] >> logger_http_writer->http_server_export;
+		if(profiler)
+		{
+			*http_server->http_server_import[i++] >> profiler->http_server_export;
+		}
+	}
+	
+	{
+		unsigned int i = 0;
+		*http_server->registers_import[i++] >> cpu->registers_export;
+	}
 }
 
 Simulator::~Simulator()
@@ -315,6 +401,7 @@ Simulator::~Simulator()
 	delete memory;
 	delete gdb_server;
 	delete inline_debugger;
+	delete profiler;
 	delete debugger;
 	delete loader;
 	delete ti_c_io;
@@ -332,10 +419,20 @@ Simulator::~Simulator()
 	delete dint_stub;
 	delete sim_time;
 	delete host_time;
+	delete http_server;
+	delete logger_console_printer;
+	delete logger_text_file_writer;
+	delete logger_http_writer;
+	delete logger_xml_file_writer;
+	delete logger_netstream_writer;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
+	new unisim::kernel::config::xml::XMLConfigFileHelper(simulator);
+	new unisim::kernel::config::ini::INIConfigFileHelper(simulator);
+	new unisim::kernel::config::json::JSONConfigFileHelper(simulator);
+	
 	double cpu_frequency = 75.0; // in Mhz
 	double cpu_ipc = 1.0; // in instructions per cycle
 	double cpu_cycle_time = (double)(1.0e6 / cpu_frequency); // in picoseconds
@@ -382,6 +479,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	//  - GDB server
 	simulator->SetVariable("gdb-server.architecture-description-filename", "unisim/service/debug/gdb_server/gdb_tms320c3x.xml");
 	simulator->SetVariable("gdb-server.memory-atom-size", 4);
+	
+	// HTTP server
+	simulator->SetVariable("http-server.http-port", 12360);
 }
 
 void Simulator::Run()
@@ -421,6 +521,18 @@ void Simulator::Run()
 
 unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 {
+	if(profiler)
+	{
+		http_server->AddJSAction(
+		unisim::service::interfaces::ToolbarOpenTabAction(
+			/* name */      profiler->GetName(), 
+			/* label */     "<img src=\"/unisim/service/debug/profiler/icon_profile_cpu0.svg\" alt=\"Profile\">",
+			/* tips */      std::string("Profile of ") + cpu->GetName(),
+			/* tile */      unisim::service::interfaces::OpenTabAction::TOP_MIDDLE_TILE,
+			/* uri */       profiler->URI()
+		));
+	}
+	
 	if(enable_inline_debugger)
 	{
 		SetVariable("debugger.parse-dwarf", true);

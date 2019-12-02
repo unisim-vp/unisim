@@ -83,7 +83,6 @@
 #include <unisim/service/instrumenter/instrumenter.hh>
 #include <unisim/service/tee/char_io/tee.hh>
 #include <unisim/service/web_terminal/web_terminal.hh>
-#include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 
 // Compile time configuration

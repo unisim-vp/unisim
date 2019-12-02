@@ -127,6 +127,7 @@ private:
 	PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
 	sc_core::sc_time cpu_cycle_time;         //<! CPU core cycle time
 	sc_core::sc_time bus_cycle_time;         //<! Bus (FSB) cycle time
+	sc_core::sc_time timer_cycle_time;       //<! Timer cycle time
 	sc_core::sc_time cpu_time;               //<! local time (relative to sc_time_stamp)
 	sc_core::sc_time timer_time;             //<! absolute time from the internal timers point of view
 	sc_core::sc_time nice_time;              //<! period of synchronization with other threads

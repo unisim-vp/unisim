@@ -36,34 +36,43 @@
 #include "config.h"
 #endif
 
-#include <unisim/component/tlm/processor/powerpc/e600/mpc7447a/cpu.hh>
+#include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/logger/console/console_printer.hh>
+#include <unisim/kernel/logger/text_file/text_file_writer.hh>
+#include <unisim/kernel/logger/http/http_writer.hh>
+#include <unisim/kernel/logger/xml_file/xml_file_writer.hh>
+#include <unisim/kernel/logger/netstream/netstream_writer.hh>
+#include <unisim/kernel/config/xml/xml_config_file_helper.hh>
+#include <unisim/kernel/config/ini/ini_config_file_helper.hh>
+#include <unisim/kernel/config/json/json_config_file_helper.hh>
+
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/debugger/debugger.tcc>
 #include <unisim/service/loader/pmac_linux_kernel_loader/pmac_linux_kernel_loader.hh>
 #include <unisim/service/translator/memory_address/memory/translator.hh>
-#include <unisim/kernel/kernel.hh>
-#include <unisim/component/tlm/memory/ram/memory.hh>
-#include <unisim/component/tlm/memory/flash/am29/am29.hh>
-#include <unisim/component/cxx/memory/flash/am29/am29lv800b_config.hh>
-#include <unisim/component/tlm/pci/video/display.hh>
-#include <unisim/component/tlm/fsb/snooping_bus/bus.hh>
-#include <unisim/component/tlm/chipset/mpc107/mpc107.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
-#include <unisim/component/tlm/pci/bus/bus.hh>
-#include <unisim/component/tlm/pci/ide/pci_ide_module.hh>
-#include <unisim/component/tlm/pci/macio/heathrow.hh>
-#include <unisim/component/cxx/pci/types.hh>
 #include <unisim/service/sdl/sdl.hh>
-#include <unisim/component/tlm/bridge/pci_isa/bridge.hh>
-#include <unisim/component/tlm/isa/i8042/i8042.hh>
-#include <unisim/component/tlm/debug/transaction_spy.hh>
 #include <unisim/service/debug/profiler/profiler.hh>
 #include <unisim/service/http_server/http_server.hh>
 #include <unisim/service/instrumenter/instrumenter.hh>
-#include <unisim/kernel/logger/logger_server.hh>
+
+#include <unisim/component/cxx/memory/flash/am29/am29lv800b_config.hh>
+#include <unisim/component/cxx/pci/types.hh>
+#include <unisim/component/tlm/processor/powerpc/e600/mpc7447a/cpu.hh>
+#include <unisim/component/tlm/memory/ram/memory.hh>
+#include <unisim/component/tlm/memory/flash/am29/am29.hh>
+#include <unisim/component/tlm/pci/video/display.hh>
+#include <unisim/component/tlm/fsb/snooping_bus/bus.hh>
+#include <unisim/component/tlm/chipset/mpc107/mpc107.hh>
+#include <unisim/component/tlm/pci/bus/bus.hh>
+#include <unisim/component/tlm/pci/ide/pci_ide_module.hh>
+#include <unisim/component/tlm/pci/macio/heathrow.hh>
+#include <unisim/component/tlm/bridge/pci_isa/bridge.hh>
+#include <unisim/component/tlm/isa/i8042/i8042.hh>
+#include <unisim/component/tlm/debug/transaction_spy.hh>
 
 #include <stdexcept>
 #include <iostream>
@@ -178,6 +187,11 @@ private:
 	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
 	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
 	typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
+	typedef unisim::kernel::logger::console::Printer LOGGER_CONSOLE_PRINTER;
+	typedef unisim::kernel::logger::text_file::Writer LOGGER_TEXT_FILE_WRITER;
+	typedef unisim::kernel::logger::http::Writer LOGGER_HTTP_WRITER;
+	typedef unisim::kernel::logger::xml_file::Writer LOGGER_XML_FILE_WRITER;
+	typedef unisim::kernel::logger::netstream::Writer LOGGER_NETSTREAM_WRITER;
 	
 	//=========================================================================
 	//===               Aliases for transaction Spies classes               ===
@@ -257,6 +271,16 @@ private:
 	unisim::service::time::host_time::HostTime *host_time;
 	//  - memory address translator from effective address to physical address
 	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *memory_effective_to_physical_address_translator;
+	//  - Logger Console Printer
+	LOGGER_CONSOLE_PRINTER *logger_console_printer;
+	//  - Logger Text File Writer
+	LOGGER_TEXT_FILE_WRITER *logger_text_file_writer;
+	//  - Logger HTTP Writer
+	LOGGER_HTTP_WRITER *logger_http_writer;
+	//  - Logger XML File Writer
+	LOGGER_XML_FILE_WRITER *logger_xml_file_writer;
+	//  - Logger TCP Network Stream Writer
+	LOGGER_NETSTREAM_WRITER *logger_netstream_writer;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
@@ -297,6 +321,11 @@ Simulator::Simulator(int argc, char **argv)
 	, sim_time(0)
 	, host_time(0)
 	, memory_effective_to_physical_address_translator(0)
+	, logger_console_printer(0)
+	, logger_text_file_writer(0)
+	, logger_http_writer(0)
+	, logger_xml_file_writer(0)
+	, logger_netstream_writer(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, enable_profiler(false)
@@ -308,11 +337,16 @@ Simulator::Simulator(int argc, char **argv)
 	, stop_called(false)
 	, exit_status(0)
 {
-	if(enable_profiler)
-	{
-		this->SetVariable("HARDWARE.instrumenter.enable-user-interface", true); // When profiler is enabled, enable also instrumenter user interface so that profiler interface is periodically refreshed too
-	}
+	//=========================================================================
+	//===                 Logger Printers instantiations                    ===
+	//=========================================================================
 
+	logger_console_printer = new LOGGER_CONSOLE_PRINTER();
+	logger_text_file_writer = new LOGGER_TEXT_FILE_WRITER();
+	logger_http_writer = new LOGGER_HTTP_WRITER();
+	logger_xml_file_writer = new LOGGER_XML_FILE_WRITER();
+	logger_netstream_writer = new LOGGER_NETSTREAM_WRITER();
+	
 	//=========================================================================
 	//===                     Instrumenter instantiation                    ===
 	//=========================================================================
@@ -682,7 +716,7 @@ Simulator::Simulator(int argc, char **argv)
 	
 	{
 		unsigned int i = 0;
-		*http_server->http_server_import[i++] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
+		*http_server->http_server_import[i++] >> logger_http_writer->http_server_export;
 		*http_server->http_server_import[i++] >> instrumenter->http_server_export;
 		if(profiler)
 		{
@@ -729,10 +763,19 @@ Simulator::~Simulator()
 	if(pci_bus) delete pci_bus;
 	if(heathrow) delete heathrow;
 	if(instrumenter) delete instrumenter;
+	if(logger_console_printer) delete logger_console_printer;
+	if(logger_text_file_writer) delete logger_text_file_writer;
+	if(logger_http_writer) delete logger_http_writer;
+	if(logger_xml_file_writer) delete logger_xml_file_writer;
+	if(logger_netstream_writer) delete logger_netstream_writer;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
+	new unisim::kernel::config::xml::XMLConfigFileHelper(simulator);
+	new unisim::kernel::config::ini::INIConfigFileHelper(simulator);
+	new unisim::kernel::config::json::JSONConfigFileHelper(simulator);
+	
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM ppcemu-system");
 	simulator->SetVariable("copyright", "Copyright (C) 2007-2019, Commissariat a l'Energie Atomique (CEA)");

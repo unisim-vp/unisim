@@ -70,6 +70,7 @@ CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, unisim::kernel::Obj
 	, payload_fabric()
 	, cpu_cycle_time()
 	, bus_cycle_time()
+	, timer_cycle_time()
 	, cpu_time()
 	, nice_time()
 	, max_idle_time()
@@ -205,6 +206,10 @@ CPU<TYPES, CONFIG>::~CPU()
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::EndSetup()
 {
+	// Timer cycle time = 4 * Bus cycle time
+	timer_cycle_time = bus_cycle_time;
+	timer_cycle_time += timer_cycle_time;
+	timer_cycle_time += timer_cycle_time;
 	if(!Super::EndSetup()) return false;
 	return true;
 }
@@ -500,41 +505,14 @@ bool CPU<TYPES, CONFIG>::interrupt_get_direct_mem_ptr(unsigned int, InterruptPay
 template <typename TYPES, typename CONFIG>
 inline void CPU<TYPES, CONFIG>::RunInternalTimers()
 {
-	const sc_core::sc_time timer_cycle_time(bus_cycle_time);
-	timer_cycle_time *= 4;
-		
-#if 0
-	if(run_time >= (timer_time + timer_cycle_time))
-	{
-		do
-		{
-			Super::RunTimers(1);
-			timer_time += timer_cycle_time;
-		}
-		while(run_time >= (timer_time + timer_cycle_time));
-	}
-#else
-	// Note: this code brings a slight speed improvement (6 %)
-#if 0
-	sc_time delta_time(run_time);
-	delta_time -= timer_time;
-	uint64_t delta = (uint64_t) floor(delta_time / timer_cycle_time);
-	Super::RunTimers(delta);
-	sc_time t(timer_cycle_time);
-	t *= (double) delta;
-	timer_time += t;
-#else
 	sc_dt::uint64 delta_time_tu = run_time.value() - timer_time.value();
 	sc_dt::uint64 timer_cycle_time_tu = timer_cycle_time.value();
 	uint64_t delta = delta_time_tu / timer_cycle_time_tu;
 	Super::RunTimers(delta);
 	sc_dt::uint64 t_tu = timer_cycle_time_tu * delta;
-	//sc_time t(t_tu, false);
 	sc_core::sc_time t(sc_core::sc_get_time_resolution());
 	t *= t_tu;
 	timer_time += t;
-#endif
-#endif
 	timers_update_deadline = timer_time + (Super::GetTimersDeadline() * timer_cycle_time);
 }
 
@@ -595,8 +573,6 @@ void CPU<TYPES, CONFIG>::Idle()
 	if(!this->HasPendingInterrupts()) // Is there some pending interrupts?
 	{
 		// Compute the time to consume before an internal timer event occurs
-		const sc_core::sc_time timer_cycle_time(bus_cycle_time);
-		timer_cycle_time *= 4;
 		max_idle_time = timer_cycle_time;
 		max_idle_time *= Super::GetMaxIdleTime(); // max idle time (timer_time based)
 

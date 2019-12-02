@@ -6,7 +6,9 @@
  */
 
 #include <simulator.hh>
-#include <unisim/kernel/logger/logger_server.hh>
+#include <unisim/kernel/config/xml/xml_config_file_helper.hh>
+#include <unisim/kernel/config/ini/ini_config_file_helper.hh>
+#include <unisim/kernel/config/json/json_config_file_helper.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/service/debug/debugger/debugger.tcc>
 
@@ -85,6 +87,12 @@ Simulator::Simulator(int argc, char **argv)
 	, sim_time(0)
 	, host_time(0)
 
+	, logger_console_printer(0)
+	, logger_text_file_writer(0)
+	, logger_http_writer(0)
+	, logger_xml_file_writer(0)
+	, logger_netstream_writer(0)
+	
 //	, filename("")
 //	, symbol_filename("")
 
@@ -132,6 +140,12 @@ Simulator::Simulator(int argc, char **argv)
 	param_pc_reg_name = new Parameter<string>("program-counter-name", 0, program_counter_name, "Target CPU program counter name");
 	param_pc_reg_name->SetMutable(false);
 	param_pc_reg_name->SetVisible(true);
+
+	logger_console_printer = new LOGGER_CONSOLE_PRINTER();
+	logger_text_file_writer = new LOGGER_TEXT_FILE_WRITER();
+	logger_http_writer = new LOGGER_HTTP_WRITER();
+	logger_xml_file_writer = new LOGGER_XML_FILE_WRITER();
+	logger_netstream_writer = new LOGGER_NETSTREAM_WRITER();
 
 	// - Instrumenter
 	instrumenter = new INSTRUMENTER("instrumenter");
@@ -656,7 +670,7 @@ Simulator::Simulator(int argc, char **argv)
 	{
 		unsigned int i = 0;
 		*http_server->http_server_import[i++] >> instrumenter->http_server_export;
-		*http_server->http_server_import[i++] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
+		*http_server->http_server_import[i++] >> logger_http_writer->http_server_export;
 		if(profiler) *http_server->http_server_import[i++] >> profiler->http_server_export;
 		if(sci_web_terminal) *http_server->http_server_import[i++] >> sci_web_terminal->http_server_export;
 		if(spi_web_terminal) *http_server->http_server_import[i++] >> spi_web_terminal->http_server_export;
@@ -848,6 +862,12 @@ Simulator::~Simulator()
 	if(cpu) { delete cpu; cpu = NULL; }
 	
 	if(instrumenter) { delete instrumenter; instrumenter = NULL; }
+	
+	if(logger_console_printer) { delete logger_console_printer; logger_console_printer = NULL; }
+	if(logger_text_file_writer) { delete logger_text_file_writer; logger_text_file_writer = NULL; }
+	if(logger_http_writer) { delete logger_http_writer; logger_http_writer = NULL; }
+	if(logger_xml_file_writer) { delete logger_xml_file_writer; logger_xml_file_writer = NULL; }
+	if(logger_netstream_writer) { delete logger_netstream_writer; logger_netstream_writer = NULL; }
 }
 
 
@@ -1016,6 +1036,10 @@ Simulator::StoreRatioStatistic::Get(double& value)
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
+	new unisim::kernel::config::xml::XMLConfigFileHelper(simulator);
+	new unisim::kernel::config::ini::INIConfigFileHelper(simulator);
+	new unisim::kernel::config::json::JSONConfigFileHelper(simulator);
+	
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM star12x");
 	simulator->SetVariable("copyright", "Copyright (C) 2008-2010, Commissariat a l'Energie Atomique (CEA)");

@@ -2101,9 +2101,23 @@ bool Profiler<ADDRESS>::EndSetup()
 {
 	num_sampled_variables = 0;
 	
-	if(!registers_import) return false;
-	if(!stmt_lookup_import) return false;
-	if(!symbol_table_lookup_import) return false;
+	if(!registers_import)
+	{
+		logger << DebugError << "registers_import is not connected" << EndDebugError;
+		return false;
+	}
+	
+	if(!stmt_lookup_import)
+	{
+		logger << DebugError << "stmt_lookup_import is not connected" << EndDebugError;
+		return false;
+	}
+	
+	if(!symbol_table_lookup_import)
+	{
+		logger << DebugError << "symbol_table_lookup_import is not connected" << EndDebugError;
+		return false;
+	}
 
 	LoadDebugInfo();
 	

@@ -33,8 +33,7 @@
  */
 
 #include <simulator.hh>
-#include <unisim/kernel/logger/logger_server.hh>
-// #include <unisim/kernel/config/xml/xml_config_file_helper.hh>
+#include <unisim/kernel/config/xml/xml_config_file_helper.hh>
 #include <unisim/kernel/config/ini/ini_config_file_helper.hh>
 #include <unisim/kernel/config/json/json_config_file_helper.hh>
 #include <sstream>
@@ -399,6 +398,10 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	unsigned int dma_trigger_num;
 	unsigned int dma_channel_num;
 	unsigned int i;
+
+	//=========================================================================
+	//===                 Logger Printers instantiations                    ===
+	//=========================================================================
 
 	logger_console_printer = new LOGGER_CONSOLE_PRINTER();
 	logger_text_file_writer = new LOGGER_TEXT_FILE_WRITER();
@@ -5590,7 +5593,7 @@ void Simulator::DMASource(const std::string& source_req,
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
-// 	new unisim::kernel::config::xml::XMLConfigFileHelper(simulator);
+	new unisim::kernel::config::xml::XMLConfigFileHelper(simulator);
 	new unisim::kernel::config::ini::INIConfigFileHelper(simulator);
 	new unisim::kernel::config::json::JSONConfigFileHelper(simulator);
 	
@@ -6384,7 +6387,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	simulator->SetVariable("dspi_0-master", 2);
 	simulator->SetVariable("dspi_0-slave", 0);
 	
-	// Instrumenter
+	// HTTP server
 	simulator->SetVariable("http-server.http-port", 12360);
 	
 	// Web terminals
