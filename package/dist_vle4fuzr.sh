@@ -47,14 +47,17 @@ UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES="$(files isa_thumb)"
 
 UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES="$(files isa_arm32)"
 
-UNISIM_LIB_SIMULATOR_ISA_PPC_FILES="$(files isa isa_vle)"
+UNISIM_LIB_SIMULATOR_ISA_PPC_FILES="\
+$(files isa) \
+$(files isa_vle) \
+"
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES} \
 ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES} \
 ${UNISIM_LIB_SIMULATOR_ISA_PPC_FILES} \
 $(files header) \
-$(files template)\
+$(files template) \
 "
 
 UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
