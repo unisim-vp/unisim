@@ -59,10 +59,10 @@ extern "C"
     return proc.set_disasm(disasm), 0;
   }
 
-  int emu_mem_map(void* uc, uint64_t addr, uintptr_t size, uint32_t perms)
+  int emu_mem_map(void* uc, uint64_t addr, uint64_t size, unsigned perms, void* hook)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.mem_map(addr, size, perms) == proc.pages.end();
+    return proc.mem_map(addr, size, perms, (Processor::Page::hook_t)hook) == proc.pages.end();
   }
 
   int emu_mem_write(void* uc, uint64_t addr, uint8_t const* bytes, uintptr_t size)
@@ -80,7 +80,7 @@ extern "C"
   int emu_mem_prot(void* uc, uint64_t addr, uint32_t new_perms)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.mem_prot(addr, new_perms);
+    return proc.mem_chprot(addr, new_perms);
   }
   
   int emu_reg_write(void* uc, char const* id, uintptr_t size, int regid, uint64_t value)
@@ -95,7 +95,7 @@ extern "C"
     return proc.reg_read(id, size, regid, value);
   }
 
-  int emu_hook_add(void* uc, uintptr_t* hh, int types, void* callback, uint64_t begin, uint64_t end)
+  int emu_hook_add(void* uc, int types, void* callback, uint64_t begin, uint64_t end)
   {
     Processor::Hook* hook = new Processor::Hook(types, callback, begin, end);
     
@@ -106,7 +106,6 @@ extern "C"
         return 8 /*EMU_ERR_HOOK*/;
       }
 
-    *hh = (uintptr_t)hook;
     return 0;
   }
 

@@ -357,7 +357,6 @@ template <> struct AMO< Arm32Decoder<ArmProcessor> >
   enum { thumb = 0 };
   typedef ArmProcessor::AOpPage OpPage;
   static OpPage& GetOpPage(ArmProcessor& ap, uint32_t tag) { return ap.arm32_op_cache[tag]; }
-  static bool CodeMatch(Operation* op, CodeType insn) { return op and op->GetEncoding() == insn; }
   static Arm32Decoder<ArmBranch> bdecoder;
 };
 
@@ -371,7 +370,6 @@ template <> struct AMO< ThumbDecoder<ArmProcessor> >
   enum { thumb = 1 };
   typedef ArmProcessor::TOpPage OpPage;
   static OpPage& GetOpPage(ArmProcessor& ap, uint32_t tag) { return ap.thumb_op_cache[tag]; }
-  static bool CodeMatch(Operation* op, CodeType insn) { return op and insn.match( op->GetEncoding() ); }
   static ThumbDecoder<ArmBranch> bdecoder;
 };
 
@@ -388,15 +386,14 @@ ArmProcessor::Step( Decoder& decoder )
 
   // Fetch
   uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr, insn_length = 0;
-  CodeType insn;
-  this->ReadInsn(insn_addr, insn);
+  CodeType insn = ReadInsn(insn_addr);
 
   // Decode
   uint32_t insn_idx = insn_addr/(AMO<Decoder>::thumb ? 2 : 4),
     insn_tag = insn_idx / ArmProcessor::OPPAGESIZE, insn_offset = insn_idx % ArmProcessor::OPPAGESIZE;
   OpPage& page = AMO<Decoder>::GetOpPage(*this, insn_tag);
   Operation* op = page.ops[insn_offset];
-  if (AMO<Decoder>::CodeMatch(op, insn))
+  if (op and op->GetEncoding() == insn)
     { insn_length = op->GetLength() / 8; }
   else
     {
@@ -542,19 +539,13 @@ ArmProcessor::emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintp
   return 0;
 }
 
-void 
-ArmProcessor::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
+uint32_t
+ArmProcessor::ReadInsn(uint32_t address)
 {
-  uint32_t word;
-  PhysicalFetchMemory( address, (uint8_t*)&word, 4 );
-  insn = Target2Host(unisim::util::endian::E_LITTLE_ENDIAN, word);
-}
-
-void
-ArmProcessor::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn)
-{
-  PhysicalFetchMemory( address, &insn.str[0], 4 );
-  insn.size = 32;
+  uint64_t value = 0;
+  if (not PhysicalFetchMemory( address, 4, 0, &value ))
+    DataAbort( address, mat_exec, unisim::component::cxx::processor::arm::DAbort_SyncExternal );
+  return value;
 }
 
 void
@@ -608,19 +599,8 @@ ArmProcessor::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   if (unlikely(misalignment))
     DataAbort( addr, mat_write, unisim::component::cxx::processor::arm::DAbort_Alignment );
 
-  uint8_t data[4];
-
-  if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN) {
-    uint32_t shifter = value;
-    for (int byte = size; --byte >= 0;)
-      { data[byte] = shifter; shifter >>= 8; }
-  } else {
-    uint32_t shifter = value;
-    for (int byte = 0; byte < int( size ); ++byte)
-      { data[byte] = shifter; shifter >>= 8; }
-  }
-  
-  if (not PhysicalWriteMemory( addr, data, size ))
+  unsigned endianness = lo_mask*(GetEndianness() == unisim::util::endian::E_BIG_ENDIAN);
+  if (not PhysicalWriteMemory( addr, size, endianness, value ))
     DataAbort(addr, mat_write, unisim::component::cxx::processor::arm::DAbort_SyncExternal);
 }
 
@@ -657,24 +637,10 @@ ArmProcessor::PerformReadAccess( uint32_t addr, uint32_t size )
   if (unlikely(misalignment))
     DataAbort(addr, mat_read, unisim::component::cxx::processor::arm::DAbort_Alignment);
 
-  uint8_t data[4];
-
-  if (not PhysicalReadMemory(addr, &data[0], size))
+  uint64_t value = 0;
+  unsigned endianness = lo_mask*(GetEndianness() == unisim::util::endian::E_BIG_ENDIAN);
+  if (not PhysicalReadMemory(addr, size, endianness, &value))
     DataAbort(addr, mat_read, unisim::component::cxx::processor::arm::DAbort_SyncExternal);
-
-  /* Compute return value */
-  uint32_t value;
-  if (GetEndianness() == unisim::util::endian::E_LITTLE_ENDIAN) {
-    uint32_t shifter = 0;
-    for (int byte = size; --byte >= 0;)
-      { shifter = (shifter << 8) | uint32_t( data[byte] ); }
-    value = shifter;
-  } else {
-    uint32_t shifter = 0;
-    for (int byte = 0; byte < int( size ); ++byte)
-      { shifter = (shifter << 8) | uint32_t( data[byte] ); }
-    value = shifter;
-  }
 
   return value;
 }

@@ -192,31 +192,30 @@ namespace concrete {
 
     U32 Fetch(U32 address)
     {
-      uint32_t insn;
-      PhysicalFetchMemory( address, (uint8_t*)&insn, 4 );
-      return Target2Host(unisim::util::endian::E_BIG_ENDIAN, insn);
+      uint64_t value = 0;
+      if (not PhysicalFetchMemory( address, 4, 3, &value ))
+        throw TODO();
+      return value;
     }
     
     U32 MemRead(U32 address, unsigned size, bool sext, bool bigendian)
     {
-      unsigned mask = size - 1, endian_mask = mask*(not bigendian);
+      unsigned mask = size-1;
       if (size >= 4 or mask & size) { throw "illegal size"; }
-      uint8_t buf[4];
-      PhysicalReadMemory( address, &buf[0], size );
-      U32 result = 0;
-      for (unsigned byte = 0; byte < size; ++byte)
-        result = (result << 8) | buf[byte^endian_mask];
-      if (sext) { int sh = (32 - size*8); result = int32_t(result << sh) >> sh; }
-      return result;
+      uint64_t result = 0;
+      PhysicalReadMemory( address, size, bigendian*mask, &result );
+      if (sext)
+        {
+          int sh = (32 - size*8);
+          return U32(int32_t(result << sh) >> sh);
+        }
+      return U32(result);
     }
     void MemWrite( U32 address, unsigned size, U32 value, bool bigendian )
     {
-      unsigned mask = size - 1, endian_mask = mask*bigendian;
+      unsigned mask = size-1;
       if (size >= 4 or mask & size) { throw "illegal size"; }
-      uint8_t buf[4];
-      for (unsigned byte = 0; byte < size; ++byte)
-        { buf[byte^endian_mask] = value; value >>= 8; }
-      PhysicalWriteMemory( address, &buf[0], size );
+      PhysicalWriteMemory( address, size, bigendian*mask, value );
     }
     
     bool Int8Load(unsigned n, U32 address) { SetGPR(n, MemRead(address, 1, false, true)); return true; }

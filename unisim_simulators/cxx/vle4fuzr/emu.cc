@@ -35,20 +35,9 @@ bool
 Processor::Hook::check_types()
 {
   if (not ( Is<INTR>()           ).check(types)) return false; // uc_cb_hookintr_t
-  //      if (not ( Is<INSN>()           ).check(types)) return false; // unimplemented
   if (not ( Is<CODE>() |
             Is<BLOCK>()          ).check(types)) return false; // uc_cb_hookcode_t
-  if (not ( Is<MEM_READ_UNMAPPED>() |
-            Is<MEM_WRITE_UNMAPPED>() |
-            Is<MEM_FETCH_UNMAPPED>() |
-            Is<MEM_READ_PROT>() |
-            Is<MEM_WRITE_PROT>() |
-            Is<MEM_FETCH_PROT>() ).check(types)) return false; // uc_cb_eventmem_t
-  if (not ( Is<MEM_READ>() |
-            Is<MEM_WRITE>() |
-            Is<MEM_FETCH>() |
-            Is<MEM_READ_AFTER>() ).check(types)) return false; // uc_cb_hookmem_t
-  if (not ( Is<INSN_INVALID>()   ).check(types)) return false; // uc_cb_hookinsn_invalid_t
+  if (not ( Is<MEM>()            ).check(types)) return false; // uc_cb_eventmem_t
   return true;
 }
     
@@ -68,7 +57,7 @@ Processor::add( Processor::Hook* hook )
 }
 
 void
-Processor::insn_hooks(uint64_t addr, uint64_t insn_length)
+Processor::insn_hooks(uint64_t addr, unsigned insn_length)
 {
   if (this->bblock)
     {
@@ -91,9 +80,15 @@ void Processor::Abort::dump(std::ostream& sink)
 }
 
 void
-Processor::mem_overlap_error( Page const& a, Page const& b )
+Processor::error_mem_overlap( Page const& a, Page const& b )
 {
   std::cerr << "error: inserted " << a << " overlaps " << b << "\n";
+}
+
+void
+Processor::error_page_at( char const* issue, uint64_t addr )
+{
+  std::cerr << "error: " << issue << " page at 0x" << std::hex << addr << ".\n";
 }
 
 void

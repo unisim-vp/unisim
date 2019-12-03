@@ -36,8 +36,10 @@ namespace vle::concrete
 
 set addressclass {uint32_t}
 set codetype scalar;
+set withcache_p false;
 
 decl {
+#include <emu.hh>
 #include <iosfwd>
 #include <inttypes.h>
 

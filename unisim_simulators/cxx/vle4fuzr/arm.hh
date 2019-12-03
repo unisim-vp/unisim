@@ -90,8 +90,7 @@ struct ArmProcessor
   bool     ExclusiveMonitorsPass( uint32_t addr, unsigned size ) { throw 0; return true; }
   void     ClearExclusiveLocal() { throw 0; }
 
-  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn );
-  void ReadInsn( uint32_t address, unisim::component::cxx::processor::arm::isa::thumb::CodeType& insn );
+  uint32_t ReadInsn( uint32_t address );
   
   int emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count ) override;
 
