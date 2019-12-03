@@ -360,8 +360,8 @@ Scanner::parse( char const* _filename, Opts& opts, Isa& isa )
             std::string cmd;
             source.get(cmd, &CLex::Scanner::get_name);
         
-            if (std::equal(cmd.begin(), cmd.end(), "decl") or
-                std::equal(cmd.begin(), cmd.end(), "impl"))
+            if ((cmd == "decl") or
+                (cmd == "impl"))
               {
                 auto& member = (cmd[0] == 'd') ? isa.m_decl_srccodes : isa.m_impl_srccodes;
                 if (source.next() != CLex::Scanner::ObjectOpening)
@@ -369,7 +369,7 @@ Scanner::parse( char const* _filename, Opts& opts, Isa& isa )
                 member.push_back( new SourceCode(GetSourceCode(source)) );
                 source.next();
               }
-            else if (std::equal(cmd.begin(), cmd.end(), "action"))
+            else if ((cmd == "action"))
               {
                 SourceCode* returns = 0;
                 if (source.next() == CLex::Scanner::ObjectOpening)
@@ -436,7 +436,7 @@ Scanner::parse( char const* _filename, Opts& opts, Isa& isa )
                 isa.m_actionprotos.push_back( ap );
                 source.next();
               }
-            else if (std::equal(cmd.begin(), cmd.end(), "include"))
+            else if ((cmd == "include"))
               {
                 if (source.next() != CLex::Scanner::StringQuotes)
                   throw source.unexpected();
@@ -454,7 +454,7 @@ Scanner::parse( char const* _filename, Opts& opts, Isa& isa )
                 
                 source.next();
               }
-            else if (std::equal(cmd.begin(), cmd.end(), "namespace"))
+            else if ((cmd == "namespace"))
               {
                 for (;;)
                   {
@@ -470,7 +470,7 @@ Scanner::parse( char const* _filename, Opts& opts, Isa& isa )
                   }
                 
               }
-            else if (std::equal(cmd.begin(), cmd.end(), "set"))
+            else if ((cmd == "set"))
               {
                 if (source.next() != CLex::Scanner::Name)
                   throw source.unexpected();
@@ -504,7 +504,7 @@ Scanner::parse( char const* _filename, Opts& opts, Isa& isa )
                   }
                 source.next();
               }
-            else if (std::equal(cmd.begin(), cmd.end(), "subdecoder"))
+            else if ((cmd == "subdecoder"))
               {
                 std::vector<ConstStr> nmspc;
                 for (;;)
@@ -588,7 +588,7 @@ Scanner::parse( char const* _filename, Opts& opts, Isa& isa )
                     throw source.unexpected();
                   }
               }
-            else if (std::equal(cmd.begin(), cmd.end(), "template"))
+            else if ((cmd == "template"))
               {
                 if (source.next() != CLex::Scanner::Less)
                   throw source.unexpected();
@@ -608,13 +608,13 @@ Scanner::parse( char const* _filename, Opts& opts, Isa& isa )
                   }
                 source.next();
               }
-            else if (std::equal(cmd.begin(), cmd.end(), "op"))
+            else if ((cmd == "op"))
               {
                 isa.add(GetOp(source, isa, comments));
                 comments.clear();
                 source.next();
               }
-            else if (std::equal(cmd.begin(), cmd.end(), "specialize"))
+            else if ((cmd == "specialize"))
               {
                 if (source.next() != CLex::Scanner::Name)
                   throw source.unexpected();
@@ -666,13 +666,13 @@ Scanner::parse( char const* _filename, Opts& opts, Isa& isa )
                 
                 source.next();
               }
-            else if (std::equal(cmd.begin(), cmd.end(), "var"))
+            else if ((cmd == "var"))
               {
                 Vector<Variable> var_list;
                 GetVarList(source, var_list);
                 isa.m_vars.append( var_list );
               }
-            else if (std::equal(cmd.begin(), cmd.end(), "group"))
+            else if ((cmd == "group"))
               {
                 if (source.next() != CLex::Scanner::Name)
                   throw source.unexpected();

@@ -763,7 +763,7 @@ void UserInstrument::Sample()
 // 		sstr.clear();
 // 		sstr.seekp(0);
 // 		output_instrument->Output(sstr);
-		has_breakpoint_cond = value_changed_breakpoint && output_instrument->ValueChanged();
+		if(value_changed_breakpoint && output_instrument->ValueChanged()) has_breakpoint_cond = true;
 // 		get_value = sstr.str();
 		get_value_valid = false;
 	}
@@ -780,7 +780,10 @@ void UserInstrument::Latch()
 void UserInstrument::Fetch()
 {
 	Sample();
-	Latch();
+	if(ValueChanged())
+	{
+		Latch();
+	}
 }
 
 void UserInstrument::EnableValueChangedBreakpoint()
@@ -796,6 +799,11 @@ void UserInstrument::DisableValueChangedBreakpoint()
 bool UserInstrument::IsValueChangedBreakpointEnabled() const
 {
 	return value_changed_breakpoint;
+}
+
+void UserInstrument::ClearBreakpointCondition()
+{
+	has_breakpoint_cond = false;
 }
 
 bool UserInstrument::HasBreakpointCondition() const
@@ -849,6 +857,12 @@ bool UserInstrument::IsReadOnly() const
 bool UserInstrument::IsBoolean() const
 {
 	return (input_instrument && (input_instrument->GetTypeInfo() == typeid(bool))) || (output_instrument && (output_instrument->GetTypeInfo() == typeid(bool)));
+}
+
+bool UserInstrument::ValueChanged() const
+{
+	return output_instrument->ValueChanged();
+
 }
 
 UserInterface::UserInterface(const char *name, Instrumenter *instrumenter)
@@ -1036,6 +1050,17 @@ void UserInterface::Commit()
 	}
 }
 
+void UserInterface::ClearBreakpointConditions()
+{
+	std::map<std::string, UserInstrument *>::iterator user_instrument_it;
+	for(user_instrument_it = user_instruments.begin(); user_instrument_it != user_instruments.end(); user_instrument_it++)
+	{
+		UserInstrument *user_instrument = (*user_instrument_it).second;
+		
+		user_instrument->ClearBreakpointCondition();
+	}
+}
+
 void UserInterface::ProcessInputInstruments()
 {
 	if(unlikely(halt))
@@ -1071,6 +1096,7 @@ void UserInterface::ProcessInputInstruments()
 			UnlockInstruments();
 			WaitForUser();
 			LockInstruments();
+			ClearBreakpointConditions();
 			Commit();
 			if(unlikely(halt))
 			{
@@ -1299,7 +1325,6 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 			{
 				LockPost();
 				LockInstruments();
-				Sample();
 				
 				PropertySetter property_setter(*this);
 				if(property_setter.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
@@ -1539,7 +1564,7 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 								if(is_boolean) user_instrument->Get(bool_value);
 								response << "\t\t\t\t<div class=\"signal" << (user_instrument->HasBreakpointCondition() ? " brkpt-cond" : "") << "\">" << std::endl;
 								response << "\t\t\t\t\t<div class=\"signal-enable\"><form action=\"" << form_action << "\" method=\"post\"><button title=\"Enable/Disable injection\" class=\"signal-enable" << (user_instrument->IsInjectionEnabled() ? " checked" : " unchecked") << "\" type=\"submit\" name=\"" << (user_instrument->IsInjectionEnabled() ? "disable" : "enable") << "*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></button></form></div>" << std::endl;
-								response << "\t\t\t\t\t<div class=\"signal-brkpt-enable\"><form action=\"" << form_action << "\" method=\"post\"><button title=\"Enable/Disable breakpoint\" class=\"signal-brkpt-enable" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : " unchecked") << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"submit\" name=\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? "disable" : "enable") << "-brkpt*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></button></form></div>" << std::endl;
+								response << "\t\t\t\t\t<div class=\"signal-brkpt-enable\"><form action=\"" << form_action << "\" method=\"post\"><button title=\"Enable/Disable breakpoint\" class=\"signal-brkpt-enable" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : " unchecked") << ((cont || halt) ? " disabled" : "") << "\" type=\"submit\" name=\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? "disable" : "enable") << "-brkpt*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt) ? " disabled" : "") << "></button></form></div>" << std::endl;
 								response << "\t\t\t\t\t<div class=\"signal-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "</div>" << std::endl;
 								response << "\t\t\t\t\t<div class=\"signal-toggle\">";
 								if(is_boolean)

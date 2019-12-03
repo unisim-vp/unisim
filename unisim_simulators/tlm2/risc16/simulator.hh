@@ -41,6 +41,9 @@
 #endif
 
 #include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/logger/console/console_printer.hh>
+#include <unisim/kernel/logger/text_file/text_file_writer.hh>
+#include <unisim/kernel/logger/xml_file/xml_file_writer.hh>
 
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
@@ -132,9 +135,12 @@ private:
 	// - Raw loader
 	RawLoader* raw_loader;
 
-	// - Profiler
-	//Profiler<uint64_t> *profiler;
-
+	//  - Logger Console Printer
+	unisim::kernel::logger::console::Printer *logger_console_printer;
+	//  - Logger Text File Writer
+	unisim::kernel::logger::text_file::Writer *logger_text_file_writer;
+	//  - Logger XML File Writer
+	unisim::kernel::logger::xml_file::Writer *logger_xml_file_writer;
 	
 	//==========================================================================
 	

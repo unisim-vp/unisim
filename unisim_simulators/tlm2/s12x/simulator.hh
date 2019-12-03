@@ -21,6 +21,11 @@
 #endif
 
 #include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/logger/console/console_printer.hh>
+#include <unisim/kernel/logger/text_file/text_file_writer.hh>
+#include <unisim/kernel/logger/http/http_writer.hh>
+#include <unisim/kernel/logger/xml_file/xml_file_writer.hh>
+#include <unisim/kernel/logger/netstream/netstream_writer.hh>
 
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
@@ -367,6 +372,11 @@ private:
 	typedef unisim::service::debug::profiler::Profiler<DEBUGGER_CONFIG::ADDRESS> PROFILER;
 	typedef unisim::service::tee::char_io::Tee<2> CHAR_IO_TEE;
 	typedef unisim::service::web_terminal::WebTerminal WEB_TERMINAL;
+	typedef unisim::kernel::logger::console::Printer LOGGER_CONSOLE_PRINTER;
+	typedef unisim::kernel::logger::text_file::Writer LOGGER_TEXT_FILE_WRITER;
+	typedef unisim::kernel::logger::http::Writer LOGGER_HTTP_WRITER;
+	typedef unisim::kernel::logger::xml_file::Writer LOGGER_XML_FILE_WRITER;
+	typedef unisim::kernel::logger::netstream::Writer LOGGER_NETSTREAM_WRITER;
 	
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -454,6 +464,17 @@ private:
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
 
+	//  - Logger Console Printer
+	LOGGER_CONSOLE_PRINTER *logger_console_printer;
+	//  - Logger Text File Writer
+	LOGGER_TEXT_FILE_WRITER *logger_text_file_writer;
+	//  - Logger HTTP Writer
+	LOGGER_HTTP_WRITER *logger_http_writer;
+	//  - Logger XML File Writer
+	LOGGER_XML_FILE_WRITER *logger_xml_file_writer;
+	//  - Logger TCP Network Stream Writer
+	LOGGER_NETSTREAM_WRITER *logger_netstream_writer;
+	
 	bool enable_pim_server;
 	bool enable_gdb_server;
 	bool enable_inline_debugger;

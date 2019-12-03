@@ -35,6 +35,9 @@
 
 #include <simulator.hh>
 #include <unisim/service/debug/debugger/debugger.tcc>
+#include <unisim/kernel/config/xml/xml_config_file_helper.hh>
+#include <unisim/kernel/config/ini/ini_config_file_helper.hh>
+#include <unisim/kernel/config/json/json_config_file_helper.hh>
 
 Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::Simulator(argc, argv, LoadBuiltInConfig)
@@ -43,8 +46,19 @@ Simulator::Simulator(int argc, char **argv)
 	, debugger(0)
 	, inline_debugger(0)
 	, raw_loader(0)
+	, logger_console_printer(0)
+	, logger_text_file_writer(0)
+	, logger_xml_file_writer(0)
 	, exit_status(0)
 {
+	//=========================================================================
+	//===                 Logger Printers instantiations                    ===
+	//=========================================================================
+
+	logger_console_printer = new unisim::kernel::logger::console::Printer();
+	logger_text_file_writer = new unisim::kernel::logger::text_file::Writer();
+	logger_xml_file_writer = new unisim::kernel::logger::xml_file::Writer();
+	
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
@@ -116,10 +130,19 @@ Simulator::~Simulator()
 	delete cpu;
 	delete memory;
 	delete raw_loader;
+	delete inline_debugger;
+	delete debugger;
+	delete logger_console_printer;
+	delete logger_text_file_writer;
+	delete logger_xml_file_writer;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
+	new unisim::kernel::config::xml::XMLConfigFileHelper(simulator);
+	new unisim::kernel::config::ini::INIConfigFileHelper(simulator);
+	new unisim::kernel::config::json::JSONConfigFileHelper(simulator);
+	
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM risc16");
 	simulator->SetVariable("copyright", "Copyright (C) 2008-2015, Commissariat a l'Energie Atomique (CEA)");
@@ -146,6 +169,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	//=========================================================================
 
 	simulator->SetVariable("inline-debugger.memory-atom-size", 2); // memory is not byte addressable
+	simulator->SetVariable("inline-debugger.program-counter-name", "cia");
 	simulator->SetVariable("kernel_logger.std_err", true);
 	simulator->SetVariable("kernel_logger.std_out", false);
 	simulator->SetVariable("kernel_logger.std_err_color", false);

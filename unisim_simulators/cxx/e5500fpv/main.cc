@@ -35,6 +35,7 @@
 #include <arch.hh>
 #include <linuxsystem.hh>
 #include <debugger.hh>
+#include <unisim/kernel/logger/console/console_printer.hh>
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
@@ -84,6 +85,7 @@ struct Simulator
   }
   
   int exit_status;
+  unisim::kernel::logger::console::Printer logger_console_printer;
 };
 
 struct Disasm

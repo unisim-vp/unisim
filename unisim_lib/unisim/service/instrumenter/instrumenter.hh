@@ -378,8 +378,10 @@ public:
 	void EnableValueChangedBreakpoint();
 	void DisableValueChangedBreakpoint();
 	bool IsValueChangedBreakpointEnabled() const;
+	void ClearBreakpointCondition();
 	bool HasBreakpointCondition() const;
 	bool IsBoolean() const;
+	bool ValueChanged() const;
 private:
 	std::string name;
 	mutable std::ostringstream sstr;
@@ -513,6 +515,7 @@ private:
 	void Sample();
 	void Fetch();
 	void Commit();
+	void ClearBreakpointConditions();
 	void WaitForUser();
 	void Continue();
 	void LockInstruments();
@@ -816,14 +819,14 @@ template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
 void OutputInstrument<T, WRITER_POLICY>::Sample()
 {
 	sample_value = signal->read();
-	//std::cerr << sc_core::sc_time_stamp() << ":Sample:" << sample_value << std::endl;
+// 	std::cerr << sc_core::sc_time_stamp() << ":" << GetName() << ":Sample:" << sample_value << std::endl;
 }
 
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
 void OutputInstrument<T, WRITER_POLICY>::Latch()
 {
 	latched_value = sample_value;
-	//std::cerr << sc_core::sc_time_stamp() << ":Latch:" << latched_value << std::endl;
+// 	std::cerr << sc_core::sc_time_stamp() << ":" << GetName() << ":Latch:" << latched_value << std::endl;
 }
 
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY>

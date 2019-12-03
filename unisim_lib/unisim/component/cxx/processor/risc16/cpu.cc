@@ -83,6 +83,8 @@ CPU::CPU(const char *name, Object *_parent)
 		registers_registry.AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint16_t>(name.c_str(), &gpr[i]));
 		extended_registers_registry.push_back(new unisim::kernel::variable::Register<uint16_t>(name.c_str(), this, gpr[i], "General Purpose Register"));
 	}
+	registers_registry.AddRegisterInterface(new unisim::util::debug::SimpleRegister<uint16_t>("cia", &cia));
+	extended_registers_registry.push_back(new unisim::kernel::variable::Register<uint16_t>("cia", this, cia, "Current Instruction Address"));
 }
 
 CPU::~CPU()
