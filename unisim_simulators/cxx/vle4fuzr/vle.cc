@@ -100,7 +100,8 @@ namespace concrete {
             delete op;
             static Decoder decoder;
             op = page.ops[insn_offset] = decoder.NCDecode(insn_addr, insn);
-
+            insn_length = op->GetLength() / 8;
+            
             {
               static branch::Decoder bdecoder;
               auto bop = bdecoder.NCDecode( insn_addr, insn );
@@ -136,6 +137,8 @@ namespace concrete {
             std::cerr << "Something went wrong with instruction execution.\n";
             throw TODO();
           }
+        
+        this->bblock = (op->branch.target != op->branch.BNone);
       }
     
     //  std::cerr << "Stopped: current=0x" << std::hex << current_insn_addr << ", next: " << std::hex << next_insn_addr << std::dec << std::endl;

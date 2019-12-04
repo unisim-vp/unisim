@@ -391,7 +391,7 @@ namespace branch
     U32 GetGPR(unsigned n) { return reg_values[n]; };
     void SetGPR(unsigned n, U32 value) { reg_values[n] = value; }
     U32 GetCIA() { return cia; };
-    bool Branch(U32 addr) { nia = addr; return false; }
+    bool Branch(U32 addr) { nia = addr; has_branch = true; return false; }
     
     bool Int8Load(unsigned n, U32 address) { SetGPR(n, U32()); return true; }
     bool Int16Load(unsigned n, U32 address) { SetGPR(n, U32()); return true; }

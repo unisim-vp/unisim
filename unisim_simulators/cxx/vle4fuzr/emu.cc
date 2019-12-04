@@ -102,7 +102,7 @@ Processor::Page::dump(std::ostream& sink) const
 }
 
 void
-BranchInfo::update( bool branch, bool known, uint64_t target )
+BranchInfo::update( bool branch, bool known, uint64_t naddress )
 {
   if (not branch)
     { pass = true; }
@@ -115,8 +115,8 @@ BranchInfo::update( bool branch, bool known, uint64_t target )
   else if (target == BNone)
     {
       target = Direct;
-      address = target;
+      address = naddress;
     }
-  else if (target != Direct or address != target)
+  else if (target != Direct or address != naddress)
     { throw *this; }
 }
