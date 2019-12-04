@@ -16,7 +16,7 @@
 #include <cstdint>
 
 Processor::Processor()
-  : pages(), hooks(), disasm(true), bblock(true)
+  : pages(), hooks(), disasm(true), bblock(true), terminated(false)
 {}
 
 Processor::~Processor()

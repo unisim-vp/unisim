@@ -319,6 +319,7 @@ struct Processor
 
   bool disasm;
   bool bblock;
+  bool terminated;
   
   void set_disasm(bool _disasm) { disasm = _disasm; }
   virtual int emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count ) = 0;

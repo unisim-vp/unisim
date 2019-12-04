@@ -77,10 +77,16 @@ extern "C"
     return proc.mem_read(addr,bytes,size);
   }
   
-  int emu_mem_prot(void* uc, uint64_t addr, uint32_t new_perms)
+  int emu_mem_chprot(void* uc, uint64_t addr, unsigned new_perms)
   {
     Processor& proc = *(Processor*)uc;
     return proc.mem_chprot(addr, new_perms);
+  }
+  
+  int emu_mem_chhook(void* uc, uint64_t addr, void* hook)
+  {
+    Processor& proc = *(Processor*)uc;
+    return proc.mem_chhook(addr, (Processor::Page::hook_t)hook);
   }
   
   int emu_reg_write(void* uc, char const* id, uintptr_t size, int regid, uint64_t value)
@@ -111,8 +117,23 @@ extern "C"
 
   int emu_start(void* uc, uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count)
   {
+    if (timeout)
+      {
+        std::cerr << "Error: timeout unimplemented." << timeout << std::endl;
+        throw 0;
+      }
+    
     Processor& proc = *(Processor*)uc;
+    proc.terminated = false;
+    proc.bblock = true;
     return proc.emu_start(begin, until, timeout, count);
+  }
+
+  int emu_stop(void* uc)
+  {
+    Processor& proc = *(Processor*)uc;
+    proc.terminated = true;
+    return 0;
   }
 
 }

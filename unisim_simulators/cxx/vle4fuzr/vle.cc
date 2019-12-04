@@ -65,24 +65,12 @@ namespace concrete {
   int
   Processor::emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count )
   {
-    if (timeout)
-      {
-        std::cerr << "Error: timeout unimplemented." << timeout << std::endl;
-        throw 0;
-      }
-    
-    // std::cerr << "until: " << until << std::endl;
-    // std::cerr << "count: " << count << std::endl;
-    
     this->Branch(begin);
-    this->bblock = true;
-  
-    while (this->nia != until)
+    
+    while (not terminated and this->nia != until)
       {
         /* go to the next instruction */
         this->cia = this->nia;
-        
-        /* Process exceptions */
         
         uint32_t insn_addr = this->cia = this->nia, insn_length = 0;
         CodeType insn;
@@ -134,6 +122,7 @@ namespace concrete {
         /* execute the instruction */
         if (not op->execute(this))
           {
+            /* Process exceptions */
             std::cerr << "Something went wrong with instruction execution.\n";
             throw TODO();
           }

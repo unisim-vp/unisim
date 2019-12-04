@@ -215,7 +215,7 @@ struct ArmBranch
   void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 value ) {}
   char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { return "no"; }
 
-  void     CallSupervisor( uint16_t imm ) { }
+  void     CallSupervisor( uint16_t imm ) { throw TODO(); }
 
   U32 FPSCR, FPEXC;
   U32 RoundTowardsZeroFPSCR() { return U32(); }
@@ -346,19 +346,9 @@ ArmProcessor::Step( Decoder& decoder )
 int
 ArmProcessor::emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count )
 {
-  if (timeout)
-    {
-      std::cerr << "Error: timeout unimplemented." << timeout << std::endl;
-      throw 0;
-    }
-    
-  // std::cerr << "until: " << until << std::endl;
-  // std::cerr << "count: " << count << std::endl;
-
   this->Branch(begin, B_DBG);
-  this->bblock = true;
   
-  while (next_insn_addr != until)
+  while (not terminated and next_insn_addr != until)
     {
       /* Instruction boundary next_insn_addr becomes current_insn_addr */
       try {
@@ -370,63 +360,9 @@ ArmProcessor::emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintp
           {
             Step(arm32_decoder);
           }
-            
-        // if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
-        //   memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, insn_length);
-            
-        //instruction_counter++; /* Instruction regularly finished */
       }
-          
-      //         catch (SVCException const& svexc) {
-      //           /* Resuming execution, since SVC exceptions are explicitly
-      //    * requested from regular instructions. ITState will be updated as
-      //    * needed by TakeSVCException (as done in the ARM spec). */
-      //   if (unlikely( requires_commit_instruction_reporting and memory_access_reporting_import ))
-      //     memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, insn_length);
-
-      //   instruction_counter++; /* Instruction regularly finished */
-    
-      //   this->TakeSVCException();
-      // }
-  
-      // catch (DataAbortException const& daexc) {
-      //   /* Abort execution, and take processor to data abort handler */
-    
-      //   if (unlikely(trap_reporting_import))
-      //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
-    
-      //   this->TakeDataOrPrefetchAbortException(true); // TakeDataAbortException
-      // }
-  
-      // catch (PrefetchAbortException const& paexc) {
-      //   /* Abort execution, and take processor to prefetch abort handler */
-    
-      //   if (unlikely(trap_reporting_import))
-      //     trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
-    
-      //   this->TakeDataOrPrefetchAbortException(false); // TakePrefetchAbortException
-      // }
-  
-      // catch (UndefInstrException const& undexc) {
-      //   /* Abort execution, and take processor to undefined handler */
-    
-      //   if (unlikely(trap_reporting_import))
-      //     trap_reporting_import->ReportTrap( *this, "Undefined Exception" );
-    
-      //   this->TakeUndefInstrException();
-      // }
-  
-      catch (unisim::component::cxx::processor::arm::Exception const& exc)
-        {
-          throw 0;
-          // logger << DebugError << "Unimplemented exception (" << exc.what() << ")"
-          //        << " pc: " << std::hex << current_insn_addr << std::dec
-          //        << EndDebugError;
-          // this->Stop(-1);
-        }
     }
     
-  //  std::cerr << "Stopped: current=0x" << std::hex << current_insn_addr << ", next: " << std::hex << next_insn_addr << std::dec << std::endl;
   return 0;
 }
 
