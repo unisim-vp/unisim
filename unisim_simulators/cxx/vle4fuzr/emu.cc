@@ -100,3 +100,23 @@ Processor::Page::dump(std::ostream& sink) const
             << ("x "[not (perms & Execute)])
             << ")";
 }
+
+void
+BranchInfo::update( bool branch, bool known, uint64_t target )
+{
+  if (not branch)
+    { pass = true; }
+  else if (not known)
+    {
+      if (target == Direct)
+        { throw *this; }
+      target = Indirect;
+    }
+  else if (target == BNone)
+    {
+      target = Direct;
+      address = target;
+    }
+  else if (target != Direct or address != target)
+    { throw *this; }
+}

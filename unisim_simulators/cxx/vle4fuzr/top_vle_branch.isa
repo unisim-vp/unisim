@@ -8,13 +8,8 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Gilles Mouchard <gilles.mouchard@cea.fr>
  */
 
-include "unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 
-set withcache_p false;
+namespace vle::branch
 
-decl {
-  #include <emu.hh>
-}
-
-var branch : {typename ARCH::InsnBranch};
+include "top_vle.isa"
 

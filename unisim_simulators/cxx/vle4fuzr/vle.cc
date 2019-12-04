@@ -9,25 +9,29 @@
  */
 
 #include "vle.hh"
-#include "top_vle.hh"
+#include "top_vle_concrete.hh"
+#include "top_vle_branch.hh"
 #include <unisim/util/endian/endian.hh>
 #include <iostream>
 
 namespace vle {
-namespace concrete {
-  
-  Processor::Processor()
-  {     
-    for (unsigned reg = 0; reg < 32; ++reg)
-      reg_values[reg] = U32();
-  }
-
   void
-  Processor::ProcessException( char const* msg )
+  PPCBase::ProcessException( char const* msg )
   {
     std::cerr << "exception(" << msg << ")\n";
     throw TODO();
   }
+namespace branch {
+  Processor::Processor( ActionNode& root, uint32_t addr, uint32_t length )
+    : path(&root), reg_values(), cia(addr), nia(addr+length), has_branch(false)
+  {}
+  
+} // end of namespace branch
+namespace concrete {
+  
+  Processor::Processor()
+    : reg_values(), cia(), nia()
+  {}
 
   Processor::RegView const*
   Processor::get_reg(char const* id, uintptr_t size)
@@ -78,6 +82,8 @@ namespace concrete {
         /* go to the next instruction */
         this->cia = this->nia;
         
+        /* Process exceptions */
+        
         uint32_t insn_addr = this->cia = this->nia, insn_length = 0;
         CodeType insn;
         insn = this->Fetch(insn_addr);
@@ -94,6 +100,23 @@ namespace concrete {
             delete op;
             static Decoder decoder;
             op = page.ops[insn_offset] = decoder.NCDecode(insn_addr, insn);
+
+            {
+              static branch::Decoder bdecoder;
+              auto bop = bdecoder.NCDecode( insn_addr, insn );
+          
+              branch::ActionNode root;
+              for (bool end = false; not end;)
+                {
+                  branch::Processor bp( root, insn_addr, insn_length );
+                  bop->execute( &bp );
+                  op->branch.update( bp.has_branch, bp.nia );
+                  end = bp.path->close();
+                }
+    
+              delete bop;
+            }
+            
           }
         
         // Monitor

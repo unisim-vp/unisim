@@ -82,6 +82,9 @@ UNISIM_BINDINGS_HEADER_FILES="\
 top_arm32.isa \
 top_thumb.isa \
 top_vle.isa \
+top_vle_concrete.isa \
+top_vle_branch.isa \
+xvalue.hh \
 emu.hh \
 vle.hh \
 arm.hh \
@@ -193,7 +196,7 @@ unisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULA
 # Dynamic Plugin
 lib_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_BINDINGS_SOURCE_FILES}
-nodist_libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = top_vle.cc
+nodist_libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = top_vle_branch.cc top_vle_concrete.cc
 #libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -shared -no-undefined
 libunisim_${AM_SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -no-undefined
 
@@ -208,16 +211,20 @@ BUILT_SOURCES=\
 	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc\
 	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh\
 	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc\
-	\$(top_builddir)/top_vle.hh\
-	\$(top_builddir)/top_vle.cc\
+	\$(top_builddir)/top_vle_concrete.hh\
+	\$(top_builddir)/top_vle_concrete.cc\
+	\$(top_builddir)/top_vle_branch.hh\
+	\$(top_builddir)/top_vle_branch.cc\
 
 CLEANFILES=\
 	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh\
 	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc\
 	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh\
 	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc\
-	\$(top_builddir)/top_vle.hh\
-	\$(top_builddir)/top_vle.cc\
+	\$(top_builddir)/top_vle_concrete.hh\
+	\$(top_builddir)/top_vle_concrete.cc\
+	\$(top_builddir)/top_vle_branch.hh\
+	\$(top_builddir)/top_vle_branch.cc\
 
 \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh
 \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: top_arm32.isa ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES}
@@ -227,9 +234,13 @@ CLEANFILES=\
 \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: top_thumb.isa ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES}
 	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_thumb.isa
 
-\$(top_builddir)/top_vle.cc: \$(top_builddir)/top_vle.hh
-\$(top_builddir)/top_vle.hh: top_vle.isa ${UNISIM_SIMULATOR_ISA_PPC_FILES}
-	\$(GENISSLIB_PATH) \$(GILFLAGS) -o \$(top_builddir)/top_vle -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_vle.isa
+\$(top_builddir)/top_vle_concrete.cc: \$(top_builddir)/top_vle_concrete.hh
+\$(top_builddir)/top_vle_concrete.hh: top_vle_concrete.isa top_vle.isa ${UNISIM_SIMULATOR_ISA_PPC_FILES}
+	\$(GENISSLIB_PATH) \$(GILFLAGS) -o \$(top_builddir)/top_vle_concrete -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_vle_concrete.isa
+
+\$(top_builddir)/top_vle_branch.cc: \$(top_builddir)/top_vle_branch.hh
+\$(top_builddir)/top_vle_branch.hh: top_vle_branch.isa top_vle.isa ${UNISIM_SIMULATOR_ISA_PPC_FILES}
+	\$(GENISSLIB_PATH) \$(GILFLAGS) -o \$(top_builddir)/top_vle_branch -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_vle_branch.isa
 
 EOF
 )

@@ -9,6 +9,7 @@
  */
 
 #include "arm.hh"
+#include "xvalue.hh"
 #include <unisim/component/cxx/processor/arm/isa_arm32.tcc>
 #include <unisim/component/cxx/processor/arm/isa_thumb.tcc>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
@@ -55,106 +56,12 @@ ArmProcessor::get_reg(char const* id, uintptr_t size)
   return 0;
 }
 
-namespace x
-{
-  template <typename Bool> struct AssertBool {};
-  template <>              struct AssertBool<bool> { static void check() {} };
-
-  template <typename VALUE_TYPE>
-  struct XValue
-  {
-    typedef VALUE_TYPE value_type;
-    typedef XValue<value_type> this_type;
-
-    XValue() : value(), determined(false) {}
-    XValue( value_type _value, bool _determined ) : value(_value), determined(_determined) {}
-    explicit XValue( value_type _value ) : value(_value), determined(true) {}
-
-    template <typename SRC_VALUE_TYPE>  explicit XValue( XValue<SRC_VALUE_TYPE> const& other ) : value(other.value), determined(other.determined) {}
-
-    template <typename SHT> this_type operator << ( SHT sh ) const { return this_type( value << sh, determined ); }
-    template <typename SHT> this_type operator >> ( SHT sh ) const { return this_type( value >> sh, determined ); }
-    template <typename SHT> this_type& operator <<= ( SHT sh ) { value <<= sh; return *this; }
-    template <typename SHT> this_type& operator >>= ( SHT sh ) { value >>= sh; return *this; }
-    template <typename SHT> this_type operator << ( XValue<SHT> const& sh ) const { return this_type( value << sh.value, determined and sh.determined ); }
-    template <typename SHT> this_type operator >> ( XValue<SHT> const& sh ) const { return this_type( value >> sh.value, determined and sh.determined ); }
-
-    this_type operator - () const { return this_type( -value, determined ); }
-    this_type operator ~ () const { return this_type( ~value, determined ); }
-
-    this_type& operator += ( this_type const& other ) { value += other.value; determined &= other.determined; return *this; }
-    this_type& operator -= ( this_type const& other ) { value -= other.value; determined &= other.determined; return *this; }
-    this_type& operator *= ( this_type const& other ) { value *= other.value; determined &= other.determined; return *this; }
-    this_type& operator /= ( this_type const& other ) { value /= other.value; determined &= other.determined; return *this; }
-    this_type& operator %= ( this_type const& other ) { value %= other.value; determined &= other.determined; return *this; }
-    this_type& operator ^= ( this_type const& other ) { value ^= other.value; determined &= other.determined; return *this; }
-    this_type& operator &= ( this_type const& other ) { value &= other.value; determined &= other.determined; return *this; }
-    this_type& operator |= ( this_type const& other ) { value |= other.value; determined &= other.determined; return *this; }
-
-    this_type operator + ( this_type const& other ) const { return this_type( value + other.value, determined and other.determined ); }
-    this_type operator - ( this_type const& other ) const { return this_type( value - other.value, determined and other.determined ); }
-    this_type operator * ( this_type const& other ) const { return this_type( value * other.value, determined and other.determined ); }
-    this_type operator / ( this_type const& other ) const { return this_type( value / other.value, determined and other.determined ); }
-    this_type operator % ( this_type const& other ) const { return this_type( value % other.value, determined and other.determined ); }
-    this_type operator ^ ( this_type const& other ) const { return this_type( value ^ other.value, determined and other.determined ); }
-    this_type operator & ( this_type const& other ) const { return this_type( value & other.value, determined and other.determined ); }
-    this_type operator | ( this_type const& other ) const { return this_type( value | other.value, determined and other.determined ); }
-  
-    XValue<bool> operator == ( this_type const& other ) const { return XValue<bool>( value == other.value, determined and other.determined ); }
-    XValue<bool> operator != ( this_type const& other ) const { return XValue<bool>( value != other.value, determined and other.determined ); }
-    XValue<bool> operator <= ( this_type const& other ) const { return XValue<bool>( value <= other.value, determined and other.determined ); }
-    XValue<bool> operator >= ( this_type const& other ) const { return XValue<bool>( value >= other.value, determined and other.determined ); }
-    XValue<bool> operator < ( this_type const& other ) const  { return XValue<bool>( value < other.value, determined and other.determined ); }
-    XValue<bool> operator > ( this_type const& other ) const  { return XValue<bool>( value > other.value, determined and other.determined ); }
-
-    XValue<bool> operator ! () const { AssertBool<value_type>::check(); return XValue<bool>( not value, determined ); }
-
-    XValue<bool> operator && ( XValue<bool> const& other ) const { AssertBool<value_type>::check(); return XValue<bool>( value and other.value, determined and other.determined ); }
-
-    XValue<bool> operator || ( XValue<bool> const& other ) const { AssertBool<value_type>::check(); return XValue<bool>( value or other.value, determined and other.determined ); }
-  
-    value_type value;
-    bool determined;
-  };
-
-  template <typename T, class F>
-  XValue<T> XApply( F const& f, XValue<T> const& l, XValue<T> const& r ) { return XValue<T>( f(l.value, r.value), l.determined and r.determined ); }
-  
-  template <typename T, class F>
-  XValue<T> XApply( F const& f, XValue<T> const& v ) { return XValue<T>( f(v.value), v.determined ); }
-  
-  template <typename T> XValue<T> Minimum( XValue<T> const& l, XValue<T> const& r ) { return XApply( std::min, l, r ); }
-  template <typename T> XValue<T> Maximum( XValue<T> const& l, XValue<T> const& r ) { return XApply( std::max, l, r ); }
-
-  template <typename UTP> UTP ByteSwap( UTP const& v ) { return UTP( unisim::util::endian::ByteSwap( v.value ), v.determined ); }
-  template <typename UTP> UTP BitScanReverse( UTP const& v ) { return UTP( unisim::util::arithmetic::BitScanReverse( v.value ), v.determined ); }
-
-  template <typename UTP, typename STP>
-  UTP RotateRight( UTP const& v, STP const& _s ) { XValue<uint8_t> s(_s); return UTP( unisim::util::arithmetic::RotateRight( v.value, s.value ), v.determined and s.determined ); }
-
-  // template <typename UTP>
-  // UTP RotateLeft( UTP const& value, uint8_t sh ) { return UTP( make_operation( "Rol", value.expr, make_const<uint8_t>(sh) ) ); }
-  // template <typename UTP, typename STP>
-  // UTP RotateLeft( UTP const& value, STP const& sh ) { return UTP( make_operation( "Rol", value.expr, XValue<uint8_t>(sh).expr ) ); }
-
-  // template <typename UTP>
-  // UTP BitScanReverse( UTP const& value ) { return UTP( make_operation( "BSR", value.expr ) ); }
-
-  // template <typename UTP>
-  // UTP BitScanForward( UTP const& value ) { return UTP( make_operation( "BSF", value.expr ) ); }
-
-  // template <typename T>
-  // XValue<T> power( XValue<T> const& left, XValue<T> const& right ) { return XValue<T>( make_operation( "FPow", left.expr, right.expr ) ); }
-
-  // template <typename T>
-  // XValue<T> fmodulo( XValue<T> const& left, XValue<T> const& right ) { return XValue<T>( make_operation( "FMod", left.expr, right.expr ) ); }
-}
-
 struct ActionNode : public unisim::util::symbolic::Choice<ActionNode> {};
 
 struct ArmBranch
 {
   typedef ArmProcessor::Config Config;
+  struct InsnBranch {};
   
   typedef x::XValue<double>   F64;
   typedef x::XValue<float>    F32;
@@ -341,8 +248,6 @@ struct ArmBranch
   };
 };
 
-template <> struct InsnBranch<ArmBranch> {};
-
 inline bool CheckCondition( ArmBranch& ab, ArmBranch::ITCond const& ) { return ab.Choose(); }
 
 template <class T> struct AMO {};
@@ -409,21 +314,7 @@ ArmProcessor::Step( Decoder& decoder )
           {
             ArmBranch ab( root, insn_addr, insn_length, AMO<Decoder>::thumb );
             bop->execute( ab );
-            if (not ab.has_branch)
-              { op->branch.pass = true; }
-            else if (not ab.next_insn_addr.determined)
-              {
-                if (op->branch.target == Branch::Direct) throw op->branch;
-                op->branch.target = Branch::Indirect;
-              }
-            else if (op->branch.target != Branch::Indirect and
-                     (op->branch.target != Branch::Direct or op->branch.address == ab.next_insn_addr.value))
-              {
-                op->branch.target = Branch::Direct;
-                op->branch.address = ab.next_insn_addr.value;
-              }
-            else
-              { throw op->branch; }
+            op->branch.update( ab.has_branch, ab.next_insn_addr );
             end = ab.path->close();
           }
     

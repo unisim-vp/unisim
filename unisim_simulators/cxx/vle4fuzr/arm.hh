@@ -45,6 +45,7 @@ struct ArmProcessor
 {
   typedef unisim::component::cxx::processor::arm::CPU<ARMv7cfg> CP15CPU;
   typedef typename CP15CPU::CP15Reg CP15Reg;
+  typedef BranchInfo InsnBranch;
 
   ArmProcessor( char const* name, bool is_thumb );
   ~ArmProcessor();

@@ -324,16 +324,18 @@ struct Processor
   virtual int emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count ) = 0;
 };
 
-struct Branch
+struct BranchInfo
 {
-  Branch() : address(), target(BNone), pass(false) {}
   enum { BNone = 0, Direct, Indirect };
+  
+  BranchInfo() : address(), target(BNone), pass(false) {}
+  template <class X> void update( bool branch, X const& x ) { update( branch, x.determined, x.value ); }
+  void update( bool branch, bool known, uint64_t target );
+  
   uint64_t address;
   unsigned target : 2;
   unsigned pass : 1;
 };
-
-template <class ARCH> struct InsnBranch : public Branch {};
 
 template <class OP, uint64_t SZ>
 struct OpPage

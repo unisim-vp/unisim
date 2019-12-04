@@ -18,7 +18,7 @@ set endianness little;
 set words_order ascending;
 set withcache_p false;
 
-var branch : {InsnBranch<ARCH>};
+var branch : {typename ARCH::InsnBranch};
 
 template <{typename} {ARCH}>
 

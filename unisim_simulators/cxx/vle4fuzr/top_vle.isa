@@ -1,39 +1,13 @@
 /*
- *  Copyright (c) 2017,
+ *  Copyright (c) 2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met:
+ * FUZR RENAULT CEA FILE
  *
- *   - Redistributions of source code must retain the above copyright notice, this
- *     list of conditions and the following disclaimer.
- *
- *   - Redistributions in binary form must reproduce the above copyright notice,
- *     this list of conditions and the following disclaimer in the documentation
- *     and/or other materials provided with the distribution.
- *
- *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific prior
- *     written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *  DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
- *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Gilles Mouchard <gilles.mouchard@cea.fr>
  */
  
-namespace vle::concrete
-
 set addressclass {uint32_t}
 set codetype scalar;
 set withcache_p false;
@@ -44,11 +18,8 @@ decl {
 #include <inttypes.h>
 
 namespace vle {
-namespace concrete {
-  struct Processor;
-  typedef Processor CPU;
-} // end of namespace concrete
-
+  namespace concrete { struct Processor; typedef Processor CPU; }
+  namespace branch { struct Processor; typedef Processor CPU; }
 } // end of namespace vle
 
 }
@@ -60,22 +31,19 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/lsp/lsp.hh>
 
 namespace vle {
-namespace concrete {
-
-  using unisim::component::cxx::processor::powerpc::LSP_HS_UPPER_LOWER_EXCHANGED;
+ inline char const* LSP_HS_EVEN_ODD( unsigned n ) { return "<?>"; }
+ inline char const* LSP_TY( unsigned n ) { return "<?>"; }
+ inline char const* LSP_ACC( unsigned n ) { return "<?>"; }
   
-} // end of namespace concrete
+  // using unisim::component::cxx::processor::powerpc::Mask64;
+  using unisim::component::cxx::processor::powerpc::LSP_HS_UPPER_LOWER_EXCHANGED;
 } // end of namespace vle
 
+
+ /* Hooking likely/unlikely/even at implementation level */
 #if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
-#if defined(likely)
 #undef likely
-#endif
-
-#if defined(unlikely)
 #undef unlikely
-#endif
-
 #define likely(x)       __builtin_expect(cpu->Cond(x),1)
 #define evenly(x)       (cpu->Cond(x))
 #define unlikely(x)     __builtin_expect(cpu->Cond(x),0)
@@ -84,55 +52,20 @@ namespace concrete {
 #define evenly(x)       (cpu->Cond(x))
 #define unlikely(x)     (cpu->Cond(x))
 #endif
- 
-//   using ut::CPU;
-//   //  using ut::SignedAdd32;
-//   using ut::XER;
-//   using ut::LR;
-//   using ut::CTR;
-//   using ut::CR;
-//   using ut::ADDRESS;
-//   using ut::Flags;
-//   using ut::RN_NEAREST;
-//   using ut::RN_ZERO;
-//   using ut::RN_UP;
-//   using ut::RN_DOWN;
-//   using ut::SoftFloat;
-//   using ut::SoftHalfFloat;
 
-
-//   using ut::GenSPEFSCR_FINV;
-//   using ut::GenSPEFSCR_FOVF;
-//   using ut::GenSPEFSCR_FUNF;
-//   using ut::GenSPEFSCR_FINXS;
-//   using ut::HasSPEFSCR_InvalidInput;
-//   using ut::GenSPEFSCR_FG;
-//   using ut::GenSPEFSCR_FX;
-//   using ut::DoesSPEFSCR_TriggerException;
-//   using ut::GenSPEFSCR_FG;
-
- inline char const* LSP_HS_EVEN_ODD( unsigned n ) { return "<?>"; }
- inline char const* LSP_TY( unsigned n ) { return "<?>"; }
- inline char const* LSP_ACC( unsigned n ) { return "<?>"; }
-  
-//   using unisim::component::cxx::processor::powerpc::LSP_HS_UPPER_LOWER_EXCHANGED;
-//   using unisim::component::cxx::processor::powerpc::Mask64;
 }
 
 action {bool} execute({CPU *} {cpu}) {
-  throw 0;
   return false;
 }
 
 action {void} disasm({CPU *} {cpu}, {std::ostream&} {os}) {
-	os << "???";
+  os << "???";
 }
 
-action {void} update_esr_st({CPU *} {cpu}) {
-}
+action {void} update_esr_st({CPU *} {cpu}) {}
 
-action {void} update_esr_spv({CPU *} {cpu}) {
-}
+action {void} update_esr_spv({CPU *} {cpu}) {}
 
 /* Book I: Power ISA User Instruction Set Architecture */
 /* Fixed-point */
