@@ -370,7 +370,7 @@ namespace ut
     void UnpredictableInsnBehaviour() { reject(); }
     template <typename OP>
     void UndefinedInstruction( OP* op ) { reject(); }
-    void CallSupervisor( uint16_t imm ) { donttest_system(); }
+    void CallSupervisor( uint32_t imm ) { donttest_system(); }
     void UnpredictableIf( BOOL const& condition ) { donttest_system(); }
     bool IntegerZeroDivide( BOOL const& condition ) { return false; }
 

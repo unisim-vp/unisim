@@ -350,7 +350,7 @@ struct CPU
 public:
   bool     Concretize( bool cond ) { return cond; }
   void     UnpredictableInsnBehaviour();
-  void     CallSupervisor( uint16_t imm );
+  void     CallSupervisor( uint32_t imm );
   bool     IntegerZeroDivide( bool zero_div ) { return zero_div; }
   virtual void WaitForInterrupt() {}; // Implementation-defined
   

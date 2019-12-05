@@ -602,7 +602,7 @@ CPU<CONFIG>::MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size )
  */
 template <class CONFIG>
 void
-CPU<CONFIG>::CallSupervisor( uint16_t imm )
+CPU<CONFIG>::CallSupervisor( uint32_t imm )
 {
   if (linux_os_import)
     {

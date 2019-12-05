@@ -15,12 +15,6 @@
 #include <iostream>
 
 namespace vle {
-  void
-  PPCBase::ProcessException( char const* msg )
-  {
-    std::cerr << "exception(" << msg << ")\n";
-    throw TODO();
-  }
 namespace branch {
   Processor::Processor( ActionNode& root, uint32_t addr, uint32_t length )
     : path(&root), reg_values(), cia(addr), nia(addr+length), has_branch(false)

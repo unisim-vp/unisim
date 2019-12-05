@@ -74,6 +74,16 @@ Processor::insn_hooks(uint64_t addr, unsigned insn_length)
     }
 }
 
+void
+Processor::syscall_hooks(uint64_t insn_addr, unsigned  intno)
+{
+  for (auto h : hooks[Hook::INTR])
+    {
+      if (h->bound_check(insn_addr))
+        h->cb<Hook::cb_code>()(this, insn_addr, intno);
+    }
+}
+
 void Processor::Abort::dump(std::ostream& sink)
 {
   sink << "Abort";

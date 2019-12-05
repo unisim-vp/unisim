@@ -177,37 +177,41 @@ struct Processor
   int
   mem_write(uint64_t addr, uint8_t const* bytes, uint64_t size)
   {
-    for (auto pi = pages.lower_bound(addr); pi != pages.end(); --pi)
+    auto pi = pages.lower_bound(addr);
+    if (pi == pages.end()) return 1;
+    for (;;)
       {
         if (not pi->has_data())
           return error_page_at("cannot write hooked", addr), -1;
         uintptr_t count = pi->write(addr, bytes, size);
-        if (count >= size) break;
+        if (count >= size)       return 0;
         addr += count;
         bytes += count;
         size -= count;
+        if (pi == pages.begin()) break;
+        --pi;
       }
-    
-    return 0;
+    return 1;
   }
 
   int
   mem_read(uint64_t addr, uint8_t* bytes, uint64_t size)
   {
-    for (auto pi = pages.lower_bound(addr); pi != pages.end(); --pi)
+    auto pi = pages.lower_bound(addr);
+    if (pi == pages.end()) return 1;
+    for (;;)
       {
         if (not pi->has_data())
           return error_page_at("cannot read hooked", addr), -1;
         uintptr_t count = pi->read(addr, bytes, size);
-        if (count >= size)
-          return 0;
+        if (count >= size)       return 0;
         addr += count;
         bytes += count;
         size -= count;
+        if (pi == pages.begin()) break;
+        --pi;
       }
-       
-    throw 0;
-    return 0;
+    return 1;
   }
 
   bool PhysicalWriteMemory( uint64_t addr, unsigned size, unsigned endianness, uint64_t value )
@@ -262,7 +266,6 @@ struct Processor
   struct Hook
   {
     typedef void (*cb_code)(void* uc, uint64_t address, unsigned size);
-    typedef void (*cb_intr)(void* uc, uint32_t intno);
     
     Hook(unsigned _types, void* cb, uint64_t _begin, uint64_t _end)
       : types(_types), begin(_begin), end(_end), callback(cb), insn()
@@ -314,6 +317,7 @@ struct Processor
 
   bool add( Hook* hook );
   void insn_hooks(uint64_t addr, unsigned len);
+  void syscall_hooks(uint64_t addr, unsigned num);
   
   std::vector<Hook*> hooks[Hook::TYPE_COUNT];
 

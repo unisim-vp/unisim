@@ -215,7 +215,7 @@ struct ArmBranch
   void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 value ) {}
   char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { return "no"; }
 
-  void     CallSupervisor( uint16_t imm ) { throw TODO(); }
+  void     CallSupervisor( uint32_t imm ) {}
 
   U32 FPSCR, FPEXC;
   U32 RoundTowardsZeroFPSCR() { return U32(); }
@@ -351,16 +351,14 @@ ArmProcessor::emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintp
   while (not terminated and next_insn_addr != until)
     {
       /* Instruction boundary next_insn_addr becomes current_insn_addr */
-      try {
-        if (cpsr.Get( unisim::component::cxx::processor::arm::T ))
-          {
-            Step(thumb_decoder);
-          }
-        else
-          {
-            Step(arm32_decoder);
-          }
-      }
+      if (cpsr.Get( unisim::component::cxx::processor::arm::T ))
+        {
+          Step(thumb_decoder);
+        }
+      else
+        {
+          Step(arm32_decoder);
+        }
     }
     
   return 0;
@@ -475,9 +473,11 @@ ArmProcessor::PerformReadAccess( uint32_t addr, uint32_t size )
 void
 ArmProcessor::DataAbort(uint32_t address, mem_acc_type_t mat, unisim::component::cxx::processor::arm::DAbort type)
 {
-  throw 0;
-  // if (mat == mat_exec)
-  //   throw PrefetchAbortException();
-  // else
-  //   throw DataAbortException();
+  throw TODO();
+}
+
+void
+ArmProcessor::CallSupervisor( uint32_t imm )
+{
+  syscall_hooks( this->current_insn_addr, imm );
 }

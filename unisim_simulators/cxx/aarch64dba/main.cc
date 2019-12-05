@@ -297,7 +297,7 @@ struct Processor
     branch_type = (bt == B_CALL) ? Branch::Call : (bt == B_RET) ? Branch::Return : Branch::Jump;
   }
   
-  void CallSupervisor( uint16_t imm ) { throw 0;  }
+  void CallSupervisor( uint32_t imm ) { throw 0;  }
   
   //   =====================================================================
   //   =                       Memory access methods                       =

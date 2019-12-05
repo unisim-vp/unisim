@@ -817,7 +817,7 @@ public:
   void WaitForInterrupt() { not_implemented(); }
   void SWI( uint32_t imm ) { not_implemented(); }
   void BKPT( uint32_t imm ) { not_implemented(); }
-  void CallSupervisor( uint16_t imm ) { not_implemented(); }
+  void CallSupervisor( uint32_t imm ) { not_implemented(); }
   bool IntegerZeroDivide( BOOL const& condition ) { return false; }
   
   //   =====================================================================

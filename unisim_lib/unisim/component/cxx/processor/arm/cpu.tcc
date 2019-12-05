@@ -486,7 +486,7 @@ CPU<CONFIG>::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanne
  */
 template <class CONFIG>
 void
-CPU<CONFIG>::CallSupervisor( uint16_t imm )
+CPU<CONFIG>::CallSupervisor( uint32_t imm )
 {
   throw SVCException();
 }

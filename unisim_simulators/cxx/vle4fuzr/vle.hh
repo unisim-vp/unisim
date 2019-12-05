@@ -25,18 +25,11 @@
 typedef Processor EmuProcessor;
 
 namespace vle {
+  
   struct PPCBase
   {
     struct TODO {};
-  
-    struct Interrupt { void SetELEV(unsigned x) { throw TODO(); } };
-    
-    template <class T> Interrupt ThrowException() { DispatchException( T() ); return Interrupt(); }
 
-    void ProcessException( char const* msg );
-    
-    template <class T> void DispatchException( T const& exc ) { ProcessException( "ANY" ); }
-    
     struct ProgramInterrupt
     {
       struct UnimplementedInstruction {};
@@ -45,17 +38,15 @@ namespace vle {
       struct PrivilegeViolation {};
     };
 
-    void DispatchException( ProgramInterrupt::UnimplementedInstruction const& exc ) { ProcessException( "UD" ); }
-    
     struct SystemCallInterrupt
     {
-      struct SystemCall {};
+      struct SystemCall { void SetELEV(unsigned x) {} };
     };
     
-    void DispatchException( SystemCallInterrupt::SystemCall const& exc ) { ProcessException( "SYS" ); }
-    
-    struct AlignmentInterrupt { struct UnalignedLoadStoreMultiple {}; };
-    // void DispatchException( AlignmentInterrupt::UnalignedLoadStoreMultiple const& exc ) { interface.aligned = true; }
+    struct AlignmentInterrupt
+    {
+      struct UnalignedLoadStoreMultiple {};
+    };
   };
   
 namespace concrete {
@@ -159,6 +150,26 @@ namespace concrete {
   {
     struct TODO {};
     
+    template <class T> T ThrowException() { return DispatchException( T() ); }
+
+    template <class T> T DispatchException( T const& exc ) { throw TODO(); return T(); }
+
+    struct SystemCallInterrupt
+    {
+      struct SystemCall
+      {
+        SystemCall( Processor* _proc ) : proc(_proc) {}
+        SystemCall() : proc() {}
+        void SetELEV(unsigned x) { proc->syscall_hooks(proc->GetCIA(), x); }
+        Processor* proc;
+      };
+    };
+    
+    SystemCallInterrupt::SystemCall DispatchException( SystemCallInterrupt::SystemCall const& exc )
+    {
+      return SystemCallInterrupt::SystemCall(this);
+    }
+    
     Processor();
 
     static Processor& Self( EmuProcessor& proc ) { return dynamic_cast<Processor&>( proc ); }
@@ -191,7 +202,7 @@ namespace concrete {
     U32 MemRead(U32 address, unsigned size, bool sext, bool bigendian)
     {
       unsigned mask = size-1;
-      if (size >= 4 or mask & size) { throw "illegal size"; }
+      if (size > 4 or mask & size) { throw "illegal size"; }
       uint64_t result = 0;
       PhysicalReadMemory( address, size, bigendian*mask, &result );
       if (sext)
@@ -204,7 +215,7 @@ namespace concrete {
     void MemWrite( U32 address, unsigned size, U32 value, bool bigendian )
     {
       unsigned mask = size-1;
-      if (size >= 4 or mask & size) { throw "illegal size"; }
+      if (size > 4 or mask & size) { throw "illegal size"; }
       PhysicalWriteMemory( address, size, bigendian*mask, value );
     }
     
@@ -364,6 +375,8 @@ namespace branch
   {
     struct TODO {};
     
+    template <class T> T ThrowException() { return T(); }
+
     Processor( ActionNode& root, uint32_t addr, uint32_t length );
 
     static Processor& Self( EmuProcessor& proc ) { return dynamic_cast<Processor&>( proc ); }

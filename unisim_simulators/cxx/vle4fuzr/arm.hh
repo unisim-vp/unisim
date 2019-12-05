@@ -46,6 +46,7 @@ struct ArmProcessor
   typedef unisim::component::cxx::processor::arm::CPU<ARMv7cfg> CP15CPU;
   typedef typename CP15CPU::CP15Reg CP15Reg;
   typedef BranchInfo InsnBranch;
+  struct TODO {};
 
   ArmProcessor( char const* name, bool is_thumb );
   ~ArmProcessor();
@@ -100,6 +101,7 @@ struct ArmProcessor
   void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<ArmProcessor>* insn );
   void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb::Operation<ArmProcessor>* insn );
   void DataAbort(uint32_t addr, mem_acc_type_t mat, unisim::component::cxx::processor::arm::DAbort type);
+  void CallSupervisor( uint32_t imm );
   void BKPT( int ) { throw 0; }
 };
 

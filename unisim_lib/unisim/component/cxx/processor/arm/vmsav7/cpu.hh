@@ -230,7 +230,7 @@ struct CPU
   /* Software Exceptions                     START  */
   /**************************************************/
 	
-  void CallSupervisor( uint16_t imm );
+  void CallSupervisor( uint32_t imm );
   void BKPT( uint32_t imm );
   void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<CPU>* insn );
   void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb::Operation<CPU>* insn );

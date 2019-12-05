@@ -1000,7 +1000,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
  *  This method is called by SWI/SVC instructions to handle software interrupts.
  */
 void
-CPU::CallSupervisor( uint16_t imm )
+CPU::CallSupervisor( uint32_t imm )
 {
   if (linux_os_import) {
     // we are executing on linux emulation mode, use linux_os_import
