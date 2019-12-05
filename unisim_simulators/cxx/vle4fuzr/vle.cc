@@ -57,11 +57,11 @@ namespace concrete {
   }
 
   int
-  Processor::emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count )
+  Processor::run( uint64_t begin, uint64_t until, uint64_t count )
   {
     this->Branch(begin);
-    
-    while (not terminated and this->nia != until)
+
+    do
       {
         /* go to the next instruction */
         this->cia = this->nia;
@@ -117,14 +117,14 @@ namespace concrete {
         if (not op->execute(this))
           {
             /* Process exceptions */
-            std::cerr << "Something went wrong with instruction execution.\n";
-            throw TODO();
+            std::cerr << "Pending exceptions.\n";
+            abort();
           }
         
         this->bblock = (op->branch.target != op->branch.BNone);
       }
+    while (not terminated and this->nia != until and --count != 0);
     
-    //  std::cerr << "Stopped: current=0x" << std::hex << current_insn_addr << ", next: " << std::hex << next_insn_addr << std::dec << std::endl;
     return 0;
   }
   

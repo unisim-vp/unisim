@@ -46,7 +46,6 @@ struct ArmProcessor
   typedef unisim::component::cxx::processor::arm::CPU<ARMv7cfg> CP15CPU;
   typedef typename CP15CPU::CP15Reg CP15Reg;
   typedef BranchInfo InsnBranch;
-  struct TODO {};
 
   ArmProcessor( char const* name, bool is_thumb );
   ~ArmProcessor();
@@ -94,7 +93,7 @@ struct ArmProcessor
 
   uint32_t ReadInsn( uint32_t address );
   
-  int emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count ) override;
+  int run( uint64_t begin, uint64_t until, uint64_t count ) override;
 
   template <class Decoder> void Step(Decoder&);
 

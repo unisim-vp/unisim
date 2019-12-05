@@ -23,8 +23,6 @@ struct Processor
   
   virtual ~Processor();
 
-  struct Abort { virtual ~Abort() {}; virtual void dump(std::ostream&); };
-
   struct Page
   {
     typedef uint64_t (*hook_t) (void* uc, unsigned access, uint64_t address, unsigned size, unsigned endianness, uint64_t value);
@@ -152,14 +150,14 @@ struct Processor
   }
 
   
-  void error_page_at( char const* issue, uint64_t addr );
+  void error_at( char const* issue, uint64_t addr );
   
   int
   mem_chprot(uint64_t addr, unsigned perms)
   {
     auto page = pages.lower_bound(addr);
     if (page == pages.end() or page->hi() < addr)
-      return error_page_at("no", addr), -1;
+      return error_at("no page", addr), -1;
     page->chperms( perms );
     return 0;
   }
@@ -169,7 +167,7 @@ struct Processor
   {
     auto page = pages.lower_bound(addr);
     if (page == pages.end() or page->hi() < addr)
-      return error_page_at("no", addr), -1;
+      return error_at("no page", addr), -1;
     page->chhook( hook );
     return 0;
   }
@@ -182,7 +180,7 @@ struct Processor
     for (;;)
       {
         if (not pi->has_data())
-          return error_page_at("cannot write hooked", addr), -1;
+          return error_at("cannot write hooked page", addr), -1;
         uintptr_t count = pi->write(addr, bytes, size);
         if (count >= size)       return 0;
         addr += count;
@@ -202,7 +200,7 @@ struct Processor
     for (;;)
       {
         if (not pi->has_data())
-          return error_page_at("cannot read hooked", addr), -1;
+          return error_at("cannot read hooked page", addr), -1;
         uintptr_t count = pi->read(addr, bytes, size);
         if (count >= size)       return 0;
         addr += count;
@@ -214,27 +212,30 @@ struct Processor
     return 1;
   }
 
-  bool PhysicalWriteMemory( uint64_t addr, unsigned size, unsigned endianness, uint64_t value )
+  void PhysicalWriteMemory( uint64_t addr, unsigned size, unsigned endianness, uint64_t value )
   {
     auto pi = pages.lower_bound(addr);
     if (pi == pages.end() or pi->hi() < addr)
-      return error_page_at("write to nonexistent", addr), false;
-    return pi->phys_write(this, addr, size, endianness, value);
+      { error_at("write to nonexistent page", addr); return abort(); }
+    if (not pi->phys_write(this, addr, size, endianness, value))
+      { error_at("cannot write", addr); return abort(); }
   }
 
-  bool PhysicalReadMemory( uint64_t addr, unsigned size, unsigned endianness, uint64_t* value )
+  void PhysicalReadMemory( uint64_t addr, unsigned size, unsigned endianness, uint64_t* value )
   {
     auto pi = pages.lower_bound(addr);
     if (pi == pages.end() or pi->hi() < addr)
-      return error_page_at("read to nonexistent", addr), false;
-    return pi->phys_read(this, addr, size, endianness, value);
+      { error_at("read to nonexistent page", addr); return abort(); }
+    if (not pi->phys_read(this, addr, size, endianness, value))
+      { error_at("cannot read", addr); return abort(); }
   }
-  bool PhysicalFetchMemory( uint64_t addr, unsigned size, unsigned endianness, uint64_t* value )
+  void PhysicalFetchMemory( uint64_t addr, unsigned size, unsigned endianness, uint64_t* value )
   {
     auto pi = pages.lower_bound(addr);
     if (pi == pages.end() or pi->hi() < addr)
-      return error_page_at("fetch to nonexistent", addr), false;
-    return pi->phys_fetch(this, addr, size, endianness, value);
+      { error_at("fetch to nonexistent page", addr); return abort(); }
+    if (not pi->phys_fetch(this, addr, size, endianness, value))
+      { error_at("cannot fetch", addr); return abort(); }
   }
   struct RegView
   {
@@ -324,9 +325,10 @@ struct Processor
   bool disasm;
   bool bblock;
   bool terminated;
-  
+
+  void abort() { terminated = true; }
   void set_disasm(bool _disasm) { disasm = _disasm; }
-  virtual int emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count ) = 0;
+  virtual int run( uint64_t begin, uint64_t until, uint64_t count ) = 0;
 };
 
 struct BranchInfo

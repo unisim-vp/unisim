@@ -115,18 +115,12 @@ extern "C"
     return 0;
   }
 
-  int emu_start(void* uc, uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count)
+  int emu_start(void* uc, uint64_t begin, uint64_t until, uint64_t count)
   {
-    if (timeout)
-      {
-        std::cerr << "Error: timeout unimplemented." << timeout << std::endl;
-        throw 0;
-      }
-    
     Processor& proc = *(Processor*)uc;
     proc.terminated = false;
     proc.bblock = true;
-    return proc.emu_start(begin, until, timeout, count);
+    return proc.run(begin, until, count);
   }
 
   int emu_stop(void* uc)

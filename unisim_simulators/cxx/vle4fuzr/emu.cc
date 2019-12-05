@@ -84,11 +84,6 @@ Processor::syscall_hooks(uint64_t insn_addr, unsigned  intno)
     }
 }
 
-void Processor::Abort::dump(std::ostream& sink)
-{
-  sink << "Abort";
-}
-
 void
 Processor::error_mem_overlap( Page const& a, Page const& b )
 {
@@ -96,7 +91,7 @@ Processor::error_mem_overlap( Page const& a, Page const& b )
 }
 
 void
-Processor::error_page_at( char const* issue, uint64_t addr )
+Processor::error_at( char const* issue, uint64_t addr )
 {
   std::cerr << "error: " << issue << " page at 0x" << std::hex << addr << ".\n";
 }

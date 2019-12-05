@@ -344,11 +344,11 @@ ArmProcessor::Step( Decoder& decoder )
 }
 
 int
-ArmProcessor::emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count )
+ArmProcessor::run( uint64_t begin, uint64_t until, uint64_t count )
 {
   this->Branch(begin, B_DBG);
-  
-  while (not terminated and next_insn_addr != until)
+
+  do
     {
       /* Instruction boundary next_insn_addr becomes current_insn_addr */
       if (cpsr.Get( unisim::component::cxx::processor::arm::T ))
@@ -360,6 +360,7 @@ ArmProcessor::emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintp
           Step(arm32_decoder);
         }
     }
+  while (not terminated and next_insn_addr != until and --count != 0);
     
   return 0;
 }
@@ -368,8 +369,7 @@ uint32_t
 ArmProcessor::ReadInsn(uint32_t address)
 {
   uint64_t value = 0;
-  if (not PhysicalFetchMemory( address, 4, 0, &value ))
-    DataAbort( address, mat_exec, unisim::component::cxx::processor::arm::DAbort_SyncExternal );
+  PhysicalFetchMemory( address, 4, 0, &value );
   return value;
 }
 
@@ -425,8 +425,7 @@ ArmProcessor::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
     DataAbort( addr, mat_write, unisim::component::cxx::processor::arm::DAbort_Alignment );
 
   unsigned endianness = lo_mask*(GetEndianness() == unisim::util::endian::E_BIG_ENDIAN);
-  if (not PhysicalWriteMemory( addr, size, endianness, value ))
-    DataAbort(addr, mat_write, unisim::component::cxx::processor::arm::DAbort_SyncExternal);
+  PhysicalWriteMemory( addr, size, endianness, value );
 }
 
 uint32_t
@@ -464,16 +463,32 @@ ArmProcessor::PerformReadAccess( uint32_t addr, uint32_t size )
 
   uint64_t value = 0;
   unsigned endianness = lo_mask*(GetEndianness() == unisim::util::endian::E_BIG_ENDIAN);
-  if (not PhysicalReadMemory(addr, size, endianness, &value))
-    DataAbort(addr, mat_read, unisim::component::cxx::processor::arm::DAbort_SyncExternal);
-
+  PhysicalReadMemory(addr, size, endianness, &value);
+  
   return value;
 }
 
 void
 ArmProcessor::DataAbort(uint32_t address, mem_acc_type_t mat, unisim::component::cxx::processor::arm::DAbort type)
 {
-  throw TODO();
+  std::cerr << "aborted access:"
+            << "\n  - address: 0x" << std::hex << address
+            << "\n  - type: ";
+  switch (mat)
+    {
+    case mat_exec:  std::cerr << "fetch"; break;
+    case mat_read:  std::cerr << "read"; break;
+    case mat_write: std::cerr << "write"; break;
+    default:        std::cerr << "???"; break;
+    }
+  std::cerr << "\n  - fault: ";
+  switch (type)
+    {
+    case unisim::component::cxx::processor::arm::DAbort_SyncExternal: std::cerr << "external";
+    case unisim::component::cxx::processor::arm::DAbort_Alignment:    std::cerr << "misalignment";
+    default:                                                          std::cerr << "???";
+    }
+  terminated = true;
 }
 
 void

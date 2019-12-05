@@ -28,8 +28,6 @@ namespace vle {
   
   struct PPCBase
   {
-    struct TODO {};
-
     struct ProgramInterrupt
     {
       struct UnimplementedInstruction {};
@@ -107,26 +105,20 @@ namespace concrete {
   
   struct LR
   {
-    // template <typename PART> void Set( unsigned ) { throw TODO(); }
-    // template <typename PART> U32 Get() { throw TODO(); return U32(); }
     operator U32 () { return lr_value; }
     LR& operator= (U32 const& value) { lr_value = value; return *this; }
     LR& GetLR() { return *this; }
     void SetLR(U32 const& value) { lr_value = value; }
-    
     LR() : lr_value() {}
     U32 lr_value;
   };
   
   struct CTR
   {
-    // template <typename PART> void Set( unsigned ) {}
-    // template <typename PART> U32 Get() { return U32(); }
     operator U32 () { return ctr_value; }
     CTR& operator= (U32 const& value) { ctr_value = value; return *this; }
     CTR& GetCTR() { return *this; }
     void SetCTR(U32 const& value) { ctr_value = value; }
-    
     CTR() : ctr_value() {}
     U32 ctr_value;
   };
@@ -194,8 +186,7 @@ namespace concrete {
     U32 Fetch(U32 address)
     {
       uint64_t value = 0;
-      if (not PhysicalFetchMemory( address, 4, 3, &value ))
-        throw TODO();
+      PhysicalFetchMemory( address, 4, 3, &value );
       return value;
     }
     
@@ -268,7 +259,7 @@ namespace concrete {
     bool CheckSPV() { return true; }
     bool Wait() { throw TODO(); return false; }
     
-    virtual int emu_start( uint64_t begin, uint64_t until, uint64_t timeout, uintptr_t count ) override;
+    virtual int run( uint64_t begin, uint64_t until, uint64_t count ) override;
   };
   
   using unisim::util::arithmetic::BitScanReverse;
@@ -358,12 +349,11 @@ namespace branch
   {
     struct PR {};
     struct EE {};
-    struct TODO {};
     
-    template <typename P, typename T> void Set( T value ) { throw TODO(); }
-    template <typename PART> U32 Get() { throw TODO(); return U32(); }
-    operator U32 () { throw TODO(); return U32(); }
-    MSR& operator= (U32 const& v) { throw TODO(); return *this; }
+    template <typename P, typename T> void Set( T value ) {}
+    template <typename PART> U32 Get() { return U32(); }
+    operator U32 () { return U32(); }
+    MSR& operator= (U32 const& v) { return *this; }
     MSR& GetMSR() { return *this; }
   };
 
@@ -373,8 +363,6 @@ namespace branch
     : public PPCBase
     , public XER, public CR, public MSR, public LR, public CTR
   {
-    struct TODO {};
-    
     template <class T> T ThrowException() { return T(); }
 
     Processor( ActionNode& root, uint32_t addr, uint32_t length );
@@ -423,37 +411,37 @@ namespace branch
     bool Int16StoreByteReverse(unsigned n, U32 address ) { return true; }
     bool Int32StoreByteReverse(unsigned n, U32 address ) { return true; }
 
-    bool Rfmci() { throw TODO(); return false; }
-    bool Rfci() { throw TODO(); return false; }
-    bool Rfdi() { throw TODO(); return false; }
-    bool Rfi() { throw TODO(); return false; }
+    bool Rfmci() { return true; }
+    bool Rfci() { return true; }
+    bool Rfdi() { return true; }
+    bool Rfi() { return true; }
 
-    bool Dcba(U32 const& addr) { throw TODO(); return false; }
-    bool Dcbf(U32 const& addr) { throw TODO(); return false; }
-    bool Dcbst(U32 const& addr) { throw TODO(); return false; }
-    bool Dcbz(U32 const& addr) { throw TODO(); return false; }
-    bool Dcbi(U32 const& addr) { throw TODO(); return false; }
-    bool Icbi(U32 const& addr) { throw TODO(); return false; }
-    bool Icbt(U32 const& addr) { throw TODO(); return false; }
+    bool Dcba(U32 const& addr) { return true; }
+    bool Dcbf(U32 const& addr) { return true; }
+    bool Dcbst(U32 const& addr) { return true; }
+    bool Dcbz(U32 const& addr) { return true; }
+    bool Dcbi(U32 const& addr) { return true; }
+    bool Icbi(U32 const& addr) { return true; }
+    bool Icbt(U32 const& addr) { return true; }
     
-    bool Msync() { throw TODO(); return false; }
-    bool Isync() { throw TODO(); return false; }
-    bool Mpure() { throw TODO(); return false; }
-    bool Mpuwe() { throw TODO(); return false; }
-    bool Mpusync() { throw TODO(); return false; }
+    bool Msync() { return true; }
+    bool Isync() { return true; }
+    bool Mpure() { return true; }
+    bool Mpuwe() { return true; }
+    bool Mpusync() { return true; }
     
-    bool Lbarx(unsigned n, U32 const& addr) { throw TODO(); return false; }
-    bool Lharx(unsigned n, U32 const& addr) { throw TODO(); return false; }
-    bool Lwarx(unsigned n, U32 const& addr) { throw TODO(); return false; }
-    bool Stbcx(unsigned n, U32 const& addr) { throw TODO(); return false; }
-    bool Sthcx(unsigned n, U32 const& addr) { throw TODO(); return false; }
-    bool Stwcx(unsigned n, U32 const& addr) { throw TODO(); return false; }
-    bool MoveFromDCR(unsigned dcrn, U32& result) { throw TODO(); return false; }
-    bool MoveFromSPR(unsigned dcrn, U32& result) { throw TODO(); return false; }
-    bool MoveToSPR(unsigned dcrn, U32 const& result) { throw TODO(); return false; }
+    bool Lbarx(unsigned n, U32 const& addr) { return true; }
+    bool Lharx(unsigned n, U32 const& addr) { return true; }
+    bool Lwarx(unsigned n, U32 const& addr) { return true; }
+    bool Stbcx(unsigned n, U32 const& addr) { return true; }
+    bool Sthcx(unsigned n, U32 const& addr) { return true; }
+    bool Stwcx(unsigned n, U32 const& addr) { return true; }
+    bool MoveFromDCR(unsigned dcrn, U32& result) { return true; }
+    bool MoveFromSPR(unsigned dcrn, U32& result) { return true; }
+    bool MoveToSPR(unsigned dcrn, U32 const& result) { return true; }
     
     bool CheckSPV() { return true; }
-    bool Wait() { throw TODO(); return false; }
+    bool Wait() { return true; }
   };
   
 } // end of namespace branch
