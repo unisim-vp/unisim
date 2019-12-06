@@ -1233,15 +1233,11 @@ struct Translator
       Instruction(ISA& isa, uint32_t addr, uint32_t code)
         : operation(0), bytecount(0)
       {
-        try {
-          operation = isa.NCDecode( addr, ISA::mkcode( code ) );
-          unsigned bitlength = operation->GetLength(); 
-          if ((bitlength != 32) and ((bitlength != 16) or not ISA::is_thumb))
-            { delete operation; operation = 0; }
-          bytecount = bitlength/8;
-        }
-        catch (unisim::component::cxx::processor::arm::isa::Reject const&)
-          { operation = 0; }
+        operation = isa.NCDecode( addr, ISA::mkcode( code ) );
+        unsigned bitlength = operation->GetLength(); 
+        if ((bitlength != 32) and ((bitlength != 16) or not ISA::is_thumb))
+          { delete operation; operation = 0; }
+        bytecount = bitlength/8;
       }
       ~Instruction() { delete operation; }
       Operation* operator -> () { return operation; }
@@ -1252,12 +1248,6 @@ struct Translator
     
     Instruction instruction( isa, addr, code );
     
-    if (not instruction.operation)
-      {
-        sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(4, code) << ")\n(illegal)\n";
-        return;
-      }
-
     {
       uint32_t encoding = instruction->GetEncoding();
       if (instruction.bytecount == 2)
@@ -1315,7 +1305,7 @@ struct Translator
       }
     catch (...)
       {
-        sink << "(unimplemented)\n";
+        sink << "(undefined)\n";
         return;
       }
 
