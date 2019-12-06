@@ -447,6 +447,7 @@ public:
 	
 	virtual void SigInt();
 	virtual void Kill();
+	bool Killed() const { return killed; }
 
 	const char *GetName() const;
 	const char *GetObjectName() const;
@@ -483,6 +484,7 @@ private:
 	std::list<ServiceImportBase *> srv_imports;
 	std::list<ServiceExportBase *> srv_exports;
 	std::list<Object *> leaf_objects;
+	bool killed;
 };
 
 //=============================================================================

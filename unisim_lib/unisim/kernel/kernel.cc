@@ -1000,6 +1000,7 @@ Object::Object(const char *_name, Object *_parent, const char *_description)
 	, srv_imports()
 	, srv_exports()
 	, leaf_objects()
+	, killed(false)
 {
 	if(_parent) _parent->Add(*this);
 	Simulator::Instance()->Register(this);
@@ -1200,6 +1201,7 @@ void Object::SigInt()
 
 void Object::Kill()
 {
+	killed = true;
 }
 
 void Object::OnDisconnect()

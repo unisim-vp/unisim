@@ -945,6 +945,7 @@ void UserInterface::Kill()
 {
 	halt = true;
 	Continue();
+	unisim::kernel::Object::Kill();
 }
 
 bool UserInterface::SetupInstrumentation()
@@ -1319,6 +1320,20 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 			form_action = URI() + "/instrument";
 		}
 		
+		std::string title;
+		if(is_control_interface && is_instrument_interface)
+		{
+			title = "Hardware instrumenter";
+		}
+		else if(is_control_interface)
+		{
+			title = "Simulation controls";
+		}
+		else if(is_instrument_interface)
+		{
+			title = "Signals instrumenter";
+		}
+		
 		switch(req.GetRequestType())
 		{
 			case unisim::util::hypapp::Request::POST:
@@ -1348,9 +1363,26 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 
 				UnlockPost();
 
-				// Post/Redirect/Get pattern: got Post, so do Redirect
-				response.SetStatus(unisim::util::hypapp::HttpResponse::SEE_OTHER);
-				response.SetHeaderField("Location", form_action);
+				if(halt)
+				{
+					response << "\t<head>" << std::endl;
+					response << "\t\t<title>" << title << "</title>" << std::endl;
+					response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+					response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
+					response << "\t\t<script type=\"text/javascript\">document.domain=\"" << req.GetDomain() << "\";</script>" << std::endl;
+					response << "\t</head>" << std::endl;
+					response << "\t<body>" << std::endl;
+					response << "\t<p>Disconnected</p>" << std::endl;
+					response << "\t<script>Reload = function() { window.location.href=window.location.href; }</script>" << std::endl;
+					response << "\t<button onclick=\"Reload()\">Reconnect</button>" << std::endl;
+					response << "\t</body>" << std::endl;
+				}
+				else
+				{
+					// Post/Redirect/Get pattern: got Post, so do Redirect
+					response.SetStatus(unisim::util::hypapp::HttpResponse::SEE_OTHER);
+					response.SetHeaderField("Location", form_action);
+				}
 				
 				break;
 			}
@@ -1358,20 +1390,6 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 			case unisim::util::hypapp::Request::GET:
 			case unisim::util::hypapp::Request::HEAD:
 			{
-				std::string title;
-				if(is_control_interface && is_instrument_interface)
-				{
-					title = "Hardware instrumenter";
-				}
-				else if(is_control_interface)
-				{
-					title = "Simulation controls";
-				}
-				else if(is_instrument_interface)
-				{
-					title = "Signals instrumenter";
-				}
-				
 				response << "<!DOCTYPE html>" << std::endl;
 				response << "<html lang=\"en\">" << std::endl;
 				
@@ -1657,7 +1675,7 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response" << EndDebugWarning;
 	}
 	
-	if(halt && (req.GetRequestType() == unisim::util::hypapp::Request::GET))
+	if(halt)
 	{
 		Stop(-1, /* asynchronous */ true);
 	}

@@ -6,6 +6,7 @@ unisim/service/debug/profiler/icon_profile_cpu0.svg
 unisim/service/debug/profiler/icon_profile_cpu1.svg
 unisim/service/debug/profiler/icon_profile_cpu2.svg
 unisim/service/debug/profiler/icon_svg_histogram.svg
+unisim/service/debug/profiler/icon_sweeper.svg
 unisim/service/debug/profiler/icon_table.svg
 unisim/service/debug/profiler/icon_to_histogram.svg
 unisim/service/debug/profiler/icon_to_table.svg

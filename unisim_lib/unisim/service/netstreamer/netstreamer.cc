@@ -72,6 +72,7 @@ NetStreamer::~NetStreamer()
 void NetStreamer::Kill()
 {
 	netstreamer.Kill();
+	unisim::kernel::Object::Kill();
 }
 
 bool NetStreamer::EndSetup()

@@ -232,7 +232,7 @@ HttpServer::HttpServer(const char *name, unisim::kernel::Object *parent)
 
 HttpServer::~HttpServer()
 {
-	unisim::util::hypapp::HttpServer::Kill();
+	Kill();
 	if(Running())
 	{
 		JoinLoopThread();
@@ -500,7 +500,13 @@ bool HttpServer::EndSetup()
 
 void HttpServer::Kill()
 {
+	unisim::kernel::Object::Kill();
 	unisim::util::hypapp::HttpServer::Kill();
+}
+
+bool HttpServer::Killed() const
+{
+	return unisim::kernel::Object::Killed() || unisim::util::hypapp::HttpServer::Killed();
 }
 
 void HttpServer::AddCSSFile(const unisim::service::interfaces::CSSFile& f)
@@ -2377,7 +2383,7 @@ void HttpServer::Serve(unisim::util::hypapp::ClientConnection const& conn)
 							std::string object_http_request_server_root(http_request.GetAbsolutePath().substr(0, pos));
 							std::string object_http_request_path(http_request.GetAbsolutePath().substr(pos));
 							unisim::util::hypapp::HttpRequest object_http_request(object_http_request_server_root, object_http_request_path, http_request);
-							return !http_server.RouteHttpRequest(object, object_http_request, conn) || !http_server.killed;
+							return !http_server.RouteHttpRequest(object, object_http_request, conn) || !http_server.Killed();
 						}
 						else
 						{

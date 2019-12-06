@@ -70,7 +70,6 @@ using unisim::kernel::logger::EndDebugError;
 
 /////////////////////////////// GDBServerBase /////////////////////////////////
 
-bool GDBServerBase::killed = false;
 const uint64_t GDBServerBase::SERVER_ACCEPT_POLL_PERIOD_MS;
 const uint64_t GDBServerBase::NON_BLOCKING_READ_POLL_PERIOD_MS;
 const uint64_t GDBServerBase::NON_BLOCKING_WRITE_POLL_PERIOD_MS;
@@ -139,11 +138,6 @@ bool GDBServerBase::EndSetup()
 	output_buffer_size = 0;
 	
 	return true;
-}
-
-void GDBServerBase::Kill()
-{
-	killed = true;
 }
 
 bool GDBServerBase::StartServer()
@@ -247,7 +241,7 @@ bool GDBServerBase::StartServer()
 	sock = -1;
 #endif
 
-	while(!killed)
+	while(!Killed())
 	{
 		sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
 	
@@ -280,7 +274,7 @@ bool GDBServerBase::StartServer()
 		WaitTime(SERVER_ACCEPT_POLL_PERIOD_MS); // retry later
 	}
 	
-	if(killed)
+	if(Killed())
 	{
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(server_sock);
@@ -417,7 +411,7 @@ bool GDBServerBase::StopServer()
 #endif
 		
 		logger << DebugInfo << "Connection with GDB client closed" << EndDebugInfo;
-		if(killed)
+		if(Killed())
 		{
 			logger << DebugInfo << "Server shuts down" << EndDebugInfo;
 		}
@@ -447,7 +441,7 @@ bool GDBServerBase::StopServer()
 void GDBServerBase::WaitTime(unsigned int msec)
 {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-	if(!killed)
+	if(!Killed())
 	{
 		Sleep(msec);
 	}
@@ -456,7 +450,7 @@ void GDBServerBase::WaitTime(unsigned int msec)
 	tim_req.tv_sec = msec / 1000;
 	tim_req.tv_nsec = 1000000 * (msec % 1000);
 	
-	while(!killed)
+	while(!Killed())
 	{
 		int status = nanosleep(&tim_req, &tim_rem);
 		
@@ -546,7 +540,7 @@ bool GDBServerBase::GetChar(char& c, bool blocking)
 					if((errno == EAGAIN) || (errno == EWOULDBLOCK))
 #endif
 					{
-						if(blocking && !killed)
+						if(blocking && !Killed())
 						{
 							WaitTime(NON_BLOCKING_READ_POLL_PERIOD_MS);
 							continue;
@@ -614,7 +608,7 @@ bool GDBServerBase::FlushOutput()
 					if((errno == EAGAIN) || (errno == EWOULDBLOCK))
 #endif
 					{
-						if(!killed)
+						if(!Killed())
 						{
 							WaitTime(NON_BLOCKING_WRITE_POLL_PERIOD_MS);
 							continue;
