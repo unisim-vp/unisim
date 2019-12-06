@@ -1449,8 +1449,23 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, variables()
 	, cmd_args()
 	, param_cmd_args(0)
+	, mutex()
+	, sig_int_thrd()
+	, sig_int_thrd_create_mutex()
+	, sig_int_thrd_create_cond()
+	, sig_int_thrd_mutex()
+	, sig_int_thrd_cond()
+	, sig_int_cond(false)
+	, stop_sig_int_thrd(false)
+	, sig_int_thrd_alive(false)
 {
 	pthread_mutex_init(&mutex, NULL);
+	
+	pthread_mutex_init(&sig_int_thrd_create_mutex, NULL);
+	pthread_mutex_init(&sig_int_thrd_mutex, NULL);
+	
+	pthread_cond_init(&sig_int_thrd_create_cond, NULL);
+	pthread_cond_init(&sig_int_thrd_cond, NULL);
 	
 	SignalHandler::Init();
 
@@ -1924,9 +1939,20 @@ Simulator::~Simulator()
 	
 	SignalHandler::Fini();
 	
+	if(!StopSigIntThrd())
+	{
+		std::cerr << "WARNING! Can't stop SIGINT thread" << std::endl;
+	}
+	
 	unisim::kernel::logger::Logger::ReleaseStaticServiceInstance();
 	
 	pthread_mutex_destroy(&mutex);
+	
+	pthread_mutex_destroy(&sig_int_thrd_create_mutex);
+	pthread_mutex_destroy(&sig_int_thrd_mutex);
+	
+	pthread_cond_destroy(&sig_int_thrd_create_cond);
+	pthread_cond_destroy(&sig_int_thrd_cond);
 }
 
 void Simulator::Version(std::ostream& os) const
@@ -2480,6 +2506,12 @@ Simulator::SetupStatus Simulator::Setup()
 		}
 	}
 
+	if(!StartSigIntThrd())
+	{
+		std::cerr << "ERROR! Can't start SIGINT thread" << std::endl;
+		return ST_ERROR;
+	}
+	
 	return status;
 }
 
@@ -3110,21 +3142,148 @@ void Simulator::Kill()
 	}
 }
 
-void Simulator::MTSigInt()
+void Simulator::SigIntThrd()
 {
-	pthread_t thrd_process_int;
-	pthread_attr_t thrd_attr;
-	pthread_attr_init(&thrd_attr);
-	pthread_attr_setdetachstate(&thrd_attr, PTHREAD_CREATE_DETACHED);
+	pthread_mutex_lock(&sig_int_thrd_mutex);
 	
-	pthread_create(&thrd_process_int, &thrd_attr, &Simulator::ProcessSigIntThrdEntryPoint, this);
+	do
+	{
+#ifdef DEBUG_KERNEL
+		std::cerr << "Thread that handle SIGINT sleeping" << std::endl;
+#endif
+		
+		do
+		{
+			pthread_cond_wait(&sig_int_thrd_cond, &sig_int_thrd_mutex);
+		}
+		while(!sig_int_cond);
+		
+		sig_int_cond = false;
+#ifdef DEBUG_KERNEL
+		std::cerr << "Thread that handle SIGINT waking up" << std::endl;
+#endif
+		
+		if(!stop_sig_int_thrd)
+		{
+			BroadcastSigInt();
+		}
+	}
+	while(!stop_sig_int_thrd);
+	
+	pthread_mutex_unlock(&sig_int_thrd_mutex);
 }
 
-void *Simulator::ProcessSigIntThrdEntryPoint(void *self)
+void *Simulator::SigIntThrdEntryPoint(void *_self)
 {
-	static_cast<Simulator *>(self)->BroadcastSigInt();
+	Simulator *self = static_cast<Simulator *>(_self);
+	pthread_mutex_lock(&self->sig_int_thrd_create_mutex);
+	self->sig_int_thrd_alive = true;
+	pthread_cond_signal(&self->sig_int_thrd_create_cond);
+	pthread_mutex_unlock(&self->sig_int_thrd_create_mutex);
+	
+	self->SigIntThrd();
 	
 	return 0;
+}
+
+bool Simulator::StartSigIntThrd()
+{
+	bool status = true;
+	
+	if(sig_int_thrd_alive)
+	{
+		std::cerr << "WARNING! thread that handle SIGINT has already started" << std::endl;
+		status = false;
+	}
+	else
+	{
+		pthread_attr_t sig_int_thrd_attr;
+		pthread_attr_init(&sig_int_thrd_attr);
+		
+		pthread_mutex_lock(&sig_int_thrd_create_mutex);
+
+		sig_int_thrd_alive = false;
+
+		// Create a thread that handle SIGINT
+
+#ifdef DEBUG_KERNEL
+		std::cerr << "Creating thread that handle SIGINT" << std::endl;
+#endif
+		
+		if(pthread_create(&sig_int_thrd, &sig_int_thrd_attr, &Simulator::SigIntThrdEntryPoint, this) == 0)
+		{
+			// wait for creation of thread that handle SIGINT
+			do
+			{
+				pthread_cond_wait(&sig_int_thrd_create_cond, &sig_int_thrd_create_mutex);
+			}
+			while(!sig_int_thrd_alive);
+			
+#ifdef DEBUG_KERNEL
+			std::cerr << "Thread that handle SIGINT has started" << std::endl;
+#endif
+		}
+		else
+		{
+			// can't create thread that handle SIGINT
+#ifdef DEBUG_KERNEL
+			std::cerr << "ERROR! Can't create thread that handle SIGINT" << std::endl;
+#endif
+			status = false;
+		}
+		
+		pthread_mutex_unlock(&sig_int_thrd_create_mutex);
+
+		pthread_attr_destroy(&sig_int_thrd_attr);
+	}
+	
+	return status;
+}
+
+bool Simulator::StopSigIntThrd()
+{
+	bool status = true;
+	
+	if(sig_int_thrd_alive)
+	{
+		stop_sig_int_thrd = true;
+		
+#ifdef DEBUG_KERNEL
+		std::cerr << "joining thread that handle SIGINT" << std::endl;
+#endif
+
+		MTSigInt();
+		
+		if(pthread_join(sig_int_thrd, NULL) == 0)
+		{
+			// thread has gracefully exited
+#ifdef DEBUG_KERNEL
+			std::cerr << "thread that handle SIGINT has gracefully exited" << std::endl;
+#endif
+			sig_int_thrd_alive = false;
+		}
+		else
+		{
+			// can't join communication thread
+#ifdef DEBUG_KERNEL
+			std::cerr << "ERROR! can't join thread that handle SIGINT" << std::endl;
+#endif
+			status = false;
+		}
+	}
+	
+	return status;
+}
+
+void Simulator::MTSigInt()
+{
+	if(sig_int_thrd_alive)
+	{
+		pthread_mutex_lock(&sig_int_thrd_mutex);
+		sig_int_cond = true;
+		pthread_cond_signal(&sig_int_thrd_cond);
+		pthread_mutex_unlock(&sig_int_thrd_mutex);
+	}
 }
 
 void Simulator::BroadcastSigInt()

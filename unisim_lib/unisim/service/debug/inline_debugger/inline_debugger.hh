@@ -151,7 +151,7 @@ public:
 	virtual bool EndSetup();
 	virtual void OnDisconnect();
 	
-	bool IsWaitingForUser() const;
+	bool IsStarted() const;
 protected:
 	virtual void Interrupt();
 private:
@@ -207,7 +207,7 @@ private:
 	};
 	std::map<ADDRESS,VisitedInstructionPage> visited_instructions;
 	
-	bool is_waiting_for_user;
+	bool is_started;
 
 	void Tokenize(const std::string& str, std::vector<std::string>& tokens);
 	bool ParseAddr(const char *s, ADDRESS& addr);

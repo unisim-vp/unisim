@@ -6559,9 +6559,9 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 
 void Simulator::SigInt()
 {
-	if((!inline_debugger[0] || !inline_debugger[0]->IsWaitingForUser()) &&
-	   (!inline_debugger[1] || !inline_debugger[1]->IsWaitingForUser()) &&
-	   (!inline_debugger[2] || !inline_debugger[2]->IsWaitingForUser()))
+	if((!inline_debugger[0] || !inline_debugger[0]->IsStarted()) &&
+	   (!inline_debugger[1] || !inline_debugger[1]->IsStarted()) &&
+	   (!inline_debugger[2] || !inline_debugger[2]->IsStarted()))
 	{
 		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}

@@ -75,23 +75,26 @@ Simulator::~Simulator()
 
 void Simulator::Run()
 {
-	sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
-	
-	try
+	if(!stop_called)
 	{
-		if(max_time != sc_core::SC_ZERO_TIME)
+		sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
+		
+		try
 		{
-			sc_core::sc_start(max_time);
+			if(max_time != sc_core::SC_ZERO_TIME)
+			{
+				sc_core::sc_start(max_time);
+			}
+			else
+			{
+				sc_core::sc_start();
+			}
 		}
-		else
+		catch(std::runtime_error& e)
 		{
-			sc_core::sc_start();
+			std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+			std::cerr << e.what() << std::endl;
 		}
-	}
-	catch(std::runtime_error& e)
-	{
-		std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
-		std::cerr << e.what() << std::endl;
 	}
 
 	std::cerr << "Program exited with status " << GetExitStatus() << std::endl;

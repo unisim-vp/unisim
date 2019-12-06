@@ -421,8 +421,24 @@ public:
 private:
 	pthread_mutex_t mutex;
 	
+	pthread_t sig_int_thrd;
+	
+	pthread_mutex_t sig_int_thrd_create_mutex;
+	pthread_cond_t sig_int_thrd_create_cond;
+	
+	pthread_mutex_t sig_int_thrd_mutex;
+	pthread_cond_t sig_int_thrd_cond;
+	
+	bool sig_int_cond;
+	bool stop_sig_int_thrd;
+	bool sig_int_thrd_alive;
+	
+	void SigIntThrd();
+	static void *SigIntThrdEntryPoint(void *self);
+	bool StartSigIntThrd();
+	bool StopSigIntThrd();
 	void MTSigInt();
-	static void *ProcessSigIntThrdEntryPoint(void *self);
+	
 	void BroadcastSigInt();
 	void Lock();
 	void Unlock();

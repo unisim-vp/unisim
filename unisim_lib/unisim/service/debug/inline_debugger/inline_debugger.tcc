@@ -124,7 +124,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, fetch_insn_event(0)
 	, trap_event(0)
 	, visited_instructions()
-	, is_waiting_for_user(false)
+	, is_started(false)
 {
 	param_memory_atom_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
@@ -338,6 +338,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 {
 	if(Killed()) return;
 	if(!trap) return;
+	is_started = true;
 	
 	// Ctrl-C, breakpoint or watchpoint condition occured
 	
@@ -3254,9 +3255,7 @@ bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, std::string& line, boo
 			{
 				(*std_output_stream) << prompt;
 			}
-			is_waiting_for_user = true;
 			line_read = readline(prompt);
-			is_waiting_for_user = false;
 			if(Killed()) return false;
 			if(!line_read)
 			{
@@ -3285,9 +3284,7 @@ bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, std::string& line, boo
 			std::cout << prompt;
 		}
 		(*std_output_stream) << prompt;
-		is_waiting_for_user = true;
 		getline(std::cin, line);
-		is_waiting_for_user = false;
 		if(std::cin.fail()) return false;
 		if(Killed()) return false;
 		if(std_output_stream != &std::cout)
@@ -3624,9 +3621,9 @@ bool InlineDebugger<ADDRESS>::IsVisited(ADDRESS _cia)
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsWaitingForUser() const
+bool InlineDebugger<ADDRESS>::IsStarted() const
 {
-	return is_waiting_for_user;
+	return is_started;
 }
 
 
