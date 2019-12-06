@@ -95,7 +95,7 @@ bcc_w.execute = {
   // Note: according to specification, if InITBlock() then UNPREDICTABLE;
   typedef typename ARCH::U32 U32;
   
-  if (cpu.Concretize( CheckCondition(cpu, cond ) ))
+  if (CheckCondition(cpu, cond ))
     cpu.Branch( cpu.GetGPR( 15 ) + U32( imm ), ARCH::B_JMP );
 };
 

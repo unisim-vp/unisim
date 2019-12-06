@@ -943,7 +943,6 @@ namespace symbolic {
     Conditional() : Choice<T>(), cond() {}
 
     bool  proceed( Expr const& _cond );
-    bool  close();
   
     Expr  cond;
   };
@@ -955,7 +954,7 @@ namespace symbolic {
     if (not cond.good()) cond = _cond;
     else if (cond != _cond) throw cond;
 
-    return proceed();
+    return Choice<T>::proceed();
   }
   
   template <class PoolT, typename Merger>

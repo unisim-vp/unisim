@@ -63,9 +63,9 @@ namespace binsec {
     friend std::ostream& operator << ( std::ostream& sink, dbx const& _ );
   };
   
-  struct ActionNode : public Choice<ActionNode>
+  struct ActionNode : public Conditional<ActionNode>
   {
-    ActionNode() : Choice<ActionNode>(), sinks(), sestats() {}
+    ActionNode() : Conditional<ActionNode>(), sinks(), sestats() {}
 
     void                    add_sink( Expr expr ) { expr.ConstSimplify(); sinks.insert( expr ); }
     void                    simplify();

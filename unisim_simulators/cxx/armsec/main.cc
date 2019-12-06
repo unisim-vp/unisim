@@ -1070,40 +1070,43 @@ public:
   Expr             neonregs[32][NEONSIZE];
 };
 
-Processor::BOOL CheckCondition( Processor& state, unsigned cond )
+bool CheckCondition( Processor& state, unsigned cond )
 {
   Processor::BOOL N = state.cpsr.n, Z = state.cpsr.z, C = state.cpsr.c, V = state.cpsr.v;
 
+  Processor::BOOL result(false);
   switch (cond) {
-  case  0: return                   Z; // eq; equal
-  case  1: return               not Z; // ne; not equal
-  case  2: return                   C; // cs/hs; unsigned higher or same
-  case  3: return               not C; // cc/lo; unsigned lower
-  case  4: return                   N; // mi; negative
-  case  5: return               not N; // pl; positive or zero
-  case  6: return                   V; // vs; overflow set
-  case  7: return               not V; // vc; overflow clear
-  case  8: return    not (not C or Z); // hi; unsigned higher
-  case  9: return        (not C or Z); // ls; unsigned lower or same
-  case 10: return       not (N xor V); // ge; signed greater than or equal
-  case 11: return           (N xor V); // lt; signed less than
-  case 12: return not(Z or (N xor V)); // gt; signed greater than
-  case 13: return    (Z or (N xor V)); // le; signed less than or equal
-  case 14: return unisim::util::symbolic::make_const( true ); // al; always
-  default: break;                     // nv; never (illegal)
+  case  0: result =                   Z; break; // eq; equal
+  case  1: result =               not Z; break; // ne; not equal
+  case  2: result =                   C; break; // cs/hs; unsigned higher or same
+  case  3: result =               not C; break; // cc/lo; unsigned lower
+  case  4: result =                   N; break; // mi; negative
+  case  5: result =               not N; break; // pl; positive or zero
+  case  6: result =                   V; break; // vs; overflow set
+  case  7: result =               not V; break; // vc; overflow clear
+  case  8: result =    not (not C or Z); break; // hi; unsigned higher
+  case  9: result =        (not C or Z); break; // ls; unsigned lower or same
+  case 10: result =       not (N xor V); break; // ge; signed greater than or equal
+  case 11: result =           (N xor V); break; // lt; signed less than
+  case 12: result = not(Z or (N xor V)); break; // gt; signed greater than
+  case 13: result =    (Z or (N xor V)); break; // le; signed less than or equal
+  case 14:                                      // al; always
+     result = unisim::util::symbolic::make_const( true );
+     break;
+  default:                                      // nv; never (illegal)
+    throw std::logic_error( "undefined condition" );
   }
 
-  throw std::logic_error( "undefined condition" );
-  return unisim::util::symbolic::make_const( false );
+  return state.Concretize(result);
 }
 
-Processor::BOOL CheckCondition( Processor& state, Processor::ITCond const& cond )
+bool CheckCondition( Processor& state, Processor::ITCond const& cond )
 {
   typedef Processor::BOOL BOOL;
   typedef Processor::U8   U8;
   BOOL N = state.cpsr.n, Z = state.cpsr.z, C = state.cpsr.c, V = state.cpsr.v;
   U8 cc = (state.cpsr.itstate >> 4);
-  return
+  return state.Concretize(
     ((state.cpsr.itstate & U8(0b1111)) == U8(0)) or // unconditional
     ((cc == U8(0)) and (Z)) or // eq; equal
     ((cc == U8(1)) and (not Z)) or // ne; not equal
@@ -1119,7 +1122,7 @@ Processor::BOOL CheckCondition( Processor& state, Processor::ITCond const& cond 
     ((cc == U8(11)) and ((N xor V))) or // lt; signed less than
     ((cc == U8(12)) and (not(Z or (N xor V)))) or // gt; signed greater than
     ((cc == U8(13)) and ((Z or (N xor V)))) or // le; signed less than or equal
-    ((cc == U8(14)) and (unisim::util::symbolic::make_const( true )));
+    ((cc == U8(14)) and (unisim::util::symbolic::make_const( true ))));
 }
 
 void UpdateStatusSub( Processor& state, Processor::U32 const& res, Processor::U32 const& lhs, Processor::U32 const& rhs )
@@ -1274,47 +1277,47 @@ struct Translator
     sink << "\")\n";
     
     // Get actions
+    bool is_thumb = status.IsThumb();
+    for (bool end = false; not end;)
+      {
+        Processor state( status );
+        state.path = coderoot;
+        // Fetch
+        uint32_t insn_addr = instruction->GetAddr();
+        state.SetNIA( Processor::U32(insn_addr + instruction.bytecount), Processor::B_JMP );
+        state.reg_values[15] = Processor::U32(insn_addr + (is_thumb ? 4 : 8) );
+        // Execute
+        instruction->execute( state );
+        if (is_thumb)
+          state.ITAdvance();
+        end = state.close( reference );
+      }
+    coderoot->simplify();
+    coderoot->commit_stats();
+  }
+
+  void translate( std::ostream& sink )
+  {
     try
       {
-        bool is_thumb = status.IsThumb();
-        for (bool end = false; not end;)
+        if      (status.iset == status.Arm)
           {
-            Processor state( status );
-            state.path = coderoot;
-            // Fetch
-            uint32_t insn_addr = instruction->GetAddr();
-            state.SetNIA( Processor::U32(insn_addr + instruction.bytecount), Processor::B_JMP );
-            state.reg_values[15] = Processor::U32(insn_addr + (is_thumb ? 4 : 8) );
-            // Execute
-            instruction->execute( state );
-            if (is_thumb)
-              state.ITAdvance();
-            end = state.close( reference );
+            ARMISA armisa;
+            extract( sink, armisa );
           }
-        coderoot->simplify();
-        coderoot->commit_stats();
+        else if (status.iset == status.Thumb)
+          {
+            THUMBISA thumbisa;
+            extract( sink, thumbisa );
+          }
+        else
+          throw 0;
       }
     catch (...)
       {
         sink << "(unimplemented)\n";
         return;
       }
-  }
-
-  void translate( std::ostream& sink )
-  {
-    if      (status.iset == status.Arm)
-      {
-        ARMISA armisa;
-        extract( sink, armisa );
-      }
-    else if (status.iset == status.Thumb)
-      {
-        THUMBISA thumbisa;
-        extract( sink, thumbisa );
-      }
-    else
-      throw 0;
 
     // Translate to DBA
     unisim::util::symbolic::binsec::Program program;
