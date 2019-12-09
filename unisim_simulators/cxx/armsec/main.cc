@@ -29,6 +29,8 @@ struct Processor
   //   =====================================================================
   //   =                           Configuration                           =
   //   =====================================================================
+  struct Unimplemented {};
+  struct Undefined {};
     
   struct Config
   {
@@ -176,7 +178,7 @@ struct Processor
     bool     HasBR( unsigned index ) { return false; }
     bool     HasSPSR() { return false; }
     void     SetSPSR(U32 const& value) {}
-    U32      GetSPSR() { return U32(); }
+    U32      GetSPSR() { throw Unimplemented(); return U32(); }
     void     Swap( Processor& ) {}
   };
     
@@ -186,8 +188,8 @@ struct Processor
   {
     virtual            ~CP15Reg() {}
     virtual unsigned    RequiredPL() { return 1; }
-    virtual void        Write( Processor& proc, U32 const& value ) { proc.not_implemented(); }
-    virtual U32         Read( Processor& proc ) { proc.not_implemented(); return U32(); }
+    virtual void        Write( Processor& proc, U32 const& value ) { throw Unimplemented(); }
+    virtual U32         Read( Processor& proc ) { throw Unimplemented(); return U32(); }
     virtual char const* Describe() = 0;
   };
 
@@ -413,7 +415,7 @@ public:
   void UnpredictableInsnBehaviour() { unpredictable = true; }
   
   template <typename OP>
-  void UndefinedInstruction( OP* op ) { not_implemented(); }
+  void UndefinedInstruction( OP* op ) { throw Undefined(); }
     
   bool Choose( Expr const& cexp )
   {
@@ -454,11 +456,9 @@ public:
     
   void FPTrap( unsigned exc )
   {
-    throw std::logic_error("unimplemented");
+    throw Unimplemented();
   }
     
-  void not_implemented() { throw std::logic_error( "not implemented" ); }
-
   //   =====================================================================
   //   =             General Purpose Registers access methods              =
   //   =====================================================================
@@ -480,8 +480,8 @@ public:
       SetNIA( value, B_JMP );
   }
     
-  void SetGPR_usr( uint32_t id, U32 const& value ) { /* Only work in system mode instruction */ not_implemented(); }
-  U32  GetGPR_usr( uint32_t id ) { /* Only work in system mode instruction */ not_implemented(); return U32(); }
+  void SetGPR_usr( uint32_t id, U32 const& value ) { /* system mode */ throw Unimplemented(); }
+  U32  GetGPR_usr( uint32_t id ) { /* system mode */ throw Unimplemented(); return U32(); }
     
   U32  GetNIA() { return next_insn_addr; }
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
@@ -530,7 +530,7 @@ public:
   U32  GetCPSR()                                 { return cpsr.GetBits(); }
   void SetCPSR( U32 const& bits, uint32_t mask ) { cpsr.SetBits( bits, mask ); }
     
-  U32& SPSR() { not_implemented(); static U32 spsr_dummy; return spsr_dummy; }
+  U32& SPSR() { throw Unimplemented(); static U32 spsr_dummy; return spsr_dummy; }
   
   ITCond itcond() const { return ITCond(); }
   bool itblock() { return Choose(cpsr.InITBlock()); }
@@ -553,8 +553,8 @@ public:
       }
   }
   
-  Mode&  CurrentMode() { /* not_implemented(); */ return mode; }
-  Mode&  GetMode(uint8_t) { not_implemented(); return mode; }
+  Mode&  CurrentMode() { /* throw Unimplemented(); */ return mode; }
+  Mode&  GetMode(uint8_t) { throw Unimplemented(); return mode; }
   
   virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
   
@@ -814,10 +814,10 @@ public:
   void BranchExchange( U32 const& target, branch_type_t branch_type ) { SetNIA( target, branch_type ); }
   void Branch( U32 const& target, branch_type_t branch_type ) { SetNIA( target, branch_type ); }
     
-  void WaitForInterrupt() { not_implemented(); }
-  void SWI( uint32_t imm ) { not_implemented(); }
-  void BKPT( uint32_t imm ) { not_implemented(); }
-  void CallSupervisor( uint32_t imm ) { not_implemented(); }
+  void WaitForInterrupt() { throw Unimplemented(); }
+  void SWI( uint32_t imm ) { throw Unimplemented(); }
+  void BKPT( uint32_t imm ) { throw Unimplemented(); }
+  void CallSupervisor( uint32_t imm ) { throw Unimplemented(); }
   bool IntegerZeroDivide( BOOL const& condition ) { return false; }
   
   //   =====================================================================
@@ -1303,9 +1303,14 @@ struct Translator
         else
           throw 0;
       }
-    catch (...)
+    catch (Processor::Undefined const&)
       {
         sink << "(undefined)\n";
+        return;
+      }
+    catch (...)
+      {
+        sink << "(unimplemented)\n";
         return;
       }
 
