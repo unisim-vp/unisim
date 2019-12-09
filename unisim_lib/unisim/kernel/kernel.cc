@@ -2322,6 +2322,14 @@ bool Simulator::SaveVariables(std::ostream& os, VariableBase::Type type, const s
 
 Simulator::SetupStatus Simulator::Setup()
 {
+	if(!StartSigIntThrd())
+	{
+		std::cerr << "ERROR! Can't start SIGINT thread" << std::endl;
+		return ST_ERROR;
+	}
+	
+	if(sig_int_cond) return ST_OK_DONT_START;
+		
 	if(generate_doc)
 	{
 		if(generate_doc_filename.empty())
@@ -2336,17 +2344,25 @@ Simulator::SetupStatus Simulator::Setup()
 		}
 		return ST_OK_DONT_START;
 	}
+	
+	if(sig_int_cond) return ST_OK_DONT_START;
+	
 	if(enable_version)
 	{
 		Version(std::cerr);
 		return ST_OK_DONT_START;
 	}
+	
+	if(sig_int_cond) return ST_OK_DONT_START;
+	
 	if(enable_help)
 	{
 		Help(std::cerr);
 		return ST_OK_DONT_START;
 	}
 	
+	if(sig_int_cond) return ST_OK_DONT_START;
+
 	if(list_parms)
 	{
 		std::cerr << "Listing parameters..." << std::endl;
@@ -2355,6 +2371,8 @@ Simulator::SetupStatus Simulator::Setup()
 		return ST_OK_DONT_START;
 	}
 
+	if(sig_int_cond) return ST_OK_DONT_START;
+	
 	for(std::vector<std::string>::const_iterator get_config_filename_it = get_config_filenames.begin(); get_config_filename_it != get_config_filenames.end(); ++get_config_filename_it)
 	{
 		const std::string& get_config_filename = *get_config_filename_it;
@@ -2367,12 +2385,17 @@ Simulator::SetupStatus Simulator::Setup()
 			std::cerr << "WARNING! Saving parameters set to file \"" << get_config_filename << "\" failed" << std::endl;
 		}
 	}
+	
+	if(sig_int_cond) return ST_OK_DONT_START;
+	
 	if(!get_config_filenames.empty())
 	{
 		std::cerr << "Aborting simulation" << std::endl;
 		return ST_OK_DONT_START;
 	}
 
+	if(sig_int_cond) return ST_OK_DONT_START;
+	
 	std::map<std::string, ServiceExportBase *>::iterator export_iter;
 	if(enable_warning)
 	{
@@ -2386,6 +2409,8 @@ Simulator::SetupStatus Simulator::Setup()
 		}
 	}
 
+	if(sig_int_cond) return ST_OK_DONT_START;
+	
 	// Build a dependency graph of exports
 	DiGraph<ServiceExportBase *> dependency_graph;
 
@@ -2418,6 +2443,8 @@ Simulator::SetupStatus Simulator::Setup()
 		}
 	}
 
+	if(sig_int_cond) return ST_OK_DONT_START;
+	
 #ifdef DEBUG_KERNEL
 	std::ofstream file("deps.dot");
 	dependency_graph.WriteGraphviz(file);
@@ -2435,6 +2462,8 @@ Simulator::SetupStatus Simulator::Setup()
 		return ST_ERROR;
 	}
 	
+	if(sig_int_cond) return ST_OK_DONT_START;
+	
 	SetupStatus status = ST_OK_TO_START;
 	
 	// Call all methods "BeginSetup()"
@@ -2450,6 +2479,19 @@ Simulator::SetupStatus Simulator::Setup()
 			std::cerr << "Simulator: " << object->GetName() << " beginning of setup failed" << std::endl;
 			status = ST_ERROR;
 			break;
+		}
+		
+		if(sig_int_cond) break;
+	}
+	
+	if(sig_int_cond)
+	{
+		switch(status)
+		{
+			case ST_OK_TO_START  : 
+			case ST_OK_DONT_START:
+			case ST_WARNING      : return ST_OK_DONT_START; 
+			case ST_ERROR        : return ST_ERROR;
 		}
 	}
 	
@@ -2474,9 +2516,22 @@ Simulator::SetupStatus Simulator::Setup()
 					break;
 				}
 			}
+			
+			if(sig_int_cond) break;
 		}
 	}
 
+	if(sig_int_cond)
+	{
+		switch(status)
+		{
+			case ST_OK_TO_START  : 
+			case ST_OK_DONT_START:
+			case ST_WARNING      : return ST_OK_DONT_START; 
+			case ST_ERROR        : return ST_ERROR;
+		}
+	}
+	
 	if(status != ST_ERROR)
 	{
 		// Call all methods "EndSetup()"
@@ -2492,6 +2547,7 @@ Simulator::SetupStatus Simulator::Setup()
 				status = ST_ERROR;
 				break;
 			}
+			if(sig_int_cond) break;
 		}
 	}
 
@@ -2506,10 +2562,15 @@ Simulator::SetupStatus Simulator::Setup()
 		}
 	}
 
-	if(!StartSigIntThrd())
+	if(sig_int_cond)
 	{
-		std::cerr << "ERROR! Can't start SIGINT thread" << std::endl;
-		return ST_ERROR;
+		switch(status)
+		{
+			case ST_OK_TO_START  : 
+			case ST_OK_DONT_START:
+			case ST_WARNING      : return ST_OK_DONT_START; 
+			case ST_ERROR        : return ST_ERROR;
+		}
 	}
 	
 	return status;
@@ -3283,6 +3344,10 @@ void Simulator::MTSigInt()
 		sig_int_cond = true;
 		pthread_cond_signal(&sig_int_thrd_cond);
 		pthread_mutex_unlock(&sig_int_thrd_mutex);
+	}
+	else
+	{
+		sig_int_cond = true;
 	}
 }
 

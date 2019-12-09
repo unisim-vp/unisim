@@ -443,7 +443,7 @@ bool Simulator<CONFIG>::EndSetup()
 template <class CONFIG>
 void Simulator<CONFIG>::SigInt()
 {
-	if(!inline_debugger)
+	if(!inline_debugger || !inline_debugger->IsStarted())
 	{
 		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}

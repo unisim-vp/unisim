@@ -951,7 +951,7 @@ bool Simulator::EndSetup()
 
 void Simulator::SigInt()
 {
-	if(!inline_debugger)
+	if(!inline_debugger || !inline_debugger->IsStarted())
 	{
 		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}

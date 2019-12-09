@@ -1035,16 +1035,19 @@ void Simulator::Run()
 {
 	double time_start = host_time->GetTime();
 
-	sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
+	if(!stop_called)
+	{
+		sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
 
-	try
-	{
-		sc_core::sc_start();
-	}
-	catch(std::runtime_error& e)
-	{
-		std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
-		std::cerr << e.what() << std::endl;
+		try
+		{
+			sc_core::sc_start();
+		}
+		catch(std::runtime_error& e)
+		{
+			std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+			std::cerr << e.what() << std::endl;
+		}
 	}
 
 	std::cerr << "Simulation finished" << std::endl;
@@ -1124,7 +1127,7 @@ int Simulator::GetExitStatus() const
 
 void Simulator::SigInt()
 {
-	if(!inline_debugger)
+	if(!inline_debugger || !inline_debugger->IsStarted())
 	{
 		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}
