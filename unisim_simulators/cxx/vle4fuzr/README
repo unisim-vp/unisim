@@ -1,3 +1,4 @@
 This package contains:
-- VLE4FUZR: an PPC VLE decoder for conversion for usage in the RENAULT FUZR environment
+  - s3pac: an ARMv7 decoder for conversion of arm instructions to C code
+  - GenISSLib (will not be installed): an instruction set simulator generator
 See INSTALL for installation instructions.

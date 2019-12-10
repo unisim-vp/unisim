@@ -99,6 +99,16 @@ README \
 INSTALL \
 "
 
+UNISIM_SIMULATOR_SAMPLE_FILES=" \
+gcd_arm.py \
+sample_arm.py \
+guess_vle.py \
+unipy.py \
+gcd_vle.py \
+gcd.c \
+guess.c \
+"
+
 UNISIM_SIMULATOR_DATA_FILES="${UNISIM_TOP_DATA_FILES}"
 
 UNISIM_SIMULATOR_FILES="\
@@ -115,6 +125,10 @@ done
 
 for file in ${UNISIM_TOP_DATA_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
+done
+
+for file in ${UNISIM_SIMULATOR_SAMPLE_FILES}; do
+	dist_copy "${UNISIM_SIMULATOR_DIR}/samples/${file}" "${DEST_DIR}/samples/${file}"
 done
 
 # Top level
@@ -204,7 +218,7 @@ noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_BINDINGS_HEADER_F
 EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
 sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
 dist_share_DATA = ${UNISIM_TOP_DATA_FILES}
-nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
+nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES}
 
 BUILT_SOURCES=\
 	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh\

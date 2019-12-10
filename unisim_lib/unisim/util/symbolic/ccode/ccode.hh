@@ -55,11 +55,11 @@ namespace ccode {
   typedef SmartValue<int32_t>  S32;
   typedef SmartValue<int64_t>  S64;
 
-  struct ActionNode : public unisim::util::symbolic::Choice<ActionNode>
+  struct ActionNode : public unisim::util::symbolic::Conditional<ActionNode>
   {
     typedef unisim::util::symbolic::Expr Expr;
     
-    ActionNode() : Choice<ActionNode>(), updates() {}
+    ActionNode() : Conditional<ActionNode>(), updates() {}
     void                     Repr( std::ostream& sink ) const;
     
     void                     simplify();

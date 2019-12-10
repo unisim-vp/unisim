@@ -1072,9 +1072,8 @@ public:
 
 bool CheckCondition( Processor& state, unsigned cond )
 {
-  Processor::BOOL N = state.cpsr.n, Z = state.cpsr.z, C = state.cpsr.c, V = state.cpsr.v;
-
-  Processor::BOOL result(false);
+  Processor::BOOL N = state.cpsr.n, Z = state.cpsr.z, C = state.cpsr.c, V = state.cpsr.v, result(false);
+  
   switch (cond) {
   case  0: result =                   Z; break; // eq; equal
   case  1: result =               not Z; break; // ne; not equal
@@ -1090,11 +1089,9 @@ bool CheckCondition( Processor& state, unsigned cond )
   case 11: result =           (N xor V); break; // lt; signed less than
   case 12: result = not(Z or (N xor V)); break; // gt; signed greater than
   case 13: result =    (Z or (N xor V)); break; // le; signed less than or equal
-  case 14:                                      // al; always
-     result = unisim::util::symbolic::make_const( true );
-     break;
+  case 14: return true;                         // al; always
   default:                                      // nv; never (illegal)
-    throw std::logic_error( "undefined condition" );
+    throw std::logic_error( "bad condition" );
   }
 
   return state.Concretize(result);
