@@ -161,9 +161,9 @@ try:
     unipy.EMU_mem_init(ctx, 0xe0000, 4, perms=0, hook=Console(0xe0000))
 
     # tracing one instruction at entrypoint with customized callback
-    unipy.EMU_hook_code(ctx, RegMon(28).check)
-    unipy.EMU_hook_code(ctx, RegMon(29).check)
-    unipy.EMU_hook_code(ctx, RegMon(30).check)
+    # unipy.EMU_hook_code(ctx, RegMon(28).check)
+    # unipy.EMU_hook_code(ctx, RegMon(29).check)
+    # unipy.EMU_hook_code(ctx, RegMon(30).check)
 
     # initialize machine registers
     unipy.EMU_reg_write(ctx, unipy.EMU_VLE_REG_R(1), stacktop)

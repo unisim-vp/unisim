@@ -100,13 +100,13 @@ INSTALL \
 "
 
 UNISIM_SIMULATOR_SAMPLE_FILES=" \
-gcd_arm.py \
-sample_arm.py \
-guess_vle.py \
-unipy.py \
-gcd_vle.py \
-gcd.c \
-guess.c \
+samples/gcd_arm.py \
+samples/sample_arm.py \
+samples/guess_vle.py \
+samples/unipy.py \
+samples/gcd_vle.py \
+samples/gcd.c \
+samples/guess.c \
 "
 
 UNISIM_SIMULATOR_DATA_FILES="${UNISIM_TOP_DATA_FILES}"
@@ -128,7 +128,7 @@ for file in ${UNISIM_TOP_DATA_FILES}; do
 done
 
 for file in ${UNISIM_SIMULATOR_SAMPLE_FILES}; do
-	dist_copy "${UNISIM_SIMULATOR_DIR}/samples/${file}" "${DEST_DIR}/samples/${file}"
+	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
 
 # Top level
@@ -153,6 +153,7 @@ EOF
 output_top_makefile_am <(cat << EOF
 SUBDIRS=genisslib ${SIMPKG_DSTDIR}
 EXTRA_DIST = configure.cross
+dist_noinst_DATA = ${UNISIM_SIMULATOR_SAMPLE_FILES}
 EOF
 )
 
