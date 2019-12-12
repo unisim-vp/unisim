@@ -420,6 +420,7 @@ public:
 	virtual FunctionInstructionProfileBase *CreateFunctionInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const = 0;
 	virtual SourceCodeProfileBase<ADDRESS> *CreateSourceCodeProfile() const = 0;
 	virtual const Printer& GetPrinter(FileFormat) const = 0;
+	virtual void Clear() = 0;
 };
 
 ///////////////////////////// AddressProfile<> ////////////////////////////////
@@ -441,6 +442,7 @@ public:
 	virtual InstructionProfileBase *CreateInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const;
 	virtual FunctionInstructionProfileBase *CreateFunctionInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const;
 	virtual SourceCodeProfileBase<ADDRESS> *CreateSourceCodeProfile() const;
+	virtual void Clear() { Super::Clear(); }
 	
 	bool GetValue(ADDRESS addr, T& value) const;
 	std::pair<T, T> GetValueRange() const;
@@ -801,6 +803,16 @@ public:
 	void Output();
 
 private:
+	struct PropertySetter : public unisim::util::hypapp::Form_URL_Encoded_Decoder
+	{
+		PropertySetter(Profiler<ADDRESS>& _profiler);
+		virtual bool FormAssign(const std::string& name, const std::string& value);
+		void Apply();
+	private:
+		Profiler<ADDRESS>& profiler;
+		bool clear_all;
+		std::vector<std::string> clear;
+	};
 
 	template <typename T> bool TryProfile(unisim::kernel::VariableBase *var);
 	
@@ -851,6 +863,8 @@ private:
 	bool ListenCommit();
 	bool UnlistenCommit();
 	void LoadDebugInfo();
+	void Clear();
+	void Clear(const std::string& variable_name);
 	void Update();
 	void PrintIndex(std::ostream& os, Visitor& visitor) const;
 	//void Print(std::ostream& os, DebugVisitor& dbg_visitor);

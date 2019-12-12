@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,27 +29,24 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_KERNEL_CONFIG_XML_CONFIG_FILE_HELPER_HH__
-#define __UNISIM_KERNEL_CONFIG_XML_CONFIG_FILE_HELPER_HH__
+#ifndef __UNISIM_KERNEL_CONFIG_INI_CONFIG_FILE_HELPER_HH__
+#define __UNISIM_KERNEL_CONFIG_INI_CONFIG_FILE_HELPER_HH__
 
-#include <vector>
-#include <sstream>
-#include <libxml/xmlreader.h>
-#include <libxml/xmlwriter.h>
 #include <unisim/kernel/kernel.hh>
 
 namespace unisim {
 namespace kernel {
 namespace config {
+namespace ini {
 
-class XMLConfigFileHelper : public unisim::kernel::ConfigFileHelper
+class INIConfigFileHelper : public unisim::kernel::ConfigFileHelper
 {
 public:
-	XMLConfigFileHelper(unisim::kernel::Simulator *simulator);
-	~XMLConfigFileHelper();
+	INIConfigFileHelper(unisim::kernel::Simulator *simulator);
+	virtual ~INIConfigFileHelper();
 	
 	virtual const char *GetName() const;
 	virtual bool SaveVariables(const char *filename, unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
@@ -58,57 +55,15 @@ public:
 	virtual bool LoadVariables(std::istream& is, unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
 	
 private:
-	static const char *XML_ENCODING; 
-
-	bool SaveVariables(xmlTextWriterPtr writer, unisim::kernel::VariableBase::Type type);
-	bool LoadVariables(xmlTextReaderPtr reader, unisim::kernel::VariableBase::Type type);
-
-	bool HasVariable(const unisim::kernel::Object *obj,
-	                 unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
-
-	int XmlfyVariables(xmlTextWriterPtr writer,
-	                   const unisim::kernel::Object *obj,
-	                   unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
-	
-	int XmlfyVariable(xmlTextWriterPtr writer, 
-	                  const unisim::kernel::VariableBase *var);
-	
 	unisim::kernel::Simulator *simulator;
 	
-	bool ProcessXmlVariableNode(xmlTextReaderPtr reader,
-	                            unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
-	
-	class CurVariable {
-	public:
-		std::stringstream type;
-		std::stringstream name;
-		std::stringstream value;
-		std::stringstream description;
-		std::stringstream data_type;
-	};
-	
-	enum CurStatus {NONE, TYPE, NAME, VALUE, DESCRIPTION, DATA_TYPE};
-	CurVariable *cur_var;
-	CurStatus cur_status;
-	typedef std::vector<std::string> CurObject;
-	CurObject cur_object;
-
-	// tokens required
-	xmlChar* name_token;
-	xmlChar* variables_token;
-	xmlChar* object_token;
-	xmlChar* variable_token;
-	xmlChar* type_token;
-	xmlChar* value_token;
-	xmlChar* default_value_token;
-	xmlChar* data_type_token;
-	xmlChar* description_token;
-	xmlChar* _text_token;
-	xmlChar* empty_text;
+	void SaveVariables(std::ostream& os, unisim::kernel::Object *object, unisim::kernel::VariableBase::Type type);
+	void Assign(const std::string& section, const std::string& key, const std::string& value);
 };
 
+} // end of namespace ini
 } // end of namespace config
 } // end of namespace kernel
 } // end of namespace unisim
 
-#endif // __UNISIM_KERNEL_CONFIG_XML_CONFIG_FILE_HELPER_HH__
+#endif // __UNISIM_KERNEL_CONFIG_INI_CONFIG_FILE_HELPER_HH__

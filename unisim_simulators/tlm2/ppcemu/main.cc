@@ -37,6 +37,14 @@
 #endif
 
 #include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/logger/console/console_printer.hh>
+#include <unisim/kernel/logger/text_file/text_file_writer.hh>
+#include <unisim/kernel/logger/http/http_writer.hh>
+#include <unisim/kernel/logger/xml_file/xml_file_writer.hh>
+#include <unisim/kernel/logger/netstream/netstream_writer.hh>
+#include <unisim/kernel/config/xml/xml_config_file_helper.hh>
+#include <unisim/kernel/config/ini/ini_config_file_helper.hh>
+#include <unisim/kernel/config/json/json_config_file_helper.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/debugger/debugger.tcc>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
@@ -134,6 +142,11 @@ private:
 	typedef unisim::service::debug::gdb_server::GDBServer<CPU_ADDRESS_TYPE> GDB_SERVER;
 	typedef unisim::service::debug::inline_debugger::InlineDebugger<CPU_ADDRESS_TYPE> INLINE_DEBUGGER;
 	typedef unisim::service::os::linux_os::PowerPCLinux32<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE> LINUS_OS;
+	typedef unisim::kernel::logger::console::Printer LOGGER_CONSOLE_PRINTER;
+	typedef unisim::kernel::logger::text_file::Writer LOGGER_TEXT_FILE_WRITER;
+	typedef unisim::kernel::logger::http::Writer LOGGER_HTTP_WRITER;
+	typedef unisim::kernel::logger::xml_file::Writer LOGGER_XML_FILE_WRITER;
+	typedef unisim::kernel::logger::netstream::Writer LOGGER_NETSTREAM_WRITER;
 	
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -166,6 +179,16 @@ private:
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
+	//  - Logger Console Printer
+	LOGGER_CONSOLE_PRINTER *logger_console_printer;
+	//  - Logger Text File Writer
+	LOGGER_TEXT_FILE_WRITER *logger_text_file_writer;
+	//  - Logger HTTP Writer
+	LOGGER_HTTP_WRITER *logger_http_writer;
+	//  - Logger XML File Writer
+	LOGGER_XML_FILE_WRITER *logger_xml_file_writer;
+	//  - Logger TCP Network Stream Writer
+	LOGGER_NETSTREAM_WRITER *logger_netstream_writer;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
@@ -193,12 +216,27 @@ Simulator::Simulator(int argc, char **argv)
 	, inline_debugger(0)
 	, sim_time(0)
 	, host_time(0)
+	, logger_console_printer(0)
+	, logger_text_file_writer(0)
+	, logger_http_writer(0)
+	, logger_xml_file_writer(0)
+	, logger_netstream_writer(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, exit_status(0)
 {
+	//=========================================================================
+	//===                 Logger Printers instantiations                    ===
+	//=========================================================================
+
+	logger_console_printer = new LOGGER_CONSOLE_PRINTER();
+	logger_text_file_writer = new LOGGER_TEXT_FILE_WRITER();
+	logger_http_writer = new LOGGER_HTTP_WRITER();
+	logger_xml_file_writer = new LOGGER_XML_FILE_WRITER();
+	logger_netstream_writer = new LOGGER_NETSTREAM_WRITER();
+	
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
@@ -314,6 +352,11 @@ Simulator::~Simulator()
 	delete cpu;
 	delete sim_time;
 	delete linux_os;
+	if(logger_console_printer) delete logger_console_printer;
+	if(logger_text_file_writer) delete logger_text_file_writer;
+	if(logger_http_writer) delete logger_http_writer;
+	if(logger_xml_file_writer) delete logger_xml_file_writer;
+	if(logger_netstream_writer) delete logger_netstream_writer;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
@@ -474,7 +517,7 @@ int Simulator::GetExitStatus() const
 
 void Simulator::SigInt()
 {
-	if(!inline_debugger)
+	if(!inline_debugger || !inline_debugger->IsStarted())
 	{
 		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}

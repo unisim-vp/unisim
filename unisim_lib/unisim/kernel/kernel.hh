@@ -218,12 +218,15 @@ private:
 class ConfigFileHelper
 {
 public:
-	virtual ~ConfigFileHelper() {}
+	virtual ~ConfigFileHelper();
 	virtual const char *GetName() const = 0;
 	virtual bool SaveVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
 	virtual bool SaveVariables(std::ostream& os, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
 	virtual bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
 	virtual bool LoadVariables(std::istream& is, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
+	virtual bool Match(const char *filename) const;
+protected:
+	static bool MatchFilenameByExtension(const char *filename, const char *extension);
 };
 
 //=============================================================================
@@ -309,10 +312,9 @@ private:
 	VariableBase *void_variable;
 	std::string shared_data_dir;
 	std::map<std::string, std::string> set_vars;
-	std::string get_config_filename;
+	std::vector<std::string> get_config_filenames;
 	std::string default_config_file_format;
 	bool list_parms;
-	bool get_config;
 	bool generate_doc;
 	std::string generate_doc_filename;
 	bool enable_warning;
@@ -355,7 +357,7 @@ private:
 
 	void Initialize(VariableBase *variable);
 
-	const char *GuessConfigFileFormat(const char *filename) const;
+	ConfigFileHelper *GuessConfigFileHelper(const char *filename);
 	ConfigFileHelper *FindConfigFileHelper(const std::string& config_file_format);
 public:
 	bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID, const std::string& config_file_format = std::string());
@@ -384,6 +386,7 @@ private:
 		const char *opt_description;
 	};
 
+	std::string config_file_formats;
 	std::vector<CommandLineOption> command_line_options;
 
 	std::map<std::string, Object *, unisim::util::nat_sort::nat_ltstr> objects;
@@ -418,8 +421,24 @@ public:
 private:
 	pthread_mutex_t mutex;
 	
+	pthread_t sig_int_thrd;
+	
+	pthread_mutex_t sig_int_thrd_create_mutex;
+	pthread_cond_t sig_int_thrd_create_cond;
+	
+	pthread_mutex_t sig_int_thrd_mutex;
+	pthread_cond_t sig_int_thrd_cond;
+	
+	bool sig_int_cond;
+	bool stop_sig_int_thrd;
+	bool sig_int_thrd_alive;
+	
+	void SigIntThrd();
+	static void *SigIntThrdEntryPoint(void *self);
+	bool StartSigIntThrd();
+	bool StopSigIntThrd();
 	void MTSigInt();
-	static void *ProcessSigIntThrdEntryPoint(void *self);
+	
 	void BroadcastSigInt();
 	void Lock();
 	void Unlock();
@@ -444,6 +463,7 @@ public:
 	
 	virtual void SigInt();
 	virtual void Kill();
+	bool Killed() const { return killed; }
 
 	const char *GetName() const;
 	const char *GetObjectName() const;
@@ -480,6 +500,7 @@ private:
 	std::list<ServiceImportBase *> srv_imports;
 	std::list<ServiceExportBase *> srv_exports;
 	std::list<Object *> leaf_objects;
+	bool killed;
 };
 
 //=============================================================================

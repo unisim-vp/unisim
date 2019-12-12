@@ -123,6 +123,8 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, tracked_data_objects()
 	, fetch_insn_event(0)
 	, trap_event(0)
+	, visited_instructions()
+	, is_started(false)
 {
 	param_memory_atom_size.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
 	
@@ -334,7 +336,9 @@ void InlineDebugger<ADDRESS>::Tokenize(const std::string& str, std::vector<std::
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DebugYield()
 {
+	if(Killed()) return;
 	if(!trap) return;
+	is_started = true;
 	
 	// Ctrl-C, breakpoint or watchpoint condition occured
 	
@@ -383,6 +387,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 		trap = false;
 		bool interactive = false;
 		//(*std_output_stream) << "> ";
+		if(Killed()) return;
 		if(!GetLine(prompt.c_str(), line, interactive))
 		{
 			this->Stop(0);
@@ -1666,7 +1671,7 @@ bool InlineDebugger<ADDRESS>::EditBuffer(ADDRESS addr, std::vector<uint8_t>& buf
 		sstr << ": ";
 		
 		bool interactive = false;
-		if(!GetLine(sstr.str().c_str(), line, interactive))
+		if(Killed() || !GetLine(sstr.str().c_str(), line, interactive))
 		{
 			return false;
 		}
@@ -3251,6 +3256,7 @@ bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, std::string& line, boo
 				(*std_output_stream) << prompt;
 			}
 			line_read = readline(prompt);
+			if(Killed()) return false;
 			if(!line_read)
 			{
 				rl_redisplay(); // work around when terminal size changes
@@ -3280,6 +3286,7 @@ bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, std::string& line, boo
 		(*std_output_stream) << prompt;
 		getline(std::cin, line);
 		if(std::cin.fail()) return false;
+		if(Killed()) return false;
 		if(std_output_stream != &std::cout)
 		{
 			(*std_output_stream) << line << std::endl;
@@ -3612,6 +3619,13 @@ bool InlineDebugger<ADDRESS>::IsVisited(ADDRESS _cia)
 	VisitedInstructionPage& vip = visited_instructions[hi_address];
 	return vip.Get(_cia);
 }
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsStarted() const
+{
+	return is_started;
+}
+
 
 } // end of namespace inline_debugger
 } // end of namespace debug

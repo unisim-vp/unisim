@@ -62,6 +62,7 @@ public:
 	
 	virtual bool EndSetup();
 	virtual void Kill();
+	bool Killed() const;
 	
 	virtual void Serve(unisim::util::hypapp::ClientConnection const& conn);
 	

@@ -9,6 +9,14 @@ import_genisslib || exit
 import unisim/kernel || exit
 import unisim/kernel/tlm2 || exit
 import unisim/kernel/variable/endian || exit
+import unisim/kernel/config/xml || exit
+import unisim/kernel/config/ini || exit
+import unisim/kernel/config/json || exit
+import unisim/kernel/logger/console || exit
+import unisim/kernel/logger/text_file || exit
+import unisim/kernel/logger/http || exit
+import unisim/kernel/logger/xml_file || exit
+import unisim/kernel/logger/netstream || exit
 import unisim/component/tlm2/processor/arm/cortex_a9 || exit
 import unisim/component/tlm2/memory/ram || exit
 import unisim/util/likely || exit

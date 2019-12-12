@@ -53,6 +53,7 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <cassert>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -74,13 +75,8 @@
 // #include <mach-o/dyld.h>
 // #endif
 
-#include "unisim/kernel/config/xml_config_file_helper.hh"
 #include "unisim/util/backtrace/backtrace.hh"
 #include "unisim/util/likely/likely.hh"
-
-#include <unisim/kernel/config/ini_config_file_helper.hh>
-
-#include <unisim/kernel/config/json_config_file_helper.hh>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <fcntl.h>
@@ -1004,6 +1000,7 @@ Object::Object(const char *_name, Object *_parent, const char *_description)
 	, srv_imports()
 	, srv_exports()
 	, leaf_objects()
+	, killed(false)
 {
 	if(_parent) _parent->Add(*this);
 	Simulator::Instance()->Register(this);
@@ -1204,6 +1201,7 @@ void Object::SigInt()
 
 void Object::Kill()
 {
+	killed = true;
 }
 
 void Object::OnDisconnect()
@@ -1327,6 +1325,35 @@ std::list<ServiceImportBase *>& ServiceExportBase::GetSetupDependencies()
 }
 
 //=============================================================================
+//=                           ConfigFileHelper                                =
+//=============================================================================
+
+ConfigFileHelper::~ConfigFileHelper()
+{
+}
+
+bool ConfigFileHelper::Match(const char *filename) const
+{
+	return MatchFilenameByExtension(filename, GetName());
+}
+
+bool ConfigFileHelper::MatchFilenameByExtension(const char *filename, const char *extension)
+{
+	const char *p = filename;
+	const char *dot = 0;
+	do
+	{
+		if((p = strchr(p, '.')) != 0)
+		{
+			dot = p++;
+		}
+	}
+	while(p);
+	
+	return dot && (strcasecmp(dot + 1, extension) == 0);
+}
+
+//=============================================================================
 //=                                Simulator                                  =
 //=============================================================================
 
@@ -1385,10 +1412,9 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	: void_variable(0)
 	, shared_data_dir()
 	, set_vars()
-	, get_config_filename()
+	, get_config_filenames()
 	, default_config_file_format("XML")
 	, list_parms(false)
-	, get_config(false)
 	, generate_doc(false)
 	, generate_doc_filename()
 	, enable_warning(false)
@@ -1415,6 +1441,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, var_schematic(0)
 	, param_enable_press_enter_at_exit(0)
 	, param_default_config_file_format(0)
+	, config_file_formats()
 	, command_line_options()
 	, objects()
 	, imports()
@@ -1422,33 +1449,58 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, variables()
 	, cmd_args()
 	, param_cmd_args(0)
+	, mutex()
+	, sig_int_thrd()
+	, sig_int_thrd_create_mutex()
+	, sig_int_thrd_create_cond()
+	, sig_int_thrd_mutex()
+	, sig_int_thrd_cond()
+	, sig_int_cond(false)
+	, stop_sig_int_thrd(false)
+	, sig_int_thrd_alive(false)
 {
 	pthread_mutex_init(&mutex, NULL);
 	
-	new unisim::kernel::config::XMLConfigFileHelper(this);
-	new unisim::kernel::config::INIConfigFileHelper(this);
-	new unisim::kernel::config::JSONConfigFileHelper(this);
+	pthread_mutex_init(&sig_int_thrd_create_mutex, NULL);
+	pthread_mutex_init(&sig_int_thrd_mutex, NULL);
+	
+	pthread_cond_init(&sig_int_thrd_create_cond, NULL);
+	pthread_cond_init(&sig_int_thrd_cond, NULL);
 	
 	SignalHandler::Init();
 
+	if(LoadBuiltInConfig)
+	{
+		LoadBuiltInConfig(this);
+	}
+	
 	bool has_share_data_dir_hint = false;
 	std::string shared_data_dir_hint;
+	
+	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_iter;
+	for(config_file_helper_iter = config_file_helpers.begin(); config_file_helper_iter != config_file_helpers.end(); config_file_helper_iter++)
+	{
+		if(config_file_helper_iter != config_file_helpers.begin())
+		{
+			config_file_formats += " | ";
+		}
+		ConfigFileHelper *config_file_helper = (*config_file_helper_iter).second;
+		config_file_formats += config_file_helper->GetName();
+	}
 
 	command_line_options.push_back(CommandLineOption('s', "set", "set value of parameter 'param' to 'value'", "param=value"));
-	command_line_options.push_back(CommandLineOption('c', "config", "configures the simulator with the given configuration file", "file"));
-	command_line_options.push_back(CommandLineOption('g', "get-config", "get the simulator configuration file (you can use it to create your own configuration. This option can be combined with -c to get a new configuration file with existing variables from another file", "file"));
-	command_line_options.push_back(CommandLineOption('f', "default-config-file-format", "set the simulator default configuration file format", "XML | INI | JSON"));
+	if(config_file_helpers.size())
+	{
+		command_line_options.push_back(CommandLineOption('c', "config", "configures the simulator with the given configuration file", "file"));
+		command_line_options.push_back(CommandLineOption('g', "get-config", "get the simulator configuration file (you can use it to create your own configuration. This option can be combined with -c to get a new configuration file with existing variables from another file", "file"));
+		command_line_options.push_back(CommandLineOption('f', "default-config-file-format", "set the simulator default configuration file format", config_file_formats.c_str()));
+	}
 	command_line_options.push_back(CommandLineOption('l', "list", "lists all available parameters, their type, and their current value"));
 	command_line_options.push_back(CommandLineOption('w', "warn", "enable printing of kernel warnings"));
 	command_line_options.push_back(CommandLineOption('d', "doc", "enable printing a latex documentation", "Latex file"));
 	command_line_options.push_back(CommandLineOption('v', "version", "displays the program version information"));
 	command_line_options.push_back(CommandLineOption('p', "share-path", "the path that should be used for the share directory (absolute path)", "path"));
 	command_line_options.push_back(CommandLineOption('h', "help", "displays this help"));
-	
-	if(LoadBuiltInConfig)
-	{
-		LoadBuiltInConfig(this);
-	}
 	
 	if(simulator)
 	{
@@ -1768,19 +1820,10 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					{
 						std::cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << std::endl;
 					}
-	// 				if(LoadXmlvariable::Parameters(*arg))
-	// 				{
-	// 					std::cerr << "variable::Parameters set using file \"" << (*arg) << "\"" << std::endl;
-	// 				}
-	// 				else if(enable_warning)
-	// 				{
-	// 					std::cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << std::endl;
-	// 				}
 					state = 0;
 					break;
 				case 3:
-					get_config = true;
-					get_config_filename = *arg;
+					get_config_filenames.push_back(*arg);
 					state = 0;
 					break;
 				case 4:
@@ -1821,9 +1864,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 		param_cmd_args->SetSerializable(false);
 	}
 	
-	// Setup logger server
-	unisim::kernel::logger::LoggerServer *logserv = unisim::kernel::logger::Logger::StaticServerInstance();
-	logserv->Initialize();
+	unisim::kernel::logger::Logger::StaticServerInstance();
 }
 
 Simulator::~Simulator()
@@ -1898,9 +1939,20 @@ Simulator::~Simulator()
 	
 	SignalHandler::Fini();
 	
+	if(!StopSigIntThrd())
+	{
+		std::cerr << "WARNING! Can't stop SIGINT thread" << std::endl;
+	}
+	
 	unisim::kernel::logger::Logger::ReleaseStaticServiceInstance();
 	
 	pthread_mutex_destroy(&mutex);
+	
+	pthread_mutex_destroy(&sig_int_thrd_create_mutex);
+	pthread_mutex_destroy(&sig_int_thrd_mutex);
+	
+	pthread_cond_destroy(&sig_int_thrd_create_cond);
+	pthread_cond_destroy(&sig_int_thrd_cond);
 }
 
 void Simulator::Version(std::ostream& os) const
@@ -2206,29 +2258,15 @@ void Simulator::DumpRegisters(std::ostream &os)
 	DumpVariables(os, VariableBase::VAR_REGISTER);
 }
 
-const char *Simulator::GuessConfigFileFormat(const char *filename) const
+ConfigFileHelper *Simulator::GuessConfigFileHelper(const char *filename)
 {
-	const char *p = filename;
-	const char *dot = 0;
-	do
+	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_iter;
+	for(config_file_helper_iter = config_file_helpers.begin(); config_file_helper_iter != config_file_helpers.end(); config_file_helper_iter++)
 	{
-		p = strchr(p, '.');
-		if(p)
-		{
-			dot = p++;
-		}
+		ConfigFileHelper *config_file_helper = (*config_file_helper_iter).second;
+		if(config_file_helper->Match(filename)) return config_file_helper;
 	}
-	while(p);
-	
-	if(dot)
-	{
-		const char *ext = dot + 1;
-		if(strcasecmp(ext, "XML") == 0) return "XML";
-		if(strcasecmp(ext, "INI") == 0) return "INI";
-		if(strcasecmp(ext, "JSON") == 0) return "JSON";
-	}
-	
-	return default_config_file_format.c_str();
+	return FindConfigFileHelper(default_config_file_format);
 }
 
 ConfigFileHelper *Simulator::FindConfigFileHelper(const std::string& config_file_format)
@@ -2240,7 +2278,7 @@ ConfigFileHelper *Simulator::FindConfigFileHelper(const std::string& config_file
 
 bool Simulator::LoadVariables(const char *filename, VariableBase::Type type, const std::string& config_file_format)
 {
-	ConfigFileHelper *config_file_helper = FindConfigFileHelper(config_file_format.empty() ? GuessConfigFileFormat(filename) : config_file_format);
+	ConfigFileHelper *config_file_helper = config_file_format.empty() ? GuessConfigFileHelper(filename) : FindConfigFileHelper(config_file_format);
 	if(config_file_helper)
 	{
 		return config_file_helper->LoadVariables(filename, type);
@@ -2262,7 +2300,7 @@ bool Simulator::LoadVariables(std::istream& is, VariableBase::Type type, const s
 
 bool Simulator::SaveVariables(const char *filename, VariableBase::Type type, const std::string& config_file_format)
 {
-	ConfigFileHelper *config_file_helper = FindConfigFileHelper(config_file_format.empty() ? GuessConfigFileFormat(filename) : config_file_format);
+	ConfigFileHelper *config_file_helper = config_file_format.empty() ? GuessConfigFileHelper(filename) : FindConfigFileHelper(config_file_format);
 	if(config_file_helper)
 	{
 		return config_file_helper->SaveVariables(filename, type);
@@ -2282,13 +2320,16 @@ bool Simulator::SaveVariables(std::ostream& os, VariableBase::Type type, const s
 	return false;
 }
 
-struct MyVertexProperty
-{
-	ServiceExportBase *srv_export;
-};
-
 Simulator::SetupStatus Simulator::Setup()
 {
+	if(!StartSigIntThrd())
+	{
+		std::cerr << "ERROR! Can't start SIGINT thread" << std::endl;
+		return ST_ERROR;
+	}
+	
+	if(sig_int_cond) return ST_OK_DONT_START;
+		
 	if(generate_doc)
 	{
 		if(generate_doc_filename.empty())
@@ -2303,17 +2344,25 @@ Simulator::SetupStatus Simulator::Setup()
 		}
 		return ST_OK_DONT_START;
 	}
+	
+	if(sig_int_cond) return ST_OK_DONT_START;
+	
 	if(enable_version)
 	{
 		Version(std::cerr);
 		return ST_OK_DONT_START;
 	}
+	
+	if(sig_int_cond) return ST_OK_DONT_START;
+	
 	if(enable_help)
 	{
 		Help(std::cerr);
 		return ST_OK_DONT_START;
 	}
 	
+	if(sig_int_cond) return ST_OK_DONT_START;
+
 	if(list_parms)
 	{
 		std::cerr << "Listing parameters..." << std::endl;
@@ -2322,8 +2371,11 @@ Simulator::SetupStatus Simulator::Setup()
 		return ST_OK_DONT_START;
 	}
 
-	if(!get_config_filename.empty())
+	if(sig_int_cond) return ST_OK_DONT_START;
+	
+	for(std::vector<std::string>::const_iterator get_config_filename_it = get_config_filenames.begin(); get_config_filename_it != get_config_filenames.end(); ++get_config_filename_it)
 	{
+		const std::string& get_config_filename = *get_config_filename_it;
 		if(SaveVariables(get_config_filename.c_str(), VariableBase::VAR_PARAMETER))
 		{
 			std::cerr << "variable::Parameters saved on file \"" << get_config_filename << "\"" << std::endl;
@@ -2332,10 +2384,18 @@ Simulator::SetupStatus Simulator::Setup()
 		{
 			std::cerr << "WARNING! Saving parameters set to file \"" << get_config_filename << "\" failed" << std::endl;
 		}
+	}
+	
+	if(sig_int_cond) return ST_OK_DONT_START;
+	
+	if(!get_config_filenames.empty())
+	{
 		std::cerr << "Aborting simulation" << std::endl;
 		return ST_OK_DONT_START;
 	}
 
+	if(sig_int_cond) return ST_OK_DONT_START;
+	
 	std::map<std::string, ServiceExportBase *>::iterator export_iter;
 	if(enable_warning)
 	{
@@ -2349,6 +2409,8 @@ Simulator::SetupStatus Simulator::Setup()
 		}
 	}
 
+	if(sig_int_cond) return ST_OK_DONT_START;
+	
 	// Build a dependency graph of exports
 	DiGraph<ServiceExportBase *> dependency_graph;
 
@@ -2381,6 +2443,8 @@ Simulator::SetupStatus Simulator::Setup()
 		}
 	}
 
+	if(sig_int_cond) return ST_OK_DONT_START;
+	
 #ifdef DEBUG_KERNEL
 	std::ofstream file("deps.dot");
 	dependency_graph.WriteGraphviz(file);
@@ -2398,6 +2462,8 @@ Simulator::SetupStatus Simulator::Setup()
 		return ST_ERROR;
 	}
 	
+	if(sig_int_cond) return ST_OK_DONT_START;
+	
 	SetupStatus status = ST_OK_TO_START;
 	
 	// Call all methods "BeginSetup()"
@@ -2413,6 +2479,19 @@ Simulator::SetupStatus Simulator::Setup()
 			std::cerr << "Simulator: " << object->GetName() << " beginning of setup failed" << std::endl;
 			status = ST_ERROR;
 			break;
+		}
+		
+		if(sig_int_cond) break;
+	}
+	
+	if(sig_int_cond)
+	{
+		switch(status)
+		{
+			case ST_OK_TO_START  : 
+			case ST_OK_DONT_START:
+			case ST_WARNING      : return ST_OK_DONT_START; 
+			case ST_ERROR        : return ST_ERROR;
 		}
 	}
 	
@@ -2437,9 +2516,22 @@ Simulator::SetupStatus Simulator::Setup()
 					break;
 				}
 			}
+			
+			if(sig_int_cond) break;
 		}
 	}
 
+	if(sig_int_cond)
+	{
+		switch(status)
+		{
+			case ST_OK_TO_START  : 
+			case ST_OK_DONT_START:
+			case ST_WARNING      : return ST_OK_DONT_START; 
+			case ST_ERROR        : return ST_ERROR;
+		}
+	}
+	
 	if(status != ST_ERROR)
 	{
 		// Call all methods "EndSetup()"
@@ -2455,6 +2547,7 @@ Simulator::SetupStatus Simulator::Setup()
 				status = ST_ERROR;
 				break;
 			}
+			if(sig_int_cond) break;
 		}
 	}
 
@@ -2469,6 +2562,17 @@ Simulator::SetupStatus Simulator::Setup()
 		}
 	}
 
+	if(sig_int_cond)
+	{
+		switch(status)
+		{
+			case ST_OK_TO_START  : 
+			case ST_OK_DONT_START:
+			case ST_WARNING      : return ST_OK_DONT_START; 
+			case ST_ERROR        : return ST_ERROR;
+		}
+	}
+	
 	return status;
 }
 
@@ -3099,21 +3203,152 @@ void Simulator::Kill()
 	}
 }
 
-void Simulator::MTSigInt()
+void Simulator::SigIntThrd()
 {
-	pthread_t thrd_process_int;
-	pthread_attr_t thrd_attr;
-	pthread_attr_init(&thrd_attr);
-	pthread_attr_setdetachstate(&thrd_attr, PTHREAD_CREATE_DETACHED);
+	pthread_mutex_lock(&sig_int_thrd_mutex);
 	
-	pthread_create(&thrd_process_int, &thrd_attr, &Simulator::ProcessSigIntThrdEntryPoint, this);
+	do
+	{
+#ifdef DEBUG_KERNEL
+		std::cerr << "Thread that handle SIGINT sleeping" << std::endl;
+#endif
+		
+		do
+		{
+			pthread_cond_wait(&sig_int_thrd_cond, &sig_int_thrd_mutex);
+		}
+		while(!sig_int_cond);
+		
+		sig_int_cond = false;
+#ifdef DEBUG_KERNEL
+		std::cerr << "Thread that handle SIGINT waking up" << std::endl;
+#endif
+		
+		if(!stop_sig_int_thrd)
+		{
+			BroadcastSigInt();
+		}
+	}
+	while(!stop_sig_int_thrd);
+	
+	pthread_mutex_unlock(&sig_int_thrd_mutex);
 }
 
-void *Simulator::ProcessSigIntThrdEntryPoint(void *self)
+void *Simulator::SigIntThrdEntryPoint(void *_self)
 {
-	static_cast<Simulator *>(self)->BroadcastSigInt();
+	Simulator *self = static_cast<Simulator *>(_self);
+	pthread_mutex_lock(&self->sig_int_thrd_create_mutex);
+	self->sig_int_thrd_alive = true;
+	pthread_cond_signal(&self->sig_int_thrd_create_cond);
+	pthread_mutex_unlock(&self->sig_int_thrd_create_mutex);
+	
+	self->SigIntThrd();
 	
 	return 0;
+}
+
+bool Simulator::StartSigIntThrd()
+{
+	bool status = true;
+	
+	if(sig_int_thrd_alive)
+	{
+		std::cerr << "WARNING! thread that handle SIGINT has already started" << std::endl;
+		status = false;
+	}
+	else
+	{
+		pthread_attr_t sig_int_thrd_attr;
+		pthread_attr_init(&sig_int_thrd_attr);
+		
+		pthread_mutex_lock(&sig_int_thrd_create_mutex);
+
+		sig_int_thrd_alive = false;
+
+		// Create a thread that handle SIGINT
+
+#ifdef DEBUG_KERNEL
+		std::cerr << "Creating thread that handle SIGINT" << std::endl;
+#endif
+		
+		if(pthread_create(&sig_int_thrd, &sig_int_thrd_attr, &Simulator::SigIntThrdEntryPoint, this) == 0)
+		{
+			// wait for creation of thread that handle SIGINT
+			do
+			{
+				pthread_cond_wait(&sig_int_thrd_create_cond, &sig_int_thrd_create_mutex);
+			}
+			while(!sig_int_thrd_alive);
+			
+#ifdef DEBUG_KERNEL
+			std::cerr << "Thread that handle SIGINT has started" << std::endl;
+#endif
+		}
+		else
+		{
+			// can't create thread that handle SIGINT
+#ifdef DEBUG_KERNEL
+			std::cerr << "ERROR! Can't create thread that handle SIGINT" << std::endl;
+#endif
+			status = false;
+		}
+		
+		pthread_mutex_unlock(&sig_int_thrd_create_mutex);
+
+		pthread_attr_destroy(&sig_int_thrd_attr);
+	}
+	
+	return status;
+}
+
+bool Simulator::StopSigIntThrd()
+{
+	bool status = true;
+	
+	if(sig_int_thrd_alive)
+	{
+		stop_sig_int_thrd = true;
+		
+#ifdef DEBUG_KERNEL
+		std::cerr << "joining thread that handle SIGINT" << std::endl;
+#endif
+
+		MTSigInt();
+		
+		if(pthread_join(sig_int_thrd, NULL) == 0)
+		{
+			// thread has gracefully exited
+#ifdef DEBUG_KERNEL
+			std::cerr << "thread that handle SIGINT has gracefully exited" << std::endl;
+#endif
+			sig_int_thrd_alive = false;
+		}
+		else
+		{
+			// can't join communication thread
+#ifdef DEBUG_KERNEL
+			std::cerr << "ERROR! can't join thread that handle SIGINT" << std::endl;
+#endif
+			status = false;
+		}
+	}
+	
+	return status;
+}
+
+void Simulator::MTSigInt()
+{
+	if(sig_int_thrd_alive)
+	{
+		pthread_mutex_lock(&sig_int_thrd_mutex);
+		sig_int_cond = true;
+		pthread_cond_signal(&sig_int_thrd_cond);
+		pthread_mutex_unlock(&sig_int_thrd_mutex);
+	}
+	else
+	{
+		sig_int_cond = true;
+	}
 }
 
 void Simulator::BroadcastSigInt()

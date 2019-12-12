@@ -32,7 +32,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include <unisim/kernel/config/xml_config_file_helper.hh>
+#include <unisim/kernel/config/xml/xml_config_file_helper.hh>
 #include <libxml/encoding.h>
 #include <libxml/xmlwriter.h>
 #include <map>
@@ -41,6 +41,7 @@
 namespace unisim {
 namespace kernel {
 namespace config {
+namespace xml {
 
 using std::map;
 
@@ -685,6 +686,7 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, unisim::kernel::VariableBase::Ty
 	return true;
 }
 
+} // end of namespace xml
 } // end of namespace config
 } // end of namespace kernel
 } // end of namespace unisim

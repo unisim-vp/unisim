@@ -50,7 +50,7 @@ function import()
 			if [ -e "${PKG_DEPS_TXT}" ]; then
 				local DEP_PKG
 				while IFS= read -r DEP_PKG; do
-					#echo "Package \"${PKG}\" requires Packages \"${DEP_PKG}\""
+					echo "Package \"${PKG}\" requires Packages \"${DEP_PKG}\""
 					if ! import "${DEP_PKG}"; then
 						echo -e "\033[31mERROR! Missing dependency: Package \"${PKG}\" requires Packages \"${DEP_PKG}\"\033[0m" >&2
 						unset UNISIM_LIB_PACKAGE_IMPORTED["${PKG}"]
@@ -70,42 +70,49 @@ function import()
 
 function files()
 {
-	local LIST_NAME="$1"
-	local FOUND='no'
-	for PACKAGE in ${UNISIM_LIB_PACKAGES[@]}; do
-		LIST_FILENAME="${PACKAGE_DIR}/${PACKAGE}/${LIST_NAME}_list.txt"
-		if [ -e "${LIST_FILENAME}" ]; then
-			local FILENAME
-			while IFS= read -r FILENAME; do
-				FOUND='yes'
-				echo -n " ${FILENAME}"
-			done < "${LIST_FILENAME}"
-		fi
-	done
+	while [ $# -ne 0 ]; do
+		local LIST_NAME="$1"
+		local FOUND='no'
+		for PACKAGE in ${UNISIM_LIB_PACKAGES[@]}; do
+			LIST_FILENAME="${PACKAGE_DIR}/${PACKAGE}/${LIST_NAME}_list.txt"
+			if [ -e "${LIST_FILENAME}" ]; then
+				local FILENAME
+				while IFS= read -r FILENAME; do
+					FOUND='yes'
+					echo -n " ${FILENAME}"
+				done < "${LIST_FILENAME}"
+			fi
+		done
 	
-	if [ "${FOUND}" != 'yes' ]; then
-		echo -e "\033[33mWARNING! There are no files in List \"${LIST_NAME}\"\033[0m" >&2
-	fi
+		if [ "${FOUND}" != 'yes' ]; then
+			echo -e "\033[33mWARNING! There are no files in List \"${LIST_NAME}\"\033[0m" >&2
+		fi
+		
+		shift
+	done
 }
 
 function lines()
 {
-	local LIST_NAME="$1"
-	local FOUND='no'
-	for PACKAGE in ${UNISIM_LIB_PACKAGES[@]}; do
-		LIST_FILENAME="${PACKAGE_DIR}/${PACKAGE}/${LIST_NAME}_list.txt"
-		if [ -e "${LIST_FILENAME}" ]; then
-			local LINE
-			while IFS= read -r LINE; do
-				FOUND='yes'
-				echo "${LINE}"
-			done < "${LIST_FILENAME}"
+	while [ $# -ne 0 ]; do
+		local LIST_NAME="$1"
+		local FOUND='no'
+		for PACKAGE in ${UNISIM_LIB_PACKAGES[@]}; do
+			LIST_FILENAME="${PACKAGE_DIR}/${PACKAGE}/${LIST_NAME}_list.txt"
+			if [ -e "${LIST_FILENAME}" ]; then
+				local LINE
+				while IFS= read -r LINE; do
+					FOUND='yes'
+					echo "${LINE}"
+				done < "${LIST_FILENAME}"
+			fi
+		done
+		
+		if [ "${FOUND}" != 'yes' ]; then
+			echo -e "\033[33mWARNING! There are no lines in List \"${LIST_NAME}\"\033[0m" >&2
 		fi
+		shift
 	done
-	
-	if [ "${FOUND}" != 'yes' ]; then
-		echo -e "\033[33mWARNING! There are no lines in List \"${LIST_NAME}\"\033[0m" >&2
-	fi
 }
 
 function pkg_deps_changed()

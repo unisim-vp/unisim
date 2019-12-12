@@ -33,7 +33,9 @@
  */
 
 #include <simulator.hh>
-#include <unisim/kernel/logger/logger_server.hh>
+#include <unisim/kernel/config/xml/xml_config_file_helper.hh>
+#include <unisim/kernel/config/ini/ini_config_file_helper.hh>
+#include <unisim/kernel/config/json/json_config_file_helper.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 #include <unisim/component/cxx/processor/arm/register_field.hh>
@@ -827,6 +829,11 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   , inline_debugger(0)
   , profiler(0)
   , instrumenter(0)
+  , logger_console_printer(0)
+  , logger_text_file_writer(0)
+  , logger_http_writer(0)
+  , logger_xml_file_writer(0)
+  , logger_netstream_writer(0)
   , enable_gdb_server(false)
   , param_enable_gdb_server( "enable-gdb-server", 0, enable_gdb_server, "Enable GDB server." )
   , enable_inline_debugger(false)
@@ -838,10 +845,11 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
   param_enable_inline_debugger.SetMutable(false);
   param_enable_profiler.SetMutable(false);
   
-  if(enable_profiler)
-  {
-    this->SetVariable("HARDWARE.instrumenter.enable-user-interface", true); // When profiler is enabled, enable also instrumenter user interface so that profiler interface is periodically refreshed too
-  }
+  logger_console_printer = new LOGGER_CONSOLE_PRINTER();
+  logger_text_file_writer = new LOGGER_TEXT_FILE_WRITER();
+  logger_http_writer = new LOGGER_HTTP_WRITER();
+  logger_xml_file_writer = new LOGGER_XML_FILE_WRITER();
+  logger_netstream_writer = new LOGGER_NETSTREAM_WRITER();
   
   instrumenter = new INSTRUMENTER("instrumenter", this);
   
@@ -969,7 +977,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
       profiler->subprogram_lookup_import           >> *debugger->subprogram_lookup_export[2];
     }
     
-   *http_server.http_server_import[0] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
+   *http_server.http_server_import[0] >> logger_http_writer->http_server_export;
    *http_server.http_server_import[1] >> instrumenter->http_server_export;
    *http_server.http_server_import[2] >> web_terminal0.http_server_export;
    *http_server.http_server_import[3] >> web_terminal1.http_server_export;
@@ -988,6 +996,11 @@ Simulator::~Simulator()
   delete profiler;
   delete debugger;
   delete instrumenter;
+  delete logger_console_printer;
+  delete logger_text_file_writer;
+  delete logger_http_writer;
+  delete logger_xml_file_writer;
+  delete logger_netstream_writer;
 }
 
 int
@@ -1153,6 +1166,10 @@ bool Simulator::EndSetup()
 void
 Simulator::DefaultConfiguration(unisim::kernel::Simulator *sim)
 {
+  new unisim::kernel::config::xml::XMLConfigFileHelper(sim);
+  new unisim::kernel::config::ini::INIConfigFileHelper(sim);
+  new unisim::kernel::config::json::JSONConfigFileHelper(sim);
+
   // meta information
   sim->SetVariable("program-name", "UNISIM Zynq7000");
   sim->SetVariable("copyright", "Copyright (C) 2017, Commissariat a l'Energie Atomique (CEA)");

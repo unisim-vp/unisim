@@ -311,8 +311,8 @@ bool GDBServer<ADDRESS>::EndSetup()
 template <class ADDRESS>
 void GDBServer<ADDRESS>::Kill()
 {
-	killed = true;
 	if(!run_cond) Run();
+	unisim::kernel::Object::Kill();
 }
 
 template <class ADDRESS>
@@ -373,7 +373,7 @@ bool GDBServer<ADDRESS>::StartServer()
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::StopServer()
 {
-	if(IsConnected() && !killed && !session_terminated && !detached)
+	if(IsConnected() && !Killed() && !session_terminated && !detached)
 	{
 		ReportProgramExit();
 	}
@@ -649,7 +649,7 @@ void GDBServer<ADDRESS>::WaitForCommandProcessing()
 	{
 		logger << DebugInfo << "Simulation thread: waiting for GDB command processing (start)" << EndDebugInfo;
 	}
-	if(!killed) // to avoid an interlock in case we've been killed before being able to process any GDB commands (e.g. accept failed in StartServer)
+	if(!Killed()) // to avoid an interlock in case we've been Killed() before being able to process any GDB commands (e.g. accept failed in StartServer)
 	{
 		pthread_mutex_lock(&thrd_process_cmd_mutex);
 		process_cmd_cond = true;
@@ -733,7 +733,7 @@ void GDBServer<ADDRESS>::ProcessCmdThrd()
 	}
 	
 	// Loop until there's stop or kill requests
-	while(!stop_process_cmd_thrd && !killed)
+	while(!stop_process_cmd_thrd && !Killed())
 	{
 		// start TCP/IP server and wait for GDB client connection
 		if(!StartServer())
@@ -972,7 +972,7 @@ void GDBServer<ADDRESS>::ProcessCommands()
 				break;
 
 			case '?':
-				session_terminated = !ReportTracePointTrap();
+				session_terminated = !ReportSignal(2 /* SIGINT */);
 				break;
 
 			case '!':
@@ -1123,17 +1123,18 @@ bool GDBServer<ADDRESS>::Step()
 		Run();
 		WaitForSimulationRun();
 	}
-	while(!trap && !killed);
+	while(!trap && !Killed());
 	if(unlikely(debug))
 	{
 		logger << DebugInfo << "GDB command processing thread: Locking" << EndDebugInfo;
 	}
 	Lock();
-	if(!killed)
+	if(!Killed())
 	{
 		UnlistenFetch(c_prc_num);
 		if(status) status = DisplayMonitoredInternals();
-		if(status) status = ReportTracePointTrap();
+		if(status) status = ReportSignal(5 /* SIGTRAP */);
+		if(trap) ClearStopEvents();
 	}
 	return status;
 }
@@ -1154,16 +1155,17 @@ bool GDBServer<ADDRESS>::Continue()
 		Run();
 		WaitForSimulationRun();
 	}
-	while(!trap && !killed);
+	while(!trap && !Killed());
 	if(unlikely(debug))
 	{
 		logger << DebugInfo << "GDB command processing thread: Locking" << EndDebugInfo;
 	}
 	Lock();
-	if(!killed)
+	if(!Killed())
 	{
 		if(status) status = DisplayMonitoredInternals();
-		if(status) status = ReportTracePointTrap();
+		if(status) status = ReportSignal(5 /* SIGTRAP */);
+		if(trap) ClearStopEvents();
 	}
 	return status;
 }
@@ -1181,7 +1183,7 @@ template <class ADDRESS>
 void GDBServer<ADDRESS>::ProcessIntThrd()
 {
 	// poll network socket every XX ms, keep alive between sessions
-	while(!stop_process_int_thrd && !killed)
+	while(!stop_process_int_thrd && !Killed())
 	{
 		if(!session_terminated)
 		{
@@ -1849,7 +1851,7 @@ void GDBServer<ADDRESS>::DebugYield()
 	if(likely(wait_for_command_processing))
 	{
 		WaitForCommandProcessing();
-		if(unlikely(killed))
+		if(unlikely(Killed()))
 		{
 			if(unlikely(debug))
 			{
@@ -2397,7 +2399,7 @@ void GDBServer<ADDRESS>::KillFromThrdProcessCmd()
 	{
 		logger << DebugInfo << "GDB command processing thread: Kill" << EndDebugInfo;
 	}
-	killed = true;
+	Kill();
 	session_terminated = true;
 	wait_for_command_processing = false;
 	Run();
@@ -2411,7 +2413,7 @@ void GDBServer<ADDRESS>::KillFromSimulationRun()
 	{
 		logger << DebugInfo << "Simulation thread: Kill" << EndDebugInfo;
 	}
-	killed = true;
+	Kill();
 	stop_process_cmd_thrd = true;
 	session_terminated = true;
 	UnblockCommandProcessing();
@@ -2534,29 +2536,26 @@ bool GDBServer<ADDRESS>::ReportProgramExit()
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::ReportSignal(unsigned int signum)
 {
-	char packet[4];
-	sprintf(packet, "S%02x", signum);
-	return PutReply(packet);
-}
-
-template <class ADDRESS>
-bool GDBServer<ADDRESS>::ReportTracePointTrap()
-{
 	unsigned int prc_num;
+	std::string packet("T");
 	
-	std::string packet("T05");
+	packet += Nibble2HexChar((signum >> 4) & 0xf);
+	packet += Nibble2HexChar(signum & 0xf);
 	
-	if(trap && mode == GDB_MODE_MULTI_THREAD)
+	if(trap && (mode == GDB_MODE_MULTI_THREAD))
 	{
 		// we have a stop event
 		for(prc_num = 0; prc_num < num_processors; prc_num++)
 		{
-			if(prc_trap[prc_num]) break; // pick first processor with a stop event
+			if(prc_trap[prc_num])
+			{
+				break; // pick first processor with a stop event
+			}
 		}
 	}
 	else
 	{
-		prc_num = c_prc_num; // stop reply is about currently selected thread
+		prc_num = c_prc_num;
 	}
 	
 	if(mode == GDB_MODE_MULTI_THREAD)
@@ -2649,11 +2648,6 @@ bool GDBServer<ADDRESS>::ReportTracePointTrap()
 				}
 			}
 		}
-	}
-	
-	if(trap)
-	{
-		ClearStopEvents();
 	}
 	
 	return PutReply(packet);
@@ -3116,13 +3110,13 @@ bool GDBServer<ADDRESS>::HandleVCont(const std::string& query, std::size_t& pos)
 		Run();
 		WaitForSimulationRun();
 	}
-	while(!trap && !killed);
+	while(!trap && !Killed());
 	if(unlikely(debug))
 	{
 		logger << DebugInfo << "GDB command processing thread: Locking" << EndDebugInfo;
 	}
 	Lock();
-	if(!killed)
+	if(!Killed())
 	{
 		switch(mode)
 		{
@@ -3153,7 +3147,8 @@ bool GDBServer<ADDRESS>::HandleVCont(const std::string& query, std::size_t& pos)
 			}
 		}
 		if(status) status = DisplayMonitoredInternals();
-		if(status) status = ReportTracePointTrap();
+		if(status) status = ReportSignal(5 /* SIGTRAP */);
+		if(trap) ClearStopEvents();
 	}
 
 	return status;

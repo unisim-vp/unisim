@@ -58,6 +58,11 @@
 #include <unisim/component/cxx/com/xilinx/xps_uart_lite/config.hh>
 
 #include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/logger/console/console_printer.hh>
+#include <unisim/kernel/logger/text_file/text_file_writer.hh>
+#include <unisim/kernel/logger/http/http_writer.hh>
+#include <unisim/kernel/logger/xml_file/xml_file_writer.hh>
+#include <unisim/kernel/logger/netstream/netstream_writer.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
@@ -172,6 +177,14 @@ private:
 	typedef unisim::component::cxx::interconnect::xilinx::dcr_controller::Config DCR_CONTROLLER_CONFIG;
 	typedef unisim::component::cxx::interconnect::xilinx::crossbar::Config CROSSBAR_CONFIG;
 
+	struct DEBUGGER_CONFIG
+	{
+		typedef CPU_ADDRESS_TYPE ADDRESS;
+		static const unsigned int NUM_PROCESSORS = 1;
+		/* gdb_server, inline_debugger */
+		static const unsigned int MAX_FRONT_ENDS = 2;
+	};
+	
 	//=========================================================================
 	//===                     Aliases for components classes                ===
 	//=========================================================================
@@ -201,6 +214,18 @@ private:
 	typedef unisim::kernel::tlm2::TargetStub<4> DMAC3_DCR_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<4> EXTERNAL_SLAVE_DCR_STUB;
 
+	//=========================================================================
+	//===                      Aliases for services classes                 ===
+	//=========================================================================
+
+	typedef PPCLinuxKernelLoader<CPU_ADDRESS_TYPE> PPC_LINUX_KERNEL_LOADER;
+	typedef Elf32Loader<CPU_ADDRESS_TYPE> ROM_LOADER;
+	typedef unisim::kernel::logger::console::Printer LOGGER_CONSOLE_PRINTER;
+	typedef unisim::kernel::logger::text_file::Writer LOGGER_TEXT_FILE_WRITER;
+	typedef unisim::kernel::logger::http::Writer LOGGER_HTTP_WRITER;
+	typedef unisim::kernel::logger::xml_file::Writer LOGGER_XML_FILE_WRITER;
+	typedef unisim::kernel::logger::netstream::Writer LOGGER_NETSTREAM_WRITER;
+	
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
@@ -254,14 +279,6 @@ private:
 	PPCLinuxKernelLoader<CPU_ADDRESS_TYPE> *ppc_linux_kernel_loader;
 	//  - ROM loader (ELF32)
 	Elf32Loader<CPU_ADDRESS_TYPE> *rom_loader;
-	
-	struct DEBUGGER_CONFIG
-	{
-		typedef CPU_ADDRESS_TYPE ADDRESS;
-		static const unsigned int NUM_PROCESSORS = 1;
-		/* gdb_server, inline_debugger and/or monitor */
-		static const unsigned int MAX_FRONT_ENDS = 2;
-	};
 	
 	typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> Debugger;
 	//  - debugger back-end

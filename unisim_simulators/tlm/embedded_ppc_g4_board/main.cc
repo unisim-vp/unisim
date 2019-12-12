@@ -38,6 +38,14 @@
 #endif
 
 #include <unisim/kernel/kernel.hh>
+#include <unisim/kernel/logger/console/console_printer.hh>
+#include <unisim/kernel/logger/text_file/text_file_writer.hh>
+#include <unisim/kernel/logger/http/http_writer.hh>
+#include <unisim/kernel/logger/xml_file/xml_file_writer.hh>
+#include <unisim/kernel/logger/netstream/netstream_writer.hh>
+#include <unisim/kernel/config/xml/xml_config_file_helper.hh>
+#include <unisim/kernel/config/ini/ini_config_file_helper.hh>
+#include <unisim/kernel/config/json/json_config_file_helper.hh>
 #include <unisim/component/tlm/processor/powerpc/e600/mpc7447a/cpu.hh>
 #include <unisim/component/tlm/memory/ram/memory.hh>
 #include <unisim/component/tlm/memory/flash/am29/am29.hh>
@@ -170,6 +178,11 @@ private:
 	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
 	typedef unisim::service::http_server::HttpServer HTTP_SERVER;
 	typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
+	typedef unisim::kernel::logger::console::Printer LOGGER_CONSOLE_PRINTER;
+	typedef unisim::kernel::logger::text_file::Writer LOGGER_TEXT_FILE_WRITER;
+	typedef unisim::kernel::logger::http::Writer LOGGER_HTTP_WRITER;
+	typedef unisim::kernel::logger::xml_file::Writer LOGGER_XML_FILE_WRITER;
+	typedef unisim::kernel::logger::netstream::Writer LOGGER_NETSTREAM_WRITER;
 	
 	//=========================================================================
 	//===               Aliases for transaction Spies classes               ===
@@ -242,6 +255,16 @@ private:
 	HTTP_SERVER *http_server;
 	//  - memory address translator from effective address to physical address
 	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *memory_effective_to_physical_address_translator;
+	//  - Logger Console Printer
+	LOGGER_CONSOLE_PRINTER *logger_console_printer;
+	//  - Logger Text File Writer
+	LOGGER_TEXT_FILE_WRITER *logger_text_file_writer;
+	//  - Logger HTTP Writer
+	LOGGER_HTTP_WRITER *logger_http_writer;
+	//  - Logger XML File Writer
+	LOGGER_XML_FILE_WRITER *logger_xml_file_writer;
+	//  - Logger TCP Network Stream Writer
+	LOGGER_NETSTREAM_WRITER *logger_netstream_writer;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
@@ -280,6 +303,11 @@ Simulator::Simulator(int argc, char **argv)
 	, instrumenter(0)
 	, http_server(0)
 	, memory_effective_to_physical_address_translator(0)
+	, logger_console_printer(0)
+	, logger_text_file_writer(0)
+	, logger_http_writer(0)
+	, logger_xml_file_writer(0)
+	, logger_netstream_writer(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, enable_profiler(false)
@@ -289,10 +317,15 @@ Simulator::Simulator(int argc, char **argv)
 	, param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable/Disable profiler")
 	, param_message_spy("message-spy", 0, message_spy, "Enable/Disable message spies instantiation")
 {
-	if(enable_profiler)
-	{
-		this->SetVariable("HARDWARE.instrumenter.enable-user-interface", true); // When profiler is enabled, enable also instrumenter user interface so that profiler interface is periodically refreshed too
-	}
+	//=========================================================================
+	//===                 Logger Printers instantiations                    ===
+	//=========================================================================
+
+	logger_console_printer = new LOGGER_CONSOLE_PRINTER();
+	logger_text_file_writer = new LOGGER_TEXT_FILE_WRITER();
+	logger_http_writer = new LOGGER_HTTP_WRITER();
+	logger_xml_file_writer = new LOGGER_XML_FILE_WRITER();
+	logger_netstream_writer = new LOGGER_NETSTREAM_WRITER();
 	
 #ifdef WITH_PCI_STUB
 	unsigned int pci_stub_irq = 0;
@@ -637,7 +670,7 @@ Simulator::Simulator(int argc, char **argv)
 	
 	{
 		unsigned int i = 0;
-		*http_server->http_server_import[i++] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
+		*http_server->http_server_import[i++] >> logger_http_writer->http_server_export;
 		*http_server->http_server_import[i++] >> instrumenter->http_server_export;
 		if(profiler)
 		{
@@ -680,10 +713,19 @@ Simulator::~Simulator()
 	if(pci_stub) delete pci_stub;
 #endif
 	if(instrumenter) delete instrumenter;
+	if(logger_console_printer) delete logger_console_printer;
+	if(logger_text_file_writer) delete logger_text_file_writer;
+	if(logger_http_writer) delete logger_http_writer;
+	if(logger_xml_file_writer) delete logger_xml_file_writer;
+	if(logger_netstream_writer) delete logger_netstream_writer;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
+	new unisim::kernel::config::xml::XMLConfigFileHelper(simulator);
+	new unisim::kernel::config::ini::INIConfigFileHelper(simulator);
+	new unisim::kernel::config::json::JSONConfigFileHelper(simulator);
+
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM embedded-ppc-g4-board");
 	simulator->SetVariable("copyright", "Copyright (C) 2007-2011, Commissariat a l'Energie Atomique (CEA)");
@@ -934,7 +976,7 @@ int Simulator::GetExitStatus() const
 
 void Simulator::SigInt()
 {
-	if(!inline_debugger)
+	if(!inline_debugger || !inline_debugger->IsStarted())
 	{
 		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}

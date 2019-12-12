@@ -384,6 +384,7 @@ DoubleIFrame.prototype.visible = false;
 DoubleIFrame.prototype.bg = 0;
 DoubleIFrame.prototype.fg = 1;
 DoubleIFrame.prototype.iframes = null;
+DoubleIFrame.prototype.bound_on_mouseup = null;
 
 function DoubleIFrame(owner, name, uri, class_name, storage_item_prefix, parent_element)
 {
@@ -400,6 +401,7 @@ function DoubleIFrame(owner, name, uri, class_name, storage_item_prefix, parent_
 	{
 		this.iframes[i] = new IFrame(this, i);
 	}
+	this.bound_on_mouseup = null;
 	this.attach(parent_element);
 }
 
@@ -479,12 +481,7 @@ DoubleIFrame.prototype.on_load = function(i)
 
 	this.restore_scroll_position(); // restore scroll position for background iframe
 	
-	// patch anchors within iframe to provide user with a context menu for each anchor
-	this.patch_anchors();
-	// patch inputs within iframe to freeze/unfreeze when focus in/focus out input
-	this.patch_inputs();
-	// patch inputs within iframe to freeze/unfreeze when mouse down/up button
-	this.patch_buttons();
+	this.patch_document();
 	// simulate unloading before flipping
 	this.trigger_on_unload();
 	this.owner.unfreeze();
@@ -502,6 +499,25 @@ DoubleIFrame.prototype.on_load = function(i)
 // 	console.log(this.name + ':next frame is frame #' + this.bg);
 }
 
+DoubleIFrame.prototype.on_mouseup = function(element)
+{
+// 	console.log(this.owner.tab_config.name + ' mouseup');
+	this.owner.unfreeze();
+	element.removeEventListener('mouseup', this.bound_on_mouseup);
+	this.bound_on_mouseup = null;
+}
+
+DoubleIFrame.prototype.patch_document = function()
+{
+	// patch anchors within iframe to provide user with a context menu for each anchor
+	this.patch_anchors();
+	// patch inputs within iframe to freeze/unfreeze when focus in/focus out input
+	this.patch_inputs('input');
+	this.patch_inputs('select');
+	// patch inputs within iframe to freeze/unfreeze when mouse down/up button
+	this.patch_buttons();
+}
+
 DoubleIFrame.prototype.patch_anchors = function()
 {
 	var bg_iframe = this.iframes[this.bg];
@@ -513,6 +529,15 @@ DoubleIFrame.prototype.patch_anchors = function()
 		for(var i = 0; i < anchor_elements.length; i++)
 		{
 			var anchor_element = anchor_elements[i];
+			
+			anchor_element.addEventListener('mousedown',
+				function(event)
+				{
+					this.owner.freeze();
+					this.bound_on_mouseup = this.on_mouseup.bind(this, anchor_element);
+					iframe_element.contentDocument.addEventListener('mouseup', this.bound_on_mouseup);
+				}.bind(this)
+			);
 			
 			if(anchor_element.hasAttribute('href'))
 			{
@@ -577,14 +602,14 @@ DoubleIFrame.prototype.patch_anchors = function()
 	}
 }
 
-DoubleIFrame.prototype.patch_inputs = function()
+DoubleIFrame.prototype.patch_inputs = function(tag_name)
 {
 	var bg_iframe = this.iframes[this.bg];
 	var iframe_element = bg_iframe.iframe_element;
 	
 	if(iframe_element.contentDocument)
 	{
-		var input_elements = iframe_element.contentDocument.documentElement.getElementsByTagName('input');
+		var input_elements = iframe_element.contentDocument.documentElement.getElementsByTagName(tag_name);
 		for(var i = 0; i < input_elements.length; i++)
 		{
 			var input_element = input_elements[i];
@@ -619,12 +644,8 @@ DoubleIFrame.prototype.patch_buttons = function()
 				function(event)
 				{
 					this.owner.freeze();
-				}.bind(this)
-			);
-			input_element.addEventListener('mouseup',
-				function(event)
-				{
-					this.owner.unfreeze();
+					this.bound_on_mouseup = this.on_mouseup.bind(this, input_element);
+					iframe_element.contentDocument.addEventListener('mouseup', this.bound_on_mouseup);
 				}.bind(this)
 			);
 		}
@@ -1862,6 +1883,7 @@ RefreshScheduler.prototype.schedule = function()
 				var tab = refresh_event.tab;
 				if(tab.frozen)
 				{
+// 					console.log(this.time_stamp + ' ms:' + tab.tab_config.name + ' is frozen');
 					this.refresh_tab_after(tab);
 				}
 				else

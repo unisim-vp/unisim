@@ -22,6 +22,14 @@ import unisim/component/tlm2/com/xilinx/xps_gpio || exit
 import unisim/component/tlm2/com/xilinx/xps_gpio || exit
 import unisim/component/tlm2/com/xilinx/xps_gpio || exit
 import unisim/kernel || exit
+import unisim/kernel/config/xml || exit
+import unisim/kernel/config/ini || exit
+import unisim/kernel/config/json || exit
+import unisim/kernel/logger/console || exit
+import unisim/kernel/logger/text_file || exit
+import unisim/kernel/logger/http || exit
+import unisim/kernel/logger/xml_file || exit
+import unisim/kernel/logger/netstream || exit
 import unisim/service/debug/debugger || exit
 import unisim/service/debug/gdb_server || exit
 import unisim/service/debug/inline_debugger || exit

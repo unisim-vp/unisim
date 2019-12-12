@@ -38,10 +38,18 @@
 
 #include <unisim/kernel/tlm2/tlm_can.hh>
 #include <unisim/kernel/tlm2/simulator.hh>
+#include <unisim/kernel/logger/console/console_printer.hh>
+#include <unisim/kernel/logger/text_file/text_file_writer.hh>
+#include <unisim/kernel/logger/http/http_writer.hh>
+#include <unisim/kernel/logger/xml_file/xml_file_writer.hh>
+#include <unisim/kernel/config/xml/xml_config_file_helper.hh>
+#include <unisim/kernel/config/ini/ini_config_file_helper.hh>
+#include <unisim/kernel/config/json/json_config_file_helper.hh>
 #include <unisim/util/random/random.hh>
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/instrumenter/instrumenter.hh>
+#include <unisim/service/http_server/http_server.hh>
 
 #include <iostream>
 #include <vector>
@@ -425,10 +433,16 @@ private:
 	unisim::service::time::host_time::HostTime *host_time;
 	//  - Instrumenter
 	unisim::service::instrumenter::Instrumenter *instrumenter;
-	
-	sc_core::sc_time max_time;
-	
-	unisim::kernel::variable::Parameter<sc_core::sc_time> param_max_time;
+	//  - HTTP server
+	unisim::service::http_server::HttpServer *http_server;
+	//  - Logger Console Printer
+	unisim::kernel::logger::console::Printer *logger_console_printer;
+	//  - Logger Text File Writer
+	unisim::kernel::logger::text_file::Writer *logger_text_file_writer;
+	//  - Logger HTTP Writer
+	unisim::kernel::logger::http::Writer *logger_http_writer;
+	//  - Logger XML File Writer
+	unisim::kernel::logger::xml_file::Writer *logger_xml_file_writer;
 	
 	static void LoadBuiltInConfig(unisim::kernel::Simulator *simulator);
 	
@@ -444,9 +458,23 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, sim_time(0)
 	, host_time(0)
 	, instrumenter(0)
-	, max_time(sc_core::SC_ZERO_TIME)
-	, param_max_time("max-time", 0, max_time, "Maximum time to simulate (zero means forever)")
+	, http_server(0)
+	, logger_console_printer(0)
+	, logger_text_file_writer(0)
+	, logger_http_writer(0)
+	, logger_xml_file_writer(0)
 {
+	//=========================================================================
+	//===                 Logger Printers instantiations                    ===
+	//=========================================================================
+	//  - Logger Console Printer
+	logger_console_printer = new unisim::kernel::logger::console::Printer();
+	//  - Logger Text File Writer
+	logger_text_file_writer = new unisim::kernel::logger::text_file::Writer();
+	//  - Logger HTTP Writer
+	logger_http_writer = new unisim::kernel::logger::http::Writer();
+	//  - Logger XML File Writer
+	logger_xml_file_writer = new unisim::kernel::logger::xml_file::Writer();
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -463,7 +491,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//  - Host Time
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
 	//  - Instrumenter
-	instrumenter = new unisim::service::instrumenter::Instrumenter("instrumenter");
+	instrumenter = new unisim::service::instrumenter::Instrumenter("instrumenter", this);
+	//  - HTTP server
+	http_server = new unisim::service::http_server::HttpServer("http-server");
 	
 	//=========================================================================
 	//===                          Port registration                        ===
@@ -493,6 +523,17 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	node2->CAN_TX(can_bus->CAN_TX);
 	node2->CAN_RX(can_bus->CAN_RX);
+	
+	//=========================================================================
+	//===                        Clients/Services connection                ===
+	//=========================================================================
+	
+	{
+		unsigned int i = 0;
+		*http_server->http_server_import[i++] >> instrumenter->http_server_export;
+		*http_server->http_server_import[i++] >> logger_http_writer->http_server_export;
+	}
+
 }
 
 Simulator::~Simulator()
@@ -501,11 +542,20 @@ Simulator::~Simulator()
 	if(node1) delete node1;
 	if(node2) delete node2;
 	if(can_bus) delete can_bus;
+	if(http_server) delete http_server;
 	if(instrumenter) delete instrumenter;
+	if(logger_console_printer) delete logger_console_printer;
+	if(logger_text_file_writer) delete logger_text_file_writer;
+	if(logger_http_writer) delete logger_http_writer;
+	if(logger_xml_file_writer) delete logger_xml_file_writer;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
+	new unisim::kernel::config::xml::XMLConfigFileHelper(simulator);
+	new unisim::kernel::config::ini::INIConfigFileHelper(simulator);
+	new unisim::kernel::config::json::JSONConfigFileHelper(simulator);
+	
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM CAN testbench");
 	simulator->SetVariable("copyright", "Copyright (C) 2018, Commissariat a l'Energie Atomique (CEA)");
@@ -520,6 +570,17 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 
 	// CAN global quantum
 	simulator->SetVariable("HARDWARE.can-global-quantum", "1 us");
+	
+	// HTTP server
+	simulator->SetVariable("http-server.http-port", 12360);
+	
+	// CAN observer
+	simulator->SetVariable("enable-tlm-can-bus-observer", 1);
+	
+	// CAN simulation accuracy
+	simulator->SetVariable("HARDWARE.node0.model-accuracy", "cycle-accurate");
+	simulator->SetVariable("HARDWARE.node1.model-accuracy", "cycle-accurate");
+	simulator->SetVariable("HARDWARE.node2.model-accuracy", "cycle-accurate");
 }
 
 void Simulator::Run()

@@ -218,9 +218,6 @@ private:
 	std::string reg_num_mapping_filename;
 	bool verbose;
 	bool debug;
-// 	DWARF_RegisterNumberMapping *dw_reg_num_mapping;
-// 	unisim::service::interfaces::Registers *regs_if;
-// 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
 	std::vector<DWARF_RegisterNumberMapping *> dw_reg_num_mapping;
 	std::vector<unisim::service::interfaces::Registers *> regs_if;
 	std::vector<unisim::service::interfaces::Memory<MEMORY_ADDR> *> mem_if;

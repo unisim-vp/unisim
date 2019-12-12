@@ -763,7 +763,7 @@ void UserInstrument::Sample()
 // 		sstr.clear();
 // 		sstr.seekp(0);
 // 		output_instrument->Output(sstr);
-		has_breakpoint_cond = value_changed_breakpoint && output_instrument->ValueChanged();
+		if(value_changed_breakpoint && output_instrument->ValueChanged()) has_breakpoint_cond = true;
 // 		get_value = sstr.str();
 		get_value_valid = false;
 	}
@@ -780,7 +780,10 @@ void UserInstrument::Latch()
 void UserInstrument::Fetch()
 {
 	Sample();
-	Latch();
+	if(ValueChanged())
+	{
+		Latch();
+	}
 }
 
 void UserInstrument::EnableValueChangedBreakpoint()
@@ -796,6 +799,11 @@ void UserInstrument::DisableValueChangedBreakpoint()
 bool UserInstrument::IsValueChangedBreakpointEnabled() const
 {
 	return value_changed_breakpoint;
+}
+
+void UserInstrument::ClearBreakpointCondition()
+{
+	has_breakpoint_cond = false;
 }
 
 bool UserInstrument::HasBreakpointCondition() const
@@ -849,6 +857,12 @@ bool UserInstrument::IsReadOnly() const
 bool UserInstrument::IsBoolean() const
 {
 	return (input_instrument && (input_instrument->GetTypeInfo() == typeid(bool))) || (output_instrument && (output_instrument->GetTypeInfo() == typeid(bool)));
+}
+
+bool UserInstrument::ValueChanged() const
+{
+	return output_instrument->ValueChanged();
+
 }
 
 UserInterface::UserInterface(const char *name, Instrumenter *instrumenter)
@@ -931,6 +945,7 @@ void UserInterface::Kill()
 {
 	halt = true;
 	Continue();
+	unisim::kernel::Object::Kill();
 }
 
 bool UserInterface::SetupInstrumentation()
@@ -1036,6 +1051,17 @@ void UserInterface::Commit()
 	}
 }
 
+void UserInterface::ClearBreakpointConditions()
+{
+	std::map<std::string, UserInstrument *>::iterator user_instrument_it;
+	for(user_instrument_it = user_instruments.begin(); user_instrument_it != user_instruments.end(); user_instrument_it++)
+	{
+		UserInstrument *user_instrument = (*user_instrument_it).second;
+		
+		user_instrument->ClearBreakpointCondition();
+	}
+}
+
 void UserInterface::ProcessInputInstruments()
 {
 	if(unlikely(halt))
@@ -1071,6 +1097,7 @@ void UserInterface::ProcessInputInstruments()
 			UnlockInstruments();
 			WaitForUser();
 			LockInstruments();
+			ClearBreakpointConditions();
 			Commit();
 			if(unlikely(halt))
 			{
@@ -1293,13 +1320,26 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 			form_action = URI() + "/instrument";
 		}
 		
+		std::string title;
+		if(is_control_interface && is_instrument_interface)
+		{
+			title = "Hardware instrumenter";
+		}
+		else if(is_control_interface)
+		{
+			title = "Simulation controls";
+		}
+		else if(is_instrument_interface)
+		{
+			title = "Signals instrumenter";
+		}
+		
 		switch(req.GetRequestType())
 		{
 			case unisim::util::hypapp::Request::POST:
 			{
 				LockPost();
 				LockInstruments();
-				Sample();
 				
 				PropertySetter property_setter(*this);
 				if(property_setter.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
@@ -1323,9 +1363,26 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 
 				UnlockPost();
 
-				// Post/Redirect/Get pattern: got Post, so do Redirect
-				response.SetStatus(unisim::util::hypapp::HttpResponse::SEE_OTHER);
-				response.SetHeaderField("Location", form_action);
+				if(halt)
+				{
+					response << "\t<head>" << std::endl;
+					response << "\t\t<title>" << title << "</title>" << std::endl;
+					response << "\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+					response << "\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" << std::endl;
+					response << "\t\t<script type=\"text/javascript\">document.domain=\"" << req.GetDomain() << "\";</script>" << std::endl;
+					response << "\t</head>" << std::endl;
+					response << "\t<body>" << std::endl;
+					response << "\t<p>Disconnected</p>" << std::endl;
+					response << "\t<script>Reload = function() { window.location.href=window.location.href; }</script>" << std::endl;
+					response << "\t<button onclick=\"Reload()\">Reconnect</button>" << std::endl;
+					response << "\t</body>" << std::endl;
+				}
+				else
+				{
+					// Post/Redirect/Get pattern: got Post, so do Redirect
+					response.SetStatus(unisim::util::hypapp::HttpResponse::SEE_OTHER);
+					response.SetHeaderField("Location", form_action);
+				}
 				
 				break;
 			}
@@ -1333,20 +1390,6 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 			case unisim::util::hypapp::Request::GET:
 			case unisim::util::hypapp::Request::HEAD:
 			{
-				std::string title;
-				if(is_control_interface && is_instrument_interface)
-				{
-					title = "Hardware instrumenter";
-				}
-				else if(is_control_interface)
-				{
-					title = "Simulation controls";
-				}
-				else if(is_instrument_interface)
-				{
-					title = "Signals instrumenter";
-				}
-				
 				response << "<!DOCTYPE html>" << std::endl;
 				response << "<html lang=\"en\">" << std::endl;
 				
@@ -1539,7 +1582,7 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 								if(is_boolean) user_instrument->Get(bool_value);
 								response << "\t\t\t\t<div class=\"signal" << (user_instrument->HasBreakpointCondition() ? " brkpt-cond" : "") << "\">" << std::endl;
 								response << "\t\t\t\t\t<div class=\"signal-enable\"><form action=\"" << form_action << "\" method=\"post\"><button title=\"Enable/Disable injection\" class=\"signal-enable" << (user_instrument->IsInjectionEnabled() ? " checked" : " unchecked") << "\" type=\"submit\" name=\"" << (user_instrument->IsInjectionEnabled() ? "disable" : "enable") << "*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></button></form></div>" << std::endl;
-								response << "\t\t\t\t\t<div class=\"signal-brkpt-enable\"><form action=\"" << form_action << "\" method=\"post\"><button title=\"Enable/Disable breakpoint\" class=\"signal-brkpt-enable" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : " unchecked") << (user_instrument->IsReadOnly() ? " disabled" : "") << "\" type=\"submit\" name=\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? "disable" : "enable") << "-brkpt*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt || user_instrument->IsReadOnly()) ? " disabled" : "") << "></button></form></div>" << std::endl;
+								response << "\t\t\t\t\t<div class=\"signal-brkpt-enable\"><form action=\"" << form_action << "\" method=\"post\"><button title=\"Enable/Disable breakpoint\" class=\"signal-brkpt-enable" << (user_instrument->IsValueChangedBreakpointEnabled() ? " checked" : " unchecked") << ((cont || halt) ? " disabled" : "") << "\" type=\"submit\" name=\"" << (user_instrument->IsValueChangedBreakpointEnabled() ? "disable" : "enable") << "-brkpt*" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "\"" << ((cont || halt) ? " disabled" : "") << "></button></form></div>" << std::endl;
 								response << "\t\t\t\t\t<div class=\"signal-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(user_instrument->GetName()) << "</div>" << std::endl;
 								response << "\t\t\t\t\t<div class=\"signal-toggle\">";
 								if(is_boolean)
@@ -1632,7 +1675,7 @@ bool UserInterface::ServeHttpRequest(unisim::util::hypapp::HttpRequest const& re
 		logger << DebugWarning << "I/O error or connection closed by peer while sending HTTP response" << EndDebugWarning;
 	}
 	
-	if(halt && (req.GetRequestType() == unisim::util::hypapp::Request::GET))
+	if(halt)
 	{
 		Stop(-1, /* asynchronous */ true);
 	}

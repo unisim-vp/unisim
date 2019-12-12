@@ -6,10 +6,18 @@ SIMPKG_DSTDIR=can_testbench
 source "$(dirname $0)/dist_common.sh"
 
 import unisim/kernel/tlm2 || exit
+import unisim/kernel/config/xml || exit
+import unisim/kernel/config/ini || exit
+import unisim/kernel/config/json || exit
+import unisim/kernel/logger/console || exit
+import unisim/kernel/logger/text_file || exit
+import unisim/kernel/logger/http || exit
+import unisim/kernel/logger/xml_file || exit
 import unisim/util/random || exit
 import unisim/service/time/host_time || exit
 import unisim/service/time/sc_time || exit
 import unisim/service/instrumenter || exit
+import unisim/service/http_server || exit
 
 import std/iostream || exit
 import std/queue || exit

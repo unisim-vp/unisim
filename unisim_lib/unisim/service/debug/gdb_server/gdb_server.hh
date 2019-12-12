@@ -160,7 +160,6 @@ public:
 	virtual ~GDBServerBase();
 	
 	virtual bool EndSetup();
-	virtual void Kill();
 	
 	bool StartServer();
 	bool StopServer();
@@ -173,7 +172,6 @@ public:
 	
 protected:
 	static const unsigned int MAX_BUFFER_SIZE = 256;
-	static bool killed;
 	unisim::kernel::logger::Logger logger;
 	int tcp_port;
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
@@ -328,7 +326,6 @@ private:
 	bool WriteMemoryBin(ADDRESS addr, const std::string& bin, uint32_t size);
 	bool ReportProgramExit();
 	bool ReportSignal(unsigned int signum);
-	bool ReportTracePointTrap();
 	void ClearStopEvents();
 	bool SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind);
 	bool RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind);

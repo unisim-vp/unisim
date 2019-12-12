@@ -181,6 +181,7 @@ void UserInterface<ADDRESS>::Kill()
 {
 	halt = true;
 	Continue();
+	unisim::kernel::Object::Kill();
 }
 
 // unisim::service::interfaces::HttpServer

@@ -14,6 +14,14 @@ import unisim/service/debug/debugger || exit
 import unisim/service/loader/pmac_linux_kernel_loader || exit
 import unisim/service/translator/memory_address/memory || exit
 import unisim/kernel || exit
+import unisim/kernel/config/xml || exit
+import unisim/kernel/config/ini || exit
+import unisim/kernel/config/json || exit
+import unisim/kernel/logger/console || exit
+import unisim/kernel/logger/text_file || exit
+import unisim/kernel/logger/http || exit
+import unisim/kernel/logger/xml_file || exit
+import unisim/kernel/logger/netstream || exit
 import unisim/component/tlm/memory/ram || exit
 import unisim/component/tlm/memory/flash/am29 || exit
 import unisim/component/tlm/pci/video || exit

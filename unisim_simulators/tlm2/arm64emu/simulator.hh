@@ -37,6 +37,11 @@
 
 #include <unisim/kernel/kernel.hh>
 #include <unisim/kernel/tlm2/simulator.hh>
+#include <unisim/kernel/logger/console/console_printer.hh>
+#include <unisim/kernel/logger/text_file/text_file_writer.hh>
+#include <unisim/kernel/logger/http/http_writer.hh>
+#include <unisim/kernel/logger/xml_file/xml_file_writer.hh>
+#include <unisim/kernel/logger/netstream/netstream_writer.hh>
 #include <unisim/component/tlm2/processor/arm/cortex_a53/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/util/likely/likely.hh>
@@ -83,6 +88,11 @@ struct Simulator
   typedef unisim::service::debug::profiler::Profiler<uint64_t> PROFILER;
   typedef unisim::service::http_server::HttpServer HTTP_SERVER;
   typedef unisim::service::instrumenter::Instrumenter INSTRUMENTER;
+  typedef unisim::kernel::logger::console::Printer LOGGER_CONSOLE_PRINTER;
+  typedef unisim::kernel::logger::text_file::Writer LOGGER_TEXT_FILE_WRITER;
+  typedef unisim::kernel::logger::http::Writer LOGGER_HTTP_WRITER;
+  typedef unisim::kernel::logger::xml_file::Writer LOGGER_XML_FILE_WRITER;
+  typedef unisim::kernel::logger::netstream::Writer LOGGER_NETSTREAM_WRITER;
 
   CPU                                        cpu;
   MEMORY                                     memory;
@@ -98,6 +108,11 @@ struct Simulator
   PROFILER*                                  profiler;
   HTTP_SERVER*                               http_server;
   INSTRUMENTER*                              instrumenter;
+  LOGGER_CONSOLE_PRINTER*                    logger_console_printer;
+  LOGGER_TEXT_FILE_WRITER*                   logger_text_file_writer;
+  LOGGER_HTTP_WRITER*                        logger_http_writer;
+  LOGGER_XML_FILE_WRITER*                    logger_xml_file_writer;
+  LOGGER_NETSTREAM_WRITER*                   logger_netstream_writer;
   
   bool                                       enable_gdb_server;
   unisim::kernel::variable::Parameter<bool>   param_enable_gdb_server;

@@ -26,6 +26,14 @@ import unisim/service/instrumenter || exit
 import unisim/service/web_terminal || exit
 import unisim/service/tee/char_io || exit
 import unisim/kernel/tlm2 || exit
+import unisim/kernel/config/xml || exit
+import unisim/kernel/config/ini || exit
+import unisim/kernel/config/json || exit
+import unisim/kernel/logger/console || exit
+import unisim/kernel/logger/text_file || exit
+import unisim/kernel/logger/http || exit
+import unisim/kernel/logger/xml_file || exit
+import unisim/kernel/logger/netstream || exit
 
 import std/iostream || exit
 import std/sstream || exit

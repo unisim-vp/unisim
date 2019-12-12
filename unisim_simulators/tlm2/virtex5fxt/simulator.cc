@@ -33,7 +33,9 @@
  */
 
 #include <simulator.hh>
-#include <unisim/kernel/logger/logger_server.hh>
+#include <unisim/kernel/config/xml/xml_config_file_helper.hh>
+#include <unisim/kernel/config/ini/ini_config_file_helper.hh>
+#include <unisim/kernel/config/json/json_config_file_helper.hh>
 
 Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	: unisim::kernel::tlm2::Simulator(name, argc, argv, LoadBuiltInConfig)
@@ -104,6 +106,16 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	unsigned int irq;
 	unsigned int channel;
 	unsigned int i;
+	
+	//=========================================================================
+	//===                 Logger Printers instanciations                    ===
+	//=========================================================================
+
+	logger_console_printer = new LOGGER_CONSOLE_PRINTER();
+	logger_text_file_writer = new LOGGER_TEXT_FILE_WRITER();
+	logger_http_writer = new LOGGER_HTTP_WRITER();
+	logger_xml_file_writer = new LOGGER_XML_FILE_WRITER();
+	logger_netstream_writer = new LOGGER_NETSTREAM_WRITER();
 	
 	//=========================================================================
 	//===                     Instrumenter instantiation                    ===
@@ -524,7 +536,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	
 	{
 		unsigned int i = 0;
-		*http_server->http_server_import[i++] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
+		*http_server->http_server_import[i++] >> logger_http_writer->http_server_export;
 		*http_server->http_server_import[i++] >> instrumenter->http_server_export;
 		if(web_terminal)
 		{
@@ -619,10 +631,19 @@ Simulator::~Simulator()
 	if(char_io_tee) delete char_io_tee;
 	if(linux_os) delete linux_os;
 	if(instrumenter) delete instrumenter;
+	if(logger_console_printer) delete logger_console_printer;
+	if(logger_text_file_writer) delete logger_text_file_writer;
+	if(logger_http_writer) delete logger_http_writer;
+	if(logger_xml_file_writer) delete logger_xml_file_writer;
+	if(logger_netstream_writer) delete logger_netstream_writer;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
+	new unisim::kernel::config::xml::XMLConfigFileHelper(simulator);
+	new unisim::kernel::config::ini::INIConfigFileHelper(simulator);
+	new unisim::kernel::config::json::JSONConfigFileHelper(simulator);
+	
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM Virtex 5 FXT");
 	simulator->SetVariable("copyright", "Copyright (C) 2007-2019, Commissariat a l'Energie Atomique (CEA)");
@@ -930,7 +951,7 @@ bool Simulator::EndSetup()
 
 void Simulator::SigInt()
 {
-	if(!inline_debugger)
+	if(!inline_debugger || !inline_debugger->IsStarted())
 	{
 		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}

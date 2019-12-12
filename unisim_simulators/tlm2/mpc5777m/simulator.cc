@@ -33,7 +33,9 @@
  */
 
 #include <simulator.hh>
-#include <unisim/kernel/logger/logger_server.hh>
+#include <unisim/kernel/config/xml/xml_config_file_helper.hh>
+#include <unisim/kernel/config/ini/ini_config_file_helper.hh>
+#include <unisim/kernel/config/json/json_config_file_helper.hh>
 #include <sstream>
 #include <stdexcept>
 #include <map>
@@ -213,6 +215,11 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	, web_terminal14(0)
 	, web_terminal15(0)
 	, web_terminal16(0)
+	, logger_console_printer(0)
+	, logger_text_file_writer(0)
+	, logger_http_writer(0)
+	, logger_xml_file_writer(0)
+	, logger_netstream_writer(0)
 	, enable_core0_reset(true)
 	, enable_core1_reset(true)
 	, enable_core2_reset(true)
@@ -375,11 +382,6 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	param_bandwidth_gtkwave_init_script.SetMutable(false);
 #endif
 	
-// 	if(enable_profiler0 || enable_profiler1 || enable_profiler2)
-// 	{
-// 		this->SetVariable("HARDWARE.instrumenter.enable-user-interface", true); // When profilers are enabled, enable also instrumenter user interface so that profiler interface is periodically refreshed too
-// 	}
-	
 	if(enable_web_terminal0) enable_serial_terminal0 = true;
 	if(enable_web_terminal1) enable_serial_terminal1 = true;
 	if(enable_web_terminal2) enable_serial_terminal2 = true;
@@ -397,6 +399,16 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	unsigned int dma_channel_num;
 	unsigned int i;
 
+	//=========================================================================
+	//===                 Logger Printers instantiations                    ===
+	//=========================================================================
+
+	logger_console_printer = new LOGGER_CONSOLE_PRINTER();
+	logger_text_file_writer = new LOGGER_TEXT_FILE_WRITER();
+	logger_http_writer = new LOGGER_HTTP_WRITER();
+	logger_xml_file_writer = new LOGGER_XML_FILE_WRITER();
+	logger_netstream_writer = new LOGGER_NETSTREAM_WRITER();
+	
 	//=========================================================================
 	//===                     Instrumenter instantiation                    ===
 	//=========================================================================
@@ -4652,12 +4664,12 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	peripheral_core_2->memory_import >> xbar_1->memory_export;
 
 	(*xbar_0->memory_import[0]) >> flash->memory_export;
-	(*xbar_0->memory_import[2]) >> main_core_0->memory_export;
-	(*xbar_0->memory_import[3]) >> main_core_1->memory_export;
+	(*xbar_0->memory_import[2]) >> main_core_0->local_memory_export;
+	(*xbar_0->memory_import[3]) >> main_core_1->local_memory_export;
 	(*xbar_0->memory_import[4]) >> system_sram->memory_export;
 	(*xbar_0->memory_import[7]) >> xbar_1->memory_export;
 	
-	(*xbar_1->memory_import[1]) >> peripheral_core_2->memory_export;
+	(*xbar_1->memory_import[1]) >> peripheral_core_2->local_memory_export;
 		
 	if(debugger)
 	{
@@ -4842,7 +4854,7 @@ Simulator::Simulator(int argc, char **argv, const sc_core::sc_module_name& name)
 	{
 		unsigned int i = 0;
 		*http_server->http_server_import[i++] >> instrumenter->http_server_export;
-		*http_server->http_server_import[i++] >> unisim::kernel::logger::Logger::StaticServerInstance()->http_server_export;
+		*http_server->http_server_import[i++] >> logger_http_writer->http_server_export;
 		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++, front_end_num++)
 		{
 			if(profiler[prc_num])
@@ -5345,6 +5357,11 @@ Simulator::~Simulator()
 	if(bandwidth_vcd) delete bandwidth_vcd;
 	if(bandwidth_vcd_file) delete bandwidth_vcd_file;
 #endif
+	if(logger_console_printer) delete logger_console_printer;
+	if(logger_text_file_writer) delete logger_text_file_writer;
+	if(logger_http_writer) delete logger_http_writer;
+	if(logger_xml_file_writer) delete logger_xml_file_writer;
+	if(logger_netstream_writer) delete logger_netstream_writer;
 }
 
 void Simulator::Core0ResetProcess()
@@ -5576,6 +5593,10 @@ void Simulator::DMASource(const std::string& source_req,
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 {
+	new unisim::kernel::config::xml::XMLConfigFileHelper(simulator);
+	new unisim::kernel::config::ini::INIConfigFileHelper(simulator);
+	new unisim::kernel::config::json::JSONConfigFileHelper(simulator);
+	
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM MPC5777M");
 	simulator->SetVariable("copyright", "Copyright (C) 2007-2019, Commissariat à l'Energie Atomique (CEA)");
@@ -6366,7 +6387,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	simulator->SetVariable("dspi_0-master", 2);
 	simulator->SetVariable("dspi_0-slave", 0);
 	
-	// Instrumenter
+	// HTTP server
 	simulator->SetVariable("http-server.http-port", 12360);
 	
 	// Web terminals
@@ -6538,7 +6559,9 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 
 void Simulator::SigInt()
 {
-	if(!inline_debugger[0] && !inline_debugger[1] && !inline_debugger[2])
+	if((!inline_debugger[0] || !inline_debugger[0]->IsStarted()) &&
+	   (!inline_debugger[1] || !inline_debugger[1]->IsStarted()) &&
+	   (!inline_debugger[2] || !inline_debugger[2]->IsStarted()))
 	{
 		unisim::kernel::Simulator::Instance()->Stop(0, 0, true);
 	}

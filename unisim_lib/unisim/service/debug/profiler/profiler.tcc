@@ -382,8 +382,16 @@ void AddressProfile<ADDRESS, T>::Print(std::ostream& os, Visitor& visitor, FileF
 			os << ">" << std::endl;
 			os << ++indent << "<div id=\"content\">" << std::endl;
 			std::string href_csv(std::string("by_address") + FileFormatSuffix(F_FMT_CSV));
-			os << ++indent << "<div id=\"index\" class=\"button\"><a title=\"Go back to index\" draggable=\"false\" ondragstart=\"return false\" href=\"../index.html\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_index.svg")) << "\" alt=\"Index\"></a></div>" << std::endl;
-			os << indent << "<div id=\"save\" class=\"button\" draggable=\"false\"><a title=\"Save as .CSV spreadsheet file\" ondragstart=\"return false\" href=\"" << href_csv << "\" download=\"" << href_csv << "\" target=\"_blank\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_csv_table.svg")) << "\"></a></div>" << std::endl;
+			os << ++indent << "<div id=\"index\" class=\"button\">" << std::endl;
+			os << ++indent << "<a title=\"Go back to index\" draggable=\"false\" ondragstart=\"return false\" href=\"../index.html\">" << std::endl;
+			os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_index.svg")) << "\" alt=\"Index\">" << std::endl;
+			os << --indent << "</a>" << std::endl;
+			os << --indent << "</div>" << std::endl;
+			os << indent << "<div id=\"save\" class=\"button\" draggable=\"false\">" << std::endl;
+			os << ++indent << "<a title=\"Save as .CSV spreadsheet file\" ondragstart=\"return false\" href=\"" << href_csv << "\" download=\"" << href_csv << "\" target=\"_blank\">" << std::endl;
+			os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_csv_table.svg")) << "\">" << std::endl;
+			os << --indent << "</a>" << std::endl;
+			os << --indent << "</div>" << std::endl;
 			os << indent << "<h1 id=\"title\">Instruction profile by address<br>for " << unisim::util::hypapp::HTML_Encoder::Encode(GetSampledVariableName()) << "</h1>" << std::endl;
 			os << indent << "<table id=\"addresses\">" << std::endl;
 			os << ++indent << "<tr>" << std::endl;
@@ -666,10 +674,22 @@ void InstructionProfile<ADDRESS, T>::Print(std::ostream& os, Visitor& visitor, F
 			}
 			os << ">" << std::endl;
 			os << ++indent << "<div id=\"content\">" << std::endl;
-			os << ++indent << "<div id=\"show-table\" class=\"button\"><a title=\"Go back to function profile table\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_table.html\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_to_table.svg")) << "\" alt=\"→Table\"></a></div>" << std::endl;
-			os << indent << "<div id=\"show-histogram\" class=\"button\"><a title=\"Go back to function profile chart\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_histogram.html\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_to_histogram.svg")) << "\" alt=\"→Histogram\"></a></div>" << std::endl;
+			os << ++indent << "<div id=\"show-table\" class=\"button\">" << std::endl;
+			os << ++indent << "<a title=\"Go back to function profile table\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_table.html\">" << std::endl;
+			os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_to_table.svg")) << "\" alt=\"→Table\">" << std::endl;
+			os << --indent << "</a>" << std::endl;
+			os << --indent << "</div>" << std::endl;
+			os << indent << "<div id=\"show-histogram\" class=\"button\">" << std::endl;
+			os << ++indent << "<a title=\"Go back to function profile chart\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_histogram.html\">" << std::endl;
+			os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_to_histogram.svg")) << "\" alt=\"→Histogram\">" << std::endl;
+			os << --indent << "</a>" << std::endl;
+			os << --indent << "</div>" << std::endl;
 			std::string href_csv(std::string("disassembly") + FileFormatSuffix(F_FMT_CSV));
-			os << indent << "<div id=\"save\" class=\"button\"><a title=\"Save as .CSV spreadsheet file\" draggable=\"false\" ondragstart=\"return false\" href=\"" << href_csv << "\" download=\"" << href_csv << "\" target=\"_blank\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_csv_table.svg")) << "\" alt=\".CSV↓\"></a></div>" << std::endl;
+			os << indent << "<div id=\"save\" class=\"button\">" << std::endl;
+			os << ++indent << "<a title=\"Save as .CSV spreadsheet file\" draggable=\"false\" ondragstart=\"return false\" href=\"" << href_csv << "\" download=\"" << href_csv << "\" target=\"_blank\">" << std::endl;
+			os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_csv_table.svg")) << "\" alt=\".CSV↓\">" << std::endl;
+			os << --indent << "</a>" << std::endl;
+			os << --indent << "</div>" << std::endl;
 			os << indent << "<h1 id=\"title\">Instruction profile with annotated disassembly<br>for " << unisim::util::hypapp::HTML_Encoder::Encode(GetSampledVariableName()) << "</h1>" << std::endl;
 			
 			os << indent << "<table id=\"disassembly\">" << std::endl;
@@ -896,10 +916,26 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintTable(std::ostream& os, Visito
 			}
 			os << ">" << std::endl;
 			os << ++indent << "<div id=\"content\">" << std::endl;
-			os << ++indent << "<div id=\"index\" class=\"button\"><a title=\"Go back to index\" draggable=\"false\" ondragstart=\"return false\" href=\"../index.html\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_index.svg")) << "\" alt=\"→Index\"></a></div>" << std::endl;
-			os << indent << "<div id=\"show-histogram\" class=\"button\"><a title=\"Show function profile chart\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_histogram.html\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_histogram.svg")) << "\" alt=\"→Histogram\"></a></div>" << std::endl;
-			os << indent << "<div id=\"save-histogram\" class=\"button\"><a title=\"Save as .SVG image file\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_histogram.svg\" download=\"by_function_histogram.svg\" target=\"_blank\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_svg_histogram.svg")) << "\" alt=\".SVG↓\"></a></div>" << std::endl;
-			os << indent << "<div id=\"save-table\" class=\"button\"><a title=\"Save as .CSV spreadsheet file\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_table.csv\" download=\"by_function_table.csv\" target=\"_blank\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_csv_table.svg")) << "\" alt=\".CSV↓\"></a></div>" << std::endl;
+			os << ++indent << "<div id=\"index\" class=\"button\">" << std::endl;
+			os << ++indent << "<a title=\"Go back to index\" draggable=\"false\" ondragstart=\"return false\" href=\"../index.html\">" << std::endl;
+			os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_index.svg")) << "\" alt=\"→Index\">" << std::endl;
+			os << --indent << "</a>" << std::endl;
+			os << --indent << "</div>" << std::endl;
+			os << indent << "<div id=\"show-histogram\" class=\"button\">" << std::endl;
+			os << ++indent << "<a title=\"Show function profile chart\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_histogram.html\">" << std::endl;
+			os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_histogram.svg")) << "\" alt=\"→Histogram\">" << std::endl;
+			os << --indent << "</a>" << std::endl;
+			os << --indent << "</div>" << std::endl;
+			os << indent << "<div id=\"save-histogram\" class=\"button\">" << std::endl;
+			os << ++indent << "<a title=\"Save as .SVG image file\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_histogram.svg\" download=\"by_function_histogram.svg\" target=\"_blank\">" << std::endl;
+			os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_svg_histogram.svg")) << "\" alt=\".SVG↓\">" << std::endl;
+			os << --indent << "</a>" << std::endl;
+			os << --indent << "</div>" << std::endl;
+			os << indent << "<div id=\"save-table\" class=\"button\">" << std::endl;
+			os << ++indent << "<a title=\"Save as .CSV spreadsheet file\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_table.csv\" download=\"by_function_table.csv\" target=\"_blank\">" << std::endl;
+			os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_csv_table.svg")) << "\" alt=\".CSV↓\">" << std::endl;
+			os << --indent << "</a>" << std::endl;
+			os << --indent << "</div>" << std::endl;
 			os << indent << "<h1 id=\"title\">Instruction profile by function<br>for " << unisim::util::hypapp::HTML_Encoder::Encode(GetSampledVariableName()) << "</h1>" << std::endl;
 			os << indent << "<table id=\"summary\">" << std::endl;
 			os << ++indent << "<tr>" << std::endl;
@@ -1075,10 +1111,26 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintHistogram(std::ostream& os, Vi
 		}
 		os << ">" << std::endl;
 		os << ++indent << "<div id=\"content\">" << std::endl;
-		os << ++indent << "<div id=\"index\" class=\"button\"><a title=\"Go back to index\" draggable=\"false\" ondragstart=\"return false\" href=\"../index.html\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_index.svg")) << "\" alt=\"→Index\"></a></div>" << std::endl;
-		os << indent << "<div id=\"show-table\" class=\"button\"><a title=\"Show function profile table\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_table.html\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_table.svg")) << "\" alt=\"→Table\"></a></div>" << std::endl;
-		os << indent << "<div id=\"save-histogram\" class=\"button\"><a title=\"Save as .SVG image file\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_histogram.svg\" download=\"by_function_histogram.svg\" target=\"_blank\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_svg_histogram.svg")) << "\" alt=\".SVG↓\"></a></div>" << std::endl;
-		os << indent << "<div id=\"save-table\" class=\"button\"><a title=\"Save as .CSV spreadsheet file\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_table.csv\" download=\"by_function_table.csv\" target=\"_blank\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_csv_table.svg")) << "\" alt=\".CSV↓\"></a></div>" << std::endl;
+		os << ++indent << "<div id=\"index\" class=\"button\">" << std::endl;
+		os << ++indent << "<a title=\"Go back to index\" draggable=\"false\" ondragstart=\"return false\" href=\"../index.html\">" << std::endl;
+		os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_index.svg")) << "\" alt=\"→Index\">" << std::endl;
+		os << --indent << "</a>" << std::endl;
+		os << --indent << "</div>" << std::endl;
+		os << indent << "<div id=\"show-table\" class=\"button\">" << std::endl;
+		os << ++indent << "<a title=\"Show function profile table\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_table.html\">" << std::endl;
+		os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_table.svg")) << "\" alt=\"→Table\">" << std::endl;
+		os << --indent << "</a>" << std::endl;
+		os << --indent << "</div>" << std::endl;
+		os << indent << "<div id=\"save-histogram\" class=\"button\">" << std::endl;
+		os << ++indent << "<a title=\"Save as .SVG image file\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_histogram.svg\" download=\"by_function_histogram.svg\" target=\"_blank\">" << std::endl;
+		os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_svg_histogram.svg")) << "\" alt=\".SVG↓\">" << std::endl;
+		os << --indent << "</a>" << std::endl;
+		os << --indent << "</div>" << std::endl;
+		os << indent << "<div id=\"save-table\" class=\"button\">" << std::endl;
+		os << ++indent << "<a title=\"Save as .CSV spreadsheet file\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_table.csv\" download=\"by_function_table.csv\" target=\"_blank\">" << std::endl;
+		os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_csv_table.svg")) << "\" alt=\".CSV↓\">" << std::endl;
+		os << --indent << "</a>" << std::endl;
+		os << --indent << "</div>" << std::endl;
 		os << indent << "<h1 id=\"title\">Instruction profile by function<br>for " << unisim::util::hypapp::HTML_Encoder::Encode(GetSampledVariableName()) << "</h1>" << std::endl;
 		os << indent << "<div id=\"histogram\">" << std::endl;
 		++indent;
@@ -1188,7 +1240,7 @@ void FunctionInstructionProfile<ADDRESS, T>::PrintHistogram(std::ostream& os, Vi
 			
 			if(sloc && ((r_fmt == R_FMT_HTML) || (r_fmt == R_FMT_HTTP)))
 			{
-				os << indent << "<a title=\"Go to source code\" href=\"source" << filename_index->IndexFilename(sloc->GetFilename()) << ".html#" << unisim::util::hypapp::URI_Encoder::Encode(func_name.c_str()) << "\">" << std::endl;
+				os << indent << "<a title=\"Go to source code\" draggable=\"false\" ondragstart=\"return false\" href=\"source" << filename_index->IndexFilename(sloc->GetFilename()) << ".html#" << unisim::util::hypapp::URI_Encoder::Encode(func_name.c_str()) << "\">" << std::endl;
 				++indent;
 			}
 			
@@ -1644,10 +1696,22 @@ void AnnotatedSourceCodeFile<ADDRESS, T>::Print(std::ostream& os, Visitor& visit
 			}
 			os << ">" << std::endl;
 			os << ++indent << "<div id=\"content\">" << std::endl;
-			os << ++indent << "<div id=\"show-table\" class=\"button\"><a title=\"Go back to function profile table\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_table.html\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_to_table.svg")) << "\" alt=\"→Table\"></a></div>" << std::endl;
-			os << indent << "<div id=\"show-histogram\" class=\"button\"><a title=\"Go back to function profile chart\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_histogram.html\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_to_histogram.svg")) << "\" alt=\".SVG↓\"></a></div>" << std::endl;
+			os << ++indent << "<div id=\"show-table\" class=\"button\">" << std::endl;
+			os << ++indent << "<a title=\"Go back to function profile table\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_table.html\">" << std::endl;
+			os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_to_table.svg")) << "\" alt=\"→Table\">" << std::endl;
+			os << --indent << "</a>" << std::endl;
+			os << --indent << "</div>" << std::endl;
+			os << indent << "<div id=\"show-histogram\" class=\"button\">" << std::endl;
+			os << ++indent << "<a title=\"Go back to function profile chart\" draggable=\"false\" ondragstart=\"return false\" href=\"by_function_histogram.html\">" << std::endl;
+			os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_to_histogram.svg")) << "\" alt=\".SVG↓\">" << std::endl;
+			os << --indent << "</a>" << std::endl;
+			os << --indent << "</div>" << std::endl;
 			std::string href_csv(std::string("source") + to_string(filename_index->IndexFilename(filename)) + FileFormatSuffix(F_FMT_CSV));
-			os << indent << "<div id=\"save\" class=\"button\"><a title=\"Save as .CSV spreadsheet file\" draggable=\"false\" ondragstart=\"return false\" href=\"" << href_csv << "\" download=\"" << href_csv << "\" target=\"_blank\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_csv_table.svg")) << "\" alt=\".CSV↓\"></a></div>" << std::endl;
+			os << indent << "<div id=\"save\" class=\"button\">" << std::endl;
+			os << ++indent << "<a title=\"Save as .CSV spreadsheet file\" draggable=\"false\" ondragstart=\"return false\" href=\"" << href_csv << "\" download=\"" << href_csv << "\" target=\"_blank\">" << std::endl;
+			os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_csv_table.svg")) << "\" alt=\".CSV↓\">" << std::endl;
+			os << --indent << "</a>" << std::endl;
+			os << --indent << "</div>" << std::endl;
 			os << indent << "<h1 id=\"title\">Instruction profile with annotated source code of " << unisim::util::hypapp::HTML_Encoder::Encode(filename.c_str()) << "<br>for " << unisim::util::hypapp::HTML_Encoder::Encode(GetSampledVariableName()) << "</h1>" << std::endl;
 			
 			os << indent << "<table id=\"source\">" << std::endl;
@@ -2101,9 +2165,23 @@ bool Profiler<ADDRESS>::EndSetup()
 {
 	num_sampled_variables = 0;
 	
-	if(!registers_import) return false;
-	if(!stmt_lookup_import) return false;
-	if(!symbol_table_lookup_import) return false;
+	if(!registers_import)
+	{
+		logger << DebugError << "registers_import is not connected" << EndDebugError;
+		return false;
+	}
+	
+	if(!stmt_lookup_import)
+	{
+		logger << DebugError << "stmt_lookup_import is not connected" << EndDebugError;
+		return false;
+	}
+	
+	if(!symbol_table_lookup_import)
+	{
+		logger << DebugError << "symbol_table_lookup_import is not connected" << EndDebugError;
+		return false;
+	}
 
 	LoadDebugInfo();
 	
@@ -2321,7 +2399,7 @@ bool Profiler<ADDRESS>::ServeHttpRequest(unisim::util::hypapp::HttpRequest const
 	};
 	
 	double print_time = http_print_times_per_path[req.GetPath()];
-	double refresh_period = std::max(4 * print_time, http_refresh_period); // configured refresh period for reporting over HTTP or at least twice the last print time
+	double refresh_period = std::max(4 * print_time, http_refresh_period); // configured refresh period for reporting over HTTP or at least four times the last print time
 	HttpVisitor http_visitor(*this, response, req.GetHost(), URI(), req.GetPath(), req.GetDomain(), refresh_period);
 	double start_time = unisim::util::host_time::GetHostTime();
 	Output(http_visitor);
@@ -2345,8 +2423,31 @@ bool Profiler<ADDRESS>::ServeHttpRequest(unisim::util::hypapp::HttpRequest const
 				response.SetContentType(http_visitor.GetContentType());
 				break;
 				
+			case unisim::util::hypapp::Request::POST:
+				if((req.GetPath() == "") || (req.GetPath() == "index.html"))
+				{
+					Lock();
+					PropertySetter property_setter(*this);
+					if(property_setter.Decode(std::string(req.GetContent(), req.GetContentLength()), logger.DebugWarningStream()))
+					{
+						property_setter.Apply();
+					}
+					else
+					{
+						logger << DebugWarning << "parse error in POST data" << EndDebugWarning;
+					}
+					Unlock();
+					
+					// Post/Redirect/Get pattern: got Post, so do Redirect
+					response.SetStatus(unisim::util::hypapp::HttpResponse::SEE_OTHER);
+					response.SetHeaderField("Location", req.GetRequestURI());
+					
+					break;
+				}
+				
 			default:
 			{
+				response.ClearContent();
 				response.SetStatus(unisim::util::hypapp::HttpResponse::METHOD_NOT_ALLOWED);
 
 				Indent indent;
@@ -2359,11 +2460,13 @@ bool Profiler<ADDRESS>::ServeHttpRequest(unisim::util::hypapp::HttpRequest const
 				response << indent << "<meta name=\"description\" content=\"Error 405 (Method Not Allowed)\">" << std::endl;
 				response << indent << "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << std::endl;
 				response << indent << "<script>document.domain='" << req.GetDomain() << "';</script>" << std::endl;
+				response << indent << "<script src=\"unisim/service/http_server/embedded_script.js\"></script>" << std::endl;
+				response << indent << "<script src=\"unisim/service/debug/profiler/script.js\"></script>" << std::endl;
 				response << indent << "<style>" << std::endl;
 				response << ++indent << "body { font-family:Arial,Helvetica,sans-serif; font-style:normal; font-size:14px; text-align:left; font-weight:400; color:black; background-color:white; }" << std::endl;
 				response << --indent << "</style>" << std::endl;
 				response << --indent << "</head>" << std::endl;
-				response << indent << "<body>" << std::endl;
+				response << indent << "<body onload=\"gui.auto_reload(0)\">" << std::endl;
 				response << ++indent << "<p>Method Not Allowed</p>" << std::endl;
 				response << --indent << "</body>" << std::endl;
 				response << --indent << "</html>" << std::endl;
@@ -2531,6 +2634,34 @@ void Profiler<ADDRESS>::LoadDebugInfo()
 }
 
 template <typename ADDRESS>
+void Profiler<ADDRESS>::Clear()
+{
+	unsigned int i;
+	for(i = 0; i < num_sampled_variables; i++)
+	{
+		AddressProfileBase<ADDRESS> *addr_profile = addr_profiles[i];
+		addr_profile->Clear();
+	}
+	need_update = true;
+}
+
+template <typename ADDRESS>
+void Profiler<ADDRESS>::Clear(const std::string& variable_name)
+{
+	unsigned int i;
+	for(i = 0; i < num_sampled_variables; i++)
+	{
+		AddressProfileBase<ADDRESS> *addr_profile = addr_profiles[i];
+		if(variable_name == addr_profile->GetSampledVariableName())
+		{
+			addr_profile->Clear();
+		}
+	}
+	need_update = true;
+}
+
+
+template <typename ADDRESS>
 void Profiler<ADDRESS>::Update()
 {
 	unsigned int i;
@@ -2649,20 +2780,57 @@ void Profiler<ADDRESS>::PrintIndex(std::ostream& os, Visitor& visitor) const
 	os << ++indent << "<h1 id=\"title\">Instruction profile index by variable</h1>" << std::endl;
 	os << indent << "<table id=\"var-index\">" << std::endl;
 	os << ++indent << "<tr>" << std::endl;
-	//os << "<th>Variable</th><th>Description</th><th>Value</th><th>Raw data</th><th>Profile</th>" << std::endl;
-	os << ++indent << "<th>Variable</th><th>Description</th><th>Value</th><th colspan=\"3\">Profile</th>" << std::endl;
+	os << ++indent << "<th id=\"var-clear-all\"><form id=\"var-clear-all-form\" action=\"" << URI() << "\" method=\"post\">" << std::endl;
+	os << ++indent << "<div class=\"button\"><input type=\"hidden\" name=\"clear-all\" value=\"on\">" << std::endl;
+	os << ++indent << "<a title=\"Clear all\" draggable=\"false\" ondragstart=\"return false\" onclick=\"document.getElementById('var-clear-all-form').submit()\">" << std::endl;
+	os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_sweeper.svg")) << "\" alt=\"Clear all\">" << std::endl;
+	os << --indent << "</a>" << std::endl;
+	os << --indent << "</div>" << std::endl;
+	os << --indent << "</form>" << std::endl;
+	os << --indent << "</th>" << std::endl;
+	os << indent << "<th>Variable</th>" << std::endl;
+	os << indent << "<th>Description</th>" << std::endl;
+	os << indent << "<th>Value</th>" << std::endl;
+	os << indent << "<th colspan=\"3\">Profile</th>" << std::endl;
 	os << --indent << "</tr>" << std::endl;
 	for(i = 0; i < num_sampled_variables; i++)
 	{
 		AddressProfileBase<ADDRESS> *addr_profile = addr_profiles[i];
 		
 		os << indent << "<tr>" << std::endl;
-		os << ++indent << "<td class=\"var-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(addr_profile->GetSampledVariableName()) << "</td>" << std::endl;
+		os << ++indent << "<td class=\"var-clear\">" << std::endl;
+		os << ++indent << "<form id=\"var-clear-form-" << i << "\" action=\"" << URI() << "\" method=\"post\"><div class=\"button\">" << std::endl;
+		os << ++indent << "<input type=\"hidden\" name=\"clear*" << unisim::util::hypapp::URI_Encoder::Encode(addr_profile->GetSampledVariableName()) << "\" value=\"on\">" << std::endl;
+		os << ++indent << "<a title=\"Clear\" draggable=\"false\" ondragstart=\"return false\" onclick=\"document.getElementById('var-clear-form-" << i << "').submit()\">" << std::endl;
+		os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_sweeper.svg")) << "\" alt=\"Clear\">" << std::endl;
+		os << --indent << "</a>" << std::endl;
+		os << --indent << "</div>" << std::endl;
+		os << --indent << "</form>" << std::endl;
+		os << --indent << "</td>" << std::endl;
+		os << indent << "<td class=\"var-name\">" << unisim::util::hypapp::HTML_Encoder::Encode(addr_profile->GetSampledVariableName()) << "</td>" << std::endl;
 		os << indent << "<td class=\"var-description\">" << unisim::util::hypapp::HTML_Encoder::Encode(addr_profile->GetSampledVariable()->GetDescription()) << "</td>" << std::endl;
 		os << indent << "<td class=\"var-value\">" << unisim::util::hypapp::HTML_Encoder::Encode(addr_profile->GetCumulativeValueAsString()) << "</td>" << std::endl;
-		os << indent << "<td class=\"by-address\"><div class=\"button\"><a title=\"Show instruction profile by address\" draggable=\"false\" ondragstart=\"return false\" href=\"" << root << (root.empty() ? "" : "/") << unisim::util::hypapp::URI_Encoder::Encode(addr_profile->GetSampledVariableName()) << "/by_address.html\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_pc_table.svg")) << "\" alt=\"PC Table\"></a></div></td>" << std::endl;
-		os << indent << "<td class=\"by-address-histogram\"><div class=\"button\"><a title=\"Show function profile chart\" draggable=\"false\" ondragstart=\"return false\" href=\"" << root << (root.empty() ? "" : "/") << unisim::util::hypapp::URI_Encoder::Encode(addr_profile->GetSampledVariableName()) << "/by_function_histogram.html\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_histogram.svg")) << "\" alt=\"Histogram\"></a></div></td>" << std::endl;
-		os << indent << "<td class=\"by-address-table\"><div class=\"button\"><a title=\"Show function profile table\" draggable=\"false\" ondragstart=\"return false\" href=\"" << root << (root.empty() ? "" : "/") << unisim::util::hypapp::URI_Encoder::Encode(addr_profile->GetSampledVariableName()) << "/by_function_table.html\"><img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_table.svg")) << "\" alt=\"Table\"></a></div></td>" << std::endl;
+		os << indent << "<td class=\"by-address\">" << std::endl;
+		os << ++indent << "<div class=\"button\">" << std::endl;
+		os << ++indent << "<a title=\"Show instruction profile by address\" draggable=\"false\" ondragstart=\"return false\" href=\"" << root << (root.empty() ? "" : "/") << unisim::util::hypapp::URI_Encoder::Encode(addr_profile->GetSampledVariableName()) << "/by_address.html\">" << std::endl;
+		os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_pc_table.svg")) << "\" alt=\"PC Table\">" << std::endl;
+		os << --indent << "</a>" << std::endl;
+		os << --indent << "</div>" << std::endl;
+		os << --indent << "</td>" << std::endl;
+		os << indent << "<td class=\"by-address-histogram\">" << std::endl;
+		os << ++indent << "<div class=\"button\">" << std::endl;
+		os << ++indent << "<a title=\"Show function profile chart\" draggable=\"false\" ondragstart=\"return false\" href=\"" << root << (root.empty() ? "" : "/") << unisim::util::hypapp::URI_Encoder::Encode(addr_profile->GetSampledVariableName()) << "/by_function_histogram.html\">" << std::endl;
+		os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_histogram.svg")) << "\" alt=\"Histogram\">" << std::endl;
+		os << --indent << "</a>" << std::endl;
+		os << --indent << "</div>" << std::endl;
+		os << --indent << "</td>" << std::endl;
+		os << indent << "<td class=\"by-address-table\">" << std::endl;
+		os << ++indent << "<div class=\"button\">" << std::endl;
+		os << ++indent << "<a title=\"Show function profile table\" draggable=\"false\" ondragstart=\"return false\" href=\"" << root << (root.empty() ? "" : "/") << unisim::util::hypapp::URI_Encoder::Encode(addr_profile->GetSampledVariableName()) << "/by_function_table.html\">" << std::endl;
+		os << ++indent << "<img draggable=\"false\" src=\"" << unisim::util::hypapp::URI_Encoder::Encode(visitor.GetFilePath("unisim/service/debug/profiler/icon_table.svg")) << "\" alt=\"Table\">" << std::endl;
+		os << --indent << "</a>" << std::endl;
+		os << --indent << "</div>" << std::endl;
+		os << --indent << "</td>" << std::endl;
 		os << --indent << "</tr>" << std::endl;
 	}
 	os << --indent << "</table>" << std::endl;
@@ -2823,6 +2991,59 @@ template <typename ADDRESS>
 void Profiler<ADDRESS>::Unlock()
 {
 	pthread_mutex_unlock(&mutex);
+}
+
+template <typename ADDRESS>
+Profiler<ADDRESS>::PropertySetter::PropertySetter(Profiler<ADDRESS>& _profiler)
+	: profiler(_profiler)
+	, clear_all(false)
+	, clear()
+{
+}
+
+template <typename ADDRESS>
+bool Profiler<ADDRESS>::PropertySetter::FormAssign(const std::string& name, const std::string& value)
+{
+	if((name == "clear-all") && (value == "on"))
+	{
+		clear_all = true;
+	}
+	else
+	{
+		std::size_t delim_pos = name.find_first_of('*');
+		if(delim_pos != std::string::npos)
+		{
+			std::string action = name.substr(0, delim_pos);
+			std::string variable_name = name.substr(delim_pos + 1);
+			
+			if((action == "clear") && (value == "on"))
+			{
+				clear.push_back(variable_name);
+			}
+		}
+		else
+		{
+		}
+	}
+	
+	return true;
+}
+	
+template <typename ADDRESS>
+void Profiler<ADDRESS>::PropertySetter::Apply()
+{
+	if(clear_all)
+	{
+		profiler.Clear();
+	}
+	else
+	{
+		for(std::vector<std::string>::iterator it = clear.begin(); it != clear.end(); ++it)
+		{
+			const std::string& variable_name = *it;
+			profiler.Clear(variable_name);
+		}
+	}
 }
 
 } // end of namespace profiler

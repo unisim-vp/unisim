@@ -491,7 +491,7 @@ int main(int argc, char *argv[], char **envp) {
 		EnableDebug();
 		void (*prev_sig_int_handler)(int);
 
-		if(!inline_debugger)
+		if(!inline_debugger || !inline_debugger->IsStarted())
 		{
 			prev_sig_int_handler = signal(SIGINT, SigIntHandler);
 		}
@@ -510,7 +510,7 @@ int main(int argc, char *argv[], char **envp) {
 			cerr << e.what() << endl;
 		}
 
-		if(!inline_debugger)
+		if(!inline_debugger || !inline_debugger->IsStarted())
 		{
 			signal(SIGINT, prev_sig_int_handler);
 		}

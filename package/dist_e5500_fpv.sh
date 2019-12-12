@@ -6,6 +6,7 @@ source "$(dirname $0)/dist_common.sh"
 
 import_genisslib || exit
 
+import unisim/kernel/logger/console || exit
 import unisim/component/cxx/processor/powerpc
 import unisim/component/cxx/memory/sparse
 import unisim/util/reg/core

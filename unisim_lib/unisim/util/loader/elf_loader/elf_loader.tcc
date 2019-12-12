@@ -400,7 +400,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		
 		if(unlikely(verbose))
 		{
-			GetDebugInfoStream() << "Forcing base address to 0x" << std::hex << base_addr << std::dec << " (instead of 0x" << std::hex << origin << std::dec << ")" << std::endl;
+			GetDebugInfoStream() << "Forcing base address to 0x" << std::hex << base_addr << std::dec << std::endl;
 		}
 	}
 	

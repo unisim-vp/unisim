@@ -150,6 +150,8 @@ public:
 
 	virtual bool EndSetup();
 	virtual void OnDisconnect();
+	
+	bool IsStarted() const;
 protected:
 	virtual void Interrupt();
 private:
@@ -204,6 +206,8 @@ private:
 		Words flags[WORD_COUNT];
 	};
 	std::map<ADDRESS,VisitedInstructionPage> visited_instructions;
+	
+	bool is_started;
 
 	void Tokenize(const std::string& str, std::vector<std::string>& tokens);
 	bool ParseAddr(const char *s, ADDRESS& addr);

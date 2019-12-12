@@ -36,17 +36,9 @@
 #define __UNISIM_KERNEL_LOGGER_LOGGER_SERVER_HH__
 
 #include <unisim/kernel/kernel.hh>
-#include <unisim/kernel/variable/variable.hh>
 #include <unisim/kernel/logger/logger.hh>
-#include <unisim/service/interfaces/http_server.hh>
 #include <pthread.h>
-#include <string>
-#include <fstream>
 #include <set>
-
-// Forward declaration to hide libxml2 data types
-typedef struct _xmlTextWriter xmlTextWriter;
-typedef xmlTextWriter *xmlTextWriterPtr;
 
 namespace unisim {
 namespace kernel {
@@ -54,25 +46,19 @@ namespace logger {
 
 struct Logger;
 
-struct LoggerServer : public unisim::kernel::Service<unisim::service::interfaces::HttpServer>
+struct Printer
 {
-	/** Http server export */
-	unisim::kernel::ServiceExport<unisim::service::interfaces::HttpServer> http_server_export;
-	
+	Printer();
+	virtual ~Printer();
+	virtual void Print(mode_t mode, const char *name, const char *buffer) = 0;
+};
+
+struct LoggerServer : unisim::kernel::Object
+{
 	/** Constructor */
 	LoggerServer(const char *name, unisim::kernel::Object *parent = 0);
 	/** Destructor */
 	~LoggerServer();
-
-	/** Initialize the logger server according to options value
-	 * 
-	 * Returns true if the initialization of the logger could be
-	 * successfully done based on the parameters options, or false
-	 * otherwise.
-	 *
-	 * @return true if initialization succedded, false otherwise
-	 */
-	bool Initialize();
 
 	/** Register a client logger.
 	 * 
@@ -80,6 +66,13 @@ struct LoggerServer : public unisim::kernel::Service<unisim::service::interfaces
 	 * being constructed.
 	 */
 	void AddClient( Logger const* client );
+	
+	/** Register a printer
+	 * 
+	 * This method should be called by the different printers when
+	 * being constructed.
+	 */
+	void AddPrinter( Printer *printer );
 
 	/** Unregister a client logger and close server if needed
 	 *  
@@ -88,18 +81,13 @@ struct LoggerServer : public unisim::kernel::Service<unisim::service::interfaces
 	 */
 	void RemoveClient( Logger const* client );
 
-	/** Message debug log command
-	 * Loggers should call this method (using the handle obtained with GetInstance)
-	 *   to log a debug message.
-	 *
-	 * @param os output stream
-	 * @param opt_color whether to color message
-	 * @param mode type of debug message (info, warning or error)
-	 * @param obj the unisim::kernel::Object that is sending the debug message
-	 * @param buffer the debug message
+	/** Unregister a printer
+	 *  
+	 *  This method should be called by the different printers
+	 *  when being destroyed.
 	 */
-	void Print(std::ostream& os, bool opt_color, mode_t mode, const char *name, const char *buffer);
-	
+	void RemovePrinter( Printer *printer );
+
 	/** Message debug log command
 	 * Loggers should call this method (using the handle obtained with GetInstance)
 	 *   to log a debug message.
@@ -143,176 +131,39 @@ struct LoggerServer : public unisim::kernel::Service<unisim::service::interfaces
 	 */
 	void DebugError( const char *name, const char *buffer );
 
-	/** Serve an HTTP request
-	  * HTTP server calls that interface method to ask for logger to serve an incoming HTTP request intended for logger
-	  * 
-	  * @param req HTTP request
-	  * @param conn Connection with HTTP client (web browser)
-	  */
-	virtual bool ServeHttpRequest(unisim::util::hypapp::HttpRequest const& req, unisim::util::hypapp::ClientConnection const& conn);
-	virtual void ScanWebInterfaceModdings(unisim::service::interfaces::WebInterfaceModdingScanner& scanner);
-
+	/** For each client logger calls operator () (Logger const* client) of visitor
+	 * @param visitor a non-const reference to a visitor that have an operator () (Logger const*)
+	 */
+	template <class VISITOR> void ForEachClient(VISITOR& visitor);
+	
 private:
 	/** Pointer set to the client loggers */
-	std::set<Logger const*> clients;
-
-	/** XML file handler
-	 * The type of this file handler is provided by libxml2.
-	 */
-	xmlTextWriterPtr xml_writer_;
-
-	/** XML output method for debug messages
-	 * XML output method for debug messages of the different types.
-	 *
-	 * @param type   the type of the message
-	 * @param obj    the object source of the message
-	 * @param buffer the message buffer
-	 */
-	void XmlDebug( const char *type, const char *name, const char *buffer );
-
-	/** Server internal closing method
-         * 
-	 * Invoked when no client are connected anymore
-	 */
-	void Close();
+	typedef std::set<Logger const*> Clients;
+	Clients clients;
 	
-	/** Text file handler
-	 */
-	std::ofstream text_file_;
+	/** Pointer set to the printers */
+	typedef std::set<Printer *> Printers;
+	Printers printers;
 
-	/* HTTP logs */
-	struct HttpLogEntry
-	{
-		HttpLogEntry()
-			: data(0)
-		{
-		}
-		
-		HttpLogEntry(mode_t mode, const char *name, const char *buffer)
-			: data(new HttpLogEntryData(mode, name, buffer))
-		{
-			if(data) data->Catch();
-		}
-		
-		HttpLogEntry(const HttpLogEntry& o)
-			: data(0)
-		{
-			Copy(o);
-		}
-		
-		HttpLogEntry& operator = (const HttpLogEntry& o)
-		{
-			Copy(o);
-			return *this;
-		}
-		
-		~HttpLogEntry()
-		{
-			if(data) data->Release();
-			data = 0;
-		}
-		
-		mode_t GetMode() const { return data ? data->GetMode() : NO_MODE; }
-		const std::string& GetName() const { static std::string null_str; return data ? data->GetName() : null_str; }
-		const std::string& GetMessage() const { static std::string null_str; return data ? data->GetMessage() : null_str; }
-		
-	private:
-		struct HttpLogEntryData
-		{
-			HttpLogEntryData(mode_t _mode, const char *_name, const char *buffer)
-				: mode(_mode)
-				, name(_name)
-				, msg(buffer)
-				, ref_count(0)
-			{
-			}
-			
-			void Catch()
-			{
-				ref_count++;
-			}
-			
-			void Release()
-			{
-				if(ref_count && (--ref_count == 0))
-				{
-					delete this;
-				}
-			}
-			
-			mode_t GetMode() const { return mode; }
-			const std::string& GetName() const { return name; }
-			const std::string& GetMessage() const { return msg; }
-			
-		private:
-			mode_t mode;
-			std::string name;
-			std::string msg;
-			unsigned int ref_count;
-		};
-		
-		HttpLogEntryData *data;
-		
-		
-		void Copy(const HttpLogEntry& o)
-		{
-			if(data != o.data)
-			{
-				if(data) data->Release();
-				data = o.data;
-				if(data) data->Catch();
-			}
-		}
-	};
-	
-	typedef HttpLogEntry HTTP_LOG_ENTRY;
-	typedef std::list<HTTP_LOG_ENTRY> HTTP_LOG;
-	typedef std::map<std::string, HTTP_LOG *> HTTP_LOGS_PER_CLIENT;
-
-	HTTP_LOG global_http_log;
-	HTTP_LOGS_PER_CLIENT http_logs_per_client;
-	bool activity;
-	double http_refresh_period;
-	
-	void PrintHttpLog(std::ostream& os, const HTTP_LOG& http_log, bool global);
-
-	/***************************************************************************
-	 * Parameters                                                        START *
-	 ***************************************************************************/
-public:
-	bool opt_std_err_;
-	bool opt_std_out_;
-	bool opt_std_err_color_;
-	bool opt_std_out_color_;
-	bool opt_file_;
-	std::string opt_filename_;
-	bool opt_xml_file_;
-	std::string opt_xml_filename_;
-	bool opt_xml_file_gzipped_;
-	bool opt_http_;
-	unsigned int opt_http_max_log_size_;
-	double opt_http_min_refresh_period_;
-	double opt_http_max_refresh_period_;
 	pthread_mutex_t mutex;
-
-	unisim::kernel::variable::Parameter<bool>         param_std_err;
-	unisim::kernel::variable::Parameter<bool>         param_std_out;
-	unisim::kernel::variable::Parameter<bool>         param_std_err_color;
-	unisim::kernel::variable::Parameter<bool>         param_std_out_color;
-	unisim::kernel::variable::Parameter<bool>         param_file;
-	unisim::kernel::variable::Parameter<std::string>  param_filename;
-	unisim::kernel::variable::Parameter<bool>         param_xml_file;
-	unisim::kernel::variable::Parameter<std::string>  param_xml_filename;
-	unisim::kernel::variable::Parameter<bool>         param_xml_file_gzipped;
-	unisim::kernel::variable::Parameter<bool>         param_http;
-	unisim::kernel::variable::Parameter<unsigned int> param_http_max_log_size;
-	unisim::kernel::variable::Parameter<double>       param_http_min_refresh_period;
-	unisim::kernel::variable::Parameter<double>       param_http_max_refresh_period;
 	
-	/***************************************************************************
-	 * Parameters                                                          END *
-	 ***************************************************************************/
+	/** Server internal closing method
+	* 
+	* Invoked when no client are connected anymore
+	*/
+	void Close();
 };
+
+template <class VISITOR>
+void LoggerServer::ForEachClient(VISITOR& visitor)
+{
+	Clients::iterator client_iter;
+	for(client_iter = clients.begin(); client_iter != clients.end(); client_iter++)
+	{
+		Logger const* client = *client_iter;
+		visitor(client);
+	}
+}
 
 } // end of namespace logger
 } // end of namespace kernel

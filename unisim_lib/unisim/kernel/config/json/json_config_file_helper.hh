@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2018,
+ *  Copyright (c) 2019,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,20 +32,42 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_KERNEL_CONFIG_INI_CONFIG_FILE_HELPER_HH__
-#define __UNISIM_KERNEL_CONFIG_INI_CONFIG_FILE_HELPER_HH__
+#ifndef __UNISIM_KERNEL_CONFIG_JSON_CONFIG_FILE_HELPER_HH__
+#define __UNISIM_KERNEL_CONFIG_JSON_CONFIG_FILE_HELPER_HH__
 
 #include <unisim/kernel/kernel.hh>
+#include <unisim/util/json/json.hh>
+#include <stack>
 
 namespace unisim {
 namespace kernel {
 namespace config {
+namespace json {
 
-class INIConfigFileHelper : public unisim::kernel::ConfigFileHelper
+//////////////////////////////// Indent /////////////////////////////////////
+
+class Indent
 {
 public:
-	INIConfigFileHelper(unisim::kernel::Simulator *simulator);
-	virtual ~INIConfigFileHelper();
+	Indent() : count(0) {}
+	Indent& operator ++ () { ++count; return *this; }
+	Indent& operator -- () { if(count) --count; return *this; }
+private:
+	friend std::ostream& operator << (std::ostream& os, const Indent& indent);
+	unsigned int count;
+};
+
+inline std::ostream& operator << (std::ostream& os, const Indent& indent)
+{
+	for(unsigned int i = 0; i < indent.count; i++) os << '\t';
+	return os;
+}
+
+class JSONConfigFileHelper : public unisim::kernel::ConfigFileHelper
+{
+public:
+	JSONConfigFileHelper(unisim::kernel::Simulator *simulator);
+	virtual ~JSONConfigFileHelper();
 	
 	virtual const char *GetName() const;
 	virtual bool SaveVariables(const char *filename, unisim::kernel::VariableBase::Type type = unisim::kernel::VariableBase::VAR_VOID);
@@ -56,12 +78,14 @@ public:
 private:
 	unisim::kernel::Simulator *simulator;
 	
-	void SaveVariables(std::ostream& os, unisim::kernel::Object *object, unisim::kernel::VariableBase::Type type);
+	void SaveVariables(std::ostream& os, unisim::kernel::Object *object, unisim::kernel::VariableBase::Type type, Indent& indent);
+	void SaveVariable(std::ostream& os, unisim::kernel::VariableBase& variable);
 	void Assign(const std::string& section, const std::string& key, const std::string& value);
 };
 
+} // end of namespace json
 } // end of namespace config
 } // end of namespace kernel
 } // end of namespace unisim
 
-#endif // __UNISIM_KERNEL_CONFIG_INI_CONFIG_FILE_HELPER_HH__
+#endif // __UNISIM_KERNEL_CONFIG_JSON_CONFIG_FILE_HELPER_HH__

@@ -7,6 +7,12 @@ source "$(dirname $0)/dist_common.sh"
 import_genisslib || exit
 
 import unisim/kernel || exit
+import unisim/kernel/config/xml || exit
+import unisim/kernel/config/ini || exit
+import unisim/kernel/config/json || exit
+import unisim/kernel/logger/console || exit
+import unisim/kernel/logger/text_file || exit
+import unisim/kernel/logger/xml_file || exit
 import unisim/util/debug || exit
 import unisim/util/blob || exit
 import unisim/util/loader/elf_loader || exit

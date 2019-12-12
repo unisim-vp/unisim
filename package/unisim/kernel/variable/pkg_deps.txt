@@ -2,6 +2,7 @@ libc/stdint
 libc/stdio
 libc/stdlib
 libc/unistd
+std/cstring
 std/fstream
 std/iomanip
 std/iostream

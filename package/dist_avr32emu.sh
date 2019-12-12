@@ -11,6 +11,14 @@ import unisim/component/tlm2/processor/avr32/avr32uc || exit
 import unisim/component/tlm2/memory/ram || exit
 import unisim/component/tlm2/interconnect/generic_router || exit
 import unisim/kernel || exit
+import unisim/kernel/config/xml || exit
+import unisim/kernel/config/ini || exit
+import unisim/kernel/config/json || exit
+import unisim/kernel/logger/console || exit
+import unisim/kernel/logger/text_file || exit
+import unisim/kernel/logger/http || exit
+import unisim/kernel/logger/xml_file || exit
+import unisim/kernel/logger/netstream || exit
 import unisim/service/debug/debugger || exit
 import unisim/service/debug/gdb_server || exit
 import unisim/service/debug/inline_debugger || exit
@@ -183,7 +191,7 @@ AC_PROG_LN_S
 PKG_PROG_PKG_CONFIG([0.26])
 AC_LANG([C++])
 AM_PROG_CC_C_O
-CPPFLAGS=\"${CPPFLAGS} -D_LARGEFILE64_SOURCE\"
+CPPFLAGS="\${CPPFLAGS} -D_LARGEFILE64_SOURCE"
 case "\${host}" in
 	*mingw*)
 		CPPFLAGS="-U__STRICT_ANSI__ \${CPPFLAGS}"
