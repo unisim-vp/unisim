@@ -94,9 +94,10 @@ struct Processor
     bool phys_read(Processor* p, uint64_t addr, unsigned size, unsigned endianness, uint64_t* value) const
     {
       if (data and access( Read ))
-        return read(addr, size, endianness, value);
+        return  read(addr, size, endianness, value);
       if (not hook) return false;
-      *value = hook(p, 0, addr, size, endianness, 0);
+      if (data) read(addr, size, endianness, value);
+      *value = hook(p, 0, addr, size, endianness, *value);
       return true;
     }
     bool phys_fetch(Processor* p, uint64_t addr, unsigned size, unsigned endianness, uint64_t* value) const

@@ -201,7 +201,7 @@ struct ArmBranch
   void FPTrap( unsigned exc ) { throw Abort(); }
 
   void SetBankedRegister( int, int, U32 const& ) {}
-  U32 GetBankedRegister( int, int ) { return U32(); }
+  U32  GetBankedRegister( int, int ) { return U32(); }
 
   void SetExclusiveMonitors( U32 const&, int ) {}
   bool ExclusiveMonitorsPass( U32 const&, int ) { return true; }
@@ -211,11 +211,11 @@ struct ArmBranch
 
   void WaitForInterrupt() {}
   
-  U32    CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { return U32(); }
-  void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 value ) {}
+  U32  CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { return U32(); }
+  void CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 value ) {}
   char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { return "no"; }
 
-  void     CallSupervisor( uint32_t imm ) {}
+  void CallSupervisor( uint32_t imm ) {}
 
   U32 FPSCR, FPEXC;
   U32 RoundTowardsZeroFPSCR() { return U32(); }

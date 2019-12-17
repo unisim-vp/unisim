@@ -65,11 +65,15 @@ class MemHook:
         
     def action(self, ctx, access, address, size, endianness, value):
         if access == 0:
-            return self.dev.read(ctx, address, size, endianness)
+            res = self.dev.read(ctx, address, size, endianness)
+            if res is None: return value
+            return res
         elif access == 1:
             self.dev.write(ctx, address, size, endianness, value)
         elif access == 2:
-            return self.dev.fetch(ctx, address, size, endianness)
+            res = self.dev.fetch(ctx, address, size, endianness)
+            if res is None: return value
+            return res
         return 0
 
 class CodeHook:
