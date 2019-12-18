@@ -64,11 +64,11 @@ try:
     unipy.EMU_reg_write(ctx, unipy.EMU_VLE_REG_R(4), 0x6789)
     unipy.EMU_reg_write(ctx, unipy.EMU_VLE_REG_LR, exitpoint)
 
-    # tracing all basic blocks with customized callback
-    unipy.EMU_hook_BB(ctx, hook_block)
+    # # tracing all basic blocks with customized callback
+    # unipy.EMU_hook_BB(ctx, hook_block)
 
-    # tracing one instruction at entrypoint with customized callback
-    unipy.EMU_hook_code(ctx, hook_code, begin=entrypoint, end=entrypoint)
+    # # tracing one instruction at entrypoint with customized callback
+    # unipy.EMU_hook_code(ctx, hook_code, begin=entrypoint, end=entrypoint)
 
     # (de)activate disassembly
     unipy.EMU_set_disasm(ctx, True)

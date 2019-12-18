@@ -14,7 +14,7 @@ _so = None
 
 def bind( shared_object ):
     if not shared_object.endswith('.so'):
-        raise exception('bad cannot locate fuzr shared object (either define VLE4FUZR_SO or pass an argument)')
+        raise Exception('bad cannot locate fuzr shared object (either define VLE4FUZR_SO or pass an argument)')
     global _so
     _so = ctypes.cdll.LoadLibrary(shared_object)
     if _so is None:
