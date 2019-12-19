@@ -314,7 +314,7 @@ struct CPU
   /** Set the next Program Counter */
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
   void BranchTo( uint64_t addr, branch_type_t branch_type ) { next_insn_addr = addr; }
-  
+  bool Test( bool cond ) { return cond; }
   void CallSupervisor( uint32_t imm );
   
   //=====================================================================

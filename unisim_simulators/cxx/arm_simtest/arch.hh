@@ -198,7 +198,7 @@ namespace ut
     typedef unisim::util::symbolic::Expr Expr;
     typedef unisim::util::symbolic::ExprNode ExprNode;
     
-    bool Concretize( BOOL const& _cond_expr ) const { return false; }
+    bool Test( BOOL const& _cond_expr ) const { return false; /* TODO WTF ?*/ }
     
     struct Config
     {

@@ -1103,7 +1103,7 @@ clz.execute = {
   
   typedef typename ARCH::U32 U32;
   U32 val = cpu.GetGPR( rm );
-  if (unlikely( cpu.Concretize(val == U32(0)) ))
+  if (unlikely( cpu.Test(val == U32(0)) ))
     val = U32(32);
   else
     val = U32(31) - BitScanReverse( cpu.GetGPR( rm ) );

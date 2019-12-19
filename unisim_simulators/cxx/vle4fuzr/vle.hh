@@ -375,9 +375,9 @@ namespace branch
     {
       BOOL c = BOOL(cond);
       if (c.determined) return c.value;
-      return this->Choose();
+      return this->concretize();
     }
-    bool Choose()
+    bool concretize()
     {
       bool predicate = path->proceed();
       path = path->next( predicate );

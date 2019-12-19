@@ -1006,12 +1006,12 @@ ldm_usr.execute = {
   typedef typename ARCH::U32 U32;
   
   U32 runmode = cpu.CPSR().Get(M);
-  if (unlikely( cpu.Concretize(runmode == U32(cpu.HYPERVISOR_MODE)) ))
+  if (unlikely( cpu.Test(runmode == U32(cpu.HYPERVISOR_MODE)) ))
     {
       cpu.UndefinedInstruction( this );
       return;
     }
-  if (unlikely( cpu.Concretize((runmode == U32(cpu.USER_MODE)) or (runmode == U32(cpu.SYSTEM_MODE))) ))
+  if (unlikely( cpu.Test((runmode == U32(cpu.USER_MODE)) or (runmode == U32(cpu.SYSTEM_MODE))) ))
     {
       cpu.UnpredictableInsnBehaviour();
       return;
@@ -1039,12 +1039,12 @@ ldm_rfe.execute = {
   typedef typename ARCH::U32 U32;
   
   U32 runmode = cpu.CPSR().Get(M);
-  if (unlikely( cpu.Concretize( runmode == U32(ARCH::HYPERVISOR_MODE) ) ))
+  if (unlikely( cpu.Test( runmode == U32(ARCH::HYPERVISOR_MODE) ) ))
     {
       cpu.UndefinedInstruction( this );
       return;
     }
-  if (unlikely( cpu.Concretize((runmode == U32(ARCH::USER_MODE)) or (runmode == U32(ARCH::SYSTEM_MODE))) ))
+  if (unlikely( cpu.Test((runmode == U32(ARCH::USER_MODE)) or (runmode == U32(ARCH::SYSTEM_MODE))) ))
     {
       cpu.UnpredictableInsnBehaviour();
       return;
@@ -1062,7 +1062,7 @@ ldm_rfe.execute = {
   
   CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   // Cannot return to Hyp mode and ThumbEE state
-  if (unlikely( cpu.Concretize((cpu.CPSR().Get(M) == U32(cpu.HYPERVISOR_MODE)) and
+  if (unlikely( cpu.Test((cpu.CPSR().Get(M) == U32(cpu.HYPERVISOR_MODE)) and
                                (cpu.CPSR().Get(J) == U32(1)) and (cpu.CPSR().Get(T) == U32(1))) ))
     cpu.UnpredictableInsnBehaviour();
   
@@ -1091,12 +1091,12 @@ stm_usr.execute = {
   typedef typename ARCH::U32 U32;
   
   U32 runmode = cpu.CPSR().Get(M);
-  if (unlikely( cpu.Concretize(runmode == U32(cpu.HYPERVISOR_MODE)) ))
+  if (unlikely( cpu.Test(runmode == U32(cpu.HYPERVISOR_MODE)) ))
     {
       cpu.UndefinedInstruction( this );
       return;
     }
-  if (unlikely( cpu.Concretize((runmode == U32(cpu.USER_MODE)) or (runmode == U32(cpu.SYSTEM_MODE))) ))
+  if (unlikely( cpu.Test((runmode == U32(cpu.USER_MODE)) or (runmode == U32(cpu.SYSTEM_MODE))) ))
     {
       cpu.UnpredictableInsnBehaviour();
       return;

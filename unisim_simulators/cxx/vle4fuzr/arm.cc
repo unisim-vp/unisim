@@ -150,18 +150,17 @@ struct ArmBranch
 
   struct ITCond {};
   ITCond itcond() const { return ITCond(); }
-  bool itblock() { return Choose(); }
+  bool itblock() { return concretize(); }
   void ITSetState(uint8_t, uint8_t) {}
 
-  static bool Concretize( bool c ) { return c; }
   template <typename T>
-  bool Concretize( x::XValue<T> const& cond )
+  bool Test( x::XValue<T> const& cond )
   {
     BOOL c = BOOL(cond);
     if (c.determined) return c.value;
-    return this->Choose();
+    return this->concretize();
   }
-  bool Choose()
+  bool concretize()
   {
     bool predicate = path->proceed();
     path = path->next( predicate );
@@ -248,7 +247,7 @@ struct ArmBranch
   };
 };
 
-inline bool CheckCondition( ArmBranch& ab, ArmBranch::ITCond const& ) { return ab.Choose(); }
+inline bool CheckCondition( ArmBranch& ab, ArmBranch::ITCond const& ) { return ab.concretize(); }
 
 template <class T> struct AMO {};
 

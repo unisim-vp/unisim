@@ -157,11 +157,11 @@ namespace ut
     std::string reason;
   };
 
-  struct ActionNode : public unisim::util::symbolic::Choice<ActionNode>
+  struct ActionNode : public unisim::util::symbolic::Conditional<ActionNode>
   {
     typedef unisim::util::symbolic::Expr Expr;
 
-    ActionNode() : Choice<ActionNode>(), updates() {}
+    ActionNode() : Conditional<ActionNode>(), updates() {}
 
     friend std::ostream& operator << (std::ostream& sink, ActionNode const& an)
     {
