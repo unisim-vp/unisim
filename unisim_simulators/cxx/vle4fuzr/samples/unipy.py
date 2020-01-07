@@ -39,6 +39,8 @@ def bind( shared_object ):
     _setup_prototype(_so, "emu_mem_chhook", emuerr, emu_engine, ctypes.c_uint64, ctypes.c_void_p)
     _setup_prototype(_so, "emu_set_disasm", emuerr, emu_engine, ctypes.c_int)
     _setup_prototype(_so, "emu_hook_add", emuerr, emu_engine, ctypes.c_int, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_uint64)
+    _setup_prototype(_so, "emu_page_info", emuerr, emu_engine, ctypes.c_uint64, ctypes.c_void_p )
+    _setup_prototype(_so, "emu_pages_info", emuerr, emu_engine, ctypes.c_void_p )
 
 
 EMU_ERR_OK = 0
@@ -54,14 +56,12 @@ def _EmuCheck(status):
     if status != EMU_ERR_OK:
         raise EmuError(status)
 
-EMU_HOOK_POOL = set()
+EMU_HOOK_POOL = {}
 
 class MemHook:
     CBTYPE = ctypes.CFUNCTYPE(ctypes.c_uint64, emu_engine, ctypes.c_uint, ctypes.c_uint64, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint64)
     def __init__(self, dev):
         self.dev, self.callback = dev, ctypes.cast(self.CBTYPE(self.action), self.CBTYPE)
-        global EMU_HOOK_POOL
-        EMU_HOOK_POOL.add(self)
         
     def action(self, ctx, access, address, size, endianness, value):
         if access == 0:
@@ -76,6 +76,14 @@ class MemHook:
             return res
         return 0
 
+def _get_mem_hook(dev):
+    global EMU_HOOK_POOL
+    hook = EMU_HOOK_POOL.get(dev)
+    if hook is None:
+        hook = MemHook(dev)
+        EMU_HOOK_POOL[dev] = hook
+    return hook.callback
+    
 class CodeHook:
     CBTYPE = ctypes.CFUNCTYPE(None, emu_engine, ctypes.c_uint64, ctypes.c_uint)
 
@@ -86,6 +94,14 @@ class CodeHook:
 
     def action(self, ctx, address, size):
         self.cb( ctx, address, size, **self.cbargs )
+
+def _get_code_hook(cb, cbargs):
+    global EMU_HOOK_POOL
+    hook = EMU_HOOK_POOL.get( (cb, cbargs) )
+    if hook is None:
+        hook = CodeHook(cb, cbargs)
+        EMU_HOOK_POOL[(cb, cbargs)] = hook
+    return hook.callback
     
 def EMU_close(ctx):
     # closes an EMU_CTX
@@ -121,7 +137,7 @@ def EMU_mem_init(ctx, address, size, **opts ):
     if hook is None:
         hook = ctypes.cast(None, MemHook.CBTYPE)
     else:
-        hook = MemHook(hook).callback
+        hook = _get_mem_hook(hook)
     status = _so.emu_mem_map(ctx, address, size, perms, hook)
     _EmuCheck(status)
 
@@ -146,7 +162,7 @@ def EMU_mem_prot(ctx, addr, new_prot):
 
 def EMU_mem_hook(ctx, addr, new_hook):
     # change page hook
-    status = _so.emu_mem_chhook(ctx, address, MemHook(new_hook).callback)
+    status = _so.emu_mem_chhook(ctx, address, _get_mem_hook(new_hook))
     if status != EMU_ERR_OK:
         raise EmuError(status)  
 
@@ -165,22 +181,34 @@ def EMU_set_disasm(ctx, disasm):
     status = _so.emu_set_disasm(ctx, disasm)
     _EmuCheck(status)
 
-
 EMU_HOOK_INTR = 1
 EMU_HOOK_CODE = 4
 EMU_HOOK_BLOCK = 8
 EMU_HOOK_MEM = 16
 
 def EMU_hook_code(ctx, callback, begin=1, end=0, **cbargs):
-    status = _so.emu_hook_add(ctx, EMU_HOOK_CODE, CodeHook(callback, cbargs).callback, begin, end)
+    status = _so.emu_hook_add(ctx, EMU_HOOK_CODE, _get_code_hook(callback, cbargs), begin, end)
     _EmuCheck(status)
 
 def EMU_hook_BB(ctx, callback, begin=1, end=0, **cbargs):
-    status = _so.emu_hook_add(ctx, EMU_HOOK_BLOCK, CodeHook(callback, cbargs).callback, begin, end)
+    status = _so.emu_hook_add(ctx, EMU_HOOK_BLOCK, _get_code_hook(callback, cbargs), begin, end)
     _EmuCheck(status)
 
 def EMU_hook_excpt(ctx, callback, begin=1, end=0, **cbargs):
-    status = _so.emu_hook_add(ctx, EMU_HOOK_INTR, CodeHook(callback, cbargs).callback, begin, end)
+    status = _so.emu_hook_add(ctx, EMU_HOOK_INTR, _get_code_hook(callback, cbargs), begin, end)
+    _EmuCheck(status)
+
+EMU_PAGE_INFO_CBTYPE = ctypes.CFUNCTYPE(None, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint, ctypes.c_void_p)
+
+def EMU_page_info(ctx, addr, callback):
+    cb = ctypes.cast(EMU_PAGE_INFO_CBTYPE(callback), EMU_PAGE_INFO_CBTYPE)
+    return _so.emu_page_info(ctx, addr, cb) == 0
+
+def EMU_pages_info(ctx, callback):
+    cb = ctypes.cast(EMU_PAGE_INFO_CBTYPE(callback), EMU_PAGE_INFO_CBTYPE)
+    status = _so.emu_pages_info(ctx, cb)
+    _EmuCheck(status)
+    
 
 ######################
 # ARM specific stuff #

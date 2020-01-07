@@ -26,6 +26,7 @@ struct Processor
   struct Page
   {
     typedef uint64_t (*hook_t) (void* uc, unsigned access, uint64_t address, unsigned size, unsigned endianness, uint64_t value);
+    typedef void (*info_t)(uint64_t first, uint64_t last, unsigned perms, Page::hook_t hook);
     
     uint64_t hi() const { return base + size - 1; }
 
@@ -118,6 +119,8 @@ struct Processor
     void dump(std::ostream&) const;
     friend std::ostream& operator << ( std::ostream& sink, Page const& p ) { p.dump(sink); return sink; }
 
+    void info( info_t sink ) const { (*sink)( base, hi(), perms, hook ); }
+    
   public:
     uint64_t  base;
   private:
@@ -131,7 +134,7 @@ struct Processor
   Pages pages;
 
   void error_mem_overlap( Page const& a, Page const& b );
-  
+
   Pages::iterator mem_map(uint64_t addr, uint64_t size, unsigned perms, Page::hook_t hook)
   {
     Page page(addr, size, perms, hook);
@@ -150,8 +153,23 @@ struct Processor
     return pages.insert(below,std::move(page));
   }
 
-  
   void error_at( char const* issue, uint64_t addr );
+  
+  int page_info(uint64_t addr, Page::info_t sink)
+  {
+    auto page = pages.lower_bound(addr);
+    if (page == pages.end() or page->hi() < addr)
+      return error_at("no page", addr), -1;
+    page->info(sink);
+    return 0;
+  }
+  
+  int pages_info(Page::info_t sink)
+  {
+    for (Page const& page : pages)
+      page.info(sink);
+    return 0;
+  }
   
   int
   mem_chprot(uint64_t addr, unsigned perms)

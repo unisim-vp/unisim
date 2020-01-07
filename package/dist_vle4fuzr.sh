@@ -101,12 +101,13 @@ INSTALL \
 
 UNISIM_SIMULATOR_SAMPLE_FILES=" \
 samples/gcd_arm.py \
-samples/sample_arm.py \
-samples/guess_vle.py \
-samples/unipy.py \
-samples/gcd_vle.py \
 samples/gcd.c \
+samples/gcd_vle.py \
 samples/guess.c \
+samples/guess_vle.py \
+samples/page_info.py \
+samples/sample_arm.py \
+samples/unipy.py \
 "
 
 UNISIM_SIMULATOR_DATA_FILES="${UNISIM_TOP_DATA_FILES}"

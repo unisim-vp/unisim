@@ -114,6 +114,18 @@ extern "C"
 
     return 0;
   }
+  
+  int emu_page_info(void* uc, uint64_t addr, Processor::Page::info_t page_info)
+  {
+    Processor& proc = *(Processor*)uc;
+    return proc.page_info(addr, page_info);
+  }
+  
+  int emu_pages_info(void* uc, Processor::Page::info_t page_info)
+  {
+    Processor& proc = *(Processor*)uc;
+    return proc.pages_info(page_info);
+  }
 
   int emu_start(void* uc, uint64_t begin, uint64_t until, uint64_t count)
   {
