@@ -62,43 +62,49 @@ extern "C"
   int emu_mem_map(void* uc, uint64_t addr, uint64_t size, unsigned perms, void* hook)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.mem_map(addr, size, perms, (Processor::Page::hook_t)hook) == proc.pages.end();
+    return proc.mem_map(addr, size, perms, (Processor::Page::hook_t)hook) ? 0 : -1;
+  }
+
+  int emu_mem_unmap(void* uc, uint64_t addr)
+  {
+    Processor& proc = *(Processor*)uc;
+    return proc.mem_unmap(addr) ? 0 : -1;
   }
 
   int emu_mem_write(void* uc, uint64_t addr, uint8_t const* bytes, uintptr_t size)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.mem_write(addr,bytes,size);
+    return proc.mem_write(addr,bytes,size) ? 0 : -1;
   }
   
   int emu_mem_read(void* uc, uint64_t addr, uint8_t* bytes, uintptr_t size)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.mem_read(addr,bytes,size);
+    return proc.mem_read(addr,bytes,size) ? 0 : -1;
   }
   
   int emu_mem_chprot(void* uc, uint64_t addr, unsigned new_perms)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.mem_chprot(addr, new_perms);
+    return proc.mem_chprot(addr, new_perms) ? 0 : -1;
   }
   
   int emu_mem_chhook(void* uc, uint64_t addr, void* hook)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.mem_chhook(addr, (Processor::Page::hook_t)hook);
+    return proc.mem_chhook(addr, (Processor::Page::hook_t)hook) ? 0 : -1;
   }
   
   int emu_reg_write(void* uc, char const* id, uintptr_t size, int regid, uint64_t value)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.reg_write(id, size, regid, value);
+    return proc.reg_write(id, size, regid, value) ? 0 : -1;
   }
 
   int emu_reg_read(void* uc, char const* id, uintptr_t size, int regid, uint64_t* value)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.reg_read(id, size, regid, value);
+    return proc.reg_read(id, size, regid, value) ? 0 : -1;
   }
 
   int emu_hook_add(void* uc, int types, void* callback, uint64_t begin, uint64_t end)
@@ -118,13 +124,13 @@ extern "C"
   int emu_page_info(void* uc, uint64_t addr, Processor::Page::info_t page_info)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.page_info(addr, page_info);
+    return proc.page_info(addr, page_info) ? 0 : -1;
   }
   
   int emu_pages_info(void* uc, Processor::Page::info_t page_info)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.pages_info(page_info);
+    return proc.pages_info(page_info) ? 0 : -1;
   }
 
   int emu_start(void* uc, uint64_t begin, uint64_t until, uint64_t count)

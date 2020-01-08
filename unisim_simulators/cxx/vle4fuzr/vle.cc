@@ -56,7 +56,7 @@ namespace concrete {
     return 0;
   }
 
-  int
+  bool
   Processor::run( uint64_t begin, uint64_t until, uint64_t count )
   {
     this->Branch(begin);
@@ -125,7 +125,7 @@ namespace concrete {
       }
     while (not terminated and this->nia != until and --count != 0);
     
-    return 0;
+    return true;
   }
   
 } // end of namespace concrete

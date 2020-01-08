@@ -342,7 +342,7 @@ ArmProcessor::Step( Decoder& decoder )
   this->bblock = (op->branch.target != op->branch.BNone);
 }
 
-int
+bool
 ArmProcessor::run( uint64_t begin, uint64_t until, uint64_t count )
 {
   this->Branch(begin, B_DBG);
@@ -361,7 +361,7 @@ ArmProcessor::run( uint64_t begin, uint64_t until, uint64_t count )
     }
   while (not terminated and next_insn_addr != until and --count != 0);
     
-  return 0;
+  return true;
 }
 
 uint32_t

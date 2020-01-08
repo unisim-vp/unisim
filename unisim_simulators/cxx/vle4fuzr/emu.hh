@@ -28,85 +28,82 @@ struct Processor
     typedef uint64_t (*hook_t) (void* uc, unsigned access, uint64_t address, unsigned size, unsigned endianness, uint64_t value);
     typedef void (*info_t)(uint64_t first, uint64_t last, unsigned perms, Page::hook_t hook);
     
-    uint64_t hi() const { return base + size - 1; }
+    uint64_t hi() const { return last; }
 
-    bool operator < (Page const& p) const { return hi() < p.base; }
-    bool operator > (Page const& p) const { return p.hi() < base; }
+    bool operator < (Page const& p) const { return last < p.base; }
+    bool operator > (Page const& p) const { return p.last < base; }
 
     struct Above
     {
       using is_transparent = void;
       bool operator() (Page const& a, Page const& b) const { return a > b; }
-      bool operator() (Page const& a, unsigned b) const { return b < a.base; }
+      bool operator() (Page const& a, unsigned b) const { return a.base > b; }
     };
     Page( Page&& page )
-      : base(page.base), size(page.size), data(page.data), hook(page.hook), perms(page.perms)
+      : base(page.base), last(page.last), data(page.data), hook(page.hook), perms(page.perms)
     {
       page.data = 0;
     }
     Page( Page const& ) = delete;
-    Page( uint64_t addr, uint64_t size, unsigned _perms, hook_t _hook )
-      : base(addr), size(size), data(_perms ? new uint8_t[size] : 0), hook(_hook), perms(_perms)
+    Page( uint64_t addr, uint64_t _size, unsigned _perms, hook_t _hook )
+      : base(addr), last(addr+_size-1), data(_perms ? new uint8_t[_size] : 0), hook(_hook), perms(_perms)
     {}
     ~Page()
     {
       delete [] data;
     }
-    uint64_t len() const { return size; }
-    uint64_t write(uint64_t addr, uint8_t const* bytes, uint64_t size) const
+    uint64_t write(uint64_t addr, uint8_t const* bytes, uint64_t count) const
     {
-      addr -= base;
-      uint64_t count = std::min(len()-addr,size);
-      std::copy( &bytes[0], &bytes[count], &data[addr] );
-      return count;
+      uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
+      std::copy( &bytes[0], &bytes[cnt], &data[start] );
+      return cnt;
     }
-    bool write(uint64_t addr, unsigned size, unsigned endianness, uint64_t value) const
+    bool write(uint64_t addr, unsigned count, unsigned endianness, uint64_t value) const
     {
       uint8_t bytes[8];
-      for (unsigned idx = 0; idx < size; ++idx)
+      for (unsigned idx = 0; idx < count; ++idx)
         { bytes[idx^endianness] = value; value >>= 8; }
-      return write( addr, &bytes[0], size ) == size;
+      return write( addr, &bytes[0], count ) == count;
     }
-    bool phys_write(Processor* p, uint64_t addr, unsigned size, unsigned endianness, uint64_t value) const
+    bool phys_write(Processor* p, uint64_t addr, unsigned count, unsigned endianness, uint64_t value) const
     {
       if (data and access( Write ))
-        return write(addr, size, endianness, value);
+        return write(addr, count, endianness, value);
       if (not hook) return false;
-      hook(p, 1, addr, size, endianness, value);
+      hook(p, 1, addr, count, endianness, value);
       return true;
     }
-    uint64_t read(uint64_t addr, uint8_t* bytes, uint64_t size) const
+    uint64_t read(uint64_t addr, uint8_t* bytes, uint64_t count) const
     {
-      addr -= base;
-      uint64_t count = std::min(len()-addr,size);
-      std::copy( &data[addr], &data[addr+count], &bytes[0] );
-      return count;
+      uint64_t cnt = std::min(count,last-addr+1), start = addr-base;
+      std::copy( &data[start], &data[start+cnt], &bytes[0] );
+      return cnt;
     }
-    bool read(uint64_t addr, unsigned size, unsigned endianness, uint64_t* value) const
+    bool read(uint64_t addr, unsigned count, unsigned endianness, uint64_t* value) const
     {
       uint8_t bytes[8];
-      if (read(addr, &bytes[0], size) != size) return false;
+      if (read(addr, &bytes[0], count) != count) return false;
       uint64_t res = 0;
-      for (unsigned idx = size; idx-- != 0;)
+      for (unsigned idx = count; idx-- != 0;)
         { res <<= 8; res |= bytes[idx^endianness]; }
       *value = res;
       return true;
     }
-    bool phys_read(Processor* p, uint64_t addr, unsigned size, unsigned endianness, uint64_t* value) const
+    bool phys_read(Processor* p, uint64_t addr, unsigned count, unsigned endianness, uint64_t* value) const
     {
       if (data and access( Read ))
-        return  read(addr, size, endianness, value);
+        return  read(addr, count, endianness, value);
       if (not hook) return false;
-      if (data) read(addr, size, endianness, value);
-      *value = hook(p, 0, addr, size, endianness, *value);
+      if (data) read(addr, count, endianness, value);
+      *value = hook(p, 0, addr, count, endianness, *value);
       return true;
     }
-    bool phys_fetch(Processor* p, uint64_t addr, unsigned size, unsigned endianness, uint64_t* value) const
+    bool phys_fetch(Processor* p, uint64_t addr, unsigned count, unsigned endianness, uint64_t* value) const
     {
       if (data and access( Execute ))
-        return read(addr, size, endianness, value);
+        return read(addr, count, endianness, value);
       if (not hook) return false;
-      *value = hook(p, 2, addr, size, endianness, 0);
+      *value = hook(p, 2, addr, count, endianness, 0);
       return true;
     }
     
@@ -119,12 +116,12 @@ struct Processor
     void dump(std::ostream&) const;
     friend std::ostream& operator << ( std::ostream& sink, Page const& p ) { p.dump(sink); return sink; }
 
-    void info( info_t sink ) const { (*sink)( base, hi(), perms, hook ); }
+    void info( info_t sink ) const { (*sink)( base, last, perms, hook ); }
     
   public:
     uint64_t  base;
+    uint64_t  last;
   private:
-    uint64_t  size;
     uint8_t*  data;
     hook_t    hook;
     unsigned  perms;
@@ -135,106 +132,116 @@ struct Processor
 
   void error_mem_overlap( Page const& a, Page const& b );
 
-  Pages::iterator mem_map(uint64_t addr, uint64_t size, unsigned perms, Page::hook_t hook)
+  bool mem_map(uint64_t addr, uint64_t size, unsigned perms, Page::hook_t hook)
   {
     Page page(addr, size, perms, hook);
     auto below = pages.lower_bound(page);
     if (below != pages.end() and not (*below < page))
       {
         error_mem_overlap(page, *below);
-        return pages.end();
+        return false;
       }
     if (pages.size() and below != pages.begin() and not (page < *std::prev(below)))
       {
         error_mem_overlap(page, *std::prev(below));
-        return pages.end();
+        return false;
       }
     
-    return pages.insert(below,std::move(page));
+    pages.insert(below,std::move(page));
+    return true;
+  }
+
+  bool mem_unmap(uint64_t addr)
+  {
+    auto page = pages.lower_bound(addr);
+    if (page == pages.end() or page->last < addr)
+      return error_at("no page", addr), false;
+    pages.erase(page);
+    return true;
   }
 
   void error_at( char const* issue, uint64_t addr );
   
-  int page_info(uint64_t addr, Page::info_t sink)
+  bool page_info(uint64_t addr, Page::info_t sink)
   {
     auto page = pages.lower_bound(addr);
-    if (page == pages.end() or page->hi() < addr)
-      return error_at("no page", addr), -1;
+    if (page == pages.end() or page->last < addr)
+      return error_at("no page", addr), false;
     page->info(sink);
-    return 0;
+    return true;
   }
   
-  int pages_info(Page::info_t sink)
+  bool pages_info(Page::info_t sink)
   {
     for (Page const& page : pages)
       page.info(sink);
-    return 0;
+    return true;
   }
   
-  int
+  bool
   mem_chprot(uint64_t addr, unsigned perms)
   {
     auto page = pages.lower_bound(addr);
-    if (page == pages.end() or page->hi() < addr)
-      return error_at("no page", addr), -1;
+    if (page == pages.end() or page->last < addr)
+      return error_at("no page", addr), false;
     page->chperms( perms );
-    return 0;
+    return true;
   }
 
-  int
+  bool
   mem_chhook(uint64_t addr, Page::hook_t hook)
   {
     auto page = pages.lower_bound(addr);
-    if (page == pages.end() or page->hi() < addr)
-      return error_at("no page", addr), -1;
+    if (page == pages.end() or page->last < addr)
+      return error_at("no page", addr), false;
     page->chhook( hook );
-    return 0;
+    return true;
   }
 
-  int
+  bool
   mem_write(uint64_t addr, uint8_t const* bytes, uint64_t size)
   {
     auto pi = pages.lower_bound(addr);
-    if (pi == pages.end()) return 1;
+    if (pi == pages.end()) return false;
     for (;;)
       {
         if (not pi->has_data())
-          return error_at("cannot write hooked page", addr), -1;
+          return error_at("cannot write hooked page", addr), false;
         uintptr_t count = pi->write(addr, bytes, size);
-        if (count >= size)       return 0;
+        if (count >= size)       return true;
         addr += count;
         bytes += count;
         size -= count;
         if (pi == pages.begin()) break;
         --pi;
       }
-    return 1;
+    return false;
   }
 
-  int
+  bool
   mem_read(uint64_t addr, uint8_t* bytes, uint64_t size)
   {
     auto pi = pages.lower_bound(addr);
-    if (pi == pages.end()) return 1;
+    if (pi == pages.end()) return false;
     for (;;)
       {
         if (not pi->has_data())
-          return error_at("cannot read hooked page", addr), -1;
+          return error_at("cannot read hooked page", addr), false;
         uintptr_t count = pi->read(addr, bytes, size);
-        if (count >= size)       return 0;
+        if (count >= size)       return true;
         addr += count;
         bytes += count;
         size -= count;
         if (pi == pages.begin()) break;
         --pi;
       }
-    return 1;
+    return false;
   }
 
   void PhysicalWriteMemory( uint64_t addr, unsigned size, unsigned endianness, uint64_t value )
   {
     auto pi = pages.lower_bound(addr);
-    if (pi == pages.end() or pi->hi() < addr)
+    if (pi == pages.end() or pi->last < addr)
       { error_at("write to nonexistent page", addr); return abort(); }
     if (not pi->phys_write(this, addr, size, endianness, value))
       { error_at("cannot write", addr); return abort(); }
@@ -243,7 +250,7 @@ struct Processor
   void PhysicalReadMemory( uint64_t addr, unsigned size, unsigned endianness, uint64_t* value )
   {
     auto pi = pages.lower_bound(addr);
-    if (pi == pages.end() or pi->hi() < addr)
+    if (pi == pages.end() or pi->last < addr)
       { error_at("read to nonexistent page", addr); return abort(); }
     if (not pi->phys_read(this, addr, size, endianness, value))
       { error_at("cannot read", addr); return abort(); }
@@ -251,7 +258,7 @@ struct Processor
   void PhysicalFetchMemory( uint64_t addr, unsigned size, unsigned endianness, uint64_t* value )
   {
     auto pi = pages.lower_bound(addr);
-    if (pi == pages.end() or pi->hi() < addr)
+    if (pi == pages.end() or pi->last < addr)
       { error_at("fetch to nonexistent page", addr); return abort(); }
     if (not pi->phys_fetch(this, addr, size, endianness, value))
       { error_at("cannot fetch", addr); return abort(); }
@@ -265,22 +272,22 @@ struct Processor
 
   virtual RegView const* get_reg(char const* id, uintptr_t size) = 0;
   
-  int
+  bool
   reg_write(char const* id, uintptr_t size, int regid, uint64_t value)
   {
     RegView const* rv = get_reg(id, size);
-    if (not rv) return -1;
+    if (not rv) return false;
     rv->write(*this, regid, value);
-    return 0;
+    return true;
   }
   
-  int
+  bool
   reg_read(char const* id, uintptr_t size, int regid, uint64_t* value)
   {
     RegView const* rv = get_reg(id, size);
-    if (not rv) return -1;
+    if (not rv) return false;
     rv->read(*this, regid, value);
-    return 0;
+    return true;
   }
   
   struct Hook
@@ -347,7 +354,7 @@ struct Processor
 
   void abort() { terminated = true; }
   void set_disasm(bool _disasm) { disasm = _disasm; }
-  virtual int run( uint64_t begin, uint64_t until, uint64_t count ) = 0;
+  virtual bool run( uint64_t begin, uint64_t until, uint64_t count ) = 0;
 };
 
 struct BranchInfo

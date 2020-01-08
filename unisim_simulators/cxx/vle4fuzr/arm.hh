@@ -93,15 +93,15 @@ struct ArmProcessor
 
   uint32_t ReadInsn( uint32_t address );
   
-  int run( uint64_t begin, uint64_t until, uint64_t count ) override;
+  bool     run( uint64_t begin, uint64_t until, uint64_t count ) override;
 
   template <class Decoder> void Step(Decoder&);
 
-  void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<ArmProcessor>* insn );
-  void UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb::Operation<ArmProcessor>* insn );
-  void DataAbort(uint32_t addr, mem_acc_type_t mat, unisim::component::cxx::processor::arm::DAbort type);
-  void CallSupervisor( uint32_t imm );
-  void BKPT( int ) { throw 0; }
+  void     UndefinedInstruction( unisim::component::cxx::processor::arm::isa::arm32::Operation<ArmProcessor>* insn );
+  void     UndefinedInstruction( unisim::component::cxx::processor::arm::isa::thumb::Operation<ArmProcessor>* insn );
+  void     DataAbort(uint32_t addr, mem_acc_type_t mat, unisim::component::cxx::processor::arm::DAbort type);
+  void     CallSupervisor( uint32_t imm );
+  void     BKPT( int ) { throw 0; }
 };
 
 
