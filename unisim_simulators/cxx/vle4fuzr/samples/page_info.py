@@ -34,7 +34,7 @@ for idx in range(PAGECOUNT):
     base = 0x2000 + 0x1000*random.randrange(PAGECOUNT)
     # Trying to alloc a 4k page
     try:
-        unipy.EMU_mem_init(ctx, base, 0x1000, perms=(base>>0x1000)&7)
+        unipy.EMU_mem_init(ctx, base, 0x1000, perms=(base>>12)&7)
         sys.stdout.write('Allocated 4k @%08x\n' % base)
     except unipy.EmuError as e:
         pass
@@ -42,21 +42,20 @@ for idx in range(PAGECOUNT):
 sys.stdout.write( '### Memory mapping display ###\n' )
 class MemMap:
     def __init__(self):
-        self.count = 0
+        self.bases = []
         
     def page(self, beg, end, perms, hook):
         print_page(beg, end, perms, hook)
-        self.count += 1
-
+        self.bases.append(beg)
 
 mm = MemMap()
 unipy.EMU_pages_info(ctx, mm.page)
 
 sys.stdout.write( '### Other ###\n' )
-sys.stdout.write( 'page count: %r\n' % mm.count )
+sys.stdout.write( 'page count: %r\n' % len(mm.bases) )
+
+sys.stdout.write( '### Cleaning ###\n' )
+for base in mm.bases:
+    unipy.EMU_mem_erase(ctx, base)
 
 unipy.EMU_close(ctx)
-
-
-
-

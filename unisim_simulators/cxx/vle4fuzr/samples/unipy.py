@@ -24,7 +24,7 @@ def bind( shared_object ):
     def _setup_prototype(lib, fname, restype, *argtypes):
         getattr(lib, fname).restype = restype
         getattr(lib, fname).argtypes = argtypes
-    
+
     _setup_prototype(_so, "emu_open_arm", emuerr, ctypes.c_uint, ctypes.POINTER(emu_engine))
     _setup_prototype(_so, "emu_open_vle", emuerr, ctypes.POINTER(emu_engine))
     _setup_prototype(_so, "emu_start", emuerr, emu_engine, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64)
@@ -33,6 +33,7 @@ def bind( shared_object ):
     _setup_prototype(_so, "emu_reg_read", emuerr, emu_engine, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t, ctypes.c_int, ctypes.POINTER(ctypes.c_uint64))
     _setup_prototype(_so, "emu_reg_write", emuerr, emu_engine, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t, ctypes.c_int, ctypes.c_uint64)
     _setup_prototype(_so, "emu_mem_map", emuerr, emu_engine, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint, ctypes.c_void_p)
+    _setup_prototype(_so, "emu_mem_unmap", emuerr, emu_engine, ctypes.c_uint64)
     _setup_prototype(_so, "emu_mem_write", emuerr, emu_engine, ctypes.c_uint64, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t)
     _setup_prototype(_so, "emu_mem_read", emuerr, emu_engine, ctypes.c_uint64, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t)
     _setup_prototype(_so, "emu_mem_chprot", emuerr, emu_engine, ctypes.c_uint64, ctypes.c_uint)
@@ -41,7 +42,6 @@ def bind( shared_object ):
     _setup_prototype(_so, "emu_hook_add", emuerr, emu_engine, ctypes.c_int, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_uint64)
     _setup_prototype(_so, "emu_page_info", emuerr, emu_engine, ctypes.c_uint64, ctypes.c_void_p )
     _setup_prototype(_so, "emu_pages_info", emuerr, emu_engine, ctypes.c_void_p )
-
 
 EMU_ERR_OK = 0
 
@@ -131,7 +131,8 @@ def EMU_reg_write(ctx, reg_id , value):
 #    - a zero perms if a pure python-hooked memory region (no memory will ever be allocated)
 #    - non zero perm memory region may (or not) have a hook
 def EMU_mem_init(ctx, address, size, **opts ):
-    # initialize a page
+    # Create a page of size @size starting at @address with
+    # permissions (defaulting to rwx) and hook (defaulting to None).
     perms = opts.get('perms',7)
     hook = opts.get('hook',None)
     if hook is None:
@@ -141,8 +142,15 @@ def EMU_mem_init(ctx, address, size, **opts ):
     status = _so.emu_mem_map(ctx, address, size, perms, hook)
     _EmuCheck(status)
 
+def EMU_mem_erase(ctx, address):
+    # Erase the page containing the byte at @address
+    status = _so.emu_mem_unmap(ctx, address)
+    _EmuCheck(status)
+
 def EMU_mem_write(ctx, address, data, size=None):
-    # write data to memory
+    # Write @size bytes of @data to memory starting at @address.
+    # Note: data whould be a bytearray or equivalent (b'...'; no
+    # encoded string)
     if size is None:
         size = len(data)
     status = _so.emu_mem_write(ctx, address, data, size)
@@ -208,7 +216,6 @@ def EMU_pages_info(ctx, callback):
     cb = ctypes.cast(EMU_PAGE_INFO_CBTYPE(callback), EMU_PAGE_INFO_CBTYPE)
     status = _so.emu_pages_info(ctx, cb)
     _EmuCheck(status)
-    
 
 ######################
 # ARM specific stuff #
