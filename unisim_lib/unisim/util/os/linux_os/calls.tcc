@@ -1172,8 +1172,8 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
             parameter_type iov_base, iov_len;
             lin.ReadMemory(iovecaddr + 0*parameter_size, iov_base, true );
             lin.ReadMemory(iovecaddr + 1*parameter_size, iov_len, true );
-            iov_base = unisim::util::endian::Target2Host( lin.endianness_, iov_base );
-            iov_len  = unisim::util::endian::Target2Host( lin.endianness_, iov_len );
+//             iov_base = unisim::util::endian::Target2Host( lin.endianness_, iov_base );
+//             iov_len  = unisim::util::endian::Target2Host( lin.endianness_, iov_len );
             assert( iov_len < 0x100000 );
             uint8_t buffer[iov_len];
             lin.ReadMemory(iov_base, &buffer[0], iov_len, true );

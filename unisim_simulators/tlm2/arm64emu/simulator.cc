@@ -237,21 +237,6 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
       SetVariable("debugger.parse-dwarf", true);
     }
 
-  // Build the Linux OS arguments from the command line arguments
-  std::vector<std::string> const& simargs = GetCmdArgs();
-  if (not simargs.empty())
-    {
-      SetVariable("linux-os.binary", simargs[0].c_str());
-      SetVariable("linux-os.argc", simargs.size());
-
-      for (unsigned i = 0; i < simargs.size(); i++)
-        {
-          std::stringstream sstr;
-          sstr << "linux-os.argv[" << i << "]";
-          SetVariable(sstr.str().c_str(), simargs[i].c_str());
-        }
-    }
-  
   unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
 	
   return setup_status;
