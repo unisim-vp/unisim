@@ -105,15 +105,16 @@ class Console:
         self.source = ''
         self.sink = ''
 
-    def read(self, ctx, address, size, endianness):
-        assert size == 4 and address == self.base and endianness == 3
+    def read(self, ctx, access_type, address, size, endianness, valref):
+        assert access_type == 0 and size == 4 and address == self.base and endianness == 3
         if not self.source:
             self.source = sys.stdin.readline()
         c, self.source = self.source[0], self.source[1:]
-        return ord(c)
+        valref.contents.value = ord(c)
     
-    def write(self, ctx, address, size, endianness, value):
-        assert size == 4 and address == self.base and endianness == 3
+    def write(self, ctx, access_type, address, size, endianness, valref):
+        assert access_type == 1 and size == 4 and address == self.base and endianness == 3
+        value = valref.contents.value
         self.sink += chr(value)
         if value != 10 and value != 13:
             return
@@ -121,9 +122,6 @@ class Console:
         self.sink = ''
         sys.stdout.flush()
 
-    def fetch(self, ctx, address, size, endianness):
-        sys.stderr.write( 'fatal error: fetching from console memory.\n' )
-        unipy.EMU_stop(ctx)
 
 
 class RegMon:
@@ -158,7 +156,8 @@ try:
     unipy.EMU_mem_init(ctx, stackbase, stacksize)
 
     # map serial console
-    unipy.EMU_mem_init(ctx, 0xe0000, 4, perms=0, hook=Console(0xe0000))
+    console = Console(0xe0000)
+    unipy.EMU_mem_init(ctx, 0xe0000, 4, perms=0, rhook=console.read, whook=console.write)
 
     # tracing one instruction at entrypoint with customized callback
     # unipy.EMU_hook_code(ctx, RegMon(28).check)

@@ -96,26 +96,6 @@ def EMU_reg_write(ctx, reg_id , value):
 
 MEM_HOOK_CBTYPE = ctypes.CFUNCTYPE(ctypes.c_void_p, emu_engine, ctypes.c_uint, ctypes.c_uint64, ctypes.c_uint, ctypes.c_uint, ctypes.POINTER(ctypes.c_uint64))
 
-# class MemHook:
-#     CBTYPE = 
-#     NULL = ctypes.cast(None, CBTYPE)
-
-#     def __init__(self, dev):
-#         self.dev, self.callback = dev, ctypes.cast(self.CBTYPE(self.action), self.CBTYPE)
-        
-#     def action(self, ctx, access, address, size, endianness, value):
-#         if access == 0:
-#             res = self.dev.read(ctx, address, size, endianness)
-#             if res is None: return value
-#             return res
-#         elif access == 1:
-#             self.dev.write(ctx, address, size, endianness, value)
-#         elif access == 2:
-#             res = self.dev.fetch(ctx, address, size, endianness)
-#             if res is None: return value
-#             return res
-#         return 0
-
 # WARNING:
 #  - a size argument has been added
 #  - now using keyword arguments
