@@ -16,7 +16,7 @@
 #include <cstdint>
 
 Processor::Processor()
-  : pages(), hooks(), disasm(true), bblock(true), terminated(false)
+  : pages(), failpage(0,0,0,0,0,0), hooks(), disasm(true), bblock(true), terminated(false)
 {}
 
 Processor::~Processor()
@@ -37,7 +37,6 @@ Processor::Hook::check_types()
   if (not ( Is<INTR>()           ).check(types)) return false; // uc_cb_hookintr_t
   if (not ( Is<CODE>() |
             Is<BLOCK>()          ).check(types)) return false; // uc_cb_hookcode_t
-  if (not ( Is<MEM>()            ).check(types)) return false; // uc_cb_eventmem_t
   return true;
 }
     
@@ -84,16 +83,24 @@ Processor::syscall_hooks(uint64_t insn_addr, unsigned  intno)
     }
 }
 
-void
-Processor::error_mem_overlap( Page const& a, Page const& b )
+bool
+Processor::mem_chprot(uint64_t addr, unsigned perms)
 {
-  std::cerr << "error: inserted " << a << " overlaps " << b << "\n";
+  auto page = pages.lower_bound(addr);
+  if (page == pages.end() or page->last < addr)
+    return error_at("no", addr), false;
+  page->chperms( perms );
+  return true;
 }
 
-void
-Processor::error_at( char const* issue, uint64_t addr )
+bool
+Processor::mem_chhook(uint64_t addr, unsigned access_type, Page::hook_t hook)
 {
-  std::cerr << "error: " << issue << " page at 0x" << std::hex << addr << ".\n";
+  auto page = pages.lower_bound(addr);
+  if (page == pages.end() or page->last < addr)
+    return error_at("no", addr), false;
+  page->chhook( access_type, hook );
+  return true;
 }
 
 void
@@ -125,3 +132,17 @@ BranchInfo::update( bool branch, bool known, uint64_t naddress )
   else if (target != Direct or address != naddress)
     { throw *this; }
 }
+
+
+void
+Processor::error_mem_overlap( Page const& a, Page const& b )
+{
+  std::cerr << "error: inserted " << a << " overlaps " << b << "\n";
+}
+
+void
+Processor::error_at( char const* issue, uint64_t addr )
+{
+  std::cerr << "error: " << issue << " page at 0x" << std::hex << addr << ".\n";
+}
+

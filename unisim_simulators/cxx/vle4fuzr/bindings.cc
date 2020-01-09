@@ -30,7 +30,7 @@ static unisim::kernel::Simulator simulator(1, (char**)emptyargv);
 
 extern "C"
 {
-  int emu_open_arm(unsigned is_thumb, void** ucengine)
+  int emu_open_arm(void** ucengine, unsigned is_thumb)
   {
     static int instance = 0;
     std::ostringstream name;
@@ -59,10 +59,14 @@ extern "C"
     return proc.set_disasm(disasm), 0;
   }
 
-  int emu_mem_map(void* uc, uint64_t addr, uint64_t size, unsigned perms, void* hook)
+  int emu_mem_map(void* uc, uint64_t addr, uint64_t size, unsigned perms, void* _rhook, void* _whook, void* _xhook)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.mem_map(addr, size, perms, (Processor::Page::hook_t)hook) ? 0 : -1;
+    Processor::Page::hook_t
+      rhook = (Processor::Page::hook_t)_rhook,
+      whook = (Processor::Page::hook_t)_whook,
+      xhook = (Processor::Page::hook_t)_xhook;
+    return proc.mem_map(addr, size, perms, rhook, whook, xhook) ? 0 : -1;
   }
 
   int emu_mem_unmap(void* uc, uint64_t addr)
@@ -89,10 +93,15 @@ extern "C"
     return proc.mem_chprot(addr, new_perms) ? 0 : -1;
   }
   
-  int emu_mem_chhook(void* uc, uint64_t addr, void* hook)
+  int emu_mem_chhook(void* uc, uint64_t addr, unsigned access_type, void* hook)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.mem_chhook(addr, (Processor::Page::hook_t)hook) ? 0 : -1;
+    if (access_type > 2)
+      {
+        std::cerr << "Illegal access_type " << access_type << ", should be (0:read, 1: write, 2: fetch).\n";
+        return 8 /*EMU_ERR_HOOK*/;
+      }
+    return proc.mem_chhook(addr, access_type, (Processor::Page::hook_t)hook) ? 0 : -1;
   }
   
   int emu_reg_write(void* uc, char const* id, uintptr_t size, int regid, uint64_t value)
@@ -121,10 +130,10 @@ extern "C"
     return 0;
   }
   
-  int emu_page_info(void* uc, uint64_t addr, Processor::Page::info_t page_info)
+  int emu_page_info(void* uc, Processor::Page::info_t page_info, uint64_t addr)
   {
     Processor& proc = *(Processor*)uc;
-    return proc.page_info(addr, page_info) ? 0 : -1;
+    return proc.page_info(page_info, addr) ? 0 : -1;
   }
   
   int emu_pages_info(void* uc, Processor::Page::info_t page_info)
@@ -138,7 +147,7 @@ extern "C"
     Processor& proc = *(Processor*)uc;
     proc.terminated = false;
     proc.bblock = true;
-    return proc.run(begin, until, count);
+    return proc.run(begin, until, count) ? 0 : -1;
   }
 
   int emu_stop(void* uc)

@@ -13,9 +13,10 @@ if len( sys.argv ) > 1:
 else:
     unipy.bind(os.getenv("VLE4FUZR_SO"))
  
-def print_page(beg, end, perms, hook):
-    rwx = ''.join( ' rw x'[perms & bit] for bit in (1,2,4) )
-    sys.stdout.write( '%08x - %08x %s %r\n' % (beg, end, rwx, hook) )
+def print_page(beg, end, perms, hooks):
+    perms_rwx = ''.join( ' rw x'[perms & bit] for bit in (1,2,4) )
+    hooks_rwx = ''.join( ' rw x'[hooks & bit] for bit in (1,2,4) )
+    sys.stdout.write( '%08x - %08x perms(%s), hooks(%s)\n' % (beg, end, perms_rwx, hooks_rwx) )
    
 # Initialize emulator (in ARM mode, though no code will be executed)
 ctx = unipy.EMU_open_arm()
