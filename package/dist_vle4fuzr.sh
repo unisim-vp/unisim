@@ -105,6 +105,7 @@ samples/gcd.c \
 samples/gcd_vle.py \
 samples/guess.c \
 samples/guess_vle.py \
+samples/memhook.py \
 samples/page_info.py \
 samples/sample_arm.py \
 samples/unipy.py \

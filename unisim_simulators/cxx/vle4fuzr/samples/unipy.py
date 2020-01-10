@@ -52,26 +52,37 @@ def _EmuCheck(status):
     if status != EMU_ERR_OK:
         raise EmuError(status)
 
-EMU_HOOK_POOL = {}
+_EMU_HOOK_POOL = {}
 
 def _get_managed_c_hook( signature, function ):
-    global EMU_HOOK_POOL
+    global _EMU_HOOK_POOL
     key = (signature, function)
-    hook = EMU_HOOK_POOL.get(key)
+    hook = _EMU_HOOK_POOL.get(key)
     if hook is None:
         if function is not None:
             function = signature(function)
         hook = ctypes.cast(function, signature)
-        EMU_HOOK_POOL[key] = hook
+        _EMU_HOOK_POOL[key] = hook
     return hook
 
+# Public APIs (EMU_*) to interact with the emulator library
+#
+# In all the following APIs, ctx is the instance of the emulator as
+# returned by EMU_open_${ARCH} (See architecture specific emulator
+# constructor at the end of the file).
+#
+# Public function starts with EMU_, and everything (function,
+# variables, classes...) not starting with EMU_ is internal and should most
+# probabaly not be used directly.
+
 def EMU_close(ctx):
-    # Close the emulator @ctx
+    # Close the emulator @ctx and release associated resources.
     status = _so.emu_close(ctx)
     _EmuCheck(status)
 
 def EMU_reg_read(ctx, reg_id):
-    # Read a register
+    # Read from the @reg_id register (See architecture specific
+    # EMU_${ARCH}_REG_* for lists of register identifiers).
     reg = ctypes.c_uint64(0)
     rstr, rnum = reg_id
     status = _so.emu_reg_read(ctx, rstr.encode('ascii'), len(rstr), rnum, ctypes.byref(reg))
@@ -79,7 +90,7 @@ def EMU_reg_read(ctx, reg_id):
     return reg.value
 
 def EMU_reg_write(ctx, reg_id , value):
-    # Write a register
+    # Write @value from the @reg_id register
     rstr, rnum = reg_id
     status = _so.emu_reg_write(ctx, rstr.encode('ascii'), len(rstr), rnum, value)
     _EmuCheck(status)
@@ -91,16 +102,11 @@ def EMU_reg_write(ctx, reg_id , value):
 # - @address:     the memory access address
 # - @size:        the memory access size
 # - @endianness:  the memory access endianness as a byte ordering mask
-# - @valref:      the memory access value as a reference (from ctypes module)
+# - @valref:      the memory access value as a reference (from ctypes module, reads/writes through valref.contents.value)
 # A return value of any non-zero number will abort the hooked memory access
 
 MEM_HOOK_CBTYPE = ctypes.CFUNCTYPE(ctypes.c_void_p, emu_engine, ctypes.c_uint, ctypes.c_uint64, ctypes.c_uint, ctypes.c_uint, ctypes.POINTER(ctypes.c_uint64))
 
-# WARNING:
-#  - a size argument has been added
-#  - now using keyword arguments
-#    - perms become a keyword arguments, defaulting to 7 (rwx)
-#    - rhook, whook and xhook are respectively the read, write and fetch hooks (all defaulting to None)
 # INFO:
 #  - permissions: bit flags {1=read, 2=write, 4=execute}
 #  - pages created with permissions 0 have no storage allocated, and won't accept any later permissions modification (EMU_mem_chprot)
@@ -110,23 +116,34 @@ MEM_HOOK_CBTYPE = ctypes.CFUNCTYPE(ctypes.c_void_p, emu_engine, ctypes.c_uint, c
 #  - if a write is allowed and the corresponding hooks exists, it is called before the value is written
 #  - hooks have a value reference arguments to change the destination value (source is not affected).
 
-def EMU_mem_init(ctx, address, size, **opts ):
-    # Create a page of size @size starting at @address with
-    # permissions @perms (defaulting to rwx) and hook (defaulting to None).
+def EMU_mem_init(ctx, address, size, **opts):
+    # Create a page of size @size starting at @address with attributes @opts.
+    # @opts are optional keyword arguments (perms=..., rhook=..., whook=, xhook=) with:
+    #    - permissions 'perms', defaulting to 7 (rwx)
+    #    - read write and fetch hooks 'rhook', 'whook' and 'xhook', all defaulting to None.
+    #      Hooks should comply with the MEM_HOOK_CBTYPE signature
     perms = opts.get('perms',7)
     hooks = (_get_managed_c_hook(MEM_HOOK_CBTYPE, opts.get(atp + 'hook', None)) for atp in 'rwx')
     status = _so.emu_mem_map(ctx, address, size, perms, *hooks)
     _EmuCheck(status)
 
-def EMU_mem_prot(ctx, address, new_prot):
-    # Change permissions of page at @addr to @ne_prot
-    status = _so.emu_mem_chprot(ctx, address, new_prot)
-    _EmuCheck(status)
+def EMU_mem_update(ctx, address, **opts):
+    # Update attributes @opts of page at @address.  New attributes are
+    # given using the same format as in EMU_mem_init (keyword
+    # arguments).  The only difference is that missing arguments won't
+    # be updated (no default value).  Note: to clear a hook,
+    # explicitely pass None (e.g. rhook=None).
+    perms = opts.get('perms')
+    if perms is not None:
+        status = _so.emu_mem_chprot(ctx, address, new_prot)
+        _EmuCheck(status)
 
-def EMU_mem_hook(ctx, address, new_hook):
-    # change page hook
-    status = _so.emu_mem_chhook(ctx, address, _get_managed_c_hook(MEM_HOOK_CBTYPE, new_hook))
-    _EmuCheck(status)
+    for access_type in range(3):
+        hook = 'rwx'[access_type] + 'hook'
+        if hook not in opts:
+            continue
+        status = _so.emu_mem_chhook(ctx, address, access_type, _get_managed_c_hook(MEM_HOOK_CBTYPE, opts[hook]))
+        _EmuCheck(status)
 
 def EMU_mem_erase(ctx, address):
     # Erase the page containing the byte at @address
@@ -144,7 +161,7 @@ def EMU_mem_write(ctx, address, data, size=None):
     _EmuCheck(status)
 
 def EMU_mem_read(ctx, address, size):
-    # read data from memory
+    # Read @size bytes of data from memory at @address
     data = ctypes.create_string_buffer(size)
     status = _so.emu_mem_read(ctx, address, data, size)
     _EmuCheck(status)
@@ -175,10 +192,6 @@ def EMU_set_disasm(ctx, disasm):
 
 CODE_HOOK_CBTYPE = ctypes.CFUNCTYPE(None, emu_engine, ctypes.c_uint64, ctypes.c_uint)
 
-EMU_HOOK_INTR = 1
-EMU_HOOK_CODE = 4
-EMU_HOOK_BLOCK = 8
-
 class _CodeHook:
     def __init__(self, cb, cbargs):
         self.cb, self.cbargs = cb, cbargs
@@ -189,17 +202,30 @@ class _CodeHook:
 def _get_code_hook(cb, cbargs):
     return _get_managed_c_hook(CODE_HOOK_CBTYPE, _CodeHook(cb, cbargs).action)
 
+_EMU_HOOK_INTR = 1
+_EMU_HOOK_CODE = 4
+_EMU_HOOK_BLOCK = 8
+
+# EMU_hook_*(ctx, callback, begin=1, end=0, **cbargs)
+#
+# Add a hook @callback active whenever current instruction is in the
+# @begin and @end address range.  Additional optional keyword
+# arguments are given back to the hook @callback when called.  Hooks
+# should comply with the MEM_HOOK_CBTYPE signature.
+
 def EMU_hook_code(ctx, callback, begin=1, end=0, **cbargs):
-    status = _so.emu_hook_add(ctx, EMU_HOOK_CODE, _get_code_hook(callback, cbargs), begin, end)
+    # Add a hook @callback before each instruction execution (if conditions are met).
+    status = _so.emu_hook_add(ctx, _EMU_HOOK_CODE, _get_code_hook(callback, cbargs), begin, end)
     _EmuCheck(status)
 
 def EMU_hook_BB(ctx, callback, begin=1, end=0, **cbargs):
-    status = _so.emu_hook_add(ctx, EMU_HOOK_BLOCK, _get_code_hook(callback, cbargs), begin, end)
+    # Add a hook @callback before each basic-block execution (if conditions are met).
+    status = _so.emu_hook_add(ctx, _EMU_HOOK_BLOCK, _get_code_hook(callback, cbargs), begin, end)
     _EmuCheck(status)
 
 def EMU_hook_excpt(ctx, callback, begin=1, end=0, **cbargs):
-    c_callback = _get_managed_c_hook(CodeHook(callback, cbargs).action)
-    status = _so.emu_hook_add(ctx, EMU_HOOK_INTR, _get_code_hook(callback, cbargs), begin, end)
+    # Add a hook @callback before each interrupting instruction (if conditions are met).
+    status = _so.emu_hook_add(ctx, _EMU_HOOK_INTR, _get_code_hook(callback, cbargs), begin, end)
     _EmuCheck(status)
 
 # Hook type for page info hooks: hook( first, last, perms, hooks ):
@@ -213,10 +239,17 @@ def EMU_hook_excpt(ctx, callback, begin=1, end=0, **cbargs):
 EMU_PAGE_INFO_CBTYPE = ctypes.CFUNCTYPE(None, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint, ctypes.c_uint)
 
 def EMU_page_info(ctx, addr, callback):
+    # Call the information @callback function with information from
+    # page at @addr.  Hook should comply with the EMU_PAGE_INFO_CBTYPE
+    # signature.
     cb = ctypes.cast(EMU_PAGE_INFO_CBTYPE(callback), EMU_PAGE_INFO_CBTYPE)
     return _so.emu_page_info(ctx, cb, addr) == 0
 
 def EMU_pages_info(ctx, callback):
+    # Call the information @callback function with information from
+    # each page (scanning the whole memory from higher to lower
+    # addresses).  Hook should comply with the EMU_PAGE_INFO_CBTYPE
+    # signature.
     cb = ctypes.cast(EMU_PAGE_INFO_CBTYPE(callback), EMU_PAGE_INFO_CBTYPE)
     status = _so.emu_pages_info(ctx, cb)
     _EmuCheck(status)
@@ -226,7 +259,8 @@ def EMU_pages_info(ctx, callback):
 ######################
 
 def EMU_open_arm(is_thumb=False):
-    # Create an arm emulator in arm32 mode when @is_thumb is False or in thumb2 mode when @is_thumb is True.
+    # Create an arm emulator in arm32 mode when @is_thumb is False or
+    # in thumb2 mode when @is_thumb is True.
     ctx = emu_engine()
     status = _so.emu_open_arm(ctypes.byref(ctx), int(is_thumb))
     _EmuCheck(status)
