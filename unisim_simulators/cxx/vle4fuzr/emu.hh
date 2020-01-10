@@ -189,6 +189,7 @@ struct Processor
   bool mem_chprot(uint64_t addr, unsigned perms);
 
   bool  mem_chhook(uint64_t addr, unsigned access_type, Page::hook_t hook);
+  bool  mem_exc_chhook(unsigned access_type, Page::hook_t hook);
   
   bool
   mem_write(uint64_t addr, uint8_t const* bytes, uint64_t size)

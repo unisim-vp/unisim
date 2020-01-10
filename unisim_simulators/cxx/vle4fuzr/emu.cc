@@ -93,13 +93,36 @@ Processor::mem_chprot(uint64_t addr, unsigned perms)
   return true;
 }
 
+namespace
+{
+  bool check_access_type(unsigned access_type)
+  {
+    if (access_type < 3)
+      return true;
+    
+    std::cerr << "Illegal access_type " << access_type << ", should be (0:read, 1: write, 2: fetch).\n";
+    return false;
+  }
+}
+
 bool
 Processor::mem_chhook(uint64_t addr, unsigned access_type, Page::hook_t hook)
 {
+  if (not check_access_type(access_type))
+    return false;
   auto page = pages.lower_bound(addr);
   if (page == pages.end() or page->last < addr)
     return error_at("no", addr), false;
   page->chhook( access_type, hook );
+  return true;
+}
+
+bool
+Processor::mem_exc_chhook(unsigned access_type, Page::hook_t hook)
+{
+  if (not check_access_type(access_type))
+    return false;
+  failpage.chhook( access_type, hook );
   return true;
 }
 

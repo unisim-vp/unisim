@@ -21,23 +21,24 @@ def bind( shared_object ):
         raise ImportError("ERROR: fail to load the dynamic library.")
 
     # All functions return an error status as int, we just specify their argument types
-    _so.emu_open_arm   .argtype = (ctypes.POINTER(emu_engine),ctypes.c_uint)
-    _so.emu_open_vle   .argtype = (ctypes.POINTER(emu_engine))
-    _so.emu_start      .argtype = (emu_engine, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64)
-    _so.emu_stop       .argtype = (emu_engine,)
-    _so.emu_close      .argtype = (emu_engine,)
-    _so.emu_reg_read   .argtype = (emu_engine, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t, ctypes.c_int, ctypes.POINTER(ctypes.c_uint64))
-    _so.emu_reg_write  .argtype = (emu_engine, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t, ctypes.c_int, ctypes.c_uint64)
-    _so.emu_mem_map    .argtype = (emu_engine, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p)
-    _so.emu_mem_unmap  .argtype = (emu_engine, ctypes.c_uint64)
-    _so.emu_mem_write  .argtype = (emu_engine, ctypes.c_uint64, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t)
-    _so.emu_mem_read   .argtype = (emu_engine, ctypes.c_uint64, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t)
-    _so.emu_mem_chprot .argtype = (emu_engine, ctypes.c_uint64, ctypes.c_uint)
-    _so.emu_mem_chhook .argtype = (emu_engine, ctypes.c_uint64, ctypes.c_uint, ctypes.c_void_p)
-    _so.emu_set_disasm .argtype = (emu_engine, ctypes.c_int)
-    _so.emu_hook_add   .argtype = (emu_engine, ctypes.c_int, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_uint64)
-    _so.emu_page_info  .argtype = (emu_engine, ctypes.c_void_p, ctypes.c_uint64)
-    _so.emu_pages_info .argtype = (emu_engine, ctypes.c_void_p)
+    _so.emu_open_arm       .argtype = (ctypes.POINTER(emu_engine),ctypes.c_uint)
+    _so.emu_open_vle       .argtype = (ctypes.POINTER(emu_engine))
+    _so.emu_start          .argtype = (emu_engine, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64)
+    _so.emu_stop           .argtype = (emu_engine,)
+    _so.emu_close          .argtype = (emu_engine,)
+    _so.emu_reg_read       .argtype = (emu_engine, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t, ctypes.c_int, ctypes.POINTER(ctypes.c_uint64))
+    _so.emu_reg_write      .argtype = (emu_engine, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t, ctypes.c_int, ctypes.c_uint64)
+    _so.emu_mem_map        .argtype = (emu_engine, ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p)
+    _so.emu_mem_unmap      .argtype = (emu_engine, ctypes.c_uint64)
+    _so.emu_mem_write      .argtype = (emu_engine, ctypes.c_uint64, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t)
+    _so.emu_mem_read       .argtype = (emu_engine, ctypes.c_uint64, ctypes.POINTER(ctypes.c_char), ctypes.c_size_t)
+    _so.emu_mem_chprot     .argtype = (emu_engine, ctypes.c_uint64, ctypes.c_uint)
+    _so.emu_mem_chhook     .argtype = (emu_engine, ctypes.c_uint64, ctypes.c_uint, ctypes.c_void_p)
+    _so.emu_mem_exc_chhook .argtype = (emu_engine, ctypes.c_uint, ctypes.c_void_p)
+    _so.emu_set_disasm     .argtype = (emu_engine, ctypes.c_int)
+    _so.emu_hook_add       .argtype = (emu_engine, ctypes.c_int, ctypes.c_void_p, ctypes.c_uint64, ctypes.c_uint64)
+    _so.emu_page_info      .argtype = (emu_engine, ctypes.c_void_p, ctypes.c_uint64)
+    _so.emu_pages_info     .argtype = (emu_engine, ctypes.c_void_p)
 
 EMU_ERR_OK = 0
 
@@ -135,7 +136,7 @@ def EMU_mem_update(ctx, address, **opts):
     # explicitely pass None (e.g. rhook=None).
     perms = opts.get('perms')
     if perms is not None:
-        status = _so.emu_mem_chprot(ctx, address, new_prot)
+        status = _so.emu_mem_chprot(ctx, address, perms)
         _EmuCheck(status)
 
     for access_type in range(3):
@@ -145,6 +146,19 @@ def EMU_mem_update(ctx, address, **opts):
         status = _so.emu_mem_chhook(ctx, address, access_type, _get_managed_c_hook(MEM_HOOK_CBTYPE, opts[hook]))
         _EmuCheck(status)
 
+def EMU_mem_exceptions(ctx, **opts):
+    # Update global memory exception hooks.  New hooks are given using
+    # the same format as in EMU_mem_update (keyword
+    # arguments). Exception hooks, are called upon unmapped memory
+    # accesses.
+    for access_type in range(3):
+        hook = 'rwx'[access_type] + 'hook'
+        if hook not in opts:
+            continue
+        status = _so.emu_mem_exc_chhook(ctx, access_type, _get_managed_c_hook(MEM_HOOK_CBTYPE, opts[hook]))
+        _EmuCheck(status)
+    
+    
 def EMU_mem_erase(ctx, address):
     # Erase the page containing the byte at @address
     status = _so.emu_mem_unmap(ctx, address)

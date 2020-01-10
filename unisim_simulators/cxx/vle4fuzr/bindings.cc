@@ -96,12 +96,13 @@ extern "C"
   int emu_mem_chhook(void* uc, uint64_t addr, unsigned access_type, void* hook)
   {
     Processor& proc = *(Processor*)uc;
-    if (access_type > 2)
-      {
-        std::cerr << "Illegal access_type " << access_type << ", should be (0:read, 1: write, 2: fetch).\n";
-        return 8 /*EMU_ERR_HOOK*/;
-      }
     return proc.mem_chhook(addr, access_type, (Processor::Page::hook_t)hook) ? 0 : -1;
+  }
+  
+  int emu_mem_exc_chhook(void* uc, unsigned access_type, void* hook)
+  {
+    Processor& proc = *(Processor*)uc;
+    return proc.mem_exc_chhook(access_type, (Processor::Page::hook_t)hook) ? 0 : -1;
   }
   
   int emu_reg_write(void* uc, char const* id, uintptr_t size, int regid, uint64_t value)

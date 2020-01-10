@@ -13,7 +13,7 @@ if len( sys.argv ) > 1:
 else:
     unipy.bind(os.getenv("VLE4FUZR_SO"))
 
-# code to be emulated
+# A simple *memcpy* arm32 code
 ARM_CODE  = b""
 ARM_CODE += b"\x00\x30\xa0\xe3" #    0: mov     r3, #0
 ARM_CODE += b"\x03\xc0\xd1\xe7" #    4: ldrb    ip, [r1, r3]
@@ -47,11 +47,11 @@ unipy.EMU_reg_write(ctx, unipy.EMU_ARM_REG_APSR, 0xFFFFFFFF) #All application fl
 unipy.EMU_set_disasm(ctx, True)
 
 # the hook that will be used to monitor memory transaction
-def catch_mem(ctx,access,address,size,endianness,valref):
+def catch_mem(message,ctx,access,address,size,endianness,valref):
     assert size == 1 and endianness == 0
     op = ['read', 'write', 'fetch']
     op = op[access]
-    sys.stdout.write( '%s @%08x => %02x\n' % (op, address, valref.contents.value) )
+    sys.stdout.write( '%s @%08x => %02x (%s)\n' % (op, address, valref.contents.value, message) )
 
 
 ########################
@@ -65,9 +65,30 @@ sys.stdout.write( 'received: %r\n' % unipy.EMU_mem_read(ctx,dst,size) )
 sys.stdout.write( '\n### 2. Monitor writes ###\n' )
 ########################
 
-unipy.EMU_mem_update(ctx,dst,whook=catch_mem)
+hook = lambda *args: catch_mem("from step #2", *args)
+unipy.EMU_mem_update(ctx,dst,whook=hook)
 unipy.EMU_start(ctx, entrypoint, exitpoint)
 
+########################
+sys.stdout.write( '\n### 3. Monitor reads and forbid writes ###\n' )
+########################
+
+hook = lambda *args: catch_mem("from step #3", *args)
+unipy.EMU_mem_update(ctx,src,rhook=hook)
+# Warning: the write hook installed in #2 must be removed.  If is not
+# removed, it will be used as an exception handler after permission
+# error.
+unipy.EMU_mem_update(ctx,dst,whook=None,perms=0)
+unipy.EMU_start(ctx, entrypoint, exitpoint)
+
+########################
+sys.stdout.write( '\n### 4. Remove the destination page and setup a global write exception hook ###\n' )
+########################
+
+# Note: not removing the read monitor from #3
+unipy.EMU_mem_erase(ctx,dst)
+unipy.EMU_mem_exceptions(ctx,whook=lambda *args: catch_mem("from step #4", *args))
+unipy.EMU_start(ctx, entrypoint, exitpoint)
 
 unipy.EMU_close(ctx)
 
