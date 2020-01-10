@@ -149,12 +149,22 @@ struct Processor
   template <typename RID>
   static Expr newRegWrite( RID id, Expr const& value ) { return new RegWrite<RID>( id, value ); }
   
-  struct PCWrite : public Br
+  struct Goto : public Br
   {
-    PCWrite( Expr const& value, Br::type_t bt ) : Br( value, bt ) {}
-    virtual PCWrite* Mutate() const { return new PCWrite( *this ); }
-    virtual void GetRegName( std::ostream& sink ) const { sink << "pc"; }
-    virtual ScalarType::id_t GetType() const { return ScalarType::VOID; }
+    Goto( Expr const& value ) : Br( value ) {}
+    virtual Goto* Mutate() const override { return new Goto( *this ); }
+    virtual void GetRegName( std::ostream& sink ) const override { sink << "pc"; }
+    virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
+    virtual void annotate(std::ostream& sink) const override { return; }
+  };
+
+  struct Call : public Goto
+  {
+    Call( Expr const& value, uint32_t ra ) : Goto( value ), return_address( ra ) {}
+    virtual Call* Mutate() const override { return new Call( *this ); }
+    virtual void annotate(std::ostream& sink) const override { sink << " // call " << unisim::util::symbolic::binsec::dbx(4,return_address); }
+
+    uint32_t return_address;
   };
 
   struct ITCond {};
@@ -314,7 +324,7 @@ public:
     : path(0)
     , reg_values()
     , next_insn_addr()
-    , branch_type()
+    , branch_type(B_JMP)
     , cpsr( *this, ref_psr )
     , spsr( newRegRead(RegID("spsr"), ScalarType::U32) )
     , sregs()
@@ -339,10 +349,13 @@ public:
       neonregs[reg][0] = new NeonRead( reg );
   }
 
-  bool close( Processor const& ref )
+  bool close( Processor const& ref, uint32_t linear_nia )
   {
     bool complete = path->close();
-    path->add_sink( new PCWrite( next_insn_addr.expr, branch_type ) );
+    if (branch_type == B_CALL)
+      path->add_sink( new Call( next_insn_addr.expr, linear_nia ) );
+    else
+      path->add_sink( new Goto( next_insn_addr.expr ) );
     if (unpredictable)
       {
         path->add_sink( new unisim::util::symbolic::binsec::AssertFalse() );
@@ -456,8 +469,8 @@ public:
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
   void SetNIA( U32 const& nia, branch_type_t bt )
   {
+    branch_type = bt;
     next_insn_addr = nia;
-    branch_type = (bt == B_CALL) ? Br::Call : (bt == B_RET) ? Br::Return : Br::Jump;
   }
 
   Expr& GetForeignRegister( uint8_t foreign_mode, uint32_t idx )
@@ -1027,7 +1040,7 @@ public:
   ActionNode*      path;
   U32              reg_values[16];
   U32              next_insn_addr;
-  Br::type_t       branch_type;
+  branch_type_t    branch_type;
   PSR              cpsr;
   U32              spsr;
   U32              sregs[SRegID::end];
@@ -1240,14 +1253,14 @@ struct Translator
         Processor state( status );
         state.path = coderoot;
         // Fetch
-        uint32_t insn_addr = instruction->GetAddr();
-        state.SetNIA( Processor::U32(insn_addr + instruction.bytecount), Processor::B_JMP );
+        uint32_t insn_addr = instruction->GetAddr(), nia = insn_addr + instruction.bytecount;
+        state.SetNIA( Processor::U32(nia), Processor::B_JMP );
         state.reg_values[15] = Processor::U32(insn_addr + (is_thumb ? 4 : 8) );
         // Execute
         instruction->execute( state );
         if (is_thumb)
           state.ITAdvance();
-        end = state.close( reference );
+        end = state.close( reference, nia );
       }
     coderoot->simplify();
     coderoot->commit_stats();

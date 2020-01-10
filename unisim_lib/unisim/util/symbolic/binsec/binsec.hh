@@ -178,8 +178,8 @@ namespace binsec {
 
   struct Branch : public RegWrite
   {
-    enum type_t { Jump = 0, Call, Return } type;
-    Branch( Expr const& value, type_t bt ) : RegWrite( value ), type(bt) {}
+    Branch( Expr const& value ) : RegWrite( value ) {}
+    virtual void annotate(std::ostream& sink) const = 0;
   };
   
   struct AssertFalse : public ASExprNode

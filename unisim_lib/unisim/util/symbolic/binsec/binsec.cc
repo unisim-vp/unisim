@@ -577,8 +577,7 @@ namespace binsec {
 
       void GenCode( ActionNode const* action_tree, Label const& start, Label const& after )
       {
-        Expr nia;
-        Branch::type_t bt = Branch::Jump;
+        Branch const* nia = 0;
     
         // Using a delayed writing mechanism so that the last code line
         // produced is linked to the next code line given by the upper
@@ -686,9 +685,9 @@ namespace binsec {
                   }
 
                 if (Branch const* branch = dynamic_cast<Branch const*>( rw ))
-                  { nia = value; bt = branch->type; }
+                  { nia = branch; }
                 else
-                  this->add_pending( *itr );
+                  { this->add_pending( *itr ); }
               }
             else
               {
@@ -714,7 +713,7 @@ namespace binsec {
 
             // Preparing room for if then else code
             Label endif( after );
-            if (nia.good() or (after.valid() and (this->has_pending())))
+            if (nia or (after.valid() and (this->has_pending())))
               endif.allocate();
 
             if (not action_tree->nexts[0]) {
@@ -756,7 +755,7 @@ namespace binsec {
             head.write( buffer.str() );
           }
 
-        if (not nia.good())
+        if (not nia)
           return;
 
         Label current( head.current() );
@@ -775,8 +774,9 @@ namespace binsec {
           }
 
         std::ostringstream buffer;
-        buffer << "goto (" << GetCode(nia, this->vars, current) << (nia->AsConstNode() ? ",0" : "") << ")";
-        if (bt == Branch::Call) buffer << " // call";
+        Expr const& target = nia->value;
+        buffer << "goto (" << GetCode(target, this->vars, current) << (target->AsConstNode() ? ",0" : "") << ")";
+        nia->annotate( buffer );
         current.write( buffer.str() );
       }
 
