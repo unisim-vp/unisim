@@ -162,7 +162,7 @@ struct Processor
   {
     Call( Expr const& value, uint32_t ra ) : Goto( value ), return_address( ra ) {}
     virtual Call* Mutate() const override { return new Call( *this ); }
-    virtual void annotate(std::ostream& sink) const override { sink << " // call " << unisim::util::symbolic::binsec::dbx(4,return_address); }
+    virtual void annotate(std::ostream& sink) const override { sink << " // call (" << unisim::util::symbolic::binsec::dbx(4,return_address) << ",0)"; }
 
     uint32_t return_address;
   };
