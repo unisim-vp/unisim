@@ -124,14 +124,16 @@ namespace intel {
     {
       this->ExecuteSystemCall( m_regs[0] );
     }
-    void                        interrupt( uint8_t _exc )
+    void                        interrupt( uint8_t op, uint8_t code )
     {
-      switch (_exc) {
-      case 0x80: {
-        this->ExecuteSystemCall( m_regs[0] );
-      } break;
+      switch (code)
+        {
+        case 0x80: {
+          this->ExecuteSystemCall( m_regs[0] );
+        } break;
+      
       default:
-        std::cerr << "Unhandled interruption (0x" << std::hex << uint32_t( _exc ) << ").\n";
+        std::cerr << "Unhandled interruption (0x" << std::hex << uint32_t( op ) << ", 0x" << uint32_t( code ) << ").\n";
         exit( 0 );
       }
     }

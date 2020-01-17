@@ -452,7 +452,7 @@ struct Interrupt : public Operation<ARCH>
 
   void disasm( std::ostream& sink ) const { sink << "int " << DisasmI( vector_number ); }
 
-  void execute( ARCH& arch ) const { arch.interrupt( vector_number ); }
+  void execute( ARCH& arch ) const { arch.interrupt( 0xcd, vector_number ); }
 };
 
 template <class ARCH>
@@ -461,6 +461,8 @@ struct Interrupt3 : public Operation<ARCH>
   Interrupt3( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
 
   void disasm( std::ostream& sink ) const { sink << "int3"; }
+  
+  void execute( ARCH& arch ) const { arch.interrupt( 0xcc, 0x3 ); }
 };
 
 template <class ARCH>
@@ -469,6 +471,8 @@ struct InterruptOF : public Operation<ARCH>
   InterruptOF( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
 
   void disasm( std::ostream& sink ) const { sink << "into"; }
+  
+  void execute( ARCH& arch ) const { arch.interrupt( 0xce, 0x4 ); }
 };
 
 template <class ARCH> struct DC<ARCH,INTERRUPT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )

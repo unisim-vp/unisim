@@ -628,9 +628,9 @@ struct Arch
     this->ExecuteSystemCall( this->regread( GR(), 0 ) );
   }
 
-  void                        interrupt( uint8_t _exc )
+  void                        interrupt( uint8_t op, uint8_t code )
   {
-    std::cerr << "Unhandled interruption (0x" << std::hex << unsigned( _exc ) << ").\n";
+    std::cerr << "Unhandled interruption (0x" << std::hex << unsigned( op ) << ", 0x" << unsigned( code ) << ").\n";
     exit( 0 );
   }
   

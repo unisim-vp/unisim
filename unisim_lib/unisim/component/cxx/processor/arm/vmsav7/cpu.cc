@@ -1945,6 +1945,34 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         return x;
       } break;
       
+    case CP15ENCODE( 7, 0, 6, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DCIMVAC, Invalidate data* cache line by MVA to PoC"; }
+          void Write( CP15CPU& _cpu, uint32_t value )
+          {
+            /* No cache, basically nothing to do */
+            //_cpu.logger << DebugWarning << "DCIMVAC <- " << std::hex << value << std::dec << EndDebugWarning;
+          }
+        } x;
+        return x;
+      } break;
+
+    case CP15ENCODE( 7, 0, 6, 2 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "DCISW, Invalidate data* cache line by set/way"; }
+          void Write( CP15CPU& _cpu, uint32_t value )
+          {
+            /* No cache, basically nothing to do */
+            //_cpu.logger << DebugWarning << "CDISW <- " << std::hex << value << std::dec << EndDebugWarning;
+          }
+        } x;
+        return x;
+      } break;
+          
     case CP15ENCODE( 7, 0, 10, 1 ):
       {
         static struct : public CP15Reg
