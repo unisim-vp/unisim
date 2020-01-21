@@ -172,6 +172,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 	uint8_t address_size = dw_cu->GetAddressSize();
 	uint8_t offset_size = dw_cu->GetOffsetSize();
 	endian_type file_endianness = dw_cu->GetHandler()->GetFileEndianness();
+	DWARF_Version dw_ver = dw_cu->GetDWARFVersion();
 	uint64_t size = 0;
 	int64_t sz;
 	DWARF_LEB128 dw_abbrev_code;
@@ -407,31 +408,38 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					
 					DWARF_AttributeValue<MEMORY_ADDR> *dw_value;
 					
-					switch(dw_at)
+					if(dw_ver < DW_VER4)
 					{
-						case DW_AT_stmt_list:
-							dw_value = new DWARF_LinePtr<MEMORY_ADDR>((uint64_t) value);
-							break;
-						case DW_AT_ranges:
-							dw_value = new DWARF_RangeListPtr<MEMORY_ADDR>(dw_cu, (uint64_t) value);
-							break;
-						case DW_AT_macro_info:
-							dw_value = new DWARF_MacPtr<MEMORY_ADDR>((uint64_t) value);
-							break;
-						case DW_AT_location:
-						case DW_AT_string_length:
-						case DW_AT_return_addr:
-						case DW_AT_data_member_location:
-						case DW_AT_frame_base:
-						case DW_AT_segment:
-						case DW_AT_static_link:
-						case DW_AT_use_location:
-						case DW_AT_vtable_elem_location:
-							dw_value = new DWARF_LocListPtr<MEMORY_ADDR>(dw_cu, (uint64_t) value);
-							break;
-						default:
-							dw_value = new DWARF_UnsignedConstant<MEMORY_ADDR>((uint64_t) value);
-							break;
+						switch(dw_at)
+						{
+							case DW_AT_stmt_list:
+								dw_value = new DWARF_LinePtr<MEMORY_ADDR>((uint64_t) value);
+								break;
+							case DW_AT_ranges:
+								dw_value = new DWARF_RangeListPtr<MEMORY_ADDR>(dw_cu, (uint64_t) value);
+								break;
+							case DW_AT_macro_info:
+								dw_value = new DWARF_MacPtr<MEMORY_ADDR>((uint64_t) value);
+								break;
+							case DW_AT_location:
+							case DW_AT_string_length:
+							case DW_AT_return_addr:
+							case DW_AT_data_member_location:
+							case DW_AT_frame_base:
+							case DW_AT_segment:
+							case DW_AT_static_link:
+							case DW_AT_use_location:
+							case DW_AT_vtable_elem_location:
+								dw_value = new DWARF_LocListPtr<MEMORY_ADDR>(dw_cu, (uint64_t) value);
+								break;
+							default:
+								dw_value = new DWARF_UnsignedConstant<MEMORY_ADDR>((uint64_t) value);
+								break;
+						}
+					}
+					else
+					{
+						dw_value = new DWARF_UnsignedConstant<MEMORY_ADDR>((uint64_t) value);
 					}
 					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_value);
 				}
@@ -448,31 +456,38 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 
 					DWARF_AttributeValue<MEMORY_ADDR> *dw_value;
 					
-					switch(dw_at)
+					if(dw_ver < DW_VER4)
 					{
-						case DW_AT_stmt_list:
-							dw_value = new DWARF_LinePtr<MEMORY_ADDR>((uint64_t) value);
-							break;
-						case DW_AT_ranges:
-							dw_value = new DWARF_RangeListPtr<MEMORY_ADDR>(dw_cu, (uint64_t) value);
-							break;
-						case DW_AT_macro_info:
-							dw_value = new DWARF_MacPtr<MEMORY_ADDR>((uint64_t) value);
-							break;
-						case DW_AT_location:
-						case DW_AT_string_length:
-						case DW_AT_return_addr:
-						case DW_AT_data_member_location:
-						case DW_AT_frame_base:
-						case DW_AT_segment:
-						case DW_AT_static_link:
-						case DW_AT_use_location:
-						case DW_AT_vtable_elem_location:
-							dw_value = new DWARF_LocListPtr<MEMORY_ADDR>(dw_cu, (uint64_t) value);
-							break;
-						default:
-							dw_value = new DWARF_UnsignedConstant<MEMORY_ADDR>((uint64_t) value);
-							break;
+						switch(dw_at)
+						{
+							case DW_AT_stmt_list:
+								dw_value = new DWARF_LinePtr<MEMORY_ADDR>((uint64_t) value);
+								break;
+							case DW_AT_ranges:
+								dw_value = new DWARF_RangeListPtr<MEMORY_ADDR>(dw_cu, (uint64_t) value);
+								break;
+							case DW_AT_macro_info:
+								dw_value = new DWARF_MacPtr<MEMORY_ADDR>((uint64_t) value);
+								break;
+							case DW_AT_location:
+							case DW_AT_string_length:
+							case DW_AT_return_addr:
+							case DW_AT_data_member_location:
+							case DW_AT_frame_base:
+							case DW_AT_segment:
+							case DW_AT_static_link:
+							case DW_AT_use_location:
+							case DW_AT_vtable_elem_location:
+								dw_value = new DWARF_LocListPtr<MEMORY_ADDR>(dw_cu, (uint64_t) value);
+								break;
+							default:
+								dw_value = new DWARF_UnsignedConstant<MEMORY_ADDR>((uint64_t) value);
+								break;
+						}
+					}
+					else
+					{
+						dw_value = new DWARF_UnsignedConstant<MEMORY_ADDR>((uint64_t) value);
 					}
 					dw_attribute = new DWARF_Attribute<MEMORY_ADDR>(this, dw_abbrev_attribute, dw_value);
 				}
