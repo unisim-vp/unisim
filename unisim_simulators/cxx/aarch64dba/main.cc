@@ -77,19 +77,24 @@ struct Processor
   static RegWrite<RID>* newRegWrite( RID id, Expr const& value )
   { return new RegWrite<RID>( id, value ); }
   
-  struct PCWrite : public unisim::util::symbolic::binsec::Branch
+  struct Goto : public unisim::util::symbolic::binsec::Branch
   {
-    PCWrite( Expr const& value, unisim::util::symbolic::binsec::Branch::type_t bt ) : Branch( value, bt ) {}
-    virtual PCWrite* Mutate() const override { return new PCWrite(*this); }
-    virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
+    Goto( Expr const& value ) : unisim::util::symbolic::binsec::Branch( value ) {}
+    virtual Goto* Mutate() const override { return new Goto( *this ); }
     virtual void GetRegName( std::ostream& sink ) const override { sink << "pc"; }
-    virtual Expr Simplify() const override
-    {
-      Expr nvalue( ASExprNode::Simplify(value) );
-      return nvalue != value ? new PCWrite( nvalue, type ) : this;
-    }
+    virtual ScalarType::id_t GetType() const override { return ScalarType::VOID; }
+    virtual void annotate(std::ostream& sink) const override { return; }
   };
-  
+
+  struct Call : public Goto
+  {
+    Call( Expr const& value, uint32_t ra ) : Goto( value ), return_address( ra ) {}
+    virtual Call* Mutate() const override { return new Call( *this ); }
+    virtual void annotate(std::ostream& sink) const override { sink << " // call (" << unisim::util::symbolic::binsec::dbx(4,return_address) << ",0)"; }
+
+    uint32_t return_address;
+  };
+
   //   =====================================================================
   //   =                      Construction/Destruction                     =
   //   =====================================================================
@@ -106,7 +111,7 @@ struct Processor
     , flags()
     , current_instruction_address(insn_addr)
     , next_instruction_address(insn_addr + U64(4))
-    , branch_type(Branch::Jump)
+    , branch_type(B_JMP)
     , stores()
     , unpredictable( false )
   {
@@ -117,10 +122,13 @@ struct Processor
   }
   
   bool
-  close( Processor const& ref )
+  close( Processor const& ref, uint64_t linear_nia )
   {
     bool complete = path->close();
-    path->sinks.insert( Expr( new PCWrite( next_instruction_address.expr, branch_type ) ) );
+    if (branch_type == B_CALL)
+      path->sinks.insert( Expr( new Call( next_instruction_address.expr, linear_nia ) ) );
+    else
+      path->sinks.insert( Expr( new Goto( next_instruction_address.expr ) ) );
     if (unpredictable)
       {
         path->sinks.insert( Expr( new unisim::util::symbolic::binsec::AssertFalse() ) );
@@ -264,7 +272,7 @@ struct Processor
   void BranchTo(U64 const& npc, branch_type_t bt)
   {
     next_instruction_address = npc;
-    branch_type = (bt == B_CALL) ? Branch::Call : (bt == B_RET) ? Branch::Return : Branch::Jump;
+    branch_type = bt;
   }
   
   void CallSupervisor( uint32_t imm ) { throw 0;  }
@@ -341,7 +349,7 @@ struct Processor
   Expr             flags[Flag::end];
   U64              current_instruction_address;
   U64              next_instruction_address;
-  Branch::type_t   branch_type;
+  branch_type_t    branch_type;
   std::set<Expr>   stores;
   bool             unpredictable;
 };
@@ -410,7 +418,7 @@ struct Translator
             Processor state( reference );
             state.path = coderoot;
             instruction->execute( state );
-            end = state.close( reference );
+            end = state.close( reference, addr + 4 );
           }
         coderoot->simplify();
         coderoot->commit_stats();
