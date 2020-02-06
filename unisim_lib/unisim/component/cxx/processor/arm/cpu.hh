@@ -41,7 +41,6 @@
 #include <unisim/component/cxx/processor/arm/cp15.hh>
 #include <unisim/component/cxx/processor/arm/hostfloat.hh>
 #include <unisim/component/cxx/processor/arm/simfloat.hh>
-#include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>

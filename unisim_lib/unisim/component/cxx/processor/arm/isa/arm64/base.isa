@@ -5484,18 +5484,10 @@ op mrs_reg( 0b110101010011[12] : o0[1] : op1[3] : crn[4] : crm[4] : op2[3] : rt[
 mrs_reg.var format : {char const*} = {"base,249"};
 
 mrs_reg.disasm = {
-  char const* sys_reg_name = cpu.NameSystemRegister( 2+o0, op1, crn, crm, op2 );
-  if (sys_reg_name)
-    sink << "mrs\t" << DisasmGZXR(rt) << ", " << sys_reg_name << "\t; " << cpu.DescribeSystemRegister( 2+o0, op1, crn, crm, op2 );
-  else {
-    uint32_t sys_reg_idx = 0;
-    sys_reg_idx = (sys_reg_idx << 1) | o0;
-    sys_reg_idx = (sys_reg_idx << 3) | op1;
-    sys_reg_idx = (sys_reg_idx << 4) | crn;
-    sys_reg_idx = (sys_reg_idx << 4) | crm;
-    sys_reg_idx = (sys_reg_idx << 3) | op2;
-    sink << "mrs\t" << DisasmGZXR(rt) << ", " << DisasmI(sys_reg_idx,16);
-  }
+  sink << "mrs\t" << DisasmGZXR(rt) << ", ";
+  cpu.NameSystemRegister( 2+o0, op1, crn, crm, op2, sink );
+  sink << "\t; ";
+  cpu.DescribeSystemRegister( 2+o0, op1, crn, crm, op2, sink );
 };
 
 mrs_reg.execute = {
@@ -5535,18 +5527,10 @@ op msr_reg( 0b110101010001[12] : o0[1] : op1[3] : crn[4] : crm[4] : op2[3] : rt[
 msr_reg.var format : {char const*} = {"base,248"};
 
 msr_reg.disasm = {
-  char const* sys_reg_name = cpu.NameSystemRegister( 2+o0, op1, crn, crm, op2) ;
-  if (sys_reg_name)
-    sink << "msr\t" << sys_reg_name << ", " << DisasmGZXR(rt) << "\t; " << cpu.DescribeSystemRegister( 2+o0, op1, crn, crm, op2 );
-  else {
-    uint32_t sys_reg_idx = 0;
-    sys_reg_idx = (sys_reg_idx << 1) | o0;
-    sys_reg_idx = (sys_reg_idx << 3) | op1;
-    sys_reg_idx = (sys_reg_idx << 4) | crn;
-    sys_reg_idx = (sys_reg_idx << 4) | crm;
-    sys_reg_idx = (sys_reg_idx << 3) | op2;
-    sink << "msr\t" << DisasmI(sys_reg_idx,16) << ", " << DisasmGZXR(rt);
-  } 
+  sink << "msr\t";
+  cpu.NameSystemRegister( 2+o0, op1, crn, crm, op2, sink );
+  sink << ", " << DisasmGZXR(rt) << "\t; ";
+  cpu.DescribeSystemRegister( 2+o0, op1, crn, crm, op2, sink );
 };
 
 msr_reg.execute = {

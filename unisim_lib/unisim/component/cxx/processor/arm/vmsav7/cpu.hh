@@ -49,6 +49,7 @@
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/kernel/variable/variable.hh>
+#include <unisim/util/likely/likely.hh>
 #include <string>
 #include <inttypes.h>
 
@@ -212,7 +213,7 @@ struct CPU
   
   void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp, uint32_t addr, uint32_t size )
   {
-    if (requires_memory_access_reporting and memory_access_reporting_import)
+    if (unlikely(requires_memory_access_reporting))
       memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);
   }
   

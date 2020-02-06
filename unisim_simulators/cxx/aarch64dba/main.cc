@@ -261,8 +261,20 @@ struct Processor
   void        CheckSystemAccess( uint8_t op1 ) { throw 0; }
   U64         ReadSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 ) { throw 0; return U64(); }
   void        WriteSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, U64 value ) { throw 0; }
-  char const* DescribeSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 ) { throw 0; return "???"; }
-  char const* NameSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 ) { throw 0; return "???"; }
+  void        DescribeSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, std::ostream& sink )
+  {
+    sink << "Unknown system register (op0=" << unsigned(op0) << ", op1=" << unsigned(op1) << ", crn=" << unsigned(crn) << ", crm=" << unsigned(crm) << ", op2=" << unsigned(op2) << ")";
+  }
+  void        NameSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, std::ostream& sink )
+  {
+    uint32_t sys_reg_idx = 0;
+    sys_reg_idx = (sys_reg_idx << 1) | op0;
+    sys_reg_idx = (sys_reg_idx << 3) | op1;
+    sys_reg_idx = (sys_reg_idx << 4) | crn;
+    sys_reg_idx = (sys_reg_idx << 4) | crm;
+    sys_reg_idx = (sys_reg_idx << 3) | op2;
+    sink << "#" << std::hex << sys_reg_idx << std::dec;
+  }
   
   //   =====================================================================
   //   =                      Control Transfer methods                     =

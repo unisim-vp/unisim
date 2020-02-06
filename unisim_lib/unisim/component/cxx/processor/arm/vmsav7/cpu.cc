@@ -44,7 +44,6 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/truth_table/truth_table.hh>
-#include <unisim/util/likely/likely.hh>
 #include <unisim/util/os/linux_os/linux.hh>
 #include <unisim/util/os/linux_os/arm.hh>
 #include <unisim/util/simfloat/floating.tcc>
@@ -736,12 +735,16 @@ CPU::InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t size )
 void
 CPU::RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report )
 {
-  switch (type) {
-  case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
-  case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
-  case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
-  default: throw 0;
-  }
+  if (report and not memory_access_reporting_import)
+    throw std::logic_error("missing memory_access_reporting_import");
+  
+  switch (type)
+    {
+    case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+    case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+    case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+    default: throw std::logic_error("Unknown reporting types");
+    }
 }
 
 /** Perform a non intrusive read access.
@@ -929,7 +932,7 @@ CPU::RefillInsnPrefetchBuffer(uint32_t mva, AddressDescriptor const& line_loc)
     DataAbort(mva, line_loc.address, 0, 0, mat_exec, DAbort_SyncExternal, false, false, true, false, false);
   }
   
-  if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
+  if (unlikely(requires_memory_access_reporting))
     memory_access_reporting_import->
       ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, line_loc.address, IPB_LINE_SIZE);
 }
