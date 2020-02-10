@@ -72,14 +72,15 @@ struct MemorySubSystem : public unisim::util::cache::MemorySubSystem<MSSConfig,M
   using AccessLog::DataBusRead;
   using AccessLog::DataBusWrite;
   
-
   MemorySubSystem( std::ostream& sink ) : BaseMSS(), AccessLog(sink) {}
   
   bool IsStorageCacheable(StorageAttr storage_attr) const { return true; }
 
+  // Tightly Coupled Memories (none)
   typedef unisim::util::cache::LocalMemorySet<MSSConfig> DATA_LOCAL_MEMORIES;
   typedef unisim::util::cache::LocalMemorySet<MSSConfig> INSTRUCTION_LOCAL_MEMORIES;
-  
+
+  // Cache memories
   struct L1D_CONFIG
   {
     static const unsigned int SIZE                                      = 4096;
@@ -88,8 +89,8 @@ struct MemorySubSystem : public unisim::util::cache::MemorySubSystem<MSSConfig,M
     static const unisim::util::cache::CacheTagScheme TAG_SCHEME         = unisim::util::cache::CACHE_PHYSICALLY_TAGGED;
     static const unisim::util::cache::CacheType TYPE                    = unisim::util::cache::DATA_CACHE;
     static const unsigned int ASSOCIATIVITY                             = 4;
-    static const unsigned int BLOCK_SIZE                                = 32;
-    static const unsigned int BLOCKS_PER_LINE                           = 1;
+    static const unsigned int BLOCK_SIZE                                = 4;
+    static const unsigned int BLOCKS_PER_LINE                           = 8;
     
     //    typedef CACHE_CPU CPU;
     struct LINE_STATUS : unisim::util::cache::CacheLineStatus {};
@@ -135,9 +136,10 @@ main( int argc, char *argv[] )
 
   srand(0);
 
-  for (uint32_t step = 0; step < 0x100000; step += 4)
+  for (uint32_t step = 0; step < 0x10000; step += 1)
     {
       uint32_t addr =  (uint32_t(rand()) % 0x1000) & -4, value = addr;
+      //      if (rand() % 2)
       if (rand() % 2)
         {
           alog.DataBusRead(addr, &value, sizeof(value), storage_attr, false);
@@ -146,7 +148,7 @@ main( int argc, char *argv[] )
       else
         {
           alog.DataBusWrite(addr, &value, sizeof(value), storage_attr);
-            mss.DataStore(addr, addr, &value, sizeof(value), storage_attr);
+          mss.DataStore(addr, addr, &value, sizeof(value), storage_attr);
         }
     }
   std::cout << "Hello simcache!\n";
