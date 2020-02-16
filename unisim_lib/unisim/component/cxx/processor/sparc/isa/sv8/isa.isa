@@ -1,0 +1,40 @@
+// -*- C++ -*-
+set codetype scalar;
+set endianness big;
+set addressclass {uint32_t};
+set fields_order descending;
+
+template <{class} {t_Arch_t}>
+
+namespace SSv8
+
+decl {
+#include <iosfwd>
+#include <inttypes.h>
+}
+
+impl {
+#include <unisim/component/cxx/processor/sparc/asi.hh>
+#include <unisim/component/cxx/processor/sparc/trap.hh>
+#include <iostream>
+#include <cstdlib>
+
+using namespace std;
+}
+
+action {void} execute( {t_Arch_t&} {sparcv8} ) {
+  std::cerr << "Unknown instruction:";
+  this->disasm( std::cerr, sparcv8.m_pc );
+  std::cerr << std::endl;
+  exit( -1 );
+}
+
+action {void} disasm( {std::ostream&} {os}, {uint32_t} {pc} ) {
+  os << "?";
+}
+
+include "unisim/component/cxx/processor/sparc/isa/sv8/memory.isa"
+include "unisim/component/cxx/processor/sparc/isa/sv8/integer.isa"
+include "unisim/component/cxx/processor/sparc/isa/sv8/control.isa"
+include "unisim/component/cxx/processor/sparc/isa/sv8/special.isa"
+include "unisim/component/cxx/processor/sparc/isa/sv8/floating-point.isa"

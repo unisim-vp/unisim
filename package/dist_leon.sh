@@ -1,59 +1,32 @@
 #!/bin/bash
 
-SIMPKG=armemu
-SIMPKG_SRCDIR=tlm2/armemu
-SIMPKG_DSTDIR=armemu
+SIMPKG=leon
+SIMPKG_SRCDIR=cxx/leon
+SIMPKG_DSTDIR=leon
 source "$(dirname $0)/dist_common.sh"
 
 import_genisslib || exit
 
-import unisim/kernel || exit
-import unisim/kernel/tlm2 || exit
-import unisim/kernel/variable/endian || exit
-import unisim/kernel/config/xml || exit
-import unisim/kernel/config/ini || exit
-import unisim/kernel/config/json || exit
-import unisim/kernel/logger/console || exit
-import unisim/kernel/logger/text_file || exit
-import unisim/kernel/logger/http || exit
-import unisim/kernel/logger/xml_file || exit
-import unisim/kernel/logger/netstream || exit
-import unisim/component/tlm2/processor/arm/cortex_a9 || exit
-import unisim/component/tlm2/memory/ram || exit
-import unisim/util/likely || exit
-import unisim/service/time/sc_time || exit
-import unisim/service/time/host_time || exit
-import unisim/service/os/linux_os || exit
-import unisim/service/trap_handler || exit
-import unisim/service/debug/gdb_server || exit
-import unisim/service/debug/inline_debugger || exit
-import unisim/service/debug/debugger || exit
-import unisim/service/debug/monitor || exit
-import unisim/service/debug/profiler || exit
-import unisim/service/http_server || exit
-import unisim/service/instrumenter || exit
+import unisim/component/cxx/processor/sparc/isa/sv8
 
-import std/stdexcept || exit
-import std/iostream || exit
-import std/sstream || exit
-import std/list || exit
-import std/string || exit
-import std/cstdlib || exit
+import libc/inttypes
+import std/iostream
+import std/sstream
+import std/string
+import std/map
+import std/vector
 
 import m4/ax_cflags_warn_all || exit
 
-copy source isa_thumb isa_arm32 header template data
+copy source header template data isa
 copy m4 && has_to_build_simulator_configure=yes # Some imported files (m4 macros) impact configure generation
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="$(files source)"
 
-UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES="$(files isa_thumb)"
-
-UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES="$(files isa_arm32)"
+UNISIM_LIB_SIMULATOR_ISA_SV8_FILES="$(files isa)"
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
-${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES} \
-${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES} \
+${UNISIM_LIB_SIMULATOR_ISA_SV8_FILES} \
 $(files header) \
 $(files template) \
 "
@@ -63,12 +36,36 @@ UNISIM_LIB_SIMULATOR_M4_FILES="$(files m4)"
 UNISIM_LIB_SIMULATOR_DATA_FILES="$(files data)"
 
 UNISIM_SIMULATOR_SOURCE_FILES="\
+options.cc \
 main.cc \
-simulator.cc \
+arch.cc \
+sys/elfloader.cc \
+hw/console.cc \
+hw/pnp.cc \
+utils/options.cc \
+utils/trace.cc \
+utils/pfxchan.cc \
+utils/cfmt.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
-simulator.hh \
+fwd.hh \
+options.hh \
+arch.hh \
+sys/gaislersystem.hh \
+sys/elfloader.hh \
+hw/peripheral.hh \
+hw/controller.hh \
+hw/pnp.hh \
+hw/console.hh \
+fpu.hh \
+utils/trace.hh \
+utils/cfmt.hh \
+utils/beaccess.hh \
+utils/options.hh \
+utils/pfxchan.hh \
+sys/gaislersystem.tcc \
+hw/controller.tcc \
 "
 
 UNISIM_SIMULATOR_PKG_DATA_FILES="\
@@ -81,7 +78,7 @@ ChangeLog \
 "
 
 UNISIM_SIMULATOR_DATA_FILES="\
-${UNISIM_SIMULATOR_PKG_DATA_FILES}\
+${UNISIM_SIMULATOR_PKG_DATA_FILES} \
 "
 
 UNISIM_SIMULATOR_FILES="\
@@ -101,7 +98,7 @@ done
 # Top level
 
 output_top_configure_ac <(cat << EOF
-AC_INIT([UniSIM ARMemu package], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}])
+AC_INIT([UniSIM Leon package], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>], [unisim-${SIMPKG}])
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
@@ -129,7 +126,7 @@ build_top_configure_cross
 # Simulator
 
 output_simulator_configure_ac <(cat <<EOF
-AC_INIT([UNISIM ARMemu C++ simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}-core])
+AC_INIT([UNISIM Leon C++ simulator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>], [unisim-${SIMPKG}-core])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
@@ -192,28 +189,20 @@ dist_share_DATA = ${UNISIM_SIMULATOR_DATA_FILES}
 nobase_dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
 
 BUILT_SOURCES=\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc\
+	\$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.tcc\
 
 CLEANFILES=\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh\
-	\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc
+	\$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.hh\
+	\$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.tcc\
 
-\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh
-\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.isa
+\$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.tcc: \$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.hh
+\$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8.hh: ${UNISIM_LIB_SIMULATOR_ISA_SV8_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/sparc/isa_sv8 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/sparc/isa/sv8/isa.isa
 
-\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh
-\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.isa
 EOF
 )
 
 build_simulator_configure
 
 echo "Distribution is up-to-date"
-
