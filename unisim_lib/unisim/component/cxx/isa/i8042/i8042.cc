@@ -969,6 +969,23 @@ void I8042::WriteKbd(uint8_t data)
 				{
 					logger << DebugInfo << "Handling keyboard command KBD_CMD_ENABLE" << EndDebugInfo;
 				}
+				KbdEnqueue(KBD_RET_ACK);
+				kbd_scanning = true;
+				break;
+			case KBD_CMD_RESET_DISABLE:
+				if(verbose)
+				{
+					logger << DebugInfo << "Handling keyboard command KBD_CMD_RESET_DISABLE" << EndDebugInfo;
+				}
+				KbdResetQueue();
+				KbdEnqueue(KBD_RET_ACK);
+				kbd_scanning = false;
+				break;
+			case KBD_CMD_RESET_ENABLE:
+				if(verbose)
+				{
+					logger << DebugInfo << "Handling keyboard command KBD_CMD_RESET_ENABLE" << EndDebugInfo;
+				}
 				KbdResetQueue();
 				KbdEnqueue(KBD_RET_ACK);
 				kbd_scanning = true;

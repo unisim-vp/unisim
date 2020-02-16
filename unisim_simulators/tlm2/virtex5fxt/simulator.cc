@@ -879,29 +879,10 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 		SetVariable("debugger.parse-dwarf", true);
 	}
 	
-	unisim::kernel::VariableBase *cmd_args = FindVariable("cmd-args");
-	unsigned int cmd_args_length = cmd_args->GetLength();
-	
 	if(enable_linux_os)
 	{
 		SetVariable("HARDWARE.ram.org", 0);
 		SetVariable("HARDWARE.ram.bytesize", 0x100000000ULL); // a 4 GB addressable RAM
-		
-		// Build the Linux OS arguments from the command line arguments
-		
-		if(cmd_args_length > 0)
-		{
-			SetVariable("linux-os.binary", ((std::string)(*cmd_args)[0]).c_str());
-			SetVariable("linux-os.argc", cmd_args_length);
-			
-			unsigned int i;
-			for(i = 0; i < cmd_args_length; i++)
-			{
-				std::stringstream sstr;
-				sstr << "linux-os.argv[" << i << "]";
-				SetVariable(sstr.str().c_str(), ((std::string)(*cmd_args)[i]).c_str());
-			}
-		}
 		
 		// Relax time decoupling
 		SetVariable("cpu.nice-time", "1 ms");
@@ -909,6 +890,9 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 	else
 	{
 		// Optionally get the program to load from the command line arguments
+    unisim::kernel::VariableBase *cmd_args = FindVariable("cmd-args");
+    unsigned int cmd_args_length = cmd_args->GetLength();
+	
 		if(cmd_args_length > 0)
 		{
 			SetVariable("loader.filename", ((std::string)(*cmd_args)[0]).c_str());

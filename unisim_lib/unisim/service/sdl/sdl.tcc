@@ -870,21 +870,29 @@ void SDL<ADDRESS>::ProcessKeyboardEvent(SDL_KeyboardEvent& kbd_ev)
 		}
 
 		map<SDLKey, uint8_t>::iterator keymap_iter = keymap.find(kbd_ev.keysym.sym);
-		uint8_t key_num = (keymap_iter != keymap.end()) ? (*keymap_iter).second : 0;
-
-		if(unlikely(verbose_run))
+		if(keymap_iter != keymap.end())
 		{
-			SDL_mutexP(logger_mutex);
-			logger << DebugInfo << "Key #" << (unsigned int) key_num << " (" << (unsigned int) kbd_ev.keysym.sym << ")" << ((kbd_ev.type == SDL_KEYUP) ? "up" : "down") << EndDebugInfo;
-			SDL_mutexV(logger_mutex);
-		}
+			uint8_t key_num = (*keymap_iter).second;
+			if(unlikely(verbose_run))
+			{
+				SDL_mutexP(logger_mutex);
+				logger << DebugInfo << "Key #" << (unsigned int) key_num << " (" << (unsigned int) kbd_ev.keysym.sym << ")" << ((kbd_ev.type == SDL_KEYUP) ? "up" : "down") << EndDebugInfo;
+				SDL_mutexV(logger_mutex);
+			}
 
-		if(key_num)
-		{
 			KeyAction key_action;
 			key_action.key_num = key_num;
 			key_action.action = (kbd_ev.type == SDL_KEYUP) ? unisim::service::interfaces::Keyboard::KeyAction::KEY_UP : unisim::service::interfaces::Keyboard::KeyAction::KEY_DOWN;
 			PushKeyAction(key_action);
+		}
+		else
+		{
+			if(unlikely(verbose_run))
+			{
+				SDL_mutexP(logger_mutex);
+				logger << DebugInfo << "Unmapped Key (" << (unsigned int) kbd_ev.keysym.sym << ")" << ((kbd_ev.type == SDL_KEYUP) ? "up" : "down") << EndDebugInfo;
+				SDL_mutexV(logger_mutex);
+			}
 		}
 	}
 }

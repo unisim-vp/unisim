@@ -655,9 +655,20 @@ std::string DWARF_Expression<MEMORY_ADDR>::to_string() const
 	std::stringstream sstr;
 	
 	DWARF_ExpressionVM<MEMORY_ADDR> expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu ? dw_cu->GetHandler() : dw_cfp->GetHandler(), 0U);
-	expr_vm.Disasm(sstr, this);
+	if(!expr_vm.Disasm(sstr, this))
+	{
+		std::stringstream raw_sstr;
+		raw_sstr << "invalid expression (" << length << " bytes): ";
+		raw_sstr << std::hex;
+		for(uint64_t i = 0; i < length; i++)
+		{
+			if(i) raw_sstr << " ";
+			raw_sstr << "0x" << +value[i]; 
+		}
+		
+		return raw_sstr.str();
+	}
 	return sstr.str();
-	//return expr_vm.Disasm(sstr, this) ? sstr.str() : std::string("");
 }
 
 template <class MEMORY_ADDR>

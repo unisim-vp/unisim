@@ -60,7 +60,9 @@ PowerPCLinux32<ADDRESS_TYPE,PARAMETER_TYPE>::SetupTargetSystem()
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 PowerPCLinux32<ADDRESS_TYPE,PARAMETER_TYPE>::~PowerPCLinux32()
 {
-  delete Linux<ADDRESS_TYPE,PARAMETER_TYPE>::linuxlib_->GetTargetSystem();
+  if(Linux<ADDRESS_TYPE,PARAMETER_TYPE>::linuxlib_) {
+    delete Linux<ADDRESS_TYPE,PARAMETER_TYPE>::linuxlib_->GetTargetSystem();
+  }
 }
 
 } // end of linux_os namespace

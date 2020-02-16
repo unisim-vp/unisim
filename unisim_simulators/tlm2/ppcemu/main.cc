@@ -405,15 +405,15 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::Simulator *simulator)
 	simulator->SetVariable("linux-os.endianness", "big-endian");
 	simulator->SetVariable("linux-os.stack-base", 0xc0000000);
 	simulator->SetVariable("linux-os.envc", 0);
-	simulator->SetVariable("linux-os.system", "ppc");
-	simulator->SetVariable("linux-os.endianness", "big-endian");
+//	simulator->SetVariable("linux-os.system", "ppc");
+// 	simulator->SetVariable("linux-os.endianness", "big-endian");
 	simulator->SetVariable("linux-os.utsname-sysname", "Linux");
  	simulator->SetVariable("linux-os.utsname-nodename", "(none)");
- 	simulator->SetVariable("linux-os.utsname-release", "3.0.4");
+ 	simulator->SetVariable("linux-os.utsname-release", "5.1.20");
  	simulator->SetVariable("linux-os.utsname-version", "#1 PREEMPT Thu Jan 1 00:00:00 CEST 1970");
 	simulator->SetVariable("linux-os.utsname-machine", "ppc");
 	simulator->SetVariable("linux-os.utsname-domainname", "(none)");
-	simulator->SetVariable("linux-os.apply-host-environment", false);
+// 	simulator->SetVariable("linux-os.apply-host-environment", false);
 	
 	// Inline debugger
 	simulator->SetVariable("inline-debugger.num-loaders", 1);
@@ -462,24 +462,6 @@ unisim::kernel::Simulator::SetupStatus Simulator::Setup()
 		SetVariable("debugger.parse-dwarf", true);
 	}
 	
-	// Build the Linux OS arguments from the command line arguments
-	
-	unisim::kernel::VariableBase *cmd_args = FindVariable("cmd-args");
-	unsigned int cmd_args_length = cmd_args->GetLength();
-	if(cmd_args_length > 0)
-	{
-		SetVariable("linux-os.binary", ((std::string)(*cmd_args)[0]).c_str());
-		SetVariable("linux-os.argc", cmd_args_length);
-		
-		unsigned int i;
-		for(i = 0; i < cmd_args_length; i++)
-		{
-			std::stringstream sstr;
-			sstr << "linux-os.argv[" << i << "]";
-			SetVariable(sstr.str().c_str(), ((std::string)(*cmd_args)[i]).c_str());
-		}
-	}
-
 	unisim::kernel::Simulator::SetupStatus setup_status = unisim::kernel::Simulator::Setup();
 
 	return setup_status;

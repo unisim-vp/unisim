@@ -120,13 +120,21 @@ Linux(const char *name, unisim::kernel::Object *parent)
   , binary_()
   , param_binary_("binary", this, binary_,
                   "The binary to execute on the target simulator. Usually it"
-                  " is the same value than the argv[1] parameter.")
+                  " is the same value than the argv[0] parameter.")
   , argc_(0)
   , param_argc_("argc", this, argc_,
                 "Number of commands in the program execution line (usually at"
                 " least one which is the name of the program executed). The"
                 " different tokens can be set up with the parameters"
                 " argv[<n>] where <n> can go up to argc - 1.")
+  , argv_(argc_)
+  , param_argv_()
+  , apply_host_cmd_line_(true)
+  , param_apply_host_cmd_line_("apply-host-cmd-line", this,
+                               apply_host_cmd_line_,
+                               "Whether to apply the host command line on"
+                               " the target simulator or use the provided"
+                               " argc and argv.")
   , apply_host_environment_(false)
   , param_apply_host_environment_("apply-host-environment", this,
                                   apply_host_environment_,
@@ -174,9 +182,34 @@ Linux(const char *name, unisim::kernel::Object *parent)
                  "CPU Hardware capabilities to enable (e.g. \"swp thumb fastmult vfp\".")
 {
   param_argc_.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
+  param_envc_.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
   
   linux_os_export_.SetupDependsOn(memory_import_);
   linux_os_export_.SetupDependsOn(registers_import_);
+
+  for (unsigned int i = 0; i < argc_; i++) {
+    std::stringstream argv_name, argv_desc, argv_val;
+    argv_name << "argv[" << i << "]";
+    argv_desc << "The '" << i << "' token in the command line.";
+    argv_val << "Undefined argv[" << i << "] value";
+    argv_[i] = argv_val.str();
+    param_argv_.push_back(
+        new unisim::kernel::variable::Parameter<std::string>(
+            argv_name.str().c_str(), this, argv_[i],
+            argv_desc.str().c_str()));
+  }
+  
+  for (unsigned int i = 0; i < envc_; i++) {
+    std::stringstream envp_name, envp_desc, envp_val;
+    envp_name << "envp[" << i << "]";
+    envp_desc << "The '" << i << "' token in the environment.";
+    envp_val << "Undefined envp[" << i << "] value";
+    envp_.push_back(envp_val.str());
+    param_envp_.push_back(
+        new unisim::kernel::variable::Parameter<std::string>(
+            envp_name.str().c_str(), this, envp_[i],
+            envp_desc.str().c_str()));
+  }
 }
 
 /** Destructor. */
@@ -184,6 +217,15 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux()
 {
   delete linuxlib_;
+
+  typename std::vector<unisim::kernel::variable::Parameter<std::string> *>::iterator param_argv_it;
+  for(param_argv_it = param_argv_.begin(); param_argv_it != param_argv_.end(); param_argv_it++) {
+    delete *param_argv_it;
+  }
+  typename std::vector<unisim::kernel::variable::Parameter<std::string> *>::iterator param_envp_it;
+  for(param_envp_it = param_envp_.begin(); param_envp_it != param_envp_.end(); param_envp_it++) {
+    delete *param_envp_it;
+  }
 }
 
 /** Method to execute when the Linux is disconnected from its client. */
@@ -196,26 +238,6 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::OnDisconnect()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
 {
-  std::vector<std::string> argv, envp;
-  argv.reserve( argc_ );
-  envp.reserve( argc_ );
-  
-  for (unsigned int i = 0; i < ((argc_ == 0)?1:argc_); i++)
-    {
-      std::stringstream argv_name;
-      argv_name << "argv[" << i << "]";
-      argv.push_back( static_cast<std::string>(*GetSimulator()->FindVariable(argv_name.str().c_str(), unisim::kernel::VariableBase::VAR_PARAMETER) ) );
-    }
-  
-  param_envc_.SetFormat(unisim::kernel::VariableBase::FMT_DEC);
-  
-  for (unsigned int i = 0; i < ((envc_ == 0)?1:envc_); i++)
-    {
-      std::stringstream envp_name;
-      envp_name << "envp[" << i << "]";
-      envp.push_back( static_cast<std::string>(*GetSimulator()->FindVariable(envp_name.str().c_str(), unisim::kernel::VariableBase::VAR_PARAMETER) ) );
-    }
-
   // check the endianness parameter
   if(endianness_ == unisim::util::endian::E_UNKNOWN_ENDIAN)
   {
@@ -225,7 +247,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
         << EndDebugError;
     return false;
   }
-
+  
   linuxlib_ = new LinuxImpl(logger_.DebugInfoStream(), logger_.DebugWarningStream(), logger_.DebugErrorStream(), registers_import_, memory_import_, memory_injection_import_);
   
   // set up the different linuxlib parameters
@@ -234,26 +256,71 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
   linuxlib_->SetDebugDWARF(debug_dwarf_);
   linuxlib_->SetDWARFToHTMLOutputDirectory(dwarf_to_html_output_directory_.c_str());
   linuxlib_->SetDWARFToXMLOutputFilename(dwarf_to_xml_output_filename_.c_str());
-
+  
   // set the linuxlib command line
-  if (argc_ != 0) {
-    bool success = linuxlib_->SetCommandLine(argv);
-    if (!success) {
+  if(apply_host_cmd_line_)
+  {
+    std::vector<std::string> const& cmd_args = GetSimulator()->GetCmdArgs();
+    
+    if (not cmd_args.empty()) {
+      bool success = linuxlib_->SetCommandLine(cmd_args);
+      
+      if (!success) {
+        logger_ << DebugError
+            << "Could not set the command line."
+            << EndDebugError;
+        return false;
+      }
+      
+      // set the binary that will be simulated in the target simulator
+      {
+        bool success = linuxlib_->AddLoadFile(cmd_args[0].c_str());
+        if (!success) {
+          logger_ << DebugError
+              << "Could not set the binary file to simulate on the target"
+              << " simulator." << EndDebugError;
+          return false;
+        }
+      }
+    } else {
       logger_ << DebugError
-          << "Could not set the command line."
+          << "No command line was given for the target simulator."
           << EndDebugError;
       return false;
     }
-  } else {
-    logger_ << DebugError
-        << "No command line was given for the target simulator."
-        << EndDebugError;
-    return false;
   }
-
+  else
+  {
+    if (argc_ != 0) {
+      bool success = linuxlib_->SetCommandLine(argv_);
+      if (!success) {
+        logger_ << DebugError
+            << "Could not set the command line."
+            << EndDebugError;
+        return false;
+      }
+    } else {
+      logger_ << DebugError
+          << "No command line was given for the target simulator."
+          << EndDebugError;
+      return false;
+    }
+    
+    // set the binary that will be simulated in the target simulator
+    {
+      bool success = linuxlib_->AddLoadFile(binary_.c_str());
+      if (!success) {
+        logger_ << DebugError
+            << "Could not set the binary file to simulate on the target"
+            << " simulator." << EndDebugError;
+        return false;
+      }
+    }
+  }
+  
   // set the linuxlib environment
   if (envc_ != 0) {
-    bool success = linuxlib_->SetEnvironment(envp);
+    bool success = linuxlib_->SetEnvironment(envp_);
     if (!success) {
       logger_ << DebugError
           << "Could not set the application environment."
@@ -265,17 +332,6 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
   // set the linuxlib option to set the target environment with the host
   // environment
   linuxlib_->SetApplyHostEnvironment(apply_host_environment_);
-
-  // set the binary that will be simulated in the target simulator
-  {
-    bool success = linuxlib_->AddLoadFile(binary_.c_str());
-    if (!success) {
-      logger_ << DebugError
-          << "Could not set the binary file to simulate on the target"
-          << " simulator." << EndDebugError;
-      return false;
-    }
-  }
 
   // setup target specific implementation
   

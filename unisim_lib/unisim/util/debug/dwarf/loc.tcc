@@ -139,6 +139,9 @@ const DWARF_LocListEntry<MEMORY_ADDR> *DWARF_LocListEntry<MEMORY_ADDR>::GetNext(
 template <class MEMORY_ADDR>
 int64_t DWARF_LocListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, uint64_t _offset)
 {
+	// DWARF v4 page 167: A location list entry consists of two address offsets followed by a 2-byte length, followed by a
+	//                    block of contiguous bytes that contains a DWARF location description. The length specifies the
+	//                    number of bytes in that block. The two offsets are the same size as an address on the target machine.
 	offset = _offset;
 	int64_t size = 0;
 	
@@ -215,7 +218,6 @@ int64_t DWARF_LocListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t m
 
 	if(IsBaseAddressSelection() || IsEndOfList()) return size;
 	
-	// Warning! whether block_length is a 2-byte unsigned integer or an unsigned LEB128 as I initially expected is undocumented both in DWARF v2 and v3 specifications.
 	uint16_t block_length;
 	if(max_size < sizeof(block_length)) return -1;
 	memcpy(&block_length, rawdata, sizeof(block_length));
